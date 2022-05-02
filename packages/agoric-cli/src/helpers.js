@@ -24,7 +24,7 @@ export const getSDKBinaries = ({
 /**
  * Create a promisified spawn function with the following built-in parameters.
  *
- * @param {Object} param0
+ * @param {object} param0
  * @param {Record<string, string | undefined>} [param0.env] the default environment
  * @param {*} [param0.chalk] a colorizer
  * @param {Console} [param0.log] a console object
@@ -41,7 +41,7 @@ export const makePspawn = ({
    *
    * @param {string} cmd command name to run
    * @param {Array<string>} cargs arguments to the command
-   * @param {Object} param2
+   * @param {object} param2
    * @param {string | [string, string, string]} [param2.stdio] standard IO
    * specification
    * @param {Record<string, string | undefined>} [param2.env] environment

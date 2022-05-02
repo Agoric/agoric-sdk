@@ -24,6 +24,6 @@
  * @property {(instanceAdminFromZoe: ERef<ZoeInstanceAdmin>,
  *     instanceRecordFromZoe: InstanceRecord,
  *     issuerStorageFromZoe: IssuerRecords,
- *     privateArgs?: Object,
+ *     privateArgs?: object,
  * ) => Promise<ExecuteContractResult>} startContract
  */

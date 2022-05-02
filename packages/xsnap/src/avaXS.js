@@ -210,7 +210,7 @@ async function runTestScript(
  * Get ava / ava-xs config from package.json
  *
  * @param { string[] } args
- * @param {Object} options
+ * @param {object} options
  * @param {string} [options.packageFilename]
  * @param {{
  *   readFile: typeof import('fs').promises.readFile,
@@ -218,7 +218,7 @@ async function runTestScript(
  * }} io
  * @returns {Promise<AvaXSConfig>}
  *
- * @typedef {Object} AvaXSConfig
+ * @typedef {object} AvaXSConfig
  * @property {string[]} files - files from args or else ava.files
  * @property {string[]} require - specifiers of modules to run before each test script
  * @property {string[]=} exclude - files containing any of these should be skipped

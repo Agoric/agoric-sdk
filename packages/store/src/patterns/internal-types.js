@@ -10,7 +10,7 @@
 // and in exports.js
 
 // /**
-//  * @typedef {Object} MatchHelper
+//  * @typedef {object} MatchHelper
 //  * This factors out only the parts specific to each kind of Matcher. It is
 //  * encapsulated, and its methods can make the stated unchecker assumptions
 //  * enforced by the common calling logic.

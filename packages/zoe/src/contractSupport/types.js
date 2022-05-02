@@ -2,7 +2,7 @@
 /// <reference types="ses"/>
 
 /**
- * @typedef {Object} SeatGainsLossesRecord
+ * @typedef {object} SeatGainsLossesRecord
  * @property {ZCFSeat} seat
  * @property {AmountKeywordRecord} gains - what the seat will
  * gain as a result of this trade
@@ -80,7 +80,7 @@
  */
 
 /**
- * @typedef {Object} Ratio
+ * @typedef {object} Ratio
  * @property {Amount<'nat'>} numerator
  * @property {Amount<'nat'>} denominator
  */

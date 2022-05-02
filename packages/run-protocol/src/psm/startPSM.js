@@ -8,7 +8,7 @@ const BASIS_POINTS = 10000n;
 
 /**
  * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
- * @param {Object} [config]
+ * @param {object} [config]
  * @param {bigint} [config.WantStableFeeBP]
  * @param {bigint} [config.GiveStableFeeBP]
  * @param {bigint} [config.MINT_LIMIT]

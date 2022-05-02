@@ -25,7 +25,7 @@ import '../../../src/contracts/exported.js';
  */
 
 /**
- * @typedef {Object} TestContext
+ * @typedef {object} TestContext
  * @property {ZoeService} zoe
  * @property {MakeFakePriceOracle} makeFakePriceOracle
  * @property {(POLL_INTERVAL: bigint) => Promise<PriceAggregatorKit & { instance: Instance }>} makeMedianAggregator

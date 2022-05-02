@@ -38,7 +38,7 @@ const setUpZoeForTest = async setJig => {
   /**
    * These properties will be assigned by `setJig` in the contract.
    *
-   * @typedef {Object} TestContext
+   * @typedef {object} TestContext
    * @property {ZCF} zcf
    * @property {IssuerRecord} runIssuerRecord
    * @property {IssuerRecord} govIssuerRecord

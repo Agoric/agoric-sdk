@@ -55,7 +55,7 @@ const trace = makeTracer('RSM', false);
  * @param {ZCFMint<'nat'>} debtMint
  * @param {{ debt: Brand<'nat'>, Attestation: Brand<'copyBag'>, Stake: Brand<'nat'> }} brands
  * @param {{ burnDebt: BurnDebt, getGovernedParams: () => ParamManager, mintAndReallocate: MintAndReallocate }} mintPowers
- * @param {Object} timing
+ * @param {object} timing
  * @param {ERef<TimerService>} timing.timerService
  * @param {bigint} timing.chargingPeriod
  * @param {bigint} timing.recordingPeriod

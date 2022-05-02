@@ -6,12 +6,12 @@ import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 
 /**
- * @typedef {Object} Deleter
+ * @typedef {object} Deleter
  * @property {() => void} delete
  */
 
 /**
- * @typedef {Object} PriceAuthorityRegistryAdmin
+ * @typedef {object} PriceAuthorityRegistryAdmin
  * @property {(pa: ERef<PriceAuthority>,
  *             brandIn: Brand,
  *             brandOut: Brand,
@@ -20,7 +20,7 @@ import { Far } from '@endo/marshal';
  */
 
 /**
- * @typedef {Object} PriceAuthorityRegistry A price authority that is a facade
+ * @typedef {object} PriceAuthorityRegistry A price authority that is a facade
  * for other backing price authorities registered for a given asset and price
  * brand
  * @property {PriceAuthority} priceAuthority
@@ -32,7 +32,7 @@ import { Far } from '@endo/marshal';
  */
 export const makePriceAuthorityRegistry = () => {
   /**
-   * @typedef {Object} PriceAuthorityRecord A record indicating a registered
+   * @typedef {object} PriceAuthorityRecord A record indicating a registered
    * price authority.  We put a box around the priceAuthority to ensure the
    * deleter doesn't delete the wrong thing.
    * @property {ERef<PriceAuthority>} priceAuthority the sub-authority for a

@@ -1,5 +1,5 @@
 /**
- * @typedef {Object} OracleAdmin
+ * @typedef {object} OracleAdmin
  * @property {() => Promise<void>} delete
  * Remove the oracle from the aggregator
  * @property {(result: any) => Promise<void>} pushResult
@@ -18,14 +18,14 @@
  */
 
 /**
- * @typedef {Object} PriceAggregatorCreatorFacet
+ * @typedef {object} PriceAggregatorCreatorFacet
  * @property {PriceAggregatorCreatorFacetInitOracle} initOracle
  * @property {(oracleKey: OracleKey) => Promise<void>} deleteOracle
  * @property {(oracleKey?: OracleKey) => Promise<Invitation>} makeOracleInvitation
  */
 
 /**
- * @typedef {Object} PriceAggregatorPublicFacet
+ * @typedef {object} PriceAggregatorPublicFacet
  * @property {() => PriceAuthority} getPriceAuthority
  * @property {() => Promise<Notifier<bigint> | undefined>} getRoundStartNotifier
  * @property {() => Promise<Notifier<{
@@ -35,7 +35,7 @@
  */
 
 /**
- * @typedef {Object} PriceAggregatorKit
+ * @typedef {object} PriceAggregatorKit
  * @property {PriceAggregatorPublicFacet} publicFacet
  * @property {PriceAggregatorCreatorFacet} creatorFacet
  */
@@ -46,7 +46,7 @@
  */
 
 /**
- * @typedef {Object} OraclePublicFacet
+ * @typedef {object} OraclePublicFacet
  * The public methods accessible from the contract instance
  * @property {(query: any) => ERef<Invitation>} makeQueryInvitation
  * Create an invitation for an oracle query
@@ -61,7 +61,7 @@
  */
 
 /**
- * @typedef {Object} OracleCreatorFacet
+ * @typedef {object} OracleCreatorFacet
  * The private methods accessible from the contract instance
  * @property {() => AmountKeywordRecord} getCurrentFees
  * Get the current fee amounts
@@ -72,38 +72,38 @@
  */
 
 /**
- * @typedef {Object} OraclePrivateParameters
+ * @typedef {object} OraclePrivateParameters
  * @property {OracleHandler} oracleHandler
  */
 
 /**
- * @typedef {Object} OracleInitializationFacet
+ * @typedef {object} OracleInitializationFacet
  * @property {(privateParams: OraclePrivateParameters
  * ) => OracleCreatorFacet} initialize
  */
 
 /**
- * @typedef {Object} OracleStartFnResult
+ * @typedef {object} OracleStartFnResult
  * @property {OracleInitializationFacet} creatorFacet
  * @property {OraclePublicFacet} publicFacet
  * @property {Instance} instance
  */
 
 /**
- * @typedef {Object} OracleKit
+ * @typedef {object} OracleKit
  * @property {OracleCreatorFacet} creatorFacet
  * @property {OraclePublicFacet} publicFacet
  * @property {Instance} instance
  */
 
 /**
- * @typedef {Object} OracleReply
+ * @typedef {object} OracleReply
  * @property {any} reply
  * @property {Amount} [requiredFee]
  */
 
 /**
- * @typedef {Object} OracleHandler
+ * @typedef {object} OracleHandler
  * @property {(query: any, fee: Amount) => Promise<OracleReply>} onQuery
  * Callback to reply to a query
  * @property {(query: any, reason: any) => void} onError

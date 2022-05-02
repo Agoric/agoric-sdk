@@ -70,7 +70,7 @@ const start = async (
   const zoe = zcf.getZoeService();
 
   /**
-   * @typedef {Object} OracleRecord
+   * @typedef {object} OracleRecord
    * @property {(timestamp: Timestamp) => Promise<void>=} querier
    * @property {Ratio} lastSample
    * @property {OracleKey} oracleKey
@@ -108,7 +108,7 @@ const start = async (
   E(repeaterP).schedule(waker);
 
   /**
-   * @param {Object} param0
+   * @param {object} param0
    * @param {Ratio} [param0.overridePrice]
    * @param {Timestamp} [param0.timestamp]
    */
@@ -301,7 +301,7 @@ const start = async (
        * reported data.
        *
        * @param {ZCFSeat} seat
-       * @param {Object} param1
+       * @param {object} param1
        * @param {Notifier<OraclePriceSubmission>} [param1.notifier] optional notifier that produces oracle price submissions
        * @param {number} [param1.scaleValueOut]
        * @returns {Promise<OracleAdmin>}

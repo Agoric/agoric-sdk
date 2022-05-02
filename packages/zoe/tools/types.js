@@ -1,5 +1,5 @@
 /**
- * @typedef {Object} PriceQuote
+ * @typedef {object} PriceQuote
  * @property {Amount<'set'>} quoteAmount
  * Amount whose value is a PriceQuoteValue
  * @property {ERef<Payment<'set'>>} quotePayment
@@ -13,7 +13,7 @@
  */
 
 /**
- * @typedef {Object} PriceDescription
+ * @typedef {object} PriceDescription
  * A description of a single quote
  * @property {Amount} amountIn
  * The amount supplied to a trade
@@ -39,25 +39,25 @@
  */
 
 /**
- * @typedef {Object} PriceAuthorityAdmin
+ * @typedef {object} PriceAuthorityAdmin
  * @property {(createQuote: PriceQuoteCreate) => Promise<void>} fireTriggers
  */
 
 /**
- * @typedef {Object} PriceAuthorityKit
+ * @typedef {object} PriceAuthorityKit
  * @property {PriceAuthority} priceAuthority
  * @property {PriceAuthorityAdmin} adminFacet
  */
 
 /**
- * @typedef {Object} MutableQuote
+ * @typedef {object} MutableQuote
  * @property {(reason?: any) => void} cancel
  * @property {(amountIn: Amount, amountOut: Amount) => void} updateLevel
  * @property {() => ERef<PriceQuote>} getPromise
  */
 
 /**
- * @typedef {Object} PriceAuthority
+ * @typedef {object} PriceAuthority
  * An object that mints PriceQuotes and handles
  * triggers and notifiers for changes in the price
  *

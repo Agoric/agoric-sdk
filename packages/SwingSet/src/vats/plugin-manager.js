@@ -38,18 +38,18 @@ const DEFAULT_WALKER = Far('walker', { walk: pluginRootP => pluginRootP });
  */
 
 /**
- * @typedef {Object} PluginManager
+ * @typedef {object} PluginManager
  * @property {LoadPlugin} load
  */
 
 /**
- * @typedef {Object} Receiver
+ * @typedef {object} Receiver
  * @property {(index: number, obj: Record<string, any>) => void} dispatch
  * @property {(index: number, epoch: number) => void} reset
  */
 
 /**
- * @typedef {Object} PluginDevice
+ * @typedef {object} PluginDevice
  * @property {(mod: string) => number} connect
  * @property {(receiver: Receiver) => void} registerReceiver
  * @property {(index: number, obj: Record<string, any>) => void} send
@@ -65,7 +65,7 @@ const DEFAULT_WALKER = Far('walker', { walk: pluginRootP => pluginRootP });
  */
 export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
   /**
-   * @typedef {Object} AbortDispatch
+   * @typedef {object} AbortDispatch
    * @property {(epoch: number) => void} reset
    * @property {(obj: Record<string,any>) => void} dispatch
    */

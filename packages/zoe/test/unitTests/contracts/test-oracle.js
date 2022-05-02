@@ -18,7 +18,7 @@ import '../../../exported.js';
 import '../../../src/contracts/exported.js';
 
 /**
- * @typedef {Object} TestContext
+ * @typedef {object} TestContext
  * @property {ZoeService} zoe
  * @property {(t: ExecutionContext) => Promise<OracleKit>} makePingOracle
  * @property {Amount} feeAmount

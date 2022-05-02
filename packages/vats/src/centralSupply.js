@@ -10,7 +10,7 @@ import { E, Far } from '@endo/far';
  * @param {ZCF<{
  *  bootstrapPaymentValue: bigint,
  * }>} zcf
- * @param {Object} privateArgs
+ * @param {object} privateArgs
  * @param {FeeMintAccess} privateArgs.feeMintAccess
  */
 export const start = async (zcf, { feeMintAccess }) => {

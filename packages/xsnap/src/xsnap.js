@@ -41,7 +41,7 @@ function echoCommand(arg) {
 /**
  * @param {XSnapOptions} options
  *
- * @typedef {Object} XSnapOptions
+ * @typedef {object} XSnapOptions
  * @property {string} os
  * @property {Spawn} spawn
  * @property {(request:Uint8Array) => Promise<Uint8Array>} [handleCommand]
@@ -148,7 +148,7 @@ export function xsnap(options) {
 
   /**
    * @template T
-   * @typedef {Object} RunResult
+   * @typedef {object} RunResult
    * @property {T} reply
    * @property {{ meterType: string, allocate: number|null, compute: number|null }} meterUsage
    */

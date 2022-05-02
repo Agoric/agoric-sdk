@@ -7,7 +7,7 @@ const { details: X, quote: q } = assert;
 
 /**
  * @template K
- * @param {WeakSet<K & Object>} jsset
+ * @param {WeakSet<K & object>} jsset
  * @param {(k: K) => void} assertKeyOkToAdd
  * @param {((k: K) => void)=} assertKeyOkToDelete
  * @param {string=} keyName

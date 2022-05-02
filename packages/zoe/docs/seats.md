@@ -26,7 +26,7 @@ type:
 
 ```js
 /**
- * @typedef {Object} UserSeat
+ * @typedef {object} UserSeat
  * @property {() => Promise<Allocation>} getCurrentAllocation
  * @property {() => Promise<ProposalRecord>} getProposal
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
@@ -59,7 +59,7 @@ The type of the ZCFSeat is:
 
 ```js
 /**
- * @typedef {Object} ZCFSeat
+ * @typedef {object} ZCFSeat
  * @property {() => void} exit
  * @property {ZCFSeatFail} fail
  * @property {() => Notifier<Allocation>} getNotifier
@@ -89,7 +89,7 @@ The type of the `ZoeSeatAdmin` is:
 
 ```js
 /**
- * @typedef {Object} ZoeSeatAdmin
+ * @typedef {object} ZoeSeatAdmin
  * @property {(allocation: Allocation) => void} replaceAllocation
  * @property {ZoeSeatAdminExit} exit
  * @property {ShutdownWithFailure} fail called with the reason

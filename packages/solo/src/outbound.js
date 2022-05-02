@@ -10,7 +10,7 @@ const SOLO_MAX_DEBUG_LENGTH =
 const log = anylogger('outbound');
 
 /**
- * @typedef {Object} TargetRecord
+ * @typedef {object} TargetRecord
  * @property {(newMessages: Array<[number, string]>, acknum: number) => void} deliverator
  * @property {number} highestSent
  * @property {number} highestAck

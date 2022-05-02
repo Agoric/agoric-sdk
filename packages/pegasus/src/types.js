@@ -8,14 +8,14 @@
  */
 
 /**
- * @typedef {Object} PacketParts
+ * @typedef {object} PacketParts
  * @property {AmountValue} value
  * @property {Denom} remoteDenom
  * @property {DepositAddress} depositAddress
  */
 
 /**
- * @typedef {Object} TransferProtocol
+ * @typedef {object} TransferProtocol
  * @property {(parts: PacketParts) => Promise<Bytes>} makeTransferPacket
  * @property {(packet: Bytes) => Promise<PacketParts>} parseTransferPacket
  * @property {(success: boolean, error?: any) => Promise<Bytes>} makeTransferPacketAck
@@ -23,7 +23,7 @@
  */
 
 /**
- * @typedef {Object} DenomTransformer
+ * @typedef {object} DenomTransformer
  * @property {(remoteDenom: Denom, localAddr: Address, remoteAddr: Address)
  *   => Promise<{ sendDenom: Denom, receiveDenom: Denom }>
  * } getDenomsForLocalPeg
@@ -33,7 +33,7 @@
  */
 
 /**
- * @typedef {Object} Peg
+ * @typedef {object} Peg
  * @property {() => string} getAllegedName get the debug name
  * @property {() => Brand} getLocalBrand get the brand associated with the peg
  * @property {() => Denom} getReceiveDenom get the remote denomination identifier we receive
@@ -41,7 +41,7 @@
  */
 
 /**
- * @typedef {Object} BoardDepositFacet a registry for depositAddresses
+ * @typedef {object} BoardDepositFacet a registry for depositAddresses
  * @property {(id: string) => any} getValue return the corresponding DepositFacet
  */
 
@@ -49,7 +49,7 @@
  * @typedef {(zcfSeat: ZCFSeat, depositAddress: DepositAddress) => Promise<void>} Sender
  * Successive transfers are not guaranteed to be processed in the order in which they were sent.
  * @typedef {(parts: PacketParts) => Promise<Bytes>} Receiver
- * @typedef {Object} Courier
+ * @typedef {object} Courier
  * @property {Sender} send
  * @property {Receiver} receive
  */
@@ -90,7 +90,7 @@
  */
 
 /**
- * @typedef {Object} PegasusConnectionActions
+ * @typedef {object} PegasusConnectionActions
  * @property {PegLocal} pegLocal
  * @property {PegRemote} pegRemote
  * @property {RejectTransfersWaitingForPegRemote} rejectTransfersWaitingForPegRemote
@@ -98,7 +98,7 @@
  */
 
 /**
- * @typedef {Object} PegasusConnection
+ * @typedef {object} PegasusConnection
  * @property {PegasusConnectionActions} [actions]
  * @property {Address} localAddr
  * @property {Address} remoteAddr
@@ -106,7 +106,7 @@
  */
 
 /**
- * @typedef {Object} PegasusConnectionKit
+ * @typedef {object} PegasusConnectionKit
  * @property {ConnectionHandler} handler
  * @property {Subscription<PegasusConnection>} subscription
  */

@@ -14,7 +14,7 @@
 
 /**
  * @template {object} [CT=Record<string, unknown>] Contract's custom terms
- * @typedef {Object} ZCF Zoe Contract Facet
+ * @typedef {object} ZCF Zoe Contract Facet
  *
  * The Zoe interface specific to a contract instance. The Zoe Contract
  * Facet is an API object used by running contract instances to access
@@ -99,7 +99,7 @@
  * @param {OfferHandler<OR>} offerHandler - a contract specific function
  * that handles the offer, such as saving it or performing a trade
  * @param {string} description
- * @param {Object=} customProperties
+ * @param {object=} customProperties
  * @returns {Promise<Invitation<OR>>}
  */
 
@@ -139,7 +139,7 @@
 
 /**
  * @template {AssetKind} [K=AssetKind]
- * @typedef {Object} ZCFMint
+ * @typedef {object} ZCFMint
  * @property {() => IssuerRecord<K>} getIssuerRecord
  * @property {ZCFMintMintGains} mintGains
  * All the amounts in gains must be of this ZCFMint's brand.
@@ -184,7 +184,7 @@
  */
 
 /**
- * @typedef {Object} ZCFSeat
+ * @typedef {object} ZCFSeat
  * @property {() => void} exit
  * @property {ZCFSeatFail} fail
  * @property {() => Notifier<Allocation>} getNotifier
@@ -205,10 +205,10 @@
  */
 
 /**
- * @template {Object} [OR=any]
+ * @template {object} [OR=any]
  * @callback OfferHandler
  * @param {ZCFSeat} seat
- * @param {Object=} offerArgs
+ * @param {object=} offerArgs
  * @returns {OR}
  */
 
@@ -229,7 +229,7 @@
 /**
  * @template PF Public facet
  * @template CF Creator facet
- * @typedef {Object} ContractStartFnResult
+ * @typedef {object} ContractStartFnResult
  * @property {PF} publicFacet
  * @property {CF} creatorFacet
  * @property {Promise<Invitation>=} [creatorInvitation]

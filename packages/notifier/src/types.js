@@ -20,7 +20,7 @@
 
 /**
  * @template T
- * @typedef {Object} IterationObserver<T>
+ * @typedef {object} IterationObserver<T>
  * A valid sequence of calls to the methods of an `IterationObserver`
  * represents an iteration. A valid sequence consists of any number of calls
  * to `updateState` with the successive non-final values, followed by a
@@ -42,7 +42,7 @@
 
 /**
  * @template T
- * @typedef {Object} UpdateRecord<T>
+ * @typedef {object} UpdateRecord<T>
  * @property {T} value is whatever state the service wants to publish
  * @property {UpdateCount} updateCount is a value that identifies the update
  */
@@ -62,7 +62,7 @@
 
 /**
  * @template T
- * @typedef {Object} BaseNotifier<T> an object that can be used to get the
+ * @typedef {object} BaseNotifier<T> an object that can be used to get the
  * current state or updates
  * @property {GetUpdateSince<T>} getUpdateSince return update record as of an
  * update count.
@@ -85,7 +85,7 @@
 
 /**
  * @template T
- * @typedef {Object} SharableNotifier
+ * @typedef {object} SharableNotifier
  * @property {() => ERef<NotifierInternals<T>>} getSharableNotifierInternals
  * Used to replicate the multicast values at other sites. To manually create a
  * local representative of a Notification, do
@@ -99,7 +99,7 @@
 
 /**
  * @template T
- * @typedef {Object} NotifierRecord<T> the produced notifier/updater pair
+ * @typedef {object} NotifierRecord<T> the produced notifier/updater pair
  * @property {IterationObserver<T>} updater the (closely-held) notifier producer
  * @property {Notifier<T>} notifier the (widely-held) notifier consumer
  */
@@ -114,7 +114,7 @@
 
 /**
  * @template T
- * @typedef {Object} SubscriptionInternals
+ * @typedef {object} SubscriptionInternals
  * Will be shared between machines, so it must be safe to expose. But other
  * software should avoid depending on its internal structure.
  * @property {ERef<IteratorResult<T, T>>} head internal only
@@ -131,7 +131,7 @@
 
 /**
  * @template T
- * @typedef {Object} SharableSubscription
+ * @typedef {object} SharableSubscription
  * @property {() => ERef<SubscriptionInternals<T>>} getSharableSubscriptionInternals
  * Used to replicate the multicast values at other sites. To manually create a
  * local representative of a Subscription, do
@@ -155,7 +155,7 @@
 
 /**
  * @template T
- * @typedef {Object} SubscriptionRecord<T>
+ * @typedef {object} SubscriptionRecord<T>
  * @property {IterationObserver<T>} publication
  * @property {Subscription<T>} subscription
  */

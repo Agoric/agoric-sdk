@@ -170,7 +170,7 @@ const manifest2graph = manifest => {
 
 /**
  * @param { string[] } args
- * @param { Object } io
+ * @param {object} io
  * @param { typeof import('process').stdout } io.stdout
  */
 const main = async (args, { stdout }) => {

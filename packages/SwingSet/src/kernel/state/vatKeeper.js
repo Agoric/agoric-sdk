@@ -235,7 +235,7 @@ export function makeVatKeeper(
    * allocate, we insist that the reachable flag was already set.
    *
    * @param {string} vatSlot  The vat slot of interest
-   * @param {Object} [options]
+   * @param {object} [options]
    * @param {boolean} [options.setReachable] set the 'reachable' flag on vat exports
    * @param {boolean} [options.required] refuse to allocate a missing entry
    * @param {boolean} [options.requireNew] require that the entry be newly allocated
@@ -468,7 +468,7 @@ export function makeVatKeeper(
   /**
    * Append an entry to the vat's transcript.
    *
-   * @param {Object} entry  The transcript entry to append.
+   * @param {object} entry  The transcript entry to append.
    */
   function addToTranscript(entry) {
     const oldPos = JSON.parse(getRequired(`${vatID}.t.endPosition`));

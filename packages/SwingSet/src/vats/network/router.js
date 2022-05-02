@@ -10,7 +10,7 @@ import '@agoric/store/exported.js';
 import './types.js';
 
 /**
- * @typedef {Object} Router A delimited string router implementation
+ * @typedef {object} Router A delimited string router implementation
  * @property {(addr: string) => [string, Protocol][]} getRoutes Return the match and route in order of preference
  * @property {(prefix: string, route: Protocol) => void} register Add a prefix->route to the database
  * @property {(prefix: string, route: Protocol) => void} unregister Remove a prefix->route from the database
@@ -64,7 +64,7 @@ export default function makeRouter() {
   });
 }
 /**
- * @typedef {Object} RouterProtocol
+ * @typedef {object} RouterProtocol
  * @property {(prefix: string) => Promise<Port>} bind
  * @property {(paths: string[], protocolHandler: ProtocolHandler) => void} registerProtocolHandler
  * @property {(prefix: string, protocolHandler: ProtocolHandler) => void} unregisterProtocolHandler

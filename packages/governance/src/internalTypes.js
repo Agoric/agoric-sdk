@@ -1,5 +1,5 @@
 /**
- * @typedef {Object} QuestionRecord
+ * @typedef {object} QuestionRecord
  * @property {ERef<VoteCounterCreatorFacet>} voteCap
  * @property {VoteCounterPublicFacet} publicFacet
  * @property {Timestamp} deadline

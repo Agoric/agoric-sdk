@@ -4,7 +4,7 @@ import { Far } from '@endo/far';
 import { assert, details as X } from '@agoric/assert';
 
 /**
- * @typedef {Object} ICS20TransferPacket Packet shape defined at:
+ * @typedef {object} ICS20TransferPacket Packet shape defined at:
  * https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures
  * @property {string} amount The extent of the amount
  * @property {Denom} denom The denomination of the amount

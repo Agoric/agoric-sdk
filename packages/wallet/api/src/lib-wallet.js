@@ -52,7 +52,7 @@ const cmp = (a, b) => {
 };
 
 /**
- * @typedef {Object} MakeWalletParams
+ * @typedef {object} MakeWalletParams
  * @property {ERef<ZoeService>} zoe
  * @property {Board} board
  * @property {NameHub} [agoricNames]

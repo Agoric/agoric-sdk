@@ -17,10 +17,10 @@
  */
 
 /**
- * @typedef {Object} StakingAuthority
+ * @typedef {object} StakingAuthority
  * @property {(address: Address, previous: Amount, target: Amount<'nat'>) => Promise<void>} setLiened
  * @property {(address: Address, brand: Brand<'nat'>) => ERef<AccountState> } getAccountState
- * @typedef {Object} AccountState
+ * @typedef {object} AccountState
  * @property {Amount<'nat'>} bonded
  * @property {Amount<'nat'>} liened
  * @property {Amount<'nat'>} locked

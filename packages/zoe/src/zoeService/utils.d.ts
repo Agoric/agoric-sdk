@@ -44,8 +44,8 @@ export type ContractOf<S> = StartParams<S> & StartResult<S>;
 type StartContractInstance<C> = (
   installation: Installation<C>,
   issuerKeywordRecord?: IssuerKeywordRecord,
-  terms?: Object,
-  privateArgs?: Object,
+  terms?: object,
+  privateArgs?: object,
 ) => Promise<{
   creatorFacet: C['creatorFacet'];
   publicFacet: C['publicFacet'];
@@ -74,7 +74,7 @@ export type StartInstance = <I extends Installation>(
   installation: I | PromiseLike<I>,
   issuerKeywordRecord?: IssuerKeywordRecord,
   terms?: object,
-  privateArgs?: Object,
+  privateArgs?: object,
 ) => Promise<
   {
     instance: Instance;

@@ -92,7 +92,7 @@
  */
 
 /**
- * @typedef {Object} StoreOptions
+ * @typedef {object} StoreOptions
  * Of the dimensions on which KeyedStores can differ, we only represent a few
  * of them as standard options. A given store maker should document which
  * options it supports, as well as its positions on dimensions for which it
@@ -124,7 +124,7 @@
 
 /**
  * @template K
- * @typedef {Object} WeakSetStore
+ * @typedef {object} WeakSetStore
  * @property {(key: K) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the
  * answer will always be false for keys that cannot be found in this store.
@@ -140,7 +140,7 @@
 
 /**
  * @template K
- * @typedef {Object} SetStore
+ * @typedef {object} SetStore
  * @property {(key: K) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the
  * answer will always be false for keys that cannot be found in this store.
@@ -161,7 +161,7 @@
 
 /**
  * @template K,V
- * @typedef {Object} WeakMapStore
+ * @typedef {object} WeakMapStore
  * @property {(key: K) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the
  * answer will always be false for keys that cannot be found in this store.
@@ -180,7 +180,7 @@
 
 /**
  * @template K,V
- * @typedef {Object} MapStore
+ * @typedef {object} MapStore
  * @property {(key: K) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the
  * answer will always be false for keys that cannot be found in this map
@@ -222,7 +222,7 @@
 
 /**
  * @template K,V
- * @typedef {Object} LegacyWeakMap
+ * @typedef {object} LegacyWeakMap
  * LegacyWeakMap is deprecated. Use WeakMapStore instead.
  * @property {(key: K) => boolean} has
  * Check if a key exists
@@ -239,7 +239,7 @@
 
 /**
  * @template K,V
- * @typedef {Object} LegacyMap
+ * @typedef {object} LegacyMap
  * LegacyWeakMap is deprecated. Use WeakMapStore instead.
  * @property {(key: K) => boolean} has
  * Check if a key exists
@@ -317,13 +317,13 @@
  */
 
 /**
- * @typedef {Object} RankComparatorKit
+ * @typedef {object} RankComparatorKit
  * @property {RankCompare} comparator
  * @property {RankCompare} antiComparator
  */
 
 /**
- * @typedef {Object} FullComparatorKit
+ * @typedef {object} FullComparatorKit
  * @property {FullCompare} comparator
  * @property {FullCompare} antiComparator
  */
@@ -459,7 +459,7 @@
  */
 
 /**
- * @typedef {Object} MatcherNamespace
+ * @typedef {object} MatcherNamespace
  * @property {() => Matcher} any
  * Matches any passable
  * @property {(...patts: Pattern[]) => Matcher} and
@@ -546,7 +546,7 @@
  */
 
 /**
- * @typedef {Object} PatternKit
+ * @typedef {object} PatternKit
  * @property {(specimen: Passable, patt: Pattern) => boolean} matches
  * @property {(specimen: Passable, patt: Pattern) => void} fit
  * @property {(patt: Pattern) => void} assertPattern
@@ -567,7 +567,7 @@
 // in internal-types.js and exports.js
 
 /**
- * @typedef {Object} MatchHelper
+ * @typedef {object} MatchHelper
  * This factors out only the parts specific to each kind of Matcher. It is
  * encapsulated, and its methods can make the stated unchecker assumptions
  * enforced by the common calling logic.

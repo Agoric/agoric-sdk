@@ -7,10 +7,10 @@ import { parseVatSlot } from '../lib/parseVatSlots.js';
 
 /**
  * @param {*} syscall  Vat's syscall object, used to access the vatstore operations.
- * @param { (val: Object) => string} getSlotForVal  A function that returns the
+ * @param {(val: object) => string} getSlotForVal  A function that returns the
  *   object ID (vref) for a given object, if any.  their corresponding export
  *   IDs
- * @param { (slot: string) => Object} requiredValForSlot  A function that
+ * @param {(slot: string) => object} requiredValForSlot  A function that
  *   converts an object ID (vref) to an object.
  * @param {*} FinalizationRegistry  Powerful JavaScript intrinsic normally denied
  *   by SES
@@ -209,7 +209,7 @@ export function makeVirtualReferenceManager(
    * Register information describing a persistent object kind.
    *
    * @param {string} kindID  The kind of persistent object being handle
-   * @param {(string, boolean) => Object} reanimator  Reanimator function for the given kind.
+   * @param {(string, boolean) => object} reanimator  Reanimator function for the given kind.
    * @param {(string) => boolean} deleter  Deleter function for the given kind.
    * @param {boolean} durable  Flag indicating if instances survive vat termination
    */
@@ -274,7 +274,7 @@ export function makeVirtualReferenceManager(
    *
    * @param {string} baseRef  The baseRef of the object being reanimated
    *
-   * @returns {Object}  A representative of the object identified by `baseRef`
+   * @returns {object}  A representative of the object identified by `baseRef`
    */
   function reanimate(baseRef) {
     const { id } = parseVatSlot(baseRef);
@@ -313,7 +313,7 @@ export function makeVirtualReferenceManager(
    * offline data later, we must ensure the Remotable remains alive. This Map
    * keeps a strong reference to the Remotable along with its (virtual) refcount.
    */
-  /** @type {Map<Object, number>} Remotable->refcount */
+  /** @type {Map<object, number>} Remotable->refcount */
   const remotableRefCounts = new Map();
 
   // Note that since presence refCounts are keyed by vref, `processDeadSet` must

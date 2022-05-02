@@ -245,7 +245,7 @@ export {};
  */
 
 /**
- * @typedef {Object} SwingSetConfig a swingset config object
+ * @typedef {object} SwingSetConfig a swingset config object
  * @property {string} [bootstrap]
  * @property {boolean} [includeDevDependencies] indicates that
  * `devDependencies` of the surrounding `package.json` should be accessible to
@@ -259,7 +259,7 @@ export {};
  */
 
 /**
- * @typedef {Object} SwingSetKernelConfig the config object passed to initializeKernel
+ * @typedef {object} SwingSetKernelConfig the config object passed to initializeKernel
  * @property {string} [bootstrap]
  * @property {boolean} [includeDevDependencies] indicates that
  * `devDependencies` of the surrounding `package.json` should be accessible to
@@ -313,7 +313,7 @@ export {};
  * tests). MeterControl.isMeteringDisabled()===false does not mean metering is happening, it just
  * means that MeterControl isn't disabling it.
  *
- * @typedef {Object} MeterControl
+ * @typedef {object} MeterControl
  * @property {() => boolean} isMeteringDisabled Ask whether metering is currently disabled.
  * @property {*} assertIsMetered
  * @property {*} assertNotMetered

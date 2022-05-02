@@ -39,7 +39,7 @@ function deepDifference(x, y) {
     }
 
     const { hasOwnProperty } = Object.prototype;
-    /** @type {(obj: Object, prop: string | symbol | number) => boolean} */
+    /** @type {(obj: object, prop: string | symbol | number) => boolean} */
     const hasOwnPropertyOf = (obj, prop) =>
       Reflect.apply(hasOwnProperty, obj, [prop]);
     for (const prop of Reflect.ownKeys(x)) {
@@ -105,7 +105,7 @@ let theHarness = null; // ISSUE: ambient
  */
 function createHarness(send) {
   let testNum = 0;
-  /** @type {((ot: { context: Object }) => Promise<void>)[]} */
+  /** @type {((ot: { context: object }) => Promise<void>)[]} */
   const beforeHooks = [];
   /** @type {Record<string, () => Promise<void>>} */
   const suitesToRun = {};

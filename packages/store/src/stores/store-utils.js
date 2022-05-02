@@ -6,7 +6,7 @@ const { details: X, quote: q } = assert;
 
 /**
  * @template K,V
- * @typedef {Object} CurrentKeysKit
+ * @typedef {object} CurrentKeysKit
  * @property {(k: K, v?: V) => void} assertUpdateOnAdd
  * @property {(k: K) => void} assertUpdateOnDelete
  * @property {Iterable<K>} iterableKeys

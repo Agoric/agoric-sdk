@@ -168,7 +168,7 @@ const start = async (
   const { notifier } = makeNotifierKit();
 
   /**
-   * @typedef {Object} OracleRecord
+   * @typedef {object} OracleRecord
    * @property {(timestamp: Timestamp) => Promise<void>=} querier
    * @property {number} lastSample
    */
@@ -181,7 +181,7 @@ const start = async (
   const keyToRecords = makeLegacyMap('oracleKey');
 
   /**
-   * @param {Object} param0
+   * @param {object} param0
    * @param {number} [param0.overrideValueOut]
    * @param {Timestamp} [param0.timestamp]
    */

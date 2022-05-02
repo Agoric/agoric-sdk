@@ -41,7 +41,7 @@ export const getResourceAttributes = ({
 };
 
 /**
- * @typedef {Object} Powers
+ * @typedef {object} Powers
  * @property {{ warn: Console['warn'] }} console
  * @property {NodeJS.ProcessEnv} env
  * @property {string} [serviceName]

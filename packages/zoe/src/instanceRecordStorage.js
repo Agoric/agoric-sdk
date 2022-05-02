@@ -107,7 +107,7 @@ export const makeInstanceRecordStorage = () => {
  *
  * @param {Installation} installation
  * @param {Instance} instance
- * @param {Object} customTerms
+ * @param {object} customTerms
  * @param {IssuerKeywordRecord} issuers
  * @param {BrandKeywordRecord} brands
  * @returns {InstanceRecordManager}
