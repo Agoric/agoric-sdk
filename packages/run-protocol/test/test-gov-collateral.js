@@ -287,8 +287,10 @@ test('Benefactor can add to reserve', async t => {
   await s.startDevNet();
   await s.provisionMembers();
   await s.startRunPreview();
-  await s.enactInviteEconCommitteeProposal();
-  await s.enactVaultAssetProposal();
+  await Promise.all([
+    s.enactVaultAssetProposal(),
+    s.enactInviteEconCommitteeProposal(),
+  ]);
 
   const result = await s.benefactorDeposit();
   t.deepEqual(result, 'added Collateral to the Reserve');
@@ -299,8 +301,10 @@ test('voters get invitations', async t => {
   await s.startDevNet();
   const purses = await s.provisionMembers();
   await s.startRunPreview();
-  await s.enactInviteEconCommitteeProposal();
-  await s.enactVaultAssetProposal();
+  await Promise.all([
+    s.enactVaultAssetProposal(),
+    s.enactInviteEconCommitteeProposal(),
+  ]);
 
   t.is(purses.size, 3);
   await Promise.all(
@@ -330,8 +334,10 @@ test('assets are in AMM, Vaults', async t => {
   await s.provisionMembers();
   await s.startRunPreview();
 
-  await s.enactVaultAssetProposal();
-  await s.enactInviteEconCommitteeProposal();
+  await Promise.all([
+    s.enactVaultAssetProposal(),
+    s.enactInviteEconCommitteeProposal(),
+  ]);
 
   const {
     consume: { zoe, agoricNames },
@@ -361,10 +367,9 @@ test('Committee can raise debt limit', async t => {
   const s = await makeScenario(t);
   await s.startDevNet();
   const purses = await s.provisionMembers();
+  s.startRunPreview();
 
-  // For variety, try launching it all at once.
   await Promise.all([
-    s.startRunPreview(),
     s.enactVaultAssetProposal(),
     s.enactInviteEconCommitteeProposal(),
   ]);
@@ -390,7 +395,10 @@ test('Committee can raise debt limit', async t => {
 
   const pf = await E(zoe).getPublicFacet(votingInv.instance);
   const params = { DebtLimit: AmountMath.make(runBrand, 100n) };
-  const deadline = 1232n;
+
+  const timer = s.space.consume.chainTimerService;
+  const now = await E(timer).getCurrentTimestamp();
+  const deadline = now + 3n;
   const actual = await E(pf).voteOnVaultParamChanges(
     params,
     {
@@ -399,11 +407,41 @@ test('Committee can raise debt limit', async t => {
     deadline,
   );
 
-  t.log('@@@ continue testing here');
+  t.log('@@actual', actual);
   t.deepEqual(actual, {
     details: actual.details,
     instance: votingInv.instance,
     outcomeOfUpdate: actual.outcomeOfUpdate,
+  });
+
+  const { questionHandle, positions } = await actual.details;
+  await Promise.all(
+    [...purses.values()].map(async p => {
+      const amt2 = await E(p).getCurrentAmount();
+
+      const item = /** @type {SetValue} */ (amt2.value).find(
+        ({ description }) => description.startsWith('Voter'),
+      );
+      const inv = await E(p).withdraw(
+        AmountMath.make(amt2.brand, harden([item])),
+      );
+      t.log({ inv });
+      const seat = await E(zoe).offer(inv);
+      t.log({ seat });
+      const voteFacet = await E(seat).getOfferResult();
+      t.log({ voteFacet });
+      return E(voteFacet).castBallotFor(questionHandle, [positions[0]]);
+    }),
+  );
+
+  await E(timer).tick();
+  await E(timer).tick();
+  await E(timer).tick();
+
+  const count = E(zoe).getPublicFacet(actual.instance);
+  const outcome = await E(count).getOutcome();
+  t.deepEqual(outcome, {
+    changes: { DebtLimit: { brand: runBrand, value: 100n } },
   });
 });
 
