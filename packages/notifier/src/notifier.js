@@ -44,7 +44,7 @@ export const makeNotifier = sharableInternalsP => {
  * update.
  *
  * @template T
- * @param {[] | [T]} initialStateArr the first state to be returned (typed as rest array to permit 'undefined')
+ * @param {[] | [T]} initialStateArr the first state to be returned (typed as rest array to permit `undefined`)
  * @returns {NotifierRecord<T>} the notifier and updater
  */
 export const makeNotifierKit = (...initialStateArr) => {
