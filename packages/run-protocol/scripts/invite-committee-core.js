@@ -8,7 +8,7 @@ import { getManifestForInviteCommittee } from '../src/committee-proposal.js';
 export const defaultProposalBuilder = async ({ publishRef, install }) => {
   const { ECON_COMMITTEE_ADDRESSES } = process.env;
 
-  assert(ECON_COMMITTEE_ADDRESSES, 'ECON_COMMITTEE_ADDRESES is required');
+  assert(ECON_COMMITTEE_ADDRESSES, 'ECON_COMMITTEE_ADDRESSES is required');
   const voterAddresses = JSON.parse(ECON_COMMITTEE_ADDRESSES);
 
   return harden({
