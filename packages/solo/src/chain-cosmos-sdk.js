@@ -22,10 +22,9 @@ const console = anylogger('chain-cosmos-sdk');
 // the `agd` tool in our repo is built by 'cd golang/cosmos &&
 // make'. It lives in the build tree along with `bin/ag-solo`, in case there are
 // multiple checkouts of `agoric-sdk`.
-export const HELPER = url.fileNameToURL(new URL(
-  '../../../golang/cosmos/build/agd',
-  import.meta.url,
-));
+export const HELPER = url.fileURLToPath(
+  new URL('../../../golang/cosmos/build/agd', import.meta.url),
+);
 
 const FAUCET_ADDRESS =
   'the appropriate faucet channel on Discord (https://agoric.com/discord)';

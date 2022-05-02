@@ -344,6 +344,8 @@ const buildSwingset = async (
   // now let the bootstrap functions run
   await processKernel();
 
+  const { validateAndInstallBundle } = controller;
+
   return {
     deliverInboundToMbx: queuedDeliverInboundToMbx,
     deliverInboundCommand: queuedDeliverInboundCommand,
@@ -356,6 +358,7 @@ const buildSwingset = async (
       plugin.reset();
       return processKernel();
     }),
+    validateAndInstallBundle,
   };
 };
 
@@ -408,9 +411,28 @@ const start = async (basedir, argv) => {
     basedir,
     'swingset-kernel-mailbox.json',
   );
-  const connections = JSON.parse(
-    fs.readFileSync(path.join(basedir, 'connections.json'), 'utf8'),
+
+  // Where necessary, add the solo's working directory to each connection
+  // described in its connections.json, such that they have enough information
+  // for a deploy script to pass along to publishBundle.
+  const rawConnectionsPath = path.join(basedir, 'connections.json');
+  const rawConnections = JSON.parse(
+    fs.readFileSync(rawConnectionsPath, 'utf8'),
   );
+  assert(
+    Array.isArray(rawConnections),
+    `Invalid connections.json: must be a JSON array, at ${rawConnectionsPath}`,
+  );
+  const homeDirectory = path.resolve(
+    process.cwd(),
+    'ag-cosmos-helper-statedir',
+  );
+  const connections = rawConnections.map(connection => {
+    if (['chain-cosmos-sdk', 'fake-chain'].includes(connection.type)) {
+      return { ...connection, homeDirectory };
+    }
+    return connection;
+  });
 
   let broadcastJSON;
   function broadcast(obj) {
@@ -454,6 +476,7 @@ const start = async (basedir, argv) => {
     deliverOutbound,
     startTimer,
     resetOutdatedState,
+    validateAndInstallBundle,
   } = d;
 
   // Start timer here!
@@ -513,6 +536,8 @@ const start = async (basedir, argv) => {
             c.host,
             deliverInboundCommand,
             agWalletHtml,
+            validateAndInstallBundle,
+            connections,
           );
           break;
         }
