@@ -1,7 +1,5 @@
 /* global process */
 
-import '@endo/init/pre-bundle-source.js';
-
 // `test.after.always` does not yet seem compatible with ses-ava
 // See https://github.com/endojs/endo/issues/647
 // TODO restore
