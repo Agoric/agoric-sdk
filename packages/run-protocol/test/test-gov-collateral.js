@@ -30,7 +30,7 @@ const test = anyTest;
 
 const contractRoots = {
   mintHolder: '../vats/src/mintHolder.js',
-  voting: './src/voting.js',
+  econCommitteeCharter: './src/econCommitteeCharter.js',
 };
 
 const coreProposals = {
@@ -56,7 +56,10 @@ const makeTestContext = async () => {
     bundleCache.load(src, dest).then(b => E(zoe).install(b));
   const installation = {
     mintHolder: install(contractRoots.mintHolder, 'mintHolder'),
-    voting: install(contractRoots.voting, 'voting'),
+    econCommitteeCharter: install(
+      contractRoots.econCommitteeCharter,
+      'econCommitteeCharter',
+    ),
   };
 
   const bundlePathToInstallP = new Map();
@@ -315,7 +318,8 @@ test('voters get invitations', async t => {
 
       const instanceInv = value.find(
         ({ description }) =>
-          description === 'identifies the voting contract instance',
+          description ===
+          'identifies the econCommitteeCharter contract instance',
       );
       t.assert(instanceInv);
 

@@ -17,10 +17,14 @@ export const defaultProposalBuilder = async ({ publishRef, install }) => {
       getManifestForInviteCommittee.name,
       {
         voterAddresses,
-        votingRef: publishRef(
-          install('../src/voting.js', '../bundles/bundle-voting.js', {
-            persist: true,
-          }),
+        econCommitteeCharterRef: publishRef(
+          install(
+            '../src/econCommitteeCharter.js',
+            '../bundles/bundle-econCommitteeCharter.js',
+            {
+              persist: true,
+            },
+          ),
         ),
       },
     ],

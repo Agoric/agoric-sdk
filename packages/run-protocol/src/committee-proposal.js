@@ -31,8 +31,8 @@ export const inviteCommitteeMembers = async (
   { options: { voterAddresses } },
 ) => {
   /** @type {[Installation, Installation]} */
-  const [votingInstall, counterInstall] = await Promise.all([
-    E(agoricNames).lookup('installation', 'voting'),
+  const [charterInstall, counterInstall] = await Promise.all([
+    E(agoricNames).lookup('installation', 'econCommitteeCharter'),
     counterP,
   ]);
   const terms = {
@@ -44,7 +44,7 @@ export const inviteCommitteeMembers = async (
     vaults: vaultFactoryGovernorCreator,
   };
   const { publicFacet: votingAPI } = E.get(
-    E(zoe).startInstance(votingInstall, undefined, terms, privateFacets),
+    E(zoe).startInstance(charterInstall, undefined, terms, privateFacets),
   );
 
   const invitations = await E(
@@ -75,7 +75,7 @@ harden(inviteCommitteeMembers);
 
 export const getManifestForInviteCommittee = async (
   { restoreRef },
-  { voterAddresses, votingRef },
+  { voterAddresses, econCommitteeCharterRef },
 ) => {
   const t = true;
   return {
@@ -96,7 +96,7 @@ export const getManifestForInviteCommittee = async (
       },
     },
     installations: {
-      voting: restoreRef(votingRef),
+      econCommitteeCharter: restoreRef(econCommitteeCharterRef),
     },
     options: {
       voterAddresses,
