@@ -298,13 +298,12 @@ async function setupServices(
   );
 
   // Add a vault that will lend on aeth collateral
+  /** @type {Promise<VaultManager>} */
   const aethVaultManagerP = E(vaultFactoryCreatorFacetP).addVaultType(
     aethIssuer,
     'AEth',
     rates,
   );
-  /** @type {[any, VaultFactory, VFC['publicFacet']]} */
-  // @ts-expect-error cast
   const [
     governorInstance,
     vaultFactoryCreator,
@@ -2387,4 +2386,51 @@ test('director notifiers', async t => {
 
   // Not testing penaltyPoolAllocation and rewardPoolAllocation contents because those are simply those values.
   // We could refactor the tests of those allocations to use the data now exposed by a notifier.
+});
+
+test('manager notifiers', async t => {
+  const { aethKit, runKit } = t.context;
+  const services = await setupServices(
+    t,
+    [500n, 15n],
+    AmountMath.make(aethKit.brand, 900n),
+    undefined,
+    undefined,
+    500n,
+  );
+
+  const { aethVaultManager, lender } = services.vaultFactory;
+  const cm = await E(aethVaultManager).getPublicFacet();
+
+  const { econ } = await E(cm).getPublicNotifiers();
+  let state = await E(econ).getUpdateSince();
+  t.deepEqual(state.value, {
+    numVaults: 0,
+    totalCollateral: AmountMath.makeEmpty(aethKit.brand),
+    totalDebt: AmountMath.makeEmpty(t.context.runKit.brand),
+  });
+
+  // Create a loan for 470 RUN with 1100 aeth collateral
+  const collateralAmount = AmountMath.make(aethKit.brand, 1100n);
+  const loanAmount = AmountMath.make(runKit.brand, 470n);
+  /** @type {UserSeat<VaultKit>} */
+  const vaultSeat = await E(services.zoe).offer(
+    await E(lender).makeVaultInvitation(),
+    harden({
+      give: { Collateral: collateralAmount },
+      want: { RUN: loanAmount },
+    }),
+    harden({
+      Collateral: t.context.aethKit.mint.mintPayment(collateralAmount),
+    }),
+  );
+
+  await E(vaultSeat).getOfferResult();
+
+  state = await E(econ).getUpdateSince(state.updateCount);
+  t.deepEqual(state.value, {
+    numVaults: 1,
+    totalCollateral: collateralAmount,
+    totalDebt: AmountMath.make(runKit.brand, 494n), // 470 plus fee
+  });
 });

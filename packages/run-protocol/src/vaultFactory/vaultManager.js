@@ -34,11 +34,15 @@ const trace = makeTracer('VM', false);
  *  compoundedInterest: Ratio,
  *  interestRate: Ratio,
  *  latestInterestUpdate: bigint,
+ * }} AssetState
+ *
+ * @typedef {{
+ *  numVaults: number,
+ *  totalCollateral: Amount<'nat'>,
  *  totalDebt: Amount<'nat'>,
  *  liquidatorInstance?: Instance,
- * }} AssetState */
-
-/**
+ * }} EconState
+ *
  * @typedef {{
  *  getChargingPeriod: () => bigint,
  *  getRecordingPeriod: () => bigint,
@@ -70,9 +74,12 @@ const trace = makeTracer('VM', false);
  * assetNotifier: Notifier<AssetState>,
  * assetUpdater: IterationObserver<AssetState>,
  * compoundedInterest: Ratio,
+ * econNotifier: Notifier<EconState>,
+ * econUpdater: IterationObserver<EconState>,
  * latestInterestUpdate: bigint,
  * liquidator?: Liquidator
  * liquidatorInstance?: Instance
+ * totalCollateral: Amount<'nat'>,
  * totalDebt: Amount<'nat'>,
  * vaultCounter: number,
  * }} MutableState
@@ -138,6 +145,7 @@ const initState = (
     zcf,
   };
 
+  const totalCollateral = AmountMath.makeEmpty(fixed.collateralBrand, 'nat');
   const totalDebt = AmountMath.makeEmpty(fixed.debtBrand, 'nat');
   const compoundedInterest = makeRatio(100n, fixed.debtBrand); // starts at 1.0, no interest
   // timestamp of most recent update to interest
@@ -148,8 +156,14 @@ const initState = (
       compoundedInterest,
       interestRate: fixed.factoryPowers.getGovernedParams().getInterestRate(),
       latestInterestUpdate,
+    }),
+  );
+
+  const { updater: econUpdater, notifier: econNotifier } = makeNotifierKit(
+    harden({
+      numVaults: 0,
+      totalCollateral,
       totalDebt,
-      liquidationInstance: undefined,
     }),
   );
 
@@ -159,9 +173,12 @@ const initState = (
     assetNotifier,
     assetUpdater,
     debtBrand: fixed.debtBrand,
+    econNotifier,
+    econUpdater,
     vaultCounter: 0,
     liquidator: undefined,
     liquidatorInstance: undefined,
+    totalCollateral,
     totalDebt,
     compoundedInterest,
     latestInterestUpdate,
@@ -241,6 +258,17 @@ const helperBehavior = {
       liquidatorInstance: state.liquidatorInstance,
     });
     state.assetUpdater.updateState(payload);
+  },
+
+  /** @param {MethodContext} context */
+  econNotify: ({ state }) => {
+    /** @type {EconState} */
+    const payload = harden({
+      numVaults: state.prioritizedVaults.getSize(),
+      totalCollateral: state.totalCollateral,
+      totalDebt: state.totalDebt,
+    });
+    state.econUpdater.updateState(payload);
   },
 
   /**
@@ -464,7 +492,9 @@ const collateralBehavior = {
   makeVaultInvitation: ({ state: { zcf }, facets: { self } }) =>
     zcf.makeInvitation(self.makeVaultKit, 'MakeVault'),
   /** @param {MethodContext} context */
-  getNotifier: ({ state }) => state.assetNotifier,
+  getAssetNotifier: ({ state }) => state.assetNotifier,
+  /** @param {MethodContext} context */
+  getPublicNotifiers: ({ state }) => ({ econ: state.econNotifier }),
   /** @param {MethodContext} context */
   getCompoundedInterest: ({ state }) => state.compoundedInterest,
 };
@@ -510,6 +540,10 @@ const selfBehavior = {
       // TODO `await` is allowed until the above ordering is fixed
       // eslint-disable-next-line @jessie.js/no-nested-await
       const vaultKit = await vault.initVaultKit(seat);
+      state.totalCollateral = AmountMath.add(
+        state.totalCollateral,
+        vaultKit.vault.getCollateralAmount(),
+      );
       seat.exit();
       return vaultKit;
     } catch (err) {
