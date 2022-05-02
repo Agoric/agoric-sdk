@@ -1,6 +1,6 @@
 // @ts-check
 
-/** @typedef {import('./vault').VaultUIState} VaultUIState */
+/** @typedef {import('./vault').VaultTitleState} VaultTitleState */
 /** @typedef {import('./vault').Vault} Vault */
 /** @typedef {import('./vaultKit').VaultKit} VaultKit */
 /** @typedef {import('./vaultManager').VaultManager} VaultManager */
