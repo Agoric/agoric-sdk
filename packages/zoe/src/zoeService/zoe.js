@@ -62,7 +62,8 @@ const makeZoeKit = (
     shutdownZoeVat,
   );
 
-  const getBundleCapFromID = bundleID => E(vatAdminSvc).getBundleCap(bundleID);
+  const getBundleCapFromID = bundleID =>
+    E(vatAdminSvc).waitForBundleCap(bundleID);
 
   // This method contains the power to create a new ZCF Vat, and must
   // be closely held. vatAdminSvc is even more powerful - any vat can
