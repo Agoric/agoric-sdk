@@ -12,7 +12,7 @@ import '@agoric/notifier/exported.js';
  */
 
 /**
- * @typedef {Object} VirtualPurseController The object that determines the
+ * @typedef {object} VirtualPurseController The object that determines the
  * remote behaviour of a virtual purse.
  * @property {(amount: Amount) => Promise<void>} pushAmount Tell the controller
  * to send an amount from "us" to the "other side".  This should resolve on

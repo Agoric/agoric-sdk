@@ -26,7 +26,7 @@ import '../../../src/contracts/exported.js';
  */
 
 /**
- * @typedef {Object} TestContext
+ * @typedef {object} TestContext
  * @property {ZoeService} zoe
  * @property {Installation<typeof import('../../../src/contracts/scaledPriceAuthority.js').start>} scaledPriceInstallation
  * @property {Brand} atomBrand

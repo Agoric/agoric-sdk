@@ -6,7 +6,7 @@
  */
 
 /**
- * @typedef {Object} StartInstanceResultWithDetailsNoInvitation
+ * @typedef {object} StartInstanceResultWithDetailsNoInvitation
  * @property {any} creatorFacet
  * @property {any} publicFacet
  * @property {Instance} instance
@@ -15,7 +15,7 @@
  */
 
 /**
- * @typedef {Object} OfferHelperConfig
+ * @typedef {object} OfferHelperConfig
  * @property {ERef<Invitation>=} invitation
  * @property {Partial<InvitationDetails>=} partialInvitationDetails
  * @property {Proposal} proposal

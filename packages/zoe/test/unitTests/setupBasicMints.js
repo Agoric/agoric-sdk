@@ -28,7 +28,7 @@ const setup = () => {
   const makeSimpleMake = brand => value => AmountMath.make(brand, value);
 
   /**
-   * @typedef {Object} BasicMints
+   * @typedef {object} BasicMints
    * @property {Issuer} moolaIssuer
    * @property {Mint} moolaMint
    * @property {IssuerKit} moolaR

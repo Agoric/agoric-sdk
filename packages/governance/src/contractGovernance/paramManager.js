@@ -36,7 +36,7 @@ const assertElectorateMatches = (paramManager, governedParams) => {
 };
 
 /**
- * @typedef {Object} ParamManagerBuilder
+ * @typedef {object} ParamManagerBuilder
  * @property {(name: string, value: Amount) => ParamManagerBuilder} addAmount
  * @property {(name: string, value: Brand) => ParamManagerBuilder} addBrand
  * @property {(name: string, value: Installation) => ParamManagerBuilder} addInstallation

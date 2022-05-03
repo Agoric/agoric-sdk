@@ -373,7 +373,7 @@ export function buildRootObject(vatPowers) {
   function getBridgeURLHandler() {
     return Far('bridgeURLHandler', {
       /**
-       * @typedef {Object} WalletOtherSide
+       * @typedef {object} WalletOtherSide
        * The callbacks from a CapTP wallet client.
        * @property {(dappOrigin: string,
        *             suggestedDappPetname: Petname

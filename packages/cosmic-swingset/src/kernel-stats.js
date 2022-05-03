@@ -199,7 +199,7 @@ export function makeSlogCallbacks({ metricMeter, attributes = {} }) {
 }
 
 /**
- * @param {Object} param0
+ * @param {object} param0
  * @param {any} param0.controller
  * @param {import('@opentelemetry/sdk-metrics-base').Meter} param0.metricMeter
  * @param {Console} param0.log

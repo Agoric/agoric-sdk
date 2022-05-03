@@ -25,7 +25,7 @@ export const assertIssuerKeywords = (zcf, expected) => {
 };
 
 /**
- * @typedef {Object} ZcfSeatPartial
+ * @typedef {object} ZcfSeatPartial
  * @property {() => ProposalRecord} getProposal
  * @property {() => Allocation} getCurrentAllocation
  */
@@ -304,7 +304,7 @@ const reverse = (keywordRecord = {}) => {
  *   The seat in contractA to deposit the payout of the offer to.
  *   If `toSeat` is not provided, this defaults to the `fromSeat`.
  *
- * @param {Object=} offerArgs
+ * @param {object=} offerArgs
  *   Aditional contract-specific optional arguments in a record.
  *
  * @returns {Promise<{userSeatPromise: Promise<UserSeat>, deposited: Promise<AmountKeywordRecord>}>}

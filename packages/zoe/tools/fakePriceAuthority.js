@@ -15,7 +15,7 @@ import './types.js';
 import '../exported.js';
 
 /**
- * @typedef {Object} FakePriceAuthorityOptions
+ * @typedef {object} FakePriceAuthorityOptions
  * @property {Brand} actualBrandIn
  * @property {Brand} actualBrandOut
  * @property {Array<number>} [priceList]

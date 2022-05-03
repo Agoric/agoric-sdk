@@ -507,7 +507,7 @@ const selfBehavior = {
    *
    * @param {MethodContext} param
    * @param {Installation} liquidationInstall
-   * @param {Object} liquidationTerms
+   * @param {object} liquidationTerms
    */
   setupLiquidator: async (
     { state, facets },

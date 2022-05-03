@@ -224,7 +224,7 @@ export const setupReserve = async ({
 
 /**
  * @param { EconomyBootstrapPowers } powers
- * @param { Object } config
+ * @param {object} config
  * @param { LoanTiming } [config.loanParams]
  */
 export const startVaultFactory = async (
@@ -545,7 +545,7 @@ export const startLienBridge = async ({
 
 /**
  * @param {RunStakeBootstrapPowers } powers
- * @param {Object} config
+ * @param {object} config
  * @param {bigint} [config.debtLimit] count of RUN
  * @param {Rational} [config.mintingRatio] ratio of RUN minted to BLD
  * @param {bigint} [config.interestRateBP]

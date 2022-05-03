@@ -48,15 +48,15 @@ function copyState(schedState) {
 }
 
 /**
- * @typedef {Object} Event
+ * @typedef {object} Event
  * @property {bigint} time
  * @property {Array<IndexedHandler>} handlers
  *
- * @typedef {Object} IndexedHandler
+ * @typedef {object} IndexedHandler
  * @property {number} [index]
  * @property {Waker} handler
  *
- * @typedef {Object} Waker
+ * @typedef {object} Waker
  * @property {(now: bigint) => void} wake
  */
 

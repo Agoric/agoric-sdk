@@ -25,7 +25,7 @@ export const LIQUIDATION_TERMS_KEY = 'LiquidationTerms';
 /**
  * @param {Amount} electorateInvitationAmount
  * @param {Installation} liquidationInstall
- * @param {Object} liquidationTerms
+ * @param {object} liquidationTerms
  */
 const makeVaultDirectorParams = (
   electorateInvitationAmount,
@@ -76,7 +76,7 @@ export const vaultParamPattern = M.split(
  * @param {ERef<ZoeService>} zoe
  * @param {Invitation} electorateInvitation
  * @param {Installation} liquidationInstall
- * @param {Object} liquidationTerms
+ * @param {object} liquidationTerms
  */
 const makeVaultDirectorParamManager = async (
   zoe,
@@ -102,7 +102,7 @@ const makeVaultDirectorParamManager = async (
  * @param {Amount} invitationAmount
  * @param {VaultManagerParamValues} vaultManagerParams
  * @param {XYKAMMPublicFacet} ammPublicFacet
- * @param {Object} liquidationTerms
+ * @param {object} liquidationTerms
  * @param {bigint=} bootstrapPaymentValue
  */
 const makeGovernedTerms = (

@@ -32,7 +32,7 @@ const DEFAULT_PACKET_TIMEOUT_NS = 10n * 60n * 1_000_000_000n;
  */
 
 /**
- * @typedef {Object} IBCPacket
+ * @typedef {object} IBCPacket
  * @property {Bytes} [data]
  * @property {IBCChannelID} source_channel
  * @property {IBCPortID} source_port
@@ -62,11 +62,11 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
   const channelKeyToConnP = makeStore('CHANNEL:PORT');
 
   /**
-   * @typedef {Object} Counterparty
+   * @typedef {object} Counterparty
    * @property {string} port_id
    * @property {string} channel_id
    *
-   * @typedef {Object} ConnectingInfo
+   * @typedef {object} ConnectingInfo
    * @property {'ORDERED'|'UNORDERED'} order
    * @property {string[]} connectionHops
    * @property {string} portID
@@ -158,7 +158,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
      * @param {Connection} _conn
      * @param {Bytes} packetBytes
      * @param {ConnectionHandler} _handler
-     * @param {Object} root0
+     * @param {object} root0
      * @param {bigint} [root0.relativeTimeoutNs]
      * @returns {Promise<Bytes>} Acknowledgement data
      */
@@ -232,7 +232,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
   let protocolImpl;
 
   /**
-   * @typedef {Object} OutboundCircuitRecord
+   * @typedef {object} OutboundCircuitRecord
    * @property {IBCConnectionID} dst
    * @property {'ORDERED'|'UNORDERED'} order
    * @property {string} version

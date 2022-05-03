@@ -1,19 +1,19 @@
 // @ts-check
 
 /**
- * @typedef {Object} VPoolPriceQuote
+ * @typedef {object} VPoolPriceQuote
  * @property {Amount} amountIn
  * @property {Amount} amountOut
  */
 
 /**
- * @typedef {Object} VPool - virtual pool for price quotes and trading
+ * @typedef {object} VPool - virtual pool for price quotes and trading
  * @property {(amountIn: Amount, amountOut: Amount) => VPoolPriceQuote} getInputPrice
  * @property {(amountIn: Amount, amountOut: Amount) => VPoolPriceQuote} getOutputPrice
  */
 
 /**
- * @typedef {Object} DoublePoolSwapResult
+ * @typedef {object} DoublePoolSwapResult
  * @property {Amount} swapperGives
  * @property {Amount} swapperGets
  * @property {Amount} inPoolIncrement
@@ -38,7 +38,7 @@
  */
 
 /**
- * @typedef {Object} VirtualPool - virtual pool for price quotes and trading
+ * @typedef {object} VirtualPool - virtual pool for price quotes and trading
  * @property {GetDoublePoolSwapQuote} getPriceForInput
  * @property {GetDoublePoolSwapQuote} getPriceForOutput
  * @property {(seat: ZCFSeat, swapResult: DoublePoolSwapResult) => string} allocateGainsAndLosses
@@ -55,7 +55,7 @@
  */
 
 /**
- * @typedef {Object} XYKPool
+ * @typedef {object} XYKPool
  * @property {() => bigint} getLiquiditySupply
  * @property {() => Issuer} getLiquidityIssuer
  * @property {(seat: ZCFSeat) => string} addLiquidity
@@ -71,18 +71,18 @@
  */
 
 /**
- * @typedef {Object} PoolFacets
+ * @typedef {object} PoolFacets
  * @property {XYKPool} pool
  * @property {{addLiquidityActual: AddLiquidityActual}} helper
  * @property {VirtualPool} singlePool
  */
 
 /**
- * @typedef {Object} XYKAMMCreatorFacet
+ * @typedef {object} XYKAMMCreatorFacet
  * @property {() => Promise<Invitation>} makeCollectFeesInvitation
  */
 /**
- * @typedef {Object} XYKAMMPublicFacet
+ * @typedef {object} XYKAMMPublicFacet
  * @property {(issuer: ERef<Issuer>, keyword: Keyword) => Promise<Issuer>} addPool
  * add a new liquidity pool
  * @property {() => Promise<Invitation>} makeSwapInvitation synonym for

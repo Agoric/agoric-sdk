@@ -1,11 +1,11 @@
 // @ts-check
 /**
- * @typedef {Object} SeatData
+ * @typedef {object} SeatData
  * @property {ProposalRecord} proposal
  * @property {Notifier<Allocation>} notifier
  * @property {Allocation} initialAllocation
  * @property {SeatHandle} seatHandle
- * @property {Object=} offerArgs
+ * @property {object=} offerArgs
  */
 
 /**
@@ -17,7 +17,7 @@
  */
 
 /**
- * @typedef {Object} ZoeSeatAdminKit
+ * @typedef {object} ZoeSeatAdminKit
  * @property {UserSeat} userSeat
  * @property {ZoeSeatAdmin} zoeSeatAdmin
  * @property {Notifier<Allocation>} notifier
@@ -41,7 +41,7 @@
  */
 
 /**
- * @typedef {Object} ZoeSeatAdmin
+ * @typedef {object} ZoeSeatAdmin
  * @property {(allocation: Allocation) => void} replaceAllocation
  * @property {ZoeSeatAdminExit} exit
  * @property {ShutdownWithFailure} fail called with the reason
@@ -53,9 +53,9 @@
  */
 
 /**
- * @typedef {Object} HandleOfferResult
+ * @typedef {object} HandleOfferResult
  * @property {Promise<any>} offerResultP
- * @property {Object} exitObj
+ * @property {object} exitObj
  */
 
 /**
@@ -63,19 +63,19 @@
  * depending on whether the seat comes from a normal offer or a
  * request by the contract for an "empty" seat.
  *
- * @typedef {Object} InstanceAdmin
+ * @typedef {object} InstanceAdmin
  * @property {() => void} assertAcceptingOffers
  * @property {(invitationHandle: InvitationHandle,
  *     initialAllocation: Allocation,
  *     proposal: ProposalRecord,
- *     offerArgs?: Object,
+ *     offerArgs?: object,
  * ) => UserSeat } makeUserSeat
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {() => Instance} getInstance
- * @property {() => Object} getPublicFacet
+ * @property {() => object} getPublicFacet
  * @property {() => IssuerKeywordRecord} getIssuers
  * @property {() => BrandKeywordRecord} getBrands
- * @property {() => Object} getTerms
+ * @property {() => object} getTerms
  * @property {() => Installation} getInstallationForInstance
  * @property {(completion: Completion) => void} exitAllSeats
  * @property {ShutdownWithFailure} failAllSeats
@@ -87,7 +87,7 @@
  * depending on whether the seat comes from a normal offer or a
  * request by the contract for an "empty" seat.
  *
- * @typedef {Object} HandleOfferObj
+ * @typedef {object} HandleOfferObj
  * @property {(invitationHandle: InvitationHandle,
  *             zoeSeatAdmin: ZoeSeatAdmin,
  *             seatData: SeatData,
@@ -103,7 +103,7 @@
  */
 
 /**
- * @typedef {Object} ZoeInstanceAdmin
+ * @typedef {object} ZoeInstanceAdmin
  * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
  * @property {(issuerP: ERef<Issuer>,
  *             keyword: Keyword
@@ -155,13 +155,13 @@
  */
 
 /**
- * @typedef {Object} SeatHandleAllocation
+ * @typedef {object} SeatHandleAllocation
  * @property {SeatHandle} seatHandle
  * @property {Allocation} allocation
  */
 
 /**
- * @typedef {Object} ZoeMint
+ * @typedef {object} ZoeMint
  * @property {() => IssuerRecord} getIssuerRecord
  * @property {(totalToMint: Amount) => void} mintAndEscrow
  * @property {(totalToBurn: Amount) => void} withdrawAndBurn
@@ -172,13 +172,13 @@
  */
 
 /**
- * @typedef {Object} ZCFRoot
+ * @typedef {object} ZCFRoot
  * @property {ExecuteContract} executeContract
  *
- * @typedef {Object} ExecuteContractResult
- * @property {Object} creatorFacet
+ * @typedef {object} ExecuteContractResult
+ * @property {object} creatorFacet
  * @property {Promise<Invitation>} creatorInvitation
- * @property {Object} publicFacet
+ * @property {object} publicFacet
  * @property {HandleOfferObj} handleOfferObj
  */
 
@@ -190,7 +190,7 @@
  * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
  * @param {InstanceRecord} instanceRecordFromZoe
  * @param {IssuerRecords} issuerStorageFromZoe
- * @param {Object=} privateArgs
+ * @param {object=} privateArgs
  * @returns {Promise<ExecuteContractResult>}
  */
 
@@ -202,7 +202,7 @@
  */
 
 /**
- * @typedef {Object} ExitObj
+ * @typedef {object} ExitObj
  * @property {() => void} exit
  */
 
@@ -212,12 +212,12 @@
 
 /**
  * @typedef RootAndAdminNode
- * @property {Object} root
+ * @property {object} root
  * @property {AdminNode} adminNode
  */
 
 /**
- * @typedef {Object} AdminNode
+ * @typedef {object} AdminNode
  * A powerful object that can be used to terminate the vat in which a contract
  * is running, to get statistics, or to be notified when it terminates.
  *
@@ -314,7 +314,7 @@
  */
 
 /**
- * @typedef {Object} InstanceRecordManager
+ * @typedef {object} InstanceRecordManager
  * @property {AddIssuerToInstanceRecord} addIssuerToInstanceRecord
  * @property {GetInstanceRecord} getInstanceRecord
  * @property {InstanceRecordManagerGetTerms} getTerms

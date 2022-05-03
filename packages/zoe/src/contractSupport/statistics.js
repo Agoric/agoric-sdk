@@ -1,6 +1,6 @@
 /**
  * @template T
- * @typedef {Object} TypedMath
+ * @typedef {object} TypedMath
  * @property {(a: T, b: T) => T} add
  * @property {(a: T, b: bigint) => T} divide
  * @property {(a: T, b: T) => boolean} isGTE

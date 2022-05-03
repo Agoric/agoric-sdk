@@ -1,7 +1,7 @@
 /// <reference types="ses"/>
 
 /**
- * @typedef {Object} ZoeService
+ * @typedef {object} ZoeService
  *
  * Zoe provides a framework for deploying and working with smart
  * contracts. It is accessed as a long-lived and well-trusted service
@@ -69,7 +69,7 @@
 /**
  * @callback GetPublicFacet
  * @param {ERef<Instance>} instanceP
- * @returns {Promise<Object>}
+ * @returns {Promise<object>}
  */
 
 /**
@@ -169,13 +169,13 @@
  * @param {ERef<Invitation<OR>>} invitation
  * @param {Proposal=} proposal
  * @param {PaymentPKeywordRecord=} paymentKeywordRecord
- * @param {Object=} offerArgs
+ * @param {object=} offerArgs
  * @returns {Promise<UserSeat<OR>>} seat
  */
 
 /**
- * @template {Object} [OR=any]
- * @typedef {Object} UserSeat
+ * @template {object} [OR=any]
+ * @typedef {object} UserSeat
  * @property {() => Promise<Allocation>} getCurrentAllocation
  * TODO remove getCurrentAllocation query
  * @property {() => Promise<ProposalRecord>} getProposal
@@ -206,7 +206,7 @@
  */
 
 /**
- * @typedef {Object} Waker
+ * @typedef {object} Waker
  * @property {() => void} wake
  */
 
@@ -215,22 +215,22 @@
  */
 
 /**
- * @typedef {Object} Timer
+ * @typedef {object} Timer
  * @property {(deadline: Deadline, wakerP: ERef<Waker>) => void} setWakeup
  */
 
 /**
- * @typedef {Object} OnDemandExitRule
+ * @typedef {object} OnDemandExitRule
  * @property {null} onDemand
  */
 
 /**
- * @typedef {Object} WaivedExitRule
+ * @typedef {object} WaivedExitRule
  * @property {null} waived
  */
 
 /**
- * @typedef {Object} AfterDeadlineExitRule
+ * @typedef {object} AfterDeadlineExitRule
  * @property {{timer:Timer, deadline:Deadline}} afterDeadline
  */
 
@@ -250,7 +250,7 @@
  */
 
 /**
- * @typedef {Object} VatAdminSvc
+ * @typedef {object} VatAdminSvc
  * @property {(BundleID: id) => Promise<BundleCap>} getBundleCap
  * @property {(name: string) => Promise<BundleCap>} getNamedBundleCap
  * @property {(bundleCap: BundleCap) => Promise<RootAndAdminNode>} createVat
@@ -271,7 +271,7 @@
  */
 
 /**
- * @typedef {Object} StandardInvitationDetails
+ * @typedef {object} StandardInvitationDetails
  * @property {Installation} installation
  * @property {Instance} instance
  * @property {InvitationHandle} handle
@@ -293,13 +293,13 @@
  */
 
 /**
- * @typedef {Object} FeeIssuerConfig
+ * @typedef {object} FeeIssuerConfig
  * @property {string} name
  * @property {AssetKind} assetKind
  * @property {DisplayInfo} displayInfo
  */
 
 /**
- * @typedef {Object} ZoeFeesConfig
+ * @typedef {object} ZoeFeesConfig
  * @property {NatValue} getPublicFacetFee
  */

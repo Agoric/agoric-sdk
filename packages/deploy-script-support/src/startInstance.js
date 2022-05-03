@@ -5,7 +5,7 @@ import { E, passStyleOf } from '@endo/far';
 
 /**
  * @template T
- * @typedef {Object} PetnameManager
+ * @typedef {object} PetnameManager
  * @property {(petname: Petname, object: T) => Promise<void>} rename
  * @property {(petname: Petname) => T} get
  * @property { () => Array<[Petname, T]>} getAll
@@ -58,7 +58,7 @@ export const makeStartInstance = (
    * installation: I,
    * issuerKeywordRecord?: IssuerKeywordRecord,
    * issuerPetnameKeywordRecord?: Record<Keyword,Petname>,
-   * terms?: Object,
+   * terms?: object,
    * }} config
    */
   const startInstance = async config => {

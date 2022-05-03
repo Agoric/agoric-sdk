@@ -154,7 +154,7 @@
  */
 
 /**
- * @typedef {Object} DebtCalculatorConfig
+ * @typedef {object} DebtCalculatorConfig
  * @property {CalcInterestFn} calcInterestFn
  *
  *   A function to calculate the interest, given the debt value and an
@@ -181,7 +181,7 @@
  */
 
 /**
- * @typedef {Object} ConfigMinusGetDebt
+ * @typedef {object} ConfigMinusGetDebt
  * @property {ZCFSeat} collateralSeat
  * @property {PromiseRecord<any>} liquidationPromiseKit
  * @property {bigint} [mmr]
@@ -194,7 +194,7 @@
  */
 
 /**
- * @typedef {Object} BorrowFacet
+ * @typedef {object} BorrowFacet
  *
  * @property {() => Promise<Invitation>} makeCloseLoanInvitation
  *

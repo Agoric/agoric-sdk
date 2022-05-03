@@ -33,7 +33,7 @@ const TRANSFER_PROPOSAL_SHAPE = {
  */
 const makePegasus = (zcf, board, namesByAddress) => {
   /**
-   * @typedef {Object} LocalDenomState
+   * @typedef {object} LocalDenomState
    * @property {Address} localAddr
    * @property {Address} remoteAddr
    * @property {LegacyMap<Denom, PromiseRecord<Courier>>} receiveDenomToCourierPK
@@ -64,7 +64,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
   /**
    * Create a fresh Peg associated with a descriptor.
    *
-   * @typedef {Object} PegasusDescriptor
+   * @typedef {object} PegasusDescriptor
    * @property {Brand} localBrand
    * @property {Denom} receiveDenom
    * @property {Denom} sendDenom
@@ -96,7 +96,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
   };
 
   /**
-   * @param {Object} param0
+   * @param {object} param0
    * @param {ReturnType<typeof makeCourierMaker>} param0.makeCourier
    * @param {LocalDenomState} param0.localDenomState
    * @param {ERef<TransferProtocol>} param0.transferProtocol

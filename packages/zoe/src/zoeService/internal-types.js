@@ -74,7 +74,7 @@
  */
 
 /**
- * @typedef {Object} ZoeInstanceStorageManager
+ * @typedef {object} ZoeInstanceStorageManager
  * @property {InstanceRecordManagerGetTerms} getTerms
  * @property {InstanceRecordManagerGetInstallationForInstance} getInstallationForInstance
  * @property {InstanceRecordGetIssuers} getIssuers
@@ -89,7 +89,7 @@
  * @property {DeleteInstanceAdmin} deleteInstanceAdmin
  * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
  * @property {Issuer} invitationIssuer
- * @property {Object} root of a RootAndAdminNode
+ * @property {object} root of a RootAndAdminNode
  * @property {AdminNode} adminNode of a RootAndAdminNode
  */
 
@@ -101,7 +101,7 @@
  *
  * @callback MakeZoeInstanceStorageManager
  * @param {Installation} installation
- * @param {Object} customTerms
+ * @param {object} customTerms
  * @param {IssuerKeywordRecord} uncleanIssuerKeywordRecord
  * @param {Instance} instance
  * @returns {ZoeInstanceStorageManager}

@@ -128,7 +128,7 @@ export function makeVatLoader(stuff) {
    *
    * @param { Translators } translators
    *
-   * @param {Object} options  an options bag. These options are currently understood:
+   * @param {object} options  an options bag. These options are currently understood:
    *
    * @param {ManagerType} options.managerType
    *
