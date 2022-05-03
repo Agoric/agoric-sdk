@@ -1,3 +1,12 @@
+const t = 'makeCoreProposalBehavior';
+
+export const permits = {
+  consume: { board: t, agoricNamesAdmin: t },
+  evaluateInstallation: t,
+  installation: { produce: t },
+  modules: { utils: { runModuleBehaviors: t } },
+};
+
 /**
  * Create a behavior for a core-eval proposal.
  *
