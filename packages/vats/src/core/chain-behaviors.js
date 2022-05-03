@@ -320,7 +320,7 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
       },
     });
     const ibcHandler = await E(vats.ibc).createInstance(callbacks);
-    dibcBridgeManager.register('dibc', ibcHandler);
+    dibcBridgeManager.register(BRIDGE_ID.DIBC, ibcHandler);
     ps.push(
       E(vats.network).registerProtocolHandler(
         ['/ibc-port', '/ibc-hop'],
