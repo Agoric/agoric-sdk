@@ -1,5 +1,6 @@
 // @ts-check
 
+// TODO: Describe the manifest schema and semantics.
 const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
   bridgeCoreEval: true, // Needs all the powers.
   makeOracleBrands: {

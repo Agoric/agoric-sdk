@@ -31,11 +31,12 @@ import {
 
 const enableKernelGC = true;
 
-// Kernel state lives in a key-value store. All keys and values are strings.
+// Kernel state lives in a key-value store supporting key retrieval by
+// lexicographic range. All keys and values are strings.
 // We simulate a tree by concatenating path-name components with ".". When we
-// want to delete a subtree, we tell the DB to delete everything between
-// "prefix." and "prefix/", which avoids including anything using an
-// extension of the prefix (e.g. [vat1.foo, vat1.bar, vat15.baz]).
+// want to delete a subtree, we tell the store to delete everything from
+// "prefix." (inclusive) to "prefix/" (exclusive), which avoids anything using an
+// extension of the prefix (e.g., consider [vat1.prefix1, vat1.prefix2, vat15.prefix1]).
 //
 // The 'local.' namespace is excluded from the kernel activity hash, and is
 // allowed to vary between instances in a consensus machine. Everything else
@@ -744,7 +745,7 @@ export default function makeKernelKeeper(
       assert(k.startsWith(exportPrefix), k);
       // The void for an object exported by a vat will always be of the form
       // `o+NN`.  The '+' means that the vat exported the object (rather than
-      // importing it) and therefor the object is owned by (i.e., within) the
+      // importing it) and therefore the object is owned by (i.e., within) the
       // vat.  The corresponding void->koid c-list entry will thus always
       // begin with `vMM.c.o+`.  In addition to deleting the c-list entry, we
       // must also delete the corresponding kernel owner entry for the object,
