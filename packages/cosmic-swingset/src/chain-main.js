@@ -39,8 +39,8 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
   let changedKeys = new Set();
   const storage = {
     has(key) {
-      // It's more efficient just to get the value (null if not exists)
-      return !!storage.get(key);
+      // Fetch the value to avoid a second round trip for any followup get.
+      return storage.get(key) !== undefined;
     },
     set(key, obj) {
       if (cache.get(key) !== obj) {
@@ -53,14 +53,12 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
       changedKeys.add(key);
     },
     get(key) {
-      if (cache.has(key)) {
-        // Our cache has the value.
-        return cache.get(key);
-      }
+      if (cache.has(key)) return cache.get(key);
+
+      // Fetch the value and cache it until the next commit or abort.
       const retStr = call(stringify({ method: 'get', key: `${prefix}${key}` }));
       const ret = JSON.parse(retStr);
-      const value = ret && JSON.parse(ret);
-      // console.log(` value=${value}`);
+      const value = ret ? JSON.parse(ret) : undefined;
       const obj = value && imp(value);
       cache.set(key, obj);
       // We need to add this in case the caller mutates the state, as in
