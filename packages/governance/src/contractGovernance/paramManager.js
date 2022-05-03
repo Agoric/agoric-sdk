@@ -163,7 +163,7 @@ const makeParamManagerBuilder = zoe => {
       passStyleOf(v);
       assert.typeof(v, 'object');
     };
-    buildCopyParam(name, value, assertRecord, ParamTypes.RECORD);
+    buildCopyParam(name, value, assertRecord, ParamTypes.PASSABLE_RECORD);
     return builder;
   };
 
@@ -338,7 +338,7 @@ const makeParamManagerBuilder = zoe => {
       getInvitationAmount: name => getTypedParam(ParamTypes.INVITATION, name),
       getNat: name => getTypedParam(ParamTypes.NAT, name),
       getRatio: name => getTypedParam(ParamTypes.RATIO, name),
-      getRecord: name => getTypedParam(ParamTypes.RECORD, name),
+      getRecord: name => getTypedParam(ParamTypes.PASSABLE_RECORD, name),
       getString: name => getTypedParam(ParamTypes.STRING, name),
       getUnknown: name => getTypedParam(ParamTypes.UNKNOWN, name),
       getVisibleValue,

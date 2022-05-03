@@ -14,10 +14,9 @@ export const ParamTypes = /** @type {const} */ ({
   NAT: 'nat',
   RATIO: 'ratio',
   STRING: 'string',
-
-  // passable record
-  RECORD: 'record',
+  PASSABLE_RECORD: 'record',
   UNKNOWN: 'unknown',
 });
+
 harden(ParamTypes);
 /** @typedef {typeof ParamTypes[keyof typeof ParamTypes]} ParamType */
