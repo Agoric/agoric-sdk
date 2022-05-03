@@ -29,7 +29,12 @@ const toNumber = specimen => {
   return number;
 };
 
-const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
+const makeChainStorage = (
+  call,
+  prefix = '',
+  fromChainShape = x => x,
+  toChainShape = x => x,
+) => {
   assert(
     prefix === '' || prefix.endsWith('.'),
     X`prefix ${prefix} must end with a dot`,
@@ -59,7 +64,7 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
       const retStr = call(stringify({ method: 'get', key: `${prefix}${key}` }));
       const ret = JSON.parse(retStr);
       const value = ret ? JSON.parse(ret) : undefined;
-      const obj = value && imp(value);
+      const obj = value && fromChainShape(value);
       cache.set(key, obj);
       // We need to add this in case the caller mutates the state, as in
       // mailbox.js, which mutates on basically every get.
@@ -69,7 +74,7 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
     commit() {
       for (const key of changedKeys.keys()) {
         const obj = cache.get(key);
-        const value = obj === undefined ? '' : stringify(exp(obj));
+        const value = obj === undefined ? '' : stringify(toChainShape(obj));
         call(
           stringify({
             method: 'set',
