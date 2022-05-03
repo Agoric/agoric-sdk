@@ -26,10 +26,11 @@ function safeUnlink(filePath) {
 }
 
 /**
- * Create a new instance of a RAM-based implementation of the Storage API.
+ * Create a new instance of a RAM-based StorageAPI implementation.
  *
- * The "Storage API" is a set of functions { has, getKeys, get, set, delete }
- * that work on string keys and accept string values.
+ * StorageAPI is a set of functions { has, getKeys, get, set, delete }
+ * that work on string keys and accept string values
+ * (cf. packages/SwingSet/docs/state.md#transactions).
  *
  * returns an object: {
  *   storage,  // the storage API object itself

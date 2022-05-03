@@ -49,7 +49,7 @@ export function makeSnapStoreIO() {
  * }} StreamStore
  *
  * @typedef {{
- *   kvStore: KVStore, // a key-value storage API object to load and store data
+ *   kvStore: KVStore, // a key-value StorageAPI object to load and store data
  *   streamStore: StreamStore, // a stream-oriented API object to append and read streams of data
  *   commit: () => void,  // commit changes made since the last commit
  *   close: () => void,   // shutdown the store, abandoning any uncommitted changes

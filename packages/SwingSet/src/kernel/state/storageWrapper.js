@@ -1,8 +1,9 @@
 import { assert } from '@agoric/assert';
 import { insistStorageAPI } from '../../lib/storageAPI.js';
 
-// We wrap a provided object implementing the Storage API (has/get/set/delete/getKeys)
-// and add some convenience methods.
+// We wrap a provided object implementing StorageAPI methods { has, getKeys,
+// get, set, delete } (cf. packages/SwingSet/docs/state.md#transactions) and
+// add some convenience methods.
 
 // NOTE: There's a lot of suspenders-and-belt paranoia here because we have to
 // be vewy, vewy careful with host-realm objects.  This raises a question
@@ -54,7 +55,7 @@ function* mergeUtf16SortedIterators(it1, it2) {
  * Create and return a crank buffer, which wraps a storage object with logic
  * that buffers any mutations until told to commit them.
  *
- * @param {*} kvStore  The storage object that this crank buffer will be based on.
+ * @param {*} kvStore  The StorageAPI object that this crank buffer will be based on.
  * @param {CreateSHA256}  createSHA256
  * @param { (key: string) => boolean } isConsensusKey
  * @returns {*} an object {
