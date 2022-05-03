@@ -44,7 +44,7 @@ const assertElectorateMatches = (paramManager, governedParams) => {
  * @property {(name: string, value: Invitation) => Promise<ParamManagerBuilder>} addInvitation
  * @property {(name: string, value: bigint) => ParamManagerBuilder} addNat
  * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatio
- * @property {(name: string, value: Object) => ParamManagerBuilder} addRecord
+ * @property {(name: string, value: import('@endo/marshal').CopyRecord<unknown>) => ParamManagerBuilder} addRecord
  * @property {(name: string, value: string) => ParamManagerBuilder} addString
  * @property {(name: string, value: any) => ParamManagerBuilder} addUnknown
  * @property {() => AnyParamManager} build
@@ -157,7 +157,7 @@ const makeParamManagerBuilder = zoe => {
     return builder;
   };
 
-  /** @type {(name: string, value: string, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /** @type {(name: string, value: import('@endo/marshal').CopyRecord<unknown>, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addRecord = (name, value, builder) => {
     const assertRecord = v => {
       passStyleOf(v);
