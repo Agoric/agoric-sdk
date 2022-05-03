@@ -1,12 +1,31 @@
 name: Integration tests
 
 on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - beta
+    tags:
+      - '@agoric/sdk@*'
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - labeled
+      - auto_merge_enabled
 
 jobs:
+  pre_check:
+    uses: ./.github/workflows/pre-check-integration.yml
+
   # This job is meant to emulate what developers working with the Agoric platform will experience
   # It should be kept in sync with https://agoric.com/documentation/getting-started/
   getting-started:
+    needs: pre_check
+    if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -95,3 +114,12 @@ jobs:
           AGORIC_INIT_OPTIONS: '["--dapp-branch=${{steps.get-branch.outputs.result}}"]'
           # Try to avoid hitting a pessimal Actions output rate-limitation.
           SOLO_MAX_DEBUG_LENGTH: '1024'
+
+      - name: notify on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}

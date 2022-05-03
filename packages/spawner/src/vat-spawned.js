@@ -1,9 +1,10 @@
-/* global globalThis */
+/* global globalThis VatData */
 
 import { importBundle } from '@endo/import-bundle';
 import { Far } from '@endo/marshal';
 
 const endowments = {
+  VatData,
   console,
   assert,
   Base64: globalThis.Base64, // Present only on XSnap
