@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far } from '@endo/marshal';
+import { Far, passStyleOf } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { Nat } from '@agoric/nat';
@@ -44,6 +44,7 @@ const assertElectorateMatches = (paramManager, governedParams) => {
  * @property {(name: string, value: Invitation) => Promise<ParamManagerBuilder>} addInvitation
  * @property {(name: string, value: bigint) => ParamManagerBuilder} addNat
  * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatio
+ * @property {(name: string, value: Object) => ParamManagerBuilder} addRecord
  * @property {(name: string, value: string) => ParamManagerBuilder} addString
  * @property {(name: string, value: any) => ParamManagerBuilder} addUnknown
  * @property {() => AnyParamManager} build
@@ -153,6 +154,16 @@ const makeParamManagerBuilder = zoe => {
   const addRatio = (name, value, builder) => {
     const assertBrandedRatio = makeAssertBrandedRatio(name, value);
     buildCopyParam(name, value, assertBrandedRatio, ParamTypes.RATIO);
+    return builder;
+  };
+
+  /** @type {(name: string, value: string, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  const addRecord = (name, value, builder) => {
+    const assertRecord = v => {
+      passStyleOf(v);
+      assert.typeof(v, 'object');
+    };
+    buildCopyParam(name, value, assertRecord, ParamTypes.RECORD);
     return builder;
   };
 
@@ -327,6 +338,7 @@ const makeParamManagerBuilder = zoe => {
       getInvitationAmount: name => getTypedParam(ParamTypes.INVITATION, name),
       getNat: name => getTypedParam(ParamTypes.NAT, name),
       getRatio: name => getTypedParam(ParamTypes.RATIO, name),
+      getRecord: name => getTypedParam(ParamTypes.RECORD, name),
       getString: name => getTypedParam(ParamTypes.STRING, name),
       getUnknown: name => getTypedParam(ParamTypes.UNKNOWN, name),
       getVisibleValue,
@@ -349,6 +361,7 @@ const makeParamManagerBuilder = zoe => {
     addInvitation: (n, v) => addInvitation(n, v, builder),
     addNat: (n, v) => addNat(n, v, builder),
     addRatio: (n, v) => addRatio(n, v, builder),
+    addRecord: (n, v) => addRecord(n, v, builder),
     addString: (n, v) => addString(n, v, builder),
     build: () => makeParamManager(),
   };

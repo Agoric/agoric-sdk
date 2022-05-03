@@ -296,6 +296,64 @@ test('Ratio', async t => {
   );
 });
 
+test('Record', async t => {
+  const epRecord = harden({
+    A1: 'Magical Mystery Tour',
+    A2: 'Your Mother Should Know',
+    B: 'I Am the Walrus',
+    C1: 'The Fool on the Hill',
+    C2: 'Flying',
+    D: 'Blue Jay Way',
+  });
+  const paramManager = makeParamManagerBuilder()
+    .addRecord('BestEP', epRecord)
+    .build();
+  t.is(paramManager.getRecord('BestEP'), epRecord);
+
+  const replacement = harden({
+    A1: "Wouldn't It Be Nice",
+    A2: "Don't Talk",
+    B1: 'God Only Knows',
+    B2: "I Know There's an Answer",
+  });
+  await paramManager.updateParams({ BestEP: replacement });
+  t.is(paramManager.getRecord('BestEP'), replacement);
+
+  const brokenRecord = {
+    A1: 'Long Tall Sally',
+    A2: 'I Call Your Name',
+    B1: 'Slow Down',
+    B2: 'Matchbox',
+  };
+  await t.throwsAsync(
+    () => paramManager.updateParams({ BestEP: brokenRecord }),
+    {
+      message:
+        'Cannot pass non-frozen objects like {"A1":"Long Tall Sally","A2":"I Call Your Name","B1":"Slow Down","B2":"Matchbox"}. Use harden()',
+    },
+  );
+
+  await t.throwsAsync(
+    () =>
+      paramManager.updateParams({
+        duration: '2:37',
+      }),
+    {
+      message: 'setters[name] is not a function',
+    },
+  );
+
+  await t.throwsAsync(
+    () =>
+      paramManager.updateParams({
+        BestEP: '2:37',
+      }),
+    {
+      message: '"2:37" must be an object',
+    },
+  );
+});
+
 test('Strings', async t => {
   const paramManager = makeParamManagerBuilder()
     .addNat('Acres', 50n)

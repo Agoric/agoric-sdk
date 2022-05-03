@@ -14,6 +14,9 @@ export const ParamTypes = /** @type {const} */ ({
   NAT: 'nat',
   RATIO: 'ratio',
   STRING: 'string',
+
+  // passable record
+  RECORD: 'record',
   UNKNOWN: 'unknown',
 });
 harden(ParamTypes);
