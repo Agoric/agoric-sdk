@@ -120,7 +120,7 @@ test.serial('exercise baggage', async t => {
   validate(v, matchVatstoreGet('deadPromises', NONE));
   validate(v, matchVatstoreDelete('deadPromises'));
   validate(v, matchVatstoreGetAfter('', 'vc.3.', 'vc.3.{', [NONE, NONE]));
-  validate(v, matchVatstoreGetAfter('', 'vom.kind.', NONE, [NONE, NONE]));
+  validate(v, matchVatstoreGetAfter('', 'vom.dkind.', NONE, [NONE, NONE]));
   validateDone(v);
 
   const rp = await dispatchMessage('doSomething', capargs([]));

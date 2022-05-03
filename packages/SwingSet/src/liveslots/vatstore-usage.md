@@ -94,6 +94,11 @@ Durable Kinds are defined just like virtual Kinds, but they use a different cons
 The KindHandle is a durable virtual object of a special internal Kind. This is the first Kind allocated, so it generally gets Kind ID "1", and the handles will get vrefs of `o+1/N`.
 
 
+# Kind Metadata
+
+For each virtual object kind that is defined we store a metadata record for purposes of scanning directly through the defined kinds when a vat is stopped or upgraded.  For durable kinds this record is stored in `vom.dkind.${kindID}`; for non-durable kinds it is stored in `vom.vkind.${kindID}`.  Currently this metadata takes the form of a JSON-serialized record `{ kindID, tag }`, where the `kindID` property is the kind ID (redundantly) and `tag` is the tag string as provided in the `defineKind` or `makeKindHandle` call.
+
+
 # Virtual/Durable Collections (aka Stores)
 
 Liveslots provides a handful of "virtual collection" types to vats, to store high-cardinality data on disk rather than in RAM. These are also known as a `Store`. They provide limited range queries and offer a single fixed sort index: numbers sort as usual, BigInts sort as usual but separate from numbers, strings sort lexicographically by UTF-8 encoding, and object references sort by insertion order).
