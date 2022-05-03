@@ -186,7 +186,7 @@ function makeManagerKit(
     );
     const status = await deliver(delivery);
     finish(status);
-    transcriptManager.finishReplayDelivery();
+    transcriptManager.finishReplayDelivery(deliveryNum);
     transcriptManager.checkReplayError();
     transcriptManager.finishReplay();
     return status;
