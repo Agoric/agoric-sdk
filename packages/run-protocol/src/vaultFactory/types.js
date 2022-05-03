@@ -4,6 +4,7 @@
 /** @typedef {import('./vault').Vault} Vault */
 /** @typedef {import('./vaultKit').VaultKit} VaultKit */
 /** @typedef {import('./vaultManager').VaultManager} VaultManager */
+/** @typedef {import('./vaultManager').VaultManagerObject} VaultManagerObject */
 /** @typedef {import('./vaultManager').CollateralManager} CollateralManager */
 
 /**
@@ -37,7 +38,7 @@
  * @param {Issuer} collateralIssuer
  * @param {Keyword} collateralKeyword
  * @param {VaultManagerParamValues} params
- * @returns {Promise<VaultManager>}
+ * @returns {Promise<VaultManagerObject>}
  */
 
 /**

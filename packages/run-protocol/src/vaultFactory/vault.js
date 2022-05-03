@@ -74,6 +74,7 @@ const validTransitions = {
  * @property {TitlePhase} vaultState
  */
 
+// XXX masks typedef from types.js, but using that causes circular def problems
 /**
  * @typedef {object} VaultManager
  * @property {() => Notifier<import('./vaultManager').AssetState>} getNotifier
