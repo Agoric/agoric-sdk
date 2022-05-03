@@ -112,7 +112,7 @@ jobs:
           path: chaintest/results
 
       - name: notify on failure
-        if: failure()
+        if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
