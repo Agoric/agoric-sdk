@@ -3,7 +3,22 @@ queue_rules:
   - name: main
     conditions:
       - base=master
-      # - check-success=mergify-merge-queue-test
+      # Require integration tests before merging only
+      - or:
+       - check-success=deployment-test
+       - check-neutral=deployment-test
+       - check-skipped=deployment-test
+       - label=bypass:integration
+      - or:
+       - check-success=getting-started (link-cli)
+       - check-neutral=getting-started (link-cli)
+       - check-skipped=getting-started (link-cli)
+       - label=bypass:integration
+      - or:
+       - check-success=getting-started (local-npm)
+       - check-neutral=getting-started (local-npm)
+       - check-skipped=getting-started (local-npm)
+       - label=bypass:integration
 
 pull_request_rules:
   - name: merge to master
