@@ -40,8 +40,7 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
   const storage = {
     has(key) {
       // Fetch the value to avoid a second round trip for any followup get.
-      storage.get(key);
-      return cache.has(key);
+      return storage.get(key) !== undefined;
     },
     set(key, obj) {
       if (cache.get(key) !== obj) {
