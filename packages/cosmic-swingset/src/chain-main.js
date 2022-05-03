@@ -39,8 +39,9 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
   let changedKeys = new Set();
   const storage = {
     has(key) {
-      // It's more efficient just to get the value (null if not exists)
-      return !!storage.get(key);
+      // Fetch the value to avoid a second round trip for any followup get.
+      storage.get(key);
+      return cache.has(key);
     },
     set(key, obj) {
       if (cache.get(key) !== obj) {
@@ -53,14 +54,12 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
       changedKeys.add(key);
     },
     get(key) {
-      if (cache.has(key)) {
-        // Our cache has the value.
-        return cache.get(key);
-      }
+      if (cache.has(key)) return cache.get(key);
+
+      // Fetch the value and cache it until the next commit or abort.
       const retStr = call(stringify({ method: 'get', key: `${prefix}${key}` }));
       const ret = JSON.parse(retStr);
-      const value = ret && JSON.parse(ret);
-      // console.log(` value=${value}`);
+      const value = ret ? JSON.parse(ret) : undefined;
       const obj = value && imp(value);
       cache.set(key, obj);
       // We need to add this in case the caller mutates the state, as in
@@ -288,12 +287,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   // instance, and we update the 'portNums.storage' value each time toSwingSet is called
   async function launchAndInitializeSwingSet(bootMsg) {
     // this object is used to store the mailbox state.
-    // TODO: Generalize StorageAPI caching for both makeChainStorage and buildCrankBuffer?
-    // const sendToSwingset = msg => chainSend(portNums.storage, msg);
-    // const decodeGet = rawVal => rawVal && JSON.parse(rawVal);
-    // const transformers = { decodeGet, encodeSet: exportMailbox };
-    // const rawMailboxStorage = makeChainStorage(sendToSwingset, 'mailbox.', transformers);
-    // const mailboxStorage = makeCachingStorage(rawMailboxStorage, { onSet(key, val){} });
     const mailboxStorage = makeChainStorage(
       msg => chainSend(portNums.storage, msg),
       'mailbox.',

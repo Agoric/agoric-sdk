@@ -1,9 +1,8 @@
 import { assert } from '@agoric/assert';
 import { insistStorageAPI } from '../../lib/storageAPI.js';
 
-// We manage a host-realm Storage object with a has/getKeys/get/set/delete API.
-// We must protect against cross-realm contamination, and add some
-// convenience methods.
+// We wrap a provided object implementing the Storage API (has/get/set/delete/getKeys)
+// and add some convenience methods.
 
 // NOTE: There's a lot of suspenders-and-belt paranoia here because we have to
 // be vewy, vewy careful with host-realm objects.  This raises a question
@@ -14,17 +13,16 @@ import { insistStorageAPI } from '../../lib/storageAPI.js';
 // xenophobia.
 
 /**
- * Given two iterators over sequences of comparable unique elements
- * sorted in ascending order,
- * produce a new iterator that will output the ascending sequence of unique elements
- * from their merged output.
+ * Given two iterators over sequences of unique strings sorted in ascending
+ * order lexicographically by UTF-16 code unit, produce a new iterator that will
+ * output the ascending sequence of unique strings from their merged output.
  *
  * @param { Iterator } it1
  * @param { Iterator } it2
  *
  * @yields any
  */
-function* mergeSortedIterators(it1, it2) {
+function* mergeUtf16SortedIterators(it1, it2) {
   let v1 = it1.next();
   let v2 = it2.next();
   while (!v1.done && !v2.done) {
@@ -38,7 +36,6 @@ function* mergeSortedIterators(it1, it2) {
       v2 = it2.next();
       yield result;
     } else {
-      // TODO? assert(v1.value > v2.value);
       const result = v2.value;
       v2 = it2.next();
       yield result;
@@ -124,11 +121,10 @@ export function buildCrankBuffer(
       }
       added.sort();
 
-      for (const k of mergeSortedIterators(
+      for (const k of mergeUtf16SortedIterators(
         added.values(),
         kvStore.getKeys(start, end),
       )) {
-        // TODO: Remove this redundant range verification?
         if ((start === '' || start <= k) && (end === '' || k < end)) {
           if (!deletions.has(k)) {
             yield k;
@@ -227,7 +223,6 @@ export function buildCrankBuffer(
  * @param {KVStore} kvStore
  */
 export function addHelpers(kvStore) {
-  // these functions are built on top of the DB interface
   insistStorageAPI(kvStore);
 
   // NOTE: awkward naming: the thing that returns a stream of keys is named
@@ -236,9 +231,8 @@ export function addHelpers(kvStore) {
   function* enumeratePrefixedKeys(prefix, start = 0) {
     // Return an iterator over all existing keys `${prefix}${N}`, for N
     // starting at `start`, in numeric order. This is implemented with
-    // has/get rather than any DB-specific functionality: we could imagine
-    // a DB with getRange(start, end), but the numbers would be sorted
-    // incorrectly.
+    // has/get rather than any hypothetical DB-specific getRange(start, end)
+    // to ensure that results are sorted numerically.
     for (let i = start; true; i += 1) {
       const key = `${prefix}${i}`;
       if (kvStore.has(key)) {
