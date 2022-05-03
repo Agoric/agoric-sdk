@@ -12,7 +12,7 @@ import '../types.js';
  * @returns {LegacyWeakMap<K,V>}
  */
 export const makeLegacyWeakMap = (keyName = 'key') => {
-  /** @type {WeakMap<K & Object,V>} */
+  /** @type {WeakMap<K & object, V>} */
   const wm = new WeakMap();
   const assertKeyDoesNotExist = key =>
     assert(!wm.has(key), X`${q(keyName)} already registered: ${key}`);

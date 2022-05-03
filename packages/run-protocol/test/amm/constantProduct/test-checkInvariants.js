@@ -13,7 +13,7 @@ import { checkKInvariantSellingX } from '../../../src/vpool-xyk-amm/constantProd
 import { getXY } from '../../../src/vpool-xyk-amm/constantProduct/getXY.js';
 
 /**
- * @typedef {Object} SwapPriceArgs
+ * @typedef {object} SwapPriceArgs
  * @property {Amount} amountGiven
  * @property {PoolAllocation} poolAllocation
  * @property {Amount=} amountWanted

@@ -1072,6 +1072,87 @@ test('promise reject', async t => {
   t.deepEqual(kernel.dump().acceptanceQueue, []);
 });
 
+async function doResultInArgs(t, enablePipelining) {
+  // https://github.com/Agoric/agoric-sdk/issues/5189
+  const kernel = makeKernel();
+  await kernel.start();
+
+  // Alice sends a message to Bob which references its own result
+  // promise, Bob receives it. We allow this from pipelining vats like
+  // comms (since remote systems might do that, and we don't want to
+  // let that kill the comms vat), but not from local vats.
+
+  const logA = [];
+  let syscallA;
+  function setupA(s) {
+    syscallA = s;
+    function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
+      logA.push(vatDeliverObject);
+    }
+    return dispatch;
+  }
+  await kernel.createTestVat('vatA', setupA, {}, { enablePipelining });
+
+  const logB = [];
+  function setupB() {
+    function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
+      logB.push(vatDeliverObject);
+    }
+    return dispatch;
+  }
+  await kernel.createTestVat('vatB', setupB);
+
+  const vatA = kernel.vatNameToID('vatA');
+  const vatB = kernel.vatNameToID('vatB');
+
+  const bobForB = 'o+5';
+  const bobKref = kernel.addExport(vatB, bobForB);
+  const bobForA = kernel.addImport(vatA, bobKref);
+
+  const resP = 'p+1';
+  const args = { resP: { '@qclass': 'slot', index: 0 } };
+  if (!enablePipelining) {
+    console.log(`intentional error, should get 'p+1 is already allocated'`);
+    t.throws(() => syscallA.send(bobForA, 'one', capargs(args, [resP]), resP), {
+      message: /syscall translation error: prepare to die/,
+    });
+    return;
+  }
+  syscallA.send(bobForA, 'one', capargs(args, [resP]), resP);
+
+  const q1 = kernel.dump().acceptanceQueue[0];
+  const m1 = q1.msg;
+  const kpid = m1.result; // probably kp40
+  t.is(kernel.dump().promises.length, 1);
+  const p1 = kernel.dump().promises[0];
+  t.is(p1.id, kpid);
+  // if vatTranslator translated args before result, then 1: resP
+  // might look like an exported promise, leaving decider as vatA, and
+  // 2: the translator would balk at translating a non-new resP
+  t.is(p1.decider, undefined);
+
+  await kernel.run();
+  const b1 = logB.shift();
+  t.is(b1[0], 'message');
+  t.is(b1[2].result, b1[2].args.slots[0]);
+
+  t.is(kernel.dump().promises.length, 1);
+  // vatB should now hold decision-making authority
+  const p2 = kernel.dump().promises[0];
+  t.is(p2.id, kpid);
+  t.is(p2.decider, vatB);
+}
+
+test('result promise in args (pipelining)', doResultInArgs, true);
+
+test('result promise in args (non-pipelining)', doResultInArgs, false);
+
 test('transcript', async t => {
   const aliceForAlice = 'o+1';
   const kernel = makeKernel();

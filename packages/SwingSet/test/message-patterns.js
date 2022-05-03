@@ -487,6 +487,50 @@ export function buildPatterns(log) {
   out.a65 = ['a65 rejected with {"message":"nope"}'];
   test('a65');
 
+  // p=bob!x(p) // early reference to result promise, issue #5189
+  {
+    objA.a66 = async () => {
+      // E() hardens the arguments before returning the promise, so it
+      // prevents the following direct way to build a message that
+      // references its own result:
+      //
+      // const args = { a: 1 };
+      // const p = E(b.bob).b66_1(args);
+      // args.p = p;
+      //
+      // We can't provoke that from userspace, so we exercise a subset
+      // of the concerns: a result promise is first seen in arguments
+      // (of a different message).
+
+      const p1 = E(b.bob).b66_wait(); // doesn't resolve for a while
+      const p2 = E(p1).msg2(); // so msg2 is stalled waiting for p1
+      const p3 = E(b.bob).b66_msg1(p2); // and msg1 arrives first
+      await E(b.bob).b66_flush();
+      E(b.bob).b66_resolve();
+      await p1;
+      await p2;
+      await p3;
+    };
+    const pk = makePromiseKit();
+    objB.b66_wait = () => pk.promise;
+    objB.b66_msg1 = p2 => {
+      log('one');
+      p2.then(() => log('p2 resolved'));
+    };
+    objB.b66_flush = () => 0;
+    const target = Far('target', {
+      msg2: () => {
+        log('two');
+        return 'res';
+      },
+    });
+    objB.b66_resolve = () => {
+      pk.resolve(target);
+    };
+  }
+  out.a66 = ['one', 'two', 'p2 resolved'];
+  test('a66');
+
   // bob!pipe1()!pipe2()!pipe3() // pipelining
   {
     objA.a70 = async () => {

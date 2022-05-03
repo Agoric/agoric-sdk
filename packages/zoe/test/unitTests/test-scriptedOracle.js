@@ -28,7 +28,7 @@ const oracleContractPath = `${dirname}/../../src/contracts/oracle.js`;
 const bountyContractPath = `${dirname}/bounty.js`;
 
 /**
- * @typedef {Object} TestContext
+ * @typedef {object} TestContext
  * @property {ZoeService} zoe
  * @property {Installation} oracleInstallation
  * @property {Installation} bountyInstallation

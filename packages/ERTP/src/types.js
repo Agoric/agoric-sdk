@@ -78,7 +78,7 @@
 
 /**
  * @template {AssetKind} [K=AssetKind]
- * @typedef {Object} DisplayInfo
+ * @typedef {object} DisplayInfo
  * @property {number=} decimalPlaces Tells the display software how
  *   many decimal places to move the decimal over to the left, or in
  *   other words, which position corresponds to whole numbers. We
@@ -96,7 +96,7 @@
 
 /**
  * @template {AssetKind} [K=AssetKind]
- * @typedef {Object} Brand
+ * @typedef {object} Brand
  * The brand identifies the kind of issuer, and has a function to get the
  * alleged name for the kind of asset described. The alleged name (such
  * as 'BTC' or 'moola') is provided by the maker of the issuer and should
@@ -219,7 +219,7 @@
 
 /**
  * @template {AssetKind} [K=AssetKind]
- * @typedef {Object} Issuer
+ * @typedef {object} Issuer
  *
  * The issuer cannot mint a new amount, but it can create empty purses
  * and payments. The issuer can also transform payments (splitting
@@ -253,7 +253,7 @@
  */
 
 /**
- * @typedef {Object} AdditionalDisplayInfo
+ * @typedef {object} AdditionalDisplayInfo
  *
  * @property {number=} decimalPlaces Tells the display software how
  *   many decimal places to move the decimal over to the left, or in
@@ -287,7 +287,7 @@
 
 /**
  * @template {AssetKind} [K=AssetKind]
- * @typedef {Object} Mint
+ * @typedef {object} Mint
  * Holding a Mint carries the right to issue new digital assets. These
  * assets all have the same kind, which is called a Brand.
  *
@@ -303,7 +303,7 @@
  */
 
 /**
- * @typedef {Object} DepositFacet
+ * @typedef {object} DepositFacet
  * @property {DepositFacetReceive} receive
  * Deposit all the contents of payment into the purse that made this facet,
  * returning the amount. If the optional argument `optAmount` does not equal the
@@ -320,7 +320,7 @@
  */
 
 /**
- * @typedef {Object} Purse
+ * @typedef {object} Purse
  * Purses hold amount of digital assets of the same brand, but unlike Payments,
  * they are not meant to be sent to others. To transfer digital assets, a
  * Payment should be withdrawn from a Purse. The amount of digital
@@ -368,7 +368,7 @@
 
 /**
  * @template {AssetKind} [K=AssetKind]
- * @typedef {Object} Payment
+ * @typedef {object} Payment
  * Payments hold amount of digital assets of the same brand in transit. Payments
  * can be deposited in purses, split into multiple payments, combined, and
  * claimed (getting an exclusive payment). Payments are linear, meaning
@@ -393,7 +393,7 @@
 
 /**
  * @template {AssetKind} K
- * @typedef {Object} MathHelpers<K>
+ * @typedef {object} MathHelpers<K>
  * All of the difference in how digital asset amount are manipulated can be
  * reduced to the behavior of the math on values. We extract this
  * custom logic into mathHelpers. MathHelpers are about value

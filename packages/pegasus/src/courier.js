@@ -28,7 +28,7 @@ export const getCourierPK = (key, keyToCourierPK) => {
 /**
  * Create the [send, receive] pair.
  *
- * @typedef {Object} CourierArgs
+ * @typedef {object} CourierArgs
  * @property {ZCF} zcf
  * @property {ERef<BoardDepositFacet>} board
  * @property {ERef<NameHub>} namesByAddress

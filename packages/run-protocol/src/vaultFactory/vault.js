@@ -66,7 +66,7 @@ const validTransitions = {
 /**
  * @typedef {Phase[keyof typeof Phase]} TitlePhase
  *
- * @typedef {Object} VaultUIState
+ * @typedef {object} VaultUIState
  * @property {Amount<'nat'>} locked Amount of Collateral locked
  * @property {{debt: Amount<'nat'>, interest: Ratio}} debtSnapshot 'debt' at the point the compounded interest was 'interest'
  * @property {Ratio} interestRate Annual interest rate charge
@@ -75,7 +75,7 @@ const validTransitions = {
  */
 
 /**
- * @typedef {Object} VaultManager
+ * @typedef {object} VaultManager
  * @property {() => Notifier<import('./vaultManager').AssetState>} getNotifier
  * @property {(collateralAmount: Amount) => ERef<Amount>} maxDebtFor
  * @property {() => Brand} getCollateralBrand

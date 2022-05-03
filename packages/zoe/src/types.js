@@ -17,7 +17,7 @@
  */
 
 /**
- * @typedef {Object} StandardTerms
+ * @typedef {object} StandardTerms
  * @property {IssuerKeywordRecord} issuers - record with
  * keywords keys, issuer values
  * @property {BrandKeywordRecord} brands - record with keywords
@@ -25,14 +25,14 @@
  *
  * @typedef {StandardTerms & Record<string, any>} AnyTerms
  *
- * @typedef {Object} InstanceRecord
+ * @typedef {object} InstanceRecord
  * @property {Installation} installation
  * @property {Instance} instance
  * @property {AnyTerms} terms - contract parameters
  
  *
  * @template {AssetKind} [K=AssetKind]
- * @typedef {Object} IssuerRecord
+ * @typedef {object} IssuerRecord
  * @property {Brand<K>} brand
  * @property {Issuer<K>} issuer
  * @property {K} assetKind

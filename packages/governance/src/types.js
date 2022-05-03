@@ -26,7 +26,7 @@
  */
 
 /**
- * @typedef {Object} SimpleIssue
+ * @typedef {object} SimpleIssue
  * @property {string} text
  */
 
@@ -70,7 +70,7 @@
  */
 
 /**
- * @typedef {Object} QuestionTerms - QuestionSpec plus the Electorate Instance and
+ * @typedef {object} QuestionTerms - QuestionSpec plus the Electorate Instance and
  *   a numerical threshold for the quorum. (The voteCounter doesn't know the
  *   size of the electorate, so the Electorate has to say what limit to enforce.)
  * @property {QuestionSpec} questionSpec
@@ -79,7 +79,7 @@
  */
 
 /**
- * @typedef {Object} TextPosition
+ * @typedef {object} TextPosition
  * @property {string} text
  */
 
@@ -91,7 +91,7 @@
  * Specification when requesting creation of a Question
  *
  * @template {Issue} [I=Issue]
- * @typedef {Object} QuestionSpec
+ * @typedef {object} QuestionSpec
  * @property {ChoiceMethod} method
  * @property {I} issue
  * @property {Position[]} positions
@@ -103,7 +103,7 @@
  */
 
 /**
- * @typedef {Object} QuestionDetailsExtraProperties
+ * @typedef {object} QuestionDetailsExtraProperties
  * @property {Instance} counterInstance - instance of the VoteCounter
  * @property {Handle<'Question'>} questionHandle
  */
@@ -114,26 +114,26 @@
  */
 
 /**
- * @typedef {Object} GovernancePair
+ * @typedef {object} GovernancePair
  * @property {Instance} governor
  * @property {Instance} governed
  */
 
 /**
- * @typedef {Object} Question
+ * @typedef {object} Question
  * @property {() => Instance} getVoteCounter
  * @property {() => QuestionDetails} getDetails
  */
 
 /**
- * @typedef {Object} CompleteUnrankedQuestion
+ * @typedef {object} CompleteUnrankedQuestion
  * @property {Handle<'Question'>} questionHandle
  * @property {Position[]} chosen - a list of equal-weight preferred positions
  */
 
 // not yet in use
 /**
- * @typedef {Object} CompleteWeightedBallot
+ * @typedef {object} CompleteWeightedBallot
  * @property {Handle<'Question'>} questionHandle
  * @property {[Position,bigint][]} weighted - list of positions with
  *   weights. VoteCounter may limit weights to a range or require uniqueness.
@@ -141,27 +141,27 @@
 
 // not yet in use
 /**
- * @typedef {Object} CompleteOrderedBallot
+ * @typedef {object} CompleteOrderedBallot
  * @property {Handle<'Question'>} questionHandle
  * @property {Position[]} ordered - ordered list of position from most preferred
  *   to least preferred
  */
 
 /**
- * @typedef {Object} PositionCount
+ * @typedef {object} PositionCount
  * @property {Position} position
  * @property {bigint} total
  */
 
 /**
- * @typedef {Object} VoteStatistics
+ * @typedef {object} VoteStatistics
  * @property {bigint} spoiled
  * @property {number} votes
  * @property {PositionCount[]} results
  */
 
 /**
- * @typedef {Object} QuorumCounter
+ * @typedef {object} QuorumCounter
  * @property {(stats: VoteStatistics) => boolean} check
  */
 
@@ -173,7 +173,7 @@
  */
 
 /**
- * @typedef {Object} VoteCounterCreatorFacet - a facet that the Electorate should
+ * @typedef {object} VoteCounterCreatorFacet - a facet that the Electorate should
  *   hold tightly. submitVote() is the core capability that allows the holder to
  *   specify the identity and choice of a voter. The voteCounter is making that
  *   available to the Electorate, which should wrap and attenuate it so each
@@ -183,7 +183,7 @@
  */
 
 /**
- * @typedef {Object} VoteCounterPublicFacet
+ * @typedef {object} VoteCounterPublicFacet
  * @property {() => boolean} isOpen
  * @property {() => Question} getQuestion
  * @property {() => Promise<Position>} getOutcome
@@ -192,13 +192,13 @@
  */
 
 /**
- * @typedef {Object} VoteCounterCloseFacet
+ * @typedef {object} VoteCounterCloseFacet
  *   TEST ONLY: Should not be allowed to escape from contracts
  * @property {() => void} closeVoting
  */
 
 /**
- * @typedef {Object} VoteCounterFacets
+ * @typedef {object} VoteCounterFacets
  * @property {VoteCounterPublicFacet} publicFacet
  * @property {VoteCounterCreatorFacet} creatorFacet
  * @property {VoteCounterCloseFacet} closeFacet
@@ -232,7 +232,7 @@
  */
 
 /**
- * @typedef {Object} ElectoratePublic
+ * @typedef {object} ElectoratePublic
  * @property {() => Subscription<QuestionDetails>} getQuestionSubscription
  * @property {GetOpenQuestions} getOpenQuestions,
  * @property {() => Instance} getInstance
@@ -245,12 +245,12 @@
  */
 
 /**
- * @typedef {Object} PoserFacet
+ * @typedef {object} PoserFacet
  * @property {AddQuestion} addQuestion
  */
 
 /**
- * @typedef {Object} ElectorateCreatorFacet
+ * @typedef {object} ElectorateCreatorFacet
  * @property {AddQuestion} addQuestion can be used directly when the creator doesn't need any
  *  reassurance. When someone needs to connect addQuestion to the Electorate
  *  instance, getPoserInvitation() lets them get addQuestion with assurance.
@@ -266,19 +266,19 @@
  */
 
 /**
- * @typedef {Object} GetVoterInvitations
+ * @typedef {object} GetVoterInvitations
  * @property {() => Invitation[]} getVoterInvitations
  */
 
 /**
- * @typedef {Object} VoterFacet - a facet that the Electorate should hold
+ * @typedef {object} VoterFacet - a facet that the Electorate should hold
  *   tightly. It allows specification of the vote's weight, so the Electorate
  *   should distribute an attenuated wrapper that doesn't make that available!
  * @property {SubmitVote} submitVote
  */
 
 /**
- * @typedef {Object} ClosingRule
+ * @typedef {object} ClosingRule
  * @property {ERef<Timer>} timer
  * @property {Timestamp} deadline
  */
@@ -290,7 +290,7 @@
  */
 
 /**
- * @typedef {Object} AddQuestionReturn
+ * @typedef {object} AddQuestionReturn
  * @property {VoteCounterPublicFacet} publicFacet
  * @property {VoteCounterCreatorFacet} creatorFacet
  * @property {Instance} instance
@@ -323,25 +323,25 @@
 
 /**
  * @template [P=StandardParamPath] path for a paramManagerRetriever
- * @typedef {Object} ParamChangeIssue
+ * @typedef {object} ParamChangeIssue
  * @property {ParamChangesSpec<P>} spec
  * @property {Instance} contract
  */
 
 /**
- * @typedef {Object} ApiInvocationIssue
+ * @typedef {object} ApiInvocationIssue
  * @property {string} apiMethodName
  * @property {unknown[]} methodArgs
  */
 
 /**
- * @typedef {Object} ParamChangePositions
+ * @typedef {object} ParamChangePositions
  * @property {ChangeParamsPosition} positive
  * @property {NoChangeParamsPosition} negative
  */
 
 /**
- * @typedef {Object} ParamChangeIssueDetails
+ * @typedef {object} ParamChangeIssueDetails
  *    details for a question that can change a contract parameter
  * @property {ChoiceMethod} method
  * @property {ParamChangeIssue<unknown>} issue
@@ -362,7 +362,7 @@
  */
 
 /**
- * @typedef {Object} ParamManagerBase The base paramManager with typed getters
+ * @typedef {object} ParamManagerBase The base paramManager with typed getters
  * @property {() => Record<Keyword, ParamRecord>} getParams
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
@@ -423,34 +423,34 @@
  */
 
 /**
- * @typedef {Object} ChangeParamsPosition
+ * @typedef {object} ChangeParamsPosition
  * @property {Record<string,ParamValue>} changes one or more changes to parameters
  */
 
 /**
- * @typedef {Object} InvokeApiPosition
+ * @typedef {object} InvokeApiPosition
  * @property {string} apiMethodName
  * @property {unknown[]} methodArgs
  */
 
 /**
- * @typedef {Object} DontInvokeApiPosition
+ * @typedef {object} DontInvokeApiPosition
  * @property {string} dontInvoke
  */
 
 /**
- * @typedef {Object} NoChangeParamsPosition
+ * @typedef {object} NoChangeParamsPosition
  * @property {string[]} noChange Parameters in the proposal that this position
  *   is opposed to
  */
 
 /**
- * @typedef {Object} Governor
+ * @typedef {object} Governor
  * @property {CreateQuestion} createQuestion
  */
 
 /**
- * @typedef {Object} GovernorPublic
+ * @typedef {object} GovernorPublic
  * @property {() => Promise<Instance>} getElectorate
  * @property {() => Instance} getGovernedContract
  * @property {(voteCounter: Instance) => Promise<boolean>} validateVoteCounter
@@ -459,7 +459,7 @@
  */
 
 /**
- * @typedef {Object} ParamKey identifier for a paramManager within a contract
+ * @typedef {object} ParamKey identifier for a paramManager within a contract
  * @property {string} key
  */
 
@@ -473,7 +473,7 @@
  */
 
 /**
- * @typedef {Object} ContractGovernanceVoteResult
+ * @typedef {object} ContractGovernanceVoteResult
  * @property {Instance} instance - instance of the VoteCounter
  * @property {ERef<QuestionDetails>} details
  * @property {Promise<ParamValue>} outcomeOfUpdate - A promise for the result
@@ -491,7 +491,7 @@
  */
 
 /**
- * @typedef {Object} ContractPowerfulCreatorFacet
+ * @typedef {object} ContractPowerfulCreatorFacet
  *
  *   A powerful facet that carries access to both the creatorFacet to be passed
  *   to the caller and the paramManager, which will be used exclusively by the
@@ -502,7 +502,7 @@
 
 /**
  * @template {object} PF Public facet of governed contract
- * @typedef {Object} GovernedContractFacetAccess
+ * @typedef {object} GovernedContractFacetAccess
  * @property {VoteOnParamChanges} voteOnParamChanges
  * @property {VoteOnApiInvocation} voteOnApiInvocation
  * @property {() => Promise<LimitedCreatorFacet<any>>} getCreatorFacet - creator
@@ -566,7 +566,7 @@
  */
 
 /**
- * @typedef {Object} ParamManagerRetriever
+ * @typedef {object} ParamManagerRetriever
  * @property {(paramKey?: ParamKey) => AnyParamManager} get
  */
 
@@ -590,13 +590,13 @@
  */
 
 /**
- * @typedef {Object} ParamGovernor
+ * @typedef {object} ParamGovernor
  * @property {VoteOnParamChanges} voteOnParamChanges
  * @property {CreatedQuestion} createdQuestion
  */
 
 /**
- * @typedef {Object} ApiGovernor
+ * @typedef {object} ApiGovernor
  * @property {VoteOnApiInvocation} voteOnApiInvocation
  * @property {CreatedQuestion} createdQuestion
  */
@@ -626,10 +626,10 @@
  */
 
 /**
- * @typedef {Object} GovernedContractTerms
+ * @typedef {object} GovernedContractTerms
  * @property {TimerService} timer
  * @property {IssuerKeywordRecord} issuerKeywordRecord
- * @property {Object} privateArgs
+ * @property {object} privateArgs
  */
 
 /**

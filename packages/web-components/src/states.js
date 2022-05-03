@@ -9,7 +9,7 @@ import {
 } from 'robot3';
 
 /**
- * @typedef {Object} Context
+ * @typedef {object} Context
  * @property {any?} error
  * @property {string?} location
  * @property {Record<string,any>} connectionParams

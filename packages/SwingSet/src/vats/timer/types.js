@@ -1,7 +1,7 @@
 // @ts-check
 
 /**
- * @typedef {Object} TimerService
+ * @typedef {object} TimerService
  * Gives the ability to get the current time,
  * schedule a single wake() call, create a repeater that will allow scheduling
  * of events at regular intervals, or remove scheduled calls.
@@ -54,14 +54,14 @@
  */
 
 /**
- * @typedef {Object} TimerWaker
+ * @typedef {object} TimerWaker
  *
  * @property {(timestamp: Timestamp) => void} wake The timestamp passed to
  * `wake()` is the time that the call was scheduled to occur.
  */
 
 /**
- * @typedef {Object} TimerRepeater
+ * @typedef {object} TimerRepeater
  *
  * @property {(waker: ERef<TimerWaker>) => Timestamp} schedule
  * Returns the time scheduled for

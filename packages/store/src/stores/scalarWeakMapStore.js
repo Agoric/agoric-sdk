@@ -7,7 +7,7 @@ const { details: X, quote: q } = assert;
 
 /**
  * @template K,V
- * @param {WeakMap<K & Object,V>} jsmap
+ * @param {WeakMap<K & object, V>} jsmap
  * @param {(k: K, v: V) => void} assertKVOkToAdd
  * @param {(k: K, v: V) => void} assertKVOkToSet
  * @param {((k: K) => void)=} assertKeyOkToDelete

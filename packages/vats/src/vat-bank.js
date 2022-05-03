@@ -75,7 +75,7 @@ const makePurseController = (
 };
 
 /**
- * @typedef {Object} AssetIssuerKit
+ * @typedef {object} AssetIssuerKit
  * @property {ERef<Mint>} [mint]
  * @property {ERef<Issuer>} issuer
  * @property {Brand} brand
@@ -86,7 +86,7 @@ const makePurseController = (
  */
 
 /**
- * @typedef {Object} AssetDescriptor
+ * @typedef {object} AssetDescriptor
  * @property {Brand} brand
  * @property {ERef<Issuer>} issuer
  * @property {string} issuerName
@@ -95,7 +95,7 @@ const makePurseController = (
  */
 
 /**
- * @typedef {Object} Bank
+ * @typedef {object} Bank
  * @property {() => Subscription<AssetDescriptor>} getAssetSubscription Returns
  * assets as they are added to the bank
  * @property {(brand: Brand) => VirtualPurse} getPurse Find any existing vpurse

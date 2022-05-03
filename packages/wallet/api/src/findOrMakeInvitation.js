@@ -22,7 +22,7 @@ const assertFirstCapASCII = str => {
 
 /**
  * @param {Amount} invitationPurseBalance
- * @param {Object} query
+ * @param {object} query
  * @param {Board} query.board
  * @param {string} query.boardId
  * @returns {Array}

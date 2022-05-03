@@ -78,9 +78,9 @@ export function makeTranscriptManager(
     return s.response;
   }
 
-  function finishReplayDelivery() {
+  function finishReplayDelivery(dnum) {
     if (playbackSyscalls.length !== 0) {
-      console.log(`anachrophobia strikes vat ${vatID}`);
+      console.log(`anachrophobia strikes vat ${vatID} on delivery ${dnum}`);
       console.log(
         `delivery completed with ${playbackSyscalls.length} expected syscalls remaining`,
       );

@@ -5,7 +5,7 @@
  */
 
 /**
- * @typedef {Object} ManualTimerAdmin
+ * @typedef {object} ManualTimerAdmin
  * @property {ManualTimerTick} tick
  */
 

@@ -1,41 +1,41 @@
 /**
- * @typedef {Object} SellItemsPublicFacet
+ * @typedef {object} SellItemsPublicFacet
  * @property {() => Issuer} getItemsIssuer
  * @property {() => Amount} getAvailableItems
  *
- * @typedef {Object} SellItemsCreatorOnly
+ * @typedef {object} SellItemsCreatorOnly
  * @property {() => Promise<Invitation>} makeBuyerInvitation
  *
  * @typedef {SellItemsPublicFacet & SellItemsCreatorOnly} SellItemsCreatorFacet
  */
 
 /**
- * @typedef {Object} SellItemsParameters
+ * @typedef {object} SellItemsParameters
  * @property {Record<string, any>} customValueProperties
  * @property {number} count
  * @property {Issuer} moneyIssuer
  * @property {Installation} sellItemsInstallation
  * @property {Amount} pricePerItem
  *
- * @typedef {Object} SellItemsResult
+ * @typedef {object} SellItemsResult
  * @property {UserSeat} sellItemsCreatorSeat
  * @property {SellItemsCreatorFacet} sellItemsCreatorFacet
  * @property {Instance} sellItemsInstance
  * @property {SellItemsPublicFacet} sellItemsPublicFacet
  *
- * @typedef {Object} MintAndSellNFTCreatorFacet
+ * @typedef {object} MintAndSellNFTCreatorFacet
  * @property {(sellParams: SellItemsParameters) => Promise<SellItemsResult>} sellTokens
  * @property {() => Issuer} getIssuer
  */
 
 /**
- * @typedef {Object} AutomaticRefundPublicFacet
+ * @typedef {object} AutomaticRefundPublicFacet
  * @property {() => bigint} getOffersCount
  * @property {() => Promise<Invitation>} makeInvitation
  */
 
 /**
- * @typedef {Object} AutoswapPublicFacet
+ * @typedef {object} AutoswapPublicFacet
  * @property {() => Promise<Invitation>} makeSwapInvitation synonym for
  * makeSwapInInvitation
  * @property {() => Promise<Invitation>} makeSwapInInvitation make an invitation

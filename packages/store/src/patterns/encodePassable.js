@@ -255,10 +255,10 @@ const decodeTagged = (encoded, decodePassable) => {
 };
 
 /**
- * @typedef {Object} EncodeOptionsRecord
- * @property {(remotable: Object) => string} encodeRemotable
- * @property {(promise: Object) => string} encodePromise
- * @property {(error: Object) => string} encodeError
+ * @typedef {object} EncodeOptionsRecord
+ * @property {(remotable: object) => string} encodeRemotable
+ * @property {(promise: object) => string} encodePromise
+ * @property {(error: object) => string} encodeError
  */
 
 /**
@@ -343,8 +343,8 @@ export const makeEncodePassable = ({
 harden(makeEncodePassable);
 
 /**
- * @typedef {Object} DecodeOptionsRecord
- * @property {(encodedRemotable: string) => Object} decodeRemotable
+ * @typedef {object} DecodeOptionsRecord
+ * @property {(encodedRemotable: string) => object} decodeRemotable
  * @property {(encodedPromise: string) => Promise} decodePromise
  * @property {(encodedError: string) => Error} decodeError
  */

@@ -113,7 +113,7 @@
  * @param {string[]} powerFlags
  * @returns {Promise<Record<string, Promise<any>>>}
  *
- * @typedef {Object} ClientFacet
+ * @typedef {object} ClientFacet
  * @property {() => ERef<Record<string, any>>} getChainBundle Required for ag-solo, but deprecated in favour of getConfiguration
  *   NOTE: we use `any` rather than `unknown` because each client that wants to call a method such as
  *   `E(userBundle.bank).deposit(payment)` has to cast userBundle.bank;
@@ -123,7 +123,7 @@
  *
  * @typedef {{ clientAddress: string, clientHome: Record<string, any>}} Configuration
  *
- * @typedef {Object} ClientCreator
+ * @typedef {object} ClientCreator
  * @property {CreateUserBundle} createUserBundle Required for vat-provisioning, but deprecated in favor of {@link createClient}.
  * @property {(nickname: string, clientAddress: string, powerFlags: string[]) => Promise<ClientFacet>} createClientFacet
  */

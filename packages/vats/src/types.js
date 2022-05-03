@@ -6,7 +6,7 @@
  */
 
 /**
- * @typedef {Object} Board
+ * @typedef {object} Board
  * @property {(id: string) => any} getValue
  * @property {(value: unknown) => string} getId
  * @property {(value: unknown) => boolean} has
@@ -15,7 +15,7 @@
  */
 
 /**
- * @typedef {Object} NameHub read-only access to a node in a name hierarchy
+ * @typedef {object} NameHub read-only access to a node in a name hierarchy
  *
  * NOTE: We need to return arrays, not iterables, because even if marshal could
  * allow passing a remote iterable, there would be an inordinate number of round
@@ -33,7 +33,7 @@
  */
 
 /**
- * @typedef {Object} NameAdmin write access to a node in a name hierarchy
+ * @typedef {object} NameAdmin write access to a node in a name hierarchy
  *
  * @property {(key: string) => void} reserve Mark a key as reserved; will
  * return a promise that is fulfilled when the key is updated (or rejected when
@@ -57,19 +57,19 @@
  */
 
 /**
- * @typedef {Object} NameHubKit a node in a name hierarchy
+ * @typedef {object} NameHubKit a node in a name hierarchy
  * @property {NameHub} nameHub read access
  * @property {NameAdmin} nameAdmin write access
  */
 
 /**
- * @typedef {Object} FeeCollector
+ * @typedef {object} FeeCollector
  *
  * @property {() => ERef<Payment>} collectFees
  */
 
 /**
- * @typedef {Object} DistributorParams
+ * @typedef {object} DistributorParams
  *
  * @property {bigint} [epochInterval=1n] - parameter to the epochTimer
  *  controlling the interval at which rewards should be sent to the bank.

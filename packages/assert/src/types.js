@@ -19,7 +19,7 @@
  */
 
 /**
- * @typedef {Object} AssertMakeErrorOptions
+ * @typedef {object} AssertMakeErrorOptions
  * @property {string=} errorName
  */
 
@@ -164,7 +164,7 @@
  */
 
 /**
- * @typedef {Object} StringablePayload
+ * @typedef {object} StringablePayload
  * Holds the payload passed to quote so that its printed form is visible.
  * @property {() => string} toString How to print the payload
  */

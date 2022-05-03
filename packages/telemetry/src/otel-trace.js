@@ -17,7 +17,7 @@ export const SPAN_MAX_QUEUE_SIZE = 100_000;
 export const SPAN_EXPORT_DELAY_MS = 1_000;
 
 /**
- * @param {Object} opts
+ * @param {object} opts
  * @param {Record<string, string>} opts.env
  */
 export const makeOtelTracingProvider = opts => {

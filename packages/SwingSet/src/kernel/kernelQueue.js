@@ -5,7 +5,7 @@ import { insistMessage } from '../lib/message.js';
 import { insistVatID } from '../lib/id.js';
 
 /**
- * @param {Object} tools
+ * @param {object} tools
  * @param {KernelKeeper} tools.kernelKeeper  Kernel keeper managing persistent kernel state
  * @param {(problem: unknown, err?: Error) => void } [tools.panic]
  */

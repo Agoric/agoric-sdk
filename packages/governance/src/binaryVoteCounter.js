@@ -70,7 +70,7 @@ const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
   // choice with the new selection.
 
   /**
-   * @typedef {Object} RecordedBallot
+   * @typedef {object} RecordedBallot
    * @property {Position} chosen
    * @property {bigint} shares
    */

@@ -9,13 +9,13 @@
  */
 
 /**
- * @typedef {Object} PayoffHandler
+ * @typedef {object} PayoffHandler
  * @property {() => void} schedulePayoffs
  * @property  {MakeOptionInvitation} makeOptionInvitation
  */
 
 /**
- * @typedef {Object} CalculateSharesReturn
+ * @typedef {object} CalculateSharesReturn
  * Return value from calculateShares, which represents the portions assigned to
  * the long and short side of a transaction. These will be two non-negative
  * integers that sum to 100.

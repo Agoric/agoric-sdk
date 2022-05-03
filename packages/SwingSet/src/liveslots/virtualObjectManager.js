@@ -20,12 +20,12 @@ const unweakable = new WeakSet();
  *
  * @param {number} size  Maximum number of entries to keep in the cache before
  *    starting to throw them away.
- * @param {(baseRef: string) => Object} fetch  Function to retrieve an
+ * @param {(baseRef: string) => object} fetch  Function to retrieve an
  *    object's raw state from the store by its baseRef
- * @param {(baseRef: string, rawState: Object) => void} store  Function to
+ * @param {(baseRef: string, rawState: object) => void} store  Function to
  *   store raw object state by its baseRef
  *
- * @returns {Object}  An LRU cache of (up to) the given size
+ * @returns {object}  An LRU cache of (up to) the given size
  *
  * This cache is part of the virtual object manager and is not intended to be
  * used independently; it is exported only for the benefit of test code.
@@ -140,7 +140,7 @@ export function makeCache(size, fetch, store) {
  *   of virtual references.
  * @param {() => number} allocateExportID  Function to allocate the next object
  *   export ID for the enclosing vat.
- * @param { (val: Object) => string} getSlotForVal  A function that returns the
+ * @param {(val: object) => string} getSlotForVal  A function that returns the
  *   object ID (vref) for a given object, if any.  their corresponding export
  *   IDs
  * @param {*} registerValue  Function to register a new slot+value in liveSlot's
@@ -150,7 +150,7 @@ export function makeCache(size, fetch, store) {
  * @param {number} cacheSize  How many virtual objects this manager should cache
  *   in memory.
  *
- * @returns {Object} a new virtual object manager.
+ * @returns {object} a new virtual object manager.
  *
  * The virtual object manager allows the creation of persistent objects that do
  * not need to occupy memory when they are not in use.  It provides five

@@ -1,27 +1,27 @@
 // @ts-check
 
 /**
- * @typedef {Object} ImprovedNoFeeSwapResult
+ * @typedef {object} ImprovedNoFeeSwapResult
  * @property {Amount} amountIn
  * @property {Amount} amountOut
  */
 
 /**
- * @typedef {Object} FeePair
+ * @typedef {object} FeePair
  *
  * @property {Amount} poolFee
  * @property {Amount} protocolFee
  */
 
 /**
- * @typedef {Object} PoolAllocation
+ * @typedef {object} PoolAllocation
  *
  * @property {Amount} Central
  * @property {Amount} Secondary
  */
 
 /**
- * @typedef {Object} NoFeeSwapFnInput
+ * @typedef {object} NoFeeSwapFnInput
  * @property {Amount} amountGiven
  * @property {Amount} amountWanted
  * @property {Brand=} brand
@@ -29,7 +29,7 @@
  */
 
 /**
- * @typedef {Object} SwapResult
+ * @typedef {object} SwapResult
  *
  * @property {Amount} xIncrement
  * @property {Amount} swapperGives
@@ -96,14 +96,14 @@
  */
 
 /**
- * @typedef {Object} GetXYParam
+ * @typedef {object} GetXYParam
  * @property {Amount=} amountGiven
  * @property {PoolAllocation} poolAllocation
  * @property {Amount=} amountWanted
  */
 
 /**
- * @typedef {Object} GetXYResultDeltaX
+ * @typedef {object} GetXYResultDeltaX
  * @property {Amount} x
  * @property {Amount} y
  * @property {Amount} deltaX
@@ -111,7 +111,7 @@
  */
 
 /**
- * @typedef {Object} GetXYResultDeltaY
+ * @typedef {object} GetXYResultDeltaY
  * @property {Amount} x
  * @property {Amount} y
  * @property {Amount} deltaY

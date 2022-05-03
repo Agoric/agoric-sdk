@@ -146,8 +146,8 @@ export function initEphemeralSwingStore() {
    * Generator function that returns an iterator over the items in a stream.
    *
    * @param {string} streamName  The stream to read
-   * @param {Object} startPosition  The position to start reading from
-   * @param {Object} endPosition  The position of the end of the stream
+   * @param {object} startPosition  The position to start reading from
+   * @param {object} endPosition  The position of the end of the stream
    *
    * @returns {Iterable<string>} an iterable for the items in the named stream
    */
@@ -195,9 +195,9 @@ export function initEphemeralSwingStore() {
    *
    * @param {string} streamName  The stream to be written
    * @param {string} item  The item to write
-   * @param {Object} position  The position to write the item
+   * @param {object} position  The position to write the item
    *
-   * @returns {Object} the new position after writing
+   * @returns {object} the new position after writing
    */
   function writeStreamItem(streamName, item, position) {
     insistStreamName(streamName);

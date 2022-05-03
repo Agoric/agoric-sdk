@@ -105,7 +105,7 @@ export function makeSnapStoreIO() {
  *
  * @param {string} dirPath  Path to a directory in which database files may be kept.
  * @param {boolean} forceReset  If true, initialize the database to an empty state
- * @param {Object} options  Configuration options
+ * @param {object} options  Configuration options
  *
  * @returns {SwingAndSnapStore}
  */
@@ -343,7 +343,7 @@ function makeSwingStore(dirPath, forceReset, options) {
  *   be kept.  This directory need not actually exist yet (if it doesn't it will
  *   be created) but it is reserved (by the caller) for the exclusive use of
  *   this swing store instance.  If null, an ephemeral store will be created.
- * @param {Object?} options  Optional configuration options
+ * @param {object?} options  Optional configuration options
  *
  * @returns {SwingStore}
  */
@@ -364,7 +364,7 @@ export function initSwingStore(dirPath, options = {}) {
  *   This directory need not actually exist yet (if it doesn't it will be
  *   created) but it is reserved (by the caller) for the exclusive use of this
  *   swing store instance.
- * @param {Object?} options  Optional configuration options
+ * @param {object?} options  Optional configuration options
  *
  * @returns {SwingAndSnapStore}
  */

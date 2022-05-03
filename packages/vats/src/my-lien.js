@@ -21,7 +21,7 @@ const XLien = {
  */
 
 /**
- * @typedef {Object} StakingAuthority
+ * @typedef {object} StakingAuthority
  * @property {(address: string, wantedBrand: Brand) => Promise<{
  *   bonded: Amount,
  *   liened: Amount,

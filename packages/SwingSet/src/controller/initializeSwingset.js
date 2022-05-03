@@ -31,7 +31,7 @@ const allValues = async obj =>
 /**
  * Build the source bundles for the kernel and xsnap vat worker.
  *
- * @param {Object} [options]
+ * @param {object} [options]
  * @param {ModuleFormat} [options.bundleFormat]
  */
 export async function buildKernelBundles(options = {}) {
@@ -84,7 +84,7 @@ function byName(a, b) {
  * 'bootstrap.js'.
  *
  * @param {string} basedir  The directory to scan
- * @param {Object} [options]
+ * @param {object} [options]
  * @param {boolean} [options.includeDevDependencies] whether to include devDependencies
  * @param {ModuleFormat} [options.bundleFormat] the bundle format to use
  * @returns {SwingSetConfig} a swingset config object: {

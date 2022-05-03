@@ -10,7 +10,7 @@
  */
 
 /**
- * @typedef {Object} WalletUser
+ * @typedef {object} WalletUser
  * The presence exposed as `local.wallet` (or
  * `home.wallet`).  The idea is to provide someplace from which all the rest of
  * the API can be obtained.
@@ -51,7 +51,7 @@
  */
 
 /**
- * @typedef {Object} WalletBridge
+ * @typedef {object} WalletBridge
  * The methods that can be used by an untrusted
  * Dapp without breaching the wallet's integrity.  These methods are also
  * exposed via the iframe/WebSocket bridge that a Dapp UI can use to access the
@@ -97,7 +97,7 @@
  */
 
 /**
- * @typedef {Object} RecordMetadata
+ * @typedef {object} RecordMetadata
  * @property {number} id
  * Identifies a particular record in the context of the wallet backend. This id
  * is stable and unique for a wallet backend (even across different record
@@ -113,7 +113,7 @@
  */
 
 /**
- * @typedef {Object} PursesJSONState
+ * @typedef {object} PursesJSONState
  * @property {Brand} brand
  * @property {string} brandBoardId
  * The board ID for this purse's brand
@@ -132,14 +132,14 @@
  */
 
 /**
- * @typedef {Object} OfferState
+ * @typedef {object} OfferState
  * @property {any} requestContext
  * @property {string} id
  */
 
 /**
  * @template T
- * @typedef {Object} PetnameManager
+ * @typedef {object} PetnameManager
  * @property {(petname: Petname, object: T) => Promise<void>} rename
  * @property {(petname: Petname) => T} get
  * @property { () => Array<[Petname, T]>} getAll
@@ -159,7 +159,7 @@
  */
 
 /**
- * @typedef {Object} IssuerTable
+ * @typedef {object} IssuerTable
  * @property {(brand: Brand) => boolean} hasByBrand
  * @property {(brand: Brand) => IssuerRecord} getByBrand
  * @property {(issuer: Issuer) => boolean} hasByIssuer

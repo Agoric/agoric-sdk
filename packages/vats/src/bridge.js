@@ -11,16 +11,16 @@ import { Far } from '@endo/far';
  */
 
 /**
- * @typedef {Object} BridgeDevice
+ * @typedef {object} BridgeDevice
  * @property {(dstID: string, obj: any) => any} callOutbound
  * @property {(handler: { inbound: (srcID: string, obj: any) => void}) => void} registerInboundHandler
  */
 
 /**
- * @typedef {Object} BridgeHandler An object that can receive messages from the bridge device
+ * @typedef {object} BridgeHandler An object that can receive messages from the bridge device
  * @property {(srcId: string, obj: any) => Promise<any>} fromBridge Handle an inbound message
  *
- * @typedef {Object} BridgeManager The object to manage this bridge
+ * @typedef {object} BridgeManager The object to manage this bridge
  * @property {(dstID: string, obj: any) => any} toBridge
  * @property {(srcID: string, handler: BridgeHandler) => void} register
  * @property {(srcID: string, handler: BridgeHandler) => void} unregister

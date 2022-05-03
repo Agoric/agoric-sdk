@@ -9,6 +9,7 @@ import { debugState } from '../src/vats/comms/dispatch.js';
 import {
   capargs,
   makeMessage,
+  makeResolve,
   makeDropExports,
   makeRetireExports,
   makeRetireImports,
@@ -67,10 +68,15 @@ function mockSyscall() {
   const sends = [];
   const resolves = [];
   const gcs = [];
+  const subscribes = [];
   const fakestore = new Map();
   const syscall = harden({
-    send(targetSlot, method, args, _result) {
-      sends.push([targetSlot, method, args]);
+    send(targetSlot, method, args, result) {
+      if (result) {
+        sends.push([targetSlot, method, args, result]);
+      } else {
+        sends.push([targetSlot, method, args]);
+      }
       // return 'r-1';
     },
     resolve(resolutions) {
@@ -78,7 +84,9 @@ function mockSyscall() {
         resolves.push(resolution);
       }
     },
-    subscribe(_targetSlot) {},
+    subscribe(targetSlot) {
+      subscribes.push(targetSlot);
+    },
     vatstoreGet(key) {
       return fakestore.get(key);
     },
@@ -98,7 +106,7 @@ function mockSyscall() {
       gcs.push(['retireExports', vrefs]);
     },
   });
-  return { syscall, sends, resolves, gcs, fakestore };
+  return { syscall, sends, resolves, gcs, subscribes, fakestore };
 }
 
 /*
@@ -126,7 +134,7 @@ function encodeArgs(body) {
 test('transmit', t => {
   // look at machine A, on which some local vat is sending messages to a
   // remote 'bob' on machine B
-  const { syscall, sends } = mockSyscall();
+  const { syscall, sends, subscribes, resolves } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
   dispatch(['startVat', capargs()]);
   const { state, clistKit } = debugState.get(dispatch);
@@ -140,7 +148,7 @@ test('transmit', t => {
   const transmitterID = 'o-1';
   const aliceKernel = 'o-10';
   const aliceLocal = provideLocalForKernel(aliceKernel);
-  const { remoteID } = state.addRemote('remote1', transmitterID);
+  const { remoteID, receiverID } = state.addRemote('remote1', transmitterID);
   const bobLocal = provideLocalForRemote(remoteID, 'ro-23');
   const bobKernel = provideKernelForLocal(bobLocal);
 
@@ -196,12 +204,29 @@ test('transmit', t => {
     'transmit',
     encodeArgs('4:0:deliver:ro+23:cat::ro-20:ro+23:ro-21;argsbytes'),
   ]);
+
+  // bob!ref(res): a message that references its own result promise
+  const vpid = 'p-1';
+  dispatch(makeMessage(bobKernel, 'ref', capargs('args', [vpid]), vpid));
+  t.deepEqual(sends.shift(), [
+    transmitterID,
+    'transmit',
+    encodeArgs('5:0:deliver:ro+23:ref:rp-40:rp-40;"args"'),
+  ]);
+  // comms is decider, but the promise was briefly in the "decided by
+  // kernel" state, so we should see a syscall.subscribe . In an ideal
+  // world we'd avoid this.
+  t.deepEqual(subscribes, [vpid]);
+  // when comms receives a notify, it should do syscall.resolve
+  const res1 = `1:0:resolve:fulfill:rp+40;"resolution"`;
+  dispatch(makeMessage(receiverID, 'receive', encodeArgs(res1)));
+  t.deepEqual(resolves, [[vpid, false, capargs('resolution')]]);
 });
 
 test('receive', t => {
   // look at machine B, which is receiving remote messages aimed at a local
   // vat's object 'bob'
-  const { syscall, sends, gcs } = mockSyscall();
+  const { syscall, sends, gcs, subscribes } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
   dispatch(['startVat', capargs()]);
   const { state, clistKit } = debugState.get(dispatch);
@@ -322,24 +347,37 @@ test('receive', t => {
     ]),
   ]);
 
+  // receive a message that references its own result promise
+  const ref1 = encodeArgs(`6:0:deliver:${bobRemote}:ref:rp-40:rp-40;args`);
+  dispatch(makeMessage(receiverID, 'receive', ref1));
+  const ref1msg = [bobKernel, 'ref', capdata('args', ['p+40']), 'p+40'];
+  t.deepEqual(sends.shift(), ref1msg);
+  // kernel is the decider, so comms should syscall.subscribe
+  t.deepEqual(subscribes, ['p+40']);
+
+  // when kernel resolves, it should notify remote
+  dispatch(makeResolve('p+40', capargs('resolution')));
+  const res1 = `1:6:resolve:fulfill:rp+40;"resolution"`;
+  t.deepEqual(sends.shift(), [transmitterID, 'transmit', encodeArgs(res1)]);
+
   // upstream GC operations should work
   dispatch(makeDropExports(expectedAliceKernel, expectedAyanaKernel));
-  const gc1 = `1:5:gc:dropExport:ro+20\ngc:dropExport:ro+21`;
+  const gc1 = `2:6:gc:dropExport:ro+20\ngc:dropExport:ro+21`;
   t.deepEqual(sends.shift(), [transmitterID, 'transmit', encodeArgs(gc1)]);
 
   dispatch(makeRetireExports(expectedAliceKernel, expectedAyanaKernel));
-  const gc2 = `2:5:gc:retireExport:ro+20\ngc:retireExport:ro+21`;
+  const gc2 = `3:6:gc:retireExport:ro+20\ngc:retireExport:ro+21`;
   t.deepEqual(sends.shift(), [transmitterID, 'transmit', encodeArgs(gc2)]);
   t.deepEqual(sends, []);
 
   // sending an upstream drop makes it legal to expect a downstream retire
   dispatch(makeDropExports(expectedAgrippaKernel));
-  const gc3 = `3:5:gc:dropExport:ro+22`;
+  const gc3 = `4:6:gc:dropExport:ro+22`;
   t.deepEqual(sends.shift(), [transmitterID, 'transmit', encodeArgs(gc3)]);
   t.deepEqual(sends, []);
 
   dispatch(
-    makeMessage(receiverID, 'receive', encodeArgs(`6:3:gc:retireImport:ro-22`)),
+    makeMessage(receiverID, 'receive', encodeArgs(`7:4:gc:retireImport:ro-22`)),
   );
 
   t.deepEqual(gcs.shift(), ['retireExports', [expectedAgrippaKernel]]);
