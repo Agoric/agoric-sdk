@@ -746,6 +746,7 @@ export function makeVirtualObjectManager(
 
   function defineKind(tag, init, behavior, options) {
     const kindID = `${allocateExportID()}`;
+    syscall.vatstoreSet(`vom.vkind.${kindID}`, JSON.stringify({ kindID, tag }));
     return defineKindInternal(
       kindID,
       tag,
@@ -759,6 +760,7 @@ export function makeVirtualObjectManager(
 
   function defineKindMulti(tag, init, behavior, options) {
     const kindID = `${allocateExportID()}`;
+    syscall.vatstoreSet(`vom.vkind.${kindID}`, JSON.stringify({ kindID, tag }));
     return defineKindInternal(
       kindID,
       tag,
@@ -785,7 +787,7 @@ export function makeVirtualObjectManager(
 
   function reanimateDurableKindID(vobjID) {
     const { subid: kindID } = parseVatSlot(vobjID);
-    const raw = syscall.vatstoreGet(`vom.kind.${kindID}`);
+    const raw = syscall.vatstoreGet(`vom.dkind.${kindID}`);
     assert(raw, X`unknown kind ID ${kindID}`);
     const durableKindDescriptor = harden(JSON.parse(raw));
     const kindHandle = Far('kind', {});
@@ -806,7 +808,7 @@ export function makeVirtualObjectManager(
     kindDescriptors.set(kindHandle, durableKindDescriptor);
     registerValue(kindIDvref, kindHandle, false);
     syscall.vatstoreSet(
-      `vom.kind.${kindID}`,
+      `vom.dkind.${kindID}`,
       JSON.stringify(durableKindDescriptor),
     );
     return kindHandle;
@@ -847,9 +849,9 @@ export function makeVirtualObjectManager(
   }
 
   function insistAllDurableKindsReconnected() {
-    // identify all user-defined durable kinds by iterating `vom.kind.*`
+    // identify all user-defined durable kinds by iterating `vom.dkind.*`
     const missing = [];
-    const prefix = 'vom.kind.';
+    const prefix = 'vom.dkind.';
     let [key, value] = syscall.vatstoreGetAfter('', prefix);
     while (key) {
       const descriptor = JSON.parse(value);

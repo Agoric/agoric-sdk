@@ -411,6 +411,7 @@ test('virtual object gc', async t => {
     'v1.vs.vom.rc.o+6/1': '1',
     'v1.vs.vom.rc.o+6/2': '1',
     'v1.vs.vom.rc.o+6/3': '1',
+    'v1.vs.vom.vkind.10': '{"kindID":"10","tag":"thing"}',
     'v1.vs.watchedPromiseTableID': 'o+6/3',
     'v1.vs.watcherTableID': 'o+6/2',
   });
