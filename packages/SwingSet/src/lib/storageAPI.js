@@ -154,22 +154,14 @@ export function makeBufferedStorage(kvStore, listeners = {}) {
   const buffered = {
     has(key) {
       assert.typeof(key, 'string');
-      if (additions.has(key)) {
-        return true;
-      }
-      if (deletions.has(key)) {
-        return false;
-      }
+      if (additions.has(key)) return true;
+      if (deletions.has(key)) return false;
       return kvStore.has(key);
     },
     get(key) {
       assert.typeof(key, 'string');
-      if (additions.has(key)) {
-        return additions.get(key);
-      }
-      if (deletions.has(key)) {
-        return undefined;
-      }
+      if (additions.has(key)) return additions.get(key);
+      if (deletions.has(key)) return undefined;
       const value = kvStore.get(key);
       if (onGet !== undefined) onGet(key, value);
       return value;
