@@ -3,6 +3,7 @@
     "@endo",
     "plugin:@jessie.js/recommended"
   ],
+  "parser": "@typescript-eslint/parser",
   "rules": {
     "jsdoc/no-multi-asterisks": "off",
     "jsdoc/multiline-blocks": "off",

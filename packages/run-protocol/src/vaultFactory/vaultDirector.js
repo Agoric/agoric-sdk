@@ -150,7 +150,7 @@ const getLiquidationConfig = directorParamManager => ({
 
 const watchGovernance = (govParams, vaultManager, oldInstall, oldTerms) => {
   const subscription = govParams.getSubscription();
-  observeIteration(subscription, {
+  return observeIteration(subscription, {
     updateState(_paramUpdate) {
       const { install, terms } = getLiquidationConfig(govParams);
       if (install === oldInstall && keyEQ(terms, oldTerms)) {
@@ -276,7 +276,7 @@ const machineBehavior = {
     const { install, terms } = getLiquidationConfig(directorParamManager);
     // console.log('PARAM UPDATE', install, terms);
     await vm.setupLiquidator(install, terms);
-    watchGovernance(directorParamManager, vm, install, terms);
+    await watchGovernance(directorParamManager, vm, install, terms);
     return vm;
   },
   getCollaterals,

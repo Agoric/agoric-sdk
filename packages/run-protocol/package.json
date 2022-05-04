@@ -75,7 +75,24 @@
   "eslintConfig": {
     "extends": [
       "@agoric"
-    ]
+    ],
+    "parserOptions": {
+      "project": [
+        "./jsconfig.json"
+      ]
+    },
+    "plugins": [
+      "@typescript-eslint"
+    ],
+    "rules": {
+      "@typescript-eslint/no-floating-promises": "warn",
+      "no-void": [
+        "error",
+        {
+          "allowAsStatement": true
+        }
+      ]
+    }
   },
   "eslintIgnore": [
     "bundle-*.js"
