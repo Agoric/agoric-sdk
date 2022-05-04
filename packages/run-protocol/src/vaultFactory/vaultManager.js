@@ -170,6 +170,20 @@ const initState = (
   return state;
 };
 
+/**
+ * Threshold to alert when the price level falls enough that the vault
+ * with the highest debt to collateral ratio will no longer be valued at the
+ * liquidationMargin above its debt.
+ *
+ * @param {*} highestDebtRatio
+ * @param {*} liquidationMargin
+ */
+const liquidationThreshold = (highestDebtRatio, liquidationMargin) =>
+  ceilMultiplyBy(
+    highestDebtRatio.numerator, // debt
+    liquidationMargin,
+  );
+
 // Some of these could go in closures but are kept on a facet anticipating future durability options.
 const helperBehavior = {
   /**
@@ -254,32 +268,10 @@ const helperBehavior = {
       return;
     }
 
-    // INTERLOCK: the first time through falls to the `else` case to process
-    // liquidations. Everything just updates the liquidation threshold.
-    if (state.liquidationInProgress) {
-      // ask to be alerted when the price level falls enough that the vault
-      // with the highest debt to collateral ratio will no longer be valued
-      // at the liquidationMargin above its debt.
-      const govParams = state.factoryPowers.getGovernedParams();
-      const liquidationMargin = govParams.getLiquidationMargin();
-      const triggerPoint = ceilMultiplyBy(
-        highestDebtRatio.numerator, // debt
-        liquidationMargin,
-      );
-
-      // Update the current in-progress quote if there is one. Otherwise,
-      // the new threshold will be picked up by the next quote request.
-      if (state.outstandingQuote) {
-        // Safe to call extraneously (lightweight and idempotent)
-        E(state.outstandingQuote).updateLevel(
-          highestDebtRatio.denominator, // collateral
-          triggerPoint,
-        );
-        trace('update quote', triggerPoint, highestDebtRatio.denominator);
-      }
-    } else {
+    // INTERLOCK: the first time through, start the process to process
+    // liquidations over time.
+    if (!state.liquidationInProgress) {
       state.liquidationInProgress = true;
-
       // eslint-disable-next-line consistent-return
       return facets.helper
         .processLiquidations()
@@ -288,13 +280,28 @@ const helperBehavior = {
           state.liquidationInProgress = false;
         });
     }
+
+    // There is already an activity processing liquidations. It may be
+    // waiting for the oracle price to cross a threshold.
+    // Update the current in-progress quote if there is one. Otherwise,
+    // the new threshold will be picked up by the next quote request.
+    if (state.outstandingQuote) {
+      const govParams = state.factoryPowers.getGovernedParams();
+      const liquidationMargin = govParams.getLiquidationMargin();
+      // Safe to call extraneously (lightweight and idempotent)
+      E(state.outstandingQuote).updateLevel(
+        highestDebtRatio.denominator, // collateral
+        liquidationThreshold(highestDebtRatio, liquidationMargin),
+      );
+      trace('update quote', highestDebtRatio);
+    }
   },
 
   processLiquidations: async ({ state, facets }) => {
     const { prioritizedVaults, priceAuthority } = state;
     const govParams = state.factoryPowers.getGovernedParams();
 
-    async function* liquidations() {
+    async function* eventualLiquidations() {
       while (true) {
         const highestDebtRatio = prioritizedVaults.highestRatio();
         if (!highestDebtRatio) {
@@ -305,18 +312,14 @@ const helperBehavior = {
         // ask to be alerted when the price level falls enough that the vault
         // with the highest debt to collateral ratio will no longer be valued at the
         // liquidationMargin above its debt.
-        const triggerPoint = ceilMultiplyBy(
-          highestDebtRatio.numerator, // debt
-          liquidationMargin,
-        );
         state.outstandingQuote = E(priceAuthority).mutableQuoteWhenLT(
           highestDebtRatio.denominator, // collateral
-          triggerPoint,
+          liquidationThreshold(highestDebtRatio, liquidationMargin),
         );
-        trace('posted quote request', triggerPoint);
+        trace('posted quote request', highestDebtRatio);
 
         // The rest of this method will not happen until after a quote is received.
-        // This may not happen until much later, when themarket changes.
+        // This may not happen until much later, when the market changes.
         // eslint-disable-next-line no-await-in-loop
         const quote = await E(state.outstandingQuote).getPromise();
         state.outstandingQuote = null;
@@ -338,7 +341,7 @@ const helperBehavior = {
         }
       }
     }
-    for await (const next of liquidations()) {
+    for await (const next of eventualLiquidations()) {
       await facets.helper.liquidateAndRemove(next);
       trace('price check liq', next && next[0]);
     }
