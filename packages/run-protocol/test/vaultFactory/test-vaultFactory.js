@@ -116,7 +116,7 @@ test.before(async t => {
       chargingPeriod: 2n,
       recordingPeriod: 6n,
     },
-    minInitialDebt: 5_000_000n,
+    minInitialDebt: 50n,
     rates: runBrand.then(r => defaultParamValues(r)),
     aethInitialLiquidity: AmountMath.make(aethKit.brand, 300n),
   };
@@ -356,7 +356,6 @@ test('first', async t => {
     recordingPeriod: 10n,
   };
 
-  t.context.minInitialDebt = 400n;
   const services = await setupServices(
     t,
     [500n, 15n],
@@ -485,7 +484,6 @@ test('price drop', async t => {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
-  t.context.minInitialDebt = 265n;
 
   const services = await setupServices(
     t,
@@ -619,7 +617,6 @@ test('price falls precipitously', async t => {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
-  t.context.minInitialDebt = 350n;
   t.context.aethInitialLiquidity = AmountMath.make(aethBrand, 900n);
 
   // The borrower will deposit 4 Aeth, and ask to borrow 470 RUN. The
@@ -815,7 +812,6 @@ test('interest on multiple vaults', async t => {
     chargingPeriod: SECONDS_PER_WEEK,
     recordingPeriod: SECONDS_PER_WEEK,
   };
-  t.context.minInitialDebt = 400n;
 
   // Clock ticks by days
   const manualTimer = buildManualTimer(t.log, 0n, SECONDS_PER_DAY);
@@ -1023,7 +1019,6 @@ test('adjust balances', async t => {
     rates,
   } = t.context;
   t.context;
-  t.context.minInitialDebt = 5000n;
 
   const services = await setupServices(
     t,
@@ -1259,7 +1254,6 @@ test('transfer vault', async t => {
     zoe,
     runKit: { issuer: runIssuer, brand: runBrand },
   } = t.context;
-  t.context.minInitialDebt = 5000n;
 
   const services = await setupServices(
     t,
@@ -1410,7 +1404,6 @@ test('overdeposit', async t => {
     runKit: { issuer: runIssuer, brand: runBrand },
     rates,
   } = t.context;
-  t.context.minInitialDebt = 1000n;
 
   const services = await setupServices(
     t,
@@ -1561,7 +1554,6 @@ test('mutable liquidity triggers and interest', async t => {
     chargingPeriod: SECONDS_PER_WEEK,
     recordingPeriod: SECONDS_PER_WEEK,
   };
-  t.context.minInitialDebt = 500n;
 
   // charge interest on every tick
   const manualTimer = buildManualTimer(t.log, 0n, SECONDS_PER_WEEK);
@@ -1789,7 +1781,6 @@ test('collect fees from loan and AMM', async t => {
   const priceList = [500n, 15n];
   const unitAmountIn = AmountMath.make(aethBrand, 900n);
   const manualTimer = buildManualTimer(t.log);
-  t.context.minInitialDebt = 450n;
 
   // Add a pool with 900 aeth collateral at a 201 aeth/RUN rate
 
@@ -1872,7 +1863,6 @@ test('close loan', async t => {
     runKit: { issuer: runIssuer, brand: runBrand },
     rates,
   } = t.context;
-  t.context.minInitialDebt = 1000n;
 
   const services = await setupServices(
     t,
@@ -1991,7 +1981,6 @@ test('excessive loan', async t => {
     aethKit: { mint: aethMint, brand: aethBrand },
     runKit: { brand: runBrand },
   } = t.context;
-  t.context.minInitialDebt = 5000n;
 
   const services = await setupServices(
     t,
@@ -2028,6 +2017,7 @@ test('loan too small', async t => {
     aethKit: { mint: aethMint, brand: aethBrand },
     runKit: { brand: runBrand },
   } = t.context;
+  t.context.minInitialDebt = 50_000n;
 
   const services = await setupServices(
     t,
@@ -2055,7 +2045,7 @@ test('loan too small', async t => {
   );
   await t.throwsAsync(() => E(aliceLoanSeat).getOfferResult(), {
     message:
-      /The request must be for at least ".5000000n.". ".5000n." is too small/,
+      /The request must be for at least ".50000n.". ".5000n." is too small/,
   });
 });
 
@@ -2072,7 +2062,6 @@ test('excessive debt on collateral type', async t => {
     aethKit: { mint: aethMint, brand: aethBrand },
     runKit: { brand: runBrand },
   } = t.context;
-  t.context.minInitialDebt = 1000_000n;
 
   const services = await setupServices(
     t,
@@ -2121,7 +2110,6 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
     chargingPeriod: SECONDS_PER_WEEK,
     recordingPeriod: SECONDS_PER_WEEK,
   };
-  t.context.minInitialDebt = 730n;
 
   // Add a vaultManager with 10000 aeth collateral at a 200 aeth/RUN rate
   const rates = harden({
