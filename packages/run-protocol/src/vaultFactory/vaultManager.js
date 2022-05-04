@@ -268,8 +268,8 @@ const helperBehavior = {
       return;
     }
 
-    // INTERLOCK: the first time through, start the process to process
-    // liquidations over time.
+    // INTERLOCK: the first time through, start the activity to wait for
+    // and process liquidations over time.
     if (!liquidationInProgress) {
       liquidationInProgress = true;
       // eslint-disable-next-line consistent-return
