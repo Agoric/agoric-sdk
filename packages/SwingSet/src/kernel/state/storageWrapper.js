@@ -55,7 +55,7 @@ function* mergeUtf16SortedIterators(it1, it2) {
  * Create and return a crank buffer, which wraps a storage object with logic
  * that buffers any mutations until told to commit them.
  *
- * @param {*} kvStore  The StorageAPI object that this crank buffer will be based on.
+ * @param {KVStore} kvStore  The StorageAPI object that this crank buffer will be based on.
  * @param {CreateSHA256}  createSHA256
  * @param { (key: string) => boolean } isConsensusKey
  * @returns {*} an object {
