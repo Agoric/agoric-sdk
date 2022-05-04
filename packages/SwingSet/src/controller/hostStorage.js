@@ -2,10 +2,11 @@
 import { initSwingStore } from '@agoric/swing-store';
 
 /*
-The "Storage API" is a set of functions { has, getKeys, get, set, delete } that
-work on string keys and accept string values.  A lot of kernel-side code
-expects to get an object which implements the Storage API, which is usually
-associated with a write-back buffer wrapper.
+StorageAPI is a set of functions { has, getKeys, get, set, delete }
+that work on string keys and accept string values
+(cf. packages/SwingSet/docs/state.md#transactions). A lot of kernel-side
+code expects to get a StorageAPI object, which is usually associated with
+a write-back buffer wrapper.
 
 A more sophisticated host will build a hostDB that writes changes to disk
 directly.
