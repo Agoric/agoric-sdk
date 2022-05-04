@@ -37,7 +37,7 @@ const { details: X } = assert;
  * debtMint: ZCFMint<'nat'>,
  * collateralTypes: Store<Brand,VaultManager>,
  * electionManager: Instance,
- * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{Electorate: "invitation"}>,
+ * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{VaultDirectorParams}>,
  * mintSeat: ZCFSeat,
  * penaltyPoolSeat: ZCFSeat,
  * rewardPoolSeat: ZCFSeat,
@@ -59,7 +59,7 @@ const { details: X } = assert;
 
 /**
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
- * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{Electorate: "invitation"}>} directorParamManager
+ * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{Electorate: "invitation", LiquidationInstall: "installation", LiquidationTerms: "unknown", MinInitialDebt: "amount"}>} directorParamManager
  * @param {ZCFMint<"nat">} debtMint
  */
 const initState = (zcf, directorParamManager, debtMint) => {
@@ -101,12 +101,26 @@ const makeVaultInvitation = ({ state }) => {
     });
     const {
       give: { Collateral: collateralAmount },
+      want: { RUN: requestedAmount },
     } = seat.getProposal();
     const { brand: brandIn } = collateralAmount;
     assert(
       collateralTypes.has(brandIn),
       X`Not a supported collateral type ${brandIn}`,
     );
+
+    assert(
+      AmountMath.isGTE(
+        requestedAmount,
+        // @ts-expect-error VaultDirectoryParams isn't right
+        state.directorParamManager.getMinInitialDebt(),
+      ),
+      X`The request must be for at least ${
+        // @ts-expect-error VaultDirectoryParams isn't right
+        state.directorParamManager.getMinInitialDebt().value
+      }. ${requestedAmount.value} is too small`,
+    );
+
     /** @type {VaultManager} */
     const mgr = collateralTypes.get(brandIn);
     return mgr.makeVaultKit(seat);
@@ -274,7 +288,6 @@ const machineBehavior = {
     );
     collateralTypes.init(collateralBrand, vm);
     const { install, terms } = getLiquidationConfig(directorParamManager);
-    // console.log('PARAM UPDATE', install, terms);
     await vm.setupLiquidator(install, terms);
     watchGovernance(directorParamManager, vm, install, terms);
     return vm;
@@ -406,7 +419,7 @@ const behavior = {
  *   timerService: TimerService,
  *   priceAuthority: ERef<PriceAuthority>
  * }>} zcf
- * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{Electorate: "invitation"}>} directorParamManager
+ * @param {import('./vaultFactory.js').VaultDirectorParams} directorParamManager
  * @param {ZCFMint<"nat">} debtMint
  */
 const makeVaultDirector = defineKindMulti('VaultDirector', initState, behavior);

@@ -116,6 +116,7 @@ test.before(async t => {
       chargingPeriod: 2n,
       recordingPeriod: 6n,
     },
+    minInitialDebt: 50n,
     rates: runBrand.then(r => defaultParamValues(r)),
     aethInitialLiquidity: AmountMath.make(aethKit.brand, 300n),
   };
@@ -236,6 +237,7 @@ async function setupServices(
     runKit: { issuer: runIssuer, brand: runBrand },
     aethKit: { brand: aethBrand, issuer: aethIssuer, mint: aethMint },
     loanTiming,
+    minInitialDebt,
     rates,
     aethInitialLiquidity,
   } = t.context;
@@ -287,7 +289,7 @@ async function setupServices(
   } = space;
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
   iProduce.liquidate.resolve(t.context.installation.liquidate);
-  await startVaultFactory(space, { loanParams: loanTiming });
+  await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
 
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
   /** @type {Promise<VaultFactory & LimitedCreatorFacet<any>>} */
@@ -1016,6 +1018,7 @@ test('adjust balances', async t => {
     runKit: { issuer: runIssuer, brand: runBrand },
     rates,
   } = t.context;
+  t.context;
 
   const services = await setupServices(
     t,
@@ -1551,6 +1554,7 @@ test('mutable liquidity triggers and interest', async t => {
     chargingPeriod: SECONDS_PER_WEEK,
     recordingPeriod: SECONDS_PER_WEEK,
   };
+
   // charge interest on every tick
   const manualTimer = buildManualTimer(t.log, 0n, SECONDS_PER_WEEK);
   const services = await setupServices(
@@ -1754,6 +1758,7 @@ test('bad chargingPeriod', async t => {
     chargingPeriod: 2,
     recordingPeriod: 10n,
   };
+
   t.context.loanTiming = loanTiming;
   t.throws(
     () =>
@@ -2003,6 +2008,44 @@ test('excessive loan', async t => {
   );
   await t.throwsAsync(() => E(aliceLoanSeat).getOfferResult(), {
     message: /exceeds max/,
+  });
+});
+
+test('loan too small', async t => {
+  const {
+    zoe,
+    aethKit: { mint: aethMint, brand: aethBrand },
+    runKit: { brand: runBrand },
+  } = t.context;
+  t.context.minInitialDebt = 50_000n;
+
+  const services = await setupServices(
+    t,
+    [15n],
+    AmountMath.make(aethBrand, 1n),
+    buildManualTimer(t.log),
+    undefined,
+    500n,
+  );
+  const { lender } = services.vaultFactory;
+
+  // Try to Create a loan for Alice for 5000 RUN with 100 aeth collateral
+  const collateralAmount = AmountMath.make(aethBrand, 100n);
+  const aliceLoanAmount = AmountMath.make(runBrand, 5000n);
+  /** @type {UserSeat<VaultKit>} */
+  const aliceLoanSeat = await E(zoe).offer(
+    E(lender).makeVaultInvitation(),
+    harden({
+      give: { Collateral: collateralAmount },
+      want: { RUN: aliceLoanAmount },
+    }),
+    harden({
+      Collateral: aethMint.mintPayment(collateralAmount),
+    }),
+  );
+  await t.throwsAsync(() => E(aliceLoanSeat).getOfferResult(), {
+    message:
+      /The request must be for at least ".50000n.". ".5000n." is too small/,
   });
 });
 
