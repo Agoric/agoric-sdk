@@ -71,10 +71,8 @@ const trace = makeTracer('VM', false);
  * assetUpdater: IterationObserver<AssetState>,
  * compoundedInterest: Ratio,
  * latestInterestUpdate: bigint,
- * liquidationInProgress: boolean,
  * liquidator?: Liquidator
  * liquidatorInstance?: Instance
- * outstandingQuote: Promise<MutableQuote>| null,
  * totalDebt: Amount<'nat'>,
  * vaultCounter: number,
  * }} MutableState
@@ -91,6 +89,10 @@ const trace = makeTracer('VM', false);
  *   }
  * }>} MethodContext
  */
+
+// EPHERMERAL STATE
+let liquidationInProgress = false;
+let outstandingQuote = null;
 
 /**
  * Create state for the Vault Manager kind
@@ -158,13 +160,11 @@ const initState = (
     assetUpdater,
     debtBrand: fixed.debtBrand,
     vaultCounter: 0,
-    liquidationInProgress: false,
     liquidator: undefined,
     liquidatorInstance: undefined,
     totalDebt,
     compoundedInterest,
     latestInterestUpdate,
-    outstandingQuote: null,
   };
 
   return state;
@@ -270,14 +270,14 @@ const helperBehavior = {
 
     // INTERLOCK: the first time through, start the process to process
     // liquidations over time.
-    if (!state.liquidationInProgress) {
-      state.liquidationInProgress = true;
+    if (!liquidationInProgress) {
+      liquidationInProgress = true;
       // eslint-disable-next-line consistent-return
       return facets.helper
         .processLiquidations()
         .catch(e => console.log('Liquidator failed', e))
         .finally(() => {
-          state.liquidationInProgress = false;
+          liquidationInProgress = false;
         });
     }
 
@@ -285,11 +285,11 @@ const helperBehavior = {
     // waiting for the oracle price to cross a threshold.
     // Update the current in-progress quote if there is one. Otherwise,
     // the new threshold will be picked up by the next quote request.
-    if (state.outstandingQuote) {
+    if (outstandingQuote) {
       const govParams = state.factoryPowers.getGovernedParams();
       const liquidationMargin = govParams.getLiquidationMargin();
       // Safe to call extraneously (lightweight and idempotent)
-      E(state.outstandingQuote).updateLevel(
+      E(outstandingQuote).updateLevel(
         highestDebtRatio.denominator, // collateral
         liquidationThreshold(highestDebtRatio, liquidationMargin),
       );
@@ -312,7 +312,7 @@ const helperBehavior = {
         // ask to be alerted when the price level falls enough that the vault
         // with the highest debt to collateral ratio will no longer be valued at the
         // liquidationMargin above its debt.
-        state.outstandingQuote = E(priceAuthority).mutableQuoteWhenLT(
+        outstandingQuote = E(priceAuthority).mutableQuoteWhenLT(
           highestDebtRatio.denominator, // collateral
           liquidationThreshold(highestDebtRatio, liquidationMargin),
         );
@@ -321,8 +321,8 @@ const helperBehavior = {
         // The rest of this method will not happen until after a quote is received.
         // This may not happen until much later, when the market changes.
         // eslint-disable-next-line no-await-in-loop
-        const quote = await E(state.outstandingQuote).getPromise();
-        state.outstandingQuote = null;
+        const quote = await E(outstandingQuote).getPromise();
+        outstandingQuote = null;
         // When we receive a quote, we check whether the vault with the highest
         // ratio of debt to collateral is below the liquidationMargin, and if so,
         // we liquidate it. We use ceilDivide to round up because ratios above
@@ -354,7 +354,6 @@ const helperBehavior = {
   liquidateAndRemove: ({ state, facets }, [key, vault]) => {
     const { factoryPowers, penaltyPoolSeat, prioritizedVaults, zcf } = state;
     trace('liquidating', vault.getVaultSeat().getProposal());
-    state.liquidationInProgress = true;
 
     // Start liquidation (vaultState: LIQUIDATING)
     const liquidator = state.liquidator;
@@ -371,11 +370,9 @@ const helperBehavior = {
     )
       .then(() => {
         prioritizedVaults.removeVault(key);
-        state.liquidationInProgress = false;
         trace('liquidated');
       })
       .catch(e => {
-        state.liquidationInProgress = false;
         // XXX should notify interested parties
         console.error('liquidateAndRemove failed with', e);
         throw e;

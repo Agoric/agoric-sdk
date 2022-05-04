@@ -55,9 +55,6 @@ const start = async zcf => {
     AMMMaxSlippage,
   } = /** @type {LiquidationContractTerms} */ zcf.getTerms();
 
-  // trace('terms', zcf.getTerms());
-  const nextBlock = async () => E(timerService).delay(1n);
-
   const SCALE = 1_000_000n;
   const BASIS_POINTS = 10_000n * SCALE;
   const BP2 = BASIS_POINTS * BASIS_POINTS;
@@ -133,19 +130,38 @@ const start = async zcf => {
   };
 
   /**
+   * A generator that yields once per block, starting in the current block.
+   *
+   * @yields {void}
+   */
+  async function* oncePerBlock() {
+    yield;
+    while (true) {
+      yield E(timerService).delay(1n);
+    }
+  }
+
+  /**
+   * Generate tranches to sell until the debt is paid off.
    *
    * @param {ZCFSeat} seat
    * @param {Amount} originalDebt
    * @yields {LiquidationStep}
    */
   async function* processTranches(seat, originalDebt) {
-    let proceedsSoFar = seat.getAmountAllocated('Out');
-    let toSell = seat.getAmountAllocated('In');
-    while (
-      !AmountMath.isGTE(proceedsSoFar, originalDebt) &&
-      !AmountMath.isEmpty(toSell)
-    ) {
-      const debt = AmountMath.subtract(originalDebt, proceedsSoFar);
+    while (true) {
+      const proceedsSoFar = seat.getAmountAllocated('Out');
+      const toSell = seat.getAmountAllocated('In');
+      if (
+        AmountMath.isGTE(proceedsSoFar, originalDebt) ||
+        AmountMath.isEmpty(toSell)
+      ) {
+        trace('exiting async loop');
+        return;
+      }
+      await oncePerBlock();
+
+      // Determine the max allowed tranche size
       const { Secondary: poolCollateral, Central: poolCentral } = await E(
         amm,
       ).getPoolAllocation(toSell.brand);
@@ -154,9 +170,12 @@ const start = async zcf => {
         MaxImpactBP,
         AMMFeeBP,
       );
-      trace('TRANCHE', asFloat(maxAllowedTranche.value, 100000n));
+      trace('Pool', { poolCentral, poolCollateral });
+      trace('Max tranche', asFloat(maxAllowedTranche.value, 100000n));
       const tranche = AmountMath.min(maxAllowedTranche, toSell);
+
       // compute the expected proceeds from the AMM for tranche
+      const debt = AmountMath.subtract(originalDebt, proceedsSoFar);
       const minAmmProceeds = estimateAMMProceeds(
         poolCentral,
         poolCollateral,
@@ -173,15 +192,9 @@ const start = async zcf => {
       );
       const oracleLimit = computeOracleLimit(oracleQuote, OracleTolerance);
 
-      trace('TRANCHE', {
-        debt,
-        tranche,
-        minAmmProceeds,
-        oracleLimit,
-        poolCentral,
-        poolCollateral,
-      });
+      trace('Tranche', { debt, tranche, minAmmProceeds, oracleLimit });
       if (AmountMath.isGTE(minAmmProceeds, oracleLimit)) {
+        // our prices are within the same range; go ahead and try to sell
         yield {
           collateral: tranche,
           ammProceeds: minAmmProceeds,
@@ -189,18 +202,9 @@ const start = async zcf => {
           oracleLimit,
         };
       } else {
+        // prices are too far apart; don't sell this block
         trace('SKIP');
       }
-      proceedsSoFar = seat.getAmountAllocated('Out');
-      toSell = seat.getAmountAllocated('In');
-      if (
-        AmountMath.isGTE(proceedsSoFar, originalDebt) ||
-        AmountMath.isEmpty(toSell)
-      ) {
-        trace('exiting async loop');
-        return;
-      }
-      await nextBlock();
     }
   }
 
