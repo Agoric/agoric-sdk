@@ -86,3 +86,23 @@ export const makeCurrentKeysKit = (
   });
 };
 harden(makeCurrentKeysKit);
+
+/**
+ * Call `provide` to get or make the value associated with the key.
+ * If there already is one, return that. Otherwise,
+ * call `makeValue(key)`, remember it as the value for
+ * that key, and return it.
+ *
+ * @template K,V
+ * @param {MapStore<K,V>} mapStore
+ * @param {K} key
+ * @param {(key: K) => V} makeValue
+ * @returns {V}
+ */
+export const provide = (mapStore, key, makeValue) => {
+  if (!mapStore.has(key)) {
+    mapStore.init(key, makeValue(key));
+  }
+  return mapStore.get(key);
+};
+harden(provide);
