@@ -5,32 +5,32 @@ queue_rules:
       - base=master
       # Require integration tests before merging only
       - or:
-       - check-success=deployment-test
-       - check-neutral=deployment-test
-       - check-skipped=deployment-test
-       - label=bypass:integration
+          - check-success=deployment-test
+          - check-neutral=deployment-test
+          - check-skipped=deployment-test
+          - label=bypass:integration
       - or:
-       - check-success=getting-started (link-cli)
-       - check-neutral=getting-started (link-cli)
-       - check-skipped=getting-started (link-cli)
-       - label=bypass:integration
+          - check-success=getting-started (link-cli)
+          - check-neutral=getting-started (link-cli)
+          - check-skipped=getting-started (link-cli)
+          - label=bypass:integration
       - or:
-       - check-success=getting-started (local-npm)
-       - check-neutral=getting-started (local-npm)
-       - check-skipped=getting-started (local-npm)
-       - label=bypass:integration
+          - check-success=getting-started (local-npm)
+          - check-neutral=getting-started (local-npm)
+          - check-skipped=getting-started (local-npm)
+          - label=bypass:integration
 
 pull_request_rules:
   - name: merge to master
     conditions:
       - label=automerge:merge
       - or:
-        - and: # breakage succeeds like we thought
-          - check-success=breakage
-          - -label=proto:expect-breakage
-        - and: # breakage fails like we thought 
-          - check-failure=breakage
-          - label=proto:expect-breakage
+          - and: # breakage succeeds like we thought
+              - check-success=breakage
+              - -label=proto:expect-breakage
+          - and: # breakage fails like we thought
+              - check-failure=breakage
+              - label=proto:expect-breakage
     actions:
       queue:
         name: main
@@ -39,12 +39,12 @@ pull_request_rules:
     conditions:
       - label=automerge:rebase
       - or:
-        - and: # breakage succeeds like we thought
-          - check-success=breakage
-          - -label=proto:expect-breakage
-        - and: # breakage fails like we thought 
-          - check-failure=breakage
-          - label=proto:expect-breakage
+          - and: # breakage succeeds like we thought
+              - check-success=breakage
+              - -label=proto:expect-breakage
+          - and: # breakage fails like we thought
+              - check-failure=breakage
+              - label=proto:expect-breakage
     actions:
       queue:
         name: main
@@ -54,12 +54,12 @@ pull_request_rules:
     conditions:
       - label=automerge:squash
       - or:
-        - and: # breakage succeeds like we thought
-          - check-success=breakage
-          - -label=proto:expect-breakage
-        - and: # breakage fails like we thought 
-          - check-failure=breakage
-          - label=proto:expect-breakage
+          - and: # breakage succeeds like we thought
+              - check-success=breakage
+              - -label=proto:expect-breakage
+          - and: # breakage fails like we thought
+              - check-failure=breakage
+              - label=proto:expect-breakage
     actions:
       queue:
         name: main
