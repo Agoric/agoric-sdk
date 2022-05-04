@@ -10,15 +10,17 @@ queue_rules:
           - check-skipped=deployment-test
           - label=bypass:integration
       - or:
-          - check-success=getting-started (link-cli)
-          - check-neutral=getting-started (link-cli)
-          - check-skipped=getting-started (link-cli)
           - label=bypass:integration
-      - or:
-          - check-success=getting-started (local-npm)
-          - check-neutral=getting-started (local-npm)
-          - check-skipped=getting-started (local-npm)
-          - label=bypass:integration
+          - check-skipped=getting-started
+          - and:
+              - or:
+                  - check-success=getting-started (link-cli)
+                  - check-neutral=getting-started (link-cli)
+                  - check-skipped=getting-started (link-cli)
+              - or:
+                  - check-success=getting-started (local-npm)
+                  - check-neutral=getting-started (local-npm)
+                  - check-skipped=getting-started (local-npm)
 
 pull_request_rules:
   - name: merge to master
