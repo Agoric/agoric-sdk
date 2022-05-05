@@ -90,7 +90,7 @@ const trace = makeTracer('VM', false);
  * }>} MethodContext
  */
 
-// EPHERMERAL STATE
+// EPHEMERAL STATE
 let liquidationInProgress = false;
 let outstandingQuote = null;
 
@@ -175,8 +175,8 @@ const initState = (
  * with the highest debt to collateral ratio will no longer be valued at the
  * liquidationMargin above its debt.
  *
- * @param {*} highestDebtRatio
- * @param {*} liquidationMargin
+ * @param {Ratio} highestDebtRatio
+ * @param {Ratio} liquidationMargin
  */
 const liquidationThreshold = (highestDebtRatio, liquidationMargin) =>
   ceilMultiplyBy(
@@ -281,20 +281,22 @@ const helperBehavior = {
         });
     }
 
+    if (!outstandingQuote) {
+      // the new threshold will be picked up by the next quote request
+      return;
+    }
+
     // There is already an activity processing liquidations. It may be
     // waiting for the oracle price to cross a threshold.
-    // Update the current in-progress quote if there is one. Otherwise,
-    // the new threshold will be picked up by the next quote request.
-    if (outstandingQuote) {
-      const govParams = state.factoryPowers.getGovernedParams();
-      const liquidationMargin = govParams.getLiquidationMargin();
-      // Safe to call extraneously (lightweight and idempotent)
-      E(outstandingQuote).updateLevel(
-        highestDebtRatio.denominator, // collateral
-        liquidationThreshold(highestDebtRatio, liquidationMargin),
-      );
-      trace('update quote', highestDebtRatio);
-    }
+    // Update the current in-progress quote.
+    const govParams = state.factoryPowers.getGovernedParams();
+    const liquidationMargin = govParams.getLiquidationMargin();
+    // Safe to call extraneously (lightweight and idempotent)
+    E(outstandingQuote).updateLevel(
+      highestDebtRatio.denominator, // collateral
+      liquidationThreshold(highestDebtRatio, liquidationMargin),
+    );
+    trace('update quote', highestDebtRatio);
   },
 
   processLiquidations: async ({ state, facets }) => {

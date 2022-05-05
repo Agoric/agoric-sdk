@@ -156,7 +156,7 @@ const start = async zcf => {
         AmountMath.isGTE(proceedsSoFar, originalDebt) ||
         AmountMath.isEmpty(toSell)
       ) {
-        trace('exiting async loop');
+        trace('exiting processTranches loop');
         return;
       }
       await oncePerBlock();
