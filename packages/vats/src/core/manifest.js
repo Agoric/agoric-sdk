@@ -11,7 +11,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
     },
   },
   startPriceAuthority: {
-    consume: { loadVat: true },
+    consume: { loadVat: true, client: true },
     produce: {
       priceAuthorityVat: 'priceAuthority',
       priceAuthority: 'priceAuthority',

@@ -106,7 +106,7 @@ harden(buildZoe);
  * @typedef {ERef<ReturnType<import('../vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat
  */
 export const startPriceAuthority = async ({
-  consume: { loadVat },
+  consume: { loadVat, client },
   produce,
 }) => {
   const vats = { priceAuthority: E(loadVat)('priceAuthority') };
@@ -117,6 +117,8 @@ export const startPriceAuthority = async ({
   produce.priceAuthorityVat.resolve(vats.priceAuthority);
   produce.priceAuthority.resolve(priceAuthority);
   produce.priceAuthorityAdmin.resolve(adminFacet);
+
+  return E(client).assignBundle([_addr => ({ priceAuthority })]);
 };
 harden(startPriceAuthority);
 
