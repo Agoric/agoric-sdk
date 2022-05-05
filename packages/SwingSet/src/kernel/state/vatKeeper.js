@@ -36,6 +36,10 @@ export function initializeVatState(kvStore, streamStore, vatID) {
   kvStore.set(`${vatID}.d.nextID`, `${FIRST_DEVICE_ID}`);
   kvStore.set(`${vatID}.nextDeliveryNum`, `0`);
   kvStore.set(
+    `${vatID}.t.startPosition`,
+    `${JSON.stringify(streamStore.STREAM_START)}`,
+  );
+  kvStore.set(
     `${vatID}.t.endPosition`,
     `${JSON.stringify(streamStore.STREAM_START)}`,
   );
@@ -454,11 +458,14 @@ export function makeVatKeeper(
    *
    * @yields { TranscriptEntry } a stream of transcript entries
    */
-  function* getTranscript(startPos = streamStore.STREAM_START) {
+  function* getTranscript(startPos) {
+    if (startPos === undefined) {
+      startPos = JSON.parse(getRequired(`${vatID}.t.startPosition`));
+    }
     const endPos = JSON.parse(getRequired(`${vatID}.t.endPosition`));
     for (const entry of streamStore.readStream(
       transcriptStream,
-      startPos,
+      /** @type { StreamPosition } */ (startPos),
       endPos,
     )) {
       yield /** @type { TranscriptEntry } */ (JSON.parse(entry));
@@ -582,7 +589,6 @@ export function makeVatKeeper(
 
   function removeSnapshotAndTranscript() {
     const skey = `local.${vatID}.lastSnapshot`;
-    const epkey = `${vatID}.t.endPosition`;
     if (snapStore) {
       const notation = kvStore.get(skey);
       if (notation) {
@@ -596,9 +602,9 @@ export function makeVatKeeper(
       }
     }
     // TODO: same rollback concern
-    // TODO: streamStore.deleteStream(transcriptStream);
-    const newStart = streamStore.STREAM_START;
-    kvStore.set(epkey, `${JSON.stringify(newStart)}`);
+
+    const endPos = getRequired(`${vatID}.t.endPosition`);
+    kvStore.set(`${vatID}.t.startPosition`, endPos);
   }
 
   function vatStats() {
@@ -610,9 +616,13 @@ export function makeVatKeeper(
     const objectCount = getCount(`${vatID}.o.nextID`, FIRST_OBJECT_ID);
     const promiseCount = getCount(`${vatID}.p.nextID`, FIRST_PROMISE_ID);
     const deviceCount = getCount(`${vatID}.d.nextID`, FIRST_DEVICE_ID);
-    const transcriptCount = JSON.parse(
+    const startCount = JSON.parse(
+      getRequired(`${vatID}.t.startPosition`),
+    ).itemCount;
+    const endCount = JSON.parse(
       getRequired(`${vatID}.t.endPosition`),
     ).itemCount;
+    const transcriptCount = endCount - startCount;
 
     // TODO: Fix the downstream JSON.stringify to allow the counts to be BigInts
     return harden({
