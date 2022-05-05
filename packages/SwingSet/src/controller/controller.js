@@ -36,12 +36,32 @@ export function computeSha512(bytes) {
   return hash.digest().toString('hex');
 }
 
-/** @param {string} tag */
-function makeConsole(tag) {
-  const log = anylogger(tag);
+/** @param {string | ((args: unknown[]) => string)} tagOrTagCreator */
+function makeConsole(tagOrTagCreator) {
+  /** @type {(level: string) => (args: unknown[]) => void} */
+  let makeLoggerForLevel;
+  if (typeof tagOrTagCreator === 'function') {
+    const tagToLogger = new Map();
+    makeLoggerForLevel =
+      level =>
+      (...args) => {
+        // Retrieve the logger from cache.
+        const tag = tagOrTagCreator(args);
+        let logger = tagToLogger.get(tag);
+        if (!logger) {
+          logger = anylogger(tag);
+          tagToLogger.set(tag, logger);
+        }
+        // Actually log the message.
+        return logger[level](...args);
+      };
+  } else {
+    const logger = anylogger(tagOrTagCreator);
+    makeLoggerForLevel = level => logger[level];
+  }
   const cons = {};
   for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
-    cons[level] = log[level];
+    cons[level] = makeLoggerForLevel(level);
   }
   return harden(cons);
 }

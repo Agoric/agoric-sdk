@@ -56,12 +56,11 @@ export function makeVatManagerFactory({
       'metered',
       'enableDisavow',
       'enableSetup',
-      'liveSlotsConsole',
       'enableVatstore',
       'virtualObjectCacheSize',
       'useTranscript',
       'reapInterval',
-      'vatConsole',
+      'sourcedConsole',
       'name',
       'compareSyscalls',
     ]);

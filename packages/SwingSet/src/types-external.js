@@ -28,9 +28,6 @@ export {};
  *   enableSetup: true,
  * }} HasSetup
  *
- * TODO: liveSlotsConsole...
- * See validateManagerOptions() in factory.js
- *
  * @typedef { 'local' | 'nodeWorker' | 'node-subprocess' | 'xs-worker' | 'xs-worker-no-gc' } ManagerType
  * @typedef {{
  *   enablePipelining?: boolean,
@@ -45,8 +42,7 @@ export {};
  *   virtualObjectCacheSize: number,
  *   name: string,
  *   compareSyscalls?: (originalSyscall: {}, newSyscall: {}) => Error | undefined,
- *   vatConsole: Console,
- *   liveSlotsConsole?: Console,
+ *   sourcedConsole: Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>,
  *   meterID?: string,
  * } & (HasBundle | HasSetup)} ManagerOptions
  */

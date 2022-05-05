@@ -108,7 +108,7 @@ export default function buildKernel(
   /** @type { KernelSlog } */
   const kernelSlog = writeSlogObject
     ? makeSlogger(slogCallbacks, writeSlogObject)
-    : makeDummySlogger(slogCallbacks, makeConsole);
+    : makeDummySlogger(slogCallbacks, makeConsole('disabled slogger'));
 
   const kernelKeeper = makeKernelKeeper(hostStorage, kernelSlog, createSHA256);
 
@@ -149,14 +149,11 @@ export default function buildKernel(
   }
   harden(testLog);
 
-  function makeVatConsole(kind, vatID) {
-    const origConsole = makeConsole(`${debugPrefix}SwingSet:${kind}:${vatID}`);
-    if (kind === 'ls') {
-      // LiveSlots is not recorded to kernelSlog.
-      // The slog captures 1: what a vat is told to do, and
-      // 2: what a vat says about its activities
-      return origConsole;
-    }
+  function makeSourcedConsole(vatID) {
+    const origConsole = makeConsole(args => {
+      const source = args.shift();
+      return `${debugPrefix}SwingSet:${source}:${vatID}`;
+    });
     return kernelSlog.vatConsole(vatID, origConsole);
   }
 
@@ -1250,7 +1247,7 @@ export default function buildKernel(
   const vatLoader = makeVatLoader({
     vatManagerFactory,
     kernelSlog,
-    makeVatConsole,
+    makeSourcedConsole,
     kernelKeeper,
     panic,
     buildVatSyscallHandler,

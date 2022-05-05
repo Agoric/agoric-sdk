@@ -74,10 +74,10 @@ function makeCallbackRegistry(callbacks) {
 /**
  *
  * @param {*} slogCallbacks
- * @param {*} makeConsole
+ * @param {Pick<Console, 'debug'|'log'|'info'|'warn'|'error'>} dummyConsole
  * @returns { KernelSlog }
  */
-export function makeDummySlogger(slogCallbacks, makeConsole) {
+export function makeDummySlogger(slogCallbacks, dummyConsole) {
   const { registerCallback: reg, doneRegistering } =
     makeCallbackRegistry(slogCallbacks);
   const dummySlogger = harden({
@@ -88,7 +88,7 @@ export function makeDummySlogger(slogCallbacks, makeConsole) {
         },
       }),
     ),
-    vatConsole: reg('vatConsole', () => makeConsole('disabled slogger')),
+    vatConsole: reg('vatConsole', () => dummyConsole),
     startup: reg('startup', () => () => 0), // returns nop finish() function
     replayVatTranscript: reg('replayVatTranscript', () => () => 0),
     delivery: reg('delivery', () => () => 0),
@@ -123,13 +123,14 @@ export function makeSlogger(slogCallbacks, writeObj) {
       assert.equal(state, exp, X`vat ${vatID} in ${state}, not ${exp}: ${msg}`);
     }
 
-    function vatConsole(origConsole) {
+    function vatConsole(sourcedConsole) {
       const vc = {};
       for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
-        vc[level] = (...args) => {
-          origConsole[level](...args);
+        vc[level] = (sourceTag, ...args) => {
+          sourcedConsole[level](sourceTag, ...args);
           const when = { state, crankNum, vatID, deliveryNum };
-          write({ type: 'console', ...when, level, args });
+          const source = sourceTag === 'ls' ? 'liveslots' : sourceTag;
+          write({ type: 'console', source, ...when, level, args });
         };
       }
       return harden(vc);
