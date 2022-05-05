@@ -53,7 +53,6 @@ export function makeXsSubprocessFactory({
     const {
       virtualObjectCacheSize,
       enableDisavow,
-      enableVatstore,
       gcEveryCrank = true,
       name,
       metered,
@@ -146,7 +145,6 @@ export function makeXsSubprocessFactory({
         bundle,
         virtualObjectCacheSize,
         enableDisavow,
-        enableVatstore,
         gcEveryCrank,
       ]);
       if (bundleReply[0] === 'dispatchReady') {

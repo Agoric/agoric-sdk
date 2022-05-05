@@ -37,7 +37,6 @@ export {};
  *   enableDisavow?: boolean,
  *   useTranscript?: boolean,
  *   reapInterval?: number | 'never',
- *   enableVatstore?: boolean,
  *   vatParameters: Record<string, unknown>,
  *   virtualObjectCacheSize: number,
  *   name: string,
@@ -335,7 +334,6 @@ export {};
  *              vatParameters?: *,
  *              enableSetup?: boolean,
  *              enablePipelining?: boolean
- *              enableVatstore?: boolean,
  *              virtualObjectCacheSize?: number,
  *              useTranscript?: boolean,
  *              reapInterval? : number | 'never',

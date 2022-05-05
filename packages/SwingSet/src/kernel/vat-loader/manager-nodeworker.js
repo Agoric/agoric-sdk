@@ -39,7 +39,6 @@ export function makeNodeWorkerVatManagerFactory(tools) {
     const {
       virtualObjectCacheSize,
       enableDisavow,
-      enableVatstore,
       compareSyscalls,
       useTranscript,
     } = managerOptions;
@@ -106,13 +105,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
     gotWorker(worker);
 
     parentLog(`instructing worker to load bundle..`);
-    sendToWorker([
-      'setBundle',
-      bundle,
-      virtualObjectCacheSize,
-      enableDisavow,
-      enableVatstore,
-    ]);
+    sendToWorker(['setBundle', bundle, virtualObjectCacheSize, enableDisavow]);
 
     function deliverToWorker(delivery) {
       parentLog(`sending delivery`, delivery);

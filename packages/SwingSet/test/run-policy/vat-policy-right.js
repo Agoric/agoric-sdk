@@ -14,15 +14,14 @@ function consumeCPU() {
   }
 }
 
-export function buildRootObject(vatPowers) {
-  const vatstore = vatPowers.vatstore;
+export function buildRootObject(_vatPowers, _vatParameters, baggage) {
+  baggage.init('counter', 0);
+  baggage.init('seqnum', 0);
   let counter = 0;
-  // we cannot perform syscalls during startup, only during deliveries, so we
-  // can't pre-initialize this
-  // vatstore.set('counter', `${counter}`);
+
   function increment() {
     counter += 1;
-    vatstore.set('counter', `${counter}`);
+    baggage.set('counter', counter);
   }
 
   let nextPKR;
@@ -43,7 +42,7 @@ export function buildRootObject(vatPowers) {
         // if enbled, do extra work once every 5 cranks, to exercise the
         // limited-computron policy
         seqnum += 1;
-        vatstore.set('seqnum', `${seqnum}`);
+        baggage.set('seqnum', seqnum);
         if (seqnum % 5 === 0) {
           consumeCPU();
         }

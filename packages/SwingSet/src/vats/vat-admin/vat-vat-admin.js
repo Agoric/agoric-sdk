@@ -135,7 +135,6 @@ export function buildRootObject(vatPowers) {
       vatParameters, // stripped out and re-added
       enableSetup,
       enablePipelining,
-      enableVatstore,
       virtualObjectCacheSize,
       useTranscript,
       reapInterval,
@@ -153,7 +152,6 @@ export function buildRootObject(vatPowers) {
     }
     assertType('enableSetup', enableSetup, 'boolean');
     assertType('enablePipelining', enablePipelining, 'boolean');
-    assertType('enableVatstore', enableVatstore, 'boolean');
     assertType('virtualObjectCacheSize', virtualObjectCacheSize, 'number');
     assertType('useTranscript', useTranscript, 'boolean');
     assertType('reapInterval', reapInterval, 'number');
@@ -180,7 +178,6 @@ export function buildRootObject(vatPowers) {
       vatParameters,
       enableSetup,
       enablePipelining,
-      enableVatstore,
       virtualObjectCacheSize,
       useTranscript,
       reapInterval,

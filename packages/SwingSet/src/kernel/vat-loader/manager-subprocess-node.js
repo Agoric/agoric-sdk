@@ -19,7 +19,6 @@ export function makeNodeSubprocessFactory(tools) {
     const {
       virtualObjectCacheSize,
       enableDisavow,
-      enableVatstore,
       compareSyscalls,
       useTranscript,
     } = managerOptions;
@@ -101,13 +100,7 @@ export function makeNodeSubprocessFactory(tools) {
     fromChild.on('data', handleUpstream);
 
     parentLog(`instructing worker to load bundle..`);
-    sendToWorker([
-      'setBundle',
-      bundle,
-      virtualObjectCacheSize,
-      enableDisavow,
-      enableVatstore,
-    ]);
+    sendToWorker(['setBundle', bundle, virtualObjectCacheSize, enableDisavow]);
 
     function shutdown() {
       terminate();
