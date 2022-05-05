@@ -47,8 +47,8 @@ async function doTerminate(t, mode, reference, extraMessage = []) {
     ...extraMessage,
     'foreverP.catch Error: vat terminated',
     'query3P.catch Error: vat terminated',
-    'foo4P.catch Error: vat terminated',
     'afterForeverP.catch Error: vat terminated',
+    'foo4P.catch Error: vat terminated',
     reference,
     'done',
   ]);

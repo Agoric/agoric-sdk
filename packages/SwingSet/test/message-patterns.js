@@ -557,7 +557,7 @@ export function buildPatterns(log) {
       return pipe2;
     };
   }
-  out.a70 = ['pipe1', 'pipe2', 'pipe3', 'p1.then', 'p2.then', 'p3.then'];
+  out.a70 = ['pipe1', 'p1.then', 'pipe2', 'p2.then', 'pipe3', 'p3.then'];
   outPipelined.a70 = [
     'pipe1',
     'pipe2',
