@@ -42,6 +42,7 @@ export const bridgeCoreEval = async allPowers => {
   } = allPowers;
 
   const endowments = {
+    VatData: globalThis.VatData,
     console,
     assert,
     Base64: globalThis.Base64, // Present only on XSnap
