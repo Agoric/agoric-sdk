@@ -74,7 +74,7 @@ export const start = async (zcf, privateArgs) => {
      * vote on param changes for a vaultManager
      *
      * @param {Record<string, unknown>} params
-     * @param {Brand} brand
+     * @param {{collateralBrand: Brand}} brand
      * @param {bigint} deadline
      */
     voteOnVaultParamChanges: (params, brand, deadline) =>
