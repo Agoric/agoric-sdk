@@ -40,6 +40,7 @@ async function innerTest(t, extraFlags, dbdir) {
       output += data;
     });
     proc.addListener('exit', code => {
+      t.log(output);
       t.is(code, 0, 'exits successfully');
       const uMsg = 'user vat is happy';
       t.not(output.indexOf(`\n${uMsg}\n`), -1, uMsg);

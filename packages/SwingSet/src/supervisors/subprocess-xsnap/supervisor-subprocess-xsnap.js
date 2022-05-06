@@ -236,15 +236,15 @@ function makeWorker(port) {
       meterControl,
     });
 
-    /** @param {string} dst */
-    const makeLogMaker = dst => {
+    /** @param {string} source */
+    const makeLogMaker = source => {
       /** @param {string} level */
       const makeLog = level => {
         // Capture the `console.log`, etc.'s `printAll` function.
         const printAll = console[level];
         assert.typeof(printAll, 'function');
         const portSendingPrinter = (...args) => {
-          port.send([dst, level, ...args]);
+          port.send(['sourcedConsole', source, level, ...args]);
         };
         return (...args) => {
           // Use the causal console, but output to the port.
@@ -265,7 +265,7 @@ function makeWorker(port) {
     };
 
     const workerEndowments = {
-      console: makeVatConsole(makeLogMaker('console')),
+      console: makeVatConsole(makeLogMaker('vat')),
       assert,
       // bootstrap provides HandledPromise
       HandledPromise: globalThis.HandledPromise,
@@ -294,7 +294,7 @@ function makeWorker(port) {
       enableDisavow,
       enableVatstore,
       gcTools,
-      makeVatConsole(makeLogMaker('liveSlotsConsole')),
+      makeVatConsole(makeLogMaker('ls')),
       buildVatNamespace,
     );
 
@@ -345,7 +345,7 @@ const worker = makeWorker(port);
 
 // Send unexpected console messages to the manager port.
 globalThis.print = (...args) => {
-  port.send(['console', 'error', ...args]);
+  port.send(['sourcedConsole', 'xsnap', 'error', ...args]);
 };
 
 globalThis.handleCommand = port.handlerFrom(worker.handleItem);

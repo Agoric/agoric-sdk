@@ -74,14 +74,13 @@ export function makeLocalVatManagerFactory(tools) {
     const {
       enableDisavow = false,
       enableSetup = false,
-      vatConsole,
-      liveSlotsConsole,
+      sourcedConsole,
       enableVatstore = false,
       virtualObjectCacheSize,
       compareSyscalls,
       useTranscript,
     } = managerOptions;
-    assert(vatConsole, 'vats need managerOptions.vatConsole');
+    assert(sourcedConsole, 'vats need managerOptions.sourcedConsole');
 
     const { syscall, finish } = prepare(
       vatID,
@@ -95,18 +94,18 @@ export function makeLocalVatManagerFactory(tools) {
       testLog: allVatPowers.testLog,
     });
 
-    const makeLogMaker = logger => {
+    const makeLogMaker = source => {
       const makeLog = level => {
-        const log = logger[level];
+        const log = sourcedConsole[level];
         assert.typeof(log, 'function', X`logger[${level}] must be a function`);
-        return log;
+        return log.bind(sourcedConsole, source);
       };
       return makeLog;
     };
 
     const workerEndowments = harden({
       ...vatEndowments,
-      console: makeVatConsole(makeLogMaker(vatConsole)),
+      console: makeVatConsole(makeLogMaker('vat')),
       assert,
       TextEncoder,
       TextDecoder,
@@ -144,7 +143,7 @@ export function makeLocalVatManagerFactory(tools) {
         enableDisavow,
         enableVatstore,
         gcTools,
-        makeVatConsole(makeLogMaker(liveSlotsConsole)),
+        makeVatConsole(makeLogMaker('ls')),
         buildVatNamespace,
       );
       assert(ls.dispatch);

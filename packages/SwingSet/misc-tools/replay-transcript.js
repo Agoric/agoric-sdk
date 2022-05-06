@@ -141,7 +141,7 @@ async function replay(transcriptFile) {
       const { vatParameters, vatSourceBundle } = data;
       vatID = data.vatID;
       const managerOptions = {
-        vatConsole: console,
+        sourcedConsole: console,
         vatParameters,
         compareSyscalls,
         useTranscript: true,
