@@ -20,20 +20,36 @@ val0len=$(wc -l < $RESULTSDIR/validator0-swingstore-trace)
 val1len=$(wc -l < $RESULTSDIR/validator1-swingstore-trace)
 commonlen=$((val0len < val1len ? val0len : val1len))
 
-diff -U0 <(head -n $commonlen $RESULTSDIR/validator0-swingstore-trace) <(head -n $commonlen $RESULTSDIR/validator1-swingstore-trace) > $RESULTSDIR/validator-swingstore-trace.diff
-ret=$?
+ret=0
+diff -U0 <(head -n $commonlen $RESULTSDIR/validator0-swingstore-trace) <(head -n $commonlen $RESULTSDIR/validator1-swingstore-trace) > $RESULTSDIR/validator-swingstore-trace.diff || ret=$?
 
 failedtest=${1:-"unknown"}
 
-[ $ret -eq 0 -a "$failedtest" = "false" ] && exit
+if [ $ret -eq 0 ]
+then
+  if [ "$failedtest" = "false" ]
+  then
+    echo "Successful test"
+    exit 0
+  fi
+else 
+  cat "$RESULTSDIR/validator-swingstore-trace.diff" | cut -c -80 || true
+  echo "Error: Swingstore trace mismatch"
+fi
 
 for node in validator{0,1}; do
   "$thisdir/setup.sh" ssh "$node" cat "$home/config/genesis.json" > "$RESULTSDIR/$node-genesis.json" || true
   "$thisdir/setup.sh" ssh "$node" cat "$home/data/chain.slog" > "$RESULTSDIR/$node.slog" || true
   "$thisdir/setup.sh" ssh "$node" cat "$home/data/ag-cosmos-chain-state/flight-recorder.bin" > "$RESULTSDIR/$node-flight-recorder.bin" || true
   "$thisdir/setup.sh" ssh "$node" cat "$home/data/kvstore-trace" > "$RESULTSDIR/$node-kvstore-trace" || true
-  mkdir -p "$RESULTSDIR/$node-xsnap-trace" && "$thisdir/setup.sh" ssh "$node" tar -c -C "$home/data/xsnap-trace" . | tar -x -C "$RESULTSDIR/$node-xsnap-trace" || true
+  "$thisdir/setup.sh" ssh "$node" tar -cz -C "$home/data/xsnap-trace" . > "$RESULTSDIR/$node-xsnap-trace.tgz" || true
   mkdir -p "$RESULTSDIR/$node-xs-snapshots" && "$thisdir/setup.sh" ssh "$node" tar -c -C "$home/data/ag-cosmos-chain-state/xs-snapshots" . | tar -x -C "$RESULTSDIR/$node-xs-snapshots" || true
+done
+
+for trace in $RESULTSDIR/chain-stage-*-xsnap-trace $RESULTSDIR/client-stage-*-xsnap-trace; do
+  [ -d "$trace" ] || continue
+  tar -cz -C "$trace" -f "$trace.tgz" . || continue
+  rm -rf "$trace" || true
 done
 
 exit $ret
