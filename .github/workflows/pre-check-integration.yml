@@ -30,7 +30,7 @@ jobs:
       - id: step1
         uses: fkirc/skip-duplicate-actions@master
         with:
-          cancel_others: 'true'
+          cancel_others: "${{ github.event_name == 'pull_request' }}"
           concurrent_skipping: 'same_content_newer'
       - id: step2
         name: Wait for concurrent run conclusion
