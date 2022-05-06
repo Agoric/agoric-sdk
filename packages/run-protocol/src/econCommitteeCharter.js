@@ -25,11 +25,17 @@ export const start = async (zcf, privateArgs) => {
   const { binaryVoteCounterInstallation: counter } = zcf.getTerms();
   const { reserve, amm, vaults } = privateArgs;
 
+  /**
+   * @param {*} target
+   * @param {Record<string, unknown>} params
+   * @param {bigint} deadline
+   * @param {{paramPath: { key: unknown }}} [path]
+   */
   const voteOnParamChanges = (
     target,
     params,
-    path = { paramPath: { key: 'governedApi' } },
     deadline,
+    path = { paramPath: { key: 'governedApi' } },
   ) => {
     return E(target).voteOnParamChanges(counter, deadline, {
       ...path,
@@ -37,8 +43,14 @@ export const start = async (zcf, privateArgs) => {
     });
   };
 
-  const voteOnApiInvocation = (contract, method, amounts, deadline) => {
-    return E(contract).voteOnApiInvocation(method, amounts, counter, deadline);
+  /**
+   * @param {*} target
+   * @param {string} method
+   * @param {unknown[]} args
+   * @param {bigint} deadline
+   */
+  const voteOnApiInvocation = (target, method, args, deadline) => {
+    return E(target).voteOnApiInvocation(method, args, counter, deadline);
   };
 
   const makeNullInvitation = () => {
@@ -47,19 +59,41 @@ export const start = async (zcf, privateArgs) => {
   };
 
   const publicFacet = Far('votingAPI', {
-    voteOnAmmParamChanges: params => voteOnParamChanges(amm, params),
-    voteOnReserveParamChanges: params => voteOnParamChanges(reserve, params),
-    // vote on param changes for a vaultManager
+    /**
+     * @param {Record<string, unknown>} params
+     * @param {bigint} deadline
+     */
+    voteOnAmmParamChanges: (params, deadline) =>
+      voteOnParamChanges(amm, params, deadline),
+    /**
+     * @param {Record<string, unknown>} params
+     * @param {bigint} deadline
+     */
+    voteOnReserveParamChanges: (params, deadline) =>
+      voteOnParamChanges(reserve, params, deadline),
+    /**
+     * vote on param changes for a vaultManager
+     *
+     * @param {Record<string, unknown>} params
+     * @param {Brand} brand
+     * @param {bigint} deadline
+     */
     voteOnVaultParamChanges: (params, brand, deadline) =>
-      voteOnParamChanges(
-        vaults,
-        params,
-        { paramPath: { key: brand } },
-        deadline,
-      ),
-    // vote on param changes across the vaultFactory
-    voteOnVaultFactoryParamChanges: params =>
-      voteOnParamChanges(vaults, params),
+      voteOnParamChanges(vaults, params, deadline, {
+        paramPath: { key: brand },
+      }),
+    /**
+     * vote on param changes across the vaultFactory
+     *
+     * @param {Record<string, unknown>} params
+     * @param {bigint} deadline
+     */
+    voteOnVaultFactoryParamChanges: (params, deadline) =>
+      voteOnParamChanges(vaults, params, deadline),
+    /**
+     * @param {Amount[]} amounts
+     * @param {bigint} deadline
+     */
     voteOnReserveApiInvocation: (amounts, deadline) =>
       voteOnApiInvocation(reserve, 'addLiquidityToAmmPool', amounts, deadline),
     makeNullInvitation,
