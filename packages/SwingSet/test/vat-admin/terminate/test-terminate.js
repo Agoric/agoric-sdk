@@ -9,14 +9,7 @@ import {
   loadSwingsetConfigFile,
   buildKernelBundles,
 } from '../../../src/index.js';
-
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
-
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
+import { capargs } from '../../util.js';
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
@@ -47,8 +40,8 @@ async function doTerminate(t, mode, reference, extraMessage = []) {
     ...extraMessage,
     'foreverP.catch Error: vat terminated',
     'query3P.catch Error: vat terminated',
-    'foo4P.catch Error: vat terminated',
     'afterForeverP.catch Error: vat terminated',
+    'foo4P.catch Error: vat terminated',
     reference,
     'done',
   ]);
@@ -162,38 +155,6 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
   }
 });
 
-test.serial('replay does not resurrect dead vat', async t => {
-  const configPath = new URL('swingset-no-zombies.json', import.meta.url)
-    .pathname;
-  const config = await loadSwingsetConfigFile(configPath);
-
-  const hostStorage1 = provideHostStorage();
-  {
-    const c1 = await buildVatController(config, [], {
-      hostStorage: hostStorage1,
-      kernelBundles: t.context.data.kernelBundles,
-    });
-    await c1.run();
-    t.deepEqual(c1.kpResolution(c1.bootstrapResult), capargs('bootstrap done'));
-    // this comes from the dynamic vat...
-    t.deepEqual(c1.dump().log, [`w: I ate'nt dead`]);
-  }
-
-  const state1 = getAllState(hostStorage1);
-  const hostStorage2 = provideHostStorage();
-  // XXX TODO also copy transcripts
-  setAllState(hostStorage2, state1);
-  {
-    const c2 = await buildVatController(config, [], {
-      hostStorage: hostStorage2,
-      kernelBundles: t.context.data.kernelBundles,
-    });
-    await c2.run();
-    // ...which shouldn't run the second time through
-    t.deepEqual(c2.dump().log, []);
-  }
-});
-
 test('dead vat state removed', async t => {
   const configPath = new URL('swingset-die-cleanly.json', import.meta.url)
     .pathname;
@@ -213,7 +174,7 @@ test('dead vat state removed', async t => {
   const kvStore = hostStorage.kvStore;
   t.is(kvStore.get('vat.dynamicIDs'), '["v6"]');
   t.is(kvStore.get('ko26.owner'), 'v6');
-  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 32);
+  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 33);
 
   controller.queueToVatRoot('bootstrap', 'phase2', capargs([]));
   await controller.run();

@@ -390,8 +390,10 @@ export default function buildKernel(
     insistMessage(msg);
     kernelKeeper.incStat('dispatches');
     kernelKeeper.incStat('dispatchDeliver');
+
     // eslint-disable-next-line no-use-before-define
-    if (!vatWarehouse.lookup(vatID)) {
+    const vatInfo = vatWarehouse.lookup(vatID);
+    if (!vatInfo) {
       // splat
       if (msg.result) {
         resolveToError(msg.result, VAT_TERMINATION_ERROR);
@@ -403,6 +405,11 @@ export default function buildKernel(
     const kd = harden(['message', target, msg]);
     // eslint-disable-next-line no-use-before-define
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
+
+    if (vatInfo.enablePipelining && msg.result) {
+      kernelKeeper.requeueKernelPromise(msg.result);
+    }
+
     return deliverAndLogToVat(vatID, kd, vd);
   }
 
@@ -730,7 +737,7 @@ export default function buildKernel(
    * This does not decrement any refcounts. The caller should do that.
    *
    * @param { RunQueueEventSend } message
-   * @returns { { vatID: VatID, targetObject: string } | null }
+   * @returns { { vatID: VatID | null, target: string } | null }
    */
   function routeSendEvent(message) {
     const { target, msg } = message;
@@ -752,12 +759,12 @@ export default function buildKernel(
       if (!vatID) {
         return splat(VAT_TERMINATION_ERROR);
       }
-      return { vatID, targetObject };
+      return { vatID, target: targetObject };
     }
 
-    function enqueue() {
-      kernelKeeper.addMessageToPromiseQueue(target, msg);
-      return null; // message is queued, not sent to a vat right now
+    function requeue() {
+      // message will be requeued, not sent to a vat right now
+      return { vatID: null, target };
     }
 
     if (type === 'object') {
@@ -781,7 +788,7 @@ export default function buildKernel(
       }
       case 'unresolved': {
         if (!kp.decider) {
-          return enqueue();
+          return requeue();
         } else {
           insistVatID(kp.decider);
           // eslint-disable-next-line no-use-before-define
@@ -791,9 +798,9 @@ export default function buildKernel(
             return splat(VAT_TERMINATION_ERROR);
           }
           if (deciderVat.enablePipelining) {
-            return { vatID: kp.decider, targetObject: target };
+            return { vatID: kp.decider, target };
           }
-          return enqueue();
+          return requeue();
         }
       }
       default:
@@ -871,13 +878,25 @@ export default function buildKernel(
     let useMeter = false;
     let deliverP = null;
 
+    // The common action should be delivering events to the vat. Any references
+    // in the events should no longer be the kernel's responsibility and the
+    // refcounts should be decremented
     if (message.type === 'send') {
       useMeter = true;
       const route = routeSendEvent(message);
-      decrementSendEventRefCount(message);
-      if (route) {
+      if (!route) {
+        // Message went splat
+        decrementSendEventRefCount(message);
+      } else {
         vatID = route.vatID;
-        deliverP = processSend(vatID, route.targetObject, message.msg);
+        if (vatID) {
+          decrementSendEventRefCount(message);
+          deliverP = processSend(vatID, route.target, message.msg);
+        } else {
+          // Message is requeued and stays the kernel's responsibility, do not
+          // decrement refcounts in this case
+          kernelKeeper.addMessageToPromiseQueue(route.target, message.msg);
+        }
       }
     } else if (message.type === 'notify') {
       useMeter = true;
@@ -1064,13 +1083,13 @@ export default function buildKernel(
   }
 
   let processQueueRunning;
-  async function tryProcessDeliveryMessage(message) {
+  async function tryProcessMessage(processor, message) {
     if (processQueueRunning) {
       console.error(`We're currently already running at`, processQueueRunning);
       assert.fail(X`Kernel reentrancy is forbidden`);
     }
     processQueueRunning = Error('here');
-    return processDeliveryMessage(message).finally(() => {
+    return processor(message).finally(() => {
       processQueueRunning = undefined;
     });
   }
@@ -1078,32 +1097,49 @@ export default function buildKernel(
   async function processAcceptanceMessage(message) {
     kdebug(`processAcceptanceQ ${JSON.stringify(message)}`);
     kdebug(legibilizeMessage(message));
-    if (processQueueRunning) {
-      console.error(`We're currently already running at`, processQueueRunning);
-      assert.fail(X`Kernel reentrancy is forbidden`);
-    }
     kernelSlog.write({ type: 'crank-start', message });
     /** @type { PolicyInput } */
     const policyInput = ['none'];
-    try {
-      processQueueRunning = Error('here');
 
+    // By default we're moving events from one queue to another. Any references
+    // in the events remain the kernel's responsibility and the refcounts persist
+    if (message.type === 'send') {
+      const route = routeSendEvent(message);
+      if (!route) {
+        // Message went splat, no longer the kernel's responsibility
+        decrementSendEventRefCount(message);
+      } else {
+        const { vatID, target } = route;
+        if (target !== message.target) {
+          // Message has been re-targeted, other refcounts stay intact
+          kernelKeeper.decrementRefCount(message.target, `deq|msg|t`);
+          kernelKeeper.incrementRefCount(target, `enq|msg|t`);
+        }
+        if (vatID) {
+          kernelKeeper.addToRunQueue({
+            ...message,
+            target,
+          });
+        } else {
+          kernelKeeper.addMessageToPromiseQueue(target, message.msg);
+        }
+      }
+    } else {
       kernelKeeper.addToRunQueue(message);
-
-      kernelKeeper.processRefcounts();
-      kernelKeeper.saveStats();
-      const crankNum = kernelKeeper.getCrankNumber();
-      kernelKeeper.incrementCrankNumber();
-      const { crankhash, activityhash } = kernelKeeper.commitCrank();
-      kernelSlog.write({
-        type: 'crank-finish',
-        crankNum,
-        crankhash,
-        activityhash,
-      });
-    } finally {
-      processQueueRunning = undefined;
     }
+
+    kernelKeeper.processRefcounts();
+    kernelKeeper.saveStats();
+    const crankNum = kernelKeeper.getCrankNumber();
+    kernelKeeper.incrementCrankNumber();
+    const { crankhash, activityhash } = kernelKeeper.commitCrank();
+    kernelSlog.write({
+      type: 'crank-finish',
+      crankNum,
+      crankhash,
+      activityhash,
+    });
+
     return harden(policyInput);
   }
 
@@ -1419,19 +1455,16 @@ export default function buildKernel(
     return undefined;
   }
 
-  function startProcessingNextMessageIfAny() {
-    /** @type {Promise<PolicyInput> | undefined} */
-    let resultPromise;
+  function getNextMessageAndProcessor() {
     let message = getNextAcceptanceMessage();
-    if (message) {
-      resultPromise = processAcceptanceMessage(message);
-    } else {
+    /** @type {(message:any) => Promise<PolicyInput>} */
+    let processor = processAcceptanceMessage;
+    if (!message) {
       message = getNextDeliveryMessage();
-      if (message) {
-        resultPromise = tryProcessDeliveryMessage(message);
-      }
+      processor = processDeliveryMessage;
     }
-    return { resultPromise };
+
+    return { message, processor };
   }
 
   async function step() {
@@ -1441,10 +1474,10 @@ export default function buildKernel(
     if (!started) {
       throw new Error('must do kernel.start() before step()');
     }
-    const { resultPromise } = startProcessingNextMessageIfAny();
+    const { processor, message } = getNextMessageAndProcessor();
     // process a single message
-    if (resultPromise) {
-      await resultPromise;
+    if (message) {
+      await tryProcessMessage(processor, message);
       if (kernelPanic) {
         throw kernelPanic;
       }
@@ -1473,14 +1506,14 @@ export default function buildKernel(
     }
     let count = 0;
     for (;;) {
-      const { resultPromise } = startProcessingNextMessageIfAny();
-      if (!resultPromise) {
+      const { processor, message } = getNextMessageAndProcessor();
+      if (!message) {
         break;
       }
       count += 1;
       /** @type { PolicyInput } */
       // eslint-disable-next-line no-await-in-loop
-      const policyInput = await resultPromise;
+      const policyInput = await tryProcessMessage(processor, message);
       if (kernelPanic) {
         throw kernelPanic;
       }

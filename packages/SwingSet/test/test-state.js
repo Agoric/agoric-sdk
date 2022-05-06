@@ -493,11 +493,13 @@ test('kernelKeeper promises', async t => {
   const expectedAcceptanceQueue = [];
   const m1 = { method: 'm1', args: { body: '', slots: [] } };
   k.addMessageToPromiseQueue(p1, m1);
+  k.incrementRefCount(p1);
   t.deepEqual(k.getKernelPromise(p1).refCount, 1);
   expectedAcceptanceQueue.push({ type: 'send', target: 'kp40', msg: m1 });
 
   const m2 = { method: 'm2', args: { body: '', slots: [] } };
   k.addMessageToPromiseQueue(p1, m2);
+  k.incrementRefCount(p1);
   t.deepEqual(k.getKernelPromise(p1).queue, [m1, m2]);
   t.deepEqual(k.getKernelPromise(p1).refCount, 2);
   expectedAcceptanceQueue.push({ type: 'send', target: 'kp40', msg: m2 });
