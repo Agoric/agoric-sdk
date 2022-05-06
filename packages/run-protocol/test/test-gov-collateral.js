@@ -317,9 +317,7 @@ test('voters get invitations', async t => {
       assert(Array.isArray(value));
 
       const instanceInv = value.find(
-        ({ description }) =>
-          description ===
-          'identifies the econCommitteeCharter contract instance',
+        ({ description }) => description === 'econCommitteeCharter noop',
       );
       t.assert(instanceInv);
 
@@ -392,8 +390,7 @@ test('Committee can raise debt limit', async t => {
   t.log('amt.value', amt.value);
 
   const votingInv = /** @type {SetValue} */ (amt.value).find(
-    ({ description }) =>
-      description === 'identifies the voting contract instance',
+    ({ description }) => description === 'econCommitteeCharter noop',
   );
   t.assert(votingInv);
 

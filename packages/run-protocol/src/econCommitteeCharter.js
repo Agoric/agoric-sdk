@@ -54,8 +54,7 @@ export const start = async (zcf, privateArgs) => {
   };
 
   const makeNullInvitation = () => {
-    return zcf.makeInvitation(() => {},
-    'identifies the voting contract instance');
+    return zcf.makeInvitation(() => {}, 'econCommitteeCharter noop');
   };
 
   const publicFacet = Far('votingAPI', {
