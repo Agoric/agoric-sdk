@@ -408,6 +408,40 @@ test('set fail on concurrent modification', t => {
   }, m(`keys in store cannot be added to during iteration`));
 });
 
+test('fail on oversized keys', t => {
+  const bigString = `Elaine${'!'.repeat(220)}`;
+  const ex = m('key too large');
+
+  const map = makeScalarBigMapStore('meh', { keySchema: M.any() });
+  t.throws(() => map.has(bigString), ex);
+  t.throws(() => map.get(bigString), ex);
+  t.throws(() => map.init(bigString, 'Ben!'), ex);
+  t.throws(() => map.set(bigString, 'Ben!'), ex);
+  t.throws(() => map.delete(bigString), ex);
+
+  const set = makeScalarBigSetStore('sigh', { keySchema: M.any() });
+  t.throws(() => set.has(bigString), ex);
+  t.throws(() => set.add(bigString), ex);
+  t.throws(() => set.delete(bigString), ex);
+
+  const wmap = makeScalarBigWeakMapStore('wump', { keySchema: M.any() });
+  t.throws(() => wmap.has(bigString), ex);
+  t.throws(() => wmap.get(bigString), ex);
+  t.throws(() => wmap.init(bigString, 'Ben!'), ex);
+  t.throws(() => wmap.set(bigString, 'Ben!'), ex);
+  t.throws(() => wmap.delete(bigString), ex);
+
+  const wset = makeScalarBigWeakSetStore('whisk', { keySchema: M.any() });
+  t.throws(() => wset.has(bigString), ex);
+  t.throws(() => wset.add(bigString), ex);
+  t.throws(() => wset.delete(bigString), ex);
+
+  // check edge of size range
+  const maxKey = 'x'.repeat(218);
+  t.is(map.has(maxKey), false);
+  t.throws(() => map.has(`${maxKey}x`), ex);
+});
+
 test('map queries', t => {
   const testStore = makeScalarBigMapStore('qmap', { keySchema: M.any() });
   fillBasicMapStore(testStore);
