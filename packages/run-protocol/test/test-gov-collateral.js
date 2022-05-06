@@ -400,7 +400,10 @@ test('Committee can raise debt limit', async t => {
   const pf = await E(zoe).getPublicFacet(votingInv.instance);
   const params = { DebtLimit: AmountMath.make(runBrand, 100n) };
 
-  const timer = s.space.consume.chainTimerService;
+  // We happen to know how the timer is implemented.
+  /** @type { ERef<ManualTimer> } */
+  const timer = /** @type {any } */ (s.space.consume.chainTimerService);
+
   const now = await E(timer).getCurrentTimestamp();
   const deadline = now + 3n;
   const actual = await E(pf).voteOnVaultParamChanges(
