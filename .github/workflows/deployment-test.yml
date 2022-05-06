@@ -101,7 +101,7 @@ jobs:
           /usr/src/agoric-sdk/packages/deployment/scripts/capture-integration-results.sh "${{ job.status == 'failure' }}"
 
           # Tear down the nodes.
-          echo yes | /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh destroy
+          echo yes | /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh destroy || true
         env:
           NETWORK_NAME: chaintest
       - uses: actions/upload-artifact@v2

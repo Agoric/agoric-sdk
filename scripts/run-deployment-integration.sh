@@ -1,4 +1,5 @@
 #!/bin/sh
+set -xueo pipefail
 
 SDK_REAL_DIR="$(cd "$(dirname "$(readlink -f -- "$0")")/.." > /dev/null && pwd -P)"
 
@@ -20,8 +21,13 @@ rm -rf /usr/src/agoric-sdk/chaintest  ~/.ag-chain-cosmos/ /usr/src/testnet-load-
 cd /usr/src/agoric-sdk/
 sudo ./packages/deployment/scripts/install-deps.sh
 yarn install && yarn build && make -C packages/cosmic-swingset/
-/usr/src/agoric-sdk/packages/deployment/scripts/integration-test.sh
+# change to "false" to skip extraction on success like in CI
+testfailure="unknown"
+/usr/src/agoric-sdk/packages/deployment/scripts/integration-test.sh || {
+  echo "Test failed!!!"
+  testfailure="true"
+}
 
 /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh play stop || true
-/usr/src/agoric-sdk/packages/deployment/scripts/capture-integration-results.sh
-echo yes | /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh destroy
+/usr/src/agoric-sdk/packages/deployment/scripts/capture-integration-results.sh $testfailure
+echo yes | /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh destroy || true
