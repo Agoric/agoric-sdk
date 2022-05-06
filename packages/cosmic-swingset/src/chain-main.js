@@ -29,11 +29,13 @@ const toNumber = specimen => {
   return number;
 };
 
-const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
+const makeChainStorage = (call, prefix = '', options = {}) => {
   assert(
     prefix === '' || prefix.endsWith('.'),
     X`prefix ${prefix} must end with a dot`,
   );
+
+  const { fromChainShape, toChainShape } = options;
 
   let cache = new Map();
   let changedKeys = new Set();
@@ -58,23 +60,28 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
       // Fetch the value and cache it until the next commit or abort.
       const retStr = call(stringify({ method: 'get', key: `${prefix}${key}` }));
       const ret = JSON.parse(retStr);
-      const value = ret ? JSON.parse(ret) : undefined;
-      const obj = value && imp(value);
-      cache.set(key, obj);
+      const chainShapeValue = ret ? JSON.parse(ret) : undefined;
+      const value =
+        chainShapeValue === undefined || !fromChainShape
+          ? chainShapeValue
+          : fromChainShape(chainShapeValue);
+      cache.set(key, value);
       // We need to add this in case the caller mutates the state, as in
       // mailbox.js, which mutates on basically every get.
       changedKeys.add(key);
-      return obj;
+      return value;
     },
     commit() {
       for (const key of changedKeys.keys()) {
-        const obj = cache.get(key);
-        const value = obj === undefined ? '' : stringify(exp(obj));
+        const value = cache.get(key);
+        const chainShapeValue =
+          value === undefined || !toChainShape ? value : toChainShape(value);
+        const valueStr = value === undefined ? '' : stringify(chainShapeValue);
         call(
           stringify({
             method: 'set',
             key: `${prefix}${key}`,
-            value,
+            value: valueStr,
           }),
         );
       }
@@ -289,12 +296,14 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const mailboxStorage = makeChainStorage(
       msg => chainSend(portNums.storage, msg),
       'mailbox.',
-      data => {
-        const ack = toNumber(data.ack);
-        const outbox = data.outbox.map(([seq, msg]) => [toNumber(seq), msg]);
-        return importMailbox({ outbox, ack });
+      {
+        fromChainShape: data => {
+          const ack = toNumber(data.ack);
+          const outbox = data.outbox.map(([seq, msg]) => [toNumber(seq), msg]);
+          return importMailbox({ outbox, ack });
+        },
+        toChainShape: exportMailbox,
       },
-      exportMailbox,
     );
     const actionQueue = makeChainQueue(
       msg => chainSend(portNums.storage, msg),
