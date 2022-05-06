@@ -90,7 +90,6 @@ jobs:
         env:
           NETWORK_NAME: chaintest
       - name: capture results
-        if: failure()
         run: |
           NOW=$(date -u +%Y%m%dT%H%M%S)
           echo "NOW=$NOW" >> "$GITHUB_ENV"
@@ -99,7 +98,7 @@ jobs:
           /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh play stop || true
 
           # Get the results.
-          /usr/src/agoric-sdk/packages/deployment/scripts/capture-integration-results.sh
+          /usr/src/agoric-sdk/packages/deployment/scripts/capture-integration-results.sh "${{ job.status == 'failure' }}"
 
           # Tear down the nodes.
           echo yes | /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh destroy
