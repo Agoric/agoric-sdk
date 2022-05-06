@@ -15,8 +15,8 @@ for img in agoric-sdk cosmic-swingset-setup cosmic-swingset-solo deployment; do
   SRC="$DOCKERUSER/$img:$SRCTAG"
   DST="$DOCKERUSER/$img:$DSTTAG"
   if manifest=$(docker manifest inspect "$SRC"); then
-    SUBIMGS=$(jq -r .manifests[].digest <<<"$manifest" | sed -e "s!^!$DOCKERUSER/$img@!")
-    docker manifest create "$DST" $SUBIMGS
+    AMENDS=$(jq -r .manifests[].digest <<<"$manifest" | sed -e "s!^!--amend $DOCKERUSER/$img@!")
+    docker manifest create "$DST" $AMENDS
     docker manifest push "$DST"
   elif docker pull "$SRC"; then
     docker tag "$SRC" "$DST"
