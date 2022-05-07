@@ -1640,6 +1640,30 @@ export default function buildKernel(
       return kernelKeeper.getActivityhash();
     },
 
+    /**
+     * Returns 2 numbers informing the state of the kernel queues:
+     * - activeQueues: the total length of queues which can be processed
+     * - inactiveQueues: the total length of queues which are waiting on some
+     *   kernel state change.
+     *
+     * The reason to keep those separate is to make explicit a state where the
+     * active queues are empty and only the inactive queues have pending events,
+     * aka where SwingSet is blocked on some external trigger.
+     */
+    getQueuesLength() {
+      const { runQueueLength, acceptanceQueueLength, promiseQueuesLength } =
+        kernelKeeper.getStats(true);
+
+      assert.typeof(runQueueLength, 'number');
+      assert.typeof(acceptanceQueueLength, 'number');
+      assert.typeof(promiseQueuesLength, 'number');
+
+      return {
+        activeQueues: runQueueLength + acceptanceQueueLength,
+        inactiveQueues: promiseQueuesLength,
+      };
+    },
+
     dump() {
       // note: dump().log is not deterministic, since log() does not go
       // through the syscall interface (and we replay transcripts one vat at
