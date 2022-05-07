@@ -325,6 +325,8 @@ async function setupServices(
 // #endregion
 
 // #region driver
+const AT_NEXT = {};
+
 const makeDriver = async (t, initialPrice, priceBase) => {
   const timer = buildManualTimer(t.log);
   const services = await setupServices(t, initialPrice, priceBase, timer);
@@ -343,10 +345,10 @@ const makeDriver = async (t, initialPrice, priceBase) => {
   ).getNotifier();
   let managerNotification = await E(managerNotifier).getUpdateSince();
 
-  /** @type {UserSeat<VaultKit>} */
-  let lastSeat;
+  /** @type {UserSeat} */
+  let currentSeat;
   let notification = {};
-  let lastOfferResult;
+  let currentOfferResult;
   const makeVaultDriver = async (collateral, debt) => {
     /** @type {UserSeat<VaultKit>} */
     const vaultSeat = await E(zoe).offer(
@@ -363,33 +365,37 @@ const makeDriver = async (t, initialPrice, priceBase) => {
       vault,
       publicNotifiers: { vault: notifier },
     } = await E(vaultSeat).getOfferResult();
-    t.truthy(await E(vaultSeat).hasExited());
+    t.true(await E(vaultSeat).hasExited());
     return {
       vault: () => vault,
       vaultSeat: () => vaultSeat,
       notification: () => notification,
       close: async () => {
-        lastSeat = await E(zoe).offer(E(vault).makeCloseInvitation());
-        lastOfferResult = await E(lastSeat).getOfferResult();
+        currentSeat = await E(zoe).offer(E(vault).makeCloseInvitation());
+        currentOfferResult = await E(currentSeat).getOfferResult();
         t.is(
-          lastOfferResult,
+          currentOfferResult,
           'your loan is closed, thank you for your business',
         );
         t.truthy(await E(vaultSeat).hasExited());
       },
-      checkNotify: async (phase, expected) => {
-        notification = await E(notifier).getUpdateSince();
-        trace(t, 'notify', notification);
-        t.is(notification.value.vaultState, phase);
-        expected && t.like(notification.value, expected);
-      },
-      awaitNotify: async (phase, expected) => {
+      /**
+       *
+       * @param {Vault.Phase} phase
+       * @param {Object} likeExpected
+       * @param {undefined|AT_NEXT|number} optSince
+       */
+      notified: async (phase, likeExpected, optSince) => {
+        // optSince can be AT_NEXT in order to wait for the
+        // next update.
         notification = await E(notifier).getUpdateSince(
-          notification.updateCount,
+          optSince === AT_NEXT ? notification.updateCount : optSince,
         );
-        trace(t, 'notify', notification);
         t.is(notification.value.vaultState, phase);
-        expected && t.like(notification.value, expected);
+        if (likeExpected) {
+          t.like(notification.value, likeExpected);
+        }
+        return notification;
       },
       checkBorrowed: async (loanAmount, loanFee) => {
         const debtAmount = await E(vault).getCurrentDebt();
@@ -410,17 +416,17 @@ const makeDriver = async (t, initialPrice, priceBase) => {
 
   const driver = {
     managerNotification: () => managerNotification,
-    lastSeat: () => lastSeat,
-    lastOfferResult: () => lastOfferResult,
+    currentSeat: () => currentSeat,
+    lastOfferResult: () => currentOfferResult,
     timer: () => timer,
     tick: (ticks = 1) => {
       for (let i = 0; i < ticks; i += 1) {
         timer.tick();
       }
     },
-    makeVault: makeVaultDriver,
+    makeVaultDriver,
     checkPayouts: async (expectedRUN, expectedAEth) => {
-      const payouts = await E(lastSeat).getPayouts();
+      const payouts = await E(currentSeat).getPayouts();
       const collProceeds = await aethIssuer.getAmountOf(payouts.Collateral);
       const runProceeds = await E(runIssuer).getAmountOf(payouts.RUN);
       t.deepEqual(runProceeds, expectedRUN);
@@ -439,15 +445,15 @@ const makeDriver = async (t, initialPrice, priceBase) => {
       const offerArgs = optStopAfter
         ? harden({ stopAfter: optStopAfter })
         : undefined;
-      lastSeat = await E(zoe).offer(
+      currentSeat = await E(zoe).offer(
         await swapInvitation,
         harden({ give: { In: give }, want: { Out: want } }),
         harden({ In: aethMint.mintPayment(give) }),
         offerArgs,
       );
-      lastOfferResult = await E(lastSeat).getOfferResult();
+      currentOfferResult = await E(currentSeat).getOfferResult();
       if (expected) {
-        const payouts = await E(lastSeat).getCurrentAllocation();
+        const payouts = await E(currentSeat).getCurrentAllocation();
         trace(t, 'AMM payouts', payouts);
         t.like(payouts, expected);
       }
@@ -467,12 +473,14 @@ const makeDriver = async (t, initialPrice, priceBase) => {
       await driver.tick(3);
       await outcome;
     },
-    checkManagerNotifier: async (expected, optUpdateSince) => {
+    managerNotified: async (likeExpected, optSince) => {
       managerNotification = await E(managerNotifier).getUpdateSince(
-        optUpdateSince,
+        optSince === AT_NEXT ? managerNotifier.updateCount : optSince,
       );
       trace(t, 'manager notifier', managerNotification);
-      expected && t.like(managerNotification.value, expected);
+      if (likeExpected) {
+        t.like(managerNotification.value, likeExpected);
+      }
       return managerNotification;
     },
   };
@@ -502,45 +510,45 @@ test('price drop', async t => {
   // Create a loan for 270 RUN with 400 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 400n);
   const loanAmount = AmountMath.make(runBrand, 270n);
-  const v = await d.makeVault(collateralAmount, loanAmount);
-  trace(t, 'loan made', loanAmount, v);
-  const debtAmount = await v.checkBorrowed(loanAmount, rates.loanFee);
+  const dv = await d.makeVaultDriver(collateralAmount, loanAmount);
+  trace(t, 'loan made', loanAmount, dv);
+  const debtAmount = await dv.checkBorrowed(loanAmount, rates.loanFee);
 
-  await v.checkNotify(Phase.ACTIVE, {
+  await dv.notified(Phase.ACTIVE, {
     debtSnapshot: {
       debt: debtAmount,
       interest: makeRatio(100n, runBrand),
     },
   });
-  await v.checkBalance(debtAmount, collateralAmount);
+  await dv.checkBalance(debtAmount, collateralAmount);
 
   // small change doesn't cause liquidation
   await d.setPrice(AmountMath.make(runBrand, 677n));
   trace(t, 'price dropped a little');
   await d.tick();
-  await v.checkNotify(Phase.ACTIVE);
+  await dv.notified(Phase.ACTIVE);
 
   await d.setPrice(AmountMath.make(runBrand, 636n));
   trace(t, 'price dropped enough to liquidate');
-  await v.awaitNotify(Phase.LIQUIDATING);
+  await dv.notified(Phase.LIQUIDATING, undefined, AT_NEXT);
 
   // Collateral consumed while liquidating
   // Debt remains while liquidating
-  await v.checkBalance(debtAmount, AmountMath.makeEmpty(aethBrand));
+  await dv.checkBalance(debtAmount, AmountMath.makeEmpty(aethBrand));
   const collateralExpected = AmountMath.make(aethBrand, 210n);
   const debtExpected = AmountMath.makeEmpty(runBrand);
-  await v.awaitNotify(Phase.LIQUIDATED, { locked: collateralExpected });
-  await v.checkBalance(debtExpected, collateralExpected);
+  await dv.notified(Phase.LIQUIDATED, { locked: collateralExpected }, AT_NEXT);
+  await dv.checkBalance(debtExpected, collateralExpected);
 
   await d.checkRewards(AmountMath.make(runBrand, 14n));
 
-  await v.close();
-  await v.checkNotify(Phase.CLOSED, {
+  await dv.close();
+  await dv.notified(Phase.CLOSED, {
     locked: AmountMath.makeEmpty(aethBrand),
     updateCount: undefined,
   });
   await d.checkPayouts(debtExpected, collateralExpected);
-  await v.checkBalance(debtExpected, AmountMath.makeEmpty(aethBrand));
+  await dv.checkBalance(debtExpected, AmountMath.makeEmpty(aethBrand));
 });
 
 test('price falls precipitously', async t => {
@@ -562,17 +570,17 @@ test('price falls precipitously', async t => {
   // Create a loan for 370 RUN with 400 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 400n);
   const loanAmount = AmountMath.make(runBrand, 370n);
-  const v = await d.makeVault(collateralAmount, loanAmount);
-  trace(t, 'loan made', loanAmount, v);
-  const debtAmount = await v.checkBorrowed(loanAmount, rates.loanFee);
+  const dv = await d.makeVaultDriver(collateralAmount, loanAmount);
+  trace(t, 'loan made', loanAmount, dv);
+  const debtAmount = await dv.checkBorrowed(loanAmount, rates.loanFee);
 
-  await v.checkNotify(Phase.ACTIVE, {
+  await dv.notified(Phase.ACTIVE, {
     debtSnapshot: {
       debt: debtAmount,
       interest: makeRatio(100n, runBrand),
     },
   });
-  await v.checkBalance(debtAmount, collateralAmount);
+  await dv.checkBalance(debtAmount, collateralAmount);
 
   // Sell some aEth to drive the value down
   await d.sellOnAMM(
@@ -582,38 +590,38 @@ test('price falls precipitously', async t => {
 
   // [2200n, 19180n, 1650n, 150n],
   await d.setPrice(AmountMath.make(runBrand, 19180n));
-  await v.checkBalance(debtAmount, collateralAmount);
+  await dv.checkBalance(debtAmount, collateralAmount);
   await d.tick();
-  await v.checkNotify(Phase.ACTIVE);
+  await dv.notified(Phase.ACTIVE);
 
   await d.setPrice(AmountMath.make(runBrand, 1650n));
   await d.tick();
-  await v.checkBalance(debtAmount, collateralAmount);
-  await v.checkNotify(Phase.ACTIVE);
+  await dv.checkBalance(debtAmount, collateralAmount);
+  await dv.notified(Phase.ACTIVE);
 
   // Drop price a lot
   await d.setPrice(AmountMath.make(runBrand, 150n));
-  await v.awaitNotify(Phase.LIQUIDATING);
-  await v.checkBalance(debtAmount, AmountMath.makeEmpty(aethBrand));
+  await dv.notified(Phase.LIQUIDATING, undefined, AT_NEXT);
+  await dv.checkBalance(debtAmount, AmountMath.makeEmpty(aethBrand));
   // was AmountMath.make(runBrand, 103n)
 
   // Collateral consumed while liquidating
   // Debt remains while liquidating
-  await v.checkBalance(debtAmount, AmountMath.makeEmpty(aethBrand));
+  await dv.checkBalance(debtAmount, AmountMath.makeEmpty(aethBrand));
   const collateralExpected = AmountMath.make(aethBrand, 141n);
   const debtExpected = AmountMath.makeEmpty(runBrand);
-  await v.awaitNotify(Phase.LIQUIDATED, { locked: collateralExpected });
-  await v.checkBalance(debtExpected, collateralExpected);
+  await dv.notified(Phase.LIQUIDATED, { locked: collateralExpected }, AT_NEXT);
+  await dv.checkBalance(debtExpected, collateralExpected);
 
   await d.checkRewards(AmountMath.make(runBrand, 19n));
 
-  await v.close();
-  await v.checkNotify(Phase.CLOSED, {
+  await dv.close();
+  await dv.notified(Phase.CLOSED, {
     locked: AmountMath.makeEmpty(aethBrand),
     updateCount: undefined,
   });
   await d.checkPayouts(debtExpected, collateralExpected);
-  await v.checkBalance(debtExpected, AmountMath.makeEmpty(aethBrand));
+  await dv.checkBalance(debtExpected, AmountMath.makeEmpty(aethBrand));
 });
 
 test('update liquidator', async t => {
@@ -632,11 +640,11 @@ test('update liquidator', async t => {
   const loanAmount = AmountMath.make(debtBrand, 300n);
   const collateralAmount = AmountMath.make(aethBrand, 100n);
   /* * @type {UserSeat<VaultKit>} */
-  const v = await d.makeVault(collateralAmount, loanAmount);
-  const debtAmount = await E(v.vault()).getCurrentDebt();
-  await v.checkBalance(debtAmount, collateralAmount);
+  const dv = await d.makeVaultDriver(collateralAmount, loanAmount);
+  const debtAmount = await E(dv.vault()).getCurrentDebt();
+  await dv.checkBalance(debtAmount, collateralAmount);
 
-  let govNotify = await d.checkManagerNotifier();
+  let govNotify = await d.managerNotified();
   const oldLiquidator = govNotify.value.liquidatorInstance;
   trace(t, 'gov start', oldLiquidator, govNotify);
   await d.setLiquidationTerms(
@@ -648,14 +656,14 @@ test('update liquidator', async t => {
     }),
   );
   await waitForPromisesToSettle();
-  govNotify = await d.checkManagerNotifier();
+  govNotify = await d.managerNotified();
   const newLiquidator = govNotify.value.liquidatorInstance;
   t.not(oldLiquidator, newLiquidator);
 
   // trigger liquidation
   await d.setPrice(AmountMath.make(debtBrand, 300n));
   await waitForPromisesToSettle();
-  await v.checkNotify(Phase.LIQUIDATED);
+  await dv.notified(Phase.LIQUIDATED);
 });
 
 test('liquidate many', async t => {
@@ -682,49 +690,49 @@ test('liquidate many', async t => {
   );
   const collateral = AmountMath.make(aethBrand, 300n);
   const run = amt => AmountMath.make(runBrand, amt);
-  const v0 = await d.makeVault(collateral, run(390n));
-  const v1 = await d.makeVault(collateral, run(380n));
-  const v2 = await d.makeVault(collateral, run(370n));
-  const v3 = await d.makeVault(collateral, run(360n));
-  const v4 = await d.makeVault(collateral, run(350n));
-  const v5 = await d.makeVault(collateral, run(340n));
-  const v6 = await d.makeVault(collateral, run(330n));
-  const v7 = await d.makeVault(collateral, run(320n));
-  const v8 = await d.makeVault(collateral, run(310n));
-  const v9 = await d.makeVault(collateral, run(300n));
+  const dv0 = await d.makeVaultDriver(collateral, run(390n));
+  const dv1 = await d.makeVaultDriver(collateral, run(380n));
+  const dv2 = await d.makeVaultDriver(collateral, run(370n));
+  const dv3 = await d.makeVaultDriver(collateral, run(360n));
+  const dv4 = await d.makeVaultDriver(collateral, run(350n));
+  const dv5 = await d.makeVaultDriver(collateral, run(340n));
+  const dv6 = await d.makeVaultDriver(collateral, run(330n));
+  const dv7 = await d.makeVaultDriver(collateral, run(320n));
+  const dv8 = await d.makeVaultDriver(collateral, run(310n));
+  const dv9 = await d.makeVaultDriver(collateral, run(300n));
 
-  await d.setPrice(await overThreshold(v1));
+  await d.setPrice(await overThreshold(dv1));
   await waitForPromisesToSettle();
-  await v0.checkNotify(Phase.LIQUIDATED);
-  await v1.checkNotify(Phase.ACTIVE);
-  await v2.checkNotify(Phase.ACTIVE);
-  await v3.checkNotify(Phase.ACTIVE);
-  await v4.checkNotify(Phase.ACTIVE);
-  await v5.checkNotify(Phase.ACTIVE);
-  await v6.checkNotify(Phase.ACTIVE);
-  await v7.checkNotify(Phase.ACTIVE);
-  await v8.checkNotify(Phase.ACTIVE);
-  await v9.checkNotify(Phase.ACTIVE);
+  await dv0.notified(Phase.LIQUIDATED);
+  await dv1.notified(Phase.ACTIVE);
+  await dv2.notified(Phase.ACTIVE);
+  await dv3.notified(Phase.ACTIVE);
+  await dv4.notified(Phase.ACTIVE);
+  await dv5.notified(Phase.ACTIVE);
+  await dv6.notified(Phase.ACTIVE);
+  await dv7.notified(Phase.ACTIVE);
+  await dv8.notified(Phase.ACTIVE);
+  await dv9.notified(Phase.ACTIVE);
 
-  await d.setPrice(await overThreshold(v5));
+  await d.setPrice(await overThreshold(dv5));
   await waitForPromisesToSettle();
-  await v1.checkNotify(Phase.LIQUIDATED);
-  await v2.checkNotify(Phase.LIQUIDATED);
-  await v3.checkNotify(Phase.LIQUIDATED);
-  await v4.checkNotify(Phase.LIQUIDATED);
-  await v5.checkNotify(Phase.ACTIVE);
-  await v6.checkNotify(Phase.ACTIVE);
-  await v7.checkNotify(Phase.ACTIVE);
-  await v8.checkNotify(Phase.ACTIVE);
-  await v9.checkNotify(Phase.ACTIVE);
+  await dv1.notified(Phase.LIQUIDATED);
+  await dv2.notified(Phase.LIQUIDATED);
+  await dv3.notified(Phase.LIQUIDATED);
+  await dv4.notified(Phase.LIQUIDATED);
+  await dv5.notified(Phase.ACTIVE);
+  await dv6.notified(Phase.ACTIVE);
+  await dv7.notified(Phase.ACTIVE);
+  await dv8.notified(Phase.ACTIVE);
+  await dv9.notified(Phase.ACTIVE);
 
   await d.setPrice(run(300n));
   await waitForPromisesToSettle();
-  await v5.checkNotify(Phase.LIQUIDATED);
-  await v6.checkNotify(Phase.LIQUIDATED);
-  await v7.checkNotify(Phase.LIQUIDATED);
-  await v8.checkNotify(Phase.LIQUIDATED);
-  await v9.checkNotify(Phase.LIQUIDATED);
+  await dv5.notified(Phase.LIQUIDATED);
+  await dv6.notified(Phase.LIQUIDATED);
+  await dv7.notified(Phase.LIQUIDATED);
+  await dv8.notified(Phase.LIQUIDATED);
+  await dv9.notified(Phase.LIQUIDATED);
 });
 
 // 1) `give` sells for more than `stopAfter`, and got some of the input back
