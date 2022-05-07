@@ -15,6 +15,7 @@ test('install bundle', async t => {
   const { kvStore } = endowments.hostStorage;
   initializeKernel({}, endowments.hostStorage);
   const kernel = buildKernel(endowments, {}, {});
+  await kernel.start(); // empty queue
 
   const bundleFile = new URL('./bootstrap-bundles.js', import.meta.url)
     .pathname;
@@ -54,16 +55,16 @@ test('install bundle', async t => {
   });
 
   // actual installation should succeed
-  kernel.installBundle(bundleID, bundle);
+  await kernel.installBundle(bundleID, bundle);
   t.deepEqual(JSON.parse(kvStore.get(`bundle.${bundleID}`)), bundle);
 
   // installing the same bundle twice is a NOP
-  kernel.installBundle(bundleID, bundle);
+  await kernel.installBundle(bundleID, bundle);
   t.deepEqual(JSON.parse(kvStore.get(`bundle.${bundleID}`)), bundle);
 
   // the kernel's installBundle() doesn't validate
   const wrong =
     'b1-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
-  kernel.installBundle(wrong, bundle);
+  await kernel.installBundle(wrong, bundle);
   t.deepEqual(JSON.parse(kvStore.get(`bundle.${wrong}`)), bundle);
 });
