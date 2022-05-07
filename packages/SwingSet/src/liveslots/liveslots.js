@@ -34,7 +34,6 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {number} cacheSize  Maximum number of entries in the virtual object state cache
  * @param {boolean} enableDisavow
- * @param {boolean} enableVatstore
  * @param {*} vatPowers
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize,
  *                      meterControl }
@@ -48,7 +47,6 @@ function build(
   forVatID,
   cacheSize,
   enableDisavow,
-  enableVatstore,
   vatPowers,
   gcTools,
   console,
@@ -1185,11 +1183,6 @@ function build(
     ...collectionManager.testHooks,
   });
 
-  function assertValidUserVatstoreKey(key) {
-    assert.typeof(key, 'string');
-    assert(key.match(/^[-\w.+/]+$/), X`invalid vatstore key`);
-  }
-
   let baggage;
   async function startVat(vatParametersCapData) {
     insistCapData(vatParametersCapData);
@@ -1212,50 +1205,6 @@ function build(
     };
     if (enableDisavow) {
       vpow.disavow = disavow;
-    }
-    if (enableVatstore) {
-      vpow.vatstore = harden({
-        get: key => {
-          assertValidUserVatstoreKey(key);
-          return syscall.vatstoreGet(`vvs.${key}`);
-        },
-        set: (key, value) => {
-          assertValidUserVatstoreKey(key);
-          assert.typeof(value, 'string');
-          syscall.vatstoreSet(`vvs.${key}`, value);
-        },
-        getAfter: (priorKey, lowerBound, upperBound) => {
-          let scopedPriorKey = '';
-          if (priorKey !== '') {
-            assertValidUserVatstoreKey(priorKey);
-            assert(priorKey >= lowerBound, 'priorKey must be >= lowerBound');
-            scopedPriorKey = `vvs.${priorKey}`;
-          }
-          assertValidUserVatstoreKey(lowerBound);
-          const scopedLowerBound = `vvs.${lowerBound}`;
-          let scopedUpperBound;
-          if (upperBound) {
-            assertValidUserVatstoreKey(upperBound);
-            assert(upperBound > lowerBound, 'upperBound must be > lowerBound');
-            scopedUpperBound = `vvs.${upperBound}`;
-          }
-          const [key, value] = syscall.vatstoreGetAfter(
-            scopedPriorKey,
-            scopedLowerBound,
-            scopedUpperBound,
-          );
-          if (key) {
-            assert(key.startsWith('vvs.'));
-            return [key.slice(4), value];
-          } else {
-            return [undefined, undefined];
-          }
-        },
-        delete: key => {
-          assertValidUserVatstoreKey(key);
-          syscall.vatstoreDelete(`vvs.${key}`);
-        },
-      });
     }
 
     initializeIDCounters();
@@ -1502,7 +1451,6 @@ function build(
  * @param {*} vatPowers
  * @param {number} cacheSize  Upper bound on virtual object cache size
  * @param {boolean} enableDisavow
- * @param {boolean} enableVatstore
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
  * @param {*} buildVatNamespace
@@ -1537,7 +1485,6 @@ export function makeLiveSlots(
   vatPowers = harden({}),
   cacheSize = DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
   enableDisavow = false,
-  enableVatstore = false,
   gcTools,
   liveSlotsConsole = console,
   buildVatNamespace,
@@ -1551,7 +1498,6 @@ export function makeLiveSlots(
     forVatID,
     cacheSize,
     enableDisavow,
-    enableVatstore,
     allVatPowers,
     gcTools,
     liveSlotsConsole,
@@ -1572,7 +1518,6 @@ export function makeMarshaller(syscall, gcTools, vatID = 'forVatID') {
     syscall,
     vatID,
     DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
-    false,
     false,
     {},
     gcTools,

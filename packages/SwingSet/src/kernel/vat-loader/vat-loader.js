@@ -92,7 +92,6 @@ export function makeVatLoader(stuff) {
     'managerType', // TODO: not sure we want vats to be able to control this
     'enableSetup',
     'enablePipelining',
-    'enableVatstore',
     'virtualObjectCacheSize',
     'useTranscript',
     'reapInterval',
@@ -105,7 +104,6 @@ export function makeVatLoader(stuff) {
     'enableDisavow',
     'enableSetup',
     'enablePipelining',
-    'enableVatstore',
     'virtualObjectCacheSize',
     'useTranscript',
     'reapInterval',
@@ -156,10 +154,6 @@ export function makeVatLoader(stuff) {
    *        promises for which the vat is the decider directly to the vat
    *        without waiting for the promises to be resolved.  If false, such
    *        messages will be queued inside the kernel.  Defaults to false.
-   *
-   * @param {boolean} [options.enableVatstore] If true, the vat is provided with
-   *        an object that allows individual keyed access (in an insolated
-   *        subset of the key space) to the vatstore.  Defaults to false.
    *
    * @param {boolean} [options.useTranscript] If true, saves a transcript of a
    *        vat's inbound deliveries and outbound syscalls so that the vat's
@@ -219,7 +213,6 @@ export function makeVatLoader(stuff) {
       enableSetup = false,
       enableDisavow = false,
       enablePipelining = false,
-      enableVatstore = false,
       virtualObjectCacheSize,
       useTranscript = true,
       name,
@@ -244,7 +237,6 @@ export function makeVatLoader(stuff) {
       enableSetup,
       enablePipelining,
       sourcedConsole: makeSourcedConsole(vatID),
-      enableVatstore,
       virtualObjectCacheSize,
       useTranscript,
       name,

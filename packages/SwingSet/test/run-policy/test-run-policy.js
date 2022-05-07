@@ -19,9 +19,6 @@ async function testCranks(t, mode) {
       },
       right: {
         sourceSpec: new URL('vat-policy-right.js', import.meta.url).pathname,
-        creationOptions: {
-          enableVatstore: true,
-        },
       },
     },
     defaultManagerType: 'xs-worker',
@@ -92,9 +89,9 @@ async function testCranks(t, mode) {
     // extra-compute step.
     await c.run(computronCounter(4_000_000n));
     t.is(elapsedCranks(), 35);
-    const ckey = `${rightID}.vs.vvs.seqnum`;
-    const seqnum = parseInt(hostStorage.kvStore.get(ckey), 10);
-    t.is(seqnum, 5);
+    const ckey = `${rightID}.vs.vc.1.sseqnum`;
+    const seqnum = JSON.parse(hostStorage.kvStore.get(ckey));
+    t.deepEqual(seqnum, capargs(5));
   } else if (mode === 'wallclock') {
     const startMS = Date.now();
     // On an idle system, this does about 120 cranks per second when run

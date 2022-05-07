@@ -47,14 +47,12 @@ export function buildRootObject() {
     return three === 3 ? 'three good' : `not three, got ${three}`;
   }
 
-  function checkA([pB, pC, pF, three, vs1, vs2, evt, evwft]) {
+  function checkA([pB, pC, pF, three, evt, evwft]) {
     return Promise.all([
       pB.then(checkResB),
       pC.then(checkResC, checkErrC),
       pF.then(checkResF),
       checkThree(three),
-      vs1 === 'vsValue' ? 'vs1 good' : 'vs1 bad',
-      vs2 === undefined ? 'vs2 good' : 'vs2 bad',
       evt === 'function' ? 'exit good' : 'exit bad',
       evwft === 'function' ? 'exitWF good' : 'exitWF bad',
     ]);
@@ -73,7 +71,7 @@ export function buildRootObject() {
       precD.resolve(callbackObj); // two
       precE.reject(Error('four')); // three
       const done = Promise.all([pA.then(checkA), rp3]);
-      // expect: [['B good', 'C good', 'F good', 'three good', 'vs1 good', 'vs2 good', 'exit good', 'exitWF good'], 'rp3 good']
+      // expect: [['B good', 'C good', 'F good', 'three good', 'exit good', 'exitWF good'], 'rp3 good']
       return done;
     },
   });

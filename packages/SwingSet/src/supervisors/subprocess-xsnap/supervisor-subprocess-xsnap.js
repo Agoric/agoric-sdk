@@ -185,7 +185,6 @@ function makeWorker(port) {
    * @param {unknown} bundle
    * @param {unknown} virtualObjectCacheSize
    * @param {boolean} enableDisavow
-   * @param {boolean} enableVatstore
    * @param {boolean} [gcEveryCrank]
    * @returns { Promise<Tagged> }
    */
@@ -194,7 +193,6 @@ function makeWorker(port) {
     bundle,
     virtualObjectCacheSize,
     enableDisavow,
-    enableVatstore,
     gcEveryCrank,
   ) {
     /** @type { (vso: VatSyscallObject) => VatSyscallResult } */
@@ -292,7 +290,6 @@ function makeWorker(port) {
       vatPowers,
       cacheSize,
       enableDisavow,
-      enableVatstore,
       gcTools,
       makeVatConsole(makeLogMaker('ls')),
       buildVatNamespace,
@@ -311,14 +308,12 @@ function makeWorker(port) {
       case 'setBundle': {
         assert(!dispatch, 'cannot setBundle again');
         const enableDisavow = !!args[3];
-        const enableVatstore = !!args[4];
-        const gcEveryCrank = args[5] === undefined ? true : !!args[5];
+        const gcEveryCrank = args[4] === undefined ? true : !!args[4];
         return setBundle(
           args[0],
           args[1],
           args[2],
           enableDisavow,
-          enableVatstore,
           gcEveryCrank,
         );
       }
