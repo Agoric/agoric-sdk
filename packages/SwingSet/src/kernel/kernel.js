@@ -1066,7 +1066,6 @@ export default function buildKernel(
       await vatWarehouse.maybeSaveSnapshot();
     }
     kernelKeeper.processRefcounts();
-    kernelKeeper.saveStats();
     const crankNum = kernelKeeper.getCrankNumber();
     kernelKeeper.incrementCrankNumber();
     const { crankhash, activityhash } = kernelKeeper.commitCrank();
@@ -1126,7 +1125,6 @@ export default function buildKernel(
     }
 
     kernelKeeper.processRefcounts();
-    kernelKeeper.saveStats();
     const crankNum = kernelKeeper.getCrankNumber();
     kernelKeeper.incrementCrankNumber();
     const { crankhash, activityhash } = kernelKeeper.commitCrank();
@@ -1344,6 +1342,8 @@ export default function buildKernel(
     started = true;
     assert(kernelKeeper.getInitialized(), X`kernel not initialized`);
 
+    kernelKeeper.loadStats();
+
     await vatWarehouse.start(logStartup);
 
     // the admin device is endowed directly by the kernel
@@ -1425,8 +1425,6 @@ export default function buildKernel(
       const hooks = makeVatAdminHooks({ kernelKeeper, terminateVat });
       deviceHooks.set(vatAdminDeviceID, hooks);
     }
-
-    kernelKeeper.loadStats();
   }
 
   function getNextDeliveryMessage() {

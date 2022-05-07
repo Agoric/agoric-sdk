@@ -24,10 +24,7 @@ import {
   makeUpgradeID,
 } from '../../lib/id.js';
 import { kdebug } from '../../lib/kdebug.js';
-import {
-  KERNEL_STATS_SUM_METRICS,
-  KERNEL_STATS_UPDOWN_METRICS,
-} from '../metrics.js';
+import { KERNEL_STATS_METRICS } from '../metrics.js';
 
 const enableKernelGC = true;
 
@@ -79,13 +76,13 @@ const enableKernelGC = true;
 // v$NN.reapCountdown = $NN or 'never'
 // exclude from consensus
 // local.v$NN.lastSnapshot = JSON({ snapshotID, startPos })
+// local.snapshot.$id = [vatID, ...]
 
 // m$NN.remaining = $NN // remaining capacity (in computrons) or 'unlimited'
 // m$NN.threshold = $NN // notify when .remaining first drops below this
 
-// exclude from consensus
-// local.snapshot.$id = [vatID, ...]
-// local.kernelStats // JSON(various kernel stats)
+// kernelStats // JSON(various consensus kernel stats of other kernel state)
+// local.kernelStats // JSON(various non-consensus kernel stats of other kernel state)
 
 // d$NN.o.nextID = $NN
 // d$NN.c.$kernelSlot = $deviceSlot = o-$NN/d+$NN/d-$NN
@@ -176,8 +173,8 @@ export default function makeKernelKeeper(
   }
 
   const {
-    abortCrank,
-    commitCrank,
+    abortCrank: storeAbortCrank,
+    commitCrank: storeCommitCrank,
     enhancedCrankBuffer: kvStore,
   } = wrapStorage(rawKVStore, createSHA256, isConsensusKey);
   insistEnhancedStorageAPI(kvStore);
@@ -207,22 +204,57 @@ export default function makeKernelKeeper(
   // counter named 'fooUp', the stats collection machinery will automatically
   // track the number of times 'foo' is incremented.  Similarly, 'fooDown' will
   // track the number of times 'foo' is decremented.
-  let kernelStats = {};
+  /** @type {Record<string, number> | null} */
+  let kernelLocalStats = null;
 
-  // The SUM_METRICS just allow incrementing a single value.
-  KERNEL_STATS_SUM_METRICS.forEach(({ key }) => {
-    kernelStats[key] = 0;
+  /** @type {Record<string, number> | null} */
+  let kernelConsensusStats = null;
+
+  /** @type {Record<string, number>} */
+  const defaultConsensusStats = {};
+  /** @type {Record<string, number>} */
+  const defaultLocalStats = {};
+
+  KERNEL_STATS_METRICS.forEach(({ key, consensus, metricType }) => {
+    const targetStats = consensus ? defaultConsensusStats : defaultLocalStats;
+
+    switch (metricType) {
+      case 'counter': {
+        targetStats[key] = 0;
+        break;
+      }
+      case 'gauge': {
+        targetStats[key] = 0;
+        targetStats[`${key}Up`] = 0;
+        targetStats[`${key}Down`] = 0;
+        targetStats[`${key}Max`] = 0;
+        break;
+      }
+      default:
+        assert.fail(`Unknown stat type ${metricType}`);
+    }
   });
 
-  // The UPDOWN_METRICS track a value, up, down, and max.
-  KERNEL_STATS_UPDOWN_METRICS.forEach(({ key }) => {
-    kernelStats[key] = 0;
-    kernelStats[`${key}Up`] = 0;
-    kernelStats[`${key}Down`] = 0;
-    kernelStats[`${key}Max`] = 0;
-  });
+  Object.freeze(defaultConsensusStats);
+  Object.freeze(defaultLocalStats);
+
+  function initializeStats() {
+    kernelConsensusStats = { ...defaultConsensusStats };
+    kernelLocalStats = { ...defaultLocalStats };
+  }
+
+  function pickStats(stat) {
+    assert(
+      kernelConsensusStats && kernelLocalStats,
+      'Kernel stats not initialized',
+    );
+    return stat in kernelConsensusStats
+      ? kernelConsensusStats
+      : kernelLocalStats;
+  }
 
   function incStat(stat, delta = 1) {
+    const kernelStats = pickStats(stat);
     assert.typeof(kernelStats[stat], 'number');
     kernelStats[stat] += delta;
     const maxStat = `${stat}Max`;
@@ -239,6 +271,7 @@ export default function makeKernelKeeper(
   }
 
   function decStat(stat, delta = 1) {
+    const kernelStats = pickStats(stat);
     assert.typeof(kernelStats[stat], 'number');
     kernelStats[stat] -= delta;
     const downStat = `${stat}Down`;
@@ -248,18 +281,42 @@ export default function makeKernelKeeper(
   }
 
   function saveStats() {
-    kvStore.set('local.kernelStats', JSON.stringify(kernelStats));
+    assert(
+      kernelConsensusStats && kernelLocalStats,
+      'Kernel stats not initialized',
+    );
+
+    kvStore.set('kernelStats', JSON.stringify(kernelConsensusStats));
+    kvStore.set('local.kernelStats', JSON.stringify(kernelLocalStats));
   }
 
   function loadStats() {
-    kernelStats = {
-      ...kernelStats,
-      ...JSON.parse(getRequired('local.kernelStats')),
+    kernelConsensusStats = {
+      ...defaultConsensusStats,
+      ...JSON.parse(getRequired('kernelStats')),
+    };
+    kernelLocalStats = {
+      ...defaultLocalStats,
+      ...JSON.parse(kvStore.get('local.kernelStats') || '{}'),
     };
   }
 
-  function getStats() {
-    return { ...kernelStats };
+  function getStats(consensusOnly) {
+    return {
+      ...(consensusOnly ? {} : kernelLocalStats),
+      ...kernelConsensusStats,
+    };
+  }
+
+  function commitCrank() {
+    saveStats();
+    return storeCommitCrank();
+  }
+
+  function abortCrank() {
+    const ret = storeAbortCrank();
+    loadStats();
+    return ret;
   }
 
   const ephemeral = harden({
@@ -307,6 +364,8 @@ export default function makeKernelKeeper(
     kvStore.set('crankNumber', `${FIRST_CRANK_NUMBER}`);
     kvStore.set('kernel.defaultManagerType', defaultManagerType);
     kvStore.set('kernel.defaultReapInterval', `${defaultReapInterval}`);
+    // Will be saved in the bootstrap commit
+    initializeStats();
   }
 
   /**

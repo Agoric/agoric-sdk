@@ -106,16 +106,19 @@ export const KERNEL_STATS_UPDOWN_METRICS = [
   {
     key: 'runQueueLength',
     name: 'swingset_run_queue_length',
+    consensus: true,
     description: 'Length of the kernel run queue',
   },
   {
     key: 'acceptanceQueueLength',
     name: 'swingset_acceptance_queue_length',
+    consensus: true,
     description: 'Length of the kernel acceptance queue',
   },
   {
     key: 'promiseQueuesLength',
     name: 'swingset_promise_queues_length',
+    consensus: true,
     description: 'Combined length of all kernel promise queues',
   },
   {
@@ -130,6 +133,7 @@ export const KERNEL_STATS_UPDOWN_METRICS = [
   },
 ];
 
+/** @type {ReadonlyArray<{key: string, name: string, consensus?: boolean, description: string, metricType: 'counter' | 'gauge'}>} */
 export const KERNEL_STATS_METRICS = [
   ...KERNEL_STATS_SUM_METRICS.map(m => ({ ...m, metricType: 'counter' })),
   ...KERNEL_STATS_UPDOWN_METRICS.map(m => ({ ...m, metricType: 'gauge' })),

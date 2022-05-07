@@ -11,11 +11,13 @@ import {
   addHelpers,
 } from '../src/kernel/state/storageWrapper.js';
 
+const ignoredStateKeys = ['activityhash', 'kernelStats', 'local.kernelStats'];
+
 function checkState(t, getState, expected) {
   const state = getState();
   const got = [];
   for (const key of Object.getOwnPropertyNames(state)) {
-    if (key !== 'activityhash') {
+    if (!ignoredStateKeys.includes(key)) {
       // the hash is just too annoying to compare against
       got.push([key, state[key]]);
     }
@@ -236,7 +238,9 @@ function buildKeeperStorageInMemory() {
 function duplicateKeeper(getState) {
   const store = initSwingStore(null);
   setAllState(store, { kvStuff: getState(), streamStuff: new Map() });
-  return makeKernelKeeper(store, null, createSHA256);
+  const kernelKeeper = makeKernelKeeper(store, null, createSHA256);
+  kernelKeeper.loadStats();
+  return kernelKeeper;
 }
 
 test('hostStorage param guards', async t => {
@@ -701,6 +705,27 @@ test('meters', async t => {
   t.deepEqual(k.getMeter(m3), { remaining: 'unlimited', threshold: 5n });
 });
 
+/**
+ * Wraps a base sha256 hasher always appending the initial kernel stats
+ * before generating the digest.
+ *
+ * @param {string} [algorithm]
+ * @param {any} k
+ */
+const makeTestCrankHasher = (algorithm = 'sha256', k) => {
+  const h = createHash(algorithm);
+  const update = h.update.bind(h);
+  const digest = (encoding = 'hex') => {
+    update('add\n' + 'kernelStats\n' + `${JSON.stringify(k.getStats(true))}\n`);
+    return h.digest(encoding);
+  };
+
+  return {
+    update,
+    digest,
+  };
+};
+
 test('crankhash - initial state and additions', t => {
   const store = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(store, null, createSHA256);
@@ -713,12 +738,12 @@ test('crankhash - initial state and additions', t => {
   // a crank which sets a single key produces a stable crankhash, which does
   // not depend upon the earlier activityhash of kernel state
   k.kvStore.set('one', '1');
-  let h = createHash('sha256');
+  let h = makeTestCrankHasher('sha256', k);
   h.update('add\n' + 'one\n' + '1\n');
   const expCrankhash = h.digest('hex');
   t.is(
     expCrankhash,
-    '29dedad4ccd119b6f7d80109590cc357c69eb4f03210cdbc9b1c982cd228fd8b',
+    '136550ffca718f8097396cbecb511aa2320d9ddc9bda5cebbafb64081b29e1e6',
   );
 
   h = createHash('sha256');
@@ -747,12 +772,12 @@ test('crankhash - skip keys', t => {
   k.commitCrank();
 
   k.kvStore.set('one', '1');
-  const h = createHash('sha256');
+  const h = makeTestCrankHasher('sha256', k);
   h.update('add\n' + 'one\n' + '1\n');
   const expCrankhash = h.digest('hex');
   t.is(
     expCrankhash,
-    '29dedad4ccd119b6f7d80109590cc357c69eb4f03210cdbc9b1c982cd228fd8b',
+    '136550ffca718f8097396cbecb511aa2320d9ddc9bda5cebbafb64081b29e1e6',
   );
   t.is(k.commitCrank().crankhash, expCrankhash);
 
@@ -777,24 +802,24 @@ test('crankhash - duplicate set', t => {
   k.commitCrank();
 
   k.kvStore.set('one', '1');
-  const h = createHash('sha256');
+  const h = makeTestCrankHasher('sha256', k);
   h.update('add\n' + 'one\n' + '1\n');
   const expCrankhash = h.digest('hex');
   t.is(
     expCrankhash,
-    '29dedad4ccd119b6f7d80109590cc357c69eb4f03210cdbc9b1c982cd228fd8b',
+    '136550ffca718f8097396cbecb511aa2320d9ddc9bda5cebbafb64081b29e1e6',
   );
   t.is(k.commitCrank().crankhash, expCrankhash);
 
   k.kvStore.set('one', '1');
   k.kvStore.set('one', '1');
-  const h2 = createHash('sha256');
+  const h2 = makeTestCrankHasher('sha256', k);
   h2.update('add\n' + 'one\n' + '1\n');
   h2.update('add\n' + 'one\n' + '1\n');
   const expCrankhash2 = h2.digest('hex');
   t.is(
     expCrankhash2,
-    '6e82c45c44062ceb71cf242a79aa76578a2dd3002e0b76d756790418914ccc34',
+    '2b60f31547515d4887ff62871fbf27a99a4091ec1564f6aaefe89f41131245eb',
   );
   t.is(k.commitCrank().crankhash, expCrankhash2);
 });
@@ -807,11 +832,11 @@ test('crankhash - set and delete', t => {
   k.createStartingKernelState('local');
   k.commitCrank();
 
-  const h1 = createHash('sha256');
+  const h1 = makeTestCrankHasher('sha256', k);
   const expCrankhash1 = h1.digest('hex');
   t.is(k.commitCrank().crankhash, expCrankhash1); // empty
 
-  const h2 = createHash('sha256');
+  const h2 = makeTestCrankHasher('sha256', k);
   h2.update('add\n' + 'one\n' + '1\n');
   h2.update('delete\n' + 'one\n');
   const expCrankhash2 = h2.digest('hex');
