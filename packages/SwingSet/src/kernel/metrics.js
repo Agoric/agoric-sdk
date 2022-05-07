@@ -114,6 +114,11 @@ export const KERNEL_STATS_UPDOWN_METRICS = [
     description: 'Length of the kernel acceptance queue',
   },
   {
+    key: 'promiseQueuesLength',
+    name: 'swingset_promise_queues_length',
+    description: 'Combined length of all kernel promise queues',
+  },
+  {
     key: 'clistEntries',
     name: 'swingset_clist_entries',
     description: 'Number of entries in the kernel c-list',
