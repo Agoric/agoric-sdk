@@ -169,14 +169,12 @@ const start = async (zcf, privateArgs) => {
     { addLiquidityToAmmPool },
   );
 
-  /** @typedef {typeof creatorFacet} ReserveCreatorFacet */
   const publicFacet = augmentPublicFacet(
     Far('Collateral Reserve public', {
       makeAddCollateralInvitation,
     }),
   );
 
-  /** @typedef {typeof publicFacet} ReservePublicFacet */
   return harden({ creatorFacet, publicFacet });
 };
 

@@ -213,3 +213,17 @@ export const unsafeMakeBundleCache = async dest => {
   const destWr = makeFileWriter(dest, { fs, path });
   return makeBundleCache(destWr, cwd, readPowers);
 };
+
+export const makeNodeBundleCache = async (dest, loadModule) => {
+  const [fs, path, url, crypto] = await Promise.all([
+    await loadModule('fs'),
+    await loadModule('path'),
+    await loadModule('url'),
+    await loadModule('crypto'),
+  ]);
+
+  const readPowers = makeReadPowers({ fs, url, crypto });
+  const cwd = makeFileReader('', { fs, path });
+  const destWr = makeFileWriter(dest, { fs, path });
+  return makeBundleCache(destWr, cwd, readPowers);
+};

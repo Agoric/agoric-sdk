@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 # docker-tag.sh - Create a new tag for a set of Agoric Docker images
 set -xe
 
@@ -12,7 +12,16 @@ if [ -z "$DSTTAG" ]; then
 fi
 
 for img in agoric-sdk cosmic-swingset-setup cosmic-swingset-solo deployment; do
-  docker pull $DOCKERUSER/$img:$SRCTAG
-  docker tag $DOCKERUSER/$img:$SRCTAG $DOCKERUSER/$img:$DSTTAG
-  docker push $DOCKERUSER/$img:$DSTTAG
+  SRC="$DOCKERUSER/$img:$SRCTAG"
+  DST="$DOCKERUSER/$img:$DSTTAG"
+  if manifest=$(docker manifest inspect "$SRC"); then
+    AMENDS=$(jq -r .manifests[].digest <<<"$manifest" | sed -e "s!^!--amend $DOCKERUSER/$img@!")
+    docker manifest create "$DST" $AMENDS
+    docker manifest push "$DST"
+  elif docker pull "$SRC"; then
+    docker tag "$SRC" "$DST"
+    docker push "$DST"
+  else
+    echo 1>&2 "Failed to find image $img:$SRCTAG"
+  fi
 done

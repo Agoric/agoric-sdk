@@ -55,9 +55,10 @@ packages (to enable `agoric install <TAG>`), use:
 To make validators' lives easier, create a Git tag for the chain-id:
 
 ```sh
-CHAIN_ID=agoricstage-8 # Change this as necessary
+CHAIN_ID=agoricstage-27 # Change this as necessary
 git tag -s -m "release $CHAIN_ID" $CHAIN_ID @agoric/sdk@$SDKVER^{}
 git push origin $CHAIN_ID
+./scripts/docker-tag.sh $SDKVER $CHAIN_ID
 ```
 
 ## More subtlety

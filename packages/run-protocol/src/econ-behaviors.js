@@ -35,17 +35,21 @@ const CENTRAL_DENOM_NAME = 'urun';
  *   ammCreatorFacet: XYKAMMCreatorFacet,
  *   ammGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
  *   economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet,
+ *   interchainMints: Mint[],
  *   psmCreatorFacet: unknown,
  *   psmGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
- *   reservePublicFacet: unknown,
- *   reserveCreatorFacet: GovernedContractFacetAccess<any>,
- *   reserveGovernorCreatorFacet: GovernedContractFacetAccess<any>,
+ *   reservePublicFacet: AssetReservePublicFacet,
+ *   reserveCreatorFacet: AssetReserveCreatorFacet,
+ *   reserveGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
  *   runStakeCreatorFacet: import('./runStake/runStake.js').RunStakeCreator,
  *   vaultFactoryCreator: VaultFactory,
  *   vaultFactoryGovernorCreator: GovernedContractFacetAccess<unknown>,
  *   vaultFactoryVoteCreator: unknown,
  *   minInitialDebt: NatValue,
  * }>} EconomyBootstrapSpace
+ *
+ * @typedef {import('./reserve/assetReserve.js').AssetReserveCreatorFacet} AssetReserveCreatorFacet
+ * @typedef {import('./reserve/assetReserve.js').AssetReservePublicFacet} AssetReservePublicFacet
  */
 
 /**
@@ -59,7 +63,9 @@ const CENTRAL_DENOM_NAME = 'urun';
 
 /**
  * @param {EconomyBootstrapPowers} powers
- * @param {{ committeeName: string, committeeSize: number }} electorateTerms
+ * @param {object} [electorateTerms]
+ * @param {string} [electorateTerms.committeeName]
+ * @param {number} [electorateTerms.committeeSize]
  */
 export const startEconomicCommittee = async (
   {
@@ -72,15 +78,17 @@ export const startEconomicCommittee = async (
       produce: { economicCommittee },
     },
   },
-  electorateTerms = {
-    committeeName: 'Initial Economic Committee',
-    committeeSize: 3,
-  },
+  electorateTerms = {},
 ) => {
+  const {
+    committeeName = 'Initial Economic Committee',
+    committeeSize = 3,
+    ...rest
+  } = electorateTerms;
   const { creatorFacet, instance } = await E(zoe).startInstance(
     committee,
     {},
-    electorateTerms,
+    { committeeName, committeeSize, ...rest },
   );
 
   economicCommitteeCreatorFacet.resolve(creatorFacet);

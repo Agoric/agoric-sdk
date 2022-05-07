@@ -8,7 +8,7 @@ import {
   mergePermits,
   stringify,
 } from './code-gen.js';
-import { makeCoreProposalBehavior } from './coreProposalBehavior.js';
+import { makeCoreProposalBehavior, permits } from './coreProposalBehavior.js';
 import { createBundles } from './createBundles.js';
 
 export const makeWriteCoreProposal = (
@@ -91,13 +91,7 @@ export const makeWriteCoreProposal = (
     console.log('created', { filePrefix, sourceSpec, getManifestCall });
 
     // Extract the top-level permit.
-    const t = 'writeCoreProposal';
-    const proposalPermit = await mergeProposalPermit(proposal, {
-      consume: { board: t },
-      evaluateInstallation: t,
-      installation: { produce: t },
-      modules: { utils: { runModuleBehaviors: t } },
-    });
+    const proposalPermit = await mergeProposalPermit(proposal, permits);
 
     // Get an install
     const manifestInstallRef = await publishRef(install(sourceSpec));
