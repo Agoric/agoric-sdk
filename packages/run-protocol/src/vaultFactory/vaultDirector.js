@@ -26,8 +26,6 @@ import {
   RECORDING_PERIOD_KEY,
   CHARGING_PERIOD_KEY,
   vaultParamPattern,
-  LIQUIDATION_INSTALL_KEY,
-  LIQUIDATION_TERMS_KEY,
 } from './params.js';
 
 const { details: X } = assert;
@@ -158,8 +156,8 @@ const getCollaterals = async ({ state }) => {
 };
 
 const getLiquidationConfig = directorParamManager => ({
-  install: directorParamManager.getInstallation(LIQUIDATION_INSTALL_KEY),
-  terms: directorParamManager.getUnknown(LIQUIDATION_TERMS_KEY),
+  install: directorParamManager.getLiquidationInstall(),
+  terms: directorParamManager.getLiquidationTerms(),
 });
 
 const watchGovernance = (govParams, vaultManager, oldInstall, oldTerms) => {
