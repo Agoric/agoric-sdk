@@ -59,8 +59,10 @@ export const extractCoreProposalBundles = async (
   const bundleToSource = new Map();
   const extracted = await Promise.all(
     coreProposals.map(async (initCore, i) => {
-      /** @type {Set<{ source: string, bundle?: string, bundleID?: string }>} */
+      /** @type {Set<{ bundleID?: string }>} */
       const bundleHandles = new Set();
+      /** @type {Map<{ bundleID?: string }, string>} */
+      const bundleHandleToSource = new Map();
 
       console.log(`Parsing core proposal:`, initCore);
       const initPath = pathResolve(dirname, initCore);
@@ -68,7 +70,8 @@ export const extractCoreProposalBundles = async (
       const ns = await import(initPath);
       const install = (srcPath, bundlePath) => {
         const absSrc = pathResolve(initDir, srcPath);
-        const bundleHandle = { source: absSrc };
+        const bundleHandle = {};
+        bundleHandleToSource.set(bundleHandle, absSrc);
         if (bundlePath) {
           const absBundle = pathResolve(initDir, bundlePath);
           const oldSource = bundleToSource.get(absBundle);
@@ -81,7 +84,6 @@ export const extractCoreProposalBundles = async (
           } else {
             bundleToSource.set(absBundle, absSrc);
           }
-          bundleHandle.bundle = absBundle;
         }
         // Don't harden since we need to set the bundleID later.
         bundleHandles.add(bundleHandle);
@@ -98,21 +100,23 @@ export const extractCoreProposalBundles = async (
       const proposal = await ns.defaultProposalBuilder({ publishRef, install });
 
       // Add the proposal bundle handles in sorted order.
-      const bundleSpecEntries = [...bundleHandles.values()]
-        .sort(({ source: a }, { source: b }) => {
-          if (a < b) {
+      const bundleSpecEntries = [...bundleHandleToSource.entries()]
+        .sort(([_hnda, sourcea], [_hndb, sourceb]) => {
+          if (sourcea < sourceb) {
             return -1;
           }
-          if (a > b) {
+          if (sourcea > sourceb) {
             return 1;
           }
           return 0;
         })
-        .map((handle, j) => {
+        .map(([handle, sourceSpec], j) => {
+          // Transform the bundle handle identity into just a bundleID reference.
           handle.bundleID = `coreProposal${i}_${j}`;
           harden(handle);
+
           /** @type {[string, { sourceSpec: string }]} */
-          const specEntry = [handle.bundleID, { sourceSpec: handle.source }];
+          const specEntry = [handle.bundleID, { sourceSpec }];
           return specEntry;
         });
 
@@ -124,12 +128,11 @@ export const extractCoreProposalBundles = async (
       const absSrc = pathResolve(initDir, sourceSpec);
       const behaviorBundleHandle = harden({
         bundleID: `coreProposal${i}_behaviors`,
-        source: absSrc,
       });
 
       bundleSpecEntries.unshift([
         behaviorBundleHandle.bundleID,
-        { sourceSpec: behaviorBundleHandle.source },
+        { sourceSpec: absSrc },
       ]);
 
       return harden({
@@ -161,6 +164,6 @@ const makeCoreProposalBehavior = ${makeCoreProposalBehavior};
 (${makeEnactCoreProposals})({ makeCoreProposalArgs, E });
 `;
 
-  console.debug('created bundles from proposals:', coreProposals, bundles);
+  // console.debug('created bundles from proposals:', coreProposals, bundles);
   return { bundles, code: defangAndTrim(code) };
 };
