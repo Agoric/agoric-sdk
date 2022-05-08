@@ -26,8 +26,6 @@ import {
   RECORDING_PERIOD_KEY,
   CHARGING_PERIOD_KEY,
   vaultParamPattern,
-  LIQUIDATION_INSTALL_KEY,
-  LIQUIDATION_TERMS_KEY,
 } from './params.js';
 
 const { details: X } = assert;
