@@ -70,6 +70,7 @@ export const extractCoreProposalBundles = async (
   const extracted = await Promise.all(
     coreProposals.map(async (initCore, i) => {
       console.log(`Parsing core proposal:`, initCore);
+      const thisProposalBundleHandles = new Set();
       assert(getSequenceForProposal);
       const thisProposalSequence = getSequenceForProposal(i);
       const initPath = pathResolve(dirname, initCore);
@@ -95,6 +96,7 @@ export const extractCoreProposalBundles = async (
         }
         // Don't harden the bundleHandle since we need to set the bundleID on
         // its unique identity later.
+        thisProposalBundleHandles.add(bundleHandle);
         bundleHandleToAbsolutePaths.set(bundleHandle, harden(absolutePaths));
         return bundleHandle;
       };
@@ -109,7 +111,8 @@ export const extractCoreProposalBundles = async (
       const proposal = await ns.defaultProposalBuilder({ publishRef, install });
 
       // Add the proposal bundle handles in sorted order.
-      const bundleSpecEntries = [...bundleHandleToAbsolutePaths.entries()]
+      const bundleSpecEntries = [...thisProposalBundleHandles.keys()]
+        .map(handle => [handle, bundleHandleToAbsolutePaths.get(handle)])
         .sort(([_hnda, { source: a }], [_hndb, { source: b }]) => {
           if (a < b) {
             return -1;
@@ -120,7 +123,7 @@ export const extractCoreProposalBundles = async (
           return 0;
         })
         .map(([handle, absolutePaths], j) => {
-          // Transform the bundle handle identity into just a bundleID reference.
+          // Transform the bundle handle identity into a bundleID reference.
           handle.bundleID = `coreProposal${thisProposalSequence}_${j}`;
           harden(handle);
 
