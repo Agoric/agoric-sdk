@@ -22,6 +22,7 @@ import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeNodeBundleCache } from './bundleTool.js';
 import { setupBootstrap, setUpZoeForTest } from './supports.js';
 
+const { details: X } = assert;
 const dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 /** @type {import('ava').TestInterface<Awaited<ReturnType<makeTestContext>>>} */
@@ -45,6 +46,9 @@ const voterAddresses = {
   Dan: `agoric1yumvyl7f5nkalss7w59gs6n3jtqv5gmarudx55`,
 };
 
+// Nondeterministic, but the test shouldn't rely on this value.
+let lastProposalSequence = 0;
+
 const makeTestContext = async () => {
   const bundleCache = await makeNodeBundleCache('bundles/', s => import(s));
   const { zoe, feeMintAccess } = setUpZoeForTest();
@@ -62,21 +66,34 @@ const makeTestContext = async () => {
     ),
   };
 
+  const bundleIDToAbsolutePaths = new Map();
   const bundlePathToInstallP = new Map();
-  const cachedInstall = (src, dest) => {
-    if (!dest) {
-      dest = src.replace(/(\\|\/|:)/g, '_');
+  const restoreBundleID = bundleID => {
+    const absolutePaths = bundleIDToAbsolutePaths.get(bundleID);
+    assert(absolutePaths, X`bundleID ${bundleID} not found`);
+    const { source, bundle } = absolutePaths;
+    const bundlePath = bundle || source.replace(/(\\|\/|:)/g, '_');
+    if (!bundlePathToInstallP.has(bundlePath)) {
+      const match = path.basename(bundlePath).match(/^bundle-(.*)\.js$/);
+      const actualBundle = match ? match[1] : bundlePath;
+      bundlePathToInstallP.set(bundlePath, install(source, actualBundle));
     }
-    if (!bundlePathToInstallP.has(dest)) {
-      const match = path.basename(dest).match(/^bundle-(.*)\.js$/);
-      const bundle = match ? match[1] : dest;
-      bundlePathToInstallP.set(dest, install(src, bundle));
+    return bundlePathToInstallP.get(bundlePath);
+  };
+
+  const registerBundleHandles = bundleHandleMap => {
+    for (const [{ bundleID }, paths] of bundleHandleMap.entries()) {
+      assert(
+        !bundleIDToAbsolutePaths.has(bundleID),
+        X`bundleID ${bundleID} already registered`,
+      );
+      bundleIDToAbsolutePaths.set(bundleID, paths);
     }
-    return bundlePathToInstallP.get(dest);
   };
 
   return {
-    cachedInstall,
+    registerBundleHandles,
+    restoreBundleID,
     cleanups: [],
     zoe: await zoe,
     feeMintAccess: await feeMintAccess,
@@ -166,17 +183,16 @@ const makeScenario = async t => {
   };
 
   /** @type {any} */
-  const { cachedInstall: produceCachedInstall } = space.produce;
-  produceCachedInstall.resolve(t.context.cachedInstall);
-  const makeEnactCoreProposalsFromSource =
+  const { restoreBundleID: produceRestoreBundleID } = space.produce;
+  produceRestoreBundleID.resolve(t.context.restoreBundleID);
+  const makeEnactCoreProposalsFromBundleHandle =
     ({ makeCoreProposalArgs, E: cpE }) =>
     allPowers => {
       const {
-        consume: { cachedInstall },
+        consume: { restoreBundleID },
       } = allPowers;
-      const restoreRef = async ref => {
-        const { source, bundle } = ref;
-        return cpE(cachedInstall)(source, bundle);
+      const restoreRef = async ({ bundleID }) => {
+        return cpE(restoreBundleID)(bundleID);
       };
 
       return Promise.all(
@@ -196,11 +212,16 @@ const makeScenario = async t => {
    * @param {string[]} proposals
    */
   const evalProposals = async proposals => {
-    const { code } = await extractCoreProposalBundles(
-      proposals,
-      dirname,
-      makeEnactCoreProposalsFromSource,
-    );
+    const { code, bundleHandleToAbsolutePaths } =
+      await extractCoreProposalBundles(
+        proposals,
+        dirname,
+        makeEnactCoreProposalsFromBundleHandle,
+        () => (lastProposalSequence += 1),
+      );
+    t.context.registerBundleHandles(bundleHandleToAbsolutePaths);
+
+    console.log(bundleHandleToAbsolutePaths, code);
 
     const coreEvalMessage = {
       type: 'CORE_EVAL',

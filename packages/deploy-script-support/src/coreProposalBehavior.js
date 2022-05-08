@@ -19,7 +19,7 @@ export const permits = {
  * @param {[string, ...unknown[]]} opts.getManifestCall
  * @param {typeof import('@endo/far').E} opts.E
  * @param {(...args: unknown[]) => void} [opts.log]
- * @param {(ref: string) => Promise<unknown>} [opts.restoreRef]
+ * @param {(ref: unknown) => Promise<unknown>} [opts.restoreRef]
  * @returns {(vatPowers: unknown) => Promise<unknown>}
  */
 export const makeCoreProposalBehavior = ({

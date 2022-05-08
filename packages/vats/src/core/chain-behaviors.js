@@ -82,8 +82,7 @@ export const bridgeCoreEval = async allPowers => {
                   const globals = harden({
                     ...allPowers.modules,
                     ...farExports,
-                    assert,
-                    console,
+                    ...endowments,
                   });
 
                   // Evaluate the code in the context of the globals.
