@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.15.1](https://github.com/Agoric/agoric-sdk/compare/agoric@0.15.0...agoric@0.15.1) (2022-05-09)
+
+
+### Bug Fixes
+
+* **agoric-cli:** Fully validate agoric start portNum ([#5146](https://github.com/Agoric/agoric-sdk/issues/5146)) ([4aaa709](https://github.com/Agoric/agoric-sdk/commit/4aaa7095c005a2423f2e9b20b945800382484053))
+* **agoric-cli:** path handling ([1bbde6d](https://github.com/Agoric/agoric-sdk/commit/1bbde6d63cbff35c0b7d6bcf4c0475c387f9efd0))
+
+
+
 ## [0.15.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.14.1...agoric@0.15.0) (2022-04-18)
 
 

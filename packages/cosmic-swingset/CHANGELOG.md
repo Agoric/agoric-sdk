@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.36.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.35.0...@agoric/cosmic-swingset@0.36.0) (2022-05-09)
+
+
+### Features
+
+* Accept path for swingStore trace ([63a209c](https://github.com/Agoric/agoric-sdk/commit/63a209c8c7906f8be07f87aedf1313e607df7b42))
+* Plumb env into makeSwingsetController ([53c2c93](https://github.com/Agoric/agoric-sdk/commit/53c2c93e6bf4fa569e1194c8a6126d187ecbdb84))
+* **swingset:** Add swing store trace option ([25c7e79](https://github.com/Agoric/agoric-sdk/commit/25c7e79d699e8894a283518490add19f60840f4b))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** Fully drain actionQueue when recovering an interrupted block ([#5198](https://github.com/Agoric/agoric-sdk/issues/5198)) ([70c5463](https://github.com/Agoric/agoric-sdk/commit/70c5463d318288bec7d0947793f8cc24e676ef5b)), closes [#5196](https://github.com/Agoric/agoric-sdk/issues/5196)
+* **cosmic-swingset:** stay alive with unresolved promise instead of 30s timer ([5ecbb51](https://github.com/Agoric/agoric-sdk/commit/5ecbb51cf099ab65365085b82337879b54449045))
+* **extract-proposal:** make results deterministic ([8fba48a](https://github.com/Agoric/agoric-sdk/commit/8fba48ae6182b31b5d595f193d1f9209a7e56455))
+
+
+
 ## [0.35.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.34.6...@agoric/cosmic-swingset@0.35.0) (2022-04-18)
 
 

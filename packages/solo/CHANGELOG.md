@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.6.0...@agoric/solo@0.7.0) (2022-05-09)
+
+
+### Features
+
+* **deployment:** integration: record xsnap and swingStore traces ([fa669e0](https://github.com/Agoric/agoric-sdk/commit/fa669e05c98a42ca647e1603c9ba1e95bec42769))
+* Accept path for swingStore trace ([63a209c](https://github.com/Agoric/agoric-sdk/commit/63a209c8c7906f8be07f87aedf1313e607df7b42))
+* Plumb env into makeSwingsetController ([53c2c93](https://github.com/Agoric/agoric-sdk/commit/53c2c93e6bf4fa569e1194c8a6126d187ecbdb84))
+
+
+
 ## [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.5.6...@agoric/solo@0.6.0) (2022-04-18)
 
 

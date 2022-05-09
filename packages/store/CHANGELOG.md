@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.7.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.7.0...@agoric/store@0.7.1) (2022-05-09)
+
+
+### Bug Fixes
+
+* provide provide, a get-or-make for mapStores ([#5282](https://github.com/Agoric/agoric-sdk/issues/5282)) ([9975529](https://github.com/Agoric/agoric-sdk/commit/9975529c2bc34664e8f908855cf68a74cbfec871))
+
+
+
 ## [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.6.10...@agoric/store@0.7.0) (2022-04-18)
 
 

@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.5.0...@agoric/spawner@0.5.1) (2022-05-09)
+
+
+### Bug Fixes
+
+* **spawner:** propagate `VatData` ([7bb8475](https://github.com/Agoric/agoric-sdk/commit/7bb847510ebfa873049a26457e58827f8c15a15b))
+
+
+
 ## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.35...@agoric/spawner@0.5.0) (2022-04-18)
 
 

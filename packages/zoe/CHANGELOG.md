@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.22.0...@agoric/zoe@0.23.0) (2022-05-09)
+
+
+### Features
+
+* **contractSupport:** looser ratio op brands, `parse`, `subtract` ([b1978b8](https://github.com/Agoric/agoric-sdk/commit/b1978b885d8f441d2f10177b3084837ef6fa3683))
+* **vault:** Liquidate incrementally ([#5129](https://github.com/Agoric/agoric-sdk/issues/5129)) ([b641269](https://github.com/Agoric/agoric-sdk/commit/b64126996d4844c07016deadc87269dc387c4aae))
+* **zoe:** `priceAuthorityTransform.js` and `scaledPriceAuthority.js` ([d897c66](https://github.com/Agoric/agoric-sdk/commit/d897c662b19dbd14a7894d86b7de8f5f19dada3d))
+* **zoe:** half-to-even (bankers) rounding for ratio math ([b5770e8](https://github.com/Agoric/agoric-sdk/commit/b5770e8b1bbe26a3dc430b14e5c8714156f4f842))
+* **zoe:** use bankers rounding in quantize ([f726786](https://github.com/Agoric/agoric-sdk/commit/f72678688fcfec1c3952080e61339688913f38dd))
+
+
+### Bug Fixes
+
+* **contractSupport:** median divide is by a scalar ([78e426e](https://github.com/Agoric/agoric-sdk/commit/78e426e014fd7cdbc95396bb3cdb552269a6a641))
+* **priceAggregator:** internally use ratios to preserve price precision ([f48c63d](https://github.com/Agoric/agoric-sdk/commit/f48c63d1c9edccf3c3ef50697211469db35a587c))
+* fix types of stopAcceptingOffers ([#5225](https://github.com/Agoric/agoric-sdk/issues/5225)) ([3996280](https://github.com/Agoric/agoric-sdk/commit/39962808ce77432e6ce74a1bdac207f10545a626))
+* **priceAggregator:** use `privateArgs`, not `initializeQuoteMint` ([f2c4f8e](https://github.com/Agoric/agoric-sdk/commit/f2c4f8e37f6c4d35569f683b84f619a0fb4fc968))
+
+
+
 ## [0.22.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.21.3...@agoric/zoe@0.22.0) (2022-04-18)
 
 

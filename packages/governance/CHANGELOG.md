@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.5.0...@agoric/governance@0.6.0) (2022-05-09)
+
+
+### Features
+
+* add governance for RECORDS as a parameter type ([#5273](https://github.com/Agoric/agoric-sdk/issues/5273)) ([82ffc23](https://github.com/Agoric/agoric-sdk/commit/82ffc23f5516738b22b2ef8bc0f4fe2850c3f35c)), closes [#5216](https://github.com/Agoric/agoric-sdk/issues/5216)
+* **vault:** governance upgrade of liquidation ([#5211](https://github.com/Agoric/agoric-sdk/issues/5211)) ([35e1b7d](https://github.com/Agoric/agoric-sdk/commit/35e1b7d0b7df2508adf0d46a83944e94ab95951a))
+* **vault:** Liquidate incrementally ([#5129](https://github.com/Agoric/agoric-sdk/issues/5129)) ([b641269](https://github.com/Agoric/agoric-sdk/commit/b64126996d4844c07016deadc87269dc387c4aae))
+
+
+### Bug Fixes
+
+* **governance:** fix test result order ([c4f7a3e](https://github.com/Agoric/agoric-sdk/commit/c4f7a3ed0ec7a0a1aa138dd85ec5973b949ed661))
+* reconcile use of path to paramManager vaults with others ([#5151](https://github.com/Agoric/agoric-sdk/issues/5151)) ([b5d1439](https://github.com/Agoric/agoric-sdk/commit/b5d14393d407a7d7dca42ff5e41d374613168cbc))
+* repair types left as <any> ([#5159](https://github.com/Agoric/agoric-sdk/issues/5159)) ([0eaa0b1](https://github.com/Agoric/agoric-sdk/commit/0eaa0b1226b2a49b3b05ce00e19b7ab7cc830f35))
+
+
+
 ## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.4.3...@agoric/governance@0.5.0) (2022-04-18)
 
 

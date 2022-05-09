@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.2.1...@agoric/deployment@2.3.0) (2022-05-09)
+
+
+### Features
+
+* **deployment:** Add script to run integration test locally ([e0d366a](https://github.com/Agoric/agoric-sdk/commit/e0d366a3c1445d73db55141deac5bcbb8ce0da2e))
+* **deployment:** integration: record xsnap and swingStore traces ([fa669e0](https://github.com/Agoric/agoric-sdk/commit/fa669e05c98a42ca647e1603c9ba1e95bec42769))
+* **dockerfile:** include otel collector ([6f5e686](https://github.com/Agoric/agoric-sdk/commit/6f5e68604409b87592b7d810e0f412a5571d5459))
+
+
+### Bug Fixes
+
+* **deployment:** default `faucet-helper.sh` to `show-rpcaddrs` ([352f6a6](https://github.com/Agoric/agoric-sdk/commit/352f6a63d31a629aa88de860916b65801ce71513))
+* **deployment:** disable swingstore consistency check ([#5323](https://github.com/Agoric/agoric-sdk/issues/5323)) ([e9dc159](https://github.com/Agoric/agoric-sdk/commit/e9dc1592e2aa7b6d907c9e7bf63e0ff1b46af1d0))
+* **deployment:** give out some tokens to new clients ([847da8d](https://github.com/Agoric/agoric-sdk/commit/847da8d6f35a31525923cf18ca789c8b367ad943))
+* **deployment:** handle aarch64 and arm64 ([75965ee](https://github.com/Agoric/agoric-sdk/commit/75965ee3ba8e4ef42b55a710cc743ea8a874c4ef))
+* **deployment:** Install ansible for current os ([4b5940f](https://github.com/Agoric/agoric-sdk/commit/4b5940f5474b0b7ce3fe0ab07f5dd75b0f40b58a))
+* **deployment:** Update CI script ([#5322](https://github.com/Agoric/agoric-sdk/issues/5322)) ([efbbf54](https://github.com/Agoric/agoric-sdk/commit/efbbf54ec53e064e1038fd678fca9e88c083f312))
+* **faucet-helper:** use published network config ([72b0a81](https://github.com/Agoric/agoric-sdk/commit/72b0a819c04613c510fe8b08b934cc8801aca551))
+
+
+
 ### [2.2.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.2.0...@agoric/deployment@2.2.1) (2022-04-18)
 
 

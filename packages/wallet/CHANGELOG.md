@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.12.0...@agoric/wallet@0.13.0) (2022-05-09)
+
+
+### Features
+
+* **wallet:** support attestations in offers ([f993c0b](https://github.com/Agoric/agoric-sdk/commit/f993c0b5f44f2b8d6beba50748da0b4889a26b5c))
+
+
+
 ## [0.12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.11.9...@agoric/wallet@0.12.0) (2022-04-18)
 
 
