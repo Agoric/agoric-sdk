@@ -382,7 +382,7 @@ const makeDriver = async (t, initialPrice, priceBase) => {
       /**
        *
        * @param {Vault.Phase} phase
-       * @param {Object} likeExpected
+       * @param {object} likeExpected
        * @param {undefined|AT_NEXT|number} optSince
        */
       notified: async (phase, likeExpected, optSince) => {
