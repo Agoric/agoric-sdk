@@ -35,7 +35,7 @@ const { details: X } = assert;
  * collaterals: Brand[],
  * penaltyPoolAllocation: AmountKeywordRecord,
  * rewardPoolAllocation: AmountKeywordRecord,
- * }} EconState
+ * }} MetricsNotification
  *
  * @typedef {Readonly<{
  * debtMint: ZCFMint<'nat'>,
@@ -46,8 +46,8 @@ const { details: X } = assert;
  * penaltyPoolSeat: ZCFSeat,
  * rewardPoolSeat: ZCFSeat,
  * vaultParamManagers: Store<Brand, import('./params.js').VaultParamManager>,
- * econNotifier: Notifier<EconState>
- * econUpdater: IterationObserver<EconState>
+ * metricsNotifier: Notifier<MetricsNotification>
+ * metricsUpdater: IterationObserver<MetricsNotification>
  * zcf: import('./vaultFactory.js').VaultFactoryZCF,
  * }>} ImmutableState
  *
@@ -78,14 +78,15 @@ const initState = (zcf, directorParamManager, debtMint) => {
 
   const vaultParamManagers = makeScalarMap('brand');
 
-  const { notifier: econNotifier, updater: econUpdater } = makeNotifierKit();
+  const { notifier: metricsNotifier, updater: metricsUpdater } =
+    makeNotifierKit();
 
   return {
     collateralTypes,
     debtMint,
     directorParamManager,
-    econNotifier,
-    econUpdater,
+    metricsNotifier,
+    metricsUpdater,
     mintSeat,
     penaltyPoolSeat,
     rewardPoolSeat,
@@ -328,13 +329,13 @@ const machineBehavior = {
   getContractGovernor: ({ state }) => state.zcf.getTerms().electionManager,
   /** @param {MethodContext} context */
   notifyEcon: ({ state }) => {
-    /** @type {EconState} */
-    const econState = harden({
+    /** @type {MetricsNotification} */
+    const metrics = harden({
       collaterals: Array.from(state.collateralTypes.keys()),
       penaltyPoolAllocation: state.penaltyPoolSeat.getCurrentAllocation(),
       rewardPoolAllocation: state.rewardPoolSeat.getCurrentAllocation(),
     });
-    state.econUpdater.updateState(econState);
+    state.metricsUpdater.updateState(metrics);
   },
 
   // XXX accessors for tests
@@ -393,8 +394,8 @@ const publicBehavior = {
    * @param {MethodContext} context
    */
   getPublicNotifiers: ({ state }) => {
-    const { econNotifier } = state;
-    return { econ: econNotifier };
+    const { metricsNotifier } = state;
+    return { metrics: metricsNotifier };
   },
   /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
   makeLoanInvitation: makeVaultInvitation,

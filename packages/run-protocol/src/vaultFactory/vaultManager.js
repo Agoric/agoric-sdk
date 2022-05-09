@@ -41,7 +41,7 @@ const trace = makeTracer('VM', false);
  *  numVaults: number,
  *  totalCollateral: Amount<'nat'>,
  *  totalDebt: Amount<'nat'>,
- * }} EconState
+ * }} MetricsNotification
  *
  * @typedef {{
  *  getChargingPeriod: () => bigint,
@@ -74,8 +74,8 @@ const trace = makeTracer('VM', false);
  * assetNotifier: Notifier<AssetState>,
  * assetUpdater: IterationObserver<AssetState>,
  * compoundedInterest: Ratio,
- * econNotifier: Notifier<EconState>,
- * econUpdater: IterationObserver<EconState>,
+ * metricsNotifier: Notifier<MetricsNotification>,
+ * metricsUpdater: IterationObserver<MetricsNotification>,
  * latestInterestUpdate: bigint,
  * liquidator?: Liquidator
  * liquidatorInstance?: Instance
@@ -159,13 +159,14 @@ const initState = (
     }),
   );
 
-  const { updater: econUpdater, notifier: econNotifier } = makeNotifierKit(
-    harden({
-      numVaults: 0,
-      totalCollateral,
-      totalDebt,
-    }),
-  );
+  const { updater: metricsUpdater, notifier: metricsNotifier } =
+    makeNotifierKit(
+      harden({
+        numVaults: 0,
+        totalCollateral,
+        totalDebt,
+      }),
+    );
 
   /** @type {MutableState & ImmutableState} */
   const state = {
@@ -173,8 +174,8 @@ const initState = (
     assetNotifier,
     assetUpdater,
     debtBrand: fixed.debtBrand,
-    econNotifier,
-    econUpdater,
+    metricsNotifier,
+    metricsUpdater,
     vaultCounter: 0,
     liquidator: undefined,
     liquidatorInstance: undefined,
@@ -255,21 +256,21 @@ const helperBehavior = {
       compoundedInterest: state.compoundedInterest,
       interestRate,
       latestInterestUpdate: state.latestInterestUpdate,
-      // XXX move to EconState and type as present with null
+      // XXX move to governance and type as present with null
       liquidatorInstance: state.liquidatorInstance,
     });
     state.assetUpdater.updateState(payload);
   },
 
   /** @param {MethodContext} context */
-  econNotify: ({ state }) => {
-    /** @type {EconState} */
+  metricsNotify: ({ state }) => {
+    /** @type {MetricsNotification} */
     const payload = harden({
       numVaults: state.prioritizedVaults.getSize(),
       totalCollateral: state.totalCollateral,
       totalDebt: state.totalDebt,
     });
-    state.econUpdater.updateState(payload);
+    state.metricsUpdater.updateState(payload);
   },
 
   /**
@@ -495,7 +496,7 @@ const collateralBehavior = {
   /** @param {MethodContext} context */
   getAssetNotifier: ({ state }) => state.assetNotifier,
   /** @param {MethodContext} context */
-  getPublicNotifiers: ({ state }) => ({ econ: state.econNotifier }),
+  getPublicNotifiers: ({ state }) => ({ metrics: state.metricsNotifier }),
   /** @param {MethodContext} context */
   getCompoundedInterest: ({ state }) => state.compoundedInterest,
 };
@@ -546,7 +547,7 @@ const selfBehavior = {
         vaultKit.vault.getCollateralAmount(),
       );
       seat.exit();
-      helper.econNotify();
+      helper.metricsNotify();
       return vaultKit;
     } catch (err) {
       // remove it from prioritizedVaults
