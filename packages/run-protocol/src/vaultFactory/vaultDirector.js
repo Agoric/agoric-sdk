@@ -41,7 +41,7 @@ const { details: X } = assert;
  * debtMint: ZCFMint<'nat'>,
  * collateralTypes: Store<Brand,VaultManager>,
  * electionManager: Instance,
- * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<VaultDirectorParams>,
+ * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<unknown>,
  * mintSeat: ZCFSeat,
  * penaltyPoolSeat: ZCFSeat,
  * rewardPoolSeat: ZCFSeat,
@@ -171,7 +171,9 @@ const getCollaterals = async ({ state }) => {
  * @param {ImmutableState['directorParamManager']} directorParamManager
  */
 const getLiquidationConfig = directorParamManager => ({
+  // @ts-expect-error VaultDirectoryParams isn't right
   install: directorParamManager.getLiquidationInstall(),
+  // @ts-expect-error VaultDirectoryParams isn't right
   terms: directorParamManager.getLiquidationTerms(),
 });
 
