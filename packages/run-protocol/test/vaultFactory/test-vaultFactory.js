@@ -292,10 +292,8 @@ async function setupServices(
   await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
 
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
-  /** @type {Promise<VaultFactory & LimitedCreatorFacet<any>>} */
-  const vaultFactoryCreatorFacetP = /** @type { any } */ (
-    E(governorCreatorFacet).getCreatorFacet()
-  );
+  /** @type {Promise<VaultFactory & LimitedCreatorFacet<unknown>>} */
+  const vaultFactoryCreatorFacetP = E(governorCreatorFacet).getCreatorFacet();
 
   // Add a vault that will lend on aeth collateral
   /** @type {Promise<VaultKitManager>} */
@@ -306,7 +304,7 @@ async function setupServices(
   );
   const [
     governorInstance,
-    vaultFactoryCreator,
+    vaultFactory, // creator
     lender,
     aethVaultManager,
     priceAuthority,
@@ -319,7 +317,7 @@ async function setupServices(
   ]);
   trace(t, 'pa', {
     governorInstance,
-    vaultFactory: vaultFactoryCreator,
+    vaultFactory,
     lender,
     priceAuthority,
   });
@@ -331,7 +329,7 @@ async function setupServices(
       governorCreatorFacet,
     },
     v: {
-      vaultFactoryCreator,
+      vaultFactory,
       lender,
       aethVaultManager,
     },
@@ -368,11 +366,7 @@ test('first', async t => {
     undefined,
     500n,
   );
-  const {
-    vaultFactoryCreator: vaultFactory,
-    lender,
-    aethVaultManager,
-  } = services.vaultFactory;
+  const { vaultFactory, lender, aethVaultManager } = services.vaultFactory;
   trace(t, 'services', { services, vaultFactory, lender });
 
   // Create a loan for 470 RUN with 1100 aeth collateral
@@ -504,7 +498,7 @@ test('price drop', async t => {
   trace(t, 'setup');
 
   const {
-    vaultFactory: { vaultFactoryCreator: vaultFactory, lender },
+    vaultFactory: { vaultFactory, lender },
     priceAuthority,
   } = services;
 
@@ -644,7 +638,7 @@ test('price falls precipitously', async t => {
     undefined,
     1500n,
   );
-  const { vaultFactoryCreator: vaultFactory, lender } = services.vaultFactory;
+  const { vaultFactory, lender } = services.vaultFactory;
 
   // Create a loan for 370 RUN with 400 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 400n);
@@ -792,7 +786,7 @@ test('vaultFactory display collateral', async t => {
     500n,
   );
 
-  const { vaultFactoryCreator: vaultFactory } = services.vaultFactory;
+  const { vaultFactory } = services.vaultFactory;
   const collaterals = await E(vaultFactory).getCollaterals();
   t.deepEqual(collaterals[0], {
     brand: aethBrand,
@@ -831,7 +825,7 @@ test('interest on multiple vaults', async t => {
     SECONDS_PER_DAY,
     500n,
   );
-  const { vaultFactoryCreator: vaultFactory, lender } = services.vaultFactory;
+  const { vaultFactory, lender } = services.vaultFactory;
 
   // Create a loan for Alice for 4700 RUN with 1100 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 1100n);
@@ -1421,7 +1415,7 @@ test('overdeposit', async t => {
     undefined,
     500n,
   );
-  const { vaultFactoryCreator: vaultFactory, lender } = services.vaultFactory;
+  const { vaultFactory, lender } = services.vaultFactory;
 
   // Alice's loan /////////////////////////////////////
 
@@ -1800,7 +1794,7 @@ test('collect fees from loan and AMM', async t => {
     undefined,
     500n,
   );
-  const { vaultFactoryCreator: vaultFactory, lender } = services.vaultFactory;
+  const { vaultFactory, lender } = services.vaultFactory;
 
   // Create a loan for 470 RUN with 1100 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 1100n);
@@ -2287,7 +2281,7 @@ test('addVaultType: invalid args do not modify state', async t => {
     500n,
   );
 
-  const { vaultFactoryCreator: vaultFactory } = services.vaultFactory;
+  const { vaultFactory } = services.vaultFactory;
 
   const failsForSameReason = async p =>
     p
@@ -2324,7 +2318,7 @@ test('addVaultType: extra, unexpected params', async t => {
     500n,
   );
 
-  const { vaultFactoryCreator: vaultFactory } = services.vaultFactory;
+  const { vaultFactory } = services.vaultFactory;
 
   const params = { ...defaultParamValues(aethBrand), shoeSize: 10 };
   const extraParams = { ...params, shoeSize: 10 };
