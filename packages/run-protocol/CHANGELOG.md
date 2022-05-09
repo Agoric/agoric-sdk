@@ -3,6 +3,46 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.10.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/run-protocol@0.9.0...@agoric/run-protocol@0.10.0) (2022-05-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* impose a minimum loan size when opening a vault (#5235)
+
+### Features
+
+* extract committee invitation as deploy script ([7d52883](https://github.com/Agoric/agoric-sdk/commit/7d52883844af1a41a0b1095a290069de1470f4f5))
+* **bundleTool:** makeNodeBundleCache uses explicit authority ([bbb7e02](https://github.com/Agoric/agoric-sdk/commit/bbb7e02d34c59e2a8c7f743a2ca28727da5bc67e))
+* **run-protocol:** gov-inviteCommittee.js for agoricdev-10 ([af21f22](https://github.com/Agoric/agoric-sdk/commit/af21f22e8e7c1649b13661312a58de54d51d11fa))
+* add a contract that supports voting on economic contracts ([e3f77ef](https://github.com/Agoric/agoric-sdk/commit/e3f77ef788d7c85d55e07adfd52f24158d0eec85))
+* impose a minimum loan size when opening a vault ([#5235](https://github.com/Agoric/agoric-sdk/issues/5235)) ([4a2edd3](https://github.com/Agoric/agoric-sdk/commit/4a2edd32b187604e11a1b530e6e5703994813017)), closes [#4967](https://github.com/Agoric/agoric-sdk/issues/4967)
+* **amm:** support `maxOut` optional arg to `swap` ([#5125](https://github.com/Agoric/agoric-sdk/issues/5125)) ([54151ac](https://github.com/Agoric/agoric-sdk/commit/54151ac5aa468abedae0b535d35df3535c4ad727))
+* **psm:** governance ([086674c](https://github.com/Agoric/agoric-sdk/commit/086674c28b607f344e22c8df5a82ff46a3255622))
+* **run-protocol:** collect runStake fees ([#5197](https://github.com/Agoric/agoric-sdk/issues/5197)) ([ac1b9c8](https://github.com/Agoric/agoric-sdk/commit/ac1b9c8418cf603d96f498aac199c21686d4672d))
+* **run-protocol:** convert RunStakeManager to vobj ([#5135](https://github.com/Agoric/agoric-sdk/issues/5135)) ([6b912b4](https://github.com/Agoric/agoric-sdk/commit/6b912b4f1f96a0b22e776246e232cc1a61d6d60a)), closes [#5106](https://github.com/Agoric/agoric-sdk/issues/5106)
+* **run-protocol:** runStake, PSM bootstrap ([2c98994](https://github.com/Agoric/agoric-sdk/commit/2c98994819bc7947ffbfb5318050f371e10e2ea4))
+* **vault:** governance upgrade of liquidation ([#5211](https://github.com/Agoric/agoric-sdk/issues/5211)) ([35e1b7d](https://github.com/Agoric/agoric-sdk/commit/35e1b7d0b7df2508adf0d46a83944e94ab95951a))
+* **vault:** Liquidate incrementally ([#5129](https://github.com/Agoric/agoric-sdk/issues/5129)) ([b641269](https://github.com/Agoric/agoric-sdk/commit/b64126996d4844c07016deadc87269dc387c4aae))
+* virtualize pools for the AMM. ([#5187](https://github.com/Agoric/agoric-sdk/issues/5187)) ([e2338e9](https://github.com/Agoric/agoric-sdk/commit/e2338e98b64b59920a13faeacb29ae7868c3693b))
+
+
+### Bug Fixes
+
+* **econCommitteeCharter:** missing deadline param ([1669588](https://github.com/Agoric/agoric-sdk/commit/1669588d96929b5b6e427affcf30b51a882f47c4))
+* **extract-proposal:** coreProposal source paths were leaked onto the chain ([acc6672](https://github.com/Agoric/agoric-sdk/commit/acc66729cfa8459ef549b96f6fbeed1d55a4be3f))
+* addPool takes an issuer ([9a9eb43](https://github.com/Agoric/agoric-sdk/commit/9a9eb436007b83adb3a18551d9d7510b9be91ecc))
+* typo in invite-committee-core.js ([ebbb3ff](https://github.com/Agoric/agoric-sdk/commit/ebbb3ff64d89cd34a7e30324be2af7b15eb23ef6))
+* **attestation:** handle return of empty attestation ([11164bb](https://github.com/Agoric/agoric-sdk/commit/11164bbe8695825bcadcf09bba3bb59114256a41))
+* **bundleTool:** don't ignore module path in metadata check ([#5199](https://github.com/Agoric/agoric-sdk/issues/5199)) ([540978c](https://github.com/Agoric/agoric-sdk/commit/540978c997e30c25905ea1fb837ae701db6f3536)), closes [#5129](https://github.com/Agoric/agoric-sdk/issues/5129) [/github.com/Agoric/agoric-sdk/pull/5129/commits/00d32a7e84d8d4fd9309a1e115145d5164c93b19#r854207585](https://github.com/Agoric//github.com/Agoric/agoric-sdk/pull/5129/commits/00d32a7e84d8d4fd9309a1e115145d5164c93b19/issues/r854207585)
+* **run-protocol:** complete permits for startRewardDistributor, makeAnchorAsset ([#5213](https://github.com/Agoric/agoric-sdk/issues/5213)) ([2b2c966](https://github.com/Agoric/agoric-sdk/commit/2b2c9666f5cb51f584ab04f187aa12c03f415437))
+* **run-protocol:** PSM governance, anchor mintHolder ([cb8f68b](https://github.com/Agoric/agoric-sdk/commit/cb8f68b10c0351c6d5d04a06cd31a4fefb0e5043))
+* **run-protocol:** restore wrapLienedAmount on AttestationTool ([1445997](https://github.com/Agoric/agoric-sdk/commit/14459974e7b78f646b792bc7c5033cba5c6ed31c))
+* reconcile use of path to paramManager vaults with others ([#5151](https://github.com/Agoric/agoric-sdk/issues/5151)) ([b5d1439](https://github.com/Agoric/agoric-sdk/commit/b5d14393d407a7d7dca42ff5e41d374613168cbc))
+* **run-protocol:** vault debt ratio ordering after interest charges ([#5149](https://github.com/Agoric/agoric-sdk/issues/5149)) ([2c9a5d0](https://github.com/Agoric/agoric-sdk/commit/2c9a5d0e07b0886ba6cbfd38ec6d321f1e42a4fb))
+
+
+
 ## [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/run-protocol@0.8.0...@agoric/run-protocol@0.9.0) (2022-04-18)
 
 

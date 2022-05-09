@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.1.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet-ui@0.1.0...@agoric/wallet-ui@0.1.1) (2022-05-09)
+
+**Note:** Version bump only for package @agoric/wallet-ui
+
+
+
+
+
 ## [0.1.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet-ui@0.0.6...@agoric/wallet-ui@0.1.0) (2022-04-18)
 
 

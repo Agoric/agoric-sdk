@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.8.0...@agoric/vats@0.9.0) (2022-05-09)
+
+
+### Features
+
+* **vats:** export AssetTerms type from mintHolder.js ([cfd5648](https://github.com/Agoric/agoric-sdk/commit/cfd5648f883ddcecb87d6a8743e7c034de1e18e6))
+
+
+### Bug Fixes
+
+* **basic-behaviours:** assign `home.priceAuthority` ([7afa292](https://github.com/Agoric/agoric-sdk/commit/7afa29200819f35043fdbbd6bccc09cc74b5a5c7))
+* **centralSupply:** shutdown after providing bootstrap payment ([823dda0](https://github.com/Agoric/agoric-sdk/commit/823dda012f2a07ec7caf9742dea261ef78c1091a))
+* **chain-behaviors:** propagate `VatData` to `endowments` ([e9ed050](https://github.com/Agoric/agoric-sdk/commit/e9ed0508e3c10f2ab582b044b8f6ac50f0e9c969))
+* **chain-behaviors:** use endowments consistently ([166ffd5](https://github.com/Agoric/agoric-sdk/commit/166ffd51bb49a27b0f10e85cca358e7ff1074df2))
+
+
+
 ## [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.7.0...@agoric/vats@0.8.0) (2022-04-18)
 
 

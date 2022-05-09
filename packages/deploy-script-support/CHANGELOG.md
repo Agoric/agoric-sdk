@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.7.0...@agoric/deploy-script-support@0.8.0) (2022-05-09)
+
+
+### Features
+
+* **deploy-script-support:** persist option for installInPieces ([8241a0e](https://github.com/Agoric/agoric-sdk/commit/8241a0e0977a1ef2bbfd7e68197cb969bc80e1f1))
+
+
+### Bug Fixes
+
+* **deploy-script-support:** permit agoricNamesAdmin for installation ([49b5e89](https://github.com/Agoric/agoric-sdk/commit/49b5e89e287b9f5e8ccc5cb7c26dea53c09c42de))
+* **extract-proposal:** avoid reiterating bundleHandles ([9a0886d](https://github.com/Agoric/agoric-sdk/commit/9a0886d7d96699cf5698bbe81820626e3ee8c64b))
+* **extract-proposal:** coreProposal source paths were leaked onto the chain ([acc6672](https://github.com/Agoric/agoric-sdk/commit/acc66729cfa8459ef549b96f6fbeed1d55a4be3f))
+
+
+
 ## [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.6.3...@agoric/deploy-script-support@0.7.0) (2022-04-18)
 
 

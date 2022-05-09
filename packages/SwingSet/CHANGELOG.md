@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.27.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.26.0...@agoric/swingset-vat@0.27.0) (2022-05-09)
+
+
+### Features
+
+* **swingset:** allow buildRootObject to return a Promise ([169cbc2](https://github.com/Agoric/agoric-sdk/commit/169cbc2765d72ec300a25ebd38761e9c880f0d5a)), closes [#5246](https://github.com/Agoric/agoric-sdk/issues/5246)
+* **swingset:** prevent imported promises as result ([5eec3a0](https://github.com/Agoric/agoric-sdk/commit/5eec3a0e2c8ca2fa91a504691cac0ec3ba5bd240))
+* **swingset:** requeue pipelined promises ([bbe9b12](https://github.com/Agoric/agoric-sdk/commit/bbe9b12f45b367b68f1f8a0169e6e7706a46147c))
+* **swingset:** send to promise avoid trip through run-queue ([4acc748](https://github.com/Agoric/agoric-sdk/commit/4acc74821cf5cbfbf6e27489ce44dab7290f568b))
+* **SwingSet:** implement `console` event `source` property ([e96cd5c](https://github.com/Agoric/agoric-sdk/commit/e96cd5cb5b078269f4a2b79163400e91b9853dda))
+* first pass at VO and DVO test harnesses ([272bf67](https://github.com/Agoric/agoric-sdk/commit/272bf67180b9ae14a64b37fa97170e5381312cd5)), closes [#4997](https://github.com/Agoric/agoric-sdk/issues/4997)
+* store metadata for each virtual object kind, to each scanning on vat stop or restart ([4c3f5cc](https://github.com/Agoric/agoric-sdk/commit/4c3f5cc352e15ec9bf5f2fed61d3f778c0335f51)), closes [#5262](https://github.com/Agoric/agoric-sdk/issues/5262)
+* **vault:** governance upgrade of liquidation ([#5211](https://github.com/Agoric/agoric-sdk/issues/5211)) ([35e1b7d](https://github.com/Agoric/agoric-sdk/commit/35e1b7d0b7df2508adf0d46a83944e94ab95951a))
+* implement durable promise watchers ([ce55851](https://github.com/Agoric/agoric-sdk/commit/ce558515467e869e784260f5478802835c5eb9cf)), closes [#5006](https://github.com/Agoric/agoric-sdk/issues/5006)
+* virtualize pools for the AMM. ([#5187](https://github.com/Agoric/agoric-sdk/issues/5187)) ([e2338e9](https://github.com/Agoric/agoric-sdk/commit/e2338e98b64b59920a13faeacb29ae7868c3693b))
+* **swingset-vat:** Include alleged bundleID in checkBundle diagnostics ([6585693](https://github.com/Agoric/agoric-sdk/commit/658569307d82cb1eb393894ee005425f82f14148))
+
+
+### Bug Fixes
+
+* conform to Agoric arrow-only function style ([9e5dd0d](https://github.com/Agoric/agoric-sdk/commit/9e5dd0d79e1429848bdd65b2d0e17c24627fceb4))
+* eliminate vatstore vat power ([dd4def3](https://github.com/Agoric/agoric-sdk/commit/dd4def34c99e979e7625cb6be11141a0f80db61d))
+* guard against oversized collection keys ([690c159](https://github.com/Agoric/agoric-sdk/commit/690c1595eb8ceb392ff5f5569fd87d3883f4732d)), closes [#5277](https://github.com/Agoric/agoric-sdk/issues/5277)
+* persistently track transcript start position for transcript continuity across upgrades ([3c69350](https://github.com/Agoric/agoric-sdk/commit/3c69350052d54554ac57d9040f0e621b482ab786)), closes [#3293](https://github.com/Agoric/agoric-sdk/issues/3293)
+* review feedback ([388871e](https://github.com/Agoric/agoric-sdk/commit/388871eb87a40d181124c4edce0fd74f7c6eeb87))
+* **swingset:** disallow fulfillment to promise ([b1bbdf9](https://github.com/Agoric/agoric-sdk/commit/b1bbdf9e8e45e1f4683b66c7e7927f89534c7ca0))
+* **swingset:** Handle relative paths for XSNAP_TEST_RECORD ([7181141](https://github.com/Agoric/agoric-sdk/commit/7181141e382e1c3bc0600789f841913424ec10da))
+* **swingset:** Test vats save creation options ([6f21236](https://github.com/Agoric/agoric-sdk/commit/6f21236daeec657d394851edcfddf39f3ff0db35))
+
+
+
 ## [0.26.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.25.1...@agoric/swingset-vat@0.26.0) (2022-04-18)
 
 
