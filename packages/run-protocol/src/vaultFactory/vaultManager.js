@@ -266,7 +266,7 @@ const helperBehavior = {
   metricsNotify: ({ state }) => {
     /** @type {MetricsNotification} */
     const payload = harden({
-      numVaults: state.prioritizedVaults.getSize(),
+      numVaults: state.prioritizedVaults.getCount(),
       totalCollateral: state.totalCollateral,
       totalDebt: state.totalDebt,
     });
