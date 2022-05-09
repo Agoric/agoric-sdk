@@ -673,6 +673,6 @@ const makeVaultManagerKit = defineKindMulti(
  */
 export const makeVaultManager = pickFacet(makeVaultManagerKit, 'self');
 
-/** @typedef {ReturnType<typeof makeVaultManagerKit>['manager']} VaultManager */
-/** @typedef {ReturnType<typeof makeVaultManager>} VaultManagerObject */
-/** @typedef {ReturnType<VaultManagerObject['getPublicFacet']>} CollateralManager */
+/** @typedef {ReturnType<typeof makeVaultManagerKit>['manager']} VaultKitManager */
+/** @typedef {ReturnType<typeof makeVaultManager>} VaultManager */
+/** @typedef {ReturnType<VaultManager['getPublicFacet']>} CollateralManager */

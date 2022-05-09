@@ -39,7 +39,7 @@ const { details: X } = assert;
  *
  * @typedef {Readonly<{
  * debtMint: ZCFMint<'nat'>,
- * collateralTypes: Store<Brand,VaultManagerObject>,
+ * collateralTypes: Store<Brand,VaultManager>,
  * electionManager: Instance,
  * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{VaultDirectorParams}>,
  * mintSeat: ZCFSeat,
@@ -132,7 +132,7 @@ const makeVaultInvitation = ({ state }) => {
       }. ${requestedAmount.value} is too small`,
     );
 
-    /** @type {VaultManagerObject} */
+    /** @type {VaultManager} */
     const mgr = collateralTypes.get(brandIn);
     return mgr.makeVaultKit(seat);
   };
@@ -178,7 +178,7 @@ const getLiquidationConfig = directorParamManager => ({
 /**
  *
  * @param {ImmutableState['directorParamManager']} govParams
- * @param {VaultManagerObject} vaultManager
+ * @param {VaultManager} vaultManager
  * @param {*} oldInstall
  * @param {*} oldTerms
  */
@@ -387,7 +387,7 @@ const publicBehavior = {
       collateralTypes.has(brandIn),
       X`Not a supported collateral type ${brandIn}`,
     );
-    /** @type {VaultManagerObject} */
+    /** @type {VaultManager} */
     return collateralTypes.get(brandIn).getPublicFacet();
   },
   /**

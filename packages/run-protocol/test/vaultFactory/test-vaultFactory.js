@@ -298,7 +298,7 @@ async function setupServices(
   );
 
   // Add a vault that will lend on aeth collateral
-  /** @type {Promise<VaultManager>} */
+  /** @type {Promise<VaultKitManager>} */
   const aethVaultManagerP = E(vaultFactoryCreatorFacetP).addVaultType(
     aethIssuer,
     'AEth',
