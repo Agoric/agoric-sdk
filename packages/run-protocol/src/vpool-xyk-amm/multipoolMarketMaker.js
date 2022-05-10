@@ -165,6 +165,7 @@ const start = async (zcf, privateArgs) => {
     params,
     protocolSeat,
   );
+  /** @param {Brand} brand */
   const getPoolAllocation = brand =>
     getPool(brand).getPoolSeat().getCurrentAllocation();
 
