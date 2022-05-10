@@ -15,7 +15,6 @@ import '@agoric/store/exported.js';
 import '../../exported.js';
 import '../internal-types.js';
 
-import { AssetKind } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
@@ -25,7 +24,7 @@ import { makeStartInstance } from './startInstance.js';
 import { makeOfferMethod } from './offer/offer.js';
 import { makeInvitationQueryFns } from './invitationQueries.js';
 import { getZcfBundleCap, setupCreateZCFVat } from './createZCFVat.js';
-import { createFeeMint } from './feeMint.js';
+import { createFeeMint, defaultFeeIssuerConfig } from './feeMint.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -48,11 +47,7 @@ import { createFeeMint } from './feeMint.js';
 const makeZoeKit = (
   vatAdminSvc,
   shutdownZoeVat = () => {},
-  feeIssuerConfig = {
-    name: 'RUN',
-    assetKind: AssetKind.NAT,
-    displayInfo: harden({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
-  },
+  feeIssuerConfig = defaultFeeIssuerConfig,
   zcfSpec = { name: 'zcf' },
   zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
 ) => {
