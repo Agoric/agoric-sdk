@@ -284,7 +284,7 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
                * ['namesByAddress']
                * ['namesByAddress', 'agoric1...']
                * ['namesByAddress', 'agoric1...', 'depositFacet']
-               * ['wallet', 'issuer', 'RUN']
+               * ['wallet', 'issuer', 'IST']
                *
                * @param  {...string[]} namePath
                * @returns {Promise<any>}
