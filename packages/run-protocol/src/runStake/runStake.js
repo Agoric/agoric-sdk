@@ -4,6 +4,7 @@ import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { E, Far } from '@endo/far';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
+import { Stable } from '../tokens.js';
 import { makeAttestationFacets } from './attestation.js';
 import { ManagerKW as KW } from './constants.js';
 import { makeRunStakeKit } from './runStakeKit.js';
@@ -206,7 +207,7 @@ export const start = async (
         zcf,
         rewardPoolSeat,
         debtBrand,
-        'RUN',
+        Stable.symbol,
       ).makeCollectFeesInvitation();
     },
   });

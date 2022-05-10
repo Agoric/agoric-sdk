@@ -1,4 +1,7 @@
 // @ts-check
+
+import { Stable } from './tokens.js';
+
 /**
  * Provide shared support for providing access to fees from a service contract.
  *
@@ -16,7 +19,7 @@ export const makeMakeCollectFeesInvitation = (
   const collectFees = seat => {
     const amount = feeSeat.getAmountAllocated(keyword, feeBrand);
     feeSeat.decrementBy(harden({ [keyword]: amount }));
-    seat.incrementBy(harden({ RUN: amount }));
+    seat.incrementBy(harden({ [Stable.symbol]: amount }));
     zcf.reallocate(seat, feeSeat);
 
     seat.exit();
