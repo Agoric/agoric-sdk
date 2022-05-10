@@ -13,6 +13,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { AmountMath } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
+import { Stable } from '../../src/tokens.js';
 import { makeTracer } from '../../src/makeTracer.js';
 
 const vaultRoot = './vault-contract-wrapper.js';
@@ -71,7 +72,7 @@ async function launch(zoeP, sourceRoot) {
   const collateral50 = AmountMath.make(collaterlBrand, 50n);
   const proposal = harden({
     give: { Collateral: collateral50 },
-    want: { RUN: AmountMath.make(runBrand, 70n) },
+    want: { [Stable.symbol]: AmountMath.make(runBrand, 70n) },
   });
   const payments = harden({
     Collateral: collateralMint.mintPayment(collateral50),
@@ -129,10 +130,10 @@ test('charges', async t => {
   const paybackSeat = E(zoe).offer(
     vault.makeAdjustBalancesInvitation(),
     harden({
-      give: { RUN: paybackAmount },
+      give: { [Stable.symbol]: paybackAmount },
       want: { Collateral: collateralWanted },
     }),
-    harden({ RUN: payback }),
+    harden({ [Stable.symbol]: payback }),
   );
   await E(paybackSeat).getOfferResult();
   t.deepEqual(

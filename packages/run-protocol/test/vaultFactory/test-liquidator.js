@@ -15,6 +15,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 
+import { Stable } from '../../src/tokens.js';
 import { makeTracer } from '../../src/makeTracer.js';
 import {
   startEconomicCommittee,
@@ -205,11 +206,11 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
     await E(faucetCreator).makeFaucetInvitation(),
     harden({
       give: {},
-      want: { RUN: runInitialLiquidity },
+      want: { [Stable.symbol]: runInitialLiquidity },
     }),
   );
 
-  const runPayment = await E(faucetSeat).getPayout('RUN');
+  const runPayment = await E(faucetSeat).getPayout(Stable.symbol);
   return runPayment;
 };
 
@@ -355,7 +356,7 @@ const makeDriver = async (t, initialPrice, priceBase) => {
       await E(lender).makeVaultInvitation(),
       harden({
         give: { Collateral: collateral },
-        want: { RUN: debt },
+        want: { [Stable.symbol]: debt },
       }),
       harden({
         Collateral: aethMint.mintPayment(collateral),
@@ -382,7 +383,7 @@ const makeDriver = async (t, initialPrice, priceBase) => {
       /**
        *
        * @param {Vault.Phase} phase
-       * @param {Object} likeExpected
+       * @param {object} likeExpected
        * @param {undefined|AT_NEXT|number} optSince
        */
       notified: async (phase, likeExpected, optSince) => {
@@ -428,13 +429,13 @@ const makeDriver = async (t, initialPrice, priceBase) => {
     checkPayouts: async (expectedRUN, expectedAEth) => {
       const payouts = await E(currentSeat).getPayouts();
       const collProceeds = await aethIssuer.getAmountOf(payouts.Collateral);
-      const runProceeds = await E(runIssuer).getAmountOf(payouts.RUN);
+      const runProceeds = await E(runIssuer).getAmountOf(payouts.IST);
       t.deepEqual(runProceeds, expectedRUN);
       t.deepEqual(collProceeds, expectedAEth);
     },
     checkRewards: async expectedRUN => {
       t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
-        RUN: expectedRUN,
+        [Stable.symbol]: expectedRUN,
       });
     },
     sellOnAMM: async (give, want, optStopAfter, expected) => {

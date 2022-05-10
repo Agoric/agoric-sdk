@@ -14,6 +14,7 @@ import { makeTracer } from '../makeTracer.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { makeVaultKit } from './vaultKit.js';
 import { addSubtract, assertOnlyKeys, stageDelta } from '../contractSupport.js';
+import { Stable } from '../tokens.js';
 
 const { details: X, quote: q } = assert;
 
@@ -267,7 +268,7 @@ const helperBehavior = {
   getCollateralAllocated: ({ facets }, seat) =>
     seat.getAmountAllocated('Collateral', facets.helper.collateralBrand()),
   getRunAllocated: ({ facets }, seat) =>
-    seat.getAmountAllocated('RUN', facets.helper.debtBrand()),
+    seat.getAmountAllocated(Stable.symbol, facets.helper.debtBrand()),
 
   assertVaultHoldsNoRun: ({ state, facets }) => {
     const { vaultSeat } = state;
@@ -357,13 +358,13 @@ const helperBehavior = {
     const { phase, vaultSeat } = state;
     if (phase === Phase.ACTIVE) {
       assertProposalShape(seat, {
-        give: { RUN: null },
+        give: { [Stable.symbol]: null },
       });
 
       // you're paying off the debt, you get everything back.
       const debt = self.getCurrentDebt();
       const {
-        give: { RUN: given },
+        give: { [Stable.symbol]: given },
       } = seat.getProposal();
 
       // you must pay off the entire remainder but if you offer too much, we won't
@@ -431,7 +432,7 @@ const helperBehavior = {
     const { self, helper } = facets;
     const { vaultSeat, outerUpdater: updaterPre } = state;
     const proposal = clientSeat.getProposal();
-    assertOnlyKeys(proposal, ['Collateral', 'RUN']);
+    assertOnlyKeys(proposal, ['Collateral', Stable.symbol]);
 
     const debtPre = self.getCurrentDebt();
     const collateralPre = helper.getCollateralAllocated(vaultSeat);
@@ -455,10 +456,10 @@ const helperBehavior = {
 
     const debt = self.getCurrentDebt();
     const giveRUN = AmountMath.min(
-      proposal.give.RUN || helper.emptyDebt(),
+      proposal.give.IST || helper.emptyDebt(),
       debt,
     );
-    const wantRUN = proposal.want.RUN || helper.emptyDebt();
+    const wantRUN = proposal.want.IST || helper.emptyDebt();
 
     // Calculate the fee, the amount to mint and the resulting debt. We'll
     // verify that the target debt doesn't violate the collateralization ratio,
@@ -479,7 +480,13 @@ const helperBehavior = {
 
     stageDelta(clientSeat, vaultSeat, giveColl, wantColl, 'Collateral');
     // `wantRUN` is allocated in the reallocate and mint operation, and so not here
-    stageDelta(clientSeat, vaultSeat, giveRUN, helper.emptyDebt(), 'RUN');
+    stageDelta(
+      clientSeat,
+      vaultSeat,
+      giveRUN,
+      helper.emptyDebt(),
+      Stable.symbol,
+    );
     state.manager.mintAndReallocate(toMint, fee, clientSeat, vaultSeat);
 
     // parent needs to know about the change in debt
@@ -539,7 +546,7 @@ const selfBehavior = {
     // contract abandons
     const {
       give: { Collateral: giveCollateral },
-      want: { RUN: wantRUN },
+      want: { [Stable.symbol]: wantRUN },
     } = seat.getProposal();
 
     const {

@@ -8,6 +8,7 @@ import {
   makeRatio,
   offerTo,
 } from '@agoric/zoe/src/contractSupport/index.js';
+import { Stable } from '../tokens.js';
 import { makeTracer } from '../makeTracer.js';
 
 const trace = makeTracer('LIQ');
@@ -74,7 +75,7 @@ const liquidate = async (
   const { deposited, userSeatPromise: liqSeat } = await offerTo(
     zcf,
     E(liquidator).makeLiquidateInvitation(),
-    harden({ Collateral: 'In', RUN: 'Out' }),
+    harden({ Collateral: 'In', [Stable.symbol]: 'Out' }),
     harden({
       give: { In: collateralToSell },
       want: { Out: AmountMath.makeEmpty(debt.brand) },
@@ -91,7 +92,7 @@ const liquidate = async (
   // Now we need to know how much was sold so we can pay off the debt.
   // We can use this because only liquidation adds RUN to the vaultSeat.
   const { debtPaid, penaltyProceeds, runToBurn } = partitionProceeds(
-    vaultZcfSeat.getAmountAllocated('RUN', debt.brand),
+    vaultZcfSeat.getAmountAllocated(Stable.symbol, debt.brand),
     debt,
     penalty,
   );
@@ -100,7 +101,7 @@ const liquidate = async (
 
   // Allocate penalty portion of proceeds to a seat that will be transferred to reserve
   penaltyPoolSeat.incrementBy(
-    vaultZcfSeat.decrementBy(harden({ RUN: penaltyProceeds })),
+    vaultZcfSeat.decrementBy(harden({ [Stable.symbol]: penaltyProceeds })),
   );
   zcf.reallocate(penaltyPoolSeat, vaultZcfSeat);
 

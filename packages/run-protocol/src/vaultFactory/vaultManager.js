@@ -24,6 +24,7 @@ import { liquidate } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
 import { chargeInterest } from '../interest.js';
 import { checkDebtLimit } from '../contractSupport.js';
+import { Stable } from '../tokens.js';
 
 const { details: X } = assert;
 
@@ -204,7 +205,7 @@ const helperBehavior = {
         mint: state.debtMint,
         mintAndReallocateWithFee: state.factoryPowers.mintAndReallocate,
         poolIncrementSeat,
-        seatAllocationKeyword: 'RUN',
+        seatAllocationKeyword: Stable.symbol,
       },
       {
         interestRate,
@@ -495,7 +496,7 @@ const selfBehavior = {
     const { prioritizedVaults, zcf } = state;
     assertProposalShape(seat, {
       give: { Collateral: null },
-      want: { RUN: null },
+      want: { [Stable.symbol]: null },
     });
 
     state.vaultCounter += 1;
@@ -544,7 +545,7 @@ const selfBehavior = {
     });
     const { creatorFacet, instance } = await E(zoe).startInstance(
       liquidationInstall,
-      harden({ RUN: debtIssuer, Collateral: collateralIssuer }),
+      harden({ [Stable.symbol]: debtIssuer, Collateral: collateralIssuer }),
       harden({
         ...liquidationTerms,
         amm: ammPublicFacet,

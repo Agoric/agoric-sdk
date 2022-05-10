@@ -27,6 +27,7 @@ import {
   CHARGING_PERIOD_KEY,
   vaultParamPattern,
 } from './params.js';
+import { Stable } from '../tokens.js';
 
 const { details: X } = assert;
 
@@ -95,11 +96,11 @@ const makeVaultInvitation = ({ state }) => {
   const makeVaultHook = async seat => {
     assertProposalShape(seat, {
       give: { Collateral: null },
-      want: { RUN: null },
+      want: { [Stable.symbol]: null },
     });
     const {
       give: { Collateral: collateralAmount },
-      want: { RUN: requestedAmount },
+      want: { [Stable.symbol]: requestedAmount },
     } = seat.getProposal();
     const { brand: brandIn } = collateralAmount;
     assert(
@@ -228,10 +229,14 @@ const machineBehavior = {
      */
     const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
       const kept = AmountMath.subtract(toMint, fee);
-      debtMint.mintGains(harden({ RUN: toMint }), mintSeat);
+      debtMint.mintGains(harden({ [Stable.symbol]: toMint }), mintSeat);
       try {
-        rewardPoolSeat.incrementBy(mintSeat.decrementBy(harden({ RUN: fee })));
-        seat.incrementBy(mintSeat.decrementBy(harden({ RUN: kept })));
+        rewardPoolSeat.incrementBy(
+          mintSeat.decrementBy(harden({ [Stable.symbol]: fee })),
+        );
+        seat.incrementBy(
+          mintSeat.decrementBy(harden({ [Stable.symbol]: kept })),
+        );
         zcf.reallocate(rewardPoolSeat, mintSeat, seat, ...otherSeats);
       } catch (e) {
         mintSeat.clear();
@@ -240,7 +245,7 @@ const machineBehavior = {
         // That only relies on the internal mint, so it cannot fail without
         // there being much larger problems. There's no risk of tokens being
         // stolen here because the staging for them was already cleared.
-        debtMint.burnLosses(harden({ RUN: toMint }), mintSeat);
+        debtMint.burnLosses(harden({ [Stable.symbol]: toMint }), mintSeat);
         throw e;
       } finally {
         assert(
@@ -259,7 +264,7 @@ const machineBehavior = {
      * @param {ZCFSeat} seat
      */
     const burnDebt = (toBurn, seat) => {
-      debtMint.burnLosses(harden({ RUN: toBurn }), seat);
+      debtMint.burnLosses(harden({ [Stable.symbol]: toBurn }), seat);
     };
 
     const { loanTimingParams } = zcf.getTerms();
@@ -298,7 +303,7 @@ const machineBehavior = {
       zcf,
       rewardPoolSeat,
       debtMint.getIssuerRecord().brand,
-      'RUN',
+      Stable.symbol,
     ).makeCollectFeesInvitation();
   },
   /** @param {MethodContext} context */

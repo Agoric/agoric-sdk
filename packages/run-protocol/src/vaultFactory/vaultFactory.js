@@ -27,6 +27,7 @@ import {
   MIN_INITIAL_DEBT_KEY,
 } from './params.js';
 import { makeVaultDirector } from './vaultDirector.js';
+import { Stable } from '../tokens.js';
 
 /**
  * @typedef {{
@@ -50,7 +51,7 @@ import { makeVaultDirector } from './vaultDirector.js';
  */
 export const start = async (zcf, privateArgs) => {
   const { feeMintAccess, initialPoserInvitation } = privateArgs;
-  const debtMint = await zcf.registerFeeMint('RUN', feeMintAccess);
+  const debtMint = await zcf.registerFeeMint(Stable.symbol, feeMintAccess);
   zcf.setTestJig(() => ({
     runIssuerRecord: debtMint.getIssuerRecord(),
   }));

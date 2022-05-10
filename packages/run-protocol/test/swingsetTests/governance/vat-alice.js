@@ -3,6 +3,7 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
+import { Stable } from '../../../src/tokens.js';
 import { daysForVoting } from './bootstrap';
 import { ONE_DAY } from '../setup';
 
@@ -37,7 +38,7 @@ const build = async (log, zoe, brands, payments, timer) => {
       E(vaultFactory).makeVaultInvitation(),
       harden({
         give: { Collateral: AmountMath.make(moolaBrand, 100n) },
-        want: { RUN: AmountMath.make(runBrand, 500000n) },
+        want: { [Stable.symbol]: AmountMath.make(runBrand, 500000n) },
       }),
       harden({
         Collateral: moolaPayment,

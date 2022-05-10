@@ -15,6 +15,7 @@ import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { assert } from '@agoric/assert';
 import { makeFakeLiveSlotsStuff } from '@agoric/swingset-vat/tools/fakeVirtualSupport.js';
 import { makeTracer } from '../../src/makeTracer.js';
+import { Stable } from '../../src/tokens.js';
 
 const vaultRoot = './vault-contract-wrapper.js';
 const trace = makeTracer('TestVault');
@@ -72,7 +73,7 @@ async function launch(zoeP, sourceRoot) {
   const collateral50 = AmountMath.make(collateralBrand, 50n);
   const proposal = harden({
     give: { Collateral: collateral50 },
-    want: { RUN: AmountMath.make(runBrand, 70n) },
+    want: { [Stable.symbol]: AmountMath.make(runBrand, 70n) },
   });
   const payments = harden({
     Collateral: collateralMint.mintPayment(collateral50),
@@ -119,7 +120,7 @@ test('first', async t => {
     invite,
     harden({
       give: { Collateral: collateralAmount },
-      want: {}, // RUN: AmountMath.make(runBrand, 2n) },
+      want: {}, // [Stable.symbol]: AmountMath.make(runBrand, 2n) },
     }),
     harden({
       // TODO
@@ -142,10 +143,10 @@ test('first', async t => {
   const paybackSeat = E(zoe).offer(
     vault.makeAdjustBalancesInvitation(),
     harden({
-      give: { RUN: paybackAmount },
+      give: { [Stable.symbol]: paybackAmount },
       want: { Collateral: collateralWanted },
     }),
-    harden({ RUN: payback }),
+    harden({ [Stable.symbol]: payback }),
   );
   await E(paybackSeat).getOfferResult();
 

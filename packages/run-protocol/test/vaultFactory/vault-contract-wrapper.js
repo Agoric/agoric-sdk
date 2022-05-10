@@ -17,6 +17,7 @@ import { Far } from '@endo/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { getAmountOut } from '@agoric/zoe/src/contractSupport';
 import { E } from '@endo/eventual-send';
+import { Stable } from '../../src/tokens.js';
 import { makeVault } from '../../src/vaultFactory/vault.js';
 import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';
 
@@ -36,7 +37,10 @@ export async function start(zcf, privateArgs) {
   const { brand: collateralBrand } = collateralKit;
   await zcf.saveIssuer(collateralKit.issuer, 'Collateral'); // todo: CollateralETH, etc
 
-  const runMint = await zcf.registerFeeMint('RUN', privateArgs.feeMintAccess);
+  const runMint = await zcf.registerFeeMint(
+    Stable.symbol,
+    privateArgs.feeMintAccess,
+  );
   const { brand: runBrand } = runMint.getIssuerRecord();
 
   const LIQUIDATION_MARGIN = makeRatio(105n, runBrand);
@@ -85,7 +89,7 @@ export async function start(zcf, privateArgs) {
       throw e;
     } finally {
       assert(
-        AmountMath.isEmpty(stage.getAmountAllocated('RUN', runBrand)),
+        AmountMath.isEmpty(stage.getAmountAllocated(Stable.symbol, runBrand)),
         `Stage should be empty of RUN`,
       );
     }
