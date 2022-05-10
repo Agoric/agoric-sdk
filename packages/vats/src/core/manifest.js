@@ -129,8 +129,8 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
     installation: {
       consume: { centralSupply: 'zoe', mintHolder: 'zoe' },
     },
-    issuer: { produce: { BLD: 'BLD', RUN: 'zoe' } },
-    brand: { produce: { BLD: 'BLD', RUN: 'zoe' } },
+    issuer: { produce: { BLD: 'BLD', IST: 'zoe' } },
+    brand: { produce: { BLD: 'BLD', IST: 'zoe' } },
   },
   makeProvisioner: {
     consume: {

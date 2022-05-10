@@ -3,6 +3,7 @@ import { E } from '@endo/far';
 import { AssetKind } from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeNameHubKit } from '../nameHub.js';
+import { Stable, Stake } from '../tokens.js';
 
 const { entries, fromEntries, keys } = Object;
 const { details: X, quote: q } = assert;
@@ -12,8 +13,6 @@ const mapEntries = (obj, f) =>
   // @ts-expect-error entries() loses key type
   fromEntries(entries(obj).map(([p, v]) => f(p, v)));
 
-export const CENTRAL_ISSUER_NAME = 'RUN';
-
 /**
  * We reserve these keys in name hubs.
  *
@@ -21,14 +20,14 @@ export const CENTRAL_ISSUER_NAME = 'RUN';
  */
 export const agoricNamesReserved = harden({
   issuer: {
-    BLD: 'Agoric staking token',
-    RUN: 'Agoric RUN currency',
+    [Stake.symbol]: 'Agoric staking token',
+    [Stable.symbol]: 'Agoric stable local currency',
     Attestation: 'Agoric lien attestation',
     AUSD: 'Agoric bridged USDC',
   },
   brand: {
-    BLD: 'Agoric staking token',
-    RUN: 'Agoric RUN currency',
+    [Stake.symbol]: 'Agoric staking token',
+    [Stable.symbol]: 'Agoric stable local currency',
     Attestation: 'Agoric lien attestation',
     AUSD: 'Agoric bridged USDC',
   },
@@ -73,7 +72,7 @@ export const agoricNamesReserved = harden({
 
 /** @type { FeeIssuerConfig } */
 export const feeIssuerConfig = {
-  name: CENTRAL_ISSUER_NAME,
+  name: Stable.symbol,
   assetKind: AssetKind.NAT,
   displayInfo: { decimalPlaces: 6, assetKind: AssetKind.NAT },
 };
@@ -293,7 +292,7 @@ harden(runModuleBehaviors);
 
 /**
  * Make the well-known agoricNames namespace so that we can
- * E(home.agoricNames).lookup('issuer', 'RUN') and likewise
+ * E(home.agoricNames).lookup('issuer', 'IST') and likewise
  * for brand, installation, instance, etc.
  *
  * @param {typeof console.log} [log]

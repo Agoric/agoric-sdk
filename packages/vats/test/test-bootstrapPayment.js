@@ -116,10 +116,10 @@ test('bootstrap payment - only minted once', async (/** @type {CentralSupplyTest
   const { creatorFacet } = await startContract(t, bootstrapPaymentValue);
   const bootstrapPayment = E(creatorFacet).getBootstrapPayment();
 
-  const issuers = { RUN: runIssuer };
+  const issuers = { IST: runIssuer };
 
-  const claimedPayment = await E(issuers.RUN).claim(bootstrapPayment);
-  const bootstrapAmount = await E(issuers.RUN).getAmountOf(claimedPayment);
+  const claimedPayment = await E(issuers.IST).claim(bootstrapPayment);
+  const bootstrapAmount = await E(issuers.IST).getAmountOf(claimedPayment);
 
   t.true(
     AmountMath.isEqual(
@@ -132,7 +132,7 @@ test('bootstrap payment - only minted once', async (/** @type {CentralSupplyTest
 
   const bootstrapPayment2 = E(creatorFacet).getBootstrapPayment();
 
-  await t.throwsAsync(() => E(issuers.RUN).claim(bootstrapPayment2), {
+  await t.throwsAsync(() => E(issuers.IST).claim(bootstrapPayment2), {
     message: /was not a live payment/,
   });
 });
@@ -148,7 +148,7 @@ test('bootstrap payment - default value is 0n', async (/** @type {CentralSupplyT
 
   const bootstrapPayment = E(creatorFacet).getBootstrapPayment();
 
-  const bootstrapAmount = await E(issuers.RUN).getAmountOf(bootstrapPayment);
+  const bootstrapAmount = await E(issuers.IST).getAmountOf(bootstrapPayment);
 
   t.true(AmountMath.isEqual(bootstrapAmount, AmountMath.make(runBrand, 0n)));
 });

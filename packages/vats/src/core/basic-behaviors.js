@@ -6,24 +6,7 @@ import { Nat } from '@agoric/nat';
 import { makeNameHubKit } from '../nameHub.js';
 
 import { feeIssuerConfig } from './utils.js';
-
-// TODO/TECHDEBT: move to run-protocol?
-const Tokens = harden({
-  RUN: {
-    name: 'RUN',
-    denom: 'urun',
-    proposedName: 'Agoric RUN currency',
-    assetKind: AssetKind.NAT,
-    displayInfo: { decimalPlaces: 6 },
-  },
-  BLD: {
-    name: 'BLD',
-    denom: 'ubld',
-    proposedName: 'Agoric staking token',
-    assetKind: AssetKind.NAT,
-    displayInfo: { decimalPlaces: 6 },
-  },
-});
+import { Stable, Stake } from '../tokens.js';
 
 /**
  * In golang/cosmos/app/app.go, we define
@@ -163,7 +146,7 @@ harden(makeBoard);
  * Make the agoricNames, namesByAddress name hierarchies.
  *
  * agoricNames are well-known items such as the RUN issuer,
- * available as E(home.agoricNames).lookup('issuer', 'RUN')
+ * available as E(home.agoricNames).lookup('issuer', 'IST')
  *
  * namesByAddress is a NameHub for each provisioned client,
  * available, for example, as `E(home.namesByAddress).lookup('agoric1...')`.
@@ -254,7 +237,7 @@ export const mintInitialSupply = async ({
 
   const { supplyCoins = [] } = bootMsg || {};
   const centralBootstrapSupply = supplyCoins.find(
-    ({ denom }) => denom === Tokens.RUN.denom,
+    ({ denom }) => denom === Stable.denom,
   ) || { amount: '0' };
   const bootstrapPaymentValue = Nat(BigInt(centralBootstrapSupply.amount));
 
@@ -301,9 +284,9 @@ export const addBankAssets = async ({
       mintHolder,
       harden({}),
       harden({
-        keyword: Tokens.BLD.name,
-        assetKind: AssetKind.NAT,
-        displayInfo: Tokens.BLD.displayInfo,
+        keyword: Stake.symbol,
+        assetKind: Stake.assetKind,
+        displayInfo: Stake.displayInfo,
       }),
     ),
   );
@@ -315,20 +298,20 @@ export const addBankAssets = async ({
   bankManager.resolve(bankMgr);
 
   produceIssuer.BLD.resolve(bldKit.issuer);
-  produceIssuer.RUN.resolve(runKit.issuer);
+  produceIssuer.IST.resolve(runKit.issuer);
   produceBrand.BLD.resolve(bldKit.brand);
-  produceBrand.RUN.resolve(runKit.brand);
+  produceBrand.IST.resolve(runKit.brand);
   return Promise.all([
     E(bankMgr).addAsset(
-      Tokens.BLD.denom,
-      Tokens.BLD.name,
-      Tokens.BLD.proposedName,
+      Stake.denom,
+      Stake.symbol,
+      Stake.proposedName,
       bldKit, // with mint
     ),
     E(bankMgr).addAsset(
-      Tokens.RUN.denom,
-      Tokens.RUN.name,
-      Tokens.RUN.proposedName,
+      Stable.denom,
+      Stable.symbol,
+      Stable.proposedName,
       runKit, // without mint, with payment
     ),
   ]);

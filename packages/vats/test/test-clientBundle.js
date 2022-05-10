@@ -19,6 +19,7 @@ import {
   installBootContracts,
   makeClientBanks,
 } from '../src/core/basic-behaviors.js';
+import { Stake } from '../src/tokens.js';
 
 import { devices } from './devices.js';
 
@@ -57,7 +58,7 @@ test('connectFaucet produces payments', async t => {
 
   t.plan(4); // be sure bank.deposit() gets called
 
-  const bldKit = makeIssuerKit('BLD');
+  const bldKit = makeIssuerKit(Stake.symbol);
   produce.bldIssuerKit.resolve(bldKit);
   const runIssuer = E(zoe).getFeeIssuer();
   produce.bankManager.resolve(
@@ -72,7 +73,7 @@ test('connectFaucet produces payments', async t => {
                 const isBLD = brand === bldKit.brand;
                 const issuer = isBLD ? bldKit.issuer : runIssuer;
                 const amt = await E(issuer).getAmountOf(pmt);
-                t.is(showAmount(amt), isBLD ? '5_000 BLD' : '53 RUN');
+                t.is(showAmount(amt), isBLD ? '5_000 BLD' : '53 IST');
                 return amt;
               },
             }),

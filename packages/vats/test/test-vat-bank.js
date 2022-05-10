@@ -228,7 +228,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
     type: 'INIT@@',
     chainID: 'ag',
     storagePort: 1,
-    supplyCoins: [{ amount: '50000000', denom: 'urun' }],
+    supplyCoins: [{ amount: '50000000', denom: 'uist' }],
     vbankPort: 2,
     vibcPort: 3,
   };
@@ -276,13 +276,13 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
 
   // check results: bankManager assets
   const assets = E(consume.bankManager).getAssetSubscription();
-  const expected = ['BLD', 'RUN'];
+  const expected = ['BLD', 'IST'];
   const seen = new Set();
   const done = makePromiseKit();
   observeIteration(assets, {
     updateState: asset => {
       seen.add(asset.issuerName);
-      if (asset.issuerName === 'RUN') {
+      if (asset.issuerName === 'IST') {
         t.is(asset.issuer, runIssuer);
       }
       if (seen.size === expected.length) {
