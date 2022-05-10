@@ -39,8 +39,6 @@ const trace = makeTracer('LiqI', false);
  * Selling uses the `oracleLimit as the `want` as the limit to allowed
  * slippage, and provides the remaining `debt` as the `stopAfter` so
  * that we sell no more than is needed to pay off the debt.
- *
- * TODO integrate the reserve, including the above Reserve strategies.
  */
 
 /**
@@ -73,6 +71,8 @@ const start = async zcf => {
 
   const asFloat = (numerator, denominator) =>
     Number(numerator) / Number(denominator);
+
+  const { zcfSeat: penaltyPoolSeat } = zcf.makeEmptySeatKit();
 
   /**
    * Compute the tranche size whose sale on the AMM would have

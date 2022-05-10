@@ -58,9 +58,9 @@ const liquidate = async (
   trace('liquidate start', vault);
   vault.liquidating();
 
+  // -> CONTRACT
   const debtBeforePenalty = vault.getCurrentDebt();
   const penalty = ceilMultiplyBy(debtBeforePenalty, penaltyRate);
-
   const debt = AmountMath.add(debtBeforePenalty, penalty);
 
   const vaultZcfSeat = vault.getVaultSeat();
@@ -81,13 +81,16 @@ const liquidate = async (
     }),
     vaultZcfSeat,
     vaultZcfSeat,
-    harden({ debt }),
+    harden({ debt }), // + penaltyRate
   );
   trace(` offeredTo`, collateralToSell, debt);
 
   // await deposited, but we don't need the value.
   await Promise.all([deposited, E(liqSeat).getOfferResult()]);
+  // all the proceeds from AMM sale are on the vault seat instead of a staging seat
+  // ??? & okay?
 
+  // -> CONTRACT
   // Now we need to know how much was sold so we can pay off the debt.
   // We can use this because only liquidation adds RUN to the vaultSeat.
   const { debtPaid, penaltyProceeds, runToBurn } = partitionProceeds(
@@ -98,12 +101,17 @@ const liquidate = async (
 
   trace({ debt, debtPaid, penaltyProceeds, runToBurn });
 
+  // -> CONTRACT
+  // penaltyPoolSeat is up to the contract (give it Reserve so it can make it)
   // Allocate penalty portion of proceeds to a seat that will be transferred to reserve
   penaltyPoolSeat.incrementBy(
     vaultZcfSeat.decrementBy(harden({ RUN: penaltyProceeds })),
   );
   zcf.reallocate(penaltyPoolSeat, vaultZcfSeat);
 
+  // STAYS
+  // runToBurn is simply min(proceeds, debt)
+  // whatever's remaining stays on the vault seat
   burnLosses(runToBurn, vaultZcfSeat);
 
   // Accounting complete. Update the vault state.
