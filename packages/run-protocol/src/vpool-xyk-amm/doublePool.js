@@ -2,6 +2,7 @@
 
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
+import { Stable } from '../tokens.js';
 import { makeFeeRatio } from './constantProduct/calcFees.js';
 import {
   pricesForStatedInput,
@@ -58,7 +59,7 @@ export const makeDoublePool = (
     seat.incrementBy(harden({ Out: prices.swapperGets }));
     inPoolSeat.incrementBy(harden({ Secondary: prices.inPoolIncrement }));
     outPoolSeat.incrementBy(harden({ Central: prices.outPoolIncrement }));
-    feeSeat.incrementBy(harden({ RUN: prices.protocolFee }));
+    feeSeat.incrementBy(harden({ [Stable.symbol]: prices.protocolFee }));
 
     zcf.reallocate(outPoolSeat, inPoolSeat, feeSeat, seat);
     seat.exit();

@@ -8,6 +8,7 @@ import {
 import { AmountMath } from '@agoric/ertp';
 
 import '@agoric/zoe/exported.js';
+import { Stable } from '../tokens.js';
 
 const { add, multiply } = natSafeMath;
 /**
@@ -156,7 +157,7 @@ const makeMakeAddLiquidityAtRateInvitation = (
       seat.decrementBy(harden({ [incrementKey]: prices.swapperGives }));
       poolSeat.decrementBy(harden({ [decrementKey]: prices.yDecrement }));
       seat.incrementBy(harden({ [decrementKey]: prices.swapperGets }));
-      feeSeat.incrementBy(harden({ RUN: prices.protocolFee }));
+      feeSeat.incrementBy(harden({ [Stable.symbol]: prices.protocolFee }));
       poolSeat.incrementBy(harden({ [incrementKey]: prices.xIncrement }));
     };
 

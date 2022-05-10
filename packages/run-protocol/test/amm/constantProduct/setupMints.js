@@ -1,10 +1,11 @@
 // @ts-check
 
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
+import { Stable } from '@agoric/vats/src/tokens.js';
 
 export const setupMintKits = () => {
   const runKit = makeIssuerKit(
-    'RUN',
+    Stable.symbol,
     AssetKind.NAT,
     harden({ decimalPlaces: 6 }),
   );

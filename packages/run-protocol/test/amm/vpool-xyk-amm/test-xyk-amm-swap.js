@@ -23,6 +23,7 @@ import {
   assertAmountsEqual,
   assertPayoutAmount,
 } from '@agoric/zoe/test/zoeTestHelpers.js';
+import { Stable } from '../../../src/tokens.js';
 import { BASIS_POINTS } from '../../../src/vpool-xyk-amm/constantProduct/defaults.js';
 import { setupAmmServices } from './setup.js';
 import { unsafeMakeBundleCache } from '../../bundleTool.js';
@@ -233,7 +234,7 @@ test('amm with valid offers', async t => {
   /** @type {Amount} */
   let runningFees = ceilMultiplyBy(priceInCentrals, protocolFeeRatio);
   t.deepEqual(await E(amm.ammPublicFacet).getProtocolPoolBalance(), {
-    RUN: runningFees,
+    [Stable.symbol]: runningFees,
   });
 
   const quoteGivenBob = await E(priceAuthority).quoteGiven(
@@ -312,7 +313,7 @@ test('amm with valid offers', async t => {
     ceilMultiplyBy(centralTokens(700n), protocolFeeRatio),
   );
   t.deepEqual(await E(amm.ammPublicFacet).getProtocolPoolBalance(), {
-    RUN: runningFees,
+    [Stable.symbol]: runningFees,
   });
 
   t.is(
@@ -578,7 +579,7 @@ test('amm doubleSwap', async t => {
 
   let runningFees = AmountMath.make(centralR.brand, 6n);
   t.deepEqual(await E(amm.ammPublicFacet).getProtocolPoolBalance(), {
-    RUN: runningFees,
+    [Stable.symbol]: runningFees,
   });
 
   // Bob swaps simoleans for moola
@@ -615,7 +616,7 @@ test('amm doubleSwap', async t => {
     AmountMath.make(centralR.brand, 4n),
   );
   t.deepEqual(await E(amm.ammPublicFacet).getProtocolPoolBalance(), {
-    RUN: runningFees,
+    [Stable.symbol]: runningFees,
   });
 
   const collectFeesInvitation = E(
@@ -627,12 +628,12 @@ test('amm doubleSwap', async t => {
     undefined,
   );
 
-  const payout = await E(collectFeesSeat).getPayout('RUN');
+  const payout = await E(collectFeesSeat).getPayout(Stable.symbol);
 
   await assertPayoutAmount(t, centralR.issuer, payout, runningFees);
 
   t.deepEqual(await E(amm.ammPublicFacet).getProtocolPoolBalance(), {
-    RUN: AmountMath.makeEmpty(centralR.brand),
+    [Stable.symbol]: AmountMath.makeEmpty(centralR.brand),
   });
 });
 
@@ -879,7 +880,7 @@ test('amm jig - swapOut uneven', async t => {
 
   let expectedPoolBalance = protocolFee1;
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
-    RUN: AmountMath.make(centralR.brand, expectedPoolBalance),
+    [Stable.symbol]: AmountMath.make(centralR.brand, expectedPoolBalance),
   });
 
   // trade to get 25000 moola: central price: 49949, approximately double.
@@ -923,7 +924,7 @@ test('amm jig - swapOut uneven', async t => {
 
   expectedPoolBalance += expectedProtocolCharge2;
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
-    RUN: AmountMath.make(centralR.brand, expectedPoolBalance),
+    [Stable.symbol]: AmountMath.make(centralR.brand, expectedPoolBalance),
   });
 
   mPoolState = updatePoolState(mPoolState, expectedC);
@@ -935,7 +936,7 @@ test('amm jig - swapOut uneven', async t => {
     undefined,
   );
 
-  const payout = await E(collectFeesSeat).getPayout('RUN');
+  const payout = await E(collectFeesSeat).getPayout(Stable.symbol);
 
   await assertPayoutAmount(
     t,
@@ -945,7 +946,7 @@ test('amm jig - swapOut uneven', async t => {
   );
 
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
-    RUN: AmountMath.makeEmpty(centralR.brand),
+    [Stable.symbol]: AmountMath.makeEmpty(centralR.brand),
   });
 });
 
@@ -1086,7 +1087,7 @@ test('zoe allow empty reallocations', async t => {
     undefined,
   );
 
-  const payout = await E(collectFeesSeat2).getPayout('RUN');
+  const payout = await E(collectFeesSeat2).getPayout(Stable.symbol);
   const result = await E(collectFeesSeat2).getOfferResult();
 
   t.deepEqual(result, 'paid out 0');

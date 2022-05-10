@@ -21,6 +21,7 @@ import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeMakeSwapInvitation } from './swap.js';
 import { makeDoublePool } from './doublePool.js';
 import { POOL_FEE_KEY, PROTOCOL_FEE_KEY } from './params.js';
+import { Stable } from '../tokens.js';
 
 const { quote: q, details: X } = assert;
 
@@ -234,7 +235,7 @@ const start = async (zcf, privateArgs) => {
     zcf,
     protocolSeat,
     centralBrand,
-    'RUN',
+    Stable.symbol,
   );
 
   /** @type {XYKAMMPublicFacet} */
