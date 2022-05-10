@@ -501,7 +501,7 @@ test(`zoe.getConfiguration`, async t => {
         assetKind: 'nat',
         decimalPlaces: 6,
       },
-      name: 'RUN',
+      name: 'ZDEFAULT',
     },
   });
 });
