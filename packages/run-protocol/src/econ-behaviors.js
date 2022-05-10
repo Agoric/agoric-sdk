@@ -2,10 +2,10 @@
 
 import { E, Far } from '@endo/far';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/core/utils.js';
 import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
+import { Stake, Stable } from '@agoric/vats/src/tokens.js';
 
 import { AmountMath } from '@agoric/ertp';
 import { makeGovernedTerms } from './vaultFactory/params.js';
@@ -25,8 +25,6 @@ const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
 
 const BASIS_POINTS = 10_000n;
-
-const CENTRAL_DENOM_NAME = 'urun';
 
 /**
  * @typedef { WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace
@@ -105,7 +103,7 @@ export const setupAmm = async ({
   },
   produce: { ammCreatorFacet, ammGovernorCreatorFacet },
   issuer: {
-    consume: { [CENTRAL_ISSUER_NAME]: centralIssuer },
+    consume: { [Stable.symbol]: centralIssuer },
   },
   instance: {
     consume: { economicCommittee: electorateInstance },
@@ -172,7 +170,7 @@ export const setupReserve = async ({
     reservePublicFacet,
   },
   issuer: {
-    consume: { [CENTRAL_ISSUER_NAME]: centralIssuer },
+    consume: { [Stable.symbol]: centralIssuer },
   },
   instance: {
     consume: { economicCommittee: electorateInstance, amm: ammInstanceP },
@@ -248,7 +246,7 @@ export const startVaultFactory = async (
     },
     produce, // {  vaultFactoryCreator }
     brand: {
-      consume: { [CENTRAL_ISSUER_NAME]: centralBrandP },
+      consume: { [Stable.symbol]: centralBrandP },
     },
     instance,
     installation: {
@@ -384,10 +382,10 @@ harden(grantVaultFactoryControl);
 export const configureVaultFactoryUI = async ({
   consume: { board, zoe },
   issuer: {
-    consume: { [CENTRAL_ISSUER_NAME]: centralIssuerP },
+    consume: { [Stable.symbol]: centralIssuerP },
   },
   brand: {
-    consume: { [CENTRAL_ISSUER_NAME]: centralBrandP },
+    consume: { [Stable.symbol]: centralBrandP },
   },
   installation: {
     consume: {
@@ -482,10 +480,10 @@ export const startRewardDistributor = async ({
     zoe,
   },
   issuer: {
-    consume: { RUN: centralIssuerP },
+    consume: { [Stable.symbol]: centralIssuerP },
   },
   brand: {
-    consume: { RUN: centralBrandP },
+    consume: { [Stable.symbol]: centralBrandP },
   },
 }) => {
   const epochTimerService = await chainTimerService;
@@ -497,7 +495,7 @@ export const startRewardDistributor = async ({
     centralBrandP,
   ]);
   const feeCollectorDepositFacet = await E(bankManager)
-    .getFeeCollectorDepositFacet(CENTRAL_DENOM_NAME, {
+    .getFeeCollectorDepositFacet(Stable.denom, {
       issuer: centralIssuer,
       brand: centralBrand,
     })
@@ -537,7 +535,7 @@ export const startLienBridge = async ({
   consume: { bridgeManager: bridgeOptP },
   produce: { lienBridge },
   brand: {
-    consume: { BLD: bldP },
+    consume: { [Stake.symbol]: bldP },
   },
 }) => {
   const bridgeManager = await bridgeOptP;
@@ -589,11 +587,11 @@ export const startRunStake = async (
       produce: { runStake: runStakeinstanceR },
     },
     brand: {
-      consume: { BLD: bldBrandP, RUN: runBrandP },
+      consume: { [Stake.symbol]: bldBrandP, [Stable.symbol]: runBrandP },
       produce: { Attestation: attestationBrandR },
     },
     issuer: {
-      consume: { BLD: bldIssuer },
+      consume: { [Stake.symbol]: bldIssuer },
       produce: { Attestation: attestationIssuerR },
     },
   },

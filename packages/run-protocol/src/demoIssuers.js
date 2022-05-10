@@ -7,19 +7,19 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { Nat } from '@endo/nat';
 import { E, Far } from '@endo/far';
+import { Stake, Stable } from '@agoric/vats/src/tokens.js';
 import * as Collect from './collect.js';
 
 const { details: X, quote: q } = assert;
 const { multiply, floorDivide } = natSafeMath;
 const { entries, fromEntries, keys, values } = Object;
 
-const CENTRAL_ISSUER_NAME = 'RUN';
 const QUOTE_INTERVAL = 5n * 60n;
 
 /** @type {Record<string, number>} */
 export const DecimalPlaces = {
-  BLD: 6,
-  [CENTRAL_ISSUER_NAME]: 6,
+  [Stake.symbol]: Stake.displayInfo.decimalPlaces,
+  [Stable.symbol]: Stable.displayInfo.decimalPlaces,
   ATOM: 6,
   WETH: 18,
   LINK: 18,
@@ -30,8 +30,14 @@ export const DecimalPlaces = {
 
 /** @type {Record<string, { proposedName: string, balance: bigint}>} */
 const FaucetPurseDetail = {
-  BLD: { proposedName: 'Agoric staking token', balance: 5000n },
-  [CENTRAL_ISSUER_NAME]: { proposedName: 'Agoric RUN currency', balance: 53n },
+  [Stake.symbol]: {
+    proposedName: Stake.proposedName,
+    balance: 5000n,
+  },
+  [Stable.symbol]: {
+    proposedName: Stable.proposedName,
+    balance: 53n,
+  },
   LINK: { proposedName: 'Oracle fee', balance: 51n },
   USDC: { proposedName: 'USD Coin', balance: 1_323n },
 };
@@ -72,6 +78,7 @@ export const showBrand = b =>
   `${b}`.replace(/.object Alleged: (.*) brand./, '$1');
 export const showAmount = ({ brand, value }) => {
   const b = `${showBrand(brand)}`;
+  assert(b in DecimalPlaces, b);
   return `${decimal(value, DecimalPlaces[b])} ${b}`;
 };
 
@@ -170,8 +177,7 @@ export const AMMDemoState = {
 
 /** @param { number } f */
 const run2places = f =>
-  BigInt(Math.round(f * 100)) *
-  10n ** BigInt(DecimalPlaces[CENTRAL_ISSUER_NAME] - 2);
+  BigInt(Math.round(f * 100)) * 10n ** BigInt(DecimalPlaces[Stable.symbol] - 2);
 
 /**
  * @param {bigint} value
@@ -276,9 +282,9 @@ export const connectFaucet = async ({
         /** @param {string} name */
         const provideIssuerKit = async name => {
           switch (name) {
-            case CENTRAL_ISSUER_NAME:
+            case Stable.symbol:
               return runIssuerKit;
-            case 'BLD':
+            case Stake.symbol:
               return bldIssuerKit;
             default: {
               const { mint, issuer, brand } = await provideCoin(
@@ -296,8 +302,8 @@ export const connectFaucet = async ({
 
         /** @type {UserPaymentRecord[]} */
         let toFaucet = [];
-        // Use the bank layer for BLD, RUN.
-        if (['BLD', 'RUN'].includes(issuerName)) {
+        // Use the bank layer for BLD, IST.
+        if (issuerName === Stake.symbol || issuerName === Stable.symbol) {
           const purse = E(bank).getPurse(brand);
           await E(purse).deposit(payment);
         } else {
@@ -466,10 +472,10 @@ export const fundAMM = async ({
     consume: { centralSupply: centralSupplyInstall },
   },
   issuer: {
-    consume: { RUN: centralIssuer },
+    consume: { IST: centralIssuer },
   },
   brand: {
-    consume: { RUN: centralBrand },
+    consume: { IST: centralBrand },
   },
   instance: {
     consume: { amm: ammInstance },
@@ -482,12 +488,10 @@ export const fundAMM = async ({
 
   const kits = await Collect.allValues(
     Collect.mapValues(
-      fromEntries(
-        [CENTRAL_ISSUER_NAME, ...keys(AMMDemoState)].map(n => [n, n]),
-      ),
+      fromEntries([Stable.symbol, ...keys(AMMDemoState)].map(n => [n, n])),
       async issuerName => {
         switch (issuerName) {
-          case CENTRAL_ISSUER_NAME: {
+          case Stable.symbol: {
             const [issuer, brand] = await Promise.all([
               centralIssuer,
               centralBrand,
@@ -502,7 +506,7 @@ export const fundAMM = async ({
       },
     ),
   );
-  const central = kits[CENTRAL_ISSUER_NAME];
+  const central = kits[Stable.symbol];
 
   /** @type {[ XYKAMMPublicFacet, TimerService]} */
   const [ammPublicFacet, timer] = await Promise.all([
@@ -602,7 +606,7 @@ export const fundAMM = async ({
     entries(AMMDemoState).map(async ([issuerName, record]) => {
       // Create priceAuthority pairs for centralIssuer based on the
       // AMM or FakePriceAuthority.
-      console.debug(`Creating ${issuerName}-${CENTRAL_ISSUER_NAME}`);
+      console.debug(`Creating ${issuerName}-${Stable.symbol}`);
       const issuer = kits[issuerName].issuer;
       const { trades } = record;
       /** @param { bigint } n */
@@ -630,9 +634,9 @@ export const fundAMM = async ({
 
       if (!fromCentral && tradesGivenCentral) {
         // We have no amm from-central price authority, make one from trades.
-        if (issuerName !== CENTRAL_ISSUER_NAME) {
+        if (issuerName !== Stable.symbol) {
           console.log(
-            `Making fake price authority for ${CENTRAL_ISSUER_NAME}-${issuerName}`,
+            `Making fake price authority for ${Stable.symbol}-${issuerName}`,
           );
         }
         fromCentral = makeFakePriceAuthority(
@@ -645,7 +649,7 @@ export const fundAMM = async ({
       if (!toCentral && central.issuer !== issuer && tradesGivenCentral) {
         // We have no amm to-central price authority, make one from trades.
         console.log(
-          `Making fake price authority for ${issuerName}-${CENTRAL_ISSUER_NAME}`,
+          `Making fake price authority for ${issuerName}-${Stable.symbol}`,
         );
         /** @type {Array<[bigint | number, bigint | number]>} */
         const tradesGivenOther = tradesGivenCentral.map(

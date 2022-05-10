@@ -90,8 +90,8 @@ export const setupReserveServices = async (
 
   const reserveBundle = await provideBundle(t, reserveRoot, 'reserve');
   installation.produce.reserve.resolve(E(zoe).install(reserveBundle));
-  brand.produce.RUN.resolve(runBrand);
-  issuer.produce.RUN.resolve(runIssuer);
+  brand.produce.IST.resolve(runBrand);
+  issuer.produce.IST.resolve(runIssuer);
   produce.feeMintAccess.resolve(feeMintAccess);
 
   await setupReserve(spaces);

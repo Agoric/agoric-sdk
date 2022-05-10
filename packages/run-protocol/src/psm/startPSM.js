@@ -3,6 +3,7 @@ import { E } from '@endo/far';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import { Stable } from '@agoric/vats/src/tokens.js';
 
 const BASIS_POINTS = 10000n;
 
@@ -31,7 +32,7 @@ export const startPSM = async (
       produce: { psm: psmInstanceR, psmGovernor: psmGovernorR },
     },
     brand: {
-      consume: { AUSD: anchorBrandP, RUN: runBrandP },
+      consume: { AUSD: anchorBrandP, [Stable.symbol]: runBrandP },
     },
     issuer: {
       consume: { AUSD: anchorIssuerP },

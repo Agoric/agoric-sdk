@@ -2,6 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { Stable } from '@agoric/vats/src/tokens.js';
 
 import {
   AMMDemoState,
@@ -31,7 +32,11 @@ test('ammPoolRunDeposits: check total, WETH', t => {
 });
 
 test('splitAllCentralPayments: count entries, spot check', async t => {
-  const central = makeIssuerKit('RUN', 'nat', harden({ decimalPlaces: 6 }));
+  const central = makeIssuerKit(
+    Stable.symbol,
+    'nat',
+    harden({ decimalPlaces: 6 }),
+  );
   const deposits = ammPoolRunDeposits(AMMDemoState);
   const bootstrapPayment = central.mint.mintPayment(
     AmountMath.make(central.brand, deposits.ammTotal),
@@ -48,9 +53,13 @@ test('splitAllCentralPayments: count entries, spot check', async t => {
 });
 
 test('poolRates: spot check WETH', t => {
-  const central = makeIssuerKit('RUN', 'nat', harden({ decimalPlaces: 6 }));
+  const central = makeIssuerKit(
+    Stable.symbol,
+    'nat',
+    harden({ decimalPlaces: 6 }),
+  );
   const weth = makeIssuerKit('WETH', 'nat', harden({ decimalPlaces: 18 }));
-  const kits = { RUN: central, WETH: weth };
+  const kits = { [Stable.symbol]: central, WETH: weth };
   const { rates, initialValue } = poolRates(
     'WETH',
     AMMDemoState.WETH,
@@ -61,8 +70,8 @@ test('poolRates: spot check WETH', t => {
   t.is(decimal(initialValue, DecimalPlaces.WETH), '1_000_000');
   t.is((AMMDemoState.WETH.config || {}).collateralValue, 1_000_000n);
 
-  t.is(showBrand(rates.interestRate.numerator.brand), 'RUN');
-  t.is(showAmount(rates.interestRate.numerator), '0.00025 RUN');
+  t.is(showBrand(rates.interestRate.numerator.brand), Stable.symbol);
+  t.is(showAmount(rates.interestRate.numerator), '0.00025 IST');
 
   const showRatio = ({ numerator, denominator }) =>
     numerator.brand === denominator.brand

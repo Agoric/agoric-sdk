@@ -7,6 +7,7 @@ import { E } from '@endo/far';
 import { AssetKind } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
+import { Stable } from '@agoric/vats/src/tokens.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import {
   defangAndTrim,
@@ -131,7 +132,10 @@ const startPSMWorkAround = async agoricdev10Powers => {
       },
     },
     brand: {
-      consume: { AUSD: syncBrand.consume, RUN: brand.consume.RUN },
+      consume: {
+        AUSD: syncBrand.consume,
+        [Stable.symbol]: brand.consume[Stable.symbol],
+      },
       produce: { AUSD: syncBrand.produce },
     },
     issuer: {

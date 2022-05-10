@@ -85,8 +85,8 @@ export const setupAmmServices = async (
   const ammBundle = await provideBundle(t, ammRoot, 'amm');
   installation.produce.amm.resolve(E(zoe).install(ammBundle));
 
-  brand.produce.RUN.resolve(centralR.brand);
-  issuer.produce.RUN.resolve(centralR.issuer);
+  brand.produce.IST.resolve(centralR.brand);
+  issuer.produce.IST.resolve(centralR.issuer);
 
   await Promise.all([
     startEconomicCommittee(space, electorateTerms),

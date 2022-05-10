@@ -82,8 +82,8 @@ export const setupBootstrap = (t, optTimer = undefined) => {
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   const { brand, issuer } = spaces;
-  brand.produce.RUN.resolve(runBrand);
-  issuer.produce.RUN.resolve(runIssuer);
+  brand.produce.IST.resolve(runBrand);
+  issuer.produce.IST.resolve(runIssuer);
 
   return { produce, consume, modules: { utils: { ...utils } }, ...spaces };
 };

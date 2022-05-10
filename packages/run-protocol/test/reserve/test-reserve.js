@@ -120,7 +120,7 @@ test('governance add Liquidity to the AMM', async t => {
     moolaR.brand,
   );
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
-  const runBrand = await space.brand.consume.RUN;
+  const runBrand = await space.brand.consume.IST;
 
   await E(reserve.reserveCreatorFacet).addIssuer(moolaR.issuer, 'Moola');
   const invitation = await E(
@@ -198,7 +198,7 @@ test('request more collateral than available', async t => {
 
   const { ammPublicFacet } = space.amm;
   await E(ammPublicFacet).addPool(moolaR.issuer, 'Moola');
-  const runBrand = await space.brand.consume.RUN;
+  const runBrand = await space.brand.consume.IST;
 
   await E(reserve.reserveCreatorFacet).addIssuer(moolaR.issuer, 'Moola');
   const invitation = await E(

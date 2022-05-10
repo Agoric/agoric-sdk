@@ -19,6 +19,7 @@ import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/ex
 import { makeCoreProposalBehavior } from '@agoric/deploy-script-support/src/coreProposalBehavior.js';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeNodeBundleCache } from './bundleTool.js';
 import { setupBootstrap, setUpZoeForTest } from './supports.js';
 
@@ -116,10 +117,10 @@ const makeScenario = async t => {
   const emptyRunPayment = async () => {
     const {
       issuer: {
-        consume: { RUN: runIssuer },
+        consume: { [Stable.symbol]: runIssuer },
       },
       brand: {
-        consume: { RUN: runBrand },
+        consume: { [Stable.symbol]: runBrand },
       },
     } = space;
     return E(E(runIssuer).makeEmptyPurse()).withdraw(
@@ -367,7 +368,7 @@ test('assets are in AMM, Vaults', async t => {
     instance: { consume: instanceP },
   } = s.space;
   const brand = await E(agoricNames).lookup('brand', 'IbcATOM');
-  const runBrand = await E(agoricNames).lookup('brand', 'RUN');
+  const runBrand = await E(agoricNames).lookup('brand', Stable.symbol);
 
   /** @type { ERef<XYKAMMPublicFacet> } */
   const ammAPI = instanceP.amm.then(i => E(zoe).getPublicFacet(i));
@@ -399,7 +400,7 @@ test('Committee can raise debt limit', async t => {
 
   const { agoricNames } = s.space.consume;
   const brand = await E(agoricNames).lookup('brand', 'IbcATOM');
-  const runBrand = await E(agoricNames).lookup('brand', 'RUN');
+  const runBrand = await E(agoricNames).lookup('brand', Stable.symbol);
 
   const { zoe } = s.space.consume;
   t.log({ purses });
