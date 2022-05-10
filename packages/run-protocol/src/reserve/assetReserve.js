@@ -7,6 +7,7 @@ import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { AMM_INSTANCE } from './params.js';
+import { Stable } from '../tokens.js';
 
 const makeLiquidityKeyword = keyword => `${keyword}Liquidity`;
 
@@ -93,7 +94,7 @@ const start = async (zcf, privateArgs) => {
     zcf.makeInvitation(addCollateralHook, 'Add Collateal');
 
   /** @type {ZCFMint} */
-  const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);
+  const runMint = await zcf.registerFeeMint(Stable.symbol, feeMintAccess);
 
   // Takes collateral from the reserve, mints RUN to accompany it, and uses both
   // to add Liquidity to a pool in the AMM.
@@ -110,7 +111,9 @@ const start = async (zcf, privateArgs) => {
     }
 
     // create the RUN
-    const offerToSeat = runMint.mintGains(harden({ RUN: runAmount }));
+    const offerToSeat = runMint.mintGains(
+      harden({ [Stable.symbol]: runAmount }),
+    );
     offerToSeat.incrementBy(
       collateralSeat.decrementBy(
         harden({
@@ -125,7 +128,7 @@ const start = async (zcf, privateArgs) => {
       ammPublicFacet,
     ).makeAddLiquidityAtRateInvitation();
     const mapping = harden({
-      RUN: 'Central',
+      [Stable.symbol]: 'Central',
       [collateralKeyword]: 'Secondary',
     });
 
