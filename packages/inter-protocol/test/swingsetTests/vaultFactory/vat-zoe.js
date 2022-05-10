@@ -3,6 +3,7 @@
 import { Far } from '@endo/marshal';
 
 import { makeZoeKit } from '@agoric/zoe';
+import { Stable } from '@agoric/vats/src/tokens.js';
 
 /** @type {BuildRootObjectForTestVat} */
 export function buildRootObject(vatPowers) {
@@ -12,6 +13,11 @@ export function buildRootObject(vatPowers) {
       const { zoeService: zoe, feeMintAccess } = makeZoeKit(
         vatAdminSvc,
         shutdownZoeVat,
+        {
+          name: Stable.symbol,
+          assetKind: Stable.assetKind,
+          displayInfo: Stable.displayInfo,
+        },
       );
       return { zoe, feeMintAccess };
     },

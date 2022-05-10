@@ -95,8 +95,8 @@ test('reserve add collateral', async t => {
 
   const { zoe, reserve, space, feeMintAccess, faucetInstallation } =
     await setupReserveServices(t, electorateTerms, timer);
-  const runBrand = await space.brand.consume.RUN;
-  const runIssuer = await space.issuer.consume.RUN;
+  const runBrand = await space.brand.consume.IST;
+  const runIssuer = await space.issuer.consume.IST;
   const runPayment = getRunFromFaucet(
     zoe,
     feeMintAccess,
@@ -144,8 +144,8 @@ test('governance add Liquidity to the AMM', async t => {
 
   const { zoe, reserve, space, governor, faucetInstallation, feeMintAccess } =
     await setupReserveServices(t, electorateTerms, timer);
-  const runBrand = await space.brand.consume.RUN;
-  const runIssuer = await space.issuer.consume.RUN;
+  const runBrand = await space.brand.consume.IST;
+  const runIssuer = await space.issuer.consume.IST;
   const runPayment = getRunFromFaucet(
     zoe,
     feeMintAccess,
@@ -255,8 +255,8 @@ test('request more collateral than available', async t => {
   const { zoe, reserve, space, governor, faucetInstallation, feeMintAccess } =
     await setupReserveServices(t, electorateTerms, timer);
 
-  const runBrand = await space.brand.consume.RUN;
-  const runIssuer = await space.issuer.consume.RUN;
+  const runBrand = await space.brand.consume.IST;
+  const runIssuer = await space.issuer.consume.IST;
   const runPayment = getRunFromFaucet(
     zoe,
     feeMintAccess,
@@ -333,7 +333,7 @@ test('reserve track shortfall', async t => {
     timer,
   );
 
-  const runBrand = await space.brand.consume.RUN;
+  const runBrand = await space.brand.consume.IST;
 
   const shortfallReporterSeat = await E(zoe).offer(
     E(reserve.reserveCreatorFacet).makeShortfallReportingInvitation(),
@@ -387,7 +387,7 @@ test('reserve burn IST', async t => {
   const { zoe, reserve, space, feeMintAccess, faucetInstallation, governor } =
     await setupReserveServices(t, electorateTerms, timer);
 
-  const runBrand = await space.brand.consume.RUN;
+  const runBrand = await space.brand.consume.IST;
 
   const shortfallReporterSeat = await E(zoe).offer(
     E(reserve.reserveCreatorFacet).makeShortfallReportingInvitation(),

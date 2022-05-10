@@ -1,6 +1,7 @@
 // @ts-check
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import { Stable } from '@agoric/vats/src/tokens.js';
 import { E } from '@endo/far';
 
 import { reserveThenGetNames } from './utils.js';
@@ -97,10 +98,10 @@ export const publishInterchainAssetFromBank = async (
       consume: { amm },
     },
     issuer: {
-      consume: { RUN: runIssuer },
+      consume: { [Stable.symbol]: runIssuer },
     },
     brand: {
-      consume: { RUN: runBrandP },
+      consume: { [Stable.symbol]: runBrandP },
     },
   },
   { options: { interchainAssetOptions } },
@@ -172,7 +173,7 @@ export const registerScaledPriceAuthority = async (
     priceAuthority,
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('brand'), [
       keyword,
-      'RUN',
+      'IST',
     ]),
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
       oracleBrand,
@@ -238,7 +239,7 @@ export const addAssetToVault = async (
   {
     consume: { vaultFactoryCreator, agoricNamesAdmin },
     brand: {
-      consume: { RUN: runP },
+      consume: { [Stable.symbol]: runP },
     },
   },
   { options: { interchainAssetOptions } },
@@ -294,8 +295,8 @@ export const getManifestForAddAssetToVault = (
             consume: { mintHolder: true },
           },
           instance: { consume: { amm: 'amm' } },
-          issuer: { consume: { RUN: 'zoe' } },
-          brand: { consume: { RUN: 'zoe' } },
+          issuer: { consume: { [Stable.symbol]: 'zoe' } },
+          brand: { consume: { [Stable.symbol]: 'zoe' } },
         },
       }),
       [registerScaledPriceAuthority.name]: {
@@ -317,7 +318,7 @@ export const getManifestForAddAssetToVault = (
           agoricNamesAdmin: true,
         },
         brand: {
-          consume: { RUN: true },
+          consume: { [Stable.symbol]: true },
         },
       },
     },

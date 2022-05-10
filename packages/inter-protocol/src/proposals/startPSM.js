@@ -4,6 +4,7 @@ import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeStorageNode } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
+import { Stable } from '@agoric/vats/src/tokens.js';
 import { reserveThenGetNamePaths } from './utils.js';
 
 const BASIS_POINTS = 10000n;
@@ -39,7 +40,7 @@ export const startPSM = async (
       produce: { psm: psmInstanceR, psmGovernor: psmGovernorR },
     },
     brand: {
-      consume: { RUN: runBrandP },
+      consume: { [Stable.symbol]: runBrandP },
     },
   },
   {
