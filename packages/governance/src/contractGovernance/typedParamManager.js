@@ -7,6 +7,14 @@ import { makeParamManagerBuilder } from './paramManager.js';
 /**
  * @typedef {Record<Keyword, ParamType>} ParamTypesMap
  */
+/**
+ * @template {Record<Keyword, ParamRecord>} M
+ * @typedef {{ [R in keyof M]: M[R]['type']}} ParamTypesMapFromRecords
+ */
+/**
+ * @template {ParamTypesMap} M
+ * @typedef {{ [T in keyof M]: { type: M[T], value: ParamValueForType<M[T]> } }} ParamRecordsFromTypes
+ */
 
 /**
  * @template {ParamTypesMap} M
@@ -37,11 +45,6 @@ const builderMethodName = type =>
 const isAsync = {
   invitation: true,
 };
-
-/**
- * @template {ParamType} [T=ParamType]
- * @typedef {[type: T, value: ParamValueForType<T>]} ParamRecordTuple
- */
 
 /**
  * @template {ParamType} T
@@ -113,8 +116,7 @@ const makeParamManagerSync = spec => {
 
 /**
  * @template {ParamTypesMap} M Map of types of custom governed terms
- * @template {Record<string, ParamRecord>} CGT Custom governed terms
- * @param {ZCF<GovernanceTerms<CGT>>} zcf
+ * @param {ZCF<GovernanceTerms<M>>} zcf
  * @param {Payment} initialPoserInvitation
  * @param {M} paramTypesMap
  * @returns {Promise<TypedParamManager<M & {Electorate: 'invitation'}>>}

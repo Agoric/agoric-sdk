@@ -20,7 +20,7 @@ const makeLiquidityKeyword = keyword => `${keyword}Liquidity`;
  * accompany it, and deposits both into an AMM pool, using the AMM's method that
  * allows the pool balance to be determined based on the contributed funds.
  *
- * @param {ZCF<GovernanceTerms<{AmmInstance: ParamRecord<'instance'>}> &
+ * @param {ZCF<GovernanceTerms<{AmmInstance: 'instance'}> &
  * {
  *   governedApis: ['addLiquidityToAmmPool'],
  * }

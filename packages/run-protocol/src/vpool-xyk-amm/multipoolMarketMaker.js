@@ -102,8 +102,8 @@ const start = async (zcf, privateArgs) => {
    * IssuerKeywordRecord.
    *
    * @typedef {GovernanceTerms<{
-   *   PoolFee: ParamRecord<'nat'>,
-   *   ProtocolFee: ParamRecord<'nat'>,
+   *   PoolFee: 'nat',
+   *   ProtocolFee: 'nat',
    * }> & {
    *   brands: { Central: Brand },
    *   issuers: {},
