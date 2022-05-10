@@ -1,49 +1,49 @@
 import djson from 'deterministic-json';
 import TOML from '@iarna/toml';
 
-export const CENTRAL_DENOM = 'urun';
-export const MINT_DENOM = 'ubld';
-export const STAKING_DENOM = 'ubld';
 export const STAKING_MAX_VALIDATORS = 150;
 // Required for IBC connections not to time out.
 export const STAKING_MIN_HISTORICAL_ENTRIES = 10000;
 
-export const DENOM_METADATA = [
-  {
-    name: 'Agoric Staking Token',
-    description: 'The token used by delegates to stake on the Agoric chain',
-    denom_units: [
-      {
-        denom: 'ubld',
-        exponent: 0,
-      },
-      {
-        denom: 'bld',
-        exponent: 6,
-      },
-    ],
-    base: 'ubld',
-    display: 'bld',
-    symbol: 'BLD',
-  },
-  {
-    name: 'Agoric Stable Local Currency',
-    description: 'The stable local currency ($USD) used by the Agoric chain',
-    denom_units: [
-      {
-        denom: 'urun',
-        exponent: 0,
-      },
-      {
-        denom: 'run',
-        exponent: 6,
-      },
-    ],
-    base: 'urun',
-    display: 'run',
-    symbol: 'RUN',
-  },
-];
+const Stake = /** @type {const} */ ({
+  name: 'Agoric Staking Token',
+  description: 'The token used by delegates to stake on the Agoric chain',
+  denom_units: [
+    {
+      denom: 'ubld',
+      exponent: 0,
+    },
+    {
+      denom: 'bld',
+      exponent: 6,
+    },
+  ],
+  base: 'ubld',
+  display: 'bld',
+  symbol: 'BLD',
+});
+const Stable = /** @type {const} */ ({
+  name: 'Agoric Stable Local Currency',
+  description: 'The stable local currency ($USD) used by the Agoric chain',
+  denom_units: [
+    {
+      denom: 'uist',
+      exponent: 0,
+    },
+    {
+      denom: 'ist',
+      exponent: 6,
+    },
+  ],
+  base: 'uist',
+  display: 'ist',
+  symbol: 'IST',
+});
+export const DENOM_METADATA = /** @type {const} */ ([Stake, Stable]);
+
+export const CENTRAL_DENOM = Stable.base;
+export const MINT_DENOM = Stake.base;
+export const STAKING_DENOM = Stake.base;
 
 export const GOV_DEPOSIT_COINS = [{ amount: '1000000', denom: MINT_DENOM }];
 export const GOV_VOTING_PERIOD = '36h';
