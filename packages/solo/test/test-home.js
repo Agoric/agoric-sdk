@@ -12,12 +12,12 @@ import test from 'ava';
 
 import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
+import { Stable } from '@agoric/vats/src/tokens.js';
 import { Far } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { makeFixture, E } from './captp-fixture.js';
 
-const CENTRAL_ISSUER_NAME = 'RUN';
 const SOLO_PORT = 7999;
 
 // This runs before all the tests.
@@ -62,9 +62,9 @@ test.serial('home.wallet - transfer funds to the feePurse', async t => {
   const feePurse = E(faucet).getFeePurse();
   const feeBrand = await E(feePurse).getAllegedBrand();
   const feeAmount = AmountMath.make(feeBrand, 10_000_000n);
-  const feePayment = await E(
-    E(wallet).getPurse('Agoric RUN currency'),
-  ).withdraw(feeAmount);
+  const feePayment = await E(E(wallet).getPurse(Stable.proposedName)).withdraw(
+    feeAmount,
+  );
   const deposited = await E(feePurse).deposit(feePayment);
   t.deepEqual(deposited, feeAmount, `all fees deposited to feePurse`);
 });
@@ -126,7 +126,7 @@ test.serial('home.wallet - central issuer setup', async t => {
   // Check that the wallet knows about the central issuer.
   const issuers = await E(wallet).getIssuers();
   const issuersMap = new Map(issuers);
-  const centralIssuer = issuersMap.get(CENTRAL_ISSUER_NAME);
+  const centralIssuer = issuersMap.get(Stable.symbol);
 
   const centralPurse = await E(wallet).getPurse('Agoric RUN currency');
   const brandFromIssuer = await E(centralIssuer).getBrand();
