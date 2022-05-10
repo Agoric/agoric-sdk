@@ -242,7 +242,7 @@ const start = async zcf => {
     trace('offerResult', { amounts });
   }
 
-  const debtorHook = async (debtorSeat, { debt: originalDebt }) => {
+  const handleLiquidateOffer = async (debtorSeat, { debt: originalDebt }) => {
     trace('LIQ', originalDebt);
     assertProposalShape(debtorSeat, {
       give: { In: null },
@@ -284,7 +284,8 @@ const start = async zcf => {
    * @type {ERef<Liquidator>}
    */
   const creatorFacet = Far('debtorInvitationCreator', {
-    makeLiquidateInvitation: () => zcf.makeInvitation(debtorHook, 'Liquidate'),
+    makeLiquidateInvitation: () =>
+      zcf.makeInvitation(handleLiquidateOffer, 'Liquidate'),
   });
 
   return harden({ creatorFacet });

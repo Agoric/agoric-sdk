@@ -28,7 +28,7 @@ const start = async zcf => {
    * @param {ZCFSeat} debtorSeat
    * @param {{ debt: Amount<'nat'> }} options
    */
-  const debtorHook = async (debtorSeat, { debt }) => {
+  const handleLiquidationOffer = async (debtorSeat, { debt }) => {
     const debtBrand = debt.brand;
     const {
       give: { In: amountIn },
@@ -63,7 +63,8 @@ const start = async zcf => {
    * @type {ERef<Liquidator>}
    */
   const creatorFacet = Far('debtorInvitationCreator', {
-    makeLiquidateInvitation: () => zcf.makeInvitation(debtorHook, 'Liquidate'),
+    makeLiquidateInvitation: () =>
+      zcf.makeInvitation(handleLiquidationOffer, 'Liquidate'),
   });
 
   return harden({ creatorFacet });
