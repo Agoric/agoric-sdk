@@ -117,7 +117,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     const vrefs = krefs.map(kref =>
       mapKernelSlotToVatSlot(kref, gcDeliveryMapOpts),
     );
-    krefs.map(kref => vatKeeper.clearReachableFlag(kref, 'dropE'));
+    krefs.forEach(kref => vatKeeper.clearReachableFlag(kref, 'dropE'));
     /** @type { VatDeliveryDropExports } */
     const vatDelivery = harden(['dropExports', vrefs]);
     return vatDelivery;
