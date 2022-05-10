@@ -611,7 +611,7 @@ export default function makeKernelKeeper(
           body: kvStore.get(`${kernelSlot}.data.body`),
           slots: commaSplit(kvStore.get(`${kernelSlot}.data.slots`)),
         };
-        p.data.slots.map(parseKernelSlot);
+        p.data.slots.forEach(parseKernelSlot);
         break;
       default:
         assert.fail(X`unknown state for ${kernelSlot}: ${p.state}`);

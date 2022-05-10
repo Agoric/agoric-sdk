@@ -93,13 +93,13 @@ test('VO property deletion is not short-circuited', async t => {
   // The bug (#5044) was that this loop short-circuited the decref if
   // doMoreGC was true. That is, it did:
   //
-  // propValue.slots.map(
+  // propValue.slots.forEach(
   //   vref => (doMoreGC = doMoreGC || vrm.removeReachableVref(vref)),
   // );
   //
   // instead of:
   //
-  // propValue.slots.map(
+  // propValue.slots.forEach(
   //   vref => (doMoreGC = vrm.removeReachableVref(vref) || doMoreGC),
   // );
   //

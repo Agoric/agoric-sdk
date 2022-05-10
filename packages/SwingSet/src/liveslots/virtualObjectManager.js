@@ -633,7 +633,7 @@ export function makeVirtualObjectManager(
             const before = innerSelf.rawState[prop];
             const after = serialize(value);
             if (durable) {
-              after.slots.map(vref =>
+              after.slots.forEach(vref =>
                 assert(
                   vrm.isDurable(vref),
                   X`value for ${prop} is not durable`,
@@ -720,11 +720,11 @@ export function makeVirtualObjectManager(
       for (const prop of Object.getOwnPropertyNames(initialData)) {
         const data = serialize(initialData[prop]);
         if (durable) {
-          data.slots.map(vref =>
-            assert(vrm.isDurable(vref), X`value for ${prop} is not durable`),
-          );
+          data.slots.forEach(vref => {
+            assert(vrm.isDurable(vref), X`value for ${prop} is not durable`);
+          });
         }
-        data.slots.map(vrm.addReachableVref);
+        data.slots.forEach(vrm.addReachableVref);
         rawState[prop] = data;
       }
       const innerSelf = { baseRef, rawState, repCount: 0 };

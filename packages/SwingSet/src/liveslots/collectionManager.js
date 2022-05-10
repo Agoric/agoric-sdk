@@ -328,7 +328,7 @@ export function makeCollectionManager(
       currentGenerationNumber += 1;
       const serializedValue = serialize(value);
       if (durable) {
-        serializedValue.slots.map(vref =>
+        serializedValue.slots.forEach(vref =>
           assert(vrm.isDurable(vref), X`value is not durable`),
         );
       }
@@ -344,7 +344,7 @@ export function makeCollectionManager(
           vrm.addReachableVref(vref);
         }
       }
-      serializedValue.slots.map(vrm.addReachableVref);
+      serializedValue.slots.forEach(vrm.addReachableVref);
       syscall.vatstoreSet(keyToDBKey(key), JSON.stringify(serializedValue));
       updateEntryCount(1);
     }
@@ -362,7 +362,7 @@ export function makeCollectionManager(
       }
       const after = serialize(harden(value));
       if (durable) {
-        after.slots.map(vref =>
+        after.slots.forEach(vref =>
           assert(vrm.isDurable(vref), X`value is not durable`),
         );
       }
