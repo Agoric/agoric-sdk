@@ -13,6 +13,7 @@ import {
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { makeTracer } from '../makeTracer.js';
+import { partitionProceeds } from './liquidation.js';
 
 const { details: X } = assert;
 const trace = makeTracer('LiqI', false);
@@ -39,6 +40,8 @@ const trace = makeTracer('LiqI', false);
  * Selling uses the `oracleLimit as the `want` as the limit to allowed
  * slippage, and provides the remaining `debt` as the `stopAfter` so
  * that we sell no more than is needed to pay off the debt.
+ *
+ * TODO integrate the reserve, including the above Reserve strategies.
  */
 
 /**
@@ -72,6 +75,7 @@ const start = async zcf => {
   const asFloat = (numerator, denominator) =>
     Number(numerator) / Number(denominator);
 
+  // TODO distribute penalties to the reserve
   const { zcfSeat: penaltyPoolSeat } = zcf.makeEmptySeatKit();
 
   /**
@@ -244,10 +248,14 @@ const start = async zcf => {
 
   /**
    * @param {ZCFSeat} debtorSeat
-   * @param {{ debt: Amount<'nat'> }} options
+   * @param {object} options
+   * @param {Amount<'nat'>} options.debt Debt before penalties
+   * @param {Ratio} options.penaltyRate
    */
-  const handleLiquidateOffer = async (debtorSeat, { debt: originalDebt }) => {
-    trace('LIQ', originalDebt);
+  const handleLiquidateOffer = async (
+    debtorSeat,
+    { debt: originalDebt, penaltyRate },
+  ) => {
     assertProposalShape(debtorSeat, {
       give: { In: null },
     });
@@ -255,7 +263,11 @@ const start = async zcf => {
       originalDebt.brand === debtBrand,
       X`Cannot liquidate to ${originalDebt.brand}`,
     );
-    for await (const t of processTranches(debtorSeat, originalDebt)) {
+    const penalty = ceilMultiplyBy(originalDebt, penaltyRate);
+    const debtWithPenalty = AmountMath.add(originalDebt, penalty);
+    trace('LIQ', { originalDebt, debtWithPenalty });
+
+    for await (const t of processTranches(debtorSeat, debtWithPenalty)) {
       const { collateral, oracleLimit, ammProceeds, debt } = t;
       trace(`OFFER TO DEBT: `, {
         collateral,
@@ -280,6 +292,18 @@ const start = async zcf => {
         });
       }
     }
+
+    // Now we need to know how much was sold so we can pay off the debt.
+    // We can use this because only liquidation adds debt brand to the seat.
+    const debtPaid = debtorSeat.getAmountAllocated('Out', debtBrand);
+    const penaltyPaid = AmountMath.min(penalty, debtPaid);
+
+    // Allocate penalty portion of proceeds to a seat that will be transferred to reserve
+    penaltyPoolSeat.incrementBy(
+      debtorSeat.decrementBy(harden({ Out: penaltyPaid })),
+    );
+    zcf.reallocate(penaltyPoolSeat, debtorSeat);
+
     debtorSeat.exit();
     trace('exit seat');
   };
@@ -287,7 +311,7 @@ const start = async zcf => {
   /**
    * @type {ERef<Liquidator>}
    */
-  const creatorFacet = Far('debtorInvitationCreator', {
+  const creatorFacet = Far('debtorInvitationCreator (incrementally)', {
     makeLiquidateInvitation: () =>
       zcf.makeInvitation(handleLiquidateOffer, 'Liquidate'),
   });

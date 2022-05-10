@@ -1,14 +1,19 @@
 // @ts-check
 
 import { E } from '@endo/eventual-send';
-import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  ceilMultiplyBy,
+  offerTo,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
 import { makeTracer } from '../makeTracer.js';
+import { partitionProceeds } from './liquidation.js';
 
 const trace = makeTracer('LiqMin', false);
 
+// ??? is this contract used only for tests and demo purposes?
 /**
  * This contract liquidates the minimum amount of vault's collateral necessary
  * to satisfy the debt. It uses the AMM's swapOut, which sells no more than
@@ -26,10 +31,19 @@ const start = async zcf => {
 
   /**
    * @param {ZCFSeat} debtorSeat
-   * @param {{ debt: Amount<'nat'> }} options
+   * @param {object} options
+   * @param {Amount<'nat'>} options.debt Debt before penalties
+   * @param {Ratio} options.penaltyRate
    */
-  const handleLiquidationOffer = async (debtorSeat, { debt }) => {
-    const debtBrand = debt.brand;
+  const handleLiquidationOffer = async (
+    debtorSeat,
+    { debt: originalDebt, penaltyRate },
+  ) => {
+    // ??? distribute penalties to the reserve
+    const { zcfSeat: penaltyPoolSeat } = zcf.makeEmptySeatKit();
+    const penalty = ceilMultiplyBy(originalDebt, penaltyRate);
+    const debtWithPenalty = AmountMath.add(originalDebt, penalty);
+    const debtBrand = originalDebt.brand;
     const {
       give: { In: amountIn },
     } = debtorSeat.getProposal();
@@ -39,7 +53,7 @@ const start = async zcf => {
       give: { In: amountIn },
       want: { Out: AmountMath.makeEmpty(debtBrand) },
     });
-    trace(`OFFER TO DEBT: `, debt, amountIn);
+    trace(`OFFER TO DEBT: `, debtWithPenalty, amountIn);
     const { deposited } = await offerTo(
       zcf,
       swapInvitation,
@@ -47,22 +61,34 @@ const start = async zcf => {
       liqProposal,
       debtorSeat,
       debtorSeat,
-      { stopAfter: debt },
+      { stopAfter: debtWithPenalty },
     );
     const amounts = await deposited;
     trace(`Liq results`, {
-      debt,
+      debtWithPenalty,
       amountIn,
       paid: debtorSeat.getCurrentAllocation(),
       amounts,
     });
+
+    // Now we need to know how much was sold so we can pay off the debt.
+    // We can use this because only liquidation adds debt brand to the seat.
+    const debtPaid = debtorSeat.getAmountAllocated('Out', debtBrand);
+    const penaltyPaid = AmountMath.min(penalty, debtPaid);
+
+    // Allocate penalty portion of proceeds to a seat that will be transferred to reserve
+    penaltyPoolSeat.incrementBy(
+      debtorSeat.decrementBy(harden({ Out: penaltyPaid })),
+    );
+    zcf.reallocate(penaltyPoolSeat, debtorSeat);
+
     debtorSeat.exit();
   };
 
   /**
    * @type {ERef<Liquidator>}
    */
-  const creatorFacet = Far('debtorInvitationCreator', {
+  const creatorFacet = Far('debtorInvitationCreator (minimum)', {
     makeLiquidateInvitation: () =>
       zcf.makeInvitation(handleLiquidationOffer, 'Liquidate'),
   });

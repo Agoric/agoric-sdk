@@ -3,11 +3,7 @@
 
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
-import {
-  ceilMultiplyBy,
-  makeRatio,
-  offerTo,
-} from '@agoric/zoe/src/contractSupport/index.js';
+import { makeRatio, offerTo } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeTracer } from '../makeTracer.js';
 
 const trace = makeTracer('LIQ');
@@ -58,10 +54,7 @@ const liquidate = async (
   trace('liquidate start', vault);
   vault.liquidating();
 
-  // -> CONTRACT
-  const debtBeforePenalty = vault.getCurrentDebt();
-  const penalty = ceilMultiplyBy(debtBeforePenalty, penaltyRate);
-  const debt = AmountMath.add(debtBeforePenalty, penalty);
+  const debt = vault.getCurrentDebt();
 
   const vaultZcfSeat = vault.getVaultSeat();
 
@@ -69,7 +62,7 @@ const liquidate = async (
     'Collateral',
     collateralBrand,
   );
-  trace(`liq prep`, collateralToSell, debtBeforePenalty, debt);
+  trace(`liq prep`, { collateralToSell, debt, liquidator });
 
   const { deposited, userSeatPromise: liqSeat } = await offerTo(
     zcf,
@@ -81,41 +74,24 @@ const liquidate = async (
     }),
     vaultZcfSeat,
     vaultZcfSeat,
-    harden({ debt }), // + penaltyRate
+    harden({ debt, penaltyRate }),
   );
-  trace(` offeredTo`, collateralToSell, debt);
+  trace(` offeredTo`, { collateralToSell, debt });
 
-  // await deposited, but we don't need the value.
-  await Promise.all([deposited, E(liqSeat).getOfferResult()]);
+  // await deposited and offer result, but ignore the latter
+  const [proceeds] = await Promise.all([
+    deposited,
+    E(liqSeat).getOfferResult(),
+  ]);
   // all the proceeds from AMM sale are on the vault seat instead of a staging seat
-  // ??? & okay?
+  // ??? ^ okay?
 
-  // -> CONTRACT
-  // Now we need to know how much was sold so we can pay off the debt.
-  // We can use this because only liquidation adds RUN to the vaultSeat.
-  const { debtPaid, penaltyProceeds, runToBurn } = partitionProceeds(
-    vaultZcfSeat.getAmountAllocated('RUN', debt.brand),
-    debt,
-    penalty,
-  );
-
-  trace({ debt, debtPaid, penaltyProceeds, runToBurn });
-
-  // -> CONTRACT
-  // penaltyPoolSeat is up to the contract (give it Reserve so it can make it)
-  // Allocate penalty portion of proceeds to a seat that will be transferred to reserve
-  penaltyPoolSeat.incrementBy(
-    vaultZcfSeat.decrementBy(harden({ RUN: penaltyProceeds })),
-  );
-  zcf.reallocate(penaltyPoolSeat, vaultZcfSeat);
-
-  // STAYS
-  // runToBurn is simply min(proceeds, debt)
-  // whatever's remaining stays on the vault seat
+  const runToBurn = AmountMath.min(proceeds.RUN, debt);
+  trace('before burn', { debt, proceeds, runToBurn });
   burnLosses(runToBurn, vaultZcfSeat);
 
   // Accounting complete. Update the vault state.
-  vault.liquidated(AmountMath.subtract(debt, debtPaid));
+  vault.liquidated(AmountMath.subtract(debt, runToBurn));
 
   // remaining funds are left on the vault for the user to close and claim
   return vault;
