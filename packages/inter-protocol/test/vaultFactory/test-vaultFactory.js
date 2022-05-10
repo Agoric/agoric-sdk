@@ -1305,8 +1305,8 @@ test('adjust balances', async t => {
   await t.throwsAsync(() => E(aliceReduceCollateralSeat2).getOfferResult(), {
     // Double-disclosure bug endojs/endo#640
     // wildcards were:
-    // "brand":"[Alleged: RUN brand]","value":"[5829n]"
-    // "value":"[3750n]","brand":"[Alleged: RUN brand]"
+    // "brand":"[Alleged: IST brand]","value":"[5829n]"
+    // "value":"[3750n]","brand":"[Alleged: IST brand]"
     message: / is more than the collateralization ratio allows:/,
     // message: /The requested debt {.*} is more than the collateralization ratio allows: {.*}/,
   });
@@ -2285,7 +2285,7 @@ test('excessive debt on collateral type', async t => {
   );
   await t.throwsAsync(() => E(loanSeat).getOfferResult(), {
     message:
-      'Minting {"brand":"[Alleged: RUN brand]","value":"[1050000n]"} past {"brand":"[Alleged: RUN brand]","value":"[0n]"} would hit total debt limit {"brand":"[Alleged: RUN brand]","value":"[1000000n]"}',
+      'Minting {"brand":"[Alleged: IST brand]","value":"[1050000n]"} past {"brand":"[Alleged: IST brand]","value":"[0n]"} would hit total debt limit {"brand":"[Alleged: IST brand]","value":"[1000000n]"}',
   });
 });
 

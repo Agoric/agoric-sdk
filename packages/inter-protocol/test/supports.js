@@ -11,6 +11,7 @@ import {
 } from '@agoric/vats/src/core/utils.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { makeChainStorageRoot } from '@agoric/vats/src/lib-chainStorage.js';
+import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
@@ -46,6 +47,12 @@ export const setUpZoeForTest = (setJig = () => {}) => {
 
   const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
     makeFakeVatAdmin(setJig).admin,
+    undefined,
+    {
+      name: Stable.symbol,
+      assetKind: Stable.assetKind,
+      displayInfo: Stable.displayInfo,
+    },
   );
   /** @type {ERef<ZoeService>} */
   const zoe = makeFar(zoeService);
@@ -89,8 +96,8 @@ export const setupBootstrap = (t, optTimer) => {
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   const { brand, issuer } = spaces;
-  brand.produce.RUN.resolve(run.brand);
-  issuer.produce.RUN.resolve(run.issuer);
+  brand.produce.IST.resolve(run.brand);
+  issuer.produce.IST.resolve(run.issuer);
 
   return { produce, consume, modules: { utils: { ...utils } }, ...spaces };
 };
