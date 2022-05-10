@@ -179,15 +179,23 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   }
 
   function convertSlotToVal(slot) {
-    const { type, virtual } = parseVatSlot(slot);
+    const { type, virtual, facet, baseRef } = parseVatSlot(slot);
     assert.equal(type, 'object');
-    let val = getValForSlot(slot);
+    let val = getValForSlot(baseRef);
     if (val) {
+      if (virtual) {
+        if (facet !== undefined) {
+          return val[facet];
+        }
+      }
       return val;
     }
     if (virtual) {
       if (vrm) {
         val = vrm.reanimate(slot);
+        if (facet !== undefined) {
+          val = val[facet];
+        }
       } else {
         assert.fail('fake liveSlots stuff configured without vrm');
       }
@@ -197,9 +205,15 @@ export function makeFakeLiveSlotsStuff(options = {}) {
 
   const marshal = makeMarshal(convertValToSlot, convertSlotToVal);
 
-  function registerEntry(slot, val) {
-    setValForSlot(slot, val);
-    valToSlot.set(val, slot);
+  function registerEntry(baseRef, val, valIsCohort) {
+    setValForSlot(baseRef, val);
+    if (valIsCohort) {
+      for (let i = 0; i < val.length; i += 1) {
+        valToSlot.set(val[i], `${baseRef}:${i}`);
+      }
+    } else {
+      valToSlot.set(val, baseRef);
+    }
   }
 
   function deleteEntry(slot, val) {
