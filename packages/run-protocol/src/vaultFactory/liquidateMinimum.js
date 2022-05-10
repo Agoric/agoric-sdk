@@ -17,7 +17,7 @@ const trace = makeTracer('LiqMin', false);
  * uses the AMM's swapIn instead.
  *
  * @param {ZCF<{
- *   amm: AutoswapPublicFacet,
+ *   amm: XYKAMMPublicFacet,
  * }>} zcf
  */
 const start = async zcf => {
@@ -59,6 +59,9 @@ const start = async zcf => {
     debtorSeat.exit();
   };
 
+  /**
+   * @type {ERef<Liquidator>}
+   */
   const creatorFacet = Far('debtorInvitationCreator', {
     makeLiquidateInvitation: () => zcf.makeInvitation(debtorHook, 'Liquidate'),
   });

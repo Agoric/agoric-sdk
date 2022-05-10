@@ -43,7 +43,18 @@ const trace = makeTracer('LiqI', false);
  * TODO integrate the reserve, including the above Reserve strategies.
  */
 
-/** @type {ContractStartFn} */
+/**
+ * @typedef {{
+ *   amm: XYKAMMPublicFacet,
+ *   priceAuthority: PriceAuthority,
+ *   timerService: TimerService,
+ *   debtBrand: Brand,
+ *   MaxImpactBP: NatValue,
+ *   OracleTolerance: Ratio,
+ *   AMMMaxSlippage: Ratio,
+ * }} LiquidationContractTerms
+ * @param {ZCF<LiquidationContractTerms>} zcf
+ */
 const start = async zcf => {
   const {
     amm,
@@ -53,7 +64,7 @@ const start = async zcf => {
     MaxImpactBP,
     OracleTolerance,
     AMMMaxSlippage,
-  } = /** @type {LiquidationContractTerms} */ zcf.getTerms();
+  } = zcf.getTerms();
 
   const SCALE = 1_000_000n;
   const BASIS_POINTS = 10_000n * SCALE;
@@ -269,11 +280,13 @@ const start = async zcf => {
     trace('exit seat');
   };
 
+  /**
+   * @type {ERef<Liquidator>}
+   */
   const creatorFacet = Far('debtorInvitationCreator', {
     makeLiquidateInvitation: () => zcf.makeInvitation(debtorHook, 'Liquidate'),
   });
 
-  // @ts-expect-error
   return harden({ creatorFacet });
 };
 

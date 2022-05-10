@@ -116,8 +116,7 @@ const facetHelpers = (zcf, paramManager) => {
  *
  * @template {import('./contractGovernance/typedParamManager').ParamTypesMap} M
  *   Map of types of custom governed terms
- * @template {Record<keyof M, ParamRecord>} CGT Custom governed terms
- * @param {ZCF<GovernanceTerms<CGT>>} zcf
+ * @param {ZCF<GovernanceTerms<M>>} zcf
  * @param {Invitation} initialPoserInvitation
  * @param {M} paramTypesMap
  */

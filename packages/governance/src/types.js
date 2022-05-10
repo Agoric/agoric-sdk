@@ -61,8 +61,8 @@
 /**
  * Terms a contract must provide in order to be governed.
  *
- * @template {Record<string, ParamRecord>} T Governed parameters of contract
- * @typedef {{ electionManager: Instance, governedParams: T & { Electorate: ParamRecord<'invitation'> } } } GovernanceTerms<T>
+ * @template {import('./contractGovernance/typedParamManager.js').ParamTypesMap} T Governed parameters of contract
+ * @typedef {{ electionManager: Instance, governedParams: import('./contractGovernance/typedParamManager.js').ParamRecordsFromTypes<T & { Electorate: 'invitation' }> } } GovernanceTerms<T>
  */
 
 /**
