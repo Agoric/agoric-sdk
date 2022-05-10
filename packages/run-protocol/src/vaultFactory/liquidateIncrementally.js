@@ -242,6 +242,10 @@ const start = async zcf => {
     trace('offerResult', { amounts });
   }
 
+  /**
+   * @param {ZCFSeat} debtorSeat
+   * @param {{ debt: Amount<'nat'> }} options
+   */
   const handleLiquidateOffer = async (debtorSeat, { debt: originalDebt }) => {
     trace('LIQ', originalDebt);
     assertProposalShape(debtorSeat, {

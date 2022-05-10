@@ -112,7 +112,7 @@
 
 /**
  * @typedef {object} Liquidator
- * @property {() => Promise<Invitation>} makeLiquidateInvitation
+ * @property {() => Promise<Invitation<{ debt: Amount<'nat'> }, void>>} makeLiquidateInvitation
  */
 
 /**
