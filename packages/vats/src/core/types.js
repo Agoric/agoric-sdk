@@ -132,9 +132,11 @@
  */
 
 /**
+ * @typedef {import('../tokens.js').TokenKeyword} TokenKeyword
+ *
  * @typedef {{
  *   issuer: |
- *     'RUN' | 'BLD' | 'Attestation' | 'AUSD',
+ *     TokenKeyword | 'Attestation' | 'AUSD',
  *   installation: |
  *     'centralSupply' | 'mintHolder' | 'singleWallet' | 'walletFactory' |
  *     'feeDistributor' |
