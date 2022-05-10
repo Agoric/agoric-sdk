@@ -195,6 +195,7 @@ export const start = async (
       makeLoanInvitation: () =>
         zcf.makeInvitation(offerHandler, 'make RUNstake'),
       makeReturnAttInvitation: att.publicFacet.makeReturnAttInvitation,
+      getAssetNotifier: manager.getAssetNotifier,
     }),
   );
 
