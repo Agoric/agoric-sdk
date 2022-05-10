@@ -1,10 +1,19 @@
 // @ts-check
 
-import { makeIssuerKit } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind } from '@agoric/ertp';
 
 import { makeHandle } from '../makeHandle.js';
 
 const { details: X } = assert;
+
+export const defaultFeeIssuerConfig = harden(
+  /** @type {const} */ ({
+    name: 'ZOE',
+    assetKind: AssetKind.NAT,
+    displayInfo: harden({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
+  }),
+);
+
 /**
  * @param {FeeIssuerConfig} feeIssuerConfig
  * @param {ShutdownWithFailure} shutdownZoeVat

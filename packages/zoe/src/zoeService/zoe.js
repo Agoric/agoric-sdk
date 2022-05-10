@@ -15,7 +15,6 @@ import '@agoric/store/exported.js';
 import '../../exported.js';
 import '../internal-types.js';
 
-import { AssetKind } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -25,7 +24,7 @@ import { makeStartInstance } from './startInstance.js';
 import { makeOfferMethod } from './offer/offer.js';
 import { makeInvitationQueryFns } from './invitationQueries.js';
 import { setupCreateZCFVat } from './createZCFVat.js';
-import { createFeeMint } from './feeMint.js';
+import { createFeeMint, defaultFeeIssuerConfig } from './feeMint.js';
 
 /**
  * Create an instance of Zoe.
@@ -45,11 +44,7 @@ import { createFeeMint } from './feeMint.js';
 const makeZoeKit = (
   vatAdminSvc,
   shutdownZoeVat = () => {},
-  feeIssuerConfig = {
-    name: 'RUN',
-    assetKind: AssetKind.NAT,
-    displayInfo: harden({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
-  },
+  feeIssuerConfig = defaultFeeIssuerConfig,
   zcfSpec = { name: 'zcf' },
 ) => {
   // We must pass the ZoeService to `makeStartInstance` before it is
