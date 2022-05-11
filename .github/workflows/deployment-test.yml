@@ -31,6 +31,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
+      - run: sudo packages/deployment/scripts/install-deps.sh
       - uses: ./.github/actions/restore-golang
         with:
           go-version: 1.17
@@ -80,8 +81,6 @@ jobs:
           set -e
           cd packages/cosmic-swingset
           make install
-        working-directory: /usr/src/agoric-sdk
-      - run: sudo ./packages/deployment/scripts/install-deps.sh
         working-directory: /usr/src/agoric-sdk
       - run: /usr/src/agoric-sdk/packages/deployment/scripts/integration-test.sh
         working-directory: /usr/src/agoric-sdk
