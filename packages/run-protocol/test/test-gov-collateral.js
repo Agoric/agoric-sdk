@@ -196,10 +196,11 @@ const makeScenario = async t => {
       };
 
       return Promise.all(
-        makeCoreProposalArgs.map(async ({ ref, call }) => {
+        makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
           const subBehavior = makeCoreProposalBehavior({
             manifestInstallRef: ref,
             getManifestCall: call,
+            overrideManifest,
             E: cpE,
             restoreRef,
           });
