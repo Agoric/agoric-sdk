@@ -9,21 +9,6 @@ import { makeTracer } from '../makeTracer.js';
 const trace = makeTracer('LIQ');
 
 /**
- * @param {Amount<'nat'>} proceeds
- * @param {Amount<'nat'>} debt - after incurring penalty
- * @param {Amount<'nat'>} penaltyPortion
- */
-const partitionProceeds = (proceeds, debt, penaltyPortion) => {
-  const debtPaid = AmountMath.min(proceeds, debt);
-
-  // Pay as much of the penalty as possible
-  const penaltyProceeds = AmountMath.min(penaltyPortion, debtPaid);
-  const runToBurn = AmountMath.subtract(debtPaid, penaltyProceeds);
-
-  return { debtPaid, penaltyProceeds, runToBurn };
-};
-
-/**
  * Liquidates a Vault, using the strategy to parameterize the particular
  * contract being used. The strategy provides a KeywordMapping and proposal
  * suitable for `offerTo()`, and an invitation.
@@ -105,7 +90,6 @@ const liquidationDetailTerms = debtBrand =>
   });
 
 harden(liquidate);
-harden(partitionProceeds);
 harden(liquidationDetailTerms);
 
-export { liquidate, partitionProceeds, liquidationDetailTerms };
+export { liquidate, liquidationDetailTerms };

@@ -13,7 +13,6 @@ import {
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { makeTracer } from '../makeTracer.js';
-import { partitionProceeds } from './liquidation.js';
 
 const { details: X } = assert;
 const trace = makeTracer('LiqI', false);
