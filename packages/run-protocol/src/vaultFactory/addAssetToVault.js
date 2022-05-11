@@ -87,10 +87,37 @@ export const registerScaledPriceAuthority = async ({
     ]),
   ]);
 
-  // we used 4 decimals for ibcAtom above...
-  // 1_000_000 atomBrand = 10_000 ibcAtomBrand
-  const scaleIn = makeRatio(100n, atomBrand, 1n, ibcAtomBrand);
-  const scaleOut = makeRatio(1n, usdBrand, 1n, runBrand);
+  // We need "unit amounts" of each brand in order to get the ratios right.  You
+  // can ignore decimalPlaces when adding and subtracting a brand with itself,
+  // but not when creating ratios.
+  const getDecimalP = async brand => {
+    const displayInfo = E(brand).getDisplayInfo();
+    return E.get(displayInfo).decimalPlaces;
+  };
+  const [
+    decimalPlacesAtom = 0,
+    decimalPlacesIbcAtom = 0,
+    decimalPlacesUsd = 0,
+    decimalPlacesRun = 0,
+  ] = await Promise.all([
+    getDecimalP(atomBrand),
+    getDecimalP(ibcAtomBrand),
+    getDecimalP(usdBrand),
+    getDecimalP(runBrand),
+  ]);
+
+  const scaleIn = makeRatio(
+    10n ** BigInt(decimalPlacesAtom),
+    atomBrand,
+    10n ** BigInt(decimalPlacesIbcAtom),
+    ibcAtomBrand,
+  );
+  const scaleOut = makeRatio(
+    10n ** BigInt(decimalPlacesUsd),
+    usdBrand,
+    10n ** BigInt(decimalPlacesRun),
+    runBrand,
+  );
   const terms = { sourcePriceAuthority, scaleIn, scaleOut };
   const { publicFacet } = E.get(
     E(zoe).startInstance(scaledPriceAuthority, undefined, terms),
