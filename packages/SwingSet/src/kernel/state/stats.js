@@ -43,6 +43,9 @@ export const makeKernelStats = kernelStatsMetrics => {
   /** @type {Record<string, number>} */
   const defaultLocalStats = {};
 
+  const allStatsKeys =
+    /** @type {Record<GaugeKeys | CounterKeys, KernelStatsMetricType>} */ ({});
+
   for (const { key, consensus, metricType } of kernelStatsMetrics) {
     const targetStats = consensus ? defaultConsensusStats : defaultLocalStats;
 
@@ -61,16 +64,24 @@ export const makeKernelStats = kernelStatsMetrics => {
       default:
         assert.fail(`Unknown stat type ${metricType}`);
     }
+    allStatsKeys[key] = metricType;
   }
 
   Object.freeze(defaultConsensusStats);
   Object.freeze(defaultLocalStats);
+  Object.freeze(allStatsKeys);
 
-  const pickStats = stat => {
+  const pickStats = (stat, gauge = false) => {
     assert(
       kernelConsensusStats && kernelLocalStats,
       'Kernel stats not initialized',
     );
+    const metricType = allStatsKeys[stat];
+    if (gauge) {
+      assert(metricType === 'gauge', `Invalid kernel gauge stat ${stat}`);
+    } else {
+      assert(!!metricType, `Invalid kernel stat ${stat}`);
+    }
     return stat in kernelConsensusStats
       ? kernelConsensusStats
       : kernelLocalStats;
@@ -82,7 +93,6 @@ export const makeKernelStats = kernelStatsMetrics => {
    */
   const incStat = (stat, delta = 1) => {
     const kernelStats = pickStats(stat);
-    assert.typeof(kernelStats[stat], 'number');
     kernelStats[stat] += delta;
     const maxStat = `${stat}Max`;
     if (
@@ -102,10 +112,8 @@ export const makeKernelStats = kernelStatsMetrics => {
    * @param {number} [delta]
    */
   const decStat = (stat, delta = 1) => {
-    const kernelStats = pickStats(stat);
+    const kernelStats = pickStats(stat, true);
     const downStat = `${stat}Down`;
-    assert.typeof(kernelStats[stat], 'number');
-    assert.typeof(kernelStats[downStat], 'number');
     kernelStats[stat] -= delta;
     kernelStats[downStat] += delta;
   };
@@ -141,13 +149,28 @@ export const makeKernelStats = kernelStatsMetrics => {
    * @param {string | undefined} [serializedStats.localStats]
    */
   const loadFromSerializedStats = ({ consensusStats, localStats }) => {
+    const oldConsensusStatEntries = Object.entries(JSON.parse(consensusStats));
+    const oldConsensusStats = Object.fromEntries(
+      oldConsensusStatEntries.filter(([key]) => key in defaultConsensusStats),
+    );
+
+    const nowLocalStats = Object.fromEntries(
+      oldConsensusStatEntries.filter(([key]) => key in defaultLocalStats),
+    );
+
+    const oldLocalStatEntries = Object.entries(JSON.parse(localStats || '{}'));
+    const keptLocalStats = Object.fromEntries(
+      oldLocalStatEntries.filter(([key]) => !(key in nowLocalStats)),
+    );
+
     kernelConsensusStats = {
       ...defaultConsensusStats,
-      ...JSON.parse(consensusStats),
+      ...oldConsensusStats,
     };
     kernelLocalStats = {
       ...defaultLocalStats,
-      ...JSON.parse(localStats || '{}'),
+      ...nowLocalStats,
+      ...keptLocalStats,
     };
   };
 

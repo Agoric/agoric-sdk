@@ -855,3 +855,155 @@ test('crankhash - set and delete', t => {
 
   t.not(expCrankhash1, expCrankhash2);
 });
+
+test('stats - can increment and decrement', t => {
+  const { incStat, decStat, initializeStats, getStats, getSerializedStats } =
+    makeKernelStats([
+      {
+        key: 'testCounter',
+        name: 'test_counter',
+        description: 'test counter stat',
+        metricType: 'counter',
+      },
+      {
+        key: 'testGauge',
+        name: 'test_gauge',
+        description: 'test gauge stat',
+        metricType: 'gauge',
+      },
+    ]);
+
+  t.throws(() => getSerializedStats());
+  t.throws(() => incStat('testCounter'));
+  initializeStats();
+  const expectedStats = {
+    testCounter: 0,
+    testGauge: 0,
+    testGaugeDown: 0,
+    testGaugeUp: 0,
+    testGaugeMax: 0,
+  };
+  t.deepEqual(getStats(), expectedStats);
+  t.throws(() => incStat('invalidStat'));
+
+  incStat('testCounter');
+  expectedStats.testCounter += 1;
+  t.deepEqual(getStats(), expectedStats);
+
+  incStat('testGauge');
+  expectedStats.testGauge += 1;
+  expectedStats.testGaugeUp += 1;
+  expectedStats.testGaugeMax += 1;
+  t.deepEqual(getStats(), expectedStats);
+
+  t.throws(() => decStat('testCounter'));
+
+  decStat('testGauge');
+  expectedStats.testGauge -= 1;
+  expectedStats.testGaugeDown += 1;
+  t.deepEqual(getStats(), expectedStats);
+
+  incStat('testGauge', 5);
+  expectedStats.testGauge += 5;
+  expectedStats.testGaugeUp += 5;
+  expectedStats.testGaugeMax = 5;
+  t.deepEqual(getStats(), expectedStats);
+
+  decStat('testGauge', 3);
+  expectedStats.testGauge -= 3;
+  expectedStats.testGaugeDown += 3;
+  t.deepEqual(getStats(), expectedStats);
+});
+
+test('stats - can load and save existing stats', t => {
+  const { incStat, loadFromSerializedStats, getSerializedStats, getStats } =
+    makeKernelStats([
+      {
+        key: 'testLocal',
+        name: 'test_local',
+        description: 'test local stat',
+        metricType: 'counter',
+      },
+      {
+        key: 'testConsensus',
+        name: 'test_consensus',
+        description: 'test consensus stat',
+        metricType: 'counter',
+        consensus: true,
+      },
+    ]);
+
+  const consensusStats = { testConsensus: 5 };
+  const localStats = { testLocal: 7 };
+
+  // Can load consensus and local
+  loadFromSerializedStats({
+    consensusStats: JSON.stringify(consensusStats),
+    localStats: JSON.stringify(localStats),
+  });
+  t.deepEqual(getStats(), { ...localStats, ...consensusStats });
+  t.deepEqual(getStats(true), consensusStats);
+  t.deepEqual(JSON.parse(getSerializedStats().localStats), localStats);
+  t.deepEqual(JSON.parse(getSerializedStats().consensusStats), consensusStats);
+
+  // Accepts missing local stats
+  loadFromSerializedStats({
+    consensusStats: JSON.stringify(consensusStats),
+  });
+  t.deepEqual(getStats(), { testLocal: 0, ...consensusStats });
+  t.deepEqual(JSON.parse(getSerializedStats().localStats), { testLocal: 0 });
+
+  // Accepts missing entries from loaded stats
+  loadFromSerializedStats({
+    consensusStats: '{}',
+    localStats: '{}',
+  });
+  t.deepEqual(getStats(), { testLocal: 0, testConsensus: 0 });
+
+  // Extra local stats are preserved but cannot be changed
+  localStats.extraLocal = 11;
+  loadFromSerializedStats({
+    consensusStats: JSON.stringify(consensusStats),
+    localStats: JSON.stringify(localStats),
+  });
+  t.deepEqual(getStats(), { ...localStats, ...consensusStats });
+  t.deepEqual(JSON.parse(getSerializedStats().localStats), localStats);
+  t.throws(() => incStat('extraLocal'));
+  delete localStats.extraLocal;
+
+  // Extra consensus stats are removed
+  loadFromSerializedStats({
+    consensusStats: JSON.stringify({ ...consensusStats, extraConsensus: 11 }),
+    localStats: JSON.stringify(localStats),
+  });
+  t.deepEqual(getStats(), { ...localStats, ...consensusStats });
+  t.deepEqual(JSON.parse(getSerializedStats().consensusStats), consensusStats);
+
+  // Promoting a local metric to consensus shadows old local stats
+  // and ignores their value for initialization
+  loadFromSerializedStats({
+    consensusStats: JSON.stringify({}),
+    localStats: JSON.stringify({ ...localStats, testConsensus: 11 }),
+  });
+  t.deepEqual(getStats(), { testConsensus: 0, ...localStats });
+  t.deepEqual(getStats(true), { testConsensus: 0 });
+  incStat('testConsensus');
+  t.deepEqual(getStats(), { testConsensus: 1, ...localStats });
+  t.deepEqual(JSON.parse(getSerializedStats().localStats), {
+    ...localStats,
+    testConsensus: 11,
+  });
+
+  // Demoting a consensus metric to local (re)sets the initial local value
+  loadFromSerializedStats({
+    consensusStats: JSON.stringify({ ...consensusStats, ...localStats }),
+    localStats: JSON.stringify({ testLocal: 1 }),
+  });
+  t.deepEqual(getStats(), { ...consensusStats, ...localStats });
+  t.deepEqual(getStats(true), consensusStats);
+  incStat('testLocal');
+  localStats.testLocal += 1;
+  t.deepEqual(getStats(), { ...consensusStats, ...localStats });
+  t.deepEqual(JSON.parse(getSerializedStats().consensusStats), consensusStats);
+  t.deepEqual(JSON.parse(getSerializedStats().localStats), localStats);
+});
