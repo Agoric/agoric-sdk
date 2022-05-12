@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-rename */
 // @ts-check
 
 import './types.js';
@@ -107,29 +108,30 @@ const makeVaultDirectorParamManager = async (
 };
 
 /**
- * @param {ERef<PriceAuthority>} priceAuthority
- * @param {LoanTiming} loanTiming
- * @param {Installation} liquidationInstall
- * @param {ERef<TimerService>} timerService
- * @param {Amount} invitationAmount
- * @param {VaultManagerParamValues} vaultManagerParams
- * @param {XYKAMMPublicFacet} ammPublicFacet
- * @param {object} liquidationTerms
- * @param {Amount} minInitialDebt
- * @param {bigint=} bootstrapPaymentValue
+ * @param {object} opts
+ * @param {ERef<PriceAuthority>} opts.priceAuthority
+ * @param {LoanTiming} opts.loanTiming
+ * @param {Installation} opts.liquidationInstall
+ * @param {ERef<TimerService>} opts.timer
+ * @param {Amount} opts.invitationAmount
+ * @param {VaultManagerParamValues} opts.vaultManagerParams
+ * @param {XYKAMMPublicFacet} opts.ammPublicFacet
+ * @param {object} opts.liquidationTerms
+ * @param {Amount} opts.minInitialDebt
+ * @param {bigint} opts.bootstrapPaymentValue
  */
-const makeGovernedTerms = (
+const makeGovernedTerms = ({
   priceAuthority,
   loanTiming,
   liquidationInstall,
-  timerService,
+  timer,
   invitationAmount,
   vaultManagerParams,
   ammPublicFacet,
   liquidationTerms,
   minInitialDebt,
-  bootstrapPaymentValue = 0n,
-) => {
+  bootstrapPaymentValue,
+}) => {
   const loanTimingParams = makeParamManagerSync({
     [CHARGING_PERIOD_KEY]: ['nat', loanTiming.chargingPeriod],
     [RECORDING_PERIOD_KEY]: ['nat', loanTiming.recordingPeriod],
@@ -142,7 +144,7 @@ const makeGovernedTerms = (
     priceAuthority,
     loanParams,
     loanTimingParams,
-    timerService,
+    timerService: timer,
     governedParams: makeVaultDirectorParams(
       invitationAmount,
       liquidationInstall,

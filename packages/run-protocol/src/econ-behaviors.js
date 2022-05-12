@@ -247,7 +247,7 @@ export const startVaultFactory = async (
   {
     consume: {
       chainTimerService,
-      priceAuthority,
+      priceAuthority: priceAuthorityP,
       zoe,
       feeMintAccess: feeMintAccessP, // ISSUE: why doeszn't Zoe await this?
       economicCommitteeCreatorFacet: electorateCreatorFacet,
@@ -304,19 +304,20 @@ export const startVaultFactory = async (
     ]);
   const ammPublicFacet = await E(zoe).getPublicFacet(ammInstance);
   const feeMintAccess = await feeMintAccessP;
-  const pa = await priceAuthority;
+  const priceAuthority = await priceAuthorityP;
   const timer = await chainTimerService;
-  const vaultFactoryTerms = makeGovernedTerms(
-    pa,
-    loanParams,
-    installations.liquidate,
+  const vaultFactoryTerms = makeGovernedTerms({
+    priceAuthority,
+    loanTiming: loanParams,
+    liquidationInstall: installations.liquidate,
     timer,
     invitationAmount,
     vaultManagerParams,
     ammPublicFacet,
-    liquidationDetailTerms(centralBrand),
-    AmountMath.make(centralBrand, minInitialDebt),
-  );
+    liquidationTerms: liquidationDetailTerms(centralBrand),
+    minInitialDebt: AmountMath.make(centralBrand, minInitialDebt),
+    bootstrapPaymentValue: 0n,
+  });
 
   const governorTerms = harden({
     timer,
