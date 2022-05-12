@@ -1,4 +1,5 @@
 // @ts-check
+// @jessie-check
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';

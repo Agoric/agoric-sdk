@@ -1,4 +1,5 @@
 // @ts-check
+// @jessie-check
 
 import { E, Far } from '@endo/far';
 import { makeStore } from '@agoric/store';
