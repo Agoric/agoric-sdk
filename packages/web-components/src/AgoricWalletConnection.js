@@ -41,6 +41,20 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
       return this.machine.state.name;
     }
 
+    reset() {
+      this.service.send({ type: 'reset' });
+      if (this._captp) {
+        this._captp.abort();
+        this._captp = null;
+      }
+      if (this._connector) {
+        this._connector.hostDisconnected();
+        this._connector = null;
+      }
+      this._bridgePK.reject(Error('Connection reset'));
+      this._bridgePK = makePromiseKit();
+    }
+
     get walletConnection() {
       if (this._walletConnection) {
         // Cached.
@@ -89,17 +103,7 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
           return this._bridgePK.promise;
         },
         reset: () => {
-          this.service.send({ type: 'reset' });
-          if (this._captp) {
-            this._captp.abort();
-            this._captp = null;
-          }
-          if (this._connector) {
-            this._connector.hostDisconnected();
-            this._connector = null;
-          }
-          this._bridgePK.reject(Error('Connection reset'));
-          this._bridgePK = makePromiseKit();
+          this.reset();
         },
       });
 
