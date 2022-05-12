@@ -42,26 +42,14 @@ async function buildSwingset(
   env,
   { debugName = undefined, slogCallbacks, slogFile, slogSender },
 ) {
+  // FIXME: Find a better way to propagate the role.
+  process.env.ROLE = argv.ROLE;
+  env.ROLE = argv.ROLE;
+
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
   let config = await loadSwingsetConfigFile(vatconfig);
   if (config === null) {
     config = loadBasedir(vatconfig);
-  }
-
-  // Find the entrypoints for all the core proposals.
-  if (config.coreProposals) {
-    // FIXME: Find a better way to propagate the role.
-    process.env.ROLE = argv.ROLE;
-    env.ROLE = argv.ROLE;
-    const { bundles, code } = await extractCoreProposalBundles(
-      config.coreProposals,
-      vatconfig,
-    );
-    const bootVat = config.vats[config.bootstrap || 'bootstrap'];
-    config.bundles = { ...config.bundles, ...bundles };
-
-    // Tell the bootstrap code how to run the core proposals.
-    bootVat.parameters = { ...bootVat.parameters, coreProposalCode: code };
   }
 
   const mbs = buildMailboxStateMap(mailboxStorage);
@@ -94,6 +82,20 @@ async function buildSwingset(
     if (swingsetIsInitialized(hostStorage)) {
       return;
     }
+
+    // Find the entrypoints for all the core proposals.
+    if (config.coreProposals) {
+      const { bundles, code } = await extractCoreProposalBundles(
+        config.coreProposals,
+        vatconfig,
+      );
+      const bootVat = config.vats[config.bootstrap || 'bootstrap'];
+      config.bundles = { ...config.bundles, ...bundles };
+
+      // Tell the bootstrap code how to run the core proposals.
+      bootVat.parameters = { ...bootVat.parameters, coreProposalCode: code };
+    }
+
     await initializeSwingset(config, argv, hostStorage, { debugPrefix });
   }
   await ensureSwingsetInitialized();
