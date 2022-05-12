@@ -25,6 +25,7 @@ import {
 } from '../../lib/id.js';
 import { kdebug } from '../../lib/kdebug.js';
 import { KERNEL_STATS_METRICS } from '../metrics.js';
+import { makeKernelStats } from './stats.js';
 
 const enableKernelGC = true;
 
@@ -194,118 +195,27 @@ export default function makeKernelKeeper(
     return kvStore.get(key);
   }
 
-  // These are the defined kernel statistics counters.
-  //
-  // For any counter 'foo' that is defined here, if there is also a defined
-  // counter named 'fooMax', the stats collection machinery will automatically
-  // track the latter as a high-water mark for 'foo'.
-  //
-  // For any counter 'foo' that is defined here, if there is also a defined
-  // counter named 'fooUp', the stats collection machinery will automatically
-  // track the number of times 'foo' is incremented.  Similarly, 'fooDown' will
-  // track the number of times 'foo' is decremented.
-  /** @type {Record<string, number> | null} */
-  let kernelLocalStats = null;
-
-  /** @type {Record<string, number> | null} */
-  let kernelConsensusStats = null;
-
-  /** @type {Record<string, number>} */
-  const defaultConsensusStats = {};
-  /** @type {Record<string, number>} */
-  const defaultLocalStats = {};
-
-  KERNEL_STATS_METRICS.forEach(({ key, consensus, metricType }) => {
-    const targetStats = consensus ? defaultConsensusStats : defaultLocalStats;
-
-    switch (metricType) {
-      case 'counter': {
-        targetStats[key] = 0;
-        break;
-      }
-      case 'gauge': {
-        targetStats[key] = 0;
-        targetStats[`${key}Up`] = 0;
-        targetStats[`${key}Down`] = 0;
-        targetStats[`${key}Max`] = 0;
-        break;
-      }
-      default:
-        assert.fail(`Unknown stat type ${metricType}`);
-    }
-  });
-
-  Object.freeze(defaultConsensusStats);
-  Object.freeze(defaultLocalStats);
-
-  function initializeStats() {
-    kernelConsensusStats = { ...defaultConsensusStats };
-    kernelLocalStats = { ...defaultLocalStats };
-  }
-
-  function pickStats(stat) {
-    assert(
-      kernelConsensusStats && kernelLocalStats,
-      'Kernel stats not initialized',
-    );
-    return stat in kernelConsensusStats
-      ? kernelConsensusStats
-      : kernelLocalStats;
-  }
-
-  function incStat(stat, delta = 1) {
-    const kernelStats = pickStats(stat);
-    assert.typeof(kernelStats[stat], 'number');
-    kernelStats[stat] += delta;
-    const maxStat = `${stat}Max`;
-    if (
-      kernelStats[maxStat] !== undefined &&
-      kernelStats[stat] > kernelStats[maxStat]
-    ) {
-      kernelStats[maxStat] = kernelStats[stat];
-    }
-    const upStat = `${stat}Up`;
-    if (kernelStats[upStat] !== undefined) {
-      kernelStats[upStat] += delta;
-    }
-  }
-
-  function decStat(stat, delta = 1) {
-    const kernelStats = pickStats(stat);
-    assert.typeof(kernelStats[stat], 'number');
-    kernelStats[stat] -= delta;
-    const downStat = `${stat}Down`;
-    if (kernelStats[downStat] !== undefined) {
-      kernelStats[downStat] += delta;
-    }
-  }
+  const {
+    incStat,
+    decStat,
+    getStats,
+    getSerializedStats,
+    initializeStats,
+    loadFromSerializedStats,
+  } = makeKernelStats(KERNEL_STATS_METRICS);
 
   function saveStats() {
-    assert(
-      kernelConsensusStats && kernelLocalStats,
-      'Kernel stats not initialized',
-    );
+    const { consensusStats, localStats } = getSerializedStats();
 
-    kvStore.set('kernelStats', JSON.stringify(kernelConsensusStats));
-    kvStore.set('local.kernelStats', JSON.stringify(kernelLocalStats));
+    kvStore.set('kernelStats', consensusStats);
+    kvStore.set('local.kernelStats', localStats);
   }
 
   function loadStats() {
-    kernelConsensusStats = {
-      ...defaultConsensusStats,
-      ...JSON.parse(getRequired('kernelStats')),
-    };
-    kernelLocalStats = {
-      ...defaultLocalStats,
-      ...JSON.parse(kvStore.get('local.kernelStats') || '{}'),
-    };
-  }
-
-  function getStats(consensusOnly) {
-    return {
-      ...(consensusOnly ? {} : kernelLocalStats),
-      ...kernelConsensusStats,
-    };
+    loadFromSerializedStats({
+      consensusStats: getRequired('kernelStats'),
+      localStats: kvStore.get('local.kernelStats'),
+    });
   }
 
   function commitCrank() {

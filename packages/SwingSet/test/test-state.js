@@ -10,6 +10,8 @@ import {
   buildCrankBuffer,
   addHelpers,
 } from '../src/kernel/state/storageWrapper.js';
+import { makeKernelStats } from '../src/kernel/state/stats.js';
+import { KERNEL_STATS_METRICS } from '../src/kernel/metrics.js';
 
 const ignoredStateKeys = ['activityhash', 'kernelStats', 'local.kernelStats'];
 
@@ -705,18 +707,24 @@ test('meters', async t => {
   t.deepEqual(k.getMeter(m3), { remaining: 'unlimited', threshold: 5n });
 });
 
+const testCrankHasherStats = makeKernelStats(KERNEL_STATS_METRICS);
+testCrankHasherStats.initializeStats();
+const { consensusStats: testCrankHasherConsensusStats } =
+  testCrankHasherStats.getSerializedStats();
+
 /**
  * Wraps a base sha256 hasher always appending the initial kernel stats
  * before generating the digest.
+ * Assumes tests do not perform complex kernelKeeper operations that
+ * change the stats.
  *
  * @param {string} [algorithm]
- * @param {any} k
  */
-const makeTestCrankHasher = (algorithm = 'sha256', k) => {
+const makeTestCrankHasher = (algorithm = 'sha256') => {
   const h = createHash(algorithm);
   const update = h.update.bind(h);
   const digest = (encoding = 'hex') => {
-    update('add\n' + 'kernelStats\n' + `${JSON.stringify(k.getStats(true))}\n`);
+    update('add\n' + 'kernelStats\n' + `${testCrankHasherConsensusStats}\n`);
     return h.digest(encoding);
   };
 
@@ -738,7 +746,7 @@ test('crankhash - initial state and additions', t => {
   // a crank which sets a single key produces a stable crankhash, which does
   // not depend upon the earlier activityhash of kernel state
   k.kvStore.set('one', '1');
-  let h = makeTestCrankHasher('sha256', k);
+  let h = makeTestCrankHasher('sha256');
   h.update('add\n' + 'one\n' + '1\n');
   const expCrankhash = h.digest('hex');
   t.is(
@@ -772,7 +780,7 @@ test('crankhash - skip keys', t => {
   k.commitCrank();
 
   k.kvStore.set('one', '1');
-  const h = makeTestCrankHasher('sha256', k);
+  const h = makeTestCrankHasher('sha256');
   h.update('add\n' + 'one\n' + '1\n');
   const expCrankhash = h.digest('hex');
   t.is(
@@ -802,7 +810,7 @@ test('crankhash - duplicate set', t => {
   k.commitCrank();
 
   k.kvStore.set('one', '1');
-  const h = makeTestCrankHasher('sha256', k);
+  const h = makeTestCrankHasher('sha256');
   h.update('add\n' + 'one\n' + '1\n');
   const expCrankhash = h.digest('hex');
   t.is(
@@ -813,7 +821,7 @@ test('crankhash - duplicate set', t => {
 
   k.kvStore.set('one', '1');
   k.kvStore.set('one', '1');
-  const h2 = makeTestCrankHasher('sha256', k);
+  const h2 = makeTestCrankHasher('sha256');
   h2.update('add\n' + 'one\n' + '1\n');
   h2.update('add\n' + 'one\n' + '1\n');
   const expCrankhash2 = h2.digest('hex');
@@ -832,11 +840,11 @@ test('crankhash - set and delete', t => {
   k.createStartingKernelState('local');
   k.commitCrank();
 
-  const h1 = makeTestCrankHasher('sha256', k);
+  const h1 = makeTestCrankHasher('sha256');
   const expCrankhash1 = h1.digest('hex');
   t.is(k.commitCrank().crankhash, expCrankhash1); // empty
 
-  const h2 = makeTestCrankHasher('sha256', k);
+  const h2 = makeTestCrankHasher('sha256');
   h2.update('add\n' + 'one\n' + '1\n');
   h2.update('delete\n' + 'one\n');
   const expCrankhash2 = h2.digest('hex');
