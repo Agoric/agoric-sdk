@@ -140,11 +140,19 @@ export const extractCoreProposalBundles = async (
       const { sourceSpec, getManifestCall } = await deeplyFulfilled(
         harden(proposal),
       );
+
+      const behaviorSource = pathResolve(initDir, sourceSpec);
+      const behaviors = await import(behaviorSource);
+      const [exportedGetManifest, ...manifestArgs] = getManifestCall;
+      const { manifest: overrideManifest } = await behaviors[
+        exportedGetManifest
+      ](harden({ restoreRef: () => null }), ...manifestArgs);
+
       const behaviorBundleHandle = harden({
         bundleID: `coreProposal${thisProposalSequence}_behaviors`,
       });
       const behaviorAbsolutePaths = harden({
-        source: pathResolve(initDir, sourceSpec),
+        source: behaviorSource,
       });
       bundleHandleToAbsolutePaths.set(
         behaviorBundleHandle,
@@ -159,6 +167,7 @@ export const extractCoreProposalBundles = async (
       return harden({
         ref: behaviorBundleHandle,
         call: getManifestCall,
+        overrideManifest,
         bundleSpecs: bundleSpecEntries,
       });
     }),
@@ -171,7 +180,11 @@ export const extractCoreProposalBundles = async (
   harden(bundles);
 
   // Extract the manifest references and calls.
-  const makeCPArgs = extracted.map(({ ref, call }) => ({ ref, call }));
+  const makeCPArgs = extracted.map(({ ref, call, overrideManifest }) => ({
+    ref,
+    call,
+    overrideManifest,
+  }));
   harden(makeCPArgs);
 
   const code = `\

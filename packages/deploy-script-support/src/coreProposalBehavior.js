@@ -17,6 +17,7 @@ export const permits = {
  * @param {object} opts
  * @param {string} opts.manifestInstallRef
  * @param {[string, ...unknown[]]} opts.getManifestCall
+ * @param {Record<string, Record<string, unknown>>} [opts.overrideManifest]
  * @param {typeof import('@endo/far').E} opts.E
  * @param {(...args: unknown[]) => void} [opts.log]
  * @param {(ref: unknown) => Promise<unknown>} [opts.restoreRef]
@@ -25,6 +26,7 @@ export const permits = {
 export const makeCoreProposalBehavior = ({
   manifestInstallRef,
   getManifestCall,
+  overrideManifest,
   E,
   log = console.info,
   restoreRef: overrideRestoreRef,
@@ -97,7 +99,7 @@ export const makeCoreProposalBehavior = ({
     return runModuleBehaviors({
       allPowers,
       behaviors,
-      manifest,
+      manifest: overrideManifest || manifest,
       makeConfig: (name, _permit) => {
         log('coreProposal:', name);
         return { options };
@@ -126,10 +128,11 @@ export const makeEnactCoreProposalsFromBundleCap =
     };
 
     return Promise.all(
-      makeCoreProposalArgs.map(async ({ ref, call }) => {
+      makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
         const subBehavior = makeCoreProposalBehavior({
           manifestInstallRef: ref,
           getManifestCall: call,
+          overrideManifest,
           E,
           restoreRef,
         });
