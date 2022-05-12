@@ -579,6 +579,7 @@ test('price drop', async t => {
   t.truthy(await E(vaultSeat).hasExited());
 
   const debtAmountAfter = await E(vault).getCurrentDebt();
+  // FIXME tests that state DID NOT change
   const finalNotification = await E(vaultNotifier).getUpdateSince();
   t.is(finalNotification.value.vaultState, Phase.LIQUIDATED);
   t.deepEqual(finalNotification.value.locked, AmountMath.make(aethBrand, 2n));
@@ -1703,6 +1704,7 @@ test('mutable liquidity triggers and interest', async t => {
 
   // XXX this causes BOB to get liquidated, which is suspicious. Revisit this test case
   await waitForPromisesToSettle();
+  // FIXME tests the state DID NOT change
   bobUpdate = await E(bobNotifier).getUpdateSince();
   trace(t, 'bob not liquidating?', bobUpdate.value.vaultState);
   t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
@@ -1750,6 +1752,7 @@ test('mutable liquidity triggers and interest', async t => {
   );
 
   await waitForPromisesToSettle();
+  // FIXME tests that state DID NOT change
   bobUpdate = await E(bobNotifier).getUpdateSince();
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
   trace(t, 'bob liquidated');
@@ -2260,6 +2263,7 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
 
   // No change for Alice
+  // FIXME tests that state DID NOT change
   aliceUpdate = await E(aliceNotifier).getUpdateSince(); // can't use updateCount because there's no newer update
   t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
 });
