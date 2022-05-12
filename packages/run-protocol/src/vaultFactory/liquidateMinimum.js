@@ -12,7 +12,6 @@ import { makeTracer } from '../makeTracer.js';
 
 const trace = makeTracer('LiqMin', false);
 
-// ??? is this contract used only for tests and demo purposes?
 /**
  * This contract liquidates the minimum amount of vault's collateral necessary
  * to satisfy the debt. It uses the AMM's swapOut, which sells no more than
@@ -38,7 +37,7 @@ const start = async zcf => {
     debtorSeat,
     { debt: originalDebt, penaltyRate },
   ) => {
-    // ??? distribute penalties to the reserve
+    // XXX does not distribute penalties anywhere
     const { zcfSeat: penaltyPoolSeat } = zcf.makeEmptySeatKit();
     const penalty = ceilMultiplyBy(originalDebt, penaltyRate);
     const debtWithPenalty = AmountMath.add(originalDebt, penalty);
