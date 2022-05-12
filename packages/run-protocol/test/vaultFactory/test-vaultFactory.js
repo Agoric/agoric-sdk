@@ -1118,7 +1118,7 @@ test('adjust balances', async t => {
     ),
   );
 
-  aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
 
   // increase collateral 2 ////////////////////////////////// (want:s, give:c)
@@ -1165,7 +1165,7 @@ test('adjust balances', async t => {
     ),
   );
 
-  aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
   t.deepEqual(aliceUpdate.value.debtSnapshot, {
     debt: AmountMath.make(runBrand, 5253n),
@@ -1218,7 +1218,7 @@ test('adjust balances', async t => {
     ),
   );
 
-  aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
 
   // NSF  ///////////////////////////////////// (want too much of both)
@@ -1380,7 +1380,9 @@ test('transfer vault', async t => {
   const collateralAfter2 = await E(t2Vault).getCollateralAmount();
   t.deepEqual(collateralAmount, collateralAfter2, 'vault has 1000n aEth');
 
-  const transferFinish = await E(transferNotifier).getUpdateSince();
+  const transferFinish = await E(transferNotifier).getUpdateSince(
+    transferStatus.updateCount,
+  );
   t.deepEqual(
     transferFinish.value.vaultState,
     Phase.TRANSFER,
@@ -1510,7 +1512,7 @@ test('overdeposit', async t => {
     AmountMath.make(runBrand, 750n),
   );
 
-  aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
   t.deepEqual(
     aliceUpdate.value.debtSnapshot.debt,
     AmountMath.makeEmpty(runBrand),
@@ -1724,7 +1726,7 @@ test('mutable liquidity triggers and interest', async t => {
   t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATED);
   trace(t, 'alice liquidated');
 
-  bobUpdate = await E(bobNotifier).getUpdateSince();
+  bobUpdate = await E(bobNotifier).getUpdateSince(bobUpdate.updateCount);
   trace(
     t,
     'bob state?',
@@ -1739,7 +1741,7 @@ test('mutable liquidity triggers and interest', async t => {
   await manualTimer.tick();
   await waitForPromisesToSettle();
 
-  bobUpdate = await E(bobNotifier).getUpdateSince();
+  bobUpdate = await E(bobNotifier).getUpdateSince(bobUpdate.updateCount);
   trace(
     t,
     'bob 2 state?',
