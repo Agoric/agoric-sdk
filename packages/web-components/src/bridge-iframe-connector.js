@@ -6,9 +6,14 @@ export const makeBridgeIframeConnector = component => {
   const connectedOnMessage = ev => {
     console.log(component.state, 'bridge received', ev);
     const { data } = ev.detail;
-    if (data && typeof data.type === 'string' && data.type.startsWith('CTP_')) {
-      assert(component._captp);
-      component._captp.dispatch(data);
+    if (data && typeof data.type === 'string') {
+      if (data.type === 'walletBridgeClosed') {
+        setTimeout(() => component.reset(), 3000);
+      }
+      if (data.type.startsWith('CTP_')) {
+        assert(component._captp);
+        component._captp.dispatch(data);
+      }
     }
   };
 
