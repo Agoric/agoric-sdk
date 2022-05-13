@@ -31,7 +31,7 @@ export async function suggestChain(networkConfig, caption = undefined) {
   };
   const stableCurrency = {
     coinDenom: 'RUN',
-    coinMinimalDenom: 'urun',
+    coinMinimalDenom: 'uist',
     coinDecimals: 6,
     coinGeckoId: undefined,
   };
@@ -81,7 +81,7 @@ export async function suggestChain(networkConfig, caption = undefined) {
       amount: [
         {
           amount: '500000',
-          denom: 'urun',
+          denom: 'uist',
         },
       ],
       gas: '890000',
