@@ -469,9 +469,6 @@ test('first', async t => {
     'unused collateral remains after liquidation',
   );
 
-  // ??? remove penalty pool from vault factory
-  // used to be funded from liquidation penalty
-  t.deepEqual(await E(vaultFactory).getPenaltyAllocation(), {});
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
     RUN: AmountMath.make(runBrand, 24n),
   });
