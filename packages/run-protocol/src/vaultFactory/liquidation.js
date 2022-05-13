@@ -23,7 +23,6 @@ const trace = makeTracer('LIQ');
  *            ) => void} burnLosses
  * @param {Liquidator}  liquidator
  * @param {Brand} collateralBrand
- * @param {ZCFSeat} penaltyPoolSeat
  * @param {Ratio} penaltyRate
  * @returns {Promise<Vault>}
  */
@@ -33,7 +32,6 @@ const liquidate = async (
   burnLosses,
   liquidator,
   collateralBrand,
-  penaltyPoolSeat,
   penaltyRate,
 ) => {
   trace('liquidate start', vault);

@@ -56,7 +56,6 @@ const trace = makeTracer('VM', false);
  * debtBrand: Brand<'nat'>,
  * debtMint: ZCFMint<'nat'>,
  * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
- * penaltyPoolSeat: ZCFSeat,
  * periodNotifier: ERef<Notifier<bigint>>,
  * poolIncrementSeat: ZCFSeat,
  * priceAuthority: ERef<PriceAuthority>,
@@ -103,7 +102,6 @@ let outstandingQuote = null;
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
- * @param {ZCFSeat} penaltyPoolSeat
  * @param {Timestamp} startTimeStamp
  */
 const initState = (
@@ -113,7 +111,6 @@ const initState = (
   priceAuthority,
   factoryPowers,
   timerService,
-  penaltyPoolSeat,
   startTimeStamp,
 ) => {
   const periodNotifier = E(timerService).makeNotifier(
@@ -127,7 +124,6 @@ const initState = (
     debtBrand: debtMint.getIssuerRecord().brand,
     debtMint,
     factoryPowers,
-    penaltyPoolSeat,
     periodNotifier,
     poolIncrementSeat: zcf.makeEmptySeatKit().zcfSeat,
     priceAuthority,
@@ -354,7 +350,7 @@ const helperBehavior = {
    * @param {[key: string, vaultKit: Vault]} record
    */
   liquidateAndRemove: ({ state, facets }, [key, vault]) => {
-    const { factoryPowers, penaltyPoolSeat, prioritizedVaults, zcf } = state;
+    const { factoryPowers, prioritizedVaults, zcf } = state;
     trace('liquidating', vault.getVaultSeat().getProposal());
 
     // Start liquidation (vaultState: LIQUIDATING)
@@ -367,7 +363,6 @@ const helperBehavior = {
       (amount, seat) => facets.manager.burnAndRecord(amount, seat),
       liquidator,
       state.collateralBrand,
-      penaltyPoolSeat,
       factoryPowers.getGovernedParams().getLiquidationPenalty(),
     )
       .then(() => {
@@ -633,7 +628,6 @@ const makeVaultManagerKit = defineKindMulti(
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
- * @param {ZCFSeat} penaltyPoolSeat
  * @param {Timestamp} startTimeStamp
  */
 export const makeVaultManager = pickFacet(makeVaultManagerKit, 'self');

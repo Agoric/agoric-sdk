@@ -76,7 +76,7 @@ const start = async zcf => {
   const asFloat = (numerator, denominator) =>
     Number(numerator) / Number(denominator);
 
-  // TODO distribute penalties to the reserve
+  // TODO(before merge) distribute penalties to the reserve
   assert(reservePublicFacet, 'Missing reservePublicFacet');
   const { zcfSeat: penaltyPoolSeat } = zcf.makeEmptySeatKit();
 
