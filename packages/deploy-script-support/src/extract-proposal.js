@@ -69,7 +69,7 @@ export const extractCoreProposalBundles = async (
   const bundleToSource = new Map();
   const extracted = await Promise.all(
     coreProposals.map(async (coreProposal, i) => {
-      console.log(`Parsing core proposal:`, coreProposal);
+      // console.debug(`Parsing core proposal:`, coreProposal);
 
       /** @type {string} */
       let entrypoint;

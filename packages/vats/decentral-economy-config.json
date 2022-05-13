@@ -34,6 +34,9 @@
     },
     {
       "module": "@agoric/run-protocol/scripts/invite-committee-core.js",
+      "envComments": {
+        "SOLO_MNEMONIC": "Yes, we know there's a mnemonic here.  We don't use it in production."
+      },
       "env": {
         "SOLO_MNEMONIC": "move peace crew tip eternal fruit robust carry solar panda gain holiday horror violin struggle scrap together fault film march basket can illness chapter"
       },
