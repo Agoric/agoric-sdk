@@ -33,7 +33,7 @@ var (
 	DefaultBeansPerVatCreation = sdk.NewUint(300000).Mul(DefaultBeansPerXsnapComputron)
 
 	// Fees are denominated in units of $1 RUN.
-	DefaultFeeUnitPrice = sdk.NewCoins(sdk.NewInt64Coin("urun", 1000000))
+	DefaultFeeUnitPrice = sdk.NewCoins(sdk.NewInt64Coin("uist", 1000000))
 
 	// TODO: create the cost model we want, and update these to be more principled.
 	// These defaults currently make deploying an ag-solo cost less than $1.00.
