@@ -28,6 +28,7 @@ import {
   startEconomicCommittee,
   startVaultFactory,
   setupAmm,
+  setupReserve,
 } from '../../src/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
 import * as Collect from '../../src/collect.js';
@@ -40,7 +41,6 @@ import {
   installGovernance,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
-import { setupReserveServices } from '../reserve/setup.js';
 
 // #region Support
 
@@ -50,6 +50,7 @@ const contractRoots = {
   liquidate: './src/vaultFactory/liquidateMinimum.js',
   VaultFactory: './src/vaultFactory/vaultFactory.js',
   amm: './src/vpool-xyk-amm/multipoolMarketMaker.js',
+  reserve: './src/reserve/assetReserve.js',
 };
 
 /** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
@@ -101,6 +102,7 @@ test.before(async t => {
     liquidate: bundleCache.load(contractRoots.liquidate, 'liquidateMinimum'),
     VaultFactory: bundleCache.load(contractRoots.VaultFactory, 'VaultFactory'),
     amm: bundleCache.load(contractRoots.amm, 'amm'),
+    reserve: bundleCache.load(contractRoots.reserve, 'reserve'),
   });
   const installation = Collect.mapValues(bundles, bundle =>
     E(zoe).install(bundle),
@@ -286,16 +288,13 @@ async function setupServices(
       });
   produce.priceAuthority.resolve(pa);
 
-  const { reserve } = await setupReserveServices(
-    t,
-    t.context.electorateTerms,
-    timer,
-  );
-  produce.reservePublicFacet.resolve(reserve.reservePublicFacet);
-
   const {
     installation: { produce: iProduce },
   } = space;
+  // make the installation available for setupReserve
+  iProduce.reserve.resolve(t.context.installation.reserve);
+  // produce the reserve instance in the space
+  await setupReserve(space);
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
   iProduce.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);

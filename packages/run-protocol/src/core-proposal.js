@@ -50,7 +50,6 @@ const SHARED_MAIN_MANIFEST = harden({
       chainTimerService: 'timer',
       zoe: 'zoe',
       priceAuthority: 'priceAuthority',
-      reservePublicFacet: 'reservePublicFacet',
       economicCommitteeCreatorFacet: 'economicCommittee',
     },
     produce: {
@@ -68,7 +67,11 @@ const SHARED_MAIN_MANIFEST = harden({
       },
     },
     instance: {
-      consume: { amm: 'amm', economicCommittee: 'economicCommittee' },
+      consume: {
+        amm: 'amm',
+        economicCommittee: 'economicCommittee',
+        reserve: 'reserve',
+      },
       produce: {
         VaultFactory: 'VaultFactory',
         Treasury: 'VaultFactory',
