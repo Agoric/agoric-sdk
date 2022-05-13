@@ -1,4 +1,3 @@
-/* eslint-disable no-useless-rename */
 // @ts-check
 
 import './types.js';

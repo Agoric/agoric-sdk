@@ -17,7 +17,7 @@ import {
 } from './assertions.js';
 import { CONTRACT_ELECTORATE } from './governParam.js';
 
-const { details: X } = assert;
+const { details: X, quote: q } = assert;
 
 /**
  * @param {ParamManagerBase} paramManager
@@ -29,6 +29,10 @@ const assertElectorateMatches = (paramManager, governedParams) => {
   const {
     [CONTRACT_ELECTORATE]: { value: paramElectorate },
   } = governedParams;
+  assert(
+    paramElectorate,
+    X`Missing ${q(CONTRACT_ELECTORATE)} term in ${q(governedParams)}`,
+  );
   assert(
     keyEQ(managerElectorate, paramElectorate),
     X`Electorate in manager (${managerElectorate})} incompatible with terms (${paramElectorate}`,

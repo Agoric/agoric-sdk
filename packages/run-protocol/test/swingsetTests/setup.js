@@ -199,18 +199,22 @@ const buildOwner = async (
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
   ]);
 
+  /** @type {AssetReservePublicFacet} */
+  // @ts-expect-error cast, never used
+  const reservePublicFacet = null;
+
   const terms = makeVaultFactoryTerms({
     priceAuthority: priceAuthorityKit.priceAuthority,
     loanTiming,
     liquidationInstall: installations.liquidateMinimum,
     timer,
-    electorateInvitation: poserInvitationAmount,
+    invitationAmount: poserInvitationAmount,
     vaultManagerParams,
-    // @ts-expect-error It's not a real AMM public facet
     ammPublicFacet: ammMock,
     liquidationTerms: liquidationDetailTerms(runBrand),
     minInitialDebt: AmountMath.make(runBrand, 100n),
     bootstrapPaymentValue: 0n,
+    reservePublicFacet,
   });
 
   const privateVaultFactoryArgs = { feeMintAccess, initialPoserInvitation };
