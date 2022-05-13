@@ -143,6 +143,9 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		if err != nil {
 			return "", fmt.Errorf("cannot convert %s to address: %w", msg.Address, err)
 		}
+		if err = sdk.ValidateDenom(msg.Denom); err != nil {
+			return "", fmt.Errorf("invalid denom %s: %w", msg.Denom, err)
+		}
 		coin := keeper.GetBalance(ctx.Context, addr, msg.Denom)
 		packet := coin.Amount.String()
 		if err == nil {
@@ -156,6 +159,9 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		addr, err := sdk.AccAddressFromBech32(msg.Sender)
 		if err != nil {
 			return "", fmt.Errorf("cannot convert %s to address: %w", msg.Sender, err)
+		}
+		if err = sdk.ValidateDenom(msg.Denom); err != nil {
+			return "", fmt.Errorf("invalid denom %s: %w", msg.Denom, err)
 		}
 		value, ok := sdk.NewIntFromString(msg.Amount)
 		if !ok {
@@ -181,6 +187,9 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		addr, err := sdk.AccAddressFromBech32(msg.Recipient)
 		if err != nil {
 			return "", fmt.Errorf("cannot convert %s to address: %w", msg.Recipient, err)
+		}
+		if err = sdk.ValidateDenom(msg.Denom); err != nil {
+			return "", fmt.Errorf("invalid denom %s: %w", msg.Denom, err)
 		}
 		value, ok := sdk.NewIntFromString(msg.Amount)
 		if !ok {
