@@ -50,7 +50,7 @@ then
   cp ag-chain-cosmos/data/genesis.json "$RESULTSDIR/genesis.json"
   cp "$AG_SETUP_COSMOS_HOME/ag-chain-cosmos/data/genesis.json" "$RESULTSDIR/genesis.json"
   cd /usr/src/testnet-load-generator
-  SOLO_COINS=40000000000urun \
+  SOLO_COINS=40000000000uist \
     "$AG_SETUP_COSMOS_HOME/faucet-helper.sh" add-egress loadgen "$SOLO_ADDR"
   SDK_BUILD=0 SDK_SRC=/usr/src/agoric-sdk OUTPUT_DIR="$RESULTSDIR" ./start.sh \
     --stage.save-storage --trace kvstore swingstore xsnap \
