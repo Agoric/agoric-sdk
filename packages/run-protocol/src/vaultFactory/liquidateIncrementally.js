@@ -23,6 +23,10 @@ const trace = makeTracer('LiqI', false);
  * price impact on the AMM of any one sale. Each block it will compute
  * a tranche of collateral to sell, where the size is a function of
  * the amount of that collateral in the AMM pool and the desired price impact.
+ * It presently consults the AMM and Oracle for whether to sell.
+ *
+ * The next revision of this will work as follows...
+ *
  * It then gets 3 prices for the current tranche:
  * - AMM quote - compute XYK locally based on the pool sizes
  * - Reserve quote - based on a low price at which the Reserve will purchase
@@ -76,7 +80,7 @@ const start = async zcf => {
   const asFloat = (numerator, denominator) =>
     Number(numerator) / Number(denominator);
 
-  // TODO(before merge) distribute penalties to the reserve
+  // TODO(5467)) distribute penalties to the reserve
   assert(reservePublicFacet, 'Missing reservePublicFacet');
   const { zcfSeat: penaltyPoolSeat } = zcf.makeEmptySeatKit();
 
