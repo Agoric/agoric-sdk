@@ -98,7 +98,13 @@ export function buildRootObject(vatPowers) {
       done() {
         return doneP;
       },
-      upgrade(bundlecap, vatParameters) {
+      upgrade(bundlecap, options = {}) {
+        const { vatParameters, ...rest } = options;
+        const leftovers = Object.keys(rest);
+        if (leftovers.length) {
+          const bad = leftovers.join(',');
+          assert.fail(`upgrade() received unknown options: ${bad}`);
+        }
         let bundleID;
         try {
           bundleID = D(bundlecap).getBundleID();
