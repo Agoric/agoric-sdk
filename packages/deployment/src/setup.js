@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 
 export const ACCOUNT_JSON = `account.json`;
-export const DEFAULT_BOOT_TOKENS = `1000000000000000ubld,10000000000000000urun`;
+export const DEFAULT_BOOT_TOKENS = `1000000000000000ubld,10000000000000000uist`;
 export const PLAYBOOK_WRAPPER = `./ansible-playbook.sh`;
 export const SSH_TYPE = 'ecdsa';
 
