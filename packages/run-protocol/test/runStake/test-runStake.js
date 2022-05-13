@@ -251,8 +251,12 @@ const bootstrapRunStake = async (
 
   await Promise.all([
     startEconomicCommittee(space, {
-      committeeName: 'Me, myself, and I',
-      committeeSize: 1,
+      options: {
+        econCommitteeOptions: {
+          committeeName: 'Me, myself, and I',
+          committeeSize: 1,
+        },
+      },
     }),
     startRunStake(space),
   ]);

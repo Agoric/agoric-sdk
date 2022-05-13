@@ -128,7 +128,9 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   const { consume, instance } = space;
   installGovernance(zoe, space.installation.produce);
   space.installation.produce.amm.resolve(t.context.installation.amm);
-  startEconomicCommittee(space, electorateTerms);
+  startEconomicCommittee(space, {
+    options: { econCommitteeOptions: electorateTerms },
+  });
   setupAmm(space);
 
   const governorCreatorFacet = consume.ammGovernorCreatorFacet;

@@ -13,7 +13,13 @@ const reserveThenGetNames = async (nameAdmin, names) => {
 
 /**
  * @param { EconomyBootstrapPowers } powers
- * @param {*} config
+ * @param {object} config
+ * @param {object} [config.options]
+ * @param {string} [config.options.interchainDenom]
+ * @param {string} [config.options.interchainKeyword]
+ * @param {string} [config.options.interchainProposedName]
+ * @param {number} [config.options.interchainDecimals]
+ * @param {string} [config.options.interchainOracle]
  */
 export const addInterchainAsset = async (
   {
@@ -25,18 +31,22 @@ export const addInterchainAsset = async (
   },
   {
     options: {
-      denom,
-      keyword = 'IbcATOM',
-      proposedName = 'ATOM',
-      decimalPlaces = 4,
-    },
+      interchainOracle = 'ATOM',
+      interchainDenom = 'uatom',
+      interchainKeyword = 'IbcATOM',
+      interchainProposedName = interchainOracle,
+      interchainDecimals = 4,
+    } = {},
   },
 ) => {
   /** @type {import('@agoric/vats/src/mintHolder.js').AssetTerms} */
   const terms = {
-    keyword,
+    keyword: interchainKeyword,
     assetKind: AssetKind.NAT,
-    displayInfo: { decimalPlaces, assetKind: AssetKind.NAT },
+    displayInfo: {
+      decimalPlaces: interchainDecimals,
+      assetKind: AssetKind.NAT,
+    },
   };
   const { creatorFacet: mint, publicFacet: issuer } = E.get(
     E(zoe).startInstance(mintHolder, {}, terms),
@@ -52,35 +62,47 @@ export const addInterchainAsset = async (
     () => {}, // If the interchainMints list was rejected, ignore the error.
   );
 
-  E(E(agoricNamesAdmin).lookupAdmin('issuer')).update('IbcATOM', issuer);
-  E(E(agoricNamesAdmin).lookupAdmin('brand')).update('IbcATOM', brand);
+  E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(
+    interchainKeyword,
+    issuer,
+  );
+  E(E(agoricNamesAdmin).lookupAdmin('brand')).update(interchainKeyword, brand);
 
   return E(bankManager).addAsset(
-    denom,
-    keyword,
-    proposedName,
+    interchainDenom,
+    interchainKeyword,
+    interchainProposedName,
     kit, // with mint
   );
 };
 
-/** @param {BootstrapPowers} powers */
-export const registerScaledPriceAuthority = async ({
-  consume: { agoricNamesAdmin, zoe, priceAuthorityAdmin, priceAuthority },
-}) => {
+/**
+ * @param {BootstrapPowers} powers
+ * @param {object} config
+ * @param {object} config.options
+ * @param {string} [config.options.interchainKeyword]
+ * @param {string} [config.options.interchainOracle]
+ */
+export const registerScaledPriceAuthority = async (
+  { consume: { agoricNamesAdmin, zoe, priceAuthorityAdmin, priceAuthority } },
+  {
+    options: { interchainOracle = 'ATOM', interchainKeyword = 'IbcATOM' } = {},
+  },
+) => {
   const [
     sourcePriceAuthority,
-    [ibcAtomBrand, runBrand],
-    [usdBrand, atomBrand],
+    [interchainBrand, runBrand],
+    [interchainOracleBrand, usdBrand],
     [scaledPriceAuthority],
   ] = await Promise.all([
     priceAuthority,
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('brand'), [
-      'IbcATOM',
+      interchainKeyword,
       'RUN',
     ]),
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
+      interchainOracle,
       'USD',
-      'ATOM',
     ]),
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('installation'), [
       'scaledPriceAuthority',
@@ -95,22 +117,22 @@ export const registerScaledPriceAuthority = async ({
     return E.get(displayInfo).decimalPlaces;
   };
   const [
-    decimalPlacesAtom = 0,
-    decimalPlacesIbcAtom = 0,
+    decimalPlacesInterchainOracle = 0,
+    decimalPlacesInterchain = 0,
     decimalPlacesUsd = 0,
     decimalPlacesRun = 0,
   ] = await Promise.all([
-    getDecimalP(atomBrand),
-    getDecimalP(ibcAtomBrand),
+    getDecimalP(interchainOracleBrand),
+    getDecimalP(interchainBrand),
     getDecimalP(usdBrand),
     getDecimalP(runBrand),
   ]);
 
   const scaleIn = makeRatio(
-    10n ** BigInt(decimalPlacesAtom),
-    atomBrand,
-    10n ** BigInt(decimalPlacesIbcAtom),
-    ibcAtomBrand,
+    10n ** BigInt(decimalPlacesInterchainOracle),
+    interchainOracleBrand,
+    10n ** BigInt(decimalPlacesInterchain),
+    interchainBrand,
   );
   const scaleOut = makeRatio(
     10n ** BigInt(decimalPlacesUsd),
@@ -124,7 +146,7 @@ export const registerScaledPriceAuthority = async ({
   );
   await E(priceAuthorityAdmin).registerPriceAuthority(
     E(publicFacet).getPriceAuthority(),
-    ibcAtomBrand,
+    interchainBrand,
     runBrand,
     true, // force
   );
@@ -132,16 +154,32 @@ export const registerScaledPriceAuthority = async ({
 
 /** @typedef {import('../econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers */
 
-/** @param {EconomyBootstrapPowers} powers */
-export const addAssetToVault = async ({
-  consume: { vaultFactoryCreator, reserveCreatorFacet, agoricNamesAdmin, zoe },
-  brand: {
-    consume: { RUN: runP },
+/**
+ * @param {EconomyBootstrapPowers} powers
+ * @param {object} config
+ * @param {object} [config.options]
+ * @param {string} [config.options.interchainKeyword]
+ * @param {string} [config.options.interchainOracle]
+ */
+export const addAssetToVault = async (
+  {
+    consume: {
+      vaultFactoryCreator,
+      reserveCreatorFacet,
+      agoricNamesAdmin,
+      zoe,
+    },
+    brand: {
+      consume: { RUN: runP },
+    },
+    instance: {
+      consume: { amm },
+    },
   },
-  instance: {
-    consume: { amm },
+  {
+    options: { interchainOracle = 'ATOM', interchainKeyword = 'IbcATOM' } = {},
   },
-}) => {
+) => {
   const [ibcAtomIssuer] = await reserveThenGetNames(
     E(agoricNamesAdmin).lookupAdmin('issuer'),
     ['IbcATOM', 'RUN'],
@@ -149,11 +187,11 @@ export const addAssetToVault = async ({
 
   /** @type {ERef<XYKAMMPublicFacet>} */
   const ammPub = E(zoe).getPublicFacet(amm);
-  await E(ammPub).addPool(ibcAtomIssuer, 'IbcATOM');
-  await E(reserveCreatorFacet).addIssuer(ibcAtomIssuer, 'IbcATOM');
+  await E(ammPub).addPool(ibcAtomIssuer, interchainKeyword);
+  await E(reserveCreatorFacet).addIssuer(ibcAtomIssuer, interchainKeyword);
 
   const RUN = await runP;
-  await E(vaultFactoryCreator).addVaultType(ibcAtomIssuer, 'ATOM', {
+  await E(vaultFactoryCreator).addVaultType(ibcAtomIssuer, interchainOracle, {
     debtLimit: AmountMath.make(RUN, 0n),
     // the rest of these are arbitrary, TBD by gov cttee
     interestRate: makeRatio(1n, RUN),
@@ -165,11 +203,17 @@ export const addAssetToVault = async ({
 
 export const getManifestForAddAssetToVault = (
   { restoreRef },
-  { denom, scaledPriceAuthorityRef },
+  {
+    interchainDenom,
+    interchainDecimals,
+    interchainKeyword,
+    interchainProposedName,
+    scaledPriceAuthorityRef,
+  },
 ) => {
   return {
     manifest: {
-      addInterchainAsset: {
+      [addInterchainAsset.name]: {
         consume: {
           zoe: true,
           bankManager: true,
@@ -179,7 +223,7 @@ export const getManifestForAddAssetToVault = (
         produce: { interchainMints: true },
         installation: { consume: { mintHolder: true } },
       },
-      registerScaledPriceAuthority: {
+      [registerScaledPriceAuthority.name]: {
         consume: {
           agoricNamesAdmin: true,
           zoe: true,
@@ -190,7 +234,7 @@ export const getManifestForAddAssetToVault = (
           consume: { scaledPriceAuthority: true },
         },
       },
-      addAssetToVault: {
+      [addAssetToVault.name]: {
         consume: {
           vaultFactoryCreator: true,
           reserveCreatorFacet: true,
@@ -209,7 +253,10 @@ export const getManifestForAddAssetToVault = (
       scaledPriceAuthority: restoreRef(scaledPriceAuthorityRef),
     },
     options: {
-      denom,
+      interchainDenom,
+      interchainDecimals,
+      interchainKeyword,
+      interchainProposedName,
     },
   };
 };

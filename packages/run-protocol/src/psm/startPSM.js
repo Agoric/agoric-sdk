@@ -5,6 +5,7 @@ import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
 const BASIS_POINTS = 10000n;
+const { details: X } = assert;
 
 /**
  * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
@@ -128,10 +129,10 @@ harden(startPSM);
  *
  * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
  * @param {{ options: {
- *   denom: string,
- *   keyword?: string,
- *   proposedName?: string,
- *   decimalPlaces?: number,
+ *   anchorDenom?: string,
+ *   anchorKeyword?: string,
+ *   anchorProposedName?: string,
+ *   anchorDecimalPlaces?: number,
  * }}} config
  */
 export const makeAnchorAsset = async (
@@ -149,18 +150,26 @@ export const makeAnchorAsset = async (
   },
   {
     options: {
-      denom,
-      proposedName = 'USDC Anchor',
-      keyword = 'AUSD',
-      decimalPlaces = 6,
-    },
+      anchorDenom,
+      anchorProposedName = 'USDC Anchor',
+      anchorKeyword = 'AUSD',
+      anchorDecimalPlaces = 6,
+    } = {},
   },
 ) => {
+  assert.typeof(
+    anchorDenom,
+    'string',
+    X`anchorDenom ${anchorDenom} must be string`,
+  );
   /** @type {import('@agoric/vats/src/mintHolder.js').AssetTerms} */
   const terms = {
-    keyword,
+    keyword: anchorKeyword,
     assetKind: AssetKind.NAT,
-    displayInfo: { decimalPlaces, assetKind: AssetKind.NAT },
+    displayInfo: {
+      decimalPlaces: anchorDecimalPlaces,
+      assetKind: AssetKind.NAT,
+    },
   };
   const { creatorFacet: mint, publicFacet: issuer } = E.get(
     E(zoe).startInstance(mintHolder, {}, terms),
@@ -171,9 +180,9 @@ export const makeAnchorAsset = async (
   issuerP.resolve(kit.issuer);
   brandP.resolve(kit.brand);
   return E(bankManager).addAsset(
-    denom,
-    keyword,
-    proposedName,
+    anchorDenom,
+    anchorKeyword,
+    anchorProposedName,
     kit, // with mint
   );
 };

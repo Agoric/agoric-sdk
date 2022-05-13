@@ -1,9 +1,16 @@
+// @ts-check
+import * as econBehaviors from './econ-behaviors.js';
+import * as simBehaviors from './sim-behaviors.js';
+import * as startPSM from './psm/startPSM.js';
+
 export * from './econ-behaviors.js';
 export * from './sim-behaviors.js';
+// @ts-expect-error Module './econ-behaviors.js' has already exported a member
+// named 'EconomyBootstrapPowers'.
 export * from './psm/startPSM.js';
 
 const ECON_COMMITTEE_MANIFEST = harden({
-  startEconomicCommittee: {
+  [econBehaviors.startEconomicCommittee.name]: {
     consume: {
       zoe: true,
     },
@@ -18,7 +25,7 @@ const ECON_COMMITTEE_MANIFEST = harden({
 });
 
 const SHARED_MAIN_MANIFEST = harden({
-  setupAmm: {
+  [econBehaviors.setupAmm.name]: {
     consume: {
       chainTimerService: 'timer',
       zoe: 'zoe',
@@ -37,7 +44,7 @@ const SHARED_MAIN_MANIFEST = harden({
       produce: { amm: 'amm', ammGovernor: 'ammGovernor' },
     },
   },
-  startVaultFactory: {
+  [econBehaviors.startVaultFactory.name]: {
     consume: {
       feeMintAccess: 'zoe',
       chainTimerService: 'timer',
@@ -68,7 +75,7 @@ const SHARED_MAIN_MANIFEST = harden({
       },
     },
   },
-  grantVaultFactoryControl: {
+  [econBehaviors.grantVaultFactoryControl.name]: {
     consume: {
       client: 'provisioning',
       priceAuthorityAdmin: 'priceAuthority',
@@ -76,7 +83,7 @@ const SHARED_MAIN_MANIFEST = harden({
     },
   },
 
-  setupReserve: {
+  [econBehaviors.setupReserve.name]: {
     consume: {
       feeMintAccess: 'zoe',
       chainTimerService: 'timer',
@@ -102,7 +109,7 @@ const SHARED_MAIN_MANIFEST = harden({
     },
   },
 
-  configureVaultFactoryUI: {
+  [econBehaviors.configureVaultFactoryUI.name]: {
     consume: {
       board: true,
       zoe: true,
@@ -125,13 +132,8 @@ const SHARED_MAIN_MANIFEST = harden({
   },
 });
 
-const SHARED_POST_BOOT_MANIFEST = harden({
-  ...ECON_COMMITTEE_MANIFEST,
-  ...SHARED_MAIN_MANIFEST,
-});
-
 const REWARD_MANIFEST = harden({
-  startRewardDistributor: {
+  [econBehaviors.startRewardDistributor.name]: {
     consume: {
       chainTimerService: true,
       bankManager: true,
@@ -147,14 +149,14 @@ const REWARD_MANIFEST = harden({
 });
 
 const RUN_STAKE_MANIFEST = harden({
-  startLienBridge: {
+  [econBehaviors.startLienBridge.name]: {
     consume: { bridgeManager: true },
     produce: { lienBridge: true },
     brand: {
       consume: { BLD: 'BLD' },
     },
   },
-  startRunStake: {
+  [econBehaviors.startRunStake.name]: {
     consume: {
       zoe: 'zoe',
       feeMintAccess: 'zoe',
@@ -185,14 +187,8 @@ const RUN_STAKE_MANIFEST = harden({
   },
 });
 
-export const CHAIN_POST_BOOT_MANIFEST = harden({
-  ...SHARED_POST_BOOT_MANIFEST,
-  ...REWARD_MANIFEST,
-  ...RUN_STAKE_MANIFEST,
-});
-
 export const PSM_MANIFEST = harden({
-  makeAnchorAsset: {
+  [startPSM.makeAnchorAsset.name]: {
     consume: { bankManager: 'bank', zoe: 'zoe' },
     installation: { consume: { mintHolder: 'zoe' } },
     issuer: {
@@ -202,7 +198,7 @@ export const PSM_MANIFEST = harden({
       produce: { AUSD: true },
     },
   },
-  startPSM: {
+  [startPSM.startPSM.name]: {
     consume: {
       zoe: 'zoe',
       feeMintAccess: 'zoe',
@@ -226,16 +222,8 @@ export const PSM_MANIFEST = harden({
   },
 });
 
-const MAIN_MANIFEST = harden({
-  ...SHARED_MAIN_MANIFEST,
-  ...RUN_STAKE_MANIFEST,
-  ...REWARD_MANIFEST,
-  // XXX PSM work-around ...PSM_MANIFEST,
-});
-
-export const SIM_CHAIN_POST_BOOT_MANIFEST = harden({
-  ...SHARED_POST_BOOT_MANIFEST,
-  fundAMM: {
+export const SIM_CHAIN_MANIFEST = harden({
+  [simBehaviors.fundAMM.name]: {
     consume: {
       centralSupplyBundle: true,
       mintHolderBundle: true,
@@ -264,41 +252,9 @@ export const SIM_CHAIN_POST_BOOT_MANIFEST = harden({
   },
 });
 
-const roleToGovernanceActions = harden({
-  chain: CHAIN_POST_BOOT_MANIFEST,
-  'sim-chain': SIM_CHAIN_POST_BOOT_MANIFEST,
-  'run-preview': {
-    ...ECON_COMMITTEE_MANIFEST,
-    ...CHAIN_POST_BOOT_MANIFEST,
-  },
-  client: {},
-});
-
-export const getManifestForRunProtocol = (
-  { restoreRef },
-  { ROLE = 'chain', installKeys, vaultFactoryControllerAddress },
-) => {
-  return {
-    manifest: roleToGovernanceActions[ROLE],
-    installations: {
-      amm: restoreRef(installKeys.amm),
-      VaultFactory: restoreRef(installKeys.vaultFactory),
-      liquidate: restoreRef(installKeys.liquidate),
-      reserve: restoreRef(installKeys.reserve),
-      runStake: restoreRef(installKeys.runStake),
-      contractGovernor: restoreRef(installKeys.contractGovernor),
-      committee: restoreRef(installKeys.committee),
-      binaryVoteCounter: restoreRef(installKeys.binaryVoteCounter),
-    },
-    options: {
-      vaultFactoryControllerAddress,
-    },
-  };
-};
-
 export const getManifestForEconCommittee = (
   { restoreRef },
-  { installKeys },
+  { installKeys, econCommitteeSize = 3 },
 ) => {
   return {
     manifest: ECON_COMMITTEE_MANIFEST,
@@ -307,27 +263,100 @@ export const getManifestForEconCommittee = (
       committee: restoreRef(installKeys.committee),
       binaryVoteCounter: restoreRef(installKeys.binaryVoteCounter),
     },
+    options: {
+      econCommitteeSize,
+    },
   };
 };
 
 export const getManifestForMain = (
   { restoreRef },
-  { installKeys, vaultFactoryControllerAddress, anchorDenom },
+  {
+    installKeys,
+    vaultFactoryControllerAddress,
+    anchorDenom,
+    anchorDecimalPlaces,
+    anchorKeyword,
+    anchorProposedName,
+  },
 ) => {
   return {
-    manifest: MAIN_MANIFEST,
+    manifest: {
+      ...SHARED_MAIN_MANIFEST,
+      ...(anchorDenom && PSM_MANIFEST),
+    },
     installations: {
       amm: restoreRef(installKeys.amm),
       VaultFactory: restoreRef(installKeys.vaultFactory),
       liquidate: restoreRef(installKeys.liquidate),
       reserve: restoreRef(installKeys.reserve),
-      runStake: restoreRef(installKeys.runStake),
-      // psm: restoreRef(installKeys.psm),
-      // mintHolder: restoreRef(installKeys.mintHolder),
+      ...(anchorDenom && {
+        psm: restoreRef(installKeys.psm),
+        mintHolder: restoreRef(installKeys.mintHolder),
+      }),
     },
     options: {
       vaultFactoryControllerAddress,
-      denom: anchorDenom,
+      anchorDenom,
+      anchorDecimalPlaces,
+      anchorKeyword,
+      anchorProposedName,
+    },
+  };
+};
+
+const roleToManifest = harden({
+  chain: {
+    ...REWARD_MANIFEST,
+    ...RUN_STAKE_MANIFEST,
+  },
+  'sim-chain': SIM_CHAIN_MANIFEST,
+  client: {},
+});
+
+export const getManifestForRunProtocol = (
+  { restoreRef },
+  {
+    ROLE = 'chain',
+    anchorDenom,
+    anchorDecimalPlaces = 6,
+    anchorKeyword = 'AUSD',
+    anchorProposedName = 'AUSD',
+    econCommitteeSize = 3,
+    installKeys,
+    vaultFactoryControllerAddress,
+  },
+) => {
+  const econCommitteeManifest = getManifestForEconCommittee(
+    { restoreRef },
+    { installKeys, econCommitteeSize },
+  );
+  const mainManifest = getManifestForMain(
+    { restoreRef },
+    {
+      installKeys,
+      vaultFactoryControllerAddress,
+      anchorDenom,
+      anchorDecimalPlaces,
+      anchorKeyword,
+      anchorProposedName,
+    },
+  );
+  return {
+    manifest: {
+      ...econCommitteeManifest.manifest,
+      ...mainManifest.manifest,
+      ...roleToManifest[ROLE],
+    },
+    installations: {
+      ...econCommitteeManifest.installations,
+      ...mainManifest.installations,
+      runStake: restoreRef(installKeys.runStake),
+    },
+    options: {
+      ...econCommitteeManifest.options,
+      ...mainManifest.options,
+      vaultFactoryControllerAddress,
     },
   };
 };

@@ -80,7 +80,7 @@ export const getManifestForInviteCommittee = async (
   const t = true;
   return {
     manifest: {
-      inviteCommitteeMembers: {
+      [inviteCommitteeMembers.name]: {
         consume: {
           zoe: t,
           agoricNames: t,
