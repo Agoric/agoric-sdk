@@ -1,6 +1,6 @@
-// @ts-nocheck
+// @ts-check
 
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
 import { E } from '@endo/eventual-send';
@@ -33,6 +33,9 @@ import {
   waitForPromisesToSettle,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
+
+/** @type {import('ava').TestInterface<any>} */
+const test = unknownTest;
 
 // #region Support
 
@@ -147,7 +150,6 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   t.context.committee = makeVoterTool(
     zoe,
     space.consume.economicCommitteeCreatorFacet,
-    // @ts-expect-error TODO: add vaultFactoryGovernorCreator to vats/src/types.js
     space.consume.vaultFactoryGovernorCreator,
     counter,
   );
@@ -190,7 +192,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
 
 /**
  *
- * @param {ExecutionContext} t
+ * @param {import('ava').ExecutionContext} t
  * @param {bigint} runInitialLiquidity
  */
 const getRunFromFaucet = async (t, runInitialLiquidity) => {
@@ -223,7 +225,7 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
 /**
  * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
  *
- * @param {ExecutionContext} t
+ * @param {import('ava').ExecutionContext} t
  * @param {Amount} initialPrice
  * @param {Amount} priceBase
  * @param {TimerService} timer
@@ -392,9 +394,9 @@ const makeDriver = async (t, initialPrice, priceBase) => {
       },
       /**
        *
-       * @param {Vault.Phase} phase
-       * @param {object} likeExpected
-       * @param {undefined|AT_NEXT|number} optSince
+       * @param {import('../../src/vaultFactory/vault.js').VaultPhase} phase
+       * @param {object} [likeExpected]
+       * @param {AT_NEXT|number} [optSince]
        */
       notified: async (phase, likeExpected, optSince) => {
         // optSince can be AT_NEXT in order to wait for the

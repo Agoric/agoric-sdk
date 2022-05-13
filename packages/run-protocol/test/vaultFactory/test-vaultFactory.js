@@ -1,6 +1,6 @@
-// @ts-nocheck
+// @ts-check
 
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
 import { E } from '@endo/eventual-send';
@@ -41,6 +41,9 @@ import {
   installGovernance,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
+
+/** @type {import('ava').TestInterface<any>} */
+const test = unknownTest;
 
 // #region Support
 
@@ -187,7 +190,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
 
 /**
  *
- * @param {ExecutionContext} t
+ * @param {import('ava').ExecutionContext<any>} t
  * @param {bigint} runInitialLiquidity
  */
 const getRunFromFaucet = async (t, runInitialLiquidity) => {
@@ -199,6 +202,7 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
   } = t.context;
   /** @type {Promise<Installation<import('./faucet.js').start>>} */
   // On-chain, there will be pre-existing RUN. The faucet replicates that
+  // @ts-expect-error
   const { creatorFacet: faucetCreator } = await E(zoe).startInstance(
     installation,
     {},
@@ -221,8 +225,8 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
 /**
  * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
  *
- * @param {ExecutionContext} t
- * @param {Array<nat> | Ratio} priceOrList
+ * @param {import('ava').ExecutionContext<any>} t
+ * @param {Array<NatValue> | Ratio} priceOrList
  * @param {Amount} unitAmountIn
  * @param {TimerService} timer
  * @param {unknown} quoteInterval
@@ -306,12 +310,13 @@ async function setupServices(
   );
 
   // Add a vault that will lend on aeth collateral
+  /** @type {Promise<VaultManager>} */
   const aethVaultManagerP = E(vaultFactoryCreatorFacet).addVaultType(
     aethIssuer,
     'AEth',
     rates,
   );
-  /** @type {[any, VaultFactory, VFC['publicFacet']]} */
+  /** @type {[any, VaultFactory, VFC['publicFacet'], VaultManager, PriceAuthority]} */
   // @ts-expect-error cast
   const [
     governorInstance,
@@ -551,11 +556,13 @@ test('price drop', async t => {
   );
   trace(t, 'pa2', priceAuthority);
 
+  // @ts-expect-error mock
   priceAuthority.setPrice(makeRatio(677n, runBrand, 900n, aethBrand));
   trace(t, 'price dropped a little');
   notification = await E(vaultNotifier).getUpdateSince();
   t.is(notification.value.vaultState, Phase.ACTIVE);
 
+  // @ts-expect-error mock
   await E(priceAuthority).setPrice(makeRatio(636n, runBrand, 900n, aethBrand));
   notification = await E(vaultNotifier).getUpdateSince(
     notification.updateCount,
@@ -575,6 +582,7 @@ test('price drop', async t => {
   );
   trace(t, 'debt remains', AmountMath.make(runBrand, 284n));
 
+  // @ts-expect-error mock
   await E(priceAuthority).setPrice(makeRatio(1000n, runBrand, 900n, aethBrand));
   trace(t, 'debt gone');
   notification = await E(vaultNotifier).getUpdateSince(
@@ -1696,6 +1704,7 @@ test('mutable liquidity triggers and interest', async t => {
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
   trace(t, 'alice reduce collateral');
 
+  // @ts-expect-error mock
   await E(priceAuthority).setPrice(makeRatio(7n, runBrand, 1n, aethBrand));
   trace(t, 'changed price to 7');
 
@@ -2296,9 +2305,7 @@ test('addVaultType: invalid args do not modify state', async t => {
       .addVaultType(chit.issuer, kw, null),
   );
   await failsForSameReason(
-    E(vaultFactory)
-      // @ts-expect-error bad args on purpose for test
-      .addVaultType(chit.issuer, 'bogus kw', params),
+    E(vaultFactory).addVaultType(chit.issuer, 'bogus kw', params),
   );
 
   // The keyword in the vault manager is not "stuck"; it's still available:
@@ -2331,6 +2338,7 @@ test('addVaultType: extra, unexpected params', async t => {
   };
 
   await t.throwsAsync(
+    // @ts-expect-error bad args
     E(vaultFactory).addVaultType(chit.issuer, 'Chit', missingParams),
     { message: /Must have same property names/ },
   );
