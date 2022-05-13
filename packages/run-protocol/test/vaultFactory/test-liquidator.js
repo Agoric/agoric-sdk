@@ -488,7 +488,7 @@ const makeDriver = async (t, initialPrice, priceBase) => {
     },
     managerNotified: async (likeExpected, optSince) => {
       managerNotification = await E(managerNotifier).getUpdateSince(
-        optSince === AT_NEXT ? managerNotifier.updateCount : optSince,
+        optSince === AT_NEXT ? managerNotification.updateCount : optSince,
       );
       trace(t, 'manager notifier', managerNotification);
       if (likeExpected) {
