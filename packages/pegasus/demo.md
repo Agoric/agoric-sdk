@@ -36,7 +36,7 @@ account_prefix = 'agoric'
 key_name = 'localkey'
 store_prefix = 'ibc'
 max_gas = 3000000
-gas_price = { price = 0.001, denom = 'urun' }
+gas_price = { price = 0.001, denom = 'uist' }
 gas_adjustment = 0.1
 clock_drift = '5s'
 trusting_period = '14days'                                               
