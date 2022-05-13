@@ -52,7 +52,7 @@ export const defaultBeansPerUnit = [
 
 export const defaultFeeUnitPrice = [
   {
-    denom: 'urun',
+    denom: 'uist',
     amount: '1000000',
   },
 ];
