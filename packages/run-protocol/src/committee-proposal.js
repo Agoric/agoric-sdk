@@ -4,6 +4,44 @@ import { E } from '@endo/far';
 // must match packages/wallet/api/src/lib-wallet.js
 const DEPOSIT_FACET = 'depositFacet';
 
+const { details: X } = assert;
+
+/**
+ * @param {ERef<NameAdmin>} nameAdmin
+ * @param {string[][]} paths
+ */
+const reserveThenGetNamePaths = async (nameAdmin, paths) => {
+  /**
+   *
+   * @param {ERef<NameAdmin>} nextAdmin
+   * @param {string[]} path
+   */
+  const nextPath = async (nextAdmin, path) => {
+    const [nextName, ...rest] = path;
+    assert.typeof(nextName, 'string');
+
+    // Ensure we wait for the next name until it exists.
+    await E(nextAdmin).reserve(nextName);
+
+    if (rest.length === 0) {
+      // Now return the readonly lookup of the name.
+      const nameHub = E(nextAdmin).readonly();
+      return E(nameHub).lookup(nextName);
+    }
+
+    // Wait until the next admin is resolved.
+    const restAdmin = await E(nextAdmin).lookupAdmin(nextName);
+    return nextPath(restAdmin, rest);
+  };
+
+  return Promise.all(
+    paths.map(async path => {
+      assert(Array.isArray(path), X`path ${path} is not an array`);
+      return nextPath(nameAdmin, path);
+    }),
+  );
+};
+
 const { values } = Object;
 
 /** @type { <X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
@@ -18,7 +56,7 @@ export const inviteCommitteeMembers = async (
     consume: {
       zoe,
       agoricNames,
-      namesByAddress,
+      namesByAddressAdmin,
       economicCommitteeCreatorFacet,
       reserveGovernorCreatorFacet,
       ammGovernorCreatorFacet,
@@ -54,16 +92,19 @@ export const inviteCommitteeMembers = async (
 
   /** @param {[string, Promise<Invitation>]} entry */
   const distributeInvitation = async ([addr, invitationP]) => {
-    const [voterInvitation, depositFacet] = await Promise.all([
+    console.info('waiting for econ committee member', addr);
+    const [voterInvitation, [depositFacet]] = await Promise.all([
       invitationP,
-      E(namesByAddress).lookup(addr, DEPOSIT_FACET),
+      reserveThenGetNamePaths(namesByAddressAdmin, [[addr, DEPOSIT_FACET]]),
     ]);
 
+    console.info('depositing invitation for econ committee member', addr);
     const nullInvitation = await E(votingAPI).makeNullInvitation();
     await Promise.all([
       E(depositFacet).receive(voterInvitation),
       E(depositFacet).receive(nullInvitation),
     ]);
+    console.info('confirmed deposit for econ committee member', addr);
   };
 
   await Promise.all(
@@ -84,7 +125,7 @@ export const getManifestForInviteCommittee = async (
         consume: {
           zoe: t,
           agoricNames: t,
-          namesByAddress: t,
+          namesByAddressAdmin: t,
           economicCommitteeCreatorFacet: t,
           reserveGovernorCreatorFacet: t,
           ammGovernorCreatorFacet: t,

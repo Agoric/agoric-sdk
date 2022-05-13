@@ -124,16 +124,19 @@ export const startPSM = async (
 harden(startPSM);
 
 /**
+ * @typedef {object} AnchorOptions
+ * @property {string} [denom]
+ * @property {number} [decimalPlaces]
+ * @property {string} [keyword]
+ * @property {string} [proposedName]
+ */
+
+/**
  * Make anchor issuer out of a Cosmos asset; presumably
  * USDC over IBC. Add it to BankManager.
  *
  * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
- * @param {{ options: {
- *   anchorDenom?: string,
- *   anchorKeyword?: string,
- *   anchorProposedName?: string,
- *   anchorDecimalPlaces?: number,
- * }}} config
+ * @param {{options?: { anchorOptions?: AnchorOptions } }} [config]
  */
 export const makeAnchorAsset = async (
   {
@@ -148,26 +151,27 @@ export const makeAnchorAsset = async (
       produce: { AUSD: brandP },
     },
   },
-  {
-    options: {
-      anchorDenom,
-      anchorProposedName = 'USDC Anchor',
-      anchorKeyword = 'AUSD',
-      anchorDecimalPlaces = 6,
-    } = {},
-  },
+  { options: { anchorOptions = {} } = {} },
 ) => {
+  assert.typeof(anchorOptions, 'object', X`${anchorOptions} must be an object`);
+  const {
+    denom,
+    keyword = 'AUSD',
+    decimalPlaces = 6,
+    proposedName = 'AUSD',
+  } = anchorOptions;
   assert.typeof(
-    anchorDenom,
+    denom,
     'string',
-    X`anchorDenom ${anchorDenom} must be string`,
+    X`anchorOptions.denom must be a string, not ${denom}`,
   );
+
   /** @type {import('@agoric/vats/src/mintHolder.js').AssetTerms} */
   const terms = {
-    keyword: anchorKeyword,
+    keyword,
     assetKind: AssetKind.NAT,
     displayInfo: {
-      decimalPlaces: anchorDecimalPlaces,
+      decimalPlaces,
       assetKind: AssetKind.NAT,
     },
   };
@@ -180,9 +184,9 @@ export const makeAnchorAsset = async (
   issuerP.resolve(kit.issuer);
   brandP.resolve(kit.brand);
   return E(bankManager).addAsset(
-    anchorDenom,
-    anchorKeyword,
-    anchorProposedName,
+    denom,
+    keyword,
+    proposedName,
     kit, // with mint
   );
 };

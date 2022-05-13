@@ -254,7 +254,7 @@ export const SIM_CHAIN_MANIFEST = harden({
 
 export const getManifestForEconCommittee = (
   { restoreRef },
-  { installKeys, econCommitteeSize = 3 },
+  { installKeys, econCommitteeOptions },
 ) => {
   return {
     manifest: ECON_COMMITTEE_MANIFEST,
@@ -264,43 +264,33 @@ export const getManifestForEconCommittee = (
       binaryVoteCounter: restoreRef(installKeys.binaryVoteCounter),
     },
     options: {
-      econCommitteeSize,
+      econCommitteeOptions,
     },
   };
 };
 
 export const getManifestForMain = (
   { restoreRef },
-  {
-    installKeys,
-    vaultFactoryControllerAddress,
-    anchorDenom,
-    anchorDecimalPlaces,
-    anchorKeyword,
-    anchorProposedName,
-  },
+  { installKeys, vaultFactoryControllerAddress, anchorOptions },
 ) => {
   return {
     manifest: {
       ...SHARED_MAIN_MANIFEST,
-      ...(anchorDenom && PSM_MANIFEST),
+      ...(anchorOptions && PSM_MANIFEST),
     },
     installations: {
       amm: restoreRef(installKeys.amm),
       VaultFactory: restoreRef(installKeys.vaultFactory),
       liquidate: restoreRef(installKeys.liquidate),
       reserve: restoreRef(installKeys.reserve),
-      ...(anchorDenom && {
+      ...(anchorOptions && {
         psm: restoreRef(installKeys.psm),
         mintHolder: restoreRef(installKeys.mintHolder),
       }),
     },
     options: {
       vaultFactoryControllerAddress,
-      anchorDenom,
-      anchorDecimalPlaces,
-      anchorKeyword,
-      anchorProposedName,
+      anchorOptions,
     },
   };
 };
@@ -318,28 +308,22 @@ export const getManifestForRunProtocol = (
   { restoreRef },
   {
     ROLE = 'chain',
-    anchorDenom,
-    anchorDecimalPlaces = 6,
-    anchorKeyword = 'AUSD',
-    anchorProposedName = 'AUSD',
-    econCommitteeSize = 3,
+    anchorOptions,
+    econCommitteeOptions,
     installKeys,
     vaultFactoryControllerAddress,
   },
 ) => {
   const econCommitteeManifest = getManifestForEconCommittee(
     { restoreRef },
-    { installKeys, econCommitteeSize },
+    { installKeys, econCommitteeOptions },
   );
   const mainManifest = getManifestForMain(
     { restoreRef },
     {
       installKeys,
       vaultFactoryControllerAddress,
-      anchorDenom,
-      anchorDecimalPlaces,
-      anchorKeyword,
-      anchorProposedName,
+      anchorOptions,
     },
   );
   return {

@@ -177,16 +177,31 @@ export const defaultProposalBuilder = async (
   const {
     ROLE = process.env.ROLE || 'chain',
     vaultFactoryControllerAddress = process.env.VAULT_FACTORY_CONTROLLER_ADDR,
-    anchorDenom = process.env.ANCHOR_DENOM,
-    anchorDecimalPlaces = '6',
-    anchorKeyword = 'AUSD',
-    anchorProposedName = anchorKeyword,
-    econCommitteeSize = process.env.ECON_COMMITTEE_SIZE || '3',
+    anchorOptions: {
+      anchorDenom = process.env.ANCHOR_DENOM,
+      anchorDecimalPlaces = '6',
+      anchorKeyword = 'AUSD',
+      anchorProposedName = anchorKeyword,
+    } = {},
+    econCommitteeOptions: {
+      committeeSize: econCommitteeSize = process.env.ECON_COMMITTEE_SIZE || '3',
+    } = {},
   } = options;
 
   /** @param { Record<string, [string, string]> } group */
   const publishGroup = group =>
     mapValues(group, ([mod, bundle]) => publishRef(install(mod, bundle)));
+
+  const anchorOptions = anchorDenom && {
+    denom: anchorDenom,
+    decimalPlaces: parseInt(anchorDecimalPlaces, 10),
+    keyword: anchorKeyword,
+    proposedName: anchorProposedName,
+  };
+
+  const econCommitteeOptions = {
+    committeeSize: parseInt(econCommitteeSize, 10),
+  };
 
   return harden({
     sourceSpec: '../src/core-proposal.js',
@@ -195,11 +210,8 @@ export const defaultProposalBuilder = async (
       {
         ROLE,
         vaultFactoryControllerAddress,
-        anchorDenom,
-        anchorDecimalPlaces: parseInt(anchorDecimalPlaces, 10),
-        anchorKeyword,
-        anchorProposedName,
-        econCommitteeSize: parseInt(econCommitteeSize, 10),
+        anchorOptions,
+        econCommitteeOptions,
         installKeys: {
           ...publishGroup(installKeyGroups.econCommittee),
           ...publishGroup(installKeyGroups.runStake),
