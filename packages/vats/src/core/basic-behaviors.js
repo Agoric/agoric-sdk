@@ -20,7 +20,7 @@ const RESERVE_ADDRESS = 'agoric1ae0lmtzlgrcnla9xjkpaarq5d5dfez63h3nucl';
  * cosmosInitAction with type AG_COSMOS_INIT,
  * with the following shape.
  *
- * The urun supplyCoins value is taken from genesis,
+ * The uist supplyCoins value is taken from genesis,
  * thereby authorizing the minting an initial supply of RUN.
  */
 // eslint-disable-next-line no-unused-vars
@@ -32,7 +32,7 @@ const bootMsgEx = {
     { denom: 'provisionpass', amount: '100' },
     { denom: 'sendpacketpass', amount: '100' },
     { denom: 'ubld', amount: '1000000000000000' },
-    { denom: 'urun', amount: '50000000000' },
+    { denom: 'uist', amount: '50000000000' },
   ],
   vbankPort: 3,
   vibcPort: 2,
