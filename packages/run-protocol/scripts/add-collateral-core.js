@@ -5,17 +5,30 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 import { getManifestForAddAssetToVault } from '../src/vaultFactory/addAssetToVault.js';
 
 // Build proposal for sim-chain etc.
-export const defaultProposalBuilder = async ({ publishRef, install }) => {
-  const { INTERCHAIN_DENOM } = process.env;
+export const defaultProposalBuilder = async (
+  { publishRef, install },
+  options = {},
+) => {
+  const {
+    interchainOracle = 'ATOM',
+    interchainDenom = process.env.INTERCHAIN_DENOM,
+    interchainDecimals = 6,
+    interchainKeyword = 'IbcATOM',
+    interchainProposedName = interchainOracle,
+  } = options;
 
-  assert(INTERCHAIN_DENOM, 'INTERCHAIN_DENOM is required');
+  assert(interchainDenom, 'INTERCHAIN_DENOM is required');
 
   return harden({
     sourceSpec: '../src/vaultFactory/addAssetToVault.js',
     getManifestCall: [
       getManifestForAddAssetToVault.name,
       {
-        denom: INTERCHAIN_DENOM,
+        interchainDenom,
+        interchainDecimals,
+        interchainKeyword,
+        interchainProposedName,
+        interchainOracle,
         scaledPriceAuthorityRef: publishRef(
           install(
             '@agoric/zoe/src/contracts/scaledPriceAuthority.js',
