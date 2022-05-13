@@ -22,7 +22,16 @@ const terminalOnlyFlags = (...flags) => {
   return [];
 };
 
-const PROVISION_COINS = `1000000000000000${STAKING_DENOM},500000000000000${CENTRAL_DENOM},100provisionpass,100sendpacketpass`;
+const PROVISION_COINS = [
+  `1000000000000000${STAKING_DENOM}`,
+  `500000000000000${CENTRAL_DENOM}`,
+  `100provisionpass`,
+  `100sendpacketpass`,
+  `1000000000000ibc/0123456789abcdef`, // IbcATOM
+  `1000000000000ibc/123456789abcdef0`, // AUSD
+  `1000000000000ibc/23456789abcdef01`,
+  `1000000000000ibc/3456789abcdef012`,
+].join(',');
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
 const SOLO_COINS = `13000000${STAKING_DENOM},50000000${CENTRAL_DENOM}`;
 const CHAIN_ID = 'agoric';
