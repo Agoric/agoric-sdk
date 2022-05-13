@@ -47,6 +47,7 @@ const trace = makeTracer('LiqI', false);
  * @typedef {{
  *   amm: XYKAMMPublicFacet,
  *   priceAuthority: PriceAuthority,
+ *   reservePublicFacet: AssetReservePublicFacet,
  *   timerService: TimerService,
  *   debtBrand: Brand,
  *   MaxImpactBP: NatValue,
@@ -59,6 +60,7 @@ const start = async zcf => {
   const {
     amm,
     priceAuthority,
+    reservePublicFacet,
     timerService,
     debtBrand,
     MaxImpactBP,
@@ -75,6 +77,7 @@ const start = async zcf => {
     Number(numerator) / Number(denominator);
 
   // TODO distribute penalties to the reserve
+  assert(reservePublicFacet, 'Missing reservePublicFacet');
   const { zcfSeat: penaltyPoolSeat } = zcf.makeEmptySeatKit();
 
   /**

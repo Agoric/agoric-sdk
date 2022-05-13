@@ -32,6 +32,7 @@ import {
   waitForPromisesToSettle,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
+import { setupReserveServices } from '../reserve/setup.js';
 
 // #region Support
 
@@ -82,15 +83,18 @@ test.before(async t => {
   const runIssuer = E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
   const aethKit = makeIssuerKit('aEth');
-  const loader = await unsafeMakeBundleCache('./bundles/'); // package-relative
+  const bundleCache = await unsafeMakeBundleCache('./bundles/'); // package-relative
 
   // note that the liquidation might be a different bundle name
   // Collect.mapValues(contractRoots, (root, k) => loader.load(root, k)),
   const bundles = await Collect.allValues({
-    faucet: loader.load(contractRoots.faucet, 'faucet'),
-    liquidate: loader.load(contractRoots.liquidate, 'liquidateIncrementally'),
-    VaultFactory: loader.load(contractRoots.VaultFactory, 'VaultFactory'),
-    amm: loader.load(contractRoots.amm, 'amm'),
+    faucet: bundleCache.load(contractRoots.faucet, 'faucet'),
+    liquidate: bundleCache.load(
+      contractRoots.liquidate,
+      'liquidateIncrementally',
+    ),
+    VaultFactory: bundleCache.load(contractRoots.VaultFactory, 'VaultFactory'),
+    amm: bundleCache.load(contractRoots.amm, 'amm'),
   });
   const installation = Collect.mapValues(bundles, bundle =>
     E(zoe).install(bundle),
@@ -112,7 +116,7 @@ test.before(async t => {
     aethInitialLiquidity: AmountMath.make(aethKit.brand, 900_000_000n),
   };
   const frozenCtx = await deeplyFulfilled(harden(contextPs));
-  t.context = { ...frozenCtx };
+  t.context = { ...frozenCtx, bundleCache };
   trace(t, 'CONTEXT');
 });
 
@@ -269,6 +273,13 @@ async function setupServices(
     quoteMint,
   });
   produce.priceAuthority.resolve(priceAuthority);
+
+  const { reserve } = await setupReserveServices(
+    t,
+    t.context.electorateTerms,
+    timer,
+  );
+  produce.reservePublicFacet.resolve(reserve.reservePublicFacet);
 
   const {
     installation: { produce: iProduce },

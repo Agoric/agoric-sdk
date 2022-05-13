@@ -33,9 +33,11 @@ import { makeVaultDirector } from './vaultDirector.js';
  *   ammPublicFacet: AutoswapPublicFacet,
  *   liquidationInstall: Installation<import('./liquidateMinimum.js').start>,
  *   loanTimingParams: {ChargingPeriod: ParamRecord<'nat'>, RecordingPeriod: ParamRecord<'nat'>},
- *   timerService: TimerService,
  *   minInitialDebt: Amount,
- *   priceAuthority: ERef<PriceAuthority>}>} VaultFactoryZCF
+ *   priceAuthority: ERef<PriceAuthority>,
+ *   reservePublicFacet: AssetReservePublicFacet,
+ *   timerService: TimerService,
+ * }>} VaultFactoryZCF
  */
 
 /**

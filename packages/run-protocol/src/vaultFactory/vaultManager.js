@@ -61,7 +61,7 @@ const trace = makeTracer('VM', false);
  * poolIncrementSeat: ZCFSeat,
  * priceAuthority: ERef<PriceAuthority>,
  * prioritizedVaults: ReturnType<typeof makePrioritizedVaults>,
- * zcf: ZCF,
+ * zcf: import('./vaultFactory.js').VaultFactoryZCF,
  * }>} ImmutableState
  */
 
@@ -97,7 +97,7 @@ let outstandingQuote = null;
 /**
  * Create state for the Vault Manager kind
  *
- * @param {ZCF} zcf
+ * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
  * @param {ZCFMint<'nat'>} debtMint
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
@@ -532,7 +532,8 @@ const selfBehavior = {
     liquidationTerms,
   ) => {
     const { zcf, debtBrand, collateralBrand } = state;
-    const { ammPublicFacet, priceAuthority, timerService } = zcf.getTerms();
+    const { ammPublicFacet, priceAuthority, reservePublicFacet, timerService } =
+      zcf.getTerms();
     const zoe = zcf.getZoeService();
     const collateralIssuer = zcf.getIssuerForBrand(collateralBrand);
     const debtIssuer = zcf.getIssuerForBrand(debtBrand);
@@ -548,9 +549,10 @@ const selfBehavior = {
       harden({
         ...liquidationTerms,
         amm: ammPublicFacet,
+        debtBrand,
+        reservePublicFacet,
         priceAuthority,
         timerService,
-        debtBrand,
       }),
     );
     trace('setup liquidator complete', {

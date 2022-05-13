@@ -5,7 +5,7 @@ import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
 import buildManualTimer from '@agoric/zoe/tools/manualTimer';
-import { makeGovernedTerms } from '../../src/vaultFactory/params';
+import { makeGovernedTerms as makeVaultFactoryTerms } from '../../src/vaultFactory/params';
 import { ammMock } from './mockAmm';
 import { liquidationDetailTerms } from '../../src/vaultFactory/liquidation';
 
@@ -199,7 +199,7 @@ const buildOwner = async (
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
   ]);
 
-  const terms = makeGovernedTerms({
+  const terms = makeVaultFactoryTerms({
     priceAuthority: priceAuthorityKit.priceAuthority,
     loanTiming,
     liquidationInstall: installations.liquidateMinimum,

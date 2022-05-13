@@ -88,6 +88,7 @@ const liquidationDetailTerms = debtBrand =>
     OracleTolerance: makeRatio(30n, debtBrand),
     AMMMaxSlippage: makeRatio(30n, debtBrand),
   });
+/** @typedef {ReturnType<typeof liquidationDetailTerms>} LiquidationTerms */
 
 harden(liquidate);
 harden(liquidationDetailTerms);

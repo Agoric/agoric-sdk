@@ -248,6 +248,7 @@ export const startVaultFactory = async (
     consume: {
       chainTimerService,
       priceAuthority: priceAuthorityP,
+      reservePublicFacet: reservePublicFacetP,
       zoe,
       feeMintAccess: feeMintAccessP, // ISSUE: why doeszn't Zoe await this?
       economicCommitteeCreatorFacet: electorateCreatorFacet,
@@ -305,9 +306,11 @@ export const startVaultFactory = async (
   const ammPublicFacet = await E(zoe).getPublicFacet(ammInstance);
   const feeMintAccess = await feeMintAccessP;
   const priceAuthority = await priceAuthorityP;
+  const reservePublicFacet = await reservePublicFacetP;
   const timer = await chainTimerService;
   const vaultFactoryTerms = makeGovernedTerms({
     priceAuthority,
+    reservePublicFacet,
     loanTiming: loanParams,
     liquidationInstall: installations.liquidate,
     timer,

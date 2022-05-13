@@ -27,7 +27,7 @@ export const MIN_INITIAL_DEBT_KEY = 'MinInitialDebt';
 /**
  * @param {Amount} electorateInvitationAmount
  * @param {Installation} liquidationInstall
- * @param {object} liquidationTerms
+ * @param {import('./liquidation.js').LiquidationTerms} liquidationTerms
  * @param {Amount} minInitialDebt
  */
 const makeVaultDirectorParams = (
@@ -108,29 +108,32 @@ const makeVaultDirectorParamManager = async (
 };
 
 /**
- * @param {object} opts
- * @param {ERef<PriceAuthority>} opts.priceAuthority
- * @param {LoanTiming} opts.loanTiming
- * @param {Installation} opts.liquidationInstall
- * @param {ERef<TimerService>} opts.timer
- * @param {Amount} opts.invitationAmount
- * @param {VaultManagerParamValues} opts.vaultManagerParams
- * @param {XYKAMMPublicFacet} opts.ammPublicFacet
- * @param {object} opts.liquidationTerms
- * @param {Amount} opts.minInitialDebt
- * @param {bigint} opts.bootstrapPaymentValue
+ * @param {{
+ *   invitationAmount: Amount,
+ *   minInitialDebt: Amount,
+ *   bootstrapPaymentValue: bigint,
+ *   priceAuthority: ERef<PriceAuthority>,
+ *   timer: ERef<TimerService>,
+ *   reservePublicFacet: AssetReservePublicFacet,
+ *   liquidationInstall: Installation,
+ *   loanTiming: LoanTiming,
+ *   liquidationTerms: import('./liquidation.js').LiquidationTerms,
+ *   vaultManagerParams: VaultManagerParamValues,
+ *   ammPublicFacet: XYKAMMPublicFacet,
+ * }} opts
  */
 const makeGovernedTerms = ({
-  priceAuthority,
-  loanTiming,
-  liquidationInstall,
-  timer,
-  invitationAmount,
-  vaultManagerParams,
   ammPublicFacet,
-  liquidationTerms,
-  minInitialDebt,
   bootstrapPaymentValue,
+  invitationAmount,
+  liquidationInstall,
+  liquidationTerms,
+  loanTiming,
+  minInitialDebt,
+  priceAuthority,
+  reservePublicFacet,
+  timer,
+  vaultManagerParams,
 }) => {
   const loanTimingParams = makeParamManagerSync({
     [CHARGING_PERIOD_KEY]: ['nat', loanTiming.chargingPeriod],
@@ -144,6 +147,7 @@ const makeGovernedTerms = ({
     priceAuthority,
     loanParams,
     loanTimingParams,
+    reservePublicFacet,
     timerService: timer,
     governedParams: makeVaultDirectorParams(
       invitationAmount,

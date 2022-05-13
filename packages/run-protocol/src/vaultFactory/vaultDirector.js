@@ -153,11 +153,21 @@ const getCollaterals = async ({ state }) => {
   );
 };
 
+/**
+ * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} directorParamManager
+ */
 const getLiquidationConfig = directorParamManager => ({
   install: directorParamManager.getLiquidationInstall(),
   terms: directorParamManager.getLiquidationTerms(),
 });
 
+/**
+ *
+ * @param {*} govParams
+ * @param {VaultManager} vaultManager
+ * @param {*} oldInstall
+ * @param {*} oldTerms
+ */
 const watchGovernance = (govParams, vaultManager, oldInstall, oldTerms) => {
   const subscription = govParams.getSubscription();
   observeIteration(subscription, {
@@ -412,10 +422,11 @@ const behavior = {
  *   ammPublicFacet: AutoswapPublicFacet,
  *   liquidationInstall: Installation<import('./liquidateMinimum.js').start>,
  *   loanTimingParams: {ChargingPeriod: ParamRecord<'nat'>, RecordingPeriod: ParamRecord<'nat'>},
+ *   reservePublicFacet: AssetReservePublicFacet,
  *   timerService: TimerService,
  *   priceAuthority: ERef<PriceAuthority>
  * }>} zcf
- * @param {import('./params.js').VaultDirectorParams} directorParamManager
+ * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} directorParamManager
  * @param {ZCFMint<"nat">} debtMint
  */
 const makeVaultDirector = defineKindMulti('VaultDirector', initState, behavior);

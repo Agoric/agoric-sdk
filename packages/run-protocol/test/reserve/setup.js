@@ -54,7 +54,7 @@ const setupReserveBootstrap = async (
 /**
  * NOTE: called separately by each test so contracts don't interfere
  *
- * @param {*} t
+ * @param {import("ava").ExecutionContext<unknown>} t
  * @param {{ committeeName: string, committeeSize: number}} electorateTerms
  * @param {ManualTimer | undefined=} timer
  * @returns {{
