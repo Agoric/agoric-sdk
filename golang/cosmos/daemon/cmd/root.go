@@ -104,9 +104,9 @@ func initAppConfig() (string, interface{}) {
 	// - if you set srvCfg.MinGasPrices non-empty, validators CAN tweak their
 	//   own app.toml to override, or use this default value.
 	//
-	// FIXME: We may want to have Agoric set a min gas price in urun.
+	// FIXME: We may want to have Agoric set a min gas price in uist.
 	// For now, we set it to zero so that validators don't have to worry about it.
-	srvCfg.MinGasPrices = "0urun"
+	srvCfg.MinGasPrices = "0uist"
 
 	return serverconfig.DefaultConfigTemplate, *srvCfg
 }
