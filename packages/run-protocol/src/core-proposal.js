@@ -50,6 +50,7 @@ const SHARED_MAIN_MANIFEST = harden({
       chainTimerService: 'timer',
       zoe: 'zoe',
       priceAuthority: 'priceAuthority',
+      reservePublicFacet: 'reservePublicFacet',
       economicCommitteeCreatorFacet: 'economicCommittee',
     },
     produce: {
