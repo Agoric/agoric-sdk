@@ -31,7 +31,7 @@ import {
 
 const console = anylogger('launch-chain');
 
-const SWING_STORE_META_KEY = 'cosmos/meta';
+const SWING_STORE_HOST_PREFIX = 'host';
 
 async function buildSwingset(
   mailboxStorage,
@@ -266,9 +266,11 @@ export async function launch({
     savedBlockTime,
     savedChainSends,
   ) {
+    kvStore.set(`${SWING_STORE_HOST_PREFIX}.height`, `${savedHeight}`);
+    kvStore.set(`${SWING_STORE_HOST_PREFIX}.blockTime`, `${savedBlockTime}`);
     kvStore.set(
-      SWING_STORE_META_KEY,
-      JSON.stringify([savedHeight, savedBlockTime, savedChainSends]),
+      `${SWING_STORE_HOST_PREFIX}.chainSends`,
+      JSON.stringify(savedChainSends),
     );
     await commit();
   }
@@ -310,8 +312,14 @@ export async function launch({
     );
   }
 
-  const [savedHeight, savedBlockTime, savedChainSends] = JSON.parse(
-    kvStore.get(SWING_STORE_META_KEY) || '[0, 0, []]',
+  const savedHeight = Number(
+    kvStore.get(`${SWING_STORE_HOST_PREFIX}.height`) || 0,
+  );
+  const savedBlockTime = Number(
+    kvStore.get(`${SWING_STORE_HOST_PREFIX}.blockTime`) || 0,
+  );
+  const savedChainSends = JSON.parse(
+    kvStore.get(`${SWING_STORE_HOST_PREFIX}.chainSends`) || '[]',
   );
 
   return {

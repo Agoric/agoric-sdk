@@ -797,6 +797,7 @@ test('crankhash - skip keys', t => {
     'local.v1234.lastSnapshot',
     '{"snapshotID":"XYZ","startPos":4}',
   );
+  t.throws(() => k.kvStore.set('host.foo', 'bar'));
   t.is(k.commitCrank().crankhash, expCrankhash);
 });
 
