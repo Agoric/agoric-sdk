@@ -62,10 +62,16 @@ const CENTRAL_DENOM_NAME = 'urun';
  */
 
 /**
+ * @typedef {object} EconCommitteeOptions
+ * @property {string} [committeeName]
+ * @property {number} [committeeSize]
+ */
+
+/**
  * @param {EconomyBootstrapPowers} powers
- * @param {object} [electorateTerms]
- * @param {string} [electorateTerms.committeeName]
- * @param {number} [electorateTerms.committeeSize]
+ * @param {object} [config]
+ * @param {object} [config.options]
+ * @param {EconCommitteeOptions} [config.options.econCommitteeOptions]
  */
 export const startEconomicCommittee = async (
   {
@@ -78,13 +84,13 @@ export const startEconomicCommittee = async (
       produce: { economicCommittee },
     },
   },
-  electorateTerms = {},
+  { options: { econCommitteeOptions = {} } = {} },
 ) => {
   const {
     committeeName = 'Initial Economic Committee',
     committeeSize = 3,
     ...rest
-  } = electorateTerms;
+  } = econCommitteeOptions;
   const { creatorFacet, instance } = await E(zoe).startInstance(
     committee,
     {},

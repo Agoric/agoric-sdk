@@ -87,10 +87,15 @@ export default function initBasedir(
       const keyName = 'ag-solo';
       const mnemonicFile = path.join(basedir, 'ag-solo-mnemonic');
 
-      console.log('generating mnemonic in', mnemonicFile);
-      const mnemonic = execFileSync(HELPER, ['keys', 'mnemonic'], {
-        stdio: ['ignore', 'pipe', 'inherit'],
-      });
+      let mnemonic = process.env.SOLO_MNEMONIC;
+      if (!mnemonic) {
+        console.log('generating mnemonic');
+        mnemonic = execFileSync(HELPER, ['keys', 'mnemonic'], {
+          stdio: ['ignore', 'pipe', 'inherit'],
+        }).toString();
+      }
+      mnemonic = `${mnemonic.trimEnd()}\n`;
+      console.log('saving mnemonic in', mnemonicFile);
       fs.writeFileSync(mnemonicFile, mnemonic.toString(), {
         mode: 0o600,
       });

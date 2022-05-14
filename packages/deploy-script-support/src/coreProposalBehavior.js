@@ -113,7 +113,7 @@ export const makeCoreProposalBehavior = ({
 
 export const makeEnactCoreProposalsFromBundleCap =
   ({ makeCoreProposalArgs, E }) =>
-  allPowers => {
+  async allPowers => {
     const {
       vatPowers: { D },
       devices: { vatAdmin },
@@ -127,7 +127,7 @@ export const makeEnactCoreProposalsFromBundleCap =
       return install;
     };
 
-    return Promise.all(
+    await Promise.all(
       makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
         const subBehavior = makeCoreProposalBehavior({
           manifestInstallRef: ref,

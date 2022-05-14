@@ -198,7 +198,7 @@ export const makeAddressNameHubs = async ({
     // reserve space for deposit facet
     myAddressNameAdmin.reserve('depositFacet');
     // Register it with the namesByAddress hub.
-    namesByAddressAdmin.update(address, myAddressNameHub);
+    namesByAddressAdmin.update(address, myAddressNameHub, myAddressNameAdmin);
     return { agoricNames, namesByAddress, myAddressNameAdmin };
   };
 
