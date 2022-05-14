@@ -8,16 +8,16 @@ import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
 
 import { AmountMath } from '@agoric/ertp';
-import { makeGovernedTerms } from './vaultFactory/params.js';
-import { makeAmmTerms } from './vpool-xyk-amm/params.js';
-import { makeReserveTerms } from './reserve/params.js';
+import { makeGovernedTerms } from '../vaultFactory/params.js';
+import { makeAmmTerms } from '../vpool-xyk-amm/params.js';
+import { makeReserveTerms } from '../reserve/params.js';
 
-import '../exported.js';
+import '../../exported.js';
 
-import * as Collect from './collect.js';
-import { makeRunStakeTerms } from './runStake/params.js';
-import { liquidationDetailTerms } from './vaultFactory/liquidation.js';
-import { makeStakeReporter } from './my-lien.js';
+import * as Collect from '../collect.js';
+import { makeRunStakeTerms } from '../runStake/params.js';
+import { liquidationDetailTerms } from '../vaultFactory/liquidation.js';
+import { makeStakeReporter } from '../my-lien.js';
 
 const { details: X } = assert;
 
@@ -41,15 +41,15 @@ const CENTRAL_DENOM_NAME = 'urun';
  *   reservePublicFacet: AssetReservePublicFacet,
  *   reserveCreatorFacet: AssetReserveCreatorFacet,
  *   reserveGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
- *   runStakeCreatorFacet: import('./runStake/runStake.js').RunStakeCreator,
+ *   runStakeCreatorFacet: import('../runStake/runStake.js').RunStakeCreator,
  *   vaultFactoryCreator: VaultFactory,
  *   vaultFactoryGovernorCreator: GovernedContractFacetAccess<unknown>,
  *   vaultFactoryVoteCreator: unknown,
  *   minInitialDebt: NatValue,
  * }>} EconomyBootstrapSpace
  *
- * @typedef {import('./reserve/assetReserve.js').AssetReserveCreatorFacet} AssetReserveCreatorFacet
- * @typedef {import('./reserve/assetReserve.js').AssetReservePublicFacet} AssetReservePublicFacet
+ * @typedef {import('../reserve/assetReserve.js').AssetReserveCreatorFacet} AssetReserveCreatorFacet
+ * @typedef {import('../reserve/assetReserve.js').AssetReservePublicFacet} AssetReservePublicFacet
  */
 
 /**
@@ -475,7 +475,7 @@ harden(configureVaultFactoryUI);
  *   consume: { loadVat: ERef<VatLoader<DistributeFeesVat>>},
  * }} powers
  *
- * @typedef {ERef<ReturnType<import('../../vats/src/vat-distributeFees.js').buildRootObject>>} DistributeFeesVat
+ * @typedef {ERef<ReturnType<import('@agoric/vats/src/vat-distributeFees').buildRootObject>>} DistributeFeesVat
  */
 export const startRewardDistributor = async ({
   consume: {
@@ -572,7 +572,7 @@ export const startLienBridge = async ({
  * @param {bigint} [config.chargingPeriod]
  * @param {bigint} [config.recordingPeriod]
  * @typedef {[bigint, bigint]} Rational
- * @typedef {Awaited<ReturnType<typeof import('./runStake/runStake.js').start>>} StartRunStake
+ * @typedef {Awaited<ReturnType<typeof import('../runStake/runStake.js').start>>} StartRunStake
  */
 export const startRunStake = async (
   {

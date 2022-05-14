@@ -2,7 +2,7 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 
 export const defaultProposalBuilder = async ({ publishRef, install }) =>
   harden({
-    sourceSpec: '../src/core-proposal.js',
+    sourceSpec: '../src/proposals/core-proposal.js',
     getManifestCall: [
       'getManifestForPegasus',
       {

@@ -2,7 +2,7 @@
 // @ts-check
 import { makeHelpers } from '@agoric/deploy-script-support';
 
-import { getManifestForInviteCommittee } from '../src/committee-proposal.js';
+import { getManifestForInviteCommittee } from '../src/proposals/committee-proposal.js';
 
 // Build proposal for sim-chain etc.
 export const defaultProposalBuilder = async (
@@ -16,7 +16,7 @@ export const defaultProposalBuilder = async (
   const voterAddresses = JSON.parse(econCommitteeAddresses);
 
   return harden({
-    sourceSpec: '../src/committee-proposal.js',
+    sourceSpec: '../src/proposals/committee-proposal.js',
     getManifestCall: [
       getManifestForInviteCommittee.name,
       {

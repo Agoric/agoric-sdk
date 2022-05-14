@@ -153,7 +153,7 @@ export const registerScaledPriceAuthority = async (
   );
 };
 
-/** @typedef {import('../econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers */
+/** @typedef {import('./econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers */
 
 /**
  * @param {EconomyBootstrapPowers} powers
