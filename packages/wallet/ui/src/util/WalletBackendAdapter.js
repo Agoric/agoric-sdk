@@ -3,7 +3,6 @@ import { Far } from '@endo/marshal';
 import {
   makeAsyncIterableFromNotifier,
   makeNotifierKit,
-  observeIterator,
 } from '@agoric/notifier';
 
 const newId = kind => `${kind}${Math.random()}`;
@@ -71,17 +70,12 @@ export const makeBackendFromWalletBridge = walletBridge => {
 
   // Just produce a single update for the initial backend.
   // TODO: allow further updates.
-  const { notifier: backendNotifier } = makeNotifierKit(firstSchema);
+  const { notifier: backendNotifier, updater: backendUpdater } =
+    makeNotifierKit(firstSchema);
   const backendIt = iterateNotifier(backendNotifier);
 
-  // Finish all the other members iterators.
-  observeIterator(backendIt, {
-    finish: state => {
-      Object.values(state).forEach(it => {
-        typeof it.return === 'function' && it.return();
-      });
-    },
-  });
-
-  return backendIt;
+  const cancel = e => {
+    backendUpdater.fail(e);
+  };
+  return { backendIt, cancel };
 };
