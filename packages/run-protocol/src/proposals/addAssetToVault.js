@@ -3,13 +3,7 @@ import { AmountMath, AssetKind } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 
-export const reserveThenGetNames = async (nameAdmin, names) => {
-  for (const name of names) {
-    E(nameAdmin).reserve(name);
-  }
-  const nameHub = E(nameAdmin).readonly();
-  return Promise.all(names.map(name => E(nameHub).lookup(name)));
-};
+import { reserveThenGetNames } from './utils.js';
 
 /**
  * @typedef {object} InterchainAssetOptions

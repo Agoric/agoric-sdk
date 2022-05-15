@@ -1,46 +1,7 @@
 // @ts-check
 import { E } from '@endo/far';
 
-// must match packages/wallet/api/src/lib-wallet.js
-const DEPOSIT_FACET = 'depositFacet';
-
-const { details: X } = assert;
-
-/**
- * @param {ERef<NameAdmin>} nameAdmin
- * @param {string[][]} paths
- */
-const reserveThenGetNamePaths = async (nameAdmin, paths) => {
-  /**
-   *
-   * @param {ERef<NameAdmin>} nextAdmin
-   * @param {string[]} path
-   */
-  const nextPath = async (nextAdmin, path) => {
-    const [nextName, ...rest] = path;
-    assert.typeof(nextName, 'string');
-
-    // Ensure we wait for the next name until it exists.
-    await E(nextAdmin).reserve(nextName);
-
-    if (rest.length === 0) {
-      // Now return the readonly lookup of the name.
-      const nameHub = E(nextAdmin).readonly();
-      return E(nameHub).lookup(nextName);
-    }
-
-    // Wait until the next admin is resolved.
-    const restAdmin = await E(nextAdmin).lookupAdmin(nextName);
-    return nextPath(restAdmin, rest);
-  };
-
-  return Promise.all(
-    paths.map(async path => {
-      assert(Array.isArray(path), X`path ${path} is not an array`);
-      return nextPath(nameAdmin, path);
-    }),
-  );
-};
+import { reserveThenDeposit } from './utils.js';
 
 const { values } = Object;
 
@@ -90,26 +51,25 @@ export const inviteCommitteeMembers = async (
   ).getVoterInvitations();
   assert.equal(invitations.length, values(voterAddresses).length);
 
-  /** @param {[string, Promise<Invitation>]} entry */
-  const distributeInvitation = async ([addr, invitationP]) => {
-    console.info('waiting for econ committee member', addr);
-    const [voterInvitation, [depositFacet]] = await Promise.all([
-      invitationP,
-      reserveThenGetNamePaths(namesByAddressAdmin, [[addr, DEPOSIT_FACET]]),
-    ]);
-
-    console.info('depositing invitation for econ committee member', addr);
+  /**
+   * @param {[string, Promise<Invitation>][]} addrInvitations
+   */
+  const distributeInvitations = async addrInvitations => {
     const nullInvitation = await E(votingAPI).makeNullInvitation();
-    await Promise.all([
-      E(depositFacet).receive(voterInvitation),
-      E(depositFacet).receive(nullInvitation),
-    ]);
-    console.info('confirmed deposit for econ committee member', addr);
+    await Promise.all(
+      addrInvitations.map(async ([addr, invitationP]) => {
+        const voterInvitation = await invitationP;
+        await reserveThenDeposit(
+          `econ committee member ${addr}`,
+          namesByAddressAdmin,
+          addr,
+          [voterInvitation, nullInvitation],
+        );
+      }),
+    );
   };
 
-  await Promise.all(
-    zip(values(voterAddresses), invitations).map(distributeInvitation),
-  );
+  await distributeInvitations(zip(values(voterAddresses), invitations));
 };
 
 harden(inviteCommitteeMembers);
