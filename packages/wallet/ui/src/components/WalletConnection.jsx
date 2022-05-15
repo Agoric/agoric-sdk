@@ -99,9 +99,7 @@ const WalletConnection = ({
           setBackendCancel(() => cancel);
 
           observeIterator(backendIt, {
-            updateState: s => {
-              setBackend(s);
-            },
+            updateState: setBackend,
             fail: () => {
               setBackend(null);
             },
