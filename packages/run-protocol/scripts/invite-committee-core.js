@@ -9,11 +9,12 @@ export const defaultProposalBuilder = async (
   { publishRef, install },
   options = {},
 ) => {
-  const { econCommitteeAddresses = process.env.ECON_COMMITTEE_ADDRESSES } =
-    options;
+  const {
+    ECON_COMMITTEE_ADDRESSES = process.env.ECON_COMMITTEE_ADDRESSES,
+    voterAddresses = JSON.parse(ECON_COMMITTEE_ADDRESSES),
+  } = options;
 
-  assert(econCommitteeAddresses, 'ECON_COMMITTEE_ADDRESSES is required');
-  const voterAddresses = JSON.parse(econCommitteeAddresses);
+  assert(voterAddresses, 'ECON_COMMITTEE_ADDRESSES is required');
 
   return harden({
     sourceSpec: '../src/proposals/committee-proposal.js',
