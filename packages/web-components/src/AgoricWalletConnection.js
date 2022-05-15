@@ -83,7 +83,9 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
           this._bridgePK.promise,
           delay(CONNECTION_TIMEOUT_MS, 'timeout'),
         ])
-          .then(value => value === 'timeout' && this.reset() || Promise.resolve())
+          .then(
+            value => (value === 'timeout' && this.reset()) || Promise.resolve(),
+          )
           .catch(e => console.error('error establishing connection', e));
       };
 

@@ -68,7 +68,7 @@ export const makeAdminWebSocketConnector = component => {
           }
           return component.reset();
         };
-  
+
         ws = new WebSocket(url.href);
         ws.addEventListener('open', ev => {
           return onAdminOpen(ev);
