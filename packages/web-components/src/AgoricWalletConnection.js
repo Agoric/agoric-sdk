@@ -16,7 +16,10 @@ import { makeAdminWebSocketConnector } from './admin-websocket-connector.js';
 import { makeBridgeIframeConnector } from './bridge-iframe-connector.js';
 
 // Wait this long for the bridge before timing out.
-const CONNECTION_TIMEOUT_MS = 8765;
+const CONNECTION_TIMEOUT_MS = 5000;
+
+// Delay after a reset.
+const RESET_DELAY_MS = 3000;
 
 // TODO: Use something on agoric.app instead.
 const DEFAULT_LOCATOR_URL =
@@ -47,8 +50,12 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
       return this.machine.state.name;
     }
 
-    reset() {
-      this.service.send({ type: 'reset' });
+    async reset() {
+      if (this.isResetting) {
+        return;
+      }
+      this.isResetting = true;
+      await delay(RESET_DELAY_MS, 'reset');
       if (this._captp) {
         this._captp.abort();
         this._captp = null;
@@ -57,8 +64,12 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
         this._connector.hostDisconnected();
         this._connector = null;
       }
-      this._bridgePK.reject(Error('Connection reset'));
+
+      // Just make sure the reconnection logic is triggered.
       this._bridgePK = makePromiseKit();
+
+      this.service.send({ type: 'reset' });
+      this.isResetting = false;
     }
 
     get walletConnection() {
@@ -72,7 +83,9 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
           this._bridgePK.promise,
           delay(CONNECTION_TIMEOUT_MS, 'timeout'),
         ])
-          .then(value => value === 'timeout' && this.reset())
+          .then(
+            value => (value === 'timeout' && this.reset()) || Promise.resolve(),
+          )
           .catch(e => console.error('error establishing connection', e));
       };
 
