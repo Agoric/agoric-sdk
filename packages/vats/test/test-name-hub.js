@@ -126,3 +126,18 @@ test('makeNameHubKit - reserve and delete', async t => {
     message: /"nameKey" not found: .*/,
   });
 });
+
+test('makeNameHubKit - default and set', async t => {
+  const { nameAdmin, nameHub } = makeNameHubKit();
+
+  t.is(nameAdmin.readonly(), nameHub);
+
+  t.is(await nameAdmin.default('defaulted', 'defaultValue'), 'defaultValue');
+  t.is(await nameAdmin.update('already set', 'initial'), 'initial');
+  t.is(await nameAdmin.default('already set'), 'initial');
+  t.is(await nameAdmin.set('already set', 'new'), 'new');
+  t.is(await nameAdmin.default('already set'), 'new');
+  t.throwsAsync(() => nameAdmin.set('not set', 'irrelevant'), {
+    message: 'key "not set" is not already initialized',
+  });
+});
