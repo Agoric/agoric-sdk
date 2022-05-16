@@ -75,6 +75,11 @@ const mapValues = (obj, f) =>
   // @ts-expect-error entries() loses the K type
   harden(fromEntries(entries(obj).map(([p, v]) => [p, f(v)])));
 
+/**
+ *
+ * @param {{ scratch: ERef<MapStore<string, unknown>> }} homeP
+ * @param {string} [installCacheKey]
+ */
 const makeTool = async (homeP, installCacheKey = 'installCache') => {
   /** @type {CopyMap<string, {installation: Installation, boardId: string, path?: string}>} */
   const initial = await provide(E.get(homeP).scratch, installCacheKey, () =>
@@ -108,65 +113,91 @@ const makeTool = async (homeP, installCacheKey = 'installCache') => {
     return detail.installation;
   };
 
-  const committeeProposalBuilder = async ({
-    publishRef,
-    install: install0,
-  }) => {
-    const { ROLE = 'chain' } = process.env;
+  return { wrapInstall, saveCache };
+};
 
-    const install = wrapInstall(install0);
+/**
+ *
+ * @param {object} opts
+ * @param {(i: I) => R} opts.publishRef
+ * @param {(m: string, b: string, opts?: any) => I} opts.install
+ * @param {<T>(f: T) => T} [opts.wrapInstall]
+ *
+ * @template I
+ * @template R
+ */
+export const committeeProposalBuilder = async ({
+  publishRef,
+  install: install0,
+  wrapInstall,
+}) => {
+  const { ROLE = 'chain' } = process.env;
 
-    /** @param { Record<string, [string, string]> } group */
-    const publishGroup = group =>
-      mapValues(group, ([mod, bundle]) =>
-        publishRef(install(mod, bundle, { persist: true })),
-      );
-    return harden({
-      sourceSpec: '../src/proposals/core-proposal.js',
-      getManifestCall: [
-        getManifestForEconCommittee.name,
-        {
-          ROLE,
-          installKeys: {
-            ...publishGroup(installKeyGroups.econCommittee),
-          },
+  const install = wrapInstall ? wrapInstall(install0) : install0;
+
+  /** @param { Record<string, [string, string]> } group */
+  const publishGroup = group =>
+    mapValues(group, ([mod, bundle]) =>
+      publishRef(install(mod, bundle, { persist: true })),
+    );
+  return harden({
+    sourceSpec: '../src/proposals/core-proposal.js',
+    getManifestCall: [
+      getManifestForEconCommittee.name,
+      {
+        ROLE,
+        installKeys: {
+          ...publishGroup(installKeyGroups.econCommittee),
         },
-      ],
-    });
-  };
+      },
+    ],
+  });
+};
 
-  const mainProposalBuilder = async ({ publishRef, install: install0 }) => {
-    const {
-      ROLE = 'chain',
-      VAULT_FACTORY_CONTROLLER_ADDR,
-      ANCHOR_DENOM,
-    } = process.env;
+/**
+ *
+ * @param {object} opts
+ * @param {(i: I) => R} opts.publishRef
+ * @param {(m: string, b: string, opts?: any) => I} opts.install
+ * @param {<T>(f: T) => T} [opts.wrapInstall]
+ *
+ * @template I
+ * @template R
+ */
+export const mainProposalBuilder = async ({
+  publishRef,
+  install: install0,
+  wrapInstall,
+}) => {
+  const {
+    ROLE = 'chain',
+    VAULT_FACTORY_CONTROLLER_ADDR,
+    ANCHOR_DENOM,
+  } = process.env;
 
-    const install = wrapInstall(install0);
+  const install = wrapInstall ? wrapInstall(install0) : install0;
 
-    const persist = true;
-    /** @param { Record<string, [string, string]> } group */
-    const publishGroup = group =>
-      mapValues(group, ([mod, bundle]) =>
-        publishRef(install(mod, bundle, { persist })),
-      );
-    return harden({
-      sourceSpec: '../src/proposals/core-proposal.js',
-      getManifestCall: [
-        getManifestForMain.name,
-        {
-          ROLE,
-          vaultFactoryControllerAddress: VAULT_FACTORY_CONTROLLER_ADDR,
-          installKeys: {
-            ...publishGroup(installKeyGroups.main),
-            ...publishGroup(installKeyGroups.runStake),
-            ...(ANCHOR_DENOM && publishGroup(installKeyGroups.psm)),
-          },
+  const persist = true;
+  /** @param { Record<string, [string, string]> } group */
+  const publishGroup = group =>
+    mapValues(group, ([mod, bundle]) =>
+      publishRef(install(mod, bundle, { persist })),
+    );
+  return harden({
+    sourceSpec: '../src/proposals/core-proposal.js',
+    getManifestCall: [
+      getManifestForMain.name,
+      {
+        ROLE,
+        vaultFactoryControllerAddress: VAULT_FACTORY_CONTROLLER_ADDR,
+        installKeys: {
+          ...publishGroup(installKeyGroups.main),
+          ...publishGroup(installKeyGroups.runStake),
+          ...(ANCHOR_DENOM && publishGroup(installKeyGroups.psm)),
         },
-      ],
-    });
-  };
-  return { committeeProposalBuilder, mainProposalBuilder, saveCache };
+      },
+    ],
+  });
 };
 
 // Build proposal for sim-chain etc.
@@ -228,8 +259,12 @@ export default async (homeP, endowments) => {
 
   const tool = await makeTool(homeP);
   await Promise.all([
-    writeCoreProposal('gov-econ-committee', tool.committeeProposalBuilder),
-    writeCoreProposal('gov-amm-vaults-etc', tool.mainProposalBuilder),
+    writeCoreProposal('gov-econ-committee', opts =>
+      committeeProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
+    ),
+    writeCoreProposal('gov-amm-vaults-etc', opts =>
+      mainProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
+    ),
   ]);
   await tool.saveCache();
 };
