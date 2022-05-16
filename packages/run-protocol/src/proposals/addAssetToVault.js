@@ -164,6 +164,7 @@ export const getManifestForAddAssetToVault = (
       [addInterchainAsset.name]: {
         consume: {
           board: true,
+          bankManager: true,
           agoricNamesAdmin: true,
         },
       },
