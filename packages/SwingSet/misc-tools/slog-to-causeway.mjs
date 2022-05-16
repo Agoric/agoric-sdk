@@ -239,10 +239,12 @@ async function* slogToCauseway(entries) {
             break;
           }
           case 'invoke':
+          case 'exit':
           case 'subscribe':
           case 'vatstoreGet':
           case 'vatstoreSet':
           case 'vatstoreDelete':
+          case 'vatstoreGetAfter':
           case 'dropImports':
           case 'retireImports':
           case 'retireExports':
@@ -263,12 +265,15 @@ async function* slogToCauseway(entries) {
       case 'finish-replay-delivery':
       case 'cosmic-swingset-begin-block':
       case 'cosmic-swingset-end-block-start':
+      case 'cosmic-swingset-bootstrap-block-start':
+      case 'cosmic-swingset-bootstrap-block-finish':
       case 'cosmic-swingset-end-block-finish':
       case 'cosmic-swingset-deliver-inbound':
       case 'syscall-result':
       case 'clist':
       case 'crank-start':
       case 'crank-finish':
+      case 'terminate':
         break; // irrelevant. ignore.
       case 'console':
         break; // TODO: log comment
