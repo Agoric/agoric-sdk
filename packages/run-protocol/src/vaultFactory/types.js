@@ -1,10 +1,14 @@
 // @ts-check
 
-/** @typedef {import('./vault').VaultUIState} VaultUIState */
-/** @typedef {import('./vault').Vault} Vault */
-/** @typedef {import('./vaultKit').VaultKit} VaultKit */
-/** @typedef {import('./vaultManager').VaultManager} VaultManager */
-/** @typedef {import('./vaultManager').CollateralManager} CollateralManager */
+/**
+ * @typedef {import('./vault').VaultUIState} VaultUIState
+ * @typedef {import('./vault').Vault} Vault
+ * @typedef {import('./vaultKit').VaultKit} VaultKit
+ * @typedef {import('./vaultManager').VaultManager} VaultManager
+ * @typedef {import('./vaultManager').CollateralManager} CollateralManager
+ * @typedef {import('../reserve/assetReserve.js').AssetReserveCreatorFacet} AssetReserveCreatorFacet
+ * @typedef {import('../reserve/assetReserve.js').AssetReservePublicFacet} AssetReservePublicFacet
+ */
 
 /**
  * @typedef  {object} AutoswapLocal
