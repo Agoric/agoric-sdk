@@ -14,7 +14,11 @@ import {
   makeRatio,
   floorDivideBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
+import {
+  makeNotifierKit,
+  makeSubscriptionKit,
+  observeNotifier,
+} from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 
 import { defineKindMulti, pickFacet } from '@agoric/vat-data';
@@ -60,6 +64,8 @@ const trace = makeTracer('VM', false);
  * debtBrand: Brand<'nat'>,
  * debtMint: ZCFMint<'nat'>,
  * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
+ * metricsPublication: IterationObserver<MetricsNotification>,
+ * metricsSubscription: Subscription<MetricsNotification>,
  * penaltyPoolSeat: ZCFSeat,
  * periodNotifier: ERef<Notifier<bigint>>,
  * poolIncrementSeat: ZCFSeat,
@@ -74,8 +80,6 @@ const trace = makeTracer('VM', false);
  * assetNotifier: Notifier<AssetState>,
  * assetUpdater: IterationObserver<AssetState>,
  * compoundedInterest: Ratio,
- * metricsNotifier: Notifier<MetricsNotification>,
- * metricsUpdater: IterationObserver<MetricsNotification>,
  * latestInterestUpdate: bigint,
  * liquidator?: Liquidator
  * liquidatorInstance?: Instance
@@ -128,12 +132,28 @@ const initState = (
     factoryPowers.getGovernedParams().getChargingPeriod(),
   );
 
+  const debtBrand = debtMint.getIssuerRecord().brand;
+  const totalCollateral = AmountMath.makeEmpty(collateralBrand, 'nat');
+  const totalDebt = AmountMath.makeEmpty(debtBrand, 'nat');
+
+  const { publication: metricsPublication, subscription: metricsSubscription } =
+    makeSubscriptionKit();
+  metricsPublication.updateState(
+    harden({
+      numVaults: 0,
+      totalCollateral,
+      totalDebt,
+    }),
+  );
+
   /** @type {ImmutableState} */
   const fixed = {
     collateralBrand,
-    debtBrand: debtMint.getIssuerRecord().brand,
+    debtBrand,
     debtMint,
     factoryPowers,
+    metricsSubscription,
+    metricsPublication,
     penaltyPoolSeat,
     periodNotifier,
     poolIncrementSeat: zcf.makeEmptySeatKit().zcfSeat,
@@ -145,8 +165,6 @@ const initState = (
     zcf,
   };
 
-  const totalCollateral = AmountMath.makeEmpty(fixed.collateralBrand, 'nat');
-  const totalDebt = AmountMath.makeEmpty(fixed.debtBrand, 'nat');
   const compoundedInterest = makeRatio(100n, fixed.debtBrand); // starts at 1.0, no interest
   // timestamp of most recent update to interest
   const latestInterestUpdate = startTimeStamp;
@@ -159,23 +177,12 @@ const initState = (
     }),
   );
 
-  const { updater: metricsUpdater, notifier: metricsNotifier } =
-    makeNotifierKit(
-      harden({
-        numVaults: 0,
-        totalCollateral,
-        totalDebt,
-      }),
-    );
-
   /** @type {MutableState & ImmutableState} */
   const state = {
     ...fixed,
     assetNotifier,
     assetUpdater,
     debtBrand: fixed.debtBrand,
-    metricsNotifier,
-    metricsUpdater,
     vaultCounter: 0,
     liquidator: undefined,
     liquidatorInstance: undefined,
@@ -270,7 +277,7 @@ const helperBehavior = {
       totalCollateral: state.totalCollateral,
       totalDebt: state.totalDebt,
     });
-    state.metricsUpdater.updateState(payload);
+    state.metricsPublication.updateState(payload);
   },
 
   /**
@@ -496,7 +503,7 @@ const collateralBehavior = {
   /** @param {MethodContext} context */
   getAssetNotifier: ({ state }) => state.assetNotifier,
   /** @param {MethodContext} context */
-  getMetrics: ({ state }) => state.metricsNotifier,
+  getMetrics: ({ state }) => state.metricsSubscription,
   /** @param {MethodContext} context */
   getCompoundedInterest: ({ state }) => state.compoundedInterest,
 };

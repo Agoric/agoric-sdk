@@ -18,7 +18,7 @@ import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { defineKindMulti } from '@agoric/vat-data';
-import { makeNotifierKit, observeIteration } from '@agoric/notifier';
+import { makeSubscriptionKit, observeIteration } from '@agoric/notifier';
 import { makeVaultManager } from './vaultManager.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import {
@@ -42,12 +42,12 @@ const { details: X } = assert;
  * collateralTypes: Store<Brand,VaultManager>,
  * electionManager: Instance,
  * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>,
+ * metricsPublication: IterationObserver<MetricsNotification>
+ * metricsSubscription: Subscription<MetricsNotification>
  * mintSeat: ZCFSeat,
  * penaltyPoolSeat: ZCFSeat,
  * rewardPoolSeat: ZCFSeat,
  * vaultParamManagers: Store<Brand, import('./params.js').VaultParamManager>,
- * metricsNotifier: Notifier<MetricsNotification>
- * metricsUpdater: IterationObserver<MetricsNotification>
  * zcf: import('./vaultFactory.js').VaultFactoryZCF,
  * }>} ImmutableState
  *
@@ -78,15 +78,15 @@ const initState = (zcf, directorParamManager, debtMint) => {
 
   const vaultParamManagers = makeScalarMap('brand');
 
-  const { notifier: metricsNotifier, updater: metricsUpdater } =
-    makeNotifierKit();
+  const { publication: metricsPublication, subscription: metricsSubscription } =
+    makeSubscriptionKit();
 
   return {
     collateralTypes,
     debtMint,
     directorParamManager,
-    metricsNotifier,
-    metricsUpdater,
+    metricsSubscription,
+    metricsPublication,
     mintSeat,
     penaltyPoolSeat,
     rewardPoolSeat,
@@ -333,7 +333,7 @@ const machineBehavior = {
       penaltyPoolAllocation: state.penaltyPoolSeat.getCurrentAllocation(),
       rewardPoolAllocation: state.rewardPoolSeat.getCurrentAllocation(),
     });
-    state.metricsUpdater.updateState(metrics);
+    state.metricsPublication.updateState(metrics);
   },
 
   // XXX accessors for tests
@@ -391,7 +391,7 @@ const publicBehavior = {
   /**
    * @param {MethodContext} context
    */
-  getMetrics: ({ state }) => state.metricsNotifier,
+  getMetrics: ({ state }) => state.metricsSubscription,
 
   /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
   makeLoanInvitation: makeVaultInvitation,

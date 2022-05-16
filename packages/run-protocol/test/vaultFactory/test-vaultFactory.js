@@ -40,6 +40,7 @@ import {
   installGovernance,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
+import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 
 // #region Support
 
@@ -2355,9 +2356,11 @@ test('director notifiers', async t => {
 
   const { lender, vaultFactory } = services.vaultFactory;
 
-  const econ = await E(lender).getMetrics();
+  /** @type {Subscription<MetricsNotification>} */
+  const metricsSub = await E(lender).getMetrics();
+  const metrics = makeNotifierFromAsyncIterable(metricsSub);
 
-  let state = await E(econ).getUpdateSince();
+  let state = await E(metrics).getUpdateSince();
   t.deepEqual(state.value, {
     collaterals: [aethBrand],
     penaltyPoolAllocation: {},
@@ -2371,7 +2374,7 @@ test('director notifiers', async t => {
     'Chit',
     defaultParamValues(chit.brand),
   );
-  state = await E(econ).getUpdateSince(state.updateCount);
+  state = await E(metrics).getUpdateSince(state.updateCount);
   t.deepEqual(state.value, {
     collaterals: [aethBrand, chit.brand],
     penaltyPoolAllocation: {},
@@ -2396,8 +2399,10 @@ test('manager notifiers', async t => {
   const { aethVaultManager, lender } = services.vaultFactory;
   const cm = await E(aethVaultManager).getPublicFacet();
 
-  const econ = await E(cm).getMetrics();
-  let state = await E(econ).getUpdateSince();
+  /** @type {Subscription<MetricsNotification>} */
+  const metricsSub = await E(cm).getMetrics();
+  const metrics = makeNotifierFromAsyncIterable(metricsSub);
+  let state = await E(metrics).getUpdateSince();
   t.deepEqual(state.value, {
     numVaults: 0,
     totalCollateral: AmountMath.makeEmpty(aethKit.brand),
@@ -2421,7 +2426,7 @@ test('manager notifiers', async t => {
 
   await E(vaultSeat).getOfferResult();
 
-  state = await E(econ).getUpdateSince(state.updateCount);
+  state = await E(metrics).getUpdateSince(state.updateCount);
   t.deepEqual(state.value, {
     numVaults: 1,
     totalCollateral: collateralAmount,
