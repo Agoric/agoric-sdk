@@ -2409,8 +2409,8 @@ test('manager notifiers', async t => {
     totalDebt: AmountMath.makeEmpty(t.context.runKit.brand),
   });
 
-  // Create a loan for 470 RUN with 1100 aeth collateral
-  const collateralAmount = AmountMath.make(aethKit.brand, 1100n);
+  // Create a loan for 470 RUN with 210_000 aeth collateral
+  const collateralAmount = AmountMath.make(aethKit.brand, 210_000n);
   const loanAmount = AmountMath.make(runKit.brand, 470n);
   /** @type {UserSeat<VaultKit>} */
   const vaultSeat = await E(services.zoe).offer(
@@ -2431,5 +2431,13 @@ test('manager notifiers', async t => {
     numVaults: 1,
     totalCollateral: collateralAmount,
     totalDebt: AmountMath.make(runKit.brand, 494n), // 470 plus fee
+  });
+
+  await E(aethVaultManager).liquidateAll();
+  state = await E(metrics).getUpdateSince(state.updateCount);
+  t.deepEqual(state.value, {
+    numVaults: 0,
+    totalCollateral: collateralAmount,
+    totalDebt: AmountMath.make(runKit.brand, 48n), // FIXME none should be left
   });
 });

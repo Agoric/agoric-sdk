@@ -336,6 +336,9 @@ const helperBehavior = {
     trace('update quote', highestDebtRatio);
   },
 
+  /**
+   * @param {MethodContext} context
+   */
   processLiquidations: async ({ state, facets }) => {
     const { prioritizedVaults, priceAuthority } = state;
     const govParams = state.factoryPowers.getGovernedParams();
@@ -410,6 +413,7 @@ const helperBehavior = {
       .then(() => {
         prioritizedVaults.removeVault(key);
         trace('liquidated');
+        facets.helper.updateMetrics();
       })
       .catch(e => {
         // XXX should notify interested parties
@@ -467,6 +471,7 @@ const managerBehavior = {
    * @param {ZCFSeat} seat
    */
   burnAndRecord: ({ state }, toBurn, seat) => {
+    trace('burnAndRecord', { toBurn, totalDebt: state.totalDebt });
     const { burnDebt } = state.factoryPowers;
     burnDebt(toBurn, seat);
     state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);

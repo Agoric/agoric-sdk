@@ -69,7 +69,7 @@ const liquidate = async (
     'Collateral',
     collateralBrand,
   );
-  trace(`liq prep`, collateralToSell, debtBeforePenalty, debt);
+  trace(`liq prep`, { collateralToSell, debtBeforePenalty, debt });
 
   const { deposited, userSeatPromise: liqSeat } = await offerTo(
     zcf,
@@ -83,7 +83,6 @@ const liquidate = async (
     vaultZcfSeat,
     harden({ debt }),
   );
-  trace(` offeredTo`, collateralToSell, debt);
 
   // await deposited, but we don't need the value.
   await Promise.all([deposited, E(liqSeat).getOfferResult()]);
