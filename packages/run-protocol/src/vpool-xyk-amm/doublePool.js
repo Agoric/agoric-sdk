@@ -104,6 +104,18 @@ export const makeDoublePool = (
       protocolFeeRatio,
       poolFeeRatioCentral,
     );
+
+    // When finalInPoolPrices has a price improvement that makes the difference
+    // between finalInPoolPrices.yDecrement and outPoolPrices.xIncrement more
+    // than the calculated protocol fees add the excess to the protocol fee.
+    const protocolFee = AmountMath.max(
+      AmountMath.add(finalInPoolPrices.protocolFee, outPoolPrices.protocolFee),
+      AmountMath.subtract(
+        finalInPoolPrices.yDecrement,
+        outPoolPrices.xIncrement,
+      ),
+    );
+
     return harden({
       swapperGives: finalInPoolPrices.swapperGives,
       swapperGets: outPoolPrices.swapperGets,
@@ -111,10 +123,7 @@ export const makeDoublePool = (
       inPoolDecrement: finalInPoolPrices.yDecrement,
       outPoolIncrement: outPoolPrices.xIncrement,
       outPoolDecrement: outPoolPrices.yDecrement,
-      protocolFee: AmountMath.add(
-        finalInPoolPrices.protocolFee,
-        outPoolPrices.protocolFee,
-      ),
+      protocolFee,
     });
   };
 

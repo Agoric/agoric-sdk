@@ -12,7 +12,13 @@ const voPoolTest = async (t, mutation, postTest) => {
   let makePool;
   const { zoe, zcf } = await setupZCFTest();
   const invitation = await zcf.makeInvitation(() => {}, 'fake invitation');
-  const paramManager = await makeAmmParamManager(zoe, 25n, 5n, invitation);
+  const paramManager = await makeAmmParamManager(
+    zoe,
+    25n,
+    5n,
+    100n,
+    invitation,
+  );
   const { brand: centralBrand } = makeIssuerKit('central');
   const { brand: secondaryBrand } = makeIssuerKit('secondary');
   const quoteIssuerKit = makeIssuerKit('Quotes');

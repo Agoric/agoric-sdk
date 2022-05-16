@@ -157,25 +157,31 @@ export const startInterchainPool = async (
 };
 harden(startInterchainPool);
 
-/** @param { EconomyBootstrapPowers } powers */
-export const setupAmm = async ({
-  consume: {
-    chainTimerService,
-    zoe,
-    economicCommitteeCreatorFacet: committeeCreator,
+/**
+ * @param { EconomyBootstrapPowers } powers
+ * @param { bigint }  minInitialPoolLiquidity
+ */
+export const setupAmm = async (
+  {
+    consume: {
+      chainTimerService,
+      zoe,
+      economicCommitteeCreatorFacet: committeeCreator,
+    },
+    produce: { ammCreatorFacet, ammGovernorCreatorFacet },
+    issuer: {
+      consume: { [CENTRAL_ISSUER_NAME]: centralIssuer },
+    },
+    instance: {
+      consume: { economicCommittee: electorateInstance },
+      produce: { amm: ammInstanceProducer, ammGovernor },
+    },
+    installation: {
+      consume: { contractGovernor: governorInstallation, amm: ammInstallation },
+    },
   },
-  produce: { ammCreatorFacet, ammGovernorCreatorFacet },
-  issuer: {
-    consume: { [CENTRAL_ISSUER_NAME]: centralIssuer },
-  },
-  instance: {
-    consume: { economicCommittee: electorateInstance },
-    produce: { amm: ammInstanceProducer, ammGovernor },
-  },
-  installation: {
-    consume: { contractGovernor: governorInstallation, amm: ammInstallation },
-  },
-}) => {
+  { minInitialPoolLiquidity = 1_000_000_000n },
+) => {
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
   const [poserInvitation, poserInvitationAmount] = await Promise.all([
     poserInvitationP,
@@ -184,7 +190,11 @@ export const setupAmm = async ({
 
   const timer = await chainTimerService; // avoid promise for legibility
 
-  const ammTerms = makeAmmTerms(timer, poserInvitationAmount);
+  const ammTerms = makeAmmTerms(
+    timer,
+    poserInvitationAmount,
+    minInitialPoolLiquidity,
+  );
 
   const ammGovernorTerms = {
     timer,

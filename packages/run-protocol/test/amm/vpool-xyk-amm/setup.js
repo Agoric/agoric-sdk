@@ -93,7 +93,7 @@ export const setupAmmServices = async (
     startEconomicCommittee(space, {
       options: { econCommitteeOptions: electorateTerms },
     }),
-    setupAmm(space),
+    setupAmm(space, 1000n),
   ]);
 
   const installs = await Collect.allValues({

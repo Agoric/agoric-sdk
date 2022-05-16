@@ -8,7 +8,7 @@ import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 
 import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
-import { makeAddPool } from './addPool.js';
+import { makeAddIssuer, makeAddPoolInvitation } from './addPool.js';
 import { publicPrices } from './pool.js';
 import {
   makeMakeAddLiquidityInvitation,
@@ -20,7 +20,11 @@ import '@agoric/zoe/exported.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeMakeSwapInvitation } from './swap.js';
 import { makeDoublePool } from './doublePool.js';
-import { POOL_FEE_KEY, PROTOCOL_FEE_KEY } from './params.js';
+import {
+  POOL_FEE_KEY,
+  PROTOCOL_FEE_KEY,
+  MIN_INITIAL_POOL_LIQUIDITY_KEY,
+} from './params.js';
 
 const { quote: q, details: X } = assert;
 
@@ -104,6 +108,7 @@ const start = async (zcf, privateArgs) => {
    * @typedef {GovernanceTerms<{
    *   PoolFee: 'nat',
    *   ProtocolFee: 'nat',
+   *   MinInitialPoolLiquidity: 'nat',
    * }> & {
    *   brands: { Central: Brand },
    *   issuers: {},
@@ -128,6 +133,7 @@ const start = async (zcf, privateArgs) => {
     handleParamGovernance(zcf, privateArgs.initialPoserInvitation, {
       [POOL_FEE_KEY]: ParamTypes.NAT,
       [PROTOCOL_FEE_KEY]: ParamTypes.NAT,
+      [MIN_INITIAL_POOL_LIQUIDITY_KEY]: ParamTypes.NAT,
     }),
     E(centralBrand).getDisplayInfo(),
   ]);
@@ -147,24 +153,37 @@ const start = async (zcf, privateArgs) => {
   const initPool = secondaryBrandToPool.init;
   const isSecondary = secondaryBrandToPool.has;
 
+  // The liquidityBrand has to exist to allow the addPool Offer to specify want
+  const secondaryBrandToLiquidityMint = makeWeakStore('secondaryBrand');
+
   const quoteIssuerKit = makeIssuerKit('Quote', AssetKind.SET);
 
   // For now, this seat collects protocol fees. It needs to be connected to
   // something that will extract the fees.
   const { zcfSeat: protocolSeat } = zcf.makeEmptySeatKit();
 
+  // todo(hibbert): give reserve the abilty to collect this.
+  const { zcfSeat: reserveLiquidityTokenSeat } = zcf.makeEmptySeatKit();
+
   const getLiquiditySupply = brand => getPool(brand).getLiquiditySupply();
   const getLiquidityIssuer = brand => getPool(brand).getLiquidityIssuer();
-  const addPool = makeAddPool(
+  const addPoolInvitation = makeAddPoolInvitation(
     zcf,
-    isSecondary,
     initPool,
     centralBrand,
     timer,
     quoteIssuerKit,
     params,
     protocolSeat,
+    reserveLiquidityTokenSeat,
+    secondaryBrandToLiquidityMint,
   );
+  const addIssuer = makeAddIssuer(
+    zcf,
+    isSecondary,
+    secondaryBrandToLiquidityMint,
+  );
+
   /** @param {Brand} brand */
   const getPoolAllocation = brand =>
     getPool(brand).getPoolSeat().getCurrentAllocation();
@@ -241,7 +260,8 @@ const start = async (zcf, privateArgs) => {
   /** @type {XYKAMMPublicFacet} */
   const publicFacet = augmentPublicFacet(
     Far('AMM public facet', {
-      addPool,
+      addPoolInvitation,
+      addIssuer,
       getPoolAllocation,
       getLiquidityIssuer,
       getLiquiditySupply,
@@ -277,5 +297,6 @@ export { start };
  * @typedef {object} AMMParamGetters
  * @property {() => NatValue} getPoolFee
  * @property {() => NatValue} getProtocolFee
+ * @property {() => NatValue} getMinInitialPoolLiquidity
  * @property {() => Amount} getElectorate
  */

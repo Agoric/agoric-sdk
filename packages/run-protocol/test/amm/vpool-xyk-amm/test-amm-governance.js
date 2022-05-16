@@ -10,6 +10,7 @@ import { CONTRACT_ELECTORATE } from '@agoric/governance';
 
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
+  MIN_INITIAL_POOL_LIQUIDITY_KEY,
   POOL_FEE_KEY,
   PROTOCOL_FEE_KEY,
 } from '../../../src/vpool-xyk-amm/params.js';
@@ -56,6 +57,10 @@ test('amm change param via Governance', async t => {
       [POOL_FEE_KEY]: {
         type: 'nat',
         value: 24n,
+      },
+      [MIN_INITIAL_POOL_LIQUIDITY_KEY]: {
+        type: 'nat',
+        value: 1000n,
       },
       [PROTOCOL_FEE_KEY]: {
         type: 'nat',
@@ -115,19 +120,17 @@ test('price check after Governance param change', async t => {
   // Let's assume that central tokens are worth 2x as much as moola
   const aliceCentralPayment = centralR.mint.mintPayment(centralTokens(50000n));
 
-  const aliceAddLiquidityInvitation = E(
-    amm.ammPublicFacet,
-  ).makeAddLiquidityInvitation();
-
-  const moolaLiquidityIssuer = await E(amm.ammPublicFacet).addPool(
+  const moolaLiquidityIssuer = await E(amm.ammPublicFacet).addIssuer(
     moolaR.issuer,
     'Moola',
   );
+  const aliceAddLiquidityInvitation = E(amm.ammPublicFacet).addPoolInvitation();
+
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
   const moolaLiquidity = value => AmountMath.make(moolaLiquidityBrand, value);
 
   const aliceProposal = harden({
-    want: { Liquidity: moolaLiquidity(50000n) },
+    want: { Liquidity: moolaLiquidity(40000n) },
     give: { Secondary: moola(100000n), Central: centralTokens(50000n) },
   });
   const alicePayments = {
@@ -163,6 +166,10 @@ test('price check after Governance param change', async t => {
       ProtocolFee: {
         type: 'nat',
         value: 6n,
+      },
+      MinInitialPoolLiquidity: {
+        type: 'nat',
+        value: 1000n,
       },
       Electorate: {
         type: 'invitation',

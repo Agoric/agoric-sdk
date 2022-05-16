@@ -3,7 +3,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
@@ -78,19 +78,19 @@ const makeLiquidityInvitations = async (
     });
     const alicePayments = { Liquidity: liquidityTokens };
 
-    const addLiquiditySeat = await E(zoe).offer(
+    const removeLiquiditySeat = await E(zoe).offer(
       removeLiquidityInvitation,
       aliceProposal,
       alicePayments,
     );
 
     t.is(
-      await E(addLiquiditySeat).getOfferResult(),
+      await E(removeLiquiditySeat).getOfferResult(),
       'Liquidity successfully removed.',
       `Alice removed liquidity`,
     );
 
-    return E(addLiquiditySeat).getPayouts();
+    return E(removeLiquiditySeat).getPayouts();
   };
   return { addLiquidity, removeLiquidity };
 };
@@ -138,10 +138,14 @@ const makeAssertPayouts = (
 };
 
 test('amm add and remove liquidity', async t => {
+  const centralLiquidityValue = 1_500_000_000n;
+  const secondaryLiquidityValue = 300_000_000n;
+
   // Set up central token
   const centralR = makeIssuerKit('central');
   const moolaR = makeIssuerKit('moola');
   const moola = value => AmountMath.make(moolaR.brand, value);
+  const central = value => AmountMath.make(centralR.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   // This timer is only used to build quotes. Let's make it non-zero
@@ -153,11 +157,43 @@ test('amm add and remove liquidity', async t => {
     centralR,
     timer,
   );
-  const moolaLiquidityIssuer = await E(amm.ammPublicFacet).addPool(
+
+  const liquidityIssuer = await E(amm.ammPublicFacet).addIssuer(
     moolaR.issuer,
     'Moola',
   );
-  const liquidityBrand = await E(moolaLiquidityIssuer).getBrand();
+  const liquidityBrand = await E(liquidityIssuer).getBrand();
+  const addPoolInvitation = await E(amm.ammPublicFacet).addPoolInvitation();
+
+  const proposal = harden({
+    give: {
+      Secondary: moola(secondaryLiquidityValue),
+      Central: central(centralLiquidityValue),
+    },
+    want: { Liquidity: AmountMath.make(liquidityBrand, 1000n) },
+  });
+  const payments = {
+    Secondary: moolaR.mint.mintPayment(moola(secondaryLiquidityValue)),
+    Central: centralR.mint.mintPayment(central(centralLiquidityValue)),
+  };
+
+  const addLiquiditySeat = await E(zoe).offer(
+    addPoolInvitation,
+    proposal,
+    payments,
+  );
+  t.is(
+    await E(addLiquiditySeat).getOfferResult(),
+    'Added liquidity.',
+    `Added Moola and Central Liquidity`,
+  );
+
+  const alloc = await E(addLiquiditySeat).getCurrentAllocation();
+  t.deepEqual(alloc, {
+    Central: central(0n),
+    Liquidity: AmountMath.make(liquidityBrand, 1_499_999_000n),
+    Secondary: moola(0n),
+  });
 
   const allocation = (c, l, s) => ({
     Central: AmountMath.make(centralR.brand, c),
@@ -170,11 +206,11 @@ test('amm add and remove liquidity', async t => {
     amm,
     moolaR,
     centralR,
-    moolaLiquidityIssuer,
+    liquidityIssuer,
   );
   const assertPayouts = makeAssertPayouts(
     t,
-    moolaLiquidityIssuer,
+    liquidityIssuer,
     liquidityBrand,
     centralR,
     moolaR,
@@ -182,11 +218,15 @@ test('amm add and remove liquidity', async t => {
 
   t.deepEqual(
     await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
-    {},
-    `The poolAllocation object values for moola should be empty`,
+    {
+      Central: central(centralLiquidityValue),
+      Liquidity: AmountMath.makeEmpty(liquidityBrand),
+      Secondary: moola(secondaryLiquidityValue),
+    },
+    `The pool will hava an initial Allocation`,
   );
 
-  // add initial liquidity at 10_000:50_000
+  // add liquidity at 10_000:50_000
   const {
     Central: c1,
     Liquidity: l1,
@@ -196,7 +236,11 @@ test('amm add and remove liquidity', async t => {
   await assertPayouts(l1, 50_000n, c1, 0n, s1, 0n);
   t.deepEqual(
     await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
-    allocation(50_000n, 0n, 10000n),
+    allocation(
+      centralLiquidityValue + 50_000n,
+      0n,
+      secondaryLiquidityValue + 10000n,
+    ),
     `poolAllocation after initialization`,
   );
 
@@ -208,14 +252,18 @@ test('amm add and remove liquidity', async t => {
   } = await addLiquidity(20_000n, 70_000n);
   // After the trade, this will increase the pool by about 140%
   await assertPayouts(l2, 70_000n, c2, 0n, s2, 6000n);
-  // The pool should now have 50K + 70K and 10K + 20K
+  // The pool should now have grown by 50K + 70K and 24K
   t.deepEqual(
     await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
-    allocation(120_000n, 0n, 24_000n),
-    `poolAllocation after initialization`,
+    allocation(
+      centralLiquidityValue + 120_000n,
+      0n,
+      secondaryLiquidityValue + 24_000n,
+    ),
+    `poolAllocation after adding more`,
   );
 
-  const [l40Payment, _l30Payment] = await E(moolaLiquidityIssuer).split(
+  const [l40Payment, _l30Payment] = await E(liquidityIssuer).split(
     l2,
     AmountMath.make(liquidityBrand, 40_000n),
   );
@@ -229,7 +277,11 @@ test('amm add and remove liquidity', async t => {
   await assertPayouts(l3, 0n, c3, 40_000n, s3, 8000n);
   t.deepEqual(
     await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
-    allocation(80_000n, 40_000n, 16_000n),
-    `poolAllocation after initialization`,
+    allocation(
+      centralLiquidityValue + 80_000n,
+      40_000n,
+      secondaryLiquidityValue + 16_000n,
+    ),
+    `poolAllocation after removing liquidity`,
   );
 });

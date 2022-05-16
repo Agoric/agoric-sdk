@@ -1,53 +1,15 @@
 // @ts-check
 
 import { E } from '@endo/eventual-send';
-import { AssetKind } from '@agoric/ertp';
+import { AmountMath, AssetKind } from '@agoric/ertp';
+import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { definePoolKind } from './pool.js';
 
 const { details: X } = assert;
 
-/**
- * @param {ZCF} zcf
- * @param {(brand: Brand) => boolean} isInSecondaries true if brand is known secondary
- * @param {(brand: Brand, pool: PoolFacets) => void} initPool add new pool to store
- * @param {Brand} centralBrand
- * @param {ERef<Timer>} timer
- * @param {IssuerKit} quoteIssuerKit
- * @param {import('./multipoolMarketMaker.js').AMMParamGetters} params retrieve governed params
- * @param {ZCFSeat} protocolSeat seat that holds collected fees
- */
-export const makeAddPool = (
-  zcf,
-  isInSecondaries,
-  initPool,
-  centralBrand,
-  timer,
-  quoteIssuerKit,
-  params,
-  protocolSeat,
-) => {
-  const makePool = definePoolKind(
-    zcf,
-    centralBrand,
-    timer,
-    quoteIssuerKit,
-    params,
-    protocolSeat,
-  );
-
-  /**
-   * Allows users to add new liquidity pools. `secondaryIssuer` and
-   * its keyword must not have been already used
-   *
-   * @param {ERef<Issuer>} secondaryIssuer
-   * @param {Keyword} keyword - will be used in the
-   * terms.issuers for the contract, but not used otherwise
-   */
-  const addPool = async (secondaryIssuer, keyword) => {
-    const liquidityKeyword = `${keyword}Liquidity`;
-    zcf.assertUniqueKeyword(liquidityKeyword);
-
+export const makeAddIssuer = (zcf, isInSecondaries, brandToLiquidityMint) => {
+  return async (secondaryIssuer, keyword) => {
     const [secondaryAssetKind, secondaryBrand] = await Promise.all([
       E(secondaryIssuer).getAssetKind(),
       E(secondaryIssuer).getBrand(),
@@ -61,23 +23,135 @@ export const makeAddPool = (
       secondaryAssetKind === AssetKind.NAT,
       X`${keyword} asset not fungible (must use NAT math)`,
     );
+    const liquidityKeyword = `${keyword}Liquidity`;
+    zcf.assertUniqueKeyword(liquidityKeyword);
 
-    // COMMIT POINT
-    // We've checked all the foreseeable exceptions (except
-    // zcf.assertUniqueKeyword(keyword), which will be checked by saveIssuer()
-    // before proceeding), so we can do the work now.
-    await zcf.saveIssuer(secondaryIssuer, keyword);
-    const liquidityZCFMint = await zcf.makeZCFMint(
-      liquidityKeyword,
-      AssetKind.NAT,
-      harden({ decimalPlaces: 6 }),
+    return E.when(
+      zcf.makeZCFMint(
+        liquidityKeyword,
+        AssetKind.NAT,
+        harden({ decimalPlaces: 6 }),
+      ),
+      mint => {
+        zcf.saveIssuer(secondaryIssuer, keyword);
+        brandToLiquidityMint.init(secondaryBrand, mint);
+        const { issuer: liquidityIssuer } = mint.getIssuerRecord();
+        return liquidityIssuer;
+      },
     );
+  };
+};
+
+/**
+ * @param {ZCF} zcf
+ * @param {(brand: Brand, pool: PoolFacets) => void} initPool add new pool to store
+ * @param {Brand} centralBrand
+ * @param {ERef<Timer>} timer
+ * @param {IssuerKit} quoteIssuerKit
+ * @param {import('./multipoolMarketMaker.js').AMMParamGetters} params retrieve governed params
+ * @param {ZCFSeat} protocolSeat seat that holds collected fees
+ * @param {ZCFSeat} reserveLiquidityTokenSeat seat that holds liquidity tokens
+ *   from adding pool liquidity. It is expected to be collected by the Reserve.
+ * @param {WeakStore<Brand,ZCFMint>} brandToLiquidityMint
+ */
+export const makeAddPoolInvitation = (
+  zcf,
+  initPool,
+  centralBrand,
+  timer,
+  quoteIssuerKit,
+  params,
+  protocolSeat,
+  reserveLiquidityTokenSeat,
+  brandToLiquidityMint,
+) => {
+  const makePool = definePoolKind(
+    zcf,
+    centralBrand,
+    timer,
+    quoteIssuerKit,
+    params,
+    protocolSeat,
+  );
+
+  /** @type {(Brand) => Promise<{poolFacets: PoolFacets, liquidityZcfMint: ZCFMint}>} */
+  const addPool = async secondaryBrand => {
+    const liquidityZcfMint = brandToLiquidityMint.get(secondaryBrand);
+
     const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
-    const pool = makePool(liquidityZCFMint, poolSeat, secondaryBrand);
-    // @ts-expect-error xxx fix types
-    initPool(secondaryBrand, pool);
-    return liquidityZCFMint.getIssuerRecord().issuer;
+    /** @type {PoolFacets} */
+    // @ts-expect-error cast
+    const poolFacets = makePool(liquidityZcfMint, poolSeat, secondaryBrand);
+
+    initPool(secondaryBrand, poolFacets);
+    return { liquidityZcfMint, poolFacets };
   };
 
-  return addPool;
+  /** @param {ZCFSeat} seat */
+  const addPoolAndLiquidityHandler = async seat => {
+    assertProposalShape(seat, {
+      give: { Central: null, Secondary: null },
+    });
+
+    const {
+      give: { Central: centralAmount, Secondary: secondaryAmount },
+      want: proposalWant,
+    } = seat.getProposal();
+    const secondaryBrand = secondaryAmount.brand;
+
+    const { brand: liquidityBrand, issuer } = brandToLiquidityMint
+      .get(secondaryBrand)
+      .getIssuerRecord();
+
+    const minPoolLiquidity = params.getMinInitialPoolLiquidity();
+
+    if (proposalWant.Liquidity) {
+      const { Liquidity: wantLiquidityAmount } = proposalWant;
+      // @ts-expect-error central is NAT
+      const liquidityTokensForFunder = centralAmount.value - minPoolLiquidity;
+      const funderLiquidityAmount = AmountMath.make(
+        liquidityBrand,
+        liquidityTokensForFunder,
+      );
+
+      assert(
+        AmountMath.isGTE(funderLiquidityAmount, wantLiquidityAmount),
+        X`Requested too many liquidity tokens (${wantLiquidityAmount}, max: ${funderLiquidityAmount}`,
+      );
+    }
+
+    const {
+      poolFacets: { pool, helper },
+    } = await addPool(secondaryBrand);
+
+    assert(
+      centralAmount.value >= minPoolLiquidity,
+      `The minimum initial liquidity is ${minPoolLiquidity}, rejecting ${centralAmount}`,
+    );
+
+    helper.addLiquidityInternal(seat, secondaryAmount, centralAmount);
+
+    const totalNewLiquidity = seat.getAmountAllocated('Liquidity');
+    const minLiqAmount = AmountMath.make(
+      totalNewLiquidity.brand,
+      minPoolLiquidity,
+    );
+
+    // @ts-ignore TS unhappy about issuers
+    const [liquidityKeyword] = Object.entries(zcf.getTerms().issuers).find(
+      ([_, i]) => i === issuer,
+    );
+
+    seat.decrementBy({ Liquidity: minLiqAmount });
+    reserveLiquidityTokenSeat.incrementBy({ [liquidityKeyword]: minLiqAmount });
+    zcf.reallocate(reserveLiquidityTokenSeat, seat);
+    seat.exit();
+    pool.updateState();
+    brandToLiquidityMint.delete(secondaryBrand);
+
+    return 'Added liquidity.';
+  };
+
+  return () =>
+    zcf.makeInvitation(addPoolAndLiquidityHandler, 'Add Pool and Liquidity');
 };

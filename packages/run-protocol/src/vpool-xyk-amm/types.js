@@ -55,6 +55,14 @@
  */
 
 /**
+ * @callback AddLiquidityInternal
+ * @param {ZCFSeat} zcfSeat
+ * @param {Amount<'nat'>} secondaryAmount
+ * @param {Amount<'nat'>} poolCentralAmount
+ * @param {ZCFSeat} [feeSeat]
+ */
+
+/**
  * @typedef {object} XYKPool
  * @property {() => bigint} getLiquiditySupply
  * @property {() => Issuer} getLiquidityIssuer
@@ -73,7 +81,7 @@
 /**
  * @typedef {object} PoolFacets
  * @property {XYKPool} pool
- * @property {{addLiquidityActual: AddLiquidityActual}} helper
+ * @property {{addLiquidityActual: AddLiquidityActual, addLiquidityInternal: AddLiquidityInternal}} helper
  * @property {VirtualPool} singlePool
  */
 
@@ -83,8 +91,9 @@
  */
 /**
  * @typedef {object} XYKAMMPublicFacet
- * @property {(issuer: ERef<Issuer>, keyword: Keyword) => Promise<Issuer>} addPool
+ * @property {() => Promise<Invitation>} addPoolInvitation
  * add a new liquidity pool
+ * @property {(secondaryIssuer: ERef<Issuer>, keyword: Keyword) => Promise<Issuer>} addIssuer
  * @property {() => Promise<Invitation>} makeSwapInvitation synonym for
  * makeSwapInInvitation
  * @property {() => Promise<Invitation>} makeSwapInInvitation make an invitation

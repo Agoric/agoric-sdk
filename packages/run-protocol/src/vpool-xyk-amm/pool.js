@@ -56,7 +56,7 @@ export const publicPrices = prices => {
  * }} MethodContext
  */
 
-const updateUpdaterState = (updater, pool) =>
+export const updateUpdaterState = (updater, pool) =>
   // TODO: when governance can change the interest rate, include it here
   updater.updateState({
     central: pool.getCentralAmount(),
@@ -64,23 +64,19 @@ const updateUpdaterState = (updater, pool) =>
   });
 
 const helperBehavior = {
-  /** @type {import('@agoric/vat-data/src/types').PlusContext<MethodContext, AddLiquidityActual>} */
-  addLiquidityActual: (
+  addLiquidityInternal: (
     { state },
-    pool,
     zcfSeat,
     secondaryAmount,
     poolCentralAmount,
     feeSeat,
   ) => {
-    const { poolSeat, liquidityBrand, liquidityZcfMint, updater, zcf } = state;
-
+    const { poolSeat, liquidityBrand, liquidityZcfMint, zcf } = state;
     // addLiquidity can't be called until the pool has been created. We verify
     // that the asset is NAT before creating a pool.
 
     const liquidityValueOut = calcLiqValueToMint(
       state.liqTokenSupply,
-      // @ts-expect-error NatValue cast
       zcfSeat.getStagedAllocation().Central.value,
       poolCentralAmount.value,
     );
@@ -112,6 +108,23 @@ const helperBehavior = {
     } else {
       zcf.reallocate(poolSeat, zcfSeat);
     }
+  },
+  addLiquidityActual: (
+    { state, facets: { helper } },
+    pool,
+    zcfSeat,
+    secondaryAmount,
+    poolCentralAmount,
+    feeSeat,
+  ) => {
+    const { updater } = state;
+
+    helper.addLiquidityInternal(
+      zcfSeat,
+      secondaryAmount,
+      poolCentralAmount,
+      feeSeat,
+    );
     zcfSeat.exit();
     updateUpdaterState(updater, pool);
     return 'Added liquidity.';
@@ -140,6 +153,7 @@ const poolBehavior = {
     assert(isNatValue(secondaryIn.value), 'User Secondary');
 
     if (state.liqTokenSupply === 0n) {
+      // @ts-expect-error TS confused about parameter count
       return helper.addLiquidityActual(pool, zcfSeat, secondaryIn, centralIn);
     }
 
@@ -167,6 +181,7 @@ const poolBehavior = {
     );
 
     return helper.addLiquidityActual(
+      // @ts-expect-error TS confused about parameter count
       pool,
       zcfSeat,
       secondaryRequired,

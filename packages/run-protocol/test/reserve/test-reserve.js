@@ -15,11 +15,71 @@ import { unsafeMakeBundleCache } from '../bundleTool.js';
 // Some notifier updates aren't propogating sufficiently quickly for the tests.
 // This invocation (thanks to Warner) waits for all promises that can fire to
 // have all their callbacks run
-async function waitForPromisesToSettle() {
+const waitForPromisesToSettle = async () => {
   const pk = makePromiseKit();
   setImmediate(pk.resolve);
   return pk.promise;
-}
+};
+
+const addLiquidPool = async (
+  runPayment,
+  runIssuer,
+  space,
+  t,
+  moola,
+  moolaR,
+  zoe,
+) => {
+  const poolVal = 1000n;
+  const { ammPublicFacet } = space.amm;
+
+  const runAmount = await E(runIssuer).getAmountOf(runPayment);
+  const ammProposal = harden({
+    give: {
+      Secondary: moola(poolVal),
+      Central: runAmount,
+    },
+  });
+  const ammPayments = {
+    Secondary: moolaR.mint.mintPayment(moola(poolVal)),
+    Central: runPayment,
+  };
+
+  await E(ammPublicFacet).addIssuer(moolaR.issuer, 'Moola');
+  const addPoolInvitation = await E(ammPublicFacet).addPoolInvitation();
+
+  const addLiquiditySeat = await E(zoe).offer(
+    addPoolInvitation,
+    ammProposal,
+    ammPayments,
+  );
+  return E(addLiquiditySeat).getOfferResult();
+};
+
+const getRunFromFaucet = async (
+  zoe,
+  feeMintAccess,
+  faucetInstallation,
+  runInitialLiquidity,
+) => {
+  // On-chain, there will be pre-existing RUN. The faucet replicates that
+  const { creatorFacet: faucetCreator } = await E(zoe).startInstance(
+    faucetInstallation,
+    {},
+    {},
+    harden({ feeMintAccess }),
+  );
+  const faucetSeat = E(zoe).offer(
+    await E(faucetCreator).makeFaucetInvitation(),
+    harden({
+      give: {},
+      want: { RUN: runInitialLiquidity },
+    }),
+  );
+
+  const runPayment = await E(faucetSeat).getPayout('RUN');
+  return runPayment;
+};
 
 test.before(async t => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
@@ -34,14 +94,17 @@ test('reserve add collateral', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   const timer = buildManualTimer(console.log);
 
-  const { reserve, zoe, space } = await setupReserveServices(
-    t,
-    electorateTerms,
-    timer,
+  const { zoe, reserve, space, feeMintAccess, faucetInstallation } =
+    await setupReserveServices(t, electorateTerms, timer);
+  const runBrand = await space.brand.consume.RUN;
+  const runIssuer = await space.issuer.consume.RUN;
+  const runPayment = getRunFromFaucet(
+    zoe,
+    feeMintAccess,
+    faucetInstallation,
+    AmountMath.make(runBrand, 1000n),
   );
-  const { ammPublicFacet } = space.amm;
-  await E(ammPublicFacet).addPool(moolaR.issuer, 'Moola');
-
+  await addLiquidPool(runPayment, runIssuer, space, t, moola, moolaR, zoe);
   await E(reserve.reserveCreatorFacet).addIssuer(moolaR.issuer, 'Moola');
   const invitation = await E(
     reserve.reservePublicFacet,
@@ -73,13 +136,17 @@ test('reserve unregistered', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   const timer = buildManualTimer(console.log);
 
-  const { reserve, zoe, space } = await setupReserveServices(
-    t,
-    electorateTerms,
-    timer,
+  const { zoe, reserve, space, faucetInstallation, feeMintAccess } =
+    await setupReserveServices(t, electorateTerms, timer);
+  const runBrand = await space.brand.consume.RUN;
+  const runIssuer = await space.issuer.consume.RUN;
+  const runPayment = getRunFromFaucet(
+    zoe,
+    feeMintAccess,
+    faucetInstallation,
+    AmountMath.make(runBrand, 1000n),
   );
-  const { ammPublicFacet } = space.amm;
-  await E(ammPublicFacet).addPool(moolaR.issuer, 'Moola');
+  await addLiquidPool(runPayment, runIssuer, space, t, moola, moolaR, zoe);
 
   const invitation = await E(
     reserve.reservePublicFacet,
@@ -108,19 +175,35 @@ test('governance add Liquidity to the AMM', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 1 };
   const timer = buildManualTimer(console.log);
 
-  const { reserve, zoe, space, governor } = await setupReserveServices(
-    t,
-    electorateTerms,
-    timer,
+  const { zoe, reserve, space, governor, faucetInstallation, feeMintAccess } =
+    await setupReserveServices(t, electorateTerms, timer);
+  const runBrand = await space.brand.consume.RUN;
+  const runIssuer = await space.issuer.consume.RUN;
+  const runPayment = getRunFromFaucet(
+    zoe,
+    feeMintAccess,
+    faucetInstallation,
+    AmountMath.make(runBrand, 1000n),
   );
 
   const { ammPublicFacet } = space.amm;
-  await E(ammPublicFacet).addPool(moolaR.issuer, 'Moola');
+
+  await addLiquidPool(runPayment, runIssuer, space, t, moola, moolaR, zoe);
+
   const moolaLiquidityIssuer = E(ammPublicFacet).getLiquidityIssuer(
     moolaR.brand,
   );
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
-  const runBrand = await space.brand.consume.RUN;
+
+  t.deepEqual(
+    await E(ammPublicFacet).getPoolAllocation(moolaR.brand),
+    harden({
+      Central: AmountMath.make(runBrand, 1000n),
+      Secondary: moola(1000n),
+      Liquidity: AmountMath.makeEmpty(moolaLiquidityBrand),
+    }),
+    'should be 80K',
+  );
 
   await E(reserve.reserveCreatorFacet).addIssuer(moolaR.issuer, 'Moola');
   const invitation = await E(
@@ -166,7 +249,7 @@ test('governance add Liquidity to the AMM', async t => {
     await E(reserve.reserveCreatorFacet).getAllocations(),
     harden({
       Moola: moola(10_000n),
-      MoolaLiquidity: AmountMath.make(moolaLiquidityBrand, 80_000n),
+      MoolaLiquidity: AmountMath.make(moolaLiquidityBrand, 84_622n),
     }),
     'expecting more',
   );
@@ -174,8 +257,8 @@ test('governance add Liquidity to the AMM', async t => {
   t.deepEqual(
     await E(ammPublicFacet).getPoolAllocation(moolaR.brand),
     harden({
-      Central: AmountMath.make(runBrand, 80_000n),
-      Secondary: moola(90_000n),
+      Central: AmountMath.make(runBrand, 80_999n),
+      Secondary: moola(90_675n),
       Liquidity: AmountMath.makeEmpty(moolaLiquidityBrand),
     }),
     'should be 80K',
@@ -190,15 +273,18 @@ test('request more collateral than available', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 1 };
   const timer = buildManualTimer(console.log);
 
-  const { reserve, zoe, space, governor } = await setupReserveServices(
-    t,
-    electorateTerms,
-    timer,
-  );
+  const { zoe, reserve, space, governor, faucetInstallation, feeMintAccess } =
+    await setupReserveServices(t, electorateTerms, timer);
 
-  const { ammPublicFacet } = space.amm;
-  await E(ammPublicFacet).addPool(moolaR.issuer, 'Moola');
   const runBrand = await space.brand.consume.RUN;
+  const runIssuer = await space.issuer.consume.RUN;
+  const runPayment = getRunFromFaucet(
+    zoe,
+    feeMintAccess,
+    faucetInstallation,
+    AmountMath.make(runBrand, 1000n),
+  );
+  await addLiquidPool(runPayment, runIssuer, space, t, moola, moolaR, zoe);
 
   await E(reserve.reserveCreatorFacet).addIssuer(moolaR.issuer, 'Moola');
   const invitation = await E(
