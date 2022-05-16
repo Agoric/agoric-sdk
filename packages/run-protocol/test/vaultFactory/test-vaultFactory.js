@@ -2355,7 +2355,7 @@ test('director notifiers', async t => {
 
   const { lender, vaultFactory } = services.vaultFactory;
 
-  const { econ } = await E(lender).getPublicNotifiers();
+  const econ = await E(lender).getMetrics();
 
   let state = await E(econ).getUpdateSince();
   t.deepEqual(state.value, {
@@ -2396,7 +2396,7 @@ test('manager notifiers', async t => {
   const { aethVaultManager, lender } = services.vaultFactory;
   const cm = await E(aethVaultManager).getPublicFacet();
 
-  const { econ } = await E(cm).getPublicNotifiers();
+  const econ = await E(cm).getMetrics();
   let state = await E(econ).getUpdateSince();
   t.deepEqual(state.value, {
     numVaults: 0,

@@ -49,7 +49,7 @@
  * @property {() => Allocation} getPenaltyAllocation
  * @property {() => Instance} getContractGovernor
  * @property {() => Promise<Invitation>} makeCollectFeesInvitation
- * @property {() => void} notifyEcon
+ * @property {() => void} updateMetrics
  */
 
 /**

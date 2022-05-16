@@ -272,7 +272,7 @@ const machineBehavior = {
       }
       // TODO add aggregate debt tracking at the vaultFactory level #4482
       // totalDebt = AmountMath.add(totalDebt, toMint);
-      facets.machine.notifyEcon();
+      facets.machine.updateMetrics();
     };
 
     /**
@@ -309,7 +309,7 @@ const machineBehavior = {
     const { install, terms } = getLiquidationConfig(directorParamManager);
     await vm.setupLiquidator(install, terms);
     watchGovernance(directorParamManager, vm, install, terms);
-    facets.machine.notifyEcon();
+    facets.machine.updateMetrics();
     return vm;
   },
   getCollaterals,
@@ -326,7 +326,7 @@ const machineBehavior = {
   /** @param {MethodContext} context */
   getContractGovernor: ({ state }) => state.zcf.getTerms().electionManager,
   /** @param {MethodContext} context */
-  notifyEcon: ({ state }) => {
+  updateMetrics: ({ state }) => {
     /** @type {MetricsNotification} */
     const metrics = harden({
       collaterals: Array.from(state.collateralTypes.keys()),
@@ -391,10 +391,8 @@ const publicBehavior = {
   /**
    * @param {MethodContext} context
    */
-  getPublicNotifiers: ({ state }) => {
-    const { metricsNotifier } = state;
-    return { metrics: metricsNotifier };
-  },
+  getMetrics: ({ state }) => state.metricsNotifier,
+
   /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
   makeLoanInvitation: makeVaultInvitation,
   /** @deprecated use getCollateralManager and then makeVaultInvitation instead */

@@ -496,7 +496,7 @@ const collateralBehavior = {
   /** @param {MethodContext} context */
   getAssetNotifier: ({ state }) => state.assetNotifier,
   /** @param {MethodContext} context */
-  getPublicNotifiers: ({ state }) => ({ metrics: state.metricsNotifier }),
+  getMetrics: ({ state }) => state.metricsNotifier,
   /** @param {MethodContext} context */
   getCompoundedInterest: ({ state }) => state.compoundedInterest,
 };
