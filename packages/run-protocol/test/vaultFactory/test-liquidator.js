@@ -344,7 +344,7 @@ const makeDriver = async (t, initialPrice, priceBase) => {
   } = services;
   const managerNotifier = await E(
     E(lender).getCollateralManager(aethBrand),
-  ).getAssetNotifier();
+  ).getNotifier();
   let managerNotification = await E(managerNotifier).getUpdateSince();
 
   /** @type {UserSeat} */
