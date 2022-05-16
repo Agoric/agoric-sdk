@@ -25,18 +25,59 @@ async function* readJSONLines(data) {
 
 /**
  * @param {AsyncIterable<SlogEntry>} entries
- * @yields { string }
+ *
+ * @typedef {{time: number}} TimedEvent
+ * @typedef {{blockTime: number} | DInfo} Arrival
+ * @typedef {DeliveryInfo | NotifyInfo} DInfo
+ * @typedef {{
+ *   type: 'deliver',
+ *   elapsed: number,
+ *   crankNum: number,
+ *   deliveryNum: number,
+ *   vatID: string,
+ *   target: unknown,
+ *   method: string,
+ *   argSize: number,
+ *   compute?: number,
+ * }} DeliveryInfo
+ * @typedef {{
+ *   type: 'deliver',
+ *   elapsed: number,
+ *   vatID: string,
+ *   target: unknown,
+ *   state: unknown,
+ *   compute?: number,
+ * }} NotifyInfo
+ * @typedef {{
+ *   type: 'syscall',
+ *   vatID: string,
+ *   target?: string,
+ *   method?: string,
+ * } | {
+ *   type: 'resolve',
+ *   vatID: string,
+ * }} Departure
+ *
+ * @typedef {['deliver-result', {
+ *   time: number, type: 'deliver-result', vatID: string
+ * }]} DeliverResult
  */
-async function* slogToDiagram(entries) {
+async function slogToDiagramX(entries) {
   /** @type { Map<string, SlogCreateVatEntry> } */
   const vatInfo = new Map();
+  /** @type { Map<number | string | {}, TimedEvent & Arrival>} */
   const arrival = new Map();
+  /** @type { Map<string | {}, TimedEvent & Departure>} */
   const departure = new Map();
   // track end-of-delivery for deactivating actors
+  /** @type {DeliverResult[]} */
   const deliverResults = [];
 
+  /** @type {number} */
   let tBlock;
+  /** @type {number} */
   let blockHeight;
+  /** @type { TimedEvent & DInfo } */
   let dInfo;
 
   const seen = {
@@ -184,12 +225,51 @@ async function* slogToDiagram(entries) {
     }
   }
 
-  yield '@startuml slog\n';
+  return { vatInfo, arrival, departure, deliverResults };
+}
+
+const { freeze } = Object;
+
+/**
+ * ref: https://plantuml.com/sequence-diagram
+ */
+const fmtPlantUml = freeze({
+  /** @param {string} name */
+  start: name => `@startuml ${name}\n`,
+  /** @type {() => string} */
+  end: () => '@enduml\n',
+  /** @type {(l: string, v: string) => string} */
+  participant: (label, vatID) => `control ${label} as ${vatID}\n`,
+  /** @type {(s: string, t: string) => string} */
+  note: (side, text) => `note ${side}\n${text}\nend note\n`,
+  /** @param {string} text */
+  delay: text => `... ${text} ...\n`,
+  /** @param {number} x */
+  autonumber: x => `autonumber ${x}\n`,
+  /** @type {(d: string, msg: string, m?: boolean) => string} */
+  incoming: (dest, msg, missing) =>
+    `[${missing ? 'o' : ''}-> ${dest} : ${msg})\n`,
+  /** @type {(s: string, d: string, msg: string) => string} */
+  send: (src, dest, label) => `${src} -> ${dest} : ${label}\n`,
+  /** @type {(s: string, d: string, msg: string) => string} */
+  response: (src, dest, label) => `${src} --> ${dest} : ${label}\n`,
+});
+
+/**
+ * @param {typeof fmtPlantUml} fmt
+ * @param {Awaited<ReturnType<typeof slogToDiagramX>>} param0
+ * @yields {string}
+ */
+async function* diagramLines(
+  fmt,
+  { vatInfo, arrival, departure, deliverResults },
+) {
+  yield fmt.start('slog');
 
   for (const [vatID, info] of vatInfo) {
     const { name = '???' } = info || {};
     const label = JSON.stringify(`${vatID}:${name}`); // stringify to add ""s
-    yield `control ${label} as ${vatID}\n`;
+    yield fmt.participant(label, vatID);
   }
 
   const byTime = [...arrival, ...deliverResults].sort(
@@ -197,6 +277,8 @@ async function* slogToDiagram(entries) {
   );
 
   let active;
+  let blockHeight;
+
   for (const [
     ref,
     {
@@ -221,7 +303,7 @@ async function* slogToDiagram(entries) {
     if (typeof ref === 'number') {
       blockHeight = ref;
       const dt = new Date(blockTime * 1000).toISOString().slice(0, -5);
-      yield `... block ${blockHeight} ${dt} ...\n`;
+      yield fmt.delay(`block ${blockHeight} ${dt}`);
       continue;
     }
     const t = Math.round(elapsed * 1000) / 1000;
@@ -229,25 +311,24 @@ async function* slogToDiagram(entries) {
     // add note to compute-intensive deliveries
     const computeNote =
       compute && compute > 50000
-        ? `note right\n${compute.toLocaleString()} compute\nend note\n`
+        ? fmt.note(`right`, `${compute.toLocaleString()} compute`)
         : undefined;
 
     // yield `autonumber ${blockHeight}.${t}\n`;
     if (t > 0) {
-      yield `autonumber ${t}\n`;
+      yield fmt.autonumber(t);
     } else {
       console.warn('??? t < 0', elapsed);
     }
+    const call = `${target}.${method || state}(${argSize || ''})`;
     if (typeof ref === 'object') {
-      yield `[-> ${dest} : ${target}.${method || state}(${argSize || ''})\n`;
+      yield fmt.incoming(dest, `${call}`);
       if (computeNote) yield computeNote;
       continue;
     }
     if (!departure.has(ref)) {
       console.warn('no source for', { ref });
-      yield `[o-> ${dest} : ${ref} <- ${target}.${method || state}(${
-        argSize || ''
-      })\n`;
+      yield fmt.incoming(dest, `${ref} <- ${call}`, true);
       if (computeNote) yield computeNote;
       continue;
     }
@@ -255,10 +336,8 @@ async function* slogToDiagram(entries) {
     const label = method
       ? `${ref} <- ${target}.${method}(${argSize || ''})`
       : `${target}.${state}()`;
-    // label return values (resolutions) with dotted lines
-    const arrow = method ? '->' : '-->';
 
-    yield `${src} ${arrow} ${dest} : ${label}\n`;
+    yield method ? fmt.send(src, dest, label) : fmt.response(src, dest, label);
 
     // show active vat
     if (type === 'deliver' && active !== dest) {
@@ -269,7 +348,18 @@ async function* slogToDiagram(entries) {
     if (computeNote) yield computeNote;
   }
 
-  yield '@enduml\n';
+  yield fmt.end();
+}
+
+/**
+ * @param {AsyncIterable<SlogEntry>} entries
+ * @yields {string}
+ */
+async function* slogToDiagram(entries) {
+  const summary = await slogToDiagramX(entries);
+  for await (const line of diagramLines(fmtPlantUml, summary)) {
+    yield line;
+  }
 }
 
 /**
