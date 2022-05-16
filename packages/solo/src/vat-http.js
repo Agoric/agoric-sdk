@@ -6,12 +6,6 @@ import { getReplHandler } from '@agoric/vats/src/repl.js';
 import { makePromiseKit } from '@endo/promise-kit';
 import { getCapTPHandler } from './captp.js';
 
-const introduceWith = f => {
-  const [kit1, kit2] = [makePromiseKit(), makePromiseKit()];
-  Promise.all([kit1.promise, kit2.promise]).then(([o1, o2]) => f(o1, o2));
-  return [kit1.resolve, kit2.resolve];
-};
-
 // This vat contains the HTTP request handler.
 export function buildRootObject(vatPowers) {
   const { D } = vatPowers;
@@ -104,13 +98,13 @@ export function buildRootObject(vatPowers) {
     urlToHandler.set(url, commandHandler);
   }
 
-  const [resolveWallet, resolveAttMaker] = introduceWith(
-    async (wallet, attMaker) => {
-      const walletAdmin = await E(wallet).getAdminFacet();
-      // console.debug('introduce', { wallet, walletAdmin, attMaker });
-      E(walletAdmin).resolveAttMaker(attMaker);
-    },
-  );
+  const { promise: walletP, resolve: resolveWallet } = makePromiseKit();
+  const { promise: attMakerP, resolve: resolveAttMaker } = makePromiseKit();
+  Promise.all([walletP, attMakerP]).then(async ([wallet, attMaker]) => {
+    const walletAdmin = await E(wallet).getAdminFacet();
+    // console.debug('introduce', { wallet, walletAdmin, attMaker });
+    E(walletAdmin).resolveAttMaker(attMaker);
+  });
 
   return Far('root', {
     setCommandDevice(d) {
