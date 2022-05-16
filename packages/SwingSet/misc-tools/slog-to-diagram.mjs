@@ -248,7 +248,7 @@ const fmtPlantUml = freeze({
   autonumber: x => `autonumber ${x}\n`,
   /** @type {(d: string, msg: string, m?: boolean) => string} */
   incoming: (dest, msg, missing) =>
-    `[${missing ? 'o' : ''}-> ${dest} : ${msg})\n`,
+    `[${missing ? 'o' : ''}-> ${dest} : ${msg}\n`,
   /** @type {(s: string, d: string, msg: string) => string} */
   send: (src, dest, label) => `${src} -> ${dest} : ${label}\n`,
   /** @type {(s: string, d: string, msg: string) => string} */
@@ -272,7 +272,7 @@ const fmtMermaid = freeze({
   /** @param {number} _x */
   autonumber: _x => '',
   /** @type {(d: string, msg: string, m?: boolean) => string} */
-  incoming: (dest, msg, _missing) => `  Incoming ->> ${dest} : ${msg})\n`,
+  incoming: (dest, msg, _missing) => `  Incoming ->> ${dest} : ${msg}\n`,
   /** @type {(s: string, d: string, msg: string) => string} */
   send: (src, dest, label) => `  ${src} -) ${dest} : ${label}\n`,
   /** @type {(s: string, d: string, msg: string) => string} */
