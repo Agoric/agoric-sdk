@@ -270,7 +270,7 @@ const helperBehavior = {
   },
 
   /** @param {MethodContext} context */
-  metricsNotify: ({ state }) => {
+  updateMetrics: ({ state }) => {
     /** @type {MetricsNotification} */
     const payload = harden({
       numVaults: state.prioritizedVaults.getCount(),
@@ -554,7 +554,7 @@ const selfBehavior = {
         vaultKit.vault.getCollateralAmount(),
       );
       seat.exit();
-      helper.metricsNotify();
+      helper.updateMetrics();
       return vaultKit;
     } catch (err) {
       // remove it from prioritizedVaults
