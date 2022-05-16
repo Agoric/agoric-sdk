@@ -28,6 +28,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
     produce: {
       vatAdminSvc: 'vatAdmin',
       loadVat: true,
+      vatStore: true,
     },
   },
   buildZoe: {
@@ -192,6 +193,7 @@ export const CLIENT_BOOTSTRAP_MANIFEST = harden({
     produce: {
       vatAdminSvc: 'vatAdmin',
       loadVat: true,
+      vatStore: true,
     },
   },
   startClient: {

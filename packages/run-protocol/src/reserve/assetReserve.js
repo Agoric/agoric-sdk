@@ -90,7 +90,7 @@ const start = async (zcf, privateArgs) => {
   };
 
   const makeAddCollateralInvitation = () =>
-    zcf.makeInvitation(addCollateralHook, 'Add Collateal');
+    zcf.makeInvitation(addCollateralHook, 'Add Collateral');
 
   /** @type {ZCFMint} */
   const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);

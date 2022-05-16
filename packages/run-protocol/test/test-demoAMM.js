@@ -12,7 +12,7 @@ import {
   showAmount,
   showBrand,
   splitAllCentralPayments,
-} from '../src/demoIssuers.js';
+} from '../src/proposals/demoIssuers.js';
 
 /** @param { bigint } n */
 const showRUN = n => `${decimal(n, 6)} RUN`;

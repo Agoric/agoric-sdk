@@ -1,13 +1,13 @@
 // @ts-check
 import * as econBehaviors from './econ-behaviors.js';
 import * as simBehaviors from './sim-behaviors.js';
-import * as startPSM from './psm/startPSM.js';
+import * as startPSM from './startPSM.js';
 
 export * from './econ-behaviors.js';
 export * from './sim-behaviors.js';
 // @ts-expect-error Module './econ-behaviors.js' has already exported a member
 // named 'EconomyBootstrapPowers'.
-export * from './psm/startPSM.js';
+export * from './startPSM.js';
 
 const ECON_COMMITTEE_MANIFEST = harden({
   [econBehaviors.startEconomicCommittee.name]: {

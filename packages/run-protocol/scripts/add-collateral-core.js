@@ -2,7 +2,7 @@
 // @ts-check
 import { makeHelpers } from '@agoric/deploy-script-support';
 
-import { getManifestForAddAssetToVault } from '../src/vaultFactory/addAssetToVault.js';
+import { getManifestForAddAssetToVault } from '../src/proposals/addAssetToVault.js';
 
 // Build proposal for sim-chain etc.
 export const defaultProposalBuilder = async (
@@ -20,7 +20,7 @@ export const defaultProposalBuilder = async (
   assert(denom, 'INTERCHAIN_DENOM is required');
 
   return harden({
-    sourceSpec: '../src/vaultFactory/addAssetToVault.js',
+    sourceSpec: '../src/proposals/addAssetToVault.js',
     getManifestCall: [
       getManifestForAddAssetToVault.name,
       {

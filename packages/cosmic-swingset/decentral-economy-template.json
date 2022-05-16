@@ -33,23 +33,30 @@
       ]
     },
     {
-      "module": "@agoric/run-protocol/scripts/invite-committee-core.js",
-      "envComments": {
-        "SOLO_MNEMONIC": "Yes, we know there's a mnemonic here.  We don't use it in production."
-      },
-      "env": {
-        "SOLO_MNEMONIC": "move peace crew tip eternal fruit robust carry solar panda gain holiday horror violin struggle scrap together fault film march basket can illness chapter"
-      },
+      "module": "@agoric/run-protocol/scripts/price-feed-core.js",
       "args": [
         {
-          "econCommitteeAddresses": "[\"agoric16wwc6m3n83jjj8rfynyc2xk040m0mg90dnaxlf\"]"
+          "AGORIC_INSTANCE_NAME": "ATOM-USD price feed",
+          "oracleAddresses": ["@FIRST_SOLO_ADDRESS@"],
+          "IN_BRAND_LOOKUP": ["agoricNames", "oracleBrand", "ATOM"],
+          "IN_BRAND_DECIMALS": 6,
+          "OUT_BRAND_LOOKUP": ["agoricNames", "oracleBrand", "USD"],
+          "OUT_BRAND_DECIMALS": 4
+        }
+      ]
+    },
+    {
+      "module": "@agoric/run-protocol/scripts/invite-committee-core.js",
+      "args": [
+        {
+          "voterAddresses": ["@FIRST_SOLO_ADDRESS@"]
         }
       ]
     }
   ],
   "vats": {
     "bootstrap": {
-      "sourceSpec": "./src/core/boot.js",
+      "sourceSpec": "@agoric/vats/src/core/boot.js",
       "parameters": {
         "governanceActions": true
       }
@@ -57,46 +64,46 @@
   },
   "bundles": {
     "centralSupply": {
-      "sourceSpec": "./src/centralSupply.js"
+      "sourceSpec": "@agoric/vats/src/centralSupply.js"
     },
     "mintHolder": {
-      "sourceSpec": "./src/mintHolder.js"
+      "sourceSpec": "@agoric/vats/src/mintHolder.js"
     },
     "zcf": {
       "sourceSpec": "@agoric/zoe/contractFacet.js"
     },
     "bank": {
-      "sourceSpec": "./src/vat-bank.js"
+      "sourceSpec": "@agoric/vats/src/vat-bank.js"
     },
     "board": {
-      "sourceSpec": "./src/vat-board.js"
+      "sourceSpec": "@agoric/vats/src/vat-board.js"
     },
     "distributeFees": {
-      "sourceSpec": "./src/vat-distributeFees.js"
+      "sourceSpec": "@agoric/vats/src/vat-distributeFees.js"
     },
     "ibc": {
-      "sourceSpec": "./src/vat-ibc.js"
+      "sourceSpec": "@agoric/vats/src/vat-ibc.js"
     },
     "mints": {
-      "sourceSpec": "./src/vat-mints.js"
+      "sourceSpec": "@agoric/vats/src/vat-mints.js"
     },
     "network": {
-      "sourceSpec": "./src/vat-network.js"
+      "sourceSpec": "@agoric/vats/src/vat-network.js"
     },
     "priceAuthority": {
-      "sourceSpec": "./src/vat-priceAuthority.js"
+      "sourceSpec": "@agoric/vats/src/vat-priceAuthority.js"
     },
     "provisioning": {
-      "sourceSpec": "./src/vat-provisioning.js"
+      "sourceSpec": "@agoric/vats/src/vat-provisioning.js"
     },
     "sharing": {
-      "sourceSpec": "./src/vat-sharing.js"
+      "sourceSpec": "@agoric/vats/src/vat-sharing.js"
     },
     "walletManager": {
-      "sourceSpec": "./src/vat-walletManager.js"
+      "sourceSpec": "@agoric/vats/src/vat-walletManager.js"
     },
     "zoe": {
-      "sourceSpec": "./src/vat-zoe.js"
+      "sourceSpec": "@agoric/vats/src/vat-zoe.js"
     }
   },
   "defaultManagerType": "xs-worker"

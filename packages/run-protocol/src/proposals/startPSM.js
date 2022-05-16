@@ -13,7 +13,7 @@ const { details: X } = assert;
  * @param {bigint} [config.WantStableFeeBP]
  * @param {bigint} [config.GiveStableFeeBP]
  * @param {bigint} [config.MINT_LIMIT]
- * @typedef {import('../econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers
+ * @typedef {import('./econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers
  */
 export const startPSM = async (
   {

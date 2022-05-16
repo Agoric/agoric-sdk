@@ -4,7 +4,7 @@ import {
   setUpZoeForTest,
   setupAmmServices,
 } from '../amm/vpool-xyk-amm/setup.js';
-import { setupReserve } from '../../src/econ-behaviors.js';
+import { setupReserve } from '../../src/proposals/econ-behaviors.js';
 import { provideBundle } from '../supports.js';
 
 const reserveRoot = './src/reserve/assetReserve.js'; // package relative
