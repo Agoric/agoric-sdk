@@ -128,6 +128,12 @@ Affects: solo
 
 Same as `LMDB_MAP_SIZE`, but for solo instead of chain.
 
+## SOLO_MNEMONIC
+
+Affects: solo init
+
+Seed phrase for HD key derivation.
+
 ## SOLO_OTEL_EXPORTER_PROMETHEUS_PORT
 
 Affects: solo

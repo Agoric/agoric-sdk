@@ -100,6 +100,11 @@ describe('WalletConnection', () => {
     let getAdminBootstrap;
 
     beforeEach(() => {
+      makeBackendFromWalletBridge.mockReturnValue({
+        backendIt: 'mockBackendIterator',
+        cancel: jest.fn(),
+      });
+
       getAdminBootstrap = jest.fn(_ => ({}));
 
       delete window.localStorage;
@@ -111,7 +116,6 @@ describe('WalletConnection', () => {
 
     describe('with an access token in the url', () => {
       beforeEach(() => {
-        makeBackendFromWalletBridge.mockReturnValue('mockBackendIterator');
         delete window.location;
         window.location = {
           hash: `#accessToken=${accessToken}`,
@@ -153,6 +157,7 @@ describe('WalletConnection', () => {
         );
         expect(observeIterator).toHaveBeenCalledWith('mockBackendIterator', {
           updateState: setBackend,
+          fail: expect.any(Function),
         });
       });
     });

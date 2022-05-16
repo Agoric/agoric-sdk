@@ -28,8 +28,12 @@ test('start Economic Committee', async t => {
   const space = await setupAMMBootstrap();
   const { consume } = space;
   startEconomicCommittee(space, {
-    committeeName: 'The Cabal',
-    committeeSize: 1,
+    options: {
+      econCommitteeOptions: {
+        committeeName: 'The Cabal',
+        committeeSize: 1,
+      },
+    },
   });
   const agoricNames = await consume.agoricNames;
   const instance = await E(agoricNames).lookup('instance', 'economicCommittee');

@@ -166,7 +166,7 @@ function run() {
     const h = document.getElementById('history');
     const isScrolledToBottom =
       h.scrollHeight - h.clientHeight <= h.scrollTop + 1;
-    if (histnum >= nextHistNum) {
+    if (nextHistNum <= histnum) {
       nextHistNum = histnum + 1;
     }
     const m1 = document.getElementById(`msg-command-${histnum}`);
@@ -174,11 +174,15 @@ function run() {
     if (m1 || m2) {
       const c = document.getElementById(`command-${histnum}`);
       const h1 = document.getElementById(`history-${histnum}`);
-      c.innerHTML = linesToHTML(`${command}`);
+      if (c) {
+        c.innerHTML = linesToHTML(`${command}`);
+      }
       if (m1) {
         m1.innerHTML = linesToHTML(`${consoles.command}`);
       }
-      h1.innerHTML = linesToHTML(`${result}`);
+      if (h1) {
+        h1.innerHTML = linesToHTML(`${result}`);
+      }
       if (m2) {
         m2.innerHTML = linesToHTML(`${consoles.display}`);
       }

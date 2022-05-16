@@ -1,6 +1,6 @@
 /* eslint-disable react/display-name */
 import { observeIterator } from '@agoric/notifier';
-import React, {
+import {
   useEffect,
   createContext,
   memo,
@@ -48,41 +48,43 @@ const kv = (keyObj, val) => {
 
 const inboxReducer = (_, newInbox) =>
   newInbox
-    .map(tx => ({
+    ?.map(tx => ({
       ...tx,
       offerId: tx.id,
       id: tx.meta.id,
     }))
-    .sort((a, b) => cmp(b.id, a.id));
+    .sort((a, b) => cmp(b.id, a.id)) || null;
 
 const pursesReducer = (_, newPurses) =>
   newPurses
-    .map(purse => kv({ pursePetname: purse.pursePetname }, purse))
+    ?.map(purse => kv({ pursePetname: purse.pursePetname }, purse))
     .sort(
       (a, b) =>
         cmp(a.brandPetname, b.brandPetname) ||
         cmp(a.pursePetname, b.pursePetname),
-    );
+    ) || null;
 
 const dappsReducer = (_, newDapps) =>
   newDapps
-    .map(dapp => ({ ...dapp, id: dapp.meta.id }))
-    .sort((a, b) => cmp(a.petname, b.petname) || cmp(a.id, b.id));
+    ?.map(dapp => ({ ...dapp, id: dapp.meta.id }))
+    .sort((a, b) => cmp(a.petname, b.petname) || cmp(a.id, b.id)) || null;
 
 const contactsReducer = (_, newContacts) =>
   newContacts
-    .map(([contactPetname, contact]) => kv({ contactPetname }, contact))
-    .sort((a, b) => cmp(a.contactPetname, b.contactPetname) || cmp(a.id, b.id));
+    ?.map(([contactPetname, contact]) => kv({ contactPetname }, contact))
+    .sort(
+      (a, b) => cmp(a.contactPetname, b.contactPetname) || cmp(a.id, b.id),
+    ) || null;
 
 const issuersReducer = (_, newIssuers) =>
   newIssuers
-    .map(([issuerPetname, issuer]) => kv({ issuerPetname }, issuer))
-    .sort((a, b) => cmp(a.id, b.id));
+    ?.map(([issuerPetname, issuer]) => kv({ issuerPetname }, issuer))
+    .sort((a, b) => cmp(a.id, b.id)) || null;
 
 const paymentsReducer = (_, newPayments) =>
   newPayments
-    .map(payment => ({ ...payment, id: payment.meta.id }))
-    .sort((a, b) => cmp(a.id, b.id));
+    ?.map(payment => ({ ...payment, id: payment.meta.id }))
+    .sort((a, b) => cmp(a.id, b.id)) || null;
 
 const pendingPurseCreationsReducer = (
   pendingPurseCreations,
@@ -140,15 +142,26 @@ const Provider = ({ children }) => {
     setUseChainBackend(onChain);
   }, []);
 
+  const backendSetters = new Map([
+    ['services', setServices],
+    ['offers', setInbox],
+    ['purses', setPurses],
+    ['contacts', setContacts],
+    ['payments', setPayments],
+    ['issuers', setIssuers],
+  ]);
   const setBackend = backend => {
+    if (!backend) {
+      setSchemaActions(null);
+      for (const setter of backendSetters.values()) {
+        setter(null);
+      }
+      return;
+    }
     setSchemaActions(backend.actions);
-    observeIterator(backend.services, { updateState: setServices });
-    observeIterator(backend.offers, { updateState: setInbox });
-    observeIterator(backend.purses, { updateState: setPurses });
-    observeIterator(backend.dapps, { updateState: setDapps });
-    observeIterator(backend.contacts, { updateState: setContacts });
-    observeIterator(backend.payments, { updateState: setPayments });
-    observeIterator(backend.issuers, { updateState: setIssuers });
+    for (const [prop, setter] of backendSetters.entries()) {
+      observeIterator(backend[prop], { updateState: setter });
+    }
   };
 
   const [pendingPurseCreations, setPendingPurseCreations] = useReducer(

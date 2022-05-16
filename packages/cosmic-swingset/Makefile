@@ -105,10 +105,13 @@ scenario2-setup-nobuild:
 	mkdir -p t1/bootstrap
 	# Init the chain node.
 	$(AGCH) --home=t1/n0 init scenario2-chain --chain-id=$(CHAIN_ID)
-	# Init all the ag-solos.
-	set -e; for port in `seq $(BASE_PORT) $$(($(BASE_PORT) + $(NUM_SOLOS) - 1))`; do \
-		NODE_OPTIONS= $(AG_SOLO) init t1/$$port --webport=$$port; \
-	done
+	# Init all the ag-solos, ensuring only the first one uses the $SOLO_MNEMONIC, if any.
+	set -e; \
+	  eval "$$(../vats/scripts/set-core-proposal-env.js "$$CHAIN_BOOTSTRAP_VAT_CONFIG")"; \
+	  for port in `seq $(BASE_PORT) $$(($(BASE_PORT) + $(NUM_SOLOS) - 1))`; do \
+		  NODE_OPTIONS= SOLO_MNEMONIC=$$SOLO_MNEMONIC $(AG_SOLO) init t1/$$port --webport=$$port; \
+		  SOLO_MNEMONIC=; \
+	  done
 	# Create the bootstrap account.
 	$(AGCH) --home=t1/bootstrap keys add bootstrap --keyring-backend=test
 	$(AGCH) --home=t1/bootstrap keys show -a bootstrap --keyring-backend=test > t1/bootstrap-address
