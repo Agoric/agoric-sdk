@@ -55,10 +55,12 @@ export const inviteCommitteeMembers = async (
    * @param {[string, Promise<Invitation>][]} addrInvitations
    */
   const distributeInvitations = async addrInvitations => {
-    const nullInvitation = await E(votingAPI).makeNullInvitation();
     await Promise.all(
       addrInvitations.map(async ([addr, invitationP]) => {
-        const voterInvitation = await invitationP;
+        const [voterInvitation, nullInvitation] = await Promise.all([
+          invitationP,
+          E(votingAPI).makeNullInvitation(),
+        ]);
         await reserveThenDeposit(
           `econ committee member ${addr}`,
           namesByAddressAdmin,
