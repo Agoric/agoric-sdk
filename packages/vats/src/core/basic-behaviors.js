@@ -3,6 +3,8 @@ import { E, Far } from '@endo/far';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 
 import { Nat } from '@agoric/nat';
+import { makeScalarMapStore } from '@agoric/store';
+import { provide } from '@agoric/store/src/stores/store-utils.js';
 import { makeNameHubKit } from '../nameHub.js';
 
 import { feeIssuerConfig } from './utils.js';
@@ -53,22 +55,33 @@ const bootMsgEx = {
  * since we may want/need them later.
  */
 
-/** @param {BootstrapPowers} powers */
+/**
+ * @param {BootstrapPowers & {
+ *   produce: {vatStore: Producer<VatStore> }
+ * }} powers
+ *
+ * @typedef {{adminNode: any, root: unknown}} VatInfo as from createVatByName
+ * @typedef {MapStore<string, Promise<VatInfo>>} VatStore
+ */
 export const makeVatsFromBundles = ({
   vats,
   devices,
-  produce: { vatAdminSvc, loadVat },
+  produce: { vatAdminSvc, loadVat, vatStore },
 }) => {
   const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
   vatAdminSvc.resolve(svc);
-  // TODO: getVat? do we need to memoize this by name?
-  // TODO: rename loadVat to createVatByName?
+
+  /** @type {VatStore} */
+  const store = makeScalarMapStore();
+  vatStore.resolve(store);
+
   loadVat.resolve(bundleName => {
-    console.info(`createVatByName(${bundleName})`);
-    const root = E(svc)
-      .createVatByName(bundleName)
-      .then(r => r.root);
-    return root;
+    return provide(store, bundleName, _k => {
+      console.info(`createVatByName(${bundleName})`);
+      /** @type { Promise<VatInfo> } */
+      const vatInfo = E(svc).createVatByName(bundleName);
+      return vatInfo;
+    }).then(r => r.root);
   });
 };
 harden(makeVatsFromBundles);
