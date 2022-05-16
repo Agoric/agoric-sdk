@@ -19,8 +19,11 @@ if (Array.isArray(config?.coreProposals)) {
     ({ env }) =>
       env &&
       Object.entries(env).forEach(([key, val]) => {
-        if (envs.has(key)) {
-          throw Error(`Duplicate env key: ${key}`);
+        const oldVal = envs.get(key);
+        if (envs.has(key) && oldVal !== val) {
+          throw Error(
+            `Duplicate env key: ${key}, but value is ${val} not ${oldVal}`,
+          );
         }
         envs.set(key, val);
       }),

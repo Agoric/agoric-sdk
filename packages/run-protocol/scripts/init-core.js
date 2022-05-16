@@ -8,7 +8,7 @@ import {
   getManifestForRunProtocol,
   getManifestForEconCommittee,
   getManifestForMain,
-} from '../src/core-proposal.js';
+} from '../src/proposals/core-proposal.js';
 
 /** @type {<T>(store: any, key: string, make: () => T) => Promise<T>} */
 const provide = async (store, key, make) => {
@@ -122,7 +122,7 @@ const makeTool = async (homeP, installCacheKey = 'installCache') => {
         publishRef(install(mod, bundle, { persist: true })),
       );
     return harden({
-      sourceSpec: '../src/core-proposal.js',
+      sourceSpec: '../src/proposals/core-proposal.js',
       getManifestCall: [
         getManifestForEconCommittee.name,
         {
@@ -151,7 +151,7 @@ const makeTool = async (homeP, installCacheKey = 'installCache') => {
         publishRef(install(mod, bundle, { persist })),
       );
     return harden({
-      sourceSpec: '../src/core-proposal.js',
+      sourceSpec: '../src/proposals/core-proposal.js',
       getManifestCall: [
         getManifestForMain.name,
         {
@@ -204,7 +204,7 @@ export const defaultProposalBuilder = async (
   };
 
   return harden({
-    sourceSpec: '../src/core-proposal.js',
+    sourceSpec: '../src/proposals/core-proposal.js',
     getManifestCall: [
       getManifestForRunProtocol.name,
       {

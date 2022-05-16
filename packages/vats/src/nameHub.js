@@ -8,6 +8,8 @@ import { makeLegacyMap } from '@agoric/store';
 
 import './types.js';
 
+const { details: X } = assert;
+
 /**
  * Make two facets of a node in a name hierarchy: the nameHub
  * is read access and the nameAdmin is write access.
@@ -22,7 +24,7 @@ export const makeNameHubKit = () => {
 
   /** @type {NameHub} */
   const nameHub = Far('nameHub', {
-    async lookup(...path) {
+    lookup: async (...path) => {
       if (path.length === 0) {
         return nameHub;
       }
@@ -35,7 +37,7 @@ export const makeNameHubKit = () => {
       }
       return E(firstValue).lookup(...remaining);
     },
-    entries() {
+    entries: () => {
       return [
         ...mapIterable(
           keyToRecord.entries(),
@@ -47,7 +49,7 @@ export const makeNameHubKit = () => {
         ),
       ];
     },
-    values() {
+    values: () => {
       return [
         ...mapIterable(
           keyToRecord.values(),
@@ -55,7 +57,7 @@ export const makeNameHubKit = () => {
         ),
       ];
     },
-    keys() {
+    keys: () => {
       return [...keyToRecord.keys()];
     },
   });
@@ -66,7 +68,7 @@ export const makeNameHubKit = () => {
 
   /** @type {NameAdmin} */
   const nameAdmin = Far('nameAdmin', {
-    reserve(key) {
+    reserve: async key => {
       assert.typeof(key, 'string');
       for (const map of [keyToAdminRecord, keyToRecord]) {
         if (!map.has(key)) {
@@ -74,7 +76,31 @@ export const makeNameHubKit = () => {
         }
       }
     },
-    update(key, newValue, adminValue) {
+    default: async (key, newValue, adminValue) => {
+      assert.typeof(key, 'string');
+      if (keyToRecord.has(key)) {
+        const record = keyToRecord.get(key);
+        if (!record.promise) {
+          // Already initalized.
+          return /** @type {any} */ (record.value);
+        }
+      }
+      await nameAdmin.update(key, newValue, adminValue);
+      return newValue;
+    },
+    set: async (key, newValue, adminValue) => {
+      assert.typeof(key, 'string');
+      let record;
+      if (keyToRecord.has(key)) {
+        record = keyToRecord.get(key);
+      }
+      assert(
+        record && !record.promise,
+        X`key ${key} is not already initialized`,
+      );
+      return nameAdmin.update(key, newValue, adminValue);
+    },
+    update: (key, newValue, adminValue) => {
       assert.typeof(key, 'string');
       /** @type {[LegacyMap<string, NameRecord>, unknown][]} */
       const valueMapEntries = [
@@ -93,8 +119,9 @@ export const makeNameHubKit = () => {
           map.init(key, record);
         }
       }
+      return /** @type {any} */ (newValue);
     },
-    async lookupAdmin(...path) {
+    lookupAdmin: async (...path) => {
       if (path.length === 0) {
         return nameAdmin;
       }
@@ -107,7 +134,7 @@ export const makeNameHubKit = () => {
       }
       return E(firstValue).lookupAdmin(...remaining);
     },
-    delete(key) {
+    delete: async key => {
       for (const map of [keyToAdminRecord, keyToRecord]) {
         if (map.has(key)) {
           // Reject only if already exists.
