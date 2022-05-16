@@ -1,6 +1,6 @@
-// @ts-nocheck
+// @ts-check
 
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
 import { E } from '@endo/eventual-send';
@@ -20,6 +20,7 @@ import {
   startEconomicCommittee,
   startVaultFactory,
   setupAmm,
+  setupReserve,
 } from '../../src/proposals/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
 import * as Collect from '../../src/collect.js';
@@ -32,6 +33,9 @@ import {
   waitForPromisesToSettle,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
+
+/** @type {import('ava').TestInterface<any>} */
+const test = unknownTest;
 
 // #region Support
 
@@ -82,15 +86,19 @@ test.before(async t => {
   const runIssuer = E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
   const aethKit = makeIssuerKit('aEth');
-  const loader = await unsafeMakeBundleCache('./bundles/'); // package-relative
+  const bundleCache = await unsafeMakeBundleCache('./bundles/'); // package-relative
 
   // note that the liquidation might be a different bundle name
   // Collect.mapValues(contractRoots, (root, k) => loader.load(root, k)),
   const bundles = await Collect.allValues({
-    faucet: loader.load(contractRoots.faucet, 'faucet'),
-    liquidate: loader.load(contractRoots.liquidate, 'liquidateIncrementally'),
-    VaultFactory: loader.load(contractRoots.VaultFactory, 'VaultFactory'),
-    amm: loader.load(contractRoots.amm, 'amm'),
+    faucet: bundleCache.load(contractRoots.faucet, 'faucet'),
+    liquidate: bundleCache.load(
+      contractRoots.liquidate,
+      'liquidateIncrementally',
+    ),
+    VaultFactory: bundleCache.load(contractRoots.VaultFactory, 'VaultFactory'),
+    amm: bundleCache.load(contractRoots.amm, 'amm'),
+    reserve: bundleCache.load(contractRoots.reserve, 'reserve'),
   });
   const installation = Collect.mapValues(bundles, bundle =>
     E(zoe).install(bundle),
@@ -112,7 +120,7 @@ test.before(async t => {
     aethInitialLiquidity: AmountMath.make(aethKit.brand, 900_000_000n),
   };
   const frozenCtx = await deeplyFulfilled(harden(contextPs));
-  t.context = { ...frozenCtx };
+  t.context = { ...frozenCtx, bundleCache };
   trace(t, 'CONTEXT');
 });
 
@@ -142,7 +150,6 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   t.context.committee = makeVoterTool(
     zoe,
     space.consume.economicCommitteeCreatorFacet,
-    // @ts-expect-error TODO: add vaultFactoryGovernorCreator to vats/src/types.js
     space.consume.vaultFactoryGovernorCreator,
     counter,
   );
@@ -185,7 +192,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
 
 /**
  *
- * @param {ExecutionContext} t
+ * @param {import('ava').ExecutionContext} t
  * @param {bigint} runInitialLiquidity
  */
 const getRunFromFaucet = async (t, runInitialLiquidity) => {
@@ -218,7 +225,7 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
 /**
  * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
  *
- * @param {ExecutionContext} t
+ * @param {import('ava').ExecutionContext} t
  * @param {Amount} initialPrice
  * @param {Amount} priceBase
  * @param {TimerService} timer
@@ -273,6 +280,10 @@ async function setupServices(
   const {
     installation: { produce: iProduce },
   } = space;
+  // make the installation available for setupReserve
+  iProduce.reserve.resolve(t.context.installation.reserve);
+  // produce the reserve instance in the space
+  await setupReserve(space);
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
   iProduce.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
@@ -383,9 +394,9 @@ const makeDriver = async (t, initialPrice, priceBase) => {
       },
       /**
        *
-       * @param {Vault.Phase} phase
-       * @param {object} likeExpected
-       * @param {undefined|AT_NEXT|number} optSince
+       * @param {import('../../src/vaultFactory/vault.js').VaultPhase} phase
+       * @param {object} [likeExpected]
+       * @param {AT_NEXT|number} [optSince]
        */
       notified: async (phase, likeExpected, optSince) => {
         // optSince can be AT_NEXT in order to wait for the
@@ -477,7 +488,7 @@ const makeDriver = async (t, initialPrice, priceBase) => {
     },
     managerNotified: async (likeExpected, optSince) => {
       managerNotification = await E(managerNotifier).getUpdateSince(
-        optSince === AT_NEXT ? managerNotifier.updateCount : optSince,
+        optSince === AT_NEXT ? managerNotification.updateCount : optSince,
       );
       trace(t, 'manager notifier', managerNotification);
       if (likeExpected) {

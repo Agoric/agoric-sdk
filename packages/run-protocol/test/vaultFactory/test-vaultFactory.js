@@ -1,6 +1,6 @@
-// @ts-nocheck
+// @ts-check
 
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
 import { E } from '@endo/eventual-send';
@@ -29,6 +29,7 @@ import {
   startEconomicCommittee,
   startVaultFactory,
   setupAmm,
+  setupReserve,
 } from '../../src/proposals/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
 import * as Collect from '../../src/collect.js';
@@ -42,6 +43,9 @@ import {
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 
+/** @type {import('ava').TestInterface<any>} */
+const test = unknownTest;
+
 // #region Support
 
 // TODO path resolve these so refactors detect
@@ -50,6 +54,7 @@ const contractRoots = {
   liquidate: './src/vaultFactory/liquidateMinimum.js',
   VaultFactory: './src/vaultFactory/vaultFactory.js',
   amm: './src/vpool-xyk-amm/multipoolMarketMaker.js',
+  reserve: './src/reserve/assetReserve.js',
 };
 
 /** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
@@ -93,13 +98,15 @@ test.before(async t => {
   const runIssuer = E(zoe).getFeeIssuer();
   const runBrand = E(runIssuer).getBrand();
   const aethKit = makeIssuerKit('aEth');
-  const loader = await unsafeMakeBundleCache('./bundles/'); // package-relative
+
+  const bundleCache = await unsafeMakeBundleCache('./bundles/'); // package-relative
   // note that the liquidation might be a different bundle name
   const bundles = await Collect.allValues({
-    faucet: loader.load(contractRoots.faucet, 'faucet'),
-    liquidate: loader.load(contractRoots.liquidate, 'liquidateMinimum'),
-    VaultFactory: loader.load(contractRoots.VaultFactory, 'VaultFactory'),
-    amm: loader.load(contractRoots.amm, 'amm'),
+    faucet: bundleCache.load(contractRoots.faucet, 'faucet'),
+    liquidate: bundleCache.load(contractRoots.liquidate, 'liquidateMinimum'),
+    VaultFactory: bundleCache.load(contractRoots.VaultFactory, 'VaultFactory'),
+    amm: bundleCache.load(contractRoots.amm, 'amm'),
+    reserve: bundleCache.load(contractRoots.reserve, 'reserve'),
   });
   const installation = Collect.mapValues(bundles, bundle =>
     E(zoe).install(bundle),
@@ -122,7 +129,7 @@ test.before(async t => {
     aethInitialLiquidity: AmountMath.make(aethKit.brand, 300n),
   };
   const frozenCtx = await deeplyFulfilled(harden(contextPs));
-  t.context = { ...frozenCtx };
+  t.context = { ...frozenCtx, bundleCache };
   trace(t, 'CONTEXT');
 });
 
@@ -184,7 +191,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
 
 /**
  *
- * @param {ExecutionContext} t
+ * @param {import('ava').ExecutionContext<any>} t
  * @param {bigint} runInitialLiquidity
  */
 const getRunFromFaucet = async (t, runInitialLiquidity) => {
@@ -196,6 +203,7 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
   } = t.context;
   /** @type {Promise<Installation<import('./faucet.js').start>>} */
   // On-chain, there will be pre-existing RUN. The faucet replicates that
+  // @ts-expect-error
   const { creatorFacet: faucetCreator } = await E(zoe).startInstance(
     installation,
     {},
@@ -218,8 +226,8 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
 /**
  * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
  *
- * @param {ExecutionContext} t
- * @param {Array<nat> | Ratio} priceOrList
+ * @param {import('ava').ExecutionContext<any>} t
+ * @param {Array<NatValue> | Ratio} priceOrList
  * @param {Amount} unitAmountIn
  * @param {TimerService} timer
  * @param {unknown} quoteInterval
@@ -288,21 +296,27 @@ async function setupServices(
   const {
     installation: { produce: iProduce },
   } = space;
+  // make the installation available for setupReserve
+  iProduce.reserve.resolve(t.context.installation.reserve);
+  // produce the reserve instance in the space
+  await setupReserve(space);
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
   iProduce.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
 
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
-  /** @type {Promise<VaultFactory & LimitedCreatorFacet<unknown>>} */
+  /** @type {Promise<VaultFactory & LimitedCreatorFacet<VaultFactory>>} */
   const vaultFactoryCreatorFacetP = E(governorCreatorFacet).getCreatorFacet();
 
   // Add a vault that will lend on aeth collateral
-  /** @type {Promise<VaultKitManager>} */
+  /** @type {Promise<VaultManager>} */
   const aethVaultManagerP = E(vaultFactoryCreatorFacetP).addVaultType(
     aethIssuer,
     'AEth',
     rates,
   );
+  /** @type {[any, VaultFactory, VFC['publicFacet'], VaultManager, PriceAuthority]} */
+  // @ts-expect-error cast
   const [
     governorInstance,
     vaultFactory, // creator
@@ -463,9 +477,6 @@ test('first', async t => {
     'unused collateral remains after liquidation',
   );
 
-  t.deepEqual(await E(vaultFactory).getPenaltyAllocation(), {
-    RUN: AmountMath.make(runBrand, 30n),
-  });
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
     RUN: AmountMath.make(runBrand, 24n),
   });
@@ -549,11 +560,13 @@ test('price drop', async t => {
   );
   trace(t, 'pa2', priceAuthority);
 
+  // @ts-expect-error mock
   priceAuthority.setPrice(makeRatio(677n, runBrand, 900n, aethBrand));
   trace(t, 'price dropped a little');
   notification = await E(vaultNotifier).getUpdateSince();
   t.is(notification.value.vaultState, Phase.ACTIVE);
 
+  // @ts-expect-error mock
   await E(priceAuthority).setPrice(makeRatio(636n, runBrand, 900n, aethBrand));
   notification = await E(vaultNotifier).getUpdateSince(
     notification.updateCount,
@@ -573,6 +586,7 @@ test('price drop', async t => {
   );
   trace(t, 'debt remains', AmountMath.make(runBrand, 284n));
 
+  // @ts-expect-error mock
   await E(priceAuthority).setPrice(makeRatio(1000n, runBrand, 900n, aethBrand));
   trace(t, 'debt gone');
   notification = await E(vaultNotifier).getUpdateSince(
@@ -1694,6 +1708,7 @@ test('mutable liquidity triggers and interest', async t => {
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
   trace(t, 'alice reduce collateral');
 
+  // @ts-expect-error mock
   await E(priceAuthority).setPrice(makeRatio(7n, runBrand, 1n, aethBrand));
   trace(t, 'changed price to 7');
 
@@ -2294,9 +2309,7 @@ test('addVaultType: invalid args do not modify state', async t => {
       .addVaultType(chit.issuer, kw, null),
   );
   await failsForSameReason(
-    E(vaultFactory)
-      // @ts-expect-error bad args on purpose for test
-      .addVaultType(chit.issuer, 'bogus kw', params),
+    E(vaultFactory).addVaultType(chit.issuer, 'bogus kw', params),
   );
 
   // The keyword in the vault manager is not "stuck"; it's still available:
@@ -2329,6 +2342,7 @@ test('addVaultType: extra, unexpected params', async t => {
   };
 
   await t.throwsAsync(
+    // @ts-expect-error bad args
     E(vaultFactory).addVaultType(chit.issuer, 'Chit', missingParams),
     { message: /Must have same property names/ },
   );
@@ -2356,14 +2370,12 @@ test('director notifiers', async t => {
 
   const { lender, vaultFactory } = services.vaultFactory;
 
-  /** @type {Subscription<MetricsNotification>} */
   const metricsSub = await E(lender).getMetrics();
   const metrics = makeNotifierFromAsyncIterable(metricsSub);
 
   let state = await E(metrics).getUpdateSince();
   t.deepEqual(state.value, {
     collaterals: [aethBrand],
-    penaltyPoolAllocation: {},
     rewardPoolAllocation: {},
   });
 
@@ -2377,11 +2389,10 @@ test('director notifiers', async t => {
   state = await E(metrics).getUpdateSince(state.updateCount);
   t.deepEqual(state.value, {
     collaterals: [aethBrand, chit.brand],
-    penaltyPoolAllocation: {},
     rewardPoolAllocation: {},
   });
 
-  // Not testing penaltyPoolAllocation and rewardPoolAllocation contents because those are simply those values.
+  // Not testing rewardPoolAllocation contents because those are simply those values.
   // We could refactor the tests of those allocations to use the data now exposed by a notifier.
 });
 
@@ -2399,7 +2410,6 @@ test('manager notifiers', async t => {
   const { aethVaultManager, lender } = services.vaultFactory;
   const cm = await E(aethVaultManager).getPublicFacet();
 
-  /** @type {Subscription<MetricsNotification>} */
   const metricsSub = await E(cm).getMetrics();
   const metrics = makeNotifierFromAsyncIterable(metricsSub);
   let state = await E(metrics).getUpdateSince();

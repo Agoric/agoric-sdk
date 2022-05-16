@@ -1,11 +1,14 @@
 // @ts-check
 
-/** @typedef {import('./vault').VaultNotification} VaultNotification */
-/** @typedef {import('./vault').Vault} Vault */
-/** @typedef {import('./vaultKit').VaultKit} VaultKit */
-/** @typedef {import('./vaultManager').VaultKitManager} VaultKitManager */
-/** @typedef {import('./vaultManager').VaultManager} VaultManager */
-/** @typedef {import('./vaultManager').CollateralManager} CollateralManager */
+/**
+ * @typedef {import('./vault').VaultNotification} VaultNotification
+ * @typedef {import('./vault').Vault} Vault
+ * @typedef {import('./vaultKit').VaultKit} VaultKit
+ * @typedef {import('./vaultManager').VaultManager} VaultManager
+ * @typedef {import('./vaultManager').CollateralManager} CollateralManager
+ * @typedef {import('../reserve/assetReserve.js').AssetReserveCreatorFacet} AssetReserveCreatorFacet
+ * @typedef {import('../reserve/assetReserve.js').AssetReservePublicFacet} AssetReservePublicFacet
+ */
 
 /**
  * @typedef  {object} AutoswapLocal
@@ -46,7 +49,6 @@
  * @property {AddVaultType} addVaultType
  * @property {() => Promise<Array<Collateral>>} getCollaterals
  * @property {() => Allocation} getRewardAllocation
- * @property {() => Allocation} getPenaltyAllocation
  * @property {() => Instance} getContractGovernor
  * @property {() => Promise<Invitation>} makeCollectFeesInvitation
  * @property {() => void} updateMetrics
@@ -114,7 +116,7 @@
 
 /**
  * @typedef {object} Liquidator
- * @property {() => Promise<Invitation>} makeLiquidateInvitation
+ * @property {() => Promise<Invitation<{ debt: Amount<'nat'> }, void>>} makeLiquidateInvitation
  */
 
 /**

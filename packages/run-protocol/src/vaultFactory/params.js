@@ -26,7 +26,7 @@ export const MIN_INITIAL_DEBT_KEY = 'MinInitialDebt';
 /**
  * @param {Amount} electorateInvitationAmount
  * @param {Installation} liquidationInstall
- * @param {object} liquidationTerms
+ * @param {import('./liquidation.js').LiquidationTerms} liquidationTerms
  * @param {Amount} minInitialDebt
  */
 const makeVaultDirectorParams = (
@@ -107,29 +107,33 @@ const makeVaultDirectorParamManager = async (
 };
 
 /**
- * @param {ERef<PriceAuthority>} priceAuthority
- * @param {LoanTiming} loanTiming
- * @param {Installation} liquidationInstall
- * @param {ERef<TimerService>} timerService
- * @param {Amount} invitationAmount
- * @param {VaultManagerParamValues} vaultManagerParams
- * @param {XYKAMMPublicFacet} ammPublicFacet
- * @param {object} liquidationTerms
- * @param {Amount} minInitialDebt
- * @param {bigint=} bootstrapPaymentValue
+ * @param {{
+ *   invitationAmount: Amount,
+ *   minInitialDebt: Amount,
+ *   bootstrapPaymentValue: bigint,
+ *   priceAuthority: ERef<PriceAuthority>,
+ *   timer: ERef<TimerService>,
+ *   reservePublicFacet: AssetReservePublicFacet,
+ *   liquidationInstall: Installation,
+ *   loanTiming: LoanTiming,
+ *   liquidationTerms: import('./liquidation.js').LiquidationTerms,
+ *   vaultManagerParams: VaultManagerParamValues,
+ *   ammPublicFacet: XYKAMMPublicFacet,
+ * }} opts
  */
-const makeGovernedTerms = (
-  priceAuthority,
-  loanTiming,
-  liquidationInstall,
-  timerService,
-  invitationAmount,
-  vaultManagerParams,
+const makeGovernedTerms = ({
   ammPublicFacet,
+  bootstrapPaymentValue,
+  invitationAmount,
+  liquidationInstall,
   liquidationTerms,
+  loanTiming,
   minInitialDebt,
-  bootstrapPaymentValue = 0n,
-) => {
+  priceAuthority,
+  reservePublicFacet,
+  timer,
+  vaultManagerParams,
+}) => {
   const loanTimingParams = makeParamManagerSync({
     [CHARGING_PERIOD_KEY]: ['nat', loanTiming.chargingPeriod],
     [RECORDING_PERIOD_KEY]: ['nat', loanTiming.recordingPeriod],
@@ -142,7 +146,8 @@ const makeGovernedTerms = (
     priceAuthority,
     loanParams,
     loanTimingParams,
-    timerService,
+    reservePublicFacet,
+    timerService: timer,
     governedParams: makeVaultDirectorParams(
       invitationAmount,
       liquidationInstall,
