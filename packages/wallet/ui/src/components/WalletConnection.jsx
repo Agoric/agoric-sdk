@@ -1,7 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable react/display-name */
 import { makeReactAgoricWalletConnection } from '@agoric/wallet-connection/react.js';
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import clsx from 'clsx';
 import { E } from '@endo/eventual-send';
 import { observeIterator } from '@agoric/notifier';
@@ -76,31 +76,48 @@ const WalletConnection = ({
   setBackend,
 }) => {
   const classes = useStyles();
-  const onWalletState = useCallback(ev => {
-    const { walletConnection, state } = ev.detail;
-    console.log('onWalletState', state);
-    setConnectionState(state);
-    switch (state) {
-      case 'idle': {
-        // This is one of the only methods that the wallet connection facet allows.
-        // It connects asynchronously, but you can use promise pipelining immediately.
-        /** @type {ERef<WalletBridge>} */
-        const bridge = E(walletConnection).getAdminBootstrap(getAccessToken());
-        observeIterator(makeBackendFromWalletBridge(bridge), {
-          updateState: setBackend,
-        });
-        break;
+  const [backendCancel, setBackendCancel] = useState(null);
+  const onWalletState = useCallback(
+    ev => {
+      const { walletConnection, state } = ev.detail;
+      setConnectionState(state);
+      switch (state) {
+        case 'idle': {
+          if (backendCancel) {
+            backendCancel();
+          }
+
+          // This is one of the only methods that the wallet connection facet allows.
+          // It connects asynchronously, but you can use promise pipelining immediately.
+          /** @type {ERef<WalletBridge>} */
+          const bridge = E(walletConnection).getAdminBootstrap(
+            getAccessToken(),
+          );
+          const { backendIt, cancel } = makeBackendFromWalletBridge(bridge);
+
+          // Need to thunk the cancel function, or it will be called immediately.
+          setBackendCancel(() => cancel);
+
+          observeIterator(backendIt, {
+            updateState: setBackend,
+            fail: () => {
+              setBackend(null);
+            },
+          });
+          break;
+        }
+        case 'error': {
+          console.log('error', ev.detail);
+          // In case of an error, reset to 'idle'.
+          // Backoff or other retry strategies would go here instead of immediate reset.
+          E(walletConnection).reset();
+          break;
+        }
+        default:
       }
-      case 'error': {
-        console.log('error', ev.detail);
-        // In case of an error, reset to 'idle'.
-        // Backoff or other retry strategies would go here instead of immediate reset.
-        E(walletConnection).reset();
-        break;
-      }
-      default:
-    }
-  }, []);
+    },
+    [backendCancel],
+  );
 
   return (
     <div className={clsx('Connector', classes.connector)}>

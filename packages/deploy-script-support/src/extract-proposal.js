@@ -68,12 +68,43 @@ export const extractCoreProposalBundles = async (
 
   const bundleToSource = new Map();
   const extracted = await Promise.all(
-    coreProposals.map(async (initCore, i) => {
-      console.log(`Parsing core proposal:`, initCore);
+    coreProposals.map(async (coreProposal, i) => {
+      // console.debug(`Parsing core proposal:`, coreProposal);
+
+      /** @type {string} */
+      let entrypoint;
+      /** @type {unknown[]} */
+      let args;
+      /** @type {string} */
+      let module;
+      if (typeof coreProposal === 'string') {
+        module = coreProposal;
+        entrypoint = 'defaultProposalBuilder';
+        args = [];
+      } else {
+        ({
+          module,
+          entrypoint = 'defaultProposalBuilder',
+          args = [],
+        } = coreProposal);
+      }
+
+      assert.typeof(
+        module,
+        'string',
+        X`coreProposal module ${module} must be string`,
+      );
+      assert.typeof(
+        entrypoint,
+        'string',
+        X`coreProposal entrypoint ${entrypoint} must be string`,
+      );
+      assert(Array.isArray(args), X`coreProposal args ${args} must be array`);
+
       const thisProposalBundleHandles = new Set();
       assert(getSequenceForProposal);
       const thisProposalSequence = getSequenceForProposal(i);
-      const initPath = pathResolve(dirname, initCore);
+      const initPath = pathResolve(dirname, module);
       const initDir = path.dirname(initPath);
       const ns = await import(initPath);
       const install = (srcSpec, bundlePath) => {
@@ -108,7 +139,7 @@ export const extractCoreProposalBundles = async (
         );
         return handle;
       };
-      const proposal = await ns.defaultProposalBuilder({ publishRef, install });
+      const proposal = await ns[entrypoint]({ publishRef, install }, ...args);
 
       // Add the proposal bundle handles in sorted order.
       const bundleSpecEntries = [...thisProposalBundleHandles.keys()]

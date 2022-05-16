@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <script src="./lockdown.umd.js"></script>
+    <script src="%PUBLIC_URL%/lockdown.umd.js"></script>
     <script>
       // Allow the React dev environment to extend the console for debugging
       // features.
@@ -22,6 +22,10 @@
       });
 
       console.log('lockdown done.');
+
+      window.addEventListener('unhandledrejection', ev => {
+        ev.stopImmediatePropagation();
+      });
     </script>
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

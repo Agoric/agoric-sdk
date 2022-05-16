@@ -78,7 +78,7 @@
  */
 
 /**
- * @typedef {Object} Producer<T>
+ * @typedef {object} Producer<T>
  * @property {(v: ERef<T>) => void} resolve
  * @property {(r: unknown) => void} reject
  * @property {() => void} reset

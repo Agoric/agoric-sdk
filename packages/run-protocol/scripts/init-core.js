@@ -160,7 +160,7 @@ const makeTool = async (homeP, installCacheKey = 'installCache') => {
           installKeys: {
             ...publishGroup(installKeyGroups.main),
             ...publishGroup(installKeyGroups.runStake),
-            ...(ANCHOR_DENOM ? publishGroup(installKeyGroups.psm) : {}),
+            ...(ANCHOR_DENOM && publishGroup(installKeyGroups.psm)),
           },
         },
       ],
@@ -170,16 +170,38 @@ const makeTool = async (homeP, installCacheKey = 'installCache') => {
 };
 
 // Build proposal for sim-chain etc.
-export const defaultProposalBuilder = async ({ publishRef, install }) => {
+export const defaultProposalBuilder = async (
+  { publishRef, install },
+  options = {},
+) => {
   const {
-    ROLE = 'chain',
-    VAULT_FACTORY_CONTROLLER_ADDR,
-    ANCHOR_DENOM,
-  } = process.env;
+    ROLE = process.env.ROLE || 'chain',
+    vaultFactoryControllerAddress = process.env.VAULT_FACTORY_CONTROLLER_ADDR,
+    anchorOptions: {
+      anchorDenom = process.env.ANCHOR_DENOM,
+      anchorDecimalPlaces = '6',
+      anchorKeyword = 'AUSD',
+      anchorProposedName = anchorKeyword,
+    } = {},
+    econCommitteeOptions: {
+      committeeSize: econCommitteeSize = process.env.ECON_COMMITTEE_SIZE || '3',
+    } = {},
+  } = options;
 
   /** @param { Record<string, [string, string]> } group */
   const publishGroup = group =>
     mapValues(group, ([mod, bundle]) => publishRef(install(mod, bundle)));
+
+  const anchorOptions = anchorDenom && {
+    denom: anchorDenom,
+    decimalPlaces: parseInt(anchorDecimalPlaces, 10),
+    keyword: anchorKeyword,
+    proposedName: anchorProposedName,
+  };
+
+  const econCommitteeOptions = {
+    committeeSize: parseInt(econCommitteeSize, 10),
+  };
 
   return harden({
     sourceSpec: '../src/core-proposal.js',
@@ -187,13 +209,14 @@ export const defaultProposalBuilder = async ({ publishRef, install }) => {
       getManifestForRunProtocol.name,
       {
         ROLE,
-        vaultFactoryControllerAddress: VAULT_FACTORY_CONTROLLER_ADDR,
-        anchorDenom: ANCHOR_DENOM,
+        vaultFactoryControllerAddress,
+        anchorOptions,
+        econCommitteeOptions,
         installKeys: {
           ...publishGroup(installKeyGroups.econCommittee),
           ...publishGroup(installKeyGroups.runStake),
           ...publishGroup(installKeyGroups.main),
-          ...(ANCHOR_DENOM ? publishGroup(installKeyGroups.psm) : {}),
+          ...(anchorDenom ? publishGroup(installKeyGroups.psm) : {}),
         },
       },
     ],
