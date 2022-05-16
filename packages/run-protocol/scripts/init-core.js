@@ -1,25 +1,13 @@
 /* global process */
 // @ts-check
-import { E } from '@endo/far';
 import { makeHelpers } from '@agoric/deploy-script-support';
 
-import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 import {
   getManifestForRunProtocol,
   getManifestForEconCommittee,
   getManifestForMain,
 } from '../src/proposals/core-proposal.js';
-
-/** @type {<T>(store: any, key: string, make: () => T) => Promise<T>} */
-const provide = async (store, key, make) => {
-  const found = await E(store).get(key);
-  if (found) {
-    return found;
-  }
-  const value = make();
-  await E(store).set(key, value);
-  return value;
-};
+import { makeInstallCache } from '../src/proposals/utils.js';
 
 /** @type {Record<string, Record<string, [string, string]>>} */
 const installKeyGroups = {
@@ -59,13 +47,6 @@ const installKeyGroups = {
     ],
     reserve: ['../src/reserve/assetReserve.js', '../bundles/bundle-reserve.js'],
   },
-  psm: {
-    psm: ['../src/psm/psm.js', '../bundles/bundle-psm.js'],
-    mintHolder: [
-      '@agoric/vats/src/mintHolder.js',
-      '../../vats/bundles/bundle-mintHolder.js',
-    ],
-  },
 };
 
 const { entries, fromEntries } = Object;
@@ -74,47 +55,6 @@ const { entries, fromEntries } = Object;
 const mapValues = (obj, f) =>
   // @ts-expect-error entries() loses the K type
   harden(fromEntries(entries(obj).map(([p, v]) => [p, f(v)])));
-
-/**
- *
- * @param {{ scratch: ERef<MapStore<string, unknown>> }} homeP
- * @param {string} [installCacheKey]
- */
-const makeTool = async (homeP, installCacheKey = 'installCache') => {
-  /** @type {CopyMap<string, {installation: Installation, boardId: string, path?: string}>} */
-  const initial = await provide(E.get(homeP).scratch, installCacheKey, () =>
-    makeCopyMap([]),
-  );
-  // ISSUE: getCopyMapEntries of CopyMap<K, V> loses K, V.
-  /** @type {Map<string, {installation: Installation, boardId: string, path?: string}>} */
-  const working = new Map(getCopyMapEntries(initial));
-
-  const saveCache = async () => {
-    const final = makeCopyMap(working);
-    assert.equal(final.payload.keys.length, working.size);
-    await E(E.get(homeP).scratch).set('installCache', final);
-    console.log({
-      initial: initial.payload.keys.length,
-      total: working.size,
-    });
-  };
-
-  const wrapInstall = install => async (mPath, bPath, opts) => {
-    const { endoZipBase64Sha512: sha512 } = await import(bPath).then(
-      m => m.default,
-    );
-    const detail = await provide(working, sha512, () =>
-      install(mPath, bPath, opts).then(installation => ({
-        installation,
-        sha512,
-        path: bPath,
-      })),
-    );
-    return detail.installation;
-  };
-
-  return { wrapInstall, saveCache };
-};
 
 /**
  *
@@ -169,11 +109,7 @@ export const mainProposalBuilder = async ({
   install: install0,
   wrapInstall,
 }) => {
-  const {
-    ROLE = 'chain',
-    VAULT_FACTORY_CONTROLLER_ADDR,
-    ANCHOR_DENOM,
-  } = process.env;
+  const { ROLE = 'chain', VAULT_FACTORY_CONTROLLER_ADDR } = process.env;
 
   const install = wrapInstall ? wrapInstall(install0) : install0;
 
@@ -193,7 +129,6 @@ export const mainProposalBuilder = async ({
         installKeys: {
           ...publishGroup(installKeyGroups.main),
           ...publishGroup(installKeyGroups.runStake),
-          ...(ANCHOR_DENOM && publishGroup(installKeyGroups.psm)),
         },
       },
     ],
@@ -247,7 +182,6 @@ export const defaultProposalBuilder = async (
           ...publishGroup(installKeyGroups.econCommittee),
           ...publishGroup(installKeyGroups.runStake),
           ...publishGroup(installKeyGroups.main),
-          ...(anchorDenom ? publishGroup(installKeyGroups.psm) : {}),
         },
       },
     ],
@@ -257,7 +191,9 @@ export const defaultProposalBuilder = async (
 export default async (homeP, endowments) => {
   const { writeCoreProposal } = await makeHelpers(homeP, endowments);
 
-  const tool = await makeTool(homeP);
+  const tool = await makeInstallCache(homeP, {
+    loadBundle: spec => import(spec),
+  });
   await Promise.all([
     writeCoreProposal('gov-econ-committee', opts =>
       committeeProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),

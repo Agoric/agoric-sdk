@@ -1,7 +1,6 @@
 // @ts-check
 import * as econBehaviors from './econ-behaviors.js';
 import * as simBehaviors from './sim-behaviors.js';
-import * as startPSM from './startPSM.js';
 
 export * from './econ-behaviors.js';
 export * from './sim-behaviors.js';
@@ -187,41 +186,6 @@ const RUN_STAKE_MANIFEST = harden({
   },
 });
 
-export const PSM_MANIFEST = harden({
-  [startPSM.makeAnchorAsset.name]: {
-    consume: { bankManager: 'bank', zoe: 'zoe' },
-    installation: { consume: { mintHolder: 'zoe' } },
-    issuer: {
-      produce: { AUSD: true },
-    },
-    brand: {
-      produce: { AUSD: true },
-    },
-  },
-  [startPSM.startPSM.name]: {
-    consume: {
-      zoe: 'zoe',
-      feeMintAccess: 'zoe',
-      economicCommitteeCreatorFacet: 'economicCommittee',
-      chainTimerService: 'timer',
-    },
-    produce: { psmCreatorFacet: 'psm', psmGovernorCreatorFacet: 'psmGovernor' },
-    installation: {
-      consume: { contractGovernor: 'zoe', psm: 'zoe' },
-    },
-    instance: {
-      consume: { economicCommittee: 'economicCommittee' },
-      produce: { psm: 'psm', psmGovernor: 'psm' },
-    },
-    brand: {
-      consume: { AUSD: 'bank', RUN: 'zoe' },
-    },
-    issuer: {
-      consume: { AUSD: 'bank' },
-    },
-  },
-});
-
 export const SIM_CHAIN_MANIFEST = harden({
   [simBehaviors.fundAMM.name]: {
     consume: {
@@ -271,26 +235,18 @@ export const getManifestForEconCommittee = (
 
 export const getManifestForMain = (
   { restoreRef },
-  { installKeys, vaultFactoryControllerAddress, anchorOptions },
+  { installKeys, vaultFactoryControllerAddress },
 ) => {
   return {
-    manifest: {
-      ...SHARED_MAIN_MANIFEST,
-      ...(anchorOptions && PSM_MANIFEST),
-    },
+    manifest: SHARED_MAIN_MANIFEST,
     installations: {
       amm: restoreRef(installKeys.amm),
       VaultFactory: restoreRef(installKeys.vaultFactory),
       liquidate: restoreRef(installKeys.liquidate),
       reserve: restoreRef(installKeys.reserve),
-      ...(anchorOptions && {
-        psm: restoreRef(installKeys.psm),
-        mintHolder: restoreRef(installKeys.mintHolder),
-      }),
     },
     options: {
       vaultFactoryControllerAddress,
-      anchorOptions,
     },
   };
 };
@@ -308,7 +264,6 @@ export const getManifestForRunProtocol = (
   { restoreRef },
   {
     ROLE = 'chain',
-    anchorOptions,
     econCommitteeOptions,
     installKeys,
     vaultFactoryControllerAddress,
@@ -323,7 +278,6 @@ export const getManifestForRunProtocol = (
     {
       installKeys,
       vaultFactoryControllerAddress,
-      anchorOptions,
     },
   );
   return {

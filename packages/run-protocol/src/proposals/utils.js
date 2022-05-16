@@ -1,3 +1,4 @@
+import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 import { E } from '@endo/far';
 
 // must match packages/wallet/api/src/lib-wallet.js
@@ -64,4 +65,61 @@ export const reserveThenDeposit = async (
   console.info('depositing to', debugName);
   await Promise.all(payments.map(payment => E(depositFacet).receive(payment)));
   console.info('confirmed deposit for', debugName);
+};
+
+/** @type {<T>(store: any, key: string, make: () => T) => Promise<T>} */
+const provide = async (store, key, make) => {
+  const found = await E(store).get(key);
+  if (found) {
+    return found;
+  }
+  const value = make();
+  await E(store).set(key, value);
+  return value;
+};
+
+/**
+ *
+ * @param {{ scratch: ERef<MapStore<string, unknown>> }} homeP
+ * @param {object} opts
+ * @param {(specifier: string) => Promise<{default: Bundle}>} opts.loadBundle
+ * @param {string} [opts.installCacheKey]
+ */
+export const makeInstallCache = async (
+  homeP,
+  { installCacheKey = 'installCache', loadBundle },
+) => {
+  /** @type {CopyMap<string, {installation: Installation, boardId: string, path?: string}>} */
+  const initial = await provide(E.get(homeP).scratch, installCacheKey, () =>
+    makeCopyMap([]),
+  );
+  // ISSUE: getCopyMapEntries of CopyMap<K, V> loses K, V.
+  /** @type {Map<string, {installation: Installation, boardId: string, path?: string}>} */
+  const working = new Map(getCopyMapEntries(initial));
+
+  const saveCache = async () => {
+    const final = makeCopyMap(working);
+    assert.equal(final.payload.keys.length, working.size);
+    await E(E.get(homeP).scratch).set(installCacheKey, final);
+    console.log({
+      initial: initial.payload.keys.length,
+      total: working.size,
+    });
+  };
+
+  const wrapInstall = install => async (mPath, bPath, opts) => {
+    const { endoZipBase64Sha512: sha512 } = await loadBundle(bPath).then(
+      m => m.default,
+    );
+    const detail = await provide(working, sha512, () =>
+      install(mPath, bPath, opts).then(installation => ({
+        installation,
+        sha512,
+        path: bPath,
+      })),
+    );
+    return detail.installation;
+  };
+
+  return { wrapInstall, saveCache };
 };

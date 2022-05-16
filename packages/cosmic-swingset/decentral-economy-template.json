@@ -5,12 +5,6 @@
       "module": "@agoric/run-protocol/scripts/init-core.js",
       "args": [
         {
-          "anchorOptions": {
-            "denom": "ibc/123456789abcdef0",
-            "decimalPlaces": 6,
-            "keyword": "AUSD",
-            "proposedName": "AUSD"
-          },
           "econCommitteeOptions": {
             "committeeSize": 1
           }
@@ -23,11 +17,25 @@
       "args": [
         {
           "interchainAssetOptions": {
-            "denom": "ibc/0123456789abcdef",
+            "denom": "ibc/atom1234",
             "decimalPlaces": 4,
             "keyword": "IbcATOM",
             "oracleBrand": "ATOM",
             "proposedName": "ATOM"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/run-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/usdc1234",
+            "decimalPlaces": 6,
+            "keyword": "AUSD",
+            "proposedName": "Anchor USD"
           }
         }
       ]
