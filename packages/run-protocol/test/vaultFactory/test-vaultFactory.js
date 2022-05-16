@@ -2353,7 +2353,7 @@ test('director notifiers', async t => {
     500n,
   );
 
-  const { lender, vaultFactoryCreator } = services.vaultFactory;
+  const { lender, vaultFactory } = services.vaultFactory;
 
   const { econ } = await E(lender).getPublicNotifiers();
 
@@ -2366,7 +2366,7 @@ test('director notifiers', async t => {
 
   // add a vault type
   const chit = makeIssuerKit('chit');
-  await E(vaultFactoryCreator).addVaultType(
+  await E(vaultFactory).addVaultType(
     chit.issuer,
     'Chit',
     defaultParamValues(chit.brand),
