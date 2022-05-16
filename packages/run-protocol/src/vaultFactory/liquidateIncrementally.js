@@ -300,11 +300,11 @@ const start = async zcf => {
     }
 
     // Now we need to know how much was sold so we can pay off the debt.
-    // We can use this because only liquidation adds debt brand to the seat.
+    // We can use this seat because only liquidation adds debt brand to it..
     const debtPaid = debtorSeat.getAmountAllocated('Out', debtBrand);
     const penaltyPaid = AmountMath.min(penalty, debtPaid);
 
-    // Allocate penalty portion of proceeds to a seat that will be transferred to reserve
+    // Allocate penalty portion of proceeds to a seat that will hold it for transfer to reserve
     penaltyPoolSeat.incrementBy(
       debtorSeat.decrementBy(harden({ Out: penaltyPaid })),
     );

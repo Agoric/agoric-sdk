@@ -66,8 +66,7 @@ const liquidate = async (
     deposited,
     E(liqSeat).getOfferResult(),
   ]);
-  // all the proceeds from AMM sale are on the vault seat instead of a staging seat
-  // ??? ^ okay?
+  // NB: all the proceeds from AMM sale are on the vault seat instead of a staging seat
 
   const runToBurn = AmountMath.min(proceeds.RUN, debt);
   trace('before burn', { debt, proceeds, runToBurn });
