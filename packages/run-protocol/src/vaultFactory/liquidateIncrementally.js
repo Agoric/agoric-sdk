@@ -23,6 +23,10 @@ const trace = makeTracer('LiqI', false);
  * price impact on the AMM of any one sale. Each block it will compute
  * a tranche of collateral to sell, where the size is a function of
  * the amount of that collateral in the AMM pool and the desired price impact.
+ * It presently consults the AMM and Oracle for whether to sell.
+ *
+ * The next revision of this will work as follows...
+ *
  * It then gets 3 prices for the current tranche:
  * - AMM quote - compute XYK locally based on the pool sizes
  * - Reserve quote - based on a low price at which the Reserve will purchase
@@ -47,6 +51,7 @@ const trace = makeTracer('LiqI', false);
  * @typedef {{
  *   amm: XYKAMMPublicFacet,
  *   priceAuthority: PriceAuthority,
+ *   reservePublicFacet: AssetReservePublicFacet,
  *   timerService: TimerService,
  *   debtBrand: Brand,
  *   MaxImpactBP: NatValue,
@@ -59,6 +64,7 @@ const start = async zcf => {
   const {
     amm,
     priceAuthority,
+    reservePublicFacet,
     timerService,
     debtBrand,
     MaxImpactBP,
@@ -73,6 +79,10 @@ const start = async zcf => {
 
   const asFloat = (numerator, denominator) =>
     Number(numerator) / Number(denominator);
+
+  // TODO(5467)) distribute penalties to the reserve
+  assert(reservePublicFacet, 'Missing reservePublicFacet');
+  const { zcfSeat: penaltyPoolSeat } = zcf.makeEmptySeatKit();
 
   /**
    * Compute the tranche size whose sale on the AMM would have
@@ -242,8 +252,16 @@ const start = async zcf => {
     trace('offerResult', { amounts });
   }
 
-  const debtorHook = async (debtorSeat, { debt: originalDebt }) => {
-    trace('LIQ', originalDebt);
+  /**
+   * @param {ZCFSeat} debtorSeat
+   * @param {object} options
+   * @param {Amount<'nat'>} options.debt Debt before penalties
+   * @param {Ratio} options.penaltyRate
+   */
+  const handleLiquidateOffer = async (
+    debtorSeat,
+    { debt: originalDebt, penaltyRate },
+  ) => {
     assertProposalShape(debtorSeat, {
       give: { In: null },
     });
@@ -251,7 +269,11 @@ const start = async zcf => {
       originalDebt.brand === debtBrand,
       X`Cannot liquidate to ${originalDebt.brand}`,
     );
-    for await (const t of processTranches(debtorSeat, originalDebt)) {
+    const penalty = ceilMultiplyBy(originalDebt, penaltyRate);
+    const debtWithPenalty = AmountMath.add(originalDebt, penalty);
+    trace('LIQ', { originalDebt, debtWithPenalty });
+
+    for await (const t of processTranches(debtorSeat, debtWithPenalty)) {
       const { collateral, oracleLimit, ammProceeds, debt } = t;
       trace(`OFFER TO DEBT: `, {
         collateral,
@@ -276,6 +298,18 @@ const start = async zcf => {
         });
       }
     }
+
+    // Now we need to know how much was sold so we can pay off the debt.
+    // We can use this seat because only liquidation adds debt brand to it..
+    const debtPaid = debtorSeat.getAmountAllocated('Out', debtBrand);
+    const penaltyPaid = AmountMath.min(penalty, debtPaid);
+
+    // Allocate penalty portion of proceeds to a seat that will hold it for transfer to reserve
+    penaltyPoolSeat.incrementBy(
+      debtorSeat.decrementBy(harden({ Out: penaltyPaid })),
+    );
+    zcf.reallocate(penaltyPoolSeat, debtorSeat);
+
     debtorSeat.exit();
     trace('exit seat');
   };
@@ -283,8 +317,9 @@ const start = async zcf => {
   /**
    * @type {ERef<Liquidator>}
    */
-  const creatorFacet = Far('debtorInvitationCreator', {
-    makeLiquidateInvitation: () => zcf.makeInvitation(debtorHook, 'Liquidate'),
+  const creatorFacet = Far('debtorInvitationCreator (incrementally)', {
+    makeLiquidateInvitation: () =>
+      zcf.makeInvitation(handleLiquidateOffer, 'Liquidate'),
   });
 
   return harden({ creatorFacet });
