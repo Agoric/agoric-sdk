@@ -318,10 +318,7 @@ async function* diagramLines(
     },
   ] of byTime) {
     if (type === 'deliver-result') {
-      if (active) {
-        // yield `deactivate ${active}\n`;
-        active = undefined;
-      }
+      // failed experiment
       continue;
     }
     if (typeof ref === 'number') {
