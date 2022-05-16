@@ -62,7 +62,7 @@ async function* readJSONLines(data) {
  *   time: number, type: 'deliver-result', vatID: string
  * }]} DeliverResult
  */
-async function slogToDiagramX(entries) {
+async function slogSummary(entries) {
   /** @type { Map<string, SlogCreateVatEntry> } */
   const vatInfo = new Map();
   /** @type { Map<number | string | {}, TimedEvent & Arrival>} */
@@ -281,7 +281,7 @@ const fmtMermaid = freeze({
 
 /**
  * @param {typeof fmtPlantUml} fmt
- * @param {Awaited<ReturnType<typeof slogToDiagramX>>} param0
+ * @param {Awaited<ReturnType<typeof slogSummary>>} param0
  * @yields {string}
  */
 async function* diagramLines(
@@ -380,8 +380,8 @@ async function* diagramLines(
  * @yields {string}
  */
 async function* slogToDiagram(entries) {
-  const summary = await slogToDiagramX(entries);
-  for await (const line of diagramLines(fmtMermaid, summary)) {
+  const summary = await slogSummary(entries);
+  for await (const line of diagramLines(fmtPlantUml, summary)) {
     yield line;
   }
 }
