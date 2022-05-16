@@ -42,9 +42,9 @@ function stageTransfer(from, to, txFrom, txTo = txFrom) {
 
 /**
  * @param {ZCF<GovernanceTerms<{
- *    GiveStableFee: ParamRecord<'ratio'>,
- *    WantStableFee: ParamRecord<'ratio'>,
- *    MintLimit: ParamRecord<'amount'>,
+ *    GiveStableFee: 'ratio',
+ *    WantStableFee: 'ratio',
+ *    MintLimit: 'amount',
  *   }> & {
  *    anchorBrand: Brand,
  *    anchorPerStable: Ratio,

@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@endo/eventual-send';
-import { makeLegacyMap } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import { Far } from '@endo/marshal';
@@ -22,9 +22,8 @@ import { makePromiseKit } from '@endo/promise-kit';
 export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
   let ticks = Nat(startValue);
 
-  /** @type {LegacyMap<Timestamp, Array<ERef<TimerWaker>>>} */
-  // Legacy because the value is mutated after it is stored.
-  const schedule = makeLegacyMap('Timestamp');
+  /** @type {MapStore<Timestamp, ERef<TimerWaker>[]>} */
+  const schedule = makeScalarMapStore('Timestamp');
 
   const makeRepeater = (delay, interval, timer) => {
     assert.typeof(delay, 'bigint');
@@ -111,7 +110,7 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
       if (!schedule.has(baseTime)) {
         schedule.init(baseTime, []);
       }
-      schedule.get(baseTime).push(waker);
+      schedule.set(baseTime, [...schedule.get(baseTime), waker]);
       return baseTime;
     },
     removeWakeup(waker) {

@@ -177,7 +177,7 @@ const makeScenario = async t => {
         },
       });
       myAddressNameAdmin.update('depositFacet', depositFacet);
-      nameAdmin.update(addr, nameHub);
+      nameAdmin.update(addr, nameHub, myAddressNameAdmin);
     });
     return purses;
   };
@@ -187,7 +187,7 @@ const makeScenario = async t => {
   produceRestoreBundleID.resolve(t.context.restoreBundleID);
   const makeEnactCoreProposalsFromBundleHandle =
     ({ makeCoreProposalArgs, E: cpE }) =>
-    allPowers => {
+    async allPowers => {
       const {
         consume: { restoreBundleID },
       } = allPowers;
@@ -195,11 +195,12 @@ const makeScenario = async t => {
         return cpE(restoreBundleID)(bundleID);
       };
 
-      return Promise.all(
-        makeCoreProposalArgs.map(async ({ ref, call }) => {
+      await Promise.all(
+        makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
           const subBehavior = makeCoreProposalBehavior({
             manifestInstallRef: ref,
             getManifestCall: call,
+            overrideManifest,
             E: cpE,
             restoreRef,
           });

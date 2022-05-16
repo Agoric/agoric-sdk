@@ -102,8 +102,8 @@ const start = async (zcf, privateArgs) => {
    * IssuerKeywordRecord.
    *
    * @typedef {GovernanceTerms<{
-   *   PoolFee: ParamRecord<'nat'>,
-   *   ProtocolFee: ParamRecord<'nat'>,
+   *   PoolFee: 'nat',
+   *   ProtocolFee: 'nat',
    * }> & {
    *   brands: { Central: Brand },
    *   issuers: {},
@@ -165,6 +165,7 @@ const start = async (zcf, privateArgs) => {
     params,
     protocolSeat,
   );
+  /** @param {Brand} brand */
   const getPoolAllocation = brand =>
     getPool(brand).getPoolSeat().getCurrentAllocation();
 

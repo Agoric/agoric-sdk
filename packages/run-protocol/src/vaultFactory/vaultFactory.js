@@ -29,13 +29,7 @@ import {
 import { makeVaultDirector } from './vaultDirector.js';
 
 /**
- * @typedef {{
- *   LiquidationTerms: ParamRecord<'unknown'>,
- *   LiquidationInstall: ParamRecord<'installation'>,
- *   MinInitialDebt: ParamRecord<'amount'>,
- * }} VaultDirectorParams
- *
- * @typedef {ZCF<GovernanceTerms<VaultDirectorParams> & {
+ * @typedef {ZCF<GovernanceTerms<import('./params').VaultDirectorParams> & {
  *   ammPublicFacet: AutoswapPublicFacet,
  *   liquidationInstall: Installation<import('./liquidateMinimum.js').start>,
  *   loanTimingParams: {ChargingPeriod: ParamRecord<'nat'>, RecordingPeriod: ParamRecord<'nat'>},

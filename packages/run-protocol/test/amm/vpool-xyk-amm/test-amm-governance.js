@@ -14,7 +14,7 @@ import {
   PROTOCOL_FEE_KEY,
 } from '../../../src/vpool-xyk-amm/params.js';
 import { amountGT } from '../../../src/vpool-xyk-amm/constantProduct/calcFees.js';
-import { startEconomicCommittee } from '../../../src/econ-behaviors.js';
+import { startEconomicCommittee } from '../../../src/proposals/econ-behaviors.js';
 
 import { setupAmmServices, setupAMMBootstrap } from './setup.js';
 import { unsafeMakeBundleCache } from '../../bundleTool.js';
@@ -28,8 +28,12 @@ test('start Economic Committee', async t => {
   const space = await setupAMMBootstrap();
   const { consume } = space;
   startEconomicCommittee(space, {
-    committeeName: 'The Cabal',
-    committeeSize: 1,
+    options: {
+      econCommitteeOptions: {
+        committeeName: 'The Cabal',
+        committeeSize: 1,
+      },
+    },
   });
   const agoricNames = await consume.agoricNames;
   const instance = await E(agoricNames).lookup('instance', 'economicCommittee');

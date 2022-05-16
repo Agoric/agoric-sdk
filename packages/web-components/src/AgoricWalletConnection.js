@@ -15,9 +15,18 @@ import { makeConnectionMachine } from './states.js';
 import { makeAdminWebSocketConnector } from './admin-websocket-connector.js';
 import { makeBridgeIframeConnector } from './bridge-iframe-connector.js';
 
+// Wait this long for the bridge before timing out.
+const CONNECTION_TIMEOUT_MS = 5000;
+
+// Delay after a reset.
+const RESET_DELAY_MS = 3000;
+
 // TODO: Use something on agoric.app instead.
 const DEFAULT_LOCATOR_URL =
   'https://local.agoric.com/?append=/wallet-bridge.html';
+
+const delay = (ms, resolution) =>
+  new Promise(resolve => setTimeout(resolve, ms, resolution));
 
 export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
   class AgoricWalletConnection extends LitElement {
@@ -41,11 +50,44 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
       return this.machine.state.name;
     }
 
+    async reset() {
+      if (this.isResetting) {
+        return;
+      }
+      this.isResetting = true;
+      await delay(RESET_DELAY_MS, 'reset');
+      if (this._captp) {
+        this._captp.abort();
+        this._captp = null;
+      }
+      if (this._connector) {
+        this._connector.hostDisconnected();
+        this._connector = null;
+      }
+
+      // Just make sure the reconnection logic is triggered.
+      this._bridgePK = makePromiseKit();
+
+      this.service.send({ type: 'reset' });
+      this.isResetting = false;
+    }
+
     get walletConnection() {
       if (this._walletConnection) {
         // Cached.
         return this._walletConnection;
       }
+
+      const startTimeout = () => {
+        Promise.race([
+          this._bridgePK.promise,
+          delay(CONNECTION_TIMEOUT_MS, 'timeout'),
+        ])
+          .then(
+            value => (value === 'timeout' && this.reset()) || Promise.resolve(),
+          )
+          .catch(e => console.error('error establishing connection', e));
+      };
 
       this._walletConnection = Far('WalletConnection', {
         getScopedBridge: (
@@ -67,6 +109,7 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
               makeConnector,
             },
           });
+          startTimeout();
           return this._bridgePK.promise;
         },
         getAdminBootstrap: (
@@ -86,20 +129,11 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
               makeConnector,
             },
           });
+          startTimeout();
           return this._bridgePK.promise;
         },
         reset: () => {
-          this.service.send({ type: 'reset' });
-          if (this._captp) {
-            this._captp.abort();
-            this._captp = null;
-          }
-          if (this._connector) {
-            this._connector.hostDisconnected();
-            this._connector = null;
-          }
-          this._bridgePK.reject(Error('Connection reset'));
-          this._bridgePK = makePromiseKit();
+          this.reset();
         },
       });
 

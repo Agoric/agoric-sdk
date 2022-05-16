@@ -23,7 +23,7 @@ const makeTerms = (number, invitationAmount) => {
  * GovernedPublicFacet<{}>,
  * GovernedCreatorFacet<any>,
  * GovernanceTerms<{
- *   MalleableNumber: ParamRecord<'nat'>,
+ *   MalleableNumber: 'nat',
  * }>,
  * {initialPoserInvitation: Payment}>
  */

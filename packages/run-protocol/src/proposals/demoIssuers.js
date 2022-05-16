@@ -7,7 +7,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { Nat } from '@endo/nat';
 import { E, Far } from '@endo/far';
-import * as Collect from './collect.js';
+import * as Collect from '../collect.js';
 
 const { details: X, quote: q } = assert;
 const { multiply, floorDivide } = natSafeMath;
@@ -430,7 +430,7 @@ export const poolRates = (issuerName, record, kits, central) => {
    */
   const toRatio = ([n, d], b) => makeRatio(n, b, d);
   const rates = {
-    debtLimit: AmountMath.make(central.brand, 1_000_000n),
+    debtLimit: AmountMath.make(central.brand, 1_000_000_000n),
     initialPrice: makeRatio(
       initialPriceNumerator,
       central.brand,

@@ -21,7 +21,7 @@ import mintHolderBundle from '@agoric/vats/bundles/bundle-mintHolder.js';
 import {
   startEconomicCommittee,
   startRunStake,
-} from '../../src/econ-behaviors.js';
+} from '../../src/proposals/econ-behaviors.js';
 import * as Collect from '../../src/collect.js';
 import { makeVoterTool, setUpZoeForTest } from '../supports.js';
 import { ManagerKW as KW } from '../../src/runStake/constants.js';
@@ -123,7 +123,7 @@ export const setupBootstrap = async (
 
   const space = /** @type {any} */ (makePromiseSpace(t.log));
   const { produce, consume } =
-    /** @type { import('../../src/econ-behaviors.js').RunStakeBootstrapPowers } */ (
+    /** @type { import('../../src/proposals/econ-behaviors.js').RunStakeBootstrapPowers } */ (
       space
     );
 
@@ -251,8 +251,12 @@ const bootstrapRunStake = async (
 
   await Promise.all([
     startEconomicCommittee(space, {
-      committeeName: 'Me, myself, and I',
-      committeeSize: 1,
+      options: {
+        econCommitteeOptions: {
+          committeeName: 'Me, myself, and I',
+          committeeSize: 1,
+        },
+      },
     }),
     startRunStake(space),
   ]);

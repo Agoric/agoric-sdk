@@ -15,7 +15,7 @@ import {
 } from '@agoric/deploy-script-support/src/code-gen.js';
 
 import { startPSM, makeAnchorAsset } from './startPSM.js';
-import { PSM_MANIFEST } from '../core-proposal.js';
+import { PSM_MANIFEST } from './core-proposal.js';
 
 /** @file render `startPSM` and `makeAnchorAsset` as evaluatable script.
  *

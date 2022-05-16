@@ -1,0 +1,110 @@
+{
+  "bootstrap": "bootstrap",
+  "coreProposals": [
+    {
+      "module": "@agoric/run-protocol/scripts/init-core.js",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/123456789abcdef0",
+            "decimalPlaces": 6,
+            "keyword": "AUSD",
+            "proposedName": "AUSD"
+          },
+          "econCommitteeOptions": {
+            "committeeSize": 1
+          }
+        }
+      ]
+    },
+    "@agoric/pegasus/scripts/init-core.js",
+    {
+      "module": "@agoric/run-protocol/scripts/add-collateral-core.js",
+      "args": [
+        {
+          "interchainAssetOptions": {
+            "denom": "ibc/0123456789abcdef",
+            "decimalPlaces": 4,
+            "keyword": "IbcATOM",
+            "oracleBrand": "ATOM",
+            "proposedName": "ATOM"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/run-protocol/scripts/price-feed-core.js",
+      "args": [
+        {
+          "AGORIC_INSTANCE_NAME": "ATOM-USD price feed",
+          "oracleAddresses": ["@FIRST_SOLO_ADDRESS@"],
+          "IN_BRAND_LOOKUP": ["agoricNames", "oracleBrand", "ATOM"],
+          "IN_BRAND_DECIMALS": 6,
+          "OUT_BRAND_LOOKUP": ["agoricNames", "oracleBrand", "USD"],
+          "OUT_BRAND_DECIMALS": 4
+        }
+      ]
+    },
+    {
+      "module": "@agoric/run-protocol/scripts/invite-committee-core.js",
+      "args": [
+        {
+          "voterAddresses": ["@FIRST_SOLO_ADDRESS@"]
+        }
+      ]
+    }
+  ],
+  "vats": {
+    "bootstrap": {
+      "sourceSpec": "@agoric/vats/src/core/boot.js",
+      "parameters": {
+        "governanceActions": true
+      }
+    }
+  },
+  "bundles": {
+    "centralSupply": {
+      "sourceSpec": "@agoric/vats/src/centralSupply.js"
+    },
+    "mintHolder": {
+      "sourceSpec": "@agoric/vats/src/mintHolder.js"
+    },
+    "zcf": {
+      "sourceSpec": "@agoric/zoe/contractFacet.js"
+    },
+    "bank": {
+      "sourceSpec": "@agoric/vats/src/vat-bank.js"
+    },
+    "board": {
+      "sourceSpec": "@agoric/vats/src/vat-board.js"
+    },
+    "distributeFees": {
+      "sourceSpec": "@agoric/vats/src/vat-distributeFees.js"
+    },
+    "ibc": {
+      "sourceSpec": "@agoric/vats/src/vat-ibc.js"
+    },
+    "mints": {
+      "sourceSpec": "@agoric/vats/src/vat-mints.js"
+    },
+    "network": {
+      "sourceSpec": "@agoric/vats/src/vat-network.js"
+    },
+    "priceAuthority": {
+      "sourceSpec": "@agoric/vats/src/vat-priceAuthority.js"
+    },
+    "provisioning": {
+      "sourceSpec": "@agoric/vats/src/vat-provisioning.js"
+    },
+    "sharing": {
+      "sourceSpec": "@agoric/vats/src/vat-sharing.js"
+    },
+    "walletManager": {
+      "sourceSpec": "@agoric/vats/src/vat-walletManager.js"
+    },
+    "zoe": {
+      "sourceSpec": "@agoric/vats/src/vat-zoe.js"
+    }
+  },
+  "defaultManagerType": "xs-worker"
+}

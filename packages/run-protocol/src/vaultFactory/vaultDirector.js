@@ -41,7 +41,7 @@ const { details: X } = assert;
  * debtMint: ZCFMint<'nat'>,
  * collateralTypes: Store<Brand,VaultManager>,
  * electionManager: Instance,
- * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<unknown>,
+ * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>,
  * mintSeat: ZCFSeat,
  * penaltyPoolSeat: ZCFSeat,
  * rewardPoolSeat: ZCFSeat,
@@ -64,9 +64,9 @@ const { details: X } = assert;
  */
 
 /**
- * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
- * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{Electorate: "invitation", LiquidationInstall: "installation", LiquidationTerms: "unknown", MinInitialDebt: "amount"}>} directorParamManager
- * @param {ZCFMint<"nat">} debtMint
+ * @param {ImmutableState['zcf']} zcf
+ * @param {ImmutableState['directorParamManager']} directorParamManager
+ * @param {ImmutableState['debtMint']} debtMint
  */
 const initState = (zcf, directorParamManager, debtMint) => {
   /** For temporary staging of newly minted tokens */
@@ -123,11 +123,9 @@ const makeVaultInvitation = ({ state }) => {
     assert(
       AmountMath.isGTE(
         requestedAmount,
-        // @ts-expect-error VaultDirectoryParams isn't right
         state.directorParamManager.getMinInitialDebt(),
       ),
       X`The request must be for at least ${
-        // @ts-expect-error VaultDirectoryParams isn't right
         state.directorParamManager.getMinInitialDebt().value
       }. ${requestedAmount.value} is too small`,
     );
@@ -171,9 +169,7 @@ const getCollaterals = async ({ state }) => {
  * @param {ImmutableState['directorParamManager']} directorParamManager
  */
 const getLiquidationConfig = directorParamManager => ({
-  // @ts-expect-error VaultDirectoryParams isn't right
   install: directorParamManager.getLiquidationInstall(),
-  // @ts-expect-error VaultDirectoryParams isn't right
   terms: directorParamManager.getLiquidationTerms(),
 });
 
@@ -460,7 +456,7 @@ const behavior = {
  *   timerService: TimerService,
  *   priceAuthority: ERef<PriceAuthority>
  * }>} zcf
- * @param {import('./vaultFactory.js').VaultDirectorParams} directorParamManager
+ * @param {import('./params.js').VaultDirectorParams} directorParamManager
  * @param {ZCFMint<"nat">} debtMint
  */
 const makeVaultDirector = defineKindMulti('VaultDirector', initState, behavior);

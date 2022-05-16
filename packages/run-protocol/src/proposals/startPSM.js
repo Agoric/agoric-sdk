@@ -5,6 +5,7 @@ import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
 const BASIS_POINTS = 10000n;
+const { details: X } = assert;
 
 /**
  * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
@@ -12,7 +13,7 @@ const BASIS_POINTS = 10000n;
  * @param {bigint} [config.WantStableFeeBP]
  * @param {bigint} [config.GiveStableFeeBP]
  * @param {bigint} [config.MINT_LIMIT]
- * @typedef {import('../econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers
+ * @typedef {import('./econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers
  */
 export const startPSM = async (
   {
@@ -123,16 +124,19 @@ export const startPSM = async (
 harden(startPSM);
 
 /**
+ * @typedef {object} AnchorOptions
+ * @property {string} [denom]
+ * @property {number} [decimalPlaces]
+ * @property {string} [keyword]
+ * @property {string} [proposedName]
+ */
+
+/**
  * Make anchor issuer out of a Cosmos asset; presumably
  * USDC over IBC. Add it to BankManager.
  *
  * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
- * @param {{ options: {
- *   denom: string,
- *   keyword?: string,
- *   proposedName?: string,
- *   decimalPlaces?: number,
- * }}} config
+ * @param {{options?: { anchorOptions?: AnchorOptions } }} [config]
  */
 export const makeAnchorAsset = async (
   {
@@ -147,20 +151,29 @@ export const makeAnchorAsset = async (
       produce: { AUSD: brandP },
     },
   },
-  {
-    options: {
-      denom,
-      proposedName = 'USDC Anchor',
-      keyword = 'AUSD',
-      decimalPlaces = 6,
-    },
-  },
+  { options: { anchorOptions = {} } = {} },
 ) => {
+  assert.typeof(anchorOptions, 'object', X`${anchorOptions} must be an object`);
+  const {
+    denom,
+    keyword = 'AUSD',
+    decimalPlaces = 6,
+    proposedName = 'AUSD',
+  } = anchorOptions;
+  assert.typeof(
+    denom,
+    'string',
+    X`anchorOptions.denom must be a string, not ${denom}`,
+  );
+
   /** @type {import('@agoric/vats/src/mintHolder.js').AssetTerms} */
   const terms = {
     keyword,
     assetKind: AssetKind.NAT,
-    displayInfo: { decimalPlaces, assetKind: AssetKind.NAT },
+    displayInfo: {
+      decimalPlaces,
+      assetKind: AssetKind.NAT,
+    },
   };
   const { creatorFacet: mint, publicFacet: issuer } = E.get(
     E(zoe).startInstance(mintHolder, {}, terms),

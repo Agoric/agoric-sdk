@@ -49,7 +49,10 @@ export const makeWriteCoreProposal = (
     );
 
     const mergedPermits = mergePermits(manifest);
-    return mergePermits({ mergedPermits, additionalPermits });
+    return {
+      manifest,
+      permits: mergePermits({ mergedPermits, additionalPermits }),
+    };
   };
 
   let mutex = Promise.resolve();
@@ -91,7 +94,8 @@ export const makeWriteCoreProposal = (
     console.log('created', { filePrefix, sourceSpec, getManifestCall });
 
     // Extract the top-level permit.
-    const proposalPermit = await mergeProposalPermit(proposal, permits);
+    const { permits: proposalPermit, manifest: overrideManifest } =
+      await mergeProposalPermit(proposal, permits);
 
     // Get an install
     const manifestInstallRef = await publishRef(install(sourceSpec));
@@ -102,9 +106,10 @@ export const makeWriteCoreProposal = (
 
 const manifestInstallRef = ${stringify(manifestInstallRef)};
 const getManifestCall = harden(${stringify(getManifestCall, true)});
+const overrideManifest = ${stringify(overrideManifest, true)};
 
 // Make the behavior the completion value.
-(${makeCoreProposalBehavior})({ manifestInstallRef, getManifestCall, E });
+(${makeCoreProposalBehavior})({ manifestInstallRef, getManifestCall, overrideManifest, E });
 `;
 
     const trimmed = defangAndTrim(code);

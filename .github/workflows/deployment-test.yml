@@ -90,6 +90,7 @@ jobs:
         env:
           NETWORK_NAME: chaintest
       - name: capture results
+        if: always()
         run: |
           NOW=$(date -u +%Y%m%dT%H%M%S)
           echo "NOW=$NOW" >> "$GITHUB_ENV"

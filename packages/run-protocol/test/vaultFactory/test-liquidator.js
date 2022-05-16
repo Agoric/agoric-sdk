@@ -20,7 +20,7 @@ import {
   startEconomicCommittee,
   startVaultFactory,
   setupAmm,
-} from '../../src/econ-behaviors.js';
+} from '../../src/proposals/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
 import * as Collect from '../../src/collect.js';
 
@@ -128,7 +128,9 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   const { consume, instance } = space;
   installGovernance(zoe, space.installation.produce);
   space.installation.produce.amm.resolve(t.context.installation.amm);
-  startEconomicCommittee(space, electorateTerms);
+  startEconomicCommittee(space, {
+    options: { econCommitteeOptions: electorateTerms },
+  });
   setupAmm(space);
 
   const governorCreatorFacet = consume.ammGovernorCreatorFacet;

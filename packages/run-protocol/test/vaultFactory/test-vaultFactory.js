@@ -28,7 +28,7 @@ import {
   startEconomicCommittee,
   startVaultFactory,
   setupAmm,
-} from '../../src/econ-behaviors.js';
+} from '../../src/proposals/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
 import * as Collect from '../../src/collect.js';
 import { calculateCurrentDebt } from '../../src/interest-math.js';

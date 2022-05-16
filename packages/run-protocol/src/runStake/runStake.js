@@ -23,10 +23,10 @@ const { values } = Object;
  * and `electionManager` terms.
  *
  * @typedef {{
- *   DebtLimit: ParamRecord<'amount'>,
- *   MintingRatio: ParamRecord<'ratio'>,
- *   InterestRate: ParamRecord<'ratio'>,
- *   LoanFee: ParamRecord<'ratio'>,
+ *   DebtLimit: 'amount',
+ *   MintingRatio: 'ratio',
+ *   InterestRate: 'ratio',
+ *   LoanFee: 'ratio',
  * }} RunStakeParams
  *
  * As in vaultFactory, `timerService` provides the periodic signal to
