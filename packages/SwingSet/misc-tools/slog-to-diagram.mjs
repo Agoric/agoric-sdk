@@ -256,6 +256,30 @@ const fmtPlantUml = freeze({
 });
 
 /**
+ * ref: https://mermaid-js.github.io/mermaid/
+ */
+const fmtMermaid = freeze({
+  /** @param {string} _name */
+  start: _name =>
+    `\`\`\`mermaid\nsequenceDiagram\n  autonumber\n  participant Incoming\n`,
+  end: () => '```\n',
+  /** @type {(l: string, v: string) => string} */
+  participant: (label, vatID) => `  participant ${vatID} as ${label}\n`,
+  /** @type {(s: string, t: string) => string} */
+  note: (side, text) => `  note ${side} of XXXActor ${text}\n`,
+  /** @param {string} text */
+  delay: text => `  %% TODO: delay ... ${text} ...\n`,
+  /** @param {number} _x */
+  autonumber: _x => '',
+  /** @type {(d: string, msg: string, m?: boolean) => string} */
+  incoming: (dest, msg, _missing) => `  Incoming ->> ${dest} : ${msg})\n`,
+  /** @type {(s: string, d: string, msg: string) => string} */
+  send: (src, dest, label) => `  ${src} -) ${dest} : ${label}\n`,
+  /** @type {(s: string, d: string, msg: string) => string} */
+  response: (src, dest, label) => `  ${src} -->> ${dest} : ${label}\n`,
+});
+
+/**
  * @param {typeof fmtPlantUml} fmt
  * @param {Awaited<ReturnType<typeof slogToDiagramX>>} param0
  * @yields {string}
@@ -357,7 +381,7 @@ async function* diagramLines(
  */
 async function* slogToDiagram(entries) {
   const summary = await slogToDiagramX(entries);
-  for await (const line of diagramLines(fmtPlantUml, summary)) {
+  for await (const line of diagramLines(fmtMermaid, summary)) {
     yield line;
   }
 }
