@@ -561,7 +561,7 @@ export const fundAMM = async ({
         });
 
         E(zoe).offer(
-          E(ammPublicFacet).makeAddLiquidityInvitation(),
+          E(ammPublicFacet).addPoolInvitation(),
           proposal,
           harden({
             Secondary: secondaryPayment,
