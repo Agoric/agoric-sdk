@@ -45,10 +45,20 @@
       "args": [
         {
           "AGORIC_INSTANCE_NAME": "ATOM-USD price feed",
-          "oracleAddresses": ["@FIRST_SOLO_ADDRESS@"],
-          "IN_BRAND_LOOKUP": ["agoricNames", "oracleBrand", "ATOM"],
+          "oracleAddresses": [
+            "@FIRST_SOLO_ADDRESS@"
+          ],
+          "IN_BRAND_LOOKUP": [
+            "agoricNames",
+            "oracleBrand",
+            "ATOM"
+          ],
           "IN_BRAND_DECIMALS": 6,
-          "OUT_BRAND_LOOKUP": ["agoricNames", "oracleBrand", "USD"],
+          "OUT_BRAND_LOOKUP": [
+            "agoricNames",
+            "oracleBrand",
+            "USD"
+          ],
           "OUT_BRAND_DECIMALS": 4
         }
       ]
@@ -57,7 +67,9 @@
       "module": "@agoric/run-protocol/scripts/invite-committee-core.js",
       "args": [
         {
-          "voterAddresses": ["@FIRST_SOLO_ADDRESS@"]
+          "voterAddresses": [
+            "@FIRST_SOLO_ADDRESS@"
+          ]
         }
       ]
     }
