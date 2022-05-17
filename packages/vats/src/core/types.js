@@ -189,6 +189,7 @@
  *   bldIssuerKit: RemoteIssuerKit,
  *   board: Board,
  *   bridgeManager: OptionalBridgeManager,
+ *   chainStorage: unknown,
  *   chainTimerService: TimerService,
  *   client: ClientManager,
  *   clientCreator: ClientCreator,

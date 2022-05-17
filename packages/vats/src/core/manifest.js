@@ -82,6 +82,14 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
     },
     home: { produce: { chainTimerService: 'timer' } },
   },
+  makeChainStorage: {
+    consume: {
+      bridgeManager: true,
+    },
+    produce: {
+      chainStorage: true,
+    },
+  },
   makeClientBanks: {
     consume: {
       bankManager: 'bank',

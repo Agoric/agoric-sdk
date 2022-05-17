@@ -282,6 +282,76 @@ export const makeBridgeManager = async ({
 };
 harden(makeBridgeManager);
 
+// TODO: Refine typing... maybe something like PromiseSpace or PromiseSpaceOf?
+/**
+ * @param { BootstrapPowers } powers
+ */
+export const makeChainStorage = async ({
+  consume: { bridgeManager: bridgeManagerP },
+  produce: { chainStorage: chainStorageP },
+}) => {
+  const bridgeManager = await bridgeManagerP;
+  if (!bridgeManager) {
+    console.warn('Cannot support chainStorage without an actual chain.');
+    chainStorageP.resolve(undefined);
+    return;
+  }
+  const toStorage = message =>
+    E(bridgeManager).toBridge(BRIDGE_ID.STORAGE, message);
+
+  // TODO: Formalize root key.
+  // Must not be any of {activityhash,beansOwing,egress,mailbox},
+  // and must be reserved in sites that use those keys (both Go and JS).
+  const ROOT_KEY = 'published';
+  // TODO: Formalize segment constraints.
+  // Must be nonempty and disallow (unescaped) `.`, and for simplicity
+  // (and future possibility of e.g. escaping) we currently limit to
+  // ASCII alphanumeric plus underscore.
+  const pathSegmentPattern = /^[a-zA-Z0-9_]{1,100}$/;
+  const makeChainStorageNode = key => {
+    const node = {
+      getKey() {
+        return key;
+      },
+      getChildNode(name) {
+        assert.typeof(name, 'string');
+        if (!pathSegmentPattern.test(name)) {
+          assert.fail(
+            X`Path segment must be a short ASCII identifier: ${name}`,
+          );
+        }
+        return makeChainStorageNode(`${key}.${name}`);
+      },
+      setValue(value) {
+        assert.typeof(value, 'string');
+        // TODO: Fix on the Go side.
+        // https://github.com/Agoric/agoric-sdk/issues/5381
+        assert(value !== '');
+        toStorage({ key, method: 'set', value });
+      },
+      async delete() {
+        assert(key !== ROOT_KEY);
+        const childKeys = await toStorage({ key, method: 'keys' });
+        if (childKeys.length > 0) {
+          assert.fail(X`Refusing to delete node with children: ${key}`);
+        }
+        toStorage({ key, method: 'set' });
+      },
+      // Possible extensions:
+      // * getValue()
+      // * getChildNames() and/or getChildNodes()
+      // * getName()
+      // * recursive delete
+      // * batch operations
+      // * local buffering (with end-of-block commit)
+    };
+    return Far('chainStorageNode', node);
+  };
+
+  const rootNode = makeChainStorageNode(ROOT_KEY);
+  chainStorageP.resolve(rootNode);
+};
+
 /**
  * no free lunch on chain
  *
