@@ -39,13 +39,13 @@
  * return a promise that is fulfilled when the key is updated (or rejected when
  * deleted).
  * @property {( key: string, newValue: unknown, newAdmin?: unknown) =>
- *   Promise<any> } default Update if not already updated.  Return
+ *   any } default Update if not already updated.  Return
  *   existing value, or newValue if not existing.
  * @property {(
- *   key: string, newValue: unknown, newAdmin?: unknown) => Promise<void>
+ *   key: string, newValue: unknown, newAdmin?: unknown) => void
  * } set Update only if already initialized. Reject if not.
  * @property {(
- *   key: string, newValue: unknown, newAdmin?: unknown) => Promise<void>
+ *   key: string, newValue: unknown, newAdmin?: unknown) => void
  * } update Fulfill an outstanding reserved promise (if any) to the newValue and
  * set the key to the newValue.  If newAdmin is provided, set that to return via
  * lookupAdmin.
