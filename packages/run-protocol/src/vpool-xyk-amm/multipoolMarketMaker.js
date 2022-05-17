@@ -50,7 +50,8 @@ const { quote: q, details: X } = assert;
  * terms. Separate invitations are available by calling methods on the
  * publicFacet for adding and removing liquidity and for making trades. Other
  * publicFacet operations support querying prices and the sizes of pools. New
- * Pools can be created with addPool().
+ * Pools can be created by first calling addIssuer() and then exercising an
+ * invitation from addPoolInvitation().
  *
  * When making trades or requesting prices, the caller must specify either a
  * maximum input amount (swapIn, getInputPrice) or a minimum output amount
