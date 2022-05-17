@@ -45,7 +45,7 @@ const liquidate = async (
     'Collateral',
     collateralBrand,
   );
-  trace(`liq prep`, { collateralToSell, debt });
+  trace(`liq prep`, { collateralToSell, debt, liquidator });
 
   const { deposited, userSeatPromise: liqSeat } = await offerTo(
     zcf,
@@ -59,6 +59,7 @@ const liquidate = async (
     vaultZcfSeat,
     harden({ debt, penaltyRate }),
   );
+  trace(` offeredTo`, { collateralToSell, debt });
 
   // await deposited and offer result, but ignore the latter
   const [proceeds] = await Promise.all([

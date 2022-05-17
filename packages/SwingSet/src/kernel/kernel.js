@@ -1066,7 +1066,6 @@ export default function buildKernel(
       await vatWarehouse.maybeSaveSnapshot();
     }
     kernelKeeper.processRefcounts();
-    kernelKeeper.saveStats();
     const crankNum = kernelKeeper.getCrankNumber();
     kernelKeeper.incrementCrankNumber();
     const { crankhash, activityhash } = kernelKeeper.commitCrank();
@@ -1126,7 +1125,6 @@ export default function buildKernel(
     }
 
     kernelKeeper.processRefcounts();
-    kernelKeeper.saveStats();
     const crankNum = kernelKeeper.getCrankNumber();
     kernelKeeper.incrementCrankNumber();
     const { crankhash, activityhash } = kernelKeeper.commitCrank();
@@ -1344,6 +1342,8 @@ export default function buildKernel(
     started = true;
     assert(kernelKeeper.getInitialized(), X`kernel not initialized`);
 
+    kernelKeeper.loadStats();
+
     await vatWarehouse.start(logStartup);
 
     // the admin device is endowed directly by the kernel
@@ -1425,8 +1425,6 @@ export default function buildKernel(
       const hooks = makeVatAdminHooks({ kernelKeeper, terminateVat });
       deviceHooks.set(vatAdminDeviceID, hooks);
     }
-
-    kernelKeeper.loadStats();
   }
 
   function getNextDeliveryMessage() {
@@ -1640,6 +1638,30 @@ export default function buildKernel(
 
     getActivityhash() {
       return kernelKeeper.getActivityhash();
+    },
+
+    /**
+     * Returns 2 numbers informing the state of the kernel queues:
+     * - activeQueues: the total length of queues which can be processed
+     * - inactiveQueues: the total length of queues which are waiting on some
+     *   kernel state change.
+     *
+     * The reason to keep those separate is to make explicit a state where the
+     * active queues are empty and only the inactive queues have pending events,
+     * aka where SwingSet is blocked on some external trigger.
+     */
+    getQueuesLength() {
+      const { runQueueLength, acceptanceQueueLength, promiseQueuesLength } =
+        kernelKeeper.getStats(true);
+
+      assert.typeof(runQueueLength, 'number');
+      assert.typeof(acceptanceQueueLength, 'number');
+      assert.typeof(promiseQueuesLength, 'number');
+
+      return {
+        activeQueues: runQueueLength + acceptanceQueueLength,
+        inactiveQueues: promiseQueuesLength,
+      };
     },
 
     dump() {

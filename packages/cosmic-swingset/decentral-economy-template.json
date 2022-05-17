@@ -5,12 +5,6 @@
       "module": "@agoric/run-protocol/scripts/init-core.js",
       "args": [
         {
-          "anchorOptions": {
-            "denom": "ibc/123456789abcdef0",
-            "decimalPlaces": 6,
-            "keyword": "AUSD",
-            "proposedName": "AUSD"
-          },
           "econCommitteeOptions": {
             "committeeSize": 1
           }
@@ -23,7 +17,7 @@
       "args": [
         {
           "interchainAssetOptions": {
-            "denom": "ibc/0123456789abcdef",
+            "denom": "ibc/atom1234",
             "decimalPlaces": 4,
             "keyword": "IbcATOM",
             "oracleBrand": "ATOM",
@@ -33,14 +27,38 @@
       ]
     },
     {
+      "module": "@agoric/run-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/usdc1234",
+            "decimalPlaces": 6,
+            "keyword": "AUSD",
+            "proposedName": "Anchor USD"
+          }
+        }
+      ]
+    },
+    {
       "module": "@agoric/run-protocol/scripts/price-feed-core.js",
       "args": [
         {
           "AGORIC_INSTANCE_NAME": "ATOM-USD price feed",
-          "oracleAddresses": ["@FIRST_SOLO_ADDRESS@"],
-          "IN_BRAND_LOOKUP": ["agoricNames", "oracleBrand", "ATOM"],
+          "oracleAddresses": [
+            "@FIRST_SOLO_ADDRESS@"
+          ],
+          "IN_BRAND_LOOKUP": [
+            "agoricNames",
+            "oracleBrand",
+            "ATOM"
+          ],
           "IN_BRAND_DECIMALS": 6,
-          "OUT_BRAND_LOOKUP": ["agoricNames", "oracleBrand", "USD"],
+          "OUT_BRAND_LOOKUP": [
+            "agoricNames",
+            "oracleBrand",
+            "USD"
+          ],
           "OUT_BRAND_DECIMALS": 4
         }
       ]
@@ -49,7 +67,9 @@
       "module": "@agoric/run-protocol/scripts/invite-committee-core.js",
       "args": [
         {
-          "voterAddresses": ["@FIRST_SOLO_ADDRESS@"]
+          "voterAddresses": [
+            "@FIRST_SOLO_ADDRESS@"
+          ]
         }
       ]
     }
