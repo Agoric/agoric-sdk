@@ -5,6 +5,8 @@ import { E } from '@endo/far';
 
 import { reserveThenGetNames } from './utils.js';
 
+export * from './startPSM.js';
+
 /**
  * @typedef {object} InterchainAssetOptions
  * @property {string} [denom]
