@@ -149,6 +149,7 @@ const Provider = ({ children }) => {
     ['contacts', setContacts],
     ['payments', setPayments],
     ['issuers', setIssuers],
+    ['dapps', setDapps],
   ]);
   const setBackend = backend => {
     if (!backend) {
