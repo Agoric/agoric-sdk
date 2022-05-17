@@ -62,7 +62,7 @@ harden(setUpZoeForTest);
 export const setupBootstrap = (t, optTimer = undefined) => {
   const space = /** @type {any} */ (makePromiseSpace(t.log));
   const { produce, consume } =
-    /** @type { import('../src/econ-behaviors.js').EconomyBootstrapPowers & BootstrapPowers } */ (
+    /** @type { import('../src/proposals/econ-behaviors.js').EconomyBootstrapPowers & BootstrapPowers } */ (
       space
     );
 

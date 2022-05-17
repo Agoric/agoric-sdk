@@ -3,13 +3,9 @@ import { AmountMath, AssetKind } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 
-export const reserveThenGetNames = async (nameAdmin, names) => {
-  for (const name of names) {
-    E(nameAdmin).reserve(name);
-  }
-  const nameHub = E(nameAdmin).readonly();
-  return Promise.all(names.map(name => E(nameHub).lookup(name)));
-};
+import { reserveThenGetNames } from './utils.js';
+
+export * from './startPSM.js';
 
 /**
  * @typedef {object} InterchainAssetOptions
@@ -153,7 +149,7 @@ export const registerScaledPriceAuthority = async (
   );
 };
 
-/** @typedef {import('../econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers */
+/** @typedef {import('./econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers */
 
 /**
  * @param {EconomyBootstrapPowers} powers

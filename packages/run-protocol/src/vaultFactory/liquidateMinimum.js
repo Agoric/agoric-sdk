@@ -1,7 +1,10 @@
 // @ts-check
 
 import { E } from '@endo/eventual-send';
-import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  ceilMultiplyBy,
+  offerTo,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
@@ -26,10 +29,19 @@ const start = async zcf => {
 
   /**
    * @param {ZCFSeat} debtorSeat
-   * @param {{ debt: Amount<'nat'> }} options
+   * @param {object} options
+   * @param {Amount<'nat'>} options.debt Debt before penalties
+   * @param {Ratio} options.penaltyRate
    */
-  const debtorHook = async (debtorSeat, { debt }) => {
-    const debtBrand = debt.brand;
+  const handleLiquidationOffer = async (
+    debtorSeat,
+    { debt: originalDebt, penaltyRate },
+  ) => {
+    // XXX does not distribute penalties anywhere
+    const { zcfSeat: penaltyPoolSeat } = zcf.makeEmptySeatKit();
+    const penalty = ceilMultiplyBy(originalDebt, penaltyRate);
+    const debtWithPenalty = AmountMath.add(originalDebt, penalty);
+    const debtBrand = originalDebt.brand;
     const {
       give: { In: amountIn },
     } = debtorSeat.getProposal();
@@ -39,7 +51,7 @@ const start = async zcf => {
       give: { In: amountIn },
       want: { Out: AmountMath.makeEmpty(debtBrand) },
     });
-    trace(`OFFER TO DEBT: `, debt, amountIn);
+    trace(`OFFER TO DEBT: `, debtWithPenalty, amountIn);
     const { deposited } = await offerTo(
       zcf,
       swapInvitation,
@@ -47,23 +59,36 @@ const start = async zcf => {
       liqProposal,
       debtorSeat,
       debtorSeat,
-      { stopAfter: debt },
+      { stopAfter: debtWithPenalty },
     );
     const amounts = await deposited;
     trace(`Liq results`, {
-      debt,
+      debtWithPenalty,
       amountIn,
       paid: debtorSeat.getCurrentAllocation(),
       amounts,
     });
+
+    // Now we need to know how much was sold so we can pay off the debt.
+    // We can use this seat because only liquidation adds debt brand to it..
+    const debtPaid = debtorSeat.getAmountAllocated('Out', debtBrand);
+    const penaltyPaid = AmountMath.min(penalty, debtPaid);
+
+    // Allocate penalty portion of proceeds to a seat that will hold it for transfer to reserve
+    penaltyPoolSeat.incrementBy(
+      debtorSeat.decrementBy(harden({ Out: penaltyPaid })),
+    );
+    zcf.reallocate(penaltyPoolSeat, debtorSeat);
+
     debtorSeat.exit();
   };
 
   /**
    * @type {ERef<Liquidator>}
    */
-  const creatorFacet = Far('debtorInvitationCreator', {
-    makeLiquidateInvitation: () => zcf.makeInvitation(debtorHook, 'Liquidate'),
+  const creatorFacet = Far('debtorInvitationCreator (minimum)', {
+    makeLiquidateInvitation: () =>
+      zcf.makeInvitation(handleLiquidationOffer, 'Liquidate'),
   });
 
   return harden({ creatorFacet });

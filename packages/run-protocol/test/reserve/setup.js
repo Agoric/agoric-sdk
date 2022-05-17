@@ -4,7 +4,7 @@ import {
   setUpZoeForTest,
   setupAmmServices,
 } from '../amm/vpool-xyk-amm/setup.js';
-import { setupReserve } from '../../src/econ-behaviors.js';
+import { setupReserve } from '../../src/proposals/econ-behaviors.js';
 import { provideBundle } from '../supports.js';
 
 const reserveRoot = './src/reserve/assetReserve.js'; // package relative
@@ -54,7 +54,7 @@ const setupReserveBootstrap = async (
 /**
  * NOTE: called separately by each test so contracts don't interfere
  *
- * @param {*} t
+ * @param {import("ava").ExecutionContext<unknown>} t
  * @param {{ committeeName: string, committeeSize: number}} electorateTerms
  * @param {ManualTimer | undefined=} timer
  * @returns {{

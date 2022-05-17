@@ -14,7 +14,7 @@ import {
   PROTOCOL_FEE_KEY,
 } from '../../../src/vpool-xyk-amm/params.js';
 import { amountGT } from '../../../src/vpool-xyk-amm/constantProduct/calcFees.js';
-import { startEconomicCommittee } from '../../../src/econ-behaviors.js';
+import { startEconomicCommittee } from '../../../src/proposals/econ-behaviors.js';
 
 import { setupAmmServices, setupAMMBootstrap } from './setup.js';
 import { unsafeMakeBundleCache } from '../../bundleTool.js';

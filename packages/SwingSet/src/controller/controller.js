@@ -368,7 +368,7 @@ export async function makeSwingsetController(
         `alleged bundleID ${allegedBundleID} does not match actual ${bundleID}`,
       );
     }
-    kernel.installBundle(bundleID, bundle);
+    await kernel.installBundle(bundleID, bundle);
     return bundleID;
   }
 

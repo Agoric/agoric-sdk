@@ -43,6 +43,7 @@
  */
 
 /**
+ * @template [OfferArgs]
  * @template [OfferResult]
  * @typedef {Payment<'set'>} Invitation
  */

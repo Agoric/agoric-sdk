@@ -1,5 +1,7 @@
+// @ts-check
+
 // All the kernel metrics we are prepared for.
-export const KERNEL_STATS_SUM_METRICS = [
+export const KERNEL_STATS_SUM_METRICS = /** @type {const} */ ([
   {
     key: 'syscalls',
     name: 'swingset_syscall_total',
@@ -70,9 +72,9 @@ export const KERNEL_STATS_SUM_METRICS = [
     name: 'swingset_dispatch_notify_total',
     description: 'Total number of SwingSet vat promise notifications',
   },
-];
+]);
 
-export const KERNEL_STATS_UPDOWN_METRICS = [
+export const KERNEL_STATS_UPDOWN_METRICS = /** @type {const} */ ([
   {
     key: 'kernelObjects',
     name: 'swingset_kernel_objects',
@@ -106,12 +108,20 @@ export const KERNEL_STATS_UPDOWN_METRICS = [
   {
     key: 'runQueueLength',
     name: 'swingset_run_queue_length',
+    consensus: true,
     description: 'Length of the kernel run queue',
   },
   {
     key: 'acceptanceQueueLength',
     name: 'swingset_acceptance_queue_length',
+    consensus: true,
     description: 'Length of the kernel acceptance queue',
+  },
+  {
+    key: 'promiseQueuesLength',
+    name: 'swingset_promise_queues_length',
+    consensus: true,
+    description: 'Combined length of all kernel promise queues',
   },
   {
     key: 'clistEntries',
@@ -123,9 +133,12 @@ export const KERNEL_STATS_UPDOWN_METRICS = [
     name: 'swingset_vats',
     description: 'Number of active vats',
   },
-];
+]);
 
-export const KERNEL_STATS_METRICS = [
-  ...KERNEL_STATS_SUM_METRICS.map(m => ({ ...m, metricType: 'counter' })),
-  ...KERNEL_STATS_UPDOWN_METRICS.map(m => ({ ...m, metricType: 'gauge' })),
-];
+const COUNTER = /** @type {const} */ ('counter');
+const GAUGE = /** @type {const} */ ('gauge');
+
+export const KERNEL_STATS_METRICS = harden([
+  ...KERNEL_STATS_SUM_METRICS.map(m => ({ ...m, metricType: COUNTER })),
+  ...KERNEL_STATS_UPDOWN_METRICS.map(m => ({ ...m, metricType: GAUGE })),
+]);

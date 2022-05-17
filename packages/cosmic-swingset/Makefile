@@ -9,6 +9,9 @@ INITIAL_HEIGHT = 17
 GENESIS_TIME = $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)
 VOTING_PERIOD = 45s
 
+ECONOMY_TEMPLATE = decentral-economy-template.json
+ECONOMY_CONFIG = @agoric/cosmic-swingset/t1/decentral-economy-config.json
+
 EVAL_PERMIT = test/gov-permit.json
 EVAL_CODE = test/gov-code.js
 EVAL_DEPOSIT = 1000000ubld
@@ -99,6 +102,8 @@ scenario1-run-chain:
 scenario1-run-client:
 	AG_SOLO_BASEDIR=$$PWD/t9/$(BASE_PORT) $(AG_SOLO) setup --network-config=http://localhost:8001/network-config --webport=$(BASE_PORT)
 
+BOOT_COINS=1000000000000000ubld,500000000000000urun,100provisionpass,100sendpacketpass,1000000000000ibc/usdc1234,1000000000000ibc/atom1234
+
 scenario2-setup: all scenario2-setup-nobuild
 scenario2-setup-nobuild:
 	rm -rf t1
@@ -107,15 +112,20 @@ scenario2-setup-nobuild:
 	$(AGCH) --home=t1/n0 init scenario2-chain --chain-id=$(CHAIN_ID)
 	# Init all the ag-solos, ensuring only the first one uses the $SOLO_MNEMONIC, if any.
 	set -e; \
-	  eval "$$(../vats/scripts/set-core-proposal-env.js "$$CHAIN_BOOTSTRAP_VAT_CONFIG")"; \
-	  for port in `seq $(BASE_PORT) $$(($(BASE_PORT) + $(NUM_SOLOS) - 1))`; do \
-		  NODE_OPTIONS= SOLO_MNEMONIC=$$SOLO_MNEMONIC $(AG_SOLO) init t1/$$port --webport=$$port; \
-		  SOLO_MNEMONIC=; \
+		first_solo=true; \
+		for port in `seq $(BASE_PORT) $$(($(BASE_PORT) + $(NUM_SOLOS) - 1))`; do \
+			NODE_OPTIONS= $(AG_SOLO) init t1/$$port --webport=$$port; \
+			if $$first_solo; then \
+				first_solo=false; \
+				test ! -f "$(ECONOMY_TEMPLATE)" || \
+					sed -e "s!@FIRST_SOLO_ADDRESS@!$$(cat t1/$$port/ag-cosmos-helper-address)!g" \
+					$(ECONOMY_TEMPLATE) > "$$(echo '$(ECONOMY_CONFIG)' | sed -e 's!^@agoric/cosmic-swingset/!!')"; \
+			fi; \
 	  done
 	# Create the bootstrap account.
 	$(AGCH) --home=t1/bootstrap keys add bootstrap --keyring-backend=test
 	$(AGCH) --home=t1/bootstrap keys show -a bootstrap --keyring-backend=test > t1/bootstrap-address
-	$(AGCH) --home=t1/n0 add-genesis-account `cat t1/bootstrap-address` 1000000000000000ubld,50000000000urun,100provisionpass,100sendpacketpass
+	$(AGCH) --home=t1/n0 add-genesis-account `cat t1/bootstrap-address` $(BOOT_COINS)
 	# Create the (singleton) chain node.
 	$(AGCH) --home=t1/n0 --keyring-dir=t1/bootstrap gentx --keyring-backend=test bootstrap 73000000ubld --chain-id=$(CHAIN_ID)
 	$(AGCH) --home=t1/n0 collect-gentxs
@@ -127,6 +137,11 @@ scenario2-setup-nobuild:
 		t1/n0/config/genesis.json > t1/n0/config/genesis2.json
 	mv t1/n0/config/genesis2.json t1/n0/config/genesis.json
 	$(MAKE) set-local-gci-ingress
+
+scenario2-run-chain-economy:
+	CHAIN_BOOTSTRAP_VAT_CONFIG='$(ECONOMY_CONFIG)' \
+		OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
+		$(AGC) --home=t1/n0 start --log_level=warn $(AGC_START_ARGS)
 
 scenario2-run-chain:
 	OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
@@ -161,7 +176,7 @@ scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo
 
 # Provision the ag-solo from an provisionpass-holding address (idempotent).
 AGORIC_POWERS = agoric.ALL_THE_POWERS
-SOLO_COINS = 13000000ubld,12345000000urun
+SOLO_COINS = 13000000ubld,12345000000urun,1122000000ibc/usdc1234,3344000000ibc/atom1234
 COSMOS_RPC_HOST = localhost
 COSMOS_RPC_PORT = 26657
 wait-for-cosmos:
@@ -183,9 +198,9 @@ t1-provision-one-with-powers: wait-for-cosmos
 		test -f $$addrfile || addrfile=t1/$(BASE_PORT)/ag-cosmos-helper-address; \
 		addr=$$(cat $$addrfile); \
 	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
-		{ $(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
+		{ while ! $(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
 		  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
-			bootstrap $$addr $(SOLO_COINS) && \
+			bootstrap $$addr $(SOLO_COINS); do sleep 2; done && \
 	  $(AGCH) --home=t1/bootstrap tx swingset provision-one --keyring-backend=test --from=bootstrap \
 		  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
 		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) -ojson | tee /dev/stderr | grep -q '"code":0'; }

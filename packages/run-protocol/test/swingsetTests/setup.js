@@ -5,7 +5,7 @@ import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
 import buildManualTimer from '@agoric/zoe/tools/manualTimer';
-import { makeGovernedTerms } from '../../src/vaultFactory/params';
+import { makeGovernedTerms as makeVaultFactoryTerms } from '../../src/vaultFactory/params';
 import { ammMock } from './mockAmm';
 import { liquidationDetailTerms } from '../../src/vaultFactory/liquidation';
 
@@ -184,7 +184,7 @@ const buildOwner = async (
   const [moolaIssuer] = issuers;
   const runBrand = await E(E(zoe).getFeeIssuer()).getBrand();
 
-  const rates = makeRates(runBrand);
+  const vaultManagerParams = makeRates(runBrand);
 
   const loanTiming = {
     chargingPeriod: SECONDS_PER_DAY,
@@ -199,18 +199,23 @@ const buildOwner = async (
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
   ]);
 
-  const terms = makeGovernedTerms(
-    priceAuthorityKit.priceAuthority,
+  /** @type {AssetReservePublicFacet} */
+  // @ts-expect-error cast, never used
+  const reservePublicFacet = null;
+
+  const terms = makeVaultFactoryTerms({
+    priceAuthority: priceAuthorityKit.priceAuthority,
     loanTiming,
-    installations.liquidateMinimum,
+    liquidationInstall: installations.liquidateMinimum,
     timer,
-    poserInvitationAmount,
-    rates,
-    // @ts-expect-error It's not a real AMM public facet
-    ammMock,
-    liquidationDetailTerms(runBrand),
-    AmountMath.make(runBrand, 100n),
-  );
+    invitationAmount: poserInvitationAmount,
+    vaultManagerParams,
+    ammPublicFacet: ammMock,
+    liquidationTerms: liquidationDetailTerms(runBrand),
+    minInitialDebt: AmountMath.make(runBrand, 100n),
+    bootstrapPaymentValue: 0n,
+    reservePublicFacet,
+  });
 
   const privateVaultFactoryArgs = { feeMintAccess, initialPoserInvitation };
 
@@ -235,7 +240,7 @@ const buildOwner = async (
   await E(E(governorFacets.creatorFacet).getCreatorFacet()).addVaultType(
     moolaIssuer,
     'Moola',
-    rates,
+    vaultManagerParams,
   );
 
   const QUOTE_INTERVAL = 24n * 60n * 60n;

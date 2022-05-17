@@ -3,6 +3,7 @@ import { E } from '@endo/far';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import { reserveThenGetNamePaths } from './utils.js';
 
 const BASIS_POINTS = 10000n;
 const { details: X } = assert;
@@ -13,11 +14,14 @@ const { details: X } = assert;
  * @param {bigint} [config.WantStableFeeBP]
  * @param {bigint} [config.GiveStableFeeBP]
  * @param {bigint} [config.MINT_LIMIT]
- * @typedef {import('../econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers
+ * @param {{ anchorOptions?: AnchorOptions } } [config.options]
+ *
+ * @typedef {import('./econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers
  */
 export const startPSM = async (
   {
     consume: {
+      agoricNamesAdmin,
       zoe,
       feeMintAccess: feeMintAccessP,
       economicCommitteeCreatorFacet,
@@ -32,31 +36,36 @@ export const startPSM = async (
       produce: { psm: psmInstanceR, psmGovernor: psmGovernorR },
     },
     brand: {
-      consume: { AUSD: anchorBrandP, RUN: runBrandP },
-    },
-    issuer: {
-      consume: { AUSD: anchorIssuerP },
+      consume: { RUN: runBrandP },
     },
   },
   {
+    options: { anchorOptions = {} } = {},
     WantStableFeeBP = 1n,
     GiveStableFeeBP = 3n,
     MINT_LIMIT = 20_000_000n * 1_000_000n,
   } = {},
 ) => {
+  const { denom, keyword = 'AUSD' } = anchorOptions;
+  assert.typeof(
+    denom,
+    'string',
+    X`anchorOptions.denom must be a string, not ${denom}`,
+  );
   const [
     feeMintAccess,
     runBrand,
-    anchorBrand,
-    anchorIssuer,
+    [anchorBrand, anchorIssuer],
     governor,
     psmInstall,
     timer,
   ] = await Promise.all([
     feeMintAccessP,
     runBrandP,
-    anchorBrandP,
-    anchorIssuerP,
+    reserveThenGetNamePaths(agoricNamesAdmin, [
+      ['brand', keyword],
+      ['issuer', keyword],
+    ]),
     contractGovernor,
     psmInstallP,
     chainTimerService,
@@ -105,7 +114,7 @@ export const startPSM = async (
       governedContractInstallation: psmInstall,
       governed: harden({
         terms,
-        issuerKeywordRecord: { AUSD: anchorIssuer },
+        issuerKeywordRecord: { [keyword]: anchorIssuer },
         privateArgs: { feeMintAccess, initialPoserInvitation },
       }),
     },
@@ -126,8 +135,8 @@ harden(startPSM);
 /**
  * @typedef {object} AnchorOptions
  * @property {string} [denom]
- * @property {number} [decimalPlaces]
  * @property {string} [keyword]
+ * @property {number} [decimalPlaces]
  * @property {string} [proposedName]
  */
 
@@ -140,15 +149,9 @@ harden(startPSM);
  */
 export const makeAnchorAsset = async (
   {
-    consume: { bankManager, zoe },
+    consume: { agoricNamesAdmin, bankManager, zoe },
     installation: {
       consume: { mintHolder },
-    },
-    issuer: {
-      produce: { AUSD: issuerP },
-    },
-    brand: {
-      produce: { AUSD: brandP },
     },
   },
   { options: { anchorOptions = {} } = {} },
@@ -181,13 +184,67 @@ export const makeAnchorAsset = async (
 
   const brand = await E(issuer).getBrand();
   const kit = { mint, issuer, brand };
-  issuerP.resolve(kit.issuer);
-  brandP.resolve(kit.brand);
-  return E(bankManager).addAsset(
-    denom,
-    keyword,
-    proposedName,
-    kit, // with mint
-  );
+  return Promise.all([
+    E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(keyword, kit.issuer),
+    E(E(agoricNamesAdmin).lookupAdmin('brand')).update(keyword, kit.brand),
+    E(bankManager).addAsset(
+      denom,
+      keyword,
+      proposedName,
+      kit, // with mint
+    ),
+  ]);
 };
 harden(makeAnchorAsset);
+
+export const PSM_MANIFEST = harden({
+  [makeAnchorAsset.name]: {
+    consume: { agoricNamesAdmin: true, bankManager: 'bank', zoe: 'zoe' },
+    installation: { consume: { mintHolder: 'zoe' } },
+    issuer: {
+      produce: { AUSD: true },
+    },
+    brand: {
+      produce: { AUSD: true },
+    },
+  },
+  [startPSM.name]: {
+    consume: {
+      agoricNamesAdmin: true,
+      zoe: 'zoe',
+      feeMintAccess: 'zoe',
+      economicCommitteeCreatorFacet: 'economicCommittee',
+      chainTimerService: 'timer',
+    },
+    produce: { psmCreatorFacet: 'psm', psmGovernorCreatorFacet: 'psmGovernor' },
+    installation: {
+      consume: { contractGovernor: 'zoe', psm: 'zoe' },
+    },
+    instance: {
+      consume: { economicCommittee: 'economicCommittee' },
+      produce: { psm: 'psm', psmGovernor: 'psm' },
+    },
+    brand: {
+      consume: { AUSD: 'bank', RUN: 'zoe' },
+    },
+    issuer: {
+      consume: { AUSD: 'bank' },
+    },
+  },
+});
+
+export const getManifestForPsm = (
+  { restoreRef },
+  { installKeys, anchorOptions },
+) => {
+  return {
+    manifest: PSM_MANIFEST,
+    installations: {
+      psm: restoreRef(installKeys.psm),
+      mintHolder: restoreRef(installKeys.mintHolder),
+    },
+    options: {
+      anchorOptions,
+    },
+  };
+};

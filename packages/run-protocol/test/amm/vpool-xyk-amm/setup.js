@@ -15,7 +15,7 @@ import * as Collect from '../../../src/collect.js';
 import {
   setupAmm,
   startEconomicCommittee,
-} from '../../../src/econ-behaviors.js';
+} from '../../../src/proposals/econ-behaviors.js';
 import { installGovernance, provideBundle } from '../../supports.js';
 
 const ammRoot = './src/vpool-xyk-amm/multipoolMarketMaker.js'; // package relative
@@ -46,7 +46,7 @@ export const setupAMMBootstrap = async (
 
   const space = /** @type {any} */ (makePromiseSpace());
   const { produce, consume } =
-    /** @type { import('../../../src/econ-behaviors.js').EconomyBootstrapPowers } */ (
+    /** @type { import('../../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers } */ (
       space
     );
 

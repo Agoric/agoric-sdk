@@ -139,7 +139,6 @@ export function initializeKernel(config, hostStorage, verbose = false) {
     bootstrapResultKpid = enqueueBootstrap(bootstrapVatID, kernelKeeper);
   }
   kernelKeeper.setInitialized();
-  kernelKeeper.saveStats();
   kernelKeeper.commitCrank(); // commit initialized kernel state as crank #0
   return bootstrapResultKpid;
 

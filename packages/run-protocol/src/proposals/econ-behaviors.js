@@ -8,16 +8,16 @@ import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
 
 import { AmountMath } from '@agoric/ertp';
-import { makeGovernedTerms } from './vaultFactory/params.js';
-import { makeAmmTerms } from './vpool-xyk-amm/params.js';
-import { makeReserveTerms } from './reserve/params.js';
+import { makeGovernedTerms } from '../vaultFactory/params.js';
+import { makeAmmTerms } from '../vpool-xyk-amm/params.js';
+import { makeReserveTerms } from '../reserve/params.js';
 
-import '../exported.js';
+import '../../exported.js';
 
-import * as Collect from './collect.js';
-import { makeRunStakeTerms } from './runStake/params.js';
-import { liquidationDetailTerms } from './vaultFactory/liquidation.js';
-import { makeStakeReporter } from './my-lien.js';
+import * as Collect from '../collect.js';
+import { makeRunStakeTerms } from '../runStake/params.js';
+import { liquidationDetailTerms } from '../vaultFactory/liquidation.js';
+import { makeStakeReporter } from '../my-lien.js';
 
 const { details: X } = assert;
 
@@ -41,15 +41,15 @@ const CENTRAL_DENOM_NAME = 'urun';
  *   reservePublicFacet: AssetReservePublicFacet,
  *   reserveCreatorFacet: AssetReserveCreatorFacet,
  *   reserveGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
- *   runStakeCreatorFacet: import('./runStake/runStake.js').RunStakeCreator,
+ *   runStakeCreatorFacet: import('../runStake/runStake.js').RunStakeCreator,
  *   vaultFactoryCreator: VaultFactory,
  *   vaultFactoryGovernorCreator: GovernedContractFacetAccess<unknown>,
  *   vaultFactoryVoteCreator: unknown,
  *   minInitialDebt: NatValue,
  * }>} EconomyBootstrapSpace
  *
- * @typedef {import('./reserve/assetReserve.js').AssetReserveCreatorFacet} AssetReserveCreatorFacet
- * @typedef {import('./reserve/assetReserve.js').AssetReservePublicFacet} AssetReservePublicFacet
+ * @typedef {import('../reserve/assetReserve.js').AssetReserveCreatorFacet} AssetReserveCreatorFacet
+ * @typedef {import('../reserve/assetReserve.js').AssetReservePublicFacet} AssetReservePublicFacet
  */
 
 /**
@@ -247,7 +247,7 @@ export const startVaultFactory = async (
   {
     consume: {
       chainTimerService,
-      priceAuthority,
+      priceAuthority: priceAuthorityP,
       zoe,
       feeMintAccess: feeMintAccessP, // ISSUE: why doeszn't Zoe await this?
       economicCommitteeCreatorFacet: electorateCreatorFacet,
@@ -296,27 +296,35 @@ export const startVaultFactory = async (
     loanFee: makeRatio(0n, centralBrand, BASIS_POINTS),
   };
 
-  const [ammInstance, electorateInstance, contractGovernorInstall] =
-    await Promise.all([
-      instance.consume.amm,
-      instance.consume.economicCommittee,
-      contractGovernor,
-    ]);
+  const [
+    ammInstance,
+    electorateInstance,
+    contractGovernorInstall,
+    reserveInstance,
+  ] = await Promise.all([
+    instance.consume.amm,
+    instance.consume.economicCommittee,
+    contractGovernor,
+    instance.consume.reserve,
+  ]);
   const ammPublicFacet = await E(zoe).getPublicFacet(ammInstance);
   const feeMintAccess = await feeMintAccessP;
-  const pa = await priceAuthority;
+  const priceAuthority = await priceAuthorityP;
+  const reservePublicFacet = await E(zoe).getPublicFacet(reserveInstance);
   const timer = await chainTimerService;
-  const vaultFactoryTerms = makeGovernedTerms(
-    pa,
-    loanParams,
-    installations.liquidate,
+  const vaultFactoryTerms = makeGovernedTerms({
+    priceAuthority,
+    reservePublicFacet,
+    loanTiming: loanParams,
+    liquidationInstall: installations.liquidate,
     timer,
     invitationAmount,
     vaultManagerParams,
     ammPublicFacet,
-    liquidationDetailTerms(centralBrand),
-    AmountMath.make(centralBrand, minInitialDebt),
-  );
+    liquidationTerms: liquidationDetailTerms(centralBrand),
+    minInitialDebt: AmountMath.make(centralBrand, minInitialDebt),
+    bootstrapPaymentValue: 0n,
+  });
 
   const governorTerms = harden({
     timer,
@@ -475,7 +483,7 @@ harden(configureVaultFactoryUI);
  *   consume: { loadVat: ERef<VatLoader<DistributeFeesVat>>},
  * }} powers
  *
- * @typedef {ERef<ReturnType<import('../../vats/src/vat-distributeFees.js').buildRootObject>>} DistributeFeesVat
+ * @typedef {ERef<ReturnType<import('@agoric/vats/src/vat-distributeFees').buildRootObject>>} DistributeFeesVat
  */
 export const startRewardDistributor = async ({
   consume: {
@@ -572,7 +580,7 @@ export const startLienBridge = async ({
  * @param {bigint} [config.chargingPeriod]
  * @param {bigint} [config.recordingPeriod]
  * @typedef {[bigint, bigint]} Rational
- * @typedef {Awaited<ReturnType<typeof import('./runStake/runStake.js').start>>} StartRunStake
+ * @typedef {Awaited<ReturnType<typeof import('../runStake/runStake.js').start>>} StartRunStake
  */
 export const startRunStake = async (
   {

@@ -10,12 +10,16 @@ import {
   buildCrankBuffer,
   addHelpers,
 } from '../src/kernel/state/storageWrapper.js';
+import { makeKernelStats } from '../src/kernel/state/stats.js';
+import { KERNEL_STATS_METRICS } from '../src/kernel/metrics.js';
+
+const ignoredStateKeys = ['activityhash', 'kernelStats', 'local.kernelStats'];
 
 function checkState(t, getState, expected) {
   const state = getState();
   const got = [];
   for (const key of Object.getOwnPropertyNames(state)) {
-    if (key !== 'activityhash') {
+    if (!ignoredStateKeys.includes(key)) {
       // the hash is just too annoying to compare against
       got.push([key, state[key]]);
     }
@@ -236,7 +240,9 @@ function buildKeeperStorageInMemory() {
 function duplicateKeeper(getState) {
   const store = initSwingStore(null);
   setAllState(store, { kvStuff: getState(), streamStuff: new Map() });
-  return makeKernelKeeper(store, null, createSHA256);
+  const kernelKeeper = makeKernelKeeper(store, null, createSHA256);
+  kernelKeeper.loadStats();
+  return kernelKeeper;
 }
 
 test('hostStorage param guards', async t => {
@@ -701,6 +707,33 @@ test('meters', async t => {
   t.deepEqual(k.getMeter(m3), { remaining: 'unlimited', threshold: 5n });
 });
 
+const testCrankHasherStats = makeKernelStats(KERNEL_STATS_METRICS);
+testCrankHasherStats.initializeStats();
+const { consensusStats: testCrankHasherConsensusStats } =
+  testCrankHasherStats.getSerializedStats();
+
+/**
+ * Wraps a base sha256 hasher always appending the initial kernel stats
+ * before generating the digest.
+ * Assumes tests do not perform complex kernelKeeper operations that
+ * change the stats.
+ *
+ * @param {string} [algorithm]
+ */
+const makeTestCrankHasher = (algorithm = 'sha256') => {
+  const h = createHash(algorithm);
+  const update = h.update.bind(h);
+  const digest = (encoding = 'hex') => {
+    update('add\n' + 'kernelStats\n' + `${testCrankHasherConsensusStats}\n`);
+    return h.digest(encoding);
+  };
+
+  return {
+    update,
+    digest,
+  };
+};
+
 test('crankhash - initial state and additions', t => {
   const store = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(store, null, createSHA256);
@@ -713,12 +746,12 @@ test('crankhash - initial state and additions', t => {
   // a crank which sets a single key produces a stable crankhash, which does
   // not depend upon the earlier activityhash of kernel state
   k.kvStore.set('one', '1');
-  let h = createHash('sha256');
+  let h = makeTestCrankHasher('sha256');
   h.update('add\n' + 'one\n' + '1\n');
   const expCrankhash = h.digest('hex');
   t.is(
     expCrankhash,
-    '29dedad4ccd119b6f7d80109590cc357c69eb4f03210cdbc9b1c982cd228fd8b',
+    '136550ffca718f8097396cbecb511aa2320d9ddc9bda5cebbafb64081b29e1e6',
   );
 
   h = createHash('sha256');
@@ -747,12 +780,12 @@ test('crankhash - skip keys', t => {
   k.commitCrank();
 
   k.kvStore.set('one', '1');
-  const h = createHash('sha256');
+  const h = makeTestCrankHasher('sha256');
   h.update('add\n' + 'one\n' + '1\n');
   const expCrankhash = h.digest('hex');
   t.is(
     expCrankhash,
-    '29dedad4ccd119b6f7d80109590cc357c69eb4f03210cdbc9b1c982cd228fd8b',
+    '136550ffca718f8097396cbecb511aa2320d9ddc9bda5cebbafb64081b29e1e6',
   );
   t.is(k.commitCrank().crankhash, expCrankhash);
 
@@ -777,24 +810,24 @@ test('crankhash - duplicate set', t => {
   k.commitCrank();
 
   k.kvStore.set('one', '1');
-  const h = createHash('sha256');
+  const h = makeTestCrankHasher('sha256');
   h.update('add\n' + 'one\n' + '1\n');
   const expCrankhash = h.digest('hex');
   t.is(
     expCrankhash,
-    '29dedad4ccd119b6f7d80109590cc357c69eb4f03210cdbc9b1c982cd228fd8b',
+    '136550ffca718f8097396cbecb511aa2320d9ddc9bda5cebbafb64081b29e1e6',
   );
   t.is(k.commitCrank().crankhash, expCrankhash);
 
   k.kvStore.set('one', '1');
   k.kvStore.set('one', '1');
-  const h2 = createHash('sha256');
+  const h2 = makeTestCrankHasher('sha256');
   h2.update('add\n' + 'one\n' + '1\n');
   h2.update('add\n' + 'one\n' + '1\n');
   const expCrankhash2 = h2.digest('hex');
   t.is(
     expCrankhash2,
-    '6e82c45c44062ceb71cf242a79aa76578a2dd3002e0b76d756790418914ccc34',
+    '2b60f31547515d4887ff62871fbf27a99a4091ec1564f6aaefe89f41131245eb',
   );
   t.is(k.commitCrank().crankhash, expCrankhash2);
 });
@@ -807,11 +840,11 @@ test('crankhash - set and delete', t => {
   k.createStartingKernelState('local');
   k.commitCrank();
 
-  const h1 = createHash('sha256');
+  const h1 = makeTestCrankHasher('sha256');
   const expCrankhash1 = h1.digest('hex');
   t.is(k.commitCrank().crankhash, expCrankhash1); // empty
 
-  const h2 = createHash('sha256');
+  const h2 = makeTestCrankHasher('sha256');
   h2.update('add\n' + 'one\n' + '1\n');
   h2.update('delete\n' + 'one\n');
   const expCrankhash2 = h2.digest('hex');
@@ -821,4 +854,156 @@ test('crankhash - set and delete', t => {
   t.is(k.commitCrank().crankhash, expCrankhash2);
 
   t.not(expCrankhash1, expCrankhash2);
+});
+
+test('stats - can increment and decrement', t => {
+  const { incStat, decStat, initializeStats, getStats, getSerializedStats } =
+    makeKernelStats([
+      {
+        key: 'testCounter',
+        name: 'test_counter',
+        description: 'test counter stat',
+        metricType: 'counter',
+      },
+      {
+        key: 'testGauge',
+        name: 'test_gauge',
+        description: 'test gauge stat',
+        metricType: 'gauge',
+      },
+    ]);
+
+  t.throws(() => getSerializedStats());
+  t.throws(() => incStat('testCounter'));
+  initializeStats();
+  const expectedStats = {
+    testCounter: 0,
+    testGauge: 0,
+    testGaugeDown: 0,
+    testGaugeUp: 0,
+    testGaugeMax: 0,
+  };
+  t.deepEqual(getStats(), expectedStats);
+  t.throws(() => incStat('invalidStat'));
+
+  incStat('testCounter');
+  expectedStats.testCounter += 1;
+  t.deepEqual(getStats(), expectedStats);
+
+  incStat('testGauge');
+  expectedStats.testGauge += 1;
+  expectedStats.testGaugeUp += 1;
+  expectedStats.testGaugeMax += 1;
+  t.deepEqual(getStats(), expectedStats);
+
+  t.throws(() => decStat('testCounter'));
+
+  decStat('testGauge');
+  expectedStats.testGauge -= 1;
+  expectedStats.testGaugeDown += 1;
+  t.deepEqual(getStats(), expectedStats);
+
+  incStat('testGauge', 5);
+  expectedStats.testGauge += 5;
+  expectedStats.testGaugeUp += 5;
+  expectedStats.testGaugeMax = 5;
+  t.deepEqual(getStats(), expectedStats);
+
+  decStat('testGauge', 3);
+  expectedStats.testGauge -= 3;
+  expectedStats.testGaugeDown += 3;
+  t.deepEqual(getStats(), expectedStats);
+});
+
+test('stats - can load and save existing stats', t => {
+  const { incStat, loadFromSerializedStats, getSerializedStats, getStats } =
+    makeKernelStats([
+      {
+        key: 'testLocal',
+        name: 'test_local',
+        description: 'test local stat',
+        metricType: 'counter',
+      },
+      {
+        key: 'testConsensus',
+        name: 'test_consensus',
+        description: 'test consensus stat',
+        metricType: 'counter',
+        consensus: true,
+      },
+    ]);
+
+  const consensusStats = { testConsensus: 5 };
+  const localStats = { testLocal: 7 };
+
+  // Can load consensus and local
+  loadFromSerializedStats({
+    consensusStats: JSON.stringify(consensusStats),
+    localStats: JSON.stringify(localStats),
+  });
+  t.deepEqual(getStats(), { ...localStats, ...consensusStats });
+  t.deepEqual(getStats(true), consensusStats);
+  t.deepEqual(JSON.parse(getSerializedStats().localStats), localStats);
+  t.deepEqual(JSON.parse(getSerializedStats().consensusStats), consensusStats);
+
+  // Accepts missing local stats
+  loadFromSerializedStats({
+    consensusStats: JSON.stringify(consensusStats),
+  });
+  t.deepEqual(getStats(), { testLocal: 0, ...consensusStats });
+  t.deepEqual(JSON.parse(getSerializedStats().localStats), { testLocal: 0 });
+
+  // Accepts missing entries from loaded stats
+  loadFromSerializedStats({
+    consensusStats: '{}',
+    localStats: '{}',
+  });
+  t.deepEqual(getStats(), { testLocal: 0, testConsensus: 0 });
+
+  // Extra local stats are preserved but cannot be changed
+  localStats.extraLocal = 11;
+  loadFromSerializedStats({
+    consensusStats: JSON.stringify(consensusStats),
+    localStats: JSON.stringify(localStats),
+  });
+  t.deepEqual(getStats(), { ...localStats, ...consensusStats });
+  t.deepEqual(JSON.parse(getSerializedStats().localStats), localStats);
+  t.throws(() => incStat('extraLocal'));
+  delete localStats.extraLocal;
+
+  // Extra consensus stats are removed
+  loadFromSerializedStats({
+    consensusStats: JSON.stringify({ ...consensusStats, extraConsensus: 11 }),
+    localStats: JSON.stringify(localStats),
+  });
+  t.deepEqual(getStats(), { ...localStats, ...consensusStats });
+  t.deepEqual(JSON.parse(getSerializedStats().consensusStats), consensusStats);
+
+  // Promoting a local metric to consensus shadows old local stats
+  // and ignores their value for initialization
+  loadFromSerializedStats({
+    consensusStats: JSON.stringify({}),
+    localStats: JSON.stringify({ ...localStats, testConsensus: 11 }),
+  });
+  t.deepEqual(getStats(), { testConsensus: 0, ...localStats });
+  t.deepEqual(getStats(true), { testConsensus: 0 });
+  incStat('testConsensus');
+  t.deepEqual(getStats(), { testConsensus: 1, ...localStats });
+  t.deepEqual(JSON.parse(getSerializedStats().localStats), {
+    ...localStats,
+    testConsensus: 11,
+  });
+
+  // Demoting a consensus metric to local (re)sets the initial local value
+  loadFromSerializedStats({
+    consensusStats: JSON.stringify({ ...consensusStats, ...localStats }),
+    localStats: JSON.stringify({ testLocal: 1 }),
+  });
+  t.deepEqual(getStats(), { ...consensusStats, ...localStats });
+  t.deepEqual(getStats(true), consensusStats);
+  incStat('testLocal');
+  localStats.testLocal += 1;
+  t.deepEqual(getStats(), { ...consensusStats, ...localStats });
+  t.deepEqual(JSON.parse(getSerializedStats().consensusStats), consensusStats);
+  t.deepEqual(JSON.parse(getSerializedStats().localStats), localStats);
 });
