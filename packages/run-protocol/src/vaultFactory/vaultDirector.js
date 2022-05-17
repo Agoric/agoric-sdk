@@ -37,7 +37,6 @@ const { details: X } = assert;
  * electionManager: Instance,
  * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>,
  * mintSeat: ZCFSeat,
- * penaltyPoolSeat: ZCFSeat,
  * rewardPoolSeat: ZCFSeat,
  * vaultParamManagers: Store<Brand, import('./params.js').VaultParamManager>,
  * zcf: import('./vaultFactory.js').VaultFactoryZCF,
@@ -64,7 +63,6 @@ const initState = (zcf, directorParamManager, debtMint) => {
   /** For temporary staging of newly minted tokens */
   const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
   const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
-  const { zcfSeat: penaltyPoolSeat } = zcf.makeEmptySeatKit();
 
   const collateralTypes = makeScalarMap('brand');
 
@@ -76,7 +74,6 @@ const initState = (zcf, directorParamManager, debtMint) => {
     directorParamManager,
     mintSeat,
     rewardPoolSeat,
-    penaltyPoolSeat,
     vaultParamManagers,
     zcf,
   };
@@ -153,11 +150,21 @@ const getCollaterals = async ({ state }) => {
   );
 };
 
+/**
+ * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} directorParamManager
+ */
 const getLiquidationConfig = directorParamManager => ({
   install: directorParamManager.getLiquidationInstall(),
   terms: directorParamManager.getLiquidationTerms(),
 });
 
+/**
+ *
+ * @param {*} govParams
+ * @param {VaultManager} vaultManager
+ * @param {*} oldInstall
+ * @param {*} oldTerms
+ */
 const watchGovernance = (govParams, vaultManager, oldInstall, oldTerms) => {
   const subscription = govParams.getSubscription();
   observeIteration(subscription, {
@@ -194,7 +201,6 @@ const machineBehavior = {
       debtMint,
       collateralTypes,
       mintSeat,
-      penaltyPoolSeat,
       rewardPoolSeat,
       vaultParamManagers,
       directorParamManager,
@@ -279,7 +285,6 @@ const machineBehavior = {
       zcf.getTerms().priceAuthority,
       factoryPowers,
       timerService,
-      penaltyPoolSeat,
       startTimeStamp,
     );
     collateralTypes.init(collateralBrand, vm);
@@ -306,9 +311,6 @@ const machineBehavior = {
   /** @param {MethodContext} context */
   getRewardAllocation: ({ state }) =>
     state.rewardPoolSeat.getCurrentAllocation(),
-  /** @param {MethodContext} context */
-  getPenaltyAllocation: ({ state }) =>
-    state.penaltyPoolSeat.getCurrentAllocation(),
 };
 
 const creatorBehavior = {
@@ -412,10 +414,11 @@ const behavior = {
  *   ammPublicFacet: AutoswapPublicFacet,
  *   liquidationInstall: Installation<import('./liquidateMinimum.js').start>,
  *   loanTimingParams: {ChargingPeriod: ParamRecord<'nat'>, RecordingPeriod: ParamRecord<'nat'>},
+ *   reservePublicFacet: AssetReservePublicFacet,
  *   timerService: TimerService,
  *   priceAuthority: ERef<PriceAuthority>
  * }>} zcf
- * @param {import('./params.js').VaultDirectorParams} directorParamManager
+ * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} directorParamManager
  * @param {ZCFMint<"nat">} debtMint
  */
 const makeVaultDirector = defineKindMulti('VaultDirector', initState, behavior);
