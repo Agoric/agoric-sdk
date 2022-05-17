@@ -3,6 +3,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { getReplHandler } from '@agoric/vats/src/repl.js';
+import { makePromiseKit } from '@endo/promise-kit';
 import { getCapTPHandler } from './captp.js';
 
 // This vat contains the HTTP request handler.
@@ -97,6 +98,14 @@ export function buildRootObject(vatPowers) {
     urlToHandler.set(url, commandHandler);
   }
 
+  const { promise: walletP, resolve: resolveWallet } = makePromiseKit();
+  const { promise: attMakerP, resolve: resolveAttMaker } = makePromiseKit();
+  Promise.all([walletP, attMakerP]).then(async ([wallet, attMaker]) => {
+    const walletAdmin = await E(wallet).getAdminFacet();
+    // console.debug('introduce', { wallet, walletAdmin, attMaker });
+    E(walletAdmin).resolveAttMaker(attMaker);
+  });
+
   return Far('root', {
     setCommandDevice(d) {
       commandDevice = d;
@@ -132,6 +141,8 @@ export function buildRootObject(vatPowers) {
     setWallet(wallet) {
       replObjects.local.wallet = wallet;
       replObjects.home.wallet = wallet;
+
+      resolveWallet(wallet);
     },
 
     /**
@@ -162,6 +173,10 @@ export function buildRootObject(vatPowers) {
           ...rest
         } = decentralObjects;
         decentralObjects = rest;
+
+        if (decentralObjects.attMaker) {
+          resolveAttMaker(decentralObjects.attMaker);
+        }
       }
 
       // TODO: Maybe remove sometime; home object is deprecated.
