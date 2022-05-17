@@ -2397,14 +2397,18 @@ test('director notifiers', async t => {
 });
 
 test('manager notifiers', async t => {
+  const LOAN = 450n;
+  const DEBT = 473n; // with penalty
+  const AMPLE = 100_000n;
+
   const { aethKit, runKit } = t.context;
   const services = await setupServices(
     t,
-    [500n, 15n],
+    [10n],
     AmountMath.make(aethKit.brand, 900n),
     undefined,
     undefined,
-    500n,
+    AMPLE,
   );
 
   const { aethVaultManager, lender } = services.vaultFactory;
@@ -2419,9 +2423,9 @@ test('manager notifiers', async t => {
     totalDebt: AmountMath.makeEmpty(t.context.runKit.brand),
   });
 
-  // Create a loan for 470 RUN with 210_000 aeth collateral
-  const collateralAmount = AmountMath.make(aethKit.brand, 210_000n);
-  const loanAmount = AmountMath.make(runKit.brand, 470n);
+  // Create a loan with ample collateral
+  const collateralAmount = AmountMath.make(aethKit.brand, AMPLE);
+  const loanAmount = AmountMath.make(runKit.brand, LOAN);
   /** @type {UserSeat<VaultKit>} */
   const vaultSeat = await E(services.zoe).offer(
     await E(lender).makeVaultInvitation(),
@@ -2440,7 +2444,7 @@ test('manager notifiers', async t => {
   t.deepEqual(state.value, {
     numVaults: 1,
     totalCollateral: collateralAmount,
-    totalDebt: AmountMath.make(runKit.brand, 494n), // 470 plus fee
+    totalDebt: AmountMath.make(runKit.brand, DEBT),
   });
 
   await E(aethVaultManager).liquidateAll();
@@ -2448,6 +2452,6 @@ test('manager notifiers', async t => {
   t.deepEqual(state.value, {
     numVaults: 0,
     totalCollateral: collateralAmount,
-    totalDebt: AmountMath.make(runKit.brand, 48n), // FIXME none should be left
+    totalDebt: AmountMath.make(runKit.brand, 0n),
   });
 });
