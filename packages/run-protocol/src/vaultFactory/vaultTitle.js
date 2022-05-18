@@ -10,8 +10,8 @@ const { details: X } = assert;
 
 /**
  * @typedef {{
- * notifier: NotifierRecord<VaultUIState>['notifier'],
- * updater: NotifierRecord<VaultUIState>['updater'],
+ * notifier: NotifierRecord<VaultNotification>['notifier'],
+ * updater: NotifierRecord<VaultNotification>['updater'],
  * vault: Vault | null,
  * }} State
  * @typedef {Readonly<{
@@ -29,7 +29,7 @@ const { details: X } = assert;
  * @returns {State}
  */
 const initState = vault => {
-  /** @type {NotifierRecord<VaultUIState>} */
+  /** @type {NotifierRecord<VaultNotification>} */
   const { updater, notifier } = makeNotifierKit();
 
   return { notifier, updater, vault };

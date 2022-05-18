@@ -174,6 +174,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
     addVault,
     entries: vaults.entries,
     entriesPrioritizedGTE,
+    getCount: vaults.getSize,
     highestRatio: firstDebtRatio,
     refreshVaultPriority,
     removeVault,

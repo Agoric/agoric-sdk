@@ -14,6 +14,12 @@ const dirname = path.dirname(filename);
 
 const contractRoot = `${dirname}/zcfTesterContract.js`;
 
+/**
+ * Test setup utility
+ *
+ * @param {IssuerKeywordRecord} [issuerKeywordRecord]
+ * @param {Record<string, unknown>} [terms]
+ */
 export const setupZCFTest = async (issuerKeywordRecord, terms) => {
   /** @type {ZCF} */
   let zcf;

@@ -18,7 +18,7 @@ import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { defineKindMulti } from '@agoric/vat-data';
-import { observeIteration } from '@agoric/notifier';
+import { makeSubscriptionKit, observeIteration } from '@agoric/notifier';
 import { makeVaultManager } from './vaultManager.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import {
@@ -31,11 +31,18 @@ import {
 const { details: X } = assert;
 
 /**
+ * @typedef {{
+ * collaterals: Brand[],
+ * rewardPoolAllocation: AmountKeywordRecord,
+ * }} MetricsNotification
+ *
  * @typedef {Readonly<{
  * debtMint: ZCFMint<'nat'>,
  * collateralTypes: Store<Brand,VaultManager>,
  * electionManager: Instance,
  * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>,
+ * metricsPublication: IterationObserver<MetricsNotification>
+ * metricsSubscription: Subscription<MetricsNotification>
  * mintSeat: ZCFSeat,
  * rewardPoolSeat: ZCFSeat,
  * vaultParamManagers: Store<Brand, import('./params.js').VaultParamManager>,
@@ -68,10 +75,15 @@ const initState = (zcf, directorParamManager, debtMint) => {
 
   const vaultParamManagers = makeScalarMap('brand');
 
+  const { publication: metricsPublication, subscription: metricsSubscription } =
+    makeSubscriptionKit();
+
   return {
     collateralTypes,
     debtMint,
     directorParamManager,
+    metricsSubscription,
+    metricsPublication,
     mintSeat,
     rewardPoolSeat,
     vaultParamManagers,
@@ -149,9 +161,8 @@ const getCollaterals = async ({ state }) => {
     ),
   );
 };
-
 /**
- * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} directorParamManager
+ * @param {ImmutableState['directorParamManager']} directorParamManager
  */
 const getLiquidationConfig = directorParamManager => ({
   install: directorParamManager.getLiquidationInstall(),
@@ -160,7 +171,7 @@ const getLiquidationConfig = directorParamManager => ({
 
 /**
  *
- * @param {*} govParams
+ * @param {ImmutableState['directorParamManager']} govParams
  * @param {VaultManager} vaultManager
  * @param {*} oldInstall
  * @param {*} oldTerms
@@ -192,7 +203,7 @@ const machineBehavior = {
    * @param {VaultManagerParamValues} initialParamValues
    */
   addVaultType: async (
-    { state },
+    { state, facets },
     collateralIssuer,
     collateralKeyword,
     initialParamValues,
@@ -256,6 +267,7 @@ const machineBehavior = {
       }
       // TODO add aggregate debt tracking at the vaultFactory level #4482
       // totalDebt = AmountMath.add(totalDebt, toMint);
+      facets.machine.updateMetrics();
     };
 
     /**
@@ -291,6 +303,7 @@ const machineBehavior = {
     const { install, terms } = getLiquidationConfig(directorParamManager);
     await vm.setupLiquidator(install, terms);
     watchGovernance(directorParamManager, vm, install, terms);
+    facets.machine.updateMetrics();
     return vm;
   },
   getCollaterals,
@@ -306,6 +319,15 @@ const machineBehavior = {
   },
   /** @param {MethodContext} context */
   getContractGovernor: ({ state }) => state.zcf.getTerms().electionManager,
+  /** @param {MethodContext} context */
+  updateMetrics: ({ state }) => {
+    /** @type {MetricsNotification} */
+    const metrics = harden({
+      collaterals: Array.from(state.collateralTypes.keys()),
+      rewardPoolAllocation: state.rewardPoolSeat.getCurrentAllocation(),
+    });
+    state.metricsPublication.updateState(metrics);
+  },
 
   // XXX accessors for tests
   /** @param {MethodContext} context */
@@ -356,6 +378,11 @@ const publicBehavior = {
     /** @type {VaultManager} */
     return collateralTypes.get(brandIn).getPublicFacet();
   },
+  /**
+   * @param {MethodContext} context
+   */
+  getMetrics: ({ state }) => state.metricsSubscription,
+
   /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
   makeLoanInvitation: makeVaultInvitation,
   /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
