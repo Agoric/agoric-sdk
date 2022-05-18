@@ -16,18 +16,18 @@ mkdir -p "$NETWORK_NAME/setup"
 cd "$NETWORK_NAME/setup"
 
 export AG_SETUP_COSMOS_HOME=${AG_SETUP_COSMOS_HOME-$PWD}
+AGORIC_SDK_PATH=${AGORIC_SDK_PATH-$(cd "$thisdir/../../.." > /dev/null && pwd -P)}
 
 if [ -d /usr/src/testnet-load-generator ]
 then
-  "$thisdir/../../solo/bin/ag-solo" init \
-    /usr/src/testnet-load-generator/_agstate/agoric-servers/testnet-8000 \
-    --webport=8000
-  SOLO_ADDR=$(cat /usr/src/testnet-load-generator/_agstate/agoric-servers/testnet-8000/ag-cosmos-helper-address)
-  VAT_CONFIG="@agoric/vats/decentral-loadgen-config.json"
+  solodir=/usr/src/testnet-load-generator/_agstate/agoric-servers/testnet-8000
+  "$thisdir/../../solo/bin/ag-solo" init "$solodir" --webport=8000
+  SOLO_ADDR=$(cat "$solodir/ag-cosmos-helper-address")
+  VAT_CONFIG="@agoric/vats/decentral-demo-config.json"
 fi
 
 # Speed up the docker deployment by pre-mounting /usr/src/agoric-sdk.
-DOCKER_VOLUMES="${AGORIC_SDK_PATH-$(cd "$thisdir/../../.." > /dev/null && pwd -P)}:/usr/src/agoric-sdk" \
+DOCKER_VOLUMES="$AGORIC_SDK_PATH:/usr/src/agoric-sdk" \
   "$thisdir/docker-deployment.cjs" > deployment.json
 
 # Set up the network from our above deployment.json.
