@@ -9,8 +9,8 @@ INITIAL_HEIGHT = 17
 GENESIS_TIME = $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)
 VOTING_PERIOD = 45s
 
-ECONOMY_TEMPLATE = decentral-economy-template.json
-ECONOMY_CONFIG = @agoric/cosmic-swingset/t1/decentral-economy-config.json
+ECONOMY_TEMPLATE = economy-template.json
+ECONOMY_PROPOSALS = t1/economy-proposals.json
 
 EVAL_PERMIT = test/gov-permit.json
 EVAL_CODE = test/gov-code.js
@@ -117,9 +117,8 @@ scenario2-setup-nobuild:
 			NODE_OPTIONS= $(AG_SOLO) init t1/$$port --webport=$$port; \
 			if $$first_solo; then \
 				first_solo=false; \
-				test ! -f "$(ECONOMY_TEMPLATE)" || \
-					sed -e "s!@FIRST_SOLO_ADDRESS@!$$(cat t1/$$port/ag-cosmos-helper-address)!g" \
-					$(ECONOMY_TEMPLATE) > "$$(echo '$(ECONOMY_CONFIG)' | sed -e 's!^@agoric/cosmic-swingset/!!')"; \
+				sed -e "s!@FIRST_SOLO_ADDRESS@!$$(cat t1/$$port/ag-cosmos-helper-address)!g" \
+					'$(ECONOMY_TEMPLATE)' > '$(ECONOMY_PROPOSALS)'; \
 			fi; \
 	  done
 	# Create the bootstrap account.
@@ -139,7 +138,10 @@ scenario2-setup-nobuild:
 	$(MAKE) set-local-gci-ingress
 
 scenario2-run-chain-economy:
-	CHAIN_BOOTSTRAP_VAT_CONFIG='$(ECONOMY_CONFIG)' \
+	jq -s '.[0] * { coreProposals: .[1] }' \
+		../vats/decentral-core-config.json \
+		'$(ECONOMY_PROPOSALS)' > t1/decentral-economy-config.json
+	CHAIN_BOOTSTRAP_VAT_CONFIG="$$PWD/t1/decentral-economy-config.json" \
 		OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
 		$(AGC) --home=t1/n0 start --log_level=warn $(AGC_START_ARGS)
 
