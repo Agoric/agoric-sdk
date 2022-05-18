@@ -135,13 +135,6 @@ const initState = (
 
   const { publication: metricsPublication, subscription: metricsSubscription } =
     makeSubscriptionKit();
-  metricsPublication.updateState(
-    harden({
-      numVaults: 0,
-      totalCollateral,
-      totalDebt,
-    }),
-  );
 
   /** @type {ImmutableState} */
   const fixed = {
@@ -628,6 +621,8 @@ const selfBehavior = {
 /** @param {MethodContext} context */
 const finish = ({ state, facets: { helper } }) => {
   state.prioritizedVaults.setRescheduler(helper.reschedulePriceCheck);
+
+  helper.updateMetrics();
 
   observeNotifier(state.periodNotifier, {
     updateState: updateTime =>
