@@ -40,11 +40,13 @@ const test = unknownTest;
 // #region Support
 
 // TODO path resolve these so refactors detect
+const abs = p => new URL(p, import.meta.url).pathname;
 const contractRoots = {
-  faucet: './test/vaultFactory/faucet.js',
-  liquidate: './src/vaultFactory/liquidateIncrementally.js',
-  VaultFactory: './src/vaultFactory/vaultFactory.js',
-  amm: './src/vpool-xyk-amm/multipoolMarketMaker.js',
+  faucet: abs('../../test/vaultFactory/faucet.js'),
+  liquidate: abs('../../src/vaultFactory/liquidateIncrementally.js'),
+  VaultFactory: abs('../../src/vaultFactory/vaultFactory.js'),
+  amm: abs('../../src/vpool-xyk-amm/multipoolMarketMaker.js'),
+  reserve: abs('../../src/reserve/assetReserve.js'),
 };
 
 /** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
