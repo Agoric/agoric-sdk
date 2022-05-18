@@ -1,6 +1,7 @@
 [
   {
     "module": "@agoric/run-protocol/scripts/init-core.js",
+    "entrypoint": "defaultProposalBuilder",
     "args": [
       {
         "econCommitteeOptions": {
@@ -12,6 +13,7 @@
   "@agoric/pegasus/scripts/init-core.js",
   {
     "module": "@agoric/run-protocol/scripts/add-collateral-core.js",
+    "entrypoint": "defaultProposalBuilder",
     "args": [
       {
         "interchainAssetOptions": {
@@ -40,6 +42,7 @@
   },
   {
     "module": "@agoric/run-protocol/scripts/price-feed-core.js",
+    "entrypoint": "defaultProposalBuilder",
     "args": [
       {
         "AGORIC_INSTANCE_NAME": "ATOM-USD price feed",
@@ -63,6 +66,7 @@
   },
   {
     "module": "@agoric/run-protocol/scripts/invite-committee-core.js",
+    "entrypoint": "defaultProposalBuilder",
     "args": [
       {
         "voterAddresses": [

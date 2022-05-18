@@ -82,11 +82,7 @@ export const extractCoreProposalBundles = async (
         entrypoint = 'defaultProposalBuilder';
         args = [];
       } else {
-        ({
-          module,
-          entrypoint = 'defaultProposalBuilder',
-          args = [],
-        } = coreProposal);
+        ({ module, entrypoint, args = [] } = coreProposal);
       }
 
       assert.typeof(
