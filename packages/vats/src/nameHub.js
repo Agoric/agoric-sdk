@@ -76,7 +76,7 @@ export const makeNameHubKit = () => {
         }
       }
     },
-    default: async (key, newValue, adminValue) => {
+    default: (key, newValue, adminValue) => {
       assert.typeof(key, 'string');
       if (keyToRecord.has(key)) {
         const record = keyToRecord.get(key);
@@ -85,10 +85,10 @@ export const makeNameHubKit = () => {
           return /** @type {any} */ (record.value);
         }
       }
-      await nameAdmin.update(key, newValue, adminValue);
+      nameAdmin.update(key, newValue, adminValue);
       return newValue;
     },
-    set: async (key, newValue, adminValue) => {
+    set: (key, newValue, adminValue) => {
       assert.typeof(key, 'string');
       let record;
       if (keyToRecord.has(key)) {
@@ -98,7 +98,7 @@ export const makeNameHubKit = () => {
         record && !record.promise,
         X`key ${key} is not already initialized`,
       );
-      return nameAdmin.update(key, newValue, adminValue);
+      nameAdmin.update(key, newValue, adminValue);
     },
     update: (key, newValue, adminValue) => {
       assert.typeof(key, 'string');
@@ -119,7 +119,6 @@ export const makeNameHubKit = () => {
           map.init(key, record);
         }
       }
-      return /** @type {any} */ (newValue);
     },
     lookupAdmin: async (...path) => {
       if (path.length === 0) {

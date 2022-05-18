@@ -132,12 +132,14 @@ test('makeNameHubKit - default and set', async t => {
 
   t.is(nameAdmin.readonly(), nameHub);
 
-  t.is(await nameAdmin.default('defaulted', 'defaultValue'), 'defaultValue');
-  t.is(await nameAdmin.update('already set', 'initial'), 'initial');
-  t.is(await nameAdmin.default('already set'), 'initial');
-  t.is(await nameAdmin.set('already set', 'new'), 'new');
-  t.is(await nameAdmin.default('already set'), 'new');
-  t.throwsAsync(() => nameAdmin.set('not set', 'irrelevant'), {
+  t.is(nameAdmin.default('defaulted', 'defaultValue'), 'defaultValue');
+  nameAdmin.update('already set', 'initial');
+  t.is(await nameAdmin.readonly().lookup('already set'), 'initial');
+  t.is(nameAdmin.default('already set'), 'initial');
+  nameAdmin.set('already set', 'new');
+  t.is(await nameAdmin.readonly().lookup('already set'), 'new');
+  t.is(nameAdmin.default('already set'), 'new');
+  t.throws(() => nameAdmin.set('not set', 'irrelevant'), {
     message: 'key "not set" is not already initialized',
   });
 });

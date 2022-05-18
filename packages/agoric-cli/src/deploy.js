@@ -79,7 +79,13 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
   const host = match ? match[1] : 'localhost';
   const port = match ? match[2] : '8000';
 
-  const wsurl = `ws://${opts.hostport}/private/captp`;
+  const wsurl = opts.hostport.includes('//')
+    ? new URL(opts.hostport)
+    : new URL(`ws://${host}:${port}`);
+  if (wsurl.pathname === '/' && !opts.hostport.endsWith('/')) {
+    wsurl.pathname = '/private/captp';
+  }
+
   const exit = makePromiseKit();
   let connected = false;
   process.stdout.write(`Open CapTP connection to ${wsurl}...`);
@@ -90,12 +96,15 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
   );
 
   const retryWebsocket = async () => {
-    const accessToken = await getAccessToken(opts.hostport);
+    const myPort =
+      wsurl.port ||
+      (['https:', 'wss:'].includes(wsurl.protocol) ? '443' : '80');
+    const accessToken = await getAccessToken(`${wsurl.hostname}:${myPort}`);
 
     // For a WebSocket we need to put the token in the query string.
     const wsWebkey = `${wsurl}?accessToken=${encodeURIComponent(accessToken)}`;
 
-    const ws = makeWebSocket(wsWebkey, { origin: 'http://127.0.0.1' });
+    const ws = makeWebSocket(wsWebkey, { origin: wsurl.origin });
     ws.on('open', async () => {
       connected = true;
       try {
