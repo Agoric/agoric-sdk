@@ -2396,7 +2396,7 @@ test('director notifiers', async t => {
   // We could refactor the tests of those allocations to use the data now exposed by a notifier.
 });
 
-test('manager notifiers', async t => {
+test.only('manager notifiers', async t => {
   const LOAN = 450n;
   const DEBT = 473n; // with penalty
   const AMPLE = 100_000n;
@@ -2417,10 +2417,18 @@ test('manager notifiers', async t => {
   const metricsSub = await E(cm).getMetrics();
   const metrics = makeNotifierFromAsyncIterable(metricsSub);
   let state = await E(metrics).getUpdateSince();
+  const noCollateral = AmountMath.makeEmpty(aethKit.brand);
+  const noDebt = AmountMath.makeEmpty(t.context.runKit.brand);
   t.deepEqual(state.value, {
     numVaults: 0,
-    totalCollateral: AmountMath.makeEmpty(aethKit.brand),
-    totalDebt: AmountMath.makeEmpty(t.context.runKit.brand),
+    totalCollateral: noCollateral,
+    totalDebt: noDebt,
+
+    numLiquidations: 0,
+    totalReclaimed: noCollateral,
+    totalOverage: noDebt,
+    totalProceeds: noDebt,
+    totalShortfall: noCollateral,
   });
 
   // Create a loan with ample collateral
@@ -2445,6 +2453,12 @@ test('manager notifiers', async t => {
     numVaults: 1,
     totalCollateral: collateralAmount,
     totalDebt: AmountMath.make(runKit.brand, DEBT),
+
+    numLiquidations: 0,
+    totalReclaimed: noCollateral,
+    totalOverage: noDebt,
+    totalProceeds: noDebt,
+    totalShortfall: noCollateral,
   });
 
   await E(aethVaultManager).liquidateAll();
@@ -2452,6 +2466,12 @@ test('manager notifiers', async t => {
   t.deepEqual(state.value, {
     numVaults: 0,
     totalCollateral: collateralAmount,
-    totalDebt: AmountMath.make(runKit.brand, 0n),
+    totalDebt: noDebt,
+
+    numLiquidations: 0,
+    totalReclaimed: noCollateral,
+    totalOverage: noDebt,
+    totalProceeds: noDebt,
+    totalShortfall: noCollateral,
   });
 });

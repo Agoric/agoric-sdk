@@ -42,9 +42,14 @@ const trace = makeTracer('VM', false);
  * }} AssetState
  *
  * @typedef {{
+ *  numLiquidations: number,
  *  numVaults: number,
  *  totalCollateral: Amount<'nat'>,
+ *  totalReclaimed: Amount<'nat'>,
  *  totalDebt: Amount<'nat'>,
+ *  totalOverage: Amount<'nat'>,
+ *  totalProceeds: Amount<'nat'>,
+ *  totalShortfall: Amount<'nat'>,
  * }} MetricsNotification
  *
  * @typedef {{
@@ -82,8 +87,13 @@ const trace = makeTracer('VM', false);
  * latestInterestUpdate: bigint,
  * liquidator?: Liquidator
  * liquidatorInstance?: Instance
+ * numLiquidations: number,
  * totalCollateral: Amount<'nat'>,
  * totalDebt: Amount<'nat'>,
+ * totalOverage: Amount<'nat'>,
+ * totalProceeds: Amount<'nat'>,
+ * totalReclaimed: Amount<'nat'>,
+ * totalShortfall: Amount<'nat'>,
  * vaultCounter: number,
  * }} MutableState
  */
@@ -130,8 +140,8 @@ const initState = (
   );
 
   const debtBrand = debtMint.getIssuerRecord().brand;
-  const totalCollateral = AmountMath.makeEmpty(collateralBrand, 'nat');
-  const totalDebt = AmountMath.makeEmpty(debtBrand, 'nat');
+  const zeroCollateral = AmountMath.makeEmpty(collateralBrand, 'nat');
+  const zeroDebt = AmountMath.makeEmpty(debtBrand, 'nat');
 
   const { publication: metricsPublication, subscription: metricsSubscription } =
     makeSubscriptionKit();
@@ -171,14 +181,19 @@ const initState = (
     ...fixed,
     assetNotifier,
     assetUpdater,
+    compoundedInterest,
     debtBrand: fixed.debtBrand,
-    vaultCounter: 0,
+    latestInterestUpdate,
     liquidator: undefined,
     liquidatorInstance: undefined,
-    totalCollateral,
-    totalDebt,
-    compoundedInterest,
-    latestInterestUpdate,
+    numLiquidations: 0,
+    totalCollateral: zeroCollateral,
+    totalDebt: zeroDebt,
+    totalOverage: zeroDebt,
+    totalProceeds: zeroDebt,
+    totalReclaimed: zeroCollateral,
+    totalShortfall: zeroCollateral,
+    vaultCounter: 0,
   };
 
   return state;
@@ -265,6 +280,12 @@ const helperBehavior = {
       numVaults: state.prioritizedVaults.getCount(),
       totalCollateral: state.totalCollateral,
       totalDebt: state.totalDebt,
+
+      numLiquidations: state.numLiquidations,
+      totalReclaimed: state.totalReclaimed,
+      totalOverage: state.totalOverage,
+      totalProceeds: state.totalProceeds,
+      totalShortfall: state.totalShortfall,
     });
     state.metricsPublication.updateState(payload);
   },
