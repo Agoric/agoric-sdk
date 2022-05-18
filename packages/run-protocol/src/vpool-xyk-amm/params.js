@@ -17,21 +17,24 @@ const DEFAULT_PROTOCOL_FEE_BP = 6n;
  * @param {ERef<ZoeService>} zoe
  * @param {bigint} poolFeeBP
  * @param {bigint} protocolFeeBP
- * @param {bigint} mintInitialLiquidity
+ * @param {Amount} minInitialLiquidity
  * @param {Invitation} poserInvitation - invitation for the question poser
  */
 const makeAmmParamManager = async (
   zoe,
   poolFeeBP,
   protocolFeeBP,
-  mintInitialLiquidity,
+  minInitialLiquidity,
   poserInvitation,
 ) => {
   return makeParamManager(
     {
       [POOL_FEE_KEY]: [ParamTypes.NAT, poolFeeBP],
       [PROTOCOL_FEE_KEY]: [ParamTypes.NAT, protocolFeeBP],
-      [MIN_INITIAL_POOL_LIQUIDITY_KEY]: [ParamTypes.NAT, mintInitialLiquidity],
+      [MIN_INITIAL_POOL_LIQUIDITY_KEY]: [
+        ParamTypes.AMOUNT,
+        minInitialLiquidity,
+      ],
       [CONTRACT_ELECTORATE]: [ParamTypes.INVITATION, poserInvitation],
     },
     zoe,
@@ -42,14 +45,14 @@ const makeAmmParams = (
   electorateInvitationAmount,
   protocolFeeBP,
   poolFeeBP,
-  mintInitialLiquidity,
+  minInitialLiquidity,
 ) => {
   return harden({
     [POOL_FEE_KEY]: { type: ParamTypes.NAT, value: poolFeeBP },
     [PROTOCOL_FEE_KEY]: { type: ParamTypes.NAT, value: protocolFeeBP },
     [MIN_INITIAL_POOL_LIQUIDITY_KEY]: {
-      type: ParamTypes.NAT,
-      value: mintInitialLiquidity,
+      type: ParamTypes.AMOUNT,
+      value: minInitialLiquidity,
     },
     [CONTRACT_ELECTORATE]: {
       type: ParamTypes.INVITATION,
@@ -61,7 +64,7 @@ const makeAmmParams = (
 const makeAmmTerms = (
   timer,
   poserInvitationAmount,
-  mintInitialLiquidity,
+  minInitialLiquidity,
   protocolFeeBP = DEFAULT_PROTOCOL_FEE_BP,
   poolFeeBP = DEFAULT_POOL_FEE_BP,
 ) => ({
@@ -72,7 +75,7 @@ const makeAmmTerms = (
     poserInvitationAmount,
     protocolFeeBP,
     poolFeeBP,
-    mintInitialLiquidity,
+    minInitialLiquidity,
   ),
 });
 

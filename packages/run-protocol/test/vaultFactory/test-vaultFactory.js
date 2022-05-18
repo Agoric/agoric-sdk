@@ -137,6 +137,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   const {
     zoe,
     aethKit: { issuer: aethIssuer },
+    runKit: { brand: runBrand },
     electorateTerms = { committeeName: 'The Cabal', committeeSize: 1 },
     timer,
   } = t.context;
@@ -146,7 +147,9 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   installGovernance(zoe, space.installation.produce);
   space.installation.produce.amm.resolve(t.context.installation.amm);
   await startEconomicCommittee(space, electorateTerms);
-  await setupAmm(space, 300n);
+  await setupAmm(space, {
+    minInitialPoolLiquidity: AmountMath.make(runBrand, 300n),
+  });
 
   const governorCreatorFacet = consume.ammGovernorCreatorFacet;
   const governorInstance = await instance.consume.ammGovernor;

@@ -109,7 +109,7 @@ const start = async (zcf, privateArgs) => {
    * @typedef {GovernanceTerms<{
    *   PoolFee: 'nat',
    *   ProtocolFee: 'nat',
-   *   MinInitialPoolLiquidity: 'nat',
+   *   MinInitialPoolLiquidity: 'amount',
    * }> & {
    *   brands: { Central: Brand },
    *   issuers: {},
@@ -134,7 +134,7 @@ const start = async (zcf, privateArgs) => {
     handleParamGovernance(zcf, privateArgs.initialPoserInvitation, {
       [POOL_FEE_KEY]: ParamTypes.NAT,
       [PROTOCOL_FEE_KEY]: ParamTypes.NAT,
-      [MIN_INITIAL_POOL_LIQUIDITY_KEY]: ParamTypes.NAT,
+      [MIN_INITIAL_POOL_LIQUIDITY_KEY]: ParamTypes.AMOUNT,
     }),
     E(centralBrand).getDisplayInfo(),
   ]);
@@ -298,6 +298,6 @@ export { start };
  * @typedef {object} AMMParamGetters
  * @property {() => NatValue} getPoolFee
  * @property {() => NatValue} getProtocolFee
- * @property {() => NatValue} getMinInitialPoolLiquidity
+ * @property {() => Amount} getMinInitialPoolLiquidity
  * @property {() => Amount} getElectorate
  */

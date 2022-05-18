@@ -35,6 +35,7 @@ const SHARED_MAIN_MANIFEST = harden({
       ammGovernorCreatorFacet: 'amm',
     },
     issuer: { consume: { RUN: 'zoe' } },
+    brand: { consume: { RUN: 'zoe' } },
     installation: {
       consume: { contractGovernor: 'zoe', amm: 'zoe' },
     },

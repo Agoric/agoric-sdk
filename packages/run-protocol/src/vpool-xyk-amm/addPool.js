@@ -107,8 +107,9 @@ export const makeAddPoolInvitation = (
 
     if (proposalWant.Liquidity) {
       const { Liquidity: wantLiquidityAmount } = proposalWant;
-      // @ts-expect-error central is NAT
-      const liquidityTokensForFunder = centralAmount.value - minPoolLiquidity;
+      const liquidityTokensForFunder =
+        // @ts-expect-error central is NAT
+        centralAmount.value - minPoolLiquidity.value;
       const funderLiquidityAmount = AmountMath.make(
         liquidityBrand,
         liquidityTokensForFunder,
@@ -125,22 +126,23 @@ export const makeAddPoolInvitation = (
     } = await addPool(secondaryBrand);
 
     assert(
-      centralAmount.value >= minPoolLiquidity,
+      AmountMath.isGTE(centralAmount, minPoolLiquidity),
       `The minimum initial liquidity is ${minPoolLiquidity}, rejecting ${centralAmount}`,
     );
-
-    helper.addLiquidityInternal(seat, secondaryAmount, centralAmount);
-
-    const totalNewLiquidity = seat.getAmountAllocated('Liquidity');
     const minLiqAmount = AmountMath.make(
-      totalNewLiquidity.brand,
-      minPoolLiquidity,
+      liquidityBrand,
+      minPoolLiquidity.value,
     );
 
     // @ts-ignore TS unhappy about issuers
     const [liquidityKeyword] = Object.entries(zcf.getTerms().issuers).find(
       ([_, i]) => i === issuer,
     );
+
+    // in addLiquidityInternal, funder provides centralAmount & secondaryAmount,
+    // and receives liquidity tokens equal to centralAmount. Afterward, we'll
+    // transfer minPoolLiquidity in tokens from the funder to the reserve.
+    helper.addLiquidityInternal(seat, secondaryAmount, centralAmount);
 
     seat.decrementBy({ Liquidity: minLiqAmount });
     reserveLiquidityTokenSeat.incrementBy({ [liquidityKeyword]: minLiqAmount });

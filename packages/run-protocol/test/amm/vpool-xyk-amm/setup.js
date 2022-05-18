@@ -3,7 +3,7 @@ import { E } from '@endo/eventual-send';
 import { makeLoopback } from '@endo/captp';
 
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-
+import { AmountMath } from '@agoric/ertp';
 import { makeZoeKit } from '@agoric/zoe';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
@@ -93,7 +93,9 @@ export const setupAmmServices = async (
     startEconomicCommittee(space, {
       options: { econCommitteeOptions: electorateTerms },
     }),
-    setupAmm(space, 1000n),
+    setupAmm(space, {
+      minInitialPoolLiquidity: AmountMath.make(centralR.brand, 1000n),
+    }),
   ]);
 
   const installs = await Collect.allValues({

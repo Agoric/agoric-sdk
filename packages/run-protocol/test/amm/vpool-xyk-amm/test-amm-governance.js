@@ -59,8 +59,8 @@ test('amm change param via Governance', async t => {
         value: 24n,
       },
       [MIN_INITIAL_POOL_LIQUIDITY_KEY]: {
-        type: 'nat',
-        value: 1000n,
+        type: 'amount',
+        value: AmountMath.make(centralR.brand, 1000n),
       },
       [PROTOCOL_FEE_KEY]: {
         type: 'nat',
@@ -168,8 +168,8 @@ test('price check after Governance param change', async t => {
         value: 6n,
       },
       MinInitialPoolLiquidity: {
-        type: 'nat',
-        value: 1000n,
+        type: 'amount',
+        value: AmountMath.make(centralR.brand, 1000n),
       },
       Electorate: {
         type: 'invitation',
