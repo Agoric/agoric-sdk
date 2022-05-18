@@ -233,3 +233,70 @@ test(`offerTo - violates offer safety of fromSeat`, async t => {
   });
   t.falsy(fromSeatContractA.hasExited());
 });
+
+test(`throws handler errors during getOfferResult`, async t => {
+  const { moola, moolaIssuer, bucksMint, bucks, bucksIssuer } = setup();
+  const { zoe, instanceToZCF, instanceA, instanceB } = await setupContract(
+    moolaIssuer,
+    bucksIssuer,
+  );
+
+  const zcfA = instanceToZCF.get(instanceA);
+  const zcfB = instanceToZCF.get(instanceB);
+
+  // Make an offer from contract A to contract B from a seat in
+  // contract A, and deposit the winnings in a different seat on contract A.
+
+  // Create a fromSeat on contract instance A that starts with 5 bucks
+  // under keyword TokenK
+
+  const { zcfSeat: fromSeatContractA } = await makeOffer(
+    zoe,
+    zcfA,
+    harden({ want: harden({}), give: { TokenK: bucks(5n) } }),
+    harden({ TokenK: bucksMint.mintPayment(bucks(5n)) }),
+  );
+
+  const contractBInvitation = zcfB.makeInvitation(
+    () => assert.fail('🚨'),
+    'contractB invitation',
+  );
+
+  // Map the keywords in contract A to the keywords in contract B
+  const keywordMapping = harden({
+    TokenJ: 'TokenL',
+    TokenK: 'TokenM',
+  });
+
+  const proposal = harden({
+    give: {
+      TokenM: bucks(5n),
+    },
+    want: {
+      TokenL: moola(10n),
+    },
+  });
+
+  const { zcfSeat: toSeatContractA } = zcfA.makeEmptySeatKit();
+
+  // doesn't call the broken handler yet
+  const { userSeatPromise: contractBUserSeat, deposited } = await offerTo(
+    zcfA,
+    contractBInvitation,
+    keywordMapping,
+    proposal,
+    fromSeatContractA,
+    toSeatContractA,
+  );
+
+  // doesn't call the broken handler yet
+  await deposited;
+  await contractBUserSeat;
+
+  // only getOfferResult calls the broken handler
+  try {
+    await E(contractBUserSeat).getOfferResult();
+  } catch (e) {
+    t.is(e.message, '🚨');
+  }
+});
