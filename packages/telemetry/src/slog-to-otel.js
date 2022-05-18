@@ -499,6 +499,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
           case 'resolve':
           case 'subscribe':
           case 'vatstoreGet':
+          case 'vatstoreGetAfter':
           case 'vatstoreSet':
           case 'vatstoreDelete':
           case 'dropImports':
