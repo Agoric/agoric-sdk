@@ -7,6 +7,7 @@ import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
   makeRatio,
@@ -304,14 +305,12 @@ async function setupServices(
   await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
 
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
-  /** @type {Promise<VaultFactory & LimitedCreatorFacet<any>>} */
-  const vaultFactoryCreatorFacet = /** @type { any } */ (
-    E(governorCreatorFacet).getCreatorFacet()
-  );
+  /** @type {Promise<VaultFactory & LimitedCreatorFacet<VaultFactory>>} */
+  const vaultFactoryCreatorFacetP = E(governorCreatorFacet).getCreatorFacet();
 
   // Add a vault that will lend on aeth collateral
   /** @type {Promise<VaultManager>} */
-  const aethVaultManagerP = E(vaultFactoryCreatorFacet).addVaultType(
+  const aethVaultManagerP = E(vaultFactoryCreatorFacetP).addVaultType(
     aethIssuer,
     'AEth',
     rates,
@@ -320,18 +319,23 @@ async function setupServices(
   // @ts-expect-error cast
   const [
     governorInstance,
-    vaultFactory,
+    vaultFactory, // creator
     lender,
     aethVaultManager,
     priceAuthority,
   ] = await Promise.all([
     E(consume.agoricNames).lookup('instance', 'VaultFactoryGovernor'),
-    vaultFactoryCreatorFacet,
+    vaultFactoryCreatorFacetP,
     E(governorCreatorFacet).getPublicFacet(),
     aethVaultManagerP,
     pa,
   ]);
-  trace(t, 'pa', { governorInstance, vaultFactory, lender, priceAuthority });
+  trace(t, 'pa', {
+    governorInstance,
+    vaultFactory,
+    lender,
+    priceAuthority,
+  });
 
   const { g, v } = {
     g: {
@@ -2349,4 +2353,105 @@ test('addVaultType: extra, unexpected params', async t => {
     extraParams,
   );
   t.true(matches(actual, M.remotable()), 'unexpected params are ignored');
+});
+
+test('director notifiers', async t => {
+  const {
+    aethKit: { brand: aethBrand },
+  } = t.context;
+  const services = await setupServices(
+    t,
+    [500n, 15n],
+    AmountMath.make(aethBrand, 900n),
+    undefined,
+    undefined,
+    500n,
+  );
+
+  const { lender, vaultFactory } = services.vaultFactory;
+
+  const metricsSub = await E(lender).getMetrics();
+  const metrics = makeNotifierFromAsyncIterable(metricsSub);
+
+  let state = await E(metrics).getUpdateSince();
+  t.deepEqual(state.value, {
+    collaterals: [aethBrand],
+    rewardPoolAllocation: {},
+  });
+
+  // add a vault type
+  const chit = makeIssuerKit('chit');
+  await E(vaultFactory).addVaultType(
+    chit.issuer,
+    'Chit',
+    defaultParamValues(chit.brand),
+  );
+  state = await E(metrics).getUpdateSince(state.updateCount);
+  t.deepEqual(state.value, {
+    collaterals: [aethBrand, chit.brand],
+    rewardPoolAllocation: {},
+  });
+
+  // Not testing rewardPoolAllocation contents because those are simply those values.
+  // We could refactor the tests of those allocations to use the data now exposed by a notifier.
+});
+
+test('manager notifiers', async t => {
+  const LOAN = 450n;
+  const DEBT = 473n; // with penalty
+  const AMPLE = 100_000n;
+
+  const { aethKit, runKit } = t.context;
+  const services = await setupServices(
+    t,
+    [10n],
+    AmountMath.make(aethKit.brand, 900n),
+    undefined,
+    undefined,
+    AMPLE,
+  );
+
+  const { aethVaultManager, lender } = services.vaultFactory;
+  const cm = await E(aethVaultManager).getPublicFacet();
+
+  const metricsSub = await E(cm).getMetrics();
+  const metrics = makeNotifierFromAsyncIterable(metricsSub);
+  let state = await E(metrics).getUpdateSince();
+  t.deepEqual(state.value, {
+    numVaults: 0,
+    totalCollateral: AmountMath.makeEmpty(aethKit.brand),
+    totalDebt: AmountMath.makeEmpty(t.context.runKit.brand),
+  });
+
+  // Create a loan with ample collateral
+  const collateralAmount = AmountMath.make(aethKit.brand, AMPLE);
+  const loanAmount = AmountMath.make(runKit.brand, LOAN);
+  /** @type {UserSeat<VaultKit>} */
+  const vaultSeat = await E(services.zoe).offer(
+    await E(lender).makeVaultInvitation(),
+    harden({
+      give: { Collateral: collateralAmount },
+      want: { RUN: loanAmount },
+    }),
+    harden({
+      Collateral: t.context.aethKit.mint.mintPayment(collateralAmount),
+    }),
+  );
+
+  await E(vaultSeat).getOfferResult();
+
+  state = await E(metrics).getUpdateSince(state.updateCount);
+  t.deepEqual(state.value, {
+    numVaults: 1,
+    totalCollateral: collateralAmount,
+    totalDebt: AmountMath.make(runKit.brand, DEBT),
+  });
+
+  await E(aethVaultManager).liquidateAll();
+  state = await E(metrics).getUpdateSince(state.updateCount);
+  t.deepEqual(state.value, {
+    numVaults: 0,
+    totalCollateral: collateralAmount,
+    totalDebt: AmountMath.make(runKit.brand, 0n),
+  });
 });

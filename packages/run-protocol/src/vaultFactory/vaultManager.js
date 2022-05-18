@@ -14,7 +14,11 @@ import {
   makeRatio,
   floorDivideBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
+import {
+  makeNotifierKit,
+  makeSubscriptionKit,
+  observeNotifier,
+} from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 
 import { defineKindMulti, pickFacet } from '@agoric/vat-data';
@@ -34,11 +38,15 @@ const trace = makeTracer('VM', false);
  *  compoundedInterest: Ratio,
  *  interestRate: Ratio,
  *  latestInterestUpdate: bigint,
- *  totalDebt: Amount<'nat'>,
  *  liquidatorInstance?: Instance,
- * }} AssetState */
-
-/**
+ * }} AssetState
+ *
+ * @typedef {{
+ *  numVaults: number,
+ *  totalCollateral: Amount<'nat'>,
+ *  totalDebt: Amount<'nat'>,
+ * }} MetricsNotification
+ *
  * @typedef {{
  *  getChargingPeriod: () => bigint,
  *  getRecordingPeriod: () => bigint,
@@ -56,6 +64,8 @@ const trace = makeTracer('VM', false);
  * debtBrand: Brand<'nat'>,
  * debtMint: ZCFMint<'nat'>,
  * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
+ * metricsPublication: IterationObserver<MetricsNotification>,
+ * metricsSubscription: Subscription<MetricsNotification>,
  * periodNotifier: ERef<Notifier<bigint>>,
  * poolIncrementSeat: ZCFSeat,
  * priceAuthority: ERef<PriceAuthority>,
@@ -72,6 +82,7 @@ const trace = makeTracer('VM', false);
  * latestInterestUpdate: bigint,
  * liquidator?: Liquidator
  * liquidatorInstance?: Instance
+ * totalCollateral: Amount<'nat'>,
  * totalDebt: Amount<'nat'>,
  * vaultCounter: number,
  * }} MutableState
@@ -118,12 +129,28 @@ const initState = (
     factoryPowers.getGovernedParams().getChargingPeriod(),
   );
 
+  const debtBrand = debtMint.getIssuerRecord().brand;
+  const totalCollateral = AmountMath.makeEmpty(collateralBrand, 'nat');
+  const totalDebt = AmountMath.makeEmpty(debtBrand, 'nat');
+
+  const { publication: metricsPublication, subscription: metricsSubscription } =
+    makeSubscriptionKit();
+  metricsPublication.updateState(
+    harden({
+      numVaults: 0,
+      totalCollateral,
+      totalDebt,
+    }),
+  );
+
   /** @type {ImmutableState} */
   const fixed = {
     collateralBrand,
-    debtBrand: debtMint.getIssuerRecord().brand,
+    debtBrand,
     debtMint,
     factoryPowers,
+    metricsSubscription,
+    metricsPublication,
     periodNotifier,
     poolIncrementSeat: zcf.makeEmptySeatKit().zcfSeat,
     priceAuthority,
@@ -134,7 +161,6 @@ const initState = (
     zcf,
   };
 
-  const totalDebt = AmountMath.makeEmpty(fixed.debtBrand, 'nat');
   const compoundedInterest = makeRatio(100n, fixed.debtBrand); // starts at 1.0, no interest
   // timestamp of most recent update to interest
   const latestInterestUpdate = startTimeStamp;
@@ -144,8 +170,6 @@ const initState = (
       compoundedInterest,
       interestRate: fixed.factoryPowers.getGovernedParams().getInterestRate(),
       latestInterestUpdate,
-      totalDebt,
-      liquidationInstance: undefined,
     }),
   );
 
@@ -158,6 +182,7 @@ const initState = (
     vaultCounter: 0,
     liquidator: undefined,
     liquidatorInstance: undefined,
+    totalCollateral,
     totalDebt,
     compoundedInterest,
     latestInterestUpdate,
@@ -219,12 +244,13 @@ const helperBehavior = {
       updateTime,
     );
     Object.assign(state, stateUpdates);
-    facets.helper.notify();
+    facets.helper.assetNotify();
     trace('chargeAllVaults complete');
     facets.helper.reschedulePriceCheck();
   },
 
-  notify: ({ state }) => {
+  /** @param {MethodContext} context */
+  assetNotify: ({ state }) => {
     const interestRate = state.factoryPowers
       .getGovernedParams()
       .getInterestRate();
@@ -233,10 +259,21 @@ const helperBehavior = {
       compoundedInterest: state.compoundedInterest,
       interestRate,
       latestInterestUpdate: state.latestInterestUpdate,
-      totalDebt: state.totalDebt,
+      // XXX move to governance and type as present with null
       liquidatorInstance: state.liquidatorInstance,
     });
     state.assetUpdater.updateState(payload);
+  },
+
+  /** @param {MethodContext} context */
+  updateMetrics: ({ state }) => {
+    /** @type {MetricsNotification} */
+    const payload = harden({
+      numVaults: state.prioritizedVaults.getCount(),
+      totalCollateral: state.totalCollateral,
+      totalDebt: state.totalDebt,
+    });
+    state.metricsPublication.updateState(payload);
   },
 
   /**
@@ -295,6 +332,9 @@ const helperBehavior = {
     trace('update quote', highestDebtRatio);
   },
 
+  /**
+   * @param {MethodContext} context
+   */
   processLiquidations: async ({ state, facets }) => {
     const { prioritizedVaults, priceAuthority } = state;
     const govParams = state.factoryPowers.getGovernedParams();
@@ -368,6 +408,7 @@ const helperBehavior = {
       .then(() => {
         prioritizedVaults.removeVault(key);
         trace('liquidated');
+        facets.helper.updateMetrics();
       })
       .catch(e => {
         // XXX should notify interested parties
@@ -425,6 +466,7 @@ const managerBehavior = {
    * @param {ZCFSeat} seat
    */
   burnAndRecord: ({ state }, toBurn, seat) => {
+    trace('burnAndRecord', { toBurn, totalDebt: state.totalDebt });
     const { burnDebt } = state.factoryPowers;
     burnDebt(toBurn, seat);
     state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
@@ -461,6 +503,8 @@ const collateralBehavior = {
   /** @param {MethodContext} context */
   getNotifier: ({ state }) => state.assetNotifier,
   /** @param {MethodContext} context */
+  getMetrics: ({ state }) => state.metricsSubscription,
+  /** @param {MethodContext} context */
   getCompoundedInterest: ({ state }) => state.compoundedInterest,
 };
 
@@ -486,7 +530,7 @@ const selfBehavior = {
    * @param {MethodContext} context
    * @param {ZCFSeat} seat
    */
-  makeVaultKit: async ({ state, facets: { manager } }, seat) => {
+  makeVaultKit: async ({ state, facets: { helper, manager } }, seat) => {
     const { prioritizedVaults, zcf } = state;
     assertProposalShape(seat, {
       give: { Collateral: null },
@@ -505,7 +549,12 @@ const selfBehavior = {
       // TODO `await` is allowed until the above ordering is fixed
       // eslint-disable-next-line @jessie.js/no-nested-await
       const vaultKit = await vault.initVaultKit(seat);
+      state.totalCollateral = AmountMath.add(
+        state.totalCollateral,
+        vaultKit.vault.getCollateralAmount(),
+      );
       seat.exit();
+      helper.updateMetrics();
       return vaultKit;
     } catch (err) {
       // remove it from prioritizedVaults
@@ -557,7 +606,7 @@ const selfBehavior = {
     });
     state.liquidatorInstance = instance;
     state.liquidator = creatorFacet;
-    facets.helper.notify();
+    facets.helper.assetNotify();
   },
 
   /** @param {MethodContext} context */
@@ -632,5 +681,6 @@ const makeVaultManagerKit = defineKindMulti(
  */
 export const makeVaultManager = pickFacet(makeVaultManagerKit, 'self');
 
+/** @typedef {ReturnType<typeof makeVaultManagerKit>['manager']} VaultKitManager */
 /** @typedef {ReturnType<typeof makeVaultManager>} VaultManager */
 /** @typedef {ReturnType<VaultManager['getPublicFacet']>} CollateralManager */

@@ -66,7 +66,7 @@ const validTransitions = {
 /**
  * @typedef {Phase[keyof typeof Phase]} TitlePhase
  *
- * @typedef {object} VaultUIState
+ * @typedef {object} VaultNotification
  * @property {Amount<'nat'>} locked Amount of Collateral locked
  * @property {{debt: Amount<'nat'>, interest: Ratio}} debtSnapshot 'debt' at the point the compounded interest was 'interest'
  * @property {Ratio} interestRate Annual interest rate charge
@@ -74,6 +74,7 @@ const validTransitions = {
  * @property {TitlePhase} vaultState
  */
 
+// XXX masks typedef from types.js, but using that causes circular def problems
 /**
  * @typedef {object} VaultManager
  * @property {() => Notifier<import('./vaultManager').AssetState>} getNotifier
@@ -101,7 +102,7 @@ const validTransitions = {
  *
  * @typedef {{
  *   interestSnapshot: Ratio,
- *   outerUpdater: IterationObserver<VaultUIState> | null,
+ *   outerUpdater: IterationObserver<VaultNotification> | null,
  *   phase: VaultPhase,
  *   debtSnapshot: Amount<'nat'>,
  * }} MutableState
@@ -302,7 +303,7 @@ const helperBehavior = {
    */
   getStateSnapshot: ({ state, facets }, newPhase) => {
     const { debtSnapshot: debt, interestSnapshot: interest } = state;
-    /** @type {VaultUIState} */
+    /** @type {VaultNotification} */
     return harden({
       // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
       interestRate: state.manager.getGovernedParams().getInterestRate(),

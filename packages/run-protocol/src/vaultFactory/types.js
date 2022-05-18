@@ -1,7 +1,7 @@
 // @ts-check
 
 /**
- * @typedef {import('./vault').VaultUIState} VaultUIState
+ * @typedef {import('./vault').VaultNotification} VaultNotification
  * @typedef {import('./vault').Vault} Vault
  * @typedef {import('./vaultKit').VaultKit} VaultKit
  * @typedef {import('./vaultManager').VaultManager} VaultManager
@@ -51,6 +51,7 @@
  * @property {() => Allocation} getRewardAllocation
  * @property {() => Instance} getContractGovernor
  * @property {() => Promise<Invitation>} makeCollectFeesInvitation
+ * @property {() => void} updateMetrics
  */
 
 /**
