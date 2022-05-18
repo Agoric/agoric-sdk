@@ -283,9 +283,6 @@ const reverse = (keywordRecord = {}) => {
  * contract instance (contractA) and depositing the payouts in another
  * seat in the current contract instance (contractA).
  *
- * @template {object=} A Offer args
- * @template {object=} R Offer result
- *
  * @param {ZCF} zcf
  *   Zoe Contract Facet for contractA
  *
@@ -313,7 +310,11 @@ const reverse = (keywordRecord = {}) => {
  * @returns {Promise<{userSeatPromise: Promise<UserSeat<R>>, deposited: Promise<AmountKeywordRecord>}>}
  *   A promise for the userSeat for the offer to the other contract, and a
  *   promise (`deposited`) which resolves when the payout for the offer has been
- *   deposited to the `toSeat`
+ *   deposited to the `toSeat`.
+ *   Any failures of the invitation will be returned by `userSeatPromise.getOfferResult()`.
+ *
+ * @template {object=} A Offer args
+ * @template {object=} R Offer result
  */
 export const offerTo = async (
   zcf,
