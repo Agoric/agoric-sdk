@@ -24,7 +24,6 @@ const trace = makeTracer('LIQ');
  * @param {Liquidator}  liquidator
  * @param {Brand} collateralBrand
  * @param {Ratio} penaltyRate
- * @returns {Promise<Vault>}
  */
 const liquidate = async (
   zcf,
@@ -74,9 +73,10 @@ const liquidate = async (
 
   // Accounting complete. Update the vault state.
   vault.liquidated(AmountMath.subtract(debt, runToBurn));
-
   // remaining funds are left on the vault for the user to close and claim
-  return vault;
+
+  // for metrics
+  return { proceeds: proceeds.RUN };
 };
 
 const liquidationDetailTerms = debtBrand =>

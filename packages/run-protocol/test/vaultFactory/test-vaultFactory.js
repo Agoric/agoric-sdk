@@ -129,7 +129,12 @@ test.before(async t => {
     aethInitialLiquidity: AmountMath.make(aethKit.brand, 300n),
   };
   const frozenCtx = await deeplyFulfilled(harden(contextPs));
-  t.context = { ...frozenCtx, bundleCache };
+  t.context = {
+    ...frozenCtx,
+    bundleCache,
+    debtAmount: num => AmountMath.make(frozenCtx.runKit.brand, BigInt(num)),
+    collAmount: num => AmountMath.make(aethKit.brand, BigInt(num)),
+  };
   trace(t, 'CONTEXT');
 });
 
@@ -2401,7 +2406,7 @@ test.only('manager notifiers', async t => {
   const DEBT = 473n; // with penalty
   const AMPLE = 100_000n;
 
-  const { aethKit, runKit } = t.context;
+  const { aethKit, runKit, debtAmount, collAmount } = t.context;
   const services = await setupServices(
     t,
     [10n],
@@ -2416,9 +2421,11 @@ test.only('manager notifiers', async t => {
 
   const metricsSub = await E(cm).getMetrics();
   const metrics = makeNotifierFromAsyncIterable(metricsSub);
+
+  // 0. Creation
   let state = await E(metrics).getUpdateSince();
-  const noCollateral = AmountMath.makeEmpty(aethKit.brand);
-  const noDebt = AmountMath.makeEmpty(t.context.runKit.brand);
+  const noCollateral = collAmount(0);
+  const noDebt = debtAmount(0);
   t.deepEqual(state.value, {
     numVaults: 0,
     totalCollateral: noCollateral,
@@ -2431,11 +2438,11 @@ test.only('manager notifiers', async t => {
     totalShortfall: noCollateral,
   });
 
-  // Create a loan with ample collateral
+  // 1. Create a loan with ample collateral
   const collateralAmount = AmountMath.make(aethKit.brand, AMPLE);
   const loanAmount = AmountMath.make(runKit.brand, LOAN);
   /** @type {UserSeat<VaultKit>} */
-  const vaultSeat = await E(services.zoe).offer(
+  let vaultSeat = await E(services.zoe).offer(
     await E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
@@ -2445,9 +2452,7 @@ test.only('manager notifiers', async t => {
       Collateral: t.context.aethKit.mint.mintPayment(collateralAmount),
     }),
   );
-
-  await E(vaultSeat).getOfferResult();
-
+  const { vault: vault1 } = await E(vaultSeat).getOfferResult();
   state = await E(metrics).getUpdateSince(state.updateCount);
   t.deepEqual(state.value, {
     numVaults: 1,
@@ -2461,17 +2466,88 @@ test.only('manager notifiers', async t => {
     totalShortfall: noCollateral,
   });
 
-  await E(aethVaultManager).liquidateAll();
+  // 2. Add collateral to it
+  const adjustBalances1 = await E(vault1).makeAdjustBalancesInvitation();
+  const smallColl = collAmount(99);
+  const giveCollateralSeat = await E(services.zoe).offer(
+    adjustBalances1,
+    harden({
+      give: { Collateral: smallColl },
+      want: {},
+    }),
+    harden({
+      Collateral: t.context.aethKit.mint.mintPayment(smallColl),
+    }),
+  );
+  const or = await E(giveCollateralSeat).getOfferResult();
+  console.log('offer result', or);
+  await waitForPromisesToSettle();
   state = await E(metrics).getUpdateSince(state.updateCount);
+  console.log('DEBUG', state.value.totalCollateral); // missing the smallColl added above
   t.deepEqual(state.value, {
-    numVaults: 0,
-    totalCollateral: collateralAmount,
-    totalDebt: noDebt,
+    numVaults: 1,
+    totalCollateral: AmountMath.add(collateralAmount, smallColl),
+    totalDebt: debtAmount(473),
 
     numLiquidations: 0,
     totalReclaimed: noCollateral,
     totalOverage: noDebt,
     totalProceeds: noDebt,
+    totalShortfall: noCollateral,
+  });
+  return;
+
+  // 2. Liquidate all (1 loan)
+  await E(aethVaultManager).liquidateAll();
+  state = await E(metrics).getUpdateSince(state.updateCount);
+  t.deepEqual(state.value, {
+    numVaults: 0,
+    totalCollateral: noCollateral,
+    totalDebt: noDebt,
+
+    numLiquidations: 1,
+    totalReclaimed: noCollateral,
+    totalOverage: noDebt,
+    totalProceeds: debtAmount(613),
+    totalShortfall: noCollateral,
+  });
+
+  // 3. Make the first loan again
+  vaultSeat = await E(services.zoe).offer(
+    await E(lender).makeVaultInvitation(),
+    harden({
+      give: { Collateral: collateralAmount },
+      want: { RUN: loanAmount },
+    }),
+    harden({
+      Collateral: t.context.aethKit.mint.mintPayment(collateralAmount),
+    }),
+  );
+  state = await E(metrics).getUpdateSince(state.updateCount);
+  t.deepEqual(state.value, {
+    numVaults: 1,
+    totalCollateral: collateralAmount,
+    totalDebt: AmountMath.make(runKit.brand, DEBT),
+
+    numLiquidations: 1,
+    totalReclaimed: noCollateral,
+    totalOverage: noDebt,
+    totalProceeds: debtAmount(613),
+    totalShortfall: noCollateral,
+  });
+
+  // 4. Liquidate all (1 loan) again
+  await E(aethVaultManager).liquidateAll();
+  state = await E(metrics).getUpdateSince(state.updateCount);
+  t.deepEqual(state.value, {
+    numVaults: 0,
+    totalCollateral: noCollateral,
+    totalDebt: noDebt,
+
+    numLiquidations: 2,
+    totalReclaimed: noCollateral,
+    totalOverage: noDebt,
+    totalProceeds: debtAmount(1215),
     totalShortfall: noCollateral,
   });
 });

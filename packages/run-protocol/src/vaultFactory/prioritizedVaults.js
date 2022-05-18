@@ -168,6 +168,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
   const refreshVaultPriority = (oldDebt, oldCollateral, vaultId) => {
     const vault = removeVaultByAttributes(oldDebt, oldCollateral, vaultId);
     addVault(vaultId, vault);
+    return vault;
   };
 
   return Far('PrioritizedVaults', {

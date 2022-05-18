@@ -31,7 +31,7 @@ import { checkDebtLimit } from '../contractSupport.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer('VM', false);
+const trace = makeTracer('VM');
 
 /**
  * @typedef {{
@@ -42,14 +42,14 @@ const trace = makeTracer('VM', false);
  * }} AssetState
  *
  * @typedef {{
- *  numLiquidations: number,
- *  numVaults: number,
- *  totalCollateral: Amount<'nat'>,
- *  totalReclaimed: Amount<'nat'>,
- *  totalDebt: Amount<'nat'>,
- *  totalOverage: Amount<'nat'>,
- *  totalProceeds: Amount<'nat'>,
- *  totalShortfall: Amount<'nat'>,
+ *  numLiquidations: number,        // ever (FIXME naming convention to distinguish)
+ *  numVaults: number,              // NOW
+ *  totalCollateral: Amount<'nat'>, // NOW
+ *  totalReclaimed: Amount<'nat'>,  // ever
+ *  totalDebt: Amount<'nat'>,       // NOW
+ *  totalOverage: Amount<'nat'>,    // ever
+ *  totalProceeds: Amount<'nat'>,   // ever
+ *  totalShortfall: Amount<'nat'>,  // ever
  * }} MetricsNotification
  *
  * @typedef {{
@@ -274,6 +274,7 @@ const helperBehavior = {
   },
 
   /** @param {MethodContext} context */
+  // XXX rename to publishMetrics since it doesn't update anything locally
   updateMetrics: ({ state }) => {
     /** @type {MetricsNotification} */
     const payload = harden({
@@ -287,6 +288,7 @@ const helperBehavior = {
       totalProceeds: state.totalProceeds,
       totalShortfall: state.totalShortfall,
     });
+    trace('publishing', payload);
     state.metricsPublication.updateState(payload);
   },
 
@@ -407,6 +409,8 @@ const helperBehavior = {
     const { factoryPowers, prioritizedVaults, zcf } = state;
     trace('liquidating', vault.getVaultSeat().getProposal());
 
+    const collateralPre = vault.getCollateralAmount();
+
     // Start liquidation (vaultState: LIQUIDATING)
     const liquidator = state.liquidator;
     assert(liquidator);
@@ -419,9 +423,18 @@ const helperBehavior = {
       state.collateralBrand,
       factoryPowers.getGovernedParams().getLiquidationPenalty(),
     )
-      .then(() => {
+      .then(metrics => {
+        state.totalProceeds = AmountMath.add(
+          state.totalProceeds,
+          metrics.proceeds,
+        );
+        state.totalCollateral = AmountMath.subtract(
+          state.totalCollateral,
+          collateralPre,
+        );
         prioritizedVaults.removeVault(key);
         trace('liquidated');
+        state.numLiquidations += 1;
         facets.helper.updateMetrics();
       })
       .catch(e => {
@@ -503,10 +516,27 @@ const managerBehavior = {
    * @param {Amount<'nat'>} oldCollateral
    * @param {VaultId} vaultId
    */
-  updateVaultPriority: ({ state }, oldDebt, oldCollateral, vaultId) => {
-    const { prioritizedVaults, totalDebt } = state;
-    prioritizedVaults.refreshVaultPriority(oldDebt, oldCollateral, vaultId);
-    trace('updateVaultPriority complete', { totalDebt });
+  // XXX does more than the name implies, called by a vault when balances change
+  updateVaultPriority: ({ state, facets }, oldDebt, oldCollateral, vaultId) => {
+    const { prioritizedVaults } = state;
+    const vault = prioritizedVaults.refreshVaultPriority(
+      oldDebt,
+      oldCollateral,
+      vaultId,
+    );
+    const debtDelta = AmountMath.subtract(vault.getCurrentDebt(), oldDebt);
+    const collateralDelta = AmountMath.subtract(
+      vault.getCollateralAmount(),
+      oldCollateral,
+    );
+    trace('updateVaultPriority', { debtDelta, collateralDelta });
+    // state.totalDebt = AmountMath.add(state.totalDebt, debtDelta);
+    state.totalCollateral = AmountMath.add(
+      state.totalCollateral,
+      collateralDelta,
+    );
+    trace('totalCollateral added', collateralDelta, state.totalCollateral);
+    facets.helper.updateMetrics();
   },
 };
 
@@ -563,10 +593,13 @@ const selfBehavior = {
       // TODO `await` is allowed until the above ordering is fixed
       // eslint-disable-next-line @jessie.js/no-nested-await
       const vaultKit = await vault.initVaultKit(seat);
-      state.totalCollateral = AmountMath.add(
-        state.totalCollateral,
-        vaultKit.vault.getCollateralAmount(),
-      );
+      trace('totalCollateral in makevaultKit', state.totalCollateral);
+      // ??? what is setting this instead?
+      // state.totalCollateral = AmountMath.add(
+      //   state.totalCollateral,
+      //   // FIXME vaults can have balances adjusted; must include in metrics test
+      //   vaultKit.vault.getCollateralAmount(),
+      // );
       seat.exit();
       helper.updateMetrics();
       return vaultKit;

@@ -17,7 +17,7 @@ import { addSubtract, assertOnlyKeys, stageDelta } from '../contractSupport.js';
 
 const { details: X, quote: q } = assert;
 
-const trace = makeTracer('IV', false);
+const trace = makeTracer('IV');
 
 /**
  * @file This has most of the logic for a Vault, to borrow RUN against collateral.
@@ -250,6 +250,7 @@ const helperBehavior = {
     oldCollateral,
     newDebt,
   ) => {
+    trace('updateDebtAccounting', { oldCollateral, oldDebt });
     const { helper } = facets;
     helper.updateDebtSnapshot(newDebt);
     // update position of this vault in liquidation priority queue
@@ -429,6 +430,7 @@ const helperBehavior = {
    * @returns {Promise<string>} success message
    */
   adjustBalancesHook: async ({ state, facets }, clientSeat) => {
+    trace('adjustBalancesHook start');
     const { self, helper } = facets;
     const { vaultSeat, outerUpdater: updaterPre } = state;
     const proposal = clientSeat.getProposal();
