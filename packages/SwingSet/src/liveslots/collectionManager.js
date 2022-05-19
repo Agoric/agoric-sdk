@@ -14,6 +14,7 @@ import {
   makeCopyMap,
 } from '@agoric/store';
 import { Far, passStyleOf } from '@endo/marshal';
+import { decodeToJustin } from '@endo/marshal/src/marshal-justin.js';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
 
 // The maximum length of an LMDB key is 254 characters, which puts an upper
@@ -60,6 +61,18 @@ const MAX_DBKEY_LENGTH = 220;
 
 function pattEq(p1, p2) {
   return compareRank(p1, p2) === 0;
+}
+
+function throwNotDurable(value, slotIndex, serializedValue) {
+  assert.fail(
+    X`value is not durable: ${value} at slot ${slotIndex} of ${decodeToJustin(
+      {
+        body: JSON.parse(serializedValue.body),
+        slots: serializedValue.slots,
+      },
+      true,
+    )}`,
+  );
 }
 
 export function makeCollectionManager(
@@ -328,14 +341,19 @@ export function makeCollectionManager(
       currentGenerationNumber += 1;
       const serializedValue = serialize(value);
       if (durable) {
-        serializedValue.slots.forEach(vref =>
-          assert(vrm.isDurable(vref), X`value is not durable`),
-        );
+        serializedValue.slots.forEach((vref, slotIndex) => {
+          if (!vrm.isDurable(vref)) {
+            throwNotDurable(value, slotIndex, serializedValue);
+          }
+        });
       }
       if (passStyleOf(key) === 'remotable') {
         const vref = convertValToSlot(key);
         if (durable) {
-          assert(vrm.isDurable(vref), X`key is not durable`);
+          assert(
+            vrm.isDurable(vref),
+            X`key (${key}) is not durable in ${value}`,
+          );
         }
         generateOrdinal(key);
         if (hasWeakKeys) {
@@ -362,9 +380,11 @@ export function makeCollectionManager(
       }
       const after = serialize(harden(value));
       if (durable) {
-        after.slots.forEach(vref =>
-          assert(vrm.isDurable(vref), X`value is not durable`),
-        );
+        after.slots.forEach((vref, i) => {
+          if (!vrm.isDurable(vref)) {
+            throwNotDurable(value, i, after);
+          }
+        });
       }
       const dbKey = keyToDBKey(key);
       const rawBefore = syscall.vatstoreGet(dbKey);
