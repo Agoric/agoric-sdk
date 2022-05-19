@@ -5,10 +5,8 @@ import '@agoric/zoe/exported.js';
 
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
-import { detailedDiff, diff } from 'deep-object-diff';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
-import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
   makeRatio,
@@ -43,6 +41,7 @@ import {
   installGovernance,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
+import { metricsTracker } from '../metrics.js';
 
 /** @type {import('ava').TestInterface<any>} */
 const test = unknownTest;
@@ -2376,11 +2375,9 @@ test('director notifiers', async t => {
 
   const { lender, vaultFactory } = services.vaultFactory;
 
-  const metricsSub = await E(lender).getMetrics();
-  const metrics = makeNotifierFromAsyncIterable(metricsSub);
+  const m = await metricsTracker(lender);
 
-  let state = await E(metrics).getUpdateSince();
-  t.deepEqual(state.value, {
+  m.assertInitial({
     collaterals: [aethBrand],
     rewardPoolAllocation: {},
   });
@@ -2392,48 +2389,17 @@ test('director notifiers', async t => {
     'Chit',
     defaultParamValues(chit.brand),
   );
-  state = await E(metrics).getUpdateSince(state.updateCount);
-  t.deepEqual(state.value, {
-    collaterals: [aethBrand, chit.brand],
-    rewardPoolAllocation: {},
+  m.assertChange({
+    collaterals: { 1: chit.brand },
   });
 
   // Not testing rewardPoolAllocation contents because those are simply those values.
   // We could refactor the tests of those allocations to use the data now exposed by a notifier.
+
+  t.pass();
 });
 
-const { details: X, quote: q } = assert;
-const size = o => Object.entries(o).length;
-const metricsTracker = async publicFacet => {
-  const metricsSub = await E(publicFacet).getMetrics();
-  const metrics = makeNotifierFromAsyncIterable(metricsSub);
-  let notif;
-  const assertInitial = async expectedValue => {
-    notif = await metrics.getUpdateSince();
-    const difference = diff(notif.value, expectedValue);
-    assert(
-      Object.entries(difference).length === 0,
-      `Unexpected metric initial value: ${q(notif.value)}`,
-    );
-  };
-  /**
-   *
-   * @param {Record<string, unknown>} expectedDelta
-   */
-  const assertChange = async expectedDelta => {
-    const prevNotif = notif;
-    notif = await metrics.getUpdateSince(notif.updateCount);
-    const actualDelta = diff(prevNotif.value, notif.value);
-    const deltaDiff = detailedDiff(actualDelta, expectedDelta);
-    const diffCount =
-      // @ts-expect-error bad types
-      size(deltaDiff.added) + size(deltaDiff.deleted) + size(deltaDiff.updated);
-    assert(diffCount === 0, X`Unexpected metric delta: ${actualDelta}`);
-  };
-  return { assertChange, assertInitial };
-};
-
-test.only('manager notifiers', async t => {
+test('manager notifiers', async t => {
   const LOAN1 = 450n;
   const DEBT1 = 473n; // with penalty
   const LOAN2 = 50n;
