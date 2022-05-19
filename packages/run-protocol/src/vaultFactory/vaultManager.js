@@ -523,16 +523,15 @@ const managerBehavior = {
       oldCollateral,
       vaultId,
     );
-    const debtDelta = AmountMath.subtract(vault.getCurrentDebt(), oldDebt);
-    const collateralDelta = AmountMath.subtract(
-      vault.getCollateralAmount(),
-      oldCollateral,
-    );
+    const debtDelta = vault.getCurrentDebt().value - oldDebt.value;
+    const collateralDelta =
+      vault.getCollateralAmount().value - oldCollateral.value;
     trace('updateVaultPriority', { debtDelta, collateralDelta });
     // state.totalDebt = AmountMath.add(state.totalDebt, debtDelta);
-    state.totalCollateral = AmountMath.add(
-      state.totalCollateral,
-      collateralDelta,
+    // XXX do we have amount helpers for deltas?
+    state.totalCollateral = AmountMath.make(
+      state.totalCollateral.brand,
+      state.totalCollateral.value + collateralDelta,
     );
     trace('totalCollateral added', collateralDelta, state.totalCollateral);
     facets.helper.updateMetrics();
