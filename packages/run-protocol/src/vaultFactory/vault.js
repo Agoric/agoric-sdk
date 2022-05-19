@@ -293,7 +293,9 @@ const helperBehavior = {
     const maxRun = await state.manager.maxDebtFor(collateralAmount);
     assert(
       AmountMath.isGTE(maxRun, proposedRunDebt, facets.helper.debtBrand()),
-      X`Requested ${q(proposedRunDebt)} exceeds max ${q(maxRun)}`,
+      X`Requested ${q(proposedRunDebt)} exceeds max ${q(maxRun)} for ${q(
+        collateralAmount,
+      )} collateral`,
     );
   },
 
