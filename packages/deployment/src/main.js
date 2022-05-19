@@ -472,6 +472,7 @@ show-config      display the client connection parameters
         'SLOGSENDER',
         'XSNAP_TEST_RECORD',
         'SWING_STORE_TRACE',
+        'XSNAP_KEEP_SNAPSHOTS',
       ]) {
         if (env[envName]) {
           serviceLines.push(`Environment="${envName}=${env[envName]}"`);
