@@ -5,6 +5,7 @@ import '@agoric/zoe/exported.js';
 
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
+import { diff } from 'deep-object-diff';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
@@ -2401,78 +2402,46 @@ test('director notifiers', async t => {
   // We could refactor the tests of those allocations to use the data now exposed by a notifier.
 });
 
-const { keys } = Object;
-/**
- * deep equal value comparison
- *
- * originally based on code from Paul Roub Aug 2014
- * https://stackoverflow.com/a/25456134/7963
- *
- * @type {(x: unknown, y: unknown) => Delta }
- * @typedef { null | { actual: unknown, expected?: unknown }} Delta
- */
-function deepDifference(x, y) {
-  if (Object.is(x, y)) {
-    return null;
-  }
-  if (
-    typeof x === 'object' &&
-    x != null &&
-    typeof y === 'object' &&
-    y != null
-  ) {
-    if (keys(x).length !== keys(y).length) {
-      return {
-        actual: {
-          length: keys(x).length,
-          keys: keys(x),
-        },
-        expected: {
-          length: keys(y).length,
-          keys: keys(y),
-        },
-      };
-    }
-
-    const { hasOwnProperty } = Object.prototype;
-    /** @type {(obj: object, prop: string | symbol | number) => boolean} */
-    const hasOwnPropertyOf = (obj, prop) =>
-      Reflect.apply(hasOwnProperty, obj, [prop]);
-    for (const prop of Reflect.ownKeys(x)) {
-      if (hasOwnPropertyOf(y, prop)) {
-        if (!deepDifference(x[prop], y[prop])) {
-          return null;
-        }
-      } else {
-        return { actual: { extraProperty: prop } };
-      }
-    }
-
-    return null;
-  }
-  return {
-    actual: { type: typeof x, value: x },
-    expected: { type: typeof y, value: y },
-  };
-}
-
+const { details: X, quote: q } = assert;
 const metricsTracker = async publicFacet => {
   const metricsSub = await E(publicFacet).getMetrics();
   const metrics = makeNotifierFromAsyncIterable(metricsSub);
-  let notif = await metrics.getUpdateSince();
-  const assertChange = async expectedDiff => {
-    const expected = { ...notif.value, ...expectedDiff };
-    notif = await metrics.getUpdateSince(notif.updateCount);
-    const actualDiff = deepDifference(notif.value, expected);
+  let notif;
+  const assertInitial = async expectedValue => {
+    notif = await metrics.getUpdateSince();
+    const difference = diff(notif.value, expectedValue);
     assert(
-      actualDiff === null,
-      `Unexpected metric diff: ${JSON.stringify(actualDiff)}`,
+      Object.entries(difference).length === 0,
+      `Unexpected metric initial value: ${q(notif.value)}`,
     );
   };
-  return { assertChange };
+  /**
+   *
+   * @param {Record<string, unknown>} expectedDelta
+   */
+  const assertChange = async expectedDelta => {
+    const prevNotif = notif;
+    notif = await metrics.getUpdateSince(notif.updateCount);
+    console.log('DEBUG prev', prevNotif.value);
+    console.log('DEBUG curr', notif.value);
+    const actualDelta = diff(prevNotif.value, notif.value);
+    const deltaDiff = diff(actualDelta, expectedDelta);
+    console.log('DEBUG', { actualDelta, expectedDelta, deltaDiff });
+    // assert(
+    //   deltaDiff === null,
+    //   X`Unexpected metric delta: ${q(actualDelta)} instead of ${q(
+    //     expectedDelta,
+    //   )}`,
+    // );
+    assert(
+      Object.entries(deltaDiff).length === 0,
+      X`Unexpected metric delta: ${actualDelta} instead of ${q(expectedDelta)}`,
+    );
+  };
+  return { assertChange, assertInitial };
 };
 
-test('manager notifiers', async t => {
+test.only('manager notifiers', async t => {
   const LOAN = 450n;
   const DEBT = 473n; // with penalty
   const AMPLE = 100_000n;
@@ -2492,20 +2461,17 @@ test('manager notifiers', async t => {
 
   const m = await metricsTracker(cm);
 
-  const noCollateral = collAmount(0);
-  const noDebt = debtAmount(0);
-
   // 0. Creation
-  m.assertChange({
+  await m.assertInitial({
     numVaults: 0,
-    totalCollateral: noCollateral,
-    totalDebt: noDebt,
+    totalCollateral: collAmount(0),
+    totalDebt: debtAmount(0),
 
     numLiquidations: 0,
-    totalReclaimed: noCollateral,
-    totalOverage: noDebt,
-    totalProceeds: noDebt,
-    totalShortfall: noCollateral,
+    totalReclaimed: collAmount(0),
+    totalOverage: debtAmount(0),
+    totalProceeds: debtAmount(0),
+    totalShortfall: collAmount(0),
   });
 
   // 1. Create a loan with ample collateral
@@ -2523,16 +2489,10 @@ test('manager notifiers', async t => {
     }),
   );
   const { vault: vault1 } = await E(vaultSeat).getOfferResult();
-  m.assertChange({
+  await m.assertChange({
     numVaults: 1,
-    totalCollateral: collateralAmount,
-    totalDebt: AmountMath.make(runKit.brand, DEBT),
-
-    numLiquidations: 0,
-    totalReclaimed: noCollateral,
-    totalOverage: noDebt,
-    totalProceeds: noDebt,
-    totalShortfall: noCollateral,
+    totalCollateral: { value: collateralAmount.value },
+    totalDebt: { value: DEBT },
   });
 
   // 2. Add collateral to it
@@ -2549,30 +2509,20 @@ test('manager notifiers', async t => {
     }),
   );
   await E(giveCollateralSeat).getOfferResult();
-  m.assertChange({
-    numVaults: 1,
-    totalCollateral: AmountMath.add(collateralAmount, smallColl),
-    totalDebt: debtAmount(473),
-
-    numLiquidations: 0,
-    totalReclaimed: noCollateral,
-    totalOverage: noDebt,
-    totalProceeds: noDebt,
-    totalShortfall: noCollateral,
+  // XXX there's a state push without any changes
+  await m.assertChange({});
+  await m.assertChange({
+    totalCollateral: { value: collateralAmount.value + smallColl.value },
   });
 
   // 2. Liquidate all (1 loan)
   await E(aethVaultManager).liquidateAll();
-  m.assertChange({
+  await m.assertChange({
     numVaults: 0,
-    totalCollateral: noCollateral,
-    totalDebt: noDebt,
-
+    totalCollateral: { value: 0n },
+    totalDebt: { value: 0n },
     numLiquidations: 1,
-    totalReclaimed: noCollateral,
-    totalOverage: noDebt,
-    totalProceeds: debtAmount(613),
-    totalShortfall: noCollateral,
+    totalProceeds: { value: 613n },
   });
 
   // 3. Make the first loan again
@@ -2586,30 +2536,22 @@ test('manager notifiers', async t => {
       Collateral: t.context.aethKit.mint.mintPayment(collateralAmount),
     }),
   );
-  m.assertChange({
+  await m.assertChange({
     numVaults: 1,
-    totalCollateral: collateralAmount,
-    totalDebt: AmountMath.make(runKit.brand, DEBT),
-
-    numLiquidations: 1,
-    totalReclaimed: noCollateral,
-    totalOverage: noDebt,
-    totalProceeds: debtAmount(613),
-    totalShortfall: noCollateral,
+    totalCollateral: { value: collateralAmount.value },
+    totalDebt: { value: DEBT },
   });
 
   // 4. Liquidate all (1 loan) again
   await E(aethVaultManager).liquidateAll();
-  m.assertChange({
-    numVaults: 0,
-    totalCollateral: noCollateral,
-    totalDebt: noDebt,
-
+  // XXX empty change
+  await m.assertChange({});
+  await m.assertChange({
     numLiquidations: 2,
-    totalReclaimed: noCollateral,
-    totalOverage: noDebt,
-    totalProceeds: debtAmount(1215),
-    totalShortfall: noCollateral,
+    numVaults: 0,
+    totalCollateral: { value: 0n },
+    totalDebt: { value: 0n },
+    totalProceeds: { value: 1215n },
   });
 
   t.pass(); // bc Ava doesn't detect the custom assertions above
