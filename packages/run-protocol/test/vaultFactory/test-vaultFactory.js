@@ -5,7 +5,7 @@ import '@agoric/zoe/exported.js';
 
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
-import { diff } from 'deep-object-diff';
+import { detailedDiff, diff } from 'deep-object-diff';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
@@ -2403,6 +2403,7 @@ test('director notifiers', async t => {
 });
 
 const { details: X, quote: q } = assert;
+const size = o => Object.entries(o).length;
 const metricsTracker = async publicFacet => {
   const metricsSub = await E(publicFacet).getMetrics();
   const metrics = makeNotifierFromAsyncIterable(metricsSub);
@@ -2423,19 +2424,21 @@ const metricsTracker = async publicFacet => {
     const prevNotif = notif;
     notif = await metrics.getUpdateSince(notif.updateCount);
     const actualDelta = diff(prevNotif.value, notif.value);
-    const deltaDiff = diff(actualDelta, expectedDelta);
-    assert(
-      Object.entries(deltaDiff).length === 0,
-      X`Unexpected metric delta: ${actualDelta} instead of ${q(expectedDelta)}`,
-    );
+    const deltaDiff = detailedDiff(actualDelta, expectedDelta);
+    const diffCount =
+      size(deltaDiff.added) + size(deltaDiff.deleted) + size(deltaDiff.updated);
+    assert(diffCount === 0, X`Unexpected metric delta: ${actualDelta}`);
   };
   return { assertChange, assertInitial };
 };
 
 test.only('manager notifiers', async t => {
-  const LOAN = 450n;
-  const DEBT = 473n; // with penalty
+  const LOAN1 = 450n;
+  const DEBT1 = 473n; // with penalty
+  const LOAN2 = 50n;
+  const DEBT2 = 53n; // with penalty
   const AMPLE = 100_000n;
+  const ENOUGH = 10_000n;
 
   const { aethKit, runKit, debtAmount, collAmount } = t.context;
   const services = await setupServices(
@@ -2454,26 +2457,24 @@ test.only('manager notifiers', async t => {
 
   // 0. Creation
   await m.assertInitial({
+    numLiquidations: 0,
     numVaults: 0,
     totalCollateral: collAmount(0),
     totalDebt: debtAmount(0),
-
-    numLiquidations: 0,
-    totalReclaimed: collAmount(0),
     totalOverage: debtAmount(0),
     totalProceeds: debtAmount(0),
+    totalReclaimed: collAmount(0),
     totalShortfall: collAmount(0),
   });
 
   // 1. Create a loan with ample collateral
   const collateralAmount = AmountMath.make(aethKit.brand, AMPLE);
-  const loanAmount = AmountMath.make(runKit.brand, LOAN);
   /** @type {UserSeat<VaultKit>} */
   let vaultSeat = await E(services.zoe).offer(
     await E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
-      want: { RUN: loanAmount },
+      want: { RUN: AmountMath.make(runKit.brand, LOAN1) },
     }),
     harden({
       Collateral: t.context.aethKit.mint.mintPayment(collateralAmount),
@@ -2483,27 +2484,27 @@ test.only('manager notifiers', async t => {
   await m.assertChange({
     numVaults: 1,
     totalCollateral: { value: collateralAmount.value },
-    totalDebt: { value: DEBT },
+    totalDebt: { value: DEBT1 },
   });
 
   // 2. Add collateral to it
   const adjustBalances1 = await E(vault1).makeAdjustBalancesInvitation();
-  const smallColl = collAmount(99);
+  const bonus = collAmount(99);
   const giveCollateralSeat = await E(services.zoe).offer(
     adjustBalances1,
     harden({
-      give: { Collateral: smallColl },
+      give: { Collateral: bonus },
       want: {},
     }),
     harden({
-      Collateral: t.context.aethKit.mint.mintPayment(smallColl),
+      Collateral: t.context.aethKit.mint.mintPayment(bonus),
     }),
   );
   await E(giveCollateralSeat).getOfferResult();
   // XXX there's a state push without any changes
   await m.assertChange({});
   await m.assertChange({
-    totalCollateral: { value: collateralAmount.value + smallColl.value },
+    totalCollateral: { value: collateralAmount.value + bonus.value },
   });
 
   // 2. Liquidate all (1 loan)
@@ -2516,33 +2517,60 @@ test.only('manager notifiers', async t => {
     totalProceeds: { value: 613n },
   });
 
-  // 3. Make the first loan again
+  // 3. Make another LOAN1 loan
   vaultSeat = await E(services.zoe).offer(
     await E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
-      want: { RUN: loanAmount },
+      want: { RUN: AmountMath.make(runKit.brand, LOAN1) },
     }),
     harden({
       Collateral: t.context.aethKit.mint.mintPayment(collateralAmount),
     }),
   );
+  await E(vaultSeat).getOfferResult();
   await m.assertChange({
     numVaults: 1,
     totalCollateral: { value: collateralAmount.value },
-    totalDebt: { value: DEBT },
+    totalDebt: { value: DEBT1 },
   });
 
-  // 4. Liquidate all (1 loan) again
+  // 4. Make a LOAN2 loan
+  vaultSeat = await E(services.zoe).offer(
+    await E(lender).makeVaultInvitation(),
+    harden({
+      give: { Collateral: collAmount(ENOUGH) },
+      want: { RUN: AmountMath.make(runKit.brand, LOAN2) },
+    }),
+    harden({
+      Collateral: t.context.aethKit.mint.mintPayment(collAmount(ENOUGH)),
+    }),
+  );
+  await E(vaultSeat).getOfferResult();
+  // XXX empty change
+  await m.assertChange({});
+  await m.assertChange({
+    numVaults: 2,
+    totalCollateral: { value: AMPLE + ENOUGH },
+    totalDebt: { value: DEBT1 + DEBT2 },
+  });
+
+  // 5. Liquidate all (2 loans)
   await E(aethVaultManager).liquidateAll();
   // XXX empty change
   await m.assertChange({});
   await m.assertChange({
     numLiquidations: 2,
+    numVaults: 1,
+    totalCollateral: { value: AMPLE },
+    totalDebt: { value: 0n },
+    totalProceeds: { value: 932n },
+  });
+  await m.assertChange({
+    numLiquidations: 3,
     numVaults: 0,
     totalCollateral: { value: 0n },
-    totalDebt: { value: 0n },
-    totalProceeds: { value: 1215n },
+    totalProceeds: { value: 1528n },
   });
 
   t.pass(); // bc Ava doesn't detect the custom assertions above

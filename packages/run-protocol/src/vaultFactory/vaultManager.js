@@ -288,7 +288,6 @@ const helperBehavior = {
       totalProceeds: state.totalProceeds,
       totalShortfall: state.totalShortfall,
     });
-    trace('publishing', payload);
     state.metricsPublication.updateState(payload);
   },
 
