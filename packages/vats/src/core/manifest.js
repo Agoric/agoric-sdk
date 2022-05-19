@@ -85,6 +85,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
   makeChainStorage: {
     consume: {
       bridgeManager: true,
+      loadVat: true,
     },
     produce: {
       chainStorage: true,

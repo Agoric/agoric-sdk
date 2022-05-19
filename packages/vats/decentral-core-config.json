@@ -21,6 +21,9 @@
     "board": {
       "sourceSpec": "@agoric/vats/src/vat-board.js"
     },
+    "chainStorage": {
+      "sourceSpec": "./src/vat-chainStorage.js"
+    },
     "distributeFees": {
       "sourceSpec": "@agoric/vats/src/vat-distributeFees.js"
     },
