@@ -310,6 +310,12 @@ func (k Keeper) SetStorage(ctx sdk.Context, path, value string) {
 		types.NewStorageEvent(path, value),
 	)
 
+	if value == "" && len(k.GetKeys(ctx, path).Keys) > 0 {
+		// If we're deleting and we had children, we need to keep our ancestor keys
+		// around.
+		return
+	}
+
 	// Update the parent keys.
 	pathComponents := strings.Split(path, ".")
 	for i := len(pathComponents) - 1; i >= 0; i-- {
@@ -327,7 +333,8 @@ func (k Keeper) SetStorage(ctx sdk.Context, path, value string) {
 		// Decide if we need to add or remove the key.
 		if value == "" {
 			if _, ok := keyMap[lastKeyStr]; !ok {
-				// If the key is already gone, we don't need to remove from the key lists.
+				// If the key is already gone, we don't need to remove from the key
+				// lists.
 				return
 			}
 			// Delete the key.
