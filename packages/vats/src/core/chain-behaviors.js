@@ -282,7 +282,6 @@ export const makeBridgeManager = async ({
 };
 harden(makeBridgeManager);
 
-// TODO: Refine typing... maybe something like PromiseSpace or PromiseSpaceOf?
 /**
  * @param { BootstrapPowers } powers
  */
