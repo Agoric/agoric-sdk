@@ -9,7 +9,6 @@ const size = o => Object.entries(o).length;
 /**
  *
  * @param {{getMetrics: () => Subscription<object>}} publicFacet
- * @returns
  */
 export const metricsTracker = async publicFacet => {
   const metricsSub = await E(publicFacet).getMetrics();

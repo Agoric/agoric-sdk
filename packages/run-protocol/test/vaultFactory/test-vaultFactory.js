@@ -2377,7 +2377,7 @@ test('director notifiers', async t => {
 
   const m = await metricsTracker(lender);
 
-  m.assertInitial({
+  await m.assertInitial({
     collaterals: [aethBrand],
     rewardPoolAllocation: {},
   });
@@ -2389,7 +2389,7 @@ test('director notifiers', async t => {
     'Chit',
     defaultParamValues(chit.brand),
   );
-  m.assertChange({
+  await m.assertChange({
     collaterals: { 1: chit.brand },
   });
 
