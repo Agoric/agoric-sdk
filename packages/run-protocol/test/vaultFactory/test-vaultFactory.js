@@ -2422,17 +2422,8 @@ const metricsTracker = async publicFacet => {
   const assertChange = async expectedDelta => {
     const prevNotif = notif;
     notif = await metrics.getUpdateSince(notif.updateCount);
-    console.log('DEBUG prev', prevNotif.value);
-    console.log('DEBUG curr', notif.value);
     const actualDelta = diff(prevNotif.value, notif.value);
     const deltaDiff = diff(actualDelta, expectedDelta);
-    console.log('DEBUG', { actualDelta, expectedDelta, deltaDiff });
-    // assert(
-    //   deltaDiff === null,
-    //   X`Unexpected metric delta: ${q(actualDelta)} instead of ${q(
-    //     expectedDelta,
-    //   )}`,
-    // );
     assert(
       Object.entries(deltaDiff).length === 0,
       X`Unexpected metric delta: ${actualDelta} instead of ${q(expectedDelta)}`,
