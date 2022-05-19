@@ -5,7 +5,11 @@ export {
   makeNotifierKit,
   makeNotifierFromAsyncIterable,
 } from './notifier.js';
-export { makeSubscription, makeSubscriptionKit } from './subscriber.js';
+export {
+  DEFAULT_SUBSCRIPTION_HISTORY_LIMIT,
+  makeSubscription,
+  makeSubscriptionKit,
+} from './subscriber.js';
 export {
   observeNotifier,
   observeIterator,

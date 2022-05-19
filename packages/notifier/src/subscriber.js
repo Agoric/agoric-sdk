@@ -8,15 +8,25 @@ import { makePromiseKit } from '@endo/promise-kit';
 
 import './types.js';
 
+export const DEFAULT_SUBSCRIPTION_HISTORY_LIMIT = Infinity;
+
 /**
  * @template T
- * @param {ERef<SubscriptionInternals<T>>} sharableInternalsP
+ * @param {(() => ERef<SubscriptionInternals<T>>) |
+ *   ERef<SubscriptionInternals<T>>
+ * } internalsOrThunk
  * @returns {Subscription<T>}
  */
-const makeSubscription = sharableInternalsP => {
+const makeSubscription = internalsOrThunk => {
+  const getSharableSubscriptionInternals =
+    typeof internalsOrThunk === 'function'
+      ? () => internalsOrThunk()
+      : () => internalsOrThunk;
+
   return Far('Subscription', {
-    // eslint-disable-next-line no-use-before-define
-    [Symbol.asyncIterator]: () => makeSubscriptionIterator(sharableInternalsP),
+    [Symbol.asyncIterator]: () =>
+      // eslint-disable-next-line no-use-before-define
+      makeSubscriptionIterator(getSharableSubscriptionInternals()),
 
     /**
      * Use this to distribute a Subscription efficiently over the network,
@@ -26,7 +36,7 @@ const makeSubscription = sharableInternalsP => {
      *
      * @returns {ERef<SubscriptionInternals<T>>}
      */
-    getSharableSubscriptionInternals: () => sharableInternalsP,
+    getSharableSubscriptionInternals,
   });
 };
 harden(makeSubscription);
@@ -56,13 +66,26 @@ const makeSubscriptionIterator = tailP => {
  * distributed pub/sub.
  *
  * @template T
+ * @param {number} [historyLimit]
  * @returns {SubscriptionRecord<T>}
  */
-const makeSubscriptionKit = () => {
+const makeSubscriptionKit = (
+  historyLimit = DEFAULT_SUBSCRIPTION_HISTORY_LIMIT,
+) => {
+  historyLimit = Math.max(historyLimit, 0);
+
+  /**
+   * An array of [...historicalStates, nextState].
+   *
+   * @type {PromiseRecord<SubscriptionInternals<T>>[]}
+   */
+  const history = [makePromiseKit()];
+
+  // Our state to start from is the earliest historical state.
+  const subscription = makeSubscription(() => history[0].promise);
+
   /** @type {((internals: ERef<SubscriptionInternals<T>>) => void) | undefined} */
-  let rear;
-  const hp = new HandledPromise(r => (rear = r));
-  const subscription = makeSubscription(hp);
+  let rear = history[0].resolve;
 
   /** @type {IterationObserver<T>} */
   const publication = Far('publication', {
@@ -70,9 +93,13 @@ const makeSubscriptionKit = () => {
       if (rear === undefined) {
         throw new Error('Cannot update state after termination.');
       }
-      const { promise: nextTailE, resolve: nextRear } = makePromiseKit();
-      rear(harden({ head: { value, done: false }, tail: nextTailE }));
-      rear = nextRear;
+      const nextRear = makePromiseKit();
+      rear(harden({ head: { value, done: false }, tail: nextRear.promise }));
+      rear = nextRear.resolve;
+
+      // Prune history.
+      history.splice(0, Math.max(history.length - historyLimit, 0));
+      history.push(nextRear);
     },
     finish: finalValue => {
       if (rear === undefined) {
@@ -82,7 +109,12 @@ const makeSubscriptionKit = () => {
         new Error('cannot read past end of iteration'),
       );
       readComplaint.catch(_ => {}); // suppress unhandled rejection error
-      rear({ head: { value: finalValue, done: true }, tail: readComplaint });
+      rear(
+        harden({
+          head: { value: finalValue, done: true },
+          tail: readComplaint,
+        }),
+      );
       rear = undefined;
     },
     fail: reason => {
