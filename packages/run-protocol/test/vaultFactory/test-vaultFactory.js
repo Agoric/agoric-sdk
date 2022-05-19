@@ -2426,6 +2426,7 @@ const metricsTracker = async publicFacet => {
     const actualDelta = diff(prevNotif.value, notif.value);
     const deltaDiff = detailedDiff(actualDelta, expectedDelta);
     const diffCount =
+      // @ts-expect-error bad types
       size(deltaDiff.added) + size(deltaDiff.deleted) + size(deltaDiff.updated);
     assert(diffCount === 0, X`Unexpected metric delta: ${actualDelta}`);
   };
