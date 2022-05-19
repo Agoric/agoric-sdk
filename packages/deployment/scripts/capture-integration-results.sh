@@ -16,27 +16,30 @@ for node in validator{0,1}; do
   "$thisdir/setup.sh" ssh "$node" cat "$home/data/swingstore-trace" > "$RESULTSDIR/$node-swingstore-trace" || true
 done
 
-val0len=$(wc -l < $RESULTSDIR/validator0-swingstore-trace)
-val1len=$(wc -l < $RESULTSDIR/validator1-swingstore-trace)
-commonlen=$((val0len < val1len ? val0len : val1len))
-
 ret=0
-diff -U0 <(head -n $commonlen $RESULTSDIR/validator0-swingstore-trace) <(head -n $commonlen $RESULTSDIR/validator1-swingstore-trace) > $RESULTSDIR/validator-swingstore-trace.diff || ret=$?
+"$thisdir/../../../scripts/process-integration-swingstore-traces.sh" "$RESULTSDIR" || ret=$?
 
 failedtest=${1:-"unknown"}
 
-if [ $ret -eq 0 ]
-then
-  if [ "$failedtest" = "false" ]
-  then
-    echo "Successful test"
-    exit 0
+if [ -f "$RESULTSDIR/divergent_snapshots" ]; then
+  if [ -s "$RESULTSDIR/validator-swingstore-trace.diff" ]; then
+    cat "$RESULTSDIR/validator-swingstore-trace.diff" | cut -c -80 || true
+    echo "Error: Swingstore trace mismatch between validators"
   fi
-else 
-  cat "$RESULTSDIR/validator-swingstore-trace.diff" | cut -c -80 || true
-  echo "Error: Swingstore trace mismatch"
-  # disable failing the test until transient divergences are solved
-  ret=0
+
+  if [ -f "$RESULTSDIR/monitor-vs-validator-swingstore-trace.diff" ] && \
+     [ -s "$RESULTSDIR/monitor-vs-validator-swingstore-trace.diff" ]
+  then
+    cat "$RESULTSDIR/monitor-vs-validator-swingstore-trace.diff" | cut -c -80 || true
+    echo "Error: Swingstore trace mismatch between loadgen monitor and validators"
+  fi
+
+  # Snapshot divergences were found, fail the test after capturing results
+  # TODO: uncomment once transient divergences are solved
+  # ret=1
+elif [ $ret -eq 0 -a "$failedtest" = "false" ]; then 
+  echo "Successful test"
+  exit 0
 fi
 
 for node in validator{0,1}; do

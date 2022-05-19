@@ -31,3 +31,6 @@ testfailure="unknown"
 /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh play stop || true
 /usr/src/agoric-sdk/packages/deployment/scripts/capture-integration-results.sh $testfailure
 echo yes | /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh destroy || true
+
+# Not part of CI
+/usr/src/agoric-sdk/scripts/process-integration-results.sh $NETWORK_NAME/results
