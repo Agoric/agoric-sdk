@@ -6,11 +6,10 @@ import { diff } from 'deep-object-diff';
 /**
  *
  * @param {import('ava').ExecutionContext} t
- * @param {{getMetrics: () => Subscription<object>}} publicFacet
+ * @param {Subscription<object>} subscription
  */
-export const metricsTracker = async (t, publicFacet) => {
-  const metricsSub = await E(publicFacet).getMetrics();
-  const metrics = makeNotifierFromAsyncIterable(metricsSub);
+export const subscriptionTracker = async (t, subscription) => {
+  const metrics = makeNotifierFromAsyncIterable(subscription);
   let notif;
   const assertInitial = async expectedValue => {
     notif = await metrics.getUpdateSince();
@@ -24,7 +23,18 @@ export const metricsTracker = async (t, publicFacet) => {
     const prevNotif = notif;
     notif = await metrics.getUpdateSince(notif.updateCount);
     const actualDelta = diff(prevNotif.value, notif.value);
-    t.deepEqual(actualDelta, expectedDelta, 'Unexpected metric delta');
+    t.deepEqual(actualDelta, expectedDelta, 'Unexpected delta');
   };
   return { assertChange, assertInitial };
+};
+
+/**
+ * For public facets that have a `getMetrics` method.
+ *
+ * @param {import('ava').ExecutionContext} t
+ * @param {{getMetrics?: () => Subscription<object>}} publicFacet
+ */
+export const metricsTracker = async (t, publicFacet) => {
+  const metricsSub = await E(publicFacet).getMetrics();
+  return subscriptionTracker(t, metricsSub);
 };
