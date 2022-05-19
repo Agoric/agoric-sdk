@@ -46,6 +46,7 @@ const makeSubscriptionIterator = tailP => {
     next: () => {
       const resultP = E.get(tailP).head;
       tailP = E.get(tailP).tail;
+      Promise.resolve(tailP).catch(() => {}); // suppress unhandled rejection error
       return resultP;
     },
   });
