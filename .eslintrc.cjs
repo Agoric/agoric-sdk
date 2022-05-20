@@ -22,6 +22,9 @@ module.exports = {
   extends: ['@agoric'],
   rules: {
     '@typescript-eslint/prefer-ts-expect-error': 'warn',
+    '@typescript-eslint/no-floating-promises': 'warn',
+    // so that floating-promises can be explicitly permitted with void operator
+    'no-void': ['error', { allowAsStatement: true }],
     'jsdoc/no-multi-asterisks': 'off',
     'jsdoc/multiline-blocks': 'off',
     // Use these rules to warn about JSDoc type problems, such as after
