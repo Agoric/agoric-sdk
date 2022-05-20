@@ -57,7 +57,7 @@ function* mergeUtf16SortedIterators(it1, it2) {
  *
  * @param {KVStore} kvStore  The StorageAPI object that this crank buffer will be based on.
  * @param {CreateSHA256}  createSHA256
- * @param { (key: string) => boolean } isConsensusKey
+ * @param { (key: string) => 'consensus' | 'local' | 'invalid' } getKeyType
  * @returns {*} an object {
  * crankBuffer,  // crank buffer as described, wrapping `kvStore`
  * commitCrank,  // function to save buffered mutations to `kvStore`
@@ -67,7 +67,7 @@ function* mergeUtf16SortedIterators(it1, it2) {
 export function buildCrankBuffer(
   kvStore,
   createSHA256,
-  isConsensusKey = () => true,
+  getKeyType = () => 'consensus',
 ) {
   insistStorageAPI(kvStore);
   let crankhasher;
@@ -148,9 +148,11 @@ export function buildCrankBuffer(
     set(key, value) {
       assert.typeof(key, 'string');
       assert.typeof(value, 'string');
+      const keyType = getKeyType(key);
+      assert(keyType !== 'invalid');
       additions.set(key, value);
       deletions.delete(key);
-      if (isConsensusKey(key)) {
+      if (keyType === 'consensus') {
         crankhasher.add('add');
         crankhasher.add('\n');
         crankhasher.add(key);
@@ -162,9 +164,11 @@ export function buildCrankBuffer(
 
     delete(key) {
       assert.typeof(key, 'string');
+      const keyType = getKeyType(key);
+      assert(keyType !== 'invalid');
       additions.delete(key);
       deletions.add(key);
-      if (isConsensusKey(key)) {
+      if (keyType === 'consensus') {
         crankhasher.add('delete');
         crankhasher.add('\n');
         crankhasher.add(key);
@@ -274,12 +278,12 @@ export function addHelpers(kvStore) {
 // write-back buffer wrapper (the CrankBuffer), but the keeper is unaware of
 // that.
 
-export function wrapStorage(kvStore, createSHA256, isConsensusKey) {
+export function wrapStorage(kvStore, createSHA256, getKeyType) {
   insistStorageAPI(kvStore);
   const { crankBuffer, commitCrank, abortCrank } = buildCrankBuffer(
     kvStore,
     createSHA256,
-    isConsensusKey,
+    getKeyType,
   );
   const enhancedCrankBuffer = addHelpers(crankBuffer);
   return { enhancedCrankBuffer, commitCrank, abortCrank };
