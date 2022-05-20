@@ -10,16 +10,18 @@ import { makeInstallCache } from '../src/proposals/utils.js';
 export const defaultProposalBuilder = async (
   { publishRef, install: install0, wrapInstall },
   { interchainAssetOptions = /** @type {object} */ ({}) } = {},
+  { env = process.env } = {},
 ) => {
+  /** @type {import('../src/proposals/addAssetToVault.js').InterchainAssetOptions} */
   const {
+    issuerBoardId = env.INTERCHAIN_ISSUER_BOARD_ID,
     oracleBrand = 'ATOM',
-    denom = process.env.INTERCHAIN_DENOM,
     decimalPlaces = 6,
     keyword = 'IbcATOM',
     proposedName = oracleBrand,
   } = interchainAssetOptions;
 
-  assert(denom, 'INTERCHAIN_DENOM is required');
+  assert(issuerBoardId, 'INTERCHAIN_ISSUER_BOARD_ID is required');
 
   const install = wrapInstall ? wrapInstall(install0) : install0;
 
@@ -29,7 +31,7 @@ export const defaultProposalBuilder = async (
       getManifestForAddAssetToVault.name,
       {
         interchainAssetOptions: {
-          denom,
+          issuerBoardId,
           decimalPlaces,
           keyword,
           proposedName,
@@ -50,8 +52,9 @@ export const defaultProposalBuilder = async (
 export const psmProposalBuilder = async (
   { publishRef, install: install0, wrapInstall },
   { anchorOptions = /** @type {object} */ ({}) } = {},
+  { env = process.env } = {},
 ) => {
-  const { denom = process.env.ANCHOR_DENOM, decimalPlaces = 6 } = anchorOptions;
+  const { denom = env.ANCHOR_DENOM, decimalPlaces = 6 } = anchorOptions;
 
   assert(denom, 'ANCHOR_DENOM is required');
 
