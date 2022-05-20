@@ -139,12 +139,12 @@
  *     'centralSupply' | 'mintHolder' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'amm' | 'VaultFactory' | 'liquidate' | 'runStake' |
- *     'Pegasus' | 'reserve' | 'psm',
+ *     'Pegasus' | 'reserve' | 'psm' | 'interchainPool',
  *   instance: |
  *     'economicCommittee' |
  *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' |
  *     'runStake' | 'runStakeGovernor' |
- *     'psm' | 'psmGovernor' |
+ *     'psm' | 'psmGovernor' | 'interchainPool' |
  *     'Treasury' | 'reserve' | 'reserveGovernor' | 'Pegasus',
  *   oracleBrand:
  *     'USD',
