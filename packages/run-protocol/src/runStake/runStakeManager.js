@@ -113,7 +113,7 @@ const finish = ({ state, facets }) => {
 
   const periodNotifier = E(timerService).makeNotifier(0n, recordingPeriod);
 
-  observeNotifier(periodNotifier, {
+  void observeNotifier(periodNotifier, {
     updateState: updateTime =>
       helper
         .chargeAllVaults(updateTime)

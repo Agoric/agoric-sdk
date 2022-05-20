@@ -560,6 +560,7 @@ export const fundAMM = async ({
           give: { Secondary: secondaryAmount, Central: centralAmount },
         });
 
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
         E(zoe).offer(
           E(ammPublicFacet).addPoolInvitation(),
           proposal,

@@ -101,7 +101,7 @@ export const makeAsyncIterableFromNotifier = notifierP => {
 export const observeIterator = (asyncIteratorP, iterationObserver) => {
   return new Promise(ack => {
     const recur = () => {
-      E.when(
+      void E.when(
         E(asyncIteratorP).next(),
         ({ value, done }) => {
           if (done) {

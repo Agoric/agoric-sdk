@@ -986,7 +986,7 @@ test('interest on multiple vaults', async t => {
   // { chargingPeriod: weekly, recordingPeriod: weekly }
   // Advance 8 days, past one charging and recording period
   for (let i = 0; i < 8; i += 1) {
-    manualTimer.tick();
+    await manualTimer.tick();
   }
   await waitForPromisesToSettle();
 
@@ -1056,7 +1056,7 @@ test('interest on multiple vaults', async t => {
 
   // Advance another 7 days, past one charging and recording period
   for (let i = 0; i < 8; i += 1) {
-    manualTimer.tick();
+    await manualTimer.tick();
   }
   await waitForPromisesToSettle();
 
@@ -1384,7 +1384,7 @@ test('transfer vault', async t => {
     vault: transferVault,
     publicNotifiers: { vault: transferNotifier },
   } = await E(transferSeat).getOfferResult();
-  t.throwsAsync(() => E(aliceVault).getCurrentDebt());
+  await t.throwsAsync(() => E(aliceVault).getCurrentDebt());
   const debtAfter = await E(transferVault).getCurrentDebt();
   t.deepEqual(debtAfter, debtAmount, 'vault lent 5000 RUN + fees');
   const collateralAfter = await E(transferVault).getCollateralAmount();
@@ -1446,14 +1446,14 @@ test('transfer vault', async t => {
     vault: t2Vault,
     publicNotifiers: { vault: t2Notifier },
   } = await E(t2Seat).getOfferResult();
-  t.throwsAsync(
+  await t.throwsAsync(
     () => E(adjustSeatPromise).getOfferResult(),
     {
       message: 'Transfer during vault adjustment',
     },
     'adjust balances should have been rejected',
   );
-  t.throwsAsync(() => E(transferVault).getCurrentDebt());
+  await t.throwsAsync(() => E(transferVault).getCurrentDebt());
   const debtAfter2 = await E(t2Vault).getCurrentDebt();
   t.deepEqual(debtAmount, debtAfter2, 'vault lent 5000 RUN + fees');
 
@@ -1807,7 +1807,7 @@ test('mutable liquidity triggers and interest', async t => {
   // liquidated.
 
   for (let i = 0; i < 8; i += 1) {
-    manualTimer.tick();
+    await manualTimer.tick();
   }
   t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
   trace(
@@ -1829,10 +1829,10 @@ test('mutable liquidity triggers and interest', async t => {
     await E(bobVault).getCurrentDebt(),
   );
   // 5 days pass
-  manualTimer.tick();
-  manualTimer.tick();
-  manualTimer.tick();
-  manualTimer.tick();
+  await manualTimer.tick();
+  await manualTimer.tick();
+  await manualTimer.tick();
+  await manualTimer.tick();
   await manualTimer.tick();
   await waitForPromisesToSettle();
 
@@ -2353,7 +2353,7 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   // liquidated.
   // Advance time to trigger interest collection.
   for (let i = 0; i < 8; i += 1) {
-    manualTimer.tick();
+    await manualTimer.tick();
   }
   await waitForPromisesToSettle();
   bobUpdate = await E(bobNotifier).getUpdateSince(bobUpdate.updateCount);

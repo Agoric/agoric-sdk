@@ -442,7 +442,7 @@ const makeDriver = async (t, initialPrice, priceBase) => {
     timer: () => timer,
     tick: (ticks = 1) => {
       for (let i = 0; i < ticks; i += 1) {
-        timer.tick();
+        void timer.tick();
       }
     },
     makeVaultDriver,

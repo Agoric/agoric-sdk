@@ -604,7 +604,7 @@ const makeWorld = async (/** @type {RunStakeTestContext} */ t) => {
         harden({ [KW.Attestation]: attPmt }),
       );
       const runPmt = await E(seat).getPayout(KW.Debt);
-      E(runPurse).deposit(runPmt);
+      await E(runPurse).deposit(runPmt);
       offerResult = await E(seat).getOfferResult();
     },
     earnRUNReward: async n => {

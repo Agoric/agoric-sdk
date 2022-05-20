@@ -156,7 +156,7 @@ export async function start(zcf, privateArgs) {
   );
 
   const advanceRecordingPeriod = () => {
-    timer.tick();
+    void timer.tick();
 
     // skip the debt calculation for this mock manager
     const currentInterestAsMultiplicand = makeRatio(
