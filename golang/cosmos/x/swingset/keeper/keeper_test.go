@@ -31,33 +31,28 @@ func Test_Key_Encoding(t *testing.T) {
 		key    []byte
 	}{
 		{
-			name:   "empty key matches prefix",
+			name:   "empty key is prefixed",
 			keyStr: "",
-			key:    keyPrefix,
-		},
-		{
-			name:   "empty key string (actual)",
-			keyStr: "",
-			key:    []byte{':'},
+			key:    []byte("0\x00"),
 		},
 		{
 			name:   "some key string",
 			keyStr: "some",
-			key:    []byte{':', 's', 'o', 'm', 'e'},
+			key:    []byte("1\x00some"),
 		},
 		{
-			name:   "key prefix immutable",
-			keyStr: "",
-			key:    keyPrefix,
+			name:   "dot-separated",
+			keyStr: "some.child.grandchild",
+			key:    []byte("3\x00some\x00child\x00grandchild"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if key := stringToKey(tt.keyStr); !bytes.Equal(key, tt.key) {
-				t.Errorf("stringToKey(%q) = %v, want %v", tt.keyStr, key, tt.key)
+			if key := pathToKey(tt.keyStr); !bytes.Equal(key, tt.key) {
+				t.Errorf("pathToKey(%q) = %v, want %v", tt.keyStr, key, tt.key)
 			}
-			if keyStr := keyToString(tt.key); keyStr != tt.keyStr {
+			if keyStr := keyToPath(tt.key); keyStr != tt.keyStr {
 				t.Errorf("keyToString(%v) = %q, want %q", tt.key, keyStr, tt.keyStr)
 			}
 		})
