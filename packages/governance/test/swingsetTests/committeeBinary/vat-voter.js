@@ -43,7 +43,7 @@ const build = async (log, zoe) => {
         },
       });
       const subscription = E(electoratePublicFacet).getQuestionSubscription();
-      observeIteration(subscription, votingObserver);
+      void observeIteration(subscription, votingObserver);
 
       return Far(`Voter ${name}`, {
         verifyBallot: (question, instances) =>
@@ -69,7 +69,7 @@ const build = async (log, zoe) => {
         },
       });
       const subscription = E(electoratePublicFacet).getQuestionSubscription();
-      observeIteration(subscription, votingObserver);
+      void observeIteration(subscription, votingObserver);
 
       return Far(`Voter ${name}`, {
         verifyBallot: (question, instances) =>

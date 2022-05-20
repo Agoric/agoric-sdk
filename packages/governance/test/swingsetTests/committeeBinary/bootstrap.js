@@ -228,11 +228,15 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   const [testName] = argv;
   switch (testName) {
     case 'committeeBinaryStart':
-      committeeBinaryStart(zoe, voterCreator, timer, log, installations);
-      break;
+      return committeeBinaryStart(zoe, voterCreator, timer, log, installations);
     case 'committeeBinaryTwoQuestions':
-      committeeBinaryTwoQuestions(zoe, voterCreator, timer, log, installations);
-      break;
+      return committeeBinaryTwoQuestions(
+        zoe,
+        voterCreator,
+        timer,
+        log,
+        installations,
+      );
     default:
       log(`didn't find test: ${argv}`);
   }

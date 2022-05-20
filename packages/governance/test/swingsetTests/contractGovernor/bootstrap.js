@@ -144,7 +144,7 @@ const checkContractState = async (zoe, contractInstanceP, log) => {
   const paramChangeObserver = Far('param observer', {
     updateState: update => log(`${update.paramNames} changed in a vote.`),
   });
-  observeIteration(subscription, paramChangeObserver);
+  void observeIteration(subscription, paramChangeObserver);
 
   // it takes a while for the update to propagate. The second time it seems good
   paramValues = await E(contractPublic).getGovernedParams();
@@ -390,7 +390,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
 
       await E(timer).tick();
       await E(timer).tick();
-      E.when(
+      await E.when(
         electorateOutcome,
         o => log(`vote (unexpected) successful outcome: ${o} `),
         e => log(`vote rejected outcome: ${e}`),
@@ -443,7 +443,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
 
       await E(timer).tick();
       await E(timer).tick();
-      E.when(
+      await E.when(
         electorateOutcome,
         o => log(`successful outcome: ${q(o)} `),
         e => log(`vote (unexpected) rejected outcome: ${e}`),
