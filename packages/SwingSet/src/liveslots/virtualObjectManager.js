@@ -419,11 +419,9 @@ export function makeVirtualObjectManager(
     if (typeof obj !== 'object') {
       return 'not';
     }
-    if (Object.getOwnPropertySymbols(obj).length !== 0) {
-      return 'not';
-    }
     let established;
-    for (const [_name, value] of Object.entries(obj)) {
+    for (const prop of Reflect.ownKeys(obj)) {
+      const value = obj[prop];
       let current;
       if (typeof value === 'function') {
         current = 'one';
@@ -432,6 +430,10 @@ export function makeVirtualObjectManager(
         typeof value === 'object' &&
         assessFacetiousness(value, true) === 'one'
       ) {
+        if (typeof prop === 'symbol') {
+          // can't have symbol-named facets
+          return 'not';
+        }
         current = 'many';
       } else {
         return 'not';
@@ -452,20 +454,22 @@ export function makeVirtualObjectManager(
 
   function copyMethods(behavior) {
     const obj = {};
-    for (const [name, func] of Object.entries(behavior)) {
+    for (const prop of Reflect.ownKeys(behavior)) {
+      const func = behavior[prop];
       assert.typeof(func, 'function');
-      obj[name] = func;
+      obj[prop] = func;
     }
     return obj;
   }
 
   function bindMethods(context, behaviorTemplate) {
     const obj = {};
-    for (const [name, func] of Object.entries(behaviorTemplate)) {
+    for (const prop of Reflect.ownKeys(behaviorTemplate)) {
+      const func = behaviorTemplate[prop];
       assert.typeof(func, 'function');
       const method = (...args) => Reflect.apply(func, null, [context, ...args]);
       unweakable.add(method);
-      obj[name] = method;
+      obj[prop] = method;
     }
     return obj;
   }

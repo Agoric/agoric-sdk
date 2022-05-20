@@ -398,6 +398,86 @@ test('virtual object operations', t => {
   ]);
 });
 
+test('symbol named methods', t => {
+  const log = [];
+  const { defineKind, flushCache, dumpStore } = makeFakeVirtualObjectManager({
+    cacheSize: 0,
+    log,
+  });
+
+  const IncSym = Symbol.for('incsym');
+
+  const symThingBehavior = {
+    [IncSym]({ state }) {
+      state.counter += 1;
+      return state.counter;
+    },
+    get({ state }) {
+      return state.counter;
+    },
+  };
+
+  const makeThing = defineKind('symthing', initThing, symThingBehavior);
+  const tid = 'o+2';
+
+  // phase 0: start
+  t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
+    ['vom.vkind.2', '{"kindID":"2","tag":"symthing"}'],
+  ]);
+
+  // phase 1: object creations
+  const thing1 = makeThing('thing-1'); // [t1-0]
+  // t1-0: 'thing-1' 0 0
+  const thing2 = makeThing('thing-2', 100); // [t2-0]
+  // t2-0: 'thing-2' 100 0
+  t.is(log.shift(), `get kindIDID => undefined`);
+  t.is(log.shift(), `set kindIDID 1`);
+  t.is(log.shift(), `set vom.vkind.2 {"kindID":"2","tag":"symthing"}`);
+  t.is(log.shift(), `set vom.${tid}/1 ${thingVal(0, 'thing-1', 0)}`); // evict t1-0
+  t.deepEqual(log, []);
+  t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
+    [`vom.${tid}/1`, thingVal(0, 'thing-1', 0)], // =t1-0
+    ['vom.vkind.2', '{"kindID":"2","tag":"symthing"}'],
+  ]);
+
+  // phase 2: call symbol-named method on thing1
+  t.is(thing1[IncSym](), 1); // [t1-1] evict t2-0
+  t.is(log.shift(), `set vom.${tid}/2 ${thingVal(100, 'thing-2', 0)}`); // evict t2-0
+  t.is(log.shift(), `get vom.${tid}/1 => ${thingVal(0, 'thing-1', 0)}`); // load t1-0
+  t.deepEqual(log, []);
+  t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
+    [`vom.${tid}/1`, thingVal(0, 'thing-1', 0)], // =t1-0
+    [`vom.${tid}/2`, thingVal(100, 'thing-2', 0)], // =t2-0
+    ['vom.vkind.2', '{"kindID":"2","tag":"symthing"}'],
+  ]);
+
+  // phase 3: call symbol-named method on thing2
+  t.is(thing2[IncSym](), 101); // [t2-1] evict t1-0
+  t.is(log.shift(), `set vom.${tid}/1 ${thingVal(1, 'thing-1', 0)}`); // evict t1-1
+  t.is(log.shift(), `get vom.${tid}/2 => ${thingVal(100, 'thing-2', 0)}`); // load t2-0
+  t.deepEqual(log, []);
+  t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
+    [`vom.${tid}/1`, thingVal(1, 'thing-1', 0)], // =t1-1
+    [`vom.${tid}/2`, thingVal(100, 'thing-2', 0)], // =t2-0
+    ['vom.vkind.2', '{"kindID":"2","tag":"symthing"}'],
+  ]);
+
+  // phase 4: flush cache
+  flushCache(); // [] evict t2-1
+  t.is(log.shift(), `set vom.${tid}/2 ${thingVal(101, 'thing-2', 0)}`); // evict t2-1
+  t.deepEqual(log, []);
+  t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
+    [`vom.${tid}/1`, thingVal(1, 'thing-1', 0)], // =t1-1
+    [`vom.${tid}/2`, thingVal(101, 'thing-2', 0)], // =t2-1
+    ['vom.vkind.2', '{"kindID":"2","tag":"symthing"}'],
+  ]);
+});
+
 test('virtual object cycles using the finish function', t => {
   const { vom } = makeFakeVirtualStuff();
   const { defineKind } = vom;

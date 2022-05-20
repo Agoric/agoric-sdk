@@ -13,6 +13,8 @@ import { createRequire } from 'module';
 
 import { getAccessToken } from '@agoric/access-token';
 
+const { details: X } = assert;
+
 const require = createRequire(import.meta.url);
 const esmRequire = createEsmRequire({});
 
@@ -80,11 +82,11 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
   const port = match ? match[2] : '8000';
 
   const wsurl = opts.hostport.includes('//')
-    ? new URL(opts.hostport)
+    ? new URL(opts.hostport, 'ws://localhost:8000')
     : new URL(`ws://${host}:${port}`);
-  if (wsurl.pathname === '/' && !opts.hostport.endsWith('/')) {
-    wsurl.pathname = '/private/captp';
-  }
+
+  assert.equal(wsurl.pathname, '/', X`${opts.hostport} cannot contain a path`);
+  wsurl.pathname = '/private/captp';
 
   const exit = makePromiseKit();
   let connected = false;
