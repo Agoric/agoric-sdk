@@ -150,7 +150,7 @@ const start = async (zcf, privateArgs) => {
   // something that will extract the fees.
   const { zcfSeat: protocolSeat } = zcf.makeEmptySeatKit();
 
-  // todo(hibbert): give reserve the abilty to collect this.
+  // TODO(#5408): give reserve the ability to collect this.
   const { zcfSeat: reserveLiquidityTokenSeat } = zcf.makeEmptySeatKit();
 
   const getLiquiditySupply = brand => getPool(brand).getLiquiditySupply();
