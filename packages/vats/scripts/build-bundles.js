@@ -10,4 +10,4 @@ const sourceToBundle = [
   [`../src/mintHolder.js`, `../bundles/bundle-mintHolder.js`],
 ];
 
-createBundles(sourceToBundle, dirname);
+await createBundles(sourceToBundle, dirname);

@@ -7,4 +7,4 @@ const dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 const sourceToBundle = [[`../src/wallet.js`, `../bundles/bundle-wallet.js`]];
 
-createBundles(sourceToBundle, dirname);
+await createBundles(sourceToBundle, dirname);
