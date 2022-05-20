@@ -34,23 +34,27 @@ const { details: X } = assert;
 const trace = makeTracer('VM');
 
 /**
+ * @typedef {object} MetricsNotification
+ * FIXME naming convention to distinguish
+ * @property {number}         numVaults        present count of vaults
+ * @property {Amount<'nat'>}  totalCollateral  present sum of collateral across all vaults
+ * @property {Amount<'nat'>}  totalDebt        present sum of debt across all vaults
+ *
+ * @property {number}         numLiquidations  running count of liquidations
+ * @property {Amount<'nat'>}  totalReclaimed   running sum of collateral sold in liquidation // totalCollateralSold
+ *
+ * @property {Amount<'nat'>}  totalProceeds    running sum of central received from liquidation
+ * @property {Amount<'nat'>}  totalOverage     running sum of overages, central received greater than debt
+ * @property {Amount<'nat'>}  totalShortfall   running sum of shortfalls, central received less than ddebt
+ */
+
+/**
  * @typedef {{
  *  compoundedInterest: Ratio,
  *  interestRate: Ratio,
  *  latestInterestUpdate: bigint,
  *  liquidatorInstance?: Instance,
  * }} AssetState
- *
- * @typedef {{
- *  numLiquidations: number,        // ever (FIXME naming convention to distinguish)
- *  numVaults: number,              // NOW
- *  totalCollateral: Amount<'nat'>, // NOW
- *  totalReclaimed: Amount<'nat'>,  // ever
- *  totalDebt: Amount<'nat'>,       // NOW
- *  totalOverage: Amount<'nat'>,    // ever
- *  totalProceeds: Amount<'nat'>,   // ever
- *  totalShortfall: Amount<'nat'>,  // ever
- * }} MetricsNotification
  *
  * @typedef {{
  *  getChargingPeriod: () => bigint,
