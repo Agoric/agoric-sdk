@@ -80,7 +80,7 @@ test('communication', async t => {
           break;
         }
 
-        case 'VBANK_GIVE_TO_FEE_COLLECTOR': {
+        case 'VBANK_GIVE_TO_REWARD_DISTRIBUTOR': {
           const { amount, denom, type: _type, ...rest } = obj;
           t.is(denom, 'ufee');
           t.is(amount, '12');
@@ -192,7 +192,7 @@ test('communication', async t => {
   const feeAmount = AmountMath.make(feeKit.brand, 12n);
   const feePayment = mint.mintPayment(feeAmount);
   const feeReceived = await E(
-    E(bankMgr).getFeeCollectorDepositFacet('ufee', feeKit),
+    E(bankMgr).getRewardDistributorDepositFacet('ufee', feeKit),
   ).receive(feePayment);
   t.assert(AmountMath.isEqual(feeReceived, feeAmount));
 });
