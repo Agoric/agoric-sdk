@@ -7,7 +7,6 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '../../../src/index.js';
-import { capargs } from '../../util.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
@@ -32,7 +31,7 @@ async function testUpgrade(t, defaultManagerType) {
   c.pinVatRoot('bootstrap');
   await c.run();
 
-  const kpid = c.queueToVatRoot('bootstrap', 'build', capargs([]));
+  const kpid = c.queueToVatRoot('bootstrap', 'build', []);
   await c.run();
   t.is(c.kpStatus(kpid), 'fulfilled');
   // the bug manifests as a fatal vat error (illegal syscall), causing

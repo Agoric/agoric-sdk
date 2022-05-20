@@ -36,6 +36,10 @@ export function legibilizeValue(val, slots) {
           return val.digits;
         case 'slot':
           return `@${slots[val.index]}`;
+        case 'symbol':
+          return `[${val.name}]`;
+        case '@@asyncIterator':
+          return `[Symbol.asyncIterator]`;
         case 'error':
           return `new ${val.name}('${val.message}')`;
         default:
@@ -57,10 +61,38 @@ export function legibilizeValue(val, slots) {
   }
 }
 
-export function legibilizeMessageArgs(args) {
-  try {
-    return JSON.parse(args.body).map(arg => legibilizeValue(arg, args.slots));
-  } catch (e) {
-    return [args];
+export function legibilizeMethod(method) {
+  if (typeof method === 'string') {
+    return method;
+  } else if (typeof method === 'symbol') {
+    return `[${method.toString()}]`;
+  } else if (method === undefined) {
+    return '<funcall>';
+  } else {
+    assert.typeof(method, 'object');
+    const qclass = method['@qclass'];
+    assert(qclass);
+    if (qclass === 'undefined') {
+      return '<funcall>';
+    } else if (qclass === 'symbol') {
+      return `[${method.name}]`;
+    } else if (qclass === '@@asyncIterator') {
+      return `[Symbol.asyncIterator]`;
+    } else {
+      assert.fail('invalid method type');
+    }
   }
+}
+
+export function extractMethod(methargsCapdata) {
+  const methargs = JSON.parse(methargsCapdata.body);
+  return legibilizeMethod(methargs[0]);
+}
+
+export function legibilizeMessageArgs(methargsCapdata) {
+  const methargs = JSON.parse(methargsCapdata.body);
+  const [method, args] = methargs;
+  const methodStr = legibilizeMethod(method);
+  const argsStrs = args.map(arg => legibilizeValue(arg, methargsCapdata.slots));
+  return [methodStr, argsStrs.join(', ')];
 }

@@ -120,7 +120,7 @@ test.serial('d1', async t => {
   c.pinVatRoot('bootstrap');
   await c.run();
 
-  c.queueToVatRoot('bootstrap', 'step1', capargs([]));
+  c.queueToVatRoot('bootstrap', 'step1', []);
   await c.run();
   t.deepEqual(c.dump().log, [
     'callNow',
@@ -156,7 +156,7 @@ async function test2(t, mode) {
   await c.run(); // startup
 
   function qv(method) {
-    c.queueToVatRoot('bootstrap', method, capargs([]), 'panic');
+    c.queueToVatRoot('bootstrap', method, [], 'panic');
   }
 
   if (mode === '1') {
@@ -274,7 +274,7 @@ test.serial('command broadcast', async t => {
   await initializeSwingset(config, [], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
   c.pinVatRoot('bootstrap');
-  c.queueToVatRoot('bootstrap', 'doCommand1', capargs([]), 'panic');
+  c.queueToVatRoot('bootstrap', 'doCommand1', [], 'panic');
   await c.run();
   t.deepEqual(broadcasts, [{ hello: 'everybody' }]);
 });
@@ -302,7 +302,7 @@ test.serial('command deliver', async t => {
   await initializeSwingset(config, [], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
   c.pinVatRoot('bootstrap');
-  c.queueToVatRoot('bootstrap', 'doCommand2', capargs([]), 'panic');
+  c.queueToVatRoot('bootstrap', 'doCommand2', [], 'panic');
   await c.run();
 
   t.deepEqual(c.dump().log.length, 0);
@@ -346,7 +346,7 @@ test.serial('liveslots throws when D() gets promise', async t => {
 
   // When liveslots catches an attempt to send a promise into D(), it throws
   // a regular error, which the vat can catch.
-  c.queueToVatRoot('bootstrap', 'doPromise1', capargs([]), 'panic');
+  c.queueToVatRoot('bootstrap', 'doPromise1', [], 'panic');
   await c.run();
   t.deepEqual(c.dump().log, ['sending Promise', 'good: callNow failed']);
 
@@ -354,7 +354,7 @@ test.serial('liveslots throws when D() gets promise', async t => {
   // syscall.callNow, the translator will notice and kill the vat. We send a
   // ping() to it to make sure it's still alive. If the vat were dead,
   // queueToVatRoot would throw because the vat was deleted.
-  c.queueToVatRoot('bootstrap', 'ping', capargs([]), 'panic');
+  c.queueToVatRoot('bootstrap', 'ping', [], 'panic');
   await c.run();
 
   // If the translator doesn't catch the promise and it makes it to the device,
@@ -385,13 +385,13 @@ test.serial('syscall.callNow(promise) is vat-fatal', async t => {
 
   // deliver doBadCallNow, which will fail, which kills vat-bootstrap, which
   // emits "DANGER: static vat v1 terminated", but does not panic the kernel
-  c.queueToVatRoot('bootstrap', 'doBadCallNow', capargs([]), 'ignore');
+  c.queueToVatRoot('bootstrap', 'doBadCallNow', [], 'ignore');
   await c.run();
   t.deepEqual(c.dump().log, ['sending Promise', 'good: callNow failed']);
 
   // now check that the vat was terminated: this should throw an exception
   // because the entire bootstrap vat was deleted
-  t.throws(() => c.queueToVatRoot('bootstrap', 'ping', capargs([])), {
+  t.throws(() => c.queueToVatRoot('bootstrap', 'ping', []), {
     message: /vat name .* must exist, but doesn't/,
   });
 });

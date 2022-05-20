@@ -13,7 +13,8 @@
 
 const QCLASS = '@';
 
-export function makeUndeliverableError(method) {
+export function makeUndeliverableError(methargs) {
+  const method = JSON.parse(methargs.body)[0];
   const s = {
     [QCLASS]: 'error',
     name: 'TypeError',

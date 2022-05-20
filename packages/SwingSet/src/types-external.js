@@ -71,15 +71,14 @@ export {};
 
 /*
  * `['message', targetSlot, msg]`
- * msg is `{ method, args, result }`
+ * msg is `{ methargs, result }`
  * `['notify', resolutions]`
  * `['dropExports', vrefs]`
  */
 
 /**
  * @typedef {{
- * method: string,
- * args: SwingSetCapData,
+ * methargs: SwingSetCapData, // of [method, args]
  * result: string | undefined | null,
  * }} Message
  *

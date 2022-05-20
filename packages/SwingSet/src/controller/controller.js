@@ -15,6 +15,7 @@ import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
 
+import { QCLASS } from '@endo/marshal';
 import { checkBundle } from '@endo/check-bundle/lite.js';
 import { createSHA256 } from '../lib-nodejs/hasher.js';
 import engineGC from '../lib-nodejs/engine-gc.js';
@@ -22,7 +23,6 @@ import { startSubprocessWorker } from '../lib-nodejs/spawnSubprocessWorker.js';
 import { waitUntilQuiescent } from '../lib-nodejs/waitUntilQuiescent.js';
 import { makeGcAndFinalize } from '../lib-nodejs/gc-and-finalize.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
-import { insistCapData } from '../lib/capdata.js';
 import { provideHostStorage } from './hostStorage.js';
 import {
   swingsetIsInitialized,
@@ -446,15 +446,35 @@ export async function makeSwingsetController(
     /**
      * @param {string} vatName
      * @param {string} method
-     * @param {import('@endo/marshal').CapData<unknown>} args
+     * @param {unknown[]} args
      * @param {ResolutionPolicy} resultPolicy
+     * @param {string[]} [slots]
      */
-    queueToVatRoot(vatName, method, args, resultPolicy = 'ignore') {
+    queueToVatRoot(
+      vatName,
+      method,
+      args = [],
+      resultPolicy = 'ignore',
+      slots = [],
+    ) {
+      function replacer(_, arg) {
+        if (typeof arg === 'bigint') {
+          return { [QCLASS]: 'bigint', digits: String(arg) };
+        }
+        if (arg === undefined) {
+          return { [QCLASS]: 'undefined' };
+        }
+        return arg;
+      }
+
       const vatID = kernel.vatNameToID(vatName);
       assert.typeof(method, 'string');
-      insistCapData(args);
       const kref = kernel.getRootObject(vatID);
-      const kpid = kernel.queueToKref(kref, method, args, resultPolicy);
+      const methargs = {
+        body: JSON.stringify([method, args], replacer),
+        slots,
+      };
+      const kpid = kernel.queueToKref(kref, methargs, resultPolicy);
       if (kpid) {
         kernel.kpRegisterInterest(kpid);
       }

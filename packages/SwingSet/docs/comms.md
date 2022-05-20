@@ -43,10 +43,10 @@ messages. There are four different types, with some formatting variations
 that depend upon the presence of slots and/or a result promise:
 
 ```
-deliver:${remoteTargetSlot}:${method}:;${args.body}
-deliver:${remoteTargetSlot}:${method}::${slots..};${args.body}
-deliver:${remoteTargetSlot}:${method}:${remoteResultSlot};${args.body}
-deliver:${remoteTargetSlot}:${method}:${remoteResultSlot}:${slots..};${args.body}
+deliver:${remoteTargetSlot}:;${methargs.body}
+deliver:${remoteTargetSlot}::${slots..};${methargs.body}
+deliver:${remoteTargetSlot}:${remoteResultSlot};${methargs.body}
+deliver:${remoteTargetSlot}:${remoteResultSlot}:${slots..};${methargs.body}
 resolve:object:${target}:${resolutionRef};
 resolve:data:${target};${resolution.data.body}
 resolve:data:${target}:${slots..};${resolution.data.body}
@@ -99,16 +99,20 @@ message is being delivered, and thus will always be an *egress* (export) of
 the machine which receives the message (if it were an ingress, the message
 was sent to the wrong place).
 
-`method` is a simple string.
-
 `remoteResultSlot` is either an empty string, or a `rp+NN` promise identifier.
 
 `slots..` is a colon-joined list of any slots in the message arguments, which
 can be `ro+NN`, `ro-NN`, `rp+NN`, or `rp-NN`.
 
-`args.body` is the JSON-encoded argument body (using our `marshal` library).
-As JSON, it can have arbitrary characters except for a newline. The comms
-message always ends with a newline.
+`methargs.body` is the JSON-encoded method+argument message body (using our
+`marshal` library).  The value that `methargs` encodes is always a pair (which
+is to say, a two-element array) consisting of the method name and the arguments
+list.  The latter is itself always an array, though it can be an empty array if
+there are no arguments.  As far as the comms encoding is concerned, the method
+"name" can be any serialized value, though it actually is limited by use to
+being a string, a symbol, or `undefined`.  As JSON, the methargs body can
+contain arbitrary characters except for a newline. The comms message always ends
+with a newline.
 
 ### Examples
 
@@ -230,10 +234,9 @@ The inbound parser will locate the first semicolon and tokenize the string up
 to that point as a series of colon-separated fields. The first field is the
 message type (`deliver` or `resolve`).
 
-For `deliver`, the second field is the target slot, and the third is the
-method name. The fourth field (which might be an empty string) is the result
-promise. Any remaining fields are slots for the arguments. Everything after
-the semicolon is the body for the arguments.
+For `deliver`, the second field is the target slot. The third field (which might
+be an empty string) is the result promise. Any remaining fields are slots for
+the arguments. Everything after the semicolon is the body for the arguments.
 
 If the type is `resolve`, the second field is used as the subtype (`object`
 or `data` or `reject`). The next field is the target (the promise being

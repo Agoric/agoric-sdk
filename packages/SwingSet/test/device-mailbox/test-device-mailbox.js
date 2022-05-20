@@ -13,7 +13,6 @@ import {
   buildMailboxStateMap,
   buildMailbox,
 } from '../../src/devices/mailbox/mailbox.js';
-import { capargs } from '../util.js';
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
@@ -178,14 +177,14 @@ test('mailbox determinism', async t => {
   t.true(mb1a.deliverInbound('peer1', msg1, 0));
   await c1a.run();
   t.deepEqual(c1a.dump().log, ['comms receive msg1']);
-  const kp1 = c1a.queueToVatRoot('bootstrap', 'getNumReceived', capargs([]));
+  const kp1 = c1a.queueToVatRoot('bootstrap', 'getNumReceived', []);
   await c1a.run();
   t.deepEqual(JSON.parse(c1a.kpResolution(kp1).body), 1);
 
   t.true(mb2.deliverInbound('peer1', msg1, 0));
   await c2.run();
   t.deepEqual(c2.dump().log, ['comms receive msg1']);
-  const kp2 = c2.queueToVatRoot('bootstrap', 'getNumReceived', capargs([]));
+  const kp2 = c2.queueToVatRoot('bootstrap', 'getNumReceived', []);
   await c2.run();
   t.deepEqual(JSON.parse(c2.kpResolution(kp2).body), 1);
 
@@ -210,7 +209,7 @@ test('mailbox determinism', async t => {
   // original message, delivered during the second run
   t.deepEqual(c1b.dump().log, ['comms receive msg1']);
   // but vattp dedups, so only one message should be delivered to comms
-  const kp3 = c1b.queueToVatRoot('bootstrap', 'getNumReceived', capargs([]));
+  const kp3 = c1b.queueToVatRoot('bootstrap', 'getNumReceived', []);
   await c1b.run();
   t.deepEqual(JSON.parse(c1b.kpResolution(kp3).body), 1);
 
@@ -219,7 +218,7 @@ test('mailbox determinism', async t => {
   // the second kernel still has that ephemeral testlog, however the vat is
   // still running, so we only see the original message from the first run
   t.deepEqual(c2.dump().log, ['comms receive msg1']);
-  const kp4 = c2.queueToVatRoot('bootstrap', 'getNumReceived', capargs([]));
+  const kp4 = c2.queueToVatRoot('bootstrap', 'getNumReceived', []);
   await c2.run();
   t.deepEqual(JSON.parse(c2.kpResolution(kp4).body), 1);
 

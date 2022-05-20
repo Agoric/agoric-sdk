@@ -77,11 +77,10 @@ async function extraMessage(t, mode, status, body, slots) {
   const controller = await beginning(t, 'data');
   controller.pinVatRoot('bootstrap');
   await controller.run();
-  const args = { body: `["${mode}"]`, slots: [] };
   const extraResult = controller.queueToVatRoot(
     'bootstrap',
     'extra',
-    args,
+    [mode],
     'ignore',
   );
   await controller.run();

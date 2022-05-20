@@ -151,9 +151,9 @@ const oCommsRoot = '@o+0'; // Always the root of the comms vat
 function loggingSyscall(log) {
   const fakestore = new Map();
   return harden({
-    send(target, method, args, result) {
-      // console.log(`<< send ${target}, ${method}, ${JSON.stringify(args)}, ${result}`);
-      log.push([target, method, args, result]);
+    send(target, methargs, result) {
+      // console.log(`<< send ${target}, ${JSON.stringify(methargs)}, ${result}`);
+      log.push([target, methargs, result]);
     },
     resolve(resolutions) {
       // console.log(`<< resolve ${JSON.stringify(resolutions)}`);
@@ -231,7 +231,7 @@ function ifaceOf(scriptRef) {
  *
  * @returns {unknown} a capdata object kinda sorta representing `from`
  */
-function capdata(from) {
+function encodeCapdata(from) {
   const slots = [];
 
   function encodeValue(value) {
@@ -278,16 +278,15 @@ function capdata(from) {
  * @param {boolean} doFlip  If true, flip the polarity of any rrefs, as would be
  *   done for sending to a remote.
  * @param {string} target  Message target rref.
- * @param {string} method  Name of the method to be invoked.
- * @param {unknown} args  Capdata containing the message arguments
+ * @param {unknown} methargs  Capdata containing the method and arguments
  * @param {string|undefined} result  Result promise rref, or undefined to be one-way
  *
  * @returns {string} the message encoded in comms protocol format
  */
-function remoteMessage(doFlip, target, method, args, result) {
+function remoteMessage(doFlip, target, methargs, result) {
   const slots = doFlip
-    ? args.slots.map(rref => flipRemoteSlot(rref))
-    : args.slots;
+    ? methargs.slots.map(rref => flipRemoteSlot(rref))
+    : methargs.slots;
   let ss = slots.join(':');
   if (ss) {
     ss = `:${ss}`;
@@ -298,7 +297,7 @@ function remoteMessage(doFlip, target, method, args, result) {
   } else {
     result = doFlip ? flipRemoteSlot(result) : result;
   }
-  return `deliver:${target}:${method}:${result}${ss};${args.body}`;
+  return `deliver:${target}:${result}${ss};${methargs.body}`;
 }
 
 /**
@@ -367,7 +366,7 @@ export function commsVatDriver(t, verbose = false) {
    */
   function prepareTransmit(remote, msg) {
     // prettier-ignore
-    const encodedMsg = [`${remote.sendFromSeqNum}:${remote.lastToSeqNum}:${msg}`];
+    const encodedMsg = ['transmit', [`${remote.sendFromSeqNum}:${remote.lastToSeqNum}:${msg}`]];
     if (verbose) {
       console.log(`${remote.lastFromSeqNum} | ${remote.name} < ${encodedMsg}`);
     }
@@ -377,10 +376,7 @@ export function commsVatDriver(t, verbose = false) {
     }
     remote.lastFromSeqNum = remote.sendFromSeqNum;
     remote.sendFromSeqNum += 1;
-    return {
-      body: JSON.stringify(encodedMsg),
-      slots: [],
-    };
+    return encodedMsg;
   }
 
   /**
@@ -403,10 +399,7 @@ export function commsVatDriver(t, verbose = false) {
     }
     remote.lastToSeqNum = remote.sendToSeqNum;
     remote.sendToSeqNum += 1;
-    return {
-      body: JSON.stringify(encodedMsg),
-      slots: [],
-    };
+    return encodedMsg;
   }
 
   /**
@@ -417,20 +410,20 @@ export function commsVatDriver(t, verbose = false) {
    *   kernel, or 'a', b', or 'c', one of the remotes.
    * @param {string} target  Scriptref of the object or promise that is the
    *   target of the message.
-   * @param {string} method  The name of the method being invoked.
-   * @param {unknown} args  Capdata object containing the message arguments.
+   * @param {unknow} methargs  Capdata containing the method and arguments
    * @param {string|undefined} result  Scriptref of the result promise or
    *   undefined to indicate a one-way message.
    */
-  function injectSend(who, target, method, args, result) {
+  function injectSend(who, target, methargs, result) {
     t.deepEqual(log, []);
     if (who === 'k') {
-      dispatch(makeMessage(target, method, args, result));
+      const msg = ['message', target, { methargs, result }];
+      dispatch(msg);
     } else {
       const remote = remotes.get(who);
       const msg = prepareReceive(
         remote,
-        remoteMessage(false, target, method, args, result),
+        remoteMessage(false, target, methargs, result),
       );
       dispatch(makeMessage(remote.receiver, 'receive', msg));
     }
@@ -444,24 +437,22 @@ export function commsVatDriver(t, verbose = false) {
    *   the kernel, or 'a', b', or 'c', one of the remotes.
    * @param {string} target  Scriptref of the object or promise that is the
    *   target of the message.
-   * @param {string} method  The name of the method being invoked.
-   * @param {unknown} args  Capdata object containing the message arguments.
+   * @param {unknown} methargs  Capdata containg the method and arguments.
    * @param {string|undefined} result  Scriptref of the result promise or
    *   undefined to indicate a one-way message.
    */
-  function observeSend(who, target, method, args, result) {
+  function observeSend(who, target, methargs, result) {
     if (who === 'k') {
-      t.deepEqual(log.shift(), [target, method, args, result]);
+      t.deepEqual(log.shift(), [target, methargs, result]);
     } else {
       const remote = remotes.get(who);
       const msg = prepareTransmit(
         remote,
-        remoteMessage(true, target, method, args, result),
+        remoteMessage(true, target, methargs, result),
       );
       t.deepEqual(log.shift(), [
         remote.transmitter,
-        'transmit',
-        msg,
+        { body: JSON.stringify(msg), slots: [] },
         undefined,
       ]);
     }
@@ -503,8 +494,7 @@ export function commsVatDriver(t, verbose = false) {
       const msg = prepareTransmit(remote, remoteResolutions(true, resolutions));
       t.deepEqual(log.shift(), [
         remote.transmitter,
-        'transmit',
-        msg,
+        { body: JSON.stringify(msg), slots: [] },
         undefined,
       ]);
     }
@@ -686,13 +676,12 @@ export function commsVatDriver(t, verbose = false) {
       case 'm': {
         assert(dir === '<' || dir === '>');
         const target = refOf(params[0]);
-        const method = params[1];
         const result = params[2] ? refOf(params[2]) : undefined;
-        const args = capdata(params.slice(3));
+        const methargs = encodeCapdata([params[1], params.slice(3)]);
         if (dir === '>') {
-          injectSend(who, target, method, args, result);
+          injectSend(who, target, methargs, result);
         } else {
-          observeSend(who, target, method, args, result);
+          observeSend(who, target, methargs, result);
         }
         break;
       }
@@ -702,7 +691,7 @@ export function commsVatDriver(t, verbose = false) {
         for (const resolution of params) {
           const target = refOf(resolution[0]);
           const status = resolution[1];
-          const value = capdata(resolution[2]);
+          const value = encodeCapdata(resolution[2]);
           resolutions.push([target, status, value]);
         }
         if (dir === '>') {

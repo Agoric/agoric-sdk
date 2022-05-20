@@ -123,7 +123,7 @@ test.serial('exercise baggage', async t => {
   validate(v, matchVatstoreGetAfter('', 'vom.dkind.', NONE, [NONE, NONE]));
   validateDone(v);
 
-  const rp = await dispatchMessage('doSomething', capargs([]));
+  const rp = await dispatchMessage('doSomething', []);
   validate(v, matchVatstoreGet('vc.1.soutside', stringVal('outer val')));
   validate(v, matchVatstoreGet('vc.1.sinside', NONE));
   validate(v, matchVatstoreSet('vc.1.sinside', stringVal('inner val')));

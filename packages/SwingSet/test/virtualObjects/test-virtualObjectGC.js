@@ -395,27 +395,18 @@ function holderSer(vref) {
   }
 }
 
-function boolArgs(flag) {
-  return capargs([flag], []);
-}
-
-function thingArgs(vref, isf) {
+function thingArg(vref, isf) {
   if (isf) {
-    return capargs(
-      [
-        {
-          '@qclass': 'slot',
-          iface: 'Alleged: thing facetB',
-          index: 0,
-        },
-      ],
-      [`${vref}:1`],
-    );
+    return [
+      {
+        '@qclass': 'slot',
+        iface: 'Alleged: thing facetB',
+        index: 0,
+      },
+      `${vref}:1`,
+    ];
   } else {
-    return capargs(
-      [{ '@qclass': 'slot', iface: 'Alleged: thing', index: 0 }],
-      [vref],
-    );
+    return [{ '@qclass': 'slot', iface: 'Alleged: thing', index: 0 }, vref];
   }
 }
 
@@ -742,7 +733,7 @@ async function voLifeCycleTest1(t, isf) {
   const thingf = facetRef(isf, thing, '1');
 
   // lerv -> Lerv  Create VO
-  let rp = await dispatchMessage('makeAndHold', boolArgs(isf));
+  let rp = await dispatchMessage('makeAndHold', [isf]);
   validateSetupAndCreate(v, rp, thing);
 
   // Lerv -> LerV  Store VO reference virtually
@@ -773,7 +764,7 @@ async function voLifeCycleTest2(t, isf) {
   const thingf = facetRef(isf, thing, '1');
 
   // lerv -> Lerv  Create VO
-  let rp = await dispatchMessage('makeAndHold', boolArgs(isf));
+  let rp = await dispatchMessage('makeAndHold', [isf]);
   validateSetupAndCreate(v, rp, thing);
 
   // Lerv -> LerV  Store VO reference virtually (permanent for now)
@@ -805,7 +796,8 @@ async function voLifeCycleTest2(t, isf) {
   validateDropHeld(v, rp, thing, esf(isf), '1', 'r');
 
   // lERV -> LERV  Reintroduce the in-memory reference via message
-  rp = await dispatchMessage('importAndHold', thingArgs(thing, isf));
+  const [targ, tslot] = thingArg(thing, isf);
+  rp = await dispatchMessage('importAndHold', [targ], [tslot]);
   validateImport(v, rp, thingf, testObjValue);
 
   // LERV -> lERV  Drop in-memory reference
@@ -847,7 +839,7 @@ async function voLifeCycleTest3(t, isf) {
   const thingf = facetRef(isf, thing, '1');
 
   // lerv -> Lerv  Create VO
-  let rp = await dispatchMessage('makeAndHold', boolArgs(isf));
+  let rp = await dispatchMessage('makeAndHold', [isf]);
   validateSetupAndCreate(v, rp, thing);
 
   // Lerv -> LerV  Store VO reference virtually (permanent for now)
@@ -893,7 +885,7 @@ async function voLifeCycleTest4(t, isf) {
   const thingf = facetRef(isf, thing, '1');
 
   // lerv -> Lerv  Create VO
-  let rp = await dispatchMessage('makeAndHold', boolArgs(isf));
+  let rp = await dispatchMessage('makeAndHold', [isf]);
   validateSetupAndCreate(v, rp, thing);
 
   // Lerv -> LERv  Export the reference, now two legs hold it
@@ -923,7 +915,7 @@ async function voLifeCycleTest5(t, isf) {
   const thingf = facetRef(isf, thing, '1');
 
   // lerv -> Lerv  Create VO
-  let rp = await dispatchMessage('makeAndHold', boolArgs(isf));
+  let rp = await dispatchMessage('makeAndHold', [isf]);
   validateSetupAndCreate(v, rp, thing);
 
   // Lerv -> LERv  Export the reference, now all three legs hold it
@@ -961,7 +953,7 @@ async function voLifeCycleTest6(t, isf) {
   const thingf = facetRef(isf, thing, '1');
 
   // lerv -> Lerv  Create VO
-  let rp = await dispatchMessage('makeAndHold', boolArgs(isf));
+  let rp = await dispatchMessage('makeAndHold', [isf]);
   validateSetupAndCreate(v, rp, thing);
 
   // Lerv -> LERv  Export the reference, now all three legs hold it
@@ -1011,7 +1003,7 @@ async function voLifeCycleTest7(t, isf) {
   const thingf = facetRef(isf, thing, '1');
 
   // lerv -> Lerv  Create VO
-  let rp = await dispatchMessage('makeAndHold', boolArgs(isf));
+  let rp = await dispatchMessage('makeAndHold', [isf]);
   validateSetupAndCreate(v, rp, thing);
 
   // Lerv -> LERv  Export the reference, now all three legs hold it
@@ -1023,7 +1015,8 @@ async function voLifeCycleTest7(t, isf) {
   validateDropHeld(v, rp, thing, esf(isf), NONE, 'r');
 
   // lERv -> LERv  Reintroduce the in-memory reference via message
-  rp = await dispatchMessage('importAndHold', thingArgs(thing, isf));
+  const [targ, tslot] = thingArg(thing, isf);
+  rp = await dispatchMessage('importAndHold', [targ], [tslot]);
   validateImport(v, rp, thingf, testObjValue);
 
   // LERv -> lERv  Drop in-memory reference again, still no GC because exported
@@ -1053,7 +1046,7 @@ async function voLifeCycleTest8(t, isf) {
   const thingf = facetRef(isf, thing, '1');
 
   // lerv -> Lerv  Create VO
-  let rp = await dispatchMessage('makeAndHold', boolArgs(isf));
+  let rp = await dispatchMessage('makeAndHold', [isf]);
   validateSetupAndCreate(v, rp, thing);
 
   // Lerv -> LERv  Export the reference
@@ -1288,7 +1281,7 @@ async function voRefcountManagementTest1(t, isf) {
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
 
-  let rp = await dispatchMessage('makeAndHold', boolArgs(isf));
+  let rp = await dispatchMessage('makeAndHold', [isf]);
   validateSetupAndCreate(v, rp, thing);
 
   rp = await dispatchMessage('prepareStore3');
@@ -1327,7 +1320,7 @@ async function voRefcountManagementTest2(t, isf) {
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
 
-  let rp = await dispatchMessage('makeAndHold', boolArgs(isf));
+  let rp = await dispatchMessage('makeAndHold', [isf]);
   validateSetupAndCreate(v, rp, thing);
 
   rp = await dispatchMessage('prepareStore3');
@@ -1376,7 +1369,7 @@ async function voRefcountManagementTest3(t, isf) {
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
 
-  let rp = await dispatchMessage('makeAndHold', boolArgs(isf));
+  let rp = await dispatchMessage('makeAndHold', [isf]);
   validateSetupAndCreate(v, rp, thing);
 
   rp = await dispatchMessage('prepareStoreLinked');
@@ -1442,7 +1435,8 @@ test.serial('presence refcount management 1', async t => {
   const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
   const presRef = 'o-5';
-  let rp = await dispatchMessage('importAndHold', thingArgs(presRef));
+  const [targ, tslot] = thingArg(presRef);
+  let rp = await dispatchMessage('importAndHold', [targ], [tslot]);
   validateSetup(v);
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
@@ -1494,7 +1488,8 @@ test.serial('presence refcount management 2', async t => {
   const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
   const presRef = 'o-5';
-  let rp = await dispatchMessage('importAndHold', thingArgs(presRef));
+  const [targ, tslot] = thingArg(presRef);
+  let rp = await dispatchMessage('importAndHold', [targ], [tslot]);
   validateSetup(v);
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
@@ -1623,7 +1618,7 @@ async function voWeakKeyGCTest(t, isf) {
   const thingf = facetRef(isf, thing, '1');
 
   // Create VO and hold onto it weakly
-  let rp = await dispatchMessage('makeAndHoldAndKey', boolArgs(isf));
+  let rp = await dispatchMessage('makeAndHoldAndKey', [isf]);
   validateSetupAndCreate(v, rp, thing);
   t.is(testHooks.countCollectionsForWeakKey(facetRef(isf, thing, '1')), 2);
   t.is(testHooks.countWeakKeysForCollection(aWeakMap), 1);
@@ -1649,7 +1644,8 @@ test.serial('verify presence weak key GC', async t => {
   const { v, dispatchMessage, dispatchRetireImports, testHooks } =
         await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
-  let rp = await dispatchMessage('importAndHoldAndKey', thingArgs('o-5'));
+  const [targ, tslot] = thingArg('o-5');
+  let rp = await dispatchMessage('importAndHoldAndKey', [targ], [tslot]);
   validateSetup(v);
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);

@@ -9,7 +9,6 @@ import { xsnap } from '@agoric/xsnap';
 import * as proc from 'child_process';
 import * as os from 'os';
 import { buildVatController } from '../../src/index.js';
-import { capargs } from '../../test/util.js';
 
 function countingPolicy() {
   let computrons = 0n;
@@ -79,7 +78,7 @@ async function run() {
   await c.run();
 
   async function runOneMode(mode) {
-    const kp = c.queueToVatRoot('bootstrap', 'measure', capargs([mode]));
+    const kp = c.queueToVatRoot('bootstrap', 'measure', [mode]);
     await c.run();
     const cd = c.kpResolution(kp);
     const used = JSON.parse(cd.body);
@@ -129,7 +128,7 @@ async function run() {
   // of the target vat.
 
   async function doCounted(method, args = []) {
-    const kp = c.queueToVatRoot('bootstrap', method, capargs(args));
+    const kp = c.queueToVatRoot('bootstrap', method, args);
     const p = countingPolicy();
     await c.run(p);
     c.kpResolution(kp);
