@@ -31,7 +31,12 @@ import {
 
 const console = anylogger('launch-chain');
 
-const SWING_STORE_HOST_PREFIX = 'host';
+/**
+ * Return the key in the reserved "host.*" section of the swing-store
+ *
+ * @param {string} path
+ */
+const getHostKey = path => `host.${path}`;
 
 async function buildSwingset(
   mailboxStorage,
@@ -266,12 +271,9 @@ export async function launch({
     savedBlockTime,
     savedChainSends,
   ) {
-    kvStore.set(`${SWING_STORE_HOST_PREFIX}.height`, `${savedHeight}`);
-    kvStore.set(`${SWING_STORE_HOST_PREFIX}.blockTime`, `${savedBlockTime}`);
-    kvStore.set(
-      `${SWING_STORE_HOST_PREFIX}.chainSends`,
-      JSON.stringify(savedChainSends),
-    );
+    kvStore.set(getHostKey('height'), `${savedHeight}`);
+    kvStore.set(getHostKey('blockTime'), `${savedBlockTime}`);
+    kvStore.set(getHostKey('chainSends'), JSON.stringify(savedChainSends));
     await commit();
   }
 
@@ -312,14 +314,10 @@ export async function launch({
     );
   }
 
-  const savedHeight = Number(
-    kvStore.get(`${SWING_STORE_HOST_PREFIX}.height`) || 0,
-  );
-  const savedBlockTime = Number(
-    kvStore.get(`${SWING_STORE_HOST_PREFIX}.blockTime`) || 0,
-  );
+  const savedHeight = Number(kvStore.get(getHostKey('height')) || 0);
+  const savedBlockTime = Number(kvStore.get(getHostKey('blockTime')) || 0);
   const savedChainSends = JSON.parse(
-    kvStore.get(`${SWING_STORE_HOST_PREFIX}.chainSends`) || '[]',
+    kvStore.get(getHostKey('chainSends')) || '[]',
   );
 
   return {
