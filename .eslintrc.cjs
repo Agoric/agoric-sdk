@@ -2,6 +2,17 @@
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
+  parserOptions: {
+    sourceType: 'module',
+    project: [
+      './packages/*/jsconfig.json',
+      './packages/*/tsconfig.json',
+      './packages/wallet/*/jsconfig.json',
+      './tsconfig.json',
+    ],
+    tsconfigRootDir: __dirname,
+    extraFileExtensions: ['.cjs'],
+  },
   plugins: [
     '@jessie.js/eslint-plugin',
     '@typescript-eslint',
