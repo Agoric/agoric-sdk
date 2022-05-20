@@ -52,7 +52,7 @@ You can use the JavaScript `AsyncIterable` API directly, but it is more convenie
 the JavaScript `for-await-of` syntax or
 the `observeIteration` adaptor.
 
-Below, Paula publishes an iteration with the non-final sequence `'a'`, `'b'`, `'c'` which terminates 
+Below, Paula publishes an iteration with the non-final sequence `'a'`, `'b'` which terminates 
 with `'done'` as its completion value.
 
 ```js

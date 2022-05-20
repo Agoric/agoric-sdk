@@ -74,18 +74,19 @@ const makeSubscriptionKit = (
 ) => {
   historyLimit = Math.max(historyLimit, 0);
 
-  /**
-   * An array of [...historicalStates, nextState].
-   *
-   * @type {PromiseRecord<SubscriptionInternals<T>>[]}
-   */
-  const history = [makePromiseKit()];
-
-  // Our state to start from is the earliest historical state.
-  const subscription = makeSubscription(() => history[0].promise);
-
   /** @type {((internals: ERef<SubscriptionInternals<T>>) => void) | undefined} */
-  let rear = history[0].resolve;
+  let rear;
+  const hp = new HandledPromise(r => (rear = r));
+
+  /**
+   * An array of [...historicalPromises, nextPromise].
+   *
+   * @type {Promise<SubscriptionInternals<T>>[]}
+   */
+  const history = [hp];
+
+  // Our state to start from is the earliest historical promise.
+  const subscription = makeSubscription(() => history[0]);
 
   /** @type {IterationObserver<T>} */
   const publication = Far('publication', {
@@ -93,13 +94,13 @@ const makeSubscriptionKit = (
       if (rear === undefined) {
         throw new Error('Cannot update state after termination.');
       }
-      const nextRear = makePromiseKit();
-      rear(harden({ head: { value, done: false }, tail: nextRear.promise }));
-      rear = nextRear.resolve;
+      const { promise: nextTailE, resolve: nextRear } = makePromiseKit();
+      rear(harden({ head: { value, done: false }, tail: nextTailE }));
+      rear = nextRear;
 
       // Prune history.
       history.splice(0, Math.max(history.length - historyLimit, 0));
-      history.push(nextRear);
+      history.push(nextTailE);
     },
     finish: finalValue => {
       if (rear === undefined) {
