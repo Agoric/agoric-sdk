@@ -46,13 +46,10 @@ export const publicPrices = prices => {
  * liqTokenSupply: bigint,
  * }} MutableState
  *
- * This declaration doesn't work for helper below.
- * import('@agoric/vat-data/src/types').KindFacet<typeof helperBehavior>,
- *
  * @typedef {{
  *   state: ImmutableState & MutableState,
  *   facets: {
- *     helper: unknown,
+ *     helper: import('@agoric/vat-data/src/types').KindFacet<typeof helperBehavior>,
  *     pool: import('@agoric/vat-data/src/types').KindFacet<XYKPool>,
  *     singlePool: VirtualPool,
  *   },
@@ -67,6 +64,7 @@ export const updateUpdaterState = (updater, pool) =>
   });
 
 const helperBehavior = {
+  /** @type {import('@agoric/vat-data/src/types').PlusContext<MethodContext, AddLiquidityInternal>} */
   addLiquidityInternal: (
     { state },
     zcfSeat,
@@ -80,6 +78,7 @@ const helperBehavior = {
 
     const liquidityValueOut = calcLiqValueToMint(
       state.liqTokenSupply,
+      // @ts-expect-error value could be not Nat
       zcfSeat.getStagedAllocation().Central.value,
       poolCentralAmount.value,
     );
@@ -114,7 +113,7 @@ const helperBehavior = {
   },
   /** @type {import('@agoric/vat-data/src/types').PlusContext<MethodContext, AddLiquidityActual>} */
   addLiquidityActual: (
-    { state, facets: { helper } },
+    { state, facets },
     pool,
     zcfSeat,
     secondaryAmount,
@@ -122,8 +121,8 @@ const helperBehavior = {
     feeSeat,
   ) => {
     const { updater } = state;
+    const { helper } = facets;
 
-    // @ts-expect-error helper isn't right.
     helper.addLiquidityInternal(
       zcfSeat,
       secondaryAmount,
@@ -158,7 +157,6 @@ const poolBehavior = {
     assert(isNatValue(secondaryIn.value), 'User Secondary');
 
     if (state.liqTokenSupply === 0n) {
-      // @ts-expect-error helper isn't right.
       return helper.addLiquidityActual(pool, zcfSeat, secondaryIn, centralIn);
     }
 
@@ -185,7 +183,6 @@ const poolBehavior = {
       'insufficient Secondary deposited',
     );
 
-    // @ts-expect-error helper isn't right.
     return helper.addLiquidityActual(
       pool,
       zcfSeat,
