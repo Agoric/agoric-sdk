@@ -8,7 +8,16 @@ import { definePoolKind } from './pool.js';
 
 const { details: X } = assert;
 
+/**
+ * @param {ZCF} zcf
+ * @param {(Brand) => boolean} isInSecondaries
+ * @param {WeakStore<Brand,ZCFMint>} brandToLiquidityMint
+ */
 export const makeAddIssuer = (zcf, isInSecondaries, brandToLiquidityMint) => {
+  /**
+   * @param {Issuer} secondaryIssuer
+   * @param {string} keyword
+   */
   return async (secondaryIssuer, keyword) => {
     const [secondaryAssetKind, secondaryBrand] = await Promise.all([
       E(secondaryIssuer).getAssetKind(),
@@ -43,7 +52,7 @@ export const makeAddIssuer = (zcf, isInSecondaries, brandToLiquidityMint) => {
 };
 
 /**
- * @param {ZCF} zcf
+ * @param {ZCF<import('./multipoolMarketMaker.js').AMMTerms>} zcf
  * @param {(brand: Brand, pool: PoolFacets) => void} initPool add new pool to store
  * @param {Brand} centralBrand
  * @param {ERef<Timer>} timer
@@ -80,7 +89,6 @@ export const makeAddPoolInvitation = (
 
     const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
     /** @type {PoolFacets} */
-    // @ts-expect-error cast
     const poolFacets = makePool(liquidityZcfMint, poolSeat, secondaryBrand);
 
     initPool(secondaryBrand, poolFacets);
@@ -107,12 +115,14 @@ export const makeAddPoolInvitation = (
 
     if (proposalWant.Liquidity) {
       const { Liquidity: wantLiquidityAmount } = proposalWant;
-      const liquidityTokensForFunder =
+      const centralAboveMinimum =
         // @ts-expect-error central is NAT
         centralAmount.value - minPoolLiquidity.value;
+      // when providing initial liquidity, the liquidity tokens issued will be
+      // equal to the central provided. Here, the reserve gets the minimum
       const funderLiquidityAmount = AmountMath.make(
         liquidityBrand,
-        liquidityTokensForFunder,
+        centralAboveMinimum,
       );
 
       assert(
@@ -134,7 +144,7 @@ export const makeAddPoolInvitation = (
       minPoolLiquidity.value,
     );
 
-    // @ts-ignore TS unhappy about issuers
+    // @ts-expect-error find might return undefined
     const [liquidityKeyword] = Object.entries(zcf.getTerms().issuers).find(
       ([_, i]) => i === issuer,
     );

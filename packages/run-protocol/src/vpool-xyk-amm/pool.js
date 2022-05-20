@@ -46,10 +46,13 @@ export const publicPrices = prices => {
  * liqTokenSupply: bigint,
  * }} MutableState
  *
+ * This declaration doesn't work for helper below.
+ * import('@agoric/vat-data/src/types').KindFacet<typeof helperBehavior>,
+ *
  * @typedef {{
  *   state: ImmutableState & MutableState,
  *   facets: {
- *     helper: import('@agoric/vat-data/src/types').KindFacet<typeof helperBehavior>,
+ *     helper: unknown,
  *     pool: import('@agoric/vat-data/src/types').KindFacet<XYKPool>,
  *     singlePool: VirtualPool,
  *   },
@@ -109,6 +112,7 @@ const helperBehavior = {
       zcf.reallocate(poolSeat, zcfSeat);
     }
   },
+  /** @type {import('@agoric/vat-data/src/types').PlusContext<MethodContext, AddLiquidityActual>} */
   addLiquidityActual: (
     { state, facets: { helper } },
     pool,
@@ -119,6 +123,7 @@ const helperBehavior = {
   ) => {
     const { updater } = state;
 
+    // @ts-expect-error helper isn't right.
     helper.addLiquidityInternal(
       zcfSeat,
       secondaryAmount,
@@ -153,7 +158,7 @@ const poolBehavior = {
     assert(isNatValue(secondaryIn.value), 'User Secondary');
 
     if (state.liqTokenSupply === 0n) {
-      // @ts-expect-error TS confused about parameter count
+      // @ts-expect-error helper isn't right.
       return helper.addLiquidityActual(pool, zcfSeat, secondaryIn, centralIn);
     }
 
@@ -180,8 +185,8 @@ const poolBehavior = {
       'insufficient Secondary deposited',
     );
 
+    // @ts-expect-error helper isn't right.
     return helper.addLiquidityActual(
-      // @ts-expect-error TS confused about parameter count
       pool,
       zcfSeat,
       secondaryRequired,

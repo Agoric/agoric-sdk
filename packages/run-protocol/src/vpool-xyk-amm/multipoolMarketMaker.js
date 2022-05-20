@@ -105,20 +105,6 @@ const start = async (zcf, privateArgs) => {
   /**
    * This contract must have a "Central" keyword and issuer in the
    * IssuerKeywordRecord.
-   *
-   * @typedef {GovernanceTerms<{
-   *   PoolFee: 'nat',
-   *   ProtocolFee: 'nat',
-   *   MinInitialPoolLiquidity: 'amount',
-   * }> & {
-   *   brands: { Central: Brand },
-   *   issuers: {},
-   *   timer: TimerService,
-   *   poolFeeBP: BasisPoints, // portion of the fees that go into the pool
-   *   protocolFeeBP: BasisPoints, // portion of the fees that are shared with validators
-   * }} AMMTerms
-   *
-   * @typedef { bigint } BasisPoints -- hundredths of a percent
    */
   const {
     brands: { Central: centralBrand },
@@ -155,6 +141,7 @@ const start = async (zcf, privateArgs) => {
   const isSecondary = secondaryBrandToPool.has;
 
   // The liquidityBrand has to exist to allow the addPool Offer to specify want
+  /** @type {WeakStore<Brand,ZCFMint>} */
   const secondaryBrandToLiquidityMint = makeWeakStore('secondaryBrand');
 
   const quoteIssuerKit = makeIssuerKit('Quote', AssetKind.SET);
@@ -300,4 +287,20 @@ export { start };
  * @property {() => NatValue} getProtocolFee
  * @property {() => Amount} getMinInitialPoolLiquidity
  * @property {() => Amount} getElectorate
+ */
+
+/**
+ * @typedef { bigint } BasisPoints -- hundredths of a percent
+ *
+ * @typedef {GovernanceTerms<{
+ *   PoolFee: 'nat',
+ *   ProtocolFee: 'nat',
+ *   MinInitialPoolLiquidity: 'amount',
+ * }> & {
+ *   brands: { Central: Brand },
+ *   issuers: {},
+ *   timer: TimerService,
+ *   poolFeeBP: BasisPoints, // portion of the fees that go into the pool
+ *   protocolFeeBP: BasisPoints, // portion of the fees that are shared with validators
+ * }} AMMTerms
  */

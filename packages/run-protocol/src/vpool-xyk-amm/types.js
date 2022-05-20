@@ -45,6 +45,13 @@
  */
 
 /**
+ * @typedef {object} SinglePool - virtual pool for price quotes and trading
+ * @property {(seat: ZCFSeat, prices: SwapResult) => string} allocateGainsAndLosses
+ * @property {(amountIn: Amount, amountOut: Amount) => SwapResult} getPriceForInput
+ * @property {(amountIn: Amount, amountOut: Amount) => SwapResult} getPriceForOutput
+ */
+
+/**
  * @callback AddLiquidityActual
  * @param {XYKPool} pool
  * @param {ZCFSeat} zcfSeat
@@ -82,7 +89,7 @@
  * @typedef {object} PoolFacets
  * @property {XYKPool} pool
  * @property {{addLiquidityActual: AddLiquidityActual, addLiquidityInternal: AddLiquidityInternal}} helper
- * @property {VirtualPool} singlePool
+ * @property {SinglePool} singlePool
  */
 
 /**
