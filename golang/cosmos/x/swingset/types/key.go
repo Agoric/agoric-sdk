@@ -9,7 +9,6 @@ const (
 )
 
 var (
-	DataPrefix   = []byte(StoreKey + "/data")
-	KeysPrefix   = []byte(StoreKey + "/keys")
-	EgressPrefix = []byte(StoreKey + "/egress")
+	DataKeyPrefix = []byte(ModuleName + "/data")
+	PathKeyPrefix = []byte(ModuleName + "/path")
 )
