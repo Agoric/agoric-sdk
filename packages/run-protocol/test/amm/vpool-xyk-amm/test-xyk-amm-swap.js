@@ -1023,11 +1023,11 @@ test('amm adding liquidity', async t => {
     centralR,
   );
 
-  // await t.throwsAsync(
-  //   () => E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
-  //   { message: /"secondaryBrand" not found: / },
-  //   "The pool hasn't been created yet",
-  // );
+  await t.throwsAsync(
+    () => E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
+    { message: /"secondaryBrand" not found: / },
+    "The pool hasn't been created yet",
+  );
 
   // add initial liquidity at 10000:50000
   const liquidityIssuer = await addInitialLiquidity(10000n, 50000n);
