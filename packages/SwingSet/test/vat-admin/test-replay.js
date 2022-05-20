@@ -39,12 +39,7 @@ test.serial('replay dynamic vat', async t => {
       kernelBundles: t.context.data.kernelBundles,
     });
     c1.pinVatRoot('bootstrap');
-    const r1 = c1.queueToVatRoot(
-      'bootstrap',
-      'createVat',
-      capargs([]),
-      'panic',
-    );
+    const r1 = c1.queueToVatRoot('bootstrap', 'createVat', [], 'panic');
     await c1.run();
     t.deepEqual(c1.kpResolution(r1), capargs('created'));
   }
@@ -60,7 +55,7 @@ test.serial('replay dynamic vat', async t => {
     const c2 = await buildVatController(copy(config), [], {
       hostStorage: hostStorage2,
     });
-    const r2 = c2.queueToVatRoot('bootstrap', 'check', capargs([]), 'panic');
+    const r2 = c2.queueToVatRoot('bootstrap', 'check', [], 'panic');
     await c2.run();
     t.deepEqual(c2.kpResolution(r2), capargs('ok'));
   }

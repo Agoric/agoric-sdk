@@ -24,11 +24,11 @@ export function buildCommsDispatch(syscall, _state, _helpers, _vatPowers) {
     const seqNum = sendExplicitSeqNums ? remote.nextSendSeqNum() : '';
     remote.advanceSendSeqNum();
     const ackSeqNum = remote.lastReceivedSeqNum();
-    const args = harden({
-      body: JSON.stringify([`${seqNum}:${ackSeqNum}:${msg}`]),
+    const methargs = harden({
+      body: JSON.stringify(['transmit', [`${seqNum}:${ackSeqNum}:${msg}`]]),
       slots: [],
     });
-    syscall.send(remote.transmitterID(), 'transmit', args); // sendOnly
+    syscall.send(remote.transmitterID(), methargs); // sendOnly
   }
 
   const gcKit = makeGCKit(state, syscall, transmit);
@@ -57,19 +57,12 @@ export function buildCommsDispatch(syscall, _state, _helpers, _vatPowers) {
     }
   }
 
-  function doDeliver(target, method, args, result) {
+  function doDeliver(target, methargs, result) {
     // console.debug(`comms.deliver ${target} r=${result}`);
-    insistCapData(args);
+    insistCapData(methargs);
 
     if (target === controller) {
-      return deliverToController(
-        state,
-        clistKit,
-        method,
-        args,
-        result,
-        syscall,
-      );
+      return deliverToController(state, clistKit, methargs, result, syscall);
     }
 
     const remoteID = state.getRemoteReceiver(target);
@@ -96,14 +89,15 @@ export function buildCommsDispatch(syscall, _state, _helpers, _vatPowers) {
       // when it's not.  All of this should be fixed soon as practicable.
       // DANGER WILL ROBINSON CASE NIGHTMARE GREEN ELDRITCH HORRORS OH THE HUMANITY
       try {
+        const methargsdata = JSON.parse(methargs.body);
+        const [method, [message]] = methargsdata;
         assert(method === 'receive', X`unexpected method ${method}`);
         // the vat-tp integrity layer is a regular vat, so when they send the
         // received message to us, it will be embedded in a JSON array
-        const message = JSON.parse(args.body)[0];
         return messageFromRemote(remoteID, message, result);
       } catch (err) {
         console.log('WARNING: delivery from remote triggered error:', err);
-        console.log(`Error happened while processing "${args.body}"`);
+        console.log(`Error happened while processing "${methargs.body}"`);
         return undefined;
       }
     }
@@ -130,13 +124,13 @@ export function buildCommsDispatch(syscall, _state, _helpers, _vatPowers) {
     // crank).  The resulting abrupt comms vat termination should serve as a
     // diagnostic signal that we have a bug that must be corrected.
 
-    args.slots.forEach(s =>
+    methargs.slots.forEach(s =>
       assert(
         !state.hasMetaObject(s),
         X`comms meta-object ${s} not allowed in message args`,
       ),
     );
-    return sendFromKernel(target, method, args, result);
+    return sendFromKernel(target, methargs, result);
   }
 
   function filterMetaObjects(vrefs) {
@@ -164,7 +158,7 @@ export function buildCommsDispatch(syscall, _state, _helpers, _vatPowers) {
       case 'message': {
         const [targetSlot, msg] = args;
         insistMessage(msg);
-        doDeliver(targetSlot, msg.method, msg.args, msg.result);
+        doDeliver(targetSlot, msg.methargs, msg.result);
         break;
       }
       case 'notify': {

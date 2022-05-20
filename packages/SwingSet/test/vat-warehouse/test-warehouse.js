@@ -19,16 +19,6 @@ async function makeController(managerType, runtimeOptions) {
   return c;
 }
 
-/** @type { (body: string, slots?: string[]) => SwingSetCapData } */
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
-
-/** @type { (args: unknown[], slots?: string[]) => SwingSetCapData } */
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
-
 const maxVatsOnline = 2;
 const steps = [
   {
@@ -74,7 +64,7 @@ async function runSteps(c, t) {
   await c.run();
   for (const { vat, online } of steps) {
     t.log('sending to vat', vat);
-    c.queueToVatRoot(vat, 'append', capargs([1]));
+    c.queueToVatRoot(vat, 'append', [1]);
     // eslint-disable-next-line no-await-in-loop
     await c.run();
     t.log(

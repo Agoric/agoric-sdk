@@ -497,13 +497,13 @@ test('kernelKeeper promises', async t => {
   t.deepEqual(k.getKernelPromise(p1).subscribers, ['v3', 'v5']);
 
   const expectedAcceptanceQueue = [];
-  const m1 = { method: 'm1', args: { body: '', slots: [] } };
+  const m1 = { methargs: { body: '["m1", []]', slots: [] } };
   k.addMessageToPromiseQueue(p1, m1);
   k.incrementRefCount(p1);
   t.deepEqual(k.getKernelPromise(p1).refCount, 1);
   expectedAcceptanceQueue.push({ type: 'send', target: 'kp40', msg: m1 });
 
-  const m2 = { method: 'm2', args: { body: '', slots: [] } };
+  const m2 = { methargs: { body: '["m2", []]', slots: [] } };
   k.addMessageToPromiseQueue(p1, m2);
   k.incrementRefCount(p1);
   t.deepEqual(k.getKernelPromise(p1).queue, [m1, m2]);
@@ -797,6 +797,7 @@ test('crankhash - skip keys', t => {
     'local.v1234.lastSnapshot',
     '{"snapshotID":"XYZ","startPos":4}',
   );
+  t.throws(() => k.kvStore.set('host.foo', 'bar'));
   t.is(k.commitCrank().crankhash, expCrankhash);
 });
 

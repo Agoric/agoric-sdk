@@ -47,8 +47,8 @@ export function buildSyscall(skipLogging) {
   }
 
   const syscall = {
-    send(targetSlot, method, args, resultSlot) {
-      appendLog({ type: 'send', targetSlot, method, args, resultSlot });
+    send(targetSlot, methargs, resultSlot) {
+      appendLog({ type: 'send', targetSlot, methargs, resultSlot });
     },
     subscribe(target) {
       appendLog({ type: 'subscribe', target });
@@ -182,9 +182,9 @@ export async function setupTestLiveslots(
   );
   const [testHooks] = th;
 
-  async function dispatchMessage(message, args = capargs([])) {
+  async function dispatchMessage(message, args = [], slots = []) {
     const rp = nextRP();
-    await dispatch(makeMessage('o+0', message, args, rp));
+    await dispatch(makeMessage('o+0', message, args, slots, rp));
     if (forceGC) {
       // XXX TERRIBLE HACK WARNING XXX The following GC call is terrible but
       // apparently sometimes necessary.  Without it, certain tests in some

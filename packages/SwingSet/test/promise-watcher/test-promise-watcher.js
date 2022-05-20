@@ -11,7 +11,6 @@ import { assert } from '@agoric/assert';
 import { getAllState } from '@agoric/swing-store';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
-import { capargs } from '../util.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
@@ -50,9 +49,9 @@ async function testPromiseWatcher(t) {
   c.pinVatRoot('bootstrap');
   await c.run();
 
-  async function run(name, args = []) {
+  async function run(method, args = []) {
     assert(Array.isArray(args));
-    const kpid = c.queueToVatRoot('bootstrap', name, capargs(args));
+    const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
     const capdata = c.kpResolution(kpid);

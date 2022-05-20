@@ -18,8 +18,7 @@ const UNDEFINED = harden({
 export function deliverToController(
   state,
   clistKit,
-  method,
-  controllerArgs,
+  methargs,
   result,
   syscall,
 ) {
@@ -30,6 +29,10 @@ export function deliverToController(
     provideLocalForKernel,
   } = clistKit;
 
+  const methargsdata = JSON.parse(methargs.body);
+  const [method, args] = methargsdata;
+  const { slots } = methargs;
+
   // We use a degenerate form of deserialization, just enough to handle the
   // handful of methods implemented by the commsController. 'args.body' can
   // normally have arbitrary {'@qclass': whatever} objects, but we only
@@ -39,18 +42,16 @@ export function deliverToController(
   function doAddRemote() {
     // comms!addRemote(name, tx, setRx)
     //  we then do setRx!setReceiver(rx)
-    const args = JSON.parse(controllerArgs.body);
-    const { slots } = controllerArgs;
 
     const name = args[0];
     assert.typeof(name, 'string', X`bad addRemote name ${name}`);
     assert(
       args[1]['@qclass'] === 'slot' && args[1].index === 0,
-      X`unexpected args for addRemote(): ${controllerArgs}`,
+      X`unexpected args for addRemote(): ${methargs.body}`,
     );
     assert(
       args[2]['@qclass'] === 'slot' && args[2].index === 1,
-      X`unexpected args for addRemote(): ${controllerArgs}`,
+      X`unexpected args for addRemote(): ${methargs.body}`,
     );
     const transmitterID = slots[args[1].index];
     const setReceiverID = slots[args[2].index];
@@ -58,11 +59,11 @@ export function deliverToController(
     const { receiverID } = state.addRemote(name, transmitterID);
 
     const rxArg = { '@qclass': 'slot', index: 0 };
-    const setReceiverArgs = harden({
-      body: JSON.stringify([rxArg]),
+    const setReceiverMethargs = harden({
+      body: JSON.stringify(['setReceiver', [rxArg]]),
       slots: [receiverID],
     });
-    syscall.send(setReceiverID, 'setReceiver', setReceiverArgs);
+    syscall.send(setReceiverID, setReceiverMethargs);
     // todo: consider, this leaves one message (setReceiver) on the queue,
     // rather than giving the caller of comms!addRemote() something to
     // synchronize upon. I don't think it hurts, but might affect debugging.
@@ -71,8 +72,6 @@ export function deliverToController(
 
   function doAddEgress() {
     // comms!addEgress(name, index, obj)
-    const args = JSON.parse(controllerArgs.body);
-    const { slots } = controllerArgs;
 
     const remoteName = args[0];
     const remoteID = state.getRemoteIDForName(remoteName);
@@ -80,7 +79,7 @@ export function deliverToController(
     const remoteRefID = args[1];
     assert(
       args[2]['@qclass'] === 'slot' && args[2].index === 0,
-      X`unexpected args for addEgress(): ${controllerArgs}`,
+      X`unexpected args for addEgress(): ${methargs.body}`,
     );
     const localRef = provideLocalForKernel(slots[args[2].index]);
     addEgress(remoteID, remoteRefID, localRef);
@@ -89,7 +88,6 @@ export function deliverToController(
 
   function doAddIngress() {
     // obj = comms!addIngress(name, index)
-    const args = JSON.parse(controllerArgs.body);
 
     const remoteName = args[0];
     const remoteID = state.getRemoteIDForName(remoteName);
