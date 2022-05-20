@@ -3,7 +3,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
-import { capargsOneSlot, capSlot, capargs } from '../util.js';
+import { capSlot, capargs } from '../util.js';
 import {
   crankCounter,
   computronCounter,
@@ -37,18 +37,21 @@ async function testCranks(t, mode) {
     // doMessage() to right, which makes right send doMessage() to left, etc.
     // This uses four cranks per cycle, since each doMessage() also has a
     // return promise that must be resolved.
-    const args = capargs([capSlot(0), 'disabled'], [rightKref]);
-    c.queueToVatRoot('left', 'doMessage', args);
+    c.queueToVatRoot('left', 'doMessage', [capSlot(0), 'disabled'], 'ignore', [
+      rightKref,
+    ]);
   } else if (mode === 'resolutions') {
     // This triggers a back-and-forth cycle of promise resolution, which uses
     // two cranks per cycle. The setup takes three cranks.
-    const args = capargsOneSlot(rightKref);
-    c.queueToVatRoot('left', 'startPromise', args);
+    c.queueToVatRoot('left', 'startPromise', [capSlot(0)], 'ignore', [
+      rightKref,
+    ]);
   } else if (mode === 'computrons') {
     // Use doMessage() like above, but once every 10 cycles, do enough extra
     // CPU to trigger a computron-limiting policy.
-    const args = capargs([capSlot(0), 0], [rightKref]);
-    c.queueToVatRoot('left', 'doMessage', args);
+    c.queueToVatRoot('left', 'doMessage', [capSlot(0), 0], 'ignore', [
+      rightKref,
+    ]);
   } else {
     throw Error(`unknown mode ${mode}`);
   }

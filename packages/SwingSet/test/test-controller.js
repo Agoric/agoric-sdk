@@ -10,7 +10,7 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '../src/index.js';
-import { checkKT, capdata, capargs } from './util.js';
+import { checkKT, capargs } from './util.js';
 
 const emptyVP = capargs({});
 
@@ -64,7 +64,7 @@ async function simpleCall(t) {
   t.deepEqual(data.kernelTable, [vatAdminRoot]);
 
   // vat1:o+0 will map to ko21
-  controller.queueToVatRoot('vat1', 'foo', capdata('args'));
+  controller.queueToVatRoot('vat1', 'foo', ['args']);
   t.deepEqual(controller.dump().runQueue, []);
   t.deepEqual(controller.dump().acceptanceQueue, [
     { type: 'startVat', vatID: 'v1', vatParameters: emptyVP },
@@ -74,8 +74,7 @@ async function simpleCall(t) {
     { type: 'startVat', vatID: 'v5', vatParameters: emptyVP },
     {
       msg: {
-        method: 'foo',
-        args: capdata('args'),
+        methargs: capargs(['foo', ['args']]),
         result: 'kp40',
       },
       target: 'ko21',
@@ -86,7 +85,7 @@ async function simpleCall(t) {
   t.deepEqual(JSON.parse(controller.dump().log[0]), {
     target: 'o+0',
     method: 'foo',
-    args: capdata('args'),
+    args: capargs(['args']),
   });
 
   controller.log('2');
@@ -230,9 +229,8 @@ test.serial('bootstrap export', async t => {
     {
       msg: {
         result: 'kp40',
-        method: 'bootstrap',
-        args: {
-          body: '[{"bootstrap":{"@qclass":"slot","iface":"Alleged: root","index":0},"comms":{"@qclass":"slot","iface":"Alleged: root","index":1},"left":{"@qclass":"slot","iface":"Alleged: root","index":2},"right":{"@qclass":"slot","iface":"Alleged: root","index":3},"timer":{"@qclass":"slot","iface":"Alleged: root","index":4},"vatAdmin":{"@qclass":"slot","iface":"Alleged: root","index":5},"vattp":{"@qclass":"slot","iface":"Alleged: root","index":6}},{"vatAdmin":{"@qclass":"slot","iface":"Alleged: device","index":7}}]',
+        methargs: {
+          body: '["bootstrap",[{"bootstrap":{"@qclass":"slot","iface":"Alleged: root","index":0},"comms":{"@qclass":"slot","iface":"Alleged: root","index":1},"left":{"@qclass":"slot","iface":"Alleged: root","index":2},"right":{"@qclass":"slot","iface":"Alleged: root","index":3},"timer":{"@qclass":"slot","iface":"Alleged: root","index":4},"vatAdmin":{"@qclass":"slot","iface":"Alleged: root","index":5},"vattp":{"@qclass":"slot","iface":"Alleged: root","index":6}},{"vatAdmin":{"@qclass":"slot","iface":"Alleged: device","index":7}}]]',
           slots: [
             boot0,
             comms0,
@@ -295,9 +293,8 @@ test.serial('bootstrap export', async t => {
       type: 'send',
       target: left0,
       msg: {
-        method: 'foo',
-        args: {
-          body: '[1,{"@qclass":"slot","iface":"Alleged: root","index":0}]',
+        methargs: {
+          body: '["foo",[1,{"@qclass":"slot","iface":"Alleged: root","index":0}]]',
           slots: [right0],
         },
         result: fooP,
@@ -319,9 +316,8 @@ test.serial('bootstrap export', async t => {
       type: 'send',
       target: right0,
       msg: {
-        method: 'bar',
-        args: {
-          body: '[2,{"@qclass":"slot","iface":"Alleged: root","index":0}]',
+        methargs: {
+          body: '["bar",[2,{"@qclass":"slot","iface":"Alleged: root","index":0}]]',
           slots: [right0],
         },
         result: barP,

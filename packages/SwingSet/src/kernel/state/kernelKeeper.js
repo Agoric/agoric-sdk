@@ -116,6 +116,9 @@ const enableKernelGC = true;
 // // if fulfilled or rejected:
 // kp$NN.data.body = missing | JSON
 // kp$NN.data.slots = '' | $vatID[,$vatID..]
+//
+// Prefix reserved for host written data:
+// host.
 
 export function commaSplit(s) {
   if (s === '') {
@@ -164,20 +167,21 @@ export default function makeKernelKeeper(
 
   /**
    * @param { string } key
-   * @returns { boolean }
    */
-  function isConsensusKey(key) {
+  function getKeyType(key) {
     if (key.startsWith('local.')) {
-      return false;
+      return 'local';
+    } else if (key.startsWith('host.')) {
+      return 'invalid';
     }
-    return true;
+    return 'consensus';
   }
 
   const {
     abortCrank: storeAbortCrank,
     commitCrank: storeCommitCrank,
     enhancedCrankBuffer: kvStore,
-  } = wrapStorage(rawKVStore, createSHA256, isConsensusKey);
+  } = wrapStorage(rawKVStore, createSHA256, getKeyType);
   insistEnhancedStorageAPI(kvStore);
   const { streamStore, snapStore } = hostStorage;
 

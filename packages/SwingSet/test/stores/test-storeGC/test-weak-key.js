@@ -204,7 +204,8 @@ test.serial('verify presence weak key GC', async t => {
   const presenceRef = 'o-5';
 
   // Import a presence to use as a key and hold onto it weakly
-  let rp = await dispatchMessage('importAndHoldAndKey', thingArg(presenceRef));
+  const [targ, tslot] = thingArg(presenceRef);
+  let rp = await dispatchMessage('importAndHoldAndKey', [targ], [tslot]);
   validateInit(v);
   const mapID = mainHeldIdx;
   validateCreateStore(v, mapID, true); // map

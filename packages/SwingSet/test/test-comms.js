@@ -71,11 +71,11 @@ function mockSyscall() {
   const subscribes = [];
   const fakestore = new Map();
   const syscall = harden({
-    send(targetSlot, method, args, result) {
+    send(targetSlot, methargs, result) {
       if (result) {
-        sends.push([targetSlot, method, args, result]);
+        sends.push([targetSlot, methargs, result]);
       } else {
-        sends.push([targetSlot, method, args]);
+        sends.push([targetSlot, methargs]);
       }
       // return 'r-1';
     },
@@ -127,8 +127,8 @@ function capdata(body, slots = []) {
   return harden({ body, slots });
 }
 
-function encodeArgs(body) {
-  return capdata(JSON.stringify([body]), []);
+function encodeMsg(method, arg, slots = []) {
+  return capdata(JSON.stringify([method, [arg]]), slots);
 }
 
 test('transmit', t => {
@@ -154,40 +154,35 @@ test('transmit', t => {
 
   // now tell the comms vat to send a message to a remote machine, the
   // equivalent of bob!foo()
-  dispatch(makeMessage(bobKernel, 'foo', capdata('argsbytes', [])));
+  dispatch(makeMessage(bobKernel, 'foo', ['argsbytes']));
   t.deepEqual(sends.shift(), [
     transmitterID,
-    'transmit',
-    encodeArgs('1:0:deliver:ro+23:foo:;argsbytes'),
+    encodeMsg('transmit', '1:0:deliver:ro+23:;["foo",["argsbytes"]]'),
   ]);
 
   // bob!bar(alice, bob)
   dispatch(
-    makeMessage(
-      bobKernel,
-      'bar',
-      capdata('argsbytes', [aliceKernel, bobKernel]),
-    ),
+    makeMessage(bobKernel, 'bar', ['argsbytes'], [aliceKernel, bobKernel]),
   );
   t.deepEqual(sends.shift(), [
     transmitterID,
-    'transmit',
-    encodeArgs('2:0:deliver:ro+23:bar::ro-20:ro+23;argsbytes'),
+    encodeMsg(
+      'transmit',
+      '2:0:deliver:ro+23::ro-20:ro+23;["bar",["argsbytes"]]',
+    ),
   ]);
   // the outbound ro-20 should match an inbound ro+20, both represent 'alice'
   t.is(getLocalForRemote(remoteID, 'ro+20'), aliceLocal);
   // do it again, should use same values
   dispatch(
-    makeMessage(
-      bobKernel,
-      'bar',
-      capdata('argsbytes', [aliceKernel, bobKernel]),
-    ),
+    makeMessage(bobKernel, 'bar', ['argsbytes'], [aliceKernel, bobKernel]),
   );
   t.deepEqual(sends.shift(), [
     transmitterID,
-    'transmit',
-    encodeArgs('3:0:deliver:ro+23:bar::ro-20:ro+23;argsbytes'),
+    encodeMsg(
+      'transmit',
+      '3:0:deliver:ro+23::ro-20:ro+23;["bar",["argsbytes"]]',
+    ),
   ]);
 
   // bob!cat(alice, bob, ayana)
@@ -196,22 +191,24 @@ test('transmit', t => {
     makeMessage(
       bobKernel,
       'cat',
-      capdata('argsbytes', [aliceKernel, bobKernel, ayanaKernel]),
+      ['argsbytes'],
+      [aliceKernel, bobKernel, ayanaKernel],
     ),
   );
   t.deepEqual(sends.shift(), [
     transmitterID,
-    'transmit',
-    encodeArgs('4:0:deliver:ro+23:cat::ro-20:ro+23:ro-21;argsbytes'),
+    encodeMsg(
+      'transmit',
+      '4:0:deliver:ro+23::ro-20:ro+23:ro-21;["cat",["argsbytes"]]',
+    ),
   ]);
 
   // bob!ref(res): a message that references its own result promise
   const vpid = 'p-1';
-  dispatch(makeMessage(bobKernel, 'ref', capargs('args', [vpid]), vpid));
+  dispatch(makeMessage(bobKernel, 'ref', ['args'], [vpid], vpid));
   t.deepEqual(sends.shift(), [
     transmitterID,
-    'transmit',
-    encodeArgs('5:0:deliver:ro+23:ref:rp-40:rp-40;"args"'),
+    encodeMsg('transmit', '5:0:deliver:ro+23:rp-40:rp-40;["ref",["args"]]'),
   ]);
   // comms is decider, but the promise was briefly in the "decided by
   // kernel" state, so we should see a syscall.subscribe . In an ideal
@@ -219,7 +216,7 @@ test('transmit', t => {
   t.deepEqual(subscribes, [vpid]);
   // when comms receives a notify, it should do syscall.resolve
   const res1 = `1:0:resolve:fulfill:rp+40;"resolution"`;
-  dispatch(makeMessage(receiverID, 'receive', encodeArgs(res1)));
+  dispatch(makeMessage(receiverID, 'receive', [res1]));
   t.deepEqual(resolves, [[vpid, false, capargs('resolution')]]);
 });
 
@@ -249,27 +246,22 @@ test('receive', t => {
   // now pretend the transport layer received a message from remote1, as if
   // the remote machine had performed bob!foo()
   dispatch(
-    makeMessage(
-      receiverID,
-      'receive',
-      encodeArgs(`1:0:deliver:${bobRemote}:foo:;argsbytes`),
-    ),
+    makeMessage(receiverID, 'receive', [
+      `1:0:deliver:${bobRemote}:;["foo",["argsbytes"]]`,
+    ]),
   );
-  t.deepEqual(sends.shift(), [bobKernel, 'foo', capdata('argsbytes')]);
+  t.deepEqual(sends.shift(), [bobKernel, encodeMsg('foo', 'argsbytes')]);
 
   // bob!bar(alice, bob)
   dispatch(
-    makeMessage(
-      receiverID,
-      'receive',
-      encodeArgs(`2:0:deliver:${bobRemote}:bar::ro-20:${bobRemote};argsbytes`),
-    ),
+    makeMessage(receiverID, 'receive', [
+      `2:0:deliver:${bobRemote}::ro-20:${bobRemote};["bar",["argsbytes"]]`,
+    ]),
   );
   const expectedAliceKernel = 'o+31';
   t.deepEqual(sends.shift(), [
     bobKernel,
-    'bar',
-    capdata('argsbytes', [expectedAliceKernel, bobKernel]),
+    encodeMsg('bar', 'argsbytes', [expectedAliceKernel, bobKernel]),
   ]);
   // if we were to send o+31/lo11, the other side should get ro+20, which is alice
   t.is(getRemoteForLocal(remoteID, 'lo11'), 'ro+20');
@@ -280,33 +272,29 @@ test('receive', t => {
   // bob!bar(alice, bob), again, to test stability
   // also test absent sequence number
   dispatch(
-    makeMessage(
-      receiverID,
-      'receive',
-      encodeArgs(`:0:deliver:${bobRemote}:bar::ro-20:${bobRemote};argsbytes`),
-    ),
+    makeMessage(receiverID, 'receive', [
+      `:0:deliver:${bobRemote}::ro-20:${bobRemote};["bar",["argsbytes"]]`,
+    ]),
   );
   t.deepEqual(sends.shift(), [
     bobKernel,
-    'bar',
-    capdata('argsbytes', [expectedAliceKernel, bobKernel]),
+    encodeMsg('bar', 'argsbytes', [expectedAliceKernel, bobKernel]),
   ]);
 
   // bob!cat(alice, bob, ayana)
   const expectedAyanaKernel = 'o+32';
   dispatch(
-    makeMessage(
-      receiverID,
-      'receive',
-      encodeArgs(
-        `4:0:deliver:${bobRemote}:cat::ro-20:${bobRemote}:ro-21;argsbytes`,
-      ),
-    ),
+    makeMessage(receiverID, 'receive', [
+      `4:0:deliver:${bobRemote}::ro-20:${bobRemote}:ro-21;["cat",["argsbytes"]]`,
+    ]),
   );
   t.deepEqual(sends.shift(), [
     bobKernel,
-    'cat',
-    capdata('argsbytes', [expectedAliceKernel, bobKernel, expectedAyanaKernel]),
+    encodeMsg('cat', 'argsbytes', [
+      expectedAliceKernel,
+      bobKernel,
+      expectedAyanaKernel,
+    ]),
   ]);
 
   // react to bad sequence number
@@ -318,9 +306,7 @@ test('receive', t => {
   //       makeMessage(
   //         receiverID,
   //         'receive',
-  //         encodeArgs(
-  //           `47:deliver:${bobRemote}:bar::ro-20:${bobRemote};argsbytes`,
-  //         ),
+  //         [`47:deliver:${bobRemote}::ro-20:${bobRemote};["bar",["argsbytes"]]`],
   //       ),
   //     ),
   //   { message: /unexpected recv seqNum .*/ },
@@ -329,18 +315,13 @@ test('receive', t => {
   // bob!cat(alice, bob, agrippa)
   const expectedAgrippaKernel = 'o+33';
   dispatch(
-    makeMessage(
-      receiverID,
-      'receive',
-      encodeArgs(
-        `5:0:deliver:${bobRemote}:cat::ro-20:${bobRemote}:ro-22;argsbytes`,
-      ),
-    ),
+    makeMessage(receiverID, 'receive', [
+      `5:0:deliver:${bobRemote}::ro-20:${bobRemote}:ro-22;["cat",["argsbytes"]]`,
+    ]),
   );
   t.deepEqual(sends.shift(), [
     bobKernel,
-    'cat',
-    capdata('argsbytes', [
+    encodeMsg('cat', 'argsbytes', [
       expectedAliceKernel,
       bobKernel,
       expectedAgrippaKernel,
@@ -348,9 +329,9 @@ test('receive', t => {
   ]);
 
   // receive a message that references its own result promise
-  const ref1 = encodeArgs(`6:0:deliver:${bobRemote}:ref:rp-40:rp-40;args`);
-  dispatch(makeMessage(receiverID, 'receive', ref1));
-  const ref1msg = [bobKernel, 'ref', capdata('args', ['p+40']), 'p+40'];
+  const ref1 = `6:0:deliver:${bobRemote}:rp-40:rp-40;["ref",["args"]]`;
+  dispatch(makeMessage(receiverID, 'receive', [ref1]));
+  const ref1msg = [bobKernel, encodeMsg('ref', 'args', ['p+40']), 'p+40'];
   t.deepEqual(sends.shift(), ref1msg);
   // kernel is the decider, so comms should syscall.subscribe
   t.deepEqual(subscribes, ['p+40']);
@@ -358,27 +339,25 @@ test('receive', t => {
   // when kernel resolves, it should notify remote
   dispatch(makeResolve('p+40', capargs('resolution')));
   const res1 = `1:6:resolve:fulfill:rp+40;"resolution"`;
-  t.deepEqual(sends.shift(), [transmitterID, 'transmit', encodeArgs(res1)]);
+  t.deepEqual(sends.shift(), [transmitterID, encodeMsg('transmit', res1)]);
 
   // upstream GC operations should work
   dispatch(makeDropExports(expectedAliceKernel, expectedAyanaKernel));
   const gc1 = `2:6:gc:dropExport:ro+20\ngc:dropExport:ro+21`;
-  t.deepEqual(sends.shift(), [transmitterID, 'transmit', encodeArgs(gc1)]);
+  t.deepEqual(sends.shift(), [transmitterID, encodeMsg('transmit', gc1)]);
 
   dispatch(makeRetireExports(expectedAliceKernel, expectedAyanaKernel));
   const gc2 = `3:6:gc:retireExport:ro+20\ngc:retireExport:ro+21`;
-  t.deepEqual(sends.shift(), [transmitterID, 'transmit', encodeArgs(gc2)]);
+  t.deepEqual(sends.shift(), [transmitterID, encodeMsg('transmit', gc2)]);
   t.deepEqual(sends, []);
 
   // sending an upstream drop makes it legal to expect a downstream retire
   dispatch(makeDropExports(expectedAgrippaKernel));
   const gc3 = `4:6:gc:dropExport:ro+22`;
-  t.deepEqual(sends.shift(), [transmitterID, 'transmit', encodeArgs(gc3)]);
+  t.deepEqual(sends.shift(), [transmitterID, encodeMsg('transmit', gc3)]);
   t.deepEqual(sends, []);
 
-  dispatch(
-    makeMessage(receiverID, 'receive', encodeArgs(`7:4:gc:retireImport:ro-22`)),
-  );
+  dispatch(makeMessage(receiverID, 'receive', [`7:4:gc:retireImport:ro-22`]));
 
   t.deepEqual(gcs.shift(), ['retireExports', [expectedAgrippaKernel]]);
   t.deepEqual(gcs, []);
@@ -398,12 +377,12 @@ test('addEgress', t => {
   const index = 12;
   const kfref = 'o-2';
   const kfrefObj = { '@qclass': 'slot', iface: 'Alleged: export', index: 0 };
-  const args = {
-    body: JSON.stringify([remoteName, index, kfrefObj]),
+  const methargs = {
+    body: JSON.stringify(['addEgress', [remoteName, index, kfrefObj]]),
     slots: [kfref],
   };
   const result = 'p-1';
-  const vdo = ['message', 'o+0', { method: 'addEgress', args, result }];
+  const vdo = ['message', 'o+0', { methargs, result }];
   dispatch(vdo);
 
   const lref = getLocalForKernel(kfref);
@@ -430,9 +409,12 @@ test('addIngress', t => {
   // pretend the remote has an object for us to access
   const index = 12;
   const iface = 'iface name';
-  const args = { body: JSON.stringify([remoteName, index, iface]), slots: [] };
+  const methargs = {
+    body: JSON.stringify(['addIngress', [remoteName, index, iface]]),
+    slots: [],
+  };
   const result = 'p-1';
-  const vdo = ['message', 'o+0', { method: 'addIngress', args, result }];
+  const vdo = ['message', 'o+0', { methargs, result }];
   dispatch(vdo);
 
   t.is(resolves.length, 1);
@@ -459,10 +441,10 @@ test('comms gc', t => {
   const transmitterID = 'o-1'; // vat-tp target for B
   const { remoteID, receiverID } = state.addRemote('B', transmitterID);
   function didTx(exp) {
-    t.deepEqual(sends.shift(), [transmitterID, 'transmit', encodeArgs(exp)]);
+    t.deepEqual(sends.shift(), [transmitterID, encodeMsg('transmit', exp)]);
   }
   function rx(msg) {
-    dispatch(makeMessage(receiverID, 'receive', encodeArgs(msg)));
+    dispatch(makeMessage(receiverID, 'receive', [msg]));
   }
 
   // Alice is a Remoteable on some vat of machine A
@@ -486,8 +468,8 @@ test('comms gc', t => {
   let amyOutbound = 'ro-20'; // expected
   let amyInbound = flipRemoteSlot(amyOutbound);
   // bob~.foo(amy)
-  dispatch(makeMessage(bobKernel, 'foo', capdata('args', [amyKernel])));
-  didTx(`1:0:deliver:${bobRemote}:foo::${amyOutbound};args`);
+  dispatch(makeMessage(bobKernel, 'foo', ['args'], [amyKernel]));
+  didTx(`1:0:deliver:${bobRemote}::${amyOutbound};["foo",["args"]]`);
   t.deepEqual(sends, []);
   // B-> dropExport(amy), causes commsA to syscall.drop
   rx(`1:1:gc:dropExport:${amyInbound}`);
@@ -503,8 +485,8 @@ test('comms gc', t => {
   amyOutbound = 'ro-21'; // expected
   amyInbound = flipRemoteSlot(amyOutbound);
   // bob~.foo(amy)
-  dispatch(makeMessage(bobKernel, 'foo', capdata('args', [amyKernel])));
-  didTx(`2:2:deliver:${bobRemote}:foo::${amyOutbound};args`);
+  dispatch(makeMessage(bobKernel, 'foo', ['args'], [amyKernel]));
+  didTx(`2:2:deliver:${bobRemote}::${amyOutbound};["foo",["args"]]`);
   t.deepEqual(sends, []);
   // B-> dropExport(amy)+retireExport(amy), commsA does syscall.drop+retire
   rx(`3:2:gc:dropExport:${amyInbound}\ngc:retireExport:${amyInbound}`);
@@ -517,8 +499,8 @@ test('comms gc', t => {
   amyOutbound = 'ro-22'; // expected
   amyInbound = flipRemoteSlot(amyOutbound);
   // bob~.foo(amy)
-  dispatch(makeMessage(bobKernel, 'foo', capdata('args', [amyKernel])));
-  didTx(`3:3:deliver:${bobRemote}:foo::${amyOutbound};args`);
+  dispatch(makeMessage(bobKernel, 'foo', ['args'], [amyKernel]));
+  didTx(`3:3:deliver:${bobRemote}::${amyOutbound};["foo",["args"]]`);
   t.deepEqual(sends, []);
   // B-> dropExport(amy), causes commsA to syscall.drop
   rx(`4:3:gc:dropExport:${amyInbound}`);
@@ -539,14 +521,14 @@ test('comms gc', t => {
   amyOutbound = 'ro-23'; // expected
   amyInbound = flipRemoteSlot(amyOutbound);
   // bob~.foo(amy)
-  dispatch(makeMessage(bobKernel, 'foo', capdata('args', [amyKernel])));
-  didTx(`5:5:deliver:${bobRemote}:foo::${amyOutbound};args`); // first export
+  dispatch(makeMessage(bobKernel, 'foo', ['args'], [amyKernel]));
+  didTx(`5:5:deliver:${bobRemote}::${amyOutbound};["foo",["args"]]`); // first export
   t.deepEqual(sends, []);
   // B-> dropExport(amy), pretend it's stalled on the wire
   const uninformed = `6:5:gc:dropExport:${amyInbound}`; // ack=5=first export
   // bob~.foo(amy) (re-export)
-  dispatch(makeMessage(bobKernel, 'foo', capdata('args', [amyKernel])));
-  didTx(`6:5:deliver:${bobRemote}:foo::${amyOutbound};args`); // second export
+  dispatch(makeMessage(bobKernel, 'foo', ['args'], [amyKernel]));
+  didTx(`6:5:deliver:${bobRemote}::${amyOutbound};["foo",["args"]]`); // second export
   t.deepEqual(sends, []);
   const informed = `7:6:gc:dropExport:${amyInbound}`; // ack=6=second export
   // first drop finally arrives, should be ignored
@@ -561,14 +543,14 @@ test('comms gc', t => {
   let bertInbound = 'ro-24';
   let bertKernel = 'o+32'; // expected
   let bertOutbound = flipRemoteSlot(bertInbound);
-  dispatch(makeMessage(bobKernel, 'foo', capdata('args', [aliceKernel])));
+  dispatch(makeMessage(bobKernel, 'foo', ['args'], [aliceKernel]));
   const aliceOutbound = `ro-24`; // expected
   const aliceInbound = flipRemoteSlot(aliceOutbound);
-  didTx(`7:7:deliver:${bobRemote}:foo::${aliceOutbound};args`);
+  didTx(`7:7:deliver:${bobRemote}::${aliceOutbound};["foo",["args"]]`);
 
   // alice~.bar(bert)
-  rx(`8:6:deliver:${aliceInbound}:bar::${bertInbound};args`); // first import
-  let barmsg = [aliceKernel, 'bar', capdata('args', [bertKernel])];
+  rx(`8:6:deliver:${aliceInbound}::${bertInbound};["bar",["args"]]`); // first import
+  let barmsg = [aliceKernel, encodeMsg('bar', 'args', [bertKernel])];
   t.deepEqual(sends.shift(), barmsg);
   t.deepEqual(sends, []);
   t.deepEqual(gcs, []);
@@ -588,8 +570,8 @@ test('comms gc', t => {
   bertInbound = 'ro-25';
   bertKernel = 'o+33'; // expected
   bertOutbound = flipRemoteSlot(bertInbound);
-  rx(`10:9:deliver:${aliceInbound}:bar::${bertInbound};args`); // first import
-  barmsg = [aliceKernel, 'bar', capdata('args', [bertKernel])];
+  rx(`10:9:deliver:${aliceInbound}::${bertInbound};["bar",["args"]]`); // first import
+  barmsg = [aliceKernel, encodeMsg('bar', 'args', [bertKernel])];
   t.deepEqual(sends.shift(), barmsg);
   t.deepEqual(sends, []);
   t.deepEqual(gcs, []);

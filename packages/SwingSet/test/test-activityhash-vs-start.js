@@ -5,7 +5,6 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import { getAllState, setAllState } from '@agoric/swing-store';
 import { provideHostStorage } from '../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../src/index.js';
-import { capargs } from './util.js';
 import { buildTimer } from '../src/devices/timer/timer.js';
 
 const TimerSrc = new URL(
@@ -60,7 +59,7 @@ test.serial('restarting kernel does not change activityhash', async t => {
   await c1.run();
 
   // console.log(`--c1 dummy()`);
-  c1.queueToVatRoot('bootstrap', 'dummy', capargs([]));
+  c1.queueToVatRoot('bootstrap', 'dummy', []);
   // console.log(`--c1 run3`);
   await c1.run();
   const c1ah = c1.getActivityhash();
@@ -84,7 +83,7 @@ test.serial('restarting kernel does not change activityhash', async t => {
   await c2.run();
 
   // console.log(`--c2 dummy()`);
-  c2.queueToVatRoot('bootstrap', 'dummy', capargs([]));
+  c2.queueToVatRoot('bootstrap', 'dummy', []);
   // console.log(`--c2 run3`);
   await c2.run();
 
@@ -114,7 +113,7 @@ test.serial('comms initialize is deterministic', async t => {
   const state = getAllState(hs1);
 
   // but the second message should not
-  c1.queueToVatRoot('bootstrap', 'addRemote', capargs(['remote2']));
+  c1.queueToVatRoot('bootstrap', 'addRemote', ['remote2']);
   await c1.run();
   const c1ah = c1.getActivityhash();
   await c1.shutdown();
@@ -127,7 +126,7 @@ test.serial('comms initialize is deterministic', async t => {
   // the "am I already initialized?" check must be identical to the
   // non-restarted version
 
-  c2.queueToVatRoot('bootstrap', 'addRemote', capargs(['remote2']));
+  c2.queueToVatRoot('bootstrap', 'addRemote', ['remote2']);
   await c2.run();
   const c2ah = c2.getActivityhash();
   await c2.shutdown();

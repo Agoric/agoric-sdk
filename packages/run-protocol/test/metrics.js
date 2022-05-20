@@ -1,26 +1,19 @@
 // @ts-check
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
-import { detailedDiff, diff } from 'deep-object-diff';
-
-const { details: X, quote: q } = assert;
-const size = o => Object.entries(o).length;
+import { diff } from 'deep-object-diff';
 
 /**
  *
- * @param {{getMetrics: () => Subscription<object>}} publicFacet
+ * @param {import('ava').ExecutionContext} t
+ * @param {Subscription<object>} subscription
  */
-export const metricsTracker = async publicFacet => {
-  const metricsSub = await E(publicFacet).getMetrics();
-  const metrics = makeNotifierFromAsyncIterable(metricsSub);
+export const subscriptionTracker = async (t, subscription) => {
+  const metrics = makeNotifierFromAsyncIterable(subscription);
   let notif;
   const assertInitial = async expectedValue => {
     notif = await metrics.getUpdateSince();
-    const difference = diff(notif.value, expectedValue);
-    assert(
-      Object.entries(difference).length === 0,
-      `Unexpected metric initial value: ${q(notif.value)}`,
-    );
+    t.deepEqual(notif.value, expectedValue);
   };
   /**
    *
@@ -30,14 +23,18 @@ export const metricsTracker = async publicFacet => {
     const prevNotif = notif;
     notif = await metrics.getUpdateSince(notif.updateCount);
     const actualDelta = diff(prevNotif.value, notif.value);
-    const deltaDiff = detailedDiff(actualDelta, expectedDelta);
-    const diffCount =
-      // @ts-expect-error bad types
-      size(deltaDiff.added) + size(deltaDiff.deleted) + size(deltaDiff.updated);
-    assert(
-      diffCount === 0,
-      X`Unexpected metric delta: ${actualDelta}; ${deltaDiff}`,
-    );
+    t.deepEqual(actualDelta, expectedDelta, 'Unexpected delta');
   };
   return { assertChange, assertInitial };
+};
+
+/**
+ * For public facets that have a `getMetrics` method.
+ *
+ * @param {import('ava').ExecutionContext} t
+ * @param {{getMetrics?: () => Subscription<object>}} publicFacet
+ */
+export const metricsTracker = async (t, publicFacet) => {
+  const metricsSub = await E(publicFacet).getMetrics();
+  return subscriptionTracker(t, metricsSub);
 };

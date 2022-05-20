@@ -117,8 +117,9 @@ export function makeDeviceSlots(
           return undefined;
         }
         const p = (...args) => {
-          const capdata = m.serialize(harden(args));
-          syscall.sendOnly(importSlot, prop, capdata);
+          const methargs = [prop, args];
+          const capdata = m.serialize(harden(methargs));
+          syscall.sendOnly(importSlot, capdata);
         };
         return p;
       },

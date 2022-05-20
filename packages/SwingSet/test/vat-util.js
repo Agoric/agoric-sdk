@@ -8,7 +8,10 @@ export function extractMessage(vatDeliverObject) {
   const [type, ...vdoargs] = vatDeliverObject;
   assert.equal(type, 'message', `util.js .extractMessage got type ${type}`);
   const [facetID, msg] = vdoargs;
-  const { method, args, result } = msg;
+  const { methargs, result } = msg;
+  const methargsdata = JSON.parse(methargs.body);
+  const [method, argsdata] = methargsdata;
+  const args = { body: JSON.stringify(argsdata), slots: methargs.slots };
   return { facetID, method, args, result };
 }
 

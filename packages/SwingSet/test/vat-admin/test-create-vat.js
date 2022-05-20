@@ -10,7 +10,8 @@ import {
   makeSwingsetController,
   loadBasedir,
 } from '../../src/index.js';
-import { capargs, capSlot } from '../util.js';
+import { capSlot } from '../util.js';
+import { extractMethod } from '../../src/lib/kdebug.js';
 
 function nonBundleFunction(_E) {
   return {};
@@ -87,54 +88,42 @@ async function doTestSetup(t, enableSlog = false) {
 
 test('createVatByBundle', async t => {
   const { c, vat13Bundle } = await doTestSetup(t);
-  const kpid = c.queueToVatRoot(
-    'bootstrap',
-    'byBundle',
-    capargs([vat13Bundle]),
-  );
+  const kpid = c.queueToVatRoot('bootstrap', 'byBundle', [vat13Bundle]);
   await c.run();
   t.deepEqual(JSON.parse(c.kpResolution(kpid).body), 13);
 });
 
 test('createVatByName', async t => {
   const { c } = await doTestSetup(t);
-  const kpid = c.queueToVatRoot('bootstrap', 'byName', capargs(['new13']));
+  const kpid = c.queueToVatRoot('bootstrap', 'byName', ['new13']);
   await c.run();
   t.deepEqual(JSON.parse(c.kpResolution(kpid).body), 13);
 });
 
 test('createVat by named bundlecap', async t => {
   const { c } = await doTestSetup(t);
-  const kpid = c.queueToVatRoot(
-    'bootstrap',
-    'byNamedBundleCap',
-    capargs(['new13']),
-  );
+  const kpid = c.queueToVatRoot('bootstrap', 'byNamedBundleCap', ['new13']);
   await c.run();
   t.deepEqual(JSON.parse(c.kpResolution(kpid).body), 13);
 });
 
 test('createVat by ID', async t => {
   const { c, id44 } = await doTestSetup(t);
-  const kpid = c.queueToVatRoot('bootstrap', 'byID', capargs([id44]));
+  const kpid = c.queueToVatRoot('bootstrap', 'byID', [id44]);
   await c.run();
   t.deepEqual(JSON.parse(c.kpResolution(kpid).body), 44);
 });
 
 test('counter test', async t => {
   const { c } = await doTestSetup(t);
-  const kpid = c.queueToVatRoot('bootstrap', 'counters', capargs(['new13']));
+  const kpid = c.queueToVatRoot('bootstrap', 'counters', ['new13']);
   await c.run();
   t.deepEqual(JSON.parse(c.kpResolution(kpid).body), [4, 9, 2, 8]);
 });
 
 async function brokenVatTest(t, bundleName, expected) {
   const { c } = await doTestSetup(t);
-  const kpid = c.queueToVatRoot(
-    'bootstrap',
-    'brokenVat',
-    capargs([bundleName]),
-  );
+  const kpid = c.queueToVatRoot('bootstrap', 'brokenVat', [bundleName]);
   await c.run();
   t.is(c.kpStatus(kpid), 'rejected');
   const res = parse(c.kpResolution(kpid).body);
@@ -158,7 +147,7 @@ test('broken vat creation fails (buildRootObject hangs)', async t => {
 
 test('error creating vat from non-bundle', async t => {
   const { c } = await doTestSetup(t);
-  const kpid = c.queueToVatRoot('bootstrap', 'nonBundleCap', capargs([]));
+  const kpid = c.queueToVatRoot('bootstrap', 'nonBundleCap', []);
   await c.run();
   t.is(c.kpStatus(kpid), 'rejected');
   t.deepEqual(
@@ -230,7 +219,7 @@ test('createVat holds refcount', async t => {
   expectedCLists += 1; // v2-bootstrap
 
   // calling getHeld doesn't immediately increment the refcount
-  const kpid1 = c.queueToVatRoot('bootstrap', 'getHeld', capargs([]));
+  const kpid1 = c.queueToVatRoot('bootstrap', 'getHeld', []);
   await c.run();
   const h1 = c.kpResolution(kpid1);
   t.deepEqual(JSON.parse(h1.body), capSlot(0, 'held'));
@@ -261,13 +250,14 @@ test('createVat holds refcount', async t => {
 
   // now start refcount() and step until we see the `send(createVat)` on
   // the run-queue
-  const kpid = c.queueToVatRoot('bootstrap', 'refcount', capargs([idRC]));
+  const kpid = c.queueToVatRoot('bootstrap', 'refcount', [idRC]);
   function seeDeliverCreateVat() {
     // console.log('rq:', JSON.stringify(c.dump().runQueue));
     return c
       .dump()
-      .runQueue.filter(q => q.type === 'send' && q.msg.method === 'createVat')
-      .length;
+      .runQueue.filter(
+        q => q.type === 'send' && extractMethod(q.msg.methargs) === 'createVat',
+      ).length;
   }
   await stepUntil(seeDeliverCreateVat);
 

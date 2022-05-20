@@ -2375,7 +2375,7 @@ test('director notifiers', async t => {
 
   const { lender, vaultFactory } = services.vaultFactory;
 
-  const m = await metricsTracker(lender);
+  const m = await metricsTracker(t, lender);
 
   await m.assertInitial({
     collaterals: [aethBrand],
@@ -2420,7 +2420,7 @@ test('manager notifiers', async t => {
   const { aethVaultManager, lender } = services.vaultFactory;
   const cm = await E(aethVaultManager).getPublicFacet();
 
-  const m = await metricsTracker(cm);
+  const m = await metricsTracker(t, cm);
 
   // 0. Creation
   await m.assertInitial({

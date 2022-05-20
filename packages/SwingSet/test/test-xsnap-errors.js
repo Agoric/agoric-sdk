@@ -68,7 +68,7 @@ test('child termination distinguished from meter exhaustion', async t => {
 
   await m.deliver(['startVat', capargs()]);
 
-  const msg = { method: 'hang', args: capargs([]) };
+  const msg = { methargs: capargs(['hang', []]) };
   /** @type { VatDeliveryObject } */
   const delivery = ['message', 'o+0', msg];
 

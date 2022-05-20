@@ -8,7 +8,6 @@ import { assert } from '@agoric/assert';
 import { parse } from '@endo/marshal';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
-import { capargs } from '../util.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
@@ -89,9 +88,9 @@ test('bundles', async t => {
   c.pinVatRoot('bootstrap');
   await c.run();
 
-  async function run(name, args) {
+  async function run(method, args) {
     assert(Array.isArray(args));
-    const kpid = c.queueToVatRoot('bootstrap', name, capargs(args));
+    const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
     const capdata = c.kpResolution(kpid);
@@ -147,11 +146,7 @@ test('bundles', async t => {
   );
 
   // vatAdminService~.waitForBundleCap(bid1) should hang until installed
-  const waitKPID = c.queueToVatRoot(
-    'bootstrap',
-    'waitForBundleCap',
-    capargs([bid1]),
-  );
+  const waitKPID = c.queueToVatRoot('bootstrap', 'waitForBundleCap', [bid1]);
   await c.run();
   t.is(c.kpStatus(waitKPID), 'unresolved');
 

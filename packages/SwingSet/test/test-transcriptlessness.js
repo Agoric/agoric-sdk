@@ -3,7 +3,6 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 import { provideHostStorage } from '../src/controller/hostStorage.js';
 import { buildVatController } from '../src/index.js';
-import { capargs } from './util.js';
 
 async function testTranscriptlessness(t, useTranscript) {
   const config = {
@@ -29,7 +28,7 @@ async function testTranscriptlessness(t, useTranscript) {
   const c2 = await buildVatController(config, [], {
     hostStorage,
   });
-  c2.queueToVatRoot('bootstrap', 'go', capargs([]), 'panic');
+  c2.queueToVatRoot('bootstrap', 'go', [], 'panic');
   await c2.run();
   if (useTranscript) {
     t.deepEqual(c2.dump().log, [

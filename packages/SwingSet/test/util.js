@@ -52,12 +52,11 @@ export function buildDispatch(onDispatchCallback = undefined) {
     const [type, ...vdoargs] = vatDeliverObject;
     if (type === 'message') {
       const [target, msg] = vdoargs;
-      const { method, args, result } = msg;
+      const { methargs, result } = msg;
       const d = {
         type: 'deliver',
         targetSlot: target,
-        method,
-        args,
+        methargs,
         resultSlot: result,
       };
       log.push(d);
@@ -89,6 +88,11 @@ export function capSlot(index, iface = 'export') {
   return { '@qclass': 'slot', iface, index };
 }
 
+export function methargsOneSlot(method, slot, iface = 'export') {
+  iface = iface ? `Alleged: ${iface}` : undefined;
+  return capargs([method, [{ '@qclass': 'slot', iface, index: 0 }]], [slot]);
+}
+
 export function capdataOneSlot(slot, iface = 'export') {
   iface = iface ? `Alleged: ${iface}` : undefined;
   return capargs({ '@qclass': 'slot', iface, index: 0 }, [slot]);
@@ -99,8 +103,15 @@ export function capargsOneSlot(slot, iface = 'export') {
   return capargs([{ '@qclass': 'slot', iface, index: 0 }], [slot]);
 }
 
-export function makeMessage(target, method, args, result = null) {
-  const msg = { method, args, result };
+export function makeMessage(
+  target,
+  method,
+  args = [],
+  slots = [],
+  result = null,
+) {
+  const methargs = capargs([method, args], slots);
+  const msg = { methargs, result };
   const vatDeliverObject = harden(['message', target, msg]);
   return vatDeliverObject;
 }
