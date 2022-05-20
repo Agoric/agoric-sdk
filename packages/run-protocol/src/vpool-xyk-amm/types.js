@@ -2,32 +2,32 @@
 
 /**
  * @typedef {object} VPoolPriceQuote
- * @property {Amount} amountIn
- * @property {Amount} amountOut
+ * @property {Amount<'nat'>} amountIn
+ * @property {Amount<'nat'>} amountOut
  */
 
 /**
  * @typedef {object} SinglePoolSwapResult
  *
- * @property {Amount} xIncrement
- * @property {Amount} swapperGives
- * @property {Amount} yDecrement
- * @property {Amount} swapperGets
- * @property {Amount} protocolFee
- * @property {Amount} poolFee
- * @property {Amount} newY
- * @property {Amount} newX
+ * @property {Amount<'nat'>} xIncrement
+ * @property {Amount<'nat'>} swapperGives
+ * @property {Amount<'nat'>} yDecrement
+ * @property {Amount<'nat'>} swapperGets
+ * @property {Amount<'nat'>} protocolFee
+ * @property {Amount<'nat'>} poolFee
+ * @property {Amount<'nat'>} newY
+ * @property {Amount<'nat'>} newX
  */
 
 /**
  * @typedef {object} DoublePoolSwapResult
- * @property {Amount} swapperGives
- * @property {Amount} swapperGets
- * @property {Amount} inPoolIncrement
- * @property {Amount} inPoolDecrement
- * @property {Amount} outPoolIncrement
- * @property {Amount} outPoolDecrement
- * @property {Amount} protocolFee
+ * @property {Amount<'nat'>} swapperGives
+ * @property {Amount<'nat'>} swapperGets
+ * @property {Amount<'nat'>} inPoolIncrement
+ * @property {Amount<'nat'>} inPoolDecrement
+ * @property {Amount<'nat'>} outPoolIncrement
+ * @property {Amount<'nat'>} outPoolDecrement
+ * @property {Amount<'nat'>} protocolFee
  */
 
 /**

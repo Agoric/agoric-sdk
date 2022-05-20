@@ -285,7 +285,7 @@ export { start };
  * @typedef {object} AMMParamGetters
  * @property {() => NatValue} getPoolFee
  * @property {() => NatValue} getProtocolFee
- * @property {() => Amount} getMinInitialPoolLiquidity
+ * @property {() => Amount<'nat'>} getMinInitialPoolLiquidity
  * @property {() => Amount} getElectorate
  */
 

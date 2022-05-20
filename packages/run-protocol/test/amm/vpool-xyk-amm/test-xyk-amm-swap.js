@@ -185,7 +185,6 @@ test('amm with valid offers', async t => {
     true,
   );
 
-  /** @type {Amount} */
   let runningFees = ceilMultiplyBy(priceInCentrals, protocolFeeRatio);
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {
     RUN: runningFees,
@@ -208,9 +207,7 @@ test('amm with valid offers', async t => {
     `bob gets the same price as when he called the getInputPrice method`,
   );
 
-  // @ts-ignore it doesn't know both are Nat
   moolaPools.Secondary += costInMoola.value;
-  // @ts-ignore it doesn't know both are Nat
   moolaPools.Central -= AmountMath.add(priceInCentrals, runningFees).value;
 
   t.deepEqual(

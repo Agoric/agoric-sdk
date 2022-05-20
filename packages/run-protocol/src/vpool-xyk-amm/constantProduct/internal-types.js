@@ -2,22 +2,22 @@
 
 /**
  * @typedef {object} ImprovedNoFeeSwapResult
- * @property {Amount} amountIn
- * @property {Amount} amountOut
+ * @property {Amount<'nat'>} amountIn
+ * @property {Amount<'nat'>} amountOut
  */
 
 /**
  * @typedef {object} FeePair
  *
- * @property {Amount} poolFee
- * @property {Amount} protocolFee
+ * @property {Amount<'nat'>} poolFee
+ * @property {Amount<'nat'>} protocolFee
  */
 
 /**
  * @typedef {object} PoolAllocation
  *
- * @property {Amount} Central
- * @property {Amount} Secondary
+ * @property {Amount<'nat'>} Central
+ * @property {Amount<'nat'>} Secondary
  */
 
 /**
