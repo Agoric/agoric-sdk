@@ -41,7 +41,7 @@ import {
   installGovernance,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
-import { metricsTracker } from '../metrics.js';
+import { metricsTracker, totalDebtTracker } from '../metrics.js';
 
 /** @type {import('ava').TestInterface<any>} */
 const test = unknownTest;
@@ -2399,7 +2399,7 @@ test('director notifiers', async t => {
   t.pass();
 });
 
-test('manager notifiers', async t => {
+test.only('manager notifiers', async t => {
   const LOAN1 = 450n;
   const DEBT1 = 473n; // with penalty
   const LOAN2 = 50n;
@@ -2421,13 +2421,17 @@ test('manager notifiers', async t => {
   const cm = await E(aethVaultManager).getPublicFacet();
 
   const m = await metricsTracker(t, cm);
+  const td = totalDebtTracker(t, cm);
 
   // 0. Creation
   await m.assertInitial({
-    numLiquidations: 0,
+    // present
     numVaults: 0,
     totalCollateral: collAmount(0),
     totalDebt: debtAmount(0),
+
+    // running
+    numLiquidations: 0,
     totalOverage: debtAmount(0),
     totalProceeds: debtAmount(0),
     totalReclaimed: collAmount(0),
@@ -2448,6 +2452,7 @@ test('manager notifiers', async t => {
     }),
   );
   const { vault: vault1 } = await E(vaultSeat).getOfferResult();
+  td.add(DEBT1);
   await m.assertChange({
     numVaults: 1,
     totalCollateral: { value: collateralAmount.value },
@@ -2483,6 +2488,7 @@ test('manager notifiers', async t => {
     numLiquidations: 1,
     totalProceeds: { value: 613n },
   });
+  await td.assertFullLiquidation();
 
   // 3. Make another LOAN1 loan
   vaultSeat = await E(services.zoe).offer(
@@ -2501,6 +2507,7 @@ test('manager notifiers', async t => {
     totalCollateral: { value: collateralAmount.value },
     totalDebt: { value: DEBT1 },
   });
+  td.add(DEBT1);
 
   // 4. Make a LOAN2 loan
   vaultSeat = await E(services.zoe).offer(
@@ -2521,6 +2528,7 @@ test('manager notifiers', async t => {
     totalCollateral: { value: AMPLE + ENOUGH },
     totalDebt: { value: DEBT1 + DEBT2 },
   });
+  td.add(DEBT2);
 
   // 5. Liquidate all (2 loans)
   await E(aethVaultManager).liquidateAll();
@@ -2539,6 +2547,5 @@ test('manager notifiers', async t => {
     totalCollateral: { value: 0n },
     totalProceeds: { value: 1528n },
   });
-
-  t.pass(); // bc Ava doesn't detect the custom assertions above
+  await td.assertFullLiquidation();
 });

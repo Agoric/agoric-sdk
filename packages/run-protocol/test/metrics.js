@@ -38,3 +38,32 @@ export const metricsTracker = async (t, publicFacet) => {
   const metricsSub = await E(publicFacet).getMetrics();
   return subscriptionTracker(t, metricsSub);
 };
+
+/**
+ * For vaultManager
+ *
+ * @param {import('ava').ExecutionContext} t
+ * @param {{getMetrics?: () => Subscription<import('../src/vaultFactory/vaultManager').MetricsNotification>}} publicFacet
+ */
+export const totalDebtTracker = (t, publicFacet) => {
+  let totalDebtEver = 0n;
+  /** @param {bigint} delta */
+  const add = delta => {
+    totalDebtEver += delta;
+  };
+  const assertFullLiquidation = async () => {
+    const metricsSub = await E(publicFacet).getMetrics();
+    const metrics = makeNotifierFromAsyncIterable(metricsSub);
+    // FIXME can't work until prefix-lossy subscriptions or https://github.com/Agoric/agoric-sdk/issues/5413
+    const { value: v } = await metrics.getUpdateSince();
+    const [p, o, s] = [v.totalProceeds, v.totalOverage, v.totalShortfall].map(
+      a => a.value,
+    );
+    t.is(
+      totalDebtEver,
+      p - o + s,
+      `Proceeds - overage + shortfall must equal total debt: ${totalDebtEver} != ${p} - ${o} + ${s}`,
+    );
+  };
+  return harden({ assertFullLiquidation, add });
+};
