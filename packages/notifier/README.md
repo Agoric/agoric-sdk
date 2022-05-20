@@ -52,7 +52,7 @@ You can use the JavaScript `AsyncIterable` API directly, but it is more convenie
 the JavaScript `for-await-of` syntax or
 the `observeIteration` adaptor.
 
-Below, Paula publishes an iteration with the non-final sequence `'a'`, `'b'` which terminates 
+Below, Paula publishes an iteration with the non-final sequence `'a'`, `'b'`, `'c'` which terminates 
 with `'done'` as its completion value.
 
 ```js
@@ -146,14 +146,14 @@ Paula's IterationObserver.
 
 Subscriber Alice's above code is less forgiving. She's using JavaScript's `for-await-of` loop 
 which requires a local AsyncIterable. It cannot handle a remote reference to an AsyncIterable 
-at Paula's site. Alice has to make an AsyncIterable at her site by using `getSharableSubsciptionInternals()`. 
+at Paula's site. Alice has to make an AsyncIterable at her site by using `getSharableSubscriptionInternals()`. 
 She can replace her call to `consume(subscription)` with:
 
 ```js
 import { makeSubscription } from '@agoric/notifier';
 
 const localSubscription =
-  makeSubscription(E(subscription).getSharableSubsciptionInternals());
+  makeSubscription(E(subscription).getSharableSubscriptionInternals());
 consume(localSubscription);
 ```
 
@@ -221,12 +221,30 @@ An iteration’s  *suffix subset* is defined by its *starting point* in the orig
      subset with a starting point of 2, 5, or 9. It does not become available to any subset starting at
      13 or Fail).
 
+`makeSubscriptionKit` accepts an optional `historyLimit` argument which defines
+the  starting point of a new subscription, and therefore implies a lower bound
+on memory consumed by the subscription kit (uncooperative early iterators may
+still prevent history entries from being collected).  The default, Infinity,
+means that every new iterator will have a starting point at the very beginning
+of the original iteration.  Setting the `historyLimit` to a lower number, N,
+means that the starting point is no more than N values older than the next
+(future) value.
+ - A `historyLimit` of 0 means that new iterations will always wait until the
+   next (future) value becomes available, then proceed from that starting point.
+ - A `historyLimit` of 1 means that after the first entry has become available,
+   the starting point of new iterators will be just the most recent promptly
+   available value.
+ - Any other `historyLimit`, N, will have a starting point of the Nth most
+   beginning of the original iteration if N values are not yet promptly
+   recent promptly available value when the iterator is created, or the
+   available.
+
 The values published using the publication define the original iteration. Each subscription has a starting
 point in that iteration and provides access to a suffix subset of that iteration starting at that starting
-point. The initial subscription created by the `makeSubscriptionKit()` call provides the entire iteration.
+point. The initial subscription created by the `makeSubscriptionKit()` call provides the entire iteration (unless a `historyLimit` argument is supplied).
 Each subscription is a kind of `AsyncIterable` which produces any number of `AsyncIterators`, each of which
 advance independently starting with that subscription's starting point. These `AsyncIterators` 
-are `SubsciptionIterators` which also have a `subscribe()` method. Calling a `SubscriptionIterator`'s `subscribe()` 
+are `SubscriptionIterators` which also have a `subscribe()` method. Calling a `SubscriptionIterator`'s `subscribe()` 
 method makes a `Subscription` whose starting point is that `SubscriptionIterator`'s current position at that time.
 
 Neither Alice nor Bob are good starting points to construct an example of `subscribe()` since their code uses
