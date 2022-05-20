@@ -7,9 +7,16 @@
  */
 
 /**
- * @typedef {object} VPool - virtual pool for price quotes and trading
- * @property {(amountIn: Amount, amountOut: Amount) => VPoolPriceQuote} getInputPrice
- * @property {(amountIn: Amount, amountOut: Amount) => VPoolPriceQuote} getOutputPrice
+ * @typedef {object} SinglePoolSwapResult
+ *
+ * @property {Amount} xIncrement
+ * @property {Amount} swapperGives
+ * @property {Amount} yDecrement
+ * @property {Amount} swapperGets
+ * @property {Amount} protocolFee
+ * @property {Amount} poolFee
+ * @property {Amount} newY
+ * @property {Amount} newX
  */
 
 /**
@@ -24,31 +31,18 @@
  */
 
 /**
- * @callback GetDoublePoolSwapQuote
- * @param {Amount} amountIn
- * @param {Amount} amountOut
- * @returns {DoublePoolSwapResult}
- */
-
-/**
- * @callback GetSinglePoolSwapQuote
- * @param {Amount} amountIn
- * @param {Amount} amountOut
- * @returns {SwapResult}
+ * @typedef {A extends 'single' ? SinglePoolSwapResult
+ * : A extends 'double' ? DoublePoolSwapResult
+ * : SinglePoolSwapResult | DoublePoolSwapResult} SwapResult
+ * @template {'single' | 'double' | unknown} A arity
  */
 
 /**
  * @typedef {object} VirtualPool - virtual pool for price quotes and trading
- * @property {GetDoublePoolSwapQuote} getPriceForInput
- * @property {GetDoublePoolSwapQuote} getPriceForOutput
- * @property {(seat: ZCFSeat, swapResult: DoublePoolSwapResult) => string} allocateGainsAndLosses
- */
-
-/**
- * @typedef {object} SinglePool - virtual pool for price quotes and trading
- * @property {(seat: ZCFSeat, prices: SwapResult) => string} allocateGainsAndLosses
- * @property {(amountIn: Amount, amountOut: Amount) => SwapResult} getPriceForInput
- * @property {(amountIn: Amount, amountOut: Amount) => SwapResult} getPriceForOutput
+ * @property {(seat: ZCFSeat, prices: SwapResult<A>) => string} allocateGainsAndLosses
+ * @property {(amountIn: Amount, amountOut: Amount) => SwapResult<A>} getPriceForInput
+ * @property {(amountIn: Amount, amountOut: Amount) => SwapResult<A>} getPriceForOutput
+ * @template {'single' | 'double' | unknown} [A=unknown] arity
  */
 
 /**
@@ -89,7 +83,7 @@
  * @typedef {object} PoolFacets
  * @property {XYKPool} pool
  * @property {{addLiquidityActual: AddLiquidityActual, addLiquidityInternal: AddLiquidityInternal}} helper
- * @property {SinglePool} singlePool
+ * @property {VirtualPool<'single'>} singlePool
  */
 
 /**

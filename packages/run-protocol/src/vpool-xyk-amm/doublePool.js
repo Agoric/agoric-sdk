@@ -23,6 +23,7 @@ const { details: X } = assert;
  * @param {() => bigint} getProtocolFeeBP - retrieve governed protocol fee value
  * @param {() => bigint} getPoolFeeBP - retrieve governed pool fee value
  * @param {ZCFSeat} feeSeat
+ * @returns {VirtualPool<'double'>}
  */
 export const makeDoublePool = (
   zcf,

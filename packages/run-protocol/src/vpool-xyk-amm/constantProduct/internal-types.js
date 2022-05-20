@@ -29,19 +29,6 @@
  */
 
 /**
- * @typedef {object} SwapResult
- *
- * @property {Amount} xIncrement
- * @property {Amount} swapperGives
- * @property {Amount} yDecrement
- * @property {Amount} swapperGets
- * @property {Amount} protocolFee
- * @property {Amount} poolFee
- * @property {Amount} newY
- * @property {Amount} newX
- */
-
-/**
  * This is the type for swapInNoFees and swapOutNoFees. pricesForStatedInput()
  * uses swapInNoFees, while pricesForStatedOutput() uses swapOutNoFees.
  *
@@ -73,7 +60,7 @@
  * @param {Ratio} protocolFeeRatio
  * @param {Ratio} poolFeeRatio
  * @param {NoFeeSwapFn} swapFn
- * @returns {SwapResult}
+ * @returns {SinglePoolSwapResult}
  */
 
 /**
@@ -83,7 +70,7 @@
  * @param {Amount=} amountWanted
  * @param {Ratio} protocolFeeRatio
  * @param {Ratio} poolFeeRatio
- * @returns {SwapResult}
+ * @returns {SinglePoolSwapResult}
  */
 /**
  * @callback CalcSwapOutPrices
@@ -92,7 +79,7 @@
  * @param {Amount} amountWanted
  * @param {Ratio} protocolFeeRatio
  * @param {Ratio} poolFeeRatio
- * @returns {SwapResult}
+ * @returns {SinglePoolSwapResult}
  */
 
 /**
