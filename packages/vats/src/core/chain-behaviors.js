@@ -302,7 +302,7 @@ export const makeChainStorage = async ({
   const ROOT_KEY = 'published';
 
   const vat = E(loadVat)('chainStorage');
-  const rootNodeP = E(vat).createChainStorageRoot(
+  const rootNodeP = E(vat).makeBridgedChainStorageRoot(
     bridgeManager,
     BRIDGE_ID.STORAGE,
     ROOT_KEY,
