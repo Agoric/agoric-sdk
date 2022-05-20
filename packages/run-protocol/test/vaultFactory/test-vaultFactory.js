@@ -7,7 +7,6 @@ import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
-import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
   makeRatio,
@@ -42,6 +41,8 @@ import {
   installGovernance,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
+
+import { metricsTracker } from '../metrics.js';
 
 /** @type {import('ava').TestInterface<any>} */
 const test = unknownTest;
@@ -2370,11 +2371,9 @@ test('director notifiers', async t => {
 
   const { lender, vaultFactory } = services.vaultFactory;
 
-  const metricsSub = await E(lender).getMetrics();
-  const metrics = makeNotifierFromAsyncIterable(metricsSub);
+  const m = await metricsTracker(t, lender);
 
-  let state = await E(metrics).getUpdateSince();
-  t.deepEqual(state.value, {
+  await m.assertInitial({
     collaterals: [aethBrand],
     rewardPoolAllocation: {},
   });
@@ -2386,10 +2385,8 @@ test('director notifiers', async t => {
     'Chit',
     defaultParamValues(chit.brand),
   );
-  state = await E(metrics).getUpdateSince(state.updateCount);
-  t.deepEqual(state.value, {
-    collaterals: [aethBrand, chit.brand],
-    rewardPoolAllocation: {},
+  await m.assertChange({
+    collaterals: { 1: chit.brand },
   });
 
   // Not testing rewardPoolAllocation contents because those are simply those values.
@@ -2414,10 +2411,9 @@ test('manager notifiers', async t => {
   const { aethVaultManager, lender } = services.vaultFactory;
   const cm = await E(aethVaultManager).getPublicFacet();
 
-  const metricsSub = await E(cm).getMetrics();
-  const metrics = makeNotifierFromAsyncIterable(metricsSub);
-  let state = await E(metrics).getUpdateSince();
-  t.deepEqual(state.value, {
+  const m = await metricsTracker(t, cm);
+
+  await m.assertInitial({
     numVaults: 0,
     totalCollateral: AmountMath.makeEmpty(aethKit.brand),
     totalDebt: AmountMath.makeEmpty(t.context.runKit.brand),
@@ -2440,18 +2436,15 @@ test('manager notifiers', async t => {
 
   await E(vaultSeat).getOfferResult();
 
-  state = await E(metrics).getUpdateSince(state.updateCount);
-  t.deepEqual(state.value, {
+  await m.assertChange({
     numVaults: 1,
-    totalCollateral: collateralAmount,
-    totalDebt: AmountMath.make(runKit.brand, DEBT),
+    totalCollateral: { value: collateralAmount.value },
+    totalDebt: { value: DEBT },
   });
 
   await E(aethVaultManager).liquidateAll();
-  state = await E(metrics).getUpdateSince(state.updateCount);
-  t.deepEqual(state.value, {
+  await m.assertChange({
     numVaults: 0,
-    totalCollateral: collateralAmount,
-    totalDebt: AmountMath.make(runKit.brand, 0n),
+    totalDebt: { value: 0n },
   });
 });
