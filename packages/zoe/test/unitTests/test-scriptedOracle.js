@@ -1,6 +1,8 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+/** @type {import('ava').TestInterface<any>} */
+const test = unknownTest;
 
 import path from 'path';
 

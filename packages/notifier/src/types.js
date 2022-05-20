@@ -106,7 +106,6 @@
 
 // /////////////////////////////////////////////////////////////////////////////
 
-// eslint-disable-next-line jsdoc/require-property
 /**
  * @template T
  * @typedef {{}} BaseSubscription<T>

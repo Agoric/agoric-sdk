@@ -11,16 +11,13 @@
     "declaration": true,
     "emitDeclarationOnly": true,
 */
+    "downlevelIteration": true,
     "strictNullChecks": true,
     "moduleResolution": "node",
   },
   "include": [
     "exported.js",
-    "demo/**/*.js", 
-    "lib/**/*.js", 
-    "src/**/*.js", 
-    "misc-tools/**/*.js", 
-    "test/**/*.js", 
-    "tools/**/*.js", 
-  ],
+    "src/**/*.js",
+    "test/**/*.js"
+  ]
 }

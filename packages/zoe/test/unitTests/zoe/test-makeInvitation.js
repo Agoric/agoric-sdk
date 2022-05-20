@@ -65,6 +65,7 @@ test('description is omitted, wrongly', async t => {
   });
 
   await t.throwsAsync(
+    // @ts-expect-error
     () =>
       makeInvitation(
         // @ts-expect-error mockInvitationHandle is mocked

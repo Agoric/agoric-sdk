@@ -21,10 +21,21 @@ import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 
 import '../../exported.js';
 import '../internal-types.js';
+import './internal-types.js';
 
 import '@agoric/swingset-vat/src/types-ambient.js';
 
-/** @type {MakeZCFZygote} */
+/**
+ * Make the ZCF vat in zygote-usable form. First, a generic ZCF is
+ * made, then the contract code is evaluated, then a particular
+ * instance is made.
+ *
+ * @param {VatPowers} powers
+ * @param {ERef<ZoeService>} zoeService
+ * @param {Issuer} invitationIssuer
+ * @param {TestJigSetter} testJigSetter
+ * @returns {ZCFZygote}
+ */
 export const makeZCFZygote = (
   powers,
   zoeService,

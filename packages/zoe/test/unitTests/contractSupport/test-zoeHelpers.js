@@ -39,11 +39,15 @@ function makeMockTradingZcfBuilder() {
 
 test('ZoeHelpers satisfies blank proposal', t => {
   const { moola } = setup();
+  /** @type {ZCFSeat} */
+  // @ts-expect-error cast
   const fakeZcfSeat = Far('fakeZcfSeat', {
     getCurrentAllocation: () => harden({ Asset: moola(10n) }),
     getProposal: () => harden({}),
   });
   const mockZCFBuilder = makeMockTradingZcfBuilder();
+  /** @type {ZCF} */
+  // @ts-expect-error cast
   const mockZCF = mockZCFBuilder.build();
   t.truthy(
     satisfies(mockZCF, fakeZcfSeat, { Gift: moola(3n) }),
@@ -53,11 +57,14 @@ test('ZoeHelpers satisfies blank proposal', t => {
 
 test('ZoeHelpers satisfies simple proposal', t => {
   const { moola, simoleans } = setup();
+  /** @type {ZCFSeat} */
+  // @ts-expect-error cast
   const fakeZcfSeat = Far('fakeZcfSeat', {
     getCurrentAllocation: () => harden({ Asset: moola(10n) }),
     getProposal: () => harden({ want: { Desire: moola(30n) } }),
   });
-  const mockZCFBuilder = makeMockTradingZcfBuilder();
+  /** @type {ZCF} */
+  // @ts-expect-error cast
   const mockZCF = mockZCFBuilder.build();
   t.falsy(
     satisfies(mockZCF, fakeZcfSeat, { Desire: moola(3n) }),
@@ -86,12 +93,16 @@ test('ZoeHelpers satisfies simple proposal', t => {
 
 test('ZoeHelpers satisfies() with give', t => {
   const { moola, bucks } = setup();
+  /** @type {ZCFSeat} */
+  // @ts-expect-error cast
   const fakeZcfSeat = Far('fakeZcfSeat', {
     getCurrentAllocation: () => harden({ Charge: moola(30n) }),
     getProposal: () =>
       harden({ give: { Charge: moola(30n) }, want: { Desire: bucks(5n) } }),
   });
   const mockZCFBuilder = makeMockTradingZcfBuilder();
+  /** @type {ZCF} */
+  // @ts-expect-error cast
   const mockZCF = mockZCFBuilder.build();
   t.falsy(
     satisfies(mockZCF, fakeZcfSeat, { Charge: moola(0n), Desire: bucks(1n) }),

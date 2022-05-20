@@ -21,7 +21,13 @@ const setupNonFungible = () => {
     brands.set(k, allBundles[k].brand);
   }
 
-  function createRpgItem(name, power, desc = undefined) {
+  /**
+   *
+   * @param {string} name
+   * @param {number} power
+   * @param {string} [desc]
+   */
+  function createRpgItem(name, power, desc) {
     return harden([{ name, description: desc || name, power }]);
   }
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
@@ -31,9 +37,9 @@ const setupNonFungible = () => {
   const rpgIssuer = rpgBundle.issuer;
   const ccMint = ccBundle.mint;
   const rpgMint = rpgBundle.mint;
-  /** @param {AmountValue} value */
+  /** @param {SetValue} value */
   const cryptoCats = value => AmountMath.make(allBundles.cc.brand, value);
-  /** @param {AmountValue} value */
+  /** @param {SetValue} value */
   const rpgItems = value => AmountMath.make(allBundles.rpg.brand, value);
   return {
     ccIssuer,
