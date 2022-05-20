@@ -43,11 +43,6 @@
     "c8": "^7.11.0",
     "tmp": "^0.2.1"
   },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
-  },
   "publishConfig": {
     "access": "public"
   },

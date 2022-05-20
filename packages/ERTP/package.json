@@ -65,11 +65,6 @@
     ],
     "timeout": "2m"
   },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
-  },
   "publishConfig": {
     "access": "public"
   }

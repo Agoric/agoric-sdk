@@ -33,11 +33,6 @@
     "@endo/promise-kit": "^0.2.41",
     "import-meta-resolve": "^1.1.1"
   },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
-  },
   "keywords": [],
   "repository": {
     "type": "git",

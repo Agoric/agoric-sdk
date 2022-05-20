@@ -32,11 +32,6 @@
   "publishConfig": {
     "access": "public"
   },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
-  },
   "devDependencies": {
     "readline-transform": "^1.0.0"
   }

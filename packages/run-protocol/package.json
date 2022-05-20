@@ -69,11 +69,6 @@
     ],
     "timeout": "10m"
   },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
-  },
   "eslintIgnore": [
     "bundle-*.js"
   ],

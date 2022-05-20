@@ -30,10 +30,5 @@
       "test/**/test-*.js"
     ],
     "timeout": "2m"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
   }
 }

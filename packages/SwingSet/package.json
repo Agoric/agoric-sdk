@@ -71,11 +71,6 @@
   "directories": {
     "example": "examples"
   },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
-  },
   "ava": {
     "files": [
       "test/**/test-*.js"

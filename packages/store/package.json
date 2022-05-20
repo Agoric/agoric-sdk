@@ -45,11 +45,6 @@
     "exported.js",
     "NEWS.md"
   ],
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
-  },
   "eslintIgnore": [
     "bundle-*.js"
   ],

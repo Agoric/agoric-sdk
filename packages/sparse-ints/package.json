@@ -37,11 +37,6 @@
       "test/**/test-*.js"
     ]
   },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
-  },
   "eslintIgnore": [
     "bundle-*.js"
   ],

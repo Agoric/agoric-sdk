@@ -64,11 +64,6 @@
       "test/**/test-*.js"
     ]
   },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
-  },
   "publishConfig": {
     "access": "public"
   }

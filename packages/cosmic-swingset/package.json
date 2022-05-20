@@ -48,11 +48,6 @@
     "ava": "^3.12.1",
     "c8": "^7.7.2"
   },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
-  },
   "publishConfig": {
     "access": "public"
   },

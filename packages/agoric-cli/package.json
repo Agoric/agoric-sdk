@@ -57,11 +57,6 @@
     "url": "https://github.com/Agoric/agoric/agoric-sdk"
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
-  },
   "ava": {
     "files": [
       "test/**/test-*.js"
