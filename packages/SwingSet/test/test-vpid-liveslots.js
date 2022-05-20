@@ -186,19 +186,14 @@ async function doVatResolveCase1(t, mode) {
   const expectedP4 = 'p+8';
 
   await dispatch(
-    makeMessage(
-      rootA,
-      'run',
-      capargs([slot0arg, slot1arg], [target1, target2]),
-    ),
+    makeMessage(rootA, 'run', [slot0arg, slot1arg], [target1, target2]),
   );
 
   // The vat should send 'one' and subscribe to the result promise
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
-    method: 'one',
-    args: capargs([slot0arg], [expectedP1]),
+    methargs: capargs(['one', [slot0arg]], [expectedP1]),
     resultSlot: expectedP2,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP2 });
@@ -213,8 +208,7 @@ async function doVatResolveCase1(t, mode) {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
-    method: 'two',
-    args: capargs([slot0arg], [expectedTwoArg]),
+    methargs: capargs(['two', [slot0arg]], [expectedTwoArg]),
     resultSlot: expectedResultOfTwo,
   });
   const targets2 = { target2, localTarget, p1: expectedP3 };
@@ -343,11 +337,11 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   const target2 = 'o-2';
 
   if (which === 2) {
-    await dispatch(makeMessage(rootA, 'result', capargs([], []), p1));
-    await dispatch(makeMessage(rootA, 'promise', capargs([slot0arg], [p1])));
+    await dispatch(makeMessage(rootA, 'result', [], [], p1));
+    await dispatch(makeMessage(rootA, 'promise', [slot0arg], [p1]));
   } else if (which === 3) {
-    await dispatch(makeMessage(rootA, 'promise', capargs([slot0arg], [p1])));
-    await dispatch(makeMessage(rootA, 'result', capargs([], []), p1));
+    await dispatch(makeMessage(rootA, 'promise', [slot0arg], [p1]));
+    await dispatch(makeMessage(rootA, 'result', [], [], p1));
   } else {
     assert.fail(X`bad which=${which}`);
   }
@@ -361,11 +355,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   t.deepEqual(log, []);
 
   await dispatch(
-    makeMessage(
-      rootA,
-      'run',
-      capargs([slot0arg, slot1arg], [target1, target2]),
-    ),
+    makeMessage(rootA, 'run', [slot0arg, slot1arg], [target1, target2]),
   );
 
   // At the end of the turn in which run() is executed, the promise queue
@@ -395,8 +385,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
-    method: 'one',
-    args: capargs([slot0arg], [p1]),
+    methargs: capargs(['one', [slot0arg]], [p1]),
     resultSlot: expectedP2,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP2 });
@@ -405,8 +394,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: p1,
-    method: 'two',
-    args: capargs([], []),
+    methargs: capargs(['two', []], []),
     resultSlot: expectedP3,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP3 });
@@ -450,8 +438,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
-    method: 'three',
-    args: capargs([slot0arg], [expectedVPIDInThree]),
+    methargs: capargs(['three', [slot0arg]], [expectedVPIDInThree]),
     resultSlot: expectedResultOfThree,
   });
   t.deepEqual(log.shift(), {
@@ -467,8 +454,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
     t.deepEqual(log.shift(), {
       type: 'send',
       targetSlot: target2,
-      method: 'four',
-      args: capargs([], []),
+      methargs: capargs(['four', []], []),
       resultSlot: expectedResultOfFour,
     });
     t.deepEqual(log.shift(), {
@@ -567,19 +553,18 @@ async function doVatResolveCase4(t, mode) {
   }
   const target2 = 'o-2';
 
-  await dispatch(makeMessage(rootA, 'get', capargs([slot0arg], [p1])));
+  await dispatch(makeMessage(rootA, 'get', [slot0arg], [p1]));
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
   matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
-  await dispatch(makeMessage(rootA, 'first', capargs([slot0arg], [target1])));
+  await dispatch(makeMessage(rootA, 'first', [slot0arg], [target1]));
 
   const expectedP2 = nextP();
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
-    method: 'one',
-    args: capargs([slot0arg], [p1]),
+    methargs: capargs(['one', [slot0arg]], [p1]),
     resultSlot: expectedP2,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP2 });
@@ -588,8 +573,7 @@ async function doVatResolveCase4(t, mode) {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: p1,
-    method: 'two',
-    args: capargs([], []),
+    methargs: capargs(['two', []], []),
     resultSlot: expectedP3,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP3 });
@@ -615,15 +599,14 @@ async function doVatResolveCase4(t, mode) {
   await dispatch(r);
   t.deepEqual(log, []);
 
-  await dispatch(makeMessage(rootA, 'second', capargs([slot0arg], [target1])));
+  await dispatch(makeMessage(rootA, 'second', [slot0arg], [target1]));
 
   const expectedP4 = nextP();
   const expectedP5 = nextP();
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
-    method: 'three',
-    args: capargs([slot0arg], [expectedP4]),
+    methargs: capargs(['three', [slot0arg]], [expectedP4]),
     resultSlot: expectedP5,
   });
   t.deepEqual(log.shift(), {
@@ -636,8 +619,7 @@ async function doVatResolveCase4(t, mode) {
     t.deepEqual(log.shift(), {
       type: 'send',
       targetSlot: target2, // this depends on #823 being fixed
-      method: 'four',
-      args: capargs([], []),
+      methargs: capargs(['four', []], []),
       resultSlot: expectedP6,
     });
     t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP6 });
@@ -695,16 +677,14 @@ test('inter-vat circular promise references', async t => {
   // const pbB = 'p-18';
   // const paB = 'p-19';
 
-  await dispatchA(makeMessage(rootA, 'genPromise', capargs([], []), paA));
+  await dispatchA(makeMessage(rootA, 'genPromise', [], [], paA));
   matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
-  // await dispatchB(makeMessage(rootB, 'genPromise', capargs([], []), pbB));
+  // await dispatchB(makeMessage(rootB, 'genPromise', [], [], pbB));
   // t.deepEqual(log, []);
 
-  await dispatchA(
-    makeMessage(rootA, 'usePromise', capargs([[slot0arg]], [pbA])),
-  );
+  await dispatchA(makeMessage(rootA, 'usePromise', [[slot0arg]], [pbA]));
   t.deepEqual(log.shift(), { type: 'subscribe', target: pbA });
   t.deepEqual(log.shift(), {
     type: 'resolve',
@@ -712,7 +692,7 @@ test('inter-vat circular promise references', async t => {
   });
   t.deepEqual(log, []);
 
-  // await dispatchB(makeMessage(rootB, 'usePromise', capargs([[slot0arg]], [paB])));
+  // await dispatchB(makeMessage(rootB, 'usePromise', [slot0arg], [paB]));
   // t.deepEqual(log.shift(), { type: 'subscribe', target: paB });
   // t.deepEqual(log.shift(), {
   //   type: 'resolve',

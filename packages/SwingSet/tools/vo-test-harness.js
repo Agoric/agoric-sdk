@@ -7,7 +7,6 @@ import { Far, makeMarshal } from '@endo/marshal';
 import { provideHostStorage } from '../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../src/index.js';
 import { setupTestLiveslots } from '../test/liveslots-helpers.js';
-import { capargs } from '../test/util.js';
 
 export { test };
 
@@ -150,11 +149,11 @@ export async function runVOTest(t, prepare, makeTestObject, testTestObject) {
   );
 
   await dispatchMessage('makeAndHold');
-  await dispatchMessage('testHeld', capargs(['before']));
+  await dispatchMessage('testHeld', ['before']);
   await dispatchMessage('storeHeld');
   await dispatchMessage('dropHeld');
   await dispatchMessage('fetchAndHold');
-  await dispatchMessage('testHeld', capargs(['after']));
+  await dispatchMessage('testHeld', ['after']);
 }
 
 function bfile(name) {
@@ -266,9 +265,9 @@ export async function runDVOTest(t, logCheck, testVatSource, testVatParams) {
   c.pinVatRoot('bootstrap');
   await c.run();
 
-  async function run(name, args = []) {
+  async function run(method, args = []) {
     assert(Array.isArray(args));
-    const kpid = c.queueToVatRoot('bootstrap', name, capargs(args));
+    const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
     const capdata = c.kpResolution(kpid);

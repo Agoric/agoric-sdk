@@ -4,11 +4,12 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import { parse } from '@endo/marshal';
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
+import { extractMethod } from '../src/lib/kdebug.js';
 import {
   makeKernelEndowments,
   buildDispatch,
   capargs,
-  capargsOneSlot,
+  methargsOneSlot,
 } from './util.js';
 
 function makeKernel() {
@@ -55,32 +56,32 @@ async function doAbandon(t, reachable) {
     // make a dummy delivery to vatA, so the kernel will call
     // processRefcounts(), this isn't normally needed but we're
     // calling the syscall object directly here
-    kernel.queueToKref(aliceKref, 'flush', capargs([]));
+    kernel.queueToKref(aliceKref, capargs(['flush', []]));
     await kernel.run();
     t.truthy(logA.length >= 1);
     const f = logA.shift();
     t.is(f.type, 'deliver');
-    t.is(f.method, 'flush');
+    t.is(extractMethod(f.methargs), 'flush');
   }
 
   // introduce B to A, so it can send 'holdThis' later
-  kernel.queueToKref(bobKref, 'exportToA', capargsOneSlot(aliceKref), 'none');
+  kernel.queueToKref(bobKref, methargsOneSlot('exportToA', aliceKref), 'none');
   await kernel.run();
   t.is(logB.length, 1);
   t.is(logB[0].type, 'deliver');
-  t.is(logB[0].method, 'exportToA');
-  const aliceForBob = logB[0].args.slots[0]; // probably o-50
+  t.is(extractMethod(logB[0].methargs), 'exportToA');
+  const aliceForBob = logB[0].methargs.slots[0]; // probably o-50
   logB.length = 0;
 
   // tell B to export 'target' to A, so it gets a c-list and refcounts
   const targetForBob = 'o+100';
-  syscallB.send(aliceForBob, 'holdThis', capargsOneSlot(targetForBob));
+  syscallB.send(aliceForBob, methargsOneSlot('holdThis', targetForBob));
   await kernel.run();
 
   t.is(logA.length, 1);
   t.is(logA[0].type, 'deliver');
-  t.is(logA[0].method, 'holdThis');
-  const targetForAlice = logA[0].args.slots[0];
+  t.is(extractMethod(logA[0].methargs), 'holdThis');
+  const targetForAlice = logA[0].methargs.slots[0];
   const targetKref = kvStore.get(`${vatA}.c.${targetForAlice}`);
   t.regex(targetKref, /^ko\d+$/);
   logA.length = 0;
@@ -93,11 +94,11 @@ async function doAbandon(t, reachable) {
 
   // vatA can send a message to the target
   const p1ForAlice = 'p+1'; // left unresolved because vatB is lazy
-  syscallA.send(targetForAlice, 'ping', capargs([]), p1ForAlice);
+  syscallA.send(targetForAlice, capargs(['ping', []]), p1ForAlice);
   await flushDeliveries();
   t.is(logB.length, 1);
   t.is(logB[0].type, 'deliver');
-  t.is(logB[0].method, 'ping');
+  t.is(extractMethod(logB[0].methargs), 'ping');
   logB.length = 0;
 
   if (!reachable) {
@@ -133,7 +134,7 @@ async function doAbandon(t, reachable) {
   if (reachable) {
     // vatA can send a message, but it will reject
     const p2ForAlice = 'p+2'; // rejected by kernel
-    syscallA.send(targetForAlice, 'ping2', capargs([]), p2ForAlice);
+    syscallA.send(targetForAlice, capargs(['ping2', []]), p2ForAlice);
     syscallA.subscribe(p2ForAlice);
     await flushDeliveries();
 

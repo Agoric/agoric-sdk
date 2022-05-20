@@ -36,19 +36,14 @@ test('unmetered dynamic vat', async t => {
   await c.run();
 
   // 'createVat' will import the bundle
-  const kp1 = c.queueToVatRoot(
-    'bootstrap',
-    'createVat',
-    capargs(['dynamic']),
-    'panic',
-  );
+  const kp1 = c.queueToVatRoot('bootstrap', 'createVat', ['dynamic'], 'panic');
   await c.run();
   const res1 = c.kpResolution(kp1);
   t.is(JSON.parse(res1.body)[0], 'created', res1.body);
   // const doneKPID = res1.slots[0];
 
   // Now send a message to the dynamic vat that runs normally
-  const kp2 = c.queueToVatRoot('bootstrap', 'run', capargs([]), 'panic');
+  const kp2 = c.queueToVatRoot('bootstrap', 'run', [], 'panic');
   await c.run();
   t.is(c.kpStatus(kp2), 'fulfilled');
   t.deepEqual(c.kpResolution(kp2), capargs(42));

@@ -277,7 +277,7 @@ async function doTest123(t, which, mode) {
     p1VatA = exportedP1VatA;
     p1VatB = importedP1VatB;
     dataPromiseB = 'p-61';
-    syscallA.send(rootBvatA, 'one', capargs([slot0arg], [exportedP1VatA]));
+    syscallA.send(rootBvatA, capargs(['one', [slot0arg]], [exportedP1VatA]));
     p1kernel = clistVatToKernel(kernel, vatA, exportedP1VatA);
     t.is(p1kernel, expectedP1kernel);
     await kernel.run();
@@ -285,8 +285,7 @@ async function doTest123(t, which, mode) {
     t.deepEqual(logB.shift(), {
       type: 'deliver',
       targetSlot: rootBvatB,
-      method: 'one',
-      args: capargs([slot0arg], [importedP1VatB]),
+      methargs: capargs(['one', [slot0arg]], [importedP1VatB]),
       resultSlot: null,
     });
     t.deepEqual(logB, []);
@@ -301,7 +300,7 @@ async function doTest123(t, which, mode) {
     // A: function one() { return resolution; }
     p1VatB = exportedP1VatB;
     p1VatA = importedP1VatA;
-    syscallB.send(rootAvatB, 'one', capargs([], []), exportedP1VatB);
+    syscallB.send(rootAvatB, capargs(['one', []]), exportedP1VatB);
     syscallB.subscribe(exportedP1VatB);
     p1kernel = clistVatToKernel(kernel, vatB, p1VatB);
     await kernel.run();
@@ -309,8 +308,7 @@ async function doTest123(t, which, mode) {
     t.deepEqual(logA.shift(), {
       type: 'deliver',
       targetSlot: rootAvatA,
-      method: 'one',
-      args: capargs([], []),
+      methargs: capargs(['one', []], []),
       resultSlot: importedP1VatA,
     });
     t.deepEqual(logA, []);
@@ -323,15 +321,14 @@ async function doTest123(t, which, mode) {
     // A: function two { return resolution }
     p1VatB = exportedP1VatB;
     p1VatA = importedP1VatA;
-    syscallB.send(rootAvatB, 'one', capargs([slot0arg], [exportedP1VatB]));
+    syscallB.send(rootAvatB, capargs(['one', [slot0arg]], [exportedP1VatB]));
     p1kernel = clistVatToKernel(kernel, vatB, p1VatB);
     await kernel.run();
     // expect logA to have deliver(one)
     t.deepEqual(logA.shift(), {
       type: 'deliver',
       targetSlot: rootAvatA,
-      method: 'one',
-      args: capargs([slot0arg], [importedP1VatA]),
+      methargs: capargs(['one', [slot0arg]], [importedP1VatA]),
       resultSlot: null,
     });
     t.deepEqual(logA, []);
@@ -341,14 +338,13 @@ async function doTest123(t, which, mode) {
     t.deepEqual(logA, []);
     t.deepEqual(logB, []);
 
-    syscallB.send(rootAvatB, 'two', capargs([], []), exportedP1VatB);
+    syscallB.send(rootAvatB, capargs(['two', []]), exportedP1VatB);
     await kernel.run();
     // expect logA to have deliver(two)
     t.deepEqual(logA.shift(), {
       type: 'deliver',
       targetSlot: rootAvatA,
-      method: 'two',
-      args: capargs([], []),
+      methargs: capargs(['two', []], []),
       resultSlot: importedP1VatA,
     });
     t.deepEqual(logA, []);
@@ -452,7 +448,7 @@ async function doTest4567(t, which, mode) {
     p1VatB = exportedP1VatB;
     p1VatA = importedP1VatA;
     dataPromiseA = 'p-61';
-    syscallB.send(rootAvatB, 'one', capargs([slot0arg], [exportedP1VatB]));
+    syscallB.send(rootAvatB, capargs(['one', [slot0arg]], [exportedP1VatB]));
     p1kernel = clistVatToKernel(kernel, vatB, exportedP1VatB);
     t.is(p1kernel, expectedP1kernel);
     await kernel.run();
@@ -460,8 +456,7 @@ async function doTest4567(t, which, mode) {
     t.deepEqual(logA.shift(), {
       type: 'deliver',
       targetSlot: rootAvatA,
-      method: 'one',
-      args: capargs([slot0arg], [importedP1VatA]),
+      methargs: capargs(['one', [slot0arg]], [importedP1VatA]),
       resultSlot: null,
     });
     t.deepEqual(logB, []);
@@ -475,7 +470,7 @@ async function doTest4567(t, which, mode) {
     // B: function one() { return resolution; }
     p1VatA = exportedP1VatA;
     p1VatB = importedP1VatB;
-    syscallA.send(rootBvatA, 'one', capargs([], []), exportedP1VatA);
+    syscallA.send(rootBvatA, capargs(['one', []]), exportedP1VatA);
     syscallA.subscribe(exportedP1VatA);
     p1kernel = clistVatToKernel(kernel, vatA, p1VatA);
     await kernel.run();
@@ -483,8 +478,7 @@ async function doTest4567(t, which, mode) {
     t.deepEqual(logB.shift(), {
       type: 'deliver',
       targetSlot: rootBvatB,
-      method: 'one',
-      args: capargs([], []),
+      methargs: capargs(['one', []], []),
       resultSlot: importedP1VatB,
     });
     t.deepEqual(logA, []);
@@ -496,24 +490,22 @@ async function doTest4567(t, which, mode) {
     // B: function one() { return resolution; }
     p1VatA = exportedP1VatA;
     p1VatB = importedP1VatB;
-    syscallA.send(rootBvatA, 'one', capargs([], []), exportedP1VatA);
+    syscallA.send(rootBvatA, capargs(['one', []]), exportedP1VatA);
     syscallA.subscribe(exportedP1VatA);
-    syscallA.send(rootBvatA, 'two', capargs([slot0arg], [exportedP1VatA]));
+    syscallA.send(rootBvatA, capargs(['two', [slot0arg]], [exportedP1VatA]));
     p1kernel = clistVatToKernel(kernel, vatA, p1VatA);
     await kernel.run();
     // expect logB to have deliver(one) and deliver(two)
     t.deepEqual(logB.shift(), {
       type: 'deliver',
       targetSlot: rootBvatB,
-      method: 'one',
-      args: capargs([], []),
+      methargs: capargs(['one', []], []),
       resultSlot: importedP1VatB,
     });
     t.deepEqual(logB.shift(), {
       type: 'deliver',
       targetSlot: rootBvatB,
-      method: 'two',
-      args: capargs([slot0arg], [importedP1VatB]),
+      methargs: capargs(['two', [slot0arg]], [importedP1VatB]),
       resultSlot: null,
     });
     t.deepEqual(logA, []);
@@ -525,8 +517,8 @@ async function doTest4567(t, which, mode) {
     // B: function two() { return resolution; }
     p1VatA = exportedP1VatA;
     p1VatB = importedP1VatB;
-    syscallA.send(rootBvatA, 'one', capargs([slot0arg], [exportedP1VatA]));
-    syscallA.send(rootBvatA, 'two', capargs([], []), exportedP1VatA);
+    syscallA.send(rootBvatA, capargs(['one', [slot0arg]], [exportedP1VatA]));
+    syscallA.send(rootBvatA, capargs(['two', []]), exportedP1VatA);
     syscallA.subscribe(exportedP1VatA);
     p1kernel = clistVatToKernel(kernel, vatA, p1VatA);
     await kernel.run();
@@ -534,15 +526,13 @@ async function doTest4567(t, which, mode) {
     t.deepEqual(logB.shift(), {
       type: 'deliver',
       targetSlot: rootBvatB,
-      method: 'one',
-      args: capargs([slot0arg], [importedP1VatB]),
+      methargs: capargs(['one', [slot0arg]], [importedP1VatB]),
       resultSlot: null,
     });
     t.deepEqual(logB.shift(), {
       type: 'deliver',
       targetSlot: rootBvatB,
-      method: 'two',
-      args: capargs([], []),
+      methargs: capargs(['two', []], []),
       resultSlot: importedP1VatB,
     });
     t.deepEqual(logA, []);
@@ -659,31 +649,19 @@ test(`kernel vpid handling crossing resolutions`, async t => {
   // X: bob~.usePromise(pa)     // bob resolves promise pb to an array containing pa
 
   // **** begin Crank 1 (X) ****
-  syscallX.send(
-    rootAvatX,
-    'genPromise',
-    capargs([], []),
-    exportedGenResultAvatX,
-  );
+  syscallX.send(rootAvatX, capargs(['genPromise', []]), exportedGenResultAvatX);
   syscallX.subscribe(exportedGenResultAvatX);
-  syscallX.send(
-    rootBvatX,
-    'genPromise',
-    capargs([], []),
-    exportedGenResultBvatX,
-  );
+  syscallX.send(rootBvatX, capargs(['genPromise', []]), exportedGenResultBvatX);
   syscallX.subscribe(exportedGenResultBvatX);
   syscallX.send(
     rootAvatX,
-    'usePromise',
-    capargs([slot0arg], [exportedGenResultBvatX]),
+    capargs(['usePromise', [slot0arg]], [exportedGenResultBvatX]),
     exportedUseResultAvatX,
   );
   syscallX.subscribe(exportedUseResultAvatX);
   syscallX.send(
     rootBvatX,
-    'usePromise',
-    capargs([slot0arg], [exportedGenResultAvatX]),
+    capargs(['usePromise', [slot0arg]], [exportedGenResultAvatX]),
     exportedUseResultBvatX,
   );
   syscallX.subscribe(exportedUseResultBvatX);
@@ -693,32 +671,28 @@ test(`kernel vpid handling crossing resolutions`, async t => {
     // reacted to on Crank 2 (A)
     type: 'deliver',
     targetSlot: rootAvatA,
-    method: 'genPromise',
-    args: capargs([], []),
+    methargs: capargs(['genPromise', []], []),
     resultSlot: importedGenResultAvatA,
   });
   t.deepEqual(logB.shift(), {
     // reacted to on Crank 3 (B)
     type: 'deliver',
     targetSlot: rootBvatB,
-    method: 'genPromise',
-    args: capargs([], []),
+    methargs: capargs(['genPromise', []], []),
     resultSlot: importedGenResultBvatB,
   });
   t.deepEqual(logA.shift(), {
     // reacted to on Crank 4 (A)
     type: 'deliver',
     targetSlot: rootAvatA,
-    method: 'usePromise',
-    args: capargs([slot0arg], [importedGenResultBvatA]),
+    methargs: capargs(['usePromise', [slot0arg]], [importedGenResultBvatA]),
     resultSlot: importedUseResultAvatA,
   });
   t.deepEqual(logB.shift(), {
     // reacted to on Crank 5 (B)
     type: 'deliver',
     targetSlot: rootBvatB,
-    method: 'usePromise',
-    args: capargs([slot0arg], [importedGenResultAvatB]),
+    methargs: capargs(['usePromise', [slot0arg]], [importedGenResultAvatB]),
     resultSlot: importedUseResultBvatB,
   });
   t.deepEqual(logA, []);
@@ -903,7 +877,7 @@ async function doReflectedMessageTest(t, enablePipelining) {
   // B: alice~.two(result=r)
 
   const exportedPVatB = 'p+1';
-  syscallB.send(rootAvatB, 'one', capargs([slot0arg], [exportedPVatB]));
+  syscallB.send(rootAvatB, capargs(['one', [slot0arg]], [exportedPVatB]));
   const pKernel = clistVatToKernel(kernel, vatB, exportedPVatB);
   await kernel.run();
   const importedPVatA = clistKernelToVat(kernel, vatA, pKernel);
@@ -912,15 +886,14 @@ async function doReflectedMessageTest(t, enablePipelining) {
   t.deepEqual(logA.shift(), {
     type: 'deliver',
     targetSlot: rootAvatA,
-    method: 'one',
-    args: capargs([slot0arg], [importedPVatA]),
+    methargs: capargs(['one', [slot0arg]], [importedPVatA]),
     resultSlot: null,
   });
   t.deepEqual(logA, []);
   t.deepEqual(logB, []);
 
   const exportedRPVatA = 'p+2';
-  syscallA.send(importedPVatA, 'two', capargs([], []), exportedRPVatA);
+  syscallA.send(importedPVatA, capargs(['two', []]), exportedRPVatA);
   syscallA.subscribe(exportedRPVatA);
   const rpKernel = clistVatToKernel(kernel, vatA, exportedRPVatA);
   await kernel.run();
@@ -931,14 +904,13 @@ async function doReflectedMessageTest(t, enablePipelining) {
     t.deepEqual(logB.shift(), {
       type: 'deliver',
       targetSlot: exportedPVatB,
-      method: 'two',
-      args: capargs([], []),
+      methargs: capargs(['two', []], []),
       resultSlot: importedRPVatB,
     });
     t.deepEqual(logA, []);
     t.deepEqual(logB, []);
 
-    syscallB.send(rootAvatB, 'two', capargs([], []), importedRPVatB);
+    syscallB.send(rootAvatB, capargs(['two', []]), importedRPVatB);
     await kernel.run();
   } else {
     // Send is queued to promise
@@ -953,8 +925,7 @@ async function doReflectedMessageTest(t, enablePipelining) {
   t.deepEqual(logA.shift(), {
     type: 'deliver',
     targetSlot: rootAvatA,
-    method: 'two',
-    args: capargs([], []),
+    methargs: capargs(['two', []], []),
     resultSlot: exportedRPVatA,
   });
   t.deepEqual(logA, []);
@@ -1009,7 +980,7 @@ test('kernel vpid handling rejects imported result promise', async t => {
   // B: alice~.two(result=r)
 
   const exportedPRVatA = 'p+1';
-  syscallA.send(rootBvatA, 'one', capargs([], []), exportedPRVatA);
+  syscallA.send(rootBvatA, capargs(['one', []]), exportedPRVatA);
   syscallA.subscribe(exportedPRVatA);
   const prKernel = clistVatToKernel(kernel, vatA, exportedPRVatA);
   await kernel.run();
@@ -1019,15 +990,14 @@ test('kernel vpid handling rejects imported result promise', async t => {
   t.deepEqual(logB.shift(), {
     type: 'deliver',
     targetSlot: rootBvatB,
-    method: 'one',
-    args: capargs([], []),
+    methargs: capargs(['one', []], []),
     resultSlot: importedPRVatB,
   });
   t.deepEqual(logA, []);
   t.deepEqual(logB, []);
 
   t.throws(
-    () => syscallB.send(rootAvatB, 'two', capargs([], []), importedPRVatB),
+    () => syscallB.send(rootAvatB, capargs(['two', []]), importedPRVatB),
     undefined,
     'Send reusing imported promise should throw',
   );
@@ -1076,8 +1046,7 @@ test('kernel vpid handling rejects previously exported result promise', async t 
   t.throws(() =>
     syscallA.send(
       rootBvatA,
-      'one',
-      capargs(slot0arg, [exportedPRVatA]),
+      capargs(['one', [slot0arg]], [exportedPRVatA]),
       exportedPRVatA,
     ),
   );

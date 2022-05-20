@@ -76,9 +76,9 @@ const testUpgrade = async (t, defaultManagerType) => {
   c.pinVatRoot('bootstrap');
   await c.run();
 
-  const run = async (name, args = []) => {
+  const run = async (method, args = []) => {
     assert(Array.isArray(args));
-    const kpid = c.queueToVatRoot('bootstrap', name, capargs(args));
+    const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
     const capdata = c.kpResolution(kpid);
@@ -283,9 +283,9 @@ test('failed upgrade - lost kind', async t => {
   c.pinVatRoot('bootstrap');
   await c.run();
 
-  const run = async (name, args = []) => {
+  const run = async (method, args = []) => {
     assert(Array.isArray(args));
-    const kpid = c.queueToVatRoot('bootstrap', name, capargs(args));
+    const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
     const capdata = c.kpResolution(kpid);

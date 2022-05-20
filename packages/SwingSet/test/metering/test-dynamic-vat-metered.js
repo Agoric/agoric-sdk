@@ -55,7 +55,7 @@ test('meter objects', async t => {
   await c.run();
 
   // create and manipulate a meter without attaching it to a vat
-  const cmargs = capargs([10n, 5n]); // remaining, notify threshold
+  const cmargs = [10n, 5n]; // remaining, notify threshold
   const kp1 = c.queueToVatRoot('bootstrap', 'createMeter', cmargs);
   await c.run();
   const { marg, meterKref } = extractSlot(t, c.kpResolution(kp1));
@@ -63,7 +63,9 @@ test('meter objects', async t => {
     const kp = c.queueToVatRoot(
       'bootstrap',
       method,
-      capargs([marg, ...args], [meterKref]),
+      [marg, ...args],
+      'ignore',
+      [meterKref],
     );
     await c.run();
     return c.kpResolution(kp);
@@ -92,7 +94,7 @@ function kpidRejected(t, c, kpid, message) {
 async function createMeteredVat(c, t, dynamicVatBundle, capacity, threshold) {
   assert.typeof(capacity, 'bigint');
   assert.typeof(threshold, 'bigint');
-  const cmargs = capargs([capacity, threshold]);
+  const cmargs = [capacity, threshold];
   const kp1 = c.queueToVatRoot('bootstrap', 'createMeter', cmargs);
   await c.run();
   const { marg, meterKref } = extractSlot(t, c.kpResolution(kp1));
@@ -100,23 +102,25 @@ async function createMeteredVat(c, t, dynamicVatBundle, capacity, threshold) {
   const notifyKPID = c.queueToVatRoot(
     'bootstrap',
     'whenMeterNotifiesNext',
-    capargs([marg], [meterKref]),
+    [marg],
+    'ignore',
+    [meterKref],
   );
 
   // 'createVat' will import the bundle
-  const cvargs = capargs(
-    ['dynamic', { managerType: 'xs-worker', meter: marg }],
-    [meterKref],
-  );
-  const kp2 = c.queueToVatRoot('bootstrap', 'createVat', cvargs);
+  const cvargs = ['dynamic', { managerType: 'xs-worker', meter: marg }];
+  const kp2 = c.queueToVatRoot('bootstrap', 'createVat', cvargs, 'ignore', [
+    meterKref,
+  ]);
   await c.run();
   const res2 = c.kpResolution(kp2);
   t.is(JSON.parse(res2.body)[0], 'created', res2.body);
   const doneKPID = res2.slots[0];
 
   async function getMeter() {
-    const args = capargs([marg], [meterKref]);
-    const kp = c.queueToVatRoot('bootstrap', 'getMeter', args);
+    const kp = c.queueToVatRoot('bootstrap', 'getMeter', [marg], 'ignore', [
+      meterKref,
+    ]);
     await c.run();
     const res = c.kpResolution(kp);
     const { remaining } = parse(res.body);
@@ -124,7 +128,7 @@ async function createMeteredVat(c, t, dynamicVatBundle, capacity, threshold) {
   }
 
   async function consume(shouldComplete) {
-    const kp = c.queueToVatRoot('bootstrap', 'run', capargs([]));
+    const kp = c.queueToVatRoot('bootstrap', 'run', []);
     await c.run();
     if (shouldComplete) {
       t.is(c.kpStatus(kp), 'fulfilled');
@@ -167,15 +171,17 @@ async function overflowCrank(t, explosion) {
   await c.run();
 
   // create a meter with 10M remaining
-  const cmargs = capargs([10000000n, 5000000n]); // remaining, notifyThreshold
+  const cmargs = [10000000n, 5000000n]; // remaining, notifyThreshold
   const kp1 = c.queueToVatRoot('bootstrap', 'createMeter', cmargs);
   await c.run();
   const { marg, meterKref } = extractSlot(t, c.kpResolution(kp1));
 
   // 'createVat' will import the bundle
   const cvopts = { managerType, meter: marg };
-  const cvargs = capargs(['dynamic', cvopts], [meterKref]);
-  const kp2 = c.queueToVatRoot('bootstrap', 'createVat', cvargs);
+  const cvargs = ['dynamic', cvopts];
+  const kp2 = c.queueToVatRoot('bootstrap', 'createVat', cvargs, 'ignore', [
+    meterKref,
+  ]);
   await c.run();
   const res2 = c.kpResolution(kp2);
   t.is(JSON.parse(res2.body)[0], 'created', res2.body);
@@ -189,13 +195,13 @@ async function overflowCrank(t, explosion) {
   const root = kvStore.get(`${vatID}.c.o+0`);
 
   // and grab a kpid that won't be resolved until the vat dies
-  const r = c.queueToVatRoot('bootstrap', 'getNever', capargs([]));
+  const r = c.queueToVatRoot('bootstrap', 'getNever', []);
   await c.run();
   const neverArgs = c.kpResolution(r);
   const neverKPID = neverArgs.slots[0];
 
   // First, send a message to the dynamic vat that runs normally
-  const kp3 = c.queueToVatRoot('bootstrap', 'run', capargs([]));
+  const kp3 = c.queueToVatRoot('bootstrap', 'run', []);
   await c.run();
   t.is(JSON.parse(kvStore.get('vat.dynamicIDs')).length, 1);
   t.is(kvStore.get(`${root}.owner`), vatID);
@@ -209,7 +215,7 @@ async function overflowCrank(t, explosion) {
   // meter. The message result promise should be rejected, and the control
   // facet should report the vat's demise. Remnants of the killed vat should
   // be gone from the kernel state store.
-  const kp4 = c.queueToVatRoot('bootstrap', 'explode', capargs([explosion]));
+  const kp4 = c.queueToVatRoot('bootstrap', 'explode', [explosion]);
   await c.run();
   kpidRejected(t, c, kp4, 'vat terminated');
   t.is(JSON.parse(kvStore.get('vat.dynamicIDs')).length, 0);
@@ -227,7 +233,7 @@ async function overflowCrank(t, explosion) {
   kpidRejected(t, c, doneKPID, expected[explosion]);
 
   // the dead vat should stay dead
-  const kp5 = c.queueToVatRoot('bootstrap', 'run', capargs([]));
+  const kp5 = c.queueToVatRoot('bootstrap', 'run', []);
   await c.run();
   kpidRejected(t, c, kp5, 'vat terminated');
 }
@@ -369,25 +375,24 @@ test('unlimited meter', async t => {
   await c.run();
 
   // create an unlimited meter
-  const cmargs = capargs([]);
-  const kp1 = c.queueToVatRoot('bootstrap', 'createUnlimitedMeter', cmargs);
+  const kp1 = c.queueToVatRoot('bootstrap', 'createUnlimitedMeter', []);
   await c.run();
   const { marg, meterKref } = extractSlot(t, c.kpResolution(kp1));
 
   // 'createVat' will import the bundle
-  const cvargs = capargs(
-    ['dynamic', { managerType, meter: marg }],
-    [meterKref],
-  );
-  const kp2 = c.queueToVatRoot('bootstrap', 'createVat', cvargs);
+  const cvargs = ['dynamic', { managerType, meter: marg }];
+  const kp2 = c.queueToVatRoot('bootstrap', 'createVat', cvargs, 'ignore', [
+    meterKref,
+  ]);
   await c.run();
   const res2 = c.kpResolution(kp2);
   t.is(JSON.parse(res2.body)[0], 'created', res2.body);
   const doneKPID = res2.slots[0];
 
   async function getMeter() {
-    const args = capargs([marg], [meterKref]);
-    const kp = c.queueToVatRoot('bootstrap', 'getMeter', args);
+    const kp = c.queueToVatRoot('bootstrap', 'getMeter', [marg], 'ignore', [
+      meterKref,
+    ]);
     await c.run();
     const res = c.kpResolution(kp);
     const { remaining } = parse(res.body);
@@ -395,7 +400,7 @@ test('unlimited meter', async t => {
   }
 
   async function consume(shouldComplete) {
-    const kp = c.queueToVatRoot('bootstrap', 'run', capargs([]));
+    const kp = c.queueToVatRoot('bootstrap', 'run', []);
     await c.run();
     if (shouldComplete) {
       t.is(c.kpStatus(kp), 'fulfilled');
@@ -415,7 +420,7 @@ test('unlimited meter', async t => {
   t.is(remaining, 'unlimited');
 
   // but each crank is still limited, so an infinite loop will kill the vat
-  const kp4 = c.queueToVatRoot('bootstrap', 'explode', capargs(['compute']));
+  const kp4 = c.queueToVatRoot('bootstrap', 'explode', ['compute']);
   await c.run();
   kpidRejected(t, c, kp4, 'vat terminated');
   kpidRejected(t, c, doneKPID, 'Compute meter exceeded');

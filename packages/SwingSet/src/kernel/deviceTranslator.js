@@ -76,19 +76,19 @@ export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {
   const { mapDeviceSlotToKernelSlot } = deviceKeeper;
 
   // syscall.sendOnly is translated into a kernel send() with result=null
-  function translateSendOnly(targetSlot, method, args) {
+  function translateSendOnly(targetSlot, methargs) {
     assert.typeof(targetSlot, 'string', 'non-string targetSlot');
     insistVatType('object', targetSlot);
-    insistCapData(args);
+    insistCapData(methargs);
     const target = mapDeviceSlotToKernelSlot(targetSlot);
     assert(target, 'unable to find target');
-    kdebug(`syscall[${deviceName}].send(${targetSlot}/${target}).${method}`);
-    kdebug(`  ^target is ${target}`);
+    // const method = JSON.parse(methargs.body)[0];
+    // kdebug(`syscall[${deviceName}].send(${targetSlot}/${target}).${method}`);
+    // kdebug(`  ^target is ${target}`);
     const msg = harden({
-      method,
-      args: {
-        ...args,
-        slots: args.slots.map(slot => mapDeviceSlotToKernelSlot(slot)),
+      methargs: {
+        ...methargs,
+        slots: methargs.slots.map(slot => mapDeviceSlotToKernelSlot(slot)),
       },
       result: null, // this makes it sendOnly
     });

@@ -36,8 +36,8 @@ export default function makeDeviceManager(
   deviceSyscallHandler,
 ) {
   const syscall = harden({
-    sendOnly: (target, method, args) => {
-      const dso = harden(['sendOnly', target, method, args]);
+    sendOnly: (target, methargs) => {
+      const dso = harden(['sendOnly', target, methargs]);
       deviceSyscallHandler(dso);
     },
     vatstoreGet: key => {

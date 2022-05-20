@@ -196,15 +196,10 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       // See https://github.com/Agoric/agoric-sdk/issues/2780
       errorIdNum: 60000,
     });
-    const args = harden([vatObj0s, deviceObj0s]);
+    const methargs = harden(['bootstrap', [vatObj0s, deviceObj0s]]);
     // doQueueToKref() takes kernel-refs (ko+NN, kd+NN) in s.slots
     const rootKref = exportRootObject(kernelKeeper, bootstrapVatID);
-    const resultKpid = queueToKref(
-      rootKref,
-      'bootstrap',
-      m.serialize(args),
-      'panic',
-    );
+    const resultKpid = queueToKref(rootKref, m.serialize(methargs), 'panic');
     kernelKeeper.incrementRefCount(resultKpid, 'external');
     return resultKpid;
   }

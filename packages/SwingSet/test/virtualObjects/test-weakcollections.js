@@ -42,8 +42,7 @@ test('weakMap in vat', async t => {
   t.deepEqual(c.kpResolution(bootstrapResult), capargs('bootstrap done'));
 
   async function doSimple(method) {
-    const sendArgs = capargs([], []);
-    const r = c.queueToVatRoot('bootstrap', method, sendArgs);
+    const r = c.queueToVatRoot('bootstrap', method, []);
     await c.run();
     t.is(c.kpStatus(r), 'fulfilled');
     return c.kpResolution(r);

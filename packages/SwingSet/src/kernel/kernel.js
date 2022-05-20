@@ -8,7 +8,12 @@ import { makeVatManagerFactory } from './vat-loader/manager-factory.js';
 import { makeVatWarehouse } from './vat-warehouse.js';
 import makeDeviceManager from './deviceManager.js';
 import makeKernelKeeper from './state/kernelKeeper.js';
-import { kdebug, kdebugEnable, legibilizeMessageArgs } from '../lib/kdebug.js';
+import {
+  kdebug,
+  kdebugEnable,
+  legibilizeMessageArgs,
+  extractMethod,
+} from '../lib/kdebug.js';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
 import { extractSingleSlot, insistCapData } from '../lib/capdata.js';
@@ -277,9 +282,12 @@ export default function buildKernel(
   function notifyMeterThreshold(meterID) {
     // tell vatAdmin that a meter has dropped below its notifyThreshold
     const { remaining } = kernelKeeper.getMeter(meterID);
-    const args = { body: stringify(harden([meterID, remaining])), slots: [] };
+    const methargs = {
+      body: stringify(harden(['meterCrossedThreshold', [meterID, remaining]])),
+      slots: [],
+    };
     assert.typeof(vatAdminRootKref, 'string', 'vatAdminRootKref missing');
-    queueToKref(vatAdminRootKref, 'meterCrossedThreshold', args, 'logFailure');
+    queueToKref(vatAdminRootKref, methargs, 'logFailure');
   }
 
   // TODO: instead of using a kernel-wide flag here, consider making each
@@ -564,33 +572,28 @@ export default function buildKernel(
     vatKeeper.setSourceAndOptions(source, options);
     vatKeeper.initializeReapCountdown(options.reapInterval);
 
-    function sendNewVatCallback(args) {
-      queueToKref(vatAdminRootKref, 'newVatCallback', args, 'logFailure');
+    function sendNewVatCallback(results, slots) {
+      const methargs = {
+        body: JSON.stringify(['newVatCallback', [vatID, results]]),
+        slots,
+      };
+      queueToKref(vatAdminRootKref, methargs, 'logFailure');
     }
 
     function makeSuccessResponse(status) {
       // build success message, giving admin vat access to the new vat's root
       // object
       const kernelRootObjSlot = exportRootObject(kernelKeeper, vatID);
-      const args = {
-        body: JSON.stringify([
-          vatID,
-          { rootObject: { '@qclass': 'slot', index: 0 } },
-        ]),
-        slots: [kernelRootObjSlot],
-      };
-      sendNewVatCallback(args);
+      sendNewVatCallback({ rootObject: { '@qclass': 'slot', index: 0 } }, [
+        kernelRootObjSlot,
+      ]);
       return { ...status, discardFailedDelivery: true };
     }
 
     function makeErrorResponse(error) {
       // delete partial vat state
       kernelKeeper.cleanupAfterTerminatedVat(vatID);
-      const args = {
-        body: JSON.stringify([vatID, { error: `${error}` }]),
-        slots: [],
-      };
-      sendNewVatCallback(args);
+      sendNewVatCallback({ error: `${error}` }, []);
       // ?? will this cause double-termination? or just get unwound?
       return { terminate: error, discardFailedDelivery: true };
     }
@@ -680,14 +683,17 @@ export default function buildKernel(
         name: 'Error',
         message: 'vat-upgrade failure notification not implemented',
       };
-      const args = {
-        body: JSON.stringify([upgradeID, false, err]),
+      const methargs = {
+        body: JSON.stringify(['vatUpgradeCallback', [upgradeID, false, err]]),
         slots: [],
       };
-      queueToKref(vatAdminRootKref, 'vatUpgradeCallback', args, 'logFailure');
+      queueToKref(vatAdminRootKref, methargs, 'logFailure');
     } else {
-      const args = { body: JSON.stringify([upgradeID, true]), slots: [] };
-      queueToKref(vatAdminRootKref, 'vatUpgradeCallback', args, 'logFailure');
+      const methargs = {
+        body: JSON.stringify(['vatUpgradeCallback', [upgradeID, true]]),
+        slots: [],
+      };
+      queueToKref(vatAdminRootKref, methargs, 'logFailure');
     }
     // return { ...status1, ...status2, discardFailedDelivery: true };
     return {};
@@ -696,9 +702,9 @@ export default function buildKernel(
   function legibilizeMessage(message) {
     if (message.type === 'send') {
       const msg = message.msg;
-      const argList = legibilizeMessageArgs(msg.args).join(', ');
+      const [method, argList] = legibilizeMessageArgs(msg.methargs);
       const result = msg.result ? msg.result : 'null';
-      return `@${message.target} <- ${msg.method}(${argList}) : @${result}`;
+      return `@${message.target} <- ${method}(${argList}) : @${result}`;
     } else if (message.type === 'notify') {
       return `notify(vatID: ${message.vatID}, kpid: @${message.kpid})`;
     } else if (message.type === 'create-vat') {
@@ -776,7 +782,8 @@ export default function buildKernel(
           return send(targetSlot);
         }
         // TODO: maybe mimic (3).foo(): "TypeError: XX.foo is not a function"
-        const s = `data is not callable, has no method ${msg.method}`;
+        const method = extractMethod(msg.methargs);
+        const s = `data is not callable, has no method ${method}`;
         return splat(makeError(s));
       }
       case 'rejected': {
@@ -811,7 +818,7 @@ export default function buildKernel(
       kernelKeeper.decrementRefCount(message.msg.result, `deq|msg|r`);
     }
     let idx = 0;
-    for (const argSlot of message.msg.args.slots) {
+    for (const argSlot of message.msg.methargs.slots) {
       kernelKeeper.decrementRefCount(argSlot, `deq|msg|s${idx}`);
       idx += 1;
     }
@@ -1091,8 +1098,8 @@ export default function buildKernel(
   }
 
   async function processAcceptanceMessage(message) {
-    kdebug(`processAcceptanceQ ${JSON.stringify(message)}`);
-    kdebug(legibilizeMessage(message));
+    // kdebug(`processAcceptanceQ ${JSON.stringify(message)}`);
+    // kdebug(legibilizeMessage(message));
     kernelSlog.write({ type: 'crank-start', message });
     /** @type { PolicyInput } */
     const policyInput = ['none'];
@@ -1554,10 +1561,13 @@ export default function buildKernel(
     // bundleID is b1-HASH
     if (!kernelKeeper.hasBundle(bundleID)) {
       kernelKeeper.addBundle(bundleID, bundle);
-      const args = harden({ body: JSON.stringify([bundleID]), slots: [] });
       if (vatAdminRootKref) {
+        const methargs = harden({
+          body: JSON.stringify(['bundleInstalled', [bundleID]]),
+          slots: [],
+        });
         // TODO: consider 'panic' instead of 'logFailure'
-        queueToKref(vatAdminRootKref, 'bundleInstalled', args, 'logFailure');
+        queueToKref(vatAdminRootKref, methargs, 'logFailure');
       } else {
         // this should only happen during unit tests that are too lazy to
         // build a complete kernel: test/bundles/test-bundles-kernel.js

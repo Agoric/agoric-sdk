@@ -14,7 +14,6 @@ import { makeLiveSlots, makeMarshaller } from '../src/liveslots/liveslots.js';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
 import {
   capargs,
-  capargsOneSlot,
   capdataOneSlot,
   makeMessage,
   makeBringOutYourDead,
@@ -28,6 +27,8 @@ import {
 function matchIDCounterSet(t, log) {
   t.like(log.shift(), { type: 'vatstoreSet', key: 'idCounters' });
 }
+
+const slot0arg = { '@qclass': 'slot', index: 0 };
 
 test('calls', async t => {
   const { log, syscall } = buildSyscall();
@@ -51,19 +52,13 @@ test('calls', async t => {
   const rootA = 'o+0';
 
   // root!one() // sendOnly
-  await dispatch(makeMessage(rootA, 'one', capargs(['args'])));
+  await dispatch(makeMessage(rootA, 'one', ['args']));
   t.deepEqual(log.shift(), 'one');
 
   // pr = makePromise()
   // root!two(pr.promise)
   // pr.resolve('result')
-  await dispatch(
-    makeMessage(
-      rootA,
-      'two',
-      capargs([{ '@qclass': 'slot', index: 0 }], ['p-1']),
-    ),
-  );
+  await dispatch(makeMessage(rootA, 'two', [slot0arg], ['p-1']));
   matchIDCounterSet(t, log);
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p-1' });
   t.deepEqual(log.shift(), 'two true');
@@ -75,13 +70,7 @@ test('calls', async t => {
   // root!two(pr.promise)
   // pr.reject('rejection')
 
-  await dispatch(
-    makeMessage(
-      rootA,
-      'two',
-      capargs([{ '@qclass': 'slot', index: 0 }], ['p-2']),
-    ),
-  );
+  await dispatch(makeMessage(rootA, 'two', [slot0arg], ['p-2']));
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p-2' });
   t.deepEqual(log.shift(), 'two true');
 
@@ -113,9 +102,7 @@ test('liveslots pipelines to syscall.send', async t => {
   const p3 = 'p+7';
 
   // root!one(x) // sendOnly
-  await dispatch(
-    makeMessage(rootA, 'one', capargs([{ '@qclass': 'slot', index: 0 }], [x])),
-  );
+  await dispatch(makeMessage(rootA, 'one', [slot0arg], [x]));
 
   // calling one() should cause three syscall.send() calls to be made: one
   // for x!pipe1(), a second pipelined to the result promise of it, and a
@@ -125,24 +112,21 @@ test('liveslots pipelines to syscall.send', async t => {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: x,
-    method: 'pipe1',
-    args: capargs([], []),
+    methargs: capargs(['pipe1', []], []),
     resultSlot: p1,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: p1,
-    method: 'pipe2',
-    args: capargs([], []),
+    methargs: capargs(['pipe2', []], []),
     resultSlot: p2,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: p2 });
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: p2,
-    method: 'pipe3',
-    args: capargs([], []),
+    methargs: capargs(['pipe3', []], []),
     resultSlot: p3,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: p3 });
@@ -170,18 +154,16 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   const rootA = 'o+0';
   const p1 = 'p-1';
   const o2 = 'o-2';
-  const slot0arg = { '@qclass': 'slot', index: 0 };
 
   // function deliver(target, method, argsdata, result) {
-  await dispatch(makeMessage(rootA, 'one', capargs([slot0arg], [p1])));
+  await dispatch(makeMessage(rootA, 'one', [slot0arg], [p1]));
   // the vat should subscribe to the inbound p1 during deserialization
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
   // then it pipeline-sends `pipe1` to p1, with a new result promise
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: p1,
-    method: 'pipe1',
-    args: capargs([], []),
+    methargs: capargs(['pipe1', []], []),
     resultSlot: 'p+5',
   });
   // then it subscribes to the result promise too
@@ -195,8 +177,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: o2,
-    method: 'nonpipe2',
-    args: capargs([], []),
+    methargs: capargs(['nonpipe2', []], []),
     resultSlot: 'p+6',
   });
   // and nonpipe2() wants a result
@@ -206,12 +187,11 @@ test('liveslots pipeline/non-pipeline calls', async t => {
 
   // now call two(), which should send nonpipe3 to o2, not p1, since p1 has
   // been resolved
-  await dispatch(makeMessage(rootA, 'two', capargs([], [])));
+  await dispatch(makeMessage(rootA, 'two', []));
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: o2,
-    method: 'nonpipe3',
-    args: capargs([], []),
+    methargs: capargs(['nonpipe3', []], []),
     resultSlot: 'p+7',
   });
   // and nonpipe3() wants a result
@@ -252,7 +232,6 @@ async function doOutboundPromise(t, mode) {
   const expectedResultP1 = 'p+6';
   const expectedP2 = 'p+7';
   const expectedResultP2 = 'p+8';
-  const slot0arg = { '@qclass': 'slot', index: 0 };
 
   let resolution;
   const resolveSyscall = {
@@ -282,17 +261,14 @@ async function doOutboundPromise(t, mode) {
   }
 
   // function deliver(target, method, argsdata, result) {
-  await dispatch(
-    makeMessage(rootA, 'run', capargs([slot0arg, resolution], [target])),
-  );
+  await dispatch(makeMessage(rootA, 'run', [slot0arg, resolution], [target]));
 
   // The vat should send 'one' and mention the promise for the first time. It
   // does not subscribe to its own promise.
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target,
-    method: 'one',
-    args: capargs([slot0arg], [expectedP1]),
+    methargs: capargs(['one', [slot0arg]], [expectedP1]),
     resultSlot: expectedResultP1,
   });
   // then it subscribes to the result promise
@@ -306,8 +282,7 @@ async function doOutboundPromise(t, mode) {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target,
-    method: 'two',
-    args: capargs([slot0arg], [expectedP2]),
+    methargs: capargs(['two', [slot0arg]], [expectedP2]),
     resultSlot: expectedResultP2,
   });
   resolveSyscall.resolutions[0][0] = expectedP2;
@@ -360,14 +335,14 @@ test('liveslots retains pending exported promise', async t => {
   log.length = 0; // assume pre-build vatstore operations are correct
   const rootA = 'o+0';
   const resultP = 'p-1';
-  await dispatch(makeMessage(rootA, 'make', capargs([]), resultP));
+  await dispatch(makeMessage(rootA, 'make', [], [], resultP));
   await gcAndFinalize();
   t.truthy(watch.deref(), 'Promise not retained');
   t.is(log[0].type, 'resolve');
   const res0 = log[0].resolutions[0];
   t.is(res0[0], resultP);
   const exportedVPID = res0[2].slots[0]; // currently p+5
-  await dispatch(makeMessage(rootA, 'check', capargsOneSlot(exportedVPID)));
+  await dispatch(makeMessage(rootA, 'check', [slot0arg], [exportedVPID]));
   t.deepEqual(success, ['yes']);
 });
 
@@ -403,7 +378,6 @@ async function doResultPromise(t, mode) {
   const dispatch = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
 
-  const slot0arg = { '@qclass': 'slot', index: 0 };
   const rootA = 'o+0';
   const target1 = 'o-1';
   const expectedP1 = 'p+5';
@@ -413,14 +387,13 @@ async function doResultPromise(t, mode) {
   const target2 = 'o-2';
   // if it returns data or a rejection, two() results in an error
 
-  await dispatch(makeMessage(rootA, 'run', capargs([slot0arg], [target1])));
+  await dispatch(makeMessage(rootA, 'run', [slot0arg], [target1]));
 
   // The vat should send 'getTarget2' and subscribe to the result promise
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
-    method: 'getTarget2',
-    args: capargs([], []),
+    methargs: capargs(['getTarget2', []], []),
     resultSlot: expectedP1,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP1 });
@@ -429,8 +402,7 @@ async function doResultPromise(t, mode) {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: expectedP1,
-    method: 'one',
-    args: capargs([], []),
+    methargs: capargs(['one', []], []),
     resultSlot: expectedP2,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP2 });
@@ -461,8 +433,7 @@ async function doResultPromise(t, mode) {
     t.deepEqual(log.shift(), {
       type: 'send',
       targetSlot: target2, // #823 fails here: expect o-2, get p+5
-      method: 'two',
-      args: capargs([], []),
+      methargs: capargs(['two', []], []),
       resultSlot: expectedP3,
     });
     t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP3 });
@@ -492,22 +463,21 @@ test('liveslots retires result promise IDs after reject', async t => {
 
 test('liveslots vs symbols', async t => {
   const { log, syscall } = buildSyscall();
+  const arbitrarySymbol = Symbol.for('arbitrary');
 
   function build(_vatPowers) {
     return Far('root', {
       [Symbol.asyncIterator](arg) {
         return ['ok', 'asyncIterator', arg];
       },
-      good(target) {
+      [arbitrarySymbol](arg) {
+        return ['ok', 'arbitrary', arg];
+      },
+      sendAsyncIterator(target) {
         E(target)[Symbol.asyncIterator]('arg');
       },
-      bad(target) {
-        return E(target)
-          [Symbol.for('nope')]('arg')
-          .then(
-            _ok => 'oops no error',
-            err => ['caught', err],
-          );
+      sendArbitrary(target) {
+        E(target)[arbitrarySymbol]('arg');
       },
     });
   }
@@ -519,7 +489,13 @@ test('liveslots vs symbols', async t => {
   // E(root)[Symbol.asyncIterator]('one')
   const rp1 = 'p-1';
   await dispatch(
-    makeMessage(rootA, 'Symbol.asyncIterator', capargs(['one']), 'p-1'),
+    makeMessage(
+      rootA,
+      { '@qclass': 'symbol', name: '@@asyncIterator' },
+      ['one'],
+      [],
+      rp1,
+    ),
   );
   t.deepEqual(log.shift(), {
     type: 'resolve',
@@ -528,44 +504,88 @@ test('liveslots vs symbols', async t => {
   matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
-  // root~.good(target) -> send(methodname=Symbol.asyncIterator)
+  // E(root)[arbitrarySymbol]('two')
+  const rp2 = 'p-2';
   await dispatch(
     makeMessage(
       rootA,
-      'good',
-      capargs([{ '@qclass': 'slot', index: 0 }], [target]),
+      { '@qclass': 'symbol', name: 'arbitrary' },
+      ['two'],
+      [],
+      rp2,
     ),
   );
   t.deepEqual(log.shift(), {
+    type: 'resolve',
+    resolutions: [[rp2, false, capargs(['ok', 'arbitrary', 'two'])]],
+  });
+  t.deepEqual(log, []);
+
+  // root~.sendAsyncIterator(target) -> send(methodname=Symbol.asyncIterator)
+  await dispatch(makeMessage(rootA, 'sendAsyncIterator', [slot0arg], [target]));
+  t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target,
-    method: 'Symbol.asyncIterator',
-    args: capargs(['arg']),
+    methargs: capargs([{ '@qclass': '@@asyncIterator' }, ['arg']]),
     resultSlot: 'p+5',
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+5' });
   matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
-  // root~.bad(target) -> error because other Symbols are rejected
+  // root~.sendArbitrary(target) -> send(methodname=Symbol.for('arbitrary')
+  await dispatch(makeMessage(rootA, 'sendArbitrary', [slot0arg], [target]));
+  t.deepEqual(log.shift(), {
+    type: 'send',
+    targetSlot: target,
+    methargs: capargs([{ '@qclass': 'symbol', name: 'arbitrary' }, ['arg']]),
+    resultSlot: 'p+6',
+  });
+  t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+6' });
+  matchIDCounterSet(t, log);
+  t.deepEqual(log, []);
+});
+
+test('remote function call', async t => {
+  const { log, syscall } = buildSyscall();
+
+  function build(_vatPowers) {
+    const fun = Far('fun', arg => ['ok', 'funcall', arg]);
+
+    return Far('root', {
+      getFun() {
+        return fun;
+      },
+    });
+  }
+  const dispatch = await makeDispatch(syscall, build);
+  log.length = 0; // assume pre-build vatstore operations are correct
+  const rootA = 'o+0';
+
+  const rp1 = 'p-1';
+  await dispatch(makeMessage(rootA, 'getFun', [], [], rp1));
+  t.deepEqual(log.shift(), {
+    type: 'resolve',
+    resolutions: [
+      [
+        rp1,
+        false,
+        capargs({ '@qclass': 'slot', iface: 'Alleged: fun', index: 0 }, [
+          'o+10',
+        ]),
+      ],
+    ],
+  });
+  matchIDCounterSet(t, log);
+  t.deepEqual(log, []);
+
   const rp2 = 'p-2';
-  const expErr = {
-    '@qclass': 'error',
-    errorId: 'error:liveSlots:vatA#70001',
-    message: 'arbitrary Symbols cannot be used as method names',
-    name: 'Error',
-  };
   await dispatch(
-    makeMessage(
-      rootA,
-      'bad',
-      capargs([{ '@qclass': 'slot', index: 0 }], [target]),
-      rp2,
-    ),
+    makeMessage('o+10', { '@qclass': 'undefined' }, ['arg!'], [], rp2),
   );
   t.deepEqual(log.shift(), {
     type: 'resolve',
-    resolutions: [[rp2, false, capargs(['caught', expErr])]],
+    resolutions: [[rp2, false, capargs(['ok', 'funcall', 'arg!'])]],
   });
   t.deepEqual(log, []);
 });
@@ -585,7 +605,7 @@ test('disable disavow', async t => {
   const rootA = 'o+0';
 
   // root~.one() // sendOnly
-  await dispatch(makeMessage(rootA, 'one', capargs([])));
+  await dispatch(makeMessage(rootA, 'one', []));
   t.deepEqual(log.shift(), false);
   matchIDCounterSet(t, log);
   t.deepEqual(log, []);
@@ -644,7 +664,7 @@ test('disavow', async t => {
   const import1 = 'o-1';
 
   // root~.one(import1) // sendOnly
-  await dispatch(makeMessage(rootA, 'one', capargsOneSlot(import1)));
+  await dispatch(makeMessage(rootA, 'one', [slot0arg], [import1]));
   t.deepEqual(log.shift(), { type: 'dropImports', slots: [import1] });
   t.deepEqual(log.shift(), 'disavowed pres1');
 
@@ -700,10 +720,10 @@ test('liveslots retains device nodes', async t => {
   const dispatch = await makeDispatch(syscall, build);
   const rootA = 'o+0';
   const device = 'd-1';
-  await dispatch(makeMessage(rootA, 'first', capargsOneSlot(device)));
+  await dispatch(makeMessage(rootA, 'first', [slot0arg], [device]));
   await gcAndFinalize();
   t.truthy(watch.deref(), 'Device node not retained');
-  await dispatch(makeMessage(rootA, 'second', capargsOneSlot(device)));
+  await dispatch(makeMessage(rootA, 'second', [slot0arg], [device]));
   t.deepEqual(success, [true]);
 });
 
@@ -732,17 +752,17 @@ test('GC syscall.dropImports', async t => {
 
   // tell the vat make a Presence and hold it for a moment
   // rp1 = root~.one(arg)
-  await dispatch(makeMessage(rootA, 'one', capargsOneSlot(arg)));
+  await dispatch(makeMessage(rootA, 'one', [slot0arg], [arg]));
   await dispatch(makeBringOutYourDead());
   t.truthy(wr.deref());
 
   // an intermediate message will trigger GC, but the presence is still held
-  await dispatch(makeMessage(rootA, 'two', capargs([])));
+  await dispatch(makeMessage(rootA, 'two', []));
   await dispatch(makeBringOutYourDead());
   t.truthy(wr.deref());
 
   // now tell the vat to drop the 'arg' presence we gave them earlier
-  await dispatch(makeMessage(rootA, 'three', capargs([]), null));
+  await dispatch(makeMessage(rootA, 'three', []));
   await dispatch(makeBringOutYourDead());
 
   // the presence itself should be gone
@@ -807,7 +827,7 @@ test('GC dispatch.retireImports', async t => {
 
   // tell the vat make a Presence and hold it
   // rp1 = root~.one(arg)
-  await dispatch(makeMessage(rootA, 'one', capargsOneSlot(arg)));
+  await dispatch(makeMessage(rootA, 'one', [slot0arg], [arg]));
 
   // when the upstream export goes away, the kernel will send a
   // dispatch.retireImport into the vat
@@ -838,7 +858,7 @@ test('GC dispatch.retireExports', async t => {
   // rp1 = root~.one()
   // ex1 = await rp1
   const rp1 = 'p-1';
-  await dispatch(makeMessage(rootA, 'one', capargs([]), rp1));
+  await dispatch(makeMessage(rootA, 'one', [], [], rp1));
   const l1 = log.shift();
   const ex1 = l1.resolutions[0][2].slots[0];
   t.deepEqual(l1, {
@@ -995,7 +1015,7 @@ test('dropImports', async t => {
   const rootA = 'o+0';
 
   // immediate drop should push import to possiblyDeadSet after finalizer runs
-  await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-1')));
+  await dispatch(makeMessage(rootA, 'ignore', [slot0arg], ['o-1']));
   // the immediate gcTools.kill() means that the import should now be in the
   // "COLLECTED" state
   t.deepEqual(possiblyDeadSet, new Set());
@@ -1005,10 +1025,10 @@ test('dropImports', async t => {
   possiblyDeadSet.delete('o-1'); // pretend liveslots did syscall.dropImport
 
   // separate hold and free should do the same
-  await dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-2')));
+  await dispatch(makeMessage(rootA, 'hold', [slot0arg], ['o-2']));
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 0);
-  await dispatch(makeMessage(rootA, 'free', capargs([])));
+  await dispatch(makeMessage(rootA, 'free', []));
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
   FR.runOneCallback(); // moves to FINALIZED
@@ -1017,12 +1037,12 @@ test('dropImports', async t => {
 
   // re-introduction during COLLECTED should return to REACHABLE
 
-  await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-3')));
+  await dispatch(makeMessage(rootA, 'ignore', [slot0arg], ['o-3']));
   // now COLLECTED
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
 
-  await dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-3')));
+  await dispatch(makeMessage(rootA, 'hold', [slot0arg], ['o-3']));
   // back to REACHABLE
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
@@ -1030,7 +1050,7 @@ test('dropImports', async t => {
   FR.runOneCallback(); // stays at REACHABLE
   t.deepEqual(possiblyDeadSet, new Set());
 
-  await dispatch(makeMessage(rootA, 'free', capargs([])));
+  await dispatch(makeMessage(rootA, 'free', []));
   // now COLLECTED
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
@@ -1041,17 +1061,17 @@ test('dropImports', async t => {
 
   // multiple queued finalizers are idempotent, remains REACHABLE
 
-  await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-4')));
+  await dispatch(makeMessage(rootA, 'ignore', [slot0arg], ['o-4']));
   // now COLLECTED
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
 
-  await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-4')));
+  await dispatch(makeMessage(rootA, 'ignore', [slot0arg], ['o-4']));
   // moves to REACHABLE and then back to COLLECTED
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 2);
 
-  await dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-4')));
+  await dispatch(makeMessage(rootA, 'hold', [slot0arg], ['o-4']));
   // back to REACHABLE
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 2);
@@ -1066,12 +1086,12 @@ test('dropImports', async t => {
 
   // multiple queued finalizers are idempotent, remains FINALIZED
 
-  await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-5')));
+  await dispatch(makeMessage(rootA, 'ignore', [slot0arg], ['o-5']));
   // now COLLECTED
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
 
-  await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-5')));
+  await dispatch(makeMessage(rootA, 'ignore', [slot0arg], ['o-5']));
   // moves to REACHABLE and then back to COLLECTED
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 2);
@@ -1087,7 +1107,7 @@ test('dropImports', async t => {
 
   // re-introduction during FINALIZED moves back to REACHABLE
 
-  await dispatch(makeMessage(rootA, 'ignore', capargsOneSlot('o-6')));
+  await dispatch(makeMessage(rootA, 'ignore', [slot0arg], ['o-6']));
   // moves to REACHABLE and then back to COLLECTED
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
@@ -1096,7 +1116,7 @@ test('dropImports', async t => {
   t.deepEqual(possiblyDeadSet, new Set(['o-6']));
   t.is(FR.countCallbacks(), 0);
 
-  await dispatch(makeMessage(rootA, 'hold', capargsOneSlot('o-6')));
+  await dispatch(makeMessage(rootA, 'hold', [slot0arg], ['o-6']));
   await dispatch(makeBringOutYourDead());
   // back to REACHABLE, removed from possiblyDeadSet
   t.deepEqual(possiblyDeadSet, new Set());
@@ -1150,7 +1170,7 @@ test('GC dispatch.dropExports', async t => {
   // rp1 = root~.one()
   // ex1 = await rp1
   const rp1 = 'p-1';
-  await dispatch(makeMessage(rootA, 'one', capargs([]), rp1));
+  await dispatch(makeMessage(rootA, 'one', [], [], rp1));
   await dispatch(makeBringOutYourDead());
   const l1 = log.shift();
   const ex1 = l1.resolutions[0][2].slots[0];
@@ -1170,7 +1190,7 @@ test('GC dispatch.dropExports', async t => {
   t.truthy(wr.deref());
 
   // an intermediate message will trigger GC, but the presence is still held
-  await dispatch(makeMessage(rootA, 'two', capargs([])));
+  await dispatch(makeMessage(rootA, 'two', []));
   await dispatch(makeBringOutYourDead());
   t.truthy(wr.deref());
 
@@ -1217,7 +1237,7 @@ test('GC dispatch.retireExports inhibits syscall.retireExports', async t => {
   // rp1 = root~.hold()
   // ex1 = await rp1
   const rp1 = 'p-1';
-  await dispatch(makeMessage(rootA, 'hold', capargs([]), rp1));
+  await dispatch(makeMessage(rootA, 'hold', [], [], rp1));
   await dispatch(makeBringOutYourDead());
   const l1 = log.shift();
   const ex1 = l1.resolutions[0][2].slots[0];
@@ -1237,7 +1257,7 @@ test('GC dispatch.retireExports inhibits syscall.retireExports', async t => {
   t.truthy(wr.deref());
 
   // an intermediate message will trigger GC, but the presence is still held
-  await dispatch(makeMessage(rootA, 'two', capargs([])));
+  await dispatch(makeMessage(rootA, 'two', []));
   await dispatch(makeBringOutYourDead());
   t.truthy(wr.deref());
 
@@ -1257,7 +1277,7 @@ test('GC dispatch.retireExports inhibits syscall.retireExports', async t => {
   t.truthy(wr.deref());
 
   // now tell the vat to drop its strongref
-  await dispatch(makeMessage(rootA, 'drop', capargs([])));
+  await dispatch(makeMessage(rootA, 'drop', []));
   await dispatch(makeBringOutYourDead());
 
   // which should let the export be collected
@@ -1291,7 +1311,7 @@ test('simple promise resolution', async t => {
   const rootA = 'o+0';
 
   const rp1 = 'p-1';
-  await dispatch(makeMessage(rootA, 'export', capargs([]), rp1));
+  await dispatch(makeMessage(rootA, 'export', [], [], rp1));
   const l1 = log.shift();
   t.is(l1.type, 'resolve');
   const expectedPA = 'p+5';
@@ -1303,7 +1323,7 @@ test('simple promise resolution', async t => {
   matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
-  await dispatch(makeMessage(rootA, 'resolve', capargs([])));
+  await dispatch(makeMessage(rootA, 'resolve', []));
   // this should resolve pkA.promise
   const l2 = log.shift();
   t.is(l2.type, 'resolve');
@@ -1333,7 +1353,7 @@ test('promise cycle', async t => {
   const rootA = 'o+0';
 
   const rp1 = 'p-1';
-  await dispatch(makeMessage(rootA, 'export', capargs([]), rp1));
+  await dispatch(makeMessage(rootA, 'export', [], [], rp1));
   const l1 = log.shift();
   t.is(l1.type, 'resolve');
   const expectedPA1 = 'p+5'; // pkA.promise first export
@@ -1394,7 +1414,7 @@ test('unserializable promise resolution', async t => {
   const rootA = 'o+0';
 
   const rp1 = 'p-1';
-  await dispatch(makeMessage(rootA, 'export', capargs([]), rp1));
+  await dispatch(makeMessage(rootA, 'export', [], [], rp1));
   const l1 = log.shift();
   t.is(l1.type, 'resolve');
   const expectedPA = 'p+5';
@@ -1407,7 +1427,7 @@ test('unserializable promise resolution', async t => {
   t.deepEqual(log, []);
 
   console.log('generating deliberate error');
-  await dispatch(makeMessage(rootA, 'resolve', capargs([])));
+  await dispatch(makeMessage(rootA, 'resolve', []));
   // This should reject pkA.promise, because the promise's resolution cannot
   // be serialized. If liveSlots doesn't catch serialization errors, the
   // promise won't get resolved, and the vat won't have made any syscalls
@@ -1455,7 +1475,7 @@ test('unserializable promise rejection', async t => {
   const rootA = 'o+0';
 
   const rp1 = 'p-1';
-  await dispatch(makeMessage(rootA, 'export', capargs([]), rp1));
+  await dispatch(makeMessage(rootA, 'export', [], [], rp1));
   const l1 = log.shift();
   t.is(l1.type, 'resolve');
   const expectedPA = 'p+5';
@@ -1468,7 +1488,7 @@ test('unserializable promise rejection', async t => {
   t.deepEqual(log, []);
 
   console.log('generating deliberate error');
-  await dispatch(makeMessage(rootA, 'resolve', capargs([])));
+  await dispatch(makeMessage(rootA, 'resolve', []));
   // This should reject pkA.promise, because the promise's resolution cannot
   // be serialized. If liveSlots doesn't catch serialization errors, the
   // promise won't get resolved, and the vat won't have made any syscalls
@@ -1569,16 +1589,16 @@ test('result promise in args', async t => {
     { '@qclass': 'slot', index: 0 },
     { '@qclass': 'slot', index: 1 },
   ];
-  await dispatch(
-    makeMessage(rootA, 'one', capargs(args, [resP, target]), resP),
-  );
+  await dispatch(makeMessage(rootA, 'one', args, [resP, target], resP));
 
   t.deepEqual(log.shift(), { type: 'subscribe', target: resP });
   const s2 = log.shift();
   t.is(s2.type, 'send');
   t.is(s2.targetSlot, target);
-  t.is(s2.method, 'two');
-  t.deepEqual(s2.args.slots, [resP]);
+  t.deepEqual(s2.methargs, {
+    body: '["two",[{"@qclass":"slot","index":0}]]',
+    slots: [resP],
+  });
   t.is(log.shift().type, 'subscribe'); // result of two()
 
   const s3 = log.shift();
