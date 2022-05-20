@@ -15,12 +15,13 @@ type portHandler struct {
 }
 
 type portMessage struct { // comes from swingset's vat-bank
-	Type      string `json:"type"` // VBANK_*
-	Address   string `json:"address"`
-	Recipient string `json:"recipient"`
-	Sender    string `json:"sender"`
-	Denom     string `json:"denom"`
-	Amount    string `json:"amount"`
+	Type       string `json:"type"` // VBANK_*
+	Address    string `json:"address"`
+	Recipient  string `json:"recipient"`
+	Sender     string `json:"sender"`
+	ModuleName string `json:"moduleName"`
+	Denom      string `json:"denom"`
+	Amount     string `json:"amount"`
 }
 
 func NewPortHandler(am AppModule, keeper Keeper) portHandler {
@@ -211,14 +212,14 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 			ret = string(bz)
 		}
 
-	case "VBANK_GIVE_TO_FEE_COLLECTOR":
+	case "VBANK_GIVE_TO_REWARD_DISTRIBUTOR":
 		value, ok := sdk.NewIntFromString(msg.Amount)
 		if !ok {
 			return "", fmt.Errorf("cannot convert %s to int", msg.Amount)
 		}
 		coins := sdk.NewCoins(sdk.NewCoin(msg.Denom, value))
-		if err := keeper.StoreFeeCoins(ctx.Context, coins); err != nil {
-			return "", fmt.Errorf("cannot store fee %s coins: %w", coins.Sort().String(), err)
+		if err := keeper.StoreRewardCoins(ctx.Context, coins); err != nil {
+			return "", fmt.Errorf("cannot store reward %s coins: %w", coins.Sort().String(), err)
 		}
 		if err != nil {
 			return "", err
@@ -234,6 +235,17 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		keeper.SetState(ctx.Context, state)
 		// We don't supply the module balance, since the controller shouldn't know.
 		ret = "true"
+
+	case "VBANK_GET_MODULE_ACCOUNT_ADDRESS":
+		addr := keeper.GetModuleAccountAddress(ctx.Context, msg.ModuleName).String()
+		if addr == "" {
+			return "", fmt.Errorf("module account %s not found", msg.ModuleName)
+		}
+		bz, err := marshal(addr)
+		if err != nil {
+			return "", err
+		}
+		ret = string(bz)
 
 	default:
 		err = fmt.Errorf("unrecognized type %s", msg.Type)

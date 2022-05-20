@@ -18,6 +18,7 @@ type Keeper struct {
 	cdc        codec.Codec
 	paramSpace paramtypes.Subspace
 
+	accountKeeper    types.AccountKeeper
 	bankKeeper       types.BankKeeper
 	feeCollectorName string
 	PushAction       vm.ActionPusher
@@ -26,7 +27,7 @@ type Keeper struct {
 // NewKeeper creates a new vbank Keeper instance
 func NewKeeper(
 	cdc codec.Codec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
-	bankKeeper types.BankKeeper,
+	accountKeeper types.AccountKeeper, bankKeeper types.BankKeeper,
 	feeCollectorName string,
 	pushAction vm.ActionPusher,
 ) Keeper {
@@ -40,6 +41,7 @@ func NewKeeper(
 		storeKey:         key,
 		cdc:              cdc,
 		paramSpace:       paramSpace,
+		accountKeeper:    accountKeeper,
 		bankKeeper:       bankKeeper,
 		feeCollectorName: feeCollectorName,
 		PushAction:       pushAction,
@@ -54,7 +56,7 @@ func (k Keeper) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	return k.bankKeeper.GetAllBalances(ctx, addr)
 }
 
-func (k Keeper) StoreFeeCoins(ctx sdk.Context, amt sdk.Coins) error {
+func (k Keeper) StoreRewardCoins(ctx sdk.Context, amt sdk.Coins) error {
 	return k.bankKeeper.MintCoins(ctx, types.ModuleName, amt)
 }
 
@@ -74,6 +76,10 @@ func (k Keeper) GrabCoins(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coins) e
 		return err
 	}
 	return k.bankKeeper.BurnCoins(ctx, types.ModuleName, amt)
+}
+
+func (k Keeper) GetModuleAccountAddress(ctx sdk.Context, name string) sdk.AccAddress {
+	return k.accountKeeper.GetModuleAddress(name)
 }
 
 func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
