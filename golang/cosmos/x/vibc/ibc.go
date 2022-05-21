@@ -7,11 +7,11 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	channeltypes "github.com/cosmos/ibc-go/v2/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v2/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v2/modules/core/24-host"
+	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 
-	"github.com/cosmos/ibc-go/v2/modules/core/exported"
+	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -207,9 +207,8 @@ func (am AppModule) OnChanOpenTry(
 	channelID string,
 	channelCap *capability.Capability,
 	counterparty channeltypes.Counterparty,
-	version,
 	counterpartyVersion string,
-) error {
+) (version string, err error) {
 	event := channelOpenTryEvent{
 		Type:                "IBC_EVENT",
 		Event:               "channelOpenTry",
@@ -224,17 +223,17 @@ func (am AppModule) OnChanOpenTry(
 		BlockTime:           ctx.BlockTime().Unix(),
 	}
 
-	err := am.PushAction(ctx, event)
+	err = am.PushAction(ctx, event)
 	if err != nil {
-		return err
+		return counterpartyVersion, err
 	}
 
 	// Claim channel capability passed back by IBC module
 	if err = am.keeper.ClaimCapability(ctx, channelCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
-		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, err.Error())
+		return counterpartyVersion, sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, err.Error())
 	}
 
-	return err
+	return counterpartyVersion, err
 }
 
 type channelOpenAckEvent struct {

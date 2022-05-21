@@ -300,26 +300,48 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     // Get or create the essential addresses.
     const addrs = {};
-    for (const keyName of ['provision', 'delegate0']) {
+    for (const keyName of ['provision', 'delegate0', 'rly2']) {
       /* eslint-disable no-await-in-loop */
-      let capret = showKey(keyName);
-      if (await capret[0]) {
-        const exitStatus = await keysSpawn([
-          'keys',
-          'add',
-          keyName,
-          '--keyring-backend=test',
-        ]);
-        if (exitStatus) {
-          return exitStatus;
+      if (keyName == 'rly2') {
+        let capret = showKey(keyName);
+        if (await capret[0]) {
+          const exitStatus = await keysSpawn([
+            'keys',
+            'add',
+            keyName,
+            '--keyring-backend=test',
+            '--recover'
+          ]);
+          if (exitStatus) {
+            return exitStatus;
+          }
+          capret = showKey(keyName);
+          const status2 = await capret[0];
+          if (status2) {
+            return status2;
+          }
         }
-        capret = showKey(keyName);
-        const status2 = await capret[0];
-        if (status2) {
-          return status2;
+        addrs[keyName] = capret[1].trimRight();
+      } else {
+        let capret = showKey(keyName);
+        if (await capret[0]) {
+          const exitStatus = await keysSpawn([
+            'keys',
+            'add',
+            keyName,
+            '--keyring-backend=test',
+          ]);
+          if (exitStatus) {
+            return exitStatus;
+          }
+          capret = showKey(keyName);
+          const status2 = await capret[0];
+          if (status2) {
+            return status2;
+          }
         }
+        addrs[keyName] = capret[1].trimRight();
       }
-      addrs[keyName] = capret[1].trimRight();
       /* eslint-enable no-await-in-loop */
     }
 
@@ -338,6 +360,14 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         'add-genesis-account',
         addrs.delegate0,
         DELEGATE0_COINS,
+      ]);
+      if (exitStatus) {
+        return exitStatus;
+      }
+      exitStatus = await chainSpawn([
+        'add-genesis-account',
+        addrs.rly2,
+        PROVISION_COINS,
       ]);
       if (exitStatus) {
         return exitStatus;

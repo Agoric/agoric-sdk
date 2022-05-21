@@ -9,10 +9,11 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	channeltypes "github.com/cosmos/ibc-go/v2/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v2/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v2/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v2/modules/core/exported"
+	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	"github.com/cosmos/ibc-go/v3/modules/core/exported"
+	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
@@ -125,7 +126,10 @@ func (k Keeper) WriteAcknowledgement(ctx sdk.Context, packet ibcexported.PacketI
 	if !ok {
 		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
-	return k.channelKeeper.WriteAcknowledgement(ctx, chanCap, packet, acknowledgement)
+	var ackRaw exported.Acknowledgement
+	ackRaw.Success()
+	ackRaw.Acknowledgement()
+	return k.channelKeeper.WriteAcknowledgement(ctx, chanCap, packet, ackRaw)
 }
 
 // ChanCloseInit defines a wrapper function for the channel Keeper's function
