@@ -64,14 +64,28 @@ function pattEq(p1, p2) {
 }
 
 function throwNotDurable(value, slotIndex, serializedValue) {
-  assert.fail(
-    X`value is not durable: ${value} at slot ${slotIndex} of ${decodeToJustin(
+  const body = JSON.parse(serializedValue.body);
+  let encodedValue;
+  try {
+    encodedValue = decodeToJustin(
       {
-        body: JSON.parse(serializedValue.body),
+        body,
         slots: serializedValue.slots,
       },
       true,
-    )}`,
+    );
+  } catch (justinError) {
+    const err = assert.error(
+      X`value is not durable: ${value} at slot ${slotIndex} of ${serializedValue}`,
+    );
+    assert.note(
+      err,
+      X`decodeToJustin(${serializedValue}) threw ${justinError} `,
+    );
+    throw err;
+  }
+  assert.fail(
+    X`value is not durable: ${value} at slot ${slotIndex} of ${encodedValue}`,
   );
 }
 
