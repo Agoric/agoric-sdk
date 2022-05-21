@@ -5,7 +5,7 @@ export {
   makeNotifierKit,
   makeNotifierFromAsyncIterable,
 } from './notifier.js';
-export { makeSubscription, makeSubscriptionKit } from './subscriber.js';
+export { shadowSubscription, makeSubscriptionKit } from './subscriber.js';
 export {
   observeNotifier,
   observeIterator,

@@ -106,7 +106,28 @@
 
 // /////////////////////////////////////////////////////////////////////////////
 
-// eslint-disable-next-line jsdoc/require-property
+/**
+ * @template T
+ * @typedef {object} SubscriptionUpdatesRecord
+ * @property {ERef<IteratorResult<T>>} head internal only
+ * @property {UpdateCount} updateCount is a value that identifies the update
+ * @property {SubscriptionUpdates<T>} tail internal onli
+ */
+
+/**
+ * @template T
+ * @typedef {ERef<SubscriptionUpdatesRecord<T>>} SubscriptionUpdates
+ * Will be shared between machines, so it must be safe to expose. But other
+ * software should avoid depending on its internal structure.
+ */
+
+/**
+ * @template T
+ * @callback GetUpdatesSince<T>
+ * @param {UpdateCount} [updateCount]
+ * @returns {SubscriptionUpdates<T>}
+ */
+
 /**
  * @template T
  * @typedef {{}} BaseSubscription<T>
@@ -114,11 +135,12 @@
 
 /**
  * @template T
- * @typedef {object} SubscriptionInternals
- * Will be shared between machines, so it must be safe to expose. But other
- * software should avoid depending on its internal structure.
- * @property {ERef<IteratorResult<T, T>>} head internal only
- * @property {Promise<SubscriptionInternals<T>>} tail internal onli
+ * @typedef {object} SharableSubscription
+ * @property {GetUpdatesSince<T>} getUpdatesSince
+ * Internally used to get the "current" SharableSubscriptionInternals
+ * in order to make a subscription iterator that starts there.
+ * The answer is "current" in that it was accurate at some moment between
+ * when you asked and when you got the answer.
  */
 
 /**
@@ -127,30 +149,6 @@
  *   ConsistentAsyncIterable<T> &
  *   SharableSubscription<T>} Subscription<T>
  * A form of AsyncIterable supporting distributed and multicast usage.
- */
-
-/**
- * @template T
- * @typedef {object} SharableSubscription
- * @property {() => ERef<SubscriptionInternals<T>>} getSharableSubscriptionInternals
- * Used to replicate the multicast values at other sites. To manually create a
- * local representative of a Subscription, do
- * ```js
- * localIterable =
- *   makeSubscription(E(remoteIterable).getSharableSubscriptionInternals());
- * ```
- * The resulting `localIterable` also supports such remote use, and
- * will return access to the same representation.
- */
-
-/**
- * @template T
- * @typedef {AsyncIterator<T, T> & ConsistentAsyncIterable<T>} SubscriptionIterator<T>
- * an AsyncIterator supporting distributed and multicast usage.
- *
- * @property {() => Subscription<T>} subscribe
- * Get a new subscription whose starting position is this iterator's current
- * position.
  */
 
 /**

@@ -12,7 +12,7 @@ import { AmountMath } from '@agoric/ertp';
 import { makeZoeKit } from '@agoric/zoe';
 
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { makeSubscription } from '@agoric/notifier';
+import { shadowSubscription } from '@agoric/notifier';
 
 import '@agoric/ertp/exported.js';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -28,9 +28,7 @@ const contractPath = `${dirname}/../src/pegasus.js`;
  * @returns {AsyncIterator<T, T>}
  */
 const makeAsyncIteratorFromSubscription = sub =>
-  makeSubscription(E(sub).getSharableSubscriptionInternals())[
-    Symbol.asyncIterator
-  ]();
+  shadowSubscription(sub)[Symbol.asyncIterator]();
 
 /**
  * @param {import('ava').Assertions} t
