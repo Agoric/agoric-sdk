@@ -637,12 +637,12 @@ export function makeVirtualObjectManager(
             const before = innerSelf.rawState[prop];
             const after = serialize(value);
             if (durable) {
-              after.slots.forEach(vref =>
+              after.slots.forEach((vref, index) => {
                 assert(
                   vrm.isDurable(vref),
-                  X`value for ${prop} is not durable`,
-                ),
-              );
+                  X`value for ${prop} is not durable at slot ${index} of ${after}`,
+                );
+              });
             }
             vrm.updateReferenceCounts(before.slots, after.slots);
             innerSelf.rawState[prop] = after;
