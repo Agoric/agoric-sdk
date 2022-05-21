@@ -79,9 +79,9 @@ function m(s) {
 
 // prettier-ignore
 test('durability checks', t => {
-  const failKey = f => t.throws(f, m('key is not durable'));
-  const failVal = f => t.throws(f, m('value is not durable'));
-  const failHold = f => t.throws(f, m('value for "held" is not durable'));
+  const failKey = f => t.throws(f, m(/^key .* is not durable in /));
+  const failVal = f => t.throws(f, m(/^value is not durable: /));
+  const failHold = f => t.throws(f, m(/^value for "held" is not durable/));
   const passKey = f => t.notThrows(f);
   const passVal = f => t.notThrows(f);
   const passHold = f => t.notThrows(f);
