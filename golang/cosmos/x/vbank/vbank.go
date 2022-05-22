@@ -238,7 +238,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 
 	case "VBANK_GET_MODULE_ACCOUNT_ADDRESS":
 		addr := keeper.GetModuleAccountAddress(ctx.Context, msg.ModuleName).String()
-		if addr == "" {
+		if len(addr) == 0 {
 			return "", fmt.Errorf("module account %s not found", msg.ModuleName)
 		}
 		bz, err := marshal(addr)
