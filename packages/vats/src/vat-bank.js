@@ -127,9 +127,9 @@ export function buildRootObject(_vatPowers) {
                 const updater = addressToUpdater.get(address);
 
                 updater(value, obj.nonce);
-                console.error('Successful update', update);
+                console.info('bank balance update', update);
               } catch (e) {
-                console.error('Unregistered update', update);
+                // console.error('Unregistered update', update);
               }
             }
             return true;
@@ -272,9 +272,9 @@ export function buildRootObject(_vatPowers) {
          * @param {AssetIssuerKit} feeKit
          * @returns {import('@endo/far').EOnly<DepositFacet>}
          */
-        getFeeCollectorDepositFacet(denom, feeKit) {
+        getRewardDistributorDepositFacet(denom, feeKit) {
           if (!bankCall) {
-            throw Error(`Bank doesn't implement fee collectors`);
+            throw Error(`Bank doesn't implement reward collectors`);
           }
 
           /** @type {VirtualPurseController} */
@@ -284,12 +284,12 @@ export function buildRootObject(_vatPowers) {
               yield new Promise(_ => {});
             },
             async pullAmount(_amount) {
-              throw Error(`Cannot pull from fee collector`);
+              throw Error(`Cannot pull from reward distributor`);
             },
             async pushAmount(amount) {
               const value = AmountMath.getValue(feeKit.brand, amount);
               await bankCall({
-                type: 'VBANK_GIVE_TO_FEE_COLLECTOR',
+                type: 'VBANK_GIVE_TO_REWARD_DISTRIBUTOR',
                 denom,
                 amount: `${value}`,
               });
@@ -297,6 +297,24 @@ export function buildRootObject(_vatPowers) {
           });
           const vp = makeVirtualPurse(feeVpc, feeKit);
           return E(vp).getDepositFacet();
+        },
+
+        /**
+         * Get the address of named module account.
+         *
+         * @param {string} moduleName
+         * @returns {Promise<string | null>} address of named module account, or
+         * null if unimplemented (no bankCall)
+         */
+        getModuleAccountAddress: async moduleName => {
+          if (!bankCall) {
+            return null;
+          }
+
+          return bankCall({
+            type: 'VBANK_GET_MODULE_ACCOUNT_ADDRESS',
+            moduleName,
+          });
         },
 
         /**

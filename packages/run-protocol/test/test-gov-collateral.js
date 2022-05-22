@@ -128,12 +128,8 @@ const makeScenario = async t => {
   };
 
   const startDevNet = async () => {
-    const bridgeManager = {
-      toBridge: () => {},
-      register: () => {},
-      unregister: () => {},
-    };
-    space.produce.bridgeManager.resolve(bridgeManager);
+    // If we don't have a proper bridge manager, we need it to be undefined.
+    space.produce.bridgeManager.resolve(undefined);
 
     space.installation.produce.mintHolder.resolve(
       t.context.installation.mintHolder,

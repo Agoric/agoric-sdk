@@ -9,6 +9,8 @@ import { makeNameHubKit } from '../nameHub.js';
 
 import { feeIssuerConfig } from './utils.js';
 
+const { details: X } = assert;
+
 // TODO/TECHDEBT: move to run-protocol?
 const Tokens = harden({
   RUN: {
@@ -26,6 +28,9 @@ const Tokens = harden({
     displayInfo: { decimalPlaces: 6 },
   },
 });
+// These two are inextricably linked with ../../golang/cosmos.
+const RESERVE_MODULE_ACCOUNT = 'vbank/reserve';
+const RESERVE_ADDRESS = 'agoric1ae0lmtzlgrcnla9xjkpaarq5d5dfez63h3nucl';
 
 /**
  * In golang/cosmos/app/app.go, we define
@@ -326,6 +331,19 @@ export const addBankAssets = async ({
 
   const bankMgr = E(E(loadVat)('bank')).makeBankManager(bridgeManager);
   bankManager.resolve(bankMgr);
+
+  // Sanity check: the bank manager should have a reserve module account.
+  const reserveAddress = await E(bankMgr).getModuleAccountAddress(
+    RESERVE_MODULE_ACCOUNT,
+  );
+  if (reserveAddress !== null) {
+    // bridgeManager is available, so we should have a legit reserve address.
+    assert.equal(
+      reserveAddress,
+      RESERVE_ADDRESS,
+      X`vbank address for reserve module ${RESERVE_MODULE_ACCOUNT} is ${reserveAddress}; expected ${RESERVE_ADDRESS}`,
+    );
+  }
 
   produceIssuer.BLD.resolve(bldKit.issuer);
   produceIssuer.RUN.resolve(runKit.issuer);

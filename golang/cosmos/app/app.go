@@ -107,6 +107,7 @@ import (
 	swingsetclient "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/client"
 	swingsettypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank"
+	vbanktypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
 
 	// unnamed import of statik for swagger UI support
@@ -166,6 +167,7 @@ var (
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		vbank.ModuleName:               {authtypes.Minter, authtypes.Burner},
+		vbanktypes.ReserveName:         nil,
 	}
 )
 
@@ -438,7 +440,7 @@ func NewAgoricApp(
 
 	app.VbankKeeper = vbank.NewKeeper(
 		appCodec, keys[vbank.StoreKey], app.GetSubspace(vbank.ModuleName),
-		app.BankKeeper, authtypes.FeeCollectorName,
+		app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName,
 		app.SwingSetKeeper.PushAction,
 	)
 	vbankModule := vbank.NewAppModule(app.VbankKeeper)

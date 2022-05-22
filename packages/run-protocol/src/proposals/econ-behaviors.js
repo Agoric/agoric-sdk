@@ -510,8 +510,8 @@ export const startRewardDistributor = async ({
     centralIssuerP,
     centralBrandP,
   ]);
-  const feeCollectorDepositFacet = await E(bankManager)
-    .getFeeCollectorDepositFacet(CENTRAL_DENOM_NAME, {
+  const rewardDistributorDepositFacet = await E(bankManager)
+    .getRewardDistributorDepositFacet(CENTRAL_DENOM_NAME, {
       issuer: centralIssuer,
       brand: centralBrand,
     })
@@ -520,8 +520,8 @@ export const startRewardDistributor = async ({
       return undefined;
     });
 
-  // Only distribute fees if there is a collector.
-  if (!feeCollectorDepositFacet) {
+  // Only distribute rewards if there is a collector.
+  if (!rewardDistributorDepositFacet) {
     return;
   }
 
@@ -535,7 +535,7 @@ export const startRewardDistributor = async ({
     [vaultAdmin, ammAdmin, runStakeAdmin].map(cf =>
       E(vats.distributeFees).makeFeeCollector(zoe, cf),
     ),
-    feeCollectorDepositFacet,
+    rewardDistributorDepositFacet,
     epochTimerService,
     harden(distributorParams),
   );
