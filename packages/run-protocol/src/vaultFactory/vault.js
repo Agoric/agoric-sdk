@@ -432,7 +432,6 @@ const helperBehavior = {
    * @returns {Promise<string>} success message
    */
   adjustBalancesHook: async ({ state, facets }, clientSeat) => {
-    trace('adjustBalancesHook start');
     const { self, helper } = facets;
     const { vaultSeat, outerUpdater: updaterPre } = state;
     const proposal = clientSeat.getProposal();

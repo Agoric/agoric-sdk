@@ -31,7 +31,7 @@ import { checkDebtLimit } from '../contractSupport.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer('VM');
+const trace = makeTracer('VM', false);
 
 // Metrics naming scheme: nouns are present values; past-participles are summative.
 /**
@@ -93,10 +93,10 @@ const trace = makeTracer('VM');
  * liquidatorInstance?: Instance
  * numLiquidationsCompleted: number,
  * totalCollateral: Amount<'nat'>,
+ * totalCollateralSold: Amount<'nat'>,
  * totalDebt: Amount<'nat'>,
  * totalOverageReceived: Amount<'nat'>,
  * totalProceedsReceived: Amount<'nat'>,
- * totalCollateralSold: Amount<'nat'>,
  * totalShortfallReceived: Amount<'nat'>,
  * vaultCounter: number,
  * }} MutableState
