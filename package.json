@@ -63,15 +63,5 @@
   },
   "dependencies": {
     "patch-package": "^6.2.2"
-  },
-  "resolutions": {
-    "**/react-scripts/@babel/core": "^7.12.3",
-    "**/react-scripts/@typescript-eslint/parser": "^5.15.0",
-    "**/react-scripts/@typescript-eslint/eslint-plugin": "^5.15.0",
-    "**/react-scripts/eslint-plugin-jest": "^26.0.0",
-    "**/react-scripts/eslint-plugin-testing-library": "^5.0.1",
-    "**/react-scripts/eslint-config-react-app": "^7.0.0",
-    "**/react-dev-utils/@babel/code-frame": "^7.10.4",
-    "**/eslint-config-react-app/eslint-plugin-jest": "^26.0.0"
   }
 }
