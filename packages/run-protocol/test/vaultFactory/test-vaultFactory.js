@@ -2440,11 +2440,11 @@ test.only('manager notifiers', async t => {
     totalDebt: debtAmount(0),
 
     // running
-    numLiquidations: 0,
-    totalOverage: debtAmount(0),
-    totalProceeds: debtAmount(0),
-    totalReclaimed: collAmount(0),
-    totalShortfall: debtAmount(0),
+    numLiquidationsCompleted: 0,
+    totalOverageReceived: debtAmount(0),
+    totalProceedsReceived: debtAmount(0),
+    totalCollateralSold: collAmount(0),
+    totalShortfallReceived: debtAmount(0),
   });
 
   trace('1. Create a loan with ample collateral');
@@ -2486,15 +2486,15 @@ test.only('manager notifiers', async t => {
 
   trace('3. Liquidate all (1 loan)');
   await E(aethVaultManager).liquidateAll();
-  let totalProceeds = 474n;
-  let totalOverage = totalProceeds - DEBT1;
+  let totalProceedsReceived = 474n;
+  let totalOverageReceived = totalProceedsReceived - DEBT1;
   await m.assertChange({
     numVaults: 0,
     totalCollateral: { value: 0n },
     totalDebt: { value: 0n },
-    numLiquidations: 1,
-    totalOverage: { value: totalOverage },
-    totalProceeds: { value: totalProceeds },
+    numLiquidationsCompleted: 1,
+    totalOverageReceived: { value: totalOverageReceived },
+    totalProceedsReceived: { value: totalProceedsReceived },
   });
   // FIXME
   // await td.assertFullLiquidation();
@@ -2541,24 +2541,24 @@ test.only('manager notifiers', async t => {
 
   trace('6. Liquidate all (2 loans)');
   await E(aethVaultManager).liquidateAll();
-  totalProceeds += 54n;
-  totalOverage += 54n - DEBT2;
+  totalProceedsReceived += 54n;
+  totalOverageReceived += 54n - DEBT2;
   // XXX empty change
   await m.assertChange({});
   await m.assertChange({
-    numLiquidations: 2,
+    numLiquidationsCompleted: 2,
     numVaults: 1,
     totalCollateral: { value: AMPLE },
     totalDebt: { value: 0n },
-    totalOverage: { value: totalOverage },
-    totalProceeds: { value: totalProceeds },
+    totalOverageReceived: { value: totalOverageReceived },
+    totalProceedsReceived: { value: totalProceedsReceived },
   });
-  totalProceeds += 473n;
+  totalProceedsReceived += 473n;
   await m.assertChange({
-    numLiquidations: 3,
+    numLiquidationsCompleted: 3,
     numVaults: 0,
     totalCollateral: { value: 0n },
-    totalProceeds: { value: totalProceeds },
+    totalProceedsReceived: { value: totalProceedsReceived },
   });
   // FIXME
   // await td.assertFullLiquidation();
@@ -2586,13 +2586,13 @@ test.only('manager notifiers', async t => {
 
   trace('8. Liquidate all');
   await E(aethVaultManager).liquidateAll();
-  totalProceeds += 53n;
+  totalProceedsReceived += 53n;
   await m.assertChange({
-    numLiquidations: 4,
+    numLiquidationsCompleted: 4,
     numVaults: 0,
     totalCollateral: { value: 0n },
     totalDebt: { value: 0n },
-    totalProceeds: { value: totalProceeds },
+    totalProceedsReceived: { value: totalProceedsReceived },
   });
 
   trace('9. Loan interest');

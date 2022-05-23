@@ -33,19 +33,19 @@ const { details: X } = assert;
 
 const trace = makeTracer('VM');
 
+// Metrics naming scheme: nouns are present values; past-participles are summative.
 /**
  * @typedef {object} MetricsNotification
- * FIXME naming convention to distinguish
+ *
  * @property {number}         numVaults        present count of vaults
  * @property {Amount<'nat'>}  totalCollateral  present sum of collateral across all vaults
  * @property {Amount<'nat'>}  totalDebt        present sum of debt across all vaults
  *
- * @property {number}         numLiquidations  running count of liquidations
- * @property {Amount<'nat'>}  totalReclaimed   running sum of collateral sold in liquidation // totalCollateralSold
- *
- * @property {Amount<'nat'>}  totalProceeds    running sum of central received from liquidation
- * @property {Amount<'nat'>}  totalOverage     running sum of overages, central received greater than debt
- * @property {Amount<'nat'>}  totalShortfall   running sum of shortfalls, central received less than debt
+ * @property {Amount<'nat'>}  totalCollateralSold       running sum of collateral sold in liquidation // totalCollateralSold
+ * @property {Amount<'nat'>}  totalOverageReceived      running sum of overages, central received greater than debt
+ * @property {Amount<'nat'>}  totalProceedsReceived     running sum of central received from liquidation
+ * @property {Amount<'nat'>}  totalShortfallReceived    running sum of shortfalls, central received less than debt
+ * @property {number}         numLiquidationsCompleted  running count of liquidations
  */
 
 /**
@@ -91,13 +91,13 @@ const trace = makeTracer('VM');
  * latestInterestUpdate: bigint,
  * liquidator?: Liquidator
  * liquidatorInstance?: Instance
- * numLiquidations: number,
+ * numLiquidationsCompleted: number,
  * totalCollateral: Amount<'nat'>,
  * totalDebt: Amount<'nat'>,
- * totalOverage: Amount<'nat'>,
- * totalProceeds: Amount<'nat'>,
- * totalReclaimed: Amount<'nat'>,
- * totalShortfall: Amount<'nat'>,
+ * totalOverageReceived: Amount<'nat'>,
+ * totalProceedsReceived: Amount<'nat'>,
+ * totalCollateralSold: Amount<'nat'>,
+ * totalShortfallReceived: Amount<'nat'>,
  * vaultCounter: number,
  * }} MutableState
  */
@@ -190,13 +190,13 @@ const initState = (
     latestInterestUpdate,
     liquidator: undefined,
     liquidatorInstance: undefined,
-    numLiquidations: 0,
+    numLiquidationsCompleted: 0,
     totalCollateral: zeroCollateral,
     totalDebt: zeroDebt,
-    totalOverage: zeroDebt,
-    totalProceeds: zeroDebt,
-    totalReclaimed: zeroCollateral,
-    totalShortfall: zeroDebt,
+    totalOverageReceived: zeroDebt,
+    totalProceedsReceived: zeroDebt,
+    totalCollateralSold: zeroCollateral,
+    totalShortfallReceived: zeroDebt,
     vaultCounter: 0,
   };
 
@@ -286,11 +286,11 @@ const helperBehavior = {
       totalCollateral: state.totalCollateral,
       totalDebt: state.totalDebt,
 
-      numLiquidations: state.numLiquidations,
-      totalReclaimed: state.totalReclaimed,
-      totalOverage: state.totalOverage,
-      totalProceeds: state.totalProceeds,
-      totalShortfall: state.totalShortfall,
+      numLiquidationsCompleted: state.numLiquidationsCompleted,
+      totalCollateralSold: state.totalCollateralSold,
+      totalOverageReceived: state.totalOverageReceived,
+      totalProceedsReceived: state.totalProceedsReceived,
+      totalShortfallReceived: state.totalShortfallReceived,
     });
     state.metricsPublication.updateState(payload);
   },
@@ -427,16 +427,16 @@ const helperBehavior = {
       factoryPowers.getGovernedParams().getLiquidationPenalty(),
     )
       .then(metrics => {
-        state.totalProceeds = AmountMath.add(
-          state.totalProceeds,
+        state.totalProceedsReceived = AmountMath.add(
+          state.totalProceedsReceived,
           metrics.proceeds,
         );
-        state.totalOverage = AmountMath.add(
-          state.totalOverage,
+        state.totalOverageReceived = AmountMath.add(
+          state.totalOverageReceived,
           metrics.overage,
         );
-        state.totalShortfall = AmountMath.add(
-          state.totalShortfall,
+        state.totalShortfallReceived = AmountMath.add(
+          state.totalShortfallReceived,
           metrics.shortfall,
         );
         state.totalCollateral = AmountMath.subtract(
@@ -445,7 +445,7 @@ const helperBehavior = {
         );
         prioritizedVaults.removeVault(key);
         trace('liquidated');
-        state.numLiquidations += 1;
+        state.numLiquidationsCompleted += 1;
         facets.helper.updateMetrics();
       })
       .catch(e => {
@@ -535,17 +535,12 @@ const managerBehavior = {
       oldCollateral,
       vaultId,
     );
-    const debtDelta = vault.getCurrentDebt().value - oldDebt.value;
-    const collateralDelta =
-      vault.getCollateralAmount().value - oldCollateral.value;
-    trace('updateVaultPriority', { debtDelta, collateralDelta });
-    // state.totalDebt = AmountMath.add(state.totalDebt, debtDelta);
-    // XXX do we have amount helpers for deltas?
-    state.totalCollateral = AmountMath.make(
-      state.totalCollateral.brand,
-      state.totalCollateral.value + collateralDelta,
+    // totalCollateral += vault's collateral delta (post — pre)
+    state.totalCollateral = AmountMath.subtract(
+      AmountMath.add(state.totalCollateral, vault.getCollateralAmount()),
+      oldCollateral,
     );
-    trace('totalCollateral added', collateralDelta, state.totalCollateral);
+    // debt accounting managed through minting and burning
     facets.helper.updateMetrics();
   },
 };

@@ -56,9 +56,11 @@ export const totalDebtTracker = (t, publicFacet) => {
     const metrics = makeNotifierFromAsyncIterable(metricsSub);
     // FIXME can't work until prefix-lossy subscriptions or https://github.com/Agoric/agoric-sdk/issues/5413
     const { value: v } = await metrics.getUpdateSince();
-    const [p, o, s] = [v.totalProceeds, v.totalOverage, v.totalShortfall].map(
-      a => a.value,
-    );
+    const [p, o, s] = [
+      v.totalProceedsReceived,
+      v.totalOverageReceived,
+      v.totalShortfallReceived,
+    ].map(a => a.value);
     t.is(
       totalDebtEver,
       p - o + s,
