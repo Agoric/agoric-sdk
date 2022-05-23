@@ -431,6 +431,14 @@ const helperBehavior = {
           state.totalProceeds,
           metrics.proceeds,
         );
+        state.totalOverage = AmountMath.add(
+          state.totalOverage,
+          metrics.overage,
+        );
+        state.totalShortfall = AmountMath.add(
+          state.totalShortfall,
+          metrics.shortfall,
+        );
         state.totalCollateral = AmountMath.subtract(
           state.totalCollateral,
           collateralPre,

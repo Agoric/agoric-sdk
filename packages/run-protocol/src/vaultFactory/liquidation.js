@@ -9,6 +9,25 @@ import { makeTracer } from '../makeTracer.js';
 const trace = makeTracer('LIQ');
 
 /**
+ *
+ * @param {Amount<'nat'>} debt
+ * @param {Amount<'nat'>} proceeds
+ */
+const calcMetrics = (debt, proceeds) => {
+  if (AmountMath.isGTE(debt, proceeds)) {
+    return {
+      overage: AmountMath.makeEmptyFromAmount(debt),
+      shortfall: AmountMath.subtract(debt, proceeds),
+    };
+  } else {
+    return {
+      overage: AmountMath.subtract(proceeds, debt),
+      shortfall: AmountMath.makeEmptyFromAmount(debt),
+    };
+  }
+};
+
+/**
  * Liquidates a Vault, using the strategy to parameterize the particular
  * contract being used. The strategy provides a KeywordMapping and proposal
  * suitable for `offerTo()`, and an invitation.
@@ -67,8 +86,10 @@ const liquidate = async (
   ]);
   // NB: all the proceeds from AMM sale are on the vault seat instead of a staging seat
 
+  const { shortfall, overage } = calcMetrics(debt, proceeds.RUN);
+
   const runToBurn = AmountMath.min(proceeds.RUN, debt);
-  trace('before burn', { debt, proceeds, runToBurn });
+  trace('before burn', { debt, proceeds, overage, shortfall, runToBurn });
   burnLosses(runToBurn, vaultZcfSeat);
 
   // Accounting complete. Update the vault state.
@@ -76,7 +97,7 @@ const liquidate = async (
   // remaining funds are left on the vault for the user to close and claim
 
   // for metrics
-  return { proceeds: proceeds.RUN };
+  return { proceeds: proceeds.RUN, overage, shortfall };
 };
 
 const liquidationDetailTerms = debtBrand =>
