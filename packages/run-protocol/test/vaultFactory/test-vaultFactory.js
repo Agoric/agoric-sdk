@@ -43,7 +43,11 @@ import {
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 import { metricsTracker, totalDebtTracker } from '../metrics.js';
 
-/** @type {import('ava').TestInterface<any>} */
+/** @type {import('ava').TestInterface<Record<string, any> & {
+ * rates: VaultManagerParamValues,
+ * loanTiming: LoanTiming,
+ * }>} */
+// @ts-expect-error cast
 const test = unknownTest;
 
 // #region Support
@@ -1777,18 +1781,12 @@ test('mutable liquidity triggers and interest', async t => {
 });
 
 test('bad chargingPeriod', async t => {
-  const loanTiming = {
-    chargingPeriod: 2,
-    recordingPeriod: 10n,
-  };
-
-  t.context.loanTiming = loanTiming;
   t.throws(
     () =>
       makeParamManagerBuilder()
-        // @ts-expect-error It's not a bigint.
-        .addNat(CHARGING_PERIOD_KEY, loanTiming.chargingPeriod)
-        .addNat(RECORDING_PERIOD_KEY, loanTiming.recordingPeriod)
+        // @ts-expect-error bad value for test
+        .addNat(CHARGING_PERIOD_KEY, 2)
+        .addNat(RECORDING_PERIOD_KEY, 10n)
         .build(),
     { message: '2 must be a bigint' },
   );
@@ -2408,10 +2406,14 @@ test.only('manager notifiers', async t => {
   const ENOUGH = 10_000n;
 
   const { aethKit, runKit, debtAmount, collAmount } = t.context;
-  const manualTimer = buildManualTimer(t.log, 0n);
+  const manualTimer = buildManualTimer(t.log, 0n, SECONDS_PER_WEEK);
   t.context.loanTiming = {
-    chargingPeriod: 1n,
-    recordingPeriod: 1n,
+    chargingPeriod: SECONDS_PER_WEEK,
+    recordingPeriod: SECONDS_PER_WEEK,
+  };
+  t.context.rates = {
+    ...t.context.rates,
+    interestRate: makeRatio(20n, runKit.brand),
   };
 
   const services = await setupServices(
@@ -2461,7 +2463,7 @@ test.only('manager notifiers', async t => {
   td.add(DEBT1);
   await m.assertChange({
     numVaults: 1,
-    totalCollateral: { value: collAmount(AMPLE).value },
+    totalCollateral: { value: AMPLE },
     totalDebt: { value: DEBT1 },
   });
 
@@ -2479,10 +2481,10 @@ test.only('manager notifiers', async t => {
   // XXX empty change
   await m.assertChange({});
   await m.assertChange({
-    totalCollateral: { value: collAmount(AMPLE).value - taken.value },
+    totalCollateral: { value: AMPLE - taken.value },
   });
 
-  trace('2. Liquidate all (1 loan)');
+  trace('3. Liquidate all (1 loan)');
   await E(aethVaultManager).liquidateAll();
   let totalProceeds = 474n;
   let totalOverage = totalProceeds - DEBT1;
@@ -2497,7 +2499,7 @@ test.only('manager notifiers', async t => {
   // FIXME
   // await td.assertFullLiquidation();
 
-  trace('3. Make another LOAN1 loan');
+  trace('4. Make another LOAN1 loan');
   vaultSeat = await E(services.zoe).offer(
     await E(lender).makeVaultInvitation(),
     harden({
@@ -2511,12 +2513,12 @@ test.only('manager notifiers', async t => {
   await E(vaultSeat).getOfferResult();
   await m.assertChange({
     numVaults: 1,
-    totalCollateral: { value: collAmount(AMPLE).value },
+    totalCollateral: { value: AMPLE },
     totalDebt: { value: DEBT1 },
   });
   td.add(DEBT1);
 
-  // 4. Make a LOAN2 loan
+  trace('5. Make a LOAN2 loan');
   vaultSeat = await E(services.zoe).offer(
     await E(lender).makeVaultInvitation(),
     harden({
@@ -2537,7 +2539,7 @@ test.only('manager notifiers', async t => {
   });
   td.add(DEBT2);
 
-  trace('5. Liquidate all (2 loans)');
+  trace('6. Liquidate all (2 loans)');
   await E(aethVaultManager).liquidateAll();
   totalProceeds += 54n;
   totalOverage += 54n - DEBT2;
@@ -2561,7 +2563,7 @@ test.only('manager notifiers', async t => {
   // FIXME
   // await td.assertFullLiquidation();
 
-  trace('6. Make another LOAN2 loan');
+  trace('7. Make another LOAN2 loan');
   vaultSeat = await E(services.zoe).offer(
     await E(lender).makeVaultInvitation(),
     harden({
@@ -2578,11 +2580,11 @@ test.only('manager notifiers', async t => {
     totalCollateral: { value: collAmount(ENOUGH).value },
     totalDebt: { value: DEBT2 },
   });
+  td.add(DEBT2);
   // XXX empty change
   await m.assertChange({});
-  td.add(DEBT2);
 
-  trace('7. Liquidate all');
+  trace('8. Liquidate all');
   await E(aethVaultManager).liquidateAll();
   totalProceeds += 53n;
   await m.assertChange({
@@ -2592,4 +2594,49 @@ test.only('manager notifiers', async t => {
     totalDebt: { value: 0n },
     totalProceeds: { value: totalProceeds },
   });
+
+  trace('9. Loan interest');
+  vaultSeat = await E(services.zoe).offer(
+    await E(lender).makeVaultInvitation(),
+    harden({
+      give: { Collateral: collAmount(AMPLE) },
+      want: { RUN: AmountMath.make(runKit.brand, LOAN1) },
+    }),
+    harden({
+      Collateral: t.context.aethKit.mint.mintPayment(collAmount(AMPLE)),
+    }),
+  );
+  await E(vaultSeat).getOfferResult();
+  await m.assertChange({
+    numVaults: 1,
+    totalCollateral: { value: AMPLE },
+    totalDebt: { value: DEBT1 },
+  });
+  td.add(DEBT1);
+  const periods = 5n;
+  for (let i = 0; i < periods; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await manualTimer.tick();
+  }
+  const interestAccrued = periods * 2n;
+  // XXX empty change
+  await m.assertChange({});
+  // make another loan to trigger a publish
+  vaultSeat = await E(services.zoe).offer(
+    await E(lender).makeVaultInvitation(),
+    harden({
+      give: { Collateral: collAmount(ENOUGH) },
+      want: { RUN: AmountMath.make(runKit.brand, LOAN2) },
+    }),
+    harden({
+      Collateral: t.context.aethKit.mint.mintPayment(collAmount(ENOUGH)),
+    }),
+  );
+  await E(vaultSeat).getOfferResult();
+  await m.assertChange({
+    numVaults: 2,
+    totalCollateral: { value: AMPLE + ENOUGH },
+    totalDebt: { value: DEBT1 + DEBT2 + interestAccrued },
+  });
+  td.add(DEBT1);
 });

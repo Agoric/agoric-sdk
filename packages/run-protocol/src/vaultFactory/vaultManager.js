@@ -21,7 +21,7 @@ import {
 } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 
-import { defineKindMulti, pickFacet } from '@agoric/vat-data';
+import { defineKindMulti, partialAssign, pickFacet } from '@agoric/vat-data';
 import { makeVault } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
@@ -255,7 +255,7 @@ const helperBehavior = {
       },
       updateTime,
     );
-    Object.assign(state, stateUpdates);
+    partialAssign(state, stateUpdates);
     facets.helper.assetNotify();
     trace('chargeAllVaults complete');
     facets.helper.reschedulePriceCheck();
