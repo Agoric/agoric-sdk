@@ -140,7 +140,7 @@ export async function start(zcf, privateArgs) {
       return Promise.reject(Error('Not implemented'));
     },
     getCompoundedInterest: () => compoundedInterest,
-    updateVaultPriority: () => {
+    updateVaultAccounting: () => {
       // noop
     },
     mintforVault: async amount => {

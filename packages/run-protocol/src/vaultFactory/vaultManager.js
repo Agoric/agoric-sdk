@@ -521,13 +521,19 @@ const managerBehavior = {
    */
   getCompoundedInterest: ({ state }) => state.compoundedInterest,
   /**
+   * Called by a vault when its balances change.
+   *
    * @param {MethodContext} context
    * @param {Amount<'nat'>} oldDebt
    * @param {Amount<'nat'>} oldCollateral
    * @param {VaultId} vaultId
    */
-  // XXX does more than the name implies, called by a vault when balances change
-  updateVaultPriority: ({ state, facets }, oldDebt, oldCollateral, vaultId) => {
+  updateVaultAccounting: (
+    { state, facets },
+    oldDebt,
+    oldCollateral,
+    vaultId,
+  ) => {
     const { prioritizedVaults } = state;
     const vault = prioritizedVaults.refreshVaultPriority(
       oldDebt,
