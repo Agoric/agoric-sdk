@@ -76,7 +76,7 @@ test('makeChainStorageRoot', async t => {
     'second setValue message',
   );
 
-  // Valid key segments are strings of up to 100 ASCII alphanumeric/underscore characters.
+  // Valid key segments are strings of up to 100 ASCII alphanumeric/dash/underscore characters.
   const validSegmentChars = `${
     String.fromCharCode(
       ...Array(26)
@@ -93,7 +93,7 @@ test('makeChainStorageRoot', async t => {
         .fill()
         .map((_, i) => '0'.charCodeAt(0) + i),
     )
-  }_`;
+  }-_`;
   const extremeSegments = validSegmentChars
     .repeat(Math.ceil(100 / validSegmentChars.length))
     .match(/.{1,100}/gsu);
