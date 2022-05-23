@@ -53,8 +53,9 @@ export const setupAMMBootstrap = async (
   produce.chainTimerService.resolve(timer);
   produce.zoe.resolve(zoe);
 
-  const { agoricNames, spaces } = makeAgoricNamesAccess();
+  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
+  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   installGovernance(zoe, spaces.installation.produce);
 
