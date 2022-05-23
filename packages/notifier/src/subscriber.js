@@ -9,7 +9,7 @@ import './types.js';
 
 /**
  * @template T
- * @param {SubscriptionUpdates<T>} tailP
+ * @param {Iteration<T>} tailP
  * @returns {AsyncIterator<T>}
  */
 const makeSubscriptionIterator = tailP => {
@@ -28,14 +28,14 @@ const makeSubscriptionIterator = tailP => {
  * Makes a behavioral presence of a possibly far subscription.
  *
  * @template T
- * @param {GetUpdatesSince<T>} getUpdatesSince
+ * @param {GetIterationSince<T>} getIterationSince
  * @returns {Subscription<T>}
  */
-const makeSubscription = getUpdatesSince => {
+const makeSubscription = getIterationSince => {
   return Far('Subscription', {
-    [Symbol.asyncIterator]: () => makeSubscriptionIterator(getUpdatesSince()),
+    [Symbol.asyncIterator]: () => makeSubscriptionIterator(getIterationSince()),
 
-    getUpdatesSince,
+    getIterationSince,
   });
 };
 
@@ -47,10 +47,10 @@ const makeSubscription = getUpdatesSince => {
  * @returns {Subscription<T>}
  */
 export const shadowSubscription = subscriptionP => {
-  const getUpdatesSince = (updateCount = NaN) =>
-    E(subscriptionP).getUpdatesSince(updateCount);
+  const getIterationSince = (updateCount = NaN) =>
+    E(subscriptionP).getIterationSince(updateCount);
 
-  return makeSubscription(getUpdatesSince);
+  return makeSubscription(getIterationSince);
 };
 harden(shadowSubscription);
 
@@ -62,29 +62,30 @@ harden(shadowSubscription);
  * @returns {SubscriptionRecord<T>}
  */
 export const makeSubscriptionKit = () => {
-  /** @type {((internals: SubscriptionUpdates<T>) => void) | undefined} */
+  /** @type {((internals: Iteration<T>) => void) | undefined} */
   let tailR;
   let tailP = new HandledPromise(r => (tailR = r));
 
   let currentUpdateCount = 1;
-  /** @type {SubscriptionUpdates<T>} */
+  /** @type {Iteration<T>} */
   let currentP = tailP;
   const advanceCurrent = () => {
-    // If tailP has not advanced past currentP, do nothing.
-    if (currentP !== tailP) {
-      currentUpdateCount += 1;
-      currentP = tailP;
+    if (currentP === tailP) {
+      // If tailP has not advanced past currentP, do nothing.
+      return;
     }
+    currentUpdateCount += 1;
+    currentP = tailP;
   };
 
-  const getUpdatesSince = (updateCount = NaN) => {
+  const getIterationSince = (updateCount = NaN) => {
     if (currentUpdateCount === updateCount) {
       return tailP;
     } else {
       return currentP;
     }
   };
-  const subscription = makeSubscription(getUpdatesSince);
+  const subscription = makeSubscription(getIterationSince);
 
   /** @type {IterationObserver<T>} */
   const publication = Far('publication', {
@@ -129,7 +130,7 @@ export const makeSubscriptionKit = () => {
       }
 
       advanceCurrent();
-      /** @type {SubscriptionUpdates<T>} */
+      /** @type {Iteration<T>} */
       const rejection = HandledPromise.reject(reason);
       tailR(rejection);
       tailR = undefined;

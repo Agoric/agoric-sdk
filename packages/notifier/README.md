@@ -140,7 +140,7 @@ local or remote promise for an AsyncIterable. `observeIteration` only sends it e
 using `E` (equivalent to the tildot syntax `~.`), and so doesn't care about these differences.
 
 While correct, Bob’s code is sub-optimal. Its distributed systems properties are not terrible, but
-Bob does better using `getUpdatesSince()` (provided by
+Bob does better using `getIterationSince()` (provided by
 SubscriptionKit). This lets Bob make a local AsyncIterable that coordinates better with producer
 Paula's IterationObserver.
 

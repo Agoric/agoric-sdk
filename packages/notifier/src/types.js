@@ -108,24 +108,24 @@
 
 /**
  * @template T
- * @typedef {object} SubscriptionUpdatesRecord
+ * @typedef {object} IterationRecord
  * @property {ERef<IteratorResult<T>>} head internal only
  * @property {UpdateCount} updateCount is a value that identifies the update
- * @property {SubscriptionUpdates<T>} tail internal onli
+ * @property {Iteration<T>} tail internal only
  */
 
 /**
  * @template T
- * @typedef {ERef<SubscriptionUpdatesRecord<T>>} SubscriptionUpdates
+ * @typedef {ERef<IterationRecord<T>>} Iteration
  * Will be shared between machines, so it must be safe to expose. But other
- * software should avoid depending on its internal structure.
+ * software should consider it opaque, not depending on its internal structure.
  */
 
 /**
  * @template T
- * @callback GetUpdatesSince<T>
+ * @callback GetIterationSince<T>
  * @param {UpdateCount} [updateCount]
- * @returns {SubscriptionUpdates<T>}
+ * @returns {Iteration<T>}
  */
 
 /**
@@ -136,7 +136,7 @@
 /**
  * @template T
  * @typedef {object} SharableSubscription
- * @property {GetUpdatesSince<T>} getUpdatesSince
+ * @property {GetIterationSince<T>} getIterationSince
  * Internally used to get the "current" SharableSubscriptionInternals
  * in order to make a subscription iterator that starts there.
  * The answer is "current" in that it was accurate at some moment between
