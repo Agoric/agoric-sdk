@@ -63,5 +63,14 @@
   },
   "dependencies": {
     "patch-package": "^6.2.2"
+  },
+  "resolutions": {
+    "**/http-errors/depd": "^2.0.0",
+    "**/morgan/depd": "^2.0.0",
+    "**/agentkeepalive/depd": "^2.0.0",
+    "**/acorn-globals/acorn": "^8.7.1",
+    "**/acorn-node/acorn": "^8.7.1",
+    "**/espree/acorn": "^8.7.1",
+    "**/puppeteer-core/node-fetch": "^2.6.5"
   }
 }
