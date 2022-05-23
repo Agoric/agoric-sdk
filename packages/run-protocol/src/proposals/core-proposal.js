@@ -43,6 +43,22 @@ const SHARED_MAIN_MANIFEST = harden({
       produce: { amm: 'amm', ammGovernor: 'ammGovernor' },
     },
   },
+  [econBehaviors.startInterchainPool.name]: {
+    consume: { bankManager: 'bank', zoe: 'zoe', agoricNamesAdmin: true },
+    installation: {
+      consume: { interchainPool: 'zoe' },
+    },
+    brand: {
+      consume: { RUN: 'zoe' },
+    },
+    issuer: {
+      consume: { RUN: 'zoe' },
+    },
+    instance: {
+      consume: { amm: 'amm' },
+      produce: { interchainPool: 'interchainPool' },
+    },
+  },
   [econBehaviors.startVaultFactory.name]: {
     consume: {
       feeMintAccess: 'zoe',
@@ -248,6 +264,7 @@ export const getManifestForMain = (
       VaultFactory: restoreRef(installKeys.vaultFactory),
       liquidate: restoreRef(installKeys.liquidate),
       reserve: restoreRef(installKeys.reserve),
+      interchainPool: restoreRef(installKeys.interchainPool),
     },
     options: {
       vaultFactoryControllerAddress,

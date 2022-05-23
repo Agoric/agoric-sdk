@@ -126,3 +126,27 @@ export const makeVoterTool = async (
     },
   });
 };
+
+/**
+ * @param {bigint} value
+ * @param {{
+ *   centralSupply: ERef<Installation>,
+ *   feeMintAccess: ERef<FeeMintAccess>,
+ *   zoe: ERef<ZoeService>,
+ * }} powers
+ * @returns { Promise<Payment> }
+ */
+export const mintRunPayment = async (
+  value,
+  { centralSupply, feeMintAccess: feeMintAccessP, zoe },
+) => {
+  const feeMintAccess = await feeMintAccessP;
+
+  const { creatorFacet: ammSupplier } = await E(zoe).startInstance(
+    centralSupply,
+    {},
+    { bootstrapPaymentValue: value },
+    { feeMintAccess },
+  );
+  return E(ammSupplier).getBootstrapPayment();
+};

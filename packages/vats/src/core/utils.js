@@ -46,6 +46,7 @@ export const agoricNamesReserved = harden({
     Pegasus: 'pegasus',
     reserve: 'collateral reserve',
     psm: 'Parity Stability Module',
+    interchainPool: 'interchainPool',
   },
   instance: {
     economicCommittee: 'Economic Committee',
@@ -61,6 +62,7 @@ export const agoricNamesReserved = harden({
     reserveGovernor: 'ReserveGovernor',
     psm: 'Parity Stability Module',
     psmGovernor: 'PSM Governor',
+    interchainPool: 'interchainPool',
   },
   oracleBrand: {
     USD: 'US Dollar',

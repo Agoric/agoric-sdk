@@ -108,7 +108,7 @@ func Test_marshalBalanceUpdate(t *testing.T) {
 	bank := &mockBank{balance: map[string]sdk.Coin{
 		addr1: sdk.NewInt64Coin("moola", 392),
 	}}
-	keeper, ctx := makeTestKit(bank)
+	keeper, ctx := makeTestKit(nil, bank)
 
 	tests := []struct {
 		name             string
@@ -226,7 +226,7 @@ func (b *mockBank) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, re
 }
 
 // makeTestKit creates a minimal Keeper and Context for use in testing.
-func makeTestKit(bank types.BankKeeper) (Keeper, sdk.Context) {
+func makeTestKit(account types.AccountKeeper, bank types.BankKeeper) (Keeper, sdk.Context) {
 	encodingConfig := params.MakeEncodingConfig()
 	cdc := encodingConfig.Marshaler
 	pushAction := func(ctx sdk.Context, action vm.Jsonable) error {
@@ -238,7 +238,7 @@ func makeTestKit(bank types.BankKeeper) (Keeper, sdk.Context) {
 	pk := paramskeeper.NewKeeper(cdc, encodingConfig.Amino, paramsStoreKey, paramsTStoreKey)
 
 	subspace := pk.Subspace(types.ModuleName)
-	keeper := NewKeeper(cdc, vbankStoreKey, subspace, bank, "feeCollectorName", pushAction)
+	keeper := NewKeeper(cdc, vbankStoreKey, subspace, account, bank, "feeCollectorName", pushAction)
 
 	db := dbm.NewMemDB()
 	ms := store.NewCommitMultiStore(db)
@@ -261,7 +261,7 @@ func Test_Receive_GetBalance(t *testing.T) {
 	bank := &mockBank{balance: map[string]sdk.Coin{
 		addr1: sdk.NewInt64Coin("quatloos", 123),
 	}}
-	keeper, ctx := makeTestKit(bank)
+	keeper, ctx := makeTestKit(nil, bank)
 	ch := NewPortHandler(AppModule{}, keeper)
 	ctlCtx := &vm.ControllerContext{Context: ctx}
 
@@ -289,7 +289,7 @@ func Test_Receive_Give(t *testing.T) {
 	bank := &mockBank{balance: map[string]sdk.Coin{
 		addr1: sdk.NewInt64Coin("urun", 1000),
 	}}
-	keeper, ctx := makeTestKit(bank)
+	keeper, ctx := makeTestKit(nil, bank)
 	ch := NewPortHandler(AppModule{}, keeper)
 	ctlCtx := &vm.ControllerContext{Context: ctx}
 
@@ -326,7 +326,7 @@ func Test_Receive_Give(t *testing.T) {
 
 func Test_Receive_GiveToFeeCollector(t *testing.T) {
 	bank := &mockBank{}
-	keeper, ctx := makeTestKit(bank)
+	keeper, ctx := makeTestKit(nil, bank)
 	ch := NewPortHandler(AppModule{}, keeper)
 	ctlCtx := &vm.ControllerContext{Context: ctx}
 
@@ -406,7 +406,7 @@ func Test_Receive_GiveToFeeCollector(t *testing.T) {
 			keeper.SetState(ctx, types.State{RewardPool: tt.rewardPool})
 
 			ret, err := ch.Receive(ctlCtx,
-				`{"type": "VBANK_GIVE_TO_FEE_COLLECTOR", "amount": "`+tt.feeAmount+`", "denom": "`+tt.feeDenom+`"}`)
+				`{"type": "VBANK_GIVE_TO_REWARD_DISTRIBUTOR", "amount": "`+tt.feeAmount+`", "denom": "`+tt.feeDenom+`"}`)
 			if err != nil {
 				t.Fatalf("got error = %v", err)
 			}
@@ -431,7 +431,7 @@ func Test_Receive_Grab(t *testing.T) {
 	bank := &mockBank{balance: map[string]sdk.Coin{
 		addr1: sdk.NewInt64Coin("ubld", 1000),
 	}}
-	keeper, ctx := makeTestKit(bank)
+	keeper, ctx := makeTestKit(nil, bank)
 	ch := NewPortHandler(AppModule{}, keeper)
 	ctlCtx := &vm.ControllerContext{Context: ctx}
 
@@ -474,7 +474,7 @@ func Test_EndBlock_Events(t *testing.T) {
 			sdk.NewInt64Coin("arcadeTokens", 7),
 		},
 	}}
-	keeper, ctx := makeTestKit(bank)
+	keeper, ctx := makeTestKit(nil, bank)
 	msgsSent := []string{}
 	keeper.PushAction = func(ctx sdk.Context, action vm.Jsonable) error {
 		bz, err := json.Marshal(action)
@@ -552,7 +552,7 @@ func Test_EndBlock_Rewards(t *testing.T) {
 			},
 		},
 	}
-	keeper, ctx := makeTestKit(bank)
+	keeper, ctx := makeTestKit(nil, bank)
 	msgsSent := []string{}
 	keeper.PushAction = func(ctx sdk.Context, action vm.Jsonable) error {
 		bz, err := json.Marshal(action)
@@ -662,5 +662,31 @@ func Test_EndBlock_Rewards(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+type mockAccount struct{}
+
+func (ma mockAccount) GetModuleAddress(name string) sdk.AccAddress {
+	return sdk.AccAddress(name)
+}
+
+func Test_Module_Account(t *testing.T) {
+	account := &mockAccount{}
+	keeper, ctx := makeTestKit(account, nil)
+	ch := NewPortHandler(AppModule{}, keeper)
+	ctlCtx := &vm.ControllerContext{Context: ctx}
+
+	mod1 := "vbank/reserve"
+	ret, err := ch.Receive(ctlCtx, `{
+		"type": "VBANK_GET_MODULE_ACCOUNT_ADDRESS",
+		"moduleName": "`+mod1+`"
+		}`)
+	if err != nil {
+		t.Fatalf("got error = %v", err)
+	}
+	expected := `"cosmos1we3xzmnt9aex2um9wfmx2em0pd0"`
+	if ret != expected {
+		t.Errorf("got ret = %v, want %v", ret, expected)
 	}
 }

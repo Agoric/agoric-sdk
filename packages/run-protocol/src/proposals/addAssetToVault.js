@@ -1,5 +1,5 @@
 // @ts-check
-import { AmountMath, AssetKind } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 
@@ -9,78 +9,46 @@ export * from './startPSM.js';
 
 /**
  * @typedef {object} InterchainAssetOptions
- * @property {string} [denom]
- * @property {string} [keyword]
- * @property {string} [proposedName]
- * @property {number} [decimalPlaces]
- * @property {string} [oracleBrand]
+ * @property {string} issuerBoardId
+ * @property {string} keyword
+ * @property {string} proposedName
+ * @property {number} decimalPlaces
+ * @property {string} oracleBrand
  */
 
 /**
  * @param { EconomyBootstrapPowers } powers
  * @param {object} config
- * @param {object} [config.options]
- * @param {InterchainAssetOptions} [config.options.interchainAssetOptions]
+ * @param {object} config.options
+ * @param {InterchainAssetOptions} config.options.interchainAssetOptions
  */
 export const addInterchainAsset = async (
-  {
-    consume: { zoe, bankManager, agoricNamesAdmin, interchainMints },
-    produce: { interchainMints: produceInterchainMints },
-    installation: {
-      consume: { mintHolder },
-    },
-  },
-  { options: { interchainAssetOptions = {} } = {} },
+  { consume: { board, agoricNamesAdmin } },
+  { options: { interchainAssetOptions } },
 ) => {
-  const { denom, keyword, decimalPlaces, proposedName } =
+  const { issuerBoardId, keyword, decimalPlaces, proposedName } =
     interchainAssetOptions;
-  assert.typeof(denom, 'string');
+  assert.typeof(issuerBoardId, 'string');
   assert.typeof(keyword, 'string');
   assert.typeof(decimalPlaces, 'number');
   assert.typeof(proposedName, 'string');
-  /** @type {import('@agoric/vats/src/mintHolder.js').AssetTerms} */
-  const terms = {
-    keyword,
-    assetKind: AssetKind.NAT,
-    displayInfo: {
-      decimalPlaces,
-      assetKind: AssetKind.NAT,
-    },
-  };
-  const { creatorFacet: mint, publicFacet: issuer } = E.get(
-    E(zoe).startInstance(mintHolder, {}, terms),
-  );
 
+  const issuer = await E(board).getValue(issuerBoardId);
   const brand = await E(issuer).getBrand();
-  const kit = { mint, issuer, brand };
-
-  // Create the mint list if it doesn't exist and wasn't already rejected.
-  produceInterchainMints.resolve([]);
-  Promise.resolve(interchainMints).then(
-    mints => mints.push(mint),
-    () => {}, // If the interchainMints list was rejected, ignore the error.
-  );
 
   E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(keyword, issuer);
   E(E(agoricNamesAdmin).lookupAdmin('brand')).update(keyword, brand);
-
-  return E(bankManager).addAsset(
-    denom,
-    keyword,
-    proposedName,
-    kit, // with mint
-  );
 };
 
 /**
  * @param {BootstrapPowers} powers
  * @param {object} config
- * @param {object} [config.options]
- * @param {InterchainAssetOptions} [config.options.interchainAssetOptions]
+ * @param {object} config.options
+ * @param {InterchainAssetOptions} config.options.interchainAssetOptions
  */
 export const registerScaledPriceAuthority = async (
   { consume: { agoricNamesAdmin, zoe, priceAuthorityAdmin, priceAuthority } },
-  { options: { interchainAssetOptions = {} } = {} },
+  { options: { interchainAssetOptions } },
 ) => {
   const { keyword, oracleBrand } = interchainAssetOptions;
   assert.typeof(keyword, 'string');
@@ -154,25 +122,17 @@ export const registerScaledPriceAuthority = async (
 /**
  * @param {EconomyBootstrapPowers} powers
  * @param {object} config
- * @param {object} [config.options]
- * @param {InterchainAssetOptions} [config.options.interchainAssetOptions]
+ * @param {object} config.options
+ * @param {InterchainAssetOptions} config.options.interchainAssetOptions
  */
 export const addAssetToVault = async (
   {
-    consume: {
-      vaultFactoryCreator,
-      reserveCreatorFacet,
-      agoricNamesAdmin,
-      zoe,
-    },
+    consume: { vaultFactoryCreator, reserveCreatorFacet, agoricNamesAdmin },
     brand: {
       consume: { RUN: runP },
     },
-    instance: {
-      consume: { amm },
-    },
   },
-  { options: { interchainAssetOptions = {} } = {} },
+  { options: { interchainAssetOptions } },
 ) => {
   const { keyword, oracleBrand } = interchainAssetOptions;
   assert.typeof(keyword, 'string');
@@ -182,9 +142,6 @@ export const addAssetToVault = async (
     [keyword],
   );
 
-  /** @type {ERef<XYKAMMPublicFacet>} */
-  const ammPub = E(zoe).getPublicFacet(amm);
-  await E(ammPub).addPool(interchainIssuer, keyword);
   await E(reserveCreatorFacet).addIssuer(interchainIssuer, keyword);
 
   const RUN = await runP;
@@ -206,13 +163,9 @@ export const getManifestForAddAssetToVault = (
     manifest: {
       [addInterchainAsset.name]: {
         consume: {
-          zoe: true,
-          bankManager: true,
+          board: true,
           agoricNamesAdmin: true,
-          interchainMints: true,
         },
-        produce: { interchainMints: true },
-        installation: { consume: { mintHolder: true } },
       },
       [registerScaledPriceAuthority.name]: {
         consume: {
@@ -230,13 +183,9 @@ export const getManifestForAddAssetToVault = (
           vaultFactoryCreator: true,
           reserveCreatorFacet: true,
           agoricNamesAdmin: true,
-          zoe: true,
         },
         brand: {
           consume: { RUN: true },
-        },
-        instance: {
-          consume: { amm: true },
         },
       },
     },

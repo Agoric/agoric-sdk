@@ -23,7 +23,7 @@ import {
   startRunStake,
 } from '../../src/proposals/econ-behaviors.js';
 import * as Collect from '../../src/collect.js';
-import { makeVoterTool, setUpZoeForTest } from '../supports.js';
+import { makeVoterTool, setUpZoeForTest, mintRunPayment } from '../supports.js';
 import { ManagerKW as KW } from '../../src/runStake/constants.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 
@@ -269,31 +269,6 @@ const makeWalletMaker = creatorFacet => {
     return harden({ attMaker });
   };
   return makeWallet;
-};
-
-/**
- * @param {bigint} value
- * @param {{
- *   centralSupply: ERef<Installation>,
- *   feeMintAccess: ERef<FeeMintAccess>,
- *   zoe: ERef<ZoeService>,
- * }} powers
- * @returns { Promise<Payment> }
- */
-const mintRunPayment = async (
-  value,
-  { centralSupply, feeMintAccess: feeMintAccessP, zoe },
-) => {
-  const feeMintAccess = await feeMintAccessP;
-
-  const { creatorFacet: ammSupplier } = await E(zoe).startInstance(
-    centralSupply,
-    {},
-    { bootstrapPaymentValue: value },
-    { feeMintAccess },
-  );
-  // TODO: stop the contract vat?
-  return E(ammSupplier).getBootstrapPayment();
 };
 
 test('wrap liened amount', async (/** @type {RunStakeTestContext} */ t) => {

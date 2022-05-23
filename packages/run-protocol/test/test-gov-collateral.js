@@ -4,6 +4,7 @@ import process from 'process';
 import url from 'url';
 import path from 'path';
 import { E, Far } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 import {
   addBankAssets,
   makeAddressNameHubs,
@@ -11,6 +12,7 @@ import {
   makeBoard,
   startPriceAuthority,
 } from '@agoric/vats/src/core/basic-behaviors.js';
+import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 import {
   bridgeCoreEval,
   makeClientManager,
@@ -20,7 +22,9 @@ import { makeCoreProposalBehavior } from '@agoric/deploy-script-support/src/core
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeNodeBundleCache } from './bundleTool.js';
-import { setupBootstrap, setUpZoeForTest } from './supports.js';
+import { setupBootstrap, setUpZoeForTest, mintRunPayment } from './supports.js';
+
+/** @template T @typedef {import('@endo/promise-kit').PromiseKit<T>} PromiseKit */
 
 const { details: X } = assert;
 const dirname = url.fileURLToPath(new URL('.', import.meta.url));
@@ -60,6 +64,7 @@ const makeTestContext = async () => {
     bundleCache.load(src, dest).then(b => E(zoe).install(b));
   const installation = {
     mintHolder: install(contractRoots.mintHolder, 'mintHolder'),
+    centralSupply: E(zoe).install(centralSupplyBundle),
     econCommitteeCharter: install(
       contractRoots.econCommitteeCharter,
       'econCommitteeCharter',
@@ -106,6 +111,9 @@ test.before(async t => {
   t.context = await makeTestContext();
 });
 
+/**
+ * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
+ */
 const makeScenario = async t => {
   const space = await setupBootstrap(t);
 
@@ -127,13 +135,26 @@ const makeScenario = async t => {
     );
   };
 
+  /** @type {PromiseKit<IssuerKit>} */
+  const ibcKitP = makePromiseKit();
+
   const startDevNet = async () => {
-    const bridgeManager = {
-      toBridge: () => {},
-      register: () => {},
-      unregister: () => {},
-    };
-    space.produce.bridgeManager.resolve(bridgeManager);
+    // If we don't have a proper bridge manager, we need it to be undefined.
+    space.produce.bridgeManager.resolve(undefined);
+
+    const bankManager = Far('mock BankManager', {
+      addAsset: (denom, keyword, proposedName, kit) => {
+        t.log('addAsset', { denom, keyword, issuer: `${kit.issuer}` });
+        t.truthy(kit.mint);
+        ibcKitP.resolve(kit);
+      },
+      getFeeCollectorDepositFacet: () =>
+        harden({
+          receive: () => {},
+        }),
+    });
+    // @ts-ignore mock doesn't have all the methods
+    space.produce.bankManager.resolve(bankManager);
 
     space.installation.produce.mintHolder.resolve(
       t.context.installation.mintHolder,
@@ -257,15 +278,12 @@ const makeScenario = async t => {
     ]);
   };
 
-  const enactVaultAssetProposal = async (denom = 'ibc/abc123') => {
-    // If necessary, this is how to hobble interchainMints in production:
-    /*
-      space.produce.interchainMints.reject(
-        Error('no interchain mints in production'),
-      );
-      space.consume.interchainMints.catch(() => {});
-    */
-    process.env.INTERCHAIN_DENOM = denom;
+  /** @type {PromiseKit<string>} */
+  const atomIssuerPK = makePromiseKit();
+
+  const enactVaultAssetProposal = async () => {
+    const boardId = await atomIssuerPK.promise;
+    process.env.INTERCHAIN_ISSUER_BOARD_ID = boardId;
     await evalProposals([coreProposals.addCollateral]);
   };
 
@@ -274,26 +292,107 @@ const makeScenario = async t => {
     await evalProposals([coreProposals.inviteCommittee]);
   };
 
-  const benefactorDeposit = async (qty = 10_000n) => {
-    const { interchainMints, agoricNames, zoe } = space.consume;
-    const ibcAtomBrand = await E(agoricNames).lookup('brand', 'IbcATOM');
-    /** @type {ERef<import('../src/reserve/assetReserve').AssetReservePublicFacet>} */
-    const reserveAPI = E(zoe).getPublicFacet(
-      E(agoricNames).lookup('instance', 'reserve'),
-    );
-    const proposal = harden({
-      give: { Collateral: AmountMath.make(ibcAtomBrand, qty * 1_000_000n) },
-    });
+  /**
+   * @param {{
+   *   agoricNames: ERef<NameHub>,
+   *   board: ERef<Board>,
+   *   zoe: ERef<ZoeService>,
+   *   wallet: {
+   *     purses: {
+   *       ist: ERef<Purse>,
+   *       atom: ERef<Purse>,
+   *     },
+   *   },
+   * }} home
+   */
+  const makeBenefactor = home => {
+    const {
+      agoricNames,
+      board,
+      zoe,
+      wallet: { purses },
+    } = home;
 
-    const atom10k = await E(E.get(interchainMints)[0]).mintPayment(
-      proposal.give.Collateral,
+    return harden({
+      makePool: async (atomQty = 100n, istQty = 500n) => {
+        const istBrand = await E(agoricNames).lookup('brand', 'RUN');
+        const istAmt = qty => AmountMath.make(istBrand, qty * 1_000_000n);
+        const interchainPoolAPI = E(zoe).getPublicFacet(
+          E(agoricNames).lookup('instance', 'interchainPool'),
+        );
+
+        const proposal1 = harden({ give: { Central: istAmt(istQty) } });
+        const centralPmt = await E(purses.ist).withdraw(proposal1.give.Central);
+        const inv1 = await E(interchainPoolAPI).makeInterchainPoolInvitation();
+        const seat1 = await E(zoe).offer(
+          inv1,
+          proposal1,
+          harden({ Central: centralPmt }),
+          harden({ denom: 'ibc/abc123' }),
+        );
+        const { invitation: inv2, issuer: ibcIssuer } = await E(
+          seat1,
+        ).getOfferResult();
+        atomIssuerPK.resolve(E(board).getId(ibcIssuer));
+        const ibcBrand = await E(ibcIssuer).getBrand();
+        const atomAmt = qty => AmountMath.make(ibcBrand, qty * 1_000_000n);
+
+        const proposal2 = harden({ give: { Secondary: atomAmt(atomQty) } });
+        const pmt2 = await E(purses.atom).withdraw(proposal2.give.Secondary);
+        const seat2 = await E(zoe).offer(
+          inv2,
+          proposal2,
+          harden({ Secondary: pmt2 }),
+        );
+        t.deepEqual(await E(seat2).getOfferResult(), 'Added liquidity.');
+      },
+
+      depositInReserve: async (qty = 10_000n) => {
+        const ibcAtomBrand = await E(agoricNames).lookup('brand', 'IbcATOM');
+        /** @type {ERef<import('../src/reserve/assetReserve').AssetReservePublicFacet>} */
+        const reserveAPI = E(zoe).getPublicFacet(
+          E(agoricNames).lookup('instance', 'reserve'),
+        );
+
+        const proposal = harden({
+          give: { Collateral: AmountMath.make(ibcAtomBrand, qty * 1_000_000n) },
+        });
+        const atom10k = await E(purses.atom).withdraw(proposal.give.Collateral);
+        const seat = E(zoe).offer(
+          await E(reserveAPI).makeAddCollateralInvitation(),
+          proposal,
+          harden({ Collateral: atom10k }),
+        );
+        return E(seat).getOfferResult();
+      },
+    });
+  };
+
+  const { agoricNames, zoe, board } = space.consume;
+  const makeRunPurse = async value => {
+    /** @type {Promise<Issuer<'nat'>>} */
+    const issuerP = E(agoricNames).lookup('issuer', 'RUN');
+    const purseP = E(issuerP).makeEmptyPurse();
+    return mintRunPayment(value, {
+      centralSupply: t.context.installation.centralSupply,
+      feeMintAccess: t.context.feeMintAccess,
+      zoe,
+    }).then(pmt =>
+      E(purseP)
+        .deposit(pmt)
+        .then(_ => purseP),
     );
-    const seat = E(zoe).offer(
-      await E(reserveAPI).makeAddCollateralInvitation(),
-      proposal,
-      harden({ Collateral: atom10k }),
-    );
-    return E(seat).getOfferResult();
+  };
+  const makeAtomPurse = async value => {
+    const { issuer, mint, brand } = await ibcKitP.promise;
+    const purseP = E(issuer).makeEmptyPurse();
+    const pmt = await E(mint).mintPayment(AmountMath.make(brand, value));
+    await E(purseP).deposit(pmt);
+    return purseP;
+  };
+  const purses = {
+    ist: makeRunPurse(10_000n * 1_000_000n),
+    atom: makeAtomPurse(10_000n * 1_000_000n),
   };
 
   return {
@@ -302,7 +401,7 @@ const makeScenario = async t => {
     startRunPreview,
     enactVaultAssetProposal,
     enactInviteEconCommitteeProposal,
-    benefactorDeposit,
+    benefactor: makeBenefactor({ agoricNames, board, zoe, wallet: { purses } }),
     space,
   };
 };
@@ -312,12 +411,13 @@ test('Benefactor can add to reserve', async t => {
   await s.startDevNet();
   await s.provisionMembers();
   await s.startRunPreview();
+  await s.benefactor.makePool(2000n, 100n);
   await Promise.all([
     s.enactVaultAssetProposal(),
     s.enactInviteEconCommitteeProposal(),
   ]);
 
-  const result = await s.benefactorDeposit();
+  const result = await s.benefactor.depositInReserve(4000n);
   t.deepEqual(result, 'added Collateral to the Reserve');
 });
 
@@ -326,6 +426,7 @@ test('voters get invitations', async t => {
   await s.startDevNet();
   const purses = await s.provisionMembers();
   await s.startRunPreview();
+  await s.benefactor.makePool();
   await Promise.all([
     s.enactVaultAssetProposal(),
     s.enactInviteEconCommitteeProposal(),
@@ -357,6 +458,7 @@ test('assets are in AMM, Vaults', async t => {
   await s.startDevNet();
   await s.provisionMembers();
   await s.startRunPreview();
+  await s.benefactor.makePool(2000n, 100n);
 
   await Promise.all([
     s.enactVaultAssetProposal(),
@@ -391,7 +493,8 @@ test('Committee can raise debt limit', async t => {
   const s = await makeScenario(t);
   await s.startDevNet();
   const purses = await s.provisionMembers();
-  s.startRunPreview();
+  await s.startRunPreview();
+  await s.benefactor.makePool(2000n, 100n);
 
   await Promise.all([
     s.enactVaultAssetProposal(),
@@ -433,7 +536,6 @@ test('Committee can raise debt limit', async t => {
     deadline,
   );
 
-  t.log('@@actual', actual);
   t.deepEqual(actual, {
     details: actual.details,
     instance: votingInv.instance,

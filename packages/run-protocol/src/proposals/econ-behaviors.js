@@ -25,6 +25,7 @@ const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
 
 const BASIS_POINTS = 10_000n;
+const MILLI = 1_000_000n;
 
 const CENTRAL_DENOM_NAME = 'urun';
 
@@ -101,6 +102,60 @@ export const startEconomicCommittee = async (
   economicCommittee.resolve(instance);
 };
 harden(startEconomicCommittee);
+
+/**
+ * @param { EconomyBootstrapPowers } powers
+ * @param {{
+ *   interchainPoolOptions?: { minimumCentral?: bigint }
+ * }} [options]
+ */
+export const startInterchainPool = async (
+  {
+    consume: { bankManager: mgrP, zoe, agoricNamesAdmin },
+    installation: {
+      consume: { interchainPool: installationP },
+    },
+    instance: {
+      consume: { amm: ammP },
+      produce: { interchainPool: _viaAgoricNamesAdmin },
+    },
+    brand: {
+      consume: { RUN: centralBrandP },
+    },
+    issuer: {
+      consume: { RUN: centralIssuerP },
+    },
+  },
+  { interchainPoolOptions = {} } = {},
+) => {
+  // TODO: get minimumCentral dynamically from the AMM
+  const { minimumCentral = 100n * MILLI } = interchainPoolOptions;
+  const [centralIssuer, centralBrand, installation, bankManager, amm] =
+    await Promise.all([
+      centralIssuerP,
+      centralBrandP,
+      installationP,
+      mgrP,
+      ammP,
+    ]);
+
+  const terms = {
+    minimumCentral: AmountMath.make(centralBrand, minimumCentral),
+    amm,
+  };
+  const { instance } = await E(zoe).startInstance(
+    installation,
+    { Central: centralIssuer },
+    terms,
+    {
+      bankManager,
+    },
+  );
+
+  const instanceAdmin = E(agoricNamesAdmin).lookupAdmin('instance');
+  await E(instanceAdmin).update('interchainPool', instance);
+};
+harden(startInterchainPool);
 
 /** @param { EconomyBootstrapPowers } powers */
 export const setupAmm = async ({
@@ -510,8 +565,8 @@ export const startRewardDistributor = async ({
     centralIssuerP,
     centralBrandP,
   ]);
-  const feeCollectorDepositFacet = await E(bankManager)
-    .getFeeCollectorDepositFacet(CENTRAL_DENOM_NAME, {
+  const rewardDistributorDepositFacet = await E(bankManager)
+    .getRewardDistributorDepositFacet(CENTRAL_DENOM_NAME, {
       issuer: centralIssuer,
       brand: centralBrand,
     })
@@ -520,8 +575,8 @@ export const startRewardDistributor = async ({
       return undefined;
     });
 
-  // Only distribute fees if there is a collector.
-  if (!feeCollectorDepositFacet) {
+  // Only distribute rewards if there is a collector.
+  if (!rewardDistributorDepositFacet) {
     return;
   }
 
@@ -535,7 +590,7 @@ export const startRewardDistributor = async ({
     [vaultAdmin, ammAdmin, runStakeAdmin].map(cf =>
       E(vats.distributeFees).makeFeeCollector(zoe, cf),
     ),
-    feeCollectorDepositFacet,
+    rewardDistributorDepositFacet,
     epochTimerService,
     harden(distributorParams),
   );
