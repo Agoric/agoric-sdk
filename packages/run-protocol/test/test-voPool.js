@@ -12,7 +12,7 @@ const voPoolTest = async (t, mutation, postTest) => {
   let makePool;
   const { zoe, zcf } = await setupZCFTest();
   const invitation = await zcf.makeInvitation(() => {}, 'fake invitation');
-  const { brand: centralBrand } = makeIssuerKit('central');
+  const { brand: centralBrand, issuer: centralI } = makeIssuerKit('central');
   const paramManager = await makeAmmParamManager(
     zoe,
     25n,
@@ -20,15 +20,20 @@ const voPoolTest = async (t, mutation, postTest) => {
     AmountMath.make(centralBrand, 100n),
     invitation,
   );
-  const { brand: secondaryBrand } = makeIssuerKit('secondary');
+
+  const { brand: secondaryBrand, issuer: secondaryI } =
+    makeIssuerKit('secondary');
   const quoteIssuerKit = makeIssuerKit('Quotes');
   const liquidityZcfMint = await zcf.makeZCFMint('Liquidity');
-  const { userSeat: poolSeatP } = zcf.makeEmptySeatKit();
+  const { zcfSeat: poolSeatP } = zcf.makeEmptySeatKit();
   const { zcfSeat: protocolSeatP } = zcf.makeEmptySeatKit();
   const [poolSeat, protocolSeat] = await Promise.all([
     poolSeatP,
     protocolSeatP,
   ]);
+
+  await zcf.saveIssuer(centralI, 'Central');
+  await zcf.saveIssuer(secondaryI, 'Secondary');
 
   const defineVirtualPoolKind = () => {
     const timer = buildManualTimer(t.log);

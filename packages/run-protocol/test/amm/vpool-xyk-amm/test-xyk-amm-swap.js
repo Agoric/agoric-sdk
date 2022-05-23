@@ -26,6 +26,7 @@ import {
 import { BASIS_POINTS } from '../../../src/vpool-xyk-amm/constantProduct/defaults.js';
 import { setupAmmServices } from './setup.js';
 import { unsafeMakeBundleCache } from '../../bundleTool.js';
+import { subscriptionTracker } from '../../metrics.js';
 
 const { quote: q } = assert;
 const { ceilDivide } = natSafeMath;
@@ -388,6 +389,10 @@ test('amm doubleSwap', async t => {
 
   const ammInstance = await amm.instance;
 
+  const metricsSub = await E(amm.ammPublicFacet).getMetrics();
+  const m = await subscriptionTracker(t, metricsSub);
+  m.assertInitial({ XYK: [] });
+
   const aliceAddLiquidityInvitation = E(
     amm.ammPublicFacet,
   ).makeAddLiquidityInvitation();
@@ -401,6 +406,8 @@ test('amm doubleSwap', async t => {
     'Moola',
   );
 
+  await m.assertChange({ XYK: { 0: moolaR.brand } });
+
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
   const moolaLiquidity = value => AmountMath.make(moolaLiquidityBrand, value);
 
@@ -410,6 +417,8 @@ test('amm doubleSwap', async t => {
   const simoleanLiquidityBrand = await E(simoleanLiquidityIssuer).getBrand();
   const simoleanLiquidity = value =>
     AmountMath.make(simoleanLiquidityBrand, value);
+
+  await m.assertChange({ XYK: { 1: simoleanR.brand } });
 
   const issuerKeywordRecord = await E(zoe).getIssuers(ammInstance);
   t.deepEqual(
@@ -1015,6 +1024,10 @@ test('amm adding liquidity', async t => {
     timer,
   );
 
+  const metricsSub = await E(amm.ammPublicFacet).getMetrics();
+  const m = await subscriptionTracker(t, metricsSub);
+  await m.assertInitial({ XYK: [] });
+
   const addInitialLiquidity = makeAddInitialLiquidity(
     t,
     zoe,
@@ -1028,6 +1041,18 @@ test('amm adding liquidity', async t => {
     { message: /"secondaryBrand" not found: / },
     "The pool hasn't been created yet",
   );
+
+  await m.assertChange({ XYK: { 0: moolaR.brand } });
+
+  const poolMetricsSub = await E(amm.ammPublicFacet).getPoolMetrics(
+    moolaR.brand,
+  );
+  const p = await subscriptionTracker(t, poolMetricsSub);
+  await p.assertInitial({
+    centralAmount: AmountMath.makeEmpty(centralR.brand),
+    secondaryAmount: moola(0n),
+    liquidityTokens: 0n,
+  });
 
   // add initial liquidity at 10000:50000
   const liquidityIssuer = await addInitialLiquidity(10000n, 50000n);
@@ -1067,6 +1092,13 @@ test('amm adding liquidity', async t => {
     payoutC: 0n,
     payoutS: 11n,
   };
+
+  await p.assertState({
+    centralAmount: AmountMath.make(centralR.brand, 50_000n),
+    secondaryAmount: moola(10_000n),
+    liquidityTokens: 5_0000n,
+  });
+
   // Add liquidity. Offer 20_000:70_000.
   await addLiquidity(20_000n, 70_000n, poolState1, expected1);
   // After the trade, this will increase the pool by about 150%
@@ -1094,6 +1126,13 @@ test('amm adding liquidity', async t => {
     payoutC: 0n,
     payoutS: 16n,
   };
+
+  await p.assertState({
+    centralAmount: AmountMath.make(centralR.brand, 119_996n),
+    secondaryAmount: moola(29_989n),
+    liquidityTokens: 134_115n,
+  });
+
   // Add liquidity. Offer 12_000:100_000.
   await addLiquidity(12_000n, 100_000n, poolState2, expected2);
 
@@ -1103,4 +1142,10 @@ test('amm adding liquidity', async t => {
     allocation(219985n, 0n, 41973n),
     `poolAllocation after initialization`,
   );
+
+  await p.assertState({
+    centralAmount: AmountMath.make(centralR.brand, 219_985n),
+    secondaryAmount: moola(41_973n),
+    liquidityTokens: 214_795n,
+  });
 });

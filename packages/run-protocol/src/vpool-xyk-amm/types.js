@@ -20,6 +20,11 @@
  */
 
 /**
+ * @typedef {import('./multipoolMarketMaker.js').MetricsNotification} MetricsNotification
+ * @typedef {import('./pool.js').PoolMetricsNotification} PoolMetricsNotification
+ */
+
+/**
  * @typedef {object} DoublePoolSwapResult
  * @property {Amount<'nat'>} swapperGives
  * @property {Amount<'nat'>} swapperGets
@@ -77,6 +82,7 @@
  * @property {() => PriceAuthority} getToCentralPriceAuthority
  * @property {() => PriceAuthority} getFromCentralPriceAuthority
  * @property {() => VirtualPool} getVPool
+ * @property {() => Subscription<PoolMetricsNotification>} getMetrics
  */
 
 /**
@@ -128,6 +134,8 @@
  * Prices and notifications about changing prices.
  * @property {() => Brand[]} getAllPoolBrands
  * @property {() => Allocation} getProtocolPoolBalance
+ * @property {() => Subscription<MetricsNotification>} getMetrics
+ * @property {(brand: Brand) => Subscription<PoolMetricsNotification>} getPoolMetrics
  */
 
 /**
