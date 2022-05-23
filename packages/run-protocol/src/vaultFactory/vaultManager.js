@@ -45,7 +45,7 @@ const trace = makeTracer('VM');
  *
  * @property {Amount<'nat'>}  totalProceeds    running sum of central received from liquidation
  * @property {Amount<'nat'>}  totalOverage     running sum of overages, central received greater than debt
- * @property {Amount<'nat'>}  totalShortfall   running sum of shortfalls, central received less than ddebt
+ * @property {Amount<'nat'>}  totalShortfall   running sum of shortfalls, central received less than debt
  */
 
 /**
@@ -196,7 +196,7 @@ const initState = (
     totalOverage: zeroDebt,
     totalProceeds: zeroDebt,
     totalReclaimed: zeroCollateral,
-    totalShortfall: zeroCollateral,
+    totalShortfall: zeroDebt,
     vaultCounter: 0,
   };
 
