@@ -2397,7 +2397,7 @@ test('director notifiers', async t => {
   t.pass();
 });
 
-test.only('manager notifiers', async t => {
+test('manager notifiers', async t => {
   const LOAN1 = 450n;
   const DEBT1 = 473n; // with penalty
   const LOAN2 = 50n;
@@ -2478,8 +2478,6 @@ test.only('manager notifiers', async t => {
     }),
   );
   await E(takeCollateralSeat).getOfferResult();
-  // XXX empty change
-  await m.assertChange({});
   await m.assertChange({
     totalCollateral: { value: AMPLE - taken.value },
   });
@@ -2530,8 +2528,6 @@ test.only('manager notifiers', async t => {
     }),
   );
   await E(vaultSeat).getOfferResult();
-  // XXX empty change
-  await m.assertChange({});
   await m.assertChange({
     numVaults: 2,
     totalCollateral: { value: AMPLE + ENOUGH },
@@ -2543,8 +2539,6 @@ test.only('manager notifiers', async t => {
   await E(aethVaultManager).liquidateAll();
   totalProceedsReceived += 54n;
   totalOverageReceived += 54n - DEBT2;
-  // XXX empty change
-  await m.assertChange({});
   await m.assertChange({
     numLiquidationsCompleted: 2,
     numVaults: 1,
@@ -2581,8 +2575,6 @@ test.only('manager notifiers', async t => {
     totalDebt: { value: DEBT2 },
   });
   td.add(DEBT2);
-  // XXX empty change
-  await m.assertChange({});
 
   trace('8. Liquidate all');
   await E(aethVaultManager).liquidateAll();
@@ -2619,8 +2611,6 @@ test.only('manager notifiers', async t => {
     await manualTimer.tick();
   }
   const interestAccrued = periods * 2n;
-  // XXX empty change
-  await m.assertChange({});
   // make another loan to trigger a publish
   vaultSeat = await E(services.zoe).offer(
     await E(lender).makeVaultInvitation(),

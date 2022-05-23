@@ -278,7 +278,6 @@ const helperBehavior = {
   },
 
   /** @param {MethodContext} context */
-  // XXX rename to publishMetrics since it doesn't update anything locally
   updateMetrics: ({ state }) => {
     /** @type {MetricsNotification} */
     const payload = harden({
@@ -579,7 +578,7 @@ const selfBehavior = {
    * @param {MethodContext} context
    * @param {ZCFSeat} seat
    */
-  makeVaultKit: async ({ state, facets: { helper, manager } }, seat) => {
+  makeVaultKit: async ({ state, facets: { manager } }, seat) => {
     const { prioritizedVaults, zcf } = state;
     assertProposalShape(seat, {
       give: { Collateral: null },
@@ -598,15 +597,7 @@ const selfBehavior = {
       // TODO `await` is allowed until the above ordering is fixed
       // eslint-disable-next-line @jessie.js/no-nested-await
       const vaultKit = await vault.initVaultKit(seat);
-      trace('totalCollateral in makevaultKit', state.totalCollateral);
-      // ??? what is setting this instead?
-      // state.totalCollateral = AmountMath.add(
-      //   state.totalCollateral,
-      //   // FIXME vaults can have balances adjusted; must include in metrics test
-      //   vaultKit.vault.getCollateralAmount(),
-      // );
       seat.exit();
-      helper.updateMetrics();
       return vaultKit;
     } catch (err) {
       // remove it from prioritizedVaults
