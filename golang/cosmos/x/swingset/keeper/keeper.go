@@ -303,16 +303,19 @@ func (k Keeper) SetEgress(ctx sdk.Context, egress *types.Egress) error {
 // ExportStorage fetches all storage
 func (k Keeper) ExportStorage(ctx sdk.Context) []*types.StorageEntry {
 	store := ctx.KVStore(k.storeKey)
-	dataStore := prefix.NewStore(store, types.DataKeyPrefix)
+	pathStore := prefix.NewStore(store, types.PathKeyPrefix)
 
-	iterator := sdk.KVStorePrefixIterator(dataStore, nil)
+	iterator := sdk.KVStorePrefixIterator(pathStore, nil)
 
 	exported := []*types.StorageEntry{}
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		keyStr := keyToPath(iterator.Key())
-		entry := types.StorageEntry{Key: keyStr, Value: string(iterator.Value())}
-		exported = append(exported, &entry)
+		value := k.GetStorage(ctx, keyStr)
+		if value != "" {
+			entry := types.StorageEntry{Key: keyStr, Value: value}
+			exported = append(exported, &entry)
+		}
 	}
 	return exported
 }

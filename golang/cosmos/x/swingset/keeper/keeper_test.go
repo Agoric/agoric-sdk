@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"bytes"
+	"reflect"
 	"testing"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
@@ -201,5 +202,17 @@ func TestStorage(t *testing.T) {
 	keeper.SetStorage(ctx, "key2.child2.grandchild2a", "value2grandchilda")
 	if got := keeper.GetKeys(ctx, "key2.child2"); !keysEqual(got.Keys, []string{"grandchild2", "grandchild2a"}) {
 		t.Errorf("got %q keys, want [grandchild2,grandchild2a]", got.Keys)
+	}
+
+	// Check the export.
+	expectedExport := []*types.StorageEntry{
+		{Key: "alpha2", Value: "value2"},
+		{Key: "beta3", Value: "value3"},
+		{Key: "inited", Value: "initValue"},
+		{Key: "key2.child2.grandchild2", Value: "value2grandchild"},
+		{Key: "key2.child2.grandchild2a", Value: "value2grandchilda"},
+	}
+	if got := keeper.ExportStorage(ctx); !reflect.DeepEqual(got, expectedExport) {
+		t.Errorf("got export %q, want %q", got, expectedExport)
 	}
 }
