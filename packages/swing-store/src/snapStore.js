@@ -10,6 +10,43 @@ const pipe = promisify(pipeline);
 const { freeze } = Object;
 
 /**
+ *
+ * @param {import("fs").ReadStream | import("fs").WriteStream} stream
+ * @returns {Promise<void>}
+ */
+export const fsStreamReady = stream =>
+  new Promise((resolve, reject) => {
+    if (stream.destroyed) {
+      reject(new Error('Stream already destroyed'));
+      return;
+    }
+
+    if (!stream.pending) {
+      resolve();
+      return;
+    }
+
+    const onReady = () => {
+      cleanup(); // eslint-disable-line no-use-before-define
+      resolve();
+    };
+
+    /** @param {Error} err */
+    const onError = err => {
+      cleanup(); // eslint-disable-line no-use-before-define
+      reject(err);
+    };
+
+    const cleanup = () => {
+      stream.off('ready', onReady);
+      stream.off('error', onError);
+    };
+
+    stream.on('ready', onReady);
+    stream.on('error', onError);
+  });
+
+/**
  * @param {string} root
  * @param {{
  *   tmpName: typeof import('tmp').tmpName,
@@ -87,7 +124,8 @@ export function makeSnapStore(
   /** @type {(input: string, f: NodeJS.ReadWriteStream, output: string) => Promise<void>} */
   async function filter(input, f, output) {
     const source = createReadStream(input);
-    const destination = createWriteStream(output);
+    const destination = createWriteStream(output, { flags: 'wx' });
+    await Promise.all([fsStreamReady(source), fsStreamReady(destination)]);
     await pipe(source, f, destination);
   }
 
@@ -95,6 +133,7 @@ export function makeSnapStore(
   async function fileHash(filename) {
     const hash = createHash('sha256');
     const input = createReadStream(filename);
+    await fsStreamReady(input);
     await pipe(input, hash);
     return hash.digest('hex');
   }
