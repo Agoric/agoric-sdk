@@ -3,7 +3,6 @@ import { E } from '@endo/eventual-send';
 import { makeLoopback } from '@endo/captp';
 
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { AmountMath } from '@agoric/ertp';
 import { makeZoeKit } from '@agoric/zoe';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
