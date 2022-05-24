@@ -43,10 +43,8 @@ export const metricsTracker = async (t, publicFacet) => {
 };
 
 /**
- * For vaultManager
- *
  * @param {import('ava').ExecutionContext} t
- * @param {{getMetrics?: () => Subscription<import('../src/vaultFactory/vaultManager').MetricsNotification>}} publicFacet
+ * @param {import('../src/vaultFactory/vaultManager').CollateralManager} publicFacet
  */
 export const vaultManagerMetricsTracker = async (t, publicFacet) => {
   let totalDebtEver = 0n;
