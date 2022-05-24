@@ -62,6 +62,7 @@ export const makeAddIssuer = (zcf, isInSecondaries, brandToLiquidityMint) => {
  * @param {ZCFSeat} reserveLiquidityTokenSeat seat that holds liquidity tokens
  *   from adding pool liquidity. It is expected to be collected by the Reserve.
  * @param {WeakStore<Brand,ZCFMint>} brandToLiquidityMint
+ * @param {() => void} updateMetrics
  */
 export const makeAddPoolInvitation = (
   zcf,
@@ -73,6 +74,7 @@ export const makeAddPoolInvitation = (
   protocolSeat,
   reserveLiquidityTokenSeat,
   brandToLiquidityMint,
+  updateMetrics,
 ) => {
   const makePool = definePoolKind(
     zcf,
@@ -92,6 +94,7 @@ export const makeAddPoolInvitation = (
     const poolFacets = makePool(liquidityZcfMint, poolSeat, secondaryBrand);
 
     initPool(secondaryBrand, poolFacets);
+    updateMetrics();
     return { liquidityZcfMint, poolFacets };
   };
 

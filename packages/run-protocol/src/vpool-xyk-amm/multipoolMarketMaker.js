@@ -1,18 +1,19 @@
 // @ts-check
 
-import { makeWeakStore } from '@agoric/store';
+import { makeStore, makeWeakStore } from '@agoric/store';
 import { Far } from '@endo/marshal';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
+import { makeSubscriptionKit } from '@agoric/notifier';
 
 import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { makeAddIssuer, makeAddPoolInvitation } from './addPool.js';
 import { publicPrices } from './pool.js';
 import {
-  makeMakeAddLiquidityInvitation,
   makeMakeAddLiquidityAtRateInvitation,
+  makeMakeAddLiquidityInvitation,
 } from './addLiquidity.js';
 import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity.js';
 
@@ -27,6 +28,11 @@ import {
 } from './params.js';
 
 const { quote: q, details: X } = assert;
+
+/**
+ * @typedef {object} MetricsNotification
+ * @property {Brand[]} XYK brands of pools that use an X*Y=K pricing policy
+ */
 
 /**
  * Multipool AMM is a rewrite of Uniswap that supports multiple liquidity pools,
@@ -133,8 +139,8 @@ const start = async (zcf, privateArgs) => {
     )}`,
   );
 
-  /** @type {WeakStore<Brand,PoolFacets>} */
-  const secondaryBrandToPool = makeWeakStore('secondaryBrand');
+  /** @type {Store<Brand,PoolFacets>} */
+  const secondaryBrandToPool = makeStore('secondaryBrand');
   const getPool = brand => secondaryBrandToPool.get(brand).pool;
   const getPoolHelper = brand => secondaryBrandToPool.get(brand).helper;
   const initPool = secondaryBrandToPool.init;
@@ -145,6 +151,16 @@ const start = async (zcf, privateArgs) => {
   const secondaryBrandToLiquidityMint = makeWeakStore('secondaryBrand');
 
   const quoteIssuerKit = makeIssuerKit('Quote', AssetKind.SET);
+
+  /** @type {SubscriptionRecord<MetricsNotification>} */
+  const { publication: metricsPublication, subscription: metricsSubscription } =
+    makeSubscriptionKit();
+  const updateMetrics = () => {
+    metricsPublication.updateState(
+      harden({ XYK: Array.from(secondaryBrandToPool.keys()) }),
+    );
+  };
+  updateMetrics();
 
   // For now, this seat collects protocol fees. It needs to be connected to
   // something that will extract the fees.
@@ -165,6 +181,7 @@ const start = async (zcf, privateArgs) => {
     protocolSeat,
     reserveLiquidityTokenSeat,
     secondaryBrandToLiquidityMint,
+    updateMetrics,
   );
   const addIssuer = makeAddIssuer(
     zcf,
@@ -183,6 +200,9 @@ const start = async (zcf, privateArgs) => {
       fromCentral: pool.getFromCentralPriceAuthority(),
     };
   };
+
+  /** @param {Brand} brand */
+  const getPoolMetrics = brand => getPool(brand).getMetrics();
 
   /**
    * @param {Brand} brandIn
@@ -266,6 +286,8 @@ const start = async (zcf, privateArgs) => {
       getAllPoolBrands: () =>
         Object.values(zcf.getTerms().brands).filter(isSecondary),
       getProtocolPoolBalance: () => protocolSeat.getCurrentAllocation(),
+      getMetrics: () => metricsSubscription,
+      getPoolMetrics,
     }),
   );
 
