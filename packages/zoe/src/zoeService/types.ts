@@ -233,6 +233,7 @@ export type Proposal = Partial<ProposalRecord>;
 export type ProposalRecord = {
   give: AmountKeywordRecord;
   want: AmountKeywordRecord;
+  multiples: bigint;
   exit: ExitRule;
 };
 /**

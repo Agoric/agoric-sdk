@@ -1,12 +1,13 @@
-import { AmountMath } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
-import { q, Fail } from '@endo/errors';
-import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
-import { provideDurableWeakMapStore } from '@agoric/vat-data';
-
 /// <reference path="./types.js" />
 
-import { cleanKeywords } from '../cleanProposal.js';
+import { q, Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { objectMap } from '@endo/patterns';
+import { deeplyFulfilledObject } from '@agoric/internal/src/ses-utils.js';
+import { provideDurableWeakMapStore } from '@agoric/vat-data';
+import { AmountMath } from '@agoric/ertp';
+
+import { cleanKeywords, scaleAmount } from '../cleanProposal.js';
 
 /**
  * @import {WeakMapStore} from '@agoric/store';
@@ -76,7 +77,7 @@ export const provideEscrowStorage = baggage => {
 
   /** @type {DepositPayments} */
   const depositPayments = async (proposal, payments) => {
-    const { give, want } = proposal;
+    const { give, want, multiples } = proposal;
     const giveKeywords = Object.keys(give);
     const paymentKeywords = cleanKeywords(payments);
 
@@ -106,7 +107,8 @@ export const provideEscrowStorage = baggage => {
         )} keyword in proposal.give did not have an associated payment in the paymentKeywordRecord, which had keywords: ${q(
           paymentKeywords,
         )}`;
-      return doDepositPayment(payments[keyword], amount);
+      const giveAmount = scaleAmount(give[keyword], multiples);
+      return doDepositPayment(payments[keyword], giveAmount);
     });
     const deposits = await deeplyFulfilledObject(depositPs);
 

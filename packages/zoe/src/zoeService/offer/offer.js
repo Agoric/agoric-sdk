@@ -46,7 +46,12 @@ export const makeOfferMethod = offerDataAccess => {
     const proposal = cleanProposal(uncleanProposal, getAssetKindByBrand);
     const proposalShape =
       offerDataAccess.getProposalShapeForInvitation(invitationHandle);
-    if (proposalShape !== undefined) {
+    if (proposalShape === undefined) {
+      // For the contract to opt into accepting a multiples value other than
+      // `1n`, it must provide `makeInvitation` with a proposalShape.
+      proposal.multiples === 1n ||
+        Fail`Contract not willing to accept multiples for this invitation: ${proposal}`;
+    } else {
       mustMatch(proposal, proposalShape, `${q(description)} proposal`);
     }
 
