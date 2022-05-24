@@ -2,46 +2,47 @@
 
 /**
  * @typedef {object} VPoolPriceQuote
- * @property {Amount} amountIn
- * @property {Amount} amountOut
+ * @property {Amount<'nat'>} amountIn
+ * @property {Amount<'nat'>} amountOut
  */
 
 /**
- * @typedef {object} VPool - virtual pool for price quotes and trading
- * @property {(amountIn: Amount, amountOut: Amount) => VPoolPriceQuote} getInputPrice
- * @property {(amountIn: Amount, amountOut: Amount) => VPoolPriceQuote} getOutputPrice
+ * @typedef {object} SinglePoolSwapResult
+ *
+ * @property {Amount<'nat'>} xIncrement
+ * @property {Amount<'nat'>} swapperGives
+ * @property {Amount<'nat'>} yDecrement
+ * @property {Amount<'nat'>} swapperGets
+ * @property {Amount<'nat'>} protocolFee
+ * @property {Amount<'nat'>} poolFee
+ * @property {Amount<'nat'>} newY
+ * @property {Amount<'nat'>} newX
  */
 
 /**
  * @typedef {object} DoublePoolSwapResult
- * @property {Amount} swapperGives
- * @property {Amount} swapperGets
- * @property {Amount} inPoolIncrement
- * @property {Amount} inPoolDecrement
- * @property {Amount} outPoolIncrement
- * @property {Amount} outPoolDecrement
- * @property {Amount} protocolFee
+ * @property {Amount<'nat'>} swapperGives
+ * @property {Amount<'nat'>} swapperGets
+ * @property {Amount<'nat'>} inPoolIncrement
+ * @property {Amount<'nat'>} inPoolDecrement
+ * @property {Amount<'nat'>} outPoolIncrement
+ * @property {Amount<'nat'>} outPoolDecrement
+ * @property {Amount<'nat'>} protocolFee
  */
 
 /**
- * @callback GetDoublePoolSwapQuote
- * @param {Amount} amountIn
- * @param {Amount} amountOut
- * @returns {DoublePoolSwapResult}
- */
-
-/**
- * @callback GetSinglePoolSwapQuote
- * @param {Amount} amountIn
- * @param {Amount} amountOut
- * @returns {SwapResult}
+ * @typedef {A extends 'single' ? SinglePoolSwapResult
+ * : A extends 'double' ? DoublePoolSwapResult
+ * : SinglePoolSwapResult | DoublePoolSwapResult} SwapResult
+ * @template {'single' | 'double' | unknown} A arity
  */
 
 /**
  * @typedef {object} VirtualPool - virtual pool for price quotes and trading
- * @property {GetDoublePoolSwapQuote} getPriceForInput
- * @property {GetDoublePoolSwapQuote} getPriceForOutput
- * @property {(seat: ZCFSeat, swapResult: DoublePoolSwapResult) => string} allocateGainsAndLosses
+ * @property {(seat: ZCFSeat, prices: SwapResult<A>) => string} allocateGainsAndLosses
+ * @property {(amountIn: Amount, amountOut: Amount) => SwapResult<A>} getPriceForInput
+ * @property {(amountIn: Amount, amountOut: Amount) => SwapResult<A>} getPriceForOutput
+ * @template {'single' | 'double' | unknown} [A=unknown] arity
  */
 
 /**
@@ -52,6 +53,14 @@
  * @param {Amount<'nat'>} poolCentralAmount
  * @param {ZCFSeat} [feeSeat]
  * @returns {string}
+ */
+
+/**
+ * @callback AddLiquidityInternal
+ * @param {ZCFSeat} zcfSeat
+ * @param {Amount<'nat'>} secondaryAmount
+ * @param {Amount<'nat'>} poolCentralAmount
+ * @param {ZCFSeat} [feeSeat]
  */
 
 /**
@@ -73,8 +82,8 @@
 /**
  * @typedef {object} PoolFacets
  * @property {XYKPool} pool
- * @property {{addLiquidityActual: AddLiquidityActual}} helper
- * @property {VirtualPool} singlePool
+ * @property {{addLiquidityActual: AddLiquidityActual, addLiquidityInternal: AddLiquidityInternal}} helper
+ * @property {VirtualPool<'single'>} singlePool
  */
 
 /**
@@ -83,8 +92,9 @@
  */
 /**
  * @typedef {object} XYKAMMPublicFacet
- * @property {(issuer: ERef<Issuer>, keyword: Keyword) => Promise<Issuer>} addPool
+ * @property {() => Promise<Invitation>} addPoolInvitation
  * add a new liquidity pool
+ * @property {(secondaryIssuer: ERef<Issuer>, keyword: Keyword) => Promise<Issuer>} addIssuer
  * @property {() => Promise<Invitation>} makeSwapInvitation synonym for
  * makeSwapInInvitation
  * @property {() => Promise<Invitation>} makeSwapInInvitation make an invitation

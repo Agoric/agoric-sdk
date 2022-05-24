@@ -77,9 +77,7 @@ test('balancesToReachRatio calculations are to spec', async t => {
 
         // target X / targetY approximately equals poolXAfter / poolYAfter
         const ratiosWithinRange = withinEpsilon(
-          // @ts-expect-error targetX.value is a Nat
           targetX.value * add(poolY.value, giveY.value),
-          // @ts-expect-error targetY.value is a Nat
           targetY.value * add(poolX.value, giveX.value),
         );
         t.truthy(

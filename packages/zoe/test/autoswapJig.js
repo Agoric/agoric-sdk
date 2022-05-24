@@ -123,6 +123,113 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
   const getPoolAllocation = issuer =>
     E(publicFacet).getPoolAllocation(issuer.getBrand());
 
+  const liquidityPreCheck = async (
+    t,
+    secondaryIssuer,
+    liquidityIssuer,
+    priorPoolState,
+    details,
+    expected,
+  ) => {
+    const centralBrand = await E(centralIssuer).getBrand();
+    const secondaryBrand = await E(secondaryIssuer).getBrand();
+    const liquidityBrand = await E(liquidityIssuer).getBrand();
+    const central = value => AmountMath.make(centralBrand, value);
+    const secondary = value => AmountMath.make(secondaryBrand, value);
+    const liquidity = value => AmountMath.make(liquidityBrand, value);
+
+    const { c: cPre, s: sPre, l: lPre, k: kPre } = priorPoolState;
+    const { cAmount, sAmount, lAmount = liquidity(0n) } = details;
+    const { payoutC, payoutS } = expected;
+    t.truthy(payoutC === 0n || payoutS === 0n, 'only refund one side');
+
+    const poolPre = await getPoolAllocation(secondaryIssuer);
+    t.deepEqual(poolPre.Central, central(cPre), `central before add liq`);
+    t.deepEqual(poolPre.Secondary, secondary(sPre), `s before add liq`);
+    t.is(
+      await getLiquidity(secondaryIssuer),
+      lPre,
+      'liquidity pool before add',
+    );
+    t.is(kPre, sPre * cPre);
+    return {
+      cAmount,
+      sAmount,
+      lAmount,
+    };
+  };
+
+  const liquidityPostCheck = async (
+    t,
+    seat,
+    secondaryIssuer,
+    liquidityIssuer,
+    expected,
+    priorPoolState,
+    cAmount,
+    specifyRate,
+  ) => {
+    const centralBrand = await E(centralIssuer).getBrand();
+    const secondaryBrand = await E(secondaryIssuer).getBrand();
+    const liquidityBrand = await E(liquidityIssuer).getBrand();
+    const central = value => AmountMath.make(centralBrand, value);
+    const secondary = value => AmountMath.make(secondaryBrand, value);
+    const liquidity = value => AmountMath.make(liquidityBrand, value);
+    const {
+      c: cPost,
+      s: sPost,
+      l: lPost,
+      k: kPost,
+      payoutL,
+      payoutC,
+      payoutS,
+    } = expected;
+    const { c: cPre, s: sPre, l: lPre } = priorPoolState;
+
+    const scaleByAlpha = makeScaleFn(cPre, cPost);
+    const {
+      Central: cPayout,
+      Secondary: sPayout,
+      Liquidity: lPayout,
+    } = await E(seat).getPayouts();
+    await assertPayoutAmount(t, centralIssuer, cPayout, central(payoutC), '+c');
+    await assertPayoutAmount(
+      t,
+      secondaryIssuer,
+      sPayout,
+      secondary(payoutS),
+      '+s',
+    );
+    await assertPayoutAmount(
+      t,
+      liquidityIssuer,
+      lPayout,
+      liquidity(payoutL),
+      '+l',
+    );
+
+    const poolPost = await getPoolAllocation(secondaryIssuer);
+    t.deepEqual(poolPost.Central, central(cPost), `central after add liq`);
+    t.deepEqual(poolPost.Secondary, secondary(sPost), `s after add liq`);
+    t.is(await getLiquidity(secondaryIssuer), lPost, 'liquidity pool after');
+    t.is(kPost, sPost * cPost, 'expected value of K after addLiquidity');
+
+    if (!specifyRate) {
+      t.is(add(lPre, scaleByAlpha(lPre)), lPost, 'liquidity scales');
+
+      const productC = multiply(cPre, scaleByAlpha(sPre));
+      const productS = multiply(sPre, cAmount.value);
+      const exact = productC === productS;
+      if (exact) {
+        t.is(add(cPre, scaleByAlpha(cPre)), cPost, 'central post add');
+        t.is(add(sPre, scaleByAlpha(sPre)), sPost, 'secondary post add');
+      } else {
+        t.is(add(cPre, cAmount.value), cPost, 'central post add');
+        t.is(add(1n, add(sPre, scaleByAlpha(sPre))), sPost, 's post add');
+      }
+    }
+  };
+
   const trader = Remotable('Alleged: trader', undefined, {
     // Using Remotable rather than Far because the methods accept
     // an ava ExecutionContext as `t`, which is not a passable.
@@ -220,37 +327,14 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
       // just check that it went through, and the results are as stated.
       // The test will declare fees, refunds, and figure out when the trade
       // gets less than requested
-
-      const centralBrand = await E(centralIssuer).getBrand();
-      const secondaryBrand = await E(secondaryIssuer).getBrand();
-      const liquidityBrand = await E(liquidityIssuer).getBrand();
-      const central = value => AmountMath.make(centralBrand, value);
-      const secondary = value => AmountMath.make(secondaryBrand, value);
-      const liquidity = value => AmountMath.make(liquidityBrand, value);
-
-      const { c: cPre, s: sPre, l: lPre, k: kPre } = priorPoolState;
-      const { cAmount, sAmount, lAmount = liquidity(0n) } = details;
-      const {
-        c: cPost,
-        s: sPost,
-        l: lPost,
-        k: kPost,
-        payoutL,
-        payoutC,
-        payoutS,
-      } = expected;
-      t.truthy(payoutC === 0n || payoutS === 0n, 'only refund one side');
-      const scaleByAlpha = makeScaleFn(cPre, cPost);
-
-      const poolPre = await getPoolAllocation(secondaryIssuer);
-      t.deepEqual(poolPre.Central, central(cPre), `central before add liq`);
-      t.deepEqual(poolPre.Secondary, secondary(sPre), `s before add liq`);
-      t.is(
-        await getLiquidity(secondaryIssuer),
-        lPre,
-        'liquidity pool before add',
+      const { cAmount, sAmount, lAmount } = await liquidityPreCheck(
+        t,
+        secondaryIssuer,
+        liquidityIssuer,
+        priorPoolState,
+        details,
+        expected,
       );
-      t.is(kPre, sPre * cPre);
 
       const proposal = harden({
         give: { Central: cAmount, Secondary: sAmount },
@@ -268,50 +352,64 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
       );
       assertOfferResult(t, seat, 'Added liquidity.');
 
-      const {
-        Central: cPayout,
-        Secondary: sPayout,
-        Liquidity: lPayout,
-      } = await seat.getPayouts();
-      await assertPayoutAmount(
+      return liquidityPostCheck(
         t,
-        centralIssuer,
-        cPayout,
-        central(payoutC),
-        '+c',
+        seat,
+        secondaryIssuer,
+        liquidityIssuer,
+        expected,
+        priorPoolState,
+        cAmount,
+        false,
       );
-      await assertPayoutAmount(
+    },
+
+    // This check only handles success. Failing calls should do something else.
+    addLiquidityAtRateAndCheck: async (
+      t,
+      priorPoolState,
+      details,
+      expected,
+      { Liquidity: liquidityIssuer, Secondary: secondaryIssuer },
+    ) => {
+      // just check that it went through, and the results are as stated.
+      // The test will declare fees, refunds, and figure out when the trade
+      // gets less than requested
+      const { cAmount, sAmount, lAmount } = await liquidityPreCheck(
         t,
         secondaryIssuer,
-        sPayout,
-        secondary(payoutS),
-        '+s',
-      );
-      await assertPayoutAmount(
-        t,
         liquidityIssuer,
-        lPayout,
-        liquidity(payoutL),
-        '+l',
+        priorPoolState,
+        details,
+        expected,
       );
 
-      const poolPost = await getPoolAllocation(secondaryIssuer);
-      t.deepEqual(poolPost.Central, central(cPost), `central after add liq`);
-      t.deepEqual(poolPost.Secondary, secondary(sPost), `s after add liq`);
-      t.is(await getLiquidity(secondaryIssuer), lPost, 'liquidity pool after');
-      t.is(kPost, sPost * cPost, 'expected value of K after addLiquidity');
-      t.is(add(lPre, scaleByAlpha(lPre)), lPost, 'liquidity scales');
-      const productC = multiply(cPre, scaleByAlpha(sPre));
+      const proposal = harden({
+        give: { Central: cAmount, Secondary: sAmount },
+        want: { Liquidity: lAmount },
+      });
+      const payment = harden({
+        Central: withdrawPayment(cAmount),
+        Secondary: withdrawPayment(sAmount),
+      });
 
-      const productS = multiply(sPre, cAmount.value);
-      const exact = productC === productS;
-      if (exact) {
-        t.is(add(cPre, scaleByAlpha(cPre)), cPost, 'central post add');
-        t.is(add(sPre, scaleByAlpha(sPre)), sPost, 'secondary post add');
-      } else {
-        t.is(add(cPre, cAmount.value), cPost, 'central post add');
-        t.is(add(1n, add(sPre, scaleByAlpha(sPre))), sPost, 's post add');
-      }
+      const seat = await E(zoe).offer(
+        E(publicFacet).makeAddLiquidityAtRateInvitation(),
+        proposal,
+        payment,
+      );
+      assertOfferResult(t, seat, 'Added liquidity.');
+
+      return liquidityPostCheck(
+        t,
+        seat,
+        secondaryIssuer,
+        liquidityIssuer,
+        expected,
+        priorPoolState,
+        cAmount,
+        true,
+      );
     },
 
     // This check only handles success. Failing calls should test manually.
@@ -484,6 +582,51 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
       t.is(cAmount.value, cPost);
       t.is(sAmount.value, sPost);
       return { central: cPayout, secondary: sPayout, liquidity: lPayout };
+    },
+
+    async addLiquidPoolAndCheck(t, details, expected, secondaryIssuer, kwd) {
+      const { cAmount, sAmount, liquidityValue } = details;
+      const liquidityIssuer = E(publicFacet).addIssuer(secondaryIssuer, kwd);
+      const liquidityBrand = await E(liquidityIssuer).getBrand();
+      const addPoolInvitation = await E(publicFacet).addPoolInvitation();
+
+      const proposal = harden({
+        give: { Secondary: sAmount, Central: cAmount },
+        want: { Liquidity: AmountMath.make(liquidityBrand, liquidityValue) },
+      });
+      const payments = {
+        Secondary: withdrawPayment(sAmount),
+        Central: withdrawPayment(cAmount),
+      };
+
+      const addLiquiditySeat = E(zoe).offer(
+        addPoolInvitation,
+        proposal,
+        payments,
+      );
+      t.is(
+        await E(addLiquiditySeat).getOfferResult(),
+        'Added liquidity.',
+        `Added Secondary and Central Liquidity`,
+      );
+
+      const centralBrand = await E(centralIssuer).getBrand();
+      const secondaryBrand = await E(secondaryIssuer).getBrand();
+      const central = value => AmountMath.make(centralBrand, value);
+      const secondary = value => AmountMath.make(secondaryBrand, value);
+      const liquidity = value => AmountMath.make(liquidityBrand, value);
+
+      const { c: cPost, s: sPost, l: lPost, k: kPost } = expected;
+      const poolPost = await getPoolAllocation(secondaryIssuer);
+      t.deepEqual(poolPost.Central, central(cPost), `central after init`);
+      t.deepEqual(poolPost.Secondary, secondary(sPost), `s after liquidity`);
+      t.deepEqual(poolPost.Liquidity, liquidity(0n), `l after liquidity`);
+      t.is(await getLiquidity(secondaryIssuer), lPost, 'liq pool after init');
+      t.is(sPost * cPost, kPost, 'expected value of K after init');
+      t.is(cAmount.value, cPost);
+      t.is(sAmount.value, sPost);
+
+      return { seat: addLiquiditySeat, liquidityIssuer };
     },
   });
   return trader;

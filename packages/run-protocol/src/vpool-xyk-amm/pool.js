@@ -56,7 +56,7 @@ export const publicPrices = prices => {
  * }} MethodContext
  */
 
-const updateUpdaterState = (updater, pool) =>
+export const updateUpdaterState = (updater, pool) =>
   // TODO: when governance can change the interest rate, include it here
   updater.updateState({
     central: pool.getCentralAmount(),
@@ -64,23 +64,21 @@ const updateUpdaterState = (updater, pool) =>
   });
 
 const helperBehavior = {
-  /** @type {import('@agoric/vat-data/src/types').PlusContext<MethodContext, AddLiquidityActual>} */
-  addLiquidityActual: (
+  /** @type {import('@agoric/vat-data/src/types').PlusContext<MethodContext, AddLiquidityInternal>} */
+  addLiquidityInternal: (
     { state },
-    pool,
     zcfSeat,
     secondaryAmount,
     poolCentralAmount,
     feeSeat,
   ) => {
-    const { poolSeat, liquidityBrand, liquidityZcfMint, updater, zcf } = state;
-
+    const { poolSeat, liquidityBrand, liquidityZcfMint, zcf } = state;
     // addLiquidity can't be called until the pool has been created. We verify
     // that the asset is NAT before creating a pool.
 
     const liquidityValueOut = calcLiqValueToMint(
       state.liqTokenSupply,
-      // @ts-expect-error NatValue cast
+      // @ts-expect-error value could be not Nat
       zcfSeat.getStagedAllocation().Central.value,
       poolCentralAmount.value,
     );
@@ -112,6 +110,25 @@ const helperBehavior = {
     } else {
       zcf.reallocate(poolSeat, zcfSeat);
     }
+  },
+  /** @type {import('@agoric/vat-data/src/types').PlusContext<MethodContext, AddLiquidityActual>} */
+  addLiquidityActual: (
+    { state, facets },
+    pool,
+    zcfSeat,
+    secondaryAmount,
+    poolCentralAmount,
+    feeSeat,
+  ) => {
+    const { updater } = state;
+    const { helper } = facets;
+
+    helper.addLiquidityInternal(
+      zcfSeat,
+      secondaryAmount,
+      poolCentralAmount,
+      feeSeat,
+    );
     zcfSeat.exit();
     updateUpdaterState(updater, pool);
     return 'Added liquidity.';
