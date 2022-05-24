@@ -6,7 +6,7 @@ import { AmountMath } from '@agoric/ertp';
 import { makeRatio, offerTo } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeTracer } from '../makeTracer.js';
 
-const trace = makeTracer('LIQ');
+const trace = makeTracer('LIQ', false);
 
 /**
  *

@@ -11,6 +11,8 @@ import { diff } from 'deep-object-diff';
 export const subscriptionTracker = async (t, subscription) => {
   const metrics = makeNotifierFromAsyncIterable(subscription);
   let notif;
+  const getLastNotif = () => notif;
+
   const assertInitial = async expectedValue => {
     notif = await metrics.getUpdateSince();
     t.deepEqual(notif.value, expectedValue);
@@ -23,9 +25,10 @@ export const subscriptionTracker = async (t, subscription) => {
     const prevNotif = notif;
     notif = await metrics.getUpdateSince(notif.updateCount);
     const actualDelta = diff(prevNotif.value, notif.value);
+    console.log({ actualDelta });
     t.deepEqual(actualDelta, expectedDelta, 'Unexpected delta');
   };
-  return { assertChange, assertInitial };
+  return { assertChange, assertInitial, getLastNotif };
 };
 
 /**
@@ -45,27 +48,43 @@ export const metricsTracker = async (t, publicFacet) => {
  * @param {import('ava').ExecutionContext} t
  * @param {{getMetrics?: () => Subscription<import('../src/vaultFactory/vaultManager').MetricsNotification>}} publicFacet
  */
-export const totalDebtTracker = (t, publicFacet) => {
+export const vaultManagerMetricsTracker = async (t, publicFacet) => {
   let totalDebtEver = 0n;
-  /** @param {bigint} delta */
-  const add = delta => {
-    totalDebtEver += delta;
-  };
-  const assertFullLiquidation = async () => {
-    const metricsSub = await E(publicFacet).getMetrics();
-    const metrics = makeNotifierFromAsyncIterable(metricsSub);
-    // FIXME can't work until prefix-lossy subscriptions or https://github.com/Agoric/agoric-sdk/issues/5413
-    const { value: v } = await metrics.getUpdateSince();
+  const m = await metricsTracker(t, publicFacet);
+
+  /** @returns {bigint} Proceeds - overage + shortfall */
+  const liquidatedYet = () => {
+    // XXX re-use the state until subscriptions are lossy https://github.com/Agoric/agoric-sdk/issues/5413
+    const { value: v } = m.getLastNotif();
     const [p, o, s] = [
       v.totalProceedsReceived,
       v.totalOverageReceived,
       v.totalShortfallReceived,
     ].map(a => a.value);
-    t.is(
-      totalDebtEver,
-      p - o + s,
-      `Proceeds - overage + shortfall must equal total debt: ${totalDebtEver} != ${p} - ${o} + ${s}`,
+    console.log('liquidatedYet', { p, o, s });
+    return p - o + s;
+  };
+
+  /** @param {bigint} delta */
+  const addDebt = delta => {
+    totalDebtEver += delta;
+    const liquidated = liquidatedYet();
+    t.true(
+      liquidated < totalDebtEver,
+      `Liquidated ${liquidated} must be less than total debt ever ${totalDebtEver}`,
     );
   };
-  return harden({ assertFullLiquidation, add });
+
+  const assertFullyLiquidated = () => {
+    const liquidated = liquidatedYet();
+    t.true(
+      totalDebtEver - liquidated <= 1,
+      `Liquidated ${liquidated} must approx equal total debt ever ${totalDebtEver}`,
+    );
+  };
+  return harden({
+    ...m,
+    addDebt,
+    assertFullyLiquidated,
+  });
 };

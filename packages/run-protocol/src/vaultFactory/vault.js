@@ -250,7 +250,6 @@ const helperBehavior = {
     oldCollateral,
     newDebt,
   ) => {
-    trace('updateDebtAccounting', { oldCollateral, oldDebt });
     const { helper } = facets;
     helper.updateDebtSnapshot(newDebt);
     // update position of this vault in liquidation priority queue

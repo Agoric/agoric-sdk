@@ -41,7 +41,7 @@ import {
   installGovernance,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
-import { metricsTracker, totalDebtTracker } from '../metrics.js';
+import { metricsTracker, vaultManagerMetricsTracker } from '../metrics.js';
 
 /** @type {import('ava').TestInterface<Record<string, any> & {
  * rates: VaultManagerParamValues,
@@ -2429,8 +2429,7 @@ test('manager notifiers', async t => {
   const { aethVaultManager, lender } = services.vaultFactory;
   const cm = await E(aethVaultManager).getPublicFacet();
 
-  const m = await metricsTracker(t, cm);
-  const td = totalDebtTracker(t, cm);
+  const m = await vaultManagerMetricsTracker(t, cm);
 
   trace('0. Creation');
   await m.assertInitial({
@@ -2460,7 +2459,7 @@ test('manager notifiers', async t => {
     }),
   );
   const { vault: vault1 } = await E(vaultSeat).getOfferResult();
-  td.add(DEBT1);
+  m.addDebt(DEBT1);
   await m.assertChange({
     numVaults: 1,
     totalCollateral: { value: AMPLE },
@@ -2494,8 +2493,7 @@ test('manager notifiers', async t => {
     totalOverageReceived: { value: totalOverageReceived },
     totalProceedsReceived: { value: totalProceedsReceived },
   });
-  // FIXME
-  // await td.assertFullLiquidation();
+  await m.assertFullyLiquidated();
 
   trace('4. Make another LOAN1 loan');
   vaultSeat = await E(services.zoe).offer(
@@ -2514,7 +2512,7 @@ test('manager notifiers', async t => {
     totalCollateral: { value: AMPLE },
     totalDebt: { value: DEBT1 },
   });
-  td.add(DEBT1);
+  m.addDebt(DEBT1);
 
   trace('5. Make a LOAN2 loan');
   vaultSeat = await E(services.zoe).offer(
@@ -2533,7 +2531,7 @@ test('manager notifiers', async t => {
     totalCollateral: { value: AMPLE + ENOUGH },
     totalDebt: { value: DEBT1 + DEBT2 },
   });
-  td.add(DEBT2);
+  m.addDebt(DEBT2);
 
   trace('6. Liquidate all (2 loans)');
   await E(aethVaultManager).liquidateAll();
@@ -2554,8 +2552,7 @@ test('manager notifiers', async t => {
     totalCollateral: { value: 0n },
     totalProceedsReceived: { value: totalProceedsReceived },
   });
-  // FIXME
-  // await td.assertFullLiquidation();
+  await m.assertFullyLiquidated();
 
   trace('7. Make another LOAN2 loan');
   vaultSeat = await E(services.zoe).offer(
@@ -2574,7 +2571,7 @@ test('manager notifiers', async t => {
     totalCollateral: { value: collAmount(ENOUGH).value },
     totalDebt: { value: DEBT2 },
   });
-  td.add(DEBT2);
+  m.addDebt(DEBT2);
 
   trace('8. Liquidate all');
   await E(aethVaultManager).liquidateAll();
@@ -2604,13 +2601,14 @@ test('manager notifiers', async t => {
     totalCollateral: { value: AMPLE },
     totalDebt: { value: DEBT1 },
   });
-  td.add(DEBT1);
+  m.addDebt(DEBT1);
   const periods = 5n;
   for (let i = 0; i < periods; i += 1) {
     // eslint-disable-next-line no-await-in-loop
     await manualTimer.tick();
   }
   const interestAccrued = periods * 2n;
+  m.addDebt(interestAccrued);
   // make another loan to trigger a publish
   vaultSeat = await E(services.zoe).offer(
     await E(lender).makeVaultInvitation(),
@@ -2626,7 +2624,33 @@ test('manager notifiers', async t => {
   await m.assertChange({
     numVaults: 2,
     totalCollateral: { value: AMPLE + ENOUGH },
-    totalDebt: { value: DEBT1 + DEBT2 + interestAccrued },
+    totalDebt: { value: DEBT1 + interestAccrued + DEBT2 },
   });
-  td.add(DEBT1);
+  m.addDebt(DEBT2);
+
+  trace('10. Liquidate all including interest');
+  // liquidateAll executes in parallel, allowing the two burns to complete before the proceed calculations begin
+  await E(aethVaultManager).liquidateAll();
+  let nextProceeds = 53n;
+  totalProceedsReceived += nextProceeds;
+  console.log({ DEBT1, DEBT2, interestAccrued, nextProceeds });
+  await m.assertChange({
+    numLiquidationsCompleted: 5,
+    numVaults: 1,
+    totalCollateral: { value: AMPLE },
+    totalDebt: { value: DEBT1 + DEBT2 + interestAccrued - nextProceeds - 296n }, // debt changed already with proceeds from next notification
+    totalProceedsReceived: { value: totalProceedsReceived },
+  });
+  nextProceeds = 296n;
+  totalProceedsReceived += nextProceeds;
+  await m.assertChange({
+    numLiquidationsCompleted: 6,
+    numVaults: 0,
+    totalCollateral: { value: 0n },
+    totalProceedsReceived: { value: totalProceedsReceived },
+    totalShortfallReceived: {
+      value: DEBT1 + DEBT2 + interestAccrued - nextProceeds - 53n - 1n, // compensate for previous proceeds and rounding
+    },
+  });
+  await m.assertFullyLiquidated();
 });

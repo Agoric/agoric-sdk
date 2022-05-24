@@ -85,9 +85,9 @@
  * @property {() => Ratio} getLoanFee
  * @property {() => Promise<PriceQuote>} getCollateralQuote
  * @property {() => Ratio} getInterestRate - The annual interest rate on a loan
- * @property {() => NatValue} getChargingPeriod - The period (in seconds) at
+ * @property {() => RelativeTime} getChargingPeriod - The period (in seconds) at
  *   which interest is charged to the loan.
- * @property {() => NatValue} getRecordingPeriod - The period (in seconds)
+ * @property {() => RelativeTime} getRecordingPeriod - The period (in seconds)
  *   at which interest is recorded to the loan.
  */
 
@@ -97,8 +97,8 @@
 
 /**
  * @typedef {object} LoanTiming
- * @property {NatValue} chargingPeriod in seconds
- * @property {NatValue} recordingPeriod in seconds
+ * @property {RelativeTime} chargingPeriod in seconds
+ * @property {RelativeTime} recordingPeriod in seconds
  */
 
 /**

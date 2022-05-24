@@ -426,6 +426,7 @@ const helperBehavior = {
       factoryPowers.getGovernedParams().getLiquidationPenalty(),
     )
       .then(metrics => {
+        console.log('liquidateAndRemove metrics', metrics);
         state.totalProceedsReceived = AmountMath.add(
           state.totalProceedsReceived,
           metrics.proceeds,
@@ -678,6 +679,7 @@ const selfBehavior = {
 const finish = ({ state, facets: { helper } }) => {
   state.prioritizedVaults.setRescheduler(helper.reschedulePriceCheck);
 
+  // push initial state of metrics
   helper.updateMetrics();
 
   observeNotifier(state.periodNotifier, {
