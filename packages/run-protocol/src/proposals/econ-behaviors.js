@@ -191,16 +191,14 @@ export const setupAmm = async (
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
     runBrandP,
   ]);
-  const {
-    minInitialPoolLiquidity = AmountMath.make(runBrand, 1_000_000_000n),
-  } = opts;
+  const { minInitialPoolLiquidity = 1_000_000_000n } = opts;
 
   const timer = await chainTimerService; // avoid promise for legibility
 
   const ammTerms = makeAmmTerms(
     timer,
     poserInvitationAmount,
-    minInitialPoolLiquidity,
+    AmountMath.make(runBrand, minInitialPoolLiquidity),
   );
 
   const ammGovernorTerms = {

@@ -140,7 +140,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
     options: { econCommitteeOptions: electorateTerms },
   });
   setupAmm(space, {
-    minInitialPoolLiquidity: AmountMath.make(runBrand, 1000n),
+    minInitialPoolLiquidity: 1000n,
   });
 
   const governorCreatorFacet = consume.ammGovernorCreatorFacet;

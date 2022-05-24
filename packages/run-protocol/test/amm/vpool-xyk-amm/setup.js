@@ -94,7 +94,7 @@ export const setupAmmServices = async (
       options: { econCommitteeOptions: electorateTerms },
     }),
     setupAmm(space, {
-      minInitialPoolLiquidity: AmountMath.make(centralR.brand, 1000n),
+      minInitialPoolLiquidity: 1000n,
     }),
   ]);
 

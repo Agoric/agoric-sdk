@@ -79,7 +79,7 @@ export const start = (zcf, { bankManager }) => {
       } = seat2.getProposal();
       AmountMath.coerce(interAsset.brand, secondaryAmt);
 
-      const liquidityIssuer = await E(ammPub).addPool(
+      const liquidityIssuer = await E(ammPub).addIssuer(
         interAsset.issuer,
         `Interchain${kwNonce}`,
       );
@@ -95,7 +95,7 @@ export const start = (zcf, { bankManager }) => {
       seat2.incrementBy(seat.decrementBy(harden({ Central: centralAmt })));
       zcf.reallocate(seat, seat2);
 
-      const invitation = await E(ammPub).makeAddLiquidityInvitation();
+      const invitation = await E(ammPub).addPoolInvitation();
       const { userSeatPromise, deposited } = await offerTo(
         zcf,
         invitation,

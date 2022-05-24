@@ -314,7 +314,7 @@ const makeScenario = async t => {
     } = home;
 
     return harden({
-      makePool: async (atomQty = 100n, istQty = 500n) => {
+      makePool: async (atomQty = 500n, istQty = 1000n) => {
         const istBrand = await E(agoricNames).lookup('brand', 'RUN');
         const istAmt = qty => AmountMath.make(istBrand, qty * 1_000_000n);
         const interchainPoolAPI = E(zoe).getPublicFacet(
@@ -411,7 +411,7 @@ test('Benefactor can add to reserve', async t => {
   await s.startDevNet();
   await s.provisionMembers();
   await s.startRunPreview();
-  await s.benefactor.makePool(2000n, 100n);
+  await s.benefactor.makePool(2000n, 1000n);
   await Promise.all([
     s.enactVaultAssetProposal(),
     s.enactInviteEconCommitteeProposal(),
@@ -458,7 +458,7 @@ test('assets are in AMM, Vaults', async t => {
   await s.startDevNet();
   await s.provisionMembers();
   await s.startRunPreview();
-  await s.benefactor.makePool(2000n, 100n);
+  await s.benefactor.makePool(2000n, 1000n);
 
   await Promise.all([
     s.enactVaultAssetProposal(),
@@ -494,7 +494,7 @@ test('Committee can raise debt limit', async t => {
   await s.startDevNet();
   const purses = await s.provisionMembers();
   await s.startRunPreview();
-  await s.benefactor.makePool(2000n, 100n);
+  await s.benefactor.makePool(2000n, 1000n);
 
   await Promise.all([
     s.enactVaultAssetProposal(),
