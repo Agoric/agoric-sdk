@@ -18,11 +18,11 @@ liquidity providers to violate that expectation is a problem.
 ## Multiple Pools
 
 `addPool` and `addLiquidity` are publicly available. That means someone could maliciously
-create pools or provide insufficient liquidity. The ability to add liquidity in arbitrary
-proportions should be enough to prevent misuse of these APIs from hurting us.
+create pools or provide insufficient liquidity. The requirement of a minimum initial
+liquidity should be enough to prevent misuse of these APIs from hurting us.
 
-Since `addPool` is public, someone could add a look-alike issuer for a well-knownn
-currency and make it harder for poepole to find the pool they intend to trade with. As
+Since `addPool` is public, someone could add a look-alike issuer for a well-known
+currency and make it harder for people to find the pool they intend to trade with. As
 long as people are dealing wiht Brands and Issuers, they shouldn't be confused by
 this. Does the Wallet UI provide enough clarity in the face of this?
 

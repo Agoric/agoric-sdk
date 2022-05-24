@@ -135,23 +135,27 @@ const makeScenario = async t => {
     );
   };
 
-  /** @type {PromiseKit<IssuerKit>} */
+  /** @type {PromiseKit<{ mint: ERef<Mint>, issuer: ERef<Issuer>, brand: Brand}>} */
   const ibcKitP = makePromiseKit();
 
   const startDevNet = async () => {
     // If we don't have a proper bridge manager, we need it to be undefined.
     space.produce.bridgeManager.resolve(undefined);
 
+    /** @type {Awaited<BankManager>} */
     const bankManager = Far('mock BankManager', {
-      addAsset: (denom, keyword, proposedName, kit) => {
+      getAssetSubscription: () => assert.fail('not impl'),
+      getModuleAccountAddress: () => assert.fail('not impl'),
+      getRewardDistributorDepositFacet: () =>
+        harden({
+          receive: () => /** @type {any} */ (null),
+        }),
+      addAsset: async (denom, keyword, proposedName, kit) => {
         t.log('addAsset', { denom, keyword, issuer: `${kit.issuer}` });
         t.truthy(kit.mint);
-        ibcKitP.resolve(kit);
+        ibcKitP.resolve({ ...kit, mint: kit.mint || assert.fail() });
       },
-      getFeeCollectorDepositFacet: () =>
-        harden({
-          receive: () => {},
-        }),
+      getBankForAddress: () => assert.fail('not impl'),
     });
     // @ts-ignore mock doesn't have all the methods
     space.produce.bankManager.resolve(bankManager);
@@ -314,7 +318,7 @@ const makeScenario = async t => {
     } = home;
 
     return harden({
-      makePool: async (atomQty = 100n, istQty = 500n) => {
+      makePool: async (atomQty = 500n, istQty = 1000n) => {
         const istBrand = await E(agoricNames).lookup('brand', 'RUN');
         const istAmt = qty => AmountMath.make(istBrand, qty * 1_000_000n);
         const interchainPoolAPI = E(zoe).getPublicFacet(
@@ -411,7 +415,7 @@ test('Benefactor can add to reserve', async t => {
   await s.startDevNet();
   await s.provisionMembers();
   await s.startRunPreview();
-  await s.benefactor.makePool(2000n, 100n);
+  await s.benefactor.makePool(2000n, 1000n);
   await Promise.all([
     s.enactVaultAssetProposal(),
     s.enactInviteEconCommitteeProposal(),
@@ -458,7 +462,7 @@ test('assets are in AMM, Vaults', async t => {
   await s.startDevNet();
   await s.provisionMembers();
   await s.startRunPreview();
-  await s.benefactor.makePool(2000n, 100n);
+  await s.benefactor.makePool(2000n, 1000n);
 
   await Promise.all([
     s.enactVaultAssetProposal(),
@@ -494,7 +498,7 @@ test('Committee can raise debt limit', async t => {
   await s.startDevNet();
   const purses = await s.provisionMembers();
   await s.startRunPreview();
-  await s.benefactor.makePool(2000n, 100n);
+  await s.benefactor.makePool(2000n, 1000n);
 
   await Promise.all([
     s.enactVaultAssetProposal(),

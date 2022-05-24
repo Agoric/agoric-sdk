@@ -1,7 +1,7 @@
 // @ts-check
 
 import { AmountMath, isNatValue } from '@agoric/ertp';
-import { makeNotifierKit } from '@agoric/notifier';
+import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
 
 import {
   calcLiqValueToMint,
@@ -42,6 +42,8 @@ export const publicPrices = prices => {
  * @typedef {{
  * updater: IterationObserver<any>,
  * notifier: Notifier<any>,
+ * metricsPublication: IterationObserver<PoolMetricsNotification>,
+ * metricsSubscription: Subscription<PoolMetricsNotification>
  * poolSeat: ZCFSeat,
  * liqTokenSupply: bigint,
  * }} MutableState
@@ -54,9 +56,14 @@ export const publicPrices = prices => {
  *     singlePool: VirtualPool,
  *   },
  * }} MethodContext
+ *
+ * @typedef {object} PoolMetricsNotification
+ * @property {Amount} centralAmount
+ * @property {Amount} secondaryAmount
+ * @property {NatValue} liquidityTokens - outstanding tokens
  */
 
-const updateUpdaterState = (updater, pool) =>
+export const updateUpdaterState = (updater, pool) =>
   // TODO: when governance can change the interest rate, include it here
   updater.updateState({
     central: pool.getCentralAmount(),
@@ -64,23 +71,21 @@ const updateUpdaterState = (updater, pool) =>
   });
 
 const helperBehavior = {
-  /** @type {import('@agoric/vat-data/src/types').PlusContext<MethodContext, AddLiquidityActual>} */
-  addLiquidityActual: (
+  /** @type {import('@agoric/vat-data/src/types').PlusContext<MethodContext, AddLiquidityInternal>} */
+  addLiquidityInternal: (
     { state },
-    pool,
     zcfSeat,
     secondaryAmount,
     poolCentralAmount,
     feeSeat,
   ) => {
-    const { poolSeat, liquidityBrand, liquidityZcfMint, updater, zcf } = state;
-
+    const { poolSeat, liquidityBrand, liquidityZcfMint, zcf } = state;
     // addLiquidity can't be called until the pool has been created. We verify
     // that the asset is NAT before creating a pool.
 
     const liquidityValueOut = calcLiqValueToMint(
       state.liqTokenSupply,
-      // @ts-expect-error NatValue cast
+      // @ts-expect-error value could be not Nat
       zcfSeat.getStagedAllocation().Central.value,
       poolCentralAmount.value,
     );
@@ -112,9 +117,40 @@ const helperBehavior = {
     } else {
       zcf.reallocate(poolSeat, zcfSeat);
     }
+  },
+  /** @type {import('@agoric/vat-data/src/types').PlusContext<MethodContext, AddLiquidityActual>} */
+  addLiquidityActual: (
+    { state, facets },
+    pool,
+    zcfSeat,
+    secondaryAmount,
+    poolCentralAmount,
+    feeSeat,
+  ) => {
+    const { updater } = state;
+    const { helper } = facets;
+
+    helper.addLiquidityInternal(
+      zcfSeat,
+      secondaryAmount,
+      poolCentralAmount,
+      feeSeat,
+    );
     zcfSeat.exit();
     updateUpdaterState(updater, pool);
+    facets.helper.updateMetrics();
     return 'Added liquidity.';
+  },
+  /** @param {MethodContext} context */
+  updateMetrics: context => {
+    const { state, facets } = context;
+    const payload = harden({
+      centralAmount: facets.pool.getCentralAmount(),
+      secondaryAmount: facets.pool.getSecondaryAmount(),
+      liquidityTokens: state.liqTokenSupply,
+    });
+
+    state.metricsPublication.updateState(payload);
   },
 };
 
@@ -216,6 +252,7 @@ const poolBehavior = {
 
     userSeat.exit();
     updateUpdaterState(state.updater, facets.pool);
+    facets.helper.updateMetrics();
     return 'Liquidity successfully removed.';
   },
   getNotifier: ({ state: { notifier } }) => notifier,
@@ -225,6 +262,7 @@ const poolBehavior = {
   getToCentralPriceAuthority: ({ state }) => state.toCentralPriceAuthority,
   getFromCentralPriceAuthority: ({ state }) => state.fromCentralPriceAuthority,
   getVPool: ({ facets }) => facets.singlePool,
+  getMetrics: ({ state }) => state.metricsSubscription,
 };
 
 /** @param {MethodContext} context */
@@ -273,6 +311,7 @@ const finish = context => {
   context.state.toCentralPriceAuthority = toCentralPriceAuthority;
   // @ts-expect-error declared read-only, set value once
   context.state.fromCentralPriceAuthority = fromCentralPriceAuthority;
+  context.facets.helper.updateMetrics();
 };
 
 /**
@@ -295,6 +334,10 @@ export const definePoolKind = (
     const { brand: liquidityBrand, issuer: liquidityIssuer } =
       liquidityZcfMint.getIssuerRecord();
     const { notifier, updater } = makeNotifierKit();
+    const {
+      publication: metricsPublication,
+      subscription: metricsSubscription,
+    } = makeSubscriptionKit();
 
     // XXX why does the paramAccessor have to be repackaged as a Far object?
     const params = Far('pool param accessor', {
@@ -318,6 +361,8 @@ export const definePoolKind = (
       quoteIssuerKit,
       timer,
       paramAccessor: params,
+      metricsPublication,
+      metricsSubscription,
     };
   };
 

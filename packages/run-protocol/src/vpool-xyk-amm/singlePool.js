@@ -16,11 +16,11 @@ const getPools = pool => ({
 
 export const singlePool = {
   allocateGainsAndLosses: (context, seat, prices) => {
-    const { pool } = context.facets;
+    const { pool, helper } = context.facets;
     const { poolSeat, zcf, protocolSeat } = context.state;
     seat.decrementBy(harden({ In: prices.swapperGives }));
     seat.incrementBy(harden({ Out: prices.swapperGets }));
-    context.state.protocolSeat.incrementBy(harden({ RUN: prices.protocolFee }));
+    protocolSeat.incrementBy(harden({ RUN: prices.protocolFee }));
 
     const inBrand = prices.swapperGives.brand;
     if (inBrand === getSecondaryBrand(pool)) {
@@ -34,6 +34,7 @@ export const singlePool = {
     zcf.reallocate(poolSeat, seat, protocolSeat);
     seat.exit();
     pool.updateState();
+    helper.updateMetrics();
     return `Swap successfully completed.`;
   },
 

@@ -8,6 +8,7 @@ import { setupReserve } from '../../src/proposals/econ-behaviors.js';
 import { provideBundle } from '../supports.js';
 
 const reserveRoot = './src/reserve/assetReserve.js'; // package relative
+const faucetRoot = './test/vaultFactory/faucet.js';
 
 const setupReserveBootstrap = async (
   t,
@@ -67,6 +68,7 @@ const setupReserveBootstrap = async (
  *     reserve: ReserveKit,
  *     invitationAmount: Amount,
  *     space: any,
+ *     faucetInstallation: Installation,
  * }}
  */
 export const setupReserveServices = async (
@@ -90,6 +92,8 @@ export const setupReserveServices = async (
 
   const reserveBundle = await provideBundle(t, reserveRoot, 'reserve');
   installation.produce.reserve.resolve(E(zoe).install(reserveBundle));
+  const faucetBundle = await provideBundle(t, faucetRoot, 'faucet');
+  const faucetInstallation = E(zoe).install(faucetBundle);
   brand.produce.RUN.resolve(runBrand);
   issuer.produce.RUN.resolve(runIssuer);
   produce.feeMintAccess.resolve(feeMintAccess);
@@ -134,6 +138,7 @@ export const setupReserveServices = async (
     reserve,
     invitationAmount: poserInvitationAmount,
     space: spaces,
+    faucetInstallation,
   };
 };
 harden(setupReserveServices);

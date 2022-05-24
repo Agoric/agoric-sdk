@@ -6,6 +6,9 @@ import {
   makeRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 
+import './types.js';
+import './internal-types.js';
+
 import { BASIS_POINTS } from './defaults.js';
 
 const { details: X } = assert;

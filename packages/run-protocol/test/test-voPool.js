@@ -3,7 +3,7 @@
 import { runVOTest, test } from '@agoric/swingset-vat/tools/vo-test-harness.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { makeIssuerKit } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 import { definePoolKind } from '../src/vpool-xyk-amm/pool.js';
 import { makeAmmParamManager } from '../src/vpool-xyk-amm/params.js';
@@ -12,17 +12,28 @@ const voPoolTest = async (t, mutation, postTest) => {
   let makePool;
   const { zoe, zcf } = await setupZCFTest();
   const invitation = await zcf.makeInvitation(() => {}, 'fake invitation');
-  const paramManager = await makeAmmParamManager(zoe, 25n, 5n, invitation);
-  const { brand: centralBrand } = makeIssuerKit('central');
-  const { brand: secondaryBrand } = makeIssuerKit('secondary');
+  const { brand: centralBrand, issuer: centralI } = makeIssuerKit('central');
+  const paramManager = await makeAmmParamManager(
+    zoe,
+    25n,
+    5n,
+    AmountMath.make(centralBrand, 100n),
+    invitation,
+  );
+
+  const { brand: secondaryBrand, issuer: secondaryI } =
+    makeIssuerKit('secondary');
   const quoteIssuerKit = makeIssuerKit('Quotes');
   const liquidityZcfMint = await zcf.makeZCFMint('Liquidity');
-  const { userSeat: poolSeatP } = zcf.makeEmptySeatKit();
+  const { zcfSeat: poolSeatP } = zcf.makeEmptySeatKit();
   const { zcfSeat: protocolSeatP } = zcf.makeEmptySeatKit();
   const [poolSeat, protocolSeat] = await Promise.all([
     poolSeatP,
     protocolSeatP,
   ]);
+
+  await zcf.saveIssuer(centralI, 'Central');
+  await zcf.saveIssuer(secondaryI, 'Secondary');
 
   const defineVirtualPoolKind = () => {
     const timer = buildManualTimer(t.log);

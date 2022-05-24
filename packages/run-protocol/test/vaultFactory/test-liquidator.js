@@ -67,8 +67,8 @@ export const Phase = /** @type {const} */ ({
  *
  * @param {Brand} debtBrand
  */
-function defaultParamValues(debtBrand) {
-  return harden({
+const defaultParamValues = debtBrand =>
+  harden({
     debtLimit: AmountMath.make(debtBrand, 1_000_000n),
     // margin required to maintain a loan
     liquidationMargin: makeRatio(105n, debtBrand),
@@ -79,7 +79,6 @@ function defaultParamValues(debtBrand) {
     // charge to create or increase loan balance
     loanFee: makeRatio(500n, debtBrand, BASIS_POINTS),
   });
-}
 
 test.before(async t => {
   const { zoe, feeMintAccess } = setUpZoeForTest();
@@ -139,7 +138,9 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   startEconomicCommittee(space, {
     options: { econCommitteeOptions: electorateTerms },
   });
-  setupAmm(space);
+  setupAmm(space, {
+    minInitialPoolLiquidity: 1000n,
+  });
 
   const governorCreatorFacet = consume.ammGovernorCreatorFacet;
   const governorInstance = await instance.consume.ammGovernor;
@@ -158,7 +159,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   // @ts-expect-error cast from unknown
   const ammPublicFacet = await E(governorCreatorFacet).getPublicFacet();
 
-  const liquidityIssuer = E(ammPublicFacet).addPool(aethIssuer, 'Aeth');
+  const liquidityIssuer = await E(ammPublicFacet).addIssuer(aethIssuer, 'Aeth');
   const liquidityBrand = await E(liquidityIssuer).getBrand();
 
   const liqProposal = harden({
@@ -168,7 +169,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
     },
     want: { Liquidity: AmountMath.makeEmpty(liquidityBrand) },
   });
-  const liqInvitation = await E(ammPublicFacet).makeAddLiquidityInvitation();
+  const liqInvitation = await E(ammPublicFacet).addPoolInvitation();
 
   const ammLiquiditySeat = await E(zoe).offer(
     liqInvitation,
@@ -230,12 +231,12 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
  * @param {Amount} priceBase
  * @param {TimerService} timer
  */
-async function setupServices(
+const setupServices = async (
   t,
   initialPrice,
   priceBase,
   timer = buildManualTimer(t.log),
-) {
+) => {
   const {
     zoe,
     runKit: { issuer: runIssuer, brand: runBrand },
@@ -334,7 +335,7 @@ async function setupServices(
     runKit: { issuer: runIssuer, brand: runBrand },
     priceAuthority,
   };
-}
+};
 // #endregion
 
 // #region driver

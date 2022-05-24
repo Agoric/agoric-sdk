@@ -49,7 +49,7 @@ test('make interchain pool', async t => {
   const { make, add } = AmountMath;
   const { zoe, istKit, installation } = t.context;
 
-  const minimumCentral = make(istKit.brand, 100n * 1_000_000n);
+  const minimumCentral = make(istKit.brand, 1000n * 1_000_000n);
 
   // Start AMM
   const {
@@ -108,7 +108,7 @@ test('make interchain pool', async t => {
       const pmt = await actualPayouts[kw];
       // eslint-disable-next-line no-await-in-loop
       const actual = await E(issuers[kw]).getAmountOf(pmt);
-      t.deepEqual(actual, amts[kw]);
+      t.deepEqual(actual, amts[kw], `amount mismatch for ${kw}`);
     }
   };
 
@@ -156,7 +156,8 @@ test('make interchain pool', async t => {
       {
         Central: make(istKit.brand, 0n),
         Secondary: make(ibcBrand, 0n),
-        Liquidity: make(liqBrand, proposal1.give.Central.value),
+        // @ts-expect-error proposal1.give.Central.value is Nat
+        Liquidity: make(liqBrand, proposal1.give.Central.value - 1000n),
       },
       {
         Central: istKit.issuer,

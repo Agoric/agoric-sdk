@@ -2,22 +2,22 @@
 
 /**
  * @typedef {object} ImprovedNoFeeSwapResult
- * @property {Amount} amountIn
- * @property {Amount} amountOut
+ * @property {Amount<'nat'>} amountIn
+ * @property {Amount<'nat'>} amountOut
  */
 
 /**
  * @typedef {object} FeePair
  *
- * @property {Amount} poolFee
- * @property {Amount} protocolFee
+ * @property {Amount<'nat'>} poolFee
+ * @property {Amount<'nat'>} protocolFee
  */
 
 /**
  * @typedef {object} PoolAllocation
  *
- * @property {Amount} Central
- * @property {Amount} Secondary
+ * @property {Amount<'nat'>} Central
+ * @property {Amount<'nat'>} Secondary
  */
 
 /**
@@ -26,19 +26,6 @@
  * @property {Amount} amountWanted
  * @property {Brand=} brand
  * @property {PoolAllocation} poolAllocation
- */
-
-/**
- * @typedef {object} SwapResult
- *
- * @property {Amount} xIncrement
- * @property {Amount} swapperGives
- * @property {Amount} yDecrement
- * @property {Amount} swapperGets
- * @property {Amount} protocolFee
- * @property {Amount} poolFee
- * @property {Amount} newY
- * @property {Amount} newX
  */
 
 /**
@@ -73,7 +60,7 @@
  * @param {Ratio} protocolFeeRatio
  * @param {Ratio} poolFeeRatio
  * @param {NoFeeSwapFn} swapFn
- * @returns {SwapResult}
+ * @returns {SinglePoolSwapResult}
  */
 
 /**
@@ -83,7 +70,7 @@
  * @param {Amount=} amountWanted
  * @param {Ratio} protocolFeeRatio
  * @param {Ratio} poolFeeRatio
- * @returns {SwapResult}
+ * @returns {SinglePoolSwapResult}
  */
 /**
  * @callback CalcSwapOutPrices
@@ -92,7 +79,7 @@
  * @param {Amount} amountWanted
  * @param {Ratio} protocolFeeRatio
  * @param {Ratio} poolFeeRatio
- * @returns {SwapResult}
+ * @returns {SinglePoolSwapResult}
  */
 
 /**

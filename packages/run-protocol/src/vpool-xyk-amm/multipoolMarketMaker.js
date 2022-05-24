@@ -1,18 +1,19 @@
 // @ts-check
 
-import { makeWeakStore } from '@agoric/store';
+import { makeStore, makeWeakStore } from '@agoric/store';
 import { Far } from '@endo/marshal';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
+import { makeSubscriptionKit } from '@agoric/notifier';
 
 import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
-import { makeAddPool } from './addPool.js';
+import { makeAddIssuer, makeAddPoolInvitation } from './addPool.js';
 import { publicPrices } from './pool.js';
 import {
-  makeMakeAddLiquidityInvitation,
   makeMakeAddLiquidityAtRateInvitation,
+  makeMakeAddLiquidityInvitation,
 } from './addLiquidity.js';
 import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity.js';
 
@@ -20,9 +21,18 @@ import '@agoric/zoe/exported.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeMakeSwapInvitation } from './swap.js';
 import { makeDoublePool } from './doublePool.js';
-import { POOL_FEE_KEY, PROTOCOL_FEE_KEY } from './params.js';
+import {
+  POOL_FEE_KEY,
+  PROTOCOL_FEE_KEY,
+  MIN_INITIAL_POOL_LIQUIDITY_KEY,
+} from './params.js';
 
 const { quote: q, details: X } = assert;
+
+/**
+ * @typedef {object} MetricsNotification
+ * @property {Brand[]} XYK brands of pools that use an X*Y=K pricing policy
+ */
 
 /**
  * Multipool AMM is a rewrite of Uniswap that supports multiple liquidity pools,
@@ -46,7 +56,8 @@ const { quote: q, details: X } = assert;
  * terms. Separate invitations are available by calling methods on the
  * publicFacet for adding and removing liquidity and for making trades. Other
  * publicFacet operations support querying prices and the sizes of pools. New
- * Pools can be created with addPool().
+ * Pools can be created by first calling addIssuer() and then exercising an
+ * invitation from addPoolInvitation().
  *
  * When making trades or requesting prices, the caller must specify either a
  * maximum input amount (swapIn, getInputPrice) or a minimum output amount
@@ -100,19 +111,6 @@ const start = async (zcf, privateArgs) => {
   /**
    * This contract must have a "Central" keyword and issuer in the
    * IssuerKeywordRecord.
-   *
-   * @typedef {GovernanceTerms<{
-   *   PoolFee: 'nat',
-   *   ProtocolFee: 'nat',
-   * }> & {
-   *   brands: { Central: Brand },
-   *   issuers: {},
-   *   timer: TimerService,
-   *   poolFeeBP: BasisPoints, // portion of the fees that go into the pool
-   *   protocolFeeBP: BasisPoints, // portion of the fees that are shared with validators
-   * }} AMMTerms
-   *
-   * @typedef { bigint } BasisPoints -- hundredths of a percent
    */
   const {
     brands: { Central: centralBrand },
@@ -128,6 +126,7 @@ const start = async (zcf, privateArgs) => {
     handleParamGovernance(zcf, privateArgs.initialPoserInvitation, {
       [POOL_FEE_KEY]: ParamTypes.NAT,
       [PROTOCOL_FEE_KEY]: ParamTypes.NAT,
+      [MIN_INITIAL_POOL_LIQUIDITY_KEY]: ParamTypes.AMOUNT,
     }),
     E(centralBrand).getDisplayInfo(),
   ]);
@@ -140,31 +139,56 @@ const start = async (zcf, privateArgs) => {
     )}`,
   );
 
-  /** @type {WeakStore<Brand,PoolFacets>} */
-  const secondaryBrandToPool = makeWeakStore('secondaryBrand');
+  /** @type {Store<Brand,PoolFacets>} */
+  const secondaryBrandToPool = makeStore('secondaryBrand');
   const getPool = brand => secondaryBrandToPool.get(brand).pool;
   const getPoolHelper = brand => secondaryBrandToPool.get(brand).helper;
   const initPool = secondaryBrandToPool.init;
   const isSecondary = secondaryBrandToPool.has;
 
+  // The liquidityBrand has to exist to allow the addPool Offer to specify want
+  /** @type {WeakStore<Brand,ZCFMint>} */
+  const secondaryBrandToLiquidityMint = makeWeakStore('secondaryBrand');
+
   const quoteIssuerKit = makeIssuerKit('Quote', AssetKind.SET);
+
+  /** @type {SubscriptionRecord<MetricsNotification>} */
+  const { publication: metricsPublication, subscription: metricsSubscription } =
+    makeSubscriptionKit();
+  const updateMetrics = () => {
+    metricsPublication.updateState(
+      harden({ XYK: Array.from(secondaryBrandToPool.keys()) }),
+    );
+  };
+  updateMetrics();
 
   // For now, this seat collects protocol fees. It needs to be connected to
   // something that will extract the fees.
   const { zcfSeat: protocolSeat } = zcf.makeEmptySeatKit();
 
+  // TODO(#5408): give reserve the ability to collect this.
+  const { zcfSeat: reserveLiquidityTokenSeat } = zcf.makeEmptySeatKit();
+
   const getLiquiditySupply = brand => getPool(brand).getLiquiditySupply();
   const getLiquidityIssuer = brand => getPool(brand).getLiquidityIssuer();
-  const addPool = makeAddPool(
+  const addPoolInvitation = makeAddPoolInvitation(
     zcf,
-    isSecondary,
     initPool,
     centralBrand,
     timer,
     quoteIssuerKit,
     params,
     protocolSeat,
+    reserveLiquidityTokenSeat,
+    secondaryBrandToLiquidityMint,
+    updateMetrics,
   );
+  const addIssuer = makeAddIssuer(
+    zcf,
+    isSecondary,
+    secondaryBrandToLiquidityMint,
+  );
+
   /** @param {Brand} brand */
   const getPoolAllocation = brand =>
     getPool(brand).getPoolSeat().getCurrentAllocation();
@@ -176,6 +200,9 @@ const start = async (zcf, privateArgs) => {
       fromCentral: pool.getFromCentralPriceAuthority(),
     };
   };
+
+  /** @param {Brand} brand */
+  const getPoolMetrics = brand => getPool(brand).getMetrics();
 
   /**
    * @param {Brand} brandIn
@@ -241,7 +268,8 @@ const start = async (zcf, privateArgs) => {
   /** @type {XYKAMMPublicFacet} */
   const publicFacet = augmentPublicFacet(
     Far('AMM public facet', {
-      addPool,
+      addPoolInvitation,
+      addIssuer,
       getPoolAllocation,
       getLiquidityIssuer,
       getLiquiditySupply,
@@ -258,6 +286,8 @@ const start = async (zcf, privateArgs) => {
       getAllPoolBrands: () =>
         Object.values(zcf.getTerms().brands).filter(isSecondary),
       getProtocolPoolBalance: () => protocolSeat.getCurrentAllocation(),
+      getMetrics: () => metricsSubscription,
+      getPoolMetrics,
     }),
   );
 
@@ -277,5 +307,22 @@ export { start };
  * @typedef {object} AMMParamGetters
  * @property {() => NatValue} getPoolFee
  * @property {() => NatValue} getProtocolFee
+ * @property {() => Amount<'nat'>} getMinInitialPoolLiquidity
  * @property {() => Amount} getElectorate
+ */
+
+/**
+ * @typedef { bigint } BasisPoints -- hundredths of a percent
+ *
+ * @typedef {GovernanceTerms<{
+ *   PoolFee: 'nat',
+ *   ProtocolFee: 'nat',
+ *   MinInitialPoolLiquidity: 'amount',
+ * }> & {
+ *   brands: { Central: Brand },
+ *   issuers: {},
+ *   timer: TimerService,
+ *   poolFeeBP: BasisPoints, // portion of the fees that go into the pool
+ *   protocolFeeBP: BasisPoints, // portion of the fees that are shared with validators
+ * }} AMMTerms
  */

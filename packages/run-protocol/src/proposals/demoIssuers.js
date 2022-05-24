@@ -544,7 +544,7 @@ export const fundAMM = async ({
         assert(secondaryPayment, X`no payment for ${q(issuerName)}`);
 
         assert(kit.issuer, `No issuer for ${issuerName}`);
-        const liquidityIssuer = E(ammPublicFacet).addPool(
+        const liquidityIssuer = E(ammPublicFacet).addIssuer(
           kit.issuer,
           issuerName,
         );
@@ -561,7 +561,7 @@ export const fundAMM = async ({
         });
 
         E(zoe).offer(
-          E(ammPublicFacet).makeAddLiquidityInvitation(),
+          E(ammPublicFacet).addPoolInvitation(),
           proposal,
           harden({
             Secondary: secondaryPayment,

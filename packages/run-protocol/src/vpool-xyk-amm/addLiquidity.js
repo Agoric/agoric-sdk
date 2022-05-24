@@ -74,11 +74,11 @@ export { imbalancedRequest };
  * digits and the other 9, and the pool has single digits of liquidity, then
  * it would be better to manually adjust rather than using this approach.
  *
- * @param {Amount} poolX
- * @param {Amount} poolY
- * @param {Amount} giveX
- * @param {Amount} giveY
- * @returns {{targetX: Amount, targetY: Amount }}
+ * @param {Amount<'nat'>} poolX
+ * @param {Amount<'nat'>} poolY
+ * @param {Amount<'nat'>} giveX
+ * @param {Amount<'nat'>} giveY
+ * @returns {{targetX: Amount<'nat'>, targetY: Amount<'nat'> }}
  */
 export const balancesToReachRatio = (poolX, poolY, giveX, giveY) => {
   const startK = multiply(poolX.value, poolY.value);

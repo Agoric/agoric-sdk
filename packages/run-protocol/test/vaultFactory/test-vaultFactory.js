@@ -83,8 +83,8 @@ export const Phase = /** @type {const} */ ({
  *
  * @param {Brand} debtBrand
  */
-function defaultParamValues(debtBrand) {
-  return harden({
+const defaultParamValues = debtBrand =>
+  harden({
     debtLimit: AmountMath.make(debtBrand, 1_000_000n),
     // margin required to maintain a loan
     liquidationMargin: makeRatio(105n, debtBrand),
@@ -95,7 +95,6 @@ function defaultParamValues(debtBrand) {
     // charge to create or increase loan balance
     loanFee: makeRatio(500n, debtBrand, BASIS_POINTS),
   });
-}
 
 test.before(async t => {
   const { zoe, feeMintAccess } = setUpZoeForTest();
@@ -155,7 +154,9 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   installGovernance(zoe, space.installation.produce);
   space.installation.produce.amm.resolve(t.context.installation.amm);
   await startEconomicCommittee(space, electorateTerms);
-  await setupAmm(space);
+  await setupAmm(space, {
+    minInitialPoolLiquidity: 300n,
+  });
 
   const governorCreatorFacet = consume.ammGovernorCreatorFacet;
   const governorInstance = await instance.consume.ammGovernor;
@@ -166,7 +167,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   // @ts-expect-error cast from unknown
   const ammPublicFacet = await E(governorCreatorFacet).getPublicFacet();
 
-  const liquidityIssuer = E(ammPublicFacet).addPool(aethIssuer, 'Aeth');
+  const liquidityIssuer = await E(ammPublicFacet).addIssuer(aethIssuer, 'Aeth');
   const liquidityBrand = await E(liquidityIssuer).getBrand();
 
   const liqProposal = harden({
@@ -176,7 +177,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
     },
     want: { Liquidity: AmountMath.makeEmpty(liquidityBrand) },
   });
-  const liqInvitation = await E(ammPublicFacet).makeAddLiquidityInvitation();
+  const liqInvitation = await E(ammPublicFacet).addPoolInvitation();
 
   const ammLiquiditySeat = await E(zoe).offer(
     liqInvitation,
@@ -242,14 +243,14 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
  * @param {RelativeTime} quoteInterval
  * @param {bigint} runInitialLiquidity
  */
-async function setupServices(
+const setupServices = async (
   t,
   priceOrList,
   unitAmountIn,
   timer = buildManualTimer(t.log),
   quoteInterval = 1n,
   runInitialLiquidity,
-) {
+) => {
   const {
     zoe,
     runKit: { issuer: runIssuer, brand: runBrand },
@@ -367,7 +368,7 @@ async function setupServices(
     runKit: { issuer: runIssuer, brand: runBrand },
     priceAuthority,
   };
-}
+};
 // #endregion
 
 test('first', async t => {
@@ -716,14 +717,14 @@ test('price falls precipitously', async t => {
     }),
   );
 
-  async function assertDebtIs(value) {
+  const assertDebtIs = async value => {
     const debt = await E(vault).getCurrentDebt();
     t.is(
       debt.value,
       BigInt(value),
       `Expected debt ${debt.value} to be ${value}`,
     );
-  }
+  };
 
   await manualTimer.tick();
   await assertDebtIs(debtAmount.value);
@@ -1795,10 +1796,13 @@ test('bad chargingPeriod', async t => {
 test('collect fees from loan and AMM', async t => {
   const {
     zoe,
-    aethKit: { mint: aethMint, brand: aethBrand },
-    runKit: { brand: runBrand },
+    aethKit: { mint: aethMint, brand: aethBrand, issuer: aethIssuer },
+    runKit: { brand: runBrand, issuer: runIssuer },
     rates,
   } = t.context;
+
+  t.context.aethInitialLiquidity = AmountMath.make(aethBrand, 900n);
+
   const priceList = [500n, 15n];
   const unitAmountIn = AmountMath.make(aethBrand, 900n);
   const manualTimer = buildManualTimer(t.log);
@@ -1863,10 +1867,13 @@ test('collect fees from loan and AMM', async t => {
     }),
   );
 
-  await E(swapSeat).getPayouts();
+  const payouts = await E(swapSeat).getPayouts();
+  const inAmount = await E(aethIssuer).getAmountOf(await payouts.In);
+  t.truthy(AmountMath.isGTE(AmountMath.make(aethBrand, 60000n), inAmount));
+  const outAmount = await E(runIssuer).getAmountOf(await payouts.Out);
+  t.truthy(AmountMath.isGTE(outAmount, AmountMath.makeEmpty(runBrand)));
 
   const feePoolBalance = await E(amm).getProtocolPoolBalance();
-
   const collectFeesSeat = await E(zoe).offer(
     E(vaultFactory).makeCollectFeesInvitation(),
   );

@@ -4,7 +4,6 @@ import { E } from '@endo/eventual-send';
 import { diff } from 'deep-object-diff';
 
 /**
- *
  * @param {import('ava').ExecutionContext} t
  * @param {Subscription<object>} subscription
  */
@@ -17,10 +16,7 @@ export const subscriptionTracker = async (t, subscription) => {
     notif = await metrics.getUpdateSince();
     t.deepEqual(notif.value, expectedValue);
   };
-  /**
-   *
-   * @param {Record<string, unknown>} expectedDelta
-   */
+  /** @param {Record<string, unknown>} expectedDelta */
   const assertChange = async expectedDelta => {
     const prevNotif = notif;
     notif = await metrics.getUpdateSince(notif.updateCount);
@@ -28,7 +24,11 @@ export const subscriptionTracker = async (t, subscription) => {
     console.log({ actualDelta });
     t.deepEqual(actualDelta, expectedDelta, 'Unexpected delta');
   };
-  return { assertChange, assertInitial, getLastNotif };
+  const assertState = async expectedState => {
+    notif = await metrics.getUpdateSince(notif.updateCount);
+    t.deepEqual(notif.value, expectedState, 'Unexpected state');
+  };
+  return { assertChange, assertInitial, assertState, getLastNotif };
 };
 
 /**
