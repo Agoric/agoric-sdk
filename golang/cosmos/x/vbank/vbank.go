@@ -108,26 +108,6 @@ func marshal(event vm.Jsonable) ([]byte, error) {
 	return json.Marshal(event)
 }
 
-// rewardRate calculates the rate for dispensing the pool of coins over
-// the specified number of blocks. Fractions are rounded up. In other
-// words, it returns the smallest Coins such that pool is exhausted
-// after #blocks withdrawals.
-func rewardRate(pool sdk.Coins, blocks int64) sdk.Coins {
-	coins := make([]sdk.Coin, 0)
-	if blocks > 0 {
-		for _, coin := range pool {
-			if coin.IsZero() {
-				continue
-			}
-			// divide by blocks, rounding fractions up
-			// (coin.Amount - 1)/blocks + 1
-			rate := coin.Amount.SubRaw(1).QuoRaw(blocks).AddRaw(1)
-			coins = append(coins, sdk.NewCoin(coin.GetDenom(), rate))
-		}
-	}
-	return sdk.NewCoins(coins...)
-}
-
 func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string, err error) {
 	// fmt.Println("vbank.go downcall", str)
 	keeper := ch.keeper
@@ -224,14 +204,8 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		if err != nil {
 			return "", err
 		}
-		params := keeper.GetParams(ctx.Context)
-		blocks := params.FeeEpochDurationBlocks
-		if blocks < 1 {
-			blocks = 1
-		}
 		state := keeper.GetState(ctx.Context)
 		state.RewardPool = state.RewardPool.Add(coins...)
-		state.RewardRate = rewardRate(state.RewardPool, blocks)
 		keeper.SetState(ctx.Context, state)
 		// We don't supply the module balance, since the controller shouldn't know.
 		ret = "true"

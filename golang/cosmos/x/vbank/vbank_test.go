@@ -324,7 +324,7 @@ func Test_Receive_Give(t *testing.T) {
 	}
 }
 
-func Test_Receive_GiveToFeeCollector(t *testing.T) {
+func Test_Receive_GiveToRewardDistributor(t *testing.T) {
 	bank := &mockBank{}
 	keeper, ctx := makeTestKit(nil, bank)
 	ch := NewPortHandler(AppModule{}, keeper)
@@ -346,7 +346,7 @@ func Test_Receive_GiveToFeeCollector(t *testing.T) {
 			feeAmount:     "1000",
 			feeDenom:      "urun",
 			wantMintCoins: "1000urun",
-			wantRate:      sdk.NewCoins(sdk.NewInt64Coin("urun", 1000)),
+			wantRate:      sdk.NewCoins(),
 		},
 		{
 			name:          "one",
@@ -398,11 +398,28 @@ func Test_Receive_GiveToFeeCollector(t *testing.T) {
 				sdk.NewCoin("yoctoquatloos", sdk.NewInt(123456789123456789).MulRaw(1000).AddRaw(124)),
 			),
 		},
+		{
+			name:          "big",
+			duration:      1000 * 1000,
+			rewardPool:    sdk.NewCoins(),
+			feeAmount:     "123456789123456789123456789",
+			feeDenom:      "yoctoquatloos",
+			wantMintCoins: "123456789123456789123456789yoctoquatloos",
+			wantRate: sdk.NewCoins(
+				sdk.NewCoin("yoctoquatloos", sdk.NewInt(123456789123456789).MulRaw(1000).AddRaw(124)),
+			),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			bank.calls = []string{}
-			keeper.SetParams(ctx, types.Params{FeeEpochDurationBlocks: tt.duration})
+			ctx = ctx.WithBlockHeight(3)
+
+			params := types.DefaultParams()
+			params.RewardEpochDurationBlocks = 0
+			params.RewardSmoothingBlocks = tt.duration
+
+			keeper.SetParams(ctx, params)
 			keeper.SetState(ctx, types.State{RewardPool: tt.rewardPool})
 
 			ret, err := ch.Receive(ctlCtx,
@@ -419,9 +436,12 @@ func Test_Receive_GiveToFeeCollector(t *testing.T) {
 			if !reflect.DeepEqual(bank.calls, wantCalls) {
 				t.Errorf("got calls %v, want %v", bank.calls, wantCalls)
 			}
+			if err := keeper.DistributeRewards(ctx); err != nil {
+				t.Errorf("got error = %v", err)
+			}
 			state := keeper.GetState(ctx)
-			if !state.RewardRate.IsEqual(tt.wantRate) {
-				t.Errorf("got rate %v, want %v", state.RewardRate, tt.wantRate)
+			if !state.RewardBlockAmount.IsEqual(tt.wantRate) {
+				t.Errorf("got rate %v, want %v", state.RewardBlockAmount, tt.wantRate)
 			}
 		})
 	}
@@ -475,6 +495,8 @@ func Test_EndBlock_Events(t *testing.T) {
 		},
 	}}
 	keeper, ctx := makeTestKit(nil, bank)
+	// Turn off rewards.
+	keeper.SetParams(ctx, types.Params{PerEpochRewardFraction: sdk.ZeroDec()})
 	msgsSent := []string{}
 	keeper.PushAction = func(ctx sdk.Context, action vm.Jsonable) error {
 		bz, err := json.Marshal(action)
@@ -630,10 +652,15 @@ func Test_EndBlock_Rewards(t *testing.T) {
 			msgsSent = []string{}
 			bank.calls = []string{}
 			state := types.State{
-				RewardPool: tt.pool,
-				RewardRate: tt.rate,
+				RewardPool:        tt.pool,
+				RewardBlockAmount: tt.rate,
 			}
 			keeper.SetState(ctx, state)
+			keeper.SetParams(ctx, types.Params{
+				RewardEpochDurationBlocks: 3,
+				RewardSmoothingBlocks:     1,
+				PerEpochRewardFraction:    sdk.OneDec(),
+			})
 
 			updates := am.EndBlock(ctx, abci.RequestEndBlock{})
 			if len(updates) != 0 {

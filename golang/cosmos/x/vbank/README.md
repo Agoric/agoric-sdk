@@ -12,7 +12,7 @@ entirely at the ERTP level.
 ## Parameters
 
 - `feeCollectorName`: the module which handles fee distribution to stakers.
-- `fee_epoch_duration_blocks`: the duration (in blocks) over which fees should be given to the fee collector.
+- `reward_epoch_duration_blocks`: the duration (in blocks) over which fees should be given to the fee collector.
 
 ## State
 
@@ -53,11 +53,11 @@ not be bank purses by default.
 
 ## Governance
 
-To use Cosmos governance to change the `fee_epoch_duration_blocks` value:
+To use Cosmos governance to change the `reward_epoch_duration_blocks` value:
 
 ```sh
 $ agd query vbank params
-fee_epoch_duration_blocks: "720"
+reward_epoch_duration_blocks: "720"
 $ cat <<EOF > epoch-duration-proposal.json
 {
   "title": "Vbank param-change test",
@@ -65,7 +65,7 @@ $ cat <<EOF > epoch-duration-proposal.json
   "changes": [
     {
       "subspace": "vbank",
-      "key": "fee_epoch_duration_blocks",
+      "key": "reward_epoch_duration_blocks",
       "value": "30"
     }
   ],
@@ -77,6 +77,6 @@ $ agd tx gov submit-proposal param-change epoch-duration-proposal.json --from=my
 $ agd tx vote ...
 # After passing,
 $ agd query vbank params
-fee_epoch_duration_blocks: "30"
+reward_epoch_duration_blocks: "30"
 $
 ```
