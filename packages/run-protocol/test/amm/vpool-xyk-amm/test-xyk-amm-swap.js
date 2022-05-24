@@ -26,6 +26,7 @@ import {
 import { BASIS_POINTS } from '../../../src/vpool-xyk-amm/constantProduct/defaults.js';
 import { setupAmmServices } from './setup.js';
 import { unsafeMakeBundleCache } from '../../bundleTool.js';
+import { subscriptionTracker } from '../../metrics.js';
 
 const { quote: q } = assert;
 const { ceilDivide } = natSafeMath;
@@ -388,6 +389,10 @@ test('amm doubleSwap', async t => {
 
   const ammInstance = await amm.instance;
 
+  const metricsSub = await E(amm.ammPublicFacet).getMetrics();
+  const m = await subscriptionTracker(t, metricsSub);
+  m.assertInitial({ XYK: [] });
+
   const aliceAddLiquidityInvitation = E(
     amm.ammPublicFacet,
   ).makeAddLiquidityInvitation();
@@ -401,6 +406,8 @@ test('amm doubleSwap', async t => {
     'Moola',
   );
 
+  await m.assertChange({ XYK: { 0: moolaR.brand } });
+
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
   const moolaLiquidity = value => AmountMath.make(moolaLiquidityBrand, value);
 
@@ -410,6 +417,8 @@ test('amm doubleSwap', async t => {
   const simoleanLiquidityBrand = await E(simoleanLiquidityIssuer).getBrand();
   const simoleanLiquidity = value =>
     AmountMath.make(simoleanLiquidityBrand, value);
+
+  await m.assertChange({ XYK: { 1: simoleanR.brand } });
 
   const issuerKeywordRecord = await E(zoe).getIssuers(ammInstance);
   t.deepEqual(
@@ -777,8 +786,6 @@ test('amm jig - swapOut uneven', async t => {
     RUN: AmountMath.make(centralR.brand, expectedPoolBalance),
   });
 
-  mPoolState = updatePoolState(mPoolState, expectedC);
-
   const collectFeesInvitation = E(creatorFacet).makeCollectFeesInvitation();
   const collectFeesSeat = await E(zoe).offer(
     collectFeesInvitation,
@@ -1007,7 +1014,6 @@ test('amm adding liquidity', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   // This timer is only used to build quotes. Let's make it non-zero
   const timer = buildManualTimer(console.log, 30n);
-
   const { zoe, amm } = await setupAmmServices(
     t,
     electorateTerms,
@@ -1015,13 +1021,9 @@ test('amm adding liquidity', async t => {
     timer,
   );
 
-  const addInitialLiquidity = makeAddInitialLiquidity(
-    t,
-    zoe,
-    amm,
-    moolaR,
-    centralR,
-  );
+  const metricsSub = await E(amm.ammPublicFacet).getMetrics();
+  const m = await subscriptionTracker(t, metricsSub);
+  await m.assertInitial({ XYK: [] });
 
   await t.throwsAsync(
     () => E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
@@ -1029,17 +1031,28 @@ test('amm adding liquidity', async t => {
     "The pool hasn't been created yet",
   );
 
-  // add initial liquidity at 10000:50000
-  const liquidityIssuer = await addInitialLiquidity(10000n, 50000n);
-  const addLiquidity = makeAddLiquidity(
+  const addInitialLiquidity = await makeAddInitialLiquidity(
     t,
     zoe,
     amm,
     moolaR,
     centralR,
-    liquidityIssuer,
   );
+  // add initial liquidity at 10000:50000
+  const liquidityIssuer = await addInitialLiquidity(10000n, 50000n);
   const liquidityBrand = await E(liquidityIssuer).getBrand();
+  await m.assertChange({ XYK: { 0: moolaR.brand } });
+
+  const poolMetricsSub = await E(amm.ammPublicFacet).getPoolMetrics(
+    moolaR.brand,
+  );
+  const p = await subscriptionTracker(t, poolMetricsSub);
+  await p.assertInitial({
+    centralAmount: AmountMath.makeEmpty(centralR.brand),
+    secondaryAmount: moola(0n),
+    liquidityTokens: 0n,
+  });
+
   const allocation = (c, l, s) => ({
     Central: AmountMath.make(centralR.brand, c),
     Liquidity: AmountMath.make(liquidityBrand, l),
@@ -1067,9 +1080,24 @@ test('amm adding liquidity', async t => {
     payoutC: 0n,
     payoutS: 11n,
   };
+
+  const addLiquidity = makeAddLiquidity(
+    t,
+    zoe,
+    amm,
+    moolaR,
+    centralR,
+    liquidityIssuer,
+  );
   // Add liquidity. Offer 20_000:70_000.
   await addLiquidity(20_000n, 70_000n, poolState1, expected1);
   // After the trade, this will increase the pool by about 150%
+
+  await p.assertState({
+    centralAmount: AmountMath.make(centralR.brand, expected1.c),
+    secondaryAmount: moola(expected1.s),
+    liquidityTokens: expected1.l,
+  });
 
   // The pool will have 10K + 20K and 50K + 70K after
   t.deepEqual(
@@ -1094,8 +1122,14 @@ test('amm adding liquidity', async t => {
     payoutC: 0n,
     payoutS: 16n,
   };
+
   // Add liquidity. Offer 12_000:100_000.
   await addLiquidity(12_000n, 100_000n, poolState2, expected2);
+  await p.assertState({
+    centralAmount: AmountMath.make(centralR.brand, expected2.c),
+    secondaryAmount: moola(expected2.s),
+    liquidityTokens: expected2.l,
+  });
 
   // The pool should now have just under 50K + 70K + 60K and 10K + 14K + 12K
   t.deepEqual(
