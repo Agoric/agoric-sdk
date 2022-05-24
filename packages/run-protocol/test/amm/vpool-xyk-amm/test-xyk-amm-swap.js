@@ -786,8 +786,6 @@ test('amm jig - swapOut uneven', async t => {
     RUN: AmountMath.make(centralR.brand, expectedPoolBalance),
   });
 
-  mPoolState = updatePoolState(mPoolState, expectedC);
-
   const collectFeesInvitation = E(creatorFacet).makeCollectFeesInvitation();
   const collectFeesSeat = await E(zoe).offer(
     collectFeesInvitation,
@@ -1016,7 +1014,6 @@ test('amm adding liquidity', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   // This timer is only used to build quotes. Let's make it non-zero
   const timer = buildManualTimer(console.log, 30n);
-
   const { zoe, amm } = await setupAmmServices(
     t,
     electorateTerms,
@@ -1028,20 +1025,22 @@ test('amm adding liquidity', async t => {
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial({ XYK: [] });
 
-  const addInitialLiquidity = makeAddInitialLiquidity(
-    t,
-    zoe,
-    amm,
-    moolaR,
-    centralR,
-  );
-
   await t.throwsAsync(
     () => E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
     { message: /"secondaryBrand" not found: / },
     "The pool hasn't been created yet",
   );
 
+  const addInitialLiquidity = await makeAddInitialLiquidity(
+    t,
+    zoe,
+    amm,
+    moolaR,
+    centralR,
+  );
+  // add initial liquidity at 10000:50000
+  const liquidityIssuer = await addInitialLiquidity(10000n, 50000n);
+  const liquidityBrand = await E(liquidityIssuer).getBrand();
   await m.assertChange({ XYK: { 0: moolaR.brand } });
 
   const poolMetricsSub = await E(amm.ammPublicFacet).getPoolMetrics(
@@ -1054,17 +1053,6 @@ test('amm adding liquidity', async t => {
     liquidityTokens: 0n,
   });
 
-  // add initial liquidity at 10000:50000
-  const liquidityIssuer = await addInitialLiquidity(10000n, 50000n);
-  const addLiquidity = makeAddLiquidity(
-    t,
-    zoe,
-    amm,
-    moolaR,
-    centralR,
-    liquidityIssuer,
-  );
-  const liquidityBrand = await E(liquidityIssuer).getBrand();
   const allocation = (c, l, s) => ({
     Central: AmountMath.make(centralR.brand, c),
     Liquidity: AmountMath.make(liquidityBrand, l),
@@ -1093,15 +1081,23 @@ test('amm adding liquidity', async t => {
     payoutS: 11n,
   };
 
-  await p.assertState({
-    centralAmount: AmountMath.make(centralR.brand, 50_000n),
-    secondaryAmount: moola(10_000n),
-    liquidityTokens: 5_0000n,
-  });
-
+  const addLiquidity = makeAddLiquidity(
+    t,
+    zoe,
+    amm,
+    moolaR,
+    centralR,
+    liquidityIssuer,
+  );
   // Add liquidity. Offer 20_000:70_000.
   await addLiquidity(20_000n, 70_000n, poolState1, expected1);
   // After the trade, this will increase the pool by about 150%
+
+  await p.assertState({
+    centralAmount: AmountMath.make(centralR.brand, expected1.c),
+    secondaryAmount: moola(expected1.s),
+    liquidityTokens: expected1.l,
+  });
 
   // The pool will have 10K + 20K and 50K + 70K after
   t.deepEqual(
@@ -1127,14 +1123,13 @@ test('amm adding liquidity', async t => {
     payoutS: 16n,
   };
 
-  await p.assertState({
-    centralAmount: AmountMath.make(centralR.brand, 119_996n),
-    secondaryAmount: moola(29_989n),
-    liquidityTokens: 134_115n,
-  });
-
   // Add liquidity. Offer 12_000:100_000.
   await addLiquidity(12_000n, 100_000n, poolState2, expected2);
+  await p.assertState({
+    centralAmount: AmountMath.make(centralR.brand, expected2.c),
+    secondaryAmount: moola(expected2.s),
+    liquidityTokens: expected2.l,
+  });
 
   // The pool should now have just under 50K + 70K + 60K and 10K + 14K + 12K
   t.deepEqual(
@@ -1142,10 +1137,4 @@ test('amm adding liquidity', async t => {
     allocation(219985n, 0n, 41973n),
     `poolAllocation after initialization`,
   );
-
-  await p.assertState({
-    centralAmount: AmountMath.make(centralR.brand, 219_985n),
-    secondaryAmount: moola(41_973n),
-    liquidityTokens: 214_795n,
-  });
 });
