@@ -135,23 +135,27 @@ const makeScenario = async t => {
     );
   };
 
-  /** @type {PromiseKit<IssuerKit>} */
+  /** @type {PromiseKit<{ mint: ERef<Mint>, issuer: ERef<Issuer>, brand: Brand}>} */
   const ibcKitP = makePromiseKit();
 
   const startDevNet = async () => {
     // If we don't have a proper bridge manager, we need it to be undefined.
     space.produce.bridgeManager.resolve(undefined);
 
+    /** @type {Awaited<BankManager>} */
     const bankManager = Far('mock BankManager', {
-      addAsset: (denom, keyword, proposedName, kit) => {
+      getAssetSubscription: () => assert.fail('not impl'),
+      getModuleAccountAddress: () => assert.fail('not impl'),
+      getRewardDistributorDepositFacet: () =>
+        harden({
+          receive: () => /** @type {any} */ (null),
+        }),
+      addAsset: async (denom, keyword, proposedName, kit) => {
         t.log('addAsset', { denom, keyword, issuer: `${kit.issuer}` });
         t.truthy(kit.mint);
-        ibcKitP.resolve(kit);
+        ibcKitP.resolve({ ...kit, mint: kit.mint || assert.fail() });
       },
-      getFeeCollectorDepositFacet: () =>
-        harden({
-          receive: () => {},
-        }),
+      getBankForAddress: () => assert.fail('not impl'),
     });
     // @ts-ignore mock doesn't have all the methods
     space.produce.bankManager.resolve(bankManager);
