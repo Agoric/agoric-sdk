@@ -11,6 +11,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 
 import { setupReserveServices } from './setup.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
+import { subscriptionTracker } from '../metrics.js';
 
 // Some notifier updates aren't propogating sufficiently quickly for the tests.
 // This invocation (thanks to Warner) waits for all promises that can fire to
@@ -337,4 +338,53 @@ test('request more collateral than available', async t => {
     }),
     'expecting more',
   );
+});
+
+test('reserve track shortfall', async t => {
+  /** @param {NatValue} value */
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+  const timer = buildManualTimer(console.log);
+
+  const { reserve, space } = await setupReserveServices(
+    t,
+    electorateTerms,
+    timer,
+  );
+
+  const runBrand = await space.brand.consume.RUN;
+
+  await E(reserve.reserveCreatorFacet).addLiquidationShortfall(
+    AmountMath.make(runBrand, 1000n),
+  );
+
+  const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
+  const m = await subscriptionTracker(t, metricsSub);
+  await m.assertInitial({
+    allocations: {},
+    shortfall: AmountMath.makeEmpty(runBrand),
+  });
+  await m.assertChange({
+    shortfall: { value: 1000n },
+  });
+
+  await E(reserve.reserveCreatorFacet).addLiquidationShortfall(
+    AmountMath.make(runBrand, 500n),
+  );
+  await m.assertChange({
+    shortfall: { value: 1500n },
+  });
+
+  await E(reserve.reserveCreatorFacet).reduceLiquidationShortfall(
+    AmountMath.make(runBrand, 200n),
+  );
+  await m.assertChange({
+    shortfall: { value: 1300n },
+  });
+
+  await E(reserve.reserveCreatorFacet).reduceLiquidationShortfall(
+    AmountMath.make(runBrand, 2000n),
+  );
+  await m.assertChange({
+    shortfall: { value: 0n },
+  });
 });

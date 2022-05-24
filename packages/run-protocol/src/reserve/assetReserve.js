@@ -5,6 +5,7 @@ import { makeStore } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeSubscriptionKit } from '@agoric/notifier';
 
 import { AMM_INSTANCE } from './params.js';
 import { makeTracer } from '../makeTracer.js';
@@ -118,6 +119,36 @@ const start = async (zcf, privateArgs) => {
   const makeAddCollateralInvitation = () =>
     zcf.makeInvitation(addCollateralHook, 'Add Collateral');
 
+  const { brand: runBrand } = await E(runMint).getIssuerRecord();
+  const { publication: metricsPublication, subscription: metricsSubscription } =
+    makeSubscriptionKit();
+
+  // shortfall in Vaults due to liquidations less than debt. This value can be
+  // reduced by various actions which burn IST.
+  let vaultShortfall = AmountMath.makeEmpty(runBrand);
+
+  const updateMetrics = () => {
+    const metrics = harden({
+      allocations: getAllocations(),
+      shortfall: vaultShortfall,
+    });
+    metricsPublication.updateState(metrics);
+  };
+  updateMetrics();
+
+  const addLiquidationShortfall = shortfall => {
+    vaultShortfall = AmountMath.add(vaultShortfall, shortfall);
+    updateMetrics();
+  };
+  const reduceLiquidationShortfall = reduction => {
+    if (AmountMath.isGTE(reduction, vaultShortfall)) {
+      vaultShortfall = AmountMath.makeEmptyFromAmount(vaultShortfall);
+    } else {
+      vaultShortfall = AmountMath.subtract(vaultShortfall, reduction);
+    }
+    updateMetrics();
+  };
+
   // Takes collateral from the reserve, mints RUN to accompany it, and uses both
   // to add Liquidity to a pool in the AMM.
   const addLiquidityToAmmPool = async (collateralAmount, runAmount) => {
@@ -188,6 +219,9 @@ const start = async (zcf, privateArgs) => {
       // add makeRedeemLiquidityTokensInvitation later. For now just store them
       getAllocations,
       addIssuer,
+      addLiquidationShortfall,
+      reduceLiquidationShortfall,
+      getMetrics: () => metricsSubscription,
     },
     { addLiquidityToAmmPool },
   );
