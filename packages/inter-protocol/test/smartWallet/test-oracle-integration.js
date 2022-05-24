@@ -339,7 +339,7 @@ test.serial('errors', async t => {
     }),
     {
       error: undefined,
-      numWantsSatisfied: 1,
+      numWantsSatisfied: Infinity,
     },
   );
   await eventLoopIteration();
