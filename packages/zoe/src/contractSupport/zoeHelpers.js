@@ -3,13 +3,13 @@ import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AssetKind } from '@agoric/ertp';
 import { fromUniqueEntries } from '@agoric/internal';
-import { satisfiesWant } from '../contractFacet/offerSafety.js';
 import {
   atomicRearrange,
   atomicTransfer,
   fromOnly,
   toOnly,
 } from './atomicTransfer.js';
+import { numWantsSatisfied } from '../contractFacet/offerSafety.js';
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
@@ -38,20 +38,25 @@ export const assertIssuerKeywords = (zcf, expected) => {
  * check; whether the allocation constitutes a refund is not
  * checked. The update is merged with currentAllocation
  * (update's values prevailing if the keywords are the same)
- * to produce the newAllocation. The return value is 0 for
- * false and 1 for true. When multiples are introduced, any
- * positive return value will mean true.
+ * to produce the newAllocation. The return value indicates the
+ * number of times the want was satisfied.
+ *
+ * There are some calls to `satisfies` dating from when it returned a
+ * boolean rather than a number. Manual inspection verifies that these
+ * are only sensitive to whether the result is truthy or falsy.
+ * Since `0` is falsy and any positive number (including `Infinity`)
+ * is truthy, all these callers still operate correctly.
  *
  * @param {ZCF} zcf
  * @param {ZcfSeatPartial} seat
  * @param {AmountKeywordRecord} update
- * @returns {0|1}
+ * @returns {number}
  */
 export const satisfies = (zcf, seat, update) => {
   const currentAllocation = seat.getCurrentAllocation();
   const newAllocation = { ...currentAllocation, ...update };
   const proposal = seat.getProposal();
-  return satisfiesWant(proposal, newAllocation);
+  return numWantsSatisfied(proposal, newAllocation);
 };
 
 /** @type {Swap} */
@@ -167,6 +172,14 @@ export const assertProposalShape = (seat, expected) => {
   assertKeys(actual.give, expected.give);
   assertKeys(actual.want, expected.want);
   assertKeys(actual.exit, expected.exit);
+  if ('multiples' in expected) {
+    // Not sure what to do with the value of expected.multiples. Probably
+    // nothing until we convert all this to use proper patterns
+  } else {
+    // multiples other than 1n need to be opted into
+    actual.multiples === 1n ||
+      Fail`Only 1n multiples expected: ${actual.multiples}`;
+  }
 };
 
 /* Given a brand, assert that brand is AssetKind.NAT. */

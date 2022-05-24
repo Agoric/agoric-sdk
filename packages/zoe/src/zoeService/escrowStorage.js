@@ -7,7 +7,7 @@ import { provideDurableWeakMapStore } from '@agoric/vat-data';
 import './types.js';
 import './internal-types.js';
 
-import { cleanKeywords } from '../cleanProposal.js';
+import { cleanKeywords, scaleAmount } from '../cleanProposal.js';
 import { arrayToObj } from '../objArrayConversion.js';
 
 /**
@@ -74,7 +74,7 @@ export const provideEscrowStorage = baggage => {
 
   /** @type {DepositPayments} */
   const depositPayments = async (proposal, payments) => {
-    const { give, want } = proposal;
+    const { give, want, multiples } = proposal;
     const giveKeywords = Object.keys(give);
     const wantKeywords = Object.keys(want);
     const paymentKeywords = cleanKeywords(payments);
@@ -108,7 +108,8 @@ export const provideEscrowStorage = baggage => {
           )} keyword in proposal.give did not have an associated payment in the paymentKeywordRecord, which had keywords: ${q(
             paymentKeywords,
           )}`;
-        return doDepositPayment(payments[keyword], give[keyword]);
+        const giveAmount = scaleAmount(give[keyword], multiples);
+        return doDepositPayment(payments[keyword], giveAmount);
       }),
     );
 

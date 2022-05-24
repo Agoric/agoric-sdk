@@ -270,7 +270,12 @@ const helperBehavior = {
     const want = proposal.want.Debt || emptyDebt;
     const giveDebtOnly = matches(
       proposal,
-      harden({ give: { [KW.Debt]: M.record() }, want: {}, exit: M.any() }),
+      harden({
+        give: { [KW.Debt]: M.record() },
+        want: {},
+        multiples: 1n,
+        exit: M.any(),
+      }),
     );
 
     // Calculate the fee, the amount to mint and the resulting debt. We'll

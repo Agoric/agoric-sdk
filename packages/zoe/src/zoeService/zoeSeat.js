@@ -4,7 +4,8 @@ import { M, vivifyFarClassKit } from '@agoric/vat-data';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
-import { satisfiesWant } from '../contractFacet/offerSafety.js';
+import { numWantsSatisfied } from '../contractFacet/offerSafety.js';
+
 import '../types.js';
 import '../internal-types.js';
 import {
@@ -272,8 +273,8 @@ export const makeZoeSeatAdminFactory = baggage => {
           const { state } = this;
           return E.when(
             state.subscriber.subscribeAfter(),
-            () => satisfiesWant(state.proposal, state.currentAllocation),
-            () => satisfiesWant(state.proposal, state.currentAllocation),
+            () => numWantsSatisfied(state.proposal, state.currentAllocation),
+            () => numWantsSatisfied(state.proposal, state.currentAllocation),
           );
         },
         getExitSubscriber() {

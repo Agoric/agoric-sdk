@@ -30,6 +30,7 @@ test('cleanProposal test', t => {
     {
       give: { Asset: simoleans(1n) },
       want: { Price: moola(3n) },
+      multiples: 1n,
       exit: { onDemand: null },
     },
   );
@@ -39,6 +40,7 @@ test('cleanProposal - all empty', t => {
   proposeGood(t, {}, 'nat', {
     give: harden({}),
     want: harden({}),
+    multiples: 1n,
     exit: { onDemand: null },
   });
 
@@ -53,6 +55,7 @@ test('cleanProposal - all empty', t => {
     {
       give: harden({}),
       want: harden({}),
+      multiples: 1n,
       exit: { waived: null },
     },
   );
@@ -73,6 +76,7 @@ test('cleanProposal - repeated brands', t => {
     {
       want: { Asset2: simoleans(1n) },
       give: { Price2: moola(3n) },
+      multiples: 1n,
       exit: { afterDeadline: { timer, deadline: 100n } },
     },
   );
@@ -109,6 +113,7 @@ test('cleanProposal - want patterns', t => {
     {
       want: { Asset2: M.any() },
       give: { Price2: moola(3n) },
+      multiples: 1n,
       exit: { afterDeadline: { timer, deadline: 100n } },
     },
   );
@@ -188,9 +193,10 @@ test('cleanProposal - other wrong stuff', t => {
     /keyword "Not Ident" must be an ascii identifier starting with upper case./,
   );
   proposeGood(t, { give: { ['A'.repeat(100)]: simoleans(1n) } }, 'nat', {
-    exit: { onDemand: null },
-    give: { ['A'.repeat(100)]: simoleans(1n) },
     want: {},
+    give: { ['A'.repeat(100)]: simoleans(1n) },
+    multiples: 1n,
+    exit: { onDemand: null },
   });
   proposeBad(
     t,

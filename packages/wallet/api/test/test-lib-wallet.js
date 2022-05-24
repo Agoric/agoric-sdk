@@ -1356,6 +1356,7 @@ test('lib-wallet can give attestations in offers', async t => {
       give: {
         Attestation: AmountMath.make(attestationBrand, 30n),
       },
+      multiples: 1n,
       want: {},
     },
     {
@@ -1365,6 +1366,7 @@ test('lib-wallet can give attestations in offers', async t => {
       give: {
         Attestation: AmountMath.make(attestationBrand, 30n),
       },
+      multiples: 1n,
       want: {},
     },
   ]);
@@ -1428,6 +1430,7 @@ test('lib-wallet can want attestations in offers', async t => {
       want: {
         Attestation: AmountMath.make(attestationBrand, 65n),
       },
+      multiples: 1n,
       give: {},
     },
   ]);
@@ -1444,6 +1447,7 @@ test('lib-wallet can want attestations in offers', async t => {
       give: {
         Attestation: AmountMath.make(attestationBrand, 65n),
       },
+      multiples: 1n,
       want: {},
     },
   ]);
@@ -1551,6 +1555,7 @@ test('addOffer invitationQuery', async t => {
           value: 1n,
         },
       },
+      multiples: 1n,
       exit: {
         onDemand: null,
       },
@@ -1672,6 +1677,7 @@ test('addOffer offer.invitation', async t => {
           value: 1n,
         },
       },
+      multiples: 1n,
       exit: {
         onDemand: null,
       },

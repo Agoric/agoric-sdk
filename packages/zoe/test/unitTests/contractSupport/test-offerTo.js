@@ -105,7 +105,7 @@ test(`offerTo - basic usage`, async t => {
     want: {
       TokenL: moolaIssuer.getBrand().getAmountShape(),
     },
-    // multiples: 1n,
+    multiples: 1n,
     exit: {
       onDemand: null,
     },
@@ -221,7 +221,7 @@ test(`offerTo - violates offer safety of fromSeat`, async t => {
       ),
     {
       message:
-        /Offer safety was violated by the proposed allocation: {"Token[JK]":{"brand":"\[Alleged: .* brand]","value":"\[0n]"},"Token[KJ]":{"brand":"\[Alleged: .* brand]","value":"\[0n]"}}. Proposal was/,
+        'Offer safety was violated by the proposed allocation: {"TokenJ":{"brand":"[Alleged: moola brand]","value":"[0n]"},"TokenK":{"brand":"[Alleged: bucks brand]","value":"[0n]"}}. Proposal was {"exit":{"onDemand":null},"give":{"TokenK":{"brand":"[Alleged: bucks brand]","value":"[5n]"}},"multiples":"[1n]","want":{"TokenJ":{"brand":"[Alleged: moola brand]","value":"[3n]"}}}',
     },
   );
 
