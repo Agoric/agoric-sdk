@@ -2,6 +2,7 @@
 import { E, Far } from '@endo/far';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
+import { MIN_INITIAL_POOL_LIQUIDITY_KEY } from './vpool-xyk-amm/params.js';
 
 const { details: X, quote: q } = assert;
 
@@ -16,9 +17,7 @@ const COSMOS_DECIMALS = 6;
  *   bankManager: ERef<BankManager>,
  * }} privateArgs
  *
- * TODO: get minimumCentral dynamically from the AMM
  * @typedef {{
- *   minimumCentral: Amount<'nat'>,
  *   amm: Instance,
  * }} InterchainPoolTerms
  *
@@ -28,15 +27,10 @@ const COSMOS_DECIMALS = 6;
  * }} AssetDetail
  */
 export const start = (zcf, { bankManager }) => {
-  const {
-    brands: { Central: centralBrand },
-    minimumCentral,
-    amm,
-  } = zcf.getTerms();
-  AmountMath.coerce(centralBrand, minimumCentral);
+  const { amm } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
-  /** @type {ERef<XYKAMMPublicFacet>} */
+  /** @type {ERef<GovernedPublicFacet<XYKAMMPublicFacet>>} */
   const ammPub = E(zoe).getPublicFacet(amm);
 
   let kwNonce = 0;
@@ -54,6 +48,10 @@ export const start = (zcf, { bankManager }) => {
     const { denom, decimalPlaces = COSMOS_DECIMALS } = detail;
     assert.typeof(denom, 'string');
     assert.typeof(decimalPlaces, 'number');
+
+    const minimumCentral = await E(ammPub).getAmount(
+      MIN_INITIAL_POOL_LIQUIDITY_KEY,
+    );
 
     const {
       give: { Central: centralAmt },
