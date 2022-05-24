@@ -7,8 +7,13 @@ import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { AMM_INSTANCE } from './params.js';
+import { makeTracer } from '../makeTracer.js';
+
+const trace = makeTracer('Reserve', true);
 
 const makeLiquidityKeyword = keyword => `${keyword}Liquidity`;
+
+const RunKW = 'RUN';
 
 /**
  * Asset Reserve holds onto assets for the RUN protocol, and can
@@ -28,9 +33,17 @@ const makeLiquidityKeyword = keyword => `${keyword}Liquidity`;
  * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Payment}} privateArgs
  */
 const start = async (zcf, privateArgs) => {
-  /** @type {MapStore<Brand, Keyword>} */
+  /**
+   * Used to look up the unique keyword for each brand, including RUN.
+   *
+   * @type {MapStore<Brand, Keyword>}
+   */
   const keywordForBrand = makeStore('keywords');
-  /** @type {MapStore<Keyword, [Brand, Brand]>} */
+  /**
+   * Used to look up the brands for keywords, excluding RUN because it's a special case.
+   *
+   * @type {MapStore<Keyword, [brand: Brand, liquidityBrand: Brand]>}
+   */
   const brandForKeyword = makeStore('brands');
 
   const { augmentPublicFacet, makeGovernorFacet, params } =
@@ -43,8 +56,22 @@ const start = async (zcf, privateArgs) => {
     params.getAmmInstance(),
   );
 
+  /** @type {ZCFMint} */
+  const runMint = await zcf.registerFeeMint(RunKW, privateArgs.feeMintAccess);
+  const runKit = runMint.getIssuerRecord();
+  keywordForBrand.init(runKit.brand, RunKW);
+  // no need to saveIssuer() b/c registerFeeMint does it
+
+  /**
+   * @param {Issuer} issuer
+   * @param {string} keyword
+   */
   const addIssuer = async (issuer, keyword) => {
     const brand = await E(issuer).getBrand();
+    assert(
+      keyword !== RunKW && brand !== runKit.brand,
+      `${RunKW} is a special case handled by the reserve contract`,
+    );
 
     const liquidityIssuer = E(ammPublicFacet).getLiquidityIssuer(brand);
     const liquidityBrand = await E(liquidityIssuer).getBrand();
@@ -65,8 +92,6 @@ const start = async (zcf, privateArgs) => {
     return keywordForBrand.get(brand);
   };
 
-  const { feeMintAccess } = privateArgs;
-
   // We keep the associated liquidity tokens in the same seat
   const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
   const getAllocations = () => {
@@ -86,14 +111,12 @@ const start = async (zcf, privateArgs) => {
     zcf.reallocate(collateralSeat, seat);
     seat.exit();
 
+    trace('received collateral', amountIn);
     return 'added Collateral to the Reserve';
   };
 
   const makeAddCollateralInvitation = () =>
     zcf.makeInvitation(addCollateralHook, 'Add Collateral');
-
-  /** @type {ZCFMint} */
-  const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);
 
   // Takes collateral from the reserve, mints RUN to accompany it, and uses both
   // to add Liquidity to a pool in the AMM.

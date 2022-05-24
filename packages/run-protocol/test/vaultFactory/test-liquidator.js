@@ -34,7 +34,13 @@ import {
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 
-/** @type {import('ava').TestInterface<any>} */
+/** @typedef {Record<string, any> & {
+ *   aethKit: IssuerKit,
+ *   reserveCreatorFacet: AssetReserveCreatorFacet,
+ *   runKit: IssuerKit,
+ * }} Context */
+/** @type {import('ava').TestInterface<Context>} */
+// @ts-expect-error cast
 const test = unknownTest;
 
 // #region Support
@@ -45,6 +51,7 @@ const contractRoots = {
   liquidate: './src/vaultFactory/liquidateIncrementally.js',
   VaultFactory: './src/vaultFactory/vaultFactory.js',
   amm: './src/vpool-xyk-amm/multipoolMarketMaker.js',
+  reserve: './src/reserve/assetReserve.js',
 };
 
 /** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
@@ -285,6 +292,7 @@ const setupServices = async (
   iProduce.reserve.resolve(t.context.installation.reserve);
   // produce the reserve instance in the space
   await setupReserve(space);
+  t.context.reserveCreatorFacet = space.consume.reserveCreatorFacet;
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
   iProduce.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
@@ -816,5 +824,32 @@ test('amm stopAfter - want too much', async t => {
   await d.sellOnAMM(give, want, stopAfter, {
     In: expectedAeth,
     Out: expectedRUN,
+  });
+});
+
+test('penalties to reserve', async t => {
+  const {
+    aethKit: { brand: aethBrand },
+    runKit: { brand: runBrand },
+  } = t.context;
+
+  const d = await makeDriver(
+    t,
+    AmountMath.make(runBrand, 1000n),
+    AmountMath.make(aethBrand, 900n),
+  );
+  // Create a loan for 270 RUN with 400 aeth collateral
+  const collateralAmount = AmountMath.make(aethBrand, 400n);
+  const loanAmount = AmountMath.make(runBrand, 270n);
+  await d.makeVaultDriver(collateralAmount, loanAmount);
+
+  // liquidate
+  d.setPrice(AmountMath.make(runBrand, 636n));
+  await waitForPromisesToSettle();
+
+  const { reserveCreatorFacet } = t.context;
+  const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
+  t.deepEqual(reserveAllocations, {
+    RUN: { brand: runBrand, value: 29n },
   });
 });

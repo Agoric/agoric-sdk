@@ -80,9 +80,26 @@ const start = async zcf => {
   const asFloat = (numerator, denominator) =>
     Number(numerator) / Number(denominator);
 
-  // TODO(5467)) distribute penalties to the reserve
-  assert(reservePublicFacet, 'Missing reservePublicFacet');
+  // #region penalty distribution
   const { zcfSeat: penaltyPoolSeat } = zcf.makeEmptySeatKit();
+  const drainPenaltyPool = async () => {
+    const addCollateral = await E(
+      reservePublicFacet,
+    ).makeAddCollateralInvitation();
+    const proposal = harden({
+      give: { Collateral: penaltyPoolSeat.getCurrentAllocation().Out },
+    });
+    const { deposited, userSeatPromise } = await offerTo(
+      zcf,
+      addCollateral,
+      harden({ Out: 'Collateral' }),
+      proposal,
+      penaltyPoolSeat,
+    );
+    const [deposits] = await Promise.all([deposited, userSeatPromise]);
+    trace('drainPenaltyPool deposited', deposits.Out);
+  };
+  // #endregion
 
   /**
    * Compute the tranche size whose sale on the AMM would have
@@ -312,6 +329,10 @@ const start = async zcf => {
 
     debtorSeat.exit();
     trace('exit seat');
+    // trigger but don't await so it doesn't make liquidation itself fail
+    drainPenaltyPool().catch(e =>
+      console.error('🚨 error draining penalty pool', e),
+    );
   };
 
   /**
