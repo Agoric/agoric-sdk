@@ -379,20 +379,6 @@ const machineBehavior = {
     state.rewardPoolSeat.getCurrentAllocation(),
 };
 
-const helperBehavior = {
-  getShortfallReporter: async ({ state }) => {
-    const { zcf } = state;
-    const zoe = zcf.getZoeService();
-    const { shortfallReporter } = await updateShortfallReporter(
-      zoe,
-      state.directorParamManager,
-      state.shortfallReporter,
-      state.shortfallInvitation,
-    );
-    return shortfallReporter;
-  },
-};
-
 const creatorBehavior = {
   /** @param {MethodContext} context */
   getParamMgrRetriever: ({
@@ -490,7 +476,6 @@ const behavior = {
   creator: creatorBehavior,
   machine: machineBehavior,
   public: publicBehavior,
-  helper: helperBehavior,
 };
 
 /** @param {MethodContext} context */
