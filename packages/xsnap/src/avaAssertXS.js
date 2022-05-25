@@ -8,6 +8,7 @@ const { assign, freeze, keys } = Object;
 
 /**
  * deep equal value comparison
+ * XXX untested and buggy
  *
  * originally based on code from Paul Roub Aug 2014
  * https://stackoverflow.com/a/25456134/7963
