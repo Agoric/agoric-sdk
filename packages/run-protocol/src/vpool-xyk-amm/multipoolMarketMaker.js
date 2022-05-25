@@ -180,11 +180,14 @@ const start = async (zcf, privateArgs) => {
    * @param {Keyword} liquidityKeyword
    */
   const handlePoolAdded = (reserveLiquidityTokenSeat, liquidityKeyword) => {
-    // XXX should be earlier but there's no clean place for it in current factoring
+    updateMetrics();
+
+    if (!reserveDepositFacet) {
+      console.error('🚨 no reserveDepositFacet');
+      return;
+    }
     assert(reserveDepositFacet, 'Missing reserveDepositFacet');
     assert(reserveLiquidityTokenSeat, 'Missing reserveLiquidityTokenSeat');
-
-    updateMetrics();
 
     trace(
       `move ${liquidityKeyword} to the reserve`,

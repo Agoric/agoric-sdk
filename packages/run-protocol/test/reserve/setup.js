@@ -10,10 +10,19 @@ import { provideBundle } from '../supports.js';
 const reserveRoot = './src/reserve/assetReserve.js'; // package relative
 const faucetRoot = './test/vaultFactory/faucet.js';
 
+/**
+ * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
+ *
+ * @param {*} t
+ * @param {ManualTimer | undefined=} timer
+ * @param {FarZoeKit} farZoeKit
+ * @param {Issuer} runIssuer
+ * @param {{ committeeName: string, committeeSize: number}} electorateTerms
+ */
 const setupReserveBootstrap = async (
   t,
   timer,
-  zoe,
+  farZoeKit,
   runIssuer,
   electorateTerms,
 ) => {
@@ -25,9 +34,10 @@ const setupReserveBootstrap = async (
     electorateTerms,
     centralR,
     timer,
-    zoe,
+    farZoeKit,
   );
   const { produce } = /** @type { EconomyBootstrapPowers } */ (ammSpaces.space);
+  const zoe = await farZoeKit.zoe;
 
   produce.chainTimerService.resolve(timer);
   produce.zoe.resolve(zoe);
@@ -76,7 +86,9 @@ export const setupReserveServices = async (
   electorateTerms,
   timer = buildManualTimer(console.log),
 ) => {
-  const { zoe, feeMintAccess } = await setUpZoeForTest();
+  const farZoeKit = await setUpZoeForTest();
+  const zoe = await farZoeKit.zoe;
+  const feeMintAccess = await farZoeKit.feeMintAccess;
 
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
@@ -84,7 +96,7 @@ export const setupReserveServices = async (
   const spaces = await setupReserveBootstrap(
     t,
     timer,
-    zoe,
+    farZoeKit,
     runIssuer,
     electorateTerms,
   );
