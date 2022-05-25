@@ -1,6 +1,17 @@
 // @ts-check
 
-// TODO: Describe the manifest schema and semantics.
+/**
+ * A manifest is an object in which each key is the name of a function to run
+ * at bootstrap and the corresponding value is a "permit" describing an
+ * attenuation of allPowers that should be provided as its first argument
+ * (cf. packages/vats/src/core/boot.js).
+ *
+ * A permit is either
+ * - `true` or a string (both meaning no attenuation, with a string serving
+ *   as a grouping label for convenience and diagram generation), or
+ * - an object whose keys identify properties to preserve and whose values
+ *   are theirselves (recursive) permits.
+ */
 const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
   bridgeCoreEval: true, // Needs all the powers.
   makeOracleBrands: {
