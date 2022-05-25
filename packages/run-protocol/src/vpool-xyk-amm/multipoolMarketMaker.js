@@ -168,6 +168,8 @@ const start = async (zcf, privateArgs) => {
 
   // TODO(#5408): give reserve the ability to collect this.
   const { zcfSeat: reserveLiquidityTokenSeat } = zcf.makeEmptySeatKit();
+  /** @type {AssetReservePublicFacet=} */
+  let reserveDepositFacet;
 
   const getLiquiditySupply = brand => getPool(brand).getLiquiditySupply();
   const getLiquidityIssuer = brand => getPool(brand).getLiquidityIssuer();
@@ -295,6 +297,15 @@ const start = async (zcf, privateArgs) => {
   const creatorFacet = makeGovernorFacet(
     Far('AMM Fee Collector facet', {
       makeCollectFeesInvitation,
+      /**
+       * Must be called before adding pools. Not provided at contract start time due to cyclic dependency.
+       *
+       * @param {AssetReservePublicFacet} facet
+       */
+      setReserveDepositFacet: facet => {
+        reserveDepositFacet = facet;
+        console.log('set', { reserveDepositFacet });
+      },
     }),
   );
   return harden({ publicFacet, creatorFacet });

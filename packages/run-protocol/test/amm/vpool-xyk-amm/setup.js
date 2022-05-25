@@ -13,11 +13,15 @@ import {
 import * as Collect from '../../../src/collect.js';
 import {
   setupAmm,
+  setupReserve,
   startEconomicCommittee,
 } from '../../../src/proposals/econ-behaviors.js';
 import { installGovernance, provideBundle } from '../../supports.js';
+import { makeTracer } from '../../../src/makeTracer.js';
 
 const ammRoot = './src/vpool-xyk-amm/multipoolMarketMaker.js'; // package relative
+
+const trace = makeTracer('AmmTS');
 
 export const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
@@ -88,6 +92,10 @@ export const setupAmmServices = async (
   brand.produce.RUN.resolve(centralR.brand);
   issuer.produce.RUN.resolve(centralR.issuer);
 
+  // AMM requires Reserve in order to add pools, but we can't provide it at startInstance
+  // time because Reserve requires AMM itself in order to be started.
+  // Instead we make AMM without the Reserve and add it later: REFa
+  trace('await dependencies of reserve');
   await Promise.all([
     startEconomicCommittee(space, {
       options: { econCommitteeOptions: electorateTerms },
@@ -98,6 +106,8 @@ export const setupAmmServices = async (
       },
     }),
   ]);
+  trace('setupReserve');
+  await setupReserve(space);
 
   const installs = await Collect.allValues({
     amm: installation.consume.amm,
@@ -124,6 +134,12 @@ export const setupAmmServices = async (
     ammPublicFacet,
     instance: governedInstance,
   };
+
+  // REFa: connect these after both contracts are started
+  const reservePublicFacet = await E(zoe).getPublicFacet(
+    instance.consume.reserve,
+  );
+  await E(amm.ammCreatorFacet).setReserveDepositFacet(reservePublicFacet);
 
   const committeeCreator = await consume.economicCommitteeCreatorFacet;
   const electorateInstance = await instance.consume.economicCommittee;
