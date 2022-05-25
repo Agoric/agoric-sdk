@@ -222,6 +222,19 @@ const start = async (zcf, privateArgs) => {
     zcf.reallocate(offerToSeat, collateralSeat);
   };
 
+  const burnRUNToReduceShortfall = reduction => {
+    reduction = AmountMath.coerce(runBrand, reduction);
+    const runKeyword = keywordForBrand.get(runBrand);
+    const runBalance = collateralSeat.getAmountAllocated(runKeyword);
+    const amountToBurn = AmountMath.min(reduction, runBalance);
+    if (AmountMath.isEmpty(amountToBurn)) {
+      return;
+    }
+
+    runMint.burnLosses(harden({ [runKeyword]: amountToBurn }), collateralSeat);
+    reduceLiquidationShortfall(amountToBurn);
+  };
+
   const makeShortfallReportingInvitation = () => {
     const handleShortfallReportingOffer = () => {
       return Far('shortfallReporter', {
@@ -246,7 +259,7 @@ const start = async (zcf, privateArgs) => {
       makeShortfallReportingInvitation,
       getMetrics: () => metricsSubscription,
     },
-    { addLiquidityToAmmPool },
+    { addLiquidityToAmmPool, burnRUNToReduceShortfall },
   );
 
   const publicFacet = augmentPublicFacet(
@@ -265,6 +278,7 @@ export { start };
 /**
  * @typedef {object} ShortfallReporter
  * @property {(shortfall: Amount) => void} increaseLiquidationShortfall
+ * @property {(shortfall: Amount) => void} reduceLiquidationShortfall
  */
 
 /** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} AssetReservePublicFacet */
