@@ -6,7 +6,6 @@ import { getManifestForAddAssetToVault } from '../src/proposals/addAssetToVault.
 import { getManifestForPsm } from '../src/proposals/startPSM.js';
 import { makeInstallCache } from '../src/proposals/utils.js';
 
-// Build proposal for sim-chain etc.
 export const defaultProposalBuilder = async (
   { publishRef, install: install0, wrapInstall },
   { interchainAssetOptions = /** @type {object} */ ({}) } = {},
@@ -15,13 +14,16 @@ export const defaultProposalBuilder = async (
   /** @type {import('../src/proposals/addAssetToVault.js').InterchainAssetOptions} */
   const {
     issuerBoardId = env.INTERCHAIN_ISSUER_BOARD_ID,
+    denom,
     oracleBrand = 'ATOM',
     decimalPlaces = 6,
     keyword = 'IbcATOM',
     proposedName = oracleBrand,
   } = interchainAssetOptions;
 
-  assert(issuerBoardId, 'INTERCHAIN_ISSUER_BOARD_ID is required');
+  if (!denom) {
+    assert(issuerBoardId, 'INTERCHAIN_ISSUER_BOARD_ID is required');
+  }
 
   const install = wrapInstall ? wrapInstall(install0) : install0;
 
@@ -31,6 +33,7 @@ export const defaultProposalBuilder = async (
       getManifestForAddAssetToVault.name,
       {
         interchainAssetOptions: {
+          denom,
           issuerBoardId,
           decimalPlaces,
           keyword,
