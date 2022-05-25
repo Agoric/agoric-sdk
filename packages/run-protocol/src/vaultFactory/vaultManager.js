@@ -33,7 +33,7 @@ const { details: X } = assert;
 
 const trace = makeTracer('VM', false);
 
-// Metrics naming scheme: nouns are present values; past-participles are summative.
+// Metrics naming scheme: nouns are present values; past-participles are accumulative.
 /**
  * @typedef {object} MetricsNotification
  *
@@ -425,19 +425,19 @@ const helperBehavior = {
       state.collateralBrand,
       factoryPowers.getGovernedParams().getLiquidationPenalty(),
     )
-      .then(metrics => {
-        console.log('liquidateAndRemove metrics', metrics);
+      .then(accounting => {
+        console.log('liquidateAndRemove accounting', accounting);
         state.totalProceedsReceived = AmountMath.add(
           state.totalProceedsReceived,
-          metrics.proceeds,
+          accounting.proceeds,
         );
         state.totalOverageReceived = AmountMath.add(
           state.totalOverageReceived,
-          metrics.overage,
+          accounting.overage,
         );
         state.totalShortfallReceived = AmountMath.add(
           state.totalShortfallReceived,
-          metrics.shortfall,
+          accounting.shortfall,
         );
         state.totalCollateral = AmountMath.subtract(
           state.totalCollateral,

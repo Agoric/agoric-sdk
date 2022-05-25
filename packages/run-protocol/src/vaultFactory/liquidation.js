@@ -13,7 +13,7 @@ const trace = makeTracer('LIQ', false);
  * @param {Amount<'nat'>} debt
  * @param {Amount<'nat'>} proceeds
  */
-const calcMetrics = (debt, proceeds) => {
+const discrepancy = (debt, proceeds) => {
   if (AmountMath.isGTE(debt, proceeds)) {
     return {
       overage: AmountMath.makeEmptyFromAmount(debt),
@@ -86,7 +86,7 @@ const liquidate = async (
   ]);
   // NB: all the proceeds from AMM sale are on the vault seat instead of a staging seat
 
-  const { shortfall, overage } = calcMetrics(debt, proceeds.RUN);
+  const { shortfall, overage } = discrepancy(debt, proceeds.RUN);
 
   const runToBurn = AmountMath.min(proceeds.RUN, debt);
   trace('before burn', { debt, proceeds, overage, shortfall, runToBurn });
@@ -96,7 +96,7 @@ const liquidate = async (
   vault.liquidated(AmountMath.subtract(debt, runToBurn));
   // remaining funds are left on the vault for the user to close and claim
 
-  // for metrics
+  // for accounting
   return { proceeds: proceeds.RUN, overage, shortfall };
 };
 

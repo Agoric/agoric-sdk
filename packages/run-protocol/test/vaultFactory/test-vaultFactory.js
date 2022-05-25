@@ -2400,8 +2400,6 @@ test('director notifiers', async t => {
 
   // Not testing rewardPoolAllocation contents because those are simply those values.
   // We could refactor the tests of those allocations to use the data now exposed by a notifier.
-
-  t.pass();
 });
 
 test('manager notifiers', async t => {
