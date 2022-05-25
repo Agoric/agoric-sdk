@@ -60,10 +60,8 @@ export const makeAddIssuer = (zcf, isInSecondaries, brandToLiquidityMint) => {
  * @param {IssuerKit} quoteIssuerKit
  * @param {import('./multipoolMarketMaker.js').AMMParamGetters} params retrieve governed params
  * @param {ZCFSeat} protocolSeat seat that holds collected fees
- * @param {ZCFSeat} reserveLiquidityTokenSeat seat that holds liquidity tokens
- *   from adding pool liquidity. It is expected to be collected by the Reserve.
  * @param {WeakStore<Brand,ZCFMint>} brandToLiquidityMint
- * @param {() => void} updateMetrics
+ * @param {(reserveLiquidityTokenSeat: ZCFSeat) => void} onOfferHandled
  */
 export const makeAddPoolInvitation = (
   zcf,
@@ -73,9 +71,8 @@ export const makeAddPoolInvitation = (
   quoteIssuerKit,
   params,
   protocolSeat,
-  reserveLiquidityTokenSeat,
   brandToLiquidityMint,
-  updateMetrics,
+  onOfferHandled,
 ) => {
   const makePool = definePoolKind(
     zcf,
@@ -95,12 +92,11 @@ export const makeAddPoolInvitation = (
     const poolFacets = makePool(liquidityZcfMint, poolSeat, secondaryBrand);
 
     initPool(secondaryBrand, poolFacets);
-    updateMetrics();
     return { liquidityZcfMint, poolFacets };
   };
 
   /** @param {ZCFSeat} seat */
-  const addPoolAndLiquidityHandler = async seat => {
+  const handleAddPoolOffer = async seat => {
     assertProposalShape(seat, {
       give: { Central: null, Secondary: null },
     });
@@ -159,15 +155,16 @@ export const makeAddPoolInvitation = (
     helper.addLiquidityInternal(seat, secondaryAmount, centralAmount);
 
     seat.decrementBy({ Liquidity: minLiqAmount });
+    const { zcfSeat: reserveLiquidityTokenSeat } = zcf.makeEmptySeatKit();
     reserveLiquidityTokenSeat.incrementBy({ [liquidityKeyword]: minLiqAmount });
     zcf.reallocate(reserveLiquidityTokenSeat, seat);
     seat.exit();
     pool.updateState();
     brandToLiquidityMint.delete(secondaryBrand);
 
+    onOfferHandled(reserveLiquidityTokenSeat);
     return 'Added liquidity.';
   };
 
-  return () =>
-    zcf.makeInvitation(addPoolAndLiquidityHandler, 'Add Pool and Liquidity');
+  return () => zcf.makeInvitation(handleAddPoolOffer, 'Add Pool and Liquidity');
 };

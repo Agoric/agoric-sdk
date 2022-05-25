@@ -166,10 +166,18 @@ const start = async (zcf, privateArgs) => {
   // something that will extract the fees.
   const { zcfSeat: protocolSeat } = zcf.makeEmptySeatKit();
 
-  // TODO(#5408): give reserve the ability to collect this.
-  const { zcfSeat: reserveLiquidityTokenSeat } = zcf.makeEmptySeatKit();
   /** @type {AssetReservePublicFacet=} */
   let reserveDepositFacet;
+  /**
+   *
+   * @param {ZCFSeat} reserveLiquidityTokenSeat
+   */
+  const handlePoolAdded = reserveLiquidityTokenSeat => {
+    // FIXME should be earlier
+    assert(reserveDepositFacet);
+    assert(reserveLiquidityTokenSeat);
+    updateMetrics();
+  };
 
   const getLiquiditySupply = brand => getPool(brand).getLiquiditySupply();
   const getLiquidityIssuer = brand => getPool(brand).getLiquidityIssuer();
@@ -181,9 +189,8 @@ const start = async (zcf, privateArgs) => {
     quoteIssuerKit,
     params,
     protocolSeat,
-    reserveLiquidityTokenSeat,
     secondaryBrandToLiquidityMint,
-    updateMetrics,
+    handlePoolAdded,
   );
   const addIssuer = makeAddIssuer(
     zcf,
@@ -304,7 +311,6 @@ const start = async (zcf, privateArgs) => {
        */
       setReserveDepositFacet: facet => {
         reserveDepositFacet = facet;
-        console.log('set', { reserveDepositFacet });
       },
     }),
   );
