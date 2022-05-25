@@ -55,38 +55,22 @@ export const makeAddIssuer = (zcf, isInSecondaries, brandToLiquidityMint) => {
 /**
  * @param {ZCF<import('./multipoolMarketMaker.js').AMMTerms>} zcf
  * @param {(brand: Brand, pool: PoolFacets) => void} initPool add new pool to store
- * @param {Brand} centralBrand
- * @param {ERef<Timer>} timer
- * @param {IssuerKit} quoteIssuerKit
  * @param {import('./multipoolMarketMaker.js').AMMParamGetters} params retrieve governed params
- * @param {ZCFSeat} protocolSeat seat that holds collected fees
  * @param {ZCFSeat} reserveLiquidityTokenSeat seat that holds liquidity tokens
  *   from adding pool liquidity. It is expected to be collected by the Reserve.
  * @param {WeakStore<Brand,ZCFMint>} brandToLiquidityMint
  * @param {() => void} updateMetrics
+ * @param {ReturnType<typeof definePoolKind>} makePool
  */
 export const makeAddPoolInvitation = (
   zcf,
   initPool,
-  centralBrand,
-  timer,
-  quoteIssuerKit,
   params,
-  protocolSeat,
   reserveLiquidityTokenSeat,
   brandToLiquidityMint,
   updateMetrics,
+  makePool,
 ) => {
-  // TODO: get this as an argument from start()
-  const makePool = definePoolKind(
-    zcf,
-    centralBrand,
-    timer,
-    quoteIssuerKit,
-    params,
-    protocolSeat,
-  );
-
   /** @type {(Brand) => Promise<{poolFacets: PoolFacets, liquidityZcfMint: ZCFMint}>} */
   const addPool = async secondaryBrand => {
     const liquidityZcfMint = brandToLiquidityMint.get(secondaryBrand);

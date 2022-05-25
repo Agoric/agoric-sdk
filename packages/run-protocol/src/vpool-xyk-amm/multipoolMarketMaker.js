@@ -171,14 +171,21 @@ const start = async (zcf, privateArgs) => {
 
   const getLiquiditySupply = brand => getPool(brand).getLiquiditySupply();
   const getLiquidityIssuer = brand => getPool(brand).getLiquidityIssuer();
-  const addPoolInvitation = makeAddPoolInvitation(
+
+  const makePool = definePoolKind(
     zcf,
-    initPool,
     centralBrand,
     timer,
     quoteIssuerKit,
     params,
     protocolSeat,
+  );
+
+  const addPoolInvitation = makeAddPoolInvitation(
+    zcf,
+    initPool,
+    makePool,
+    params,
     reserveLiquidityTokenSeat,
     secondaryBrandToLiquidityMint,
     updateMetrics,
@@ -289,16 +296,6 @@ const start = async (zcf, privateArgs) => {
       getMetrics: () => metricsSubscription,
       getPoolMetrics,
     }),
-  );
-
-  // TODO: pass this into makeAddPoolInvitation
-  const makePool = definePoolKind(
-    zcf,
-    centralBrand,
-    timer,
-    quoteIssuerKit,
-    params,
-    protocolSeat,
   );
 
   /**
