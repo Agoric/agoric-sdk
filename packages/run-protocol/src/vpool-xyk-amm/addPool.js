@@ -41,8 +41,9 @@ export const makeAddIssuer = (zcf, isInSecondaries, brandToLiquidityMint) => {
         AssetKind.NAT,
         harden({ decimalPlaces: 6 }),
       ),
-      mint => {
-        zcf.saveIssuer(secondaryIssuer, keyword);
+      /** @param {ZCFMint} mint */
+      async mint => {
+        await zcf.saveIssuer(secondaryIssuer, keyword);
         brandToLiquidityMint.init(secondaryBrand, mint);
         const { issuer: liquidityIssuer } = mint.getIssuerRecord();
         return liquidityIssuer;
