@@ -21,7 +21,7 @@ const { freeze } = Object;
 const encoder = new TextEncoder();
 
 /** @param { number } n */
-const pad5 = n => `00000${n}`.slice(-5);
+const pad5 = n => `${n}`.padStart(5, '0');
 
 /**
  * @param {string} path
@@ -33,7 +33,8 @@ function makeSyncStorage(path, { writeFileSync }) {
     /** @param {string} fn */
     file: fn => {
       /** @param { Uint8Array } data */
-      const put = data => writeFileSync(new URL(fn, base).pathname, data);
+      const put = data =>
+        writeFileSync(new URL(fn, base).pathname, data, { flag: 'wx' });
 
       return freeze({
         put,

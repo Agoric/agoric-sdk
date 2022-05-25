@@ -174,6 +174,11 @@ export const makeBundleCache = (wr, cwd, readPowers, opts) => {
   };
 
   const loaded = new Map();
+  /**
+   * @param {string} rootPath
+   * @param {string} targetName
+   * @param {(message: *) => void} [log]
+   */
   const load = async (rootPath, targetName, log = console.debug) => {
     const found = loaded.get(targetName);
     // console.log('load', { targetName, found: !!found, rootPath });
