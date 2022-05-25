@@ -6,11 +6,11 @@ import '@agoric/zoe/exported.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
-  makeRatio,
   ceilMultiplyBy,
+  makeRatio,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
@@ -25,20 +25,20 @@ import {
   RECORDING_PERIOD_KEY,
 } from '../../src/vaultFactory/params.js';
 import {
-  startEconomicCommittee,
-  startVaultFactory,
   setupAmm,
   setupReserve,
+  startEconomicCommittee,
+  startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
 import * as Collect from '../../src/collect.js';
 import { calculateCurrentDebt } from '../../src/interest-math.js';
 
 import {
-  waitForPromisesToSettle,
-  setUpZoeForTest,
-  setupBootstrap,
   installGovernance,
+  setupBootstrap,
+  setUpZoeForTest,
+  waitForPromisesToSettle,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 import { metricsTracker, subscriptionTracker } from '../metrics.js';
@@ -623,10 +623,10 @@ test('price drop', async t => {
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial({
     allocations: {},
-    shortfall: AmountMath.makeEmpty(runBrand),
+    shortfallBalance: AmountMath.makeEmpty(runBrand),
   });
   await m.assertChange({
-    shortfall: { value: 30n },
+    shortfallBalance: { value: 30n },
   });
 
   /** @type {UserSeat<string>} */
@@ -745,7 +745,7 @@ test('price falls precipitously', async t => {
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial({
     allocations: {},
-    shortfall: AmountMath.makeEmpty(runBrand),
+    shortfallBalance: AmountMath.makeEmpty(runBrand),
   });
 
   await manualTimer.tick();
@@ -791,7 +791,7 @@ test('price falls precipitously', async t => {
   );
 
   await m.assertChange({
-    shortfall: { value: 103n },
+    shortfallBalance: { value: 103n },
   });
 
   const finalNotification = await E(vaultNotifier).getUpdateSince();
@@ -1629,8 +1629,9 @@ test('mutable liquidity triggers and interest', async t => {
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial({
     allocations: {},
-    shortfall: AmountMath.makeEmpty(runBrand),
+    shortfallBalance: AmountMath.makeEmpty(runBrand),
   });
+  let shortfallBalance = 0n;
 
   // initial loans /////////////////////////////////////
 
@@ -1761,8 +1762,9 @@ test('mutable liquidity triggers and interest', async t => {
   trace(t, 'alice liquidating?', aliceUpdate.value.vaultState);
   t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATING);
 
+  shortfallBalance += 1900n;
   await m.assertChange({
-    shortfall: { value: 1900n },
+    shortfallBalance: { value: shortfallBalance },
   });
 
   // XXX this causes BOB to get liquidated, which is suspicious. Revisit this test case
@@ -1818,8 +1820,9 @@ test('mutable liquidity triggers and interest', async t => {
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
   trace(t, 'bob liquidated');
 
+  shortfallBalance += 42n;
   await m.assertChange({
-    shortfall: { value: 1942n },
+    shortfallBalance: { value: shortfallBalance },
   });
 });
 

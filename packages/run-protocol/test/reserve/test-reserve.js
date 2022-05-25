@@ -354,40 +354,47 @@ test('reserve track shortfall', async t => {
   const runBrand = await space.brand.consume.RUN;
 
   const shortfallReporterSeat = await E(zoe).offer(
-    E(reserve.reserveCreatorFacet).getShortfallReportInvitation(),
+    E(reserve.reserveCreatorFacet).makeShortfallReportingInvitation(),
   );
   const reporterFacet = await E(shortfallReporterSeat).getOfferResult();
 
-  await E(reporterFacet).addLiquidationShortfall(
+  await E(reporterFacet).increaseLiquidationShortfall(
     AmountMath.make(runBrand, 1000n),
   );
+  let runningShortfall = 1000n;
+
   const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial({
     allocations: {},
-    shortfall: AmountMath.makeEmpty(runBrand),
+    shortfallBalance: AmountMath.makeEmpty(runBrand),
   });
   await m.assertChange({
-    shortfall: { value: 1000n },
+    shortfallBalance: { value: runningShortfall },
   });
 
-  await E(reporterFacet).addLiquidationShortfall(
+  await E(reporterFacet).increaseLiquidationShortfall(
     AmountMath.make(runBrand, 500n),
   );
+  runningShortfall += 500n;
+
   await m.assertChange({
-    shortfall: { value: 1500n },
+    shortfallBalance: { value: runningShortfall },
   });
 
   await E(reporterFacet).reduceLiquidationShortfall(
     AmountMath.make(runBrand, 200n),
   );
+  runningShortfall -= 200n;
   await m.assertChange({
-    shortfall: { value: 1300n },
+    shortfallBalance: { value: runningShortfall },
   });
+
   await E(reporterFacet).reduceLiquidationShortfall(
     AmountMath.make(runBrand, 2000n),
   );
+  runningShortfall = 0n;
   await m.assertChange({
-    shortfall: { value: 0n },
+    shortfallBalance: { value: runningShortfall },
   });
 });

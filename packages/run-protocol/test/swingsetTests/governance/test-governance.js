@@ -76,6 +76,7 @@ async function main(t, argv) {
 }
 
 // NB: yarn build if changing any of the contract bundles under test
+// TODO(#5433) reinstate or convert to non-swingset test
 test.skip('vaultFactory', async t => {
   const startingValues = [[100], [1000]]; // [aliceValues, ownerValues]
   const dump = await main(t, ['oneLoanWithInterest', startingValues]);

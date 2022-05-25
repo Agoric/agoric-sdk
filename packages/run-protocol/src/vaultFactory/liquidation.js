@@ -95,7 +95,7 @@ const liquidate = async (
   burnLosses(runToBurn, vaultZcfSeat);
 
   if (AmountMath.isGTE(debt, runToBurn)) {
-    E(shortfallReporter).addLiquidationShortfall(
+    E(shortfallReporter).increaseLiquidationShortfall(
       AmountMath.subtract(debt, runToBurn),
     );
   }

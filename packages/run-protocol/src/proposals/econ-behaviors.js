@@ -347,7 +347,7 @@ export const startVaultFactory = async (
 
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
   const shortfallInvitationP =
-    E(reserveCreatorFacet).getShortfallReportInvitation();
+    E(reserveCreatorFacet).makeShortfallReportingInvitation();
   const [
     initialPoserInvitation,
     poserInvitationAmount,
