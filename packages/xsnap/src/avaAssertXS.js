@@ -8,6 +8,7 @@ const { assign, freeze, keys } = Object;
 
 /**
  * deep equal value comparison
+ * XXX broken https://github.com/Agoric/agoric-sdk/pull/5398
  *
  * originally based on code from Paul Roub Aug 2014
  * https://stackoverflow.com/a/25456134/7963

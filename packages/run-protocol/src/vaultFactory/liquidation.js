@@ -6,7 +6,26 @@ import { AmountMath } from '@agoric/ertp';
 import { makeRatio, offerTo } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeTracer } from '../makeTracer.js';
 
-const trace = makeTracer('LIQ');
+const trace = makeTracer('LIQ', false);
+
+/**
+ *
+ * @param {Amount<'nat'>} debt
+ * @param {Amount<'nat'>} proceeds
+ */
+const discrepancy = (debt, proceeds) => {
+  if (AmountMath.isGTE(debt, proceeds)) {
+    return {
+      overage: AmountMath.makeEmptyFromAmount(debt),
+      shortfall: AmountMath.subtract(debt, proceeds),
+    };
+  } else {
+    return {
+      overage: AmountMath.subtract(proceeds, debt),
+      shortfall: AmountMath.makeEmptyFromAmount(debt),
+    };
+  }
+};
 
 /**
  * Liquidates a Vault, using the strategy to parameterize the particular
@@ -24,7 +43,6 @@ const trace = makeTracer('LIQ');
  * @param {Liquidator}  liquidator
  * @param {Brand} collateralBrand
  * @param {Ratio} penaltyRate
- * @returns {Promise<Vault>}
  */
 const liquidate = async (
   zcf,
@@ -68,15 +86,18 @@ const liquidate = async (
   ]);
   // NB: all the proceeds from AMM sale are on the vault seat instead of a staging seat
 
+  const { shortfall, overage } = discrepancy(debt, proceeds.RUN);
+
   const runToBurn = AmountMath.min(proceeds.RUN, debt);
-  trace('before burn', { debt, proceeds, runToBurn });
+  trace('before burn', { debt, proceeds, overage, shortfall, runToBurn });
   burnLosses(runToBurn, vaultZcfSeat);
 
   // Accounting complete. Update the vault state.
   vault.liquidated(AmountMath.subtract(debt, runToBurn));
-
   // remaining funds are left on the vault for the user to close and claim
-  return vault;
+
+  // for accounting
+  return { proceeds: proceeds.RUN, overage, shortfall };
 };
 
 const liquidationDetailTerms = debtBrand =>
