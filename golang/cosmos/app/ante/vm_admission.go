@@ -1,4 +1,4 @@
-package gaia
+package ante
 
 import (
 	"github.com/armon/go-metrics"
