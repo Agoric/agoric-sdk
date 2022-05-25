@@ -127,7 +127,12 @@ export const registerScaledPriceAuthority = async (
  */
 export const addAssetToVault = async (
   {
-    consume: { vaultFactoryCreator, reserveCreatorFacet, agoricNamesAdmin },
+    consume: {
+      ammCreatorFacet,
+      vaultFactoryCreator,
+      reserveCreatorFacet,
+      agoricNamesAdmin,
+    },
     brand: {
       consume: { RUN: runP },
     },
@@ -142,7 +147,10 @@ export const addAssetToVault = async (
     [keyword],
   );
 
-  await E(reserveCreatorFacet).addIssuer(interchainIssuer, keyword);
+  await Promise.all([
+    E(ammCreatorFacet).addPool(interchainIssuer, keyword),
+    E(reserveCreatorFacet).addIssuer(interchainIssuer, keyword),
+  ]);
 
   const RUN = await runP;
   await E(vaultFactoryCreator).addVaultType(interchainIssuer, oracleBrand, {
