@@ -7,7 +7,10 @@ import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { makeSubscriptionKit } from '@agoric/notifier';
 
-import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  assertIssuerKeywords,
+  offerTo,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { makeAddIssuer, makeAddPoolInvitation } from './addPool.js';
 import { publicPrices } from './pool.js';
@@ -26,8 +29,11 @@ import {
   PROTOCOL_FEE_KEY,
   MIN_INITIAL_POOL_LIQUIDITY_KEY,
 } from './params.js';
+import { makeTracer } from '../makeTracer.js';
 
 const { quote: q, details: X } = assert;
+
+const trace = makeTracer('XykAmm');
 
 /**
  * @typedef {object} MetricsNotification
@@ -171,12 +177,40 @@ const start = async (zcf, privateArgs) => {
   /**
    *
    * @param {ZCFSeat} reserveLiquidityTokenSeat
+   * @param {Keyword} liquidityKeyword
    */
-  const handlePoolAdded = reserveLiquidityTokenSeat => {
-    // FIXME should be earlier
-    assert(reserveDepositFacet);
-    assert(reserveLiquidityTokenSeat);
+  const handlePoolAdded = (reserveLiquidityTokenSeat, liquidityKeyword) => {
+    // XXX should be earlier but there's no clean place for it in current factoring
+    assert(reserveDepositFacet, 'Missing reserveDepositFacet');
+    assert(reserveLiquidityTokenSeat, 'Missing reserveLiquidityTokenSeat');
+
     updateMetrics();
+
+    trace(
+      `move ${liquidityKeyword} to the reserve`,
+      reserveLiquidityTokenSeat.getCurrentAllocation(),
+    );
+    // spawn promise without error handling
+    (async () => {
+      const addCollateral = await E(
+        reserveDepositFacet,
+      ).makeAddCollateralInvitation();
+      const proposal = harden({
+        give: {
+          Collateral:
+            reserveLiquidityTokenSeat.getCurrentAllocation()[liquidityKeyword],
+        },
+      });
+      const { deposited, userSeatPromise } = await offerTo(
+        zcf,
+        addCollateral,
+        harden({ [liquidityKeyword]: 'Collateral' }),
+        proposal,
+        reserveLiquidityTokenSeat,
+      );
+      const [deposits] = await Promise.all([deposited, userSeatPromise]);
+      trace('drainPenaltyPool deposited', deposits.Out);
+    })();
   };
 
   const getLiquiditySupply = brand => getPool(brand).getLiquiditySupply();

@@ -88,6 +88,8 @@ export const setupAmmServices = async (
   const { consume, brand, issuer, installation, instance } = space;
   const ammBundle = await provideBundle(t, ammRoot, 'amm');
   installation.produce.amm.resolve(E(zoe).install(ammBundle));
+  const reserveBundle = await provideBundle(t, reserveRoot, 'reserve');
+  installation.produce.reserve.resolve(E(zoe).install(reserveBundle));
 
   brand.produce.RUN.resolve(centralR.brand);
   issuer.produce.RUN.resolve(centralR.issuer);

@@ -61,7 +61,7 @@ export const makeAddIssuer = (zcf, isInSecondaries, brandToLiquidityMint) => {
  * @param {import('./multipoolMarketMaker.js').AMMParamGetters} params retrieve governed params
  * @param {ZCFSeat} protocolSeat seat that holds collected fees
  * @param {WeakStore<Brand,ZCFMint>} brandToLiquidityMint
- * @param {(reserveLiquidityTokenSeat: ZCFSeat) => void} onOfferHandled
+ * @param {(reserveLiquidityTokenSeat: ZCFSeat, liquidityKeyword: Keyword) => void} onOfferHandled
  */
 export const makeAddPoolInvitation = (
   zcf,
@@ -162,7 +162,7 @@ export const makeAddPoolInvitation = (
     pool.updateState();
     brandToLiquidityMint.delete(secondaryBrand);
 
-    onOfferHandled(reserveLiquidityTokenSeat);
+    onOfferHandled(reserveLiquidityTokenSeat, liquidityKeyword);
     return 'Added liquidity.';
   };
 
