@@ -203,7 +203,9 @@ export const addAssetToVault = async (
   );
 
   await Promise.all([
-    E(ammCreatorFacet).addPool(interchainIssuer, keyword),
+    ...(interchainAssetOptions.denom
+      ? [E(ammCreatorFacet).addPool(interchainIssuer, keyword)]
+      : []),
     E(reserveCreatorFacet).addIssuer(interchainIssuer, keyword),
   ]);
 
