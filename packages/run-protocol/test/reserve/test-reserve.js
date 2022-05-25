@@ -345,7 +345,7 @@ test('reserve track shortfall', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   const timer = buildManualTimer(console.log);
 
-  const { reserve, space } = await setupReserveServices(
+  const { reserve, space, zoe } = await setupReserveServices(
     t,
     electorateTerms,
     timer,
@@ -353,10 +353,14 @@ test('reserve track shortfall', async t => {
 
   const runBrand = await space.brand.consume.RUN;
 
-  await E(reserve.reserveCreatorFacet).addLiquidationShortfall(
+  const shortfallReporterSeat = await E(zoe).offer(
+    E(reserve.reserveCreatorFacet).getShortfallReportInvitation(),
+  );
+  const reporterFacet = await E(shortfallReporterSeat).getOfferResult();
+
+  await E(reporterFacet).addLiquidationShortfall(
     AmountMath.make(runBrand, 1000n),
   );
-
   const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial({
@@ -367,21 +371,20 @@ test('reserve track shortfall', async t => {
     shortfall: { value: 1000n },
   });
 
-  await E(reserve.reserveCreatorFacet).addLiquidationShortfall(
+  await E(reporterFacet).addLiquidationShortfall(
     AmountMath.make(runBrand, 500n),
   );
   await m.assertChange({
     shortfall: { value: 1500n },
   });
 
-  await E(reserve.reserveCreatorFacet).reduceLiquidationShortfall(
+  await E(reporterFacet).reduceLiquidationShortfall(
     AmountMath.make(runBrand, 200n),
   );
   await m.assertChange({
     shortfall: { value: 1300n },
   });
-
-  await E(reserve.reserveCreatorFacet).reduceLiquidationShortfall(
+  await E(reporterFacet).reduceLiquidationShortfall(
     AmountMath.make(runBrand, 2000n),
   );
   await m.assertChange({

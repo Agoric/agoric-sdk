@@ -321,6 +321,7 @@ export const startVaultFactory = async (
       zoe,
       feeMintAccess: feeMintAccessP, // ISSUE: why doeszn't Zoe await this?
       economicCommitteeCreatorFacet: electorateCreatorFacet,
+      reserveCreatorFacet,
     },
     produce, // {  vaultFactoryCreator }
     brand: {
@@ -345,9 +346,18 @@ export const startVaultFactory = async (
   });
 
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
-  const [initialPoserInvitation, invitationAmount] = await Promise.all([
+  const shortfallInvitationP =
+    E(reserveCreatorFacet).getShortfallReportInvitation();
+  const [
+    initialPoserInvitation,
+    poserInvitationAmount,
+    initialShortfallInvitation,
+    shortfallInvitationAmount,
+  ] = await Promise.all([
     poserInvitationP,
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+    shortfallInvitationP,
+    E(E(zoe).getInvitationIssuer()).getAmountOf(shortfallInvitationP),
   ]);
 
   const centralBrand = await centralBrandP;
@@ -388,12 +398,13 @@ export const startVaultFactory = async (
     loanTiming: loanParams,
     liquidationInstall: installations.liquidate,
     timer,
-    invitationAmount,
+    electorateInvitationAmount: poserInvitationAmount,
     vaultManagerParams,
     ammPublicFacet,
     liquidationTerms: liquidationDetailTerms(centralBrand),
     minInitialDebt: AmountMath.make(centralBrand, minInitialDebt),
     bootstrapPaymentValue: 0n,
+    shortfallInvitationAmount,
   });
 
   const governorTerms = harden({
@@ -403,7 +414,11 @@ export const startVaultFactory = async (
     governed: {
       terms: vaultFactoryTerms,
       issuerKeywordRecord: {},
-      privateArgs: harden({ feeMintAccess, initialPoserInvitation }),
+      privateArgs: harden({
+        feeMintAccess,
+        initialPoserInvitation,
+        initialShortfallInvitation,
+      }),
     },
   });
 

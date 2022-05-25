@@ -22,18 +22,21 @@ export const LOAN_FEE_KEY = 'LoanFee';
 export const LIQUIDATION_INSTALL_KEY = 'LiquidationInstall';
 export const LIQUIDATION_TERMS_KEY = 'LiquidationTerms';
 export const MIN_INITIAL_DEBT_KEY = 'MinInitialDebt';
+export const SHORTFALL_INVITATION_KEY = 'ShortfallInvitation';
 
 /**
  * @param {Amount} electorateInvitationAmount
  * @param {Installation} liquidationInstall
  * @param {import('./liquidation.js').LiquidationTerms} liquidationTerms
  * @param {Amount} minInitialDebt
+ * @param {Amount} shortfallInvitationAmount
  */
 const makeVaultDirectorParams = (
   electorateInvitationAmount,
   liquidationInstall,
   liquidationTerms,
   minInitialDebt,
+  shortfallInvitationAmount,
 ) => {
   return harden({
     [CONTRACT_ELECTORATE]: {
@@ -51,6 +54,10 @@ const makeVaultDirectorParams = (
     [MIN_INITIAL_DEBT_KEY]: {
       type: ParamTypes.AMOUNT,
       value: minInitialDebt,
+    },
+    [SHORTFALL_INVITATION_KEY]: {
+      type: ParamTypes.INVITATION,
+      value: shortfallInvitationAmount,
     },
   });
 };
@@ -87,6 +94,7 @@ export const vaultParamPattern = M.split(
  * @param {Installation} liquidationInstall
  * @param {object} liquidationTerms
  * @param {Amount} minInitialDebt
+ * @param {Invitation} shortfallInvitation
  */
 const makeVaultDirectorParamManager = async (
   zoe,
@@ -94,6 +102,7 @@ const makeVaultDirectorParamManager = async (
   liquidationInstall,
   liquidationTerms,
   minInitialDebt,
+  shortfallInvitation,
 ) => {
   return makeParamManager(
     {
@@ -101,6 +110,7 @@ const makeVaultDirectorParamManager = async (
       [LIQUIDATION_INSTALL_KEY]: [ParamTypes.INSTALLATION, liquidationInstall],
       [LIQUIDATION_TERMS_KEY]: [ParamTypes.UNKNOWN, liquidationTerms],
       [MIN_INITIAL_DEBT_KEY]: [ParamTypes.AMOUNT, minInitialDebt],
+      [SHORTFALL_INVITATION_KEY]: [ParamTypes.INVITATION, shortfallInvitation],
     },
     zoe,
   );
@@ -108,7 +118,7 @@ const makeVaultDirectorParamManager = async (
 
 /**
  * @param {{
- *   invitationAmount: Amount,
+ *   electorateInvitationAmount: Amount,
  *   minInitialDebt: Amount,
  *   bootstrapPaymentValue: bigint,
  *   priceAuthority: ERef<PriceAuthority>,
@@ -119,12 +129,13 @@ const makeVaultDirectorParamManager = async (
  *   liquidationTerms: import('./liquidation.js').LiquidationTerms,
  *   vaultManagerParams: VaultManagerParamValues,
  *   ammPublicFacet: XYKAMMPublicFacet,
+ *   shortfallInvitationAmount: Amount,
  * }} opts
  */
 const makeGovernedTerms = ({
   ammPublicFacet,
   bootstrapPaymentValue,
-  invitationAmount,
+  electorateInvitationAmount,
   liquidationInstall,
   liquidationTerms,
   loanTiming,
@@ -133,6 +144,7 @@ const makeGovernedTerms = ({
   reservePublicFacet,
   timer,
   vaultManagerParams,
+  shortfallInvitationAmount,
 }) => {
   const loanTimingParams = makeParamManagerSync({
     [CHARGING_PERIOD_KEY]: ['nat', loanTiming.chargingPeriod],
@@ -149,10 +161,11 @@ const makeGovernedTerms = ({
     reservePublicFacet,
     timerService: timer,
     governedParams: makeVaultDirectorParams(
-      invitationAmount,
+      electorateInvitationAmount,
       liquidationInstall,
       liquidationTerms,
       minInitialDebt,
+      shortfallInvitationAmount,
     ),
     bootstrapPaymentValue,
   });

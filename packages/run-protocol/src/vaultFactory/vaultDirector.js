@@ -26,6 +26,7 @@ import {
   RECORDING_PERIOD_KEY,
   CHARGING_PERIOD_KEY,
   vaultParamPattern,
+  SHORTFALL_INVITATION_KEY,
 } from './params.js';
 
 const { details: X } = assert;
@@ -39,7 +40,6 @@ const { details: X } = assert;
  * @typedef {Readonly<{
  * debtMint: ZCFMint<'nat'>,
  * collateralTypes: Store<Brand,VaultManager>,
- * electionManager: Instance,
  * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>,
  * metricsPublication: IterationObserver<MetricsNotification>
  * metricsSubscription: Subscription<MetricsNotification>
@@ -47,12 +47,15 @@ const { details: X } = assert;
  * rewardPoolSeat: ZCFSeat,
  * vaultParamManagers: Store<Brand, import('./params.js').VaultParamManager>,
  * zcf: import('./vaultFactory.js').VaultFactoryZCF,
+ * shortfallInvitation: Invitation,
+ * shortfallReporter: import('../reserve/assetReserve.js').ShortfallReporter,
  * }>} ImmutableState
  *
  * @typedef {{
  *  burnDebt: BurnDebt,
  *  getGovernedParams: () => import('./vaultManager.js').GovernedParamGetters,
  *  mintAndReallocate: MintAndReallocate,
+ *  getShortfallReporter: () => Promise<import('../reserve/assetReserve.js').ShortfallReporter>,
  * }} FactoryPowersFacet
  *
  * @typedef {Readonly<{
@@ -60,6 +63,35 @@ const { details: X } = assert;
  *   facets: import('@agoric/vat-data/src/types').KindFacets<typeof behavior>;
  * }>} MethodContext
  */
+
+/**
+ * @param {ERef<ZoeService>} zoe
+ * @param {ImmutableState['directorParamManager']} paramMgr
+ * @param {unknown} [oldShortfallReporter]
+ * @param {ERef<Invitation>} [oldInvitation]
+ */
+const updateShortfallReporter = async (
+  zoe,
+  paramMgr,
+  oldShortfallReporter,
+  oldInvitation,
+) => {
+  const newInvitation = paramMgr.getInternalParamValue(
+    SHORTFALL_INVITATION_KEY,
+  );
+
+  if (newInvitation !== oldInvitation) {
+    return {
+      shortfallReporter: E(E(zoe).offer(newInvitation)).getOfferResult(),
+      shortfallInvitation: newInvitation,
+    };
+  } else {
+    return {
+      shortfallReporter: oldShortfallReporter,
+      shortfallInvitation: oldInvitation,
+    };
+  }
+};
 
 /**
  * @param {ImmutableState['zcf']} zcf
@@ -87,6 +119,8 @@ const initState = (zcf, directorParamManager, debtMint) => {
     mintSeat,
     rewardPoolSeat,
     vaultParamManagers,
+    shortfallReporter: undefined,
+    shortfallInvitation: undefined,
     zcf,
   };
 };
@@ -287,6 +321,15 @@ const machineBehavior = {
         getRecordingPeriod: () => loanTimingParams[RECORDING_PERIOD_KEY].value,
       }),
       mintAndReallocate,
+      getShortfallReporter: async () => {
+        const reporterKit = await updateShortfallReporter(
+          zcf.getZoeService(),
+          directorParamManager,
+          state.shortfallReporter,
+          state.shortfallInvitation,
+        );
+        return reporterKit.shortfallReporter;
+      },
       burnDebt,
     });
 
@@ -295,6 +338,7 @@ const machineBehavior = {
       debtMint,
       collateralBrand,
       zcf.getTerms().priceAuthority,
+      // @ts-expect-error promise issues?
       factoryPowers,
       timerService,
       startTimeStamp,
@@ -333,6 +377,20 @@ const machineBehavior = {
   /** @param {MethodContext} context */
   getRewardAllocation: ({ state }) =>
     state.rewardPoolSeat.getCurrentAllocation(),
+};
+
+const helperBehavior = {
+  getShortfallReporter: async ({ state }) => {
+    const { zcf } = state;
+    const zoe = zcf.getZoeService();
+    const { shortfallReporter } = await updateShortfallReporter(
+      zoe,
+      state.directorParamManager,
+      state.shortfallReporter,
+      state.shortfallInvitation,
+    );
+    return shortfallReporter;
+  },
 };
 
 const creatorBehavior = {
@@ -432,6 +490,20 @@ const behavior = {
   creator: creatorBehavior,
   machine: machineBehavior,
   public: publicBehavior,
+  helper: helperBehavior,
+};
+
+/** @param {MethodContext} context */
+const finish = async ({ state }) => {
+  const { shortfallReporter, shortfallInvitation } =
+    await updateShortfallReporter(
+      state.zcf.getZoeService(),
+      state.directorParamManager,
+    );
+  // @ts-expect-error write once
+  state.shortfallReporter = shortfallReporter;
+  // @ts-expect-error write once
+  state.shortfallInvitation = shortfallInvitation;
 };
 
 /**
@@ -448,7 +520,13 @@ const behavior = {
  * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} directorParamManager
  * @param {ZCFMint<"nat">} debtMint
  */
-const makeVaultDirector = defineKindMulti('VaultDirector', initState, behavior);
+const makeVaultDirector = defineKindMulti(
+  'VaultDirector',
+  initState,
+  behavior,
+  // @ts-expect-error type is undefined on one branch
+  { finish },
+);
 
 harden(makeVaultDirector);
 export { makeVaultDirector };

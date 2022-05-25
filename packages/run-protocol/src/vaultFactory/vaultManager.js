@@ -6,13 +6,13 @@ import { E } from '@endo/eventual-send';
 import { Nat } from '@agoric/nat';
 import {
   assertProposalShape,
-  makeRatioFromAmounts,
-  getAmountOut,
-  getAmountIn,
-  ceilMultiplyBy,
   ceilDivideBy,
-  makeRatio,
+  ceilMultiplyBy,
   floorDivideBy,
+  getAmountIn,
+  getAmountOut,
+  makeRatio,
+  makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import {
   makeNotifierKit,
@@ -424,6 +424,7 @@ const helperBehavior = {
       liquidator,
       state.collateralBrand,
       factoryPowers.getGovernedParams().getLiquidationPenalty(),
+      factoryPowers.getShortfallReporter(),
     )
       .then(accounting => {
         console.log('liquidateAndRemove accounting', accounting);

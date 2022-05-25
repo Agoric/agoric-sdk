@@ -41,7 +41,7 @@ import {
   installGovernance,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
-import { metricsTracker, vaultManagerMetricsTracker } from '../metrics.js';
+import { metricsTracker, subscriptionTracker } from '../metrics.js';
 
 /** @type {import('ava').TestInterface<Record<string, any> & {
  * rates: VaultManagerParamValues,
@@ -317,6 +317,8 @@ const setupServices = async (
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
   /** @type {Promise<VaultFactory & LimitedCreatorFacet<VaultFactory>>} */
   const vaultFactoryCreatorFacetP = E(governorCreatorFacet).getCreatorFacet();
+  const reserveCreatorFacet = consume.reserveCreatorFacet;
+  const reserveFacets = { reserveCreatorFacet };
 
   // Add a vault that will lend on aeth collateral
   /** @type {Promise<VaultManager>} */
@@ -367,6 +369,7 @@ const setupServices = async (
     ammFacets,
     runKit: { issuer: runIssuer, brand: runBrand },
     priceAuthority,
+    reserveFacets,
   };
 };
 // #endregion
@@ -522,6 +525,7 @@ test('price drop', async t => {
   const {
     vaultFactory: { vaultFactory, lender },
     priceAuthority,
+    reserveFacets: { reserveCreatorFacet },
   } = services;
 
   // Create a loan for 270 RUN with 400 aeth collateral
@@ -615,6 +619,16 @@ test('price drop', async t => {
     RUN: AmountMath.make(runBrand, 14n),
   });
 
+  const metricsSub = await E(reserveCreatorFacet).getMetrics();
+  const m = await subscriptionTracker(t, metricsSub);
+  await m.assertInitial({
+    allocations: {},
+    shortfall: AmountMath.makeEmpty(runBrand),
+  });
+  await m.assertChange({
+    shortfall: { value: 30n },
+  });
+
   /** @type {UserSeat<string>} */
   const closeSeat = await E(zoe).offer(E(vault).makeCloseInvitation());
   await E(closeSeat).getOfferResult();
@@ -665,6 +679,7 @@ test('price falls precipitously', async t => {
   );
   const { vaultFactory, lender } = services.vaultFactory;
 
+  const { reserveCreatorFacet } = services.reserveFacets;
   // Create a loan for 370 RUN with 400 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 400n);
   const loanAmount = AmountMath.make(runBrand, 370n);
@@ -726,6 +741,13 @@ test('price falls precipitously', async t => {
     );
   };
 
+  const metricsSub = await E(reserveCreatorFacet).getMetrics();
+  const m = await subscriptionTracker(t, metricsSub);
+  await m.assertInitial({
+    allocations: {},
+    shortfall: AmountMath.makeEmpty(runBrand),
+  });
+
   await manualTimer.tick();
   await assertDebtIs(debtAmount.value);
 
@@ -767,6 +789,10 @@ test('price falls precipitously', async t => {
     debtAfterLiquidation,
     'Liquidation didn’t fully cover debt',
   );
+
+  await m.assertChange({
+    shortfall: { value: 103n },
+  });
 
   const finalNotification = await E(vaultNotifier).getUpdateSince();
   t.is(finalNotification.value.vaultState, Phase.LIQUIDATED);
@@ -1596,7 +1622,15 @@ test('mutable liquidity triggers and interest', async t => {
   const {
     vaultFactory: { lender },
     priceAuthority,
+    reserveFacets: { reserveCreatorFacet },
   } = services;
+
+  const metricsSub = await E(reserveCreatorFacet).getMetrics();
+  const m = await subscriptionTracker(t, metricsSub);
+  await m.assertInitial({
+    allocations: {},
+    shortfall: AmountMath.makeEmpty(runBrand),
+  });
 
   // initial loans /////////////////////////////////////
 
@@ -1727,6 +1761,10 @@ test('mutable liquidity triggers and interest', async t => {
   trace(t, 'alice liquidating?', aliceUpdate.value.vaultState);
   t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATING);
 
+  await m.assertChange({
+    shortfall: { value: 1900n },
+  });
+
   // XXX this causes BOB to get liquidated, which is suspicious. Revisit this test case
   await waitForPromisesToSettle();
   bobUpdate = await E(bobNotifier).getUpdateSince();
@@ -1779,6 +1817,10 @@ test('mutable liquidity triggers and interest', async t => {
   bobUpdate = await E(bobNotifier).getUpdateSince();
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
   trace(t, 'bob liquidated');
+
+  await m.assertChange({
+    shortfall: { value: 1942n },
+  });
 });
 
 test('bad chargingPeriod', async t => {

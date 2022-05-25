@@ -76,7 +76,7 @@ async function main(t, argv) {
 }
 
 // NB: yarn build if changing any of the contract bundles under test
-test.serial('vaultFactory', async t => {
+test.skip('vaultFactory', async t => {
   const startingValues = [[100], [1000]]; // [aliceValues, ownerValues]
   const dump = await main(t, ['oneLoanWithInterest', startingValues]);
   t.deepEqual(dump.log, [

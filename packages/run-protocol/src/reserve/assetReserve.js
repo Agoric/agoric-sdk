@@ -140,6 +140,8 @@ const start = async (zcf, privateArgs) => {
     vaultShortfall = AmountMath.add(vaultShortfall, shortfall);
     updateMetrics();
   };
+  // TODO(#5299): add something that calls this
+  // eslint-disable-next-line no-unused-vars
   const reduceLiquidationShortfall = reduction => {
     if (AmountMath.isGTE(reduction, vaultShortfall)) {
       vaultShortfall = AmountMath.makeEmptyFromAmount(vaultShortfall);
@@ -213,14 +215,28 @@ const start = async (zcf, privateArgs) => {
     zcf.reallocate(offerToSeat, collateralSeat);
   };
 
+  const getShortfallReportInvitation = () => {
+    const shortfallReportOffer = () => {
+      return Far('shortfallReporter', {
+        addLiquidationShortfall,
+        // currently exposed for testing. Maybe it only gets called internally?
+        reduceLiquidationShortfall,
+      });
+    };
+
+    return zcf.makeInvitation(
+      shortfallReportOffer,
+      'getFacetForReportingShortfalls',
+    );
+  };
+
   const creatorFacet = makeGovernorFacet(
     {
       makeAddCollateralInvitation,
       // add makeRedeemLiquidityTokensInvitation later. For now just store them
       getAllocations,
       addIssuer,
-      addLiquidationShortfall,
-      reduceLiquidationShortfall,
+      getShortfallReportInvitation,
       getMetrics: () => metricsSubscription,
     },
     { addLiquidityToAmmPool },
@@ -238,6 +254,11 @@ const start = async (zcf, privateArgs) => {
 harden(start);
 
 export { start };
+
+/**
+ * @typedef {object} ShortfallReporter
+ * @property {(shortfall: Amount) => void} addLiquidationShortfall
+ */
 
 /** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} AssetReservePublicFacet */
 /** @typedef {Awaited<ReturnType<typeof start>>['creatorFacet']} AssetReserveCreatorFacet */
