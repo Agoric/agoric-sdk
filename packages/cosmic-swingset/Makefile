@@ -137,10 +137,12 @@ scenario2-setup-nobuild:
 	mv t1/n0/config/genesis2.json t1/n0/config/genesis.json
 	$(MAKE) set-local-gci-ingress
 
-scenario2-run-chain-economy:
+t1/decentral-economy-config.json: $(ECONOMY_PROPOSALS)
 	jq -s '.[0] * { coreProposals: .[1] }' \
 		../vats/decentral-core-config.json \
 		'$(ECONOMY_PROPOSALS)' > t1/decentral-economy-config.json
+
+scenario2-run-chain-economy: t1/decentral-economy-config.json
 	CHAIN_BOOTSTRAP_VAT_CONFIG="$$PWD/t1/decentral-economy-config.json" \
 		OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
 		$(AGC) --home=t1/n0 start --log_level=warn $(AGC_START_ARGS)
@@ -150,8 +152,9 @@ scenario2-run-chain:
 		$(AGC) --home=t1/n0 start --log_level=warn $(AGC_START_ARGS)
 
 # Run a chain with an explicit halt.
-scenario2-run-chain-to-halt:
-	$(AGC) --home=t1/n0 start --log_level=warn --halt-height=$$(($(INITIAL_HEIGHT) + 3)); \
+scenario2-run-chain-to-halt: t1/decentral-economy-config.json
+	CHAIN_BOOTSTRAP_VAT_CONFIG="$$PWD/t1/decentral-economy-config.json" \
+		$(AGC) --home=t1/n0 start --log_level=warn --halt-height=$$(($(INITIAL_HEIGHT) + 3)); \
 		test "$$?" -eq 98
 
 # Blow away all client state to try again without resetting the chain.
