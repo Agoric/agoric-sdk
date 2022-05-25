@@ -1138,3 +1138,20 @@ test('amm adding liquidity', async t => {
     `poolAllocation after initialization`,
   );
 });
+
+test('addPool on creatorFacet', async t => {
+  const centralR = makeIssuerKit('central');
+  const moolaR = makeIssuerKit('moola');
+
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+  const timer = buildManualTimer(t.log, 30n);
+
+  const { amm } = await setupAmmServices(t, electorateTerms, centralR, timer);
+
+  await E(amm.ammCreatorFacet).addPool(moolaR.issuer, 'Moola');
+
+  const brands = await E(amm.ammPublicFacet).getAllPoolBrands();
+  t.deepEqual(brands, [moolaR.brand]);
+  const actual = await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand);
+  t.deepEqual(actual, {});
+});

@@ -95,6 +95,7 @@
 /**
  * @typedef {object} XYKAMMCreatorFacet
  * @property {() => Promise<Invitation>} makeCollectFeesInvitation
+ * @property {(secondaryIssuer: Issuer, keyword: string) => Promise<Issuer>} addPool
  */
 /**
  * @typedef {object} XYKAMMPublicFacet

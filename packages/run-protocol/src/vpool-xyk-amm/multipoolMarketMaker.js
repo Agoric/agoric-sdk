@@ -10,7 +10,7 @@ import { makeSubscriptionKit } from '@agoric/notifier';
 import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { makeAddIssuer, makeAddPoolInvitation } from './addPool.js';
-import { publicPrices } from './pool.js';
+import { definePoolKind, publicPrices } from './pool.js';
 import {
   makeMakeAddLiquidityAtRateInvitation,
   makeMakeAddLiquidityInvitation,
@@ -291,10 +291,38 @@ const start = async (zcf, privateArgs) => {
     }),
   );
 
-  /** @type {GovernedCreatorFacet<*>} */
-  const creatorFacet = makeGovernorFacet(
+  // TODO: pass this into makeAddPoolInvitation
+  const makePool = definePoolKind(
+    zcf,
+    centralBrand,
+    timer,
+    quoteIssuerKit,
+    params,
+    protocolSeat,
+  );
+
+  /**
+   * @param {Issuer} secondaryIssuer
+   * @param {string} keyword
+   */
+  const addPool = async (secondaryIssuer, keyword) => {
+    const liquidityIssuer = await addIssuer(secondaryIssuer, keyword);
+    const secondaryBrand = await E(secondaryIssuer).getBrand();
+    const liquidityZcfMint = secondaryBrandToLiquidityMint.get(secondaryBrand);
+
+    const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
+    /** @type {PoolFacets} */
+    const poolFacets = makePool(liquidityZcfMint, poolSeat, secondaryBrand);
+
+    initPool(secondaryBrand, poolFacets);
+    return liquidityIssuer;
+  };
+
+  /** @type {GovernedCreatorFacet<XYKAMMCreatorFacet>} */
+  const creatorFacet = await makeGovernorFacet(
     Far('AMM Fee Collector facet', {
       makeCollectFeesInvitation,
+      addPool,
     }),
   );
   return harden({ publicFacet, creatorFacet });

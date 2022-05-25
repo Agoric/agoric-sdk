@@ -77,6 +77,7 @@ export const makeAddPoolInvitation = (
   brandToLiquidityMint,
   updateMetrics,
 ) => {
+  // TODO: get this as an argument from start()
   const makePool = definePoolKind(
     zcf,
     centralBrand,
