@@ -140,8 +140,6 @@ const start = async (zcf, privateArgs) => {
     vaultShortfall = AmountMath.add(vaultShortfall, shortfall);
     updateMetrics();
   };
-  // TODO(#5299): add something that calls this
-  // eslint-disable-next-line no-unused-vars
   const reduceLiquidationShortfall = reduction => {
     if (AmountMath.isGTE(reduction, vaultShortfall)) {
       vaultShortfall = AmountMath.makeEmptyFromAmount(vaultShortfall);
