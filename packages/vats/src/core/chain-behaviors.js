@@ -284,7 +284,7 @@ harden(makeBridgeManager);
 
 /**
  * @param {BootstrapPowers & {
- *   consume: { loadVat: ERef<VatLoader<ProvisioningVat>> }
+ *   consume: { loadVat: ERef<VatLoader<ChainStorageVat>> }
  * }} powers
  */
 export const makeChainStorage = async ({
