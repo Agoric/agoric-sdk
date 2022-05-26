@@ -4,7 +4,7 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeEmptyPublishKit } from './publish-kit.js';
+import { makeEachIterator, makeEmptyPublishKit } from './publish-kit.js';
 
 import './types.js';
 
@@ -71,10 +71,7 @@ const makeSubscriptionKit = (...optionalInitialState) => {
   // This losslessness will inhibit gc, which is why we're moving away from
   // it.
   const pubList = subscriber.subscribeAfter();
-  const sharableInternalsP = /** @type {ERef<SubscriptionInternals<T>>} */ (
-    /** @type {unknown} */ (pubList)
-  );
-  const subscription = makeSubscription(sharableInternalsP);
+  const subscription = makeSubscription(pubList);
 
   /** @type {IterationObserver<T>} */
   const publication = Far('publication', {

@@ -9,9 +9,11 @@ import { Far } from '@endo/marshal';
 import './types.js';
 
 /**
- * @template T
- * @typedef {import('@endo/promise-kit').PromiseKit<T>} PromiseKit
+ * TODO Believe it or not, some tool in our toolchain still cannot handle
+ * bigint literals.
+ * See https://github.com/Agoric/agoric-sdk/issues/5438
  */
+const ONE = BigInt(1);
 
 /**
  * Asyncronously iterates over the contents of a PublicationList as it appears.
@@ -22,7 +24,7 @@ import './types.js';
  * @param {PublicationList<T>} pubList
  * @returns {AsyncIterator<T>}
  */
-const makeEachIterator = pubList => {
+export const makeEachIterator = pubList => {
   // To understand the implementation, start with
   // https://web.archive.org/web/20160404122250/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency#infinite_queue
   return Far('EachIterator', {
@@ -33,6 +35,7 @@ const makeEachIterator = pubList => {
     },
   });
 };
+harden(makeEachIterator);
 
 /**
  * Given a local or remote subscriber, returns a local AsyncIterable which
@@ -65,7 +68,7 @@ harden(subcribeEach);
  * @returns {AsyncIterator<T>}
  */
 const makeLatestIterator = subscriber => {
-  let latestPubCount = -1n;
+  let latestPubCount = -ONE;
   return Far('LatestIterator', {
     next: () => {
       const pubList = E(subscriber).subscribeAfter(latestPubCount);
@@ -112,14 +115,14 @@ export const makeEmptyPublishKit = () => {
   /** @type {PromiseKit<PublicationRecord<T>>} */
   let { promise: tailP, resolve: tailR } = makePromiseKit();
 
-  let currentPublishCount = 1n;
+  let currentPublishCount = ONE;
   let currentP = tailP;
   const advanceCurrent = () => {
     if (currentP === tailP) {
       // If tailP has not advanced past currentP, do nothing.
       return;
     }
-    currentPublishCount += 1n;
+    currentPublishCount += ONE;
     currentP = tailP;
   };
 
@@ -128,7 +131,7 @@ export const makeEmptyPublishKit = () => {
    * @type {Subscriber<T>}
    */
   const subscriber = Far('Subscriber', {
-    subscribeAfter: (publishCount = -1n) => {
+    subscribeAfter: (publishCount = -ONE) => {
       if (currentPublishCount === publishCount) {
         return tailP;
       } else {
