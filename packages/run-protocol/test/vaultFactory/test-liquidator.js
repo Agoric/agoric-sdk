@@ -521,7 +521,7 @@ const makeDriver = async (t, initialPrice, priceBase) => {
       const liquidityBrand = await E(liquidityIssuer).getBrand();
 
       t.deepEqual(reserveAllocations, {
-        ReserveaEthLiquidity: AmountMath.make(liquidityBrand, liquidityValue),
+        RaEthLiquidity: AmountMath.make(liquidityBrand, liquidityValue),
         RUN: AmountMath.make(runBrand, stableValue),
       });
     },

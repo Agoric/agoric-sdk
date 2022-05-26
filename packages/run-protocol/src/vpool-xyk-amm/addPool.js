@@ -56,10 +56,13 @@ export const makeAddIssuer = (
       'and got back',
       issuer,
     );
+    // this ensures that getSecondaryIssuer will return
     brandToLiquidityMint.init(secondaryBrand, mint);
-    // DISCUSSION: make the reserve have all the same issuers as they were created
     const { issuer: liquidityIssuer } = mint.getIssuerRecord();
+    // ??? still need this deferred lookup?
     const addIssuerToReserve = getAddIssuerToReserve();
+    // tell the reserve about this brand, which it will validate by calling back
+    // to AMM for the issuer
     await addIssuerToReserve(secondaryBrand);
     return liquidityIssuer;
   };

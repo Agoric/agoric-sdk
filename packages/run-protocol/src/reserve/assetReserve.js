@@ -16,6 +16,8 @@ const makeLiquidityKeyword = keyword => `${keyword}Liquidity`;
 
 const RunKW = 'RUN';
 
+const nonalphanumeric = /[^A-Za-z0-9]/g;
+
 /**
  * @typedef {object} MetricsNotification
  *
@@ -137,12 +139,13 @@ const start = async (zcf, privateArgs) => {
   };
 
   const conjureKeyword = async baseBrand => {
-    const brandName = await E(baseBrand).getAllegedName();
+    const allegedName = await E(baseBrand).getAllegedName();
+    const safeName = allegedName.replace(nonalphanumeric, '');
     let keyword;
     let keywordNum = 0;
     do {
       // 'R' to guarantee leading uppercase
-      keyword = `R${brandName}${keywordNum || ''}`;
+      keyword = `R${safeName}${keywordNum || ''}`;
       keywordNum += 1;
     } while (brandForKeyword.has(keyword));
     return keyword;
@@ -158,11 +161,12 @@ const start = async (zcf, privateArgs) => {
     );
 
     const keyword = await conjureKeyword(ammSecondaryBrand);
+    trace('addIssuerFromAmm', { ammSecondaryBrand, keyword });
     // validate the AMM has this brand and match its issuer
     const issuer = await E(ammPublicFacet).getSecondaryIssuer(
       ammSecondaryBrand,
     );
-    trace('addIssuerFromAmm', { issuer, keyword });
+    console.debug({ issuer });
     await addIssuer(issuer, keyword);
   };
 

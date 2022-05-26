@@ -95,7 +95,7 @@ test.before(async t => {
   t.context = { bundleCache };
 });
 
-test('reserve add collateral', async t => {
+test.only('reserve add collateral', async t => {
   /** @param {NatValue} value */
   const moolaR = makeIssuerKit('moola');
   const moola = value => AmountMath.make(moolaR.brand, value);
@@ -114,7 +114,6 @@ test('reserve add collateral', async t => {
     AmountMath.make(runBrand, 1000n),
   );
   await addLiquidPool(runPayment, runIssuer, space, t, moola, moolaR, zoe);
-  await E(reserve.reserveCreatorFacet).addIssuer(moolaR.issuer, 'Moola');
   const invitation = await E(
     reserve.reservePublicFacet,
   ).makeAddCollateralInvitation();
@@ -130,49 +129,18 @@ test('reserve add collateral', async t => {
     `added moola to the collateral Reserve`,
   );
 
+  const { ammPublicFacet } = space.amm;
+  const moolaLiquidityIssuer = E(ammPublicFacet).getLiquidityIssuer(
+    moolaR.brand,
+  );
+  const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
   t.deepEqual(
     await E(reserve.reserveCreatorFacet).getAllocations(),
-    harden({ Moola: moola(100_000n) }),
+    harden({
+      Rmoola: moola(100_000n),
+      RmoolaLiquidity: AmountMath.make(moolaLiquidityBrand, 1000n),
+    }),
     'expecting more',
-  );
-});
-
-test('reserve unregistered', async t => {
-  /** @param {NatValue} value */
-  const moolaR = makeIssuerKit('moola');
-  const moola = value => AmountMath.make(moolaR.brand, value);
-
-  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  const timer = buildManualTimer(console.log);
-
-  const { zoe, reserve, space, faucetInstallation, feeMintAccess } =
-    await setupReserveServices(t, electorateTerms, timer);
-  const runBrand = await space.brand.consume.RUN;
-  const runIssuer = await space.issuer.consume.RUN;
-  const runPayment = getRunFromFaucet(
-    zoe,
-    feeMintAccess,
-    faucetInstallation,
-    AmountMath.make(runBrand, 1000n),
-  );
-  await addLiquidPool(runPayment, runIssuer, space, t, moola, moolaR, zoe);
-
-  const invitation = await E(
-    reserve.reservePublicFacet,
-  ).makeAddCollateralInvitation();
-
-  const proposal = { give: { Collateral: moola(100_000n) } };
-  const moolaPayment = moolaR.mint.mintPayment(moola(100000n));
-  const payments = { Collateral: moolaPayment };
-  const collateralSeat = E(zoe).offer(invitation, proposal, payments);
-
-  await t.throwsAsync(
-    () => E(collateralSeat).getOfferResult(),
-    {
-      message:
-        'Issuer not defined for brand [object Alleged: moola brand]; first call addIssuer()',
-    },
-    'Should not accept unregistered brand',
   );
 });
 
@@ -259,7 +227,7 @@ test('governance add Liquidity to the AMM', async t => {
     await E(reserve.reserveCreatorFacet).getAllocations(),
     harden({
       AmmBrand0: moola(10_000n),
-      AmmBrand0Liquidity: AmountMath.make(moolaLiquidityBrand, 84_622n),
+      RaEthLiquidity: AmountMath.make(moolaLiquidityBrand, 84_622n),
     }),
     'expecting more',
   );

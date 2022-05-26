@@ -389,6 +389,11 @@ const setupServices = async (
     runKit: { issuer: runIssuer, brand: runBrand },
     priceAuthority,
     reserveFacets,
+    /** @param {Brand} baseBrand */
+    getLiquidityBrand: baseBrand =>
+      E(ammFacets.ammPublicFacet)
+        .getLiquidityIssuer(baseBrand)
+        .then(liqIssuer => E(liqIssuer).getBrand()),
   };
 };
 // #endregion
@@ -644,9 +649,9 @@ test('price drop', async t => {
     allocations: {},
     shortfallBalance: AmountMath.makeEmpty(runBrand),
   });
+  const liqBrand = await services.getLiquidityBrand(aethBrand);
   await m.assertChange({
-    // FIXME expects to know liquidity brand
-    allocations: { AmmBrand0Liquidity: { value: 300n } },
+    allocations: { RaEthLiquidity: AmountMath.make(liqBrand, 300n) },
     shortfallBalance: { value: 30n },
   });
 
@@ -811,9 +816,10 @@ test('price falls precipitously', async t => {
     'Liquidation didn’t fully cover debt',
   );
 
+  const liqBrand = await services.getLiquidityBrand(aethBrand);
   await m.assertChange({
     shortfallBalance: { value: 103n },
-    allocations: { AmmBrand0Liquidity: { brand: undefined, value: 300n } },
+    allocations: { RaEthLiquidity: AmountMath.make(liqBrand, 300n) },
   });
 
   const finalNotification = await E(vaultNotifier).getUpdateSince();
@@ -1785,9 +1791,10 @@ test('mutable liquidity triggers and interest', async t => {
   t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATING);
 
   shortfallBalance += 1900n;
+  const liqBrand = await services.getLiquidityBrand(aethBrand);
   await m.assertChange({
     shortfallBalance: { value: shortfallBalance },
-    allocations: { AmmBrand0Liquidity: { brand: undefined, value: 300n } },
+    allocations: { RaEthLiquidity: AmountMath.make(liqBrand, 300n) },
   });
 
   // XXX this causes BOB to get liquidated, which is suspicious. Revisit this test case

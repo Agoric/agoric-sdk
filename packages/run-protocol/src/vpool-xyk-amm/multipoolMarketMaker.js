@@ -150,6 +150,8 @@ const start = async (zcf, privateArgs) => {
   const getPool = brand => secondaryBrandToPool.get(brand).pool;
   const getPoolHelper = brand => secondaryBrandToPool.get(brand).helper;
   const initPool = secondaryBrandToPool.init;
+  // XXX a brand can be in secondaryBrandToLiquidityMint and return false for this check
+  // if it's called between addIssuer and addPool
   const isSecondary = secondaryBrandToPool.has;
 
   // The liquidityBrand has to exist to allow the addPool Offer to specify want
@@ -232,7 +234,10 @@ const start = async (zcf, privateArgs) => {
   const getLiquidityIssuer = brand => getPool(brand).getLiquidityIssuer();
   /** @param {Brand} brand */
   const getSecondaryIssuer = brand => {
-    assert(isSecondary(brand), 'Brand not a secondary of the AMM');
+    assert(
+      secondaryBrandToLiquidityMint.has(brand),
+      'Brand not a secondary of the AMM',
+    );
     return zcf.getIssuerForBrand(brand);
   };
   const addPoolInvitation = makeAddPoolInvitation(
@@ -246,6 +251,9 @@ const start = async (zcf, privateArgs) => {
     secondaryBrandToLiquidityMint,
     handlePoolAdded,
   );
+  /**
+   *
+   */
   const addIssuer = makeAddIssuer(
     zcf,
     isSecondary,
