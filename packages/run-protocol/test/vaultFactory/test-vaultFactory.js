@@ -1811,6 +1811,11 @@ test('mutable liquidity triggers and interest', async t => {
   await manualTimer.tick();
   await waitForPromisesToSettle();
 
+  shortfallBalance += 42n;
+  await m.assertChange({
+    shortfallBalance: { value: shortfallBalance },
+  });
+
   bobUpdate = await E(bobNotifier).getUpdateSince();
   trace(
     t,
@@ -1823,11 +1828,6 @@ test('mutable liquidity triggers and interest', async t => {
   bobUpdate = await E(bobNotifier).getUpdateSince();
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
   trace(t, 'bob liquidated');
-
-  shortfallBalance += 42n;
-  await m.assertChange({
-    shortfallBalance: { value: shortfallBalance },
-  });
 });
 
 test('bad chargingPeriod', async t => {
