@@ -362,7 +362,7 @@ const makeDriver = async (t, initialPrice, priceBase) => {
   const {
     zoe,
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
-    runKit: { issuer: runIssuer },
+    runKit: { issuer: runIssuer, brand: runBrand },
   } = t.context;
   const {
     vaultFactory: { lender, vaultFactory },
@@ -510,6 +510,20 @@ const makeDriver = async (t, initialPrice, priceBase) => {
         t.like(managerNotification.value, likeExpected);
       }
       return managerNotification;
+    },
+    checkReserveAllocation: async (liquidityValue, stableValue) => {
+      const { reserveCreatorFacet } = t.context;
+      const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
+
+      const liquidityIssuer = await E(
+        services.ammFacets.ammPublicFacet,
+      ).getLiquidityIssuer(aethBrand);
+      const liquidityBrand = await E(liquidityIssuer).getBrand();
+
+      t.deepEqual(reserveAllocations, {
+        ReserveaEthLiquidity: AmountMath.make(liquidityBrand, liquidityValue),
+        RUN: AmountMath.make(runBrand, stableValue),
+      });
     },
   };
   return driver;
@@ -853,10 +867,5 @@ test('penalties to reserve', async t => {
   d.setPrice(AmountMath.make(runBrand, 636n));
   await waitForPromisesToSettle();
 
-  const { reserveCreatorFacet } = t.context;
-  const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
-  t.like(reserveAllocations, {
-    AmmBrand0Liquidity: { value: 1000n },
-    RUN: { brand: runBrand, value: 29n },
-  });
+  await d.checkReserveAllocation(1000n, 29n);
 });
