@@ -32,20 +32,22 @@ test('makeChainStorageRoot', async t => {
   t.is(rootNode.getKey(), rootKey, 'root key matches initialization input');
 
   // Values must be strings.
-  /** @type { Map<string, any> } */
-  const nonStrings = new Map();
-  nonStrings.set('number', 1);
-  nonStrings.set('bigint', 1n);
-  nonStrings.set('boolean', true);
-  nonStrings.set('null', null);
-  nonStrings.set('undefined', undefined);
-  nonStrings.set('symbol', Symbol('foo'));
-  nonStrings.set('array', ['foo']);
-  nonStrings.set('object', {
-    toString() {
-      return 'foo';
-    },
-  });
+  const nonStrings = new Map(
+    Object.entries({
+      number: 1,
+      bigint: 1n,
+      boolean: true,
+      null: null,
+      undefined,
+      symbol: Symbol('foo'),
+      array: ['foo'],
+      object: {
+        toString() {
+          return 'foo';
+        },
+      },
+    }),
+  );
   for (const [label, val] of nonStrings) {
     t.throws(
       () => rootNode.setValue(val),
