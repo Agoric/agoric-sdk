@@ -41,7 +41,11 @@ import {
   waitForPromisesToSettle,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
-import { metricsTracker, subscriptionTracker } from '../metrics.js';
+import {
+  metricsTracker,
+  vaultManagerMetricsTracker,
+  subscriptionTracker,
+} from '../metrics.js';
 
 /** @type {import('ava').TestInterface<Record<string, any> & {
  * rates: VaultManagerParamValues,

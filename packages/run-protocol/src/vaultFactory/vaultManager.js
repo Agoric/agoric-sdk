@@ -424,7 +424,6 @@ const helperBehavior = {
       liquidator,
       state.collateralBrand,
       factoryPowers.getGovernedParams().getLiquidationPenalty(),
-      factoryPowers.getShortfallReporter(),
     )
       .then(accounting => {
         console.log('liquidateAndRemove accounting', accounting);
@@ -448,6 +447,12 @@ const helperBehavior = {
         trace('liquidated');
         state.numLiquidationsCompleted += 1;
         facets.helper.updateMetrics();
+
+        if (!AmountMath.isEmpty(accounting.shortfall)) {
+          E(factoryPowers.getShortfallReporter()).increaseLiquidationShortfall(
+            accounting.shortfall,
+          );
+        }
       })
       .catch(e => {
         // XXX should notify interested parties

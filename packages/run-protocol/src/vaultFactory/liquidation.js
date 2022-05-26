@@ -43,7 +43,6 @@ const discrepancy = (debt, proceeds) => {
  * @param {Liquidator}  liquidator
  * @param {Brand} collateralBrand
  * @param {Ratio} penaltyRate
- * @param {ERef<import('../reserve/assetReserve.js').ShortfallReporter>} shortfallReporter
  */
 const liquidate = async (
   zcf,
@@ -52,7 +51,6 @@ const liquidate = async (
   liquidator,
   collateralBrand,
   penaltyRate,
-  shortfallReporter,
 ) => {
   trace('liquidate start', vault);
   vault.liquidating();
@@ -93,12 +91,6 @@ const liquidate = async (
   const runToBurn = AmountMath.min(proceeds.RUN, debt);
   trace('before burn', { debt, proceeds, overage, shortfall, runToBurn });
   burnLosses(runToBurn, vaultZcfSeat);
-
-  if (AmountMath.isGTE(debt, runToBurn)) {
-    E(shortfallReporter).increaseLiquidationShortfall(
-      AmountMath.subtract(debt, runToBurn),
-    );
-  }
 
   // Accounting complete. Update the vault state.
   vault.liquidated(AmountMath.subtract(debt, runToBurn));
