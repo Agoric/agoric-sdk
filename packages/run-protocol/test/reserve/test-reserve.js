@@ -95,7 +95,7 @@ test.before(async t => {
   t.context = { bundleCache };
 });
 
-test.only('reserve add collateral', async t => {
+test('reserve add collateral', async t => {
   /** @param {NatValue} value */
   const moolaR = makeIssuerKit('moola');
   const moola = value => AmountMath.make(moolaR.brand, value);
@@ -182,8 +182,6 @@ test('governance add Liquidity to the AMM', async t => {
     'should be 80K',
   );
 
-  // FIXME handle repeats
-  // await E(reserve.reserveCreatorFacet).addIssuer(moolaR.issuer, 'Moola');
   const invitation = await E(
     reserve.reservePublicFacet,
   ).makeAddCollateralInvitation();
@@ -226,8 +224,8 @@ test('governance add Liquidity to the AMM', async t => {
   t.deepEqual(
     await E(reserve.reserveCreatorFacet).getAllocations(),
     harden({
-      AmmBrand0: moola(10_000n),
-      RaEthLiquidity: AmountMath.make(moolaLiquidityBrand, 84_622n),
+      Rmoola: moola(10_000n),
+      RmoolaLiquidity: AmountMath.make(moolaLiquidityBrand, 85_622n),
     }),
     'expecting more',
   );
@@ -264,8 +262,6 @@ test('request more collateral than available', async t => {
   );
   await addLiquidPool(runPayment, runIssuer, space, t, moola, moolaR, zoe);
 
-  // FIXME prevent collisions
-  // await E(reserve.reserveCreatorFacet).addIssuer(moolaR.issuer, 'Moola');
   const invitation = await E(
     reserve.reservePublicFacet,
   ).makeAddCollateralInvitation();
@@ -309,11 +305,16 @@ test('request more collateral than available', async t => {
     .then(() => t.fail('expecting failure'))
     .catch(e => t.is(e.message, 'insufficient reserves for that transaction'));
 
-  t.like(
+  const { ammPublicFacet } = space.amm;
+  const moolaLiquidityIssuer = E(ammPublicFacet).getLiquidityIssuer(
+    moolaR.brand,
+  );
+  const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
+  t.deepEqual(
     await E(reserve.reserveCreatorFacet).getAllocations(),
     harden({
-      Moola: moola(10_000n),
-      MoolaLiquidity: { value: 1000n },
+      Rmoola: moola(10_000n),
+      RmoolaLiquidity: AmountMath.make(moolaLiquidityBrand, 1000n),
     }),
     'expecting more',
   );

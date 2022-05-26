@@ -435,7 +435,7 @@ test('Benefactor can add to reserve', async t => {
   t.deepEqual(result, 'added Collateral to the Reserve');
 });
 
-test.only('voters get invitations', async t => {
+test('voters get invitations', async t => {
   const s = await makeScenario(t);
   await s.startDevNet();
   const purses = await s.provisionMembers();
