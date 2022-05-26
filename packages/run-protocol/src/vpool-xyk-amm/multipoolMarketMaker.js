@@ -188,10 +188,6 @@ const start = async (zcf, privateArgs) => {
     trace('handlePoolAdded', { secondaryBrand, liquidityKeyword });
     updateMetrics();
 
-    if (!reserveDepositFacet) {
-      console.error('🚨 no reserveDepositFacet');
-      return;
-    }
     assert(reserveDepositFacet, 'Missing reserveDepositFacet');
     assert(reserveLiquidityTokenSeat, 'Missing reserveLiquidityTokenSeat');
 
