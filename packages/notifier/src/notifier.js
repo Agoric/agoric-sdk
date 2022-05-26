@@ -10,6 +10,21 @@ import './types.js';
 import { makeEmptyPublishKit } from './publish-kit.js';
 
 /**
+ * TODO Believe it or not, some tool in our toolchain still cannot handle
+ * bigint literals.
+ * See https://github.com/Agoric/agoric-sdk/issues/5438
+ */
+const ONE = BigInt(1);
+
+const updateCountToPublishCount = updateCount =>
+  updateCount === undefined || Number.isNaN(updateCount)
+    ? -ONE
+    : BigInt(updateCount) - ONE;
+
+const publishCountToUpdateCount = publishCount =>
+  publishCount === -ONE ? undefined : Number(publishCount) + 1;
+
+/**
  * @template T
  * @param {ERef<BaseNotifier<T> | NotifierInternals<T>>} sharableInternalsP
  * @returns {AsyncIterable<T> & SharableNotifier<T>}
@@ -56,13 +71,13 @@ export const makeNotifierKit = (...initialStateArr) => {
   const baseNotifier = Far('baseNotifier', {
     // NaN matches nothing
     getUpdateSince(baseUpdateCount = NaN) {
-      const basePublishCount = Number.isNaN(baseUpdateCount)
-        ? -BigInt(1) // See https://github.com/Agoric/agoric-sdk/issues/5438
-        : BigInt(baseUpdateCount);
+      const basePublishCount = updateCountToPublishCount(baseUpdateCount);
       return E.when(
         subscriber.subscribeAfter(basePublishCount),
         ({ head: { value, done }, publishCount }) => {
-          const updateCount = done ? undefined : Number(publishCount);
+          const updateCount = done
+            ? undefined
+            : publishCountToUpdateCount(publishCount);
           return harden({ value, updateCount });
         },
       );
