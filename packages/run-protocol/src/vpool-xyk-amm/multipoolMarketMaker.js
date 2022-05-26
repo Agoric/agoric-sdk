@@ -231,7 +231,10 @@ const start = async (zcf, privateArgs) => {
   const getLiquiditySupply = brand => getPool(brand).getLiquiditySupply();
   const getLiquidityIssuer = brand => getPool(brand).getLiquidityIssuer();
   /** @param {Brand} brand */
-  const getIssuer = brand => zcf.getIssuerForBrand(brand);
+  const getSecondaryIssuer = brand => {
+    assert(isSecondary(brand), 'Brand not a secondary of the AMM');
+    return zcf.getIssuerForBrand(brand);
+  };
   const addPoolInvitation = makeAddPoolInvitation(
     zcf,
     initPool,
@@ -339,7 +342,7 @@ const start = async (zcf, privateArgs) => {
       getLiquiditySupply,
       getInputPrice,
       getOutputPrice,
-      getIssuer,
+      getSecondaryIssuer,
       makeSwapInvitation: makeSwapInInvitation,
       makeSwapInInvitation,
       makeSwapOutInvitation,

@@ -159,7 +159,9 @@ const start = async (zcf, privateArgs) => {
 
     const keyword = await conjureKeyword(ammSecondaryBrand);
     // validate the AMM has this brand and match its issuer
-    const issuer = await E(ammPublicFacet).getIssuer(ammSecondaryBrand);
+    const issuer = await E(ammPublicFacet).getSecondaryIssuer(
+      ammSecondaryBrand,
+    );
     trace('addIssuerFromAmm', { issuer, keyword });
     await addIssuer(issuer, keyword);
   };
