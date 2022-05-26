@@ -204,7 +204,7 @@ const buildOwner = async (
   // @ts-expect-error cast, never used
   const reservePublicFacet = null;
   /** @type {Amount} */
-  // @ts-expect-error Tests are currently disabled.
+  // @ts-expect-error cast, never used
   const shortfallInvitationAmount = null;
 
   const terms = makeVaultFactoryTerms({

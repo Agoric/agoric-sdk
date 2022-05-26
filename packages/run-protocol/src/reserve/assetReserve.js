@@ -128,6 +128,7 @@ const start = async (zcf, privateArgs) => {
     zcf.makeInvitation(addCollateralHook, 'Add Collateral');
 
   const { brand: runBrand } = await E(runMint).getIssuerRecord();
+  /** @type {SubscriptionRecord<MetricsNotification>} */
   const { publication: metricsPublication, subscription: metricsSubscription } =
     makeSubscriptionKit();
 
@@ -136,7 +137,6 @@ const start = async (zcf, privateArgs) => {
   let shortfallBalance = AmountMath.makeEmpty(runBrand);
 
   const updateMetrics = () => {
-    /** @type {MetricsNotification} */
     const metrics = harden({
       allocations: getAllocations(),
       shortfallBalance,
