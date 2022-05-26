@@ -36,8 +36,10 @@ export const publishInterchainAssetFromBoardId = async (
   const issuer = await E(board).getValue(issuerBoardId);
   const brand = await E(issuer).getBrand();
 
-  E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(keyword, issuer);
-  E(E(agoricNamesAdmin).lookupAdmin('brand')).update(keyword, brand);
+  return Promise.all([
+    E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(keyword, issuer),
+    E(E(agoricNamesAdmin).lookupAdmin('brand')).update(keyword, brand),
+  ]);
 };
 
 const addPool = async (
