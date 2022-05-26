@@ -121,6 +121,11 @@ export function buildRootObject(vatPowers) {
     });
   }
 
+  const criticalVatKey = Far('criticalVatKey', {});
+  function getCriticalVatKey() {
+    return criticalVatKey;
+  }
+
   function assertType(name, obj, type) {
     if (obj) {
       assert.typeof(obj, type, `CreateVatOptions(${name})`);
@@ -138,6 +143,7 @@ export function buildRootObject(vatPowers) {
       virtualObjectCacheSize,
       useTranscript,
       reapInterval,
+      critical, // converted from cap key to boolean
       ...rest
     } = origOptions;
 
@@ -168,6 +174,12 @@ export function buildRootObject(vatPowers) {
       meterID = meterIDByMeter.get(origOptions.meter);
     }
 
+    let isCriticalVat = false;
+    if (critical) {
+      assert(critical === criticalVatKey, 'invalid criticalVatKey');
+      isCriticalVat = true;
+    }
+
     // TODO: assert vatParameters is Durable
 
     // now glue everything back together
@@ -181,6 +193,7 @@ export function buildRootObject(vatPowers) {
       virtualObjectCacheSize,
       useTranscript,
       reapInterval,
+      critical: isCriticalVat,
     };
     return harden(options);
   }
@@ -325,6 +338,7 @@ export function buildRootObject(vatPowers) {
 
   return Far('root', {
     createVatAdminService,
+    getCriticalVatKey,
     bundleInstalled,
     newVatCallback,
     vatUpgradeCallback,

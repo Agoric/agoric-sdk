@@ -94,6 +94,7 @@ export function makeVatLoader(stuff) {
     'enablePipelining',
     'virtualObjectCacheSize',
     'useTranscript',
+    'critical',
     'reapInterval',
   ];
 
@@ -106,6 +107,7 @@ export function makeVatLoader(stuff) {
     'enablePipelining',
     'virtualObjectCacheSize',
     'useTranscript',
+    'critical',
     'reapInterval',
   ];
 
@@ -171,6 +173,7 @@ export function makeVatLoader(stuff) {
    * @param {string} [options.name]
    * @param {string} [options.description]
    * @param {boolean} [options.enableDisavow]
+   * @param {boolean} [options.critical]
    *
    * @param {boolean} isDynamic  If true, the vat being created is a dynamic vat;
    *    if false, it's a static vat (these have differences in their allowed
@@ -215,6 +218,7 @@ export function makeVatLoader(stuff) {
       enablePipelining = false,
       virtualObjectCacheSize,
       useTranscript = true,
+      critical = false,
       name,
     } = options;
 
@@ -239,6 +243,7 @@ export function makeVatLoader(stuff) {
       sourcedConsole: makeSourcedConsole(vatID),
       virtualObjectCacheSize,
       useTranscript,
+      critical,
       name,
       ...overrideVatManagerOptions,
     };

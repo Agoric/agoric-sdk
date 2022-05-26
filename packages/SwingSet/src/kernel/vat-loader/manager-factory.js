@@ -58,6 +58,7 @@ export function makeVatManagerFactory({
       'enableSetup',
       'virtualObjectCacheSize',
       'useTranscript',
+      'critical',
       'reapInterval',
       'sourcedConsole',
       'name',
