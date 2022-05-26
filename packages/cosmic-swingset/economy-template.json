@@ -6,7 +6,8 @@
       {
         "econCommitteeOptions": {
           "committeeSize": 1
-        }
+        },
+        "minInitialPoolLiquidity": "0"
       }
     ]
   },
