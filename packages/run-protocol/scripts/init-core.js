@@ -143,18 +143,22 @@ export const mainProposalBuilder = async ({
 export const defaultProposalBuilder = async (
   { publishRef, install },
   options = {},
+  { env = process.env } = {},
 ) => {
+  /** @param {string|undefined} s */
+  const optBigInt = s => s && BigInt(s);
   const {
-    ROLE = process.env.ROLE || 'chain',
-    vaultFactoryControllerAddress = process.env.VAULT_FACTORY_CONTROLLER_ADDR,
+    ROLE = env.ROLE || 'chain',
+    vaultFactoryControllerAddress = env.VAULT_FACTORY_CONTROLLER_ADDR,
+    minInitialPoolLiquidity = env.MIN_INITIAL_POOL_LIQUIDITY,
     anchorOptions: {
-      anchorDenom = process.env.ANCHOR_DENOM,
+      anchorDenom = env.ANCHOR_DENOM,
       anchorDecimalPlaces = '6',
       anchorKeyword = 'AUSD',
       anchorProposedName = anchorKeyword,
     } = {},
     econCommitteeOptions: {
-      committeeSize: econCommitteeSize = process.env.ECON_COMMITTEE_SIZE || '3',
+      committeeSize: econCommitteeSize = env.ECON_COMMITTEE_SIZE || '3',
     } = {},
   } = options;
 
@@ -180,6 +184,7 @@ export const defaultProposalBuilder = async (
       {
         ROLE,
         vaultFactoryControllerAddress,
+        minInitialPoolLiquidity: optBigInt(minInitialPoolLiquidity),
         anchorOptions,
         econCommitteeOptions,
         installKeys: {

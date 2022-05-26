@@ -159,7 +159,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   space.installation.produce.amm.resolve(t.context.installation.amm);
   await startEconomicCommittee(space, electorateTerms);
   await setupAmm(space, {
-    minInitialPoolLiquidity: 300n,
+    options: { minInitialPoolLiquidity: 300n },
   });
 
   const governorCreatorFacet = consume.ammGovernorCreatorFacet;

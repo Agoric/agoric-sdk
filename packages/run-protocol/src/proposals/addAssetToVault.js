@@ -1,5 +1,5 @@
 // @ts-check
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, AssetKind } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 
@@ -9,10 +9,11 @@ export * from './startPSM.js';
 
 /**
  * @typedef {object} InterchainAssetOptions
- * @property {string} issuerBoardId
+ * @property {string} [issuerBoardId]
+ * @property {string} [denom]
+ * @property {number} [decimalPlaces]
+ * @property {string} [proposedName]
  * @property {string} keyword
- * @property {string} proposedName
- * @property {number} decimalPlaces
  * @property {string} oracleBrand
  */
 
@@ -22,22 +23,130 @@ export * from './startPSM.js';
  * @param {object} config.options
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions
  */
-export const addInterchainAsset = async (
+export const publishInterchainAssetFromBoardId = async (
   { consume: { board, agoricNamesAdmin } },
   { options: { interchainAssetOptions } },
 ) => {
-  const { issuerBoardId, keyword, decimalPlaces, proposedName } =
-    interchainAssetOptions;
+  const { issuerBoardId, keyword } = interchainAssetOptions;
+  // Incompatible with denom.
+  assert.equal(interchainAssetOptions.denom, undefined);
   assert.typeof(issuerBoardId, 'string');
   assert.typeof(keyword, 'string');
-  assert.typeof(decimalPlaces, 'number');
-  assert.typeof(proposedName, 'string');
 
   const issuer = await E(board).getValue(issuerBoardId);
   const brand = await E(issuer).getBrand();
 
-  E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(keyword, issuer);
-  E(E(agoricNamesAdmin).lookupAdmin('brand')).update(keyword, brand);
+  return Promise.all([
+    E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(keyword, issuer),
+    E(E(agoricNamesAdmin).lookupAdmin('brand')).update(keyword, brand),
+  ]);
+};
+
+const addPool = async (
+  zoe,
+  amm,
+  issuer,
+  keyword,
+  brand,
+  runBrand,
+  runIssuer,
+) => {
+  const ammPub = E(zoe).getPublicFacet(amm);
+  const [addPoolInvitation] = await Promise.all([
+    E(ammPub).addPoolInvitation(),
+    E(ammPub).addIssuer(issuer, keyword),
+  ]);
+  const proposal = harden({
+    give: {
+      Secondary: AmountMath.makeEmpty(brand),
+      Central: AmountMath.makeEmpty(runBrand),
+    },
+  });
+  const centralPurse = E(runIssuer).makeEmptyPurse();
+  const secondaryPurse = E(issuer).makeEmptyPurse();
+  const [emptyCentral, emptySecondary] = await Promise.all([
+    E(centralPurse).withdraw(proposal.give.Central),
+    E(secondaryPurse).withdraw(proposal.give.Secondary),
+  ]);
+  const payments = harden({
+    Central: emptyCentral,
+    Secondary: emptySecondary,
+  });
+  const addLiquiditySeat = await E(zoe).offer(
+    addPoolInvitation,
+    proposal,
+    payments,
+  );
+  await E(addLiquiditySeat).getOfferResult();
+};
+
+/**
+ * @param { EconomyBootstrapPowers } powers
+ * @param {object} config
+ * @param {object} config.options
+ * @param {InterchainAssetOptions} config.options.interchainAssetOptions
+ */
+export const publishInterchainAssetFromBank = async (
+  {
+    consume: { zoe, bankManager, agoricNamesAdmin, bankMints },
+    produce: { bankMints: produceBankMints },
+    installation: {
+      consume: { mintHolder },
+    },
+    instance: {
+      consume: { amm },
+    },
+    issuer: {
+      consume: { RUN: runIssuer },
+    },
+    brand: {
+      consume: { RUN: runBrandP },
+    },
+  },
+  { options: { interchainAssetOptions } },
+) => {
+  const { denom, decimalPlaces, proposedName, keyword } =
+    interchainAssetOptions;
+
+  // Incompatible with issuerBoardId.
+  assert.equal(interchainAssetOptions.issuerBoardId, undefined);
+  assert.typeof(denom, 'string');
+  assert.typeof(keyword, 'string');
+  assert.typeof(decimalPlaces, 'number');
+  assert.typeof(proposedName, 'string');
+
+  /** @type {import('@agoric/vats/src/mintHolder.js').AssetTerms} */
+  const terms = {
+    keyword,
+    assetKind: AssetKind.NAT,
+    displayInfo: {
+      decimalPlaces,
+      assetKind: AssetKind.NAT,
+    },
+  };
+  const { creatorFacet: mint, publicFacet: issuer } = E.get(
+    E(zoe).startInstance(mintHolder, {}, terms),
+  );
+
+  const [brand, runBrand] = await Promise.all([
+    E(issuer).getBrand(),
+    runBrandP,
+  ]);
+  const kit = { mint, issuer, brand };
+
+  await addPool(zoe, amm, issuer, keyword, brand, runBrand, runIssuer);
+
+  // Create the mint list if it doesn't exist and wasn't already rejected.
+  produceBankMints.resolve([]);
+  await Promise.all([
+    Promise.resolve(bankMints).then(
+      mints => mints.push(mint),
+      () => {}, // If the bankMints list was rejected, ignore the error.
+    ),
+    E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(keyword, issuer),
+    E(E(agoricNamesAdmin).lookupAdmin('brand')).update(keyword, brand),
+    E(bankManager).addAsset(denom, keyword, proposedName, kit),
+  ]);
 };
 
 /**
@@ -159,16 +268,38 @@ export const getManifestForAddAssetToVault = (
   { restoreRef },
   { interchainAssetOptions, scaledPriceAuthorityRef },
 ) => {
+  const publishIssuerFromBoardId =
+    typeof interchainAssetOptions.issuerBoardId === 'string';
+  const publishIssuerFromBank =
+    !publishIssuerFromBoardId &&
+    typeof interchainAssetOptions.denom === 'string';
   return {
     manifest: {
-      [addInterchainAsset.name]: {
-        consume: {
-          board: true,
-          zoe: true,
-          bankManager: true,
-          agoricNamesAdmin: true,
+      ...(publishIssuerFromBoardId && {
+        [publishInterchainAssetFromBoardId.name]: {
+          consume: {
+            board: true,
+            agoricNamesAdmin: true,
+          },
         },
-      },
+      }),
+      ...(publishIssuerFromBank && {
+        [publishInterchainAssetFromBank.name]: {
+          consume: {
+            zoe: true,
+            bankManager: true,
+            agoricNamesAdmin: true,
+            bankMints: true,
+          },
+          produce: { bankMints: true },
+          installation: {
+            consume: { mintHolder: true },
+          },
+          instance: { consume: { amm: 'amm' } },
+          issuer: { consume: { RUN: 'zoe' } },
+          brand: { consume: { RUN: 'zoe' } },
+        },
+      }),
       [registerScaledPriceAuthority.name]: {
         consume: {
           agoricNamesAdmin: true,
@@ -183,6 +314,7 @@ export const getManifestForAddAssetToVault = (
       [addAssetToVault.name]: {
         consume: {
           vaultFactoryCreator: true,
+          ammCreatorFacet: true,
           reserveCreatorFacet: true,
           agoricNamesAdmin: true,
         },
