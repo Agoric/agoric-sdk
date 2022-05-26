@@ -10,8 +10,8 @@ import { E } from '@endo/far';
  * Array items are possibly-duplicated [index, value] pairs, where index is a
  * string (ascending numeric or terminal "finish" or "fail").
  *
- * @param {AsyncIterator} iterable
- * @param {ReturnType<typeof import('./lib-chainStorage.js').makeChainStorageRoot>} chainStorageNode
+ * @param {ERef<AsyncIterator>} iterable
+ * @param {{ setValue: (val: any) => void }} chainStorageNode
  * @param {{ timerService: ERef<TimerService>, serialize?: (obj: any) => string }} powers
  */
 export async function publishToChainNode(

@@ -293,7 +293,7 @@ function getMockInputs(t) {
 
   // Mock a timerService.
   let advanceTimerP;
-  let advanceTimerR = () => {};
+  let advanceTimerR = _val => {};
   const advanceTimer = () => {
     advanceTimerR();
     advanceTimerP = new Promise(resolve => {
@@ -308,7 +308,7 @@ function getMockInputs(t) {
   };
 
   // Create an async iterable with a function for supplying results.
-  const pendingResults = [{ resolve() {} }];
+  const pendingResults = [{ resolve(_val) {}, reject(_reason) {} }];
   const supplyIterationResult = value => {
     const nextDeferred = {};
     nextDeferred.promise = new Promise((resolve, reject) => {
