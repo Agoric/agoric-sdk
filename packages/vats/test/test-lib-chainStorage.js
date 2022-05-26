@@ -76,24 +76,25 @@ test('makeChainStorageRoot', async t => {
   // Valid key segments are strings of up to 100 ASCII alphanumeric/dash/underscore characters.
   const validSegmentChars = `${
     Array(26)
-      .fill()
+      .fill(undefined)
       .map((_, i) => 'a'.charCodeAt(0) + i)
       .map(code => String.fromCharCode(code))
       .join('') +
     Array(26)
-      .fill()
+      .fill(undefined)
       .map((_, i) => 'A'.charCodeAt(0) + i)
       .map(code => String.fromCharCode(code))
       .join('') +
     Array(10)
-      .fill()
+      .fill(undefined)
       .map((_, i) => '0'.charCodeAt(0) + i)
       .map(code => String.fromCharCode(code))
       .join('')
   }-_`;
-  const extremeSegments = validSegmentChars
-    .repeat(Math.ceil(100 / validSegmentChars.length))
-    .match(/.{1,100}/gsu) || [];
+  const extremeSegments =
+    validSegmentChars
+      .repeat(Math.ceil(100 / validSegmentChars.length))
+      .match(/.{1,100}/gsu) || [];
   for (const segment of extremeSegments) {
     const child = rootNode.getChildNode(segment);
     const childKey = `${rootKey}.${segment}`;
