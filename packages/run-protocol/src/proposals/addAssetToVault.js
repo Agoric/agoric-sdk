@@ -40,6 +40,44 @@ export const publishInterchainAssetFromBoardId = async (
   E(E(agoricNamesAdmin).lookupAdmin('brand')).update(keyword, brand);
 };
 
+const addPool = async (
+  zoe,
+  amm,
+  issuer,
+  keyword,
+  brand,
+  runBrand,
+  runIssuer,
+) => {
+  const ammPub = E(zoe).getPublicFacet(amm);
+  const [addPoolInvitation] = await Promise.all([
+    E(ammPub).addPoolInvitation(),
+    E(ammPub).addIssuer(issuer, keyword),
+  ]);
+  const proposal = harden({
+    give: {
+      Secondary: AmountMath.makeEmpty(brand),
+      Central: AmountMath.makeEmpty(runBrand),
+    },
+  });
+  const centralPurse = E(runIssuer).makeEmptyPurse();
+  const secondaryPurse = E(issuer).makeEmptyPurse();
+  const [emptyCentral, emptySecondary] = await Promise.all([
+    E(centralPurse).withdraw(proposal.give.Central),
+    E(secondaryPurse).withdraw(proposal.give.Secondary),
+  ]);
+  const payments = harden({
+    Central: emptyCentral,
+    Secondary: emptySecondary,
+  });
+  const addLiquiditySeat = await E(zoe).offer(
+    addPoolInvitation,
+    proposal,
+    payments,
+  );
+  await E(addLiquiditySeat).getOfferResult();
+};
+
 /**
  * @param { EconomyBootstrapPowers } powers
  * @param {object} config
@@ -52,6 +90,15 @@ export const publishInterchainAssetFromBank = async (
     produce: { bankMints: produceBankMints },
     installation: {
       consume: { mintHolder },
+    },
+    instance: {
+      consume: { amm },
+    },
+    issuer: {
+      consume: { RUN: runIssuer },
+    },
+    brand: {
+      consume: { RUN: runBrandP },
     },
   },
   { options: { interchainAssetOptions } },
@@ -79,8 +126,13 @@ export const publishInterchainAssetFromBank = async (
     E(zoe).startInstance(mintHolder, {}, terms),
   );
 
-  const brand = await E(issuer).getBrand();
+  const [brand, runBrand] = await Promise.all([
+    E(issuer).getBrand(),
+    runBrandP,
+  ]);
   const kit = { mint, issuer, brand };
+
+  await addPool(zoe, amm, issuer, keyword, brand, runBrand, runIssuer);
 
   // Create the mint list if it doesn't exist and wasn't already rejected.
   produceBankMints.resolve([]);
@@ -241,6 +293,9 @@ export const getManifestForAddAssetToVault = (
           installation: {
             consume: { mintHolder: true },
           },
+          instance: { consume: { amm: 'amm' } },
+          issuer: { consume: { RUN: 'zoe' } },
+          brand: { consume: { RUN: 'zoe' } },
         },
       }),
       [registerScaledPriceAuthority.name]: {
