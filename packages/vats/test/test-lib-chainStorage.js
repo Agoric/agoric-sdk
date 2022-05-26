@@ -32,23 +32,20 @@ test('makeChainStorageRoot', async t => {
   t.is(rootNode.getKey(), rootKey, 'root key matches initialization input');
 
   // Values must be strings.
-  const nonStrings = new Map([
-    ['number', 1],
-    ['bigint', 1n],
-    ['boolean', true],
-    ['null', null],
-    ['undefined', undefined],
-    ['symbol', Symbol('foo')],
-    ['array', ['foo']],
-    [
-      'object',
-      {
-        toString() {
-          return 'foo';
-        },
-      },
-    ],
-  ]);
+  /** @type { Map<string, any> } */
+  const nonStrings = new Map();
+  nonStrings.set('number', 1);
+  nonStrings.set('bigint', 1n);
+  nonStrings.set('boolean', true);
+  nonStrings.set('null', null);
+  nonStrings.set('undefined', undefined);
+  nonStrings.set('symbol', Symbol('foo'));
+  nonStrings.set('array', ['foo']);
+  nonStrings.set('object', {
+    toString() {
+      return 'foo';
+    },
+  });
   for (const [label, val] of nonStrings) {
     t.throws(
       () => rootNode.setValue(val),
@@ -78,25 +75,25 @@ test('makeChainStorageRoot', async t => {
 
   // Valid key segments are strings of up to 100 ASCII alphanumeric/dash/underscore characters.
   const validSegmentChars = `${
-    String.fromCharCode(
-      ...Array(26)
-        .fill()
-        .map((_, i) => 'a'.charCodeAt(0) + i),
-    ) +
-    String.fromCharCode(
-      ...Array(26)
-        .fill()
-        .map((_, i) => 'A'.charCodeAt(0) + i),
-    ) +
-    String.fromCharCode(
-      ...Array(10)
-        .fill()
-        .map((_, i) => '0'.charCodeAt(0) + i),
-    )
+    Array(26)
+      .fill()
+      .map((_, i) => 'a'.charCodeAt(0) + i)
+      .map(code => String.fromCharCode(code))
+      .join('') +
+    Array(26)
+      .fill()
+      .map((_, i) => 'A'.charCodeAt(0) + i)
+      .map(code => String.fromCharCode(code))
+      .join('') +
+    Array(10)
+      .fill()
+      .map((_, i) => '0'.charCodeAt(0) + i)
+      .map(code => String.fromCharCode(code))
+      .join('')
   }-_`;
   const extremeSegments = validSegmentChars
     .repeat(Math.ceil(100 / validSegmentChars.length))
-    .match(/.{1,100}/gsu);
+    .match(/.{1,100}/gsu) || [];
   for (const segment of extremeSegments) {
     const child = rootNode.getChildNode(segment);
     const childKey = `${rootKey}.${segment}`;
