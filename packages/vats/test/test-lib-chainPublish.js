@@ -228,6 +228,59 @@ test('publishToChainNode custom serialization', async t => {
   t.is(nodeValueHistory[2], '3', 'finish result is output from serialize()');
 });
 
+test('publishToChainNode does not drop values', async t => {
+  // eslint-disable-next-line no-use-before-define
+  const { storageNode, nodeValueHistory } = getMockInputs(t);
+
+  // This approach is a little intricate...
+  // We start by producing a sequence of increasing nonnegative values,
+  // and switch to decreasing negative values upon the response to a
+  // timerService delay call being fulfilled.
+  // The delay response intentionally takes many turns to fulfill,
+  // and we expect at least one negative value to be consumed between its
+  // fulfillment and acknowledgement thereof by the caller (i.e., new block
+  // detection).
+  // We then verify that the first dropped batch included at least one
+  // negative value.
+  let nextValue = 0;
+  let step = 1;
+  const timerService = {
+    delay() {
+      if (step < 0) return Promise.resolve();
+      let slow = Promise.resolve();
+      for (let i = 0; i < 10; i += 1) slow = slow.then();
+      return slow.then(() => {
+        nextValue = -1;
+        step = -1;
+      });
+    },
+  };
+  let oldestIndex;
+  let oldestValue;
+  const batchDropped = () => {
+    if (!nodeValueHistory.length) return false;
+    const lastSent = JSON.parse(nodeValueHistory[nodeValueHistory.length - 1]);
+    [oldestIndex, oldestValue] = lastSent[0];
+    return oldestIndex !== '0' || oldestValue !== 0;
+  };
+  const source = (async function* makeSource() {
+    while (!batchDropped()) {
+      if (Math.abs(nextValue) >= 1e5) throw new Error('too many iterations');
+      yield nextValue;
+      nextValue += step;
+    }
+  })();
+  await publishToChainNode(source, storageNode, { timerService }).catch(err =>
+    t.fail(`unexpected error: ${err}`),
+  );
+  t.true(
+    Number(oldestIndex) > 0 && Number(oldestValue) < 0,
+    `result after first dropped batch should have positive index and negative value: ${JSON.stringify(
+      [oldestIndex, oldestValue],
+    )}`,
+  );
+});
+
 // TODO: Move to a testing library.
 function getMockInputs(t) {
   // Mock a chainStorage node.

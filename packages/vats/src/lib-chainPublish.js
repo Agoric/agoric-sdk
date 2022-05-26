@@ -37,7 +37,7 @@ export async function publishToChainNode(
       }
       // To avoid loss when detecting the new block *after* already consuming
       // results produced within it, we associate each result with an index and
-      // include "old" results in the batch.
+      // include results of the previous batch.
       // Downstream consumers are expected to deduplicate by index.
       // We represent the index as a string to maintain compatibility with
       // JSON.stringify and to avoid overly inflating the data size (e.g. with
@@ -45,8 +45,8 @@ export async function publishToChainNode(
       const index = forceIndex || String(nextIndex);
       nextIndex += 1n;
       results.push([index, value]);
-      const batch = harden(oldResults.slice().concat(results));
-      E(chainStorageNode).setValue(serialize(batch));
+      const combined = harden(oldResults.slice().concat(results));
+      E(chainStorageNode).setValue(serialize(combined));
     };
   };
   await observeIteration(iterable, {
