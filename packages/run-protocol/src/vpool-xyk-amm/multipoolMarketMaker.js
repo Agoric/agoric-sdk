@@ -226,10 +226,10 @@ const start = async (zcf, privateArgs) => {
       deposited,
       userSeatPromise,
     ]);
-    trace('drainPenaltyPool deposited', deposits);
+    trace('handlePoolAdded deposited', deposits);
     await userSeat.getOfferResult();
     reserveLiquidityTokenSeat.exit();
-    trace('drainPenaltyPool done');
+    trace('handlePoolAdded done');
   };
 
   const getLiquiditySupply = brand => getPool(brand).getLiquiditySupply();

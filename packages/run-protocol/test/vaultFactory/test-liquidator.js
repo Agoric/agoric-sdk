@@ -856,7 +856,7 @@ test('penalties to reserve', async t => {
   const { reserveCreatorFacet } = t.context;
   const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
   t.like(reserveAllocations, {
-    MoolaLiquidity: { value: 1000n },
+    AmmBrand0Liquidity: { value: 1000n },
     RUN: { brand: runBrand, value: 29n },
   });
 });

@@ -250,8 +250,8 @@ test('governance add Liquidity to the AMM', async t => {
   t.deepEqual(
     await E(reserve.reserveCreatorFacet).getAllocations(),
     harden({
-      Moola: moola(10_000n),
-      MoolaLiquidity: AmountMath.make(moolaLiquidityBrand, 84_622n),
+      AmmBrand0: moola(10_000n),
+      AmmBrand0Liquidity: AmountMath.make(moolaLiquidityBrand, 84_622n),
     }),
     'expecting more',
   );

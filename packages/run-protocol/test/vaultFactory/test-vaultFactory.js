@@ -645,6 +645,8 @@ test('price drop', async t => {
     shortfallBalance: AmountMath.makeEmpty(runBrand),
   });
   await m.assertChange({
+    // FIXME expects to know liquidity brand
+    allocations: { AmmBrand0Liquidity: { value: 300n } },
     shortfallBalance: { value: 30n },
   });
 
@@ -811,6 +813,7 @@ test('price falls precipitously', async t => {
 
   await m.assertChange({
     shortfallBalance: { value: 103n },
+    allocations: { AmmBrand0Liquidity: { brand: undefined, value: 300n } },
   });
 
   const finalNotification = await E(vaultNotifier).getUpdateSince();
@@ -1784,6 +1787,7 @@ test('mutable liquidity triggers and interest', async t => {
   shortfallBalance += 1900n;
   await m.assertChange({
     shortfallBalance: { value: shortfallBalance },
+    allocations: { AmmBrand0Liquidity: { brand: undefined, value: 300n } },
   });
 
   // XXX this causes BOB to get liquidated, which is suspicious. Revisit this test case

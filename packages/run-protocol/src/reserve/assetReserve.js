@@ -109,7 +109,16 @@ const start = async (zcf, privateArgs) => {
    * @param {Issuer} baseIssuer on which the liquidity issuer is based
    */
   const addLiquidityIssuer = async baseIssuer => {
-    const baseBrand = await zcf.getBrandForIssuer(baseIssuer);
+    const getBrand = () => {
+      try {
+        return zcf.getBrandForIssuer(baseIssuer);
+      } catch {
+        assert.fail(
+          `baseIssuer ${baseIssuer} not known; try addIssuer() first`,
+        );
+      }
+    };
+    const baseBrand = getBrand();
     const baseKeyword = keywordForBrand.get(baseBrand);
     const liquidityIssuer = E(ammPublicFacet).getLiquidityIssuer(baseBrand);
     const liquidityBrand = await E(liquidityIssuer).getBrand();
@@ -127,6 +136,7 @@ const start = async (zcf, privateArgs) => {
     await zcf.saveIssuer(liquidityIssuer, liquidityKeyword);
   };
 
+  let keywordNum = 0;
   /**
    * @param {Brand} secondaryBrand
    */
@@ -144,10 +154,9 @@ const start = async (zcf, privateArgs) => {
       Reflect.ownKeys(secondaryBrand),
       Reflect.ownKeys(secondaryIssuer),
     );
-    // private to the contract
-    // FIXME prevent collisions
-    // const keyword = `${secondaryIssuer.getAllegedName()}`;
-    const keyword = 'Moola';
+    const keyword = `AmmBrand${keywordNum}`;
+    keywordNum += 1;
+    trace('awaiting addIssuer', { secondaryIssuer, keyword });
     await addIssuer(secondaryIssuer, keyword);
   };
 
