@@ -136,28 +136,30 @@ const start = async (zcf, privateArgs) => {
     await zcf.saveIssuer(liquidityIssuer, liquidityKeyword);
   };
 
-  let keywordNum = 0;
+  const conjureKeyword = async baseBrand => {
+    const brandName = await E(baseBrand).getAllegedName();
+    let keyword;
+    let keywordNum = 0;
+    do {
+      keyword = `Reserve${brandName}${keywordNum || ''}`;
+      keywordNum += 1;
+    } while (brandForKeyword.has(keyword));
+    return keyword;
+  };
+
   /**
-   * @param {Brand} secondaryBrand
+   * @param {Brand} ammSecondaryBrand
    */
-  const addIssuerFromAmm = async secondaryBrand => {
+  const addIssuerFromAmm = async ammSecondaryBrand => {
     assert(
-      secondaryBrand !== runKit.brand,
+      ammSecondaryBrand !== runKit.brand,
       `${RunKW} is a special case handled by the reserve contract`,
     );
 
-    const secondaryIssuer = await E(ammPublicFacet).getIssuer(secondaryBrand);
-    // ??? why don't these objects have methods?
-    trace(
-      'addIssuerFromAmm',
-      { secondaryBrand, secondaryIssuer },
-      Reflect.ownKeys(secondaryBrand),
-      Reflect.ownKeys(secondaryIssuer),
-    );
-    const keyword = `AmmBrand${keywordNum}`;
-    keywordNum += 1;
-    trace('awaiting addIssuer', { secondaryIssuer, keyword });
-    await addIssuer(secondaryIssuer, keyword);
+    const keyword = await conjureKeyword(ammSecondaryBrand);
+    const issuer = await E(ammPublicFacet).getIssuer(ammSecondaryBrand);
+    trace('addIssuerFromAmm', { issuer, keyword });
+    await addIssuer(issuer, keyword);
   };
 
   const getKeywordForBrand = brand => {
