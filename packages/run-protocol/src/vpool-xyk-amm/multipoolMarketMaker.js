@@ -175,11 +175,17 @@ const start = async (zcf, privateArgs) => {
   /** @type {AssetReservePublicFacet=} */
   let reserveDepositFacet;
   /**
-   *
+   * @param {Brand} secondaryBrand
    * @param {ZCFSeat} reserveLiquidityTokenSeat
    * @param {Keyword} liquidityKeyword
+   * @returns {Promise<void>} up to caller whether to await or handle rejections
    */
-  const handlePoolAdded = (reserveLiquidityTokenSeat, liquidityKeyword) => {
+  const handlePoolAdded = async (
+    secondaryBrand,
+    reserveLiquidityTokenSeat,
+    liquidityKeyword,
+  ) => {
+    trace('handlePoolAdded', { secondaryBrand, liquidityKeyword });
     updateMetrics();
 
     if (!reserveDepositFacet) {
@@ -189,35 +195,47 @@ const start = async (zcf, privateArgs) => {
     assert(reserveDepositFacet, 'Missing reserveDepositFacet');
     assert(reserveLiquidityTokenSeat, 'Missing reserveLiquidityTokenSeat');
 
+    const secondaryIssuer = await zcf.getIssuerForBrand(secondaryBrand);
+    trace('ensuring reserve has the liquidity issuer', {
+      secondaryBrand,
+      secondaryIssuer,
+    });
+    await E(reserveDepositFacet).addLiquidityIssuer(secondaryIssuer);
+
     trace(
       `move ${liquidityKeyword} to the reserve`,
       reserveLiquidityTokenSeat.getCurrentAllocation(),
     );
-    // spawn promise without error handling
-    (async () => {
-      const addCollateral = await E(
-        reserveDepositFacet,
-      ).makeAddCollateralInvitation();
-      const proposal = harden({
-        give: {
-          Collateral:
-            reserveLiquidityTokenSeat.getCurrentAllocation()[liquidityKeyword],
-        },
-      });
-      const { deposited, userSeatPromise } = await offerTo(
-        zcf,
-        addCollateral,
-        harden({ [liquidityKeyword]: 'Collateral' }),
-        proposal,
-        reserveLiquidityTokenSeat,
-      );
-      const [deposits] = await Promise.all([deposited, userSeatPromise]);
-      trace('drainPenaltyPool deposited', deposits.Out);
-    })();
+    const addCollateral = await E(
+      reserveDepositFacet,
+    ).makeAddCollateralInvitation();
+    const proposal = harden({
+      give: {
+        Collateral:
+          reserveLiquidityTokenSeat.getCurrentAllocation()[liquidityKeyword],
+      },
+    });
+    const { deposited, userSeatPromise } = await offerTo(
+      zcf,
+      addCollateral,
+      harden({ [liquidityKeyword]: 'Collateral' }),
+      proposal,
+      reserveLiquidityTokenSeat,
+    );
+    const [deposits, userSeat] = await Promise.all([
+      deposited,
+      userSeatPromise,
+    ]);
+    trace('drainPenaltyPool deposited', deposits);
+    await userSeat.getOfferResult();
+    reserveLiquidityTokenSeat.exit();
+    trace('drainPenaltyPool done');
   };
 
   const getLiquiditySupply = brand => getPool(brand).getLiquiditySupply();
   const getLiquidityIssuer = brand => getPool(brand).getLiquidityIssuer();
+  /** @param {Brand} brand */
+  const getIssuer = brand => zcf.getIssuerForBrand(brand);
   const addPoolInvitation = makeAddPoolInvitation(
     zcf,
     initPool,
@@ -233,6 +251,12 @@ const start = async (zcf, privateArgs) => {
     zcf,
     isSecondary,
     secondaryBrandToLiquidityMint,
+    () => {
+      // DISCUSSION: this gumms up all the testing setup to require the reserve to be created AND set onto the AMM
+      // before the AMM can add an issuer
+      assert(reserveDepositFacet, 'Must first setReserveDepositFacet');
+      return E(reserveDepositFacet).addIssuerFromAmm;
+    },
   );
 
   /** @param {Brand} brand */
@@ -321,6 +345,7 @@ const start = async (zcf, privateArgs) => {
       getLiquiditySupply,
       getInputPrice,
       getOutputPrice,
+      getIssuer,
       makeSwapInvitation: makeSwapInInvitation,
       makeSwapInInvitation,
       makeSwapOutInvitation,
@@ -347,6 +372,7 @@ const start = async (zcf, privateArgs) => {
        * @param {AssetReservePublicFacet} facet
        */
       setReserveDepositFacet: facet => {
+        // FIXME more than deposits
         reserveDepositFacet = facet;
       },
     }),

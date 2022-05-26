@@ -12,8 +12,14 @@ const { details: X } = assert;
  * @param {ZCF} zcf
  * @param {(Brand) => boolean} isInSecondaries
  * @param {WeakStore<Brand,ZCFMint>} brandToLiquidityMint
+ * @param {() => (secondaryBrand: Brand) => Promise<void>} getAddIssuerToReserve
  */
-export const makeAddIssuer = (zcf, isInSecondaries, brandToLiquidityMint) => {
+export const makeAddIssuer = (
+  zcf,
+  isInSecondaries,
+  brandToLiquidityMint,
+  getAddIssuerToReserve,
+) => {
   /**
    * @param {Issuer} secondaryIssuer
    * @param {string} keyword
@@ -35,20 +41,27 @@ export const makeAddIssuer = (zcf, isInSecondaries, brandToLiquidityMint) => {
     const liquidityKeyword = `${keyword}Liquidity`;
     zcf.assertUniqueKeyword(liquidityKeyword);
 
-    return E.when(
-      zcf.makeZCFMint(
-        liquidityKeyword,
-        AssetKind.NAT,
-        harden({ decimalPlaces: 6 }),
-      ),
-      /** @param {ZCFMint} mint */
-      async mint => {
-        await zcf.saveIssuer(secondaryIssuer, keyword);
-        brandToLiquidityMint.init(secondaryBrand, mint);
-        const { issuer: liquidityIssuer } = mint.getIssuerRecord();
-        return liquidityIssuer;
-      },
+    const mint = await zcf.makeZCFMint(
+      liquidityKeyword,
+      AssetKind.NAT,
+      harden({ decimalPlaces: 6 }),
     );
+    await zcf.saveIssuer(secondaryIssuer, keyword);
+    const issuer = zcf.getIssuerForBrand(secondaryBrand);
+    console.log(
+      'Saved issuer',
+      secondaryIssuer,
+      'to keyword',
+      keyword,
+      'and got back',
+      issuer,
+    );
+    brandToLiquidityMint.init(secondaryBrand, mint);
+    // DISCUSSION: make the reserve have all the same issuers as they were created
+    const { issuer: liquidityIssuer } = mint.getIssuerRecord();
+    const addIssuerToReserve = getAddIssuerToReserve();
+    await addIssuerToReserve(secondaryBrand);
+    return liquidityIssuer;
   };
 };
 
@@ -61,7 +74,7 @@ export const makeAddIssuer = (zcf, isInSecondaries, brandToLiquidityMint) => {
  * @param {import('./multipoolMarketMaker.js').AMMParamGetters} params retrieve governed params
  * @param {ZCFSeat} protocolSeat seat that holds collected fees
  * @param {WeakStore<Brand,ZCFMint>} brandToLiquidityMint
- * @param {(reserveLiquidityTokenSeat: ZCFSeat, liquidityKeyword: Keyword) => void} onOfferHandled
+ * @param {(secondaryBrand: Brand, reserveLiquidityTokenSeat: ZCFSeat, liquidityKeyword: Keyword) => void} onOfferHandled
  */
 export const makeAddPoolInvitation = (
   zcf,
@@ -162,7 +175,11 @@ export const makeAddPoolInvitation = (
     pool.updateState();
     brandToLiquidityMint.delete(secondaryBrand);
 
-    onOfferHandled(reserveLiquidityTokenSeat, liquidityKeyword);
+    await onOfferHandled(
+      secondaryBrand,
+      reserveLiquidityTokenSeat,
+      liquidityKeyword,
+    );
     return 'Added liquidity.';
   };
 

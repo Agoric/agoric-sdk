@@ -51,9 +51,22 @@ const start = async (zcf, privateArgs) => {
   /**
    * Used to look up the brands for keywords, excluding RUN because it's a special case.
    *
-   * @type {MapStore<Keyword, [brand: Brand, liquidityBrand: Brand]>}
+   * @type {MapStore<Keyword, Brand>}
    */
   const brandForKeyword = makeStore('brands');
+  /**
+   * @type {MapStore<Brand, Brand>}
+   */
+  const liquidityBrandForBrand = makeStore('liquidityBrands');
+
+  /**
+   * @param {Brand} brand
+   * @param {Keyword} keyword
+   */
+  const saveBrandKeyword = (brand, keyword) => {
+    keywordForBrand.init(brand, keyword);
+    brandForKeyword.init(keyword, brand);
+  };
 
   const { augmentPublicFacet, makeGovernorFacet, params } =
     await handleParamGovernance(zcf, privateArgs.initialPoserInvitation, {
@@ -68,7 +81,7 @@ const start = async (zcf, privateArgs) => {
   /** @type {ZCFMint} */
   const runMint = await zcf.registerFeeMint(RunKW, privateArgs.feeMintAccess);
   const runKit = runMint.getIssuerRecord();
-  keywordForBrand.init(runKit.brand, RunKW);
+  saveBrandKeyword(runKit.brand, RunKW);
   // no need to saveIssuer() b/c registerFeeMint does it
 
   /**
@@ -77,20 +90,65 @@ const start = async (zcf, privateArgs) => {
    */
   const addIssuer = async (issuer, keyword) => {
     const brand = await E(issuer).getBrand();
+    trace('addIssuer', { brand, keyword });
     assert(
       keyword !== RunKW && brand !== runKit.brand,
       `${RunKW} is a special case handled by the reserve contract`,
     );
 
-    const liquidityIssuer = E(ammPublicFacet).getLiquidityIssuer(brand);
-    const liquidityBrand = await E(liquidityIssuer).getBrand();
+    trace('addIssuer storing', {
+      keyword,
+      brand,
+    });
 
-    brandForKeyword.init(keyword, [brand, liquidityBrand]);
-    keywordForBrand.init(brand, keyword);
-    return Promise.all([
-      zcf.saveIssuer(issuer, keyword),
-      zcf.saveIssuer(liquidityIssuer, makeLiquidityKeyword(keyword)),
-    ]);
+    saveBrandKeyword(brand, keyword);
+    await zcf.saveIssuer(issuer, keyword);
+  };
+
+  /**
+   * @param {Issuer} baseIssuer on which the liquidity issuer is based
+   */
+  const addLiquidityIssuer = async baseIssuer => {
+    const baseBrand = await zcf.getBrandForIssuer(baseIssuer);
+    const baseKeyword = keywordForBrand.get(baseBrand);
+    const liquidityIssuer = E(ammPublicFacet).getLiquidityIssuer(baseBrand);
+    const liquidityBrand = await E(liquidityIssuer).getBrand();
+    const liquidityKeyword = makeLiquidityKeyword(baseKeyword);
+
+    trace('addLiquidityIssuer', {
+      baseBrand,
+      baseKeyword,
+      liquidityBrand,
+      liquidityKeyword,
+    });
+    saveBrandKeyword(liquidityBrand, liquidityKeyword);
+    liquidityBrandForBrand.init(baseBrand, liquidityBrand);
+
+    await zcf.saveIssuer(liquidityIssuer, liquidityKeyword);
+  };
+
+  /**
+   * @param {Brand} secondaryBrand
+   */
+  const addIssuerFromAmm = async secondaryBrand => {
+    assert(
+      secondaryBrand !== runKit.brand,
+      `${RunKW} is a special case handled by the reserve contract`,
+    );
+
+    const secondaryIssuer = await E(ammPublicFacet).getIssuer(secondaryBrand);
+    // ??? why don't these objects have methods?
+    trace(
+      'addIssuerFromAmm',
+      { secondaryBrand, secondaryIssuer },
+      Reflect.ownKeys(secondaryBrand),
+      Reflect.ownKeys(secondaryIssuer),
+    );
+    // private to the contract
+    // FIXME prevent collisions
+    // const keyword = `${secondaryIssuer.getAllegedName()}`;
+    const keyword = 'Moola';
+    await addIssuer(secondaryIssuer, keyword);
   };
 
   const getKeywordForBrand = brand => {
@@ -107,7 +165,11 @@ const start = async (zcf, privateArgs) => {
     return collateralSeat.getCurrentAllocation();
   };
 
-  // Anyone can deposit collateral to the reserve.
+  /**
+   * Anyone can deposit any assets to the reserve
+   *
+   * @param {ZCFSeat} seat
+   */
   const addCollateralHook = async seat => {
     const {
       give: { Collateral: amountIn },
@@ -192,7 +254,7 @@ const start = async (zcf, privateArgs) => {
       [collateralKeyword]: 'Secondary',
     });
 
-    const [_, liqBrand] = brandForKeyword.get(collateralKeyword);
+    const liqBrand = liquidityBrandForBrand.get(collateralAmount.brand);
     const proposal = harden({
       give: {
         Central: runAmount,
@@ -252,6 +314,8 @@ const start = async (zcf, privateArgs) => {
   const publicFacet = augmentPublicFacet(
     Far('Collateral Reserve public', {
       makeAddCollateralInvitation,
+      addIssuerFromAmm,
+      addLiquidityIssuer,
     }),
   );
 

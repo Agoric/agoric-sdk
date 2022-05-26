@@ -151,3 +151,15 @@ export const mintRunPayment = async (
   );
   return E(ammSupplier).getBootstrapPayment();
 };
+
+/**
+ * @typedef {import('../src/proposals/econ-behaviors.js').EconomyBootstrapPowers} Space
+ *
+ * @param {Space} space
+ * @param {Record<keyof Space['installation']['produce'], Promise<Installation>>} installations
+ */
+export const produceInstallations = (space, installations) => {
+  for (const [key, installation] of Object.entries(installations)) {
+    space.installation.produce[key].resolve(installation);
+  }
+};

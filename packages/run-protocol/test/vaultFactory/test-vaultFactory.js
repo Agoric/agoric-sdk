@@ -29,6 +29,7 @@ import {
   setupReserve,
   startEconomicCommittee,
   startVaultFactory,
+  linkAmmAndReserve,
 } from '../../src/proposals/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
 import * as Collect from '../../src/collect.js';
@@ -47,10 +48,13 @@ import {
   subscriptionTracker,
 } from '../metrics.js';
 
-/** @type {import('ava').TestInterface<Record<string, any> & {
+/** @typedef {Record<string, any> & {
+ * bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>,
  * rates: VaultManagerParamValues,
  * loanTiming: LoanTiming,
- * }>} */
+ * zoe: ZoeService,
+ * }} Context */
+/** @type {import('ava').TestInterface<Context>} */
 // @ts-expect-error cast
 const test = unknownTest;
 
@@ -145,6 +149,11 @@ test.before(async t => {
   trace(t, 'CONTEXT');
 });
 
+/**
+ * @param {import('ava').ExecutionContext<Context>} t
+ * @param {*} aethLiquidity
+ * @param {*} runLiquidity
+ */
 const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   const {
     zoe,
@@ -157,10 +166,15 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   const { consume, instance } = space;
   installGovernance(zoe, space.installation.produce);
   space.installation.produce.amm.resolve(t.context.installation.amm);
+  space.installation.produce.reserve.resolve(t.context.installation.reserve);
   await startEconomicCommittee(space, electorateTerms);
   await setupAmm(space, {
     options: { minInitialPoolLiquidity: 300n },
   });
+
+  trace('Wire in the reserve');
+  await setupReserve(space);
+  await linkAmmAndReserve(space);
 
   const governorCreatorFacet = consume.ammGovernorCreatorFacet;
   const governorInstance = await instance.consume.ammGovernor;
@@ -240,7 +254,7 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
 /**
  * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
  *
- * @param {import('ava').ExecutionContext<any>} t
+ * @param {import('ava').ExecutionContext<Context>} t
  * @param {Array<NatValue> | Ratio} priceOrList
  * @param {Amount | undefined} unitAmountIn
  * @param {TimerService} timer
@@ -283,6 +297,7 @@ const setupServices = async (
     aethLiquidity,
     runLiquidity,
   );
+
   const { consume, produce } = space;
   trace(t, 'amm', { ammFacets });
 

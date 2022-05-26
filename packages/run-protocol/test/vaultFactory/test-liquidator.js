@@ -21,6 +21,7 @@ import {
   startVaultFactory,
   setupAmm,
   setupReserve,
+  linkAmmAndReserve,
 } from '../../src/proposals/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
 import * as Collect from '../../src/collect.js';
@@ -141,13 +142,17 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   const space = setupBootstrap(t, timer);
   const { consume, instance } = space;
   installGovernance(zoe, space.installation.produce);
+  // TODO
   space.installation.produce.amm.resolve(t.context.installation.amm);
-  startEconomicCommittee(space, {
+  space.installation.produce.reserve.resolve(t.context.installation.reserve);
+  await startEconomicCommittee(space, {
     options: { econCommitteeOptions: electorateTerms },
   });
-  setupAmm(space, {
+  await setupAmm(space, {
     options: { minInitialPoolLiquidity: 1000n },
   });
+  await setupReserve(space);
+  await linkAmmAndReserve(space);
 
   const governorCreatorFacet = consume.ammGovernorCreatorFacet;
   const governorInstance = await instance.consume.ammGovernor;
@@ -292,6 +297,7 @@ const setupServices = async (
   iProduce.reserve.resolve(t.context.installation.reserve);
   // produce the reserve instance in the space
   await setupReserve(space);
+  await linkAmmAndReserve(space);
   t.context.reserveCreatorFacet = space.consume.reserveCreatorFacet;
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
   iProduce.liquidate.resolve(t.context.installation.liquidate);
@@ -849,7 +855,8 @@ test('penalties to reserve', async t => {
 
   const { reserveCreatorFacet } = t.context;
   const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
-  t.deepEqual(reserveAllocations, {
+  t.like(reserveAllocations, {
+    MoolaLiquidity: { value: 1000n },
     RUN: { brand: runBrand, value: 29n },
   });
 });

@@ -18,6 +18,9 @@ import * as Collect from '../collect.js';
 import { makeRunStakeTerms } from '../runStake/params.js';
 import { liquidationDetailTerms } from '../vaultFactory/liquidation.js';
 import { makeStakeReporter } from '../my-lien.js';
+import { makeTracer } from '../makeTracer.js';
+
+const trace = makeTracer('RunEconBehaviors', false);
 
 const { details: X } = assert;
 
@@ -34,7 +37,7 @@ const CENTRAL_DENOM_NAME = 'urun';
  * } EconomyBootstrapPowers
  * @typedef {PromiseSpaceOf<{
  *   ammCreatorFacet: XYKAMMCreatorFacet,
- *   ammGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
+ *   ammGovernorCreatorFacet: GovernedContractFacetAccess<XYKAMMCreatorFacet>,
  *   economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet,
  *   bankMints: Mint[],
  *   psmCreatorFacet: unknown,
@@ -211,6 +214,7 @@ export const setupAmm = async (
       privateArgs: { initialPoserInvitation: poserInvitation },
     },
   };
+  /** @type {{ creatorFacet: GovernedContractFacetAccess<XYKAMMCreatorFacet>, publicFacet: GovernorPublic, instance: Instance }} */
   const g = await E(zoe).startInstance(
     governorInstallation,
     {},
@@ -261,6 +265,9 @@ export const setupReserve = async ({
     },
   },
 }) => {
+  trace('setupReserve');
+  await reserveInstallation;
+  trace({ reserveInstallation });
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
   const [poserInvitation, poserInvitationAmount] = await Promise.all([
     poserInvitationP,
@@ -283,6 +290,7 @@ export const setupReserve = async ({
       privateArgs: { feeMintAccess, initialPoserInvitation: poserInvitation },
     },
   };
+  /** @type {{ creatorFacet: GovernedContractFacetAccess<AssetReserveCreatorFacet>, publicFacet: GovernorPublic, instance: Instance }} */
   const g = await E(zoe).startInstance(
     governorInstallation,
     {},
@@ -300,6 +308,7 @@ export const setupReserve = async ({
 
   reserveGovernorCreatorFacet.resolve(g.creatorFacet);
   reserveCreatorFacet.resolve(creatorFacet);
+  // @ts-expect-error bad types
   reservePublicFacet.resolve(publicFacet);
 
   reserveInstanceProducer.resolve(instance);
@@ -340,6 +349,7 @@ export const startVaultFactory = async (
   } = {},
   minInitialDebt = 5_000_000n,
 ) => {
+  trace('startVaultFactory');
   const installations = await Collect.allValues({
     VaultFactory,
     liquidate,
@@ -587,6 +597,7 @@ export const startRewardDistributor = async ({
     consume: { RUN: centralBrandP },
   },
 }) => {
+  trace('startRewardDistributor');
   const epochTimerService = await chainTimerService;
   const distributorParams = {
     epochInterval: 60n * 60n, // 1 hour
@@ -786,3 +797,17 @@ export const startRunStake = async (
   ]);
 };
 harden(startRunStake);
+
+/**
+ * @param {EconomyBootstrapPowers} space
+ */
+export const linkAmmAndReserve = async space => {
+  trace('linkAmmAndReserve');
+  const reserveInstance = await space.instance.consume.reserve;
+  trace({ reserveInstance });
+  const reservePublicFacet = await E(space.consume.zoe).getPublicFacet(
+    reserveInstance,
+  );
+  const ammCreatorFacet = await space.consume.ammCreatorFacet;
+  await E(ammCreatorFacet).setReserveDepositFacet(reservePublicFacet);
+};

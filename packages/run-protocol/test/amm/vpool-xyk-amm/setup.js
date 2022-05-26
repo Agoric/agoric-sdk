@@ -124,7 +124,6 @@ export const setupAmmServices = async (
       },
     }),
   ]);
-  trace('setupReserve');
   await setupReserve(space);
 
   const installs = await Collect.allValues({
