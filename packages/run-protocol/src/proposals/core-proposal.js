@@ -67,6 +67,7 @@ const SHARED_MAIN_MANIFEST = harden({
       zoe: 'zoe',
       priceAuthority: 'priceAuthority',
       economicCommitteeCreatorFacet: 'economicCommittee',
+      reserveCreatorFacet: 'reserve',
     },
     produce: {
       vaultFactoryCreator: 'VaultFactory',

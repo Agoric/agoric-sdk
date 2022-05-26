@@ -257,6 +257,20 @@ export function buildDevice(tools, endowments) {
           }
           return returnCapForBundleID(bundleID);
         }
+        // D(devices.bundle).getBundleIDByName(name) -> id
+        if (method === 'getBundleIDByName') {
+          const args = unserialize(argsCapdata);
+          const [name] = args;
+          assert.typeof(name, 'string', `getBundleIDByName() name`);
+          let bundleID;
+          try {
+            // this throws on a bad name, so make a better error
+            bundleID = getNamedBundleID(name);
+          } catch (e) {
+            throw Error(`unregistered bundle name '${name}'`);
+          }
+          return returnFromInvoke(bundleID);
+        }
         throw TypeError(`target[${method}] does not exist`);
       }
 

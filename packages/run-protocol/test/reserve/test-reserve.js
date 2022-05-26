@@ -11,6 +11,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 
 import { setupReserveServices } from './setup.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
+import { subscriptionTracker } from '../metrics.js';
 
 // Some notifier updates aren't propogating sufficiently quickly for the tests.
 // This invocation (thanks to Warner) waits for all promises that can fire to
@@ -337,4 +338,63 @@ test('request more collateral than available', async t => {
     }),
     'expecting more',
   );
+});
+
+test('reserve track shortfall', async t => {
+  /** @param {NatValue} value */
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+  const timer = buildManualTimer(console.log);
+
+  const { reserve, space, zoe } = await setupReserveServices(
+    t,
+    electorateTerms,
+    timer,
+  );
+
+  const runBrand = await space.brand.consume.RUN;
+
+  const shortfallReporterSeat = await E(zoe).offer(
+    E(reserve.reserveCreatorFacet).makeShortfallReportingInvitation(),
+  );
+  const reporterFacet = await E(shortfallReporterSeat).getOfferResult();
+
+  await E(reporterFacet).increaseLiquidationShortfall(
+    AmountMath.make(runBrand, 1000n),
+  );
+  let runningShortfall = 1000n;
+
+  const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
+  const m = await subscriptionTracker(t, metricsSub);
+  await m.assertInitial({
+    allocations: {},
+    shortfallBalance: AmountMath.makeEmpty(runBrand),
+  });
+  await m.assertChange({
+    shortfallBalance: { value: runningShortfall },
+  });
+
+  await E(reporterFacet).increaseLiquidationShortfall(
+    AmountMath.make(runBrand, 500n),
+  );
+  runningShortfall += 500n;
+
+  await m.assertChange({
+    shortfallBalance: { value: runningShortfall },
+  });
+
+  await E(reporterFacet).reduceLiquidationShortfall(
+    AmountMath.make(runBrand, 200n),
+  );
+  runningShortfall -= 200n;
+  await m.assertChange({
+    shortfallBalance: { value: runningShortfall },
+  });
+
+  await E(reporterFacet).reduceLiquidationShortfall(
+    AmountMath.make(runBrand, 2000n),
+  );
+  runningShortfall = 0n;
+  await m.assertChange({
+    shortfallBalance: { value: runningShortfall },
+  });
 });

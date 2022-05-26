@@ -208,6 +208,9 @@ export function buildRootObject(vatPowers) {
       getNamedBundleCap(name) {
         return D(vatAdminNode).getNamedBundleCap(name);
       },
+      getBundleIDByName(name) {
+        return D(vatAdminNode).getBundleIDByName(name);
+      },
       createMeter(remaining, threshold) {
         return makeMeter(remaining, threshold);
       },

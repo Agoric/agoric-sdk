@@ -58,10 +58,13 @@ export const RPC_BROADCAST_TIMEOUT_S = 30;
 export const RPC_MAX_BODY_BYTES = 15_000_000;
 
 export const EPOCH_DURATION_S = 60 * 60; // 1 hour
-export const BLOCKS_PER_EPOCH = Math.floor(EPOCH_DURATION_S / BLOCK_CADENCE_S);
+export const BLOCKS_PER_EPOCH =
+  BigInt(EPOCH_DURATION_S) / BigInt(BLOCK_CADENCE_S);
+export const PER_EPOCH_REWARD_FRACTION = '0.1';
 
 export const ORIG_BLOCK_CADENCE_S = 5;
 export const ORIG_SIGNED_BLOCKS_WINDOW = 100;
+export const SIGNED_BLOCKS_WINDOW_BASE_MULTIPLIER = 100;
 
 export const DEFAULT_GRPC_PORT = 9090;
 export const DEFAULT_RPC_PORT = 26657;
@@ -192,9 +195,12 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
 
   // We scale this parameter according to our own block cadence, so
   // that we tolerate the same downtime as the old genesis.
-  genesis.app_state.slashing.params.signed_blocks_window = `${Math.ceil(
-    (ORIG_BLOCK_CADENCE_S * ORIG_SIGNED_BLOCKS_WINDOW) / BLOCK_CADENCE_S,
-  )}`;
+  genesis.app_state.slashing.params.signed_blocks_window = `${
+    SIGNED_BLOCKS_WINDOW_BASE_MULTIPLIER *
+    Math.ceil(
+      (ORIG_BLOCK_CADENCE_S * ORIG_SIGNED_BLOCKS_WINDOW) / BLOCK_CADENCE_S,
+    )
+  }`;
 
   // Zero inflation, for now.
   genesis.app_state.mint.minter.inflation = '0.0';
@@ -212,16 +218,17 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
 
   // Until we have epoched distribution, we manually set the fee disbursement.
   if (
-    genesis.app_state.vbank.params &&
-    genesis.app_state.vbank.params.fee_epoch_duration_blocks
+    genesis.app_state.vbank.params?.reward_epoch_duration_blocks !== undefined
   ) {
-    genesis.app_state.vbank.params.fee_epoch_duration_blocks = BLOCKS_PER_EPOCH;
+    genesis.app_state.vbank.params.reward_epoch_duration_blocks = `${BLOCKS_PER_EPOCH}`;
   }
-
-  // Use the same consensus_params.
-  if ('consensus_params' in exported) {
-    genesis.consensus_params = exported.consensus_params;
-  }
+  genesis.app_state.vbank.params.per_epoch_reward_fraction =
+    PER_EPOCH_REWARD_FRACTION;
+  if (genesis.app)
+    if ('consensus_params' in exported) {
+      // Use the same consensus_params.
+      genesis.consensus_params = exported.consensus_params;
+    }
 
   // Give some continuity between chains.
   if ('initial_height' in exported) {

@@ -46,6 +46,7 @@ test('bundles', async t => {
   // We save this vat bundle (with 'disk()') to disk, to exercise
   // config.bundles.NAME.bundleSpec
   const diskBundle = await bundleSource(bfile('vat-disk.js'));
+  const diskBundleID = `b1-${diskBundle.endoZipBase64Sha512}`;
   const diskBundleFilename = bfile('bundle-disk.bundle');
   fs.writeFileSync(diskBundleFilename, JSON.stringify(diskBundle));
   t.teardown(() => fs.unlinkSync(diskBundleFilename));
@@ -120,6 +121,15 @@ test('bundles', async t => {
 
   // vatAdminService~.createVatByName() still works, TODO until we remove it
   await check('vatByName', ['named', 'hi'], ['hello']);
+
+  await check('idByName', ['disk'], diskBundleID);
+
+  // prints "unregistered bundle name 'missing'" to log
+  await checkRejects(
+    'idByName',
+    ['missing'],
+    Error('syscall.callNow failed: device.invoke failed, see logs for details'),
+  );
 
   // vatAdminService~.getBundleCap(invalidBundleID) should reject
   await checkRejects(

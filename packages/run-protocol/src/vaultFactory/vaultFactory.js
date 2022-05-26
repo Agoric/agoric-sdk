@@ -37,15 +37,17 @@ import { makeVaultDirector } from './vaultDirector.js';
  *   priceAuthority: ERef<PriceAuthority>,
  *   reservePublicFacet: AssetReservePublicFacet,
  *   timerService: TimerService,
+ *   shortfallInvitation: 'invitation',
  * }>} VaultFactoryZCF
  */
 
 /**
  * @param {VaultFactoryZCF} zcf
- * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation}} privateArgs
+ * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation, initialShortfallInvitation: Invitation}} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
-  const { feeMintAccess, initialPoserInvitation } = privateArgs;
+  const { feeMintAccess, initialPoserInvitation, initialShortfallInvitation } =
+    privateArgs;
   const debtMint = await zcf.registerFeeMint('RUN', feeMintAccess);
   zcf.setTestJig(() => ({
     runIssuerRecord: debtMint.getIssuerRecord(),
@@ -63,6 +65,7 @@ export const start = async (zcf, privateArgs) => {
     liqInstall,
     liqTerms,
     minInitialDebt,
+    initialShortfallInvitation,
   );
 
   assertElectorateMatches(
