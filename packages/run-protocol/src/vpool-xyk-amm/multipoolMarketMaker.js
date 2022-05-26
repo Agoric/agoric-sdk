@@ -248,8 +248,6 @@ const start = async (zcf, privateArgs) => {
     isSecondary,
     secondaryBrandToLiquidityMint,
     () => {
-      // DISCUSSION: this gumms up all the testing setup to require the reserve to be created AND set onto the AMM
-      // before the AMM can add an issuer
       assert(reserveDepositFacet, 'Must first setReserveDepositFacet');
       return E(reserveDepositFacet).addIssuerFromAmm;
     },
