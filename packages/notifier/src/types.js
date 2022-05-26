@@ -12,6 +12,7 @@
 
 /**
  * Deprecated. Use PromiseKit instead.
+ *
  * @template T
  * @typedef {import('@endo/promise-kit').PromiseRecord<T>} PromiseRecord
  */

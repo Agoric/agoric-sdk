@@ -2,12 +2,12 @@
 /// <reference types="ses"/>
 
 import { assert } from '@agoric/assert';
-import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeAsyncIterableFromNotifier } from './asyncIterableAdaptor.js';
 
 import './types.js';
+import { makeEmptyPublishKit } from './publish-kit.js';
 
 /**
  * @template T
@@ -51,35 +51,21 @@ export const makeNotifier = sharableInternalsP => {
  * @returns {NotifierRecord<T>} the notifier and updater
  */
 export const makeNotifierKit = (...initialStateArr) => {
-  /** @type {PromiseKit<UpdateRecord<T>>|undefined} */
-  let optNextPromiseKit;
-  /** @type {UpdateCount} */
-  let currentUpdateCount = 1; // avoid falsy numbers
-  /** @type {UpdateRecord<T>|undefined} */
-  let currentResponse;
-
-  const hasState = () => currentResponse !== undefined;
-
-  const final = () => currentUpdateCount === undefined;
+  const { publisher, subscriber } = makeEmptyPublishKit();
 
   const baseNotifier = Far('baseNotifier', {
     // NaN matches nothing
-    getUpdateSince(updateCount = NaN) {
-      if (
-        hasState() &&
-        (final() ||
-          (currentResponse && currentResponse.updateCount !== updateCount))
-      ) {
-        // If hasState() and either it is final() or it is
-        // not the state of updateCount, return the current state.
-        assert(currentResponse !== undefined);
-        return Promise.resolve(currentResponse);
-      }
-      // otherwise return a promise for the next state.
-      if (!optNextPromiseKit) {
-        optNextPromiseKit = makePromiseKit();
-      }
-      return optNextPromiseKit.promise;
+    getUpdateSince(baseUpdateCount = NaN) {
+      const basePublishCount = Number.isNaN(baseUpdateCount)
+        ? -BigInt(1) // See https://github.com/Agoric/agoric-sdk/issues/5438
+        : BigInt(baseUpdateCount);
+      return E.when(
+        subscriber.subscribeAfter(basePublishCount),
+        ({ head: { value, done }, publishCount }) => {
+          const updateCount = done ? undefined : Number(publishCount);
+          return harden({ value, updateCount });
+        },
+      );
     },
   });
 
@@ -89,56 +75,9 @@ export const makeNotifierKit = (...initialStateArr) => {
   });
 
   const updater = Far('updater', {
-    updateState(state) {
-      if (final()) {
-        throw new Error('Cannot update state after termination.');
-      }
-
-      // become hasState() && !final()
-      assert(currentUpdateCount);
-      currentUpdateCount += 1;
-      currentResponse = harden({
-        value: state,
-        updateCount: currentUpdateCount,
-      });
-      if (optNextPromiseKit) {
-        optNextPromiseKit.resolve(currentResponse);
-        optNextPromiseKit = undefined;
-      }
-    },
-
-    finish(finalState) {
-      if (final()) {
-        throw new Error('Cannot finish after termination.');
-      }
-
-      // become hasState() && final()
-      currentUpdateCount = undefined;
-      currentResponse = harden({
-        value: finalState,
-        updateCount: currentUpdateCount,
-      });
-      if (optNextPromiseKit) {
-        optNextPromiseKit.resolve(currentResponse);
-        optNextPromiseKit = undefined;
-      }
-    },
-
-    fail(reason) {
-      if (final()) {
-        throw new Error('Cannot fail after termination.');
-      }
-
-      // become !hasState() && final()
-      currentUpdateCount = undefined;
-      currentResponse = undefined;
-      if (!optNextPromiseKit) {
-        optNextPromiseKit = makePromiseKit();
-      }
-      // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-      optNextPromiseKit.promise.catch(_ => {});
-      optNextPromiseKit.reject(reason);
-    },
+    updateState: publisher.publish,
+    finish: publisher.finish,
+    fail: publisher.fail,
   });
 
   assert(initialStateArr.length <= 1, 'too many arguments');
