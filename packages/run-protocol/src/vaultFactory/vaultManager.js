@@ -6,13 +6,13 @@ import { E } from '@endo/eventual-send';
 import { Nat } from '@agoric/nat';
 import {
   assertProposalShape,
-  makeRatioFromAmounts,
-  getAmountOut,
-  getAmountIn,
-  ceilMultiplyBy,
   ceilDivideBy,
-  makeRatio,
+  ceilMultiplyBy,
   floorDivideBy,
+  getAmountIn,
+  getAmountOut,
+  makeRatio,
+  makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import {
   makeNotifierKit,
@@ -447,6 +447,12 @@ const helperBehavior = {
         trace('liquidated');
         state.numLiquidationsCompleted += 1;
         facets.helper.updateMetrics();
+
+        if (!AmountMath.isEmpty(accounting.shortfall)) {
+          E(factoryPowers.getShortfallReporter()).increaseLiquidationShortfall(
+            accounting.shortfall,
+          );
+        }
       })
       .catch(e => {
         // XXX should notify interested parties

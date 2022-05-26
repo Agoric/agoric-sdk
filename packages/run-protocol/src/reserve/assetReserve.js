@@ -5,6 +5,7 @@ import { makeStore } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeSubscriptionKit } from '@agoric/notifier';
 
 import { AMM_INSTANCE } from './params.js';
 import { makeTracer } from '../makeTracer.js';
@@ -14,6 +15,14 @@ const trace = makeTracer('Reserve', true);
 const makeLiquidityKeyword = keyword => `${keyword}Liquidity`;
 
 const RunKW = 'RUN';
+
+/**
+ * @typedef {object} MetricsNotification
+ *
+ * @property {AmountKeywordRecord} allocations
+ * @property {Amount<'nat'>} shortfallBalance shortfall from liquiditation that
+ *   has not yet been compensated.
+ */
 
 /**
  * Asset Reserve holds onto assets for the RUN protocol, and can
@@ -118,6 +127,37 @@ const start = async (zcf, privateArgs) => {
   const makeAddCollateralInvitation = () =>
     zcf.makeInvitation(addCollateralHook, 'Add Collateral');
 
+  const { brand: runBrand } = await E(runMint).getIssuerRecord();
+  /** @type {SubscriptionRecord<MetricsNotification>} */
+  const { publication: metricsPublication, subscription: metricsSubscription } =
+    makeSubscriptionKit();
+
+  // shortfall in Vaults due to liquidations less than debt. This value can be
+  // reduced by various actions which burn RUN.
+  let shortfallBalance = AmountMath.makeEmpty(runBrand);
+
+  const updateMetrics = () => {
+    const metrics = harden({
+      allocations: getAllocations(),
+      shortfallBalance,
+    });
+    metricsPublication.updateState(metrics);
+  };
+  updateMetrics();
+
+  const increaseLiquidationShortfall = shortfall => {
+    shortfallBalance = AmountMath.add(shortfallBalance, shortfall);
+    updateMetrics();
+  };
+  const reduceLiquidationShortfall = reduction => {
+    if (AmountMath.isGTE(reduction, shortfallBalance)) {
+      shortfallBalance = AmountMath.makeEmptyFromAmount(shortfallBalance);
+    } else {
+      shortfallBalance = AmountMath.subtract(shortfallBalance, reduction);
+    }
+    updateMetrics();
+  };
+
   // Takes collateral from the reserve, mints RUN to accompany it, and uses both
   // to add Liquidity to a pool in the AMM.
   const addLiquidityToAmmPool = async (collateralAmount, runAmount) => {
@@ -182,12 +222,29 @@ const start = async (zcf, privateArgs) => {
     zcf.reallocate(offerToSeat, collateralSeat);
   };
 
+  const makeShortfallReportingInvitation = () => {
+    const handleShortfallReportingOffer = () => {
+      return Far('shortfallReporter', {
+        increaseLiquidationShortfall,
+        // currently exposed for testing. Maybe it only gets called internally?
+        reduceLiquidationShortfall,
+      });
+    };
+
+    return zcf.makeInvitation(
+      handleShortfallReportingOffer,
+      'getFacetForReportingShortfalls',
+    );
+  };
+
   const creatorFacet = makeGovernorFacet(
     {
       makeAddCollateralInvitation,
       // add makeRedeemLiquidityTokensInvitation later. For now just store them
       getAllocations,
       addIssuer,
+      makeShortfallReportingInvitation,
+      getMetrics: () => metricsSubscription,
     },
     { addLiquidityToAmmPool },
   );
@@ -204,6 +261,11 @@ const start = async (zcf, privateArgs) => {
 harden(start);
 
 export { start };
+
+/**
+ * @typedef {object} ShortfallReporter
+ * @property {(shortfall: Amount) => void} increaseLiquidationShortfall
+ */
 
 /** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} AssetReservePublicFacet */
 /** @typedef {Awaited<ReturnType<typeof start>>['creatorFacet']} AssetReserveCreatorFacet */

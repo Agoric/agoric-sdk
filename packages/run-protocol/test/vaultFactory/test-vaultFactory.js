@@ -6,11 +6,11 @@ import '@agoric/zoe/exported.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
-  makeRatio,
   ceilMultiplyBy,
+  makeRatio,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
@@ -25,23 +25,27 @@ import {
   RECORDING_PERIOD_KEY,
 } from '../../src/vaultFactory/params.js';
 import {
-  startEconomicCommittee,
-  startVaultFactory,
   setupAmm,
   setupReserve,
+  startEconomicCommittee,
+  startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
 import * as Collect from '../../src/collect.js';
 import { calculateCurrentDebt } from '../../src/interest-math.js';
 
 import {
-  waitForPromisesToSettle,
-  setUpZoeForTest,
-  setupBootstrap,
   installGovernance,
+  setupBootstrap,
+  setUpZoeForTest,
+  waitForPromisesToSettle,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
-import { metricsTracker, vaultManagerMetricsTracker } from '../metrics.js';
+import {
+  metricsTracker,
+  vaultManagerMetricsTracker,
+  subscriptionTracker,
+} from '../metrics.js';
 
 /** @type {import('ava').TestInterface<Record<string, any> & {
  * rates: VaultManagerParamValues,
@@ -317,6 +321,8 @@ const setupServices = async (
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
   /** @type {Promise<VaultFactory & LimitedCreatorFacet<VaultFactory>>} */
   const vaultFactoryCreatorFacetP = E(governorCreatorFacet).getCreatorFacet();
+  const reserveCreatorFacet = consume.reserveCreatorFacet;
+  const reserveFacets = { reserveCreatorFacet };
 
   // Add a vault that will lend on aeth collateral
   /** @type {Promise<VaultManager>} */
@@ -367,6 +373,7 @@ const setupServices = async (
     ammFacets,
     runKit: { issuer: runIssuer, brand: runBrand },
     priceAuthority,
+    reserveFacets,
   };
 };
 // #endregion
@@ -522,6 +529,7 @@ test('price drop', async t => {
   const {
     vaultFactory: { vaultFactory, lender },
     priceAuthority,
+    reserveFacets: { reserveCreatorFacet },
   } = services;
 
   // Create a loan for 270 RUN with 400 aeth collateral
@@ -615,6 +623,16 @@ test('price drop', async t => {
     RUN: AmountMath.make(runBrand, 14n),
   });
 
+  const metricsSub = await E(reserveCreatorFacet).getMetrics();
+  const m = await subscriptionTracker(t, metricsSub);
+  await m.assertInitial({
+    allocations: {},
+    shortfallBalance: AmountMath.makeEmpty(runBrand),
+  });
+  await m.assertChange({
+    shortfallBalance: { value: 30n },
+  });
+
   /** @type {UserSeat<string>} */
   const closeSeat = await E(zoe).offer(E(vault).makeCloseInvitation());
   await E(closeSeat).getOfferResult();
@@ -665,6 +683,7 @@ test('price falls precipitously', async t => {
   );
   const { vaultFactory, lender } = services.vaultFactory;
 
+  const { reserveCreatorFacet } = services.reserveFacets;
   // Create a loan for 370 RUN with 400 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 400n);
   const loanAmount = AmountMath.make(runBrand, 370n);
@@ -726,6 +745,13 @@ test('price falls precipitously', async t => {
     );
   };
 
+  const metricsSub = await E(reserveCreatorFacet).getMetrics();
+  const m = await subscriptionTracker(t, metricsSub);
+  await m.assertInitial({
+    allocations: {},
+    shortfallBalance: AmountMath.makeEmpty(runBrand),
+  });
+
   await manualTimer.tick();
   await assertDebtIs(debtAmount.value);
 
@@ -767,6 +793,10 @@ test('price falls precipitously', async t => {
     debtAfterLiquidation,
     'Liquidation didn’t fully cover debt',
   );
+
+  await m.assertChange({
+    shortfallBalance: { value: 103n },
+  });
 
   const finalNotification = await E(vaultNotifier).getUpdateSince();
   t.is(finalNotification.value.vaultState, Phase.LIQUIDATED);
@@ -1596,7 +1626,16 @@ test('mutable liquidity triggers and interest', async t => {
   const {
     vaultFactory: { lender },
     priceAuthority,
+    reserveFacets: { reserveCreatorFacet },
   } = services;
+
+  const metricsSub = await E(reserveCreatorFacet).getMetrics();
+  const m = await subscriptionTracker(t, metricsSub);
+  await m.assertInitial({
+    allocations: {},
+    shortfallBalance: AmountMath.makeEmpty(runBrand),
+  });
+  let shortfallBalance = 0n;
 
   // initial loans /////////////////////////////////////
 
@@ -1727,6 +1766,11 @@ test('mutable liquidity triggers and interest', async t => {
   trace(t, 'alice liquidating?', aliceUpdate.value.vaultState);
   t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATING);
 
+  shortfallBalance += 1900n;
+  await m.assertChange({
+    shortfallBalance: { value: shortfallBalance },
+  });
+
   // XXX this causes BOB to get liquidated, which is suspicious. Revisit this test case
   await waitForPromisesToSettle();
   bobUpdate = await E(bobNotifier).getUpdateSince();
@@ -1779,6 +1823,11 @@ test('mutable liquidity triggers and interest', async t => {
   bobUpdate = await E(bobNotifier).getUpdateSince();
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
   trace(t, 'bob liquidated');
+
+  shortfallBalance += 42n;
+  await m.assertChange({
+    shortfallBalance: { value: shortfallBalance },
+  });
 });
 
 test('bad chargingPeriod', async t => {
