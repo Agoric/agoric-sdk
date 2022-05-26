@@ -53,6 +53,11 @@ export function buildRootObject(vatPowers) {
       return [hello];
     },
 
+    async idByName(name) {
+      const id = await E(vatAdmin).getBundleIDByName(name);
+      return id;
+    },
+
     async vatFromID(id, method) {
       const bcap = await E(vatAdmin).getBundleCap(id);
       const { root } = await E(vatAdmin).createVat(bcap);

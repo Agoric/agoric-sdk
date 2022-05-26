@@ -18,17 +18,17 @@ type Keeper struct {
 	cdc        codec.Codec
 	paramSpace paramtypes.Subspace
 
-	accountKeeper    types.AccountKeeper
-	bankKeeper       types.BankKeeper
-	feeCollectorName string
-	PushAction       vm.ActionPusher
+	accountKeeper         types.AccountKeeper
+	bankKeeper            types.BankKeeper
+	rewardDistributorName string
+	PushAction            vm.ActionPusher
 }
 
 // NewKeeper creates a new vbank Keeper instance
 func NewKeeper(
 	cdc codec.Codec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
 	accountKeeper types.AccountKeeper, bankKeeper types.BankKeeper,
-	feeCollectorName string,
+	rewardDistributorName string,
 	pushAction vm.ActionPusher,
 ) Keeper {
 
@@ -38,13 +38,13 @@ func NewKeeper(
 	}
 
 	return Keeper{
-		storeKey:         key,
-		cdc:              cdc,
-		paramSpace:       paramSpace,
-		accountKeeper:    accountKeeper,
-		bankKeeper:       bankKeeper,
-		feeCollectorName: feeCollectorName,
-		PushAction:       pushAction,
+		storeKey:              key,
+		cdc:                   cdc,
+		paramSpace:            paramSpace,
+		accountKeeper:         accountKeeper,
+		bankKeeper:            bankKeeper,
+		rewardDistributorName: rewardDistributorName,
+		PushAction:            pushAction,
 	}
 }
 
@@ -60,8 +60,8 @@ func (k Keeper) StoreRewardCoins(ctx sdk.Context, amt sdk.Coins) error {
 	return k.bankKeeper.MintCoins(ctx, types.ModuleName, amt)
 }
 
-func (k Keeper) SendCoinsToFeeCollector(ctx sdk.Context, amt sdk.Coins) error {
-	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ModuleName, k.feeCollectorName, amt)
+func (k Keeper) SendCoinsToRewardDistributor(ctx sdk.Context, amt sdk.Coins) error {
+	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ModuleName, k.rewardDistributorName, amt)
 }
 
 func (k Keeper) SendCoins(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coins) error {
