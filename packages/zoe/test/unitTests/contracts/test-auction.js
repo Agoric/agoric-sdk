@@ -201,7 +201,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
   };
 
   // Setup Alice
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const alice = await makeAlice(timer, moolaKit.mint.mintPayment(moola(1n)));
   const installation = await alice.installCode();
 
@@ -273,7 +273,7 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
     Asset: moolaR.issuer,
     Ask: simoleanR.issuer,
   });
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const terms = harden({ timeAuthority: timer, bidDuration: 1n });
   const { creatorInvitation: aliceInvitation } = await E(zoe).startInstance(
     installation,
@@ -423,7 +423,7 @@ test('zoe - secondPriceAuction - all bidders try to exit', async t => {
     Asset: moolaR.issuer,
     Ask: simoleanR.issuer,
   });
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const terms = harden({ timeAuthority: timer, bidDuration: 1n });
   const { creatorInvitation: aliceInvitation } = await E(zoe).startInstance(
     installation,
@@ -567,7 +567,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     Asset: ccIssuer,
     Ask: moolaIssuer,
   });
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const terms = harden({ timeAuthority: timer, bidDuration: 1n });
   const { creatorInvitation: aliceInvitation } = await E(zoe).startInstance(
     installation,
@@ -1004,7 +1004,7 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
   };
 
   // Setup Alice
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const alice = await makeAlice(timer, moolaKit.mint.mintPayment(moola(1n)));
   const installation = await alice.installCode();
 

@@ -60,7 +60,7 @@ test('loan - lend - exit before borrow', async t => {
     Loan: loanKit.issuer,
   });
 
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   const priceAuthority = makeFakePriceAuthority({
     priceList: [],

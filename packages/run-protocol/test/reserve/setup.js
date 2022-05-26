@@ -71,7 +71,7 @@ const setupReserveBootstrap = async (
 export const setupReserveServices = async (
   t,
   electorateTerms,
-  timer = buildManualTimer(console.log),
+  timer = buildManualTimer(t.log),
 ) => {
   const farZoeKit = await setUpZoeForTest();
   const { feeMintAccess, zoe } = farZoeKit;

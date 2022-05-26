@@ -36,7 +36,7 @@ test('makeAddCollateralInvitation', async t => {
 
   const { zcfSeat: lenderSeat } = await zcf.makeEmptySeatKit();
 
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   const priceAuthority = makeFakePriceAuthority({
     priceList: [],

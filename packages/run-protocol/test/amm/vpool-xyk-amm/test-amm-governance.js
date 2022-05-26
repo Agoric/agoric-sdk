@@ -46,7 +46,7 @@ test('start Economic Committee', async t => {
 test('amm change param via Governance', async t => {
   const centralR = makeIssuerKit('central');
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   const { zoe, amm, committeeCreator, governor, installs, invitationAmount } =
     await setupAmmServices(t, electorateTerms, centralR, timer);
@@ -110,7 +110,7 @@ test('price check after Governance param change', async t => {
   const moola = value => AmountMath.make(moolaR.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   const { zoe, amm, committeeCreator, governor, installs, invitationAmount } =
     await setupAmmServices(t, electorateTerms, centralR, timer);

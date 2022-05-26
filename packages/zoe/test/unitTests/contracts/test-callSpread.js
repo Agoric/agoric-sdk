@@ -64,7 +64,7 @@ test('fundedCallSpread below Strike1', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(console.log, 0n);
+  const manualTimer = buildManualTimer(t.log, 0n);
   const priceAuthority = makeTestPriceAuthority(
     brands,
     [54, 20, 35, 15, 28],
@@ -170,7 +170,7 @@ test('fundedCallSpread above Strike2', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(console.log, 0n);
+  const manualTimer = buildManualTimer(t.log, 0n);
   const priceAuthority = makeTestPriceAuthority(brands, [20, 55], manualTimer);
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
@@ -269,7 +269,7 @@ test('fundedCallSpread, mid-strike', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(console.log, 0n);
+  const manualTimer = buildManualTimer(t.log, 0n);
   const priceAuthority = makeTestPriceAuthority(brands, [20, 45], manualTimer);
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
@@ -367,7 +367,7 @@ test('fundedCallSpread, late exercise', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(console.log, 0n);
+  const manualTimer = buildManualTimer(t.log, 0n);
   const priceAuthority = makeTestPriceAuthority(brands, [20, 45], manualTimer);
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
@@ -469,7 +469,7 @@ test('fundedCallSpread, sell options', async t => {
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
   const carolBucksPayment = bucksMint.mintPayment(bucks(100n));
 
-  const manualTimer = buildManualTimer(console.log, 0n);
+  const manualTimer = buildManualTimer(t.log, 0n);
   const priceAuthority = makeTestPriceAuthority(brands, [20, 45], manualTimer);
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
@@ -649,7 +649,7 @@ test('pricedCallSpread, mid-strike', async t => {
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
   const carolBucksPayment = bucksMint.mintPayment(bucks(75n));
 
-  const manualTimer = buildManualTimer(console.log, 0n);
+  const manualTimer = buildManualTimer(t.log, 0n);
   const priceAuthority = await makeTestPriceAuthority(
     brands,
     [20, 45, 45, 45, 45, 45, 45],
