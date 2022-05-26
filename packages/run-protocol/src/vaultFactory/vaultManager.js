@@ -326,7 +326,7 @@ const helperBehavior = {
       // eslint-disable-next-line consistent-return
       return facets.helper
         .processLiquidations()
-        .catch(e => console.log('Liquidator failed', e))
+        .catch(e => console.error('Liquidator failed', e))
         .finally(() => {
           liquidationInProgress = false;
         });
@@ -426,7 +426,6 @@ const helperBehavior = {
       factoryPowers.getGovernedParams().getLiquidationPenalty(),
     )
       .then(accounting => {
-        console.log('liquidateAndRemove accounting', accounting);
         state.totalProceedsReceived = AmountMath.add(
           state.totalProceedsReceived,
           accounting.proceeds,

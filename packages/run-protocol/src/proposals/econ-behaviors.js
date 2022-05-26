@@ -612,7 +612,7 @@ export const startRewardDistributor = async ({
       brand: centralBrand,
     })
     .catch(e => {
-      console.log('Cannot create fee collector deposit facet', e);
+      console.error('Cannot create fee collector deposit facet', e);
       return undefined;
     });
 
