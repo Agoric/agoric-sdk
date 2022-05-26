@@ -141,7 +141,8 @@ const start = async (zcf, privateArgs) => {
     let keyword;
     let keywordNum = 0;
     do {
-      keyword = `Reserve${brandName}${keywordNum || ''}`;
+      // 'R' to guarantee leading uppercase
+      keyword = `R${brandName}${keywordNum || ''}`;
       keywordNum += 1;
     } while (brandForKeyword.has(keyword));
     return keyword;

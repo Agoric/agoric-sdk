@@ -349,6 +349,6 @@ test('MinInitialPoolLiquidity to reserve', async t => {
   await waitForPromisesToSettle();
   const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
   t.deepEqual(reserveAllocations, {
-    MoolaLiquidity: AmountMath.make(liquidityBrand, 1000n),
+    RmoolaLiquidity: AmountMath.make(liquidityBrand, 1000n),
   });
 });
