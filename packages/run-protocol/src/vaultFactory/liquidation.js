@@ -9,25 +9,6 @@ import { makeTracer } from '../makeTracer.js';
 const trace = makeTracer('LIQ', false);
 
 /**
- *
- * @param {Amount<'nat'>} debt
- * @param {Amount<'nat'>} proceeds
- */
-const discrepancy = (debt, proceeds) => {
-  if (AmountMath.isGTE(debt, proceeds)) {
-    return {
-      overage: AmountMath.makeEmptyFromAmount(debt),
-      shortfall: AmountMath.subtract(debt, proceeds),
-    };
-  } else {
-    return {
-      overage: AmountMath.subtract(proceeds, debt),
-      shortfall: AmountMath.makeEmptyFromAmount(debt),
-    };
-  }
-};
-
-/**
  * Liquidates a Vault, using the strategy to parameterize the particular
  * contract being used. The strategy provides a KeywordMapping and proposal
  * suitable for `offerTo()`, and an invitation.
@@ -86,7 +67,15 @@ const liquidate = async (
   ]);
   // NB: all the proceeds from AMM sale are on the vault seat instead of a staging seat
 
-  const { shortfall, overage } = discrepancy(debt, proceeds.RUN);
+  const [overage, shortfall] = AmountMath.isGTE(debt, proceeds.RUN)
+    ? [
+        AmountMath.makeEmptyFromAmount(debt),
+        AmountMath.subtract(debt, proceeds.RUN),
+      ]
+    : [
+        AmountMath.subtract(proceeds.RUN, debt),
+        AmountMath.makeEmptyFromAmount(debt),
+      ];
 
   const runToBurn = AmountMath.min(proceeds.RUN, debt);
   trace('before burn', { debt, proceeds, overage, shortfall, runToBurn });
