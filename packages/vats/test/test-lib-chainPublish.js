@@ -17,23 +17,25 @@ test('publishToChainNode', async t => {
     advanceTimer,
     supplyIterationResult,
   } = inputs;
-  publishToChainNode(customAsyncIterable, storageNode, { timerService });
+  publishToChainNode(customAsyncIterable, storageNode, { timerService }).catch(
+    err => t.fail(`unexpected error: ${err}`),
+  );
   await E(Promise).resolve();
 
   supplyIterationResult('foo');
   await E(Promise).resolve().then();
-  t.is(nodeValueHistory.length, 1, 'first result is communicated promptly');
+  t.is(nodeValueHistory.length, 1, 'first result is sent promptly');
   t.deepEqual(
-    nodeValueHistory.pop(),
+    JSON.parse(nodeValueHistory[0]),
     [['0', 'foo']],
     'first result has index 0',
   );
 
   supplyIterationResult('bar');
   await E(Promise).resolve().then();
-  t.is(nodeValueHistory.length, 1, 'second result is communicated promptly');
+  t.is(nodeValueHistory.length, 2, 'second result is sent promptly');
   t.deepEqual(
-    nodeValueHistory.pop(),
+    JSON.parse(nodeValueHistory[1]),
     [
       ['0', 'foo'],
       ['1', 'bar'],
@@ -46,11 +48,11 @@ test('publishToChainNode', async t => {
   await E(Promise).resolve().then();
   t.is(
     nodeValueHistory.length,
-    1,
-    'result following timer advance is communicated promptly',
+    3,
+    'result following timer advance is sent promptly',
   );
   t.deepEqual(
-    nodeValueHistory.pop(),
+    JSON.parse(nodeValueHistory[2]),
     [
       ['0', 'foo'],
       ['1', 'bar'],
@@ -66,11 +68,11 @@ test('publishToChainNode', async t => {
   await E(Promise).resolve().then();
   t.is(
     nodeValueHistory.length,
-    1,
-    'results following multiple timer advances are communicated promptly',
+    4,
+    'results following multiple timer advances are sent promptly',
   );
   t.deepEqual(
-    nodeValueHistory.pop(),
+    JSON.parse(nodeValueHistory[3]),
     [
       ['2', 'baz'],
       ['3', 'qux'],
@@ -80,9 +82,9 @@ test('publishToChainNode', async t => {
 
   supplyIterationResult('quux');
   await E(Promise).resolve().then();
-  t.is(nodeValueHistory.length, 1);
+  t.is(nodeValueHistory.length, 5);
   t.deepEqual(
-    nodeValueHistory.pop(),
+    JSON.parse(nodeValueHistory[4]),
     [
       ['2', 'baz'],
       ['3', 'qux'],
@@ -96,9 +98,9 @@ test('publishToChainNode', async t => {
   advanceTimer();
   supplyIterationResult('corge');
   await E(Promise).resolve().then();
-  t.is(nodeValueHistory.length, 1);
+  t.is(nodeValueHistory.length, 6);
   t.deepEqual(
-    nodeValueHistory.pop(),
+    JSON.parse(nodeValueHistory[5]),
     [
       ['3', 'qux'],
       ['4', 'quux'],
@@ -120,14 +122,16 @@ test('publishToChainNode captures finish value', async t => {
     nodeValueHistory,
     supplyIterationResult,
   } = inputs;
-  publishToChainNode(customAsyncIterable, storageNode, { timerService });
+  publishToChainNode(customAsyncIterable, storageNode, { timerService }).catch(
+    err => t.fail(`unexpected error: ${err}`),
+  );
   await E(Promise).resolve();
 
   supplyIterationResult.finish('foo');
   await E(Promise).resolve().then();
-  t.is(nodeValueHistory.length, 1, 'finish is communicated promptly');
+  t.is(nodeValueHistory.length, 1, 'finish is sent promptly');
   t.deepEqual(
-    nodeValueHistory.pop(),
+    JSON.parse(nodeValueHistory[0]),
     [['finish', 'foo']],
     'result has index "finish"',
   );
@@ -145,14 +149,16 @@ test('publishToChainNode captures fail value', async t => {
     nodeValueHistory,
     supplyIterationResult,
   } = inputs;
-  publishToChainNode(customAsyncIterable, storageNode, { timerService });
+  publishToChainNode(customAsyncIterable, storageNode, { timerService }).catch(
+    err => t.fail(`unexpected error: ${err}`),
+  );
   await E(Promise).resolve();
 
   supplyIterationResult.fail('foo');
   await E(Promise).resolve().then();
-  t.is(nodeValueHistory.length, 1, 'fail is communicated promptly');
+  t.is(nodeValueHistory.length, 1, 'fail is sent promptly');
   t.deepEqual(
-    nodeValueHistory.pop(),
+    JSON.parse(nodeValueHistory[0]),
     [['fail', 'foo']],
     'result has index "fail"',
   );
@@ -178,7 +184,7 @@ test('publishToChainNode custom serialization', async t => {
   publishToChainNode(customAsyncIterable, storageNode, {
     timerService,
     serialize,
-  });
+  }).catch(err => t.fail(`unexpected error: ${err}`));
   await E(Promise).resolve();
 
   supplyIterationResult('foo');
@@ -189,8 +195,8 @@ test('publishToChainNode custom serialization', async t => {
     [['0', 'foo']],
     'first result has index 0',
   );
-  t.is(nodeValueHistory.length, 1, 'first result is communicated promptly');
-  t.is(nodeValueHistory[0], 1, 'first result is output from serialize()');
+  t.is(nodeValueHistory.length, 1, 'first result is sent promptly');
+  t.is(nodeValueHistory[0], '1', 'first result is output from serialize()');
 
   supplyIterationResult('bar');
   await E(Promise).resolve().then();
@@ -203,8 +209,8 @@ test('publishToChainNode custom serialization', async t => {
     ],
     'second result is appended',
   );
-  t.is(nodeValueHistory.length, 2, 'second result is communicated promptly');
-  t.is(nodeValueHistory[1], 2, 'second result is output from serialize()');
+  t.is(nodeValueHistory.length, 2, 'second result is sent promptly');
+  t.is(nodeValueHistory[1], '2', 'second result is output from serialize()');
 
   supplyIterationResult.finish('baz');
   await E(Promise).resolve().then();
@@ -218,8 +224,8 @@ test('publishToChainNode custom serialization', async t => {
     ],
     'finish result is appended',
   );
-  t.is(nodeValueHistory.length, 3, 'finish result is communicated promptly');
-  t.is(nodeValueHistory[2], 3, 'finish result is output from serialize()');
+  t.is(nodeValueHistory.length, 3, 'finish result is sent promptly');
+  t.is(nodeValueHistory[2], '3', 'finish result is output from serialize()');
 });
 
 // TODO: Move to a testing library.
@@ -228,7 +234,7 @@ function getMockInputs(t) {
   const nodeValueHistory = [];
   const storageNode = {
     setValue(val) {
-      nodeValueHistory.push(JSON.parse(val));
+      nodeValueHistory.push(val);
     },
   };
 
