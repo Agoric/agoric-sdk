@@ -255,7 +255,16 @@ const helperBehavior = {
       },
       updateTime,
     );
-    partialAssign(state, stateUpdates);
+
+    // specify keys defensively
+    const { compoundedInterest, latestInterestUpdate, totalDebt } =
+      stateUpdates;
+    partialAssign(state, {
+      compoundedInterest,
+      latestInterestUpdate,
+      totalDebt,
+    });
+
     facets.helper.assetNotify();
     trace('chargeAllVaults complete');
     facets.helper.reschedulePriceCheck();
