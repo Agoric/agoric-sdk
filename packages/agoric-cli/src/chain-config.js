@@ -64,6 +64,7 @@ export const PER_EPOCH_REWARD_FRACTION = '0.1';
 
 export const ORIG_BLOCK_CADENCE_S = 5;
 export const ORIG_SIGNED_BLOCKS_WINDOW = 100;
+export const SIGNED_BLOCKS_WINDOW_BASE_MULTIPLIER = 100;
 
 export const DEFAULT_GRPC_PORT = 9090;
 export const DEFAULT_RPC_PORT = 26657;
@@ -194,9 +195,12 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
 
   // We scale this parameter according to our own block cadence, so
   // that we tolerate the same downtime as the old genesis.
-  genesis.app_state.slashing.params.signed_blocks_window = `${Math.ceil(
-    (ORIG_BLOCK_CADENCE_S * ORIG_SIGNED_BLOCKS_WINDOW) / BLOCK_CADENCE_S,
-  )}`;
+  genesis.app_state.slashing.params.signed_blocks_window = `${
+    SIGNED_BLOCKS_WINDOW_BASE_MULTIPLIER *
+    Math.ceil(
+      (ORIG_BLOCK_CADENCE_S * ORIG_SIGNED_BLOCKS_WINDOW) / BLOCK_CADENCE_S,
+    )
+  }`;
 
   // Zero inflation, for now.
   genesis.app_state.mint.minter.inflation = '0.0';

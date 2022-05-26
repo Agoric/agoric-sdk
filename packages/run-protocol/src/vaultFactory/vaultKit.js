@@ -1,7 +1,7 @@
 // @ts-check
 import '@agoric/zoe/exported.js';
 import { Far } from '@endo/marshal';
-import { makeVaultTitle } from './vaultTitle.js';
+import { makeVaultHolder } from './vaultHolder.js';
 
 /**
  * Create a kit of utilities for use of the vault.
@@ -10,7 +10,7 @@ import { makeVaultTitle } from './vaultTitle.js';
  * @param {Notifier<import('./vaultManager').AssetState>} assetNotifier
  */
 export const makeVaultKit = (vault, assetNotifier) => {
-  const { title, helper } = makeVaultTitle(vault);
+  const { title, helper } = makeVaultHolder(vault);
   const vaultKit = harden({
     publicNotifiers: {
       vault: title.getNotifier(),

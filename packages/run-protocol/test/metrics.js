@@ -10,6 +10,8 @@ import { diff } from 'deep-object-diff';
 export const subscriptionTracker = async (t, subscription) => {
   const metrics = makeNotifierFromAsyncIterable(subscription);
   let notif;
+  const getLastNotif = () => notif;
+
   const assertInitial = async expectedValue => {
     notif = await metrics.getUpdateSince();
     t.deepEqual(notif.value, expectedValue);
@@ -25,7 +27,7 @@ export const subscriptionTracker = async (t, subscription) => {
     notif = await metrics.getUpdateSince(notif.updateCount);
     t.deepEqual(notif.value, expectedState, 'Unexpected state');
   };
-  return { assertChange, assertInitial, assertState };
+  return { assertChange, assertInitial, assertState, getLastNotif };
 };
 
 /**
@@ -37,4 +39,49 @@ export const subscriptionTracker = async (t, subscription) => {
 export const metricsTracker = async (t, publicFacet) => {
   const metricsSub = await E(publicFacet).getMetrics();
   return subscriptionTracker(t, metricsSub);
+};
+
+/**
+ * @param {import('ava').ExecutionContext} t
+ * @param {import('../src/vaultFactory/vaultManager').CollateralManager} publicFacet
+ */
+export const vaultManagerMetricsTracker = async (t, publicFacet) => {
+  let totalDebtEver = 0n;
+  const m = await metricsTracker(t, publicFacet);
+
+  /** @returns {bigint} Proceeds - overage + shortfall */
+  const liquidatedYet = () => {
+    // XXX re-use the state until subscriptions are lossy https://github.com/Agoric/agoric-sdk/issues/5413
+    const { value: v } = m.getLastNotif();
+    const [p, o, s] = [
+      v.totalProceedsReceived,
+      v.totalOverageReceived,
+      v.totalShortfallReceived,
+    ].map(a => a.value);
+    console.log('liquidatedYet', { p, o, s });
+    return p - o + s;
+  };
+
+  /** @param {bigint} delta */
+  const addDebt = delta => {
+    totalDebtEver += delta;
+    const liquidated = liquidatedYet();
+    t.true(
+      liquidated < totalDebtEver,
+      `Liquidated ${liquidated} must be less than total debt ever ${totalDebtEver}`,
+    );
+  };
+
+  const assertFullyLiquidated = () => {
+    const liquidated = liquidatedYet();
+    t.true(
+      totalDebtEver - liquidated <= 1,
+      `Liquidated ${liquidated} must approx equal total debt ever ${totalDebtEver}`,
+    );
+  };
+  return harden({
+    ...m,
+    addDebt,
+    assertFullyLiquidated,
+  });
 };

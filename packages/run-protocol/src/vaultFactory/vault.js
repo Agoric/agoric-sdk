@@ -84,7 +84,7 @@ const validTransitions = {
  * @property {MintAndReallocate} mintAndReallocate
  * @property {(amount: Amount, seat: ZCFSeat) => void} burnAndRecord
  * @property {() => Ratio} getCompoundedInterest
- * @property {(oldDebt: Amount, oldCollateral: Amount, vaultId: VaultId) => void} updateVaultPriority
+ * @property {(oldDebt: Amount, oldCollateral: Amount, vaultId: VaultId) => void} updateVaultAccounting
  * @property {() => import('./vaultManager.js').GovernedParamGetters} getGovernedParams
  */
 
@@ -253,7 +253,7 @@ const helperBehavior = {
     const { helper } = facets;
     helper.updateDebtSnapshot(newDebt);
     // update position of this vault in liquidation priority queue
-    state.manager.updateVaultPriority(
+    state.manager.updateVaultAccounting(
       oldDebt,
       oldCollateral,
       state.idInManager,
@@ -292,7 +292,9 @@ const helperBehavior = {
     const maxRun = await state.manager.maxDebtFor(collateralAmount);
     assert(
       AmountMath.isGTE(maxRun, proposedRunDebt, facets.helper.debtBrand()),
-      X`Requested ${q(proposedRunDebt)} exceeds max ${q(maxRun)}`,
+      X`Requested ${q(proposedRunDebt)} exceeds max ${q(maxRun)} for ${q(
+        collateralAmount,
+      )} collateral`,
     );
   },
 

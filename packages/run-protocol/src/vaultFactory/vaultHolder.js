@@ -59,7 +59,7 @@ const title = {
   makeCloseInvitation: ({ facets }) =>
     facets.helper.owned().makeCloseInvitation(),
   /**
-   * Starting a transfer revokes the vaultTitle. The associated updater will
+   * Starting a transfer revokes the vault holder. The associated updater will
    * get a special notification that the vault is being transferred.
    *
    * @param {MethodContext} context
@@ -81,8 +81,8 @@ const title = {
 
 const behavior = { helper, title };
 
-export const makeVaultTitle = defineKindMulti(
-  'VaultTitle',
+export const makeVaultHolder = defineKindMulti(
+  'VaultHolder',
   initState,
   behavior,
 );
