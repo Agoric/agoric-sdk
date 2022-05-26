@@ -95,11 +95,10 @@ export const setupAmmServices = async (
   if (!farZoeKit) {
     farZoeKit = await setUpZoeForTest();
   }
-  const feeMintAccess = await farZoeKit.feeMintAccess;
-  const zoe = await farZoeKit.zoe;
+  const { feeMintAccess, zoe } = farZoeKit;
   trace('setupAMMBootstrap');
   const space = await setupAMMBootstrap(timer, farZoeKit);
-  space.produce.zoe.resolve(zoe);
+  space.produce.zoe.resolve(farZoeKit.zoe);
   space.produce.feeMintAccess.resolve(feeMintAccess);
   const { consume, brand, issuer, installation, instance } = space;
   const ammBundle = await provideBundle(t, ammRoot, 'amm');

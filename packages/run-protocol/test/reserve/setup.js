@@ -68,18 +68,6 @@ const setupReserveBootstrap = async (
  * @param {import("ava").ExecutionContext<unknown>} t
  * @param {{ committeeName: string, committeeSize: number}} electorateTerms
  * @param {ManualTimer | undefined=} timer
- * @returns {{
- *     zoe: ZoeService,
- *     feeMintAccess: FeeMintAccess,
- *     installation: Installation,
- *     committeeCreator: ElectorateCreatorFacet,
- *     electorateInstance: Instance,
- *     governor: any,
- *     reserve: ReserveKit,
- *     invitationAmount: Amount,
- *     space: any,
- *     faucetInstallation: Installation,
- * }}
  */
 export const setupReserveServices = async (
   t,
@@ -87,8 +75,7 @@ export const setupReserveServices = async (
   timer = buildManualTimer(console.log),
 ) => {
   const farZoeKit = await setUpZoeForTest();
-  const zoe = await farZoeKit.zoe;
-  const feeMintAccess = await farZoeKit.feeMintAccess;
+  const { feeMintAccess, zoe } = farZoeKit;
 
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
@@ -108,7 +95,7 @@ export const setupReserveServices = async (
   const faucetInstallation = E(zoe).install(faucetBundle);
   brand.produce.RUN.resolve(runBrand);
   issuer.produce.RUN.resolve(runIssuer);
-  produce.feeMintAccess.resolve(feeMintAccess);
+  produce.feeMintAccess.resolve(await feeMintAccess);
 
   await setupReserve(spaces);
 

@@ -57,12 +57,20 @@ const addLiquidPool = async (
   return E(addLiquiditySeat).getOfferResult();
 };
 
+/**
+ *
+ * @param {ERef<ZoeService>} zoe
+ * @param {ERef<FeeMintAccess>} feeMintAccessP
+ * @param {*} faucetInstallation
+ * @param {*} runInitialLiquidity
+ */
 const getRunFromFaucet = async (
   zoe,
-  feeMintAccess,
+  feeMintAccessP,
   faucetInstallation,
   runInitialLiquidity,
 ) => {
+  const feeMintAccess = await feeMintAccessP;
   // On-chain, there will be pre-existing RUN. The faucet replicates that
   const { creatorFacet: faucetCreator } = await E(zoe).startInstance(
     faucetInstallation,
@@ -317,7 +325,7 @@ test('request more collateral than available', async t => {
   ).voteOnApiInvocation(
     'addLiquidityToAmmPool',
     params,
-    space.installation.consume.binaryVoteCounter,
+    await space.installation.consume.binaryVoteCounter,
     timer.getCurrentTimestamp() + 2n,
   );
   const details = await detailsP;
