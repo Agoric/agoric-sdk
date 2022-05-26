@@ -4,7 +4,7 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeEachIterator, makeEmptyPublishKit } from './publish-kit.js';
+import { makeEmptyPublishKit } from './publish-kit.js';
 
 import './types.js';
 

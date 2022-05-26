@@ -51,7 +51,7 @@ export const makeNotifier = sharableInternalsP => {
  * @returns {NotifierRecord<T>} the notifier and updater
  */
 export const makeNotifierKit = (...initialStateArr) => {
-  /** @type {PromiseRecord<UpdateRecord<T>>|undefined} */
+  /** @type {PromiseKit<UpdateRecord<T>>|undefined} */
   let optNextPromiseKit;
   /** @type {UpdateCount} */
   let currentUpdateCount = 1; // avoid falsy numbers
