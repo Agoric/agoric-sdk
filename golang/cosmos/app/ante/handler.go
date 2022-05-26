@@ -1,4 +1,4 @@
-package gaia
+package ante
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -14,6 +14,7 @@ type HandlerOptions struct {
 	ante.HandlerOptions
 
 	IBCChannelkeeper channelkeeper.Keeper
+	FeeCollectorName string
 	AdmissionData    interface{}
 }
 
@@ -44,7 +45,7 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewTxTimeoutHeightDecorator(),
 		ante.NewValidateMemoDecorator(options.AccountKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
-		ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper),
+		NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, options.FeeCollectorName),
 		// SetPubKeyDecorator must be called before all signature verification decorators
 		ante.NewSetPubKeyDecorator(options.AccountKeeper),
 		ante.NewValidateSigCountDecorator(options.AccountKeeper),

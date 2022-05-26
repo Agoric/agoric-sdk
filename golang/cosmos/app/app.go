@@ -101,6 +101,7 @@ import (
 	routerkeeper "github.com/strangelove-ventures/packet-forward-middleware/router/keeper"
 	routertypes "github.com/strangelove-ventures/packet-forward-middleware/router/types"
 
+	appante "github.com/Agoric/agoric-sdk/golang/cosmos/app/ante"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
@@ -159,7 +160,6 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:     nil,
 		distrtypes.ModuleName:          nil,
 		minttypes.ModuleName:           {authtypes.Minter},
 		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
@@ -167,7 +167,8 @@ var (
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		vbank.ModuleName:               {authtypes.Minter, authtypes.Burner},
-		vbanktypes.ReserveName:         nil,
+		vbanktypes.ReservePoolName:     nil,
+		vbanktypes.GiveawayPoolName:    nil,
 	}
 )
 
@@ -362,7 +363,7 @@ func NewAgoricApp(
 		&stakingKeeper,
 		app.AccountKeeper,
 		app.BankKeeper,
-		authtypes.FeeCollectorName,
+		vbanktypes.GiveawayPoolName,
 	)
 	distrKeeper := distrkeeper.NewKeeper(
 		appCodec,
@@ -371,7 +372,8 @@ func NewAgoricApp(
 		app.AccountKeeper,
 		app.BankKeeper,
 		&stakingKeeper,
-		authtypes.FeeCollectorName,
+		// This is the pool to distribute from immediately.  DO NOT ALTER.
+		vbanktypes.GiveawayPoolName,
 		app.ModuleAccountAddrs(),
 	)
 	app.SlashingKeeper = slashingkeeper.NewKeeper(
@@ -384,7 +386,7 @@ func NewAgoricApp(
 		app.GetSubspace(crisistypes.ModuleName),
 		invCheckPeriod,
 		app.BankKeeper,
-		authtypes.FeeCollectorName,
+		vbanktypes.ReservePoolName,
 	)
 	app.UpgradeKeeper = upgradekeeper.NewKeeper(
 		skipUpgradeHeights,
@@ -422,7 +424,7 @@ func NewAgoricApp(
 	app.SwingSetKeeper = swingset.NewKeeper(
 		appCodec, keys[swingset.StoreKey], app.GetSubspace(swingset.ModuleName),
 		app.AccountKeeper, app.BankKeeper,
-		authtypes.FeeCollectorName,
+		vbanktypes.ReservePoolName,
 		callToController,
 	)
 	vm.RegisterPortHandler("storage", swingset.NewStorageHandler(app.SwingSetKeeper))
@@ -641,8 +643,8 @@ func NewAgoricApp(
 	app.MountTransientStores(tkeys)
 	app.MountMemoryStores(memKeys)
 
-	anteHandler, err := NewAnteHandler(
-		HandlerOptions{
+	anteHandler, err := appante.NewAnteHandler(
+		appante.HandlerOptions{
 			HandlerOptions: ante.HandlerOptions{
 				AccountKeeper:   app.AccountKeeper,
 				BankKeeper:      app.BankKeeper,
@@ -652,6 +654,7 @@ func NewAgoricApp(
 			},
 			IBCChannelkeeper: app.IBCKeeper.ChannelKeeper,
 			AdmissionData:    app.SwingSetKeeper,
+			FeeCollectorName: vbanktypes.ReservePoolName,
 		},
 	)
 	if err != nil {
