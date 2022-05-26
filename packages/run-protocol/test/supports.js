@@ -14,6 +14,7 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeLoopback } from '@endo/captp';
 import { E } from '@endo/far';
+import { makeTracer } from '../src/makeTracer.js';
 
 /**
  * @param {*} t
@@ -61,7 +62,8 @@ export const setUpZoeForTest = (setJig = () => {}) => {
 harden(setUpZoeForTest);
 
 export const setupBootstrap = (t, optTimer = undefined) => {
-  const space = /** @type {any} */ (makePromiseSpace(t.log));
+  const trace = makeTracer('PromiseSpace');
+  const space = /** @type {any} */ (makePromiseSpace(trace));
   const { produce, consume } =
     /** @type { import('../src/proposals/econ-behaviors.js').EconomyBootstrapPowers & BootstrapPowers } */ (
       space
