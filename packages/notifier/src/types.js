@@ -11,6 +11,12 @@
  */
 
 /**
+ * Deprecated. Use PromiseKit instead.
+ * @template T
+ * @typedef {import('@endo/promise-kit').PromiseRecord<T>} PromiseRecord
+ */
+
+/**
  * @template T
  * @typedef {{
  *   [Symbol.asyncIterator]: () => AsyncIterator<T, T>
@@ -38,7 +44,7 @@
 /**
  * @template T
  * @typedef {object} PublicationRecord
- * @property {ERef<IteratorResult<T>>} head
+ * @property {IteratorResult<T>} head
  * @property {bigint} publishCount
  * @property {PublicationList<T>} tail
  */
