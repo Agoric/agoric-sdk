@@ -244,8 +244,9 @@ test('publishToChainNode does not drop values', async t => {
   // negative value.
   let nextValue = 0;
   let step = 1;
+  /** @type TimerService */
   const timerService = {
-    delay() {
+    delay(_n) {
       if (step < 0) return Promise.resolve();
       let slow = Promise.resolve();
       for (let i = 0; i < 10; i += 1) slow = slow.then();
@@ -300,6 +301,7 @@ function getMockInputs(t) {
       advanceTimerR = resolve;
     });
   };
+  /** @type TimerService */
   const timerService = {
     delay(n) {
       t.is(n, 1n);
@@ -308,7 +310,8 @@ function getMockInputs(t) {
   };
 
   // Create an async iterable with a function for supplying results.
-  const pendingResults = [{ resolve(_val) {}, reject(_reason) {} }];
+  /** @type Array<{ promise: Promise<any>, resolve: (val: any) => void, reject: (reason: any) => void }> */
+  const pendingResults = [{ resolve(_val) {} }];
   const supplyIterationResult = value => {
     const nextDeferred = {};
     nextDeferred.promise = new Promise((resolve, reject) => {

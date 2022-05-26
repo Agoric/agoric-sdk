@@ -10,12 +10,12 @@ import { E } from '@endo/far';
  * Array items are possibly-duplicated [index, value] pairs, where index is a
  * string (ascending numeric or terminal "finish" or "fail").
  *
- * @param {ERef<AsyncIterator>} iterable
+ * @param {ERef<AsyncIterable>} source
  * @param {{ setValue: (val: any) => void }} chainStorageNode
  * @param {{ timerService: ERef<TimerService>, serialize?: (obj: any) => string }} powers
  */
 export async function publishToChainNode(
-  iterable,
+  source,
   chainStorageNode,
   { timerService, serialize = JSON.stringify },
 ) {
@@ -49,7 +49,7 @@ export async function publishToChainNode(
       E(chainStorageNode).setValue(serialize(combined));
     };
   };
-  await observeIteration(iterable, {
+  await observeIteration(source, {
     updateState: makeAcceptor(),
     finish: makeAcceptor('finish'),
     fail: makeAcceptor('fail'),
