@@ -14,7 +14,7 @@ export const defaultProposalBuilder = async (
   /** @type {import('../src/proposals/addAssetToVault.js').InterchainAssetOptions} */
   const {
     issuerBoardId = env.INTERCHAIN_ISSUER_BOARD_ID,
-    denom,
+    denom = env.INTERCHAIN_DENOM,
     oracleBrand = 'ATOM',
     decimalPlaces = 6,
     keyword = 'IbcATOM',

@@ -159,7 +159,7 @@ harden(startInterchainPool);
 
 /**
  * @param { EconomyBootstrapPowers } powers
- * @param {object} opts
+ * @param {{ options?: { minInitialPoolLiquidity?: bigint }}} opts
  */
 export const setupAmm = async (
   {
@@ -183,7 +183,7 @@ export const setupAmm = async (
       consume: { contractGovernor: governorInstallation, amm: ammInstallation },
     },
   },
-  opts,
+  { options = {} } = {},
 ) => {
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
   const [poserInvitation, poserInvitationAmount, runBrand] = await Promise.all([
@@ -191,7 +191,7 @@ export const setupAmm = async (
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
     runBrandP,
   ]);
-  const { minInitialPoolLiquidity = 1_000_000_000n } = opts;
+  const { minInitialPoolLiquidity = 1_000_000_000n } = options;
 
   const timer = await chainTimerService; // avoid promise for legibility
 
