@@ -2,9 +2,9 @@
 // @ts-check
 /// <reference types="ses"/>
 
-import { HandledPromise, E } from '@endo/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@endo/promise-kit';
+import { makeEmptyPublishKit } from './publish-kit.js';
 
 import './types.js';
 
@@ -64,41 +64,23 @@ const makeSubscriptionIterator = tailP => {
  * @returns {SubscriptionRecord<T>}
  */
 const makeSubscriptionKit = (...optionalInitialState) => {
-  /** @type {((internals: ERef<SubscriptionInternals<T>>) => void) | undefined} */
-  let rear;
-  const hp = new HandledPromise(r => (rear = r));
-  const subscription = makeSubscription(hp);
+  const { publisher, subscriber } = makeEmptyPublishKit();
+
+  // Unlike the Subscriber contract, the Subscription contract is completely
+  // lossless, do we get the PublicationList immediately and then reuse that.
+  // This losslessness will inhibit gc, which is why we're moving away from
+  // it.
+  const pubList = subscriber.subscribeAfter();
+  const sharableInternalsP = /** @type {ERef<SubscriptionInternals<T>>} */ (
+    /** @type {unknown} */ (pubList)
+  );
+  const subscription = makeSubscription(sharableInternalsP);
 
   /** @type {IterationObserver<T>} */
   const publication = Far('publication', {
-    updateState: value => {
-      if (rear === undefined) {
-        throw new Error('Cannot update state after termination.');
-      }
-      const { promise: nextTailE, resolve: nextRear } = makePromiseKit();
-      rear(harden({ head: { value, done: false }, tail: nextTailE }));
-      rear = nextRear;
-    },
-    finish: finalValue => {
-      if (rear === undefined) {
-        throw new Error('Cannot finish after termination.');
-      }
-      const readComplaint = HandledPromise.reject(
-        new Error('cannot read past end of iteration'),
-      );
-      readComplaint.catch(_ => {}); // suppress unhandled rejection error
-      rear({ head: { value: finalValue, done: true }, tail: readComplaint });
-      rear = undefined;
-    },
-    fail: reason => {
-      if (rear === undefined) {
-        throw new Error('Cannot fail after termination.');
-      }
-      /** @type {Promise<SubscriptionInternals<T>>} */
-      const rejection = HandledPromise.reject(reason);
-      rear(rejection);
-      rear = undefined;
-    },
+    updateState: publisher.publish,
+    finish: publisher.finish,
+    fail: publisher.fail,
   });
 
   if (optionalInitialState.length > 0) {
