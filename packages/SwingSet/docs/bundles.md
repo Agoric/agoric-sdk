@@ -48,7 +48,7 @@ The swingset kernel maintains a "bundle table" in the kernel database. Bundles c
 
 When defining a static vat in the Swingset `config.vats` object, the filename provided as `sourceSpec` is turned into a bundle, the bundle is installed into the bundle table, and resulting bundle ID is stored in the vat's database record. When the static vat is launched, the DB record provides the bundle ID, and the bundle is loaded and evaluated in a new vat worker.
 
-The `config.bundles` object maps names to a bundle specification. These bundles are installed as above, and then a special "named bundles" table is updated with the name-to-bundle-ID mapping. These names are available to `E(vatAdminService).getNamedBundleCap(name) -> bundleCap`. For example, the chain's "core bootstrap" code will use this to define bundles for the core vats (Zoe, etc), and create dynamic vats at bootstrap time from them. It will also provide Zoe with the bundlecap for ZCF this way, so Zoe can later create dynamic ZCF vats. `E(vatAdminService).createVatByName(name)` will continue to be supported until core-bootstrap is updated to retrieve bundlecaps, after which vat-admin will drop `createVatByName` and only support `createVat(bundleCap)`.
+The `config.bundles` object maps names to a bundle specification. These bundles are installed as above, and then a special "named bundles" table is updated with the name-to-bundle-ID mapping. These names are available to `E(vatAdminService).getNamedBundleCap(name) -> bundleCap` and `E(vatAdminService).getBundleIDByName(name) -> bundleID`. For example, the chain's "core bootstrap" code will use this to define bundles for the core vats (Zoe, etc), and create dynamic vats at bootstrap time from them. It will also provide Zoe with the bundlecap for ZCF this way, so Zoe can later create dynamic ZCF vats. `E(vatAdminService).createVatByName(name)` will continue to be supported until core-bootstrap is updated to retrieve bundlecaps, after which vat-admin will drop `createVatByName` and only support `createVat(bundleCap)`.
 
 The `initializeSwingset()` function, called when the host application is first configured, creates bundles for built-in vats and devices (timer, vatAdmin, mailbox), as well as liveslots and the kernel, and installs them into the table as well. Internally, the kernel remembers the bundle ID of each one for later use.
 
@@ -71,6 +71,7 @@ Bundlecaps can be obtained from several methods of `vatAdminService`, which (as 
 * `E(vatAdminService).getBundleCap(bundleID) -> Promise<BundleCap>` (rejects if not installed yet)
 * `E(vatAdminService).waitForBundleCap(bundleID) -> Promise<BundleCap>` (waits until installed)
 * `E(vatAdminService).getNamedBundleCap(name) -> Promise<BundleCap>` (rejects if not registered)
+* `E(vatAdminService).getBundleIDByName(name) -> Promise<string>` (rejects if not registered)
 
 Note that the `waitForBundleCap()` method will wait (possibly forever) for the bundle ID to be installed before resolving its Promise, so the Promise will never resolve to `undefined`.
 
