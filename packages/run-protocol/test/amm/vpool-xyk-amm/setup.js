@@ -93,7 +93,9 @@ export const setupAmmServices = async (
       options: { econCommitteeOptions: electorateTerms },
     }),
     setupAmm(space, {
-      minInitialPoolLiquidity: 1000n,
+      options: {
+        minInitialPoolLiquidity: 1000n,
+      },
     }),
   ]);
 

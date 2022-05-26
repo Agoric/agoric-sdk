@@ -113,8 +113,9 @@ test.before(async t => {
 
 /**
  * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
+ * @param {{ env?: Record<string, string|undefined> }} [io]
  */
-const makeScenario = async t => {
+const makeScenario = async (t, { env = process.env } = {}) => {
   const space = await setupBootstrap(t);
 
   const loadVat = name =>
@@ -273,6 +274,7 @@ const makeScenario = async t => {
       undefined,
       harden({ decimalPlaces: 6 }),
     );
+    env.MIN_INITIAL_POOL_LIQUIDITY = '0';
     await Promise.all([
       E(E(space.consume.agoricNamesAdmin).lookupAdmin('oracleBrand')).update(
         'ATOM',
@@ -286,13 +288,12 @@ const makeScenario = async t => {
   const atomIssuerPK = makePromiseKit();
 
   const enactVaultAssetProposal = async () => {
-    const boardId = await atomIssuerPK.promise;
-    process.env.INTERCHAIN_ISSUER_BOARD_ID = boardId;
+    env.INTERCHAIN_DENOM = 'ibc/abc123';
     await evalProposals([coreProposals.addCollateral]);
   };
 
   const enactInviteEconCommitteeProposal = async () => {
-    process.env.ECON_COMMITTEE_ADDRESSES = JSON.stringify(voterAddresses);
+    env.ECON_COMMITTEE_ADDRESSES = JSON.stringify(voterAddresses);
     await evalProposals([coreProposals.inviteCommittee]);
   };
 
@@ -318,6 +319,10 @@ const makeScenario = async t => {
     } = home;
 
     return harden({
+      // This isn't used now that we make the pool from a denom
+      // in publishInterchainAssetFromBank in addAssetToVault.js
+      // But it should still work. TODO: Perhaps we should test both ways?
+      // i.e. from a board ID as well?
       makePool: async (atomQty = 500n, istQty = 1000n) => {
         const istBrand = await E(agoricNames).lookup('brand', 'RUN');
         const istAmt = qty => AmountMath.make(istBrand, qty * 1_000_000n);
@@ -388,8 +393,13 @@ const makeScenario = async t => {
     );
   };
   const makeAtomPurse = async value => {
-    const { issuer, mint, brand } = await ibcKitP.promise;
+    // when using benefactor.makePool:
+    // const { issuer, mint, brand } = await ibcKitP.promise;
+    const { bankMints } = space.consume;
+    const mint = E.get(bankMints)[0];
+    const issuer = E(mint).getIssuer();
     const purseP = E(issuer).makeEmptyPurse();
+    const brand = await E(issuer).getBrand();
     const pmt = await E(mint).mintPayment(AmountMath.make(brand, value));
     await E(purseP).deposit(pmt);
     return purseP;
@@ -415,7 +425,7 @@ test('Benefactor can add to reserve', async t => {
   await s.startDevNet();
   await s.provisionMembers();
   await s.startRunPreview();
-  await s.benefactor.makePool(2000n, 1000n);
+  // await s.benefactor.makePool(2000n, 1000n);
   await Promise.all([
     s.enactVaultAssetProposal(),
     s.enactInviteEconCommitteeProposal(),
@@ -430,7 +440,7 @@ test('voters get invitations', async t => {
   await s.startDevNet();
   const purses = await s.provisionMembers();
   await s.startRunPreview();
-  await s.benefactor.makePool();
+  // await s.benefactor.makePool();
   await Promise.all([
     s.enactVaultAssetProposal(),
     s.enactInviteEconCommitteeProposal(),
@@ -462,7 +472,7 @@ test('assets are in AMM, Vaults', async t => {
   await s.startDevNet();
   await s.provisionMembers();
   await s.startRunPreview();
-  await s.benefactor.makePool(2000n, 1000n);
+  // await s.benefactor.makePool(2000n, 1000n);
 
   await Promise.all([
     s.enactVaultAssetProposal(),
@@ -498,7 +508,7 @@ test('Committee can raise debt limit', async t => {
   await s.startDevNet();
   const purses = await s.provisionMembers();
   await s.startRunPreview();
-  await s.benefactor.makePool(2000n, 1000n);
+  // await s.benefactor.makePool(2000n, 1000n);
 
   await Promise.all([
     s.enactVaultAssetProposal(),

@@ -398,3 +398,93 @@ test('reserve track shortfall', async t => {
     shortfallBalance: { value: runningShortfall },
   });
 });
+
+test('reserve burn IST', async t => {
+  /** @param {NatValue} value */
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 1 };
+  const timer = buildManualTimer(console.log);
+
+  const { zoe, reserve, space, feeMintAccess, faucetInstallation, governor } =
+    await setupReserveServices(t, electorateTerms, timer);
+
+  const runBrand = await space.brand.consume.RUN;
+
+  const shortfallReporterSeat = await E(zoe).offer(
+    E(reserve.reserveCreatorFacet).makeShortfallReportingInvitation(),
+  );
+  const reporterFacet = await E(shortfallReporterSeat).getOfferResult();
+
+  const oneKRun = AmountMath.make(runBrand, 1000n);
+  await E(reporterFacet).increaseLiquidationShortfall(oneKRun);
+  let runningShortfall = 1000n;
+
+  const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
+  const m = await subscriptionTracker(t, metricsSub);
+  await m.assertInitial({
+    allocations: {},
+    shortfallBalance: AmountMath.makeEmpty(runBrand),
+  });
+  await m.assertChange({
+    shortfallBalance: { value: runningShortfall },
+  });
+
+  const runPayment = getRunFromFaucet(
+    zoe,
+    feeMintAccess,
+    faucetInstallation,
+    oneKRun,
+  );
+
+  const invitation = await E(
+    reserve.reservePublicFacet,
+  ).makeAddCollateralInvitation();
+
+  const proposal = { give: { Collateral: oneKRun } };
+  const payments = { Collateral: runPayment };
+  const collateralSeat = E(zoe).offer(invitation, proposal, payments);
+
+  t.is(
+    await E(collateralSeat).getOfferResult(),
+    'added Collateral to the Reserve',
+    `added RUN to the collateral Reserve`,
+  );
+
+  t.deepEqual(
+    await E(reserve.reserveCreatorFacet).getAllocations(),
+    harden({ RUN: oneKRun }),
+    'expecting more',
+  );
+
+  const [voterInvitation] = await E(
+    space.consume.economicCommitteeCreatorFacet,
+  ).getVoterInvitations();
+
+  const voterFacet = await E(E(zoe).offer(voterInvitation)).getOfferResult();
+
+  const params = harden([oneKRun]);
+  const { details: detailsP } = await E(
+    governor.governorCreatorFacet,
+  ).voteOnApiInvocation(
+    'burnRUNToReduceShortfall',
+    params,
+    await space.installation.consume.binaryVoteCounter,
+    timer.getCurrentTimestamp() + 2n,
+  );
+  const details = await detailsP;
+  await E(voterFacet).castBallotFor(details.questionHandle, [
+    details.positions[0],
+  ]);
+  timer.tick();
+  await waitForPromisesToSettle();
+  timer.tick();
+  await waitForPromisesToSettle();
+
+  runningShortfall = 0n;
+
+  await m.assertChange({
+    shortfallBalance: {
+      value: runningShortfall,
+    },
+    allocations: { RUN: AmountMath.makeEmpty(runBrand) },
+  });
+});
