@@ -136,12 +136,12 @@
  *   issuer: |
  *     'RUN' | 'BLD' | 'Attestation' | 'AUSD',
  *   installation: |
- *     'centralSupply' | 'mintHolder' |
+ *     'centralSupply' | 'mintHolder' | 'feeDistributor' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'amm' | 'VaultFactory' | 'liquidate' | 'runStake' |
  *     'Pegasus' | 'reserve' | 'psm' | 'interchainPool',
  *   instance: |
- *     'economicCommittee' |
+ *     'economicCommittee' | 'feeDistributor' |
  *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' |
  *     'runStake' | 'runStakeGovernor' |
  *     'psm' | 'psmGovernor' | 'interchainPool' |

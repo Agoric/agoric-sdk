@@ -40,6 +40,9 @@ const CENTRAL_DENOM_NAME = 'urun';
  *   ammCreatorFacet: XYKAMMCreatorFacet,
  *   ammGovernorCreatorFacet: GovernedContractFacetAccess<XYKAMMCreatorFacet>,
  *   economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet,
+ *   feeDistributorCreatorFacet: FeeDistributorCreatorFacet,
+ *   feeDistributorPublicFacet: FeeDistributorPublicFacet,
+ *   periodicFeeCollectors: import('../feeDistributor.js').PeriodicFeeCollector[],
  *   bankMints: Mint[],
  *   psmCreatorFacet: unknown,
  *   psmGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
@@ -53,6 +56,8 @@ const CENTRAL_DENOM_NAME = 'urun';
  *   minInitialDebt: NatValue,
  * }>} EconomyBootstrapSpace
  *
+ * @typedef {import('../feeDistributor.js').FeeDistributorCreatorFacet} FeeDistributorCreatorFacet
+ * @typedef {import('../feeDistributor.js').FeeDistributorPublicFacet} FeeDistributorPublicFacet
  * @typedef {import('../reserve/assetReserve.js').AssetReserveCreatorFacet} AssetReserveCreatorFacet
  * @typedef {import('../reserve/assetReserve.js').AssetReservePublicFacet} AssetReservePublicFacet
  */
@@ -596,21 +601,28 @@ harden(configureVaultFactoryUI);
 /**
  * Start the reward distributor.
  *
- * @param {EconomyBootstrapPowers & {
- *   consume: { loadVat: ERef<VatLoader<DistributeFeesVat>>},
- * }} powers
- *
- * @typedef {ERef<ReturnType<import('@agoric/vats/src/vat-distributeFees').buildRootObject>>} DistributeFeesVat
+ * @param {EconomyBootstrapPowers} powers
  */
 export const startRewardDistributor = async ({
   consume: {
     chainTimerService,
     bankManager,
-    loadVat,
     vaultFactoryCreator,
+    periodicFeeCollectors,
     ammCreatorFacet,
     runStakeCreatorFacet,
+    reservePublicFacet,
     zoe,
+  },
+  produce: {
+    feeDistributorCreatorFacet: feeDistributorCreatorFacetP,
+    periodicFeeCollectors: periodicFeeCollectorsP,
+  },
+  instance: {
+    produce: { feeDistributor: feeDistributorP },
+  },
+  installation: {
+    consume: { feeDistributor },
   },
   issuer: {
     consume: { RUN: centralIssuerP },
@@ -620,14 +632,21 @@ export const startRewardDistributor = async ({
   },
 }) => {
   trace('startRewardDistributor');
-  const epochTimerService = await chainTimerService;
-  const distributorParams = {
-    epochInterval: 60n * 60n, // 1 hour
+  const timerService = await chainTimerService;
+  const feeDistributorTerms = {
+    timerService,
+    collectionInterval: 60n * 60n, // 1 hour
+    keywordShares: {
+      RewardDistributor: 1n,
+      Reserve: 1n,
+    },
   };
+
   const [centralIssuer, centralBrand] = await Promise.all([
     centralIssuerP,
     centralBrandP,
   ]);
+
   const rewardDistributorDepositFacet = await E(bankManager)
     .getRewardDistributorDepositFacet(CENTRAL_DENOM_NAME, {
       issuer: centralIssuer,
@@ -638,24 +657,46 @@ export const startRewardDistributor = async ({
       return undefined;
     });
 
-  // Only distribute rewards if there is a collector.
-  if (!rewardDistributorDepositFacet) {
-    return;
-  }
-
-  const vats = { distributeFees: E(loadVat)('distributeFees') };
-  const [vaultAdmin, ammAdmin, runStakeAdmin] = await Promise.all([
-    vaultFactoryCreator,
-    ammCreatorFacet,
-    runStakeCreatorFacet,
-  ]);
-  await E(vats.distributeFees).buildDistributor(
-    [vaultAdmin, ammAdmin, runStakeAdmin].map(cf =>
-      E(vats.distributeFees).makeFeeCollector(zoe, cf),
+  const feeDistributorFacets = await E(zoe).startInstance(
+    feeDistributor,
+    { Fee: centralIssuer },
+    feeDistributorTerms,
+  );
+  await E(feeDistributorFacets.creatorFacet).setDestinations({
+    RewardDistributor:
+      rewardDistributorDepositFacet &&
+      E(feeDistributorFacets.creatorFacet).makeDepositFacetDestination(
+        rewardDistributorDepositFacet,
+      ),
+    Reserve: E(feeDistributorFacets.creatorFacet).makeOfferDestination(
+      'Collateral',
+      reservePublicFacet,
+      'makeAddCollateralInvitation',
     ),
-    rewardDistributorDepositFacet,
-    epochTimerService,
-    harden(distributorParams),
+  });
+
+  feeDistributorCreatorFacetP.resolve(feeDistributorFacets.creatorFacet);
+  feeDistributorP.resolve(feeDistributorFacets.instance);
+
+  // Initialize the periodic collectors list if we don't have one.
+  periodicFeeCollectorsP.resolve([]);
+  const periodicCollectors = await periodicFeeCollectors;
+
+  const collectorFacets = {
+    vaultFactory: vaultFactoryCreator,
+    amm: ammCreatorFacet,
+    runStake: runStakeCreatorFacet,
+  };
+  await Promise.all(
+    Object.entries(collectorFacets).map(async ([debugName, collectorFacet]) => {
+      const collector = E(
+        feeDistributorFacets.creatorFacet,
+      ).makeContractFeeCollector(zoe, collectorFacet);
+      const periodicCollector = await E(
+        feeDistributorFacets.creatorFacet,
+      ).startPeriodicCollection(debugName, collector);
+      periodicCollectors.push(periodicCollector);
+    }),
   );
 };
 harden(startRewardDistributor);
