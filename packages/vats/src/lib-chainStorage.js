@@ -8,7 +8,7 @@ const { details: X } = assert;
 // Must be nonempty and disallow (unescaped) `.`, and for simplicity
 // (and future possibility of e.g. escaping) we currently limit to
 // ASCII alphanumeric plus underscore.
-const pathSegmentPattern = /^[a-zA-Z0-9_\-]{1,100}$/;
+const pathSegmentPattern = /^[a-zA-Z0-9_-]{1,100}$/;
 
 /**
  * Create a root storage node for a given backing function and root key.
