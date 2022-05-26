@@ -2,6 +2,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 import { publishToChainNode } from '../src/lib-chainPublish.js';
 
 test('publishToChainNode', async t => {
@@ -244,15 +245,16 @@ test('publishToChainNode does not drop values', async t => {
   // negative value.
   let nextValue = 0;
   let step = 1;
-  /** @type TimerService */
+  /** @type any */
   const timerService = {
     delay(_n) {
-      if (step < 0) return Promise.resolve();
+      if (step < 0) return Promise.resolve(0n);
       let slow = Promise.resolve();
       for (let i = 0; i < 10; i += 1) slow = slow.then();
       return slow.then(() => {
         nextValue = -1;
         step = -1;
+        return 0n;
       });
     },
   };
@@ -301,7 +303,7 @@ function getMockInputs(t) {
       advanceTimerR = resolve;
     });
   };
-  /** @type TimerService */
+  /** @type any */
   const timerService = {
     delay(n) {
       t.is(n, 1n);
@@ -310,15 +312,9 @@ function getMockInputs(t) {
   };
 
   // Create an async iterable with a function for supplying results.
-  /** @type Array<{ promise: Promise<any>, resolve: (val: any) => void, reject: (reason: any) => void }> */
-  const pendingResults = [{ resolve(_val) {} }];
+  const pendingResults = [makePromiseKit()];
   const supplyIterationResult = value => {
-    const nextDeferred = {};
-    nextDeferred.promise = new Promise((resolve, reject) => {
-      nextDeferred.resolve = resolve;
-      nextDeferred.reject = reject;
-    });
-    const newLength = pendingResults.push(nextDeferred);
+    const newLength = pendingResults.push(makePromiseKit());
     pendingResults[newLength - 2].resolve({ value });
   };
   supplyIterationResult.finish = value => {
