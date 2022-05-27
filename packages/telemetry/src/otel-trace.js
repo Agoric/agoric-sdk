@@ -47,10 +47,9 @@ export const makeOtelTracingProvider = opts => {
 };
 
 export const makeSlogSender = async opts => {
-  const tracingProvider = makeOtelTracingProvider(opts);
-  if (!tracingProvider) {
-    return undefined;
-  }
+  const tracingProvider =
+    makeOtelTracingProvider(opts) || new BasicTracerProvider();
+
   tracingProvider.register();
   const tracer = tracingProvider.getTracer('slog-trace', opts.version);
 

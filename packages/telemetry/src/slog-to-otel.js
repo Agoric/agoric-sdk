@@ -102,9 +102,15 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       case 'send': {
         // TODO: The arguments to a method call can be pretty big.
         delete attrs.msg;
-        name = `E(${message.target}).${message.msg.method}`;
+        if (message.msg.methargs) {
+          const [method] = JSON.parse(message.msg.methargs.body);
+          name = `E(${message.target}).${method}`;
+          attrs['message.msg.args.slots'] = message.msg.methargs.slots;
+        } else {
+          name = `E(${message.target}).${message.msg.method}`;
+          attrs['message.msg.args.slots'] = message.msg.args.slots;
+        }
         attrs['message.msg.method'] = name;
-        attrs['message.msg.args.slots'] = message.msg.args.slots;
         attrs['message.msg.result'] = message.msg.result;
         break;
       }
