@@ -1,16 +1,22 @@
 // @ts-check
 
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { setupAmmServices } from './setup.js';
 import { unsafeMakeBundleCache } from '../../bundleTool.js';
 import { subscriptionTracker } from '../../metrics.js';
+import { waitForPromisesToSettle } from '../../supports.js';
+
+/** @typedef {Record<string, any> & {
+ *   bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>,
+ * }} Context */
+/** @type {import('ava').TestInterface<Context>} */
+// @ts-expect-error cast
+const test = unknownTest;
 
 test.before(async t => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
@@ -148,15 +154,10 @@ test('amm add and remove liquidity', async t => {
   const moola = value => AmountMath.make(moolaR.brand, value);
   const central = value => AmountMath.make(centralR.brand, value);
 
-  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  // This timer is only used to build quotes. Let's make it non-zero
-  const timer = buildManualTimer(console.log, 30n);
-
   const { zoe, amm } = await setupAmmServices(
     t,
-    electorateTerms,
+    { committeeName: 'EnBancPanel', committeeSize: 3 },
     centralR,
-    timer,
   );
 
   const liquidityIssuer = await E(amm.ammPublicFacet).addIssuer(
@@ -315,4 +316,59 @@ test('amm add and remove liquidity', async t => {
   poolLiquidity.liquidityTokens.value -= 40000n;
   poolLiquidity.secondaryAmount.value -= 8000n;
   await tracker.assertChange(poolLiquidity);
+});
+
+test('MinInitialPoolLiquidity to reserve', async t => {
+  const centralLiquidityValue = 1_500_000_000n;
+  const secondaryLiquidityValue = 300_000_000n;
+
+  // Set up central token
+  const centralR = makeIssuerKit('central');
+  const moolaR = makeIssuerKit('moola');
+  const moola = value => AmountMath.make(moolaR.brand, value);
+  const central = value => AmountMath.make(centralR.brand, value);
+
+  const { zoe, amm, space } = await setupAmmServices(
+    t,
+    { committeeName: 'EnBancPanel', committeeSize: 3 },
+    centralR,
+  );
+  const { reserveCreatorFacet } = space.consume;
+
+  const liquidityIssuer = await E(amm.ammPublicFacet).addIssuer(
+    moolaR.issuer,
+    'Moola',
+  );
+  const liquidityBrand = await E(liquidityIssuer).getBrand();
+
+  const addPoolInvitation = await E(amm.ammPublicFacet).addPoolInvitation();
+
+  const proposal = harden({
+    give: {
+      Secondary: moola(secondaryLiquidityValue),
+      Central: central(centralLiquidityValue),
+    },
+    want: { Liquidity: AmountMath.make(liquidityBrand, 1000n) },
+  });
+  const payments = {
+    Secondary: moolaR.mint.mintPayment(moola(secondaryLiquidityValue)),
+    Central: centralR.mint.mintPayment(central(centralLiquidityValue)),
+  };
+
+  const addLiquiditySeat = await E(zoe).offer(
+    addPoolInvitation,
+    proposal,
+    payments,
+  );
+  t.is(
+    await E(addLiquiditySeat).getOfferResult(),
+    'Added liquidity.',
+    `Added Moola and Central Liquidity`,
+  );
+
+  await waitForPromisesToSettle();
+  const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
+  t.deepEqual(reserveAllocations, {
+    RmoolaLiquidity: AmountMath.make(liquidityBrand, 1000n),
+  });
 });

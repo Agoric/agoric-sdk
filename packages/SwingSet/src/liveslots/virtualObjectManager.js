@@ -1,5 +1,5 @@
 // @ts-check
-/* eslint-disable no-use-before-define */
+/* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
 import { assert, details as X, q } from '@agoric/assert';
 import { Far } from '@endo/marshal';
@@ -25,7 +25,7 @@ const unweakable = new WeakSet();
  * @param {(baseRef: string, rawState: object) => void} store  Function to
  *   store raw object state by its baseRef
  *
- * @returns {object}  An LRU cache of (up to) the given size
+ * @returns An LRU cache of (up to) the given size
  *
  * This cache is part of the virtual object manager and is not intended to be
  * used independently; it is exported only for the benefit of test code.
@@ -150,7 +150,7 @@ export function makeCache(size, fetch, store) {
  * @param {number} cacheSize  How many virtual objects this manager should cache
  *   in memory.
  *
- * @returns {object} a new virtual object manager.
+ * @returns a new virtual object manager.
  *
  * The virtual object manager allows the creation of persistent objects that do
  * not need to occupy memory when they are not in use.  It provides five
@@ -900,3 +900,6 @@ export function makeVirtualObjectManager(
     testHooks,
   });
 }
+/**
+ * @typedef { ReturnType<typeof makeVirtualObjectManager> } VirtualObjectManager
+ */

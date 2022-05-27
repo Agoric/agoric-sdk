@@ -64,12 +64,12 @@ export const makeWeakSetStoreMethods = (
  * remotables, since the other primitives may always appear.
  *
  * @template K
- * @param {string} [keyName='key'] - the column name for the key
+ * @param {string} [tag='key'] - tag for debugging
  * @param {StoreOptions=} options
  * @returns {WeakSetStore<K>}
  */
 export const makeScalarWeakSetStore = (
-  keyName = 'key',
+  tag = 'key',
   { longLived = true, keySchema = undefined } = {},
 ) => {
   const jsset = new (longLived ? WeakSet : Set)();
@@ -91,8 +91,8 @@ export const makeScalarWeakSetStore = (
     }
   };
 
-  return Far(`scalar WeakSetStore of ${q(keyName)}`, {
-    ...makeWeakSetStoreMethods(jsset, assertKeyOkToAdd, undefined, keyName),
+  return Far(`scalar WeakSetStore of ${q(tag)}`, {
+    ...makeWeakSetStoreMethods(jsset, assertKeyOkToAdd, undefined, tag),
   });
 };
 harden(makeScalarWeakSetStore);

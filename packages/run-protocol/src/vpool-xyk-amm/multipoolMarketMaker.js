@@ -7,7 +7,10 @@ import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { makeSubscriptionKit } from '@agoric/notifier';
 
-import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  assertIssuerKeywords,
+  offerTo,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { makeAddIssuer, makeAddPoolInvitation } from './addPool.js';
 import { publicPrices } from './pool.js';
@@ -26,8 +29,11 @@ import {
   PROTOCOL_FEE_KEY,
   MIN_INITIAL_POOL_LIQUIDITY_KEY,
 } from './params.js';
+import { makeTracer } from '../makeTracer.js';
 
 const { quote: q, details: X } = assert;
+
+const trace = makeTracer('XykAmm');
 
 /**
  * @typedef {object} MetricsNotification
@@ -144,6 +150,8 @@ const start = async (zcf, privateArgs) => {
   const getPool = brand => secondaryBrandToPool.get(brand).pool;
   const getPoolHelper = brand => secondaryBrandToPool.get(brand).helper;
   const initPool = secondaryBrandToPool.init;
+  // XXX a brand can be in secondaryBrandToLiquidityMint and return false for this check
+  // if it's called between addIssuer and addPool
   const isSecondary = secondaryBrandToPool.has;
 
   // The liquidityBrand has to exist to allow the addPool Offer to specify want
@@ -166,11 +174,67 @@ const start = async (zcf, privateArgs) => {
   // something that will extract the fees.
   const { zcfSeat: protocolSeat } = zcf.makeEmptySeatKit();
 
-  // TODO(#5408): give reserve the ability to collect this.
-  const { zcfSeat: reserveLiquidityTokenSeat } = zcf.makeEmptySeatKit();
+  /** @type {AssetReservePublicFacet=} */
+  let reserveFacet;
+  /**
+   * @param {Brand} secondaryBrand
+   * @param {ZCFSeat} reserveLiquidityTokenSeat
+   * @param {Keyword} liquidityKeyword
+   * @returns {Promise<void>} up to caller whether to await or handle rejections
+   */
+  const handlePoolAdded = async (
+    secondaryBrand,
+    reserveLiquidityTokenSeat,
+    liquidityKeyword,
+  ) => {
+    trace('handlePoolAdded', { secondaryBrand, liquidityKeyword });
+    updateMetrics();
+
+    assert(reserveFacet, 'Missing reserveFacet');
+    assert(reserveLiquidityTokenSeat, 'Missing reserveLiquidityTokenSeat');
+
+    const secondaryIssuer = await zcf.getIssuerForBrand(secondaryBrand);
+    trace('ensuring reserve has the liquidity issuer', {
+      secondaryBrand,
+      secondaryIssuer,
+    });
+    await E(reserveFacet).addLiquidityIssuer(secondaryIssuer);
+
+    trace(
+      `move ${liquidityKeyword} to the reserve`,
+      reserveLiquidityTokenSeat.getCurrentAllocation(),
+    );
+    const addCollateral = await E(reserveFacet).makeAddCollateralInvitation();
+    const proposal = harden({
+      give: {
+        Collateral:
+          reserveLiquidityTokenSeat.getCurrentAllocation()[liquidityKeyword],
+      },
+    });
+    const { deposited, userSeatPromise } = await offerTo(
+      zcf,
+      addCollateral,
+      harden({ [liquidityKeyword]: 'Collateral' }),
+      proposal,
+      reserveLiquidityTokenSeat,
+    );
+    const deposits = await deposited;
+    trace('handlePoolAdded deposited', deposits);
+    await E(userSeatPromise).getOfferResult();
+    reserveLiquidityTokenSeat.exit();
+    trace('handlePoolAdded done');
+  };
 
   const getLiquiditySupply = brand => getPool(brand).getLiquiditySupply();
   const getLiquidityIssuer = brand => getPool(brand).getLiquidityIssuer();
+  /** @param {Brand} brand */
+  const getSecondaryIssuer = brand => {
+    assert(
+      secondaryBrandToLiquidityMint.has(brand),
+      'Brand not a secondary of the AMM',
+    );
+    return zcf.getIssuerForBrand(brand);
+  };
   const addPoolInvitation = makeAddPoolInvitation(
     zcf,
     initPool,
@@ -179,14 +243,17 @@ const start = async (zcf, privateArgs) => {
     quoteIssuerKit,
     params,
     protocolSeat,
-    reserveLiquidityTokenSeat,
     secondaryBrandToLiquidityMint,
-    updateMetrics,
+    handlePoolAdded,
   );
   const addIssuer = makeAddIssuer(
     zcf,
     isSecondary,
     secondaryBrandToLiquidityMint,
+    () => {
+      assert(reserveFacet, 'Must first resolveReserveFacet');
+      return E(reserveFacet).addIssuerFromAmm;
+    },
   );
 
   /** @param {Brand} brand */
@@ -275,6 +342,7 @@ const start = async (zcf, privateArgs) => {
       getLiquiditySupply,
       getInputPrice,
       getOutputPrice,
+      getSecondaryIssuer,
       makeSwapInvitation: makeSwapInInvitation,
       makeSwapInInvitation,
       makeSwapOutInvitation,
@@ -295,6 +363,15 @@ const start = async (zcf, privateArgs) => {
   const creatorFacet = makeGovernorFacet(
     Far('AMM Fee Collector facet', {
       makeCollectFeesInvitation,
+      /**
+       * Must be called before adding pools. Not provided at contract start time due to cyclic dependency.
+       *
+       * @param {AssetReservePublicFacet} facet
+       */
+      resolveReserveFacet: facet => {
+        assert(!reserveFacet, 'reserveFacet already resolved');
+        reserveFacet = facet;
+      },
     }),
   );
   return harden({ publicFacet, creatorFacet });

@@ -30,15 +30,15 @@ import { assert, details as X, q } from '@agoric/assert';
  *
  * @deprecated switch to ScalarMap if possible, Map otherwise
  * @template K,V
- * @param {string} [keyName='key'] - the column name for the key
+ * @param {string} [tag='key'] - tag for debugging
  * @returns {LegacyMap<K,V>}
  */
-export const makeLegacyMap = (keyName = 'key') => {
+export const makeLegacyMap = (tag = 'key') => {
   const m = new Map();
   const assertKeyDoesNotExist = key =>
-    assert(!m.has(key), X`${q(keyName)} already registered: ${key}`);
+    assert(!m.has(key), X`${q(tag)} already registered: ${key}`);
   const assertKeyExists = key =>
-    assert(m.has(key), X`${q(keyName)} not found: ${key}`);
+    assert(m.has(key), X`${q(tag)} not found: ${key}`);
   return harden({
     has: key => {
       // Check if a key exists. The key can be any JavaScript value,

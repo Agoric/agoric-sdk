@@ -12,8 +12,14 @@ const { details: X } = assert;
  * @param {ZCF} zcf
  * @param {(Brand) => boolean} isInSecondaries
  * @param {WeakStore<Brand,ZCFMint>} brandToLiquidityMint
+ * @param {() => (secondaryBrand: Brand) => Promise<void>} getAddIssuerToReserve
  */
-export const makeAddIssuer = (zcf, isInSecondaries, brandToLiquidityMint) => {
+export const makeAddIssuer = (
+  zcf,
+  isInSecondaries,
+  brandToLiquidityMint,
+  getAddIssuerToReserve,
+) => {
   /**
    * @param {Issuer} secondaryIssuer
    * @param {string} keyword
@@ -35,20 +41,30 @@ export const makeAddIssuer = (zcf, isInSecondaries, brandToLiquidityMint) => {
     const liquidityKeyword = `${keyword}Liquidity`;
     zcf.assertUniqueKeyword(liquidityKeyword);
 
-    return E.when(
-      zcf.makeZCFMint(
-        liquidityKeyword,
-        AssetKind.NAT,
-        harden({ decimalPlaces: 6 }),
-      ),
-      /** @param {ZCFMint} mint */
-      async mint => {
-        await zcf.saveIssuer(secondaryIssuer, keyword);
-        brandToLiquidityMint.init(secondaryBrand, mint);
-        const { issuer: liquidityIssuer } = mint.getIssuerRecord();
-        return liquidityIssuer;
-      },
+    const mint = await zcf.makeZCFMint(
+      liquidityKeyword,
+      AssetKind.NAT,
+      harden({ decimalPlaces: 6 }),
     );
+    await zcf.saveIssuer(secondaryIssuer, keyword);
+    const issuer = zcf.getIssuerForBrand(secondaryBrand);
+    console.log(
+      'Saved issuer',
+      secondaryIssuer,
+      'to keyword',
+      keyword,
+      'and got back',
+      issuer,
+    );
+    // this ensures that getSecondaryIssuer(thisIssuer) will return even before the pool is created
+    brandToLiquidityMint.init(secondaryBrand, mint);
+    const { issuer: liquidityIssuer } = mint.getIssuerRecord();
+    // defer lookup until necessary. more aligned with governed param we expect this to be eventually.
+    const addIssuerToReserve = getAddIssuerToReserve();
+    // tell the reserve about this brand, which it will validate by calling back
+    // to AMM for the issuer
+    await addIssuerToReserve(secondaryBrand);
+    return liquidityIssuer;
   };
 };
 
@@ -60,10 +76,8 @@ export const makeAddIssuer = (zcf, isInSecondaries, brandToLiquidityMint) => {
  * @param {IssuerKit} quoteIssuerKit
  * @param {import('./multipoolMarketMaker.js').AMMParamGetters} params retrieve governed params
  * @param {ZCFSeat} protocolSeat seat that holds collected fees
- * @param {ZCFSeat} reserveLiquidityTokenSeat seat that holds liquidity tokens
- *   from adding pool liquidity. It is expected to be collected by the Reserve.
  * @param {WeakStore<Brand,ZCFMint>} brandToLiquidityMint
- * @param {() => void} updateMetrics
+ * @param {(secondaryBrand: Brand, reserveLiquidityTokenSeat: ZCFSeat, liquidityKeyword: Keyword) => Promise<void>} onOfferHandled
  */
 export const makeAddPoolInvitation = (
   zcf,
@@ -73,9 +87,8 @@ export const makeAddPoolInvitation = (
   quoteIssuerKit,
   params,
   protocolSeat,
-  reserveLiquidityTokenSeat,
   brandToLiquidityMint,
-  updateMetrics,
+  onOfferHandled,
 ) => {
   const makePool = definePoolKind(
     zcf,
@@ -95,12 +108,11 @@ export const makeAddPoolInvitation = (
     const poolFacets = makePool(liquidityZcfMint, poolSeat, secondaryBrand);
 
     initPool(secondaryBrand, poolFacets);
-    updateMetrics();
     return { liquidityZcfMint, poolFacets };
   };
 
   /** @param {ZCFSeat} seat */
-  const addPoolAndLiquidityHandler = async seat => {
+  const handleAddPoolOffer = async seat => {
     assertProposalShape(seat, {
       give: { Central: null, Secondary: null },
     });
@@ -159,15 +171,20 @@ export const makeAddPoolInvitation = (
     helper.addLiquidityInternal(seat, secondaryAmount, centralAmount);
 
     seat.decrementBy({ Liquidity: minLiqAmount });
+    const { zcfSeat: reserveLiquidityTokenSeat } = zcf.makeEmptySeatKit();
     reserveLiquidityTokenSeat.incrementBy({ [liquidityKeyword]: minLiqAmount });
     zcf.reallocate(reserveLiquidityTokenSeat, seat);
     seat.exit();
     pool.updateState();
     brandToLiquidityMint.delete(secondaryBrand);
 
+    await onOfferHandled(
+      secondaryBrand,
+      reserveLiquidityTokenSeat,
+      liquidityKeyword,
+    );
     return 'Added liquidity.';
   };
 
-  return () =>
-    zcf.makeInvitation(addPoolAndLiquidityHandler, 'Add Pool and Liquidity');
+  return () => zcf.makeInvitation(handleAddPoolOffer, 'Add Pool and Liquidity');
 };

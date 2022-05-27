@@ -32,6 +32,7 @@ const SHARED_MAIN_MANIFEST = harden({
     },
     produce: {
       ammCreatorFacet: 'amm',
+      ammInstanceWithoutReserve: 'amm',
       ammGovernorCreatorFacet: 'amm',
     },
     issuer: { consume: { RUN: 'zoe' } },
@@ -41,7 +42,7 @@ const SHARED_MAIN_MANIFEST = harden({
     },
     instance: {
       consume: { economicCommittee: 'economicCommittee' },
-      produce: { amm: 'amm', ammGovernor: 'ammGovernor' },
+      produce: { ammGovernor: 'ammGovernor' },
     },
   },
   [econBehaviors.startInterchainPool.name]: {
@@ -106,6 +107,8 @@ const SHARED_MAIN_MANIFEST = harden({
 
   [econBehaviors.setupReserve.name]: {
     consume: {
+      ammCreatorFacet: 'amm',
+      ammInstanceWithoutReserve: 'amm',
       feeMintAccess: 'zoe',
       chainTimerService: 'timer',
       zoe: 'zoe',
@@ -124,6 +127,7 @@ const SHARED_MAIN_MANIFEST = harden({
     instance: {
       consume: { amm: 'amm', economicCommittee: 'economicCommittee' },
       produce: {
+        amm: 'amm',
         reserve: 'reserve',
         reserveGovernor: 'ReserveGovernor',
       },
