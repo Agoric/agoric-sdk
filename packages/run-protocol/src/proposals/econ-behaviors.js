@@ -267,7 +267,6 @@ export const setupReserve = async ({
   },
 }) => {
   trace('setupReserve');
-  console.trace('setupReserve');
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
   const [poserInvitation, poserInvitationAmount] = await Promise.all([
     poserInvitationP,
