@@ -1474,7 +1474,7 @@
   resolved "https://registry.yarnpkg.com/@endo/base64/-/base64-0.2.25.tgz#afdccb950bf5e003fb9e9df315376cce69f9b4af"
   integrity sha512-TRKmAKQGT3KBnB6M0A5FMvrOyR00CX1M96hA5CA8bVIvQCb+KabqVZmnhgsLgQUkfU/d85B/oaJZCIUW6AFtog==
 
-"@endo/bundle-source@^2.1.1", "@endo/bundle-source@^2.2.0":
+"@endo/bundle-source@^2.2.0":
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/@endo/bundle-source/-/bundle-source-2.2.0.tgz#b0a48c671ac86ba279d8495a28e42540fc067f8b"
   integrity sha512-NNDc76e90QAgPpUR3LTz+EK8Nii5sAt6/8fmsWMwXuD2anItRFo2fHIwo5jfjB4mZfnvoyzc5er0v2fEURayuw==

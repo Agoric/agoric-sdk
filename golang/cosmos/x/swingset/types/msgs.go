@@ -14,6 +14,7 @@ const RouterKey = ModuleName // this was defined in your key.go file
 var (
 	_ sdk.Msg = &MsgDeliverInbound{}
 	_ sdk.Msg = &MsgProvision{}
+	_ sdk.Msg = &MsgInstallBundle{}
 	_ sdk.Msg = &MsgWalletAction{}
 	_ sdk.Msg = &MsgWalletSpendAction{}
 
@@ -181,5 +182,34 @@ func (msg MsgProvision) GetSignBytes() []byte {
 
 // GetSigners defines whose signature is required
 func (msg MsgProvision) GetSigners() []sdk.AccAddress {
+	return []sdk.AccAddress{msg.Submitter}
+}
+
+func NewMsgInstallBundle(bundleJson string, submitter sdk.AccAddress) *MsgInstallBundle {
+	return &MsgInstallBundle{
+		Bundle:    bundleJson,
+		Submitter: submitter,
+	}
+}
+
+// Route should return the name of the module
+func (msg MsgInstallBundle) Route() string { return RouterKey }
+
+// Type should return the action
+func (msg MsgInstallBundle) Type() string { return "installBundle" }
+
+// ValidateBasic runs stateless checks on the message
+func (msg MsgInstallBundle) ValidateBasic() error {
+	if msg.Submitter.Empty() {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
+	}
+	if len(msg.Bundle) == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Bundle cannot be empty")
+	}
+	return nil
+}
+
+// GetSigners defines whose signature is required
+func (msg MsgInstallBundle) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Submitter}
 }

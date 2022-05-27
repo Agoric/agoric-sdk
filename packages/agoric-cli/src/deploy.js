@@ -5,13 +5,24 @@ import { E, makeCapTP } from '@endo/captp';
 import { makePromiseKit } from '@endo/promise-kit';
 import bundleSource from '@endo/bundle-source';
 import { search as readContainingPackageDescriptor } from '@endo/compartment-mapper';
+import url from 'url';
 import path from 'path';
+import http from 'http';
 import inquirer from 'inquirer';
+import chalk from 'chalk';
+import tmp from 'tmp';
 import createEsmRequire from 'esm';
-
 import { createRequire } from 'module';
 
 import { getAccessToken } from '@agoric/access-token';
+
+import {
+  makeBundlePublisher,
+  makeCosmosBundlePublisher,
+  makeHttpBundlePublisher,
+} from './publish.js';
+import { makeJsonHttpClient } from './json-http-client-node.js';
+import { makePspawn, getSDKBinaries } from './helpers.js';
 
 const { details: X } = assert;
 
@@ -35,7 +46,7 @@ const RETRY_DELAY_MS = 1000;
 const PATH_SEP_RE = new RegExp(`${path.sep.replace(/\\/g, '\\\\')}`, 'g');
 
 export default async function deployMain(progname, rawArgs, powers, opts) {
-  const { anylogger, fs, makeWebSocket, now } = powers;
+  const { anylogger, fs, spawn, makeWebSocket, now } = powers;
   const console = anylogger('agoric:deploy');
 
   const allowUnsafePlugins = opts.allowUnsafePlugins;
@@ -62,6 +73,14 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
     .filter(dep => dep)
     .sort();
 
+  const sdkPrefixes = {};
+  if (!opts.sdk) {
+    // TODO importMetaResolve should be more reliable.
+    const agoricPrefix = path.resolve(`node_modules/@agoric`);
+    sdkPrefixes.goPfx = agoricPrefix;
+    sdkPrefixes.jsPfx = agoricPrefix;
+  }
+
   const need = opts.need
     .split(',')
     .map(dep => dep.trim())
@@ -85,6 +104,9 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
     ? new URL(opts.hostport, 'ws://localhost:8000')
     : new URL(`ws://${host}:${port}`);
 
+  const myPort =
+    wsurl.port || (['https:', 'wss:'].includes(wsurl.protocol) ? '443' : '80');
+
   assert.equal(wsurl.pathname, '/', X`${opts.hostport} cannot contain a path`);
   wsurl.pathname = '/private/captp';
 
@@ -97,10 +119,96 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
     1000,
   );
 
+  const jsonHttpCall = makeJsonHttpClient({ http });
+
+  const listConnections = async () => {
+    const accessToken = await getAccessToken(`${wsurl.hostname}:${myPort}`);
+
+    const { ok, connections } = await jsonHttpCall({
+      hostname: host,
+      port,
+      method: 'GET',
+      path: `/connections?accessToken=${encodeURIComponent(accessToken)}`,
+    });
+    assert(
+      ok === true,
+      `Expected JSON body "ok" property to be true for HTTP request for chain connections`,
+    );
+    return connections;
+  };
+
+  const getDefaultConnection = async () => {
+    let connections = await listConnections();
+
+    const filterOptions = {
+      __proto__: null,
+      local: ['http'],
+      sim: ['fake-chain'],
+      cosmos: ['chain-cosmos-sdk'],
+    };
+    const defaultFilter = [...filterOptions.sim, ...filterOptions.cosmos];
+    filterOptions.agoric = defaultFilter;
+
+    let filterChoice = defaultFilter;
+    if (opts.target !== undefined) {
+      filterChoice = filterOptions[opts.target];
+      assert(
+        filterChoice !== undefined,
+        `Invalid --target ${opts.target}, must be one of agoric, cosmos, sim, or local`,
+      );
+    }
+
+    connections = connections.filter(({ type }) => filterChoice.includes(type));
+
+    assert(
+      connections.length > 0,
+      `Cannot find any chain connections in local solo.`,
+    );
+    if (connections.length === 1) {
+      return connections[0];
+    }
+    assert(
+      process.stdin.isTTY,
+      `Multiple connection options. Please use the --target flag or an interactive terminal.`,
+    );
+    console.log('\nConnection options:');
+    const lookup = new Map(
+      connections.map((connection, index) => {
+        console.log(`${index + 1}.`, connection);
+        return [`${index + 1}`, connection];
+      }),
+    );
+    const { connectionNumber } = await inquirer.prompt({
+      name: 'connectionNumber',
+      message: 'Please choose a connection to publish to',
+      choices: lookup.keys(),
+    });
+    const connection = lookup.get(connectionNumber);
+    console.log({ connection });
+    return connection;
+  };
+
+  const pspawnEnv = { ...process.env, DEBUG: 'agoric,deploy,deploy:publish' };
+  const pspawn = makePspawn({ env: pspawnEnv, spawn, log: console, chalk });
+  const { cosmosHelper } = getSDKBinaries(sdkPrefixes);
+  const publishBundleCosmos = makeCosmosBundlePublisher({
+    pspawn,
+    cosmosHelper,
+    pathResolve: path.resolve,
+    writeFile: fs.writeFile,
+    tmpDirSync: tmp.dirSync,
+  });
+  const publishBundleHttp = makeHttpBundlePublisher({
+    getAccessToken,
+    jsonHttpCall,
+  });
+  const publishBundle = makeBundlePublisher({
+    getDefaultConnection,
+    publishBundleCosmos,
+    publishBundleHttp,
+  });
+
   const retryWebsocket = async () => {
-    const myPort =
-      wsurl.port ||
-      (['https:', 'wss:'].includes(wsurl.protocol) ? '443' : '80');
     const accessToken = await getAccessToken(`${wsurl.hostname}:${myPort}`);
 
     // For a WebSocket we need to put the token in the query string.
@@ -253,11 +361,12 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
 
           // Use Node.js ESM support if package.json of template says "type":
           // "module".
-          const read = async url => fs.readFile(new URL(url).pathname);
+          const read = async location =>
+            fs.readFile(url.fileURLToPath(location));
           const { packageDescriptorText } =
             await readContainingPackageDescriptor(
               read,
-              `file://${moduleFile}`,
+              url.pathToFileURL(moduleFile),
             ).catch(cause => {
               throw new Error(
                 `Expected a package.json beside deploy script ${moduleFile}, ${cause}`,
@@ -285,6 +394,8 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
             await main(bootP, {
               bundleSource: (file, options = undefined) =>
                 bundleSource(pathResolve(file), options),
+              publishBundle,
+              listConnections,
               pathResolve,
               installUnsafePlugin,
               /**

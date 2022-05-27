@@ -114,8 +114,8 @@
  * @returns {Promise<InvitationDetails>}
  */
 
-// XXX include `SourceBundle` because that's how this function is used.
-// TODO remove this function https://github.com/Agoric/agoric-sdk/issues/4565
+// TODO remove support for source bundles, leaving only support for hash bundles.
+// https://github.com/Agoric/agoric-sdk/issues/4565
 /**
  * @callback InstallBundle
  *
@@ -124,11 +124,10 @@
  *
  * @param {Bundle | SourceBundle} bundle
  * @returns {Promise<Installation>}
- *
- * @deprecated
- * @see InstallBundleID
  */
 
+// TODO consolidate installBundleID into install.
+// https://github.com/Agoric/agoric-sdk/issues/4974
 /**
  * @callback InstallBundleID
  *
@@ -251,6 +250,7 @@
 
 /**
  * @typedef {object} VatAdminSvc
+ * @property {(BundleID: id) => Promise<BundleCap>} waitForBundleCap
  * @property {(BundleID: id) => Promise<BundleCap>} getBundleCap
  * @property {(name: string) => Promise<BundleCap>} getNamedBundleCap
  * @property {(bundleCap: BundleCap) => Promise<RootAndAdminNode>} createVat

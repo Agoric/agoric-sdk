@@ -26,18 +26,6 @@ export const makeInstallationStorage = getBundleCapForID => {
    * an instance is started.
    */
 
-  /** @type {InstallBundle} */
-  const installBundle = async bundle => {
-    assert.typeof(bundle, 'object', 'a bundle must be provided');
-    /** @type {Installation} */
-    // @ts-expect-error cast
-    const installation = Far('Installation', {
-      getBundle: () => bundle,
-    });
-    installationsBundle.init(installation, bundle);
-    return installation;
-  };
-
   /** @type {InstallBundleID} */
   const installBundleID = async bundleID => {
     assert.typeof(bundleID, 'string', `a bundle ID must be provided`);
@@ -55,6 +43,39 @@ export const makeInstallationStorage = getBundleCapForID => {
     });
     installationsBundleCap.init(installation, { bundleCap, bundleID });
     return installation;
+  };
+
+  /** @type {InstallBundle} */
+  const installSourceBundle = async bundle => {
+    assert.typeof(bundle, 'object', 'a bundle must be provided');
+    /** @type {Installation} */
+    // @ts-expect-error cast
+    const installation = Far('Installation', {
+      getBundle: () => bundle,
+    });
+    installationsBundle.init(installation, bundle);
+    return installation;
+  };
+
+  /** @type {InstallBundle} */
+  const installBundle = async allegedBundle => {
+    // Bundle is a very open-ended type and we must decide here
+    // whether to treat it as either a HashBundle or SourceBundle.
+    // So, we cast it down and inspect it.
+    const bundle = /** @type {unknown} */ (allegedBundle);
+    assert.typeof(bundle, 'object', 'a bundle must be provided');
+    assert(bundle !== null, 'a bundle must be provided');
+    const { moduleFormat } = bundle;
+    if (moduleFormat === 'endoZipBase64Sha512') {
+      const { endoZipBase64Sha512 } = bundle;
+      assert.typeof(
+        endoZipBase64Sha512,
+        'string',
+        `bundle endoZipBase64Sha512 must be a string, got ${endoZipBase64Sha512}`,
+      );
+      return installBundleID(`b1-${endoZipBase64Sha512}`);
+    }
+    return installSourceBundle(bundle);
   };
 
   /** @type {UnwrapInstallation} */

@@ -27,6 +27,7 @@ export default function makeBlockManager({
   saveChainState,
   saveOutsideState,
   savedHeight,
+  validateAndInstallBundle,
   verboseBlocks = false,
 }) {
   let computedHeight = savedHeight;
@@ -76,6 +77,17 @@ export default function makeBlockManager({
 
       case ActionType.PLEASE_PROVISION: {
         p = doBridgeInbound(BRIDGE_ID.PROVISION, action);
+        break;
+      }
+
+      case ActionType.INSTALL_BUNDLE: {
+        p = (async () => {
+          const bundle = JSON.parse(action.bundle);
+          harden(bundle);
+          return validateAndInstallBundle(bundle);
+        })().catch(error => {
+          console.error(error);
+        });
         break;
       }
 

@@ -320,6 +320,8 @@ export async function launch({
     kvStore.get(getHostKey('chainSends')) || '[]',
   );
 
+  const { validateAndInstallBundle } = controller;
+
   return {
     actionQueue,
     deliverInbound,
@@ -333,5 +335,6 @@ export async function launch({
     savedHeight,
     savedBlockTime,
     savedChainSends,
+    validateAndInstallBundle,
   };
 }
