@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint-disable jsdoc/require-returns-type */
 import { assert, details as X, q } from '@agoric/assert';
 
 /**
@@ -197,7 +198,7 @@ export function initEphemeralSwingStore() {
    * @param {string} item  The item to write
    * @param {object} position  The position to write the item
    *
-   * @returns {object} the new position after writing
+   * @returns the new position after writing
    */
   function writeStreamItem(streamName, item, position) {
     insistStreamName(streamName);
