@@ -4,16 +4,24 @@ import {
   setUpZoeForTest,
   setupAmmServices,
 } from '../amm/vpool-xyk-amm/setup.js';
-import { setupReserve } from '../../src/proposals/econ-behaviors.js';
 import { provideBundle } from '../supports.js';
 
 const reserveRoot = './src/reserve/assetReserve.js'; // package relative
 const faucetRoot = './test/vaultFactory/faucet.js';
 
+/**
+ * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
+ *
+ * @param {*} t
+ * @param {ManualTimer | undefined=} timer
+ * @param {FarZoeKit} farZoeKit
+ * @param {Issuer} runIssuer
+ * @param {{ committeeName: string, committeeSize: number}} electorateTerms
+ */
 const setupReserveBootstrap = async (
   t,
   timer,
-  zoe,
+  farZoeKit,
   runIssuer,
   electorateTerms,
 ) => {
@@ -25,9 +33,10 @@ const setupReserveBootstrap = async (
     electorateTerms,
     centralR,
     timer,
-    zoe,
+    farZoeKit,
   );
   const { produce } = /** @type { EconomyBootstrapPowers } */ (ammSpaces.space);
+  const zoe = await farZoeKit.zoe;
 
   produce.chainTimerService.resolve(timer);
   produce.zoe.resolve(zoe);
@@ -58,25 +67,14 @@ const setupReserveBootstrap = async (
  * @param {import("ava").ExecutionContext<unknown>} t
  * @param {{ committeeName: string, committeeSize: number}} electorateTerms
  * @param {ManualTimer | undefined=} timer
- * @returns {{
- *     zoe: ZoeService,
- *     feeMintAccess: FeeMintAccess,
- *     installation: Installation,
- *     committeeCreator: ElectorateCreatorFacet,
- *     electorateInstance: Instance,
- *     governor: any,
- *     reserve: ReserveKit,
- *     invitationAmount: Amount,
- *     space: any,
- *     faucetInstallation: Installation,
- * }}
  */
 export const setupReserveServices = async (
   t,
   electorateTerms,
   timer = buildManualTimer(console.log),
 ) => {
-  const { zoe, feeMintAccess } = await setUpZoeForTest();
+  const farZoeKit = await setUpZoeForTest();
+  const { feeMintAccess, zoe } = farZoeKit;
 
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
@@ -84,7 +82,7 @@ export const setupReserveServices = async (
   const spaces = await setupReserveBootstrap(
     t,
     timer,
-    zoe,
+    farZoeKit,
     runIssuer,
     electorateTerms,
   );
@@ -96,9 +94,7 @@ export const setupReserveServices = async (
   const faucetInstallation = E(zoe).install(faucetBundle);
   brand.produce.RUN.resolve(runBrand);
   issuer.produce.RUN.resolve(runIssuer);
-  produce.feeMintAccess.resolve(feeMintAccess);
-
-  await setupReserve(spaces);
+  produce.feeMintAccess.resolve(await feeMintAccess);
 
   const governorCreatorFacet = consume.reserveGovernorCreatorFacet;
   const governorInstance = await instance.consume.reserveGovernor;

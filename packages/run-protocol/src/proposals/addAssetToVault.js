@@ -236,7 +236,7 @@ export const registerScaledPriceAuthority = async (
  */
 export const addAssetToVault = async (
   {
-    consume: { vaultFactoryCreator, reserveCreatorFacet, agoricNamesAdmin },
+    consume: { vaultFactoryCreator, agoricNamesAdmin },
     brand: {
       consume: { RUN: runP },
     },
@@ -250,8 +250,6 @@ export const addAssetToVault = async (
     E(agoricNamesAdmin).lookupAdmin('issuer'),
     [keyword],
   );
-
-  await E(reserveCreatorFacet).addIssuer(interchainIssuer, keyword);
 
   const RUN = await runP;
   await E(vaultFactoryCreator).addVaultType(interchainIssuer, oracleBrand, {

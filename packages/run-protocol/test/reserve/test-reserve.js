@@ -57,12 +57,20 @@ const addLiquidPool = async (
   return E(addLiquiditySeat).getOfferResult();
 };
 
+/**
+ *
+ * @param {ERef<ZoeService>} zoe
+ * @param {ERef<FeeMintAccess>} feeMintAccessP
+ * @param {*} faucetInstallation
+ * @param {*} runInitialLiquidity
+ */
 const getRunFromFaucet = async (
   zoe,
-  feeMintAccess,
+  feeMintAccessP,
   faucetInstallation,
   runInitialLiquidity,
 ) => {
+  const feeMintAccess = await feeMintAccessP;
   // On-chain, there will be pre-existing RUN. The faucet replicates that
   const { creatorFacet: faucetCreator } = await E(zoe).startInstance(
     faucetInstallation,
@@ -106,7 +114,6 @@ test('reserve add collateral', async t => {
     AmountMath.make(runBrand, 1000n),
   );
   await addLiquidPool(runPayment, runIssuer, space, t, moola, moolaR, zoe);
-  await E(reserve.reserveCreatorFacet).addIssuer(moolaR.issuer, 'Moola');
   const invitation = await E(
     reserve.reservePublicFacet,
   ).makeAddCollateralInvitation();
@@ -122,49 +129,18 @@ test('reserve add collateral', async t => {
     `added moola to the collateral Reserve`,
   );
 
+  const { ammPublicFacet } = space.amm;
+  const moolaLiquidityIssuer = E(ammPublicFacet).getLiquidityIssuer(
+    moolaR.brand,
+  );
+  const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
   t.deepEqual(
     await E(reserve.reserveCreatorFacet).getAllocations(),
-    harden({ Moola: moola(100_000n) }),
+    harden({
+      Rmoola: moola(100_000n),
+      RmoolaLiquidity: AmountMath.make(moolaLiquidityBrand, 1000n),
+    }),
     'expecting more',
-  );
-});
-
-test('reserve unregistered', async t => {
-  /** @param {NatValue} value */
-  const moolaR = makeIssuerKit('moola');
-  const moola = value => AmountMath.make(moolaR.brand, value);
-
-  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  const timer = buildManualTimer(console.log);
-
-  const { zoe, reserve, space, faucetInstallation, feeMintAccess } =
-    await setupReserveServices(t, electorateTerms, timer);
-  const runBrand = await space.brand.consume.RUN;
-  const runIssuer = await space.issuer.consume.RUN;
-  const runPayment = getRunFromFaucet(
-    zoe,
-    feeMintAccess,
-    faucetInstallation,
-    AmountMath.make(runBrand, 1000n),
-  );
-  await addLiquidPool(runPayment, runIssuer, space, t, moola, moolaR, zoe);
-
-  const invitation = await E(
-    reserve.reservePublicFacet,
-  ).makeAddCollateralInvitation();
-
-  const proposal = { give: { Collateral: moola(100_000n) } };
-  const moolaPayment = moolaR.mint.mintPayment(moola(100000n));
-  const payments = { Collateral: moolaPayment };
-  const collateralSeat = E(zoe).offer(invitation, proposal, payments);
-
-  await t.throwsAsync(
-    () => E(collateralSeat).getOfferResult(),
-    {
-      message:
-        'Issuer not defined for brand [object Alleged: moola brand]; first call addIssuer()',
-    },
-    'Should not accept unregistered brand',
   );
 });
 
@@ -206,7 +182,6 @@ test('governance add Liquidity to the AMM', async t => {
     'should be 80K',
   );
 
-  await E(reserve.reserveCreatorFacet).addIssuer(moolaR.issuer, 'Moola');
   const invitation = await E(
     reserve.reservePublicFacet,
   ).makeAddCollateralInvitation();
@@ -249,8 +224,8 @@ test('governance add Liquidity to the AMM', async t => {
   t.deepEqual(
     await E(reserve.reserveCreatorFacet).getAllocations(),
     harden({
-      Moola: moola(10_000n),
-      MoolaLiquidity: AmountMath.make(moolaLiquidityBrand, 84_622n),
+      Rmoola: moola(10_000n),
+      RmoolaLiquidity: AmountMath.make(moolaLiquidityBrand, 85_622n),
     }),
     'expecting more',
   );
@@ -287,7 +262,6 @@ test('request more collateral than available', async t => {
   );
   await addLiquidPool(runPayment, runIssuer, space, t, moola, moolaR, zoe);
 
-  await E(reserve.reserveCreatorFacet).addIssuer(moolaR.issuer, 'Moola');
   const invitation = await E(
     reserve.reservePublicFacet,
   ).makeAddCollateralInvitation();
@@ -315,7 +289,7 @@ test('request more collateral than available', async t => {
   ).voteOnApiInvocation(
     'addLiquidityToAmmPool',
     params,
-    space.installation.consume.binaryVoteCounter,
+    await space.installation.consume.binaryVoteCounter,
     timer.getCurrentTimestamp() + 2n,
   );
   const details = await detailsP;
@@ -331,10 +305,16 @@ test('request more collateral than available', async t => {
     .then(() => t.fail('expecting failure'))
     .catch(e => t.is(e.message, 'insufficient reserves for that transaction'));
 
+  const { ammPublicFacet } = space.amm;
+  const moolaLiquidityIssuer = E(ammPublicFacet).getLiquidityIssuer(
+    moolaR.brand,
+  );
+  const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
   t.deepEqual(
     await E(reserve.reserveCreatorFacet).getAllocations(),
     harden({
-      Moola: moola(10_000n),
+      Rmoola: moola(10_000n),
+      RmoolaLiquidity: AmountMath.make(moolaLiquidityBrand, 1000n),
     }),
     'expecting more',
   );

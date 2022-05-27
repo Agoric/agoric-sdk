@@ -141,13 +141,16 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   const space = setupBootstrap(t, timer);
   const { consume, instance } = space;
   installGovernance(zoe, space.installation.produce);
+  // TODO consider using produceInstallations()
   space.installation.produce.amm.resolve(t.context.installation.amm);
-  startEconomicCommittee(space, {
+  space.installation.produce.reserve.resolve(t.context.installation.reserve);
+  await startEconomicCommittee(space, {
     options: { econCommitteeOptions: electorateTerms },
   });
-  setupAmm(space, {
+  await setupAmm(space, {
     options: { minInitialPoolLiquidity: 1000n },
   });
+  await setupReserve(space);
 
   const governorCreatorFacet = consume.ammGovernorCreatorFacet;
   const governorInstance = await instance.consume.ammGovernor;
@@ -288,10 +291,6 @@ const setupServices = async (
   const {
     installation: { produce: iProduce },
   } = space;
-  // make the installation available for setupReserve
-  iProduce.reserve.resolve(t.context.installation.reserve);
-  // produce the reserve instance in the space
-  await setupReserve(space);
   t.context.reserveCreatorFacet = space.consume.reserveCreatorFacet;
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
   iProduce.liquidate.resolve(t.context.installation.liquidate);
@@ -356,7 +355,7 @@ const makeDriver = async (t, initialPrice, priceBase) => {
   const {
     zoe,
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
-    runKit: { issuer: runIssuer },
+    runKit: { issuer: runIssuer, brand: runBrand },
   } = t.context;
   const {
     vaultFactory: { lender, vaultFactory },
@@ -504,6 +503,20 @@ const makeDriver = async (t, initialPrice, priceBase) => {
         t.like(managerNotification.value, likeExpected);
       }
       return managerNotification;
+    },
+    checkReserveAllocation: async (liquidityValue, stableValue) => {
+      const { reserveCreatorFacet } = t.context;
+      const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
+
+      const liquidityIssuer = await E(
+        services.ammFacets.ammPublicFacet,
+      ).getLiquidityIssuer(aethBrand);
+      const liquidityBrand = await E(liquidityIssuer).getBrand();
+
+      t.deepEqual(reserveAllocations, {
+        RaEthLiquidity: AmountMath.make(liquidityBrand, liquidityValue),
+        RUN: AmountMath.make(runBrand, stableValue),
+      });
     },
   };
   return driver;
@@ -847,9 +860,5 @@ test('penalties to reserve', async t => {
   d.setPrice(AmountMath.make(runBrand, 636n));
   await waitForPromisesToSettle();
 
-  const { reserveCreatorFacet } = t.context;
-  const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
-  t.deepEqual(reserveAllocations, {
-    RUN: { brand: runBrand, value: 29n },
-  });
+  await d.checkReserveAllocation(1000n, 29n);
 });
