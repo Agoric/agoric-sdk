@@ -1065,6 +1065,22 @@ test('amm adding liquidity', async t => {
     `poolAllocation after initialization`,
   );
 
+  const expected0 = {
+    c: 50_000n,
+    s: 10_000n,
+    l: 50_000n,
+    k: 500_000_000n,
+    payoutL: 84_115n,
+    payoutC: 0n,
+    payoutS: 11n,
+  };
+
+  await p.assertState({
+    centralAmount: AmountMath.make(centralR.brand, expected0.c),
+    secondaryAmount: moola(expected0.s),
+    liquidityTokens: expected0.l,
+  });
+
   const poolState1 = {
     c: 50_000n,
     s: 10_000n,
@@ -1089,6 +1105,7 @@ test('amm adding liquidity', async t => {
     centralR,
     liquidityIssuer,
   );
+
   // Add liquidity. Offer 20_000:70_000.
   await addLiquidity(20_000n, 70_000n, poolState1, expected1);
   // After the trade, this will increase the pool by about 150%
