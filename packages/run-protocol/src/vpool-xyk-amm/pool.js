@@ -60,7 +60,7 @@ export const publicPrices = prices => {
  * @typedef {object} PoolMetricsNotification
  * @property {Amount} centralAmount
  * @property {Amount} secondaryAmount
- * @property {NatValue} liquidityTokens - outstanding tokens
+ * @property {Amount} liquidityTokens - outstanding tokens
  */
 
 export const updateUpdaterState = (updater, pool) =>
