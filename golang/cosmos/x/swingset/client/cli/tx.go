@@ -34,6 +34,7 @@ func GetTxCmd(storeKey string) *cobra.Command {
 	swingsetTxCmd.AddCommand(
 		GetCmdDeliver(),
 		GetCmdProvisionOne(),
+		GetCmdInstallBundle(),
 	)
 
 	return swingsetTxCmd
@@ -74,6 +75,48 @@ func GetCmdDeliver() *cobra.Command {
 			}
 
 			msg := types.NewMsgDeliverInbound(msgs, cctx.GetFromAddress())
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(cctx, cmd.Flags(), msg)
+		},
+	}
+	flags.AddTxFlagsToCmd(cmd)
+	return cmd
+}
+
+// GetCmdInstallBundle is the CLI command for constructing or sending an
+// InstallBundle message in a transaction.
+func GetCmdInstallBundle() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:  "install-bundle <JSON>/@<FILE>/-",
+		Args: cobra.ExactArgs(1),
+
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cctx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			jsonIn := args[0]
+			if jsonIn[0] == '@' {
+				fname := args[0][1:]
+				if fname == "-" {
+					// Reading from stdin.
+					if _, err := fmt.Scanln(&jsonIn); err != nil {
+						return err
+					}
+				} else {
+					jsonBytes, err := ioutil.ReadFile(fname)
+					if err != nil {
+						return err
+					}
+					jsonIn = string(jsonBytes)
+				}
+			}
+
+			msg := types.NewMsgInstallBundle(jsonIn, cctx.GetFromAddress())
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}

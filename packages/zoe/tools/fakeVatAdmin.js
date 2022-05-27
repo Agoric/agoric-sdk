@@ -56,6 +56,12 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
       }
       return Promise.resolve(idToBundleCap.get(bundleID));
     },
+    waitForBundleCap: bundleID => {
+      if (!idToBundleCap.has(bundleID)) {
+        idToBundleCap.init(bundleID, fakeBundleCap());
+      }
+      return Promise.resolve(idToBundleCap.get(bundleID));
+    },
     getNamedBundleCap: name => {
       assert.equal(name, 'zcf', 'fakeVatAdmin only knows ZCF');
       return Promise.resolve(zcfBundleCap);

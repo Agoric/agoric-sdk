@@ -16,7 +16,7 @@ const getPools = pool => ({
 
 export const singlePool = {
   allocateGainsAndLosses: (context, seat, prices) => {
-    const { pool, helper } = context.facets;
+    const { pool } = context.facets;
     const { poolSeat, zcf, protocolSeat } = context.state;
     seat.decrementBy(harden({ In: prices.swapperGives }));
     seat.incrementBy(harden({ Out: prices.swapperGets }));
@@ -34,7 +34,6 @@ export const singlePool = {
     zcf.reallocate(poolSeat, seat, protocolSeat);
     seat.exit();
     pool.updateState();
-    helper.updateMetrics();
     return `Swap successfully completed.`;
   },
 

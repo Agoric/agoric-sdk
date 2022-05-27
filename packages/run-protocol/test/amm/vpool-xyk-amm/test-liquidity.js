@@ -9,6 +9,7 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { setupAmmServices } from './setup.js';
 import { unsafeMakeBundleCache } from '../../bundleTool.js';
+import { subscriptionTracker } from '../../metrics.js';
 import { waitForPromisesToSettle } from '../../supports.js';
 
 /** @typedef {Record<string, any> & {
@@ -195,6 +196,20 @@ test('amm add and remove liquidity', async t => {
     `Added Moola and Central Liquidity`,
   );
 
+  const poolMetrics = await E(amm.ammPublicFacet).getPoolMetrics(moolaR.brand);
+  const tracker = await subscriptionTracker(t, poolMetrics);
+  await tracker.assertInitial({
+    centralAmount: central(0n),
+    liquidityTokens: 0n,
+    secondaryAmount: moola(0n),
+  });
+  const poolLiquidity = {
+    centralAmount: { value: 1500000000n },
+    liquidityTokens: 1500000000n,
+    secondaryAmount: { value: 300000000n },
+  };
+  await tracker.assertChange(poolLiquidity);
+
   const alloc = await E(addLiquiditySeat).getCurrentAllocation();
   t.deepEqual(alloc, {
     Central: central(0n),
@@ -251,6 +266,11 @@ test('amm add and remove liquidity', async t => {
     `poolAllocation after initialization`,
   );
 
+  poolLiquidity.centralAmount.value += 50000n;
+  poolLiquidity.liquidityTokens += 50000n;
+  poolLiquidity.secondaryAmount.value += 10000n;
+  await tracker.assertChange(poolLiquidity);
+
   // Add liquidity. Offer 20_000:70_000. It will be accepted at a ratio of 5:1
   const {
     Central: c2,
@@ -269,6 +289,11 @@ test('amm add and remove liquidity', async t => {
     ),
     `poolAllocation after adding more`,
   );
+
+  poolLiquidity.centralAmount.value += 70000n;
+  poolLiquidity.liquidityTokens += 70000n;
+  poolLiquidity.secondaryAmount.value += 14000n;
+  await tracker.assertChange(poolLiquidity);
 
   const [l40Payment, _l30Payment] = await E(liquidityIssuer).split(
     l2,
@@ -291,6 +316,11 @@ test('amm add and remove liquidity', async t => {
     ),
     `poolAllocation after removing liquidity`,
   );
+
+  poolLiquidity.centralAmount.value -= 40000n;
+  poolLiquidity.liquidityTokens -= 40000n;
+  poolLiquidity.secondaryAmount.value -= 8000n;
+  await tracker.assertChange(poolLiquidity);
 });
 
 test('MinInitialPoolLiquidity to reserve', async t => {

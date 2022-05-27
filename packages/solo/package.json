@@ -33,7 +33,6 @@
     "@agoric/telemetry": "^0.2.0",
     "@agoric/vats": "^0.9.0",
     "@agoric/wallet": "^0.13.0",
-    "@agoric/xsnap": "^0.12.0",
     "@endo/captp": "^2.0.7",
     "@endo/eventual-send": "^0.15.3",
     "@endo/import-bundle": "^0.2.45",

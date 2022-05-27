@@ -7,6 +7,8 @@ option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types
 
 // Transactions.
 service Msg {
+  // Install a JavaScript sources bundle on the chain's SwingSet controller.
+  rpc InstallBundle(MsgInstallBundle) returns (MsgInstallBundleResponse);
   // Send inbound messages.
   rpc DeliverInbound(MsgDeliverInbound) returns (MsgDeliverInboundResponse);
   // Perform a low-privilege wallet action.
@@ -108,3 +110,20 @@ message MsgProvision {
 
 // MsgProvisionResponse is an empty reply.
 message MsgProvisionResponse {}
+
+// MsgInstallBundle carries a signed bundle to SwingSet.
+message MsgInstallBundle {
+    string bundle = 1 [
+        (gogoproto.jsontag)    = "bundle",
+        (gogoproto.moretags)   = "yaml:\"bundle\""
+    ];
+    bytes submitter = 2 [
+        (gogoproto.casttype)   = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+        (gogoproto.jsontag)    = "submitter",
+        (gogoproto.moretags)   = "yaml:\"submitter\""
+    ];
+}
+
+// MsgInstallBundleResponse is an empty acknowledgement that an install bundle
+// message has been queued for the SwingSet kernel's consideration.
+message MsgInstallBundleResponse {}

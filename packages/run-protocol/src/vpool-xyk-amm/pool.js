@@ -256,7 +256,8 @@ const poolBehavior = {
     return 'Liquidity successfully removed.';
   },
   getNotifier: ({ state: { notifier } }) => notifier,
-  updateState: ({ state: { updater }, facets: { pool } }) => {
+  updateState: ({ state: { updater }, facets: { pool, helper } }) => {
+    helper.updateMetrics();
     return updater.updateState(pool);
   },
   getToCentralPriceAuthority: ({ state }) => state.toCentralPriceAuthority,

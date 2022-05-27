@@ -46,7 +46,7 @@
   "devDependencies": {
     "@agoric/babel-parser": "^7.6.4",
     "@agoric/deploy-script-support": "^0.8.0",
-    "@endo/bundle-source": "^2.1.1",
+    "@endo/bundle-source": "^2.2.0",
     "@endo/captp": "^2.0.7",
     "ava": "^3.12.1",
     "c8": "^7.7.2",

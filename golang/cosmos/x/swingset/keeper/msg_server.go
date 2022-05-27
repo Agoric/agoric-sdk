@@ -155,3 +155,29 @@ func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision
 
 	return &types.MsgProvisionResponse{}, nil
 }
+
+type installBundleAction struct {
+	*types.MsgInstallBundle
+	Type        string `json:"type"` // INSTALL_BUNDLE
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
+}
+
+func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInstallBundle) (*types.MsgInstallBundleResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	action := &installBundleAction{
+		MsgInstallBundle: msg,
+		Type:             "INSTALL_BUNDLE",
+		BlockHeight:      ctx.BlockHeight(),
+		BlockTime:        ctx.BlockTime().Unix(),
+	}
+
+	err := keeper.PushAction(ctx, action)
+	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.MsgInstallBundleResponse{}, nil
+}
