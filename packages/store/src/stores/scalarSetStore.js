@@ -82,12 +82,12 @@ export const makeSetStoreMethods = (
  * copyRecords, as keys and look them up based on equality of their contents.
  *
  * @template K
- * @param {string} [keyName='key'] - the column name for the key
+ * @param {string} [tag='key'] - tag for debugging
  * @param {StoreOptions=} options
  * @returns {SetStore<K>}
  */
 export const makeScalarSetStore = (
-  keyName = 'key',
+  tag = 'key',
   { keySchema = undefined } = {},
 ) => {
   const jsset = new Set();
@@ -106,8 +106,8 @@ export const makeScalarSetStore = (
     }
   };
 
-  return Far(`scalar SetStore of ${q(keyName)}`, {
-    ...makeSetStoreMethods(jsset, assertKeyOkToAdd, undefined, keyName),
+  return Far(`scalar SetStore of ${q(tag)}`, {
+    ...makeSetStoreMethods(jsset, assertKeyOkToAdd, undefined, tag),
   });
 };
 harden(makeScalarSetStore);

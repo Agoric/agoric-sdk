@@ -20,7 +20,7 @@ const { quote: q } = assert;
  * @param {(k: K, v: V) => void} assertKVOkToAdd
  * @param {(k: K, v: V) => void} assertKVOkToSet
  * @param {((k: K) => void)=} assertKeyOkToDelete
- * @param {string=} keyName
+ * @param {string=} tag
  * @returns {MapStore<K,V>}
  */
 export const makeMapStoreMethods = (
@@ -28,7 +28,7 @@ export const makeMapStoreMethods = (
   assertKVOkToAdd,
   assertKVOkToSet,
   assertKeyOkToDelete = undefined,
-  keyName = 'key',
+  tag = 'key',
 ) => {
   const { assertUpdateOnAdd, assertUpdateOnDelete, iterableKeys } =
     makeCurrentKeysKit(
@@ -37,7 +37,7 @@ export const makeMapStoreMethods = (
       compareRank,
       assertKVOkToAdd,
       assertKeyOkToDelete,
-      keyName,
+      tag,
     );
 
   /**
@@ -87,7 +87,7 @@ export const makeMapStoreMethods = (
       /** @type {(k: K, v: V) => void} */ (assertUpdateOnAdd),
       assertKVOkToSet,
       assertUpdateOnDelete,
-      keyName,
+      tag,
     ),
     keys,
     values,
@@ -124,12 +124,12 @@ export const makeMapStoreMethods = (
  * copyRecords, as keys and look them up based on equality of their contents.
  *
  * @template K,V
- * @param {string} [keyName='key'] - the column name for the key
+ * @param {string} [tag='key'] - the column name for the key
  * @param {StoreOptions=} options
  * @returns {MapStore<K,V>}
  */
 export const makeScalarMapStore = (
-  keyName = 'key',
+  tag = 'key',
   { keySchema = undefined, valueSchema = undefined } = {},
 ) => {
   const jsmap = new Map();
@@ -163,13 +163,13 @@ export const makeScalarMapStore = (
     assertKVOkToSet(key, value);
   };
 
-  return Far(`scalar MapStore of ${q(keyName)}`, {
+  return Far(`scalar MapStore of ${q(tag)}`, {
     ...makeMapStoreMethods(
       jsmap,
       assertKVOkToAdd,
       assertKVOkToSet,
       undefined,
-      keyName,
+      tag,
     ),
   });
 };
