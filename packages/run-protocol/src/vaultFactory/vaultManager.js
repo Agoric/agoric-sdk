@@ -21,7 +21,7 @@ import {
 } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 
-import { defineKindMulti, partialAssign, pickFacet } from '@agoric/vat-data';
+import { defineKindMulti, pickFacet } from '@agoric/vat-data';
 import { makeVault } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
@@ -232,7 +232,7 @@ const helperBehavior = {
 
     // Update state with the results of charging interest
 
-    const stateUpdates = chargeInterest(
+    const changes = chargeInterest(
       {
         mint: state.debtMint,
         mintAndReallocateWithFee: state.factoryPowers.mintAndReallocate,
@@ -256,14 +256,9 @@ const helperBehavior = {
       updateTime,
     );
 
-    // specify keys defensively
-    const { compoundedInterest, latestInterestUpdate, totalDebt } =
-      stateUpdates;
-    partialAssign(state, {
-      compoundedInterest,
-      latestInterestUpdate,
-      totalDebt,
-    });
+    state.compoundedInterest = changes.compoundedInterest;
+    state.latestInterestUpdate = changes.latestInterestUpdate;
+    state.totalDebt = changes.totalDebt;
 
     facets.helper.assetNotify();
     trace('chargeAllVaults complete');
