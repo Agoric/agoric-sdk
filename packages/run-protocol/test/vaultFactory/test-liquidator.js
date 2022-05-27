@@ -21,7 +21,6 @@ import {
   startVaultFactory,
   setupAmm,
   setupReserve,
-  linkAmmAndReserve,
 } from '../../src/proposals/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
 import * as Collect from '../../src/collect.js';
@@ -142,7 +141,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   const space = setupBootstrap(t, timer);
   const { consume, instance } = space;
   installGovernance(zoe, space.installation.produce);
-  // TODO
+  // TODO consider using produceInstallations()
   space.installation.produce.amm.resolve(t.context.installation.amm);
   space.installation.produce.reserve.resolve(t.context.installation.reserve);
   await startEconomicCommittee(space, {
@@ -152,7 +151,6 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
     options: { minInitialPoolLiquidity: 1000n },
   });
   await setupReserve(space);
-  await linkAmmAndReserve(space);
 
   const governorCreatorFacet = consume.ammGovernorCreatorFacet;
   const governorInstance = await instance.consume.ammGovernor;
@@ -293,11 +291,10 @@ const setupServices = async (
   const {
     installation: { produce: iProduce },
   } = space;
-  // make the installation available for setupReserve
-  iProduce.reserve.resolve(t.context.installation.reserve);
-  // produce the reserve instance in the space
-  await setupReserve(space);
-  await linkAmmAndReserve(space);
+  // // make the installation available for setupReserve
+  // iProduce.reserve.resolve(t.context.installation.reserve);
+  // // produce the reserve instance in the space
+  // await setupReserve(space);
   t.context.reserveCreatorFacet = space.consume.reserveCreatorFacet;
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
   iProduce.liquidate.resolve(t.context.installation.liquidate);

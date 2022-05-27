@@ -106,6 +106,7 @@ const SHARED_MAIN_MANIFEST = harden({
 
   [econBehaviors.setupReserve.name]: {
     consume: {
+      ammCreatorFacet: 'amm',
       feeMintAccess: 'zoe',
       chainTimerService: 'timer',
       zoe: 'zoe',

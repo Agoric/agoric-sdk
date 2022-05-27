@@ -29,7 +29,6 @@ import {
   setupReserve,
   startEconomicCommittee,
   startVaultFactory,
-  linkAmmAndReserve,
 } from '../../src/proposals/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
 import * as Collect from '../../src/collect.js';
@@ -154,7 +153,11 @@ test.before(async t => {
  * @param {*} aethLiquidity
  * @param {*} runLiquidity
  */
-const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
+const setupAmmAndElectorateAndReserve = async (
+  t,
+  aethLiquidity,
+  runLiquidity,
+) => {
   const {
     zoe,
     aethKit: { issuer: aethIssuer },
@@ -165,6 +168,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   const space = setupBootstrap(t, timer);
   const { consume, instance } = space;
   installGovernance(zoe, space.installation.produce);
+  // TODO consider using produceInstallations()
   space.installation.produce.amm.resolve(t.context.installation.amm);
   space.installation.produce.reserve.resolve(t.context.installation.reserve);
   await startEconomicCommittee(space, electorateTerms);
@@ -172,9 +176,8 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
     options: { minInitialPoolLiquidity: 300n },
   });
 
-  trace('Wire in the reserve');
+  // AMM needs the reserve in order to function
   await setupReserve(space);
-  await linkAmmAndReserve(space);
 
   const governorCreatorFacet = consume.ammGovernorCreatorFacet;
   const governorInstance = await instance.consume.ammGovernor;
@@ -292,7 +295,7 @@ const setupServices = async (
     proposal: aethInitialLiquidity,
     payment: aethMint.mintPayment(aethInitialLiquidity),
   };
-  const { amm: ammFacets, space } = await setupAmmAndElectorate(
+  const { amm: ammFacets, space } = await setupAmmAndElectorateAndReserve(
     t,
     aethLiquidity,
     runLiquidity,
@@ -325,10 +328,6 @@ const setupServices = async (
   const {
     installation: { produce: iProduce },
   } = space;
-  // make the installation available for setupReserve
-  iProduce.reserve.resolve(t.context.installation.reserve);
-  // produce the reserve instance in the space
-  await setupReserve(space);
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
   iProduce.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);

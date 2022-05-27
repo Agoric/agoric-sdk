@@ -175,7 +175,7 @@ const start = async (zcf, privateArgs) => {
   const { zcfSeat: protocolSeat } = zcf.makeEmptySeatKit();
 
   /** @type {AssetReservePublicFacet=} */
-  let reserveDepositFacet;
+  let reserveFacet;
   /**
    * @param {Brand} secondaryBrand
    * @param {ZCFSeat} reserveLiquidityTokenSeat
@@ -190,7 +190,7 @@ const start = async (zcf, privateArgs) => {
     trace('handlePoolAdded', { secondaryBrand, liquidityKeyword });
     updateMetrics();
 
-    assert(reserveDepositFacet, 'Missing reserveDepositFacet');
+    assert(reserveFacet, 'Missing reserveFacet');
     assert(reserveLiquidityTokenSeat, 'Missing reserveLiquidityTokenSeat');
 
     const secondaryIssuer = await zcf.getIssuerForBrand(secondaryBrand);
@@ -198,15 +198,13 @@ const start = async (zcf, privateArgs) => {
       secondaryBrand,
       secondaryIssuer,
     });
-    await E(reserveDepositFacet).addLiquidityIssuer(secondaryIssuer);
+    await E(reserveFacet).addLiquidityIssuer(secondaryIssuer);
 
     trace(
       `move ${liquidityKeyword} to the reserve`,
       reserveLiquidityTokenSeat.getCurrentAllocation(),
     );
-    const addCollateral = await E(
-      reserveDepositFacet,
-    ).makeAddCollateralInvitation();
+    const addCollateral = await E(reserveFacet).makeAddCollateralInvitation();
     const proposal = harden({
       give: {
         Collateral:
@@ -251,16 +249,13 @@ const start = async (zcf, privateArgs) => {
     secondaryBrandToLiquidityMint,
     handlePoolAdded,
   );
-  /**
-   *
-   */
   const addIssuer = makeAddIssuer(
     zcf,
     isSecondary,
     secondaryBrandToLiquidityMint,
     () => {
-      assert(reserveDepositFacet, 'Must first setReserveDepositFacet');
-      return E(reserveDepositFacet).addIssuerFromAmm;
+      assert(reserveFacet, 'Must first resolveReserveFacet');
+      return E(reserveFacet).addIssuerFromAmm;
     },
   );
 
@@ -376,9 +371,9 @@ const start = async (zcf, privateArgs) => {
        *
        * @param {AssetReservePublicFacet} facet
        */
-      setReserveDepositFacet: facet => {
-        // FIXME more than deposits
-        reserveDepositFacet = facet;
+      resolveReserveFacet: facet => {
+        assert(!reserveFacet, 'reserveFacet already resolved');
+        reserveFacet = facet;
       },
     }),
   );

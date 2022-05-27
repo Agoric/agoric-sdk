@@ -97,8 +97,6 @@ export const setupReserveServices = async (
   issuer.produce.RUN.resolve(runIssuer);
   produce.feeMintAccess.resolve(await feeMintAccess);
 
-  await setupReserve(spaces);
-
   const governorCreatorFacet = consume.reserveGovernorCreatorFacet;
   const governorInstance = await instance.consume.reserveGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);

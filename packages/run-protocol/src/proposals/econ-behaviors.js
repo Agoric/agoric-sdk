@@ -241,6 +241,7 @@ export const setupAmm = async (
 /** @param { EconomyBootstrapPowers } powers */
 export const setupReserve = async ({
   consume: {
+    ammCreatorFacet,
     feeMintAccess: feeMintAccessP,
     chainTimerService,
     zoe,
@@ -266,6 +267,7 @@ export const setupReserve = async ({
   },
 }) => {
   trace('setupReserve');
+  console.trace('setupReserve');
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
   const [poserInvitation, poserInvitationAmount] = await Promise.all([
     poserInvitationP,
@@ -311,6 +313,14 @@ export const setupReserve = async ({
 
   reserveInstanceProducer.resolve(instance);
   reserveGovernor.resolve(g.instance);
+
+  // AMM requires Reserve in order to add pools, but we can't provide it at startInstance
+  // time because Reserve requires AMM itself in order to be started.
+  // Now that we have the reserve, provide it to the AMM.
+  trace('Resolving the reserve public facet on the AMM');
+  // @ts-expect-error bad types
+  await E(ammCreatorFacet).resolveReserveFacet(publicFacet);
+
   return reserveInstallation;
 };
 
@@ -795,17 +805,3 @@ export const startRunStake = async (
   ]);
 };
 harden(startRunStake);
-
-/**
- * @param {EconomyBootstrapPowers} space
- */
-export const linkAmmAndReserve = async space => {
-  trace('linkAmmAndReserve');
-  const reserveInstance = await space.instance.consume.reserve;
-  trace({ reserveInstance });
-  const reservePublicFacet = await E(space.consume.zoe).getPublicFacet(
-    reserveInstance,
-  );
-  const ammCreatorFacet = await space.consume.ammCreatorFacet;
-  await E(ammCreatorFacet).setReserveDepositFacet(reservePublicFacet);
-};

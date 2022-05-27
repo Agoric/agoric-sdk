@@ -56,10 +56,10 @@ export const makeAddIssuer = (
       'and got back',
       issuer,
     );
-    // this ensures that getSecondaryIssuer will return
+    // this ensures that getSecondaryIssuer(thisIssuer) will return even before the pool is created
     brandToLiquidityMint.init(secondaryBrand, mint);
     const { issuer: liquidityIssuer } = mint.getIssuerRecord();
-    // ??? still need this deferred lookup?
+    // defer lookup until necessary. more aligned with governed param we expect this to be eventually.
     const addIssuerToReserve = getAddIssuerToReserve();
     // tell the reserve about this brand, which it will validate by calling back
     // to AMM for the issuer

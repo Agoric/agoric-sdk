@@ -109,10 +109,6 @@ export const setupAmmServices = async (
   brand.produce.RUN.resolve(centralR.brand);
   issuer.produce.RUN.resolve(centralR.issuer);
 
-  // AMM requires Reserve in order to add pools, but we can't provide it at startInstance
-  // time because Reserve requires AMM itself in order to be started.
-  // Instead we make AMM without the Reserve and add it later: REFa
-  trace('await dependencies of reserve');
   await Promise.all([
     startEconomicCommittee(space, {
       options: { econCommitteeOptions: electorateTerms },
@@ -150,12 +146,6 @@ export const setupAmmServices = async (
     ammPublicFacet,
     instance: governedInstance,
   };
-
-  // REFa: connect these after both contracts are started
-  const reservePublicFacet = await E(zoe).getPublicFacet(
-    instance.consume.reserve,
-  );
-  await E(amm.ammCreatorFacet).setReserveDepositFacet(reservePublicFacet);
 
   const committeeCreator = await consume.economicCommitteeCreatorFacet;
   const electorateInstance = await instance.consume.economicCommittee;
