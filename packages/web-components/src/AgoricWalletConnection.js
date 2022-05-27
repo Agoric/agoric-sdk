@@ -117,6 +117,7 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
           return this._bridgePK.promise;
         },
         reset: () => {
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
           this.reset();
         },
       });

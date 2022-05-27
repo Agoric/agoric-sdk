@@ -117,7 +117,7 @@ export const makeMapFollower = snapshotNotifierP => {
   const snapshotObserver = harden({
     updateState: ({ entries, deltaSubscription }) => {
       m = new Map(entries);
-      observeIteration(deltaSubscription, deltaObserver);
+      void observeIteration(deltaSubscription, deltaObserver);
     },
     finish: _completion => {
       m = undefined;
@@ -126,7 +126,7 @@ export const makeMapFollower = snapshotNotifierP => {
       m = undefined;
     },
   });
-  observeIteration(snapshotNotifierP, snapshotObserver);
+  void observeIteration(snapshotNotifierP, snapshotObserver);
 
   return mapFollower;
 };

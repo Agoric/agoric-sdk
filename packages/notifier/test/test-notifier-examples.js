@@ -78,7 +78,7 @@ test('notifier for-await-of on generic representative', async t => {
   paula(updater);
   const subP = Promise.resolve(notifier);
   const { updater: p, notifier: localSub } = makeNotifierKit();
-  observeIteration(subP, p);
+  void observeIteration(subP, p);
   const log = await alice(localSub);
 
   t.deepEqual(last(log), ['finished']);
@@ -89,7 +89,7 @@ test('notifier observeIteration on generic representative', async t => {
   paula(updater);
   const subP = Promise.resolve(notifier);
   const { updater: p, notifier: localSub } = makeNotifierKit();
-  observeIteration(subP, p);
+  void observeIteration(subP, p);
   const log = await bob(localSub);
 
   t.deepEqual(last(log), ['finished', 'done']);

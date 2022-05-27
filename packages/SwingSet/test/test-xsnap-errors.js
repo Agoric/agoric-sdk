@@ -3,6 +3,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 import { spawn } from 'child_process';
+// @ts-ignore
 import bundleSource from '@endo/bundle-source';
 
 import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
@@ -48,7 +49,9 @@ test('child termination distinguished from meter exhaustion', async t => {
     kernelKeeper,
     // @ts-expect-error kernelSlog is not used in this test
     kernelSlog: {},
+    // @ts-expect-error
     allVatPowers: undefined,
+    // @ts-expect-error
     testLog: undefined,
   });
 
@@ -70,6 +73,7 @@ test('child termination distinguished from meter exhaustion', async t => {
 
   const msg = { methargs: capargs(['hang', []]) };
   /** @type { VatDeliveryObject } */
+  // @ts-expect-error
   const delivery = ['message', 'o+0', msg];
 
   const p = m.deliver(delivery); // won't resolve until child dies

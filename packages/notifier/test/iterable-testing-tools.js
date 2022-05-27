@@ -259,7 +259,7 @@ export const bob = async asyncIterableP => {
     finish: completion => log.push(['finished', completion]),
     fail: reason => log.push(['failed', reason]),
   });
-  await observeIteration(asyncIterableP, observer);
+  void observeIteration(asyncIterableP, observer);
   return log;
 };
 

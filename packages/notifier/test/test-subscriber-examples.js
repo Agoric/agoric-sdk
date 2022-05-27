@@ -89,7 +89,7 @@ test('subscription for-await-of on generic representative', async t => {
   paula(publication);
   const subP = Promise.resolve(subscription);
   const { publication: p, subscription: localSub } = makeSubscriptionKit();
-  observeIteration(subP, p);
+  void observeIteration(subP, p);
   const log = await alice(localSub);
 
   t.deepEqual(log, [['non-final', 'a'], ['non-final', 'b'], ['finished']]);
@@ -100,7 +100,7 @@ test('subscription observeIteration on generic representative', async t => {
   paula(publication);
   const subP = Promise.resolve(subscription);
   const { publication: p, subscription: localSub } = makeSubscriptionKit();
-  observeIteration(subP, p);
+  void observeIteration(subP, p);
   const log = await bob(localSub);
 
   t.deepEqual(log, [
