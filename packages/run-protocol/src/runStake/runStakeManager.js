@@ -6,7 +6,7 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { fit, getCopyBagEntries, M } from '@agoric/store';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { E } from '@endo/far';
-import { defineKindMulti, partialAssign } from '@agoric/vat-data';
+import { defineKindMulti } from '@agoric/vat-data';
 import { makeTracer } from '../makeTracer.js';
 import { chargeInterest } from '../interest.js';
 import { ManagerKW as KW } from './constants.js';
@@ -162,7 +162,9 @@ const helper = {
       },
       updateTime,
     );
-    partialAssign(state, changes);
+    state.compoundedInterest = changes.compoundedInterest;
+    state.latestInterestUpdate = changes.latestInterestUpdate;
+    state.totalDebt = changes.totalDebt;
 
     const payload = harden({
       compoundedInterest: state.compoundedInterest,
