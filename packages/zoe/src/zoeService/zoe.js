@@ -168,6 +168,3 @@ const makeZoeKit = (
 };
 
 export { makeZoeKit };
-/**
- * @typedef {ReturnType<typeof makeZoeKit>} ZoeKit
- */

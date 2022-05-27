@@ -35,8 +35,6 @@ test('startInstance', async t => {
   const zoeInvitationIssuer = E(zoe).getInvitationIssuer();
   const zoeInvitationPurse = E(zoeInvitationIssuer).makeEmptyPurse();
 
-  /** @type {import('../../src/startInstance.js').IssuerManager} */
-  // @ts-expect-error cast mock
   const issuerManager = {
     get: petname => {
       if (petname === MOOLA_BRAND_PETNAME) {
@@ -49,15 +47,10 @@ test('startInstance', async t => {
     },
   };
 
-  /** @type {Petname=} */
   let addedPetname;
 
-  /** @type {import('../../src/startInstance.js').InstanceManager} */
-  // @ts-expect-error cast mock
   const instanceManager = {
-    add: async (petname, _instance) => {
-      addedPetname = petname;
-    },
+    add: (petname, _instance) => (addedPetname = petname),
   };
 
   const startInstance = makeStartInstance(
