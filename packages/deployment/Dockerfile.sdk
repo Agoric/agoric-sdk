@@ -15,7 +15,7 @@ RUN make GIT_COMMIT="$GIT_COMMIT" MOD_READONLY= compile-go
 # OTEL fetch
 # from https://github.com/open-telemetry/opentelemetry-collector-releases/releases
 
-FROM node:14-buster AS otel
+FROM node:16-buster AS otel
 
 ARG OTEL_VERSION=0.48.0
 ARG OTEL_HASH_arm64=846852f4c34f6e494abe202402fdf1d17e2ec3c7a7f96985b6011126ae553249
@@ -31,7 +31,7 @@ RUN set -eux; \
 
 ###############################
 # The js build container
-FROM node:14-buster AS build-js
+FROM node:16-buster AS build-js
 
 # When changing/adding entries here, make sure to search the whole project for
 # `@@AGORIC_DOCKER_SUBMODULES@@`
@@ -70,7 +70,7 @@ RUN rm -rf packages/xsnap/moddable
 
 ###############################
 # The install container.
-FROM node:14-buster AS install
+FROM node:16-buster AS install
 
 # Install some conveniences.
 RUN apt-get --allow-releaseinfo-change update && apt-get install -y vim jq less && apt-get clean -y
