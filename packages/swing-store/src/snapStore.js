@@ -9,6 +9,10 @@ const pipe = promisify(pipeline);
 
 const { freeze } = Object;
 
+const noPath = /** @type {import('fs').PathLike} */ (
+  /** @type {unknown} */ (undefined)
+);
+
 /**
  *
  * @param {import("fs").ReadStream | import("fs").WriteStream} stream
@@ -51,6 +55,8 @@ export const fsStreamReady = stream =>
  * @param {{
  *   tmpName: typeof import('tmp').tmpName,
  *   existsSync: typeof import('fs').existsSync
+ *   createReadStream: typeof import('fs').createReadStream,
+ *   createWriteStream: typeof import('fs').createWriteStream,
  *   open: typeof import('fs').promises.open,
  *   resolve: typeof import('path').resolve,
  *   rename: typeof import('fs').promises.rename,
@@ -60,7 +66,17 @@ export const fsStreamReady = stream =>
  */
 export function makeSnapStore(
   root,
-  { tmpName, existsSync, open, resolve, rename, unlink, unlinkSync },
+  {
+    tmpName,
+    existsSync,
+    createReadStream,
+    createWriteStream,
+    open,
+    resolve,
+    rename,
+    unlink,
+    unlinkSync,
+  },
 ) {
   /** @type {(opts: unknown) => Promise<string>} */
   const ptmpName = promisify(tmpName);
@@ -123,8 +139,12 @@ export function makeSnapStore(
       open(input, 'r'),
       open(output, 'wx'),
     ]);
-    const sourceStream = source.createReadStream();
-    const destinationStream = destination.createWriteStream({
+    const sourceStream = createReadStream(noPath, {
+      fd: source.fd,
+      autoClose: false,
+    });
+    const destinationStream = createWriteStream(noPath, {
+      fd: destination.fd,
       autoClose: false,
     });
     try {
@@ -137,21 +157,16 @@ export function makeSnapStore(
         await destination.sync();
       }
     } finally {
-      await Promise.all([
-        destination.close(),
-        // source may already be closed, but safe since idempotent
-        source.close(),
-      ]);
+      await Promise.all([destination.close(), source.close()]);
     }
   }
 
   /** @type {(filename: string) => Promise<string>} */
   async function fileHash(filename) {
     const hash = createHash('sha256');
-    const input = await open(filename, 'r');
-    const inputStream = input.createReadStream();
-    await fsStreamReady(inputStream);
-    await pipe(inputStream, hash);
+    const input = createReadStream(filename);
+    await fsStreamReady(input);
+    await pipe(input, hash);
     return hash.digest('hex');
   }
 
