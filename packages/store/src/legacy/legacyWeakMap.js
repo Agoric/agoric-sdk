@@ -8,16 +8,16 @@ import '../types.js';
  *
  * @deprecated switch to ScalarWeakMap if possible, WeakMap otherwise
  * @template K,V
- * @param {string} [keyName='key'] - the column name for the key
+ * @param {string} [tag='key'] - tag for debugging
  * @returns {LegacyWeakMap<K,V>}
  */
-export const makeLegacyWeakMap = (keyName = 'key') => {
+export const makeLegacyWeakMap = (tag = 'key') => {
   /** @type {WeakMap<K & object, V>} */
   const wm = new WeakMap();
   const assertKeyDoesNotExist = key =>
-    assert(!wm.has(key), X`${q(keyName)} already registered: ${key}`);
+    assert(!wm.has(key), X`${q(tag)} already registered: ${key}`);
   const assertKeyExists = key =>
-    assert(wm.has(key), X`${q(keyName)} not found: ${key}`);
+    assert(wm.has(key), X`${q(tag)} not found: ${key}`);
   return harden({
     has: key => {
       // Check if a key exists. The key can be any JavaScript value,
