@@ -193,12 +193,13 @@ test('amm add and remove liquidity', async t => {
   const tracker = await subscriptionTracker(t, poolMetrics);
   await tracker.assertInitial({
     centralAmount: central(0n),
-    liquidityTokens: 0n,
+    liquidityTokens: AmountMath.makeEmpty(liquidityBrand),
     secondaryAmount: moola(0n),
   });
+
   const poolLiquidity = {
     centralAmount: { value: 1500000000n },
-    liquidityTokens: 1500000000n,
+    liquidityTokens: { value: 1500000000n },
     secondaryAmount: { value: 300000000n },
   };
   await tracker.assertChange(poolLiquidity);
@@ -260,7 +261,7 @@ test('amm add and remove liquidity', async t => {
   );
 
   poolLiquidity.centralAmount.value += 50000n;
-  poolLiquidity.liquidityTokens += 50000n;
+  poolLiquidity.liquidityTokens.value += 50000n;
   poolLiquidity.secondaryAmount.value += 10000n;
   await tracker.assertChange(poolLiquidity);
 
@@ -284,7 +285,7 @@ test('amm add and remove liquidity', async t => {
   );
 
   poolLiquidity.centralAmount.value += 70000n;
-  poolLiquidity.liquidityTokens += 70000n;
+  poolLiquidity.liquidityTokens.value += 70000n;
   poolLiquidity.secondaryAmount.value += 14000n;
   await tracker.assertChange(poolLiquidity);
 
@@ -311,7 +312,7 @@ test('amm add and remove liquidity', async t => {
   );
 
   poolLiquidity.centralAmount.value -= 40000n;
-  poolLiquidity.liquidityTokens -= 40000n;
+  poolLiquidity.liquidityTokens.value -= 40000n;
   poolLiquidity.secondaryAmount.value -= 8000n;
   await tracker.assertChange(poolLiquidity);
 });
