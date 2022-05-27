@@ -218,12 +218,9 @@ const start = async (zcf, privateArgs) => {
       proposal,
       reserveLiquidityTokenSeat,
     );
-    const [deposits, userSeat] = await Promise.all([
-      deposited,
-      userSeatPromise,
-    ]);
+    const deposits = await deposited;
     trace('handlePoolAdded deposited', deposits);
-    await userSeat.getOfferResult();
+    await E(userSeatPromise).getOfferResult();
     reserveLiquidityTokenSeat.exit();
     trace('handlePoolAdded done');
   };

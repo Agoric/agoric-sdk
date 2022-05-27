@@ -5,7 +5,6 @@ import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { setupAmmServices } from './setup.js';
 import { unsafeMakeBundleCache } from '../../bundleTool.js';
@@ -155,15 +154,10 @@ test('amm add and remove liquidity', async t => {
   const moola = value => AmountMath.make(moolaR.brand, value);
   const central = value => AmountMath.make(centralR.brand, value);
 
-  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  // This timer is only used to build quotes. Let's make it non-zero
-  const timer = buildManualTimer(console.log, 30n);
-
   const { zoe, amm } = await setupAmmServices(
     t,
-    electorateTerms,
+    { committeeName: 'EnBancPanel', committeeSize: 3 },
     centralR,
-    timer,
   );
 
   const liquidityIssuer = await E(amm.ammPublicFacet).addIssuer(
@@ -333,15 +327,10 @@ test('MinInitialPoolLiquidity to reserve', async t => {
   const moola = value => AmountMath.make(moolaR.brand, value);
   const central = value => AmountMath.make(centralR.brand, value);
 
-  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  // This timer is only used to build quotes. Let's make it non-zero
-  const timer = buildManualTimer(console.log, 30n);
-
   const { zoe, amm, space } = await setupAmmServices(
     t,
-    electorateTerms,
+    { committeeName: 'EnBancPanel', committeeSize: 3 },
     centralR,
-    timer,
   );
   const { reserveCreatorFacet } = space.consume;
 

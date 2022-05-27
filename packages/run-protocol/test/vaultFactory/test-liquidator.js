@@ -291,10 +291,6 @@ const setupServices = async (
   const {
     installation: { produce: iProduce },
   } = space;
-  // // make the installation available for setupReserve
-  // iProduce.reserve.resolve(t.context.installation.reserve);
-  // // produce the reserve instance in the space
-  // await setupReserve(space);
   t.context.reserveCreatorFacet = space.consume.reserveCreatorFacet;
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
   iProduce.liquidate.resolve(t.context.installation.liquidate);

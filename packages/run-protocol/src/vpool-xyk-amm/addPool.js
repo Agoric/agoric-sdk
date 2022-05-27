@@ -77,7 +77,7 @@ export const makeAddIssuer = (
  * @param {import('./multipoolMarketMaker.js').AMMParamGetters} params retrieve governed params
  * @param {ZCFSeat} protocolSeat seat that holds collected fees
  * @param {WeakStore<Brand,ZCFMint>} brandToLiquidityMint
- * @param {(secondaryBrand: Brand, reserveLiquidityTokenSeat: ZCFSeat, liquidityKeyword: Keyword) => void} onOfferHandled
+ * @param {(secondaryBrand: Brand, reserveLiquidityTokenSeat: ZCFSeat, liquidityKeyword: Keyword) => Promise<void>} onOfferHandled
  */
 export const makeAddPoolInvitation = (
   zcf,

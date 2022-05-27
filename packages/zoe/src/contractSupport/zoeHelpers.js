@@ -364,6 +364,7 @@ export const offerTo = async (
 
   E(userSeatPromise).getPayouts().then(doDeposit);
 
+  // TODO rename return key; userSeatPromise is a remote UserSeat
   return harden({ userSeatPromise, deposited: depositedPromiseKit.promise });
 };
 

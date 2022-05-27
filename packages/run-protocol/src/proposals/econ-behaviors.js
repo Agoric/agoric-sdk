@@ -36,6 +36,7 @@ const CENTRAL_DENOM_NAME = 'urun';
  * @typedef { WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace
  * } EconomyBootstrapPowers
  * @typedef {PromiseSpaceOf<{
+ *   ammInstanceWithoutReserve: Instance,
  *   ammCreatorFacet: XYKAMMCreatorFacet,
  *   ammGovernorCreatorFacet: GovernedContractFacetAccess<XYKAMMCreatorFacet>,
  *   economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet,
@@ -171,7 +172,11 @@ export const setupAmm = async (
       zoe,
       economicCommitteeCreatorFacet: committeeCreator,
     },
-    produce: { ammCreatorFacet, ammGovernorCreatorFacet },
+    produce: {
+      ammCreatorFacet,
+      ammInstanceWithoutReserve,
+      ammGovernorCreatorFacet,
+    },
     brand: {
       consume: { RUN: runBrandP },
     },
@@ -180,7 +185,7 @@ export const setupAmm = async (
     },
     instance: {
       consume: { economicCommittee: electorateInstance },
-      produce: { amm: ammInstanceProducer, ammGovernor },
+      produce: { ammGovernor },
     },
     installation: {
       consume: { contractGovernor: governorInstallation, amm: ammInstallation },
@@ -233,7 +238,7 @@ export const setupAmm = async (
   // Confirm that the amm was indeed setup
   assert(ammPublicFacet, X`ammPublicFacet broken  ${ammPublicFacet}`);
 
-  ammInstanceProducer.resolve(instance);
+  ammInstanceWithoutReserve.resolve(instance);
   ammGovernor.resolve(g.instance);
   return ammInstallation;
 };
@@ -242,6 +247,7 @@ export const setupAmm = async (
 export const setupReserve = async ({
   consume: {
     ammCreatorFacet,
+    ammInstanceWithoutReserve: ammInstanceWithoutReserveP,
     feeMintAccess: feeMintAccessP,
     chainTimerService,
     zoe,
@@ -256,8 +262,12 @@ export const setupReserve = async ({
     consume: { [CENTRAL_ISSUER_NAME]: centralIssuer },
   },
   instance: {
-    consume: { economicCommittee: electorateInstance, amm: ammInstanceP },
-    produce: { reserve: reserveInstanceProducer, reserveGovernor },
+    consume: { economicCommittee: electorateInstance },
+    produce: {
+      amm: ammInstanceProducer,
+      reserve: reserveInstanceProducer,
+      reserveGovernor,
+    },
   },
   installation: {
     consume: {
@@ -274,9 +284,12 @@ export const setupReserve = async ({
   ]);
   const timer = await chainTimerService; // avoid promise for legibility
 
-  const ammInstance = await ammInstanceP;
+  const ammInstanceWithoutReserve = await ammInstanceWithoutReserveP;
 
-  const reserveTerms = makeReserveTerms(poserInvitationAmount, ammInstance);
+  const reserveTerms = makeReserveTerms(
+    poserInvitationAmount,
+    ammInstanceWithoutReserve,
+  );
 
   const feeMintAccess = await feeMintAccessP;
   const reserveGovernorTerms = {
@@ -319,6 +332,8 @@ export const setupReserve = async ({
   trace('Resolving the reserve public facet on the AMM');
   // @ts-expect-error bad types
   await E(ammCreatorFacet).resolveReserveFacet(publicFacet);
+  // it now has the reserve
+  ammInstanceProducer.resolve(ammInstanceWithoutReserve);
 
   return reserveInstallation;
 };
