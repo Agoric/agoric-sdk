@@ -51,8 +51,7 @@ export const fsStreamReady = stream =>
  * @param {{
  *   tmpName: typeof import('tmp').tmpName,
  *   existsSync: typeof import('fs').existsSync
- *   createReadStream: typeof import('fs').createReadStream,
- *   createWriteStream: typeof import('fs').createWriteStream,
+ *   open: typeof import('fs').promises.open,
  *   resolve: typeof import('path').resolve,
  *   rename: typeof import('fs').promises.rename,
  *   unlink: typeof import('fs').promises.unlink,
@@ -61,16 +60,7 @@ export const fsStreamReady = stream =>
  */
 export function makeSnapStore(
   root,
-  {
-    tmpName,
-    existsSync,
-    createReadStream,
-    createWriteStream,
-    resolve,
-    rename,
-    unlink,
-    unlinkSync,
-  },
+  { tmpName, existsSync, open, resolve, rename, unlink, unlinkSync },
 ) {
   /** @type {(opts: unknown) => Promise<string>} */
   const ptmpName = promisify(tmpName);
@@ -121,20 +111,47 @@ export function makeSnapStore(
     return result;
   }
 
-  /** @type {(input: string, f: NodeJS.ReadWriteStream, output: string) => Promise<void>} */
-  async function filter(input, f, output) {
-    const source = createReadStream(input);
-    const destination = createWriteStream(output, { flags: 'wx' });
-    await Promise.all([fsStreamReady(source), fsStreamReady(destination)]);
-    await pipe(source, f, destination);
+  /**
+   * @param {string} input
+   * @param {NodeJS.ReadWriteStream} f
+   * @param {string} output
+   * @param {object} [options]
+   * @param {boolean} [options.flush]
+   */
+  async function filter(input, f, output, { flush = false } = {}) {
+    const [source, destination] = await Promise.all([
+      open(input, 'r'),
+      open(output, 'wx'),
+    ]);
+    const sourceStream = source.createReadStream();
+    const destinationStream = destination.createWriteStream({
+      autoClose: false,
+    });
+    try {
+      await Promise.all([
+        fsStreamReady(sourceStream),
+        fsStreamReady(destinationStream),
+      ]);
+      await pipe(sourceStream, f, destinationStream);
+      if (flush) {
+        await destination.sync();
+      }
+    } finally {
+      await Promise.all([
+        destination.close(),
+        // source may already be closed, but safe since idempotent
+        source.close(),
+      ]);
+    }
   }
 
   /** @type {(filename: string) => Promise<string>} */
   async function fileHash(filename) {
     const hash = createHash('sha256');
-    const input = createReadStream(filename);
-    await fsStreamReady(input);
-    await pipe(input, hash);
+    const input = await open(filename, 'r');
+    const inputStream = input.createReadStream();
+    await fsStreamReady(inputStream);
+    await pipe(inputStream, hash);
     return hash.digest('hex');
   }
 
@@ -164,7 +181,7 @@ export function makeSnapStore(
         return h;
       }
       await atomicWrite(`${h}.gz`, gztmp =>
-        filter(snapFile, createGzip(), gztmp),
+        filter(snapFile, createGzip(), gztmp, { flush: true }),
       );
       return h;
     }, 'save-raw');

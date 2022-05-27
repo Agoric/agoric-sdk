@@ -21,8 +21,7 @@ export function makeSnapStoreIO() {
   return {
     tmpName,
     existsSync: fs.existsSync,
-    createReadStream: fs.createReadStream,
-    createWriteStream: fs.createWriteStream,
+    open: fs.promises.open,
     rename: fs.promises.rename,
     unlink: fs.promises.unlink,
     unlinkSync: fs.unlinkSync,
