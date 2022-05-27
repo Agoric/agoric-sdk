@@ -24,7 +24,7 @@ const terminalOnlyFlags = (...flags) => {
 
 const PROVISION_COINS = [
   `1000000000000000${STAKING_DENOM}`,
-  `500000000000000${CENTRAL_DENOM}`,
+  `5000000000000000${CENTRAL_DENOM}`,
   `100provisionpass`,
   `100sendpacketpass`,
   `1000000000000ibc/0123456789abcdef`, // IbcATOM
