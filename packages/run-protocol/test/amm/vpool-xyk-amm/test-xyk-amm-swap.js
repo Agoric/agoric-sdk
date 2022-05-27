@@ -1050,7 +1050,7 @@ test('amm adding liquidity', async t => {
   await p.assertInitial({
     centralAmount: AmountMath.makeEmpty(centralR.brand),
     secondaryAmount: moola(0n),
-    liquidityTokens: 0n,
+    liquidityTokens: AmountMath.makeEmpty(liquidityBrand),
   });
 
   const allocation = (c, l, s) => ({
@@ -1078,7 +1078,7 @@ test('amm adding liquidity', async t => {
   await p.assertState({
     centralAmount: AmountMath.make(centralR.brand, expected0.c),
     secondaryAmount: moola(expected0.s),
-    liquidityTokens: expected0.l,
+    liquidityTokens: AmountMath.make(liquidityBrand, expected0.l),
   });
 
   const poolState1 = {
@@ -1113,7 +1113,7 @@ test('amm adding liquidity', async t => {
   await p.assertState({
     centralAmount: AmountMath.make(centralR.brand, expected1.c),
     secondaryAmount: moola(expected1.s),
-    liquidityTokens: expected1.l,
+    liquidityTokens: AmountMath.make(liquidityBrand, expected1.l),
   });
 
   // The pool will have 10K + 20K and 50K + 70K after
@@ -1145,7 +1145,7 @@ test('amm adding liquidity', async t => {
   await p.assertState({
     centralAmount: AmountMath.make(centralR.brand, expected2.c),
     secondaryAmount: moola(expected2.s),
-    liquidityTokens: expected2.l,
+    liquidityTokens: AmountMath.make(liquidityBrand, expected2.l),
   });
 
   // The pool should now have just under 50K + 70K + 60K and 10K + 14K + 12K

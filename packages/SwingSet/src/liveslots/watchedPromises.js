@@ -7,6 +7,16 @@ import { assert } from '@agoric/assert';
 import { M } from '@agoric/store';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
 
+/**
+ *
+ * @param {*} syscall
+ * @param {*} vrm
+ * @param {import('./virtualObjectManager.js').VirtualObjectManager} vom
+ * @param {*} cm
+ * @param {*} convertValToSlot
+ * @param {*} convertSlotToVal
+ * @param {*} revivePromise
+ */
 export function makeWatchedPromiseManager(
   syscall,
   vrm,
