@@ -13,13 +13,18 @@ import {
 import * as Collect from '../../../src/collect.js';
 import {
   setupAmm,
+  setupReserve,
   startEconomicCommittee,
 } from '../../../src/proposals/econ-behaviors.js';
 import { installGovernance, provideBundle } from '../../supports.js';
+import { makeTracer } from '../../../src/makeTracer.js';
 
 const ammRoot = './src/vpool-xyk-amm/multipoolMarketMaker.js'; // package relative
+const reserveRoot = './src/reserve/assetReserve.js'; // package relative
 
-export const setUpZoeForTest = async () => {
+const trace = makeTracer('AmmTS', false);
+
+export const setUpZoeForTest = () => {
   const { makeFar } = makeLoopback('zoeTest');
 
   const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
@@ -27,21 +32,30 @@ export const setUpZoeForTest = async () => {
   );
   /** @type {ERef<ZoeService>} */
   const zoe = makeFar(zoeService);
-  const feeMintAccess = await makeFar(nonFarFeeMintAccess);
+  const feeMintAccess = makeFar(nonFarFeeMintAccess);
   return {
     zoe,
     feeMintAccess,
   };
 };
 harden(setUpZoeForTest);
+/**
+ * @typedef {ReturnType<typeof setUpZoeForTest>} FarZoeKit
+ */
 
+/**
+ *
+ * @param {TimerService} timer
+ * @param {FarZoeKit} [farZoeKit]
+ */
 export const setupAMMBootstrap = async (
   timer = buildManualTimer(console.log),
-  zoe,
+  farZoeKit,
 ) => {
-  if (!zoe) {
-    ({ zoe } = await setUpZoeForTest());
+  if (!farZoeKit) {
+    farZoeKit = await setUpZoeForTest();
   }
+  const { zoe } = farZoeKit;
 
   const space = /** @type {any} */ (makePromiseSpace());
   const { produce, consume } =
@@ -68,22 +82,29 @@ export const setupAMMBootstrap = async (
  * @param {{ committeeName: string, committeeSize: number}} electorateTerms
  * @param {{ brand: Brand, issuer: Issuer }} centralR
  * @param {ManualTimer | undefined=} timer
- * @param {ERef<ZoeService> | undefined=} zoe
+ * @param {FarZoeKit} [farZoeKit]
  */
 export const setupAmmServices = async (
   t,
   electorateTerms = { committeeName: 'The Cabal', committeeSize: 1 },
   centralR,
   timer = buildManualTimer(console.log),
-  zoe,
+  farZoeKit,
 ) => {
-  if (!zoe) {
-    ({ zoe } = await setUpZoeForTest());
+  trace('setupAmmServices', { farZoeKit });
+  if (!farZoeKit) {
+    farZoeKit = await setUpZoeForTest();
   }
-  const space = await setupAMMBootstrap(timer, zoe);
+  const { feeMintAccess, zoe } = farZoeKit;
+  trace('setupAMMBootstrap');
+  const space = await setupAMMBootstrap(timer, farZoeKit);
+  space.produce.zoe.resolve(farZoeKit.zoe);
+  space.produce.feeMintAccess.resolve(feeMintAccess);
   const { consume, brand, issuer, installation, instance } = space;
   const ammBundle = await provideBundle(t, ammRoot, 'amm');
   installation.produce.amm.resolve(E(zoe).install(ammBundle));
+  const reserveBundle = await provideBundle(t, reserveRoot, 'reserve');
+  installation.produce.reserve.resolve(E(zoe).install(reserveBundle));
 
   brand.produce.RUN.resolve(centralR.brand);
   issuer.produce.RUN.resolve(centralR.issuer);
@@ -98,6 +119,7 @@ export const setupAmmServices = async (
       },
     }),
   ]);
+  await setupReserve(space);
 
   const installs = await Collect.allValues({
     amm: installation.consume.amm,

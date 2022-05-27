@@ -14,6 +14,7 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeLoopback } from '@endo/captp';
 import { E } from '@endo/far';
+import { makeTracer } from '../src/makeTracer.js';
 
 /**
  * @param {*} t
@@ -42,6 +43,7 @@ harden(waitForPromisesToSettle);
  * Returns promises for `zoe` and the `feeMintAccess`.
  *
  * @param {() => void} setJig
+ * @returns {import('./amm/vpool-xyk-amm/setup.js').FarZoeKit}
  */
 export const setUpZoeForTest = (setJig = () => {}) => {
   const { makeFar } = makeLoopback('zoeTest');
@@ -60,7 +62,8 @@ export const setUpZoeForTest = (setJig = () => {}) => {
 harden(setUpZoeForTest);
 
 export const setupBootstrap = (t, optTimer = undefined) => {
-  const space = /** @type {any} */ (makePromiseSpace(t.log));
+  const trace = makeTracer('PromiseSpace');
+  const space = /** @type {any} */ (makePromiseSpace(trace));
   const { produce, consume } =
     /** @type { import('../src/proposals/econ-behaviors.js').EconomyBootstrapPowers & BootstrapPowers } */ (
       space
@@ -149,4 +152,16 @@ export const mintRunPayment = async (
     { feeMintAccess },
   );
   return E(ammSupplier).getBootstrapPayment();
+};
+
+/**
+ * @typedef {import('../src/proposals/econ-behaviors.js').EconomyBootstrapPowers} Space
+ *
+ * @param {Space} space
+ * @param {Record<keyof Space['installation']['produce'], Promise<Installation>>} installations
+ */
+export const produceInstallations = (space, installations) => {
+  for (const [key, installation] of Object.entries(installations)) {
+    space.installation.produce[key].resolve(installation);
+  }
 };

@@ -8,6 +8,9 @@ import { Far } from '@endo/marshal';
 import { keyEQ, keyLT } from '@agoric/store';
 import { makeOrderedVaultStore } from './orderedVaultStore.js';
 import { toVaultKey } from './storeUtils.js';
+import { makeTracer } from '../makeTracer.js';
+
+const trace = makeTracer('PV');
 
 /** @typedef {import('./vault').Vault} Vault */
 
@@ -99,7 +102,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
     // don't call reschedulePriceCheck, but do reset the highest.
     // This could be expensive if we delete individual entries in
     // order. Will know once we have perf data.
-    console.log('removeVault', firstKey, key);
+    trace('removeVault', firstKey, key);
     if (keyEQ(key, firstKey)) {
       const [secondKey] = vaults.keys();
       firstKey = secondKey;
@@ -125,7 +128,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
    */
   const addVault = (vaultId, vault) => {
     const key = vaults.addVault(vaultId, vault);
-    console.log('addVault', firstKey, key);
+    trace('addVault', firstKey, key);
     if (!firstKey || keyLT(key, firstKey)) {
       firstKey = key;
       reschedulePriceCheck();

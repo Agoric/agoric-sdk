@@ -1,5 +1,5 @@
 // @ts-check
-/* eslint-disable no-use-before-define */
+/* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
 import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
@@ -274,7 +274,7 @@ export function makeVirtualReferenceManager(
    *
    * @param {string} baseRef  The baseRef of the object being reanimated
    *
-   * @returns {object}  A representative of the object identified by `baseRef`
+   * @returns A representative of the object identified by `baseRef`
    */
   function reanimate(baseRef) {
     const { id } = parseVatSlot(baseRef);

@@ -21,7 +21,8 @@ const contractRoots = {
 
 const makeTestContext = async () => {
   const bundleCache = await makeNodeBundleCache('bundles/', s => import(s));
-  const { zoe } = setUpZoeForTest();
+  const farZoeKit = await setUpZoeForTest();
+  const { zoe } = farZoeKit;
 
   const istKit = makeIssuerKit('IST');
 
@@ -34,6 +35,7 @@ const makeTestContext = async () => {
   return {
     bundleCache,
     zoe: await zoe,
+    farZoeKit,
     istKit,
     installation,
   };
@@ -47,7 +49,7 @@ const { keys } = Object;
 
 test('make interchain pool', async t => {
   const { make, add } = AmountMath;
-  const { zoe, istKit, installation } = t.context;
+  const { farZoeKit, istKit, installation, zoe } = t.context;
 
   const minimumCentral = make(istKit.brand, 1000n * 1_000_000n);
 
@@ -55,7 +57,7 @@ test('make interchain pool', async t => {
   const {
     amm: { ammPublicFacet: ammPub },
     space,
-  } = await setupAmmServices(t, undefined, istKit, undefined, zoe);
+  } = await setupAmmServices(t, undefined, istKit, undefined, farZoeKit);
 
   const bootstrap = async () => {
     // Mock VBANK / BankManager

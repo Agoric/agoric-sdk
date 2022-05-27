@@ -82,12 +82,12 @@ export const makeWeakMapStoreMethods = (
  * remotables, since the other primitives may always reappear.
  *
  * @template K,V
- * @param {string} [keyName='key'] - the column name for the key
+ * @param {string} [tag='key'] - tag for debugging
  * @param {StoreOptions=} options
  * @returns {WeakMapStore<K,V>}
  */
 export const makeScalarWeakMapStore = (
-  keyName = 'key',
+  tag = 'key',
   { longLived = true, keySchema = undefined, valueSchema = undefined } = {},
 ) => {
   const jsmap = new (longLived ? WeakMap : Map)();
@@ -124,13 +124,13 @@ export const makeScalarWeakMapStore = (
     assertKVOkToSet(key, value);
   };
 
-  return Far(`scalar WeakMapStore of ${q(keyName)}`, {
+  return Far(`scalar WeakMapStore of ${q(tag)}`, {
     ...makeWeakMapStoreMethods(
       jsmap,
       assertKVOkToAdd,
       assertKVOkToSet,
       undefined,
-      keyName,
+      tag,
     ),
   });
 };

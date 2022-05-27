@@ -21,7 +21,7 @@ import {
 } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 
-import { defineKindMulti, partialAssign, pickFacet } from '@agoric/vat-data';
+import { defineKindMulti, pickFacet } from '@agoric/vat-data';
 import { makeVault } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
@@ -232,7 +232,7 @@ const helperBehavior = {
 
     // Update state with the results of charging interest
 
-    const stateUpdates = chargeInterest(
+    const changes = chargeInterest(
       {
         mint: state.debtMint,
         mintAndReallocateWithFee: state.factoryPowers.mintAndReallocate,
@@ -255,7 +255,11 @@ const helperBehavior = {
       },
       updateTime,
     );
-    partialAssign(state, stateUpdates);
+
+    state.compoundedInterest = changes.compoundedInterest;
+    state.latestInterestUpdate = changes.latestInterestUpdate;
+    state.totalDebt = changes.totalDebt;
+
     facets.helper.assetNotify();
     trace('chargeAllVaults complete');
     facets.helper.reschedulePriceCheck();
@@ -326,7 +330,7 @@ const helperBehavior = {
       // eslint-disable-next-line consistent-return
       return facets.helper
         .processLiquidations()
-        .catch(e => console.log('Liquidator failed', e))
+        .catch(e => console.error('Liquidator failed', e))
         .finally(() => {
           liquidationInProgress = false;
         });
@@ -426,7 +430,6 @@ const helperBehavior = {
       factoryPowers.getGovernedParams().getLiquidationPenalty(),
     )
       .then(accounting => {
-        console.log('liquidateAndRemove accounting', accounting);
         state.totalProceedsReceived = AmountMath.add(
           state.totalProceedsReceived,
           accounting.proceeds,

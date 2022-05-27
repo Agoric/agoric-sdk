@@ -47,10 +47,13 @@ import {
   subscriptionTracker,
 } from '../metrics.js';
 
-/** @type {import('ava').TestInterface<Record<string, any> & {
+/** @typedef {Record<string, any> & {
+ * bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>,
  * rates: VaultManagerParamValues,
  * loanTiming: LoanTiming,
- * }>} */
+ * zoe: ZoeService,
+ * }} Context */
+/** @type {import('ava').TestInterface<Context>} */
 // @ts-expect-error cast
 const test = unknownTest;
 
@@ -145,7 +148,16 @@ test.before(async t => {
   trace(t, 'CONTEXT');
 });
 
-const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
+/**
+ * @param {import('ava').ExecutionContext<Context>} t
+ * @param {*} aethLiquidity
+ * @param {*} runLiquidity
+ */
+const setupAmmAndElectorateAndReserve = async (
+  t,
+  aethLiquidity,
+  runLiquidity,
+) => {
   const {
     zoe,
     aethKit: { issuer: aethIssuer },
@@ -156,11 +168,16 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   const space = setupBootstrap(t, timer);
   const { consume, instance } = space;
   installGovernance(zoe, space.installation.produce);
+  // TODO consider using produceInstallations()
   space.installation.produce.amm.resolve(t.context.installation.amm);
+  space.installation.produce.reserve.resolve(t.context.installation.reserve);
   await startEconomicCommittee(space, electorateTerms);
   await setupAmm(space, {
     options: { minInitialPoolLiquidity: 300n },
   });
+
+  // AMM needs the reserve in order to function
+  await setupReserve(space);
 
   const governorCreatorFacet = consume.ammGovernorCreatorFacet;
   const governorInstance = await instance.consume.ammGovernor;
@@ -240,7 +257,7 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
 /**
  * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
  *
- * @param {import('ava').ExecutionContext<any>} t
+ * @param {import('ava').ExecutionContext<Context>} t
  * @param {Array<NatValue> | Ratio} priceOrList
  * @param {Amount | undefined} unitAmountIn
  * @param {TimerService} timer
@@ -278,11 +295,12 @@ const setupServices = async (
     proposal: aethInitialLiquidity,
     payment: aethMint.mintPayment(aethInitialLiquidity),
   };
-  const { amm: ammFacets, space } = await setupAmmAndElectorate(
+  const { amm: ammFacets, space } = await setupAmmAndElectorateAndReserve(
     t,
     aethLiquidity,
     runLiquidity,
   );
+
   const { consume, produce } = space;
   trace(t, 'amm', { ammFacets });
 
@@ -310,10 +328,6 @@ const setupServices = async (
   const {
     installation: { produce: iProduce },
   } = space;
-  // make the installation available for setupReserve
-  iProduce.reserve.resolve(t.context.installation.reserve);
-  // produce the reserve instance in the space
-  await setupReserve(space);
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
   iProduce.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
@@ -374,6 +388,11 @@ const setupServices = async (
     runKit: { issuer: runIssuer, brand: runBrand },
     priceAuthority,
     reserveFacets,
+    /** @param {Brand} baseBrand */
+    getLiquidityBrand: baseBrand =>
+      E(ammFacets.ammPublicFacet)
+        .getLiquidityIssuer(baseBrand)
+        .then(liqIssuer => E(liqIssuer).getBrand()),
   };
 };
 // #endregion
@@ -629,7 +648,9 @@ test('price drop', async t => {
     allocations: {},
     shortfallBalance: AmountMath.makeEmpty(runBrand),
   });
+  const liqBrand = await services.getLiquidityBrand(aethBrand);
   await m.assertChange({
+    allocations: { RaEthLiquidity: AmountMath.make(liqBrand, 300n) },
     shortfallBalance: { value: 30n },
   });
 
@@ -794,8 +815,10 @@ test('price falls precipitously', async t => {
     'Liquidation didn’t fully cover debt',
   );
 
+  const liqBrand = await services.getLiquidityBrand(aethBrand);
   await m.assertChange({
     shortfallBalance: { value: 103n },
+    allocations: { RaEthLiquidity: AmountMath.make(liqBrand, 300n) },
   });
 
   const finalNotification = await E(vaultNotifier).getUpdateSince();
@@ -1767,8 +1790,10 @@ test('mutable liquidity triggers and interest', async t => {
   t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATING);
 
   shortfallBalance += 1900n;
+  const liqBrand = await services.getLiquidityBrand(aethBrand);
   await m.assertChange({
     shortfallBalance: { value: shortfallBalance },
+    allocations: { RaEthLiquidity: AmountMath.make(liqBrand, 300n) },
   });
 
   // XXX this causes BOB to get liquidated, which is suspicious. Revisit this test case
