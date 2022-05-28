@@ -9,6 +9,10 @@ const pipe = promisify(pipeline);
 
 const { freeze } = Object;
 
+const noPath = /** @type {import('fs').PathLike} */ (
+  /** @type {unknown} */ (undefined)
+);
+
 /**
  *
  * @param {import("fs").ReadStream | import("fs").WriteStream} stream
@@ -53,6 +57,7 @@ export const fsStreamReady = stream =>
  *   existsSync: typeof import('fs').existsSync
  *   createReadStream: typeof import('fs').createReadStream,
  *   createWriteStream: typeof import('fs').createWriteStream,
+ *   open: typeof import('fs').promises.open,
  *   resolve: typeof import('path').resolve,
  *   rename: typeof import('fs').promises.rename,
  *   unlink: typeof import('fs').promises.unlink,
@@ -66,6 +71,7 @@ export function makeSnapStore(
     existsSync,
     createReadStream,
     createWriteStream,
+    open,
     resolve,
     rename,
     unlink,
@@ -121,12 +127,38 @@ export function makeSnapStore(
     return result;
   }
 
-  /** @type {(input: string, f: NodeJS.ReadWriteStream, output: string) => Promise<void>} */
-  async function filter(input, f, output) {
-    const source = createReadStream(input);
-    const destination = createWriteStream(output, { flags: 'wx' });
-    await Promise.all([fsStreamReady(source), fsStreamReady(destination)]);
-    await pipe(source, f, destination);
+  /**
+   * @param {string} input
+   * @param {NodeJS.ReadWriteStream} f
+   * @param {string} output
+   * @param {object} [options]
+   * @param {boolean} [options.flush]
+   */
+  async function filter(input, f, output, { flush = false } = {}) {
+    const [source, destination] = await Promise.all([
+      open(input, 'r'),
+      open(output, 'wx'),
+    ]);
+    const sourceStream = createReadStream(noPath, {
+      fd: source.fd,
+      autoClose: false,
+    });
+    const destinationStream = createWriteStream(noPath, {
+      fd: destination.fd,
+      autoClose: false,
+    });
+    try {
+      await Promise.all([
+        fsStreamReady(sourceStream),
+        fsStreamReady(destinationStream),
+      ]);
+      await pipe(sourceStream, f, destinationStream);
+      if (flush) {
+        await destination.sync();
+      }
+    } finally {
+      await Promise.all([destination.close(), source.close()]);
+    }
   }
 
   /** @type {(filename: string) => Promise<string>} */
@@ -164,7 +196,7 @@ export function makeSnapStore(
         return h;
       }
       await atomicWrite(`${h}.gz`, gztmp =>
-        filter(snapFile, createGzip(), gztmp),
+        filter(snapFile, createGzip(), gztmp, { flush: true }),
       );
       return h;
     }, 'save-raw');
