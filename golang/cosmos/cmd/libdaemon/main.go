@@ -15,6 +15,8 @@ import (
 	"os"
 	"path/filepath"
 
+	log "github.com/tendermint/tendermint/libs/log"
+
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon"
 	daemoncmd "github.com/Agoric/agoric-sdk/golang/cosmos/daemon/cmd"
@@ -75,9 +77,15 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 	go func() {
 		// We run in the background, but exit when the job is over.
 		// swingset.SendToNode("hello from Initial Go!")
+		exitCode := 0
+		daemoncmd.OnStartHook = func(logger log.Logger) {
+			// We tried running start, which should never exit, so exit with non-zero
+			// code if we ever stop.
+			exitCode = 99
+		}
 		daemon.RunWithController(sendToNode)
 		// fmt.Fprintln(os.Stderr, "Shutting down Cosmos")
-		os.Exit(0)
+		os.Exit(exitCode)
 	}()
 	// fmt.Fprintln(os.Stderr, "Done starting Cosmos")
 	return SwingSetPort

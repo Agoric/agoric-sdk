@@ -27,7 +27,7 @@ export const makeTempKVDatabase = io => {
  * @param {sqlite3ambient.Database} [db]
  */
 export const makeKVStringStore = (kind, db = makeTempKVDatabase()) => {
-  /** @type {Pick<LegacyMap<string, string>, 'get'|'has'|'init'>} */
+  /** @type {Pick<LegacyMap<string, string>, 'get'|'has'|'set'>} */
   const serialisingStore = harden({
     get: key => {
       const it = db
@@ -51,13 +51,12 @@ export const makeKVStringStore = (kind, db = makeTempKVDatabase()) => {
       // console.log({ count: value });
       return value && value.cnt > 0;
     },
-    init: (key, value) => {
-      const changes = db
-        .prepare(`INSERT INTO kind_kv (kind, key, value) VALUES (?, ?, ?)`)
-        .run(kind, key, value).changes;
-      if (changes < 1) {
-        throw Error(`no changes after one insert of ${kind} ${key}`);
-      }
+    set: (key, value) => {
+      db.prepare(
+        `\
+INSERT INTO kind_kv (kind, key, value) VALUES (?, ?, ?) \
+ON CONFLICT(kind, key) DO UPDATE SET value = ?`,
+      ).run(kind, key, value, value);
     },
   });
   return serialisingStore;
