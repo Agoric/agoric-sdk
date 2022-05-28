@@ -87,6 +87,8 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
 
   const kernelPromiseToSendingCause = makeKVStringStore('kernelPromise');
 
+  const extractMethod = methargs => JSON.parse(methargs.body)[0];
+
   const extractMessageAttrs = ({ type: messageType, ...message }) => {
     /** @type {Record<string, any>} */
     const attrs = { 'message.type': messageType, ...message };
@@ -102,14 +104,10 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       case 'send': {
         // TODO: The arguments to a method call can be pretty big.
         delete attrs.msg;
-        if (message.msg.methargs) {
-          const [method] = JSON.parse(message.msg.methargs.body);
-          name = `E(${message.target}).${method}`;
-          attrs['message.msg.args.slots'] = message.msg.methargs.slots;
-        } else {
-          name = `E(${message.target}).${message.msg.method}`;
-          attrs['message.msg.args.slots'] = message.msg.args.slots;
-        }
+        const { methargs, method = extractMethod(methargs) } = message.msg;
+        name = `E(${message.target}).${method}`;
+        attrs['message.msg.args.slots'] =
+          message.msg.methargs?.slots ?? message.msg.args.slots;
         attrs['message.msg.method'] = name;
         attrs['message.msg.result'] = message.msg.result;
         break;
@@ -405,7 +403,11 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         } else if (kd[0] === 'message') {
           // This is where the message is delivered.
           // Track call graph.
-          const [_type, target, { method, result }] = kd;
+          const [
+            _type,
+            target,
+            { methargs, method = extractMethod(methargs), result },
+          ] = kd;
           let cause;
           if (kernelPromiseToSendingCause.has(result)) {
             cause = JSON.parse(kernelPromiseToSendingCause.get(result));
@@ -471,7 +473,11 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         // TODO: get type from packages/SwingSet/src/kernel/kernelSyscall.js
         switch (ksc[0]) {
           case 'send': {
-            const [_tag, target, { method, result }] = ksc;
+            const [
+              _tag,
+              target,
+              { methargs, method = extractMethod(methargs), result },
+            ] = ksc;
             const name = `E(${target}).${method}`;
             const links = [];
             if (crankNumToCause.has(attrs.crankNum)) {
