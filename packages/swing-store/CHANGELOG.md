@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.6.6...@agoric/swing-store@0.7.0) (2022-05-28)
+
+
+### Features
+
+* Accept path for swingStore trace ([63a209c](https://github.com/Agoric/agoric-sdk/commit/63a209c8c7906f8be07f87aedf1313e607df7b42))
+* **swingset:** Add swing store trace option ([25c7e79](https://github.com/Agoric/agoric-sdk/commit/25c7e79d699e8894a283518490add19f60840f4b))
+
+
+### Bug Fixes
+
+* **swing-store:** check fs streams are ready ([deaaa13](https://github.com/Agoric/agoric-sdk/commit/deaaa133efb430db83c88631f1b5a95ff7e36a3a))
+* **swingset:** fsync snapshots  ([#5451](https://github.com/Agoric/agoric-sdk/issues/5451)) ([396e4c6](https://github.com/Agoric/agoric-sdk/commit/396e4c62391f39267fd093afb0e37fcacbe79fe8))
+
+
+
 ### [0.6.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.6.5...@agoric/swing-store@0.6.6) (2022-04-18)
 
 **Note:** Version bump only for package @agoric/swing-store

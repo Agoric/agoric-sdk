@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [2.3.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.3.0...@agoric/deployment@2.3.1) (2022-05-28)
+
+
+### Bug Fixes
+
+* **deployment:** Do not override explicit faucet SOLO_COINS ([#5360](https://github.com/Agoric/agoric-sdk/issues/5360)) ([70fa390](https://github.com/Agoric/agoric-sdk/commit/70fa3908dde52a79658b5ef8f58c17406a030ed3))
+* **vats:** make core config location independent ([9612d59](https://github.com/Agoric/agoric-sdk/commit/9612d591a4c58cf447f46e085f81dd0762b46d4a))
+
+
+
 ## [2.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.2.1...@agoric/deployment@2.3.0) (2022-05-09)
 
 

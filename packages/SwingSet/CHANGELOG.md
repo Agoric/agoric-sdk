@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.28.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.27.0...@agoric/swingset-vat@0.28.0) (2022-05-28)
+
+
+### Features
+
+* **swingset:** add vatAdminService.getBundleIDByName() ([1ab58fc](https://github.com/Agoric/agoric-sdk/commit/1ab58fc93fff59f385c4ae609b42cdc4c4ea69bd)), closes [#4374](https://github.com/Agoric/agoric-sdk/issues/4374)
+* serialize method names in message encoding ([1de86c5](https://github.com/Agoric/agoric-sdk/commit/1de86c58f0813c73ecc2fcdde385f3d106a0b115)), closes [#2481](https://github.com/Agoric/agoric-sdk/issues/2481)
+* support symbol-named methods in virtual objects ([80624d4](https://github.com/Agoric/agoric-sdk/commit/80624d466a914e5e6ddb25c5ee99cbc68701988b)), closes [#5359](https://github.com/Agoric/agoric-sdk/issues/5359)
+* **swingset:** expose total queues length ([7959eb4](https://github.com/Agoric/agoric-sdk/commit/7959eb4010dcd1711252785038714f78b47ced98))
+* **swingset:** keep track of promise queues length ([4a3bb5d](https://github.com/Agoric/agoric-sdk/commit/4a3bb5d32a39846bc6a29460b7a30a3871d08ab4))
+* **swingset:** Make stats upgrade behave sanely ([a1b1136](https://github.com/Agoric/agoric-sdk/commit/a1b1136a6f749b599b4a9f55085d5b530fba7bc0))
+* **swingset:** Split kernelStats into local and consensus ([d16507d](https://github.com/Agoric/agoric-sdk/commit/d16507d149fbd6f166d5293ee9555d72a09c275a))
+
+
+### Bug Fixes
+
+* make legibilizeValue behave better given weird input ([05ec0fe](https://github.com/Agoric/agoric-sdk/commit/05ec0fe572823c71e124e70c0ec4116a5006a9f3)), closes [#5409](https://github.com/Agoric/agoric-sdk/issues/5409)
+* **swingset:** missing await for installBundle ([8c89c57](https://github.com/Agoric/agoric-sdk/commit/8c89c57fa5a98037b778a83caa3b2a194800259e))
+* array.map that should be array.forEach ([#5331](https://github.com/Agoric/agoric-sdk/issues/5331)) ([63fe8e4](https://github.com/Agoric/agoric-sdk/commit/63fe8e4d41bc2e9b01efdd3358283dc90ea5dcfc))
+* bug in fake virtual stuff due to recent liveslots additions ([db71bd7](https://github.com/Agoric/agoric-sdk/commit/db71bd7c408bcd4b080d049df80545f2d7a74973)), closes [#5283](https://github.com/Agoric/agoric-sdk/issues/5283)
+
+
+
 ## [0.27.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.26.0...@agoric/swingset-vat@0.27.0) (2022-05-09)
 
 

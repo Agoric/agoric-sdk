@@ -1,6 +1,6 @@
 {
   "name": "@agoric/zoe",
-  "version": "0.23.0",
+  "version": "0.24.0",
   "description": "Zoe: the Smart Contract Framework for Offer Enforcement",
   "type": "module",
   "main": "./src/zoeService/zoe.js",
@@ -42,12 +42,12 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.4.0",
-    "@agoric/ertp": "^0.14.1",
+    "@agoric/ertp": "^0.14.2",
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.4.0",
-    "@agoric/store": "^0.7.1",
-    "@agoric/swingset-vat": "^0.27.0",
-    "@agoric/vat-data": "^0.3.0",
+    "@agoric/store": "^0.7.2",
+    "@agoric/swingset-vat": "^0.28.0",
+    "@agoric/vat-data": "^0.3.1",
     "@endo/bundle-source": "^2.2.0",
     "@endo/eventual-send": "^0.15.3",
     "@endo/far": "^0.2.3",
@@ -56,7 +56,7 @@
     "@endo/promise-kit": "^0.2.41"
   },
   "devDependencies": {
-    "@agoric/deploy-script-support": "^0.8.0",
+    "@agoric/deploy-script-support": "^0.9.0",
     "@endo/captp": "^2.0.7",
     "@endo/init": "^0.5.41",
     "ava": "^3.12.1",

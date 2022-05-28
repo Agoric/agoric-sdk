@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.10.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.9.0...@agoric/vats@0.10.0) (2022-05-28)
+
+
+### Features
+
+* **cosmic-swingset:** implement `make scenario2-run-chain-economy` ([82a6ee9](https://github.com/Agoric/agoric-sdk/commit/82a6ee9edba0eec562e12bd325b893010ddb94ce))
+* **feeDistributor:** new `run-protocol` Zoe contract ([b5d9869](https://github.com/Agoric/agoric-sdk/commit/b5d9869049e42319d8df529bc274e487e77493ad))
+* **nameHub:** introduce `default` and `set` ([e7437f2](https://github.com/Agoric/agoric-sdk/commit/e7437f2d17595c26444dfa3b28e2dfb25a348ff8))
+* **vats:** decentral-economy-config to launch full economy at bootstrap ([ed49ed9](https://github.com/Agoric/agoric-sdk/commit/ed49ed9d9aa594de3018887280856f0b80712c54))
+* **vats:** separate reserve and reward streams ([8303c97](https://github.com/Agoric/agoric-sdk/commit/8303c9750b7ea2e3c455d0ba155d806563507bbc))
+
+
+### Bug Fixes
+
+* **nameHub:** align implementation with types ([fcb1b2a](https://github.com/Agoric/agoric-sdk/commit/fcb1b2a3d8c1c20fd9a3b4a249c5a23e2a89a822))
+* **vats:** make core config location independent ([9612d59](https://github.com/Agoric/agoric-sdk/commit/9612d591a4c58cf447f46e085f81dd0762b46d4a))
+* **vats:** store results of createVatByName for zoe etc. ([d991a55](https://github.com/Agoric/agoric-sdk/commit/d991a55ba808864d8ec287cc7436e183a8d43829)), closes [#5013](https://github.com/Agoric/agoric-sdk/issues/5013)
+
+
+
 ## [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.8.0...@agoric/vats@0.9.0) (2022-05-09)
 
 

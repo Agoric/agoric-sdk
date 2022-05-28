@@ -3,7 +3,7 @@
   "description": "Webcomponents for Agoric dapps",
   "license": "MIT",
   "author": "Agoric",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "main": "index.js",
   "module": "index.js",
   "scripts": {

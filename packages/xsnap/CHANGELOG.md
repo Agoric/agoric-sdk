@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.12.0...@agoric/xsnap@0.13.0) (2022-05-28)
+
+
+### Features
+
+* **vaultManager:** expose liquidation metrics ([#5393](https://github.com/Agoric/agoric-sdk/issues/5393)) ([47d4823](https://github.com/Agoric/agoric-sdk/commit/47d48236ee1702d8b0a903e39143132b56cfd096))
+
+
+### Bug Fixes
+
+* **xsnap:** Regarding unhandled exceptions ([29f7d93](https://github.com/Agoric/agoric-sdk/commit/29f7d9398be8f01447aa3083c6956242a6e3a54f))
+* **xsnap:** trace should not overwrite existing files ([5ab59a9](https://github.com/Agoric/agoric-sdk/commit/5ab59a9c6671a5aa6a81ad6a736fb95a3cf3c64b))
+* **xsnap:** Use mxNoConsole=1 ([a592439](https://github.com/Agoric/agoric-sdk/commit/a592439b4c5680fa4a81138571e769cae888a587))
+
+
+
 ## [0.12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.11.2...@agoric/xsnap@0.12.0) (2022-04-18)
 
 

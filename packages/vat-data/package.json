@@ -1,6 +1,6 @@
 {
   "name": "@agoric/vat-data",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Safe access to VatData global",
   "type": "module",
   "repository": "https://github.com/Agoric/agoric-sdk",
@@ -20,10 +20,10 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/assert": "^0.4.0",
-    "@agoric/store": "^0.7.1"
+    "@agoric/store": "^0.7.2"
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.27.0",
+    "@agoric/swingset-vat": "^0.28.0",
     "ava": "^3.12.1",
     "tsd": "^0.20.0"
   },

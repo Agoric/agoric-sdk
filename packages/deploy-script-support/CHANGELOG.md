@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.8.0...@agoric/deploy-script-support@0.9.0) (2022-05-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* **extract-proposal:** insist on an explicit `entrypoint`
+
+### Features
+
+* **core-proposal:** provide an `overrideManifest` to make the manifest explicit ([6557ecf](https://github.com/Agoric/agoric-sdk/commit/6557ecfb965fd668cf9538132e63a0419b86bd54))
+* **extract-proposal:** allow specifying module, entrypoint, args ([af712eb](https://github.com/Agoric/agoric-sdk/commit/af712eb979483e14bae765a018911b018d76b973))
+
+
+### Bug Fixes
+
+* **extract-proposal:** insist on an explicit `entrypoint` ([02df38b](https://github.com/Agoric/agoric-sdk/commit/02df38b8a5ef96a78fd6ff7f5c20ffcdba161038))
+
+
+
 ## [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.7.0...@agoric/deploy-script-support@0.8.0) (2022-05-09)
 
 

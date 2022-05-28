@@ -1,6 +1,6 @@
 {
   "name": "agoric",
-  "version": "0.15.1",
+  "version": "0.16.0",
   "description": "Manage the Agoric Javascript smart contract platform",
   "type": "module",
   "main": "src/main.js",
@@ -21,7 +21,7 @@
     "lint:eslint": "eslint --ext .js,.ts ."
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.27.0",
+    "@agoric/swingset-vat": "^0.28.0",
     "ava": "^3.12.1",
     "c8": "^7.11.0",
     "tmp": "^0.2.1"

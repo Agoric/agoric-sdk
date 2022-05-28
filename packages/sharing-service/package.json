@@ -1,6 +1,6 @@
 {
   "name": "@agoric/sharing-service",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Share objects with another party but not publicly",
   "type": "module",
   "main": "./src/sharing.js",
@@ -31,7 +31,7 @@
     "@endo/marshal": "^0.6.7"
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.27.0",
+    "@agoric/swingset-vat": "^0.28.0",
     "@endo/eventual-send": "^0.15.3",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
