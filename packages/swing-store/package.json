@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swing-store",
-  "version": "0.6.6",
+  "version": "0.7.0",
   "description": "Persistent storage for SwingSet, based on an LMDB key-value database",
   "type": "module",
   "main": "src/swingStore.js",

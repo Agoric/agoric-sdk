@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.37.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.36.0...@agoric/cosmic-swingset@0.37.0) (2022-05-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* **extract-proposal:** insist on an explicit `entrypoint`
+
+### Features
+
+* **cosmic-swingset:** extract environment from swingset config ([151d8ba](https://github.com/Agoric/agoric-sdk/commit/151d8ba4be0e577b8f89bbcf5ac49a86aaa30e58))
+* **cosmic-swingset:** Handle InstallBundle messages ([e3ae969](https://github.com/Agoric/agoric-sdk/commit/e3ae969e4824ad5fb43c18e17c6ed863743a08e2))
+* **cosmic-swingset:** implement `make scenario2-run-chain-economy` ([82a6ee9](https://github.com/Agoric/agoric-sdk/commit/82a6ee9edba0eec562e12bd325b893010ddb94ce))
+* **cosmic-swingset:** provide ibc assets to bootstrap, solo ([5985efb](https://github.com/Agoric/agoric-sdk/commit/5985efb5ecb2381029d1a11e7612ed40f3fee83d))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** generate economy config from core config ([bedb020](https://github.com/Agoric/agoric-sdk/commit/bedb020131a5f0b3f833a506097e6d3b80f36924))
+* **cosmic-swingset:** start with more coins to avoid running out ([0216990](https://github.com/Agoric/agoric-sdk/commit/0216990980e51b8576078d45ba73a9ad57bb16d8))
+* **extract-proposal:** insist on an explicit `entrypoint` ([02df38b](https://github.com/Agoric/agoric-sdk/commit/02df38b8a5ef96a78fd6ff7f5c20ffcdba161038))
+* **launch-chain:** only load `coreProposals` when initializing SwingSet ([a0eafa9](https://github.com/Agoric/agoric-sdk/commit/a0eafa93600f354fccf49b18971c2db6eac5eb5f))
+* **run-protocol:** adapt startPSM to core proposal conventions ([4e47405](https://github.com/Agoric/agoric-sdk/commit/4e474050d42727a2527026251fa40dd35a0db105))
+
+
+
 ## [0.36.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.35.0...@agoric/cosmic-swingset@0.36.0) (2022-05-09)
 
 

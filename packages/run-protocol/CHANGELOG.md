@@ -3,6 +3,55 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/run-protocol@0.10.0...@agoric/run-protocol@0.11.0) (2022-05-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* **amm:** push reserved assets to reserve contract (#5429)
+* **AMM:** make amm.addPool() require minimum collateral (#5377)
+
+### Features
+
+* **amm:** push reserved assets to reserve contract ([#5429](https://github.com/Agoric/agoric-sdk/issues/5429)) ([20472a1](https://github.com/Agoric/agoric-sdk/commit/20472a1924352df1611ed408c420ac0c56457fc7))
+* **AMM:** make amm.addPool() require minimum collateral ([#5377](https://github.com/Agoric/agoric-sdk/issues/5377)) ([2fedea6](https://github.com/Agoric/agoric-sdk/commit/2fedea666d6730c852aee49c045449aa5d8bebb5)), closes [#4643](https://github.com/Agoric/agoric-sdk/issues/4643) [#5397](https://github.com/Agoric/agoric-sdk/issues/5397)
+* **core-proposal:** provide an `overrideManifest` to make the manifest explicit ([6557ecf](https://github.com/Agoric/agoric-sdk/commit/6557ecfb965fd668cf9538132e63a0419b86bd54))
+* **feeDistributor:** new `run-protocol` Zoe contract ([b5d9869](https://github.com/Agoric/agoric-sdk/commit/b5d9869049e42319d8df529bc274e487e77493ad))
+* **liquidation:** push penalties to reserve ([b431916](https://github.com/Agoric/agoric-sdk/commit/b43191627cee20c5631fffc5786807b01673fc20))
+* **reserve:** always accept RUN ([f803755](https://github.com/Agoric/agoric-sdk/commit/f80375584953d591ec39b7370fbb3f386e6d6d12))
+* **Reserve:** Reserve can burn RUN  to reduce shortfall ([#5444](https://github.com/Agoric/agoric-sdk/issues/5444)) ([1f75135](https://github.com/Agoric/agoric-sdk/commit/1f75135b16893a2efacc6bb23011a5e910489ccf))
+* **run-protocol:** support $MIN_INITIAL_POOL_LIQUIDITY esp 0 ([1507ed6](https://github.com/Agoric/agoric-sdk/commit/1507ed6857029dbe8e96df8d7d14773e0f8ccacc))
+* Reserves track liquidation shortfall ([#5431](https://github.com/Agoric/agoric-sdk/issues/5431)) ([1d8093d](https://github.com/Agoric/agoric-sdk/commit/1d8093dd426b4ca6cf71a94c71b6f9599eefe532))
+* **cosmic-swingset:** implement `make scenario2-run-chain-economy` ([82a6ee9](https://github.com/Agoric/agoric-sdk/commit/82a6ee9edba0eec562e12bd325b893010ddb94ce))
+* **run-protocol:** add `scripts/manual-price-feed.js` ([8f3da47](https://github.com/Agoric/agoric-sdk/commit/8f3da47fac23ba947a5fac196ce14fd0d57b89d2))
+* **run-protocol:** fix committee-proposal.js ([ef9a1f6](https://github.com/Agoric/agoric-sdk/commit/ef9a1f646a627d06a20ffe2baf3b1f8ac81533c8))
+* **run-protocol:** have behaviours allow more customisation ([761661d](https://github.com/Agoric/agoric-sdk/commit/761661d2722e111f207eea5179cd43ee971a5289))
+* **run-protocol:** price feed core and proposal ([4b96bb6](https://github.com/Agoric/agoric-sdk/commit/4b96bb686fea8959ee9d34517eb59594063cdf59))
+* **run-protocol:** restructure core-proposals ([4e902a6](https://github.com/Agoric/agoric-sdk/commit/4e902a6a16f5780afea49a14e13116a1a7583a1c))
+* **run-protocol:** support core-proposal args ([d3d8927](https://github.com/Agoric/agoric-sdk/commit/d3d8927e1a8155176c8da8ea2bf96b20ce8d91ff))
+* **vats:** separate reserve and reward streams ([8303c97](https://github.com/Agoric/agoric-sdk/commit/8303c9750b7ea2e3c455d0ba155d806563507bbc))
+* **vault:** econ metrics notifiers ([#5260](https://github.com/Agoric/agoric-sdk/issues/5260)) ([6c3cdf3](https://github.com/Agoric/agoric-sdk/commit/6c3cdf37234c3053f7dfcd745e21ae78d828ad0b))
+* **vault:** liquidation penalty handled by liquidation contracts ([#5343](https://github.com/Agoric/agoric-sdk/issues/5343)) ([ce1cfaf](https://github.com/Agoric/agoric-sdk/commit/ce1cfafb6d375453865062e1bd66ade66fb80686))
+* **vaultManager:** expose liquidation metrics ([#5393](https://github.com/Agoric/agoric-sdk/issues/5393)) ([47d4823](https://github.com/Agoric/agoric-sdk/commit/47d48236ee1702d8b0a903e39143132b56cfd096))
+* permissionless interchain AMM pool creation ([5e2a8d0](https://github.com/Agoric/agoric-sdk/commit/5e2a8d09403e237b832ab4a26419e219f3f51969))
+* publish econ stats from AMM ([#5420](https://github.com/Agoric/agoric-sdk/issues/5420)) ([87a9e62](https://github.com/Agoric/agoric-sdk/commit/87a9e628315948fa75e78bf5294178f65bc34b56)), closes [#4648](https://github.com/Agoric/agoric-sdk/issues/4648) [#5377](https://github.com/Agoric/agoric-sdk/issues/5377)
+
+
+### Bug Fixes
+
+* **addAssetToVault:** dangling promises ([d37dd78](https://github.com/Agoric/agoric-sdk/commit/d37dd7846f1258ffba291b6a9cbc94fb01e95e16))
+* **addAssetToVault:** use unit values to generate the scaling ratios ([7259bbe](https://github.com/Agoric/agoric-sdk/commit/7259bbe7e07e61ec946401940e172e786e88ebf1))
+* **amm:** don't require {want:{Liquidity}} when adding liquidity ([e768c91](https://github.com/Agoric/agoric-sdk/commit/e768c91b834377018fafea150150d2c122358baa))
+* **amm:** update metrics whenever pool balances change, including init ([001280b](https://github.com/Agoric/agoric-sdk/commit/001280b7d9d8aeb0af17ba590cdde8ff6932ef6f))
+* **AMM:** await zcf.saveIssuer() ([03b597e](https://github.com/Agoric/agoric-sdk/commit/03b597e17d9e185e289e067a83b31248daee6081))
+* **interchainPool:** get MinInitialLiquidity from AMM on demand ([#5423](https://github.com/Agoric/agoric-sdk/issues/5423)) ([1f849a3](https://github.com/Agoric/agoric-sdk/commit/1f849a3edece3883dd03548825f744af6d00b686))
+* **run-protocol:** adapt startPSM to core proposal conventions ([4e47405](https://github.com/Agoric/agoric-sdk/commit/4e474050d42727a2527026251fa40dd35a0db105))
+* **run-protocol:** raise demo issuer debt limit ([129826c](https://github.com/Agoric/agoric-sdk/commit/129826c3a14021292227993a28012c1ce41fd146))
+* **run-protocol:** reinstate option to publish interchain asset from bank ([0672139](https://github.com/Agoric/agoric-sdk/commit/0672139619cf9e3ef4007700e9e05c82e742e0c5))
+* vault proposal relies on permissionless IBC AMM pool creation ([4e711b1](https://github.com/Agoric/agoric-sdk/commit/4e711b1e6009e02bd2e4e642d8c39158182336a7))
+
+
+
 ## [0.10.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/run-protocol@0.9.0...@agoric/run-protocol@0.10.0) (2022-05-09)
 
 

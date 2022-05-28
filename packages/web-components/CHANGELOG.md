@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/web-components@0.1.5...@agoric/web-components@0.2.0) (2022-05-28)
+
+
+### Features
+
+* **WalletConnection:** reset connection after connect timeout ([9e6e1ec](https://github.com/Agoric/agoric-sdk/commit/9e6e1ec5dab04de91559cf31baa24faeaca8c020))
+* **WalletConnection:** reset connection if bridge is closed ([ab165da](https://github.com/Agoric/agoric-sdk/commit/ab165dae0390ced6c868dd146b75974c0545fabb))
+* **web-components:** reset after connection problem ([f518ec2](https://github.com/Agoric/agoric-sdk/commit/f518ec25d428a406beb4b9170207fb003a1821f8))
+
+
+
 ### [0.1.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/web-components@0.1.4...@agoric/web-components@0.1.5) (2022-04-18)
 
 **Note:** Version bump only for package @agoric/web-components

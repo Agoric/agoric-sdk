@@ -1,6 +1,6 @@
 {
   "name": "@agoric/deploy-script-support",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Helpers and other support for writing deploy scripts",
   "type": "module",
   "main": "src/helpers.js",
@@ -35,13 +35,13 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.4.0",
-    "@agoric/ertp": "^0.14.1",
-    "@agoric/import-manager": "^0.3.1",
+    "@agoric/ertp": "^0.14.2",
+    "@agoric/import-manager": "^0.3.2",
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.4.0",
-    "@agoric/store": "^0.7.1",
-    "@agoric/vats": "^0.9.0",
-    "@agoric/zoe": "^0.23.0",
+    "@agoric/store": "^0.7.2",
+    "@agoric/vats": "^0.10.0",
+    "@agoric/zoe": "^0.24.0",
     "@endo/base64": "^0.2.25",
     "@endo/bundle-source": "^2.2.0",
     "@endo/far": "^0.2.3",
@@ -50,7 +50,7 @@
     "@endo/zip": "^0.2.25"
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.27.0",
+    "@agoric/swingset-vat": "^0.28.0",
     "ava": "^3.12.1",
     "import-meta-resolve": "^1.1.1"
   },

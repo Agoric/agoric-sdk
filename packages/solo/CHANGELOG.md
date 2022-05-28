@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.7.0...@agoric/solo@0.8.0) (2022-05-28)
+
+
+### Features
+
+* **solo:** Add /connections and /install-bundle HTTP routes ([01cdbc9](https://github.com/Agoric/agoric-sdk/commit/01cdbc9ff3dfee1fc9dad5c4b19a0c41ff697787))
+* **solo:** report WebSocket closure ([3e700ca](https://github.com/Agoric/agoric-sdk/commit/3e700ca6b3978af63055cf614b3ded1eeb9d5a85))
+* **solo:** use `$SOLO_MNEMONIC` on init ([c151398](https://github.com/Agoric/agoric-sdk/commit/c1513989928df1afa2c133984a67dcb984d908ec))
+
+
+### Bug Fixes
+
+* **solo:** Add missing extension to test-env import ([ea3a1bf](https://github.com/Agoric/agoric-sdk/commit/ea3a1bfd2702b54127d6db963860982835af0369))
+* **solo:** introduce runStake attMaker to wallet admin facet ([#5371](https://github.com/Agoric/agoric-sdk/issues/5371)) ([b06d6eb](https://github.com/Agoric/agoric-sdk/commit/b06d6ebbafd4d401d6de49ed8e6be1b3b90e5f86)), closes [#4263](https://github.com/Agoric/agoric-sdk/issues/4263)
+* **solo:** Portable file path to URL in chain-cosmos-sdk ([08368d4](https://github.com/Agoric/agoric-sdk/commit/08368d4db59654491146e8b55d2fcf8f26187421))
+* **solo:** Portable file path to URL in start ([f5d53ec](https://github.com/Agoric/agoric-sdk/commit/f5d53ecf97b26b214ad6321d8d5da50e4a5f9517))
+* **solo:** Relax extraneous xsnap dependency ([616f26e](https://github.com/Agoric/agoric-sdk/commit/616f26e4f886845ad6b33a80fd58aee8665e972f))
+* **solo-ui:** more robust history updates ([76edbc9](https://github.com/Agoric/agoric-sdk/commit/76edbc9305f37cd646c33d5651415aa3caf9b7d1))
+
+
+
 ## [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.6.0...@agoric/solo@0.7.0) (2022-05-09)
 
 

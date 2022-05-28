@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.2.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.2.0...@agoric/telemetry@0.2.1) (2022-05-28)
+
+
+### Bug Fixes
+
+* **slog-to-otel:** ignore `vatstoreGetAfter` syscall ([7baed8e](https://github.com/Agoric/agoric-sdk/commit/7baed8ea1c7513d57bd33edb8c4b6a80dd5182ed))
+
+
+
 ## [0.2.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.1.1...@agoric/telemetry@0.2.0) (2022-04-18)
 
 

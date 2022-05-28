@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.30.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.29.0...@agoric/cosmos@0.30.0) (2022-05-28)
+
+
+### Features
+
+* **agd:** Add install-bundle command ([6d3e227](https://github.com/Agoric/agoric-sdk/commit/6d3e227314da09609ea17aead2c0e1b48510b128))
+* **cosmic-swingset:** Handle InstallBundle messages ([e3ae969](https://github.com/Agoric/agoric-sdk/commit/e3ae969e4824ad5fb43c18e17c6ed863743a08e2))
+* **cosmos:** divert all fees to the vbank/reserve ([50755ec](https://github.com/Agoric/agoric-sdk/commit/50755ece181033a6c26ab1a247e5dd3f318a099b))
+* **golang/cosmos:** Add InstallBundle RPC message types to Protobuf definitions ([2d11fde](https://github.com/Agoric/agoric-sdk/commit/2d11fdeff8af1c671c9b833017456c9dd4f29ca1))
+* **golang/cosmos:** Implement SDK InstallBundle message type ([b69b94f](https://github.com/Agoric/agoric-sdk/commit/b69b94f22e0a2953f3783868bfb30f31c2782f1f))
+* **vbank:** separate smoothing and distribution fraction from epoch ([9116ede](https://github.com/Agoric/agoric-sdk/commit/9116ede69169ebb252faf069d90022e8e05c6a4e))
+* **vbank:** update with `vbank/reserve` module account ([3799383](https://github.com/Agoric/agoric-sdk/commit/379938358a669b6b247474d3e7fabf576f75b01d))
+* cli for sending Wallet{Spend}Action transactions ([ddb9629](https://github.com/Agoric/agoric-sdk/commit/ddb96291d37c3832e9593e3a9ed466d89fc8a824))
+
+
+### Bug Fixes
+
+* **keeper:** do not delete keys with descendents ([cb272ae](https://github.com/Agoric/agoric-sdk/commit/cb272ae97a042ceefd3af93b1b4601ca49dfe3a7))
+* **vbank:** avoid panicing on invalid denoms ([adc22d6](https://github.com/Agoric/agoric-sdk/commit/adc22d6ba3125a7e878885b066019f0e6b95a6a1))
+* Correct a dead link for package @agoric/cosmos ([#5143](https://github.com/Agoric/agoric-sdk/issues/5143)) ([1e51f6a](https://github.com/Agoric/agoric-sdk/commit/1e51f6a0bedefd0e33260a78b21ad72d31048f08))
+
+
+
 ## [0.29.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.28.0...@agoric/cosmos@0.29.0) (2022-04-18)
 
 
