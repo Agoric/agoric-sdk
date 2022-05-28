@@ -205,6 +205,7 @@ export const makeCosmosBundlePublisher = ({
 
 /**
  * @typedef HttpConnectionSpec
+ * @property {'http'} type
  * @property {string} host
  * @property {number} port
  */
@@ -224,7 +225,7 @@ export const makeCosmosBundlePublisher = ({
  */
 
 /**
- * @typedef {unknown} ConnectionSpec
+ * @typedef {HttpConnectionSpec | CosmosConnectionSpec} ConnectionSpec
  */
 
 /**
@@ -235,19 +236,16 @@ export const makeCosmosBundlePublisher = ({
  */
 
 /**
- * @callback PublishBundle
- * @param {SourceBundle} bundle
- * @param {HttpConnectionSpec | CosmosConnectionSpec} connectionSpec
- * @returns {Promise<Bundle>}
+ * @typedef {ReturnType<typeof makeBundlePublisher>} PublishBundle
  */
 
 /**
  * @param {SourceBundle} bundle
- * @param {ConnectionSpec} connectionSpec
+ * @param {ConnectionSpec | undefined} connectionSpec
  * @param {object} powers
  * @param {PublishBundleCosmos} [powers.publishBundleCosmos]
  * @param {PublishBundleHttp} [powers.publishBundleHttp]
- * @param {() => unknown} [powers.getDefaultConnection]
+ * @param {() => ConnectionSpec} [powers.getDefaultConnection]
  * @returns {Promise<Bundle>}
  */
 const publishBundle = async (
@@ -349,7 +347,7 @@ const publishBundle = async (
 export const makeBundlePublisher = powers => {
   /**
    * @param {SourceBundle} bundle
-   * @param {ConnectionSpec} connectionSpec
+   * @param {ConnectionSpec} [connectionSpec]
    */
   return async (bundle, connectionSpec) =>
     publishBundle(bundle, connectionSpec, powers);

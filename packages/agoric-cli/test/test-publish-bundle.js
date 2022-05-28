@@ -64,6 +64,7 @@ test('fake publish bundle not ok invalid connection type', async t => {
 
   await t.throwsAsync(
     publishBundle(bundle, {
+      // @ts-expect-error
       type: 'bogus',
     }),
   );
@@ -85,6 +86,7 @@ test('fake publish bundle not ok invalid HTTP connection spec non-string host', 
   await t.throwsAsync(
     publishBundle(bundle, {
       type: 'http',
+      // @ts-expect-error
       host: 1,
       port: 8080,
     }),
