@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.13.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.13.0...@agoric/wallet@0.13.1) (2022-05-28)
+
+
+### Bug Fixes
+
+* **wallet-ui:** put back missing dapps notifier ([2720247](https://github.com/Agoric/agoric-sdk/commit/272024775e3670b4ead5934a82e9625631e9ea77))
+* **wallet-ui:** update state when resetting wallet connection ([eff4186](https://github.com/Agoric/agoric-sdk/commit/eff4186d9b30ff53897f0c683660ea1a3a22949d))
+
+
+
 ## [0.13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.12.0...@agoric/wallet@0.13.0) (2022-05-09)
 
 

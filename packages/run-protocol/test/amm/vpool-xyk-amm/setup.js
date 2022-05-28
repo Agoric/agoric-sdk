@@ -88,7 +88,7 @@ export const setupAmmServices = async (
   t,
   electorateTerms = { committeeName: 'The Cabal', committeeSize: 1 },
   centralR,
-  timer = buildManualTimer(console.log),
+  timer = buildManualTimer(t.log),
   farZoeKit,
 ) => {
   trace('setupAmmServices', { farZoeKit });

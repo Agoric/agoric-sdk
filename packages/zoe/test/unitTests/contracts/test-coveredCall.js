@@ -199,7 +199,7 @@ test('zoe - coveredCall', async t => {
     });
   };
 
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   // Setup Alice
   const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(3n));
@@ -234,7 +234,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   const coveredCallInstallation = await E(zoe).installBundleID(
     'b1-coveredcall',
   );
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3n));
@@ -350,7 +350,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
 test('zoe - coveredCall with swap for invitation', async t => {
   t.plan(24);
   // Setup the environment
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const {
     moolaR,
     simoleanR,
@@ -615,7 +615,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
 test('zoe - coveredCall with coveredCall for invitation', async t => {
   t.plan(31);
   // Setup the environment
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const {
     moolaR,
     simoleanR,
@@ -911,7 +911,7 @@ test('zoe - coveredCall non-fungible', async t => {
   const coveredCallInstallation = await E(zoe).installBundleID(
     'b1-coveredcall',
   );
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   // Setup Alice
   const growlTiger = harden(['GrowlTiger']);

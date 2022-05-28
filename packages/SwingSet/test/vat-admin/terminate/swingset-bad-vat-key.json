@@ -1,0 +1,13 @@
+{
+  "bootstrap": "bootstrap",
+  "bundles": {
+    "dude": {
+      "sourceSpec": "vat-dude-terminate.js"
+    }
+  },
+  "vats": {
+    "bootstrap": {
+      "sourceSpec": "bootstrap-badVatKey.js"
+    }
+  }
+}

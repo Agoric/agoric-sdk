@@ -35,7 +35,7 @@ const vatRoots = {
 
 const noop = () => {};
 
-const mock = {
+const makeMock = t => ({
   devices: {
     command: /** @type { any } */ ({ registerInboundHandler: noop }),
     mailbox: /** @type { any } */ ({
@@ -64,7 +64,7 @@ const mock = {
       buildSpawner: () => ({ _: 'spawner' }),
     },
     timer: Far('TimerVat', {
-      createTimerService: async () => buildManualTimer(console.log),
+      createTimerService: async () => buildManualTimer(t.log),
     }),
     uploads: { getUploads: () => ({ _: 'uploads' }) },
 
@@ -73,7 +73,7 @@ const mock = {
       bind: () => ({ addListener: noop }),
     }),
   },
-};
+});
 
 const argvByRole = {
   chain: {
@@ -92,6 +92,7 @@ const argvByRole = {
 };
 const testRole = (ROLE, governanceActions) => {
   test(`test manifest permits: ${ROLE} gov: ${governanceActions}`, async t => {
+    const mock = makeMock(t);
     const root = buildRootObject(
       // @ts-expect-error Device<T> is a little goofy
       { D: d => d, logger: t.log },

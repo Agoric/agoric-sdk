@@ -27,6 +27,7 @@ export function buildRootObject(_vatPowers, vatParameters) {
   return Far('root', {
     async bootstrap(vats, devices) {
       const vatMaker = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+      const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
       const vatRoots = {};
       for (const vatName of Object.keys(vatParameters.config.vats)) {
         const vatDesc = vatParameters.config.vats[vatName];
@@ -37,11 +38,15 @@ export function buildRootObject(_vatPowers, vatParameters) {
         if (vatParameters.config.bootstrap === vatName) {
           subvatParameters.argv = vatParameters.argv;
         }
+        let critical = vatDesc.critical;
+        if (critical) {
+          critical = criticalVatKey;
+        }
         // prettier-ignore
         // eslint-disable-next-line no-await-in-loop
         const vat = await E(vatMaker).createVatByName(
           bundleName,
-          { vatParameters: harden(subvatParameters) },
+          { vatParameters: harden(subvatParameters), critical },
         );
         vatRoots[vatName] = vat.root;
       }

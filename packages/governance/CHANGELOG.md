@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.6.0...@agoric/governance@0.7.0) (2022-05-28)
+
+
+### Features
+
+* **vault:** liquidation penalty handled by liquidation contracts ([#5343](https://github.com/Agoric/agoric-sdk/issues/5343)) ([ce1cfaf](https://github.com/Agoric/agoric-sdk/commit/ce1cfafb6d375453865062e1bd66ade66fb80686))
+
+
+
 ## [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.5.0...@agoric/governance@0.6.0) (2022-05-09)
 
 

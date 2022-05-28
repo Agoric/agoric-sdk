@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.24.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.23.0...@agoric/zoe@0.24.0) (2022-05-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* **amm:** push reserved assets to reserve contract (#5429)
+* **AMM:** make amm.addPool() require minimum collateral (#5377)
+
+### Features
+
+* **amm:** push reserved assets to reserve contract ([#5429](https://github.com/Agoric/agoric-sdk/issues/5429)) ([20472a1](https://github.com/Agoric/agoric-sdk/commit/20472a1924352df1611ed408c420ac0c56457fc7))
+* **AMM:** make amm.addPool() require minimum collateral ([#5377](https://github.com/Agoric/agoric-sdk/issues/5377)) ([2fedea6](https://github.com/Agoric/agoric-sdk/commit/2fedea666d6730c852aee49c045449aa5d8bebb5)), closes [#4643](https://github.com/Agoric/agoric-sdk/issues/4643) [#5397](https://github.com/Agoric/agoric-sdk/issues/5397)
+* **vault:** econ metrics notifiers ([#5260](https://github.com/Agoric/agoric-sdk/issues/5260)) ([6c3cdf3](https://github.com/Agoric/agoric-sdk/commit/6c3cdf37234c3053f7dfcd745e21ae78d828ad0b))
+* **vault:** liquidation penalty handled by liquidation contracts ([#5343](https://github.com/Agoric/agoric-sdk/issues/5343)) ([ce1cfaf](https://github.com/Agoric/agoric-sdk/commit/ce1cfafb6d375453865062e1bd66ade66fb80686))
+* **zoe:** Support installation of hash bundles ([8f9ad75](https://github.com/Agoric/agoric-sdk/commit/8f9ad759b17d81b47c9176c61fc81600e32c82a1))
+
+
+### Bug Fixes
+
+* **zoe:** Note [#4974](https://github.com/Agoric/agoric-sdk/issues/4974) subsume installBundleID in install ([815c035](https://github.com/Agoric/agoric-sdk/commit/815c035bbfc897d4d490f934b9e28ff79c8e958f))
+* de-legacy-ize ManualTimer ([#5369](https://github.com/Agoric/agoric-sdk/issues/5369)) ([2daf2a4](https://github.com/Agoric/agoric-sdk/commit/2daf2a4c358d2cc6bf68c722d82ae980bad806ba))
+
+
+
 ## [0.23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.22.0...@agoric/zoe@0.23.0) (2022-05-09)
 
 

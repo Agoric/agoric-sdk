@@ -62,7 +62,7 @@ test('cleanProposal - all empty', t => {
 
 test('cleanProposal - repeated brands', t => {
   const { moola, simoleans } = setup();
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   proposeGood(
     t,
@@ -82,7 +82,7 @@ test('cleanProposal - repeated brands', t => {
 
 test('cleanProposal - wrong assetKind', t => {
   const { moola, simoleans } = setup();
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   proposeBad(
     t,
@@ -98,7 +98,7 @@ test('cleanProposal - wrong assetKind', t => {
 
 test('cleanProposal - want patterns', t => {
   const { moola, simoleans } = setup();
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   proposeGood(
     t,
@@ -151,7 +151,7 @@ test('cleanProposal - want patterns', t => {
 
 test('cleanProposal - other wrong stuff', t => {
   const { moola, simoleans } = setup();
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   proposeBad(
     t,

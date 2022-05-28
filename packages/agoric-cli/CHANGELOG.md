@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.16.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.15.1...agoric@0.16.0) (2022-05-28)
+
+
+### Features
+
+* **agoric-cli:** `deploy` accepts `--hostport=URL` ([512eefe](https://github.com/Agoric/agoric-sdk/commit/512eefe50318cc31abcb28cc502ae6cdac9eea8e))
+* **agoric-cli:** Inject publishBundle and listConnections to deploy scripts ([69647a2](https://github.com/Agoric/agoric-sdk/commit/69647a274e8450112f98638a13f4afb0effdd47d))
+* **chain-config:** set distribution fraction to 10% ([d4e47bc](https://github.com/Agoric/agoric-sdk/commit/d4e47bc0eda442754e36e9d5bf399e61b26d086a))
+* **vats:** decentral-economy-config to launch full economy at bootstrap ([ed49ed9](https://github.com/Agoric/agoric-sdk/commit/ed49ed9d9aa594de3018887280856f0b80712c54))
+
+
+### Bug Fixes
+
+* **agoric-cli:** Portable file path to URL in deploy ([9d2788d](https://github.com/Agoric/agoric-sdk/commit/9d2788d29ca9ef071c657c4de0a4a5536ff53b7d))
+* default missed signed blocks should be higher ([cd82ddc](https://github.com/Agoric/agoric-sdk/commit/cd82ddccceae1dbcc45442da8a4fbfc705ce4524))
+* **deploy:** enforce `--hostport` URLs use `/private/captp` ([b74755e](https://github.com/Agoric/agoric-sdk/commit/b74755e446514f4834f407974d992994daf9a6a1))
+
+
+
 ### [0.15.1](https://github.com/Agoric/agoric-sdk/compare/agoric@0.15.0...agoric@0.15.1) (2022-05-09)
 
 

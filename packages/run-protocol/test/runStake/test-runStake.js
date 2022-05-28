@@ -117,7 +117,7 @@ test.before(async (/** @type {RunStakeTestContext} */ t) => {
 
 export const setupBootstrap = async (
   /** @type {RunStakeTestContext} */ t,
-  timer = buildManualTimer(console.log),
+  timer = buildManualTimer(t.log),
 ) => {
   const { zoe, installation } = t.context;
 

@@ -250,6 +250,8 @@ export default function buildKernel(
    * @param {SwingSetCapData} info
    */
   function terminateVat(vatID, shouldReject, info) {
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    const critical = vatKeeper.getOptions().critical;
     insistCapData(info);
     // guard against somebody telling vatAdmin to kill a vat twice
     if (kernelKeeper.vatIsAlive(vatID)) {
@@ -262,6 +264,18 @@ export default function buildKernel(
       // ISSUE: terminate stuff in its own crank like creation?
       // eslint-disable-next-line no-use-before-define
       vatWarehouse.vatWasTerminated(vatID);
+    }
+    if (critical) {
+      // The following error construction is a bit awkward, but (1) it saves us
+      // from doing unmarshaling while in the kernel, while (2) it protects
+      // against the info not actually encoding an error, but (3) it still
+      // provides some diagnostic information back to the host, and (4) this
+      // should happen rarely enough that if you have to do a little bit of
+      // extra interpretive work on the receiving end to diagnose the problem,
+      // it's going to be a small cost compared to the trouble you're probably
+      // already in anyway if this happens.
+      panic(`critical vat ${vatID} failed`, Error(info.body));
+      return;
     }
     if (vatAdminRootKref) {
       // static vat termination can happen before vat admin vat exists
@@ -306,7 +320,7 @@ export default function buildKernel(
     insistCapData(info);
     // if vatFatalSyscall was here already, don't override: bad syscalls win
     if (!terminationTrigger) {
-      terminationTrigger = { vatID, abortCrank: false, reject, info };
+      terminationTrigger = { vatID, abortCrank: reject, reject, info };
     }
   }
 

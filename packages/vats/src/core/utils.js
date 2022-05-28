@@ -41,6 +41,7 @@ export const agoricNamesReserved = harden({
     binaryVoteCounter: 'binary vote counter',
     amm: 'Automated Market Maker',
     VaultFactory: 'vault factory',
+    feeDistributor: 'fee distributor',
     liquidate: 'liquidate',
     runStake: 'runStake',
     Pegasus: 'pegasus',
@@ -53,6 +54,7 @@ export const agoricNamesReserved = harden({
     amm: 'Automated Market Maker',
     ammGovernor: 'AMM Governor',
     VaultFactory: 'vault factory',
+    feeDistributor: 'fee distributor',
     Treasury: 'Treasury', // for compatibility
     VaultFactoryGovernor: 'vault factory governor',
     runStake: 'runStake',

@@ -67,6 +67,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
         'enableSetup',
         'virtualObjectCacheSize',
         'useTranscript',
+        'critical',
         'reapInterval',
       ]);
       creationOptions.description = `static name=${name}`;

@@ -401,7 +401,7 @@ const makeInitialPayments = (moolaValue, simoleanValue, bucksValue) => ({
 });
 
 test('zoe - otcDesk - offerOk', async t => {
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const installation = await installCode(zoe);
   const coveredCallInstallation = await installCoveredCall(zoe);
 
@@ -450,7 +450,7 @@ test('zoe - otcDesk - offerOk', async t => {
 });
 
 test('zoe - otcDesk - offerExpired', async t => {
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const installation = await installCode(zoe);
   const coveredCallInstallation = await installCoveredCall(zoe);
 
@@ -500,7 +500,7 @@ test('zoe - otcDesk - offerExpired', async t => {
 });
 
 test('zoe - otcDesk - offerWantTooMuch', async t => {
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const installation = await installCode(zoe);
   const coveredCallInstallation = await installCoveredCall(zoe);
 

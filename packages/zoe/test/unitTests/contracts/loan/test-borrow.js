@@ -422,7 +422,7 @@ test('interest starting from non-zero time', async t => {
   const collateralValue = 100000n;
   const maxLoanValue = 40000n;
   // The fakePriceAuthority pays attention to the fakeTimer
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   timer.tick();
   timer.tick();
   timer.tick();

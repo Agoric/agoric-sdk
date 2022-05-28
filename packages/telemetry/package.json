@@ -1,6 +1,6 @@
 {
   "name": "@agoric/telemetry",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Agoric's telemetry implementation",
   "type": "module",
   "repository": "https://github.com/Agoric/agoric-sdk",
@@ -22,7 +22,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/store": "^0.7.0",
+    "@agoric/store": "^0.7.2",
     "@endo/init": "^0.5.41",
     "@opentelemetry/api": "^1.0.0",
     "@opentelemetry/exporter-prometheus": "^0.27.0",

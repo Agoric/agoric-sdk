@@ -130,7 +130,7 @@ const setUpVoterAndVote = async (committeeCreator, zoe, qHandle, choice) => {
 
 test('governParam no votes', async t => {
   const { zoe } = await setUpZoeForTest(() => {});
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const { governorFacets, installs, invitationAmount } =
     await setUpGovernedContract(
       zoe,
@@ -173,7 +173,7 @@ test('governParam no votes', async t => {
 
 test('multiple params bad change', async t => {
   const { zoe } = await setUpZoeForTest(() => {});
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const { governorFacets, installs } = await setUpGovernedContract(
     zoe,
     { committeeName: 'Demos', committeeSize: 1 },
@@ -201,7 +201,7 @@ test('multiple params bad change', async t => {
 
 test('change multiple params', async t => {
   const { zoe } = await setUpZoeForTest(() => {});
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const { governorFacets, installs, invitationAmount, committeeCreator } =
     await setUpGovernedContract(
       zoe,
@@ -256,7 +256,7 @@ test('change multiple params', async t => {
 
 test('change multiple params used invitation', async t => {
   const { zoe } = await setUpZoeForTest(() => {});
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const { governorFacets, installs, invitationAmount, committeeCreator } =
     await setUpGovernedContract(
       zoe,

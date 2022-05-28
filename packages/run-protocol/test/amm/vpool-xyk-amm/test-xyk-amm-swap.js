@@ -91,7 +91,7 @@ test('amm with non-fungible central token', async t => {
   // Set up central token
   const centralR = makeIssuerKit('central', AssetKind.SET);
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  const timer = buildManualTimer(console.log, 30n);
+  const timer = buildManualTimer(t.log, 30n);
 
   await t.throwsAsync(
     () => setupAmmServices(t, electorateTerms, centralR, timer),
@@ -116,7 +116,7 @@ test('amm with valid offers', async t => {
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
 
-  const timer = buildManualTimer(console.log, 30n);
+  const timer = buildManualTimer(t.log, 30n);
   const protocolFeeRatio = makeRatio(6n, centralR.brand, BASIS_POINTS);
 
   const { zoe, amm } = await setupAmmServices(
@@ -368,7 +368,7 @@ test('amm doubleSwap', async t => {
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   // This timer is only used to build quotes. Let's make it non-zero
-  const timer = buildManualTimer(console.log, 30n);
+  const timer = buildManualTimer(t.log, 30n);
 
   const { zoe, amm } = await setupAmmServices(
     t,
@@ -610,7 +610,7 @@ test('amm jig - swapOut uneven', async t => {
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
 
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   const { zoe, amm } = await setupAmmServices(
     t,
@@ -816,7 +816,7 @@ test('amm jig - breaking scenario', async t => {
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
 
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   const { zoe, amm } = await setupAmmServices(
     t,
@@ -903,7 +903,7 @@ test('zoe allow empty reallocations', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
 
   // This timer is only used to build quotes. Let's make it non-zero
-  const timer = buildManualTimer(console.log, 30n);
+  const timer = buildManualTimer(t.log, 30n);
 
   const { zoe, amm } = await setupAmmServices(
     t,
@@ -1013,7 +1013,7 @@ test('amm adding liquidity', async t => {
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   // This timer is only used to build quotes. Let's make it non-zero
-  const timer = buildManualTimer(console.log, 30n);
+  const timer = buildManualTimer(t.log, 30n);
   const { zoe, amm } = await setupAmmServices(
     t,
     electorateTerms,
@@ -1050,7 +1050,7 @@ test('amm adding liquidity', async t => {
   await p.assertInitial({
     centralAmount: AmountMath.makeEmpty(centralR.brand),
     secondaryAmount: moola(0n),
-    liquidityTokens: 0n,
+    liquidityTokens: AmountMath.makeEmpty(liquidityBrand),
   });
 
   const allocation = (c, l, s) => ({
@@ -1078,7 +1078,7 @@ test('amm adding liquidity', async t => {
   await p.assertState({
     centralAmount: AmountMath.make(centralR.brand, expected0.c),
     secondaryAmount: moola(expected0.s),
-    liquidityTokens: expected0.l,
+    liquidityTokens: AmountMath.make(liquidityBrand, expected0.l),
   });
 
   const poolState1 = {
@@ -1113,7 +1113,7 @@ test('amm adding liquidity', async t => {
   await p.assertState({
     centralAmount: AmountMath.make(centralR.brand, expected1.c),
     secondaryAmount: moola(expected1.s),
-    liquidityTokens: expected1.l,
+    liquidityTokens: AmountMath.make(liquidityBrand, expected1.l),
   });
 
   // The pool will have 10K + 20K and 50K + 70K after
@@ -1145,7 +1145,7 @@ test('amm adding liquidity', async t => {
   await p.assertState({
     centralAmount: AmountMath.make(centralR.brand, expected2.c),
     secondaryAmount: moola(expected2.s),
-    liquidityTokens: expected2.l,
+    liquidityTokens: AmountMath.make(liquidityBrand, expected2.l),
   });
 
   // The pool should now have just under 50K + 70K + 60K and 10K + 14K + 12K

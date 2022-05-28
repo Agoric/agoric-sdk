@@ -60,7 +60,7 @@ export const publicPrices = prices => {
  * @typedef {object} PoolMetricsNotification
  * @property {Amount} centralAmount
  * @property {Amount} secondaryAmount
- * @property {NatValue} liquidityTokens - outstanding tokens
+ * @property {Amount} liquidityTokens - outstanding tokens
  */
 
 export const updateUpdaterState = (updater, pool) =>
@@ -147,7 +147,10 @@ const helperBehavior = {
     const payload = harden({
       centralAmount: facets.pool.getCentralAmount(),
       secondaryAmount: facets.pool.getSecondaryAmount(),
-      liquidityTokens: state.liqTokenSupply,
+      liquidityTokens: AmountMath.make(
+        state.liquidityBrand,
+        state.liqTokenSupply,
+      ),
     });
 
     state.metricsPublication.updateState(payload);

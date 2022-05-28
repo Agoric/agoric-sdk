@@ -25,7 +25,7 @@ const atomicSwapRoot = `${dirname}/../../../src/contracts/atomicSwap.js`;
 test('zoe - coveredCall with swap for invitation', async t => {
   t.plan(24);
   // Setup the environment
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const {
     moolaR,
     simoleanR,

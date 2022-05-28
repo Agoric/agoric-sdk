@@ -15,6 +15,7 @@ popd
 mkdir -p "$NETWORK_NAME/setup"
 cd "$NETWORK_NAME/setup"
 
+
 export AG_SETUP_COSMOS_HOME=${AG_SETUP_COSMOS_HOME-$PWD}
 AGORIC_SDK_PATH=${AGORIC_SDK_PATH-$(cd "$thisdir/../../.." > /dev/null && pwd -P)}
 
@@ -34,6 +35,7 @@ DOCKER_VOLUMES="$AGORIC_SDK_PATH:/usr/src/agoric-sdk" \
 "$thisdir/setup.sh" init --noninteractive
 
 # Go ahead and bootstrap with detailed debug logging.
+SLOGSENDER=@agoric/telemetry/src/otel-and-flight-recorder.js \
 AG_COSMOS_START_ARGS="--log_level=info --trace-store=.ag-chain-cosmos/data/kvstore-trace" \
 VAULT_FACTORY_CONTROLLER_ADDR="$SOLO_ADDR" \
 CHAIN_BOOTSTRAP_VAT_CONFIG="$VAT_CONFIG" \
