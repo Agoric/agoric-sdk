@@ -493,7 +493,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
             if (result) {
               // Track call graph.
               const cause = { name, context: syscall.spanContext() };
-              kernelPromiseToSendingCause.init(result, JSON.stringify(cause));
+              kernelPromiseToSendingCause.set(result, JSON.stringify(cause));
             }
             break;
           }
