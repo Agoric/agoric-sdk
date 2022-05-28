@@ -1,17 +1,13 @@
 package keeper
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/tendermint/tendermint/libs/log"
-	db "github.com/tendermint/tm-db"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -35,73 +31,6 @@ type Keeper struct {
 }
 
 var _ types.SwingSetKeeper = &Keeper{}
-
-// Keys are structured as: `${numberOfPathElements}\0${zeroSeparatedPath}`, such
-// as `0\0` for the root element, and `1\0foo` for `foo`, and `3\0foo\0bar\0baz`
-// for `foo.bar.baz`.  The reason for this is space efficiency:
-//   - we can read a node's data with just a single store operation
-//     after mapping the key
-//   - we can scan for all of `foo.bar`'s children by iterating over the prefix
-//    `3\0foo\0bar\0`.
-// We still need to iterate up the tree until we are sure the correct ancestor
-// nodes are present or absent, but we don't need to fetch all an ancestor's
-// keys to do so.
-var (
-	keySeparator      = []byte{0}
-	keySeparatorRune  = rune(0)
-	pathSeparatorRune = '.'
-	pathSeparator     = string(pathSeparatorRune)
-	dataPrefix        = ":"
-	emptyValue        = []byte{1}
-)
-
-// keyToPath converts a byte slice path to a string key
-func keyToPath(key []byte) string {
-	// Split the key into its length and path components.
-	split := bytes.SplitN(key, keySeparator, 2)
-	pathBytes := split[1]
-
-	pathStr := strings.Map(func(chr rune) rune {
-		switch chr {
-		case pathSeparatorRune:
-			panic(fmt.Sprintf("key %q cannot contain %q", key, pathSeparatorRune))
-		case keySeparatorRune:
-			return pathSeparatorRune
-		default:
-			return chr
-		}
-	}, string(pathBytes))
-
-	return pathStr
-}
-
-func pathToDataKey(keyStr string) []byte {
-	return append([]byte(dataPrefix), []byte(keyStr)...)
-}
-
-// pathToKey converts a string key to a byte slice path
-func pathToKey(keyStr string) []byte {
-	return pathWithLengthToKey(keyStr, 0)
-}
-
-func pathWithLengthToKey(keyStr string, initialPathLength int) []byte {
-	pathLength := initialPathLength
-	if len(keyStr) > 0 {
-		pathLength += 1
-	}
-	pathStr := strings.Map(func(chr rune) rune {
-		switch chr {
-		case keySeparatorRune:
-			panic(fmt.Sprintf("key %q cannot contain %q", keyStr, keySeparatorRune))
-		case pathSeparatorRune:
-			pathLength += 1
-			return keySeparatorRune
-		default:
-			return chr
-		}
-	}, keyStr)
-	return []byte(fmt.Sprintf("%d%c%s", pathLength, keySeparatorRune, pathStr))
-}
 
 // NewKeeper creates a new IBC transfer Keeper instance
 func NewKeeper(
@@ -298,128 +227,6 @@ func (k Keeper) SetEgress(ctx sdk.Context, egress *types.Egress) error {
 
 	// Tell we were successful.
 	return nil
-}
-
-// ExportStorage fetches all storage
-func (k Keeper) ExportStorage(ctx sdk.Context) []*types.StorageEntry {
-	store := ctx.KVStore(k.storeKey)
-	pathStore := prefix.NewStore(store, types.PathKeyPrefix)
-
-	iterator := sdk.KVStorePrefixIterator(pathStore, nil)
-
-	exported := []*types.StorageEntry{}
-	defer iterator.Close()
-	for ; iterator.Valid(); iterator.Next() {
-		keyStr := keyToPath(iterator.Key())
-		value := k.GetStorage(ctx, keyStr)
-		if value != "" {
-			entry := types.StorageEntry{Key: keyStr, Value: value}
-			exported = append(exported, &entry)
-		}
-	}
-	return exported
-}
-
-// GetStorage gets generic storage
-func (k Keeper) GetStorage(ctx sdk.Context, path string) string {
-	//fmt.Printf("GetStorage(%s)\n", path);
-	store := ctx.KVStore(k.storeKey)
-	dataStore := prefix.NewStore(store, types.DataKeyPrefix)
-	dataKey := pathToDataKey(path)
-	if !dataStore.Has(dataKey) {
-		return ""
-	}
-	bz := dataStore.Get(dataKey)
-	value := string(bz)
-	return value
-}
-
-func (k Keeper) getKeyIterator(ctx sdk.Context, path string) db.Iterator {
-	store := ctx.KVStore(k.storeKey)
-	pathStore := prefix.NewStore(store, types.PathKeyPrefix)
-	var keyPrefix []byte
-	if path == "" {
-		keyPrefix = pathWithLengthToKey("", 1)
-	} else {
-		keyPrefix = pathToKey(path + pathSeparator)
-	}
-
-	return sdk.KVStorePrefixIterator(pathStore, keyPrefix)
-}
-
-// GetKeys gets all storage child keys at a given path
-func (k Keeper) GetKeys(ctx sdk.Context, path string) *types.Keys {
-	iterator := k.getKeyIterator(ctx, path)
-
-	var keys types.Keys
-	keys.Keys = []string{}
-	defer iterator.Close()
-	for ; iterator.Valid(); iterator.Next() {
-		parts := strings.Split(keyToPath(iterator.Key()), pathSeparator)
-		keyStr := parts[len(parts)-1]
-		keys.Keys = append(keys.Keys, keyStr)
-	}
-	return &keys
-}
-
-// HasStorage tells if a given path has data.
-func (k Keeper) HasStorage(ctx sdk.Context, path string) bool {
-	store := ctx.KVStore(k.storeKey)
-	dataStore := prefix.NewStore(store, types.DataKeyPrefix)
-	dataKey := pathToDataKey(path)
-
-	// Check if we have data.
-	return dataStore.Has(dataKey)
-}
-
-// HasKeys tells if a given path has child keys.
-func (k Keeper) HasKeys(ctx sdk.Context, path string) bool {
-	// Check if we have children.
-	iterator := k.getKeyIterator(ctx, path)
-	defer iterator.Close()
-	return iterator.Valid()
-}
-
-// SetStorage sets the entire generic storage for a path
-func (k Keeper) SetStorage(ctx sdk.Context, path, value string) {
-	ctx.EventManager().EmitEvent(
-		types.NewStorageEvent(path, value),
-	)
-
-	store := ctx.KVStore(k.storeKey)
-	dataStore := prefix.NewStore(store, types.DataKeyPrefix)
-	pathStore := prefix.NewStore(store, types.PathKeyPrefix)
-
-	// Update the value.
-	dataKey := pathToDataKey(path)
-
-	if value == "" {
-		dataStore.Delete(dataKey)
-	} else {
-		dataStore.Set(dataKey, []byte(value))
-	}
-
-	// Update our and other parent keys.
-	pathComponents := strings.Split(path, ".")
-	for i := len(pathComponents); i >= 0; i-- {
-		ancestor := strings.Join(pathComponents[0:i], ".")
-
-		// Decide if we need to add or remove the ancestor.
-		if value == "" {
-			if k.HasStorage(ctx, ancestor) || k.HasKeys(ctx, ancestor) {
-				// If the key is needed, skip out.
-				return
-			}
-			// Delete the key.
-			pathStore.Delete(pathToKey(ancestor))
-		} else if i < len(pathComponents) && k.HasStorage(ctx, ancestor) {
-			// The key is present, so we can skip out.
-			return
-		} else {
-			// Add the key as an empty value.
-			pathStore.Set(pathToKey(ancestor), emptyValue)
-		}
-	}
 }
 
 // Logger returns a module-specific logger.

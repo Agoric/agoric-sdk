@@ -6,20 +6,20 @@ import (
 
 // swingset module event types
 const (
-	EventTypeStorage = "storage"
+	LegacyEventTypeStorage = "storage"
 
-	AttributeKeyPath  = "path"
-	AttributeKeyValue = "value"
+	LegacyAttributeKeyPath  = "path"
+	LegacyAttributeKeyValue = "value"
 
 	AttributeValueCategory = ModuleName
 )
 
-// NewStorageSetEvent constructs a new storage change sdk.Event
+// NewLegacyStorageEvent constructs a new storage change sdk.Event
 // nolint: interfacer
-func NewStorageEvent(path, value string) sdk.Event {
+func NewLegacyStorageEvent(path, value string) sdk.Event {
 	return sdk.NewEvent(
-		EventTypeStorage,
-		sdk.NewAttribute(AttributeKeyPath, path),
-		sdk.NewAttribute(AttributeKeyValue, value),
+		LegacyEventTypeStorage,
+		sdk.NewAttribute(LegacyAttributeKeyPath, path),
+		sdk.NewAttribute(LegacyAttributeKeyValue, value),
 	)
 }
