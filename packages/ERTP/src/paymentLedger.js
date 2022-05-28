@@ -21,6 +21,7 @@ import '@agoric/store/exported.js';
  * @param {Brand} brand
  * @param {AssetKind} assetKind
  * @param {DisplayInfo} displayInfo
+ * @param {Pattern} amountSchema
  * @param {ShutdownWithFailure=} optShutdownWithFailure
  * @returns {{ issuer: Issuer<K>, mint: Mint<K> }}
  */
@@ -29,6 +30,7 @@ export const makePaymentLedger = (
   brand,
   assetKind,
   displayInfo,
+  amountSchema,
   optShutdownWithFailure = undefined,
 ) => {
   const makePayment = definePaymentKind(allegedName, brand);
@@ -314,6 +316,7 @@ export const makePaymentLedger = (
    */
   const mintPayment = newAmount => {
     newAmount = coerce(newAmount);
+    fit(newAmount, amountSchema);
     const payment = makePayment();
     initPayment(payment, newAmount, undefined);
     return payment;

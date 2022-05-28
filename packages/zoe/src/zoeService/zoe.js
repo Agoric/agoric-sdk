@@ -87,6 +87,7 @@ const makeZoeKit = (
     getInstallationForInstance,
     getInstanceAdmin,
     invitationIssuer,
+    getProposalSchemaForInvitation,
   } = makeZoeStorageManager(
     createZCFVat,
     getBundleCapFromID,
@@ -109,6 +110,7 @@ const makeZoeKit = (
     getInstanceAdmin,
     depositPayments,
     getAssetKindByBrand,
+    getProposalSchemaForInvitation,
   );
 
   // Make the methods that allow users to easily and credibly get
@@ -154,6 +156,7 @@ const makeZoeKit = (
     getInvitationDetails,
     getConfiguration,
     getBundleIDFromInstallation,
+    getProposalSchemaForInvitation,
   });
 
   // startInstance must pass the ZoeService to the newly created ZCF

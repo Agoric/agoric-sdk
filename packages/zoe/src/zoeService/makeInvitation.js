@@ -1,6 +1,7 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
+import { InvitationElementShape } from '../typeGuards.js';
 
 /**
  * @param {ShutdownWithFailure | undefined} shutdownZoeVat
@@ -11,14 +12,16 @@ export const createInvitationKit = (shutdownZoeVat = undefined) => {
     AssetKind.SET,
     undefined,
     shutdownZoeVat,
+    { elementSchema: InvitationElementShape },
   );
 
   /**
    * @param {Instance} instance
    * @param {Installation} installation
+   * @param {MapStore<InvitationHandle, Pattern>} proposalSchemas
    * @returns {ZoeInstanceAdminMakeInvitation}
    */
-  const setupMakeInvitation = (instance, installation) => {
+  const setupMakeInvitation = (instance, installation, proposalSchemas) => {
     assert.typeof(instance, 'object');
     assert.typeof(installation, 'object');
 
@@ -26,7 +29,8 @@ export const createInvitationKit = (shutdownZoeVat = undefined) => {
     const makeInvitation = async (
       invitationHandle,
       description,
-      customProperties,
+      customProperties = undefined,
+      proposalSchema = undefined,
     ) => {
       assert.typeof(invitationHandle, 'object');
       assert.typeof(
@@ -54,6 +58,9 @@ export const createInvitationKit = (shutdownZoeVat = undefined) => {
           },
         ]),
       );
+      if (proposalSchema !== undefined) {
+        proposalSchemas.init(invitationHandle, proposalSchema);
+      }
       return invitationKit.mint.mintPayment(invitationAmount);
     };
     return makeInvitation;

@@ -10,11 +10,7 @@ import bundleSource from '@endo/bundle-source';
 import { setup } from '../setupBasicMints.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
-import {
-  offerTo,
-  assertProposalShape,
-  swapExact,
-} from '../../../src/contractSupport/zoeHelpers.js';
+import { offerTo, swapExact } from '../../../src/contractSupport/zoeHelpers.js';
 import { makeOffer } from '../makeOffer.js';
 
 const filename = new URL(import.meta.url).pathname;
@@ -103,25 +99,28 @@ test(`offerTo - basic usage`, async t => {
 
   const successMsg = 'offer to contractB successful';
 
-  const offerHandler = seat => {
-    assertProposalShape(seat, {
-      give: {
-        TokenM: null,
-      },
-      want: {
-        TokenL: null,
-      },
-      exit: {
-        onDemand: null,
-      },
-    });
+  const proposalBSchema = harden({
+    give: {
+      TokenM: bucksIssuer.getBrand().getAmountSchema(),
+    },
+    want: {
+      TokenL: moolaIssuer.getBrand().getAmountSchema(),
+    },
+    // multiples: 1n,
+    exit: {
+      onDemand: null,
+    },
+  });
 
+  const offerHandler = seat => {
     swapExact(zcfB, contractBCollateralSeat, seat);
     return successMsg;
   };
   const contractBInvitation = zcfB.makeInvitation(
     offerHandler,
     'contractB invitation',
+    undefined,
+    proposalBSchema,
   );
 
   // Map the keywords in contract A to the keywords in contract B

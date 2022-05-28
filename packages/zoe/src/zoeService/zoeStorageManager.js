@@ -2,9 +2,7 @@
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
-
-import './types.js';
-import './internal-types.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { makeIssuerStorage } from '../issuerStorage.js';
 import { makeAndStoreInstanceRecord } from '../instanceRecordStorage.js';
@@ -13,6 +11,9 @@ import { makeEscrowStorage } from './escrowStorage.js';
 import { createInvitationKit } from './makeInvitation.js';
 import { makeInstanceAdminStorage } from './instanceAdminStorage.js';
 import { makeInstallationStorage } from './installationStorage.js';
+
+import './types.js';
+import './internal-types.js';
 
 /**
  * The Zoe Storage Manager encapsulates and composes important
@@ -90,6 +91,15 @@ export const makeZoeStorageManager = (
     unwrapInstallation,
     getBundleIDFromInstallation,
   } = makeInstallationStorage(getBundleCapForID);
+
+  const proposalSchemas = makeScalarBigMapStore('proposal schemas');
+
+  const getProposalSchemaForInvitation = invitationHandle => {
+    if (proposalSchemas.has(invitationHandle)) {
+      return proposalSchemas.get(invitationHandle);
+    }
+    return undefined;
+  };
 
   /** @type {MakeZoeInstanceStorageManager} */
   const makeZoeInstanceStorageManager = async (
@@ -185,7 +195,12 @@ export const makeZoeStorageManager = (
     };
 
     /** @type {MakeZoeMint} */
-    const makeZoeMint = (keyword, assetKind = AssetKind.NAT, displayInfo) => {
+    const makeZoeMint = (
+      keyword,
+      assetKind = AssetKind.NAT,
+      displayInfo,
+      { elementSchema = undefined } = {},
+    ) => {
       // Local indicates one that zoe itself makes from vetted code,
       // and so can be assumed correct and fresh by zoe.
       const localIssuerKit = makeIssuerKit(
@@ -194,6 +209,7 @@ export const makeZoeStorageManager = (
         displayInfo,
         // eslint-disable-next-line no-use-before-define
         adminNode.terminateWithFailure,
+        { elementSchema },
       );
       return wrapIssuerKitWithZoeMint(keyword, localIssuerKit);
     };
@@ -214,7 +230,11 @@ export const makeZoeStorageManager = (
         Object.values(instanceRecordManager.getInstanceRecord().terms.issuers),
       );
 
-    const makeInvitation = setupMakeInvitation(instance, installation);
+    const makeInvitation = setupMakeInvitation(
+      instance,
+      installation,
+      proposalSchemas,
+    );
 
     const { root, adminNode } = await createZCFVat();
 
@@ -254,5 +274,6 @@ export const makeZoeStorageManager = (
     getInstallationForInstance,
     getInstanceAdmin,
     unwrapInstallation,
+    getProposalSchemaForInvitation,
   };
 };

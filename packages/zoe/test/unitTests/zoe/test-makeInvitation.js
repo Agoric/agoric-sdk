@@ -3,20 +3,28 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath } from '@agoric/ertp';
-
 import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
+
 import { createInvitationKit } from '../../../src/zoeService/makeInvitation.js';
+
+const proposalSchemas = makeScalarBigMapStore('proposal schemas');
 
 test('createInvitationKit', async t => {
   const { setupMakeInvitation, invitationIssuer } = createInvitationKit();
 
-  const mockInstance = harden({});
-  const mockInstallation = harden({});
+  const mockInstance = Far('mockInstance', {});
+  const mockInstallation = Far('mockInstallation', {});
 
-  // @ts-expect-error mockInstance is mocked
-  const makeInvitation = setupMakeInvitation(mockInstance, mockInstallation);
+  const makeInvitation = setupMakeInvitation(
+    // @ts-expect-error mockInstance is mocked
+    mockInstance,
+    mockInstallation,
+    proposalSchemas,
+  );
 
-  const mockInvitationHandle = harden({});
+  const mockInvitationHandle = Far('mockInvitationHandle', {});
   const description = 'myInvitation';
   const customProperties = harden({
     fruit: 'apple',
@@ -52,21 +60,24 @@ test('createInvitationKit', async t => {
 test('description is omitted, wrongly', async t => {
   const { setupMakeInvitation } = createInvitationKit();
 
-  const mockInstance = harden({});
-  const mockInstallation = harden({});
+  const mockInstance = Far('mockInstance', {});
+  const mockInstallation = Far('mockInstallation', {});
 
-  // @ts-expect-error mockInstance is mocked
-  const makeInvitation = setupMakeInvitation(mockInstance, mockInstallation);
+  const makeInvitation = setupMakeInvitation(
+    // @ts-expect-error mockInstance is mocked
+    mockInstance,
+    mockInstallation,
+    proposalSchemas,
+  );
 
-  const mockInvitationHandle = harden({});
+  const mockInvitationHandle = Far('mockInvitationHandle', {});
   const description = undefined;
   const customProperties = harden({
     fruit: 'apple',
   });
 
   await t.throwsAsync(
-    // @ts-expect-error
-    () =>
+    async () =>
       makeInvitation(
         // @ts-expect-error mockInvitationHandle is mocked
         mockInvitationHandle,
@@ -80,13 +91,17 @@ test('description is omitted, wrongly', async t => {
 test('customProperties ok to omit', async t => {
   const { setupMakeInvitation, invitationIssuer } = createInvitationKit();
 
-  const mockInstance = harden({});
-  const mockInstallation = harden({});
+  const mockInstance = Far('mockInstance', {});
+  const mockInstallation = Far('mockInstallation', {});
 
-  // @ts-expect-error mockInstance is mocked
-  const makeInvitation = setupMakeInvitation(mockInstance, mockInstallation);
+  const makeInvitation = setupMakeInvitation(
+    // @ts-expect-error mockInstance is mocked
+    mockInstance,
+    mockInstallation,
+    proposalSchemas,
+  );
 
-  const mockInvitationHandle = harden({});
+  const mockInvitationHandle = Far('mockInvitationHandle', {});
   const description = 'myInvitation';
 
   const invitation = makeInvitation(

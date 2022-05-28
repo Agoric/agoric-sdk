@@ -623,7 +623,7 @@ test(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
     { B: simoleanMint.mintPayment(simoleans(3n)) },
   );
 
-  // @ts-expect-error
+  // @ts-expect-error purposeful type violation to test enforcement
   t.throws(() => assertProposalShape(zcfSeat, { give: { B: moola(3n) } }), {
     message: /The value of the expected record must be null but was .*/,
   });
