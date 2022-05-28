@@ -34,6 +34,7 @@ export {};
  *   managerType: ManagerType,
  *   gcEveryCrank?: boolean,
  *   metered?: boolean,
+ *   critical?: boolean,
  *   enableDisavow?: boolean,
  *   useTranscript?: boolean,
  *   reapInterval?: number | 'never',
@@ -336,6 +337,7 @@ export {};
  *              virtualObjectCacheSize?: number,
  *              useTranscript?: boolean,
  *              reapInterval? : number | 'never',
+ *              critical?: boolean,
  *            }} DynamicVatOptionsWithoutMeter
  * @typedef { { meter?: Meter } } HasMeter
  * @typedef { DynamicVatOptionsWithoutMeter & HasMeter } DynamicVatOptions
