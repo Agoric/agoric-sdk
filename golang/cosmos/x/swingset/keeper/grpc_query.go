@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -28,32 +27,6 @@ func (k Querier) Params(c context.Context, req *types.QueryParamsRequest) (*type
 
 	return &types.QueryParamsResponse{
 		Params: params,
-	}, nil
-}
-
-func (k Querier) Storage(c context.Context, req *types.QueryStorageRequest) (*types.QueryStorageResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
-	}
-	ctx := sdk.UnwrapSDKContext(c)
-
-	value := k.GetStorage(ctx, strings.Join(req.Path, "."))
-
-	return &types.QueryStorageResponse{
-		Value: value,
-	}, nil
-}
-
-func (k Querier) Keys(c context.Context, req *types.QueryKeysRequest) (*types.QueryKeysResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
-	}
-	ctx := sdk.UnwrapSDKContext(c)
-
-	keys := k.GetKeys(ctx, strings.Join(req.Path, "."))
-
-	return &types.QueryKeysResponse{
-		Keys: keys.Keys,
 	}, nil
 }
 

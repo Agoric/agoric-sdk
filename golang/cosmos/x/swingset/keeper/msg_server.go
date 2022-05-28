@@ -47,7 +47,7 @@ func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeli
 		Peer:        msg.Submitter.String(),
 		Messages:    messages,
 		Ack:         msg.Ack,
-		StoragePort: vm.GetPort("storage"),
+		StoragePort: vm.GetPort("vstorage"),
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 	}

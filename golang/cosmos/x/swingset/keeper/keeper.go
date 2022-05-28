@@ -14,9 +14,10 @@ import (
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
+	vstoragekeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/keeper"
 )
 
-// Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
+// Keeper maintains the link to data vstorage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
 	storeKey   sdk.StoreKey
 	cdc        codec.Codec
@@ -24,6 +25,7 @@ type Keeper struct {
 
 	accountKeeper    types.AccountKeeper
 	bankKeeper       bankkeeper.Keeper
+	vstorageKeeper   vstoragekeeper.Keeper
 	feeCollectorName string
 
 	// CallToController dispatches a message to the controlling process
@@ -36,7 +38,7 @@ var _ types.SwingSetKeeper = &Keeper{}
 func NewKeeper(
 	cdc codec.Codec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
 	accountKeeper types.AccountKeeper, bankKeeper bankkeeper.Keeper,
-	feeCollectorName string,
+	vstorageKeeper vstoragekeeper.Keeper, feeCollectorName string,
 	callToController func(ctx sdk.Context, str string) (string, error),
 ) Keeper {
 
@@ -51,6 +53,7 @@ func NewKeeper(
 		paramSpace:       paramSpace,
 		accountKeeper:    accountKeeper,
 		bankKeeper:       bankKeeper,
+		vstorageKeeper:   vstorageKeeper,
 		feeCollectorName: feeCollectorName,
 		callToController: callToController,
 	}
@@ -70,9 +73,9 @@ func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
 		return err
 	}
 
-	// Get the current queue tail, defaulting to zero if its storage doesn't exist.
+	// Get the current queue tail, defaulting to zero if its vstorage doesn't exist.
 	tail := uint64(0)
-	tailStr := k.GetStorage(ctx, "actionQueue.tail")
+	tailStr := k.vstorageKeeper.GetData(ctx, "actionQueue.tail")
 	if len(tailStr) > 0 {
 		// Found, so parse it.
 		tail, err = strconv.ParseUint(tailStr, 10, 64)
@@ -81,11 +84,11 @@ func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
 		}
 	}
 
-	// Set the storage corresponding to the queue entry for the current tail.
-	k.SetStorage(ctx, fmt.Sprintf("actionQueue.%d", tail), string(bz))
+	// Set the vstorage corresponding to the queue entry for the current tail.
+	k.vstorageKeeper.SetStorage(ctx, fmt.Sprintf("actionQueue.%d", tail), string(bz))
 
 	// Update the tail to point to the next available entry.
-	k.SetStorage(ctx, "actionQueue.tail", fmt.Sprintf("%d", tail+1))
+	k.vstorageKeeper.SetStorage(ctx, "actionQueue.tail", fmt.Sprintf("%d", tail+1))
 	return nil
 }
 
@@ -129,7 +132,7 @@ func getBeansOwingPathForAddress(addr sdk.AccAddress) string {
 // the FeeAccount but has not yet paid.
 func (k Keeper) GetBeansOwing(ctx sdk.Context, addr sdk.AccAddress) sdk.Uint {
 	path := getBeansOwingPathForAddress(addr)
-	value := k.GetStorage(ctx, path)
+	value := k.vstorageKeeper.GetData(ctx, path)
 	if value == "" {
 		return sdk.ZeroUint()
 	}
@@ -140,7 +143,7 @@ func (k Keeper) GetBeansOwing(ctx sdk.Context, addr sdk.AccAddress) sdk.Uint {
 // feeCollector but has not yet paid.
 func (k Keeper) SetBeansOwing(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint) {
 	path := getBeansOwingPathForAddress(addr)
-	k.SetStorage(ctx, path, beans.String())
+	k.vstorageKeeper.SetStorage(ctx, path, beans.String())
 }
 
 // ChargeBeans charges the given address the given number of beans.  It divides
@@ -188,7 +191,7 @@ func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) s
 // GetEgress gets the entire egress struct for a peer
 func (k Keeper) GetEgress(ctx sdk.Context, addr sdk.AccAddress) types.Egress {
 	path := "egress." + addr.String()
-	value := k.GetStorage(ctx, path)
+	value := k.vstorageKeeper.GetData(ctx, path)
 	if value == "" {
 		return types.Egress{}
 	}
@@ -211,7 +214,8 @@ func (k Keeper) SetEgress(ctx sdk.Context, egress *types.Egress) error {
 		return err
 	}
 
-	k.SetStorage(ctx, path, string(bz))
+	// FIXME: We need to publish this value.
+	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, path, string(bz))
 
 	// Now make sure the corresponding account has been initialised.
 	if acc := k.accountKeeper.GetAccount(ctx, egress.Peer); acc != nil {
@@ -237,11 +241,11 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 // GetMailbox gets the entire mailbox struct for a peer
 func (k Keeper) GetMailbox(ctx sdk.Context, peer string) string {
 	path := "mailbox." + peer
-	return k.GetStorage(ctx, path)
+	return k.vstorageKeeper.GetData(ctx, path)
 }
 
 // SetMailbox sets the entire mailbox struct for a peer
 func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox string) {
 	path := "mailbox." + peer
-	k.SetStorage(ctx, path, mailbox)
+	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, path, mailbox)
 }

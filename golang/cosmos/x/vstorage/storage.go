@@ -1,31 +1,32 @@
-package swingset
+package vstorage
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 )
 
-type storageHandler struct {
+type vstorageHandler struct {
 	keeper Keeper
 }
 
-type storageMessage struct {
+type vstorageMessage struct {
 	Method string `json:"method"`
 	Key    string `json:"key"`
 	Value  string `json:"value"`
 }
 
-func NewStorageHandler(keeper Keeper) storageHandler {
-	return storageHandler{keeper: keeper}
+func NewStorageHandler(keeper Keeper) vstorageHandler {
+	return vstorageHandler{keeper: keeper}
 }
 
-func (sh storageHandler) Receive(cctx *vm.ControllerContext, str string) (ret string, err error) {
+func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret string, err error) {
 	keeper := sh.keeper
-	msg := new(storageMessage)
+	msg := new(vstorageMessage)
 	err = json.Unmarshal([]byte(str), &msg)
 	if err != nil {
 		return
@@ -51,11 +52,11 @@ func (sh storageHandler) Receive(cctx *vm.ControllerContext, str string) (ret st
 	switch msg.Method {
 	case "set":
 		//fmt.Printf("giving Keeper.SetStorage(%s) %s\n", msg.Key, msg.Value)
-		keeper.LegacySetStorage(cctx.Context, msg.Key, msg.Value)
+		keeper.LegacySetStorageAndNotify(cctx.Context, msg.Key, msg.Value)
 		return "true", nil
 
 	case "get":
-		value := keeper.GetStorage(cctx.Context, msg.Key)
+		value := keeper.GetData(cctx.Context, msg.Key)
 		if value == "" {
 			return "null", nil
 		}
@@ -67,7 +68,7 @@ func (sh storageHandler) Receive(cctx *vm.ControllerContext, str string) (ret st
 		return string(bz), nil
 
 	case "has":
-		value := keeper.GetStorage(cctx.Context, msg.Key)
+		value := keeper.GetData(cctx.Context, msg.Key)
 		if value == "" {
 			return "false", nil
 		}
@@ -90,7 +91,7 @@ func (sh storageHandler) Receive(cctx *vm.ControllerContext, str string) (ret st
 		for i, key := range keys.Keys {
 			ents[i] = make([]string, 2)
 			ents[i][0] = key
-			ents[i][i] = keeper.GetStorage(cctx.Context, fmt.Sprintf("%s.%s", msg.Key, key))
+			ents[i][i] = keeper.GetData(cctx.Context, fmt.Sprintf("%s.%s", msg.Key, key))
 		}
 		bytes, err := json.Marshal(ents)
 		if err != nil {
@@ -102,7 +103,7 @@ func (sh storageHandler) Receive(cctx *vm.ControllerContext, str string) (ret st
 		keys := keeper.GetKeys(cctx.Context, msg.Key)
 		vals := make([]string, len(keys.Keys))
 		for i, key := range keys.Keys {
-			vals[i] = keeper.GetStorage(cctx.Context, fmt.Sprintf("%s.%s", msg.Key, key))
+			vals[i] = keeper.GetData(cctx.Context, fmt.Sprintf("%s.%s", msg.Key, key))
 		}
 		bytes, err := json.Marshal(vals)
 		if err != nil {

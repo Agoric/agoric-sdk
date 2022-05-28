@@ -14,7 +14,7 @@ import (
 
 func NewGenesisState() *types.GenesisState {
 	return &types.GenesisState{
-		Storage: []*types.StorageEntry{},
+		Params: types.Params{},
 	}
 }
 
@@ -30,8 +30,7 @@ func ValidateGenesis(data *types.GenesisState) error {
 
 func DefaultGenesisState() *types.GenesisState {
 	return &types.GenesisState{
-		Params:  types.DefaultParams(),
-		Storage: []*types.StorageEntry{},
+		Params: types.DefaultParams(),
 	}
 }
 
@@ -44,17 +43,13 @@ type bootstrapBlockAction struct {
 func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abci.ValidatorUpdate {
 	keeper.SetParams(ctx, data.GetParams())
 
-	for _, entry := range data.Storage {
-		keeper.SetStorage(ctx, entry.Key, entry.Value)
-	}
-
 	// Just run the SwingSet kernel to finish bootstrap and get ready to open for
 	// business.
 	stdlog.Println("Running SwingSet until bootstrap is ready")
 	action := &bootstrapBlockAction{
 		Type:        "BOOTSTRAP_BLOCK",
 		BlockTime:   ctx.BlockTime().Unix(),
-		StoragePort: vm.GetPort("storage"),
+		StoragePort: vm.GetPort("vstorage"),
 	}
 
 	_, err := keeper.BlockingSend(ctx, action)
@@ -71,6 +66,5 @@ func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abc
 func ExportGenesis(ctx sdk.Context, k Keeper) *types.GenesisState {
 	gs := NewGenesisState()
 	gs.Params = k.GetParams(ctx)
-	gs.Storage = k.ExportStorage(ctx)
 	return gs
 }

@@ -1,0 +1,57 @@
+syntax = "proto3";
+package agoric.vstorage;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types";
+
+service Query {
+  // Return an arbitrary vstorage datum.
+  rpc Data(QueryDataRequest) returns (QueryDataResponse) {
+    option (google.api.http).get = "/agoric/vstorage/data/{path}";
+  }
+
+  // Return the keys of a given vstorage path.
+  rpc Keys(QueryKeysRequest)
+    returns (QueryKeysResponse) {
+      option (google.api.http).get = "/agoric/vstorage/keys/{path}";
+  }
+}
+
+// QueryDataRequest is the vstorage path data query.
+message QueryDataRequest {
+  repeated string path = 1 [
+    (gogoproto.jsontag)    = "path",
+    (gogoproto.moretags)   = "yaml:\"path\""
+  ];
+}
+
+// QueryDataResponse is the vstorage path data response.
+message QueryDataResponse {
+  string value = 1 [
+    (gogoproto.jsontag)    = "value",
+    (gogoproto.moretags)   = "yaml:\"value\""
+  ];
+}
+
+// QueryKeysRequest is the vstorage path keys query.
+message QueryKeysRequest {
+  repeated string path = 1 [
+    (gogoproto.jsontag)    = "path",
+    (gogoproto.moretags)   = "yaml:\"path\""
+  ];
+
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryKeysResponse is the vstorage path keys response.
+message QueryKeysResponse {
+  repeated string keys = 1 [
+    (gogoproto.jsontag)    = "keys",
+    (gogoproto.moretags)   = "yaml:\"keys\""
+  ];
+
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}

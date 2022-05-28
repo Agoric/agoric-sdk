@@ -10,15 +10,15 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
+	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 )
 
 // query endpoints supported by the swingset Querier
 const (
-	QueryEgress  = "egress"
-	QueryMailbox = "mailbox"
-	QueryStorage = "storage"
-	QueryKeys    = "keys"
+	QueryEgress        = "egress"
+	QueryMailbox       = "mailbox"
+	LegacyQueryStorage = "storage"
+	LegacyQueryKeys    = "keys"
 )
 
 // NewQuerier is the module level router for state queries
@@ -27,12 +27,12 @@ func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier 
 		switch path[0] {
 		case QueryEgress:
 			return queryEgress(ctx, path[1], req, keeper, legacyQuerierCdc)
-		case QueryStorage:
-			return queryStorage(ctx, strings.Join(path[1:], "/"), req, keeper, legacyQuerierCdc)
-		case QueryKeys:
-			return queryKeys(ctx, strings.Join(path[1:], "/"), req, keeper, legacyQuerierCdc)
 		case QueryMailbox:
 			return queryMailbox(ctx, path[1:], req, keeper, legacyQuerierCdc)
+		case LegacyQueryStorage:
+			return legacyQueryStorage(ctx, strings.Join(path[1:], "/"), req, keeper, legacyQuerierCdc)
+		case LegacyQueryKeys:
+			return legacyQueryKeys(ctx, strings.Join(path[1:], "/"), req, keeper, legacyQuerierCdc)
 		default:
 			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "unknown swingset query endpoint")
 		}
@@ -60,38 +60,6 @@ func queryEgress(ctx sdk.Context, bech32 string, req abci.RequestQuery, keeper K
 }
 
 // nolint: unparam
-func queryStorage(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
-	value := keeper.GetStorage(ctx, path)
-	if value == "" {
-		return []byte{}, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "could not get storage %+v", path)
-	}
-
-	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Storage{Value: value})
-	if err2 != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
-	}
-
-	return bz, nil
-}
-
-// nolint: unparam
-func queryKeys(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
-	keys := keeper.GetKeys(ctx, path)
-	klist := keys.Keys
-
-	if klist == nil {
-		klist = []string{}
-	}
-
-	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Keys{Keys: klist})
-	if err2 != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
-	}
-
-	return bz, nil
-}
-
-// nolint: unparam
 func queryMailbox(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
 	peer := path[0]
 
@@ -101,7 +69,39 @@ func queryMailbox(ctx sdk.Context, path []string, req abci.RequestQuery, keeper 
 		return []byte{}, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "could not get peer mailbox")
 	}
 
-	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Storage{Value: value})
+	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, vstoragetypes.Data{Value: value})
+	if err2 != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
+	}
+
+	return bz, nil
+}
+
+// nolint: unparam
+func legacyQueryStorage(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
+	value := keeper.vstorageKeeper.GetData(ctx, path)
+	if value == "" {
+		return []byte{}, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "could not get swingset %+v", path)
+	}
+
+	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, vstoragetypes.Data{Value: value})
+	if err2 != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
+	}
+
+	return bz, nil
+}
+
+// nolint: unparam
+func legacyQueryKeys(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
+	keys := keeper.vstorageKeeper.GetKeys(ctx, path)
+	klist := keys.Keys
+
+	if klist == nil {
+		klist = []string{}
+	}
+
+	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, vstoragetypes.Keys{Keys: klist})
 	if err2 != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
 	}

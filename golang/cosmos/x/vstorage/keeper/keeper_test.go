@@ -1,18 +1,14 @@
 package keeper
 
 import (
-	"bytes"
 	"reflect"
 	"testing"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
-	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -20,65 +16,20 @@ import (
 )
 
 var (
-	paramsStoreKey   = storetypes.NewKVStoreKey(paramstypes.StoreKey)
-	paramsTKey       = storetypes.NewTransientStoreKey(paramstypes.TStoreKey)
-	swingsetStoreKey = storetypes.NewKVStoreKey(types.StoreKey)
+	vstorageStoreKey = storetypes.NewKVStoreKey(types.StoreKey)
 )
-
-func Test_Key_Encoding(t *testing.T) {
-	tests := []struct {
-		name   string
-		keyStr string
-		key    []byte
-	}{
-		{
-			name:   "empty key is prefixed",
-			keyStr: "",
-			key:    []byte("0\x00"),
-		},
-		{
-			name:   "some key string",
-			keyStr: "some",
-			key:    []byte("1\x00some"),
-		},
-		{
-			name:   "dot-separated",
-			keyStr: "some.child.grandchild",
-			key:    []byte("3\x00some\x00child\x00grandchild"),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if key := pathToMetaKey(tt.keyStr); !bytes.Equal(key, tt.key) {
-				t.Errorf("pathToKey(%q) = %v, want %v", tt.keyStr, key, tt.key)
-			}
-			if keyStr := keyToPath(tt.key); keyStr != tt.keyStr {
-				t.Errorf("keyToString(%v) = %q, want %q", tt.key, keyStr, tt.keyStr)
-			}
-		})
-	}
-}
 
 type testKit struct {
 	ctx            sdk.Context
-	swingsetKeeper Keeper
+	vstorageKeeper Keeper
 }
 
 func makeTestKit() testKit {
-	encodingConfig := params.MakeEncodingConfig()
-	types.RegisterInterfaces(encodingConfig.InterfaceRegistry)
-	cdc := encodingConfig.Marshaler
-
-	pk := paramskeeper.NewKeeper(cdc, encodingConfig.Amino, paramsStoreKey, paramsTKey)
-	swingsetSpace := pk.Subspace(types.ModuleName)
-
-	// TODO: Flesh out with more than nil if necessary.
-	keeper := NewKeeper(cdc, swingsetStoreKey, swingsetSpace, nil, nil, "nil", nil)
+	keeper := NewKeeper(vstorageStoreKey)
 
 	db := dbm.NewMemDB()
 	ms := store.NewCommitMultiStore(db)
-	ms.MountStoreWithDB(swingsetStoreKey, sdk.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(vstorageStoreKey, sdk.StoreTypeIAVL, db)
 	err := ms.LoadLatestVersion()
 	if err != nil {
 		panic(err)
@@ -102,16 +53,16 @@ func keysEqual(a, b []string) bool {
 
 func TestStorage(t *testing.T) {
 	testKit := makeTestKit()
-	ctx, keeper := testKit.ctx, testKit.swingsetKeeper
+	ctx, keeper := testKit.ctx, testKit.vstorageKeeper
 
 	// Test that we can store and retrieve a value.
 	keeper.SetStorage(ctx, "inited", "initValue")
-	if got := keeper.GetStorage(ctx, "inited"); got != "initValue" {
+	if got := keeper.GetData(ctx, "inited"); got != "initValue" {
 		t.Errorf("got %q, want %q", got, "initValue")
 	}
 
 	// Test that unknown keys return empty string.
-	if got := keeper.GetStorage(ctx, "unknown"); got != "" {
+	if got := keeper.GetData(ctx, "unknown"); got != "" {
 		t.Errorf("got %q, want empty string", got)
 	}
 
@@ -142,7 +93,7 @@ func TestStorage(t *testing.T) {
 
 	// Check adding children.
 	keeper.SetStorage(ctx, "key1.child1", "value1child")
-	if got := keeper.GetStorage(ctx, "key1.child1"); got != "value1child" {
+	if got := keeper.GetData(ctx, "key1.child1"); got != "value1child" {
 		t.Errorf("got %q, want %q", got, "value1child")
 	}
 
@@ -152,7 +103,7 @@ func TestStorage(t *testing.T) {
 
 	// Add a grandchild.
 	keeper.SetStorage(ctx, "key1.child1.grandchild1", "value1grandchild")
-	if got := keeper.GetStorage(ctx, "key1.child1.grandchild1"); got != "value1grandchild" {
+	if got := keeper.GetData(ctx, "key1.child1.grandchild1"); got != "value1grandchild" {
 		t.Errorf("got %q, want %q", got, "value1grandchild")
 	}
 
@@ -205,14 +156,16 @@ func TestStorage(t *testing.T) {
 	}
 
 	// Check the export.
-	expectedExport := []*types.StorageEntry{
-		{Key: "alpha2", Value: "value2"},
-		{Key: "beta3", Value: "value3"},
-		{Key: "inited", Value: "initValue"},
-		{Key: "key2.child2.grandchild2", Value: "value2grandchild"},
-		{Key: "key2.child2.grandchild2a", Value: "value2grandchilda"},
+	expectedExport := []*types.DataEntry{
+		{Path: "alpha2", Value: "value2"},
+		{Path: "beta3", Value: "value3"},
+		{Path: "inited", Value: "initValue"},
+		{Path: "key2.child2.grandchild2", Value: "value2grandchild"},
+		{Path: "key2.child2.grandchild2a", Value: "value2grandchilda"},
 	}
-	if got := keeper.ExportStorage(ctx); !reflect.DeepEqual(got, expectedExport) {
+	got := keeper.ExportStorage(ctx)
+	if !reflect.DeepEqual(got, expectedExport) {
 		t.Errorf("got export %q, want %q", got, expectedExport)
 	}
+	keeper.ImportStorage(ctx, got)
 }
