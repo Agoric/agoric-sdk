@@ -9,6 +9,7 @@ const (
 )
 
 var (
-	DataKeyPrefix = []byte(ModuleName + "/data")
-	PathKeyPrefix = []byte(ModuleName + "/path")
+	DataKeyPrefix  = []byte(ModuleName + "/data")
+	MetaKeyPrefix  = []byte{0}
+	BatchKeyPrefix = MetaKeyPrefix
 )
