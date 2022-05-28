@@ -1,0 +1,26 @@
+syntax = "proto3";
+package agoric.vstorage;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types";
+
+// Data is the vstorage node data.
+message Data {
+    option (gogoproto.equal) = false;
+
+    string value = 1 [
+        (gogoproto.jsontag)    = "value",
+        (gogoproto.moretags)   = "yaml:\"value\""
+    ];
+}
+
+// Keys are the vstorage node subkeys.
+message Keys {
+    option (gogoproto.equal) = false;
+
+    repeated string keys = 1 [
+        (gogoproto.jsontag)    = "keys",
+        (gogoproto.moretags)   = "yaml:\"keys\""
+    ];
+}

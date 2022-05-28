@@ -110,6 +110,7 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank"
 	vbanktypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -153,6 +154,7 @@ var (
 		vesting.AppModuleBasic{},
 		router.AppModuleBasic{},
 		swingset.AppModuleBasic{},
+		vstorage.AppModuleBasic{},
 		vibc.AppModuleBasic{},
 		vbank.AppModuleBasic{},
 		lien.AppModuleBasic{},
@@ -218,6 +220,7 @@ type GaiaApp struct { // nolint: golint
 	RouterKeeper     routerkeeper.Keeper
 
 	SwingSetKeeper swingset.Keeper
+	VstorageKeeper vstorage.Keeper
 	VibcKeeper     vibc.Keeper
 	VbankKeeper    vbank.Keeper
 	LienKeeper     lien.Keeper
@@ -287,7 +290,7 @@ func NewAgoricApp(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey, routertypes.StoreKey,
-		swingset.StoreKey, vibc.StoreKey, vbank.StoreKey, lien.StoreKey,
+		swingset.StoreKey, vstorage.StoreKey, vibc.StoreKey, vbank.StoreKey, lien.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -420,14 +423,18 @@ func NewAgoricApp(
 		return sendToController(true, str)
 	}
 
+	app.VstorageKeeper = vstorage.NewKeeper(
+		keys[vstorage.StoreKey],
+	)
+	vm.RegisterPortHandler("vstorage", vstorage.NewStorageHandler(app.VstorageKeeper))
+
 	// The SwingSetKeeper is the Keeper from the SwingSet module
 	app.SwingSetKeeper = swingset.NewKeeper(
 		appCodec, keys[swingset.StoreKey], app.GetSubspace(swingset.ModuleName),
 		app.AccountKeeper, app.BankKeeper,
-		vbanktypes.ReservePoolName,
+		app.VstorageKeeper, vbanktypes.ReservePoolName,
 		callToController,
 	)
-	vm.RegisterPortHandler("storage", swingset.NewStorageHandler(app.SwingSetKeeper))
 
 	app.VibcKeeper = vibc.NewKeeper(
 		appCodec, keys[vibc.StoreKey],
@@ -540,6 +547,7 @@ func NewAgoricApp(
 		transferModule,
 		routerModule,
 		swingset.NewAppModule(app.SwingSetKeeper),
+		vstorage.NewAppModule(app.VstorageKeeper),
 		vibcModule,
 		vbankModule,
 		lienModule,
@@ -563,10 +571,10 @@ func NewAgoricApp(
 		ibchost.ModuleName,
 		routertypes.ModuleName,
 		swingset.ModuleName,
-		ibctransfertypes.ModuleName, vibc.ModuleName, vbank.ModuleName, lien.ModuleName,
+		ibctransfertypes.ModuleName, vstorage.ModuleName, vibc.ModuleName, vbank.ModuleName, lien.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
-		ibctransfertypes.ModuleName, vibc.ModuleName, vbank.ModuleName, lien.ModuleName,
+		ibctransfertypes.ModuleName, vstorage.ModuleName, vibc.ModuleName, vbank.ModuleName, lien.ModuleName,
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
@@ -602,6 +610,7 @@ func NewAgoricApp(
 		feegrant.ModuleName,
 		ibctransfertypes.ModuleName,
 		routertypes.ModuleName,
+		vstorage.ModuleName,
 		vbank.ModuleName,
 		vibc.ModuleName,
 		swingset.ModuleName,
@@ -704,7 +713,7 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		Type:        "AG_COSMOS_INIT",
 		ChainID:     ctx.ChainID(),
 		Params:      app.SwingSetKeeper.GetParams(ctx),
-		StoragePort: vm.GetPort("storage"),
+		StoragePort: vm.GetPort("vstorage"),
 		SupplyCoins: sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "urun")),
 		VibcPort:    app.vibcPort,
 		VbankPort:   app.vbankPort,

@@ -78,3 +78,23 @@ message StringBeans {
     (gogoproto.nullable) = false
   ];
 }
+
+// Egress is the format for a swingset egress.
+message Egress {
+    option (gogoproto.equal) = false;
+
+    string nickname = 1 [
+        (gogoproto.jsontag)    = "nickname",
+        (gogoproto.moretags)   = "yaml:\"nickname\""
+    ];
+    bytes peer = 2 [
+        (gogoproto.casttype)   = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+        (gogoproto.jsontag)    = "peer",
+        (gogoproto.moretags)   = "yaml:\"peer\""
+    ];
+    repeated string power_flags = 3 [
+        (gogoproto.customname) = "PowerFlags",
+        (gogoproto.jsontag)    = "powerFlags",
+        (gogoproto.moretags)   = "yaml:\"powerFlags\""
+    ];
+}

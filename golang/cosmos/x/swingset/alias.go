@@ -16,9 +16,7 @@ var (
 	NewQuerier           = keeper.NewQuerier
 	NewMsgDeliverInbound = types.NewMsgDeliverInbound
 	NewMsgProvision      = types.NewMsgProvision
-	NewStorage           = types.NewStorage
 	NewMailbox           = types.NewMailbox
-	NewKeys              = types.NewKeys
 	ModuleCdc            = types.ModuleCdc
 	RegisterCodec        = types.RegisterCodec
 )
@@ -29,5 +27,4 @@ type (
 	MsgDeliverInbound = types.MsgDeliverInbound
 	MsgProvision      = types.MsgProvision
 	Params            = types.Params
-	Storage           = types.Storage
 )
