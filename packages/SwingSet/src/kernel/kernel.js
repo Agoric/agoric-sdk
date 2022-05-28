@@ -262,20 +262,21 @@ export default function buildKernel(
       // ISSUE: terminate stuff in its own crank like creation?
       // eslint-disable-next-line no-use-before-define
       vatWarehouse.vatWasTerminated(vatID);
-    }
-    if (vatAdminRootKref) {
-      // static vat termination can happen before vat admin vat exists
-      notifyTermination(
-        vatID,
-        vatAdminRootKref,
-        shouldReject,
-        info,
-        queueToKref,
-      );
-    } else {
-      console.log(
-        `warning: vat ${vatID} terminated without a vatAdmin to report to`,
-      );
+
+      if (vatAdminRootKref) {
+        // static vat termination can happen before vat admin vat exists
+        notifyTermination(
+          vatID,
+          vatAdminRootKref,
+          shouldReject,
+          info,
+          queueToKref,
+        );
+      } else {
+        console.log(
+          `warning: vat ${vatID} terminated without a vatAdmin to report to`,
+        );
+      }
     }
   }
 

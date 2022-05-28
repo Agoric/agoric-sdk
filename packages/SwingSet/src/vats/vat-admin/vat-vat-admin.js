@@ -91,9 +91,14 @@ export function buildRootObject(vatPowers) {
     running.set(vatID, doneRR);
     doneP.catch(() => {}); // shut up false whine about unhandled rejection
 
+    let terminated = false;
+
     const adminNode = Far('adminNode', {
       terminateWithFailure(reason) {
-        D(vatAdminNode).terminateWithFailure(vatID, reason);
+        if (!terminated) {
+          D(vatAdminNode).terminateWithFailure(vatID, reason);
+        }
+        terminated = true;
       },
       done() {
         return doneP;
