@@ -148,7 +148,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
       getAssetSubscription: () => assert.fail('not impl'),
       getModuleAccountAddress: () => assert.fail('not impl'),
       getRewardDistributorDepositFacet: () =>
-        harden({
+        Far('depositFacet', {
           receive: () => /** @type {any} */ (null),
         }),
       addAsset: async (denom, keyword, proposedName, kit) => {
@@ -318,7 +318,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
       wallet: { purses },
     } = home;
 
-    return harden({
+    return Far('benefactor', {
       // This isn't used now that we make the pool from a denom
       // in publishInterchainAssetFromBank in addAssetToVault.js
       // But it should still work. TODO: Perhaps we should test both ways?

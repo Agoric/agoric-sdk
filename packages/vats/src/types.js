@@ -67,29 +67,3 @@
  * @property {NameHub} nameHub read access
  * @property {NameAdmin} nameAdmin write access
  */
-
-/**
- * @typedef {object} FeeCollector
- *
- * @property {() => ERef<Payment>} collectFees
- */
-
-/**
- * @typedef {object} DistributorParams
- *
- * @property {bigint} [epochInterval=1n] - parameter to the epochTimer
- *  controlling the interval at which rewards should be sent to the bank.
- */
-
-/**
- * @callback BuildFeeDistributor
- *
- * @param {ERef<FeeCollector>[]} collectors - an array of objects with
- *   collectFees() methods, each of which will return a payment. Can
- *   be populated with the results of makeFeeCollector(zoe, creatorFacet)
- * @param {EOnly<DepositFacet>} feeDepositFacet - object with receive()
- * @param {ERef<TimerService>} epochTimer - timer that notifies at the end of
- *  each Epoch. The epochInterval parameter controls the interval.
- * @param {DistributorParams} params
- * @returns {Promise<void>}
- */

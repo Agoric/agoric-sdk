@@ -21,9 +21,6 @@
     "board": {
       "sourceSpec": "@agoric/vats/src/vat-board.js"
     },
-    "distributeFees": {
-      "sourceSpec": "@agoric/vats/src/vat-distributeFees.js"
-    },
     "ibc": {
       "sourceSpec": "@agoric/vats/src/vat-ibc.js"
     },

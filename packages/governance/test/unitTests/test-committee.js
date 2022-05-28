@@ -74,7 +74,7 @@ test('committee-open question:one', async t => {
     electionType: ElectionType.SURVEY,
     maxChoices: 1,
     closingRule: {
-      timer: buildManualTimer(console.log),
+      timer: buildManualTimer(t.log),
       deadline: 2n,
     },
     quorumRule: QuorumRule.MAJORITY,
@@ -94,7 +94,7 @@ test('committee-open question:mixed', async t => {
     counterInstallation,
   } = await setupContract();
 
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const positions = [harden({ text: 'because' }), harden({ text: 'why not?' })];
   const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,

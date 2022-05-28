@@ -7,7 +7,7 @@ import { Far } from '@endo/marshal';
 import buildManualTimer from '../../tools/manualTimer.js';
 
 test('manualTimer makeNotifier', async t => {
-  const manualTimer = buildManualTimer(console.log, 0n);
+  const manualTimer = buildManualTimer(t.log, 0n);
   const notifier = await E(manualTimer).makeNotifier(1n, 1n);
   await manualTimer.tick();
   const update1 = await E(notifier).getUpdateSince();
@@ -36,7 +36,7 @@ function makeHandler() {
 }
 
 test('manualTimer makeRepeater', async t => {
-  const manualTimer = buildManualTimer(console.log, 0n);
+  const manualTimer = buildManualTimer(t.log, 0n);
   const timestamp = await E(manualTimer).getCurrentTimestamp();
   const repeater = E(manualTimer).makeRepeater(1n, 1n);
   const handler = makeHandler();

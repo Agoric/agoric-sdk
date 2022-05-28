@@ -101,7 +101,7 @@ test('reserve add collateral', async t => {
   const moola = value => AmountMath.make(moolaR.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   const { zoe, reserve, space, feeMintAccess, faucetInstallation } =
     await setupReserveServices(t, electorateTerms, timer);
@@ -150,7 +150,7 @@ test('governance add Liquidity to the AMM', async t => {
   const moola = value => AmountMath.make(moolaR.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 1 };
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   const { zoe, reserve, space, governor, faucetInstallation, feeMintAccess } =
     await setupReserveServices(t, electorateTerms, timer);
@@ -247,7 +247,7 @@ test('request more collateral than available', async t => {
   const moola = value => AmountMath.make(moolaR.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 1 };
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   const { zoe, reserve, space, governor, faucetInstallation, feeMintAccess } =
     await setupReserveServices(t, electorateTerms, timer);
@@ -323,7 +323,7 @@ test('request more collateral than available', async t => {
 test('reserve track shortfall', async t => {
   /** @param {NatValue} value */
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   const { reserve, space, zoe } = await setupReserveServices(
     t,
@@ -382,7 +382,7 @@ test('reserve track shortfall', async t => {
 test('reserve burn IST', async t => {
   /** @param {NatValue} value */
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 1 };
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
 
   const { zoe, reserve, space, feeMintAccess, faucetInstallation, governor } =
     await setupReserveServices(t, electorateTerms, timer);

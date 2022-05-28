@@ -320,7 +320,7 @@ test(`zcf.makeInvitation - no customProperties`, async t => {
 
 test(`zcf.makeInvitation - customProperties`, async t => {
   const { zcf, zoe, instance, installation } = await setupZCFTest();
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const invitationP = zcf.makeInvitation(() => {}, 'myInvitation', {
     whatever: 'whatever',
     timer,
@@ -929,7 +929,7 @@ test(`userSeat.tryExit from zcf.makeEmptySeatKit - waived`, async t => {
 
 test(`userSeat.tryExit from zcf.makeEmptySeatKit - afterDeadline`, async t => {
   const { zcf } = await setupZCFTest();
-  const timer = buildManualTimer(console.log);
+  const timer = buildManualTimer(t.log);
   const { zcfSeat, userSeat } = zcf.makeEmptySeatKit({
     afterDeadline: { timer, deadline: 1n },
   });

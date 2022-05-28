@@ -41,6 +41,10 @@ const installKeyGroups = {
       '../src/vaultFactory/vaultFactory.js',
       '../bundles/bundle-vaultFactory.js',
     ],
+    feeDistributor: [
+      '../src/feeDistributor.js',
+      '../bundles/bundle-feeDistributor.js',
+    ],
     liquidateMinimum: [
       '../src/vaultFactory/liquidateMinimum.js',
       '../bundles/bundle-liquidateMinimum.js',
