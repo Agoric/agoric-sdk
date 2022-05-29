@@ -1,0 +1,36 @@
+syntax = "proto3";
+package agoric.vstream;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstream/types";
+
+// StreamCell represents one publish state in a vstream stream.
+message StreamCell {
+    option (gogoproto.equal) = false;
+
+    // StreamState is the state of the stream as of this cell.
+    enum StreamState {
+      // STREAM_STATE_UNSPECIFIED means streaming state is unknown (probably
+      // before any values have been published).
+      STREAM_STATE_UNSPECIFIED = 0;
+      // STREAM_STATE_ACTIVE means the stream is producing more values.
+      STREAM_STATE_ACTIVE = 1;
+      // STREAM_STATE_FINISHED means the stream has terminated with a value.
+      STREAM_STATE_FINISHED = 2;
+      // STREAM_STATE_FAILURE means the stream has terminated with an error.
+      STREAM_STATE_FAILURE = 3;
+    }
+
+    repeated bytes values = 1;
+    int64 published_in_block = 2 [
+        (gogoproto.jsontag)    = "published_in_block",
+        (gogoproto.moretags)   = "yaml:\"published_in_block\""
+    ];
+    int64 last_published_in_block = 3 [
+        (gogoproto.jsontag)    = "last_published_in_block",
+        (gogoproto.moretags)   = "yaml:\"last_published_in_block\""
+    ];
+    StreamState streaming = 4;
+    string error = 5;
+}
