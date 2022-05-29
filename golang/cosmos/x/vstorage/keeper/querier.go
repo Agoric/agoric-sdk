@@ -25,7 +25,7 @@ func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier 
 		case QueryData:
 			return queryData(ctx, strings.Join(path[1:], "/"), req, keeper, legacyQuerierCdc)
 		case QueryChildren:
-			return queryKeys(ctx, strings.Join(path[1:], "/"), req, keeper, legacyQuerierCdc)
+			return queryChildren(ctx, strings.Join(path[1:], "/"), req, keeper, legacyQuerierCdc)
 		default:
 			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "unknown vstorage query endpoint")
 		}
@@ -36,7 +36,7 @@ func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier 
 func queryData(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
 	value := keeper.GetData(ctx, path)
 	if value == "" {
-		return []byte{}, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "could not get vstorage %+v", path)
+		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "could not get vstorage %+v", path)
 	}
 
 	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Data{Value: value})
@@ -48,15 +48,15 @@ func queryData(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keepe
 }
 
 // nolint: unparam
-func queryKeys(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
-	keys := keeper.GetKeys(ctx, path)
-	klist := keys.Keys
+func queryChildren(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
+	children := keeper.GetChildren(ctx, path)
+	klist := children.Children
 
 	if klist == nil {
 		klist = []string{}
 	}
 
-	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Keys{Keys: klist})
+	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Children{Children: klist})
 	if err2 != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
 	}

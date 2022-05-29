@@ -11,10 +11,10 @@ const (
 )
 
 var (
-	NewKeeper  = keeper.NewKeeper
-	NewQuerier = keeper.NewQuerier
-	NewStorage = types.NewData
-	NewKeys    = types.NewKeys
+	NewKeeper   = keeper.NewKeeper
+	NewQuerier  = keeper.NewQuerier
+	NewStorage  = types.NewData
+	NewChildren = types.NewChildren
 )
 
 type (

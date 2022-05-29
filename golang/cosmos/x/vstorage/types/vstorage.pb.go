@@ -68,23 +68,24 @@ func (m *Data) GetValue() string {
 	return ""
 }
 
-// Keys are the vstorage node subkeys.
-type Keys struct {
-	Keys []string `protobuf:"bytes,1,rep,name=keys,proto3" json:"keys" yaml:"keys"`
+// Children are the immediate names (just one level deep) of subnodes leading to
+// more data from a given vstorage node.
+type Children struct {
+	Children []string `protobuf:"bytes,1,rep,name=children,proto3" json:"children" yaml:"children"`
 }
 
-func (m *Keys) Reset()         { *m = Keys{} }
-func (m *Keys) String() string { return proto.CompactTextString(m) }
-func (*Keys) ProtoMessage()    {}
-func (*Keys) Descriptor() ([]byte, []int) {
+func (m *Children) Reset()         { *m = Children{} }
+func (m *Children) String() string { return proto.CompactTextString(m) }
+func (*Children) ProtoMessage()    {}
+func (*Children) Descriptor() ([]byte, []int) {
 	return fileDescriptor_7f80259d2fe3898c, []int{1}
 }
-func (m *Keys) XXX_Unmarshal(b []byte) error {
+func (m *Children) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *Keys) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *Children) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_Keys.Marshal(b, m, deterministic)
+		return xxx_messageInfo_Children.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -94,50 +95,50 @@ func (m *Keys) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *Keys) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Keys.Merge(m, src)
+func (m *Children) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Children.Merge(m, src)
 }
-func (m *Keys) XXX_Size() int {
+func (m *Children) XXX_Size() int {
 	return m.Size()
 }
-func (m *Keys) XXX_DiscardUnknown() {
-	xxx_messageInfo_Keys.DiscardUnknown(m)
+func (m *Children) XXX_DiscardUnknown() {
+	xxx_messageInfo_Children.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_Keys proto.InternalMessageInfo
+var xxx_messageInfo_Children proto.InternalMessageInfo
 
-func (m *Keys) GetKeys() []string {
+func (m *Children) GetChildren() []string {
 	if m != nil {
-		return m.Keys
+		return m.Children
 	}
 	return nil
 }
 
 func init() {
 	proto.RegisterType((*Data)(nil), "agoric.vstorage.Data")
-	proto.RegisterType((*Keys)(nil), "agoric.vstorage.Keys")
+	proto.RegisterType((*Children)(nil), "agoric.vstorage.Children")
 }
 
 func init() { proto.RegisterFile("agoric/vstorage/vstorage.proto", fileDescriptor_7f80259d2fe3898c) }
 
 var fileDescriptor_7f80259d2fe3898c = []byte{
-	// 242 bytes of a gzipped FileDescriptorProto
+	// 245 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x4b, 0x4c, 0xcf, 0x2f,
 	0xca, 0x4c, 0xd6, 0x2f, 0x2b, 0x2e, 0xc9, 0x2f, 0x4a, 0x4c, 0x4f, 0x85, 0x33, 0xf4, 0x0a, 0x8a,
 	0xf2, 0x4b, 0xf2, 0x85, 0xf8, 0x21, 0xf2, 0x7a, 0x30, 0x61, 0x29, 0x91, 0xf4, 0xfc, 0xf4, 0x7c,
 	0xb0, 0x9c, 0x3e, 0x88, 0x05, 0x51, 0xa6, 0x64, 0xcb, 0xc5, 0xe2, 0x92, 0x58, 0x92, 0x28, 0xa4,
 	0xcf, 0xc5, 0x5a, 0x96, 0x98, 0x53, 0x9a, 0x2a, 0xc1, 0xa8, 0xc0, 0xa8, 0xc1, 0xe9, 0x24, 0xf9,
 	0xea, 0x9e, 0x3c, 0x44, 0xe0, 0xd3, 0x3d, 0x79, 0x9e, 0xca, 0xc4, 0xdc, 0x1c, 0x2b, 0x25, 0x30,
-	0x57, 0x29, 0x08, 0x22, 0x6c, 0xc5, 0xf2, 0x62, 0x81, 0x3c, 0x83, 0x92, 0x25, 0x17, 0x8b, 0x77,
-	0x6a, 0x65, 0xb1, 0x90, 0x36, 0x17, 0x4b, 0x76, 0x6a, 0x65, 0xb1, 0x04, 0xa3, 0x02, 0xb3, 0x06,
-	0xa7, 0x93, 0xf8, 0xab, 0x7b, 0xf2, 0x60, 0xfe, 0xa7, 0x7b, 0xf2, 0xdc, 0x10, 0xcd, 0x20, 0x9e,
-	0x52, 0x10, 0x58, 0x10, 0xa2, 0xd5, 0x29, 0xf4, 0xc4, 0x23, 0x39, 0xc6, 0x0b, 0x8f, 0xe4, 0x18,
-	0x1f, 0x3c, 0x92, 0x63, 0x9c, 0xf0, 0x58, 0x8e, 0xe1, 0xc2, 0x63, 0x39, 0x86, 0x1b, 0x8f, 0xe5,
-	0x18, 0xa2, 0xac, 0xd3, 0x33, 0x4b, 0x32, 0x4a, 0x93, 0xf4, 0x92, 0xf3, 0x73, 0xf5, 0x1d, 0x21,
-	0xbe, 0x84, 0x78, 0x46, 0xb7, 0x38, 0x25, 0x5b, 0x3f, 0x3d, 0x3f, 0x27, 0x31, 0x2f, 0x5d, 0x3f,
-	0x39, 0xbf, 0x38, 0x37, 0xbf, 0x58, 0xbf, 0x02, 0x11, 0x00, 0x25, 0x95, 0x05, 0xa9, 0xc5, 0x49,
-	0x6c, 0x60, 0x7f, 0x19, 0x03, 0x02, 0x00, 0x00, 0xff, 0xff, 0x04, 0xd6, 0xc9, 0x5d, 0x20, 0x01,
-	0x00, 0x00,
+	0x57, 0x29, 0x08, 0x22, 0x6c, 0xc5, 0xf2, 0x62, 0x81, 0x3c, 0x83, 0x92, 0x2f, 0x17, 0x87, 0x73,
+	0x46, 0x66, 0x4e, 0x4a, 0x51, 0x6a, 0x9e, 0x90, 0x35, 0x17, 0x47, 0x32, 0x94, 0x2d, 0xc1, 0xa8,
+	0xc0, 0xac, 0xc1, 0xe9, 0x24, 0xff, 0xea, 0x9e, 0x3c, 0x5c, 0xec, 0xd3, 0x3d, 0x79, 0x7e, 0x88,
+	0x41, 0x30, 0x11, 0xa5, 0x20, 0xb8, 0x24, 0xc4, 0x38, 0xa7, 0xd0, 0x13, 0x8f, 0xe4, 0x18, 0x2f,
+	0x3c, 0x92, 0x63, 0x7c, 0xf0, 0x48, 0x8e, 0x71, 0xc2, 0x63, 0x39, 0x86, 0x0b, 0x8f, 0xe5, 0x18,
+	0x6e, 0x3c, 0x96, 0x63, 0x88, 0xb2, 0x4e, 0xcf, 0x2c, 0xc9, 0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf,
+	0xd5, 0x77, 0x84, 0xf8, 0x1c, 0xe2, 0x41, 0xdd, 0xe2, 0x94, 0x6c, 0xfd, 0xf4, 0xfc, 0x9c, 0xc4,
+	0xbc, 0x74, 0xfd, 0xe4, 0xfc, 0xe2, 0xdc, 0xfc, 0x62, 0xfd, 0x0a, 0x44, 0xa0, 0x94, 0x54, 0x16,
+	0xa4, 0x16, 0x27, 0xb1, 0x81, 0xfd, 0x6a, 0x0c, 0x08, 0x00, 0x00, 0xff, 0xff, 0x81, 0x6f, 0xc9,
+	0xde, 0x34, 0x01, 0x00, 0x00,
 }
 
 func (m *Data) Marshal() (dAtA []byte, err error) {
@@ -170,7 +171,7 @@ func (m *Data) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *Keys) Marshal() (dAtA []byte, err error) {
+func (m *Children) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -180,21 +181,21 @@ func (m *Keys) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *Keys) MarshalTo(dAtA []byte) (int, error) {
+func (m *Children) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *Keys) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *Children) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Keys) > 0 {
-		for iNdEx := len(m.Keys) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Keys[iNdEx])
-			copy(dAtA[i:], m.Keys[iNdEx])
-			i = encodeVarintVstorage(dAtA, i, uint64(len(m.Keys[iNdEx])))
+	if len(m.Children) > 0 {
+		for iNdEx := len(m.Children) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Children[iNdEx])
+			copy(dAtA[i:], m.Children[iNdEx])
+			i = encodeVarintVstorage(dAtA, i, uint64(len(m.Children[iNdEx])))
 			i--
 			dAtA[i] = 0xa
 		}
@@ -226,14 +227,14 @@ func (m *Data) Size() (n int) {
 	return n
 }
 
-func (m *Keys) Size() (n int) {
+func (m *Children) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if len(m.Keys) > 0 {
-		for _, s := range m.Keys {
+	if len(m.Children) > 0 {
+		for _, s := range m.Children {
 			l = len(s)
 			n += 1 + l + sovVstorage(uint64(l))
 		}
@@ -329,7 +330,7 @@ func (m *Data) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *Keys) Unmarshal(dAtA []byte) error {
+func (m *Children) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -352,15 +353,15 @@ func (m *Keys) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: Keys: wiretype end group for non-group")
+			return fmt.Errorf("proto: Children: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Keys: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: Children: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Keys", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Children", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -388,7 +389,7 @@ func (m *Keys) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Keys = append(m.Keys, string(dAtA[iNdEx:postIndex]))
+			m.Children = append(m.Children, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

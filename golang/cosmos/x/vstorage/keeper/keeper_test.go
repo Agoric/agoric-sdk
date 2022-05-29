@@ -39,7 +39,7 @@ func makeTestKit() testKit {
 	return testKit{ctx, keeper}
 }
 
-func keysEqual(a, b []string) bool {
+func childrenEqual(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -61,34 +61,34 @@ func TestStorage(t *testing.T) {
 		t.Errorf("got %q, want %q", got, "initValue")
 	}
 
-	// Test that unknown keys return empty string.
+	// Test that unknown children return empty string.
 	if got := keeper.GetData(ctx, "unknown"); got != "" {
 		t.Errorf("got %q, want empty string", got)
 	}
 
-	// Check that our keys are updated as expected.
-	if got := keeper.GetKeys(ctx, ""); !keysEqual(got.Keys, []string{"inited"}) {
-		t.Errorf("got %q keys, want [inited]", got.Keys)
+	// Check that our children are updated as expected.
+	if got := keeper.GetChildren(ctx, ""); !childrenEqual(got.Children, []string{"inited"}) {
+		t.Errorf("got %q children, want [inited]", got.Children)
 	}
 
 	keeper.SetStorage(ctx, "key1", "value1")
-	if got := keeper.GetKeys(ctx, ""); !keysEqual(got.Keys, []string{"inited", "key1"}) {
-		t.Errorf("got %q keys, want [inited,key1]", got.Keys)
+	if got := keeper.GetChildren(ctx, ""); !childrenEqual(got.Children, []string{"inited", "key1"}) {
+		t.Errorf("got %q children, want [inited,key1]", got.Children)
 	}
 
 	// Check alphabetical.
 	keeper.SetStorage(ctx, "alpha2", "value2")
-	if got := keeper.GetKeys(ctx, ""); !keysEqual(got.Keys, []string{"alpha2", "inited", "key1"}) {
-		t.Errorf("got %q keys, want [alpha2,inited,key1]", got.Keys)
+	if got := keeper.GetChildren(ctx, ""); !childrenEqual(got.Children, []string{"alpha2", "inited", "key1"}) {
+		t.Errorf("got %q children, want [alpha2,inited,key1]", got.Children)
 	}
 
 	keeper.SetStorage(ctx, "beta3", "value3")
-	if got := keeper.GetKeys(ctx, ""); !keysEqual(got.Keys, []string{"alpha2", "beta3", "inited", "key1"}) {
-		t.Errorf("got %q keys, want [alpha2,beta3,inited,key1]", got.Keys)
+	if got := keeper.GetChildren(ctx, ""); !childrenEqual(got.Children, []string{"alpha2", "beta3", "inited", "key1"}) {
+		t.Errorf("got %q children, want [alpha2,beta3,inited,key1]", got.Children)
 	}
 
-	if got := keeper.GetKeys(ctx, "nonexistent"); !keysEqual(got.Keys, []string{}) {
-		t.Errorf("got %q keys, want []", got.Keys)
+	if got := keeper.GetChildren(ctx, "nonexistent"); !childrenEqual(got.Children, []string{}) {
+		t.Errorf("got %q children, want []", got.Children)
 	}
 
 	// Check adding children.
@@ -97,8 +97,8 @@ func TestStorage(t *testing.T) {
 		t.Errorf("got %q, want %q", got, "value1child")
 	}
 
-	if got := keeper.GetKeys(ctx, "key1"); !keysEqual(got.Keys, []string{"child1"}) {
-		t.Errorf("got %q keys, want [child1]", got.Keys)
+	if got := keeper.GetChildren(ctx, "key1"); !childrenEqual(got.Children, []string{"child1"}) {
+		t.Errorf("got %q children, want [child1]", got.Children)
 	}
 
 	// Add a grandchild.
@@ -107,52 +107,52 @@ func TestStorage(t *testing.T) {
 		t.Errorf("got %q, want %q", got, "value1grandchild")
 	}
 
-	if got := keeper.GetKeys(ctx, "key1.child1"); !keysEqual(got.Keys, []string{"grandchild1"}) {
-		t.Errorf("got %q keys, want [grandchild1]", got.Keys)
+	if got := keeper.GetChildren(ctx, "key1.child1"); !childrenEqual(got.Children, []string{"grandchild1"}) {
+		t.Errorf("got %q children, want [grandchild1]", got.Children)
 	}
 
 	// Delete the child's contents.
 	keeper.SetStorage(ctx, "key1.child1", "")
-	if got := keeper.GetKeys(ctx, "key1"); !keysEqual(got.Keys, []string{"child1"}) {
-		t.Errorf("got %q keys, want [child1]", got.Keys)
+	if got := keeper.GetChildren(ctx, "key1"); !childrenEqual(got.Children, []string{"child1"}) {
+		t.Errorf("got %q children, want [child1]", got.Children)
 	}
 
-	if got := keeper.GetKeys(ctx, "key1.child1"); !keysEqual(got.Keys, []string{"grandchild1"}) {
-		t.Errorf("got %q keys, want [grandchild1]", got.Keys)
+	if got := keeper.GetChildren(ctx, "key1.child1"); !childrenEqual(got.Children, []string{"grandchild1"}) {
+		t.Errorf("got %q children, want [grandchild1]", got.Children)
 	}
 
 	// Delete the grandchild's contents.
 	keeper.SetStorage(ctx, "key1.child1.grandchild1", "")
-	if got := keeper.GetKeys(ctx, "key1.child1"); !keysEqual(got.Keys, []string{}) {
-		t.Errorf("got %q keys, want []", got.Keys)
+	if got := keeper.GetChildren(ctx, "key1.child1"); !childrenEqual(got.Children, []string{}) {
+		t.Errorf("got %q children, want []", got.Children)
 	}
 	// Removing that node rolls up into the parent.
-	if got := keeper.GetKeys(ctx, "key1"); !keysEqual(got.Keys, []string{}) {
-		t.Errorf("got %q keys, want []", got.Keys)
+	if got := keeper.GetChildren(ctx, "key1"); !childrenEqual(got.Children, []string{}) {
+		t.Errorf("got %q children, want []", got.Children)
 	}
 
 	// See about deleting the parent.
 	keeper.SetStorage(ctx, "key1", "")
-	if got := keeper.GetKeys(ctx, ""); !keysEqual(got.Keys, []string{"alpha2", "beta3", "inited"}) {
-		t.Errorf("got %q keys, want [alpha2,beta3,inited]", got.Keys)
+	if got := keeper.GetChildren(ctx, ""); !childrenEqual(got.Children, []string{"alpha2", "beta3", "inited"}) {
+		t.Errorf("got %q children, want [alpha2,beta3,inited]", got.Children)
 	}
 
 	// Do a deep set.
 	keeper.SetStorage(ctx, "key2.child2.grandchild2", "value2grandchild")
-	if got := keeper.GetKeys(ctx, ""); !keysEqual(got.Keys, []string{"alpha2", "beta3", "inited", "key2"}) {
-		t.Errorf("got %q keys, want [alpha2,beta3,inited,key2]", got.Keys)
+	if got := keeper.GetChildren(ctx, ""); !childrenEqual(got.Children, []string{"alpha2", "beta3", "inited", "key2"}) {
+		t.Errorf("got %q children, want [alpha2,beta3,inited,key2]", got.Children)
 	}
-	if got := keeper.GetKeys(ctx, "key2.child2"); !keysEqual(got.Keys, []string{"grandchild2"}) {
-		t.Errorf("got %q keys, want [grandchild2]", got.Keys)
+	if got := keeper.GetChildren(ctx, "key2.child2"); !childrenEqual(got.Children, []string{"grandchild2"}) {
+		t.Errorf("got %q children, want [grandchild2]", got.Children)
 	}
-	if got := keeper.GetKeys(ctx, "key2"); !keysEqual(got.Keys, []string{"child2"}) {
-		t.Errorf("got %q keys, want [child2]", got.Keys)
+	if got := keeper.GetChildren(ctx, "key2"); !childrenEqual(got.Children, []string{"child2"}) {
+		t.Errorf("got %q children, want [child2]", got.Children)
 	}
 
 	// Do another deep set.
 	keeper.SetStorage(ctx, "key2.child2.grandchild2a", "value2grandchilda")
-	if got := keeper.GetKeys(ctx, "key2.child2"); !keysEqual(got.Keys, []string{"grandchild2", "grandchild2a"}) {
-		t.Errorf("got %q keys, want [grandchild2,grandchild2a]", got.Keys)
+	if got := keeper.GetChildren(ctx, "key2.child2"); !childrenEqual(got.Children, []string{"grandchild2", "grandchild2a"}) {
+		t.Errorf("got %q children, want [grandchild2,grandchild2a]", got.Children)
 	}
 
 	// Check the export.

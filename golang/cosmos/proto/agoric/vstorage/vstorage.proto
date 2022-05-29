@@ -15,12 +15,13 @@ message Data {
     ];
 }
 
-// Keys are the vstorage node subkeys.
-message Keys {
+// Children are the immediate names (just one level deep) of subnodes leading to
+// more data from a given vstorage node.
+message Children {
     option (gogoproto.equal) = false;
 
-    repeated string keys = 1 [
-        (gogoproto.jsontag)    = "keys",
-        (gogoproto.moretags)   = "yaml:\"keys\""
+    repeated string children = 1 [
+        (gogoproto.jsontag)    = "children",
+        (gogoproto.moretags)   = "yaml:\"children\""
     ];
 }

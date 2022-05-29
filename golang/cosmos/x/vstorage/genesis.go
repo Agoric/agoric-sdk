@@ -19,6 +19,9 @@ func ValidateGenesis(data *types.GenesisState) error {
 		return nil
 	}
 	for _, entry := range data.Data {
+		if err := types.ValidatePath(entry.Path); err != nil {
+			return fmt.Errorf("genesis vstorage.data entry %q has invalid path format: %s", entry.Path, err)
+		}
 		if entry.Value == "" {
 			return fmt.Errorf("genesis vstorage.data entry %q has no data", entry.Path)
 		}

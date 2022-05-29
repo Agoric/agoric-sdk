@@ -253,9 +253,10 @@ func (m *StringBeans) GetKey() string {
 
 // Egress is the format for a swingset egress.
 type Egress struct {
-	Nickname   string                                        `protobuf:"bytes,1,opt,name=nickname,proto3" json:"nickname" yaml:"nickname"`
-	Peer       github_com_cosmos_cosmos_sdk_types.AccAddress `protobuf:"bytes,2,opt,name=peer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"peer" yaml:"peer"`
-	PowerFlags []string                                      `protobuf:"bytes,3,rep,name=power_flags,json=powerFlags,proto3" json:"powerFlags" yaml:"powerFlags"`
+	Nickname string                                        `protobuf:"bytes,1,opt,name=nickname,proto3" json:"nickname" yaml:"nickname"`
+	Peer     github_com_cosmos_cosmos_sdk_types.AccAddress `protobuf:"bytes,2,opt,name=peer,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"peer" yaml:"peer"`
+	// TODO: Remove these power flags as they are deprecated and have no effect.
+	PowerFlags []string `protobuf:"bytes,3,rep,name=power_flags,json=powerFlags,proto3" json:"powerFlags" yaml:"powerFlags"`
 }
 
 func (m *Egress) Reset()         { *m = Egress{} }

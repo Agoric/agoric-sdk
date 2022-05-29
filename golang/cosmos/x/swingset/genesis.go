@@ -13,9 +13,7 @@ import (
 )
 
 func NewGenesisState() *types.GenesisState {
-	return &types.GenesisState{
-		Params: types.Params{},
-	}
+	return &types.GenesisState{}
 }
 
 func ValidateGenesis(data *types.GenesisState) error {

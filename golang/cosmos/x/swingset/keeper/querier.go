@@ -94,14 +94,14 @@ func legacyQueryStorage(ctx sdk.Context, path string, req abci.RequestQuery, kee
 
 // nolint: unparam
 func legacyQueryKeys(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
-	keys := keeper.vstorageKeeper.GetKeys(ctx, path)
-	klist := keys.Keys
+	children := keeper.vstorageKeeper.GetChildren(ctx, path)
+	chlist := children.Children
 
-	if klist == nil {
-		klist = []string{}
+	if chlist == nil {
+		chlist = []string{}
 	}
 
-	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, vstoragetypes.Keys{Keys: klist})
+	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, vstoragetypes.Children{Children: chlist})
 	if err2 != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
 	}

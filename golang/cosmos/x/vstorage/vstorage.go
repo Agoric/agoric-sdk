@@ -16,7 +16,7 @@ type vstorageHandler struct {
 
 type vstorageMessage struct {
 	Method string `json:"method"`
-	Key    string `json:"key"`
+	Path   string `json:"key"` // TODO: rename JSON to "path"
 	Value  string `json:"value"`
 }
 
@@ -52,11 +52,11 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 	switch msg.Method {
 	case "set":
 		//fmt.Printf("giving Keeper.SetStorage(%s) %s\n", msg.Key, msg.Value)
-		keeper.LegacySetStorageAndNotify(cctx.Context, msg.Key, msg.Value)
+		keeper.SetStorageAndNotify(cctx.Context, msg.Path, msg.Value)
 		return "true", nil
 
 	case "get":
-		value := keeper.GetData(cctx.Context, msg.Key)
+		value := keeper.GetData(cctx.Context, msg.Path)
 		if value == "" {
 			return "null", nil
 		}
@@ -68,30 +68,31 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 		return string(bz), nil
 
 	case "has":
-		value := keeper.GetData(cctx.Context, msg.Key)
+		value := keeper.GetData(cctx.Context, msg.Path)
 		if value == "" {
 			return "false", nil
 		}
 		return "true", nil
 
-	case "keys":
-		keys := keeper.GetKeys(cctx.Context, msg.Key)
-		if keys.Keys == nil {
+	// TODO: "keys" is deprecated
+	case "children", "keys":
+		children := keeper.GetChildren(cctx.Context, msg.Path)
+		if children.Children == nil {
 			return "[]", nil
 		}
-		bytes, err := json.Marshal(keys.Keys)
+		bytes, err := json.Marshal(children.Children)
 		if err != nil {
 			return "", err
 		}
 		return string(bytes), nil
 
 	case "entries":
-		keys := keeper.GetKeys(cctx.Context, msg.Key)
-		ents := make([][]string, len(keys.Keys))
-		for i, key := range keys.Keys {
+		children := keeper.GetChildren(cctx.Context, msg.Path)
+		ents := make([][]string, len(children.Children))
+		for i, child := range children.Children {
 			ents[i] = make([]string, 2)
-			ents[i][0] = key
-			ents[i][i] = keeper.GetData(cctx.Context, fmt.Sprintf("%s.%s", msg.Key, key))
+			ents[i][0] = child
+			ents[i][i] = keeper.GetData(cctx.Context, fmt.Sprintf("%s.%s", msg.Path, child))
 		}
 		bytes, err := json.Marshal(ents)
 		if err != nil {
@@ -100,10 +101,10 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 		return string(bytes), nil
 
 	case "values":
-		keys := keeper.GetKeys(cctx.Context, msg.Key)
-		vals := make([]string, len(keys.Keys))
-		for i, key := range keys.Keys {
-			vals[i] = keeper.GetData(cctx.Context, fmt.Sprintf("%s.%s", msg.Key, key))
+		children := keeper.GetChildren(cctx.Context, msg.Path)
+		vals := make([]string, len(children.Children))
+		for i, child := range children.Children {
+			vals[i] = keeper.GetData(cctx.Context, fmt.Sprintf("%s.%s", msg.Path, child))
 		}
 		bytes, err := json.Marshal(vals)
 		if err != nil {
@@ -112,11 +113,11 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 		return string(bytes), nil
 
 	case "size":
-		keys := keeper.GetKeys(cctx.Context, msg.Key)
-		if keys.Keys == nil {
+		children := keeper.GetChildren(cctx.Context, msg.Path)
+		if children.Children == nil {
 			return "0", nil
 		}
-		return fmt.Sprint(len(keys.Keys)), nil
+		return fmt.Sprint(len(children.Children)), nil
 	}
 
 	return "", errors.New("Unrecognized msg.Method " + msg.Method)

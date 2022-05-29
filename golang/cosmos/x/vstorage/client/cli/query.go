@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"strings"
-
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -19,7 +17,7 @@ func GetQueryCmd(storeKey string) *cobra.Command {
 	}
 	swingsetQueryCmd.AddCommand(
 		GetCmdGetData(storeKey),
-		GetCmdGetKeys(storeKey),
+		GetCmdGetChildren(storeKey),
 	)
 
 	return swingsetQueryCmd
@@ -38,7 +36,7 @@ func GetCmdGetData(queryRoute string) *cobra.Command {
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			path := strings.Split(args[0], ".")
+			path := args[0]
 
 			res, err := queryClient.Data(cmd.Context(), &types.QueryDataRequest{
 				Path: path,
@@ -55,12 +53,13 @@ func GetCmdGetData(queryRoute string) *cobra.Command {
 	return cmd
 }
 
-// GetCmdGetKeys queries vstorage keys
-func GetCmdGetKeys(queryRoute string) *cobra.Command {
+// GetCmdGetChildren queries vstorage children
+func GetCmdGetChildren(queryRoute string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "keys [path]",
-		Short: "get vstorage subkey names for path",
-		Args:  cobra.MaximumNArgs(1),
+		Use:     "children [path]",
+		Aliases: []string{"keys"},
+		Short:   "get vstorage subkey names for path",
+		Args:    cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -68,12 +67,12 @@ func GetCmdGetKeys(queryRoute string) *cobra.Command {
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			path := []string{""}
+			path := ""
 			if len(args) > 0 {
-				path = strings.Split(args[0], ".")
+				path = args[0]
 			}
 
-			res, err := queryClient.Keys(cmd.Context(), &types.QueryKeysRequest{
+			res, err := queryClient.Children(cmd.Context(), &types.QueryChildrenRequest{
 				Path: path,
 			})
 			if err != nil {

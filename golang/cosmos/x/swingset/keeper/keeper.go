@@ -200,13 +200,8 @@ func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) s
 
 // GetEgress gets the entire egress struct for a peer
 func (k Keeper) GetEgress(ctx sdk.Context, addr sdk.AccAddress) types.Egress {
-<<<<<<< HEAD
 	path := StoragePathEgress + "." + addr.String()
-	value := k.GetStorage(ctx, path)
-=======
-	path := "egress." + addr.String()
 	value := k.vstorageKeeper.GetData(ctx, path)
->>>>>>> 8b4cba53e (feat(vstorage)!: separate `x/vstorage` from `x/swingset` module)
 	if value == "" {
 		return types.Egress{}
 	}
@@ -255,22 +250,12 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 // GetMailbox gets the entire mailbox struct for a peer
 func (k Keeper) GetMailbox(ctx sdk.Context, peer string) string {
-<<<<<<< HEAD
 	path := StoragePathMailbox + "." + peer
-	return k.GetStorage(ctx, path)
-=======
-	path := "mailbox." + peer
 	return k.vstorageKeeper.GetData(ctx, path)
->>>>>>> 8b4cba53e (feat(vstorage)!: separate `x/vstorage` from `x/swingset` module)
 }
 
 // SetMailbox sets the entire mailbox struct for a peer
 func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox string) {
-<<<<<<< HEAD
 	path := StoragePathMailbox + "." + peer
-	k.SetStorage(ctx, path, mailbox)
-=======
-	path := "mailbox." + peer
 	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, path, mailbox)
->>>>>>> 8b4cba53e (feat(vstorage)!: separate `x/vstorage` from `x/swingset` module)
 }

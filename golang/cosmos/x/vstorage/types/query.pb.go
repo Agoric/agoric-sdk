@@ -32,7 +32,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // QueryDataRequest is the vstorage path data query.
 type QueryDataRequest struct {
-	Path []string `protobuf:"bytes,1,rep,name=path,proto3" json:"path" yaml:"path"`
+	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path" yaml:"path"`
 }
 
 func (m *QueryDataRequest) Reset()         { *m = QueryDataRequest{} }
@@ -68,11 +68,11 @@ func (m *QueryDataRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryDataRequest proto.InternalMessageInfo
 
-func (m *QueryDataRequest) GetPath() []string {
+func (m *QueryDataRequest) GetPath() string {
 	if m != nil {
 		return m.Path
 	}
-	return nil
+	return ""
 }
 
 // QueryDataResponse is the vstorage path data response.
@@ -120,24 +120,24 @@ func (m *QueryDataResponse) GetValue() string {
 	return ""
 }
 
-// QueryKeysRequest is the vstorage path keys query.
-type QueryKeysRequest struct {
-	Path       []string           `protobuf:"bytes,1,rep,name=path,proto3" json:"path" yaml:"path"`
+// QueryChildrenRequest is the vstorage path children query.
+type QueryChildrenRequest struct {
+	Path       string             `protobuf:"bytes,1,opt,name=path,proto3" json:"path" yaml:"path"`
 	Pagination *query.PageRequest `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
-func (m *QueryKeysRequest) Reset()         { *m = QueryKeysRequest{} }
-func (m *QueryKeysRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryKeysRequest) ProtoMessage()    {}
-func (*QueryKeysRequest) Descriptor() ([]byte, []int) {
+func (m *QueryChildrenRequest) Reset()         { *m = QueryChildrenRequest{} }
+func (m *QueryChildrenRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryChildrenRequest) ProtoMessage()    {}
+func (*QueryChildrenRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_a26d6d1a170e94ae, []int{2}
 }
-func (m *QueryKeysRequest) XXX_Unmarshal(b []byte) error {
+func (m *QueryChildrenRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryKeysRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryChildrenRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryKeysRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryChildrenRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -147,50 +147,50 @@ func (m *QueryKeysRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return b[:n], nil
 	}
 }
-func (m *QueryKeysRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryKeysRequest.Merge(m, src)
+func (m *QueryChildrenRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryChildrenRequest.Merge(m, src)
 }
-func (m *QueryKeysRequest) XXX_Size() int {
+func (m *QueryChildrenRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryKeysRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryKeysRequest.DiscardUnknown(m)
+func (m *QueryChildrenRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryChildrenRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryKeysRequest proto.InternalMessageInfo
+var xxx_messageInfo_QueryChildrenRequest proto.InternalMessageInfo
 
-func (m *QueryKeysRequest) GetPath() []string {
+func (m *QueryChildrenRequest) GetPath() string {
 	if m != nil {
 		return m.Path
 	}
-	return nil
+	return ""
 }
 
-func (m *QueryKeysRequest) GetPagination() *query.PageRequest {
+func (m *QueryChildrenRequest) GetPagination() *query.PageRequest {
 	if m != nil {
 		return m.Pagination
 	}
 	return nil
 }
 
-// QueryKeysResponse is the vstorage path keys response.
-type QueryKeysResponse struct {
-	Keys       []string            `protobuf:"bytes,1,rep,name=keys,proto3" json:"keys" yaml:"keys"`
+// QueryChildrenResponse is the vstorage path children response.
+type QueryChildrenResponse struct {
+	Children   []string            `protobuf:"bytes,1,rep,name=children,proto3" json:"children" yaml:"children"`
 	Pagination *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
-func (m *QueryKeysResponse) Reset()         { *m = QueryKeysResponse{} }
-func (m *QueryKeysResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryKeysResponse) ProtoMessage()    {}
-func (*QueryKeysResponse) Descriptor() ([]byte, []int) {
+func (m *QueryChildrenResponse) Reset()         { *m = QueryChildrenResponse{} }
+func (m *QueryChildrenResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryChildrenResponse) ProtoMessage()    {}
+func (*QueryChildrenResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_a26d6d1a170e94ae, []int{3}
 }
-func (m *QueryKeysResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryChildrenResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryKeysResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryChildrenResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryKeysResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryChildrenResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -200,26 +200,26 @@ func (m *QueryKeysResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return b[:n], nil
 	}
 }
-func (m *QueryKeysResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryKeysResponse.Merge(m, src)
+func (m *QueryChildrenResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryChildrenResponse.Merge(m, src)
 }
-func (m *QueryKeysResponse) XXX_Size() int {
+func (m *QueryChildrenResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryKeysResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryKeysResponse.DiscardUnknown(m)
+func (m *QueryChildrenResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryChildrenResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryKeysResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryChildrenResponse proto.InternalMessageInfo
 
-func (m *QueryKeysResponse) GetKeys() []string {
+func (m *QueryChildrenResponse) GetChildren() []string {
 	if m != nil {
-		return m.Keys
+		return m.Children
 	}
 	return nil
 }
 
-func (m *QueryKeysResponse) GetPagination() *query.PageResponse {
+func (m *QueryChildrenResponse) GetPagination() *query.PageResponse {
 	if m != nil {
 		return m.Pagination
 	}
@@ -229,43 +229,45 @@ func (m *QueryKeysResponse) GetPagination() *query.PageResponse {
 func init() {
 	proto.RegisterType((*QueryDataRequest)(nil), "agoric.vstorage.QueryDataRequest")
 	proto.RegisterType((*QueryDataResponse)(nil), "agoric.vstorage.QueryDataResponse")
-	proto.RegisterType((*QueryKeysRequest)(nil), "agoric.vstorage.QueryKeysRequest")
-	proto.RegisterType((*QueryKeysResponse)(nil), "agoric.vstorage.QueryKeysResponse")
+	proto.RegisterType((*QueryChildrenRequest)(nil), "agoric.vstorage.QueryChildrenRequest")
+	proto.RegisterType((*QueryChildrenResponse)(nil), "agoric.vstorage.QueryChildrenResponse")
 }
 
 func init() { proto.RegisterFile("agoric/vstorage/query.proto", fileDescriptor_a26d6d1a170e94ae) }
 
 var fileDescriptor_a26d6d1a170e94ae = []byte{
-	// 455 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x53, 0xbf, 0x6b, 0x14, 0x41,
-	0x14, 0xbe, 0x89, 0x17, 0x21, 0x13, 0x41, 0x1d, 0x04, 0xcf, 0x33, 0xec, 0x9d, 0x83, 0xe8, 0x61,
-	0x70, 0x86, 0xc4, 0x4e, 0x0b, 0xf1, 0x08, 0x5a, 0xd8, 0xe8, 0x82, 0x8d, 0xdd, 0xdb, 0xcb, 0x30,
-	0x59, 0xb2, 0xb7, 0xb3, 0xd9, 0x99, 0x3d, 0x5c, 0xc4, 0xc6, 0x46, 0xec, 0x04, 0xff, 0x29, 0xcb,
-	0x80, 0x8d, 0xd5, 0x22, 0x77, 0x56, 0xe9, 0xcc, 0x5f, 0x20, 0xf3, 0x43, 0x6e, 0x39, 0x4c, 0x84,
-	0x74, 0xfb, 0x7e, 0x7d, 0xdf, 0xf7, 0xbe, 0x79, 0x8b, 0x6f, 0x83, 0x54, 0x65, 0x3a, 0xe1, 0x33,
-	0x6d, 0x54, 0x09, 0x52, 0xf0, 0xa3, 0x4a, 0x94, 0x35, 0x2b, 0x4a, 0x65, 0x14, 0xb9, 0xea, 0x8b,
-	0xec, 0x6f, 0xb1, 0x7f, 0x43, 0x2a, 0xa9, 0x5c, 0x8d, 0xdb, 0x2f, 0xdf, 0xd6, 0x7f, 0x30, 0x51,
-	0x7a, 0xaa, 0x34, 0x4f, 0x40, 0x87, 0x79, 0x3e, 0xdb, 0x49, 0x84, 0x81, 0x1d, 0x5e, 0x80, 0x4c,
-	0x73, 0x30, 0xa9, 0xca, 0x43, 0xef, 0x96, 0x54, 0x4a, 0x66, 0x82, 0x43, 0x91, 0x72, 0xc8, 0x73,
-	0x65, 0x5c, 0x51, 0xfb, 0x2a, 0x7d, 0x8a, 0xaf, 0xbd, 0xb6, 0xf3, 0x7b, 0x60, 0x20, 0x16, 0x47,
-	0x95, 0xd0, 0x86, 0x6c, 0xe3, 0x6e, 0x01, 0xe6, 0xa0, 0x87, 0x86, 0x97, 0x46, 0x1b, 0xe3, 0x9b,
-	0x27, 0xcd, 0xc0, 0xc5, 0xa7, 0xcd, 0x60, 0xb3, 0x86, 0x69, 0xf6, 0x98, 0xda, 0x88, 0xc6, 0x2e,
-	0x49, 0xf7, 0xf0, 0xf5, 0x16, 0x80, 0x2e, 0x54, 0xae, 0x05, 0xe1, 0x78, 0x7d, 0x06, 0x59, 0x25,
-	0x7a, 0x68, 0x88, 0x46, 0x1b, 0xe3, 0x5b, 0x27, 0xcd, 0xc0, 0x27, 0x4e, 0x9b, 0xc1, 0x15, 0x8f,
-	0xe1, 0x42, 0x1a, 0xfb, 0x34, 0xfd, 0x84, 0x82, 0x8e, 0x97, 0xa2, 0xd6, 0x17, 0xd1, 0x41, 0x9e,
-	0x63, 0xbc, 0x5c, 0xbd, 0xb7, 0x36, 0x44, 0xa3, 0xcd, 0xdd, 0x7b, 0xcc, 0xfb, 0xc4, 0xac, 0x4f,
-	0xcc, 0xfb, 0x1c, 0x7c, 0x62, 0xaf, 0x40, 0x8a, 0x40, 0x14, 0xb7, 0x26, 0xe9, 0x67, 0x14, 0x16,
-	0xf2, 0x4a, 0xc2, 0x42, 0xdb, 0xb8, 0x7b, 0x28, 0x6a, 0xdd, 0x96, 0x62, 0xe3, 0xa5, 0x14, 0x1b,
-	0xd1, 0xd8, 0x25, 0xc9, 0x8b, 0x7f, 0x48, 0xb9, 0xff, 0x5f, 0x29, 0x9e, 0xa9, 0xad, 0x65, 0xf7,
-	0x37, 0xc2, 0xeb, 0x4e, 0x0b, 0xd1, 0xb8, 0x6b, 0x0d, 0x26, 0x77, 0xd8, 0xca, 0x81, 0xb0, 0xd5,
-	0xd7, 0xeb, 0xd3, 0xf3, 0x5a, 0x3c, 0x09, 0xbd, 0xfb, 0xf1, 0xfb, 0xaf, 0xaf, 0x6b, 0x11, 0xd9,
-	0xe2, 0xab, 0xc7, 0xb8, 0x0f, 0x06, 0xf8, 0x7b, 0xeb, 0xe8, 0x07, 0x4b, 0x6a, 0x4d, 0x38, 0x8b,
-	0xb4, 0xf5, 0x54, 0x67, 0x91, 0xb6, 0x3d, 0x3c, 0x87, 0xd4, 0xba, 0x16, 0x48, 0xc7, 0x6f, 0xbe,
-	0xcd, 0x23, 0x74, 0x3c, 0x8f, 0xd0, 0xcf, 0x79, 0x84, 0xbe, 0x2c, 0xa2, 0xce, 0xf1, 0x22, 0xea,
-	0xfc, 0x58, 0x44, 0x9d, 0xb7, 0x4f, 0x64, 0x6a, 0x0e, 0xaa, 0x84, 0x4d, 0xd4, 0x94, 0x3f, 0xf3,
-	0x08, 0x1e, 0xe8, 0xa1, 0xde, 0x3f, 0xe4, 0x52, 0x65, 0x90, 0x4b, 0x1e, 0x7e, 0x8c, 0x77, 0x4b,
-	0x70, 0x53, 0x17, 0x42, 0x27, 0x97, 0xdd, 0xb9, 0x3f, 0xfa, 0x13, 0x00, 0x00, 0xff, 0xff, 0x2a,
-	0x09, 0x99, 0x9d, 0x7e, 0x03, 0x00, 0x00,
+	// 481 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x53, 0xb1, 0x6f, 0x13, 0x3f,
+	0x14, 0x8e, 0xf3, 0x6b, 0x7f, 0x6a, 0x5d, 0xa4, 0x82, 0x55, 0x44, 0x08, 0xd5, 0x5d, 0xb0, 0xa0,
+	0x44, 0x20, 0x6c, 0xb5, 0x6c, 0x74, 0x40, 0x84, 0x0a, 0x56, 0x38, 0x89, 0x85, 0xed, 0x25, 0xb1,
+	0x9c, 0x13, 0x97, 0xf3, 0xf5, 0xec, 0x44, 0x44, 0x88, 0xa5, 0x8c, 0x2c, 0x48, 0xcc, 0xfc, 0x3f,
+	0x8c, 0x95, 0x58, 0x98, 0x4e, 0x28, 0x61, 0xca, 0x98, 0xbf, 0x00, 0x9d, 0xed, 0xb4, 0xd1, 0x51,
+	0x51, 0x89, 0xed, 0xde, 0xf7, 0xbd, 0xf7, 0xbd, 0xef, 0x3e, 0xdb, 0xf8, 0x16, 0x48, 0x95, 0xc7,
+	0x3d, 0x3e, 0xd6, 0x46, 0xe5, 0x20, 0x05, 0x3f, 0x1e, 0x89, 0x7c, 0xc2, 0xb2, 0x5c, 0x19, 0x45,
+	0xb6, 0x1d, 0xc9, 0x96, 0x64, 0x73, 0x47, 0x2a, 0xa9, 0x2c, 0xc7, 0xcb, 0x2f, 0xd7, 0xd6, 0xbc,
+	0xdf, 0x53, 0x7a, 0xa8, 0x34, 0xef, 0x82, 0xf6, 0xf3, 0x7c, 0xbc, 0xdf, 0x15, 0x06, 0xf6, 0x79,
+	0x06, 0x32, 0x4e, 0xc1, 0xc4, 0x2a, 0xf5, 0xbd, 0xbb, 0x52, 0x29, 0x99, 0x08, 0x0e, 0x59, 0xcc,
+	0x21, 0x4d, 0x95, 0xb1, 0xa4, 0x76, 0x2c, 0x7d, 0x82, 0xaf, 0xbe, 0x2a, 0xe7, 0x8f, 0xc0, 0x40,
+	0x24, 0x8e, 0x47, 0x42, 0x1b, 0xf2, 0x00, 0xaf, 0x65, 0x60, 0x06, 0x0d, 0xd4, 0x42, 0xed, 0xcd,
+	0xce, 0x8d, 0x79, 0x11, 0xda, 0x7a, 0x51, 0x84, 0x5b, 0x13, 0x18, 0x26, 0x8f, 0x69, 0x59, 0xd1,
+	0xc8, 0x82, 0xf4, 0x08, 0x5f, 0x5b, 0x11, 0xd0, 0x99, 0x4a, 0xb5, 0x20, 0x1c, 0xaf, 0x8f, 0x21,
+	0x19, 0x09, 0x2f, 0x71, 0x73, 0x5e, 0x84, 0x0e, 0x58, 0x14, 0xe1, 0x15, 0xa7, 0x61, 0x4b, 0x1a,
+	0x39, 0x98, 0x7e, 0x42, 0x78, 0xc7, 0xca, 0x3c, 0x1b, 0xc4, 0x49, 0x3f, 0x17, 0xe9, 0xbf, 0x78,
+	0x21, 0xcf, 0x31, 0x3e, 0xff, 0xfd, 0x46, 0xbd, 0x85, 0xda, 0x5b, 0x07, 0x7b, 0xcc, 0x65, 0xc5,
+	0xca, 0xac, 0x98, 0xcb, 0xda, 0x67, 0xc5, 0x5e, 0x82, 0x14, 0x7e, 0x51, 0xb4, 0x32, 0x49, 0xbf,
+	0x22, 0x7c, 0xbd, 0xe2, 0xc6, 0xff, 0xd8, 0x21, 0xde, 0xe8, 0x79, 0xac, 0x81, 0x5a, 0xff, 0xb5,
+	0x37, 0x3b, 0xe1, 0xbc, 0x08, 0xcf, 0xb0, 0x45, 0x11, 0x6e, 0x3b, 0x5b, 0x4b, 0x84, 0x46, 0x67,
+	0x24, 0x79, 0x71, 0x81, 0xbd, 0x7b, 0x97, 0xda, 0x73, 0x9b, 0x57, 0xfd, 0x1d, 0x9c, 0xd4, 0xf1,
+	0xba, 0xf5, 0x47, 0x34, 0x5e, 0x2b, 0x83, 0x27, 0xb7, 0x59, 0xe5, 0xe2, 0xb0, 0xea, 0xa9, 0x36,
+	0xe9, 0xdf, 0x5a, 0xdc, 0x12, 0x7a, 0xe7, 0xe4, 0xfb, 0xaf, 0x2f, 0xf5, 0x80, 0xec, 0xf2, 0xea,
+	0x25, 0xed, 0x83, 0x01, 0xfe, 0xbe, 0x4c, 0xf9, 0x03, 0xf9, 0x88, 0xf0, 0xc6, 0x32, 0x19, 0x72,
+	0xf7, 0x62, 0xd9, 0xca, 0x39, 0x36, 0xf7, 0x2e, 0x6b, 0xf3, 0x0e, 0xda, 0xd6, 0x01, 0x25, 0xad,
+	0x3f, 0x1c, 0x2c, 0x63, 0xf4, 0x2e, 0x3a, 0xaf, 0xbf, 0x4d, 0x03, 0x74, 0x3a, 0x0d, 0xd0, 0xcf,
+	0x69, 0x80, 0x3e, 0xcf, 0x82, 0xda, 0xe9, 0x2c, 0xa8, 0xfd, 0x98, 0x05, 0xb5, 0x37, 0x87, 0x32,
+	0x36, 0x83, 0x51, 0x97, 0xf5, 0xd4, 0x90, 0x3f, 0x75, 0x2a, 0x4e, 0xec, 0xa1, 0xee, 0xbf, 0xe5,
+	0x52, 0x25, 0x90, 0x4a, 0xee, 0x5f, 0xd0, 0xbb, 0xf3, 0x05, 0x66, 0x92, 0x09, 0xdd, 0xfd, 0xdf,
+	0xbe, 0x8b, 0x47, 0xbf, 0x03, 0x00, 0x00, 0xff, 0xff, 0x0a, 0x1d, 0x3e, 0x9b, 0xa7, 0x03, 0x00,
+	0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -282,8 +284,8 @@ const _ = grpc.SupportPackageIsVersion4
 type QueryClient interface {
 	// Return an arbitrary vstorage datum.
 	Data(ctx context.Context, in *QueryDataRequest, opts ...grpc.CallOption) (*QueryDataResponse, error)
-	// Return the keys of a given vstorage path.
-	Keys(ctx context.Context, in *QueryKeysRequest, opts ...grpc.CallOption) (*QueryKeysResponse, error)
+	// Return the children of a given vstorage path.
+	Children(ctx context.Context, in *QueryChildrenRequest, opts ...grpc.CallOption) (*QueryChildrenResponse, error)
 }
 
 type queryClient struct {
@@ -303,9 +305,9 @@ func (c *queryClient) Data(ctx context.Context, in *QueryDataRequest, opts ...gr
 	return out, nil
 }
 
-func (c *queryClient) Keys(ctx context.Context, in *QueryKeysRequest, opts ...grpc.CallOption) (*QueryKeysResponse, error) {
-	out := new(QueryKeysResponse)
-	err := c.cc.Invoke(ctx, "/agoric.vstorage.Query/Keys", in, out, opts...)
+func (c *queryClient) Children(ctx context.Context, in *QueryChildrenRequest, opts ...grpc.CallOption) (*QueryChildrenResponse, error) {
+	out := new(QueryChildrenResponse)
+	err := c.cc.Invoke(ctx, "/agoric.vstorage.Query/Children", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -316,8 +318,8 @@ func (c *queryClient) Keys(ctx context.Context, in *QueryKeysRequest, opts ...gr
 type QueryServer interface {
 	// Return an arbitrary vstorage datum.
 	Data(context.Context, *QueryDataRequest) (*QueryDataResponse, error)
-	// Return the keys of a given vstorage path.
-	Keys(context.Context, *QueryKeysRequest) (*QueryKeysResponse, error)
+	// Return the children of a given vstorage path.
+	Children(context.Context, *QueryChildrenRequest) (*QueryChildrenResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -327,8 +329,8 @@ type UnimplementedQueryServer struct {
 func (*UnimplementedQueryServer) Data(ctx context.Context, req *QueryDataRequest) (*QueryDataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Data not implemented")
 }
-func (*UnimplementedQueryServer) Keys(ctx context.Context, req *QueryKeysRequest) (*QueryKeysResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Keys not implemented")
+func (*UnimplementedQueryServer) Children(ctx context.Context, req *QueryChildrenRequest) (*QueryChildrenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Children not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -353,20 +355,20 @@ func _Query_Data_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_Keys_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryKeysRequest)
+func _Query_Children_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryChildrenRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).Keys(ctx, in)
+		return srv.(QueryServer).Children(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/agoric.vstorage.Query/Keys",
+		FullMethod: "/agoric.vstorage.Query/Children",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Keys(ctx, req.(*QueryKeysRequest))
+		return srv.(QueryServer).Children(ctx, req.(*QueryChildrenRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -380,8 +382,8 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Query_Data_Handler,
 		},
 		{
-			MethodName: "Keys",
-			Handler:    _Query_Keys_Handler,
+			MethodName: "Children",
+			Handler:    _Query_Children_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -409,13 +411,11 @@ func (m *QueryDataRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if len(m.Path) > 0 {
-		for iNdEx := len(m.Path) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Path[iNdEx])
-			copy(dAtA[i:], m.Path[iNdEx])
-			i = encodeVarintQuery(dAtA, i, uint64(len(m.Path[iNdEx])))
-			i--
-			dAtA[i] = 0xa
-		}
+		i -= len(m.Path)
+		copy(dAtA[i:], m.Path)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Path)))
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -450,7 +450,7 @@ func (m *QueryDataResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryKeysRequest) Marshal() (dAtA []byte, err error) {
+func (m *QueryChildrenRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -460,12 +460,12 @@ func (m *QueryKeysRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryKeysRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryChildrenRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryKeysRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryChildrenRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -483,18 +483,16 @@ func (m *QueryKeysRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		dAtA[i] = 0x12
 	}
 	if len(m.Path) > 0 {
-		for iNdEx := len(m.Path) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Path[iNdEx])
-			copy(dAtA[i:], m.Path[iNdEx])
-			i = encodeVarintQuery(dAtA, i, uint64(len(m.Path[iNdEx])))
-			i--
-			dAtA[i] = 0xa
-		}
+		i -= len(m.Path)
+		copy(dAtA[i:], m.Path)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Path)))
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryKeysResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryChildrenResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -504,12 +502,12 @@ func (m *QueryKeysResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryKeysResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryChildrenResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryKeysResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryChildrenResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -526,11 +524,11 @@ func (m *QueryKeysResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.Keys) > 0 {
-		for iNdEx := len(m.Keys) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.Keys[iNdEx])
-			copy(dAtA[i:], m.Keys[iNdEx])
-			i = encodeVarintQuery(dAtA, i, uint64(len(m.Keys[iNdEx])))
+	if len(m.Children) > 0 {
+		for iNdEx := len(m.Children) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Children[iNdEx])
+			copy(dAtA[i:], m.Children[iNdEx])
+			i = encodeVarintQuery(dAtA, i, uint64(len(m.Children[iNdEx])))
 			i--
 			dAtA[i] = 0xa
 		}
@@ -555,11 +553,9 @@ func (m *QueryDataRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if len(m.Path) > 0 {
-		for _, s := range m.Path {
-			l = len(s)
-			n += 1 + l + sovQuery(uint64(l))
-		}
+	l = len(m.Path)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
 	}
 	return n
 }
@@ -577,17 +573,15 @@ func (m *QueryDataResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryKeysRequest) Size() (n int) {
+func (m *QueryChildrenRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if len(m.Path) > 0 {
-		for _, s := range m.Path {
-			l = len(s)
-			n += 1 + l + sovQuery(uint64(l))
-		}
+	l = len(m.Path)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
 	}
 	if m.Pagination != nil {
 		l = m.Pagination.Size()
@@ -596,14 +590,14 @@ func (m *QueryKeysRequest) Size() (n int) {
 	return n
 }
 
-func (m *QueryKeysResponse) Size() (n int) {
+func (m *QueryChildrenResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if len(m.Keys) > 0 {
-		for _, s := range m.Keys {
+	if len(m.Children) > 0 {
+		for _, s := range m.Children {
 			l = len(s)
 			n += 1 + l + sovQuery(uint64(l))
 		}
@@ -680,7 +674,7 @@ func (m *QueryDataRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Path = append(m.Path, string(dAtA[iNdEx:postIndex]))
+			m.Path = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -785,7 +779,7 @@ func (m *QueryDataResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryKeysRequest) Unmarshal(dAtA []byte) error {
+func (m *QueryChildrenRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -808,10 +802,10 @@ func (m *QueryKeysRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryKeysRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryChildrenRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryKeysRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryChildrenRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -844,7 +838,7 @@ func (m *QueryKeysRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Path = append(m.Path, string(dAtA[iNdEx:postIndex]))
+			m.Path = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -903,7 +897,7 @@ func (m *QueryKeysRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryKeysResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryChildrenResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -926,15 +920,15 @@ func (m *QueryKeysResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryKeysResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryChildrenResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryKeysResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryChildrenResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Keys", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Children", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -962,7 +956,7 @@ func (m *QueryKeysResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Keys = append(m.Keys, string(dAtA[iNdEx:postIndex]))
+			m.Children = append(m.Children, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {

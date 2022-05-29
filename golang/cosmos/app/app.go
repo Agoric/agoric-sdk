@@ -192,6 +192,7 @@ type GaiaApp struct { // nolint: golint
 	lienPort         int
 	vbankPort        int
 	vibcPort         int
+	vstoragePort     int
 
 	invCheckPeriod uint
 
@@ -427,6 +428,7 @@ func NewAgoricApp(
 		keys[vstorage.StoreKey],
 	)
 	vm.RegisterPortHandler("vstorage", vstorage.NewStorageHandler(app.VstorageKeeper))
+	app.vstoragePort = vm.GetPort("vstorage")
 
 	// The SwingSetKeeper is the Keeper from the SwingSet module
 	app.SwingSetKeeper = swingset.NewKeeper(
@@ -713,7 +715,7 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		Type:        "AG_COSMOS_INIT",
 		ChainID:     ctx.ChainID(),
 		Params:      app.SwingSetKeeper.GetParams(ctx),
-		StoragePort: vm.GetPort("vstorage"),
+		StoragePort: app.vstoragePort,
 		SupplyCoins: sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "urun")),
 		VibcPort:    app.vibcPort,
 		VbankPort:   app.vbankPort,

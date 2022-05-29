@@ -15,8 +15,11 @@ message GenesisState {
     ];
 }
 
-// A vstorage entry.
+// A vstorage entry.  The only necessary entries are those with data, as the
+// ancestor nodes are reconstructed on import.
 message DataEntry {
+    // A "."-separated path with individual path elements matching
+    // `[-_A-Za-z0-9]+`
     string path = 1;
     string value = 2;
 }

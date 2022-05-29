@@ -68,8 +68,11 @@ func (m *GenesisState) GetData() []*DataEntry {
 	return nil
 }
 
-// A vstorage entry.
+// A vstorage entry.  The only necessary entries are those with data, as the
+// ancestor nodes are reconstructed on import.
 type DataEntry struct {
+	// A "."-separated path with individual path elements matching
+	// `[-_A-Za-z0-9]+`
 	Path  string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
 	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 }
