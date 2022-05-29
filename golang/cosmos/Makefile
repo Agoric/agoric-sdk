@@ -177,10 +177,9 @@ buf-stamp:
 GATEWAY_PKGS = \
 	github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway \
 	github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger \
-	github.com/golang/protobuf/protoc-gen-go
+	google.golang.org/protobuf/cmd/protoc-gen-go
 
 grpc-gateway-stamp:
-	go get $(GATEWAY_PKGS)
 	go install $(GATEWAY_PKGS)
 	touch $@
 
