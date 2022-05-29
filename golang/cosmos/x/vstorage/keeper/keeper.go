@@ -23,9 +23,9 @@ func NewKeeper(storeKey sdk.StoreKey) Keeper {
 // ExportStorage fetches all storage
 func (k Keeper) ExportStorage(ctx sdk.Context) []*types.DataEntry {
 	store := ctx.KVStore(k.storeKey)
-	metaStore := prefix.NewStore(store, types.MetaKeyPrefix)
+	encodedStore := prefix.NewStore(store, types.EncodedKeyPrefix)
 
-	iterator := sdk.KVStorePrefixIterator(metaStore, nil)
+	iterator := sdk.KVStorePrefixIterator(encodedStore, nil)
 
 	exported := []*types.DataEntry{}
 	defer iterator.Close()
@@ -65,7 +65,7 @@ func (k Keeper) GetData(ctx sdk.Context, path string) string {
 
 func (k Keeper) getKeyIterator(ctx sdk.Context, path string) db.Iterator {
 	store := ctx.KVStore(k.storeKey)
-	pathStore := prefix.NewStore(store, types.MetaKeyPrefix)
+	pathStore := prefix.NewStore(store, types.EncodedKeyPrefix)
 	keyPrefix := types.PathToChildrenPrefix(path)
 
 	return sdk.KVStorePrefixIterator(pathStore, keyPrefix)
@@ -94,6 +94,15 @@ func (k Keeper) HasStorage(ctx sdk.Context, path string) bool {
 
 	// Check if we have data.
 	return dataStore.Has(dataKey)
+}
+
+func (k Keeper) hasPath(ctx sdk.Context, path string) bool {
+	store := ctx.KVStore(k.storeKey)
+	encodedStore := prefix.NewStore(store, types.EncodedKeyPrefix)
+	encodedKey := types.PathToEncodedKey(path)
+
+	// Check if we have a path entry.
+	return encodedStore.Has(encodedKey)
 }
 
 // HasKeys tells if a given path has child keys.
@@ -134,14 +143,16 @@ func (k Keeper) SetStorage(ctx sdk.Context, path, value string) bool {
 	return true
 }
 
+// Maintains the invariant: path entries exist if and only if self or some
+// descendant has non-empty storage
 func (k Keeper) updatePathAncestry(ctx sdk.Context, path string, deleting bool) {
 	store := ctx.KVStore(k.storeKey)
-	metaStore := prefix.NewStore(store, types.MetaKeyPrefix)
+	encodedStore := prefix.NewStore(store, types.EncodedKeyPrefix)
 
 	// Update our and other parent keys.
-	pathComponents := strings.Split(path, ".")
+	pathComponents := strings.Split(path, types.PathSeparator)
 	for i := len(pathComponents); i >= 0; i-- {
-		ancestor := strings.Join(pathComponents[0:i], ".")
+		ancestor := strings.Join(pathComponents[0:i], types.PathSeparator)
 
 		// Decide if we need to add or remove the ancestor.
 		if deleting {
@@ -150,13 +161,13 @@ func (k Keeper) updatePathAncestry(ctx sdk.Context, path string, deleting bool) 
 				return
 			}
 			// Delete the key.
-			metaStore.Delete(types.PathToMetaKey(ancestor))
-		} else if i < len(pathComponents) && k.HasStorage(ctx, ancestor) {
+			encodedStore.Delete(types.PathToEncodedKey(ancestor))
+		} else if i < len(pathComponents) && k.hasPath(ctx, ancestor) {
 			// The key is present, so we can skip out.
 			return
 		} else {
 			// Add the key as an placeholder value.
-			metaStore.Set(types.PathToMetaKey(ancestor), types.MetaDataPrefix)
+			encodedStore.Set(types.PathToEncodedKey(ancestor), types.DataPrefix)
 		}
 	}
 }

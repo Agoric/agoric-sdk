@@ -30,7 +30,7 @@ func Test_Key_Encoding(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if key := PathToMetaKey(tt.keyStr); !bytes.Equal(key, tt.key) {
+			if key := PathToEncodedKey(tt.keyStr); !bytes.Equal(key, tt.key) {
 				t.Errorf("pathToKey(%q) = %v, want %v", tt.keyStr, key, tt.key)
 			}
 			if keyStr := KeyToPath(tt.key); keyStr != tt.keyStr {

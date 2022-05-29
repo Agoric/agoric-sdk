@@ -6,30 +6,31 @@ import (
 	"strings"
 )
 
-// For space efficiency, path keys are structured as:
-// `${numberOfPathElements}\0${zeroSeparatedPath}`, such as `0\0` for the root
-// element, and `1\0foo` for `foo`, and `3\0foo\0bar\0baz` for `foo.bar.baz`.
+// - A "path" is a sequence of zero or more dot-separated nonempty strings of
+// 7-bit non-nul, non-dot ASCII characters. So `""`, `"foo"`, and
+// `"foo.bar.baz"` are paths but `"."`, "foo.", and "fo\0o" are not.
 //
-// Thus, we can scan for all of `foo.bar`'s children by iterating over the
-// prefix
-//    `3\0foo\0bar\0`
+// - A storage key for a path is the path prefixed with `:`.
 //
-// We still need to iterate up the tree until we are sure the correct ancestor
-// nodes are present or absent, but we don't need to fetch all an ancestor's
-// keys to do so.
+// - A path key for a path is the path prefixed with its length (in ASCII
+// digits), separated by nul, followed by the path with dots replaced with nul.
+// So the path key for the empty path is `0\0`.
+//
+// - Path store entries have just a placeholder value. Path store entries exist
+// if and only if self or some descendant have a non-empty data entry.
 var (
-	MetaKeySeparator = []byte{0}
-	PathSeparator    = "."
-	dataKeyPrefix    = ":"
-	MetaDataPrefix   = []byte{1}
+	KeySeparator  = []byte{0}
+	PathSeparator = "."
+	dataKeyPrefix = ":"
+	DataPrefix    = []byte{0}
 )
 
-// KeyToPath converts a string key to a byte slice path
+// KeyToPath converts a byte slice key to a string path
 func KeyToPath(key []byte) string {
 	// Split the key into its path depth and path components.
-	split := bytes.SplitN(key, MetaKeySeparator, 2)
+	split := bytes.SplitN(key, KeySeparator, 2)
 	encodedPath := split[1]
-	pathBytes := bytes.ReplaceAll(encodedPath, MetaKeySeparator, []byte(PathSeparator))
+	pathBytes := bytes.ReplaceAll(encodedPath, KeySeparator, []byte(PathSeparator))
 	return string(pathBytes)
 }
 
@@ -38,8 +39,8 @@ func PathToDataKey(path string) []byte {
 	return append([]byte(dataKeyPrefix), []byte(path)...)
 }
 
-// PathToMetaKey converts a path to a byte slice key
-func PathToMetaKey(path string) []byte {
+// PathToEncodedKey converts a path to a byte slice key
+func PathToEncodedKey(path string) []byte {
 	depth := strings.Count(path, PathSeparator)
 	encodedPath := PathSeparator + path
 	if len(path) > 0 {
@@ -47,10 +48,10 @@ func PathToMetaKey(path string) []byte {
 		depth += 1
 	}
 	encoded := []byte(fmt.Sprintf("%d%s", depth, encodedPath))
-	if bytes.Contains(encoded, MetaKeySeparator) {
-		panic(fmt.Errorf("pathToKey: encoded %q contains key separator %q", encoded, MetaKeySeparator))
+	if bytes.Contains(encoded, KeySeparator) {
+		panic(fmt.Errorf("pathToKey: encoded %q contains key separator %q", encoded, KeySeparator))
 	}
-	return bytes.ReplaceAll(encoded, []byte(PathSeparator), MetaKeySeparator)
+	return bytes.ReplaceAll(encoded, []byte(PathSeparator), KeySeparator)
 }
 
 // PathToChildrenPrefix converts a path to a prefix for its children
@@ -62,8 +63,8 @@ func PathToChildrenPrefix(path string) []byte {
 	}
 	depth := strings.Count(encodedPrefix, PathSeparator)
 	encoded := []byte(fmt.Sprintf("%d%s", depth, encodedPrefix))
-	if bytes.Contains(encoded, MetaKeySeparator) {
-		panic(fmt.Errorf("pathToChildrenPrefix: encoded %q contains key separator %q", encoded, MetaKeySeparator))
+	if bytes.Contains(encoded, KeySeparator) {
+		panic(fmt.Errorf("pathToChildrenPrefix: encoded %q contains key separator %q", encoded, KeySeparator))
 	}
-	return bytes.ReplaceAll(encoded, []byte(PathSeparator), MetaKeySeparator)
+	return bytes.ReplaceAll(encoded, []byte(PathSeparator), KeySeparator)
 }

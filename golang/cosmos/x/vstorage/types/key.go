@@ -11,6 +11,6 @@ const (
 var (
 	LegacyDataKeyPrefix = []byte("swingset/data")
 	DataKeyPrefix       = LegacyDataKeyPrefix // TODO: []byte{1}
-	MetaKeyPrefix       = []byte{0}
-	BatchKeyPrefix      = MetaKeyPrefix
+	EncodedKeyPrefix    = []byte{0}
+	BatchKeyPrefix      = EncodedKeyPrefix
 )
