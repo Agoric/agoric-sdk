@@ -16,11 +16,14 @@ occurs) to affect the future of the stream.
 A "stream" is an evolving structure with the following properties:
 - Publishing: A single value can be published to a stream at a given time, and becomes part of the "stream cell" of that block.
 - Batching: in order to preserve all publications to a stream, if there are more than one publication per block they are captured in order within that block's stream cell.
-- History: the stream cell can be queried as of a particular block.  Each cell contains a reference to the previous blockheight with publications (or `0` for the beginning of the stream).
+- History: the stream cell can be queried as of a particular block.  Each cell contains a reference to the previous cell.
+- Forking: stream cells can be shared between multiple streams if the
+  application wishes to publish a divergent stream with the old history.
 - Only one key per stream: each stream consists of a single KVStore key/value
   entry at a given height.  Stream history is queried via historical queries
-  made for the same key at different heights.  So, the on-chain storage
-  requirements are only for the latest stream cell at a given height.
+  made for the prior cell, which is usually the same key at an earlier height.
+  So, the on-chain storage requirements for a stream are only for the latest
+  stream cell.
 - Provable queries: a given block's committed stream cell can be queried with a single provable KVStore query.
 - Update events: besides history, a stream also logs an event to indicate to queriers that the stream cell has been updated.
 

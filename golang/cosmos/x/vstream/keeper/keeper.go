@@ -6,13 +6,13 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage"
 )
 
-type Publisher interface {
-	PublishUpdate(sdk sdk.Context, path string, value string)
-	PublishFinish(sdk sdk.Context, path string, value string)
-	PublishFail(sdk sdk.Context, path string, err error)
+type PathPublisher interface {
+	PublishUpdate(sdk sdk.Context, path string, value string) error
+	PublishFinish(sdk sdk.Context, path string, value string) error
+	PublishFail(sdk sdk.Context, path string, err error) error
 }
 
-var _ Publisher = Keeper{}
+var _ PathPublisher = Keeper{}
 
 type Keeper struct {
 	storeKey       sdk.StoreKey
@@ -24,14 +24,29 @@ func NewKeeper(storeKey sdk.StoreKey) Keeper {
 	return Keeper{storeKey, vstorageKeeper}
 }
 
-func (k Keeper) PublishUpdate(ctx sdk.Context, path string, value string) {
-	NewUpdatePublishRequest(ctx, k, path, []byte(value)).Commit(ctx)
+func (k Keeper) PublishUpdate(ctx sdk.Context, path string, value string) error {
+	pr := NewUpdatePublishRequest(ctx, k, path, []byte(value))
+	prior, err := pr.GetPriorFromPath(ctx, path)
+	if err != nil {
+		return err
+	}
+	return pr.Commit(ctx, *prior)
 }
 
-func (k Keeper) PublishFinish(ctx sdk.Context, path string, value string) {
-	NewFinishPublishRequest(ctx, k, path, []byte(value)).Commit(ctx)
+func (k Keeper) PublishFinish(ctx sdk.Context, path string, value string) error {
+	pr := NewFinishPublishRequest(ctx, k, path, []byte(value))
+	prior, err := pr.GetPriorFromPath(ctx, path)
+	if err != nil {
+		return err
+	}
+	return pr.Commit(ctx, *prior)
 }
 
-func (k Keeper) PublishFail(ctx sdk.Context, path string, err error) {
-	NewFailPublishRequest(ctx, k, path, err).Commit(ctx)
+func (k Keeper) PublishFail(ctx sdk.Context, path string, failure error) error {
+	pr := NewFailPublishRequest(ctx, k, path, failure)
+	prior, err := pr.GetPriorFromPath(ctx, path)
+	if err != nil {
+		return err
+	}
+	return pr.Commit(ctx, *prior)
 }

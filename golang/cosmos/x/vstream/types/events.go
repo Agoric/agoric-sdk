@@ -9,16 +9,16 @@ import (
 const (
 	EventTypeStateChange = "state_change"
 
-	AttributeKeyStoreKey      = "store_key"
+	AttributeKeyStoreName     = "store_name"
 	AttributeKeyStoreSubkey   = "store_subkey"
 	AttributeKeyUnprovedValue = "unproved_value"
 )
 
-func NewStateChangeEvent(storeKey string, subkey, value []byte) sdk.Event {
+func NewStateChangeEvent(storeName string, subkey, value []byte) sdk.Event {
 	// Bytes are base64-encoded.
 	return sdk.NewEvent(
 		EventTypeStateChange,
-		sdk.NewAttribute(AttributeKeyStoreKey, storeKey),
+		sdk.NewAttribute(AttributeKeyStoreName, storeName),
 		sdk.NewAttribute(AttributeKeyStoreSubkey, base64.StdEncoding.EncodeToString(subkey)),
 		sdk.NewAttribute(AttributeKeyUnprovedValue, base64.StdEncoding.EncodeToString(value)),
 	)

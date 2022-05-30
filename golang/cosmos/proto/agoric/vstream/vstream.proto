@@ -14,23 +14,57 @@ message StreamCell {
       // STREAM_STATE_UNSPECIFIED means streaming state is unknown (probably
       // before any values have been published).
       STREAM_STATE_UNSPECIFIED = 0;
-      // STREAM_STATE_ACTIVE means the stream is producing more values.
-      STREAM_STATE_ACTIVE = 1;
+      // STREAM_STATE_STREAMING means the stream is producing more values.
+      STREAM_STATE_STREAMING = 1;
       // STREAM_STATE_FINISHED means the stream has terminated with a value.
       STREAM_STATE_FINISHED = 2;
       // STREAM_STATE_FAILURE means the stream has terminated with an error.
       STREAM_STATE_FAILURE = 3;
     }
 
+    // Chronologically-ordered list of values for this cell.
     repeated bytes values = 1;
-    int64 published_in_block = 2 [
-        (gogoproto.jsontag)    = "published_in_block",
-        (gogoproto.moretags)   = "yaml:\"published_in_block\""
+
+    // The block height in which this cell was last updated.
+    int64 updated_block_height = 2 [
+        (gogoproto.jsontag)    = "updated_block_height",
+        (gogoproto.moretags)   = "yaml:\"updated_block_height\""
     ];
-    int64 last_published_in_block = 3 [
-        (gogoproto.jsontag)    = "last_published_in_block",
-        (gogoproto.moretags)   = "yaml:\"last_published_in_block\""
+
+    // The state of the stream.
+    StreamState state = 3;
+
+    // The terminal error, if state=STREAM_STATE_FAILURE.
+    string error = 4;
+
+    // The pointer to the prior cell in the stream.
+    StreamCellPointer prior = 5 [
+      (gogoproto.nullable) = false
     ];
-    StreamState streaming = 4;
-    string error = 5;
+}
+
+// StreamCellPointer points to a stream cell value.
+message StreamCellPointer {
+    // The height at which the cell is stored.
+    int64 block_height = 1 [
+        (gogoproto.jsontag)    = "block_height",
+        (gogoproto.moretags)   = "yaml:\"block_height\""
+    ];
+
+    // The store name under which the cell is stored.
+    string store_name = 2 [
+        (gogoproto.jsontag)    = "store_name",
+        (gogoproto.moretags)   = "yaml:\"store_name\""
+    ];
+
+    // The subkey under which the cell is stored.
+    bytes store_subkey = 3 [
+        (gogoproto.jsontag)    = "store_subkey",
+        (gogoproto.moretags)   = "yaml:\"store_subkey\""
+    ];
+
+    uint64 last_value_index = 4 [
+        (gogoproto.jsontag)    = "last_value_index",
+        (gogoproto.moretags)   = "yaml:\"last_value_index\""
+    ];
 }

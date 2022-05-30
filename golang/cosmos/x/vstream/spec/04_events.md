@@ -10,13 +10,13 @@ The vstore module emits the following events:
 
 | Type     | Attribute Key      | Attribute Value  |
 | -------- | ------------------ | ---------------- |
-| state_change | store_key      | {storeKey}       |
+| state_change | store_name     | {storeName}       |
 | state_change | store_subkey   | {base64-subkey}  |
 | state_change | unproved_value | {base64-value}   |
 
 This state change event is only gossip (not part of consensus) to assist
 followers in efficiently recognising when an update has occured.  The event
-contains the `store_key` and `store_subkey` to enable applications to obtain
+contains the `store_name` and `store_subkey` to enable applications to obtain
 proven values by issuing a provable query against the KVStore.
 
 This event also contains `state_change.unproved_value` as an optimisation to

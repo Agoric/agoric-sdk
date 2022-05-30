@@ -30,8 +30,8 @@ const (
 	// STREAM_STATE_UNSPECIFIED means streaming state is unknown (probably
 	// before any values have been published).
 	StreamCell_STREAM_STATE_UNSPECIFIED StreamCell_StreamState = 0
-	// STREAM_STATE_ACTIVE means the stream is producing more values.
-	StreamCell_STREAM_STATE_ACTIVE StreamCell_StreamState = 1
+	// STREAM_STATE_STREAMING means the stream is producing more values.
+	StreamCell_STREAM_STATE_STREAMING StreamCell_StreamState = 1
 	// STREAM_STATE_FINISHED means the stream has terminated with a value.
 	StreamCell_STREAM_STATE_FINISHED StreamCell_StreamState = 2
 	// STREAM_STATE_FAILURE means the stream has terminated with an error.
@@ -40,14 +40,14 @@ const (
 
 var StreamCell_StreamState_name = map[int32]string{
 	0: "STREAM_STATE_UNSPECIFIED",
-	1: "STREAM_STATE_ACTIVE",
+	1: "STREAM_STATE_STREAMING",
 	2: "STREAM_STATE_FINISHED",
 	3: "STREAM_STATE_FAILURE",
 }
 
 var StreamCell_StreamState_value = map[string]int32{
 	"STREAM_STATE_UNSPECIFIED": 0,
-	"STREAM_STATE_ACTIVE":      1,
+	"STREAM_STATE_STREAMING":   1,
 	"STREAM_STATE_FINISHED":    2,
 	"STREAM_STATE_FAILURE":     3,
 }
@@ -62,11 +62,16 @@ func (StreamCell_StreamState) EnumDescriptor() ([]byte, []int) {
 
 // StreamCell represents one publish state in a vstream stream.
 type StreamCell struct {
-	Values               [][]byte               `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty"`
-	PublishedInBlock     int64                  `protobuf:"varint,2,opt,name=published_in_block,json=publishedInBlock,proto3" json:"published_in_block" yaml:"published_in_block"`
-	LastPublishedInBlock int64                  `protobuf:"varint,3,opt,name=last_published_in_block,json=lastPublishedInBlock,proto3" json:"last_published_in_block" yaml:"last_published_in_block"`
-	Streaming            StreamCell_StreamState `protobuf:"varint,4,opt,name=streaming,proto3,enum=agoric.vstream.StreamCell_StreamState" json:"streaming,omitempty"`
-	Error                string                 `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
+	// Chronologically-ordered list of values for this cell.
+	Values [][]byte `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty"`
+	// The block height in which this cell was last updated.
+	UpdatedBlockHeight int64 `protobuf:"varint,2,opt,name=updated_block_height,json=updatedBlockHeight,proto3" json:"updated_block_height" yaml:"updated_block_height"`
+	// The state of the stream.
+	State StreamCell_StreamState `protobuf:"varint,3,opt,name=state,proto3,enum=agoric.vstream.StreamCell_StreamState" json:"state,omitempty"`
+	// The terminal error, if state=STREAM_STATE_FAILURE.
+	Error string `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	// The pointer to the prior cell in the stream.
+	Prior StreamCellPointer `protobuf:"bytes,5,opt,name=prior,proto3" json:"prior"`
 }
 
 func (m *StreamCell) Reset()         { *m = StreamCell{} }
@@ -109,23 +114,16 @@ func (m *StreamCell) GetValues() [][]byte {
 	return nil
 }
 
-func (m *StreamCell) GetPublishedInBlock() int64 {
+func (m *StreamCell) GetUpdatedBlockHeight() int64 {
 	if m != nil {
-		return m.PublishedInBlock
+		return m.UpdatedBlockHeight
 	}
 	return 0
 }
 
-func (m *StreamCell) GetLastPublishedInBlock() int64 {
+func (m *StreamCell) GetState() StreamCell_StreamState {
 	if m != nil {
-		return m.LastPublishedInBlock
-	}
-	return 0
-}
-
-func (m *StreamCell) GetStreaming() StreamCell_StreamState {
-	if m != nil {
-		return m.Streaming
+		return m.State
 	}
 	return StreamCell_STREAM_STATE_UNSPECIFIED
 }
@@ -137,41 +135,129 @@ func (m *StreamCell) GetError() string {
 	return ""
 }
 
+func (m *StreamCell) GetPrior() StreamCellPointer {
+	if m != nil {
+		return m.Prior
+	}
+	return StreamCellPointer{}
+}
+
+// StreamCellPointer points to a stream cell value.
+type StreamCellPointer struct {
+	// The height at which the cell is stored.
+	BlockHeight int64 `protobuf:"varint,1,opt,name=block_height,json=blockHeight,proto3" json:"block_height" yaml:"block_height"`
+	// The store name under which the cell is stored.
+	StoreName string `protobuf:"bytes,2,opt,name=store_name,json=storeName,proto3" json:"store_name" yaml:"store_name"`
+	// The subkey under which the cell is stored.
+	StoreSubkey    []byte `protobuf:"bytes,3,opt,name=store_subkey,json=storeSubkey,proto3" json:"store_subkey" yaml:"store_subkey"`
+	LastValueIndex uint64 `protobuf:"varint,4,opt,name=last_value_index,json=lastValueIndex,proto3" json:"last_value_index" yaml:"last_value_index"`
+}
+
+func (m *StreamCellPointer) Reset()         { *m = StreamCellPointer{} }
+func (m *StreamCellPointer) String() string { return proto.CompactTextString(m) }
+func (*StreamCellPointer) ProtoMessage()    {}
+func (*StreamCellPointer) Descriptor() ([]byte, []int) {
+	return fileDescriptor_9ac5c9d80bb2d541, []int{1}
+}
+func (m *StreamCellPointer) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *StreamCellPointer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_StreamCellPointer.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *StreamCellPointer) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StreamCellPointer.Merge(m, src)
+}
+func (m *StreamCellPointer) XXX_Size() int {
+	return m.Size()
+}
+func (m *StreamCellPointer) XXX_DiscardUnknown() {
+	xxx_messageInfo_StreamCellPointer.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StreamCellPointer proto.InternalMessageInfo
+
+func (m *StreamCellPointer) GetBlockHeight() int64 {
+	if m != nil {
+		return m.BlockHeight
+	}
+	return 0
+}
+
+func (m *StreamCellPointer) GetStoreName() string {
+	if m != nil {
+		return m.StoreName
+	}
+	return ""
+}
+
+func (m *StreamCellPointer) GetStoreSubkey() []byte {
+	if m != nil {
+		return m.StoreSubkey
+	}
+	return nil
+}
+
+func (m *StreamCellPointer) GetLastValueIndex() uint64 {
+	if m != nil {
+		return m.LastValueIndex
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterEnum("agoric.vstream.StreamCell_StreamState", StreamCell_StreamState_name, StreamCell_StreamState_value)
 	proto.RegisterType((*StreamCell)(nil), "agoric.vstream.StreamCell")
+	proto.RegisterType((*StreamCellPointer)(nil), "agoric.vstream.StreamCellPointer")
 }
 
 func init() { proto.RegisterFile("agoric/vstream/vstream.proto", fileDescriptor_9ac5c9d80bb2d541) }
 
 var fileDescriptor_9ac5c9d80bb2d541 = []byte{
-	// 409 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x49, 0x4c, 0xcf, 0x2f,
-	0xca, 0x4c, 0xd6, 0x2f, 0x2b, 0x2e, 0x29, 0x4a, 0x4d, 0xcc, 0x85, 0xd1, 0x7a, 0x05, 0x45, 0xf9,
-	0x25, 0xf9, 0x42, 0x7c, 0x10, 0x59, 0x3d, 0xa8, 0xa8, 0x94, 0x48, 0x7a, 0x7e, 0x7a, 0x3e, 0x58,
-	0x4a, 0x1f, 0xc4, 0x82, 0xa8, 0x52, 0xba, 0xc5, 0xcc, 0xc5, 0x15, 0x0c, 0x56, 0xe0, 0x9c, 0x9a,
-	0x93, 0x23, 0x24, 0xc6, 0xc5, 0x56, 0x96, 0x98, 0x53, 0x9a, 0x5a, 0x2c, 0xc1, 0xa8, 0xc0, 0xac,
-	0xc1, 0x13, 0x04, 0xe5, 0x09, 0x25, 0x72, 0x09, 0x15, 0x94, 0x26, 0xe5, 0x64, 0x16, 0x67, 0xa4,
-	0xa6, 0xc4, 0x67, 0xe6, 0xc5, 0x27, 0xe5, 0xe4, 0x27, 0x67, 0x4b, 0x30, 0x29, 0x30, 0x6a, 0x30,
-	0x3b, 0x19, 0xbf, 0xba, 0x27, 0x8f, 0x45, 0xf6, 0xd3, 0x3d, 0x79, 0xc9, 0xca, 0xc4, 0xdc, 0x1c,
-	0x2b, 0x25, 0x4c, 0x39, 0xa5, 0x20, 0x01, 0xb8, 0xa0, 0x67, 0x9e, 0x13, 0x48, 0x48, 0xa8, 0x84,
-	0x4b, 0x3c, 0x27, 0xb1, 0xb8, 0x24, 0x1e, 0x8b, 0x3d, 0xcc, 0x60, 0x7b, 0x6c, 0x5f, 0xdd, 0x93,
-	0xc7, 0xa5, 0xe4, 0xd3, 0x3d, 0x79, 0x39, 0x88, 0x65, 0x38, 0x14, 0x28, 0x05, 0x89, 0x80, 0x64,
-	0x02, 0xd0, 0x6d, 0x75, 0xe1, 0xe2, 0x84, 0x84, 0x4f, 0x66, 0x5e, 0xba, 0x04, 0x8b, 0x02, 0xa3,
-	0x06, 0x9f, 0x91, 0x9a, 0x1e, 0x6a, 0xc8, 0xe9, 0x21, 0xc2, 0x07, 0xca, 0x0c, 0x2e, 0x49, 0x2c,
-	0x49, 0x0d, 0x42, 0x68, 0x14, 0x12, 0xe1, 0x62, 0x4d, 0x2d, 0x2a, 0xca, 0x2f, 0x92, 0x60, 0x55,
-	0x60, 0xd4, 0xe0, 0x0c, 0x82, 0x70, 0x94, 0x2a, 0xb9, 0xb8, 0x91, 0xd4, 0x0b, 0xc9, 0x70, 0x49,
-	0x04, 0x87, 0x04, 0xb9, 0x3a, 0xfa, 0xc6, 0x07, 0x87, 0x38, 0x86, 0xb8, 0xc6, 0x87, 0xfa, 0x05,
-	0x07, 0xb8, 0x3a, 0x7b, 0xba, 0x79, 0xba, 0xba, 0x08, 0x30, 0x08, 0x89, 0x73, 0x09, 0xa3, 0xc8,
-	0x3a, 0x3a, 0x87, 0x78, 0x86, 0xb9, 0x0a, 0x30, 0x0a, 0x49, 0x72, 0x89, 0xa2, 0x48, 0xb8, 0x79,
-	0xfa, 0x79, 0x06, 0x7b, 0xb8, 0xba, 0x08, 0x30, 0x09, 0x49, 0x70, 0x89, 0xa0, 0x4a, 0x39, 0x7a,
-	0xfa, 0x84, 0x06, 0xb9, 0x0a, 0x30, 0x5b, 0xb1, 0xbc, 0x58, 0x20, 0xcf, 0xe0, 0x14, 0x72, 0xe2,
-	0x91, 0x1c, 0xe3, 0x85, 0x47, 0x72, 0x8c, 0x0f, 0x1e, 0xc9, 0x31, 0x4e, 0x78, 0x2c, 0xc7, 0x70,
-	0xe1, 0xb1, 0x1c, 0xc3, 0x8d, 0xc7, 0x72, 0x0c, 0x51, 0x56, 0xe9, 0x99, 0x25, 0x19, 0xa5, 0x49,
-	0x7a, 0xc9, 0xf9, 0xb9, 0xfa, 0x8e, 0x90, 0x54, 0x04, 0xf1, 0xb4, 0x6e, 0x71, 0x4a, 0xb6, 0x7e,
-	0x7a, 0x7e, 0x4e, 0x62, 0x5e, 0xba, 0x7e, 0x72, 0x7e, 0x71, 0x6e, 0x7e, 0xb1, 0x7e, 0x05, 0x3c,
-	0x81, 0x95, 0x54, 0x16, 0xa4, 0x16, 0x27, 0xb1, 0x81, 0x53, 0x8e, 0x31, 0x20, 0x00, 0x00, 0xff,
-	0xff, 0x0f, 0x6d, 0x94, 0xca, 0x7f, 0x02, 0x00, 0x00,
+	// 542 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x93, 0x4f, 0x8f, 0xd2, 0x40,
+	0x18, 0xc6, 0x5b, 0xfe, 0x6c, 0xc2, 0x40, 0x08, 0x3b, 0xe2, 0x5a, 0xd7, 0x4d, 0x8b, 0x35, 0x51,
+	0x2e, 0xd2, 0x64, 0x3d, 0x98, 0x10, 0x3d, 0xd0, 0xdd, 0xae, 0x5b, 0xa3, 0x64, 0xd3, 0xb2, 0x26,
+	0x7a, 0x69, 0x0a, 0x4c, 0x4a, 0x43, 0xcb, 0x90, 0xce, 0xb0, 0x59, 0x12, 0x3f, 0x84, 0x1f, 0xc1,
+	0x93, 0x9f, 0x65, 0xe3, 0x69, 0x8f, 0x9e, 0x1a, 0x03, 0x17, 0xc3, 0x91, 0x4f, 0x60, 0x3a, 0x83,
+	0xd2, 0xee, 0x9f, 0x13, 0xf3, 0xfc, 0x9e, 0x99, 0x97, 0xb7, 0xf3, 0xcc, 0x0b, 0x0e, 0x5c, 0x0f,
+	0x47, 0xfe, 0x40, 0xbb, 0x20, 0x34, 0x42, 0x6e, 0xf8, 0xef, 0xb7, 0x35, 0x8d, 0x30, 0xc5, 0xb0,
+	0xca, 0xdd, 0xd6, 0x86, 0xee, 0xd7, 0x3d, 0xec, 0x61, 0x66, 0x69, 0xc9, 0x8a, 0xef, 0x52, 0x7f,
+	0xe4, 0x01, 0xb0, 0xd9, 0x86, 0x23, 0x14, 0x04, 0x70, 0x0f, 0xec, 0x5c, 0xb8, 0xc1, 0x0c, 0x11,
+	0x49, 0x6c, 0xe4, 0x9b, 0x15, 0x6b, 0xa3, 0xa0, 0x0f, 0xea, 0xb3, 0xe9, 0xd0, 0xa5, 0x68, 0xe8,
+	0xf4, 0x03, 0x3c, 0x18, 0x3b, 0x23, 0xe4, 0x7b, 0x23, 0x2a, 0xe5, 0x1a, 0x62, 0x33, 0xaf, 0xbf,
+	0x5e, 0xc5, 0xca, 0x9d, 0xfe, 0x3a, 0x56, 0x9e, 0xcc, 0xdd, 0x30, 0x68, 0xab, 0x77, 0xb9, 0xaa,
+	0x05, 0x37, 0x58, 0x4f, 0xe8, 0x29, 0x83, 0xf0, 0x0d, 0x28, 0x12, 0xea, 0x52, 0x24, 0xe5, 0x1b,
+	0x62, 0xb3, 0x7a, 0xf8, 0xbc, 0x95, 0xfd, 0x8e, 0xd6, 0xb6, 0xdb, 0xcd, 0xd2, 0x4e, 0x76, 0x5b,
+	0xfc, 0x10, 0xac, 0x83, 0x22, 0x8a, 0x22, 0x1c, 0x49, 0x85, 0x86, 0xd8, 0x2c, 0x59, 0x5c, 0xc0,
+	0xb7, 0xa0, 0x38, 0x8d, 0x7c, 0x1c, 0x49, 0xc5, 0x86, 0xd8, 0x2c, 0x1f, 0x3e, 0xbd, 0xbf, 0xe6,
+	0x19, 0xf6, 0x27, 0x14, 0x45, 0x7a, 0xe1, 0x2a, 0x56, 0x04, 0x8b, 0x9f, 0x52, 0xbf, 0x82, 0x72,
+	0xea, 0xaf, 0xe0, 0x01, 0x90, 0xec, 0x9e, 0x65, 0x74, 0x3e, 0x3a, 0x76, 0xaf, 0xd3, 0x33, 0x9c,
+	0xf3, 0xae, 0x7d, 0x66, 0x1c, 0x99, 0x27, 0xa6, 0x71, 0x5c, 0x13, 0xe0, 0x3e, 0xd8, 0xcb, 0xb8,
+	0x5c, 0x98, 0xdd, 0x77, 0x35, 0x11, 0x3e, 0x06, 0x0f, 0x33, 0xde, 0x89, 0xd9, 0x35, 0xed, 0x53,
+	0xe3, 0xb8, 0x96, 0x83, 0x12, 0xa8, 0x67, 0xad, 0x8e, 0xf9, 0xe1, 0xdc, 0x32, 0x6a, 0xf9, 0x76,
+	0xe1, 0xcf, 0x77, 0x45, 0x50, 0x7f, 0xe6, 0xc0, 0xee, 0xad, 0x36, 0xe1, 0x7b, 0x50, 0xc9, 0xe4,
+	0x21, 0xb2, 0x3c, 0x5e, 0xac, 0x62, 0xa5, 0x72, 0x23, 0x87, 0x07, 0x3c, 0x87, 0xec, 0xfd, 0x97,
+	0xfb, 0xa9, 0x8b, 0xd7, 0x01, 0x20, 0x14, 0x47, 0xc8, 0x99, 0xb8, 0x21, 0x62, 0xc9, 0x96, 0xf4,
+	0x67, 0xab, 0x58, 0x49, 0xd1, 0x75, 0xac, 0xec, 0xf2, 0x3a, 0x5b, 0xa6, 0x5a, 0x25, 0x26, 0xba,
+	0x6e, 0x88, 0x92, 0x7e, 0xb8, 0x43, 0x66, 0xfd, 0x31, 0x9a, 0xb3, 0x0c, 0x2b, 0xbc, 0x9f, 0x34,
+	0xdf, 0xf6, 0x93, 0xa6, 0xaa, 0x55, 0x66, 0xd2, 0x66, 0x0a, 0x7e, 0x06, 0xb5, 0xc0, 0x25, 0xd4,
+	0x61, 0x4f, 0xd0, 0xf1, 0x27, 0x43, 0x74, 0xc9, 0x52, 0x2d, 0xe8, 0xda, 0x2a, 0x56, 0x6e, 0x79,
+	0xeb, 0x58, 0x79, 0xc4, 0x6b, 0xde, 0x74, 0x54, 0xab, 0x9a, 0xa0, 0x4f, 0x09, 0x31, 0x13, 0xa0,
+	0xf7, 0xae, 0x16, 0xb2, 0x78, 0xbd, 0x90, 0xc5, 0xdf, 0x0b, 0x59, 0xfc, 0xb6, 0x94, 0x85, 0xeb,
+	0xa5, 0x2c, 0xfc, 0x5a, 0xca, 0xc2, 0x97, 0xb6, 0xe7, 0xd3, 0xd1, 0xac, 0xdf, 0x1a, 0xe0, 0x50,
+	0xeb, 0xf0, 0xf1, 0xe2, 0x6f, 0xe5, 0x25, 0x19, 0x8e, 0x35, 0x0f, 0x07, 0xee, 0xc4, 0xd3, 0x06,
+	0x98, 0x84, 0x98, 0x68, 0x97, 0xff, 0x27, 0x8f, 0xce, 0xa7, 0x88, 0xf4, 0x77, 0xd8, 0x48, 0xbd,
+	0xfa, 0x1b, 0x00, 0x00, 0xff, 0xff, 0xbb, 0x02, 0xb8, 0x4d, 0x98, 0x03, 0x00, 0x00,
 }
 
 func (m *StreamCell) Marshal() (dAtA []byte, err error) {
@@ -194,25 +280,30 @@ func (m *StreamCell) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	{
+		size, err := m.Prior.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintVstream(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x2a
 	if len(m.Error) > 0 {
 		i -= len(m.Error)
 		copy(dAtA[i:], m.Error)
 		i = encodeVarintVstream(dAtA, i, uint64(len(m.Error)))
 		i--
-		dAtA[i] = 0x2a
+		dAtA[i] = 0x22
 	}
-	if m.Streaming != 0 {
-		i = encodeVarintVstream(dAtA, i, uint64(m.Streaming))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.LastPublishedInBlock != 0 {
-		i = encodeVarintVstream(dAtA, i, uint64(m.LastPublishedInBlock))
+	if m.State != 0 {
+		i = encodeVarintVstream(dAtA, i, uint64(m.State))
 		i--
 		dAtA[i] = 0x18
 	}
-	if m.PublishedInBlock != 0 {
-		i = encodeVarintVstream(dAtA, i, uint64(m.PublishedInBlock))
+	if m.UpdatedBlockHeight != 0 {
+		i = encodeVarintVstream(dAtA, i, uint64(m.UpdatedBlockHeight))
 		i--
 		dAtA[i] = 0x10
 	}
@@ -224,6 +315,53 @@ func (m *StreamCell) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i--
 			dAtA[i] = 0xa
 		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *StreamCellPointer) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *StreamCellPointer) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *StreamCellPointer) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.LastValueIndex != 0 {
+		i = encodeVarintVstream(dAtA, i, uint64(m.LastValueIndex))
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.StoreSubkey) > 0 {
+		i -= len(m.StoreSubkey)
+		copy(dAtA[i:], m.StoreSubkey)
+		i = encodeVarintVstream(dAtA, i, uint64(len(m.StoreSubkey)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.StoreName) > 0 {
+		i -= len(m.StoreName)
+		copy(dAtA[i:], m.StoreName)
+		i = encodeVarintVstream(dAtA, i, uint64(len(m.StoreName)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.BlockHeight != 0 {
+		i = encodeVarintVstream(dAtA, i, uint64(m.BlockHeight))
+		i--
+		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -251,18 +389,40 @@ func (m *StreamCell) Size() (n int) {
 			n += 1 + l + sovVstream(uint64(l))
 		}
 	}
-	if m.PublishedInBlock != 0 {
-		n += 1 + sovVstream(uint64(m.PublishedInBlock))
+	if m.UpdatedBlockHeight != 0 {
+		n += 1 + sovVstream(uint64(m.UpdatedBlockHeight))
 	}
-	if m.LastPublishedInBlock != 0 {
-		n += 1 + sovVstream(uint64(m.LastPublishedInBlock))
-	}
-	if m.Streaming != 0 {
-		n += 1 + sovVstream(uint64(m.Streaming))
+	if m.State != 0 {
+		n += 1 + sovVstream(uint64(m.State))
 	}
 	l = len(m.Error)
 	if l > 0 {
 		n += 1 + l + sovVstream(uint64(l))
+	}
+	l = m.Prior.Size()
+	n += 1 + l + sovVstream(uint64(l))
+	return n
+}
+
+func (m *StreamCellPointer) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.BlockHeight != 0 {
+		n += 1 + sovVstream(uint64(m.BlockHeight))
+	}
+	l = len(m.StoreName)
+	if l > 0 {
+		n += 1 + l + sovVstream(uint64(l))
+	}
+	l = len(m.StoreSubkey)
+	if l > 0 {
+		n += 1 + l + sovVstream(uint64(l))
+	}
+	if m.LastValueIndex != 0 {
+		n += 1 + sovVstream(uint64(m.LastValueIndex))
 	}
 	return n
 }
@@ -336,9 +496,9 @@ func (m *StreamCell) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PublishedInBlock", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field UpdatedBlockHeight", wireType)
 			}
-			m.PublishedInBlock = 0
+			m.UpdatedBlockHeight = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowVstream
@@ -348,16 +508,16 @@ func (m *StreamCell) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PublishedInBlock |= int64(b&0x7F) << shift
+				m.UpdatedBlockHeight |= int64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
 		case 3:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LastPublishedInBlock", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field State", wireType)
 			}
-			m.LastPublishedInBlock = 0
+			m.State = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowVstream
@@ -367,31 +527,12 @@ func (m *StreamCell) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.LastPublishedInBlock |= int64(b&0x7F) << shift
+				m.State |= StreamCell_StreamState(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
 		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Streaming", wireType)
-			}
-			m.Streaming = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowVstream
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Streaming |= StreamCell_StreamState(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Error", wireType)
 			}
@@ -423,6 +564,193 @@ func (m *StreamCell) Unmarshal(dAtA []byte) error {
 			}
 			m.Error = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Prior", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowVstream
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthVstream
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthVstream
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Prior.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipVstream(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthVstream
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *StreamCellPointer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowVstream
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StreamCellPointer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StreamCellPointer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockHeight", wireType)
+			}
+			m.BlockHeight = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowVstream
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.BlockHeight |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StoreName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowVstream
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthVstream
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthVstream
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.StoreName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StoreSubkey", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowVstream
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthVstream
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthVstream
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.StoreSubkey = append(m.StoreSubkey[:0], dAtA[iNdEx:postIndex]...)
+			if m.StoreSubkey == nil {
+				m.StoreSubkey = []byte{}
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastValueIndex", wireType)
+			}
+			m.LastValueIndex = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowVstream
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.LastValueIndex |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipVstream(dAtA[iNdEx:])

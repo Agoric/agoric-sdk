@@ -15,8 +15,8 @@ The vstream Keeper implements PathPublisher:
 // PathPublisher defines an interface that allows publishing of a value to a
 // particular vstorage path.
 type PathPublisher interface {
-  	PublishUpdate(sdk sdk.Context, path string, value string)
-	  PublishFinish(sdk sdk.Context, path string, value string)
-	  PublishFail(sdk sdk.Context, path string, err error)
+  	PublishUpdate(sdk sdk.Context, path string, value string) error
+	  PublishFinish(sdk sdk.Context, path string, value string) error
+	  PublishFail(sdk sdk.Context, path string, failure error) error
 }
 ```
