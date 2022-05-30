@@ -9,23 +9,32 @@ other modules that publish streams.
 
 ## StreamKeeper
 
-The vstream Keeper implements StreamKeeper, which is intended for broader reuse
-by other keepers:
+The vstream Keeper implements Streamer, which is intended for broader reuse
+by other keepers who want to manage their own state references:
 
 ```go
-// StreamKeeper defines an interface that allows streaming to an arbitrary State
-// object.  It does not rely on any implicit keeper state.
-type StreamKeeper interface {
-	StreamUpdate(sdk sdk.Context, state types.State, value []byte) error
-	StreamFinish(sdk sdk.Context, state types.State, value []byte) error
-	StreamFailure(sdk sdk.Context, state types.State, failure error) error
+// An interface to allow updating arbitrary underlying state.
+type StateRef interface {
+	Read(ctx sdk.Context) ([]byte, error)
+	Write(ctx sdk.Context, value []byte) error
+	Exists(ctx sdk.Context) bool
+	StoreName() string
+	StoreSubkey() []byte
+	String() string
+}
+
+// Streamer defines an interface that allows streaming to an arbitrary StateRef.
+type Streamer interface {
+	StreamUpdate(sdk sdk.Context, state StateRef, value []byte) error
+	StreamFinish(sdk sdk.Context, state StateRef, value []byte) error
+	StreamFailure(sdk sdk.Context, state StateRef, failure error) error
 }
 ```
 
 ## StorageStreamKeeper
 
-The vstream Keeper implements StorageStreamKeeper, which is for compatibility
-with the vstorage keeper:
+The vstream Keeper implements StorageStreamKeeper, which updates state in an
+underlying vstorage Keeper:
 
 ```go
 // StorageStreamKeeper defines an interface that allows streaming via a vstorage

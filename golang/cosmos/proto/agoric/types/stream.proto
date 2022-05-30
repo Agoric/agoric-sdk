@@ -1,0 +1,71 @@
+syntax = "proto3";
+package agoric.types;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/types/stream";
+
+// StreamCell represents one publish state in a vstream stream.
+message StreamCell {
+    option (gogoproto.equal) = false;
+
+    // EndState is the state of the stream at the last position in this cell.
+    enum EndState {
+      // END_STATE_UNSPECIFIED means unknown end state.
+      END_STATE_UNSPECIFIED = 0;
+      // END_STATE_APPENDABLE means that appending to this cell is possible.
+      END_STATE_APPENDABLE = 1;
+      // END_STATE_FINISHED means this cell has terminated.
+      END_STATE_FINISHED = 2;
+      // END_STATE_FAILURE means this cell has terminated with an error value.
+      END_STATE_FAILURE = 3;
+    }
+
+    // Chronologically-ordered list of values for this cell.
+    // If state=END_STATE_FAILURE, the last value is the serialised error.
+    repeated bytes values = 1;
+
+    // The block height in which this cell was last updated.
+    int64 updated_block_height = 2 [
+        (gogoproto.jsontag)    = "updated_block_height",
+        (gogoproto.moretags)   = "yaml:\"updated_block_height\""
+    ];
+
+    // The state of the stream.
+    EndState end_state = 3 [
+        (gogoproto.jsontag)    = "end_state",
+        (gogoproto.moretags)   = "yaml:\"end_state\""
+    ];
+
+    // The prior position in the stream.
+    StreamPosition prior = 4 [
+      (gogoproto.nullable) = false
+    ];
+}
+
+// StreamPosition is data that refers to a particular stream cell value.
+message StreamPosition {
+    // The height at which the cell is stored.
+    int64 block_height = 1 [
+        (gogoproto.jsontag)    = "block_height",
+        (gogoproto.moretags)   = "yaml:\"block_height\""
+    ];
+
+    // The store name under which the cell is stored.
+    string store_name = 2 [
+        (gogoproto.jsontag)    = "store_name",
+        (gogoproto.moretags)   = "yaml:\"store_name\""
+    ];
+
+    // The subkey under which the cell is stored.
+    bytes store_subkey = 3 [
+        (gogoproto.jsontag)    = "store_subkey",
+        (gogoproto.moretags)   = "yaml:\"store_subkey\""
+    ];
+
+    // The offset in the values array of this position.
+    uint64 value_offset = 4 [
+        (gogoproto.jsontag)    = "value_offset",
+        (gogoproto.moretags)   = "yaml:\"value_offset\""
+    ];
+}

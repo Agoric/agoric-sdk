@@ -1,34 +1,36 @@
-package types
+package stream
 
 import (
 	"encoding/json"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 )
 
 func NewStreamCell(blockHeight int64) StreamCell {
 	return StreamCell{
 		UpdatedBlockHeight: blockHeight,
-		State:              StreamCell_STREAM_STATE_STREAMING,
+		EndState:           StreamCell_END_STATE_APPENDABLE,
 		Values:             make([][]byte, 0, 1),
-		Prior:              NewEmptyStreamCellReference(),
+		Prior:              NewZeroStreamPosition(),
 	}
 }
 
-func NewStreamCellReference(blockHeight int64, storeName string, subkey []byte, valuesCount uint64) StreamCellReference {
-	return StreamCellReference{
+func NewStreamPosition(blockHeight int64, storeName string, subkey []byte, valuesCount uint64) StreamPosition {
+	return StreamPosition{
 		BlockHeight: blockHeight,
 		StoreName:   storeName,
 		StoreSubkey: subkey,
-		ValuesCount: valuesCount,
+		ValueOffset: valuesCount,
 	}
 }
 
-func NewEmptyStreamCellReference() StreamCellReference {
-	return NewStreamCellReference(0, "", nil, 0)
+func NewZeroStreamPosition() StreamPosition {
+	return NewStreamPosition(0, "", nil, 0)
 }
 
-func GetStreamCellReference(ctx sdk.Context, state StateRef) (*StreamCellReference, error) {
+func GetLatestPosition(ctx sdk.Context, state agoric.StateRef) (*StreamPosition, error) {
 	var priorCell StreamCell
 	if state.Exists(ctx) {
 		data, err := state.Read(ctx)
@@ -39,7 +41,7 @@ func GetStreamCellReference(ctx sdk.Context, state StateRef) (*StreamCellReferen
 			return nil, err
 		}
 	}
-	priorReference := NewStreamCellReference(
+	priorReference := NewStreamPosition(
 		priorCell.UpdatedBlockHeight,
 		state.StoreName(),
 		state.StoreSubkey(),

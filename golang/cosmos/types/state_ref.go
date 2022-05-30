@@ -3,7 +3,6 @@ package types
 import (
 	"fmt"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -53,42 +52,4 @@ func (s KVStoreStateRef) StoreSubkey() []byte {
 
 func (s KVStoreStateRef) String() string {
 	return fmt.Sprintf("KVStoreStateRef{%s, %s}", s.storeKey.Name(), s.subkey)
-}
-
-type VstorageStateRef struct {
-	keeper vstorage.Keeper
-	path   string
-}
-
-var _ StateRef = VstorageStateRef{}
-
-func NewVstorageStateRef(vstorageKeeper vstorage.Keeper, path string) *VstorageStateRef {
-	return &VstorageStateRef{vstorageKeeper, path}
-}
-
-func (s VstorageStateRef) Read(ctx sdk.Context) ([]byte, error) {
-	data := s.keeper.GetData(ctx, s.path)
-	return []byte(data), nil
-}
-
-func (s VstorageStateRef) Write(ctx sdk.Context, value []byte) error {
-	// Use a backwards-compatible store+notify.
-	s.keeper.LegacySetStorageAndNotify(ctx, s.path, string(value))
-	return nil
-}
-
-func (s VstorageStateRef) Exists(ctx sdk.Context) bool {
-	return s.keeper.HasStorage(ctx, s.path)
-}
-
-func (s VstorageStateRef) StoreName() string {
-	return s.keeper.GetStoreName()
-}
-
-func (s VstorageStateRef) StoreSubkey() []byte {
-	return s.keeper.PathToEncodedKey(s.path)
-}
-
-func (s VstorageStateRef) String() string {
-	return fmt.Sprintf("VstorageStateRef{%T, %s}", s.keeper, s.path)
 }
