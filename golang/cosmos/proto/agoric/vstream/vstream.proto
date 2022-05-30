@@ -37,14 +37,14 @@ message StreamCell {
     // The terminal error, if state=STREAM_STATE_FAILURE.
     string error = 4;
 
-    // The pointer to the prior cell in the stream.
-    StreamCellPointer prior = 5 [
+    // The reference to the prior cell in the stream.
+    StreamCellReference prior = 5 [
       (gogoproto.nullable) = false
     ];
 }
 
-// StreamCellPointer points to a stream cell value.
-message StreamCellPointer {
+// StreamCellReference is data that refers to a particular stream cell value.
+message StreamCellReference {
     // The height at which the cell is stored.
     int64 block_height = 1 [
         (gogoproto.jsontag)    = "block_height",
@@ -63,8 +63,9 @@ message StreamCellPointer {
         (gogoproto.moretags)   = "yaml:\"store_subkey\""
     ];
 
-    uint64 last_value_index = 4 [
-        (gogoproto.jsontag)    = "last_value_index",
-        (gogoproto.moretags)   = "yaml:\"last_value_index\""
+    // The count of the values before the referenced one.
+    uint64 values_count = 4 [
+        (gogoproto.jsontag)    = "values_count",
+        (gogoproto.moretags)   = "yaml:\"values_count\""
     ];
 }

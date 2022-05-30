@@ -11,23 +11,24 @@ func NewStreamCell(blockHeight int64) StreamCell {
 		UpdatedBlockHeight: blockHeight,
 		State:              StreamCell_STREAM_STATE_STREAMING,
 		Values:             make([][]byte, 0, 1),
-		Prior:              NewNilStreamCellPointer(),
+		Prior:              NewEmptyStreamCellReference(),
 	}
 }
 
-func NewStreamCellPointer(blockHeight int64, storeName string, subkey []byte) StreamCellPointer {
-	return StreamCellPointer{
+func NewStreamCellReference(blockHeight int64, storeName string, subkey []byte, valuesCount uint64) StreamCellReference {
+	return StreamCellReference{
 		BlockHeight: blockHeight,
 		StoreName:   storeName,
 		StoreSubkey: subkey,
+		ValuesCount: valuesCount,
 	}
 }
 
-func NewNilStreamCellPointer() StreamCellPointer {
-	return NewStreamCellPointer(0, "", nil)
+func NewEmptyStreamCellReference() StreamCellReference {
+	return NewStreamCellReference(0, "", nil, 0)
 }
 
-func GetPriorPointer(ctx sdk.Context, state StateRef) (*StreamCellPointer, error) {
+func GetStreamCellReference(ctx sdk.Context, state StateRef) (*StreamCellReference, error) {
 	var priorCell StreamCell
 	if state.Exists(ctx) {
 		data, err := state.Read(ctx)
@@ -38,10 +39,11 @@ func GetPriorPointer(ctx sdk.Context, state StateRef) (*StreamCellPointer, error
 			return nil, err
 		}
 	}
-	priorPointer := NewStreamCellPointer(
+	priorReference := NewStreamCellReference(
 		priorCell.UpdatedBlockHeight,
 		state.StoreName(),
 		state.StoreSubkey(),
+		uint64(len(priorCell.Values)),
 	)
-	return &priorPointer, nil
+	return &priorReference, nil
 }

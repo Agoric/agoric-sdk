@@ -13,7 +13,7 @@ type StreamState string
 type StreamOperation struct {
 	state              StateRef
 	Updater            StreamCellUpdater
-	Prior              StreamCellPointer
+	Prior              StreamCellReference
 	ForceOverwriteHead bool
 }
 
@@ -21,16 +21,16 @@ func NewStreamOperation(ctx sdk.Context, state StateRef, updater StreamCellUpdat
 	return StreamOperation{
 		state:   state,
 		Updater: updater,
-		Prior:   NewNilStreamCellPointer(),
+		Prior:   NewEmptyStreamCellReference(),
 	}
 }
 
-func (so StreamOperation) GetCurrentAsPointer(ctx sdk.Context) (*StreamCellPointer, error) {
-	return GetPriorPointer(ctx, so.state)
+func (so StreamOperation) GetPrior(ctx sdk.Context) (*StreamCellReference, error) {
+	return GetStreamCellReference(ctx, so.state)
 }
 
 // GetMutableHead returns a head we can mutate that matches prior.
-func (so StreamOperation) GetMutableHead(ctx sdk.Context, prior StreamCellPointer) (*StreamCell, error) {
+func (so StreamOperation) GetMutableHead(ctx sdk.Context, prior StreamCellReference) (*StreamCell, error) {
 	head := NewStreamCell(ctx.BlockHeight())
 	if !so.state.Exists(ctx) {
 		// No prior state, safe to update the uninitialised one.
@@ -55,14 +55,14 @@ func (so StreamOperation) GetMutableHead(ctx sdk.Context, prior StreamCellPointe
 	if !bytes.Equal(prior.StoreSubkey, stateStoreSubKey) {
 		return nil, fmt.Errorf("prior store subkey %s does not match state store subkey %s", prior.StoreSubkey, stateStoreSubKey)
 	}
-	if int(prior.LastValueIndex) != len(head.Values) {
-		return nil, fmt.Errorf("prior last value index %d does not match current last value index %d", prior.LastValueIndex, len(head.Values))
+	if int(prior.ValuesCount) != len(head.Values) {
+		return nil, fmt.Errorf("prior values count %d does not match current values count %d", prior.ValuesCount, len(head.Values))
 	}
 	// We can update the current head state.
 	return &head, nil
 }
 
-func (so StreamOperation) Commit(ctx sdk.Context, prior StreamCellPointer) error {
+func (so StreamOperation) Commit(ctx sdk.Context, prior StreamCellReference) error {
 	head := NewStreamCell(ctx.BlockHeight())
 	if !so.ForceOverwriteHead {
 		mutableHead, err := so.GetMutableHead(ctx, prior)
@@ -78,7 +78,7 @@ func (so StreamOperation) Commit(ctx sdk.Context, prior StreamCellPointer) error
 		head.Values = nil
 	}
 
-	// Set the prior pointer.
+	// Set the prior reference.
 	head.Prior = prior
 
 	if head.Values == nil {
@@ -125,4 +125,12 @@ func (so StreamOperation) Commit(ctx sdk.Context, prior StreamCellPointer) error
 		),
 	)
 	return nil
+}
+
+func (so StreamOperation) CommitToCurrent(ctx sdk.Context) error {
+	prior, err := so.GetPrior(ctx)
+	if err != nil {
+		return err
+	}
+	return so.Commit(ctx, *prior)
 }
