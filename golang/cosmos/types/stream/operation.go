@@ -112,12 +112,12 @@ func (so StreamOperation) Commit(ctx sdk.Context, priorPos StreamPosition, force
 	}
 
 	// COMMIT POINT
-	// Store and announce the marshalled stream cell.
+	// Store the marshalled stream cell.
 	if err := so.state.Write(ctx, bz); err != nil {
 		return err
 	}
 
-	// Emit the conventional state change.
+	// Emit the advisory state change event.
 	ctx.EventManager().EmitEvent(
 		agoric.NewStateChangeEvent(
 			so.state.StoreName(),
