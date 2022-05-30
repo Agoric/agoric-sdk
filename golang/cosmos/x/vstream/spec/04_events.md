@@ -4,7 +4,7 @@ order: 4
 
 # Events
 
-The vstore module emits the following events:
+The vstream module emits the following events:
 
 ## State Change
 
