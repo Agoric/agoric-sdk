@@ -5,9 +5,10 @@ import (
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 	db "github.com/tendermint/tm-db"
+
+	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 )
 
 // Keeper maintains the link to data storage and exposes getter/setter methods
@@ -170,4 +171,12 @@ func (k Keeper) SetStorage(ctx sdk.Context, path, value string) {
 			store.Set(types.PathToEncodedKey(ancestor), types.EncodedDataPrefix)
 		}
 	}
+}
+
+func (k Keeper) PathToEncodedKey(path string) []byte {
+	return types.PathToEncodedKey(path)
+}
+
+func (k Keeper) GetStoreName() string {
+	return k.storeKey.Name()
 }
