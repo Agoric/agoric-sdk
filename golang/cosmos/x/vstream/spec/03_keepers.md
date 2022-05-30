@@ -13,7 +13,8 @@ The vstream Keeper implements Streamer, which is intended for broader reuse
 by other keepers who want to manage their own state references:
 
 ```go
-// An interface to allow updating arbitrary underlying state.
+// An interface to allow updating KVStore-backed state and extracting proof
+// parameters.
 type StateRef interface {
 	Read(ctx sdk.Context) ([]byte, error)
 	Write(ctx sdk.Context, value []byte) error
@@ -23,11 +24,11 @@ type StateRef interface {
 	String() string
 }
 
-// Streamer defines an interface that allows streaming to an arbitrary StateRef.
+// Streamer defines an interface that allows streaming using an arbitrary StateRef.
 type Streamer interface {
 	StreamUpdate(sdk sdk.Context, state StateRef, value []byte) error
 	StreamFinish(sdk sdk.Context, state StateRef, value []byte) error
-	StreamFailure(sdk sdk.Context, state StateRef, failure error) error
+	StreamFailure(sdk sdk.Context, state StateRef, failure []byte) error
 }
 ```
 
@@ -42,6 +43,6 @@ underlying vstorage Keeper:
 type StorageStreamKeeper interface {
 	StorageStreamUpdate(sdk sdk.Context, path string, value string) error
 	StorageStreamFinish(sdk sdk.Context, path string, value string) error
-	StorageStreamFailure(sdk sdk.Context, path string, err error) error
+	StorageStreamFailure(sdk sdk.Context, path string, failure string) error
 }
 ```

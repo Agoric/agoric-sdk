@@ -14,7 +14,7 @@ import (
 type StorageStreamKeeper interface {
 	StorageStreamUpdate(sdk sdk.Context, path string, value string) error
 	StorageStreamFinish(sdk sdk.Context, path string, value string) error
-	StorageStreamFailure(sdk sdk.Context, path string, err error) error
+	StorageStreamFailure(sdk sdk.Context, path string, failure string) error
 }
 
 var _ StorageStreamKeeper = Keeper{}
@@ -43,9 +43,9 @@ func (k Keeper) StorageStreamFinish(ctx sdk.Context, path string, value string) 
 	return k.StreamFinish(ctx, state, []byte(value))
 }
 
-func (k Keeper) StorageStreamFailure(ctx sdk.Context, path string, failure error) error {
+func (k Keeper) StorageStreamFailure(ctx sdk.Context, path string, failure string) error {
 	state := vstoragetypes.NewStoragePathStateRef(k.vstorageKeeper, path)
-	return k.StreamFailure(ctx, state, failure)
+	return k.StreamFailure(ctx, state, []byte(failure))
 }
 
 func (Keeper) StreamUpdate(ctx sdk.Context, state agoric.StateRef, value []byte) error {
@@ -66,7 +66,7 @@ func (Keeper) StreamFinish(ctx sdk.Context, state agoric.StateRef, value []byte)
 	return so.Commit(ctx, *prior, false)
 }
 
-func (Keeper) StreamFailure(ctx sdk.Context, state agoric.StateRef, failure error) error {
+func (Keeper) StreamFailure(ctx sdk.Context, state agoric.StateRef, failure []byte) error {
 	so := streamtypes.NewFailStreamOperation(ctx, state, failure)
 	prior, err := so.GetLatestPosition(ctx)
 	if err != nil {

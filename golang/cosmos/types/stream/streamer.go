@@ -10,7 +10,7 @@ import (
 type Streamer interface {
 	StreamUpdate(sdk sdk.Context, state agoric.StateRef, value []byte) error
 	StreamFinish(sdk sdk.Context, state agoric.StateRef, value []byte) error
-	StreamFailure(sdk sdk.Context, state agoric.StateRef, failure error) error
+	StreamFailure(sdk sdk.Context, state agoric.StateRef, failure []byte) error
 }
 
 type streamerImpl struct{}
@@ -29,7 +29,7 @@ func (streamerImpl) StreamFinish(ctx sdk.Context, state agoric.StateRef, value [
 	return so.CommitToCurrent(ctx)
 }
 
-func (streamerImpl) StreamFailure(ctx sdk.Context, state agoric.StateRef, failure error) error {
+func (streamerImpl) StreamFailure(ctx sdk.Context, state agoric.StateRef, failure []byte) error {
 	so := NewFailStreamOperation(ctx, state, failure)
 	return so.CommitToCurrent(ctx)
 }

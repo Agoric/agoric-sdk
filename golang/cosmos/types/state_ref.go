@@ -6,6 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// An interface to allow updating KVStore-backed state and extracting proof
+// parameters.
 type StateRef interface {
 	Read(ctx sdk.Context) ([]byte, error)
 	Write(ctx sdk.Context, value []byte) error

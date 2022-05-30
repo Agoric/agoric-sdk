@@ -167,16 +167,16 @@ func (op AppendUpdater) Update(cell StreamCell) error {
 }
 
 type FailUpdater struct {
-	Failure error
+	Failure []byte
 }
 
 func (op FailUpdater) Update(cell StreamCell) error {
-	cell.Values = append(cell.Values, []byte(op.Failure.Error()))
+	cell.Values = append(cell.Values, op.Failure)
 	cell.EndState = StreamCell_END_STATE_FAILURE
 	return nil
 }
 
-func NewFailStreamOperation(ctx sdk.Context, state agoric.StateRef, failure error) StreamOperation {
+func NewFailStreamOperation(ctx sdk.Context, state agoric.StateRef, failure []byte) StreamOperation {
 	updater := FailUpdater{
 		Failure: failure,
 	}
