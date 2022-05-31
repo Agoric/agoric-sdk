@@ -259,3 +259,11 @@ func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox string) {
 	path := StoragePathMailbox + "." + peer
 	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, path, mailbox)
 }
+
+func (k Keeper) PathToEncodedKey(path string) []byte {
+	return k.vstorageKeeper.PathToEncodedKey(path)
+}
+
+func (k Keeper) GetStoreName() string {
+	return k.vstorageKeeper.GetStoreName()
+}
