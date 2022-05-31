@@ -1,6 +1,8 @@
 /* eslint-disable no-underscore-dangle */
 import { E } from '@endo/eventual-send';
 
+const CONNECTION_TIMEOUT_MS = 5000;
+
 // Wait for the wallet to finish loading.
 export const waitForBootstrap = async getBootstrap => {
   const getLoadingUpdate = (...args) =>
@@ -70,7 +72,12 @@ export const makeAdminWebSocketConnector = component => {
         };
 
         ws = new WebSocket(url.href);
+        const timeout = window.setTimeout(() => {
+           ws.close();
+        }, CONNECTION_TIMEOUT_MS);
+        
         ws.addEventListener('open', ev => {
+          window.clearTimeout(timeout);
           return onAdminOpen(ev);
         });
         ws.addEventListener('close', onClose);
