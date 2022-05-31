@@ -70,7 +70,7 @@ test('in-memory kvStore read/write', t => {
   testKVStore(t, initSwingStore(null));
 });
 
-test('persistent kvStore read/write/re-open', t => {
+test('persistent kvStore read/write/re-open', async t => {
   const dbDir = 'testdb';
   t.teardown(() => rimraf(dbDir));
   rimraf(dbDir);
@@ -78,19 +78,19 @@ test('persistent kvStore read/write/re-open', t => {
   const store = initSwingStore(dbDir);
   const { commit, close } = store;
   testKVStore(t, store);
-  commit();
+  await commit();
   const before = getAllState(store);
-  close();
+  await close();
   t.is(isSwingStore(dbDir), true);
 
   const store2 = openSwingStore(dbDir);
   const { close: close2 } = store2;
   t.deepEqual(getAllState(store2), before, 'check state after reread');
   t.is(isSwingStore(dbDir), true);
-  close2();
+  await close2();
 });
 
-function testStreamStore(t, dbDir) {
+async function testStreamStore(t, dbDir) {
   const { streamStore, commit, close } = initSwingStore(dbDir);
 
   const start = streamStore.STREAM_START;
@@ -125,23 +125,23 @@ function testStreamStore(t, dbDir) {
   const readerEmpty2 = streamStore.readStream('empty', start, start);
   t.deepEqual(Array.from(readerEmpty2), []);
 
-  commit();
-  close();
+  await commit();
+  await close();
 }
 
-test('in-memory streamStore read/write', t => {
-  testStreamStore(t, null);
+test('in-memory streamStore read/write', async t => {
+  await testStreamStore(t, null);
 });
 
-test('persistent streamStore read/write', t => {
+test('persistent streamStore read/write', async t => {
   const dbDir = 'testdb';
   t.teardown(() => rimraf(dbDir));
   rimraf(dbDir);
   t.is(isSwingStore(dbDir), false);
-  testStreamStore(t, dbDir);
+  await testStreamStore(t, dbDir);
 });
 
-function testStreamStoreModeInterlock(t, dbDir) {
+async function testStreamStoreModeInterlock(t, dbDir) {
   const { streamStore, commit, close } = initSwingStore(dbDir);
   const start = streamStore.STREAM_START;
 
@@ -162,18 +162,18 @@ function testStreamStoreModeInterlock(t, dbDir) {
 
   streamStore.closeStream('nonexistent');
 
-  commit();
-  close();
+  await commit();
+  await close();
 }
 
-test('in-memory streamStore mode interlock', t => {
-  testStreamStoreModeInterlock(t, null);
+test('in-memory streamStore mode interlock', async t => {
+  await testStreamStoreModeInterlock(t, null);
 });
 
-test('persistent streamStore mode interlock', t => {
+test('persistent streamStore mode interlock', async t => {
   const dbDir = 'testdb';
   t.teardown(() => rimraf(dbDir));
   rimraf(dbDir);
   t.is(isSwingStore(dbDir), false);
-  testStreamStoreModeInterlock(t, dbDir);
+  await testStreamStoreModeInterlock(t, dbDir);
 });

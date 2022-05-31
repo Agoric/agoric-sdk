@@ -124,7 +124,7 @@ test('snapshot after deliveries', async t => {
   t.teardown(c.shutdown);
 
   await runSteps(c, t);
-  commit();
+  await commit();
 
   const { inUse, onDisk, extra } = unusedSnapshotsOnDisk(
     kvStore,

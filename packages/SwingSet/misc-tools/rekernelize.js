@@ -65,8 +65,8 @@ async function main() {
   );
 
   kvStore.set('kernelBundle', JSON.stringify(kernelBundle));
-  swingStore.commit();
-  swingStore.close();
+  await swingStore.commit();
+  await swingStore.close();
 }
 
 main().then(

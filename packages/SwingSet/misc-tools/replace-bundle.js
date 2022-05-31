@@ -59,7 +59,7 @@ async function run() {
   const newBundleStr = JSON.stringify(bundle);
   log(`new bundle is ${newBundleStr.length} bytes`);
   kvStore.set(bundleName, newBundleStr);
-  commit();
+  await commit();
   log(`bundle ${bundleName} replaced`);
 }
 

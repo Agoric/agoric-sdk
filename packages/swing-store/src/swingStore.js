@@ -52,8 +52,8 @@ export function makeSnapStoreIO() {
  * @typedef {{
  *   kvStore: KVStore, // a key-value StorageAPI object to load and store data
  *   streamStore: StreamStore, // a stream-oriented API object to append and read streams of data
- *   commit: () => void,  // commit changes made since the last commit
- *   close: () => void,   // shutdown the store, abandoning any uncommitted changes
+ *   commit: () => Promise<void>,  // commit changes made since the last commit
+ *   close: () => Promise<void>,   // shutdown the store, abandoning any uncommitted changes
  *   diskUsage?: () => number, // optional stats method
  * }} SwingStore
  *
@@ -298,7 +298,7 @@ function makeSwingStore(dirPath, forceReset, options) {
   /**
    * Commit unsaved changes.
    */
-  function commit() {
+  async function commit() {
     if (txn) {
       txn.commit();
       trace(`commit-tx`);
@@ -317,7 +317,7 @@ function makeSwingStore(dirPath, forceReset, options) {
    * Close the database, abandoning any changes made since the last commit (if you want to save them, call
    * commit() first).
    */
-  function close() {
+  async function close() {
     if (txn) {
       txn.abort();
       trace(`abort-tx`);

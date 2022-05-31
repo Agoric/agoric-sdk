@@ -231,7 +231,7 @@ export function initEphemeralSwingStore() {
   /**
    * Commit unsaved changes.
    */
-  function commit() {
+  async function commit() {
     // Nothing to do here.
   }
 
@@ -239,7 +239,7 @@ export function initEphemeralSwingStore() {
    * Close the "database", abandoning any changes made since the last commit
    * (if you want to save them, call commit() first).
    */
-  function close() {
+  async function close() {
     // Nothing to do here.
   }
 
