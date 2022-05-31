@@ -119,7 +119,6 @@ async function runTestScript(
      * @type { TapMessage | { testNames: string[] } | { bundleSource: [string, ...unknown[]] } | Summary }
      */
     const msg = JSON.parse(decoder.decode(message));
-    // console.log(input, msg, qty, byStatus);
 
     if ('testNames' in msg) {
       testNames = msg.testNames;
@@ -142,6 +141,8 @@ async function runTestScript(
       assertionStatus[msg.status] += 1;
       if (msg.status === 'not ok') {
         console.warn({ ...msg, filename, label });
+        testStatus.total += 1;
+        testStatus.fail.push({ filename, name: 'file' });
       }
     }
     if ('plan' in msg) {
