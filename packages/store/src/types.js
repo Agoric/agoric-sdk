@@ -105,6 +105,14 @@
  * @property {boolean=} durable  The contents of this store survive termination
  *   of its containing process, allowing for restart or upgrade but at the cost
  *   of forbidding storage of references to ephemeral data.  Defaults to false.
+ * @property {boolean=} fakeDurable  This store pretends to be a durable store
+ *   but does not enforce that the things stored in it actually be themselves
+ *   durable (whereas an actual durable store would forbid storage of such
+ *   items).  This is in service of allowing incremental transition to use of
+ *   durable stores, to enable normal operation and testing when some stuff
+ *   intended to eventually be durable has not yet been made durable.  A store
+ *   marked as fakeDurable will appear to operate normally but any attempt to
+ *   upgrade its containing vat will fail with an error.
  * @property {Pattern=} keySchema
  * @property {Pattern=} valueSchema
  */
