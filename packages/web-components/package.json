@@ -15,7 +15,7 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json",
-    "lint:eslint": "eslint --ext .js,.ts . --ignore-path .gitignore",
+    "lint:eslint": "eslint . --ignore-path .gitignore",
     "analyze": "cem analyze --litelement",
     "start": "web-dev-server --port 8100"
   },

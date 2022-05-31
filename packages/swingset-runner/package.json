@@ -15,7 +15,7 @@
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn lint:eslint",
-    "lint:eslint": "eslint --ext .js,.ts .",
+    "lint:eslint": "eslint .",
     "ci:autobench": "./autobench.js"
   },
   "dependencies": {

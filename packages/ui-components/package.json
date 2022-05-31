@@ -27,7 +27,7 @@
     "build": "yarn build:src && yarn build:tests",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
-    "lint:eslint": "eslint --ext .js,.ts .",
+    "lint:eslint": "eslint .",
     "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json"
   },
   "eslintConfig": {

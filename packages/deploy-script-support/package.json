@@ -12,7 +12,7 @@
     "test": "ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint:eslint": "eslint --ext .js,.ts .",
+    "lint:eslint": "eslint .",
     "lint:types": "tsc --maxNodeModuleJsDepth 5 -p jsconfig.json",
     "lint": "run-s --continue-on-error lint:*"
   },
