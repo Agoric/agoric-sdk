@@ -6,7 +6,7 @@ import { Far } from '@endo/far';
 /**
  * Tests ZCF
  *
- * @type {ContractStartFn<{makeInvitation: unknown}>}
+ * @param {ZCF} zcf
  */
 const start = async zcf => {
   // make the `zcf` and `instance` available to the tests

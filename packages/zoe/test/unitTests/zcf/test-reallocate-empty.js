@@ -61,7 +61,6 @@ test(`zcf.reallocate unstaged`, async t => {
   const { brand } = zcfMint.getIssuerRecord();
   const empty = AmountMath.makeEmpty(brand, AssetKind.NAT);
   zcfSeat1.incrementBy(harden({ RUN: empty }));
-  // @ts-expect-error Deliberate wrong type for testing
   t.throws(() => zcf.reallocate(zcfSeat1, zcfSeat2), {
     message:
       'Reallocate failed because a seat had no staged allocation. Please add or subtract from the seat and then reallocate.',

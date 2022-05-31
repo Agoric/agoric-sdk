@@ -24,7 +24,7 @@ const setupNonFungible = () => {
   /**
    *
    * @param {string} name
-   * @param {number} power
+   * @param {string} power
    * @param {string} [desc]
    */
   function createRpgItem(name, power, desc) {

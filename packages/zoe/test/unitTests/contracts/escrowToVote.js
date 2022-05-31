@@ -1,5 +1,4 @@
-// @ts-check
-
+// @ts-nocheck
 import { assert, details as X, q } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 import { makeStore } from '@agoric/store';

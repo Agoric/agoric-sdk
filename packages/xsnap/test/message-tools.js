@@ -23,6 +23,7 @@ export function loader(url, readFile = undefined) {
   return freeze({
     resolve,
     /**  @param { string } ref */
+    // @ts-expect-error possibly undefined
     asset: async ref => readFile(resolve(ref), 'utf-8'),
   });
 }
