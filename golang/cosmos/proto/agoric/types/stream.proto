@@ -31,13 +31,15 @@ message StreamCell {
         (gogoproto.moretags)   = "yaml:\"updated_block_height\""
     ];
 
-    // The state of the stream.
+    // The state as of the last value.
     EndState end_state = 3 [
         (gogoproto.jsontag)    = "end_state",
         (gogoproto.moretags)   = "yaml:\"end_state\""
     ];
 
-    // The prior position in the stream.
+    // The prior position in the stream.  If this is the first cell in the
+    // stream, this will be the default value. All other cells will have a
+    // reference with a nonzero block height.
     StreamPosition prior = 4 [
       (gogoproto.nullable) = false
     ];
@@ -51,21 +53,22 @@ message StreamPosition {
         (gogoproto.moretags)   = "yaml:\"block_height\""
     ];
 
-    // The store name under which the cell is stored.
+    // The low-level (Cosmos SDK multistore) store name under which the cell is stored.
     string store_name = 2 [
         (gogoproto.jsontag)    = "store_name",
         (gogoproto.moretags)   = "yaml:\"store_name\""
     ];
 
-    // The subkey under which the cell is stored.
+    // The low-level (Cosmos SDK multistore) store subkey under which the cell is stored.
     bytes store_subkey = 3 [
         (gogoproto.jsontag)    = "store_subkey",
         (gogoproto.moretags)   = "yaml:\"store_subkey\""
     ];
 
-    // The offset in the values array of this position.
-    uint64 value_offset = 4 [
-        (gogoproto.jsontag)    = "value_offset",
-        (gogoproto.moretags)   = "yaml:\"value_offset\""
+    // The sequence number of the value at this position.  Necessary to allow
+    // references to a fork point within a cell.
+    uint64 sequence_number = 4 [
+        (gogoproto.jsontag)    = "sequence_number",
+        (gogoproto.moretags)   = "yaml:\"sequence_number\""
     ];
 }

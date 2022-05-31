@@ -14,7 +14,7 @@ type StreamCellUpdater interface {
 	Update(cell StreamCell) error
 }
 
-var _, _ StreamCellUpdater = AppendUpdater{}, FailUpdater{}
+var _, _ StreamCellUpdater = AppendStreamCellUpdater{}, FailStreamCellUpdater{}
 
 type StreamOperation struct {
 	state   agoric.StateRef
@@ -34,11 +34,11 @@ func (so StreamOperation) GetLatestPosition(ctx sdk.Context) (*StreamPosition, e
 	return GetLatestPosition(ctx, so.state)
 }
 
-// GetMutableHead returns a head we can mutate that matches prior.
-func (so StreamOperation) GetMutableHead(ctx sdk.Context, prior StreamPosition) (*StreamCell, error) {
-	head := NewStreamCell(ctx.BlockHeight())
+// LoadAndCheckHead returns a head satisfying prior that we can mutate.
+func (so StreamOperation) LoadAndCheckHead(ctx sdk.Context, prior StreamPosition) (*StreamCell, error) {
+	head := NewStreamCell(ctx.BlockHeight(), prior)
 	if !so.state.Exists(ctx) {
-		// No prior state, safe to update the uninitialised one.
+		// No prior state, safe to use the fresh head.
 		return &head, nil
 	}
 	// Get the current head.
@@ -52,6 +52,10 @@ func (so StreamOperation) GetMutableHead(ctx sdk.Context, prior StreamPosition) 
 	if prior.BlockHeight != head.UpdatedBlockHeight {
 		return nil, fmt.Errorf("prior block height %d does not match current %q head block height %d", prior.BlockHeight, so.state, head.UpdatedBlockHeight)
 	}
+	nextSequence := head.Prior.SequenceNumber + uint64(len(head.Values))
+	if prior.SequenceNumber != nextSequence {
+		return nil, fmt.Errorf("prior sequence number %d does not point to last value %d", prior.SequenceNumber, nextSequence)
+	}
 	stateStoreName := so.state.StoreName()
 	if prior.StoreName != stateStoreName {
 		return nil, fmt.Errorf("prior store name %s does not match state store name %s", prior.StoreName, stateStoreName)
@@ -60,21 +64,20 @@ func (so StreamOperation) GetMutableHead(ctx sdk.Context, prior StreamPosition) 
 	if !bytes.Equal(prior.StoreSubkey, stateStoreSubKey) {
 		return nil, fmt.Errorf("prior store subkey %s does not match state store subkey %s", prior.StoreSubkey, stateStoreSubKey)
 	}
-	if int(prior.ValueOffset) != len(head.Values) {
-		return nil, fmt.Errorf("prior value offset %d does not point to end of current values %d", prior.ValueOffset, len(head.Values))
-	}
 	// We can update the current head state.
 	return &head, nil
 }
 
+// Commit commits the stream operation to the current state.
 func (so StreamOperation) Commit(ctx sdk.Context, priorPos StreamPosition, forceOverwrite bool) error {
-	head := NewStreamCell(ctx.BlockHeight())
+	head := NewStreamCell(ctx.BlockHeight(), priorPos)
 	if !forceOverwrite {
-		mutableHead, err := so.GetMutableHead(ctx, priorPos)
+		// Get the current head and assert that it's compatible with prior.
+		headP, err := so.LoadAndCheckHead(ctx, priorPos)
 		if err != nil {
 			return err
 		}
-		head = *mutableHead
+		head = *headP
 	}
 
 	if head.UpdatedBlockHeight != ctx.BlockHeight() {
@@ -128,6 +131,7 @@ func (so StreamOperation) Commit(ctx sdk.Context, priorPos StreamPosition, force
 	return nil
 }
 
+// CommitToCurrent fetches the latest position and appends to it.
 func (so StreamOperation) CommitToCurrent(ctx sdk.Context) error {
 	prior, err := so.GetLatestPosition(ctx)
 	if err != nil {
@@ -136,13 +140,13 @@ func (so StreamOperation) CommitToCurrent(ctx sdk.Context) error {
 	return so.Commit(ctx, *prior, false)
 }
 
-type AppendUpdater struct {
+type AppendStreamCellUpdater struct {
 	Done  bool
 	Value []byte
 }
 
 func NewUpdateStreamOperation(ctx sdk.Context, state agoric.StateRef, value []byte) StreamOperation {
-	updater := AppendUpdater{
+	updater := AppendStreamCellUpdater{
 		Value: value,
 		Done:  false,
 	}
@@ -150,14 +154,14 @@ func NewUpdateStreamOperation(ctx sdk.Context, state agoric.StateRef, value []by
 }
 
 func NewFinishStreamOperation(ctx sdk.Context, state agoric.StateRef, value []byte) StreamOperation {
-	updater := AppendUpdater{
+	updater := AppendStreamCellUpdater{
 		Value: value,
 		Done:  true,
 	}
 	return NewStreamOperation(ctx, state, updater)
 }
 
-func (op AppendUpdater) Update(cell StreamCell) error {
+func (op AppendStreamCellUpdater) Update(cell StreamCell) error {
 	// Add the new state to the batch.
 	cell.Values = append(cell.Values, op.Value)
 	if op.Done {
@@ -166,18 +170,18 @@ func (op AppendUpdater) Update(cell StreamCell) error {
 	return nil
 }
 
-type FailUpdater struct {
+type FailStreamCellUpdater struct {
 	Failure []byte
 }
 
-func (op FailUpdater) Update(cell StreamCell) error {
+func (op FailStreamCellUpdater) Update(cell StreamCell) error {
 	cell.Values = append(cell.Values, op.Failure)
 	cell.EndState = StreamCell_END_STATE_FAILURE
 	return nil
 }
 
 func NewFailStreamOperation(ctx sdk.Context, state agoric.StateRef, failure []byte) StreamOperation {
-	updater := FailUpdater{
+	updater := FailStreamCellUpdater{
 		Failure: failure,
 	}
 	return NewStreamOperation(ctx, state, updater)

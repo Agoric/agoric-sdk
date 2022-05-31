@@ -15,6 +15,8 @@ occurs) to affect the future of the stream.
 
 A "stream" is an evolving structure with the following properties:
 - Publishing: A single value can be published to a stream at a given time, and becomes part of the "stream cell" of that block.
+- Consistency: Each stream has a monotonically increasing "sequence number",
+  starting from 1.  This enables stream cell relationship consistency checking.
 - Batching: in order to preserve all publications to a stream, if there are more than one publication per block they are captured in order within that block's stream cell.
 - History: the stream cell can be queried as of a particular block.  Each cell
   contains the position of to the prior value, namely information to query the
@@ -67,11 +69,12 @@ skipped.  It requires client-side persistent storage of the "last seen" cell
 ### Forward Iteration and Interchain Queries
 
 For forward iteration via an Interchain Query without prohibitively costly
-polling, there must be enforcement of two criteria specified by the Querying
+polling, there must be enforcement of three criteria specified by the Querying
 chain:
    1. Query height must be later than a specified height.
    2. Query result must not match a specified value.
-
+   3. Query will time out at another specified block height or time.
+   
 These compose to ensure the returned stream cell is not the same as the latest seen result, and thus that it represents a forward evolution of the stream.
 
 At the time of this writing, the [draft Interchain Query specification](https://github.com/cosmos/ibc/pull/735)
