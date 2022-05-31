@@ -34,7 +34,7 @@
     "@endo/marshal": "^0.6.7",
     "expose-gc": "^1.0.0",
     "n-readlines": "^1.0.1",
-    "node-lmdb": "^0.9.5",
+    "lmdb": "^2.4.5",
     "yargs": "^16.1.0"
   },
   "devDependencies": {

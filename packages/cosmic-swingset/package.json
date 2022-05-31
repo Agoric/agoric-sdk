@@ -41,7 +41,7 @@
     "anylogger": "^0.21.0",
     "deterministic-json": "^1.0.5",
     "import-meta-resolve": "^1.1.1",
-    "node-lmdb": "^0.9.5",
+    "lmdb": "^2.4.5",
     "tmp": "^0.2.1"
   },
   "devDependencies": {

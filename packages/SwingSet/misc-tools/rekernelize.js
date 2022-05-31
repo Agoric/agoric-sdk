@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import '@endo/init/pre-bundle-source.js';
-import 'node-lmdb';
+import 'lmdb';
 import '@endo/init';
 
 import fs from 'fs';

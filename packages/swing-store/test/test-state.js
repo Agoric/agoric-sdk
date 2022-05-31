@@ -2,7 +2,7 @@
 
 // import LMDB before SES lockdown, as workaround for
 // https://github.com/Agoric/SES-shim/issues/308
-import 'node-lmdb';
+import 'lmdb';
 import '@endo/init';
 
 import tmp from 'tmp';

@@ -1,0 +1,181 @@
+diff --git a/node_modules/ordered-binary/index.js b/node_modules/ordered-binary/index.js
+index c01d730..1202edf 100644
+--- a/node_modules/ordered-binary/index.js
++++ b/node_modules/ordered-binary/index.js
+@@ -131,15 +131,14 @@ export function writeKey(key, target, position, inSequence) {
+ 	return position
+ }
+ 
+-let position
+ export function readKey(buffer, start, end, inSequence) {
+ 	buffer[end] = 0 // make sure it is null terminated
+-	position = start
+-	let controlByte = buffer[position]
++	const ref = { position: start }
++	let controlByte = buffer[ref.position]
+ 	let value
+ 	if (controlByte < 24) {
+ 	if (controlByte < 8) {
+-		position++
++		ref.position++
+ 		if (controlByte == 6) {
+ 			value = false
+ 		} else if (controlByte == 7) {
+@@ -147,23 +146,23 @@ export function readKey(buffer, start, end, inSequence) {
+ 		} else if (controlByte == 0) {
+ 			value = null
+ 		} else if (controlByte == 2) {
+-			value = Symbol.for(readString(buffer))
++			value = Symbol.for(readString(buffer, ref))
+ 		} else
+ 			return Uint8Array.prototype.slice.call(buffer, start, end)
+ 	} else {
+ 		let dataView = buffer.dataView || (buffer.dataView = new DataView(buffer.buffer, buffer.byteOffset, ((buffer.byteLength + 3) >> 2) << 2))
+-		let highInt = dataView.getInt32(position) << 4
+-		let size = end - position
++		let highInt = dataView.getInt32(ref.position) << 4
++		let size = end - ref.position
+ 		let lowInt
+ 		if (size > 4) {
+-			lowInt = dataView.getInt32(position + 4)
++			lowInt = dataView.getInt32(ref.position + 4)
+ 			highInt |= lowInt >>> 28
+ 			if (size <= 6) { // clear the last bits
+ 				lowInt &= -0x1000
+ 			}
+ 			lowInt = lowInt << 4
+ 			if (size > 8) {
+-				lowInt = lowInt | buffer[position + 8] >> 4
++				lowInt = lowInt | buffer[ref.position + 8] >> 4
+ 			}
+ 		} else
+ 			lowInt = 0
+@@ -175,30 +174,30 @@ export function readKey(buffer, start, end, inSequence) {
+ 		int32Array[1] = highInt
+ 		int32Array[0] = lowInt
+ 		value = float64Array[0]
+-		position += 9
++		ref.position += 9
+ 	}
+ 	} else {
+ 	if (controlByte == 27) {
+-		position++
++		ref.position++
+ 	}
+-	value = readString(buffer)
+-	/*let strStart = position
++	value = readString(buffer, ref)
++	/*let strStart = ref.position
+ 	let strEnd = end
+-	for (; position < end; position++) {
+-		if (buffer[position] == 0) {
++	for (; ref.position < end; ref.position++) {
++		if (buffer[ref.position] == 0) {
+ 		break
+ 		}
+ 	}
+-	value = buffer.toString('utf8', strStart, position++)*/
++	value = buffer.toString('utf8', strStart, ref.position++)*/
+ 	}
+-	while (position < end) {
+-		if (buffer[position] === 0)
+-			position++
++	while (ref.position < end) {
++		if (buffer[ref.position] === 0)
++		ref.position++
+ 		if (inSequence) {
+-			encoder.position = position
++			encoder.position = ref.position
+ 			return value
+ 		}
+-		let nextValue = readKey(buffer, position, end, true)
++		let nextValue = readKey(buffer, ref.position, end, true)
+ 		if (value instanceof Array) {
+ 			value.push(nextValue)
+ 		} else
+@@ -220,55 +219,58 @@ export const toBufferKey = (key) => {
+ export const fromBufferKey = (sourceBuffer) => {
+ 	return readKey(sourceBuffer, 0, sourceBuffer.length - 1)
+ }
+-const fromCharCode = String.fromCharCode
+-function makeStringBuilder() {
+-	let stringBuildCode = '(source) => {'
++function makeReadString(env) {
++	const { fromCharCode } = env
++	let stringBuildCode = `"use strict";`
+ 	let previous = []
+ 	for (let i = 0; i < 0x30; i++) {
+ 		let v = fromCharCode((i & 0xf) + 97) + fromCharCode((i >> 4) + 97)
+ 		stringBuildCode += `
+-		let ${v} = source[position++]
++		let ${v} = source[ref.position++]
+ 		if (${v} === 0)
+ 		return fromCharCode(${previous})
+ 		else if (${v} >= 0x80)
+-		${v} = finishUtf8(${v}, source)
++		${v} = finishUtf8(${v}, source, ref)
+ 		`
+ 		previous.push(v)
+-		if (i == 1000000) // this just exists to prevent rollup from doing dead code elimination on finishUtf8
+-			finishUtf8()
+ 	}
+-	stringBuildCode += `return fromCharCode(${previous}) + readString(source)}`
+-	return stringBuildCode
++	stringBuildCode += `return fromCharCode(${previous}) + readString(source, ref)`
++	return new Function('env', `const { fromCharCode, finishUtf8 } = env
++		const readString = (source, ref) => {
++			${stringBuildCode}
++		}
++		return readString
++	`)(env);
+ }
+ 
+ let pendingSurrogate
+-function finishUtf8(byte1, src) {
++function finishUtf8(byte1, src, ref) {
+ 	if ((byte1 & 0xe0) === 0xc0) {
+ 		// 2 bytes
+-		const byte2 = src[position++] & 0x3f
++		const byte2 = src[ref.position++] & 0x3f
+ 		return ((byte1 & 0x1f) << 6) | byte2
+ 	} else if ((byte1 & 0xf0) === 0xe0) {
+ 		// 3 bytes
+-		const byte2 = src[position++] & 0x3f
+-		const byte3 = src[position++] & 0x3f
++		const byte2 = src[ref.position++] & 0x3f
++		const byte3 = src[ref.position++] & 0x3f
+ 		return ((byte1 & 0x1f) << 12) | (byte2 << 6) | byte3
+ 	} else if ((byte1 & 0xf8) === 0xf0) {
+ 		// 4 bytes
+ 		if (pendingSurrogate) {
+ 		byte1 = pendingSurrogate
+ 		pendingSurrogate = null
+-		position += 3
++		ref.position += 3
+ 		return byte1
+ 		}
+-		const byte2 = src[position++] & 0x3f
+-		const byte3 = src[position++] & 0x3f
+-		const byte4 = src[position++] & 0x3f
++		const byte2 = src[ref.position++] & 0x3f
++		const byte3 = src[ref.position++] & 0x3f
++		const byte4 = src[ref.position++] & 0x3f
+ 		let unit = ((byte1 & 0x07) << 0x12) | (byte2 << 0x0c) | (byte3 << 0x06) | byte4
+ 		if (unit > 0xffff) {
+ 		unit -= 0x10000
+ 		unit = 0xdc00 | (unit & 0x3ff)
+ 		pendingSurrogate = ((unit >>> 10) & 0x3ff) | 0xd800
+-		position -= 4 // reset so we can return the next part of the surrogate pair
++		ref.position -= 4 // reset so we can return the next part of the surrogate pair
+ 		}
+ 		return unit
+ 	} else {
+@@ -276,7 +278,7 @@ function finishUtf8(byte1, src) {
+ 	}
+ }
+ 
+-const readString = eval(makeStringBuilder())
++const readString = makeReadString({fromCharCode: String.fromCharCode, finishUtf8});
+ 
+ export function compareKeys(a, b) {
+ 	// compare with type consistency that matches binary comparison

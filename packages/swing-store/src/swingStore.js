@@ -4,7 +4,7 @@ import os from 'os';
 import path from 'path';
 import { tmpName } from 'tmp';
 
-import lmdb from 'node-lmdb';
+import { open as lmdbOpen, ABORT as lmdbAbort } from 'lmdb';
 import sqlite3 from 'better-sqlite3';
 
 import { assert } from '@agoric/assert';
@@ -111,7 +111,11 @@ export function makeSnapStoreIO() {
  * @returns {SwingAndSnapStore}
  */
 function makeSwingStore(dirPath, forceReset, options) {
-  let txn = null;
+  /** @type {((result?: typeof import("lmdb").ABORT) => void) | null} */
+  let txnFinish = null;
+
+  /** @type {Promise<typeof import("lmdb").ABORT | void> | null} */
+  let txnDone = null;
 
   if (forceReset) {
     try {
@@ -150,15 +154,10 @@ function makeSwingStore(dirPath, forceReset, options) {
     traceOutput = null;
   }
 
-  let lmdbEnv = new lmdb.Env();
-
-  // Use the new mapSize, persisting if it's bigger than before and there's a
-  // write txn commit.
-  // http://www.lmdb.tech/doc/group__mdb.html#gaa2506ec8dab3d969b0e609cd82e619e5
-  lmdbEnv.resize(mapSize);
-
-  lmdbEnv.open({
+  /** @type {import('lmdb').RootDatabase<string, string> | null} */
+  let db = lmdbOpen({
     path: dirPath,
+    // TODO: mapSize seem to be ignored / treated as informative by lmbd-js
     mapSize,
     // Turn off useWritemap on the Mac.  The useWritemap option is currently
     // required for LMDB to function correctly on Linux running under WSL, but
@@ -166,18 +165,28 @@ function makeSwingStore(dirPath, forceReset, options) {
     // runtime to distinguish that species of Linux from the others.  For now
     // we're running our benchmarks on Mac, so this will do for the time being.
     useWritemap: os.platform() !== 'darwin',
-  });
-
-  let dbi = lmdbEnv.openDbi({
     name: 'swingset-kernel-state',
-    create: true,
+    // TODO: lmdb-js is using a UTF-8 encoding for strings (both keys and values)
+    // The biggest impact is on key sizes. A key with unicode points in the range
+    // 0x0800 - 0xFFFF ends up encoded as 3 bytes where for UTF-16 they'd be
+    // encoded as 2 bytes. lmbd-js also bumps the maxKeySize to 1791 bytes,
+    // making this a non-issue for now.
+    encoding: 'string',
   });
 
   function ensureTxn() {
-    if (!txn) {
+    assert(db);
+    if (!txnDone && !txnFinish) {
       trace('begin-tx');
-      txn = lmdbEnv.beginTxn();
+      txnDone = db.transactionSync(
+        () =>
+          new Promise(resolve => {
+            txnFinish = resolve;
+          }),
+      );
     }
+    assert(txnDone && txnFinish);
+    return db;
   }
 
   function diskUsage() {
@@ -198,9 +207,8 @@ function makeSwingStore(dirPath, forceReset, options) {
    */
   function get(key) {
     assert.typeof(key, 'string');
-    ensureTxn();
-    let result = txn.getString(dbi, key);
-    if (result === null) {
+    let result = ensureTxn().get(key);
+    if (result == null) {
       result = undefined;
     }
     return result;
@@ -224,14 +232,18 @@ function makeSwingStore(dirPath, forceReset, options) {
     assert.typeof(start, 'string');
     assert.typeof(end, 'string');
 
-    ensureTxn();
-    const cursor = new lmdb.Cursor(txn, dbi);
-    let key = start === '' ? cursor.goToFirst() : cursor.goToRange(start);
-    while (key && (end === '' || key < end)) {
-      yield key;
-      key = cursor.goToNext();
+    /** @type {import("lmdb").RangeOptions} */
+    const rangeOptions = {};
+    if (start) {
+      rangeOptions.start = start;
     }
-    cursor.close();
+    if (end) {
+      rangeOptions.end = end;
+    }
+
+    const keys = ensureTxn().getKeys(rangeOptions);
+
+    yield* keys;
   }
 
   /**
@@ -260,8 +272,7 @@ function makeSwingStore(dirPath, forceReset, options) {
   function set(key, value) {
     assert.typeof(key, 'string');
     assert.typeof(value, 'string');
-    ensureTxn();
-    txn.putString(dbi, key, value);
+    ensureTxn().put(key, value);
     trace('set', key, value);
   }
 
@@ -276,8 +287,7 @@ function makeSwingStore(dirPath, forceReset, options) {
   function del(key) {
     assert.typeof(key, 'string');
     if (has(key)) {
-      ensureTxn();
-      txn.del(dbi, key);
+      ensureTxn().remove(key);
       trace('del', key);
     }
   }
@@ -299,10 +309,16 @@ function makeSwingStore(dirPath, forceReset, options) {
    * Commit unsaved changes.
    */
   async function commit() {
-    if (txn) {
-      txn.commit();
-      trace(`commit-tx`);
-      txn = null;
+    assert(db);
+    if (txnFinish) {
+      txnFinish();
+      try {
+        await txnDone;
+        trace(`commit-tx`);
+      } finally {
+        txnDone = null;
+        txnFinish = null;
+      }
     }
 
     // NOTE: The kvstore (which used to contain vatA -> snapshot1, and
@@ -318,15 +334,19 @@ function makeSwingStore(dirPath, forceReset, options) {
    * commit() first).
    */
   async function close() {
-    if (txn) {
-      txn.abort();
-      trace(`abort-tx`);
-      txn = null;
+    assert(db);
+    if (txnFinish) {
+      txnFinish(lmdbAbort);
+      try {
+        await txnDone;
+        trace(`abort-tx`);
+      } finally {
+        txnDone = null;
+        txnFinish = null;
+      }
     }
-    dbi.close();
-    dbi = null;
-    lmdbEnv.close();
-    lmdbEnv = null;
+    await db.close();
+    db = null;
     stopTrace();
   }
 

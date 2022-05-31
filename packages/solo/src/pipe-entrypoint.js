@@ -1,7 +1,7 @@
 /* global process */
 // @ts-check
 import '@endo/init/pre-bundle-source.js';
-import 'node-lmdb';
+import 'lmdb';
 import '@endo/init';
 
 import { parse, stringify } from '@endo/marshal';
