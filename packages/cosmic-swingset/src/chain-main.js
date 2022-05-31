@@ -12,6 +12,7 @@ import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import makeBlockManager from './block-manager.js';
 import { getTelemetryProviders } from './kernel-stats.js';
+import * as STORAGE_PATH from './chain-storage-paths.js';
 
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
@@ -295,7 +296,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     // this object is used to store the mailbox state.
     const mailboxStorage = makeChainStorage(
       msg => chainSend(portNums.storage, msg),
-      'mailbox.',
+      STORAGE_PATH.MAILBOX + '.',
       {
         fromChainShape: data => {
           const ack = toNumber(data.ack);
@@ -312,7 +313,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     function setActivityhash(activityhash) {
       const msg = stringify({
         method: 'set',
-        key: 'activityhash',
+        key: STORAGE_PATH.ACTIVITYHASH,
         value: activityhash,
       });
       chainSend(portNums.storage, msg);

@@ -19,6 +19,16 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 )
 
+// Top-level paths for chain storage should remain synchronized with
+// packages/cosmic-swingset/src/chain-storage-paths.js
+const (
+	StoragePathActivityhash = "activityhash"
+	StoragePathBeansOwing   = "beansOwing"
+	StoragePathEgress       = "egress"
+	StoragePathMailbox      = "mailbox"
+	StoragePathCustom       = "published"
+)
+
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
 	storeKey   sdk.StoreKey
@@ -140,7 +150,7 @@ func (k Keeper) GetBeansPerUnit(ctx sdk.Context) map[string]sdk.Uint {
 }
 
 func getBeansOwingPathForAddress(addr sdk.AccAddress) string {
-	return "beansOwing." + addr.String()
+	return StoragePathBeansOwing + "." + addr.String()
 }
 
 // GetBeansOwing returns the number of beans that the given address owes to
@@ -205,7 +215,7 @@ func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) s
 
 // GetEgress gets the entire egress struct for a peer
 func (k Keeper) GetEgress(ctx sdk.Context, addr sdk.AccAddress) types.Egress {
-	path := "egress." + addr.String()
+	path := StoragePathEgress + "." + addr.String()
 	value := k.GetStorage(ctx, path)
 	if value == "" {
 		return types.Egress{}
@@ -222,7 +232,7 @@ func (k Keeper) GetEgress(ctx sdk.Context, addr sdk.AccAddress) types.Egress {
 
 // SetEgress sets the egress struct for a peer, and ensures its account exists
 func (k Keeper) SetEgress(ctx sdk.Context, egress *types.Egress) error {
-	path := "egress." + egress.Peer.String()
+	path := StoragePathEgress + "." + egress.Peer.String()
 
 	bz, err := json.Marshal(egress)
 	if err != nil {
@@ -374,12 +384,12 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 // GetMailbox gets the entire mailbox struct for a peer
 func (k Keeper) GetMailbox(ctx sdk.Context, peer string) string {
-	path := "mailbox." + peer
+	path := StoragePathMailbox + "." + peer
 	return k.GetStorage(ctx, path)
 }
 
 // SetMailbox sets the entire mailbox struct for a peer
 func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox string) {
-	path := "mailbox." + peer
+	path := StoragePathMailbox + "." + peer
 	k.SetStorage(ctx, path, mailbox)
 }
