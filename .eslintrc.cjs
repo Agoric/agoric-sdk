@@ -44,6 +44,7 @@ module.exports = {
     'coverage/**',
     '**/output/**',
     'bundles/**',
+    'bundle-*',
     'dist/**',
     'examples/**',
     'test262/**',
