@@ -73,9 +73,9 @@ export const makeAdminWebSocketConnector = component => {
 
         ws = new WebSocket(url.href);
         const timeout = window.setTimeout(() => {
-           ws.close();
+          ws.close();
         }, CONNECTION_TIMEOUT_MS);
-        
+
         ws.addEventListener('open', ev => {
           window.clearTimeout(timeout);
           return onAdminOpen(ev);

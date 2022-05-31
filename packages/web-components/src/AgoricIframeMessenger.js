@@ -53,8 +53,8 @@ export const makeAgoricIframeMessenger = (registerThis = _that => {}) =>
       // Detect the content window of the iframe to verify message sources.
       this._contentWindow = iframe.contentWindow;
       this._timeout = window.setTimeout(() => {
-        const ev = new CustomEvent('error', { 
-          detail: { error: new Error('connection timeout')}, 
+        const ev = new CustomEvent('error', {
+          detail: { error: new Error('connection timeout') },
         });
         this.dispatchEvent(ev);
       }, CONNECTION_TIMEOUT_MS);
