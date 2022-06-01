@@ -218,6 +218,12 @@ const poolBehavior = {
       'Liquidity',
       liquidityBrand,
     );
+    if (AmountMath.isEmpty(liquidityIn)) {
+      // prevent divide-by-zero. If the caller has tokens, the pool is not empty
+      userSeat.exit();
+      return 'request to remove zero liquidity';
+    }
+
     const liquidityValueIn = liquidityIn.value;
     assert(isNatValue(liquidityValueIn), 'User Liquidity');
     const centralTokenAmountOut = AmountMath.make(

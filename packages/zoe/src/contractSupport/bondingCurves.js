@@ -1,10 +1,10 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import { natSafeMath } from './safeMath.js';
 
 const { subtract, add, multiply, floorDivide } = natSafeMath;
+const { details: X } = assert;
 
 const BASIS_POINTS = 10000n; // TODO change to 10_000n once tooling copes.
 
@@ -103,12 +103,12 @@ export const getOutputPrice = (
   return add(floorDivide(numerator, denominator), 1n);
 };
 
-// Calculate how many liquidity tokens we should be minting to send back to the
-// user when adding liquidity. We provide new liquidity equal to the existing
-// liquidity multiplied by the ratio of new central tokens to central tokens
-// already held. If the current supply is zero, return the inputValue as the
-// initial liquidity to mint is arbitrary.
 /**
+ * Calculate how many liquidity tokens we should be minting to send back to the
+ * user when adding liquidity. We provide new liquidity equal to the existing
+ * liquidity multiplied by the ratio of new central tokens to central tokens
+ * already held. If the current supply is zero, return the inputValue as the
+ * initial liquidity to mint is arbitrary.
  *
  * @param {bigint} liqTokenSupply
  * @param {bigint} inputValue

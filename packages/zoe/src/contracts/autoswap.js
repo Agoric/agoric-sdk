@@ -183,7 +183,9 @@ const start = async zcf => {
   const addLiquidity = (seat, secondaryAmount) => {
     const userAllocation = seat.getCurrentAllocation();
     const centralPool = getPoolAmount(brands.Central).value;
+    assert(!AmountMath.isEmpty(userAllocation.Central), 'Pool is empty');
     const centralIn = userAllocation.Central.value;
+
     const liquidityValueOut = calcLiqValueToMint(
       liqTokenSupply,
       centralIn,
@@ -273,9 +275,12 @@ const start = async zcf => {
       want: { Central: null, Secondary: null },
       give: { Liquidity: null },
     });
+
     // TODO (hibbert) should we burn tokens?
     const userAllocation = removeLiqSeat.getCurrentAllocation();
-    const liquidityValueIn = userAllocation.Liquidity.value;
+    const liquidityIn = userAllocation.Liquidity;
+    assert(!AmountMath.isEmpty(liquidityIn), 'Pool is empty');
+    const liquidityValueIn = liquidityIn.value;
     assert(isNatValue(liquidityValueIn));
 
     const newUserCentralAmount = AmountMath.make(
