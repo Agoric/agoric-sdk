@@ -22,9 +22,17 @@ const makeMakeAddLiquidityInvitation = (zcf, getPool) => {
         Secondary: null,
       },
     });
+
     // Get the brand of the secondary token so we can identify the liquidity pool.
     const secondaryBrand = seat.getProposal().give.Secondary.brand;
+
     const pool = getPool(secondaryBrand);
+    const liquidityBrand = pool.getLiquidityIssuer().getBrand();
+    assert(
+      seat.getProposal().want.Liquidity.brand === liquidityBrand,
+      `liquidity brand must be ${liquidityBrand}`,
+    );
+
     return pool.addLiquidity(seat);
   };
 

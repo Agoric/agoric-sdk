@@ -238,8 +238,6 @@ const poolBehavior = {
       ),
     );
 
-    state.liqTokenSupply -= liquidityValueIn;
-
     poolSeat.incrementBy(
       userSeat.decrementBy(harden({ Liquidity: liquidityIn })),
     );
@@ -252,6 +250,7 @@ const poolBehavior = {
       ),
     );
     state.zcf.reallocate(userSeat, poolSeat);
+    state.liqTokenSupply -= liquidityValueIn;
 
     userSeat.exit();
     updateUpdaterState(state.updater, facets.pool);
