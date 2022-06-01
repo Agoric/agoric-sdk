@@ -262,6 +262,45 @@ test('vat upgrade - xsnap', async t => {
   return testUpgrade(t, 'xs-worker');
 });
 
+test('vat upgrade - omit vatParameters', async t => {
+  const config = {
+    includeDevDependencies: true, // for vat-data
+    defaultManagerType: 'xs-worker',
+    bootstrap: 'bootstrap',
+    defaultReapInterval: 'never',
+    vats: {
+      bootstrap: { sourceSpec: bfile('bootstrap-upgrade.js') },
+    },
+    bundles: {
+      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
+      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
+    },
+  };
+
+  const hostStorage = provideHostStorage();
+  await initializeSwingset(config, [], hostStorage);
+  const c = await makeSwingsetController(hostStorage);
+  c.pinVatRoot('bootstrap');
+  await c.run();
+
+  const run = async (name, args = []) => {
+    assert(Array.isArray(args));
+    const kpid = c.queueToVatRoot('bootstrap', name, args);
+    await c.run();
+    const status = c.kpStatus(kpid);
+    const capdata = c.kpResolution(kpid);
+    return [status, capdata];
+  };
+
+  // create initial version
+  const [status, capdata] = await run('doUpgradeWithoutVatParameters', []);
+  t.is(status, 'fulfilled');
+  t.deepEqual(JSON.parse(capdata.body), [
+    { '@qclass': 'undefined' },
+    { '@qclass': 'undefined' },
+  ]);
+});
+
 test('failed upgrade - lost kind', async t => {
   const config = {
     includeDevDependencies: true, // for vat-data
@@ -307,4 +346,41 @@ test('failed upgrade - lost kind', async t => {
   t.regex(e.message, /vat-upgrade failure/);
   // TODO: who should see the details of what v2 did wrong? calling
   // vat? only the console?
+});
+
+test('failed upgrade - unknown options', async t => {
+  const config = {
+    includeDevDependencies: true, // for vat-data
+    defaultManagerType: 'xs-worker',
+    bootstrap: 'bootstrap',
+    defaultReapInterval: 'never',
+    vats: {
+      bootstrap: { sourceSpec: bfile('bootstrap-upgrade.js') },
+    },
+    bundles: {
+      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
+      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
+    },
+  };
+
+  const hostStorage = provideHostStorage();
+  await initializeSwingset(config, [], hostStorage);
+  const c = await makeSwingsetController(hostStorage);
+  c.pinVatRoot('bootstrap');
+  await c.run();
+
+  const run = async (name, args = []) => {
+    assert(Array.isArray(args));
+    const kpid = c.queueToVatRoot('bootstrap', name, args);
+    await c.run();
+    const status = c.kpStatus(kpid);
+    const capdata = c.kpResolution(kpid);
+    return [status, capdata];
+  };
+
+  const [status, capdata] = await run('doUpgradeWithBadOption', []);
+  t.is(status, 'rejected');
+  const e = parse(capdata.body);
+  t.truthy(e instanceof Error);
+  t.regex(e.message, /upgrade\(\) received unknown options: bad/);
 });

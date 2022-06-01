@@ -155,12 +155,12 @@ export const makeDoublePool = (
     const inpoolPrices = pricesForStatedOutput(
       amountIn,
       inAllocation,
-      interimOutpoolPrices.swapperGets,
+      interimOutpoolPrices.swapperGives,
       protocolFeeRatio,
       poolFeeRatioAmountIn,
     );
     const finalOutpoolPrices = pricesForStatedInput(
-      inpoolPrices.swapperGives,
+      inpoolPrices.swapperGets,
       outAllocation,
       amountOut,
       protocolFeeRatio,
