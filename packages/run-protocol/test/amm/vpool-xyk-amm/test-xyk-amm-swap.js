@@ -560,6 +560,19 @@ test('amm doubleSwap', async t => {
     In: bobMoolaPayment,
   });
 
+  const prices = await E(amm.ammPublicFacet).getOutputPrice(
+    AmountMath.makeEmpty(moolaR.brand),
+    simoleans(4000n),
+  );
+  t.deepEqual(
+    prices,
+    {
+      amountIn: moola(4025n),
+      amountOut: simoleans(4000n),
+    },
+    'near parity',
+  );
+
   const bobSeat2 = await E(zoe).offer(
     bobInvitation2,
     bobMoolaForSimsProposal,

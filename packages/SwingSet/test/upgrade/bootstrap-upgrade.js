@@ -79,7 +79,7 @@ export const buildRootObject = () => {
     upgradeV2: async () => {
       const bcap = await E(vatAdmin).getNamedBundleCap('ulrik2');
       const vatParameters = { youAre: 'v2', marker };
-      await E(ulrikAdmin).upgrade(bcap, vatParameters);
+      await E(ulrikAdmin).upgrade(bcap, { vatParameters });
       const version = await E(ulrikRoot).getVersion();
       const parameters = await E(ulrikRoot).getParameters();
       const m2 = await E(ulrikRoot).getPresence();
@@ -149,7 +149,35 @@ export const buildRootObject = () => {
     upgradeV2WhichLosesKind: async () => {
       const bcap = await E(vatAdmin).getNamedBundleCap('ulrik2');
       const vatParameters = { youAre: 'v2', marker };
-      await E(ulrikAdmin).upgrade(bcap, vatParameters); // throws
+      await E(ulrikAdmin).upgrade(bcap, { vatParameters }); // throws
+    },
+
+    doUpgradeWithBadOption: async () => {
+      const bcap1 = await E(vatAdmin).getNamedBundleCap('ulrik1');
+      const options1 = { vatParameters: { youAre: 'v1', marker } };
+      const res = await E(vatAdmin).createVat(bcap1, options1);
+      ulrikAdmin = res.adminNode;
+
+      const bcap2 = await E(vatAdmin).getNamedBundleCap('ulrik2');
+      const options2 = {
+        vatParameters: { youAre: 'v2', marker },
+        bad: 'unknown option',
+      };
+      await E(ulrikAdmin).upgrade(bcap2, options2); // throws
+    },
+
+    doUpgradeWithoutVatParameters: async () => {
+      const bcap1 = await E(vatAdmin).getNamedBundleCap('ulrik1');
+      const res = await E(vatAdmin).createVat(bcap1);
+      ulrikAdmin = res.adminNode;
+      const root = res.root;
+      const paramA = await E(root).getParameters();
+
+      const bcap2 = await E(vatAdmin).getNamedBundleCap('ulrik2');
+      await E(ulrikAdmin).upgrade(bcap2); // no options
+      const paramB = await E(root).getParameters();
+
+      return [paramA, paramB];
     },
   });
 };
