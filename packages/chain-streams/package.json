@@ -1,0 +1,59 @@
+{
+  "name": "@agoric/streams",
+  "version": "0.1.0",
+  "description": "Agoric's Streams follower library",
+  "type": "module",
+  "main": "src/main.js",
+  "repository": "https://github.com/Agoric/agoric-sdk",
+  "scripts": {
+    "build": "exit 0",
+    "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test:xs": "exit 0",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json",
+    "lint:eslint": "eslint --ext .js,.ts ."
+  },
+  "keywords": [],
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agoric/notifier": "^0.4.0",
+    "@agoric/spawner": "^0.5.1",
+    "@cosmjs/encoding": "^0.28.4",
+    "@cosmjs/proto-signing": "^0.28.4",
+    "@cosmjs/stargate": "^0.28.4",
+    "@cosmjs/tendermint-rpc": "^0.28.4",
+    "@endo/far": "^0.2.3",
+    "@endo/init": "^0.5.41",
+    "@endo/lockdown": "^0.1.13",
+    "@endo/marshal": "^0.6.7",
+    "@endo/promise-kit": "^0.2.41",
+    "node-fetch": "^2.6.0"
+  },
+  "devDependencies": {
+    "ava": "^3.12.1",
+    "c8": "^7.7.2",
+    "express": "^4.17.1",
+    "ws": "^7.2.0",
+    "@endo/ses-ava": "^0.2.25"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@agoric"
+    ]
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=14.15.0"
+  },
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "timeout": "20m"
+  }
+}
