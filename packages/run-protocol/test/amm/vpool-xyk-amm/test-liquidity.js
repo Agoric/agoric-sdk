@@ -5,6 +5,7 @@ import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { setupAmmServices } from './setup.js';
 import { unsafeMakeBundleCache } from '../../bundleTool.js';
@@ -374,7 +375,7 @@ test('MinInitialPoolLiquidity to reserve', async t => {
 });
 
 /// /#5293.   AddLiquidity with wrong token in want increments liqTokenSupply and then breaks
-test.only('add wrong liquidity', async t => {
+test('add wrong liquidity', async t => {
   const centralLiquidityValue = 1_500_000_000n;
   const secondaryLiquidityValue = 300_000_000n;
 
@@ -521,4 +522,89 @@ test.only('add wrong liquidity', async t => {
     }),
   );
   await tracker.assertChange(poolLiquidity2);
+});
+
+test('amm remove zero liquidity', async t => {
+  const centralLiquidityValue = 1_500_000_000n;
+  const secondaryLiquidityValue = 300_000_000n;
+
+  // Set up central token
+  const centralR = makeIssuerKit('central');
+  const moolaR = makeIssuerKit('moola');
+  const centralTokens = value => AmountMath.make(centralR.brand, value);
+  const makeMoola = value => AmountMath.make(moolaR.brand, value);
+  const moola = value => AmountMath.make(moolaR.brand, value);
+  const central = value => AmountMath.make(centralR.brand, value);
+
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+  // This timer is only used to build quotes. Let's make it non-zero
+  const timer = buildManualTimer(console.log, 30n);
+
+  const { zoe, amm } = await setupAmmServices(
+    t,
+    electorateTerms,
+    centralR,
+    timer,
+  );
+
+  const liquidityIssuer = await E(amm.ammPublicFacet).addIssuer(
+    moolaR.issuer,
+    'Moola',
+  );
+  const liquidityBrand = await E(liquidityIssuer).getBrand();
+  const addPoolInvitation = await E(amm.ammPublicFacet).addPoolInvitation();
+
+  const fundPoolProposal = harden({
+    give: {
+      Secondary: moola(secondaryLiquidityValue),
+      Central: central(centralLiquidityValue),
+    },
+    want: { Liquidity: AmountMath.make(liquidityBrand, 1000n) },
+  });
+  const payments = {
+    Secondary: moolaR.mint.mintPayment(moola(secondaryLiquidityValue)),
+    Central: centralR.mint.mintPayment(central(centralLiquidityValue)),
+  };
+
+  const addLiquiditySeat = await E(zoe).offer(
+    addPoolInvitation,
+    fundPoolProposal,
+    payments,
+  );
+  t.is(
+    await E(addLiquiditySeat).getOfferResult(),
+    'Added liquidity.',
+    `Added Moola and Central Liquidity`,
+  );
+
+  const emptyLiquidity = AmountMath.makeEmpty(liquidityBrand);
+  const liqPurse = E(liquidityIssuer).makeEmptyPurse();
+  const emptyPayment = await E(liqPurse).withdraw(emptyLiquidity);
+  const paymentRecord = {
+    Liquidity: emptyPayment,
+  };
+
+  const removeLiquidityInvitation = E(
+    amm.ammPublicFacet,
+  ).makeRemoveLiquidityInvitation();
+
+  const proposal = harden({
+    give: { Liquidity: emptyLiquidity },
+    want: {
+      Secondary: makeMoola(0n),
+      Central: centralTokens(0n),
+    },
+  });
+
+  const removeLiquiditySeat = await E(zoe).offer(
+    removeLiquidityInvitation,
+    proposal,
+    harden(paymentRecord),
+  );
+
+  t.is(
+    await E(removeLiquiditySeat).getOfferResult(),
+    'request to remove zero liquidity',
+    `No liquidity removed`,
+  );
 });
