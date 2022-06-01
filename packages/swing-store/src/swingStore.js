@@ -1,6 +1,5 @@
 // @ts-check
 import fs from 'fs';
-import os from 'os';
 import path from 'path';
 import { tmpName } from 'tmp';
 
@@ -159,12 +158,12 @@ function makeSwingStore(dirPath, forceReset, options) {
     path: dirPath,
     // TODO: mapSize seem to be ignored / treated as informative by lmbd-js
     mapSize,
-    // Turn off useWritemap on the Mac.  The useWritemap option is currently
-    // required for LMDB to function correctly on Linux running under WSL, but
-    // we don't yet have a convenient recipe to probe our environment at
-    // runtime to distinguish that species of Linux from the others.  For now
-    // we're running our benchmarks on Mac, so this will do for the time being.
-    useWritemap: os.platform() !== 'darwin',
+    // Turn off useWritemap. It can theoretically cause corruption by stray
+    // pointers, it seems incompatible with our usage of sync transactions.
+    // While we've checked it wasn't the (sole) cause of
+    // https://github.com/Agoric/agoric-sdk/issues/5031, it is no longer
+    // necessary if using WSL2 on Windows.
+    useWritemap: false,
     name: 'swingset-kernel-state',
     // TODO: lmdb-js is using a UTF-8 encoding for strings (both keys and values)
     // The biggest impact is on key sizes. A key with unicode points in the range
