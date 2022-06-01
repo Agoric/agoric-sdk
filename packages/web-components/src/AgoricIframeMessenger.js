@@ -4,6 +4,8 @@ import { LitElement, html } from 'lit';
 
 import { assert } from '@agoric/assert';
 
+const CONNECTION_TIMEOUT_MS = 5000;
+
 export const makeAgoricIframeMessenger = (registerThis = _that => {}) =>
   class AgoricIframeMessenger extends LitElement {
     static get properties() {
@@ -15,6 +17,7 @@ export const makeAgoricIframeMessenger = (registerThis = _that => {}) =>
       this.src = '';
       this._contentWindow = null;
       this._origin = null;
+      this._timeout = undefined;
 
       // Need to bind since these aren't declarative event handlers.
       this.send = this.send.bind(this);
@@ -49,6 +52,12 @@ export const makeAgoricIframeMessenger = (registerThis = _that => {}) =>
       assert(iframe);
       // Detect the content window of the iframe to verify message sources.
       this._contentWindow = iframe.contentWindow;
+      this._timeout = window.setTimeout(() => {
+        const ev = new CustomEvent('error', {
+          detail: { error: new Error('connection timeout') },
+        });
+        this.dispatchEvent(ev);
+      }, CONNECTION_TIMEOUT_MS);
     }
 
     _onLoad(event) {
@@ -62,6 +71,10 @@ export const makeAgoricIframeMessenger = (registerThis = _that => {}) =>
       // console.log('iframe message', event);
       if (event.source !== this._contentWindow) {
         return;
+      }
+      if (this._timeout) {
+        window.clearTimeout(this._timeout);
+        this._timeout = undefined;
       }
       event.preventDefault();
 
