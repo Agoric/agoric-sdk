@@ -608,3 +608,62 @@ test('amm remove zero liquidity', async t => {
     `No liquidity removed`,
   );
 });
+
+test('amm bad add liquidity offer', async t => {
+  const centralLiquidityValue = 1_500_000_000n;
+  const secondaryLiquidityValue = 300_000_000n;
+
+  // Set up central token
+  const centralR = makeIssuerKit('central');
+  const moolaR = makeIssuerKit('moola');
+  const sousR = makeIssuerKit('sous');
+  const moola = value => AmountMath.make(moolaR.brand, value);
+  const sous = value => AmountMath.make(sousR.brand, value);
+
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+  // This timer is only used to build quotes. Let's make it non-zero
+  const timer = buildManualTimer(console.log, 30n);
+
+  const { zoe, amm } = await setupAmmServices(
+    t,
+    electorateTerms,
+    centralR,
+    timer,
+  );
+
+  await E(amm.ammPublicFacet).addIssuer(sousR.issuer, 'Sous');
+
+  const liquidityIssuer = await E(amm.ammPublicFacet).addIssuer(
+    moolaR.issuer,
+    'Moola',
+  );
+  const liquidityBrand = await E(liquidityIssuer).getBrand();
+  const addPoolInvitation = await E(amm.ammPublicFacet).addPoolInvitation();
+
+  const fundPoolProposal = harden({
+    give: {
+      Secondary: moola(secondaryLiquidityValue),
+      Central: sous(centralLiquidityValue),
+    },
+    want: { Liquidity: AmountMath.make(liquidityBrand, 1000n) },
+  });
+  const payments = {
+    Secondary: moolaR.mint.mintPayment(moola(secondaryLiquidityValue)),
+    Central: sousR.mint.mintPayment(sous(centralLiquidityValue)),
+  };
+
+  const addLiquiditySeat = await E(zoe).offer(
+    addPoolInvitation,
+    fundPoolProposal,
+    payments,
+  );
+  await t.throwsAsync(async () => E(addLiquiditySeat).getOfferResult(), {
+    message:
+      'Brands in left "[Alleged: sous brand]" and right "[Alleged: central brand]" should match but do not',
+  });
+
+  await t.throwsAsync(
+    async () => E(amm.ammPublicFacet).getPoolMetrics(moolaR.brand),
+    { message: '"secondaryBrand" not found: "[Alleged: moola brand]"' },
+  );
+});
