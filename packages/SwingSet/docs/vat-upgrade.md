@@ -1,5 +1,3 @@
-(NOTE: none of this is implemented yet)
-
 # Vat Upgrade
 
 Dynamic vats can be upgraded to use a new code bundle. This might be used to fix a bug, to add new functionality, or merely to delete accumulated state and reduce memory usage.
@@ -13,13 +11,15 @@ For convenience, this description will use "v1" to describe the old version of t
 Vat upgrade is triggered by an `upgrade()` message to the vat's "adminNode" (the one returned by `E(vatAdminService).createVat()`). This schedules an upgrade event on the kernel run-queue. When this event is processed, the following takes place:
 
 * the vat's current worker (if any) is shut down
+  * outstanding promises are rejected
+  * non-durable exported objects are abandoned
 * any heap snapshot for the vat is deleted
-* the vat's transcript is deleted
-* the vat's non-durable data is deleted
+* the vat's transcript is (effectively) deleted
+* (TODO) the vat's non-durable data is deleted
 * the vat's source record is updated to point at the v2 source bundle
 * a new worker is started, and loads the v2 source bundle
 * the v2 code performs its "upgrade phase"
-  * TODO: how is it informed this has started? `buildRootObject()`? or `upgrade()` or something?
+  * this is signaled with a call to `buildRootObject()`
   * the upgrade invocation gets new `vatParameters`
 * the v2 upgrade phase rewires all durable virtual object kinds, and
   reassociates objects with all export obligations
@@ -134,7 +134,7 @@ Upgrades use bundlecaps, just like the initial `createVat()` call. So the first 
 
 Once the governance object is holding the v2 bundlecap, it triggers the upgrade with `E(adminNode).upgrade(newBundlecap, options)`. This schedules the upgrade sequence (described above), and returns a Promise that resolves when the upgrade is complete. If the upgrade fails, the Promise is rejected and the old vat is reinstalled. An upgrade might fail because the new source bundle has a syntax error (preventing evaluation), or because the upgrade phase throws an exception or returns a Promise that rejects. It will also fail if the ugprade phase does not fulfill all of its obligations, such as leaving a durable Kind unattached.
 
-An important property of the `options` bag is `vatParameters`. This value is passed to the upgrade phase (how? TBD) and can be used to communicate with the upgrade-time code before any external messages have a chance to be delivered. In the Zoe ZCF vat, this is how new contract code will be delivered, so it can be executed (and can assume responsibility for v1 obligations) to completion by the time the upgrade phase finishes.
+An important property of the `options` bag is `vatParameters`. This value is passed to the upgrade phase (as the usual second argument to `buildRootObject()`) and can be used to communicate with the upgrade-time code before any external messages have a chance to be delivered. In the Zoe ZCF vat, this is how new contract code will be delivered, so it can be executed (and can assume responsibility for v1 obligations) to completion by the time the upgrade phase finishes.
 
 ## From Inside: V2 Executes the Upgrade
 
@@ -153,4 +153,4 @@ When `buildRootObject()` finishes and the upgrade phase completes successfully, 
 
 TBD: we might terminate any Durable exported objects which v2 does not reattach, or we might treat that as an error.
 
-TBD: ideally, if the v2 code experiences an error during the upgrade phase, the entire upgrade is aborted and the v1 code is reinstated.
+(TODO) If the v2 code experiences an error during the upgrade phase, the entire upgrade is aborted and the v1 code is reinstated.

@@ -43,7 +43,7 @@ export function buildRootObject() {
 
     async upgradeV2(vatParameters) {
       const bcap = await E(vatAdmin).getNamedBundleCap('testVat');
-      await E(testVatAdmin).upgrade(bcap, vatParameters);
+      await E(testVatAdmin).upgrade(bcap, { vatParameters });
       await runTests('after');
       return testLog;
     },
