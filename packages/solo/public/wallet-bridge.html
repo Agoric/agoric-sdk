@@ -111,6 +111,9 @@ command-line request to open the Agoric wallet.`);
         });
 
         ws.addEventListener('open', () => {
+          if (window.parent !== window) {
+            window.parent.postMessage({ type: 'walletBridgeOpened' }, '*');
+          }
           if (wsQueue.length) {
             console.debug('sending', wsQueue.length, 'queued messages from', origin);
           }

@@ -15,9 +15,6 @@ import { makeConnectionMachine } from './states.js';
 import { makeAdminWebSocketConnector } from './admin-websocket-connector.js';
 import { makeBridgeIframeConnector } from './bridge-iframe-connector.js';
 
-// Wait this long for the bridge before timing out.
-const CONNECTION_TIMEOUT_MS = 5000;
-
 // Delay after a reset.
 const RESET_DELAY_MS = 3000;
 
@@ -78,17 +75,6 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
         return this._walletConnection;
       }
 
-      const startTimeout = () => {
-        Promise.race([
-          this._bridgePK.promise,
-          delay(CONNECTION_TIMEOUT_MS, 'timeout'),
-        ])
-          .then(
-            value => (value === 'timeout' && this.reset()) || Promise.resolve(),
-          )
-          .catch(e => console.error('error establishing connection', e));
-      };
-
       this._walletConnection = Far('WalletConnection', {
         getScopedBridge: (
           suggestedDappPetname,
@@ -109,7 +95,6 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
               makeConnector,
             },
           });
-          startTimeout();
           return this._bridgePK.promise;
         },
         getAdminBootstrap: (
@@ -129,7 +114,6 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
               makeConnector,
             },
           });
-          startTimeout();
           return this._bridgePK.promise;
         },
         reset: () => {
