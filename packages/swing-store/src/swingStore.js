@@ -34,7 +34,7 @@ export function makeSnapStoreIO() {
 /**
  * @typedef {{
  *   has: (key: string) => boolean,
- *   getKeys: (start: string, end: string) => Iterable<string>,
+ *   getKeys: (start: string, end: string) => IterableIterator<string>,
  *   get: (key: string) => string | undefined,
  *   set: (key: string, value: string) => void,
  *   delete: (key: string) => void,
@@ -44,7 +44,7 @@ export function makeSnapStoreIO() {
  *
  * @typedef {{
  *   writeStreamItem: (streamName: string, item: string, position: StreamPosition) => StreamPosition,
- *   readStream: (streamName: string, startPosition: StreamPosition, endPosition: StreamPosition) => Iterable<string>,
+ *   readStream: (streamName: string, startPosition: StreamPosition, endPosition: StreamPosition) => IterableIterator<string>,
  *   closeStream: (streamName: string) => void,
  *   STREAM_START: StreamPosition,
  * }} StreamStore

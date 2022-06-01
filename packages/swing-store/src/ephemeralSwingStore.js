@@ -11,6 +11,10 @@ import { assert, details as X, q } from '@agoric/assert';
 
 const streamPeek = new WeakMap(); // for tests to get raw access to the streams
 
+function* empty() {
+  // Yield nothing
+}
+
 /**
  * Create a non-persistent swing store based on an in-memory map.
  *
@@ -150,7 +154,7 @@ export function initEphemeralSwingStore() {
    * @param {object} startPosition  The position to start reading from
    * @param {object} endPosition  The position of the end of the stream
    *
-   * @returns {Iterable<string>} an iterable for the items in the named stream
+   * @returns {IterableIterator<string>} an iterable for the items in the named stream
    */
   function readStream(streamName, startPosition, endPosition) {
     insistStreamName(streamName);
@@ -164,7 +168,7 @@ export function initEphemeralSwingStore() {
     assert(startPosition.itemCount <= endPosition.itemCount);
 
     if (endPosition.itemCount === 0) {
-      return [];
+      return empty();
     } else {
       const readStatus = `read-${statusCounter}`;
       statusCounter += 1;
