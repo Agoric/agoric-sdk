@@ -1,3 +1,5 @@
+// @ts-check
+
 import { assert } from '@agoric/assert';
 import { insistStorageAPI } from '../../lib/storageAPI.js';
 
@@ -56,7 +58,7 @@ function* mergeUtf16SortedIterators(it1, it2) {
  * that buffers any mutations until told to commit them.
  *
  * @param {KVStore} kvStore  The StorageAPI object that this crank buffer will be based on.
- * @param {CreateSHA256}  createSHA256
+ * @param {import('../../lib-nodejs/hasher.js').CreateSHA256}  createSHA256
  * @param { (key: string) => 'consensus' | 'local' | 'invalid' } getKeyType
  * @returns {*} an object {
  * crankBuffer,  // crank buffer as described, wrapping `kvStore`
