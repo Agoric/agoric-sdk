@@ -23,17 +23,40 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-  lint:
+  ##################
+  # Lint tests
+  # We run per package bc of https://github.com/typescript-eslint/typescript-eslint/issues/1192
+  # We split the package tests into two jobs because type linting
+  # is inefficient and slow https://github.com/typescript-eslint/typescript-eslint/issues/2094
+  lint-primary:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
-          node-version: '14.x'
+          node-version: '16.x'
 
-      - name: lint check
-        run: yarn lint
+      # first job also does repo-level linting
+      - name: lint repo format
+        run: yarn lint:format
+      # eslint
+      - name: yarn lint primary
+        # run on packages that use roughly half the time
+        run: yarn lerna run --scope=@agoric/{cosmos,ertp,governance,run-protocol,swing-store,swingset-vat,vats,wallet,zoe} --no-bail lint
+
+  lint-rest:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: '16.x'
+
+      - name: yarn lint rest
+        # invert selection of lint-primary (--ignore instead of --scope)
+        run: yarn lerna run --ignore=@agoric/{cosmos,ertp,governance,run-protocol,swing-store,swingset-vat,vats,wallet,zoe} --no-bail lint
 
   ##################
   # Fast-running tests run as a group:
