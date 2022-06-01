@@ -344,6 +344,7 @@ test('normal close of pathological script', async t => {
 async function runToGC() {
   const trashCan = [{}];
   const wr = new WeakRef(trashCan[0]);
+  // @ts-expect-error
   trashCan[0] = undefined;
 
   let qty;

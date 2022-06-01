@@ -162,6 +162,7 @@ test('zoe - escrowToVote', async t => {
 
     // Voter3 exits before the election is closed. Voter3's vote will
     // not be counted.
+    assert(seat.tryExit);
     seat.tryExit();
 
     return { voter, seat };

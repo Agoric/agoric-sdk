@@ -295,7 +295,6 @@ test(`zoeHelper with zcf - fit proposal patterns`, async t => {
     give: { B: simoleans(3n) },
   });
 
-  // @ts-expect-error invalid arguments for testing
   t.throws(() => fit(proposal, harden([])), {
     message: /.* - Must be equivalent to: \[\]/,
   });
@@ -624,6 +623,7 @@ test(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
     { B: simoleanMint.mintPayment(simoleans(3n)) },
   );
 
+  // @ts-expect-error
   t.throws(() => assertProposalShape(zcfSeat, { give: { B: moola(3n) } }), {
     message: /The value of the expected record must be null but was .*/,
   });

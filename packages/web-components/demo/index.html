@@ -14,7 +14,6 @@
   <script type="module">
     import './install-ses-lockdown.js';
 
-    // eslint-disable-next-line import/no-extraneous-dependencies
     import { E } from '@endo/eventual-send';
     import { html, render } from 'lit';
     import '../agoric-wallet-connection.js';
@@ -31,7 +30,7 @@
       c.globalThis.state = state;
       c.globalThis.walletConnection = walletConnection;
     };
-    
+
     const onKeyPress = ev => {
       if (ev.key === 'Enter') {
         const cmd = ev.target.value;

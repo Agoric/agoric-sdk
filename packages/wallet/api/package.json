@@ -11,7 +11,7 @@
     "lint": "run-s --continue-on-error lint:*",
     "lint-fix": "yarn lint:eslint --fix",
     "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json",
-    "lint:eslint": "eslint --ext .js,.ts ."
+    "lint:eslint": "eslint ."
   },
   "devDependencies": {
     "@agoric/deploy-script-support": "^0.9.0",
@@ -32,11 +32,6 @@
     "@endo/marshal": "^0.6.7",
     "@endo/promise-kit": "^0.2.41",
     "import-meta-resolve": "^1.1.1"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
   },
   "keywords": [],
   "repository": {

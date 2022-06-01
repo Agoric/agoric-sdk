@@ -1,4 +1,4 @@
-// @ts-check
+// @ts-nocheck
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
@@ -25,7 +25,6 @@ test('findInvitationAmount', async t => {
     walletAdmin,
     zoe,
     zoeInvitationPurse,
-    brand,
   );
 
   const notFoundResult = await findInvitationAmount({

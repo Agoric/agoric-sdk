@@ -18,7 +18,7 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn lint:types&&yarn lint:eslint",
     "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json",
-    "lint:eslint": "eslint --ext .js,.ts ."
+    "lint:eslint": "eslint ."
   },
   "devDependencies": {
     "@agoric/vat-data": "^0.3.1",
@@ -70,11 +70,6 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "directories": {
     "example": "examples"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
   },
   "ava": {
     "files": [

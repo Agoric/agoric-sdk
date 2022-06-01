@@ -15,5 +15,10 @@
     "strictNullChecks": true,
     "moduleResolution": "node",
   },
-  "include": ["src/**/*.js", "exported.js"],
+  "include": [
+    "calc-*.js",
+    "exported.js",
+    "src/**/*.js",
+    "test/**/*.js",
+  ],
 }

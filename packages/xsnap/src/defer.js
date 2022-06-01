@@ -1,6 +1,5 @@
 // @ts-check
 
-// eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {boolean} _flag
  * @returns {asserts _flag}

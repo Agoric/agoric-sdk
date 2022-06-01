@@ -10,6 +10,7 @@ import { makeLRU } from '../../src/kernel/vat-warehouse.js';
 
 async function makeController(managerType, runtimeOptions) {
   const config = await loadBasedir(new URL('./', import.meta.url).pathname);
+  assert(config.vats);
   config.vats.target.creationOptions = { managerType, enableDisavow: true };
   config.vats.target2 = config.vats.target;
   config.vats.target3 = config.vats.target;

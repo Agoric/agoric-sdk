@@ -112,7 +112,9 @@ test('meter details are still available with no limit', async t => {
   t.log(meters);
   t.is(typeof meters.compute, 'number');
   t.is(typeof meters.allocate, 'number');
+  // @ts-expect-error until ava assertion types
   t.true(meters.compute > 0);
+  // @ts-expect-error until ava assertion types
   t.true(meters.allocate > 0);
 });
 
@@ -185,7 +187,6 @@ test('metering switch - start compartment only', async t => {
 function dataStructurePerformance(logn) {
   // eslint-disable-next-line no-bitwise
   const n = 1 << logn;
-  // @ts-expect-error
   const send = it => {
     // eslint-disable-next-line no-undef
     return issueCommand(new TextEncoder().encode(JSON.stringify(it)).buffer);
@@ -234,6 +235,7 @@ test.skip('Array, Map, Set growth is O(log(n))', async t => {
     const {
       meterUsage: { compute },
     } = await vat.evaluate(`dataStructurePerformance(${size})`);
+    // @ts-expect-error pop() may return undefined
     const r = JSON.parse(opts.messages.pop());
     t.log({ compute, r });
     return { compute, r };

@@ -16,7 +16,7 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json",
-    "lint:eslint": "eslint --ext .js,.ts ."
+    "lint:eslint": "eslint ."
   },
   "keywords": [],
   "author": "Agoric",
@@ -47,11 +47,6 @@
   "devDependencies": {
     "ava": "^3.12.1",
     "c8": "^7.7.2"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
   },
   "publishConfig": {
     "access": "public"

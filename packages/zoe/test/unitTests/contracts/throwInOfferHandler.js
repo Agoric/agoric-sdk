@@ -10,7 +10,7 @@ import { depositToSeat } from '../../../src/contractSupport/index.js';
  * This is a a broken contact to test that
  * errors in offerHandlers are appropriately handled
  *
- * @type {ContractStartFn<undefined, {makeThrowInOfferHandlerInvitation: unknown, makeThrowInDepositToSeatInvitation: unknown}>}
+ * @param {ZCF} zcf
  */
 const start = zcf => {
   const throwInOfferHandler = _seat => {

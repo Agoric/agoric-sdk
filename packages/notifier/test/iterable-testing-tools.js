@@ -273,7 +273,6 @@ export const bob = async asyncIterableP => {
  * @returns {Promise<Passable[]>}
  */
 export const carol = async subscriptionP => {
-  // @ts-expect-error
   const subscriptionIteratorP = E(subscriptionP)[Symbol.asyncIterator]();
   const { promise: afterA, resolve: afterAResolve } = makePromiseKit();
 
@@ -281,6 +280,7 @@ export const carol = async subscriptionP => {
     harden({
       updateState: val => {
         if (val === 'a') {
+          // @ts-expect-error
           afterAResolve(E(subscriptionIteratorP).subscribe());
         }
         log.push(['non-final', val]);

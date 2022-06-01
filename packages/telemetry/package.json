@@ -13,7 +13,7 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json",
-    "lint:eslint": "eslint --ext .js,.ts ."
+    "lint:eslint": "eslint ."
   },
   "bin": {
     "frcat": "./src/frcat-entrypoint.js"
@@ -42,11 +42,6 @@
     "ava": "^3.12.1",
     "c8": "^7.11.0",
     "tmp": "^0.2.1"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
   },
   "publishConfig": {
     "access": "public"

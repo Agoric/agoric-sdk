@@ -41,7 +41,6 @@ const QuorumRule = /** @type {const} */ ({
   ALL: 'all',
 });
 
-// eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {unknown} issue
  * @returns { asserts issue is SimpleIssue }
@@ -54,7 +53,6 @@ const assertSimpleIssue = issue => {
   );
 };
 
-// eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {unknown} issue
  * @returns { asserts issue is ParamChangeIssue<unknown> }
@@ -75,7 +73,6 @@ const assertParamChangeIssue = issue => {
   assertInstance(issue.contract);
 };
 
-// eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {unknown} issue
  * @returns {asserts issue is ApiInvocationIssue}
@@ -88,7 +85,6 @@ const assertApiInvocation = issue => {
   );
 };
 
-// eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {ElectionType} electionType
  * @param {unknown} issue

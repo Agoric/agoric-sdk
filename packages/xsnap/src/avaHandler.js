@@ -13,6 +13,7 @@ HandledPromise is defined by eventual send shim.
 /// <reference types="ses" />
 /// <reference types="@endo/eventual-send" />
 
+// @ts-expect-error cannot redeclare encoder
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
@@ -33,6 +34,7 @@ function send(item) {
  */
 const bundleSource = async (startFilename, ...args) => {
   const msg = await send({ bundleSource: [startFilename, ...args] });
+  // @ts-expect-error send() returns void
   return JSON.parse(decoder.decode(msg));
 };
 
@@ -69,18 +71,16 @@ function handler(rawMessage) {
     case 'loadScript': {
       const { source } = msg;
       const virtualObjectGlobals =
-        // @ts-ignore
+        // @ts-expect-error
         // eslint-disable-next-line no-undef
         typeof VatData !== 'undefined' ? { VatData } : {};
-      // @ts-ignore How do I get ses types in scope?!?!?!
       const c = new Compartment({
         require: testRequire,
         __dirname,
         __filename,
         console,
-        // @ts-ignore
         assert,
-        // @ts-ignore
+        // @ts-expect-error
         HandledPromise,
         TextEncoder,
         TextDecoder,

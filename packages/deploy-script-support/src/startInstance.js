@@ -55,7 +55,7 @@ export const makeStartInstance = (
    * @template {Installation} I
    * @param {{
    * instancePetname: Petname,
-   * installation: I,
+   * installation: I | PromiseLike<I>,
    * issuerKeywordRecord?: IssuerKeywordRecord,
    * issuerPetnameKeywordRecord?: Record<Keyword,Petname>,
    * terms?: object,

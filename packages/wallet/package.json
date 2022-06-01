@@ -26,10 +26,5 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
   }
 }

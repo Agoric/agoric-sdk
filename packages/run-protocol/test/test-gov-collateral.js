@@ -158,7 +158,6 @@ const makeScenario = async (t, { env = process.env } = {}) => {
       },
       getBankForAddress: () => assert.fail('not impl'),
     });
-    // @ts-ignore mock doesn't have all the methods
     space.produce.bankManager.resolve(bankManager);
 
     space.installation.produce.mintHolder.resolve(

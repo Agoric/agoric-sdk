@@ -1,6 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/far';
+import '@agoric/vats/src/core/types.js';
 import { runModuleBehaviors } from '@agoric/vats/src/core/utils.js';
 import { makeCoreProposalBehavior } from '../../src/coreProposalBehavior.js';
 
