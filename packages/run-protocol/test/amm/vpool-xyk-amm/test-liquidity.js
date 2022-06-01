@@ -372,3 +372,153 @@ test('MinInitialPoolLiquidity to reserve', async t => {
     RmoolaLiquidity: AmountMath.make(liquidityBrand, 1000n),
   });
 });
+
+/// /#5293.   AddLiquidity with wrong token in want increments liqTokenSupply and then breaks
+test.only('add wrong liquidity', async t => {
+  const centralLiquidityValue = 1_500_000_000n;
+  const secondaryLiquidityValue = 300_000_000n;
+
+  // Set up central token
+  const centralR = makeIssuerKit('central');
+  const moolaR = makeIssuerKit('moola');
+  const moola = value => AmountMath.make(moolaR.brand, value);
+  const central = value => AmountMath.make(centralR.brand, value);
+
+  const { zoe, amm } = await setupAmmServices(
+    t,
+    { committeeName: 'EnBancPanel', committeeSize: 3 },
+    centralR,
+  );
+
+  const liquidityIssuer = await E(amm.ammPublicFacet).addIssuer(
+    moolaR.issuer,
+    'Moola',
+  );
+  const liquidityBrand = await E(liquidityIssuer).getBrand();
+  const addPoolInvitation = await E(amm.ammPublicFacet).addPoolInvitation();
+
+  const proposal = harden({
+    give: {
+      Secondary: moola(secondaryLiquidityValue),
+      Central: central(centralLiquidityValue),
+    },
+    want: { Liquidity: AmountMath.make(liquidityBrand, 1000n) },
+  });
+  const payments = {
+    Secondary: moolaR.mint.mintPayment(moola(secondaryLiquidityValue)),
+    Central: centralR.mint.mintPayment(central(centralLiquidityValue)),
+  };
+
+  const addLiquiditySeat = await E(zoe).offer(
+    addPoolInvitation,
+    proposal,
+    payments,
+  );
+  t.is(
+    await E(addLiquiditySeat).getOfferResult(),
+    'Added liquidity.',
+    `Added Moola and Central Liquidity`,
+  );
+
+  const poolMetrics = await E(amm.ammPublicFacet).getPoolMetrics(moolaR.brand);
+  const tracker = await subscriptionTracker(t, poolMetrics);
+  await tracker.assertInitial({
+    centralAmount: central(0n),
+    liquidityTokens: AmountMath.makeEmpty(liquidityBrand),
+    secondaryAmount: moola(0n),
+  });
+
+  const poolLiquidity = {
+    centralAmount: { value: 1500000000n },
+    liquidityTokens: { value: 1500000000n },
+    secondaryAmount: { value: 300000000n },
+  };
+  await tracker.assertChange(poolLiquidity);
+
+  t.deepEqual(
+    await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
+    harden({
+      Central: central(poolLiquidity.centralAmount.value),
+      Liquidity: AmountMath.makeEmpty(liquidityBrand),
+      Secondary: moola(poolLiquidity.secondaryAmount.value),
+    }),
+  );
+
+  const alloc = await E(addLiquiditySeat).getCurrentAllocation();
+  t.deepEqual(alloc, {
+    Central: central(0n),
+    Liquidity: AmountMath.make(liquidityBrand, 1_499_999_000n),
+    Secondary: moola(0n),
+  });
+
+  const m = moola(10000n);
+  const c = central(15000n);
+
+  // deliberately incorrect token in want. Should be moolaLiquidity
+  const aliceBrokenProposal = harden({
+    want: { Liquidity: moola(1000n) },
+    give: { Secondary: m, Central: c },
+  });
+  const alicePayments = {
+    Secondary: moolaR.mint.mintPayment(m),
+    Central: centralR.mint.mintPayment(c),
+  };
+
+  const addLiquiditySeatBreaking = await E(zoe).offer(
+    E(amm.ammPublicFacet).makeAddLiquidityInvitation(),
+    aliceBrokenProposal,
+    alicePayments,
+  );
+
+  await t.throwsAsync(() => E(addLiquiditySeatBreaking).getOfferResult(), {
+    message: /liquidity brand must be \[object Alleged: MoolaLiquidity brand]/,
+  });
+
+  E(addLiquiditySeatBreaking).getPayouts();
+
+  t.deepEqual(
+    await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
+    harden({
+      Central: central(poolLiquidity.centralAmount.value),
+      Liquidity: AmountMath.make(liquidityBrand, 0n),
+      Secondary: moola(poolLiquidity.secondaryAmount.value),
+    }),
+  );
+
+  // Add liquidity correctly, so we can see Liquidity token balance in tracker
+  const aliceProposal = harden({
+    want: { Liquidity: AmountMath.make(liquidityBrand, 1000n) },
+    give: { Secondary: m, Central: c },
+  });
+  const aliceNewPayments = {
+    Secondary: moolaR.mint.mintPayment(m),
+    Central: centralR.mint.mintPayment(c),
+  };
+  const addLiquiditySeatCorrect = await E(zoe).offer(
+    E(amm.ammPublicFacet).makeAddLiquidityInvitation(),
+    aliceProposal,
+    aliceNewPayments,
+  );
+
+  t.deepEqual(
+    await E(addLiquiditySeatCorrect).getOfferResult(),
+    'Added liquidity.',
+  );
+
+  E(addLiquiditySeatCorrect).getPayouts();
+
+  const poolLiquidity2 = {
+    centralAmount: { value: 1500000000n + 15000n },
+    liquidityTokens: { value: 1500000000n + 15000n },
+    secondaryAmount: { value: 300000000n + 3000n },
+  };
+  t.deepEqual(
+    await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
+    harden({
+      Central: central(poolLiquidity2.centralAmount.value),
+      Liquidity: AmountMath.make(liquidityBrand, 0n),
+      Secondary: moola(poolLiquidity2.secondaryAmount.value),
+    }),
+  );
+  await tracker.assertChange(poolLiquidity2);
+});
