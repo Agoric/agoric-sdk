@@ -159,8 +159,8 @@ function makeStorageInMemory() {
  *
  * @returns {{
  *   storage: JSONStore, // a storage API object to load and store data
- *   commit: () => void,  // commit changes made since the last commit
- *   close: () => void,   // shutdown the store, abandoning any uncommitted changes
+ *   commit: () => Promise<void>,  // commit changes made since the last commit
+ *   close: () => Promise<void>,   // shutdown the store, abandoning any uncommitted changes
  * }}
  */
 function makeJSONStore(dirPath, forceReset = false) {
@@ -198,7 +198,7 @@ function makeJSONStore(dirPath, forceReset = false) {
   /**
    * Commit unsaved changes.
    */
-  function commit() {
+  async function commit() {
     if (dirPath) {
       const tempFile = `${storeFile}-${process.pid}.tmp`;
       const fd = fs.openSync(tempFile, 'w');
@@ -217,7 +217,7 @@ function makeJSONStore(dirPath, forceReset = false) {
    * Close the "database", abandoning any changes made since the last commit
    * (if you want to save them, call commit() first).
    */
-  function close() {
+  async function close() {
     // Nothing to do here.
   }
 
