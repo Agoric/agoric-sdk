@@ -94,7 +94,6 @@ function handler(rawMessage) {
         // @ts-ignore
         // eslint-disable-next-line no-undef
         typeof VatData !== 'undefined' ? { VatData } : {};
-      console.log('@@compartment URL?', { URL }, new URL('abc'));
       // @ts-ignore How do I get ses types in scope?!?!?!
       const c = new Compartment({
         require: testRequire,
