@@ -296,7 +296,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     // this object is used to store the mailbox state.
     const mailboxStorage = makeChainStorage(
       msg => chainSend(portNums.storage, msg),
-      STORAGE_PATH.MAILBOX + '.',
+      `${STORAGE_PATH.MAILBOX}.`,
       {
         fromChainShape: data => {
           const ack = toNumber(data.ack);
