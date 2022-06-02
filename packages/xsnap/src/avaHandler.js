@@ -117,6 +117,7 @@ function handler(rawMessage) {
         c.evaluate(`(${source}\n)()`);
         send({ testNames: harness.testNames() });
       } catch (ex) {
+        console.log('loadScript threw', globalThis.getStackString(ex));
         throw Error(`avaHandler: loadScript failed: ${ex.message}`);
       }
       break;
