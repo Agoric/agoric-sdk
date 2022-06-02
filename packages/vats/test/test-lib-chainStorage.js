@@ -27,9 +27,15 @@ test('makeChainStorageRoot', async t => {
         throw new Error(`unsupported method: ${message.method}`);
     }
   };
-  const rootKey = 'root';
-  const rootNode = makeChainStorageRoot(toStorage, rootKey);
-  t.is(rootNode.getKey(), rootKey, 'root key matches initialization input');
+  const rootPath = 'root';
+  const rootNode = makeChainStorageRoot(toStorage, 'swingset', rootPath);
+  t.deepEqual(
+    rootNode.getStoreKey(),
+    { storeName: 'swingset', storeSubkey: `swingset/data:${rootPath}` },
+    'root store key matches initialization input',
+  );
+
+  t.throws(() => makeChainStorageRoot(toStorage, 'notswingset', rootPath));
 
   // Values must be strings.
   const nonStrings = new Map(
@@ -65,17 +71,17 @@ test('makeChainStorageRoot', async t => {
   rootNode.setValue('foo');
   t.deepEqual(
     messages.slice(-1),
-    [{ key: rootKey, method: 'set', value: 'foo' }],
+    [{ key: rootPath, method: 'set', value: 'foo' }],
     'root node setValue message',
   );
   rootNode.setValue('bar');
   t.deepEqual(
     messages.slice(-1),
-    [{ key: rootKey, method: 'set', value: 'bar' }],
+    [{ key: rootPath, method: 'set', value: 'bar' }],
     'second setValue message',
   );
 
-  // Valid key segments are strings of up to 100 ASCII alphanumeric/dash/underscore characters.
+  // Valid path segments are strings of up to 100 ASCII alphanumeric/dash/underscore characters.
   const validSegmentChars = `${
     Array(26)
       .fill(undefined)
@@ -99,24 +105,28 @@ test('makeChainStorageRoot', async t => {
       .match(/.{1,100}/gsu) || [];
   for (const segment of extremeSegments) {
     const child = rootNode.getChildNode(segment);
-    const childKey = `${rootKey}.${segment}`;
-    t.is(child.getKey(), childKey, 'key segments are dot-separated');
+    const childPath = `${rootPath}.${segment}`;
+    t.deepEqual(
+      child.getStoreKey(),
+      { storeName: 'swingset', storeSubkey: `swingset/data:${childPath}` },
+      'path segments are dot-separated',
+    );
     child.setValue('foo');
     t.deepEqual(
       messages.slice(-1),
-      [{ key: childKey, method: 'set', value: 'foo' }],
+      [{ key: childPath, method: 'set', value: 'foo' }],
       'non-root setValue message',
     );
     // eslint-disable-next-line no-await-in-loop
     await child.delete();
     t.deepEqual(
       messages.slice(-1),
-      [{ key: childKey, method: 'set' }],
+      [{ key: childPath, method: 'set' }],
       'non-root delete message',
     );
   }
 
-  // Invalid key segments are non-strings, empty, too long, or contain unacceptable characters.
+  // Invalid path segments are non-strings, empty, too long, or contain unacceptable characters.
   const badSegments = new Map(nonStrings);
   badSegments.set('empty', '');
   badSegments.set('long', 'x'.repeat(101));
@@ -141,10 +151,13 @@ test('makeChainStorageRoot', async t => {
 
   // Level-skipping creation is allowed.
   const childNode = rootNode.getChildNode('child');
-  const childKey = `${rootKey}.child`;
+  const childPath = `${rootPath}.child`;
   const deepNode = childNode.getChildNode('grandchild');
-  const deepKey = `${childKey}.grandchild`;
-  t.is(deepNode.getKey(), deepKey);
+  const deepPath = `${childPath}.grandchild`;
+  t.deepEqual(deepNode.getStoreKey(), {
+    storeName: 'swingset',
+    storeSubkey: `swingset/data:${deepPath}`,
+  });
   for (const [label, val] of nonStrings) {
     t.throws(
       () => deepNode.setValue(val),
@@ -155,7 +168,7 @@ test('makeChainStorageRoot', async t => {
   deepNode.setValue('foo');
   t.deepEqual(
     messages.slice(-1),
-    [{ key: deepKey, method: 'set', value: 'foo' }],
+    [{ key: deepPath, method: 'set', value: 'foo' }],
     'level-skipping setValue message',
   );
 
@@ -168,13 +181,13 @@ test('makeChainStorageRoot', async t => {
   await deepNode.delete();
   t.deepEqual(
     messages.slice(-1),
-    [{ key: deepKey, method: 'set' }],
+    [{ key: deepPath, method: 'set' }],
     'granchild delete message',
   );
   await childNode.delete();
   t.deepEqual(
     messages.slice(-1),
-    [{ key: childKey, method: 'set' }],
+    [{ key: childPath, method: 'set' }],
     'child delete message',
   );
 });

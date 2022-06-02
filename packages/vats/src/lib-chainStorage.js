@@ -11,18 +11,26 @@ const { details: X } = assert;
 const pathSegmentPattern = /^[a-zA-Z0-9_-]{1,100}$/;
 
 /**
- * Create a root storage node for a given backing function and root key.
+ * Create a root storage node for a given backing function and root path.
  *
  * @param {(message: any) => any} toStorage a function for sending a storageMessage object to the storage implementation (cf. golang/cosmos/x/swingset/storage.go)
- * @param {string} rootKey
+ * @param {string} storeName currently limited to "swingset"
+ * @param {string} rootPath
  */
-export function makeChainStorageRoot(toStorage, rootKey) {
-  assert.typeof(rootKey, 'string');
+export function makeChainStorageRoot(toStorage, storeName, rootPath) {
+  assert.equal(
+    storeName,
+    'swingset',
+    'the only currently-supported store is "swingset"',
+  );
+  assert.typeof(rootPath, 'string');
 
-  function makeChainStorageNode(key) {
+  function makeChainStorageNode(path) {
     const node = {
-      getKey() {
-        return key;
+      getStoreKey() {
+        // This duplicates the Go code at
+        // https://github.com/Agoric/agoric-sdk/blob/cb272ae97a042ceefd3af93b1b4601ca49dfe3a7/golang/cosmos/x/swingset/keeper/keeper.go#L295
+        return { storeName, storeSubkey: `swingset/data:${path}` };
       },
       getChildNode(name) {
         assert.typeof(name, 'string');
@@ -30,14 +38,14 @@ export function makeChainStorageRoot(toStorage, rootKey) {
           pathSegmentPattern.test(name),
           X`Path segment must be a short ASCII identifier: ${name}`,
         );
-        return makeChainStorageNode(`${key}.${name}`);
+        return makeChainStorageNode(`${path}.${name}`);
       },
       setValue(value) {
         assert.typeof(value, 'string');
-        toStorage({ key, method: 'set', value });
+        toStorage({ key: path, method: 'set', value });
       },
       async delete() {
-        assert(key !== rootKey);
+        assert(path !== rootPath);
         // A 'set' with no value deletes a key if it has no children, but
         // otherwise sets data to the empty string and leaves all nodes intact.
         // We want to reject silently incomplete deletes (at least for now).
@@ -48,11 +56,11 @@ export function makeChainStorageRoot(toStorage, rootKey) {
         // effectively indistinguishable from a valid reordering where a fully
         // successful 'delete' is followed by a child-key 'set' (for which
         // absent parent keys are automatically created with empty-string data).
-        const childCount = await toStorage({ key, method: 'size' });
+        const childCount = await toStorage({ key: path, method: 'size' });
         if (childCount > 0) {
-          assert.fail(X`Refusing to delete node with children: ${key}`);
+          assert.fail(X`Refusing to delete node with children: ${path}`);
         }
-        toStorage({ key, method: 'set' });
+        toStorage({ key: path, method: 'set' });
       },
       // Possible extensions:
       // * getValue()
@@ -65,6 +73,6 @@ export function makeChainStorageRoot(toStorage, rootKey) {
     return Far('chainStorageNode', node);
   }
 
-  const rootNode = makeChainStorageNode(rootKey);
+  const rootNode = makeChainStorageNode(rootPath);
   return rootNode;
 }

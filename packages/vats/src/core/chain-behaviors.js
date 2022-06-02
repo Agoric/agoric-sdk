@@ -299,13 +299,13 @@ export const makeChainStorage = async ({
     return;
   }
 
-  const ROOT_KEY = STORAGE_PATH.CUSTOM;
+  const ROOT_PATH = STORAGE_PATH.CUSTOM;
 
   const vat = E(loadVat)('chainStorage');
   const rootNodeP = E(vat).makeBridgedChainStorageRoot(
     bridgeManager,
     BRIDGE_ID.STORAGE,
-    ROOT_KEY,
+    ROOT_PATH,
   );
   chainStorageP.resolve(rootNodeP);
 };
