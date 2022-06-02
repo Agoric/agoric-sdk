@@ -100,6 +100,11 @@ async function runTestScript(
   { spawnXSnap, bundleSource, resolve, dirname, basename },
 ) {
   const testBundle = await bundleSource(filename, 'getExport', { externals });
+  //    fs.writeFileSync('/tmp/testBundle.js', testBundle.source);
+  // testBundle = {
+  //   ...testBundle,
+  //   source: fs.readFileSync('/tmp/testBundle.js', 'utf-8'),
+  // };
   let assertionStatus = { ok: 0, 'not ok': 0, SKIP: 0 };
   /** @type { number | null } */
   let plan = null;
@@ -167,13 +172,6 @@ async function runTestScript(
     }
 
     await worker.evaluate(pathGlobalsKludge);
-
-    fs.writeFileSync('/tmp/testBundle.js', testBundle.source);
-    console.log({
-      file: '/tmp/testBundle.js',
-      length: testBundle.source.length,
-      lines: testBundle.source.split('\n').length,
-    });
 
     // Send the test script to avaHandler.
     await worker.issueStringCommand(
