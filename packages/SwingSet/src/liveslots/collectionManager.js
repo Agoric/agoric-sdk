@@ -17,8 +17,11 @@ import { Far, passStyleOf } from '@endo/marshal';
 import { decodeToJustin } from '@endo/marshal/src/marshal-justin.js';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
 
-// The maximum length of an LMDB key is 254 characters, which puts an upper
-// bound on the post-encoding size of keys than can be used to index entries in
+// The maximum length of an LMDB key used to be 511 bytes which corresponded to
+// 254 UTF-16 code units when using JS strings directly as keys. While we now
+// have larger key sizes and use a different unicode encoding, the prior
+// collections key constraints remain the same. They put an upper bound on the
+// post-encoding (stringified) size of keys than can be used to index entries in
 // collections.  In addition to the encoding of the collection entry key, the
 // storage key will also be prefixed with additional indexing information that
 // includes the collection ID (an integer that will grow over time as more
