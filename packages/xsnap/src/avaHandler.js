@@ -65,9 +65,6 @@ const testRequire = function require(specifier) {
     case 'path':
       console.log('@@substituting path.dirname');
       return path;
-    case 'url':
-      console.log('@@import url');
-      return wrap('url', { URL });
     case '@endo/ses-ava':
       return { wrapTest: test => test };
     case '@endo/init':
