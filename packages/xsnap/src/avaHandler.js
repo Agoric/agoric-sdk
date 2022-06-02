@@ -39,6 +39,8 @@ const bundleSource = async (startFilename, ...args) => {
 const path = {
   dirname: s => s.substring(0, s.lastIndexOf('/')),
 };
+// path__default["default"].dirname(filename);
+path.default = path; // ew.
 
 const wrap = (label, obj) =>
   new Proxy(obj, {
