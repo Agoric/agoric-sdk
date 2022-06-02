@@ -40,6 +40,20 @@ const path = {
   dirname: s => s.substring(0, s.lastIndexOf('/')),
 };
 
+const wrap = (label, obj) =>
+  new Proxy(obj, {
+    get: (target, name) => console.log({ label, target, name }),
+  });
+
+class URL {
+  constructor(url, base) {
+    if (base) throw Error('not impl');
+    this.pathname = url.replace(/file:/, '');
+    this.href = url;
+    console.log('new URL@@', { url, base, pathname: this.pathname });
+  }
+}
+
 const harness = test.createHarness(send); // ISSUE: global mutable state
 
 const testRequire = function require(specifier) {
@@ -51,6 +65,9 @@ const testRequire = function require(specifier) {
     case 'path':
       console.log('@@substituting path.dirname');
       return path;
+    case 'url':
+      console.log('@@import url');
+      return wrap('url', { URL });
     case '@endo/ses-ava':
       return { wrapTest: test => test };
     case '@endo/init':
@@ -80,6 +97,7 @@ function handler(rawMessage) {
         // @ts-ignore
         // eslint-disable-next-line no-undef
         typeof VatData !== 'undefined' ? { VatData } : {};
+      console.log('@@compartment URL?', { URL }, new URL('abc'));
       // @ts-ignore How do I get ses types in scope?!?!?!
       const c = new Compartment({
         require: testRequire,
@@ -90,6 +108,7 @@ function handler(rawMessage) {
         assert,
         // @ts-ignore
         HandledPromise,
+        URL,
         TextEncoder,
         TextDecoder,
         ...virtualObjectGlobals,
