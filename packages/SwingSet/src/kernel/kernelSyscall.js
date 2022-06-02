@@ -52,21 +52,20 @@ export function makeKernelSyscallHandler(tools) {
 
   /** @param {boolean} [done] */
   function clearVatStoreIteration(done = false) {
-    if (
-      !done &&
-      workingKeyIterator &&
-      typeof workingKeyIterator.return === 'function'
-    ) {
-      try {
+    try {
+      if (
+        !done &&
+        workingKeyIterator &&
+        typeof workingKeyIterator.return === 'function'
+      ) {
         workingKeyIterator.return();
-      } catch (e) {
-        // Ignore
       }
+    } finally {
+      workingKeyIterator = undefined;
+      workingPriorKey = undefined;
+      workingLowerBound = undefined;
+      workingUpperBound = undefined;
     }
-    workingKeyIterator = undefined;
-    workingPriorKey = undefined;
-    workingLowerBound = undefined;
-    workingUpperBound = undefined;
   }
 
   /**

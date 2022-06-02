@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { insistStorageAPI } from '../../lib/storageAPI.js';
 
 // We wrap a provided object implementing StorageAPI methods { has, getKeys,
@@ -66,26 +66,33 @@ function* mergeUtf16SortedIterators(it1, it2) {
       yield result;
     }
   } finally {
+    const errors = [];
     try {
       if (vrest && !vrest.done && itrest && itrest.return) {
         itrest.return();
       }
     } catch (e) {
-      // Ignore
+      errors.push(e);
     }
     try {
       if (v1 && !v1.done && it1.return) {
         it1.return();
       }
     } catch (e) {
-      // Ignore
+      errors.push(e);
     }
     try {
       if (v2 && !v2.done && it2.return) {
         it2.return();
       }
     } catch (e) {
-      // Ignore
+      errors.push(e);
+    }
+    if (errors.length) {
+      const err = assert.error(X`Merged iterator failed to close cleanly`);
+      for (const e of errors) {
+        assert.note(err, X`Caused by ${e}`);
+      }
     }
   }
 }
