@@ -36,6 +36,10 @@ const bundleSource = async (startFilename, ...args) => {
   return JSON.parse(decoder.decode(msg));
 };
 
+const path = {
+  dirname: s => s.substring(0, s.lastIndexOf('/')),
+};
+
 const harness = test.createHarness(send); // ISSUE: global mutable state
 
 const testRequire = function require(specifier) {
@@ -44,6 +48,9 @@ const testRequire = function require(specifier) {
       return test;
     case 'ses':
       return undefined;
+    case 'path':
+      console.log('@@substituting path.dirname');
+      return path;
     case '@endo/ses-ava':
       return { wrapTest: test => test };
     case '@endo/init':
