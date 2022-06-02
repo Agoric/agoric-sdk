@@ -247,11 +247,11 @@ const start = async (zcf, privateArgs) => {
     const collateralKeyword = getKeywordForBrand(collateralAmount.brand);
     if (
       !AmountMath.isGTE(
-        collateralSeat.getCurrentAllocation()[collateralKeyword],
+        collateralSeat.getCurrentAllocation()[+collateralKeyword],
         collateralAmount,
       )
     ) {
-      throw new Error('insufficient reserves for that transaction');
+      throw assert.fail('insufficient reserves for that transaction');
     }
 
     // create the RUN
