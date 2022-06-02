@@ -90,10 +90,7 @@ function handler(rawMessage) {
         c.evaluate(`(${source}\n)()`);
         send({ testNames: harness.testNames() });
       } catch (ex) {
-        send({
-          status: 'not ok',
-          message: `running test script: ${ex.message}`,
-        });
+        throw Error(`avaHandler: loadScript failed: ${ex.message}`);
       }
       break;
     }
