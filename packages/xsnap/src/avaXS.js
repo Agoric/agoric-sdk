@@ -105,6 +105,13 @@ async function runTestScript(
   //   ...testBundle,
   //   source: fs.readFileSync('/tmp/testBundle.js', 'utf-8'),
   // };
+  console.log('testBundle', {
+    // file: '/tmp/testBundle.js',
+    filename,
+    length: testBundle.source.length,
+    lines: testBundle.source.split('\n').length,
+  });
+
   let assertionStatus = { ok: 0, 'not ok': 0, SKIP: 0 };
   /** @type { number | null } */
   let plan = null;
