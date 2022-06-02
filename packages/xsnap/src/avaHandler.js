@@ -45,7 +45,7 @@ const wrap = (label, obj) =>
     get: (target, name) => console.log({ label, target, name }),
   });
 
-class URL {
+class URLStub {
   constructor(url, base) {
     if (base) throw Error('not impl');
     this.pathname = url.replace(/file:/, '');
@@ -108,7 +108,7 @@ function handler(rawMessage) {
         assert,
         // @ts-ignore
         HandledPromise,
-        URL,
+        URL: URLStub,
         TextEncoder,
         TextDecoder,
         ...virtualObjectGlobals,
