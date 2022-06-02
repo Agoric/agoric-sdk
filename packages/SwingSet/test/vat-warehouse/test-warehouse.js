@@ -1,5 +1,10 @@
 // @ts-check
 
+import '@endo/init/pre-bundle-source.js';
+
+// import lmdb early to work around SES incompatibility
+import 'lmdb';
+
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 import fs from 'fs';
