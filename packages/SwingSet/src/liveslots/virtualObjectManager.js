@@ -572,7 +572,18 @@ export function makeVirtualObjectManager(
     options,
     durable,
   ) {
-    const finish = options ? options.finish : undefined;
+    let finish;
+    let fakeDurable;
+    if (options) {
+      ({ finish, fakeDurable } = options);
+    }
+    if (fakeDurable) {
+      assert(
+        durable,
+        `the fakeDurable option may only be applied to durable objects`,
+      );
+      durable = false;
+    }
     let nextInstanceID = 1;
     let facetNames;
     let behaviorTemplate;
@@ -742,6 +753,9 @@ export function makeVirtualObjectManager(
         }
       }
       cache.markDirty(innerSelf);
+      if (fakeDurable) {
+        vrm.registerFakeDurable(baseRef);
+      }
       return toExpose;
     }
 
