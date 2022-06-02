@@ -88,6 +88,24 @@ test('persistent kvStore read/write/re-open', async t => {
   await close2();
 });
 
+test('persistent kvStore maxKeySize write', async t => {
+  // Vat collections assume they have 220 characters for their key space.
+  // This is based on previous math where LMDB's key size was 511 bytes max
+  // and the native UTF-16 encoding of JS strings, minus some overhead
+  // for vat store prefixes.
+  // However some unicode codepoints may end up serialized as 3 bytes with UTF-8
+  // This tests that no matter what, we can write 254 unicode characters in the
+  // 0x0800 - 0xFFFF range (single UTF-16 codepoint, but 3 byte UTF-8).
+
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
+  t.is(isSwingStore(dbDir), false);
+  const store = initSwingStore(dbDir);
+  store.kvStore.set('€'.repeat(254), 'Money!');
+  await store.commit();
+  await store.close();
+});
+
 async function testStreamStore(t, dbDir) {
   const { streamStore, commit, close } = initSwingStore(dbDir);
 
