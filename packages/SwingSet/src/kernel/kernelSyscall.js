@@ -19,6 +19,7 @@ export function makeKernelSyscallHandler(tools) {
     deviceHooks,
   } = tools;
 
+  /** @type {{kvStore: KVStore}} */
   const { kvStore } = kernelKeeper;
 
   function send(target, msg) {
@@ -46,13 +47,26 @@ export function makeKernelSyscallHandler(tools) {
   let workingPriorKey;
   let workingLowerBound;
   let workingUpperBound;
+  /** @type {IterableIterator<string> | undefined} */
   let workingKeyIterator;
 
-  function clearVatStoreIteration() {
+  /** @param {boolean} [done] */
+  function clearVatStoreIteration(done = false) {
+    if (
+      !done &&
+      workingKeyIterator &&
+      typeof workingKeyIterator.return === 'function'
+    ) {
+      try {
+        workingKeyIterator.return();
+      } catch (e) {
+        // Ignore
+      }
+    }
+    workingKeyIterator = undefined;
     workingPriorKey = undefined;
     workingLowerBound = undefined;
     workingUpperBound = undefined;
-    workingKeyIterator = undefined;
   }
 
   /**
@@ -80,8 +94,8 @@ export function makeKernelSyscallHandler(tools) {
     const actualKey = vatstoreKeyKey(vatID, key);
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallVatstoreSet');
-    kvStore.set(actualKey, value);
     clearVatStoreIteration();
+    kvStore.set(actualKey, value);
     return OKNULL;
   }
 
@@ -160,6 +174,7 @@ export function makeKernelSyscallHandler(tools) {
     }
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallVatstoreGetAfter');
+    /** @type {IteratorResult<string>} */
     let nextIter;
     // Note that the working key iterator will be invalidated if the parameters
     // to `vatstoreGetAfter` don't correspond to the working key iterator's
@@ -180,6 +195,7 @@ export function makeKernelSyscallHandler(tools) {
     ) {
       nextIter = workingKeyIterator.next();
     } else {
+      clearVatStoreIteration();
       let startKey;
       if (priorKey === '') {
         startKey = actualLowerBound;
@@ -198,7 +214,7 @@ export function makeKernelSyscallHandler(tools) {
       }
     }
     if (nextIter.done) {
-      clearVatStoreIteration();
+      clearVatStoreIteration(true);
       return harden(['ok', [undefined, undefined]]);
     } else {
       const nextKey = nextIter.value;
@@ -220,8 +236,8 @@ export function makeKernelSyscallHandler(tools) {
     const actualKey = vatstoreKeyKey(vatID, key);
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallVatstoreDelete');
-    kvStore.delete(actualKey);
     clearVatStoreIteration();
+    kvStore.delete(actualKey);
     return OKNULL;
   }
 
