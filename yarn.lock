@@ -1814,10 +1814,17 @@
   resolved "https://registry.yarnpkg.com/@istanbuljs/schema/-/schema-0.1.3.tgz#e45e384e4b8ec16bce2fd903af78450f6bf7ec98"
   integrity sha512-ZXRY4jNvVgSVQ8DL3LTcakaAtXwTVUxE81hslsyD2AtoXW/wVob10HkOJ1X/pAlcI7D+2YoZKg5do8G/w6RYgA==
 
-"@jessie.js/eslint-plugin@^0.1.1", "@jessie.js/eslint-plugin@^0.1.3":
+"@jessie.js/eslint-plugin@^0.1.1":
   version "0.1.3"
   resolved "https://registry.yarnpkg.com/@jessie.js/eslint-plugin/-/eslint-plugin-0.1.3.tgz#4df87d639dbc8ffb4c0b0168de1311b7f522cc75"
   integrity sha512-wyx/Wz/5gx87GRijQ3U6XGBYh9AnJdkw5pNgz0xZrLv6a6+l/t1p/7AeqYeolu5nDPuic/jSxfybkcWgYaP7UA==
+  dependencies:
+    requireindex "~1.1.0"
+
+"@jessie.js/eslint-plugin@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@jessie.js/eslint-plugin/-/eslint-plugin-0.2.0.tgz#47e81ddacf909b68f484955f20f9bf0bf9de6f57"
+  integrity sha512-Llym/BGtFu1pq15U73Rkb+kflTCI8LRxGfCufN+jcIX00m1+nDIhcgqVqmVKrghrSte+UXwDEzb/EO/Zl9K7hA==
   dependencies:
     requireindex "~1.1.0"
 
@@ -10423,6 +10430,13 @@ jake@^10.8.5:
     chalk "^4.0.2"
     filelist "^1.0.1"
     minimatch "^3.0.4"
+
+jessie.js@^0.3.0:
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/jessie.js/-/jessie.js-0.3.0.tgz#beff0a28ba22d41cdb683fed54539385d727020e"
+  integrity sha512-sIIcKAAuBGYXw8NbQben5H0hHG1qPMk/r1iplvAhjO5qe4+wNjH6vP0WYb/2BKFNBN0B5cqn+E0mCT4lfiohBA==
+  dependencies:
+    "@endo/far" "^0.2.3"
 
 jest-changed-files@^27.5.1:
   version "27.5.1"
