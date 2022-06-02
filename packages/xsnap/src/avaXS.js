@@ -11,6 +11,7 @@ Usage:
 /* eslint-disable no-await-in-loop */
 import '@endo/init';
 import { assert, details as X, q } from '@agoric/assert';
+import fs from 'fs';
 import { xsnap } from './xsnap.js';
 
 // scripts for use in xsnap subprocesses
@@ -166,6 +167,13 @@ async function runTestScript(
     }
 
     await worker.evaluate(pathGlobalsKludge);
+
+    fs.writeFileSync('/tmp/testBundle.js', testBundle.source);
+    console.log({
+      file: '/tmp/testBundle.js',
+      length: testBundle.source.length,
+      lines: testBundle.source.split('\n').length,
+    });
 
     // Send the test script to avaHandler.
     await worker.issueStringCommand(
