@@ -1,37 +1,59 @@
 # Chain Streams
 
 This [Agoric](https://agoric.com) Chain Streams package consumes data server
-publication sources in a flexible, future-proof way.
+publication leaders in a flexible, future-proof way.
 
-An example of following an on-chain mailbox using this package is:
+TL;DR: You can run `yarn demo`, or to consume a mailbox stream do:
+```sh
+npx agoric stream -Bhttp://devnet.agoric.net/network-config :mailbox.agoric1foobarbaz -otext
+```
+
+An example of following an on-chain mailbox in codd (using this package) is:
 
 ```js
-import { makeSourceFromNetconfig, iterateLatest } from '@agoric/chain-streams';
+// First, obtain a Hardened JS environment via Endo.
+import '@endo/init/pre-remoting.js'; // needed only for the next line
+import '@agoric/chain-streams/node-fetch-shim.js'; // needed for Node.js
+import '@endo/init';
 
-const src = makeSourceFromNetconfig('https://devnet.agoric.net/network-config');
-const stream = E(src).makeStreamFromStoragePath('mailbox.agoric1...', { integrity: 'unsafe' });
-for await (const mailbox of iterateLatest(stream)) {
-  console.log(`here's a mailbox object`, mailbox);
+import {
+  iterateLatest,
+  makeChainStream,
+  makeLeader,
+  makeStoreKey,
+} from '@agoric/chain-streams';
+
+// Iterate over a mailbox stream on the devnet.
+const leader = makeLeader('https://devnet.agoric.net/network-config');
+const storeKey = makeStoreKey(':mailbox.agoric1foobarbaz');
+const stream = makeChainStream(leader, storeKey);
+for await (const { value } of iterateLatest(stream)) {
+  console.log(`here's a mailbox value`, value);
 }
 ```
 
 ## Stream options
 
-The `E(src).makeStream...` call allows specifying a second argument of stream options
+The `streamOpts` argument in `makeChainStream(leader, key, streamOpts)` provides an optional bag of options:
 - the `integrity` option, which has three possibilities:
-  - `safe` (default) - release data only after proving it was validated (may incur waits for one block's data to be validated in the next block),
-  - `optimistic` - release data immediately, but may crash the stream in the future if a released value could not be proven,
-  - `unsafe` - release data immediately without validation
+  - `'strict'` - release data only after proving it was validated (may incur waits for one block's data to be validated in the next block),
+  - `'optimistic'` (default) - release data immediately, but may crash the stream in the future if an already-released value could not be proven,
+  - `'none'` - release data immediately without validation
+- the `decode` option is a function to translate `buf: Uint8Array` into `data: string`
+  - (default) - interpret buf as a utf-8 string, then `JSON.parse` it
 - the `unserializer` option can be
   - (default) - release unserialized objects using `@agoric/marshal`'s `makeMarshal()`
-  - `null` - don't translate data before releasing it
+  - `null` - don't additionally unserialize data before releasing it
   - any unserializer object supporting `E(unserializer).unserialize(data)`
+- the `crasher` option can be
+  - `null` (default) stream failures only propagate an exception/rejection
+  - any crasher object supporting `E(crasher).crash(reason)`
 
 ## Behind the scenes
 
 - the network config contains enough information to obtain Tendermint RPC nodes
-  for a given Agoric network.  You can use `makeSourceFromTendermintRPCNodes`
-  directly if you want to avoid using a network-config.
+  for a given Agoric network.  You can use `makeLeaderFromRpcAddresses` directly
+  if you want to avoid fetching a network-config.
 - each stream uses periodic CosmJS state polling (every X milliseconds) which
   can be refreshed more expediently via a Tendermint subscription to the
   corresponding `state_change` event
