@@ -34,6 +34,7 @@ const externals = [
   '@endo/ses-ava',
   '@endo/bundle-source',
   '@endo/init',
+  '@endo/init/debug.js',
   '@agoric/install-metering-and-ses',
 ];
 
