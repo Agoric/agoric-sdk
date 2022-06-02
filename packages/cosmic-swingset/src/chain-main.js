@@ -8,11 +8,11 @@ import {
 import { assert, details as X } from '@agoric/assert';
 import { makeSlogSenderFromModule } from '@agoric/telemetry';
 
+import * as STORAGE_PATH from '@agoric/vats/src/chain-storage-paths.js';
 import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import makeBlockManager from './block-manager.js';
 import { getTelemetryProviders } from './kernel-stats.js';
-import * as STORAGE_PATH from './chain-storage-paths.js';
 
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;

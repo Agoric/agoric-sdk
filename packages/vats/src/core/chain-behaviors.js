@@ -16,9 +16,9 @@ import {
 import { importBundle } from '@endo/import-bundle';
 
 import * as Collect from '@agoric/run-protocol/src/collect.js';
-import * as STORAGE_PATH from '@agoric/cosmic-swingset/src/chain-storage-paths.js';
 import { makeBridgeManager as makeBridgeManagerKit } from '../bridge.js';
 import * as BRIDGE_ID from '../bridge-ids.js';
+import * as STORAGE_PATH from '../chain-storage-paths.js';
 
 import { callProperties, extractPowers } from './utils.js';
 

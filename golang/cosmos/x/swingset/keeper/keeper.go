@@ -20,7 +20,7 @@ import (
 )
 
 // Top-level paths for chain storage should remain synchronized with
-// packages/cosmic-swingset/src/chain-storage-paths.js
+// packages/vats/src/chain-storage-paths.js
 const (
 	StoragePathActivityhash = "activityhash"
 	StoragePathBeansOwing   = "beansOwing"
