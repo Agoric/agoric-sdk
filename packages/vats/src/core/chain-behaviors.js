@@ -289,7 +289,13 @@ harden(makeBridgeManager);
  * }} powers
  */
 export const makeChainStorage = async ({
-  consume: { bridgeManager: bridgeManagerP, loadVat },
+  consume: {
+    bridgeManager: bridgeManagerP,
+    loadVat,
+    // provisioning is here to attempt delaying execution for avoiding failures like
+    // https://github.com/Agoric/agoric-sdk/runs/6728088019?check_suite_focus=true
+    provisioning: _provisioning,
+  },
   produce: { chainStorage: chainStorageP },
 }) => {
   const bridgeManager = await bridgeManagerP;

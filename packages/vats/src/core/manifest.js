@@ -97,6 +97,9 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
     consume: {
       bridgeManager: true,
       loadVat: true,
+      // provisioning is here to attempt delaying execution for avoiding failures like
+      // https://github.com/Agoric/agoric-sdk/runs/6728088019?check_suite_focus=true
+      provisioning: true,
     },
     produce: {
       chainStorage: true,
