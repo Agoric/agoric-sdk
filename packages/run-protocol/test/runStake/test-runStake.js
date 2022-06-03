@@ -817,6 +817,44 @@ test('Extending LoC - CR increases (FAIL)', async (/** @type {RunStakeTestContex
   await d.checkBLDLiened(0n);
 });
 
+test('test borrow zero', async (/** @type {RunStakeTestContext} */ t) => {
+  const d = await makeWorld(t);
+  await d.buyBLD(80000n);
+  await d.stakeBLD(80000n);
+  await d.lienBLD(8000n);
+  await t.throwsAsync(async () => d.borrowRUN(0n));
+});
+
+test('test zero amounts', async (/** @type {RunStakeTestContext} */ t) => {
+  const d = await makeWorld(t);
+  await d.buyBLD(80000n);
+  await d.stakeBLD(80000n);
+  await d.lienBLD(8000n);
+  await t.throwsAsync(async () => d.borrowRUN(0n));
+});
+
+test('test payoff zero', async (/** @type {RunStakeTestContext} */ t) => {
+  const d = await makeWorld(t);
+  await d.buyBLD(80000n);
+  await d.stakeBLD(80000n);
+  await d.lienBLD(8000n);
+  await d.borrowRUN(200n);
+  await t.throwsAsync(async () => d.payoffRUN(200n));
+});
+
+test('test no Lien', async (/** @type {RunStakeTestContext} */ t) => {
+  const d = await makeWorld(t);
+  await d.buyBLD(10000n);
+  await d.stakeBLD(80000n);
+  await t.throwsAsync(async () => d.lienBLD(0n));
+});
+
+test('test no Stake', async (/** @type {RunStakeTestContext} */ t) => {
+  const d = await makeWorld(t);
+  await d.buyBLD(80000n);
+  await t.throwsAsync(async () => d.lienBLD(8000n));
+});
+
 test('Partial repayment - CR remains the same', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(10000n);
