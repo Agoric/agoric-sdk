@@ -462,6 +462,10 @@ const helperBehavior = {
       debt,
     );
     const wantRUN = proposal.want.RUN || helper.emptyDebt();
+    if ([giveColl, giveRUN, wantColl].every(a => AmountMath.isEmpty(a))) {
+      clientSeat.exit();
+      return 'no transaction, as requested';
+    }
 
     // Calculate the fee, the amount to mint and the resulting debt. We'll
     // verify that the target debt doesn't violate the collateralization ratio,

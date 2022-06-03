@@ -48,6 +48,12 @@ export const assertOnlyKeys = (proposal, keys) => {
  * the gain and a loss on the `fromSeat`. The gain/loss are typically from the
  * give/want respectively of a proposal. The `key` is the allocation keyword.
  *
+ * Warning! if the amounts are both empty, this won't add a staged allocation to
+ * either seat, so the seats must only be passed to reallocate() if something
+ * else does stage an allocation. It would be wrong to throw here, since the
+ * common pattern of use is to call this twice, with one of the two calls not
+ * staging anything. It's only a mistake if both do nothing.
+ *
  * @param {ZCFSeat} fromSeat
  * @param {ZCFSeat} toSeat
  * @param {Amount} fromLoses
