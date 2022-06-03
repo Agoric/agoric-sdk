@@ -553,6 +553,8 @@ const makeWorld = async (/** @type {RunStakeTestContext} */ t) => {
     buyBLD: n => founder.sendTo(bob.getAddress(), n * micro.unit),
     stakeBLD: n => bob.stake(n * micro.unit),
     slash: n => chain.slash(bob.getAddress(), n * micro.unit),
+    // FIXME test result relies on awaiting each tick
+    // timer.tickN() awaits only the last tick
     waitDays: async n => {
       for (let i = 0; i < n; i += 1) {
         // eslint-disable-next-line no-await-in-loop

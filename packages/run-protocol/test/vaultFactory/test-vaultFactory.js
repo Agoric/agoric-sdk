@@ -1852,11 +1852,7 @@ test('mutable liquidity triggers and interest', async t => {
     await E(bobVault).getCurrentDebt(),
   );
   // 5 days pass
-  await manualTimer.tick();
-  await manualTimer.tick();
-  await manualTimer.tick();
-  await manualTimer.tick();
-  await manualTimer.tick();
+  await manualTimer.tickN(5);
   await waitForPromisesToSettle();
 
   shortfallBalance += 42n;
@@ -2338,16 +2334,13 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
   t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
 
-  await manualTimer.tick();
-  // price levels changed and interest was charged.
-
   // Bob's loan is now 777 RUN (including interest) on 100 Aeth, with the price
   // at 7. 100 * 7 > 1.05 * 777. When interest is charged again, Bob should get
   // liquidated.
   // Advance time to trigger interest collection.
-  for (let i = 0; i < 8; i += 1) {
-    await manualTimer.tick();
-  }
+  await manualTimer.tick();
+  // price levels changed and interest was charged.
+
   await waitForPromisesToSettle();
   bobUpdate = await E(bobNotifier).getUpdateSince(bobUpdate.updateCount);
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
@@ -2669,6 +2662,8 @@ test('manager notifiers', async t => {
   });
   m.addDebt(DEBT1);
   const periods = 5n;
+  // FIXME test result relies on awaiting each tick
+  // timer.tickN() awaits only the last tick
   for (let i = 0; i < periods; i += 1) {
     // eslint-disable-next-line no-await-in-loop
     await manualTimer.tick();
