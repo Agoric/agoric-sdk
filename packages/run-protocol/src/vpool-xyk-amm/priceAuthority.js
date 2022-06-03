@@ -69,11 +69,11 @@ export const makePriceAuthority = (
   // for each active trigger.
   const priceObserver = Far('priceObserver', {
     updateState: () => {
-      fireTriggers(createQuote);
+      void fireTriggers(createQuote);
     },
   });
 
-  observeNotifier(notifier, priceObserver);
+  void observeNotifier(notifier, priceObserver);
 
   return priceAuthority;
 };

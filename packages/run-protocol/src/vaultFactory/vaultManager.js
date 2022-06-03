@@ -264,7 +264,7 @@ const helperBehavior = {
 
     facets.helper.assetNotify();
     trace('chargeAllVaults complete');
-    facets.helper.reschedulePriceCheck();
+    return facets.helper.reschedulePriceCheck();
   },
 
   /** @param {MethodContext} context */
@@ -454,9 +454,14 @@ const helperBehavior = {
         facets.helper.updateMetrics();
 
         if (!AmountMath.isEmpty(accounting.shortfall)) {
-          E(factoryPowers.getShortfallReporter()).increaseLiquidationShortfall(
-            accounting.shortfall,
-          );
+          E(factoryPowers.getShortfallReporter())
+            .increaseLiquidationShortfall(accounting.shortfall)
+            .catch(reason =>
+              console.error(
+                'liquidateAndRemove failed to increaseLiquidationShortfall',
+                reason,
+              ),
+            );
         }
       })
       .catch(e => {
@@ -693,7 +698,7 @@ const finish = ({ state, facets: { helper } }) => {
   // push initial state of metrics
   helper.updateMetrics();
 
-  observeNotifier(state.periodNotifier, {
+  void observeNotifier(state.periodNotifier, {
     updateState: updateTime =>
       helper
         .chargeAllVaults(updateTime, state.poolIncrementSeat)
