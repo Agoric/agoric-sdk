@@ -7,6 +7,7 @@ import { E } from '@endo/eventual-send';
 
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
+import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 import { setupAmmServices } from './setup.js';
 import { unsafeMakeBundleCache } from '../../bundleTool.js';
 import { subscriptionTracker } from '../../metrics.js';
@@ -606,5 +607,59 @@ test('amm remove zero liquidity', async t => {
     await E(removeLiquiditySeat).getOfferResult(),
     'request to remove zero liquidity',
     `No liquidity removed`,
+  );
+});
+
+test('amm bad add liquidity offer', async t => {
+  const centralLiquidityValue = 1_500_000_000n;
+  const secondaryLiquidityValue = 300_000_000n;
+
+  const { moolaR, simoleanR, bucksR, moola, bucks } = setup();
+
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+  // This timer is only used to build quotes. Let's make it non-zero
+  const timer = buildManualTimer(console.log, 30n);
+
+  const { zoe, amm } = await setupAmmServices(
+    t,
+    electorateTerms,
+    simoleanR,
+    timer,
+  );
+
+  await E(amm.ammPublicFacet).addIssuer(bucksR.issuer, 'Bucks');
+
+  const liquidityIssuer = await E(amm.ammPublicFacet).addIssuer(
+    moolaR.issuer,
+    'Moola',
+  );
+  const liquidityBrand = await E(liquidityIssuer).getBrand();
+  const addPoolInvitation = await E(amm.ammPublicFacet).addPoolInvitation();
+
+  const fundPoolProposal = harden({
+    give: {
+      Secondary: moola(secondaryLiquidityValue),
+      Central: bucks(centralLiquidityValue),
+    },
+    want: { Liquidity: AmountMath.make(liquidityBrand, 1000n) },
+  });
+  const payments = {
+    Secondary: moolaR.mint.mintPayment(moola(secondaryLiquidityValue)),
+    Central: bucksR.mint.mintPayment(bucks(centralLiquidityValue)),
+  };
+
+  const addLiquiditySeat = await E(zoe).offer(
+    addPoolInvitation,
+    fundPoolProposal,
+    payments,
+  );
+  await t.throwsAsync(async () => E(addLiquiditySeat).getOfferResult(), {
+    message:
+      'Brands in left "[Alleged: bucks brand]" and right "[Alleged: simoleans brand]" should match but do not',
+  });
+
+  await t.throwsAsync(
+    async () => E(amm.ammPublicFacet).getPoolMetrics(moolaR.brand),
+    { message: '"secondaryBrand" not found: "[Alleged: moola brand]"' },
   );
 });
