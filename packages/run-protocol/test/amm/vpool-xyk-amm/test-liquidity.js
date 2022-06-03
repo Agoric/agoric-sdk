@@ -476,7 +476,7 @@ test('add wrong liquidity', async t => {
     message: /liquidity brand must be \[object Alleged: MoolaLiquidity brand]/,
   });
 
-  E(addLiquiditySeatBreaking).getPayouts();
+  await E(addLiquiditySeatBreaking).getPayouts();
 
   t.deepEqual(
     await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
@@ -507,7 +507,7 @@ test('add wrong liquidity', async t => {
     'Added liquidity.',
   );
 
-  E(addLiquiditySeatCorrect).getPayouts();
+  await E(addLiquiditySeatCorrect).getPayouts();
 
   const poolLiquidity2 = {
     centralAmount: { value: 1500000000n + 15000n },

@@ -274,7 +274,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     aliceProposal,
     alicePayments,
   );
-  timer.tick();
+  await timer.tick();
 
   const optionP = E(aliceSeat).getOfferResult();
 

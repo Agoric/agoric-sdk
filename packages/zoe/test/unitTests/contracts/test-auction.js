@@ -230,12 +230,12 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
   const bidInvitation3 = E(makeBidInvitationObj).makeBidInvitation();
 
   // timer ticks before offering, nothing happens
-  timer.tick();
+  await timer.tick();
 
   const bobSeat = await bob.offer(bidInvitation1);
   const carolSeat = await carol.offer(bidInvitation2);
   const daveSeat = await dave.offer(bidInvitation3);
-  timer.tick();
+  await timer.tick();
 
   await Promise.all([
     alice.collectPayout(aliceSeat),
@@ -308,7 +308,7 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
   );
 
   // timer ticks before offering, nothing happens
-  timer.tick();
+  await timer.tick();
 
   // Alice gives Bob the invitation
 
@@ -347,7 +347,7 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
     carolPayments,
   );
 
-  timer.tick();
+  await timer.tick();
 
   const aliceMoolaPayout = await aliceSeat.getPayout('Asset');
   const aliceSimoleanPayout = await aliceSeat.getPayout('Ask');
@@ -458,7 +458,7 @@ test('zoe - secondPriceAuction - all bidders try to exit', async t => {
   );
 
   // timer ticks before offering, nothing happens
-  timer.tick();
+  await timer.tick();
 
   // Alice gives Bob the invitation
 
@@ -482,7 +482,7 @@ test('zoe - secondPriceAuction - all bidders try to exit', async t => {
   const bobMoolaPayout = await bobSeat.getPayout('Asset');
   const bobSimoleanPayout = await bobSeat.getPayout('Bid');
 
-  timer.tick();
+  await timer.tick();
 
   // no active bidders, the auction should fail
   const aliceMoolaPayout = await aliceSeat.getPayout('Asset');
@@ -720,7 +720,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     'daveOutcome',
   );
 
-  timer.tick();
+  await timer.tick();
 
   const aliceCcPayout = await aliceSeat.getPayout('Asset');
   const aliceMoolaPayout = await aliceSeat.getPayout('Ask');
@@ -1033,12 +1033,12 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
   const bidInvitation3 = E(makeBidInvitationObj).makeBidInvitation();
 
   // timer ticks before offering, nothing happens
-  timer.tick();
+  await timer.tick();
 
   const bobSeat = await bob.offer(bidInvitation1);
   const carolSeat = await carol.offer(bidInvitation2);
   const daveSeat = await dave.offer(bidInvitation3);
-  timer.tick();
+  await timer.tick();
 
   await Promise.all([
     alice.collectPayout(aliceSeat),

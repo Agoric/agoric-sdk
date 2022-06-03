@@ -155,8 +155,8 @@ export async function start(zcf, privateArgs) {
     String(vaultCounter++),
   );
 
-  const advanceRecordingPeriod = () => {
-    timer.tick();
+  const advanceRecordingPeriod = async () => {
+    await timer.tick();
 
     // skip the debt calculation for this mock manager
     const currentInterestAsMultiplicand = makeRatio(

@@ -47,9 +47,11 @@ function makeFakeFeeProducer(makeEmptyPayment = () => {}) {
   });
 }
 
-function assertPaymentArray(t, payments, count, values, issuer, brand) {
+async function assertPaymentArray(t, payments, count, values, issuer, brand) {
   for (let i = 0; i < count; i += 1) {
-    assertPayoutAmount(
+    // XXX https://github.com/Agoric/agoric-sdk/issues/5527
+    // eslint-disable-next-line no-await-in-loop
+    await assertPayoutAmount(
       t,
       issuer,
       payments[i],
@@ -139,7 +141,7 @@ test('fee distribution, leftovers', async t => {
   await timerService.tick();
   await waitForPromisesToSettle();
 
-  assertPaymentArray(t, getPayments(), 2, [12n, 8n], issuer, brand);
+  await assertPaymentArray(t, getPayments(), 2, [12n, 8n], issuer, brand);
 
   // Pay them again
   vaultFactory.pushFees(runMint.mintPayment(AmountMath.make(brand, 13n)));

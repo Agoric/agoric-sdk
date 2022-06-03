@@ -939,7 +939,7 @@ test(`userSeat.tryExit from zcf.makeEmptySeatKit - afterDeadline`, async t => {
   });
   t.falsy(zcfSeat.hasExited());
   t.falsy(await E(userSeat).hasExited());
-  timer.tick();
+  await timer.tick();
 
   // Note: the wake call doesn't happen immediately so we must wait
   const payouts = await E(userSeat).getPayouts();

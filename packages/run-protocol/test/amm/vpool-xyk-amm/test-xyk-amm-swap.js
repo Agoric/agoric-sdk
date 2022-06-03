@@ -391,7 +391,7 @@ test('amm doubleSwap', async t => {
 
   const metricsSub = await E(amm.ammPublicFacet).getMetrics();
   const m = await subscriptionTracker(t, metricsSub);
-  m.assertInitial({ XYK: [] });
+  await m.assertInitial({ XYK: [] });
 
   const aliceAddLiquidityInvitation = E(
     amm.ammPublicFacet,

@@ -56,7 +56,7 @@ const contractRoots = {
 
 /** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
 
-const trace = makeTracer('TestST');
+const trace = makeTracer('TestLiq');
 
 const BASIS_POINTS = 10000n;
 
@@ -447,10 +447,8 @@ const makeDriver = async (t, initialPrice, priceBase) => {
     currentSeat: () => currentSeat,
     lastOfferResult: () => currentOfferResult,
     timer: () => timer,
-    tick: (ticks = 1) => {
-      for (let i = 0; i < ticks; i += 1) {
-        timer.tick();
-      }
+    tick: async (ticks = 1) => {
+      await timer.tickN(ticks, 'TestLiq driver');
     },
     makeVaultDriver,
     checkPayouts: async (expectedRUN, expectedAEth) => {

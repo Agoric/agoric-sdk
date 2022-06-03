@@ -493,7 +493,7 @@ test('zoe - otcDesk - offerExpired', async t => {
     timer,
     1n,
   );
-  timer.tick();
+  await timer.tick();
 
   // Bob tries to offer but the quote is expired.
   await bob.offerExpired(invitation2);
