@@ -8,6 +8,7 @@ import initMain from './init.js';
 import installMain from './install.js';
 import setDefaultsMain from './set-defaults.js';
 import startMain from './start.js';
+import streamMain from './stream.js';
 import walletMain from './open.js';
 
 const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
@@ -158,6 +159,58 @@ const main = async (progname, rawArgs, powers) => {
       await isNotBasedir();
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(installMain, ['install', forceSdkVersion], opts);
+    });
+
+  program
+    .command('stream <path-spec...>')
+    .description('read an Agoric Chain Stream')
+    .option(
+      '--integrity <strict | optimistic | none>',
+      'set integrity mode',
+      value => {
+        assert(
+          ['strict', 'optimistic', 'none'].includes(value),
+          X`--integrity must be one of 'strict', 'optimistic', or 'none'`,
+          TypeError,
+        );
+        return value;
+      },
+      'optimistic',
+    )
+    .option(
+      '--sleep <seconds>',
+      'sleep <seconds> between polling (may be fractional)',
+      value => {
+        const num = Number(value);
+        assert.equal(`${num}`, value, X`--sleep must be a number`, TypeError);
+        return num;
+      },
+      0,
+    )
+    .option(
+      '-o, --output <format>',
+      'value output format',
+      value => {
+        assert(
+          [
+            'hex',
+            'justin',
+            'justinlines',
+            'json',
+            'jsonlines',
+            'text',
+          ].includes(value),
+          X`--output must be one of 'hex', 'justin', 'justinlines', 'json', 'jsonlines', or 'text'`,
+          TypeError,
+        );
+        return value;
+      },
+      'justin',
+    )
+    .option('-B, --bootstrap <config>', 'network bootstrap configuration')
+    .action(async (pathSpecs, cmd) => {
+      const opts = { ...program.opts(), ...cmd.opts() };
+      return subMain(streamMain, ['stream', ...pathSpecs], opts);
     });
 
   const addRunOptions = cmd =>
