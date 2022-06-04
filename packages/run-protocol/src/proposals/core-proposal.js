@@ -26,6 +26,8 @@ const ECON_COMMITTEE_MANIFEST = harden({
 const SHARED_MAIN_MANIFEST = harden({
   [econBehaviors.setupAmm.name]: {
     consume: {
+      board: 'board',
+      chainStorage: true,
       chainTimerService: 'timer',
       zoe: 'zoe',
       economicCommitteeCreatorFacet: 'economicCommittee',

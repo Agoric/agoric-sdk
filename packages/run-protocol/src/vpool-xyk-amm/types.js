@@ -82,7 +82,7 @@
  * @property {() => PriceAuthority} getToCentralPriceAuthority
  * @property {() => PriceAuthority} getFromCentralPriceAuthority
  * @property {() => VirtualPool} getVPool
- * @property {() => Subscription<PoolMetricsNotification>} getMetrics
+ * @property {() => StoredSubscription<PoolMetricsNotification>} getMetrics
  */
 
 /**
@@ -136,7 +136,7 @@
  * Prices and notifications about changing prices.
  * @property {() => Brand[]} getAllPoolBrands
  * @property {() => Allocation} getProtocolPoolBalance
- * @property {() => Subscription<MetricsNotification>} getMetrics
+ * @property {() => StoredSubscription<MetricsNotification>} getMetrics
  * @property {(brand: Brand) => Subscription<PoolMetricsNotification>} getPoolMetrics
  */
 
