@@ -38,7 +38,6 @@ jobs:
       - uses: ./.github/actions/build-node
         with:
           node-version: 14.x
-          cache-built: false
 
       # Select a branch on loadgen to test against by adding text to the body of the
       # pull request. For example: #loadgen-branch: user-123-update-foo

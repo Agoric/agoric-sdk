@@ -29,9 +29,10 @@ runs:
       uses: actions/cache@v1
       with:
         path: ${{ env.GOPATH }}/pkg/mod
-        key: ${{ runner.os }}-${{ inputs.cache-key }}-go-${{ hashFiles('go.sum') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ inputs.cache-key }}-go-built-${{ inputs.go-version }}-${{ hashFiles('go.sum') }}
         restore-keys: |
-          ${{ runner.os }}-${{ inputs.cache-key }}-go-
+          ${{ runner.os }}-${{ runner.arch }}-${{ inputs.cache-key }}-go-built-${{ inputs.go-version }}-
+          ${{ runner.os }}-${{ runner.arch }}-${{ inputs.cache-key }}-go-built-
     - name: go mod download
       run: go mod download
       shell: bash

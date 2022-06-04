@@ -9,8 +9,10 @@ inputs:
 runs:
   using: composite
   steps:
+    - uses: kenchan0130/actions-system-info@master
+      id: system-info
     - name: cache build outputs
       uses: actions/cache@v1
       with:
         path: .
-        key: ${{ runner.os }}-${{ inputs.node-version }}-built-${{ github.sha }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-node-${{ inputs.node-version }}-built-${{ github.sha }}
