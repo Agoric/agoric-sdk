@@ -150,6 +150,20 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
 
   /**
    *
+   * @param {Record<string, unknown>} options
+   * @returns { VatDeliveryChangeVatOptions }
+   */
+  function translateChangeVatOptions(options) {
+    /** @type { VatDeliveryChangeVatOptions } */
+    const changeVatOptionsMessageVatDelivery = harden([
+      'changeVatOptions',
+      options,
+    ]);
+    return changeVatOptionsMessageVatDelivery;
+  }
+
+  /**
+   *
    * @param {SwingSetCapData} kernelVP
    * @returns { VatDeliveryStartVat }
    */
@@ -201,6 +215,10 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
       case 'retireImports': {
         const [_, ...args] = kd;
         return translateRetireImports(...args);
+      }
+      case 'changeVatOptions': {
+        const [_, ...args] = kd;
+        return translateChangeVatOptions(...args);
       }
       case 'startVat': {
         const [_, ...args] = kd;

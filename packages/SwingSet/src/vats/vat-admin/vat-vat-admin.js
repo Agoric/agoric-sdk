@@ -8,7 +8,7 @@
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
 import { Far, passStyleOf } from '@endo/marshal';
-import { Nat } from '@agoric/nat';
+import { Nat, isNat } from '@agoric/nat';
 import { assert } from '@agoric/assert';
 
 const managerTypes = [
@@ -120,6 +120,25 @@ export function buildRootObject(vatPowers) {
         const [upgradeCompleteP, upgradeRR] = producePRR();
         pendingUpgrades.set(upgradeID, upgradeRR);
         return upgradeCompleteP;
+      },
+      changeOptions(options) {
+        for (const option of Object.getOwnPropertyNames(options)) {
+          const value = options[option];
+          switch (option) {
+            case 'reapInterval':
+              assert(
+                value === 'never' || isNat(value),
+                'invalid reapInterval value',
+              );
+              break;
+            case 'virtualObjectCacheSize':
+              assert(isNat(value), 'invalid virtualObjectCacheSize value');
+              break;
+            default:
+              assert.fail(`invalid option "${option}"`);
+          }
+        }
+        D(vatAdminNode).changeOptions(vatID, options);
       },
     });
     return promise.then(root => {

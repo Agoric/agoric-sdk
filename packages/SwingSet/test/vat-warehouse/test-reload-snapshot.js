@@ -9,6 +9,8 @@ import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 test('vat reload from snapshot', async t => {
   const config = {
     defaultReapInterval: 'never',
+    snapshotInitial: 3,
+    snapshotInterval: 5,
     vats: {
       target: {
         sourceSpec: new URL('vat-warehouse-reload.js', import.meta.url)
@@ -26,9 +28,7 @@ test('vat reload from snapshot', async t => {
   const argv = [];
   await initializeSwingset(config, argv, hostStorage);
 
-  const c1 = await makeSwingsetController(hostStorage, null, {
-    warehousePolicy: { snapshotInitial: 3, snapshotInterval: 5 },
-  });
+  const c1 = await makeSwingsetController(hostStorage, null);
   c1.pinVatRoot('target');
   const vatID = c1.vatNameToID('target');
 
@@ -65,5 +65,5 @@ test('vat reload from snapshot', async t => {
   expected2.push(`count = 11`);
   await c2.run();
   t.deepEqual(c2.dump().log, expected2); // note: *not* 0-11
-  t.deepEqual(getPositions(), [8, 13]);
+  t.deepEqual(getPositions(), [13, 13]);
 });

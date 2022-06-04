@@ -5,6 +5,7 @@ import {
   makeMarshal,
 } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
+import { isNat } from '@agoric/nat';
 import { isPromise } from '@endo/promise-kit';
 import {
   insistVatType,
@@ -1279,6 +1280,27 @@ function build(
     ...collectionManager.testHooks,
   });
 
+  function setVatOption(option, value) {
+    switch (option) {
+      case 'virtualObjectCacheSize': {
+        if (isNat(value)) {
+          vom.setCacheSize(value);
+        } else {
+          console.log(`WARNING: invalid virtualObjectCacheSize value`, value);
+        }
+        break;
+      }
+      default:
+        console.log(`WARNING setVatOption unknown option ${option}`);
+    }
+  }
+
+  function changeVatOptions(options) {
+    for (const option of Object.getOwnPropertyNames(options)) {
+      setVatOption(option, options[option]);
+    }
+  }
+
   let baggage;
   async function startVat(vatParametersCapData) {
     insistCapData(vatParametersCapData);
@@ -1388,6 +1410,11 @@ function build(
       case 'retireImports': {
         const [vrefs] = args;
         retireImports(vrefs);
+        break;
+      }
+      case 'changeVatOptions': {
+        const [options] = args;
+        changeVatOptions(options);
         break;
       }
       case 'startVat': {

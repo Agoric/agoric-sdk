@@ -1,10 +1,8 @@
 This document describes the design of the swingset configuration
 object, which specifies the vats a swingset should be initially
-composed from.  Note that some details of this design are still
-provisional and others have yet to be implemented; these are called
-out in the text below.
+composed from.
 
-Three functions importable from the `'@agoric/swingset-vat'` module
+Four functions importable from the `'@agoric/swingset-vat'` module
 make reference to the configuration object:
 
 - `loadSwingsetConfigFile` reads a configuration object from a JSON
@@ -14,13 +12,20 @@ make reference to the configuration object:
   and `vat-*.js` and then composes and returns a corresponding
   configuration object.
 
-- `buildVatController` accepts a configuration object as its first
-  parameter, the specification of the swingset that it will create.
+- `buildVatController` and `initializeSwingset` each accept a configuration
+  object as their first parameter, the specification of the swingset that the
+  function will create.
 
 The configuration object takes this form:
 
 ```
 config = {
+  defaultManagerType: MANAGERTYPESTRING?
+  includeDevDependencies: BOOL?
+  defaultReapInterval: NUMBER|'never'?
+  enableFakeDurable: BOOL?
+  snapshotInitial: NUMBER?
+  snapshotInterval: NUMBER?
   vats: {
     VATNAME: {
       sourceSpec: PATHSTRING?
@@ -32,8 +37,15 @@ config = {
       endowments: DATAOBJECT?
       creationOptions: {
         enablePipelining: BOOL?
+        name: STRING?
+        enableDisavow: BOOL?
+        managerType: MANAGERTYPESTRING?
         metered: BOOL?
+        reapInterval: NUMBER|'never'?
         enableSetup: BOOL?
+        critical: BOOL?
+        useTranscript: BOOL?
+        virtualObjectCacheSize: NUMBER?
       }?
     }+
   }
@@ -54,17 +66,19 @@ config = {
       bundle: CODESTRING?
       parameters: DATAOBJECT?
       endowments: DATAOBJECT?
+      creationOptions: {
+        unendowed: BOOL?
+      }?
     }*
   }?
 }
 ```
 
-This object describes what we call a "vat group": one or more vats
-organized together in some purposeful way.  The configuration object
-is a pure data object that can be serialized as JSON, and so stored in
-a file, loaded from a file, passed in a message over the network,
-etc., in addition to being something that can be passed around as an
-object internally.
+This object describes what we will here call a "vat group": one or more vats
+organized together in some purposeful way.  The configuration object is a pure
+data object that can be serialized as JSON, and so stored in a file, loaded from
+a file, passed in a message over the network, etc., in addition to being
+something that can be passed around as an object internally.
 
 The `vats` property describes the vats in the vat group, in the form
 of an object with one entry property per vat keyed to the vat's name
@@ -89,8 +103,45 @@ The `bootstrap` property, if present, names the vat that is to be the
 bootstrap vat.  If this property is missing, there will be no
 bootstrap vat, which may be disallowed in certain use cases.
 
+The `defaultManagerType` property indicates what sort of vat worker to run vats
+in if they are not specifically configured otherwise.  Currently allowed manager
+types are `'local'`, `'nodeWorker'`, `'node-subprocess'`, `'xs-worker'`, and
+`'xs-worker-no-gc'`.  Of these, only `'local'` and `'xs-worker'` are fully
+supported; the others are experimental.  If omitted, it defaults to `'local'`.
+
+The `includeDevDependencies` property, if `true`, instructs the bundler which
+creates bundles to include the SwingSet package's dev dependencies as well as
+its regular runtime depencies in any bundles that it creates.  Defaults to
+`false`.
+
+The `defaultReapInterval` property specifies the default frequency with which
+the kernel should prompt each vat (by delivering it a `bringOutYourDead`
+directive) to perform garbage collection and notify the kernel of any dropped or
+released references that result.  This should either be an integer, indicating
+the number of deliveries that should be made to the vat before reaping, or the
+string `'never'`, indicating that such activity should never happen.  If
+defaults (yes, the default has a default) to 1.
+
+The `enableFakeDurable` property, if `true`, allows vat code running inside this
+swingset to use the `fakeDurable` option for stores and virtual objects.  It
+defaults to `false`, because this is a dangerous, development-time only feature;
+any vat using it will be left in a corrupted state after delivery of a `stopVat`
+directive.
+
+The `snapshotInterval` property is the frequency (measured in numbers of
+deliveries) with which `'xs-worker'` vats will perform snapshots to disk of
+their in-memory state.  Note that although each vat keeps its own counter
+tracking when it should next be snapshotted, the frequency itself is global to
+the entire swingset.  Defaults to 200.
+
+The `snapshotInitial` property is a special snapshot interval that applies only
+to the vat's very first snapshot.  We treat it as a special case because a few
+of the very first cranks of a vat (which involve initialization) can be quite
+expensive, and we'd like to be able to promptly capture the benefit having paid
+that expense so that future replays don't need to repeat the work.  Defaults to 2.
+
 The code that realizes a vat or device can be specified in one of five
-ways: 
+ways:
 
 - `sourceSpec`, the path to the module or file containing the root
 object definition;
@@ -110,19 +161,18 @@ other `vats`, `devices`, or `bundles` entry; or
 
 - `bundle`, a prebundled source string.
 
-These five alternatives are mutually exclusive, but one of them must
-be provided.  NOTE: `bundleHash` is not currently supported; the final
-version of this design may eliminate some of these options.
+These five alternatives are mutually exclusive, but one of them must be provided
+for each vat or device.
 
-`parameters` is a data object (defaults to the empty object if
-omitted) that is passed to the vat or device as one of its creation
-parameters as the second argument to the `buildRootObject` function.
-The `buildVatController` function's second argument is an array of
-strings, nominally representing command line paramaters such as would
-be given when launching a statically defined vat group via a command
-line tool such as `swingset-runner` or `ag-solo`.  If such command
-line parameters are given to `buildVatController`, then are added to
-the bootstrap vat's `parameters` object as the property `argv`.
+`parameters` is a data object (defaults to the empty object if omitted) that is
+passed to the vat or device as one of its creation parameters as the second
+argument to the `buildRootObject` function.  The second argument to
+`buildVatController` or `initializeSwingset` is an array of strings, nominally
+representing command line paramaters such as would be given when launching a
+statically defined vat group via a command line tool such as `swingset-runner`
+or `ag-solo`.  If such command line parameters are given to one of the vat
+initiation functions, they are added to the bootstrap vat's `parameters` object
+as the property `argv`.
 
 `endowments` is a data object that is interpreted by the vat creation
 mechanism to describe the endowments of the vat or device _(yes, more
@@ -133,17 +183,84 @@ not yet supported.
 `creationOptions` are directives to the vat controller rather than to the vat itself:
 
 - `enablePipelining` specifies whether the vat should be launched with
-  promise pipelining enabled (defaults to `false` if omitted).
+  promise pipelining enabled.  Defaults to `false`.
+
+- `name` is an optional short label string used to identify the vat in log and
+  debug outputs.  If omitted, it defaults to the property name that was used for
+  the vat descriptor.
+
+- `enableDisavow`, if `true`, adds `vatPowers.disavow()`, which allows vat code
+  to explicitly disavow interest in an imported Presence. This will trigger a
+  `syscall.dropImports` of the associated object ID. By default, this
+  function is not added to `vatPowers`.
+
+- `managerType` indicates what sort of vat worker to run the associated vat in.
+  If omitted, it defaults to the swingset's default manager type.
 
 - `metered` specifies whether the vat should be have metering turned
-  on or not (defaults to `false` if omitted).
+  on or not. Defaults to `false`.
+
+- `reapInterval` specifies the reap interval for this particular vat.  It
+  defaults to the swingset's default reap interval.
 
 - `enableSetup` indicates that the vat module may use the older, lower
   level `setup()` API, which allows a vat to be defined independent of
   the liveslots framework (defaults to `false` if omitted).  (If you
   don't understand what this means, do not use this.)
 
-- `enableDisavow`, if true, adds `vatPowers.disavow()`, which allows vat code
-  to explicitly disavow interest in an imported Presence. This will trigger a
-  `syscall.dropImports` of the associated object ID. By default, this
-  function is not added to `vatPowers`.
+- `critical`, if `true`, marks the vat as critical to the correct functioning of
+  the swingset.  If a critical vat suffers a failure, the kernel will panic and
+  the swingset as a whole will be terminated without saving any intermediate
+  state that resulted during the crank that caused the vat to die.  Defaults to
+  `false`.
+
+- `useTranscript`, if `true`, says the vat should record a transcript of all
+  deliveries made to it so that these can be replayed at a later time to
+  reconstruct the internal state of the vat.  Defaults to `true`.
+
+- `virtualObjectCacheSize` tells the vat's virtual object manager how many
+  virtual objects should have their state kept live in memory at any given
+  time.  Defaults to an implementation defined value.
+
+## Dynamic option setting
+
+Some swingset and vat configuration options can be dynamically updated within a
+running swingset.
+
+### Dynamic kernel options
+
+Swingset-wide (kernel) options are updated by calling the
+`changeKernelOptions(options)` method on the swingset's controller object, where
+`options` is an object indicating which options to change and the values to
+change them to.
+
+Currently supported kernel options that you can change this way are:
+
+- `defaultReapInterval`
+
+- `snapshotInterval`
+
+`controller.changeKernelOptions` should be called when the kernel is idle, i.e.,
+not in the middle of a `controller.run()`.  Modifying options will cause state
+changes to be written to the block buffer (i.e., the `hostStorage` object
+provided to `buildVatController`), and the host application is solely
+responsible for committing those changes to persistent storage, so most
+applications will need to do a `commit()` some time after call
+`controller.changeKernelOptions`.
+
+### Dynamic vat options
+
+The options for a single vat may be updated by sending the
+`changeOptions(options)` message to the vat's admin node.  For example, if the
+admin node is referenced in a variable named `adminFacet`, the you would say
+`E(adminFacet).changeOptions(options)`.  Note that because the admin node is
+involved, dynamic options update is not available for statically configured
+vats, i.e., vats configured using the config object described above).
+
+Currently supported vat options that you can change this way are:
+
+- `virtualObjectCacheSize`
+
+- `reapInterval`
+
+Other options may be added in the future.
