@@ -46,9 +46,16 @@ const testRequire = function require(specifier) {
       return test;
     case 'ses':
       return undefined;
+    case 'path':
+      return {
+        default: {
+          dirname: s => s.substring(0, s.lastIndexOf('/')),
+        },
+      };
     case '@endo/ses-ava':
       return { wrapTest: test => test };
     case '@endo/init':
+    case '@endo/init/debug.js':
       return undefined;
     case '@agoric/install-metering-and-ses':
       console.log('TODO: @agoric/install-metering-and-ses');
@@ -82,6 +89,14 @@ function handler(rawMessage) {
         assert,
         // @ts-expect-error
         HandledPromise,
+        URL: class URLStub {
+          constructor(url, base) {
+            if (base) throw Error('not impl');
+            this.pathname = url.replace(/file:/, '');
+            this.href = url;
+            console.log('new URL@@', { url, base, pathname: this.pathname });
+          }
+        },
         TextEncoder,
         TextDecoder,
         ...virtualObjectGlobals,
@@ -90,10 +105,8 @@ function handler(rawMessage) {
         c.evaluate(`(${source}\n)()`);
         send({ testNames: harness.testNames() });
       } catch (ex) {
-        send({
-          status: 'not ok',
-          message: `running test script: ${ex.message}`,
-        });
+        console.error('loadScript failed', globalThis.getStackString(ex));
+        throw Error(`avaHandler: loadScript failed: ${ex.message}`);
       }
       break;
     }
