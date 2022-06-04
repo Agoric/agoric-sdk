@@ -57,7 +57,13 @@
     "exported.js"
   ],
   "ava-xs": {
-    "exclude": "swingsetTests"
+    "exclude": [
+      "swingsetTests",
+      "# fast-check unsupported",
+      "test/unitTests/test-amountProperties.js",
+      "test/unitTests/test-inputValidation.js",
+      "test/unitTests/test-issuerObj.js"
+    ]
   },
   "ava": {
     "files": [
