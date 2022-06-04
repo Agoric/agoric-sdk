@@ -97,12 +97,6 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
     consume: {
       bridgeManager: true,
       loadVat: true,
-      // provisioning is here to attempt delaying execution for avoiding failures like
-      // https://github.com/Agoric/agoric-sdk/runs/6728088019?check_suite_focus=true
-      // stage-1: monitor-chain: found process 30881 for vat v2 "vatAdmin"
-      // stage-1: chain: portHandler threw (Error#1)
-      // stage-1: chain: Error#1: historical inaccuracy in replay of v2
-      provisioning: true,
     },
     produce: {
       chainStorage: true,

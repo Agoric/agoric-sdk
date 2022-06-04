@@ -22,7 +22,7 @@
       "sourceSpec": "@agoric/vats/src/vat-board.js"
     },
     "chainStorage": {
-      "sourceSpec": "./src/vat-chainStorage.js"
+      "sourceSpec": "@agoric/vats/src/vat-chainStorage.js"
     },
     "ibc": {
       "sourceSpec": "@agoric/vats/src/vat-ibc.js"
