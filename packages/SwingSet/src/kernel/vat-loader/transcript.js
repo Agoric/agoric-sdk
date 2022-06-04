@@ -2,9 +2,9 @@ import djson from '../../lib/djson.js';
 
 export function requireIdentical(vatID, originalSyscall, newSyscall) {
   if (djson.stringify(originalSyscall) !== djson.stringify(newSyscall)) {
-    console.log(`anachrophobia strikes vat ${vatID}`);
-    console.log(`expected:`, djson.stringify(originalSyscall));
-    console.log(`got     :`, djson.stringify(newSyscall));
+    console.error(`anachrophobia strikes vat ${vatID}`);
+    console.error(`expected:`, djson.stringify(originalSyscall));
+    console.error(`got     :`, djson.stringify(newSyscall));
     return new Error(`historical inaccuracy in replay of ${vatID}`);
   }
   return undefined;
