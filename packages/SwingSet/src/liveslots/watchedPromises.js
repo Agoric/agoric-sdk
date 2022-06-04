@@ -29,6 +29,11 @@ export function makeWatchedPromiseManager(
   const { makeScalarBigMapStore } = cm;
   const { defineDurableKind } = vom;
 
+  // virtual Store (not durable) mapping vpid to Promise objects, to
+  // maintain the slotToVal registration until resolution. Without
+  // this, slotToVal would forget local Promises that aren't exported.
+  let promiseRegistrations;
+
   // watched promises by vpid: each entry is an array of watches on the
   // corresponding vpid; each of these is in turn an array of a watcher object
   // and the arguments associated with it by `watchPromise`.
@@ -38,6 +43,7 @@ export function makeWatchedPromiseManager(
   let promiseWatcherByKindTable;
 
   function preparePromiseWatcherTables() {
+    promiseRegistrations = makeScalarBigMapStore('promiseRegistrations');
     let watcherTableID = syscall.vatstoreGet('watcherTableID');
     if (watcherTableID) {
       promiseWatcherByKindTable = convertSlotToVal(watcherTableID);
@@ -71,6 +77,7 @@ export function makeWatchedPromiseManager(
     function settle(value, wasFulfilled) {
       const watches = watchedPromiseTable.get(vpid);
       watchedPromiseTable.delete(vpid);
+      promiseRegistrations.delete(vpid);
       for (const watch of watches) {
         const [watcher, ...args] = watch;
         Promise.resolve().then(() => {
@@ -118,6 +125,7 @@ export function makeWatchedPromiseManager(
         }
       } else {
         const p = revivePromise(vpid);
+        promiseRegistrations.init(vpid, p);
         pseudoThen(p, vpid);
       }
     }
@@ -157,6 +165,11 @@ export function makeWatchedPromiseManager(
     // have happened by the time the code below executes, and thus when we call
     // `convertValToSlot` on the promise here we'll get back the vpid that was
     // assigned rather than generating a new one that nobody knows about.
+
+    // TODO: add vpid->p virtual table mapping, to keep registration alive
+    // TODO: remove mapping upon resolution
+    // TODO: track watched but non-exported promises, add during prepareShutdownRejections
+    //  maybe check importedVPIDs here and add to table if !has
     Promise.resolve().then(() => {
       const watcherVref = convertValToSlot(watcher);
       assert(watcherVref, 'invalid watcher');
@@ -182,18 +195,20 @@ export function makeWatchedPromiseManager(
         watchedPromiseTable.set(vpid, harden([...watches, [watcher, ...args]]));
       } else {
         watchedPromiseTable.init(vpid, harden([[watcher, ...args]]));
+        promiseRegistrations.init(vpid, p);
         pseudoThen(p, vpid);
       }
     });
   }
 
-  function prepareShutdownRejections(deciderVPIDs) {
+  function prepareShutdownRejections(importedVPIDsSet) {
     const deadPromises = [];
-    for (const vpid of deciderVPIDs) {
-      if (watchedPromiseTable.has(vpid)) {
-        deadPromises.push(vpid);
+    for (const vpid of watchedPromiseTable.keys()) {
+      if (!importedVPIDsSet.has(vpid)) {
+        deadPromises.push(vpid); // "exported" plus "neither" vpids
       }
     }
+    deadPromises.sort(); // just in case
     syscall.vatstoreSet('deadPromises', deadPromises.join(','));
   }
 

@@ -1,4 +1,4 @@
-/* global setImmediate, WeakRef, FinalizationRegistry */
+/* global WeakRef, FinalizationRegistry */
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
@@ -99,16 +99,12 @@ test('serialize imports', async t => {
 });
 
 test('serialize promise', async t => {
-  const log = [];
   const syscall = {
-    resolve(resolutions) {
-      log.push(resolutions);
-    },
     vatstoreGet: () => undefined,
   };
 
   const { m, unmeteredUnserialize } = makeUnmeteredMarshaller(syscall);
-  const { promise, resolve } = makePromiseKit();
+  const { promise } = makePromiseKit();
   t.deepEqual(m.serialize(promise), {
     body: '{"@qclass":"slot","index":0}',
     slots: ['p+5'],
@@ -127,14 +123,6 @@ test('serialize promise', async t => {
     }),
     promise,
   );
-
-  resolve(5);
-  t.deepEqual(log, []);
-
-  const { promise: pauseP, resolve: pauseRes } = makePromiseKit();
-  setImmediate(() => pauseRes());
-  await pauseP;
-  t.deepEqual(log, [[['p+5', false, { body: '5', slots: [] }]]]);
 });
 
 test('unserialize promise', async t => {

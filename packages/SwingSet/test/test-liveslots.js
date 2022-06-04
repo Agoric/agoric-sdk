@@ -772,7 +772,7 @@ test('GC syscall.dropImports', async t => {
   t.deepEqual(log.shift(), {
     type: 'vatstoreSet',
     key: 'idCounters',
-    value: '{"exportID":10,"collectionID":4,"promiseID":5}',
+    value: '{"exportID":10,"collectionID":5,"promiseID":5}',
   });
   const l2 = log.shift();
   t.deepEqual(l2, {
@@ -1181,7 +1181,7 @@ test('GC dispatch.dropExports', async t => {
   t.deepEqual(log.shift(), {
     type: 'vatstoreSet',
     key: 'idCounters',
-    value: '{"exportID":11,"collectionID":4,"promiseID":5}',
+    value: '{"exportID":11,"collectionID":5,"promiseID":5}',
   });
   t.deepEqual(log, []);
 
@@ -1248,7 +1248,7 @@ test('GC dispatch.retireExports inhibits syscall.retireExports', async t => {
   t.deepEqual(log.shift(), {
     type: 'vatstoreSet',
     key: 'idCounters',
-    value: '{"exportID":11,"collectionID":4,"promiseID":5}',
+    value: '{"exportID":11,"collectionID":5,"promiseID":5}',
   });
   t.deepEqual(log, []);
 
@@ -1535,34 +1535,37 @@ test('result promise in args', async t => {
   // sequence is a bit weird. We'll document it here:
 
   // * when the promise is imported (in msg.args), we create a Promise
-  //   object, track it in slotToVal/valToSlot, and hold the resolve /
-  //   reject functions in importedPromisesByPromiseID . Userspace
-  //   sees this Promise. A `dispatch.notify` will resolve it. Any
-  //   messages sent to it will be queued into the kernel, which will
-  //   wait for a `syscall.resolve` and then send the messages to the
-  //   resulting object's home vat.
+  //   object, register it in slotToVal/valToSlot, and hold the
+  //   resolve / reject functions in importedVPIDs . Userspace sees
+  //   this Promise. A `dispatch.notify` will resolve it. Any messages
+  //   sent to it will be queued into the kernel, which will wait for
+  //   a `syscall.resolve` and then send the messages to the resulting
+  //   object's home vat.
 
   // * Each dispatch.deliver causes the creation of a `res` Promise
-  //   for the result of the local delivery. If a result= vpid was
-  //   provided, we use `res.then` to wait for it to resolve. If/when
-  //   that happens, `thenHandler` does both a syscall.resolve() and
-  //   checks/resolves `importedPromisesByPromiseID`.
+  //   for the result of the local delivery. If a new result= vpid was
+  //   provided, we register `res` under `resultVPID` and use
+  //   `res.then` to wait for it to resolve. If/when that happens,
+  //   `followForKernel` does both a syscall.resolve() and removes it
+  //   from `exportedVPIDs`.
 
-  // * So if we wind up with both a real "imported" Promise and a
-  //   result vpid, any messages our userspace sends to the Promise
-  //   will be queued into the kernel, even though we're going to be
-  //   calling syscall.resolve . If we resolve it to something local,
-  //   those messages will take a round-trip through the kernel. It
-  //   might be nice to forward `res` to the generated Promise, to
-  //   avoid that trip in some cases.
+  // * If dispatch.deliver was given an *existing* (importedVPIDs)
+  //   resultVPID, we leave that old+imported promise registered as
+  //   resultVPID, but we forward it to `res`. We then remove it from
+  //   importedVPIDs and add it to exportedVPIDs. And we use a `.then`
+  //   on the old promise and `followForKernel` to wait for it to
+  //   resolve, which won't happen until `res` resolves.
+
+  //  * As a result, any messages our userspace sends to the Promise
+  //    will be forwarded(?) to 'res', and will be queued locally, and
+  //    won't go to the kernel.
 
   // * Also, our vat will do both `syscall.subscribe` and
   //   `syscall.resolve` for the same vpid. The `resolve` will
   //   schedule a `dispatch.notify` to us, as a subscriber, however it
   //   will also retire the c-list entry, so the notify will be
   //   cancelled when it finally gets to the front of the queue. Which
-  //   is good, because we won't recognize the vpid by that point, and
-  //   besides `thenHandler` did the necessary resolve/reject already.
+  //   is good, because we won't recognize the vpid by that point.
 
   function build(_vatPowers) {
     return Far('root', {
@@ -1602,14 +1605,9 @@ test('result promise in args', async t => {
   t.is(log.shift().type, 'subscribe'); // result of two()
 
   const s3 = log.shift();
-  t.is(s3.type, 'send');
-  t.is(s3.targetSlot, resP); // huh, this will be queued in the kernel
-  t.is(log.shift().type, 'subscribe'); // result of three()
-
-  const s4 = log.shift();
-  t.is(s4.type, 'resolve');
-  t.is(s4.resolutions.length, 1);
-  t.deepEqual(s4.resolutions[0], [resP, false, capargs('four')]);
+  t.is(s3.type, 'resolve');
+  t.is(s3.resolutions.length, 1);
+  t.deepEqual(s3.resolutions[0], [resP, false, capargs('four')]);
 
   t.deepEqual(vatlog, ['res: four']);
 });

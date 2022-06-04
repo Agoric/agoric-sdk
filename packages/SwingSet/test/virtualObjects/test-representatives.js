@@ -384,7 +384,7 @@ test('virtual object gc', async t => {
   }
   t.deepEqual(remainingVOs, {
     'v1.vs.baggageID': 'o+6/1',
-    'v1.vs.idCounters': '{"exportID":11,"collectionID":4,"promiseID":8}',
+    'v1.vs.idCounters': '{"exportID":11,"collectionID":5,"promiseID":8}',
     'v1.vs.kindIDID': '1',
     'v1.vs.storeKindIDTable':
       '{"scalarMapStore":2,"scalarWeakMapStore":3,"scalarSetStore":4,"scalarWeakSetStore":5,"scalarDurableMapStore":6,"scalarDurableWeakMapStore":7,"scalarDurableSetStore":8,"scalarDurableWeakSetStore":9}',
@@ -394,14 +394,19 @@ test('virtual object gc', async t => {
     'v1.vs.vc.1.|schemata':
       '{"body":"[{\\"@qclass\\":\\"tagged\\",\\"tag\\":\\"match:kind\\",\\"payload\\":\\"string\\"}]","slots":[]}',
     'v1.vs.vc.2.|entryCount': '0',
-    'v1.vs.vc.2.|label': 'promiseWatcherByKind',
+    'v1.vs.vc.2.|label': 'promiseRegistrations',
     'v1.vs.vc.2.|nextOrdinal': '1',
     'v1.vs.vc.2.|schemata':
       '{"body":"[{\\"@qclass\\":\\"tagged\\",\\"tag\\":\\"match:scalar\\",\\"payload\\":{\\"@qclass\\":\\"undefined\\"}}]","slots":[]}',
     'v1.vs.vc.3.|entryCount': '0',
-    'v1.vs.vc.3.|label': 'watchedPromises',
+    'v1.vs.vc.3.|label': 'promiseWatcherByKind',
     'v1.vs.vc.3.|nextOrdinal': '1',
     'v1.vs.vc.3.|schemata':
+      '{"body":"[{\\"@qclass\\":\\"tagged\\",\\"tag\\":\\"match:scalar\\",\\"payload\\":{\\"@qclass\\":\\"undefined\\"}}]","slots":[]}',
+    'v1.vs.vc.4.|entryCount': '0',
+    'v1.vs.vc.4.|label': 'watchedPromises',
+    'v1.vs.vc.4.|nextOrdinal': '1',
+    'v1.vs.vc.4.|schemata':
       '{"body":"[{\\"@qclass\\":\\"tagged\\",\\"tag\\":\\"match:kind\\",\\"payload\\":\\"string\\"}]","slots":[]}',
     'v1.vs.vom.es.o+10/3': 'r',
     'v1.vs.vom.o+10/2': '{"label":{"body":"\\"thing #2\\"","slots":[]}}',
@@ -409,11 +414,11 @@ test('virtual object gc', async t => {
     'v1.vs.vom.o+10/8': '{"label":{"body":"\\"thing #8\\"","slots":[]}}',
     'v1.vs.vom.o+10/9': '{"label":{"body":"\\"thing #9\\"","slots":[]}}',
     'v1.vs.vom.rc.o+6/1': '1',
-    'v1.vs.vom.rc.o+6/2': '1',
     'v1.vs.vom.rc.o+6/3': '1',
+    'v1.vs.vom.rc.o+6/4': '1',
     'v1.vs.vom.vkind.10': '{"kindID":"10","tag":"thing"}',
-    'v1.vs.watchedPromiseTableID': 'o+6/3',
-    'v1.vs.watcherTableID': 'o+6/2',
+    'v1.vs.watchedPromiseTableID': 'o+6/4',
+    'v1.vs.watcherTableID': 'o+6/3',
   });
 });
 
