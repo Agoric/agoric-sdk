@@ -16,6 +16,9 @@
     "centralSupply": {
       "sourceSpec": "@agoric/vats/src/centralSupply.js"
     },
+    "chainStorage": {
+      "sourceSpec": "@agoric/vats/src/vat-chainStorage.js"
+    },
     "mintHolder": {
       "sourceSpec": "@agoric/vats/src/mintHolder.js"
     },
