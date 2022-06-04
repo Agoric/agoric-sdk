@@ -34,7 +34,6 @@ const calcCrc = (data, crcDigits) => {
  * @param {object} [options]
  * @param {string} [options.prefix]
  * @param {number} [options.crcDigits]
- * @returns {Board}
  */
 function makeBoard(
   initSequence = 0,
@@ -83,7 +82,6 @@ function makeBoard(
     ),
   });
 
-  /** @type {Board} */
   const board = Far('Board', {
     getPublishingMarshaller: () => publishingMarshaller,
     getReadonlyMarshaller: () => readonlyMarshaller,

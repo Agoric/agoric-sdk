@@ -189,7 +189,7 @@
  *   bldIssuerKit: RemoteIssuerKit,
  *   board: Board,
  *   bridgeManager: OptionalBridgeManager,
- *   chainStorage: unknown,
+ *   chainStorage: ChainStorageNode | undefined,
  *   chainTimerService: TimerService,
  *   client: ClientManager,
  *   clientCreator: ClientCreator,
@@ -207,6 +207,8 @@
  *   provisioning: Awaited<ProvisioningVat>,
  *   zoe: ZoeService,
  * }>} ChainBootstrapSpace
+ *
+ * @typedef {ReturnType<import('../lib-chainStorage.js').makeChainStorageRoot>} ChainStorageNode
  *
  * IDEA/TODO: make types of demo stuff invisible in production behaviors
  * @typedef {{

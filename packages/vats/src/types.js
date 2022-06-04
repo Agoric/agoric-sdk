@@ -6,12 +6,7 @@
  */
 
 /**
- * @typedef {object} Board
- * @property {(id: string) => any} getValue
- * @property {(value: unknown) => string} getId
- * @property {(value: unknown) => boolean} has
- * @property {() => string[]} ids
- * @property {(...path: string[]) => Promise<unknown>} lookup
+ * @typedef {ReturnType<typeof import('./lib-board.js').makeBoard>} Board
  */
 
 /**
