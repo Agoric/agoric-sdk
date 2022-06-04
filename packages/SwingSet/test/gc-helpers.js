@@ -12,8 +12,8 @@ import {
   validate,
   validateDone,
   validateReturned,
-} from '../../liveslots-helpers.js';
-import { capargs } from '../../util.js';
+} from './liveslots-helpers.js';
+import { capargs } from './util.js';
 
 // These tests follow the model described in
 // ../virtualObjects/test-virtualObjectGC.js
