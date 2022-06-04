@@ -71,6 +71,7 @@ export const setupBootstrap = (t, optTimer = undefined) => {
 
   const timer = optTimer || buildManualTimer(t.log);
   produce.chainTimerService.resolve(timer);
+  produce.chainStorage.resolve(undefined);
 
   const {
     zoe,

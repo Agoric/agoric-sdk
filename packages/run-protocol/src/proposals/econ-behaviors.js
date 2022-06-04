@@ -166,6 +166,8 @@ export const startInterchainPool = async (
 };
 harden(startInterchainPool);
 
+const AMM_STORAGE_PATH = 'amm'; // TODO: share with agoricNames?
+
 /**
  * @param { EconomyBootstrapPowers } powers
  * @param {{ options?: { minInitialPoolLiquidity?: bigint }}} opts
@@ -173,9 +175,11 @@ harden(startInterchainPool);
 export const setupAmm = async (
   {
     consume: {
+      board,
       chainTimerService,
       zoe,
       economicCommitteeCreatorFacet: committeeCreator,
+      chainStorage,
     },
     produce: {
       ammCreatorFacet,
@@ -214,6 +218,11 @@ export const setupAmm = async (
     AmountMath.make(runBrand, minInitialPoolLiquidity),
   );
 
+  const chainStoragePresence = await chainStorage;
+  const ammChainStorage = await (chainStoragePresence &&
+    E(chainStoragePresence).getChildNode(AMM_STORAGE_PATH));
+  const marshaller = E(board).getPublishingMarshaller();
+
   const ammGovernorTerms = {
     timer,
     electorateInstance,
@@ -221,7 +230,11 @@ export const setupAmm = async (
     governed: {
       terms: ammTerms,
       issuerKeywordRecord: { Central: centralIssuer },
-      privateArgs: { initialPoserInvitation: poserInvitation },
+      privateArgs: {
+        initialPoserInvitation: poserInvitation,
+        storageNode: ammChainStorage,
+        marshaller,
+      },
     },
   };
   /** @type {{ creatorFacet: GovernedContractFacetAccess<XYKAMMCreatorFacet>, publicFacet: GovernorPublic, instance: Instance }} */

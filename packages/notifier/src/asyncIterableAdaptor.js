@@ -99,7 +99,7 @@ export const makeAsyncIterableFromNotifier = notifierP => {
  * @returns {Promise<undefined>}
  */
 export const observeIterator = (asyncIteratorP, iterationObserver) => {
-  return new Promise(ack => {
+  return new Promise((ack, observerError) => {
     const recur = () => {
       E.when(
         E(asyncIteratorP).next(),
@@ -117,7 +117,7 @@ export const observeIterator = (asyncIteratorP, iterationObserver) => {
           iterationObserver.fail && iterationObserver.fail(reason);
           ack(undefined);
         },
-      );
+      ).catch(observerError);
     };
     recur();
   });
