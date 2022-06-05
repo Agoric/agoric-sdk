@@ -246,20 +246,18 @@ function makeManagerKit(
 
       // but if the puppy deviates one inch from previous twitches, explode
       kernelSlog.syscall(vatID, undefined, vso);
-      const data = transcriptManager.simulateSyscall(vso);
-      return harden(['ok', data]);
+      const vres = transcriptManager.simulateSyscall(vso);
+      return vres;
     }
 
     const vres = vatSyscallHandler(vso);
     // vres is ['error', reason] or ['ok', null] or ['ok', capdata] or ['ok', string]
     const [successFlag, data] = vres;
-    if (successFlag === 'ok') {
-      if (data && !workerCanBlock) {
-        console.log(`warning: syscall returns data, but worker cannot get it`);
-      }
-      if (transcriptManager) {
-        transcriptManager.addSyscall(vso, data);
-      }
+    if (successFlag === 'ok' && data && !workerCanBlock) {
+      console.log(`warning: syscall returns data, but worker cannot get it`);
+    }
+    if (transcriptManager) {
+      transcriptManager.addSyscall(vso, vres);
     }
     return vres;
   }
