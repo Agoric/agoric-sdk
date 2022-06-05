@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop */
 // @ts-check
 
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
@@ -36,6 +37,7 @@ import { unsafeMakeBundleCache } from '../bundleTool.js';
 
 /** @typedef {Record<string, any> & {
  *   aethKit: IssuerKit,
+ *   committee: import('../supports.js').VoterTool,
  *   reserveCreatorFacet: AssetReserveCreatorFacet,
  *   runKit: IssuerKit,
  * }} Context */
@@ -237,8 +239,8 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
  * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
  *
  * @param {import('ava').ExecutionContext} t
- * @param {Amount} initialPrice
- * @param {Amount} priceBase
+ * @param {Amount<'nat'>} initialPrice
+ * @param {Amount<'nat'>} priceBase
  * @param {TimerService} timer
  */
 const setupServices = async (
@@ -348,6 +350,11 @@ const setupServices = async (
 // #region driver
 const AT_NEXT = {};
 
+/**
+ * @param {import('ava').ExecutionContext<Context>} t
+ * @param {Amount<'nat'>} initialPrice
+ * @param {Amount<'nat'>} priceBase
+ */
 const makeDriver = async (t, initialPrice, priceBase) => {
   const timer = buildManualTimer(t.log);
   const services = await setupServices(t, initialPrice, priceBase, timer);
@@ -370,6 +377,10 @@ const makeDriver = async (t, initialPrice, priceBase) => {
   let currentSeat;
   let notification = {};
   let currentOfferResult;
+  /**
+   * @param {Amount<'nat'>} collateral
+   * @param {Amount<'nat'>} debt
+   */
   const makeVaultDriver = async (collateral, debt) => {
     /** @type {UserSeat<VaultKit>} */
     const vaultSeat = await E(zoe).offer(
@@ -418,6 +429,10 @@ const makeDriver = async (t, initialPrice, priceBase) => {
         }
         return notification;
       },
+      /**
+       * @param {Amount<'nat'>} loanAmount
+       * @param {Ratio} loanFee
+       */
       checkBorrowed: async (loanAmount, loanFee) => {
         const debtAmount = await E(vault).getCurrentDebt();
         const fee = ceilMultiplyBy(loanAmount, loanFee);
@@ -428,6 +443,10 @@ const makeDriver = async (t, initialPrice, priceBase) => {
         );
         return debtAmount;
       },
+      /**
+       * @param {Amount<'nat'>} expectedDebt
+       * @param {Amount<'nat'>} expectedAEth
+       */
       checkBalance: async (expectedDebt, expectedAEth) => {
         t.deepEqual(await E(vault).getCurrentDebt(), expectedDebt);
         t.deepEqual(await E(vault).getCollateralAmount(), expectedAEth);
@@ -440,9 +459,9 @@ const makeDriver = async (t, initialPrice, priceBase) => {
     currentSeat: () => currentSeat,
     lastOfferResult: () => currentOfferResult,
     timer: () => timer,
-    tick: (ticks = 1) => {
+    tick: async (ticks = 1) => {
       for (let i = 0; i < ticks; i += 1) {
-        timer.tick();
+        await timer.tick();
       }
     },
     makeVaultDriver,
@@ -458,6 +477,12 @@ const makeDriver = async (t, initialPrice, priceBase) => {
         RUN: expectedRUN,
       });
     },
+    /**
+     * @param {Amount<'nat'>} give
+     * @param {Amount<'nat'>} want
+     * @param {Amount<'nat'>} [optStopAfter]
+     * @param {AmountKeywordRecord} [expected]
+     */
     sellOnAMM: async (give, want, optStopAfter, expected) => {
       const swapInvitation = E(
         services.ammFacets.ammPublicFacet,
@@ -479,8 +504,18 @@ const makeDriver = async (t, initialPrice, priceBase) => {
         t.like(payouts, expected);
       }
     },
+    /**
+     * New numerator over basePrice
+     *
+     * @param {Amount<'nat'>} p
+     */
     setPrice: p => priceAuthority.setPrice(makeRatioFromAmounts(p, priceBase)),
-    // setLiquidationTerms('MaxImpactBP', 80n)
+    /**
+     * e.g. setLiquidationTerms('MaxImpactBP', 80n)
+     *
+     * @param {Keyword} name
+     * @param {Record<string, unknown>} newValue
+     */
     setLiquidationTerms: async (name, newValue) => {
       const deadline = 3n;
       const { cast, outcome } = await E(t.context.committee).changeParam(
