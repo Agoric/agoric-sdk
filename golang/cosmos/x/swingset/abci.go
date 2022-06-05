@@ -37,7 +37,7 @@ func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) erro
 
 	action := &beginBlockAction{
 		Type:        "BEGIN_BLOCK",
-		StoragePort: vm.GetPort("storage"),
+		StoragePort: vm.GetPort("vstorage"),
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 		ChainID:     ctx.ChainID(),

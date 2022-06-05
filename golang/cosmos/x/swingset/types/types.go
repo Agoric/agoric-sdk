@@ -4,10 +4,18 @@ import (
 	"encoding/json"
 	"errors"
 
+	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 const EmptyMailboxValue = `"{\"outbox\":[], \"ack\":0}"`
+
+// Returns a new Mailbox with an empty mailbox
+func NewMailbox() *vstoragetypes.Data {
+	return &vstoragetypes.Data{
+		Value: EmptyMailboxValue,
+	}
+}
 
 func NewEgress(nickname string, peer sdk.AccAddress, powerFlags []string) *Egress {
 	return &Egress{
@@ -15,21 +23,6 @@ func NewEgress(nickname string, peer sdk.AccAddress, powerFlags []string) *Egres
 		Peer:       peer,
 		PowerFlags: powerFlags,
 	}
-}
-
-func NewStorage() *Storage {
-	return &Storage{}
-}
-
-// Returns a new Mailbox with an empty mailbox
-func NewMailbox() *Storage {
-	return &Storage{
-		Value: EmptyMailboxValue,
-	}
-}
-
-func NewKeys() *Keys {
-	return &Keys{}
 }
 
 // FIXME: Should have @agoric/nat
