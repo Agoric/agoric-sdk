@@ -5,11 +5,6 @@ inputs:
   go-version:
     description: 'The version of Go to use'
     required: true
-  cache-key:
-    description: pkg/mod cache key
-    required: false
-    type: string
-    default: latest
 
 runs:
   using: composite
@@ -24,14 +19,16 @@ runs:
     - uses: actions/setup-go@v2
       with:
         go-version: ${{ inputs.go-version }}
+    - uses: kenchan0130/actions-system-info@master
+      id: system-info
     - name: cache Go modules
       id: cache
       uses: actions/cache@v1
       with:
         path: ${{ env.GOPATH }}/pkg/mod
-        key: ${{ runner.os }}-${{ inputs.cache-key }}-go-${{ hashFiles('go.sum') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-go-${{ inputs.go-version }}-built-${{ hashFiles('go.sum') }}
         restore-keys: |
-          ${{ runner.os }}-${{ inputs.cache-key }}-go-
+          ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-go-${{ inputs.go-version }}-built-
     - name: go mod download
       run: go mod download
       shell: bash
