@@ -5,11 +5,6 @@ inputs:
   go-version:
     description: 'The version of Go to use'
     required: true
-  cache-key:
-    description: pkg/mod cache key
-    required: false
-    type: string
-    default: latest
 
 runs:
   using: composite
