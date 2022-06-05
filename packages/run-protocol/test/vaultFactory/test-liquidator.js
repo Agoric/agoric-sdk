@@ -897,3 +897,72 @@ test('penalties to reserve', async t => {
 
   await d.checkReserveAllocation(1000n, 29n);
 });
+
+test.only('case 5513', async t => {
+  // 1. set up
+  // diff: report had IbcATOM
+  const { aethKit: aeth, runKit: run } = t.context;
+  const d = await makeDriver(
+    t,
+    // report had price 0.2
+    AmountMath.make(run.brand, 200n * BASIS_POINTS),
+    AmountMath.make(aeth.brand, 1_000n * BASIS_POINTS), // denominator for prices
+  );
+
+  // 2. set the Oracle price to 12.34 using the manual oracle
+  d.setPrice(AmountMath.make(run.brand, 1234n * BASIS_POINTS));
+
+  // 3. raise LiquidationMargin to 200% using another governance vote
+
+  // 4. borrow n=??? RUN against 3 ATOM at 225% collateralization ratio
+  const dv = await d.makeVaultDriver(
+    AmountMath.make(aeth.brand, 3n * BASIS_POINTS),
+    AmountMath.make(run.brand, 1n * BASIS_POINTS),
+  );
+  await dv.notified(Phase.ACTIVE, {
+    debtSnapshot: {
+      debt: AmountMath.make(run.brand, 1n * BASIS_POINTS + 500n),
+      interest: makeRatio(100n, run.brand),
+    },
+  });
+
+  // 5. set Oracle price to 40
+  d.setPrice(AmountMath.make(run.brand, 4000n * BASIS_POINTS));
+
+  // 6. make a big AMM trade to set the price to 20 (I think...)
+  await d.sellOnAMM(
+    AmountMath.make(aeth.brand, 200n),
+    AmountMath.makeEmpty(run.brand),
+    undefined,
+    {
+      In: AmountMath.make(aeth.brand, 0n),
+      Out: AmountMath.make(run.brand, 331n),
+    },
+  );
+  // TODO confirm the new price
+  await dv.notified(Phase.ACTIVE);
+  await dv.checkBalance(
+    AmountMath.make(run.brand, 1n * BASIS_POINTS + 500n),
+    AmountMath.make(aeth.brand, 30_000n),
+  );
+
+  // 7. do the big AMM trade again (cuz it wasn't clear that it worked); price becomes 40 (I think)
+  await d.sellOnAMM(
+    AmountMath.make(aeth.brand, 200n),
+    AmountMath.makeEmpty(run.brand),
+    undefined,
+    {
+      In: AmountMath.make(aeth.brand, 0n),
+      Out: AmountMath.make(run.brand, 331n),
+    },
+  );
+  // TODO confirm the new price
+
+  // 8. set the Oracle price to 12 in an attempt to force liquidation
+  d.setPrice(AmountMath.make(run.brand, 1200n));
+
+  // 9. fail to observe liquidation
+  // in this test currently, it does fail as in the ticket if we don't want for promises to settle
+  await waitForPromisesToSettle();
+  await dv.notified(Phase.LIQUIDATED);
+});
