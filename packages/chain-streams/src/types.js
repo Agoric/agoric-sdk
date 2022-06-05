@@ -58,4 +58,5 @@ export {};
  * @typedef {object} ChainStoreKey
  * @property {string} storeName
  * @property {Uint8Array} storeSubkey
+ * @property {Uint8Array} [dataPrefixBytes]
  */

@@ -87,6 +87,16 @@ export const startFakeServer = (t, fakeValues) => {
         rpcAddrs: [`http://localhost:${PORT}/tendermint-rpc`],
       });
     });
+
+    const dataPrefix = new Uint8Array([0]);
+    const encode = obj => {
+      const str = JSON.stringify(obj);
+      const ascii = toAscii(str);
+      const buf = new Uint8Array(dataPrefix.length + ascii.length);
+      buf.set(dataPrefix);
+      buf.set(ascii, dataPrefix.length);
+      return toBase64(buf);
+    };
     app.post('/tendermint-rpc', (req, res) => {
       log('received', req.path, req.body, req.params);
       const reply = result => {
@@ -106,9 +116,7 @@ export const startFakeServer = (t, fakeValues) => {
           const value =
             fakeValues.length === 0
               ? null
-              : toBase64(
-                  toAscii(JSON.stringify(serialize(fakeValues.shift()))),
-                );
+              : encode(serialize(fakeValues.shift()));
           const result = {
             response: {
               code: 0,

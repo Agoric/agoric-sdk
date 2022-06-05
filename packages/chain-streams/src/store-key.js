@@ -11,13 +11,32 @@ const swingsetPathToStoreKey = storagePath =>
     storeSubkey: toAscii(`swingset/data:${storagePath}`),
   });
 
-export const DEFAULT_PATH_CONVERTER = swingsetPathToStoreKey;
+const PATH_SEPARATOR_BYTE = '.'.charCodeAt(0);
+const DATA_PREFIX_BYTES = new Uint8Array([0]);
+
+/**
+ * @param {string} storagePath
+ * @param {string} [storeName]
+ * @returns {import('./types').ChainStoreKey}
+ */
+const vstoragePathToStoreKey = (storagePath, storeName = 'vstorage') => {
+  const elems = storagePath ? storagePath.split('.') : [];
+  const buf = toAscii(`${elems.length}.${storagePath}`);
+  return harden({
+    storeName,
+    storeSubkey: buf.map(b => (b === PATH_SEPARATOR_BYTE ? 0 : b)),
+    dataPrefixBytes: DATA_PREFIX_BYTES,
+  });
+};
+
+export const DEFAULT_PATH_CONVERTER = vstoragePathToStoreKey;
 
 /**
  * @type {Record<string, (path: string) => import('./types').ChainStoreKey>}
  */
 export const pathPrefixToConverters = harden({
   'swingset:': swingsetPathToStoreKey,
+  'vstore:': vstoragePathToStoreKey,
   ':': DEFAULT_PATH_CONVERTER,
 });
 

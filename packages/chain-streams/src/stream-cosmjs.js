@@ -89,7 +89,11 @@ export const makeChainStream = (leader, storeKey, options = {}) => {
     integrity = 'optimistic',
     crasher = null,
   } = options;
-  const { storeName, storeSubkey } = storeKey;
+  const {
+    storeName,
+    storeSubkey,
+    dataPrefixBytes = new Uint8Array(),
+  } = storeKey;
 
   /** @type {QueryVerifier} */
   const queryVerifier = integrityToQueryVerifier[integrity];
@@ -144,7 +148,22 @@ export const makeChainStream = (leader, storeKey, options = {}) => {
         throw error;
       }
       assert(result);
-      return result;
+
+      if (result.length === 0) {
+        // No data.
+        return result;
+      }
+
+      // Handle the data prefix if any.
+      assert(
+        result.length >= dataPrefixBytes.length,
+        X`result too short for data prefix ${dataPrefixBytes}`,
+      );
+      assert(
+        dataPrefixBytes.every((v, i) => v === result[i]),
+        X`${result} doesn't start with data prefix ${dataPrefixBytes}`,
+      );
+      return result.slice(dataPrefixBytes.length);
     };
 
   const getProvenValueAtHeight = makeQuerier('queryVerified', storeName);

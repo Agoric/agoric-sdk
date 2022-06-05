@@ -69,7 +69,7 @@ test('missing rpc server', async t => {
 });
 
 test('unrecognized integrity', async t => {
-  await t.throwsAsync(() => makeChainStream({}, {}, { integrity: 'bother' }), {
+  await t.throws(() => makeChainStream({}, {}, { integrity: 'bother' }), {
     message: /unrecognized stream integrity mode.*/,
   });
 });
