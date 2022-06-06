@@ -1,4 +1,4 @@
-import fs from 'fs';
+import tmp from 'tmp';
 
 import test from 'ava';
 import {
@@ -8,22 +8,20 @@ import {
   isJSONStore,
 } from '../src/json-store.js';
 
-function rimraf(dirPath) {
-  try {
-    // Node.js 16.8.0 warns:
-    // In future versions of Node.js, fs.rmdir(path, { recursive: true }) will
-    // be removed. Use fs.rm(path, { recursive: true }) instead
-    if (fs.rmSync) {
-      fs.rmSync(dirPath, { recursive: true });
-    } else {
-      fs.rmdirSync(dirPath, { recursive: true });
-    }
-  } catch (e) {
-    if (e.code !== 'ENOENT') {
-      throw e;
-    }
-  }
-}
+/**
+ * @param {string} [prefix]
+ * @returns {Promise<[string, () => void]>}
+ */
+const tmpDir = prefix =>
+  new Promise((resolve, reject) => {
+    tmp.dir({ unsafeCleanup: true, prefix }, (err, name, removeCallback) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve([name, removeCallback]);
+      }
+    });
+  });
 
 function testStorage(t, storage) {
   t.falsy(storage.has('missing'));
@@ -56,16 +54,15 @@ function testStorage(t, storage) {
   t.deepEqual(getAllState(storage), reference, 'check state after changes');
 }
 
-test('storageInFile', t => {
-  const dbDir = 'testdb';
-  t.teardown(() => rimraf(dbDir));
-  rimraf(dbDir);
+test('storageInFile', async t => {
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
   t.is(isJSONStore(dbDir), false);
   const { storage, commit, close } = initJSONStore(dbDir);
   testStorage(t, storage);
-  commit();
+  await commit();
   const before = getAllState(storage);
-  close();
+  await close();
   t.is(isJSONStore(dbDir), true);
 
   const { storage: after } = openJSONStore(dbDir);

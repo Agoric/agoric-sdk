@@ -1,10 +1,11 @@
+// @ts-check
+
 // import LMDB before SES lockdown, as workaround for
 // https://github.com/Agoric/SES-shim/issues/308
-import 'node-lmdb';
+import 'lmdb';
 import '@endo/init';
 
-import fs from 'fs';
-
+import tmp from 'tmp';
 import test from 'ava';
 
 import {
@@ -14,22 +15,20 @@ import {
   isSwingStore,
 } from '../src/swingStore.js';
 
-function rimraf(dirPath) {
-  try {
-    // Node.js 16.8.0 warns:
-    // In future versions of Node.js, fs.rmdir(path, { recursive: true }) will
-    // be removed. Use fs.rm(path, { recursive: true }) instead
-    if (fs.rmSync) {
-      fs.rmSync(dirPath, { recursive: true });
-    } else {
-      fs.rmdirSync(dirPath, { recursive: true });
-    }
-  } catch (e) {
-    if (e.code !== 'ENOENT') {
-      throw e;
-    }
-  }
-}
+/**
+ * @param {string} [prefix]
+ * @returns {Promise<[string, () => void]>}
+ */
+const tmpDir = prefix =>
+  new Promise((resolve, reject) => {
+    tmp.dir({ unsafeCleanup: true, prefix }, (err, name, removeCallback) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve([name, removeCallback]);
+      }
+    });
+  });
 
 function testKVStore(t, store) {
   const kvStore = store.kvStore;
@@ -70,27 +69,44 @@ test('in-memory kvStore read/write', t => {
   testKVStore(t, initSwingStore(null));
 });
 
-test('persistent kvStore read/write/re-open', t => {
-  const dbDir = 'testdb';
-  t.teardown(() => rimraf(dbDir));
-  rimraf(dbDir);
+test('persistent kvStore read/write/re-open', async t => {
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
   t.is(isSwingStore(dbDir), false);
   const store = initSwingStore(dbDir);
   const { commit, close } = store;
   testKVStore(t, store);
-  commit();
+  await commit();
   const before = getAllState(store);
-  close();
+  await close();
   t.is(isSwingStore(dbDir), true);
 
   const store2 = openSwingStore(dbDir);
   const { close: close2 } = store2;
   t.deepEqual(getAllState(store2), before, 'check state after reread');
   t.is(isSwingStore(dbDir), true);
-  close2();
+  await close2();
 });
 
-function testStreamStore(t, dbDir) {
+test('persistent kvStore maxKeySize write', async t => {
+  // Vat collections assume they have 220 characters for their key space.
+  // This is based on previous math where LMDB's key size was 511 bytes max
+  // and the native UTF-16 encoding of JS strings, minus some overhead
+  // for vat store prefixes.
+  // However some unicode codepoints may end up serialized as 3 bytes with UTF-8
+  // This tests that no matter what, we can write 254 unicode characters in the
+  // 0x0800 - 0xFFFF range (single UTF-16 codepoint, but 3 byte UTF-8).
+
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
+  t.is(isSwingStore(dbDir), false);
+  const store = initSwingStore(dbDir);
+  store.kvStore.set('€'.repeat(254), 'Money!');
+  await store.commit();
+  await store.close();
+});
+
+async function testStreamStore(t, dbDir) {
   const { streamStore, commit, close } = initSwingStore(dbDir);
 
   const start = streamStore.STREAM_START;
@@ -125,23 +141,22 @@ function testStreamStore(t, dbDir) {
   const readerEmpty2 = streamStore.readStream('empty', start, start);
   t.deepEqual(Array.from(readerEmpty2), []);
 
-  commit();
-  close();
+  await commit();
+  await close();
 }
 
-test('in-memory streamStore read/write', t => {
-  testStreamStore(t, null);
+test('in-memory streamStore read/write', async t => {
+  await testStreamStore(t, null);
 });
 
-test('persistent streamStore read/write', t => {
-  const dbDir = 'testdb';
-  t.teardown(() => rimraf(dbDir));
-  rimraf(dbDir);
+test('persistent streamStore read/write', async t => {
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
   t.is(isSwingStore(dbDir), false);
-  testStreamStore(t, dbDir);
+  await testStreamStore(t, dbDir);
 });
 
-function testStreamStoreModeInterlock(t, dbDir) {
+async function testStreamStoreModeInterlock(t, dbDir) {
   const { streamStore, commit, close } = initSwingStore(dbDir);
   const start = streamStore.STREAM_START;
 
@@ -152,7 +167,7 @@ function testStreamStoreModeInterlock(t, dbDir) {
   t.throws(() => streamStore.readStream('st1', start, s1pos), {
     message: `can't read stream "st1" because it's already in use`,
   });
-  t.throws(() => streamStore.writeStreamItem('st1', start, s1pos), {
+  t.throws(() => streamStore.writeStreamItem('st1', 'second', s1pos), {
     message: `can't write stream "st1" because it's already in use`,
   });
   streamStore.closeStream('st1');
@@ -162,18 +177,17 @@ function testStreamStoreModeInterlock(t, dbDir) {
 
   streamStore.closeStream('nonexistent');
 
-  commit();
-  close();
+  await commit();
+  await close();
 }
 
-test('in-memory streamStore mode interlock', t => {
-  testStreamStoreModeInterlock(t, null);
+test('in-memory streamStore mode interlock', async t => {
+  await testStreamStoreModeInterlock(t, null);
 });
 
-test('persistent streamStore mode interlock', t => {
-  const dbDir = 'testdb';
-  t.teardown(() => rimraf(dbDir));
-  rimraf(dbDir);
+test('persistent streamStore mode interlock', async t => {
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
   t.is(isSwingStore(dbDir), false);
-  testStreamStoreModeInterlock(t, dbDir);
+  await testStreamStoreModeInterlock(t, dbDir);
 });

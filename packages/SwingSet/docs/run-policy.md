@@ -88,7 +88,7 @@ while(1) {
   processInboundIO();
   const policy = make100CrankPolicy();
   await controller.run(policy);
-  commit();
+  await commit();
   processOutboundIO();
 }
 ```

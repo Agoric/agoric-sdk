@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import '@endo/init/pre-bundle-source.js';
-import 'node-lmdb';
+import 'lmdb';
 import '@endo/init';
 
 import fs from 'fs';
@@ -65,8 +65,8 @@ async function main() {
   );
 
   kvStore.set('kernelBundle', JSON.stringify(kernelBundle));
-  swingStore.commit();
-  swingStore.close();
+  await swingStore.commit();
+  await swingStore.close();
 }
 
 main().then(
