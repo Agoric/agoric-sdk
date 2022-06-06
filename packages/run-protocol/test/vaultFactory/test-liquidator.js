@@ -529,6 +529,26 @@ const makeDriver = async (t, initialPrice, priceBase) => {
       await driver.tick(3);
       await outcome;
     },
+    /**
+     * e.g. setCollateralTerms(atom, 'LiquidationMargin', ratio1)
+     *
+     * @param {Brand} brand
+     * @param {Keyword} name
+     * @param {Record<string, unknown>} newValue
+     */
+    setCollateralTerms: async (brand, name, newValue) => {
+      const deadline = 3n + (await timer.getCurrentTimestamp());
+      const { cast, outcome } = await E(t.context.committee).changeParam(
+        harden({
+          paramPath: { key: { collateralBrand: brand } },
+          changes: { [name]: newValue },
+        }),
+        deadline,
+      );
+      await cast;
+      await driver.tick(3);
+      await outcome;
+    },
     managerNotified: async (likeExpected, optSince) => {
       managerNotification = await E(managerNotifier).getUpdateSince(
         optSince === AT_NEXT ? managerNotification.updateCount : optSince,
