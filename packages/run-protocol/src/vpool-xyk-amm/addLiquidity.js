@@ -6,7 +6,6 @@ import {
   natSafeMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
 
 import '@agoric/zoe/exported.js';
 
@@ -16,7 +15,7 @@ const { add, multiply } = natSafeMath;
  * @param {(brand: Brand) => XYKPool} getPool
  */
 const makeMakeAddLiquidityInvitation = (zcf, getPool) => {
-  const addLiquidity = async seat => {
+  const addLiquidity = seat => {
     assertProposalShape(seat, {
       give: {
         Central: null,
@@ -27,8 +26,8 @@ const makeMakeAddLiquidityInvitation = (zcf, getPool) => {
     // Get the brand of the secondary token so we can identify the liquidity pool.
     const secondaryBrand = seat.getProposal().give.Secondary.brand;
     const pool = getPool(secondaryBrand);
-    const liquidityIssuer = E(pool).getLiquidityIssuer();
-    const liquidityBrand = await E(liquidityIssuer).getBrand();
+    const liquidityIssuer = pool.getLiquidityIssuer();
+    const liquidityBrand = zcf.getBrandForIssuer(liquidityIssuer);
     assert(
       seat.getProposal().want.Liquidity.brand === liquidityBrand,
       `liquidity brand must be ${liquidityBrand}`,
