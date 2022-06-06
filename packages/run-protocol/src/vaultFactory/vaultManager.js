@@ -327,6 +327,7 @@ const helperBehavior = {
     // and process liquidations over time.
     if (!liquidationInProgress) {
       liquidationInProgress = true;
+      trace('interlock first time through');
       // eslint-disable-next-line consistent-return
       return facets.helper
         .processLiquidations()
@@ -338,6 +339,7 @@ const helperBehavior = {
 
     if (!outstandingQuote) {
       // the new threshold will be picked up by the next quote request
+      trace('no oustanding quote');
       return;
     }
 
@@ -346,6 +348,7 @@ const helperBehavior = {
     // Update the current in-progress quote.
     const govParams = state.factoryPowers.getGovernedParams();
     const liquidationMargin = govParams.getLiquidationMargin();
+    trace({ liquidationMargin });
     // Safe to call extraneously (lightweight and idempotent)
     E(outstandingQuote).updateLevel(
       highestDebtRatio.denominator, // collateral
@@ -364,7 +367,7 @@ const helperBehavior = {
     async function* eventualLiquidations() {
       while (true) {
         trace('eventualLiquidations iteration');
-        const highestDebtRatio = prioritizedVaults.highestRatio();
+        let highestDebtRatio = prioritizedVaults.highestRatio();
         if (!highestDebtRatio) {
           return;
         }
@@ -373,11 +376,27 @@ const helperBehavior = {
         // ask to be alerted when the price level falls enough that the vault
         // with the highest debt to collateral ratio will no longer be valued at the
         // liquidationMargin above its debt.
+        // highestDebtRatio = makeRatio(
+        //   100n,
+        //   highestDebtRatio.numerator.brand,
+        //   highestDebtRatio.denominator.value,
+        //   highestDebtRatio.denominator.brand,
+        // );
+        console.log('mutableQuoteWhenLT', {
+          highestDebtRatio,
+          liquidationMargin,
+          threshold: liquidationThreshold(highestDebtRatio, liquidationMargin),
+        });
         outstandingQuote = E(priceAuthority).mutableQuoteWhenLT(
           highestDebtRatio.denominator, // collateral
           liquidationThreshold(highestDebtRatio, liquidationMargin),
         );
         trace('posted quote request', highestDebtRatio);
+
+        // *****
+        console.log(
+          'DEBUG the following promise for the above quote never resolves',
+        );
 
         // The rest of this method will not happen until after a quote is received.
         // This may not happen until much later, when the market changes.
@@ -476,13 +495,14 @@ const managerBehavior = {
    */
   maxDebtFor: async ({ state }, collateralAmount) => {
     const { debtBrand, priceAuthority } = state;
-    const quoteAmount = await E(priceAuthority).quoteGiven(
+    const quote = await E(priceAuthority).quoteGiven(
       collateralAmount,
       debtBrand,
     );
+    trace('maxDebFor', { collateralAmount, quoteAmount: quote.quoteAmount });
     // floorDivide because we want the debt ceiling lower
     return floorDivideBy(
-      getAmountOut(quoteAmount),
+      getAmountOut(quote),
       state.factoryPowers.getGovernedParams().getLiquidationMargin(),
     );
   },

@@ -15,7 +15,7 @@ import { Far } from '@endo/marshal';
 import { makeTracer } from '../makeTracer.js';
 
 const { details: X } = assert;
-const trace = makeTracer('LiqI', false);
+const trace = makeTracer('LiqI');
 
 /**
  * @file
