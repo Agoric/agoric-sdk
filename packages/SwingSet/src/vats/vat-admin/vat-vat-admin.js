@@ -140,7 +140,7 @@ export function buildRootObject(vatPowers) {
 
   function convertOptions(origOptions) {
     const {
-      description,
+      name,
       meter, // stripped out and converted
       managerType, // TODO: not sure we want vats to be able to control this
       vatParameters, // stripped out and re-added
@@ -154,12 +154,28 @@ export function buildRootObject(vatPowers) {
     } = origOptions;
 
     // these are all flat data: no slots (Presences/Promises/etc)
-    assertType('description', description, 'string');
+    assertType('name', name, 'string');
+    if (name !== undefined) {
+      // The name might be used to build a no-op `xsnap`
+      // argument. xsnap.js guards against shell attacks, but limit
+      // the length to something reasonable. The actual argv length
+      // will be in bytes, not JS chars, so any OS limits will depend
+      // upon encoding, but this ought to avoid any problems.
+      assert(
+        name.length < 200,
+        `CreateVatOptions: oversized vat name '${name}'`,
+      );
+      // more limits to help the 'ps' output be readable
+      assert(
+        /^[A-Za-z0-9._-]+$/.test(name),
+        `CreateVatOptions: bad vat name '${name}'`,
+      );
+    }
     assertType('managerType', managerType, 'string');
     if (managerType) {
       assert(
         managerTypes.includes(managerType),
-        `CreateVatOptions bad managerType ${managerType}`,
+        `CreateVatOptions: bad managerType ${managerType}`,
       );
     }
     assertType('enableSetup', enableSetup, 'boolean');
@@ -171,7 +187,7 @@ export function buildRootObject(vatPowers) {
     // reject unknown options
     const unknown = Object.keys(rest).join(',');
     if (unknown) {
-      assert.fail(`CreateVatOptions unknown options ${unknown}`);
+      assert.fail(`CreateVatOptions: unknown options ${unknown}`);
     }
 
     // convert meter to meterID
@@ -190,7 +206,7 @@ export function buildRootObject(vatPowers) {
 
     // now glue everything back together
     const options = {
-      description,
+      name,
       meterID, // replaces 'meter'
       managerType,
       vatParameters,
