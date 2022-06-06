@@ -42,8 +42,7 @@ jobs:
         run: yarn lint:format
       # eslint
       - name: yarn lint primary
-        # run on packages that use roughly half the time
-        run: yarn lerna run --scope=@agoric/{cosmos,ertp,governance,run-protocol,swing-store,swingset-vat,vats,wallet,zoe} --no-bail lint
+        run: ./scripts/lint-with-types.sh primary
 
   lint-rest:
     needs: build
@@ -55,8 +54,7 @@ jobs:
           node-version: '16.x'
 
       - name: yarn lint rest
-        # invert selection of lint-primary (--ignore instead of --scope)
-        run: yarn lerna run --ignore=@agoric/{cosmos,ertp,governance,run-protocol,swing-store,swingset-vat,vats,wallet,zoe} --no-bail lint
+        run: ./scripts/lint-with-types.sh rest
 
   ##################
   # Fast-running tests run as a group:

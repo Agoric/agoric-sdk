@@ -1,18 +1,23 @@
 /* eslint-env node */
+const process = require('process');
+const lintTypes = !!process.env.AGORIC_ESLINT_TYPES;
+
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
-  parserOptions: {
-    sourceType: 'module',
-    project: [
-      './packages/*/jsconfig.json',
-      './packages/*/tsconfig.json',
-      './packages/wallet/*/jsconfig.json',
-      './tsconfig.json',
-    ],
-    tsconfigRootDir: __dirname,
-    extraFileExtensions: ['.cjs'],
-  },
+  parserOptions: lintTypes
+    ? {
+        sourceType: 'module',
+        project: [
+          './packages/*/jsconfig.json',
+          './packages/*/tsconfig.json',
+          './packages/wallet/*/jsconfig.json',
+          './tsconfig.json',
+        ],
+        tsconfigRootDir: __dirname,
+        extraFileExtensions: ['.cjs'],
+      }
+    : undefined,
   plugins: [
     '@jessie.js/eslint-plugin',
     '@typescript-eslint',
@@ -22,7 +27,7 @@ module.exports = {
   extends: ['@agoric'],
   rules: {
     '@typescript-eslint/prefer-ts-expect-error': 'warn',
-    '@typescript-eslint/no-floating-promises': 'warn',
+    '@typescript-eslint/no-floating-promises': lintTypes ? 'warn' : 'off',
     // so that floating-promises can be explicitly permitted with void operator
     'no-void': ['error', { allowAsStatement: true }],
     'jsdoc/no-multi-asterisks': 'off',
