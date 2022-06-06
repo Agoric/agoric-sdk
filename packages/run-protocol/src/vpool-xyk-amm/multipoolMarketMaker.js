@@ -8,6 +8,7 @@ import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { makeSubscriptionKit } from '@agoric/notifier';
 
 import {
+  assertIsRatio,
   assertIssuerKeywords,
   offerTo,
 } from '@agoric/zoe/src/contractSupport/index.js';
@@ -281,6 +282,7 @@ const start = async (zcf, privateArgs) => {
       return getPool(brandIn).getVPool();
     }
 
+    assert(brandIn !== brandOut, 'brandIn !== brandOut');
     if (isSecondary(brandIn) && isSecondary(brandOut)) {
       return makeDoublePool(
         zcf,

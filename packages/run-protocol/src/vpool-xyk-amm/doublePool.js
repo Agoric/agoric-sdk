@@ -33,6 +33,8 @@ export const makeDoublePool = (
   getPoolFeeBP,
   feeSeat,
 ) => {
+  assert(collateralInPool !== collateralOutPool, 'pools must differ');
+
   const inCentral = collateralInPool.getCentralAmount();
   const inSecondary = collateralInPool.getSecondaryAmount();
 
@@ -49,9 +51,19 @@ export const makeDoublePool = (
     X`The central brands on the two pools must match: ${centralBrand}, ${outCentral.brand}`,
   );
 
+  /**
+   * @param {ZCFSeat} seat
+   * @param {*} prices
+   */
   const allocateGainsAndLosses = (seat, prices) => {
     const inPoolSeat = collateralInPool.getPoolSeat();
     const outPoolSeat = collateralOutPool.getPoolSeat();
+    assert(inPoolSeat !== feeSeat, 'inPoolSeat !== feeSeat');
+    assert(outPoolSeat !== feeSeat, 'outPoolSeat !== feeSeat');
+    assert(inPoolSeat !== outPoolSeat, 'inPoolSeat !== outPoolSeat');
+    assert(seat !== outPoolSeat, 'seat !== outPoolSeat');
+    assert(seat !== inPoolSeat, 'seat !== inPoolSeat');
+    assert(seat !== feeSeat, 'seat !== feeSeat');
 
     seat.decrementBy(harden({ In: prices.swapperGives }));
     inPoolSeat.decrementBy(harden({ Central: prices.inPoolDecrement }));

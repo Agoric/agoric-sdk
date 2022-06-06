@@ -29,6 +29,7 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
       // TODO check that there are no other keys
     }
 
+    assert(amountIn.brand !== amountOut.brand, 'brandIn !== brandOut');
     const pool = provideVPool(amountIn.brand, amountOut.brand);
     let prices;
     const stopAfter = args && args.stopAfter;
