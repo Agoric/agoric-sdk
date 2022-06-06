@@ -8,7 +8,6 @@ import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { makeSubscriptionKit } from '@agoric/notifier';
 
 import {
-  assertIsRatio,
   assertIssuerKeywords,
   offerTo,
 } from '@agoric/zoe/src/contractSupport/index.js';

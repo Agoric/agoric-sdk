@@ -31,7 +31,7 @@ import { checkDebtLimit } from '../contractSupport.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer('VM', false);
+const trace = makeTracer('VM');
 
 // Metrics naming scheme: nouns are present values; past-participles are accumulative.
 /**
@@ -363,6 +363,7 @@ const helperBehavior = {
 
     async function* eventualLiquidations() {
       while (true) {
+        trace('eventualLiquidations iteration');
         const highestDebtRatio = prioritizedVaults.highestRatio();
         if (!highestDebtRatio) {
           return;

@@ -484,6 +484,7 @@ const makeDriver = async (t, initialPrice, priceBase) => {
      * @param {AmountKeywordRecord} [expected]
      */
     sellOnAMM: async (give, want, optStopAfter, expected) => {
+      assert(give.brand !== want.brand, 'give.brand !== want.brand');
       const swapInvitation = E(
         services.ammFacets.ammPublicFacet,
       ).makeSwapInvitation();
@@ -918,7 +919,7 @@ test('penalties to reserve', async t => {
   await d.checkReserveAllocation(1000n, 29n);
 });
 
-test.only('case 5513', async t => {
+test.only('case 5513 on agoricdev-13', async t => {
   // 1. set up
   // diff: report had IbcATOM
   const { aethKit: aeth, runKit: run0 } = t.context;
@@ -974,26 +975,26 @@ test.only('case 5513', async t => {
   d.setPrice(run.make(40n));
 
   // 6. make a big AMM trade to set the price to 20 (I think...)
-  await d.sellOnAMM(atom.make(868_530n), atom.make(1_350_000n), undefined, {
-    In: atom.make(0n),
-    Out: run.make(331n),
+  await d.sellOnAMM(atom.make(868_530n), run.make(1_350_000n), undefined, {
+    In: AmountMath.make(atom.brand, 8685300000n),
+    Out: run.make(0n),
   });
   // TODO confirm the new price
   await dv.notified(Phase.ACTIVE);
-  await dv.checkBalance(add(run.make(1n), fee), atom.make(3n));
+  await dv.checkBalance(add(make(run.brand, 1000n), fee), atom.make(3n));
 
   // 7. do the big AMM trade again (cuz it wasn't clear that it worked); price becomes 40 (I think)
-  await d.sellOnAMM(atom.make(200n), run.make(0n), undefined, {
-    In: atom.make(0n),
-    Out: run.make(331n),
+  await d.sellOnAMM(atom.make(868_530n), run.make(1_350_000n), undefined, {
+    In: AmountMath.make(atom.brand, 8685300000n),
+    Out: make(run.brand, 0n),
   });
   // TODO confirm the new price
 
   // 8. set the Oracle price to 12 in an attempt to force liquidation
   d.setPrice(run.make(12n));
 
-  // 9. fail to observe liquidation
-  // in this test currently, it does fail as in the ticket if we don't want for promises to settle
   await waitForPromisesToSettle();
+  // 9. fail to observe liquidation
+  // BUG still 'active'
   await dv.notified(Phase.LIQUIDATED);
 });
