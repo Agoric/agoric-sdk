@@ -517,7 +517,7 @@ const makeDriver = async (t, initialPrice, priceBase) => {
      * @param {Record<string, unknown>} newValue
      */
     setLiquidationTerms: async (name, newValue) => {
-      const deadline = 3n;
+      const deadline = 3n + (await timer.getCurrentTimestamp());
       const { cast, outcome } = await E(t.context.committee).changeParam(
         harden({
           paramPath: { key: 'governedParams' },
