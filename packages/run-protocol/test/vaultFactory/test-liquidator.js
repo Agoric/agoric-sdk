@@ -921,65 +921,76 @@ test('penalties to reserve', async t => {
 test.only('case 5513', async t => {
   // 1. set up
   // diff: report had IbcATOM
-  const { aethKit: aeth, runKit: run } = t.context;
-  const d = await makeDriver(
-    t,
-    // report had price 0.2
-    AmountMath.make(run.brand, 200n * BASIS_POINTS),
-    AmountMath.make(aeth.brand, 1_000n * BASIS_POINTS), // denominator for prices
-  );
+  const { aethKit: aeth, runKit: run0 } = t.context;
+  const { add, make } = AmountMath;
+  const run = {
+    ...run0,
+    /** @type {(qty: bigint, decimals?: number) => Amount<'nat'>} */
+    make: (qty, decimals = 6) => make(run.brand, qty * 10n ** BigInt(decimals)),
+  };
+  const atom = {
+    ...aeth,
+    /** @type {(qty: bigint, decimals?: number) => Amount<'nat'>} */
+    make: (qty, decimals = 4) =>
+      make(atom.brand, qty * 10n ** BigInt(decimals)),
+  };
+
+  // I intended to add 200k RUN, 10k ATOM, setting the price at 20.
+  // But the decimalPlaces for the ATOM brand was 4, while I assumed 6.
+  t.context.runInitialLiquidity = run.make(200_000n);
+  t.context.aethInitialLiquidity = atom.make(10_000n, 6);
 
   // 2. set the Oracle price to 12.34 using the manual oracle
-  d.setPrice(AmountMath.make(run.brand, 1234n * BASIS_POINTS));
+  const d = await makeDriver(t, run.make(12_34n, 6 - 2), atom.make(1n));
+
+  // LiquidationMargin defaults to 1% somehow.
+  await d.setCollateralTerms(
+    atom.brand,
+    'LiquidationMargin',
+    makeRatio(1n, run.brand),
+  );
+
+  // vote to raise DebtLimit.
+  await d.setCollateralTerms(atom.brand, 'DebtLimit', run.make(10_000_000n));
 
   // 3. raise LiquidationMargin to 200% using another governance vote
+  await d.setCollateralTerms(
+    atom.brand,
+    'LiquidationMargin',
+    makeRatio(200n, run.brand),
+  );
 
   // 4. borrow n=??? RUN against 3 ATOM at 225% collateralization ratio
-  const dv = await d.makeVaultDriver(
-    AmountMath.make(aeth.brand, 3n * BASIS_POINTS),
-    AmountMath.make(run.brand, 1n * BASIS_POINTS),
-  );
+  const dv = await d.makeVaultDriver(atom.make(3n), run.make(1n, 3));
+  const fee = run.make(50n, 0);
   await dv.notified(Phase.ACTIVE, {
     debtSnapshot: {
-      debt: AmountMath.make(run.brand, 1n * BASIS_POINTS + 500n),
+      debt: add(run.make(1n, 3), fee),
       interest: makeRatio(100n, run.brand),
     },
   });
 
   // 5. set Oracle price to 40
-  d.setPrice(AmountMath.make(run.brand, 4000n * BASIS_POINTS));
+  d.setPrice(run.make(40n));
 
   // 6. make a big AMM trade to set the price to 20 (I think...)
-  await d.sellOnAMM(
-    AmountMath.make(aeth.brand, 200n),
-    AmountMath.makeEmpty(run.brand),
-    undefined,
-    {
-      In: AmountMath.make(aeth.brand, 0n),
-      Out: AmountMath.make(run.brand, 331n),
-    },
-  );
+  await d.sellOnAMM(atom.make(868_530n), atom.make(1_350_000n), undefined, {
+    In: atom.make(0n),
+    Out: run.make(331n),
+  });
   // TODO confirm the new price
   await dv.notified(Phase.ACTIVE);
-  await dv.checkBalance(
-    AmountMath.make(run.brand, 1n * BASIS_POINTS + 500n),
-    AmountMath.make(aeth.brand, 30_000n),
-  );
+  await dv.checkBalance(add(run.make(1n), fee), atom.make(3n));
 
   // 7. do the big AMM trade again (cuz it wasn't clear that it worked); price becomes 40 (I think)
-  await d.sellOnAMM(
-    AmountMath.make(aeth.brand, 200n),
-    AmountMath.makeEmpty(run.brand),
-    undefined,
-    {
-      In: AmountMath.make(aeth.brand, 0n),
-      Out: AmountMath.make(run.brand, 331n),
-    },
-  );
+  await d.sellOnAMM(atom.make(200n), run.make(0n), undefined, {
+    In: atom.make(0n),
+    Out: run.make(331n),
+  });
   // TODO confirm the new price
 
   // 8. set the Oracle price to 12 in an attempt to force liquidation
-  d.setPrice(AmountMath.make(run.brand, 1200n));
+  d.setPrice(run.make(12n));
 
   // 9. fail to observe liquidation
   // in this test currently, it does fail as in the ticket if we don't want for promises to settle
