@@ -37,6 +37,7 @@
  * @property {Petname} petname
  * @property {boolean} enable
  * @property {string} origin
+ * @property {ERef<import('@agoric/cache').Coordinator>} cacheCoordinator
  * @property {DappActions} actions
  */
 
