@@ -1,4 +1,6 @@
-import { assert } from '@agoric/assert';
+// @ts-check
+
+import { assert, details as X } from '@agoric/assert';
 import { insistStorageAPI } from '../../lib/storageAPI.js';
 
 // We wrap a provided object implementing StorageAPI methods { has, getKeys,
@@ -24,30 +26,74 @@ import { insistStorageAPI } from '../../lib/storageAPI.js';
  * @yields any
  */
 function* mergeUtf16SortedIterators(it1, it2) {
-  let v1 = it1.next();
-  let v2 = it2.next();
-  while (!v1.done && !v2.done) {
-    if (v1.value < v2.value) {
-      const result = v1.value;
-      v1 = it1.next();
-      yield result;
-    } else if (v1.value === v2.value) {
-      const result = v1.value;
-      v1 = it1.next();
-      v2 = it2.next();
-      yield result;
-    } else {
-      const result = v2.value;
-      v2 = it2.next();
+  /** @type {IteratorResult<any> | null} */
+  let v1 = null;
+  /** @type {IteratorResult<any> | null} */
+  let v2 = null;
+  /** @type {IteratorResult<any> | null} */
+  let vrest = null;
+  /** @type {Iterator<any> | null} */
+  let itrest = null;
+
+  try {
+    v1 = it1.next();
+    v2 = it2.next();
+    while (!v1.done && !v2.done) {
+      if (v1.value < v2.value) {
+        const result = v1.value;
+        v1 = it1.next();
+        yield result;
+      } else if (v1.value === v2.value) {
+        const result = v1.value;
+        v1 = it1.next();
+        v2 = it2.next();
+        yield result;
+      } else {
+        const result = v2.value;
+        v2 = it2.next();
+        yield result;
+      }
+    }
+
+    itrest = v1.done ? it2 : it1;
+    vrest = v1.done ? v2 : v1;
+    v1 = null;
+    v2 = null;
+
+    while (!vrest.done) {
+      const result = vrest.value;
+      vrest = itrest.next();
       yield result;
     }
-  }
-  const itrest = v1.done ? it2 : it1;
-  let v = v1.done ? v2 : v1;
-  while (!v.done) {
-    const result = v.value;
-    v = itrest.next();
-    yield result;
+  } finally {
+    const errors = [];
+    try {
+      if (vrest && !vrest.done && itrest && itrest.return) {
+        itrest.return();
+      }
+    } catch (e) {
+      errors.push(e);
+    }
+    try {
+      if (v1 && !v1.done && it1.return) {
+        it1.return();
+      }
+    } catch (e) {
+      errors.push(e);
+    }
+    try {
+      if (v2 && !v2.done && it2.return) {
+        it2.return();
+      }
+    } catch (e) {
+      errors.push(e);
+    }
+    if (errors.length) {
+      const err = assert.error(X`Merged iterator failed to close cleanly`);
+      for (const e of errors) {
+        assert.note(err, X`Caused by ${e}`);
+      }
+    }
   }
 }
 
@@ -56,7 +102,7 @@ function* mergeUtf16SortedIterators(it1, it2) {
  * that buffers any mutations until told to commit them.
  *
  * @param {KVStore} kvStore  The StorageAPI object that this crank buffer will be based on.
- * @param {CreateSHA256}  createSHA256
+ * @param {import('../../lib-nodejs/hasher.js').CreateSHA256}  createSHA256
  * @param { (key: string) => 'consensus' | 'local' | 'invalid' } getKeyType
  * @returns {*} an object {
  * crankBuffer,  // crank buffer as described, wrapping `kvStore`

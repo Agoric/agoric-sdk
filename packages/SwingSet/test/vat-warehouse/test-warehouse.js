@@ -1,5 +1,10 @@
 // @ts-check
 
+import '@endo/init/pre-bundle-source.js';
+
+// import lmdb early to work around SES incompatibility
+import 'lmdb';
+
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 import fs from 'fs';
@@ -124,7 +129,7 @@ test('snapshot after deliveries', async t => {
   t.teardown(c.shutdown);
 
   await runSteps(c, t);
-  commit();
+  await commit();
 
   const { inUse, onDisk, extra } = unusedSnapshotsOnDisk(
     kvStore,

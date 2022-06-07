@@ -248,7 +248,7 @@ const buildSwingset = async (
   async function saveState() {
     const ms = JSON.stringify(mbs.exportToData());
     await atomicReplaceFile(mailboxStateFile, ms);
-    commit();
+    await commit();
   }
 
   function deliverOutbound() {

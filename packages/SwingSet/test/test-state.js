@@ -36,7 +36,7 @@ function checkState(t, getState, expected) {
   t.deepEqual(got.sort(compareStrings), expected.sort(compareStrings));
 }
 
-function testStorage(t, s, getState, commit) {
+async function testStorage(t, s, getState, commit) {
   t.falsy(s.has('missing'));
   t.is(s.get('missing'), undefined);
 
@@ -60,7 +60,7 @@ function testStorage(t, s, getState, commit) {
 
   if (commit) {
     checkState(t, getState, []);
-    commit();
+    await commit();
   }
   checkState(t, getState, [
     ['foo', 'f'],
@@ -69,18 +69,23 @@ function testStorage(t, s, getState, commit) {
   ]);
 }
 
-test('storageInMemory', t => {
+test('storageInMemory', async t => {
   const store = initSwingStore(null);
-  testStorage(t, store.kvStore, () => getAllState(store).kvStuff, null);
+  await testStorage(t, store.kvStore, () => getAllState(store).kvStuff, null);
 });
 
-test('crankBuffer fulfills storage API', t => {
+test('crankBuffer fulfills storage API', async t => {
   const store = initSwingStore(null);
   const { crankBuffer, commitCrank } = buildCrankBuffer(
     store.kvStore,
     createSHA256,
   );
-  testStorage(t, crankBuffer, () => getAllState(store).kvStuff, commitCrank);
+  await testStorage(
+    t,
+    crankBuffer,
+    () => getAllState(store).kvStuff,
+    commitCrank,
+  );
 });
 
 test('crankBuffer handles key iteration properly even with intra-crank data changes', t => {
