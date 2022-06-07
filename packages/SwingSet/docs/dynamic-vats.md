@@ -68,7 +68,7 @@ const control = await E(vatAdminService).createVat(bundlecap, options);
 
 `createVat()` recognizes the following options:
 
-* `description` (string): used in debug messages to describe the vat
+* `name` (string): used in debug messages and the `ps`-visible worker argments, to name the vat
 * `meter` (`Meter` object, default none): a Meter object to impose upon the vat. If provided, the Meter will be deducted for each computron spent executing, and the vat will be terminated if the Meter runs out. See docs/metering.md for details.
 * `managerType` (`'local'` or `'xs-worker'` or `'nodeWorker'` or `'node-subprocess'`): the type of worker that will host the vat. `xs-worker` is the only sensible choice. Defaults to a value set by `config.defaultManagerType`, or `xs-worker` if that is not set
 * `vatParameters` (JSON-serializable object): data passed to `buildRootObject` in the `vatParameters` argument

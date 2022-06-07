@@ -89,6 +89,8 @@ export function xsnap(options) {
   /** @type {Deferred<void>} */
   const vatExit = defer();
 
+  assert(!/^-/.test(name), `name '${name}' cannot start with hyphen`);
+
   let args = [name];
   if (snapshot) {
     args.push('-r', snapshot);

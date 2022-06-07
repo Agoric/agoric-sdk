@@ -86,6 +86,6 @@ test('child termination distinguished from meter exhaustion', async t => {
   await t.throwsAsync(p, {
     instanceOf: Error,
     code: 'SIGTERM',
-    message: 'v1:undefined exited due to signal SIGTERM',
+    message: 'v1: exited due to signal SIGTERM',
   });
 });

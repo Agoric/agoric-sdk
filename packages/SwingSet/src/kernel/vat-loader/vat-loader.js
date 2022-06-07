@@ -87,7 +87,7 @@ export function makeVatLoader(stuff) {
   }
 
   const allowedDynamicOptions = [
-    'description',
+    'name',
     'meterID',
     'managerType', // TODO: not sure we want vats to be able to control this
     'enableSetup',
@@ -99,7 +99,6 @@ export function makeVatLoader(stuff) {
   ];
 
   const allowedStaticOptions = [
-    'description',
     'name',
     'managerType',
     'enableDisavow',
@@ -171,7 +170,6 @@ export function makeVatLoader(stuff) {
    *        kernel's configured 'defaultReapInterval' value.
    *
    * @param {string} [options.name]
-   * @param {string} [options.description]
    * @param {boolean} [options.enableDisavow]
    * @param {boolean} [options.critical]
    *
@@ -222,7 +220,7 @@ export function makeVatLoader(stuff) {
       name,
     } = options;
 
-    const description = `${options.description || ''} (${sourceDesc})`.trim();
+    const description = `${options.name || ''} (${sourceDesc})`.trim();
 
     const { starting } = kernelSlog.provideVatSlogger(
       vatID,

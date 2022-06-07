@@ -421,3 +421,8 @@ test('GC after snapshot vs restore', async t => {
   t.log({ beforeClone, workerGC, cloneGC, iters });
   t.is(workerGC, cloneGC);
 });
+
+test('bad option.name', async t => {
+  const opts = Object.freeze({ ...options(io), name: '--sneaky' });
+  t.throws(() => xsnap(opts), { message: /cannot start with hyphen/ });
+});
