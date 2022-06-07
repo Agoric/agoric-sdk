@@ -38,6 +38,7 @@ for (const [debt, collat, vaultId, expectedKey, numberOut] of [
 ]) {
   test(`vault keys: (${debt}/${collat}, ${vaultId}) => ${expectedKey} ==> ${numberOut}, ${vaultId}`, t => {
     const key = StoreUtils.toVaultKey(
+      // @ts-expect-error cast to NormalizedDebt
       AmountMath.make(mockBrand, BigInt(debt)),
       AmountMath.make(mockBrand, BigInt(collat)),
       String(vaultId),

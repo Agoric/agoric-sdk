@@ -17,7 +17,9 @@ import { addSubtract, assertOnlyKeys, stageDelta } from '../contractSupport.js';
 
 const { details: X, quote: q } = assert;
 
-const trace = makeTracer('IV', false);
+const trace = makeTracer('IV');
+
+/** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 
 /**
  * @file This has most of the logic for a Vault, to borrow RUN against collateral.
@@ -78,13 +80,13 @@ const validTransitions = {
 /**
  * @typedef {object} VaultManager
  * @property {() => Notifier<import('./vaultManager').AssetState>} getNotifier
- * @property {(collateralAmount: Amount) => ERef<Amount>} maxDebtFor
+ * @property {(collateralAmount: Amount) => ERef<Amount<'nat'>>} maxDebtFor
  * @property {() => Brand} getCollateralBrand
- * @property {() => Brand} getDebtBrand
+ * @property {() => Brand<'nat'>} getDebtBrand
  * @property {MintAndReallocate} mintAndReallocate
  * @property {(amount: Amount, seat: ZCFSeat) => void} burnAndRecord
  * @property {() => Ratio} getCompoundedInterest
- * @property {(oldDebt: Amount, oldCollateral: Amount, vaultId: VaultId) => void} updateVaultAccounting
+ * @property {(oldDebt: import('./storeUtils.js').NormalizedDebt, oldCollateral: Amount<'nat'>, vaultId: VaultId) => void} updateVaultAccounting
  * @property {() => import('./vaultManager.js').GovernedParamGetters} getGovernedParams
  */
 
@@ -240,9 +242,9 @@ const helperBehavior = {
    * maintain aggregate debt and liquidation order.
    *
    * @param {MethodContext} context
-   * @param {Amount} oldDebt - prior principal and all accrued interest
-   * @param {Amount} oldCollateral - actual collateral
-   * @param {Amount} newDebt - actual principal and all accrued interest
+   * @param {NormalizedDebt} oldDebt - prior principal and all accrued interest
+   * @param {Amount<'nat'>} oldCollateral - actual collateral
+   * @param {Amount<'nat'>} newDebt - actual principal and all accrued interest
    */
   updateDebtAccounting: (
     { state, facets },
@@ -490,6 +492,8 @@ const helperBehavior = {
     state.manager.mintAndReallocate(toMint, fee, clientSeat, vaultSeat);
 
     // parent needs to know about the change in debt
+    console.log('DEBUG updateDebtAccounting', { debtPre });
+    console.trace();
     helper.updateDebtAccounting(debtPre, collateralPre, newDebt);
     state.manager.burnAndRecord(giveRUN, vaultSeat);
     helper.assertVaultHoldsNoRun();
@@ -702,9 +706,10 @@ const selfBehavior = {
    * @see getActualDebAmount
    *
    * @param {MethodContext} context
-   * @returns {Amount<'nat'>} as if the vault was open at the launch of this manager, before any interest accrued
+   * @returns {import('./storeUtils.js').NormalizedDebt} as if the vault was open at the launch of this manager, before any interest accrued
    */
   getNormalizedDebt: ({ state }) => {
+    // @ts-expect-error cast
     return reverseInterest(state.debtSnapshot, state.interestSnapshot);
   },
 };

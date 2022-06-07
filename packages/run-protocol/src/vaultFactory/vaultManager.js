@@ -33,6 +33,8 @@ const { details: X } = assert;
 
 const trace = makeTracer('VM', false);
 
+/** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
+
 // Metrics naming scheme: nouns are present values; past-participles are accumulative.
 /**
  * @typedef {object} MetricsNotification
@@ -534,7 +536,7 @@ const managerBehavior = {
    * Called by a vault when its balances change.
    *
    * @param {MethodContext} context
-   * @param {Amount<'nat'>} oldDebt
+   * @param {NormalizedDebt} oldDebt
    * @param {Amount<'nat'>} oldCollateral
    * @param {VaultId} vaultId
    */
