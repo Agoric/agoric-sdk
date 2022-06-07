@@ -110,7 +110,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       bundle,
       virtualObjectCacheSize,
       enableDisavow,
-      mk.getEnableFakeDurable(),
+      kernelKeeper.getEnableFakeDurable(),
     ]);
 
     function deliverToWorker(delivery) {

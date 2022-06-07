@@ -105,7 +105,7 @@ export function makeNodeSubprocessFactory(tools) {
       bundle,
       virtualObjectCacheSize,
       enableDisavow,
-      mk.getEnableFakeDurable(),
+      kernelKeeper.getEnableFakeDurable(),
     ]);
 
     function shutdown() {
