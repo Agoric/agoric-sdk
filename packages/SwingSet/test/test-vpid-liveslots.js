@@ -58,6 +58,10 @@ function hush(p) {
 // protect against reentrant handlers. For details see
 // https://github.com/Agoric/agoric-sdk/issues/886
 
+// 7: G S M R S M RES S M (first M is pipelined to P, second is queued to
+//                         internal result promise, third is sent to
+//                         resolution. Third S must allocate new VPID)
+
 // In addition, we want to exercise the promises being resolved in various
 // ways:
 const modes = [
@@ -224,11 +228,13 @@ for (const mode of modes) {
   });
 }
 
-// This exercises cases 2 and 3, which are unusual in that this vat is both a
-// subscriber and the decider for the same promise. The decision-making
-// authority is exercised when the vat resolves the Promise that was returned
-// from an inbound `result()` message. Liveslots always notifies the kernel
-// about this act of resolution.
+// This exercises cases 2 and 3, which are unusual in that this vat is
+// given a reference to a promise that it controls. The
+// decision-making authority is exercised when the vat resolves the
+// Promise that was returned from an inbound `result()`
+// message. Liveslots always notifies the kernel about this act of
+// resolution, but it does not subscribe to the promise, since the vat
+// knows that itself will decide the resolution, not the kernel.
 
 // Ordering guarantees: we don't intend to make any promises (haha) about the
 // relative ordering of the syscall that resolves the promise, and the
@@ -298,19 +304,20 @@ async function doVatResolveCase23(t, which, mode, stalls) {
           await Promise.resolve();
         }
 
-        // If we don't stall here, then all four messages get pipelined out
-        // before we tell the kernel about the resolution
+        // If we don't stall here, then all four messages get
+        // processed before we tell the kernel about the resolution
         // (syscall.resolve).
 
-        // If we stall two turns, then the resolve goes to the
-        // kernel before three() and four(), but our 'p1' is not yet marked
-        // as resolved, so four() is sent to a Promise, rather than to
-        // target2. This Promise ought to get a new vpid, because we retired
-        // the old one when we resolved it, however it looks like it still
-        // goes to the old 'p1' vpid, which is a bug.
+        // If we stall two or more turns, then the resolve goes to the
+        // kernel before three() and four() are processed. We've
+        // retired the VPID for p1 when three() goes to serialize it,
+        // so a new VPID is created.
 
-        // If we stall a full three turns, then four() is sent directly to
-        // target2.
+        // In all cases, two() and four() are queued on a local
+        // Promise object, so they do not get pipelined into the
+        // kernel. They are sent to directly to the resolved target
+        // (or not sent at all, if p1 was rejected or resolved to
+        // something else).
 
         // console.log(`calling three()`);
         const p4 = E(target1).three(p1);
@@ -336,32 +343,40 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   const expectedP6 = 'p+9';
   const target2 = 'o-2';
 
+  // liveslots allocates a bunch of IDs during startVat, and flushes
+  // them at the end of the first delivery. The second delivery
+  // doesn't allocate any IDs, so no flush.
+
   if (which === 2) {
     await dispatch(makeMessage(rootA, 'result', [], [], p1));
+    matchIDCounterSet(t, log);
+    // the vat knows it is the decider, does not subscribe
     await dispatch(makeMessage(rootA, 'promise', [slot0arg], [p1]));
   } else if (which === 3) {
     await dispatch(makeMessage(rootA, 'promise', [slot0arg], [p1]));
+    // the vat subscribes to p1, it cannot know the future
+    t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
+    matchIDCounterSet(t, log);
     await dispatch(makeMessage(rootA, 'result', [], [], p1));
+    // vat cannot unsubscribe, but is now the decider
   } else {
     assert.fail(X`bad which=${which}`);
   }
-  if (which === 2) {
-    matchIDCounterSet(t, log);
-  }
-  t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
-  if (which === 3) {
-    matchIDCounterSet(t, log);
-  }
+  // console.log(`-- did mode=${which} result+promise log= ->`, JSON.stringify(log), '<-');
+
   t.deepEqual(log, []);
 
   await dispatch(
     makeMessage(rootA, 'run', [slot0arg, slot1arg], [target1, target2]),
   );
 
-  // At the end of the turn in which run() is executed, the promise queue
-  // will contain deliveries one() and two() (specifically invocations of the
-  // handler on target1 and p1), plus the resolution of the promise p0 that
-  // was returned by result().
+  // console.log(`-- did run(), log: ->`, log.map(JSON.stringify), '<-');
+
+  // At the end of the turn in which run() is executed, the promise
+  // queue will contain deliveries one() and two() (specifically
+  // invocations of the handler on target1 and p1), plus the callbacks
+  // triggered by the resolution of the promise p0 that was returned
+  // by result().
 
   // If stalls=0, it will also have deliveries three() and four(). The crank
   // keeps running until the promise queue is empty, so it executes handlers
@@ -381,7 +396,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   // Here, we examine the full set of syscalls emitted by these handlers.
 
   // When the one() handler is run, the vat sends one() with promise p1 as an
-  // argument
+  // argument.
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
@@ -390,57 +405,87 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP2 });
 
-  // The two() handler pipelines 'two' to p1, the promise we gave the vat
-  t.deepEqual(log.shift(), {
-    type: 'send',
-    targetSlot: p1,
-    methargs: capargs(['two', []], []),
-    resultSlot: expectedP3,
-  });
-  t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP3 });
+  // The two() handler queues 'two' to the original p1, which is the
+  // promise deserialized in the args to promise(). In case=2 (vpid
+  // first appears as a result, then is imported), p1 is the internal
+  // HandledPromise that came back from applyMethod() for 'result'
+  // (registered at the end of deliver()). That HP is forwarded to the
+  // 'p0' returned by resuit(), so when the vat resolves p0, p1
+  // becomes resolved on the next turn. Because p1 was created by
+  // applyMethod(), it does not have any special handler, so two()
+  // will be queued on the engine's Promise queue, and we won't see a
+  // syscall until p0 resolves. Therefore we'll see a syscall.send()
+  // for 'two()' aimed at the resolution object (or other target), not
+  // pipelined to the promise.
 
-  // console.log(`p1 is ${p1}`);
-  // for(let l of log) {
-  //   console.log(l);
-  // }
-  // return t.end();
+  // In case=3 (vpid imported first, then appears as a result), the
+  // vat has subscribed to the imported promise, then becomes the
+  // decider. Here p1 was created by `convertSlotToVal`, and has a
+  // handler which would pipeline a message to the kernel. But before
+  // we give it any messages, result() causes the vat to become the
+  // decider. In that case, deliver() forwards the original p1 to the
+  // internal HandledPromise.applyMethod one, and does not register a
+  // new promise. The subsequent two() is queued on the engine's
+  // Promise queue, just like case=2, and we'll also see a
+  // syscall.send() aimed at the resolution target, not pipelined.
 
-  // Now liveslots processes the callback ("notifySuccess", mapped to a function
-  // returned by "thenResolve") that got pushed when p0 was resolved, where p0
-  // is the promise that was returned from rootA~.result() . This callback sends
-  // `syscall.resolve(vpid1, stuff)` into the kernel, notifying any remote
-  // subscribers that p1 has been resolved. Since the vat is also a subscriber,
-  // thenResolve's callback must also invoke p1's resolver (which was stashed in
-  // importedPromisesByPromiseID), as if the kernel had called the vat's
-  // dispatch(notify). This causes the p1.then callback to be pushed to the back
-  // of the promise queue, which will set resolutionOfP1 after all the syscalls
-  // have been made.
+  // the next series of vpids the vat will allocate
+  const nextVPIDs = [expectedP3, expectedP4, expectedP5, expectedP6];
 
-  // Resolving p1 changes the handler of p1, so subsequent messages sent to
-  // p1 will instead be sent to its resolution (which will be target2, or a
-  // local object, or something that causes rejections). These messages are
-  // already in the promise queue at this point, but their handlers haven't
-  // been invoked yet. We exercise the way HandledPromise changes the handler
-  // immediately, by looking at the syscalls issued (or not) by the callbacks
-  // for three() and four().
+  if (mode === 'presence') {
+    const twoResult = nextVPIDs.shift();
+    t.deepEqual(log.shift(), {
+      type: 'send',
+      targetSlot: target2,
+      methargs: capargs(['two', []], []),
+      resultSlot: twoResult,
+    });
+    t.deepEqual(log.shift(), { type: 'subscribe', target: twoResult });
+  }
 
-  // At this point, we expect to see the vat tell the kernel that p1 is
-  // resolved.
-  const targets = { target2, localTarget, p1 };
-  t.deepEqual(log.shift(), resolutionOf(p1, mode, targets));
+  // Now the callbacks attached to p0 are invoked. p0 was returned by
+  // result() and is only seen by the HandledPromise.applyMethod
+  // internals. The applyMethod return promise ('res') is forwarded to
+  // p0, which seems to induce a turn delay before the callbacks on
+  // 'res' are run.
 
-  const expectedVPIDInThree = expectedP4;
-  const expectedResultOfThree = expectedP5;
-  const expectedResultOfFour = expectedP6;
+  // In case=2, followForKernel() attached a callback to 'res', so
+  // that callback will fire after the delay, which will perform the
+  // syscall.resolve.
 
-  // three() references the old promise, which will use a new VPID if we
-  // retired the old one as it was resolved
+  // For case=3, the imported p1 was forwarded to res, and the
+  // followForKernel() callback was attached to p1, so we'll see that
+  // callback fire, and its syscall.resolve.
+
+  // In one of these cases, an extra delay seems to happen.
+
+  // So in case=2, if stalls<1, three()/four() are processed before
+  // liveslots observes the resolution, but if stalls>=1, liveslots
+  // sees the resolution first. In case=3, the threshold is stalls=2.
+
+  let vpidRetired = false;
+  if ((which === 2 && stalls >= 1) || (which === 3 && stalls >= 2)) {
+    const targets = { target2, localTarget, p1 };
+    t.deepEqual(log.shift(), resolutionOf(p1, mode, targets));
+    vpidRetired = true; // expect newly-allocated VPID for p1
+  }
+
+  // three() references p1, but if the VPID was retired (it was not
+  // held in virtual data, so did not need a stable vpid), we'll see a
+  // new VPID and a syscall.resolve() immediately after the
+  // syscall.send().
+  const expectedVPIDInThree = vpidRetired ? nextVPIDs.shift() : p1;
+  const expectedResultOfThree = nextVPIDs.shift();
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
     methargs: capargs(['three', [slot0arg]], [expectedVPIDInThree]),
     resultSlot: expectedResultOfThree,
   });
+  if (vpidRetired) {
+    const targets2 = { target2, localTarget, p1: expectedVPIDInThree };
+    t.deepEqual(log.shift(), resolutionOf(expectedVPIDInThree, mode, targets2));
+  }
   t.deepEqual(log.shift(), {
     type: 'subscribe',
     target: expectedResultOfThree,
@@ -451,6 +496,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   // otherwise the vat handles it internally.
 
   if (mode === 'presence') {
+    const expectedResultOfFour = nextVPIDs.shift();
     t.deepEqual(log.shift(), {
       type: 'send',
       targetSlot: target2,
@@ -462,8 +508,12 @@ async function doVatResolveCase23(t, which, mode, stalls) {
       target: expectedResultOfFour,
     });
   }
-  const targets2 = { target2, localTarget, p1: expectedP4 };
-  t.deepEqual(log.shift(), resolutionOf(expectedP4, mode, targets2));
+
+  // if it wasn't resolved earlier, it should get resolved now
+  if (!vpidRetired) {
+    const targets = { target2, localTarget, p1 };
+    t.deepEqual(log.shift(), resolutionOf(p1, mode, targets));
+  }
 
   // that's all the syscalls we should see
   matchIDCounterSet(t, log);
@@ -485,26 +535,18 @@ async function doVatResolveCase23(t, which, mode, stalls) {
 }
 
 // uncomment this when debugging specific problems
-// test.only(`XX`, async t => {
-//   await doVatResolveCase23(t, 2, 'presence', 0);
-// });
+// test.only(`XX`, doVatResolveCase23, 2, 'presence', 0);
 
 for (const caseNum of [2, 3]) {
   for (const mode of modes) {
     for (let stalls = 0; stalls < 4; stalls += 1) {
-      if (stalls === 0) {
-        // FIGME: Need to resolve with solution to #1719
-        test.failing(
-          `liveslots vpid handling case${caseNum} ${mode} stalls=${stalls}`,
-          async t => {
-            await doVatResolveCase23(t, caseNum, mode, stalls);
-          },
-        );
-      } else {
-        test(`liveslots vpid handling case${caseNum} ${mode} stalls=${stalls}`, async t => {
-          await doVatResolveCase23(t, caseNum, mode, stalls);
-        });
-      }
+      test(
+        `liveslots vpid handling case${caseNum} ${mode} stalls=${stalls}`,
+        doVatResolveCase23,
+        caseNum,
+        mode,
+        stalls,
+      );
     }
   }
 }
@@ -641,6 +683,177 @@ for (const mode of modes) {
 
 // TODO unimplemented
 // cases 5 and 6 are not implemented due to #886
+
+async function doVatResolveCase7(t, mode) {
+  // 7: G S M R S M RES S M (first M is pipelined to P, second is queued to
+  //                         internal result promise, third is sent to
+  //                         resolution. Third S must allocate new VPID)
+
+  const { log, syscall } = buildSyscall();
+
+  function build(_vatPowers) {
+    let p1;
+    const pr = makePromiseKit();
+    return Far('root', {
+      acceptPromise(p) {
+        p1 = p;
+      },
+      send1(target1) {
+        hush(E(target1).one(p1));
+        hush(E(p1).two());
+      },
+      becomeDecider() {
+        return pr.promise;
+      },
+      send2(target1) {
+        hush(E(target1).three(p1));
+        hush(E(p1).four());
+      },
+      resolve(target2) {
+        resolvePR(pr, mode, { target2, p1 });
+      },
+      send3(target1) {
+        hush(E(target1).five(p1));
+        hush(E(p1).six());
+      },
+    });
+  }
+  const dispatch = await makeDispatch(syscall, build);
+  log.length = 0; // assume pre-build vatstore operations are correct
+
+  let nextVPID = 5;
+  function getNextVPID() {
+    const vpid = `p+${nextVPID}`;
+    nextVPID += 1;
+    return vpid;
+  }
+
+  const rootA = 'o+0';
+  const p1 = 'p-8';
+  await dispatch(makeMessage(rootA, 'acceptPromise', [slot0arg], [p1]));
+  // the vat subscribes to p1, it cannot know the future
+  t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
+  matchIDCounterSet(t, log);
+
+  await dispatch(makeMessage(rootA, 'becomeDecider', [], [], p1));
+  t.deepEqual(log, []);
+
+  const target1 = 'o-1';
+  const target2 = 'o-2';
+  await dispatch(
+    makeMessage(rootA, 'send1', [slot0arg, slot1arg], [target1, target2]),
+  );
+  // we expect to see one(), referencing the unresolved promise
+
+  const oneResultVPID = getNextVPID();
+  t.deepEqual(log.shift(), {
+    type: 'send',
+    targetSlot: target1,
+    methargs: capargs(['one', [slot0arg]], [p1]),
+    resultSlot: oneResultVPID,
+  });
+  t.deepEqual(log.shift(), { type: 'subscribe', target: oneResultVPID });
+  // two() is queued internally, so no more syscalls
+  matchIDCounterSet(t, log);
+  t.deepEqual(log, []);
+
+  // now use p1 as the result= of a message, transferring decider
+  // authority to the vat
+  await dispatch(makeMessage(rootA, 'becomeDecider', [], []));
+  t.deepEqual(log, []);
+
+  // have the vat send some more messages
+  await dispatch(
+    makeMessage(rootA, 'send2', [slot0arg, slot1arg], [target1, target2]),
+  );
+  // we expect to see three(), referencing the unresolved promise
+
+  const threeResultVPID = getNextVPID();
+  t.deepEqual(log.shift(), {
+    type: 'send',
+    targetSlot: target1,
+    methargs: capargs(['three', [slot0arg]], [p1]),
+    resultSlot: threeResultVPID,
+  });
+  t.deepEqual(log.shift(), { type: 'subscribe', target: threeResultVPID });
+  // four() is queued internally, so no more syscalls
+  matchIDCounterSet(t, log);
+  t.deepEqual(log, []);
+
+  // now tell the vat to resolve the promise
+  await dispatch(makeMessage(rootA, 'resolve', [slot0arg], [target2]));
+
+  // that might release two() and four()
+  if (mode === 'presence') {
+    const twoResultVPID = getNextVPID();
+    t.deepEqual(log.shift(), {
+      type: 'send',
+      targetSlot: target2,
+      methargs: capargs(['two', []], []),
+      resultSlot: twoResultVPID,
+    });
+    t.deepEqual(log.shift(), { type: 'subscribe', target: twoResultVPID });
+
+    const fourResultVPID = getNextVPID();
+    t.deepEqual(log.shift(), {
+      type: 'send',
+      targetSlot: target2,
+      methargs: capargs(['four', []], []),
+      resultSlot: fourResultVPID,
+    });
+    t.deepEqual(log.shift(), { type: 'subscribe', target: fourResultVPID });
+  }
+
+  // followed by the actual resolution
+
+  const localTarget = 'o+10';
+  const targets = { target2, localTarget, p1 };
+  t.deepEqual(log.shift(), resolutionOf(p1, mode, targets));
+
+  if (mode === 'presence' || mode === 'local-object') {
+    // sending two()/four() will allocate new result promise VPIDs,
+    // and exporting 'localTarget' will allocate a new objectID, so
+    // expect a counter write
+    matchIDCounterSet(t, log);
+  }
+  t.deepEqual(log, []);
+
+  // now send another batch of messages, after the VPID is retired
+  await dispatch(
+    makeMessage(rootA, 'send3', [slot0arg, slot1arg], [target1, target2]),
+  );
+
+  // five() will get a new VPID
+  const newP1VPID = getNextVPID();
+  const fiveResultVPID = getNextVPID();
+  t.deepEqual(log.shift(), {
+    type: 'send',
+    targetSlot: target1,
+    methargs: capargs(['five', [slot0arg]], [newP1VPID]),
+    resultSlot: fiveResultVPID,
+  });
+  const targets2 = { target2, localTarget, p1: newP1VPID };
+  t.deepEqual(log.shift(), resolutionOf(newP1VPID, mode, targets2));
+  t.deepEqual(log.shift(), { type: 'subscribe', target: fiveResultVPID });
+
+  if (mode === 'presence') {
+    const sixResultVPID = getNextVPID();
+    t.deepEqual(log.shift(), {
+      type: 'send',
+      targetSlot: target2,
+      methargs: capargs(['six', []], []),
+      resultSlot: sixResultVPID,
+    });
+    t.deepEqual(log.shift(), { type: 'subscribe', target: sixResultVPID });
+  }
+
+  matchIDCounterSet(t, log);
+  t.deepEqual(log, []);
+}
+
+for (const mode of modes) {
+  test(`liveslots vpid handling case7 ${mode}`, doVatResolveCase7, mode);
+}
 
 function makePR() {
   let r;

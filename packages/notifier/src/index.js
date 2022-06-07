@@ -16,3 +16,4 @@ export {
   // Consider deprecating or not reexporting
   makeAsyncIterableFromNotifier,
 } from './asyncIterableAdaptor.js';
+export * from './storesub.js';

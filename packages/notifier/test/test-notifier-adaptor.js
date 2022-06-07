@@ -49,6 +49,52 @@ test('observeIteration - update from iterator fails', t => {
   return observeIteration(explodingStream, u);
 });
 
+test('observeIteration - synchronous throw from observer stops hard', async t => {
+  t.plan(2);
+  await t.throwsAsync(
+    () =>
+      observeIteration(finiteStream, {
+        updateState: state => {
+          t.is(state, 1);
+          throw new Error('sync propagates');
+        },
+        finish: state => {
+          t.fail(`unexpected finish with state ${state}`);
+        },
+        fail: reason => {
+          t.is(reason.message, 'sync propagates');
+        },
+      }),
+    { message: 'sync propagates' },
+  );
+});
+
+test('observeIteration - rejection from observer does nothing', async t => {
+  const u = makeTestIterationObserver(t, true, false);
+  const handledRejection = reason => {
+    const r = Promise.reject(reason);
+    r.catch(() => {});
+    return r;
+  };
+  await observeIteration(finiteStream, {
+    ...u,
+    updateState: state => {
+      u.updateState(state);
+      return handledRejection(
+        Error('updateState rejection does not propagate'),
+      );
+    },
+    finish: state => {
+      u.finish(state);
+      return handledRejection(Error('finish rejection does not propagate'));
+    },
+    fail: reason => {
+      u.fail(reason);
+      return handledRejection(Error('fail rejection does not propagate'));
+    },
+  });
+});
+
 // /////////////////////////////// NotifierKit /////////////////////////////////
 
 test('notifier adaptor - manual finishes', async t => {

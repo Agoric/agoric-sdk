@@ -35,10 +35,6 @@ export const makePriceAuthorityTransform = async ({
 }) => {
   const quoteIssuer = E(quoteMint).getIssuer();
   const quoteBrand = await E(quoteIssuer).getBrand();
-  const sourceQuoteIssuer = E(sourcePriceAuthority).getQuoteIssuer(
-    sourceBrandIn,
-    sourceBrandOut,
-  );
 
   /**
    * Ensure that the brandIn/brandOut pair is supported.
@@ -65,6 +61,11 @@ export const makePriceAuthorityTransform = async ({
    */
   const scaleQuote = async sourceQuote => {
     const { quotePayment: sourceQuotePayment } = sourceQuote;
+
+    const sourceQuoteIssuer = E(sourcePriceAuthority).getQuoteIssuer(
+      sourceBrandIn,
+      sourceBrandOut,
+    );
 
     /** @type {Amount<'set'>} */
     const { value: sourceQuoteValue } = await E(sourceQuoteIssuer).getAmountOf(

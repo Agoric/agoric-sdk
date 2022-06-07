@@ -18,6 +18,7 @@ import { importBundle } from '@endo/import-bundle';
 import * as Collect from '@agoric/run-protocol/src/collect.js';
 import { makeBridgeManager as makeBridgeManagerKit } from '../bridge.js';
 import * as BRIDGE_ID from '../bridge-ids.js';
+import * as STORAGE_PATH from '../chain-storage-paths.js';
 
 import { callProperties, extractPowers } from './utils.js';
 
@@ -281,6 +282,33 @@ export const makeBridgeManager = async ({
   bridgeManager.resolve(myBridge);
 };
 harden(makeBridgeManager);
+
+/**
+ * @param {BootstrapPowers & {
+ *   consume: { loadVat: ERef<VatLoader<ChainStorageVat>> }
+ * }} powers
+ */
+export const makeChainStorage = async ({
+  consume: { bridgeManager: bridgeManagerP, loadVat },
+  produce: { chainStorage: chainStorageP },
+}) => {
+  const bridgeManager = await bridgeManagerP;
+  if (!bridgeManager) {
+    console.warn('Cannot support chainStorage without an actual chain.');
+    chainStorageP.resolve(undefined);
+    return;
+  }
+
+  const ROOT_PATH = STORAGE_PATH.CUSTOM;
+
+  const vat = E(loadVat)('chainStorage');
+  const rootNodeP = E(vat).makeBridgedChainStorageRoot(
+    bridgeManager,
+    BRIDGE_ID.STORAGE,
+    ROOT_PATH,
+  );
+  chainStorageP.resolve(rootNodeP);
+};
 
 /**
  * no free lunch on chain

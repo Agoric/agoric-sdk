@@ -6,7 +6,7 @@
  */
 
 // LMDB bindings need to be imported before lockdown.
-import 'node-lmdb';
+import 'lmdb';
 
 // Now do lockdown.
 import '@endo/init';

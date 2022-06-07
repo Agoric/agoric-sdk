@@ -406,9 +406,9 @@ export async function main() {
       { verbose },
       runtimeOptions,
     );
-    swingStore.commit();
+    await swingStore.commit();
     if (initOnly) {
-      swingStore.close();
+      await swingStore.close();
       return;
     }
   }
@@ -462,8 +462,8 @@ export async function main() {
         if (activityHash) {
           log(`activityHash: ${controller.getActivityhash()}`);
         }
-        swingStore.commit();
-        swingStore.close();
+        await swingStore.commit();
+        await swingStore.close();
         log(`runner stepped ${steps} crank${steps === 1 ? '' : 's'}`);
       } catch (err) {
         kernelFailure(err);
@@ -481,8 +481,8 @@ export async function main() {
       cli.context.dump2 = () => controller.dump();
       cli.defineCommand('commit', {
         help: 'Commit current kernel state to persistent storage',
-        action: () => {
-          swingStore.commit();
+        action: async () => {
+          await swingStore.commit();
           log('committed');
           cli.displayPrompt();
         },
@@ -626,7 +626,7 @@ export async function main() {
     }
     const commitStartTime = readClock();
     if (doCommit) {
-      swingStore.commit();
+      await swingStore.commit();
     }
     const blockEndTime = readClock();
     if (forceGC) {
@@ -692,7 +692,7 @@ export async function main() {
 
     let [totalSteps, deltaT] = await runBatch(stepLimit, runInBlockMode);
     if (!runInBlockMode) {
-      swingStore.commit();
+      await swingStore.commit();
     }
     const cranks = getCrankNumber();
     const rawStats = controller.getStats();
@@ -720,7 +720,7 @@ export async function main() {
         bootstrapResult = null;
       }
     }
-    swingStore.close();
+    await swingStore.close();
     if (statsFile) {
       outputStats(statsFile, mainStats, benchmarkStats);
     }

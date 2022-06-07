@@ -46,6 +46,7 @@ const makeSubscriptionIterator = tailP => {
     next: () => {
       const resultP = E.get(tailP).head;
       tailP = E.get(tailP).tail;
+      Promise.resolve(tailP).catch(() => {}); // suppress unhandled rejection error
       return resultP;
     },
   });
@@ -56,9 +57,10 @@ const makeSubscriptionIterator = tailP => {
  * distributed pub/sub.
  *
  * @template T
+ * @param {T[]} optionalInitialState
  * @returns {SubscriptionRecord<T>}
  */
-const makeSubscriptionKit = () => {
+const makeSubscriptionKit = (...optionalInitialState) => {
   /** @type {((internals: ERef<SubscriptionInternals<T>>) => void) | undefined} */
   let rear;
   const hp = new HandledPromise(r => (rear = r));
@@ -95,6 +97,10 @@ const makeSubscriptionKit = () => {
       rear = undefined;
     },
   });
+
+  if (optionalInitialState.length > 0) {
+    publication.updateState(optionalInitialState[0]);
+  }
   return harden({ publication, subscription });
 };
 harden(makeSubscriptionKit);

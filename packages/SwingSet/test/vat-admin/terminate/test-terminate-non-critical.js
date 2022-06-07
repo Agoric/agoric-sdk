@@ -283,7 +283,7 @@ test('dead vat state removed', async t => {
   const kvStore = hostStorage.kvStore;
   t.is(kvStore.get('vat.dynamicIDs'), '["v6"]');
   t.is(kvStore.get('ko26.owner'), 'v6');
-  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 33);
+  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length > 30, true);
 
   controller.queueToVatRoot('bootstrap', 'phase2', []);
   await controller.run();

@@ -34,8 +34,8 @@ export const makeKVStringStore = (kind, db = makeTempKVDatabase()) => {
         .prepare(`SELECT value FROM kind_kv WHERE kind = ? AND key = ?`)
         .iterate(kind, key);
       const { done, value } = it.next();
-      if (!done) {
-        it.return && it.return();
+      if (!done && it.return) {
+        it.return();
       }
       // console.log({ serialised: value });
       return value.value;
@@ -46,8 +46,10 @@ export const makeKVStringStore = (kind, db = makeTempKVDatabase()) => {
           `SELECT COUNT(value) AS cnt FROM kind_kv WHERE kind = ? AND key = ?`,
         )
         .iterate(kind, key);
-      const { value } = it.next();
-      it.return && it.return();
+      const { done, value } = it.next();
+      if (!done && it.return) {
+        it.return();
+      }
       // console.log({ count: value });
       return value && value.cnt > 0;
     },

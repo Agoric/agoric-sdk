@@ -427,6 +427,7 @@ func (m *MsgProvisionResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgProvisionResponse proto.InternalMessageInfo
 
+// MsgInstallBundle carries a signed bundle to SwingSet.
 type MsgInstallBundle struct {
 	Bundle    string                                        `protobuf:"bytes,1,opt,name=bundle,proto3" json:"bundle" yaml:"bundle"`
 	Submitter github_com_cosmos_cosmos_sdk_types.AccAddress `protobuf:"bytes,2,opt,name=submitter,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"submitter" yaml:"submitter"`
@@ -479,6 +480,8 @@ func (m *MsgInstallBundle) GetSubmitter() github_com_cosmos_cosmos_sdk_types.Acc
 	return nil
 }
 
+// MsgInstallBundleResponse is an empty acknowledgement that an install bundle
+// message has been queued for the SwingSet kernel's consideration.
 type MsgInstallBundleResponse struct {
 }
 
@@ -592,6 +595,7 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
+	// Install a JavaScript sources bundle on the chain's SwingSet controller.
 	InstallBundle(ctx context.Context, in *MsgInstallBundle, opts ...grpc.CallOption) (*MsgInstallBundleResponse, error)
 	// Send inbound messages.
 	DeliverInbound(ctx context.Context, in *MsgDeliverInbound, opts ...grpc.CallOption) (*MsgDeliverInboundResponse, error)
@@ -658,6 +662,7 @@ func (c *msgClient) Provision(ctx context.Context, in *MsgProvision, opts ...grp
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
+	// Install a JavaScript sources bundle on the chain's SwingSet controller.
 	InstallBundle(context.Context, *MsgInstallBundle) (*MsgInstallBundleResponse, error)
 	// Send inbound messages.
 	DeliverInbound(context.Context, *MsgDeliverInbound) (*MsgDeliverInboundResponse, error)

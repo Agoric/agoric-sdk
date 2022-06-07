@@ -161,21 +161,21 @@ test('circular promise resolution data', async t => {
       },
     },
     {
-      id: 'kp45',
+      id: 'kp42',
       state: 'fulfilled',
       refCount: 1,
       data: {
         body: '[{"@qclass":"slot","index":0}]',
-        slots: ['kp46'],
+        slots: ['kp44'],
       },
     },
     {
-      id: 'kp46',
+      id: 'kp44',
       state: 'fulfilled',
       refCount: 1,
       data: {
         body: '[{"@qclass":"slot","index":0}]',
-        slots: ['kp45'],
+        slots: ['kp42'],
       },
     },
   ];

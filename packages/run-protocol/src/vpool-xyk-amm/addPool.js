@@ -147,10 +147,6 @@ export const makeAddPoolInvitation = (
       );
     }
 
-    const {
-      poolFacets: { pool, helper },
-    } = await addPool(secondaryBrand);
-
     assert(
       AmountMath.isGTE(centralAmount, minPoolLiquidity),
       `The minimum initial liquidity is ${minPoolLiquidity}, rejecting ${centralAmount}`,
@@ -164,6 +160,13 @@ export const makeAddPoolInvitation = (
     const [liquidityKeyword] = Object.entries(zcf.getTerms().issuers).find(
       ([_, i]) => i === issuer,
     );
+    assert(liquidityKeyword, 'liquidity brand required');
+
+    // COMMIT POINT /////////////////////
+
+    const {
+      poolFacets: { pool, helper },
+    } = await addPool(secondaryBrand);
 
     // in addLiquidityInternal, funder provides centralAmount & secondaryAmount,
     // and receives liquidity tokens equal to centralAmount. Afterward, we'll

@@ -2,7 +2,7 @@
 import { test } from '../../../tools/prepare-test-env-ava.js';
 
 import { setupTestLiveslots } from '../../liveslots-helpers.js';
-import { buildRootObject, mapRef } from './gc-helpers.js';
+import { buildRootObject, mapRef } from '../../gc-helpers.js';
 
 // These tests follow the model described in
 // ../virtualObjects/test-virtualObjectGC.js

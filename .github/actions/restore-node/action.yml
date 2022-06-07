@@ -19,12 +19,21 @@ runs:
     - uses: actions/setup-node@v1
       with:
         node-version: ${{ inputs.node-version }}
+    - uses: kenchan0130/actions-system-info@master
+      id: system-info
+    - name: cache node modules
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/yarn
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-yarn-${{ hashFiles('yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-yarn-
     - name: restore built files
       id: built
       uses: actions/cache@v1
       with:
         path: .
-        key: ${{ runner.os }}-${{ inputs.node-version }}-built-${{ github.sha }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-node-${{ inputs.node-version }}-built-${{ github.sha }}
     - name: yarn install --frozen-lockfile
       run: yarn install --frozen-lockfile
       shell: bash
