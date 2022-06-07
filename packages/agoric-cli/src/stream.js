@@ -86,9 +86,10 @@ export default async function streamMain(progname, rawArgs, powers, opts) {
     });
   }
 
+  // TODO: https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
   /** @type {import('@agoric/chain-streams').ChainLeaderOptions} */
   const leaderOptions = {
-    retryCallback: e => {
+    retryCallback: (e, _attempt) => {
       verbose && console.warn('Retrying due to:', e);
       return delay(1000 + Math.random() * 1000);
     },

@@ -198,13 +198,15 @@ export const makeChainStream = (leader, storeKey, options = {}) => {
         }
       };
 
+      let attempt = 0;
       const retryOrFail = err => {
-        return E(leader)
-          .retry(err)
+        E(leader)
+          .retry(err, attempt)
           .catch(e => {
             fail(e);
             throw e;
           });
+        attempt += 1;
       };
 
       /**
@@ -259,6 +261,7 @@ export const makeChainStream = (leader, storeKey, options = {}) => {
         const getProvenValue = () => getProvenValueAtHeight(allegedBlockHeight);
 
         const buf = await queryVerifier(getProvenValue, crash, getAllegedValue);
+        attempt = 0;
         if (!committer.isValid()) {
           return;
         }

@@ -15,10 +15,12 @@ export const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
  * Report an error, then retry the leader operation after a second or two.
  *
  * @param {any} err
+ * @param {number} _attempt
  * @returns {Promise<void>}
  */
-export const DEFAULT_RETRY_CALLBACK = err => {
+export const DEFAULT_RETRY_CALLBACK = (err, _attempt = 0) => {
   console.warn('retrying after error', err);
+  // TODO: `delay(Math.random() * Math.min(cap, base * 2 ** attempt))
   return delay(1000 + Math.random() * 1000);
 };
 

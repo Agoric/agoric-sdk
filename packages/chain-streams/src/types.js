@@ -5,7 +5,7 @@ export {};
 
 /**
  * @typedef {object} ChainLeaderOptions
- * @property {null | ((err: any) => Promise<void>)} [retryCallback]
+ * @property {null | ((err: any, attempt?: number) => Promise<void>)} [retryCallback]
  * @property {() => Promise<boolean>} [keepPolling]
  */
 
@@ -18,7 +18,7 @@ export {};
 
 /**
  * @typedef {object} ChainLeader
- * @property {(error: any) => Promise<void>} retry
+ * @property {(error: any, attempt?: number) => Promise<void>} retry
  * @property {() => ChainLeaderOptions} getOptions
  * @property {<T>(callback: (endpoint: string) => Promise<T>) => Promise<T[]>} mapEndpoints
  * @property {(key: ChainStoreKey) => Promise<ChainStream<ChainStoreChange>>} watchStoreKey

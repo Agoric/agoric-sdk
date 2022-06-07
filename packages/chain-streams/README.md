@@ -8,7 +8,7 @@ TL;DR: You can run `yarn demo`, or to consume a mailbox stream do:
 npx agoric stream -Bhttp://devnet.agoric.net/network-config :mailbox.agoric1foobarbaz -otext
 ```
 
-An example of following an on-chain mailbox in codd (using this package) is:
+An example of following an on-chain mailbox in code (using this package) is:
 
 ```js
 // First, obtain a Hardened JS environment via Endo.

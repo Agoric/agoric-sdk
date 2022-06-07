@@ -30,24 +30,29 @@ export const makeLeaderFromRpcAddresses = (rpcAddrs, leaderOptions) => {
  */
 export const makeLeaderFromNetworkConfig = (netconfigURL, options = {}) => {
   const { retryCallback = DEFAULT_RETRY_CALLBACK } = options;
-  const retry = async err => {
+  /** @type {import('./types.js').ChainLeaderOptions['retryCallback']} */
+  const retry = async (err, attempt) => {
     if (retryCallback) {
-      return retryCallback(err);
+      return retryCallback(err, attempt);
     }
     throw err;
   };
+  let attempt = 0;
   return new Promise((resolve, reject) => {
     const makeLeader = async () => {
       const response = await fetch(netconfigURL, {
         headers: { accept: 'application/json' },
       });
       const { rpcAddrs } = await response.json();
+      // Our part succeeded, so reset the attempt counter.
+      attempt = 0;
       return makeLeaderFromRpcAddresses(rpcAddrs, options);
     };
     const retryLeader = async err => {
-      retry(err)
+      retry(err, attempt)
         .then(() => makeLeader().then(resolve, retryLeader))
         .catch(reject);
+      attempt += 1;
     };
     makeLeader().then(resolve, retryLeader);
   });

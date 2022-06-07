@@ -18,13 +18,14 @@ export const makeRoundRobinLeader = (endpoints, leaderOptions = {}) => {
   shuffle(endpoints);
 
   let lastRespondingEndpointIndex = 0;
+  let thisAttempt = 0;
 
   /** @type {import('./types.js').ChainLeader} */
   const leader = Far('round robin leader', {
     getOptions: () => leaderOptions,
-    retry: async err => {
+    retry: async (err, attempt) => {
       if (retryCallback) {
-        return retryCallback(err);
+        return retryCallback(err, attempt);
       }
       throw err;
     },
@@ -42,7 +43,8 @@ export const makeRoundRobinLeader = (endpoints, leaderOptions = {}) => {
           endpointIndex = (endpointIndex + 1) % endpoints.length;
 
           // eslint-disable-next-line no-use-before-define
-          E(leader).retry(err).then(applyOne, reject);
+          E(leader).retry(err, thisAttempt).then(applyOne, reject);
+          thisAttempt += 1;
         };
 
         const applyOne = () => {
@@ -51,6 +53,7 @@ export const makeRoundRobinLeader = (endpoints, leaderOptions = {}) => {
             .then(res => {
               resolve(harden([res]));
               lastRespondingEndpointIndex = endpointIndex;
+              thisAttempt = 0;
             }, retry);
 
           // Don't return to prevent a promise chain.
