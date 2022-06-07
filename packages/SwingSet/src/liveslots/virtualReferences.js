@@ -349,6 +349,11 @@ export function makeVirtualReferenceManager(
         // syscall.dropImport when the Presence itself goes away.
         incRefCount(baseRef);
       }
+    } else if (type === 'promise') {
+      // need to track promises too, maybe in remotableRefCounts
+      const p = requiredValForSlot(vref);
+      const oldRefCount = remotableRefCounts.get(p) || 0;
+      remotableRefCounts.set(p, oldRefCount + 1);
     }
   }
 
@@ -374,8 +379,22 @@ export function makeVirtualReferenceManager(
       } else {
         decRefCount(baseRef);
       }
+    } else if (type === 'promise') {
+      const p = requiredValForSlot(vref);
+      const oldRefCount = remotableRefCounts.get(p) || 0;
+      assert(oldRefCount > 0, `attempt to decref ${vref} below 0`);
+      if (oldRefCount === 1) {
+        remotableRefCounts.delete(p);
+        droppedMemoryReference = true; // true for promises too
+      } else {
+        remotableRefCounts.set(p, oldRefCount - 1);
+      }
     }
     return droppedMemoryReference;
+  }
+
+  function getReachablePromiseRefCount(p) {
+    return remotableRefCounts.get(p) || 0;
   }
 
   // for testing only
@@ -633,6 +652,7 @@ export function makeVirtualReferenceManager(
     addReachableVref,
     removeReachableVref,
     updateReferenceCounts,
+    getReachablePromiseRefCount,
     addRecognizableValue,
     removeRecognizableVref,
     removeRecognizableValue,

@@ -1,15 +1,17 @@
 // @ts-check
 /* global setImmediate */
 
+import { AmountMath } from '@agoric/ertp';
 import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
 import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
+import * as utils from '@agoric/vats/src/core/utils.js';
 import {
   makeAgoricNamesAccess,
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
-import * as utils from '@agoric/vats/src/core/utils.js';
 import { makeZoeKit } from '@agoric/zoe';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeLoopback } from '@endo/captp';
@@ -62,7 +64,7 @@ export const setUpZoeForTest = (setJig = () => {}) => {
 harden(setUpZoeForTest);
 
 export const setupBootstrap = (t, optTimer = undefined) => {
-  const trace = makeTracer('PromiseSpace');
+  const trace = makeTracer('PromiseSpace', false);
   const space = /** @type {any} */ (makePromiseSpace(trace));
   const { produce, consume } =
     /** @type { import('../src/proposals/econ-behaviors.js').EconomyBootstrapPowers & BootstrapPowers } */ (
@@ -73,11 +75,7 @@ export const setupBootstrap = (t, optTimer = undefined) => {
   produce.chainTimerService.resolve(timer);
   produce.chainStorage.resolve(undefined);
 
-  const {
-    zoe,
-    feeMintAccess,
-    runKit: { brand: runBrand, issuer: runIssuer },
-  } = t.context;
+  const { zoe, feeMintAccess, run } = t.context;
   produce.zoe.resolve(zoe);
   produce.feeMintAccess.resolve(feeMintAccess);
 
@@ -86,8 +84,8 @@ export const setupBootstrap = (t, optTimer = undefined) => {
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   const { brand, issuer } = spaces;
-  brand.produce.RUN.resolve(runBrand);
-  issuer.produce.RUN.resolve(runIssuer);
+  brand.produce.RUN.resolve(run.brand);
+  issuer.produce.RUN.resolve(run.issuer);
 
   return { produce, consume, modules: { utils: { ...utils } }, ...spaces };
 };
@@ -166,3 +164,26 @@ export const produceInstallations = (space, installations) => {
     space.installation.produce[key].resolve(installation);
   }
 };
+
+/**
+ * @param {object} kit
+ * @param {Brand<'nat'>} kit.brand
+ * @param {Issuer<'nat'>} [kit.issuer]
+ * @param {Mint<'nat'>} [kit.mint]
+ */
+export const withAmountUtils = kit => {
+  return {
+    ...kit,
+    /**
+     * @param {NatValue} v
+     */
+    make: v => AmountMath.make(kit.brand, v),
+    makeEmpty: () => AmountMath.makeEmpty(kit.brand),
+    /**
+     * @param {NatValue} n
+     * @param {NatValue} [d]
+     */
+    makeRatio: (n, d) => makeRatio(n, kit.brand, d),
+  };
+};
+/** @typedef {ReturnType<typeof withAmountUtils>} AmountUtils */

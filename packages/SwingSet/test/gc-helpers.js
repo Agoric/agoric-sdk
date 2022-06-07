@@ -12,8 +12,8 @@ import {
   validate,
   validateDone,
   validateReturned,
-} from '../../liveslots-helpers.js';
-import { capargs } from '../../util.js';
+} from './liveslots-helpers.js';
+import { capargs } from './util.js';
 
 // These tests follow the model described in
 // ../virtualObjects/test-virtualObjectGC.js
@@ -21,8 +21,8 @@ import { capargs } from '../../util.js';
 let aWeakMapStore;
 let aWeakSetStore;
 
-export const mainHolderIdx = 4;
-export const mainHeldIdx = 5;
+export const mainHolderIdx = 5;
+export const mainHeldIdx = 6;
 
 export function buildRootObject(vatPowers) {
   const { VatData } = vatPowers;
@@ -32,7 +32,7 @@ export function buildRootObject(vatPowers) {
     makeScalarBigWeakSetStore,
   } = VatData;
 
-  let nextStoreNumber = 4;
+  let nextStoreNumber = 5;
   let heldStore = null;
 
   const holders = [];
@@ -239,6 +239,22 @@ export function validateStatusCheck(v, vref, rc, es) {
   validateExportStatusCheck(v, vref, es);
 }
 
+function validateCreateBuiltInNonDurableTable(v, idx, schema, label) {
+  validate(v, matchVatstoreSet(`vc.${idx}.|nextOrdinal`, `1`));
+  validate(v, matchVatstoreSet(`vc.${idx}.|entryCount`, `0`));
+  validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, schema));
+  validate(v, matchVatstoreSet(`vc.${idx}.|label`, label));
+}
+
+function validateCreatePromiseRegistrationTable(v, idx) {
+  validateCreateBuiltInNonDurableTable(
+    v,
+    idx,
+    anyScalarSchema,
+    'promiseRegistrations',
+  );
+}
+
 export function validateCreateBuiltInTable(v, idx, idKey, schema, label) {
   validate(v, matchVatstoreGet(idKey, NONE));
   validate(v, matchVatstoreSet(`vc.${idx}.|nextOrdinal`, `1`));
@@ -276,8 +292,9 @@ export function validateCreateBaggage(v, idx) {
 
 export function validateCreateBuiltInTables(v) {
   validateCreateBaggage(v, 1);
-  validateCreatePromiseWatcherKindTable(v, 2);
-  validateCreateWatchedPromiseTable(v, 3);
+  validateCreatePromiseRegistrationTable(v, 2);
+  validateCreatePromiseWatcherKindTable(v, 3);
+  validateCreateWatchedPromiseTable(v, 4);
 }
 
 export function validateCreate(v, idx, isWeak = false) {
@@ -520,10 +537,11 @@ export function validateInit(v) {
     ),
   );
   validateCreateBuiltInTables(v);
-  validateCreateHolder(v, 4);
+  validateCreateHolder(v, 5);
+
   validate(v, matchVatstoreGet('deadPromises', NONE));
   validate(v, matchVatstoreDelete('deadPromises'));
-  validate(v, matchVatstoreGetAfter('', 'vc.3.', 'vc.3.{', [NONE, NONE]));
+  validate(v, matchVatstoreGetAfter('', 'vc.4.', 'vc.4.{', [NONE, NONE]));
   validate(v, matchVatstoreGetAfter('', 'vom.dkind.', NONE, [NONE, NONE]));
 }
 
