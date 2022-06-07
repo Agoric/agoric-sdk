@@ -54,7 +54,7 @@ export function makeXsSubprocessFactory({
       virtualObjectCacheSize,
       enableDisavow,
       gcEveryCrank = true,
-      name,
+      name: vatName,
       metered,
       compareSyscalls,
       useTranscript,
@@ -113,10 +113,14 @@ export function makeXsSubprocessFactory({
 
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const lastSnapshot = vatKeeper.getLastSnapshot();
+    // `startXSnap` adds `argName` as a dummy argument so that 'ps'
+    // shows which worker is for which vat, but is careful to prevent
+    // a shell-escape attack
+    const argName = `${vatID}:${vatName !== undefined ? vatName : ''}`;
 
     // start the worker and establish a connection
     const worker = await startXSnap(
-      `${vatID}:${name}`,
+      argName,
       handleCommand,
       metered,
       lastSnapshot ? lastSnapshot.snapshotID : undefined,

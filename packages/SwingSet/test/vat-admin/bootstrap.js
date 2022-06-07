@@ -6,7 +6,7 @@ export function buildRootObject() {
   let held;
 
   const adder = Far('adder', { add1: x => x + 1 });
-  const options = { vatParameters: { adder } };
+  const options = { name: 'newvat', vatParameters: { adder } };
 
   return Far('root', {
     async bootstrap(vats, devices) {
@@ -57,6 +57,17 @@ export function buildRootObject() {
 
     async nonBundleCap() {
       return E(admin).createVat(Far('non-bundlecap', {})); // should reject
+    },
+
+    async vatName(name) {
+      const opts = { name, vatParameters: {} };
+      await E(admin).createVatByName('new13', opts);
+      return 'ok';
+    },
+
+    async badOptions() {
+      const opts = { bogus: 'nope' };
+      return E(admin).createVatByName('new13', opts); // should reject
     },
 
     getHeld() {

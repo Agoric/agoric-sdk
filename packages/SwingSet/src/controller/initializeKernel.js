@@ -71,7 +71,6 @@ export function initializeKernel(config, hostStorage, verbose = false) {
         'critical',
         'reapInterval',
       ]);
-      creationOptions.description = `static name=${name}`;
       creationOptions.name = name;
       if (creationOptions.useTranscript === undefined) {
         creationOptions.useTranscript = true;
