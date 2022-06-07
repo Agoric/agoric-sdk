@@ -283,6 +283,7 @@ const machineBehavior = {
         seat.incrementBy(mintSeat.decrementBy(harden({ RUN: kept })));
         zcf.reallocate(rewardPoolSeat, mintSeat, seat, ...otherSeats);
       } catch (e) {
+        console.error('mintAndReallocate caught', e);
         mintSeat.clear();
         rewardPoolSeat.clear();
         // Make best efforts to burn the newly minted tokens, for hygiene.
@@ -292,6 +293,9 @@ const machineBehavior = {
         debtMint.burnLosses(harden({ RUN: toMint }), mintSeat);
         throw e;
       } finally {
+        // Note that if this assertion may fail because of an error in the
+        // try{} block, but that error won't be thrown because this executes
+        // before the catch that rethrows it.
         assert(
           Object.values(mintSeat.getCurrentAllocation()).every(a =>
             AmountMath.isEmpty(a),
