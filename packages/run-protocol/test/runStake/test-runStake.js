@@ -799,6 +799,7 @@ test('Starting LoC', async (/** @type {RunStakeTestContext} */ t) => {
   await d.checkBLDLiened(8000n);
   await d.borrowMoreRUN(1400n);
   await d.checkRUNDebt(1632n);
+  await d.borrowMoreRUN(0n);
 });
 
 test('Extending LoC - CR increases (FAIL)', async (/** @type {RunStakeTestContext} */ t) => {
