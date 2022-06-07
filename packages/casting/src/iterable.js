@@ -29,14 +29,14 @@ export const makeAsyncIterableFromNotifier = notifier =>
 
 /**
  * @template T
- * @param {ERef<import('./types').ChainStream<T>>} stream
+ * @param {ERef<import('./types').Follower<T>>} follower
  */
-export const iterateLatest = stream => {
+export const iterateLatest = follower => {
   // For now, just pass through the iterable.
   return harden({
     /** @returns {AsyncIterator<T>} */
     [Symbol.asyncIterator]: () => {
-      const latestIterable = E(stream).getLatestIterable();
+      const latestIterable = E(follower).getLatestIterable();
       const iterator = E(latestIterable)[Symbol.asyncIterator]();
       return harden({
         next: () => E(iterator).next(),

@@ -5,19 +5,19 @@ import { DEFAULT_KEEP_POLLING } from './defaults.js';
 /**
  * Just return an unspecified allegedValue every poll period.
  *
- * @param {import('./types').ChainLeader} leader
- * @param {import('./types.js').ChainStoreKey} storeKey
- * @returns {Promise<import('./types.js').ChainStream<import('./types').ChainStoreChange>>}
+ * @param {import('./types').Leader} leader
+ * @param {import('./types.js').CastingSpec} castingSpec
+ * @returns {Promise<import('./types.js').Follower<import('./types').CastingChange>>}
  */
-export const makePollingWatcher = async (leader, storeKey) => {
+export const makePollingChangeFollower = async (leader, castingSpec) => {
   const { keepPolling = DEFAULT_KEEP_POLLING } = await E(leader).getOptions();
-  return Far('key watcher stream', {
+  return Far('polling change follower', {
     getLatestIterable: () =>
-      Far('key watcher iterable', {
+      Far('polling change follower iterable', {
         [Symbol.asyncIterator]: () => {
           /** @type {Promise<boolean> | undefined} */
           let nextPollPromise;
-          return Far('key watcher iterator', {
+          return Far('polling change follower iterator', {
             next: async () => {
               if (!nextPollPromise) {
                 nextPollPromise = keepPolling();
@@ -25,7 +25,7 @@ export const makePollingWatcher = async (leader, storeKey) => {
               const keepGoing = await nextPollPromise;
               nextPollPromise = undefined;
               const change = harden({
-                storeKey,
+                castingSpec,
                 // Make no warrant as to the values.
                 values: [],
               });

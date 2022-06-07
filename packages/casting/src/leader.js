@@ -2,13 +2,13 @@
 import { E, Far } from '@endo/far';
 import { DEFAULT_RETRY_CALLBACK } from './defaults.js';
 import { shuffle } from './shuffle.js';
-import { makePollingWatcher } from './watcher.js';
+import { makePollingChangeFollower } from './change-follower.js';
 
 /**
  * Create a chain leader that rotates through a list of endpoints.
  *
  * @param {string[]} endpoints
- * @param {import('./types.js').ChainLeaderOptions} leaderOptions
+ * @param {import('./types.js').LeaderOptions} leaderOptions
  */
 export const makeRoundRobinLeader = (endpoints, leaderOptions = {}) => {
   const { retryCallback = DEFAULT_RETRY_CALLBACK } = leaderOptions;
@@ -20,7 +20,7 @@ export const makeRoundRobinLeader = (endpoints, leaderOptions = {}) => {
   let lastRespondingEndpointIndex = 0;
   let thisAttempt = 0;
 
-  /** @type {import('./types.js').ChainLeader} */
+  /** @type {import('./types.js').Leader} */
   const leader = Far('round robin leader', {
     getOptions: () => leaderOptions,
     retry: async (err, attempt) => {
@@ -29,7 +29,7 @@ export const makeRoundRobinLeader = (endpoints, leaderOptions = {}) => {
       }
       throw err;
     },
-    watchStoreKey: storeKey => makePollingWatcher(leader, storeKey),
+    watchCasting: castingSpec => makePollingChangeFollower(leader, castingSpec),
     /**
      * @template T
      * @param {(endpoint: string) => Promise<T>} callback

@@ -4,35 +4,35 @@
 export {};
 
 /**
- * @typedef {object} ChainLeaderOptions
+ * @typedef {object} LeaderOptions
  * @property {null | ((err: any, attempt?: number) => Promise<void>)} [retryCallback]
  * @property {() => Promise<boolean>} [keepPolling]
  */
 
 /**
- * @typedef {object} ChainStoreChange
- * @property {ChainStoreKey} storeKey
+ * @typedef {object} CastingChange
+ * @property {CastingSpec} castingSpec
  * @property {number} [blockHeight]
  * @property {Uint8Array[]} values
  */
 
 /**
- * @typedef {object} ChainLeader
+ * @typedef {object} Leader
  * @property {(error: any, attempt?: number) => Promise<void>} retry
- * @property {() => ChainLeaderOptions} getOptions
+ * @property {() => LeaderOptions} getOptions
  * @property {<T>(callback: (endpoint: string) => Promise<T>) => Promise<T[]>} mapEndpoints
- * @property {(key: ChainStoreKey) => Promise<ChainStream<ChainStoreChange>>} watchStoreKey
+ * @property {(key: CastingSpec) => Promise<Follower<CastingChange>>} watchCasting
  */
 
 /**
  * @template T
- * @typedef {object} ChainStream
+ * @typedef {object} Follower
  * @property {() => AsyncIterable<T>} [getLatestIterable]
  */
 
 /**
  * @template T
- * @typedef {object} ChainStreamElement
+ * @typedef {object} FollowerElement
  * @property {T} value
  */
 
@@ -47,7 +47,7 @@ export {};
  */
 
 /**
- * @typedef {object} ChainStreamOptions
+ * @typedef {object} FollowerOptions
  * @property {null | import('@endo/far').FarRef<Unserializer>} [unserializer]
  * @property {(buf: Uint8Array) => any} [decode]
  * @property {'strict'|'optimistic'|'none'} [integrity]
@@ -55,7 +55,7 @@ export {};
  */
 
 /**
- * @typedef {object} ChainStoreKey
+ * @typedef {object} CastingSpec
  * @property {string} storeName
  * @property {Uint8Array} storeSubkey
  * @property {Uint8Array} [dataPrefixBytes]

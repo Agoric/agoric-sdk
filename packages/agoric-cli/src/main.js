@@ -8,7 +8,7 @@ import initMain from './init.js';
 import installMain from './install.js';
 import setDefaultsMain from './set-defaults.js';
 import startMain from './start.js';
-import streamMain from './stream.js';
+import followMain from './follow.js';
 import walletMain from './open.js';
 
 const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
@@ -162,8 +162,8 @@ const main = async (progname, rawArgs, powers) => {
     });
 
   program
-    .command('stream <path-spec...>')
-    .description('read an Agoric Chain Stream')
+    .command('follow <path-spec...>')
+    .description('follow an Agoric Casting leader')
     .option(
       '--integrity <strict | optimistic | none>',
       'set integrity mode',
@@ -210,7 +210,7 @@ const main = async (progname, rawArgs, powers) => {
     .option('-B, --bootstrap <config>', 'network bootstrap configuration')
     .action(async (pathSpecs, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
-      return subMain(streamMain, ['stream', ...pathSpecs], opts);
+      return subMain(followMain, ['follow', ...pathSpecs], opts);
     });
 
   const addRunOptions = cmd =>

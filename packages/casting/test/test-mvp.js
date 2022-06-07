@@ -4,9 +4,9 @@ import { test } from './prepare-test-env-ava.js';
 
 import {
   iterateLatest,
-  makeChainStream,
+  makeFollower,
   makeLeader,
-  makeStoreKey,
+  makeCastingSpec,
 } from '../src/main.js';
 
 import { delay } from '../src/defaults.js';
@@ -16,12 +16,12 @@ test('happy path', async t => {
   const expected = ['latest', 'later', 'done'];
   t.plan(expected.length);
   const PORT = await t.context.startServer(t, [...expected]);
-  /** @type {import('../src/types.js').ChainLeaderOptions} */
+  /** @type {import('../src/types.js').LeaderOptions} */
   const lo = {
     retryCallback: null, // fail fast, no retries
     keepPolling: () => delay(200).then(() => true), // poll really quickly
   };
-  /** @type {import('../src/types.js').ChainStreamOptions} */
+  /** @type {import('../src/types.js').FollowerOptions} */
   const so = {
     integrity: 'none',
   };
@@ -29,9 +29,9 @@ test('happy path', async t => {
   // The rest of this test is taken almost verbatim from the README.md, with
   // some minor modifications (testLeaderOptions and deepEqual).
   const leader = makeLeader(`http://localhost:${PORT}/network-config`, lo);
-  const storeKey = makeStoreKey(':mailbox.agoric1foobarbaz');
-  const stream = await makeChainStream(leader, storeKey, so);
-  for await (const { value } of iterateLatest(stream)) {
+  const castingSpec = makeCastingSpec(':mailbox.agoric1foobarbaz');
+  const follower = await makeFollower(leader, castingSpec, so);
+  for await (const { value } of iterateLatest(follower)) {
     t.log(`here's a mailbox value`, value);
 
     // The rest here is to drive the test.
@@ -69,8 +69,8 @@ test('missing rpc server', async t => {
 });
 
 test('unrecognized integrity', async t => {
-  await t.throws(() => makeChainStream({}, {}, { integrity: 'bother' }), {
-    message: /unrecognized stream integrity mode.*/,
+  await t.throws(() => makeFollower({}, {}, { integrity: 'bother' }), {
+    message: /unrecognized follower integrity mode.*/,
   });
 });
 

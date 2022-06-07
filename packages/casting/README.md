@@ -1,11 +1,11 @@
-# Chain Streams
+# Agoric Casting
 
-This [Agoric](https://agoric.com) Chain Streams package consumes data server
-publication leaders in a flexible, future-proof way.
+This [Agoric](https://agoric.com) Casting package follows ocap broadcasts in a
+flexible, future-proof way.
 
-TL;DR: You can run `yarn demo`, or to consume a mailbox stream do:
+TL;DR: You can run `yarn demo`, or to follow a mailbox castingSpec do:
 ```sh
-npx agoric stream -Bhttp://devnet.agoric.net/network-config :mailbox.agoric1foobarbaz -otext
+npx agoric follow -Bhttp://devnet.agoric.net/network-config :mailbox.agoric1foobarbaz -otext
 ```
 
 An example of following an on-chain mailbox in code (using this package) is:
@@ -13,31 +13,31 @@ An example of following an on-chain mailbox in code (using this package) is:
 ```js
 // First, obtain a Hardened JS environment via Endo.
 import '@endo/init/pre-remoting.js'; // needed only for the next line
-import '@agoric/chain-streams/node-fetch-shim.js'; // needed for Node.js
+import '@agoric/castingSpec/node-fetch-shim.js'; // needed for Node.js
 import '@endo/init';
 
 import {
   iterateLatest,
-  makeChainStream,
+  makeFollower,
   makeLeader,
-  makeStoreKey,
-} from '@agoric/chain-streams';
+  makeCastingSpec,
+} from '@agoric/casting';
 
-// Iterate over a mailbox stream on the devnet.
+// Iterate over a mailbox follower on the devnet.
 const leader = makeLeader('https://devnet.agoric.net/network-config');
-const storeKey = makeStoreKey(':mailbox.agoric1foobarbaz');
-const stream = makeChainStream(leader, storeKey);
-for await (const { value } of iterateLatest(stream)) {
+const castingSpec = makeCastingSpec(':mailbox.agoric1foobarbaz');
+const follower = makeFollower(leader, castingSpec);
+for await (const { value } of iterateLatest(follower)) {
   console.log(`here's a mailbox value`, value);
 }
 ```
 
-## Stream options
+## Follower options
 
-The `streamOpts` argument in `makeChainStream(leader, key, streamOpts)` provides an optional bag of options:
+The `followerOpts` argument in `makeFollower(leader, key, followerOpts)` provides an optional bag of options:
 - the `integrity` option, which has three possibilities:
   - `'strict'` - release data only after proving it was validated (may incur waits for one block's data to be validated in the next block),
-  - `'optimistic'` (default) - release data immediately, but may crash the stream in the future if an already-released value could not be proven,
+  - `'optimistic'` (default) - release data immediately, but may crash the follower in the future if an already-released value could not be proven,
   - `'none'` - release data immediately without validation
 - the `decode` option is a function to translate `buf: Uint8Array` into `data: string`
   - (default) - interpret buf as a utf-8 string, then `JSON.parse` it
@@ -46,7 +46,7 @@ The `streamOpts` argument in `makeChainStream(leader, key, streamOpts)` provides
   - `null` - don't additionally unserialize data before releasing it
   - any unserializer object supporting `E(unserializer).unserialize(data)`
 - the `crasher` option can be
-  - `null` (default) stream failures only propagate an exception/rejection
+  - `null` (default) follower failures only propagate an exception/rejection
   - any crasher object supporting `E(crasher).crash(reason)`
 
 ## Behind the scenes
@@ -54,11 +54,11 @@ The `streamOpts` argument in `makeChainStream(leader, key, streamOpts)` provides
 - the network config contains enough information to obtain Tendermint RPC nodes
   for a given Agoric network.  You can use `makeLeaderFromRpcAddresses` directly
   if you want to avoid fetching a network-config.
-- each stream uses periodic CosmJS state polling (every X milliseconds) which
+- each follower uses periodic CosmJS state polling (every X milliseconds) which
   can be refreshed more expediently via a Tendermint subscription to the
   corresponding `state_change` event
 - published (string) values are automatically unmarshalled, but without object references.   a custom `marshaller` for your application.
-- the `iterateRecent` adapter transforms a stream into a local async iterator
+- the `iterateRecent` adapter transforms a follower into a local async iterator
   that produces only the last queried value (with no history reconstruction)
 
 ## Status

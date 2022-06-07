@@ -3,9 +3,9 @@ import { toAscii } from '@cosmjs/encoding';
 
 /**
  * @param {string} storagePath
- * @returns {import('./types').ChainStoreKey}
+ * @returns {import('./types').CastingSpec}
  */
-const swingsetPathToStoreKey = storagePath =>
+const swingsetPathToCastingSpec = storagePath =>
   harden({
     storeName: 'swingset',
     storeSubkey: toAscii(`swingset/data:${storagePath}`),
@@ -17,9 +17,9 @@ const DATA_PREFIX_BYTES = new Uint8Array([0]);
 /**
  * @param {string} storagePath
  * @param {string} [storeName]
- * @returns {import('./types').ChainStoreKey}
+ * @returns {import('./types').CastingSpec}
  */
-const vstoragePathToStoreKey = (storagePath, storeName = 'vstorage') => {
+const vstoragePathToCastingSpec = (storagePath, storeName = 'vstorage') => {
   const elems = storagePath ? storagePath.split('.') : [];
   const buf = toAscii(`${elems.length}.${storagePath}`);
   return harden({
@@ -29,26 +29,27 @@ const vstoragePathToStoreKey = (storagePath, storeName = 'vstorage') => {
   });
 };
 
-export const DEFAULT_PATH_CONVERTER = vstoragePathToStoreKey;
+export const DEFAULT_PATH_CONVERTER = vstoragePathToCastingSpec;
 
 /**
- * @type {Record<string, (path: string) => import('./types').ChainStoreKey>}
+ * @type {Record<string, (path: string) => import('./types').CastingSpec>}
  */
 export const pathPrefixToConverters = harden({
-  'swingset:': swingsetPathToStoreKey,
-  'vstore:': vstoragePathToStoreKey,
+  'swingset:': swingsetPathToCastingSpec,
+  'vstore:': vstoragePathToCastingSpec,
   ':': DEFAULT_PATH_CONVERTER,
 });
 
 /**
- * @param {string} pathSpec
- * @returns {import('./types').ChainStoreKey}
+ * @param {string} specString
+ * @returns {import('./types').CastingSpec}
  */
-export const makeStoreKey = pathSpec => {
-  const match = pathSpec.match(/^([^:.]*:)(.*)/);
+export const makeCastingSpec = specString => {
+  assert.typeof(specString, 'string');
+  const match = specString.match(/^([^:.]*:)(.*)/);
   assert(
     match,
-    `path spec ${pathSpec} does not match 'PREFIX:PATH' or ':PATH'`,
+    `spec string ${specString} does not match 'PREFIX:PATH' or ':PATH'`,
   );
   const kind = match[1];
   const storePath = match[2];

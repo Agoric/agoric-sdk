@@ -29,7 +29,7 @@
   "dependencies": {
     "@agoric/access-token": "^0.4.18",
     "@agoric/assert": "^0.4.0",
-    "@agoric/chain-streams": "^0.1.0",
+    "@agoric/casting": "^0.1.0",
     "@agoric/nat": "^4.1.0",
     "@endo/bundle-source": "^2.2.0",
     "@endo/captp": "^2.0.7",

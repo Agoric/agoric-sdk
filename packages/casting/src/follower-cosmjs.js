@@ -9,8 +9,8 @@ import { DEFAULT_DECODER, DEFAULT_UNSERIALIZER } from './defaults.js';
 
 const { details: X } = assert;
 
-/** @template T @typedef {import('./types.js').ChainStreamElement<T>} ChainStreamElement */
-/** @template T @typedef {import('./types.js').ChainStream<T>} ChainStream */
+/** @template T @typedef {import('./types.js').FollowerElement<T>} FollowerElement */
+/** @template T @typedef {import('./types.js').Follower<T>} Follower */
 
 /**
  * @template T
@@ -42,7 +42,7 @@ const collectSingle = values => {
  */
 
 /**
- * @type {Record<Required<import('./types').ChainStreamOptions>['integrity'], QueryVerifier>}
+ * @type {Record<Required<import('./types').FollowerOptions>['integrity'], QueryVerifier>}
  */
 export const integrityToQueryVerifier = harden({
   strict: async (getProvenValue, crash, _getAllegedValue) => {
@@ -77,12 +77,12 @@ export const integrityToQueryVerifier = harden({
 
 /**
  * @template T
- * @param {ERef<import('./types').ChainLeader>} leader
- * @param {import('./types').ChainStoreKey} storeKey
- * @param {import('./types').ChainStreamOptions} options
- * @returns {ChainStream<ChainStreamElement<T>>}
+ * @param {ERef<import('./types').Leader>} leader
+ * @param {import('./types').CastingSpec} castingSpec
+ * @param {import('./types').FollowerOptions} options
+ * @returns {Follower<FollowerElement<T>>}
  */
-export const makeChainStream = (leader, storeKey, options = {}) => {
+export const makeFollower = (leader, castingSpec, options = {}) => {
   const {
     decode = DEFAULT_DECODER,
     unserializer = DEFAULT_UNSERIALIZER,
@@ -93,11 +93,11 @@ export const makeChainStream = (leader, storeKey, options = {}) => {
     storeName,
     storeSubkey,
     dataPrefixBytes = new Uint8Array(),
-  } = storeKey;
+  } = castingSpec;
 
   /** @type {QueryVerifier} */
   const queryVerifier = integrityToQueryVerifier[integrity];
-  assert(queryVerifier, X`unrecognized stream integrity mode ${integrity}`);
+  assert(queryVerifier, X`unrecognized follower integrity mode ${integrity}`);
 
   /** @type {Map<string, QueryClient>} */
   const endpointToQueryClient = new Map();
@@ -173,10 +173,10 @@ export const makeChainStream = (leader, storeKey, options = {}) => {
   );
 
   // Enable the periodic fetch.
-  /** @type {ChainStream<ChainStreamElement<T>>} */
-  return Far('chain stream', {
+  /** @type {Follower<FollowerElement<T>>} */
+  return Far('chain follower', {
     getLatestIterable: () => {
-      /** @type {NotifierRecord<ChainStreamElement<T>>} */
+      /** @type {NotifierRecord<FollowerElement<T>>} */
       const { updater, notifier } = makeNotifierKit();
       let finished = false;
 
@@ -189,10 +189,9 @@ export const makeChainStream = (leader, storeKey, options = {}) => {
       const crash = err => {
         fail(err);
         if (crasher) {
-          E(crasher).crash(
-            `PROOF VERIFICATION FAILURE; crashing follower`,
-            err,
-          );
+          E(crasher)
+            .crash(`PROOF VERIFICATION FAILURE; crashing follower`, err)
+            .catch(e => assert(false, X`crashing follower failed: ${e}`));
         } else {
           console.error(`PROOF VERIFICATION FAILURE; crashing follower`, err);
         }
@@ -246,7 +245,7 @@ export const makeChainStream = (leader, storeKey, options = {}) => {
       let lastBuf;
 
       /**
-       * @param {import('./types').ChainStoreChange} allegedChange
+       * @param {import('./types').CastingChange} allegedChange
        */
       const queryAndUpdateOnce = async allegedChange => {
         const committer = prepareUpdateInOrder();
@@ -288,9 +287,9 @@ export const makeChainStream = (leader, storeKey, options = {}) => {
         committer.commit({ value });
       };
 
-      const changeStream = E(leader).watchStoreKey(storeKey);
+      const changeFollower = E(leader).watchCasting(castingSpec);
       const queryWhenKeyChanges = async () => {
-        for await (const allegedChange of iterateLatest(changeStream)) {
+        for await (const allegedChange of iterateLatest(changeFollower)) {
           if (finished) {
             return;
           }
@@ -299,7 +298,7 @@ export const makeChainStream = (leader, storeKey, options = {}) => {
         }
       };
 
-      queryAndUpdateOnce({ values: [], storeKey }).catch(retryOrFail);
+      queryAndUpdateOnce({ values: [], castingSpec }).catch(retryOrFail);
       queryWhenKeyChanges().catch(fail);
 
       return makeAsyncIterableFromNotifier(notifier);

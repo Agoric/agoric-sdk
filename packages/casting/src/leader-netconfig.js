@@ -7,7 +7,7 @@ const { details: X } = assert;
 
 /**
  * @param {string[]} rpcAddrs
- * @param {import('./types.js').ChainLeaderOptions} [leaderOptions]
+ * @param {import('./types.js').LeaderOptions} [leaderOptions]
  */
 export const makeLeaderFromRpcAddresses = (rpcAddrs, leaderOptions) => {
   assert(Array.isArray(rpcAddrs), X`rpcAddrs ${rpcAddrs} must be an array`);
@@ -26,11 +26,11 @@ export const makeLeaderFromRpcAddresses = (rpcAddrs, leaderOptions) => {
 
 /**
  * @param {string} netconfigURL
- * @param {import('./types.js').ChainLeaderOptions} [options]
+ * @param {import('./types.js').LeaderOptions} [options]
  */
 export const makeLeaderFromNetworkConfig = (netconfigURL, options = {}) => {
   const { retryCallback = DEFAULT_RETRY_CALLBACK } = options;
-  /** @type {import('./types.js').ChainLeaderOptions['retryCallback']} */
+  /** @type {import('./types.js').LeaderOptions['retryCallback']} */
   const retry = async (err, attempt) => {
     if (retryCallback) {
       return retryCallback(err, attempt);
@@ -60,7 +60,7 @@ export const makeLeaderFromNetworkConfig = (netconfigURL, options = {}) => {
 
 /**
  * @param {string} bootstrap
- * @param {import('./types.js').ChainLeaderOptions} options
+ * @param {import('./types.js').LeaderOptions} options
  */
 export const makeLeader = (bootstrap, options) => {
   if (bootstrap.includes('network-config')) {
