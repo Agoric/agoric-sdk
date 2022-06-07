@@ -299,8 +299,6 @@ const machineBehavior = {
           X`Stage should be empty of RUN`,
         );
       }
-      // TODO add aggregate debt tracking at the vaultFactory level #4482
-      // totalDebt = AmountMath.add(totalDebt, toMint);
       facets.machine.updateMetrics();
     };
 
