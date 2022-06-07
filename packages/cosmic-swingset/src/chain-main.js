@@ -147,8 +147,9 @@ const makeChainQueue = (call, prefix = '') => {
             if (done) return { done };
             if (head < tail) {
               // Still within the queue.
-              const value = storage.get(head);
-              storage.delete(head);
+              const headKey = `${head}`;
+              const value = storage.get(headKey);
+              storage.delete(headKey);
               head += 1;
               return { value, done };
             }
