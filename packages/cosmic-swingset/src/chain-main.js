@@ -4,6 +4,7 @@ import {
   importMailbox,
   exportMailbox,
 } from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
+import { makeBufferedStorage } from '@agoric/swingset-vat/src/lib/storageAPI.js';
 
 import { assert, details as X } from '@agoric/assert';
 import { makeSlogSenderFromModule } from '@agoric/telemetry';
@@ -38,22 +39,16 @@ const makeChainStorage = (call, prefix = '', options = {}) => {
 
   const { fromChainShape, toChainShape } = options;
 
-  let cache = new Map();
-  let changedKeys = new Set();
+  // In addition to the wrapping write buffer, keep a simple cache of
+  // read values for has and get.
+  let cache;
+  function resetCache() {
+    cache = new Map();
+  }
+  resetCache();
   const storage = {
     has(key) {
-      // Fetch the value to avoid a second round trip for any followup get.
       return storage.get(key) !== undefined;
-    },
-    set(key, obj) {
-      if (cache.get(key) !== obj) {
-        cache.set(key, obj);
-        changedKeys.add(key);
-      }
-    },
-    delete(key) {
-      cache.delete(key);
-      changedKeys.add(key);
     },
     get(key) {
       if (cache.has(key)) return cache.get(key);
@@ -67,35 +62,49 @@ const makeChainStorage = (call, prefix = '', options = {}) => {
           ? chainShapeValue
           : fromChainShape(chainShapeValue);
       cache.set(key, value);
-      // We need to add this in case the caller mutates the state, as in
-      // mailbox.js, which mutates on basically every get.
-      changedKeys.add(key);
       return value;
     },
-    commit() {
-      for (const key of changedKeys.keys()) {
-        const value = cache.get(key);
-        const chainShapeValue =
-          value === undefined || !toChainShape ? value : toChainShape(value);
-        const valueStr = value === undefined ? '' : stringify(chainShapeValue);
-        call(
-          stringify({
-            method: 'set',
-            key: `${prefix}${key}`,
-            value: valueStr,
-          }),
-        );
-      }
-      // Reset our state.
-      storage.abort();
+    set(key, value) {
+      // Set the value and cache it until the next commit or abort (which is
+      // expected immediately, since the buffered wrapper only calls set
+      // *during* a commit).
+      cache.set(key, value);
+      const chainShapeValue =
+        value === undefined || !toChainShape ? value : toChainShape(value);
+      const valueStr = value === undefined ? '' : stringify(chainShapeValue);
+      call(
+        stringify({
+          method: 'set',
+          key: `${prefix}${key}`,
+          value: valueStr,
+        }),
+      );
     },
-    abort() {
-      // Just reset our state.
-      cache = new Map();
-      changedKeys = new Set();
+    delete(key) {
+      // Deletion in chain storage manifests as set-to-undefined.
+      storage.set(key, undefined);
+    },
+    // eslint-disable-next-line require-yield
+    *getKeys(_start, _end) {
+      throw new Error('not implemented');
     },
   };
-  return storage;
+  const {
+    kvStore: buffered,
+    commit,
+    abort,
+  } = makeBufferedStorage(storage, {
+    // Enqueue a write of any retrieved value, to handle callers like mailbox.js
+    // that expect local mutations to be automatically written back.
+    onGet(key, value) {
+      buffered.set(key, value);
+    },
+
+    // Reset the read cache upon commit or abort.
+    onCommit: resetCache,
+    onAbort: resetCache,
+  });
+  return { ...buffered, commit, abort };
 };
 
 /**
@@ -124,7 +133,7 @@ const makeChainQueue = (call, prefix = '') => {
     push: obj => {
       const tail = storage.get('tail') || 0;
       storage.set('tail', tail + 1);
-      storage.set(tail, obj);
+      storage.set(`${tail}`, obj);
       storage.commit();
     },
     /** @type {Iterable<unknown>} */
@@ -138,8 +147,9 @@ const makeChainQueue = (call, prefix = '') => {
             if (done) return { done };
             if (head < tail) {
               // Still within the queue.
-              const value = storage.get(head);
-              storage.delete(head);
+              const headKey = `${head}`;
+              const value = storage.get(headKey);
+              storage.delete(headKey);
               head += 1;
               return { value, done };
             }
