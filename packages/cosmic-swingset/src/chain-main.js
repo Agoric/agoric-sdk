@@ -133,7 +133,7 @@ const makeChainQueue = (call, prefix = '') => {
     push: obj => {
       const tail = storage.get('tail') || 0;
       storage.set('tail', tail + 1);
-      storage.set(tail, obj);
+      storage.set(`${tail}`, obj);
       storage.commit();
     },
     /** @type {Iterable<unknown>} */
