@@ -100,7 +100,13 @@ export function makeNodeSubprocessFactory(tools) {
     fromChild.on('data', handleUpstream);
 
     parentLog(`instructing worker to load bundle..`);
-    sendToWorker(['setBundle', bundle, virtualObjectCacheSize, enableDisavow]);
+    sendToWorker([
+      'setBundle',
+      bundle,
+      virtualObjectCacheSize,
+      enableDisavow,
+      mk.getEnableFakeDurable(),
+    ]);
 
     function shutdown() {
       terminate();

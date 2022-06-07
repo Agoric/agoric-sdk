@@ -105,7 +105,13 @@ export function makeNodeWorkerVatManagerFactory(tools) {
     gotWorker(worker);
 
     parentLog(`instructing worker to load bundle..`);
-    sendToWorker(['setBundle', bundle, virtualObjectCacheSize, enableDisavow]);
+    sendToWorker([
+      'setBundle',
+      bundle,
+      virtualObjectCacheSize,
+      enableDisavow,
+      mk.getEnableFakeDurable(),
+    ]);
 
     function deliverToWorker(delivery) {
       parentLog(`sending delivery`, delivery);

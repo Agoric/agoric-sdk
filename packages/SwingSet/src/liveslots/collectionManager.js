@@ -99,6 +99,7 @@ export function makeCollectionManager(
   registerValue,
   serialize,
   unserialize,
+  enableFakeDurable,
 ) {
   // TODO(#5058): we hold a list of all collections (both virtual and
   // durable) in RAM, so we can delete the virtual ones during
@@ -781,6 +782,17 @@ export function makeCollectionManager(
     return Far('weakSetStore', weakSetStore);
   }
 
+  function assertCorrectDurabilityFlags(durable, fakeDurable) {
+    assert(
+      enableFakeDurable || !fakeDurable,
+      'fakeDurable may only be used if enableFakeDurable is true',
+    );
+    assert(
+      !durable || !fakeDurable,
+      'durable and fakeDurable are mutually exclusive',
+    );
+  }
+
   /**
    * Produce a *scalar* big map: keys can only be atomic values, primitives, or
    * remotables.
@@ -799,10 +811,7 @@ export function makeCollectionManager(
       fakeDurable = false,
     } = {},
   ) {
-    assert(
-      !durable || !fakeDurable,
-      'durable and fakeDurable are mutually exclusive',
-    );
+    assertCorrectDurabilityFlags(durable, fakeDurable);
     const kindName = durable ? 'scalarDurableMapStore' : 'scalarMapStore';
     const [vobjID, collection] = makeCollection(
       label,
@@ -853,10 +862,7 @@ export function makeCollectionManager(
       fakeDurable = false,
     } = {},
   ) {
-    assert(
-      !durable || !fakeDurable,
-      'durable and fakeDurable are mutually exclusive',
-    );
+    assertCorrectDurabilityFlags(durable, fakeDurable);
     const kindName = durable
       ? 'scalarDurableWeakMapStore'
       : 'scalarWeakMapStore';
@@ -892,10 +898,7 @@ export function makeCollectionManager(
       fakeDurable = false,
     } = {},
   ) {
-    assert(
-      !durable || !fakeDurable,
-      'durable and fakeDurable are mutually exclusive',
-    );
+    assertCorrectDurabilityFlags(durable, fakeDurable);
     const kindName = durable ? 'scalarDurableSetStore' : 'scalarSetStore';
     const [vobjID, collection] = makeCollection(
       label,
@@ -929,10 +932,7 @@ export function makeCollectionManager(
       fakeDurable = false,
     } = {},
   ) {
-    assert(
-      !durable || !fakeDurable,
-      'durable and fakeDurable are mutually exclusive',
-    );
+    assertCorrectDurabilityFlags(durable, fakeDurable);
     const kindName = durable
       ? 'scalarDurableWeakSetStore'
       : 'scalarWeakSetStore';

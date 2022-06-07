@@ -51,6 +51,7 @@ import { makeTranscriptManager } from './transcript.js';
  *                           makeSnapshot?: (ss: SnapStore) => Promise<string>) => VatManager,
  *              syscallFromWorker: (vso: VatSyscallObject) => VatSyscallResult,
  *              setDeliverToWorker: (dtw: unknown) => void,
+ *              getEnableFakeDurable: () => boolean,
  *            } } ManagerKit
  *
  */
@@ -265,6 +266,13 @@ function makeManagerKit(
   }
 
   /**
+   * @returns { boolean }
+   */
+  function getEnableFakeDurable() {
+    return kernelKeeper.getEnableFakeDurable();
+  }
+
+  /**
    *
    * @param { () => Promise<void>} shutdown
    * @param { (ss: SnapStore) => Promise<string> } makeSnapshot
@@ -280,7 +288,12 @@ function makeManagerKit(
     });
   }
 
-  return harden({ getManager, syscallFromWorker, setDeliverToWorker });
+  return harden({
+    getManager,
+    syscallFromWorker,
+    setDeliverToWorker,
+    getEnableFakeDurable,
+  });
 }
 harden(makeManagerKit);
 export { makeManagerKit };

@@ -146,6 +146,7 @@ export async function makeDispatch(
     () => {
       return { buildRootObject: build };
     },
+    false,
   );
   await startVat(capargs());
   if (returnTestHooks) {

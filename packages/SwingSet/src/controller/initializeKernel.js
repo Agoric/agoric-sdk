@@ -27,6 +27,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
   kernelKeeper.createStartingKernelState(
     config.defaultManagerType || 'local',
     config.defaultReapInterval || 1,
+    !!config.enableFakeDurable,
   );
 
   for (const id of Object.keys(config.idToBundle || {})) {

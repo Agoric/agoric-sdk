@@ -1005,6 +1005,7 @@ test('dropImports', async t => {
     () => {
       return { buildRootObject: build };
     },
+    false,
   );
   const { dispatch, startVat, possiblyDeadSet } = ls;
   await startVat(capargs());
@@ -1142,6 +1143,7 @@ test('buildVatNamespace not called until after startVat', async t => {
     gcTools,
     undefined,
     () => ({ buildRootObject }),
+    false,
   );
   t.falsy(buildCalled);
   await ls.startVat(capargs());

@@ -40,6 +40,7 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  *                      meterControl }
  * @param {Console} console
  * @param {*} buildVatNamespace
+ * @param {boolean} enableFakeDurable
  *
  * @returns {*} { dispatch }
  */
@@ -52,6 +53,7 @@ function build(
   gcTools,
   console,
   buildVatNamespace,
+  enableFakeDurable,
 ) {
   const { WeakRef, FinalizationRegistry, meterControl } = gcTools;
   const enableLSDebug = false;
@@ -591,6 +593,7 @@ function build(
     m.serialize,
     unmeteredUnserialize,
     cacheSize,
+    enableFakeDurable,
   );
 
   const collectionManager = makeCollectionManager(
@@ -605,6 +608,7 @@ function build(
     registerValue,
     m.serialize,
     unmeteredUnserialize,
+    enableFakeDurable,
   );
 
   const watchedPromiseManager = makeWatchedPromiseManager(
@@ -1452,6 +1456,7 @@ function build(
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
  * @param {*} buildVatNamespace
+ * @param {boolean} enableFakeDurable
  *
  * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch }
  *
@@ -1486,6 +1491,7 @@ export function makeLiveSlots(
   gcTools,
   liveSlotsConsole = console,
   buildVatNamespace,
+  enableFakeDurable,
 ) {
   const allVatPowers = {
     ...vatPowers,
@@ -1500,6 +1506,7 @@ export function makeLiveSlots(
     gcTools,
     liveSlotsConsole,
     buildVatNamespace,
+    enableFakeDurable,
   );
   const { dispatch, startVat, possiblyDeadSet, testHooks } = r; // omit 'm'
   return harden({
