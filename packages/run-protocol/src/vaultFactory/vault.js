@@ -242,21 +242,21 @@ const helperBehavior = {
    * maintain aggregate debt and liquidation order.
    *
    * @param {MethodContext} context
-   * @param {NormalizedDebt} oldDebt - prior principal and all accrued interest
+   * @param {NormalizedDebt} oldDebtNormalized - prior principal and all accrued interest, normalized to the launch of the vaultManager
    * @param {Amount<'nat'>} oldCollateral - actual collateral
-   * @param {Amount<'nat'>} newDebt - actual principal and all accrued interest
+   * @param {Amount<'nat'>} newDebtActual - actual principal and all accrued interest
    */
   updateDebtAccounting: (
     { state, facets },
-    oldDebt,
+    oldDebtNormalized,
     oldCollateral,
-    newDebt,
+    newDebtActual,
   ) => {
     const { helper } = facets;
-    helper.updateDebtSnapshot(newDebt);
+    helper.updateDebtSnapshot(newDebtActual);
     // update position of this vault in liquidation priority queue
     state.manager.updateVaultAccounting(
-      oldDebt,
+      oldDebtNormalized,
       oldCollateral,
       state.idInManager,
     );
@@ -438,7 +438,7 @@ const helperBehavior = {
     const proposal = clientSeat.getProposal();
     assertOnlyKeys(proposal, ['Collateral', 'RUN']);
 
-    const debtPre = self.getCurrentDebt();
+    const normalizedDebtPre = self.getNormalizedDebt();
     const collateralPre = helper.getCollateralAllocated(vaultSeat);
 
     const giveColl = proposal.give.Collateral || helper.emptyCollateral();
@@ -492,9 +492,7 @@ const helperBehavior = {
     state.manager.mintAndReallocate(toMint, fee, clientSeat, vaultSeat);
 
     // parent needs to know about the change in debt
-    console.log('DEBUG updateDebtAccounting', { debtPre });
-    console.trace();
-    helper.updateDebtAccounting(debtPre, collateralPre, newDebt);
+    helper.updateDebtAccounting(normalizedDebtPre, collateralPre, newDebt);
     state.manager.burnAndRecord(giveRUN, vaultSeat);
     helper.assertVaultHoldsNoRun();
 
@@ -539,10 +537,11 @@ const selfBehavior = {
       X`vault must be empty initially`,
     );
     // TODO should this be simplified to know that the oldDebt mut be empty?
-    const debtPre = self.getCurrentDebt();
+    const normalizedDebtPre = self.getNormalizedDebt();
+    const actualDebtPre = self.getCurrentDebt();
     const collateralPre = self.getCollateralAmount();
     trace('initVaultKit start: collateral', state.idInManager, {
-      debtPre,
+      actualDebtPre,
       collateralPre,
     });
 
@@ -557,7 +556,7 @@ const selfBehavior = {
       newDebt: newDebtPre,
       fee,
       toMint,
-    } = helper.loanFee(debtPre, helper.emptyDebt(), wantRUN);
+    } = helper.loanFee(actualDebtPre, helper.emptyDebt(), wantRUN);
     assert(
       !AmountMath.isEmpty(fee),
       X`loan requested (${wantRUN}) is too small; cannot accrue interest`,
@@ -577,7 +576,7 @@ const selfBehavior = {
       seat.decrementBy(harden({ Collateral: giveCollateral })),
     );
     state.manager.mintAndReallocate(toMint, fee, seat, vaultSeat);
-    helper.updateDebtAccounting(debtPre, collateralPre, newDebtPre);
+    helper.updateDebtAccounting(normalizedDebtPre, collateralPre, newDebtPre);
 
     const vaultKit = makeVaultKit(self, state.manager.getNotifier());
     state.outerUpdater = vaultKit.vaultUpdater;

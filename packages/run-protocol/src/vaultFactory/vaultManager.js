@@ -536,19 +536,19 @@ const managerBehavior = {
    * Called by a vault when its balances change.
    *
    * @param {MethodContext} context
-   * @param {NormalizedDebt} oldDebt
+   * @param {NormalizedDebt} oldDebtNormalized
    * @param {Amount<'nat'>} oldCollateral
    * @param {VaultId} vaultId
    */
   updateVaultAccounting: (
     { state, facets },
-    oldDebt,
+    oldDebtNormalized,
     oldCollateral,
     vaultId,
   ) => {
     const { prioritizedVaults } = state;
     const vault = prioritizedVaults.refreshVaultPriority(
-      oldDebt,
+      oldDebtNormalized,
       oldCollateral,
       vaultId,
     );
