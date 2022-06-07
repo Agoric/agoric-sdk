@@ -22,7 +22,7 @@ import {
   validateMakeAndHold,
   validateRetireExports,
   validateStoreHeld,
-} from './gc-helpers.js';
+} from '../../gc-helpers.js';
 
 // These tests follow the model described in
 // ../virtualObjects/test-virtualObjectGC.js
