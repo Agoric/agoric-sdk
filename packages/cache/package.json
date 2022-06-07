@@ -1,0 +1,43 @@
+{
+  "name": "@agoric/cache",
+  "version": "0.1.0",
+  "description": "Agoric's simple cache interface",
+  "type": "module",
+  "main": "src/main.js",
+  "repository": "https://github.com/Agoric/agoric-sdk",
+  "scripts": {
+    "build": "exit 0",
+    "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test:xs": "exit 0",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json",
+    "lint:eslint": "eslint --ext .js,.ts ."
+  },
+  "keywords": [],
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agoric/store": "^0.7.2",
+    "@endo/far": "^0.2.3"
+  },
+  "devDependencies": {
+    "ava": "^3.12.1",
+    "c8": "^7.7.2",
+    "@agoric/vat-data": "^0.3.1",
+    "@agoric/zoe": "^0.24.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=14.15.0"
+  },
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "timeout": "20m"
+  }
+}
