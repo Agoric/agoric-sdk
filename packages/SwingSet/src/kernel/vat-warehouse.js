@@ -75,7 +75,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    * @typedef {{
    *   manager: VatManager,
    *   enablePipelining: boolean,
-   *   options: { name?: string, description?: string, managerType?: ManagerType },
+   *   options: { name?: string, managerType?: ManagerType },
    * }} VatInfo
    * @typedef { ReturnType<typeof import('./vatTranslator').makeVatTranslators> } VatTranslators
    */
@@ -145,7 +145,6 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     //   vatID,
     //   'online:',
     //   options.managerType,
-    //   options.description || '',
     //   'transcript entries replayed:',
     //   entriesReplayed, // retval of replayTranscript() above
     // );
@@ -249,9 +248,9 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
       return;
     }
     // const {
-    //   options: { description, managerType },
+    //   options: { managerType },
     // } = ephemeral.vats.get(lru) || assert.fail();
-    // console.info('evict', lru, description, managerType, 'for', currentVatID);
+    // console.info('evict', lru, managerType, 'for', currentVatID);
     await evict(lru);
   }
 

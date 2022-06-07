@@ -2,7 +2,7 @@
 
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
-import { Far } from '@endo/marshal';
+import { Far, passStyleOf } from '@endo/marshal';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeTimedIterable } from './timed-iteration.js';
@@ -18,11 +18,16 @@ export function buildRootObject(vatPowers) {
         return Nat(D(timerNode).getLastPolled());
       },
       setWakeup(baseTime, handler) {
+        assert(passStyleOf(handler) === 'remotable', 'bad setWakeup() handler');
         baseTime = Nat(baseTime);
         return D(timerNode).setWakeup(baseTime, handler);
       },
       // can be used after setWakeup(h) or schedule(h)
       removeWakeup(handler) {
+        assert(
+          passStyleOf(handler) === 'remotable',
+          'bad removeWakeup() handler',
+        );
         return D(timerNode).removeWakeup(handler);
       },
       makeRepeater(delay, interval) {
