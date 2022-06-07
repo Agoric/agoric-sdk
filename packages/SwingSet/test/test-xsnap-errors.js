@@ -41,6 +41,7 @@ test('child termination distinguished from meter exhaustion', async t => {
       getLastSnapshot: () => undefined,
       addToTranscript: () => undefined,
     }),
+    getEnableFakeDurable: () => false,
   };
 
   const xsWorkerFactory = makeXsSubprocessFactory({
