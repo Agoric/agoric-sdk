@@ -2540,10 +2540,10 @@ test('manager notifiers', async t => {
   });
 
   trace('2. Remove collateral');
-  const adjustBalances1 = await E(vault1).makeAdjustBalancesInvitation();
+  let invitationSeat = await E(vault1).makeAdjustBalancesInvitation();
   const taken = aeth.make(50_000n);
   const takeCollateralSeat = await E(services.zoe).offer(
-    adjustBalances1,
+    invitationSeat,
     harden({
       give: {},
       want: { Collateral: taken },
@@ -2726,4 +2726,62 @@ test('manager notifiers', async t => {
     },
   });
   await m.assertFullyLiquidated();
+  const leftoverDebt = DEBT1 - nextProceeds + interestAccrued;
+
+  trace('11. Create a loan with ample collateral');
+  /** @type {UserSeat<VaultKit>} */
+  vaultSeat = await E(services.zoe).offer(
+    await E(lender).makeVaultInvitation(),
+    harden({
+      give: { Collateral: aeth.make(AMPLE) },
+      want: { RUN: run.make(LOAN1) },
+    }),
+    harden({
+      Collateral: t.context.aeth.mint.mintPayment(aeth.make(AMPLE)),
+    }),
+  );
+  const { vault: vault2 } = await E(vaultSeat).getOfferResult();
+  m.addDebt(DEBT1);
+  await m.assertChange({
+    numVaults: 1,
+    totalCollateral: { value: AMPLE },
+    totalDebt: { value: DEBT1 + leftoverDebt },
+  });
+
+  // FIXME getting: Reallocate failed because a seat had no staged allocation. Please add or subtract from the seat and then reallocate.
+  // trace('12. Borrow more');
+  // adjustmentSeat = await E(vault2).makeAdjustBalancesInvitation();
+  // taken = run.make(400n);
+  // const adjustmentOfferSeat = await E(services.zoe).offer(
+  //   adjustmentSeat,
+  //   harden({
+  //     give: {  },
+  //     want: { RUN: taken },
+  //   }),
+  // );
+  // const result = await E(adjustmentOfferSeat).getOfferResult();
+  // t.deepEqual(result, {});
+  // await m.assertChange({
+  //   totalCollateral: { value: AMPLE - taken.value },
+  // });
+
+  trace('13. Close loan');
+  invitationSeat = await E(vault2).makeCloseInvitation();
+  const closeOfferSeat = await E(services.zoe).offer(
+    invitationSeat,
+    harden({
+      give: { RUN: run.make(DEBT1) },
+      want: {},
+    }),
+    harden({
+      RUN: await getRunFromFaucet(t, DEBT1),
+    }),
+  );
+  await E(closeOfferSeat).getOfferResult();
+  await m.assertChange({
+    // FIXME in https://github.com/Agoric/agoric-sdk/issues/5531
+    // numVaults: 0,
+    totalCollateral: { value: 0n },
+    totalDebt: { value: leftoverDebt },
+  });
 });
