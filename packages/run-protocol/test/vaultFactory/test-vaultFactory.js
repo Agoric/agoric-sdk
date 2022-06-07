@@ -2514,10 +2514,9 @@ test('manager notifiers', async t => {
   });
 
   trace('2. Remove collateral');
-  const adjustBalances1 = await E(vault1).makeAdjustBalancesInvitation();
-  const taken = aeth.make(50_000n);
+  let taken = aeth.make(50_000n);
   const takeCollateralSeat = await E(services.zoe).offer(
-    adjustBalances1,
+    await E(vault1).makeAdjustBalancesInvitation(),
     harden({
       give: {},
       want: { Collateral: taken },
@@ -2702,4 +2701,71 @@ test('manager notifiers', async t => {
     },
   });
   m.assertFullyLiquidated();
+  // FIXME there shouldn't be any leftover debt once fully liquidated
+  // https://github.com/Agoric/agoric-sdk/issues/5550
+  const leftoverDebt = DEBT1 - nextProceeds + interestAccrued;
+
+  trace('11. Create a loan with ample collateral');
+  /** @type {UserSeat<VaultKit>} */
+  vaultSeat = await E(services.zoe).offer(
+    await E(lender).makeVaultInvitation(),
+    harden({
+      give: { Collateral: aeth.make(AMPLE) },
+      want: { RUN: run.make(LOAN1) },
+    }),
+    harden({
+      Collateral: t.context.aeth.mint.mintPayment(aeth.make(AMPLE)),
+    }),
+  );
+  const { vault: vault2 } = await E(vaultSeat).getOfferResult();
+  m.addDebt(DEBT1);
+  await m.assertChange({
+    numVaults: 1,
+    totalCollateral: { value: AMPLE },
+    totalDebt: { value: DEBT1 + leftoverDebt },
+  });
+
+  trace('12. Borrow more');
+  taken = run.make(400n);
+  // 20n? fix in https://github.com/Agoric/agoric-sdk/issues/5550
+  const debtPostBorrowingMore = DEBT1 + leftoverDebt + taken.value + 20n;
+  // can't use 0n because of https://github.com/Agoric/agoric-sdk/issues/5548
+  // but since this test is of metrics, we take the opportunity to check totalCollateral changing
+  const given = aeth.make(2n);
+  vaultSeat = await E(services.zoe).offer(
+    await E(vault2).makeAdjustBalancesInvitation(),
+    harden({
+      // nominal collateral
+      give: { Collateral: given },
+      want: { RUN: taken },
+    }),
+    harden({
+      Collateral: t.context.aeth.mint.mintPayment(given),
+    }),
+  );
+  console.log('DEBUG', { DEBT1, leftoverDebt, taken });
+  await E(vaultSeat).getOfferResult();
+  await m.assertChange({
+    totalDebt: { value: debtPostBorrowingMore },
+    totalCollateral: { value: AMPLE + given.value },
+  });
+
+  trace('13. Close loan');
+  vaultSeat = await E(services.zoe).offer(
+    await E(vault2).makeCloseInvitation(),
+    harden({
+      give: { RUN: run.make(debtPostBorrowingMore) },
+      want: {},
+    }),
+    harden({
+      RUN: await getRunFromFaucet(t, debtPostBorrowingMore),
+    }),
+  );
+  await E(vaultSeat).getOfferResult();
+  await m.assertChange({
+    // FIXME in https://github.com/Agoric/agoric-sdk/issues/5531
+    // numVaults: 0,
+    totalCollateral: { value: 0n },
+    totalDebt: { value: leftoverDebt },
+  });
 });
