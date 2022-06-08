@@ -432,6 +432,8 @@ const helperBehavior = {
       factoryPowers.getGovernedParams().getLiquidationPenalty(),
     )
       .then(accounting => {
+        // accumulate on running sums
+        state.numLiquidationsCompleted += 1;
         state.totalProceedsReceived = AmountMath.add(
           state.totalProceedsReceived,
           accounting.proceeds,
@@ -444,13 +446,19 @@ const helperBehavior = {
           state.totalShortfallReceived,
           accounting.shortfall,
         );
+        // adjust present totals
+        state.totalDebt = AmountMath.subtract(
+          state.totalDebt,
+          accounting.shortfall,
+        );
         state.totalCollateral = AmountMath.subtract(
           state.totalCollateral,
           collateralPre,
         );
+
+        // clean up
         prioritizedVaults.removeVault(key);
         trace('liquidated');
-        state.numLiquidationsCompleted += 1;
         facets.helper.updateMetrics();
 
         if (!AmountMath.isEmpty(accounting.shortfall)) {
