@@ -228,9 +228,9 @@ const setupAmmAndElectorateAndReserve = async (
 /**
  *
  * @param {import('ava').ExecutionContext<any>} t
- * @param {bigint} runInitialLiquidity
+ * @param {bigint} amount
  */
-const getRunFromFaucet = async (t, runInitialLiquidity) => {
+const getRunFromFaucet = async (t, amount) => {
   const {
     installation: { faucet: installation },
     zoe,
@@ -250,7 +250,7 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
     await E(faucetCreator).makeFaucetInvitation(),
     harden({
       give: {},
-      want: { RUN: run.make(runInitialLiquidity) },
+      want: { RUN: run.make(amount) },
     }),
     harden({}),
   );
@@ -1313,6 +1313,67 @@ test('adjust balances', async t => {
     await E(aliceReduceCollateralSeat3).getOfferResult(),
     'no transaction, as requested',
   );
+});
+
+test('adjust balances after interest charges', async t => {
+  const LOAN1 = 450n;
+  const AMPLE = 100_000n;
+  const { aeth, run } = t.context;
+
+  // charge interest on every tick
+  const manualTimer = buildManualTimer(trace, 0n, SECONDS_PER_DAY);
+  t.context.loanTiming = {
+    chargingPeriod: SECONDS_PER_DAY,
+    recordingPeriod: SECONDS_PER_DAY,
+  };
+  t.context.rates = {
+    ...t.context.rates,
+    interestRate: run.makeRatio(20n),
+  };
+
+  const services = await setupServices(
+    t,
+    makeRatio(1n, run.brand, 100n, aeth.brand),
+    undefined,
+    manualTimer,
+    undefined, // n/a, manual price authority
+    10_000n,
+  );
+
+  const { lender } = services.vaultFactory;
+
+  trace('0. Take out loan');
+  const vaultSeat = await E(services.zoe).offer(
+    await E(lender).makeVaultInvitation(),
+    harden({
+      give: { Collateral: aeth.make(AMPLE) },
+      want: { RUN: run.make(LOAN1) },
+    }),
+    harden({
+      Collateral: t.context.aeth.mint.mintPayment(aeth.make(AMPLE)),
+    }),
+  );
+  const { vault } = await E(vaultSeat).getOfferResult();
+
+  trace('1. Charge interest');
+  await manualTimer.tick();
+  await manualTimer.tick();
+
+  trace('2. Pay down');
+  const adjustBalances1 = await E(vault).makeAdjustBalancesInvitation();
+  const given = run.make(60n);
+  const takeCollateralSeat = await E(services.zoe).offer(
+    adjustBalances1,
+    harden({
+      give: { RUN: given },
+      want: {},
+    }),
+    harden({
+      RUN: await getRunFromFaucet(t, 60n),
+    }),
+  );
+  const result = await E(takeCollateralSeat).getOfferResult();
+  t.is(result, 'We have adjusted your balances, thank you for your business');
 });
 
 test('transfer vault', async t => {

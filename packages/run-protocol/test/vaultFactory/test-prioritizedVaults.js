@@ -127,6 +127,7 @@ test('update changes ratio', async t => {
   // update the fake debt of the vault and then refresh priority queue
   fakeVault1.setDebt(AmountMath.make(brand, 95n));
   vaults.refreshVaultPriority(
+    // @ts-expect-error cast
     AmountMath.make(brand, 20n),
     AmountMath.make(brand, 100n), // default collateral of makeFakeVaultKit
     'id-fakeVault1',
@@ -170,6 +171,7 @@ test('removals', async t => {
   // remove fake 3
   rescheduler.resetCalled();
   vaults.removeVaultByAttributes(
+    // @ts-expect-error cast
     AmountMath.make(brand, 140n),
     AmountMath.make(brand, 100n), // default collateral of makeFakeVaultKit
     'id-fakeVault3',
@@ -180,6 +182,7 @@ test('removals', async t => {
   // remove fake 1
   rescheduler.resetCalled();
   vaults.removeVaultByAttributes(
+    // @ts-expect-error cast
     AmountMath.make(brand, 150n),
     AmountMath.make(brand, 100n), // default collateral of makeFakeVaultKit
     'id-fakeVault1',
@@ -189,6 +192,7 @@ test('removals', async t => {
 
   t.throws(() =>
     vaults.removeVaultByAttributes(
+      // @ts-expect-error cast
       AmountMath.make(brand, 150n),
       AmountMath.make(brand, 100n),
       'id-fakeVault1',

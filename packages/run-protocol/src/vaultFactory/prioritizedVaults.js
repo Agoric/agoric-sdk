@@ -13,6 +13,7 @@ import { makeTracer } from '../makeTracer.js';
 const trace = makeTracer('PV');
 
 /** @typedef {import('./vault').Vault} Vault */
+/** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 
 /**
  *
@@ -112,7 +113,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
 
   /**
    *
-   * @param {Amount<'nat'>} oldDebt
+   * @param {NormalizedDebt} oldDebt
    * @param {Amount<'nat'>} oldCollateral
    * @param {string} vaultId
    */
@@ -164,7 +165,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
   }
 
   /**
-   * @param {Amount<'nat'>} oldDebt
+   * @param {NormalizedDebt} oldDebt
    * @param {Amount<'nat'>} oldCollateral
    * @param {string} vaultId
    */

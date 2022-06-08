@@ -16,7 +16,7 @@ import { assert } from '@agoric/assert';
 import { makeTracer } from '../../src/makeTracer.js';
 
 const vaultRoot = './vault-contract-wrapper.js';
-const trace = makeTracer('TestVault');
+const trace = makeTracer('TestVaultInterest');
 
 /**
  * The properties will be asssigned by `setTestJig` in the contract.
@@ -111,7 +111,8 @@ test('charges', async t => {
 
   let interest = 0n;
   for (const [i, charge] of [3n, 4n, 4n, 4n].entries()) {
-    testJig.advanceRecordingPeriod();
+    // eslint-disable-next-line no-await-in-loop
+    await testJig.advanceRecordingPeriod();
     interest += charge;
     t.is(
       vault.getCurrentDebt().value,
@@ -121,7 +122,7 @@ test('charges', async t => {
     t.is(vault.getNormalizedDebt().value, startingDebt);
   }
 
-  // partially payback
+  trace('partially payback');
   const paybackValue = 3n;
   const collateralWanted = AmountMath.make(cBrand, 1n);
   const paybackAmount = AmountMath.make(runBrand, paybackValue);
@@ -148,7 +149,8 @@ test('charges', async t => {
   testJig.setInterestRate(25n);
 
   for (const [i, charge] of [21n, 27n, 33n].entries()) {
-    testJig.advanceRecordingPeriod();
+    // eslint-disable-next-line no-await-in-loop
+    await testJig.advanceRecordingPeriod();
     interest += charge;
     t.is(
       vault.getCurrentDebt().value,
