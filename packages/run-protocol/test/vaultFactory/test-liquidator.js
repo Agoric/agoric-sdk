@@ -29,7 +29,7 @@ import {
   setUpZoeForTest,
   setupBootstrap,
   installGovernance,
-  waitForPromisesToSettle,
+  eventLoopIteration,
   withAmountUtils,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
@@ -56,7 +56,7 @@ const contractRoots = {
 
 /** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
 
-const trace = makeTracer('TestST');
+const trace = makeTracer('TestLiq');
 
 const BASIS_POINTS = 10000n;
 
@@ -447,10 +447,8 @@ const makeDriver = async (t, initialPrice, priceBase) => {
     currentSeat: () => currentSeat,
     lastOfferResult: () => currentOfferResult,
     timer: () => timer,
-    tick: (ticks = 1) => {
-      for (let i = 0; i < ticks; i += 1) {
-        timer.tick();
-      }
+    tick: async (ticks = 1) => {
+      await timer.tickN(ticks, 'TestLiq driver');
     },
     makeVaultDriver,
     checkPayouts: async (expectedRUN, expectedAEth) => {
@@ -671,14 +669,14 @@ test('update liquidator', async t => {
       AMMMaxSlippage: debt.makeRatio(30n),
     }),
   );
-  await waitForPromisesToSettle();
+  await eventLoopIteration();
   govNotify = await d.managerNotified();
   const newLiquidator = govNotify.value.liquidatorInstance;
   t.not(oldLiquidator, newLiquidator);
 
   // trigger liquidation
   await d.setPrice(debt.make(300n));
-  await waitForPromisesToSettle();
+  await eventLoopIteration();
   await dv.notified(Phase.LIQUIDATED);
 });
 
@@ -709,7 +707,7 @@ test('liquidate many', async t => {
   const dv9 = await d.makeVaultDriver(collateral, run.make(300n));
 
   await d.setPrice(await overThreshold(dv1));
-  await waitForPromisesToSettle();
+  await eventLoopIteration();
   await dv0.notified(Phase.LIQUIDATED);
   await dv1.notified(Phase.ACTIVE);
   await dv2.notified(Phase.ACTIVE);
@@ -722,7 +720,7 @@ test('liquidate many', async t => {
   await dv9.notified(Phase.ACTIVE);
 
   await d.setPrice(await overThreshold(dv5));
-  await waitForPromisesToSettle();
+  await eventLoopIteration();
   await dv1.notified(Phase.LIQUIDATED);
   await dv2.notified(Phase.LIQUIDATED);
   await dv3.notified(Phase.LIQUIDATED);
@@ -734,7 +732,7 @@ test('liquidate many', async t => {
   await dv9.notified(Phase.ACTIVE);
 
   await d.setPrice(run.make(300n));
-  await waitForPromisesToSettle();
+  await eventLoopIteration();
   await dv5.notified(Phase.LIQUIDATED);
   await dv6.notified(Phase.LIQUIDATED);
   await dv7.notified(Phase.LIQUIDATED);
@@ -802,7 +800,7 @@ test('penalties to reserve', async t => {
 
   // liquidate
   d.setPrice(run.make(636n));
-  await waitForPromisesToSettle();
+  await eventLoopIteration();
 
   await d.checkReserveAllocation(1000n, 29n);
 });

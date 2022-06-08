@@ -6,25 +6,15 @@ import { AmountMath } from '@agoric/ertp';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 
-import { makePromiseKit } from '@endo/promise-kit';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { E, Far } from '@endo/far';
 import { makeFeeDistributor } from '../src/feeDistributor.js';
-
-// Some notifier updates aren't propogating sufficiently quickly for the tests.
-// This invocation (thanks to Warner) waits for all promises that can fire to
-// have all their callbacks run
-async function waitForPromisesToSettle() {
-  const pk = makePromiseKit();
-  // eslint-disable-next-line no-undef
-  setImmediate(pk.resolve);
-  return pk.promise;
-}
+import { eventLoopIteration } from './supports.js';
 
 /**
  * @param {Issuer} feeIssuer
  */
-function makeFakeFeeDepositFacet(feeIssuer) {
+function makeFakeFeeDepositFacetKit(feeIssuer) {
   const depositPayments = [];
 
   const feeDepositFacet = {
@@ -34,7 +24,11 @@ function makeFakeFeeDepositFacet(feeIssuer) {
     },
   };
 
-  return { feeDepositFacet, getPayments: _ => depositPayments };
+  const getPayments = () =>
+    // await event loop so the receive() can run
+    Promise.resolve(eventLoopIteration()).then(_ => depositPayments);
+
+  return { feeDepositFacet, getPayments };
 }
 
 function makeFakeFeeProducer(makeEmptyPayment = () => {}) {
@@ -46,10 +40,21 @@ function makeFakeFeeProducer(makeEmptyPayment = () => {}) {
     pushFees: payment => feePayments.push(payment),
   });
 }
-
-function assertPaymentArray(t, payments, count, values, issuer, brand) {
+/**
+ *
+ * @param {*} t
+ * @param {Promise<Payment[]>} paymentsP
+ * @param {number} count
+ * @param {*} values
+ * @param {Issuer} issuer
+ * @param {Brand} brand
+ */
+async function assertPaymentArray(t, paymentsP, count, values, issuer, brand) {
+  const payments = await paymentsP;
   for (let i = 0; i < count; i += 1) {
-    assertPayoutAmount(
+    // XXX https://github.com/Agoric/agoric-sdk/issues/5527
+    // eslint-disable-next-line no-await-in-loop
+    await assertPayoutAmount(
       t,
       issuer,
       payments[i],
@@ -61,7 +66,7 @@ function assertPaymentArray(t, payments, count, values, issuer, brand) {
 test('fee distribution', async t => {
   const { brands, moolaIssuer: issuer, moolaMint: runMint } = setup();
   const brand = brands.get('moola');
-  const { feeDepositFacet, getPayments } = makeFakeFeeDepositFacet(issuer);
+  const { feeDepositFacet, getPayments } = makeFakeFeeDepositFacetKit(issuer);
   const makeEmptyPayment = () =>
     runMint.mintPayment(AmountMath.makeEmpty(brand));
   const vaultFactory = makeFakeFeeProducer(makeEmptyPayment);
@@ -92,10 +97,9 @@ test('fee distribution', async t => {
   vaultFactory.pushFees(runMint.mintPayment(AmountMath.make(brand, 500n)));
   amm.pushFees(runMint.mintPayment(AmountMath.make(brand, 270n)));
 
-  t.deepEqual(getPayments(), []);
+  t.deepEqual(await getPayments(), []);
 
   await timerService.tick();
-  await waitForPromisesToSettle();
 
   await assertPaymentArray(t, getPayments(), 2, [500n, 270n], issuer, brand);
 });
@@ -103,7 +107,7 @@ test('fee distribution', async t => {
 test('fee distribution, leftovers', async t => {
   const { brands, moolaIssuer: issuer, moolaMint: runMint } = setup();
   const brand = brands.get('moola');
-  const { feeDepositFacet, getPayments } = makeFakeFeeDepositFacet(issuer);
+  const { feeDepositFacet, getPayments } = makeFakeFeeDepositFacetKit(issuer);
   const makeEmptyPayment = () =>
     runMint.mintPayment(AmountMath.makeEmpty(brand));
   const vaultFactory = makeFakeFeeProducer(makeEmptyPayment);
@@ -134,23 +138,21 @@ test('fee distribution, leftovers', async t => {
   vaultFactory.pushFees(runMint.mintPayment(AmountMath.make(brand, 12n)));
   amm.pushFees(runMint.mintPayment(AmountMath.make(brand, 8n)));
 
-  t.deepEqual(getPayments(), []);
+  t.deepEqual(await getPayments(), []);
 
   await timerService.tick();
-  await waitForPromisesToSettle();
 
-  assertPaymentArray(t, getPayments(), 2, [12n, 8n], issuer, brand);
+  await assertPaymentArray(t, getPayments(), 2, [12n, 8n], issuer, brand);
 
   // Pay them again
   vaultFactory.pushFees(runMint.mintPayment(AmountMath.make(brand, 13n)));
   amm.pushFees(runMint.mintPayment(AmountMath.make(brand, 7n)));
 
   await timerService.tick();
-  await waitForPromisesToSettle();
 
   await assertPaymentArray(
     t,
-    getPayments().slice(2),
+    getPayments().then(p => p.slice(2)),
     2,
     [13n, 7n],
     issuer,

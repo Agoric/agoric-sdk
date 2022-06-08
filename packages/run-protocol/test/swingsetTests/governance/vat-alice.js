@@ -62,34 +62,34 @@ const build = async (log, zoe, brands, payments, timer) => {
       return `assetNotifier update #${lastAssetN.updateCount} has interestRate.numerator ${lastAssetN.value.interestRate.numerator.value}`;
     };
 
-    timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
+    await timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
 
     // accrue one day of interest at initial rate
     await E(timer).tick();
     await assetUpdate();
-    timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
+    await timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
 
     // advance time enough that governance updates the interest rate
     await Promise.all(new Array(daysForVoting).fill(E(timer).tick()));
-    timeLog('vote ready to close');
+    await timeLog('vote ready to close');
     await assetUpdate();
-    timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
+    await timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
 
     await E(timer).tick();
-    timeLog('vote closed');
+    await timeLog('vote closed');
     await assetUpdate();
-    timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
+    await timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
 
     const uiDescription = () => {
       return `assetNotifier update #${lastAssetN.updateCount} has interestRate.numerator ${lastAssetN.value.interestRate.numerator.value}`;
     };
 
-    timeLog(`1 day after votes cast, ${uiDescription()}`);
+    await timeLog(`1 day after votes cast, ${uiDescription()}`);
     await E(timer).tick();
     await assetUpdate();
-    timeLog(`2 days after votes cast, ${uiDescription()}`);
+    await timeLog(`2 days after votes cast, ${uiDescription()}`);
     await assetUpdate();
-    timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
+    await timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
   };
 
   return Far('build', {

@@ -28,7 +28,7 @@ test.before(async t => {
 test('start Economic Committee', async t => {
   const space = await setupAMMBootstrap();
   const { consume } = space;
-  startEconomicCommittee(space, {
+  await startEconomicCommittee(space, {
     options: {
       econCommitteeOptions: {
         committeeName: 'The Cabal',

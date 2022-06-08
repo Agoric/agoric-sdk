@@ -38,7 +38,7 @@ import {
   installGovernance,
   setupBootstrap,
   setUpZoeForTest,
-  waitForPromisesToSettle,
+  eventLoopIteration,
   withAmountUtils,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
@@ -774,7 +774,7 @@ test('price falls precipitously', async t => {
   await assertDebtIs(debtAmount.value);
 
   await manualTimer.tick();
-  await waitForPromisesToSettle();
+  await eventLoopIteration();
   // An emergency liquidation got less than full value
   const debtAfterLiquidation = await E(vault).getCurrentDebt();
   t.deepEqual(
@@ -964,10 +964,8 @@ test('interest on multiple vaults', async t => {
 
   // { chargingPeriod: weekly, recordingPeriod: weekly }
   // Advance 8 days, past one charging and recording period
-  for (let i = 0; i < 8; i += 1) {
-    manualTimer.tick();
-  }
-  await waitForPromisesToSettle();
+  await manualTimer.tickN(8);
+  await eventLoopIteration();
 
   const assetUpdate = await E(assetNotifier).getUpdateSince();
   const aliceUpdate = await E(aliceNotifier).getUpdateSince();
@@ -1031,10 +1029,8 @@ test('interest on multiple vaults', async t => {
   await t.throwsAsync(E(caroleLoanSeat).getOfferResult());
 
   // Advance another 7 days, past one charging and recording period
-  for (let i = 0; i < 8; i += 1) {
-    manualTimer.tick();
-  }
-  await waitForPromisesToSettle();
+  await manualTimer.tickN(8);
+  await eventLoopIteration();
 
   // open a vault when manager's interest already compounded
   const wantedRun = 1_000n;
@@ -1428,7 +1424,7 @@ test('transfer vault', async t => {
     vault: transferVault,
     publicNotifiers: { vault: transferNotifier },
   } = await E(transferSeat).getOfferResult();
-  t.throwsAsync(() => E(aliceVault).getCurrentDebt());
+  await t.throwsAsync(() => E(aliceVault).getCurrentDebt());
   const debtAfter = await E(transferVault).getCurrentDebt();
   t.deepEqual(debtAfter, debtAmount, 'vault lent 5000 RUN + fees');
   const collateralAfter = await E(transferVault).getCollateralAmount();
@@ -1490,14 +1486,14 @@ test('transfer vault', async t => {
     vault: t2Vault,
     publicNotifiers: { vault: t2Notifier },
   } = await E(t2Seat).getOfferResult();
-  t.throwsAsync(
+  await t.throwsAsync(
     () => E(adjustSeatPromise).getOfferResult(),
     {
       message: 'Transfer during vault adjustment',
     },
     'adjust balances should have been rejected',
   );
-  t.throwsAsync(() => E(transferVault).getCurrentDebt());
+  await t.throwsAsync(() => E(transferVault).getCurrentDebt());
   const debtAfter2 = await E(t2Vault).getCurrentDebt();
   t.deepEqual(debtAmount, debtAfter2, 'vault lent 5000 RUN + fees');
 
@@ -1827,7 +1823,7 @@ test('mutable liquidity triggers and interest', async t => {
   });
 
   // XXX this causes BOB to get liquidated, which is suspicious. Revisit this test case
-  await waitForPromisesToSettle();
+  await eventLoopIteration();
   bobUpdate = await E(bobNotifier).getUpdateSince();
   trace(t, 'bob not liquidating?', bobUpdate.value.vaultState);
   t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
@@ -1835,10 +1831,7 @@ test('mutable liquidity triggers and interest', async t => {
   // Bob's loan is now 777 RUN (including interest) on 100 Aeth, with the price
   // at 7. 100 * 7 > 1.05 * 777. When interest is charged again, Bob should get
   // liquidated.
-
-  for (let i = 0; i < 8; i += 1) {
-    manualTimer.tick();
-  }
+  await manualTimer.tickN(8);
   t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
   trace(
     t,
@@ -1859,12 +1852,8 @@ test('mutable liquidity triggers and interest', async t => {
     await E(bobVault).getCurrentDebt(),
   );
   // 5 days pass
-  manualTimer.tick();
-  manualTimer.tick();
-  manualTimer.tick();
-  manualTimer.tick();
-  await manualTimer.tick();
-  await waitForPromisesToSettle();
+  await manualTimer.tickN(5);
+  await eventLoopIteration();
 
   shortfallBalance += 42n;
   await m.assertChange({
@@ -1879,7 +1868,7 @@ test('mutable liquidity triggers and interest', async t => {
     await E(bobVault).getCurrentDebt(),
   );
 
-  await waitForPromisesToSettle();
+  await eventLoopIteration();
   bobUpdate = await E(bobNotifier).getUpdateSince();
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
   trace(t, 'bob liquidated');
@@ -2345,17 +2334,14 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
   t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
 
-  await manualTimer.tick();
-  // price levels changed and interest was charged.
-
   // Bob's loan is now 777 RUN (including interest) on 100 Aeth, with the price
   // at 7. 100 * 7 > 1.05 * 777. When interest is charged again, Bob should get
   // liquidated.
   // Advance time to trigger interest collection.
-  for (let i = 0; i < 8; i += 1) {
-    manualTimer.tick();
-  }
-  await waitForPromisesToSettle();
+  await manualTimer.tick();
+  // price levels changed and interest was charged.
+
+  await eventLoopIteration();
   bobUpdate = await E(bobNotifier).getUpdateSince(bobUpdate.updateCount);
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
 
@@ -2676,6 +2662,8 @@ test('manager notifiers', async t => {
   });
   m.addDebt(DEBT1);
   const periods = 5n;
+  // FIXME test result relies on awaiting each tick
+  // timer.tickN() awaits only the last tick
   for (let i = 0; i < periods; i += 1) {
     // eslint-disable-next-line no-await-in-loop
     await manualTimer.tick();

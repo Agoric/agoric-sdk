@@ -11,7 +11,6 @@ import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 import { setupAmmServices } from './setup.js';
 import { unsafeMakeBundleCache } from '../../bundleTool.js';
 import { subscriptionTracker } from '../../metrics.js';
-import { waitForPromisesToSettle } from '../../supports.js';
 
 /** @typedef {Record<string, any> & {
  *   bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>,
@@ -368,7 +367,6 @@ test('MinInitialPoolLiquidity to reserve', async t => {
     `Added Moola and Central Liquidity`,
   );
 
-  await waitForPromisesToSettle();
   const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
   t.deepEqual(reserveAllocations, {
     RmoolaLiquidity: AmountMath.make(liquidityBrand, 1000n),
@@ -476,7 +474,7 @@ test('add wrong liquidity', async t => {
     message: /liquidity brand must be \[object Alleged: MoolaLiquidity brand]/,
   });
 
-  E(addLiquiditySeatBreaking).getPayouts();
+  await E(addLiquiditySeatBreaking).getPayouts();
 
   t.deepEqual(
     await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
@@ -507,7 +505,7 @@ test('add wrong liquidity', async t => {
     'Added liquidity.',
   );
 
-  E(addLiquiditySeatCorrect).getPayouts();
+  await E(addLiquiditySeatCorrect).getPayouts();
 
   const poolLiquidity2 = {
     centralAmount: { value: 1500000000n + 15000n },

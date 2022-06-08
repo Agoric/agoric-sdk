@@ -92,6 +92,19 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
         );
       }
     },
+    /**
+     *
+     * @param {number} nTimes
+     * @param {string} [msg]
+     */
+    async tickN(nTimes, msg) {
+      assert(nTimes >= 1, 'invariant nTimes >= 1');
+      for (let i = 0; i < nTimes - 1; i += 1) {
+        timer.tick(msg);
+      }
+      // suffices that only the last be awaited
+      await timer.tick(msg);
+    },
     getCurrentTimestamp() {
       return ticks;
     },

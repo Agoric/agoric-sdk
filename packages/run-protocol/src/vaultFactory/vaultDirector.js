@@ -212,7 +212,7 @@ const getLiquidationConfig = directorParamManager => ({
  */
 const watchGovernance = (govParams, vaultManager, oldInstall, oldTerms) => {
   const subscription = govParams.getSubscription();
-  observeIteration(subscription, {
+  void observeIteration(subscription, {
     updateState(_paramUpdate) {
       const { install, terms } = getLiquidationConfig(govParams);
       if (install === oldInstall && keyEQ(terms, oldTerms)) {

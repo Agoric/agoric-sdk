@@ -10,7 +10,6 @@ import {
   currentDebtToCollateral,
   makePrioritizedVaults,
 } from '../../src/vaultFactory/prioritizedVaults.js';
-import { waitForPromisesToSettle } from '../supports.js';
 import {
   makeFakeVault,
   makeCompoundedInterestProvider,
@@ -89,8 +88,6 @@ test('updates', async t => {
     makeFakeVault('id-fakeVault2', AmountMath.make(brand, 80n)),
   );
 
-  await waitForPromisesToSettle();
-
   const collector = makeCollector();
   rescheduler.resetCalled();
   Array.from(vaults.entriesPrioritizedGTE(makeRatio(1n, brand, 10n))).map(
@@ -115,8 +112,6 @@ test('update changes ratio', async t => {
     makeFakeVault('id-fakeVault2', AmountMath.make(brand, 80n)),
   );
 
-  await waitForPromisesToSettle();
-
   t.deepEqual(Array.from(Array.from(vaults.entries()).map(([k, _v]) => k)), [
     'fbff4000000000000:id-fakeVault2',
     'fc014000000000000:id-fakeVault1',
@@ -133,7 +128,6 @@ test('update changes ratio', async t => {
     'id-fakeVault1',
   );
 
-  await waitForPromisesToSettle();
   t.deepEqual(vaults.highestRatio(), percent(95));
 
   const newCollector = makeCollector();

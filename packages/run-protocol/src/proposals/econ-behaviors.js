@@ -512,7 +512,7 @@ export const grantVaultFactoryControl = async (
   { consume: { client, priceAuthorityAdmin, vaultFactoryCreator } },
   { options: { vaultFactoryControllerAddress } = {} } = {},
 ) => {
-  E(client).assignBundle([
+  await E(client).assignBundle([
     addr => ({
       vaultFactoryCreatorFacet:
         typeof vaultFactoryControllerAddress === 'string' &&

@@ -317,7 +317,7 @@ const helperBehavior = {
 
     helper.assertVaultHoldsNoRun();
 
-    helper.updateUiState();
+    void helper.updateUiState();
     clientSeat.exit();
 
     return 'We have adjusted your balances; thank you for your business.';
@@ -357,7 +357,7 @@ const helperBehavior = {
     manager.burnDebt(currentDebt, vaultSeat);
     state.open = false;
     helper.updateDebtSnapshot(AmountMath.makeEmpty(debtBrand));
-    helper.updateUiState();
+    void helper.updateUiState();
     helper.assertVaultHoldsNoRun();
     seat.exit();
 
@@ -417,7 +417,7 @@ const behavior = {
  */
 const finish = ({ facets }) => {
   const { helper } = facets;
-  helper.updateUiState();
+  void helper.updateUiState();
 };
 
 /**
