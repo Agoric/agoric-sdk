@@ -10,6 +10,7 @@ import { diff } from 'deep-object-diff';
 export const subscriptionTracker = async (t, subscription) => {
   const metrics = makeNotifierFromAsyncIterable(subscription);
   let notif;
+  /** @returns {UpdateRecord<*>} */
   const getLastNotif = () => notif;
 
   const assertInitial = async expectedValue => {
@@ -80,6 +81,8 @@ export const vaultManagerMetricsTracker = async (t, publicFacet) => {
       totalDebtEver - liquidated <= 1,
       `Liquidated ${liquidated} must approx equal total debt ever ${totalDebtEver}`,
     );
+    const { value: lastValue } = m.getLastNotif();
+    t.like(lastValue.totalDebt, { value: 0n });
   };
   return harden({
     ...m,
