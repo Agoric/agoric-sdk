@@ -1,7 +1,7 @@
 {
   "name": "@agoric/casting",
   "version": "0.1.0",
-  "description": "Agoric's OCap broadcastingSpec system",
+  "description": "Agoric's OCap broadcasting system",
   "type": "module",
   "main": "src/main.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
