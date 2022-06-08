@@ -17,7 +17,8 @@ import './types.js';
 export const makeNotifier = sharableInternalsP => {
   const asyncIterable = makeAsyncIterableFromNotifier(sharableInternalsP);
 
-  return Far('notifier', {
+  /** @type {AsyncIterable<T> & SharableNotifier<T>} */
+  const notifier = Far('notifier', {
     ...asyncIterable,
 
     /**
@@ -27,7 +28,9 @@ export const makeNotifier = sharableInternalsP => {
      * Notifier at that site.
      */
     getSharableNotifierInternals: () => sharableInternalsP,
+    getStoreKey: () => harden({ notifier }),
   });
+  return notifier;
 };
 
 /**
@@ -215,7 +218,8 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
     },
   });
 
-  return Far('notifier', {
+  /** @type {Notifier<T>} */
+  const notifier = Far('notifier', {
     // Don't leak the original asyncIterableP since it may be remote and we also
     // want the same semantics for this exposed iterable and the baseNotifier.
     ...makeAsyncIterableFromNotifier(baseNotifier),
@@ -228,6 +232,8 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
      * Notifier at that site.
      */
     getSharableNotifierInternals: () => baseNotifier,
+    getStoreKey: () => harden({ notifier }),
   });
+  return notifier;
 };
 harden(makeNotifierFromAsyncIterable);
