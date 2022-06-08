@@ -168,7 +168,7 @@ const start = async (zcf, privateArgs) => {
   const {
     publication: metricsPublication,
     subscription: rawMetricsSubscription,
-  } = makeSubscriptionKit();
+  } = makeSubscriptionKit(harden({ XYK: [] }));
   const { storageNode, marshaller } = privateArgs;
   const metricsStorageNode =
     storageNode && E(storageNode).getChildNode('metrics'); // TODO: magic string
@@ -182,7 +182,6 @@ const start = async (zcf, privateArgs) => {
       harden({ XYK: Array.from(secondaryBrandToPool.keys()) }),
     );
   };
-  updateMetrics();
 
   // For now, this seat collects protocol fees. It needs to be connected to
   // something that will extract the fees.

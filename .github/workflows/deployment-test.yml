@@ -37,7 +37,7 @@ jobs:
           cache-key: trusty
       - uses: ./.github/actions/restore-node
         with:
-          node-version: 14.x
+          node-version: 16.x
 
       # Select a branch on loadgen to test against by adding text to the body of the
       # pull request. For example: #loadgen-branch: user-123-update-foo
@@ -105,7 +105,7 @@ jobs:
         env:
           NETWORK_NAME: chaintest
       - uses: actions/upload-artifact@v2
-        if: failure()
+        if: always()
         with:
           name: deployment-test-results-${{ env.NOW }}
           path: /usr/src/agoric-sdk/chaintest/results

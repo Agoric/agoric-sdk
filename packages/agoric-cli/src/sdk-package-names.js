@@ -4,6 +4,7 @@
 export default [
   "@agoric/access-token",
   "@agoric/assert",
+  "@agoric/casting",
   "@agoric/cosmic-swingset",
   "@agoric/cosmos",
   "@agoric/deploy-script-support",

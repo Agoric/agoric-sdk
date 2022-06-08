@@ -20,6 +20,11 @@ type vstorageMessage struct {
 	Value  string `json:"value"`
 }
 
+type vstorageStoreKey struct {
+	StoreName   string `json:"storeName"`
+	StoreSubkey string `json:"storeSubkey"`
+}
+
 func NewStorageHandler(keeper Keeper) vstorageHandler {
 	return vstorageHandler{keeper: keeper}
 }
@@ -61,6 +66,17 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 			return "null", nil
 		}
 		//fmt.Printf("Keeper.GetStorage gave us %bz\n", value)
+		bz, err := json.Marshal(value)
+		if err != nil {
+			return "", err
+		}
+		return string(bz), nil
+
+	case "getStoreKey":
+		value := vstorageStoreKey{
+			StoreName:   keeper.GetStoreName(),
+			StoreSubkey: string(keeper.PathToEncodedKey(msg.Path)),
+		}
 		bz, err := json.Marshal(value)
 		if err != nil {
 			return "", err

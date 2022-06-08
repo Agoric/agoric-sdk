@@ -28,9 +28,7 @@ export function makeChainStorageRoot(toStorage, storeName, rootPath) {
   function makeChainStorageNode(path) {
     const node = {
       getStoreKey() {
-        // This duplicates the Go code at
-        // https://github.com/Agoric/agoric-sdk/blob/cb272ae97a042ceefd3af93b1b4601ca49dfe3a7/golang/cosmos/x/swingset/keeper/keeper.go#L295
-        return { storeName, storeSubkey: `swingset/data:${path}` };
+        return toStorage({ key: path, method: 'getStoreKey' });
       },
       getChildNode(name) {
         assert.typeof(name, 'string');
@@ -44,22 +42,7 @@ export function makeChainStorageRoot(toStorage, storeName, rootPath) {
         assert.typeof(value, 'string');
         toStorage({ key: path, method: 'set', value });
       },
-      async delete() {
-        assert(path !== rootPath);
-        // A 'set' with no value deletes a key if it has no children, but
-        // otherwise sets data to the empty string and leaves all nodes intact.
-        // We want to reject silently incomplete deletes (at least for now).
-        // This check is unfortunately racy (e.g., a vat could wake up
-        // and set data for a child before _this_ vat receives an
-        // already-enqueued response claiming no children), but we can tolerate
-        // that because transforming a deletion into a set-to-empty is
-        // effectively indistinguishable from a valid reordering where a fully
-        // successful 'delete' is followed by a child-key 'set' (for which
-        // absent parent keys are automatically created with empty-string data).
-        const childCount = await toStorage({ key: path, method: 'size' });
-        if (childCount > 0) {
-          assert.fail(X`Refusing to delete node with children: ${path}`);
-        }
+      clearValue() {
         toStorage({ key: path, method: 'set' });
       },
       // Possible extensions:

@@ -14,12 +14,14 @@ export const subscriptionTracker = async (t, subscription) => {
 
   const assertInitial = async expectedValue => {
     notif = await metrics.getUpdateSince();
+    t.log('assertInitial notif', notif);
     t.deepEqual(notif.value, expectedValue);
   };
   /** @param {Record<string, unknown>} expectedDelta */
   const assertChange = async expectedDelta => {
     const prevNotif = notif;
     notif = await metrics.getUpdateSince(notif.updateCount);
+    t.log('assertChange notif', notif);
     const actualDelta = diff(prevNotif.value, notif.value);
     t.deepEqual(actualDelta, expectedDelta, 'Unexpected delta');
   };
