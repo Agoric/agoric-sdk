@@ -38,7 +38,7 @@ import {
   installGovernance,
   setupBootstrap,
   setUpZoeForTest,
-  waitForPromisesToSettle,
+  eventLoopIteration,
   withAmountUtils,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
@@ -774,7 +774,7 @@ test('price falls precipitously', async t => {
   await assertDebtIs(debtAmount.value);
 
   await manualTimer.tick();
-  await waitForPromisesToSettle();
+  await eventLoopIteration();
   // An emergency liquidation got less than full value
   const debtAfterLiquidation = await E(vault).getCurrentDebt();
   t.deepEqual(
@@ -965,7 +965,7 @@ test('interest on multiple vaults', async t => {
   // { chargingPeriod: weekly, recordingPeriod: weekly }
   // Advance 8 days, past one charging and recording period
   await manualTimer.tickN(8);
-  await waitForPromisesToSettle();
+  await eventLoopIteration();
 
   const assetUpdate = await E(assetNotifier).getUpdateSince();
   const aliceUpdate = await E(aliceNotifier).getUpdateSince();
@@ -1030,7 +1030,7 @@ test('interest on multiple vaults', async t => {
 
   // Advance another 7 days, past one charging and recording period
   await manualTimer.tickN(8);
-  await waitForPromisesToSettle();
+  await eventLoopIteration();
 
   // open a vault when manager's interest already compounded
   const wantedRun = 1_000n;
@@ -1823,7 +1823,7 @@ test('mutable liquidity triggers and interest', async t => {
   });
 
   // XXX this causes BOB to get liquidated, which is suspicious. Revisit this test case
-  await waitForPromisesToSettle();
+  await eventLoopIteration();
   bobUpdate = await E(bobNotifier).getUpdateSince();
   trace(t, 'bob not liquidating?', bobUpdate.value.vaultState);
   t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
@@ -1853,7 +1853,7 @@ test('mutable liquidity triggers and interest', async t => {
   );
   // 5 days pass
   await manualTimer.tickN(5);
-  await waitForPromisesToSettle();
+  await eventLoopIteration();
 
   shortfallBalance += 42n;
   await m.assertChange({
@@ -1868,7 +1868,7 @@ test('mutable liquidity triggers and interest', async t => {
     await E(bobVault).getCurrentDebt(),
   );
 
-  await waitForPromisesToSettle();
+  await eventLoopIteration();
   bobUpdate = await E(bobNotifier).getUpdateSince();
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
   trace(t, 'bob liquidated');
@@ -2341,7 +2341,7 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   await manualTimer.tick();
   // price levels changed and interest was charged.
 
-  await waitForPromisesToSettle();
+  await eventLoopIteration();
   bobUpdate = await E(bobNotifier).getUpdateSince(bobUpdate.updateCount);
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
 

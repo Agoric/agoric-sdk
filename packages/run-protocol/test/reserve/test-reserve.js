@@ -1,5 +1,4 @@
 // @ts-check
-/* global setImmediate */
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
@@ -7,20 +6,11 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E } from '@endo/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { makePromiseKit } from '@endo/promise-kit';
 
 import { setupReserveServices } from './setup.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 import { subscriptionTracker } from '../metrics.js';
-
-// Some notifier updates aren't propogating sufficiently quickly for the tests.
-// This invocation (thanks to Warner) waits for all promises that can fire to
-// have all their callbacks run
-const waitForPromisesToSettle = async () => {
-  const pk = makePromiseKit();
-  setImmediate(pk.resolve);
-  return pk.promise;
-};
+import { eventLoopIteration } from '../supports.js';
 
 const addLiquidPool = async (
   runPayment,
@@ -219,7 +209,7 @@ test('governance add Liquidity to the AMM', async t => {
   ]);
   await timer.tick();
   await timer.tick();
-  await waitForPromisesToSettle();
+  await eventLoopIteration();
 
   t.deepEqual(
     await E(reserve.reserveCreatorFacet).getAllocations(),
@@ -299,7 +289,6 @@ test('request more collateral than available', async t => {
   ]);
   await timer.tick();
   await timer.tick();
-  await waitForPromisesToSettle();
 
   await outcomeOfUpdate
     .then(() => t.fail('expecting failure'))
@@ -455,9 +444,7 @@ test('reserve burn IST', async t => {
     details.positions[0],
   ]);
   await timer.tick();
-  await waitForPromisesToSettle();
   await timer.tick();
-  await waitForPromisesToSettle();
 
   runningShortfall = 0n;
 
