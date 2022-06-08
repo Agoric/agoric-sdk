@@ -1303,8 +1303,8 @@ test('adjust balances', async t => {
     E(aliceVault).makeAdjustBalancesInvitation(),
     harden({
       want: {
-        RUN: AmountMath.makeEmpty(runBrand),
-        Collateral: AmountMath.makeEmpty(aethBrand),
+        RUN: run.makeEmpty(),
+        Collateral: aeth.makeEmpty(),
       },
     }),
   );
