@@ -24,6 +24,7 @@
   "dependencies": {
     "@agoric/access-token": "^0.4.18",
     "@agoric/assert": "^0.4.0",
+    "@agoric/cache": "^0.1.0",
     "@agoric/cosmic-swingset": "^0.37.0",
     "@agoric/notifier": "^0.4.0",
     "@agoric/spawner": "^0.5.2",

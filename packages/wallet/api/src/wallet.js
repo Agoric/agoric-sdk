@@ -151,6 +151,10 @@ export function buildRootObject(vatPowers) {
         observeIteration(makeApprovedNotifier(pursesNotifier), updater);
         return notifier;
       },
+      async getCacheCoordinator() {
+        await approve();
+        return walletAdmin.getDappCacheCoordinator(dappOrigin);
+      },
       async getIssuersNotifier() {
         await approve();
         return walletAdmin.getIssuersNotifier();
@@ -264,6 +268,9 @@ export function buildRootObject(vatPowers) {
     },
     async getIssuersNotifier() {
       return walletAdmin.getIssuersNotifier();
+    },
+    async getCacheCoordinator() {
+      return walletAdmin.getCacheCoordinator();
     },
     suggestInstallation(petname, installationBoardId) {
       return walletAdmin.suggestInstallation(petname, installationBoardId);

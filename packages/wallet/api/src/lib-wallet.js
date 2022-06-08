@@ -12,7 +12,9 @@
  */
 
 import { assert, details as X, q } from '@agoric/assert';
+import { makeStoreCoordinator } from '@agoric/cache';
 import { makeLegacyMap, makeScalarMap, makeScalarWeakMap } from '@agoric/store';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 
@@ -1040,6 +1042,9 @@ export function makeWallet({
     dappsUpdater.updateState([...dappOrigins.values()]);
   };
 
+  const sharedCacheStore = makeScalarBigMapStore(`shared cache`);
+  const sharedCacheCoordinator = makeStoreCoordinator(sharedCacheStore);
+
   async function waitForDappApproval(
     suggestedPetname,
     origin,
@@ -1053,10 +1058,13 @@ export function makeWallet({
       let reject;
       let approvalP;
 
+      const cacheStore = makeScalarBigMapStore(`origin ${origin} cache`);
+      const cacheCoordinator = makeStoreCoordinator(cacheStore);
       dappRecord = addMeta({
         suggestedPetname,
         petname: suggestedPetname,
         origin,
+        cacheCoordinator,
         approvalP,
         enable: false,
         actions: Far('dapp.actions', {
@@ -1737,6 +1745,9 @@ export function makeWallet({
     },
     resolveAttMaker: attMaker => attMakerPK.resolve(attMaker),
     getAttMaker: () => attMakerPK.promise,
+    getDappCacheCoordinator: dappOrigin =>
+      dappOrigins.get(dappOrigin).cacheCoordinator,
+    getCacheCoordinator: () => sharedCacheCoordinator,
     saveOfferResult,
     getOfferResult,
     getAccountState,

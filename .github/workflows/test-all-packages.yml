@@ -142,6 +142,8 @@ jobs:
       # END-TEST-BOILERPLATE
       - name: yarn test (cosmos)
         run: cd golang/cosmos && yarn ${{ steps.vars.outputs.test }}
+      - name: yarn test (cache)
+        run: cd packages/cache && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (casting)
         run: cd packages/casting && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (run-protocol)

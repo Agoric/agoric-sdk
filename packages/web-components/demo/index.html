@@ -26,9 +26,10 @@
     const c = new Compartment({ E, h: history });
 
     const onState = ev => {
-      const { walletConnection, state } = ev.detail;
+      const { cache, walletConnection, state } = ev.detail;
       c.globalThis.state = state;
       c.globalThis.walletConnection = walletConnection;
+      c.globalThis.cache = cache;
     };
 
     const onKeyPress = ev => {
@@ -50,6 +51,8 @@
               <dd>the nth command history result</dd>
               <dt>walletConnection</dt>
               <dd>the wallet connection</dd>
+              <dt>cache</dt>
+              <dd>the bridge or admin cache</dd>
               <dt>state</dt>
               <dd>the wallet connection state</dd>
               <dt>E(x).method(...args)</dt>

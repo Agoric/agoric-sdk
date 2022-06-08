@@ -22,11 +22,13 @@
   },
   "dependencies": {
     "@agoric/assert": "^0.4.0",
+    "@agoric/cache": "^0.1.0",
     "@agoric/ertp": "^0.14.2",
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.4.0",
     "@agoric/run-protocol": "^0.11.0",
     "@agoric/store": "^0.7.2",
+    "@agoric/vat-data": "^0.3.1",
     "@agoric/zoe": "^0.24.0",
     "@endo/eventual-send": "^0.15.3",
     "@endo/marshal": "^0.6.7",

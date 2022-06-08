@@ -1,13 +1,12 @@
 {
-  "name": "@agoric/casting",
+  "name": "@agoric/cache",
   "version": "0.1.0",
-  "description": "Agoric's OCap broadcasting system",
+  "description": "Agoric's simple cache interface",
   "type": "module",
   "main": "src/main.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
     "build": "exit 0",
-    "demo": "node -e 'import(\"./test/fake-rpc-server.js\").then(ns => ns.develop())'",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
@@ -20,25 +19,14 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/notifier": "^0.4.0",
-    "@agoric/spawner": "^0.5.1",
-    "@cosmjs/encoding": "^0.28.4",
-    "@cosmjs/proto-signing": "^0.28.4",
-    "@cosmjs/stargate": "^0.28.4",
-    "@cosmjs/tendermint-rpc": "^0.28.4",
-    "@endo/far": "^0.2.3",
-    "@endo/init": "^0.5.41",
-    "@endo/lockdown": "^0.1.13",
-    "@endo/marshal": "^0.6.7",
-    "@endo/promise-kit": "^0.2.41",
-    "node-fetch": "^2.6.0"
+    "@agoric/store": "^0.7.2",
+    "@endo/far": "^0.2.3"
   },
   "devDependencies": {
     "ava": "^3.12.1",
     "c8": "^7.7.2",
-    "express": "^4.17.1",
-    "ws": "^7.2.0",
-    "@endo/ses-ava": "^0.2.25"
+    "@agoric/vat-data": "^0.3.1",
+    "@agoric/zoe": "^0.24.0"
   },
   "publishConfig": {
     "access": "public"
