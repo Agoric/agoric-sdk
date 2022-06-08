@@ -11,6 +11,12 @@ test('makeChainStorageRoot', async t => {
   const toStorage = message => {
     messages.push(message);
     switch (message.method) {
+      case 'getStoreKey': {
+        return {
+          storeName: 'swingset',
+          storeSubkey: `swingset/data:${message.key}`,
+        };
+      }
       case 'set':
         if ('value' in message) {
           data.set(message.key, message.value);
@@ -62,12 +68,7 @@ test('makeChainStorageRoot', async t => {
     );
   }
 
-  // The root node cannot be deleted, but is otherwise normal.
-  await t.throwsAsync(
-    rootNode.delete(),
-    undefined,
-    'root node deletion is disallowed',
-  );
+  rootNode.clearValue();
   rootNode.setValue('foo');
   t.deepEqual(
     messages.slice(-1),
@@ -117,12 +118,11 @@ test('makeChainStorageRoot', async t => {
       [{ key: childPath, method: 'set', value: 'foo' }],
       'non-root setValue message',
     );
-    // eslint-disable-next-line no-await-in-loop
-    await child.delete();
+    child.clearValue();
     t.deepEqual(
       messages.slice(-1),
       [{ key: childPath, method: 'set' }],
-      'non-root delete message',
+      'non-root clearValue message',
     );
   }
 
@@ -172,22 +172,22 @@ test('makeChainStorageRoot', async t => {
     'level-skipping setValue message',
   );
 
-  // Deletion requires absence of children.
-  await t.throwsAsync(
-    childNode.delete(),
-    undefined,
-    'deleting a node with a child is disallowed',
-  );
-  await deepNode.delete();
-  t.deepEqual(
-    messages.slice(-1),
-    [{ key: deepPath, method: 'set' }],
-    'granchild delete message',
-  );
-  await childNode.delete();
+  childNode.clearValue();
   t.deepEqual(
     messages.slice(-1),
     [{ key: childPath, method: 'set' }],
-    'child delete message',
+    'child clearValue message',
+  );
+  deepNode.clearValue();
+  t.deepEqual(
+    messages.slice(-1),
+    [{ key: deepPath, method: 'set' }],
+    'granchild clearValue message',
+  );
+  childNode.clearValue();
+  t.deepEqual(
+    messages.slice(-1),
+    [{ key: childPath, method: 'set' }],
+    'child clearValue message',
   );
 });
