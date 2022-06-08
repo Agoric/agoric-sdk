@@ -360,6 +360,11 @@ const helperBehavior = {
     const { self, helper } = facets;
     helper.assertCloseable();
     const { phase, vaultSeat } = state;
+
+    // Held as keys for cleanup in the manager
+    const oldDebtNormalized = self.getNormalizedDebt();
+    const oldCollateral = self.getCollateralAmount();
+
     if (phase === Phase.ACTIVE) {
       assertProposalShape(seat, {
         give: { RUN: null },
@@ -399,6 +404,12 @@ const helperBehavior = {
 
     helper.assertVaultHoldsNoRun();
     vaultSeat.exit();
+
+    state.manager.updateVaultAccounting(
+      oldDebtNormalized,
+      oldCollateral,
+      state.idInManager,
+    );
 
     return 'your loan is closed, thank you for your business';
   },
