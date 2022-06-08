@@ -2540,7 +2540,7 @@ test('manager notifiers', async t => {
     totalOverageReceived: { value: totalOverageReceived },
     totalProceedsReceived: { value: totalProceedsReceived },
   });
-  await m.assertFullyLiquidated();
+  m.assertFullyLiquidated();
 
   trace('4. Make another LOAN1 loan');
   vaultSeat = await E(services.zoe).offer(
@@ -2599,7 +2599,7 @@ test('manager notifiers', async t => {
     totalCollateral: { value: 0n },
     totalProceedsReceived: { value: totalProceedsReceived },
   });
-  await m.assertFullyLiquidated();
+  m.assertFullyLiquidated();
 
   trace('7. Make another LOAN2 loan');
   vaultSeat = await E(services.zoe).offer(
@@ -2701,5 +2701,5 @@ test('manager notifiers', async t => {
       value: DEBT1 + DEBT2 + interestAccrued - nextProceeds - 53n - 1n, // compensate for previous proceeds and rounding
     },
   });
-  await m.assertFullyLiquidated();
+  m.assertFullyLiquidated();
 });
