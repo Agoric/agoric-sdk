@@ -26,6 +26,7 @@ const (
 	StoragePathEgress       = "egress"
 	StoragePathMailbox      = "mailbox"
 	StoragePathCustom       = "published"
+	StoragePathBundles      = "bundles"
 )
 
 // Keeper maintains the link to data vstorage and exposes getter/setter methods for the various parts of the state machine
