@@ -1,6 +1,6 @@
 // @ts-check
 import process from 'process';
-import { Far } from '@endo/marshal';
+import { Far, getInterfaceOf } from '@endo/marshal';
 import { decodeToJustin } from '@endo/marshal/src/marshal-justin.js';
 
 import {
@@ -35,22 +35,26 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
     case 'justin': {
       followerOptions.unserializer = null;
       const pretty = !output.endsWith('lines');
-      formatOutput = ({ body }) => {
+      formatOutput = ({ body, slots }) => {
         const encoded = JSON.parse(body);
-        return decodeToJustin(encoded, pretty);
+        return decodeToJustin(encoded, pretty, slots);
       };
       break;
     }
     case 'jsonlines':
     case 'json': {
       const spaces = output.endsWith('lines') ? undefined : 2;
-      const bigintToStringReplacer = (_, arg) => {
+      const replacer = (_, arg) => {
         if (typeof arg === 'bigint') {
           return `${arg}`;
         }
+        const iface = getInterfaceOf(arg);
+        if (iface) {
+          return `[${iface} ${JSON.stringify({ ...arg }, replacer)}]`;
+        }
         return arg;
       };
-      formatOutput = obj => JSON.stringify(obj, bigintToStringReplacer, spaces);
+      formatOutput = obj => JSON.stringify(obj, replacer, spaces);
       break;
     }
     case 'hex': {
@@ -111,7 +115,7 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
     specs.map(async spec => {
       verbose && console.warn('Following', spec);
       const castingSpec = makeCastingSpec(spec);
-      const follower = makeFollower(leader, castingSpec, followerOptions);
+      const follower = makeFollower(castingSpec, leader, followerOptions);
       for await (const { value } of iterateLatest(follower)) {
         process.stdout.write(`${formatOutput(value)}\n`);
       }
