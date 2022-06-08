@@ -1,7 +1,7 @@
 // @ts-check
 /* global fetch */
 import { makeRoundRobinLeader } from './leader.js';
-import { DEFAULT_RETRY_CALLBACK } from './defaults.js';
+import { DEFAULT_BOOTSTRAP, DEFAULT_RETRY_CALLBACK } from './defaults.js';
 
 const { details: X } = assert;
 
@@ -59,10 +59,10 @@ export const makeLeaderFromNetworkConfig = (netconfigURL, options = {}) => {
 };
 
 /**
- * @param {string} bootstrap
- * @param {import('./types.js').LeaderOptions} options
+ * @param {string} [bootstrap]
+ * @param {import('./types.js').LeaderOptions} [options]
  */
-export const makeLeader = (bootstrap, options) => {
+export const makeLeader = (bootstrap = DEFAULT_BOOTSTRAP, options) => {
   if (bootstrap.includes('network-config')) {
     return makeLeaderFromNetworkConfig(bootstrap, options);
   }

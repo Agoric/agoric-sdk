@@ -29,7 +29,8 @@ export const makeRoundRobinLeader = (endpoints, leaderOptions = {}) => {
       }
       throw err;
     },
-    watchCasting: castingSpec => makePollingChangeFollower(leader, castingSpec),
+    watchCasting: castingSpecP =>
+      makePollingChangeFollower(leader, castingSpecP),
     /**
      * @template T
      * @param {(endpoint: string) => Promise<T>} callback

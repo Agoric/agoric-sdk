@@ -26,7 +26,7 @@ import {
 // Iterate over a mailbox follower on the devnet.
 const leader = makeLeader('https://devnet.agoric.net/network-config');
 const castingSpec = makeCastingSpec(':mailbox.agoric1foobarbaz');
-const follower = makeFollower(leader, castingSpec);
+const follower = makeFollower(castingSpec, leader);
 for await (const { value } of iterateLatest(follower)) {
   console.log(`here's a mailbox value`, value);
 }

@@ -11,7 +11,6 @@ export {};
 
 /**
  * @typedef {object} CastingChange
- * @property {CastingSpec} castingSpec
  * @property {number} [blockHeight]
  * @property {Uint8Array[]} values
  */
@@ -21,13 +20,16 @@ export {};
  * @property {(error: any, attempt?: number) => Promise<void>} retry
  * @property {() => LeaderOptions} getOptions
  * @property {<T>(callback: (endpoint: string) => Promise<T>) => Promise<T[]>} mapEndpoints
- * @property {(key: CastingSpec) => Promise<Follower<CastingChange>>} watchCasting
+ * @property {(spec: ERef<CastingSpec>) => Promise<Follower<CastingChange>>} watchCasting
  */
+
+/** @typedef {ERef<Leader> | (() => ERef<Leader>)} LeaderOrMaker */
 
 /**
  * @template T
  * @typedef {object} Follower
- * @property {() => AsyncIterable<T>} [getLatestIterable]
+ * @property {() => Promise<AsyncIterable<T>>} getLatestIterable
+ * @property {() => Promise<AsyncIterable<T>>} getEachIterable
  */
 
 /**
@@ -56,7 +58,9 @@ export {};
 
 /**
  * @typedef {object} CastingSpec
- * @property {string} storeName
- * @property {Uint8Array} storeSubkey
+ * @property {string} [storeName]
+ * @property {Uint8Array} [storeSubkey]
  * @property {Uint8Array} [dataPrefixBytes]
+ * @property {ERef<Subscription<any>>} [subscription]
+ * @property {ERef<Notifier<any>>} [notifier]
  */

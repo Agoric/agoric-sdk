@@ -4,6 +4,11 @@ import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 
 /**
+ * Default to the local chain.
+ */
+export const DEFAULT_BOOTSTRAP = 'http://localhost:26657';
+
+/**
  * Resolve a Promise after a given number of milliseconds.
  *
  * @param {number} ms
@@ -35,22 +40,41 @@ export const DEFAULT_KEEP_POLLING = () =>
 // ... and uses this instead.
 // delay(10 * 60 * 1000 + Math.random() * 60_000).then(() => true);
 
-/**
- * Decode utf-8 bytes, then parse the resulting JSON.
- *
- * @param {Uint8Array} buf
- */
-export const DEFAULT_DECODER = harden(buf => {
+export const MAKE_DEFAULT_DECODER = () => {
   const td = new TextDecoder();
-  const str = td.decode(buf);
-  return harden(JSON.parse(str));
-});
+  /**
+   * Decode utf-8 bytes, then parse the resulting JSON.
+   *
+   * @param {Uint8Array} buf
+   */
+  return harden(buf => {
+    const str = td.decode(buf);
+    return harden(JSON.parse(str));
+  });
+};
 
 /**
  * Unserialize the JSONable data.
  *
- * @type {import('./types').Unserializer}
+ * @type {() => import('./types').Unserializer}
  */
-export const DEFAULT_UNSERIALIZER = Far('marshal unserializer', {
-  unserialize: makeMarshal().unserialize,
-});
+export const MAKE_DEFAULT_UNSERIALIZER = () => {
+  const ifaceAllegedPrefix = 'Alleged: ';
+  const ifaceInaccessiblePrefix = 'SEVERED: ';
+  const seen = new Map();
+  const slotToVal = (slot, iface) => {
+    // Private object.
+    if (seen.has(slot)) {
+      return seen.get(slot);
+    }
+    if (typeof iface === 'string' && iface.startsWith(ifaceAllegedPrefix)) {
+      iface = iface.slice(ifaceAllegedPrefix.length);
+    }
+    const obj = Far(`${ifaceInaccessiblePrefix}${iface}`, {});
+    seen.set(slot, obj);
+    return obj;
+  };
+  return Far('marshal unserializer', {
+    unserialize: makeMarshal(undefined, slotToVal).unserialize,
+  });
+};

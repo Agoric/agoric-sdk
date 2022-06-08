@@ -30,7 +30,7 @@ test('happy path', async t => {
   // some minor modifications (testLeaderOptions and deepEqual).
   const leader = makeLeader(`http://localhost:${PORT}/network-config`, lo);
   const castingSpec = makeCastingSpec(':mailbox.agoric1foobarbaz');
-  const follower = await makeFollower(leader, castingSpec, so);
+  const follower = await makeFollower(castingSpec, leader, so);
   for await (const { value } of iterateLatest(follower)) {
     t.log(`here's a mailbox value`, value);
 
@@ -69,9 +69,17 @@ test('missing rpc server', async t => {
 });
 
 test('unrecognized integrity', async t => {
-  await t.throws(() => makeFollower({}, {}, { integrity: 'bother' }), {
-    message: /unrecognized follower integrity mode.*/,
-  });
+  await t.throwsAsync(
+    () =>
+      makeFollower(
+        makeCastingSpec(':activityhash'),
+        {},
+        { integrity: 'bother' },
+      ),
+    {
+      message: /unrecognized follower integrity mode.*/,
+    },
+  );
 });
 
 test.before(t => {
