@@ -8,8 +8,6 @@ on:
     branches:
       - master
       - beta
-    tags:
-      - '@agoric/sdk@*'
   pull_request:
     types:
       - opened
