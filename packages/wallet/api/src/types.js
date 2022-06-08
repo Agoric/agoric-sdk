@@ -49,6 +49,7 @@
  * wallet.
  *
  * @property {(offer: OfferState) => Promise<string>} addOffer
+ * @property {() => Promise<import('@agoric/cache').Coordinator>} getCacheCoordinator
  * @property {(brandBoardId: string) => Promise<string>} getDepositFacetId
  * Return the board ID to use to receive payments of the specified brand.
  * @property {() => Promise<Notifier<Array<PursesJSONState>>>} getPursesNotifier

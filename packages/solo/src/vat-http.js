@@ -1,4 +1,5 @@
 import { makeNotifierKit } from '@agoric/notifier';
+import { makeCache } from '@agoric/cache';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
@@ -45,11 +46,14 @@ export function buildRootObject(vatPowers) {
   };
   harden(lookup);
 
+  const { promise: cacheCoordinatorP, resolve: resolveCacheCooordinator } =
+    makePromiseKit();
   const replObjects = {
     home: antifreeze({ LOADING }),
     agoric: antifreeze({}),
     local: antifreeze({}),
     lookup,
+    cache: makeCache(cacheCoordinatorP),
   };
 
   function doneLoading(subsystems) {
@@ -141,6 +145,7 @@ export function buildRootObject(vatPowers) {
     setWallet(wallet) {
       replObjects.local.wallet = wallet;
       replObjects.home.wallet = wallet;
+      resolveCacheCooordinator(E(E(wallet).getBridge()).getCacheCoordinator());
 
       resolveWallet(wallet);
     },

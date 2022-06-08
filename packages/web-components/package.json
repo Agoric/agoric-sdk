@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@agoric/assert": "^0.4.0",
+    "@agoric/cache": "^0.1.0",
     "@endo/captp": "^2.0.7",
     "@endo/marshal": "^0.6.7",
     "@endo/promise-kit": "^0.2.41",

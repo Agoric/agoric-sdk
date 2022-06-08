@@ -3,7 +3,9 @@
 import { html, css, LitElement } from 'lit';
 
 import { assert, details as X } from '@agoric/assert';
+import { makeCache } from '@agoric/cache';
 import { makeCapTP as defaultMakeCapTP } from '@endo/captp';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
@@ -64,9 +66,21 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
 
       // Just make sure the reconnection logic is triggered.
       this._bridgePK = makePromiseKit();
+      this._cache = undefined;
 
       this.service.send({ type: 'reset' });
       this.isResetting = false;
+    }
+
+    get cache() {
+      if (this._cache) {
+        // The cache is cached.
+        return this._cache;
+      }
+      const cache = makeCache(E(this._bridgePK.promise).getCacheCoordinator());
+      this._cache = (key, update, ...optGuardPattern) =>
+        cache(key, update, ...optGuardPattern);
+      return this._cache;
     }
 
     get walletConnection() {
@@ -137,6 +151,7 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
             ...this.machine.context,
             state: this.machine.state.name,
             walletConnection: this.walletConnection,
+            cache: this.cache,
           },
         });
         this.dispatchEvent(ev);
