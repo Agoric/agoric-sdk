@@ -1297,6 +1297,22 @@ test('adjust balances', async t => {
     message: / is more than the collateralization ratio allows:/,
     // message: /The requested debt {.*} is more than the collateralization ratio allows: {.*}/,
   });
+
+  // try to trade zero for zero
+  const aliceReduceCollateralSeat3 = await E(zoe).offer(
+    E(aliceVault).makeAdjustBalancesInvitation(),
+    harden({
+      want: {
+        RUN: run.makeEmpty(),
+        Collateral: aeth.makeEmpty(),
+      },
+    }),
+  );
+
+  t.is(
+    await E(aliceReduceCollateralSeat3).getOfferResult(),
+    'no transaction, as requested',
+  );
 });
 
 test('transfer vault', async t => {
