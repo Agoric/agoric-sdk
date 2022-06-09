@@ -18,21 +18,25 @@ queue_rules:
           - and:
               - '-check-failure=getting-started'
               - '-check-failure=getting-started (link-cli)'
-              - '-check-failure=getting-started (local-npm)'
+              # - '-check-failure=getting-started (local-npm)'
               - or:
                   - '#commits-behind>0'
                   - queue-position<0
           - label=bypass:integration
           - check-skipped=getting-started
-          - and:
-              - or:
-                  - check-success=getting-started (link-cli)
-                  - check-neutral=getting-started (link-cli)
-                  - check-skipped=getting-started (link-cli)
-              - or:
-                  - check-success=getting-started (local-npm)
-                  - check-neutral=getting-started (local-npm)
-                  - check-skipped=getting-started (local-npm)
+          - or:
+              - check-success=getting-started (link-cli)
+              - check-neutral=getting-started (link-cli)
+              - check-skipped=getting-started (link-cli)
+          # - and:
+          #     - or:
+          #         - check-success=getting-started (link-cli)
+          #         - check-neutral=getting-started (link-cli)
+          #         - check-skipped=getting-started (link-cli)
+          #     - or:
+          #         - check-success=getting-started (local-npm)
+          #         - check-neutral=getting-started (local-npm)
+          #         - check-skipped=getting-started (local-npm)
 
 pull_request_rules:
   - name: merge to master
