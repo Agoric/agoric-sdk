@@ -37,19 +37,30 @@ if [ -f "$RESULTSDIR/divergent_snapshots" ]; then
   # Snapshot divergences were found, fail the test after capturing results
   # TODO: uncomment once transient divergences are solved
   # ret=1
-elif [ $ret -eq 0 -a "$failedtest" = "false" ]; then 
-  echo "Successful test"
-  exit 0
+  # failedtest=true
 fi
 
 for node in validator{0,1}; do
   "$thisdir/setup.sh" ssh "$node" cat "$home/config/genesis.json" > "$RESULTSDIR/$node-genesis.json" || true
-  "$thisdir/setup.sh" ssh "$node" cat "$home/data/chain.slog" > "$RESULTSDIR/$node.slog" || true
-  "$thisdir/setup.sh" ssh "$node" cat "$home/data/ag-cosmos-chain-state/flight-recorder.bin" > "$RESULTSDIR/$node-flight-recorder.bin" || true
-  "$thisdir/setup.sh" ssh "$node" cat "$home/data/kvstore-trace" > "$RESULTSDIR/$node-kvstore-trace" || true
-  "$thisdir/setup.sh" ssh "$node" tar -cz -C "$home/data/xsnap-trace" . > "$RESULTSDIR/$node-xsnap-trace.tgz" || true
-  mkdir -p "$RESULTSDIR/$node-xs-snapshots" && "$thisdir/setup.sh" ssh "$node" tar -c -C "$home/data/ag-cosmos-chain-state/xs-snapshots" . | tar -x -C "$RESULTSDIR/$node-xs-snapshots" || true
+  "$thisdir/setup.sh" ssh "$node" cat "$home/data/chain.slog" > "$RESULTSDIR/$node.slog" || \
+    "$thisdir/setup.sh" ssh "$node" cat "$home/data/ag-cosmos-chain-state/flight-recorder.bin" > "$RESULTSDIR/$node-flight-recorder.bin" || true
+  if [ "$failedtest" != "false" ]; then
+    "$thisdir/setup.sh" ssh "$node" cat "$home/data/kvstore-trace" > "$RESULTSDIR/$node-kvstore-trace" || true
+    "$thisdir/setup.sh" ssh "$node" tar -cz -C "$home/data/xsnap-trace" . > "$RESULTSDIR/$node-xsnap-trace.tgz" || true
+    mkdir -p "$RESULTSDIR/$node-xs-snapshots" && "$thisdir/setup.sh" ssh "$node" tar -c -C "$home/data/ag-cosmos-chain-state/xs-snapshots" . | tar -x -C "$RESULTSDIR/$node-xs-snapshots" || true
+  fi
 done
+
+if [ "$failedtest" = "false" ]; then
+  rm -f $RESULTSDIR/validator*-swingstore-trace || true
+  rm -rf $RESULTSDIR/chain-stage-*-kvstore-trace \
+    $RESULTSDIR/chain-stage-*-storage.* \
+    $RESULTSDIR/chain-stage-*-swingstore-trace \
+    $RESULTSDIR/chain-stage-*-xsnap-trace || true
+  rm -rf $RESULTSDIR/client-stage-*-storage.* \
+    $RESULTSDIR/client-stage-*-swingstore-trace \
+    $RESULTSDIR/client-stage-*-xsnap-trace || true
+fi
 
 for trace in $RESULTSDIR/chain-stage-*-xsnap-trace $RESULTSDIR/client-stage-*-xsnap-trace; do
   [ -d "$trace" ] || continue
