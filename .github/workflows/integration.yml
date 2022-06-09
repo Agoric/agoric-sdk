@@ -79,24 +79,35 @@ jobs:
 
       - name: Start local NPM registry
         if: ${{ matrix.cli == 'local-npm' }}
+        id: local-npm
         run: |
-          tmp_registry_log=`mktemp`
-          nohup npx verdaccio@^5.4.0 &>$tmp_registry_log &
-          # Wait for `verdaccio` to boot
-          grep -q 'http address' <(tail -f $tmp_registry_log)
+          set -x -ueo pipefail
 
-          # Set registry to local registry
-          npm set registry http://localhost:4873
-          yarn config set registry http://localhost:4873
+          ( 
+            tmp_registry=$(mktemp -d)
+            cd "$tmp_registry"
+            echo "::set-output name=LOG::$tmp_registry/verdaccio.log"
+            yarn init -y
+            yarn add verdaccio@^5.4.0 npm-cli-login@^1.0.0
 
-          # Login so we can publish packages
-          npx npm-cli-login@^1.0.0 -u user -p password -e user@example.com \
-            -r http://localhost:4873 --quotes
+            nohup yarn verdaccio &>verdaccio.log &
+            # Wait for `verdaccio` to boot
+            grep -q 'http address' <(tail -f verdaccio.log)
 
-          npm whoami
+            # Set registry to local registry
+            npm set registry http://localhost:4873
+            yarn config set registry http://localhost:4873
 
+            # Login so we can publish packages
+            yarn npm-cli-login -u user -p password -e user@example.com \
+              -r http://localhost:4873 --quotes
+
+            npm whoami
+          )
+
+          HEAD=$(git rev-parse --short=7 HEAD)
           yarn lerna publish --conventional-prerelease --canary --exact \
-            --dist-tag=blah --preid=dev-$(git rev-parse --short=7 HEAD) \
+            --dist-tag=blah --preid=dev-$HEAD \
             --no-push --no-verify-access --yes
 
           yarn global add agoric@blah </dev/null
@@ -113,6 +124,13 @@ jobs:
           AGORIC_INIT_OPTIONS: '["--dapp-branch=${{steps.get-branch.outputs.result}}"]'
           # Try to avoid hitting a pessimal Actions output rate-limitation.
           SOLO_MAX_DEBUG_LENGTH: '1024'
+
+      - uses: actions/upload-artifact@v2
+        if: failure() && matrix.cli == 'local-npm'
+        with:
+          name: verdaccio-log-${{ env.NOW }}
+          path: ${{ steps.local-npm.outputs.LOG }}
+
 
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
