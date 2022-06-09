@@ -160,7 +160,10 @@ test('vat store', async t => {
   ]);
   const data = kernel.dump();
   // check that we're not sticking an undefined into the transcript
-  t.is(data.vatTables[0].state.transcript[1].syscalls[0].response, null);
+  t.deepEqual(data.vatTables[0].state.transcript[1].syscalls[0].response, [
+    'ok',
+    null,
+  ]);
 });
 
 test('map inbound', async t => {
@@ -1204,7 +1207,7 @@ test('transcript', async t => {
           bobForAlice,
           { methargs: capargs(['foo', ['fooarg']]), result: 'p+5' },
         ],
-        response: null,
+        response: ['ok', null],
       },
     ],
   });

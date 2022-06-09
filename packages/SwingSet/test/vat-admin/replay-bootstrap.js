@@ -14,6 +14,11 @@ export function buildRootObject() {
     },
 
     async createVat() {
+      // cause vat-vattp to record a device error in its transcript,
+      // to exercise the fix for #5511
+      E(vatAdminSvc)
+        .getNamedBundleCap('missing')
+        .catch(_err => 0);
       const bcap = await E(vatAdminSvc).getNamedBundleCap('dynamic');
       const vc = await E(vatAdminSvc).createVat(bcap);
       root = vc.root;
