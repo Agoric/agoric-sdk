@@ -53,11 +53,11 @@ async function simpleCall(t) {
   const timerVatID = controller.vatNameToID('timer');
 
   t.deepEqual(data.vatTables, [
-    { vatID: vat1ID, state: { transcript: [] } },
     { vatID: adminVatID, state: { transcript: [] } },
     { vatID: commsVatID, state: { transcript: [] } },
     { vatID: vattpVatID, state: { transcript: [] } },
     { vatID: timerVatID, state: { transcript: [] } },
+    { vatID: vat1ID, state: { transcript: [] } },
   ]);
   // the vatAdmin root is pre-registered
   const vatAdminRoot = ['ko20', adminVatID, 'o+0'];
@@ -219,9 +219,9 @@ test.serial('bootstrap export', async t => {
 
   t.deepEqual(c.dump().runQueue, []);
   t.deepEqual(c.dump().acceptanceQueue, [
-    { type: 'startVat', vatID: 'v1', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v1', vatParameters: capargs({ argv: [] }) },
     { type: 'startVat', vatID: 'v2', vatParameters: emptyVP },
-    { type: 'startVat', vatID: 'v3', vatParameters: capargs({ argv: [] }) },
+    { type: 'startVat', vatID: 'v3', vatParameters: emptyVP },
     { type: 'startVat', vatID: 'v4', vatParameters: emptyVP },
     { type: 'startVat', vatID: 'v5', vatParameters: emptyVP },
     { type: 'startVat', vatID: 'v6', vatParameters: emptyVP },

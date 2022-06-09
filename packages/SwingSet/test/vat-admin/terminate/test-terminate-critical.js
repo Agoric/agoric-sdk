@@ -56,7 +56,7 @@ test('exit happy path simple result (dynamic, critical)', async t => {
 });
 
 test('exit happy path simple result (static, critical)', async t => {
-  await doTerminateCritical(t, 'v3', 'happy', false);
+  await doTerminateCritical(t, 'v6', 'happy', false);
 });
 
 test('exit happy path complex result (dynamic, critical)', async t => {
@@ -64,7 +64,7 @@ test('exit happy path complex result (dynamic, critical)', async t => {
 });
 
 test('exit happy path complex result (static, critical)', async t => {
-  await doTerminateCritical(t, 'v3', 'exceptionallyHappy', false);
+  await doTerminateCritical(t, 'v6', 'exceptionallyHappy', false);
 });
 
 test('exit sad path simple result (dynamic, critical)', async t => {
@@ -72,7 +72,7 @@ test('exit sad path simple result (dynamic, critical)', async t => {
 });
 
 test('exit sad path simple result (static, critical)', async t => {
-  await doTerminateCritical(t, 'v3', 'sad', false);
+  await doTerminateCritical(t, 'v6', 'sad', false);
 });
 
 test('exit sad path complex result (dynamic, critical)', async t => {
@@ -80,7 +80,7 @@ test('exit sad path complex result (dynamic, critical)', async t => {
 });
 
 test('exit sad path complex result (static, critical)', async t => {
-  await doTerminateCritical(t, 'v3', 'exceptionallySad', false);
+  await doTerminateCritical(t, 'v6', 'exceptionallySad', false);
 });
 
 test('exit happy path with ante-mortem message (dynamic, critical)', async t => {
@@ -88,7 +88,7 @@ test('exit happy path with ante-mortem message (dynamic, critical)', async t => 
 });
 
 test('exit happy path with ante-mortem message (static, critical)', async t => {
-  await doTerminateCritical(t, 'v3', 'happyTalkFirst', false);
+  await doTerminateCritical(t, 'v6', 'happyTalkFirst', false);
 });
 
 test('exit sad path with ante-mortem message (dynamic, critical)', async t => {
@@ -96,7 +96,7 @@ test('exit sad path with ante-mortem message (dynamic, critical)', async t => {
 });
 
 test('exit sad path with ante-mortem message (static, critical)', async t => {
-  await doTerminateCritical(t, 'v3', 'sadTalkFirst', false);
+  await doTerminateCritical(t, 'v6', 'sadTalkFirst', false);
 });
 
 test('invalid criticalVatKey causes vat creation to fail', async t => {
