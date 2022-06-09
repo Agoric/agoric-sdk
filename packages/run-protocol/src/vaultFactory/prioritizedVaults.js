@@ -10,7 +10,7 @@ import { makeOrderedVaultStore } from './orderedVaultStore.js';
 import { toVaultKey } from './storeUtils.js';
 import { makeTracer } from '../makeTracer.js';
 
-const trace = makeTracer('PV');
+const trace = makeTracer('PV', false);
 
 /** @typedef {import('./vault').Vault} Vault */
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
