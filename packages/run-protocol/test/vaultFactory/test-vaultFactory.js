@@ -631,26 +631,27 @@ test('price drop', async t => {
   t.is(notification.value.vaultState, Phase.LIQUIDATED);
   t.truthy(await E(vaultSeat).hasExited());
 
-  const debtAmountAfter = await E(vault).getCurrentDebt();
-  const finalNotification = await E(vaultNotifier).getUpdateSince();
-  t.is(finalNotification.value.vaultState, Phase.LIQUIDATED);
-  t.deepEqual(finalNotification.value.locked, aeth.make(2n));
-  t.is(debtAmountAfter.value, 30n);
-
-  t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
-    RUN: run.make(14n),
-  });
-
   const metricsSub = await E(reserveCreatorFacet).getMetrics();
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial({
     allocations: {},
     shortfallBalance: run.makeEmpty(),
   });
+
+  const debtAmountAfter = await E(vault).getCurrentDebt();
+  const finalNotification = await E(vaultNotifier).getUpdateSince();
+  t.is(finalNotification.value.vaultState, Phase.LIQUIDATED);
+  t.deepEqual(finalNotification.value.locked, aeth.make(2n));
+  // shortfall 30n covered by the reserve
+  t.is(debtAmountAfter.value, 0n);
   const liqBrand = await services.getLiquidityBrand(aeth.brand);
   await m.assertChange({
     allocations: { RaEthLiquidity: AmountMath.make(liqBrand, 300n) },
     shortfallBalance: { value: 30n },
+  });
+
+  t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
+    RUN: run.make(14n),
   });
 
   /** @type {UserSeat<string>} */
@@ -775,13 +776,18 @@ test('price falls precipitously', async t => {
 
   await manualTimer.tick();
   await eventLoopIteration();
-  // An emergency liquidation got less than full value
-  const debtAfterLiquidation = await E(vault).getCurrentDebt();
+
+  // shortfall 103n covered by the reserve
   t.deepEqual(
-    debtAfterLiquidation,
-    run.make(103n),
-    `Expected ${debtAfterLiquidation.value} to be less than 110`,
+    await E(vault).getCurrentDebt(),
+    run.makeEmpty(),
+    `Expected debt after liquidation to be zero`,
   );
+  const liqBrand = await services.getLiquidityBrand(aeth.brand);
+  await m.assertChange({
+    shortfallBalance: { value: 103n },
+    allocations: { RaEthLiquidity: AmountMath.make(liqBrand, 300n) },
+  });
 
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
     RUN: run.make(19n),
@@ -799,18 +805,6 @@ test('price falls precipitously', async t => {
   //   aeth.makeEmpty(),
   //   'Collateral used up trying to cover debt',
   // );
-
-  t.deepEqual(
-    await E(vault).getCurrentDebt(),
-    debtAfterLiquidation,
-    'Liquidation didn’t fully cover debt',
-  );
-
-  const liqBrand = await services.getLiquidityBrand(aeth.brand);
-  await m.assertChange({
-    shortfallBalance: { value: 103n },
-    allocations: { RaEthLiquidity: AmountMath.make(liqBrand, 300n) },
-  });
 
   const finalNotification = await E(vaultNotifier).getUpdateSince();
   t.is(finalNotification.value.vaultState, Phase.LIQUIDATED);
