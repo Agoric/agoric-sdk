@@ -46,15 +46,17 @@ export const makeOrderedVaultStore = () => {
       store.delete(key);
       return vault;
     } catch (e) {
-      const keys = Array.from(store.keys());
       console.error(
         'removeByKey failed to remove',
         key,
         'parts:',
         fromVaultKey(key),
       );
-      console.error('  key literals:', keys);
-      console.error('  key parts:', keys.map(fromVaultKey));
+      const keys = Array.from(store.keys());
+      console.error(
+        '  contents:',
+        keys.map(k => [k, fromVaultKey[k]]),
+      );
       throw e;
     }
   };

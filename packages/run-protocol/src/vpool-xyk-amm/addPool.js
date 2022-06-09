@@ -47,15 +47,6 @@ export const makeAddIssuer = (
       harden({ decimalPlaces: 6 }),
     );
     await zcf.saveIssuer(secondaryIssuer, keyword);
-    const issuer = zcf.getIssuerForBrand(secondaryBrand);
-    console.log(
-      'Saved issuer',
-      secondaryIssuer,
-      'to keyword',
-      keyword,
-      'and got back',
-      issuer,
-    );
     // this ensures that getSecondaryIssuer(thisIssuer) will return even before the pool is created
     brandToLiquidityMint.init(secondaryBrand, mint);
     const { issuer: liquidityIssuer } = mint.getIssuerRecord();
