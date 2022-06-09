@@ -1,12 +1,17 @@
 // @ts-check
 
 // Make this a module.
+import '@agoric/notifier';
+
 export {};
+
+/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
 
 /**
  * @typedef {object} LeaderOptions
- * @property {null | ((err: any, attempt?: number) => Promise<void>)} [retryCallback]
- * @property {() => Promise<boolean>} [keepPolling]
+ * @property {null | ((where: string, err: any, attempt?: number) => Promise<void>)} [retryCallback]
+ * @property {(where: string) => Promise<void>} [jitter]
+ * @property {(where: string) => Promise<boolean>} [keepPolling]
  */
 
 /**
@@ -17,9 +22,10 @@ export {};
 
 /**
  * @typedef {object} Leader
- * @property {(error: any, attempt?: number) => Promise<void>} retry
+ * @property {(where: string, error: any, attempt?: number) => Promise<void>} retry
+ * @property {(where: string) => Promise<void>} jitter
  * @property {() => LeaderOptions} getOptions
- * @property {<T>(callback: (endpoint: string) => Promise<T>) => Promise<T[]>} mapEndpoints
+ * @property {<T>(where: string, callback: (endpoint: string) => Promise<T>) => Promise<T[]>} mapEndpoints
  * @property {(spec: ERef<CastingSpec>) => Promise<Follower<CastingChange>>} watchCasting
  */
 

@@ -11,6 +11,8 @@ export const makeNotifierIterable = notifier =>
   makeNotifier(E(notifier).getSharableNotifierInternals());
 
 /**
+ * TODO: Remove this function when we have `makePublisherKit`.
+ *
  * @template T
  * @param {ERef<SubscriptionInternals<T>>} tailP
  * @returns {AsyncIterator<T>}
@@ -22,13 +24,14 @@ const makeSubscriptionIterator = tailP => {
     next: async () => {
       const resultP = E.get(tailP).head;
       tailP = E.get(tailP).tail;
-      Promise.resolve(tailP).catch(() => {}); // suppress unhandled rejection error
       return resultP;
     },
   });
 };
 
 /**
+ * TODO: Remove this function when we have `makePublisherKit`.
+ *
  * @template T
  * @param {ERef<Subscription<T>>} subscription
  * @returns {ConsistentAsyncIterable<T>}
@@ -58,6 +61,8 @@ export const mapAsyncIterable = (iterable, transform) => {
 };
 
 /**
+ * TODO: Remove this function when we have `makePublisherKit`.
+ *
  * @template T
  * @param {ERef<import('./types').Follower<T>>} follower
  */
@@ -75,6 +80,8 @@ export const iterateLatest = follower =>
   });
 
 /**
+ * TODO: Remove this function when we have `makePublisherKit`.
+ *
  * @template T
  * @param {ERef<import('./types').Follower<T>>} follower
  */

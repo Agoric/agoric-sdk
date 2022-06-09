@@ -20,6 +20,7 @@ test('happy path', async t => {
   const lo = {
     retryCallback: null, // fail fast, no retries
     keepPolling: () => delay(200).then(() => true), // poll really quickly
+    jitter: null, // no jitter
   };
   /** @type {import('../src/types.js').FollowerOptions} */
   const so = {
@@ -48,6 +49,7 @@ test('bad network config', async t => {
     () =>
       makeLeader(`http://localhost:${PORT}/bad-network-config`, {
         retryCallback: null,
+        jitter: null,
       }),
     {
       message: /rpcAddrs .* must be an array/,
@@ -61,6 +63,7 @@ test('missing rpc server', async t => {
     () =>
       makeLeader(`http://localhost:${PORT}/missing-network-config`, {
         retryCallback: null,
+        jitter: null,
       }),
     {
       message: /^invalid json response body/,

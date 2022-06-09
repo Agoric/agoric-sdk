@@ -9,6 +9,8 @@ import {
   makeFollower,
   makeLeader,
   makeCastingSpec,
+  exponentialBackoff,
+  randomBackoff,
 } from '@agoric/casting';
 
 export default async function followerMain(progname, rawArgs, powers, opts) {
@@ -21,6 +23,7 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
     bootstrap = 'http://localhost:26657',
     verbose,
     sleep,
+    jitter,
   } = opts;
 
   /** @type {import('@agoric/casting').FollowerOptions} */
@@ -37,6 +40,7 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
       const pretty = !output.endsWith('lines');
       formatOutput = ({ body, slots }) => {
         const encoded = JSON.parse(body);
+        // @ts-expect-error Expected 1-2 arguments, but got 3.
         return decodeToJustin(encoded, pretty, slots);
       };
       break;
@@ -93,17 +97,32 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
   // TODO: https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
   /** @type {import('@agoric/casting').LeaderOptions} */
   const leaderOptions = {
-    retryCallback: (e, _attempt) => {
-      verbose && console.warn('Retrying due to:', e);
-      return delay(1000 + Math.random() * 1000);
+    retryCallback: (where, e, attempt) => {
+      const backoff = Math.ceil(exponentialBackoff(attempt));
+      verbose &&
+        console.warn(
+          `Retrying ${where} in ${backoff}ms due to:`,
+          e,
+          Error(`attempt #${attempt}`),
+        );
+      return delay(backoff);
     },
-    keepPolling: async () => {
-      let toSleep = sleep * 1000;
-      if (toSleep <= 0) {
-        toSleep = (5 + Math.random()) * 1000;
+    keepPolling: async where => {
+      if (!sleep) {
+        return true;
       }
-      await delay(toSleep);
+      const backoff = Math.ceil(sleep * 1_000);
+      verbose && console.warn(`Repeating ${where} after ${backoff}ms`);
+      await delay(backoff);
       return true;
+    },
+    jitter: async where => {
+      if (!jitter) {
+        return undefined;
+      }
+      const backoff = Math.ceil(randomBackoff(jitter * 1_000));
+      verbose && console.warn(`Jittering ${where} for ${backoff}ms`);
+      return delay(backoff);
     },
   };
 

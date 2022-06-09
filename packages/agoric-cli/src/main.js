@@ -2,6 +2,10 @@
 import { Command } from 'commander';
 import path from 'path';
 import { assert, details as X } from '@agoric/assert';
+import {
+  DEFAULT_KEEP_POLLING_SECONDS,
+  DEFAULT_JITTER_SECONDS,
+} from '@agoric/casting';
 import cosmosMain from './cosmos.js';
 import deployMain from './deploy.js';
 import initMain from './init.js';
@@ -185,7 +189,17 @@ const main = async (progname, rawArgs, powers) => {
         assert.equal(`${num}`, value, X`--sleep must be a number`, TypeError);
         return num;
       },
-      0,
+      DEFAULT_KEEP_POLLING_SECONDS,
+    )
+    .option(
+      '--jitter <max-seconds>',
+      'jitter up to <max-seconds> (may be fractional)',
+      value => {
+        const num = Number(value);
+        assert.equal(`${num}`, value, X`--jitter must be a number`, TypeError);
+        return num;
+      },
+      DEFAULT_JITTER_SECONDS,
     )
     .option(
       '-o, --output <format>',

@@ -6,10 +6,9 @@ import { DEFAULT_KEEP_POLLING } from './defaults.js';
  * Just return an unspecified allegedValue every poll period.
  *
  * @param {import('./types').Leader} leader
- * @param {ERef<import('./types.js').CastingSpec>} _castingSpecP
  * @returns {Promise<import('./types.js').Follower<import('./types').CastingChange>>}
  */
-export const makePollingChangeFollower = async (leader, _castingSpecP) => {
+export const makePollingChangeFollower = async leader => {
   const { keepPolling = DEFAULT_KEEP_POLLING } = await E(leader).getOptions();
 
   const iterable = Far('polling change follower iterable', {
@@ -19,7 +18,16 @@ export const makePollingChangeFollower = async (leader, _castingSpecP) => {
       return Far('polling change follower iterator', {
         next: async () => {
           if (!nextPollPromise) {
-            nextPollPromise = keepPolling();
+            nextPollPromise = keepPolling('polling change follower').then(
+              cont => {
+                if (cont) {
+                  return E(leader)
+                    .jitter('polling change follower')
+                    .then(() => cont);
+                }
+                return cont;
+              },
+            );
           }
           const keepGoing = await nextPollPromise;
           nextPollPromise = undefined;

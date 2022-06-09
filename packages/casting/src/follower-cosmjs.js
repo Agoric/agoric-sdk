@@ -106,6 +106,7 @@ export const makeCosmjsFollower = (
   const queryVerifier = integrityToQueryVerifier[integrity];
   assert(queryVerifier, X`unrecognized follower integrity mode ${integrity}`);
 
+  const where = 'CosmJS follower';
   const castingSpecP = makeCastingSpec(sourceP);
 
   const leader =
@@ -162,7 +163,7 @@ export const makeCosmjsFollower = (
           assert.fail(X`unrecognized method ${method}`);
         }
       }
-      const values = await E(leader).mapEndpoints(async endpoint => {
+      const values = await E(leader).mapEndpoints(where, async endpoint => {
         const queryClient = await getOrCreateQueryClient(endpoint);
         return E(queryClient)
           [method](queryPath, storeSubkey, height)
@@ -226,15 +227,43 @@ export const makeCosmjsFollower = (
     };
 
     let attempt = 0;
-    const retryOrFail = err => {
-      E(leader)
-        .retry(err, attempt)
-        .catch(e => {
-          fail(e);
-          throw e;
-        });
-      attempt += 1;
-    };
+    let retrying;
+
+    /**
+     * @param {import('./types.js').CastingChange} castingChange
+     * @returns {Promise<void>}
+     */
+    const queryAndUpdateOnce = castingChange =>
+      new Promise((resolve, reject) => {
+        const retry = async err => {
+          attempt += 1;
+          if (!retrying) {
+            retrying = E(leader)
+              .retry(where, err, attempt)
+              .then(() => (retrying = null));
+          }
+          await retrying;
+          await E(leader).jitter(where);
+
+          // eslint-disable-next-line no-use-before-define
+          tryQueryAndUpdate(castingChange).then(success, retryOrFail);
+        };
+
+        const success = fulfillment => {
+          attempt = 0;
+          resolve(fulfillment);
+        };
+
+        const retryOrFail = err => {
+          retry(err).catch(e => {
+            reject(e);
+            fail(e);
+          });
+        };
+
+        // eslint-disable-next-line no-use-before-define
+        tryQueryAndUpdate(castingChange).then(success, retryOrFail);
+      });
 
     /**
      * These semantics are to ensure that later queries are not committed
@@ -275,7 +304,7 @@ export const makeCosmjsFollower = (
     /**
      * @param {import('./types').CastingChange} allegedChange
      */
-    const queryAndUpdateOnce = async allegedChange => {
+    const tryQueryAndUpdate = async allegedChange => {
       const committer = prepareUpdateInOrder();
 
       // Make an unproven query if we have no alleged value.
@@ -317,16 +346,22 @@ export const makeCosmjsFollower = (
 
     const changeFollower = E(leader).watchCasting(castingSpecP);
     const queryWhenKeyChanges = async () => {
+      // Initial query to get the first value from the store.
+      await queryAndUpdateOnce(harden({ values: [] }));
+      if (finished) {
+        return;
+      }
+
+      // Only query when there are changes reported.
       for await (const allegedChange of iterateLatest(changeFollower)) {
         if (finished) {
           return;
         }
         harden(allegedChange);
-        await queryAndUpdateOnce(allegedChange).catch(retryOrFail);
+        await queryAndUpdateOnce(allegedChange);
       }
     };
 
-    queryAndUpdateOnce({ values: [] }).catch(retryOrFail);
     queryWhenKeyChanges().catch(fail);
 
     return iterable;
