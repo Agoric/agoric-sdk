@@ -40,6 +40,7 @@ import {
   setUpZoeForTest,
   eventLoopIteration,
   withAmountUtils,
+  produceInstallations,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 import {
@@ -62,7 +63,6 @@ const test = unknownTest;
 
 // #region Support
 
-// TODO path resolve these so refactors detect
 const contractRoots = {
   faucet: './test/vaultFactory/faucet.js',
   liquidate: './src/vaultFactory/liquidateMinimum.js',
@@ -170,9 +170,7 @@ const setupAmmAndElectorateAndReserve = async (
   const space = setupBootstrap(t, timer);
   const { consume, instance } = space;
   installGovernance(zoe, space.installation.produce);
-  // TODO consider using produceInstallations()
-  space.installation.produce.amm.resolve(t.context.installation.amm);
-  space.installation.produce.reserve.resolve(t.context.installation.reserve);
+  produceInstallations(space, t.context.installation);
   await startEconomicCommittee(space, electorateTerms);
   await setupAmm(space, {
     options: { minInitialPoolLiquidity: 300n },
@@ -799,7 +797,7 @@ test('price falls precipitously', async t => {
     aeth.make(1n),
     'Collateral reduced after liquidation',
   );
-  // TODO take all collateral when vault is underwater
+  // TODO take all collateral when vault is underwater https://github.com/Agoric/agoric-sdk/issues/5558
   // t.deepEqual(
   //   await E(vault).getCollateralAmount(),
   //   aeth.makeEmpty(),
@@ -1408,8 +1406,7 @@ test('transfer vault', async t => {
     return amount.value[0];
   };
 
-  // TODO this should not need `await`
-  const transferInvite = await E(aliceVault).makeTransferInvitation();
+  const transferInvite = E(aliceVault).makeTransferInvitation();
   const inviteProps = await getInvitationProperties(transferInvite);
   trace(t, 'TRANSFER INVITE', transferInvite, inviteProps);
   /** @type {UserSeat<VaultKit>} */
@@ -1451,10 +1448,7 @@ test('transfer vault', async t => {
   // Interleave with `adjustVault`
   // make the invitation first so that we can arrange the interleaving
   // of adjust and tranfer
-  // TODO this should not need `await`
-  const adjustInvitation = await E(
-    transferVault,
-  ).makeAdjustBalancesInvitation();
+  const adjustInvitation = E(transferVault).makeAdjustBalancesInvitation();
   const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocation();
   const aliceProceeds = await E(aliceLoanSeat).getPayouts();
   t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 RUN');
