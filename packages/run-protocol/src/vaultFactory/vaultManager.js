@@ -565,6 +565,7 @@ const managerBehavior = {
    * @param {Amount<'nat'>} oldCollateral
    * @param {VaultId} vaultId
    * @param {import('./vault.js').VaultPhase} vaultPhase at the end of whatever change updatied balances
+   * @param {Vault} vault
    */
   handleBalanceChange: (
     { state, facets },
@@ -572,6 +573,7 @@ const managerBehavior = {
     oldCollateral,
     vaultId,
     vaultPhase,
+    vault,
   ) => {
     const { prioritizedVaults } = state;
 
@@ -591,12 +593,20 @@ const managerBehavior = {
         'Settled vaults must not be retained in storage',
       );
     } else {
-      // its position in the queue is no longer valid
-      const vault = prioritizedVaults.removeVaultByAttributes(
-        oldDebtNormalized,
-        oldCollateral,
-        vaultId,
-      );
+      const isNew = AmountMath.isEmpty(oldDebtNormalized);
+      if (!isNew) {
+        // its position in the queue is no longer valid
+
+        const vaultInStore = prioritizedVaults.removeVaultByAttributes(
+          oldDebtNormalized,
+          oldCollateral,
+          vaultId,
+        );
+        assert(
+          vault === vaultInStore,
+          'handleBalanceChange for two different vaults',
+        );
+      }
 
       // replace in queue, but only if it can accrue interest or be liquidated (i.e. has debt).
       // getCurrentDebt() would also work (0x = 0) but require more computation.
@@ -661,19 +671,38 @@ const selfBehavior = {
 
     const vault = makeVault(zcf, manager, vaultId);
 
-    // TODO Don't record the vault until it gets opened
-    const addedVaultKey = prioritizedVaults.addVault(vaultId, vault);
-
     try {
       // TODO `await` is allowed until the above ordering is fixed
       // eslint-disable-next-line @jessie.js/no-nested-await
       const vaultKit = await vault.initVaultKit(seat);
+      // initVaultKit calls back to handleBalanceChange() which will add the
+      // vault to prioritizedVaults
       seat.exit();
       return vaultKit;
     } catch (err) {
-      // remove it from prioritizedVaults
-      // XXX openLoan shouldn't assume it's already in the prioritizedVaults
-      prioritizedVaults.removeVault(addedVaultKey);
+      // ??? do we still need this cleanup? it won't get into the store unless it has collateral,
+      // which should qualify it to be in the store. If we drop this catch then the nested await
+      // for `vault.initVaultKit()` goes away.
+
+      // remove it from the store if it got in
+      /** @type {NormalizedDebt} */
+      // @ts-expect-error cast
+      const normalizedDebt = AmountMath.makeEmpty(state.debtBrand);
+      const collateralPre = seat.getCurrentAllocation().Collateral;
+      try {
+        prioritizedVaults.removeVaultByAttributes(
+          normalizedDebt,
+          collateralPre,
+          vaultId,
+        );
+        console.error('removed vault', vaultId, 'after initVaultKit failure');
+      } catch {
+        console.error(
+          'vault',
+          vaultId,
+          'never stored during initVaultKit failure',
+        );
+      }
       throw err;
     }
   },

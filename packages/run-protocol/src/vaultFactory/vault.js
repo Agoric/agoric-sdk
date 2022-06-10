@@ -86,7 +86,7 @@ const validTransitions = {
  * @property {MintAndReallocate} mintAndReallocate
  * @property {(amount: Amount, seat: ZCFSeat) => void} burnAndRecord
  * @property {() => Ratio} getCompoundedInterest
- * @property {(oldDebt: import('./storeUtils.js').NormalizedDebt, oldCollateral: Amount<'nat'>, vaultId: VaultId, vaultPhase: VaultPhase) => void} handleBalanceChange
+ * @property {(oldDebt: import('./storeUtils.js').NormalizedDebt, oldCollateral: Amount<'nat'>, vaultId: VaultId, vaultPhase: VaultPhase, vault: Vault) => void} handleBalanceChange
  * @property {() => import('./vaultManager.js').GovernedParamGetters} getGovernedParams
  */
 
@@ -260,6 +260,7 @@ const helperBehavior = {
       oldCollateral,
       state.idInManager,
       state.phase,
+      facets.self,
     );
   },
 
@@ -411,6 +412,7 @@ const helperBehavior = {
       oldCollateral,
       state.idInManager,
       state.phase,
+      facets.self,
     );
 
     return 'your loan is closed, thank you for your business';
@@ -545,13 +547,15 @@ const selfBehavior = {
    */
   initVaultKit: async ({ state, facets }, seat) => {
     const { self, helper } = facets;
-    assert(
-      AmountMath.isEmpty(state.debtSnapshot),
-      X`vault must be empty initially`,
-    );
-    // TODO should this be simplified to know that the oldDebt mut be empty?
+
     const normalizedDebtPre = self.getNormalizedDebt();
     const actualDebtPre = self.getCurrentDebt();
+    assert(
+      AmountMath.isEmpty(normalizedDebtPre) &&
+        AmountMath.isEmpty(actualDebtPre),
+      X`vault must be empty initially`,
+    );
+
     const collateralPre = self.getCollateralAmount();
     trace('initVaultKit start: collateral', state.idInManager, {
       actualDebtPre,

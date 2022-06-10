@@ -85,12 +85,10 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
     }
     // Get the first vault.
     const [vault] = vaults.values();
-    const collateralAmount = vault.getCollateralAmount();
-    if (AmountMath.isEmpty(collateralAmount)) {
-      // This should only happen when the vault has been added but not funded yet
-      // TODO remove exceptional case for new vaults; if it's in the store it must be liquidatable
-      return undefined;
-    }
+    assert(
+      !AmountMath.isEmpty(vault.getCollateralAmount()),
+      'First vault had no collateral',
+    );
     return currentDebtToCollateral(vault);
   };
 
@@ -140,11 +138,10 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
    */
   const addVault = (vaultId, vault) => {
     const key = vaults.addVault(vaultId, vault);
-    // TODO refactor to fulfill this invariant
-    // assert(
-    //   !AmountMath.isEmpty(vault.getCollateralAmount()),
-    //   'Tracked vaults must have collateral (be liquidatable',
-    // );
+    assert(
+      !AmountMath.isEmpty(vault.getCollateralAmount()),
+      'Tracked vaults must have collateral (be liquidatable)',
+    );
     trace('addVault', key, 'when first:', firstKey);
     if (!firstKey || keyLT(key, firstKey)) {
       firstKey = key;
