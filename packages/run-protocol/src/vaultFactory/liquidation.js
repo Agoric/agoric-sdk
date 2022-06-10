@@ -78,7 +78,10 @@ const liquidate = async (
       ];
 
   const runToBurn = AmountMath.min(proceeds.RUN, debt);
+  // debt is fully settled, with runToBurn and shortfall
+  assert(AmountMath.isEqual(debt, AmountMath.add(runToBurn, shortfall)));
   trace('before burn', { debt, proceeds, overage, shortfall, runToBurn });
+  // TODO why grant this power; we can burn it from the caller
   burnLosses(runToBurn, vaultZcfSeat);
 
   // Accounting complete. Update the vault state.
