@@ -67,7 +67,7 @@ export function makeTranscriptManager(
   function simulateSyscall(newSyscall) {
     const type = newSyscall[0];
     if (gcSyscalls.has(type)) {
-      return undefined;
+      return ['ok', undefined];
     }
     const s = playbackSyscalls.shift();
     const newReplayError = compareSyscalls(vatID, s.d, newSyscall);
