@@ -1259,6 +1259,7 @@ function build(
       defineDurableKind: vom.defineDurableKind,
       defineDurableKindMulti: vom.defineDurableKindMulti,
       makeKindHandle: vom.makeKindHandle,
+      canBeDurable: vom.canBeDurable,
       providePromiseWatcher: watchedPromiseManager.providePromiseWatcher,
       watchPromise: watchedPromiseManager.watchPromise,
       makeScalarBigMapStore: collectionManager.makeScalarBigMapStore,
@@ -1323,6 +1324,7 @@ function build(
     if (enableDisavow) {
       vpow.disavow = disavow;
     }
+    harden(vpow);
 
     initializeIDCounters();
     vom.initializeKindHandleKind();
@@ -1350,11 +1352,7 @@ function build(
     );
 
     // here we finally invoke the vat code, and get back the root object
-    const rootObject = await buildRootObject(
-      harden(vpow),
-      harden(vatParameters),
-      baggage,
-    );
+    const rootObject = await buildRootObject(vpow, vatParameters, baggage);
     assert.equal(
       passStyleOf(rootObject),
       'remotable',

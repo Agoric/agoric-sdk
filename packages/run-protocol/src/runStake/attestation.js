@@ -3,7 +3,7 @@
 
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
-import { fit, M, makeCopyBag, makeStore } from '@agoric/store';
+import { fit, M, makeCopyBag, makeStore, provide } from '@agoric/store';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { AttKW as KW } from './constants.js';
 import { makeAttestationTool } from './attestationTool.js';
@@ -20,20 +20,6 @@ const { details: X } = assert;
  *   unwrapLienedAmount: unknown,
  * }} LienMint
  */
-
-/**
- * Find-or-create value in store.
- *
- * @type {<K, V>(store: Store<K, V>, key: K, thunk: () => V) => V}
- */
-const getOrElse = (store, key, make) => {
-  if (store.has(key)) {
-    return store.get(key);
-  }
-  const value = make();
-  store.init(key, value);
-  return value;
-};
 
 /**
  * To support `makeAttestation`, we directly mint attestation payments.
@@ -263,7 +249,7 @@ export const makeAttestationFacets = async (zcf, stakeBrand, lienBridge) => {
        */
       provideAttestationTool: address => {
         assert.typeof(address, 'string');
-        return getOrElse(attMakerByAddress, address, () =>
+        return provide(attMakerByAddress, address, () =>
           makeAttestationTool(address, lienMint, stakeBrand, zcf),
         );
       },

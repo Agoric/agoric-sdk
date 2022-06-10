@@ -79,7 +79,9 @@ function throwNotDurable(value, slotIndex, serializedValue) {
     );
   } catch (justinError) {
     const err = assert.error(
-      X`value is not durable: ${value} at slot ${slotIndex} of ${serializedValue}`,
+      X`value is not durable: ${value} at slot ${q(
+        slotIndex,
+      )} of ${serializedValue}`,
     );
     assert.note(
       err,
@@ -88,7 +90,9 @@ function throwNotDurable(value, slotIndex, serializedValue) {
     throw err;
   }
   assert.fail(
-    X`value is not durable: ${value} at slot ${slotIndex} of ${encodedValue}`,
+    X`value is not durable: ${value} at slot ${q(
+      slotIndex,
+    )} of ${encodedValue}`,
   );
 }
 

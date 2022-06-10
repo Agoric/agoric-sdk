@@ -1,13 +1,28 @@
-import { makeNotifierKit } from '@agoric/notifier';
-import { defineKindMulti, makeScalarBigSetStore } from '@agoric/vat-data';
+import {
+  defineDurableKindMulti,
+  makeScalarBigSetStore,
+  provideKindHandle,
+} from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
+import { makeTransientNotifierKit } from './transientNotifier.js';
 
 const { details: X } = assert;
 
-export const makePurseMaker = (allegedName, assetKind, brand, purseMethods) => {
-  const updatePurseBalance = (state, newPurseBalance) => {
+//  `getBrand` must not be called before the issuerKit is created
+export const vivifyPurseKind = (
+  issuerBaggage,
+  name,
+  assetKind,
+  getBrand,
+  purseMethods,
+) => {
+  // Note: Virtual for high cardinality, but *not* durable, and so
+  // broken across an upgrade.
+  const { provideNotifier, update: updateBalance } = makeTransientNotifierKit();
+
+  const updatePurseBalance = (state, newPurseBalance, purse) => {
     state.currentBalance = newPurseBalance;
-    state.balanceUpdater.updateState(state.currentBalance);
+    updateBalance(purse, purse.getCurrentAmount());
   };
 
   // - This kind is a pair of purse and depositFacet that have a 1:1
@@ -17,53 +32,58 @@ export const makePurseMaker = (allegedName, assetKind, brand, purseMethods) => {
   //   that created depositFacet as needed. But this approach ensures a constant
   //   identity for the facet and exercises the multi-faceted object style.
   const { depositInternal, withdrawInternal } = purseMethods;
-  const makePurseKit = defineKindMulti(
-    allegedName,
+  const purseKitKindHandle = provideKindHandle(issuerBaggage, `${name} Purse`);
+  const makePurseKit = defineDurableKindMulti(
+    purseKitKindHandle,
     () => {
-      const currentBalance = AmountMath.makeEmpty(brand, assetKind);
-
-      /** @type {NotifierRecord<Amount>} */
-      const { notifier: balanceNotifier, updater: balanceUpdater } =
-        makeNotifierKit(currentBalance);
+      const currentBalance = AmountMath.makeEmpty(getBrand(), assetKind);
 
       /** @type {SetStore<Payment>} */
-      const recoverySet = makeScalarBigSetStore('recovery set');
+      const recoverySet = makeScalarBigSetStore('recovery set', {
+        durable: true,
+      });
 
       return {
         currentBalance,
-        balanceNotifier,
-        balanceUpdater,
         recoverySet,
       };
     },
     {
       purse: {
-        deposit: ({ state }, srcPayment, optAmountShape = undefined) => {
+        deposit: (
+          { state, facets: { purse } },
+          srcPayment,
+          optAmountShape = undefined,
+        ) => {
           // Note COMMIT POINT within deposit.
           return depositInternal(
             state.currentBalance,
-            newPurseBalance => updatePurseBalance(state, newPurseBalance),
+            newPurseBalance =>
+              updatePurseBalance(state, newPurseBalance, purse),
             srcPayment,
             optAmountShape,
             state.recoverySet,
           );
         },
-        withdraw: ({ state }, amount) =>
+        withdraw: ({ state, facets: { purse } }, amount) =>
           // Note COMMIT POINT within withdraw.
           withdrawInternal(
             state.currentBalance,
-            newPurseBalance => updatePurseBalance(state, newPurseBalance),
+            newPurseBalance =>
+              updatePurseBalance(state, newPurseBalance, purse),
             amount,
             state.recoverySet,
           ),
         getCurrentAmount: ({ state }) => state.currentBalance,
-        getCurrentAmountNotifier: ({ state }) => state.balanceNotifier,
-        getAllegedBrand: () => brand,
+        getCurrentAmountNotifier: ({ facets: { purse } }) =>
+          provideNotifier(purse),
+        getAllegedBrand: _context => getBrand(),
         // eslint-disable-next-line no-use-before-define
         getDepositFacet: ({ facets }) => facets.depositFacet,
 
         getRecoverySet: ({ state }) => state.recoverySet.snapshot(),
         recoverAll: ({ state, facets }) => {
+          const brand = getBrand();
           let amount = AmountMath.makeEmpty(brand, assetKind);
           for (const payment of state.recoverySet.keys()) {
             // This does cause deletions from the set while iterating,
@@ -85,4 +105,4 @@ export const makePurseMaker = (allegedName, assetKind, brand, purseMethods) => {
   );
   return () => makePurseKit().purse;
 };
-harden(makePurseMaker);
+harden(vivifyPurseKind);
