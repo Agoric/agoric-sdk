@@ -319,9 +319,17 @@ export async function makeSwingsetController(
     createSHA256,
   };
 
-  const kernelOptions = { verbose, warehousePolicy, overrideVatManagerOptions };
+  const kernelRuntimeOptions = {
+    verbose,
+    warehousePolicy,
+    overrideVatManagerOptions,
+  };
   /** @type { ReturnType<typeof import('../kernel').default> } */
-  const kernel = buildKernel(kernelEndowments, deviceEndowments, kernelOptions);
+  const kernel = buildKernel(
+    kernelEndowments,
+    deviceEndowments,
+    kernelRuntimeOptions,
+  );
 
   if (runtimeOptions.verbose) {
     kernel.kdebugEnable(true);
@@ -401,6 +409,10 @@ export async function makeSwingsetController(
 
     async shutdown() {
       return kernel.shutdown();
+    },
+
+    changeKernelOptions(options) {
+      kernel.changeKernelOptions(options);
     },
 
     getStats() {
