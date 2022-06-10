@@ -43,7 +43,7 @@ import { checkDebtLimit } from '../contractSupport.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer('VM', false);
+const trace = makeTracer('VM');
 
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 
@@ -444,6 +444,17 @@ const helperBehavior = {
       factoryPowers.getGovernedParams().getLiquidationPenalty(),
     )
       .then(accounting => {
+        // current values
+        state.totalCollateral = AmountMath.subtract(
+          state.totalCollateral,
+          collateralPre,
+        );
+        state.totalDebt = AmountMath.subtract(
+          state.totalDebt,
+          accounting.shortfall,
+        );
+
+        // cumulative values
         state.totalProceedsReceived = AmountMath.add(
           state.totalProceedsReceived,
           accounting.proceeds,
@@ -455,10 +466,6 @@ const helperBehavior = {
         state.totalShortfallReceived = AmountMath.add(
           state.totalShortfallReceived,
           accounting.shortfall,
-        );
-        state.totalCollateral = AmountMath.subtract(
-          state.totalCollateral,
-          collateralPre,
         );
         prioritizedVaults.removeVault(key);
         trace('liquidated');
