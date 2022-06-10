@@ -27,6 +27,7 @@ async function main(argv) {
   config.defaultManagerType = 'xs-worker';
   await generateBundlesP;
   config.bundles = { zcf: { bundle: zcfBundle }, ...contractBundles };
+  config.relaxDurabilityRules = true;
   const controller = await buildVatController(config, argv);
   await controller.run();
   return controller.dump();

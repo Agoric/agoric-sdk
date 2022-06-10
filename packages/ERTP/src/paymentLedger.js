@@ -1,39 +1,99 @@
+/* eslint-disable no-use-before-define */
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import { isPromise } from '@endo/promise-kit';
-import { Far, assertCopyArray } from '@endo/marshal';
-import { fit } from '@agoric/store';
-import { makeScalarBigWeakMapStore } from '@agoric/vat-data';
+import { assertCopyArray } from '@endo/marshal';
+import { fit, M, provide } from '@agoric/store';
+import {
+  makeScalarBigWeakMapStore,
+  dropContext,
+  provideDurableSingletonKit,
+} from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
-import { definePaymentKind } from './payment.js';
-import { makePurseMaker } from './purse.js';
+import { defineDurablePaymentKind } from './payment.js';
+import { defineDurablePurse } from './purse.js';
 
 import '@agoric/store/exported.js';
+
+const { details: X, quote: q } = assert;
+
+const amountSchemaFromElementSchema = (brand, assetKind, elementSchema) => {
+  let valueSchema;
+  switch (assetKind) {
+    case 'nat': {
+      valueSchema = M.nat();
+      assert(
+        elementSchema === undefined,
+        X`Fungible assets cannot have an elementSchema: ${q(elementSchema)}`,
+      );
+      break;
+    }
+    case 'set': {
+      if (elementSchema === undefined) {
+        valueSchema = M.arrayOf(M.key());
+      } else {
+        valueSchema = M.arrayOf(M.and(M.key(), elementSchema));
+      }
+      break;
+    }
+    case 'copySet': {
+      if (elementSchema === undefined) {
+        valueSchema = M.set();
+      } else {
+        valueSchema = M.setOf(elementSchema);
+      }
+      break;
+    }
+    case 'copyBag': {
+      if (elementSchema === undefined) {
+        valueSchema = M.bag();
+      } else {
+        valueSchema = M.bagOf(elementSchema);
+      }
+      break;
+    }
+    default: {
+      assert.fail(X`unexpected asset kind ${q(assetKind)}`);
+    }
+  }
+
+  const amountSchema = harden({
+    brand, // matches only this exact brand
+    value: valueSchema,
+  });
+  return amountSchema;
+};
 
 /**
  * Make the paymentLedger, the source of truth for the balances of
  * payments. All minting and transfer authority originates here.
  *
  * @template {AssetKind} [K=AssetKind]
+ * @param {MapStore<string,any>} issuerBaggage
  * @param {string} allegedName
- * @param {Brand} brand
  * @param {AssetKind} assetKind
  * @param {DisplayInfo} displayInfo
- * @param {Pattern} amountSchema
+ * @param {Pattern} elementSchema
  * @param {ShutdownWithFailure=} optShutdownWithFailure
- * @returns {{ issuer: Issuer<K>, mint: Mint<K> }}
+ * @returns {{ issuer: Issuer<K>, mint: Mint<K>, brand: Brand<K> }}
  */
-export const makePaymentLedger = (
+export const makeDurablePaymentLedger = (
+  issuerBaggage,
   allegedName,
-  brand,
   assetKind,
   displayInfo,
-  amountSchema,
+  elementSchema,
   optShutdownWithFailure = undefined,
 ) => {
-  const makePayment = definePaymentKind(allegedName, brand);
+  const getBrand = () => brand;
+
+  const makePayment = defineDurablePaymentKind(
+    issuerBaggage,
+    allegedName,
+    // @ts-expect-error Just too much typing foo for now.
+    getBrand,
+  );
 
   /** @type {ShutdownWithFailure} */
   const shutdownLedgerWithFailure = reason => {
@@ -51,7 +111,9 @@ export const makePaymentLedger = (
   };
 
   /** @type {WeakMapStore<Payment, Amount>} */
-  const paymentLedger = makeScalarBigWeakMapStore('payment');
+  const paymentLedger = provide(issuerBaggage, 'paymentLedger', () =>
+    makeScalarBigWeakMapStore('payment', { durable: true }),
+  );
 
   /**
    * A withdrawn live payment is associated with the recovery set of
@@ -73,7 +135,11 @@ export const makePaymentLedger = (
    *
    * @type {WeakMapStore<Payment, SetStore<Payment>>}
    */
-  const paymentRecoverySets = makeScalarBigWeakMapStore('payment-recovery');
+  const paymentRecoverySets = provide(
+    issuerBaggage,
+    'paymentRecoverySets',
+    () => makeScalarBigWeakMapStore('payment-recovery', { durable: true }),
+  );
 
   /**
    * To maintain the invariants listed in the `paymentRecoverySets` comment,
@@ -109,16 +175,17 @@ export const makePaymentLedger = (
   };
 
   /** @type {(left: Amount, right: Amount) => Amount } */
+  // @ts-expect-error Just too much typing foo for now.
   const add = (left, right) => AmountMath.add(left, right, brand);
   /** @type {(left: Amount, right: Amount) => Amount } */
+  // @ts-expect-error Just too much typing foo for now.
   const subtract = (left, right) => AmountMath.subtract(left, right, brand);
   /** @type {(allegedAmount: Amount) => Amount} */
+  // @ts-expect-error Just too much typing foo for now.
   const coerce = allegedAmount => AmountMath.coerce(brand, allegedAmount);
   /** @type {(left: Amount, right: Amount) => boolean } */
+  // @ts-expect-error Just too much typing foo for now.
   const isEqual = (left, right) => AmountMath.isEqual(left, right, brand);
-
-  /** @type {Amount} */
-  const emptyAmount = AmountMath.makeEmpty(brand, assetKind);
 
   /**
    * Methods like deposit() have an optional second parameter
@@ -398,44 +465,60 @@ export const makePaymentLedger = (
     return payment;
   };
 
-  const purseMethods = {
-    depositInternal,
-    withdrawInternal,
-  };
-
-  const makeEmptyPurse = makePurseMaker(
+  const makeEmptyPurse = defineDurablePurse(
+    issuerBaggage,
     allegedName,
     assetKind,
-    brand,
-    purseMethods,
+    getBrand,
+    harden({
+      depositInternal,
+      withdrawInternal,
+    }),
   );
 
-  /** @type {Issuer<K>} */
-  const issuer = Far(`${allegedName} issuer`, {
-    isLive,
-    getAmountOf,
-    burn,
-    claim,
-    combine,
-    split,
-    splitMany,
-    getBrand: () => brand,
-    getAllegedName: () => allegedName,
-    getAssetKind: () => assetKind,
-    getDisplayInfo: () => displayInfo,
-    makeEmptyPurse,
+  const issuerKit = provideDurableSingletonKit(issuerBaggage, allegedName, {
+    issuer: {
+      isLive: dropContext(isLive),
+      getAmountOf: dropContext(getAmountOf),
+      burn: dropContext(burn),
+      claim: dropContext(claim),
+      combine: dropContext(combine),
+      split: dropContext(split),
+      splitMany: dropContext(splitMany),
+      getBrand: _context => brand,
+      getAllegedName: _context => allegedName,
+      getAssetKind: _context => assetKind,
+      getDisplayInfo: _context => displayInfo,
+      makeEmptyPurse: dropContext(makeEmptyPurse),
+    },
+    mint: {
+      getIssuer: ({ facets: { issuer } }) => issuer,
+      mintPayment: dropContext(mintPayment),
+    },
+    brand: {
+      isMyIssuer: ({ facets: { issuer } }, allegedIssuerP) =>
+        E.when(allegedIssuerP, allegedIssuer => allegedIssuer === issuer),
+
+      getAllegedName: _context => allegedName,
+
+      // Give information to UI on how to display the amount.
+      getDisplayInfo: _context => displayInfo,
+
+      getAmountSchema: () => amountSchema,
+    },
   });
 
-  /** @type {Mint<K>} */
-  const mint = Far(`${allegedName} mint`, {
-    getIssuer: () => issuer,
-    mintPayment,
-  });
-
-  return harden({
-    issuer,
-    mint,
-  });
+  const { brand } = issuerKit;
+  // @ts-expect-error Just too much typing foo for now.
+  const emptyAmount = AmountMath.makeEmpty(brand, assetKind);
+  const amountSchema = amountSchemaFromElementSchema(
+    brand,
+    assetKind,
+    elementSchema,
+  );
+  // @ts-expect-error Just too much typing foo for now.
+  return issuerKit;
 };
+harden(makeDurablePaymentLedger);
 
-/** @typedef {ReturnType<makePaymentLedger>} PaymentLedger */
+/** @typedef {ReturnType<makeDurablePaymentLedger>} PaymentLedger */
