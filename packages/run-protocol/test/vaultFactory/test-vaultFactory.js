@@ -854,7 +854,7 @@ test('vaultFactory display collateral', async t => {
 });
 
 // charging period is 1 week. Clock ticks by days
-test('interest on multiple vaults', async t => {
+test.only('interest on multiple vaults', async t => {
   const { zoe, aeth, run, rates: defaultRates } = t.context;
   const rates = {
     ...defaultRates,
@@ -965,7 +965,9 @@ test('interest on multiple vaults', async t => {
   const aliceUpdate = await E(aliceNotifier).getUpdateSince();
   const bobUpdate = await E(bobNotifier).getUpdateSince();
 
-  // 160n is initial fee. interest is 3n/week. compounding is in the noise.
+  // 160n is initial fee. interest is 4n/week. compounding is in the noise.
+  const bobAddedDebt = 160n + 4n;
+  // 160n is initial fee. interest is ~3n/week. compounding is in the noise.
   const bobAddedDebt = 160n + 3n;
   t.deepEqual(
     calculateCurrentDebt(
@@ -981,8 +983,8 @@ test('interest on multiple vaults', async t => {
     makeRatio(105n, run.brand, 100n),
   );
 
-  // 236 is the initial fee. Interest is ~3n/week
-  const aliceAddedDebt = 236n + 3n;
+  // 236 is the initial fee. Interest is ~4n/week
+  const aliceAddedDebt = 236n + 4n;
   t.deepEqual(
     calculateCurrentDebt(
       aliceUpdate.value.debtSnapshot.debt,
@@ -1001,9 +1003,10 @@ test('interest on multiple vaults', async t => {
   t.deepEqual(aliceUpdate.value.liquidationRatio, makeRatio(105n, run.brand));
 
   const rewardAllocation = await E(vaultFactory).getRewardAllocation();
-  const rewardRunCount = aliceAddedDebt + bobAddedDebt + 1n; // +1 due to rounding
-  t.truthy(
-    AmountMath.isEqual(rewardAllocation.RUN, run.make(rewardRunCount)),
+  const rewardRunCount = aliceAddedDebt + bobAddedDebt;
+  t.is(
+    rewardAllocation.RUN.value,
+    rewardRunCount,
     // reward includes 5% fees on two loans plus 1% interest three times on each
     `Should be ${rewardRunCount}, was ${rewardAllocation.RUN.value}`,
   );
@@ -1051,6 +1054,7 @@ test('interest on multiple vaults', async t => {
     `Normalized debt ${normalizedDebt} must be less than actual ${danActualDebt} (after any time elapsed)`,
   );
   t.is((await E(danVault).getNormalizedDebt()).value, 1_047n);
+  t.is((await E(danVault).getNormalizedDebt()).value, 1_048n);
   const danUpdate = await E(danNotifier).getUpdateSince();
   // snapshot should equal actual since no additional time has elapsed
   const { debtSnapshot: danSnap } = danUpdate.value;
@@ -1845,7 +1849,7 @@ test('mutable liquidity triggers and interest', async t => {
   await manualTimer.tickN(5);
   await eventLoopIteration();
 
-  shortfallBalance += 42n;
+  shortfallBalance += 44n;
   await m.assertChange({
     shortfallBalance: { value: shortfallBalance },
   });
@@ -2699,7 +2703,7 @@ test('manager notifiers', async t => {
     totalCollateral: { value: 0n },
     totalProceedsReceived: { value: totalProceedsReceived },
     totalShortfallReceived: {
-      value: DEBT1 + DEBT2 + interestAccrued - nextProceeds - 53n - 1n, // compensate for previous proceeds and rounding
+      value: DEBT1 + DEBT2 + interestAccrued - nextProceeds - 53n, // compensate for previous proceeds and rounding
     },
   });
   m.assertFullyLiquidated();
