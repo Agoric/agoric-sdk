@@ -1,6 +1,6 @@
 // JavaScript correctness tests
 
-import '@endo/init';
+import '@endo/init/debug.js';
 
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies

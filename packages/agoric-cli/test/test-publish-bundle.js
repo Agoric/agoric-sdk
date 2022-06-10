@@ -1,7 +1,7 @@
 // @ts-check
 /* eslint-env node */
 
-import '@endo/init';
+import '@endo/init/debug.js';
 
 import * as http from 'http';
 import test from 'ava';

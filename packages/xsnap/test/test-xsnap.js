@@ -1,7 +1,7 @@
 /* global setTimeout, WeakRef, setImmediate, process */
 // @ts-check
 
-import '@endo/init';
+import '@endo/init/debug.js';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
