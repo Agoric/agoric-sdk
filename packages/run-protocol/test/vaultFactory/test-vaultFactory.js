@@ -2590,7 +2590,7 @@ test('manager notifiers', async t => {
     numLiquidationsCompleted: 2,
     numVaults: 1,
     totalCollateral: { value: AMPLE },
-    totalDebt: { value: 0n },
+    totalDebt: { value: DEBT1 },
     totalOverageReceived: { value: totalOverageReceived },
     totalProceedsReceived: { value: totalProceedsReceived },
   });
@@ -2599,6 +2599,7 @@ test('manager notifiers', async t => {
     numLiquidationsCompleted: 3,
     numVaults: 0,
     totalCollateral: { value: 0n },
+    totalDebt: { value: 0n },
     totalProceedsReceived: { value: totalProceedsReceived },
   });
   m.assertFullyLiquidated();
@@ -2693,7 +2694,7 @@ test('manager notifiers', async t => {
     numLiquidationsCompleted: 5,
     numVaults: 1,
     totalCollateral: { value: AMPLE },
-    totalDebt: { value: DEBT1 + DEBT2 + interestAccrued - nextProceeds - 296n }, // debt changed already with proceeds from next notification
+    totalDebt: { value: DEBT1 + DEBT2 + interestAccrued - nextProceeds },
     totalProceedsReceived: { value: totalProceedsReceived },
   });
   nextProceeds = 296n;
