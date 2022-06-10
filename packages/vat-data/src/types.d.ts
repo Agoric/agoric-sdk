@@ -29,6 +29,7 @@ type KindFacets<B> = {
   [FacetKey in keyof B]: KindFacet<B[FacetKey]>;
 };
 
+type KindContext<S, F> = { state: S; self: KindFacet<F> };
 type MultiKindContext<S, B> = { state: S; facets: KindFacets<B> };
 
 type PlusContext<C, M> = (c: C, ...args: Parameters<M>) => ReturnType<M>;
@@ -39,21 +40,25 @@ declare class DurableKindHandleClass {
 }
 export type DurableKindHandle = DurableKindHandleClass;
 
+type DefineKindOptions<C> = {
+  finish?: (context: C) => void;
+  durable?: boolean;
+  fakeDurable?: boolean;
+};
+
 export type VatData = {
   // virtual kinds
   defineKind: <P, S, F>(
     tag: string,
     init: (...args: P) => S,
     facet: F,
-    options?: {
-      finish?: (context: { state: S }, kind: KindFacet<F>) => void;
-    },
+    options?: DefineKindOptions<KindContext<S, F>>,
   ) => (...args: P) => KindFacet<F>;
   defineKindMulti: <P, S, B>(
     tag: string,
     init: (...args: P) => S,
     behavior: B,
-    options?: { finish?: (context: MultiKindContext<S, B>) => void },
+    options?: DefineKindOptions<MultiKindContext<S, B>>,
   ) => (...args: P) => KindFacets<B>;
 
   // durable kinds
@@ -62,15 +67,13 @@ export type VatData = {
     kindHandle: DurableKindHandle,
     init: (...args: P) => S,
     facet: F,
-    options?: {
-      finish?: (context: { state: S }, kind: KindFacet<F>) => void;
-    },
+    options?: DefineKindOptions<KindContext<S, F>>,
   ) => (...args: P) => KindFacet<F>;
   defineDurableKindMulti: <P, S, B>(
     kindHandle: DurableKindHandle,
     init: (...args: P) => S,
     behavior: B,
-    options?: { finish?: (context: MultiKindContext<S, B>) => void },
+    options?: DefineKindOptions<MultiKindContext<S, B>>,
   ) => (...args: P) => KindFacets<B>;
 
   providePromiseWatcher: unknown;

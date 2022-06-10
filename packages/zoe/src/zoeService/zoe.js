@@ -19,6 +19,7 @@ import { AssetKind } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
@@ -37,6 +38,7 @@ import { createFeeMint } from './feeMint.js';
  * available to a vat.
  * @param {FeeIssuerConfig} feeIssuerConfig
  * @param {ZCFSpec} [zcfSpec] - Pointer to the contract facet bundle.
+ * @param {MapStore<string, unknown>} [zoeBaggage]
  * @returns {{
  *   zoeService: ZoeService,
  *   feeMintAccess: FeeMintAccess,
@@ -51,6 +53,7 @@ const makeZoeKit = (
     displayInfo: harden({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
   },
   zcfSpec = { name: 'zcf' },
+  zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
 ) => {
   // We must pass the ZoeService to `makeStartInstance` before it is
   // defined. See below where the promise is resolved.
@@ -95,6 +98,7 @@ const makeZoeKit = (
     shutdownZoeVat,
     feeIssuer,
     feeBrand,
+    zoeBaggage,
   );
 
   // Pass the capabilities necessary to create E(zoe).startInstance

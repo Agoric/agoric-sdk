@@ -1,31 +1,19 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeKindHandle, defineDurableKind } from '@agoric/vat-data';
-
-const provideStoredObj = (key, mapStore, makeObj) => {
-  if (mapStore.has(key)) {
-    return mapStore.get(key);
-  } else {
-    const obj = makeObj();
-    mapStore.init(key, obj);
-    return obj;
-  }
-};
-
-const provideKindHandle = (tag, mapStore) =>
-  provideStoredObj(tag, mapStore, () => makeKindHandle(tag));
+import { provide } from '@agoric/store';
+import { provideKindHandle, defineDurableKind } from '@agoric/vat-data';
 
 export function buildRootObject(_vatPowers, vatParameters, baggage) {
   let other;
   const log = message => E(other).log(message);
   const testComplete = () => E(other).testComplete();
 
-  const kh = provideKindHandle('testkind', baggage);
+  const kh = provideKindHandle(baggage, 'testkind');
   const makeThing = defineDurableKind(kh, tag => ({ tag }), {
     getTag: ({ state }) => state.tag,
   });
 
-  const testThing = provideStoredObj('testthing', baggage, () =>
+  const testThing = provide(baggage, 'testthing', () =>
     makeThing('test thing'),
   );
 

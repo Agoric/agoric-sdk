@@ -1,9 +1,11 @@
 // @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { Far } from '@endo/marshal';
 import { M } from '@agoric/store';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { assert } from '@agoric/assert';
 
+import { defineDurableKind, makeKindHandle } from '@agoric/vat-data';
 import { makeIssuerKit, AssetKind, AmountMath } from '../../src/index.js';
 
 test('mint.getIssuer', t => {
@@ -47,11 +49,17 @@ test('mint.mintPayment set w strings AssetKind', async t => {
   });
 });
 
+const makeDurableHandle = name => {
+  const kindHandle = makeKindHandle(name);
+  const maker = defineDurableKind(kindHandle, () => ({}), {});
+  return maker();
+};
+
 test('mint.mintPayment set AssetKind', async t => {
   const { mint, issuer, brand } = makeIssuerKit('items', AssetKind.SET);
-  const item1handle = Far('iface', {});
-  const item2handle = Far('iface', {});
-  const item3handle = Far('iface', {});
+  const item1handle = makeDurableHandle('iface');
+  const item2handle = makeDurableHandle('iface');
+  const item3handle = makeDurableHandle('iface');
   const items1and2 = AmountMath.make(brand, harden([item1handle, item2handle]));
   const payment1 = mint.mintPayment(items1and2);
   const paymentBalance1 = await issuer.getAmountOf(payment1);
@@ -71,18 +79,18 @@ test('mint.mintPayment set AssetKind', async t => {
 
 test('mint.mintPayment set AssetKind with invites', async t => {
   const { mint, issuer, brand } = makeIssuerKit('items', AssetKind.SET);
-  const instanceHandle1 = Far('iface', {});
+  const instanceHandle1 = makeDurableHandle('iface');
   const invite1Value = {
-    handle: Far('iface', {}),
+    handle: makeDurableHandle('iface'),
     instanceHandle: instanceHandle1,
   };
   const invite2Value = {
-    handle: Far('iface', {}),
+    handle: makeDurableHandle('iface'),
     instanceHandle: instanceHandle1,
   };
   const invite3Value = {
-    handle: Far('iface', {}),
-    instanceHandle: Far('iface', {}),
+    handle: makeDurableHandle('iface'),
+    instanceHandle: makeDurableHandle('iface'),
   };
   const invites1and2 = AmountMath.make(
     brand,
