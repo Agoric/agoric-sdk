@@ -5,7 +5,6 @@ import { diff } from 'deep-object-diff';
 
 /**
  * @param {import('ava').ExecutionContext} t
- * @param {Subscription<object>} subscription
  * @param {Subscription<N>} subscription
  * @template {object} N
  */
@@ -18,13 +17,13 @@ export const subscriptionTracker = async (t, subscription) => {
   /** @param {Record<keyof N, N[keyof N]>} expectedValue */
   const assertInitial = async expectedValue => {
     notif = await metrics.getUpdateSince();
-    t.log('assertInitial notif', notif);
+    console.log('assertInitial notif', notif);
     t.deepEqual(notif.value, expectedValue);
   };
   const assertChange = async expectedDelta => {
     const prevNotif = notif;
     notif = await metrics.getUpdateSince(notif.updateCount);
-    t.log('assertChange notif', notif);
+    console.log('assertChange notif', notif);
     // @ts-expect-error diff() overly constrains
     const actualDelta = diff(prevNotif.value, notif.value);
     t.deepEqual(actualDelta, expectedDelta, 'Unexpected delta');
@@ -87,6 +86,8 @@ export const vaultManagerMetricsTracker = async (t, publicFacet) => {
       totalDebtEver - liquidated <= 1,
       `Liquidated ${liquidated} must approx equal total debt ever ${totalDebtEver}`,
     );
+    const notif = m.getLastNotif();
+    t.is(notif.value.totalDebt.value, 0n);
   };
   return harden({
     ...m,
