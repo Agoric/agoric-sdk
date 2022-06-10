@@ -5,22 +5,29 @@ import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far, passStyleOf } from '@endo/marshal';
 import { makeWeakStore } from '@agoric/store';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { makeZoeSeatAdminKit } from './zoeSeat.js';
-import { makeHandle } from '../makeHandle.js';
+import { defineDurableHandle } from '../makeHandle.js';
 import { handlePKitWarning } from '../handleWarning.js';
 
 /**
  * @param {Promise<ZoeService>} zoeServicePromise
  * @param {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @param {UnwrapInstallation} unwrapInstallation
+ * @param {MapStore<string, unknown>} [zoeBaggage]
  * @returns {import('./utils.js').StartInstance}
  */
 export const makeStartInstance = (
   zoeServicePromise,
   makeZoeInstanceStorageManager,
   unwrapInstallation,
+  zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
 ) => {
+  const makeInstanceHandle = defineDurableHandle(zoeBaggage, 'Instance');
+  // TODO(MSM): Should be 'Seat' rather than 'SeatHandle'
+  const makeSeatHandle = defineDurableHandle(zoeBaggage, 'SeatHandle');
+
   const startInstance = async (
     installationP,
     uncleanIssuerKeywordRecord = harden({}),
@@ -48,7 +55,7 @@ export const makeStartInstance = (
       );
     }
 
-    const instance = makeHandle('Instance');
+    const instance = makeInstanceHandle();
 
     const zoeInstanceStorageManager = await makeZoeInstanceStorageManager(
       installation,
@@ -110,7 +117,7 @@ export const makeStartInstance = (
           handlePKitWarning(offerResultPromiseKit);
           const exitObjPromiseKit = makePromiseKit();
           handlePKitWarning(exitObjPromiseKit);
-          const seatHandle = makeHandle('SeatHandle');
+          const seatHandle = makeSeatHandle();
 
           const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
             initialAllocation,
