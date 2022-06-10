@@ -46,19 +46,19 @@ export const currentDebtToCollateral = vault =>
  * Vaults, ordered by their liquidation ratio so that all the
  * vaults below a threshold can be quickly found and liquidated.
  *
- * @param {() => void} reschedulePriceCheck called when there is a new
- * least-collateralized vault
+ * @param {() => void} highestChanged called when there is a new
+ * `highestRatio` (least-collateralized vault)
  */
-export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
+export const makePrioritizedVaults = (highestChanged = () => {}) => {
   const vaults = makeOrderedVaultStore();
 
   /**
    * Set the callback for when there is a new least-collateralized vault
    *
-   * @param {() => void} rescheduleFn
+   * @param {() => void} callback
    */
-  const setRescheduler = rescheduleFn => {
-    reschedulePriceCheck = rescheduleFn;
+  const onHighestRatioChanged = callback => {
+    highestChanged = callback;
   };
 
   // To deal with fluctuating prices and varying collateralization, we schedule a
@@ -79,7 +79,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
    *
    * @returns {Ratio=} actual debt over collateral
    */
-  const firstDebtRatio = () => {
+  const highestRatio = () => {
     if (vaults.getSize() === 0) {
       return undefined;
     }
@@ -145,7 +145,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
     trace('addVault', key, 'when first:', firstKey);
     if (!firstKey || keyLT(key, firstKey)) {
       firstKey = key;
-      reschedulePriceCheck();
+      highestChanged();
     }
     return key;
   };
@@ -183,9 +183,9 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
     entriesPrioritizedGTE,
     getCount: vaults.getSize,
     hasVaultByAttributes,
-    highestRatio: firstDebtRatio,
+    highestRatio,
     removeVault,
     removeVaultByAttributes,
-    setRescheduler,
+    onHighestRatioChanged,
   });
 };

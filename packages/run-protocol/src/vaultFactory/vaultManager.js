@@ -770,7 +770,7 @@ const selfBehavior = {
 
 /** @param {MethodContext} context */
 const finish = ({ state, facets: { helper } }) => {
-  state.prioritizedVaults.setRescheduler(helper.reschedulePriceCheck);
+  state.prioritizedVaults.onHighestRatioChanged(helper.reschedulePriceCheck);
 
   // push initial state of metrics
   helper.updateMetrics();
