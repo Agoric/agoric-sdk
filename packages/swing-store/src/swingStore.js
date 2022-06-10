@@ -134,7 +134,7 @@ function makeSwingStore(dirPath, forceReset, options) {
   }
   fs.mkdirSync(dirPath, { recursive: true });
 
-  const { mapSize = DEFAULT_LMDB_MAP_SIZE, traceFile } = options;
+  const { mapSize = DEFAULT_LMDB_MAP_SIZE, traceFile, keepSnapshots } = options;
 
   let traceOutput = traceFile
     ? fs.createWriteStream(path.resolve(traceFile), {
@@ -302,7 +302,9 @@ function makeSwingStore(dirPath, forceReset, options) {
   const streamStore = sqlStreamStore(dirPath, { sqlite3 });
   const snapshotDir = path.resolve(dirPath, 'xs-snapshots');
   fs.mkdirSync(snapshotDir, { recursive: true });
-  const snapStore = makeSnapStore(snapshotDir, makeSnapStoreIO());
+  const snapStore = makeSnapStore(snapshotDir, makeSnapStoreIO(), {
+    keepSnapshots,
+  });
 
   /**
    * Commit unsaved changes.

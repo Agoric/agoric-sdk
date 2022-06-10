@@ -41,6 +41,7 @@ VAULT_FACTORY_CONTROLLER_ADDR="$SOLO_ADDR" \
 CHAIN_BOOTSTRAP_VAT_CONFIG="$VAT_CONFIG" \
 XSNAP_TEST_RECORD=.ag-chain-cosmos/data/xsnap-trace \
 SWING_STORE_TRACE=.ag-chain-cosmos/data/swingstore-trace \
+XSNAP_KEEP_SNAPSHOTS=1 \
   "$thisdir/setup.sh" bootstrap ${1+"$@"}
 
 if [ -d /usr/src/testnet-load-generator ]
