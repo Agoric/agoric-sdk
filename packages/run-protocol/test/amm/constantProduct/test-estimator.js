@@ -29,16 +29,22 @@ const DEFAULT_3_POOLS = [
 
 const makePools = (issuerKits, poolValues) => {
   const centralBrand = issuerKits[0].brand;
-  const pools = makeScalarMap('poolBrand');
+  const internalPools = makeScalarMap('poolBrand');
+  const uiPools = makeScalarMap('poolBrand');
   for (let i = 1; i < issuerKits.length; i += 1) {
     const brand = issuerKits[i].brand;
-    const pool = Far(`pool ${brand.getAllegedName()}`, {
+    const internalPool = Far(`pool ${brand.getAllegedName()}`, {
       getCentralAmount: () => AmountMath.make(centralBrand, poolValues[i][0]),
       getSecondaryAmount: () => AmountMath.make(brand, poolValues[i][1]),
     });
-    pools.init(brand, pool);
+    internalPools.init(brand, internalPool);
+    const uiPool = {
+      secondaryAmount: AmountMath.make(brand, poolValues[i][1]),
+      centralAmount: AmountMath.make(centralBrand, poolValues[i][0]),
+    };
+    uiPools.init(brand, uiPool);
   }
-  return pools;
+  return { internalPools, uiPools };
 };
 
 const getInputPrices = (centralBrand, amountGiven, brandOut, pools, fees) => {
@@ -85,7 +91,10 @@ function buildRates(protocolFeeBP, poolFeeBP, slippageBP) {
 test('estimate simple swapIn toCentral', t => {
   const central = withAmountUtils(makeIssuerKit('central'));
   const edge = withAmountUtils(makeIssuerKit('edge'));
-  const pools = makePools([central, edge], DEFAULT_2_POOLS);
+  const { internalPools, uiPools } = makePools(
+    [central, edge],
+    DEFAULT_2_POOLS,
+  );
   const rates = buildRates(30n, 20n, 200n);
 
   const amountGiven = edge.make(1000n);
@@ -94,13 +103,13 @@ test('estimate simple swapIn toCentral', t => {
     central.brand,
     amountGiven,
     brandOut,
-    pools,
+    internalPools,
     rates,
   );
 
   const estimator = makeEstimator(brandOut, rates);
   t.deepEqual(
-    estimator.estimateProceeds(amountGiven, brandOut, pools),
+    estimator.estimateProceeds(amountGiven, brandOut, uiPools),
     AmountMath.subtract(
       expected.swapperGets,
       charge(rates.slippageBP, expected.swapperGets),
@@ -111,7 +120,10 @@ test('estimate simple swapIn toCentral', t => {
 test('estimate simple swapIn fromCentral', t => {
   const central = withAmountUtils(makeIssuerKit('central'));
   const edge = withAmountUtils(makeIssuerKit('edge'));
-  const pools = makePools([central, edge], DEFAULT_2_POOLS);
+  const { internalPools, uiPools } = makePools(
+    [central, edge],
+    DEFAULT_2_POOLS,
+  );
   const rates = buildRates(30n, 20n, 200n);
 
   const amountGiven = central.make(1000n);
@@ -120,13 +132,13 @@ test('estimate simple swapIn fromCentral', t => {
     central.brand,
     amountGiven,
     brandOut,
-    pools,
+    internalPools,
     rates,
   );
 
   const estimator = makeEstimator(amountGiven.brand, rates);
   t.deepEqual(
-    estimator.estimateProceeds(amountGiven, brandOut, pools),
+    estimator.estimateProceeds(amountGiven, brandOut, uiPools),
     AmountMath.subtract(
       expected.swapperGets,
       charge(rates.slippageBP, expected.swapperGets),
@@ -137,7 +149,10 @@ test('estimate simple swapIn fromCentral', t => {
 test('estimate simple swapOut fromCentral', t => {
   const central = withAmountUtils(makeIssuerKit('central'));
   const edge = withAmountUtils(makeIssuerKit('edge'));
-  const pools = makePools([central, edge], DEFAULT_3_POOLS);
+  const { internalPools, uiPools } = makePools(
+    [central, edge],
+    DEFAULT_3_POOLS,
+  );
   const rates = buildRates(30n, 20n, 200n);
 
   const brandIn = central.brand;
@@ -147,13 +162,13 @@ test('estimate simple swapOut fromCentral', t => {
     central.brand,
     brandIn,
     amountWanted,
-    pools,
+    internalPools,
     rates,
   );
 
   const estimator = makeEstimator(central.brand, rates);
   t.deepEqual(
-    estimator.estimateRequired(brandIn, amountWanted, pools),
+    estimator.estimateRequired(brandIn, amountWanted, uiPools),
     AmountMath.add(
       expected.swapperGives,
       charge(rates.slippageBP, expected.swapperGives),
@@ -164,7 +179,10 @@ test('estimate simple swapOut fromCentral', t => {
 test('estimate simple swapOut toCentral', t => {
   const central = withAmountUtils(makeIssuerKit('central'));
   const edge = withAmountUtils(makeIssuerKit('edge'));
-  const pools = makePools([central, edge], DEFAULT_3_POOLS);
+  const { internalPools, uiPools } = makePools(
+    [central, edge],
+    DEFAULT_3_POOLS,
+  );
   const rates = buildRates(30n, 20n, 200n);
 
   const brandIn = edge.brand;
@@ -174,13 +192,13 @@ test('estimate simple swapOut toCentral', t => {
     central.brand,
     brandIn,
     amountWanted,
-    pools,
+    internalPools,
     rates,
   );
 
   const estimator = makeEstimator(central.brand, rates);
   t.deepEqual(
-    estimator.estimateRequired(brandIn, amountWanted, pools),
+    estimator.estimateRequired(brandIn, amountWanted, uiPools),
     AmountMath.add(
       expected.swapperGives,
       charge(rates.slippageBP, expected.swapperGives),
@@ -191,7 +209,10 @@ test('estimate simple swapOut toCentral', t => {
 test('estimate swapOut high ProtocolFee fromCentral', t => {
   const central = withAmountUtils(makeIssuerKit('central'));
   const edge = withAmountUtils(makeIssuerKit('edge'));
-  const pools = makePools([central, edge], DEFAULT_3_POOLS);
+  const { internalPools, uiPools } = makePools(
+    [central, edge],
+    DEFAULT_3_POOLS,
+  );
   const rates = buildRates(3000n, 20n, 200n);
 
   const brandIn = central.brand;
@@ -201,13 +222,13 @@ test('estimate swapOut high ProtocolFee fromCentral', t => {
     central.brand,
     brandIn,
     amountWanted,
-    pools,
+    internalPools,
     rates,
   );
 
   const estimator = makeEstimator(central.brand, rates);
   t.deepEqual(
-    estimator.estimateRequired(brandIn, amountWanted, pools),
+    estimator.estimateRequired(brandIn, amountWanted, uiPools),
     AmountMath.add(
       expected.swapperGives,
       charge(rates.slippageBP, expected.swapperGives),
@@ -218,7 +239,10 @@ test('estimate swapOut high ProtocolFee fromCentral', t => {
 test('estimate swapOut high ProtocolFee toCentral', t => {
   const central = withAmountUtils(makeIssuerKit('central'));
   const edge = withAmountUtils(makeIssuerKit('edge'));
-  const pools = makePools([central, edge], DEFAULT_3_POOLS);
+  const { internalPools, uiPools } = makePools(
+    [central, edge],
+    DEFAULT_3_POOLS,
+  );
   const rates = buildRates(3000n, 20n, 200n);
 
   const brandIn = edge.brand;
@@ -228,13 +252,13 @@ test('estimate swapOut high ProtocolFee toCentral', t => {
     central.brand,
     brandIn,
     amountWanted,
-    pools,
+    internalPools,
     rates,
   );
 
   const estimator = makeEstimator(central.brand, rates);
   t.deepEqual(
-    estimator.estimateRequired(brandIn, amountWanted, pools),
+    estimator.estimateRequired(brandIn, amountWanted, uiPools),
     AmountMath.add(
       expected.swapperGives,
       charge(rates.slippageBP, expected.swapperGives),
@@ -245,7 +269,10 @@ test('estimate swapOut high ProtocolFee toCentral', t => {
 test('estimate swapOut high poolFee fromCentral', t => {
   const central = withAmountUtils(makeIssuerKit('central'));
   const edge = withAmountUtils(makeIssuerKit('edge'));
-  const pools = makePools([central, edge], DEFAULT_3_POOLS);
+  const { internalPools, uiPools } = makePools(
+    [central, edge],
+    DEFAULT_3_POOLS,
+  );
   const rates = buildRates(300n, 2000n, 200n);
 
   const brandIn = central.brand;
@@ -254,13 +281,13 @@ test('estimate swapOut high poolFee fromCentral', t => {
     central.brand,
     brandIn,
     amountWanted,
-    pools,
+    internalPools,
     rates,
   );
 
   const estimator = makeEstimator(central.brand, rates);
   t.deepEqual(
-    estimator.estimateRequired(brandIn, amountWanted, pools),
+    estimator.estimateRequired(brandIn, amountWanted, uiPools),
     AmountMath.add(
       expected.swapperGives,
       charge(rates.slippageBP, expected.swapperGives),
@@ -271,7 +298,10 @@ test('estimate swapOut high poolFee fromCentral', t => {
 test('estimate swapOut high poolFee toCentral', t => {
   const central = withAmountUtils(makeIssuerKit('central'));
   const edge = withAmountUtils(makeIssuerKit('edge'));
-  const pools = makePools([central, edge], DEFAULT_3_POOLS);
+  const { internalPools, uiPools } = makePools(
+    [central, edge],
+    DEFAULT_3_POOLS,
+  );
   const rates = buildRates(300n, 2000n, 200n);
 
   const brandIn = edge.brand;
@@ -280,13 +310,13 @@ test('estimate swapOut high poolFee toCentral', t => {
     central.brand,
     brandIn,
     amountWanted,
-    pools,
+    internalPools,
     rates,
   );
 
   const estimator = makeEstimator(central.brand, rates);
   t.deepEqual(
-    estimator.estimateRequired(brandIn, amountWanted, pools),
+    estimator.estimateRequired(brandIn, amountWanted, uiPools),
     AmountMath.add(
       expected.swapperGives,
       charge(rates.slippageBP, expected.swapperGives),
@@ -297,7 +327,10 @@ test('estimate swapOut high poolFee toCentral', t => {
 test('estimate swapOut high slippage fromCentral', t => {
   const central = withAmountUtils(makeIssuerKit('central'));
   const edge = withAmountUtils(makeIssuerKit('edge'));
-  const pools = makePools([central, edge], DEFAULT_3_POOLS);
+  const { internalPools, uiPools } = makePools(
+    [central, edge],
+    DEFAULT_3_POOLS,
+  );
   const rates = buildRates(30n, 20n, 500n);
 
   const brandIn = central.brand;
@@ -306,13 +339,13 @@ test('estimate swapOut high slippage fromCentral', t => {
     central.brand,
     brandIn,
     amountWanted,
-    pools,
+    internalPools,
     rates,
   );
 
   const estimator = makeEstimator(central.brand, rates);
   t.deepEqual(
-    estimator.estimateRequired(brandIn, amountWanted, pools),
+    estimator.estimateRequired(brandIn, amountWanted, uiPools),
     AmountMath.add(
       expected.swapperGives,
       charge(rates.slippageBP, expected.swapperGives),
@@ -323,7 +356,10 @@ test('estimate swapOut high slippage fromCentral', t => {
 test('estimate swapOut high slippage toCentral', t => {
   const central = withAmountUtils(makeIssuerKit('central'));
   const edge = withAmountUtils(makeIssuerKit('edge'));
-  const pools = makePools([central, edge], DEFAULT_3_POOLS);
+  const { internalPools, uiPools } = makePools(
+    [central, edge],
+    DEFAULT_3_POOLS,
+  );
   const rates = buildRates(30n, 20n, 500n);
 
   const brandIn = edge.brand;
@@ -332,13 +368,13 @@ test('estimate swapOut high slippage toCentral', t => {
     central.brand,
     brandIn,
     amountWanted,
-    pools,
+    internalPools,
     rates,
   );
 
   const estimator = makeEstimator(central.brand, rates);
   t.deepEqual(
-    estimator.estimateRequired(brandIn, amountWanted, pools),
+    estimator.estimateRequired(brandIn, amountWanted, uiPools),
     AmountMath.add(
       expected.swapperGives,
       charge(rates.slippageBP, expected.swapperGives),

@@ -32,21 +32,20 @@ const makeEstimator = (centralBrand, rates) => {
   function estimateSinglePoolProceeds(amountIn, brandOut, pools) {
     const isCentralIn = amountIn.brand === centralBrand;
     const pool = isCentralIn ? pools.get(brandOut) : pools.get(amountIn.brand);
-    const kPre =
-      pool.getSecondaryAmount().value * pool.getCentralAmount().value;
+    const kPre = pool.secondaryAmount.value * pool.centralAmount.value;
 
     function calcYFromX(X) {
       const denom = isCentralIn
-        ? AmountMath.add(pool.getCentralAmount(), X)
-        : AmountMath.add(pool.getSecondaryAmount(), X);
+        ? AmountMath.add(pool.centralAmount, X)
+        : AmountMath.add(pool.secondaryAmount, X);
       const finalOutBalance = AmountMath.make(
         brandOut,
         ceilDivide(kPre, denom.value),
       );
 
       return isCentralIn
-        ? AmountMath.subtract(pool.getSecondaryAmount(), finalOutBalance)
-        : AmountMath.subtract(pool.getCentralAmount(), finalOutBalance);
+        ? AmountMath.subtract(pool.secondaryAmount, finalOutBalance)
+        : AmountMath.subtract(pool.centralAmount, finalOutBalance);
     }
 
     const amountAdded = isCentralIn
@@ -72,23 +71,22 @@ const makeEstimator = (centralBrand, rates) => {
   function estimateSinglePoolRequired(brandIn, amountOut, pools) {
     const isCentralIn = brandIn === centralBrand;
     const pool = isCentralIn ? pools.get(amountOut.brand) : pools.get(brandIn);
-    const kPre =
-      pool.getSecondaryAmount().value * pool.getCentralAmount().value;
+    const kPre = pool.secondaryAmount.value * pool.centralAmount.value;
     const amountWithdrawn = isCentralIn
       ? AmountMath.add(amountOut, charge(protocolFeeBP, amountOut))
       : amountOut;
 
     const calcXFromY = y => {
       const denom = isCentralIn
-        ? AmountMath.subtract(pool.getSecondaryAmount(), y)
-        : AmountMath.subtract(pool.getCentralAmount(), y);
+        ? AmountMath.subtract(pool.secondaryAmount, y)
+        : AmountMath.subtract(pool.centralAmount, y);
       const finalInBalance = AmountMath.make(
         brandIn,
         ceilDivide(kPre, denom.value),
       );
       return isCentralIn
-        ? AmountMath.subtract(finalInBalance, pool.getCentralAmount())
-        : AmountMath.subtract(finalInBalance, pool.getSecondaryAmount());
+        ? AmountMath.subtract(finalInBalance, pool.centralAmount)
+        : AmountMath.subtract(finalInBalance, pool.secondaryAmount);
     };
 
     const amountInForFees = calcXFromY(amountOut);
