@@ -1187,7 +1187,7 @@
 
 "@cosmjs/stargate@0.28.4":
   version "0.28.4"
-  resolved "http://localhost:4873/@cosmjs%2fstargate/-/stargate-0.28.4.tgz#a5acbaa3451f7c853739064f799dec21097a06df"
+  resolved "https://registry.yarnpkg.com/@cosmjs/stargate/-/stargate-0.28.4.tgz#a5acbaa3451f7c853739064f799dec21097a06df"
   integrity sha512-tdwudilP5iLNwDm4TOMBjWuL5YehLPqGlC5/7hjJM/kVHyzLFo4Lzt0dVEwr5YegH+RsRXH/VtFLQz+NYlCobw==
   dependencies:
     "@confio/ics23" "^0.6.8"
