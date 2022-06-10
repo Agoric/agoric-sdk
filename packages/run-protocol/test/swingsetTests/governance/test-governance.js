@@ -1,7 +1,7 @@
 // @ts-check
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@endo/init';
+import '@endo/init/debug.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import rawTest from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
