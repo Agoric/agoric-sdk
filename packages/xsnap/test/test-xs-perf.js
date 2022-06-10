@@ -62,7 +62,7 @@ test('meter details', async t => {
     },
     'evaluate returns meter details',
   );
-  t.is(meterType, 'xs-meter-13');
+  t.is(meterType, 'xs-meter-14');
 });
 
 test('isReady does not compute / allocate', async t => {
