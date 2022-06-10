@@ -24,7 +24,7 @@ const transcript1 = [
     '/xsnap-tests/00001-evaluate.dat',
     'issueCommand(new TextEncoder().encode("Hello, World!").buffer);',
   ],
-  ['/xsnap-tests/00002-command.dat', '{"currentHeap'],
+  ['/xsnap-tests/00002-command.dat', 'Hello, World!'],
   ['/xsnap-tests/00003-reply.dat', ''],
 ];
 
@@ -33,7 +33,7 @@ test('record: evaluate and issueCommand', async t => {
 
   /** @type { Map<string, Uint8Array> } */
   const files = new Map();
-  const writeFileSync = (fn, bs) => files.set(fn, bs);
+  const writeFileSync = (fn, bs) => files.set(fn, bs.slice());
 
   const vat = recordXSnap(opts, '/xsnap-tests/', { writeFileSync });
 
