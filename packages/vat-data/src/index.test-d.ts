@@ -38,6 +38,7 @@ makeFlorg('notnumber');
 type SingleCounterState = { counter: number; name: string };
 type SingleCounterContext = {
   state: SingleCounterState;
+  self: KindFacet<typeof counterBehavior>;
 };
 const initCounter = (name: string, str: string): SingleCounterState => ({
   counter: 0,
@@ -61,12 +62,9 @@ const counterBehavior = {
   getName: ({ state }: SingleCounterContext) => state.name,
 };
 
-const finishCounter = (
-  { state }: SingleCounterContext,
-  counter: KindFacet<typeof counterBehavior>,
-) => {
+const finishCounter = ({ state, self }: SingleCounterContext) => {
   expectType<string>(state.name);
-  expectType<number>(counter.getCount());
+  expectType<number>(self.getCount());
 };
 
 const makeCounter = defineKind('counter', initCounter, counterBehavior, {

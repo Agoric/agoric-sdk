@@ -881,7 +881,7 @@ export function makeVirtualObjectManager(
     }
     if (missing.length) {
       const tags = missing.join(',');
-      throw Error(`defineDurableKind not called for tags: ${tags}`);
+      throw Error(`defineDurableKind not called for tags: [${tags}]`);
     }
   }
 
