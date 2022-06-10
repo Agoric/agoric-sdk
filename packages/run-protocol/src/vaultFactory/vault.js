@@ -438,6 +438,12 @@ const helperBehavior = {
     const proposal = clientSeat.getProposal();
     assertOnlyKeys(proposal, ['Collateral', 'RUN']);
 
+    const allEmpty = amounts => {
+      // phrased negatively allows early return. This is equal to
+      // amounts.every(a => AmountMath.isEmpty(a));
+      return !amounts.some(a => !AmountMath.isEmpty(a));
+    };
+
     const normalizedDebtPre = self.getNormalizedDebt();
     const collateralPre = helper.getCollateralAllocated(vaultSeat);
 
@@ -464,7 +470,7 @@ const helperBehavior = {
       debt,
     );
     const wantRUN = proposal.want.RUN || helper.emptyDebt();
-    if ([giveColl, giveRUN, wantColl].every(a => AmountMath.isEmpty(a))) {
+    if (allEmpty([giveColl, giveRUN, wantColl, wantRUN])) {
       clientSeat.exit();
       return 'no transaction, as requested';
     }
@@ -489,7 +495,13 @@ const helperBehavior = {
     stageDelta(clientSeat, vaultSeat, giveColl, wantColl, 'Collateral');
     // `wantRUN` is allocated in the reallocate and mint operation, and so not here
     stageDelta(clientSeat, vaultSeat, giveRUN, helper.emptyDebt(), 'RUN');
-    state.manager.mintAndReallocate(toMint, fee, clientSeat, vaultSeat);
+
+    /** @type {Array<ZCFSeat>} */
+    const vaultSeatOpt = [];
+    if (!allEmpty([giveColl, giveRUN, wantColl])) {
+      vaultSeatOpt.push(vaultSeat);
+    }
+    state.manager.mintAndReallocate(toMint, fee, clientSeat, ...vaultSeatOpt);
 
     // parent needs to know about the change in debt
     helper.updateDebtAccounting(normalizedDebtPre, collateralPre, newDebt);

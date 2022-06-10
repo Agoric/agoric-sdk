@@ -1303,6 +1303,103 @@ test('adjust balances', async t => {
   );
 });
 
+test('adjust balances - withdraw RUN', async t => {
+  const { zoe, aeth, run, rates } = t.context;
+  t.context;
+
+  const services = await setupServices(
+    t,
+    [15n],
+    aeth.make(1n),
+    buildManualTimer(t.log),
+    undefined,
+    500n,
+  );
+  const { lender } = services.vaultFactory;
+
+  // initial loan /////////////////////////////////////
+
+  // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
+  const collateralAmount = aeth.make(1000n);
+  const aliceLoanAmount = run.make(5000n);
+  /** @type {UserSeat<VaultKit>} */
+  const aliceLoanSeat = await E(zoe).offer(
+    E(lender).makeVaultInvitation(),
+    harden({
+      give: { Collateral: collateralAmount },
+      want: { RUN: aliceLoanAmount },
+    }),
+    harden({
+      Collateral: aeth.mint.mintPayment(collateralAmount),
+    }),
+  );
+  const {
+    vault: aliceVault,
+    publicNotifiers: { vault: aliceNotifier },
+  } = await E(aliceLoanSeat).getOfferResult();
+
+  let debtAmount = await E(aliceVault).getCurrentDebt();
+  const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
+  let runDebtLevel = AmountMath.add(aliceLoanAmount, fee);
+
+  t.deepEqual(debtAmount, runDebtLevel, 'vault lent 5000 RUN + fees');
+  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocation();
+  const loanProceeds = await E(aliceLoanSeat).getPayouts();
+  t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 RUN');
+
+  const runLent = await loanProceeds.RUN;
+  t.truthy(
+    AmountMath.isEqual(
+      await E(run.issuer).getAmountOf(runLent),
+      run.make(5000n),
+    ),
+  );
+
+  let aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot, {
+    debt: run.make(5250n),
+    interest: makeRatio(100n, run.brand),
+  });
+
+  // Withdraw add'l RUN /////////////////////////////////////
+
+  // Alice deposits nothing; requests more RUN
+
+  const additionalRUN = run.make(100n);
+  const aliceWithdrawRunSeat = await E(zoe).offer(
+    E(aliceVault).makeAdjustBalancesInvitation(),
+    harden({
+      want: { RUN: additionalRUN },
+    }),
+  );
+
+  await E(aliceWithdrawRunSeat).getOfferResult();
+  debtAmount = await E(aliceVault).getCurrentDebt();
+  runDebtLevel = AmountMath.add(
+    runDebtLevel,
+    AmountMath.add(additionalRUN, run.make(5n)),
+  );
+  t.deepEqual(debtAmount, runDebtLevel);
+
+  const { RUN: lentAmount2 } = await E(
+    aliceWithdrawRunSeat,
+  ).getCurrentAllocation();
+  const loanProceeds2 = await E(aliceWithdrawRunSeat).getPayouts();
+  t.deepEqual(lentAmount2, additionalRUN, '100 RUN');
+
+  const runLent2 = await loanProceeds2.RUN;
+  t.truthy(
+    AmountMath.isEqual(
+      await E(run.issuer).getAmountOf(runLent2),
+      additionalRUN,
+    ),
+  );
+
+  aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
+});
+
 test('adjust balances after interest charges', async t => {
   const LOAN1 = 450n;
   const AMPLE = 100_000n;
