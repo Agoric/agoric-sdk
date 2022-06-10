@@ -2703,9 +2703,6 @@ test('manager notifiers', async t => {
     },
   });
   m.assertFullyLiquidated();
-  // FIXME there shouldn't be any leftover debt once fully liquidated
-  // https://github.com/Agoric/agoric-sdk/issues/5550
-  const leftoverDebt = DEBT1 - nextProceeds + interestAccrued;
 
   trace('11. Create a loan with ample collateral');
   /** @type {UserSeat<VaultKit>} */
@@ -2724,13 +2721,13 @@ test('manager notifiers', async t => {
   await m.assertChange({
     numVaults: 1,
     totalCollateral: { value: AMPLE },
-    totalDebt: { value: DEBT1 + leftoverDebt },
+    totalDebt: { value: DEBT1 },
   });
 
   trace('12. Borrow more');
   taken = run.make(400n);
   // 20n? fix in https://github.com/Agoric/agoric-sdk/issues/5550
-  const debtPostBorrowingMore = DEBT1 + leftoverDebt + taken.value + 20n;
+  const debtPostBorrowingMore = DEBT1 + taken.value + 20n;
   // can't use 0n because of https://github.com/Agoric/agoric-sdk/issues/5548
   // but since this test is of metrics, we take the opportunity to check totalCollateral changing
   const given = aeth.make(2n);
@@ -2745,7 +2742,6 @@ test('manager notifiers', async t => {
       Collateral: t.context.aeth.mint.mintPayment(given),
     }),
   );
-  console.log('DEBUG', { DEBT1, leftoverDebt, taken });
   await E(vaultSeat).getOfferResult();
   await m.assertChange({
     totalDebt: { value: debtPostBorrowingMore },
@@ -2767,6 +2763,6 @@ test('manager notifiers', async t => {
   await m.assertChange({
     numVaults: 0,
     totalCollateral: { value: 0n },
-    totalDebt: { value: leftoverDebt },
+    totalDebt: { value: 0n },
   });
 });
