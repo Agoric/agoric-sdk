@@ -25,7 +25,6 @@ jobs:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
-    continue-on-error: ${{ matrix.cli == 'local-npm' }}
     strategy:
       matrix:
         cli: [link-cli, local-npm]
