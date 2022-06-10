@@ -806,6 +806,8 @@ test('price falls precipitously', async t => {
 
   const finalNotification = await E(vaultNotifier).getUpdateSince();
   t.is(finalNotification.value.vaultState, Phase.LIQUIDATED);
+  // vault holds no debt after liquidation
+  t.is(finalNotification.value.debtSnapshot.debt.value, 0n);
 
   /** @type {UserSeat<string>} */
   const closeSeat = await E(zoe).offer(E(vault).makeCloseInvitation());
@@ -2763,8 +2765,7 @@ test('manager notifiers', async t => {
   );
   await E(vaultSeat).getOfferResult();
   await m.assertChange({
-    // FIXME in https://github.com/Agoric/agoric-sdk/issues/5531
-    // numVaults: 0,
+    numVaults: 0,
     totalCollateral: { value: 0n },
     totalDebt: { value: leftoverDebt },
   });

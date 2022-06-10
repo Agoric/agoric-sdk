@@ -7,7 +7,7 @@ import { ratioGTE } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
 import { keyEQ, keyLT } from '@agoric/store';
 import { makeOrderedVaultStore } from './orderedVaultStore.js';
-import { toVaultKey } from './storeUtils.js';
+import { fromVaultKey, toVaultKey } from './storeUtils.js';
 import { makeTracer } from '../makeTracer.js';
 
 const trace = makeTracer('PV', false);
@@ -95,6 +95,17 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
   };
 
   /**
+   *
+   * @param {NormalizedDebt} oldDebt
+   * @param {Amount<'nat'>} oldCollateral
+   * @param {string} vaultId
+   */
+  const hasVaultByAttributes = (oldDebt, oldCollateral, vaultId) => {
+    const key = toVaultKey(oldDebt, oldCollateral, vaultId);
+    return vaults.has(key);
+  };
+
+  /**
    * @param {string} key
    * @returns {Vault}
    */
@@ -103,7 +114,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
     // don't call reschedulePriceCheck, but do reset the highest.
     // This could be expensive if we delete individual entries in
     // order. Will know once we have perf data.
-    trace('removeVault', firstKey, key);
+    trace('removeVault', key, fromVaultKey(key), 'when first:', firstKey);
     if (keyEQ(key, firstKey)) {
       const [secondKey] = vaults.keys();
       firstKey = secondKey;
@@ -129,7 +140,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
    */
   const addVault = (vaultId, vault) => {
     const key = vaults.addVault(vaultId, vault);
-    trace('addVault', firstKey, key);
+    trace('addVault', key, 'when first:', firstKey);
     if (!firstKey || keyLT(key, firstKey)) {
       firstKey = key;
       reschedulePriceCheck();
@@ -164,24 +175,13 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
     }
   }
 
-  /**
-   * @param {NormalizedDebt} oldDebt
-   * @param {Amount<'nat'>} oldCollateral
-   * @param {string} vaultId
-   */
-  const refreshVaultPriority = (oldDebt, oldCollateral, vaultId) => {
-    const vault = removeVaultByAttributes(oldDebt, oldCollateral, vaultId);
-    addVault(vaultId, vault);
-    return vault;
-  };
-
   return Far('PrioritizedVaults', {
     addVault,
     entries: vaults.entries,
     entriesPrioritizedGTE,
     getCount: vaults.getSize,
+    hasVaultByAttributes,
     highestRatio: firstDebtRatio,
-    refreshVaultPriority,
     removeVault,
     removeVaultByAttributes,
     setRescheduler,

@@ -49,7 +49,7 @@ export const makeOrderedVaultStore = () => {
       console.error(
         'removeByKey failed to remove',
         key,
-        'parts:',
+        '[ratio, vaultId]:',
         fromVaultKey(key),
       );
       const keys = Array.from(store.keys());
@@ -64,6 +64,7 @@ export const makeOrderedVaultStore = () => {
   return harden({
     addVault,
     removeByKey,
+    has: store.has,
     keys: store.keys,
     entries: store.entries,
     getSize: store.getSize,
