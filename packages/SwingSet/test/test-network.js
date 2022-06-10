@@ -88,7 +88,7 @@ test('handled protocol', async t => {
         const ack = await connection.send('ping');
         // log(ack);
         t.is(`${ack}`, 'ping', 'received pong');
-        connection.close();
+        void connection.close();
       },
       async onClose(_connection, reason) {
         t.is(reason, undefined, 'no close reason');
@@ -179,7 +179,7 @@ test('protocol connection listen', async t => {
         if (connectionHandler.onOpen) {
           await connectionHandler.onOpen(connection, localAddr, remoteAddr, c);
         }
-        connection.send('ping');
+        void connection.send('ping');
       },
     }),
   );
