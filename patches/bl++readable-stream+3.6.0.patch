@@ -1,0 +1,20 @@
+diff --git a/node_modules/bl/node_modules/readable-stream/errors.js b/node_modules/bl/node_modules/readable-stream/errors.js
+index 8471526..c1c08cf 100644
+--- a/node_modules/bl/node_modules/readable-stream/errors.js
++++ b/node_modules/bl/node_modules/readable-stream/errors.js
+@@ -21,7 +21,14 @@ function createErrorType(code, message, Base) {
+     }
+   }
+ 
+-  NodeError.prototype.name = Base.name;
++  Object.defineProperties(NodeError.prototype, {
++    name: {
++      value: Base.name,
++      writable: true,
++      enumerable: false,
++      configurable: true,
++    }
++  })
+   NodeError.prototype.code = code;
+ 
+   codes[code] = NodeError;
