@@ -1,8 +1,7 @@
 /* global globalThis */
 import '@endo/init/pre.js';
 import 'esm';
-// Not yet '@endo/init/debug.js' because esm needs moderate override taming
-import '@endo/init';
+import '@endo/init/debug.js';
 import test from 'ava';
 import fs from 'fs';
 import anylogger from 'anylogger';
