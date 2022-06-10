@@ -10,8 +10,8 @@ export function buildRootObject(vatPowers, vatParameters) {
     bootstrap(vats) {
       const mode = vatParameters.argv[0];
       if (mode === 'flush') {
-        Promise.resolve('then1').then(log);
-        Promise.resolve('then2').then(log);
+        void Promise.resolve('then1').then(log);
+        void Promise.resolve('then2').then(log);
       } else if (mode === 'e-then') {
         E(vats.left)
           .callRight(1, vats.right)
@@ -37,7 +37,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           },
         });
         const p1 = E(t1).foo(1);
-        p1.then(x => log(`b.resolved ${x}`));
+        void p1.then(x => log(`b.resolved ${x}`));
         log(`b.local1.finish`);
       } else if (mode === 'local2') {
         const t1 = Far('t1', {

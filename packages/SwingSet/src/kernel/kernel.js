@@ -264,7 +264,7 @@ export default function buildKernel(
 
       // ISSUE: terminate stuff in its own crank like creation?
       // eslint-disable-next-line no-use-before-define
-      vatWarehouse.vatWasTerminated(vatID);
+      void vatWarehouse.vatWasTerminated(vatID);
     }
     if (critical) {
       // The following error construction is a bit awkward, but (1) it saves us

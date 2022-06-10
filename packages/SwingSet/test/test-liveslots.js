@@ -219,7 +219,7 @@ async function doOutboundPromise(t, mode) {
         // Queue up a call that includes the promise again. This will run
         // *after* the promise has been resolved. Our current implementation
         // will use the same promise identifier.
-        Promise.resolve().then(() => E(target).two(p));
+        void Promise.resolve().then(() => E(target).two(p));
       },
     });
   }
