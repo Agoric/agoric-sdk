@@ -13,8 +13,11 @@ import { initSwingStore } from '@agoric/swing-store';
 import { loadBasedir, buildVatController } from '../../src/index.js';
 import { makeLRU } from '../../src/kernel/vat-warehouse.js';
 
-async function makeController(managerType, runtimeOptions) {
+async function makeController(managerType, runtimeOptions, snapshotInterval) {
   const config = await loadBasedir(new URL('./', import.meta.url).pathname);
+  if (snapshotInterval) {
+    config.snapshotInterval = snapshotInterval;
+  }
   assert(config.vats);
   config.vats.target.creationOptions = { managerType, enableDisavow: true };
   config.vats.target2 = config.vats.target;
@@ -122,10 +125,11 @@ test('snapshot after deliveries', async t => {
 
   const { kvStore, streamStore, commit } = initSwingStore(swingStorePath);
   const hostStorage = { kvStore, streamStore };
-  const c = await makeController('xs-worker', {
-    hostStorage,
-    warehousePolicy: { maxVatsOnline, snapshotInterval: 1 },
-  });
+  const c = await makeController(
+    'xs-worker',
+    { hostStorage, warehousePolicy: { maxVatsOnline } },
+    1,
+  );
   t.teardown(c.shutdown);
 
   await runSteps(c, t);

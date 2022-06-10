@@ -21,6 +21,7 @@
  * @typedef { import('./types-external.js').HasSetup } HasSetup
  * @typedef { import('./types-external.js').ManagerType } ManagerType
  * @typedef { import('./types-external.js').ManagerOptions } ManagerOptions
+ * @typedef { import('./types-external.js').KernelOptions } KernelOptions
  */
 
 /**
@@ -46,6 +47,7 @@
  * @typedef { import('./types-external.js').VatDeliveryRetireExports } VatDeliveryRetireExports
  * @typedef { import('./types-external.js').VatDeliveryRetireImports } VatDeliveryRetireImports
  * @typedef { import('./types-external.js').VatDeliveryStartVat } VatDeliveryStartVat
+ * @typedef { import('./types-external.js').VatDeliveryChangeVatOptions } VatDeliveryChangeVatOptions
  * @typedef { import('./types-external.js').VatDeliveryBringOutYourDead } VatDeliveryBringOutYourDead
  * @typedef { import('./types-external.js').VatDeliveryObject } VatDeliveryObject
  * @typedef { import('./types-external.js').VatDeliveryResult } VatDeliveryResult
@@ -77,6 +79,7 @@
  * @typedef { import('./types-external.js').KernelDeliveryRetireExports } KernelDeliveryRetireExports
  * @typedef { import('./types-external.js').KernelDeliveryRetireImports } KernelDeliveryRetireImports
  * @typedef { import('./types-external.js').KernelDeliveryStartVat } KernelDeliveryStartVat
+ * @typedef { import('./types-external.js').KernelDeliveryChangeVatOptions } KernelDeliveryChangeVatOptions
  * @typedef { import('./types-external.js').KernelDeliveryBringOutYourDead } KernelDeliveryBringOutYourDead
  * @typedef { import('./types-external.js').KernelDeliveryObject } KernelDeliveryObject
  * @typedef { import('./types-external.js').KernelSyscallSend } KernelSyscallSend

@@ -11,7 +11,7 @@ test(`clist reachability`, async t => {
   const hostStorage = initSwingStore(null);
   const kk = makeKernelKeeper(hostStorage, slog, createSHA256);
   const s = kk.kvStore;
-  kk.createStartingKernelState('local');
+  kk.createStartingKernelState({ defaultManagerType: 'local' });
   const vatID = kk.allocateUnusedVatID();
   const vk = kk.provideVatKeeper(vatID);
 
@@ -96,7 +96,7 @@ test('getImporters', async t => {
   const hostStorage = initSwingStore(null);
   const kk = makeKernelKeeper(hostStorage, slog, createSHA256);
 
-  kk.createStartingKernelState('local');
+  kk.createStartingKernelState({ defaultManagerType: 'local' });
   const vatID1 = kk.allocateUnusedVatID();
   kk.addDynamicVatID(vatID1);
   const vk1 = kk.provideVatKeeper(vatID1);

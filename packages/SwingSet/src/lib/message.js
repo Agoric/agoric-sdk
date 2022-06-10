@@ -60,6 +60,10 @@ export function insistVatDeliveryObject(vdo) {
       }
       break;
     }
+    case 'changeVatOptions': {
+      assert(rest.length === 1);
+      break;
+    }
     case 'startVat': {
       assert(rest.length === 1);
       const [vatParameters] = rest;

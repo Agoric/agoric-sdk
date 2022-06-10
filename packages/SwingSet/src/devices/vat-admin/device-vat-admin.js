@@ -233,6 +233,18 @@ export function buildDevice(tools, endowments) {
           return returnFromInvoke(undefined);
         }
 
+        // D(devices.vatAdmin).changeOptions(vatID, options)
+        if (method === 'changeOptions') {
+          const args = JSON.parse(argsCapdata.body);
+          assert(Array.isArray(args), 'changeOptions() args array');
+          assert.equal(args.length, 2, `changeOptions() args length`);
+          const [vatID, _reason] = args;
+          assert.typeof(vatID, 'string', `changeOptions() vatID`);
+
+          syscall.callKernelHook('changeOptions', argsCapdata);
+          return returnFromInvoke(undefined);
+        }
+
         // Bundlecaps
 
         // D(devices.bundle).getBundleCap(id) -> bundlecap
