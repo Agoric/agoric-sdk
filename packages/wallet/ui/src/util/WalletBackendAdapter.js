@@ -1,3 +1,6 @@
+/**
+ * TODO: Update this adapter to use backend StoredSubscriptions directly.
+ */
 import { E } from '@endo/eventual-send';
 import { makeFollower, mapAsyncIterable, iterateLatest } from '@agoric/casting';
 import { Far } from '@endo/marshal';
