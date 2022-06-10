@@ -11,6 +11,13 @@ applications with many clients all following a state stream with immutable
 history, then those clients independently submit transactions (or other i/o
 occurs) to affect the future of the stream.
 
+Here are some use cases accommodated by this architecture:
+
+- [Query the last published value](#get-single-latest-published-value) - for polling the current value
+- [Get future updates, preferring to skip intermediate values](#forward-iteration-skip-to-any-published-future-state) - for getting the most recent values without having to iterate through all of the published values
+- [Get all values published since last seen](#forward-iteration-lossless-history) - for following individual publications from a client with persistent state
+- [Query history in reverse chronological order](#reverse-iteration-starting-at-height) - the only useful  way to consume history that may be indefinitely long.
+
 ## Streams
 
 A "stream" is an evolving structure with the following properties:
