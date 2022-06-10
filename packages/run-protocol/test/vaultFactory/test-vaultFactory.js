@@ -2515,17 +2515,17 @@ test('manager notifiers', async t => {
   t.is((await E(vault).getCurrentDebt()).value, DEBT1);
 
   trace('2. Remove collateral');
-  let taken = aeth.make(50_000n);
+  const COLL_REMOVED = 50_000n;
   const takeCollateralSeat = await E(services.zoe).offer(
     await E(vault).makeAdjustBalancesInvitation(),
     harden({
       give: {},
-      want: { Collateral: taken },
+      want: { Collateral: aeth.make(COLL_REMOVED) },
     }),
   );
   await E(takeCollateralSeat).getOfferResult();
   await m.assertChange({
-    totalCollateral: { value: AMPLE - taken.value },
+    totalCollateral: { value: AMPLE - COLL_REMOVED },
   });
 
   trace('3. Liquidate all (1 loan)');
@@ -2590,7 +2590,7 @@ test('manager notifiers', async t => {
     numLiquidationsCompleted: 2,
     numVaults: 1,
     totalCollateral: { value: AMPLE },
-    totalDebt: { value: 0n },
+    totalDebt: { value: DEBT1 },
     totalOverageReceived: { value: totalOverageReceived },
     totalProceedsReceived: { value: totalProceedsReceived },
   });
@@ -2599,6 +2599,7 @@ test('manager notifiers', async t => {
     numLiquidationsCompleted: 3,
     numVaults: 0,
     totalCollateral: { value: 0n },
+    totalDebt: { value: 0n },
     totalProceedsReceived: { value: totalProceedsReceived },
   });
   m.assertFullyLiquidated();
@@ -2693,7 +2694,7 @@ test('manager notifiers', async t => {
     numLiquidationsCompleted: 5,
     numVaults: 1,
     totalCollateral: { value: AMPLE },
-    totalDebt: { value: DEBT1 + DEBT2 + interestAccrued - nextProceeds - 296n }, // debt changed already with proceeds from next notification
+    totalDebt: { value: DEBT1 + DEBT2 + interestAccrued - nextProceeds },
     totalProceedsReceived: { value: totalProceedsReceived },
   });
   nextProceeds = 296n;

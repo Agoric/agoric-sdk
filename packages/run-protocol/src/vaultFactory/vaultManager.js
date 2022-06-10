@@ -427,23 +427,24 @@ const helperBehavior = {
    */
   liquidateAndRemove: ({ state, facets }, [key, vault]) => {
     const { factoryPowers, prioritizedVaults, zcf } = state;
-    trace('liquidating', vault.getVaultSeat().getProposal());
+    const vaultSeat = vault.getVaultSeat();
+    trace('liquidating', vaultSeat.getProposal());
 
     const collateralPre = vault.getCollateralAmount();
 
     // Start liquidation (vaultState: LIQUIDATING)
     const liquidator = state.liquidator;
     assert(liquidator);
-    trace('liquidating 2', vault.getVaultSeat().getProposal());
     return liquidate(
       zcf,
       vault,
-      (amount, seat) => facets.manager.burnAndRecord(amount, seat),
       liquidator,
       state.collateralBrand,
       factoryPowers.getGovernedParams().getLiquidationPenalty(),
     )
       .then(accounting => {
+        facets.manager.burnAndRecord(accounting.runToBurn, vaultSeat);
+
         // current values
         state.totalCollateral = AmountMath.subtract(
           state.totalCollateral,
