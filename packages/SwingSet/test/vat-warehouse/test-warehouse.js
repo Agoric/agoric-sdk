@@ -35,36 +35,36 @@ const steps = [
     vat: 'target',
     // ... we expect these vats online:
     online: [
-      { id: 'v3', name: 'bootstrap' },
-      { id: 'v1', name: 'target' },
+      { id: 'v1', name: 'bootstrap' },
+      { id: 'v6', name: 'target' },
     ],
   },
   {
     vat: 'target2',
     online: [
-      { id: 'v1', name: 'target' },
-      { id: 'v4', name: 'target2' },
+      { id: 'v6', name: 'target' },
+      { id: 'v7', name: 'target2' },
     ],
   },
   {
     vat: 'target3',
     online: [
-      { id: 'v4', name: 'target2' },
-      { id: 'v5', name: 'target3' },
+      { id: 'v7', name: 'target2' },
+      { id: 'v8', name: 'target3' },
     ],
   },
   {
     vat: 'target4',
     online: [
-      { id: 'v5', name: 'target3' },
-      { id: 'v6', name: 'target4' },
+      { id: 'v8', name: 'target3' },
+      { id: 'v9', name: 'target4' },
     ],
   },
   {
     vat: 'target2',
     online: [
-      { id: 'v6', name: 'target4' },
-      { id: 'v4', name: 'target2' },
+      { id: 'v9', name: 'target4' },
+      { id: 'v7', name: 'target2' },
     ],
   },
 ];

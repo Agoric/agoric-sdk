@@ -38,7 +38,7 @@ async function vatSyscallFailure(t, beDynamic) {
     // sanity check that the state of the bad static vat is what we think it is
     t.is(
       kvStore.get('vat.names'),
-      '["bootstrap","badvatStatic","vatAdmin","comms","vattp","timer"]',
+      '["bootstrap","vatAdmin","comms","vattp","timer","badvatStatic"]',
     );
     t.is(kvStore.get(`${badVatRootObject}.owner`), badVatID);
     t.true(
