@@ -16,6 +16,7 @@ export function makeTranscriptManager(
   compareSyscalls = requireIdentical,
 ) {
   let weAreInReplay = false;
+  let ignoreReplayGCSyscalls = false;
   let playbackSyscalls;
   let currentEntry;
 
@@ -46,12 +47,16 @@ export function makeTranscriptManager(
 
   // replay
 
-  function startReplay() {
+  function startReplay(ignoreGC=false) {
     weAreInReplay = true;
+    ignoreReplayGCSyscalls = ignoreGC;
   }
 
   function startReplayDelivery(syscalls) {
     playbackSyscalls = Array.from(syscalls);
+    if (ignoreReplayGCSyscalls) {
+      playbackSyscalls = playbackSyscalls.filter(s => !gcSyscalls.has(s[0]));
+    }
   }
 
   function inReplay() {
@@ -66,8 +71,8 @@ export function makeTranscriptManager(
 
   function simulateSyscall(newSyscall) {
     const type = newSyscall[0];
-    if (gcSyscalls.has(type)) {
-      return undefined;
+    if (ignoreReplayGCSyscalls && gcSyscalls.has(type)) {
+      return ['ok', undefined];
     }
     const s = playbackSyscalls.shift();
     const newReplayError = compareSyscalls(vatID, s.d, newSyscall);

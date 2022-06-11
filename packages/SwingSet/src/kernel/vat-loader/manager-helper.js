@@ -164,9 +164,9 @@ function makeManagerKit(
     return status;
   }
 
-  async function replayOneDelivery(delivery, expectedSyscalls, deliveryNum) {
+  async function replayOneDelivery(delivery, expectedSyscalls, deliveryNum, ignoreGC=false) {
     assert(transcriptManager, `delivery replay with no transcript`);
-    transcriptManager.startReplay();
+    transcriptManager.startReplay(ignoreGC);
     transcriptManager.startReplayDelivery(expectedSyscalls);
 
     // we slog the replay just like the original, but some fields are missing
