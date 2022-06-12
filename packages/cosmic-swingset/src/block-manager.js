@@ -2,6 +2,7 @@
 /* global process */
 import anylogger from 'anylogger';
 
+import { makePromiseKit } from '@endo/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 
 import * as BRIDGE_ID from '@agoric/vats/src/bridge-ids.js';
@@ -17,8 +18,6 @@ const console = anylogger('block-manager');
  * @param {Params} params
  */
 const validateActionJson = (actionJson, params) => {
-  assert(params, X`SwingSet is not yet open for business`);
-
   let remainingJson = actionJson;
   assert.typeof(
     actionJson,
@@ -107,6 +106,7 @@ export default function makeBlockManager({
   let chainTime;
   /** @type {Params} */
   let latestParams;
+  const paramsAreReady = makePromiseKit();
   let beginBlockAction;
 
   async function processAction(action) {
@@ -122,6 +122,7 @@ export default function makeBlockManager({
     switch (action.type) {
       case ActionType.BEGIN_BLOCK: {
         latestParams = parseParams(action.params);
+        paramsAreReady.resolve();
         p = beginBlock(action.blockHeight, action.blockTime, latestParams);
         break;
       }
@@ -220,6 +221,7 @@ export default function makeBlockManager({
     switch (action.type) {
       case ActionType.VALIDATE_ACTION_JSON: {
         const { actionJson } = action;
+        await paramsAreReady.promise;
         validateActionJson(actionJson, latestParams);
         break;
       }

@@ -233,10 +233,12 @@ export async function connectToSimChain(basedir, GCI, delay, inbound) {
     nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
   };
 
-  bootSimChain().then(enableDeliveries, e => {
-    console.error(`Cannot boot sim chain:`, e);
-    process.exit(1);
-  });
+  bootSimChain()
+    .then(enableDeliveries)
+    .catch(e => {
+      console.error(`Cannot boot sim chain:`, e);
+      process.exit(1);
+    });
 
   const batchDelayMs = delay ? delay * 1000 : undefined;
   return makeBatchedDeliver(deliver, batchDelayMs);
