@@ -10,12 +10,20 @@ import { assert, details as X } from '@agoric/assert';
 import { makeSlogSenderFromModule } from '@agoric/telemetry';
 
 import * as STORAGE_PATH from '@agoric/vats/src/chain-storage-paths.js';
-import stringify from './json-stable-stringify.js';
+import {
+  makeInputValidator,
+  limitedParse,
+  limitedStringify,
+} from '@agoric/swingset-vat/limits.js';
+
+import rawStableStringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import makeBlockManager from './block-manager.js';
 import { getTelemetryProviders } from './kernel-stats.js';
 
-// eslint-disable-next-line no-unused-vars
+const smallStringify = obj =>
+  rawStableStringify(obj, { replacer: makeInputValidator(1024) });
+
 let whenHellFreezesOver = null;
 
 const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
@@ -41,6 +49,7 @@ const makeChainStorage = (call, prefix = '', options = {}) => {
 
   // In addition to the wrapping write buffer, keep a simple cache of
   // read values for has and get.
+  /** @type {Map<string, string>} */
   let cache;
   function resetCache() {
     cache = new Map();
@@ -54,9 +63,11 @@ const makeChainStorage = (call, prefix = '', options = {}) => {
       if (cache.has(key)) return cache.get(key);
 
       // Fetch the value and cache it until the next commit or abort.
-      const retStr = call(stringify({ method: 'get', key: `${prefix}${key}` }));
-      const ret = JSON.parse(retStr);
-      const chainShapeValue = ret ? JSON.parse(ret) : undefined;
+      const valueStr = call(
+        smallStringify({ method: 'get', key: `${prefix}${key}` }),
+      );
+      const ret = limitedParse(valueStr);
+      const chainShapeValue = ret ? limitedParse(ret) : undefined;
       const value =
         chainShapeValue === undefined || !fromChainShape
           ? chainShapeValue
@@ -71,9 +82,10 @@ const makeChainStorage = (call, prefix = '', options = {}) => {
       cache.set(key, value);
       const chainShapeValue =
         value === undefined || !toChainShape ? value : toChainShape(value);
-      const valueStr = value === undefined ? '' : stringify(chainShapeValue);
+      const valueStr =
+        value === undefined ? '' : limitedStringify(chainShapeValue);
       call(
-        stringify({
+        limitedStringify({
           method: 'set',
           key: `${prefix}${key}`,
           value: valueStr,
@@ -239,7 +251,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       replier.reject(`invalid requested port ${port}`);
       return;
     }
-    const action = JSON.parse(str);
+    const action = limitedParse(str);
     const p = Promise.resolve(handler(action));
     p.then(
       res => {
@@ -261,6 +273,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   // Need to keep the process alive until Go exits.
   whenHellFreezesOver = new Promise(() => {});
   agcc.runAgCosmosDaemon(nodePort, fromGo, [progname, ...args]);
+  whenHellFreezesOver;
 
   let savedChainSends = [];
 
@@ -321,7 +334,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       'actionQueue.',
     );
     function setActivityhash(activityhash) {
-      const msg = stringify({
+      const msg = smallStringify({
         method: 'set',
         key: STORAGE_PATH.ACTIVITYHASH,
         value: activityhash,
@@ -339,9 +352,9 @@ export default async function main(progname, args, { env, homedir, agcc }) {
           `warning: doOutboundBridge called before AG_COSMOS_INIT gave us ${dstID}`,
         );
       }
-      const retStr = chainSend(portNum, stringify(obj));
+      const retStr = chainSend(portNum, limitedStringify(obj));
       try {
-        return JSON.parse(retStr);
+        return limitedParse(retStr);
       } catch (e) {
         assert.fail(X`cannot JSON.parse(${JSON.stringify(retStr)}): ${e}`);
       }
