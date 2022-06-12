@@ -114,7 +114,7 @@ parentPort.on('message', ([type, ...margs]) => {
       makeVatConsole(makeLogMaker(`SwingSet:ls:${vatID}`)),
       buildVatNamespace,
       enableFakeDurable,
-      detectLocalMemoryCostModel,
+      detectLocalMemoryCostModel(),
     );
 
     sendUplink(['gotBundle']);
