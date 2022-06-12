@@ -18,6 +18,7 @@ import {
   makeSupervisorSyscall,
   makeVatConsole,
 } from '../supervisor-helper.js';
+import { detectLocalMemoryCostModel } from '../../limits/detect.js';
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -296,6 +297,7 @@ function makeWorker(port) {
       makeVatConsole(makeLogMaker('ls')),
       buildVatNamespace,
       enableFakeDurable,
+      detectLocalMemoryCostModel(),
     );
 
     assert(ls.dispatch);

@@ -28,6 +28,7 @@ import {
   makeSupervisorSyscall,
   makeVatConsole,
 } from '../supervisor-helper.js';
+import { detectLocalMemoryCostModel } from '../../limits/detect.js';
 
 // eslint-disable-next-line no-unused-vars
 function workerLog(first, ...args) {
@@ -133,6 +134,7 @@ fromParent.on('data', ([type, ...margs]) => {
       makeVatConsole(makeLogMaker(`SwingSet:ls:${vatID}`)),
       buildVatNamespace,
       enableFakeDurable,
+      detectLocalMemoryCostModel(),
     );
 
     sendUplink(['gotBundle']);

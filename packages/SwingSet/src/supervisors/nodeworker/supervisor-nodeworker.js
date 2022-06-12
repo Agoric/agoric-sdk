@@ -20,6 +20,7 @@ import {
   makeSupervisorSyscall,
   makeVatConsole,
 } from '../supervisor-helper.js';
+import { detectLocalMemoryCostModel } from '../../limits/detect.js';
 
 assert(parentPort, 'parentPort somehow missing, am I not a Worker?');
 
@@ -113,6 +114,7 @@ parentPort.on('message', ([type, ...margs]) => {
       makeVatConsole(makeLogMaker(`SwingSet:ls:${vatID}`)),
       buildVatNamespace,
       enableFakeDurable,
+      detectLocalMemoryCostModel,
     );
 
     sendUplink(['gotBundle']);

@@ -7,6 +7,7 @@ import {
 import { assert, details as X } from '@agoric/assert';
 import { isNat } from '@agoric/nat';
 import { isPromise } from '@endo/promise-kit';
+import { makeVatMessageValidator } from '../limits/main.js';
 import {
   insistVatType,
   makeVatSlot,
@@ -42,6 +43,7 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {Console} console
  * @param {*} buildVatNamespace
  * @param {boolean} enableFakeDurable
+ * @param {import('../limits.js').MemoryCostModel} vmCostModel
  *
  * @returns {*} { dispatch }
  */
@@ -55,6 +57,7 @@ function build(
   console,
   buildVatNamespace,
   enableFakeDurable,
+  vmCostModel,
 ) {
   const { WeakRef, FinalizationRegistry, meterControl } = gcTools;
   const enableLSDebug = false;
@@ -545,18 +548,32 @@ function build(
     return makeVatSlot('object', true, exportID);
   }
 
-  // eslint-disable-next-line no-use-before-define
-  const m = makeMarshal(convertValToSlot, convertSlotToVal, {
-    marshalName: `liveSlots:${forVatID}`,
-    // TODO Temporary hack.
-    // See https://github.com/Agoric/agoric-sdk/issues/2780
-    errorIdNum: 70000,
-    marshalSaveError: err =>
-      // By sending this to `console.info`, under cosmic-swingset this is
-      // controlled by the `console` option given to makeLiveSlots.
-      console.info('Logging sent error stack', err),
-  });
-  const unmeteredUnserialize = meterControl.unmetered(m.unserialize);
+  const { serialize: rawSerialize, unserialize: rawUnserialize } = makeMarshal(
+    // eslint-disable-next-line no-use-before-define
+    convertValToSlot,
+    // eslint-disable-next-line no-use-before-define
+    convertSlotToVal,
+    {
+      marshalName: `liveSlots:${forVatID}`,
+      // TODO Temporary hack.
+      // See https://github.com/Agoric/agoric-sdk/issues/2780
+      errorIdNum: 70000,
+      marshalSaveError: err =>
+        // By sending this to `console.info`, under cosmic-swingset this is
+        // controlled by the `console` option given to makeLiveSlots.
+        console.info('Logging sent error stack', err),
+    },
+  );
+  // Really don't validate what we unserialize.
+  const unmeteredUnserialize = meterControl.unmetered(rawUnserialize);
+
+  // Everything else limits the serialization size based on our vat message
+  // validator.
+  const serialize = obj =>
+    rawSerialize(obj, () => makeVatMessageValidator(vmCostModel));
+  const unserialize = ser =>
+    rawUnserialize(ser, () => makeVatMessageValidator(vmCostModel));
+
   // eslint-disable-next-line no-use-before-define
   const unmeteredConvertSlotToVal = meterControl.unmetered(convertSlotToVal);
 
@@ -601,7 +618,7 @@ function build(
     getSlotForVal,
     // eslint-disable-next-line no-use-before-define
     registerValue,
-    m.serialize,
+    serialize,
     unmeteredUnserialize,
     cacheSize,
     enableFakeDurable,
@@ -617,7 +634,7 @@ function build(
     unmeteredConvertSlotToVal,
     // eslint-disable-next-line no-use-before-define
     registerValue,
-    m.serialize,
+    serialize,
     unmeteredUnserialize,
     enableFakeDurable,
   );
@@ -714,7 +731,7 @@ function build(
   // moves from REACHABLE to UNREACHABLE, but the JS engine then moves to
   // COLLECTED (and maybe FINALIZED) on its own, and we must not allow the
   // latter changes to affect metering. So every call to convertSlotToVal (or
-  // m.unserialize) must be wrapped by unmetered().
+  // unserialize) must be wrapped by unmetered().
   function convertSlotToVal(slot, iface = undefined) {
     meterControl.assertNotMetered();
     const { type, allocatedByVat, virtual, facet, baseRef } =
@@ -809,10 +826,10 @@ function build(
       meterControl.assertIsMetered(); // else userspace getters could escape
       let valueSer;
       try {
-        valueSer = m.serialize(value);
+        valueSer = serialize(value);
       } catch (e) {
         // Serialization failure.
-        valueSer = m.serialize(e);
+        valueSer = serialize(e);
         rejected = true;
       }
       valueSer.slots.map(retainExportedVref);
@@ -841,7 +858,7 @@ function build(
     const methargs = [prop, args];
 
     meterControl.assertIsMetered(); // else userspace getters could escape
-    const serMethargs = m.serialize(harden(methargs));
+    const serMethargs = serialize(harden(methargs));
     serMethargs.slots.map(retainExportedVref);
 
     const resultVPID = allocatePromiseID();
@@ -953,7 +970,7 @@ function build(
         }
         return (...args) => {
           meterControl.assertIsMetered(); // userspace getters shouldn't escape
-          const serArgs = m.serialize(harden(args));
+          const serArgs = serialize(harden(args));
           serArgs.slots.map(retainExportedVref);
           // if we didn't forbid promises, we'd need to
           // maybeExportPromise() here
@@ -1006,7 +1023,7 @@ function build(
     // promise (for which we were already the decider).
 
     meterControl.assertNotMetered();
-    const methargs = m.unserialize(methargsdata);
+    const methargs = unserialize(methargsdata);
     const [method, args] = methargs;
 
     // If the method is missing, or is not a Function, or the method throws a
@@ -1133,11 +1150,15 @@ function build(
     if (pRec) {
       // TODO: insist that we do not have decider authority for promiseID
       meterControl.assertNotMetered();
-      const val = m.unserialize(data);
-      if (rejected) {
-        pRec.reject(val);
-      } else {
-        pRec.resolve(val);
+      try {
+        const val = unserialize(data);
+        if (rejected) {
+          pRec.reject(val);
+        } else {
+          pRec.resolve(val);
+        }
+      } catch (e) {
+        pRec.reject(e);
       }
       return true; // caller will remove from importedVPIDs
     }
@@ -1223,7 +1244,7 @@ function build(
 
   function exitVat(completion) {
     meterControl.assertIsMetered(); // else userspace getters could escape
-    const args = m.serialize(harden(completion));
+    const args = serialize(harden(completion));
     args.slots.map(retainExportedVref);
     syscall.exit(false, args);
   }
@@ -1231,7 +1252,7 @@ function build(
   /** @type {ExitVatWithFailure} */
   function exitVatWithFailure(reason) {
     meterControl.assertIsMetered(); // else userspace getters could escape
-    const args = m.serialize(harden(reason));
+    const args = serialize(harden(reason));
     args.slots.map(retainExportedVref);
     syscall.exit(true, args);
   }
@@ -1329,7 +1350,7 @@ function build(
     vom.initializeKindHandleKind();
     collectionManager.initializeStoreKindInfo();
 
-    const vatParameters = m.unserialize(vatParametersCapData);
+    const vatParameters = unserialize(vatParametersCapData);
     baggage = collectionManager.provideBaggage();
     watchedPromiseManager.preparePromiseWatcherTables();
 
@@ -1463,7 +1484,7 @@ function build(
       // reject all "exported" vpids now
       const deciderVPIDs = Array.from(exportedVPIDs.keys()).sort();
       await releaseOldState({
-        m,
+        m: { serialize, unserialize },
         deciderVPIDs,
         syscall,
         exportedRemotables,
@@ -1569,7 +1590,7 @@ function build(
     startVat,
     vatGlobals,
     inescapableGlobalProperties,
-    m,
+    m: { serialize, unserialize },
     possiblyDeadSet,
     testHooks,
   });
@@ -1588,6 +1609,7 @@ function build(
  * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
  * @param {*} buildVatNamespace
  * @param {boolean} enableFakeDurable
+ * @param {import('../limits.js').MemoryCostModel} vmCostModel
  *
  * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch }
  *
@@ -1623,6 +1645,7 @@ export function makeLiveSlots(
   liveSlotsConsole = console,
   buildVatNamespace,
   enableFakeDurable = false,
+  vmCostModel,
 ) {
   const allVatPowers = {
     ...vatPowers,
@@ -1638,6 +1661,7 @@ export function makeLiveSlots(
     liveSlotsConsole,
     buildVatNamespace,
     enableFakeDurable,
+    vmCostModel,
   );
   const { dispatch, startVat, possiblyDeadSet, testHooks } = r; // omit 'm'
   return harden({
