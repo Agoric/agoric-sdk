@@ -1,6 +1,8 @@
 /* global setTimeout clearTimeout */
 export const DEFAULT_BATCH_TIMEOUT_MS = 1000;
 
+const { details: X } = assert;
+
 export function makeBatchedDeliver(
   deliver,
   batchTimeoutMs = DEFAULT_BATCH_TIMEOUT_MS,
@@ -9,7 +11,7 @@ export function makeBatchedDeliver(
   let latestAckNum = 0;
   let deliverTimeout;
 
-  async function batchedDeliver(newMessages, ackNum) {
+  async function batchedDeliver(newMessages, ackNum, attempts = 0) {
     // If we have no existing messages, reset the deliver timeout.
     //
     // This defers sending an ack until the timeout expires or we have new
@@ -20,7 +22,21 @@ export function makeBatchedDeliver(
         // Transfer the batched messages to the deliver function.
         const msgs = batchedMessages;
         batchedMessages = [];
-        deliver(msgs, latestAckNum);
+        if (!msgs.length) {
+          return;
+        }
+        deliver(msgs, latestAckNum).catch(e => {
+          // Just retry later.
+          const retryTimeoutMs = Math.ceil(
+            Math.random(Math.max(1000 * 2 ** attempts, 30000)),
+          );
+          assert.note(
+            e,
+            X`batchedDeliver: deliver failed, retrying ${msgs.length} in ${retryTimeoutMs}`,
+          );
+          console.error(e);
+          setTimeout(() => batchedDeliver(msgs, latestAckNum, attempts + 1));
+        });
       }, batchTimeoutMs);
     }
 
