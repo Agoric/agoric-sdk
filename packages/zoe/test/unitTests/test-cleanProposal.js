@@ -189,6 +189,17 @@ test('cleanProposal - other wrong stuff', t => {
     'nat',
     /keyword "Not Ident" must be an ascii identifier starting with upper case./,
   );
+  proposeGood(t, { give: { ['A'.repeat(100)]: simoleans(1n) } }, 'nat', {
+    exit: { onDemand: null },
+    give: { ['A'.repeat(100)]: simoleans(1n) },
+    want: {},
+  });
+  proposeBad(
+    t,
+    { give: { ['A'.repeat(101)]: simoleans(1n) } },
+    'nat',
+    /keyword "A{101}" exceeded maximum length 100 characters; got 101/,
+  );
   proposeBad(
     t,
     { what: { A: simoleans(1n) } },
