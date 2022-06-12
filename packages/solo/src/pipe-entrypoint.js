@@ -8,7 +8,7 @@ import { parse, stringify } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
 import '@agoric/cosmic-swingset/src/anylogger-agoric.js';
-import { connectToFakeChain } from '@agoric/cosmic-swingset/src/sim-chain.js';
+import { connectToSimChain } from '@agoric/cosmic-swingset/src/sim-chain.js';
 import { makeShutdown } from '@agoric/telemetry/src/shutdown.js';
 
 const { registerShutdown } = makeShutdown(false);
@@ -37,7 +37,7 @@ const main = async () => {
   switch (method) {
     case 'connectToFakeChain': {
       const [basedir, GCI, delay] = margs;
-      deliverator = await connectToFakeChain(
+      deliverator = await connectToSimChain(
         basedir,
         GCI,
         Number(delay),

@@ -10,7 +10,7 @@ import morgan from 'morgan';
 
 import { getAccessToken } from '@agoric/access-token';
 
-const maximumBundleSize = 1024 * 1024 * 128; // 128MB
+const maximumBundleSize = 1024 * 1024 * 8; // 8MB
 
 const log = anylogger('web');
 
