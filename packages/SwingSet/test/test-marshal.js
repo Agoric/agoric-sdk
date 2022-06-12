@@ -7,6 +7,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeMarshaller } from '../src/liveslots/liveslots.js';
+import { XSNAP_COST_MODEL } from '../src/limits/cost-models.js';
 
 const gcTools = harden({
   WeakRef,
@@ -45,6 +46,48 @@ test('serialize exports', t => {
     body: '[{"@qclass":"slot","iface":"Alleged: o2","index":0},{"@qclass":"slot","iface":"Alleged: o1","index":1}]',
     slots: ['o+2', 'o+1'],
   });
+});
+
+test('limits are enforced', async t => {
+  const syscall = {
+    vatstoreGet: () => undefined,
+  };
+  const { m } = makeMarshaller(syscall, gcTools, 'forVatID', XSNAP_COST_MODEL);
+  const ser = m.serialize;
+
+  t.throws(() => ser('x'.repeat(4 * 1024 * 1024)) && 'unexpected success', {
+    message: /value cost .* exceeds .* maximum value cost/,
+  });
+  t.is(ser('x'.repeat(4 * 1024 * 1024 - 8)) && 'success', 'success');
+
+  t.throws(() => ser(harden({ ['x'.repeat(253)]: 'y' })), {
+    message: /key cost .* exceeds .* maximum property cost/,
+  });
+  t.assert(ser(harden({ ['x'.repeat(252)]: 'y' })));
+
+  t.throws(
+    () =>
+      ser(harden(['x'.repeat(2 * 1024 * 1024), 'x'.repeat(2 * 1024 * 1024)])) &&
+      'unexpected success',
+    { message: /total cost .* exceeds .* maximum total cost/ },
+  );
+
+  t.is(
+    ser(
+      harden(['x'.repeat(2 * 1024 * 1024), 'x'.repeat(2 * 1024 * 1024 - 50)]),
+    ) && 'success',
+    'success',
+  );
+
+  t.throws(() => ser(harden(10n ** 100n)), {
+    message: /value.*number of digits .* exceeds maximum bigint digits/,
+  });
+  t.assert(ser(harden(10n ** 99n)));
+
+  t.throws(() => ser(harden(-(10n ** 100n))), {
+    message: /value.*number of digits .* exceeds maximum bigint digits/,
+  });
+  t.assert(ser(harden(-(10n ** 99n))));
 });
 
 test('deserialize imports', async t => {

@@ -1,3 +1,5 @@
+/* global globalThis */
+// @ts-check
 import {
   Remotable,
   passStyleOf,
@@ -21,8 +23,11 @@ import { makeVirtualObjectManager } from './virtualObjectManager.js';
 import { makeCollectionManager } from './collectionManager.js';
 import { makeWatchedPromiseManager } from './watchedPromises.js';
 import { releaseOldState } from './stop-vat.js';
+import { MAXIMUM_COST_MODEL } from '../limits/cost-models.js';
 
 const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
+
+const HandledPromise = globalThis.HandledPromise;
 
 // 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
 // of local objects which have been exported. These cannot be persisted
@@ -40,10 +45,10 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {*} vatPowers
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize,
  *                      meterControl }
- * @param {Console} console
+ * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} console
  * @param {*} buildVatNamespace
  * @param {boolean} enableFakeDurable
- * @param {import('../limits.js').MemoryCostModel} vmCostModel
+ * @param {import('../limits/types.js').MemoryCostModel} vmCostModel
  *
  * @returns {*} { dispatch }
  */
@@ -304,6 +309,7 @@ function build(
     if (exportsToRetire.size) {
       syscall.retireExports(Array.from(exportsToRetire).sort());
     }
+    return doMore;
   }
 
   /** Remember disavowed Presences which will kill the vat if you try to talk
@@ -570,8 +576,10 @@ function build(
   // Everything else limits the serialization size based on our vat message
   // validator.
   const serialize = obj =>
+    // @ts-expect-error expected just one argument
     rawSerialize(obj, () => makeVatMessageValidator(vmCostModel));
   const unserialize = ser =>
+    // @ts-expect-error expected just one argument
     rawUnserialize(ser, () => makeVatMessageValidator(vmCostModel));
 
   // eslint-disable-next-line no-use-before-define
@@ -1249,7 +1257,6 @@ function build(
     syscall.exit(false, args);
   }
 
-  /** @type {ExitVatWithFailure} */
   function exitVatWithFailure(reason) {
     meterControl.assertIsMetered(); // else userspace getters could escape
     const args = serialize(harden(reason));
@@ -1607,9 +1614,9 @@ function build(
  * @param {boolean} enableDisavow
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
- * @param {*} buildVatNamespace
- * @param {boolean} enableFakeDurable
- * @param {import('../limits.js').MemoryCostModel} vmCostModel
+ * @param {*} [buildVatNamespace]
+ * @param {boolean} [enableFakeDurable]
+ * @param {import('../limits/types.js').MemoryCostModel} [vmCostModel]
  *
  * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch }
  *
@@ -1643,9 +1650,9 @@ export function makeLiveSlots(
   enableDisavow = false,
   gcTools,
   liveSlotsConsole = console,
-  buildVatNamespace,
+  buildVatNamespace = () => {},
   enableFakeDurable = false,
-  vmCostModel,
+  vmCostModel = MAXIMUM_COST_MODEL,
 ) {
   const allVatPowers = {
     ...vatPowers,
@@ -1673,7 +1680,12 @@ export function makeLiveSlots(
 }
 
 // for tests
-export function makeMarshaller(syscall, gcTools, vatID = 'forVatID') {
+export function makeMarshaller(
+  syscall,
+  gcTools,
+  vatID = 'forVatID',
+  vmCostModel = MAXIMUM_COST_MODEL,
+) {
   const { m } = build(
     syscall,
     vatID,
@@ -1682,6 +1694,9 @@ export function makeMarshaller(syscall, gcTools, vatID = 'forVatID') {
     {},
     gcTools,
     console,
+    undefined,
+    false,
+    vmCostModel,
   );
   return { m };
 }
