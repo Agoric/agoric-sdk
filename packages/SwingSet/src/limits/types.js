@@ -3,7 +3,7 @@
 export {};
 
 /**
- * @typedef {bigint | Infinity} BudgetCost
+ * @typedef {number} BudgetCost
  */
 
 /**
@@ -18,10 +18,10 @@ export {};
 /**
  * @typedef {object} MemoryCostModel
  * @property {string} description
- * @property {bigint} baseCost
- * @property {bigint} bigintPerWordCost cost per 8-byte word
- * @property {bigint} stringPerCharacterCost
- * @property {bigint} objectPerPropertyCost
+ * @property {BudgetCost} baseValueBytes
+ * @property {BudgetCost} bytesPerBigintDigit
+ * @property {BudgetCost} bytesPerStringCharacter
+ * @property {BudgetCost} bytesPerObjectProperty
  */
 
 /**

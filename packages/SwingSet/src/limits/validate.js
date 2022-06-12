@@ -8,7 +8,6 @@ import {
 } from './budgets.js';
 import { MAXIMUM_COST_MODEL } from './cost-models.js';
 import { makeBudgetValidator } from './calculate.js';
-import { detectLocalMemoryCostModel } from './detect.js';
 
 /** @typedef {import('./types').Budget} Budget */
 /** @typedef {import('./types').BudgetCost} BudgetCost */

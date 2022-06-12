@@ -1,13 +1,23 @@
 // @ts-check
 
+import { isObject } from '@endo/marshal';
+
 /** @typedef {import('./types').Budget} Budget */
+/** @typedef {import('./types').BudgetCost} BudgetCost */
 /** @typedef {import('./types').MemoryCostModel} MemoryCostModel */
 
 const { details: X } = assert;
 // @ts-expect-error verbatim is not defined
 const v = assert.verbatim || assert.quote;
 
-export const BIGINT_WORD_VALUE = 256n ** 8n;
+/**
+ * @param {BudgetCost} cost
+ * @param {string} [description]
+ */
+export const assertIsBudgetCost = (cost, description = 'budget cost') => {
+  assert.typeof(cost, 'number', X`${v(description)} ${cost} must be a number`);
+  assert(cost >= 0, X`${v(description)} ${cost} must be nonnegative`);
+};
 
 /**
  * @param {MemoryCostModel} costModel
@@ -19,37 +29,25 @@ export const makeCalculateCost = costModel => {
     X`costModel ${costModel} must be an object`,
   );
   const {
-    baseCost,
-    bigintPerWordCost,
-    stringPerCharacterCost,
-    objectPerPropertyCost,
+    baseValueBytes,
+    bytesPerBigintDigit,
+    bytesPerStringCharacter,
+    bytesPerObjectProperty,
   } = costModel;
-  assert.typeof(baseCost, 'bigint', X`baseCost ${baseCost} must be a bigint`);
-  assert.typeof(
-    bigintPerWordCost,
-    'bigint',
-    X`bigintPerWordCost ${bigintPerWordCost} must be a bigint`,
-  );
-  assert.typeof(
-    stringPerCharacterCost,
-    'bigint',
-    X`stringPerCharacterCost ${stringPerCharacterCost} must be a bigint`,
-  );
-  assert.typeof(
-    objectPerPropertyCost,
-    'bigint',
-    X`objectPerPropertyCost ${objectPerPropertyCost} must be a bigint`,
-  );
+  assertIsBudgetCost(baseValueBytes, 'baseValueBytes');
+  assertIsBudgetCost(bytesPerBigintDigit, 'bytesPerBigintDigit');
+  assertIsBudgetCost(bytesPerStringCharacter, 'bytesPerStringCharacter');
+  assertIsBudgetCost(bytesPerObjectProperty, 'bytesPerObjectProperty');
 
-  let totalCost = 0n;
+  let totalCost = 0;
   const getTotalCost = () => totalCost;
 
   /**
    * @param {unknown} value
    */
   const shallowCost = value => {
-    let cost = baseCost;
-    if (Object(value) === value) {
+    let cost = baseValueBytes;
+    if (isObject(value)) {
       /**
        * Either a function or an object with properties.
        *
@@ -57,7 +55,7 @@ export const makeCalculateCost = costModel => {
        */
       const descs = Object.getOwnPropertyDescriptors(value);
       const keys = Reflect.ownKeys(descs);
-      cost += BigInt(keys.length) * objectPerPropertyCost;
+      cost += keys.length * bytesPerObjectProperty;
       totalCost += cost;
       return cost;
     }
@@ -65,22 +63,13 @@ export const makeCalculateCost = costModel => {
     switch (typeof value) {
       case 'string': {
         // The size of the string, in approximate bytes.
-        cost += BigInt(value.length) * stringPerCharacterCost;
+        cost += value.length * bytesPerStringCharacter;
         break;
       }
       case 'bigint': {
-        // Compute the number of approximate bytes in the bigint.
-        let remaining = value;
-        if (remaining < 0n) {
-          remaining = -remaining;
-        }
-        // Count number of bigint chunk and multiply out.
-        while (remaining > 0n) {
-          remaining /= BIGINT_WORD_VALUE;
-          cost += bigintPerWordCost;
-        }
-        // Round up.
-        cost += bigintPerWordCost;
+        // Compute the number of digits in the bigint.
+        const digits = `${value}`;
+        cost += digits.length * bytesPerBigintDigit;
         break;
       }
       case 'object': {
@@ -128,19 +117,17 @@ export const makeBudgetValidator = (budget, costModel) => {
    * @param {string} context
    */
   const assertRange = (value, context) => {
-    if (typeof maximumBigIntDigits !== 'bigint') {
-      // It's Infinity.
-      return;
-    }
     if (typeof value !== 'bigint') {
+      // It's not a bigint.
       return;
     }
-    const absVal = value < 0n ? -value : value;
+    const digits = `${value}`;
+    const numDigits = digits[0] === '-' ? digits.length - 1 : digits.length;
     assert(
-      absVal <= 10n ** maximumBigIntDigits,
+      numDigits <= maximumBigIntDigits,
       X`${v(
         context,
-      )} ${value} exceeds maximum bigint digits ${maximumBigIntDigits}`,
+      )} ${value} number of digits ${numDigits} exceeds maximum bigint digits ${maximumBigIntDigits}`,
       RangeError,
     );
   };

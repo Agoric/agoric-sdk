@@ -14,15 +14,23 @@ const registerModel = (name, model) => {
   return model;
 };
 
+export const MINIMUM_COST_MODEL = registerModel('MINIMUM_COST_MODEL', {
+  description: 'No memory cost',
+  baseValueBytes: 0,
+  bytesPerBigintDigit: 0,
+  bytesPerStringCharacter: 0,
+  bytesPerObjectProperty: 0,
+});
+
 /**
  * TOOD: Validate this cost model with folks at Node.js.
  */
 export const NODE_JS_COST_MODEL = registerModel('NODE_JS_COST_MODEL', {
   description: 'Typical Node.js',
-  baseCost: 8n,
-  bigintPerWordCost: 8n,
-  stringPerCharacterCost: 2n,
-  objectPerPropertyCost: 16n,
+  baseValueBytes: 8,
+  bytesPerBigintDigit: 1 / Math.log2(10),
+  bytesPerStringCharacter: 2,
+  bytesPerObjectProperty: 16,
 });
 
 /**
@@ -30,42 +38,31 @@ export const NODE_JS_COST_MODEL = registerModel('NODE_JS_COST_MODEL', {
  */
 export const XSNAP_COST_MODEL = registerModel('XSNAP_COST_MODEL', {
   description: '@agoric/xsnap',
-  baseCost: 8n,
-  bigintPerWordCost: 8n,
-  stringPerCharacterCost: 2n,
-  objectPerPropertyCost: 16n,
+  baseValueBytes: 8,
+  bytesPerBigintDigit: 1 / Math.log2(10),
+  bytesPerStringCharacter: 2,
+  bytesPerObjectProperty: 16,
 });
 
 /**
- * @param {keyof MemoryCostModel} prop
- * @returns {bigint}
+ * @template {keyof MemoryCostModel} K
+ * @param {K} prop
  */
 const maxMemoryCostProperty = prop =>
   Object.values(ALL_MODELS).reduce((prior, model) => {
     const current = model[prop];
-    if (typeof current !== 'bigint') {
-      return prior;
+    if (prior < current) {
+      return current;
     }
-    if (prior >= current) {
-      return prior;
-    }
-    return current;
-  }, 0n);
-
-export const MINIMUM_COST_MODEL = registerModel('MINIMUM_COST_MODEL', {
-  description: 'No memory cost',
-  baseCost: 0n,
-  bigintPerWordCost: 0n,
-  stringPerCharacterCost: 0n,
-  objectPerPropertyCost: 0n,
-});
+    return prior;
+  }, MINIMUM_COST_MODEL[prop]);
 
 export const MAXIMUM_COST_MODEL = registerModel('MAXIMUM_COST_MODEL', {
   description: 'Maximum finite cost',
-  baseCost: maxMemoryCostProperty('baseCost'),
-  bigintPerWordCost: maxMemoryCostProperty('bigintPerWordCost'),
-  stringPerCharacterCost: maxMemoryCostProperty('stringPerCharacterCost'),
-  objectPerPropertyCost: maxMemoryCostProperty('objectPerPropertyCost'),
+  baseValueBytes: maxMemoryCostProperty('baseValueBytes'),
+  bytesPerBigintDigit: maxMemoryCostProperty('bytesPerBigintDigit'),
+  bytesPerStringCharacter: maxMemoryCostProperty('bytesPerStringCharacter'),
+  bytesPerObjectProperty: maxMemoryCostProperty('bytesPerObjectProperty'),
 });
 
 // Transitively harden all our models.
