@@ -28,14 +28,19 @@ export function makeBatchedDeliver(
         deliver(msgs, latestAckNum).catch(e => {
           // Just retry later.
           const retryTimeoutMs = Math.ceil(
-            Math.random(Math.max(1000 * 2 ** attempts, 30000)),
+            Math.random() * Math.min(1000 * 2 ** attempts, 30000),
           );
           assert.note(
             e,
-            X`batchedDeliver: deliver failed, retrying ${msgs.length} in ${retryTimeoutMs}`,
+            X`batchedDeliver: deliver failed, retrying ${msgs.length} in ${
+              retryTimeoutMs / 1000
+            } seconds`,
           );
           console.error(e);
-          setTimeout(() => batchedDeliver(msgs, latestAckNum, attempts + 1));
+          setTimeout(
+            () => batchedDeliver(msgs, latestAckNum, attempts + 1),
+            retryTimeoutMs,
+          );
         });
       }, batchTimeoutMs);
     }
