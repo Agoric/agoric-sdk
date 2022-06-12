@@ -69,6 +69,11 @@ func NewKeeper(
 	}
 }
 
+type validateActionJson struct {
+	Type       string `json:"type"` // VALIDATE_ACTION_JSON
+	ActionJson string `json:"actionJson"`
+}
+
 // PushAction appends an action to the controller's action queue.  This queue is
 // kept in the kvstore so that changes to it are properly reverted if the
 // kvstore is rolled back.  By the time the block manager runs, it can commit
@@ -79,6 +84,15 @@ func NewKeeper(
 // `packages/cosmic-swingset/src/chain-main.js`.
 func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
 	bz, err := json.Marshal(action)
+	if err != nil {
+		return err
+	}
+
+	// Validate the action before pushing it to the queue.
+	_, err = k.BlockingSend(ctx, &validateActionJson{
+		Type:       "VALIDATE_ACTION_JSON",
+		ActionJson: string(bz),
+	})
 	if err != nil {
 		return err
 	}

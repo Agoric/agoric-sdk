@@ -18,10 +18,11 @@ import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver.js';
 import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import makeBlockManager from './block-manager.js';
+import * as ActionType from './action-types.js';
 import { getTelemetryProviders } from './kernel-stats.js';
 import { DEFAULT_SIM_SWINGSET_PARAMS } from './sim-params.js';
 
-const console = anylogger('fake-chain');
+const console = anylogger('sim-chain');
 
 const TELEMETRY_SERVICE_NAME = 'sim-cosmos';
 
@@ -50,9 +51,9 @@ async function makeMapStorage(file) {
   return map;
 }
 
-export async function connectToFakeChain(basedir, GCI, delay, inbound) {
+export async function connectToSimChain(basedir, GCI, delay, inbound) {
   const initialHeight = 0;
-  const mailboxFile = path.join(basedir, `fake-chain-${GCI}-mailbox.json`);
+  const mailboxFile = path.join(basedir, `sim-chain-${GCI}-mailbox.json`);
   const bootAddress = `${GCI}-client`;
 
   const mailboxStorage = await makeMapStorage(mailboxFile);
@@ -77,7 +78,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
       import.meta.url,
     ),
   ).pathname;
-  const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
+  const stateDBdir = path.join(basedir, `sim-chain-${GCI}-state`);
   function flushChainSends(replay) {
     assert(!replay, X`Replay not implemented`);
   }
@@ -104,6 +105,9 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
       const iterable = aqContents;
       aqContents = [];
       return iterable;
+    },
+    push: obj => {
+      aqContents.push(obj);
     },
   };
 
@@ -143,29 +147,21 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
 
       const params = DEFAULT_SIM_SWINGSET_PARAMS;
       const beginAction = {
-        type: 'BEGIN_BLOCK',
+        type: ActionType.BEGIN_BLOCK,
         blockHeight,
         blockTime,
         params,
       };
       await blockingSend(beginAction, savedChainSends);
       for (let i = 0; i < thisBlock.length; i += 1) {
-        const [newMessages, acknum] = thisBlock[i];
-        aqContents.push({
-          type: 'DELIVER_INBOUND',
-          peer: bootAddress,
-          messages: newMessages,
-          ack: acknum,
-          blockHeight,
-          blockTime,
-        });
+        actionQueue.push({ ...thisBlock[i], blockHeight, blockTime });
       }
-      const endAction = { type: 'END_BLOCK', blockHeight, blockTime };
+      const endAction = { type: ActionType.END_BLOCK, blockHeight, blockTime };
       await blockingSend(endAction, savedChainSends);
 
       // Done processing, "commit the block".
       await blockingSend(
-        { type: 'COMMIT_BLOCK', blockHeight, blockTime },
+        { type: ActionType.COMMIT_BLOCK, blockHeight, blockTime },
         savedChainSends,
       );
 
@@ -194,7 +190,23 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     totalDeliveries += 1;
     console.log(`delivering to ${GCI} (trips=${totalDeliveries})`);
 
-    intoChain.push([newMessages, acknum]);
+    const action = harden({
+      type: ActionType.DELIVER_INBOUND,
+      peer: bootAddress,
+      messages: newMessages,
+      ack: acknum,
+    });
+
+    // Validate the action.
+    await blockingSend(
+      {
+        type: ActionType.VALIDATE_ACTION_JSON,
+        actionJson: JSON.stringify(action),
+      },
+      [],
+    );
+    intoChain.push(action);
+
     // Only actually simulate a block if we're not in bootstrap.
     if (blockHeight && !delay) {
       clearTimeout(nextBlockTimeout);
@@ -209,7 +221,10 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     // The before-first-block is special... do it now.
     // This emulates what x/swingset does to run a BOOTSTRAP_BLOCK
     // before continuing with the real initialHeight.
-    await blockingSend({ type: 'BOOTSTRAP_BLOCK', blockTime }, savedChainSends);
+    await blockingSend(
+      { type: ActionType.BOOTSTRAP_BLOCK, blockTime },
+      savedChainSends,
+    );
     blockHeight = initialHeight;
   };
 

@@ -4,6 +4,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// These are imported from @agoric/swingset-vat/src/limits/constants.js
+var (
+	MAX_SOURCE_BUNDLE_BYTES = sdk.NewUint(2 * 4 * 1024 * 1024) // 4MB UTF-16
+	MAX_NORMAL_INPUT_BYTES  = sdk.NewUint(128 * 1024)          // 128kB
+	MAX_VAT_MESSAGE_BYTES   = MAX_SOURCE_BUNDLE_BYTES          // TODO: MAX_NORMAL_INPUT_BYTES
+)
+
 // This should roughly match the values in
 // `agoric-sdk/packages/cosmic-swingset/src/sim-params.js`.
 //
@@ -19,6 +26,9 @@ const (
 	BeansPerMinFeeDebit       = "minFeeDebit"
 	BeansPerVatCreation       = "vatCreation"
 	BeansPerXsnapComputron    = "xsnapComputron"
+	BeansPerValidNormalInput  = "validNormalInput"
+	BeansPerValidSourceBundle = "validSourceBundle"
+	BeansPerValidVatMessage   = "validVatMessage"
 )
 
 var (
@@ -43,6 +53,11 @@ var (
 	DefaultBeansPerMessageByte = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(50000)) // $0.0002
 	DefaultBeansPerMinFeeDebit = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(5))     // $0.2
 
+	// Message size limits.
+	DefaultBeansPerValidNormalInput  = DefaultBeansPerMessageByte.Mul(MAX_NORMAL_INPUT_BYTES)
+	DefaultBeansPerValidSourceBundle = DefaultBeansPerMessageByte.Mul(MAX_SOURCE_BUNDLE_BYTES)
+	DefaultBeansPerValidVatMessage   = DefaultBeansPerMessageByte.Mul(MAX_VAT_MESSAGE_BYTES)
+
 	DefaultBeansPerUnit = []StringBeans{
 		NewStringBeans(BeansPerBlockComputeLimit, DefaultBeansPerBlockComputeLimit),
 		NewStringBeans(BeansPerFeeUnit, DefaultBeansPerFeeUnit),
@@ -52,6 +67,9 @@ var (
 		NewStringBeans(BeansPerMinFeeDebit, DefaultBeansPerMinFeeDebit),
 		NewStringBeans(BeansPerVatCreation, DefaultBeansPerVatCreation),
 		NewStringBeans(BeansPerXsnapComputron, DefaultBeansPerXsnapComputron),
+		NewStringBeans(BeansPerValidNormalInput, DefaultBeansPerValidNormalInput),
+		NewStringBeans(BeansPerValidSourceBundle, DefaultBeansPerValidSourceBundle),
+		NewStringBeans(BeansPerValidVatMessage, DefaultBeansPerValidVatMessage),
 	}
 
 	DefaultBootstrapVatConfig = "@agoric/vats/decentral-core-config.json"

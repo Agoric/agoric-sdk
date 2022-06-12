@@ -1,4 +1,9 @@
 import { Nat } from '@agoric/nat';
+import {
+  MAX_SOURCE_BUNDLE_BYTES,
+  MAX_VAT_MESSAGE_BYTES,
+  MAX_NORMAL_INPUT_BYTES,
+} from '@agoric/swingset-vat/limits.js';
 
 const makeStringBeans = (key, beans) => ({ key, beans: `${Nat(beans)}` });
 
@@ -16,6 +21,9 @@ export const BeansPerMessageByte = 'messageByte';
 export const BeansPerMinFeeDebit = 'minFeeDebit';
 export const BeansPerVatCreation = 'vatCreation';
 export const BeansPerXsnapComputron = 'xsnapComputron';
+export const BeansPerValidNormalInput = 'validNormalInput';
+export const BeansPerValidSourceBundle = 'validSourceBundle';
+export const BeansPerValidVatMessage = 'validVatMessage';
 
 export const defaultBeansPerXsnapComputron = 100n;
 
@@ -39,6 +47,14 @@ export const defaultBeansPerMessage = defaultBeansPerFeeUnit / 1_000n; // $0.001
 export const defaultBeansPerMessageByte = defaultBeansPerFeeUnit / 50_000n; // $0.0002
 export const defaultBeansPerMinFeeDebit = defaultBeansPerFeeUnit / 5n; // $0.2
 
+// Message size limits.
+export const defaultBeansPerValidNormalInput =
+  defaultBeansPerMessageByte * BigInt(MAX_NORMAL_INPUT_BYTES);
+export const defaultBeansPerValidSourceBundle =
+  defaultBeansPerMessageByte * BigInt(MAX_SOURCE_BUNDLE_BYTES);
+export const defaultBeansPerValidVatMessage =
+  defaultBeansPerMessageByte * BigInt(MAX_VAT_MESSAGE_BYTES);
+
 export const defaultBeansPerUnit = [
   makeStringBeans(BeansPerFeeUnit, defaultBeansPerFeeUnit),
   makeStringBeans(BeansPerInboundTx, defaultBeansPerInboundTx),
@@ -48,6 +64,9 @@ export const defaultBeansPerUnit = [
   makeStringBeans(BeansPerMinFeeDebit, defaultBeansPerMinFeeDebit),
   makeStringBeans(BeansPerVatCreation, defaultBeansPerVatCreation),
   makeStringBeans(BeansPerXsnapComputron, defaultBeansPerXsnapComputron),
+  makeStringBeans(BeansPerValidNormalInput, defaultBeansPerValidNormalInput),
+  makeStringBeans(BeansPerValidSourceBundle, defaultBeansPerValidSourceBundle),
+  makeStringBeans(BeansPerValidVatMessage, defaultBeansPerValidVatMessage),
 ];
 
 export const defaultFeeUnitPrice = [

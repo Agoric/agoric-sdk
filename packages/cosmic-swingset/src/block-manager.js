@@ -5,11 +5,83 @@ import anylogger from 'anylogger';
 import { assert, details as X } from '@agoric/assert';
 
 import * as BRIDGE_ID from '@agoric/vats/src/bridge-ids.js';
-
 import * as ActionType from './action-types.js';
 import { parseParams } from './params.js';
 
 const console = anylogger('block-manager');
+
+/** @typedef {ReturnType<typeof parseParams>} Params */
+
+/**
+ * @param {string} actionJson
+ * @param {Params} params
+ */
+const validateActionJson = (actionJson, params) => {
+  assert(params, X`SwingSet is not yet open for business`);
+
+  let remainingJson = actionJson;
+  assert.typeof(
+    actionJson,
+    'string',
+    X`actionJson ${actionJson} must be a string`,
+  );
+  const action = JSON.parse(remainingJson);
+  const { validSourceBundle, validNormalInput, validVatMessage, messageByte } =
+    params.beansPerUnit;
+
+  // Strip out the permissible large parts of the input.
+  switch (action.type) {
+    case ActionType.INSTALL_BUNDLE: {
+      const { bundle, ...actionRest } = action;
+      remainingJson = JSON.stringify(actionRest);
+      assert.typeof(bundle, 'string', X`bundle ${bundle} must be a string`);
+      const bundleBeans = BigInt(bundle.length) * messageByte;
+      assert(
+        bundleBeans < validSourceBundle,
+        X`bundle beans ${bundleBeans} must be less than ${validSourceBundle}`,
+      );
+      break;
+    }
+    case ActionType.DELIVER_INBOUND: {
+      const { messages, ...actionRest } = action;
+      const rest = [actionRest];
+
+      // Accomodate limited individual message sizes, but potentially unbounded
+      // delivery as a whole (limited only by gas).
+      assert(Array.isArray(messages), X`messages ${messages} must be an array`);
+      for (const message of messages) {
+        assert(Array.isArray(message), X`message ${message} must be an array`);
+        const [sequence, body, ...messageRest] = message;
+        rest.push(messageRest);
+        assert.typeof(
+          sequence,
+          'number',
+          X`sequence ${sequence} must be a number`,
+        );
+        assert.typeof(body, 'string', X`body ${body} must be a string`);
+        const bodyBeans = BigInt(body.length) * messageByte;
+        assert(
+          bodyBeans < validVatMessage,
+          X`message body beans ${bodyBeans} must be less than ${validVatMessage}`,
+        );
+        remainingJson = JSON.stringify(rest);
+      }
+      break;
+    }
+    default:
+  }
+
+  assert.typeof(
+    remainingJson,
+    'string',
+    X`remainingJson ${remainingJson} must be a string`,
+  );
+  const remainingBeans = BigInt(remainingJson.length) * messageByte;
+  assert(
+    remainingBeans < validNormalInput,
+    X`remaining action beans ${remainingBeans} must be less than ${validNormalInput}`,
+  );
+};
 
 // Artificially create load if set.
 const END_BLOCK_SPIN_MS = process.env.END_BLOCK_SPIN_MS
@@ -33,6 +105,7 @@ export default function makeBlockManager({
   let computedHeight = savedHeight;
   let runTime = 0;
   let chainTime;
+  /** @type {Params} */
   let latestParams;
   let beginBlockAction;
 
@@ -145,6 +218,11 @@ export default function makeBlockManager({
 
     // console.warn('FIGME: blockHeight', action.blockHeight, 'received', action.type)
     switch (action.type) {
+      case ActionType.VALIDATE_ACTION_JSON: {
+        const { actionJson } = action;
+        validateActionJson(actionJson, latestParams);
+        break;
+      }
       case ActionType.BOOTSTRAP_BLOCK: {
         // This only runs for the very first block on the chain.
         verboseBlocks && console.info('block bootstrap');
