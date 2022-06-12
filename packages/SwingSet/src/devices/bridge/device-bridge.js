@@ -17,12 +17,16 @@ export function buildRootDeviceNode(tools) {
   let { inboundHandler } = getDeviceState() || {};
 
   function inboundCallback(...args) {
-    assert(inboundHandler, X`inboundHandler not yet registered`);
-    const safeArgs = JSON.parse(JSON.stringify(args));
     try {
+      assert(inboundHandler, X`inboundHandler not yet registered`);
+      // We don't limit the size of the inbound bridge message; we trust that
+      // the host has done that already.
+      const safeArgs = JSON.parse(JSON.stringify(args));
       SO(inboundHandler).inbound(...harden(safeArgs));
     } catch (e) {
       console.error(`error during inboundCallback:`, e);
+      assert.note(e, X`error during inboundCallback`);
+      throw e;
     }
   }
   registerInboundCallback(inboundCallback);

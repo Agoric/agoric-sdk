@@ -2,25 +2,32 @@ import { Nat } from '@agoric/nat';
 import { Far } from '@endo/marshal';
 
 import { assert, details as X } from '@agoric/assert';
+import { makeVatMessageValidator } from '../../limits/validate';
 
 export function buildRootDeviceNode(tools) {
-  const { SO, getDeviceState, setDeviceState, endowments } = tools;
+  const {
+    SO,
+    getDeviceState,
+    setDeviceState,
+    endowments,
+    parseVatMessage = str => JSON.parse(`${str}`, makeVatMessageValidator()),
+  } = tools;
   const { registerInboundCallback, deliverResponse, sendBroadcast } =
     endowments;
   let { inboundHandler } = getDeviceState() || {};
 
   registerInboundCallback((count, bodyString) => {
-    if (!inboundHandler) {
-      throw new Error(
-        `CMD inboundHandler not set before registerInboundHandler`,
-      );
-    }
     try {
-      const body = JSON.parse(`${bodyString}`);
+      assert(
+        inboundHandler,
+        X`inboundHandler not set before registerInboundCallback`,
+      );
+      const body = parseVatMessage(bodyString);
       SO(inboundHandler).inbound(Nat(count), body);
     } catch (e) {
       console.error(`error during inboundCallback:`, e);
-      assert.fail(X`error during inboundCallback: ${e}`);
+      assert.note(e, X`error during inboundCallback`);
+      throw e;
     }
   });
 
