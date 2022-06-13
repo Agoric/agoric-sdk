@@ -4,7 +4,7 @@ import Paper from '@mui/material/Paper';
 
 import { withApplicationContext } from '../contexts/Application';
 
-const Loading = ({ wantConnection, walletConnection, ...rest }) => {
+const Loading = ({ walletConnection, connectionStatus, ...rest }) => {
   let body;
   if (walletConnection) {
     const { url } = walletConnection || {};
@@ -17,13 +17,13 @@ const Loading = ({ wantConnection, walletConnection, ...rest }) => {
           width: '100%',
         }}
       >
-        {wantConnection && <CircularProgress sx={{ p: 1 }} {...rest} />}
+        {connectionStatus === 'connecting' && (
+          <CircularProgress sx={{ p: 1 }} {...rest} />
+        )}
         <Typography sx={{ p: 1 }}>
-          {wantConnection ? (
-            <>Connecting to {url}...</>
-          ) : (
-            <>Disconnected from {url}</>
-          )}
+          {connectionStatus === 'connecting' && <>Connecting to {url}...</>}
+          {connectionStatus === 'disconnected' && <>Disconnected from {url}</>}
+          {connectionStatus === 'error' && <>Error connecting to {url}</>}
         </Typography>
       </div>
     );
@@ -42,6 +42,6 @@ const Loading = ({ wantConnection, walletConnection, ...rest }) => {
 };
 
 export default withApplicationContext(Loading, context => ({
-  wantConnection: context.wantConnection,
+  connectionStatus: context.connectionStatus,
   walletConnection: context.walletConnection,
 }));

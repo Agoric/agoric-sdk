@@ -36,7 +36,7 @@ const ConnectionSettingsDialog = ({
   const saveAndClose = () => {
     if (connection) {
       setWalletConnection(connection);
-      disconnect();
+      disconnect(true);
       if (
         !allWalletConnections.some(
           c => c.label === connection.label && c.url === connection.url,

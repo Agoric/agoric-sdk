@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { makeStyles, useTheme } from '@mui/styles';
 import HelpIcon from '@mui/icons-material/HelpOutline';
@@ -66,45 +66,23 @@ const useStyles = makeStyles(theme => ({
 // Exported for testing only.
 export const AppBarWithoutContext = ({
   connectionComponent,
-  connectionState,
   wantConnection,
   setWantConnection,
+  connectionState,
+  connectionStatus,
 }) => {
   const theme = useTheme();
   const classes = useStyles(theme);
-  const [status, setStatus] = useState(
-    wantConnection ? 'connecting' : 'disconnected',
-  );
 
   const [dialogOpened, setDialogOpened] = useState(false);
   const handleClosed = () => {
     setDialogOpened(false);
   };
 
-  useEffect(() => {
-    if (!connectionComponent) {
-      setStatus('disconnected');
-      return;
-    }
-    switch (connectionState) {
-      case 'bridged': {
-        setStatus('connected');
-        break;
-      }
-      case 'disconnected': {
-        setStatus('disconnected');
-        break;
-      }
-      case 'connecting': {
-        setStatus('connecting');
-        break;
-      }
-      default:
-    }
-  }, [connectionState, connectionComponent]);
-
-  const connectionTitle = status[0].toUpperCase() + status.slice(1);
-  const connectionClassName = status === 'connecting' ? classes.connecting : '';
+  const connectionTitle =
+    connectionStatus[0].toUpperCase() + connectionStatus.slice(1);
+  const connectionClassName =
+    connectionStatus === 'connecting' ? classes.connecting : '';
 
   return (
     <header className={classes.header}>
@@ -173,4 +151,5 @@ export default withApplicationContext(AppBarWithoutContext, context => ({
   connectionState: context.connectionState,
   wantConnection: context.wantConnection,
   setWantConnection: context.setWantConnection,
+  connectionStatus: context.connectionStatus,
 }));

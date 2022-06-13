@@ -175,6 +175,9 @@ const Provider = ({ children }) => {
   const [useChainBackend, setUseChainBackend] = useState(false);
   const [wantConnection, setWantConnection] = useState(true);
   const [connectionComponent, setConnectionComponent] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState(
+    wantConnection ? 'connecting' : 'disconnected',
+  );
 
   const RESTORED_WALLET_CONNECTIONS = [...DEFAULT_WALLET_CONNECTIONS];
   let restoredWalletConnection;
@@ -207,6 +210,32 @@ const Provider = ({ children }) => {
   const [allWalletConnections, setAllWalletConnections] = useState(
     harden([...DEFAULT_WALLET_CONNECTIONS]),
   );
+
+  useEffect(() => {
+    if (!connectionComponent) {
+      if (connectionState === 'error') {
+        setConnectionStatus('error');
+      } else {
+        setConnectionStatus('disconnected');
+      }
+      return;
+    }
+    switch (connectionState) {
+      case 'bridged': {
+        setConnectionStatus('connected');
+        break;
+      }
+      case 'disconnected': {
+        setConnectionStatus('disconnected');
+        break;
+      }
+      case 'connecting': {
+        setConnectionStatus('connecting');
+        break;
+      }
+      default:
+    }
+  }, [connectionState, connectionComponent]);
 
   useEffect(() => {
     if (window && window.localStorage) {
@@ -284,35 +313,71 @@ const Provider = ({ children }) => {
     };
   }, [backend]);
 
-  const disconnect = () => {
+  const disconnect = wantReconnect => {
     setBackend(null);
     setConnectionComponent(null);
     setConnectionState('disconnected');
+    if (typeof wantReconnect === 'boolean') {
+      setWantConnection(wantReconnect);
+    }
   };
 
+  let attempts = 0;
   useEffect(() => {
     if (!walletConnection || !wantConnection) {
       disconnect();
       return () => {};
     }
+    if (connectionComponent) {
+      return () => {};
+    }
     const { url } = walletConnection;
     const u = new URL(url);
     let outdated = false;
+
+    let retryTimeout;
+    const retry = async e => {
+      if (outdated) {
+        return;
+      }
+      console.error('Connection to', walletConnection, 'failed:', e);
+      const backoff = Math.ceil(
+        Math.min(Math.random() * 2 ** attempts * 1_000, 10_000),
+      );
+      console.log('Retrying connection after', backoff, 'ms...');
+      await new Promise(
+        resolve => (retryTimeout = setTimeout(resolve, backoff)),
+      );
+      if (outdated) {
+        return;
+      }
+      // eslint-disable-next-line no-use-before-define
+      connect().catch(retry);
+    };
+
+    let importer;
+    const connect = async () => {
+      const mod = await importer();
+      if (outdated) {
+        return;
+      }
+      const component = buildWalletConnectionFromModule(mod);
+      setConnectionComponent(component);
+      attempts = 0;
+    };
     if (u.pathname.endsWith('/network-config')) {
-      import('../components/SmartWalletConnection').then(
-        mod =>
-          outdated ||
-          setConnectionComponent(buildWalletConnectionFromModule(mod)),
-      );
+      importer = () => import('../components/SmartWalletConnection');
     } else {
-      import('../components/WalletConnection').then(
-        mod =>
-          outdated ||
-          setConnectionComponent(buildWalletConnectionFromModule(mod)),
-      );
+      importer = () => import('../components/WalletConnection');
     }
-    return () => (outdated = true);
-  }, [walletConnection, wantConnection]);
+    connect().catch(retry);
+    return () => {
+      outdated = true;
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+      }
+    };
+  }, [walletConnection, wantConnection, connectionComponent]);
 
   const [pendingPurseCreations, setPendingPurseCreations] = useReducer(
     pendingPurseCreationsReducer,
@@ -380,6 +445,7 @@ const Provider = ({ children }) => {
     setAllWalletConnections,
     connectionComponent,
     disconnect,
+    connectionStatus,
   };
 
   useDebugLogging(state, [
