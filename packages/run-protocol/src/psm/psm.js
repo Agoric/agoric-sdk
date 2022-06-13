@@ -54,8 +54,6 @@ function stageTransfer(from, to, txFrom, txTo = txFrom) {
 export const start = async (zcf, { feeMintAccess, initialPoserInvitation }) => {
   const { anchorBrand, anchorPerStable } = zcf.getTerms();
 
-  // TODO should this know that the name is 'Stable'
-  // TODO get the RUN magic out of here so the contract is more reusable
   const stableMint = await zcf.registerFeeMint('Stable', feeMintAccess);
   const { brand: stableBrand } = stableMint.getIssuerRecord();
   assert(
