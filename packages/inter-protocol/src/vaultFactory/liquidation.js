@@ -45,7 +45,7 @@ const liquidate = async (
   const { deposited, userSeatPromise: liqSeat } = await offerTo(
     zcf,
     E(liquidator).makeLiquidateInvitation(),
-    harden({ Collateral: 'In', RUN: 'Out' }),
+    harden({ Collateral: 'In', Minted: 'Out' }),
     harden({
       give: { In: collateralToSell },
       want: { Out: AmountMath.makeEmpty(debt.brand) },
@@ -63,17 +63,17 @@ const liquidate = async (
   ]);
   // NB: all the proceeds from AMM sale are on the vault seat instead of a staging seat
 
-  const [overage, shortfall] = AmountMath.isGTE(debt, proceeds.RUN)
+  const [overage, shortfall] = AmountMath.isGTE(debt, proceeds.Minted)
     ? [
         AmountMath.makeEmptyFromAmount(debt),
-        AmountMath.subtract(debt, proceeds.RUN),
+        AmountMath.subtract(debt, proceeds.Minted),
       ]
     : [
-        AmountMath.subtract(proceeds.RUN, debt),
+        AmountMath.subtract(proceeds.Minted, debt),
         AmountMath.makeEmptyFromAmount(debt),
       ];
 
-  const runToBurn = AmountMath.min(proceeds.RUN, debt);
+  const runToBurn = AmountMath.min(proceeds.Minted, debt);
   // debt is fully settled, with runToBurn and shortfall
   assert(AmountMath.isEqual(debt, AmountMath.add(runToBurn, shortfall)));
 
@@ -82,7 +82,7 @@ const liquidate = async (
   // remaining funds are left on the vault for the user to close and claim
 
   // for manager's accounting
-  return { proceeds: proceeds.RUN, overage, runToBurn, shortfall };
+  return { proceeds: proceeds.Minted, overage, runToBurn, shortfall };
 };
 
 const liquidationDetailTerms = debtBrand =>

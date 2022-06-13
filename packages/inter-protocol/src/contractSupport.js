@@ -28,7 +28,7 @@ export const addSubtract = (base, gain, loss) =>
 
 /**
  * @param {ProposalRecord} proposal
- * @param {string[]} keys usually 'Collateral' and 'RUN'
+ * @param {string[]} keys usually 'Collateral' and 'Minted'
  */
 export const assertOnlyKeys = (proposal, keys) => {
   /** @param {AmountKeywordRecord} clause */
