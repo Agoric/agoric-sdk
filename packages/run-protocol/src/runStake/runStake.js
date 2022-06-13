@@ -15,7 +15,7 @@ const { values } = Object;
 /**
  * Provide loans on the basis of staked assets that earn rewards.
  *
- * In addition to brands and issuers for `Staked`, `RUN`, and attestation,
+ * In addition to brands and issuers for `Staked`, `Minted`, and attestation,
  * terms of the contract include a periodic `InterestRate`
  * plus a `LoanFee` proportional to the amount borrowed, as well as
  * a `MintingRatio` of funds to (mint and) loan per unit of staked asset.
@@ -206,7 +206,7 @@ export const start = async (
         zcf,
         rewardPoolSeat,
         debtBrand,
-        'RUN',
+        'Minted',
       ).makeCollectFeesInvitation();
     },
   });
