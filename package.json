@@ -6,6 +6,7 @@
     "golang/cosmos",
     "packages/*",
     "packages/wallet/api",
+    "packages/wallet/contract",
     "packages/wallet/ui"
   ],
   "type": "module",
