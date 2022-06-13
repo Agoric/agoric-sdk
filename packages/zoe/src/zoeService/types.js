@@ -253,7 +253,7 @@
  * @property {(BundleID: id) => Promise<BundleCap>} waitForBundleCap
  * @property {(BundleID: id) => Promise<BundleCap>} getBundleCap
  * @property {(name: string) => Promise<BundleCap>} getNamedBundleCap
- * @property {(bundleCap: BundleCap) => Promise<RootAndAdminNode>} createVat
+ * @property {(bundleCap: BundleCap, options?: Record<string, any>) => Promise<RootAndAdminNode>} createVat
  */
 
 /**
