@@ -84,7 +84,7 @@ export const makeVatsFromBundles = ({
     return provide(store, bundleName, _k => {
       console.info(`createVatByName(${bundleName})`);
       /** @type { Promise<VatInfo> } */
-      const vatInfo = E(svc).createVatByName(bundleName);
+      const vatInfo = E(svc).createVatByName(bundleName, { name: bundleName });
       return vatInfo;
     }).then(r => r.root);
   });
