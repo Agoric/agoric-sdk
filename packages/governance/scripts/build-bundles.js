@@ -12,4 +12,4 @@ const sourceToBundle = [
   ['../src/binaryVoteCounter.js', '../bundles/bundle-binaryVoteCounter.js'],
 ];
 
-createBundles(sourceToBundle, dirname);
+await createBundles(sourceToBundle, dirname);

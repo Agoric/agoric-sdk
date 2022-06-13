@@ -18,4 +18,4 @@ const sourceToBundle = [
   ],
 ];
 
-createBundles(sourceToBundle, dirname);
+await createBundles(sourceToBundle, dirname);

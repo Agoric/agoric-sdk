@@ -9,4 +9,4 @@ const sourceToBundle = [
   ['../src/contractFacet/vatRoot.js', '../bundles/bundle-contractFacet.js'],
 ];
 
-createBundles(sourceToBundle, dirname);
+await createBundles(sourceToBundle, dirname);
