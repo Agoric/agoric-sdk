@@ -420,7 +420,7 @@ test('reserve burn IST', async t => {
 
   t.deepEqual(
     await E(reserve.reserveCreatorFacet).getAllocations(),
-    harden({ RUN: oneKRun }),
+    harden({ Fee: oneKRun }),
     'expecting more',
   );
 
@@ -434,7 +434,7 @@ test('reserve burn IST', async t => {
   const { details: detailsP } = await E(
     governor.governorCreatorFacet,
   ).voteOnApiInvocation(
-    'burnRUNToReduceShortfall',
+    'burnFeesToReduceShortfall',
     params,
     await space.installation.consume.binaryVoteCounter,
     timer.getCurrentTimestamp() + 2n,
@@ -452,6 +452,6 @@ test('reserve burn IST', async t => {
     shortfallBalance: {
       value: runningShortfall,
     },
-    allocations: { RUN: AmountMath.makeEmpty(runBrand) },
+    allocations: { Fee: AmountMath.makeEmpty(runBrand) },
   });
 });

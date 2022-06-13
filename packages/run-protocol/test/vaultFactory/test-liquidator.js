@@ -520,7 +520,7 @@ const makeDriver = async (t, initialPrice, priceBase) => {
 
       t.deepEqual(reserveAllocations, {
         RaEthLiquidity: AmountMath.make(liquidityBrand, liquidityValue),
-        RUN: run.make(stableValue),
+        Fee: run.make(stableValue),
       });
     },
   };
