@@ -1,7 +1,6 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import '@endo/eventual-send/shim';
 
-import React from 'react';
 import ReactDOM from 'react-dom';
 import { BrowserRouter as Router } from 'react-router-dom';
 import {
@@ -11,7 +10,7 @@ import {
   StyledEngineProvider,
 } from '@mui/material';
 import App from './App';
-import ApplicationContextProvider from './contexts/Application';
+import ApplicationContextProvider from './contexts/Provider';
 
 Error.stackTraceLimit = Infinity;
 

@@ -1,11 +1,14 @@
+import { useState } from 'react';
+
 import { makeStyles, useTheme } from '@mui/styles';
 import HelpIcon from '@mui/icons-material/HelpOutline';
+import SettingsIcon from '@mui/icons-material/SettingsOutlined';
 import IconButton from '@mui/material/IconButton';
+import Public from '@mui/icons-material/Public';
 import Tooltip from '@mui/material/Tooltip';
 
-import WalletConnection from './WalletConnection';
 import NavDrawer from './NavDrawer';
-import ChainConnector from './ChainConnector';
+import ConnectionSettingsDialog from './ConnectionSettingsDialog';
 import { withApplicationContext } from '../contexts/Application';
 
 const logoUrl =
@@ -29,6 +32,20 @@ const useStyles = makeStyles(theme => ({
     flexDirection: 'row',
     flexWrap: 'nowrap',
   },
+  connecting: {
+    animation: `$throb 2s infinite`,
+  },
+  '@keyframes throb': {
+    '0%': {
+      opacity: 1,
+    },
+    '50%': {
+      opacity: 0.2,
+    },
+    '100%': {
+      opacity: 1,
+    },
+  },
   productLink: {
     alignItems: 'center',
     display: 'flex',
@@ -47,9 +64,24 @@ const useStyles = makeStyles(theme => ({
 }));
 
 // Exported for testing only.
-export const AppBarWithoutContext = ({ useChainBackend }) => {
+export const AppBarWithoutContext = ({
+  connectionComponent,
+  wantConnection,
+  setWantConnection,
+  connectionState,
+  connectionStatus,
+}) => {
   const theme = useTheme();
   const classes = useStyles(theme);
+
+  const [dialogOpened, setDialogOpened] = useState(false);
+  const handleClosed = () => {
+    setDialogOpened(false);
+  };
+
+  const connectionTitle =
+    connectionStatus &&
+    connectionStatus[0].toUpperCase() + connectionStatus.slice(1);
 
   return (
     <header className={classes.header}>
@@ -65,12 +97,41 @@ export const AppBarWithoutContext = ({ useChainBackend }) => {
         </a>
       </div>
       <div className={classes.appBarSection}>
+        <ConnectionSettingsDialog open={dialogOpened} onClose={handleClosed} />
         <div className={classes.connector}>
-          {useChainBackend ? (
-            <ChainConnector></ChainConnector>
-          ) : (
-            <WalletConnection></WalletConnection>
-          )}
+          {connectionComponent}
+          <Tooltip title={connectionTitle}>
+            <IconButton
+              size="medium"
+              color={wantConnection ? 'primary' : 'secondary'}
+              onClick={() => setWantConnection(!wantConnection)}
+            >
+              <Public
+                className={
+                  connectionStatus === 'connecting' ? classes.connecting : ''
+                }
+                fontSize="inherit"
+              >
+                {connectionState}
+              </Public>
+            </IconButton>
+          </Tooltip>
+        </div>
+        <div className={classes.connector}>
+          <Tooltip title="Settings">
+            <IconButton
+              color="primary"
+              size="medium"
+              target="_blank"
+              onClick={() => setDialogOpened(true)}
+            >
+              <SettingsIcon fontSize="inherit">Help</SettingsIcon>
+            </IconButton>
+          </Tooltip>
+          <ConnectionSettingsDialog
+            open={dialogOpened}
+            onClose={handleClosed}
+          />
         </div>
         <div className={classes.connector}>
           <Tooltip title="Help">
@@ -90,5 +151,9 @@ export const AppBarWithoutContext = ({ useChainBackend }) => {
 };
 
 export default withApplicationContext(AppBarWithoutContext, context => ({
-  useChainBackend: context.useChainBackend,
+  connectionComponent: context.connectionComponent,
+  connectionState: context.connectionState,
+  wantConnection: context.wantConnection,
+  setWantConnection: context.setWantConnection,
+  connectionStatus: context.connectionStatus,
 }));

@@ -6,6 +6,7 @@ import Button from '@mui/material/Button';
 import { createTheme, ThemeProvider } from '@mui/material';
 import Contacts, { ContactsWithoutContext } from '../Contacts';
 import ImportContact from '../../components/ImportContact';
+import Loading from '../../components/Loading';
 
 const contacts = [
   {
@@ -56,7 +57,15 @@ const withApplicationContext =
   };
 
 jest.mock('../../contexts/Application', () => {
-  return { withApplicationContext };
+  return {
+    withApplicationContext,
+    ConnectionStatus: {
+      Connected: 'connected',
+      Connecting: 'connecting',
+      Disconnected: 'disconnected',
+      Error: 'error',
+    },
+  };
 });
 
 jest.mock('@endo/eventual-send', () => ({
@@ -72,7 +81,7 @@ jest.mock('@endo/eventual-send', () => ({
 test('renders a loading indicator when contacts is empty', () => {
   const component = mount(<ContactsWithoutContext />);
 
-  expect(component.find(CircularProgress)).toHaveLength(1);
+  expect(component.find(Loading)).toHaveLength(1);
   expect(component.find('.Contact')).toHaveLength(0);
 });
 
@@ -80,7 +89,7 @@ test('renders the contact cards', () => {
   const component = mount(<Contacts />);
 
   expect(component.find('.Contact')).toHaveLength(2);
-  expect(component.find(CircularProgress)).toHaveLength(0);
+  expect(component.find(Loading)).toHaveLength(0);
 });
 
 test('cards display the correct data', () => {

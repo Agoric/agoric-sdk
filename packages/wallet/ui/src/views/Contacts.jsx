@@ -7,6 +7,7 @@ import Add from '@mui/icons-material/Add';
 import Snackbar from '@mui/material/Snackbar';
 import Card from '../components/Card';
 import ImportContact from '../components/ImportContact';
+import Loading from '../components/Loading';
 import { withApplicationContext } from '../contexts/Application';
 
 import './Contacts.scss';
@@ -69,7 +70,7 @@ export const ContactsWithoutContext = ({
     </div>
   );
   const contactCards = (contacts && contacts.map(Contact)) ?? (
-    <CircularProgress style={{ margin: 'auto' }} />
+    <Loading defaultMessage="Fetching contacts..." />
   );
 
   return (

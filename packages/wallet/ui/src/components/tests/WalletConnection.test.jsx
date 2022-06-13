@@ -1,9 +1,9 @@
 import { act } from '@testing-library/react';
 import { mount } from 'enzyme';
 import { observeIterator } from '@agoric/notifier';
-import Tooltip from '@mui/material/Tooltip';
 import WalletConnection from '../WalletConnection';
 import { makeBackendFromWalletBridge } from '../../util/WalletBackendAdapter.js';
+import { makeFixedWebSocketConnector } from '../../util/fixed-websocket-connector.js';
 
 jest.mock('@endo/eventual-send', () => ({
   E: obj =>
@@ -33,9 +33,15 @@ jest.mock('../../util/WalletBackendAdapter.js', () => {
   };
 });
 
+jest.mock('../../util/fixed-websocket-connector.js', () => {
+  return {
+    makeFixedWebSocketConnector: jest.fn(),
+  };
+});
+
 const setConnectionState = jest.fn();
 const setBackend = jest.fn();
-let connectionStatus = 'idle';
+const connectionStatus = 'idle';
 const withApplicationContext =
   (Component, _) =>
   ({ ...props }) => {
@@ -43,19 +49,38 @@ const withApplicationContext =
       <Component
         setConnectionState={setConnectionState}
         connectionState={connectionStatus}
+        connectionStatus={connectionStatus}
         setBackend={setBackend}
         {...props}
       />
     );
   };
 jest.mock('../../contexts/Application', () => {
-  return { withApplicationContext };
+  return {
+    withApplicationContext,
+    ConnectionStatus: {
+      Connected: 'connected',
+      Connecting: 'connecting',
+      Disconnected: 'disconnected',
+      Error: 'error',
+    },
+  };
 });
+
+const fixedWebSocketConnector = { connector: 'foo' };
 
 describe('WalletConnection', () => {
   let component;
 
   beforeEach(() => {
+    observeIterator.mockReturnValue({
+      catch: jest.fn(),
+    });
+    makeBackendFromWalletBridge.mockReturnValue({
+      backendIt: 'mockBackendIterator',
+      cancel: jest.fn(),
+    });
+    makeFixedWebSocketConnector.mockReturnValue(fixedWebSocketConnector);
     component = mount(<WalletConnection />);
   });
 
@@ -64,33 +89,15 @@ describe('WalletConnection', () => {
       component
         .find('wallet-connection')
         .props()
-        .onState({ detail: { walletConnection: {}, state: 'connecting' } }),
+        .onState({
+          detail: {
+            walletConnection: { getAdminBootstrap: jest.fn() },
+            state: 'connecting',
+          },
+        }),
     );
 
     expect(setConnectionState).toHaveBeenCalledWith('connecting');
-  });
-
-  test('displays the current connection status', () => {
-    let connectionIndicator = component.find('.Connector').find(Tooltip);
-    expect(connectionIndicator.props().title).toEqual('Disconnected');
-
-    connectionStatus = 'bridged';
-    component.setProps({ connectionStatus });
-    connectionIndicator = component.find('.Connector').find(Tooltip);
-    expect(connectionIndicator.props().title).toEqual('Connected');
-  });
-
-  test('resets the connection on error state', () => {
-    const reset = jest.fn();
-
-    act(() =>
-      component
-        .find('wallet-connection')
-        .props()
-        .onState({ detail: { walletConnection: { reset }, state: 'error' } }),
-    );
-
-    expect(reset).toHaveBeenCalled();
   });
 
   describe('on idle state', () => {
@@ -100,11 +107,6 @@ describe('WalletConnection', () => {
     let getAdminBootstrap;
 
     beforeEach(() => {
-      makeBackendFromWalletBridge.mockReturnValue({
-        backendIt: 'mockBackendIterator',
-        cancel: jest.fn(),
-      });
-
       getAdminBootstrap = jest.fn(_ => ({}));
 
       delete window.localStorage;
@@ -137,7 +139,10 @@ describe('WalletConnection', () => {
       });
 
       test('calls getAdminBootstrap with the access token', () => {
-        expect(getAdminBootstrap).toHaveBeenCalledWith(accessToken);
+        expect(getAdminBootstrap).toHaveBeenCalledWith(
+          accessToken,
+          fixedWebSocketConnector,
+        );
       });
 
       test('clears the accessToken from the url', () => {
@@ -154,12 +159,12 @@ describe('WalletConnection', () => {
       test('updates the store with the notifier data', () => {
         expect(makeBackendFromWalletBridge).toHaveBeenCalledWith(
           getAdminBootstrap(),
-          undefined,
         );
         expect(observeIterator).toHaveBeenCalledWith('mockBackendIterator', {
-          updateState: setBackend,
-          fail: expect.any(Function),
+          updateState: expect.any(Function),
         });
+        observeIterator.mock.calls[0][1].updateState('foo');
+        expect(setBackend).toHaveBeenCalledWith('foo');
       });
     });
 
@@ -189,7 +194,10 @@ describe('WalletConnection', () => {
         );
 
         expect(getItemSpy).toHaveBeenCalledWith('accessTokenParams');
-        expect(getAdminBootstrap).toHaveBeenCalledWith(accessToken);
+        expect(getAdminBootstrap).toHaveBeenCalledWith(
+          accessToken,
+          fixedWebSocketConnector,
+        );
       });
     });
   });
