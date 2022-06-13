@@ -25,22 +25,24 @@ const NavDrawer = () => {
     if (!isMobile) setDrawerOpened(false);
   }, [isMobile]);
 
+  if (isMobile) {
+    return null;
+  }
+
   return (
-    isMobile && (
-      <>
-        <IconButton
-          aria-label="navigation drawer"
-          size="medium"
-          color="primary"
-          onClick={toggleDrawer(true)}
-        >
-          <Menu fontSize="inherit"></Menu>
-        </IconButton>
-        <Drawer anchor="left" open={drawerOpened} onClose={toggleDrawer(false)}>
-          <NavMenu />
-        </Drawer>
-      </>
-    )
+    <>
+      <IconButton
+        aria-label="navigation drawer"
+        size="medium"
+        color="primary"
+        onClick={toggleDrawer(true)}
+      >
+        <Menu fontSize="inherit"></Menu>
+      </IconButton>
+      <Drawer anchor="left" open={drawerOpened} onClose={toggleDrawer(false)}>
+        <NavMenu />
+      </Drawer>
+    </>
   );
 };
 

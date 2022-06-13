@@ -17,32 +17,39 @@ export const ConnectionStatus = {
   Disconnected: 'disconnected',
   Error: 'error',
 };
+
 // TODO: Graduate to show mainnet in production.
 const SHOW_MAINNET = process.env.NODE_ENV === 'development';
-export const DEFAULT_WALLET_CONNECTIONS = [
-  ...(window && window.location.hostname !== 'localhost'
-    ? [{ label: window.location.hostname, url: window.location.origin }]
-    : [{ label: 'Local Solo', url: 'http://localhost:8000' }]),
-  ...(process.env.NODE_ENV === 'development'
+const localConnection =
+  window && window.location.hostname !== 'localhost'
+    ? { label: window.location.hostname, url: window.location.origin }
+    : { label: 'Local Solo', url: 'http://localhost:8000' };
+const stageConnections =
+  process.env.NODE_ENV === 'development'
     ? [
         {
           label: 'Agoric Stage',
           url: 'https://stage.agoric.net/network-config',
         },
       ]
-    : []),
-  ...(SHOW_MAINNET
-    ? [
-        {
-          label: 'Agoric Mainnet',
-          url: 'https://main.agoric.net/network-config',
-        },
-        {
-          label: 'Agoric Devnet',
-          url: 'https://devnet.agoric.net/network-config',
-        },
-      ]
-    : []),
+    : [];
+const netConnections = SHOW_MAINNET
+  ? [
+      {
+        label: 'Agoric Mainnet',
+        url: 'https://main.agoric.net/network-config',
+      },
+      {
+        label: 'Agoric Devnet',
+        url: 'https://devnet.agoric.net/network-config',
+      },
+    ]
+  : [];
+
+export const DEFAULT_WALLET_CONNECTIONS = [
+  localConnection,
+  ...stageConnections,
+  ...netConnections,
 ];
 
 export const ApplicationContext = createContext();

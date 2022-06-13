@@ -12,6 +12,22 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import { withApplicationContext } from '../contexts/Application';
 
+const connectionValue = formValue => {
+  if (typeof formValue === 'string') {
+    return {
+      url: formValue,
+      label: formValue,
+    };
+  } else if (formValue?.inputValue) {
+    return {
+      url: formValue.inputValue,
+      label: formValue.inputValue,
+    };
+  } else {
+    return formValue;
+  }
+};
+
 const useStyles = makeStyles(_ => ({
   centeredText: {
     textAlign: 'center',
@@ -37,11 +53,10 @@ const ConnectionSettingsDialog = ({
     if (connection) {
       setWalletConnection(connection);
       disconnect(true);
-      if (
-        !allWalletConnections.some(
-          c => c.label === connection.label && c.url === connection.url,
-        )
-      ) {
+      const isKnown = allWalletConnections.some(
+        c => c.label === connection.label && c.url === connection.url,
+      );
+      if (!isKnown) {
         setAllWalletConnections(conns => [connection, ...conns]);
       }
     }
@@ -60,23 +75,8 @@ const ConnectionSettingsDialog = ({
             id="connection"
             options={allWalletConnections}
             sx={{ width: 300 }}
-            onChange={(event, newValue) => {
-              if (typeof newValue === 'string') {
-                setConnection({
-                  url: newValue,
-                  label: newValue,
-                });
-              } else if (newValue && newValue.inputValue) {
-                setConnection({
-                  url: newValue.inputValue,
-                  label: newValue.inputValue,
-                });
-              } else {
-                setConnection(newValue);
-              }
-            }}
+            onChange={(_, newValue) => setConnection(connectionValue(newValue))}
             filterOptions={(options, params) => {
-              // eslint-disable-next-line no-unused-vars
               const { inputValue } = params;
               const isExisting = options.some(
                 option => inputValue === option.label,
