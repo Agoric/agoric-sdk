@@ -35,7 +35,6 @@ import { makePaymentActions } from './actions.js';
 
 import '@agoric/store/exported.js';
 import '@agoric/zoe/exported.js';
-import '@agoric/run-protocol/exported.js';
 
 import './internal-types.js';
 import './types.js';
@@ -582,6 +581,7 @@ export function makeWallet({
 
   const getAttBrand = makeMemoizedGetter(() => E(getAttIssuer()).getBrand());
 
+  /** @typedef {any} AttestationTool */ /* @@@ TODO */
   /** @type import('@endo/promise-kit').PromiseKit<AttestationTool> */
   const attMakerPK = makePromiseKit();
 
