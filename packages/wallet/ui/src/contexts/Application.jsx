@@ -74,6 +74,30 @@ const useDebugLogging = (state, watch) => {
   useEffect(() => console.log(state), watch);
 };
 
+/**
+ * @param {string} key
+ * @param {unknown} value
+ */
+const maybeSave = (key, value) => {
+  if (window?.localStorage) {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  }
+};
+const maybeLoad = key => {
+  if (window?.localStorage) {
+    try {
+      const json = window.localStorage.getItem(key);
+      if (json) {
+        return JSON.parse(json);
+      }
+    } catch (e) {
+      console.error(e);
+      return undefined;
+    }
+  }
+  return undefined;
+};
+
 const cmp = (a, b) => {
   if (a < b) {
     return -1;
@@ -193,29 +217,12 @@ const Provider = ({ children }) => {
   );
 
   const RESTORED_WALLET_CONNECTIONS = [...DEFAULT_WALLET_CONNECTIONS];
-  let restoredWalletConnection;
-  if (window && window.localStorage) {
-    try {
-      const json = window.localStorage.getItem('userWalletConnections');
-      if (json) {
-        const userConnections = JSON.parse(json);
-        RESTORED_WALLET_CONNECTIONS.unshift(...userConnections);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-    try {
-      const json = window.localStorage.getItem('walletConnection');
-      if (json) {
-        restoredWalletConnection = JSON.parse(json);
-      }
-    } catch (e) {
-      console.error(e);
-    }
+  const userConnections = maybeLoad('userWalletConnections');
+  if (userConnections) {
+    RESTORED_WALLET_CONNECTIONS.unshift(...userConnections);
   }
-  if (!restoredWalletConnection) {
-    restoredWalletConnection = RESTORED_WALLET_CONNECTIONS[0];
-  }
+  const restoredWalletConnection =
+    maybeLoad('walletConnection') || RESTORED_WALLET_CONNECTIONS[0];
 
   const [walletConnection, setWalletConnection] = useState(
     restoredWalletConnection,
@@ -251,12 +258,8 @@ const Provider = ({ children }) => {
   }, [connectionState, connectionComponent]);
 
   useEffect(() => {
-    if (window && window.localStorage) {
-      window.localStorage.setItem(
-        'walletConnection',
-        JSON.stringify(walletConnection),
-      );
-    }
+    maybeSave('walletConnection', walletConnection);
+
     const userConnections = [];
     for (const { url, label } of allWalletConnections) {
       const found = DEFAULT_WALLET_CONNECTIONS.find(
@@ -267,12 +270,7 @@ const Provider = ({ children }) => {
         userConnections.push({ url, label });
       }
     }
-    if (window && window.localStorage) {
-      window.localStorage.setItem(
-        'userWalletConnections',
-        JSON.stringify(userConnections),
-      );
-    }
+    maybeSave('userWalletConnections', userConnections);
   }, [allWalletConnections, walletConnection]);
 
   useEffect(() => {
