@@ -40,6 +40,7 @@ import {
   setUpZoeForTest,
   eventLoopIteration,
   withAmountUtils,
+  produceInstallations,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 import {
@@ -62,7 +63,6 @@ const test = unknownTest;
 
 // #region Support
 
-// TODO path resolve these so refactors detect
 const contractRoots = {
   faucet: './test/vaultFactory/faucet.js',
   liquidate: './src/vaultFactory/liquidateMinimum.js',
@@ -170,9 +170,7 @@ const setupAmmAndElectorateAndReserve = async (
   const space = setupBootstrap(t, timer);
   const { consume, instance } = space;
   installGovernance(zoe, space.installation.produce);
-  // TODO consider using produceInstallations()
-  space.installation.produce.amm.resolve(t.context.installation.amm);
-  space.installation.produce.reserve.resolve(t.context.installation.reserve);
+  produceInstallations(space, t.context.installation);
   await startEconomicCommittee(space, electorateTerms);
   await setupAmm(space, {
     options: { minInitialPoolLiquidity: 300n },
@@ -631,26 +629,27 @@ test('price drop', async t => {
   t.is(notification.value.vaultState, Phase.LIQUIDATED);
   t.truthy(await E(vaultSeat).hasExited());
 
-  const debtAmountAfter = await E(vault).getCurrentDebt();
-  const finalNotification = await E(vaultNotifier).getUpdateSince();
-  t.is(finalNotification.value.vaultState, Phase.LIQUIDATED);
-  t.deepEqual(finalNotification.value.locked, aeth.make(2n));
-  t.is(debtAmountAfter.value, 30n);
-
-  t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
-    RUN: run.make(14n),
-  });
-
   const metricsSub = await E(reserveCreatorFacet).getMetrics();
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial({
     allocations: {},
     shortfallBalance: run.makeEmpty(),
   });
+
+  const debtAmountAfter = await E(vault).getCurrentDebt();
+  const finalNotification = await E(vaultNotifier).getUpdateSince();
+  t.is(finalNotification.value.vaultState, Phase.LIQUIDATED);
+  t.deepEqual(finalNotification.value.locked, aeth.make(2n));
+  // shortfall 30n covered by the reserve
+  t.is(debtAmountAfter.value, 0n);
   const liqBrand = await services.getLiquidityBrand(aeth.brand);
   await m.assertChange({
     allocations: { RaEthLiquidity: AmountMath.make(liqBrand, 300n) },
     shortfallBalance: { value: 30n },
+  });
+
+  t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
+    RUN: run.make(14n),
   });
 
   /** @type {UserSeat<string>} */
@@ -775,13 +774,18 @@ test('price falls precipitously', async t => {
 
   await manualTimer.tick();
   await eventLoopIteration();
-  // An emergency liquidation got less than full value
-  const debtAfterLiquidation = await E(vault).getCurrentDebt();
+
+  // shortfall 103n covered by the reserve
   t.deepEqual(
-    debtAfterLiquidation,
-    run.make(103n),
-    `Expected ${debtAfterLiquidation.value} to be less than 110`,
+    await E(vault).getCurrentDebt(),
+    run.makeEmpty(),
+    `Expected debt after liquidation to be zero`,
   );
+  const liqBrand = await services.getLiquidityBrand(aeth.brand);
+  await m.assertChange({
+    shortfallBalance: { value: 103n },
+    allocations: { RaEthLiquidity: AmountMath.make(liqBrand, 300n) },
+  });
 
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
     RUN: run.make(19n),
@@ -793,27 +797,17 @@ test('price falls precipitously', async t => {
     aeth.make(1n),
     'Collateral reduced after liquidation',
   );
-  // TODO take all collateral when vault is underwater
+  // TODO take all collateral when vault is underwater https://github.com/Agoric/agoric-sdk/issues/5558
   // t.deepEqual(
   //   await E(vault).getCollateralAmount(),
   //   aeth.makeEmpty(),
   //   'Collateral used up trying to cover debt',
   // );
 
-  t.deepEqual(
-    await E(vault).getCurrentDebt(),
-    debtAfterLiquidation,
-    'Liquidation didn’t fully cover debt',
-  );
-
-  const liqBrand = await services.getLiquidityBrand(aeth.brand);
-  await m.assertChange({
-    shortfallBalance: { value: 103n },
-    allocations: { RaEthLiquidity: AmountMath.make(liqBrand, 300n) },
-  });
-
   const finalNotification = await E(vaultNotifier).getUpdateSince();
   t.is(finalNotification.value.vaultState, Phase.LIQUIDATED);
+  // vault holds no debt after liquidation
+  t.is(finalNotification.value.debtSnapshot.debt.value, 0n);
 
   /** @type {UserSeat<string>} */
   const closeSeat = await E(zoe).offer(E(vault).makeCloseInvitation());
@@ -1414,8 +1408,7 @@ test('transfer vault', async t => {
     return amount.value[0];
   };
 
-  // TODO this should not need `await`
-  const transferInvite = await E(aliceVault).makeTransferInvitation();
+  const transferInvite = E(aliceVault).makeTransferInvitation();
   const inviteProps = await getInvitationProperties(transferInvite);
   trace(t, 'TRANSFER INVITE', transferInvite, inviteProps);
   /** @type {UserSeat<VaultKit>} */
@@ -1457,10 +1450,7 @@ test('transfer vault', async t => {
   // Interleave with `adjustVault`
   // make the invitation first so that we can arrange the interleaving
   // of adjust and tranfer
-  // TODO this should not need `await`
-  const adjustInvitation = await E(
-    transferVault,
-  ).makeAdjustBalancesInvitation();
+  const adjustInvitation = E(transferVault).makeAdjustBalancesInvitation();
   const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocation();
   const aliceProceeds = await E(aliceLoanSeat).getPayouts();
   t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 RUN');
@@ -2526,10 +2516,9 @@ test('manager notifiers', async t => {
   });
 
   trace('2. Remove collateral');
-  const adjustBalances1 = await E(vault1).makeAdjustBalancesInvitation();
-  const taken = aeth.make(50_000n);
+  let taken = aeth.make(50_000n);
   const takeCollateralSeat = await E(services.zoe).offer(
-    adjustBalances1,
+    await E(vault1).makeAdjustBalancesInvitation(),
     harden({
       give: {},
       want: { Collateral: taken },
@@ -2552,7 +2541,7 @@ test('manager notifiers', async t => {
     totalOverageReceived: { value: totalOverageReceived },
     totalProceedsReceived: { value: totalProceedsReceived },
   });
-  await m.assertFullyLiquidated();
+  m.assertFullyLiquidated();
 
   trace('4. Make another LOAN1 loan');
   vaultSeat = await E(services.zoe).offer(
@@ -2611,7 +2600,7 @@ test('manager notifiers', async t => {
     totalCollateral: { value: 0n },
     totalProceedsReceived: { value: totalProceedsReceived },
   });
-  await m.assertFullyLiquidated();
+  m.assertFullyLiquidated();
 
   trace('7. Make another LOAN2 loan');
   vaultSeat = await E(services.zoe).offer(
@@ -2713,5 +2702,71 @@ test('manager notifiers', async t => {
       value: DEBT1 + DEBT2 + interestAccrued - nextProceeds - 53n - 1n, // compensate for previous proceeds and rounding
     },
   });
-  await m.assertFullyLiquidated();
+  m.assertFullyLiquidated();
+  // FIXME there shouldn't be any leftover debt once fully liquidated
+  // https://github.com/Agoric/agoric-sdk/issues/5550
+  const leftoverDebt = DEBT1 - nextProceeds + interestAccrued;
+
+  trace('11. Create a loan with ample collateral');
+  /** @type {UserSeat<VaultKit>} */
+  vaultSeat = await E(services.zoe).offer(
+    await E(lender).makeVaultInvitation(),
+    harden({
+      give: { Collateral: aeth.make(AMPLE) },
+      want: { RUN: run.make(LOAN1) },
+    }),
+    harden({
+      Collateral: t.context.aeth.mint.mintPayment(aeth.make(AMPLE)),
+    }),
+  );
+  const { vault: vault2 } = await E(vaultSeat).getOfferResult();
+  m.addDebt(DEBT1);
+  await m.assertChange({
+    numVaults: 1,
+    totalCollateral: { value: AMPLE },
+    totalDebt: { value: DEBT1 + leftoverDebt },
+  });
+
+  trace('12. Borrow more');
+  taken = run.make(400n);
+  // 20n? fix in https://github.com/Agoric/agoric-sdk/issues/5550
+  const debtPostBorrowingMore = DEBT1 + leftoverDebt + taken.value + 20n;
+  // can't use 0n because of https://github.com/Agoric/agoric-sdk/issues/5548
+  // but since this test is of metrics, we take the opportunity to check totalCollateral changing
+  const given = aeth.make(2n);
+  vaultSeat = await E(services.zoe).offer(
+    await E(vault2).makeAdjustBalancesInvitation(),
+    harden({
+      // nominal collateral
+      give: { Collateral: given },
+      want: { RUN: taken },
+    }),
+    harden({
+      Collateral: t.context.aeth.mint.mintPayment(given),
+    }),
+  );
+  console.log('DEBUG', { DEBT1, leftoverDebt, taken });
+  await E(vaultSeat).getOfferResult();
+  await m.assertChange({
+    totalDebt: { value: debtPostBorrowingMore },
+    totalCollateral: { value: AMPLE + given.value },
+  });
+
+  trace('13. Close loan');
+  vaultSeat = await E(services.zoe).offer(
+    await E(vault2).makeCloseInvitation(),
+    harden({
+      give: { RUN: run.make(debtPostBorrowingMore) },
+      want: {},
+    }),
+    harden({
+      RUN: await getRunFromFaucet(t, debtPostBorrowingMore),
+    }),
+  );
+  await E(vaultSeat).getOfferResult();
+  await m.assertChange({
+    numVaults: 0,
+    totalCollateral: { value: 0n },
+    totalDebt: { value: leftoverDebt },
+  });
 });

@@ -1,5 +1,6 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
+import { isNat } from '@agoric/nat';
 import { importBundle } from '@endo/import-bundle';
 import { stringify } from '@endo/marshal';
 import { assertKnownOptions } from '../lib/assertOptions.js';
@@ -81,7 +82,7 @@ export function doAddExport(kernelKeeper, fromVatID, vref) {
 export default function buildKernel(
   kernelEndowments,
   deviceEndowments,
-  kernelOptions = {},
+  kernelRuntimeOptions = {},
 ) {
   const {
     waitUntilQuiescent,
@@ -105,7 +106,7 @@ export default function buildKernel(
     defaultManagerType = 'local',
     warehousePolicy,
     overrideVatManagerOptions = {},
-  } = kernelOptions;
+  } = kernelRuntimeOptions;
   const logStartup = verbose ? console.debug : () => 0;
 
   const vatAdminRootKref = hostStorage.kvStore.get('vatAdminRootKref');
@@ -263,7 +264,7 @@ export default function buildKernel(
 
       // ISSUE: terminate stuff in its own crank like creation?
       // eslint-disable-next-line no-use-before-define
-      vatWarehouse.vatWasTerminated(vatID);
+      void vatWarehouse.vatWasTerminated(vatID);
     }
     if (critical) {
       // The following error construction is a bit awkward, but (1) it saves us
@@ -634,6 +635,56 @@ export default function buildKernel(
     );
   }
 
+  function setKernelVatOption(vatID, option, value) {
+    switch (option) {
+      case 'reapInterval': {
+        if (value === 'never' || isNat(value)) {
+          const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+          vatKeeper.updateReapInterval(value);
+        } else {
+          console.log(`WARNING: invalid reapInterval value`, value);
+        }
+        return true;
+      }
+      default:
+        return false;
+    }
+  }
+
+  /**
+   *
+   * @param { RunQueueEventChangeVatOptions } message
+   * @returns { Promise<DeliveryStatus | null> }
+   */
+  async function processChangeVatOptions(message) {
+    const { vatID, options } = message;
+    insistVatID(vatID);
+    // eslint-disable-next-line no-use-before-define
+    if (!vatWarehouse.lookup(vatID)) {
+      return null; // vat is dead, splat
+    }
+
+    /** @type { Record<string, unknown> } */
+    const optionsForVat = {};
+    let haveOptionsForVat = false;
+    for (const option of Object.getOwnPropertyNames(options)) {
+      if (!setKernelVatOption(vatID, option, options[option])) {
+        optionsForVat[option] = options[option];
+        haveOptionsForVat = true;
+      }
+    }
+    if (haveOptionsForVat) {
+      /** @type { KernelDeliveryChangeVatOptions } */
+      const kd = harden(['changeVatOptions', optionsForVat]);
+      // eslint-disable-next-line no-use-before-define
+      const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
+      const status = await deliverAndLogToVat(vatID, kd, vd);
+      return { ...status, discardFailedDelivery: true };
+    } else {
+      return { discardFailedDelivery: true };
+    }
+  }
+
   /**
    *
    * @param { RunQueueEventUpgradeVat } message
@@ -645,7 +696,9 @@ export default function buildKernel(
     insistCapData(vatParameters);
 
     // eslint-disable-next-line no-use-before-define
-    assert(vatWarehouse.lookup(vatID));
+    if (!vatWarehouse.lookup(vatID)) {
+      return null; // vat is dead, splat
+    }
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     /** @type { import('../types-external.js').KernelDeliveryStopVat } */
     const kd1 = harden(['stopVat']);
@@ -727,6 +780,9 @@ export default function buildKernel(
     } else if (message.type === 'upgrade-vat') {
       // prettier-ignore
       return `upgrade-vat ${message.vatID} upgradeID: ${message.upgradeID} vatParameters: ${JSON.stringify(message.vatParameters)}`;
+    } else if (message.type === 'changeVatOptions') {
+      // prettier-ignore
+      return `changeVatOptions ${message.vatID} options: ${JSON.stringify(message.options)}`;
       // eslint-disable-next-line no-use-before-define
     } else if (gcMessages.includes(message.type)) {
       // prettier-ignore
@@ -857,13 +913,14 @@ export default function buildKernel(
    *          } RunQueueEventCreateVat
    * @typedef { { type: 'upgrade-vat', vatID: VatID, upgradeID: string,
    *              bundleID: BundleID, vatParameters: SwingSetCapData } } RunQueueEventUpgradeVat
+   * @typedef { { type: 'changeVatOptions', vatID: VatID, options: Record<string, unknown> } } RunQueueEventChangeVatOptions
    * @typedef { { type: 'startVat', vatID: VatID, vatParameters: SwingSetCapData } } RunQueueEventStartVat
    * @typedef { { type: 'dropExports', vatID: VatID, krefs: string[] } } RunQueueEventDropExports
    * @typedef { { type: 'retireExports', vatID: VatID, krefs: string[] } } RunQueueEventRetireExports
    * @typedef { { type: 'retireImports', vatID: VatID, krefs: string[] } } RunQueueEventRetireImports
    * @typedef { { type: 'bringOutYourDead', vatID: VatID } } RunQueueEventBringOutYourDead
    * @typedef { RunQueueEventNotify | RunQueueEventSend | RunQueueEventCreateVat |
-   *            RunQueueEventUpgradeVat | RunQueueEventStartVat |
+   *            RunQueueEventUpgradeVat | RunQueueEventChangeVatOptions | RunQueueEventStartVat |
    *            RunQueueEventDropExports | RunQueueEventRetireExports | RunQueueEventRetireImports |
    *            RunQueueEventBringOutYourDead
    *          } RunQueueEvent
@@ -927,6 +984,8 @@ export default function buildKernel(
       deliverP = processStartVat(message);
     } else if (message.type === 'upgrade-vat') {
       deliverP = processUpgradeVat(message);
+    } else if (message.type === 'changeVatOptions') {
+      deliverP = processChangeVatOptions(message);
     } else if (message.type === 'bringOutYourDead') {
       deliverP = processBringOutYourDead(message);
     } else if (gcMessages.includes(message.type)) {
@@ -1505,13 +1564,32 @@ export default function buildKernel(
     }
   }
 
+  function changeKernelOptions(options) {
+    assertKnownOptions(options, ['defaultReapInterval', 'snapshotInterval']);
+    for (const option of Object.getOwnPropertyNames(options)) {
+      const value = options[option];
+      switch (option) {
+        case 'defaultReapInterval': {
+          kernelKeeper.setDefaultReapInterval(value);
+          break;
+        }
+        case 'snapshotInterval': {
+          vatWarehouse.setSnapshotInterval(value);
+          break;
+        }
+        default:
+          assert.fail(`this can't happen (kernel option ${option})`);
+      }
+    }
+    kernelKeeper.commitCrank();
+  }
+
   /**
    * Run the kernel until the policy says to stop, or the queue is empty.
    *
    * @param {RunPolicy?} policy - a RunPolicy to limit the work being done
    * @returns { Promise<number> } The number of cranks that were executed.
    */
-
   async function run(policy = foreverPolicy()) {
     assert(policy);
     if (kernelPanic) {
@@ -1641,6 +1719,7 @@ export default function buildKernel(
     step,
     run,
     shutdown,
+    changeKernelOptions,
 
     // the rest are for testing and debugging
 

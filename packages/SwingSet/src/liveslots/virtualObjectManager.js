@@ -64,6 +64,14 @@ export function makeCache(size, fetch, store) {
         dirtyCount += 1;
       }
     },
+    setSize(newSize) {
+      if (newSize < size) {
+        size = newSize;
+        cache.makeRoom();
+      } else {
+        size = newSize;
+      }
+    },
     flush() {
       if (dirtyCount > 0) {
         let entry = lruTail;
@@ -872,6 +880,10 @@ export function makeVirtualObjectManager(
     return maker;
   }
 
+  function setCacheSize(newSize) {
+    cache.setSize(newSize);
+  }
+
   function insistAllDurableKindsReconnected() {
     // identify all user-defined durable kinds by iterating `vom.dkind.*`
     const missing = [];
@@ -916,6 +928,7 @@ export function makeVirtualObjectManager(
     insistAllDurableKindsReconnected,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
+    setCacheSize,
     flushCache: cache.flush,
     testHooks,
   });

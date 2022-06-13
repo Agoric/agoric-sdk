@@ -1137,7 +1137,7 @@
     elliptic "^6.5.3"
     libsodium-wrappers "^0.7.6"
 
-"@cosmjs/encoding@0.28.4", "@cosmjs/encoding@^0.28.4":
+"@cosmjs/encoding@0.28.4":
   version "0.28.4"
   resolved "https://registry.yarnpkg.com/@cosmjs/encoding/-/encoding-0.28.4.tgz#ea39eb4c27ebf7b35e62e9898adae189b86d0da7"
   integrity sha512-N6Qnjs4dd8KwjW5m9t3L+rWYYGW2wyS+iLtJJ9DD8DiTTxpW9h7/AmUVO/dsRe5H2tV8/DzH/B9pFfpsgro22A==
@@ -1161,7 +1161,7 @@
   dependencies:
     bn.js "^5.2.0"
 
-"@cosmjs/proto-signing@0.28.4", "@cosmjs/proto-signing@^0.28.4":
+"@cosmjs/proto-signing@0.28.4":
   version "0.28.4"
   resolved "https://registry.yarnpkg.com/@cosmjs/proto-signing/-/proto-signing-0.28.4.tgz#7007651042bd05b3eee7e1c8562417bbed630198"
   integrity sha512-4vgCLK9gOsdWzD78V5XbAsupSSyntPEzokWYhgRQNwgVTcKX1kg0eKZqUvF5ua5iL9x6MevfH/sgwPyiYleMBw==
@@ -1185,7 +1185,7 @@
     ws "^7"
     xstream "^11.14.0"
 
-"@cosmjs/stargate@^0.28.4":
+"@cosmjs/stargate@0.28.4":
   version "0.28.4"
   resolved "https://registry.yarnpkg.com/@cosmjs/stargate/-/stargate-0.28.4.tgz#a5acbaa3451f7c853739064f799dec21097a06df"
   integrity sha512-tdwudilP5iLNwDm4TOMBjWuL5YehLPqGlC5/7hjJM/kVHyzLFo4Lzt0dVEwr5YegH+RsRXH/VtFLQz+NYlCobw==
@@ -1210,7 +1210,7 @@
   dependencies:
     xstream "^11.14.0"
 
-"@cosmjs/tendermint-rpc@0.28.4", "@cosmjs/tendermint-rpc@^0.28.4":
+"@cosmjs/tendermint-rpc@0.28.4":
   version "0.28.4"
   resolved "https://registry.yarnpkg.com/@cosmjs/tendermint-rpc/-/tendermint-rpc-0.28.4.tgz#78835fdc8126baa3122c8b2b396c1d7d290c7167"
   integrity sha512-iz6p4UW2QUZNh55WeJy9wHbMdqM8COo0AJdrGU4Ikb/xU0/H6b0dFPoEK+i6ngR0cSizh+hpTMzh3AA7ySUKlA==

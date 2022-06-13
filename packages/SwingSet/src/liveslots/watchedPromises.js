@@ -80,7 +80,7 @@ export function makeWatchedPromiseManager(
       promiseRegistrations.delete(vpid);
       for (const watch of watches) {
         const [watcher, ...args] = watch;
-        Promise.resolve().then(() => {
+        void Promise.resolve().then(() => {
           if (wasFulfilled) {
             if (watcher.onFulfilled) {
               watcher.onFulfilled(value, ...args);
@@ -114,7 +114,7 @@ export function makeWatchedPromiseManager(
         watchedPromiseTable.delete(vpid);
         for (const watch of watches) {
           const [watcher, ...args] = watch;
-          Promise.resolve().then(() => {
+          void Promise.resolve().then(() => {
             if (watcher.onRejected) {
               watcher.onRejected(VatUpgradedMessage, ...args);
             } else {
@@ -170,7 +170,7 @@ export function makeWatchedPromiseManager(
     // TODO: remove mapping upon resolution
     // TODO: track watched but non-exported promises, add during prepareShutdownRejections
     //  maybe check importedVPIDs here and add to table if !has
-    Promise.resolve().then(() => {
+    void Promise.resolve().then(() => {
       const watcherVref = convertValToSlot(watcher);
       assert(watcherVref, 'invalid watcher');
       const { virtual } = parseVatSlot(watcherVref);

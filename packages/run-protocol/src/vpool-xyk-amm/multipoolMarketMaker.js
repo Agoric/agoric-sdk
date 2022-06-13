@@ -33,7 +33,7 @@ import { makeTracer } from '../makeTracer.js';
 
 const { quote: q, details: X } = assert;
 
-const trace = makeTracer('XykAmm');
+const trace = makeTracer('XykAmm', false);
 
 /**
  * @typedef {object} MetricsNotification

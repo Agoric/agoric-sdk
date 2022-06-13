@@ -82,7 +82,7 @@ const liquidate = async (
   burnLosses(runToBurn, vaultZcfSeat);
 
   // Accounting complete. Update the vault state.
-  vault.liquidated(AmountMath.subtract(debt, runToBurn));
+  vault.liquidated();
   // remaining funds are left on the vault for the user to close and claim
 
   // for accounting

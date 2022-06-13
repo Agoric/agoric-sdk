@@ -332,7 +332,7 @@ export function makeNetworkProtocol(protocolHandler) {
         // eslint-disable-next-line no-use-before-define
         const conn = await protocolImpl.outbound(port, dst, connectionHandler);
         if (revoked) {
-          E(conn).close();
+          void E(conn).close();
         } else {
           openConnections.add(conn);
         }
@@ -508,7 +508,7 @@ export function makeNetworkProtocol(protocolHandler) {
   });
 
   // Wire up the local protocol to the handler.
-  E(protocolHandler).onCreate(protocolImpl, protocolHandler);
+  void E(protocolHandler).onCreate(protocolImpl, protocolHandler);
 
   // Return the user-facing protocol.
   return Far('binder', { bind });

@@ -65,7 +65,7 @@ export function buildRootObject(vatPowers) {
       purse.deposit(payment);
     },
     getUpdateSince() {
-      notifier.getUpdateSince();
+      return notifier.getUpdateSince();
     },
   });
 }

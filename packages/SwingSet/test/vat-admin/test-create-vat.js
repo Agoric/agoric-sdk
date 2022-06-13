@@ -354,7 +354,7 @@ test('createVat holds refcount', async t => {
   // expectedRefcount -= 1; // device-vat-admin retires
   // expectedCLists -= 1; // device-vat-admin retires
 
-  t.deepEqual(c.dump().reapQueue, ['v3']);
+  t.deepEqual(c.dump().reapQueue, ['v2']);
   await c.step();
   t.deepEqual(c.dump().reapQueue, []);
   // console.log(`---`);

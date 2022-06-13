@@ -13,8 +13,11 @@ import { initSwingStore } from '@agoric/swing-store';
 import { loadBasedir, buildVatController } from '../../src/index.js';
 import { makeLRU } from '../../src/kernel/vat-warehouse.js';
 
-async function makeController(managerType, runtimeOptions) {
+async function makeController(managerType, runtimeOptions, snapshotInterval) {
   const config = await loadBasedir(new URL('./', import.meta.url).pathname);
+  if (snapshotInterval) {
+    config.snapshotInterval = snapshotInterval;
+  }
   assert(config.vats);
   config.vats.target.creationOptions = { managerType, enableDisavow: true };
   config.vats.target2 = config.vats.target;
@@ -32,36 +35,36 @@ const steps = [
     vat: 'target',
     // ... we expect these vats online:
     online: [
-      { id: 'v3', name: 'bootstrap' },
-      { id: 'v1', name: 'target' },
+      { id: 'v1', name: 'bootstrap' },
+      { id: 'v6', name: 'target' },
     ],
   },
   {
     vat: 'target2',
     online: [
-      { id: 'v1', name: 'target' },
-      { id: 'v4', name: 'target2' },
+      { id: 'v6', name: 'target' },
+      { id: 'v7', name: 'target2' },
     ],
   },
   {
     vat: 'target3',
     online: [
-      { id: 'v4', name: 'target2' },
-      { id: 'v5', name: 'target3' },
+      { id: 'v7', name: 'target2' },
+      { id: 'v8', name: 'target3' },
     ],
   },
   {
     vat: 'target4',
     online: [
-      { id: 'v5', name: 'target3' },
-      { id: 'v6', name: 'target4' },
+      { id: 'v8', name: 'target3' },
+      { id: 'v9', name: 'target4' },
     ],
   },
   {
     vat: 'target2',
     online: [
-      { id: 'v6', name: 'target4' },
-      { id: 'v4', name: 'target2' },
+      { id: 'v9', name: 'target4' },
+      { id: 'v7', name: 'target2' },
     ],
   },
 ];
@@ -122,10 +125,11 @@ test('snapshot after deliveries', async t => {
 
   const { kvStore, streamStore, commit } = initSwingStore(swingStorePath);
   const hostStorage = { kvStore, streamStore };
-  const c = await makeController('xs-worker', {
-    hostStorage,
-    warehousePolicy: { maxVatsOnline, snapshotInterval: 1 },
-  });
+  const c = await makeController(
+    'xs-worker',
+    { hostStorage, warehousePolicy: { maxVatsOnline } },
+    1,
+  );
   t.teardown(c.shutdown);
 
   await runSteps(c, t);

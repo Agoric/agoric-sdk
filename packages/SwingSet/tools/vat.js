@@ -51,13 +51,13 @@ async function main() {
     r.context.dump2 = () => controller.dump();
     r.context.run = () => {
       console.log('run!');
-      controller.run();
+      return controller.run();
     };
     r.context.step = () => {
       console.log('step!');
-      controller.step();
+      return controller.step();
     };
   }
 }
 
-main();
+void main();

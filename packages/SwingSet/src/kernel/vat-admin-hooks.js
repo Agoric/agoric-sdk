@@ -112,5 +112,20 @@ export function makeVatAdminHooks(tools) {
       terminateVat(vatID, true, reasonCD);
       return harden({ body: stringify(undefined), slots: [] });
     },
+
+    changeOptions(argsCapData) {
+      // marshal([vatID, options]) -> null
+      assert(argsCapData.slots.length === 0);
+      const args = JSON.parse(argsCapData.body);
+      const [vatID, options] = args;
+      insistVatID(vatID);
+      const ev = {
+        type: 'changeVatOptions',
+        vatID,
+        options,
+      };
+      kernelKeeper.addToAcceptanceQueue(harden(ev));
+      return harden({ body: stringify(undefined), slots: [] });
+    },
   };
 }

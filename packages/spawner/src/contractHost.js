@@ -14,7 +14,7 @@ function makeSpawner(vatAdminSvc) {
       return Far('installer', {
         async spawn(argsP) {
           const meter = await E(vatAdminSvc).createUnlimitedMeter();
-          const opts = { meter };
+          const opts = { name: 'spawn', meter };
           const { root } = await E(vatAdminSvc).createVat(spawnBundle, opts);
           return E(E(root).loadBundle(bundle)).start(argsP);
         },

@@ -20,7 +20,7 @@ rm -rf /usr/src/agoric-sdk/chaintest  ~/.ag-chain-cosmos/ /usr/src/testnet-load-
 
 cd /usr/src/agoric-sdk/
 sudo ./packages/deployment/scripts/install-deps.sh
-yarn install && yarn build && make -C packages/cosmic-swingset/
+yarn install && XSNAP_RANDOM_INIT=1 yarn build && make -C packages/cosmic-swingset/
 # change to "false" to skip extraction on success like in CI
 testfailure="unknown"
 /usr/src/agoric-sdk/packages/deployment/scripts/integration-test.sh || {
@@ -28,6 +28,9 @@ testfailure="unknown"
   testfailure="true"
 }
 
-/usr/src/agoric-sdk/packages/deployment/scripts/setup.sh play stop || true
-/usr/src/agoric-sdk/packages/deployment/scripts/capture-integration-results.sh $testfailure
-echo yes | /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh destroy || true
+packages/deployment/scripts/setup.sh play stop || true
+packages/deployment/scripts/capture-integration-results.sh $testfailure
+echo yes | packages/deployment/scripts/setup.sh destroy || true
+
+# Not part of CI
+/usr/src/agoric-sdk/scripts/process-integration-results.sh $NETWORK_NAME/results

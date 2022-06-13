@@ -1,5 +1,17 @@
 // @ts-check
-
+/**
+ * @file Vault Manager object manages vault-based debts for a collateral type.
+ *
+ * The responsibilities include:
+ * - opening a new vault backed by the collateral
+ * - publishing metrics on the vault economy for that collateral
+ * - charging interest on all active vaults
+ * - liquidating active vaults that have exceeded the debt ratio
+ *
+ * Once a vault is settled (liquidated or closed) it can still be used, traded,
+ * etc. but is no longer the concern of the manager. It can't be liquidated,
+ * have interest charged, or be counted in the metrics.
+ */
 import '@agoric/zoe/exported.js';
 
 import { E } from '@endo/eventual-send';
@@ -22,7 +34,7 @@ import {
 import { AmountMath } from '@agoric/ertp';
 
 import { defineKindMulti, pickFacet } from '@agoric/vat-data';
-import { makeVault } from './vault.js';
+import { makeVault, Phase } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
@@ -544,26 +556,54 @@ const managerBehavior = {
    * @param {NormalizedDebt} oldDebtNormalized
    * @param {Amount<'nat'>} oldCollateral
    * @param {VaultId} vaultId
+   * @param {import('./vault.js').VaultPhase} vaultPhase at the end of whatever change updated balances
    */
-  updateVaultAccounting: (
+  handleBalanceChange: (
     { state, facets },
     oldDebtNormalized,
     oldCollateral,
     vaultId,
+    vaultPhase,
   ) => {
     const { prioritizedVaults } = state;
-    const vault = prioritizedVaults.refreshVaultPriority(
-      oldDebtNormalized,
-      oldCollateral,
-      vaultId,
-    );
-    // totalCollateral += vault's collateral delta (post — pre)
-    state.totalCollateral = AmountMath.subtract(
-      AmountMath.add(state.totalCollateral, vault.getCollateralAmount()),
-      oldCollateral,
-    );
-    // debt accounting managed through minting and burning
-    facets.helper.updateMetrics();
+
+    // the manager holds only vaults that can accrue interest or be liquidated;
+    // i.e. vaults that have debt. The one exception is at the outset when
+    // a vault has been added to the manager but not yet accounted for.
+    const settled =
+      AmountMath.isEmpty(oldDebtNormalized) && vaultPhase !== Phase.ACTIVE;
+
+    if (settled) {
+      assert(
+        !prioritizedVaults.hasVaultByAttributes(
+          oldDebtNormalized,
+          oldCollateral,
+          vaultId,
+        ),
+        'Settled vaults must not be retained in storage',
+      );
+    } else {
+      // its position in the queue is no longer valid
+      const vault = prioritizedVaults.removeVaultByAttributes(
+        oldDebtNormalized,
+        oldCollateral,
+        vaultId,
+      );
+
+      // replace in queue, but only if it can accrue interest or be liquidated (i.e. has debt).
+      // getCurrentDebt() would also work (0x = 0) but require more computation.
+      if (!AmountMath.isEmpty(vault.getNormalizedDebt())) {
+        prioritizedVaults.addVault(vaultId, vault);
+      }
+
+      // totalCollateral += vault's collateral delta (post — pre)
+      state.totalCollateral = AmountMath.subtract(
+        AmountMath.add(state.totalCollateral, vault.getCollateralAmount()),
+        oldCollateral,
+      );
+      // debt accounting managed through minting and burning
+      facets.helper.updateMetrics();
+    }
   },
 };
 

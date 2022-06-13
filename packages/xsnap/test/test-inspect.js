@@ -1,5 +1,5 @@
 import test from 'ava';
-import '@endo/init';
+import '@endo/init/debug.js';
 
 import * as fs from 'fs';
 import * as proc from 'child_process';

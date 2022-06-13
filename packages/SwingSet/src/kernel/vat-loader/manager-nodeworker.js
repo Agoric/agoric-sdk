@@ -64,7 +64,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
 
     function sendToWorker(msg) {
       assert(msg instanceof Array);
-      workerP.then(worker => worker.postMessage(msg));
+      void workerP.then(worker => worker.postMessage(msg));
     }
 
     const { promise: dispatchReadyP, resolve: dispatchIsReady } =

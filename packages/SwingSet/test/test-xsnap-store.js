@@ -1,4 +1,4 @@
-import '@endo/init';
+import '@endo/init/debug.js';
 
 import fs from 'fs';
 import path from 'path';

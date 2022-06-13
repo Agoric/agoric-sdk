@@ -240,6 +240,22 @@ export function swingsetIsInitialized(hostStorage) {
   return !!hostStorage.kvStore.get('initialized');
 }
 
+/**
+ * @param {Record<string, any>} obj
+ * @param {(string|undefined)[]} [firsts]
+ * @returns {Record<string, any>}
+ */
+function sortObjectProperties(obj, firsts = []) {
+  const sorted = [...firsts, ...Object.keys(obj).sort()];
+  const result = {};
+  for (const prop of sorted) {
+    if (prop && result[prop] === undefined && obj[prop] !== undefined) {
+      result[prop] = obj[prop];
+    }
+  }
+  return result;
+}
+
 /** @typedef {{ kernelBundles?: Record<string, string>, verbose?: boolean,
  *              addVatAdmin?: boolean, addComms?: boolean, addVattp?: boolean,
  *              addTimer?: boolean,
@@ -438,7 +454,7 @@ export async function initializeSwingset(
 
   async function processGroup(groupName, nameToBundle) {
     const group = config[groupName] || {};
-    const names = Array.from(Object.keys(group));
+    const names = Object.keys(group).sort();
     const processP = names.map(name =>
       processDesc(group[name], nameToBundle).catch(err => {
         throw Error(`config.${groupName}.${name}: ${err.message}`);
@@ -462,6 +478,15 @@ export async function initializeSwingset(
   // (to populate config.namedBundles) and the bundleID->bundle record (to
   // install the actual bundles)
 
+  config.bundles = sortObjectProperties(config.bundles);
+  config.vats = sortObjectProperties(config.vats, [
+    config.bootstrap,
+    'vatAdmin',
+    'comms',
+    'vattp',
+    'timer',
+  ]);
+  config.devices = sortObjectProperties(config.devices);
   const [nameToBundle, idToNamedBundle] = await processGroup('bundles');
   const [_1, idToVatBundle] = await processGroup('vats', nameToBundle);
   const [_2, idToDeviceBundle] = await processGroup('devices', nameToBundle);
@@ -469,11 +494,11 @@ export async function initializeSwingset(
   const kconfig = {
     ...config,
     namedBundleIDs: {},
-    idToBundle: {
+    idToBundle: sortObjectProperties({
       ...idToNamedBundle,
       ...idToVatBundle,
       ...idToDeviceBundle,
-    },
+    }),
   };
   for (const name of Object.keys(nameToBundle)) {
     kconfig.namedBundleIDs[name] = nameToBundle[name].id;

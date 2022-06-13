@@ -5,6 +5,10 @@ inputs:
   node-version:
     description: 'The version of Node.js to use'
     required: true
+  xsnap-random-init:
+    description: Build xsnap binary with random memory init
+    required: false
+    default: '0'
 
 runs:
   using: composite
@@ -33,7 +37,7 @@ runs:
       uses: actions/cache@v1
       with:
         path: .
-        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-node-${{ inputs.node-version }}-built-${{ github.sha }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-node-${{ inputs.node-version }}-built-${{ inputs.xsnap-random-init }}-${{ github.sha }}
     - name: yarn install --frozen-lockfile
       run: yarn install --frozen-lockfile
       shell: bash
@@ -42,3 +46,5 @@ runs:
       run: yarn build
       shell: bash
       if: steps.built.outputs.cache-hit != 'true'
+      env:
+        XSNAP_RANDOM_INIT: ${{ inputs.xsnap-random-init }}

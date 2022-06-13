@@ -57,7 +57,7 @@ export function buildRootObject(vatPowers, vatParameters) {
   //   syscall.reject(pC, Error('oops'))
   //   syscall.fulfillToData(rp3, 'rp3 good')
   function one() {
-    Promise.reject(Error('one unhandled rejection'));
+    void Promise.reject(Error('one unhandled rejection'));
     precB.resolve(callbackObj); // syscall.fulfillToPresence
     precC.reject(Error('oops')); // syscall.reject
     return 'rp3 good';

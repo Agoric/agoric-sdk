@@ -78,7 +78,7 @@ test.serial('plugin first time', async t => {
     t,
   );
 
-  queueThunkForKernel(() => bridge.deliverInbound('pingpong'));
+  void queueThunkForKernel(() => bridge.deliverInbound('pingpong'));
   await cycle();
 
   t.deepEqual(dump().log, [
@@ -94,7 +94,7 @@ test.serial('plugin after restart', async t => {
     await setupVatController(t);
 
   plugin.reset();
-  queueThunkForKernel(() => bridge.deliverInbound('pingpong'));
+  void queueThunkForKernel(() => bridge.deliverInbound('pingpong'));
   await cycle();
 
   t.deepEqual(dump().log, [

@@ -11,7 +11,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       const mode = argv[0];
       if (mode === 'harden-promise-1') {
         const { promise: p1 } = makePromiseKit();
-        harden(p1);
+        void harden(p1);
         const allP = [];
         // in bug #95, this first call returns a (correctly) frozen Promise,
         // but for the wrong reasons
@@ -26,7 +26,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         // const p4 = vats.left!checkHarden(p1);
         // log(`p4 frozen ${Object.isFrozen(p4)}`);
         // allP.push(p4);
-        Promise.all(allP).then(_ => {
+        return Promise.all(allP).then(_ => {
           log(`b.harden-promise-1.finish`);
         });
       } else {

@@ -365,7 +365,13 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       serviceName: TELEMETRY_SERVICE_NAME,
     });
 
-    const { SLOGFILE, SLOGSENDER, LMDB_MAP_SIZE, SWING_STORE_TRACE } = env;
+    const {
+      SLOGFILE,
+      SLOGSENDER,
+      LMDB_MAP_SIZE,
+      SWING_STORE_TRACE,
+      XSNAP_KEEP_SNAPSHOTS,
+    } = env;
     const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
       stateDir: stateDBDir,
       env,
@@ -392,6 +398,9 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         }
     }
 
+    const keepSnapshots =
+      XSNAP_KEEP_SNAPSHOTS === '1' || XSNAP_KEEP_SNAPSHOTS === 'true';
+
     const s = await launch({
       actionQueue,
       kernelStateDBDir: stateDBDir,
@@ -406,6 +415,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       slogSender,
       mapSize,
       swingStoreTraceFile,
+      keepSnapshots,
     });
     return s;
   }
