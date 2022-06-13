@@ -101,11 +101,29 @@ test('update changes ratio', async t => {
   const rescheduler = makeRescheduler();
   const vaults = makePrioritizedVaults(rescheduler.fakeReschedule);
 
-  const fakeVault1 = makeFakeVault(
-    'id-fakeVault1',
-    AmountMath.make(brand, 20n),
-  );
+  // default collateral of makeFakeVaultKit
+  const defaultCollateral = AmountMath.make(brand, 100n);
+
+  const fakeVault1InitialDebt = AmountMath.make(brand, 20n);
+
+  const fakeVault1 = makeFakeVault('id-fakeVault1', fakeVault1InitialDebt);
   vaults.addVault('id-fakeVault1', fakeVault1);
+  t.true(
+    vaults.hasVaultByAttributes(
+      // @ts-expect-error cast
+      fakeVault1InitialDebt,
+      defaultCollateral,
+      'id-fakeVault1',
+    ),
+  );
+  t.true(
+    vaults.hasVaultByAttributes(
+      // @ts-expect-error cast
+      fakeVault1InitialDebt,
+      defaultCollateral,
+      'id-fakeVault1',
+    ),
+  );
 
   vaults.addVault(
     'id-fakeVault2',
@@ -119,15 +137,17 @@ test('update changes ratio', async t => {
 
   t.deepEqual(vaults.highestRatio(), percent(80));
 
-  // update the fake debt of the vault and then refresh priority queue
+  // update the fake debt of the vault and then add/remove to refresh priority queue
   fakeVault1.setDebt(AmountMath.make(brand, 95n));
-  vaults.refreshVaultPriority(
+  const removedVault = vaults.removeVaultByAttributes(
     // @ts-expect-error cast
-    AmountMath.make(brand, 20n),
-    AmountMath.make(brand, 100n), // default collateral of makeFakeVaultKit
+    fakeVault1InitialDebt,
+    defaultCollateral,
     'id-fakeVault1',
   );
-
+  t.is(removedVault, fakeVault1);
+  vaults.addVault('id-fakeVault1', removedVault);
+  // 95n from setDebt / 100n defaultCollateral
   t.deepEqual(vaults.highestRatio(), percent(95));
 
   const newCollector = makeCollector();

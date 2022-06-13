@@ -86,7 +86,7 @@ const validTransitions = {
  * @property {MintAndReallocate} mintAndReallocate
  * @property {(amount: Amount, seat: ZCFSeat) => void} burnAndRecord
  * @property {() => Ratio} getCompoundedInterest
- * @property {(oldDebt: import('./storeUtils.js').NormalizedDebt, oldCollateral: Amount<'nat'>, vaultId: VaultId) => void} updateVaultAccounting
+ * @property {(oldDebt: import('./storeUtils.js').NormalizedDebt, oldCollateral: Amount<'nat'>, vaultId: VaultId, vaultPhase: VaultPhase) => void} handleBalanceChange
  * @property {() => import('./vaultManager.js').GovernedParamGetters} getGovernedParams
  */
 
@@ -254,11 +254,12 @@ const helperBehavior = {
   ) => {
     const { helper } = facets;
     helper.updateDebtSnapshot(newDebtActual);
-    // update position of this vault in liquidation priority queue
-    state.manager.updateVaultAccounting(
+    // notify manager so it can notify and clean up as appropriate
+    state.manager.handleBalanceChange(
       oldDebtNormalized,
       oldCollateral,
       state.idInManager,
+      state.phase,
     );
   },
 
@@ -360,6 +361,11 @@ const helperBehavior = {
     const { self, helper } = facets;
     helper.assertCloseable();
     const { phase, vaultSeat } = state;
+
+    // Held as keys for cleanup in the manager
+    const oldDebtNormalized = self.getNormalizedDebt();
+    const oldCollateral = self.getCollateralAmount();
+
     if (phase === Phase.ACTIVE) {
       assertProposalShape(seat, {
         give: { RUN: null },
@@ -399,6 +405,13 @@ const helperBehavior = {
 
     helper.assertVaultHoldsNoRun();
     vaultSeat.exit();
+
+    state.manager.handleBalanceChange(
+      oldDebtNormalized,
+      oldCollateral,
+      state.idInManager,
+      state.phase,
+    );
 
     return 'your loan is closed, thank you for your business';
   },

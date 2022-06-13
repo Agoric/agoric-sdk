@@ -140,8 +140,8 @@ export async function start(zcf, privateArgs) {
       return Promise.reject(Error('Not implemented'));
     },
     getCompoundedInterest: () => compoundedInterest,
-    updateVaultAccounting: () => {
-      // noop
+    handleBalanceChange: () => {
+      console.warn('mock handleBalanceChange does nothing');
     },
     mintforVault: async amount => {
       runMint.mintGains({ RUN: amount });
