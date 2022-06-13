@@ -49,9 +49,6 @@
     "sharing": {
       "sourceSpec": "@agoric/vats/src/vat-sharing.js"
     },
-    "walletManager": {
-      "sourceSpec": "@agoric/vats/src/vat-walletManager.js"
-    },
     "zoe": {
       "sourceSpec": "@agoric/vats/src/vat-zoe.js"
     }
