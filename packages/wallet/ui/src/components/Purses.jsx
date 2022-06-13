@@ -6,6 +6,7 @@ import PurseAmount from './PurseAmount';
 import { withApplicationContext } from '../contexts/Application';
 import CardItem from './CardItem';
 import Card from './Card';
+import Loading from './Loading';
 
 import './Purses.scss';
 
@@ -51,7 +52,7 @@ export const PursesWithoutContext = ({ purses, pendingTransfers }) => {
     );
   };
   const purseItems = (purses && purses.map(Purse)) ?? (
-    <CircularProgress style={{ margin: 'auto' }} />
+    <Loading style={{ margin: 'auto' }} />
   );
 
   return (

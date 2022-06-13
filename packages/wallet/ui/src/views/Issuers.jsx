@@ -9,6 +9,7 @@ import Card from '../components/Card';
 import CardItem from '../components/CardItem';
 import MakePurse from '../components/MakePurse';
 import ImportIssuer from '../components/ImportIssuer';
+import Loading from '../components/Loading';
 import Petname from '../components/Petname';
 import { icons, defaultIcon } from '../util/Icons';
 import { withApplicationContext } from '../contexts/Application';
@@ -101,7 +102,7 @@ export const IssuersWithoutContext = ({
     );
   };
   const issuerItems = (issuers && issuers.map(Issuer)) ?? (
-    <CircularProgress style={{ margin: 'auto' }} />
+    <Loading style={{ margin: 'auto' }} />
   );
 
   return (

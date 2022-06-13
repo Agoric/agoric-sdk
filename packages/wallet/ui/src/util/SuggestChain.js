@@ -2,12 +2,6 @@ import { SigningStargateClient } from '@cosmjs/stargate';
 
 export const AGORIC_COIN_TYPE = 564;
 export const COSMOS_COIN_TYPE = 118;
-export const NETWORK_CONFIGS = [
-  ['https://main.agoric.net/network-config', 'Agoric Mainnet'],
-  ['https://testnet.agoric.net/network-config', 'Agoric Testnet'],
-  ['https://devnet.agoric.net/network-config', 'Agoric Devnet'],
-  ['https://stage.agoric.net/network-config', 'Agoric Stage'],
-];
 
 export async function suggestChain(networkConfig, caption = undefined) {
   const coinType = Number(

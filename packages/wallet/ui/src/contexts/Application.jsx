@@ -1,5 +1,7 @@
 /* eslint-disable react/display-name */
+/* global process */
 import { observeIterator } from '@agoric/notifier';
+import { E } from '@endo/far';
 import {
   useEffect,
   createContext,
@@ -9,7 +11,37 @@ import {
   useReducer,
 } from 'react';
 
+// TODO: Graduate to show mainnet in production.
+const SHOW_MAINNET = process.env.NODE_ENV === 'development';
+export const DEFAULT_WALLET_CONNECTIONS = [
+  ...(window && window.location.hostname !== 'localhost'
+    ? [{ label: window.location.hostname, url: window.location.origin }]
+    : [{ label: 'Local Solo', url: 'http://localhost:8000' }]),
+  ...(process.env.NODE_ENV === 'development'
+    ? [
+        {
+          label: 'Agoric Stage',
+          url: 'https://stage.agoric.net/network-config',
+        },
+      ]
+    : []),
+  ...(SHOW_MAINNET
+    ? [
+        {
+          label: 'Agoric Mainnet',
+          url: 'https://main.agoric.net/network-config',
+        },
+        {
+          label: 'Agoric Devnet',
+          url: 'https://devnet.agoric.net/network-config',
+        },
+      ]
+    : []),
+];
+
 export const ApplicationContext = createContext();
+
+export const DEFAULT_WALLET_CONNECTION = DEFAULT_WALLET_CONNECTIONS[0];
 
 export const useApplicationContext = () => useContext(ApplicationContext);
 
@@ -124,6 +156,11 @@ const closedOffersReducer = (closedOffers, { offerId, isClosed }) => {
   return new Set(closedOffers);
 };
 
+const buildWalletConnectionFromModule = ({ buildWalletConnection }) => {
+  const WalletConnection = buildWalletConnection(withApplicationContext);
+  return <WalletConnection />;
+};
+
 const Provider = ({ children }) => {
   const [connectionState, setConnectionState] = useState('disconnected');
   const [inbox, setInbox] = useReducer(inboxReducer, null);
@@ -133,8 +170,68 @@ const Provider = ({ children }) => {
   const [payments, setPayments] = useReducer(paymentsReducer, null);
   const [issuers, setIssuers] = useReducer(issuersReducer, null);
   const [services, setServices] = useState(null);
+  const [backend, setBackend] = useState(null);
   const [schemaActions, setSchemaActions] = useState(null);
   const [useChainBackend, setUseChainBackend] = useState(false);
+  const [wantConnection, setWantConnection] = useState(true);
+  const [connectionComponent, setConnectionComponent] = useState(null);
+
+  const RESTORED_WALLET_CONNECTIONS = [...DEFAULT_WALLET_CONNECTIONS];
+  let restoredWalletConnection;
+  if (window && window.localStorage) {
+    try {
+      const json = window.localStorage.getItem('userWalletConnections');
+      if (json) {
+        const userConnections = JSON.parse(json);
+        RESTORED_WALLET_CONNECTIONS.unshift(...userConnections);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    try {
+      const json = window.localStorage.getItem('walletConnection');
+      if (json) {
+        restoredWalletConnection = JSON.parse(json);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  if (!restoredWalletConnection) {
+    restoredWalletConnection = RESTORED_WALLET_CONNECTIONS[0];
+  }
+
+  const [walletConnection, setWalletConnection] = useState(
+    restoredWalletConnection,
+  );
+  const [allWalletConnections, setAllWalletConnections] = useState(
+    harden([...DEFAULT_WALLET_CONNECTIONS]),
+  );
+
+  useEffect(() => {
+    if (window && window.localStorage) {
+      window.localStorage.setItem(
+        'walletConnection',
+        JSON.stringify(walletConnection),
+      );
+    }
+    const userConnections = [];
+    for (const { url, label } of allWalletConnections) {
+      const found = DEFAULT_WALLET_CONNECTIONS.find(
+        ({ url: defaultUrl, label: defaultLabel }) =>
+          url === defaultUrl && label === defaultLabel,
+      );
+      if (!found) {
+        userConnections.push({ url, label });
+      }
+    }
+    if (window && window.localStorage) {
+      window.localStorage.setItem(
+        'userWalletConnections',
+        JSON.stringify(userConnections),
+      );
+    }
+  }, [allWalletConnections, walletConnection]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -151,19 +248,71 @@ const Provider = ({ children }) => {
     ['issuers', setIssuers],
     ['dapps', setDapps],
   ]);
-  const setBackend = backend => {
+
+  // Resubscribe when a new backend is set.
+  useEffect(() => {
+    setSchemaActions(null);
+    for (const setter of backendSetters.values()) {
+      setter(null);
+    }
+
     if (!backend) {
-      setSchemaActions(null);
-      for (const setter of backendSetters.values()) {
-        setter(null);
+      return () => {};
+    }
+
+    let cancelIteration = null;
+    const rethrowIfNotCancelled = e => {
+      if (e !== cancelIteration) {
+        throw e;
       }
-      return;
-    }
-    setSchemaActions(backend.actions);
+    };
+    setSchemaActions(E.get(backend).actions);
     for (const [prop, setter] of backendSetters.entries()) {
-      observeIterator(backend[prop], { updateState: setter });
+      const iterator = E.get(backend)[prop];
+      observeIterator(iterator, {
+        fail: rethrowIfNotCancelled,
+        updateState: state => {
+          if (cancelIteration) {
+            throw cancelIteration;
+          }
+          setter(state);
+        },
+      }).catch(rethrowIfNotCancelled);
     }
+    return () => {
+      cancelIteration = Error('cancelled');
+    };
+  }, [backend]);
+
+  const disconnect = () => {
+    setBackend(null);
+    setConnectionComponent(null);
+    setConnectionState('disconnected');
   };
+
+  useEffect(() => {
+    if (!walletConnection || !wantConnection) {
+      disconnect();
+      return () => {};
+    }
+    const { url } = walletConnection;
+    const u = new URL(url);
+    let outdated = false;
+    if (u.pathname.endsWith('/network-config')) {
+      import('../components/SmartWalletConnection').then(
+        mod =>
+          outdated ||
+          setConnectionComponent(buildWalletConnectionFromModule(mod)),
+      );
+    } else {
+      import('../components/WalletConnection').then(
+        mod =>
+          outdated ||
+          setConnectionComponent(buildWalletConnectionFromModule(mod)),
+      );
+    }
+    return () => (outdated = true);
+  }, [walletConnection, wantConnection]);
 
   const [pendingPurseCreations, setPendingPurseCreations] = useReducer(
     pendingPurseCreationsReducer,
@@ -223,6 +372,14 @@ const Provider = ({ children }) => {
     closedOffers,
     setClosedOffers,
     useChainBackend,
+    setWantConnection,
+    wantConnection,
+    walletConnection,
+    setWalletConnection,
+    allWalletConnections,
+    setAllWalletConnections,
+    connectionComponent,
+    disconnect,
   };
 
   useDebugLogging(state, [

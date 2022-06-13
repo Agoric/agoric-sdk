@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { E } from '@endo/eventual-send';
 import { Typography } from '@mui/material';
-import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import Popover from '@mui/material/Popover';
 import SettingsIcon from '@mui/icons-material/SettingsOutlined';
 import Card from '../components/Card';
 import Dapp from '../components/Dapp';
+import Loading from '../components/Loading';
 import { withApplicationContext } from '../contexts/Application';
 
 import './Dapps.scss';
@@ -69,7 +69,7 @@ export const DappsWithoutContext = ({ dapps }) => {
 
   const dappCards = (dapps &&
     dapps.map(dapp => <DappCard dapp={dapp} key={dapp.id} />)) ?? (
-    <CircularProgress style={{ margin: 'auto' }} />
+    <Loading style={{ margin: 'auto' }} />
   );
 
   return (
