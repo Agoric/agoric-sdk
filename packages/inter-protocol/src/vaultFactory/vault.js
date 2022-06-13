@@ -25,7 +25,7 @@ import {
 
 const { details: X, quote: q } = assert;
 
-const trace = makeTracer('IV');
+const trace = makeTracer('IV', false);
 
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 
