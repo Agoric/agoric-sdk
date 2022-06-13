@@ -29,7 +29,7 @@ const build = async (log, zoe, brands, payments, timer) => {
       E(vaultFactory).makeVaultInvitation(),
       harden({
         give: { Collateral: AmountMath.make(moolaBrand, 100n) },
-        want: { RUN: AmountMath.make(runBrand, 500000n) },
+        want: { Minted: AmountMath.make(runBrand, 500000n) },
       }),
       harden({
         Collateral: moolaPayment,

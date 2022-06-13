@@ -251,7 +251,7 @@ const helperBehavior = {
         mint: state.debtMint,
         mintAndReallocateWithFee: state.factoryPowers.mintAndReallocate,
         poolIncrementSeat,
-        seatAllocationKeyword: 'RUN',
+        seatAllocationKeyword: 'Minted',
       },
       {
         interestRate,
@@ -663,7 +663,7 @@ const selfBehavior = {
     const { prioritizedVaults, zcf } = state;
     assertProposalShape(seat, {
       give: { Collateral: null },
-      want: { RUN: null },
+      want: { Minted: null },
     });
 
     state.vaultCounter += 1;
@@ -732,7 +732,7 @@ const selfBehavior = {
     });
     const { creatorFacet, instance } = await E(zoe).startInstance(
       liquidationInstall,
-      harden({ RUN: debtIssuer, Collateral: collateralIssuer }),
+      harden({ Minted: debtIssuer, Collateral: collateralIssuer }),
       harden({
         ...liquidationTerms,
         amm: ammPublicFacet,
@@ -815,7 +815,7 @@ const makeVaultManagerKit = defineKindMulti(
  * Each VaultManager manages a single collateral type.
  *
  * It manages some number of outstanding loans, each called a Vault, for which
- * the collateral is provided in exchange for borrowed RUN.
+ * the collateral is provided in exchange for borrowed Minted.
  *
  * @param {ZCF} zcf
  * @param {ZCFMint<'nat'>} debtMint

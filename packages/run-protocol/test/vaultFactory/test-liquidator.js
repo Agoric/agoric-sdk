@@ -383,7 +383,7 @@ const makeDriver = async (t, initialPrice, priceBase) => {
       await E(lender).makeVaultInvitation(),
       harden({
         give: { Collateral: collateral },
-        want: { RUN: debt },
+        want: { Minted: debt },
       }),
       harden({
         Collateral: aeth.mint.mintPayment(collateral),
@@ -431,7 +431,7 @@ const makeDriver = async (t, initialPrice, priceBase) => {
         t.deepEqual(
           debtAmount,
           AmountMath.add(loanAmount, fee),
-          'borrower RUN amount does not match',
+          'borrower Minted amount does not match',
         );
         return debtAmount;
       },
@@ -454,13 +454,13 @@ const makeDriver = async (t, initialPrice, priceBase) => {
     checkPayouts: async (expectedRUN, expectedAEth) => {
       const payouts = await E(currentSeat).getPayouts();
       const collProceeds = await aeth.issuer.getAmountOf(payouts.Collateral);
-      const runProceeds = await E(run.issuer).getAmountOf(payouts.RUN);
+      const runProceeds = await E(run.issuer).getAmountOf(payouts.Minted);
       t.deepEqual(runProceeds, expectedRUN);
       t.deepEqual(collProceeds, expectedAEth);
     },
     checkRewards: async expectedRUN => {
       t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
-        RUN: expectedRUN,
+        Minted: expectedRUN,
       });
     },
     sellOnAMM: async (give, want, optStopAfter, expected) => {
@@ -531,7 +531,7 @@ const makeDriver = async (t, initialPrice, priceBase) => {
 test('price drop', async t => {
   const { aeth, run, rates } = t.context;
   // When the price falls to 636, the loan will get liquidated. 636 for 900
-  // Aeth is 1.4 each. The loan is 270 RUN. The margin is 1.05, so at 636, 400
+  // Aeth is 1.4 each. The loan is 270 Minted. The margin is 1.05, so at 636, 400
   // Aeth collateral could support a loan of 268.
   t.context.loanTiming = {
     chargingPeriod: 2n,
@@ -539,7 +539,7 @@ test('price drop', async t => {
   };
 
   const d = await makeDriver(t, run.make(1000n), aeth.make(900n));
-  // Create a loan for 270 RUN with 400 aeth collateral
+  // Create a loan for 270 Minted with 400 aeth collateral
   const collateralAmount = aeth.make(400n);
   const loanAmount = run.make(270n);
   const dv = await d.makeVaultDriver(collateralAmount, loanAmount);
@@ -591,7 +591,7 @@ test('price falls precipitously', async t => {
   };
 
   const d = await makeDriver(t, run.make(2200n), aeth.make(900n));
-  // Create a loan for 370 RUN with 400 aeth collateral
+  // Create a loan for 370 Minted with 400 aeth collateral
   const collateralAmount = aeth.make(400n);
   const loanAmount = run.make(370n);
   const dv = await d.makeVaultDriver(collateralAmount, loanAmount);
@@ -683,7 +683,7 @@ test('update liquidator', async t => {
 test('liquidate many', async t => {
   const { aeth, run, rates } = t.context;
   // When the price falls to 636, the loan will get liquidated. 636 for 900
-  // Aeth is 1.4 each. The loan is 270 RUN. The margin is 1.05, so at 636, 400
+  // Aeth is 1.4 each. The loan is 270 Minted. The margin is 1.05, so at 636, 400
   // Aeth collateral could support a loan of 268.
 
   const overThreshold = async v => {
@@ -793,7 +793,7 @@ test('penalties to reserve', async t => {
   const { aeth, run } = t.context;
 
   const d = await makeDriver(t, run.make(1000n), aeth.make(900n));
-  // Create a loan for 270 RUN with 400 aeth collateral
+  // Create a loan for 270 Minted with 400 aeth collateral
   const collateralAmount = aeth.make(400n);
   const loanAmount = run.make(270n);
   await d.makeVaultDriver(collateralAmount, loanAmount);

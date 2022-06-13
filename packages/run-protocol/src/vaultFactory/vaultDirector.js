@@ -138,11 +138,11 @@ const makeVaultInvitation = ({ state }) => {
   const makeVaultHook = async seat => {
     assertProposalShape(seat, {
       give: { Collateral: null },
-      want: { RUN: null },
+      want: { Minted: null },
     });
     const {
       give: { Collateral: collateralAmount },
-      want: { RUN: requestedAmount },
+      want: { Minted: requestedAmount },
     } = seat.getProposal();
     const { brand: brandIn } = collateralAmount;
     assert(
@@ -277,10 +277,12 @@ const machineBehavior = {
      */
     const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
       const kept = AmountMath.subtract(toMint, fee);
-      debtMint.mintGains(harden({ RUN: toMint }), mintSeat);
+      debtMint.mintGains(harden({ Minted: toMint }), mintSeat);
       try {
-        rewardPoolSeat.incrementBy(mintSeat.decrementBy(harden({ RUN: fee })));
-        seat.incrementBy(mintSeat.decrementBy(harden({ RUN: kept })));
+        rewardPoolSeat.incrementBy(
+          mintSeat.decrementBy(harden({ Minted: fee })),
+        );
+        seat.incrementBy(mintSeat.decrementBy(harden({ Minted: kept })));
         zcf.reallocate(rewardPoolSeat, mintSeat, seat, ...otherSeats);
       } catch (e) {
         console.error('mintAndReallocate caught', e);
@@ -290,7 +292,7 @@ const machineBehavior = {
         // That only relies on the internal mint, so it cannot fail without
         // there being much larger problems. There's no risk of tokens being
         // stolen here because the staging for them was already cleared.
-        debtMint.burnLosses(harden({ RUN: toMint }), mintSeat);
+        debtMint.burnLosses(harden({ Minted: toMint }), mintSeat);
         throw e;
       } finally {
         // Note that if this assertion may fail because of an error in the
@@ -300,7 +302,7 @@ const machineBehavior = {
           Object.values(mintSeat.getCurrentAllocation()).every(a =>
             AmountMath.isEmpty(a),
           ),
-          X`Stage should be empty of RUN`,
+          X`Stage should be empty of Minted`,
         );
       }
       facets.machine.updateMetrics();
@@ -311,7 +313,7 @@ const machineBehavior = {
      * @param {ZCFSeat} seat
      */
     const burnDebt = (toBurn, seat) => {
-      debtMint.burnLosses(harden({ RUN: toBurn }), seat);
+      debtMint.burnLosses(harden({ Minted: toBurn }), seat);
     };
 
     const { loanTimingParams } = zcf.getTerms();
@@ -360,7 +362,7 @@ const machineBehavior = {
       zcf,
       rewardPoolSeat,
       debtMint.getIssuerRecord().brand,
-      'RUN',
+      'Minted',
     ).makeCollectFeesInvitation();
   },
   /** @param {MethodContext} context */
