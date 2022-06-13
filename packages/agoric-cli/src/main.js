@@ -169,12 +169,12 @@ const main = async (progname, rawArgs, powers) => {
     .command('follow <path-spec...>')
     .description('follow an Agoric Casting leader')
     .option(
-      '--integrity <strict | optimistic | none>',
-      'set integrity mode',
+      '--proof <strict | optimistic | none>',
+      'set proof mode',
       value => {
         assert(
           ['strict', 'optimistic', 'none'].includes(value),
-          X`--integrity must be one of 'strict', 'optimistic', or 'none'`,
+          X`--proof must be one of 'strict', 'optimistic', or 'none'`,
           TypeError,
         );
         return value;

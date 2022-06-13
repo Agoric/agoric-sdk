@@ -58,7 +58,7 @@ export {};
  * @typedef {object} FollowerOptions
  * @property {null | import('@endo/far').FarRef<Unserializer>} [unserializer]
  * @property {(buf: Uint8Array) => any} [decode]
- * @property {'strict'|'optimistic'|'none'} [integrity]
+ * @property {'strict'|'optimistic'|'none'} [proof]
  * @property {import('@endo/far').FarRef<Crasher>} [crasher]
  */
 

@@ -24,7 +24,7 @@ test('happy path', async t => {
   };
   /** @type {import('../src/types.js').FollowerOptions} */
   const so = {
-    integrity: 'none',
+    proof: 'none',
   };
 
   // The rest of this test is taken almost verbatim from the README.md, with
@@ -71,16 +71,12 @@ test('missing rpc server', async t => {
   );
 });
 
-test('unrecognized integrity', async t => {
+test('unrecognized proof', async t => {
   await t.throwsAsync(
     () =>
-      makeFollower(
-        makeCastingSpec(':activityhash'),
-        {},
-        { integrity: 'bother' },
-      ),
+      makeFollower(makeCastingSpec(':activityhash'), {}, { proof: 'bother' }),
     {
-      message: /unrecognized follower integrity mode.*/,
+      message: /unrecognized follower proof mode.*/,
     },
   );
 });

@@ -50,9 +50,9 @@ const collectSingle = values => {
  */
 
 /**
- * @type {Record<Required<import('./types').FollowerOptions>['integrity'], QueryVerifier>}
+ * @type {Record<Required<import('./types').FollowerOptions>['proof'], QueryVerifier>}
  */
-export const integrityToQueryVerifier = harden({
+export const proofToQueryVerifier = harden({
   strict: async (getProvenValue, crash, _getAllegedValue) => {
     // Just ignore the alleged value.
     // Crash hard if we can't prove.
@@ -98,13 +98,13 @@ export const makeCosmjsFollower = (
   const {
     decode = MAKE_DEFAULT_DECODER(),
     unserializer = MAKE_DEFAULT_UNSERIALIZER(),
-    integrity = 'optimistic',
+    proof = 'optimistic',
     crasher = null,
   } = options;
 
   /** @type {QueryVerifier} */
-  const queryVerifier = integrityToQueryVerifier[integrity];
-  assert(queryVerifier, X`unrecognized follower integrity mode ${integrity}`);
+  const queryVerifier = proofToQueryVerifier[proof];
+  assert(queryVerifier, X`unrecognized follower proof mode ${proof}`);
 
   const where = 'CosmJS follower';
   const castingSpecP = makeCastingSpec(sourceP);

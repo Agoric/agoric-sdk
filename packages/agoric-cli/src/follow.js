@@ -18,7 +18,7 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
   const console = anylogger('agoric:follower');
 
   const {
-    integrity,
+    proof,
     output,
     bootstrap = 'http://localhost:26657',
     verbose,
@@ -28,7 +28,7 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
 
   /** @type {import('@agoric/casting').FollowerOptions} */
   const followerOptions = {
-    integrity,
+    proof,
   };
 
   /** @type {(buf: any) => any} */
@@ -81,13 +81,13 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
     }
   }
 
-  if (integrity !== 'none') {
+  if (proof !== 'none') {
     followerOptions.crasher = Far('follower crasher', {
       crash: (...args) => {
         console.error(...args);
-        console.warn(`You are running with '--integrity=${integrity}'`);
+        console.warn(`You are running with '--proof=${proof}'`);
         console.warn(
-          `If you trust your RPC nodes, you can turn off proofs with '--integrity=none'`,
+          `If you trust your RPC nodes, you can turn off proofs with '--proof=none'`,
         );
         process.exit(1);
       },
