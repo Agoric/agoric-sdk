@@ -81,8 +81,6 @@ export const AppBarWithoutContext = ({
 
   const connectionTitle =
     connectionStatus[0].toUpperCase() + connectionStatus.slice(1);
-  const connectionClassName =
-    connectionStatus === 'connecting' ? classes.connecting : '';
 
   return (
     <header className={classes.header}>
@@ -107,7 +105,12 @@ export const AppBarWithoutContext = ({
               color={wantConnection ? 'primary' : 'secondary'}
               onClick={() => setWantConnection(!wantConnection)}
             >
-              <Public className={connectionClassName} fontSize="inherit">
+              <Public
+                className={
+                  connectionStatus === 'connecting' && classes.connecting
+                }
+                fontSize="inherit"
+              >
                 {connectionState}
               </Public>
             </IconButton>
