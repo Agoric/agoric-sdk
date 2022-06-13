@@ -26,7 +26,9 @@ export const setupCreateZCFVat = (vatAdminSvc, zcfSpec) => {
     /** @type {BundleCap} */
     const bundleCap = await bundleCapP;
     assert(bundleCap, `setupCreateZCFVat did not get bundleCap`);
-    const rootAndAdminNodeP = E(vatAdminSvc).createVat(bundleCap);
+    const rootAndAdminNodeP = E(vatAdminSvc).createVat(bundleCap, {
+      name: 'zcf',
+    });
     const rootAndAdminNode = await rootAndAdminNodeP;
     return rootAndAdminNode;
   };
