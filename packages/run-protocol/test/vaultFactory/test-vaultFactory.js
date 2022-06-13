@@ -1342,28 +1342,9 @@ test('adjust balances - withdraw RUN', async t => {
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
   let runDebtLevel = AmountMath.add(aliceLoanAmount, fee);
 
-  t.deepEqual(debtAmount, runDebtLevel, 'vault lent 5000 RUN + fees');
-  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocation();
-  const loanProceeds = await E(aliceLoanSeat).getPayouts();
-  t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 RUN');
-
-  const runLent = await loanProceeds.RUN;
-  t.truthy(
-    AmountMath.isEqual(
-      await E(run.issuer).getAmountOf(runLent),
-      run.make(5000n),
-    ),
-  );
-
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
-  t.deepEqual(aliceUpdate.value.debtSnapshot, {
-    debt: run.make(5250n),
-    interest: makeRatio(100n, run.brand),
-  });
 
   // Withdraw add'l RUN /////////////////////////////////////
-
   // Alice deposits nothing; requests more RUN
 
   const additionalRUN = run.make(100n);
@@ -1389,12 +1370,7 @@ test('adjust balances - withdraw RUN', async t => {
   t.deepEqual(lentAmount2, additionalRUN, '100 RUN');
 
   const runLent2 = await loanProceeds2.RUN;
-  t.truthy(
-    AmountMath.isEqual(
-      await E(run.issuer).getAmountOf(runLent2),
-      additionalRUN,
-    ),
-  );
+  t.deepEqual(await E(run.issuer).getAmountOf(runLent2), additionalRUN);
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);

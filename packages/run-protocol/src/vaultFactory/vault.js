@@ -439,9 +439,7 @@ const helperBehavior = {
     assertOnlyKeys(proposal, ['Collateral', 'RUN']);
 
     const allEmpty = amounts => {
-      // phrased negatively allows early return. This is equal to
-      // amounts.every(a => AmountMath.isEmpty(a));
-      return !amounts.some(a => !AmountMath.isEmpty(a));
+      return amounts.every(a => AmountMath.isEmpty(a));
     };
 
     const normalizedDebtPre = self.getNormalizedDebt();
@@ -497,10 +495,9 @@ const helperBehavior = {
     stageDelta(clientSeat, vaultSeat, giveRUN, helper.emptyDebt(), 'RUN');
 
     /** @type {Array<ZCFSeat>} */
-    const vaultSeatOpt = [];
-    if (!allEmpty([giveColl, giveRUN, wantColl])) {
-      vaultSeatOpt.push(vaultSeat);
-    }
+    const vaultSeatOpt = allEmpty([giveColl, giveRUN, wantColl])
+      ? []
+      : [vaultSeat];
     state.manager.mintAndReallocate(toMint, fee, clientSeat, ...vaultSeatOpt);
 
     // parent needs to know about the change in debt
