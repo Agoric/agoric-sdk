@@ -11,6 +11,12 @@ import {
   useReducer,
 } from 'react';
 
+export const ConnectionStatus = {
+  Connected: 'connected',
+  Connecting: 'connecting',
+  Disconnected: 'disconnected',
+  Error: 'error',
+};
 // TODO: Graduate to show mainnet in production.
 const SHOW_MAINNET = process.env.NODE_ENV === 'development';
 export const DEFAULT_WALLET_CONNECTIONS = [
@@ -214,23 +220,23 @@ const Provider = ({ children }) => {
   useEffect(() => {
     if (!connectionComponent) {
       if (connectionState === 'error') {
-        setConnectionStatus('error');
+        setConnectionStatus(ConnectionStatus.Error);
       } else {
-        setConnectionStatus('disconnected');
+        setConnectionStatus(ConnectionStatus.Disconnected);
       }
       return;
     }
     switch (connectionState) {
       case 'bridged': {
-        setConnectionStatus('connected');
+        setConnectionStatus(ConnectionStatus.Connected);
         break;
       }
       case 'disconnected': {
-        setConnectionStatus('disconnected');
+        setConnectionStatus(ConnectionStatus.Disconnected);
         break;
       }
       case 'connecting': {
-        setConnectionStatus('connecting');
+        setConnectionStatus(ConnectionStatus.Connecting);
         break;
       }
       default:
