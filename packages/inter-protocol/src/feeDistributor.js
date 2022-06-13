@@ -38,7 +38,7 @@ export const makeContractFeeCollector = (zoe, creatorFacet) => {
     collectFees: () => {
       const invitation = E(creatorFacet).makeCollectFeesInvitation();
       const collectFeesSeat = E(zoe).offer(invitation, undefined, undefined);
-      return E(collectFeesSeat).getPayout('RUN');
+      return E(collectFeesSeat).getPayout('Fee');
     },
   });
 };

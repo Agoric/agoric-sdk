@@ -16,7 +16,7 @@ export const makeMakeCollectFeesInvitation = (
   const collectFees = seat => {
     const amount = feeSeat.getAmountAllocated(keyword, feeBrand);
     feeSeat.decrementBy(harden({ [keyword]: amount }));
-    seat.incrementBy(harden({ RUN: amount }));
+    seat.incrementBy(harden({ Fee: amount }));
     zcf.reallocate(seat, feeSeat);
 
     seat.exit();
