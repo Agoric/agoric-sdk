@@ -20,7 +20,7 @@ export const singlePool = {
     const { poolSeat, zcf, protocolSeat } = context.state;
     seat.decrementBy(harden({ In: prices.swapperGives }));
     seat.incrementBy(harden({ Out: prices.swapperGets }));
-    protocolSeat.incrementBy(harden({ RUN: prices.protocolFee }));
+    protocolSeat.incrementBy(harden({ Fee: prices.protocolFee }));
 
     const inBrand = prices.swapperGives.brand;
     if (inBrand === getSecondaryBrand(pool)) {

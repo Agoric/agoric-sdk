@@ -38,7 +38,7 @@ export const makeContractFeeCollector = (zoe, creatorFacet) => {
     collectFees: () => {
       const invitation = E(creatorFacet).makeCollectFeesInvitation();
       const collectFeesSeat = E(zoe).offer(invitation, undefined, undefined);
-      return E(collectFeesSeat).getPayout('RUN');
+      return E(collectFeesSeat).getPayout('Fee');
     },
   });
 };
@@ -212,6 +212,7 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
             return;
           }
           const payment = await E(collector).collectFees();
+          assert(payment, 'Missing payment from collector');
           await distributeFees(payment);
         },
         stop: () => {

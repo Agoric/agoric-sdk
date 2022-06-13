@@ -1713,7 +1713,7 @@ test('overdeposit', async t => {
   await E(collectFeesSeat).getOfferResult();
   assertAmountsEqual(
     t,
-    await E.get(E(collectFeesSeat).getCurrentAllocation()).RUN,
+    await E.get(E(collectFeesSeat).getCurrentAllocation()).Fee,
     run.make(300n),
   );
 });
@@ -2044,7 +2044,7 @@ test('collect fees from loan and AMM', async t => {
   );
   await E(collectFeesSeat).getOfferResult();
   const feePayoutAmount = await E.get(E(collectFeesSeat).getCurrentAllocation())
-    .RUN;
+    .Fee;
   trace(t, 'Fee', feePoolBalance, feePayoutAmount);
   t.truthy(AmountMath.isGTE(feePayoutAmount, feePoolBalance.RUN));
 });
