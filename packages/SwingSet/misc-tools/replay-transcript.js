@@ -172,7 +172,7 @@ async function replay(transcriptFile) {
       //   s.response = 'nope';
       //   console.log(` syscall:`, s.d, s.response);
       // }
-      await manager.replayOneDelivery(delivery, syscalls, deliveryNum);
+      await manager.replayOneDelivery(delivery, syscalls, deliveryNum, false);
       deliveryNum += 1;
       // console.log(`dr`, dr);
     }
