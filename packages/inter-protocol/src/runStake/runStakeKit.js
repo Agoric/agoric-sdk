@@ -11,7 +11,7 @@ import { addSubtract, assertOnlyKeys, stageDelta } from '../contractSupport.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { ManagerKW as KW } from './constants.js';
 
-const { details: X } = assert;
+const { details: X, quote: q } = assert;
 
 const trace = makeTracer('R1');
 
@@ -272,9 +272,9 @@ const helperBehavior = {
       manager.maxDebtForLien(newCollateral);
 
     const emptyDebt = AmountMath.makeEmpty(debtBrand);
-    const giveRUN = AmountMath.min(proposal.give.Debt || emptyDebt, debt);
-    const wantRUN = proposal.want.Debt || emptyDebt;
-    const giveRUNonly = matches(
+    const give = AmountMath.min(proposal.give.Debt || emptyDebt, debt);
+    const want = proposal.want.Debt || emptyDebt;
+    const giveDebtOnly = matches(
       proposal,
       harden({ give: { [KW.Debt]: M.record() }, want: {}, exit: M.any() }),
     );
@@ -285,12 +285,14 @@ const helperBehavior = {
     const { newDebt, fee, toMint } = calculateFee(
       manager.getLoanFee(),
       debt,
-      giveRUN,
-      wantRUN,
+      give,
+      want,
     );
     assert(
-      giveRUNonly || AmountMath.isGTE(newMaxDebt, newDebt),
-      X`cannot borrow ${newDebt} against ${amountLiened}; max is ${newMaxDebt}`,
+      giveDebtOnly || AmountMath.isGTE(newMaxDebt, newDebt),
+      `cannot borrow ${q(newDebt)} against ${q(amountLiened)}; max is ${q(
+        newMaxDebt,
+      )}`,
     );
 
     trace('adjustBalancesHook', {
@@ -302,13 +304,13 @@ const helperBehavior = {
     });
 
     stageDelta(clientSeat, vaultSeat, giveColl, wantColl, KW.Attestation);
-    stageDelta(clientSeat, vaultSeat, giveRUN, emptyDebt, KW.Debt);
+    stageDelta(clientSeat, vaultSeat, give, emptyDebt, KW.Debt);
     manager.mintAndReallocate(toMint, fee, clientSeat, vaultSeat);
 
     // parent needs to know about the change in debt
     helper.updateDebtAccounting(debt, newDebt);
 
-    manager.burnDebt(giveRUN, vaultSeat);
+    manager.burnDebt(give, vaultSeat);
 
     helper.assertVaultHoldsNoRun();
 
@@ -319,7 +321,7 @@ const helperBehavior = {
   },
 
   /**
-   * Given sufficient RUN payoff, refund the attestation.
+   * Given sufficient Minted payoff, refund the attestation.
    *
    * @type {import('@agoric/vat-data/src/types').PlusContext<MethodContext, OfferHandler>}
    */
