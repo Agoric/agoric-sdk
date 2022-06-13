@@ -55,7 +55,7 @@ export function makeTranscriptManager(
   function startReplayDelivery(syscalls) {
     playbackSyscalls = Array.from(syscalls);
     if (ignoreReplayGCSyscalls) {
-      playbackSyscalls = playbackSyscalls.filter(s => !gcSyscalls.has(s[0]));
+      playbackSyscalls = playbackSyscalls.filter(s => !gcSyscalls.has(s.d[0]));
     }
   }
 
