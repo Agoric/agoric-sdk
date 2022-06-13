@@ -541,7 +541,7 @@ export const makeManagerDriver = async (
 
       t.deepEqual(reserveAllocations, {
         RaEthLiquidity: AmountMath.make(liquidityBrand, liquidityValue),
-        RUN: run.make(stableValue),
+        Fee: run.make(stableValue),
       });
     },
   };
