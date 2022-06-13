@@ -10,7 +10,7 @@ import { Far } from '@endo/marshal';
 /** @type {CloseVoting} */
 export const scheduleClose = (closingRule, closeVoting) => {
   const { timer, deadline } = closingRule;
-  E(timer).setWakeup(
+  void E(timer).setWakeup(
     deadline,
     Far('close voting', {
       wake: closeVoting,

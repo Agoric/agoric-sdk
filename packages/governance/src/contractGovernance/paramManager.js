@@ -243,7 +243,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
      *
      * @param {SetInvitationParam} param0
      */
-    const setInvitation = async ([newInvitation, amount]) => {
+    const setInvitation = ([newInvitation, amount]) => {
       currentAmount = amount;
       currentInvitation = newInvitation;
       return harden({ [name]: currentAmount });
