@@ -195,7 +195,7 @@ test('simple trades', async t => {
   );
   await E(collectFeesSeat).getOfferResult();
   const feePayoutAmount = await E.get(E(collectFeesSeat).getCurrentAllocation())
-    .RUN;
+    .Fee;
   const expectedFee = AmountMath.make(runBrand, 50000n);
   trace('Reward Fee', { feePayoutAmount, expectedFee });
   t.truthy(AmountMath.isEqual(feePayoutAmount, expectedFee));

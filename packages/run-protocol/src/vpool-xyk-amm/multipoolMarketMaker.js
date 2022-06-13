@@ -92,8 +92,8 @@ const trace = makeTracer('XykAmm', false);
  * will fail visibly.
  *
  * The initial values of the parameters are provided as poolFeeBP and
- * protocolFeeBP in terms. The poolFee is charged in RUN and each collateral, so
- * it is provided as a bigint. The protocolFee is always charged in RUN, but the
+ * protocolFeeBP in terms. The poolFee is charged in {Central} and each collateral, so
+ * it is provided as a bigint. The protocolFee is always charged in {Fee}, but the
  * initial value is specified as a bigint for consistency.
  *
  * The contract gets the initial values for those parameters from its terms, and
@@ -342,7 +342,7 @@ const start = async (zcf, privateArgs) => {
     zcf,
     protocolSeat,
     centralBrand,
-    'RUN',
+    'Fee',
   );
 
   /** @type {XYKAMMPublicFacet} */

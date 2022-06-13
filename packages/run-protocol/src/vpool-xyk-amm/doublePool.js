@@ -59,7 +59,7 @@ export const makeDoublePool = (
     seat.incrementBy(harden({ Out: prices.swapperGets }));
     inPoolSeat.incrementBy(harden({ Secondary: prices.inPoolIncrement }));
     outPoolSeat.incrementBy(harden({ Central: prices.outPoolIncrement }));
-    feeSeat.incrementBy(harden({ RUN: prices.protocolFee }));
+    feeSeat.incrementBy(harden({ Fee: prices.protocolFee }));
 
     zcf.reallocate(outPoolSeat, inPoolSeat, feeSeat, seat);
     seat.exit();
