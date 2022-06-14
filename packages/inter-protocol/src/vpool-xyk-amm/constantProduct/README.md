@@ -29,7 +29,7 @@ The rules that drive the design include
 * The pool fee is charged against the side not specified by the user (the
   "computed side"). This increases the pool balance without impacting the amount
   that the user specified.
-* The protocol fee is always charged in RUN.
+* The protocol fee is always charged in IST.
 * The fees are calculated based on the pool balances before the transaction.
 * Computations are rounded in favor of the pool.
 
@@ -58,14 +58,14 @@ proceeds.
 
 This table shows which brands the amounts each have, as well as what is computed
 vs. given. The PoolFee is computed based on the calculated amount (BLD in rows 1
-and 2; RUN in rows 3 and 4). The Protocol fee is always in RUN.
+and 2; IST in rows 3 and 4). The Protocol fee is always in IST.
 
 |          | In (X) | Out (Y) | PoolFee | Protocol Fee | Specified | Computed |
 |---------|-----|-----|--------|-----|------|-----|
-| **RUN in** | RUN | BLD | BLD | RUN | **sGive** | sGet |
-| **RUN out** | BLD | RUN | BLD | RUN | **sGet** | sGive |
-| **BLD in** | BLD | RUN | RUN | RUN | **sGive** | sGet |
-| **BLD out** | RUN | BLD | RUN | RUN | **sGet** | sGive |
+| **IST in** | IST | BLD | BLD | IST | **sGive** | sGet |
+| **IST out** | BLD | IST | BLD | IST | **sGet** | sGive |
+| **BLD in** | BLD | IST | IST | IST | **sGive** | sGet |
+| **BLD out** | IST | BLD | IST | IST | **sGet** | sGive |
 
 We'll calculate how much the pool balances would change in the no-fee, improved
 price case using the constant product formulas. We call these results &delta;X,
@@ -75,13 +75,13 @@ final values, which use capital &Delta;.
 The fees are based on &delta;X, and &delta;Y. &rho; is the poolFee (e.g., 30
 basis points). &phi; is the protocol fee (e.g., 6 basis points). The pool fee
 will be &rho; times whichever of &delta;X and &delta;Y was calculated. The
-protocol fee will be &phi; * &delta;X when RUN is paid in, and &phi; * &delta;Y
+protocol fee will be &phi; * &delta;X when IST is paid in, and &phi; * &delta;Y
 when BLD is paid in. (&alpha; and &beta; in this table are the no-fee versions.)
 
 |          | &delta;X | &delta;Y | PoolFee | Protocol Fee |
 |---------|-----|-----|--------|-----|
-| **RUN in**  | **sGive** | y * &alpha; / (1 + &alpha;) | &rho; &times; &delta;Y | &phi; &times; **sGive** (= &phi; &times; &delta;X) |
-| **RUN out** | x * &beta; / (1 - &beta;) | **sGet** | &rho; &times; &delta;X | &phi; &times; **sGet** (= &phi; &times; &delta;Y) |
+| **IST in**  | **sGive** | y * &alpha; / (1 + &alpha;) | &rho; &times; &delta;Y | &phi; &times; **sGive** (= &phi; &times; &delta;X) |
+| **IST out** | x * &beta; / (1 - &beta;) | **sGet** | &rho; &times; &delta;X | &phi; &times; **sGet** (= &phi; &times; &delta;Y) |
 | **BLD in**  | **sGive**  | y * &alpha; / (1 + &alpha;) | &rho; &times; &delta;Y | &phi; &times; &delta;Y |
 | **BLD out** | x * &beta; / (1 - &beta;) | **sGet** | &rho; &times; &delta;X | &phi; &times; &delta;X |
 
@@ -96,7 +96,7 @@ formula, xHat and yHat are the new values in the pool, reflecting the
 contribution of the pool fee. From the diagram, xIncr is the difference between
 X and xHat, while yIncr is the difference between Y and yHat.
 
-The protocol fee (&phi;) is always charged on the RUN side, and doesn't go in
+The protocol fee (&phi;) is always charged on the IST side, and doesn't go in
 the pool. The pool fee (&rho;) is charged on the amount that is calculated
 (&Delta;X or &Delta;Y) and is included in yHat. 
 
@@ -108,22 +108,22 @@ shrinking.
 
 ![AMM Diagram](./AMM-Trade.jpeg)
 
-When RUN is specified (in or out), we adjust by the protocol Fee to get the
-change to the RUN balance (which gives X' or Y'); use that to calculate the
+When IST is specified (in or out), we adjust by the protocol Fee to get the
+change to the IST balance (which gives X' or Y'); use that to calculate the
 BLD component of the constant product, and then adjust &delta; by the pool fee.
 When BLD is specified, the entire amount will affect the pool balance (so the
 value in the constant product formula is the final BLD balance.) Both the pool
-and protocol fees are charged in RUN so they respectively reduce sGet or
+and protocol fees are charged in IST so they respectively reduce sGet or
 increase sGive. 
 
 This table shows how the pool's growth and trader's values differ from the
-amounts that match the constant product formula. X is in RUN on lines 1 and 4,
+amounts that match the constant product formula. X is in IST on lines 1 and 4,
 and BLD on lines 2 and 3. 
 
 |          | xIncr | yDecr | pay In (sGive) | pay Out (sGet) |
 |---------|-----|-----|-----|-----|
-| **RUN in**  | &Delta;X | &Delta;Y - PoolFee | &Delta;X + protocolFee | &Delta;Y - PoolFee |
-| **RUN out**  | &Delta;X + PoolFee | &Delta;Y | &Delta;X + protocolFee + PoolFee | &Delta;Y |
+| **IST in**  | &Delta;X | &Delta;Y - PoolFee | &Delta;X + protocolFee | &Delta;Y - PoolFee |
+| **IST out**  | &Delta;X + PoolFee | &Delta;Y | &Delta;X + protocolFee + PoolFee | &Delta;Y |
 | **BLD in**  | &Delta;X | &Delta;Y - PoolFee | &Delta;X + ProtocolFee | &Delta;Y - PoolFee |
 | **BLD out**  | &Delta;X + PoolFee | &Delta;Y | &Delta;X + PoolFee + ProtocolFee | &Delta;Y |
 
@@ -133,11 +133,11 @@ left side, and it is either added to the amount deposited in the pool (xIncr)
 or deducted from the amout removed from the pool (yDecr).
 
 
-* line 1: the trader provides **sGive** RUN; the pool will gain that minus
-  the protocol fee in RUN. The value in the RUN pool after (X') will be used to
+* line 1: the trader provides **sGive** IST; the pool will gain that minus
+  the protocol fee in IST. The value in the IST pool after (X') will be used to
   calculate Y'.  The pool fee is calculated from &delta;Y and the trader gets
   &deltaY; - poolFee
-* line 2: the trader asked for **sGet** RUN; the pool will be reduced by that
+* line 2: the trader asked for **sGet** IST; the pool will be reduced by that
   amount plus the protocol fee. Y' will be used to calculate X'. The trader
   must provide &deltaX; plus poolFee
 * Line 3: the trader pays **sGive** BLD; the pool will increase by that minus
@@ -148,14 +148,14 @@ or deducted from the amout removed from the pool (yDecr).
 
 ## Example
 
-For example, let's say the pool has 40,000,000 RUN and 3,000,000 BLD. Alice
-requests a swapIn with inputAmount of 30,000 RUN, and outputAmount of 2000 BLD.
+For example, let's say the pool has 40,000,000 IST and 3,000,000 BLD. Alice
+requests a swapIn with inputAmount of 30,000 IST, and outputAmount of 2000 BLD.
 (SwapIn means the inputValue is the basis of the computation, while outputAmount
 is treated as a minimum). To make the numbers concrete, we'll say the pool fee
 is 25 Basis Points, and the protocol fee is 5 Basis Points.
 
 The first step is to compute the trade that would take place with no fees. 30K
-will be added to 40M RUN. To keep the product just above 120MM, the BLD will be
+will be added to 40M IST. To keep the product just above 120MM, the BLD will be
 reduced to 2,997,752.
 
 ```
@@ -170,9 +170,9 @@ But we get an even tighter bound by reducing the amount Alice has to spend
     120000000568992    >    120000000000000     >   119999997571240
 ```
 
-The initial price estimate is that 29,996 RUN would get 2248 BLD in a no-fee
-pool. We base fees on this estimate, so the **protocol Fee will be 15 RUN**
-(always in RUN, &lceil;29,996 * 0.0005&rceil;) and the **pool fee will be 6 BLD**
+The initial price estimate is that 29,996 IST would get 2248 BLD in a no-fee
+pool. We base fees on this estimate, so the **protocol Fee will be 15 IST**
+(always in IST, &lceil;29,996 * 0.0005&rceil;) and the **pool fee will be 6 BLD**
 (in the computed side, &lceil;2248 * 0.0025&rceil;).  The "computed side" for
 `swapIn` is output and for `swapOut` is input.
 
@@ -186,7 +186,7 @@ that the calculation starts from &Delta;X of
 ```
 
 and knowing that 2,997,753 BLD must remain in the pool, we refine the required
-amount of RUN:
+amount of IST:
 
 ```
 40,029,983 * 2,997,753 > 40,000,000 * 3,000,000 > 40,029,982 * 2,997,753
@@ -194,11 +194,11 @@ amount of RUN:
 
 **&Delta;X is 29,983, and &Delta;Y is 2247**.
 
- * Alice pays &Delta;X + protocolFee, which is 29,983 + 15  (29998 RUN)
+ * Alice pays &Delta;X + protocolFee, which is 29,983 + 15  (29998 IST)
  * Alice will receive &Delta;Y - PoolFee which is 2247 - 6  (2241 BLD)
- * The RUN in the pool will increase by &Delta;X   (29983 RUN)
+ * The IST in the pool will increase by &Delta;X   (29983 IST)
  * The BLD in the pool will decrease by &Delta;Y   (2247 BLD)
 
 The Pool grew by 6 BLD more than was required to maintain the constant product
-invariant. 15 RUN were extracted for the protocol fee.
+invariant. 15 IST were extracted for the protocol fee.
 

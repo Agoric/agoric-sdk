@@ -10,13 +10,13 @@ import {
 
 const { details: X } = assert;
 
-// Price calculations and swap using a pair of pools. Both pools map between RUN
-// and some collateral. We arrange the trades so collateralInPool will have
-// collateral added and collateralOutPool subtracted. When traders specify an
-// input price, that brand will be the inPool; when they specify the output
-// price that brand is the outPool.
-
 /**
+ * Price calculations and swap using a pair of pools. Both pools map between
+ * {Central} and some collateral. We arrange the trades so `collateralInPool`
+ * will have collateral added and `collateralOutPool` subtracted. When traders
+ * specify an input price, that brand will be the `inPool`; when they specify
+ * the output price that brand is the `outPool`.
+ *
  * @param {ZCF} zcf
  * @param {XYKPool} collateralInPool
  * @param {XYKPool} collateralOutPool
