@@ -15,7 +15,7 @@ jest.mock('@endo/eventual-send', () => ({
     }),
 }));
 
-jest.mock('@agoric/wallet-connection/react.js', () => {
+jest.mock('@agoric/web-components/react.js', () => {
   return {
     makeReactAgoricWalletConnection: jest.fn(() => 'wallet-connection'),
   };
@@ -154,6 +154,7 @@ describe('WalletConnection', () => {
       test('updates the store with the notifier data', () => {
         expect(makeBackendFromWalletBridge).toHaveBeenCalledWith(
           getAdminBootstrap(),
+          undefined,
         );
         expect(observeIterator).toHaveBeenCalledWith('mockBackendIterator', {
           updateState: setBackend,

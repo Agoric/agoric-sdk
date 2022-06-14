@@ -93,14 +93,8 @@ const testBoardMarshaller = async (t, board, marshaller, publishing) => {
   } else {
     t.not(unpublished1, unpublished);
     t.not(unpublished2, unpublished);
-    t.is(
-      unpublished1.toString(),
-      '[object Alleged: INACCESSIBLE: unpublished]',
-    );
-    t.is(
-      unpublished2.toString(),
-      '[object Alleged: INACCESSIBLE: unpublished]',
-    );
+    t.is(unpublished1.toString(), '[object Alleged: SEVERED: unpublished]');
+    t.is(unpublished2.toString(), '[object Alleged: SEVERED: unpublished]');
 
     // Separate marshals do not compare.
     const unpublished3 = marshaller.unserialize(

@@ -1,5 +1,8 @@
 // @ts-check
-import { toAscii } from '@cosmjs/encoding';
+import * as encodingStar from '@cosmjs/encoding';
+import { E, getInterfaceOf } from '@endo/far';
+
+const { toAscii } = encodingStar;
 
 /**
  * @param {string} storagePath
@@ -44,7 +47,7 @@ export const pathPrefixToConverters = harden({
  * @param {string} specString
  * @returns {import('./types').CastingSpec}
  */
-export const makeCastingSpec = specString => {
+export const makeCastingSpecFromString = specString => {
   assert.typeof(specString, 'string');
   const match = specString.match(/^([^:.]*:)(.*)/);
   assert(
@@ -56,4 +59,62 @@ export const makeCastingSpec = specString => {
   const converter = pathPrefixToConverters[kind];
   assert(converter, `Unknown pathKind ${kind}`);
   return converter(storePath);
+};
+
+const te = new TextEncoder();
+
+/**
+ * @param {any} specObj
+ * @returns {import('./types').CastingSpec}
+ */
+export const makeCastingSpecFromObject = specObj => {
+  const { storeName, storeSubkey, dataPrefixBytes, subscription, notifier } =
+    specObj;
+  if (subscription || notifier) {
+    return harden({
+      subscription,
+      notifier,
+    });
+  }
+  let subkey = storeSubkey;
+  if (typeof storeSubkey === 'string') {
+    subkey = te.encode(storeSubkey);
+  }
+  let dataPrefix = dataPrefixBytes;
+  if (typeof dataPrefixBytes === 'string') {
+    dataPrefix = te.encode(dataPrefixBytes);
+  }
+  return harden({
+    storeName,
+    storeSubkey: subkey,
+    dataPrefixBytes: dataPrefix,
+  });
+};
+
+/**
+ * @param {ERef<any>} specCap
+ * @returns {Promise<import('./types').CastingSpec>}
+ */
+export const makeCastingSpecFromRef = async specCap => {
+  const specObj = await E(specCap).getStoreKey();
+  return makeCastingSpecFromObject(specObj);
+};
+
+/**
+ * @param {ERef<any>} sourceP
+ * @returns {Promise<import('./types').CastingSpec>}
+ */
+export const makeCastingSpec = async sourceP => {
+  const spec = await sourceP;
+  if (typeof spec === 'string') {
+    return makeCastingSpecFromString(spec);
+  }
+  const { storeName, subscription, notifier } = spec;
+  if (storeName || subscription || notifier) {
+    return makeCastingSpecFromObject(spec);
+  }
+  if (getInterfaceOf(spec)) {
+    return makeCastingSpecFromRef(spec);
+  }
+  assert.fail(`CastingSpec ${spec} is not a string, object, or ref`);
 };

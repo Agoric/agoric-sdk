@@ -590,8 +590,7 @@ test(`zcf.makeZCFMint - burnLosses - seat exited`, async t => {
   );
 });
 
-// reported as a bug in https://github.com/Agoric/agoric-sdk/issues/5544
-test.failing('burnLosses - not offer safe', async t => {
+test('burnLosses - offer safety violation no staged allocation', async t => {
   const { zcf } = await setupZCFTest();
   const doubloonMint = await zcf.makeZCFMint('Doubloons');
   const yenMint = await zcf.makeZCFMint('Yen');
@@ -635,7 +634,7 @@ test.failing('burnLosses - not offer safe', async t => {
     },
   );
   t.truthy(zcfSeat.hasStagedAllocation());
-  t.deepEqual(staged.DownPayment, zcfSeat.getStagedAllocation().DownPayment);
+  t.deepEqual(zcfSeat.getStagedAllocation().DownPayment, staged.DownPayment);
 });
 
 test(`zcf.makeZCFMint - displayInfo`, async t => {

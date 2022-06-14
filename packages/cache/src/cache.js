@@ -1,51 +1,45 @@
 // @ts-check
-import { E } from '@endo/far';
-import { M } from '@agoric/store';
+import { E, Far } from '@endo/far';
 
-import { makeState } from './state.js';
-import { makeStoreCoordinator } from './store.js';
+import { makeScalarStoreCoordinator } from './store.js';
 
 /** @template T @typedef {import('@endo/far').ERef<T>} ERef */
 
 /**
+ * @typedef {{ [x: PropertyKey]: any } | string | symbol | bigint | null |
+ * undefined | number | ((oldValue: any) => ERef<unknown>)} Update a `newValue`
+ * to update to.  If a function, then it should take an oldValue and return a
+ * `newValue` or promise for `newValue`
+ */
+
+/**
  * @param {ERef<import('./types').Coordinator>} [coordinator]
  */
-export const makeCache = (coordinator = makeStoreCoordinator()) => {
+export const makeCache = (coordinator = makeScalarStoreCoordinator()) => {
   /**
    * The ground state for a cache key value is `undefined`.  It is impossible to
    * distinguish a set value of `undefined` from an unset key
    *
    * @param {unknown} key the cache key (any key type acceptable to the cache)
-   * @param {object | string | bigint | null | undefined | number | ((oldValue: any) => ERef<unknown>)} [update] a
-   * function that returns a `newValue` or promise for `newValue`
-   * @param {Pattern[]} optGuardPattern don't update unless this pattern matches
+   * @param {[] | [Update] | [Update, Pattern]} optUpdateGuardPattern an optional
    */
-  const cache = (key, update, ...optGuardPattern) => {
-    if (!update) {
-      return E.get(E(coordinator).getRecentState(key)).value;
+  const cache = (key, ...optUpdateGuardPattern) => {
+    if (optUpdateGuardPattern.length === 0) {
+      return E(coordinator).getRecentValue(key);
     }
-    const guardPattern =
-      optGuardPattern.length > 0 ? optGuardPattern[0] : M.any();
-    return new Promise((resolve, reject) => {
-      const retryTransaction = async recentState => {
-        const updatedValue = await (typeof update === 'function'
-          ? update(recentState.value)
-          : update);
-        const nextState = makeState(updatedValue, recentState);
-        const updatedState = await E(coordinator).tryUpdateState(
-          key,
-          nextState,
-          guardPattern,
-        );
-        if (updatedState.generation <= nextState.generation) {
-          resolve(updatedState.value);
-          return;
-        }
-        retryTransaction(updatedState).catch(reject);
-      };
-      // Start the transaction loop until it fails or we update successfully.
-      E(coordinator).getRecentState(key).then(retryTransaction).catch(reject);
+
+    const [update, guardPattern] = optUpdateGuardPattern;
+    if (typeof update !== 'function') {
+      return E(coordinator).setCacheValue(key, update, guardPattern);
+    }
+
+    const updater = Far('cache updater', {
+      update: oldValue => {
+        return update(oldValue);
+      },
     });
+    return E(coordinator).updateCacheValue(key, updater, guardPattern);
   };
+
   return cache;
 };
