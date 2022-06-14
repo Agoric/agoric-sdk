@@ -11,6 +11,8 @@ import spawn from '@agoric/wallet-backend/src/wallet.js';
 
 import '@agoric/wallet-backend/src/types.js'; // TODO avoid ambient types
 
+const { assign, entries, fromEntries } = Object;
+
 /**
  *
  * TODO: multi-tennant wallet
@@ -43,25 +45,29 @@ export const start = async (zcf, privateArgs) => {
     storageNode && E(storageNode).getChildNode(address);
   const admin = E(wallet).getAdminFacet();
 
-  const { subscription, publication } = makeSubscriptionKit();
+  /** @type {Record<string, ERef<Notifier<unknown>>>} */
+  const notifierParts = {
+    contacts: E(admin).getContactsNotifier(),
+    dapps: E(admin).getDappsNotifier(),
+    issuers: E(admin).getIssuersNotifier(),
+    offers: E(admin).getOffersNotifier(),
+    payments: E(admin).getPaymentsNotifier(),
+    purses: E(admin).getPursesNotifier(),
+  };
+  const initialEntries = await Promise.all(
+    entries(notifierParts).map(async ([key, notifier]) => {
+      const initial = await E(notifier).getUpdateSince();
+      return [key, initial];
+    }),
+  );
+  const state = fromEntries(initialEntries);
+  const { subscription, publication } = makeSubscriptionKit(state);
 
-  void observeIteration(E(admin).getContactsNotifier(), {
-    updateState: state => publication.updateState({ contacts: state }),
-  });
-  void observeIteration(E(admin).getDappsNotifier(), {
-    updateState: state => publication.updateState({ dapps: state }),
-  });
-  void observeIteration(E(admin).getIssuersNotifier(), {
-    updateState: state => publication.updateState({ issuers: state }),
-  });
-  void observeIteration(E(admin).getOffersNotifier(), {
-    updateState: state => publication.updateState({ offers: state }),
-  });
-  void observeIteration(E(admin).getPaymentsNotifier(), {
-    updateState: state => publication.updateState({ payments: state }),
-  });
-  void observeIteration(E(admin).getPursesNotifier(), {
-    updateState: state => publication.updateState({ purses: state }),
+  entries(notifierParts).forEach(([key, notifier]) => {
+    void observeIteration(notifier, {
+      updateState: value =>
+        publication.updateState(assign(state, { [key]: value })),
+    });
   });
 
   const storedSubscription = makeStoredSubscription(
