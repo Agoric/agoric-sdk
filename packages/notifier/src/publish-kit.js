@@ -67,7 +67,7 @@ harden(subcribeEach);
  * @returns {AsyncIterator<T>}
  */
 const makeLatestIterator = subscriber => {
-  let latestPublishCount = -ONE;
+  let latestPublishCount;
   return Far('LatestIterator', {
     next: () => {
       const pubList = E(subscriber).subscribeAfter(latestPublishCount);
@@ -117,7 +117,7 @@ export const makeEmptyPublishKit = () => {
   let tailR;
   ({ promise: tailP, resolve: tailR } = makePromiseKit());
 
-  let currentPublishCount = ONE;
+  let currentPublishCount = ONE - ONE;
   let currentP = tailP;
   const advanceCurrent = () => {
     if (currentP === tailP) {
@@ -136,8 +136,10 @@ export const makeEmptyPublishKit = () => {
     subscribeAfter: (publishCount = -ONE) => {
       if (publishCount === currentPublishCount) {
         return tailP;
-      } else {
+      } else if (publishCount < currentPublishCount) {
         return currentP;
+      } else {
+        throw new Error('Invalid publish count');
       }
     },
   });
