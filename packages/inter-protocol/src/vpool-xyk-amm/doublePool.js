@@ -17,6 +17,12 @@ const { details: X } = assert;
 // price that brand is the outPool.
 
 /**
+ * doublePool is the virtualPool implementation for calculating prices when
+ * transiting through two pools. virtual pools wrap something that can do a swap
+ * and calculate prices. Current wrapped pools are single pools and pairs of
+ * pools, but we've also contemplated using a similar virtual wrapper for other
+ * curves.
+ *
  * @param {ZCF} zcf
  * @param {XYKPool} collateralInPool
  * @param {XYKPool} collateralOutPool
