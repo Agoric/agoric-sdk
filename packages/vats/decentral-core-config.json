@@ -12,6 +12,9 @@
     "mintHolder": {
       "sourceSpec": "@agoric/vats/src/mintHolder.js"
     },
+    "smartWallet": {
+      "sourceSpec": "@agoric/wallet/contract/src/smart-wallet.js"
+    },
     "zcf": {
       "sourceSpec": "@agoric/zoe/contractFacet.js"
     },

@@ -8,6 +8,10 @@ const dirname = url.fileURLToPath(new URL('.', import.meta.url));
 const sourceToBundle = [
   [`../src/centralSupply.js`, `../bundles/bundle-centralSupply.js`],
   [`../src/mintHolder.js`, `../bundles/bundle-mintHolder.js`],
+  [
+    `@agoric/wallet/contract/src/smart-wallet.js`,
+    `../bundles/bundle-smartWallet.js`,
+  ],
 ];
 
 createBundles(sourceToBundle, dirname);

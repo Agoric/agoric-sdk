@@ -225,9 +225,32 @@ export const makeAddressNameHubs = async ({
 harden(makeAddressNameHubs);
 
 /** @param {BootstrapSpace} powers */
-export const makeClientBanks = async ({ consume: { client, bankManager } }) => {
+export const makeClientBanks = async ({
+  consume: {
+    agoricNames,
+    board,
+    namesByAddress,
+    namesByAddressAdmin,
+    client,
+    bankManager,
+    zoe,
+  },
+  installation: {
+    consume: { smartWallet },
+  },
+}) => {
   return E(client).assignBundle([
-    address => ({ bank: E(bankManager).getBankForAddress(address) }),
+    address => {
+      const bank = E(bankManager).getBankForAddress(address);
+      const myAddressNameAdmin = E(namesByAddressAdmin).lookupAdmin(address);
+      const myWallet = E(zoe).startInstance(
+        smartWallet,
+        {},
+        { agoricNames, bank, namesByAddress, myAddressNameAdmin, board },
+      );
+
+      return { bank, smartWallet: myWallet };
+    },
   ]);
 };
 harden(makeClientBanks);
@@ -238,12 +261,13 @@ export const installBootContracts = async ({
   devices: { vatAdmin },
   consume: { zoe },
   installation: {
-    produce: { centralSupply, mintHolder },
+    produce: { centralSupply, mintHolder, smartWallet },
   },
 }) => {
   for (const [name, producer] of Object.entries({
     centralSupply,
     mintHolder,
+    smartWallet,
   })) {
     const bundleCap = D(vatAdmin).getNamedBundleCap(name);
     const bundle = D(bundleCap).getBundle();
