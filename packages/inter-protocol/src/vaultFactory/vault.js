@@ -534,7 +534,7 @@ const helperBehavior = {
     }
 
     stageDelta(clientSeat, vaultSeat, giveColl, wantColl, 'Collateral');
-    // `wantRUN` is allocated in the reallocate and mint operation, and so not here
+    // `wantMinted` is allocated in the reallocate and mint operation, and so not here
     stageDelta(clientSeat, vaultSeat, giveMinted, helper.emptyDebt(), 'Minted');
 
     /** @type {Array<ZCFSeat>} */
