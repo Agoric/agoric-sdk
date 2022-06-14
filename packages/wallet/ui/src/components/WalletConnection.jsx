@@ -1,6 +1,6 @@
 /* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable react/display-name */
-import { makeReactAgoricWalletConnection } from '@agoric/wallet-connection/react.js';
+import { makeReactAgoricWalletConnection } from '@agoric/web-components/react.js';
 import React, { useCallback, useState } from 'react';
 import clsx from 'clsx';
 import { E } from '@endo/eventual-send';
@@ -79,7 +79,7 @@ const WalletConnection = ({
   const [backendCancel, setBackendCancel] = useState(null);
   const onWalletState = useCallback(
     ev => {
-      const { walletConnection, state } = ev.detail;
+      const { walletConnection, state, makeDefaultLeader } = ev.detail;
       setConnectionState(state);
       switch (state) {
         case 'idle': {
@@ -93,7 +93,10 @@ const WalletConnection = ({
           const bridge = E(walletConnection).getAdminBootstrap(
             getAccessToken(),
           );
-          const { backendIt, cancel } = makeBackendFromWalletBridge(bridge);
+          const { backendIt, cancel } = makeBackendFromWalletBridge(
+            bridge,
+            makeDefaultLeader,
+          );
 
           // Need to thunk the cancel function, or it will be called immediately.
           setBackendCancel(() => cancel);

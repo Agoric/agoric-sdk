@@ -7,6 +7,7 @@ backend.  Any passable object can be a cache key or a cache value.
 
 ```js
 import { makeCache, makeStoreCoordinator } from '@agoric/cache';
+import { M } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 const store = makeScalarBigMapStore('cache');
@@ -21,23 +22,23 @@ await cache('baz', 'barbosa'); // 'barbosa'
 await cache('baz', 'babaloo', undefined); // 'barbosa'
 await cache('baz', 'babaloo', 'barbosa'); // 'babaloo'
 
+// One-time initialization.
+await cache('frotz', 'default'); // 'default'
+await cache('frotz', 'ignored'); // 'default'
 
 // Update the `'foo'` entry, using its old value (initially `undefined`).
 await cache('foo'); // `undefined`
 const updater = (oldValue = 'bar') => `${oldValue}1`;
-await cache('foo', updater); // 'bar1'
-await cache('foo', updater); // 'bar11'
+await cache('foo', updater, M.any()); // 'bar1'
+await cache('foo', updater, M.any()); // 'bar11'
 await cache('foo'); // 'bar11'
 
-// You can also assert a pattern for the key.  If it doesn't match, then the cache returns a rejection.
+// You can also specify a guard pattern for the value to update.  If it
+// doesn't match the latest value, then the cache isn't updated.
 await cache('foo', updater, 'nomatch'); // 'bar11'
 await cache('foo', updater, 'bar11'); // 'bar111'
 await cache('foo', updater, 'bar11'); // 'bar111'
 await cache('foo'); // 'bar111'
-
-// Specify a pattern of `undefined` for one-time initialisation.
-await cache('frotz', 'default', undefined); // 'default'
-await cache('frotz', 'ignored', undefined); // 'ignored'
 ```
 
 ## Cache client
@@ -63,26 +64,26 @@ The cache coordinator must implement the `Coordinator` interface, which supports
 eventual consistency with optimistic updates:
 
 ```ts
-interface State {
-  // State updates must include a generation counter exactly one
-  // greater than the current state, or they are not applied.
-  generation: bigint,
-  // Any acceptable value supported by the cache.
-  value: any,
-};
-
-// The default state for a key that has not yet been updated.
-const GROUND_STATE = { generation: 0n, value: undefined };
+interface Updater {
+  /**
+   * Calculate the newValue for a given oldValue
+   */
+  update: (oldValue: Passable) => unknown
+}
 
 interface Coordinator {
   /**
-   * Read an eventually-consistent state for the specified key.
+   * Read an eventually-consistent value for the specified key.
    */
-  getRecentState: (key: unknown) => Promise<State>,
+  getRecentValue: (key: Passable) => Promise<Passable>,
   /**
-   * Attempt to update the key to the new state.  Returns the latest known
-   * state after trying to apply the desiredState (may not match).
+   * Update a cache value to newValue, but only if guardPattern matches the current value.
    */
-  tryUpdateState: (key: unknown, desiredState: State, assertedMatch: Matcher) => Promise<State>,
+  setCacheValue: (key: Passable, newValue: Passable, guardPattern: Pattern) => Promise<Passable>,
+  /**
+   * Update a cache value via an updater calculation of newValue, but only if guardPattern
+   * matches the current value.
+   */
+  updateCacheValue: (key: Passable, updater: ERef<Updater>, assertedMatch: Matcher) => Promise<Passable>,
 }
 ```

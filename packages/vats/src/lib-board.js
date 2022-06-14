@@ -45,7 +45,7 @@ function makeBoard(
   const valToId = makeStore('value');
 
   const ifaceAllegedPrefix = 'Alleged: ';
-  const ifaceInaccessiblePrefix = 'INACCESSIBLE: ';
+  const ifaceInaccessiblePrefix = 'SEVERED: ';
   const slotToVal = (slot, iface) => {
     if (slot !== null) {
       // eslint-disable-next-line no-use-before-define

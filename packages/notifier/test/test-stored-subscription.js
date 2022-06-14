@@ -39,7 +39,10 @@ test('stored subscription', async t => {
   const { subscription, publication } = makeSubscriptionKit(initialValue);
   const storesub = makeStoredSubscription(subscription, storage);
 
-  t.is(await E(storesub).getStoreKey(), await E(storage).getStoreKey());
+  t.deepEqual(await E(storesub).getStoreKey(), {
+    subscription,
+    ...(await E(storage).getStoreKey()),
+  });
   const unserializer = E(storesub).getUnserializer();
 
   const ait = E(storesub)[Symbol.asyncIterator]();

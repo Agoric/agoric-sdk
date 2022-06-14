@@ -1,6 +1,6 @@
 // @ts-check
 import { E, Far } from '@endo/far';
-import { DEFAULT_RETRY_CALLBACK } from './defaults.js';
+import { DEFAULT_RETRY_CALLBACK, DEFAULT_JITTER } from './defaults.js';
 import { shuffle } from './shuffle.js';
 import { makePollingChangeFollower } from './change-follower.js';
 
@@ -11,7 +11,8 @@ import { makePollingChangeFollower } from './change-follower.js';
  * @param {import('./types.js').LeaderOptions} leaderOptions
  */
 export const makeRoundRobinLeader = (endpoints, leaderOptions = {}) => {
-  const { retryCallback = DEFAULT_RETRY_CALLBACK } = leaderOptions;
+  const { retryCallback = DEFAULT_RETRY_CALLBACK, jitter = DEFAULT_JITTER } =
+    leaderOptions;
 
   // Shuffle the RPC addresses, so that we don't always hit the same one as all
   // our peers.
@@ -19,31 +20,46 @@ export const makeRoundRobinLeader = (endpoints, leaderOptions = {}) => {
 
   let lastRespondingEndpointIndex = 0;
   let thisAttempt = 0;
+  let retrying;
 
   /** @type {import('./types.js').Leader} */
   const leader = Far('round robin leader', {
     getOptions: () => leaderOptions,
-    retry: async (err, attempt) => {
+    jitter: async where => jitter && jitter(where),
+    retry: async (where, err, attempt) => {
       if (retryCallback) {
-        return retryCallback(err, attempt);
+        return retryCallback(where, err, attempt);
       }
       throw err;
     },
-    watchCasting: castingSpec => makePollingChangeFollower(leader, castingSpec),
+    // eslint-disable-next-line no-use-before-define
+    watchCasting: _castingSpecP => pollingChangeFollower,
     /**
      * @template T
+     * @param {string} where
      * @param {(endpoint: string) => Promise<T>} callback
      */
-    mapEndpoints: async callback => {
+    mapEndpoints: async (where, callback) => {
+      where = `${where} (round-robin endpoints)`;
       /** @type {Promise<T[]>} */
       const p = new Promise((resolve, reject) => {
         let endpointIndex = lastRespondingEndpointIndex;
 
-        const retry = async err => {
-          endpointIndex = (endpointIndex + 1) % endpoints.length;
+        const retry = err => {
+          if (!retrying) {
+            const attempt = thisAttempt;
+            retrying = E(leader)
+              .retry(where, err, attempt)
+              .then(() => {
+                endpointIndex = (endpointIndex + 1) % endpoints.length;
+                retrying = null;
+              });
+          }
 
-          // eslint-disable-next-line no-use-before-define
-          E(leader).retry(err, thisAttempt).then(applyOne, reject);
+          retrying
+            .then(() => jitter && jitter(where))
+            // eslint-disable-next-line no-use-before-define
+            .then(applyOne, reject);
           thisAttempt += 1;
         };
 
@@ -64,5 +80,7 @@ export const makeRoundRobinLeader = (endpoints, leaderOptions = {}) => {
       return p;
     },
   });
+
+  const pollingChangeFollower = makePollingChangeFollower(leader);
   return leader;
 };
