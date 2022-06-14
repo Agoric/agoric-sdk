@@ -11,7 +11,7 @@ import spawn from '@agoric/wallet-backend/src/wallet.js';
 
 import '@agoric/wallet-backend/src/types.js'; // TODO avoid ambient types
 
-const { assign, entries, fromEntries } = Object;
+const { assign, entries, keys, fromEntries } = Object;
 
 /**
  *
@@ -54,19 +54,15 @@ export const start = async (zcf, privateArgs) => {
     payments: E(admin).getPaymentsNotifier(),
     purses: E(admin).getPursesNotifier(),
   };
-  const initialEntries = await Promise.all(
-    entries(notifierParts).map(async ([key, notifier]) => {
-      const initial = await E(notifier).getUpdateSince();
-      return [key, initial];
-    }),
-  );
-  const state = fromEntries(initialEntries);
-  const { subscription, publication } = makeSubscriptionKit(state);
+  const mutableState = fromEntries(keys(notifierParts).map(key => [key, []]));
+  const { subscription, publication } = makeSubscriptionKit({
+    ...mutableState,
+  });
 
   entries(notifierParts).forEach(([key, notifier]) => {
     void observeIteration(notifier, {
       updateState: value =>
-        publication.updateState(assign(state, { [key]: value })),
+        publication.updateState({ ...assign(mutableState, { [key]: value }) }),
     });
   });
 
