@@ -29,11 +29,11 @@ const nonalphanumeric = /[^A-Za-z0-9]/g;
  * dispense it for various purposes under governance control. It currently
  * supports governance decisions to add liquidity to an AMM pool.
  *
- * This contract has the ability to tokens on the Fee mint provided in its
- * terms. When adding liquidity to an AMM pool, it takes a specified amount of
- * collateral on hand, and mints new fee tokens to accompany it. It then
- * deposits both into an AMM pool by using the AMM's method that allows the pool
- * balance to be determined based on the contributed funds.
+ * This contract has the ability to mint Fee tokens, granted through its private
+ * arguments. When adding liquidity to an AMM pool, it mints new Fee tokens and
+ * merges them with the specified amount of collateral on hand. It then deposits
+ * both into an AMM pool by using the AMM's method that allows the pool balance
+ * to be determined based on the contributed funds.
  *
  * @param {ZCF<GovernanceTerms<{AmmInstance: 'instance'}> &
  * {

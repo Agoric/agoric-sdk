@@ -198,7 +198,7 @@ export const swap = (
     return noTransaction;
   }
 
-  // The protocol fee must always be collected in {Fee}, but the pool
+  // The protocol fee must always be collected in `Fee`, but the pool
   // fee is collected in the amount opposite of what is specified.
   // This call gives us improved amountIn or amountOut
   const fees = calculateFees(
@@ -216,7 +216,7 @@ export const swap = (
 
   // Calculate no-fee amounts. swapFn will only pay attention to the `specified`
   // value. The pool fee is always charged on the unspecified side, so it is an
-  // output of the calculation. When the specified value is in {Fee}, the protocol fee will
+  // output of the calculation. When the specified value is in `Fee`, the protocol fee will
   // be deducted from amountGiven before adding to the pool or added to
   // amountWanted to calculate amoutOut. Otherwise we add the protocol fee
   // to amountWanted.
