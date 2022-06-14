@@ -1,8 +1,8 @@
 // @ts-check
 
 import {
-  floorDivideBy,
-  floorMultiplyBy,
+  divideBy,
+  multiplyBy,
   invertRatio,
   multiplyRatios,
   ratiosSame,
@@ -46,7 +46,7 @@ export const calculateCurrentDebt = (
     interestSnapshot,
   );
 
-  return floorMultiplyBy(debtSnapshot, interestSinceSnapshot);
+  return multiplyBy(debtSnapshot, interestSinceSnapshot);
 };
 
 /**
@@ -56,5 +56,5 @@ export const calculateCurrentDebt = (
  * @returns {Amount<'nat'>}
  */
 export const reverseInterest = (debt, interestApplied) => {
-  return floorDivideBy(debt, interestApplied);
+  return divideBy(debt, interestApplied);
 };

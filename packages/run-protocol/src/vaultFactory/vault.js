@@ -86,7 +86,7 @@ const validTransitions = {
  * @property {MintAndReallocate} mintAndReallocate
  * @property {(amount: Amount, seat: ZCFSeat) => void} burnAndRecord
  * @property {() => Ratio} getCompoundedInterest
- * @property {(oldDebt: import('./storeUtils.js').NormalizedDebt, oldCollateral: Amount<'nat'>, vaultId: VaultId, vaultPhase: VaultPhase) => void} handleBalanceChange
+ * @property {(oldDebt: import('./storeUtils.js').NormalizedDebt, oldCollateral: Amount<'nat'>, vaultId: VaultId, vaultPhase: VaultPhase, vault: Vault) => void} handleBalanceChange
  * @property {() => import('./vaultManager.js').GovernedParamGetters} getGovernedParams
  */
 
@@ -260,6 +260,7 @@ const helperBehavior = {
       oldCollateral,
       state.idInManager,
       state.phase,
+      facets.self,
     );
   },
 
@@ -411,6 +412,7 @@ const helperBehavior = {
       oldCollateral,
       state.idInManager,
       state.phase,
+      facets.self,
     );
 
     return 'your loan is closed, thank you for your business';
@@ -451,6 +453,10 @@ const helperBehavior = {
     const proposal = clientSeat.getProposal();
     assertOnlyKeys(proposal, ['Collateral', 'RUN']);
 
+    const allEmpty = amounts => {
+      return amounts.every(a => AmountMath.isEmpty(a));
+    };
+
     const normalizedDebtPre = self.getNormalizedDebt();
     const collateralPre = helper.getCollateralAllocated(vaultSeat);
 
@@ -477,7 +483,7 @@ const helperBehavior = {
       debt,
     );
     const wantRUN = proposal.want.RUN || helper.emptyDebt();
-    if ([giveColl, giveRUN, wantColl].every(a => AmountMath.isEmpty(a))) {
+    if (allEmpty([giveColl, giveRUN, wantColl, wantRUN])) {
       clientSeat.exit();
       return 'no transaction, as requested';
     }
@@ -502,7 +508,12 @@ const helperBehavior = {
     stageDelta(clientSeat, vaultSeat, giveColl, wantColl, 'Collateral');
     // `wantRUN` is allocated in the reallocate and mint operation, and so not here
     stageDelta(clientSeat, vaultSeat, giveRUN, helper.emptyDebt(), 'RUN');
-    state.manager.mintAndReallocate(toMint, fee, clientSeat, vaultSeat);
+
+    /** @type {Array<ZCFSeat>} */
+    const vaultSeatOpt = allEmpty([giveColl, giveRUN, wantColl])
+      ? []
+      : [vaultSeat];
+    state.manager.mintAndReallocate(toMint, fee, clientSeat, ...vaultSeatOpt);
 
     // parent needs to know about the change in debt
     helper.updateDebtAccounting(normalizedDebtPre, collateralPre, newDebt);
@@ -545,13 +556,15 @@ const selfBehavior = {
    */
   initVaultKit: async ({ state, facets }, seat) => {
     const { self, helper } = facets;
-    assert(
-      AmountMath.isEmpty(state.debtSnapshot),
-      X`vault must be empty initially`,
-    );
-    // TODO should this be simplified to know that the oldDebt mut be empty?
+
     const normalizedDebtPre = self.getNormalizedDebt();
     const actualDebtPre = self.getCurrentDebt();
+    assert(
+      AmountMath.isEmpty(normalizedDebtPre) &&
+        AmountMath.isEmpty(actualDebtPre),
+      X`vault must be empty initially`,
+    );
+
     const collateralPre = self.getCollateralAmount();
     trace('initVaultKit start: collateral', state.idInManager, {
       actualDebtPre,
