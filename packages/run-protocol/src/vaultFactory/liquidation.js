@@ -73,16 +73,16 @@ const liquidate = async (
         AmountMath.makeEmptyFromAmount(debt),
       ];
 
-  const runToBurn = AmountMath.min(proceeds.Minted, debt);
-  // debt is fully settled, with runToBurn and shortfall
-  assert(AmountMath.isEqual(debt, AmountMath.add(runToBurn, shortfall)));
+  const toBurn = AmountMath.min(proceeds.Minted, debt);
+  // debt is fully settled, with toBurn and shortfall
+  assert(AmountMath.isEqual(debt, AmountMath.add(toBurn, shortfall)));
 
   // Manager accounting changes determined. Update the vault state.
   vault.liquidated();
   // remaining funds are left on the vault for the user to close and claim
 
   // for manager's accounting
-  return { proceeds: proceeds.Minted, overage, runToBurn, shortfall };
+  return { proceeds: proceeds.Minted, overage, toBurn, shortfall };
 };
 
 const liquidationDetailTerms = debtBrand =>

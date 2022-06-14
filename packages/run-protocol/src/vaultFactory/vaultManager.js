@@ -443,7 +443,7 @@ const helperBehavior = {
       factoryPowers.getGovernedParams().getLiquidationPenalty(),
     )
       .then(accounting => {
-        facets.manager.burnAndRecord(accounting.runToBurn, vaultSeat);
+        facets.manager.burnAndRecord(accounting.toBurn, vaultSeat);
 
         // current values
         state.totalCollateral = AmountMath.subtract(
