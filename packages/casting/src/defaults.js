@@ -48,7 +48,7 @@ export const DEFAULT_DECODER = harden(buf => {
 
 const ifaceAllegedPrefix = 'Alleged: ';
 const ifaceInaccessiblePrefix = 'INACCESSIBLE: ';
-const slotToVal = (slot, iface) => {
+const slotToVal = (_slot, iface) => {
   // Private object.
   if (typeof iface === 'string' && iface.startsWith(ifaceAllegedPrefix)) {
     iface = iface.slice(ifaceAllegedPrefix.length);
