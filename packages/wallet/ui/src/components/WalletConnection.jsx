@@ -7,6 +7,8 @@ import { E } from '@endo/eventual-send';
 import { observeIterator } from '@agoric/notifier';
 import { makeStyles } from '@mui/styles';
 
+import { withApplicationContext } from '../contexts/Application.jsx';
+
 import { makeBackendFromWalletBridge } from '../util/WalletBackendAdapter.js';
 import { makeFixedWebSocketConnector } from '../util/fixed-websocket-connector.js';
 
@@ -122,10 +124,9 @@ const WalletConnection = ({
   );
 };
 
-export const buildWalletConnection = withApplicationContext =>
-  withApplicationContext(WalletConnection, context => ({
-    setConnectionState: context.setConnectionState,
-    disconnect: context.disconnect,
-    setBackend: context.setBackend,
-    walletConnection: context.walletConnection,
-  }));
+export default withApplicationContext(WalletConnection, context => ({
+  setConnectionState: context.setConnectionState,
+  disconnect: context.disconnect,
+  setBackend: context.setBackend,
+  walletConnection: context.walletConnection,
+}));

@@ -1,3 +1,5 @@
+import { withApplicationContext } from '../contexts/Application';
+
 const SmartWalletConnection = ({
   setConnectionState,
   setWantConnection,
@@ -15,11 +17,8 @@ Choose a wallet connection one from settings.`);
   }, 1);
 };
 
-export default SmartWalletConnection;
-
-export const buildWalletConnection = withApplicationContext =>
-  withApplicationContext(SmartWalletConnection, context => ({
-    setConnectionState: context.setConnectionState,
-    setWantConnection: context.setWantConnection,
-    walletConnection: context.walletConnection,
-  }));
+export default withApplicationContext(SmartWalletConnection, context => ({
+  setConnectionState: context.setConnectionState,
+  setWantConnection: context.setWantConnection,
+  walletConnection: context.walletConnection,
+}));
