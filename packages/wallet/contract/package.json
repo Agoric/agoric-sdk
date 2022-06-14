@@ -4,8 +4,7 @@
   "description": "Wallet contract",
   "type": "module",
   "scripts": {
-    "build": "yarn build:bundles",
-    "build:bundles": "node scripts/build-bundles.js",
+    "build": "exit 0",
     "test": "ava",
     "test:xs": "exit 0",
     "lint": "run-s --continue-on-error lint:*",
@@ -17,8 +16,10 @@
     "ava": "^3.12.1"
   },
   "dependencies": {
+    "@agoric/wallet-backend": "0.12.1",
     "@agoric/deploy-script-support": "^0.9.0",
     "@agoric/zoe": "^0.24.0",
+    "@agoric/notifier": "^0.4.0",
     "@endo/far": "^0.2.3"
   },
   "keywords": [],
