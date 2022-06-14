@@ -5,7 +5,7 @@ import { E } from '@endo/eventual-send';
 import '../exported.js';
 import { AmountMath, assertValueGetHelpers } from '@agoric/ertp';
 
-import { q } from '@agoric/assert';
+import { details as X, q } from '@agoric/assert';
 
 export const assertAmountsEqual = (t, amount, expected, label = '') => {
   harden(amount);
@@ -23,9 +23,7 @@ export const assertAmountsEqual = (t, amount, expected, label = '') => {
     if (brandsEqual && valuesEqual) {
       t.truthy(AmountMath.isEqual(amount, expected), l);
     } else if (brandsEqual && !valuesEqual) {
-      t.fail(
-        `${l}value (${q(amount.value)}) expected to equal ${q(expected.value)}`,
-      );
+      t.fail(`${l}value ${amount.value} expected to equal ${expected.value}`);
     } else if (!brandsEqual && valuesEqual) {
       t.fail(`${l}brand (${amount.brand}) expected to equal ${expected.brand}`);
     } else {

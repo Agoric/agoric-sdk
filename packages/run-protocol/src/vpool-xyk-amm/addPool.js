@@ -140,7 +140,7 @@ export const makeAddPoolInvitation = (
 
     assert(
       AmountMath.isGTE(centralAmount, minPoolLiquidity),
-      `The minimum initial liquidity is ${minPoolLiquidity}, rejecting ${centralAmount}`,
+      X`The minimum initial liquidity is ${minPoolLiquidity}, rejecting ${centralAmount}`,
     );
     const minLiqAmount = AmountMath.make(
       liquidityBrand,
