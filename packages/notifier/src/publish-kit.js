@@ -119,13 +119,36 @@ export const makeEmptyPublishKit = () => {
 
   let currentPublishCount = ONE - ONE;
   let currentP = tailP;
-  const advanceCurrent = () => {
-    if (currentP === tailP) {
-      // If tailP has not advanced past currentP, do nothing.
-      return;
+  const advanceCurrent = (done, value, rejection) => {
+    if (tailR === undefined) {
+      throw new Error('Cannot update state after termination.');
     }
+
     currentPublishCount += ONE;
     currentP = tailP;
+    const resolveCurrent = tailR;
+
+    if (done) {
+      tailP = HandledPromise.reject(
+        new Error('Cannot read past end of iteration.'),
+      );
+      tailP.catch(() => {}); // suppress unhandled rejection error
+      tailR = undefined;
+    } else {
+      ({ promise: tailP, resolve: tailR } = makePromiseKit());
+    }
+
+    if (rejection) {
+      resolveCurrent(rejection);
+    } else {
+      resolveCurrent(
+        harden({
+          head: { value, done },
+          publishCount: currentPublishCount,
+          tail: tailP,
+        }),
+      );
+    }
   };
 
   /**
@@ -147,50 +170,13 @@ export const makeEmptyPublishKit = () => {
   /** @type {Publisher<T>} */
   const publisher = Far('Publisher', {
     publish: value => {
-      if (tailR === undefined) {
-        throw new Error('Cannot update state after termination.');
-      }
-
-      advanceCurrent();
-      /** @type {PromiseKit<PublicationRecord<T>>} */
-      const { promise: nextTailP, resolve: nextTailR } = makePromiseKit();
-      tailR(
-        harden({
-          head: { value, done: false },
-          publishCount: currentPublishCount,
-          tail: nextTailP,
-        }),
-      );
-      tailP = nextTailP;
-      tailR = nextTailR;
+      advanceCurrent(false, value);
     },
     finish: finalValue => {
-      if (tailR === undefined) {
-        throw new Error('Cannot finish after termination.');
-      }
-      const readComplaint = HandledPromise.reject(
-        new Error('cannot read past end of iteration'),
-      );
-      readComplaint.catch(() => {}); // suppress unhandled rejection error
-
-      advanceCurrent();
-      tailR({
-        head: { value: finalValue, done: true },
-        publishCount: currentPublishCount,
-        tail: readComplaint,
-      });
-      tailR = undefined;
+      advanceCurrent(true, finalValue);
     },
     fail: reason => {
-      if (tailR === undefined) {
-        throw new Error('Cannot fail after termination.');
-      }
-
-      advanceCurrent();
-      /** @type {PublicationList<T>} */
-      const rejection = HandledPromise.reject(reason);
-      tailR(rejection);
-      tailR = undefined;
+      advanceCurrent(true, undefined, HandledPromise.reject(reason));
     },
   });
   return harden({ publisher, subscriber });
