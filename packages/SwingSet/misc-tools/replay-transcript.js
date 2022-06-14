@@ -49,7 +49,7 @@ function compareSyscalls(vatID, originalSyscall, newSyscall) {
 const worker = 'xs-worker';
 const gcEveryCrank = true; // false would hard-disable GC
 
-async function replay(transcriptFile) {
+async function replay(transcriptFile, vatSourceSpec=undefined) {
   let vatID; // we learn this from the first line of the transcript
   let factory;
 
@@ -143,7 +143,12 @@ async function replay(transcriptFile) {
       if (data.type !== 'create-vat') {
         throw Error(`first line of transcript was not a create-vat`);
       }
-      const { vatParameters, vatSourceBundle } = data;
+      let { vatParameters, vatSourceBundle } = data;
+      if (vatSourceSpec) {
+        vatSourceBundle = await bundleSource(vatSourceSpec, { dev: true });
+        console.log(` override bundle with ${vatSourceSpec} -> ${vatSourceBundle.endoZipBase64.length}`);
+        fs.writeFileSync('new-bundle', JSON.stringify(vatSourceBundle));
+      }
       vatID = data.vatID;
       const managerOptions = {
         sourcedConsole: console,
@@ -166,18 +171,36 @@ async function replay(transcriptFile) {
       // console.log(`replaying:`);
       console.log(
         `delivery ${deliveryNum} (L ${lineNumber}):`,
-        JSON.stringify(delivery).slice(0, 200),
+        JSON.stringify(delivery),//.slice(0, 200),
       );
-      // for (const s of syscalls) {
-      //   s.response = 'nope';
-      //   console.log(` syscall:`, s.d, s.response);
-      // }
+      for (const s of syscalls) {
+        console.log(` expected syscall: ${JSON.stringify(s.d)} -> ${JSON.stringify(s.response)}`);
+      }
+      if (deliveryNum === 2) {
+        assert.equal(delivery[0], 'message');
+        assert.equal(delivery[1], 'o+0');
+        const body = JSON.parse(delivery[2].methargs.body);
+        assert.equal(body[0], 'executeContract');
+        // contract bundle record is in body[1][0]
+        fs.writeFileSync('old-exec-contract', JSON.stringify(delivery));
+        // replace the AMM bundle argument with a fresh bundle
+        console.log(`re-bundling AMM`, delivery[2].methargs.body.length);
+        const newBundle = await bundleSource('../run-protocol/src/vpool-xyk-amm/multipoolMarketMaker.js');
+        const { endoZipBase64Sha512, ...newBundle2 } = newBundle;
+        body[1][0] = newBundle2;
+        delivery[2].methargs.body = JSON.stringify(body);
+        console.log(`finished re-bundling AMM`, delivery[2].methargs.body.length);
+        fs.writeFileSync('new-exec-contract', JSON.stringify(delivery));
+      }
       await manager.replayOneDelivery(delivery, syscalls, deliveryNum, false);
       deliveryNum += 1;
+      //if (deliveryNum === 6) break;
+      if (deliveryNum === 680) break;
       // console.log(`dr`, dr);
     }
   }
 
+  console.log(` -- replay exited loop`);
   lines.close();
   if (manager) {
     await manager.shutdown();
@@ -191,9 +214,15 @@ async function run() {
     console.log(`replay-one-vat.js transcript.sst`);
     return;
   }
+  let vatSourceSpec;
+  if (args[0] === '--vatsource') {
+    args.shift();
+    vatSourceSpec = args.shift(); // eg ../zoe/contractFacet.js
+    console.log(` overriding vatSourceSpec with ${vatSourceSpec}`);
+  }
   const [transcriptFile] = args;
   console.log(`using transcript ${transcriptFile}`);
-  await replay(transcriptFile);
+  await replay(transcriptFile, vatSourceSpec);
 }
 
 run().catch(err => console.log('RUN ERR', err));
