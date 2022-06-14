@@ -142,7 +142,7 @@ const helperBehavior = {
    * @param {MethodContext} context
    * @param {ZCFSeat} seat
    */
-  getRunAllocated: ({ state }, seat) =>
+  getDebtAllocated: ({ state }, seat) =>
     seat.getAmountAllocated(KW.Debt, state.debtBrand),
   /**
    * @param {MethodContext} context
@@ -235,11 +235,11 @@ const helperBehavior = {
   /**
    * @param {MethodContext} context
    */
-  assertVaultHoldsNoRun: ({ state, facets }) => {
+  assertVaultHoldsNoDebt: ({ state, facets }) => {
     const { vaultSeat } = state;
     const { helper } = facets;
     assert(
-      AmountMath.isEmpty(helper.getRunAllocated(vaultSeat)),
+      AmountMath.isEmpty(helper.getDebtAllocated(vaultSeat)),
       X`Vault should be empty of debt`,
     );
   },
@@ -315,7 +315,7 @@ const helperBehavior = {
 
     manager.burnDebt(give, vaultSeat);
 
-    helper.assertVaultHoldsNoRun();
+    helper.assertVaultHoldsNoDebt();
 
     void helper.updateUiState();
     clientSeat.exit();
@@ -358,7 +358,7 @@ const helperBehavior = {
     state.open = false;
     helper.updateDebtSnapshot(AmountMath.makeEmpty(debtBrand));
     void helper.updateUiState();
-    helper.assertVaultHoldsNoRun();
+    helper.assertVaultHoldsNoDebt();
     seat.exit();
 
     return 'Your RUNstake is closed; thank you for your business.';

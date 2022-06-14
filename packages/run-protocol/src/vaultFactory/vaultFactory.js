@@ -50,7 +50,7 @@ export const start = async (zcf, privateArgs) => {
     privateArgs;
   const debtMint = await zcf.registerFeeMint('Minted', feeMintAccess);
   zcf.setTestJig(() => ({
-    runIssuerRecord: debtMint.getIssuerRecord(),
+    mintedIssuerRecord: debtMint.getIssuerRecord(),
   }));
 
   const {

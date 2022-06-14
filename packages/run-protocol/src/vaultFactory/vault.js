@@ -271,13 +271,13 @@ const helperBehavior = {
    */
   getCollateralAllocated: ({ facets }, seat) =>
     seat.getAmountAllocated('Collateral', facets.helper.collateralBrand()),
-  getRunAllocated: ({ facets }, seat) =>
+  getDebtAllocated: ({ facets }, seat) =>
     seat.getAmountAllocated('Minted', facets.helper.debtBrand()),
 
-  assertVaultHoldsNoRun: ({ state, facets }) => {
+  assertVaultHoldsNoDebt: ({ state, facets }) => {
     const { vaultSeat } = state;
     assert(
-      AmountMath.isEmpty(facets.helper.getRunAllocated(vaultSeat)),
+      AmountMath.isEmpty(facets.helper.getDebtAllocated(vaultSeat)),
       X`Vault should be empty of Minted`,
     );
   },
@@ -404,7 +404,7 @@ const helperBehavior = {
     helper.updateDebtSnapshot(helper.emptyDebt());
     helper.updateUiState();
 
-    helper.assertVaultHoldsNoRun();
+    helper.assertVaultHoldsNoDebt();
     vaultSeat.exit();
 
     state.manager.handleBalanceChange(
@@ -522,7 +522,7 @@ const helperBehavior = {
     // parent needs to know about the change in debt
     helper.updateDebtAccounting(normalizedDebtPre, collateralPre, newDebt);
     state.manager.burnAndRecord(giveMinted, vaultSeat);
-    helper.assertVaultHoldsNoRun();
+    helper.assertVaultHoldsNoDebt();
 
     helper.updateUiState();
     clientSeat.exit();
