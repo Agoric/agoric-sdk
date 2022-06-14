@@ -1,16 +1,16 @@
-import {
-  iterateLatest,
-  makeFollower,
-  makeLeader,
-  makeCastingSpec,
-} from '@agoric/casting';
+import { makeFollower, makeLeader, makeCastingSpec } from '@agoric/casting';
 
 import React, { useEffect, useState } from 'react';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
 
+import { observeIterator } from '@agoric/notifier';
 import { withApplicationContext } from '../contexts/Application';
 import { suggestChain } from '../util/SuggestChain';
+import {
+  makeBackendFromWalletBridge,
+  makeWalletBridgeFromFollower,
+} from '../util/WalletBackendAdapter';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -18,7 +18,11 @@ const Alert = React.forwardRef(function Alert(props, ref) {
 
 const DEFAULT_WALLET_CASTING_SPEC =
   ':published.wallet.agoric1t7pdlnwwzf3yd62zajwpt7qc9ylz7dqs8x3zqd';
-const SmartWalletConnection = ({ walletConnection }) => {
+const SmartWalletConnection = ({
+  walletConnection,
+  setBackend,
+  setBackendErrorHandler,
+}) => {
   const [snackbarMessage, setSnackbarMessage] = useState(null);
 
   const handleSnackbarClose = (_, reason) => {
@@ -43,7 +47,8 @@ const SmartWalletConnection = ({ walletConnection }) => {
     if (!walletConnection) {
       return () => {};
     }
-    let outdated;
+
+    let cancelIterator;
 
     const followWallet = async () => {
       // TODO: Persist this in localStorage from settings page.
@@ -53,21 +58,25 @@ const SmartWalletConnection = ({ walletConnection }) => {
       const leader = makeLeader(url);
       const castingSpec = makeCastingSpec(walletSpec);
       const follower = makeFollower(leader, castingSpec);
-
-      for await (const { value } of iterateLatest(follower)) {
-        if (outdated) {
-          return;
-        }
-        console.log(`here's a mailbox value`, value);
-      }
-      throw Error(`unexpected end of ${walletSpec} follower`);
+      const bridge = makeWalletBridgeFromFollower(follower);
+      const { backendIt, cancel } = await makeBackendFromWalletBridge(bridge);
+      cancelIterator = cancel;
+      // Need to thunk the error handler, or it gets called immediately.
+      setBackendErrorHandler(() => e => {
+        showError('Error in wallet backend', e);
+      });
+      return observeIterator(backendIt, {
+        updateState: be => {
+          setBackend(be);
+        },
+      });
     };
     followWallet().catch(e =>
       showError('Cannot read Smart Wallet state casting', e),
     );
 
     return () => {
-      outdated = true;
+      cancelIterator && cancelIterator();
     };
   }, [walletConnection]);
 
@@ -120,7 +129,9 @@ const SmartWalletConnection = ({ walletConnection }) => {
 };
 
 export default withApplicationContext(SmartWalletConnection, context => ({
+  setBackend: context.setBackend,
   walletConnection: context.walletConnection,
   setConnectionState: context.setConnectionState,
+  setBackendErrorHandler: context.setBackendErrorHandler,
   setWantConnection: context.setWantConnection,
 }));

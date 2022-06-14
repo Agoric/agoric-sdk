@@ -147,6 +147,7 @@ const Provider = ({ children }) => {
   const [connectionStatus, setConnectionStatus] = useState(
     wantConnection ? 'connecting' : 'disconnected',
   );
+  const [backendErrorHandler, setBackendErrorHandler] = useState(null);
 
   const RESTORED_WALLET_CONNECTIONS = [...DEFAULT_WALLET_CONNECTIONS];
   const userConnections = maybeLoad('userWalletConnections');
@@ -233,31 +234,52 @@ const Provider = ({ children }) => {
     }
 
     let cancelIteration = null;
-    const rethrowIfNotCancelled = e => {
-      if (e !== cancelIteration) {
-        throw e;
+    const subscribeToBackend = async () => {
+      const rethrowIfNotCancelled = e => {
+        // eslint-disable-next-line no-debugger
+        debugger;
+        if (e !== cancelIteration) {
+          if (backendErrorHandler) {
+            backendErrorHandler(e);
+            return;
+          }
+          throw e;
+        }
+      };
+      setSchemaActions(E.get(backend).actions);
+      for (const [prop, setter] of backendSetters.entries()) {
+        const iterator = E.get(backend)[prop];
+        observeIterator(iterator, {
+          fail: e => {
+            console.log('caught error', { prop }, e);
+            rethrowIfNotCancelled(e);
+          },
+          updateState: state => {
+            if (cancelIteration) {
+              throw cancelIteration;
+            }
+            setter(state);
+          },
+        }).catch(e => {
+          console.log('caught error', { prop }, e);
+          rethrowIfNotCancelled(e);
+        });
       }
     };
-    setSchemaActions(E.get(backend).actions);
-    for (const [prop, setter] of backendSetters.entries()) {
-      const iterator = E.get(backend)[prop];
-      observeIterator(iterator, {
-        fail: rethrowIfNotCancelled,
-        updateState: state => {
-          if (cancelIteration) {
-            throw cancelIteration;
-          }
-          setter(state);
-        },
-      }).catch(rethrowIfNotCancelled);
-    }
+    subscribeToBackend().catch(e => {
+      if (backendErrorHandler) {
+        return backendErrorHandler(e);
+      }
+      throw e;
+    });
     return () => {
       cancelIteration = Error('cancelled');
     };
-  }, [backend]);
+  }, [backend, backendErrorHandler]);
 
   const disconnect = wantReconnect => {
     setBackend(null);
+    setBackendErrorHandler(null);
     setConnectionComponent(null);
     setConnectionState('disconnected');
     if (typeof wantReconnect === 'boolean') {
@@ -400,6 +422,8 @@ const Provider = ({ children }) => {
     connectionComponent,
     disconnect,
     connectionStatus,
+    backendErrorHandler,
+    setBackendErrorHandler,
   };
 
   useDebugLogging(state, [

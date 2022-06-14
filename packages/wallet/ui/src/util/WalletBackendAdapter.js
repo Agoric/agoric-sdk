@@ -4,17 +4,18 @@ import {
   makeAsyncIterableFromNotifier,
   makeNotifierKit,
 } from '@agoric/notifier';
+import { iterateLatest } from '@agoric/casting';
 
 const newId = kind => `${kind}${Math.random()}`;
 
-/**
- * @template T
- * @param {ERef<Notifier<T>>} notifier
- */
-const iterateNotifier = notifier =>
-  makeAsyncIterableFromNotifier(notifier)[Symbol.asyncIterator]();
-
 export const makeBackendFromWalletBridge = walletBridge => {
+  /**
+   * @template T
+   * @param {ERef<Notifier<T>>} notifier
+   */
+  const iterateNotifier = async notifier =>
+    makeAsyncIterableFromNotifier(notifier)[Symbol.asyncIterator]();
+
   const { notifier: servicesNotifier } = makeNotifierKit(
     harden({
       board: E(walletBridge).getBoard(),
@@ -27,7 +28,7 @@ export const makeBackendFromWalletBridge = walletBridge => {
   const wrapOffersIterator = offersMembers =>
     harden({
       next: async () => {
-        const { done, value } = await offersMembers.next();
+        const { done, value } = await E(offersMembers).next();
         return harden({
           done,
           value: value.map(({ id, ...rest }) =>
@@ -72,10 +73,70 @@ export const makeBackendFromWalletBridge = walletBridge => {
   // TODO: allow further updates.
   const { notifier: backendNotifier, updater: backendUpdater } =
     makeNotifierKit(firstSchema);
+
   const backendIt = iterateNotifier(backendNotifier);
 
   const cancel = e => {
     backendUpdater.fail(e);
   };
+
   return { backendIt, cancel };
+};
+
+/**
+ * @param {import('@agoric/casting').Follower} follower
+ * @param {(e: unknown) => void} [errorHandler]
+ */
+export const makeWalletBridgeFromFollower = (
+  follower,
+  errorHandler = e => {
+    // Make an unhandled rejection.
+    throw e;
+  },
+) => {
+  const notifiers = {
+    getPursesNotifier: 'purses',
+    getContactsNotifier: 'contacts',
+    getDappsNotifier: 'dapps',
+    getIssuersNotifier: 'issuers',
+    getOffersNotifier: 'offers',
+    getPaymentsNotifier: 'payments',
+  };
+
+  const notifierKits = Object.fromEntries(
+    Object.entries(notifiers).map(([_method, stateName]) => [
+      stateName,
+      makeNotifierKit([]),
+    ]),
+  );
+
+  const followLatest = async () => {
+    for await (const { value: state } of iterateLatest(follower)) {
+      console.log('got wallet state', state);
+      Object.entries(notifierKits).forEach(([stateName, { updater }]) => {
+        updater.updateState(state[stateName]);
+      });
+    }
+    throw new Error('Wallet follower stopped unexpectedly');
+  };
+  followLatest().catch(errorHandler);
+
+  const getNotifierMethods = Object.fromEntries(
+    Object.entries(notifiers).map(([method, stateName]) => {
+      const { notifier } = notifierKits[stateName];
+      console.log('method got notifier', notifier);
+      return [method, () => notifier];
+    }),
+  );
+  console.log('method got notifier methods', getNotifierMethods);
+  const fakeBoard = Far('fake board', {
+    getId: _val => 'fake-board-id',
+    getValue: id => `fake board value for ${id}`,
+  });
+  const walletBridge = Far('follower wallet bridge', {
+    ...getNotifierMethods,
+    getBoard: () => fakeBoard,
+  });
+  console.log('wallet bridge', walletBridge);
+  return walletBridge;
 };
