@@ -11,7 +11,7 @@ import { feeIssuerConfig } from './utils.js';
 
 const { details: X } = assert;
 
-// TODO/TECHDEBT: move to run-protocol?
+// TODO/TECHDEBT: move to inter-protocol?
 const Tokens = harden({
   RUN: {
     name: 'RUN',

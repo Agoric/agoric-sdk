@@ -49,7 +49,7 @@ $(EVAL_CLEAN): $(EVAL_CODE)
 	./scripts/clean-core-eval.js $< >$@.t || { rm -f $@.t; exit 1; }
 	mv $@.t $@
 
-RUN_PROTO=../run-protocol
+RUN_PROTO=../inter-protocol
 
 start-runStake: $(RUN_PROTO)/gov-runStake.js
 	make EVAL_CODE=$(RUN_PROTO)/gov-runStake.js \
@@ -71,8 +71,8 @@ gov-q:
 	$(AGCH) query gov proposals --output json | \
 		jq -c '.proposals[] | [.proposal_id,.voting_end_time,.status]'
 
-deploy-runStake: ../run-protocol/test/runStake/runStake-deploy.js
-	echo agoric deploy ../run-protocol/test/runStake/runStake-deploy.js
+deploy-runStake: ../inter-protocol/test/runStake/runStake-deploy.js
+	echo agoric deploy ../inter-protocol/test/runStake/runStake-deploy.js
 
 # This probably shouldn't install, but that's what published instructions
 # expect.

@@ -11,7 +11,7 @@ import { makeIssuerKit } from '@agoric/ertp';
 import {
   connectFaucet,
   showAmount,
-} from '@agoric/run-protocol/src/proposals/demoIssuers.js';
+} from '@agoric/inter-protocol/src/proposals/demoIssuers.js';
 import { makeClientManager } from '../src/core/chain-behaviors.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from '../src/core/utils.js';
 import { buildRootObject as bldMintRoot } from '../src/vat-mints.js';
@@ -115,7 +115,7 @@ test('connectFaucet produces payments', async t => {
 
   // t.deepEqual(Object.keys(userBundle), '@@todo');
 
-  /** @type { import('@agoric/run-protocol/src/proposals/demoIssuers.js').UserPaymentRecord[] } */
+  /** @type { import('@agoric/inter-protocol/src/proposals/demoIssuers.js').UserPaymentRecord[] } */
   const pmts = await E(userBundle.faucet).tapFaucet();
 
   const detail = await Promise.all(

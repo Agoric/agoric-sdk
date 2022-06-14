@@ -9,7 +9,7 @@ export NODE_OPTIONS='--max-old-space-size=8192'
 SCOPE=$1
 
 # taking roughly half the time to eslint all packages
-PRIMARY_PACKAGES="@agoric/{cosmos,ertp,governance,run-protocol,swing-store,swingset-vat,vats,wallet,zoe}"
+PRIMARY_PACKAGES="@agoric/{cosmos,ertp,governance,inter-protocol,swing-store,swingset-vat,vats,wallet,zoe}"
 
 case $SCOPE in
 primary)

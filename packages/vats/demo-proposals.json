@@ -1,4 +1,4 @@
 [
-  "@agoric/run-protocol/scripts/init-core.js",
+  "@agoric/inter-protocol/scripts/init-core.js",
   "@agoric/pegasus/scripts/init-core.js"
 ]

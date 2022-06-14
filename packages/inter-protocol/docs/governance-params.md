@@ -8,7 +8,7 @@ the RUN Protocol Whitepaper, v0.8.
 
 ### Vault Manager
 
-In `packages/run-protocol/src/vaultFactory/params.js`:
+In `packages/inter-protocol/src/vaultFactory/params.js`:
 
 | Governance Key     | Type              | WP? |
 | ------------------ | :---------------- | --- |
@@ -27,7 +27,7 @@ Note that the "stability fee" described in the Whitepaper comprises both Interes
 
 ### Automated Market Maker (AMM)
 
-In `packages/run-protocol/src/vpool-xyk-amm/multipoolMarketMaker.js`:
+In `packages/inter-protocol/src/vpool-xyk-amm/multipoolMarketMaker.js`:
 
 | Governance Key     | Type              | WP? |
 | ------------------ | :---------------- | --- |
@@ -39,7 +39,7 @@ for this contract.
 
 ### Collateral Reserve
 
-In `packages/run-protocol/src/reserve/collateralReserve.js`:
+In `packages/inter-protocol/src/reserve/collateralReserve.js`:
 
 | Governance Key     | Type                | WP? |
 | ------------------ | :------------------ | --- |
@@ -50,7 +50,7 @@ for this contract.
 
 ### RUNStake
 
-In `packages/run-protocol/src/runStake/runStake.js`:
+In `packages/inter-protocol/src/runStake/runStake.js`:
 
 | Governance Key     | Type                | WP? |
 | ------------------ | :------------------ | --- |
@@ -64,7 +64,7 @@ From RUN Protocol Whitepaper, v0.8:
 
 ### Parity Stability Mechanism (PSM)
 
-In `packages/run-protocol/src/psm/psm.js`:
+In `packages/inter-protocol/src/psm/psm.js`:
 
 | Governance Key     | Type                | WP? |
 | ------------------ | :------------------ | --- |
