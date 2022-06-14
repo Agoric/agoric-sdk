@@ -26,7 +26,7 @@ A "stream" is an evolving structure with the following properties:
   starting from 1.  This enables stream cell relationship consistency checking.
 - Batching: in order to preserve all publications to a stream, if there are more than one publication per block they are captured in order within that block's stream cell.
 - History: the stream cell can be queried as of a particular block.  Each cell
-  contains the position of to the prior value, namely information to query the
+  contains the position of the prior value, namely information to query the
   prior relevant stream cell and the value offset within that cell.
 - Forking: stream cells can be shared between multiple streams if the
   application wishes to publish a divergent stream with the old history.
@@ -55,6 +55,7 @@ This algorithm is only useful if the published values are complete states (with 
   2. query the current height's stream cell
   3. consume only the last update in the cell
   4. when an update event has arrived, repeat from step 2
+
 ### Forward iteration (lossless history)
 
 This algorithm is useful for consuming the entire history of the stream, such as
@@ -67,12 +68,14 @@ skipped.  It requires client-side persistent storage of the "last seen" cell
   3. use the previous blockheight information to issue backward queries for historical states until we reach the "last seen" cell
   4. consume the queried history in chronological order, updating the "last seen" cell as we go
   5. when an update event has arrived, repeat from step 2
+
 ### Reverse iteration starting at height
 
 1. query the stream cell at the specified height
 2. display the published values for that height in reverse order
 3. if the stream cell contains a "last published height", query the stream cell
    and repeat from step 2
+
 ### Forward Iteration and Interchain Queries
 
 For forward iteration via an Interchain Query without prohibitively costly
@@ -90,7 +93,7 @@ does not enable the option to enforce those criteria.
 ## Publish operations
 
 An on-chain publisher of stream values can invoke three possible operations for a given storage key:
-- UpdateState; add a new value to the tail of the stream
+- UpdateState: add a new value to the tail of the stream
 - Finish: add a terminal value to the tail of the stream and mark it as done to prevent further publications.
 - Fail: attach a terminal error to the tail of the stream and mark it as done
 
