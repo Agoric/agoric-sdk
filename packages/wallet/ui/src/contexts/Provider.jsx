@@ -274,8 +274,19 @@ const Provider = ({ children }) => {
     if (connectionComponent) {
       return () => {};
     }
-    const { url } = walletConnection;
-    const u = new URL(url);
+    let u;
+    try {
+      const { url } = walletConnection;
+      u = new URL(url);
+    } catch (e) {
+      alert(
+        `Invalid wallet connection URL: ${
+          walletConnection && walletConnection.url
+        }`,
+      );
+      setWalletConnection(DEFAULT_WALLET_CONNECTIONS[0]);
+      return () => {};
+    }
     let outdated = false;
 
     let retryTimeout;

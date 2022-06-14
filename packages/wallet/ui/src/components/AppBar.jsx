@@ -32,6 +32,12 @@ const useStyles = makeStyles(theme => ({
     flexDirection: 'row',
     flexWrap: 'nowrap',
   },
+  connector: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: '100%',
+  },
   connecting: {
     animation: `$throb 2s infinite`,
   },
@@ -107,7 +113,9 @@ export const AppBarWithoutContext = ({
             >
               <Public
                 className={
-                  connectionStatus === 'connecting' && classes.connecting
+                  connectionStatus === 'connecting'
+                    ? classes.connecting
+                    : undefined
                 }
                 fontSize="inherit"
               >

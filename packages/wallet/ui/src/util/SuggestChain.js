@@ -7,7 +7,9 @@ export async function suggestChain(networkConfig, caption = undefined) {
   const coinType = Number(
     new URL(networkConfig).searchParams.get('coinType') || AGORIC_COIN_TYPE,
   );
-  const res = await fetch(networkConfig);
+  const res = await fetch(networkConfig, {
+    headers: new Headers({ 'Content-Type': 'application/json' }),
+  });
   if (!res.ok) {
     throw Error(`Cannot fetch network: ${res.status}`);
   }
@@ -20,7 +22,15 @@ export async function suggestChain(networkConfig, caption = undefined) {
     rpc = `https://${network}.rpc.agoric.net`;
     api = `https://${network}.api.agoric.net`;
   } else {
-    rpc = `http://${rpcAddrs[Math.floor(Math.random() * rpcAddrs.length)]}`;
+    const rpcHrefs = rpcAddrs.map(rpcAddr =>
+      // Don't remove explicit port numbers from the URL, because the Cosmos
+      // `--node=xxx` flag requires them (it doesn't just assume that
+      // `--node=https://testnet.rpc.agoric.net` is the same as
+      // `--node=https://testnet.rpc.agoric.net:443`)
+      rpcAddr.includes('://') ? rpcAddr : `http://${rpcAddr}`,
+    );
+
+    rpc = rpcHrefs[Math.floor(Math.random() * rpcHrefs.length)];
     api = rpc.replace(/(:\d+)?$/, ':1317');
   }
   const stakeCurrency = {

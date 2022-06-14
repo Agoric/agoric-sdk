@@ -58,8 +58,8 @@ export const makeBackendFromWalletBridge = walletBridge => {
         E(walletBridge).addIssuer(id, issuer, true),
     }),
     services: iterateNotifier(servicesNotifier),
-    dapps: iterateNotifier(E(walletBridge).getDappsNotifier()),
     contacts: iterateNotifier(E(walletBridge).getContactsNotifier()),
+    dapps: iterateNotifier(E(walletBridge).getDappsNotifier()),
     issuers: iterateNotifier(E(walletBridge).getIssuersNotifier()),
     offers: wrapOffersIterator(
       iterateNotifier(E(walletBridge).getOffersNotifier()),

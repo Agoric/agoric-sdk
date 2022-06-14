@@ -15,12 +15,12 @@ import { withApplicationContext } from '../contexts/Application';
 const connectionValue = formValue => {
   if (typeof formValue === 'string') {
     return {
-      url: formValue,
+      url: new URL(formValue, window.location.href),
       label: formValue,
     };
   } else if (formValue?.inputValue) {
     return {
-      url: formValue.inputValue,
+      url: new URL(formValue.inputValue, window.location.href),
       label: formValue.inputValue,
     };
   } else {

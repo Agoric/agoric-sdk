@@ -386,10 +386,12 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const newConfigToml = finishTendermintConfig({
       configToml,
       portNum,
+      enableCors: true,
     });
     const newAppToml = finishCosmosApp({
       appToml,
       portNum,
+      enableCors: true,
     });
 
     const create = (fileName, contents) => {
