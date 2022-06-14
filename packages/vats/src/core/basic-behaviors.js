@@ -224,6 +224,8 @@ export const makeAddressNameHubs = async ({
 };
 harden(makeAddressNameHubs);
 
+const WALLET_STORAGE_PATH = 'wallet';
+
 /** @param {BootstrapSpace} powers */
 export const makeClientBanks = async ({
   consume: {
@@ -232,6 +234,7 @@ export const makeClientBanks = async ({
     namesByAddress,
     namesByAddressAdmin,
     client,
+    chainStorage,
     bankManager,
     zoe,
   },
@@ -239,6 +242,10 @@ export const makeClientBanks = async ({
     consume: { smartWallet },
   },
 }) => {
+  const chainStoragePresence = await chainStorage;
+  const walletChainStorage = await (chainStoragePresence &&
+    E(chainStoragePresence).getChildNode(WALLET_STORAGE_PATH));
+  const marshaller = E(board).getPublishingMarshaller();
   return E(client).assignBundle([
     address => {
       const bank = E(bankManager).getBankForAddress(address);
@@ -247,6 +254,7 @@ export const makeClientBanks = async ({
         smartWallet,
         {},
         { agoricNames, bank, namesByAddress, myAddressNameAdmin, board },
+        { storageNode: walletChainStorage, marshaller },
       );
 
       return { bank, smartWallet: myWallet };

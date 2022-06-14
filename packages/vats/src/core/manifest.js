@@ -110,6 +110,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
       bankManager: 'bank',
       board: 'board',
       client: true,
+      chainStorage: true,
       zoe: 'zoe',
     },
     installation: { consume: { smartWallet: 'zoe' } },
