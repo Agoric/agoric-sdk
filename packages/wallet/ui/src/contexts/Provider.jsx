@@ -145,7 +145,9 @@ const Provider = ({ children }) => {
   const [wantConnection, setWantConnection] = useState(true);
   const [connectionComponent, setConnectionComponent] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState(
-    wantConnection ? 'connecting' : 'disconnected',
+    wantConnection
+      ? ConnectionStatus.Connecting
+      : ConnectionStatus.Disconnected,
   );
   const [backendErrorHandler, setBackendErrorHandler] = useState(null);
 
@@ -174,6 +176,10 @@ const Provider = ({ children }) => {
       return;
     }
     switch (connectionState) {
+      case 'error': {
+        setConnectionStatus(ConnectionStatus.Error);
+        break;
+      }
       case 'bridged': {
         setConnectionStatus(ConnectionStatus.Connected);
         break;
@@ -193,18 +199,24 @@ const Provider = ({ children }) => {
   useEffect(() => {
     maybeSave('walletConnection', walletConnection);
 
+    const isKnown = allWalletConnections.some(
+      c => c.label === walletConnection.label && c.url === walletConnection.url,
+    );
+    if (!isKnown) {
+      setAllWalletConnections(conns => [walletConnection, ...conns]);
+    }
+
     const updatedUserConnections = [];
-    for (const { url, label } of allWalletConnections) {
+    for (const wc of allWalletConnections) {
       const found = DEFAULT_WALLET_CONNECTIONS.find(
-        ({ url: defaultUrl, label: defaultLabel }) =>
-          url === defaultUrl && label === defaultLabel,
+        ({ url, label }) => wc.url === url && wc.label === label,
       );
       if (!found) {
-        updatedUserConnections.push({ url, label });
+        updatedUserConnections.push(wc);
       }
     }
     maybeSave('userWalletConnections', updatedUserConnections);
-  }, [allWalletConnections, walletConnection]);
+  }, [walletConnection]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -236,8 +248,6 @@ const Provider = ({ children }) => {
     let cancelIteration = null;
     const subscribeToBackend = async () => {
       const rethrowIfNotCancelled = e => {
-        // eslint-disable-next-line no-debugger
-        debugger;
         if (e !== cancelIteration) {
           if (backendErrorHandler) {
             backendErrorHandler(e);
@@ -253,6 +263,7 @@ const Provider = ({ children }) => {
           fail: e => {
             console.log('caught error', { prop }, e);
             rethrowIfNotCancelled(e);
+            setter(null);
           },
           updateState: state => {
             if (cancelIteration) {
@@ -262,6 +273,7 @@ const Provider = ({ children }) => {
           },
         }).catch(e => {
           console.log('caught error', { prop }, e);
+          setter(null);
           rethrowIfNotCancelled(e);
         });
       }
@@ -282,6 +294,11 @@ const Provider = ({ children }) => {
     setBackendErrorHandler(null);
     setConnectionComponent(null);
     setConnectionState('disconnected');
+    setConnectionStatus(
+      wantReconnect
+        ? ConnectionStatus.Connecting
+        : ConnectionStatus.Disconnected,
+    );
     if (typeof wantReconnect === 'boolean') {
       setWantConnection(wantReconnect);
     }
@@ -418,7 +435,6 @@ const Provider = ({ children }) => {
     walletConnection,
     setWalletConnection,
     allWalletConnections,
-    setAllWalletConnections,
     connectionComponent,
     disconnect,
     connectionStatus,

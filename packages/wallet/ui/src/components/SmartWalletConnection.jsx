@@ -16,57 +16,68 @@ const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
-const DEFAULT_WALLET_CASTING_SPEC =
-  ':published.wallet.agoric1t7pdlnwwzf3yd62zajwpt7qc9ylz7dqs8x3zqd';
 const SmartWalletConnection = ({
   walletConnection,
+  setWalletConnection,
+  setConnectionState,
   setBackend,
   setBackendErrorHandler,
 }) => {
-  const [snackbarMessage, setSnackbarMessage] = useState(null);
+  const [snackbarMessages, setSnackbarMessages] = useState([]);
 
   const handleSnackbarClose = (_, reason) => {
     if (reason === 'clickaway') {
       return;
     }
 
-    setSnackbarMessage(null);
+    setSnackbarMessages(sm => sm.slice(1));
   };
 
-  const showError = (message, e) => {
+  const showError = (message, e, severity = 'error') => {
     if (e) {
       console.error(`${message}:`, e);
       message += `: ${e.message}`;
     }
-    setSnackbarMessage(message);
+    if (severity === 'error') {
+      setConnectionState('error');
+    }
+    setSnackbarMessages(sm => [...sm, { severity, message }]);
   };
   const showReadOnlyError = (message, e) =>
-    showError(`READ-ONLY: ${message} for write access`, e);
+    showError(`READ-ONLY: ${message} for write access`, e, 'warning');
 
   useEffect(() => {
-    if (!walletConnection) {
+    if (!walletConnection || !walletConnection.smartWalletAddress) {
       return () => {};
     }
 
     let cancelIterator;
 
     const followWallet = async () => {
-      // TODO: Persist this in localStorage from settings page.
-      const { url, walletSpec = DEFAULT_WALLET_CASTING_SPEC } =
-        walletConnection;
+      const { url, smartWalletAddress } = walletConnection;
+      const walletSpec = `:published.wallet.${smartWalletAddress}`;
+      console.log('following wallet spec', walletSpec);
+
+      const backendError = e => {
+        showError('Error in wallet backend', e);
+        setBackend(null);
+        setConnectionState('error');
+      };
 
       const leader = makeLeader(url);
       const castingSpec = makeCastingSpec(walletSpec);
       const follower = makeFollower(leader, castingSpec);
-      const bridge = makeWalletBridgeFromFollower(follower);
+      const bridge = makeWalletBridgeFromFollower(follower, backendError);
       const { backendIt, cancel } = await makeBackendFromWalletBridge(bridge);
       cancelIterator = cancel;
       // Need to thunk the error handler, or it gets called immediately.
-      setBackendErrorHandler(() => e => {
-        showError('Error in wallet backend', e);
-      });
+      setBackendErrorHandler(() => backendError);
       return observeIterator(backendIt, {
         updateState: be => {
+          setBackend(be);
+        },
+        fail: backendError,
+        finish: be => {
           setBackend(be);
         },
       });
@@ -81,7 +92,7 @@ const SmartWalletConnection = ({
   }, [walletConnection]);
 
   useEffect(() => {
-    if (!walletConnection || true) {
+    if (!walletConnection) {
       return () => {};
     }
     let outdated;
@@ -90,8 +101,29 @@ const SmartWalletConnection = ({
         showReadOnlyError('Please install the Keplr extension');
       } else if (window.keplr.experimentalSuggestChain) {
         try {
-          const client = await suggestChain(walletConnection.url);
-          console.log('got stargate client', client);
+          const { url } = walletConnection;
+          const { client, signer } = await suggestChain(url);
+          console.log('got stargate client', client, signer);
+
+          const setDefaultAddress = async () => {
+            if (walletConnection.smartWalletAddress) {
+              return;
+            }
+            const signerAccounts = await signer.getAccounts();
+            if (walletConnection.smartWalletAddress) {
+              return;
+            }
+            console.log('signer accounts', signerAccounts);
+
+            // We'll use the first available account for now.
+            const { address: defaultAddress } = signerAccounts[0];
+            setWalletConnection({
+              ...walletConnection,
+              smartWalletAddress: defaultAddress,
+            });
+          };
+
+          await setDefaultAddress();
 
           // TODO: Would enable Keplr for transacting the Agoric client.
           showReadOnlyError('Would enable transaction manager');
@@ -115,13 +147,13 @@ const SmartWalletConnection = ({
 
   return (
     <div>
-      <Snackbar open={snackbarMessage !== null} onClose={handleSnackbarClose}>
+      <Snackbar open={snackbarMessages.length > 0}>
         <Alert
           onClose={handleSnackbarClose}
-          severity="error"
+          severity={snackbarMessages[0]?.severity}
           sx={{ width: '100%' }}
         >
-          {snackbarMessage}
+          {snackbarMessages[0]?.message}
         </Alert>
       </Snackbar>
     </div>
@@ -129,9 +161,9 @@ const SmartWalletConnection = ({
 };
 
 export default withApplicationContext(SmartWalletConnection, context => ({
-  setBackend: context.setBackend,
   walletConnection: context.walletConnection,
+  setWalletConnection: context.setWalletConnection,
   setConnectionState: context.setConnectionState,
+  setBackend: context.setBackend,
   setBackendErrorHandler: context.setBackendErrorHandler,
-  setWantConnection: context.setWantConnection,
 }));

@@ -100,5 +100,5 @@ export async function suggestChain(networkConfig, caption = undefined) {
   );
  */
 
-  return cosmJS;
+  return { client: cosmJS, signer: offlineSigner };
 }

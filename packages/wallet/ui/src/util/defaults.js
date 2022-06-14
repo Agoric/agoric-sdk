@@ -14,8 +14,12 @@ const localChain = {
   ).href,
 };
 const stageConnections =
-  process.env.NODE_ENV === 'development'
+  process.env.NODE_ENV === 'development' || !SHOW_MAINNET
     ? [
+        {
+          label: 'Agoric Devnet',
+          url: 'https://devnet.agoric.net/network-config',
+        },
         {
           label: 'Agoric Stage',
           url: 'https://stage.agoric.net/network-config',
@@ -27,10 +31,6 @@ const netConnections = SHOW_MAINNET
       {
         label: 'Agoric Mainnet',
         url: 'https://main.agoric.net/network-config',
-      },
-      {
-        label: 'Agoric Devnet',
-        url: 'https://devnet.agoric.net/network-config',
       },
     ]
   : [];
