@@ -46,11 +46,21 @@ export const DEFAULT_DECODER = harden(buf => {
   return harden(JSON.parse(str));
 });
 
+const ifaceAllegedPrefix = 'Alleged: ';
+const ifaceInaccessiblePrefix = 'INACCESSIBLE: ';
+const slotToVal = (slot, iface) => {
+  // Private object.
+  if (typeof iface === 'string' && iface.startsWith(ifaceAllegedPrefix)) {
+    iface = iface.slice(ifaceAllegedPrefix.length);
+  }
+  return Far(`${ifaceInaccessiblePrefix}${iface}`, {});
+};
+
 /**
  * Unserialize the JSONable data.
  *
  * @type {import('./types').Unserializer}
  */
 export const DEFAULT_UNSERIALIZER = Far('marshal unserializer', {
-  unserialize: makeMarshal().unserialize,
+  unserialize: makeMarshal(undefined, slotToVal).unserialize,
 });
