@@ -53,7 +53,7 @@ func GetLatestPosition(ctx sdk.Context, state agoric.StateRef) (*StreamPosition,
 		priorCell.UpdatedBlockHeight,
 		state.StoreName(),
 		state.StoreSubkey(),
-		uint64(len(priorCell.Values)),
+		priorCell.Prior.SequenceNumber+uint64(len(priorCell.Values)),
 	)
 	return &priorReference, nil
 }
