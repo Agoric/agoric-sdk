@@ -57,11 +57,15 @@ const decodeNumber = encoded => {
   return result;
 };
 
+// Type annotations to support static testing of amount values
+/** @typedef {Amount<'nat'> & {normalized: true}} NormalizedDebt */
+/** @typedef {Amount<'nat'> & {normalized: false}} ActualDebt */
+
 /**
  * Overcollateralized are greater than one.
  * The more undercollaterized the smaller in [0-1].
  *
- * @param {Amount<'nat'>} normalizedDebt normalized (not actual) total debt
+ * @param {NormalizedDebt} normalizedDebt normalized (not actual) total debt
  * @param {Amount<'nat'>} collateral
  * @returns {number}
  */
@@ -76,7 +80,7 @@ const collateralizationRatio = (normalizedDebt, collateral) => {
 /**
  * Sorts by ratio in descending debt. Ordering of vault id is undefined.
  *
- * @param {Amount<'nat'>} normalizedDebt normalized (not actual) total debt
+ * @param {NormalizedDebt} normalizedDebt normalized (not actual) total debt
  * @param {Amount<'nat'>} collateral
  * @param {VaultId} vaultId
  * @returns {string} lexically sortable string in which highest

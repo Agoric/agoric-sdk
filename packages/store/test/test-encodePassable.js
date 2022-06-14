@@ -1,4 +1,4 @@
-// @ts-check
+// @ts-nocheck
 /* eslint-disable no-bitwise */
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';

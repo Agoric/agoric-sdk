@@ -15,16 +15,19 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json",
-    "lint:eslint": "eslint --ext .js,.html . --ignore-path .gitignore",
+    "lint:eslint": "eslint . --ignore-path .gitignore",
     "analyze": "cem analyze --litelement",
     "start": "web-dev-server --port 8100"
   },
   "dependencies": {
     "@agoric/assert": "^0.4.0",
+    "@agoric/cache": "^0.1.0",
+    "@agoric/casting": "^0.1.0",
     "@endo/captp": "^2.0.7",
     "@endo/marshal": "^0.6.7",
     "@endo/promise-kit": "^0.2.41",
-    "robot3": "^0.2.19"
+    "robot3": "^0.2.19",
+    "rollup-plugin-polyfill-node": "^0.9.0"
   },
   "devDependencies": {
     "@custom-elements-manifest/analyzer": "^0.4.17",

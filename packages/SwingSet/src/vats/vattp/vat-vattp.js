@@ -128,7 +128,7 @@ export function buildRootObject(vatPowers) {
         console.warn(`deleting connection is not fully supported in comms`);
       },
       infoMessage(...args) {
-        E(cons).log('VatTP connection info:', ...args);
+        void E(cons).log('VatTP connection info:', ...args);
       },
     });
 

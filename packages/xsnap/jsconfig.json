@@ -16,10 +16,11 @@
     "moduleResolution": "node",
   },
   "include": [
-    "src/**/*.js",
+    "*.js",
+    "lib/**/*.js",
     "src/**/*.d.ts",
-    "exported.js",
+    "src/**/*.js",
+    "test/**/*.js",
     "tools/**/*.js",
-    "api.js"
   ],
 }

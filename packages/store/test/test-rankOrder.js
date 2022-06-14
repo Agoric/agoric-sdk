@@ -1,4 +1,4 @@
-// @ts-check
+// @ts-nocheck
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { Far, makeTagged } from '@endo/marshal';
 import fc from 'fast-check';

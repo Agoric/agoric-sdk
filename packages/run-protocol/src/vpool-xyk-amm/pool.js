@@ -218,6 +218,12 @@ const poolBehavior = {
       'Liquidity',
       liquidityBrand,
     );
+    if (AmountMath.isEmpty(liquidityIn)) {
+      // prevent divide-by-zero. If the caller has tokens, the pool is not empty
+      userSeat.exit();
+      return 'request to remove zero liquidity';
+    }
+
     const liquidityValueIn = liquidityIn.value;
     assert(isNatValue(liquidityValueIn), 'User Liquidity');
     const centralTokenAmountOut = AmountMath.make(
@@ -238,8 +244,6 @@ const poolBehavior = {
       ),
     );
 
-    state.liqTokenSupply -= liquidityValueIn;
-
     poolSeat.incrementBy(
       userSeat.decrementBy(harden({ Liquidity: liquidityIn })),
     );
@@ -252,6 +256,7 @@ const poolBehavior = {
       ),
     );
     state.zcf.reallocate(userSeat, poolSeat);
+    state.liqTokenSupply -= liquidityValueIn;
 
     userSeat.exit();
     updateUpdaterState(state.updater, facets.pool);

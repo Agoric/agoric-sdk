@@ -156,6 +156,49 @@ test('error creating vat from non-bundle', async t => {
   );
 });
 
+test('create vat with good-sized name', async t => {
+  const { c } = await doTestSetup(t);
+  const name = 'n'.repeat(199);
+  const kpid = c.queueToVatRoot('bootstrap', 'vatName', [name]);
+  await c.run();
+  t.deepEqual(JSON.parse(c.kpResolution(kpid).body), 'ok');
+});
+
+test('error creating vat with oversized name', async t => {
+  const { c } = await doTestSetup(t);
+  const name = 'n'.repeat(200);
+  const kpid = c.queueToVatRoot('bootstrap', 'vatName', [name]);
+  await c.run();
+  t.is(c.kpStatus(kpid), 'rejected');
+  t.deepEqual(
+    parse(c.kpResolution(kpid).body),
+    Error(`CreateVatOptions: oversized vat name '${'n'.repeat(200)}'`),
+  );
+});
+
+test('error creating vat with bad characters in name', async t => {
+  const { c } = await doTestSetup(t);
+  const name = 'no spaces';
+  const kpid = c.queueToVatRoot('bootstrap', 'vatName', [name]);
+  await c.run();
+  t.is(c.kpStatus(kpid), 'rejected');
+  t.deepEqual(
+    parse(c.kpResolution(kpid).body),
+    Error(`CreateVatOptions: bad vat name 'no spaces'`),
+  );
+});
+
+test('error creating vat with unknown options', async t => {
+  const { c } = await doTestSetup(t);
+  const kpid = c.queueToVatRoot('bootstrap', 'badOptions', []);
+  await c.run();
+  t.is(c.kpStatus(kpid), 'rejected');
+  t.deepEqual(
+    parse(c.kpResolution(kpid).body),
+    Error('CreateVatOptions: unknown options bogus'),
+  );
+});
+
 function findRefs(kvStore, koid) {
   const refs = [];
   const nextVatID = Number(kvStore.get('vat.nextID'));
@@ -311,7 +354,7 @@ test('createVat holds refcount', async t => {
   // expectedRefcount -= 1; // device-vat-admin retires
   // expectedCLists -= 1; // device-vat-admin retires
 
-  t.deepEqual(c.dump().reapQueue, ['v3']);
+  t.deepEqual(c.dump().reapQueue, ['v2']);
   await c.step();
   t.deepEqual(c.dump().reapQueue, []);
   // console.log(`---`);

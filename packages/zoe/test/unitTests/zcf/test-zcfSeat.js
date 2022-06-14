@@ -47,7 +47,8 @@ test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
 
   // The contract uses the testJig so the contractFacet
   // is available here for testing purposes
-  /** @type {ContractFacet} */
+  /** @type {ZCF} */
+  // @ts-expect-error cast
   const zcf = testJig.zcf;
 
   let firstSeat;

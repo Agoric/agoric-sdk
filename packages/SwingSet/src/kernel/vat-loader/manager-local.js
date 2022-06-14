@@ -143,6 +143,7 @@ export function makeLocalVatManagerFactory(tools) {
         gcTools,
         makeVatConsole(makeLogMaker('ls')),
         buildVatNamespace,
+        kernelKeeper.getEnableFakeDurable(),
       );
       assert(ls.dispatch);
       return finish(ls.dispatch);

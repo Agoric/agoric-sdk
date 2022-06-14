@@ -16,7 +16,7 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json",
-    "lint:eslint": "eslint --ext .js,.ts ."
+    "lint:eslint": "eslint ."
   },
   "keywords": [],
   "author": "Agoric",
@@ -24,6 +24,7 @@
   "dependencies": {
     "@agoric/access-token": "^0.4.18",
     "@agoric/assert": "^0.4.0",
+    "@agoric/cache": "^0.1.0",
     "@agoric/cosmic-swingset": "^0.37.0",
     "@agoric/notifier": "^0.4.0",
     "@agoric/spawner": "^0.5.2",
@@ -48,7 +49,7 @@
     "minimist": "^1.2.0",
     "morgan": "^1.9.1",
     "node-fetch": "^2.6.0",
-    "node-lmdb": "^0.9.5",
+    "lmdb": "^2.4.5",
     "temp": "^0.9.1",
     "tmp": "^0.2.1",
     "ws": "^7.2.0"
@@ -58,11 +59,6 @@
     "@endo/bundle-source": "^2.2.0",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
   },
   "publishConfig": {
     "access": "public"

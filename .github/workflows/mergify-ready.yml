@@ -1,0 +1,27 @@
+name: Integration tests triggered
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - labeled
+      - auto_merge_enabled
+
+jobs:
+  pre_check:
+    uses: ./.github/workflows/pre-check-integration.yml
+
+  wait-integration-pre-checks:
+    needs: pre_check
+    runs-on: ubuntu-latest
+    steps:
+      - name: wait
+        shell: bash
+        run: |
+          cat <<EOF
+            needs ${{ toJSON(needs.pre_check.outputs) }}
+          EOF
+          sleep 5

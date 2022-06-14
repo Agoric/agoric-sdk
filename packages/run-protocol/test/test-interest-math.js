@@ -40,7 +40,7 @@ for (const [input, result] of /** @type {const} */ ([
   // some debt and previous interest
   [[1_000_000n, 2n, 0n], 980_392n], // negative interest since snapshot
   [[1_000_000n, 2n, 2n], 1_000_000n],
-  [[1_000_000n, 2n, 4n], 1_019_607n],
+  [[1_000_000n, 2n, 4n], 1_019_608n],
 ])) {
   test(
     `calculateCurrentDebt ${input} returns ${result}`,

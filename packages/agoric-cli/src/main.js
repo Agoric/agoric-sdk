@@ -2,12 +2,17 @@
 import { Command } from 'commander';
 import path from 'path';
 import { assert, details as X } from '@agoric/assert';
+import {
+  DEFAULT_KEEP_POLLING_SECONDS,
+  DEFAULT_JITTER_SECONDS,
+} from '@agoric/casting';
 import cosmosMain from './cosmos.js';
 import deployMain from './deploy.js';
 import initMain from './init.js';
 import installMain from './install.js';
 import setDefaultsMain from './set-defaults.js';
 import startMain from './start.js';
+import followMain from './follow.js';
 import walletMain from './open.js';
 
 const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
@@ -158,6 +163,68 @@ const main = async (progname, rawArgs, powers) => {
       await isNotBasedir();
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(installMain, ['install', forceSdkVersion], opts);
+    });
+
+  program
+    .command('follow <path-spec...>')
+    .description('follow an Agoric Casting leader')
+    .option(
+      '--proof <strict | optimistic | none>',
+      'set proof mode',
+      value => {
+        assert(
+          ['strict', 'optimistic', 'none'].includes(value),
+          X`--proof must be one of 'strict', 'optimistic', or 'none'`,
+          TypeError,
+        );
+        return value;
+      },
+      'optimistic',
+    )
+    .option(
+      '--sleep <seconds>',
+      'sleep <seconds> between polling (may be fractional)',
+      value => {
+        const num = Number(value);
+        assert.equal(`${num}`, value, X`--sleep must be a number`, TypeError);
+        return num;
+      },
+      DEFAULT_KEEP_POLLING_SECONDS,
+    )
+    .option(
+      '--jitter <max-seconds>',
+      'jitter up to <max-seconds> (may be fractional)',
+      value => {
+        const num = Number(value);
+        assert.equal(`${num}`, value, X`--jitter must be a number`, TypeError);
+        return num;
+      },
+      DEFAULT_JITTER_SECONDS,
+    )
+    .option(
+      '-o, --output <format>',
+      'value output format',
+      value => {
+        assert(
+          [
+            'hex',
+            'justin',
+            'justinlines',
+            'json',
+            'jsonlines',
+            'text',
+          ].includes(value),
+          X`--output must be one of 'hex', 'justin', 'justinlines', 'json', 'jsonlines', or 'text'`,
+          TypeError,
+        );
+        return value;
+      },
+      'justin',
+    )
+    .option('-B, --bootstrap <config>', 'network bootstrap configuration')
+    .action(async (pathSpecs, cmd) => {
+      const opts = { ...program.opts(), ...cmd.opts() };
+      return subMain(followMain, ['follow', ...pathSpecs], opts);
     });
 
   const addRunOptions = cmd =>

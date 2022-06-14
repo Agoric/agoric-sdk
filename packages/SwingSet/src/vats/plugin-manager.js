@@ -154,7 +154,7 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
           pluginRootPK = makePromiseKit();
 
           // Tell our clients we are resetting.
-          E(resetter).onReset(pluginRootPK.promise.then(_ => true));
+          void E(resetter).onReset(pluginRootPK.promise.then(_ => true));
 
           // Attempt to restart the protocol using the same device connection.
           connect();
@@ -181,7 +181,7 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
         makeStableForwarder(walker = DEFAULT_WALKER) {
           let pr;
           // eslint-disable-next-line no-new
-          new HandledPromise((_resolve, _reject, resolveWithPresence) => {
+          void new HandledPromise((_resolve, _reject, resolveWithPresence) => {
             // Use Remotable rather than Far to make a remote from a presence
             pr = Remotable(
               'Alleged: stableForwarder',
@@ -205,7 +205,7 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
       });
 
       // Declare the first reset.
-      E(resetter).onReset(Promise.resolve(false));
+      void E(resetter).onReset(Promise.resolve(false));
 
       // Start the first connection.
       connect();

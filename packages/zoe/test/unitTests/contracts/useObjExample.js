@@ -13,7 +13,7 @@ import {
 /**
  * Give a use object when a payment is escrowed
  *
- * @type {ContractStartFn}
+ * @param {ZCF} zcf
  */
 const start = zcf => {
   const {

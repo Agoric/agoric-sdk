@@ -1,7 +1,7 @@
 /* global setTimeout, WeakRef, setImmediate, process */
 // @ts-check
 
-import '@endo/init';
+import '@endo/init/debug.js';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
@@ -344,6 +344,7 @@ test('normal close of pathological script', async t => {
 async function runToGC() {
   const trashCan = [{}];
   const wr = new WeakRef(trashCan[0]);
+  // @ts-expect-error
   trashCan[0] = undefined;
 
   let qty;
@@ -419,4 +420,9 @@ test('GC after snapshot vs restore', async t => {
   }
   t.log({ beforeClone, workerGC, cloneGC, iters });
   t.is(workerGC, cloneGC);
+});
+
+test('bad option.name', async t => {
+  const opts = Object.freeze({ ...options(io), name: '--sneaky' });
+  t.throws(() => xsnap(opts), { message: /cannot start with hyphen/ });
 });

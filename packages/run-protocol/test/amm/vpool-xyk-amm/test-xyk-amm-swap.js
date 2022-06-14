@@ -391,7 +391,7 @@ test('amm doubleSwap', async t => {
 
   const metricsSub = await E(amm.ammPublicFacet).getMetrics();
   const m = await subscriptionTracker(t, metricsSub);
-  m.assertInitial({ XYK: [] });
+  await m.assertInitial({ XYK: [] });
 
   const aliceAddLiquidityInvitation = E(
     amm.ammPublicFacet,
@@ -559,6 +559,19 @@ test('amm doubleSwap', async t => {
   const moolaForSimsPayments = harden({
     In: bobMoolaPayment,
   });
+
+  const prices = await E(amm.ammPublicFacet).getOutputPrice(
+    AmountMath.makeEmpty(moolaR.brand),
+    simoleans(4000n),
+  );
+  t.deepEqual(
+    prices,
+    {
+      amountIn: moola(4025n),
+      amountOut: simoleans(4000n),
+    },
+    'near parity',
+  );
 
   const bobSeat2 = await E(zoe).offer(
     bobInvitation2,

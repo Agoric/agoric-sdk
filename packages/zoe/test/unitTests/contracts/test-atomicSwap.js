@@ -322,7 +322,7 @@ test('zoe - non-fungible atomicSwap', async t => {
   // Alice makes an instance and makes her offer.
   const installation = await alice.installCode();
 
-  const vorpalSword = createRpgItem('Vorpal Sword', 38);
+  const vorpalSword = createRpgItem('Vorpal Sword', 'vorping');
   const vorpalAmount = rpgItems(vorpalSword);
   const bobRpgPayment = await E(rpgMint).mintPayment(vorpalAmount);
   const bob = await makeBob(installation, bobRpgPayment);

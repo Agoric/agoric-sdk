@@ -2,7 +2,7 @@
  * Kernel's keeper of persistent state for a vat.
  */
 // @ts-check
-import { Nat } from '@agoric/nat';
+import { Nat, isNat } from '@agoric/nat';
 import { assert, details as X, q } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots.js';
 import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
@@ -127,14 +127,20 @@ export function makeVatKeeper(
   }
 
   function initializeReapCountdown(count) {
-    assert(
-      typeof count === 'number' ||
-        typeof count === 'bigint' ||
-        count === 'never',
-      `bad reapCountdown ${count}`,
-    );
+    assert(count === 'never' || isNat(count), `bad reapCountdown ${count}`);
     kvStore.set(`${vatID}.reapInterval`, `${count}`);
     kvStore.set(`${vatID}.reapCountdown`, `${count}`);
+  }
+
+  function updateReapInterval(reapInterval) {
+    assert(
+      reapInterval === 'never' || isNat(reapInterval),
+      `bad reapInterval ${reapInterval}`,
+    );
+    kvStore.set(`${vatID}.reapInterval`, `${reapInterval}`);
+    if (reapInterval === 'never') {
+      kvStore.set(`${vatID}.reapCountdown`, 'never');
+    }
   }
 
   function countdownToReap() {
@@ -663,6 +669,7 @@ export function makeVatKeeper(
     getOptions,
     initializeReapCountdown,
     countdownToReap,
+    updateReapInterval,
     nextDeliveryNum,
     importsKernelSlot,
     mapVatSlotToKernelSlot,

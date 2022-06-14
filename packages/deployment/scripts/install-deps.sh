@@ -53,7 +53,7 @@ if test -d /etc/apt; then
   echo "deb http://ppa.launchpad.net/ansible/ansible/ubuntu $VERSION_CODENAME main" >> /etc/apt/sources.list
   apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367
   apt-get update --allow-releaseinfo-change -y
-  apt-get install -y ansible rsync curl sudo gnupg2 jq
+  apt-get install -y ansible rsync curl sudo gnupg2 jq libbsd-dev
   apt-get clean -y
 elif test "$uname_s" == darwin; then
   brew update

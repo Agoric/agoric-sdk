@@ -1,5 +1,5 @@
 /* global setTimeout */
-// @ts-check
+// @ts-nocheck
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 import { spawn } from 'child_process';
@@ -41,6 +41,7 @@ test('child termination distinguished from meter exhaustion', async t => {
       getLastSnapshot: () => undefined,
       addToTranscript: () => undefined,
     }),
+    getEnableFakeDurable: () => false,
   };
 
   const xsWorkerFactory = makeXsSubprocessFactory({
@@ -85,6 +86,6 @@ test('child termination distinguished from meter exhaustion', async t => {
   await t.throwsAsync(p, {
     instanceOf: Error,
     code: 'SIGTERM',
-    message: 'v1:undefined exited due to signal SIGTERM',
+    message: 'v1: exited due to signal SIGTERM',
   });
 });

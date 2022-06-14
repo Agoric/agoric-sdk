@@ -5,7 +5,7 @@ import { Far } from '@endo/marshal';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
-import { makeSubscriptionKit } from '@agoric/notifier';
+import { makeStoredSubscription, makeSubscriptionKit } from '@agoric/notifier';
 
 import {
   assertIssuerKeywords,
@@ -33,7 +33,7 @@ import { makeTracer } from '../makeTracer.js';
 
 const { quote: q, details: X } = assert;
 
-const trace = makeTracer('XykAmm');
+const trace = makeTracer('XykAmm', false);
 
 /**
  * @typedef {object} MetricsNotification
@@ -111,7 +111,11 @@ const trace = makeTracer('XykAmm');
  * creator.
  *
  * @param {ZCF<AMMTerms>} zcf
- * @param {{initialPoserInvitation: Invitation}} privateArgs
+ * @param {{
+ *   initialPoserInvitation: Invitation,
+ *   storageNode?: ERef<StorageNode>,
+ *   marshaller?: ERef<Marshaller>,
+ * }} privateArgs
  */
 const start = async (zcf, privateArgs) => {
   /**
@@ -161,14 +165,23 @@ const start = async (zcf, privateArgs) => {
   const quoteIssuerKit = makeIssuerKit('Quote', AssetKind.SET);
 
   /** @type {SubscriptionRecord<MetricsNotification>} */
-  const { publication: metricsPublication, subscription: metricsSubscription } =
-    makeSubscriptionKit();
+  const {
+    publication: metricsPublication,
+    subscription: rawMetricsSubscription,
+  } = makeSubscriptionKit(harden({ XYK: [] }));
+  const { storageNode, marshaller } = privateArgs;
+  const metricsStorageNode =
+    storageNode && E(storageNode).getChildNode('metrics'); // TODO: magic string
+  const metricsSubscription = makeStoredSubscription(
+    rawMetricsSubscription,
+    metricsStorageNode,
+    marshaller,
+  );
   const updateMetrics = () => {
     metricsPublication.updateState(
       harden({ XYK: Array.from(secondaryBrandToPool.keys()) }),
     );
   };
-  updateMetrics();
 
   // For now, this seat collects protocol fees. It needs to be connected to
   // something that will extract the fees.

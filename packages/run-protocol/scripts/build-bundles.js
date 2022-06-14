@@ -11,7 +11,7 @@ process.env.INTERCHAIN_ISSUER_BOARD_ID =
   'arbitrary value to prevent build error';
 
 const dirname = url.fileURLToPath(new URL('.', import.meta.url));
-extractProposalBundles(
+await extractProposalBundles(
   [
     ['.', defaultProposalBuilder],
     ['.', collateralProposalBuilder],

@@ -64,6 +64,14 @@ export function makeCache(size, fetch, store) {
         dirtyCount += 1;
       }
     },
+    setSize(newSize) {
+      if (newSize < size) {
+        size = newSize;
+        cache.makeRoom();
+      } else {
+        size = newSize;
+      }
+    },
     flush() {
       if (dirtyCount > 0) {
         let entry = lruTail;
@@ -149,6 +157,7 @@ export function makeCache(size, fetch, store) {
  * @param {*} unserialize  Unserializer for this vat
  * @param {number} cacheSize  How many virtual objects this manager should cache
  *   in memory.
+ * @param {boolean} enableFakeDurable  True iff the associated kernel is running in dev mode.
  *
  * @returns a new virtual object manager.
  *
@@ -189,6 +198,7 @@ export function makeVirtualObjectManager(
   serialize,
   unserialize,
   cacheSize,
+  enableFakeDurable,
 ) {
   const cache = makeCache(cacheSize, fetch, store);
 
@@ -572,7 +582,22 @@ export function makeVirtualObjectManager(
     options,
     durable,
   ) {
-    const finish = options ? options.finish : undefined;
+    let finish;
+    let fakeDurable;
+    if (options) {
+      ({ finish, fakeDurable } = options);
+    }
+    if (fakeDurable) {
+      assert(
+        enableFakeDurable,
+        `fakeDurable may only be used if enableFakeDurable is true`,
+      );
+      assert(
+        durable,
+        `the fakeDurable option may only be applied to durable objects`,
+      );
+      durable = false;
+    }
     let nextInstanceID = 1;
     let facetNames;
     let behaviorTemplate;
@@ -742,6 +767,9 @@ export function makeVirtualObjectManager(
         }
       }
       cache.markDirty(innerSelf);
+      if (fakeDurable) {
+        vrm.registerFakeDurable(baseRef);
+      }
       return toExpose;
     }
 
@@ -852,6 +880,10 @@ export function makeVirtualObjectManager(
     return maker;
   }
 
+  function setCacheSize(newSize) {
+    cache.setSize(newSize);
+  }
+
   function insistAllDurableKindsReconnected() {
     // identify all user-defined durable kinds by iterating `vom.dkind.*`
     const missing = [];
@@ -896,6 +928,7 @@ export function makeVirtualObjectManager(
     insistAllDurableKindsReconnected,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
+    setCacheSize,
     flushCache: cache.flush,
     testHooks,
   });

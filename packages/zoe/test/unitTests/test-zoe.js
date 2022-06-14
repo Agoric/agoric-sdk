@@ -21,6 +21,7 @@ const dirname = path.dirname(filename);
 test(`zoe.getInvitationIssuer`, async t => {
   const { zoe, zcf } = await setupZCFTest();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
+  // @ts-expect-error
   const invitation = zcf.makeInvitation(undefined, 'invite');
 
   // A few basic tests that the invitation issuer acts like an issuer.
@@ -146,7 +147,6 @@ test(`E(zoe).startInstance - terms, issuerKeywordRecord switched`, async t => {
     () =>
       E(zoe).startInstance(
         installation,
-        // @ts-expect-error deliberate invalid arguments for testing
         { something: 2 },
         { Moola: moolaKit.issuer },
       ),
@@ -176,7 +176,6 @@ test(`E(zoe).startInstance - bad issuer, makeEmptyPurse throws`, async t => {
     getBrand: () => brand,
   });
   await t.throwsAsync(
-    // @ts-expect-error deliberate invalid arguments for testing
     () => E(zoe).startInstance(installation, { Money: badIssuer }),
     {
       message:
@@ -416,6 +415,7 @@ test(`zoe.getInstallationForInstance`, async t => {
 
 test(`zoe.getInstance`, async t => {
   const { zoe, zcf, instance } = await setupZCFTest();
+  // @ts-expect-error
   const invitation = await E(zcf).makeInvitation(undefined, 'invitation');
   const actualInstance = await E(zoe).getInstance(invitation);
   t.is(actualInstance, instance);
@@ -431,6 +431,7 @@ test(`zoe.getInstance - no invitation`, async t => {
 
 test(`zoe.getInstallation`, async t => {
   const { zoe, zcf, installation } = await setupZCFTest();
+  // @ts-expect-error
   const invitation = await E(zcf).makeInvitation(undefined, 'invitation');
   const actualInstallation = await E(zoe).getInstallation(invitation);
   t.is(actualInstallation, installation);
@@ -446,6 +447,7 @@ test(`zoe.getInstallation - no invitation`, async t => {
 
 test(`zoe.getInvitationDetails`, async t => {
   const { zoe, zcf, installation, instance } = await setupZCFTest();
+  // @ts-expect-error
   const invitation = await E(zcf).makeInvitation(undefined, 'invitation');
   const details = await E(zoe).getInvitationDetails(invitation);
   t.deepEqual(details, {

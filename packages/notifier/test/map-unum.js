@@ -7,7 +7,6 @@
 // If this experiment works out, it or something like it may eventually move
 // from test/ to src/
 
-// @ts-check
 import { assert, details as X, q } from '@agoric/assert';
 import {
   makeNotifierKit,

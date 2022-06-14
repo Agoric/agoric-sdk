@@ -2,6 +2,7 @@
 
 import { assert, details as X, q } from '@agoric/assert';
 import { E, Far } from '@endo/far';
+import { makeMarshal } from '@endo/marshal';
 import { makeStore } from '@agoric/store';
 import { crc6 } from './crc.js';
 
@@ -33,7 +34,6 @@ const calcCrc = (data, crcDigits) => {
  * @param {object} [options]
  * @param {string} [options.prefix]
  * @param {number} [options.crcDigits]
- * @returns {Board}
  */
 function makeBoard(
   initSequence = 0,
@@ -44,8 +44,47 @@ function makeBoard(
   const idToVal = makeStore('boardId');
   const valToId = makeStore('value');
 
-  /** @type {Board} */
+  const ifaceAllegedPrefix = 'Alleged: ';
+  const ifaceInaccessiblePrefix = 'SEVERED: ';
+  const slotToVal = (slot, iface) => {
+    if (slot !== null) {
+      // eslint-disable-next-line no-use-before-define
+      return board.getValue(slot);
+    }
+
+    // Private object.
+    if (typeof iface === 'string' && iface.startsWith(ifaceAllegedPrefix)) {
+      iface = iface.slice(ifaceAllegedPrefix.length);
+    }
+    return Far(`${ifaceInaccessiblePrefix}${iface}`, {});
+  };
+
+  // Create a marshaller that just looks up objects, not publish them.
+  const readonlyMarshaller = Far('board readonly marshaller', {
+    ...makeMarshal(val => {
+      if (!valToId.has(val)) {
+        // Unpublished value.
+        return null;
+      }
+
+      // Published value.
+      return valToId.get(val);
+    }, slotToVal),
+  });
+
+  // Create a marshaller useful for publishing all ocaps.
+  const publishingMarshaller = Far('board publishing marshaller', {
+    ...makeMarshal(
+      // Always put the value in the board.
+      // eslint-disable-next-line no-use-before-define
+      val => board.getId(val),
+      slotToVal,
+    ),
+  });
+
   const board = Far('Board', {
+    getPublishingMarshaller: () => publishingMarshaller,
+    getReadonlyMarshaller: () => readonlyMarshaller,
     // Add if not already present
     getId: value => {
       if (!valToId.has(value)) {

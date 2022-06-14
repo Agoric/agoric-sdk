@@ -1,4 +1,4 @@
-// @ts-check
+// @ts-nocheck
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/zoe/tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -423,9 +423,9 @@ test('interest starting from non-zero time', async t => {
   const maxLoanValue = 40000n;
   // The fakePriceAuthority pays attention to the fakeTimer
   const timer = buildManualTimer(t.log);
-  timer.tick();
-  timer.tick();
-  timer.tick();
+  await timer.tick();
+  await timer.tick();
+  await timer.tick();
   const setup = await setupBorrow(maxLoanValue, timer);
   const {
     borrowInvitation,

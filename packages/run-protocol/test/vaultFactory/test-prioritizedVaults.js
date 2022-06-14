@@ -10,7 +10,6 @@ import {
   currentDebtToCollateral,
   makePrioritizedVaults,
 } from '../../src/vaultFactory/prioritizedVaults.js';
-import { waitForPromisesToSettle } from '../supports.js';
 import {
   makeFakeVault,
   makeCompoundedInterestProvider,
@@ -89,8 +88,6 @@ test('updates', async t => {
     makeFakeVault('id-fakeVault2', AmountMath.make(brand, 80n)),
   );
 
-  await waitForPromisesToSettle();
-
   const collector = makeCollector();
   rescheduler.resetCalled();
   Array.from(vaults.entriesPrioritizedGTE(makeRatio(1n, brand, 10n))).map(
@@ -104,18 +101,34 @@ test('update changes ratio', async t => {
   const rescheduler = makeRescheduler();
   const vaults = makePrioritizedVaults(rescheduler.fakeReschedule);
 
-  const fakeVault1 = makeFakeVault(
-    'id-fakeVault1',
-    AmountMath.make(brand, 20n),
-  );
+  // default collateral of makeFakeVaultKit
+  const defaultCollateral = AmountMath.make(brand, 100n);
+
+  const fakeVault1InitialDebt = AmountMath.make(brand, 20n);
+
+  const fakeVault1 = makeFakeVault('id-fakeVault1', fakeVault1InitialDebt);
   vaults.addVault('id-fakeVault1', fakeVault1);
+  t.true(
+    vaults.hasVaultByAttributes(
+      // @ts-expect-error cast
+      fakeVault1InitialDebt,
+      defaultCollateral,
+      'id-fakeVault1',
+    ),
+  );
+  t.true(
+    vaults.hasVaultByAttributes(
+      // @ts-expect-error cast
+      fakeVault1InitialDebt,
+      defaultCollateral,
+      'id-fakeVault1',
+    ),
+  );
 
   vaults.addVault(
     'id-fakeVault2',
     makeFakeVault('id-fakeVault2', AmountMath.make(brand, 80n)),
   );
-
-  await waitForPromisesToSettle();
 
   t.deepEqual(Array.from(Array.from(vaults.entries()).map(([k, _v]) => k)), [
     'fbff4000000000000:id-fakeVault2',
@@ -124,15 +137,17 @@ test('update changes ratio', async t => {
 
   t.deepEqual(vaults.highestRatio(), percent(80));
 
-  // update the fake debt of the vault and then refresh priority queue
+  // update the fake debt of the vault and then add/remove to refresh priority queue
   fakeVault1.setDebt(AmountMath.make(brand, 95n));
-  vaults.refreshVaultPriority(
-    AmountMath.make(brand, 20n),
-    AmountMath.make(brand, 100n), // default collateral of makeFakeVaultKit
+  const removedVault = vaults.removeVaultByAttributes(
+    // @ts-expect-error cast
+    fakeVault1InitialDebt,
+    defaultCollateral,
     'id-fakeVault1',
   );
-
-  await waitForPromisesToSettle();
+  t.is(removedVault, fakeVault1);
+  vaults.addVault('id-fakeVault1', removedVault);
+  // 95n from setDebt / 100n defaultCollateral
   t.deepEqual(vaults.highestRatio(), percent(95));
 
   const newCollector = makeCollector();
@@ -170,6 +185,7 @@ test('removals', async t => {
   // remove fake 3
   rescheduler.resetCalled();
   vaults.removeVaultByAttributes(
+    // @ts-expect-error cast
     AmountMath.make(brand, 140n),
     AmountMath.make(brand, 100n), // default collateral of makeFakeVaultKit
     'id-fakeVault3',
@@ -180,6 +196,7 @@ test('removals', async t => {
   // remove fake 1
   rescheduler.resetCalled();
   vaults.removeVaultByAttributes(
+    // @ts-expect-error cast
     AmountMath.make(brand, 150n),
     AmountMath.make(brand, 100n), // default collateral of makeFakeVaultKit
     'id-fakeVault1',
@@ -189,6 +206,7 @@ test('removals', async t => {
 
   t.throws(() =>
     vaults.removeVaultByAttributes(
+      // @ts-expect-error cast
       AmountMath.make(brand, 150n),
       AmountMath.make(brand, 100n),
       'id-fakeVault1',

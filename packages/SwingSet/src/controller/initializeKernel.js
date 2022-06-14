@@ -24,10 +24,21 @@ export function initializeKernel(config, hostStorage, verbose = false) {
 
   const wasInitialized = kernelKeeper.getInitialized();
   assert(!wasInitialized);
-  kernelKeeper.createStartingKernelState(
-    config.defaultManagerType || 'local',
-    config.defaultReapInterval || 1,
-  );
+  const {
+    defaultManagerType,
+    defaultReapInterval,
+    enableFakeDurable,
+    snapshotInitial,
+    snapshotInterval,
+  } = config;
+  const kernelOptions = {
+    defaultManagerType,
+    defaultReapInterval,
+    enableFakeDurable,
+    snapshotInitial,
+    snapshotInterval,
+  };
+  kernelKeeper.createStartingKernelState(kernelOptions);
 
   for (const id of Object.keys(config.idToBundle || {})) {
     const bundle = config.idToBundle[id];
@@ -70,7 +81,6 @@ export function initializeKernel(config, hostStorage, verbose = false) {
         'critical',
         'reapInterval',
       ]);
-      creationOptions.description = `static name=${name}`;
       creationOptions.name = name;
       if (creationOptions.useTranscript === undefined) {
         creationOptions.useTranscript = true;

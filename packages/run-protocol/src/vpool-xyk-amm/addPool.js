@@ -47,15 +47,6 @@ export const makeAddIssuer = (
       harden({ decimalPlaces: 6 }),
     );
     await zcf.saveIssuer(secondaryIssuer, keyword);
-    const issuer = zcf.getIssuerForBrand(secondaryBrand);
-    console.log(
-      'Saved issuer',
-      secondaryIssuer,
-      'to keyword',
-      keyword,
-      'and got back',
-      issuer,
-    );
     // this ensures that getSecondaryIssuer(thisIssuer) will return even before the pool is created
     brandToLiquidityMint.init(secondaryBrand, mint);
     const { issuer: liquidityIssuer } = mint.getIssuerRecord();
@@ -147,10 +138,6 @@ export const makeAddPoolInvitation = (
       );
     }
 
-    const {
-      poolFacets: { pool, helper },
-    } = await addPool(secondaryBrand);
-
     assert(
       AmountMath.isGTE(centralAmount, minPoolLiquidity),
       `The minimum initial liquidity is ${minPoolLiquidity}, rejecting ${centralAmount}`,
@@ -164,6 +151,13 @@ export const makeAddPoolInvitation = (
     const [liquidityKeyword] = Object.entries(zcf.getTerms().issuers).find(
       ([_, i]) => i === issuer,
     );
+    assert(liquidityKeyword, 'liquidity brand required');
+
+    // COMMIT POINT /////////////////////
+
+    const {
+      poolFacets: { pool, helper },
+    } = await addPool(secondaryBrand);
 
     // in addLiquidityInternal, funder provides centralAmount & secondaryAmount,
     // and receives liquidity tokens equal to centralAmount. Afterward, we'll

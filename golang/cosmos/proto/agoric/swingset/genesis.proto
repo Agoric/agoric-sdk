@@ -10,16 +10,5 @@ option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types
 message GenesisState {
     option (gogoproto.equal) = false;
 
-    repeated StorageEntry storage = 1 [
-        (gogoproto.jsontag)    = "storage",
-        (gogoproto.moretags)   = "yaml:\"storage\""
-    ];
-
     Params params = 2 [(gogoproto.nullable) = false];
-}
-
-// A storage entry.
-message StorageEntry {
-    string key = 1;
-    string value = 2;
 }

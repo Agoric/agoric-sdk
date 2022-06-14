@@ -3,7 +3,10 @@
 import { html, css, LitElement } from 'lit';
 
 import { assert, details as X } from '@agoric/assert';
+import { makeCache } from '@agoric/cache';
+import { makeLeader } from '@agoric/casting/src/leader-netconfig.js';
 import { makeCapTP as defaultMakeCapTP } from '@endo/captp';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
@@ -14,9 +17,6 @@ import { makeConnectionMachine } from './states.js';
 
 import { makeAdminWebSocketConnector } from './admin-websocket-connector.js';
 import { makeBridgeIframeConnector } from './bridge-iframe-connector.js';
-
-// Wait this long for the bridge before timing out.
-const CONNECTION_TIMEOUT_MS = 5000;
 
 // Delay after a reset.
 const RESET_DELAY_MS = 3000;
@@ -67,9 +67,28 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
 
       // Just make sure the reconnection logic is triggered.
       this._bridgePK = makePromiseKit();
+      this._cache = undefined;
+      this._makeDefaultLeader = undefined;
 
       this.service.send({ type: 'reset' });
       this.isResetting = false;
+    }
+
+    get makeDefaultLeader() {
+      if (!this._makeDefaultLeader) {
+        this._makeDefaultLeader = leaderOptions => makeLeader(leaderOptions);
+      }
+      return this._makeDefaultLeader;
+    }
+
+    get cache() {
+      if (this._cache) {
+        // The cache is cached.
+        return this._cache;
+      }
+      const cache = makeCache(E(this._bridgePK.promise).getCacheCoordinator());
+      this._cache = cache;
+      return this._cache;
     }
 
     get walletConnection() {
@@ -77,17 +96,6 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
         // Cached.
         return this._walletConnection;
       }
-
-      const startTimeout = () => {
-        Promise.race([
-          this._bridgePK.promise,
-          delay(CONNECTION_TIMEOUT_MS, 'timeout'),
-        ])
-          .then(
-            value => (value === 'timeout' && this.reset()) || Promise.resolve(),
-          )
-          .catch(e => console.error('error establishing connection', e));
-      };
 
       this._walletConnection = Far('WalletConnection', {
         getScopedBridge: (
@@ -109,7 +117,6 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
               makeConnector,
             },
           });
-          startTimeout();
           return this._bridgePK.promise;
         },
         getAdminBootstrap: (
@@ -129,7 +136,6 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
               makeConnector,
             },
           });
-          startTimeout();
           return this._bridgePK.promise;
         },
         reset: () => {
@@ -153,6 +159,8 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
             ...this.machine.context,
             state: this.machine.state.name,
             walletConnection: this.walletConnection,
+            cache: this.cache,
+            makeDefaultLeader: this.makeDefaultLeader,
           },
         });
         this.dispatchEvent(ev);

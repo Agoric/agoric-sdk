@@ -8,6 +8,10 @@ const STREAM_START = { itemCount: 0 };
  * @typedef { import('./swingStore').StreamPosition } StreamPosition
  */
 
+function* empty() {
+  // Yield nothing
+}
+
 /**
  * @param { unknown } streamName
  * @returns { asserts streamName is string }
@@ -97,7 +101,7 @@ export function sqlStreamStore(dbDir, io) {
     );
 
     if (startPosition.itemCount === endPosition.itemCount) {
-      return [];
+      return empty();
     }
 
     streamStatus.set(streamName, 'reading');

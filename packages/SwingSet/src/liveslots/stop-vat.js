@@ -42,8 +42,7 @@ function rejectAllPromises({ m, deciderVPIDs, syscall }) {
   // userspace to gain agency.
 
   const rejectCapData = m.serialize('vat upgraded');
-  const vpids = Array.from(deciderVPIDs.keys()).sort();
-  const rejections = vpids.map(vpid => [vpid, true, rejectCapData]);
+  const rejections = deciderVPIDs.map(vpid => [vpid, true, rejectCapData]);
   if (rejections.length) {
     syscall.resolve(rejections);
   }

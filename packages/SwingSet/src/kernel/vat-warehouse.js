@@ -1,5 +1,6 @@
 // @ts-check
 import { assert, details as X, quote as q } from '@agoric/assert';
+import { isNat } from '@agoric/nat';
 import { makeVatTranslators } from './vatTranslator.js';
 import { insistVatDeliveryResult } from '../lib/message.js';
 
@@ -48,8 +49,6 @@ export const makeLRU = max => {
  * @param { ReturnType<typeof import('./vat-loader/vat-loader.js').makeVatLoader> } vatLoader
  * @param {{
  *   maxVatsOnline?: number,
- *   snapshotInitial?: number,
- *   snapshotInterval?: number,
  * }=} policyOptions
  *
  * @typedef {(syscall: VatSyscallObject) => ['error', string] | ['ok', null] | ['ok', Capdata]} VatSyscallHandler
@@ -58,16 +57,13 @@ export const makeLRU = max => {
  * @typedef { { moduleFormat: string }} Bundle
  */
 export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
-  const {
-    maxVatsOnline = 50,
-    // Often a large contract evaluation is among the first few deliveries,
-    // so let's do a snapshot after just a few deliveries.
-    snapshotInitial = 2,
-    // Then we'll snapshot at invervals of some number of cranks.
-    // Note: some measurements show 10 deliveries per sec on XS
-    //       as of this writing.
-    snapshotInterval = 200,
-  } = policyOptions || {};
+  const { maxVatsOnline = 50 } = policyOptions || {};
+  // Often a large contract evaluation is among the first few deliveries,
+  // so let's do a snapshot after just a few deliveries.
+  const snapshotInitial = kernelKeeper.getSnapshotInitial();
+  // Then we'll snapshot at invervals of some number of cranks.
+  // Note: some measurements show 10 deliveries per sec on XS as of this writing.
+  let snapshotInterval = kernelKeeper.getSnapshotInterval();
   // Idea: snapshot based on delivery size: after deliveries >10Kb.
   // console.debug('makeVatWarehouse', { policyOptions });
 
@@ -75,7 +71,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    * @typedef {{
    *   manager: VatManager,
    *   enablePipelining: boolean,
-   *   options: { name?: string, description?: string, managerType?: ManagerType },
+   *   options: { name?: string, managerType?: ManagerType },
    * }} VatInfo
    * @typedef { ReturnType<typeof import('./vatTranslator').makeVatTranslators> } VatTranslators
    */
@@ -145,7 +141,6 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     //   vatID,
     //   'online:',
     //   options.managerType,
-    //   options.description || '',
     //   'transcript entries replayed:',
     //   entriesReplayed, // retval of replayTranscript() above
     // );
@@ -249,9 +244,9 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
       return;
     }
     // const {
-    //   options: { description, managerType },
+    //   options: { managerType },
     // } = ephemeral.vats.get(lru) || assert.fail();
-    // console.info('evict', lru, description, managerType, 'for', currentVatID);
+    // console.info('evict', lru, managerType, 'for', currentVatID);
     await evict(lru);
   }
 
@@ -381,6 +376,12 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     return Promise.all(work);
   }
 
+  function setSnapshotInterval(interval) {
+    assert(isNat(interval), 'invalid heap snapshotInterval value');
+    kernelKeeper.setSnapshotInterval(interval);
+    snapshotInterval = interval;
+  }
+
   return harden({
     start,
     createDynamicVat,
@@ -389,6 +390,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     kernelDeliveryToVatDelivery,
     deliverToVat,
     maybeSaveSnapshot,
+    setSnapshotInterval,
 
     destroyWorker,
 

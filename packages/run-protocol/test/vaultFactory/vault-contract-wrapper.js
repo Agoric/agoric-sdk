@@ -140,8 +140,8 @@ export async function start(zcf, privateArgs) {
       return Promise.reject(Error('Not implemented'));
     },
     getCompoundedInterest: () => compoundedInterest,
-    updateVaultAccounting: () => {
-      // noop
+    handleBalanceChange: () => {
+      console.warn('mock handleBalanceChange does nothing');
     },
     mintforVault: async amount => {
       runMint.mintGains({ RUN: amount });
@@ -155,8 +155,8 @@ export async function start(zcf, privateArgs) {
     String(vaultCounter++),
   );
 
-  const advanceRecordingPeriod = () => {
-    timer.tick();
+  const advanceRecordingPeriod = async () => {
+    await timer.tick();
 
     // skip the debt calculation for this mock manager
     const currentInterestAsMultiplicand = makeRatio(

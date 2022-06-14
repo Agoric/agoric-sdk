@@ -274,7 +274,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     aliceProposal,
     alicePayments,
   );
-  timer.tick();
+  await timer.tick();
 
   const optionP = E(aliceSeat).getOfferResult();
 
@@ -923,7 +923,7 @@ test('zoe - coveredCall non-fungible', async t => {
   // Setup Bob
   const aGloriousShield = createRpgItem(
     'Glorious Shield',
-    25,
+    'blinding',
     'a Glorious Shield, burnished to a blinding brightness',
   );
   const aGloriousShieldAmount = rpgItems(aGloriousShield);

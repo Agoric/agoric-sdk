@@ -92,7 +92,7 @@ test('exit happy path simple result (dynamic, non-critical)', async t => {
 test('exit happy path simple result (static, non-critical)', async t => {
   await doTerminateNonCritical(
     t,
-    'v2',
+    'v7',
     'happy',
     false,
     'done result happy (Error=false)',
@@ -112,7 +112,7 @@ test('exit happy path complex result (dynamic, non-critical)', async t => {
 test('exit happy path complex result (static, non-critical)', async t => {
   await doTerminateNonCritical(
     t,
-    'v2',
+    'v7',
     'exceptionallyHappy',
     false,
     'done result Error: exceptionallyHappy (Error=true)',
@@ -132,7 +132,7 @@ test('exit sad path simple result (dynamic, non-critical)', async t => {
 test('exit sad path simple result (static, non-critical)', async t => {
   await doTerminateNonCritical(
     t,
-    'v2',
+    'v7',
     'sad',
     false,
     'done exception sad (Error=false)',
@@ -152,7 +152,7 @@ test('exit sad path complex result (dynamic, non-critical)', async t => {
 test('exit sad path complex result (static, non-critical)', async t => {
   await doTerminateNonCritical(
     t,
-    'v2',
+    'v7',
     'exceptionallySad',
     false,
     'done exception Error: exceptionallySad (Error=true)',
@@ -173,7 +173,7 @@ test('exit happy path with ante-mortem message (dynamic, non-critical)', async t
 test('exit happy path with ante-mortem message (static, non-critical)', async t => {
   await doTerminateNonCritical(
     t,
-    'v2',
+    'v7',
     'happyTalkFirst',
     false,
     'done result happyTalkFirst (Error=false)',
@@ -197,7 +197,7 @@ test('exit sad path with ante-mortem message (dynamic, non-critical)', async t =
 test('exit sad path with ante-mortem message (static, non-critical)', async t => {
   await doTerminateNonCritical(
     t,
-    'v2',
+    'v7',
     'sadTalkFirst',
     false,
     'done exception Error: sadTalkFirst (Error=true)',
@@ -283,7 +283,7 @@ test('dead vat state removed', async t => {
   const kvStore = hostStorage.kvStore;
   t.is(kvStore.get('vat.dynamicIDs'), '["v6"]');
   t.is(kvStore.get('ko26.owner'), 'v6');
-  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 33);
+  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length > 30, true);
 
   controller.queueToVatRoot('bootstrap', 'phase2', []);
   await controller.run();

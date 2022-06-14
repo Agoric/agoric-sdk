@@ -18,9 +18,6 @@ const trace = makeTracer('LIQ', false);
  *
  * @param {ZCF} zcf
  * @param {Vault} vault
- * @param {(losses: Amount,
- *             zcfSeat: ZCFSeat
- *            ) => void} burnLosses
  * @param {Liquidator}  liquidator
  * @param {Brand} collateralBrand
  * @param {Ratio} penaltyRate
@@ -28,7 +25,6 @@ const trace = makeTracer('LIQ', false);
 const liquidate = async (
   zcf,
   vault,
-  burnLosses,
   liquidator,
   collateralBrand,
   penaltyRate,
@@ -78,15 +74,15 @@ const liquidate = async (
       ];
 
   const runToBurn = AmountMath.min(proceeds.RUN, debt);
-  trace('before burn', { debt, proceeds, overage, shortfall, runToBurn });
-  burnLosses(runToBurn, vaultZcfSeat);
+  // debt is fully settled, with runToBurn and shortfall
+  assert(AmountMath.isEqual(debt, AmountMath.add(runToBurn, shortfall)));
 
-  // Accounting complete. Update the vault state.
-  vault.liquidated(AmountMath.subtract(debt, runToBurn));
+  // Manager accounting changes determined. Update the vault state.
+  vault.liquidated();
   // remaining funds are left on the vault for the user to close and claim
 
-  // for accounting
-  return { proceeds: proceeds.RUN, overage, shortfall };
+  // for manager's accounting
+  return { proceeds: proceeds.RUN, overage, runToBurn, shortfall };
 };
 
 const liquidationDetailTerms = debtBrand =>

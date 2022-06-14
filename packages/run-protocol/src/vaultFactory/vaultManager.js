@@ -1,5 +1,17 @@
 // @ts-check
-
+/**
+ * @file Vault Manager object manages vault-based debts for a collateral type.
+ *
+ * The responsibilities include:
+ * - opening a new vault backed by the collateral
+ * - publishing metrics on the vault economy for that collateral
+ * - charging interest on all active vaults
+ * - liquidating active vaults that have exceeded the debt ratio
+ *
+ * Once a vault is settled (liquidated or closed) it can still be used, traded,
+ * etc. but is no longer the concern of the manager. It can't be liquidated,
+ * have interest charged, or be counted in the metrics.
+ */
 import '@agoric/zoe/exported.js';
 
 import { E } from '@endo/eventual-send';
@@ -22,7 +34,7 @@ import {
 import { AmountMath } from '@agoric/ertp';
 
 import { defineKindMulti, pickFacet } from '@agoric/vat-data';
-import { makeVault } from './vault.js';
+import { makeVault, Phase } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
@@ -31,7 +43,9 @@ import { checkDebtLimit } from '../contractSupport.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer('VM', false);
+const trace = makeTracer('VM');
+
+/** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 
 // Metrics naming scheme: nouns are present values; past-participles are accumulative.
 /**
@@ -262,7 +276,7 @@ const helperBehavior = {
 
     facets.helper.assetNotify();
     trace('chargeAllVaults complete');
-    facets.helper.reschedulePriceCheck();
+    return facets.helper.reschedulePriceCheck();
   },
 
   /** @param {MethodContext} context */
@@ -413,23 +427,35 @@ const helperBehavior = {
    */
   liquidateAndRemove: ({ state, facets }, [key, vault]) => {
     const { factoryPowers, prioritizedVaults, zcf } = state;
-    trace('liquidating', vault.getVaultSeat().getProposal());
+    const vaultSeat = vault.getVaultSeat();
+    trace('liquidating', vaultSeat.getProposal());
 
     const collateralPre = vault.getCollateralAmount();
 
     // Start liquidation (vaultState: LIQUIDATING)
     const liquidator = state.liquidator;
     assert(liquidator);
-    trace('liquidating 2', vault.getVaultSeat().getProposal());
     return liquidate(
       zcf,
       vault,
-      (amount, seat) => facets.manager.burnAndRecord(amount, seat),
       liquidator,
       state.collateralBrand,
       factoryPowers.getGovernedParams().getLiquidationPenalty(),
     )
       .then(accounting => {
+        facets.manager.burnAndRecord(accounting.runToBurn, vaultSeat);
+
+        // current values
+        state.totalCollateral = AmountMath.subtract(
+          state.totalCollateral,
+          collateralPre,
+        );
+        state.totalDebt = AmountMath.subtract(
+          state.totalDebt,
+          accounting.shortfall,
+        );
+
+        // cumulative values
         state.totalProceedsReceived = AmountMath.add(
           state.totalProceedsReceived,
           accounting.proceeds,
@@ -442,19 +468,20 @@ const helperBehavior = {
           state.totalShortfallReceived,
           accounting.shortfall,
         );
-        state.totalCollateral = AmountMath.subtract(
-          state.totalCollateral,
-          collateralPre,
-        );
         prioritizedVaults.removeVault(key);
         trace('liquidated');
         state.numLiquidationsCompleted += 1;
         facets.helper.updateMetrics();
 
         if (!AmountMath.isEmpty(accounting.shortfall)) {
-          E(factoryPowers.getShortfallReporter()).increaseLiquidationShortfall(
-            accounting.shortfall,
-          );
+          E(factoryPowers.getShortfallReporter())
+            .increaseLiquidationShortfall(accounting.shortfall)
+            .catch(reason =>
+              console.error(
+                'liquidateAndRemove failed to increaseLiquidationShortfall',
+                reason,
+              ),
+            );
         }
       })
       .catch(e => {
@@ -534,29 +561,67 @@ const managerBehavior = {
    * Called by a vault when its balances change.
    *
    * @param {MethodContext} context
-   * @param {Amount<'nat'>} oldDebt
+   * @param {NormalizedDebt} oldDebtNormalized
    * @param {Amount<'nat'>} oldCollateral
    * @param {VaultId} vaultId
+   * @param {import('./vault.js').VaultPhase} vaultPhase at the end of whatever change updated balances
+   * @param {Vault} vault
    */
-  updateVaultAccounting: (
+  handleBalanceChange: (
     { state, facets },
-    oldDebt,
+    oldDebtNormalized,
     oldCollateral,
     vaultId,
+    vaultPhase,
+    vault,
   ) => {
     const { prioritizedVaults } = state;
-    const vault = prioritizedVaults.refreshVaultPriority(
-      oldDebt,
-      oldCollateral,
-      vaultId,
-    );
-    // totalCollateral += vault's collateral delta (post — pre)
-    state.totalCollateral = AmountMath.subtract(
-      AmountMath.add(state.totalCollateral, vault.getCollateralAmount()),
-      oldCollateral,
-    );
-    // debt accounting managed through minting and burning
-    facets.helper.updateMetrics();
+
+    // the manager holds only vaults that can accrue interest or be liquidated;
+    // i.e. vaults that have debt. The one exception is at the outset when
+    // a vault has been added to the manager but not yet accounted for.
+    const settled =
+      AmountMath.isEmpty(oldDebtNormalized) && vaultPhase !== Phase.ACTIVE;
+
+    if (settled) {
+      assert(
+        !prioritizedVaults.hasVaultByAttributes(
+          oldDebtNormalized,
+          oldCollateral,
+          vaultId,
+        ),
+        'Settled vaults must not be retained in storage',
+      );
+    } else {
+      const isNew = AmountMath.isEmpty(oldDebtNormalized);
+      if (!isNew) {
+        // its position in the queue is no longer valid
+
+        const vaultInStore = prioritizedVaults.removeVaultByAttributes(
+          oldDebtNormalized,
+          oldCollateral,
+          vaultId,
+        );
+        assert(
+          vault === vaultInStore,
+          'handleBalanceChange for two different vaults',
+        );
+      }
+
+      // replace in queue, but only if it can accrue interest or be liquidated (i.e. has debt).
+      // getCurrentDebt() would also work (0x = 0) but require more computation.
+      if (!AmountMath.isEmpty(vault.getNormalizedDebt())) {
+        prioritizedVaults.addVault(vaultId, vault);
+      }
+
+      // totalCollateral += vault's collateral delta (post — pre)
+      state.totalCollateral = AmountMath.subtract(
+        AmountMath.add(state.totalCollateral, vault.getCollateralAmount()),
+        oldCollateral,
+      );
+      // debt accounting managed through minting and burning
+      facets.helper.updateMetrics();
+    }
   },
 };
 
@@ -606,19 +671,38 @@ const selfBehavior = {
 
     const vault = makeVault(zcf, manager, vaultId);
 
-    // TODO Don't record the vault until it gets opened
-    const addedVaultKey = prioritizedVaults.addVault(vaultId, vault);
-
     try {
       // TODO `await` is allowed until the above ordering is fixed
       // eslint-disable-next-line @jessie.js/no-nested-await
       const vaultKit = await vault.initVaultKit(seat);
+      // initVaultKit calls back to handleBalanceChange() which will add the
+      // vault to prioritizedVaults
       seat.exit();
       return vaultKit;
     } catch (err) {
-      // remove it from prioritizedVaults
-      // XXX openLoan shouldn't assume it's already in the prioritizedVaults
-      prioritizedVaults.removeVault(addedVaultKey);
+      // ??? do we still need this cleanup? it won't get into the store unless it has collateral,
+      // which should qualify it to be in the store. If we drop this catch then the nested await
+      // for `vault.initVaultKit()` goes away.
+
+      // remove it from the store if it got in
+      /** @type {NormalizedDebt} */
+      // @ts-expect-error cast
+      const normalizedDebt = AmountMath.makeEmpty(state.debtBrand);
+      const collateralPre = seat.getCurrentAllocation().Collateral;
+      try {
+        prioritizedVaults.removeVaultByAttributes(
+          normalizedDebt,
+          collateralPre,
+          vaultId,
+        );
+        console.error('removed vault', vaultId, 'after initVaultKit failure');
+      } catch {
+        console.error(
+          'vault',
+          vaultId,
+          'never stored during initVaultKit failure',
+        );
+      }
       throw err;
     }
   },
@@ -686,12 +770,12 @@ const selfBehavior = {
 
 /** @param {MethodContext} context */
 const finish = ({ state, facets: { helper } }) => {
-  state.prioritizedVaults.setRescheduler(helper.reschedulePriceCheck);
+  state.prioritizedVaults.onHighestRatioChanged(helper.reschedulePriceCheck);
 
   // push initial state of metrics
   helper.updateMetrics();
 
-  observeNotifier(state.periodNotifier, {
+  void observeNotifier(state.periodNotifier, {
     updateState: updateTime =>
       helper
         .chargeAllVaults(updateTime, state.poolIncrementSeat)

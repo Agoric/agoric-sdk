@@ -189,6 +189,7 @@
  *   bldIssuerKit: RemoteIssuerKit,
  *   board: Board,
  *   bridgeManager: OptionalBridgeManager,
+ *   chainStorage: ChainStorageNode | undefined,
  *   chainTimerService: TimerService,
  *   client: ClientManager,
  *   clientCreator: ClientCreator,
@@ -206,6 +207,8 @@
  *   provisioning: Awaited<ProvisioningVat>,
  *   zoe: ZoeService,
  * }>} ChainBootstrapSpace
+ *
+ * @typedef {ReturnType<import('../lib-chainStorage.js').makeChainStorageRoot>} ChainStorageNode
  *
  * IDEA/TODO: make types of demo stuff invisible in production behaviors
  * @typedef {{
@@ -235,6 +238,7 @@
  * @typedef {{ mint: ERef<Mint>, issuer: ERef<Issuer>, brand: Brand }} RemoteIssuerKit
  * @typedef {ReturnType<Awaited<BankVat>['makeBankManager']>} BankManager
  * @typedef {ERef<ReturnType<import('../vat-bank.js').buildRootObject>>} BankVat
+ * @typedef {ERef<ReturnType<import('../vat-chainStorage.js').buildRootObject>>} ChainStorageVat
  * @typedef {ERef<ReturnType<import('../vat-provisioning.js').buildRootObject>>} ProvisioningVat
  * @typedef {ERef<ReturnType<import('../vat-mints.js').buildRootObject>>} MintsVat
  * @typedef {ERef<ReturnType<import('../vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat

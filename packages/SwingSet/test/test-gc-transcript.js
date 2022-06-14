@@ -66,8 +66,8 @@ test('gc syscalls are not included in transcript', async t => {
   t.deepEqual(transcript[0], {
     d: m1,
     syscalls: [
-      { d: ['subscribe', 'p-1'], response: null },
-      { d: ['subscribe', 'p-2'], response: null },
+      { d: ['subscribe', 'p-1'], response: ['ok', null] },
+      { d: ['subscribe', 'p-2'], response: ['ok', null] },
     ],
   });
 });
@@ -77,8 +77,8 @@ test('gc syscalls are ignored during replay', async t => {
     {
       d: m1,
       syscalls: [
-        { d: ['subscribe', 'p-1'], response: null },
-        { d: ['subscribe', 'p-2'], response: null },
+        { d: ['subscribe', 'p-1'], response: ['ok', null] },
+        { d: ['subscribe', 'p-2'], response: ['ok', null] },
       ],
     },
   ];

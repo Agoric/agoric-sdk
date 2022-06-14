@@ -1,12 +1,7 @@
 /**
- * @callback ManualTimerTick
- * @param {string} [msg]
- * @returns {Promise<void>}
- */
-
-/**
  * @typedef {object} ManualTimerAdmin
- * @property {ManualTimerTick} tick
+ * @property {(msg?: string) => Promise<void>} tick
+ * @property {(nTimes: number, msg?: string) => Promise<void>} tickN
  */
 
 /**

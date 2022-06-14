@@ -48,6 +48,16 @@ export {};
  */
 
 /**
+ * @typedef {{
+ *   defaultManagerType?: ManagerType,
+ *   defaultReapInterval?: number | 'never',
+ *   enableFakeDurable?: boolean,
+ *   snapshotInitial?: number,
+ *   snapshotInterval?: number,
+ * }} KernelOptions
+ */
+
+/**
  * See ../docs/static-vats.md#vatpowers
  *
  * @typedef { MarshallingVatPowers & TerminationVatPowers } VatPowers
@@ -91,11 +101,12 @@ export {};
  * @typedef { [tag: 'dropExports', vrefs: string[] ]} VatDeliveryDropExports
  * @typedef { [tag: 'retireExports', vrefs: string[] ]} VatDeliveryRetireExports
  * @typedef { [tag: 'retireImports', vrefs: string[] ]} VatDeliveryRetireImports
+ * @typedef { [tag: 'changeVatOptions', options: Record<string, unknown> ]} VatDeliveryChangeVatOptions
  * @typedef { [tag: 'startVat', vatParameters: SwingSetCapData ]} VatDeliveryStartVat
  * @typedef { [tag: 'stopVat' ]} VatDeliveryStopVat
  * @typedef { [tag: 'bringOutYourDead' ]} VatDeliveryBringOutYourDead
  * @typedef { VatDeliveryMessage | VatDeliveryNotify | VatDeliveryDropExports
- *            | VatDeliveryRetireExports | VatDeliveryRetireImports
+ *            | VatDeliveryRetireExports | VatDeliveryRetireImports | VatDeliveryChangeVatOptions
  *            | VatDeliveryStartVat | VatDeliveryStopVat | VatDeliveryBringOutYourDead
  *          } VatDeliveryObject
  * @typedef { [tag: 'ok', message: null, usage: { compute: number } | null] |
@@ -132,11 +143,12 @@ export {};
  * @typedef { [tag: 'dropExports', krefs: string[] ]} KernelDeliveryDropExports
  * @typedef { [tag: 'retireExports', krefs: string[] ]} KernelDeliveryRetireExports
  * @typedef { [tag: 'retireImports', krefs: string[] ]} KernelDeliveryRetireImports
+ * @typedef { [tag: 'changeVatOptions', options: Record<string, unknown> ]} KernelDeliveryChangeVatOptions
  * @typedef { [tag: 'startVat', vatParameters: SwingSetCapData ]} KernelDeliveryStartVat
  * @typedef { [tag: 'stopVat' ]} KernelDeliveryStopVat
  * @typedef { [tag: 'bringOutYourDead']} KernelDeliveryBringOutYourDead
  * @typedef { KernelDeliveryMessage | KernelDeliveryNotify | KernelDeliveryDropExports
- *            | KernelDeliveryRetireExports | KernelDeliveryRetireImports
+ *            | KernelDeliveryRetireExports | KernelDeliveryRetireImports | KernelDeliveryChangeVatOptions
  *            | KernelDeliveryStartVat | KernelDeliveryStopVat | KernelDeliveryBringOutYourDead
  *          } KernelDeliveryObject
  * @typedef { [tag: 'send', target: string, msg: Message] } KernelSyscallSend
@@ -246,6 +258,9 @@ export {};
  * `devDependencies` of the surrounding `package.json` should be accessible to
  * bundles.
  * @property { ManagerType } [defaultManagerType]
+ * @property {number} [snapshotInitial]
+ * @property {number} [snapshotInterval]
+ * @property {boolean} [enableFakeDurable]
  * @property {SwingSetConfigDescriptor} [vats]
  * @property {SwingSetConfigDescriptor} [bundles]
  * @property {BundleFormat} [bundleFormat] the bundle source / import bundle

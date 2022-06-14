@@ -1,4 +1,4 @@
-// @ts-check
+// @ts-nocheck
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -590,6 +590,54 @@ test(`zcf.makeZCFMint - burnLosses - seat exited`, async t => {
   );
 });
 
+// reported as a bug in https://github.com/Agoric/agoric-sdk/issues/5544
+test.failing('burnLosses - not offer safe', async t => {
+  const { zcf } = await setupZCFTest();
+  const doubloonMint = await zcf.makeZCFMint('Doubloons');
+  const yenMint = await zcf.makeZCFMint('Yen');
+  const { brand: doubloonBrand } = doubloonMint.getIssuerRecord();
+  const { brand: yenBrand } = yenMint.getIssuerRecord();
+  const yenAmount = AmountMath.make(yenBrand, 100n);
+  const proposal = harden({
+    give: { DownPayment: yenAmount },
+    want: { Bonus: AmountMath.make(doubloonBrand, 1_000_000n) },
+  });
+  const { zcfSeat: mintSeat, userSeat: payoutSeat } = zcf.makeEmptySeatKit();
+  yenMint.mintGains(
+    harden({
+      Cost: yenAmount,
+    }),
+    mintSeat,
+  );
+  mintSeat.exit();
+  const payout = await E(payoutSeat).getPayout('Cost');
+  const payment = { DownPayment: payout };
+
+  const { zcfSeat } = await makeOffer(
+    zcf.getZoeService(),
+    zcf,
+    proposal,
+    payment,
+  );
+
+  zcfSeat.incrementBy({ SidePayment: AmountMath.make(yenBrand, 50n) });
+  const staged = zcfSeat.getStagedAllocation();
+
+  t.throws(
+    () =>
+      yenMint.burnLosses(
+        { DownPayment: AmountMath.make(yenBrand, 50n) },
+        zcfSeat,
+      ),
+    {
+      message:
+        'The allocation after burning losses [object Object]for the zcfSeat was not offer safe',
+    },
+  );
+  t.truthy(zcfSeat.hasStagedAllocation());
+  t.deepEqual(staged.DownPayment, zcfSeat.getStagedAllocation().DownPayment);
+});
+
 test(`zcf.makeZCFMint - displayInfo`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint(
@@ -939,7 +987,7 @@ test(`userSeat.tryExit from zcf.makeEmptySeatKit - afterDeadline`, async t => {
   });
   t.falsy(zcfSeat.hasExited());
   t.falsy(await E(userSeat).hasExited());
-  timer.tick();
+  await timer.tick();
 
   // Note: the wake call doesn't happen immediately so we must wait
   const payouts = await E(userSeat).getPayouts();

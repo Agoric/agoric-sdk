@@ -19,21 +19,42 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - uses: ./.github/actions/build-node
+      - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.node-version }}
 
-  lint:
+  ##################
+  # Lint tests
+  # We run per package bc of https://github.com/typescript-eslint/typescript-eslint/issues/1192
+  # We split the package tests into two jobs because type linting
+  # is inefficient and slow https://github.com/typescript-eslint/typescript-eslint/issues/2094
+  lint-primary:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
-          node-version: '14.x'
+          node-version: '16.x'
 
-      - name: lint check
-        run: yarn lint
+      # first job also does repo-level linting
+      - name: lint repo format
+        run: yarn lint:format
+      # eslint
+      - name: yarn lint primary
+        run: ./scripts/lint-with-types.sh primary
+
+  lint-rest:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: '16.x'
+
+      - name: yarn lint rest
+        run: ./scripts/lint-with-types.sh rest
 
   ##################
   # Fast-running tests run as a group:
@@ -121,6 +142,10 @@ jobs:
       # END-TEST-BOILERPLATE
       - name: yarn test (cosmos)
         run: cd golang/cosmos && yarn ${{ steps.vars.outputs.test }}
+      - name: yarn test (cache)
+        run: cd packages/cache && yarn ${{ steps.vars.outputs.test }}
+      - name: yarn test (casting)
+        run: cd packages/casting && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (run-protocol)
         run: cd packages/run-protocol && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (pegasus)

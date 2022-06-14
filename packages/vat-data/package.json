@@ -12,7 +12,7 @@
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
-    "lint:eslint": "eslint --ext .js,.ts .",
+    "lint:eslint": "eslint .",
     "lint:types": "tsc"
   },
   "keywords": [],
@@ -26,11 +26,6 @@
     "@agoric/swingset-vat": "^0.28.0",
     "ava": "^3.12.1",
     "tsd": "^0.20.0"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
   },
   "publishConfig": {
     "access": "public"

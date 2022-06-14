@@ -1,5 +1,5 @@
 // @ts-check
-import { Nat } from '@agoric/nat';
+import { Nat, isNat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import { wrapStorage } from './storageWrapper.js';
 import { initializeVatState, makeVatKeeper } from './vatKeeper.js';
@@ -58,6 +58,9 @@ const enableKernelGC = true;
 //
 // kernel.defaultManagerType = managerType
 // kernel.defaultReapInterval = $NN
+// kernel.enableFakeDurable = missing | 'true'
+// kernel.snapshotInitial = $NN
+// kernel.snapshotInterval = $NN
 
 // v$NN.source = JSON({ bundle }) or JSON({ bundleName })
 // v$NN.options = JSON
@@ -257,10 +260,17 @@ export default function makeKernelKeeper(
   }
 
   /**
-   * @param { ManagerType } defaultManagerType
-   * @param { number } defaultReapInterval
+   * @param { KernelOptions } kernelOptions
    */
-  function createStartingKernelState(defaultManagerType, defaultReapInterval) {
+  function createStartingKernelState(kernelOptions) {
+    const {
+      defaultManagerType = 'local',
+      defaultReapInterval = 1,
+      enableFakeDurable = false,
+      snapshotInitial = 2,
+      snapshotInterval = 200,
+    } = kernelOptions;
+
     kvStore.set('vat.names', '[]');
     kvStore.set('vat.dynamicIDs', '[]');
     kvStore.set('vat.nextID', `${FIRST_VAT_ID}`);
@@ -278,6 +288,11 @@ export default function makeKernelKeeper(
     kvStore.set('crankNumber', `${FIRST_CRANK_NUMBER}`);
     kvStore.set('kernel.defaultManagerType', defaultManagerType);
     kvStore.set('kernel.defaultReapInterval', `${defaultReapInterval}`);
+    kvStore.set('kernel.snapshotInitial', `${snapshotInitial}`);
+    kvStore.set('kernel.snapshotInterval', `${snapshotInterval}`);
+    if (enableFakeDurable) {
+      kvStore.set('kernel.enableFakeDurable', 'true');
+    }
     // Will be saved in the bootstrap commit
     initializeStats();
   }
@@ -307,6 +322,13 @@ export default function makeKernelKeeper(
   }
 
   /**
+   * @returns { boolean }
+   */
+  function getEnableFakeDurable() {
+    return !!kvStore.get('kernel.enableFakeDurable');
+  }
+
+  /**
    *
    * @returns { number | 'never' }
    */
@@ -315,6 +337,33 @@ export default function makeKernelKeeper(
     const ri = r === 'never' ? r : Number.parseInt(r, 10);
     assert(ri === 'never' || typeof ri === 'number', `k.dri is '${ri}'`);
     return ri;
+  }
+
+  function setDefaultReapInterval(interval) {
+    assert(
+      interval === 'never' || isNat(interval),
+      'invalid defaultReapInterval value',
+    );
+    kvStore.set('kernel.defaultReapInterval', `${interval}`);
+  }
+
+  function getNat(key) {
+    const result = Number.parseInt(getRequired(key), 10);
+    assert(isNat(result));
+    return result;
+  }
+
+  function getSnapshotInitial() {
+    return getNat('kernel.snapshotInitial');
+  }
+
+  function getSnapshotInterval() {
+    return getNat('kernel.snapshotInterval');
+  }
+
+  function setSnapshotInterval(interval) {
+    assert(isNat(interval), 'invalid snapshotInterval value');
+    kvStore.set('kernel.snapshotInterval', `${interval}`);
   }
 
   const bundleIDRE = new RegExp('^b1-[0-9a-f]{128}$');
@@ -1474,6 +1523,11 @@ export default function makeKernelKeeper(
     createStartingKernelState,
     getDefaultManagerType,
     getDefaultReapInterval,
+    getEnableFakeDurable,
+    setDefaultReapInterval,
+    getSnapshotInitial,
+    getSnapshotInterval,
+    setSnapshotInterval,
 
     addNamedBundleID,
     getNamedBundleID,

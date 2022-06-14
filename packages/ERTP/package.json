@@ -15,7 +15,7 @@
     "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 'test/swingsetTests/**/test-*.js'",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
-    "lint:eslint": "eslint --ext .js,.ts .",
+    "lint:eslint": "eslint .",
     "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json"
   },
   "repository": {
@@ -57,18 +57,19 @@
     "exported.js"
   ],
   "ava-xs": {
-    "exclude": "swingsetTests"
+    "exclude": [
+      "swingsetTests",
+      "# fast-check unsupported",
+      "test/unitTests/test-amountProperties.js",
+      "test/unitTests/test-inputValidation.js",
+      "test/unitTests/test-issuerObj.js"
+    ]
   },
   "ava": {
     "files": [
       "test/**/test-*.js"
     ],
     "timeout": "2m"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
   },
   "publishConfig": {
     "access": "public"

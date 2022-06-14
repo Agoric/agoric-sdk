@@ -5,6 +5,7 @@ import {
   makeMarshal,
 } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
+import { isNat } from '@agoric/nat';
 import { isPromise } from '@endo/promise-kit';
 import {
   insistVatType,
@@ -40,6 +41,7 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  *                      meterControl }
  * @param {Console} console
  * @param {*} buildVatNamespace
+ * @param {boolean} enableFakeDurable
  *
  * @returns {*} { dispatch }
  */
@@ -52,6 +54,7 @@ function build(
   gcTools,
   console,
   buildVatNamespace,
+  enableFakeDurable,
 ) {
   const { WeakRef, FinalizationRegistry, meterControl } = gcTools;
   const enableLSDebug = false;
@@ -106,10 +109,21 @@ function build(
   const slotToVal = new Map(); // baseRef -> WeakRef(object)
   const exportedRemotables = new Set(); // objects
   const kernelRecognizableRemotables = new Set(); // vrefs
-  const pendingPromises = new Set(); // Promises
   const importedDevices = new Set(); // device nodes
   const possiblyDeadSet = new Set(); // baseRefs that need to be checked for being dead
   const possiblyRetiredSet = new Set(); // vrefs that might need to be rechecked for being retired
+
+  // importedVPIDs and exportedVPIDs track all promises which the
+  // kernel knows about: the kernel is the decider for importedVPIDs,
+  // and we are the decider for exportedVPIDs
+
+  // We do not need to include the ancillary promises that
+  // resolutionCollector() creates: those are resolved immediately
+  // after export. However we remove those during resolution just in
+  // case they overlap with non-ancillary ones.
+
+  const exportedVPIDs = new Map(); // VPID -> Promise, kernel-known, vat-decided
+  const importedVPIDs = new Map(); // VPID -> { promise, resolve, reject }, kernel-known+decided
 
   function retainExportedVref(vref) {
     // if the vref corresponds to a Remotable, keep a strong reference to it
@@ -294,18 +308,6 @@ function build(
   const disavowedPresences = new WeakSet();
   const disavowalError = harden(Error(`this Presence has been disavowed`));
 
-  // This tracks all promises that we decide (i.e. we are obligated to
-  // call syscall.resolve on them before the end of stopVat). We add
-  // their vpid when we export the promise (or receive it as the
-  // 'result' of a dispatch.deliver) and remove it when we make the
-  // syscall.resolve . We do not need to include the ancillary
-  // promises that resolutionCollector() creates: those are resolved
-  // immediately after export. However we remove those during
-  // resolution just in case they overlap with non-ancillary ones.
-  const deciderVPIDs = new Set(); // vpids
-
-  const importedPromisesByPromiseID = new Map(); // vpid -> { resolve, reject }
-
   function makeImportedPresence(slot, iface = `Alleged: presence ${slot}`) {
     // Called by convertSlotToVal for type=object (an `o-NN` reference). We
     // build a Presence for application-level code to receive. This Presence
@@ -430,6 +432,7 @@ function build(
     // about how we interact with HandledPromise, just use harden({ resolve,
     // reject }).
     const pRec = harden({
+      promise: p,
       resolve(resolution) {
         handlerActive = false;
         resolve(resolution);
@@ -440,9 +443,7 @@ function build(
         reject(rejection);
       },
     });
-    importedPromisesByPromiseID.set(vpid, pRec);
-
-    return harden(p);
+    return pRec;
   }
 
   function makeDeviceNode(id, iface = `Alleged: device ${id}`) {
@@ -496,7 +497,7 @@ function build(
   }
 
   // TODO: fix awkward non-orthogonality: allocateExportID() returns a number,
-  // allocatePromiseID() returns a slot, exportPromise() uses the slot from
+  // allocatePromiseID() returns a slot, registerPromise() uses the slot from
   // allocatePromiseID(), exportPassByPresence() generates a slot itself using
   // the number from allocateExportID().  Both allocateX fns should return a
   // number or return a slot; both exportY fns should either create a slot or
@@ -517,14 +518,26 @@ function build(
 
   const knownResolutions = new WeakMap();
 
-  function exportPromise(p) {
-    const pid = allocatePromiseID();
-    lsdebug(`Promise allocation ${forVatID}:${pid} in exportPromise`);
-    if (!knownResolutions.has(p)) {
+  // this is called with all outbound argument vrefs
+  function maybeExportPromise(vref) {
+    // we only care about new vpids
+    if (
+      parseVatSlot(vref).type === 'promise' &&
+      !exportedVPIDs.has(vref) &&
+      !importedVPIDs.has(vref)
+    ) {
+      const vpid = vref;
+      // The kernel is about to learn about this promise (syscall.send
+      // arguments or syscall.resolve resolution data), so prepare to
+      // do a syscall.resolve when it fires. The caller must finish
+      // doing their syscall before this turn finishes, to ensure the
+      // kernel isn't surprised by a spurious resolution.
       // eslint-disable-next-line no-use-before-define
-      p.then(thenResolve(p, pid), thenReject(p, pid));
+      const p = requiredValForSlot(vpid);
+      // if (!knownResolutions.has(p)) { // TODO really?
+      // eslint-disable-next-line no-use-before-define
+      followForKernel(vpid, p);
     }
-    return pid;
   }
 
   function exportPassByPresence() {
@@ -591,6 +604,7 @@ function build(
     m.serialize,
     unmeteredUnserialize,
     cacheSize,
+    enableFakeDurable,
   );
 
   const collectionManager = makeCollectionManager(
@@ -605,6 +619,7 @@ function build(
     registerValue,
     m.serialize,
     unmeteredUnserialize,
+    enableFakeDurable,
   );
 
   const watchedPromiseManager = makeWatchedPromiseManager(
@@ -633,12 +648,14 @@ function build(
 
     if (!valToSlot.has(val)) {
       let slot;
-      // must be a new export
+      // must be a new export/store
       // lsdebug('must be a new export', JSON.stringify(val));
       if (isPromise(val)) {
-        slot = exportPromise(val);
-        pendingPromises.add(val); // keep it alive until resolved
-        deciderVPIDs.add(slot);
+        // the promise either appeared in outbound arguments, or in a
+        // virtual-object store operation, so immediately after
+        // serialization we'll either add it to exportedVPIDs or
+        // increment a vdata refcount
+        slot = allocatePromiseID();
       } else {
         if (disavowedPresences.has(val)) {
           // eslint-disable-next-line no-use-before-define
@@ -724,23 +741,20 @@ function build(
         // this is a new import value
         val = makeImportedPresence(slot, iface);
       } else if (type === 'promise') {
-        // XXX note: this assert is the same as the one 5 lines above and therefor pointless
-        assert(
-          !parseVatSlot(slot).allocatedByVat,
-          X`kernel is being presumptuous: vat got unrecognized vatSlot ${slot}`,
-        );
-        val = makePipelinablePromise(slot);
+        const pRec = makePipelinablePromise(slot);
+        importedVPIDs.set(slot, pRec);
+        val = pRec.promise;
         // ideally we'd wait until .then is called on p before subscribing,
         // but the current Promise API doesn't give us a way to discover
         // this, so we must subscribe right away. If we were using Vows or
         // some other then-able, we could just hook then() to notify us.
         if (importedPromises) {
+          // leave the subscribe() up to dispatch.notify()
           importedPromises.add(slot);
         } else {
+          // probably in dispatch.deliver(), so subscribe now
           syscall.subscribe(slot);
         }
-        // keep the imported promise alive until it resolves
-        pendingPromises.add(val);
       } else if (type === 'device') {
         val = makeDeviceNode(slot, iface);
         importedDevices.add(val);
@@ -763,8 +777,9 @@ function build(
       !getValForSlot(slot),
       X`revivePromise called on pre-existing ${slot}`,
     );
-    const p = makePipelinablePromise(slot);
-    pendingPromises.add(p);
+    const pRec = makePipelinablePromise(slot);
+    importedVPIDs.set(slot, pRec);
+    const p = pRec.promise;
     registerValue(slot, p);
     return p;
   }
@@ -801,6 +816,7 @@ function build(
         rejected = true;
       }
       valueSer.slots.map(retainExportedVref);
+      // do maybeExportPromise() next to the syscall, not here
       resolutions.push([promiseID, rejected, valueSer]);
       scanSlots(valueSer.slots);
     }
@@ -827,23 +843,76 @@ function build(
     meterControl.assertIsMetered(); // else userspace getters could escape
     const serMethargs = m.serialize(harden(methargs));
     serMethargs.slots.map(retainExportedVref);
+
     const resultVPID = allocatePromiseID();
     lsdebug(`Promise allocation ${forVatID}:${resultVPID} in queueMessage`);
     // create a Promise which callers follow for the result, give it a
     // handler so we can pipeline messages to it, and prepare for the kernel
     // to notify us of its resolution
-    const p = makePipelinablePromise(resultVPID);
+    const pRec = makePipelinablePromise(resultVPID);
+
+    // userspace sees `returnedP` (so that's what we need to register
+    // in slotToVal, and what's what we need to retain with a strong
+    // reference via importedVPIDs), but when dispatch.notify arrives,
+    // we need to fire `pRec.promise` because that's what we've got
+    // the firing controls for
+    importedVPIDs.set(resultVPID, harden({ ...pRec, promise: returnedP }));
+    valToSlot.set(returnedP, resultVPID);
+    slotToVal.set(resultVPID, new WeakRef(returnedP));
 
     // prettier-ignore
     lsdebug(
       `ls.qm send(${JSON.stringify(targetSlot)}, ${legibilizeMethod(prop)}) -> ${resultVPID}`,
     );
     syscall.send(targetSlot, serMethargs, resultVPID);
+
+    // The vpids in the syscall.send might be in A:exportedVPIDs,
+    // B:importedVPIDs, or C:neither. Just after the send(), we are
+    // newly on the hook for following the ones in C:neither. One
+    // option would be to feed all the syscall.send slots to
+    // maybeExportPromise(), which will sort them into A/B/C, then
+    // take everything in C:neither and do a .then on it and add it to
+    // exportedVPIDs. Then we call it a day, and allow all the
+    // resolutions to be delivered in a later turn.
+    //
+    // But instead, we choose the option that says "but many of those
+    // promises might already be resolved", and if there's more than
+    // one, we could amortize some syscall overhead by emitting all
+    // the known resolutions in a 2-or-larger batch, and in this
+    // moment (in this turn) we have a whole list of them that we can
+    // check synchronously.
+    //
+    // To implement this option, the sequence is:
+    // * use W to name the vpids in syscall.send
+    // * feed W into resolutionCollector(), to get 'resolutions'
+    //   * that provides the resolution of any promise in W that is
+    //     known to be resolved, plus any known-resolved promises
+    //     transitively referenced through their resolution data
+    //   * all these resolutions will use the original vpid, which the
+    //     kernel does not currently know about, because the vpid was
+    //     retired earlier, the previous time that promise was
+    //     resolved
+    // * name X the set of vpids resolved in 'resolutions'
+    //   * assert that X vpids are not in exportedVPIDs or importedVPIDs
+    //   * they can only be in X if we remembered the Promise's
+    //     resolution, which means we observed the vpid resolve
+    //   * at that moment of observation, we would have removed it
+    //     from exportedVPIDs, as we did a syscall.resolve on it
+    // * name Y the set of vpids *referenced* by 'resolutions'
+    // * emit syscall.resolve(resolutions)
+    // * Z = (W+Y)-X: the set of vpids we told the kernel but didn't resolve
+    // * feed Z into maybeExportPromise()
+
+    const maybeNewVPIDs = new Set(serMethargs.slots);
     const resolutions = resolutionCollector().forSlots(serMethargs.slots);
     if (resolutions.length > 0) {
       syscall.resolve(resolutions);
-      resolutions.map(([vpid]) => deciderVPIDs.delete(vpid));
+      resolutions.forEach(([_xvpid, _isReject, resolutionCD]) => {
+        resolutionCD.slots.forEach(vref => maybeNewVPIDs.add(vref));
+      });
+      resolutions.forEach(([xvpid]) => maybeNewVPIDs.delete(xvpid));
     }
+    Array.from(maybeNewVPIDs).sort().forEach(maybeExportPromise);
 
     // ideally we'd wait until .then is called on p before subscribing, but
     // the current Promise API doesn't give us a way to discover this, so we
@@ -851,22 +920,20 @@ function build(
     // then-able, we could just hook then() to notify us.
     syscall.subscribe(resultVPID);
 
-    // We return 'p' to the handler, and the eventual resolution of 'p' will
-    // be used to resolve the caller's Promise, but the caller never sees 'p'
-    // itself. The caller got back their Promise before the handler ever got
-    // invoked, and thus before queueMessage was called.. If that caller
-    // passes the Promise they received as argument or return value, we want
-    // it to serialize as resultVPID. And if someone passes resultVPID to
-    // them, we want the user-level code to get back that Promise, not 'p'.
-    // As a result, we do not retain or track 'p'. Only 'returnedP' is
-    // registered and retained by pendingPromises.
+    // We return our new 'pRec.promise' to the handler, and when we
+    // resolve it (during dispatch.notify) its resolution will be used
+    // to resolve the caller's 'returnedP' Promise, but the caller
+    // never sees pRec.promise itself. The caller got back their
+    // 'returnedP' Promise before the handler even got invoked, and
+    // thus before this queueMessage() was called.. If that caller
+    // passes the 'returnedP' Promise they received as argument or
+    // return value, we want it to serialize as resultVPID. And if
+    // someone passes resultVPID to them, we want the user-level code
+    // to get back that Promise, not 'pRec.promise'.  As a result, we
+    // do not retain or track 'pRec.promise'. Only 'returnedP' is
+    // registered and retained by importedVPIDs.
 
-    valToSlot.set(returnedP, resultVPID);
-    slotToVal.set(resultVPID, new WeakRef(returnedP));
-    pendingPromises.add(returnedP);
-    // we do not use vreffedObjectRegistry for promises, even result promises
-
-    return p;
+    return pRec.promise;
   }
 
   function forbidPromises(serArgs) {
@@ -888,9 +955,12 @@ function build(
           meterControl.assertIsMetered(); // userspace getters shouldn't escape
           const serArgs = m.serialize(harden(args));
           serArgs.slots.map(retainExportedVref);
+          // if we didn't forbid promises, we'd need to
+          // maybeExportPromise() here
           forbidPromises(serArgs);
           const ret = syscall.callNow(slot, prop, serArgs);
           insistCapData(ret);
+          forbidPromises(ret);
           // but the unserialize must be unmetered, to prevent divergence
           const retval = unmeteredUnserialize(ret);
           return retval;
@@ -914,19 +984,19 @@ function build(
     return pr;
   }
 
-  function deliver(target, methargsdata, result) {
+  function deliver(target, methargsdata, resultVPID) {
     assert(didStartVat);
     assert(!didStopVat);
     insistCapData(methargsdata);
 
     // prettier-ignore
     lsdebug(
-      `ls[${forVatID}].dispatch.deliver ${target}.${extractMethod(methargsdata)} -> ${result}`,
+      `ls[${forVatID}].dispatch.deliver ${target}.${extractMethod(methargsdata)} -> ${resultVPID}`,
     );
     const t = convertSlotToVal(target);
     assert(t, X`no target ${target}`);
     // TODO: if we acquire new decision-making authority over a promise that
-    // we already knew about ('result' is already in slotToVal), we should no
+    // we already knew about ('resultVPID' is already in slotToVal), we should no
     // longer accept dispatch.notify from the kernel. We currently use
     // importedPromisesByPromiseID to track a combination of "we care about
     // when this promise resolves" and "we are listening for the kernel to
@@ -965,73 +1035,89 @@ function build(
       // TODO: untested, but in principle sound.
       res = HandledPromise.get(t, method);
     }
-    let notifySuccess = () => undefined;
-    let notifyFailure = () => undefined;
-    if (result) {
-      // If this vpid was imported earlier (and we just now became the
-      // decider), we'll have a local Promise object for it, and
-      // importedPromisesByPromiseID will have the resolve/reject
-      // functions to handle a dispatch.notify. If it gets imported
-      // later, we'll wind up in the same state.  TODO: it would be
-      // nice to forward that promise to `res`, so locally-sent
-      // messages are queued locally instead of being sent into the
-      // kernel (and back again after the kernel hears our
-      // syscall.resolve).
-      insistVatType('promise', result);
-      deciderVPIDs.add(result);
-      // eslint-disable-next-line no-use-before-define
-      notifySuccess = thenResolve(res, result);
-      // eslint-disable-next-line no-use-before-define
-      notifyFailure = thenReject(res, result);
-    }
-    res.then(notifySuccess, notifyFailure);
-  }
 
-  function retirePromiseID(promiseID) {
-    lsdebug(`Retiring ${forVatID}:${promiseID}`);
-    importedPromisesByPromiseID.delete(promiseID);
-    const p = getValForSlot(promiseID);
-    if (p) {
-      valToSlot.delete(p);
-      pendingPromises.delete(p);
-    }
-    slotToVal.delete(promiseID);
-  }
-
-  function thenHandler(p, promiseID, rejected) {
-    // this runs metered
-    insistVatType('promise', promiseID);
-    return value => {
-      knownResolutions.set(p, harden([rejected, value]));
-      harden(value);
-      lsdebug(`ls.thenHandler fired`, value);
-      const resolutions = resolutionCollector().forPromise(
-        promiseID,
-        rejected,
-        value,
-      );
-
-      syscall.resolve(resolutions);
-      resolutions.map(([vpid]) => deciderVPIDs.delete(vpid));
-
-      const pRec = importedPromisesByPromiseID.get(promiseID);
-      if (pRec) {
-        if (rejected) {
-          pRec.reject(value);
-        } else {
-          pRec.resolve(value);
-        }
+    let p = res; // the promise tied to resultVPID
+    if (resultVPID) {
+      if (importedVPIDs.has(resultVPID)) {
+        // This vpid was imported earlier, and we just now became the
+        // decider, so we already have a local Promise object for
+        // it. We keep using that object.
+        // , but forward it to 'res', and
+        // move it from importedVPIDs to exportedVPIDs.
+        const pRec = importedVPIDs.get(resultVPID);
+        // remove it from importedVPIDs: the kernel will no longer be
+        // telling us about its resolution
+        importedVPIDs.delete(resultVPID);
+        // forward it to the userspace-fired result promise (despite
+        // using resolve(), this could either fulfill or reject)
+        pRec.resolve(res);
+        // exportedVPIDs will hold a strong reference to the pRec
+        // promise that everyone is already using, and when it fires
+        // we'll notify the kernel
+        p = pRec.promise;
+        // note: the kernel does not unsubscribe vats that acquire
+        // decider status (but it probably should), so after we do our
+        // syscall.resolve, the kernel will give us a
+        // dispatch.notify. But we'll ignore the stale vpid by
+        // checking importedVPIDs in notifyOnePromise()
+      } else {
+        // new vpid
+        registerValue(resultVPID, res, false);
       }
-      meterControl.runWithoutMetering(() => retirePromiseID(promiseID));
-    };
+      // in both cases, we are now the decider, so treat it like an
+      // exported promise
+      // eslint-disable-next-line no-use-before-define
+      followForKernel(resultVPID, p);
+    }
   }
 
-  function thenResolve(p, promiseID) {
-    return thenHandler(p, promiseID, false);
+  function unregisterUnreferencedVPID(vpid) {
+    lsdebug(`unregisterUnreferencedVPID ${forVatID}:${vpid}`);
+    assert.equal(parseVatSlot(vpid).type, 'promise');
+    // we are only called with vpids that are in exportedVPIDs or
+    // importedVPIDs, so the WeakRef should still be populated, making
+    // this safe to call from metered code
+    const p = requiredValForSlot(vpid);
+    if (vrm.getReachablePromiseRefCount(p) === 0) {
+      // unregister
+      valToSlot.delete(p);
+      slotToVal.delete(vpid);
+      // the caller will remove the vpid from
+      // exportedVPIDs/importedVPIDs in a moment
+    }
   }
 
-  function thenReject(p, promiseID) {
-    return thenHandler(p, promiseID, true);
+  function followForKernel(vpid, p) {
+    insistVatType('promise', vpid);
+    exportedVPIDs.set(vpid, p);
+
+    function handle(isReject, value) {
+      knownResolutions.set(p, harden([isReject, value]));
+      lsdebug(`ls.thenHandler fired`, value);
+      assert(exportedVPIDs.has(vpid), vpid);
+      const rc = resolutionCollector();
+      const resolutions = rc.forPromise(vpid, isReject, value);
+      syscall.resolve(resolutions);
+
+      const maybeNewVPIDs = new Set();
+      // if we mention a vpid, we might need to track it
+      resolutions.forEach(([_xvpid, _isReject, resolutionCD]) => {
+        resolutionCD.slots.forEach(vref => maybeNewVPIDs.add(vref));
+      });
+      // but not if we just resolved it (including the primary)
+      resolutions.forEach(([xvpid]) => maybeNewVPIDs.delete(xvpid));
+      // track everything that's left
+      Array.from(maybeNewVPIDs).sort().forEach(maybeExportPromise);
+
+      // only the primary can possibly be newly resolved
+      unregisterUnreferencedVPID(vpid);
+      exportedVPIDs.delete(vpid);
+    }
+
+    p.then(
+      value => handle(false, value),
+      value => handle(true, value),
+    );
   }
 
   function notifyOnePromise(promiseID, rejected, data) {
@@ -1040,7 +1126,10 @@ function build(
       `ls.dispatch.notify(${promiseID}, ${rejected}, ${data.body}, [${data.slots}])`,
     );
     insistVatType('promise', promiseID);
-    const pRec = importedPromisesByPromiseID.get(promiseID);
+    const pRec = importedVPIDs.get(promiseID);
+    // we check pRec to ignore stale notifies, either from before an
+    // upgrade, or if we acquire decider authority for a
+    // previously-imported promise
     if (pRec) {
       // TODO: insist that we do not have decider authority for promiseID
       meterControl.assertNotMetered();
@@ -1050,29 +1139,39 @@ function build(
       } else {
         pRec.resolve(val);
       }
+      return true; // caller will remove from importedVPIDs
     }
     // else ignore: our predecessor version might have subscribed
+    return false;
   }
 
   function notify(resolutions) {
     assert(didStartVat);
     assert(!didStopVat);
+    // notifyOnePromise() will tell us whether each vpid in the batch
+    // was retired or stale
+    const retiredVPIDs = [];
+    // Deserializing the batch of resolutions may import new promises,
+    // some of which are resolved later in the batch. We'll need to
+    // subscribe to the remaining (new+unresolved) ones.
     beginCollectingPromiseImports();
     for (const resolution of resolutions) {
       const [vpid, rejected, data] = resolution;
-      notifyOnePromise(vpid, rejected, data);
-    }
-    for (const resolution of resolutions) {
-      const [vpid] = resolution;
-      retirePromiseID(vpid);
-    }
-    const imports = finishCollectingPromiseImports();
-    meterControl.assertNotMetered();
-    for (const slot of imports) {
-      if (slotToVal.get(slot)) {
-        // we'll only subscribe to new promises, which is within consensus
-        syscall.subscribe(slot);
+      const retired = notifyOnePromise(vpid, rejected, data);
+      if (retired) {
+        retiredVPIDs.push(vpid); // not stale
       }
+    }
+    // 'imports' is an exclusively-owned Set that holds all new
+    // promise vpids, both resolved and unresolved
+    const imports = finishCollectingPromiseImports();
+    retiredVPIDs.forEach(vpid => {
+      unregisterUnreferencedVPID(vpid); // unregisters if not in vdata
+      importedVPIDs.delete(vpid);
+      imports.delete(vpid); // resolved, so don't subscribe()
+    });
+    for (const vpid of Array.from(imports).sort()) {
+      syscall.subscribe(vpid);
     }
   }
 
@@ -1180,6 +1279,27 @@ function build(
     ...vrm.testHooks,
     ...collectionManager.testHooks,
   });
+
+  function setVatOption(option, value) {
+    switch (option) {
+      case 'virtualObjectCacheSize': {
+        if (isNat(value)) {
+          vom.setCacheSize(value);
+        } else {
+          console.log(`WARNING: invalid virtualObjectCacheSize value`, value);
+        }
+        break;
+      }
+      default:
+        console.log(`WARNING setVatOption unknown option ${option}`);
+    }
+  }
+
+  function changeVatOptions(options) {
+    for (const option of Object.getOwnPropertyNames(options)) {
+      setVatOption(option, options[option]);
+    }
+  }
 
   let baggage;
   async function startVat(vatParametersCapData) {
@@ -1292,6 +1412,11 @@ function build(
         retireImports(vrefs);
         break;
       }
+      case 'changeVatOptions': {
+        const [options] = args;
+        changeVatOptions(options);
+        break;
+      }
       case 'startVat': {
         const [vpCapData] = args;
         result = startVat(vpCapData);
@@ -1325,8 +1450,18 @@ function build(
     assert(!didStopVat);
     didStopVat = true;
 
+    // all vpids are either "imported" (kernel knows about it and
+    // kernel decides), "exported" (kernel knows about it but we
+    // decide), or neither (local, we decide, kernel is unaware). TODO
+    // this could be cheaper if we tracked all three states (make a
+    // Set for "neither") instead of doing enumeration and set math.
+
     try {
-      watchedPromiseManager.prepareShutdownRejections(deciderVPIDs);
+      // mark "imported" plus "neither" for rejection at next startup
+      const importedVPIDsSet = new Set(importedVPIDs.keys());
+      watchedPromiseManager.prepareShutdownRejections(importedVPIDsSet);
+      // reject all "exported" vpids now
+      const deciderVPIDs = Array.from(exportedVPIDs.keys()).sort();
       await releaseOldState({
         m,
         deciderVPIDs,
@@ -1452,6 +1587,7 @@ function build(
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
  * @param {*} buildVatNamespace
+ * @param {boolean} enableFakeDurable
  *
  * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch }
  *
@@ -1486,6 +1622,7 @@ export function makeLiveSlots(
   gcTools,
   liveSlotsConsole = console,
   buildVatNamespace,
+  enableFakeDurable = false,
 ) {
   const allVatPowers = {
     ...vatPowers,
@@ -1500,6 +1637,7 @@ export function makeLiveSlots(
     gcTools,
     liveSlotsConsole,
     buildVatNamespace,
+    enableFakeDurable,
   );
   const { dispatch, startVat, possiblyDeadSet, testHooks } = r; // omit 'm'
   return harden({

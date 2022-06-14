@@ -95,6 +95,8 @@
  * ```
  * The resulting `localIterable` also supports such remote use, and
  * will return access to the same representation.
+ * @property {StorageNode['getStoreKey']} getStoreKey get the
+ * externally-reachable store key for this notifier
  */
 
 /**
@@ -106,7 +108,6 @@
 
 // /////////////////////////////////////////////////////////////////////////////
 
-// eslint-disable-next-line jsdoc/require-property
 /**
  * @template T
  * @typedef {{}} BaseSubscription<T>
@@ -141,6 +142,8 @@
  * ```
  * The resulting `localIterable` also supports such remote use, and
  * will return access to the same representation.
+ * @property {StorageNode['getStoreKey']} getStoreKey get the
+ * externally-reachable store key for this subscription
  */
 
 /**
@@ -158,4 +161,30 @@
  * @typedef {object} SubscriptionRecord<T>
  * @property {IterationObserver<T>} publication
  * @property {Subscription<T>} subscription
+ */
+
+/** @typedef {ReturnType<typeof import('@endo/marshal').makeMarshal>} Marshaller */
+
+/**
+ * @typedef {object} Unserializer
+ * @property {Marshaller['unserialize']} unserialize
+ */
+
+/**
+ * @typedef {object} StorageNode
+ * @property {(data: string) => void} setValue publishes some data
+ * @property {() => ERef<Record<string, any>>} getStoreKey get the
+ * externally-reachable store key for this storage item
+ * @property {(subPath: string) => StorageNode} getChildNode TODO: makeChildNode
+ */
+
+/**
+ * @typedef {object} StoredFacet
+ * @property {StorageNode['getStoreKey']} getStoreKey get the externally-reachable store key
+ * @property {() => Unserializer} getUnserializer get the unserializer for the stored data
+ */
+
+/**
+ * @template T
+ * @typedef {Subscription<T> & StoredFacet} StoredSubscription
  */

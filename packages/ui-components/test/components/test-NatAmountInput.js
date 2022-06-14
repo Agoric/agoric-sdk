@@ -1,6 +1,6 @@
 // @ts-check
 
-import '@endo/init';
+import '@endo/init/debug.js';
 import React from 'react';
 import { TextField } from '@material-ui/core';
 

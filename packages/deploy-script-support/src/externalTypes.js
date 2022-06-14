@@ -48,7 +48,7 @@
  * @param {ERef<Issuer>} issuer
  * @param {Petname} brandPetname
  * @param {Petname} pursePetname
- * @returns {Promise<Array<Promise>}
+ * @returns {Promise<Petname>}
  */
 
 /**

@@ -135,7 +135,7 @@ test('committee-open question:mixed', async t => {
     .getOutcome()
     .catch(e => t.deepEqual(e, 'No quorum'));
 
-  timer.tick();
+  await timer.tick();
 
   const questions = await publicFacet.getOpenQuestions();
   t.deepEqual(questions.length, 2);

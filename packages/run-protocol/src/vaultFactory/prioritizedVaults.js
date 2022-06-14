@@ -7,12 +7,13 @@ import { ratioGTE } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
 import { keyEQ, keyLT } from '@agoric/store';
 import { makeOrderedVaultStore } from './orderedVaultStore.js';
-import { toVaultKey } from './storeUtils.js';
+import { fromVaultKey, toVaultKey } from './storeUtils.js';
 import { makeTracer } from '../makeTracer.js';
 
-const trace = makeTracer('PV');
+const trace = makeTracer('PV', false);
 
 /** @typedef {import('./vault').Vault} Vault */
+/** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 
 /**
  *
@@ -45,19 +46,19 @@ export const currentDebtToCollateral = vault =>
  * Vaults, ordered by their liquidation ratio so that all the
  * vaults below a threshold can be quickly found and liquidated.
  *
- * @param {() => void} reschedulePriceCheck called when there is a new
- * least-collateralized vault
+ * @param {() => void} highestChanged called when there is a new
+ * `highestRatio` (least-collateralized vault)
  */
-export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
+export const makePrioritizedVaults = (highestChanged = () => {}) => {
   const vaults = makeOrderedVaultStore();
 
   /**
    * Set the callback for when there is a new least-collateralized vault
    *
-   * @param {() => void} rescheduleFn
+   * @param {() => void} callback
    */
-  const setRescheduler = rescheduleFn => {
-    reschedulePriceCheck = rescheduleFn;
+  const onHighestRatioChanged = callback => {
+    highestChanged = callback;
   };
 
   // To deal with fluctuating prices and varying collateralization, we schedule a
@@ -78,19 +79,28 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
    *
    * @returns {Ratio=} actual debt over collateral
    */
-  const firstDebtRatio = () => {
+  const highestRatio = () => {
     if (vaults.getSize() === 0) {
       return undefined;
     }
     // Get the first vault.
     const [vault] = vaults.values();
-    const collateralAmount = vault.getCollateralAmount();
-    if (AmountMath.isEmpty(collateralAmount)) {
-      // ??? can currentDebtToCollateral() handle this?
-      // Would be an infinite ratio
-      return undefined;
-    }
+    assert(
+      !AmountMath.isEmpty(vault.getCollateralAmount()),
+      'First vault had no collateral',
+    );
     return currentDebtToCollateral(vault);
+  };
+
+  /**
+   *
+   * @param {NormalizedDebt} oldDebt
+   * @param {Amount<'nat'>} oldCollateral
+   * @param {string} vaultId
+   */
+  const hasVaultByAttributes = (oldDebt, oldCollateral, vaultId) => {
+    const key = toVaultKey(oldDebt, oldCollateral, vaultId);
+    return vaults.has(key);
   };
 
   /**
@@ -102,7 +112,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
     // don't call reschedulePriceCheck, but do reset the highest.
     // This could be expensive if we delete individual entries in
     // order. Will know once we have perf data.
-    trace('removeVault', firstKey, key);
+    trace('removeVault', key, fromVaultKey(key), 'when first:', firstKey);
     if (keyEQ(key, firstKey)) {
       const [secondKey] = vaults.keys();
       firstKey = secondKey;
@@ -112,7 +122,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
 
   /**
    *
-   * @param {Amount<'nat'>} oldDebt
+   * @param {NormalizedDebt} oldDebt
    * @param {Amount<'nat'>} oldCollateral
    * @param {string} vaultId
    */
@@ -128,10 +138,14 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
    */
   const addVault = (vaultId, vault) => {
     const key = vaults.addVault(vaultId, vault);
-    trace('addVault', firstKey, key);
+    assert(
+      !AmountMath.isEmpty(vault.getCollateralAmount()),
+      'Tracked vaults must have collateral (be liquidatable)',
+    );
+    trace('addVault', key, 'when first:', firstKey);
     if (!firstKey || keyLT(key, firstKey)) {
       firstKey = key;
-      reschedulePriceCheck();
+      highestChanged();
     }
     return key;
   };
@@ -163,26 +177,15 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
     }
   }
 
-  /**
-   * @param {Amount<'nat'>} oldDebt
-   * @param {Amount<'nat'>} oldCollateral
-   * @param {string} vaultId
-   */
-  const refreshVaultPriority = (oldDebt, oldCollateral, vaultId) => {
-    const vault = removeVaultByAttributes(oldDebt, oldCollateral, vaultId);
-    addVault(vaultId, vault);
-    return vault;
-  };
-
   return Far('PrioritizedVaults', {
     addVault,
     entries: vaults.entries,
     entriesPrioritizedGTE,
     getCount: vaults.getSize,
-    highestRatio: firstDebtRatio,
-    refreshVaultPriority,
+    hasVaultByAttributes,
+    highestRatio,
     removeVault,
     removeVaultByAttributes,
-    setRescheduler,
+    onHighestRatioChanged,
   });
 };

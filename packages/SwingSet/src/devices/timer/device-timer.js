@@ -134,12 +134,15 @@ function makeTimerMap(state = undefined) {
   // We don't expect this to be called often, so we don't optimize for it.
   function remove(targetHandler) {
     const droppedTimes = [];
-    for (let i = 0; i < schedule.length; i += 1) {
+    let i = 0;
+    while (i < schedule.length) {
       const { time, handlers } = schedule[i];
       if (handlers.length === 1) {
         if (handlers[0].handler === targetHandler) {
           schedule.splice(i, 1);
           droppedTimes.push(time);
+        } else {
+          i += 1;
         }
       } else {
         // Nothing prevents a particular handler from appearing more than once
@@ -151,6 +154,8 @@ function makeTimerMap(state = undefined) {
         }
         if (handlers.length === 0) {
           schedule.splice(i, 1);
+        } else {
+          i += 1;
         }
       }
     }
@@ -274,7 +279,7 @@ export function buildRootDeviceNode(tools) {
     removeWakeup(handler) {
       const times = deadlines.remove(handler);
       saveState();
-      return times;
+      return harden(times);
     },
     getLastPolled,
 

@@ -1,4 +1,4 @@
-import '@endo/init';
+import '@endo/init/debug.js';
 import test from 'ava';
 
 import { dump } from '../src/repl.js';

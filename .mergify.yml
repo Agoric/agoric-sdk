@@ -39,6 +39,9 @@ pull_request_rules:
     conditions:
       - label=automerge:merge
       - or:
+          - check-success=wait-integration-pre-checks
+          - label=bypass:integration
+      - or:
           - and: # breakage succeeds like we thought
               - check-success=breakage
               - -label=proto:expect-breakage
@@ -52,6 +55,9 @@ pull_request_rules:
   - name: rebase updates then merge to master
     conditions:
       - label=automerge:rebase
+      - or:
+          - check-success=wait-integration-pre-checks
+          - label=bypass:integration
       - or:
           - and: # breakage succeeds like we thought
               - check-success=breakage
@@ -67,6 +73,9 @@ pull_request_rules:
   - name: squash to master
     conditions:
       - label=automerge:squash
+      - or:
+          - check-success=wait-integration-pre-checks
+          - label=bypass:integration
       - or:
           - and: # breakage succeeds like we thought
               - check-success=breakage

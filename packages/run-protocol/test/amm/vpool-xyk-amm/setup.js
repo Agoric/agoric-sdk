@@ -71,6 +71,7 @@ export const setupAMMBootstrap = async (
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   installGovernance(zoe, spaces.installation.produce);
+  produce.chainStorage.resolve(undefined);
 
   return { produce, consume, ...spaces };
 };

@@ -56,14 +56,6 @@
   "publishConfig": {
     "access": "public"
   },
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ],
-    "ignorePatterns": [
-      "examples/**/*.js"
-    ]
-  },
   "ava": {
     "files": [
       "test/**/test-*.js"

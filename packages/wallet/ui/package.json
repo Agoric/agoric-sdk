@@ -10,7 +10,7 @@
     "@agoric/assert": "^0.4.0",
     "@agoric/notifier": "^0.4.0",
     "@agoric/ui-components": "^0.2.33",
-    "@cosmjs/stargate": "^0.28.4",
+    "@cosmjs/stargate": "0.28.4",
     "@emotion/react": "^11.5.0",
     "@emotion/styled": "^11.3.0",
     "@endo/captp": "^2.0.7",
@@ -81,7 +81,8 @@
       "react/prop-types": "off",
       "react/react-in-jsx-scope": "off",
       "import/no-extraneous-dependencies": "off",
-      "react/display-name": "off"
+      "react/display-name": "off",
+      "@typescript-eslint/no-floating-promises": "off"
     },
     "env": {
       "browser": true,

@@ -9,7 +9,6 @@ test('harden from SES is in the zoe contract environment', t => {
 });
 
 test('(mock) kind makers from SwingSet are in the zoe contract environment', t => {
-  // @ts-expect-error testing existence of function only
   VatData.defineKind('x', () => {}, {});
   VatData.defineKindMulti('x', () => {}, { x: {}, y: {} });
   const kh = VatData.makeKindHandle();
@@ -19,7 +18,6 @@ test('(mock) kind makers from SwingSet are in the zoe contract environment', t =
 });
 
 test('(mock) store makers from SwingSet are in the zoe contract environment', t => {
-  // @ts-expect-error testing existence of function only
   VatData.makeScalarBigMapStore();
   VatData.makeScalarBigWeakMapStore();
   VatData.makeScalarBigSetStore();

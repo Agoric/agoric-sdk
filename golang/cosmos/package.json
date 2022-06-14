@@ -29,11 +29,6 @@
     "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
   "homepage": "https://github.com/Agoric/agoric-sdk/tree/HEAD/golang/cosmos",
-  "eslintConfig": {
-    "extends": [
-      "@agoric"
-    ]
-  },
   "files": [
     "Makefile*",
     "app",

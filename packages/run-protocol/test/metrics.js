@@ -5,21 +5,26 @@ import { diff } from 'deep-object-diff';
 
 /**
  * @param {import('ava').ExecutionContext} t
- * @param {Subscription<object>} subscription
+ * @param {Subscription<N>} subscription
+ * @template {object} N
  */
 export const subscriptionTracker = async (t, subscription) => {
   const metrics = makeNotifierFromAsyncIterable(subscription);
+  /** @type {UpdateRecord<N>} */
   let notif;
   const getLastNotif = () => notif;
 
+  /** @param {Record<keyof N, N[keyof N]>} expectedValue */
   const assertInitial = async expectedValue => {
     notif = await metrics.getUpdateSince();
+    console.log('assertInitial notif', notif);
     t.deepEqual(notif.value, expectedValue);
   };
-  /** @param {Record<string, unknown>} expectedDelta */
   const assertChange = async expectedDelta => {
     const prevNotif = notif;
     notif = await metrics.getUpdateSince(notif.updateCount);
+    console.log('assertChange notif', notif);
+    // @ts-expect-error diff() overly constrains
     const actualDelta = diff(prevNotif.value, notif.value);
     t.deepEqual(actualDelta, expectedDelta, 'Unexpected delta');
   };
@@ -34,7 +39,8 @@ export const subscriptionTracker = async (t, subscription) => {
  * For public facets that have a `getMetrics` method.
  *
  * @param {import('ava').ExecutionContext} t
- * @param {{getMetrics?: () => Subscription<object>}} publicFacet
+ * @param {{getMetrics?: () => Subscription<unknown>}} publicFacet
+ * @template {object} N
  */
 export const metricsTracker = async (t, publicFacet) => {
   const metricsSub = await E(publicFacet).getMetrics();
@@ -47,6 +53,8 @@ export const metricsTracker = async (t, publicFacet) => {
  */
 export const vaultManagerMetricsTracker = async (t, publicFacet) => {
   let totalDebtEver = 0n;
+  /** @type {Awaited<ReturnType<typeof subscriptionTracker<import('../src/vaultFactory/vaultManager').MetricsNotification>>>} */
+  // @ts-expect-error cast
   const m = await metricsTracker(t, publicFacet);
 
   /** @returns {bigint} Proceeds - overage + shortfall */
@@ -78,6 +86,8 @@ export const vaultManagerMetricsTracker = async (t, publicFacet) => {
       totalDebtEver - liquidated <= 1,
       `Liquidated ${liquidated} must approx equal total debt ever ${totalDebtEver}`,
     );
+    const notif = m.getLastNotif();
+    t.is(notif.value.totalDebt.value, 0n);
   };
   return harden({
     ...m,

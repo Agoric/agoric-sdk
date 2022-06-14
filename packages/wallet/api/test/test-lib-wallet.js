@@ -3,7 +3,10 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@endo/bundle-source';
+import { makeCache } from '@agoric/cache';
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
+
+import { M } from '@agoric/store';
 
 import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
@@ -1796,4 +1799,29 @@ test('lookup', async (/** @type {LibWalletTestContext} */ t) => {
   await t.throwsAsync(E(wallet).lookup('purse2'), {
     message: /"lookups" not found: "purse2"/,
   });
+});
+
+test('cache', async (/** @type {LibWalletTestContext} */ t) => {
+  const { wallet } = await setupTest(t);
+
+  const cache = makeCache(wallet.getCacheCoordinator());
+
+  t.is(await cache('foo'), undefined);
+
+  // Update the `'foo'` entry, using its old value (initially `undefined`).
+  const updater = (oldValue = 'bar') => `${oldValue}1`;
+  t.is(await cache('foo', updater, M.any()), 'bar1');
+  t.is(await cache('foo', updater, M.any()), 'bar11');
+  t.is(await cache('foo'), 'bar11');
+
+  // You can also specify a guard pattern for the value to update.  If it
+  // doesn't match the latest value, then the cache isn't updated.
+  t.is(await cache('foo', updater, 'nomatch'), 'bar11');
+  t.is(await cache('foo', updater, 'bar11'), 'bar111');
+  t.is(await cache('foo', updater, 'bar11'), 'bar111');
+  t.is(await cache('foo'), 'bar111');
+
+  // Specify a pattern of `undefined` for one-time initialisation.
+  t.is(await cache('baz', updater, undefined), 'bar1');
+  t.is(await cache('baz', updater, undefined), 'bar1');
 });

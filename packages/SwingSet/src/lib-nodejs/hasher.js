@@ -3,7 +3,7 @@ import { assert } from '@agoric/assert';
 import { createHash } from 'crypto';
 
 /**
- * @typedef { (initial: string?) => {
+ * @typedef { (initial?: string) => {
  *             add: (more: string) => void,
  *             finish: () => string,
  *            }

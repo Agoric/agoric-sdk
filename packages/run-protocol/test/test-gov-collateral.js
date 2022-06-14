@@ -29,7 +29,7 @@ import { setupBootstrap, setUpZoeForTest, mintRunPayment } from './supports.js';
 const { details: X } = assert;
 const dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
-/** @type {import('ava').TestInterface<Awaited<ReturnType<makeTestContext>>>} */
+/** @type {import('ava').TestInterface<Awaited<ReturnType<typeof makeTestContext>>>} */
 // @ts-expect-error cast
 const test = anyTest;
 
@@ -102,7 +102,7 @@ const makeTestContext = async () => {
     cleanups: [],
     zoe: await zoe,
     feeMintAccess: await feeMintAccess,
-    runKit: { brand: runBrand, issuer: runIssuer },
+    run: { issuer: runIssuer, brand: runBrand },
     installation,
   };
 };
@@ -158,7 +158,6 @@ const makeScenario = async (t, { env = process.env } = {}) => {
       },
       getBankForAddress: () => assert.fail('not impl'),
     });
-    // @ts-ignore mock doesn't have all the methods
     space.produce.bankManager.resolve(bankManager);
 
     space.installation.produce.mintHolder.resolve(

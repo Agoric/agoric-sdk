@@ -10,7 +10,7 @@ import { makeSubscriptionKit } from '@agoric/notifier';
 import { AMM_INSTANCE } from './params.js';
 import { makeTracer } from '../makeTracer.js';
 
-const trace = makeTracer('Reserve', true);
+const trace = makeTracer('Reserve', false);
 
 const makeLiquidityKeyword = keyword => `${keyword}Liquidity`;
 
@@ -166,7 +166,6 @@ const start = async (zcf, privateArgs) => {
     const issuer = await E(ammPublicFacet).getSecondaryIssuer(
       ammSecondaryBrand,
     );
-    console.debug({ issuer });
     await addIssuer(issuer, keyword);
   };
 

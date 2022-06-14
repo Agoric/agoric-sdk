@@ -15,5 +15,11 @@
     "strictNullChecks": true,
     "moduleResolution": "node",
   },
-  "include": ["src/**/*.js", "test/**/*.js", "exported.js", "globals.d.ts"],
+  "include": [
+    "exported.js",
+    "globals.d.ts",
+    "scripts/**/*.js",
+    "src/**/*.js",
+    "test/**/*.js"
+  ]
 }

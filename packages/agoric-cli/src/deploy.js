@@ -4,6 +4,8 @@
 import { E, makeCapTP } from '@endo/captp';
 import { makePromiseKit } from '@endo/promise-kit';
 import bundleSource from '@endo/bundle-source';
+import { makeCache } from '@agoric/cache';
+import { makeLeaderFromRpcAddresses } from '@agoric/casting';
 import { search as readContainingPackageDescriptor } from '@endo/compartment-mapper';
 import url from 'url';
 import path from 'path';
@@ -301,6 +303,28 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
           );
         }
 
+        const cache = makeCache(
+          E(E(E.get(bootP).wallet).getBridge()).getCacheCoordinator(),
+        );
+
+        let cachedLeader;
+        const makeDefaultLeader = async leaderOptions => {
+          if (cachedLeader === undefined) {
+            const conn = await getDefaultConnection();
+            const { type, rpcAddresses } = conn;
+            assert.equal(
+              type,
+              'chain-cosmos-sdk',
+              X`${type} doesn't support casting followers`,
+            );
+            cachedLeader = makeLeaderFromRpcAddresses(
+              rpcAddresses,
+              leaderOptions,
+            );
+          }
+          return cachedLeader;
+        };
+
         for (const arg of args) {
           const moduleFile = path.resolve(process.cwd(), arg);
           const pathResolve = (...paths) => {
@@ -394,6 +418,8 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
             await main(bootP, {
               bundleSource: (file, options = undefined) =>
                 bundleSource(pathResolve(file), options),
+              cache,
+              makeDefaultLeader,
               publishBundle,
               listConnections,
               pathResolve,
