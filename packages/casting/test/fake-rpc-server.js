@@ -230,7 +230,7 @@ export const develop = async () => {
   const PORT = await startFakeServer(mockT, [...fakeValues]);
   console.log(
     `Try this in another terminal:
-    agoric follower :fake.path --bootstrap=http://localhost:${PORT}/network-config --sleep=0.5 --integrity=none`,
+    agoric follower :fake.path --bootstrap=http://localhost:${PORT}/network-config --sleep=0.5 --proof=none`,
   );
   console.warn(`Control-C to interrupt...`);
   // Wait forever.

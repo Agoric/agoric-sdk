@@ -26,7 +26,7 @@ import {
 // Iterate over a mailbox follower on the devnet.
 const leader = makeLeader('https://devnet.agoric.net/network-config');
 const castingSpec = makeCastingSpec(':mailbox.agoric1foobarbaz');
-const follower = makeFollower(leader, castingSpec);
+const follower = makeFollower(castingSpec, leader);
 for await (const { value } of iterateLatest(follower)) {
   console.log(`here's a mailbox value`, value);
 }
@@ -35,7 +35,7 @@ for await (const { value } of iterateLatest(follower)) {
 ## Follower options
 
 The `followerOpts` argument in `makeFollower(leader, key, followerOpts)` provides an optional bag of options:
-- the `integrity` option, which has three possibilities:
+- the `proof` option, which has three possibilities:
   - `'strict'` - release data only after proving it was validated (may incur waits for one block's data to be validated in the next block),
   - `'optimistic'` (default) - release data immediately, but may crash the follower in the future if an already-released value could not be proven,
   - `'none'` - release data immediately without validation

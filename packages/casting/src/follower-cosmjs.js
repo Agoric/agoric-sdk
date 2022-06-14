@@ -1,12 +1,20 @@
 // @ts-check
 import { E, Far } from '@endo/far';
-import { makeNotifierKit } from '@agoric/notifier';
-import { Tendermint34Client } from '@cosmjs/tendermint-rpc';
-import { QueryClient } from '@cosmjs/stargate';
+import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
+import * as tendermintRpcStar from '@cosmjs/tendermint-rpc';
+import * as stargateStar from '@cosmjs/stargate';
 
-import { makeAsyncIterableFromNotifier, iterateLatest } from './iterable.js';
-import { DEFAULT_DECODER, DEFAULT_UNSERIALIZER } from './defaults.js';
+import {
+  iterateLatest,
+  makeSubscriptionIterable,
+  makeNotifierIterable,
+} from './iterable.js';
+import { MAKE_DEFAULT_DECODER, MAKE_DEFAULT_UNSERIALIZER } from './defaults.js';
+import { makeCastingSpec } from './casting-spec.js';
+import { makeLeader as defaultMakeLeader } from './leader-netconfig.js';
 
+const { QueryClient } = stargateStar;
+const { Tendermint34Client } = tendermintRpcStar;
 const { details: X } = assert;
 
 /** @template T @typedef {import('./types.js').FollowerElement<T>} FollowerElement */
@@ -42,9 +50,9 @@ const collectSingle = values => {
  */
 
 /**
- * @type {Record<Required<import('./types').FollowerOptions>['integrity'], QueryVerifier>}
+ * @type {Record<Required<import('./types').FollowerOptions>['proof'], QueryVerifier>}
  */
-export const integrityToQueryVerifier = harden({
+export const proofToQueryVerifier = harden({
   strict: async (getProvenValue, crash, _getAllegedValue) => {
     // Just ignore the alleged value.
     // Crash hard if we can't prove.
@@ -77,29 +85,34 @@ export const integrityToQueryVerifier = harden({
 
 /**
  * @template T
- * @param {ERef<import('./types').Leader>} leader
- * @param {import('./types').CastingSpec} castingSpec
- * @param {import('./types').FollowerOptions} options
+ * @param {any} sourceP
+ * @param {import('./types').LeaderOrMaker} [leaderOrMaker]
+ * @param {import('./types').FollowerOptions} [options]
  * @returns {Follower<FollowerElement<T>>}
  */
-export const makeFollower = (leader, castingSpec, options = {}) => {
+export const makeCosmjsFollower = (
+  sourceP,
+  leaderOrMaker = defaultMakeLeader,
+  options = {},
+) => {
   const {
-    decode = DEFAULT_DECODER,
-    unserializer = DEFAULT_UNSERIALIZER,
-    integrity = 'optimistic',
+    decode = MAKE_DEFAULT_DECODER(),
+    unserializer = MAKE_DEFAULT_UNSERIALIZER(),
+    proof = 'optimistic',
     crasher = null,
   } = options;
-  const {
-    storeName,
-    storeSubkey,
-    dataPrefixBytes = new Uint8Array(),
-  } = castingSpec;
 
   /** @type {QueryVerifier} */
-  const queryVerifier = integrityToQueryVerifier[integrity];
-  assert(queryVerifier, X`unrecognized follower integrity mode ${integrity}`);
+  const queryVerifier = proofToQueryVerifier[proof];
+  assert(queryVerifier, X`unrecognized follower proof mode ${proof}`);
 
-  /** @type {Map<string, QueryClient>} */
+  const where = 'CosmJS follower';
+  const castingSpecP = makeCastingSpec(sourceP);
+
+  const leader =
+    typeof leaderOrMaker === 'function' ? leaderOrMaker() : leaderOrMaker;
+
+  /** @type {Map<string, import('@cosmjs/stargate').QueryClient>} */
   const endpointToQueryClient = new Map();
 
   /**
@@ -121,16 +134,36 @@ export const makeFollower = (leader, castingSpec, options = {}) => {
 
   /**
    * @param {'queryVerified' | 'queryUnverified'} method
-   * @param {string} queryPath
    */
   const makeQuerier =
-    (method, queryPath) =>
+    method =>
     /**
      * @param {number} [height]
      * @returns {Promise<Uint8Array>}
      */
     async height => {
-      const values = await E(leader).mapEndpoints(async endpoint => {
+      const {
+        storeName,
+        storeSubkey,
+        dataPrefixBytes = new Uint8Array(),
+      } = await castingSpecP;
+      assert.typeof(storeName, 'string');
+      assert(storeSubkey);
+      let queryPath;
+      switch (method) {
+        case 'queryVerified': {
+          queryPath = storeName;
+          break;
+        }
+        case 'queryUnverified': {
+          queryPath = `store/${storeName}/key`;
+          break;
+        }
+        default: {
+          assert.fail(X`unrecognized method ${method}`);
+        }
+      }
+      const values = await E(leader).mapEndpoints(where, async endpoint => {
         const queryClient = await getOrCreateQueryClient(endpoint);
         return E(queryClient)
           [method](queryPath, storeSubkey, height)
@@ -166,142 +199,184 @@ export const makeFollower = (leader, castingSpec, options = {}) => {
       return result.slice(dataPrefixBytes.length);
     };
 
-  const getProvenValueAtHeight = makeQuerier('queryVerified', storeName);
-  const getUnprovenValueAtHeight = makeQuerier(
-    'queryUnverified',
-    `store/${storeName}/key`,
-  );
+  const getProvenValueAtHeight = makeQuerier('queryVerified');
+  const getUnprovenValueAtHeight = makeQuerier('queryUnverified');
+
+  /**
+   * @param {IterationObserver<FollowerElement<T>>} updater
+   * @param {AsyncIterable<FollowerElement<T>>} iterable
+   */
+  const getIterable = async (updater, iterable) => {
+    let finished = false;
+
+    const fail = err => {
+      finished = true;
+      updater.fail(err);
+      return false;
+    };
+
+    const crash = err => {
+      fail(err);
+      if (crasher) {
+        E(crasher)
+          .crash(`PROOF VERIFICATION FAILURE; crashing follower`, err)
+          .catch(e => assert(false, X`crashing follower failed: ${e}`));
+      } else {
+        console.error(`PROOF VERIFICATION FAILURE; crashing follower`, err);
+      }
+    };
+
+    let attempt = 0;
+    let retrying;
+
+    /**
+     * @param {import('./types.js').CastingChange} castingChange
+     * @returns {Promise<void>}
+     */
+    const queryAndUpdateOnce = castingChange =>
+      new Promise((resolve, reject) => {
+        const retry = async err => {
+          attempt += 1;
+          if (!retrying) {
+            retrying = E(leader)
+              .retry(where, err, attempt)
+              .then(() => (retrying = null));
+          }
+          await retrying;
+          await E(leader).jitter(where);
+
+          // eslint-disable-next-line no-use-before-define
+          tryQueryAndUpdate(castingChange).then(success, retryOrFail);
+        };
+
+        const success = fulfillment => {
+          attempt = 0;
+          resolve(fulfillment);
+        };
+
+        const retryOrFail = err => {
+          retry(err).catch(e => {
+            reject(e);
+            fail(e);
+          });
+        };
+
+        // eslint-disable-next-line no-use-before-define
+        tryQueryAndUpdate(castingChange).then(success, retryOrFail);
+      });
+
+    /**
+     * These semantics are to ensure that later queries are not committed
+     * ahead of earlier ones.
+     *
+     * @template T
+     * @param {(...args: T[]) => void} commitAction
+     */
+    const makePrepareInOrder = commitAction => {
+      let lastPrepareTicket = 0n;
+      let lastCommitTicket = 0n;
+
+      const prepareInOrder = () => {
+        lastPrepareTicket += 1n;
+        const ticket = lastPrepareTicket;
+        assert(ticket > lastCommitTicket);
+        const committer = Far('committer', {
+          isValid: () => ticket > lastCommitTicket,
+          /**
+           * @type {(...args: T[]) => void}
+           */
+          commit: (...args) => {
+            assert(committer.isValid());
+            lastCommitTicket = ticket;
+            commitAction(...args);
+          },
+        });
+        return committer;
+      };
+      return prepareInOrder;
+    };
+
+    const prepareUpdateInOrder = makePrepareInOrder(updater.updateState);
+
+    /** @type {Uint8Array} */
+    let lastBuf;
+
+    /**
+     * @param {import('./types').CastingChange} allegedChange
+     */
+    const tryQueryAndUpdate = async allegedChange => {
+      const committer = prepareUpdateInOrder();
+
+      // Make an unproven query if we have no alleged value.
+      const { values: allegedValues, blockHeight: allegedBlockHeight } =
+        allegedChange;
+      const getAllegedValue =
+        allegedValues.length > 0
+          ? () => Promise.resolve(allegedValues[allegedValues.length - 1])
+          : () => getUnprovenValueAtHeight(allegedBlockHeight);
+      const getProvenValue = () => getProvenValueAtHeight(allegedBlockHeight);
+
+      const buf = await queryVerifier(getProvenValue, crash, getAllegedValue);
+      attempt = 0;
+      if (!committer.isValid()) {
+        return;
+      }
+      if (lastBuf) {
+        if (buf.length === lastBuf.length) {
+          if (buf.every((v, i) => v === lastBuf[i])) {
+            // Duplicate!
+            return;
+          }
+        }
+      }
+      lastBuf = buf;
+      const data = decode(buf);
+      if (!unserializer) {
+        /** @type {T} */
+        const value = data;
+        committer.commit({ value });
+        return;
+      }
+      const value = await E(unserializer).unserialize(data);
+      if (!committer.isValid()) {
+        return;
+      }
+      committer.commit({ value });
+    };
+
+    const changeFollower = E(leader).watchCasting(castingSpecP);
+    const queryWhenKeyChanges = async () => {
+      // Initial query to get the first value from the store.
+      await queryAndUpdateOnce(harden({ values: [] }));
+      if (finished) {
+        return;
+      }
+
+      // Only query when there are changes reported.
+      for await (const allegedChange of iterateLatest(changeFollower)) {
+        if (finished) {
+          return;
+        }
+        harden(allegedChange);
+        await queryAndUpdateOnce(allegedChange);
+      }
+    };
+
+    queryWhenKeyChanges().catch(fail);
+
+    return iterable;
+  };
 
   // Enable the periodic fetch.
   /** @type {Follower<FollowerElement<T>>} */
   return Far('chain follower', {
     getLatestIterable: () => {
-      /** @type {NotifierRecord<FollowerElement<T>>} */
       const { updater, notifier } = makeNotifierKit();
-      let finished = false;
-
-      const fail = err => {
-        finished = true;
-        updater.fail(err);
-        return false;
-      };
-
-      const crash = err => {
-        fail(err);
-        if (crasher) {
-          E(crasher)
-            .crash(`PROOF VERIFICATION FAILURE; crashing follower`, err)
-            .catch(e => assert(false, X`crashing follower failed: ${e}`));
-        } else {
-          console.error(`PROOF VERIFICATION FAILURE; crashing follower`, err);
-        }
-      };
-
-      let attempt = 0;
-      const retryOrFail = err => {
-        E(leader)
-          .retry(err, attempt)
-          .catch(e => {
-            fail(e);
-            throw e;
-          });
-        attempt += 1;
-      };
-
-      /**
-       * These semantics are to ensure that later queries are not committed
-       * ahead of earlier ones.
-       *
-       * @template T
-       * @param {(...args: T[]) => void} commitAction
-       */
-      const makePrepareInOrder = commitAction => {
-        let lastPrepareTicket = 0n;
-        let lastCommitTicket = 0n;
-
-        const prepareInOrder = () => {
-          lastPrepareTicket += 1n;
-          const ticket = lastPrepareTicket;
-          assert(ticket > lastCommitTicket);
-          const committer = Far('committer', {
-            isValid: () => ticket > lastCommitTicket,
-            /**
-             * @type {(...args: T[]) => void}
-             */
-            commit: (...args) => {
-              assert(committer.isValid());
-              lastCommitTicket = ticket;
-              commitAction(...args);
-            },
-          });
-          return committer;
-        };
-        return prepareInOrder;
-      };
-
-      const prepareUpdateInOrder = makePrepareInOrder(updater.updateState);
-
-      /** @type {Uint8Array} */
-      let lastBuf;
-
-      /**
-       * @param {import('./types').CastingChange} allegedChange
-       */
-      const queryAndUpdateOnce = async allegedChange => {
-        const committer = prepareUpdateInOrder();
-
-        // Make an unproven query if we have no alleged value.
-        const { values: allegedValues, blockHeight: allegedBlockHeight } =
-          allegedChange;
-        const getAllegedValue =
-          allegedValues.length > 0
-            ? () => Promise.resolve(allegedValues[allegedValues.length - 1])
-            : () => getUnprovenValueAtHeight(allegedBlockHeight);
-        const getProvenValue = () => getProvenValueAtHeight(allegedBlockHeight);
-
-        const buf = await queryVerifier(getProvenValue, crash, getAllegedValue);
-        attempt = 0;
-        if (!committer.isValid()) {
-          return;
-        }
-        if (lastBuf) {
-          if (buf.length === lastBuf.length) {
-            if (buf.every((v, i) => v === lastBuf[i])) {
-              // Duplicate!
-              return;
-            }
-          }
-        }
-        lastBuf = buf;
-        const data = decode(buf);
-        if (!unserializer) {
-          /** @type {T} */
-          const value = data;
-          committer.commit({ value });
-          return;
-        }
-        const value = await E(unserializer).unserialize(data);
-        if (!committer.isValid()) {
-          return;
-        }
-        committer.commit({ value });
-      };
-
-      const changeFollower = E(leader).watchCasting(castingSpec);
-      const queryWhenKeyChanges = async () => {
-        for await (const allegedChange of iterateLatest(changeFollower)) {
-          if (finished) {
-            return;
-          }
-          harden(allegedChange);
-          await queryAndUpdateOnce(allegedChange).catch(retryOrFail);
-        }
-      };
-
-      queryAndUpdateOnce({ values: [], castingSpec }).catch(retryOrFail);
-      queryWhenKeyChanges().catch(fail);
-
-      return makeAsyncIterableFromNotifier(notifier);
+      return getIterable(updater, makeNotifierIterable(notifier));
+    },
+    getEachIterable: () => {
+      const { subscription, publication } = makeSubscriptionKit();
+      return getIterable(publication, makeSubscriptionIterable(subscription));
     },
   });
 };

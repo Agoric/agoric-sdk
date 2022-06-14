@@ -6,6 +6,8 @@ import bundleSource from '@endo/bundle-source';
 import { makeCache } from '@agoric/cache';
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 
+import { M } from '@agoric/store';
+
 import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { E } from '@endo/eventual-send';
@@ -1808,8 +1810,8 @@ test('cache', async (/** @type {LibWalletTestContext} */ t) => {
 
   // Update the `'foo'` entry, using its old value (initially `undefined`).
   const updater = (oldValue = 'bar') => `${oldValue}1`;
-  t.is(await cache('foo', updater), 'bar1');
-  t.is(await cache('foo', updater), 'bar11');
+  t.is(await cache('foo', updater, M.any()), 'bar1');
+  t.is(await cache('foo', updater, M.any()), 'bar11');
   t.is(await cache('foo'), 'bar11');
 
   // You can also specify a guard pattern for the value to update.  If it

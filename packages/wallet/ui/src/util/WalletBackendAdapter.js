@@ -1,25 +1,31 @@
+/**
+ * TODO: Update this adapter to use backend StoredSubscriptions directly.
+ */
 import { E } from '@endo/eventual-send';
+import { makeFollower, mapAsyncIterable, iterateLatest } from '@agoric/casting';
 import { Far } from '@endo/marshal';
-import {
-  makeAsyncIterableFromNotifier,
-  makeNotifierKit,
-} from '@agoric/notifier';
+import { makeNotifierKit } from '@agoric/notifier';
 
 const newId = kind => `${kind}${Math.random()}`;
 
-/**
- * @template T
- * @param {ERef<Notifier<T>>} notifier
- */
-const iterateNotifier = notifier =>
-  makeAsyncIterableFromNotifier(notifier)[Symbol.asyncIterator]();
-
-export const makeBackendFromWalletBridge = walletBridge => {
+export const makeBackendFromWalletBridge = (walletBridge, makeLeader) => {
   const { notifier: servicesNotifier } = makeNotifierKit(
     harden({
       board: E(walletBridge).getBoard(),
     }),
   );
+
+  /**
+   * @template T
+   * @param {ERef<Notifier<T>>} notifier
+   */
+  const iterateNotifier = notifier => {
+    const storeKey = E(notifier).getStoreKey();
+    const follower = makeFollower(storeKey, makeLeader);
+    return mapAsyncIterable(iterateLatest(follower), ({ value }) => value)[
+      Symbol.asyncIterator
+    ]();
+  };
 
   /**
    * @param {AsyncIterator<any[], any[], undefined>} offersMembers
