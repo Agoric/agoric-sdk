@@ -1,74 +1,11 @@
 /* eslint-disable react/display-name */
-/* global process */
 import { observeIterator } from '@agoric/notifier';
 import { E } from '@endo/far';
-import {
-  useEffect,
-  createContext,
-  memo,
-  useContext,
-  useState,
-  useReducer,
-} from 'react';
+import { useEffect, useState, useReducer } from 'react';
 
-export const ConnectionStatus = {
-  Connected: 'connected',
-  Connecting: 'connecting',
-  Disconnected: 'disconnected',
-  Error: 'error',
-};
+import { ApplicationContext, ConnectionStatus } from './Application';
 
-// TODO: Graduate to show mainnet in production.
-const SHOW_MAINNET = process.env.NODE_ENV === 'development';
-const localConnection =
-  window && window.location.hostname !== 'localhost'
-    ? { label: window.location.hostname, url: window.location.origin }
-    : { label: 'Local Solo', url: 'http://localhost:8000' };
-const stageConnections =
-  process.env.NODE_ENV === 'development'
-    ? [
-        {
-          label: 'Agoric Stage',
-          url: 'https://stage.agoric.net/network-config',
-        },
-      ]
-    : [];
-const netConnections = SHOW_MAINNET
-  ? [
-      {
-        label: 'Agoric Mainnet',
-        url: 'https://main.agoric.net/network-config',
-      },
-      {
-        label: 'Agoric Devnet',
-        url: 'https://devnet.agoric.net/network-config',
-      },
-    ]
-  : [];
-
-export const DEFAULT_WALLET_CONNECTIONS = [
-  localConnection,
-  ...stageConnections,
-  ...netConnections,
-];
-
-export const ApplicationContext = createContext();
-
-export const DEFAULT_WALLET_CONNECTION = DEFAULT_WALLET_CONNECTIONS[0];
-
-export const useApplicationContext = () => useContext(ApplicationContext);
-
-// Higher-order component wrapper for mapping context to props. This allows
-// components to use `memo` and avoid rerendering when unrelated context
-// changes.
-export const withApplicationContext = (Component, mapContextToProps) => {
-  const MemoizedComponent = memo(Component);
-  return ({ ...props }) => {
-    const context = mapContextToProps(useApplicationContext());
-
-    return <MemoizedComponent {...context} {...props} />;
-  };
-};
+import { DEFAULT_WALLET_CONNECTIONS } from '../util/defaults';
 
 const useDebugLogging = (state, watch) => {
   useEffect(() => console.log(state), watch);
@@ -193,11 +130,6 @@ const closedOffersReducer = (closedOffers, { offerId, isClosed }) => {
   return new Set(closedOffers);
 };
 
-const buildWalletConnectionFromModule = ({ buildWalletConnection }) => {
-  const WalletConnection = buildWalletConnection(withApplicationContext);
-  return <WalletConnection />;
-};
-
 const Provider = ({ children }) => {
   const [connectionState, setConnectionState] = useState('disconnected');
   const [inbox, setInbox] = useReducer(inboxReducer, null);
@@ -260,17 +192,17 @@ const Provider = ({ children }) => {
   useEffect(() => {
     maybeSave('walletConnection', walletConnection);
 
-    const userConnections = [];
+    const updatedUserConnections = [];
     for (const { url, label } of allWalletConnections) {
       const found = DEFAULT_WALLET_CONNECTIONS.find(
         ({ url: defaultUrl, label: defaultLabel }) =>
           url === defaultUrl && label === defaultLabel,
       );
       if (!found) {
-        userConnections.push({ url, label });
+        updatedUserConnections.push({ url, label });
       }
     }
-    maybeSave('userWalletConnections', userConnections);
+    maybeSave('userWalletConnections', updatedUserConnections);
   }, [allWalletConnections, walletConnection]);
 
   useEffect(() => {
@@ -372,8 +304,8 @@ const Provider = ({ children }) => {
       if (outdated) {
         return;
       }
-      const component = buildWalletConnectionFromModule(mod);
-      setConnectionComponent(component);
+      const WalletConnection = mod.default;
+      setConnectionComponent(<WalletConnection />);
       attempts = 0;
     };
     if (u.pathname.endsWith('/network-config')) {
