@@ -10,7 +10,7 @@ import './types.js';
 
 /**
  * @template T
- * @param {ERef<SubscriptionInternals<T>>} sharableInternalsP
+ * @param {ERef<PublicationRecord<T>>} sharableInternalsP
  * @returns {Subscription<T>}
  */
 const makeSubscription = sharableInternalsP => {
@@ -24,7 +24,7 @@ const makeSubscription = sharableInternalsP => {
      * `makeSubscription` to it at the new site to get an equivalent local
      * Subscription at that site.
      *
-     * @returns {ERef<SubscriptionInternals<T>>}
+     * @returns {ERef<PublicationRecord<T>>}
      */
     getSharableSubscriptionInternals: () => sharableInternalsP,
 
@@ -37,7 +37,7 @@ export { makeSubscription };
 
 /**
  * @template T
- * @param {ERef<SubscriptionInternals<T>>} tailP
+ * @param {ERef<PublicationRecord<T>>} tailP
  * @returns {SubscriptionIterator<T>}
  */
 const makeSubscriptionIterator = tailP => {

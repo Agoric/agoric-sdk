@@ -176,11 +176,6 @@
 
 /**
  * @template T
- * @typedef {PublicationRecord<T>} SubscriptionInternals
- */
-
-/**
- * @template T
  * @typedef {BaseSubscription<T> &
  *   ConsistentAsyncIterable<T> &
  *   SharableSubscription<T>} Subscription<T>
@@ -190,7 +185,7 @@
 /**
  * @template T
  * @typedef {object} SharableSubscription
- * @property {() => ERef<SubscriptionInternals<T>>} getSharableSubscriptionInternals
+ * @property {() => ERef<PublicationRecord<T>>} getSharableSubscriptionInternals
  * Used to replicate the multicast values at other sites. To manually create a
  * local representative of a Subscription, do
  * ```js
