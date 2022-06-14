@@ -10,21 +10,6 @@ import './types.js';
 import { makeEmptyPublishKit } from './publish-kit.js';
 
 /**
- * TODO Believe it or not, some tool in our toolchain still cannot handle
- * bigint literals.
- * See https://github.com/Agoric/agoric-sdk/issues/5438
- */
-const ONE = BigInt(1);
-
-const updateCountToPublishCount = updateCount =>
-  updateCount === undefined || Number.isNaN(updateCount)
-    ? -ONE
-    : BigInt(updateCount) - ONE;
-
-const publishCountToUpdateCount = publishCount =>
-  publishCount === -ONE ? undefined : Number(publishCount) + 1;
-
-/**
  * @template T
  * @param {ERef<BaseNotifier<T> | NotifierInternals<T>>} sharableInternalsP
  * @returns {AsyncIterable<T> & SharableNotifier<T>}
@@ -68,16 +53,17 @@ export const makeNotifier = sharableInternalsP => {
 export const makeNotifierKit = (...initialStateArr) => {
   const { publisher, subscriber } = makeEmptyPublishKit();
 
+  /**
+   * @template T
+   * @type {BaseNotifier<T> & {getUpdateSince(sinceUpdateCount: bigint | undefined)}}
+   */
   const baseNotifier = Far('baseNotifier', {
-    // NaN matches nothing
-    getUpdateSince(baseUpdateCount = NaN) {
-      const basePublishCount = updateCountToPublishCount(baseUpdateCount);
+    getUpdateSince(sinceUpdateCount = undefined) {
       return E.when(
-        subscriber.subscribeAfter(basePublishCount),
+        subscriber.subscribeAfter(sinceUpdateCount),
         ({ head: { value, done }, publishCount }) => {
-          const updateCount = done
-            ? undefined
-            : publishCountToUpdateCount(publishCount);
+          // Unlike publish kit, notifier reports no count with a final value.
+          const updateCount = done ? undefined : publishCount;
           return harden({ value, updateCount });
         },
       );
@@ -117,7 +103,7 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
 
   /** @type {Promise<UpdateRecord<T>>|undefined} */
   let optNextPromise;
-  /** @type {UpdateCount} */
+  /** @type {UpdateCount & (number | undefined)} */
   let currentUpdateCount = 1; // avoid falsy numbers
   /** @type {UpdateRecord<T>|undefined} */
   let currentResponse;
@@ -131,8 +117,9 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
    * @type {BaseNotifier<T>}
    */
   const baseNotifier = Far('baseNotifier', {
-    // NaN matches nothing
-    getUpdateSince(updateCount = NaN) {
+    getUpdateSince(updateCount = undefined) {
+      // NaN matches nothing
+      if (updateCount === undefined) updateCount = NaN;
       if (
         hasState() &&
         (final() ||

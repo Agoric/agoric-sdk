@@ -66,10 +66,9 @@ const makeSubscriptionIterator = tailP => {
 const makeSubscriptionKit = (...optionalInitialState) => {
   const { publisher, subscriber } = makeEmptyPublishKit();
 
-  // Unlike the Subscriber contract, the Subscription contract is completely
-  // lossless, do we get the PublicationList immediately and then reuse that.
-  // This losslessness will inhibit gc, which is why we're moving away from
-  // it.
+  // The publish kit subscriber is prefix-lossy, so making *this* subscriber completely
+  // lossless requires eager consumption of the former.
+  // Such losslessness inhibits GC, which is why we're moving away from it.
   const pubList = subscriber.subscribeAfter();
   const subscription = makeSubscription(pubList);
 
