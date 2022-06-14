@@ -1,4 +1,3 @@
-/* eslint-disable no-underscore-dangle */
 // @ts-check
 /// <reference types="ses"/>
 
@@ -68,14 +67,14 @@ harden(subcribeEach);
  * @returns {AsyncIterator<T>}
  */
 const makeLatestIterator = subscriber => {
-  let latestPubCount = -ONE;
+  let latestPublishCount = -ONE;
   return Far('LatestIterator', {
     next: () => {
-      const pubList = E(subscriber).subscribeAfter(latestPubCount);
+      const pubList = E(subscriber).subscribeAfter(latestPublishCount);
       // Without an onRejection, if pubList is a rejection, this will
       // propagate the rejection as it should.
       return E.when(pubList, ({ head, publishCount }) => {
-        latestPubCount = publishCount;
+        latestPublishCount = publishCount;
         return head;
       });
     },
@@ -112,8 +111,11 @@ harden(subscribeLatest);
  * @returns {PublishKit<T>}
  */
 export const makeEmptyPublishKit = () => {
-  /** @type {PromiseKit<PublicationRecord<T>>} */
-  let { promise: tailP, resolve: tailR } = makePromiseKit();
+  /** @type {Promise<PublicationRecord<T>>} */
+  let tailP;
+  /** @type {undefined | ((value: ERef<PublicationRecord<T>>) => void)} */
+  let tailR;
+  ({ promise: tailP, resolve: tailR } = makePromiseKit());
 
   let currentPublishCount = ONE;
   let currentP = tailP;
@@ -132,7 +134,7 @@ export const makeEmptyPublishKit = () => {
    */
   const subscriber = Far('Subscriber', {
     subscribeAfter: (publishCount = -ONE) => {
-      if (currentPublishCount === publishCount) {
+      if (publishCount === currentPublishCount) {
         return tailP;
       } else {
         return currentP;
@@ -167,7 +169,7 @@ export const makeEmptyPublishKit = () => {
       const readComplaint = HandledPromise.reject(
         new Error('cannot read past end of iteration'),
       );
-      readComplaint.catch(_ => {}); // suppress unhandled rejection error
+      readComplaint.catch(() => {}); // suppress unhandled rejection error
 
       advanceCurrent();
       tailR({
@@ -175,8 +177,6 @@ export const makeEmptyPublishKit = () => {
         publishCount: currentPublishCount,
         tail: readComplaint,
       });
-      // @ts-expect-error I don't know how to adjust the type declaration
-      // to allow tailR to be undefined.
       tailR = undefined;
     },
     fail: reason => {
@@ -188,8 +188,6 @@ export const makeEmptyPublishKit = () => {
       /** @type {PublicationList<T>} */
       const rejection = HandledPromise.reject(reason);
       tailR(rejection);
-      // @ts-expect-error I don't know how to adjust the type declaration
-      // to allow tailR to be undefined.
       tailR = undefined;
     },
   });
