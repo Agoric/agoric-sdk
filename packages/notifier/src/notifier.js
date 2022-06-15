@@ -10,13 +10,6 @@ import './types.js';
 import { makeEmptyPublishKit } from './publish-kit.js';
 
 /**
- * TODO Believe it or not, some tool in our toolchain still cannot handle
- * bigint literals.
- * See https://github.com/Agoric/agoric-sdk/issues/5438
- */
-const ONE = BigInt(1);
-
-/**
  * @template T
  * @param {ERef<BaseNotifier<T> | NotifierInternals<T>>} sharableInternalsP
  * @returns {AsyncIterable<T> & SharableNotifier<T>}
@@ -111,7 +104,7 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
   /** @type {Promise<UpdateRecord<T>>|undefined} */
   let optNextPromise;
   /** @type {UpdateCount & bigint} */
-  let currentUpdateCount = ONE - ONE;
+  let currentUpdateCount = 0n;
   /** @type {ERef<UpdateRecord<T>>|undefined} */
   let currentResponse;
   let final = false;
@@ -121,7 +114,7 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
    * @type {BaseNotifier<T>}
    */
   const baseNotifier = Far('baseNotifier', {
-    getUpdateSince(updateCount = -ONE) {
+    getUpdateSince(updateCount = -1n) {
       if (updateCount < currentUpdateCount) {
         if (currentResponse) return Promise.resolve(currentResponse);
       } else if (updateCount !== currentUpdateCount) {
@@ -140,7 +133,7 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
           ({ done, value }) => {
             assert(!final);
             if (done) final = true;
-            currentUpdateCount += ONE;
+            currentUpdateCount += 1n;
             currentResponse = harden({
               value,
               updateCount: done ? undefined : currentUpdateCount,

@@ -8,13 +8,6 @@ import { Far } from '@endo/marshal';
 import './types.js';
 
 /**
- * TODO Believe it or not, some tool in our toolchain still cannot handle
- * bigint literals.
- * See https://github.com/Agoric/agoric-sdk/issues/5438
- */
-const ONE = BigInt(1);
-
-/**
  * Asyncronously iterates over the contents of a PublicationList as it appears.
  * As it proceeds, it must drop the parts of the list it no longer needs.
  * Thus, if no one else is holding on to those, it can be garbage collected.
@@ -116,14 +109,14 @@ export const makeEmptyPublishKit = () => {
   let tailR;
   ({ promise: tailP, resolve: tailR } = makePromiseKit());
 
-  let currentPublishCount = ONE - ONE;
+  let currentPublishCount = 0n;
   let currentP = tailP;
   const advanceCurrent = (done, value, rejection) => {
     if (tailR === undefined) {
       throw new Error('Cannot update state after termination.');
     }
 
-    currentPublishCount += ONE;
+    currentPublishCount += 1n;
     currentP = tailP;
     const resolveCurrent = tailR;
 
@@ -156,7 +149,7 @@ export const makeEmptyPublishKit = () => {
    * @type {Subscriber<T>}
    */
   const subscriber = Far('Subscriber', {
-    subscribeAfter: (publishCount = -ONE) => {
+    subscribeAfter: (publishCount = -1n) => {
       assert.typeof(publishCount, 'bigint');
       if (publishCount === currentPublishCount) {
         return tailP;
