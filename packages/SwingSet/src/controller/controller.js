@@ -10,6 +10,7 @@ import { spawn as ambientSpawn } from 'child_process';
 import { type as osType } from 'os';
 import { Worker } from 'worker_threads';
 import anylogger from 'anylogger';
+import microtime from 'microtime';
 
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
@@ -205,12 +206,13 @@ export async function makeSwingsetController(
       return;
     }
 
-    // Create an object with the property order that loadgen expects.
-    const timedObj = { time: undefined, type: undefined, ...obj };
+    // microtime gives POSIX gettimeofday() with microsecond resolution
+    const time = microtime.nowDouble();
+    // this is CLOCK_MONOTONIC, seconds since process start
+    const monotime = performance.now() / 1000;
 
-    // Update the timedObj timestamp.
-    const timeMS = performance.timeOrigin + performance.now();
-    timedObj.time = timeMS / 1000;
+    // rearrange the fields a bit to make it more legible to humans
+    const timedObj = { type: undefined, ...obj, time, monotime };
 
     // Serialise just once.
     const jsonObj = JSON.stringify(timedObj, (_, arg) =>
