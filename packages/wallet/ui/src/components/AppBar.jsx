@@ -11,8 +11,7 @@ import NavDrawer from './NavDrawer';
 import ConnectionSettingsDialog from './ConnectionSettingsDialog';
 import { withApplicationContext } from '../contexts/Application';
 
-const logoUrl =
-  'https://agoric.com/wp-content/themes/agoric_2021_theme/assets/img/logo.svg';
+const logoUrl = './logo.svg';
 const helpUrl = 'https://agoric.com/documentation/guides/wallet/ui.html';
 
 const useStyles = makeStyles(theme => ({

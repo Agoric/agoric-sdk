@@ -124,18 +124,11 @@ export const makeWalletBridgeFromFollower = (
   const getNotifierMethods = Object.fromEntries(
     Object.entries(notifiers).map(([method, stateName]) => {
       const { notifier } = notifierKits[stateName];
-      console.log('method got notifier', notifier);
       return [method, () => notifier];
     }),
   );
-  console.log('method got notifier methods', getNotifierMethods);
-  const fakeBoard = Far('fake board', {
-    getId: _val => 'fake-board-id',
-    getValue: id => `fake board value for ${id}`,
-  });
   const walletBridge = Far('follower wallet bridge', {
     ...getNotifierMethods,
-    getBoard: () => fakeBoard,
   });
   console.log('wallet bridge', walletBridge);
   return walletBridge;
