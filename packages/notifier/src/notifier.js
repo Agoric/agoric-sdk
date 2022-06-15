@@ -10,6 +10,13 @@ import './types.js';
 import { makeEmptyPublishKit } from './publish-kit.js';
 
 /**
+ * TODO Believe it or not, some tool in our toolchain still cannot handle
+ * bigint literals.
+ * See https://github.com/Agoric/agoric-sdk/issues/5438
+ */
+const ONE = BigInt(1);
+
+/**
  * @template T
  * @param {ERef<BaseNotifier<T> | NotifierInternals<T>>} sharableInternalsP
  * @returns {AsyncIterable<T> & SharableNotifier<T>}
@@ -55,7 +62,7 @@ export const makeNotifierKit = (...initialStateArr) => {
 
   /**
    * @template T
-   * @type {BaseNotifier<T> & {getUpdateSince(sinceUpdateCount: bigint | undefined)}}
+   * @type {BaseNotifier<T>}
    */
   const baseNotifier = Far('baseNotifier', {
     getUpdateSince(sinceUpdateCount = undefined) {
@@ -103,55 +110,51 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
 
   /** @type {Promise<UpdateRecord<T>>|undefined} */
   let optNextPromise;
-  /** @type {UpdateCount & (number | undefined)} */
-  let currentUpdateCount = 1; // avoid falsy numbers
-  /** @type {UpdateRecord<T>|undefined} */
+  /** @type {UpdateCount & bigint} */
+  let currentUpdateCount = ONE - ONE;
+  /** @type {ERef<UpdateRecord<T>>|undefined} */
   let currentResponse;
-
-  const hasState = () => currentResponse !== undefined;
-
-  const final = () => currentUpdateCount === undefined;
+  let final = false;
 
   /**
    * @template T
    * @type {BaseNotifier<T>}
    */
   const baseNotifier = Far('baseNotifier', {
-    getUpdateSince(updateCount = undefined) {
-      // NaN matches nothing
-      if (updateCount === undefined) updateCount = NaN;
-      if (
-        hasState() &&
-        (final() ||
-          (currentResponse && currentResponse.updateCount !== updateCount))
-      ) {
-        // If hasState() and either it is final() or it is
-        // not the state of updateCount, return the current state.
+    getUpdateSince(updateCount = -ONE) {
+      if (updateCount < currentUpdateCount) {
+        if (currentResponse) return Promise.resolve(currentResponse);
+      } else if (updateCount !== currentUpdateCount) {
+        throw new Error('Invalid update count');
+      }
+
+      // Return a final response if we have one, otherwise a promise for the next state.
+      if (final) {
         assert(currentResponse !== undefined);
         return Promise.resolve(currentResponse);
       }
-
-      // otherwise return a promise for the next state.
       if (!optNextPromise) {
         const nextIterResultP = E(iteratorP).next();
         optNextPromise = E.when(
           nextIterResultP,
           ({ done, value }) => {
-            assert(currentUpdateCount);
-            currentUpdateCount = done ? undefined : currentUpdateCount + 1;
+            assert(!final);
+            if (done) final = true;
+            currentUpdateCount += ONE;
             currentResponse = harden({
               value,
-              updateCount: currentUpdateCount,
+              updateCount: done ? undefined : currentUpdateCount,
             });
             optNextPromise = undefined;
             return currentResponse;
           },
           _reason => {
-            currentUpdateCount = undefined;
-            currentResponse = undefined;
-            // We know that nextIterResultP is rejected, and we just need any
-            // promise rejected by that reason.
-            return /** @type {Promise<UpdateRecord<T>>} */ (nextIterResultP);
+            final = true;
+            currentResponse =
+              /** @type {Promise<UpdateRecord<T>>} */
+              (nextIterResultP);
+            optNextPromise = undefined;
+            return currentResponse;
           },
         );
       }
