@@ -7,7 +7,12 @@ import {
   defineDurableKind,
   partialAssign,
 } from '.';
-import { KindFacets, DurableKindHandle, KindFacet } from './types.js';
+import {
+  KindFacets,
+  DurableKindHandle,
+  KindFacet,
+  FunctionsPlusContext,
+} from './types.js';
 
 /*
 export const makePaymentMaker = (allegedName: string, brand: unknown) => {
@@ -140,3 +145,18 @@ partialAssign(state, { name: 'ed' });
 partialAssign(state, { key: 'ted' });
 // @ts-expect-error
 partialAssign(state, { name: 3 });
+
+// test FunctionsPlusContext
+type SomeFacet = {
+  gt(b: number): boolean;
+};
+type SomeContext = { state: { a: number } };
+const someBehavior: FunctionsPlusContext<SomeContext, SomeFacet> = {
+  gt(context: SomeContext, b: number) {
+    return b > context.state.a;
+  },
+};
+const someFacet: KindFacet<typeof someBehavior> = null as any;
+// @ts-expect-error
+someFacet.gt();
+expectType<boolean>(someFacet.gt(1));
