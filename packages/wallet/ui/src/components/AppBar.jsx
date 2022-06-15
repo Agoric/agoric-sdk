@@ -73,6 +73,7 @@ const useStyles = makeStyles(theme => ({
 export const AppBarWithoutContext = ({
   connectionComponent,
   wantConnection,
+  walletConnection,
   setWantConnection,
   connectionState,
   connectionStatus,
@@ -80,9 +81,9 @@ export const AppBarWithoutContext = ({
   const theme = useTheme();
   const classes = useStyles(theme);
 
-  const [dialogOpened, setDialogOpened] = useState(false);
+  const [settingsOpened, setSettingsOpened] = useState(!walletConnection);
   const handleClosed = () => {
-    setDialogOpened(false);
+    setSettingsOpened(false);
   };
 
   const connectionTitle =
@@ -102,7 +103,10 @@ export const AppBarWithoutContext = ({
         </a>
       </div>
       <div className={classes.appBarSection}>
-        <ConnectionSettingsDialog open={dialogOpened} onClose={handleClosed} />
+        <ConnectionSettingsDialog
+          open={settingsOpened}
+          onClose={handleClosed}
+        />
         <div className={classes.connector}>
           {connectionComponent}
           <Tooltip title={connectionTitle}>
@@ -130,13 +134,13 @@ export const AppBarWithoutContext = ({
               color="primary"
               size="medium"
               target="_blank"
-              onClick={() => setDialogOpened(true)}
+              onClick={() => setSettingsOpened(true)}
             >
               <SettingsIcon fontSize="inherit">Help</SettingsIcon>
             </IconButton>
           </Tooltip>
           <ConnectionSettingsDialog
-            open={dialogOpened}
+            open={settingsOpened}
             onClose={handleClosed}
           />
         </div>
@@ -160,6 +164,7 @@ export const AppBarWithoutContext = ({
 export default withApplicationContext(AppBarWithoutContext, context => ({
   connectionComponent: context.connectionComponent,
   connectionState: context.connectionState,
+  walletConnection: context.walletConnection,
   wantConnection: context.wantConnection,
   setWantConnection: context.setWantConnection,
   connectionStatus: context.connectionStatus,

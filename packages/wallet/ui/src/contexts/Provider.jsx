@@ -156,11 +156,9 @@ const Provider = ({ children }) => {
   if (userConnections) {
     RESTORED_WALLET_CONNECTIONS.unshift(...userConnections);
   }
-  const restoredWalletConnection =
-    maybeLoad('walletConnection') || RESTORED_WALLET_CONNECTIONS[0];
 
   const [walletConnection, setWalletConnection] = useState(
-    restoredWalletConnection,
+    maybeLoad('walletConnection') || null,
   );
   const [allWalletConnections, setAllWalletConnections] = useState(
     harden([...DEFAULT_WALLET_CONNECTIONS]),
@@ -197,6 +195,38 @@ const Provider = ({ children }) => {
   }, [connectionState, connectionComponent]);
 
   useEffect(() => {
+    const tryFetchAccessToken = () => {
+      if (!walletConnection) {
+        return;
+      }
+
+      // Fetch the access token from the window's URL.
+      const accessTokenParams = `?${window.location.hash.slice(1)}`;
+      const accessToken = new URLSearchParams(accessTokenParams).get(
+        'accessToken',
+      );
+      console.log('have accesstoken', window.location.hash);
+      if (!accessToken) {
+        return;
+      }
+
+      setWalletConnection({ ...walletConnection, accessToken });
+
+      // Now that we've captured it, clear out the access token from the URL bar.
+      window.location.hash = '';
+    };
+
+    window.addEventListener('hashchange', tryFetchAccessToken);
+    tryFetchAccessToken();
+    return () => {
+      window.removeEventListener('hashchange', tryFetchAccessToken);
+    };
+  }, [walletConnection]);
+
+  useEffect(() => {
+    if (!walletConnection) {
+      return;
+    }
     maybeSave('walletConnection', walletConnection);
 
     const isKnown = allWalletConnections.some(
@@ -306,8 +336,10 @@ const Provider = ({ children }) => {
 
   let attempts = 0;
   useEffect(() => {
-    if (!walletConnection || !wantConnection) {
+    if (!wantConnection) {
       disconnect();
+    }
+    if (!walletConnection || !wantConnection) {
       return () => {};
     }
     if (connectionComponent) {

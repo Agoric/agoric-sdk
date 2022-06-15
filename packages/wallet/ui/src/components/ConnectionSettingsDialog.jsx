@@ -101,21 +101,40 @@ const ConnectionSettingsDialog = ({
               )}
             />
           </FormControl>
-          <FormControl sx={{ m: 1, minWidth: 120 }}>
-            <TextField
-              disabled={!isSmartWallet(connection)}
-              value={(connection && connection.smartWalletAddress) || ''}
-              id="address"
-              label="Smart Wallet address"
-              onChange={e =>
-                setConnection({
-                  ...connection,
-                  smartWalletAddress: e.target.value,
-                })
-              }
-              placeholder="agoric1..."
-            />
-          </FormControl>
+          {(!connection || isSmartWallet(connection)) && (
+            <FormControl sx={{ m: 1, minWidth: 120 }}>
+              <TextField
+                disabled={!isSmartWallet(connection)}
+                value={(connection && connection.smartWalletAddress) || ''}
+                id="address"
+                label="Smart Wallet address"
+                onChange={e =>
+                  setConnection({
+                    ...connection,
+                    smartWalletAddress: e.target.value,
+                  })
+                }
+                placeholder="agoric1..."
+              />
+            </FormControl>
+          )}
+          {(!connection || !isSmartWallet(connection)) && (
+            <FormControl sx={{ m: 1, minWidth: 120 }}>
+              <TextField
+                disabled={isSmartWallet(connection)}
+                value={(connection && connection.accessToken) || ''}
+                id="token"
+                label="Access token"
+                onChange={e =>
+                  setConnection({
+                    ...connection,
+                    accessToken: e.target.value,
+                  })
+                }
+                placeholder="token from agoric open --no-browser"
+              />
+            </FormControl>
+          )}
         </Stack>
       </DialogContent>
       <DialogActions>

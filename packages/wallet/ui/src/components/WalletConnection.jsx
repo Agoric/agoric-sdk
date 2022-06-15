@@ -2,7 +2,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable react/display-name */
 import { makeReactAgoricWalletConnection } from '@agoric/wallet-connection/react.js';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { E } from '@endo/eventual-send';
 import { observeIterator } from '@agoric/notifier';
 import { makeStyles } from '@mui/styles';
@@ -22,47 +22,6 @@ const useStyles = makeStyles(_ => ({
 // the app's instance of React.
 const AgoricWalletConnection = makeReactAgoricWalletConnection(React);
 
-const getAccessToken = () => {
-  // Fetch the access token from the window's URL.
-  let accessTokenParams = `?${window.location.hash.slice(1)}`;
-  let accessToken = new URLSearchParams(accessTokenParams).get('accessToken');
-
-  try {
-    if (accessToken) {
-      // Store the access token for later use.
-      window.localStorage.setItem('accessTokenParams', accessTokenParams);
-    } else {
-      // Try reviving it from localStorage.
-      accessTokenParams =
-        window.localStorage.getItem('accessTokenParams') || '?';
-      accessToken = new URLSearchParams(accessTokenParams).get('accessToken');
-    }
-  } catch (e) {
-    console.log('Error fetching accessTokenParams', e);
-  }
-
-  // Now that we've captured it, clear out the access token from the URL bar.
-  window.location.hash = '';
-
-  window.addEventListener('hashchange', _ev => {
-    // See if we should update the access token params.
-    const atp = `?${window.location.hash.slice(1)}`;
-    const at = new URLSearchParams(atp).get('accessToken');
-
-    if (at) {
-      // We have new params, so replace them.
-      accessTokenParams = atp;
-      accessToken = at;
-      localStorage.setItem('accessTokenParams', accessTokenParams);
-    }
-
-    // Keep it clear.
-    window.location.hash = '';
-  });
-
-  return accessToken;
-};
-
 const WalletConnection = ({
   setBackend,
   setConnectionState,
@@ -73,23 +32,27 @@ const WalletConnection = ({
   const [wc, setWC] = useState(null);
 
   let cancelled = null;
-  const onWalletState = ev => {
-    if (cancelled) {
-      return;
-    }
-    const { walletConnection: newWC, state } = ev.detail;
-    setConnectionState(state);
-    if (!wc) {
-      setWC(newWC);
-    }
-  };
+  const onWalletState = useCallback(
+    ev => {
+      if (cancelled) {
+        return;
+      }
+      const { walletConnection: newWC, state } = ev.detail;
+      setConnectionState(state);
+      if (!wc) {
+        setWC(newWC);
+      }
+    },
+    [walletConnection],
+  );
 
   useEffect(() => {
-    if (!wc) {
+    if (!wc || !walletConnection || !walletConnection.accessToken) {
       return () => {};
     }
+
     const bridge = E(wc).getAdminBootstrap(
-      getAccessToken(),
+      walletConnection.accessToken,
       makeFixedWebSocketConnector(walletConnection.url),
     );
 
@@ -114,7 +77,7 @@ const WalletConnection = ({
       disconnect();
       cancel();
     };
-  }, [wc]);
+  }, [wc, walletConnection]);
 
   return (
     <AgoricWalletConnection
