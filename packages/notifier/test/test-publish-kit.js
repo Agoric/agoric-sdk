@@ -66,7 +66,7 @@ test('makeEmptyPublishKit', async t => {
     'subscribeAfter should return current result (second)',
   );
 
-  publisher.publish();
+  publisher.publish(undefined);
   const subThird = await subSecond.tail;
   t.deepEqual(subThird.head, { value: undefined, done: false });
   t.is(subThird.publishCount, subSecond.publishCount + 1n);
@@ -192,7 +192,7 @@ test('makeEmptyPublishKit - immediate finish', async t => {
 test('makeEmptyPublishKit - fail', async t => {
   const { publisher, subscriber } = makeEmptyPublishKit();
 
-  publisher.publish();
+  publisher.publish(undefined);
   const subFirst = await subscriber.subscribeAfter();
 
   const pubFailure = Symbol('fail');
@@ -267,7 +267,7 @@ test('makeEmptyPublishKit - immediate fail', async t => {
 
 test('makePublishKit', async t => {
   const expectedInitialCount = (
-    await makePublishKit().subscriber.subscribeAfter()
+    await makePublishKit(undefined).subscriber.subscribeAfter()
   ).publishCount;
   t.true(expectedInitialCount > 0n);
   const initialValues = {
@@ -374,13 +374,14 @@ test('subscribeAfter bounds checking', async t => {
     const repr =
       typeof badCount === 'string' ? JSON.stringify(badCount) : badCount;
     t.throws(
+      // @ts-expect-error deliberate invalid arguments for testing
       () => subscriber.subscribeAfter(badCount),
       undefined,
       `subscribeAfter should reject invalid publish count: ${typeof badCount} ${repr}`,
     );
   }
   const subFirstP = subscriber.subscribeAfter(-999n);
-  publisher.publish();
+  publisher.publish(undefined);
   const subFirst = await subFirstP;
   t.deepEqual(subFirst.head, { value: undefined, done: false });
 });
@@ -392,10 +393,14 @@ test('subscribeAfter resolution sequencing', async t => {
   const sub2LIFO = [];
 
   const sub1FirstAll = [];
-  sub1.subscribeAfter().then(result => sub1FirstAll.push(result));
-  sub1.subscribeAfter(0n).then(result => sub1FirstAll.push(result));
+  Promise.resolve(sub1.subscribeAfter()).then(result =>
+    sub1FirstAll.push(result),
+  );
+  Promise.resolve(sub1.subscribeAfter(0n)).then(result =>
+    sub1FirstAll.push(result),
+  );
 
-  pub2.publish();
+  pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter());
   t.deepEqual(
     sub1FirstAll,
@@ -420,13 +425,17 @@ test('subscribeAfter resolution sequencing', async t => {
 
   const sub1FirstLateAll = [];
   const sub1SecondAll = [];
-  sub1.subscribeAfter().then(result => sub1FirstLateAll.push(result));
-  sub1.subscribeAfter(0n).then(result => sub1FirstLateAll.push(result));
-  sub1
-    .subscribeAfter(sub1FirstAll[0].publishCount)
-    .then(result => sub1SecondAll.push(result));
+  Promise.resolve(sub1.subscribeAfter()).then(result =>
+    sub1FirstLateAll.push(result),
+  );
+  Promise.resolve(sub1.subscribeAfter(0n)).then(result =>
+    sub1FirstLateAll.push(result),
+  );
+  Promise.resolve(sub1.subscribeAfter(sub1FirstAll[0].publishCount)).then(
+    result => sub1SecondAll.push(result),
+  );
 
-  pub2.publish();
+  pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter(sub2LIFO[0].publishCount));
   t.is(sub1FirstLateAll.length, 2, 'current results should resolve promptly');
   t.deepEqual(
@@ -442,7 +451,7 @@ test('subscribeAfter resolution sequencing', async t => {
 
   const pub1Second = Symbol('pub1Second');
   pub1.publish(pub1Second);
-  pub2.publish();
+  pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter(sub2LIFO[0].publishCount));
   sub1SecondAll.push(await sub1.subscribeAfter());
   t.is(
@@ -460,13 +469,17 @@ test('subscribeAfter resolution sequencing', async t => {
 
   const sub1SecondLateAll = [];
   const sub1FinalAll = [];
-  sub1.subscribeAfter().then(result => sub1SecondLateAll.push(result));
-  sub1.subscribeAfter(0n).then(result => sub1SecondLateAll.push(result));
-  sub1
-    .subscribeAfter(sub1SecondAll[0].publishCount)
-    .then(result => sub1FinalAll.push(result));
+  Promise.resolve(sub1.subscribeAfter()).then(result =>
+    sub1SecondLateAll.push(result),
+  );
+  Promise.resolve(sub1.subscribeAfter(0n)).then(result =>
+    sub1SecondLateAll.push(result),
+  );
+  Promise.resolve(sub1.subscribeAfter(sub1SecondAll[0].publishCount)).then(
+    result => sub1FinalAll.push(result),
+  );
 
-  pub2.publish();
+  pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter(sub2LIFO[0].publishCount));
   t.is(
     sub1SecondLateAll.length,
@@ -486,7 +499,7 @@ test('subscribeAfter resolution sequencing', async t => {
 
   const pub1Final = Symbol('pub1Final');
   pub1.finish(pub1Final);
-  pub2.publish();
+  pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter(sub2LIFO[0].publishCount));
   sub1FinalAll.push(await sub1.subscribeAfter());
   t.is(
