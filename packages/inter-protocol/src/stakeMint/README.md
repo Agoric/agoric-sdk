@@ -53,7 +53,7 @@ sequenceDiagram
 
 ## Components
 
-In addition to the `runStake.js` module with the contract `start` function:
+In addition to the `stakeMint.js` module with the contract `start` function:
 
  - `params.js`: utilities for governance parameters
  - `stakeKit.js`: `makeRunStakeKit` is called once per loan

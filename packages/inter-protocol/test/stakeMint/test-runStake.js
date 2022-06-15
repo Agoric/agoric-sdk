@@ -36,7 +36,7 @@ import { unsafeMakeBundleCache } from '../bundleTool.js';
 // 13	Add collateral - CR increase ok
 
 const contractRoots = {
-  runStake: './src/stakeMint/runStake.js',
+  runStake: './src/stakeMint/stakeMint.js',
   faker: './test/stakeMint/attestationFaker.js',
 };
 
@@ -58,7 +58,7 @@ const micro = harden({
  *   issuer: Record<'RUN' | 'BLD', Issuer<'nat'>>,
  *   brand: Record<'RUN' | 'BLD', Brand<'nat'>>,
  *   installation: {
- *     runStake: Installation<typeof import('../../src/stakeMint/runStake.js').start>,
+ *     runStake: Installation<typeof import('../../src/stakeMint/stakeMint.js').start>,
  *     faker: Installation,
  *     committee: Installation,
  *     contractGovernor: Installation,

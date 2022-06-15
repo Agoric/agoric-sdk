@@ -49,7 +49,7 @@ const CENTRAL_DENOM_NAME = 'urun';
  *   reservePublicFacet: AssetReservePublicFacet,
  *   reserveCreatorFacet: AssetReserveCreatorFacet,
  *   reserveGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
- *   runStakeCreatorFacet: import('../stakeMint/runStake.js').RunStakeCreator,
+ *   runStakeCreatorFacet: import('../stakeMint/stakeMint.js').RunStakeCreator,
  *   vaultFactoryCreator: VaultFactory,
  *   vaultFactoryGovernorCreator: GovernedContractFacetAccess<unknown>,
  *   vaultFactoryVoteCreator: unknown,
@@ -752,7 +752,7 @@ export const startLienBridge = async ({
  * @param {bigint} [config.chargingPeriod]
  * @param {bigint} [config.recordingPeriod]
  * @typedef {[bigint, bigint]} Rational
- * @typedef {Awaited<ReturnType<typeof import('../stakeMint/runStake.js').start>>} StartRunStake
+ * @typedef {Awaited<ReturnType<typeof import('../stakeMint/stakeMint.js').start>>} StartRunStake
  */
 export const startRunStake = async (
   {
