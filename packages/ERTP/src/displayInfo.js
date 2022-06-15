@@ -3,6 +3,9 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { assertRecord, isObject, passStyleOf } from '@endo/marshal';
 
+// One GOOGOLth should be enough decimal places for anybody.
+export const MAX_ABSOLUTE_DECIMAL_PLACES = 100;
+
 // TODO Once https://github.com/endojs/endo/pull/1061 is merged, then we
 // should add `assertPure` to the imports from `@endo/marshal` and remove
 // the redundant definition here.
@@ -66,7 +69,19 @@ export const coerceDisplayInfo = (allegedDisplayInfo, assetKind) => {
 
   assertSubset(displayInfoKeys, Object.keys(displayInfo));
   if (displayInfo.decimalPlaces !== undefined) {
-    assert.typeof(displayInfo.decimalPlaces, 'number');
+    assert(
+      Number.isSafeInteger(displayInfo.decimalPlaces),
+      X`decimalPlaces ${displayInfo.decimalPlaces} is not a safe integer`,
+    );
+    assert(
+      displayInfo.decimalPlaces <= MAX_ABSOLUTE_DECIMAL_PLACES,
+      X`decimalPlaces ${displayInfo.decimalPlaces} exceeds ${MAX_ABSOLUTE_DECIMAL_PLACES}`,
+    );
+    assert(
+      displayInfo.decimalPlaces >= -MAX_ABSOLUTE_DECIMAL_PLACES,
+      X`decimalPlaces ${displayInfo.decimalPlaces} is less than -${MAX_ABSOLUTE_DECIMAL_PLACES}`,
+    );
   }
+
   return displayInfo;
 };

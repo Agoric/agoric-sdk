@@ -28,9 +28,39 @@ test('makeIssuerKit bad displayInfo.decimalPlaces', async t => {
         // @ts-expect-error Intentional wrong type for testing
         harden({ decimalPlaces: 'hello' }),
       ),
-    {
-      message: `"hello" must be a number`,
-    },
+    { message: `decimalPlaces "hello" is not a safe integer` },
+  );
+
+  t.throws(
+    () =>
+      makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: 9.2 })),
+    { message: 'decimalPlaces 9.2 is not a safe integer' },
+  );
+
+  t.assert(
+    makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: 9 })),
+  );
+
+  t.throws(
+    () =>
+      makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: -0.1 })),
+    { message: 'decimalPlaces -0.1 is not a safe integer' },
+  );
+
+  t.assert(
+    makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: -1 })),
+  );
+
+  t.throws(
+    () =>
+      makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: 101 })),
+    { message: 'decimalPlaces 101 exceeds 100' },
+  );
+
+  t.throws(
+    () =>
+      makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: -101 })),
+    { message: 'decimalPlaces -101 is less than -100' },
   );
 });
 
