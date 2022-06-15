@@ -1,7 +1,7 @@
 // TODO should be '@endo/init/debug.js' but that fails with
 // SES_ALREADY_LOCKED_DOWN for reasons we have not yet diagnosed.
 // https://github.com/Agoric/agoric-sdk/issues/5570
-import '@endo/init';
+import '@endo/init/debug.js';
 import test from 'ava';
 import {
   defangEvaluableCode,
