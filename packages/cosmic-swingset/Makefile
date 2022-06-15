@@ -49,30 +49,9 @@ $(EVAL_CLEAN): $(EVAL_CODE)
 	./scripts/clean-core-eval.js $< >$@.t || { rm -f $@.t; exit 1; }
 	mv $@.t $@
 
-RUN_PROTO=../inter-protocol
-
-start-runStake: $(RUN_PROTO)/gov-runStake.js
-	make EVAL_CODE=$(RUN_PROTO)/gov-runStake.js \
-		EVAL_PERMIT=$(RUN_PROTO)/gov-runStake-permit.json \
-		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
-
-start-committee: $(RUN_PROTO)/gov-econ-committee.js
-	make EVAL_CODE=$(RUN_PROTO)/gov-econ-committee.js \
-		EVAL_PERMIT=$(RUN_PROTO)/gov-econ-committee-permit.json \
-		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
-
-
-start-amm-etc: $(RUN_PROTO)/gov-amm-vaults-etc.js
-	make EVAL_CODE=$(RUN_PROTO)/gov-amm-vaults-etc.js \
-		EVAL_PERMIT=$(RUN_PROTO)/gov-amm-vaults-etc-permit.json \
-		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
-
 gov-q:
 	$(AGCH) query gov proposals --output json | \
 		jq -c '.proposals[] | [.proposal_id,.voting_end_time,.status]'
-
-deploy-runStake: ../inter-protocol/test/runStake/runStake-deploy.js
-	echo agoric deploy ../inter-protocol/test/runStake/runStake-deploy.js
 
 # This probably shouldn't install, but that's what published instructions
 # expect.
