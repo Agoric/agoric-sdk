@@ -560,7 +560,7 @@ export function makeWallet({
   }
 
   /**
-   * @param { () => ( Promise | undefined ) } get - The function whose return value
+   * @param {() => ( Promise | undefined )} get - The function whose return value
    * to memoize.
    */
   const makeMemoizedGetter = get => {

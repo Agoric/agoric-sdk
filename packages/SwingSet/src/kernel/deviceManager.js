@@ -87,8 +87,8 @@ export default function makeDeviceManager(
   /**
    * Invoke a method on a device node.
    *
-   * @param { DeviceInvocation } deviceInvocation
-   * @returns { DeviceInvocationResult }
+   * @param {DeviceInvocation} deviceInvocation
+   * @returns {DeviceInvocationResult}
    */
   function invoke(deviceInvocation) {
     const [target, method, args] = deviceInvocation;

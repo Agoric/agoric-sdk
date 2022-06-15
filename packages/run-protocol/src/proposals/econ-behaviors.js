@@ -113,7 +113,7 @@ export const startEconomicCommittee = async (
 harden(startEconomicCommittee);
 
 /**
- * @param { EconomyBootstrapPowers } powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {{
  *   interchainPoolOptions?: { minimumCentral?: bigint }
  * }} [options]
@@ -169,7 +169,7 @@ harden(startInterchainPool);
 const AMM_STORAGE_PATH = 'amm'; // TODO: share with agoricNames?
 
 /**
- * @param { EconomyBootstrapPowers } powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {{ options?: { minInitialPoolLiquidity?: bigint }}} opts
  */
 export const setupAmm = async (
@@ -261,7 +261,7 @@ export const setupAmm = async (
   return ammInstallation;
 };
 
-/** @param { EconomyBootstrapPowers } powers */
+/** @param {EconomyBootstrapPowers} powers */
 export const setupReserve = async ({
   consume: {
     ammCreatorFacet,
@@ -357,9 +357,9 @@ export const setupReserve = async ({
 };
 
 /**
- * @param { EconomyBootstrapPowers } powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {object} config
- * @param { LoanTiming } [config.loanParams]
+ * @param {LoanTiming} [config.loanParams]
  * @param {bigint} minInitialDebt
  */
 export const startVaultFactory = async (
@@ -503,7 +503,7 @@ export const startVaultFactory = async (
  * Grant access to the VaultFactory creatorFacet
  * to up to one user based on address.
  *
- * @param { EconomyBootstrapPowers } powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {object} [root0]
  * @param {object} [root0.options]
  * @param {string} [root0.options.vaultFactoryControllerAddress]
@@ -529,7 +529,7 @@ export const grantVaultFactoryControl = async (
 };
 harden(grantVaultFactoryControl);
 
-/** @param { BootstrapPowers } powers */
+/** @param {BootstrapPowers} powers */
 export const configureVaultFactoryUI = async ({
   consume: { board, zoe },
   issuer: {

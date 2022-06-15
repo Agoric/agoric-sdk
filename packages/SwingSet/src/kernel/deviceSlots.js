@@ -189,10 +189,10 @@ export function makeDeviceSlots(
   // device node itself throws an exception during invocation
   /**
    *
-   * @param { string } deviceID
-   * @param { string } method
-   * @param { SwingSetCapData } args
-   * @returns { DeviceInvocationResult }
+   * @param {string} deviceID
+   * @param {string} method
+   * @param {SwingSetCapData} args
+   * @returns {DeviceInvocationResult}
    */
   function invoke(deviceID, method, args) {
     insistVatType('device', deviceID);

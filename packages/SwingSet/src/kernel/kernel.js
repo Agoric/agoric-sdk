@@ -401,10 +401,10 @@ export default function buildKernel(
   /**
    * Deliver one message to a vat.
    *
-   * @param { VatID } vatID
-   * @param { string } target
-   * @param { Message } msg
-   * @returns { Promise<DeliveryStatus | null> }
+   * @param {VatID} vatID
+   * @param {string} target
+   * @param {Message} msg
+   * @returns {Promise<DeliveryStatus | null>}
    */
   async function processSend(vatID, target, msg) {
     insistMessage(msg);
@@ -435,8 +435,8 @@ export default function buildKernel(
 
   /**
    *
-   * @param { RunQueueEventNotify } message
-   * @returns { Promise<DeliveryStatus | null> }
+   * @param {RunQueueEventNotify} message
+   * @returns {Promise<DeliveryStatus | null>}
    */
   async function processNotify(message) {
     const { vatID, kpid } = message;
@@ -482,8 +482,8 @@ export default function buildKernel(
 
   /**
    *
-   * @param { RunQueueEventDropExports | RunQueueEventRetireImports | RunQueueEventRetireExports } message
-   * @returns { Promise<DeliveryStatus | null> }
+   * @param {RunQueueEventDropExports | RunQueueEventRetireImports | RunQueueEventRetireExports} message
+   * @returns {Promise<DeliveryStatus | null>}
    */
   async function processGCMessage(message) {
     // used for dropExports, retireExports, and retireImports
@@ -511,8 +511,8 @@ export default function buildKernel(
 
   /**
    *
-   * @param { RunQueueEventBringOutYourDead } message
-   * @returns { Promise<DeliveryStatus | null> }
+   * @param {RunQueueEventBringOutYourDead} message
+   * @returns {Promise<DeliveryStatus | null>}
    */
   async function processBringOutYourDead(message) {
     const { type, vatID } = message;
@@ -542,8 +542,8 @@ export default function buildKernel(
    * but doing it this way simply guarantees there won't be such a problem
    * without requiring any further analysis to be sure).
    *
-   * @param { RunQueueEventStartVat } message
-   * @returns { Promise<DeliveryStatus> }
+   * @param {RunQueueEventStartVat} message
+   * @returns {Promise<DeliveryStatus>}
    */
   async function processStartVat(message) {
     const { vatID, vatParameters } = message;
@@ -568,8 +568,8 @@ export default function buildKernel(
 
   /**
    *
-   * @param { RunQueueEventCreateVat } message
-   * @returns { Promise<DeliveryStatus | null> }
+   * @param {RunQueueEventCreateVat} message
+   * @returns {Promise<DeliveryStatus | null>}
    */
   async function processCreateVat(message) {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
@@ -653,8 +653,8 @@ export default function buildKernel(
 
   /**
    *
-   * @param { RunQueueEventChangeVatOptions } message
-   * @returns { Promise<DeliveryStatus | null> }
+   * @param {RunQueueEventChangeVatOptions} message
+   * @returns {Promise<DeliveryStatus | null>}
    */
   async function processChangeVatOptions(message) {
     const { vatID, options } = message;
@@ -687,8 +687,8 @@ export default function buildKernel(
 
   /**
    *
-   * @param { RunQueueEventUpgradeVat } message
-   * @returns { Promise<DeliveryStatus | null> }
+   * @param {RunQueueEventUpgradeVat} message
+   * @returns {Promise<DeliveryStatus | null>}
    */
   async function processUpgradeVat(message) {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
@@ -809,8 +809,8 @@ export default function buildKernel(
    *
    * This does not decrement any refcounts. The caller should do that.
    *
-   * @param { RunQueueEventSend } message
-   * @returns { { vatID: VatID | null, target: string } | null }
+   * @param {RunQueueEventSend} message
+   * @returns {{ vatID: VatID | null, target: string } | null}
    */
   function routeSendEvent(message) {
     const { target, msg } = message;
@@ -934,8 +934,8 @@ export default function buildKernel(
    * ahead of time. For now, this is called for each run-queue event, so
    * 'send' does not yet know which vat will be involved (if any).
    *
-   * @param { RunQueueEvent } message
-   * @returns { Promise<DeliveryStatus | null> }
+   * @param {RunQueueEvent} message
+   * @returns {Promise<DeliveryStatus | null>}
    */
   async function deliverRunQueueEvent(message) {
     // Decref everything in the message, under the assumption that most of
@@ -1247,8 +1247,8 @@ export default function buildKernel(
     // not
     /**
      *
-     * @param { VatSyscallObject } vatSyscallObject
-     * @returns { VatSyscallResult }
+     * @param {VatSyscallObject} vatSyscallObject
+     * @returns {VatSyscallResult}
      */
     function vatSyscallHandler(vatSyscallObject) {
       // eslint-disable-next-line no-use-before-define
@@ -1588,7 +1588,7 @@ export default function buildKernel(
    * Run the kernel until the policy says to stop, or the queue is empty.
    *
    * @param {RunPolicy?} policy - a RunPolicy to limit the work being done
-   * @returns { Promise<number> } The number of cranks that were executed.
+   * @returns {Promise<number>} The number of cranks that were executed.
    */
   async function run(policy = foreverPolicy()) {
     assert(policy);
@@ -1646,8 +1646,8 @@ export default function buildKernel(
   /**
    * Install a pre-validated bundle under the given ID.
    *
-   * @param { BundleID } bundleID
-   * @param { EndoZipBase64Bundle } bundle
+   * @param {BundleID} bundleID
+   * @param {EndoZipBase64Bundle} bundle
    */
   async function installBundle(bundleID, bundle) {
     // bundleID is b1-HASH

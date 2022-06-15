@@ -76,8 +76,8 @@ function isMatch(specimen, pattern) {
  *   total: number,
  * }} Summary
  *
- * @param { string } filename
- * @param { string[] } preamble scripts to run in XS start compartment
+ * @param {string} filename
+ * @param {string[]} preamble scripts to run in XS start compartment
  * @param {{ verbose?: boolean, titleMatch?: string }} options
  * @param {{
  *   spawnXSnap: (opts: object) => XSnap,
@@ -210,7 +210,7 @@ async function runTestScript(
 /**
  * Get ava / ava-xs config from package.json
  *
- * @param { string[] } args
+ * @param {string[]} args
  * @param {object} options
  * @param {string} [options.packageFilename]
  * @param {{
@@ -229,8 +229,8 @@ async function runTestScript(
  */
 async function avaConfig(args, options, { glob, readFile }) {
   /**
-   * @param { string } pattern
-   * @returns { Promise<string[]> }
+   * @param {string} pattern
+   * @returns {Promise<string[]>}
    */
   const globFiles = pattern =>
     new Promise((res, rej) =>
@@ -339,7 +339,7 @@ export async function main(
    * SES objects to `import(...)`
    * avaAssert and avaHandler only use import() in type comments
    *
-   * @param { string } src
+   * @param {string} src
    */
   const hideImport = src => src.replace(/import\(/g, '');
 

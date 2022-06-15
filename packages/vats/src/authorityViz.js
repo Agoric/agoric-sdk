@@ -21,7 +21,7 @@ const styles = {
 };
 
 /**
- * @param { Set<GraphNode> } nodes
+ * @param {Set<GraphNode>} nodes
  * @param {Map<string, Set<{ id: string, style?: string }>>} neighbors
  * @yields { string }
  * @typedef {{
@@ -169,9 +169,9 @@ const manifest2graph = manifest => {
 };
 
 /**
- * @param { string[] } args
+ * @param {string[]} args
  * @param {object} io
- * @param { typeof import('process').stdout } io.stdout
+ * @param {typeof import('process').stdout} io.stdout
  */
 const main = async (args, { stdout }) => {
   const [...opts] = args;

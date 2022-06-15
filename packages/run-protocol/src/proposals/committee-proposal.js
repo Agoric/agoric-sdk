@@ -9,7 +9,7 @@ const { values } = Object;
 const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 
 /**
- * @param { import('./econ-behaviors').EconomyBootstrapPowers } powers
+ * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
  * @param {{ options: { voterAddresses: Record<string, string> }}} param1
  */
 export const inviteCommitteeMembers = async (

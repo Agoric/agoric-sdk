@@ -17,7 +17,7 @@ export function buildRootObject(_vatPowers) {
       const { mint } = mintsAndBrands.get(issuerName);
       return mint.getIssuer();
     },
-    /** @param { string[] } issuerNames */
+    /** @param {string[]} issuerNames */
     getIssuers: issuerNames => issuerNames.map(api.getIssuer),
 
     /**
@@ -25,10 +25,10 @@ export function buildRootObject(_vatPowers) {
      * a very powerful authority that is usually closely held.
      * But this mint is for demo / faucet purposes.
      *
-     * @param { string } name
+     * @param {string} name
      */
     getMint: name => mintsAndBrands.get(name).mint,
-    /** @param { string[] } issuerNames */
+    /** @param {string[]} issuerNames */
     getMints: issuerNames => issuerNames.map(api.getMint),
     /**
      * @param {*} issuerNameSingular For example, 'moola', or 'simolean'

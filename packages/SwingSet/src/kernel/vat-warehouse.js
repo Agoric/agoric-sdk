@@ -4,13 +4,13 @@ import { isNat } from '@agoric/nat';
 import { makeVatTranslators } from './vatTranslator.js';
 import { insistVatDeliveryResult } from '../lib/message.js';
 
-/** @param { number } max */
+/** @param {number} max */
 export const makeLRU = max => {
   /** @type { string[] } */
   const items = [];
 
   return harden({
-    /** @param { string } item */
+    /** @param {string} item */
     add: item => {
       const pos = items.indexOf(item);
       // already most recently used
@@ -34,7 +34,7 @@ export const makeLRU = max => {
       return items.length;
     },
 
-    /** @param { string } item */
+    /** @param {string} item */
     remove: item => {
       const pos = items.indexOf(item);
       if (pos >= 0) {
@@ -45,8 +45,8 @@ export const makeLRU = max => {
 };
 
 /**
- * @param { KernelKeeper } kernelKeeper
- * @param { ReturnType<typeof import('./vat-loader/vat-loader.js').makeVatLoader> } vatLoader
+ * @param {KernelKeeper} kernelKeeper
+ * @param {ReturnType<typeof import('./vat-loader/vat-loader.js').makeVatLoader>} vatLoader
  * @param {{
  *   maxVatsOnline?: number,
  * }=} policyOptions
@@ -82,7 +82,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
 
   /** @type {Map<string, VatTranslators> } */
   const xlate = new Map();
-  /** @param { string } vatID */
+  /** @param {string} vatID */
   function provideTranslators(vatID) {
     let translators = xlate.get(vatID);
     if (!translators) {
@@ -97,7 +97,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   /**
    * @param {string} vatID
    * @param {boolean} recreate
-   * @returns { Promise<VatInfo> }
+   * @returns {Promise<VatInfo>}
    */
   async function ensureVatOnline(vatID, recreate) {
     const info = ephemeral.vats.get(vatID);
@@ -159,7 +159,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     return ensureVatOnline(vatID, false);
   }
 
-  /** @param { typeof console.log } logStartup */
+  /** @param {typeof console.log} logStartup */
   async function start(logStartup) {
     const recreate = true; // note: PANIC on failure to recreate
 
@@ -181,7 +181,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   }
 
   /**
-   * @param { string } vatID
+   * @param {string} vatID
    * @returns {{ enablePipelining?: boolean }
    *  | undefined // if the vat is dead or never initialized
    * }
@@ -207,7 +207,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    * does not modify the kernelDB
    *
    * @param {string} vatID
-   * @returns { Promise<unknown> }
+   * @returns {Promise<unknown>}
    */
   async function evict(vatID) {
     assert(lookup(vatID));
@@ -314,7 +314,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   /**
    * @param {string} vatID
    * @param {unknown[]} kd
-   * @returns { VatDeliveryObject }
+   * @returns {VatDeliveryObject}
    */
   function kernelDeliveryToVatDelivery(vatID, kd) {
     const translators = provideTranslators(vatID);
@@ -351,7 +351,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
 
   /**
    * @param {string} vatID
-   * @returns { Promise<void> }
+   * @returns {Promise<void>}
    */
   async function vatWasTerminated(vatID) {
     try {

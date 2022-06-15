@@ -49,7 +49,7 @@ export const bridgeCoreEval = async allPowers => {
     Base64: globalThis.Base64, // Present only on XSnap
     URL: globalThis.URL, // Absent only on XSnap
   };
-  /** @param { Installation } installation */
+  /** @param {Installation} installation */
   const evaluateInstallation = async installation => {
     const bundle = await E(installation).getBundle();
     const imported = await importBundle(bundle, { endowments });
