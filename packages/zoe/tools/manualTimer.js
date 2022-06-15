@@ -116,6 +116,7 @@ export function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
       for (let i = 0; i < nTimes - 1; i += 1) {
         timer.tick(msg);
       }
+      await eventLoopIteration();
       // suffices that only the last be awaited
       await timer.tick(msg);
     },
