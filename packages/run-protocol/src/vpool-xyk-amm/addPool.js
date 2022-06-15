@@ -3,58 +3,99 @@
 import { E } from '@endo/eventual-send';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import { definePoolKind } from './pool.js';
 
 const { details: X } = assert;
 
+const DISPLAY_INFO = harden({ decimalPlaces: 6 });
+
 /**
  * @param {ZCF} zcf
  * @param {(Brand) => boolean} isInSecondaries
  * @param {WeakStore<Brand,ZCFMint>} brandToLiquidityMint
+ * @param {WeakStore<Brand,ERef<Issuer>>} brandToLiquidityIssuer
  * @param {() => (secondaryBrand: Brand) => Promise<void>} getAddIssuerToReserve
  */
 export const makeAddIssuer = (
   zcf,
   isInSecondaries,
   brandToLiquidityMint,
+  brandToLiquidityIssuer,
   getAddIssuerToReserve,
 ) => {
   /**
+   * Add a new issuer. If we previously received a request for the same issuer,
+   * we'll return a promise or the issuer.
+   *
    * @param {Issuer} secondaryIssuer
    * @param {string} keyword
    */
   return async (secondaryIssuer, keyword) => {
-    const [secondaryAssetKind, secondaryBrand] = await Promise.all([
-      E(secondaryIssuer).getAssetKind(),
-      E(secondaryIssuer).getBrand(),
-    ]);
-    assert(
-      !isInSecondaries(secondaryBrand),
-      X`issuer ${secondaryIssuer} already has a pool`,
-    );
-    assert(
-      secondaryAssetKind === AssetKind.NAT,
-      X`${keyword} asset not fungible (must use NAT math)`,
-    );
-    const liquidityKeyword = `${keyword}Liquidity`;
-    zcf.assertUniqueKeyword(liquidityKeyword);
+    return E.when(
+      Promise.all([
+        E(secondaryIssuer).getAssetKind(),
+        E(secondaryIssuer).getBrand(),
+      ]),
+      ([secondaryAssetKind, secondaryBrand]) => {
+        assert(
+          secondaryAssetKind === AssetKind.NAT,
+          X`${keyword} asset not fungible (must use NAT math)`,
+        );
 
-    const mint = await zcf.makeZCFMint(
-      liquidityKeyword,
-      AssetKind.NAT,
-      harden({ decimalPlaces: 6 }),
+        if (brandToLiquidityIssuer.has(secondaryBrand)) {
+          return brandToLiquidityIssuer.get(secondaryBrand);
+        }
+
+        assert(
+          !isInSecondaries(secondaryBrand),
+          X`issuer ${secondaryIssuer} already has a pool`,
+        );
+
+        if (brandToLiquidityMint.has(secondaryBrand)) {
+          const { issuer } = brandToLiquidityMint
+            .get(secondaryBrand)
+            .getIssuerRecord();
+          return issuer;
+        }
+
+        /** @type {import('@endo/promise-kit').PromiseKit<Issuer<'nat'>>} */
+        const promiseKit = makePromiseKit();
+        brandToLiquidityIssuer.init(secondaryBrand, promiseKit.promise);
+
+        const liquidityKeyword = `${keyword}Liquidity`;
+        zcf.assertUniqueKeyword(liquidityKeyword);
+
+        return E.when(
+          zcf.saveIssuer(secondaryIssuer, keyword),
+          ({ issuer }) => {
+            return E.when(
+              zcf.makeZCFMint(liquidityKeyword, AssetKind.NAT, DISPLAY_INFO),
+              mint => {
+                console.log(
+                  X`Saved issuer ${secondaryIssuer} to keyword ${keyword} and got back ${issuer}`,
+                );
+                // this ensures that getSecondaryIssuer(thisIssuer) will return even
+                // before the pool is created
+                brandToLiquidityMint.init(secondaryBrand, mint);
+                const { issuer: liquidityIssuer } = mint.getIssuerRecord();
+                // defer lookup until necessary. more aligned with governed
+                // param we expect this to be eventually.
+                const addIssuerToReserve = getAddIssuerToReserve();
+                // tell the reserve about this brand, which it will validate by
+                // calling back to AMM for the issuer
+                return E.when(addIssuerToReserve(secondaryBrand), () => {
+                  promiseKit.resolve(liquidityIssuer);
+                  brandToLiquidityIssuer.delete(secondaryBrand);
+                  return liquidityIssuer;
+                });
+              },
+            );
+          },
+        );
+      },
     );
-    await zcf.saveIssuer(secondaryIssuer, keyword);
-    // this ensures that getSecondaryIssuer(thisIssuer) will return even before the pool is created
-    brandToLiquidityMint.init(secondaryBrand, mint);
-    const { issuer: liquidityIssuer } = mint.getIssuerRecord();
-    // defer lookup until necessary. more aligned with governed param we expect this to be eventually.
-    const addIssuerToReserve = getAddIssuerToReserve();
-    // tell the reserve about this brand, which it will validate by calling back
-    // to AMM for the issuer
-    await addIssuerToReserve(secondaryBrand);
-    return liquidityIssuer;
   };
 };
 
