@@ -21,8 +21,6 @@ lockdown({
   consoleTaming,
 });
 
-console.log('lockdown done.');
-
 window.addEventListener('unhandledrejection', ev => {
   ev.stopImmediatePropagation();
 });

@@ -56,7 +56,6 @@ const SmartWalletConnection = ({
     const followWallet = async () => {
       const { url, smartWalletAddress } = walletConnection;
       const walletSpec = `:published.wallet.${smartWalletAddress}`;
-      console.log('following wallet spec', walletSpec);
 
       const backendError = e => {
         showError('Error in wallet backend', e);
@@ -103,7 +102,6 @@ const SmartWalletConnection = ({
         try {
           const { url } = walletConnection;
           const { client, signer } = await suggestChain(url);
-          console.log('got stargate client', client, signer);
 
           const setDefaultAddress = async () => {
             if (walletConnection.smartWalletAddress) {
@@ -113,7 +111,6 @@ const SmartWalletConnection = ({
             if (walletConnection.smartWalletAddress) {
               return;
             }
-            console.log('signer accounts', signerAccounts);
 
             // We'll use the first available account for now.
             const { address: defaultAddress } = signerAccounts[0];
@@ -126,7 +123,8 @@ const SmartWalletConnection = ({
           await setDefaultAddress();
 
           // TODO: Would enable Keplr for transacting the Agoric client.
-          showReadOnlyError('Would enable transaction manager');
+          console.log('Keplr client', client);
+          showReadOnlyError('Transaction manager not implemented');
         } catch (e) {
           if (!outdated) {
             showReadOnlyError('Failed to connect to Keplr', e);

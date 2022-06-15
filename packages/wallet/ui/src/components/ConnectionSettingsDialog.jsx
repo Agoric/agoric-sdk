@@ -13,8 +13,17 @@ import Stack from '@mui/material/Stack';
 import DialogActions from '@mui/material/DialogActions';
 import { withApplicationContext } from '../contexts/Application';
 
+const useStyles = makeStyles(_ => ({
+  centeredText: {
+    textAlign: 'center',
+  },
+  dialog: {
+    minWidth: 240,
+  },
+}));
+
 const connectionValue = formValue => {
-  if (typeof formValue === 'string') {
+  if (typeof formValue === 'string' && formValue) {
     return {
       url: new URL(formValue, window.location.href),
       label: formValue,
@@ -28,15 +37,6 @@ const connectionValue = formValue => {
     return formValue;
   }
 };
-
-const useStyles = makeStyles(_ => ({
-  centeredText: {
-    textAlign: 'center',
-  },
-  dialog: {
-    minWidth: 240,
-  },
-}));
 
 const ConnectionSettingsDialog = ({
   onClose,
@@ -109,6 +109,7 @@ const ConnectionSettingsDialog = ({
                 id="address"
                 label="Smart Wallet address"
                 onChange={e =>
+                  e.target.value &&
                   setConnection({
                     ...connection,
                     smartWalletAddress: e.target.value,
@@ -126,6 +127,7 @@ const ConnectionSettingsDialog = ({
                 id="token"
                 label="Access token"
                 onChange={e =>
+                  e.target.value &&
                   setConnection({
                     ...connection,
                     accessToken: e.target.value,

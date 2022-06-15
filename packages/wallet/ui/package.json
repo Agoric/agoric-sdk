@@ -61,6 +61,7 @@
   },
   "scripts": {
     "start": "yarn build:ses && react-app-rewired start",
+    "start:sw": "yarn build:ses && REACT_ENABLE_SW=true react-app-rewired start",
     "build": "yarn build:ses && yarn build:react",
     "build:ses": "cp ../../../node_modules/ses/dist/lockdown.umd.js src/public/",
     "build:react": "react-app-rewired build",

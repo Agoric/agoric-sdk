@@ -112,12 +112,10 @@ export const makeWalletBridgeFromFollower = (
 
   const followLatest = async () => {
     for await (const { value: state } of iterateLatest(follower)) {
-      console.log('got wallet state', state);
       Object.entries(notifierKits).forEach(([stateName, { updater }]) => {
         updater.updateState(state[stateName]);
       });
     }
-    throw new Error('Wallet follower stopped unexpectedly');
   };
   followLatest().catch(errorHandler);
 
@@ -130,6 +128,5 @@ export const makeWalletBridgeFromFollower = (
   const walletBridge = Far('follower wallet bridge', {
     ...getNotifierMethods,
   });
-  console.log('wallet bridge', walletBridge);
   return walletBridge;
 };

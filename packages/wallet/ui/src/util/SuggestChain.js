@@ -65,7 +65,7 @@ export async function suggestChain(networkConfig, caption = undefined) {
     },
     currencies: [stakeCurrency, stableCurrency],
     feeCurrencies: [stableCurrency],
-    features: ['stargate', 'ibc-transfer'],
+    features: ['ibc-transfer'],
   };
   await window.keplr.experimentalSuggestChain(chainInfo);
   await window.keplr.enable(chainId);

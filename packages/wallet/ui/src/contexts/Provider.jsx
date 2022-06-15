@@ -5,7 +5,15 @@ import { useEffect, useState, useReducer } from 'react';
 
 import { ApplicationContext, ConnectionStatus } from './Application';
 
-import { DEFAULT_WALLET_CONNECTIONS } from '../util/defaults';
+import { DEFAULT_WALLET_CONNECTIONS } from '../util/connections';
+
+const importers = {
+  SmartWalletConnection: () => import('../components/SmartWalletConnection'),
+  WalletConnection: () => import('../components/WalletConnection'),
+};
+
+// Prime the cache, but don't prevent time to interactive.
+Object.values(importers).map(importer => importer());
 
 const useDebugLogging = (state, watch) => {
   useEffect(() => console.log(state), watch);
@@ -151,17 +159,11 @@ const Provider = ({ children }) => {
   );
   const [backendErrorHandler, setBackendErrorHandler] = useState(null);
 
-  const RESTORED_WALLET_CONNECTIONS = [...DEFAULT_WALLET_CONNECTIONS];
-  const userConnections = maybeLoad('userWalletConnections');
-  if (userConnections) {
-    RESTORED_WALLET_CONNECTIONS.unshift(...userConnections);
-  }
-
   const [walletConnection, setWalletConnection] = useState(
     maybeLoad('walletConnection') || null,
   );
   const [allWalletConnections, setAllWalletConnections] = useState(
-    harden([...DEFAULT_WALLET_CONNECTIONS]),
+    harden(maybeLoad('userWalletConnections') || DEFAULT_WALLET_CONNECTIONS),
   );
 
   useEffect(() => {
@@ -205,7 +207,7 @@ const Provider = ({ children }) => {
       const accessToken = new URLSearchParams(accessTokenParams).get(
         'accessToken',
       );
-      console.log('have accesstoken', window.location.hash);
+
       if (!accessToken) {
         return;
       }
@@ -229,24 +231,26 @@ const Provider = ({ children }) => {
     }
     maybeSave('walletConnection', walletConnection);
 
-    const isKnown = allWalletConnections.some(
+    const existingIndex = allWalletConnections.findIndex(
       c => c.label === walletConnection.label && c.url === walletConnection.url,
     );
-    if (!isKnown) {
-      setAllWalletConnections(conns => [walletConnection, ...conns]);
+    if (existingIndex < 0) {
+      setAllWalletConnections([walletConnection, ...allWalletConnections]);
+    } else {
+      setAllWalletConnections([
+        ...allWalletConnections.slice(0, existingIndex),
+        walletConnection,
+        ...allWalletConnections.slice(existingIndex + 1),
+      ]);
     }
-
-    const updatedUserConnections = [];
-    for (const wc of allWalletConnections) {
-      const found = DEFAULT_WALLET_CONNECTIONS.find(
-        ({ url, label }) => wc.url === url && wc.label === label,
-      );
-      if (!found) {
-        updatedUserConnections.push(wc);
-      }
-    }
-    maybeSave('userWalletConnections', updatedUserConnections);
   }, [walletConnection]);
+
+  useEffect(() => {
+    if (!allWalletConnections) {
+      return;
+    }
+    maybeSave('userWalletConnections', allWalletConnections);
+  }, [allWalletConnections]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -391,9 +395,9 @@ const Provider = ({ children }) => {
       attempts = 0;
     };
     if (u.pathname.endsWith('/network-config')) {
-      importer = () => import('../components/SmartWalletConnection');
+      importer = importers.SmartWalletConnection;
     } else {
-      importer = () => import('../components/WalletConnection');
+      importer = importers.WalletConnection;
     }
     connect().catch(retry);
     return () => {
