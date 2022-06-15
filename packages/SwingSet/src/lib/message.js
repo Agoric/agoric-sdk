@@ -12,8 +12,9 @@ import { insistCapData } from './capdata.js';
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
  *
- * @returns { asserts message is Message }
+ * @returns {asserts message is Message}
  */
+
 export function insistMessage(message) {
   insistCapData(message.methargs);
   if (message.result) {
@@ -23,13 +24,13 @@ export function insistMessage(message) {
       X`message has non-string non-null .result ${message.result}`,
     );
   }
-  return undefined;
 }
 
 /**
  * @param {unknown} vdo
- * @returns { asserts vdo is VatDeliveryObject }
+ * @returns {asserts vdo is VatDeliveryObject}
  */
+
 export function insistVatDeliveryObject(vdo) {
   assert(Array.isArray(vdo));
   const [type, ...rest] = vdo;
@@ -81,13 +82,13 @@ export function insistVatDeliveryObject(vdo) {
     default:
       assert.fail(`unknown delivery type ${type}`);
   }
-  return undefined;
 }
 
 /**
  * @param {unknown} vdr
- * @returns { asserts vdr is VatDeliveryResult }
+ * @returns {asserts vdr is VatDeliveryResult}
  */
+
 export function insistVatDeliveryResult(vdr) {
   assert(Array.isArray(vdr));
   const [type, problem, _usage] = vdr;
@@ -103,14 +104,14 @@ export function insistVatDeliveryResult(vdr) {
     default:
       assert.fail(`unknown delivery result type ${type}`);
   }
-  return undefined;
 }
 
 /**
  *
  * @param {unknown} vso
- * @returns { asserts vso is VatSyscallObject }
+ * @returns {asserts vso is VatSyscallObject}
  */
+
 export function insistVatSyscallObject(vso) {
   assert(Array.isArray(vso));
   const [type, ...rest] = vso;
@@ -188,13 +189,13 @@ export function insistVatSyscallObject(vso) {
     default:
       assert.fail(`unknown syscall type ${type}`);
   }
-  return undefined;
 }
 
 /**
- * @param { unknown } vsr
- * @returns { asserts vsr is VatSyscallResult }
+ * @param {unknown} vsr
+ * @returns {asserts vsr is VatSyscallResult}
  */
+
 export function insistVatSyscallResult(vsr) {
   assert(Array.isArray(vsr));
   const [type, ...rest] = vsr;
@@ -210,5 +211,4 @@ export function insistVatSyscallResult(vsr) {
     default:
       assert.fail(`unknown syscall result type ${type}`);
   }
-  return undefined;
 }

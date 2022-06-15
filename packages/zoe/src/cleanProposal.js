@@ -12,6 +12,8 @@ import './internal-types.js';
 
 const { ownKeys } = Reflect;
 
+export const MAX_KEYWORD_LENGTH = 100;
+
 const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
 
 // We adopt simple requirements on keywords so that they do not accidentally
@@ -25,6 +27,10 @@ const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
 // lookup a keyword-named property no matter what `i` is.
 export const assertKeywordName = keyword => {
   assert.typeof(keyword, 'string');
+  assert(
+    keyword.length <= MAX_KEYWORD_LENGTH,
+    X`keyword ${keyword} exceeded maximum length ${MAX_KEYWORD_LENGTH} characters; got ${keyword.length}`,
+  );
   assert(
     firstCapASCII.test(keyword),
     X`keyword ${q(

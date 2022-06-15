@@ -113,8 +113,8 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
   /**
    * @param {string} name
    * @param {(request: Uint8Array) => Promise<Uint8Array>} handleCommand
-   * @param { boolean } [metered]
-   * @param { string } [snapshotHash]
+   * @param {boolean} [metered]
+   * @param {string} [snapshotHash]
    */
   async function startXSnap(
     name,
@@ -347,9 +347,9 @@ export async function makeSwingsetController(
   /**
    * Validate and install a code bundle.
    *
-   * @param { EndoZipBase64Bundle } bundle
-   * @param { BundleID } [allegedBundleID]
-   * @returns { Promise<BundleID> }
+   * @param {EndoZipBase64Bundle} bundle
+   * @param {BundleID} [allegedBundleID]
+   * @returns {Promise<BundleID>}
    */
   async function validateAndInstallBundle(bundle, allegedBundleID) {
     // TODO The following assertion may be removed when checkBundle subsumes

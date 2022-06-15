@@ -267,7 +267,7 @@ harden(extractPowers);
  * @param {object} opts
  * @param {unknown} opts.allPowers
  * @param {Record<string, unknown>} opts.behaviors
- * @param { Record<string, Record<string, unknown>> } opts.manifest
+ * @param {Record<string, Record<string, unknown>>} opts.manifest
  * @param { (name: string, permit: Record<string, unknown>) => unknown} opts.makeConfig
  */
 export const runModuleBehaviors = ({

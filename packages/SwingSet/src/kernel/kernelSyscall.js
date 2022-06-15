@@ -70,9 +70,9 @@ export function makeKernelSyscallHandler(tools) {
 
   /**
    *
-   * @param { string } vatID
-   * @param { string } key
-   * @returns { KernelSyscallResult }
+   * @param {string} vatID
+   * @param {string} key
+   * @returns {KernelSyscallResult}
    */
   function vatstoreGet(vatID, key) {
     const actualKey = vatstoreKeyKey(vatID, key);
@@ -84,10 +84,10 @@ export function makeKernelSyscallHandler(tools) {
 
   /**
    *
-   * @param { string } vatID
-   * @param { string } key
-   * @param { string } value
-   * @returns { KernelSyscallResult }
+   * @param {string} vatID
+   * @param {string} key
+   * @param {string} value
+   * @returns {KernelSyscallResult}
    */
   function vatstoreSet(vatID, key, value) {
     const actualKey = vatstoreKeyKey(vatID, key);
@@ -226,9 +226,9 @@ export function makeKernelSyscallHandler(tools) {
 
   /**
    *
-   * @param { string } vatID
-   * @param { string } key
-   * @returns { KernelSyscallResult }
+   * @param {string} vatID
+   * @param {string} key
+   * @returns {KernelSyscallResult}
    */
 
   function vatstoreDelete(vatID, key) {
@@ -242,10 +242,10 @@ export function makeKernelSyscallHandler(tools) {
 
   /**
    *
-   * @param { string } deviceSlot
-   * @param { string } method
-   * @param { SwingSetCapData } args
-   * @returns { KernelSyscallResult }
+   * @param {string} deviceSlot
+   * @param {string} method
+   * @param {SwingSetCapData} args
+   * @returns {KernelSyscallResult}
    */
   function invoke(deviceSlot, method, args) {
     insistKernelType('device', deviceSlot);
@@ -338,8 +338,8 @@ export function makeKernelSyscallHandler(tools) {
   }
 
   /**
-   * @param { KernelSyscallObject } ksc
-   * @returns {  KernelSyscallResult }
+   * @param {KernelSyscallObject} ksc
+   * @returns { KernelSyscallResult}
    */
   function kernelSyscallHandler(ksc) {
     // this repeated pattern is necessary to get the typechecker to refine 'ksc' and 'args' properly

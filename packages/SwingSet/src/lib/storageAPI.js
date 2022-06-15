@@ -48,8 +48,8 @@ export function insistEnhancedStorageAPI(kvStore) {
  * order lexicographically by UTF-16 code unit, produce a new iterator that will
  * output the ascending sequence of unique strings from their merged output.
  *
- * @param { Iterator } it1
- * @param { Iterator } it2
+ * @param {Iterator} it1
+ * @param {Iterator} it2
  *
  * @yields any
  */

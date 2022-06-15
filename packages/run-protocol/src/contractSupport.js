@@ -30,7 +30,7 @@ export const addSubtract = (base, gain, loss) =>
  * @param {string[]} keys usually 'Collateral' and 'RUN'
  */
 export const assertOnlyKeys = (proposal, keys) => {
-  /** @param { AmountKeywordRecord } clause */
+  /** @param {AmountKeywordRecord} clause */
   const onlyKeys = clause =>
     Object.getOwnPropertyNames(clause).every(c => keys.includes(c));
   assert(

@@ -2,7 +2,7 @@ import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeCopyBag } from '@agoric/store';
 import { Far } from '@endo/marshal';
 
-/** @param { ContractFacet } zcf */
+/** @param {ContractFacet} zcf */
 export const start = zcf => {
   const a = makeIssuerKit('Bogus', AssetKind.COPY_BAG);
   zcf.saveIssuer(a.issuer, 'Attestation');
@@ -10,8 +10,8 @@ export const start = zcf => {
   return {
     publicFacet: Far('pub', {
       /**
-       * @param { string } address
-       * @param { Amount<bigint> } amountLiened
+       * @param {string} address
+       * @param {Amount<bigint>} amountLiened
        * @returns {[Amount, Payment]}
        */
       fakeAttestation: (address, amountLiened) => {

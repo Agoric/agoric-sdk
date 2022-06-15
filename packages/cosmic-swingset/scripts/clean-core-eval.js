@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-import '@endo/init';
+import '@endo/init/debug.js';
 import * as farExports from '@endo/far';
 import { isEntrypoint } from '../src/is-entrypoint.js';
 

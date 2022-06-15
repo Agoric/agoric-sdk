@@ -26,7 +26,7 @@ const decoder = new TextDecoder();
  *   startXSnap: (name: string, handleCommand: AsyncHandler, metered?: boolean, snapshotHash?: string) => Promise<XSnap>,
  *   testLog: (...args: unknown[]) => void,
  * }} tools
- * @returns { VatManagerFactory }
+ * @returns {VatManagerFactory}
  *
  * @typedef { { moduleFormat: 'getExport', source: string } } ExportBundle
  * @typedef { (msg: Uint8Array) => Promise<Uint8Array> } AsyncHandler
@@ -38,10 +38,10 @@ export function makeXsSubprocessFactory({
   testLog,
 }) {
   /**
-   * @param { string } vatID
-   * @param { unknown } bundle
-   * @param { ManagerOptions } managerOptions
-   * @param { (vso: VatSyscallObject) => VatSyscallResult } vatSyscallHandler
+   * @param {string} vatID
+   * @param {unknown} bundle
+   * @param {ManagerOptions} managerOptions
+   * @param {(vso: VatSyscallObject) => VatSyscallResult} vatSyscallHandler
    */
   async function createFromBundle(
     vatID,
@@ -162,7 +162,7 @@ export function makeXsSubprocessFactory({
 
     /**
      * @param { VatDeliveryObject} delivery
-     * @returns { Promise<VatDeliveryResult> }
+     * @returns {Promise<VatDeliveryResult>}
      */
     async function deliverToWorker(delivery) {
       parentLog(vatID, `sending delivery`, delivery);

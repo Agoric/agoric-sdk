@@ -193,17 +193,18 @@ export const makeZCFZygote = (
           losses,
         );
 
+        // verifies offer safety
+        assert(
+          zcfSeat.isOfferSafe(allocationMinusLosses),
+          `The allocation after burning losses ${allocationMinusLosses}for the zcfSeat was not offer safe`,
+        );
+
         // Decrement the stagedAllocation if it exists so that the
         // stagedAllocation is kept up to the currentAllocation
         if (zcfSeat.hasStagedAllocation()) {
           zcfSeat.decrementBy(losses);
         }
 
-        // verifies offer safety
-        assert(
-          zcfSeat.isOfferSafe(allocationMinusLosses),
-          `The allocation after burning losses ${allocationMinusLosses}for the zcfSeat was not offer safe`,
-        );
         // No effects above, apart from decrementBy. Note COMMIT POINT within
         // reallocateForZCFMint. The following two steps *should* be
         // committed atomically, but it is not a disaster if they are

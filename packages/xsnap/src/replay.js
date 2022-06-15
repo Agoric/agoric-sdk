@@ -20,7 +20,7 @@ const { freeze } = Object;
 
 const encoder = new TextEncoder();
 
-/** @param { number } n */
+/** @param {number} n */
 const pad5 = n => `${n}`.padStart(5, '0');
 
 /**
@@ -32,13 +32,13 @@ function makeSyncStorage(path, { writeFileSync }) {
   return freeze({
     /** @param {string} fn */
     file: fn => {
-      /** @param { Uint8Array } data */
+      /** @param {Uint8Array} data */
       const put = data =>
         writeFileSync(new URL(fn, base).pathname, data, { flag: 'wx' });
 
       return freeze({
         put,
-        /** @param { string } txt */
+        /** @param {string} txt */
         putText: txt => put(encoder.encode(txt)),
       });
     },
@@ -70,11 +70,11 @@ function makeSyncAccess(path, { readdirSync, readFileSync }) {
  * Start an xsnap subprocess controller that records data
  * flowing to it for replay.
  *
- * @param { XSnapOptions } options used
+ * @param {XSnapOptions} options used
  *        to create the underlying xsnap subprocess. Note that
  *        options.handleCommand is wrapped in order to capture
  *        data sent to the process.
- * @param { string } folderPath where to store files of the form
+ * @param {string} folderPath where to store files of the form
  *        00000-options.json
  *        00001-evaluate.dat
  *        00002-issueCommand.dat
@@ -93,8 +93,8 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
   let ix = 0;
 
   /**
-   * @param { string } kind
-   * @param { string= } ext
+   * @param {string} kind
+   * @param {string=} ext
    */
   const nextFile = (kind, ext = 'dat') => {
     const fn = `${pad5(ix)}-${kind}.${ext}`;
@@ -140,7 +140,7 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
       nextFile('isReady');
       return it.isReady();
     },
-    /** @param { Uint8Array } msg */
+    /** @param {Uint8Array} msg */
     issueCommand: async msg => {
       nextFile('issueCommand').put(msg);
       return it.issueCommand(msg);
@@ -172,7 +172,7 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
  * Replay an xsnap subprocess from one or more folders of steps.
  *
  * @param {XSnapOptions} opts
- * @param { string[] } folders
+ * @param {string[]} folders
  * @param {{
  *   readdirSync: typeof import('fs').readdirSync,
  *   readFileSync: typeof import('fs').readFileSync,
@@ -190,7 +190,7 @@ export async function replayXSnap(
     return r;
   }
 
-  /** @param { string } folder */
+  /** @param {string} folder */
   function start(folder) {
     const rd = makeSyncAccess(folder, { readdirSync, readFileSync });
     const [optionsFn] = rd.readdir();
@@ -205,8 +205,8 @@ export async function replayXSnap(
   const it = start(folders[0]);
 
   /**
-   * @param { ReturnType<typeof makeSyncAccess> } rd
-   * @param { string[] } steps
+   * @param {ReturnType<typeof makeSyncAccess>} rd
+   * @param {string[]} steps
    */
   async function runSteps(rd, steps) {
     const folder = rd.path;

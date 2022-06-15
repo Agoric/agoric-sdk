@@ -46,7 +46,7 @@ const BASIS = 10_000n;
 const pad0 = (frac, exp) =>
   `${`${'0'.repeat(exp)}${frac}`.slice(-exp)}`.replace(/0+$/, '');
 
-/** @param { bigint } whole */
+/** @param {bigint} whole */
 const separators = whole => {
   const sep = '_';
   // ack: https://stackoverflow.com/a/45950572/7963, https://regex101.com/
@@ -168,7 +168,7 @@ export const AMMDemoState = {
   },
 };
 
-/** @param { number } f */
+/** @param {number} f */
 const run2places = f =>
   BigInt(Math.round(f * 100)) *
   10n ** BigInt(DecimalPlaces[CENTRAL_ISSUER_NAME] - 2);
@@ -180,7 +180,7 @@ const run2places = f =>
  *   feeMintAccess: ERef<FeeMintAccess>,
  *   zoe: ERef<ZoeService>,
  * }} powers
- * @returns { Promise<Payment> }
+ * @returns {Promise<Payment>}
  */
 const mintRunPayment = async (
   value,
@@ -352,7 +352,7 @@ export const ammPoolRunDeposits = issuers => {
       assert(record.config);
       assert(record.trades);
 
-      /** @param { bigint } n */
+      /** @param {bigint} n */
       const inCollateral = n => n * 10n ** BigInt(DecimalPlaces[issuerName]);
 
       // The initial trade represents the fair value of RUN for collateral.
@@ -415,7 +415,7 @@ export const splitAllCentralPayments = async (
  * @param {{ issuer: ERef<Issuer>, brand: Brand }} central
  */
 export const poolRates = (issuerName, record, kits, central) => {
-  /** @param { bigint } n */
+  /** @param {bigint} n */
   const inCollateral = n => n * 10n ** BigInt(DecimalPlaces[issuerName]);
   const config = record.config;
   assert(config);
@@ -605,7 +605,7 @@ export const fundAMM = async ({
       console.debug(`Creating ${issuerName}-${CENTRAL_ISSUER_NAME}`);
       const issuer = kits[issuerName].issuer;
       const { trades } = record;
-      /** @param { bigint } n */
+      /** @param {bigint} n */
       const inCollateral = n => n * 10n ** BigInt(DecimalPlaces[issuerName]);
       const tradesGivenCentral = trades.map(
         ({ central: num, collateral: unit }) =>
