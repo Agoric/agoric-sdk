@@ -118,7 +118,7 @@ const finish = ({ state, facets }) => {
       helper
         .chargeAllVaults(updateTime)
         .catch(e =>
-          console.error('🚨 runStakeManager failed to charge interest', e),
+          console.error('🚨 stakeManager failed to charge interest', e),
         ),
     fail: reason => {
       zcf.shutdownWithFailure(

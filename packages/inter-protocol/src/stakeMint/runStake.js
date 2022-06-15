@@ -7,7 +7,7 @@ import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeAttestationFacets } from './attestation.js';
 import { ManagerKW as KW } from './constants.js';
 import { makeRunStakeKit } from './runStakeKit.js';
-import { makeRunStakeManager } from './runStakeManager.js';
+import { makeRunStakeManager } from './stakeManager.js';
 
 const { details: X } = assert;
 const { values } = Object;
