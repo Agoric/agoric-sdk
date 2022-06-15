@@ -15,7 +15,7 @@ import { makeReserveTerms } from '../reserve/params.js';
 import '../../exported.js';
 
 import * as Collect from '../collect.js';
-import { makeRunStakeTerms } from '../runStake/params.js';
+import { makeRunStakeTerms } from '../stakeMint/params.js';
 import { liquidationDetailTerms } from '../vaultFactory/liquidation.js';
 import { makeStakeReporter } from '../my-lien.js';
 import { makeTracer } from '../makeTracer.js';
@@ -49,7 +49,7 @@ const CENTRAL_DENOM_NAME = 'urun';
  *   reservePublicFacet: AssetReservePublicFacet,
  *   reserveCreatorFacet: AssetReserveCreatorFacet,
  *   reserveGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
- *   runStakeCreatorFacet: import('../runStake/runStake.js').RunStakeCreator,
+ *   runStakeCreatorFacet: import('../stakeMint/runStake.js').RunStakeCreator,
  *   vaultFactoryCreator: VaultFactory,
  *   vaultFactoryGovernorCreator: GovernedContractFacetAccess<unknown>,
  *   vaultFactoryVoteCreator: unknown,
@@ -752,7 +752,7 @@ export const startLienBridge = async ({
  * @param {bigint} [config.chargingPeriod]
  * @param {bigint} [config.recordingPeriod]
  * @typedef {[bigint, bigint]} Rational
- * @typedef {Awaited<ReturnType<typeof import('../runStake/runStake.js').start>>} StartRunStake
+ * @typedef {Awaited<ReturnType<typeof import('../stakeMint/runStake.js').start>>} StartRunStake
  */
 export const startRunStake = async (
   {

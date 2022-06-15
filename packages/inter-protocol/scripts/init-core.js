@@ -26,7 +26,7 @@ const installKeyGroups = {
     ],
   },
   runStake: {
-    runStake: ['../src/runStake/runStake.js', '../bundles/bundle-runStake.js'],
+    runStake: ['../src/stakeMint/runStake.js', '../bundles/bundle-runStake.js'],
   },
   main: {
     amm: [

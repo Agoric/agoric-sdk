@@ -24,7 +24,7 @@ import {
 } from '../../src/proposals/econ-behaviors.js';
 import * as Collect from '../../src/collect.js';
 import { makeVoterTool, setUpZoeForTest, mintRunPayment } from '../supports.js';
-import { ManagerKW as KW } from '../../src/runStake/constants.js';
+import { ManagerKW as KW } from '../../src/stakeMint/constants.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 
 // 8	Partial repayment from reward stream - TODO
@@ -36,8 +36,8 @@ import { unsafeMakeBundleCache } from '../bundleTool.js';
 // 13	Add collateral - CR increase ok
 
 const contractRoots = {
-  runStake: './src/runStake/runStake.js',
-  faker: './test/runStake/attestationFaker.js',
+  runStake: './src/stakeMint/runStake.js',
+  faker: './test/stakeMint/attestationFaker.js',
 };
 
 const { entries } = Object;
@@ -58,7 +58,7 @@ const micro = harden({
  *   issuer: Record<'RUN' | 'BLD', Issuer<'nat'>>,
  *   brand: Record<'RUN' | 'BLD', Brand<'nat'>>,
  *   installation: {
- *     runStake: Installation<typeof import('../../src/runStake/runStake.js').start>,
+ *     runStake: Installation<typeof import('../../src/stakeMint/runStake.js').start>,
  *     faker: Installation,
  *     committee: Installation,
  *     contractGovernor: Installation,

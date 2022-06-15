@@ -50,7 +50,7 @@ for this contract.
 
 ### RUNStake
 
-In `packages/inter-protocol/src/runStake/runStake.js`:
+In `packages/inter-protocol/src/stakeMint/runStake.js`:
 
 | Governance Key     | Type                | WP? |
 | ------------------ | :------------------ | --- |
