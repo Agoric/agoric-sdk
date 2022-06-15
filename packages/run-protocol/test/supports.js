@@ -1,5 +1,4 @@
 // @ts-check
-/* global setImmediate */
 
 import { AmountMath } from '@agoric/ertp';
 import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
@@ -33,18 +32,6 @@ export const provideBundle = (t, sourceRoot, bundleName) => {
   return bundleCache.load(sourceRoot, bundleName);
 };
 harden(provideBundle);
-
-/**
- * A workaround for some issues with fake time in tests.
- *
- * Lines of test code can depend on async promises outside the test
- * resolving before they run. Awaiting this function result ensures
- * that all promises that can do resolve.
- * Note that this doesn't mean all outstanding promises.
- */
-export const eventLoopIteration = async () =>
-  new Promise(resolve => setImmediate(resolve));
-harden(eventLoopIteration);
 
 /**
  * Returns promises for `zoe` and the `feeMintAccess`.

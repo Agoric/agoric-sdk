@@ -7,7 +7,10 @@ import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import {
+  buildManualTimer,
+  eventLoopIteration,
+} from '@agoric/zoe/tools/manualTimer.js';
 import {
   ceilMultiplyBy,
   makeRatio,
@@ -38,7 +41,6 @@ import {
   installGovernance,
   setupBootstrap,
   setUpZoeForTest,
-  eventLoopIteration,
   withAmountUtils,
   produceInstallations,
 } from '../supports.js';

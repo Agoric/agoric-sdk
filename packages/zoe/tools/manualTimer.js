@@ -1,8 +1,8 @@
 // @ts-check
+/* global setImmediate */
 
 import { E } from '@endo/eventual-send';
 import { makeScalarMapStore } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import { Far } from '@endo/marshal';
 
@@ -10,6 +10,20 @@ import './types.js';
 import './internal-types.js';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
+
+const { details: X } = assert;
+
+/**
+ * A workaround for some issues with fake time in tests.
+ *
+ * Lines of test code can depend on async promises outside the test
+ * resolving before they run. Awaiting this function result ensures
+ * that all promises that can do resolve.
+ * Note that this doesn't mean all outstanding promises.
+ */
+export const eventLoopIteration = async () =>
+  new Promise(resolve => setImmediate(resolve));
+harden(eventLoopIteration);
 
 /**
  * A fake clock that also logs progress.
@@ -189,3 +203,5 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
   });
   return timer;
 }
+harden(buildManualTimer);
+export { buildManualTimer };

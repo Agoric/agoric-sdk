@@ -5,12 +5,14 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import {
+  buildManualTimer,
+  eventLoopIteration,
+} from '@agoric/zoe/tools/manualTimer.js';
 
 import { setupReserveServices } from './setup.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 import { subscriptionTracker } from '../metrics.js';
-import { eventLoopIteration } from '../supports.js';
 
 const addLiquidPool = async (
   runPayment,
