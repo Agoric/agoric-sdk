@@ -79,6 +79,7 @@ const getTwoPoolInputPrices = (
   const getPoolFee = () => fees.poolFeeBP;
   const getProFee = () => fees.protocolFeeBP;
   const vPool = makeDoublePool(
+    // @ts-expect-error fake
     undefined,
     pool1,
     pool2,
