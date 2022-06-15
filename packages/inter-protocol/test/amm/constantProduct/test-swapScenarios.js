@@ -9,9 +9,9 @@ import {
   BASIS_POINTS,
   DEFAULT_PROTOCOL_FEE,
   DEFAULT_POOL_FEE,
-} from '../../../src/vpool-xyk-amm/constantProduct/defaults.js';
+} from '../../../src/amm/constantProduct/defaults.js';
 import { setupMintKits } from './setupMints.js';
-import { pricesForStatedInput } from '../../../src/vpool-xyk-amm/constantProduct/calcSwapPrices.js';
+import { pricesForStatedInput } from '../../../src/amm/constantProduct/calcSwapPrices.js';
 
 const { multiply, ceilDivide } = natSafeMath;
 

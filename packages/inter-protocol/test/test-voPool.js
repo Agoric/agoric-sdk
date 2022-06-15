@@ -5,8 +5,8 @@ import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
-import { definePoolKind } from '../src/vpool-xyk-amm/pool.js';
-import { makeAmmParamManager } from '../src/vpool-xyk-amm/params.js';
+import { definePoolKind } from '../src/amm/pool.js';
+import { makeAmmParamManager } from '../src/amm/params.js';
 
 const voPoolTest = async (t, mutation, postTest) => {
   let makePool;

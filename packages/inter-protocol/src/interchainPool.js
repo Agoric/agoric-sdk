@@ -2,7 +2,7 @@
 import { E, Far } from '@endo/far';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
-import { MIN_INITIAL_POOL_LIQUIDITY_KEY } from './vpool-xyk-amm/params.js';
+import { MIN_INITIAL_POOL_LIQUIDITY_KEY } from './amm/params.js';
 
 const { details: X, quote: q } = assert;
 

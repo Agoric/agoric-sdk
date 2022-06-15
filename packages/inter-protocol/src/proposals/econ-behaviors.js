@@ -9,7 +9,7 @@ import '@agoric/vats/src/core/types.js';
 
 import { AmountMath } from '@agoric/ertp';
 import { makeGovernedTerms } from '../vaultFactory/params.js';
-import { makeAmmTerms } from '../vpool-xyk-amm/params.js';
+import { makeAmmTerms } from '../amm/params.js';
 import { makeReserveTerms } from '../reserve/params.js';
 
 import '../../exported.js';

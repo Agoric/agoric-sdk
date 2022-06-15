@@ -10,16 +10,16 @@ import {
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
 
-import * as Collect from '../../../src/collect.js';
+import * as Collect from '../../src/collect.js';
 import {
   setupAmm,
   setupReserve,
   startEconomicCommittee,
-} from '../../../src/proposals/econ-behaviors.js';
-import { installGovernance, provideBundle } from '../../supports.js';
-import { makeTracer } from '../../../src/makeTracer.js';
+} from '../../src/proposals/econ-behaviors.js';
+import { installGovernance, provideBundle } from '../supports.js';
+import { makeTracer } from '../../src/makeTracer.js';
 
-const ammRoot = './src/vpool-xyk-amm/multipoolMarketMaker.js'; // package relative
+const ammRoot = './src/amm/multipoolMarketMaker.js'; // package relative
 const reserveRoot = './src/reserve/assetReserve.js'; // package relative
 
 const trace = makeTracer('AmmTS', false);
@@ -59,7 +59,7 @@ export const setupAMMBootstrap = async (
 
   const space = /** @type {any} */ (makePromiseSpace());
   const { produce, consume } =
-    /** @type { import('../../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers } */ (
+    /** @type { import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers } */ (
       space
     );
 

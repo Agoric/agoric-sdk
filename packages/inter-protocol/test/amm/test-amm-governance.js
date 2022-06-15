@@ -13,12 +13,12 @@ import {
   MIN_INITIAL_POOL_LIQUIDITY_KEY,
   POOL_FEE_KEY,
   PROTOCOL_FEE_KEY,
-} from '../../../src/vpool-xyk-amm/params.js';
-import { amountGT } from '../../../src/vpool-xyk-amm/constantProduct/calcFees.js';
-import { startEconomicCommittee } from '../../../src/proposals/econ-behaviors.js';
+} from '../../src/amm/params.js';
+import { amountGT } from '../../src/amm/constantProduct/calcFees.js';
+import { startEconomicCommittee } from '../../src/proposals/econ-behaviors.js';
 
 import { setupAmmServices, setupAMMBootstrap } from './setup.js';
-import { unsafeMakeBundleCache } from '../../bundleTool.js';
+import { unsafeMakeBundleCache } from '../bundleTool.js';
 
 test.before(async t => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');

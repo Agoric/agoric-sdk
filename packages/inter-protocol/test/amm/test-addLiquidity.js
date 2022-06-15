@@ -3,9 +3,9 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { balancesToReachRatio } from '../../../src/vpool-xyk-amm/addLiquidity.js';
-import { unsafeMakeBundleCache } from '../../bundleTool.js';
-import { setupMintKits } from '../constantProduct/setupMints.js';
+import { balancesToReachRatio } from '../../src/amm/addLiquidity.js';
+import { unsafeMakeBundleCache } from '../bundleTool.js';
+import { setupMintKits } from './constantProduct/setupMints.js';
 
 test.before(async t => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');

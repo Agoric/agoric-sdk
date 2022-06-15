@@ -2,12 +2,12 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { BASIS_POINTS } from '../../../src/vpool-xyk-amm/constantProduct/defaults.js';
+import { BASIS_POINTS } from '../../../src/amm/constantProduct/defaults.js';
 import { setupMintKits } from './setupMints.js';
 import {
   pricesForStatedInput,
   pricesForStatedOutput,
-} from '../../../src/vpool-xyk-amm/constantProduct/calcSwapPrices.js';
+} from '../../../src/amm/constantProduct/calcSwapPrices.js';
 
 // This assumes run is swapped in. The test should function the same
 // regardless of what brand is the amountIn, because no run fee is

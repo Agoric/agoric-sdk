@@ -1,9 +1,6 @@
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
-import {
-  setUpZoeForTest,
-  setupAmmServices,
-} from '../amm/vpool-xyk-amm/setup.js';
+import { setUpZoeForTest, setupAmmServices } from '../amm/setup.js';
 import { provideBundle } from '../supports.js';
 
 const reserveRoot = './src/reserve/assetReserve.js'; // package relative

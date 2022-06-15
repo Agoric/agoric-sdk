@@ -30,10 +30,7 @@ test.before(async t => {
       './src/vaultFactory/liquidateMinimum.js',
       'liquidateMinimum',
     ),
-    amm: await bundleCache.load(
-      './src/vpool-xyk-amm/multipoolMarketMaker.js',
-      'amm',
-    ),
+    amm: await bundleCache.load('./src/amm/multipoolMarketMaker.js', 'amm'),
     vaultFactory: await bundleCache.load(
       './src/vaultFactory/vaultFactory.js',
       'VaultFactory',

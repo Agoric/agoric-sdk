@@ -8,8 +8,8 @@ import {
   calcDeltaXSellingX,
   calcDeltaYSellingX,
   swapInNoFees,
-} from '../../../src/vpool-xyk-amm/constantProduct/core.js';
-import { pricesForStatedInput } from '../../../src/vpool-xyk-amm/constantProduct/calcSwapPrices.js';
+} from '../../../src/amm/constantProduct/core.js';
+import { pricesForStatedInput } from '../../../src/amm/constantProduct/calcSwapPrices.js';
 
 const BASIS_POINTS = 10000n;
 

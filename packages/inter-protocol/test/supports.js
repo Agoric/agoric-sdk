@@ -50,7 +50,7 @@ harden(eventLoopIteration);
  * Returns promises for `zoe` and the `feeMintAccess`.
  *
  * @param {() => void} setJig
- * @returns {import('./amm/vpool-xyk-amm/setup.js').FarZoeKit}
+ * @returns {import('./amm/setup.js').FarZoeKit}
  */
 export const setUpZoeForTest = (setJig = () => {}) => {
   const { makeFar } = makeLoopback('zoeTest');

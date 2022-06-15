@@ -9,8 +9,8 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 import { setupAmmServices } from './setup.js';
-import { unsafeMakeBundleCache } from '../../bundleTool.js';
-import { subscriptionTracker } from '../../metrics.js';
+import { unsafeMakeBundleCache } from '../bundleTool.js';
+import { subscriptionTracker } from '../metrics.js';
 
 /** @typedef {Record<string, any> & {
  *   bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>,

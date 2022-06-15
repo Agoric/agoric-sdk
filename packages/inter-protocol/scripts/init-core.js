@@ -32,10 +32,7 @@ const installKeyGroups = {
     ],
   },
   main: {
-    amm: [
-      '../src/vpool-xyk-amm/multipoolMarketMaker.js',
-      '../bundles/bundle-amm.js',
-    ],
+    amm: ['../src/amm/multipoolMarketMaker.js', '../bundles/bundle-amm.js'],
     interchainPool: [
       '../src/interchainPool.js',
       '../bundles/bundle-interchainPool.js',

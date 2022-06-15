@@ -3,14 +3,14 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { BASIS_POINTS } from '../../../src/vpool-xyk-amm/constantProduct/defaults.js';
+import { BASIS_POINTS } from '../../../src/amm/constantProduct/defaults.js';
 import { setupMintKits } from './setupMints.js';
 import {
   pricesForStatedInput,
   pricesForStatedOutput,
-} from '../../../src/vpool-xyk-amm/constantProduct/calcSwapPrices.js';
-import { checkKInvariantSellingX } from '../../../src/vpool-xyk-amm/constantProduct/invariants.js';
-import { getXY } from '../../../src/vpool-xyk-amm/constantProduct/getXY.js';
+} from '../../../src/amm/constantProduct/calcSwapPrices.js';
+import { checkKInvariantSellingX } from '../../../src/amm/constantProduct/invariants.js';
+import { getXY } from '../../../src/amm/constantProduct/getXY.js';
 
 /**
  * @typedef {object} SwapPriceArgs

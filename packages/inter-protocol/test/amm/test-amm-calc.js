@@ -6,7 +6,7 @@ import fc from 'fast-check';
 import {
   imbalancedRequest,
   balancesToReachRatio,
-} from '../../../src/vpool-xyk-amm/addLiquidity.js';
+} from '../../src/amm/addLiquidity.js';
 
 const { add, multiply } = natSafeMath;
 

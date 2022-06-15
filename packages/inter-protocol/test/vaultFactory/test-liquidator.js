@@ -50,7 +50,7 @@ const contractRoots = {
   faucet: './test/vaultFactory/faucet.js',
   liquidate: './src/vaultFactory/liquidateIncrementally.js',
   VaultFactory: './src/vaultFactory/vaultFactory.js',
-  amm: './src/vpool-xyk-amm/multipoolMarketMaker.js',
+  amm: './src/amm/multipoolMarketMaker.js',
   reserve: './src/reserve/assetReserve.js',
 };
 

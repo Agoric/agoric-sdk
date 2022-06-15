@@ -23,10 +23,10 @@ import {
   assertAmountsEqual,
   assertPayoutAmount,
 } from '@agoric/zoe/test/zoeTestHelpers.js';
-import { BASIS_POINTS } from '../../../src/vpool-xyk-amm/constantProduct/defaults.js';
+import { BASIS_POINTS } from '../../src/amm/constantProduct/defaults.js';
 import { setupAmmServices } from './setup.js';
-import { unsafeMakeBundleCache } from '../../bundleTool.js';
-import { subscriptionTracker } from '../../metrics.js';
+import { unsafeMakeBundleCache } from '../bundleTool.js';
+import { subscriptionTracker } from '../metrics.js';
 
 const { quote: q } = assert;
 const { ceilDivide } = natSafeMath;
