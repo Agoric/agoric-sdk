@@ -98,14 +98,14 @@ import { makeTranscriptManager } from './transcript.js';
  * The returned getManager() function will return a VatManager suitable for
  * handing to the kernel, which can use it to send deliveries to the vat.
  *
- * @param { string } vatID
- * @param { KernelKeeper } kernelKeeper
- * @param { KernelSlog } kernelSlog
- * @param { (vso: VatSyscallObject) => VatSyscallResult } vatSyscallHandler
- * @param { boolean } workerCanBlock
- * @param { (vatID: any, originalSyscall: any, newSyscall: any) => Error | undefined } [compareSyscalls]
- * @param { boolean } [useTranscript]
- * @returns { ManagerKit }
+ * @param {string} vatID
+ * @param {KernelKeeper} kernelKeeper
+ * @param {KernelSlog} kernelSlog
+ * @param {(vso: VatSyscallObject) => VatSyscallResult} vatSyscallHandler
+ * @param {boolean} workerCanBlock
+ * @param {(vatID: any, originalSyscall: any, newSyscall: any) => Error | undefined} [compareSyscalls]
+ * @param {boolean} [useTranscript]
+ * @returns {ManagerKit}
  */
 
 function makeManagerKit(
@@ -132,7 +132,7 @@ function makeManagerKit(
   let deliverToWorker;
 
   /**
-   * @param { (delivery: VatDeliveryObject) => Promise<VatDeliveryResult> } dtw
+   * @param {(delivery: VatDeliveryObject) => Promise<VatDeliveryResult>} dtw
    */
   function setDeliverToWorker(dtw) {
     assert(!deliverToWorker, `setDeliverToWorker called twice`);
@@ -141,8 +141,8 @@ function makeManagerKit(
 
   /**
    *
-   * @param { VatDeliveryObject } delivery
-   * @returns { Promise<VatDeliveryResult> } // or Error
+   * @param {VatDeliveryObject} delivery
+   * @returns {Promise<VatDeliveryResult>} // or Error
    */
   async function deliver(delivery) {
     if (transcriptManager) {
@@ -194,7 +194,7 @@ function makeManagerKit(
 
   /**
    * @param {StreamPosition | undefined} startPos
-   * @returns { Promise<number?> } number of deliveries, or null if !useTranscript
+   * @returns {Promise<number?>} number of deliveries, or null if !useTranscript
    */
   async function replayTranscript(startPos) {
     // console.log('replay from', { vatID, startPos });
@@ -235,8 +235,8 @@ function makeManagerKit(
    * bytes over a socket or pipe, postMessage to an in-process Worker, or
    * just direct).
    *
-   * @param { VatSyscallObject } vso
-   * @returns { VatSyscallResult }
+   * @param {VatSyscallObject} vso
+   * @returns {VatSyscallResult}
    */
   function syscallFromWorker(vso) {
     if (transcriptManager && transcriptManager.inReplay()) {
@@ -265,8 +265,8 @@ function makeManagerKit(
   /**
    *
    * @param { () => Promise<void>} shutdown
-   * @param { (ss: SnapStore) => Promise<string> } makeSnapshot
-   * @returns { VatManager }
+   * @param {(ss: SnapStore) => Promise<string>} makeSnapshot
+   * @returns {VatManager}
    */
   function getManager(shutdown, makeSnapshot) {
     return harden({

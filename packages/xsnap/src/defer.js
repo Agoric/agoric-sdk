@@ -4,6 +4,7 @@
  * @param {boolean} _flag
  * @returns {asserts _flag}
  */
+
 function assert(_flag) {}
 
 /**

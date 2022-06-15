@@ -15,21 +15,25 @@
     import './install-ses-lockdown.js';
 
     import { E } from '@endo/eventual-send';
+    // import { makeFollower, iterateLatest } from '@agoric/casting';
     import { html, render } from 'lit';
     import '../agoric-wallet-connection.js';
 
+     // FIXME import these @agoric/casting when it doesn't crash our browser.
+    const { makeFollower, iterateLatest } = {};
     const demo = document.querySelector('#demo');
 
     const cmds = [];
     const history = [];
 
-    const c = new Compartment({ E, h: history });
+    const c = new Compartment({ E, h: history, makeFollower, iterateLatest });
 
     const onState = ev => {
-      const { cache, walletConnection, state } = ev.detail;
+      const { cache, makeDefaultLeader, walletConnection, state } = ev.detail;
       c.globalThis.state = state;
       c.globalThis.walletConnection = walletConnection;
       c.globalThis.cache = cache;
+      c.globalThis.makeDefaultLeader = makeDefaultLeader;
     };
 
     const onKeyPress = ev => {
@@ -53,6 +57,8 @@
               <dd>the wallet connection</dd>
               <dt>cache</dt>
               <dd>the bridge or admin cache</dd>
+              <dt>makeDefaultLeader</dt>
+              <dd>the default <tt>@agoric/casting</tt> leader</dd>
               <dt>state</dt>
               <dd>the wallet connection state</dd>
               <dt>E(x).method(...args)</dt>

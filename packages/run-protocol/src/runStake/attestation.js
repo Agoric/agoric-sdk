@@ -141,8 +141,8 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
   };
 
   /**
-   * @param { Address } address
-   * @param { Amount<'nat'> } lienDelta
+   * @param {Address} address
+   * @param {Amount<'nat'>} lienDelta
    */
   const mintAttestation = async (address, lienDelta) => {
     // This account state check is primarily to provide useful diagnostics.
@@ -208,7 +208,7 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     getAccountState,
     wrapLienedAmount,
     /**
-     * @param { Amount<'copyBag'> } attAmt
+     * @param {Amount<'copyBag'>} attAmt
      * @throws if `attAmt` payload length is not 1
      */
     unwrapLienedAmount: attAmt => unwrapLienedAmount(attAmt).lienedAmount,
@@ -259,7 +259,7 @@ export const makeAttestationFacets = async (zcf, stakeBrand, lienBridge) => {
        * address. Only the owner can authorize creation of attestations and
        * the resulting liens on their underlying tokens.
        *
-       * @param { Address } address
+       * @param {Address} address
        */
       provideAttestationTool: address => {
         assert.typeof(address, 'string');

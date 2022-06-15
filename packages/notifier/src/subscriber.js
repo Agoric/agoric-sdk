@@ -14,7 +14,7 @@ import './types.js';
  * @returns {Subscription<T>}
  */
 const makeSubscription = sharableInternalsP => {
-  return Far('Subscription', {
+  const subscription = Far('Subscription', {
     // eslint-disable-next-line no-use-before-define
     [Symbol.asyncIterator]: () => makeSubscriptionIterator(sharableInternalsP),
 
@@ -27,7 +27,10 @@ const makeSubscription = sharableInternalsP => {
      * @returns {ERef<SubscriptionInternals<T>>}
      */
     getSharableSubscriptionInternals: () => sharableInternalsP,
+
+    getStoreKey: () => harden({ subscription }),
   });
+  return subscription;
 };
 harden(makeSubscription);
 export { makeSubscription };

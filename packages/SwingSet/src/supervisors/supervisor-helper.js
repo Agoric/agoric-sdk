@@ -18,13 +18,13 @@ import '../types-ambient.js';
  * function with this one, and call it in response to messages from the
  * manager process.
  *
- * @param { VatDispatcherSyncAsync } dispatch
- * @returns { VatDispatcher }
+ * @param {VatDispatcherSyncAsync} dispatch
+ * @returns {VatDispatcher}
  */
 function makeSupervisorDispatch(dispatch) {
   /**
-   * @param { VatDeliveryObject } delivery
-   * @returns { Promise<VatDeliveryResult> }
+   * @param {VatDeliveryObject} delivery
+   * @returns {Promise<VatDeliveryResult>}
    *
    */
   async function dispatchToVat(delivery) {
@@ -56,10 +56,10 @@ export { makeSupervisorDispatch };
  * I should be given a `syscallToManager` function that accepts a
  * VatSyscallObject and (synchronously) returns a VatSyscallResult.
  *
- * @param { VatSyscaller } syscallToManager
- * @param { boolean } workerCanBlock
+ * @param {VatSyscaller} syscallToManager
+ * @param {boolean} workerCanBlock
  * @typedef { unknown } TheSyscallObjectWithMethodsThatLiveslotsWants
- * @returns { TheSyscallObjectWithMethodsThatLiveslotsWants }
+ * @returns {TheSyscallObjectWithMethodsThatLiveslotsWants}
  */
 function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
   function doSyscall(fields) {

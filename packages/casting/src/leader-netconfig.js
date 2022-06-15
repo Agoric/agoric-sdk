@@ -1,7 +1,11 @@
 // @ts-check
 /* global fetch */
 import { makeRoundRobinLeader } from './leader.js';
-import { DEFAULT_RETRY_CALLBACK } from './defaults.js';
+import {
+  DEFAULT_BOOTSTRAP,
+  DEFAULT_JITTER,
+  DEFAULT_RETRY_CALLBACK,
+} from './defaults.js';
 
 const { details: X } = assert;
 
@@ -29,15 +33,17 @@ export const makeLeaderFromRpcAddresses = (rpcAddrs, leaderOptions) => {
  * @param {import('./types.js').LeaderOptions} [options]
  */
 export const makeLeaderFromNetworkConfig = (netconfigURL, options = {}) => {
-  const { retryCallback = DEFAULT_RETRY_CALLBACK } = options;
+  const { retryCallback = DEFAULT_RETRY_CALLBACK, jitter = DEFAULT_JITTER } =
+    options;
   /** @type {import('./types.js').LeaderOptions['retryCallback']} */
-  const retry = async (err, attempt) => {
+  const retry = async (where, err, attempt) => {
     if (retryCallback) {
-      return retryCallback(err, attempt);
+      return retryCallback(where, err, attempt);
     }
     throw err;
   };
   let attempt = 0;
+  const where = 'Network config leader';
   return new Promise((resolve, reject) => {
     const makeLeader = async () => {
       const response = await fetch(netconfigURL, {
@@ -49,7 +55,8 @@ export const makeLeaderFromNetworkConfig = (netconfigURL, options = {}) => {
       return makeLeaderFromRpcAddresses(rpcAddrs, options);
     };
     const retryLeader = async err => {
-      retry(err, attempt)
+      retry(where, err, attempt)
+        .then(() => jitter(where))
         .then(() => makeLeader().then(resolve, retryLeader))
         .catch(reject);
       attempt += 1;
@@ -59,10 +66,10 @@ export const makeLeaderFromNetworkConfig = (netconfigURL, options = {}) => {
 };
 
 /**
- * @param {string} bootstrap
- * @param {import('./types.js').LeaderOptions} options
+ * @param {string} [bootstrap]
+ * @param {import('./types.js').LeaderOptions} [options]
  */
-export const makeLeader = (bootstrap, options) => {
+export const makeLeader = (bootstrap = DEFAULT_BOOTSTRAP, options) => {
   if (bootstrap.includes('network-config')) {
     return makeLeaderFromNetworkConfig(bootstrap, options);
   }

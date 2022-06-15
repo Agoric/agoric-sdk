@@ -180,3 +180,7 @@ func (k Keeper) PathToEncodedKey(path string) []byte {
 func (k Keeper) GetStoreName() string {
 	return k.storeKey.Name()
 }
+
+func (k Keeper) GetDataPrefix() []byte {
+	return types.EncodedDataPrefix
+}

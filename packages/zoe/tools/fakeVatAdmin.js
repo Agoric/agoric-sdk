@@ -21,8 +21,8 @@ const fakeBundleCap = () => makeHandle('BundleCap');
 export const zcfBundleCap = fakeBundleCap();
 
 /**
- * @param { (...args) => unknown } [testContextSetter]
- * @param { (x: unknown) => unknown } [makeRemote]
+ * @param {(...args) => unknown} [testContextSetter]
+ * @param {(x: unknown) => unknown} [makeRemote]
  */
 function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   // FakeVatPowers isn't intended to support testing of vat termination, it is

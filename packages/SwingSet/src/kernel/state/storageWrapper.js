@@ -21,7 +21,7 @@ import { insistStorageAPI, makeBufferedStorage } from '../../lib/storageAPI.js';
  *
  * @param {KVStore} kvStore  The StorageAPI object that this crank buffer will be based on.
  * @param {import('../../lib-nodejs/hasher.js').CreateSHA256}  createSHA256
- * @param { (key: string) => 'consensus' | 'local' | 'invalid' } getKeyType
+ * @param {(key: string) => 'consensus' | 'local' | 'invalid'} getKeyType
  * @returns {*} an object {
  * crankBuffer,  // crank buffer as described, wrapping `kvStore`
  * commitCrank,  // function to save buffered mutations to `kvStore`
@@ -74,7 +74,7 @@ export function buildCrankBuffer(
    * Flush any buffered mutations to the underlying storage, and update the
    * activityhash.
    *
-   * @returns { { crankhash: string, activityhash: string } }
+   * @returns {{ crankhash: string, activityhash: string }}
    */
   function commitCrank() {
     // Flush the buffered operations.

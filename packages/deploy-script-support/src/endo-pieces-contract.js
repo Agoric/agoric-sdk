@@ -9,7 +9,7 @@ export const start = () => {
   /** @type { Map<string, [string, Uint8Array]>} */
   const hashToEntry = new Map();
 
-  /** @param { string[] } hashes */
+  /** @param {string[]} hashes */
   const preFilter = hashes => {
     assert(Array.isArray(hashes));
     return hashes.filter(hash => {

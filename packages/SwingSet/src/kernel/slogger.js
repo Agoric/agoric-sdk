@@ -75,7 +75,7 @@ function makeCallbackRegistry(callbacks) {
  *
  * @param {*} slogCallbacks
  * @param {Pick<Console, 'debug'|'log'|'info'|'warn'|'error'>} dummyConsole
- * @returns { KernelSlog }
+ * @returns {KernelSlog}
  */
 export function makeDummySlogger(slogCallbacks, dummyConsole) {
   const { registerCallback: reg, doneRegistering } =
@@ -105,7 +105,7 @@ export function makeDummySlogger(slogCallbacks, dummyConsole) {
  *
  * @param {*} slogCallbacks
  * @param {*} writeObj
- * @returns { KernelSlog }
+ * @returns {KernelSlog}
  */
 export function makeSlogger(slogCallbacks, writeObj) {
   const safeWrite = e => {

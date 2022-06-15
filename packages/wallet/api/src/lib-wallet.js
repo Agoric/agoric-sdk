@@ -12,7 +12,7 @@
  */
 
 import { assert, details as X, q } from '@agoric/assert';
-import { makeStoreCoordinator } from '@agoric/cache';
+import { makeScalarStoreCoordinator } from '@agoric/cache';
 import { makeLegacyMap, makeScalarMap, makeScalarWeakMap } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
@@ -560,7 +560,7 @@ export function makeWallet({
   }
 
   /**
-   * @param { () => ( Promise | undefined ) } get - The function whose return value
+   * @param {() => ( Promise | undefined )} get - The function whose return value
    * to memoize.
    */
   const makeMemoizedGetter = get => {
@@ -1043,7 +1043,7 @@ export function makeWallet({
   };
 
   const sharedCacheStore = makeScalarBigMapStore(`shared cache`);
-  const sharedCacheCoordinator = makeStoreCoordinator(sharedCacheStore);
+  const sharedCacheCoordinator = makeScalarStoreCoordinator(sharedCacheStore);
 
   async function waitForDappApproval(
     suggestedPetname,
@@ -1059,7 +1059,7 @@ export function makeWallet({
       let approvalP;
 
       const cacheStore = makeScalarBigMapStore(`origin ${origin} cache`);
-      const cacheCoordinator = makeStoreCoordinator(cacheStore);
+      const cacheCoordinator = makeScalarStoreCoordinator(cacheStore);
       dappRecord = addMeta({
         suggestedPetname,
         petname: suggestedPetname,

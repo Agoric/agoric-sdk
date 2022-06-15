@@ -95,7 +95,7 @@ async function makeWorker() {
   await vat.evaluate(boot);
 
   return {
-    /** @param { string } src */
+    /** @param {string} src */
     run: async src => {
       const { reply } = await vat.issueStringCommand(src);
       return JSON.parse(reply);

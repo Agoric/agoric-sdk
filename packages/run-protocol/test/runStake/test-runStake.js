@@ -177,14 +177,14 @@ const mockChain = genesisData => {
     },
     /** @param {Brand<'nat'>} stakingBrand */
     makeLienBridge: stakingBrand => {
-      /** @param { bigint } v */
+      /** @param {bigint} v */
       const ubld = v => AmountMath.make(stakingBrand, v);
 
       /** @type {StakingAuthority} */
       const authority = Far('stakeReporter', {
         /**
-         * @param { string } address
-         * @param { Brand } brand
+         * @param {string} address
+         * @param {Brand} brand
          */
         getAccountState: (address, brand) => {
           assert(brand === stakingBrand, X`unexpected brand: ${brand}`);
@@ -424,9 +424,9 @@ test('extra offer keywords are rejected', async t => {
 });
 
 /**
- * @param { StartFaker['publicFacet'] } faker
- * @param { Brand } bldBrand
- * @returns { Promise<[Amount, Payment]> }
+ * @param {StartFaker['publicFacet']} faker
+ * @param {Brand} bldBrand
+ * @returns {Promise<[Amount, Payment]>}
  *
  * @param { (faker: ERef<StartFaker['publicFacet']>, bldBrand: Brand)
  *            => Promise<[Amount, Payment]> } [mockAttestation]
@@ -515,7 +515,7 @@ const makeWorld = async t => {
     brands: { [KW.Attestation]: attBrand },
   } = await E(zoe).getTerms(await runStake.instance);
 
-  /** @param { Payment } att */
+  /** @param {Payment} att */
   const returnAttestation = async att => {
     const invitation = E(runStake.publicFacet).makeReturnAttInvitation();
     const attestationAmount = await E(attIssuer).getAmountOf(att);

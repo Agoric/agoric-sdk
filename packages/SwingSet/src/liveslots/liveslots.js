@@ -1379,8 +1379,8 @@ function build(
   }
 
   /**
-   * @param { VatDeliveryObject } delivery
-   * @returns { void | Promise<void> }
+   * @param {VatDeliveryObject} delivery
+   * @returns {void | Promise<void>}
    */
   function dispatchToUserspace(delivery) {
     let result;
@@ -1443,7 +1443,7 @@ function build(
   }
 
   /**
-   * @returns { Promise<void> }
+   * @returns {Promise<void>}
    */
   async function stopVat() {
     assert(didStartVat);
@@ -1527,8 +1527,8 @@ function build(
    * terminate the vat). Userspace should not be able to cause the delivery
    * to fail: only a bug in liveslots should trigger a failure.
    *
-   * @param { VatDeliveryObject } delivery
-   * @returns { Promise<void> }
+   * @param {VatDeliveryObject} delivery
+   * @returns {Promise<void>}
    */
   async function dispatch(delivery) {
     // We must short-circuit dispatch to bringOutYourDead here because it has to

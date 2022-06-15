@@ -83,7 +83,7 @@ export const committeeProposalBuilder = async ({
 
   const install = wrapInstall ? wrapInstall(install0) : install0;
 
-  /** @param { Record<string, [string, string]> } group */
+  /** @param {Record<string, [string, string]>} group */
   const publishGroup = group =>
     mapValues(group, ([mod, bundle]) =>
       publishRef(install(mod, bundle, { persist: true })),
@@ -122,7 +122,7 @@ export const mainProposalBuilder = async ({
   const install = wrapInstall ? wrapInstall(install0) : install0;
 
   const persist = true;
-  /** @param { Record<string, [string, string]> } group */
+  /** @param {Record<string, [string, string]>} group */
   const publishGroup = group =>
     mapValues(group, ([mod, bundle]) =>
       publishRef(install(mod, bundle, { persist })),
@@ -166,7 +166,7 @@ export const defaultProposalBuilder = async (
     } = {},
   } = options;
 
-  /** @param { Record<string, [string, string]> } group */
+  /** @param {Record<string, [string, string]>} group */
   const publishGroup = group =>
     mapValues(group, ([mod, bundle]) => publishRef(install(mod, bundle)));
 
