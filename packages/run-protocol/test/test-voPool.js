@@ -87,14 +87,22 @@ test.serial('unchanged', async t => {
 });
 
 test.serial('one update', async t => {
+  let initialNotifierCount;
   await voPoolTest(
     t,
     context => {
+      Promise.resolve(context.pool.getNotifier().getUpdateSince()).then(
+        ({ updateCount }) => (initialNotifierCount = updateCount),
+      );
       return context.pool.updateState();
     },
     async context => {
       const notification = await context.pool.getNotifier().getUpdateSince();
-      t.is(notification.updateCount, 2);
+      t.is(
+        BigInt(notification.updateCount),
+        BigInt(initialNotifierCount) + 1n,
+        `updateCount should increase by one from ${initialNotifierCount}`,
+      );
     },
   );
 });
