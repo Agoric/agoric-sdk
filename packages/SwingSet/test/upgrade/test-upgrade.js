@@ -301,6 +301,47 @@ test('vat upgrade - omit vatParameters', async t => {
   ]);
 });
 
+test('failed upgrade - relaxed durable rules', async t => {
+  const config = {
+    relaxDurabilityRules: true,
+    includeDevDependencies: true, // for vat-data
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: { sourceSpec: bfile('bootstrap-upgrade.js') },
+    },
+    bundles: {
+      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
+      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
+    },
+  };
+
+  const hostStorage = provideHostStorage();
+  await initializeSwingset(config, [], hostStorage);
+  const c = await makeSwingsetController(hostStorage);
+  c.pinVatRoot('bootstrap');
+  await c.run();
+
+  const run = async (method, args = []) => {
+    assert(Array.isArray(args));
+    const kpid = c.queueToVatRoot('bootstrap', method, args);
+    await c.run();
+    const status = c.kpStatus(kpid);
+    const capdata = c.kpResolution(kpid);
+    return [status, capdata];
+  };
+
+  // create initial version
+  const [v1status] = await run('buildV1', []);
+  t.is(v1status, 'fulfilled');
+
+  // upgrade should fail
+  const [v2status, v2capdata] = await run('upgradeV2', []);
+  t.is(v2status, 'rejected');
+  const e = parse(v2capdata.body);
+  t.truthy(e instanceof Error);
+  t.regex(e.message, /vat-upgrade failure/);
+});
+
 test('failed upgrade - lost kind', async t => {
   const config = {
     includeDevDependencies: true, // for vat-data

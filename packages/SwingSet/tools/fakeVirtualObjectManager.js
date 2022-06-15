@@ -33,7 +33,6 @@ export function makeFakeVirtualObjectManager(vrm, fakeStuff, options = {}) {
     fakeStuff.marshal.serialize,
     fakeStuff.marshal.unserialize,
     cacheSize,
-    true,
   );
 
   const normalVOM = {

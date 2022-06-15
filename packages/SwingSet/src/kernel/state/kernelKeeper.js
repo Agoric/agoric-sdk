@@ -58,7 +58,7 @@ const enableKernelGC = true;
 //
 // kernel.defaultManagerType = managerType
 // kernel.defaultReapInterval = $NN
-// kernel.enableFakeDurable = missing | 'true'
+// kernel.relaxDurabilityRules = missing | 'true'
 // kernel.snapshotInitial = $NN
 // kernel.snapshotInterval = $NN
 
@@ -266,7 +266,7 @@ export default function makeKernelKeeper(
     const {
       defaultManagerType = 'local',
       defaultReapInterval = 1,
-      enableFakeDurable = false,
+      relaxDurabilityRules = false,
       snapshotInitial = 2,
       snapshotInterval = 200,
     } = kernelOptions;
@@ -290,8 +290,8 @@ export default function makeKernelKeeper(
     kvStore.set('kernel.defaultReapInterval', `${defaultReapInterval}`);
     kvStore.set('kernel.snapshotInitial', `${snapshotInitial}`);
     kvStore.set('kernel.snapshotInterval', `${snapshotInterval}`);
-    if (enableFakeDurable) {
-      kvStore.set('kernel.enableFakeDurable', 'true');
+    if (relaxDurabilityRules) {
+      kvStore.set('kernel.relaxDurabilityRules', 'true');
     }
     // Will be saved in the bootstrap commit
     initializeStats();
@@ -324,8 +324,8 @@ export default function makeKernelKeeper(
   /**
    * @returns {boolean}
    */
-  function getEnableFakeDurable() {
-    return !!kvStore.get('kernel.enableFakeDurable');
+  function getRelaxDurabilityRules() {
+    return !!kvStore.get('kernel.relaxDurabilityRules');
   }
 
   /**
@@ -1523,7 +1523,7 @@ export default function makeKernelKeeper(
     createStartingKernelState,
     getDefaultManagerType,
     getDefaultReapInterval,
-    getEnableFakeDurable,
+    getRelaxDurabilityRules,
     setDefaultReapInterval,
     getSnapshotInitial,
     getSnapshotInterval,

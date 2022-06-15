@@ -102,7 +102,6 @@ export function makeCollectionManager(
   registerValue,
   serialize,
   unserialize,
-  enableFakeDurable,
 ) {
   // TODO(#5058): we hold a list of all collections (both virtual and
   // durable) in RAM, so we can delete the virtual ones during
@@ -785,19 +784,6 @@ export function makeCollectionManager(
     return Far('weakSetStore', weakSetStore);
   }
 
-  function assertCorrectDurabilityFlags(durable, fakeDurable) {
-    if (fakeDurable) {
-      assert(
-        enableFakeDurable,
-        'fakeDurable may only be used if enableFakeDurable is true',
-      );
-    }
-    assert(
-      !durable || !fakeDurable,
-      'durable and fakeDurable are mutually exclusive',
-    );
-  }
-
   /**
    * Produce a *scalar* big map: keys can only be atomic values, primitives, or
    * remotables.
@@ -809,14 +795,8 @@ export function makeCollectionManager(
    */
   function makeScalarBigMapStore(
     label = 'map',
-    {
-      keySchema = M.scalar(),
-      valueSchema = undefined,
-      durable = false,
-      fakeDurable = false,
-    } = {},
+    { keySchema = M.scalar(), valueSchema = undefined, durable = false } = {},
   ) {
-    assertCorrectDurabilityFlags(durable, fakeDurable);
     const kindName = durable ? 'scalarDurableMapStore' : 'scalarMapStore';
     const [vobjID, collection] = makeCollection(
       label,
@@ -826,9 +806,6 @@ export function makeCollectionManager(
     );
     const store = collectionToMapStore(collection);
     registerValue(vobjID, store, false);
-    if (fakeDurable) {
-      vrm.registerFakeDurable(vobjID);
-    }
     return store;
   }
 
@@ -860,14 +837,8 @@ export function makeCollectionManager(
    */
   function makeScalarBigWeakMapStore(
     label = 'weakMap',
-    {
-      keySchema = M.scalar(),
-      valueSchema = undefined,
-      durable = false,
-      fakeDurable = false,
-    } = {},
+    { keySchema = M.scalar(), valueSchema = undefined, durable = false } = {},
   ) {
-    assertCorrectDurabilityFlags(durable, fakeDurable);
     const kindName = durable
       ? 'scalarDurableWeakMapStore'
       : 'scalarWeakMapStore';
@@ -879,9 +850,6 @@ export function makeCollectionManager(
     );
     const store = collectionToWeakMapStore(collection);
     registerValue(vobjID, store, false);
-    if (fakeDurable) {
-      vrm.registerFakeDurable(vobjID);
-    }
     return store;
   }
 
@@ -896,14 +864,8 @@ export function makeCollectionManager(
    */
   function makeScalarBigSetStore(
     label = 'set',
-    {
-      keySchema = M.scalar(),
-      valueSchema = undefined,
-      durable = false,
-      fakeDurable = false,
-    } = {},
+    { keySchema = M.scalar(), valueSchema = undefined, durable = false } = {},
   ) {
-    assertCorrectDurabilityFlags(durable, fakeDurable);
     const kindName = durable ? 'scalarDurableSetStore' : 'scalarSetStore';
     const [vobjID, collection] = makeCollection(
       label,
@@ -913,9 +875,6 @@ export function makeCollectionManager(
     );
     const store = collectionToSetStore(collection);
     registerValue(vobjID, store, false);
-    if (fakeDurable) {
-      vrm.registerFakeDurable(vobjID);
-    }
     return store;
   }
 
@@ -930,14 +889,8 @@ export function makeCollectionManager(
    */
   function makeScalarBigWeakSetStore(
     label = 'weakSet',
-    {
-      keySchema = M.scalar(),
-      valueSchema = undefined,
-      durable = false,
-      fakeDurable = false,
-    } = {},
+    { keySchema = M.scalar(), valueSchema = undefined, durable = false } = {},
   ) {
-    assertCorrectDurabilityFlags(durable, fakeDurable);
     const kindName = durable
       ? 'scalarDurableWeakSetStore'
       : 'scalarWeakSetStore';
@@ -949,9 +902,6 @@ export function makeCollectionManager(
     );
     const store = collectionToWeakSetStore(collection);
     registerValue(vobjID, store, false);
-    if (fakeDurable) {
-      vrm.registerFakeDurable(vobjID);
-    }
     return store;
   }
 

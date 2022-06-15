@@ -149,7 +149,7 @@ export function makeXsSubprocessFactory({
         bundle,
         virtualObjectCacheSize,
         enableDisavow,
-        kernelKeeper.getEnableFakeDurable(),
+        kernelKeeper.getRelaxDurabilityRules(),
         gcEveryCrank,
       ]);
       if (bundleReply[0] === 'dispatchReady') {
