@@ -60,12 +60,12 @@ export const makeAddIssuer = (
 };
 
 /**
- * @param {ZCF<import('./multipoolMarketMaker.js').AMMTerms>} zcf
+ * @param {ZCF<import('./amm.js').AMMTerms>} zcf
  * @param {(brand: Brand, pool: PoolFacets) => void} initPool add new pool to store
  * @param {Brand} centralBrand
  * @param {ERef<Timer>} timer
  * @param {IssuerKit} quoteIssuerKit
- * @param {import('./multipoolMarketMaker.js').AMMParamGetters} params retrieve governed params
+ * @param {import('./amm.js').AMMParamGetters} params retrieve governed params
  * @param {ZCFSeat} protocolSeat seat that holds collected fees
  * @param {WeakStore<Brand,ZCFMint>} brandToLiquidityMint
  * @param {(secondaryBrand: Brand, reserveLiquidityTokenSeat: ZCFSeat, liquidityKeyword: Keyword) => Promise<void>} onOfferHandled

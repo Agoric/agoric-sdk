@@ -328,7 +328,7 @@ const finish = context => {
  * @param {Brand} centralBrand
  * @param {ERef<Timer>} timer
  * @param {IssuerKit} quoteIssuerKit
- * @param {import('./multipoolMarketMaker.js').AMMParamGetters} paramAccessor retrieve governed params
+ * @param {import('./amm.js').AMMParamGetters} paramAccessor retrieve governed params
  * @param {ZCFSeat} protocolSeat seat that holds collected fees
  */
 export const definePoolKind = (

@@ -20,7 +20,7 @@
  */
 
 /**
- * @typedef {import('./multipoolMarketMaker.js').MetricsNotification} MetricsNotification
+ * @typedef {import('./amm.js').MetricsNotification} MetricsNotification
  * @typedef {import('./pool.js').PoolMetricsNotification} PoolMetricsNotification
  */
 

@@ -27,7 +27,7 @@ Note that the "stability fee" described in the Whitepaper comprises both Interes
 
 ### Automated Market Maker (AMM)
 
-In `packages/inter-protocol/src/amm/multipoolMarketMaker.js`:
+In `packages/inter-protocol/src/amm/amm.js`:
 
 | Governance Key     | Type              | WP? |
 | ------------------ | :---------------- | --- |

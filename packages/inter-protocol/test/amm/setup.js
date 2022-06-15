@@ -19,7 +19,7 @@ import {
 import { installGovernance, provideBundle } from '../supports.js';
 import { makeTracer } from '../../src/makeTracer.js';
 
-const ammRoot = './src/amm/multipoolMarketMaker.js'; // package relative
+const ammRoot = './src/amm/amm.js'; // package relative
 const reserveRoot = './src/reserve/assetReserve.js'; // package relative
 
 const trace = makeTracer('AmmTS', false);
