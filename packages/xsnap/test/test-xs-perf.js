@@ -1,4 +1,4 @@
-/* global performance */
+/* global globalThis performance */
 // @ts-check
 
 import '@endo/init/debug.js';
@@ -11,7 +11,7 @@ import * as os from 'os';
 
 import { xsnap } from '../src/xsnap.js';
 
-import { options } from './message-tools.js';
+import { options, decode, encode } from './message-tools.js';
 
 const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambien
 
@@ -59,10 +59,81 @@ test('meter details', async t => {
       compute: 'number',
       allocate: 'number',
       currentHeapCount: 'number',
+      timestamps: 'object',
     },
     'evaluate returns meter details',
   );
   t.is(meterType, 'xs-meter-14');
+});
+
+(globalThis.performance ? test : test.skip)('meter timestamps', async t => {
+  const kernelTimes = [];
+  function addTimestamp(name) {
+    // xsnap-worker.c uses `gettimeofday()`, so this isn't exactly the
+    // right thing to compare against (npm 'microtime' is the right
+    // match), but they should be nearly identical unless a timequake
+    // happens in the middle of the test
+    const rx = (performance.timeOrigin + performance.now()) / 1000.0;
+    kernelTimes.push([rx, name]);
+  }
+  const messages = [];
+  async function handleCommand(message) {
+    const msg = decode(message);
+    addTimestamp(`kern receive syscall ${msg}`);
+    messages.push(decode(message));
+    const result = encode('ok');
+    addTimestamp(`kern send syscall-result ${msg}`);
+    return result;
+  }
+  const opts = { ...options(io), handleCommand };
+  const vat = xsnap(opts);
+  t.teardown(() => vat.terminate());
+  addTimestamp('kern send delivery');
+  const result = await vat.evaluate(
+    `let send = msg => issueCommand(new TextEncoder().encode(msg).buffer); send('1'); send('2')`,
+  );
+  addTimestamp('kern receive deliver-result');
+
+  const meters = result.meterUsage;
+  const names = [
+    '    worker rx delivery',
+    '    worker tx syscall 1',
+    '    worker rx syscall-result 1',
+    '    worker tx syscall 2',
+    '    worker rx syscall-result 2',
+    '    worker tx delivery-result',
+  ];
+  const rawTimestamps = meters.timestamps;
+  assert(rawTimestamps);
+  const timestamps = rawTimestamps.map((ts, idx) => [ts, names[idx]]);
+  const all = [...kernelTimes, ...timestamps];
+  all.sort((a, b) => a[0] - b[0]);
+
+  // this interleaving test assumes that commands to/from the worker
+  // take at least 1us to arrive, and that no timequakes occur during
+  // test execution
+
+  const sortedNames = all.map(x => x[1]);
+  const expected = [
+    'kern send delivery',
+    '    worker rx delivery',
+    '    worker tx syscall 1',
+    'kern receive syscall 1',
+    'kern send syscall-result 1',
+    '    worker rx syscall-result 1',
+    '    worker tx syscall 2',
+    'kern receive syscall 2',
+    'kern send syscall-result 2',
+    '    worker rx syscall-result 2',
+    '    worker tx delivery-result',
+    'kern receive deliver-result',
+  ];
+
+  t.deepEqual(sortedNames, expected);
+
+  // on my 2022 MBP (M1 Pro), syscalls take 75-600us to get from
+  // worker to kernel
+  t.log(all);
 });
 
 test('isReady does not compute / allocate', async t => {

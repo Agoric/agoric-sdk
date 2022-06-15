@@ -152,7 +152,7 @@ export function xsnap(options) {
    * @template T
    * @typedef {object} RunResult
    * @property {T} reply
-   * @property {{ meterType: string, allocate: number|null, compute: number|null }} meterUsage
+   * @property {{ meterType: string, allocate: number|null, compute: number|null, timestamps: number[]|null }} meterUsage
    */
 
   /**
@@ -172,7 +172,7 @@ export function xsnap(options) {
         xsnapProcess.kill();
         throw new Error('xsnap protocol error: received empty message');
       } else if (message[0] === OK) {
-        let meterInfo = { compute: null, allocate: null };
+        let meterInfo = { compute: null, allocate: null, timestamps: [] };
         const meterSeparator = message.indexOf(OK_SEPARATOR, 1);
         if (meterSeparator >= 0) {
           // The message is `.meterdata\1reply`.
