@@ -138,12 +138,12 @@
  *   installation: |
  *     'centralSupply' | 'mintHolder' | 'feeDistributor' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
- *     'amm' | 'VaultFactory' | 'liquidate' | 'runStake' |
+ *     'amm' | 'VaultFactory' | 'liquidate' | 'stakeMint' |
  *     'Pegasus' | 'reserve' | 'psm' | 'interchainPool',
  *   instance: |
  *     'economicCommittee' | 'feeDistributor' |
  *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' |
- *     'runStake' | 'runStakeGovernor' |
+ *     'stakeMint' | 'stakeMintGovernor' |
  *     'psm' | 'psmGovernor' | 'interchainPool' |
  *     'Treasury' | 'reserve' | 'reserveGovernor' | 'Pegasus',
  *   oracleBrand:

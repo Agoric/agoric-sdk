@@ -283,12 +283,12 @@ const manager = {
 
 const behavior = { helper, manager };
 
-export const makeRunStakeManager = defineKindMulti(
-  'RunStakeManager',
+export const makeStakeMintManager = defineKindMulti(
+  'StakeMintManager',
   initState,
   behavior,
   { finish },
 );
 /**
- * @typedef {ReturnType<typeof makeRunStakeManager>['manager']} RunStakeManager
+ * @typedef {ReturnType<typeof makeStakeMintManager>['manager']} StakeMintManager
  */

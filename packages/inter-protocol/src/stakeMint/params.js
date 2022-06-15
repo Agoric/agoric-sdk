@@ -4,7 +4,7 @@
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { ParamKW as PKey } from './constants.js';
 
-export const makeRunStakeTerms = (
+export const makeStakeMintTerms = (
   { timerService, chargingPeriod, recordingPeriod },
   {
     electorateInvitationAmount,
@@ -28,4 +28,4 @@ export const makeRunStakeTerms = (
     },
   }),
 });
-harden(makeRunStakeTerms);
+harden(makeStakeMintTerms);

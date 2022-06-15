@@ -167,7 +167,7 @@ const REWARD_MANIFEST = harden({
       vaultFactoryCreator: true,
       periodicFeeCollectors: true,
       ammCreatorFacet: true,
-      runStakeCreatorFacet: true,
+      stakeMintCreatorFacet: true,
       reservePublicFacet: true,
       zoe: true,
     },
@@ -187,7 +187,7 @@ const RUN_STAKE_MANIFEST = harden({
       consume: { BLD: 'BLD' },
     },
   },
-  [econBehaviors.startRunStake.name]: {
+  [econBehaviors.startStakeMint.name]: {
     consume: {
       zoe: 'zoe',
       feeMintAccess: 'zoe',
@@ -197,23 +197,23 @@ const RUN_STAKE_MANIFEST = harden({
       economicCommitteeCreatorFacet: 'economicCommittee',
     },
     produce: {
-      runStakeCreatorFacet: 'runStake',
-      runStakeGovernorCreatorFacet: 'runStake',
+      stakeMintCreatorFacet: 'stakeMint',
+      stakeMintGovernorCreatorFacet: 'stakeMint',
     },
     installation: {
-      consume: { contractGovernor: 'zoe', runStake: 'zoe' },
+      consume: { contractGovernor: 'zoe', stakeMint: 'zoe' },
     },
     instance: {
       consume: { economicCommittee: 'economicCommittee' },
-      produce: { runStake: 'runStake' },
+      produce: { stakeMint: 'stakeMint' },
     },
     brand: {
       consume: { BLD: 'BLD', RUN: 'zoe' },
-      produce: { Attestation: 'runStake' },
+      produce: { Attestation: 'stakeMint' },
     },
     issuer: {
       consume: { BLD: 'BLD' },
-      produce: { Attestation: 'runStake' },
+      produce: { Attestation: 'stakeMint' },
     },
   },
 });
@@ -326,7 +326,7 @@ export const getManifestForRunProtocol = (
     installations: {
       ...econCommitteeManifest.installations,
       ...mainManifest.installations,
-      runStake: restoreRef(installKeys.runStake),
+      stakeMint: restoreRef(installKeys.stakeMint),
     },
     options: {
       ...econCommitteeManifest.options,

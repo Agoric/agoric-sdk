@@ -15,7 +15,7 @@ import { makeReserveTerms } from '../reserve/params.js';
 import '../../exported.js';
 
 import * as Collect from '../collect.js';
-import { makeRunStakeTerms } from '../stakeMint/params.js';
+import { makeStakeMintTerms } from '../stakeMint/params.js';
 import { liquidationDetailTerms } from '../vaultFactory/liquidation.js';
 import { makeStakeReporter } from '../my-lien.js';
 import { makeTracer } from '../makeTracer.js';
@@ -49,7 +49,7 @@ const CENTRAL_DENOM_NAME = 'urun';
  *   reservePublicFacet: AssetReservePublicFacet,
  *   reserveCreatorFacet: AssetReserveCreatorFacet,
  *   reserveGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
- *   runStakeCreatorFacet: import('../stakeMint/stakeMint.js').RunStakeCreator,
+ *   stakeMintCreatorFacet: import('../stakeMint/stakeMint.js').StakeMintCreator,
  *   vaultFactoryCreator: VaultFactory,
  *   vaultFactoryGovernorCreator: GovernedContractFacetAccess<unknown>,
  *   vaultFactoryVoteCreator: unknown,
@@ -623,7 +623,7 @@ export const startRewardDistributor = async ({
     vaultFactoryCreator,
     periodicFeeCollectors,
     ammCreatorFacet,
-    runStakeCreatorFacet,
+    stakeMintCreatorFacet,
     reservePublicFacet,
     zoe,
   },
@@ -698,7 +698,7 @@ export const startRewardDistributor = async ({
   const collectorFacets = {
     vaultFactory: vaultFactoryCreator,
     amm: ammCreatorFacet,
-    runStake: runStakeCreatorFacet,
+    stakeMint: stakeMintCreatorFacet,
   };
   await Promise.all(
     Object.entries(collectorFacets).map(async ([debugName, collectorFacet]) => {
@@ -739,11 +739,11 @@ export const startLienBridge = async ({
  * @typedef {EconomyBootstrapPowers & PromiseSpaceOf<{
  *   client: ClientManager,
  *   lienBridge: StakingAuthority,
- * }>} RunStakeBootstrapPowers
+ * }>} StakeMintBootstrapPowers
  */
 
 /**
- * @param {RunStakeBootstrapPowers } powers
+ * @param {StakeMintBootstrapPowers } powers
  * @param {object} config
  * @param {bigint} [config.debtLimit] count of RUN
  * @param {Rational} [config.mintingRatio] ratio of RUN minted to BLD
@@ -752,9 +752,9 @@ export const startLienBridge = async ({
  * @param {bigint} [config.chargingPeriod]
  * @param {bigint} [config.recordingPeriod]
  * @typedef {[bigint, bigint]} Rational
- * @typedef {Awaited<ReturnType<typeof import('../stakeMint/stakeMint.js').start>>} StartRunStake
+ * @typedef {Awaited<ReturnType<typeof import('../stakeMint/stakeMint.js').start>>} StartStakeMint
  */
-export const startRunStake = async (
+export const startStakeMint = async (
   {
     consume: {
       zoe,
@@ -766,13 +766,13 @@ export const startRunStake = async (
       economicCommitteeCreatorFacet,
     },
     // @ts-expect-error TODO: add to BootstrapPowers
-    produce: { runStakeCreatorFacet, runStakeGovernorCreatorFacet },
+    produce: { stakeMintCreatorFacet, stakeMintGovernorCreatorFacet },
     installation: {
-      consume: { contractGovernor, runStake: installationP },
+      consume: { contractGovernor, stakeMint: installationP },
     },
     instance: {
       consume: { economicCommittee: electorateInstance },
-      produce: { runStake: runStakeinstanceR },
+      produce: { stakeMint: stakeMintinstanceR },
     },
     brand: {
       consume: { BLD: bldBrandP, RUN: runBrandP },
@@ -804,7 +804,7 @@ export const startRunStake = async (
 
   const installations = {
     governor,
-    runStake: installation,
+    stakeMint: installation,
   };
 
   const poserInvitationP = E(
@@ -816,7 +816,7 @@ export const startRunStake = async (
       E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
     ]);
 
-  const runStakeTerms = makeRunStakeTerms(
+  const stakeMintTerms = makeStakeMintTerms(
     {
       timerService: timer,
       chargingPeriod,
@@ -843,9 +843,9 @@ export const startRunStake = async (
     {
       timer,
       electorateInstance,
-      governedContractInstallation: installations.runStake,
+      governedContractInstallation: installations.stakeMint,
       governed: harden({
-        terms: runStakeTerms,
+        terms: stakeMintTerms,
         issuerKeywordRecord: { Stake: bldIssuer },
         privateArgs: { feeMintAccess, initialPoserInvitation, lienBridge },
       }),
@@ -859,9 +859,9 @@ export const startRunStake = async (
     brands: { Attestation: attBrand },
   } = await E(zoe).getTerms(governedInstance);
 
-  runStakeCreatorFacet.resolve(creatorFacet);
-  runStakeGovernorCreatorFacet.resolve(governorFacets.creatorFacet);
-  runStakeinstanceR.resolve(governedInstance);
+  stakeMintCreatorFacet.resolve(creatorFacet);
+  stakeMintGovernorCreatorFacet.resolve(governorFacets.creatorFacet);
+  stakeMintinstanceR.resolve(governedInstance);
   attestationBrandR.resolve(attBrand);
   attestationIssuerR.resolve(attIssuer);
   return Promise.all([
@@ -872,4 +872,4 @@ export const startRunStake = async (
     ]),
   ]);
 };
-harden(startRunStake);
+harden(startStakeMint);

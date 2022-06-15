@@ -3,7 +3,7 @@
 We propose to launch a preview of the RUN Protocol on Devnet,
 comprising the following contracts:
 
-  - runStake - borrow RUN against staked BLD
+  - stakeMint - borrow RUN against staked BLD
   - AMM - Automated Market Maker
   - VaultFactory - collateralized RUN debt positions
     - liquidateMinimum

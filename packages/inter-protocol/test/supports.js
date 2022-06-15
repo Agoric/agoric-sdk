@@ -106,24 +106,24 @@ export const installGovernance = (zoe, produce) => {
  *
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<CommitteeElectorateCreatorFacet>} electorateCreator
- * @param {ERef<GovernedContractFacetAccess<unknown>>} runStakeGovernorCreatorFacet
+ * @param {ERef<GovernedContractFacetAccess<unknown>>} stakeMintGovernorCreatorFacet
  * @param {Installation} counter
  */
 export const makeVoterTool = async (
   zoe,
   electorateCreator,
-  runStakeGovernorCreatorFacet,
+  stakeMintGovernorCreatorFacet,
   counter,
 ) => {
   const [invitation] = await E(electorateCreator).getVoterInvitations();
-  await runStakeGovernorCreatorFacet;
+  await stakeMintGovernorCreatorFacet;
   const seat = E(zoe).offer(invitation);
   const voteFacet = E(seat).getOfferResult();
   return harden({
     changeParam: async (paramsSpec, deadline) => {
       /** @type { ContractGovernanceVoteResult } */
       const { details, instance } = await E(
-        runStakeGovernorCreatorFacet,
+        stakeMintGovernorCreatorFacet,
       ).voteOnParamChanges(counter, deadline, paramsSpec);
       const { questionHandle, positions } = await details;
       const cast = E(voteFacet).castBallotFor(questionHandle, [positions[0]]);

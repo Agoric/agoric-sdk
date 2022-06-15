@@ -48,7 +48,7 @@ In `packages/inter-protocol/src/reserve/collateralReserve.js`:
 The RUN Protocol Whitepaper v0.8 does not describe the governance parameters
 for this contract.  
 
-### RUNStake
+### stakeMint
 
 In `packages/inter-protocol/src/stakeMint/stakeMint.js`:
 
@@ -60,7 +60,7 @@ In `packages/inter-protocol/src/stakeMint/stakeMint.js`:
 | MintingRatio       | ParamTypes.RATIO    | Yes |
 
 From RUN Protocol Whitepaper, v0.8:  
->Governance through the BLDer DAO determines the parameters for RUNstake. These include the total debt limit, the minting limit per account, and minting fees and interest rates. 
+>Governance through the BLDer DAO determines the parameters for stakeMint. These include the total debt limit, the minting limit per account, and minting fees and interest rates. 
 
 ### Parity Stability Mechanism (PSM)
 

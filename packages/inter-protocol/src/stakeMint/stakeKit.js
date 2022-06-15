@@ -34,7 +34,7 @@ const calculateFee = (feeCoeff, currentDebt, giveAmount, wantAmount) => {
  * @typedef {Readonly<{
  *   collateralBrand: Brand,
  *   debtBrand: Brand,
- *   manager: import('./stakeManager.js').RunStakeManager,
+ *   manager: import('./stakeManager.js').StakeMintManager,
  *   notifier: NotifierRecord<unknown>['notifier'],
  *   vaultSeat: ZCFSeat,
  *   zcf: ZCF,
@@ -56,11 +56,11 @@ const calculateFee = (feeCoeff, currentDebt, giveAmount, wantAmount) => {
  */
 
 /**
- * Make RUNstake kit state
+ * Make stakeMint kit state
  *
  * @param {ZCF} zcf
  * @param {ZCFSeat} startSeat
- * @param {import('./stakeManager.js').RunStakeManager} manager
+ * @param {import('./stakeManager.js').StakeMintManager} manager
  * @returns {State}
  */
 const initState = (zcf, startSeat, manager) => {
@@ -361,7 +361,7 @@ const helperBehavior = {
     helper.assertVaultHoldsNoDebt();
     seat.exit();
 
-    return 'Your RUNstake is closed; thank you for your business.';
+    return 'Your stakeMint is closed; thank you for your business.';
   },
 };
 
@@ -421,15 +421,15 @@ const finish = ({ facets }) => {
 };
 
 /**
- * Make RUNstake kit, subject to runStake terms.
+ * Make stakeMint kit, subject to stakeMint terms.
  *
  * @param {ZCF} zcf
  * @param {ZCFSeat} startSeat
- * @param {import('./stakeManager.js').RunStakeManager} manager
+ * @param {import('./stakeManager.js').StakeMintManager} manager
  * @throws {Error} if startSeat proposal is not consistent with governance parameters in manager
  */
-export const makeRunStakeKit = defineKindMulti(
-  'RUNStakeKit',
+export const makeStakeMintKit = defineKindMulti(
+  'stakeMintKit',
   initState,
   behavior,
   { finish },
