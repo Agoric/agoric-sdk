@@ -59,6 +59,10 @@ export const makeNotifierKit = (...initialStateArr) => {
    */
   const baseNotifier = Far('baseNotifier', {
     getUpdateSince(sinceUpdateCount = undefined) {
+      // TODO: Narrow to exclude number.
+      if (typeof sinceUpdateCount === 'number') {
+        sinceUpdateCount = BigInt(sinceUpdateCount);
+      }
       return E.when(
         subscriber.subscribeAfter(sinceUpdateCount),
         ({ head: { value, done }, publishCount }) => {

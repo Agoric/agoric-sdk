@@ -96,8 +96,9 @@
 
 // /////////////////////////////////////////////////////////////////////////////
 
+// TODO: Narrow to exclude number.
 /**
- * @typedef {bigint | undefined} UpdateCount a value used to mark the position
+ * @typedef {number | bigint | undefined} UpdateCount a value used to mark the position
  * in the update stream. For the last state, the updateCount is undefined.
  */
 
