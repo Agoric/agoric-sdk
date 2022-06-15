@@ -66,7 +66,7 @@ export function initializeVatState(kvStore, streamStore, vatID) {
  * @param {*} incStat
  * @param {*} decStat
  * @param {*} getCrankNumber
- * @param { SnapStore= } snapStore
+ * @param {SnapStore=} snapStore
  * returns an object to hold and access the kernel's state for the given vat
  */
 export function makeVatKeeper(
@@ -493,7 +493,7 @@ export function makeVatKeeper(
     kvStore.set(`${vatID}.t.endPosition`, `${JSON.stringify(newPos)}`);
   }
 
-  /** @returns { StreamPosition } */
+  /** @returns {StreamPosition} */
   function getTranscriptEndPosition() {
     return JSON.parse(
       kvStore.get(`${vatID}.t.endPosition`) ||
@@ -569,8 +569,8 @@ export function makeVatKeeper(
   /**
    * Store a snapshot, if given a snapStore.
    *
-   * @param { VatManager } manager
-   * @returns { Promise<boolean> }
+   * @param {VatManager} manager
+   * @returns {Promise<boolean>}
    */
   async function saveSnapshot(manager) {
     if (!snapStore || !manager.makeSnapshot) {

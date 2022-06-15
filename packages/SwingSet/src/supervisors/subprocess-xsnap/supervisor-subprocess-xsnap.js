@@ -93,7 +93,7 @@ const meterControl = makeMeterControl();
 /**
  * Wrap byte-level protocols with tagged array codec.
  *
- * @param { (cmd: ArrayBuffer) => ArrayBuffer } issueCommand as from xsnap
+ * @param {(cmd: ArrayBuffer) => ArrayBuffer} issueCommand as from xsnap
  * @typedef { [unknown, ...unknown[]] } Tagged tagged array
  */
 function managerPort(issueCommand) {
@@ -132,8 +132,8 @@ function managerPort(issueCommand) {
     /**
      * Wrap an async Tagged handler in the xsnap async reporting idiom.
      *
-     * @param { (item: Tagged) => Promise<Tagged> } f async Tagged handler
-     * @returns { (msg: ArrayBuffer) => Report<ArrayBuffer> } xsnap style handleCommand
+     * @param {(item: Tagged) => Promise<Tagged>} f async Tagged handler
+     * @returns {(msg: ArrayBuffer) => Report<ArrayBuffer>} xsnap style handleCommand
      *
      * @typedef { { result?: T } } Report<T> report T when idle
      * @template T
@@ -174,7 +174,7 @@ function abbreviateReplacer(_, arg) {
 }
 
 /**
- * @param { ReturnType<typeof managerPort> } port
+ * @param {ReturnType<typeof managerPort>} port
  */
 function makeWorker(port) {
   /** @type { ((delivery: VatDeliveryObject) => Promise<VatDeliveryResult>) | null } */
@@ -187,7 +187,7 @@ function makeWorker(port) {
    * @param {boolean} enableDisavow
    * @param {boolean} enableFakeDurable
    * @param {boolean} [gcEveryCrank]
-   * @returns { Promise<Tagged> }
+   * @returns {Promise<Tagged>}
    */
   async function setBundle(
     vatID,

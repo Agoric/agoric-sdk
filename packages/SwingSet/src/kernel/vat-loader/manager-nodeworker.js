@@ -30,7 +30,7 @@ function parentLog(first, ...args) {
  *   kernelSlog: KernelSlog,
  *   testLog: (...args: unknown[]) => void,
  * }} tools
- * @returns { VatManagerFactory }
+ * @returns {VatManagerFactory}
  */
 export function makeNodeWorkerVatManagerFactory(tools) {
   const { makeNodeWorker, kernelKeeper, kernelSlog, testLog } = tools;

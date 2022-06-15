@@ -7,7 +7,7 @@ import osTop from 'os';
 
 const { freeze } = Object;
 
-/** @param { string } path */
+/** @param {string} path */
 const asset = path => new URL(path, import.meta.url).pathname;
 
 const ModdableSDK = {
@@ -30,7 +30,7 @@ const ModdableSDK = {
  * }} io
  */
 function makeCLI(command, { spawn }) {
-  /** @param { import('child_process').ChildProcess } child */
+  /** @param {import('child_process').ChildProcess} child */
   const wait = child =>
     new Promise((resolve, reject) => {
       child.on('close', () => {
@@ -85,7 +85,7 @@ function makeCLI(command, { spawn }) {
  * @param {{ git: ReturnType<typeof makeCLI> }} io
  */
 const makeSubmodule = (path, repoUrl, { git }) => {
-  /** @param { string } text */
+  /** @param {string} text */
   const parseStatus = text =>
     text
       .split('\n')
@@ -110,13 +110,13 @@ const makeSubmodule = (path, repoUrl, { git }) => {
   return freeze({
     path,
     clone: async () => git.run(['clone', repoUrl, path]),
-    /** @param { string } commitHash */
+    /** @param {string} commitHash */
     checkout: async commitHash =>
       git.run(['checkout', commitHash], { cwd: path }),
     init: async () => git.run(['submodule', 'update', '--init', '--checkout']),
     status: async () =>
       git.pipe(['submodule', 'status', path]).then(parseStatus),
-    /** @param { string } leaf */
+    /** @param {string} leaf */
     config: async leaf => {
       // git rev-parse --show-toplevel
       const top = await git
@@ -140,7 +140,7 @@ const makeSubmodule = (path, repoUrl, { git }) => {
 };
 
 /**
- * @param { string[] } args
+ * @param {string[]} args
  * @param {{
  *   env: Record<string, string | undefined>,
  *   stdout: typeof process.stdout,

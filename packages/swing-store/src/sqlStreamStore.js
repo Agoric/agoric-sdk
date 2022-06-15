@@ -13,25 +13,25 @@ function* empty() {
 }
 
 /**
- * @param { unknown } streamName
- * @returns { asserts streamName is string }
+ * @param {unknown} streamName
+ * @returns {asserts streamName is string}
  */
+
 function insistStreamName(streamName) {
   assert.typeof(streamName, 'string');
   assert(streamName.match(/^[-\w]+$/), X`invalid stream name ${q(streamName)}`);
-  return undefined;
 }
 
 /**
  * @param {unknown} position
- * @returns { asserts position is StreamPosition }
+ * @returns {asserts position is StreamPosition}
  */
+
 function insistStreamPosition(position) {
   assert.typeof(position, 'object');
   assert(position);
   assert.typeof(position.itemCount, 'number');
   assert(position.itemCount >= 0);
-  return undefined;
 }
 
 /**
@@ -133,7 +133,7 @@ export function sqlStreamStore(dbDir, io) {
     return { itemCount: position.itemCount + 1 };
   };
 
-  /** @param { string } streamName */
+  /** @param {string} streamName */
   const closeStream = streamName => {
     insistStreamName(streamName);
     streamStatus.delete(streamName);

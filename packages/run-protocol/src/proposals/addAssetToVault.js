@@ -18,7 +18,7 @@ export * from './startPSM.js';
  */
 
 /**
- * @param { EconomyBootstrapPowers } powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {object} config
  * @param {object} config.options
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions
@@ -81,7 +81,7 @@ const addPool = async (
 };
 
 /**
- * @param { EconomyBootstrapPowers } powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {object} config
  * @param {object} config.options
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions

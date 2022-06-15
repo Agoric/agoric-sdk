@@ -81,7 +81,7 @@ test('connectFaucet produces payments', async t => {
     ),
   );
 
-  /** @param { BootstrapSpace } powers */
+  /** @param {BootstrapSpace} powers */
   const stubProps = async ({ consume: { client } }) => {
     const stub = {
       agoricNames: true,

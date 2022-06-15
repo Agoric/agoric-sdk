@@ -84,9 +84,9 @@ export function makeSnapStore(
   /** @type {(opts: unknown) => Promise<string>} */
   const ptmpName = promisify(tmpName);
   /**
-   * @param { (name: string) => Promise<T> } thunk
-   * @param { string= } prefix
-   * @returns { Promise<T> }
+   * @param {(name: string) => Promise<T>} thunk
+   * @param {string=} prefix
+   * @returns {Promise<T>}
    * @template T
    */
   async function withTempName(thunk, prefix = 'tmp') {
@@ -109,8 +109,8 @@ export function makeSnapStore(
 
   /**
    * @param {string} dest basename, relative to root
-   * @param { (name: string) => Promise<T> } thunk
-   * @returns { Promise<T> }
+   * @param {(name: string) => Promise<T>} thunk
+   * @returns {Promise<T>}
    * @template T
    */
   async function atomicWrite(dest, thunk) {
@@ -173,7 +173,7 @@ export function makeSnapStore(
     return hash.digest('hex');
   }
 
-  /** @param { unknown } hash */
+  /** @param {unknown} hash */
   function hashPath(hash) {
     assert.typeof(hash, 'string');
     assert(!hash.includes('/'));
@@ -185,7 +185,7 @@ export function makeSnapStore(
 
   /**
    * @param {(fn: string) => Promise<void>} saveRaw
-   * @returns { Promise<string> } sha256 hash of (uncompressed) snapshot
+   * @returns {Promise<string>} sha256 hash of (uncompressed) snapshot
    */
   async function save(saveRaw) {
     return withTempName(async snapFile => {

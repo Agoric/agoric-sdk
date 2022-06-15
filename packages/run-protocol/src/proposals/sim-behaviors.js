@@ -4,7 +4,7 @@ import { addRemote } from '@agoric/vats/src/core/utils.js';
 
 export { connectFaucet, fundAMM } from './demoIssuers.js';
 
-/** @param { BootstrapPowers } powers */
+/** @param {BootstrapPowers} powers */
 export const installSimEgress = async ({
   vatParameters: { argv },
   vats: { vattp, comms },

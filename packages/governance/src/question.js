@@ -43,8 +43,9 @@ const QuorumRule = /** @type {const} */ ({
 
 /**
  * @param {unknown} issue
- * @returns { asserts issue is SimpleIssue }
+ * @returns {asserts issue is SimpleIssue}
  */
+
 const assertSimpleIssue = issue => {
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
   assert(
@@ -55,8 +56,9 @@ const assertSimpleIssue = issue => {
 
 /**
  * @param {unknown} issue
- * @returns { asserts issue is ParamChangeIssue<unknown> }
+ * @returns {asserts issue is ParamChangeIssue<unknown>}
  */
+
 const assertParamChangeIssue = issue => {
   assert(issue, X`argument to assertParamChangeIssue cannot be null`);
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
@@ -77,6 +79,7 @@ const assertParamChangeIssue = issue => {
  * @param {unknown} issue
  * @returns {asserts issue is ApiInvocationIssue}
  */
+
 const assertApiInvocation = issue => {
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
   assert(
@@ -88,8 +91,9 @@ const assertApiInvocation = issue => {
 /**
  * @param {ElectionType} electionType
  * @param {unknown} issue
- * @returns { asserts issue is Issue }
+ * @returns {asserts issue is Issue}
  */
+
 const assertIssueForType = (electionType, issue) => {
   assert(
     passStyleOf(issue) === 'copyRecord',
@@ -118,7 +122,7 @@ const positionIncluded = (positions, p) => positions.some(e => keyEQ(e, p));
 // QuestionSpec contains the subset of QuestionDetails that can be specified before
 /**
  * @param {unknown} closingRule
- * @returns { asserts closingRule is ClosingRule }
+ * @returns {asserts closingRule is ClosingRule}
  */
 
 function assertClosingRule(closingRule) {

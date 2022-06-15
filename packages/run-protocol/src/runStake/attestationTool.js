@@ -25,7 +25,7 @@ const initState = (address, lienMint, stakeBrand, zcf) => {
 const behavior = {
   /**
    * @param {MethodContext} context
-   * @param { Amount<'nat'> } lienedDelta
+   * @param {Amount<'nat'>} lienedDelta
    */
   makeAttestation: ({ state }, lienedDelta) =>
     state.lienMint.mintAttestation(state.address, lienedDelta),

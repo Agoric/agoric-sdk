@@ -25,9 +25,9 @@ export function makeVatLoader(stuff) {
    * Create a new vat at runtime (called when a 'create-vat' event reaches
    * the top of the run-queue).
    *
-   * @param { string } vatID  The pre-allocated vatID
-   * @param { SourceOfBundle } source  The source object implementing the vat
-   * @param { Translators } translators
+   * @param {string} vatID  The pre-allocated vatID
+   * @param {SourceOfBundle} source  The source object implementing the vat
+   * @param {Translators} translators
    * @param {*} dynamicOptions  Options bag governing vat creation
    *
    * @returns {Promise<VatManager>}
@@ -47,8 +47,8 @@ export function makeVatLoader(stuff) {
    * Recreate a dynamic vat from persistent state at kernel startup time.
    *
    * @param {string} vatID  The vatID of the vat to create
-   * @param { SourceOfBundle } source  The source object implementing the vat
-   * @param { Translators } translators
+   * @param {SourceOfBundle} source  The source object implementing the vat
+   * @param {Translators} translators
    * @param {*} dynamicOptions  Options bag governing vat creation
    *
    * @returns {Promise<VatManager>} fires when the vat is ready for messages
@@ -69,8 +69,8 @@ export function makeVatLoader(stuff) {
    * Recreate a static vat from persistent state at kernel startup time.
    *
    * @param {string} vatID  The vatID of the vat to create
-   * @param { SourceOfBundle } source  The source object implementing the vat
-   * @param { Translators } translators
+   * @param {SourceOfBundle} source  The source object implementing the vat
+   * @param {Translators} translators
    * @param {*} staticOptions  Options bag governing vat creation
    *
    * @returns {Promise<VatManager>} A Promise which fires when the
@@ -125,7 +125,7 @@ export function makeVatLoader(stuff) {
    *    used, it must identify a bundle already known to the kernel (via the
    *    `config.bundles` table) which satisfies these constraints.
    *
-   * @param { Translators } translators
+   * @param {Translators} translators
    *
    * @param {object} options  an options bag. These options are currently understood:
    *

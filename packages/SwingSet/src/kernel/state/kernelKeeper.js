@@ -169,7 +169,7 @@ export default function makeKernelKeeper(
   insistStorageAPI(rawKVStore);
 
   /**
-   * @param { string } key
+   * @param {string} key
    */
   function getKeyType(key) {
     if (key.startsWith('local.')) {
@@ -260,7 +260,7 @@ export default function makeKernelKeeper(
   }
 
   /**
-   * @param { KernelOptions } kernelOptions
+   * @param {KernelOptions} kernelOptions
    */
   function createStartingKernelState(kernelOptions) {
     const {
@@ -300,8 +300,9 @@ export default function makeKernelKeeper(
   /**
    *
    * @param {string} mt
-   * @returns { asserts mt is ManagerType }
+   * @returns {asserts mt is ManagerType}
    */
+
   function insistManagerType(mt) {
     assert(
       [
@@ -312,7 +313,6 @@ export default function makeKernelKeeper(
         'xs-worker-no-gc',
       ].includes(mt),
     );
-    return undefined; // hush JSDoc
   }
 
   function getDefaultManagerType() {
@@ -322,7 +322,7 @@ export default function makeKernelKeeper(
   }
 
   /**
-   * @returns { boolean }
+   * @returns {boolean}
    */
   function getEnableFakeDurable() {
     return !!kvStore.get('kernel.enableFakeDurable');
@@ -330,7 +330,7 @@ export default function makeKernelKeeper(
 
   /**
    *
-   * @returns { number | 'never' }
+   * @returns {number | 'never'}
    */
   function getDefaultReapInterval() {
     const r = getRequired('kernel.defaultReapInterval');
@@ -369,9 +369,9 @@ export default function makeKernelKeeper(
   const bundleIDRE = new RegExp('^b1-[0-9a-f]{128}$');
 
   /**
-   * @param { string } name
-   * @param { BundleID } bundleID
-   * @returns { void }
+   * @param {string} name
+   * @param {BundleID} bundleID
+   * @returns {void}
    */
   function addNamedBundleID(name, bundleID) {
     assert.typeof(bundleID, 'string');
@@ -380,16 +380,16 @@ export default function makeKernelKeeper(
   }
 
   /**
-   * @param { string } name
-   * @returns { BundleID }
+   * @param {string} name
+   * @returns {BundleID}
    */
   function getNamedBundleID(name) {
     return harden(getRequired(`namedBundleID.${name}`));
   }
 
   /**
-   * @param { BundleID } bundleID
-   * @returns { string }
+   * @param {BundleID} bundleID
+   * @returns {string}
    */
   function bundleIDToKey(bundleID) {
     // bundleID is b1-HASH
@@ -401,9 +401,9 @@ export default function makeKernelKeeper(
   /**
    * Store a bundle (by ID) in the kernel DB.
    *
-   * @param { BundleID } bundleID The claimed bundleID: the caller
+   * @param {BundleID} bundleID The claimed bundleID: the caller
    *        (controller.js) must validate it first, we assume it is correct.
-   * @param { EndoZipBase64Bundle } bundle The code bundle, whose format must
+   * @param {EndoZipBase64Bundle} bundle The code bundle, whose format must
    *        be 'endoZipBase64'.
    */
   function addBundle(bundleID, bundle) {
@@ -418,16 +418,16 @@ export default function makeKernelKeeper(
   }
 
   /**
-   * @param { BundleID } bundleID
-   * @returns { boolean }
+   * @param {BundleID} bundleID
+   * @returns {boolean}
    */
   function hasBundle(bundleID) {
     return kvStore.has(bundleIDToKey(bundleID));
   }
 
   /**
-   * @param { BundleID } bundleID
-   * @returns { EndoZipBase64Bundle | undefined }
+   * @param {BundleID} bundleID
+   * @returns {EndoZipBase64Bundle | undefined}
    */
   function getBundle(bundleID) {
     const value = kvStore.get(bundleIDToKey(bundleID));
@@ -483,8 +483,8 @@ export default function makeKernelKeeper(
   }
 
   /**
-   * @param { string } vatID
-   * @param { string } kernelSlot
+   * @param {string} vatID
+   * @param {string} kernelSlot
    */
   function getReachableAndVatSlot(vatID, kernelSlot) {
     const kernelKey = `${vatID}.c.${kernelSlot}`;
@@ -519,9 +519,9 @@ export default function makeKernelKeeper(
   /**
    * Allocate a new koid.
    *
-   * @param { string } ownerID
-   * @param { undefined | bigint } id
-   * @returns { string }
+   * @param {string} ownerID
+   * @param {undefined | bigint} id
+   * @returns {string}
    */
   function addKernelObject(ownerID, id = undefined) {
     // providing id= is only for unit tests
@@ -1129,7 +1129,7 @@ export default function makeKernelKeeper(
   // replay).
 
   const maybeFreeKrefs = new Set();
-  /** @param { string } kref */
+  /** @param {string} kref */
   function addMaybeFreeKref(kref) {
     insistKernelType('object', kref);
     maybeFreeKrefs.add(kref);
@@ -1144,7 +1144,7 @@ export default function makeKernelKeeper(
    *
    * @param {unknown} kernelSlot  The kernel slot whose refcount is to be incremented.
    * @param {string?} tag  Debugging note with rough source of the reference.
-   * @param { { isExport?: boolean, onlyRecognizable?: boolean } } options
+   * @param {{ isExport?: boolean, onlyRecognizable?: boolean }} options
    * 'isExport' means the reference comes from a clist export, which counts
    * for promises but not objects. 'onlyRecognizable' means the reference
    * provides only recognition, not reachability
@@ -1316,7 +1316,7 @@ export default function makeKernelKeeper(
   /**
    * Cease writing to the vat's transcript.
    *
-   * @param { string } vatID
+   * @param {string} vatID
    */
   function closeVatTranscript(vatID) {
     insistVatID(vatID);
@@ -1348,7 +1348,7 @@ export default function makeKernelKeeper(
   }
 
   /*
-   * @returns { DeviceID | undefined }
+   * @returns {DeviceID | undefined}
    */
   function getDeviceIDForName(name) {
     assert.typeof(name, 'string');

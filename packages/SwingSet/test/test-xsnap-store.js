@@ -13,7 +13,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 const { freeze } = Object;
 
 const ld = (() => {
-  /** @param { string } ref */
+  /** @param {string} ref */
   // WARNING: ambient
   const resolve = async ref => {
     const parsed = await importMetaResolve(ref, import.meta.url);
@@ -22,7 +22,7 @@ const ld = (() => {
   const readFile = fs.promises.readFile;
   return freeze({
     resolve,
-    /**  @param { string } ref */
+    /**  @param {string} ref */
     asset: async ref => readFile(await resolve(ref), 'utf-8'),
   });
 })();

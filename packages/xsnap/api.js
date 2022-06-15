@@ -30,7 +30,7 @@ export const ErrorMessage = {
 
 export class ErrorSignal extends Error {
   /**
-   * @param { string } signal
+   * @param {string} signal
    * @param {...string | undefined} params
    */
   constructor(signal, ...params) {
@@ -42,7 +42,7 @@ export class ErrorSignal extends Error {
 
 export class ErrorCode extends Error {
   /**
-   * @param { number } code
+   * @param {number} code
    * @param {...string | undefined} params
    */
   constructor(code, ...params) {
