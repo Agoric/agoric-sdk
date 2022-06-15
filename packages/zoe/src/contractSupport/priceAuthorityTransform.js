@@ -188,7 +188,7 @@ export const makePriceAuthorityTransform = async ({
 
       // Wrap our underlying notifier with scaled quotes.
       const scaledBaseNotifier = harden({
-        async getUpdateSince(updateCount = NaN) {
+        async getUpdateSince(updateCount = undefined) {
           // We use the same updateCount as our underlying notifier.
           const record = await E(notifier).getUpdateSince(updateCount);
 

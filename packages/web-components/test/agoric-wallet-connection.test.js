@@ -37,7 +37,7 @@ const makeMockCapTP = (_, rawSend, __, ___) => {
     getBootstrap: () => ({
       bridge: true,
       loadingNotifier: {
-        getUpdateSince: () => ({ updateCount: 3, value: [] }),
+        getUpdateSince: () => ({ updateCount: 3n, value: [] }),
       },
       wallet: {
         getAdminFacet: () => ({ isAdmin: true }),
