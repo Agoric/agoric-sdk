@@ -6,7 +6,7 @@ import { E, Far } from '@endo/far';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeAttestationFacets } from './attestation.js';
 import { ManagerKW as KW } from './constants.js';
-import { makeRunStakeKit } from './runStakeKit.js';
+import { makeRunStakeKit } from './stakeKit.js';
 import { makeRunStakeManager } from './stakeManager.js';
 
 const { details: X } = assert;

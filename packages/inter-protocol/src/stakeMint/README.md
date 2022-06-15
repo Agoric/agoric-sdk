@@ -56,7 +56,7 @@ sequenceDiagram
 In addition to the `runStake.js` module with the contract `start` function:
 
  - `params.js`: utilities for governance parameters
- - `runStakeKit.js`: `makeRunStakeKit` is called once per loan
+ - `stakeKit.js`: `makeRunStakeKit` is called once per loan
  - `stakeManager.js`: handles interest etc. for all loans
  - `attestation.js`: minting tokens that attest to liens,
       and wrapping them in per-user attestation maker authorities.
