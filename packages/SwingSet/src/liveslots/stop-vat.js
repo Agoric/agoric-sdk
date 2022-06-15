@@ -166,6 +166,7 @@ function finalizeEverything(tools) {
   }
 }
 
+// eslint-disable-next-line no-unused-vars
 function deleteVirtualObjectsWithoutDecref({ vrm, syscall }) {
   // delete the data of all non-durable virtual objects, without
   // attempting to decrement the refcounts of the surviving
@@ -311,6 +312,15 @@ export async function releaseOldState(tools) {
   identifyExportedFacets(abandonedVrefSet, tools);
   abandonExports(abandonedVrefSet, tools);
 
+  /* Disabling the rest of this in the interest of stop-vat performance.  We
+   * expect that in the fullness of time the following will be superseded by a
+   * post-upgrade scavenger process that cleans up dead database debris
+   * incrementally, rather than taking the hit of a potentially large delay at
+   * shutdown time.  If that change happens, the below code can simply be
+   * removed.  Until then, I'm leaving it in place as scaffolding, just in case,
+   * on the theory that it will be easier to reconstruct as a unified whole
+   * without having to navigate through a confusing maze of twisty git branches.
+
   // Then we pretend userspace RAM has dropped all the vref-based
   // objects that it was holding onto.
   finalizeEverything(tools);
@@ -389,4 +399,6 @@ export async function releaseOldState(tools) {
 
     // At this point we declare sufficient victory and return.
   }
+
+  */
 }
