@@ -1,6 +1,12 @@
 // @ts-check
 
 export {
+  makeEmptyPublishKit,
+  makePublishKit,
+  subscribeEach,
+  subscribeLatest,
+} from './publish-kit.js';
+export {
   makeNotifier,
   makeNotifierKit,
   makeNotifierFromAsyncIterable,

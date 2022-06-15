@@ -23,7 +23,7 @@ const ONE = BigInt(1);
  * @param {PublicationList<T>} pubList
  * @returns {AsyncIterator<T>}
  */
-export const makeEachIterator = pubList => {
+const makeEachIterator = pubList => {
   // To understand the implementation, start with
   // https://web.archive.org/web/20160404122250/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency#infinite_queue
   return Far('EachIterator', {
@@ -34,7 +34,6 @@ export const makeEachIterator = pubList => {
     },
   });
 };
-harden(makeEachIterator);
 
 /**
  * Given a local or remote subscriber, returns a local AsyncIterable which
@@ -50,7 +49,7 @@ harden(makeEachIterator);
  * @param {ERef<Subscriber<T>>} subscriber
  * @returns {AsyncIterable<T>}
  */
-export const subcribeEach = subscriber => {
+export const subscribeEach = subscriber => {
   const iterable = Far('EachIterable', {
     [Symbol.asyncIterator]: () => {
       const pubList = E(subscriber).subscribeAfter();
@@ -59,7 +58,7 @@ export const subcribeEach = subscriber => {
   });
   return iterable;
 };
-harden(subcribeEach);
+harden(subscribeEach);
 
 /**
  * @template T
@@ -132,7 +131,8 @@ export const makeEmptyPublishKit = () => {
       tailP = HandledPromise.reject(
         new Error('Cannot read past end of iteration.'),
       );
-      tailP.catch(() => {}); // suppress unhandled rejection error
+      // Suppress unhandled rejection error.
+      tailP.catch(() => {});
       tailR = undefined;
     } else {
       ({ promise: tailP, resolve: tailR } = makePromiseKit());
@@ -157,6 +157,7 @@ export const makeEmptyPublishKit = () => {
    */
   const subscriber = Far('Subscriber', {
     subscribeAfter: (publishCount = -ONE) => {
+      assert.typeof(publishCount, 'bigint');
       if (publishCount === currentPublishCount) {
         return tailP;
       } else if (publishCount < currentPublishCount) {
@@ -176,7 +177,10 @@ export const makeEmptyPublishKit = () => {
       advanceCurrent(true, finalValue);
     },
     fail: reason => {
-      advanceCurrent(true, undefined, HandledPromise.reject(reason));
+      const rejection = HandledPromise.reject(reason);
+      // Suppress unhandled rejection error.
+      rejection.catch(() => {});
+      advanceCurrent(true, undefined, rejection);
     },
   });
   return harden({ publisher, subscriber });
