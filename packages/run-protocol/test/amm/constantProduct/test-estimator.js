@@ -15,6 +15,7 @@ import {
   pricesForStatedOutput,
 } from '../../../src/vpool-xyk-amm/constantProduct/calcSwapPrices.js';
 import { BASIS_POINTS } from '../../../src/vpool-xyk-amm/constantProduct/defaults.js';
+import { makeDoublePool } from '../../../src/vpool-xyk-amm/doublePool.js';
 
 const Million = 1000_000n;
 const DEFAULT_2_POOLS = [
@@ -63,6 +64,30 @@ const getInputPrices = (centralBrand, amountGiven, brandOut, pools, fees) => {
     makeRatio(fees.protocolFeeBP, centralBrand, BASIS_POINTS),
     makeRatio(fees.poolFeeBP, poolAllocation.Secondary.brand, BASIS_POINTS),
   );
+};
+
+const getTwoPoolInputPrices = (
+  centralBrand,
+  amountGiven,
+  brandOut,
+  pools,
+  fees,
+) => {
+  const pool1 = pools.get(amountGiven.brand);
+  const pool2 = pools.get(brandOut);
+
+  const getPoolFee = () => fees.poolFeeBP;
+  const getProFee = () => fees.protocolFeeBP;
+  const vPool = makeDoublePool(
+    undefined,
+    pool1,
+    pool2,
+    getProFee,
+    getPoolFee,
+    undefined,
+  );
+
+  return vPool.getPriceForInput(amountGiven, AmountMath.makeEmpty(brandOut));
 };
 
 const getOutputPrices = (centralBrand, brandIn, amountWanted, pools, fees) => {
@@ -151,7 +176,7 @@ test('estimate simple swapOut fromCentral', t => {
   const edge = withAmountUtils(makeIssuerKit('edge'));
   const { internalPools, uiPools } = makePools(
     [central, edge],
-    DEFAULT_3_POOLS,
+    DEFAULT_2_POOLS,
   );
   const rates = buildRates(30n, 20n, 200n);
 
@@ -181,7 +206,7 @@ test('estimate simple swapOut toCentral', t => {
   const edge = withAmountUtils(makeIssuerKit('edge'));
   const { internalPools, uiPools } = makePools(
     [central, edge],
-    DEFAULT_3_POOLS,
+    DEFAULT_2_POOLS,
   );
   const rates = buildRates(30n, 20n, 200n);
 
@@ -211,7 +236,7 @@ test('estimate swapOut high ProtocolFee fromCentral', t => {
   const edge = withAmountUtils(makeIssuerKit('edge'));
   const { internalPools, uiPools } = makePools(
     [central, edge],
-    DEFAULT_3_POOLS,
+    DEFAULT_2_POOLS,
   );
   const rates = buildRates(3000n, 20n, 200n);
 
@@ -241,7 +266,7 @@ test('estimate swapOut high ProtocolFee toCentral', t => {
   const edge = withAmountUtils(makeIssuerKit('edge'));
   const { internalPools, uiPools } = makePools(
     [central, edge],
-    DEFAULT_3_POOLS,
+    DEFAULT_2_POOLS,
   );
   const rates = buildRates(3000n, 20n, 200n);
 
@@ -271,7 +296,7 @@ test('estimate swapOut high poolFee fromCentral', t => {
   const edge = withAmountUtils(makeIssuerKit('edge'));
   const { internalPools, uiPools } = makePools(
     [central, edge],
-    DEFAULT_3_POOLS,
+    DEFAULT_2_POOLS,
   );
   const rates = buildRates(300n, 2000n, 200n);
 
@@ -300,7 +325,7 @@ test('estimate swapOut high poolFee toCentral', t => {
   const edge = withAmountUtils(makeIssuerKit('edge'));
   const { internalPools, uiPools } = makePools(
     [central, edge],
-    DEFAULT_3_POOLS,
+    DEFAULT_2_POOLS,
   );
   const rates = buildRates(300n, 2000n, 200n);
 
@@ -329,7 +354,7 @@ test('estimate swapOut high slippage fromCentral', t => {
   const edge = withAmountUtils(makeIssuerKit('edge'));
   const { internalPools, uiPools } = makePools(
     [central, edge],
-    DEFAULT_3_POOLS,
+    DEFAULT_2_POOLS,
   );
   const rates = buildRates(30n, 20n, 500n);
 
@@ -358,7 +383,7 @@ test('estimate swapOut high slippage toCentral', t => {
   const edge = withAmountUtils(makeIssuerKit('edge'));
   const { internalPools, uiPools } = makePools(
     [central, edge],
-    DEFAULT_3_POOLS,
+    DEFAULT_2_POOLS,
   );
   const rates = buildRates(30n, 20n, 500n);
 
@@ -378,6 +403,38 @@ test('estimate swapOut high slippage toCentral', t => {
     AmountMath.add(
       expected.swapperGives,
       charge(rates.slippageBP, expected.swapperGives),
+    ),
+  );
+});
+
+test('estimate two pools swapIn toCentral', t => {
+  const central = withAmountUtils(makeIssuerKit('central'));
+  const edge1 = withAmountUtils(makeIssuerKit('edge1'));
+  const edge2 = withAmountUtils(makeIssuerKit('edge2'));
+
+  const { internalPools, uiPools } = makePools(
+    [central, edge1, edge2],
+    DEFAULT_3_POOLS,
+  );
+  const rates = buildRates(30n, 20n, 200n);
+
+  const brandOut = edge2.brand;
+  const amountGiven = edge1.make(1000n);
+
+  const expected = getTwoPoolInputPrices(
+    central.brand,
+    amountGiven,
+    brandOut,
+    internalPools,
+    rates,
+  );
+
+  const estimator = makeEstimator(central.brand, rates);
+  t.deepEqual(
+    estimator.estimateProceeds(amountGiven, brandOut, uiPools),
+    AmountMath.subtract(
+      expected.swapperGets,
+      charge(rates.slippageBP, expected.swapperGets),
     ),
   );
 });
