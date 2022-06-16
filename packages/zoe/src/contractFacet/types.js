@@ -39,7 +39,7 @@
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {(brand: Brand) => Issuer} getIssuerForBrand
  * @property {GetAssetKindByBrand} getAssetKind
- * @property {MakeZCFMint} makeZCFMint
+ * @property {<K extends AssetKind>(keyword: Keyword, assetKind?: K, displayInfo?: AdditionalDisplayInfo) => Promise<ZCFMint<K>>} makeZCFMint
  * @property {ZCFRegisterFeeMint} registerFeeMint
  * @property {ZCFMakeEmptySeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig
