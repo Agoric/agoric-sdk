@@ -22,13 +22,12 @@ import {
   defineDurableKindMulti,
   makeKindHandle,
   makeScalarBigMapStore,
-  pickFacet,
   makeScalarBigSetStore,
+  pickFacet,
 } from '@agoric/vat-data';
 import {
   assertProposalShape,
   ceilDivideBy,
-  ceilMultiplyBy,
   floorDivideBy,
   getAmountIn,
   getAmountOut,
@@ -43,7 +42,7 @@ import {
 } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { makeTracer } from '../makeTracer.js';
-import { liquidate } from './liquidation.js';
+import { liquidate, makeQuote, updateQuote } from './liquidation.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { makeVault, Phase } from './vault.js';
 
@@ -281,20 +280,6 @@ const initState = (
   return state;
 };
 
-/**
- * Threshold to alert when the price level falls enough that the vault
- * with the highest debt to collateral ratio will no longer be valued at the
- * liquidationMargin above its debt.
- *
- * @param {Ratio} highestDebtRatio
- * @param {Ratio} liquidationMargin
- */
-const liquidationThreshold = (highestDebtRatio, liquidationMargin) =>
-  ceilMultiplyBy(
-    highestDebtRatio.numerator, // debt
-    liquidationMargin,
-  );
-
 // Some of these could go in closures but are kept on a facet anticipating future durability options.
 const helperBehavior = {
   /**
@@ -445,10 +430,7 @@ const helperBehavior = {
     const govParams = ephemera.factoryPowers.getGovernedParams();
     const liquidationMargin = govParams.getLiquidationMargin();
     // Safe to call extraneously (lightweight and idempotent)
-    E(ephemera.outstandingQuote).updateLevel(
-      highestDebtRatio.denominator, // collateral
-      liquidationThreshold(highestDebtRatio, liquidationMargin),
-    );
+    updateQuote(ephemera.outstandingQuote, highestDebtRatio, liquidationMargin);
     trace('update quote', state.collateralBrand, highestDebtRatio);
   },
 
@@ -475,9 +457,10 @@ const helperBehavior = {
         // ask to be alerted when the price level falls enough that the vault
         // with the highest debt to collateral ratio will no longer be valued at the
         // liquidationMargin above its debt.
-        ephemera.outstandingQuote = E(priceAuthority).mutableQuoteWhenLT(
-          highestDebtRatio.denominator, // collateral
-          liquidationThreshold(highestDebtRatio, liquidationMargin),
+        ephemera.outstandingQuote = makeQuote(
+          priceAuthority,
+          highestDebtRatio,
+          liquidationMargin,
         );
         trace('posted quote request', state.collateralBrand, highestDebtRatio);
 
