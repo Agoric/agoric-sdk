@@ -8,6 +8,7 @@ import { deeplyFulfilled } from '@endo/marshal';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import {
   ceilMultiplyBy,
   makeRatio,
@@ -38,7 +39,6 @@ import {
   installGovernance,
   setupBootstrap,
   setUpZoeForTest,
-  eventLoopIteration,
   withAmountUtils,
   produceInstallations,
 } from '../supports.js';
@@ -2725,15 +2725,7 @@ test('manager notifiers', async t => {
     totalDebt: { value: DEBT1 },
   });
   m.addDebt(DEBT1);
-  const periods = 5n;
-  // FIXME test result relies on awaiting each tick
-  // timer.tickN() awaits only the last tick
-  for (let i = 0; i < periods; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
-    await manualTimer.tick();
-  }
-  // wait to let interest charging catch up
-  await eventLoopIteration();
+  await manualTimer.tickN(5);
   const interestAccrued = (await E(vault).getCurrentDebt()).value - DEBT1;
   m.addDebt(interestAccrued);
   t.is(interestAccrued, 10n);

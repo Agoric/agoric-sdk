@@ -4,17 +4,17 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { E, Far } from '@endo/far';
 import { makeFeeDistributor } from '../src/feeDistributor.js';
-import { eventLoopIteration } from './supports.js';
 
 /**
  * @param {Issuer} feeIssuer
  */
-function makeFakeFeeDepositFacetKit(feeIssuer) {
+const makeFakeFeeDepositFacetKit = feeIssuer => {
   const depositPayments = [];
 
   const feeDepositFacet = {
@@ -29,9 +29,9 @@ function makeFakeFeeDepositFacetKit(feeIssuer) {
     Promise.resolve(eventLoopIteration()).then(_ => depositPayments);
 
   return { feeDepositFacet, getPayments };
-}
+};
 
-function makeFakeFeeProducer(makeEmptyPayment = () => {}) {
+const makeFakeFeeProducer = (makeEmptyPayment = () => {}) => {
   const feePayments = [];
   return Far('feeCollector', {
     collectFees: () => feePayments.shift() || makeEmptyPayment(),
@@ -39,7 +39,7 @@ function makeFakeFeeProducer(makeEmptyPayment = () => {}) {
     // tools for the fake:
     pushFees: payment => feePayments.push(payment),
   });
-}
+};
 /**
  *
  * @param {*} t
@@ -49,7 +49,14 @@ function makeFakeFeeProducer(makeEmptyPayment = () => {}) {
  * @param {Issuer} issuer
  * @param {Brand} brand
  */
-async function assertPaymentArray(t, paymentsP, count, values, issuer, brand) {
+const assertPaymentArray = async (
+  t,
+  paymentsP,
+  count,
+  values,
+  issuer,
+  brand,
+) => {
   const payments = await paymentsP;
   for (let i = 0; i < count; i += 1) {
     // XXX https://github.com/Agoric/agoric-sdk/issues/5527
@@ -61,7 +68,7 @@ async function assertPaymentArray(t, paymentsP, count, values, issuer, brand) {
       AmountMath.make(brand, values[i]),
     );
   }
-}
+};
 
 test('fee distribution', async t => {
   const { brands, moolaIssuer: issuer, moolaMint: runMint } = setup();

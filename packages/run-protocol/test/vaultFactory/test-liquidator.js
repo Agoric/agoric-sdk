@@ -8,6 +8,7 @@ import { deeplyFulfilled } from '@endo/marshal';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import {
   makeRatioFromAmounts,
   ceilMultiplyBy,
@@ -29,7 +30,6 @@ import {
   setUpZoeForTest,
   setupBootstrap,
   installGovernance,
-  eventLoopIteration,
   withAmountUtils,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
