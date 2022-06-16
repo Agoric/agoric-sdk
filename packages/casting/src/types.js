@@ -21,7 +21,7 @@ export {};
  * @property {(error: any, attempt?: number) => Promise<void>} retry
  * @property {() => LeaderOptions} getOptions
  * @property {<T>(callback: (endpoint: string) => Promise<T>) => Promise<T[]>} mapEndpoints
- * @property {(key: CastingSpec) => Promise<Follower<CastingChange>>} watchCasting
+ * @property {(key: ERef<CastingSpec>) => Promise<Follower<CastingChange>>} watchCasting
  */
 
 /**
@@ -48,10 +48,11 @@ export {};
 
 /**
  * @typedef {object} FollowerOptions
- * @property {null | import('@endo/far').FarRef<Unserializer>} [unserializer]
+ * @property {null | import('@endo/far').ERef<Unserializer>} [unserializer]
  * @property {(buf: Uint8Array) => any} [decode]
+ * @property {Record<string, any>} [clientParams]
  * @property {'strict'|'optimistic'|'none'} [integrity]
- * @property {import('@endo/far').FarRef<Crasher>} [crasher]
+ * @property {null | import('@endo/far').ERef<Crasher>} [crasher]
  */
 
 /**
@@ -59,4 +60,14 @@ export {};
  * @property {string} storeName
  * @property {Uint8Array} storeSubkey
  * @property {Uint8Array} [dataPrefixBytes]
+ */
+
+/**
+ * @callback CastingSpecMaker
+ * @param {Required<FollowerOptions>} completeOptions
+ * @returns {ERef<string>}
+ */
+
+/**
+ * @typedef {ERef<CastingSpec> | CastingSpecMaker} CastingSpecTemplate
  */

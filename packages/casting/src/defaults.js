@@ -3,6 +3,8 @@
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 
+/** @template T @typedef {import('@endo/far').FarRef<T>} FarRef */
+
 /**
  * Resolve a Promise after a given number of milliseconds.
  *
@@ -58,8 +60,6 @@ const slotToVal = (_slot, iface) => {
 
 /**
  * Unserialize the JSONable data.
- *
- * @type {import('./types').Unserializer}
  */
 export const DEFAULT_UNSERIALIZER = Far('marshal unserializer', {
   unserialize: makeMarshal(undefined, slotToVal).unserialize,

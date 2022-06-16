@@ -6,6 +6,7 @@ import { QueryClient } from '@cosmjs/stargate';
 
 import { makeAsyncIterableFromNotifier, iterateLatest } from './iterable.js';
 import { DEFAULT_DECODER, DEFAULT_UNSERIALIZER } from './defaults.js';
+import { makeCastingSpec } from './casting-spec.js';
 
 const { details: X } = assert;
 
@@ -78,22 +79,52 @@ export const integrityToQueryVerifier = harden({
 /**
  * @template T
  * @param {ERef<import('./types').Leader>} leader
- * @param {import('./types').CastingSpec} castingSpec
+ * @param {import('./types').CastingSpecTemplate} specTemplate
  * @param {import('./types').FollowerOptions} options
  * @returns {Follower<FollowerElement<T>>}
  */
-export const makeFollower = (leader, castingSpec, options = {}) => {
+export const makeFollower = (leader, specTemplate, options = {}) => {
   const {
     decode = DEFAULT_DECODER,
     unserializer = DEFAULT_UNSERIALIZER,
     integrity = 'optimistic',
     crasher = null,
+    clientParams,
   } = options;
-  const {
-    storeName,
-    storeSubkey,
-    dataPrefixBytes = new Uint8Array(),
-  } = castingSpec;
+
+  /**
+   * @returns {Promise<import('./types').CastingSpec>}
+   */
+  const expandSpecTemplate = async () => {
+    if (typeof specTemplate !== 'function') {
+      return specTemplate;
+    }
+
+    const fullClientParams = { ...clientParams };
+    /** @type {Required<import('./types.js').FollowerOptions>} */
+    const fullOpts = {
+      decode,
+      unserializer,
+      integrity,
+      crasher,
+      clientParams: fullClientParams,
+    };
+    if (clientParams) {
+      // TODO: Update the client parameters with address.
+      const { address: desiredAddress } = fullClientParams;
+      assert.typeof(
+        desiredAddress,
+        'string',
+        X`clientParams.address must be a string; got ${desiredAddress}`,
+      );
+    }
+    harden(fullOpts);
+
+    const spec = await E(specTemplate)(fullOpts);
+    return makeCastingSpec(spec);
+  };
+
+  const specP = expandSpecTemplate();
 
   /** @type {QueryVerifier} */
   const queryVerifier = integrityToQueryVerifier[integrity];
@@ -121,15 +152,21 @@ export const makeFollower = (leader, castingSpec, options = {}) => {
 
   /**
    * @param {'queryVerified' | 'queryUnverified'} method
-   * @param {string} queryPath
+   * @param {(storeName: string) => string} makeQueryPath
    */
   const makeQuerier =
-    (method, queryPath) =>
+    (method, makeQueryPath) =>
     /**
      * @param {number} [height]
      * @returns {Promise<Uint8Array>}
      */
     async height => {
+      const {
+        dataPrefixBytes = new Uint8Array(),
+        storeSubkey,
+        storeName,
+      } = await specP;
+      const queryPath = makeQueryPath(storeName);
       const values = await E(leader).mapEndpoints(async endpoint => {
         const queryClient = await getOrCreateQueryClient(endpoint);
         return E(queryClient)
@@ -166,10 +203,13 @@ export const makeFollower = (leader, castingSpec, options = {}) => {
       return result.slice(dataPrefixBytes.length);
     };
 
-  const getProvenValueAtHeight = makeQuerier('queryVerified', storeName);
+  const getProvenValueAtHeight = makeQuerier(
+    'queryVerified',
+    storeName => storeName,
+  );
   const getUnprovenValueAtHeight = makeQuerier(
     'queryUnverified',
-    `store/${storeName}/key`,
+    storeName => `store/${storeName}/key`,
   );
 
   // Enable the periodic fetch.
@@ -259,9 +299,40 @@ export const makeFollower = (leader, castingSpec, options = {}) => {
             : () => getUnprovenValueAtHeight(allegedBlockHeight);
         const getProvenValue = () => getProvenValueAtHeight(allegedBlockHeight);
 
-        const buf = await queryVerifier(getProvenValue, crash, getAllegedValue);
+        const wrappedCrash = e => {
+          let parsedError;
+          const { message } = e || {};
+          if (message) {
+            try {
+              parsedError = JSON.parse(message);
+            } catch (e2) {
+              if (!(e2 instanceof SyntaxError)) {
+                throw e2;
+              }
+            }
+          }
+          const { code } = parsedError || {};
+          if (Number.isSafeInteger(code)) {
+            return e;
+          }
+          return crash(e);
+        };
+        const ret = await queryVerifier(
+          getProvenValue,
+          wrappedCrash,
+          getAllegedValue,
+        );
+        if (ret instanceof Error) {
+          assert.note(
+            ret,
+            X`Swallowing JSON-RPC error error while querying ${allegedValues} ${allegedBlockHeight}`,
+          );
+          return;
+        }
+
+        const buf = ret;
         if (buf.length === 0) {
-          fail(Error('No query results'));
+          // No data.  Just wait until the next event.
           return;
         }
         attempt = 0;
@@ -291,19 +362,22 @@ export const makeFollower = (leader, castingSpec, options = {}) => {
         committer.commit({ value });
       };
 
-      const changeFollower = E(leader).watchCasting(castingSpec);
-      const queryWhenKeyChanges = async () => {
-        for await (const allegedChange of iterateLatest(changeFollower)) {
-          if (finished) {
-            return;
+      const bootUp = async () => {
+        const castingSpec = await specP;
+        const changeFollowerP = E(leader).watchCasting(castingSpec);
+        const queryWhenKeyChanges = async () => {
+          for await (const allegedChange of iterateLatest(changeFollowerP)) {
+            if (finished) {
+              return;
+            }
+            harden(allegedChange);
+            await queryAndUpdateOnce(allegedChange).catch(retryOrFail);
           }
-          harden(allegedChange);
-          await queryAndUpdateOnce(allegedChange).catch(retryOrFail);
-        }
+        };
+        queryAndUpdateOnce({ values: [], castingSpec }).catch(retryOrFail);
+        queryWhenKeyChanges().catch(fail);
       };
-
-      queryAndUpdateOnce({ values: [], castingSpec }).catch(retryOrFail);
-      queryWhenKeyChanges().catch(fail);
+      bootUp().catch(fail);
 
       return makeAsyncIterableFromNotifier(notifier);
     },
