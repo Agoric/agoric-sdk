@@ -66,14 +66,14 @@ const validTransitions = {
 };
 
 /**
- * @typedef {Phase[keyof typeof Phase]} TitlePhase
+ * @typedef {Phase[keyof typeof Phase]} HolderPhase
  *
  * @typedef {object} VaultNotification
  * @property {Amount<'nat'>} locked Amount of Collateral locked
  * @property {{debt: Amount<'nat'>, interest: Ratio}} debtSnapshot 'debt' at the point the compounded interest was 'interest'
  * @property {Ratio} interestRate Annual interest rate charge
  * @property {Ratio} liquidationRatio
- * @property {TitlePhase} vaultState
+ * @property {HolderPhase} vaultState
  */
 
 // XXX masks typedef from types.js, but using that causes circular def problems
@@ -305,7 +305,7 @@ const helperBehavior = {
   /**
    *
    * @param {MethodContext} context
-   * @param {TitlePhase} newPhase
+   * @param {HolderPhase} newPhase
    */
   getStateSnapshot: ({ state, facets }, newPhase) => {
     const { debtSnapshot: debt, interestSnapshot: interest } = state;

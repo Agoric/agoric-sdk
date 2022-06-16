@@ -18,7 +18,7 @@ const { details: X } = assert;
  *   state: State,
  *   facets: {
  *     helper: import('@agoric/vat-data/src/types').KindFacet<typeof helper>,
- *     self: import('@agoric/vat-data/src/types').KindFacet<typeof title>,
+ *     self: import('@agoric/vat-data/src/types').KindFacet<typeof holder>,
  *   },
  * }>} MethodContext
  */
@@ -38,18 +38,18 @@ const initState = vault => {
 const helper = {
   /**
    * @param {MethodContext} context
-   * @throws if this title no longer owns the vault
+   * @throws if this holder no longer owns the vault
    */
   owned: ({ state }) => {
     const { vault } = state;
-    assert(vault, X`Using vault title after transfer`);
+    assert(vault, X`Using vault holder after transfer`);
     return vault;
   },
   /** @param {MethodContext} context */
   getUpdater: ({ state }) => state.updater,
 };
 
-const title = {
+const holder = {
   /** @param {MethodContext} context */
   getNotifier: ({ state }) => state.notifier,
   /** @param {MethodContext} context */
@@ -79,7 +79,7 @@ const title = {
   getNormalizedDebt: ({ facets }) => facets.helper.owned().getNormalizedDebt(),
 };
 
-const behavior = { helper, title };
+const behavior = { helper, holder };
 
 export const makeVaultHolder = defineKindMulti(
   'VaultHolder',
