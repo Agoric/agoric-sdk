@@ -124,6 +124,8 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         }
         break;
       }
+      case 'startVat':
+      case 'stopVat':
       case 'dropExports':
       case 'retireExports':
       case 'retireImports':
