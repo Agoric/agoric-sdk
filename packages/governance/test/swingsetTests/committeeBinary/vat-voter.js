@@ -35,6 +35,11 @@ const build = async (log, zoe) => {
       const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);
       const seat = E(zoe).offer(invitation);
       const voteFacet = E(seat).getOfferResult();
+      E.when(E(seat).getPayouts(), async () => {
+        E.when(E(seat).hasExited(), exited => {
+          log(`Seat ${name} ${exited ? 'has exited' : 'is open'}`);
+        });
+      });
 
       const votingObserver = Far('voting observer', {
         updateState: details => {
