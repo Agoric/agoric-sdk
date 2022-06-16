@@ -10,18 +10,18 @@ import { makeVaultHolder } from './vaultHolder.js';
  * @param {Notifier<import('./vaultManager').AssetState>} assetNotifier
  */
 export const makeVaultKit = (vault, assetNotifier) => {
-  const { title, helper } = makeVaultHolder(vault);
+  const { holder, helper } = makeVaultHolder(vault);
   const vaultKit = harden({
     publicNotifiers: {
-      vault: title.getNotifier(),
+      vault: holder.getNotifier(),
       asset: assetNotifier,
     },
     invitationMakers: Far('invitation makers', {
-      AdjustBalances: title.makeAdjustBalancesInvitation,
-      CloseVault: title.makeCloseInvitation,
-      TransferVault: title.makeTransferInvitation,
+      AdjustBalances: holder.makeAdjustBalancesInvitation,
+      CloseVault: holder.makeCloseInvitation,
+      TransferVault: holder.makeTransferInvitation,
     }),
-    vault: title,
+    vault: holder,
     vaultUpdater: helper.getUpdater(),
   });
   return vaultKit;
