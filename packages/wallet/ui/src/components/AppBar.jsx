@@ -9,7 +9,10 @@ import Tooltip from '@mui/material/Tooltip';
 
 import NavDrawer from './NavDrawer';
 import ConnectionSettingsDialog from './ConnectionSettingsDialog';
-import { withApplicationContext } from '../contexts/Application';
+import {
+  ConnectionStatus,
+  withApplicationContext,
+} from '../contexts/Application';
 
 const logoUrl = './logo.svg';
 const helpUrl = 'https://agoric.com/documentation/guides/wallet/ui.html';
@@ -71,9 +74,8 @@ const useStyles = makeStyles(theme => ({
 // Exported for testing only.
 export const AppBarWithoutContext = ({
   connectionComponent,
-  wantConnection,
+  disconnect,
   walletConnection,
-  setWantConnection,
   connectionState,
   connectionStatus,
 }) => {
@@ -87,6 +89,11 @@ export const AppBarWithoutContext = ({
 
   const connectionTitle =
     connectionStatus[0].toUpperCase() + connectionStatus.slice(1);
+
+  const isActive = [
+    ConnectionStatus.Connecting,
+    ConnectionStatus.Connected,
+  ].includes(connectionStatus);
 
   return (
     <header className={classes.header}>
@@ -111,12 +118,12 @@ export const AppBarWithoutContext = ({
           <Tooltip title={connectionTitle}>
             <IconButton
               size="medium"
-              color={wantConnection ? 'primary' : 'secondary'}
-              onClick={() => setWantConnection(!wantConnection)}
+              color={isActive ? 'primary' : 'secondary'}
+              onClick={() => disconnect(!isActive)}
             >
               <Public
                 className={
-                  connectionStatus === 'connecting'
+                  connectionStatus === ConnectionStatus.Connecting
                     ? classes.connecting
                     : undefined
                 }
@@ -164,7 +171,6 @@ export default withApplicationContext(AppBarWithoutContext, context => ({
   connectionComponent: context.connectionComponent,
   connectionState: context.connectionState,
   walletConnection: context.walletConnection,
-  wantConnection: context.wantConnection,
-  setWantConnection: context.setWantConnection,
+  disconnect: context.disconnect,
   connectionStatus: context.connectionStatus,
 }));

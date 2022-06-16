@@ -31,18 +31,20 @@ export const makeBackendFromWalletBridge = walletBridge => {
         const { done, value } = await E(offersMembers).next();
         return harden({
           done,
-          value: value.map(({ id, ...rest }) =>
-            harden({
-              id,
-              ...rest,
-              actions: Far('offerActions', {
-                // Provide these synthetic actions since offers don't have any yet.
-                accept: () => E(walletBridge).acceptOffer(id),
-                decline: () => E(walletBridge).declineOffer(id),
-                cancel: () => E(walletBridge).cancelOffer(id),
+          value:
+            value &&
+            value.map(({ id, ...rest }) =>
+              harden({
+                id,
+                ...rest,
+                actions: Far('offerActions', {
+                  // Provide these synthetic actions since offers don't have any yet.
+                  accept: () => E(walletBridge).acceptOffer(id),
+                  decline: () => E(walletBridge).declineOffer(id),
+                  cancel: () => E(walletBridge).cancelOffer(id),
+                }),
               }),
-            }),
-          ),
+            ),
         });
       },
       return: offersMembers.return,
@@ -86,6 +88,7 @@ export const makeBackendFromWalletBridge = walletBridge => {
 /**
  * @param {import('@agoric/casting').Follower} follower
  * @param {(e: unknown) => void} [errorHandler]
+ * @param {() => void} [firstCallback]
  */
 export const makeWalletBridgeFromFollower = (
   follower,
@@ -93,6 +96,7 @@ export const makeWalletBridgeFromFollower = (
     // Make an unhandled rejection.
     throw e;
   },
+  firstCallback,
 ) => {
   const notifiers = {
     getPursesNotifier: 'purses',
@@ -106,12 +110,16 @@ export const makeWalletBridgeFromFollower = (
   const notifierKits = Object.fromEntries(
     Object.entries(notifiers).map(([_method, stateName]) => [
       stateName,
-      makeNotifierKit([]),
+      makeNotifierKit(null),
     ]),
   );
 
   const followLatest = async () => {
     for await (const { value: state } of iterateLatest(follower)) {
+      if (firstCallback) {
+        firstCallback();
+        firstCallback = undefined;
+      }
       Object.entries(notifierKits).forEach(([stateName, { updater }]) => {
         updater.updateState(state[stateName]);
       });

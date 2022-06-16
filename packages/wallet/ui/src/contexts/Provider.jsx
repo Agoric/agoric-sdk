@@ -1,3 +1,4 @@
+// @ts-check
 /* eslint-disable react/display-name */
 import { observeIterator } from '@agoric/notifier';
 import { E } from '@endo/far';
@@ -5,15 +6,16 @@ import { useEffect, useState, useReducer } from 'react';
 
 import { ApplicationContext, ConnectionStatus } from './Application';
 
-import { DEFAULT_WALLET_CONNECTIONS } from '../util/connections';
+import { WalletBackend } from '../util/connections';
 
-const importers = {
-  SmartWalletConnection: () => import('../components/SmartWalletConnection'),
-  WalletConnection: () => import('../components/WalletConnection'),
+/** @type {Record<string, () => Promise<any>>} */
+const backendImporters = {
+  [WalletBackend.Smart]: () => import('../components/SmartWalletConnection'),
+  [WalletBackend.Solo]: () => import('../components/WalletConnection'),
 };
 
 // Prime the cache, but don't prevent time to interactive.
-Object.values(importers).map(importer => importer());
+Object.values(backendImporters).map(importer => importer());
 
 const useDebugLogging = (state, watch) => {
   useEffect(() => console.log(state), watch);
@@ -163,7 +165,7 @@ const Provider = ({ children }) => {
     maybeLoad('walletConnection') || null,
   );
   const [allWalletConnections, setAllWalletConnections] = useState(
-    harden(maybeLoad('userWalletConnections') || DEFAULT_WALLET_CONNECTIONS),
+    harden(maybeLoad('allWalletConnections') || []),
   );
 
   useEffect(() => {
@@ -230,26 +232,13 @@ const Provider = ({ children }) => {
       return;
     }
     maybeSave('walletConnection', walletConnection);
-
-    const existingIndex = allWalletConnections.findIndex(
-      c => c.label === walletConnection.label && c.url === walletConnection.url,
-    );
-    if (existingIndex < 0) {
-      setAllWalletConnections([walletConnection, ...allWalletConnections]);
-    } else {
-      setAllWalletConnections([
-        ...allWalletConnections.slice(0, existingIndex),
-        walletConnection,
-        ...allWalletConnections.slice(existingIndex + 1),
-      ]);
-    }
   }, [walletConnection]);
 
   useEffect(() => {
     if (!allWalletConnections) {
       return;
     }
-    maybeSave('userWalletConnections', allWalletConnections);
+    maybeSave('allWalletConnections', allWalletConnections);
   }, [allWalletConnections]);
 
   useEffect(() => {
@@ -324,51 +313,36 @@ const Provider = ({ children }) => {
   }, [backend, backendErrorHandler]);
 
   const disconnect = wantReconnect => {
+    console.log({ wantReconnect });
     setBackend(null);
     setBackendErrorHandler(null);
     setConnectionComponent(null);
-    setConnectionState('disconnected');
-    setConnectionStatus(
-      wantReconnect
-        ? ConnectionStatus.Connecting
-        : ConnectionStatus.Disconnected,
-    );
-    if (typeof wantReconnect === 'boolean') {
+    const desired =
+      typeof wantReconnect === 'boolean' ? wantReconnect : wantConnection;
+    if (desired !== wantConnection) {
       setWantConnection(wantReconnect);
+    }
+    if (desired) {
+      setConnectionStatus(ConnectionStatus.Connecting);
     }
   };
 
   let attempts = 0;
   useEffect(() => {
-    if (!wantConnection) {
-      disconnect();
+    if (backend || !walletConnection || !wantConnection) {
+      return undefined;
     }
-    if (!walletConnection || !wantConnection) {
-      return () => {};
-    }
-    if (connectionComponent) {
-      return () => {};
-    }
-    let u;
-    try {
-      const { url } = walletConnection;
-      u = new URL(url);
-    } catch (e) {
-      alert(
-        `Invalid wallet connection URL: ${
-          walletConnection && walletConnection.url
-        }`,
-      );
-      setWalletConnection(DEFAULT_WALLET_CONNECTIONS[0]);
-      return () => {};
-    }
-    let outdated = false;
 
+    const importer = backendImporters[walletConnection.backend];
+    assert(importer);
+
+    let outdated = false;
     let retryTimeout;
     const retry = async e => {
       if (outdated) {
         return;
       }
+      setConnectionStatus(ConnectionStatus.Connecting);
       console.error('Connection to', walletConnection, 'failed:', e);
       const backoff = Math.ceil(
         Math.min(Math.random() * 2 ** attempts * 1_000, 10_000),
@@ -384,7 +358,6 @@ const Provider = ({ children }) => {
       connect().catch(retry);
     };
 
-    let importer;
     const connect = async () => {
       const mod = await importer();
       if (outdated) {
@@ -394,11 +367,6 @@ const Provider = ({ children }) => {
       setConnectionComponent(<WalletConnection />);
       attempts = 0;
     };
-    if (u.pathname.endsWith('/network-config')) {
-      importer = importers.SmartWalletConnection;
-    } else {
-      importer = importers.WalletConnection;
-    }
     connect().catch(retry);
     return () => {
       outdated = true;
@@ -406,7 +374,7 @@ const Provider = ({ children }) => {
         clearTimeout(retryTimeout);
       }
     };
-  }, [walletConnection, wantConnection, connectionComponent]);
+  }, [walletConnection, wantConnection, connectionStatus, backend]);
 
   const [pendingPurseCreations, setPendingPurseCreations] = useReducer(
     pendingPurseCreationsReducer,
@@ -470,6 +438,7 @@ const Provider = ({ children }) => {
     wantConnection,
     walletConnection,
     setWalletConnection,
+    setAllWalletConnections,
     allWalletConnections,
     connectionComponent,
     disconnect,
