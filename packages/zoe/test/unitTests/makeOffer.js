@@ -15,7 +15,7 @@ export const makeOffer = async (zoe, zcf, proposal, payments) => {
   const getSeat = seat => {
     zcfSeat = seat;
   };
-  const invitation = await zcf.makeInvitation(getSeat, 'seat');
+  const invitation = zcf.makeInvitation(getSeat, 'seat');
   const userSeat = await E(zoe).offer(invitation, proposal, payments);
   assert(zcfSeat);
   return { zcfSeat, userSeat };
