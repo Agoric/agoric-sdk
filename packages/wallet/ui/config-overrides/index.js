@@ -8,6 +8,12 @@ module.exports = function override(config, env) {
     const generateConfig = {
       exclude: [/\.map$/, /(^|\/)(?:asset-)manifest.*\.js(?:on)?$/],
       clientsClaim: true,
+      runtimeCaching: [
+        {
+          urlPattern: ({ sameOrigin }) => !sameOrigin,
+          handler: 'NetworkOnly',
+        },
+      ],
     };
 
     config = rewireWorkboxGenerate(generateConfig)(config, env);
