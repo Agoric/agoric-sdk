@@ -246,7 +246,10 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   };
 }
 
-export function makeFakeVirtualReferenceManager(fakeStuff) {
+export function makeFakeVirtualReferenceManager(
+  fakeStuff,
+  relaxDurabilityRules = true,
+) {
   return makeVirtualReferenceManager(
     fakeStuff.syscall,
     fakeStuff.getSlotForVal,
@@ -254,6 +257,7 @@ export function makeFakeVirtualReferenceManager(fakeStuff) {
     fakeStuff.FinalizationRegistry,
     fakeStuff.addToPossiblyDeadSet,
     fakeStuff.addToPossiblyRetiredSet,
+    relaxDurabilityRules,
   );
 }
 
@@ -270,7 +274,8 @@ export function makeFakeWatchedPromiseManager(vrm, vom, cm, fakeStuff) {
 
 export function makeFakeVirtualStuff(options = {}) {
   const fakeStuff = makeFakeLiveSlotsStuff(options);
-  const vrm = makeFakeVirtualReferenceManager(fakeStuff);
+  const { relaxDurabilityRules = true } = options;
+  const vrm = makeFakeVirtualReferenceManager(fakeStuff, relaxDurabilityRules);
   const vom = makeFakeVirtualObjectManager(vrm, fakeStuff, options);
   vom.initializeKindHandleKind();
   fakeStuff.setVrm(vrm);
@@ -281,7 +286,8 @@ export function makeFakeVirtualStuff(options = {}) {
 
 export function makeStandaloneFakeVirtualObjectManager(options = {}) {
   const fakeStuff = makeFakeLiveSlotsStuff(options);
-  const vrm = makeFakeVirtualReferenceManager(fakeStuff);
+  const { relaxDurabilityRules = true } = options;
+  const vrm = makeFakeVirtualReferenceManager(fakeStuff, relaxDurabilityRules);
   const vom = makeFakeVirtualObjectManager(vrm, fakeStuff, options);
   vom.initializeKindHandleKind();
   fakeStuff.setVrm(vrm);
@@ -290,7 +296,8 @@ export function makeStandaloneFakeVirtualObjectManager(options = {}) {
 
 export function makeStandaloneFakeCollectionManager(options = {}) {
   const fakeStuff = makeFakeLiveSlotsStuff(options);
-  const vrm = makeFakeVirtualReferenceManager(fakeStuff);
+  const { relaxDurabilityRules = true } = options;
+  const vrm = makeFakeVirtualReferenceManager(fakeStuff, relaxDurabilityRules);
   return makeFakeCollectionManager(vrm, fakeStuff, options);
 }
 

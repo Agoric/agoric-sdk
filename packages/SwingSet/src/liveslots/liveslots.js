@@ -41,7 +41,7 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  *                      meterControl }
  * @param {Console} console
  * @param {*} buildVatNamespace
- * @param {boolean} enableFakeDurable
+ * @param {boolean} relaxDurabilityRules
  *
  * @returns {*} { dispatch }
  */
@@ -54,7 +54,7 @@ function build(
   gcTools,
   console,
   buildVatNamespace,
-  enableFakeDurable,
+  relaxDurabilityRules,
 ) {
   const { WeakRef, FinalizationRegistry, meterControl } = gcTools;
   const enableLSDebug = false;
@@ -592,6 +592,7 @@ function build(
     FinalizationRegistry,
     addToPossiblyDeadSet,
     addToPossiblyRetiredSet,
+    relaxDurabilityRules,
   );
 
   const vom = makeVirtualObjectManager(
@@ -604,7 +605,6 @@ function build(
     m.serialize,
     unmeteredUnserialize,
     cacheSize,
-    enableFakeDurable,
   );
 
   const collectionManager = makeCollectionManager(
@@ -619,7 +619,6 @@ function build(
     registerValue,
     m.serialize,
     unmeteredUnserialize,
-    enableFakeDurable,
   );
 
   const watchedPromiseManager = makeWatchedPromiseManager(
@@ -1446,6 +1445,11 @@ function build(
    * @returns {Promise<void>}
    */
   async function stopVat() {
+    assert(
+      !relaxDurabilityRules,
+      'stopVat not available when relaxDurabilityRules is true',
+    );
+
     assert(didStartVat);
     assert(!didStopVat);
     didStopVat = true;
@@ -1587,7 +1591,7 @@ function build(
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
  * @param {*} buildVatNamespace
- * @param {boolean} enableFakeDurable
+ * @param {boolean} relaxDurabilityRules
  *
  * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch }
  *
@@ -1622,7 +1626,7 @@ export function makeLiveSlots(
   gcTools,
   liveSlotsConsole = console,
   buildVatNamespace,
-  enableFakeDurable = false,
+  relaxDurabilityRules = false,
 ) {
   const allVatPowers = {
     ...vatPowers,
@@ -1637,7 +1641,7 @@ export function makeLiveSlots(
     gcTools,
     liveSlotsConsole,
     buildVatNamespace,
-    enableFakeDurable,
+    relaxDurabilityRules,
   );
   const { dispatch, startVat, possiblyDeadSet, testHooks } = r; // omit 'm'
   return harden({
