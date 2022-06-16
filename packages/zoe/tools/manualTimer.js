@@ -2,7 +2,6 @@
 
 import { E } from '@endo/eventual-send';
 import { makeScalarMapStore } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import { Far } from '@endo/marshal';
 
@@ -10,6 +9,9 @@ import './types.js';
 import './internal-types.js';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
+import { eventLoopIteration } from './eventLoopIteration.js';
+
+const { details: X } = assert;
 
 /**
  * A fake clock that also logs progress.
@@ -102,6 +104,7 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
       for (let i = 0; i < nTimes - 1; i += 1) {
         timer.tick(msg);
       }
+      await eventLoopIteration();
       // suffices that only the last be awaited
       await timer.tick(msg);
     },
@@ -189,3 +192,4 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
   });
   return timer;
 }
+harden(buildManualTimer);
