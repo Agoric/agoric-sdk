@@ -120,7 +120,9 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
   const baseNotifier = Far('baseNotifier', {
     getUpdateSince(updateCount = -1n) {
       if (updateCount < currentUpdateCount) {
-        if (currentResponse) return Promise.resolve(currentResponse);
+        if (currentResponse) {
+          return Promise.resolve(currentResponse);
+        }
       } else if (updateCount !== currentUpdateCount) {
         throw new Error('Invalid update count');
       }
@@ -136,7 +138,9 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
           nextIterResultP,
           ({ done, value }) => {
             assert(!final);
-            if (done) final = true;
+            if (done) {
+              final = true;
+            }
             currentUpdateCount += 1n;
             currentResponse = harden({
               value,

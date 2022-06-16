@@ -323,7 +323,9 @@ test('subscribeLatest', async t => {
       publisher.publish(nextValue);
       nextValue += 1;
     }
-    if (nextValue > 64) publisher.finish('done');
+    if (nextValue > 64) {
+      publisher.finish('done');
+    }
   }
 
   t.deepEqual(
