@@ -29,7 +29,6 @@ export const makeAddIssuer = (
       E(secondaryIssuer).getAssetKind(),
       E(secondaryIssuer).getBrand(),
     ]);
-
     assert(
       !isInSecondaries(secondaryBrand),
       X`issuer ${secondaryIssuer} already has a pool`,
@@ -176,7 +175,6 @@ export const makeAddPoolInvitation = (
     zcf.reallocate(reserveLiquidityTokenSeat, seat);
     seat.exit();
     pool.updateState();
-    brandToLiquidityMint.delete(secondaryBrand);
 
     await onOfferHandled(
       secondaryBrand,

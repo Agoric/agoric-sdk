@@ -1050,7 +1050,7 @@ test('amm adding liquidity', async t => {
 
   await t.throwsAsync(
     () => E(amm.ammPublicFacet).getPoolAllocation(moolaKit.brand),
-    { message: /"secondaryBrand" not found: / },
+    { message: /"secondaryBrandToPool" not found: / },
     "The pool hasn't been created yet",
   );
 
