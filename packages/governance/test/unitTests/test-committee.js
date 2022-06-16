@@ -9,7 +9,7 @@ import { E } from '@endo/eventual-send';
 import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@endo/bundle-source';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 
 import {
   ChoiceMethod,

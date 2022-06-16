@@ -1,7 +1,7 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 
 import { makePrintLog } from './printLog.js';
 

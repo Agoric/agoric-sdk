@@ -12,7 +12,7 @@ import {
 import { makeZoeKit } from '@agoric/zoe';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { makeLoopback } from '@endo/captp';
 import { E } from '@endo/far';
 import { makeTracer } from '../src/makeTracer.js';

@@ -5,7 +5,7 @@ import '@agoric/zoe/exported.js';
 
 import { makeZoeKit } from '@agoric/zoe';
 import bundleSource from '@endo/bundle-source';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { E } from '@endo/eventual-send';
 import { makeLoopback } from '@endo/captp';

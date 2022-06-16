@@ -21,7 +21,7 @@ import {
 } from './helpers.js';
 
 import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
-import buildManualTimer from '../../../../tools/manualTimer.js';
+import { buildManualTimer } from '../../../../tools/manualTimer.js';
 
 import { makeBorrowInvitation } from '../../../../src/contracts/loan/borrow.js';
 import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addCollateral.js';

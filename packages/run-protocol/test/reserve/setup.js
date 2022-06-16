@@ -1,4 +1,4 @@
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import {
   setUpZoeForTest,

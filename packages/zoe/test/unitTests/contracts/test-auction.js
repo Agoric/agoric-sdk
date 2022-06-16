@@ -9,7 +9,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 
-import buildManualTimer from '../../../tools/manualTimer.js';
+import { buildManualTimer } from '../../../tools/manualTimer.js';
 import { setup } from '../setupBasicMints.js';
 import { setupMixed } from '../setupMixedMints.js';
 

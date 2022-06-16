@@ -15,7 +15,7 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { checkDetails, checkPayout } from './helpers.js';
 import { setup } from '../../setupBasicMints.js';
 import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
-import buildManualTimer from '../../../../tools/manualTimer.js';
+import { buildManualTimer } from '../../../../tools/manualTimer.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
 
 const filename = new URL(import.meta.url).pathname;

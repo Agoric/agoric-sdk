@@ -6,7 +6,7 @@ import path from 'path';
 
 import { E } from '@endo/eventual-send';
 import '../../../exported.js';
-import buildManualTimer from '../../../tools/manualTimer.js';
+import { buildManualTimer } from '../../../tools/manualTimer.js';
 
 import { setup } from '../setupBasicMints.js';
 import { installationPFromSource } from '../installFromSource.js';

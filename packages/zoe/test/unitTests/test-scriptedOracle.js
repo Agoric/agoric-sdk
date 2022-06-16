@@ -14,7 +14,7 @@ import { makeZoeKit } from '../../src/zoeService/zoe.js';
 
 import '../../exported.js';
 import '../../src/contracts/exported.js';
-import buildManualTimer from '../../tools/manualTimer.js';
+import { buildManualTimer } from '../../tools/manualTimer.js';
 import { setup } from './setupBasicMints.js';
 import { assertPayoutAmount } from '../zoeTestHelpers.js';
 import { makeScriptedOracle } from '../../tools/scriptedOracle.js';

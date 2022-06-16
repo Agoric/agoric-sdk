@@ -10,7 +10,7 @@ import { Far } from '@endo/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { keyEQ } from '@agoric/store';
 
-import buildManualTimer from '../../../tools/manualTimer.js';
+import { buildManualTimer } from '../../../tools/manualTimer.js';
 import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
 import { assertAmountsEqual } from '../../zoeTestHelpers.js';

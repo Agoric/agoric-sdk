@@ -7,7 +7,7 @@ import {
   makeFakeVatAdmin,
   zcfBundleCap,
 } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 
 import { makeZoeKit } from '@agoric/zoe';
 import { buildRootObject } from '../src/core/boot.js';

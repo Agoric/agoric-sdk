@@ -8,7 +8,7 @@ import { E } from '@endo/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE } from '@agoric/governance';
 
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import {
   MIN_INITIAL_POOL_LIQUIDITY_KEY,
   POOL_FEE_KEY,

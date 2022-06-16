@@ -9,7 +9,7 @@ import { E } from '@endo/eventual-send';
 import { M, fit, keyEQ } from '@agoric/store';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 
-import buildManualTimer from '../../../tools/manualTimer.js';
+import { buildManualTimer } from '../../../tools/manualTimer.js';
 import { setup } from '../setupBasicMints.js';
 
 const filename = new URL(import.meta.url).pathname;

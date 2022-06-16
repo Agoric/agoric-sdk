@@ -12,7 +12,7 @@ import {
   priceFromTargetOutput,
   outputFromInputPrice,
 } from '@agoric/zoe/test/autoswapJig.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import {
   getAmountOut,
   makeRatio,

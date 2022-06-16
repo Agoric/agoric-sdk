@@ -4,7 +4,7 @@ import { makeLoopback } from '@endo/captp';
 
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import {
   makeAgoricNamesAccess,
   makePromiseSpace,

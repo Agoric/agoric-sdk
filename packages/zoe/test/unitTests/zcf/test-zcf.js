@@ -9,7 +9,7 @@ import { details as X } from '@agoric/assert';
 import { makeOffer } from '../makeOffer.js';
 
 import { setup } from '../setupBasicMints.js';
-import buildManualTimer from '../../../tools/manualTimer.js';
+import { buildManualTimer } from '../../../tools/manualTimer.js';
 
 import { setupZCFTest } from './setupZcfTest.js';
 import { assertAmountsEqual } from '../../zoeTestHelpers.js';

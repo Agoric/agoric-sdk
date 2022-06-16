@@ -4,7 +4,7 @@ import { E } from '@endo/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
-import buildManualTimer from '@agoric/zoe/tools/manualTimer';
+import { buildManualTimer } from '@agoric/zoe/tools/manualTimer';
 import { makeGovernedTerms as makeVaultFactoryTerms } from '../../src/vaultFactory/params';
 import { ammMock } from './mockAmm';
 import { liquidationDetailTerms } from '../../src/vaultFactory/liquidation';

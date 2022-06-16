@@ -2,7 +2,7 @@
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import {
   coerceQuestionSpec,
   ChoiceMethod,

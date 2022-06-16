@@ -2,7 +2,7 @@
 
 import { runVOTest, test } from '@agoric/swingset-vat/tools/vo-test-harness.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 import { definePoolKind } from '../src/vpool-xyk-amm/pool.js';

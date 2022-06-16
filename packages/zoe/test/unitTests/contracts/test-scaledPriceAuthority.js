@@ -12,7 +12,7 @@ import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { makeRatio } from '../../../src/contractSupport/ratio.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
-import buildManualTimer from '../../../tools/manualTimer.js';
+import { buildManualTimer } from '../../../tools/manualTimer.js';
 import { makeManualPriceAuthority } from '../../../tools/manualPriceAuthority.js';
 
 import '../../../exported.js';

@@ -4,7 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/eventual-send';
 import { assert } from '@agoric/assert';
-import buildManualTimer from '../../tools/manualTimer.js';
+import { buildManualTimer } from '../../tools/manualTimer.js';
 
 import { setup } from './setupBasicMints.js';
 import { makeFakePriceAuthority } from '../../tools/fakePriceAuthority.js';

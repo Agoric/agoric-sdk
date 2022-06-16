@@ -6,7 +6,7 @@ import { M } from '@agoric/store';
 
 import { cleanProposal } from '../../src/cleanProposal.js';
 import { setup } from './setupBasicMints.js';
-import buildManualTimer from '../../tools/manualTimer.js';
+import { buildManualTimer } from '../../tools/manualTimer.js';
 
 const proposeGood = (t, proposal, assetKind, expected) =>
   t.deepEqual(

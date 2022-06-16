@@ -33,7 +33,7 @@ harden(eventLoopIteration);
  * @param {RelativeTime} [timeStep=1n]
  * @returns {ManualTimer}
  */
-export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
+export function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
   let ticks = Nat(startValue);
 
   /** @type {MapStore<Timestamp, ERef<TimerWaker>[]>} */
@@ -204,4 +204,3 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
   return timer;
 }
 harden(buildManualTimer);
-export { buildManualTimer };
