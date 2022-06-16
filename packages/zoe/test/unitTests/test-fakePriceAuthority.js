@@ -4,6 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/eventual-send';
 import { assert } from '@agoric/assert';
+import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
 import buildManualTimer from '../../tools/manualTimer.js';
 
 import { setup } from './setupBasicMints.js';
@@ -12,7 +13,7 @@ import {
   getAmountOut,
   getTimestamp,
   getAmountIn,
-  getQuoteValues,
+  getPriceDescription,
 } from '../../src/contractSupport/index.js';
 import { assertAmountsEqual } from '../zoeTestHelpers.js';
 
@@ -40,7 +41,7 @@ test('priceAuthority quoteAtTime', async t => {
     .then(async quote => {
       assertAmountsEqual(t, moola(5n), getAmountIn(quote));
       assertAmountsEqual(t, bucks(55n * 5n), getAmountOut(quote));
-      t.is(3n, getTimestamp(quote));
+      t.is(3n, TimeMath.absValue(getTimestamp(quote)));
     });
 
   await E(manualTimer).tick();
@@ -63,8 +64,8 @@ test('priceAuthority quoteGiven', async t => {
 
   await E(manualTimer).tick();
   const quote = await E(priceAuthority).quoteGiven(moola(37n), bucksBrand);
-  const quoteAmount = getQuoteValues(quote);
-  t.is(1n, quoteAmount.timestamp);
+  const quoteAmount = getPriceDescription(quote);
+  t.is(1n, TimeMath.absValue(quoteAmount.timestamp));
   t.deepEqual(bucks(37n * 20n), quoteAmount.amountOut);
 });
 
