@@ -7,7 +7,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { E } from '@endo/eventual-send';
 import Request from './Request';
 import Petname from './Petname';
-import { icons, defaultIcon } from '../util/Icons.js';
+import defaultIcon, * as icons from '../util/Icons.js';
 import { formatDateNow } from '../util/Date';
 import { withApplicationContext } from '../contexts/Application';
 

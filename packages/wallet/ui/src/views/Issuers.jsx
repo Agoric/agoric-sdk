@@ -11,7 +11,7 @@ import MakePurse from '../components/MakePurse';
 import ImportIssuer from '../components/ImportIssuer';
 import Loading from '../components/Loading';
 import Petname from '../components/Petname';
-import { icons, defaultIcon } from '../util/Icons';
+import defaultIcon, * as icons from '../util/Icons.js';
 import { withApplicationContext } from '../contexts/Application';
 
 import './Issuers.scss';
