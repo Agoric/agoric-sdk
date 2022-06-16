@@ -42,12 +42,12 @@
     "@agoric/store": "^0.7.2",
     "@agoric/vats": "^0.10.0",
     "@agoric/zoe": "^0.24.0",
-    "@endo/base64": "^0.2.25",
-    "@endo/bundle-source": "^2.2.0",
-    "@endo/far": "^0.2.3",
-    "@endo/marshal": "^0.6.7",
-    "@endo/promise-kit": "^0.2.41",
-    "@endo/zip": "^0.2.25"
+    "@endo/base64": "^0.2.26",
+    "@endo/bundle-source": "^2.2.1",
+    "@endo/far": "^0.2.4",
+    "@endo/marshal": "^0.6.8",
+    "@endo/promise-kit": "^0.2.42",
+    "@endo/zip": "^0.2.26"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.28.0",

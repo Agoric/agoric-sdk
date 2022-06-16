@@ -42,12 +42,12 @@
     "@agoric/store": "^0.7.2",
     "@agoric/swingset-vat": "^0.28.0",
     "@agoric/vat-data": "^0.3.1",
-    "@endo/eventual-send": "^0.15.3",
-    "@endo/marshal": "^0.6.7",
-    "@endo/promise-kit": "^0.2.41"
+    "@endo/eventual-send": "^0.15.4",
+    "@endo/marshal": "^0.6.8",
+    "@endo/promise-kit": "^0.2.42"
   },
   "devDependencies": {
-    "@endo/bundle-source": "^2.2.0",
+    "@endo/bundle-source": "^2.2.1",
     "ava": "^3.12.1",
     "fast-check": "^2.21.0"
   },

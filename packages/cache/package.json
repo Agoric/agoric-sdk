@@ -20,8 +20,8 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/store": "^0.7.2",
-    "@endo/far": "^0.2.3",
-    "@endo/marshal": "^0.6.7"
+    "@endo/far": "^0.2.4",
+    "@endo/marshal": "^0.6.8"
   },
   "devDependencies": {
     "ava": "^3.12.1",

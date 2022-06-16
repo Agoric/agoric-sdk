@@ -32,13 +32,13 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.4.0",
-    "@endo/eventual-send": "^0.15.3",
-    "@endo/marshal": "^0.6.7",
-    "@endo/promise-kit": "^0.2.41"
+    "@endo/eventual-send": "^0.15.4",
+    "@endo/marshal": "^0.6.8",
+    "@endo/promise-kit": "^0.2.42"
   },
   "devDependencies": {
-    "@endo/init": "^0.5.41",
-    "@endo/ses-ava": "^0.2.25",
+    "@endo/init": "^0.5.42",
+    "@endo/ses-ava": "^0.2.26",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
   },

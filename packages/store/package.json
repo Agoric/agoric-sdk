@@ -31,9 +31,9 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.4.0",
-    "@endo/eventual-send": "^0.15.3",
-    "@endo/marshal": "^0.6.7",
-    "@endo/promise-kit": "^0.2.41"
+    "@endo/eventual-send": "^0.15.4",
+    "@endo/marshal": "^0.6.8",
+    "@endo/promise-kit": "^0.2.42"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.28.0",
