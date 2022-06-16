@@ -45,8 +45,12 @@ parentPort.on('message', ([type, ...margs]) => {
     workerLog(`got start`);
     sendUplink(['gotStart']);
   } else if (type === 'setBundle') {
-    const [bundle, virtualObjectCacheSize, enableDisavow, enableFakeDurable] =
-      margs;
+    const [
+      bundle,
+      virtualObjectCacheSize,
+      enableDisavow,
+      relaxDurabilityRules,
+    ] = margs;
 
     function testLog(...args) {
       sendUplink(['testLog', ...args]);
@@ -112,7 +116,7 @@ parentPort.on('message', ([type, ...margs]) => {
       gcTools,
       makeVatConsole(makeLogMaker(`SwingSet:ls:${vatID}`)),
       buildVatNamespace,
-      enableFakeDurable,
+      relaxDurabilityRules,
     );
 
     sendUplink(['gotBundle']);

@@ -51,7 +51,7 @@ export {};
  * @typedef {{
  *   defaultManagerType?: ManagerType,
  *   defaultReapInterval?: number | 'never',
- *   enableFakeDurable?: boolean,
+ *   relaxDurabilityRules?: boolean,
  *   snapshotInitial?: number,
  *   snapshotInterval?: number,
  * }} KernelOptions
@@ -260,7 +260,7 @@ export {};
  * @property { ManagerType } [defaultManagerType]
  * @property {number} [snapshotInitial]
  * @property {number} [snapshotInterval]
- * @property {boolean} [enableFakeDurable]
+ * @property {boolean} [relaxDurabilityRules]
  * @property {SwingSetConfigDescriptor} [vats]
  * @property {SwingSetConfigDescriptor} [bundles]
  * @property {BundleFormat} [bundleFormat] the bundle source / import bundle
