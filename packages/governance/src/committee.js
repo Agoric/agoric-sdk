@@ -38,8 +38,9 @@ const start = zcf => {
 
   const makeCommitteeVoterInvitation = index => {
     /** @type {OfferHandler} */
-    const offerHandler = Far('voter offerHandler', () => {
+    const offerHandler = seat => {
       const voterHandle = makeHandle('Voter');
+      seat.exit();
       return Far(`voter${index}`, {
         // CRUCIAL: voteCap carries the ability to cast votes for any voter at
         // any weight. It's wrapped here and given to the voter.
@@ -51,7 +52,7 @@ const start = zcf => {
           return E(voteCap).submitVote(voterHandle, positions, 1n);
         },
       });
-    });
+    };
 
     // https://github.com/Agoric/agoric-sdk/pull/3448/files#r704003612
     // This will produce unique descriptions because

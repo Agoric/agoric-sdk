@@ -27,14 +27,14 @@ export function initializeKernel(config, hostStorage, verbose = false) {
   const {
     defaultManagerType,
     defaultReapInterval,
-    enableFakeDurable,
+    relaxDurabilityRules,
     snapshotInitial,
     snapshotInterval,
   } = config;
   const kernelOptions = {
     defaultManagerType,
     defaultReapInterval,
-    enableFakeDurable,
+    relaxDurabilityRules,
     snapshotInitial,
     snapshotInterval,
   };
