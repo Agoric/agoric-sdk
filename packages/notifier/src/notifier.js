@@ -53,44 +53,65 @@ export const makeNotifier = sharableInternalsP => {
 export const makeNotifierKit = (...initialStateArr) => {
   const { publisher, subscriber } = makeEmptyPublishKit();
 
-  // Track data from the backing subscriber.
+  // In contrast to publish kit subscribers
+  // (and notifiers produced by makeNotifierFromAsyncIterable),
+  // notifiers produced by makeNotifierKit
+  // * deal in number-valued update counts, and
+  // * count from 1, and
+  // * ignore any input to getUpdateSince that doesn't match the latest update count, and
+  // * return a final response as if it were "next".
+  //
+  // https://github.com/Agoric/agoric-sdk/pull/5435 originally attempted to impose
+  // tighter restrictions, but failed to do so.
+  // We instead continue supporting the looser behavior.
+
+  // Data from the backing subscriber.
   let latestPublishCount;
 
-  // Track data exposed by this notifier.
+  // Data exposed by this notifier.
   let latestUpdateCount;
+  let currentResultP;
+  let nextResultP;
+
+  const getNextResultP = () => {
+    if (!nextResultP) {
+      nextResultP = E.when(
+        subscriber.subscribeAfter(latestPublishCount),
+        ({ head: { value, done }, publishCount }) => {
+          // Update local data.
+          latestPublishCount = publishCount;
+          latestUpdateCount =
+            latestUpdateCount === undefined ? 1 : latestUpdateCount + 1;
+          currentResultP = nextResultP;
+          if (!done) {
+            nextResultP = undefined;
+          }
+
+          // Unlike a publish kit subscriber, notifier reports no count with a final value.
+          const updateCount = done ? undefined : latestUpdateCount;
+          return harden({ value, updateCount });
+        },
+      );
+    }
+    return nextResultP;
+  };
 
   /**
    * @template T
    * @type {BaseNotifier<T>}
    */
   const baseNotifier = Far('baseNotifier', {
-    // In contrast to publish kit subscribers
-    // (and notifiers produced by makeNotifierFromAsyncIterable),
-    // notifiers produced by makeNotifierKit
-    // * deal in number-valued update counts, and
-    // * count from 1, and
-    // * ignore any input to getUpdateSince that doesn't match the latest update count.
-    //
-    // https://github.com/Agoric/agoric-sdk/pull/5435 originally attempted to impose
-    // tighter restrictions, but failed to do so.
-    // We instead continue supporting the looser behavior.
     getUpdateSince(sinceUpdateCount = undefined) {
-      const sincePublishCount =
-        sinceUpdateCount === latestUpdateCount ? latestPublishCount : undefined;
-      return E.when(
-        subscriber.subscribeAfter(sincePublishCount),
-        ({ head: { value, done }, publishCount }) => {
-          if (publishCount !== latestPublishCount) {
-            latestPublishCount = publishCount;
-            latestUpdateCount =
-              latestUpdateCount === undefined ? 1 : latestUpdateCount + 1;
-          }
+      // Handle requests for the next state.
+      if (sinceUpdateCount === latestUpdateCount) {
+        return getNextResultP();
+      }
 
-          // Unlike publish kit, notifier reports no count with a final value.
-          const updateCount = done ? undefined : latestUpdateCount;
-          return harden({ value, updateCount });
-        },
-      );
+      // Handle requests for the latest state.
+      if (!currentResultP) {
+        currentResultP = getNextResultP();
+      }
+      return currentResultP;
     },
   });
 
@@ -99,10 +120,19 @@ export const makeNotifierKit = (...initialStateArr) => {
     ...baseNotifier,
   });
 
+  // To ensure that getUpdateSince() immediately after an update
+  // doesn't return stale data, invalidate currentResultP.
+  const wrapPublisherFunction = fn => {
+    return arg => {
+      currentResultP = undefined;
+      fn(arg);
+    };
+  };
+
   const updater = Far('updater', {
-    updateState: publisher.publish,
-    finish: publisher.finish,
-    fail: publisher.fail,
+    updateState: wrapPublisherFunction(publisher.publish),
+    finish: wrapPublisherFunction(publisher.finish),
+    fail: wrapPublisherFunction(publisher.fail),
   });
 
   assert(initialStateArr.length <= 1, 'too many arguments');
@@ -110,8 +140,6 @@ export const makeNotifierKit = (...initialStateArr) => {
     updater.updateState(initialStateArr[0]);
   }
 
-  // notifier facet is separate so it can be handed out while updater
-  // is tightly held
   return harden({ notifier, updater });
 };
 
