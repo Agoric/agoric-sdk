@@ -266,7 +266,9 @@ export const setupReserve = async ({
   consume: {
     ammCreatorFacet,
     ammInstanceWithoutReserve: ammInstanceWithoutReserveP,
+    board,
     feeMintAccess: feeMintAccessP,
+    chainStorage,
     chainTimerService,
     zoe,
     economicCommitteeCreatorFacet: committeeCreator,
@@ -294,6 +296,7 @@ export const setupReserve = async ({
     },
   },
 }) => {
+  const STORAGE_PATH = 'reserve';
   trace('setupReserve');
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
   const [poserInvitation, poserInvitationAmount] = await Promise.all([
@@ -310,6 +313,12 @@ export const setupReserve = async ({
   );
 
   const feeMintAccess = await feeMintAccessP;
+
+  const chainStoragePresence = await chainStorage;
+  const storageNode = await (chainStoragePresence &&
+    E(chainStoragePresence).getChildNode(STORAGE_PATH));
+  const marshaller = E(board).getReadonlyMarshaller();
+
   const reserveGovernorTerms = {
     timer,
     electorateInstance,
@@ -317,7 +326,12 @@ export const setupReserve = async ({
     governed: {
       terms: reserveTerms,
       issuerKeywordRecord: { Central: centralIssuer },
-      privateArgs: { feeMintAccess, initialPoserInvitation: poserInvitation },
+      privateArgs: {
+        feeMintAccess,
+        initialPoserInvitation: poserInvitation,
+        marshaller,
+        storageNode,
+      },
     },
   };
   /** @type {{ creatorFacet: GovernedContractFacetAccess<AssetReserveCreatorFacet>, publicFacet: GovernorPublic, instance: Instance }} */
@@ -365,6 +379,8 @@ export const setupReserve = async ({
 export const startVaultFactory = async (
   {
     consume: {
+      board,
+      chainStorage,
       chainTimerService,
       priceAuthority: priceAuthorityP,
       zoe,
@@ -389,6 +405,7 @@ export const startVaultFactory = async (
   } = {},
   minInitialDebt = 5_000_000n,
 ) => {
+  const STORAGE_PATH = 'vaultFactory';
   trace('startVaultFactory');
   const installations = await Collect.allValues({
     VaultFactory,
@@ -457,6 +474,11 @@ export const startVaultFactory = async (
     shortfallInvitationAmount,
   });
 
+  const chainStoragePresence = await chainStorage;
+  const storageNode = await (chainStoragePresence &&
+    E(chainStoragePresence).getChildNode(STORAGE_PATH));
+  const marshaller = E(board).getReadonlyMarshaller();
+
   const governorTerms = harden({
     timer,
     electorateInstance,
@@ -468,6 +490,8 @@ export const startVaultFactory = async (
         feeMintAccess,
         initialPoserInvitation,
         initialShortfallInvitation,
+        marshaller,
+        storageNode,
       }),
     },
   });

@@ -9,6 +9,7 @@ import {
   makeAgoricNamesAccess,
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
+import { makeChainStorageRoot } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
@@ -55,6 +56,11 @@ export const setUpZoeForTest = (setJig = () => {}) => {
 };
 harden(setUpZoeForTest);
 
+export const mockChainStorageRoot = () => {
+  const toStorage = v => v;
+  return makeChainStorageRoot(toStorage, 'swingset', 'mockChainStorageRoot');
+};
+
 export const setupBootstrap = (t, optTimer = undefined) => {
   const trace = makeTracer('PromiseSpace', false);
   const space = /** @type {any} */ (makePromiseSpace(trace));
@@ -65,7 +71,7 @@ export const setupBootstrap = (t, optTimer = undefined) => {
 
   const timer = optTimer || buildManualTimer(t.log);
   produce.chainTimerService.resolve(timer);
-  produce.chainStorage.resolve(undefined);
+  produce.chainStorage.resolve(mockChainStorageRoot());
 
   const { zoe, feeMintAccess, run } = t.context;
   produce.zoe.resolve(zoe);

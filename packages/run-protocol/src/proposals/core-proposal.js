@@ -65,6 +65,8 @@ const SHARED_MAIN_MANIFEST = harden({
   },
   [econBehaviors.startVaultFactory.name]: {
     consume: {
+      board: 'board',
+      chainStorage: true,
       feeMintAccess: 'zoe',
       chainTimerService: 'timer',
       zoe: 'zoe',
@@ -111,6 +113,8 @@ const SHARED_MAIN_MANIFEST = harden({
     consume: {
       ammCreatorFacet: 'amm',
       ammInstanceWithoutReserve: 'amm',
+      board: 'board',
+      chainStorage: true,
       feeMintAccess: 'zoe',
       chainTimerService: 'timer',
       zoe: 'zoe',
