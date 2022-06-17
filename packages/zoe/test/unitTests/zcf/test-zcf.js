@@ -797,34 +797,38 @@ test(`zcfSeat.getNotifier`, async t => {
 
   // Mint some gains to change the allocation.
   const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3n);
-  t.deepEqual(await notifier.getUpdateSince(2), {
-    updateCount: 3,
-    value: {
-      A: {
-        brand: brand1,
-        value: 3n,
-      },
+  let notifierResult;
+  for (let remainingTries = 2; remainingTries >= 0; remainingTries -= 1) {
+    // eslint-disable-next-line no-await-in-loop
+    notifierResult = await notifier.getUpdateSince(notifierResult?.updateCount);
+    if (notifierResult.value?.A) {
+      break;
+    }
+  }
+  t.deepEqual(notifierResult.value, {
+    A: {
+      brand: brand1,
+      value: 3n,
     },
   });
 
   const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6n);
-  t.deepEqual(await notifier.getUpdateSince(3), {
-    updateCount: 4,
-    value: {
-      A: {
-        brand: brand1,
-        value: 3n,
-      },
-      B: {
-        brand: brand2,
-        value: 6n,
-      },
+  notifierResult = await notifier.getUpdateSince(notifierResult.updateCount);
+  t.deepEqual(notifierResult.value, {
+    A: {
+      brand: brand1,
+      value: 3n,
+    },
+    B: {
+      brand: brand2,
+      value: 6n,
     },
   });
 
   zcfSeat.exit();
 
-  t.deepEqual(await notifier.getUpdateSince(4), {
+  notifierResult = await notifier.getUpdateSince(notifierResult.updateCount);
+  t.deepEqual(notifierResult, {
     updateCount: undefined,
     value: undefined,
   });
@@ -1048,34 +1052,38 @@ test(`userSeat.getNotifier`, async t => {
 
   // Mint some gains to change the allocation.
   const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3n);
-  t.deepEqual(await notifier.getUpdateSince(), {
-    updateCount: 3,
-    value: {
-      A: {
-        brand: brand1,
-        value: 3n,
-      },
+  let notifierResult;
+  for (let remainingTries = 2; remainingTries >= 0; remainingTries -= 1) {
+    // eslint-disable-next-line no-await-in-loop
+    notifierResult = await notifier.getUpdateSince(notifierResult?.updateCount);
+    if (notifierResult.value?.A) {
+      break;
+    }
+  }
+  t.deepEqual(notifierResult.value, {
+    A: {
+      brand: brand1,
+      value: 3n,
     },
   });
 
   const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6n);
-  t.deepEqual(await notifier.getUpdateSince(2), {
-    updateCount: 4,
-    value: {
-      A: {
-        brand: brand1,
-        value: 3n,
-      },
-      B: {
-        brand: brand2,
-        value: 6n,
-      },
+  notifierResult = await notifier.getUpdateSince(notifierResult.updateCount);
+  t.deepEqual(notifierResult.value, {
+    A: {
+      brand: brand1,
+      value: 3n,
+    },
+    B: {
+      brand: brand2,
+      value: 6n,
     },
   });
 
   zcfSeat.exit();
 
-  t.deepEqual(await notifier.getUpdateSince(4), {
+  notifierResult = await notifier.getUpdateSince(notifierResult.updateCount);
+  t.deepEqual(notifierResult, {
     updateCount: undefined,
     value: undefined,
   });

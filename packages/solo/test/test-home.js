@@ -139,7 +139,7 @@ test.serial('home.localTimerService makeNotifier', async t => {
   const firstUpdate = update1.updateCount;
   t.truthy(firstUpdate > 0);
   const update2 = await E(notifier).getUpdateSince(update1.updateCount);
-  t.is(update2.updateCount, firstUpdate + 1);
+  t.is(BigInt(update2.updateCount), BigInt(firstUpdate) + 1n);
 
   // Tests gets an actual localTimerService, which returns actual times. We
   // can't verify the actual time, so we compare to make sure it's increasing.

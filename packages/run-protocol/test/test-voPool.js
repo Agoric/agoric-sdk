@@ -58,7 +58,7 @@ const voPoolTest = async (t, mutation, postTest) => {
       state.toCentralPA = pool.getToCentralPriceAuthority();
       state.singlePool = pool.getVPool();
       state.liquidityIssuer = pool.getLiquidityIssuer();
-      mutation(context);
+      await mutation(context);
     } else if (phase === 'after') {
       const newNotifier = pool.getNotifier();
       t.is(state.notifier, newNotifier);
@@ -87,14 +87,20 @@ test.serial('unchanged', async t => {
 });
 
 test.serial('one update', async t => {
+  let initialNotifierCount;
   await voPoolTest(
     t,
-    context => {
+    async context => {
+      initialNotifierCount = await context.pool.getNotifier().getUpdateSince();
       return context.pool.updateState();
     },
     async context => {
       const notification = await context.pool.getNotifier().getUpdateSince();
-      t.is(notification.updateCount, 2);
+      t.is(
+        BigInt(notification.updateCount),
+        BigInt(initialNotifierCount) + 1n,
+        `updateCount should increase by one from ${initialNotifierCount}`,
+      );
     },
   );
 });

@@ -20,7 +20,7 @@ const dirname = path.dirname(filename);
 const simpleExchange = `${dirname}/../../../src/contracts/simpleExchange.js`;
 
 test('simpleExchange with valid offers', async t => {
-  t.plan(17);
+  t.plan(16);
   const {
     moolaIssuer,
     simoleanIssuer,
@@ -54,6 +54,7 @@ test('simpleExchange with valid offers', async t => {
   const aliceInvitation = E(publicFacet).makeInvitation();
 
   const aliceNotifier = publicFacet.getNotifier();
+  let aliceNotifierInitialCount;
   E(aliceNotifier)
     .getUpdateSince()
     .then(({ value: beforeAliceOrders, updateCount: beforeAliceCount }) => {
@@ -65,7 +66,7 @@ test('simpleExchange with valid offers', async t => {
         },
         `Order book is empty`,
       );
-      t.is(beforeAliceCount, 3);
+      aliceNotifierInitialCount = beforeAliceCount;
     });
 
   const { value: initialOrders } = await publicFacet
@@ -109,11 +110,14 @@ test('simpleExchange with valid offers', async t => {
         },
         `order notifier is updated with Alice's sell order`,
       );
-      t.is(afterAliceCount, 4);
+      t.is(BigInt(afterAliceCount), BigInt(aliceNotifierInitialCount) + 1n);
 
       return aliceNotifier.getUpdateSince(afterAliceCount).then(update => {
         t.falsy(update.value.sells[0], 'accepted offer from Bob');
-        t.is(update.updateCount, 5);
+        t.is(
+          BigInt(update.updateCount),
+          BigInt(aliceNotifierInitialCount) + 2n,
+        );
       });
     });
 
