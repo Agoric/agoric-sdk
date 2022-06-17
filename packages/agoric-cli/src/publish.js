@@ -42,6 +42,17 @@
 
 const { details: X, quote: q } = assert;
 
+/**
+ * @template T
+ * @param {Array<T>} array
+ * @returns {T}
+ */
+const choose = array => {
+  assert(array.length > 0);
+  const index = Math.floor(array.length * Math.random());
+  return array[index];
+};
+
 // eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {unknown} connectionSpec
@@ -85,7 +96,7 @@ const assertCosmosConnectionSpec = connectionSpec => {
   );
   assert(connectionSpec !== null, 'Connection details must not be null');
 
-  const { chainID = 'agoric', homeDirectory } = connectionSpec;
+  const { chainID = 'agoric', homeDirectory, rpcAddresses } = connectionSpec;
 
   assert.typeof(
     chainID,
@@ -103,6 +114,22 @@ const assertCosmosConnectionSpec = connectionSpec => {
     'string',
     `connection homeDirectory must be a string, got ${homeDirectory}`,
   );
+
+  assert(
+    Array.isArray(rpcAddresses),
+    `connection rpcAddresses must be an array, got ${rpcAddresses}`,
+  );
+  assert(
+    rpcAddresses.length > 0,
+    `connection rpcAddresseses must not be empty`,
+  );
+  for (const rpcAddress of rpcAddresses) {
+    assert.typeof(
+      rpcAddress,
+      'string',
+      `every connection rpcAddress must be a string, got one ${rpcAddress}`,
+    );
+  }
 };
 
 /**
@@ -166,7 +193,9 @@ export const makeCosmosBundlePublisher = ({
    * @param {CosmosConnectionSpec} connectionSpec
    */
   const publishBundleCosmos = async (bundle, connectionSpec) => {
-    const { chainID = 'agoric', homeDirectory } = connectionSpec;
+    const { chainID = 'agoric', homeDirectory, rpcAddresses } = connectionSpec;
+
+    const rpcAddress = choose(rpcAddresses);
 
     const { name: tempDirPath, removeCallback } = tmpDirSync({
       unsafeCleanup: true,
@@ -185,6 +214,8 @@ export const makeCosmosBundlePublisher = ({
         '1.2',
         '--home',
         homeDirectory,
+        '--node',
+        `http://${rpcAddress}`,
         '--keyring-backend',
         'test',
         '--from',
@@ -222,6 +253,7 @@ export const makeCosmosBundlePublisher = ({
  * @property {'chain-cosmos-sdk' | 'fake-chain'} type
  * @property {string} chainID
  * @property {string} homeDirectory
+ * @property {Array<string>} rpcAddresses
  */
 
 /**
