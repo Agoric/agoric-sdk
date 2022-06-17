@@ -2,17 +2,13 @@ import {
   defineDurableKindMulti,
   makeScalarBigSetStore,
   makeKindHandle,
+  makeScalarBigWeakMapStore,
 } from '@agoric/vat-data';
 import { provide } from '@agoric/store';
+import { makeNotifierKit } from '@agoric/notifier';
 import { AmountMath } from './amountMath.js';
-import { provideFakeNotifierKit } from './fakeDurableNotifier.js';
 
 const { details: X } = assert;
-
-const updatePurseBalance = (state, newPurseBalance) => {
-  state.currentBalance = newPurseBalance;
-  state.balanceUpdater.updateState(state.currentBalance);
-};
 
 //  `getBrand` must not be called before the issuerKit is created
 export const defineDurablePurse = (
@@ -22,7 +18,31 @@ export const defineDurablePurse = (
   getBrand,
   purseMethods,
 ) => {
-  const makeFakeNotifierKit = provideFakeNotifierKit(issuerBaggage);
+  // Note: Virtual for high cardinality, but *not* durable, and so
+  // broken across an upgrade.
+  /** @type {WeakMapStore<Purse, NotifierRecord<Amount>>} */
+  const transientNotiferKits = makeScalarBigWeakMapStore(
+    'transientNotiferKits',
+  );
+
+  const provideNotifierKit = purse =>
+    provide(transientNotiferKits, purse, () =>
+      makeNotifierKit(purse.getCurrentAmount()),
+    );
+
+  const provideNotifier = purse => provideNotifierKit(purse).notifier;
+  const notifyBalance = purse => {
+    if (transientNotiferKits.has(purse)) {
+      const { updater } = transientNotiferKits.get(purse);
+      updater.updateState(purse.getCurrentAmount());
+    }
+  };
+
+  const updatePurseBalance = (state, newPurseBalance, purse) => {
+    state.currentBalance = newPurseBalance;
+    notifyBalance(purse);
+  };
+
   // - This kind is a pair of purse and depositFacet that have a 1:1
   //   correspondence.
   // - They are virtualized together to share a single state record.
@@ -38,10 +58,6 @@ export const defineDurablePurse = (
     () => {
       const currentBalance = AmountMath.makeEmpty(getBrand(), assetKind);
 
-      /** @type {NotifierRecord<Amount>} */
-      const { notifier: balanceNotifier, updater: balanceUpdater } =
-        makeFakeNotifierKit(currentBalance);
-
       /** @type {SetStore<Payment>} */
       const recoverySet = makeScalarBigSetStore('recovery set', {
         durable: true,
@@ -49,33 +65,38 @@ export const defineDurablePurse = (
 
       return {
         currentBalance,
-        balanceNotifier,
-        balanceUpdater,
         recoverySet,
       };
     },
     {
       purse: {
-        deposit: ({ state }, srcPayment, optAmountShape = undefined) => {
+        deposit: (
+          { state, facets: { purse } },
+          srcPayment,
+          optAmountShape = undefined,
+        ) => {
           // Note COMMIT POINT within deposit.
           return depositInternal(
             state.currentBalance,
-            newPurseBalance => updatePurseBalance(state, newPurseBalance),
+            newPurseBalance =>
+              updatePurseBalance(state, newPurseBalance, purse),
             srcPayment,
             optAmountShape,
             state.recoverySet,
           );
         },
-        withdraw: ({ state }, amount) =>
+        withdraw: ({ state, facets: { purse } }, amount) =>
           // Note COMMIT POINT within withdraw.
           withdrawInternal(
             state.currentBalance,
-            newPurseBalance => updatePurseBalance(state, newPurseBalance),
+            newPurseBalance =>
+              updatePurseBalance(state, newPurseBalance, purse),
             amount,
             state.recoverySet,
           ),
         getCurrentAmount: ({ state }) => state.currentBalance,
-        getCurrentAmountNotifier: ({ state }) => state.balanceNotifier,
+        getCurrentAmountNotifier: ({ facets: { purse } }) =>
+          provideNotifier(purse),
         getAllegedBrand: _context => getBrand(),
         // eslint-disable-next-line no-use-before-define
         getDepositFacet: ({ facets }) => facets.depositFacet,
