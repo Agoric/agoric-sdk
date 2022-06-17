@@ -134,7 +134,7 @@ test('makeIssuerKit bad optShutdownWithFailure', async t => {
 
 test('brand.isMyIssuer bad issuer', async t => {
   const { brand } = makeIssuerKit('myTokens');
-  // Was ts-expect-error Intentional wrong type for testing
+  // @ts-expect-error Intentional wrong type for testing
   // but for some reason it is no longer complaining about the string
   // being the wrong type. Hovering over `isMyIssuer` in vscode does
   // show the correct type for the parameter.
