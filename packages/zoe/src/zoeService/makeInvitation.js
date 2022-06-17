@@ -18,7 +18,7 @@ export const createInvitationKit = (shutdownZoeVat = undefined) => {
   /**
    * @param {Instance} instance
    * @param {Installation} installation
-   * @param {MapStore<InvitationHandle, Pattern>} proposalSchemas
+   * @param {WeakMapStore<InvitationHandle, Pattern>} proposalSchemas
    * @returns {ZoeInstanceAdminMakeInvitation}
    */
   const setupMakeInvitation = (instance, installation, proposalSchemas) => {

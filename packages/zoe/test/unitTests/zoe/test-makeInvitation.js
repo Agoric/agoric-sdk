@@ -5,11 +5,11 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeScalarBigWeakMapStore } from '@agoric/vat-data';
 
 import { createInvitationKit } from '../../../src/zoeService/makeInvitation.js';
 
-const proposalSchemas = makeScalarBigMapStore('proposal schemas');
+const proposalSchemas = makeScalarBigWeakMapStore('proposal schemas');
 
 test('createInvitationKit', async t => {
   const { setupMakeInvitation, invitationIssuer } = createInvitationKit();
