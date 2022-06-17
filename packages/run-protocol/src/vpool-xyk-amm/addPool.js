@@ -27,7 +27,7 @@ export const makeAddIssuer = (
 ) => {
   /**
    * Add a new issuer. If we previously received a request for the same issuer,
-   * we'll return a promise or the issuer.
+   * we'll return the issuer or a promise for it.
    *
    * @param {Issuer} secondaryIssuer
    * @param {string} keyword
