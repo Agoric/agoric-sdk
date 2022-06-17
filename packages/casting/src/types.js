@@ -24,6 +24,7 @@ export {};
  * @typedef {object} Leader
  * @property {(where: string, error: any, attempt?: number) => Promise<void>} retry
  * @property {(where: string) => Promise<void>} jitter
+ * @property {(opts: ClientOptions) => Client} makeClient
  * @property {() => LeaderOptions} getOptions
  * @property {<T>(where: string, callback: (endpoint: string) => Promise<T>) => Promise<T[]>} mapEndpoints
  * @property {(spec: ERef<CastingSpec>) => Promise<Follower<CastingChange>>} watchCasting
@@ -60,6 +61,17 @@ export {};
  * @property {(buf: Uint8Array) => any} [decode]
  * @property {'strict'|'optimistic'|'none'} [proof]
  * @property {import('@endo/far').FarRef<Crasher>} [crasher]
+ */
+
+/**
+ * @typedef {object} ClientOptions
+ * @property {string} [mnemonic]
+ * @property {unknown} [keplr]
+ */
+
+/**
+ * @typedef {object} Client
+ * @property {123} something
  */
 
 /**

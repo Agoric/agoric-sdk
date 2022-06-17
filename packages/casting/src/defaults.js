@@ -1,5 +1,5 @@
 // @ts-check
-/* global setTimeout */
+/* global harden */
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 
