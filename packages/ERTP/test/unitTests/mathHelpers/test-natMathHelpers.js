@@ -1,6 +1,7 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { M } from '@agoric/store';
 
 import { Far } from '@endo/marshal';
 import { AmountMath as m, AssetKind } from '../../../src/index.js';
@@ -66,6 +67,7 @@ test('natMathHelpers coerce', t => {
             getAllegedName: () => 'somename',
             isMyIssuer: async () => false,
             getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+            getAmountSchema: () => M.any(),
           }),
           value: 4n,
         }),
@@ -193,6 +195,7 @@ test('natMathHelpers isGTE mixed brands', t => {
             getAllegedName: () => 'somename',
             isMyIssuer: async () => false,
             getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+            getAmountSchema: () => M.any(),
           }),
           5n,
         ),
@@ -214,6 +217,7 @@ test(`natMathHelpers isGTE - brands don't match objective brand`, t => {
           getAllegedName: () => 'somename',
           isMyIssuer: async () => false,
           getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+          getAmountSchema: () => M.any(),
         }),
       ),
     {
@@ -242,6 +246,7 @@ test('natMathHelpers isEqual mixed brands', t => {
             getAllegedName: () => 'somename',
             isMyIssuer: async () => false,
             getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+            getAmountSchema: () => M.any(),
           }),
           4n,
         ),
@@ -263,6 +268,7 @@ test(`natMathHelpers isEqual - brands don't match objective brand`, t => {
           getAllegedName: () => 'somename',
           isMyIssuer: async () => false,
           getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+          getAmountSchema: () => M.any(),
         }),
       ),
     {
@@ -288,6 +294,7 @@ test('natMathHelpers add mixed brands', t => {
             getAllegedName: () => 'somename',
             isMyIssuer: async () => false,
             getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+            getAmountSchema: () => M.any(),
           }),
           5n,
         ),
@@ -309,6 +316,7 @@ test(`natMathHelpers add - brands don't match objective brand`, t => {
           getAllegedName: () => 'somename',
           isMyIssuer: async () => false,
           getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+          getAmountSchema: () => M.any(),
         }),
       ),
     {
@@ -334,6 +342,7 @@ test('natMathHelpers subtract mixed brands', t => {
             getAllegedName: () => 'somename',
             isMyIssuer: async () => false,
             getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+            getAmountSchema: () => M.any(),
           }),
           6n,
         ),
@@ -355,6 +364,7 @@ test(`natMathHelpers subtract brands don't match brand`, t => {
           getAllegedName: () => 'somename',
           isMyIssuer: async () => false,
           getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
+          getAmountSchema: () => M.any(),
         }),
       ),
     {

@@ -18,6 +18,8 @@ import { parseVatSlot } from '../lib/parseVatSlots.js';
  *   should be reinvestigated
  * @param {*} addToPossiblyRetiredSet  Function to record dead objects whose
  *   retirement should be reinvestigated
+ * @param {boolean} relaxDurabilityRules True IFF the associated swingset is
+ *   running with relaxed durability rules
  */
 export function makeVirtualReferenceManager(
   syscall,
@@ -26,6 +28,7 @@ export function makeVirtualReferenceManager(
   FinalizationRegistry,
   addToPossiblyDeadSet,
   addToPossiblyRetiredSet,
+  relaxDurabilityRules,
 ) {
   const droppedCollectionRegistry = new FinalizationRegistry(
     finalizeDroppedCollection,
@@ -243,11 +246,6 @@ export function makeVirtualReferenceManager(
     return durable;
   }
 
-  const fakeDurables = new Set();
-  function registerFakeDurable(vref) {
-    fakeDurables.add(vref);
-  }
-
   /**
    * Inquire if a given vref is something that can be stored in a durable store
    * or virtual object.
@@ -257,15 +255,15 @@ export function makeVirtualReferenceManager(
    * @returns {boolean}  true if the indicated object reference is durable.
    */
   function isDurable(vref) {
-    const { type, id, virtual, allocatedByVat, baseRef } = parseVatSlot(vref);
-    if (fakeDurables.has(baseRef)) {
-      return true;
-    }
+    const { type, id, virtual, allocatedByVat } = parseVatSlot(vref);
     if (type !== 'object') {
       // promises and devices are not durable
       return false;
     } else if (!allocatedByVat) {
       // imports are durable
+      return true;
+    } else if (relaxDurabilityRules) {
+      // we'll pretend an object is durable if running with relaxed rules
       return true;
     } else if (virtual) {
       // stores and virtual objects are durable if their kinds are so configured
@@ -646,7 +644,6 @@ export function makeVirtualReferenceManager(
     isDurable,
     isDurableKind,
     registerKind,
-    registerFakeDurable,
     rememberFacetNames,
     reanimate,
     addReachableVref,

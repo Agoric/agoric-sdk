@@ -19,6 +19,7 @@ function makeVRM() {
     FinalizationRegistry,
     addToPossiblyDeadSet,
     addToPossiblyRetiredSet,
+    false,
   );
   return { log, vrm };
 }

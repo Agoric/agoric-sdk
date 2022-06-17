@@ -157,7 +157,7 @@ export const makePriceAuthorityTransform = async ({
             makeSourceAmountOut(newAmountOutLimit),
           );
         },
-        getPromise: () => E(sourceMutableQuote).getPromise(),
+        getPromise: () => E(sourceMutableQuote).getPromise().then(scaleQuote),
       });
       return mutableQuote;
     };

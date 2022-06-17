@@ -1,10 +1,8 @@
 // @ts-check
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { Far } from '@endo/marshal';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { assert } from '@agoric/assert';
+import { M } from '@agoric/store';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '../../src/index.js';
 
@@ -26,7 +24,13 @@ test('mint.mintPayment default nat AssetKind', async t => {
 });
 
 test('mint.mintPayment set w strings AssetKind', async t => {
-  const { mint, issuer, brand } = makeIssuerKit('items', AssetKind.SET);
+  const { mint, issuer, brand } = makeIssuerKit(
+    'items',
+    AssetKind.SET,
+    undefined,
+    undefined,
+    { elementSchema: M.string() },
+  );
   const items1and2and4 = AmountMath.make(brand, harden(['1', '2', '4']));
   const payment1 = mint.mintPayment(items1and2and4);
   const paymentBalance1 = await issuer.getAmountOf(payment1);
@@ -36,6 +40,11 @@ test('mint.mintPayment set w strings AssetKind', async t => {
   const payment2 = mint.mintPayment(items5and6);
   const paymentBalance2 = await issuer.getAmountOf(payment2);
   t.assert(AmountMath.isEqual(paymentBalance2, items5and6));
+
+  const badAmount = AmountMath.make(brand, harden([['badElement']]));
+  t.throws(() => mint.mintPayment(badAmount), {
+    message: / - Must have passStyle or tag "string"/,
+  });
 });
 
 test('mint.mintPayment set AssetKind', async t => {

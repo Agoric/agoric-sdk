@@ -53,3 +53,10 @@ export const isAfterDeadlineExitRule = exit => {
   const [exitKey] = Object.getOwnPropertyNames(exit);
   return exitKey === 'afterDeadline';
 };
+
+export const InvitationElementShape = M.split({
+  description: M.string(),
+  handle: M.remotable(), // invitationHandle
+  instance: M.remotable(),
+  installation: M.remotable(),
+});

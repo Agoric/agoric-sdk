@@ -114,6 +114,12 @@
  */
 
 /**
+ * @callback GetProposalSchemaForInvitation
+ * @param {InvitationHandle} invitationHandle
+ * @returns {Pattern | undefined}
+ */
+
+/**
  * @typedef ZoeStorageManager
  * @property {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @property {GetAssetKindByBrand} getAssetKindByBrand
@@ -129,6 +135,7 @@
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstanceAdmin} getInstanceAdmin
  * @property {UnwrapInstallation} unwrapInstallation
+ * @property {GetProposalSchemaForInvitation} getProposalSchemaForInvitation
  */
 
 /**
