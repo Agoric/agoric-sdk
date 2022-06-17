@@ -2,12 +2,12 @@
 /// <reference types="ses"/>
 
 import { assert } from '@agoric/assert';
+import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeAsyncIterableFromNotifier } from './asyncIterableAdaptor.js';
 
 import './types.js';
-import { makeEmptyPublishKit } from './publish-kit.js';
 
 /**
  * @template T
@@ -51,67 +51,35 @@ export const makeNotifier = sharableInternalsP => {
  * @returns {NotifierRecord<T>} the notifier and updater
  */
 export const makeNotifierKit = (...initialStateArr) => {
-  const { publisher, subscriber } = makeEmptyPublishKit();
+  /** @type {PromiseRecord<UpdateRecord<T>>|undefined} */
+  let optNextPromiseKit;
+  /** @type {UpdateCount & (number | undefined)} */
+  let currentUpdateCount = 1; // avoid falsy numbers
+  /** @type {UpdateRecord<T>|undefined} */
+  let currentResponse;
 
-  // In contrast to publish kit subscribers
-  // (and notifiers produced by makeNotifierFromAsyncIterable),
-  // notifiers produced by makeNotifierKit
-  // * deal in number-valued update counts, and
-  // * count from 1, and
-  // * ignore any input to getUpdateSince that doesn't match the latest update count, and
-  // * return a final response as if it were "next".
-  //
-  // https://github.com/Agoric/agoric-sdk/pull/5435 originally attempted to impose
-  // tighter restrictions, but failed to do so.
-  // We instead continue supporting the looser behavior.
+  const hasState = () => currentResponse !== undefined;
 
-  // Data from the backing subscriber.
-  let latestPublishCount;
+  const final = () => currentUpdateCount === undefined;
 
-  // Data exposed by this notifier.
-  let latestUpdateCount;
-  let currentResultP;
-  let nextResultP;
-
-  const getNextResultP = () => {
-    if (!nextResultP) {
-      nextResultP = E.when(
-        subscriber.subscribeAfter(latestPublishCount),
-        ({ head: { value, done }, publishCount }) => {
-          // Update local data.
-          latestPublishCount = publishCount;
-          latestUpdateCount =
-            latestUpdateCount === undefined ? 1 : latestUpdateCount + 1;
-          currentResultP = nextResultP;
-          if (!done) {
-            nextResultP = undefined;
-          }
-
-          // Unlike a publish kit subscriber, notifier reports no count with a final value.
-          const updateCount = done ? undefined : latestUpdateCount;
-          return harden({ value, updateCount });
-        },
-      );
-    }
-    return nextResultP;
-  };
-
-  /**
-   * @template T
-   * @type {BaseNotifier<T>}
-   */
   const baseNotifier = Far('baseNotifier', {
-    getUpdateSince(sinceUpdateCount = undefined) {
-      // Handle requests for the next state.
-      if (sinceUpdateCount === latestUpdateCount) {
-        return getNextResultP();
+    // NaN matches nothing
+    getUpdateSince(updateCount = NaN) {
+      if (
+        hasState() &&
+        (final() ||
+          (currentResponse && currentResponse.updateCount !== updateCount))
+      ) {
+        // If hasState() and either it is final() or it is
+        // not the state of updateCount, return the current state.
+        assert(currentResponse !== undefined);
+        return Promise.resolve(currentResponse);
       }
-
-      // Handle requests for the latest state.
-      if (!currentResultP) {
-        currentResultP = getNextResultP();
+      // otherwise return a promise for the next state.
+      if (!optNextPromiseKit) {
+        optNextPromiseKit = makePromiseKit();
       }
-      return currentResultP;
+      return optNextPromiseKit.promise;
     },
   });
 
@@ -120,19 +88,57 @@ export const makeNotifierKit = (...initialStateArr) => {
     ...baseNotifier,
   });
 
-  // To ensure that getUpdateSince() immediately after an update
-  // doesn't return stale data, invalidate currentResultP.
-  const wrapPublisherFunction = fn => {
-    return arg => {
-      currentResultP = undefined;
-      fn(arg);
-    };
-  };
-
   const updater = Far('updater', {
-    updateState: wrapPublisherFunction(publisher.publish),
-    finish: wrapPublisherFunction(publisher.finish),
-    fail: wrapPublisherFunction(publisher.fail),
+    updateState(state) {
+      if (final()) {
+        throw new Error('Cannot update state after termination.');
+      }
+
+      // become hasState() && !final()
+      assert(currentUpdateCount);
+      currentUpdateCount += 1;
+      currentResponse = harden({
+        value: state,
+        updateCount: currentUpdateCount,
+      });
+      if (optNextPromiseKit) {
+        optNextPromiseKit.resolve(currentResponse);
+        optNextPromiseKit = undefined;
+      }
+    },
+
+    finish(finalState) {
+      if (final()) {
+        throw new Error('Cannot finish after termination.');
+      }
+
+      // become hasState() && final()
+      currentUpdateCount = undefined;
+      currentResponse = harden({
+        value: finalState,
+        updateCount: currentUpdateCount,
+      });
+      if (optNextPromiseKit) {
+        optNextPromiseKit.resolve(currentResponse);
+        optNextPromiseKit = undefined;
+      }
+    },
+
+    fail(reason) {
+      if (final()) {
+        throw new Error('Cannot fail after termination.');
+      }
+
+      // become !hasState() && final()
+      currentUpdateCount = undefined;
+      currentResponse = undefined;
+      if (!optNextPromiseKit) {
+        optNextPromiseKit = makePromiseKit();
+      }
+      // Don't trigger Node.js's UnhandledPromiseRejectionWarning
+      optNextPromiseKit.promise.catch(_ => {});
+      optNextPromiseKit.reject(reason);
+    },
   });
 
   assert(initialStateArr.length <= 1, 'too many arguments');
@@ -140,6 +146,8 @@ export const makeNotifierKit = (...initialStateArr) => {
     updater.updateState(initialStateArr[0]);
   }
 
+  // notifier facet is separate so it can be handed out while updater
+  // is tightly held
   return harden({ notifier, updater });
 };
 
