@@ -436,10 +436,20 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
           dr: [status, _1, meterResult],
           // ...attrs
         } = slogAttrs;
+        const deltaMeterResult = { ...meterResult };
+        if (meterResult.timestamps) {
+          // We don't yet try to record the delta between the kernel
+          // sending 'deliver' and the worker receiving it. We record
+          // the absolute time of the worker-rx-deliver, and the
+          // deltas between adjacent timestamps thereafter.
+          const ts = meterResult.timestamps;
+          ts.map((t, idx) => (idx === 0 ? t : t - ts[idx - 1]));
+          deltaMeterResult.timestamps = ts;
+        }
         spans.get(getCrankKey()).setAttributes(
           cleanAttrs({
             status,
-            ...meterResult,
+            ...deltaMeterResult,
           }),
         );
         break;
@@ -510,7 +520,12 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
             makeSyscallSpan(`D(${target}).${method}`, { target, method });
             break;
           }
-          case 'resolve':
+          case 'resolve': {
+            // const [ _, _vatid, resolutions] = ksc;
+            // const vpids = resolutions.map(([vpid, _isReject, _capdata]) => vpid);
+            // makeSyscallSpan(`resolve(${vpids.join(',')})`, { vpids });
+            break;
+          }
           case 'subscribe':
           case 'vatstoreGet':
           case 'vatstoreGetAfter':
