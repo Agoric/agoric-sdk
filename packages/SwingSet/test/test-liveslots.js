@@ -1578,9 +1578,9 @@ test('result promise in args', async t => {
         // we should be able to pipeline messages to it
         E(p).three();
         // we can subscribe to it, even though we're the decider
-        p.then(res => vatlog.push(`res: ${res}`));
+        p.then(res => vatlog.push(`res: ${res === target}`));
         // and we should be able to resolve it
-        return 'four';
+        return target;
       },
     });
   }
@@ -1606,10 +1606,26 @@ test('result promise in args', async t => {
   });
   t.is(log.shift().type, 'subscribe'); // result of two()
 
+  // `three()` makes it out first
   const s3 = log.shift();
-  t.is(s3.type, 'resolve');
-  t.is(s3.resolutions.length, 1);
-  t.deepEqual(s3.resolutions[0], [resP, false, capargs('four')]);
+  t.is(s3.type, 'send');
+  t.is(s3.targetSlot, target);
+  t.deepEqual(s3.methargs, {
+    body: '["three",[]]',
+    slots: [],
+  });
+  const s4 = log.shift();
+  t.is(s4.type, 'subscribe');
+  t.is(s4.target, s3.resultSlot);
 
-  t.deepEqual(vatlog, ['res: four']);
+  const s5 = log.shift();
+  t.is(s5.type, 'resolve');
+  t.is(s5.resolutions.length, 1);
+  const resdata = capdataOneSlot(target, `presence ${target}`);
+  t.deepEqual(s5.resolutions[0], [resP, false, resdata]);
+
+  // there is one more syscall.vatstoreSet(idCounters) that we ignore
+  t.is(log.length, 1);
+
+  t.deepEqual(vatlog, ['res: true']);
 });
