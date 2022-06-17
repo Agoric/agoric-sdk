@@ -443,8 +443,8 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
           // the absolute time of the worker-rx-deliver, and the
           // deltas between adjacent timestamps thereafter.
           const ts = meterResult.timestamps;
-          ts.map((t, idx) => (idx === 0 ? t : t - ts[idx - 1]));
-          deltaMeterResult.timestamps = ts;
+          const newts = ts.map((t, idx) => (idx === 0 ? t : t - ts[idx - 1]));
+          deltaMeterResult.timestamps = newts;
         }
         spans.get(getCrankKey()).setAttributes(
           cleanAttrs({
