@@ -5,7 +5,7 @@ import { observeIteration, observeIterator } from '../src/index.js';
 
 import '../src/types.js';
 
-export const invertResolution = promise =>
+export const invertPromiseSettlement = promise =>
   promise.then(
     fulfillment => {
       throw fulfillment;

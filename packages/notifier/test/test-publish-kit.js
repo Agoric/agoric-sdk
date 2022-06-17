@@ -8,7 +8,7 @@ import {
   subscribeLatest,
 } from '../src/index.js';
 import '../src/types.js';
-import { invertResolution } from './iterable-testing-tools.js';
+import { invertPromiseSettlement } from './iterable-testing-tools.js';
 
 test('makeEmptyPublishKit', async t => {
   const { publisher, subscriber } = makeEmptyPublishKit();
@@ -199,7 +199,7 @@ test('makeEmptyPublishKit - fail', async t => {
   publisher.fail(pubFailure);
   const subFinalAll = await Promise.all(
     [subFirst.tail, subscriber.subscribeAfter(subFirst.publishCount)].map(
-      invertResolution,
+      invertPromiseSettlement,
     ),
   );
   const [subFinal] = subFinalAll;
@@ -210,7 +210,7 @@ test('makeEmptyPublishKit - fail', async t => {
   );
   t.is(subFinal, pubFailure);
   t.is(
-    await invertResolution(subscriber.subscribeAfter()),
+    await invertPromiseSettlement(subscriber.subscribeAfter()),
     subFinal,
     'subscribeAfter should return current result (fail)',
   );
@@ -238,7 +238,7 @@ test('makeEmptyPublishKit - immediate fail', async t => {
   publisher.fail(pubFailure);
   const subFinalAll = await Promise.all(
     [subscriber.subscribeAfter(), subscriber.subscribeAfter(0n)].map(
-      invertResolution,
+      invertPromiseSettlement,
     ),
   );
   const [subFinal] = subFinalAll;
