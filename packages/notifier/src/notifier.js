@@ -172,7 +172,9 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
           return Promise.resolve(currentResponse);
         }
       } else if (updateCount !== currentUpdateCount) {
-        throw new Error('Invalid update count');
+        throw new Error(
+          'getUpdateSince argument must be a previously-issued updateCount.',
+        );
       }
 
       // Return a final response if we have one, otherwise a promise for the next state.

@@ -156,7 +156,9 @@ export const makeEmptyPublishKit = () => {
       } else if (publishCount < currentPublishCount) {
         return currentP;
       } else {
-        throw new Error('Invalid publish count');
+        throw new Error(
+          'subscribeAfter argument must be a previously-issued publishCount.',
+        );
       }
     },
   });
