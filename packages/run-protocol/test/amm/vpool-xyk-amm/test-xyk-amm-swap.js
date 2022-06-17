@@ -1168,3 +1168,36 @@ test('amm adding liquidity', async t => {
     `poolAllocation after initialization`,
   );
 });
+
+test('storage keys', async t => {
+  // Set up central token
+  const centralR = makeIssuerKit('central');
+  const moolaR = makeIssuerKit('moola');
+
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+  // This timer is only used to build quotes. Let's make it non-zero
+  const timer = buildManualTimer(t.log, 30n);
+  const { zoe, amm } = await setupAmmServices(
+    t,
+    electorateTerms,
+    centralR,
+    timer,
+  );
+
+  const rootMetrics = await E(amm.ammPublicFacet).getMetrics();
+  const rootStoreKey = await E(rootMetrics).getStoreKey();
+  t.is(rootStoreKey.key, 'mockChainStorageRoot.amm.metrics');
+
+  const addInitialLiquidity = await makeAddInitialLiquidity(
+    t,
+    zoe,
+    amm,
+    moolaR,
+    centralR,
+  );
+  await addInitialLiquidity(10000n, 50000n);
+
+  const poolMetrics = await E(amm.ammPublicFacet).getPoolMetrics(moolaR.brand);
+  const poolStoreKey = await E(poolMetrics).getStoreKey();
+  t.is(poolStoreKey.key, 'mockChainStorageRoot.amm.pool0.metrics');
+});

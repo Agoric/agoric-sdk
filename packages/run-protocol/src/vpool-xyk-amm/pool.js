@@ -1,7 +1,7 @@
 // @ts-check
 
 import { AmountMath, isNatValue } from '@agoric/ertp';
-import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
+import { makeNotifierKit, makeStoredPublisherKit } from '@agoric/notifier';
 
 import {
   calcLiqValueToMint,
@@ -330,6 +330,8 @@ const finish = context => {
  * @param {IssuerKit} quoteIssuerKit
  * @param {import('./multipoolMarketMaker.js').AMMParamGetters} paramAccessor retrieve governed params
  * @param {ZCFSeat} protocolSeat seat that holds collected fees
+ * @param {ERef<StorageNode>} [storageNode]
+ * @param {ERef<Marshaller>} [marshaller]
  */
 export const definePoolKind = (
   zcf,
@@ -338,15 +340,15 @@ export const definePoolKind = (
   quoteIssuerKit,
   paramAccessor,
   protocolSeat,
+  storageNode,
+  marshaller,
 ) => {
   const poolInit = (liquidityZcfMint, poolSeat, secondaryBrand) => {
     const { brand: liquidityBrand, issuer: liquidityIssuer } =
       liquidityZcfMint.getIssuerRecord();
     const { notifier, updater } = makeNotifierKit();
-    const {
-      publication: metricsPublication,
-      subscription: metricsSubscription,
-    } = makeSubscriptionKit();
+    const { publisher: metricsPublication, subscriber: metricsSubscription } =
+      makeStoredPublisherKit(storageNode, marshaller, 'metrics');
 
     // XXX why does the paramAccessor have to be repackaged as a Far object?
     const params = Far('pool param accessor', {

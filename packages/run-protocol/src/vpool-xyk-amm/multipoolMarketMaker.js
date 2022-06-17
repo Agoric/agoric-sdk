@@ -160,7 +160,9 @@ const start = async (zcf, privateArgs) => {
 
   // The liquidityBrand has to exist to allow the addPool Offer to specify want
   /** @type {WeakStore<Brand,ZCFMint>} */
-  const secondaryBrandToLiquidityMint = makeWeakStore('secondaryBrand');
+  const secondaryBrandToLiquidityMint = makeWeakStore(
+    'secondaryBrandToLiquidityMint',
+  );
 
   const quoteIssuerKit = makeIssuerKit('Quote', AssetKind.SET);
 
@@ -240,6 +242,11 @@ const start = async (zcf, privateArgs) => {
     );
     return zcf.getIssuerForBrand(brand);
   };
+  const poolStorageNode = await (privateArgs.storageNode &&
+    E(privateArgs.storageNode).getChildNode(
+      // NB: the set of pools grows monotonically
+      `pool${secondaryBrandToPool.getSize()}`,
+    ));
   const addPoolInvitation = makeAddPoolInvitation(
     zcf,
     initPool,
@@ -250,6 +257,8 @@ const start = async (zcf, privateArgs) => {
     protocolSeat,
     secondaryBrandToLiquidityMint,
     handlePoolAdded,
+    poolStorageNode,
+    privateArgs.marshaller,
   );
   const addIssuer = makeAddIssuer(
     zcf,
