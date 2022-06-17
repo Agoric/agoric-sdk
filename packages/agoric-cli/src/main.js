@@ -227,7 +227,7 @@ const main = async (progname, rawArgs, powers) => {
       return subMain(followMain, ['follow', ...pathSpecs], opts);
     });
 
-  const addRunOptions = cmd =>
+  const addRunOptions = (cmd, DEFAULT_HOSTPORT = undefined) =>
     cmd
       .option(
         '--allow-unsafe-plugins',
@@ -237,7 +237,7 @@ const main = async (progname, rawArgs, powers) => {
       .option(
         '--hostport <host:port>',
         'host and port to connect to VM',
-        '127.0.0.1:8000',
+        DEFAULT_HOSTPORT,
       )
       .option(
         '--need <subsystems>',
@@ -272,6 +272,7 @@ const main = async (progname, rawArgs, powers) => {
       .description(
         'run multiple scripts with all your user privileges against the local Agoric VM',
       ),
+    '127.0.0.1:8000',
   ).action(async (scripts, cmd) => {
     const opts = { ...program.opts(), ...cmd.opts() };
     return subMain(deployMain, ['deploy', ...scripts], opts);
