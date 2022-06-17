@@ -53,21 +53,41 @@ export const makeNotifier = sharableInternalsP => {
 export const makeNotifierKit = (...initialStateArr) => {
   const { publisher, subscriber } = makeEmptyPublishKit();
 
+  // Track data from the backing subscriber.
+  let latestPublishCount;
+
+  // Track data exposed by this notifier.
+  let latestUpdateCount;
+
   /**
    * @template T
    * @type {BaseNotifier<T>}
    */
   const baseNotifier = Far('baseNotifier', {
+    // In contrast to publish kit subscribers
+    // (and notifiers produced by makeNotifierFromAsyncIterable),
+    // notifiers produced by makeNotifierKit
+    // * deal in number-valued update counts, and
+    // * count from 1, and
+    // * ignore any input to getUpdateSince that doesn't match the latest update count.
+    //
+    // https://github.com/Agoric/agoric-sdk/pull/5435 originally attempted to impose
+    // tighter restrictions, but failed to do so.
+    // We instead continue supporting the looser behavior.
     getUpdateSince(sinceUpdateCount = undefined) {
-      // TODO: Narrow to exclude number.
-      if (typeof sinceUpdateCount === 'number') {
-        sinceUpdateCount = BigInt(sinceUpdateCount);
-      }
+      const sincePublishCount =
+        sinceUpdateCount === latestUpdateCount ? latestPublishCount : undefined;
       return E.when(
-        subscriber.subscribeAfter(sinceUpdateCount),
+        subscriber.subscribeAfter(sincePublishCount),
         ({ head: { value, done }, publishCount }) => {
+          if (publishCount !== latestPublishCount) {
+            latestPublishCount = publishCount;
+            latestUpdateCount =
+              latestUpdateCount === undefined ? 1 : latestUpdateCount + 1;
+          }
+
           // Unlike publish kit, notifier reports no count with a final value.
-          const updateCount = done ? undefined : publishCount;
+          const updateCount = done ? undefined : latestUpdateCount;
           return harden({ value, updateCount });
         },
       );
