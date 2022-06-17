@@ -6,6 +6,7 @@ import { Far, Remotable, passStyleOf } from '@endo/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
+import { assertPattern } from '@agoric/store';
 
 import { cleanProposal, coerceAmountKeywordRecord } from '../cleanProposal.js';
 import { evalContractBundle } from './evalContractCode.js';
@@ -273,12 +274,16 @@ export const makeZCFZygote = (
       offerHandler = Far('default offer handler', () => {}),
       description,
       customProperties = harden({}),
+      proposalSchema = undefined,
     ) => {
       assert.typeof(
         description,
         'string',
         X`invitations must have a description string: ${description}`,
       );
+      if (proposalSchema !== undefined) {
+        assertPattern(proposalSchema);
+      }
 
       const invitationHandle = storeOfferHandler(offerHandler);
       /** @type {Promise<Payment>} */
@@ -286,6 +291,7 @@ export const makeZCFZygote = (
         invitationHandle,
         description,
         customProperties,
+        proposalSchema,
       );
       return invitationP;
     },

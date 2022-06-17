@@ -1,5 +1,6 @@
 // @ts-check
 import { passStyleOf } from '@endo/marshal';
+import { fit } from '@agoric/store';
 
 import { cleanProposal } from '../../cleanProposal.js';
 import { burnInvitation } from './burnInvitation.js';
@@ -16,6 +17,7 @@ const { details: X, quote: q } = assert;
  * @param {GetInstanceAdmin} getInstanceAdmin
  * @param {DepositPayments} depositPayments
  * @param {GetAssetKindByBrand} getAssetKindByBrand
+ * @param {GetProposalSchemaForInvitation} getProposalSchemaForInvitation
  * @returns {Offer}
  */
 export const makeOfferMethod = (
@@ -23,6 +25,7 @@ export const makeOfferMethod = (
   getInstanceAdmin,
   depositPayments,
   getAssetKindByBrand,
+  getProposalSchemaForInvitation,
 ) => {
   /** @type {Offer} */
   const offer = async (
@@ -41,6 +44,10 @@ export const makeOfferMethod = (
     instanceAdmin.assertAcceptingOffers();
 
     const proposal = cleanProposal(uncleanProposal, getAssetKindByBrand);
+    const proposalSchema = getProposalSchemaForInvitation(invitationHandle);
+    if (proposalSchema !== undefined) {
+      fit(proposal, proposalSchema);
+    }
 
     if (offerArgs !== undefined) {
       const passStyle = passStyleOf(offerArgs);
