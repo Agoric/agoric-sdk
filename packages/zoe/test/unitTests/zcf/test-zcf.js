@@ -799,10 +799,13 @@ test(`zcfSeat.getNotifier`, async t => {
   // Mint some gains to change the allocation.
   const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3n);
   let notifierResult;
-  do {
+  for (let remainingTries = 2; remainingTries >= 0; remainingTries -= 1) {
     // eslint-disable-next-line no-await-in-loop
     notifierResult = await notifier.getUpdateSince(notifierResult?.updateCount);
-  } while (notifierResult.updateCount < 2n);
+    if (notifierResult.value?.A) {
+      break;
+    }
+  }
   t.deepEqual(notifierResult.value, {
     A: {
       brand: brand1,
@@ -1051,10 +1054,13 @@ test(`userSeat.getNotifier`, async t => {
   // Mint some gains to change the allocation.
   const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3n);
   let notifierResult;
-  do {
+  for (let remainingTries = 2; remainingTries >= 0; remainingTries -= 1) {
     // eslint-disable-next-line no-await-in-loop
     notifierResult = await notifier.getUpdateSince(notifierResult?.updateCount);
-  } while (notifierResult.updateCount < 2n);
+    if (notifierResult.value?.A) {
+      break;
+    }
+  }
   t.deepEqual(notifierResult.value, {
     A: {
       brand: brand1,
