@@ -526,7 +526,10 @@ test('liveslots vs symbols', async t => {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target,
-    methargs: capargs([{ '@qclass': '@@asyncIterator' }, ['arg']]),
+    methargs: capargs([
+      { '@qclass': 'symbol', name: '@@asyncIterator' },
+      ['arg'],
+    ]),
     resultSlot: 'p+5',
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+5' });
