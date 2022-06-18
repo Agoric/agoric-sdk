@@ -1000,6 +1000,7 @@ test('dropImports', async t => {
     {},
     undefined,
     false,
+    {},
     gcTools,
     undefined,
     () => {
@@ -1140,6 +1141,7 @@ test('buildVatNamespace not called until after startVat', async t => {
     {},
     undefined,
     false,
+    {},
     gcTools,
     undefined,
     () => ({ buildRootObject }),

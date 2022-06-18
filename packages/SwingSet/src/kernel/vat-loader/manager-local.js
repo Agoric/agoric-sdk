@@ -84,6 +84,7 @@ export function makeLocalVatManagerFactory(tools) {
       virtualObjectCacheSize,
       compareSyscalls,
       useTranscript,
+      messageBudget,
     } = managerOptions;
     assert(sourcedConsole, 'vats need managerOptions.sourcedConsole');
 
@@ -146,6 +147,7 @@ export function makeLocalVatManagerFactory(tools) {
         vatPowers,
         virtualObjectCacheSize,
         enableDisavow,
+        messageBudget,
         gcTools,
         makeVatConsole(makeLogMaker('ls')),
         buildVatNamespace,

@@ -24,6 +24,7 @@ import {
   makeUpgradeID,
 } from '../../lib/id.js';
 import { kdebug } from '../../lib/kdebug.js';
+import { VAT_MESSAGE_BUDGET } from '../../limits/budgets.js';
 import { KERNEL_STATS_METRICS } from '../metrics.js';
 import { makeKernelStats } from './stats.js';
 
@@ -58,6 +59,7 @@ const enableKernelGC = true;
 //
 // kernel.defaultManagerType = managerType
 // kernel.defaultReapInterval = $NN
+// kernel.defaultMessageBudget = JSON
 // kernel.enableFakeDurable = missing | 'true'
 // kernel.snapshotInitial = $NN
 // kernel.snapshotInterval = $NN
@@ -266,6 +268,7 @@ export default function makeKernelKeeper(
     const {
       defaultManagerType = 'local',
       defaultReapInterval = 1,
+      defaultMessageBudget = VAT_MESSAGE_BUDGET,
       enableFakeDurable = false,
       snapshotInitial = 2,
       snapshotInterval = 200,
@@ -288,6 +291,10 @@ export default function makeKernelKeeper(
     kvStore.set('crankNumber', `${FIRST_CRANK_NUMBER}`);
     kvStore.set('kernel.defaultManagerType', defaultManagerType);
     kvStore.set('kernel.defaultReapInterval', `${defaultReapInterval}`);
+    kvStore.set(
+      'kernel.defaultMessageBudget',
+      JSON.stringify(defaultMessageBudget),
+    );
     kvStore.set('kernel.snapshotInitial', `${snapshotInitial}`);
     kvStore.set('kernel.snapshotInterval', `${snapshotInterval}`);
     if (enableFakeDurable) {
@@ -345,6 +352,14 @@ export default function makeKernelKeeper(
       'invalid defaultReapInterval value',
     );
     kvStore.set('kernel.defaultReapInterval', `${interval}`);
+  }
+
+  function getDefaultMessageBudget() {
+    return JSON.parse(getRequired('kernel.defaultMessageBudget'));
+  }
+
+  function setDefaultMessageBudget(budget) {
+    kvStore.set('kernel.defaultMessageBudget', JSON.stringify(budget));
   }
 
   function getNat(key) {
@@ -1523,8 +1538,10 @@ export default function makeKernelKeeper(
     createStartingKernelState,
     getDefaultManagerType,
     getDefaultReapInterval,
+    getDefaultMessageBudget,
     getEnableFakeDurable,
     setDefaultReapInterval,
+    setDefaultMessageBudget,
     getSnapshotInitial,
     getSnapshotInterval,
     setSnapshotInterval,

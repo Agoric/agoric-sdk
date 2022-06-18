@@ -584,6 +584,9 @@ export default function buildKernel(
     if (!dynamicOptions.reapInterval) {
       options.reapInterval = kernelKeeper.getDefaultReapInterval();
     }
+    if (!dynamicOptions.messageBudget) {
+      options.messageBudget = kernelKeeper.getDefaultMessageBudget();
+    }
     vatKeeper.setSourceAndOptions(source, options);
     vatKeeper.initializeReapCountdown(options.reapInterval);
 
@@ -1565,12 +1568,20 @@ export default function buildKernel(
   }
 
   function changeKernelOptions(options) {
-    assertKnownOptions(options, ['defaultReapInterval', 'snapshotInterval']);
+    assertKnownOptions(options, [
+      'defaultReapInterval',
+      'defaultMessageBudget',
+      'snapshotInterval',
+    ]);
     for (const option of Object.getOwnPropertyNames(options)) {
       const value = options[option];
       switch (option) {
         case 'defaultReapInterval': {
           kernelKeeper.setDefaultReapInterval(value);
+          break;
+        }
+        case 'defaultMessageBudget': {
+          kernelKeeper.setDefaultMessageBudget(value);
           break;
         }
         case 'snapshotInterval': {

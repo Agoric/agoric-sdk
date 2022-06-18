@@ -52,6 +52,7 @@ export function makeXsSubprocessFactory({
     parentLog(vatID, 'createFromBundle', { vatID });
     const {
       virtualObjectCacheSize,
+      messageBudget,
       enableDisavow,
       gcEveryCrank = true,
       name: vatName,
@@ -150,6 +151,7 @@ export function makeXsSubprocessFactory({
         virtualObjectCacheSize,
         enableDisavow,
         kernelKeeper.getEnableFakeDurable(),
+        messageBudget,
         gcEveryCrank,
       ]);
       if (bundleReply[0] === 'dispatchReady') {

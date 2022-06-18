@@ -24,6 +24,7 @@ import { makeCollectionManager } from './collectionManager.js';
 import { makeWatchedPromiseManager } from './watchedPromises.js';
 import { releaseOldState } from './stop-vat.js';
 import { MAXIMUM_COST_MODEL } from '../limits/cost-models.js';
+import { VAT_MESSAGE_BUDGET } from '../limits/budgets.js';
 
 const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
 
@@ -42,6 +43,7 @@ const HandledPromise = globalThis.HandledPromise;
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {number} cacheSize  Maximum number of entries in the virtual object state cache
  * @param {boolean} enableDisavow
+ * @param {*} messageBudget
  * @param {*} vatPowers
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize,
  *                      meterControl }
@@ -57,6 +59,7 @@ function build(
   forVatID,
   cacheSize,
   enableDisavow,
+  messageBudget,
   vatPowers,
   gcTools,
   console,
@@ -1318,6 +1321,10 @@ function build(
         }
         break;
       }
+      case 'messageBudget': {
+        messageBudget = value;
+        break;
+      }
       default:
         console.log(`WARNING setVatOption unknown option ${option}`);
     }
@@ -1612,6 +1619,7 @@ function build(
  * @param {*} vatPowers
  * @param {number} cacheSize  Upper bound on virtual object cache size
  * @param {boolean} enableDisavow
+ * @param {*} messageBudget
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
  * @param {*} [buildVatNamespace]
@@ -1648,6 +1656,7 @@ export function makeLiveSlots(
   vatPowers = harden({}),
   cacheSize = DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
   enableDisavow = false,
+  messageBudget,
   gcTools,
   liveSlotsConsole = console,
   buildVatNamespace = () => {},
@@ -1663,6 +1672,7 @@ export function makeLiveSlots(
     forVatID,
     cacheSize,
     enableDisavow,
+    messageBudget,
     allVatPowers,
     gcTools,
     liveSlotsConsole,
@@ -1685,12 +1695,14 @@ export function makeMarshaller(
   gcTools,
   vatID = 'forVatID',
   vmCostModel = MAXIMUM_COST_MODEL,
+  messageBudget = VAT_MESSAGE_BUDGET,
 ) {
   const { m } = build(
     syscall,
     vatID,
     DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
     false,
+    messageBudget,
     {},
     gcTools,
     console,

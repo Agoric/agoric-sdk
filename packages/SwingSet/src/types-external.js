@@ -38,6 +38,7 @@ export {};
  *   enableDisavow?: boolean,
  *   useTranscript?: boolean,
  *   reapInterval?: number | 'never',
+ *   messageBudget?: Record<string, unknown>,
  *   vatParameters: Record<string, unknown>,
  *   virtualObjectCacheSize: number,
  *   name: string,
@@ -51,6 +52,7 @@ export {};
  * @typedef {{
  *   defaultManagerType?: ManagerType,
  *   defaultReapInterval?: number | 'never',
+ *   defaultMessageBudget?: Record<string, unknown>,
  *   enableFakeDurable?: boolean,
  *   snapshotInitial?: number,
  *   snapshotInterval?: number,
@@ -352,6 +354,7 @@ export {};
  *              virtualObjectCacheSize?: number,
  *              useTranscript?: boolean,
  *              reapInterval? : number | 'never',
+ *              messageBudget?: Record<string, unknown>,
  *              critical?: boolean,
  *            }} DynamicVatOptionsWithoutMeter
  * @typedef { { meter?: Meter } } HasMeter

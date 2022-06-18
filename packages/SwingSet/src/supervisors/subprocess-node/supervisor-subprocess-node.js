@@ -66,8 +66,13 @@ fromParent.on('data', ([type, ...margs]) => {
     workerLog(`got start`);
     sendUplink(['gotStart']);
   } else if (type === 'setBundle') {
-    const [bundle, virtualObjectCacheSize, enableDisavow, enableFakeDurable] =
-      margs;
+    const [
+      bundle,
+      virtualObjectCacheSize,
+      enableDisavow,
+      enableFakeDurable,
+      messageBudget,
+    ] = margs;
 
     function testLog(...args) {
       sendUplink(['testLog', ...args]);
@@ -130,6 +135,7 @@ fromParent.on('data', ([type, ...margs]) => {
       vatPowers,
       virtualObjectCacheSize,
       enableDisavow,
+      messageBudget,
       gcTools,
       makeVatConsole(makeLogMaker(`SwingSet:ls:${vatID}`)),
       buildVatNamespace,

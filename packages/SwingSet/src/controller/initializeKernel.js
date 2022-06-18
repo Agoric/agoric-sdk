@@ -27,6 +27,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
   const {
     defaultManagerType,
     defaultReapInterval,
+    defaultMessageBudget,
     enableFakeDurable,
     snapshotInitial,
     snapshotInterval,
@@ -34,6 +35,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
   const kernelOptions = {
     defaultManagerType,
     defaultReapInterval,
+    defaultMessageBudget,
     enableFakeDurable,
     snapshotInitial,
     snapshotInterval,
@@ -80,6 +82,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
         'useTranscript',
         'critical',
         'reapInterval',
+        'messageBudget',
       ]);
       creationOptions.name = name;
       if (creationOptions.useTranscript === undefined) {
@@ -90,6 +93,9 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       }
       if (!creationOptions.reapInterval) {
         creationOptions.reapInterval = kernelKeeper.getDefaultReapInterval();
+      }
+      if (!creationOptions.messageBudget) {
+        creationOptions.messageBudget = kernelKeeper.getDefaultMessageBudget();
       }
 
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);

@@ -12,8 +12,12 @@ import {
 } from '../src/kernel/state/storageWrapper.js';
 import { makeKernelStats } from '../src/kernel/state/stats.js';
 import { KERNEL_STATS_METRICS } from '../src/kernel/metrics.js';
+import { VAT_MESSAGE_BUDGET } from '../src/limits/budgets.js';
 
 const ignoredStateKeys = ['activityhash', 'kernelStats', 'local.kernelStats'];
+
+const DEFAULT_MESSAGE_BUDGET = JSON.stringify(VAT_MESSAGE_BUDGET);
+
 
 function checkState(t, getState, expected) {
   const state = getState();
@@ -288,6 +292,7 @@ test('kernel state', async t => {
     ['kd.nextID', '30'],
     ['kp.nextID', '40'],
     ['kernel.defaultManagerType', 'local'],
+    ['kernel.defaultMessageBudget', DEFAULT_MESSAGE_BUDGET],
     ['kernel.defaultReapInterval', '1'],
     ['kernel.snapshotInitial', '2'],
     ['kernel.snapshotInterval', '200'],
@@ -325,6 +330,7 @@ test('kernelKeeper vat names', async t => {
     ['vat.name.vatname5', 'v1'],
     ['vat.name.Frank', 'v2'],
     ['kernel.defaultManagerType', 'local'],
+    ['kernel.defaultMessageBudget', DEFAULT_MESSAGE_BUDGET],
     ['kernel.defaultReapInterval', '1'],
     ['kernel.snapshotInitial', '2'],
     ['kernel.snapshotInterval', '200'],
@@ -376,6 +382,7 @@ test('kernelKeeper device names', async t => {
     ['device.name.devicename5', 'd7'],
     ['device.name.Frank', 'd8'],
     ['kernel.defaultManagerType', 'local'],
+    ['kernel.defaultMessageBudget', DEFAULT_MESSAGE_BUDGET],
     ['kernel.defaultReapInterval', '1'],
     ['kernel.snapshotInitial', '2'],
     ['kernel.snapshotInterval', '200'],
@@ -564,6 +571,7 @@ test('kernelKeeper promises', async t => {
     [`${ko}.owner`, 'v1'],
     [`${ko}.refCount`, '1,1'],
     ['kernel.defaultManagerType', 'local'],
+    ['kernel.defaultMessageBudget', DEFAULT_MESSAGE_BUDGET],
     ['kernel.defaultReapInterval', '1'],
     ['kernel.snapshotInitial', '2'],
     ['kernel.snapshotInterval', '200'],

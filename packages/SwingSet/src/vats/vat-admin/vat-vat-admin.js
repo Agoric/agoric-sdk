@@ -131,6 +131,8 @@ export function buildRootObject(vatPowers) {
                 'invalid reapInterval value',
               );
               break;
+            case 'messageBudget':
+              break;
             case 'virtualObjectCacheSize':
               assert(isNat(value), 'invalid virtualObjectCacheSize value');
               break;
@@ -168,6 +170,7 @@ export function buildRootObject(vatPowers) {
       virtualObjectCacheSize,
       useTranscript,
       reapInterval,
+      messageBudget,
       critical, // converted from cap key to boolean
       ...rest
     } = origOptions;
@@ -202,6 +205,7 @@ export function buildRootObject(vatPowers) {
     assertType('virtualObjectCacheSize', virtualObjectCacheSize, 'number');
     assertType('useTranscript', useTranscript, 'boolean');
     assertType('reapInterval', reapInterval, 'number');
+    assertType('messageBudget', messageBudget, 'object');
 
     // reject unknown options
     const unknown = Object.keys(rest).join(',');
@@ -234,6 +238,7 @@ export function buildRootObject(vatPowers) {
       virtualObjectCacheSize,
       useTranscript,
       reapInterval,
+      messageBudget,
       critical: isCriticalVat,
     };
     return harden(options);

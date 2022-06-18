@@ -62,6 +62,7 @@ export function makeVatManagerFactory({
       'useTranscript',
       'critical',
       'reapInterval',
+      'messageBudget',
       'sourcedConsole',
       'name',
       'compareSyscalls',

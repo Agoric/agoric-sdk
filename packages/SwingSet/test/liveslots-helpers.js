@@ -141,6 +141,7 @@ export async function makeDispatch(
     {},
     cacheSize,
     enableDisavow,
+    {},
     gcTools,
     undefined,
     () => {

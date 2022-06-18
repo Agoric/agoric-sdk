@@ -21,6 +21,7 @@ export function makeNodeSubprocessFactory(tools) {
       enableDisavow,
       compareSyscalls,
       useTranscript,
+      messageBudget,
     } = managerOptions;
     assert(!managerOptions.enableSetup, 'not supported at all');
     assert(useTranscript, 'node-subprocess: useTranscript=false not supported');
@@ -106,6 +107,7 @@ export function makeNodeSubprocessFactory(tools) {
       virtualObjectCacheSize,
       enableDisavow,
       kernelKeeper.getEnableFakeDurable(),
+      messageBudget,
     ]);
 
     function shutdown() {

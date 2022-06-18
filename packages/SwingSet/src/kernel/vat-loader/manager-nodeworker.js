@@ -39,6 +39,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
     const {
       virtualObjectCacheSize,
       enableDisavow,
+      messageBudget,
       compareSyscalls,
       useTranscript,
     } = managerOptions;
@@ -111,6 +112,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       virtualObjectCacheSize,
       enableDisavow,
       kernelKeeper.getEnableFakeDurable(),
+      messageBudget,
     ]);
 
     function deliverToWorker(delivery) {

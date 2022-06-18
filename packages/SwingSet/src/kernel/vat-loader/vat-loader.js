@@ -96,6 +96,7 @@ export function makeVatLoader(stuff) {
     'useTranscript',
     'critical',
     'reapInterval',
+    'messageBudget',
   ];
 
   const allowedStaticOptions = [
@@ -108,6 +109,7 @@ export function makeVatLoader(stuff) {
     'useTranscript',
     'critical',
     'reapInterval',
+    'messageBudget',
   ];
 
   /**
@@ -169,6 +171,9 @@ export function makeVatLoader(stuff) {
    *        manner) any visible effects of garbage collection.  Defaults to the
    *        kernel's configured 'defaultReapInterval' value.
    *
+   * @param {Record<string, unknown>} [options.messageBudget]  Control over
+   *        various limits on messaging.
+   *
    * @param {string} [options.name]
    * @param {boolean} [options.enableDisavow]
    * @param {boolean} [options.critical]
@@ -215,6 +220,7 @@ export function makeVatLoader(stuff) {
       enableDisavow = false,
       enablePipelining = false,
       virtualObjectCacheSize,
+      messageBudget,
       useTranscript = true,
       critical = false,
       name,
@@ -240,6 +246,7 @@ export function makeVatLoader(stuff) {
       enablePipelining,
       sourcedConsole: makeSourcedConsole(vatID),
       virtualObjectCacheSize,
+      messageBudget,
       useTranscript,
       critical,
       name,
