@@ -10,6 +10,7 @@ import { definePoolKind } from './pool.js';
 const { details: X } = assert;
 
 const DISPLAY_INFO = harden({ decimalPlaces: 6 });
+const DECIMAL_PLACES = 6;
 
 /**
  * @param {ZCF} zcf
@@ -33,69 +34,76 @@ export const makeAddIssuer = (
    * @param {string} keyword
    */
   return async (secondaryIssuer, keyword) => {
-    return E.when(
-      Promise.all([
-        E(secondaryIssuer).getAssetKind(),
-        E(secondaryIssuer).getBrand(),
-      ]),
-      ([secondaryAssetKind, secondaryBrand]) => {
-        assert(
-          secondaryAssetKind === AssetKind.NAT,
-          X`${keyword} asset not fungible (must use NAT math)`,
-        );
+    const [secondaryAssetKind, secondaryBrand] = await Promise.all([
+      E(secondaryIssuer).getAssetKind(),
+      E(secondaryIssuer).getBrand(),
+    ]);
+    // AWAIT ///////////////
 
-        if (brandToLiquidityIssuer.has(secondaryBrand)) {
-          return brandToLiquidityIssuer.get(secondaryBrand);
-        }
-
-        assert(
-          !isInSecondaries(secondaryBrand),
-          X`issuer ${secondaryIssuer} already has a pool`,
-        );
-
-        if (brandToLiquidityMint.has(secondaryBrand)) {
-          const { issuer } = brandToLiquidityMint
-            .get(secondaryBrand)
-            .getIssuerRecord();
-          return issuer;
-        }
-
-        /** @type {import('@endo/promise-kit').PromiseKit<Issuer<'nat'>>} */
-        const promiseKit = makePromiseKit();
-        brandToLiquidityIssuer.init(secondaryBrand, promiseKit.promise);
-
-        const liquidityKeyword = `${keyword}Liquidity`;
-        zcf.assertUniqueKeyword(liquidityKeyword);
-
-        return E.when(
-          zcf.saveIssuer(secondaryIssuer, keyword),
-          ({ issuer }) => {
-            return E.when(
-              zcf.makeZCFMint(liquidityKeyword, AssetKind.NAT, DISPLAY_INFO),
-              mint => {
-                console.log(
-                  X`Saved issuer ${secondaryIssuer} to keyword ${keyword} and got back ${issuer}`,
-                );
-                // this ensures that getSecondaryIssuer(thisIssuer) will return even
-                // before the pool is created
-                brandToLiquidityMint.init(secondaryBrand, mint);
-                const { issuer: liquidityIssuer } = mint.getIssuerRecord();
-                // defer lookup until necessary. more aligned with governed
-                // param we expect this to be eventually.
-                const addIssuerToReserve = getAddIssuerToReserve();
-                // tell the reserve about this brand, which it will validate by
-                // calling back to AMM for the issuer
-                return E.when(addIssuerToReserve(secondaryBrand), () => {
-                  promiseKit.resolve(liquidityIssuer);
-                  brandToLiquidityIssuer.delete(secondaryBrand);
-                  return liquidityIssuer;
-                });
-              },
-            );
-          },
-        );
-      },
+    assert(
+      secondaryAssetKind === AssetKind.NAT,
+      X`${keyword} asset not fungible (must use NAT math)`,
     );
+
+    if (brandToLiquidityIssuer.has(secondaryBrand)) {
+      return brandToLiquidityIssuer.get(secondaryBrand);
+    }
+
+    assert(
+      !isInSecondaries(secondaryBrand),
+      X`issuer ${secondaryIssuer} already has a pool`,
+    );
+
+    if (brandToLiquidityMint.has(secondaryBrand)) {
+      const { issuer } = brandToLiquidityMint
+        .get(secondaryBrand)
+        .getIssuerRecord();
+      return issuer;
+    }
+
+    /** @template T @typedef {import('@endo/promise-kit').PromiseKit<T>} PromiseKit */
+    /** @type {PromiseKit<Issuer<'nat'>>} */
+    const promiseKit = makePromiseKit();
+
+    // If there's a race to add an issuer, one will succeed here and
+    // others will fail. The failures should get the promise.
+    try {
+      brandToLiquidityIssuer.init(secondaryBrand, promiseKit.promise);
+    } catch (e) {
+      return brandToLiquidityIssuer.get(secondaryBrand);
+    }
+
+    const liquidityKeyword = `${keyword}Liquidity`;
+    zcf.assertUniqueKeyword(liquidityKeyword);
+
+    const { issuer } = await zcf.saveIssuer(secondaryIssuer, keyword);
+    // AWAIT ///////////////
+
+    const mint = await zcf.makeZCFMint(
+      liquidityKeyword,
+      AssetKind.NAT,
+      harden({ decimalPlaces: DECIMAL_PLACES }),
+    );
+    // AWAIT ///////////////
+
+    console.log(
+      X`Saved issuer ${secondaryIssuer} to keyword ${keyword} and got back ${issuer}`,
+    );
+    // this ensures that getSecondaryIssuer(thisIssuer) will return even
+    // before the pool is created
+    brandToLiquidityMint.init(secondaryBrand, mint);
+    const { issuer: liquidityIssuer } = mint.getIssuerRecord();
+    // defer lookup until necessary. more aligned with governed
+    // param we expect this to be eventually.
+    const addIssuerToReserve = getAddIssuerToReserve();
+    // tell the reserve about this brand, which it will validate by
+    // calling back to AMM for the issuer
+    await addIssuerToReserve(secondaryBrand);
+    // AWAIT ///////////////
+
+    promiseKit.resolve(liquidityIssuer);
+    brandToLiquidityIssuer.delete(secondaryBrand);
+    return liquidityIssuer;
   };
 };
 

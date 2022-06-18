@@ -172,6 +172,27 @@ test('amm add issuers in parallel', async t => {
   t.is(issuer1, issuer4);
 });
 
+test('amm add issuer in parallel same keyword', async t => {
+  // Set up central token
+  const centralR = makeIssuerKit('central');
+  const moolaR = makeIssuerKit('moola');
+
+  const { amm } = await setupAmmServices(
+    t,
+    { committeeName: 'EnBancPanel', committeeSize: 3 },
+    centralR,
+  );
+
+  const [issuer1, issuer2, issuer3] = await Promise.all([
+    E(amm.ammPublicFacet).addIssuer(moolaR.issuer, 'Moola'),
+    E(amm.ammPublicFacet).addIssuer(moolaR.issuer, 'Moola'),
+    E(amm.ammPublicFacet).addIssuer(moolaR.issuer, 'Moola'),
+  ]);
+
+  t.is(issuer1, issuer2);
+  t.is(issuer1, issuer3);
+});
+
 test('amm add and remove liquidity', async t => {
   const centralLiquidityValue = 1_500_000_000n;
   const secondaryLiquidityValue = 300_000_000n;
