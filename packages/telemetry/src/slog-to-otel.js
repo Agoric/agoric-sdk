@@ -436,13 +436,13 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
           dr: [status, _1, meterResult],
           // ...attrs
         } = slogAttrs;
-        const deltaMeterResult = { ...meterResult };
-        if (meterResult.timestamps) {
+        const deltaMeterResult = meterResult ? { ...meterResult } : {};
+        if (deltaMeterResult.timestamps) {
           // We don't yet try to record the delta between the kernel
           // sending 'deliver' and the worker receiving it. We record
           // the absolute time of the worker-rx-deliver, and the
           // deltas between adjacent timestamps thereafter.
-          const ts = meterResult.timestamps;
+          const ts = deltaMeterResult.timestamps;
           const newts = ts.map((t, idx) => (idx === 0 ? t : t - ts[idx - 1]));
           deltaMeterResult.timestamps = newts;
         }
