@@ -1,0 +1,115 @@
+import { Nat } from '@agoric/nat';
+import { stringifyPurseValue } from '@agoric/ui-components';
+import { icons, defaultIcon } from '../util/Icons.js';
+import Petname from './Petname';
+import { formatDateNow } from '../util/Date';
+
+import './Offer.scss';
+
+const Proposal = ({ offer }) => {
+  const cmp = (a, b) => {
+    if (a < b) {
+      return -1;
+    }
+    if (a > b) {
+      return 1;
+    }
+    return 0;
+  };
+
+  const entryTypes = {
+    want: { header: 'Want', move: 'into' },
+    give: { header: 'Give', move: 'from' },
+  };
+
+  const {
+    proposalForDisplay: { give = {}, want = {}, arguments: args } = {},
+    invitationDetails: { fee, feePursePetname, expiry } = {},
+  } = offer;
+
+  const gives = Object.entries(give).sort(([kwa], [kwb]) => cmp(kwa, kwb));
+  const wants = Object.entries(want).sort(([kwa], [kwb]) => cmp(kwa, kwb));
+
+  const feeEntry = fee && (
+    <div className="OfferEntry">
+      <h6>Pay Fee</h6>
+      <div className="Token">
+        {feePursePetname && (
+          <img
+            alt="icon"
+            src={icons[fee.brand.petname] ?? defaultIcon}
+            height="32px"
+            width="32px"
+          />
+        )}
+        <div>
+          <div className="Value">
+            {stringifyPurseValue({
+              value: fee.value,
+              displayInfo: fee.displayInfo,
+            })}{' '}
+            <Petname name={fee.brand.petname} />
+          </div>
+          from <Petname name={feePursePetname} />
+        </div>
+      </div>
+    </div>
+  );
+
+  const OfferEntry = (type, [role, { amount, pursePetname }]) => {
+    const value =
+      amount.displayInfo.assetKind === 'nat' ? Nat(amount.value) : amount.value;
+    return (
+      <div className="OfferEntry" key={amount.brand.petname}>
+        <h6>
+          {type.header} {role}
+        </h6>
+        <div className="Token">
+          <img
+            alt="icon"
+            src={icons[amount.brand.petname] ?? defaultIcon}
+            height="32px"
+            width="32px"
+          />
+          <div>
+            <div className="Value">
+              {stringifyPurseValue({
+                value,
+                displayInfo: amount.displayInfo,
+              })}{' '}
+              <Petname name={amount.brand.petname} />
+            </div>
+            {type.move} <Petname name={pursePetname} />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const Give = entry => OfferEntry(entryTypes.give, entry);
+  const Want = entry => OfferEntry(entryTypes.want, entry);
+
+  return (
+    <>
+      {gives.map(Give)}
+      {wants.map(Want)}
+      {feeEntry}
+      {expiry && (
+        <div className="OfferEntry">
+          <h6>Expiry</h6>
+          <div className="Expiry text-gray">
+            {formatDateNow(parseFloat(expiry) * 1000)}
+          </div>
+        </div>
+      )}
+      {args !== undefined && (
+        <div className="OfferEntry">
+          <h6>Arguments</h6>
+          <pre>{JSON.stringify(args, null, 2)}</pre>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default Proposal;

@@ -6,6 +6,7 @@ import PurseAmount from './PurseAmount';
 import { withApplicationContext } from '../contexts/Application';
 import CardItem from './CardItem';
 import Card from './Card';
+import ErrorBoundary from './ErrorBoundary';
 
 import './Purses.scss';
 
@@ -25,12 +26,14 @@ export const PursesWithoutContext = ({ purses, pendingTransfers }) => {
     return (
       <CardItem key={purse.id}>
         <div className="Left">
-          <PurseAmount
-            brandPetname={purse.brandPetname}
-            pursePetname={purse.pursePetname}
-            value={purse.currentAmount.value}
-            displayInfo={purse.displayInfo}
-          />
+          <ErrorBoundary>
+            <PurseAmount
+              brandPetname={purse.brandPetname}
+              pursePetname={purse.pursePetname}
+              value={purse.currentAmount.value}
+              displayInfo={purse.displayInfo}
+            />
+          </ErrorBoundary>
         </div>
         <div className="Right">
           {pendingTransfers.has(purse.id) ? (
