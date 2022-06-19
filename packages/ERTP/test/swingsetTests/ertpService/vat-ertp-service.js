@@ -24,33 +24,28 @@ function makeErtpService(baggage, exitVatWithFailure) {
     });
   });
 
-  const ertpService = provideDurableSingleton(
-    baggage,
-    'ERTPServiceKindHandle',
-    'ERTPService',
-    {
-      makeIssuerKit: (
-        _context,
+  const ertpService = provideDurableSingleton(baggage, 'ERTPService', {
+    makeIssuerKit: (
+      _context,
+      allegedName,
+      assetKind = AssetKind.NAT,
+      displayInfo = harden({}),
+    ) => {
+      const issuerBaggage = makeScalarBigMapStore('IssuerBaggage', {
+        durable: true,
+      });
+      const issuerKit = makeDurableIssuerKit(
+        issuerBaggage,
         allegedName,
-        assetKind = AssetKind.NAT,
-        displayInfo = harden({}),
-      ) => {
-        const issuerBaggage = makeScalarBigMapStore('IssuerBaggage', {
-          durable: true,
-        });
-        const issuerKit = makeDurableIssuerKit(
-          issuerBaggage,
-          allegedName,
-          assetKind,
-          displayInfo,
-          exitVatWithFailure,
-        );
-        issuerBaggageSet.add(issuerBaggage);
+        assetKind,
+        displayInfo,
+        exitVatWithFailure,
+      );
+      issuerBaggageSet.add(issuerBaggage);
 
-        return issuerKit;
-      },
+      return issuerKit;
     },
-  );
+  });
 
   if (didStart) {
     console.log(`DID START`);

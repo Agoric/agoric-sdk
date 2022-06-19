@@ -46,8 +46,5 @@ test('ertp service upgrade', async t => {
 
   const [v2status] = await run('upgradeV2', []);
 
-  // this will fail until we get rid of all dependence on fake durable, but the
-  // fact that v1status was 'fulfilled' means that we successfully saved state
-  t.is(v2status, 'rejected');
-  // t.is(v2status, 'fulfilled');
+  t.is(v2status, 'fulfilled');
 });
