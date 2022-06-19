@@ -1,7 +1,7 @@
 import {
   defineDurableKindMulti,
   makeScalarBigSetStore,
-  makeKindHandle,
+  provideKindHandle,
   makeScalarBigWeakMapStore,
 } from '@agoric/vat-data';
 import { provide } from '@agoric/store';
@@ -13,7 +13,7 @@ const { details: X } = assert;
 //  `getBrand` must not be called before the issuerKit is created
 export const defineDurablePurse = (
   issuerBaggage,
-  allegedName,
+  name,
   assetKind,
   getBrand,
   purseMethods,
@@ -50,9 +50,7 @@ export const defineDurablePurse = (
   //   that created depositFacet as needed. But this approach ensures a constant
   //   identity for the facet and exercises the multi-faceted object style.
   const { depositInternal, withdrawInternal } = purseMethods;
-  const purseKitKindHandle = provide(issuerBaggage, 'purseKitKindHandle', () =>
-    makeKindHandle(`${allegedName} Purse`),
-  );
+  const purseKitKindHandle = provideKindHandle(issuerBaggage, `${name} Purse`);
   const makePurseKit = defineDurableKindMulti(
     purseKitKindHandle,
     () => {
