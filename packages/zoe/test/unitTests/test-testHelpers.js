@@ -26,7 +26,7 @@ test('assertAmountsEqual - Nat dup', t => {
 test('assertAmountsEqual - Nat manual', t => {
   const {
     moola,
-    moolaR: { brand: moolaBrand },
+    moolaKit: { brand: moolaBrand },
   } = setup();
 
   const fakeT = makeFakeT();

@@ -17,17 +17,17 @@ const automaticRefundRoot = `${dirname}/../../../src/contracts/automaticRefund.j
 
 test('zoe - simplest automaticRefund', async t => {
   // Setup zoe and mints
-  const { moolaR, moola, zoe, vatAdminState } = setup();
+  const { moolaKit, moola, zoe, vatAdminState } = setup();
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
   vatAdminState.installBundle('b1-automaticRefund', bundle);
   const installation = await E(zoe).installBundleID('b1-automaticRefund');
 
   // Setup Alice
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3n));
+  const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(3n));
 
   // 1: Alice creates an automatic refund instance
-  const issuerKeywordRecord = harden({ Contribution: moolaR.issuer });
+  const issuerKeywordRecord = harden({ Contribution: moolaKit.issuer });
   const { creatorInvitation } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
@@ -49,7 +49,7 @@ test('zoe - simplest automaticRefund', async t => {
 
   // Alice got back what she put in
   t.deepEqual(
-    await moolaR.issuer.getAmountOf(aliceMoolaPayout),
+    await moolaKit.issuer.getAmountOf(aliceMoolaPayout),
     aliceProposal.give.Contribution,
     `Alice's payout matches what she put in`,
   );
@@ -57,19 +57,19 @@ test('zoe - simplest automaticRefund', async t => {
 
 test('zoe - automaticRefund same issuer', async t => {
   // Setup zoe and mints
-  const { moolaR, moola, zoe, vatAdminState } = setup();
+  const { moolaKit, moola, zoe, vatAdminState } = setup();
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
   vatAdminState.installBundle('b1-automaticRefund', bundle);
   const installation = await E(zoe).installBundleID('b1-automaticRefund');
 
   // Setup Alice
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(9n));
+  const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(9n));
 
   // 1: Alice creates an automatic refund instance
   const issuerKeywordRecord = harden({
-    Contribution1: moolaR.issuer,
-    Contribution2: moolaR.issuer,
+    Contribution1: moolaKit.issuer,
+    Contribution2: moolaKit.issuer,
   });
   const { creatorInvitation } = await E(zoe).startInstance(
     installation,
@@ -92,7 +92,7 @@ test('zoe - automaticRefund same issuer', async t => {
 
   // Alice got back what she put in
   t.deepEqual(
-    await moolaR.issuer.getAmountOf(aliceMoolaPayout),
+    await moolaKit.issuer.getAmountOf(aliceMoolaPayout),
     aliceProposal.give.Contribution2,
   );
 });
@@ -100,18 +100,19 @@ test('zoe - automaticRefund same issuer', async t => {
 test('zoe with automaticRefund', async t => {
   t.plan(11);
   // Setup zoe and mints
-  const { moolaR, simoleanR, moola, simoleans, zoe, vatAdminState } = setup();
+  const { moolaKit, simoleanKit, moola, simoleans, zoe, vatAdminState } =
+    setup();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // Setup Alice
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3n));
-  const aliceMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const aliceSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
+  const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(3n));
+  const aliceMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const aliceSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
 
   // Setup Bob
-  const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
-  const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(17n));
+  const bobMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const bobSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
+  const bobSimoleanPayment = simoleanKit.mint.mintPayment(simoleans(17n));
 
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
@@ -120,8 +121,8 @@ test('zoe with automaticRefund', async t => {
   vatAdminState.installBundle('b1-automaticRefund', bundle);
   const installation = await E(zoe).installBundleID('b1-automaticRefund');
   const issuerKeywordRecord = harden({
-    Contribution1: moolaR.issuer,
-    Contribution2: simoleanR.issuer,
+    Contribution1: moolaKit.issuer,
+    Contribution2: simoleanKit.issuer,
   });
   const { creatorInvitation: aliceInvitation, publicFacet } = await E(
     zoe,
@@ -166,8 +167,8 @@ test('zoe with automaticRefund', async t => {
   // what order. Is it what he expects?
   const bobIssuers = await E(zoe).getIssuers(bobInvitationValue.instance);
   t.deepEqual(bobIssuers, {
-    Contribution1: moolaR.issuer,
-    Contribution2: simoleanR.issuer,
+    Contribution1: moolaKit.issuer,
+    Contribution2: simoleanKit.issuer,
   });
 
   // 6: Bob also wants to get an automaticRefund (why? we don't
@@ -203,13 +204,13 @@ test('zoe with automaticRefund', async t => {
 
   // Alice got back what she put in
   t.deepEqual(
-    await moolaR.issuer.getAmountOf(aliceMoolaPayout),
+    await moolaKit.issuer.getAmountOf(aliceMoolaPayout),
     aliceProposal.give.Contribution1,
   );
 
   // Alice didn't get any of what she wanted
   t.deepEqual(
-    await simoleanR.issuer.getAmountOf(aliceSimoleanPayout),
+    await simoleanKit.issuer.getAmountOf(aliceSimoleanPayout),
     simoleans(0n),
   );
 
@@ -233,12 +234,13 @@ test('zoe with automaticRefund', async t => {
 test('multiple instances of automaticRefund for the same Zoe', async t => {
   t.plan(6);
   // Setup zoe and mints
-  const { moolaR, simoleanR, moola, simoleans, zoe, vatAdminState } = setup();
+  const { moolaKit, simoleanKit, moola, simoleans, zoe, vatAdminState } =
+    setup();
 
   // Setup Alice
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(30n));
+  const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(30n));
   const moola10 = moola(10n);
-  const aliceMoolaPayments = await moolaR.issuer.splitMany(
+  const aliceMoolaPayments = await moolaKit.issuer.splitMany(
     aliceMoolaPayment,
     harden([moola10, moola10, moola10]),
   );
@@ -250,8 +252,8 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
   vatAdminState.installBundle('b1-automaticRefund', bundle);
   const installation = await E(zoe).installBundleID('b1-automaticRefund');
   const issuerKeywordRecord = harden({
-    ContributionA: moolaR.issuer,
-    ContributionB: simoleanR.issuer,
+    ContributionA: moolaKit.issuer,
+    ContributionB: simoleanKit.issuer,
   });
   const { creatorInvitation: aliceInvitation1, publicFacet: publicFacet1 } =
     await E(zoe).startInstance(installation, issuerKeywordRecord);
@@ -291,15 +293,15 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
 
   // Ensure that she got what she put in for each
   t.deepEqual(
-    await moolaR.issuer.getAmountOf(moolaPayout1),
+    await moolaKit.issuer.getAmountOf(moolaPayout1),
     aliceProposal.give.ContributionA,
   );
   t.deepEqual(
-    await moolaR.issuer.getAmountOf(moolaPayout2),
+    await moolaKit.issuer.getAmountOf(moolaPayout2),
     aliceProposal.give.ContributionA,
   );
   t.deepEqual(
-    await moolaR.issuer.getAmountOf(moolaPayout3),
+    await moolaKit.issuer.getAmountOf(moolaPayout3),
     aliceProposal.give.ContributionA,
   );
 
@@ -312,20 +314,21 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
 test('zoe - alice tries to complete after completion has already occurred', async t => {
   t.plan(5);
   // Setup zoe and mints
-  const { moolaR, simoleanR, moola, simoleans, zoe, vatAdminState } = setup();
+  const { moolaKit, simoleanKit, moola, simoleans, zoe, vatAdminState } =
+    setup();
 
   // Setup Alice
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3n));
-  const aliceMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const aliceSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
+  const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(3n));
+  const aliceMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const aliceSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
 
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
   vatAdminState.installBundle('b1-automaticRefund', bundle);
   const installation = await E(zoe).installBundleID('b1-automaticRefund');
   const issuerKeywordRecord = harden({
-    ContributionA: moolaR.issuer,
-    ContributionB: simoleanR.issuer,
+    ContributionA: moolaKit.issuer,
+    ContributionB: simoleanKit.issuer,
   });
   const { creatorInvitation } = await E(zoe).startInstance(
     installation,
@@ -355,13 +358,13 @@ test('zoe - alice tries to complete after completion has already occurred', asyn
 
   // Alice got back what she put in
   t.deepEqual(
-    await moolaR.issuer.getAmountOf(moolaPayout),
+    await moolaKit.issuer.getAmountOf(moolaPayout),
     aliceProposal.give.ContributionA,
   );
 
   // Alice didn't get any of what she wanted
   t.deepEqual(
-    await simoleanR.issuer.getAmountOf(simoleanPayout),
+    await simoleanKit.issuer.getAmountOf(simoleanPayout),
     simoleans(0n),
   );
 

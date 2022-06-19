@@ -247,20 +247,21 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
 test('zoe - secondPriceAuction - alice tries to exit', async t => {
   t.plan(12);
-  const { moolaR, simoleanR, moola, simoleans, zoe, vatAdminState } = setup();
+  const { moolaKit, simoleanKit, moola, simoleans, zoe, vatAdminState } =
+    setup();
 
   // Setup Alice
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(1n));
-  const aliceMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const aliceSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
+  const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(1n));
+  const aliceMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const aliceSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
 
   // Setup Bob
-  const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(11n));
-  const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
+  const bobSimoleanPayment = simoleanKit.mint.mintPayment(simoleans(11n));
+  const bobMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const bobSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
 
   // Setup Carol
-  const carolSimoleanPayment = simoleanR.mint.mintPayment(simoleans(8n));
+  const carolSimoleanPayment = simoleanKit.mint.mintPayment(simoleans(8n));
 
   // Alice creates a secondPriceAuction instance
 
@@ -270,8 +271,8 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
   vatAdminState.installBundle('b1-auction', bundle);
   const installation = await E(zoe).installBundleID('b1-auction');
   const issuerKeywordRecord = harden({
-    Asset: moolaR.issuer,
-    Ask: simoleanR.issuer,
+    Asset: moolaKit.issuer,
+    Ask: simoleanKit.issuer,
   });
   const timer = buildManualTimer(t.log);
   const terms = harden({ timeAuthority: timer, bidDuration: 1n });
@@ -358,14 +359,14 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
   // Alice (the creator of the auction) gets Carol's simoleans and
   // carol gets the assets.
   t.deepEqual(
-    await moolaR.issuer.getAmountOf(aliceMoolaPayout),
+    await moolaKit.issuer.getAmountOf(aliceMoolaPayout),
     moola(0n),
     `alice has no moola`,
   );
 
   // Alice got Carol's simoleans
   t.deepEqual(
-    await simoleanR.issuer.getAmountOf(aliceSimoleanPayout),
+    await simoleanKit.issuer.getAmountOf(aliceSimoleanPayout),
     simoleans(8n),
   );
 
@@ -374,9 +375,9 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
   await aliceSimoleanPurse.deposit(aliceSimoleanPayout);
 
   // Bob gets a refund
-  t.deepEqual(await moolaR.issuer.getAmountOf(bobMoolaPayout), moola(0n));
+  t.deepEqual(await moolaKit.issuer.getAmountOf(bobMoolaPayout), moola(0n));
   t.deepEqual(
-    await simoleanR.issuer.getAmountOf(bobSimoleanPayout),
+    await simoleanKit.issuer.getAmountOf(bobSimoleanPayout),
     bobProposal.give.Bid,
   );
 
@@ -386,9 +387,9 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
 
   // Carol gets the assets and all her simoleans are taken to pay
   // Alice
-  t.deepEqual(await moolaR.issuer.getAmountOf(carolMoolaPayout), moola(1n));
+  t.deepEqual(await moolaKit.issuer.getAmountOf(carolMoolaPayout), moola(1n));
   t.deepEqual(
-    await simoleanR.issuer.getAmountOf(carolSimoleanPayout),
+    await simoleanKit.issuer.getAmountOf(carolSimoleanPayout),
     simoleans(0n),
   );
 
@@ -401,17 +402,18 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
 
 test('zoe - secondPriceAuction - all bidders try to exit', async t => {
   t.plan(10);
-  const { moolaR, simoleanR, moola, simoleans, zoe, vatAdminState } = setup();
+  const { moolaKit, simoleanKit, moola, simoleans, zoe, vatAdminState } =
+    setup();
 
   // Setup Alice
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(1n));
-  const aliceMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const aliceSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
+  const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(1n));
+  const aliceMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const aliceSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
 
   // Setup Bob
-  const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(11n));
-  const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
+  const bobSimoleanPayment = simoleanKit.mint.mintPayment(simoleans(11n));
+  const bobMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const bobSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
 
   // Alice creates a secondPriceAuction instance
 
@@ -420,8 +422,8 @@ test('zoe - secondPriceAuction - all bidders try to exit', async t => {
   vatAdminState.installBundle('b1-auction', bundle);
   const installation = await E(zoe).installBundleID('b1-auction');
   const issuerKeywordRecord = harden({
-    Asset: moolaR.issuer,
-    Ask: simoleanR.issuer,
+    Asset: moolaKit.issuer,
+    Ask: simoleanKit.issuer,
   });
   const timer = buildManualTimer(t.log);
   const terms = harden({ timeAuthority: timer, bidDuration: 1n });
@@ -489,13 +491,13 @@ test('zoe - secondPriceAuction - all bidders try to exit', async t => {
   const aliceSimoleanPayout = await aliceSeat.getPayout('Ask');
 
   t.deepEqual(
-    await moolaR.issuer.getAmountOf(aliceMoolaPayout),
+    await moolaKit.issuer.getAmountOf(aliceMoolaPayout),
     moola(1n),
     `alice should keep moola`,
   );
 
   t.deepEqual(
-    await simoleanR.issuer.getAmountOf(aliceSimoleanPayout),
+    await simoleanKit.issuer.getAmountOf(aliceSimoleanPayout),
     simoleans(0n),
     `alic has no simolean`,
   );
@@ -505,9 +507,9 @@ test('zoe - secondPriceAuction - all bidders try to exit', async t => {
   await aliceSimoleanPurse.deposit(aliceSimoleanPayout);
 
   // Bob gets a refund
-  t.deepEqual(await moolaR.issuer.getAmountOf(bobMoolaPayout), moola(0n));
+  t.deepEqual(await moolaKit.issuer.getAmountOf(bobMoolaPayout), moola(0n));
   t.deepEqual(
-    await simoleanR.issuer.getAmountOf(bobSimoleanPayout),
+    await simoleanKit.issuer.getAmountOf(bobSimoleanPayout),
     bobProposal.give.Bid,
   );
 

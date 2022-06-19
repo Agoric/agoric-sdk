@@ -106,8 +106,8 @@ test('amm change param via Governance', async t => {
 test('price check after Governance param change', async t => {
   const centralR = makeIssuerKit('central');
   const centralTokens = value => AmountMath.make(centralR.brand, value);
-  const moolaR = makeIssuerKit('moola');
-  const moola = value => AmountMath.make(moolaR.brand, value);
+  const moolaKit = makeIssuerKit('moola');
+  const moola = value => AmountMath.make(moolaKit.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   const timer = buildManualTimer(t.log);
@@ -116,12 +116,12 @@ test('price check after Governance param change', async t => {
     await setupAmmServices(t, electorateTerms, centralR, timer);
 
   // Setup Alice
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000n));
+  const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(100000n));
   // Let's assume that central tokens are worth 2x as much as moola
   const aliceCentralPayment = centralR.mint.mintPayment(centralTokens(50000n));
 
   const moolaLiquidityIssuer = await E(amm.ammPublicFacet).addIssuer(
-    moolaR.issuer,
+    moolaKit.issuer,
     'Moola',
   );
   const aliceAddLiquidityInvitation = E(amm.ammPublicFacet).addPoolInvitation();

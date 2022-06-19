@@ -20,7 +20,7 @@ const automaticRefundRoot = `${dirname}/brokenAutoRefund.js`;
 test('zoe - brokenAutomaticRefund', async t => {
   t.plan(1);
   // Setup zoe and mints
-  const { moolaR } = setup();
+  const { moolaKit } = setup();
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
   const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   // Pack the contract.
@@ -28,7 +28,7 @@ test('zoe - brokenAutomaticRefund', async t => {
   vatAdminState.installBundle('b1-brokenAutomaticRefund', bundle);
   const installation = await E(zoe).installBundleID('b1-brokenAutomaticRefund');
 
-  const issuerKeywordRecord = harden({ Contribution: moolaR.issuer });
+  const issuerKeywordRecord = harden({ Contribution: moolaKit.issuer });
 
   // Alice tries to create an instance, but the contract is badly
   // written.
