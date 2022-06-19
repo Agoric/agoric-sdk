@@ -1,7 +1,6 @@
 // @ts-check
 
-import { provide } from '@agoric/store';
-import { defineDurableKind, makeKindHandle } from '@agoric/vat-data';
+import { defineDurableKind, provideKindHandle } from '@agoric/vat-data';
 
 /**
  * @template {AssetKind} K
@@ -16,8 +15,9 @@ export const defineDurablePaymentKind = (
   allegedName,
   getBrand,
 ) => {
-  const paymentKindHandle = provide(issuerBaggage, 'paymentKindHandle', () =>
-    makeKindHandle(`${allegedName} payment`),
+  const paymentKindHandle = provideKindHandle(
+    issuerBaggage,
+    `${allegedName} payment`,
   );
   const makePayment = defineDurableKind(paymentKindHandle, () => ({}), {
     getAllegedBrand: getBrand,

@@ -1,20 +1,50 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
-import { Far } from '@endo/marshal';
 import { E } from '@endo/eventual-send';
 import { makeWeakStore } from '@agoric/store';
+import {
+  defineDurableKind,
+  makeScalarBigMapStore,
+  provideKindHandle,
+} from '@agoric/vat-data';
 
 /** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */
 
 /**
  * @param {GetBundleCapForID} getBundleCapForID
+ * @param {MapStore<string, unknown>} [zoeBaggage]
  */
-export const makeInstallationStorage = getBundleCapForID => {
+export const makeInstallationStorage = (
+  getBundleCapForID,
+  zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
+) => {
   /** @type {WeakStore<Installation, { bundleCap: BundleCap, bundleID: BundleID }>} */
   const installationsBundleCap = makeWeakStore('installationsBundleCap');
   /** @type {WeakStore<Installation, SourceBundle>} */
   const installationsBundle = makeWeakStore('installationsBundle');
+
+  const bundleIDInstallationKindHandle = provideKindHandle(
+    zoeBaggage,
+    'BundleIDInstallation',
+  );
+
+  const bundleInstallationKindHandle = provideKindHandle(
+    zoeBaggage,
+    'BundleInstallation',
+  );
+
+  const makeBundleIDInstallation = defineDurableKind(
+    bundleIDInstallationKindHandle,
+    () => ({}),
+    { getBundle: _context => assert.fail('bundleID-based Installation') },
+  );
+
+  const makeBundleInstallation = defineDurableKind(
+    bundleInstallationKindHandle,
+    bundle => ({ bundle }),
+    { getBundle: ({ state: { bundle } }) => bundle },
+  );
 
   /**
    * Create an installation from a bundle ID or a full bundle. If we are
@@ -36,11 +66,7 @@ export const makeInstallationStorage = getBundleCapForID => {
 
     /** @type {Installation} */
     // @ts-expect-error cast
-    const installation = Far('Installation', {
-      getBundle: () => {
-        throw Error('bundleID-based Installation');
-      },
-    });
+    const installation = makeBundleIDInstallation();
     installationsBundleCap.init(installation, { bundleCap, bundleID });
     return installation;
   };
@@ -50,9 +76,7 @@ export const makeInstallationStorage = getBundleCapForID => {
     assert.typeof(bundle, 'object', 'a bundle must be provided');
     /** @type {Installation} */
     // @ts-expect-error cast
-    const installation = Far('Installation', {
-      getBundle: () => bundle,
-    });
+    const installation = makeBundleInstallation(bundle);
     installationsBundle.init(installation, bundle);
     return installation;
   };
@@ -62,7 +86,7 @@ export const makeInstallationStorage = getBundleCapForID => {
     // Bundle is a very open-ended type and we must decide here
     // whether to treat it as either a HashBundle or SourceBundle.
     // So, we cast it down and inspect it.
-    const bundle = /** @type {unknown} */ (allegedBundle);
+    const bundle = /** @type {unknown} */ (harden(allegedBundle));
     assert.typeof(bundle, 'object', 'a bundle must be provided');
     assert(bundle !== null, 'a bundle must be provided');
     const { moduleFormat } = bundle;
