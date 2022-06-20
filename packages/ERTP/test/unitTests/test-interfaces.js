@@ -12,9 +12,9 @@ test('interfaces - particular implementation', t => {
   t.is(getInterfaceOf(brand), 'Alleged: bucks brand');
   t.is(getInterfaceOf(mint), 'Alleged: bucks mint');
   const purse = issuer.makeEmptyPurse();
-  t.is(getInterfaceOf(purse), 'Alleged: bucks Purse purse');
+  t.is(getInterfaceOf(purse), 'Alleged: bucks purse');
   const depositFacet = purse.getDepositFacet();
-  t.is(getInterfaceOf(depositFacet), 'Alleged: bucks Purse depositFacet');
+  t.is(getInterfaceOf(depositFacet), 'Alleged: bucks depositFacet');
   const payment = mint.mintPayment(AmountMath.make(brand, 2n));
   t.is(getInterfaceOf(payment), 'Alleged: bucks payment');
 });

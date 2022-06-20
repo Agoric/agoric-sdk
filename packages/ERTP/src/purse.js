@@ -50,7 +50,7 @@ export const defineDurablePurse = (
   //   that created depositFacet as needed. But this approach ensures a constant
   //   identity for the facet and exercises the multi-faceted object style.
   const { depositInternal, withdrawInternal } = purseMethods;
-  const purseKitKindHandle = provideKindHandle(issuerBaggage, `${name} Purse`);
+  const purseKitKindHandle = provideKindHandle(issuerBaggage, name);
   const makePurseKit = defineDurableKindMulti(
     purseKitKindHandle,
     () => {
