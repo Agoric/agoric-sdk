@@ -171,7 +171,7 @@ export const makeBoard = async ({
     board: { resolve: resolveBoard },
   },
 }) => {
-  const board = E(E(loadVat)('board')).getBoard();
+  const board = await E(E(loadVat)('board')).getBoard();
   resolveBoard(board);
   return E(client).assignBundle([_addr => ({ board })]);
 };
@@ -329,7 +329,7 @@ export const addBankAssets = async ({
   const bldKit = { mint: bldMint, issuer: bldIssuer, brand: bldBrand };
   bldIssuerKit.resolve(bldKit);
 
-  const bankMgr = E(E(loadVat)('bank')).makeBankManager(bridgeManager);
+  const bankMgr = await E(E(loadVat)('bank')).makeBankManager(bridgeManager);
   bankManager.resolve(bankMgr);
 
   // Sanity check: the bank manager should have a reserve module account.
