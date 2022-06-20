@@ -6,29 +6,62 @@ import { formatDateNow } from '../util/Date';
 
 import './Offer.scss';
 
+const OfferEntry = (type, [role, { amount, pursePetname }]) => {
+  const value =
+    amount.displayInfo.assetKind === 'nat' ? Nat(amount.value) : amount.value;
+  return (
+    <div className="OfferEntry" key={amount.brand.petname}>
+      <h6>
+        {type.header} {role}
+      </h6>
+      <div className="Token">
+        <img
+          alt="icon"
+          src={icons[amount.brand.petname] ?? defaultIcon}
+          height="32px"
+          width="32px"
+        />
+        <div>
+          <div className="Value">
+            {stringifyPurseValue({
+              value,
+              displayInfo: amount.displayInfo,
+            })}{' '}
+            <Petname name={amount.brand.petname} />
+          </div>
+          {type.move} <Petname name={pursePetname} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const entryTypes = {
+  want: { header: 'Want', move: 'into' },
+  give: { header: 'Give', move: 'from' },
+};
+
+const Give = entry => OfferEntry(entryTypes.give, entry);
+const Want = entry => OfferEntry(entryTypes.want, entry);
+
+const cmp = (a, b) => {
+  if (a < b) {
+    return -1;
+  }
+  if (a > b) {
+    return 1;
+  }
+  return 0;
+};
+
+const sortedEntries = entries =>
+  Object.entries(entries).sort(([kwa], [kwb]) => cmp(kwa, kwb));
+
 const Proposal = ({ offer }) => {
-  const cmp = (a, b) => {
-    if (a < b) {
-      return -1;
-    }
-    if (a > b) {
-      return 1;
-    }
-    return 0;
-  };
-
-  const entryTypes = {
-    want: { header: 'Want', move: 'into' },
-    give: { header: 'Give', move: 'from' },
-  };
-
   const {
     proposalForDisplay: { give = {}, want = {}, arguments: args } = {},
     invitationDetails: { fee, feePursePetname, expiry } = {},
   } = offer;
-
-  const gives = Object.entries(give).sort(([kwa], [kwb]) => cmp(kwa, kwb));
-  const wants = Object.entries(want).sort(([kwa], [kwb]) => cmp(kwa, kwb));
 
   const feeEntry = fee && (
     <div className="OfferEntry">
@@ -56,43 +89,13 @@ const Proposal = ({ offer }) => {
     </div>
   );
 
-  const OfferEntry = (type, [role, { amount, pursePetname }]) => {
-    const value =
-      amount.displayInfo.assetKind === 'nat' ? Nat(amount.value) : amount.value;
-    return (
-      <div className="OfferEntry" key={amount.brand.petname}>
-        <h6>
-          {type.header} {role}
-        </h6>
-        <div className="Token">
-          <img
-            alt="icon"
-            src={icons[amount.brand.petname] ?? defaultIcon}
-            height="32px"
-            width="32px"
-          />
-          <div>
-            <div className="Value">
-              {stringifyPurseValue({
-                value,
-                displayInfo: amount.displayInfo,
-              })}{' '}
-              <Petname name={amount.brand.petname} />
-            </div>
-            {type.move} <Petname name={pursePetname} />
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const Give = entry => OfferEntry(entryTypes.give, entry);
-  const Want = entry => OfferEntry(entryTypes.want, entry);
+  const Gives = sortedEntries(give).map(Give);
+  const Wants = sortedEntries(want).map(Want);
 
   return (
     <>
-      {gives.map(Give)}
-      {wants.map(Want)}
+      {Gives}
+      {Wants}
       {feeEntry}
       {expiry && (
         <div className="OfferEntry">
