@@ -9,6 +9,7 @@ import {
   makeScalarBigWeakMapStore,
   dropContext,
   provideDurableSingletonKit,
+  provideDurableWeakMapStore,
 } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { defineDurablePaymentKind } from './payment.js';
@@ -111,8 +112,9 @@ export const makeDurablePaymentLedger = (
   };
 
   /** @type {WeakMapStore<Payment, Amount>} */
-  const paymentLedger = provide(issuerBaggage, 'paymentLedger', () =>
-    makeScalarBigWeakMapStore('payment', { durable: true }),
+  const paymentLedger = provideDurableWeakMapStore(
+    issuerBaggage,
+    'paymentLedger',
   );
 
   /**
@@ -135,10 +137,9 @@ export const makeDurablePaymentLedger = (
    *
    * @type {WeakMapStore<Payment, SetStore<Payment>>}
    */
-  const paymentRecoverySets = provide(
+  const paymentRecoverySets = provideDurableWeakMapStore(
     issuerBaggage,
     'paymentRecoverySets',
-    () => makeScalarBigWeakMapStore('payment-recovery', { durable: true }),
   );
 
   /**

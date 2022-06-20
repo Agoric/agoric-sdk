@@ -89,7 +89,19 @@ export const partialAssign = (target, source) => {
 // @ts-expect-error TODO statically recognize harden
 harden(partialAssign);
 
-export const provideBaggageSubtree = (baggage, name) =>
+export const provideDurableMapStore = (baggage, name) =>
   provide(baggage, name, () => makeScalarBigMapStore(name, { durable: true }));
 // @ts-expect-error TODO statically recognize harden
-harden(provideBaggageSubtree);
+harden(provideDurableMapStore);
+
+export const provideDurableWeakMapStore = (baggage, name) =>
+  provide(baggage, name, () =>
+    makeScalarBigWeakMapStore(name, { durable: true }),
+  );
+// @ts-expect-error TODO statically recognize harden
+harden(provideDurableWeakMapStore);
+
+export const provideDurableSetStore = (baggage, name) =>
+  provide(baggage, name, () => makeScalarBigSetStore(name, { durable: true }));
+// @ts-expect-error TODO statically recognize harden
+harden(provideDurableSetStore);
