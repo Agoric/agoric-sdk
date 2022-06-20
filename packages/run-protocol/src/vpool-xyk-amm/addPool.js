@@ -64,46 +64,40 @@ export const makeAddIssuer = (
     /** @template T @typedef {import('@endo/promise-kit').PromiseKit<T>} PromiseKit */
     /** @type {PromiseKit<Issuer<'nat'>>} */
     const promiseKit = makePromiseKit();
-
-    // If there's a race to add an issuer, one will succeed here and
-    // others will fail. The failures should get the promise.
-    try {
-      brandToLiquidityIssuer.init(secondaryBrand, promiseKit.promise);
-    } catch (e) {
-      return brandToLiquidityIssuer.get(secondaryBrand);
-    }
+    brandToLiquidityIssuer.init(secondaryBrand, promiseKit.promise);
 
     const liquidityKeyword = `${keyword}Liquidity`;
     zcf.assertUniqueKeyword(liquidityKeyword);
 
-    const { issuer } = await zcf.saveIssuer(secondaryIssuer, keyword);
-    // AWAIT ///////////////
-
-    const mint = await zcf.makeZCFMint(
-      liquidityKeyword,
-      AssetKind.NAT,
-      harden({ decimalPlaces: DECIMAL_PLACES }),
-    );
-    // AWAIT ///////////////
-
-    console.log(
-      X`Saved issuer ${secondaryIssuer} to keyword ${keyword} and got back ${issuer}`,
-    );
-    // this ensures that getSecondaryIssuer(thisIssuer) will return even
-    // before the pool is created
-    brandToLiquidityMint.init(secondaryBrand, mint);
-    const { issuer: liquidityIssuer } = mint.getIssuerRecord();
-    // defer lookup until necessary. more aligned with governed
-    // param we expect this to be eventually.
-    const addIssuerToReserve = getAddIssuerToReserve();
-    // tell the reserve about this brand, which it will validate by
-    // calling back to AMM for the issuer
-    await addIssuerToReserve(secondaryBrand);
-    // AWAIT ///////////////
-
-    promiseKit.resolve(liquidityIssuer);
-    brandToLiquidityIssuer.delete(secondaryBrand);
-    return liquidityIssuer;
+    const decimals = harden({ decimalPlaces: DECIMAL_PLACES });
+    return Promise.all([
+      zcf.saveIssuer(secondaryIssuer, keyword),
+      zcf.makeZCFMint(liquidityKeyword, AssetKind.NAT, decimals),
+    ])
+      .then(([issuer, mint]) => {
+        console.log(
+          X`Saved issuer ${secondaryIssuer} to keyword ${keyword} and got back ${issuer}`,
+        );
+        // this ensures that getSecondaryIssuer(thisIssuer) will return even
+        // before the pool is created
+        brandToLiquidityMint.init(secondaryBrand, mint);
+        const { issuer: liquidityIssuer } = mint.getIssuerRecord();
+        promiseKit.resolve(liquidityIssuer);
+        // defer lookup until necessary. more aligned with governed
+        // param we expect this to be eventually.
+        const addIssuerToReserve = getAddIssuerToReserve();
+        // tell the reserve about this brand, which it will validate by
+        // calling back to AMM for the issuer
+        return addIssuerToReserve(secondaryBrand).then(() => liquidityIssuer);
+      })
+      .catch(e => {
+        console.log(
+          X`Failure Saving issuer ${secondaryIssuer}. Not added to Reserve`,
+        );
+        promiseKit.reject(e);
+        brandToLiquidityIssuer.delete(secondaryBrand);
+        throw e;
+      });
   };
 };
 
