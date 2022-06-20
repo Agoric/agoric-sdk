@@ -15,6 +15,7 @@ import { bridgeCoreEval } from '../src/core/chain-behaviors.js';
 import { makePromiseSpace } from '../src/core/utils.js';
 import { buildRootObject as bankRoot } from '../src/vat-bank.js';
 import { buildRootObject as boardRoot } from '../src/vat-board.js';
+import { buildRootObject as ibcRoot } from '../src/vat-ibc.js';
 import { buildRootObject as mintsRoot } from '../src/vat-mints.js';
 import { buildRootObject as networkRoot } from '../src/vat-network.js';
 import { buildRootObject as priceAuthorityRoot } from '../src/vat-priceAuthority.js';
@@ -26,6 +27,7 @@ import { devices } from './devices.js';
 const vatRoots = {
   bank: bankRoot,
   board: boardRoot,
+  ibc: ibcRoot,
   mints: mintsRoot,
   network: networkRoot,
   priceAuthority: priceAuthorityRoot,
