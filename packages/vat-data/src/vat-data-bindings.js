@@ -7,6 +7,7 @@ import {
   makeScalarWeakMapStore,
   makeScalarSetStore,
   makeScalarWeakSetStore,
+  provide,
 } from '@agoric/store';
 
 export {
@@ -88,12 +89,7 @@ export const partialAssign = (target, source) => {
 // @ts-expect-error TODO statically recognize harden
 harden(partialAssign);
 
-export const provideBaggageSubtree = (baggage, name) => {
-  if (!baggage.has(name)) {
-    // TODO: maybe string keys
-    baggage.init(name, makeScalarBigMapStore(name, { durable: true }));
-  }
-  return baggage.get(name);
-};
+export const provideBaggageSubtree = (baggage, name) =>
+  provide(baggage, name, () => makeScalarBigMapStore(name, { durable: true }));
 // @ts-expect-error TODO statically recognize harden
 harden(provideBaggageSubtree);
