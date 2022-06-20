@@ -57,7 +57,7 @@ function makeErtpService(baggage, exitVatWithFailure) {
   return ertpService;
 }
 
-export const buildRootObject = async (vatPowers, vatParams, baggage) => {
+export const buildRootObject = async (vatPowers, _vatParams, baggage) => {
   const ertpService = makeErtpService(baggage, vatPowers.exitVatWithFailure);
   return Far('root', {
     getErtpService: () => ertpService,
