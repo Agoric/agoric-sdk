@@ -1,15 +1,14 @@
 /* eslint-disable import/no-extraneous-dependencies */
-import { Nat } from '@agoric/nat';
-import { stringifyPurseValue } from '@agoric/ui-components';
 import Chip from '@mui/material/Chip';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import { E } from '@endo/eventual-send';
 import Request from './Request';
 import Petname from './Petname';
-import { icons, defaultIcon } from '../util/Icons.js';
 import { formatDateNow } from '../util/Date';
 import { withApplicationContext } from '../contexts/Application';
+import ErrorBoundary from './ErrorBoundary';
+import Proposal from './Proposal';
 
 import './Offer.scss';
 
@@ -33,21 +32,6 @@ const statusColors = {
   cancel: 'default',
 };
 
-const cmp = (a, b) => {
-  if (a < b) {
-    return -1;
-  }
-  if (a > b) {
-    return 1;
-  }
-  return 0;
-};
-
-const entryTypes = {
-  want: { header: 'Want', move: 'into' },
-  give: { header: 'Give', move: 'from' },
-};
-
 const OfferWithoutContext = ({
   offer,
   pendingOffers,
@@ -60,8 +44,6 @@ const OfferWithoutContext = ({
     instancePetname,
     instanceHandleBoardId,
     requestContext: { date, dappOrigin, origin = 'unknown origin' } = {},
-    proposalForDisplay: { give = {}, want = {}, arguments: args } = {},
-    invitationDetails: { fee, feePursePetname, expiry } = {},
     id,
   } = offer;
   let status = offer.status || 'proposed';
@@ -98,68 +80,6 @@ const OfferWithoutContext = ({
     setDeclinedOffers({ offerId: id, isDeclined: false });
     setClosedOffers({ offerId: id, isClosed: true });
   };
-
-  const gives = Object.entries(give).sort(([kwa], [kwb]) => cmp(kwa, kwb));
-  const wants = Object.entries(want).sort(([kwa], [kwb]) => cmp(kwa, kwb));
-
-  const OfferEntry = (type, [role, { amount, pursePetname }]) => {
-    const value =
-      amount.displayInfo.assetKind === 'nat' ? Nat(amount.value) : amount.value;
-    return (
-      <div className="OfferEntry" key={amount.brand.petname}>
-        <h6>
-          {type.header} {role}
-        </h6>
-        <div className="Token">
-          <img
-            alt="icon"
-            src={icons[amount.brand.petname] ?? defaultIcon}
-            height="32px"
-            width="32px"
-          />
-          <div>
-            <div className="Value">
-              {stringifyPurseValue({
-                value,
-                displayInfo: amount.displayInfo,
-              })}{' '}
-              <Petname name={amount.brand.petname} />
-            </div>
-            {type.move} <Petname name={pursePetname} />
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const feeEntry = fee && (
-    <div className="OfferEntry">
-      <h6>Pay Fee</h6>
-      <div className="Token">
-        {feePursePetname && (
-          <img
-            alt="icon"
-            src={icons[fee.brand.petname] ?? defaultIcon}
-            height="32px"
-            width="32px"
-          />
-        )}
-        <div>
-          <div className="Value">
-            {stringifyPurseValue({
-              value: fee.value,
-              displayInfo: fee.displayInfo,
-            })}{' '}
-            <Petname name={fee.brand.petname} />
-          </div>
-          from <Petname name={feePursePetname} />
-        </div>
-      </div>
-    </div>
-  );
-
-  const Give = entry => OfferEntry(entryTypes.give, entry);
-  const Want = entry => OfferEntry(entryTypes.want, entry);
 
   const controls = (
     <div className="Controls">
@@ -215,25 +135,9 @@ const OfferWithoutContext = ({
         <i> via </i>
         <span className="Blue">{dappOrigin || origin}</span>
       </div>
-      <div>
-        {gives.map(Give)}
-        {wants.map(Want)}
-        {feeEntry}
-        {expiry && (
-          <div className="OfferEntry">
-            <h6>Expiry</h6>
-            <div className="Expiry text-gray">
-              {formatDateNow(parseFloat(expiry) * 1000)}
-            </div>
-          </div>
-        )}
-        {args !== undefined && (
-          <div className="OfferEntry">
-            <h6>Arguments</h6>
-            <pre>{JSON.stringify(args, null, 2)}</pre>
-          </div>
-        )}
-      </div>
+      <ErrorBoundary>
+        <Proposal offer={offer} />
+      </ErrorBoundary>
       {controls}
     </Request>
   );
