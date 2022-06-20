@@ -4,7 +4,6 @@ import { html, css, LitElement } from 'lit';
 
 import { assert, details as X } from '@agoric/assert';
 import { makeCache } from '@agoric/cache';
-import { makeLeader } from '@agoric/casting/src/leader-netconfig.js';
 import { makeCapTP as defaultMakeCapTP } from '@endo/captp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -72,13 +71,6 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
 
       this.service.send({ type: 'reset' });
       this.isResetting = false;
-    }
-
-    get makeDefaultLeader() {
-      if (!this._makeDefaultLeader) {
-        this._makeDefaultLeader = leaderOptions => makeLeader(leaderOptions);
-      }
-      return this._makeDefaultLeader;
     }
 
     get cache() {
@@ -160,7 +152,6 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
             state: this.machine.state.name,
             walletConnection: this.walletConnection,
             cache: this.cache,
-            makeDefaultLeader: this.makeDefaultLeader,
           },
         });
         this.dispatchEvent(ev);
