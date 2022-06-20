@@ -31,12 +31,12 @@ const makeFakeStorage = (path, publication) => {
 test('stored subscription', async t => {
   t.plan((jsonPairs.length + 2) * 4 + 1);
 
-  /** @type {any} */
   const initialValue = 'first value';
   const { publication: pubStorage, subscription: subStorage } =
     makeSubscriptionKit();
   const storage = makeFakeStorage('publish.foo.bar', pubStorage);
-  const { subscription, publication } = makeSubscriptionKit(initialValue);
+  const { subscription, publication } = makeSubscriptionKit();
+  publication.updateState(initialValue);
   const storesub = makeStoredSubscription(subscription, storage);
 
   t.deepEqual(await E(storesub).getStoreKey(), {

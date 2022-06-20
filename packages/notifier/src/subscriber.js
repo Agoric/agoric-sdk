@@ -60,10 +60,9 @@ const makeSubscriptionIterator = tailP => {
  * distributed pub/sub.
  *
  * @template T
- * @param {T[]} optionalInitialState
  * @returns {SubscriptionRecord<T>}
  */
-const makeSubscriptionKit = (...optionalInitialState) => {
+const makeSubscriptionKit = () => {
   const { publisher, subscriber } = makeEmptyPublishKit();
 
   // The publish kit subscriber is prefix-lossy, so making *this* subscriber completely
@@ -79,9 +78,6 @@ const makeSubscriptionKit = (...optionalInitialState) => {
     fail: publisher.fail,
   });
 
-  if (optionalInitialState.length > 0) {
-    publication.updateState(optionalInitialState[0]);
-  }
   return harden({ publication, subscription });
 };
 harden(makeSubscriptionKit);
