@@ -20,7 +20,6 @@ test('ertp service upgrade', async t => {
     bundles: {
       ertpService: { sourceSpec: bfile('vat-ertp-service.js') },
     },
-    enableFakeDurable: true,
   };
 
   const c = await buildVatController(config);
