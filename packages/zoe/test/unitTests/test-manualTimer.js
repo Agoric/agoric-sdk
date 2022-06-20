@@ -11,10 +11,10 @@ test('manualTimer makeNotifier', async t => {
   const notifier = await E(manualTimer).makeNotifier(1n, 1n);
   await manualTimer.tick();
   const update1 = await E(notifier).getUpdateSince();
-  t.is(update1.updateCount, 2);
   await manualTimer.tick();
   const update2 = await E(notifier).getUpdateSince(update1.updateCount);
-  t.is(update2.updateCount, 3);
+  // @ts-expect-error We know updateCount is not undefined
+  t.is(BigInt(update2.updateCount), BigInt(update1.updateCount) + 1n);
   t.truthy(update2.value > update1.value);
 });
 

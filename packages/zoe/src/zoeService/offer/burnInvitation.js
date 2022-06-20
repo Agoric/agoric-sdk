@@ -31,10 +31,10 @@ export const burnInvitation = (invitationIssuer, invitation) => {
     );
     const [{ instance: instanceHandle, handle: invitationHandle }] =
       invitationValue;
-    return {
+    return harden({
       instanceHandle,
       invitationHandle,
-    };
+    });
   };
 
   return E.when(

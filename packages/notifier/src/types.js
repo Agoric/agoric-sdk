@@ -7,6 +7,13 @@
 
 /**
  * @template T
+ * @typedef {import('@endo/promise-kit').PromiseKit<T>} PromiseKit
+ */
+
+/**
+ * Deprecated. Use PromiseKit instead.
+ *
+ * @template T
  * @typedef {import('@endo/promise-kit').PromiseRecord<T>} PromiseRecord
  */
 
@@ -36,7 +43,62 @@
 // /////////////////////////////////////////////////////////////////////////////
 
 /**
- * @typedef {number | undefined} UpdateCount a value used to mark the position
+ * @template T
+ * @typedef {object} PublicationRecord
+ * @property {IteratorResult<T>} head
+ * @property {bigint} publishCount
+ * @property {PublicationList<T>} tail
+ */
+
+/**
+ * @template T
+ * @typedef {ERef<PublicationRecord<T>>} PublicationList
+ * Will be shared between machines, so it must be safe to expose. But other
+ * software should consider it opaque, not depending on its internal structure.
+ */
+
+/**
+ * @template T
+ * @typedef {object} Subscriber
+ * @property {(publishCount?: bigint) => PublicationList<T>} subscribeAfter
+ * Internally used to get the "current" SharableSubscriptionInternals
+ * in order to make a subscription iterator that starts there.
+ * The answer is "current" in that it was accurate at some moment between
+ * when you asked and when you got the answer.
+ */
+
+/**
+ * @template T
+ * @typedef {object} Publisher
+ * A valid sequence of calls to the methods of an `IterationObserver`
+ * represents an iteration. A valid sequence consists of any number of calls
+ * to `publish` with the successive non-final values, followed by a
+ * final call to either `finish` with a successful `completion` value
+ * or `fail` with the alleged `reason` for failure. After at most one
+ * terminating calls, no further calls to these methods are valid and must be
+ * rejected.
+ * @property {(nonFinalValue: T) => void} publish
+ * @property {(completion: T) => void} finish
+ * @property {(reason: any) => void} fail
+ */
+
+/**
+ * @template T
+ * @typedef {Partial<Publisher<T>>} PublishObserver
+ */
+
+/**
+ * @template T
+ * @typedef {object} PublishKit<T>
+ * @property {Publisher<T>} publisher
+ * @property {Subscriber<T>} subscriber
+ */
+
+// /////////////////////////////////////////////////////////////////////////////
+
+// TODO: Narrow to exclude number.
+/**
+ * @typedef {number | bigint | undefined} UpdateCount a value used to mark the position
  * in the update stream. For the last state, the updateCount is undefined.
  */
 
@@ -115,15 +177,6 @@
 
 /**
  * @template T
- * @typedef {object} SubscriptionInternals
- * Will be shared between machines, so it must be safe to expose. But other
- * software should avoid depending on its internal structure.
- * @property {ERef<IteratorResult<T, T>>} head internal only
- * @property {Promise<SubscriptionInternals<T>>} tail internal onli
- */
-
-/**
- * @template T
  * @typedef {BaseSubscription<T> &
  *   ConsistentAsyncIterable<T> &
  *   SharableSubscription<T>} Subscription<T>
@@ -133,7 +186,7 @@
 /**
  * @template T
  * @typedef {object} SharableSubscription
- * @property {() => ERef<SubscriptionInternals<T>>} getSharableSubscriptionInternals
+ * @property {() => ERef<PublicationRecord<T>>} getSharableSubscriptionInternals
  * Used to replicate the multicast values at other sites. To manually create a
  * local representative of a Subscription, do
  * ```js

@@ -14,7 +14,7 @@ export const makeNotifierIterable = notifier =>
  * TODO: Remove this function when we have `makePublisherKit`.
  *
  * @template T
- * @param {ERef<SubscriptionInternals<T>>} tailP
+ * @param {ERef<PublicationRecord<T>>} tailP
  * @returns {AsyncIterator<T>}
  */
 const makeSubscriptionIterator = tailP => {

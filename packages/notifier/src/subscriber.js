@@ -2,15 +2,15 @@
 // @ts-check
 /// <reference types="ses"/>
 
-import { HandledPromise, E } from '@endo/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@endo/promise-kit';
+import { makeEmptyPublishKit } from './publish-kit.js';
 
 import './types.js';
 
 /**
  * @template T
- * @param {ERef<SubscriptionInternals<T>>} sharableInternalsP
+ * @param {ERef<PublicationRecord<T>>} sharableInternalsP
  * @returns {Subscription<T>}
  */
 const makeSubscription = sharableInternalsP => {
@@ -24,7 +24,7 @@ const makeSubscription = sharableInternalsP => {
      * `makeSubscription` to it at the new site to get an equivalent local
      * Subscription at that site.
      *
-     * @returns {ERef<SubscriptionInternals<T>>}
+     * @returns {ERef<PublicationRecord<T>>}
      */
     getSharableSubscriptionInternals: () => sharableInternalsP,
 
@@ -37,7 +37,7 @@ export { makeSubscription };
 
 /**
  * @template T
- * @param {ERef<SubscriptionInternals<T>>} tailP
+ * @param {ERef<PublicationRecord<T>>} tailP
  * @returns {SubscriptionIterator<T>}
  */
 const makeSubscriptionIterator = tailP => {
@@ -60,50 +60,24 @@ const makeSubscriptionIterator = tailP => {
  * distributed pub/sub.
  *
  * @template T
- * @param {T[]} optionalInitialState
  * @returns {SubscriptionRecord<T>}
  */
-const makeSubscriptionKit = (...optionalInitialState) => {
-  /** @type {((internals: ERef<SubscriptionInternals<T>>) => void) | undefined} */
-  let rear;
-  const hp = new HandledPromise(r => (rear = r));
-  const subscription = makeSubscription(hp);
+const makeSubscriptionKit = () => {
+  const { publisher, subscriber } = makeEmptyPublishKit();
+
+  // The publish kit subscriber is prefix-lossy, so making *this* subscriber completely
+  // lossless requires eager consumption of the former.
+  // Such losslessness inhibits GC, which is why we're moving away from it.
+  const pubList = subscriber.subscribeAfter();
+  const subscription = makeSubscription(pubList);
 
   /** @type {IterationObserver<T>} */
   const publication = Far('publication', {
-    updateState: value => {
-      if (rear === undefined) {
-        throw new Error('Cannot update state after termination.');
-      }
-      const { promise: nextTailE, resolve: nextRear } = makePromiseKit();
-      rear(harden({ head: { value, done: false }, tail: nextTailE }));
-      rear = nextRear;
-    },
-    finish: finalValue => {
-      if (rear === undefined) {
-        throw new Error('Cannot finish after termination.');
-      }
-      const readComplaint = HandledPromise.reject(
-        new Error('cannot read past end of iteration'),
-      );
-      readComplaint.catch(_ => {}); // suppress unhandled rejection error
-      rear({ head: { value: finalValue, done: true }, tail: readComplaint });
-      rear = undefined;
-    },
-    fail: reason => {
-      if (rear === undefined) {
-        throw new Error('Cannot fail after termination.');
-      }
-      /** @type {Promise<SubscriptionInternals<T>>} */
-      const rejection = HandledPromise.reject(reason);
-      rear(rejection);
-      rear = undefined;
-    },
+    updateState: publisher.publish,
+    finish: publisher.finish,
+    fail: publisher.fail,
   });
 
-  if (optionalInitialState.length > 0) {
-    publication.updateState(optionalInitialState[0]);
-  }
   return harden({ publication, subscription });
 };
 harden(makeSubscriptionKit);

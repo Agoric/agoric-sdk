@@ -168,7 +168,8 @@ const start = async (zcf, privateArgs) => {
   const {
     publication: metricsPublication,
     subscription: rawMetricsSubscription,
-  } = makeSubscriptionKit(harden({ XYK: [] }));
+  } = makeSubscriptionKit();
+  metricsPublication.updateState(harden({ XYK: [] }));
   const { storageNode, marshaller } = privateArgs;
   const metricsStorageNode =
     storageNode && E(storageNode).getChildNode('metrics'); // TODO: magic string

@@ -2,6 +2,7 @@
 // @jessie-check
 
 import { assert } from '@agoric/assert';
+import { assertPattern } from '@agoric/store';
 
 import { AssetKind, assertAssetKind } from './amountMath.js';
 import { coerceDisplayInfo } from './displayInfo.js';
@@ -33,6 +34,7 @@ import './types.js';
  * larger unit of computation, like the enclosing vat, can be shutdown
  * before anything else is corrupted by that corrupted state.
  * See https://github.com/Agoric/agoric-sdk/issues/3434
+ * @param {Partial<{elementSchema: Pattern}>} [options]
  * @returns {{
  *  mint: Mint<K>,
  *  issuer: Issuer<K>,
@@ -46,6 +48,7 @@ const makeIssuerKit = (
   assetKind = AssetKind.NAT,
   displayInfo = harden({}),
   optShutdownWithFailure = undefined,
+  { elementSchema = undefined } = {},
 ) => {
   assert.typeof(allegedName, 'string');
   assertAssetKind(assetKind);
@@ -54,6 +57,10 @@ const makeIssuerKit = (
   const cleanDisplayInfo = coerceDisplayInfo(displayInfo, assetKind);
   if (optShutdownWithFailure !== undefined) {
     assert.typeof(optShutdownWithFailure, 'function');
+  }
+
+  if (elementSchema !== undefined) {
+    assertPattern(elementSchema);
   }
 
   /**
@@ -67,7 +74,13 @@ const makeIssuerKit = (
   // eslint-disable-next-line no-use-before-define
   const isMyIssuerNow = allegedIssuer => allegedIssuer === issuer;
 
-  const brand = makeBrand(allegedName, isMyIssuerNow, cleanDisplayInfo);
+  const brand = makeBrand(
+    allegedName,
+    isMyIssuerNow,
+    cleanDisplayInfo,
+    assetKind,
+    elementSchema,
+  );
 
   // Attenuate the powerful authority to mint and change balances
   const { issuer, mint } = makePaymentLedger(
@@ -75,6 +88,7 @@ const makeIssuerKit = (
     brand,
     assetKind,
     cleanDisplayInfo,
+    brand.getAmountSchema(),
     optShutdownWithFailure,
   );
 

@@ -53,7 +53,7 @@ export const makeNotifier = sharableInternalsP => {
 export const makeNotifierKit = (...initialStateArr) => {
   /** @type {PromiseRecord<UpdateRecord<T>>|undefined} */
   let optNextPromiseKit;
-  /** @type {UpdateCount} */
+  /** @type {UpdateCount & (number | undefined)} */
   let currentUpdateCount = 1; // avoid falsy numbers
   /** @type {UpdateRecord<T>|undefined} */
   let currentResponse;
@@ -163,54 +163,57 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
 
   /** @type {Promise<UpdateRecord<T>>|undefined} */
   let optNextPromise;
-  /** @type {UpdateCount} */
-  let currentUpdateCount = 1; // avoid falsy numbers
-  /** @type {UpdateRecord<T>|undefined} */
+  /** @type {UpdateCount & bigint} */
+  let currentUpdateCount = 0n;
+  /** @type {ERef<UpdateRecord<T>>|undefined} */
   let currentResponse;
-
-  const hasState = () => currentResponse !== undefined;
-
-  const final = () => currentUpdateCount === undefined;
+  let final = false;
 
   /**
    * @template T
    * @type {BaseNotifier<T>}
    */
   const baseNotifier = Far('baseNotifier', {
-    // NaN matches nothing
-    getUpdateSince(updateCount = NaN) {
-      if (
-        hasState() &&
-        (final() ||
-          (currentResponse && currentResponse.updateCount !== updateCount))
-      ) {
-        // If hasState() and either it is final() or it is
-        // not the state of updateCount, return the current state.
+    getUpdateSince(updateCount = -1n) {
+      if (updateCount < currentUpdateCount) {
+        if (currentResponse) {
+          return Promise.resolve(currentResponse);
+        }
+      } else if (updateCount !== currentUpdateCount) {
+        throw new Error(
+          'getUpdateSince argument must be a previously-issued updateCount.',
+        );
+      }
+
+      // Return a final response if we have one, otherwise a promise for the next state.
+      if (final) {
         assert(currentResponse !== undefined);
         return Promise.resolve(currentResponse);
       }
-
-      // otherwise return a promise for the next state.
       if (!optNextPromise) {
         const nextIterResultP = E(iteratorP).next();
         optNextPromise = E.when(
           nextIterResultP,
           ({ done, value }) => {
-            assert(currentUpdateCount);
-            currentUpdateCount = done ? undefined : currentUpdateCount + 1;
+            assert(!final);
+            if (done) {
+              final = true;
+            }
+            currentUpdateCount += 1n;
             currentResponse = harden({
               value,
-              updateCount: currentUpdateCount,
+              updateCount: done ? undefined : currentUpdateCount,
             });
             optNextPromise = undefined;
             return currentResponse;
           },
           _reason => {
-            currentUpdateCount = undefined;
-            currentResponse = undefined;
-            // We know that nextIterResultP is rejected, and we just need any
-            // promise rejected by that reason.
-            return /** @type {Promise<UpdateRecord<T>>} */ (nextIterResultP);
+            final = true;
+            currentResponse =
+              /** @type {Promise<UpdateRecord<T>>} */
+              (nextIterResultP);
+            optNextPromise = undefined;
+            return currentResponse;
           },
         );
       }

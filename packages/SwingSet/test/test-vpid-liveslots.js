@@ -735,9 +735,6 @@ async function doVatResolveCase7(t, mode) {
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
   matchIDCounterSet(t, log);
 
-  await dispatch(makeMessage(rootA, 'becomeDecider', [], [], p1));
-  t.deepEqual(log, []);
-
   const target1 = 'o-1';
   const target2 = 'o-2';
   await dispatch(
@@ -753,13 +750,23 @@ async function doVatResolveCase7(t, mode) {
     resultSlot: oneResultVPID,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: oneResultVPID });
-  // two() is queued internally, so no more syscalls
+
+  // two() is pipelined to kernel
+  const twoResultVPID = getNextVPID();
+  t.deepEqual(log.shift(), {
+    type: 'send',
+    targetSlot: p1,
+    methargs: capargs(['two', []], []),
+    resultSlot: twoResultVPID,
+  });
+  t.deepEqual(log.shift(), { type: 'subscribe', target: twoResultVPID });
+
   matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   // now use p1 as the result= of a message, transferring decider
   // authority to the vat
-  await dispatch(makeMessage(rootA, 'becomeDecider', [], []));
+  await dispatch(makeMessage(rootA, 'becomeDecider', [], [], p1));
   t.deepEqual(log, []);
 
   // have the vat send some more messages
@@ -783,17 +790,8 @@ async function doVatResolveCase7(t, mode) {
   // now tell the vat to resolve the promise
   await dispatch(makeMessage(rootA, 'resolve', [slot0arg], [target2]));
 
-  // that might release two() and four()
+  // that might release four()
   if (mode === 'presence') {
-    const twoResultVPID = getNextVPID();
-    t.deepEqual(log.shift(), {
-      type: 'send',
-      targetSlot: target2,
-      methargs: capargs(['two', []], []),
-      resultSlot: twoResultVPID,
-    });
-    t.deepEqual(log.shift(), { type: 'subscribe', target: twoResultVPID });
-
     const fourResultVPID = getNextVPID();
     t.deepEqual(log.shift(), {
       type: 'send',
