@@ -241,110 +241,107 @@ export const createSeatManager = (
   };
 
   const zcfSeatKindHandle = provideKindHandle(zcfBaggage, 'zcfSeat');
+  const makeZCFSeatInternal = defineDurableKind(
+    zcfSeatKindHandle,
+    (proposal, zoeSeatAdmin, notifier) => ({
+      proposal,
+      zoeSeatAdmin,
+      notifier,
+    }),
+    {
+      getNotifier: ({ state }) => state.notifier,
+      getProposal: ({ state }) => state.proposal,
+      exit: ({ state, self }, completion) => {
+        assertActive(self);
+        assertNoStagedAllocation(self);
+        doExitSeat(self);
+        E(state.zoeSeatAdmin).exit(completion);
+      },
+      fail: (
+        { state, self },
+        reason = new Error(
+          'Seat exited with failure. Please check the log for more information.',
+        ),
+      ) => {
+        if (typeof reason === 'string') {
+          reason = Error(reason);
+          assert.note(
+            reason,
+            X`ZCFSeat.fail was called with a string reason, but requires an Error argument.`,
+          );
+        }
+        if (!hasExited(self)) {
+          doExitSeat(self);
+          E(state.zoeSeatAdmin).fail(harden(reason));
+        }
+        return reason;
+      },
+      hasExited: ({ self }) => hasExited(self),
+
+      getAmountAllocated: ({ self }, keyword, brand) => {
+        assertActive(self);
+        const currentAllocation = getCurrentAllocation(self);
+        if (currentAllocation[keyword] !== undefined) {
+          return currentAllocation[keyword];
+        }
+        assert(
+          brand,
+          X`A brand must be supplied when the keyword is not defined`,
+        );
+        const assetKind = getAssetKindByBrand(brand);
+        return AmountMath.makeEmpty(brand, assetKind);
+      },
+      getCurrentAllocation: ({ self }) => getCurrentAllocation(self),
+      getStagedAllocation: ({ self }) => getStagedAllocation(self),
+      isOfferSafe: ({ state, self }, newAllocation) => {
+        assertActive(self);
+        const currentAllocation = getCurrentAllocation(self);
+        const reallocation = harden({
+          ...currentAllocation,
+          ...newAllocation,
+        });
+
+        return isOfferSafe(state.proposal, reallocation);
+      },
+      incrementBy: ({ self }, amountKeywordRecord) => {
+        assertActive(self);
+        amountKeywordRecord = coerceAmountKeywordRecord(
+          amountKeywordRecord,
+          getAssetKindByBrand,
+        );
+        setStagedAllocation(
+          self,
+          addToAllocation(getStagedAllocation(self), amountKeywordRecord),
+        );
+        return amountKeywordRecord;
+      },
+      decrementBy: ({ self }, amountKeywordRecord) => {
+        assertActive(self);
+        amountKeywordRecord = coerceAmountKeywordRecord(
+          amountKeywordRecord,
+          getAssetKindByBrand,
+        );
+        setStagedAllocation(
+          self,
+          subtractFromAllocation(
+            getStagedAllocation(self),
+            amountKeywordRecord,
+          ),
+        );
+        return amountKeywordRecord;
+      },
+      clear: dropContext(clear),
+      hasStagedAllocation: ({ self }) => hasStagedAllocation(self),
+    },
+  );
   const makeZCFSeat = (
     zoeSeatAdmin,
     { proposal, notifier, initialAllocation, seatHandle },
   ) => {
-    const makeZCFSeatInternal = defineDurableKind(
-      zcfSeatKindHandle,
-      () => ({
-        proposal,
-        zoeSeatAdmin,
-        notifier,
-      }),
-      {
-        getNotifier: ({ state }) => state.notifier,
-        getProposal: ({ state }) => state.proposal,
-        exit: ({ state, self }, completion) => {
-          assertActive(self);
-          assertNoStagedAllocation(self);
-          doExitSeat(self);
-          E(state.zoeSeatAdmin).exit(completion);
-        },
-        fail: (
-          { state, self },
-          reason = new Error(
-            'Seat exited with failure. Please check the log for more information.',
-          ),
-        ) => {
-          if (typeof reason === 'string') {
-            reason = Error(reason);
-            assert.note(
-              reason,
-              X`ZCFSeat.fail was called with a string reason, but requires an Error argument.`,
-            );
-          }
-          if (!hasExited(self)) {
-            doExitSeat(self);
-            E(state.zoeSeatAdmin).fail(harden(reason));
-          }
-          return reason;
-        },
-        hasExited: ({ self }) => hasExited(self),
-
-        getAmountAllocated: ({ self }, keyword, brand) => {
-          assertActive(self);
-          const currentAllocation = getCurrentAllocation(self);
-          if (currentAllocation[keyword] !== undefined) {
-            return currentAllocation[keyword];
-          }
-          assert(
-            brand,
-            X`A brand must be supplied when the keyword is not defined`,
-          );
-          const assetKind = getAssetKindByBrand(brand);
-          return AmountMath.makeEmpty(brand, assetKind);
-        },
-        getCurrentAllocation: ({ self }) => getCurrentAllocation(self),
-        getStagedAllocation: ({ self }) => getStagedAllocation(self),
-        isOfferSafe: ({ state, self }, newAllocation) => {
-          assertActive(self);
-          const currentAllocation = getCurrentAllocation(self);
-          const reallocation = harden({
-            ...currentAllocation,
-            ...newAllocation,
-          });
-
-          return isOfferSafe(state.proposal, reallocation);
-        },
-        incrementBy: ({ self }, amountKeywordRecord) => {
-          assertActive(self);
-          amountKeywordRecord = coerceAmountKeywordRecord(
-            amountKeywordRecord,
-            getAssetKindByBrand,
-          );
-          setStagedAllocation(
-            self,
-            addToAllocation(getStagedAllocation(self), amountKeywordRecord),
-          );
-          return amountKeywordRecord;
-        },
-        decrementBy: ({ self }, amountKeywordRecord) => {
-          assertActive(self);
-          amountKeywordRecord = coerceAmountKeywordRecord(
-            amountKeywordRecord,
-            getAssetKindByBrand,
-          );
-          setStagedAllocation(
-            self,
-            subtractFromAllocation(
-              getStagedAllocation(self),
-              amountKeywordRecord,
-            ),
-          );
-          return amountKeywordRecord;
-        },
-        clear: dropContext(clear),
-        hasStagedAllocation: ({ self }) => hasStagedAllocation(self),
-      },
-      {
-        finish: ({ self }) => {
-          activeZCFSeats.init(self, initialAllocation);
-          zcfSeatToSeatHandle.init(self, seatHandle);
-        },
-      },
-    );
-    return makeZCFSeatInternal();
+    const zcfSeat = makeZCFSeatInternal(proposal, zoeSeatAdmin, notifier);
+    activeZCFSeats.init(zcfSeat, initialAllocation);
+    zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
+    return zcfSeat;
   };
 
   /** @type {DropAllReferences} */
