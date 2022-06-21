@@ -67,7 +67,7 @@ const { details: X } = assert;
 /**
  * @param {ERef<ZoeService>} zoe
  * @param {ImmutableState['directorParamManager']} paramMgr
- * @param {unknown} [oldShortfallReporter]
+ * @param {import('../reserve/assetReserve.js').ShortfallReporter} [oldShortfallReporter]
  * @param {ERef<Invitation>} [oldInvitation]
  */
 const updateShortfallReporter = async (
@@ -340,7 +340,6 @@ const machineBehavior = {
       debtMint,
       collateralBrand,
       zcf.getTerms().priceAuthority,
-      // @ts-expect-error promise issues?
       factoryPowers,
       timerService,
       startTimeStamp,
