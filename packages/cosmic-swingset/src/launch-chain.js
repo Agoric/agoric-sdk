@@ -275,7 +275,14 @@ export async function launch({
     kvStore.set(getHostKey('height'), `${savedHeight}`);
     kvStore.set(getHostKey('blockTime'), `${savedBlockTime}`);
     kvStore.set(getHostKey('chainSends'), JSON.stringify(savedChainSends));
-    await commit();
+    const commitResult = commit();
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-commit-block',
+      blockHeight: savedHeight,
+      blockTime: savedBlockTime,
+    });
+
+    await commitResult;
   }
 
   async function deliverInbound(sender, messages, ack) {

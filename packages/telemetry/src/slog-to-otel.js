@@ -561,6 +561,10 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         spans.end(`begin-block`);
         break;
       }
+      case 'cosmic-swingset-commit-block': {
+        spans.pop(`block ${slogAttrs.blockHeight}`);
+        break;
+      }
       case 'cosmic-swingset-deliver-inbound': {
         spans.start('deliver-inbound', spans.top());
         spans.end(`deliver-inbound`);
