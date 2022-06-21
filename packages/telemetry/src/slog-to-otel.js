@@ -311,7 +311,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
   };
 
   const slogSender = obj => {
-    const { time, type: slogType, ...slogAttrs } = obj;
+    const { time, monotime: _mt, type: slogType, ...slogAttrs } = obj;
 
     // Set up the context for this slog entry.
     nowFloat = time;
