@@ -513,6 +513,17 @@ test('virtual object cycles using the finish function', t => {
   t.is(thing.getOtherThing().getFirstThing(), thing);
 });
 
+test('durable kind IDs cannot be reused', t => {
+  const { vom } = makeFakeVirtualStuff();
+  const { makeKindHandle, defineDurableKind } = vom;
+
+  const kindHandle = makeKindHandle('testkind');
+  defineDurableKind(kindHandle, initThing, thingBehavior);
+  t.throws(() => defineDurableKind(kindHandle, initThing, thingBehavior), {
+    message: 'redefinition of durable kind "testkind"',
+  });
+});
+
 test('durable kind IDs can be reanimated', t => {
   const log = [];
   const { vom, vrm, cm, fakeStuff } = makeFakeVirtualStuff({
