@@ -134,6 +134,7 @@ export function xsnap(options) {
   const vatCancelled = vatExit.promise.then(() => {
     throw Error(`${name} exited`);
   });
+  vatCancelled.catch(() => console.log(`vatCancelled being ignored`));
 
   const writer = xsnapProcess.stdio[3];
   const reader = xsnapProcess.stdio[4];
@@ -212,7 +213,8 @@ export function xsnap(options) {
       return runToIdle();
     });
     baton = result.then(() => {}).catch(() => {});
-    return Promise.race([vatCancelled, result]);
+    //return Promise.race([vatCancelled, result]);
+    return result;
   }
 
   /**
@@ -225,7 +227,8 @@ export function xsnap(options) {
       await runToIdle();
     });
     baton = result.catch(() => {});
-    return Promise.race([vatCancelled, result]);
+    //return Promise.race([vatCancelled, result]);
+    return result;
   }
 
   /**
@@ -238,7 +241,8 @@ export function xsnap(options) {
       await runToIdle();
     });
     baton = result.catch(() => {});
-    return Promise.race([vatCancelled, result]);
+    //return Promise.race([vatCancelled, result]);
+    return result;
   }
 
   /**
@@ -250,7 +254,8 @@ export function xsnap(options) {
       await runToIdle();
     });
     baton = result.catch(() => {});
-    return Promise.race([vatCancelled, result]);
+    //return Promise.race([vatCancelled, result]);
+    return result;
   }
 
   /**
@@ -269,7 +274,8 @@ export function xsnap(options) {
       () => {},
       () => {},
     );
-    return Promise.race([vatCancelled, result]);
+    //return Promise.race([vatCancelled, result]);
+    return result;
   }
 
   /**
@@ -291,7 +297,8 @@ export function xsnap(options) {
       await runToIdle();
     });
     baton = result.catch(() => {});
-    return Promise.race([vatExit.promise, baton]);
+    //return Promise.race([vatExit.promise, baton]);
+    return baton;
   }
 
   /**
