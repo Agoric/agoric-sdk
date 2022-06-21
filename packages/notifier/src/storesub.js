@@ -67,10 +67,13 @@ export const makeStoredSubscription = (
 
   /** @type {StoredSubscription<T>} */
   const storesub = Far('StoredSubscription', {
-    getStoreKey: () =>
-      (storageNode ? E(storageNode).getStoreKey() : Promise.resolve({})).then(
-        storeKey => ({ ...storeKey, subscription }),
-      ),
+    getStoreKey: async () => {
+      if (!storageNode) {
+        return harden({ subscription });
+      }
+      const storeKey = await E(storageNode).getStoreKey();
+      return harden({ ...storeKey, subscription });
+    },
     getUnserializer: () => unserializer,
     getSharableSubscriptionInternals:
       subscription.getSharableSubscriptionInternals,
