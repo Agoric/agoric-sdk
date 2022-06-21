@@ -1,8 +1,11 @@
 import path from 'path';
 import v8 from 'node:v8';
 import process from 'node:process';
+import fs from 'node:fs';
 import { performance } from 'perf_hooks';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
+import { waitUntilQuiescent } from '@agoric/swingset-vat/src/lib-nodejs/waitUntilQuiescent.js';
 import {
   importMailbox,
   exportMailbox,
@@ -183,27 +186,6 @@ const makeChainQueue = (call, prefix = '') => {
     }),
   };
   return queue;
-};
-
-const getRuntimeStats = () => {
-  const t0 = performance.now();
-  const heapStats = v8.getHeapStatistics();
-  const t1 = performance.now();
-  const heapSpaceStats = v8.getHeapSpaceStatistics();
-  const t2 = performance.now();
-  const memoryUsage = process.memoryUsage();
-  const t3 = performance.now();
-
-  return {
-    heapStats,
-    heapSpaceStats,
-    memoryUsage,
-    statsTime: {
-      heapStats: t1 - t0,
-      heapSpaceStats: t2 - t1,
-      memoryUsage: t3 - t2,
-    },
-  };
 };
 
 export default async function main(progname, args, { env, homedir, agcc }) {
@@ -395,6 +377,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       LMDB_MAP_SIZE,
       SWING_STORE_TRACE,
       XSNAP_KEEP_SNAPSHOTS,
+      NODE_HEAP_SNAPSHOTS = -1,
     } = env;
     const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
       stateDir: stateDBDir,
@@ -425,6 +408,65 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const keepSnapshots =
       XSNAP_KEEP_SNAPSHOTS === '1' || XSNAP_KEEP_SNAPSHOTS === 'true';
 
+    const nodeHeapSnapshots = Number.parseInt(NODE_HEAP_SNAPSHOTS, 10);
+
+    let lastSnapshotTime = nodeHeapSnapshots >= 0 ? 0 : NaN;
+    let commitCallsSinceLastSnapshot = nodeHeapSnapshots > 0 ? -1 : NaN;
+    const snapshotBaseDir = path.resolve(stateDBDir, 'node-heap-snapshots');
+
+    let heapSnapshot;
+
+    if (nodeHeapSnapshots >= 0) {
+      fs.mkdirSync(snapshotBaseDir, { recursive: true });
+    }
+
+    const getRuntimeStats = () => {
+      const t0 = performance.now();
+      const heapStats = v8.getHeapStatistics();
+      const t1 = performance.now();
+      const heapSpaceStats = v8.getHeapSpaceStatistics();
+      const t2 = performance.now();
+      const memoryUsage = process.memoryUsage();
+      const t3 = performance.now();
+
+      commitCallsSinceLastSnapshot += 1;
+      if (
+        t0 - lastSnapshotTime > 30 * 1000 ||
+        (nodeHeapSnapshots > 0 &&
+          commitCallsSinceLastSnapshot >= nodeHeapSnapshots)
+      ) {
+        commitCallsSinceLastSnapshot -= commitCallsSinceLastSnapshot;
+        lastSnapshotTime = t0;
+        heapSnapshot = `Heap-${process.pid}-${Date.now()}.heapsnapshot`;
+      } else {
+        heapSnapshot = undefined;
+      }
+
+      return {
+        heapStats,
+        heapSpaceStats,
+        memoryUsage,
+        heapSnapshot,
+        statsTime: {
+          heapStats: t1 - t0,
+          heapSpaceStats: t2 - t1,
+          memoryUsage: t3 - t2,
+        },
+      };
+    };
+
+    const afterCommitCallback = async () => {
+      await waitUntilQuiescent();
+
+      engineGC();
+
+      if (heapSnapshot) {
+        const snapshotPath = path.resolve(snapshotBaseDir, heapSnapshot);
+        heapSnapshot = undefined;
+        v8.writeHeapSnapshot(snapshotPath);
+      }
+    };
+
     const s = await launch({
       actionQueue,
       kernelStateDBDir: stateDBDir,
@@ -441,6 +483,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       swingStoreTraceFile,
       keepSnapshots,
       getRuntimeStats,
+      afterCommitCallback,
     });
     return s;
   }

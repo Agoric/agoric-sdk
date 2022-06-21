@@ -185,6 +185,7 @@ export async function launch({
   swingStoreTraceFile,
   keepSnapshots,
   getRuntimeStats = () => ({}),
+  afterCommitCallback = async () => {},
 }) {
   console.info('Launching SwingSet kernel');
 
@@ -285,6 +286,7 @@ export async function launch({
     });
 
     await commitResult;
+    void Promise.resolve().then(afterCommitCallback);
   }
 
   async function deliverInbound(sender, messages, ack) {
