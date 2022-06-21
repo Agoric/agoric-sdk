@@ -122,6 +122,21 @@ for the Prometheus scrape endpoint to export telemetry.
 
 Lifetime: until we decide not to support Prometheus for metrics export
 
+## SOLO_BRIDGE_TARGET
+
+Affects: solo
+
+Until dApps are converted to connect to the smart-wallet UI directly,
+this allows them to continue to connect to `/wallet-bridge.html` and such
+on the solo and have these endpoints serviced by `/wallet/bridge.html`
+and such in a wallet UI.
+
+```
+BRIDGE_TARGET=http://localhost:3001 make BASE_PORT=8002 scenario3-run
+```
+
+Lifetime: smart wallet transition period
+
 ## SOLO_LMDB_MAP_SIZE
 
 Affects: solo

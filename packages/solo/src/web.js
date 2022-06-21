@@ -1,9 +1,11 @@
-/* global setTimeout clearTimeout setInterval clearInterval */
+/* global setTimeout clearTimeout setInterval clearInterval process */
 // Start a network service
 import path from 'path';
 import http from 'http';
 import { createConnection } from 'net';
+import { existsSync as existsSyncAmbient } from 'fs';
 import express from 'express';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 import WebSocket from 'ws';
 import anylogger from 'anylogger';
 import morgan from 'morgan';
@@ -71,6 +73,7 @@ export async function makeHTTPListener(
   walletHtmlDir = '',
   validateAndInstallBundle,
   connections,
+  { env = process.env, existsSync = existsSyncAmbient } = {},
 ) {
   // Enrich the inbound command with some metadata.
   const inboundCommand = (
@@ -126,13 +129,36 @@ export async function makeHTTPListener(
   app.use(express.json({ limit: maximumBundleSize })); // parse application/json
   const server = http.createServer(app);
 
+  // Proxy to another wallet bridge
+  const { SOLO_BRIDGE_TARGET: bridgeTarget } = env;
+  if (bridgeTarget) {
+    app.use(
+      ['/wallet-bridge.html', '/wallet'],
+      createProxyMiddleware({
+        target: bridgeTarget,
+        pathRewrite: {
+          '^/wallet-bridge.html': '/wallet/bridge.html',
+        },
+        // changeOrigin: true,
+      }),
+    );
+  }
+
   // serve the static HTML for the UI
   const htmldir = path.join(basedir, 'html');
   log(`Serving static files from ${htmldir}`);
   app.use(express.static(htmldir));
   app.use(express.static(new URL('../public', import.meta.url).pathname));
 
-  if (walletHtmlDir) {
+  if (walletHtmlDir && !bridgeTarget) {
+    // Transition localStorage based bridge
+    if (existsSync(path.join(walletHtmlDir, 'bridge.html'))) {
+      console.log('redirecting wallet bridge');
+      app.get('/wallet-bridge.html', (req, res) =>
+        res.redirect('/wallet/bridge.html'),
+      );
+    }
+
     // Serve the wallet directory.
     app.use('/wallet', express.static(walletHtmlDir));
 
