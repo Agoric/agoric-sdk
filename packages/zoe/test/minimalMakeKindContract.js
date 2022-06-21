@@ -5,7 +5,8 @@ const start = _zcf => {
   VatData.defineKindMulti('x', () => {}, { x: {}, y: {} });
   const kh = VatData.makeKindHandle();
   VatData.defineDurableKind(kh, () => {}, {});
-  VatData.defineDurableKindMulti(kh, () => {}, { x: {}, y: {} });
+  const kh2 = VatData.makeKindHandle();
+  VatData.defineDurableKindMulti(kh2, () => {}, { x: {}, y: {} });
   VatData.makeScalarBigMapStore();
   VatData.makeScalarBigWeakMapStore();
   VatData.makeScalarBigSetStore();

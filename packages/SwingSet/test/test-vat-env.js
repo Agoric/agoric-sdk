@@ -32,8 +32,9 @@ test('kind makers are in the test environment', t => {
   const dthing = makeDThing('dthing');
   t.is(dthing.ping(), 4);
 
+  const kind2 = VatData.makeKindHandle('thing2');
   const makeDMThing = VatData.defineDurableKindMulti(
-    kind,
+    kind2,
     null,
     multiThingBehavior,
   );

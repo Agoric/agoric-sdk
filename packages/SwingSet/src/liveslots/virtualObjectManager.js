@@ -833,6 +833,10 @@ export function makeVirtualObjectManager(
     const durableKindDescriptor = kindDescriptors.get(kindHandle);
     assert(durableKindDescriptor);
     const { kindID, tag } = durableKindDescriptor;
+    assert(
+      !definedDurableKinds.has(kindID),
+      `redefinition of durable kind "${tag}"`,
+    );
     const maker = defineKindInternal(
       kindID,
       tag,
@@ -850,6 +854,10 @@ export function makeVirtualObjectManager(
     const durableKindDescriptor = kindDescriptors.get(kindHandle);
     assert(durableKindDescriptor);
     const { kindID, tag } = durableKindDescriptor;
+    assert(
+      !definedDurableKinds.has(kindID),
+      `redefinition of durable kind "${tag}"`,
+    );
     const maker = defineKindInternal(
       kindID,
       tag,

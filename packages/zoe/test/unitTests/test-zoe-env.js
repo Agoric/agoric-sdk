@@ -13,7 +13,8 @@ test('(mock) kind makers from SwingSet are in the zoe contract environment', t =
   VatData.defineKindMulti('x', () => {}, { x: {}, y: {} });
   const kh = VatData.makeKindHandle();
   VatData.defineDurableKind(kh, () => {}, {});
-  VatData.defineDurableKindMulti(kh, () => {}, { x: {}, y: {} });
+  const kh2 = VatData.makeKindHandle();
+  VatData.defineDurableKindMulti(kh2, () => {}, { x: {}, y: {} });
   t.pass();
 });
 

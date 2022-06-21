@@ -26,8 +26,9 @@ test('defineKind non-swingset', async t => {
   t.notThrows(() => VatData.makeKindHandle());
   const kh = VatData.makeKindHandle();
   t.notThrows(() => VatData.defineDurableKind(kh, () => {}, {}));
+  const kh2 = VatData.makeKindHandle();
   t.notThrows(() =>
-    VatData.defineDurableKindMulti(kh, () => {}, { x: {}, y: {} }),
+    VatData.defineDurableKindMulti(kh2, () => {}, { x: {}, y: {} }),
   );
   t.notThrows(() => VatData.makeScalarBigMapStore());
   t.notThrows(() => VatData.makeScalarBigWeakMapStore());
