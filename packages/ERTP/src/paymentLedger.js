@@ -4,9 +4,8 @@
 import { E } from '@endo/eventual-send';
 import { isPromise } from '@endo/promise-kit';
 import { assertCopyArray } from '@endo/marshal';
-import { fit, M, provide } from '@agoric/store';
+import { fit, M } from '@agoric/store';
 import {
-  makeScalarBigWeakMapStore,
   dropContext,
   provideDurableSingletonKit,
   provideDurableWeakMapStore,
