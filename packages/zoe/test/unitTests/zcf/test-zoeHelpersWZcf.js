@@ -151,7 +151,8 @@ test(`zcf assertNatAssetKind - brand not registered`, async t => {
       // https://github.com/endojs/endo/pull/640
       //
       // /"brand" not found: .*/,
-      /.* not found: .*/,
+      // / not found: /,
+      /no ordinal /,
   });
 });
 
@@ -217,8 +218,9 @@ test(`zcf saveAllIssuers - duplicate keyword`, async t => {
         // disclosure bug is fixed. See
         // https://github.com/endojs/endo/pull/640
         //
-        // /"issuer" not found: .*/,
-        /.* not found: .*/,
+        // /"issuer" not found: /,
+        // /not found: /,
+        /no ordinal for /,
     },
     'issuer should not be found',
   );
@@ -230,8 +232,9 @@ test(`zcf saveAllIssuers - duplicate keyword`, async t => {
       // disclosure bug is fixed. See
       // https://github.com/endojs/endo/pull/640
       //
-      // /"brand" not found: .*/,
-      /.* not found: .*/,
+      // /"brand" not found: /,
+      // /not found: /,
+      /no ordinal for /,
   });
 });
 
