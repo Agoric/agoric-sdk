@@ -79,7 +79,7 @@ test(`getAssetKindByBrand - brand isn't stored`, t => {
   instantiate();
   const { currencyKit } = setupIssuersForTest();
   t.throws(() => getAssetKindByBrand(currencyKit.brand), {
-    message: '"brand" not found: "[Alleged: currency brand]"',
+    message: 'no ordinal for "[Alleged: currency brand]"',
   });
 });
 

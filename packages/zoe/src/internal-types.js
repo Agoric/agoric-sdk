@@ -209,7 +209,7 @@
  */
 
 /**
- * @typedef {Handle<'SeatHandle'>} SeatHandle
+ * @typedef {Handle<'Seat'>} SeatHandle
  */
 
 /**

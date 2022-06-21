@@ -1,6 +1,9 @@
 // @ts-check
 
-import { makeWeakStore } from '@agoric/store';
+import {
+  makeScalarBigMapStore,
+  provideDurableWeakMapStore,
+} from '@agoric/vat-data';
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 
@@ -9,13 +12,23 @@ import { cleanKeywords } from './cleanProposal.js';
 import { makeIssuerRecord } from './issuerRecord.js';
 
 /**
- *  Make the Issuer Storage.
+ * Make the Issuer Storage.
+ *
+ * @param {MapStore<string,any>} zcfBaggage
  */
-export const makeIssuerStorage = () => {
+export const makeIssuerStorage = (
+  zcfBaggage = makeScalarBigMapStore('zcfBaggage', { durable: true }),
+) => {
   /** @type {WeakStore<Brand,IssuerRecord>} */
-  const brandToIssuerRecord = makeWeakStore('brand');
+  const brandToIssuerRecord = provideDurableWeakMapStore(
+    zcfBaggage,
+    'brandToIssuerRecord',
+  );
   /** @type {WeakStore<Issuer,IssuerRecord>} */
-  const issuerToIssuerRecord = makeWeakStore('issuer');
+  const issuerToIssuerRecord = provideDurableWeakMapStore(
+    zcfBaggage,
+    'issuerToIssuerRecord',
+  );
 
   let instantiated = false;
   const assertInstantiated = () =>

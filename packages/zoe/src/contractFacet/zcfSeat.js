@@ -1,10 +1,16 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
+import {
+  provideDurableWeakMapStore,
+  makeScalarBigMapStore,
+  provideKindHandle,
+  defineDurableKind,
+  dropContext,
+} from '@agoric/vat-data';
 import { makeWeakStore, makeStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
-import { Far } from '@endo/marshal';
 
 import { isOfferSafe } from './offerSafety.js';
 import { assertRightsConserved } from './rightsConservation.js';
@@ -16,9 +22,10 @@ export const createSeatManager = (
   zoeInstanceAdmin,
   getAssetKindByBrand,
   shutdownWithFailure,
+  zcfBaggage = makeScalarBigMapStore('zcfBaggage', { durable: true }),
 ) => {
   /** @type {WeakStore<ZCFSeat, Allocation>}  */
-  let activeZCFSeats = makeWeakStore('zcfSeat');
+  let activeZCFSeats = provideDurableWeakMapStore(zcfBaggage, 'zcfSeat');
   /** @type {Store<ZCFSeat, Allocation>} */
   const zcfSeatToStagedAllocations = makeStore('zcfSeat');
 
@@ -220,114 +227,124 @@ export const createSeatManager = (
     }
   };
 
-  /** @type {MakeZCFSeat} */
+  /**
+   * @param {ZCFSeat} zcfSeat
+   */
+  const assertNoStagedAllocation = zcfSeat => {
+    if (hasStagedAllocation(zcfSeat)) {
+      assert.fail(
+        X`The seat could not be exited with a staged but uncommitted allocation: ${getStagedAllocation(
+          zcfSeat,
+        )}. Please reallocate over this seat or clear the staged allocation.`,
+      );
+    }
+  };
+
+  const zcfSeatKindHandle = provideKindHandle(zcfBaggage, 'zcfSeat');
   const makeZCFSeat = (
     zoeSeatAdmin,
     { proposal, notifier, initialAllocation, seatHandle },
   ) => {
-    /**
-     * @param {ZCFSeat} zcfSeat
-     */
-    const assertNoStagedAllocation = zcfSeat => {
-      if (hasStagedAllocation(zcfSeat)) {
-        assert.fail(
-          X`The seat could not be exited with a staged but uncommitted allocation: ${getStagedAllocation(
-            zcfSeat,
-          )}. Please reallocate over this seat or clear the staged allocation.`,
-        );
-      }
-    };
-
-    /** @type {ZCFSeat} */
-    const zcfSeat = Far('zcfSeat', {
-      getNotifier: () => notifier,
-      getProposal: () => proposal,
-      exit: completion => {
-        assertActive(zcfSeat);
-        assertNoStagedAllocation(zcfSeat);
-        doExitSeat(zcfSeat);
-        E(zoeSeatAdmin).exit(completion);
-      },
-      fail: (
-        reason = new Error(
-          'Seat exited with failure. Please check the log for more information.',
-        ),
-      ) => {
-        if (typeof reason === 'string') {
-          reason = Error(reason);
-          assert.note(
-            reason,
-            X`ZCFSeat.fail was called with a string reason, but requires an Error argument.`,
-          );
-        }
-        if (!hasExited(zcfSeat)) {
-          doExitSeat(zcfSeat);
-          E(zoeSeatAdmin).fail(harden(reason));
-        }
-        return reason;
-      },
-      hasExited: () => hasExited(zcfSeat),
-
-      getAmountAllocated: (keyword, brand) => {
-        assertActive(zcfSeat);
-        const currentAllocation = getCurrentAllocation(zcfSeat);
-        if (currentAllocation[keyword] !== undefined) {
-          return currentAllocation[keyword];
-        }
-        assert(
-          brand,
-          X`A brand must be supplied when the keyword is not defined`,
-        );
-        const assetKind = getAssetKindByBrand(brand);
-        return AmountMath.makeEmpty(brand, assetKind);
-      },
-      getCurrentAllocation: () => getCurrentAllocation(zcfSeat),
-      getStagedAllocation: () => getStagedAllocation(zcfSeat),
-      isOfferSafe: newAllocation => {
-        assertActive(zcfSeat);
-        const currentAllocation = getCurrentAllocation(zcfSeat);
-        const reallocation = harden({
-          ...currentAllocation,
-          ...newAllocation,
-        });
-
-        return isOfferSafe(proposal, reallocation);
-      },
-      incrementBy: amountKeywordRecord => {
-        assertActive(zcfSeat);
-        amountKeywordRecord = coerceAmountKeywordRecord(
-          amountKeywordRecord,
-          getAssetKindByBrand,
-        );
-        setStagedAllocation(
-          zcfSeat,
-          addToAllocation(getStagedAllocation(zcfSeat), amountKeywordRecord),
-        );
-        return amountKeywordRecord;
-      },
-      decrementBy: amountKeywordRecord => {
-        assertActive(zcfSeat);
-        amountKeywordRecord = coerceAmountKeywordRecord(
-          amountKeywordRecord,
-          getAssetKindByBrand,
-        );
-        setStagedAllocation(
-          zcfSeat,
-          subtractFromAllocation(
-            getStagedAllocation(zcfSeat),
-            amountKeywordRecord,
+    const makeZCFSeatInternal = defineDurableKind(
+      zcfSeatKindHandle,
+      () => ({
+        proposal,
+        zoeSeatAdmin,
+        notifier,
+      }),
+      {
+        getNotifier: ({ state }) => state.notifier,
+        getProposal: ({ state }) => state.proposal,
+        exit: ({ state, self }, completion) => {
+          assertActive(self);
+          assertNoStagedAllocation(self);
+          doExitSeat(self);
+          E(state.zoeSeatAdmin).exit(completion);
+        },
+        fail: (
+          { state, self },
+          reason = new Error(
+            'Seat exited with failure. Please check the log for more information.',
           ),
-        );
-        return amountKeywordRecord;
+        ) => {
+          if (typeof reason === 'string') {
+            reason = Error(reason);
+            assert.note(
+              reason,
+              X`ZCFSeat.fail was called with a string reason, but requires an Error argument.`,
+            );
+          }
+          if (!hasExited(self)) {
+            doExitSeat(self);
+            E(state.zoeSeatAdmin).fail(harden(reason));
+          }
+          return reason;
+        },
+        hasExited: ({ self }) => hasExited(self),
+
+        getAmountAllocated: ({ self }, keyword, brand) => {
+          assertActive(self);
+          const currentAllocation = getCurrentAllocation(self);
+          if (currentAllocation[keyword] !== undefined) {
+            return currentAllocation[keyword];
+          }
+          assert(
+            brand,
+            X`A brand must be supplied when the keyword is not defined`,
+          );
+          const assetKind = getAssetKindByBrand(brand);
+          return AmountMath.makeEmpty(brand, assetKind);
+        },
+        getCurrentAllocation: ({ self }) => getCurrentAllocation(self),
+        getStagedAllocation: ({ self }) => getStagedAllocation(self),
+        isOfferSafe: ({ state, self }, newAllocation) => {
+          assertActive(self);
+          const currentAllocation = getCurrentAllocation(self);
+          const reallocation = harden({
+            ...currentAllocation,
+            ...newAllocation,
+          });
+
+          return isOfferSafe(state.proposal, reallocation);
+        },
+        incrementBy: ({ self }, amountKeywordRecord) => {
+          assertActive(self);
+          amountKeywordRecord = coerceAmountKeywordRecord(
+            amountKeywordRecord,
+            getAssetKindByBrand,
+          );
+          setStagedAllocation(
+            self,
+            addToAllocation(getStagedAllocation(self), amountKeywordRecord),
+          );
+          return amountKeywordRecord;
+        },
+        decrementBy: ({ self }, amountKeywordRecord) => {
+          assertActive(self);
+          amountKeywordRecord = coerceAmountKeywordRecord(
+            amountKeywordRecord,
+            getAssetKindByBrand,
+          );
+          setStagedAllocation(
+            self,
+            subtractFromAllocation(
+              getStagedAllocation(self),
+              amountKeywordRecord,
+            ),
+          );
+          return amountKeywordRecord;
+        },
+        clear: dropContext(clear),
+        hasStagedAllocation: ({ self }) => hasStagedAllocation(self),
       },
-      clear,
-      hasStagedAllocation: () => hasStagedAllocation(zcfSeat),
-    });
-
-    activeZCFSeats.init(zcfSeat, initialAllocation);
-    zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
-
-    return zcfSeat;
+      {
+        finish: ({ self }) => {
+          activeZCFSeats.init(self, initialAllocation);
+          zcfSeatToSeatHandle.init(self, seatHandle);
+        },
+      },
+    );
+    return makeZCFSeatInternal();
   };
 
   /** @type {DropAllReferences} */

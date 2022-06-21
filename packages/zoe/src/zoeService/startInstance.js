@@ -26,7 +26,7 @@ export const makeStartInstance = (
 ) => {
   const makeInstanceHandle = defineDurableHandle(zoeBaggage, 'Instance');
   // TODO(MSM): Should be 'Seat' rather than 'SeatHandle'
-  const makeSeatHandle = defineDurableHandle(zoeBaggage, 'SeatHandle');
+  const makeSeatHandle = defineDurableHandle(zoeBaggage, 'Seat');
 
   const startInstance = async (
     installationP,
