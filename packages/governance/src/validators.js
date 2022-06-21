@@ -27,12 +27,12 @@ const assertContractGovernance = async (
 
   assert(
     allegedGovernor === realGovernorInstance,
-    X`The alleged governor did not match the governor retrieved from the governed contract`,
+    'The alleged governor did not match the governor retrieved from the governed contract',
   );
 
   assert(
     allegedGoverned === realGovernedInstance,
-    X`The alleged governed did not match the governed contract retrieved from the governor`,
+    'The alleged governed did not match the governed contract retrieved from the governor',
   );
 
   const governorInstallationFromGoverned = await E(
@@ -41,7 +41,7 @@ const assertContractGovernance = async (
 
   assert(
     governorInstallationFromGoverned === contractGovernorInstallation,
-    X`The governed contract is not governed by an instance of the provided installation.`,
+    'The governed contract is not governed by an instance of the provided installation.',
   );
 
   return { governor: realGovernorInstance, governed: realGovernedInstance };

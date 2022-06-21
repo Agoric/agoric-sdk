@@ -4,6 +4,8 @@ import { ParamTypes } from '../constants.js';
 import { CONTRACT_ELECTORATE } from './governParam.js';
 import { makeParamManagerBuilder } from './paramManager.js';
 
+const { details: X } = assert;
+
 /**
  * @typedef {Record<Keyword, ParamType>} ParamTypesMap
  */
@@ -108,7 +110,7 @@ const makeParamManagerSync = (publisherKit, spec) => {
 
   for (const [name, [type, value]] of Object.entries(spec)) {
     const add = builder[builderMethodName(type)];
-    assert(add, `No builder method for param type '${type}'`);
+    assert(add, X`No builder method for param type '${type}'`);
     add(name, value);
   }
 

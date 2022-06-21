@@ -100,7 +100,7 @@ const setupApiGovernance = async (
         if (keyEQ(positive, outcome)) {
           assert(
             keyEQ(outcome, harden({ apiMethodName, methodArgs })),
-            `The question's method name (${apiMethodName}) and args (${methodArgs}) didn't match the outcome ${outcome}`,
+            X`The question's method name (${apiMethodName}) and args (${methodArgs}) didn't match the outcome ${outcome}`,
           );
 
           // E(remote)[name](args) invokes the method named 'name' on remote.

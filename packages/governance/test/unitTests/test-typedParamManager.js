@@ -112,7 +112,7 @@ test('Amount', async t => {
   await t.throwsAsync(
     () => paramManager.updateParams({ Shimmer: 'fear,loathing' }),
     {
-      message: 'Expected an Amount for Shimmer, got "fear,loathing"',
+      message: 'Expected an Amount for "Shimmer", got ""fear,loathing""',
     },
   );
 
@@ -130,7 +130,7 @@ test('Amount', async t => {
   await t.throwsAsync(
     () => paramManager.updateParams({ Shimmer: 'fear,loathing' }),
     {
-      message: 'Expected an Amount for Shimmer, got "fear,loathing"',
+      message: 'Expected an Amount for "Shimmer", got ""fear,loathing""',
     },
   );
 });

@@ -12,7 +12,7 @@ import {
 } from '../../../src/index.js';
 import { MALLEABLE_NUMBER } from './governedContract.js';
 
-const { details: X, quote: q } = assert;
+const { quote: q } = assert;
 
 const build = async (log, zoe) => {
   return Far('voter', {
@@ -94,10 +94,10 @@ const build = async (log, zoe) => {
             electorateInstance,
             questionDetails,
           );
-          assert(validatedQuestion, X`governor failed to validate electorate`);
+          assert(validatedQuestion, 'governor failed to validate electorate');
           assert(
             contractGovernance,
-            X`governor and governed aren't tightly linked`,
+            "governor and governed aren't tightly linked",
           );
 
           log(`Voter ${name} validated all the things`);
