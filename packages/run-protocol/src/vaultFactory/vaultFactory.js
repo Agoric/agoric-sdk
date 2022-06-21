@@ -43,7 +43,13 @@ import { makeVaultDirector } from './vaultDirector.js';
 
 /**
  * @param {VaultFactoryZCF} zcf
- * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation, initialShortfallInvitation: Invitation}} privateArgs
+ * @param {{
+ *   feeMintAccess: FeeMintAccess,
+ *   initialPoserInvitation: Invitation,
+ *   initialShortfallInvitation: Invitation,
+ *   storageNode?: ERef<StorageNode>,
+ *   marshaller?: ERef<Marshaller>,
+ * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
   const { feeMintAccess, initialPoserInvitation, initialShortfallInvitation } =
@@ -73,7 +79,13 @@ export const start = async (zcf, privateArgs) => {
     zcf.getTerms().governedParams,
   );
 
-  const factory = makeVaultDirector(zcf, vaultDirectorParamManager, debtMint);
+  const factory = makeVaultDirector(
+    zcf,
+    vaultDirectorParamManager,
+    debtMint,
+    privateArgs.storageNode,
+    privateArgs.marshaller,
+  );
 
   return harden({
     creatorFacet: factory.creator,

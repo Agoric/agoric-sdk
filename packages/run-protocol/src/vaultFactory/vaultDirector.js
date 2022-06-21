@@ -18,7 +18,7 @@ import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { defineKindMulti } from '@agoric/vat-data';
-import { makeSubscriptionKit, observeIteration } from '@agoric/notifier';
+import { observeIteration } from '@agoric/notifier';
 import { makeVaultManager } from './vaultManager.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import {
@@ -28,6 +28,7 @@ import {
   vaultParamPattern,
   SHORTFALL_INVITATION_KEY,
 } from './params.js';
+import { makeMetricsPublisherKit } from '../contractSupport.js';
 
 const { details: X } = assert;
 
@@ -42,16 +43,24 @@ const { details: X } = assert;
  * collateralTypes: Store<Brand,VaultManager>,
  * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>,
  * metricsPublication: IterationObserver<MetricsNotification>
- * metricsSubscription: Subscription<MetricsNotification>
+ * metricsSubscription: StoredSubscription<MetricsNotification>
  * mintSeat: ZCFSeat,
  * rewardPoolSeat: ZCFSeat,
  * vaultParamManagers: Store<Brand, import('./params.js').VaultParamManager>,
  * zcf: import('./vaultFactory.js').VaultFactoryZCF,
  * shortfallInvitation: Invitation,
  * shortfallReporter: import('../reserve/assetReserve.js').ShortfallReporter,
+ * storageNode?: ERef<StorageNode>,
+ * marshaller?: ERef<Marshaller>,
  * }>} ImmutableState
  *
  * @typedef {{
+ * managerCounter: number,
+ * }} MutableState
+ *
+ * @typedef {ImmutableState & MutableState} State
+ *
+ *  @typedef {{
  *  burnDebt: BurnDebt,
  *  getGovernedParams: () => import('./vaultManager.js').GovernedParamGetters,
  *  mintAndReallocate: MintAndReallocate,
@@ -59,14 +68,14 @@ const { details: X } = assert;
  * }} FactoryPowersFacet
  *
  * @typedef {Readonly<{
- *   state: ImmutableState;
+ *   state: State;
  *   facets: import('@agoric/vat-data/src/types').KindFacets<typeof behavior>;
  * }>} MethodContext
  */
 
 /**
  * @param {ERef<ZoeService>} zoe
- * @param {ImmutableState['directorParamManager']} paramMgr
+ * @param {State['directorParamManager']} paramMgr
  * @param {import('../reserve/assetReserve.js').ShortfallReporter} [oldShortfallReporter]
  * @param {ERef<Invitation>} [oldInvitation]
  */
@@ -94,11 +103,31 @@ const updateShortfallReporter = async (
 };
 
 /**
- * @param {ImmutableState['zcf']} zcf
- * @param {ImmutableState['directorParamManager']} directorParamManager
- * @param {ImmutableState['debtMint']} debtMint
+ * @param {Pick<State, 'collateralTypes' | 'rewardPoolSeat'>} state
+ * @returns {MetricsNotification}
  */
-const initState = (zcf, directorParamManager, debtMint) => {
+const metricsOf = state => {
+  return harden({
+    collaterals: Array.from(state.collateralTypes.keys()),
+    rewardPoolAllocation: state.rewardPoolSeat.getCurrentAllocation(),
+  });
+};
+
+/**
+ * @param {State['zcf']} zcf
+ * @param {State['directorParamManager']} directorParamManager
+ * @param {State['debtMint']} debtMint
+ * @param {ERef<StorageNode>} [storageNode]
+ * @param {ERef<Marshaller>} [marshaller]
+ * @returns {State}
+ */
+const initState = (
+  zcf,
+  directorParamManager,
+  debtMint,
+  storageNode,
+  marshaller,
+) => {
   /** For temporary staging of newly minted tokens */
   const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
   const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
@@ -107,19 +136,26 @@ const initState = (zcf, directorParamManager, debtMint) => {
 
   const vaultParamManagers = makeScalarMap('brand');
 
-  const { publication: metricsPublication, subscription: metricsSubscription } =
-    makeSubscriptionKit();
+  const { metricsPublication, metricsSubscription } = makeMetricsPublisherKit(
+    storageNode,
+    marshaller,
+  );
 
   return {
     collateralTypes,
     debtMint,
     directorParamManager,
+    managerCounter: 0,
+    marshaller,
     metricsSubscription,
     metricsPublication,
     mintSeat,
     rewardPoolSeat,
+    storageNode,
     vaultParamManagers,
+    // @ts-expect-error defined in finish()
     shortfallReporter: undefined,
+    // @ts-expect-error defined in finish()
     shortfallInvitation: undefined,
     zcf,
   };
@@ -196,7 +232,7 @@ const getCollaterals = async ({ state }) => {
   );
 };
 /**
- * @param {ImmutableState['directorParamManager']} directorParamManager
+ * @param {State['directorParamManager']} directorParamManager
  */
 const getLiquidationConfig = directorParamManager => ({
   install: directorParamManager.getLiquidationInstall(),
@@ -205,7 +241,7 @@ const getLiquidationConfig = directorParamManager => ({
 
 /**
  *
- * @param {ImmutableState['directorParamManager']} govParams
+ * @param {State['directorParamManager']} govParams
  * @param {VaultManager} vaultManager
  * @param {*} oldInstall
  * @param {*} oldTerms
@@ -335,6 +371,11 @@ const machineBehavior = {
       burnDebt,
     });
 
+    const managerStorageNode =
+      state.storageNode &&
+      E(state.storageNode).getChildNode(`manager${state.managerCounter}`);
+    state.managerCounter += 1;
+
     const vm = makeVaultManager(
       zcf,
       debtMint,
@@ -343,6 +384,8 @@ const machineBehavior = {
       factoryPowers,
       timerService,
       startTimeStamp,
+      managerStorageNode,
+      state.marshaller,
     );
     collateralTypes.init(collateralBrand, vm);
     const { install, terms } = getLiquidationConfig(directorParamManager);
@@ -366,12 +409,7 @@ const machineBehavior = {
   getContractGovernor: ({ state }) => state.zcf.getTerms().electionManager,
   /** @param {MethodContext} context */
   updateMetrics: ({ state }) => {
-    /** @type {MetricsNotification} */
-    const metrics = harden({
-      collaterals: Array.from(state.collateralTypes.keys()),
-      rewardPoolAllocation: state.rewardPoolSeat.getCurrentAllocation(),
-    });
-    state.metricsPublication.updateState(metrics);
+    state.metricsPublication.updateState(metricsOf(harden(state)));
   },
 
   // XXX accessors for tests
@@ -510,7 +548,6 @@ const makeVaultDirector = defineKindMulti(
   'VaultDirector',
   initState,
   behavior,
-  // @ts-expect-error type is undefined on one branch
   { finish },
 );
 

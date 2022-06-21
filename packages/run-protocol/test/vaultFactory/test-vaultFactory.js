@@ -171,6 +171,7 @@ const setupAmmAndElectorateAndReserve = async (
   const { consume, instance } = space;
   installGovernance(zoe, space.installation.produce);
   produceInstallations(space, t.context.installation);
+
   await startEconomicCommittee(space, electorateTerms);
   await setupAmm(space, {
     options: { minInitialPoolLiquidity: 300n },
@@ -2480,6 +2481,47 @@ test('addVaultType: extra, unexpected params', async t => {
     extraParams,
   );
   t.true(matches(actual, M.remotable()), 'unexpected params are ignored');
+});
+
+test('storage keys', async t => {
+  const { aeth } = t.context;
+  const services = await setupServices(
+    t,
+    [500n, 15n],
+    aeth.make(900n),
+    undefined,
+    undefined,
+    500n,
+  );
+
+  // Root vault factory
+  const { lender, vaultFactory } = services.vaultFactory;
+  const directorMetrics = await E(lender).getMetrics();
+  const directorStoreKey = await E(directorMetrics).getStoreKey();
+  t.is(directorStoreKey.key, 'mockChainStorageRoot.vaultFactory.metrics');
+
+  // First manager
+  const manager0 = await E(lender).getCollateralManager(aeth.brand);
+  const manager0Metrics = await E(manager0).getMetrics();
+  const manager0StoreKey = await E(manager0Metrics).getStoreKey();
+  t.is(
+    manager0StoreKey.key,
+    'mockChainStorageRoot.vaultFactory.manager0.metrics',
+  );
+
+  // Second manager
+  const chit = makeIssuerKit('chit');
+  const manager1 = await E(vaultFactory).addVaultType(
+    chit.issuer,
+    'Chit',
+    defaultParamValues(chit.brand),
+  );
+  const manager1Metrics = await E(E(manager1).getPublicFacet()).getMetrics();
+  const manager1StoreKey = await E(manager1Metrics).getStoreKey();
+  t.is(
+    manager1StoreKey.key,
+    'mockChainStorageRoot.vaultFactory.manager1.metrics',
+  );
 });
 
 test('director notifiers', async t => {
