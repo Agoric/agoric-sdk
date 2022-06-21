@@ -126,7 +126,7 @@ const start = async (zcf, privateArgs) => {
     timer,
   } = zcf.getTerms();
   assertIssuerKeywords(zcf, ['Central']);
-  assert(centralBrand !== undefined, X`centralBrand must be present`);
+  assert(centralBrand !== undefined, 'centralBrand must be present');
 
   const [
     { augmentPublicFacet, makeGovernorFacet, params },

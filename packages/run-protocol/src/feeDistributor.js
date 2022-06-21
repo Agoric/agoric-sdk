@@ -5,6 +5,8 @@ import { E, Far } from '@endo/far';
 import { observeNotifier } from '@agoric/notifier';
 import { makeScalarSetStore } from '@agoric/store';
 
+const { details: X } = assert;
+
 /**
  * @typedef {object} FeeCollector
  *
@@ -92,7 +94,7 @@ export const makeShareConfig = (destinations = {}, keywordShares = {}) => {
     .filter(([_, dst]) => dst)
     .map(([kw, destination]) => {
       const share = keywordShares[kw];
-      assert.typeof(share, 'bigint', `${kw} must be a bigint; got ${share}`);
+      assert.typeof(share, 'bigint', X`${kw} must be a bigint; got ${share}`);
       totalShares += share;
       return {
         share,

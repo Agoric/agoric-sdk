@@ -295,7 +295,7 @@ const machineBehavior = {
     // We create only one vault per collateralType.
     assert(
       !collateralTypes.has(collateralBrand),
-      `Collateral brand ${collateralBrand} has already been added`,
+      X`Collateral brand ${collateralBrand} has already been added`,
     );
 
     const managerStorageNode =

@@ -622,7 +622,7 @@ const makeWorld = async t => {
       await E(runPurse).deposit(pmt);
     },
     borrowMoreRUN: async n => {
-      assert(offerResult, X`no offerResult; borrowRUN first?`);
+      assert(offerResult, 'no offerResult; borrowRUN first?');
       const runAmt = AmountMath.make(runBrand, n * micro.unit);
       const attAmt = await E(attPurse).getCurrentAmount();
       const attPmt = await E(attPurse).withdraw(attAmt);
@@ -640,7 +640,7 @@ const makeWorld = async t => {
       await E(runPurse).deposit(runPmt);
     },
     unlienBLD: async n => {
-      assert(offerResult, X`no offerResult; borrowRUN first?`);
+      assert(offerResult, 'no offerResult; borrowRUN first?');
       const attAmt = AmountMath.make(
         attBrand,
         makeCopyBag([[bob.getAddress(), n * micro.unit]]),
@@ -657,7 +657,7 @@ const makeWorld = async t => {
       await returnAttestation(attBack);
     },
     payDownRUN: async value => {
-      assert(offerResult, X`no offerResult; borrowRUN first?`);
+      assert(offerResult, 'no offerResult; borrowRUN first?');
       const runAmt = AmountMath.make(runBrand, value * micro.unit);
       const runPmt = await E(runPurse).withdraw(runAmt);
       const proposal = harden({
@@ -671,7 +671,7 @@ const makeWorld = async t => {
       await E(seat).getOfferResult(); // check for errors
     },
     payToUnlien: async ([pay, unlien]) => {
-      assert(offerResult, X`no offerResult; borrowRUN first?`);
+      assert(offerResult, 'no offerResult; borrowRUN first?');
       const proposal = harden({
         give: { [KW.Debt]: AmountMath.make(runBrand, pay * micro.unit) },
         want: {
@@ -692,7 +692,7 @@ const makeWorld = async t => {
       await returnAttestation(attBack);
     },
     payoffRUN: async value => {
-      assert(offerResult, X`no offerResult; borrowRUN first?`);
+      assert(offerResult, 'no offerResult; borrowRUN first?');
       const proposal = harden({
         give: { [KW.Debt]: AmountMath.make(runBrand, value * micro.unit) },
         want: {

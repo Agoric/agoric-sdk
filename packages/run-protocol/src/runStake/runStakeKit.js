@@ -293,7 +293,7 @@ const helperBehavior = {
     );
     assert(
       giveRUNonly || AmountMath.isGTE(newMaxDebt, newDebt),
-      `cannot borrow ${q(newDebt)} against ${q(amountLiened)}; max is ${q(
+      X`cannot borrow ${q(newDebt)} against ${q(amountLiened)}; max is ${q(
         newMaxDebt,
       )}`,
     );
