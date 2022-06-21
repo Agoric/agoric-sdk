@@ -45,6 +45,7 @@
     "deterministic-json": "^1.0.5",
     "esm": "agoric-labs/esm#Agoric-built",
     "express": "^4.17.1",
+    "http-proxy-middleware": "^2.0.6",
     "import-meta-resolve": "^1.1.1",
     "minimist": "^1.2.0",
     "morgan": "^1.9.1",
