@@ -5,10 +5,10 @@ import { makeStore } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeSubscriptionKit } from '@agoric/notifier';
 
 import { AMM_INSTANCE } from './params.js';
 import { makeTracer } from '../makeTracer.js';
+import { makeMetricsPublisherKit } from '../contractSupport.js';
 
 const trace = makeTracer('Reserve', false);
 
@@ -41,7 +41,12 @@ const nonalphanumeric = /[^A-Za-z0-9]/g;
  *   governedApis: ['addLiquidityToAmmPool'],
  * }
  * >} zcf
- * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Payment}} privateArgs
+ * @param {{
+ *   feeMintAccess: FeeMintAccess,
+ *   initialPoserInvitation: Payment,
+ *   marshaller?: ERef<Marshaller>,
+ *   storageNode?: ERef<StorageNode>,
+ * }} privateArgs
  */
 const start = async (zcf, privateArgs) => {
   /**
@@ -208,13 +213,16 @@ const start = async (zcf, privateArgs) => {
     zcf.makeInvitation(addCollateralHook, 'Add Collateral');
 
   const { brand: runBrand } = await E(runMint).getIssuerRecord();
-  /** @type {SubscriptionRecord<MetricsNotification>} */
-  const { publication: metricsPublication, subscription: metricsSubscription } =
-    makeSubscriptionKit();
 
   // shortfall in Vaults due to liquidations less than debt. This value can be
   // reduced by various actions which burn RUN.
   let shortfallBalance = AmountMath.makeEmpty(runBrand);
+
+  /** @type {import('../contractSupport.js').MetricsPublisherKit<MetricsNotification>} */
+  const { metricsPublication, metricsSubscription } = makeMetricsPublisherKit(
+    privateArgs.storageNode,
+    privateArgs.marshaller,
+  );
 
   const updateMetrics = () => {
     const metrics = harden({
