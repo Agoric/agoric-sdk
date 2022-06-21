@@ -184,6 +184,7 @@ export async function launch({
   mapSize = DEFAULT_LMDB_MAP_SIZE,
   swingStoreTraceFile,
   keepSnapshots,
+  getRuntimeStats = () => ({}),
 }) {
   console.info('Launching SwingSet kernel');
 
@@ -280,6 +281,7 @@ export async function launch({
       type: 'cosmic-swingset-commit-block',
       blockHeight: savedHeight,
       blockTime: savedBlockTime,
+      ...getRuntimeStats(),
     });
 
     await commitResult;

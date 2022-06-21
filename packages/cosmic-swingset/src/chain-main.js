@@ -1,4 +1,7 @@
 import path from 'path';
+import v8 from 'node:v8';
+import process from 'node:process';
+import { performance } from 'perf_hooks';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import {
   importMailbox,
@@ -180,6 +183,27 @@ const makeChainQueue = (call, prefix = '') => {
     }),
   };
   return queue;
+};
+
+const getRuntimeStats = () => {
+  const t0 = performance.now();
+  const heapStats = v8.getHeapStatistics();
+  const t1 = performance.now();
+  const heapSpaceStats = v8.getHeapSpaceStatistics();
+  const t2 = performance.now();
+  const memoryUsage = process.memoryUsage();
+  const t3 = performance.now();
+
+  return {
+    heapStats,
+    heapSpaceStats,
+    memoryUsage,
+    statsTime: {
+      heapStats: t1 - t0,
+      heapSpaceStats: t2 - t1,
+      memoryUsage: t3 - t2,
+    },
+  };
 };
 
 export default async function main(progname, args, { env, homedir, agcc }) {
@@ -416,6 +440,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       mapSize,
       swingStoreTraceFile,
       keepSnapshots,
+      getRuntimeStats,
     });
     return s;
   }
