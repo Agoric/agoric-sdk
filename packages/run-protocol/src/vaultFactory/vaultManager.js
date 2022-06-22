@@ -34,6 +34,7 @@ import {
 import { AmountMath } from '@agoric/ertp';
 
 import { defineKindMulti, pickFacet } from '@agoric/vat-data';
+import { makeStore } from '@agoric/store';
 import { makeVault, Phase } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
@@ -129,8 +130,19 @@ const trace = makeTracer('VM');
  */
 
 // EPHEMERAL STATE
-let liquidationInProgress = false;
-let outstandingQuote = null;
+const initEphemeralState = () => ({
+  liquidationInProgress: false,
+  outstandingQuote: null,
+});
+const ephemeralState = new Map();
+const provideEphemera = key => {
+  if (ephemeralState.has(key)) {
+    return ephemeralState.get(key);
+  }
+  const res = initEphemeralState();
+  ephemeralState.set(key, res);
+  return res;
+};
 
 /**
  * Create state for the Vault Manager kind
@@ -339,18 +351,19 @@ const helperBehavior = {
 
     // INTERLOCK: the first time through, start the activity to wait for
     // and process liquidations over time.
-    if (!liquidationInProgress) {
-      liquidationInProgress = true;
+    const ephemera = provideEphemera(facets.self);
+    if (!ephemera.liquidationInProgress) {
+      ephemera.liquidationInProgress = true;
       // eslint-disable-next-line consistent-return
       return facets.helper
         .processLiquidations()
         .catch(e => console.error('Liquidator failed', e))
         .finally(() => {
-          liquidationInProgress = false;
+          ephemera.liquidationInProgress = false;
         });
     }
 
-    if (!outstandingQuote) {
+    if (!ephemera.outstandingQuote) {
       // the new threshold will be picked up by the next quote request
       return;
     }
@@ -361,7 +374,7 @@ const helperBehavior = {
     const govParams = state.factoryPowers.getGovernedParams();
     const liquidationMargin = govParams.getLiquidationMargin();
     // Safe to call extraneously (lightweight and idempotent)
-    E(outstandingQuote).updateLevel(
+    E(ephemera.outstandingQuote).updateLevel(
       highestDebtRatio.denominator, // collateral
       liquidationThreshold(highestDebtRatio, liquidationMargin),
     );
@@ -374,6 +387,7 @@ const helperBehavior = {
   processLiquidations: async ({ state, facets }) => {
     const { prioritizedVaults, priceAuthority } = state;
     const govParams = state.factoryPowers.getGovernedParams();
+    const ephemera = provideEphemera(facets.self);
 
     async function* eventualLiquidations() {
       while (true) {
@@ -386,7 +400,7 @@ const helperBehavior = {
         // ask to be alerted when the price level falls enough that the vault
         // with the highest debt to collateral ratio will no longer be valued at the
         // liquidationMargin above its debt.
-        outstandingQuote = E(priceAuthority).mutableQuoteWhenLT(
+        ephemera.outstandingQuote = E(priceAuthority).mutableQuoteWhenLT(
           highestDebtRatio.denominator, // collateral
           liquidationThreshold(highestDebtRatio, liquidationMargin),
         );
@@ -395,8 +409,8 @@ const helperBehavior = {
         // The rest of this method will not happen until after a quote is received.
         // This may not happen until much later, when the market changes.
         // eslint-disable-next-line no-await-in-loop
-        const quote = await E(outstandingQuote).getPromise();
-        outstandingQuote = null;
+        const quote = await E(ephemera.outstandingQuote).getPromise();
+        ephemera.outstandingQuote = null;
         // When we receive a quote, we check whether the vault with the highest
         // ratio of debt to collateral is below the liquidationMargin, and if so,
         // we liquidate it. We use ceilDivide to round up because ratios above
