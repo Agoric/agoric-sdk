@@ -3,6 +3,13 @@ import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { diff } from 'deep-object-diff';
 
+import { makeTracer } from '../src/makeTracer.js';
+
+// While t.log has the advantage of omitting by default when tests pass,
+// when debugging it's most valuable to have the messages in sequence with app
+// code logging which doesn't have access to t.log.
+const trace = makeTracer('TestMetrics', false);
+
 /**
  * @param {import('ava').ExecutionContext} t
  * @param {Subscription<N>} subscription
@@ -17,13 +24,13 @@ export const subscriptionTracker = async (t, subscription) => {
   /** @param {Record<keyof N, N[keyof N]>} expectedValue */
   const assertInitial = async expectedValue => {
     notif = await metrics.getUpdateSince();
-    console.log('assertInitial notif', notif);
+    trace('assertInitial notif', notif);
     t.deepEqual(notif.value, expectedValue);
   };
   const assertChange = async expectedDelta => {
     const prevNotif = notif;
     notif = await metrics.getUpdateSince(notif.updateCount);
-    console.log('assertChange notif', notif);
+    trace('assertChange notif', notif);
     // @ts-expect-error diff() overly constrains
     const actualDelta = diff(prevNotif.value, notif.value);
     t.deepEqual(actualDelta, expectedDelta, 'Unexpected delta');
@@ -66,7 +73,7 @@ export const vaultManagerMetricsTracker = async (t, publicFacet) => {
       v.totalOverageReceived,
       v.totalShortfallReceived,
     ].map(a => a.value);
-    console.log('liquidatedYet', { p, o, s });
+    trace('liquidatedYet', { p, o, s });
     return p - o + s;
   };
 
