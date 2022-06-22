@@ -7,6 +7,7 @@ import Snackbar from '@mui/material/Snackbar';
 import Issuers, { IssuersWithoutContext } from '../Issuers';
 import MakePurse from '../../components/MakePurse';
 import ImportIssuer from '../../components/ImportIssuer';
+import Loading from '../../components/Loading';
 
 jest.mock('../../components/MakePurse', () => () => 'MakePurse');
 
@@ -71,7 +72,15 @@ const withApplicationContext =
   };
 
 jest.mock('../../contexts/Application', () => {
-  return { withApplicationContext };
+  return {
+    withApplicationContext,
+    ConnectionStatus: {
+      Connected: 'connected',
+      Connecting: 'connecting',
+      Disconnected: 'disconnected',
+      Error: 'error',
+    },
+  };
 });
 
 test('renders a loading indicator over pending transfers', () => {
@@ -84,7 +93,7 @@ test('renders a loading indicator over pending transfers', () => {
 test('renders a loading indicator when issuers is null', () => {
   const component = mount(<IssuersWithoutContext />);
 
-  expect(component.find(CircularProgress)).toHaveLength(1);
+  expect(component.find(Loading)).toHaveLength(1);
   expect(component.find(Button)).toHaveLength(1);
 });
 

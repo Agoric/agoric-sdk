@@ -3,9 +3,9 @@ import { act } from '@testing-library/react';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Popover from '@mui/material/Popover';
-import CircularProgress from '@mui/material/CircularProgress';
 import Dapps, { DappsWithoutContext } from '../Dapps';
 import Dapp from '../../components/Dapp';
+import Loading from '../../components/Loading';
 
 const dapps = [
   {
@@ -32,7 +32,15 @@ const withApplicationContext =
   };
 
 jest.mock('../../contexts/Application', () => {
-  return { withApplicationContext };
+  return {
+    withApplicationContext,
+    ConnectionStatus: {
+      Connected: 'connected',
+      Connecting: 'connecting',
+      Disconnected: 'disconnected',
+      Error: 'error',
+    },
+  };
 });
 
 jest.mock('@endo/eventual-send', () => ({
@@ -48,7 +56,7 @@ jest.mock('@endo/eventual-send', () => ({
 test('renders a loading indicator while loading', () => {
   const component = mount(<DappsWithoutContext />);
 
-  expect(component.find(CircularProgress)).toHaveLength(1);
+  expect(component.find(Loading)).toHaveLength(1);
   expect(component.find(Dapp)).toHaveLength(0);
 });
 

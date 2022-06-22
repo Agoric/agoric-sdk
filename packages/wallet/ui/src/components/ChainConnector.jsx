@@ -4,31 +4,18 @@ import React, { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { makeStyles } from '@mui/styles';
 import LoadingButton from '@mui/lab/LoadingButton';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemText from '@mui/material/ListItemText';
-import DialogTitle from '@mui/material/DialogTitle';
-import Dialog from '@mui/material/Dialog';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
 
-import { NETWORK_CONFIGS, suggestChain } from '../util/SuggestChain';
+import { withApplicationContext } from '../contexts/Application';
+import { suggestChain } from '../util/SuggestChain';
 
 const useStyles = makeStyles(_ => ({
-  hidden: {
-    display: 'none',
-  },
   connector: {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
     height: '100%',
-  },
-  centeredText: {
-    textAlign: 'center',
-  },
-  dialog: {
-    minWidth: 240,
   },
 }));
 
@@ -36,10 +23,12 @@ const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
-const ChainConnector = () => {
+const ChainConnector = ({
+  networkConfig,
+  setNetworkConfig,
+  setDialogOpened,
+}) => {
   const classes = useStyles();
-  const [dialogOpened, setDialogOpened] = useState(false);
-  const [networkConfig, setNetworkConfig] = useState(null);
   const [connectionInProgress, setConnectionInProgress] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState(null);
 
@@ -53,15 +42,6 @@ const ChainConnector = () => {
 
   const showError = message => {
     setSnackbarMessage(message);
-  };
-
-  const handleClose = () => {
-    setDialogOpened(false);
-  };
-
-  const selectNetworkConfig = nc => {
-    setNetworkConfig(nc);
-    setDialogOpened(false);
   };
 
   useEffect(() => {
@@ -116,28 +96,6 @@ const ChainConnector = () => {
           {networkConfig ? 'Connected' : 'Connect Wallet'}
         </LoadingButton>
       </div>
-      <Dialog onClose={handleClose} open={dialogOpened}>
-        <div className={classes.dialog}>
-          <DialogTitle className={classes.centeredText}>
-            Select Network
-          </DialogTitle>
-          <List sx={{ pt: 0 }}>
-            {NETWORK_CONFIGS.map(nc => (
-              <ListItem
-                button
-                selected={nc === networkConfig}
-                onClick={() => selectNetworkConfig(nc)}
-                key={nc[0]}
-              >
-                <ListItemText
-                  className={classes.centeredText}
-                  primary={nc[1]}
-                />
-              </ListItem>
-            ))}
-          </List>
-        </div>
-      </Dialog>
       <Snackbar
         open={snackbarMessage !== null}
         autoHideDuration={6000}
@@ -155,4 +113,7 @@ const ChainConnector = () => {
   );
 };
 
-export default ChainConnector;
+export default withApplicationContext(ChainConnector, context => ({
+  networkConfig: context.networkConfig,
+  setNetworkConfig: context.setNetworkConfig,
+}));

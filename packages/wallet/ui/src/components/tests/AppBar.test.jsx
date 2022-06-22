@@ -1,22 +1,41 @@
 import { mount } from 'enzyme';
 import { createTheme, ThemeProvider } from '@mui/material';
-import AppBar, { AppBarWithoutContext } from '../AppBar';
-import ChainConnector from '../ChainConnector';
+import AppBar from '../AppBar';
 import WalletConnection from '../WalletConnection';
 
 const withApplicationContext =
   (Component, _) =>
   ({ ...props }) => {
-    return <Component useChainBackend={false} {...props} />;
+    return (
+      <Component
+        useChainBackend={false}
+        allWalletConnections={[
+          'http://unit-test-net.agoric.com/network-config',
+        ]}
+        connectionStatus="Connecting"
+        connectionState="connecting"
+        {...props}
+      />
+    );
   };
 
+jest.mock('../WalletConnection', () => () => 'Wallet Connection');
+
 jest.mock('../../contexts/Application', () => {
-  return { withApplicationContext };
+  return {
+    withApplicationContext,
+    ConnectionStatus: {
+      Connected: 'connected',
+      Connecting: 'connecting',
+      Disconnected: 'disconnected',
+      Error: 'error',
+    },
+  };
 });
 
-jest.mock('../ChainConnector', () => () => 'Wallet Connection');
+jest.mock('../ChainConnector', () => () => 'Chain Connector');
 
-jest.mock('../WalletConnection', () => () => 'Chain Connector');
+jest.mock('../WalletConnection', () => () => 'Wallet Connection');
 
 const appTheme = createTheme({
   pallete: {
@@ -27,24 +46,13 @@ const appTheme = createTheme({
   appBarHeight: '64px',
 });
 
-test('renders the wallet-connection when useChainBackend is false', () => {
+test('renders the connectionComponent', () => {
+  const connectionComponent = <WalletConnection />;
   const component = mount(
     <ThemeProvider theme={appTheme}>
-      <AppBar />
+      <AppBar connectionComponent={connectionComponent} />
     </ThemeProvider>,
   );
 
-  expect(component.find(WalletConnection).exists());
-  expect(component.find(ChainConnector).exists()).toBeFalsy();
-});
-
-test('renders the wallet-connection when useChainBackend is true', () => {
-  const component = mount(
-    <ThemeProvider theme={appTheme}>
-      <AppBarWithoutContext useChainBackend={true} />
-    </ThemeProvider>,
-  );
-
-  expect(component.find(ChainConnector).exists());
-  expect(component.find(WalletConnection).exists()).toBeFalsy();
+  expect(component.find(WalletConnection).exists()).toBeTruthy();
 });

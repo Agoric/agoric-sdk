@@ -37,7 +37,7 @@ const NavDrawer = () => {
           <Menu fontSize="inherit"></Menu>
         </IconButton>
         <Drawer anchor="left" open={drawerOpened} onClose={toggleDrawer(false)}>
-          <NavMenu />
+          <NavMenu setDrawerOpened={setDrawerOpened} />
         </Drawer>
       </>
     )

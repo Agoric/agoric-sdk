@@ -7,6 +7,7 @@ import { withApplicationContext } from '../contexts/Application';
 import CardItem from './CardItem';
 import Card from './Card';
 import ErrorBoundary from './ErrorBoundary';
+import Loading from './Loading';
 
 import './Purses.scss';
 
@@ -54,7 +55,7 @@ export const PursesWithoutContext = ({ purses, pendingTransfers }) => {
     );
   };
   const purseItems = (purses && purses.map(Purse)) ?? (
-    <CircularProgress style={{ margin: 'auto' }} />
+    <Loading defaultMessage="Fetching purses..." />
   );
 
   return (

@@ -31,7 +31,7 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-const ListItemLink = ({ icon, primary, to }) => {
+const ListItemLink = ({ icon, primary, to, onClick }) => {
   const match = useRouteMatch({
     path: to,
     exact: true,
@@ -40,7 +40,15 @@ const ListItemLink = ({ icon, primary, to }) => {
   const renderLink = useMemo(
     () =>
       forwardRef((itemProps, ref) => {
-        return <Link to={to} ref={ref} {...itemProps} role={undefined} />;
+        return (
+          <Link
+            to={to}
+            ref={ref}
+            {...itemProps}
+            role={undefined}
+            onClick={onClick}
+          />
+        );
       }),
     [to],
   );
@@ -61,17 +69,38 @@ const ListItemLink = ({ icon, primary, to }) => {
   );
 };
 
-const NavMenu = () => {
+const NavMenu = ({ setDrawerOpened }) => {
   const styles = useStyles(useTheme());
+  const onLinkClick = () => {
+    if (setDrawerOpened) {
+      setDrawerOpened(false);
+    }
+  };
 
   return (
     <nav className={styles.nav}>
       <div className={styles.sectionHeader}>Wallet</div>
       <List>
-        <ListItemLink to="/" primary="Dashboard" icon={<DashboardIcon />} />
-        <ListItemLink to="/dapps" primary="Dapps" icon={<Apps />} />
-        <ListItemLink to="/contacts" primary="Contacts" icon={<People />} />
         <ListItemLink
+          onClick={onLinkClick}
+          to="/"
+          primary="Dashboard"
+          icon={<DashboardIcon />}
+        />
+        <ListItemLink
+          onClick={onLinkClick}
+          to="/dapps"
+          primary="Dapps"
+          icon={<Apps />}
+        />
+        <ListItemLink
+          onClick={onLinkClick}
+          to="/contacts"
+          primary="Contacts"
+          icon={<People />}
+        />
+        <ListItemLink
+          onClick={onLinkClick}
           to="/issuers"
           primary="Asset Issuers"
           icon={<AddCircle />}

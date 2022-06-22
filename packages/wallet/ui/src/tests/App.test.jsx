@@ -16,15 +16,31 @@ jest.mock('@cosmjs/stargate', () => () => {
   jest.mock();
 });
 
-const connectionState = 'connecting';
 const withApplicationContext =
   (Component, _) =>
   ({ ...props }) => {
-    return <Component connectionState={connectionState} {...props} />;
+    return (
+      <Component
+        allWalletConnections={[
+          'http://unit-test-net.agoric.com/network-config',
+        ]}
+        connectionState="Connecting"
+        connectionStatus="connecting"
+        {...props}
+      />
+    );
   };
 
 jest.mock('../contexts/Application', () => {
-  return { withApplicationContext };
+  return {
+    withApplicationContext,
+    ConnectionStatus: {
+      Connected: 'connected',
+      Connecting: 'connecting',
+      Disconnected: 'disconnected',
+      Error: 'error',
+    },
+  };
 });
 
 const appTheme = createTheme({

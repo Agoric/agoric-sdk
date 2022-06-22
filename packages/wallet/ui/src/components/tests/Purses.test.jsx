@@ -6,6 +6,7 @@ import { createTheme, ThemeProvider } from '@mui/material';
 import Purses, { PursesWithoutContext } from '../Purses';
 import PurseAmount from '../PurseAmount';
 import Transfer from '../Transfer';
+import Loading from '../Loading';
 
 jest.mock('../PurseAmount', () => () => 'PurseAmount');
 
@@ -68,7 +69,15 @@ const withApplicationContext =
   };
 
 jest.mock('../../contexts/Application', () => {
-  return { withApplicationContext };
+  return {
+    withApplicationContext,
+    ConnectionStatus: {
+      Connected: 'connected',
+      Connecting: 'connecting',
+      Disconnected: 'disconnected',
+      Error: 'error',
+    },
+  };
 });
 
 test('renders the purse amounts', () => {
@@ -99,7 +108,7 @@ test('renders a loading indicator when purses is null', () => {
     </ThemeProvider>,
   );
 
-  expect(component.find(CircularProgress)).toHaveLength(1);
+  expect(component.find(Loading)).toHaveLength(1);
   expect(component.find(Button)).toHaveLength(0);
 });
 
