@@ -69,6 +69,8 @@ export const makeAddIssuer = (
  * @param {ZCFSeat} protocolSeat seat that holds collected fees
  * @param {WeakStore<Brand,ZCFMint>} brandToLiquidityMint
  * @param {(secondaryBrand: Brand, reserveLiquidityTokenSeat: ZCFSeat, liquidityKeyword: Keyword) => Promise<void>} onOfferHandled
+ * @param {ERef<StorageNode>} [storageNode]
+ * @param {ERef<Marshaller>} [marshaller]
  */
 export const makeAddPoolInvitation = (
   zcf,
@@ -80,6 +82,8 @@ export const makeAddPoolInvitation = (
   protocolSeat,
   brandToLiquidityMint,
   onOfferHandled,
+  storageNode,
+  marshaller,
 ) => {
   const makePool = definePoolKind(
     zcf,
@@ -88,6 +92,8 @@ export const makeAddPoolInvitation = (
     quoteIssuerKit,
     params,
     protocolSeat,
+    storageNode,
+    marshaller,
   );
 
   /** @type {(Brand) => Promise<{poolFacets: PoolFacets, liquidityZcfMint: ZCFMint}>} */

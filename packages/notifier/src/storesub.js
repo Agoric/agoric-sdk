@@ -2,6 +2,7 @@
 import { E } from '@endo/eventual-send';
 import { Far, makeMarshal } from '@endo/marshal';
 import { observeIteration } from './asyncIterableAdaptor.js';
+import { makeSubscriptionKit } from './subscriber.js';
 
 /**
  * Begin iterating the source, storing serialized iteration values.  If the
@@ -67,10 +68,13 @@ export const makeStoredSubscription = (
 
   /** @type {StoredSubscription<T>} */
   const storesub = Far('StoredSubscription', {
-    getStoreKey: () =>
-      (storageNode ? E(storageNode).getStoreKey() : Promise.resolve({})).then(
-        storeKey => ({ ...storeKey, subscription }),
-      ),
+    getStoreKey: async () => {
+      if (!storageNode) {
+        return harden({ subscription });
+      }
+      const storeKey = await E(storageNode).getStoreKey();
+      return harden({ ...storeKey, subscription });
+    },
     getUnserializer: () => unserializer,
     getSharableSubscriptionInternals:
       subscription.getSharableSubscriptionInternals,
@@ -79,3 +83,37 @@ export const makeStoredSubscription = (
   return storesub;
 };
 harden(makeStoredSubscription);
+
+/**
+ * @template T
+ * @typedef {object} StoredPublisherKit
+ * @property {StoredSubscription<T>} subscriber TODO: change to StoredSubscriber<T> when available
+ * @property {IterationObserver<T>} publisher
+ */
+
+/**
+ * @template [T=unknown]
+ * @param {ERef<StorageNode>} [storageNode]
+ * @param {ERef<Marshaller>} [marshaller]
+ * @param {string} [childPath]
+ * @returns {StoredPublisherKit<T>}
+ */
+export const makeStoredPublisherKit = (storageNode, marshaller, childPath) => {
+  const { publication, subscription } = makeSubscriptionKit();
+
+  if (storageNode && childPath) {
+    storageNode = E(storageNode).getChildNode(childPath);
+  }
+
+  // wrap the subscription to tee events to storage, repeating to this `subscriber`
+  const subscriber = makeStoredSubscription(
+    subscription,
+    storageNode,
+    marshaller,
+  );
+
+  return {
+    publisher: publication,
+    subscriber,
+  };
+};

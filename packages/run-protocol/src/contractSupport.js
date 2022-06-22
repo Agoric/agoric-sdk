@@ -1,5 +1,6 @@
 // @ts-check
 import { AmountMath } from '@agoric/ertp';
+import { makeStoredPublisherKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
 
 const { details: X, quote: q } = assert;
@@ -79,3 +80,26 @@ export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
     )}`,
   );
 };
+
+/**
+ * @template T
+ * @param {ERef<StorageNode>} [storageNode]
+ * @param {ERef<Marshaller>} [marshaller]
+ * @returns {MetricsPublisherKit<T>}
+ */
+export const makeMetricsPublisherKit = (storageNode, marshaller) => {
+  /** @type {import('@agoric/notifier').StoredPublisherKit<T>} */
+  const kit = makeStoredPublisherKit(storageNode, marshaller, 'metrics');
+  return {
+    metricsPublication: kit.publisher,
+    metricsSubscription: kit.subscriber,
+  };
+};
+harden(makeMetricsPublisherKit);
+
+/**
+ * @template T
+ * @typedef {object} MetricsPublisherKit<T>
+ * @property {IterationObserver<T>} metricsPublication
+ * @property {StoredSubscription<T>} metricsSubscription
+ */

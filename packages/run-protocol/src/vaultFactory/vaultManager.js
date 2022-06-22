@@ -26,11 +26,7 @@ import {
   makeRatio,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import {
-  makeNotifierKit,
-  makeSubscriptionKit,
-  observeNotifier,
-} from '@agoric/notifier';
+import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 
 import { defineKindMulti, pickFacet } from '@agoric/vat-data';
@@ -39,7 +35,7 @@ import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
 import { chargeInterest } from '../interest.js';
-import { checkDebtLimit } from '../contractSupport.js';
+import { checkDebtLimit, makeMetricsPublisherKit } from '../contractSupport.js';
 
 const { details: X } = assert;
 
@@ -87,12 +83,14 @@ const trace = makeTracer('VM');
  * debtBrand: Brand<'nat'>,
  * debtMint: ZCFMint<'nat'>,
  * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
+ * marshaller?: ERef<Marshaller>,
  * metricsPublication: IterationObserver<MetricsNotification>,
  * metricsSubscription: Subscription<MetricsNotification>,
  * periodNotifier: ERef<Notifier<bigint>>,
  * poolIncrementSeat: ZCFSeat,
  * priceAuthority: ERef<PriceAuthority>,
  * prioritizedVaults: ReturnType<typeof makePrioritizedVaults>,
+ * storageNode?: ERef<StorageNode>,
  * zcf: import('./vaultFactory.js').VaultFactoryZCF,
  * }>} ImmutableState
  */
@@ -128,7 +126,7 @@ const trace = makeTracer('VM');
  * }>} MethodContext
  */
 
-// EPHEMERAL STATE
+// FIXME https://github.com/Agoric/agoric-sdk/issues/5622
 let liquidationInProgress = false;
 let outstandingQuote = null;
 
@@ -142,6 +140,8 @@ let outstandingQuote = null;
  * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
  * @param {Timestamp} startTimeStamp
+ * @param {ERef<StorageNode>} [storageNode]
+ * @param {ERef<Marshaller>} [marshaller]
  */
 const initState = (
   zcf,
@@ -151,6 +151,8 @@ const initState = (
   factoryPowers,
   timerService,
   startTimeStamp,
+  storageNode,
+  marshaller,
 ) => {
   const periodNotifier = E(timerService).makeNotifier(
     0n,
@@ -161,8 +163,10 @@ const initState = (
   const zeroCollateral = AmountMath.makeEmpty(collateralBrand, 'nat');
   const zeroDebt = AmountMath.makeEmpty(debtBrand, 'nat');
 
-  const { publication: metricsPublication, subscription: metricsSubscription } =
-    makeSubscriptionKit();
+  const { metricsPublication, metricsSubscription } = makeMetricsPublisherKit(
+    storageNode,
+    marshaller,
+  );
 
   /** @type {ImmutableState} */
   const fixed = {

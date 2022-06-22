@@ -5,7 +5,6 @@ import { Far } from '@endo/marshal';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
-import { makeStoredSubscription, makeSubscriptionKit } from '@agoric/notifier';
 
 import {
   assertIssuerKeywords,
@@ -30,6 +29,7 @@ import {
   MIN_INITIAL_POOL_LIQUIDITY_KEY,
 } from './params.js';
 import { makeTracer } from '../makeTracer.js';
+import { makeMetricsPublisherKit } from '../contractSupport.js';
 
 const { quote: q, details: X } = assert;
 
@@ -160,29 +160,22 @@ const start = async (zcf, privateArgs) => {
 
   // The liquidityBrand has to exist to allow the addPool Offer to specify want
   /** @type {WeakStore<Brand,ZCFMint>} */
-  const secondaryBrandToLiquidityMint = makeWeakStore('secondaryBrand');
+  const secondaryBrandToLiquidityMint = makeWeakStore(
+    'secondaryBrandToLiquidityMint',
+  );
 
   const quoteIssuerKit = makeIssuerKit('Quote', AssetKind.SET);
 
-  /** @type {SubscriptionRecord<MetricsNotification>} */
-  const {
-    publication: metricsPublication,
-    subscription: rawMetricsSubscription,
-  } = makeSubscriptionKit();
-  metricsPublication.updateState(harden({ XYK: [] }));
-  const { storageNode, marshaller } = privateArgs;
-  const metricsStorageNode =
-    storageNode && E(storageNode).getChildNode('metrics'); // TODO: magic string
-  const metricsSubscription = makeStoredSubscription(
-    rawMetricsSubscription,
-    metricsStorageNode,
-    marshaller,
+  const { metricsPublication, metricsSubscription } = makeMetricsPublisherKit(
+    privateArgs.storageNode,
+    privateArgs.marshaller,
   );
   const updateMetrics = () => {
     metricsPublication.updateState(
       harden({ XYK: Array.from(secondaryBrandToPool.keys()) }),
     );
   };
+  updateMetrics();
 
   // For now, this seat collects protocol fees. It needs to be connected to
   // something that will extract the fees.
@@ -249,6 +242,11 @@ const start = async (zcf, privateArgs) => {
     );
     return zcf.getIssuerForBrand(brand);
   };
+  const poolStorageNode = await (privateArgs.storageNode &&
+    E(privateArgs.storageNode).getChildNode(
+      // NB: the set of pools grows monotonically
+      `pool${secondaryBrandToPool.getSize()}`,
+    ));
   const addPoolInvitation = makeAddPoolInvitation(
     zcf,
     initPool,
@@ -259,6 +257,8 @@ const start = async (zcf, privateArgs) => {
     protocolSeat,
     secondaryBrandToLiquidityMint,
     handlePoolAdded,
+    poolStorageNode,
+    privateArgs.marshaller,
   );
   const addIssuer = makeAddIssuer(
     zcf,

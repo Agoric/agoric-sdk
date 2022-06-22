@@ -16,7 +16,11 @@ import {
   setupReserve,
   startEconomicCommittee,
 } from '../../../src/proposals/econ-behaviors.js';
-import { installGovernance, provideBundle } from '../../supports.js';
+import {
+  installGovernance,
+  mockChainStorageRoot,
+  provideBundle,
+} from '../../supports.js';
 import { makeTracer } from '../../../src/makeTracer.js';
 
 const ammRoot = './src/vpool-xyk-amm/multipoolMarketMaker.js'; // package relative
@@ -71,7 +75,7 @@ export const setupAMMBootstrap = async (
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   installGovernance(zoe, spaces.installation.produce);
-  produce.chainStorage.resolve(undefined);
+  produce.chainStorage.resolve(mockChainStorageRoot());
 
   return { produce, consume, ...spaces };
 };
