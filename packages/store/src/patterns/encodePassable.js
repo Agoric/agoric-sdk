@@ -412,3 +412,6 @@ export const makeDecodePassable = ({
   return harden(decodePassable);
 };
 harden(makeDecodePassable);
+
+export const isEncodedRemotable = encoded => encoded[0] === 'r';
+harden(isEncodedRemotable);
