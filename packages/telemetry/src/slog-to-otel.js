@@ -12,37 +12,48 @@ import { makeKVStringStore } from './kv-string-store.js';
 /** @typedef {import('@opentelemetry/api').SpanContext} SpanContext */
 /** @typedef {import('@opentelemetry/api').SpanOptions} SpanOptions */
 
-const cleanValue = (value, _key) => {
-  let subst = value;
-  switch (typeof value) {
-    case 'bigint': {
-      // Use Protobuf JSON convention: replace bigint with string.
-      // return `${val}`;
-      // Use rounding convention: replace bigint with number.
-      subst = Number(value);
-      break;
-    }
-    case 'object': {
-      if (value === null) {
-        subst = undefined;
-      } else if (Array.isArray(value)) {
-        subst = JSON.stringify(
-          value.map(cleanValue).filter(v => v !== undefined),
-        );
-      } else {
-        subst = JSON.stringify(
-          Object.fromEntries(
-            Object.entries(value)
-              .map(([k, v]) => [k, cleanValue(v, k)])
-              .filter(([_k, v]) => v !== undefined && v !== null),
-          ),
-        );
-      }
-      break;
-    }
-    default:
+const replacer = (_key, value) => {
+  if (typeof value === 'bigint') {
+    // Use Protobuf JSON convention: replace bigint with string.
+    // return `${value}`;
+    // Use rounding convention: replace bigint with number.
+    return Number(value);
   }
-  return subst;
+
+  if (value === null) {
+    return undefined;
+  }
+
+  return value;
+};
+
+const serializeInto = (value, prefix, target = {}, depth = 3) => {
+  value = replacer(prefix, value);
+  if (typeof value === 'object') {
+    if (depth > 0) {
+      depth -= 1;
+      if (Array.isArray(value)) {
+        if (value.length) {
+          Array.prototype.forEach.call(value, (nested, index) =>
+            serializeInto(nested, `${prefix}.${index}`, target, depth),
+          );
+          return target;
+        }
+      } else {
+        const proto = Object.getPrototypeOf(value);
+        if (proto == null || proto === Object.prototype) {
+          Object.entries(value).forEach(([key, nested]) =>
+            serializeInto(nested, `${prefix}.${key}`, target, depth),
+          );
+          return target;
+        }
+      }
+    }
+    // Fell-through, simply stringify
+    value = JSON.stringify(value, replacer);
+  }
+  target[prefix] = value;
+  return target;
 };
 
 /**
@@ -66,11 +77,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
   let currentAttrs = {};
 
   const cleanAttrs = attrs => ({
-    ...Object.fromEntries(
-      Object.entries(attrs)
-        .map(([key, value]) => [`agoric.${key}`, cleanValue(value, key)])
-        .filter(([_key, value]) => value !== undefined && value !== null),
-    ),
+    ...serializeInto(attrs, 'agoric'),
     ...overrideAttrs,
   });
 
@@ -114,8 +121,9 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         delete attrs.msg;
         const { methargs, method = extractMethod(methargs) } = message.msg;
         name = `E(${message.target}).${method}`;
-        attrs['message.msg.args.slots'] =
-          message.msg.methargs?.slots ?? message.msg.args.slots;
+        const slots =
+          message.msg.methargs?.slots ?? message.msg.args.slots ?? [];
+        attrs['message.msg.args.slots'] = slots.join(',');
         attrs['message.msg.method'] = name;
         attrs['message.msg.result'] = message.msg.result;
         break;
@@ -162,7 +170,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
     /** @type {{ span: Span, name: string }[]} */
     const spanStack = [];
 
-    const makeSpanKey = keyArray => JSON.stringify(keyArray.map(cleanValue));
+    const makeSpanKey = keyArray => JSON.stringify(keyArray, replacer);
 
     const sp = harden({
       endAll: endTime => {
