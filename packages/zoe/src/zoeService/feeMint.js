@@ -4,7 +4,6 @@ import { makeIssuerKit } from '@agoric/ertp';
 
 import { makeHandle } from '../makeHandle.js';
 
-const { details: X } = assert;
 /**
  * @param {FeeIssuerConfig} feeIssuerConfig
  * @param {ShutdownWithFailure} shutdownZoeVat
@@ -31,7 +30,7 @@ const createFeeMint = (feeIssuerConfig, shutdownZoeVat) => {
   const getFeeIssuerKit = allegedFeeMintAccess => {
     assert(
       feeMintAccess === allegedFeeMintAccess,
-      X`The object representing access to the fee brand mint was not provided`,
+      'The object representing access to the fee brand mint was not provided',
     );
     return feeIssuerKit;
   };

@@ -6,13 +6,14 @@ import {
   makeNotifierFromAsyncIterable,
 } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
-import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 
 import { natSafeMath } from '../src/contractSupport/index.js';
 
 import './types.js';
 import '../exported.js';
+
+const { details: X } = assert;
 
 /**
  * @typedef {object} FakePriceAuthorityOptions
@@ -47,7 +48,7 @@ export async function makeFakePriceAuthority(options) {
 
   assert(
     tradeList || priceList,
-    X`One of priceList or tradeList must be specified`,
+    'One of priceList or tradeList must be specified',
   );
 
   const unitValueIn = AmountMath.getValue(actualBrandIn, unitAmountIn);

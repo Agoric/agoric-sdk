@@ -2,7 +2,6 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
@@ -13,6 +12,8 @@ import {
 import * as secondPriceLogic from './secondPriceLogic.js';
 import * as firstPriceLogic from './firstPriceLogic.js';
 import { assertBidSeat } from './assertBidSeat.js';
+
+const { details: X } = assert;
 
 const FIRST_PRICE = 'first-price';
 const SECOND_PRICE = 'second-price';
@@ -118,7 +119,7 @@ const start = zcf => {
   const makeBidInvitation = () => {
     /** @type {OfferHandler} */
     const performBid = seat => {
-      assert(!isClosed, X`Auction session is closed, no more bidding`);
+      assert(!isClosed, 'Auction session is closed, no more bidding');
 
       assertProposalShape(seat, {
         give: { Bid: null },

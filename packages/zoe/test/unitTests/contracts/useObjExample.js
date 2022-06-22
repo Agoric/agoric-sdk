@@ -1,6 +1,5 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
@@ -9,6 +8,8 @@ import {
   assertIssuerKeywords,
   assertProposalShape,
 } from '../../../src/contractSupport/index.js';
+
+const { details: X } = assert;
 
 /**
  * Give a use object when a payment is escrowed
@@ -35,7 +36,7 @@ const start = zcf => {
       colorPixels: (color, amountToColor = undefined) => {
         // Throw if the offer is no longer active, i.e. the user has
         // completed their offer and the assets are no longer escrowed.
-        assert(!seat.hasExited(), X`the escrowing offer is no longer active`);
+        assert(!seat.hasExited(), 'the escrowing offer is no longer active');
         const escrowedAmount = seat.getAmountAllocated('Pixels', pixelBrand);
         // If no amountToColor is provided, color all the pixels
         // escrowed for this offer.

@@ -1,12 +1,13 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
 import { M, fit } from '@agoric/store';
 import '../../exported.js';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { swapExact } from '../contractSupport/index.js';
 import { isAfterDeadlineExitRule } from '../typeGuards.js';
+
+const { details: X } = assert;
 
 /**
  * A call option is the right (but not the obligation) to buy digital
@@ -77,7 +78,7 @@ const start = zcf => {
     const sellSeatExitRule = sellSeat.getProposal().exit;
     assert(
       isAfterDeadlineExitRule(sellSeatExitRule),
-      `the seller must have an afterDeadline exitRule, but instead had ${sellSeatExitRule}`,
+      X`the seller must have an afterDeadline exitRule, but instead had ${sellSeatExitRule}`,
     );
 
     const exerciseOption = buySeat => {

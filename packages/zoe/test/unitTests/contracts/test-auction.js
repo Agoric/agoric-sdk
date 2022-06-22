@@ -7,7 +7,6 @@ import path from 'path';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
 
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { setup } from '../setupBasicMints.js';
@@ -441,7 +440,7 @@ test('zoe - secondPriceAuction - all bidders try to exit', async t => {
   });
   const alicePayments = harden({ Asset: aliceMoolaPayment });
 
-  assert(!!aliceInvitation, X`Alice invitation must be presented`);
+  assert(!!aliceInvitation, 'Alice invitation must be presented');
   // Alice initializes the auction
   const aliceSeat = await E(zoe).offer(
     aliceInvitation,
