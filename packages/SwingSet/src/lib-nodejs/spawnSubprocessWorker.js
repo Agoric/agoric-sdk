@@ -23,6 +23,8 @@ function parentLog(first, ...args) {
 // always be Node.
 const stdio = harden(['inherit', 'inherit', 'inherit', 'pipe', 'pipe']);
 
+const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
+
 export function startSubprocessWorker(execPath, procArgs = []) {
   const proc = spawn(execPath, procArgs, { stdio });
 
@@ -30,7 +32,7 @@ export function startSubprocessWorker(execPath, procArgs = []) {
   toChild.pipe(netstringEncoderStream()).pipe(proc.stdio[3]);
   // proc.stdio[4].setEncoding('utf-8');
   const fromChild = proc.stdio[4]
-    .pipe(netstringDecoderStream())
+    .pipe(netstringDecoderStream(NETSTRING_MAX_CHUNK_SIZE))
     .pipe(arrayDecoderStream());
 
   // fromChild.addListener('data', data => parentLog(`fd4 data`, data));

@@ -37,7 +37,7 @@ export function netstringEncoderStream() {
 // leftover bytes. Output is zero or more decoded Buffers, one per netstring,
 // plus a Buffer of leftover bytes.
 //
-export function decode(data) {
+export function decode(data, optMaxChunkSize) {
   // TODO: it would be more efficient to accumulate pending data in an array,
   // rather than doing a concat each time
   let start = 0;
@@ -53,6 +53,12 @@ export function decode(data) {
     if (!(size > -1)) {
       // reject NaN, all negative numbers
       assert.fail(X`unparseable size ${sizeString}, should be integer`);
+    }
+    if (optMaxChunkSize) {
+      assert(
+        size <= optMaxChunkSize,
+        X`size ${size} exceeds limit of ${optMaxChunkSize}`,
+      );
     }
     if (data.length < colon + 1 + size + 1) {
       break; // still waiting for `${DATA}.`
@@ -70,7 +76,7 @@ export function decode(data) {
 }
 
 // input is a byte pipe, output is a sequence of Buffers
-export function netstringDecoderStream() {
+export function netstringDecoderStream(optMaxChunkSize) {
   let buffered = Buffer.from('');
 
   function transform(chunk, encoding, callback) {
@@ -80,7 +86,7 @@ export function netstringDecoderStream() {
     buffered = Buffer.concat([buffered, chunk]);
     let err;
     try {
-      const { leftover, payloads } = decode(buffered);
+      const { leftover, payloads } = decode(buffered, optMaxChunkSize);
       buffered = leftover;
       for (let i = 0; i < payloads.length; i += 1) {
         this.push(payloads[i]);
