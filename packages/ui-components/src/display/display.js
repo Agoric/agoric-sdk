@@ -7,6 +7,8 @@ import { parseAsNat } from './natValue/parseAsNat.js';
 import { stringifyNat } from './natValue/stringifyNat.js';
 import { parseAsSet } from './setValue/parseAsSet.js';
 import { stringifySet } from './setValue/stringifySet.js';
+import { parseAsCopyBag } from './copyBagValue/parseAsCopyBag.js';
+import { stringifyCopyBag } from './copyBagValue/stringifyCopyBag.js';
 
 /**
  *
@@ -26,7 +28,10 @@ export const parseAsValue = (
   if (assetKind === AssetKind.SET) {
     return parseAsSet(str);
   }
-  assert.fail(details`AssetKind ${assetKind} must be NAT or SET`);
+  if (assetKind === AssetKind.COPY_BAG) {
+    return parseAsCopyBag(str);
+  }
+  assert.fail(details`AssetKind ${assetKind} must be NAT or SET or COPY_BAG`);
 };
 
 /**
@@ -67,7 +72,10 @@ export const stringifyValue = (
   if (assetKind === AssetKind.SET) {
     return stringifySet(value);
   }
-  assert.fail(details`AssetKind ${assetKind} must be NAT or SET`);
+  if (assetKind === AssetKind.COPY_BAG) {
+    return stringifyCopyBag(value);
+  }
+  assert.fail(details`AssetKind ${assetKind} must be NAT or SET or COPY_BAG`);
 };
 
 /**
