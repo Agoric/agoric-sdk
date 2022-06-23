@@ -556,11 +556,14 @@ export default function makeKernelKeeper(
     const ownerVat = kvStore.get(ownerKey);
     assert.equal(ownerVat, oldVat, `export ${kref} not owned by old vat`);
     kvStore.delete(ownerKey);
+    // note that we do not delete the object here: it will be
+    // colelcted if/when all other references are dropped
   }
 
   function deleteKernelObject(koid) {
     kvStore.delete(`${koid}.owner`);
     kvStore.delete(`${koid}.refCount`);
+    decStat('kernelObjects');
     // TODO: decref auxdata slots and delete auxdata, when #2069 is added
   }
 
