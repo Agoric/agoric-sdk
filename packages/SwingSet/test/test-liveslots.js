@@ -28,7 +28,14 @@ function matchIDCounterSet(t, log) {
   t.like(log.shift(), { type: 'vatstoreSet', key: 'idCounters' });
 }
 
-const slot0arg = { '@qclass': 'slot', index: 0 };
+function slotArg(index, iface) {
+  if (iface) {
+    return { '@qclass': 'slot', iface: `Alleged: ${iface}`, index };
+  } else {
+    return { '@qclass': 'slot', index };
+  }
+}
+const slot0arg = slotArg(0);
 
 test('calls', async t => {
   const { log, syscall } = buildSyscall();
@@ -589,6 +596,201 @@ test('remote function call', async t => {
   t.deepEqual(log.shift(), {
     type: 'resolve',
     resolutions: [[rp2, false, capargs(['ok', 'funcall', 'arg!'])]],
+  });
+  t.deepEqual(log, []);
+});
+
+const longString =
+  'This is a really really long string, longer even than you would normally use, long enough, in fact, to overflow our minimal max length';
+const undefinedArg = capargs({ '@qclass': 'undefined' });
+
+test('capdata size limit on syscalls', async t => {
+  const { log, syscall } = buildSyscall();
+
+  function build(vatPowers) {
+    const { D } = vatPowers;
+    const obj1 = Far('obj1', {});
+    const obj2 = Far('obj2', {});
+    return Far('root', {
+      async sendTooManySlots(target) {
+        try {
+          await E(target).willFail(obj1, obj2);
+          log.push('did not fail as expected');
+        } catch (e) {
+          log.push(`fail: ${e.message}`);
+        }
+      },
+      async sendBodyTooBig(target) {
+        try {
+          await E(target).willFail(longString);
+          log.push('did not fail as expected');
+        } catch (e) {
+          log.push(`fail: ${e.message}`);
+        }
+      },
+      async resolveTooManySlots(target) {
+        const pk = makePromiseKit();
+        await E(target).takeThis(pk.promise);
+        pk.resolve([obj1, obj2]);
+      },
+      async resolveBodyTooBig(target) {
+        const pk = makePromiseKit();
+        await E(target).takeThis(pk.promise);
+        pk.resolve(longString);
+      },
+      async returnTooManySlots() {
+        return [obj1, obj2];
+      },
+      async returnBodyTooBig() {
+        return longString;
+      },
+      async callTooManySlots(dev) {
+        try {
+          await D(dev).willFail(obj1, obj2);
+          log.push('did not fail as expected');
+        } catch (e) {
+          log.push(`fail: ${e.message}`);
+        }
+      },
+      async callBodyTooBig(dev) {
+        try {
+          await D(dev).willFail(longString);
+          log.push('did not fail as expected');
+        } catch (e) {
+          log.push(`fail: ${e.message}`);
+        }
+      },
+    });
+  }
+  const returnTestHooks = [];
+  const dispatch = await makeDispatch(
+    syscall,
+    build,
+    'vatA',
+    false,
+    undefined,
+    returnTestHooks,
+  );
+  const { setSyscallCapdataLimits } = returnTestHooks[0];
+  setSyscallCapdataLimits(130, 2);
+
+  log.length = 0; // assume pre-build vatstore operations are correct
+  const rootA = 'o+0';
+  const target = 'o-1';
+  const device = 'd-1';
+
+  const rp1 = 'p-1';
+  await dispatch(
+    makeMessage(rootA, 'sendTooManySlots', [slot0arg], [target], rp1),
+  );
+  t.deepEqual(log.shift(), 'fail: syscall capdata slots array too long');
+  t.deepEqual(log.shift(), {
+    type: 'resolve',
+    resolutions: [[rp1, false, undefinedArg]],
+  });
+  matchIDCounterSet(t, log);
+  t.deepEqual(log, []);
+
+  const rp2 = 'p-2';
+  await dispatch(
+    makeMessage(rootA, 'sendBodyTooBig', [slot0arg], [target], rp2),
+  );
+  t.deepEqual(log.shift(), 'fail: syscall capdata body too large');
+  t.deepEqual(log.shift(), {
+    type: 'resolve',
+    resolutions: [[rp2, false, undefinedArg]],
+  });
+  t.deepEqual(log, []);
+
+  const rp3 = 'p-3';
+  await dispatch(
+    makeMessage(rootA, 'callTooManySlots', [slot0arg], [device], rp3),
+  );
+  t.deepEqual(log.shift(), 'fail: syscall capdata slots array too long');
+  t.deepEqual(log.shift(), {
+    type: 'resolve',
+    resolutions: [[rp3, false, undefinedArg]],
+  });
+  t.deepEqual(log, []);
+
+  const rp4 = 'p-4';
+  await dispatch(
+    makeMessage(rootA, 'callBodyTooBig', [slot0arg], [device], rp4),
+  );
+  t.deepEqual(log.shift(), 'fail: syscall capdata body too large');
+  t.deepEqual(log.shift(), {
+    type: 'resolve',
+    resolutions: [[rp4, false, undefinedArg]],
+  });
+  t.deepEqual(log, []);
+
+  const rp5 = 'p-5';
+  const parg5 = 'p+5';
+  const result5 = 'p+6';
+  await dispatch(
+    makeMessage(rootA, 'resolveTooManySlots', [slot0arg], [target], rp5),
+  );
+  t.deepEqual(log.shift(), {
+    type: 'send',
+    targetSlot: target,
+    methargs: capargs(['takeThis', [slotArg(0)]], [parg5]),
+    resultSlot: result5,
+  });
+  t.deepEqual(log.shift(), { type: 'subscribe', target: result5 });
+  matchIDCounterSet(t, log);
+  await dispatch(makeResolve(result5, undefinedArg));
+  t.deepEqual(log.shift(), {
+    type: 'exit',
+    isFailure: true,
+    info: Error('syscall capdata slots array too long'),
+  });
+  t.deepEqual(log.shift(), {
+    type: 'resolve',
+    resolutions: [[rp5, false, undefinedArg]],
+  });
+  t.deepEqual(log, []);
+
+  const rp6 = 'p-6';
+  const parg6 = 'p+7';
+  const result6 = 'p+8';
+  await dispatch(
+    makeMessage(rootA, 'resolveBodyTooBig', [slot0arg], [target], rp6),
+  );
+  t.deepEqual(log.shift(), {
+    type: 'send',
+    targetSlot: target,
+    methargs: capargs(['takeThis', [slotArg(0)]], [parg6]),
+    resultSlot: result6,
+  });
+  t.deepEqual(log.shift(), { type: 'subscribe', target: result6 });
+  matchIDCounterSet(t, log);
+  await dispatch(makeResolve(result6, undefinedArg));
+  t.deepEqual(log.shift(), {
+    type: 'exit',
+    isFailure: true,
+    info: Error('syscall capdata body too large'),
+  });
+  t.deepEqual(log.shift(), {
+    type: 'resolve',
+    resolutions: [[rp6, false, undefinedArg]],
+  });
+  t.deepEqual(log, []);
+
+  const rp7 = 'p-7';
+  await dispatch(makeMessage(rootA, 'returnTooManySlots', [], [], rp7));
+  t.deepEqual(log.shift(), {
+    type: 'exit',
+    isFailure: true,
+    info: Error('syscall capdata slots array too long'),
+  });
+  t.deepEqual(log, []);
+
+  const rp8 = 'p-8';
+  await dispatch(makeMessage(rootA, 'returnBodyTooBig', [], [], rp8));
+  t.deepEqual(log.shift(), {
+    type: 'exit',
+    isFailure: true,
+    info: Error('syscall capdata body too large'),
   });
   t.deepEqual(log, []);
 });
@@ -1397,7 +1599,7 @@ test('promise cycle', async t => {
   t.deepEqual(log, []);
 });
 
-test('unserializable promise resolution', async t => {
+test.serial('unserializable promise resolution', async t => {
   // method-bearing objects must be marked as Far, else they cannot be
   // serialized
   const unserializable = harden({ deliberate: () => {} });
@@ -1458,7 +1660,7 @@ test('unserializable promise resolution', async t => {
   t.deepEqual(l2.resolutions[0], [expectedPA, true, expectedError]);
 });
 
-test('unserializable promise rejection', async t => {
+test.serial('unserializable promise rejection', async t => {
   // method-bearing objects must be marked as Far, else they cannot be
   // serialized
   const unserializable = harden({ deliberate: () => {} });
