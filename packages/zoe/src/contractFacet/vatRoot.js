@@ -8,17 +8,21 @@
 // `yarn build-zcfBundle`.
 
 import { Far } from '@endo/marshal';
+import { provide } from '@agoric/store';
 
 import '../../exported.js';
 import '../internal-types.js';
 
+import { makeScalarBigMapStore } from '@agoric/vat-data/src';
 import { makeZCFZygote } from './zcfZygote.js';
 
 /**
  * @param {VatPowers & { testJigSetter: TestJigSetter }} powers
+ * @param {any} _vatParams
+ * @param {MapStore<string,any>} baggage
  * @returns {{ executeContract: ExecuteContract}}
  */
-export function buildRootObject(powers) {
+export function buildRootObject(powers, _vatParams, baggage) {
   // Currently, there is only one function, `executeContract` called
   // by the Zoe Service. However, when there is kernel support for
   // zygote vats (essentially freezing and then creating copies of
@@ -44,11 +48,15 @@ export function buildRootObject(powers) {
       testJigSetter,
     );
     zcfZygote.evaluateContract(bundleOrBundleCap);
+    const contractBaggage = provide(baggage, 'contractBaggage', () =>
+      makeScalarBigMapStore('zoeContract'),
+    );
     return zcfZygote.startContract(
       zoeInstanceAdmin,
       instanceRecordFromZoe,
       issuerStorageFromZoe,
       privateArgs,
+      contractBaggage,
     );
   };
 

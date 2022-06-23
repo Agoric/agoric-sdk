@@ -11,5 +11,6 @@
  *     instanceRecordFromZoe: InstanceRecord,
  *     issuerStorageFromZoe: IssuerRecords,
  *     privateArgs?: object,
+ *     baggage?: MapStore<string,any>,
  * ) => Promise<ExecuteContractResult>} startContract
  */
