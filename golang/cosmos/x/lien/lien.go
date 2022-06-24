@@ -179,7 +179,7 @@ func (ch portHandler) handleGetAccountState(ctx sdk.Context, msg portMessage) (s
 	return string(bz), nil
 }
 
-// handleChangeLiened processes a LIEN_SET_LIENED message.
+// handleChangeLiened processes a LIEN_CHANGE_LIENED message.
 // See spec/02_messages.md for the messages and responses.
 func (ch portHandler) handleChangeLiened(ctx sdk.Context, msg portMessage) (string, error) {
 	addr, err := sdk.AccAddressFromBech32(msg.Address)
