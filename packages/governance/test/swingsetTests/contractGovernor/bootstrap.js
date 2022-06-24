@@ -136,21 +136,33 @@ const oneVoterValidate = async (
   );
 };
 
-const checkContractState = async (zoe, contractInstanceP, log) => {
+const watchParams = async (zoe, contractInstanceP, log) => {
   const contractInstance = await contractInstanceP;
+  /** @type {GovernedPublicFacetMethods} */
   const contractPublic = E(zoe).getPublicFacet(contractInstance);
-  let paramValues = await E(contractPublic).getGovernedParams();
   const subscription = await E(contractPublic).getSubscription();
+  /** @type {any} */
+  let prev = await E(contractPublic).getGovernedParams();
   const paramChangeObserver = Far('param observer', {
-    updateState: update => log(`${update.paramNames} changed in a vote.`),
+    updateState: ({ current }) => {
+      const changed = [];
+      if (
+        prev.Electorate.value.value[0].handle !==
+        current.Electorate.value.value[0].handle
+      ) {
+        changed.push('Electorate');
+      }
+      if (prev.MalleableNumber.value !== current.MalleableNumber.value) {
+        changed.push('MalleableNumber');
+      }
+      log(`params update: `, changed.join(','));
+      log(
+        `current value of MalleableNumber is ${current.MalleableNumber.value}`,
+      );
+      prev = current;
+    },
   });
   observeIteration(subscription, paramChangeObserver);
-
-  // it takes a while for the update to propagate. The second time it seems good
-  paramValues = await E(contractPublic).getGovernedParams();
-  const malleableNumber = paramValues.MalleableNumber;
-
-  log(`current value of MalleableNumber is ${malleableNumber.value}`);
 };
 
 const setupParameterChanges = async (
@@ -268,6 +280,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   ).startInstance(installations.contractGovernor, {}, governedContractTerms);
   const governedInstance = E(governor).getInstance();
   const governedPF = E(governor).getPublicFacet();
+  await watchParams(zoe, governedInstance, log);
 
   const [testName] = argv;
   switch (testName) {
@@ -294,8 +307,6 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
       await E(timer).tick();
       await E(timer).tick();
       await outcome1;
-
-      await checkContractState(zoe, governedInstance, log);
 
       await E(governedPF)
         .getNum()
@@ -351,8 +362,6 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
       await E(timer).tick();
       await outcome2;
 
-      await checkContractState(zoe, governedInstance, log);
-
       break;
     }
     case 'brokenUpdateStart': {
@@ -407,8 +416,6 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
         E(zoe).getPublicFacet(governorInstance),
       );
 
-      await checkContractState(zoe, governedInstance, log);
-
       break;
     }
     case 'changeTwoParams': {
@@ -459,8 +466,6 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
         firstElectorateInstance,
         E(zoe).getPublicFacet(governorInstance),
       );
-
-      await checkContractState(zoe, governedInstance, log);
 
       break;
     }

@@ -3,6 +3,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
+import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { makeZoeKit } from '@agoric/zoe';
 import bundleSource from '@endo/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
@@ -138,6 +139,20 @@ test('governParam no votes', async t => {
       timer,
     );
 
+  /** @type {GovernedPublicFacet<unknown>} */
+  const publicFacet = E(governorFacets.creatorFacet).getPublicFacet();
+  const notifier = makeNotifierFromAsyncIterable(
+    await E(publicFacet).getSubscription(),
+  );
+  const update1 = await notifier.getUpdateSince();
+  t.like(update1, {
+    value: {
+      current: {
+        MalleableNumber: { type: 'nat', value: 602214090000000000000000n },
+      },
+    },
+  });
+
   const paramChangeSpec = harden({
     paramPath: { key: 'governedParams' },
     changes: { [MALLEABLE_NUMBER]: 25n },
@@ -154,21 +169,18 @@ test('governParam no votes', async t => {
     t.is(e, 'No quorum'),
   );
 
-  t.deepEqual(
-    await E(
-      E(governorFacets.creatorFacet).getPublicFacet(),
-    ).getGovernedParams(),
-    {
-      Electorate: {
-        type: 'invitation',
-        value: invitationAmount,
-      },
-      MalleableNumber: {
-        type: 'nat',
-        value: 602214090000000000000000n,
-      },
+  // no update2 because the value didn't change
+
+  t.deepEqual(await E(publicFacet).getGovernedParams(), {
+    Electorate: {
+      type: 'invitation',
+      value: invitationAmount,
     },
-  );
+    MalleableNumber: {
+      type: 'nat',
+      value: 602214090000000000000000n,
+    },
+  });
 });
 
 test('multiple params bad change', async t => {
@@ -209,6 +221,26 @@ test('change multiple params', async t => {
       timer,
     );
 
+  /** @type {GovernedPublicFacet<unknown>} */
+  const publicFacet = await E(governorFacets.creatorFacet).getPublicFacet();
+  const notifier = makeNotifierFromAsyncIterable(
+    await E(publicFacet).getSubscription(),
+  );
+  const update1 = await notifier.getUpdateSince();
+  // this part of the update has objects that can't be literals here for deepEqual
+  t.is(
+    // @ts-expect-error reaching into unknown values
+    update1.value.current.Electorate.value.value[0].description,
+    'questionPoser',
+  );
+  t.like(update1, {
+    value: {
+      current: {
+        MalleableNumber: { type: 'nat', value: 602214090000000000000000n },
+      },
+    },
+  });
+
   // This is the wrong kind of invitation, but governance can't tell
   const wrongInvitation = await E(committeeCreator).getPoserInvitation();
 
@@ -247,9 +279,16 @@ test('change multiple params', async t => {
     t.fail(`expected success, got ${e}`);
   });
 
-  const paramsAfter = await E(
-    E(governorFacets.creatorFacet).getPublicFacet(),
-  ).getGovernedParams();
+  const update2 = await notifier.getUpdateSince(update1.updateCount);
+  t.like(update2, {
+    value: {
+      current: {
+        MalleableNumber: { type: 'nat', value: 42n },
+      },
+    },
+  });
+
+  const paramsAfter = await E(publicFacet).getGovernedParams();
   t.deepEqual(paramsAfter.Electorate.value, invitationAmount);
   t.is(paramsAfter.MalleableNumber.value, 42n);
 });
@@ -263,6 +302,20 @@ test('change multiple params used invitation', async t => {
       { committeeName: 'Demos', committeeSize: 1 },
       timer,
     );
+
+  /** @type {GovernedPublicFacet<unknown>} */
+  const publicFacet = E(governorFacets.creatorFacet).getPublicFacet();
+  const notifier = makeNotifierFromAsyncIterable(
+    await E(publicFacet).getSubscription(),
+  );
+  const update1 = await notifier.getUpdateSince();
+  t.like(update1, {
+    value: {
+      current: {
+        MalleableNumber: { type: 'nat', value: 602214090000000000000000n },
+      },
+    },
+  });
 
   // This is the wrong kind of invitation, but governance can't tell
   const wrongInvitation = await E(committeeCreator).getPoserInvitation();
@@ -303,9 +356,9 @@ test('change multiple params used invitation', async t => {
   await E(timer).tick();
   await E(timer).tick();
 
-  const paramsAfter = await E(
-    E(governorFacets.creatorFacet).getPublicFacet(),
-  ).getGovernedParams();
+  // no update2 because the value didn't change
+
+  const paramsAfter = await E(publicFacet).getGovernedParams();
   t.deepEqual(paramsAfter.Electorate.value, invitationAmount);
   // original value
   t.is(paramsAfter.MalleableNumber.value, 602214090000000000000000n);

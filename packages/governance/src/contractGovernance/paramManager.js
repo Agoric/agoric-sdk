@@ -4,7 +4,7 @@ import { Far, passStyleOf } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { Nat } from '@agoric/nat';
-import { makeSubscriptionKit } from '@agoric/notifier';
+import { makeStoredPublisherKit } from '@agoric/notifier';
 import { keyEQ, makeStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { ParamTypes } from '../constants.js';
@@ -60,9 +60,18 @@ const assertElectorateMatches = (paramManager, governedParams) => {
 const makeParamManagerBuilder = zoe => {
   /** @type {Store<Keyword, any>} */
   const namesToParams = makeStore('Parameter Name');
-  const { publication, subscription } = makeSubscriptionKit();
+  /** @type {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} */
+  const { publisher, subscriber } = makeStoredPublisherKit();
   const getters = {};
   const setters = {};
+
+  const publish = () => {
+    /** @type {ParamStateRecord} */
+    const current = Object.fromEntries(
+      [...namesToParams.entries()].map(([k, v]) => [k, v.makeDescription()]),
+    );
+    publisher.updateState({ current });
+  };
 
   /**
    * Support for parameters that are copy objects
@@ -311,31 +320,31 @@ const makeParamManagerBuilder = zoe => {
   const updateParams = async paramChanges => {
     const paramNames = Object.keys(paramChanges);
 
+    // promises to prepare every update
     const asyncResults = paramNames.map(name =>
       setters[`prepareToUpdate${name}`](paramChanges[name]),
     );
     // if any update doesn't succeed, fail the request
-    const results = await Promise.all(asyncResults);
+    const prepared = await Promise.all(asyncResults);
 
-    const tuples = paramNames.map((name, i) => {
+    // actually update
+    paramNames.forEach((name, i) => {
       const setFn = setters[`update${name}`];
-      return [name, setFn(results[i])];
+      setFn(prepared[i]);
     });
-    const newValues = Object.fromEntries(tuples);
-    publication.updateState({ paramNames });
-
-    return harden(newValues);
+    publish();
   };
 
-  const makeParamManager = () => {
-    publication.updateState(harden({ paramNames: [...namesToParams.keys()] }));
+  // Called after all params have been added with their initial values
+  const build = () => {
+    publish();
 
     // CRUCIAL: Contracts that call buildParamManager should only export the
     // resulting paramManager to their creatorFacet, where it will be picked up by
     // contractGovernor. The getParams method can be shared widely.
     return Far('param manager', {
       getParams,
-      getSubscription: () => subscription,
+      getSubscription: () => subscriber,
       getAmount: name => getTypedParam(ParamTypes.AMOUNT, name),
       getBrand: name => getTypedParam(ParamTypes.BRAND, name),
       getInstance: name => getTypedParam(ParamTypes.INSTANCE, name),
@@ -368,7 +377,7 @@ const makeParamManagerBuilder = zoe => {
     addRatio: (n, v) => addRatio(n, v, builder),
     addRecord: (n, v) => addRecord(n, v, builder),
     addString: (n, v) => addString(n, v, builder),
-    build: () => makeParamManager(),
+    build,
   };
   return builder;
 };

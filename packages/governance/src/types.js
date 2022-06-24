@@ -360,6 +360,8 @@
  *   keyword pairs with descriptions of parameters under governance.
  */
 
+/** @typedef {{current: ParamStateRecord}} GovernanceSubscriptionState */
+
 /**
  * @typedef {object} ParamManagerBase The base paramManager with typed getters
  * @property {() => ParamStateRecord} getParams
@@ -376,13 +378,12 @@
  *   most types, the visible value is the same as proposedValue. For Invitations
  *   the visible value is the amount of the invitation.
  * @property {(name: string) => Promise<Invitation>} getInternalParamValue
- * @property {() => StoredSubscription<ParamStateRecord>} getSubscription
+ * @property {() => StoredSubscription<GovernanceSubscriptionState>} getSubscription
  */
 
 /**
  * @callback UpdateParams
  * @param {Record<string,ParamValue>} paramChanges
- * @returns {Promise<ParamValue[]>}
  */
 
 /**
@@ -510,7 +511,7 @@
 
 /**
  * @typedef GovernedPublicFacetMethods
- * @property {() => StoredSubscription<ParamStateRecord>} getSubscription
+ * @property {() => StoredSubscription<GovernanceSubscriptionState>} getSubscription
  * @property {() => Instance} getContractGovernor
  * @property {() => ParamStateRecord} getGovernedParams - get descriptions of
  *   all the governed parameters
