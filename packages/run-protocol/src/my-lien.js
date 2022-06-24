@@ -30,21 +30,31 @@ export const makeStakeReporter = (bridgeManager, stake, denom = 'ubld') => {
   const { make: makeAmt } = AmountMath;
   /** @param {string} numeral */
   const toStake = numeral => makeAmt(stake, BigInt(numeral));
+  /**
+   * @param {string} address
+   * @param {bigint} delta
+   * @returns {Promise<Amount<`nat`>>}
+   */
+  const changeLiened = async (address, delta) => {
+    assert.typeof(address, 'string');
+    const newAmount = await E(bridgeManager).toBridge(XLien.name, {
+      type: XLien.LIEN_CHANGE_LIENED,
+      address,
+      denom,
+      delta: `${delta}`,
+    });
+    return harden(toStake(newAmount));
+  };
 
   /** @type {StakingAuthority} */
   const stakeReporter = Far('stakeReporter', {
-    changeLiened: async (address, previous, target) => {
-      assert.typeof(address, 'string');
-      const previousAmount = AmountMath.getValue(stake, previous);
-      const targetAmount = AmountMath.getValue(stake, target);
-      const delta = targetAmount - previousAmount;
-      const newAmount = await E(bridgeManager).toBridge(XLien.name, {
-        type: XLien.LIEN_CHANGE_LIENED,
-        address,
-        denom,
-        delta: `${delta}`,
-      });
-      return harden(toStake(newAmount));
+    increaseLiened: async (address, increase) => {
+      const amount = AmountMath.getValue(stake, increase);
+      return changeLiened(address, amount);
+    },
+    decreaseLiened: async (address, decrease) => {
+      const amount = AmountMath.getValue(stake, decrease);
+      return changeLiened(address, -1n * amount);
     },
     getAccountState: async (address, wantedBrand) => {
       assert(

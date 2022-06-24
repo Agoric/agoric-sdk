@@ -12,7 +12,7 @@ import { makeAttestationFacets } from '../../src/runStake/attestation.js';
 const { details: X } = assert;
 
 /**
- * @param {Brand} uBrand
+ * @param {Brand<'nat'>} uBrand
  * @param {*} _t for debug logging
  * @returns {StakingAuthority}
  */
@@ -26,16 +26,21 @@ export const makeMockLienBridge = (uBrand, _t) => {
     locked: AmountMath.make(uBrand, 10n),
     unbonding: AmountMath.make(uBrand, 0n),
   };
+  const changeLiened = async (address, delta) => {
+    const currentAmount = liened.get(address) || empty;
+    const current = AmountMath.getValue(uBrand, currentAmount);
+    const changed = current + delta;
+    const changedAmount = AmountMath.make(uBrand, changed);
+    // t.log('changeLiened:', { address, changedAmount });
+    liened.set(address, changedAmount);
+    return changedAmount;
+  };
   return Far('stakeReporter', {
-    changeLiened: async (address, previous, amount) => {
-      const expected = liened.get(address) || empty;
-      assert(
-        AmountMath.isEqual(previous, expected),
-        X`cannot changeLien from ${previous}; expected ${expected}`,
-      );
-      // t.log('changeLiened:', { address, amount });
-      liened.set(address, amount);
-      return amount;
+    increaseLiened: (address, increase) => {
+      return changeLiened(address, AmountMath.getValue(uBrand, increase));
+    },
+    decreaseLiened: (address, decrease) => {
+      return changeLiened(address, -1n * AmountMath.getValue(uBrand, decrease));
     },
     getAccountState: (address, _brand) => {
       return harden({

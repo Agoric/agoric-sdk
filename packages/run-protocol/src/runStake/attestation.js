@@ -81,11 +81,14 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     return { address, lienedAmount };
   };
 
-  /** @type {Store<Address, Amount<'nat'>>} */
+  /**
+   * Non-authoritative store of nonzero lien amounts.
+   * @type {Store<Address, Amount<'nat'>>}
+   */
   const amountByAddress = makeStore('amount');
 
   /**
-   * Get liened amount from the JS store, without using the lienBridge.
+   * Get non-authoritative liened amount from the JS store, without using the lienBridge.
    *
    * @param {Address} address
    * @param {Brand<'nat'>} brand
@@ -138,9 +141,6 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     // may speed things up.
     await assertAccountStateOK(address, lienDelta);
 
-    const current = getLiened(address, stakeBrand);
-    const target = add(current, lienDelta);
-
     // Since our mint is not subject to normal supply/demand,
     // minting here and failing in changeLiened below does no harm.
     const attestationPayment = await mintZCFMintPayment(
@@ -149,7 +149,7 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
       wrapLienedAmount(address, lienDelta),
     );
 
-    const newLiened = await E(lienBridge).changeLiened(address, current, target);
+    const newLiened = await E(lienBridge).increaseLiened(address, lienDelta);
     // COMMIT: update the stored liened amount and issue the attestation.
     if (amountByAddress.has(address)) {
       amountByAddress.set(address, newLiened);
@@ -173,10 +173,7 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     const { address, lienedAmount: amountReturned } =
       unwrapLienedAmount(attestationAmount);
 
-    const lienedPre = amountByAddress.get(address); // or throw
-    const lienedPost = subtract(lienedPre, amountReturned); // or throw
-
-    const newLiened = await E(lienBridge).changeLiened(address, lienedPre, lienedPost);
+    const newLiened = await E(lienBridge).decreaseLiened(address, amountReturned);
     // COMMIT. Burn the escrowed attestation payment and exit the seat.
     if (newLiened === empty) {
       amountByAddress.delete(address)
