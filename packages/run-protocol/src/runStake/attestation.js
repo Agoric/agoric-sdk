@@ -142,22 +142,19 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     const target = add(current, lienDelta);
 
     // Since our mint is not subject to normal supply/demand,
-    // minting here and failing in setLiened below does no harm.
+    // minting here and failing in changeLiened below does no harm.
     const attestationPayment = await mintZCFMintPayment(
       zcf,
       attMint,
       wrapLienedAmount(address, lienDelta),
     );
 
-    // If setLiened returns successfully, then
-    // the preconditions were indeed met and we
-    // can update the stored liened amount.
-    await E(lienBridge).setLiened(address, current, target);
-    // COMMIT
+    const newLiened = await E(lienBridge).changeLiened(address, current, target);
+    // COMMIT: update the stored liened amount and issue the attestation.
     if (amountByAddress.has(address)) {
-      amountByAddress.set(address, target);
+      amountByAddress.set(address, newLiened);
     } else {
-      amountByAddress.init(address, target);
+      amountByAddress.init(address, newLiened);
     }
     return attestationPayment;
   };
@@ -179,9 +176,13 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     const lienedPre = amountByAddress.get(address); // or throw
     const lienedPost = subtract(lienedPre, amountReturned); // or throw
 
-    await E(lienBridge).setLiened(address, lienedPre, lienedPost);
-    // COMMIT. Burn the escrowed attestation payment and exit the seat
-    amountByAddress.set(address, lienedPost);
+    const newLiened = await E(lienBridge).changeLiened(address, lienedPre, lienedPost);
+    // COMMIT. Burn the escrowed attestation payment and exit the seat.
+    if (newLiened === empty) {
+      amountByAddress.delete(address)
+    } else {
+      amountByAddress.set(address, newLiened);
+    }
     attMint.burnLosses(harden({ Attestation: attestationAmount }), seat);
     seat.exit();
   };

@@ -11,8 +11,8 @@ const { details: X } = assert;
  */
 const XLien = /** @type { const } */ ({
   name: 'lien',
+  LIEN_CHANGE_LIENED: 'LIEN_CHANGE_LIENED',
   LIEN_GET_ACCOUNT_STATE: 'LIEN_GET_ACCOUNT_STATE',
-  LIEN_SET_LIENED: 'LIEN_SET_LIENED',
 });
 
 /**
@@ -33,6 +33,19 @@ export const makeStakeReporter = (bridgeManager, stake, denom = 'ubld') => {
 
   /** @type {StakingAuthority} */
   const stakeReporter = Far('stakeReporter', {
+    changeLiened: async (address, previous, target) => {
+      assert.typeof(address, 'string');
+      const previousAmount = AmountMath.getValue(stake, previous);
+      const targetAmount = AmountMath.getValue(stake, target);
+      const delta = targetAmount - previousAmount;
+      const newAmount = await E(bridgeManager).toBridge(XLien.name, {
+        type: XLien.LIEN_CHANGE_LIENED,
+        address,
+        denom,
+        delta: `${delta}`,
+      });
+      return harden(toStake(newAmount));
+    },
     getAccountState: async (address, wantedBrand) => {
       assert(
         wantedBrand === stake,
@@ -55,18 +68,6 @@ export const makeStakeReporter = (bridgeManager, stake, denom = 'ubld') => {
         unbonding: toStake(unbonding),
         currentTime: BigInt(currentTime),
       });
-    },
-    setLiened: async (address, previous, target) => {
-      assert.typeof(address, 'string');
-      AmountMath.coerce(stake, previous); // TODO
-      const amount = AmountMath.getValue(stake, target);
-      const success = await E(bridgeManager).toBridge(XLien.name, {
-        type: XLien.LIEN_SET_LIENED,
-        address,
-        denom,
-        amount: `${amount}`,
-      });
-      assert(success);
     },
   });
 

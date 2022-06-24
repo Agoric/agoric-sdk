@@ -27,21 +27,22 @@ export const makeMockLienBridge = (uBrand, _t) => {
     unbonding: AmountMath.make(uBrand, 0n),
   };
   return Far('stakeReporter', {
+    changeLiened: async (address, previous, amount) => {
+      const expected = liened.get(address) || empty;
+      assert(
+        AmountMath.isEqual(previous, expected),
+        X`cannot changeLien from ${previous}; expected ${expected}`,
+      );
+      // t.log('changeLiened:', { address, amount });
+      liened.set(address, amount);
+      return amount;
+    },
     getAccountState: (address, _brand) => {
       return harden({
         ...state,
         liened: liened.get(address) || empty,
         currentTime,
       });
-    },
-    setLiened: async (address, previous, amount) => {
-      const expected = liened.get(address) || empty;
-      assert(
-        AmountMath.isEqual(previous, expected),
-        X`cannot setLien from ${previous}; expected ${expected}`,
-      );
-      // t.log('setLiened:', { address, amount });
-      liened.set(address, amount);
     },
   });
 };

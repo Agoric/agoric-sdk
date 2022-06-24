@@ -91,7 +91,7 @@ test.before(async t => {
   );
   console.timeEnd('bundling');
 
-  const { zoe, feeMintAccess } = await setUpZoeForTest(() => {});
+  const { zoe, feeMintAccess } = await setUpZoeForTest(() => { });
   const bld = makeIssuerKit('BLD', AssetKind.NAT, micro.displayInfo);
   const issuer = {
     RUN: await E(zoe).getFeeIssuer(),
@@ -188,10 +188,17 @@ const mockChain = genesisData => {
 
       /** @type {StakingAuthority} */
       const authority = Far('stakeReporter', {
+        /** @type {(addr: string, p: Amount<'nat'>, t: Amount<'nat'>) => Promise<Amount<'nat'>>} */
+        changeLiened: async (address, previous, target) => {
+          const { value } = AmountMath.coerce(stakingBrand, target);
+          assert(AmountMath.isEqual(previous, ubld(qty(address, liened))));
+          liened.set(address, value);
+          return target;
+        },
         /**
-         * @param {string} address
-         * @param {Brand} brand
-         */
+          * @param {string} address
+          * @param {Brand} brand
+          */
         getAccountState: (address, brand) => {
           assert(brand === stakingBrand, X`unexpected brand: ${brand}`);
           assert(bankBalance.has(address), X`no such account: ${address}`);
@@ -205,12 +212,6 @@ const mockChain = genesisData => {
             unbonding: ubld(0n),
             currentTime: (currentTime += 3n),
           });
-        },
-        /** @type {(addr: string, p: Amount<'nat'>, t: Amount<'nat'>) => Promise<void>} */
-        setLiened: async (address, previous, target) => {
-          const { value } = AmountMath.coerce(stakingBrand, target);
-          assert(AmountMath.isEqual(previous, ubld(qty(address, liened))));
-          liened.set(address, value);
         },
       });
       return authority;

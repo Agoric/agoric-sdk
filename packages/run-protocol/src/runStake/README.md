@@ -40,8 +40,8 @@ sequenceDiagram
     dapp ->> walletBridge: getReturnableAttestation(want: 450 RUN, give: 500 BLD-Att)
     note right of walletBridge: Blocks on user approval in wallet
     walletBridge ->> attestation: makeAttestation(500 BLD)
-    attestation ->> Cosmos_SDK: setLienedAmount(4000 + 500 BLD)
-    Cosmos_SDK -->> attestation: ACK or throws
+    attestation ->> Cosmos_SDK: changeLienedAmount(+500 BLD)
+    Cosmos_SDK -->> attestation: new lien balance or throws
 
     attestation -->> walletBridge: Payment of 500 BLD-Att liened on ag123
 
