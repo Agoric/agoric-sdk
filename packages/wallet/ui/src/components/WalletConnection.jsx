@@ -64,6 +64,61 @@ const getAccessToken = () => {
   return accessToken;
 };
 
+/** @param {string} key */
+const parseKey = key => {
+  let parts;
+  try {
+    parts = JSON.parse(key);
+  } catch (_err) {
+    return undefined;
+  }
+  if (!Array.isArray(parts)) {
+    return undefined;
+  }
+  const [tag, origin, epoch, seq] = parts;
+  if (tag !== 'out') {
+    return undefined;
+  }
+  return { tag, origin, epoch, seq };
+};
+
+/** @param {Window['localStorage']} storage */
+const getPending = storage => {
+  const pending = [];
+  /** @type {Map<string, number>} */
+  const latest = new Map(); // latest epoch by origin
+
+  for (let ix = 0; ix <= storage.length; ix += 1) {
+    const key = storage.key(ix) || assert.fail();
+    const keyParts = parseKey(key);
+    if (!keyParts) {
+      // eslint-disable-next-line no-continue
+      continue;
+    }
+    const { epoch, origin, seq } = keyParts;
+    if (epoch > latest.has(origin) ? latest.get(origin) : 0) {
+      latest.set(origin, epoch);
+    }
+    const value = storage.getItem(key);
+    pending.push({ key, origin, epoch, seq, value });
+  }
+
+  /** @type {string[]} */
+  const old = [];
+  const current = pending.filter(item => {
+    if (item.epoch === latest.get(item.origin)) {
+      return true;
+    }
+    old.push(item.key);
+    return false;
+  });
+
+  // eslint-disable-next-line no-nested-ternary
+  current.sort((a, b) => (a.seq === b.seq ? 0 : a.seq < b.seq ? -1 : 1));
+
+  return { current, old };
+};
+
 const WalletConnection = ({
   setBackend,
   setConnectionState,
@@ -129,11 +184,13 @@ const WalletConnection = ({
     } = window; // WARNING: ambient
 
     function handleStorageMessage(key, newValue) {
-      const keyParts = JSON.parse(key);
-      assert(Array.isArray(keyParts));
-      const [tag, origin, epoch, _ix] = /** @type {unknown[]} */ (keyParts);
+      const keyParts = parseKey(key);
+      if (!keyParts) {
+        return;
+      }
+      const { origin, epoch } = keyParts;
       const payload = JSON.parse(newValue);
-      if (tag !== 'out' || !payload || typeof payload.type !== 'string') {
+      if (!payload || typeof payload.type !== 'string') {
         return;
       }
 
@@ -170,6 +227,11 @@ const WalletConnection = ({
       conn.dispatch(obj);
       storage.removeItem(key);
     }
+
+    const { current, old } = getPending(storage);
+    old.forEach(key => storage.removeItem(key));
+    current.forEach(({ key, value }) => handleStorageMessage(key, value));
+
     addEventListener('storage', ev => {
       const { key, newValue } = ev;
       // removeItem causes an event where newValue is null
