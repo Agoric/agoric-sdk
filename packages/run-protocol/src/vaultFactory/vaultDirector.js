@@ -478,10 +478,8 @@ const publicBehavior = {
    *
    * @param {MethodContext} context
    */
-  getSubscription:
-    ({ state }) =>
-    paramDesc =>
-      state.vaultParamManagers.get(paramDesc.collateralBrand).getSubscription(),
+  getSubscription: ({ state }, { collateralBrand }) =>
+    state.vaultParamManagers.get(collateralBrand).getSubscription(),
   /**
    * subscription for the paramManager for the vaultFactory's electorate
    *

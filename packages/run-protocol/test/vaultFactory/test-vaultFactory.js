@@ -7,6 +7,7 @@ import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import {
@@ -2878,4 +2879,49 @@ test('manager notifiers', async t => {
     totalCollateral: { value: 0n },
     totalDebt: { value: 0n },
   });
+});
+
+test('governance publisher', async t => {
+  const { aeth } = t.context;
+  t.context.loanTiming = {
+    chargingPeriod: 2n,
+    recordingPeriod: 10n,
+  };
+
+  const services = await setupServices(
+    t,
+    [500n, 15n],
+    aeth.make(900n),
+    undefined,
+    undefined,
+    500n,
+  );
+  const { lender } = services.vaultFactory;
+  const directorGovNotifier = makeNotifierFromAsyncIterable(
+    E(lender).getElectorateSubscription(),
+  );
+  let {
+    value: { current },
+  } = await directorGovNotifier.getUpdateSince();
+  // can't deepEqual because of non-literal objects
+  t.is(current.Electorate.type, 'invitation');
+  t.is(current.LiquidationInstall.type, 'installation');
+  t.is(current.LiquidationTerms.type, 'unknown');
+  t.is(current.MinInitialDebt.type, 'amount');
+  t.is(current.ShortfallInvitation.type, 'invitation');
+
+  const managerGovNotifier = makeNotifierFromAsyncIterable(
+    E(lender).getSubscription({
+      collateralBrand: aeth.brand,
+    }),
+  );
+  ({
+    value: { current },
+  } = await managerGovNotifier.getUpdateSince());
+  // can't deepEqual because of non-literal objects
+  t.is(current.DebtLimit.type, 'amount');
+  t.is(current.InterestRate.type, 'ratio');
+  t.is(current.LiquidationMargin.type, 'ratio');
+  t.is(current.LiquidationPenalty.type, 'ratio');
+  t.is(current.LoanFee.type, 'ratio');
 });
