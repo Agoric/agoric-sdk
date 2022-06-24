@@ -5,11 +5,39 @@
     <meta charset="utf-8" />
     <script src="%PUBLIC_URL%/lockdown.umd.js"></script>
     <title>Agoric Wallet Bridge</title>
+    <style>
+        .logo {
+            object-fit: contain;
+        }
+
+        .expand100 {
+            height: 100%;
+            width: 100%;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 100%;
+            }
+
+            50% {
+                opacity: 0%;
+            }
+
+            100% {
+                opacity: 100%;
+            }
+        }
+    </style>
 </head>
 
-<body style="overflow-x: hidden; overflow-y: scroll">
+<body class="expand100">
     <noscript>Without JavaScript enabled, this page cannot function.</noscript>
-    <div id="root"></div>
+    <div id="root" class="expand100"></div>
 </body>
 
 </html>
