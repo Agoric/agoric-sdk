@@ -8,8 +8,8 @@ import { makeParamManagerBuilder } from './paramManager.js';
  * @typedef {Record<Keyword, ParamType>} ParamTypesMap
  */
 /**
- * @template {Record<Keyword, ParamRecord>} M
- * @typedef {{ [R in keyof M]: M[R]['type']}} ParamTypesMapFromRecords
+ * @template {ParamStateRecord} M
+ * @typedef {{ [R in keyof M]: M[R]['type']}} ParamTypesMapFromRecord
  */
 /**
  * @template {ParamTypesMap} M

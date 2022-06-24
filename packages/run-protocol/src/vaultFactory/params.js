@@ -62,7 +62,7 @@ const makeVaultDirectorParams = (
   });
 };
 
-/** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').ParamTypesMapFromRecords<ReturnType<typeof makeVaultDirectorParams>>} VaultDirectorParams */
+/** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').ParamTypesMapFromRecord<ReturnType<typeof makeVaultDirectorParams>>} VaultDirectorParams */
 
 /**
  * @param {VaultManagerParamValues} initial

@@ -536,7 +536,7 @@ const finish = async ({ state }) => {
  * @param {ZCF<GovernanceTerms<{}> & {
  *   ammPublicFacet: AutoswapPublicFacet,
  *   liquidationInstall: Installation<import('./liquidateMinimum.js').start>,
- *   loanTimingParams: {ChargingPeriod: ParamRecord<'nat'>, RecordingPeriod: ParamRecord<'nat'>},
+ *   loanTimingParams: {ChargingPeriod: ParamValueTyped<'nat'>, RecordingPeriod: ParamValueTyped<'nat'>},
  *   reservePublicFacet: AssetReservePublicFacet,
  *   timerService: TimerService,
  *   priceAuthority: ERef<PriceAuthority>

@@ -21,7 +21,7 @@ const { details: X, quote: q } = assert;
 
 /**
  * @param {ParamManagerBase} paramManager
- * @param {{[CONTRACT_ELECTORATE]: ParamRecord<'invitation'>}} governedParams
+ * @param {{[CONTRACT_ELECTORATE]: ParamValueTyped<'invitation'>}} governedParams
  */
 const assertElectorateMatches = (paramManager, governedParams) => {
   const managerElectorate =
@@ -58,6 +58,7 @@ const assertElectorateMatches = (paramManager, governedParams) => {
  * @param {ERef<ZoeService>} [zoe]
  */
 const makeParamManagerBuilder = zoe => {
+  /** @type {Store<Keyword, any>} */
   const namesToParams = makeStore('Parameter Name');
   const { publication, subscription } = makeSubscriptionKit();
   const getters = {};
@@ -298,7 +299,7 @@ const makeParamManagerBuilder = zoe => {
   };
 
   const getParams = () => {
-    /** @type {Record<Keyword,ParamRecord>} */
+    /** @type {ParamStateRecord} */
     const descriptions = {};
     for (const [name, param] of namesToParams.entries()) {
       descriptions[name] = param.makeDescription();
