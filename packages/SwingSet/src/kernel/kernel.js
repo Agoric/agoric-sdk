@@ -1011,7 +1011,7 @@ export default function buildKernel(
   async function processDeliveryMessage(message) {
     kdebug(`processQ ${JSON.stringify(message)}`);
     kdebug(legibilizeMessage(message));
-    kernelSlog.write({ type: 'crank-start', message });
+    kernelSlog.write({ type: 'crank-start', crankNum: kernelKeeper.getCrankNumber(), message });
     /** @type { PolicyInput } */
     let policyInput = ['none'];
     if (message.type === 'create-vat') {
