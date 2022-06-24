@@ -54,7 +54,6 @@ export const fsStreamReady = stream =>
  * @param {string} root
  * @param {{
  *   tmpName: typeof import('tmp').tmpName,
- *   existsSync: typeof import('fs').existsSync
  *   createReadStream: typeof import('fs').createReadStream,
  *   createWriteStream: typeof import('fs').createWriteStream,
  *   open: typeof import('fs').promises.open,
@@ -62,7 +61,6 @@ export const fsStreamReady = stream =>
  *   rename: typeof import('fs').promises.rename,
  *   stat: typeof import('fs').promises.stat,
  *   unlink: typeof import('fs').promises.unlink,
- *   unlinkSync: typeof import('fs').unlinkSync,
  * }} io
  * @param {object} [options]
  * @param {boolean | undefined} [options.keepSnapshots]
@@ -71,7 +69,6 @@ export function makeSnapStore(
   root,
   {
     tmpName,
-    existsSync,
     createReadStream,
     createWriteStream,
     open,
@@ -79,7 +76,6 @@ export function makeSnapStore(
     rename,
     stat,
     unlink,
-    unlinkSync,
   },
   { keepSnapshots = false } = {},
 ) {
@@ -201,7 +197,13 @@ export function makeSnapStore(
         toDelete.delete(h);
       }
       // console.log('save', { snapFile, h });
-      if (existsSync(hashPath(h))) {
+      const fileStat = await stat(hashPath(h)).catch(e => {
+        if (e.code === 'ENOENT') {
+          return undefined;
+        }
+        throw e;
+      });
+      if (fileStat) {
         return h;
       }
       const res = await atomicWrite(`${h}.gz`, gztmp =>
@@ -240,23 +242,27 @@ export function makeSnapStore(
     toDelete.add(hash);
   }
 
-  function commitDeletes(ignoreErrors = false) {
+  async function commitDeletes(ignoreErrors = false) {
     const errors = [];
-    for (const hash of toDelete) {
-      const fullPath = hashPath(hash);
-      try {
-        if (keepSnapshots !== true) {
-          unlinkSync(fullPath);
-        }
-        toDelete.delete(hash);
-      } catch (error) {
-        if (ignoreErrors) {
+
+    await Promise.all(
+      [...toDelete].map(async hash => {
+        const fullPath = hashPath(hash);
+        try {
+          if (keepSnapshots !== true) {
+            await unlink(fullPath);
+          }
           toDelete.delete(hash);
-        } else {
-          errors.push(error);
+        } catch (error) {
+          if (ignoreErrors) {
+            toDelete.delete(hash);
+          } else {
+            errors.push(error);
+          }
         }
-      }
-    }
+      }),
+    );
+
     if (errors.length) {
       throw Error(JSON.stringify(errors));
     }

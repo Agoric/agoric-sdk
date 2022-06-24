@@ -19,14 +19,12 @@ export { makeSnapStore };
 export function makeSnapStoreIO() {
   return {
     tmpName,
-    existsSync: fs.existsSync,
     createReadStream: fs.createReadStream,
     createWriteStream: fs.createWriteStream,
     open: fs.promises.open,
     rename: fs.promises.rename,
     stat: fs.promises.stat,
     unlink: fs.promises.unlink,
-    unlinkSync: fs.unlinkSync,
     resolve: path.resolve,
   };
 }
@@ -328,7 +326,7 @@ function makeSwingStore(dirPath, forceReset, options) {
     //   MUST be committed BEFORE we delete snapshot1.
     //   Otherwise, on restart, we'll consult the kvstore and see snapshot1,
     //   but we'll fail to load it because it's been deleted already.
-    snapStore.commitDeletes();
+    await snapStore.commitDeletes();
   }
 
   /**
