@@ -128,18 +128,11 @@ const WalletConnection = ({
       removeEventListener,
     } = window; // WARNING: ambient
 
-    /** @param {StorageEvent} ev */
-    function handleStorageMessage(ev) {
-      const { parse, stringify } = JSON;
-      const { key, newValue } = ev;
-      // removeItem causes an event where newValue is null
-      if (!key || !newValue) {
-        return;
-      }
-      const keyParts = parse(key);
+    function handleStorageMessage(key, newValue) {
+      const keyParts = JSON.parse(key);
       assert(Array.isArray(keyParts));
       const [tag, origin, epoch, _ix] = /** @type {unknown[]} */ (keyParts);
-      const payload = parse(newValue);
+      const payload = JSON.parse(newValue);
       if (tag !== 'out' || !payload || typeof payload.type !== 'string') {
         return;
       }
@@ -149,7 +142,7 @@ const WalletConnection = ({
         ...payload,
         dappOrigin: origin,
       };
-      const dappKey = stringify([origin, epoch]);
+      const dappKey = JSON.stringify([origin, epoch]);
       /** @type {ReturnType<typeof makeCapTP>}  */
       let conn;
       /** @type {number} */
@@ -161,8 +154,8 @@ const WalletConnection = ({
         const send = payloadOut => {
           console.debug('WalletConnect: message -> storage', payloadOut);
           storage.setItem(
-            stringify(['in', origin, epoch, ix]),
-            stringify(payloadOut),
+            JSON.stringify(['in', origin, epoch, ix]),
+            JSON.stringify(payloadOut),
           );
           ix += 1; // ISSUE: overflow?
         };
@@ -177,7 +170,13 @@ const WalletConnection = ({
       conn.dispatch(obj);
       storage.removeItem(key);
     }
-    addEventListener('storage', handleStorageMessage);
+    addEventListener('storage', ev => {
+      const { key, newValue } = ev;
+      // removeItem causes an event where newValue is null
+      if (key && newValue) {
+        handleStorageMessage(key, newValue);
+      }
+    });
 
     return () => {
       cancelled = true;
