@@ -1165,9 +1165,20 @@ export default function buildKernel(
       assert.fail(X`Kernel reentrancy is forbidden`);
     }
     processQueueRunning = Error('here');
-    return processor(message).finally(() => {
-      processQueueRunning = undefined;
-    });
+    try {
+      return await processor(message).finally(() => {
+        processQueueRunning = undefined;
+      });
+    } catch (err) {
+      // panic() sets the kernelPanic flag which will be checked on the way out
+      // by run() or step().
+      panic(`error during tryProcessMessage: ${err}`, err);
+      // Due to the panic() call, the following return value will be ignored, so
+      // don't read deep meaning into the specific value that is returned here
+      // (though I believe it is correct in context); the return is present to
+      // make eslint happy.
+      return ['crank-failed', {}];
+    }
   }
 
   async function processAcceptanceMessage(message) {
