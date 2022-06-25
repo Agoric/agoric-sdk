@@ -83,6 +83,7 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
 
   /**
    * Non-authoritative store of nonzero lien amounts.
+   *
    * @type {Store<Address, Amount<'nat'>>}
    */
   const amountByAddress = makeStore('amount');
@@ -172,11 +173,13 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     }
     const { address, lienedAmount: amountReturned } =
       unwrapLienedAmount(attestationAmount);
-
-    const newLiened = await E(lienBridge).decreaseLiened(address, amountReturned);
+    const newLiened = await E(lienBridge).decreaseLiened(
+      address,
+      amountReturned,
+    );
     // COMMIT. Burn the escrowed attestation payment and exit the seat.
     if (newLiened === empty) {
-      amountByAddress.delete(address)
+      amountByAddress.delete(address);
     } else {
       amountByAddress.set(address, newLiened);
     }

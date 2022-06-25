@@ -49,12 +49,12 @@ export const makeStakeReporter = (bridgeManager, stake, denom = 'ubld') => {
   /** @type {StakingAuthority} */
   const stakeReporter = Far('stakeReporter', {
     increaseLiened: async (address, increase) => {
-      const amount = AmountMath.getValue(stake, increase);
-      return changeLiened(address, amount);
+      const delta = AmountMath.getValue(stake, increase);
+      return changeLiened(address, delta);
     },
     decreaseLiened: async (address, decrease) => {
-      const amount = AmountMath.getValue(stake, decrease);
-      return changeLiened(address, -1n * amount);
+      const delta = -1n * AmountMath.getValue(stake, decrease);
+      return changeLiened(address, delta);
     },
     getAccountState: async (address, wantedBrand) => {
       assert(

@@ -91,7 +91,7 @@ test.before(async t => {
   );
   console.timeEnd('bundling');
 
-  const { zoe, feeMintAccess } = await setUpZoeForTest(() => { });
+  const { zoe, feeMintAccess } = await setUpZoeForTest(() => {});
   const bld = makeIssuerKit('BLD', AssetKind.NAT, micro.displayInfo);
   const issuer = {
     RUN: await E(zoe).getFeeIssuer(),
@@ -196,19 +196,25 @@ const mockChain = genesisData => {
       /** @type {StakingAuthority} */
       const authority = Far('stakeReporter', {
         /**
-         * param {string} address
-         * param {Amount<'nat'> increase}
+         * @param {string} address
+         * @param {Amount<'nat'>} increase
          */
         increaseLiened: (address, increase) => {
-          return changeLiened(address, AmountMath.getValue(stakingBrand, increase));
-        },
-        decreaseLiened: (address, decrease) => {
-          return changeLiened(address, -1n * AmountMath.getValue(stakingBrand, decrease));
+          const delta = AmountMath.getValue(stakingBrand, increase);
+          return changeLiened(address, delta);
         },
         /**
-          * @param {string} address
-          * @param {Brand} brand
-          */
+         * @param {string} address
+         * @param {Amount<'nat'>} decrease
+         */
+        decreaseLiened: (address, decrease) => {
+          const delta = -1n * AmountMath.getValue(stakingBrand, decrease);
+          return changeLiened(address, delta);
+        },
+        /**
+         * @param {string} address
+         * @param {Brand} brand
+         */
         getAccountState: (address, brand) => {
           assert(brand === stakingBrand, X`unexpected brand: ${brand}`);
           assert(bankBalance.has(address), X`no such account: ${address}`);
