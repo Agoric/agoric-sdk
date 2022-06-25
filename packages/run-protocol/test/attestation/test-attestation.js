@@ -9,8 +9,6 @@ import { makeCopyBag } from '@agoric/store';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { makeAttestationFacets } from '../../src/runStake/attestation.js';
 
-const { details: X } = assert;
-
 /**
  * @param {Brand<'nat'>} uBrand
  * @param {*} _t for debug logging

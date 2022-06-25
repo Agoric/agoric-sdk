@@ -53,7 +53,7 @@ const mintZCFMintPayment = (zcf, zcfMint, amountToMint) => {
  * @param {ERef<StakingAuthority>} lienBridge bridge to account state
  */
 const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
-  const { add, subtract, makeEmpty, isGTE, coerce } = AmountMath;
+  const { subtract, makeEmpty, isGTE, coerce } = AmountMath;
   const empty = makeEmpty(stakeBrand);
   /** @type { ZCFMint<'copyBag'> } */
   const attMint = await zcf.makeZCFMint(KW.Attestation, AssetKind.COPY_BAG);
