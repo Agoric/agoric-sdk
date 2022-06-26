@@ -13,7 +13,6 @@ import {
   Divider,
   Chip,
   Collapse,
-  Fade,
 } from '@mui/material';
 import { useState, useEffect, useRef } from 'react';
 import Petname from './Petname';
@@ -22,19 +21,35 @@ import { stringify } from '../util/marshal';
 const Item = ({ showDivider, children }) => {
   const [expanded, setExpanded] = useState(false);
   const [collapsible, setCollapsible] = useState(true);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const contentEl = useRef(null);
 
   useEffect(() => {
     if (contentEl.current) {
       if (contentEl.current.scrollHeight <= 160) {
         setCollapsible(false);
+      } else {
+        setCollapsible(true);
       }
     }
-  }, contentEl.current);
+  }, [contentEl.current, windowWidth]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   const containerStyles = {
     backgroundColor: '#eaecef',
-    cursor: collapsible ? 'pointer' : '',
+    border: '1px solid #81d4db',
+    boxSizing: 'border-box',
     mb: 2,
     mt: 2,
     borderRadius: '8px',
@@ -46,24 +61,28 @@ const Item = ({ showDivider, children }) => {
   const content = (
     <>
       {collapsible && (
-        <Fade in={!expanded}>
-          <Box
-            sx={{
-              height: '32px',
-              lineHeight: '32px',
-              borderRadius: '0 0 8px 8px',
-              color: 'rgba(255, 255, 255)',
-              position: 'absolute',
-              width: '100%',
-              textAlign: 'center',
-              bottom: '16px',
-              backdropFilter: 'blur(2px)',
-              backgroundColor: 'rgba(4, 170, 180, 0.5)',
-            }}
-          >
-            Show more
-          </Box>
-        </Fade>
+        <Box
+          component="button"
+          tabIndex="0"
+          onClick={() => setExpanded(val => !val)}
+          sx={{
+            fontFamily: 'inherit',
+            fontSize: 'inherit',
+            cursor: 'pointer',
+            height: '32px',
+            lineHeight: '32px',
+            borderRadius: '0 0 8px 8px',
+            border: 'none',
+            color: 'rgba(255, 255, 255)',
+            position: 'absolute',
+            width: 'calc(100% - 2px)',
+            bottom: '16px',
+            backdropFilter: 'blur(2px)',
+            backgroundColor: 'rgba(4, 170, 180, 0.5)',
+          }}
+        >
+          {expanded ? 'Show less' : 'Show more'}
+        </Box>
       )}
       <Box ref={contentEl}>{children}</Box>
     </>
@@ -73,13 +92,8 @@ const Item = ({ showDivider, children }) => {
     <>
       <ListItem sx={{ p: 0, width: '100%' }}>
         {collapsible ? (
-          <Collapse
-            in={expanded}
-            collapsedSize={160}
-            onClick={() => setExpanded(val => !val)}
-            sx={containerStyles}
-          >
-            {content}
+          <Collapse in={expanded} collapsedSize={160} sx={containerStyles}>
+            <Box sx={{ mb: 3 }}>{content}</Box>
           </Collapse>
         ) : (
           <Box sx={containerStyles}>{content}</Box>
