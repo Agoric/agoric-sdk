@@ -12,72 +12,124 @@ import {
   DialogTitle,
   Divider,
   Chip,
+  Collapse,
+  Fade,
 } from '@mui/material';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Petname from './Petname';
 import { stringify } from '../util/marshal';
 
-const SetItem = ({ item, showDivider }) => {
+const Item = ({ showDivider, children }) => {
+  const [expanded, setExpanded] = useState(false);
+  const [collapsible, setCollapsible] = useState(true);
+  const contentEl = useRef(null);
+
+  useEffect(() => {
+    if (contentEl.current) {
+      if (contentEl.current.scrollHeight <= 160) {
+        setCollapsible(false);
+      }
+    }
+  }, contentEl.current);
+
+  const containerStyles = {
+    backgroundColor: '#eaecef',
+    cursor: collapsible ? 'pointer' : '',
+    mb: 2,
+    mt: 2,
+    borderRadius: '8px',
+    width: '100%',
+    whiteSpace: 'pre-wrap',
+    overflow: 'hidden',
+  };
+
+  const content = (
+    <>
+      {collapsible && (
+        <Fade in={!expanded}>
+          <Box
+            sx={{
+              height: '32px',
+              lineHeight: '32px',
+              borderRadius: '0 0 8px 8px',
+              color: 'rgba(255, 255, 255)',
+              position: 'absolute',
+              width: '100%',
+              textAlign: 'center',
+              bottom: '16px',
+              backdropFilter: 'blur(2px)',
+              backgroundColor: 'rgba(4, 170, 180, 0.5)',
+            }}
+          >
+            Show more
+          </Box>
+        </Fade>
+      )}
+      <Box ref={contentEl}>{children}</Box>
+    </>
+  );
+
   return (
     <>
       <ListItem sx={{ p: 0, width: '100%' }}>
-        <Box
-          component="pre"
-          sx={{
-            backgroundColor: '#eaecef',
-            mb: 2,
-            mt: 2,
-            p: 2,
-            fontFamily: '"Roboto Mono", monospace',
-            fontSize: '14px',
-            borderRadius: '8px',
-            width: '100%',
-            whiteSpace: 'pre-wrap',
-          }}
-        >
-          {stringify(item, true)}
-        </Box>
+        {collapsible ? (
+          <Collapse
+            in={expanded}
+            collapsedSize={160}
+            onClick={() => setExpanded(val => !val)}
+            sx={containerStyles}
+          >
+            {content}
+          </Collapse>
+        ) : (
+          <Box sx={containerStyles}>{content}</Box>
+        )}
       </ListItem>
       {showDivider && <Divider variant="middle" />}
     </>
   );
 };
 
+const SetItem = ({ item, showDivider }) => {
+  return (
+    <Item showDivider={showDivider}>
+      <Box
+        component="pre"
+        sx={{
+          m: 0,
+          p: 2,
+          fontFamily: '"Roboto Mono", monospace',
+          whiteSpace: 'pre-wrap',
+        }}
+      >
+        {stringify(item, true)}
+      </Box>
+    </Item>
+  );
+};
+
 const CopyBagItem = ({ count, record, showDivider }) => {
   return (
-    <>
-      <ListItem sx={{ p: 0, width: '100%' }}>
+    <Item showDivider={showDivider}>
+      <Box sx={{ p: 2 }}>
+        <Chip
+          sx={{ mb: 1, backgroundColor: '#fafafa' }}
+          label={`Count: ${count}`}
+          variant="outlined"
+        />
         <Box
+          component="pre"
           sx={{
-            backgroundColor: '#eaecef',
-            mb: 2,
-            mt: 2,
-            p: 2,
-            pt: 0,
-            fontSize: '14px',
-            borderRadius: '8px',
-            width: '100%',
+            m: 0,
+            fontFamily: '"Roboto Mono", monospace',
+            whiteSpace: 'pre-wrap',
+            wordWrap: 'break-word',
           }}
         >
-          <Chip
-            sx={{ mt: 1, ml: -1, backgroundColor: '#fafafa' }}
-            label={`Count: ${count}`}
-            variant="outlined"
-          />
-          <Box
-            component="pre"
-            sx={{
-              fontFamily: '"Roboto Mono", monospace',
-              whiteSpace: 'pre-wrap',
-              mt: 1,
-            }}
-          >
-            {stringify(record, true)}
-          </Box>
+          {stringify(record, true)}
         </Box>
-      </ListItem>
-      {showDivider && <Divider variant="middle" />}
-    </>
+      </Box>
+    </Item>
   );
 };
 
