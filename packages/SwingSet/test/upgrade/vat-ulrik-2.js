@@ -1,5 +1,4 @@
 import { Far } from '@endo/marshal';
-import { assert } from '@agoric/assert';
 import { defineDurableKind } from '@agoric/vat-data';
 
 const initialize = (name, imp, value) => {

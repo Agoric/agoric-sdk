@@ -1,6 +1,5 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
 import { M, fit } from '@agoric/store';
 import '../../exported.js';
 

@@ -2,7 +2,6 @@
 
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
-import { assert } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 

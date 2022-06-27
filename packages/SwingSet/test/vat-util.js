@@ -1,7 +1,6 @@
 // this file is imported by some test vats, so don't import any non-pure
 // modules
 
-import { assert } from '@agoric/assert';
 import { QCLASS } from '@endo/marshal';
 
 export function extractMessage(vatDeliverObject) {

@@ -1,5 +1,4 @@
 // @ts-check
-import { assert } from '@agoric/assert';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import {
   natSafeMath,

@@ -1,6 +1,5 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
 import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { mapIterable } from '@endo/marshal';

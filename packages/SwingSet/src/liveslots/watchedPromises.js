@@ -3,7 +3,6 @@
 // no-lonely-if is a stupid rule that really should be disabled globally
 /* eslint-disable no-lonely-if */
 
-import { assert } from '@agoric/assert';
 import { M } from '@agoric/store';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
 

@@ -1,4 +1,3 @@
-import { assert } from '@agoric/assert';
 import { buildSerializationTools } from '../../src/devices/lib/deviceTools.js';
 
 export function buildDevice(tools, endowments) {

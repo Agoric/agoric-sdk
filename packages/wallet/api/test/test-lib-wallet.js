@@ -12,7 +12,6 @@ import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { E } from '@endo/eventual-send';
 
-import { assert } from '@agoric/assert';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 // eslint-disable-next-line import/no-extraneous-dependencies

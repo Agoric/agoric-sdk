@@ -1,5 +1,4 @@
 // @ts-check
-import { assert } from '@agoric/assert';
 
 export function makeDummyMeterControl() {
   let meteringDisabled = 0;

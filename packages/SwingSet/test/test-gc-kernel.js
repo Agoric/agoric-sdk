@@ -4,7 +4,6 @@ import anylogger from 'anylogger';
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { assert } from '@agoric/assert';
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 import { createSHA256 } from '../src/lib-nodejs/hasher.js';
 import { parseVatSlot } from '../src/lib/parseVatSlots.js';

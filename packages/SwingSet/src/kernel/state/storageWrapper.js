@@ -1,6 +1,5 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
 import { insistStorageAPI, makeBufferedStorage } from '../../lib/storageAPI.js';
 
 // We wrap a provided object implementing StorageAPI methods { has, getKeys,

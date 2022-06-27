@@ -1,6 +1,5 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
 import { E, passStyleOf } from '@endo/far';
 
 /**

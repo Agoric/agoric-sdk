@@ -2,8 +2,6 @@
 // @ts-check
 import { LitElement, html } from 'lit';
 
-import { assert } from '@agoric/assert';
-
 const CONNECTION_TIMEOUT_MS = 5000;
 
 export const makeAgoricIframeMessenger = (registerThis = _that => {}) =>

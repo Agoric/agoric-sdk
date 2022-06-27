@@ -1,6 +1,5 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
 
 import { NUM_SENSORS } from './num-sensors.js';

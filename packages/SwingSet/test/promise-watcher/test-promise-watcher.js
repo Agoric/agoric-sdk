@@ -6,7 +6,6 @@ import { handleUnhandledRejections } from './unhandledRejectionDetector.js';
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { assert } from '@agoric/assert';
 // eslint-disable-next-line import/order
 import { getAllState } from '@agoric/swing-store';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';

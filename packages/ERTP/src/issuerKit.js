@@ -1,7 +1,6 @@
 // @ts-check
 // @jessie-check
 
-import { assert } from '@agoric/assert';
 import { assertPattern } from '@agoric/store';
 
 import { AssetKind, assertAssetKind } from './amountMath.js';

@@ -1,6 +1,5 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 
 /**

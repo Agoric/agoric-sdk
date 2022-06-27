@@ -8,7 +8,6 @@ import bundleSource from '@endo/bundle-source';
 
 import { E } from '@endo/eventual-send';
 
-import { assert } from '@agoric/assert';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 import { makeZoeKit } from '../../src/zoeService/zoe.js';
 

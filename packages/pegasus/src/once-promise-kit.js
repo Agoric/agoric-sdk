@@ -1,5 +1,4 @@
 // @ts-check
-import { assert } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
 
 /**

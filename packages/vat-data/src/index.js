@@ -1,5 +1,4 @@
 /* global globalThis */
-import { assert } from '@agoric/assert';
 import {
   M,
   makeScalarMapStore,

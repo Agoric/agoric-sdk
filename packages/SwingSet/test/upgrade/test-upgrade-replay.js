@@ -1,7 +1,6 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import { assert } from '@agoric/assert';
 import { getAllState, setAllState } from '@agoric/swing-store';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import {

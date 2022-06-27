@@ -4,7 +4,6 @@
 /* global VatData */
 
 import { importBundle } from '@endo/import-bundle';
-import { assert } from '@agoric/assert';
 import { handlePWarning } from '../handleWarning.js';
 
 const evalContractBundle = (bundle, additionalEndowments = {}) => {

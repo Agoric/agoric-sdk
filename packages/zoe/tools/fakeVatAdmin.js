@@ -5,7 +5,6 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
 import { makeStore } from '@agoric/store';
 
-import { assert } from '@agoric/assert';
 import { evalContractBundle } from '../src/contractFacet/evalContractCode.js';
 import { handlePKitWarning } from '../src/handleWarning.js';
 import { makeHandle } from '../src/makeHandle.js';

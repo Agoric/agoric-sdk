@@ -1,7 +1,6 @@
 // @ts-check
 
 import { E } from '@endo/eventual-send';
-import { assert } from '@agoric/assert';
 
 /**
  * @param {ERef<ZoeService>} zoe

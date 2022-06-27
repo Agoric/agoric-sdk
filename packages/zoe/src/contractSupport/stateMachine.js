@@ -1,7 +1,5 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
-
 /* allowedTransitions is an array of arrays which gets turned into a
  * map. The map maps string states to an array of potential next
  * states. For example,

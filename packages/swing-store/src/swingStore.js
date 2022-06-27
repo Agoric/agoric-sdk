@@ -6,8 +6,6 @@ import { tmpName } from 'tmp';
 import { open as lmdbOpen, ABORT as lmdbAbort } from 'lmdb';
 import sqlite3 from 'better-sqlite3';
 
-import { assert } from '@agoric/assert';
-
 import { sqlStreamStore } from './sqlStreamStore.js';
 import { makeSnapStore } from './snapStore.js';
 import { initEphemeralSwingStore } from './ephemeralSwingStore.js';

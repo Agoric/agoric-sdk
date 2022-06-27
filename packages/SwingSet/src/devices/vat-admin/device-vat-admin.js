@@ -1,6 +1,5 @@
 // @ts-check
 import { Nat } from '@agoric/nat';
-import { assert } from '@agoric/assert';
 import { buildSerializationTools } from '../lib/deviceTools.js';
 import { insistVatID } from '../../lib/id.js';
 

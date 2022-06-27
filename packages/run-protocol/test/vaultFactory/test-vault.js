@@ -12,7 +12,6 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
-import { assert } from '@agoric/assert';
 import { makeFakeLiveSlotsStuff } from '@agoric/swingset-vat/tools/fakeVirtualSupport.js';
 import { makeTracer } from '../../src/makeTracer.js';
 

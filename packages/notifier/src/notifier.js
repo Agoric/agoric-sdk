@@ -1,7 +1,6 @@
 // @ts-check
 /// <reference types="ses"/>
 
-import { assert } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';

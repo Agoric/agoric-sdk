@@ -7,7 +7,6 @@ import {
   ceilMultiplyBy,
   floorMultiplyBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { defineKindMulti, pickFacet } from '@agoric/vat-data';
 import { makeTracer } from '../makeTracer.js';

@@ -9,7 +9,6 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
 import { Far, passStyleOf } from '@endo/marshal';
 import { Nat, isNat } from '@agoric/nat';
-import { assert } from '@agoric/assert';
 
 const managerTypes = [
   'local',

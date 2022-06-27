@@ -1,5 +1,3 @@
-import { assert } from '@agoric/assert';
-
 function capdata(body, slots = []) {
   return harden({ body, slots });
 }

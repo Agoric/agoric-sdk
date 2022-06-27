@@ -1,4 +1,3 @@
-import { assert } from '@agoric/assert';
 import { stringify, parse } from '@endo/marshal';
 import { insistVatID } from '../lib/id.js';
 

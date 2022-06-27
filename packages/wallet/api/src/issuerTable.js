@@ -1,6 +1,5 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 
 import { makeWeakStore } from '@agoric/store';

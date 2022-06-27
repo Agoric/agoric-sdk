@@ -1,5 +1,3 @@
-import { assert } from '@agoric/assert';
-
 import { createHash } from 'crypto';
 
 /**

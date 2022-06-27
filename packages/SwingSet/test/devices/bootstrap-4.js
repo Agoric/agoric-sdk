@@ -1,4 +1,3 @@
-import { assert } from '@agoric/assert';
 import { QCLASS } from '@endo/marshal';
 import { insistVatType } from '../../src/lib/parseVatSlots.js';
 import { extractMessage } from '../vat-util.js';

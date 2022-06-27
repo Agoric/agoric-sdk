@@ -11,7 +11,6 @@ import { Far } from '@endo/marshal';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';
 
-import { assert } from '@agoric/assert';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';

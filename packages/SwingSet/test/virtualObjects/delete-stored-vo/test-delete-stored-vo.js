@@ -2,7 +2,6 @@
 import { test } from '../../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { assert } from '@agoric/assert';
 import { provideHostStorage } from '../../../src/controller/hostStorage.js';
 import { parseReachableAndVatSlot } from '../../../src/kernel/state/reachable.js';
 import {
