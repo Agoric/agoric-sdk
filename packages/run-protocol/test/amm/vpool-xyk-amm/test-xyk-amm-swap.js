@@ -27,6 +27,7 @@ import { BASIS_POINTS } from '../../../src/vpool-xyk-amm/constantProduct/default
 import { setupAmmServices } from './setup.js';
 import { unsafeMakeBundleCache } from '../../bundleTool.js';
 import { subscriptionTracker } from '../../metrics.js';
+import { subscriptionKey } from '../../supports.js';
 
 const { quote: q } = assert;
 const { ceilDivide } = natSafeMath;
@@ -1193,9 +1194,10 @@ test('storage keys', async t => {
     timer,
   );
 
-  const rootMetrics = await E(amm.ammPublicFacet).getMetrics();
-  const rootStoreKey = await E(rootMetrics).getStoreKey();
-  t.is(rootStoreKey.key, 'mockChainStorageRoot.amm.metrics');
+  t.is(
+    await subscriptionKey(E(amm.ammPublicFacet).getMetrics()),
+    'mockChainStorageRoot.amm.metrics',
+  );
 
   const addInitialLiquidity = await makeAddInitialLiquidity(
     t,
@@ -1206,7 +1208,8 @@ test('storage keys', async t => {
   );
   await addInitialLiquidity(10000n, 50000n);
 
-  const poolMetrics = await E(amm.ammPublicFacet).getPoolMetrics(moolaR.brand);
-  const poolStoreKey = await E(poolMetrics).getStoreKey();
-  t.is(poolStoreKey.key, 'mockChainStorageRoot.amm.pool0.metrics');
+  t.is(
+    await subscriptionKey(E(amm.ammPublicFacet).getPoolMetrics(moolaR.brand)),
+    'mockChainStorageRoot.amm.pool0.metrics',
+  );
 });

@@ -137,7 +137,7 @@
  * @property {() => Brand[]} getAllPoolBrands
  * @property {() => Allocation} getProtocolPoolBalance
  * @property {() => StoredSubscription<MetricsNotification>} getMetrics
- * @property {(brand: Brand) => Subscription<PoolMetricsNotification>} getPoolMetrics
+ * @property {(brand: Brand) => StoredSubscription<PoolMetricsNotification>} getPoolMetrics
  */
 
 /**
