@@ -5,11 +5,7 @@ import { E } from '@endo/eventual-send';
 import { isPromise } from '@endo/promise-kit';
 import { assertCopyArray } from '@endo/marshal';
 import { fit, M } from '@agoric/store';
-import {
-  dropContext,
-  provideDurableSingletonKit,
-  provideDurableWeakMapStore,
-} from '@agoric/vat-data';
+import { ProvideFar, provideDurableWeakMapStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { defineDurablePaymentKind } from './payment.js';
 import { defineDurablePurse } from './purse.js';
@@ -91,7 +87,6 @@ export const makeDurablePaymentLedger = (
   const makePayment = defineDurablePaymentKind(
     issuerBaggage,
     allegedName,
-    // @ts-expect-error Just too much typing foo for now.
     getBrand,
   );
 
@@ -175,16 +170,12 @@ export const makeDurablePaymentLedger = (
   };
 
   /** @type {(left: Amount, right: Amount) => Amount } */
-  // @ts-expect-error Just too much typing foo for now.
   const add = (left, right) => AmountMath.add(left, right, brand);
   /** @type {(left: Amount, right: Amount) => Amount } */
-  // @ts-expect-error Just too much typing foo for now.
   const subtract = (left, right) => AmountMath.subtract(left, right, brand);
   /** @type {(allegedAmount: Amount) => Amount} */
-  // @ts-expect-error Just too much typing foo for now.
   const coerce = allegedAmount => AmountMath.coerce(brand, allegedAmount);
   /** @type {(left: Amount, right: Amount) => boolean } */
-  // @ts-expect-error Just too much typing foo for now.
   const isEqual = (left, right) => AmountMath.isEqual(left, right, brand);
 
   /**
@@ -476,40 +467,41 @@ export const makeDurablePaymentLedger = (
     }),
   );
 
-  const issuerKit = provideDurableSingletonKit(issuerBaggage, allegedName, {
-    issuer: {
-      isLive: dropContext(isLive),
-      getAmountOf: dropContext(getAmountOf),
-      burn: dropContext(burn),
-      claim: dropContext(claim),
-      combine: dropContext(combine),
-      split: dropContext(split),
-      splitMany: dropContext(splitMany),
-      getBrand: _context => brand,
-      getAllegedName: _context => allegedName,
-      getAssetKind: _context => assetKind,
-      getDisplayInfo: _context => displayInfo,
-      makeEmptyPurse: dropContext(makeEmptyPurse),
-    },
-    mint: {
-      getIssuer: ({ facets: { issuer } }) => issuer,
-      mintPayment: dropContext(mintPayment),
-    },
-    brand: {
-      isMyIssuer: ({ facets: { issuer } }, allegedIssuerP) =>
-        E.when(allegedIssuerP, allegedIssuer => allegedIssuer === issuer),
-
-      getAllegedName: _context => allegedName,
-
-      // Give information to UI on how to display the amount.
-      getDisplayInfo: _context => displayInfo,
-
-      getAmountSchema: () => amountSchema,
-    },
+  const issuer = ProvideFar(issuerBaggage, `${allegedName} issuer`, {
+    isLive,
+    getAmountOf,
+    burn,
+    claim,
+    combine,
+    split,
+    splitMany,
+    getBrand: () => brand,
+    getAllegedName: () => allegedName,
+    getAssetKind: () => assetKind,
+    getDisplayInfo: () => displayInfo,
+    makeEmptyPurse,
   });
 
-  const { brand } = issuerKit;
-  // @ts-expect-error Just too much typing foo for now.
+  const mint = ProvideFar(issuerBaggage, `${allegedName} mint`, {
+    getIssuer: () => issuer,
+    mintPayment,
+  });
+
+  // @ts-expect-error Cannot figure out types.
+  const brand = /** @type {Brand} */ (
+    ProvideFar(issuerBaggage, `${allegedName} brand`, {
+      isMyIssuer: allegedIssuerP =>
+        E.when(allegedIssuerP, allegedIssuer => allegedIssuer === issuer),
+
+      getAllegedName: () => allegedName,
+      // Give information to UI on how to display the amount.
+      getDisplayInfo: () => displayInfo,
+      getAmountSchema: () => amountSchema,
+    })
+  );
+
+  const issuerKit = harden({ issuer, mint, brand });
+
   const emptyAmount = AmountMath.makeEmpty(brand, assetKind);
   const amountSchema = amountSchemaFromElementSchema(
     brand,

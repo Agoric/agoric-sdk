@@ -4,7 +4,7 @@ import { Far } from '@endo/marshal';
 import {
   makeScalarBigMapStore,
   makeScalarBigSetStore,
-  provideDurableSingleton,
+  ProvideFar,
 } from '@agoric/vat-data/src';
 import { provide } from '@agoric/store';
 
@@ -24,9 +24,8 @@ function makeErtpService(baggage, exitVatWithFailure) {
     });
   });
 
-  const ertpService = provideDurableSingleton(baggage, 'ERTPService', {
+  const ertpService = ProvideFar(baggage, 'ERTPService', {
     makeIssuerKit: (
-      _context,
       allegedName,
       assetKind = AssetKind.NAT,
       displayInfo = harden({}),
