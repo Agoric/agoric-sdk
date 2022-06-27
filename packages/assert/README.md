@@ -1,4 +1,6 @@
-# assert
+# assert - DEPRECATED
+
+_**Deprecated** in favor of `assert` from SES_
 
 An assertion library that keeps sensitive data outside of the Error.
 
