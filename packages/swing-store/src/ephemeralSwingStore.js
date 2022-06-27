@@ -1,6 +1,6 @@
 // @ts-check
 /* eslint-disable jsdoc/require-returns-type */
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 
 /**
  * @typedef { import('./swingStore').KVStore } KVStore

@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { makeStore } from '@agoric/store';

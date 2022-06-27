@@ -1,7 +1,7 @@
 // @ts-check
 
 import './types.js';
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { AmountMath } from '@agoric/ertp';
 import { assertRecord } from '@endo/marshal';
 import { isNat } from '@agoric/nat';

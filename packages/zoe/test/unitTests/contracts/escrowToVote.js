@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { Far } from '@endo/marshal';
 import { makeStore } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';

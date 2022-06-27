@@ -7,7 +7,7 @@
 // If this experiment works out, it or something like it may eventually move
 // from test/ to src/
 
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import {
   makeNotifierKit,
   makeSubscriptionKit,

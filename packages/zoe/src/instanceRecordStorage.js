@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { assertKeywordName } from './cleanProposal.js';
 
 const { ownKeys } = Reflect;

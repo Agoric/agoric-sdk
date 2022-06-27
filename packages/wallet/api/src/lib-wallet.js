@@ -11,7 +11,7 @@
  * and dapps.
  */
 
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { makeScalarStoreCoordinator } from '@agoric/cache';
 import { makeLegacyMap, makeScalarMap, makeScalarWeakMap } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';

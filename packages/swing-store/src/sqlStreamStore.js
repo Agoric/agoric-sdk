@@ -1,7 +1,7 @@
 // @ts-check
 import path from 'path';
 import sqlite3ambient from 'better-sqlite3';
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 
 const STREAM_START = { itemCount: 0 };
 /**

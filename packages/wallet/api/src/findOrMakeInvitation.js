@@ -1,4 +1,4 @@
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { E } from '@endo/eventual-send';
 import { passStyleOf } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';

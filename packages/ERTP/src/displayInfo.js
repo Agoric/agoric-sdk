@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { assertRecord, isObject, passStyleOf } from '@endo/marshal';
 
 // One GOOGOLth should be enough decimal places for anybody.

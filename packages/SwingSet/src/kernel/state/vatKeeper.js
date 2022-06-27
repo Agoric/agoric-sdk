@@ -3,7 +3,7 @@
  */
 // @ts-check
 import { Nat, isNat } from '@agoric/nat';
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { parseKernelSlot } from '../parseKernelSlots.js';
 import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
 import { insistVatID } from '../../lib/id.js';

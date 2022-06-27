@@ -10,7 +10,7 @@ Usage:
 
 /* eslint-disable no-await-in-loop */
 import '@endo/init';
-import { assert, details as X, q } from '@agoric/assert';
+const { details: X, quote: q } = assert;
 import { xsnap } from './xsnap.js';
 
 // scripts for use in xsnap subprocesses
