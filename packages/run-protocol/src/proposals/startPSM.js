@@ -22,9 +22,11 @@ export const startPSM = async (
   {
     consume: {
       agoricNamesAdmin,
+      board,
       zoe,
       feeMintAccess: feeMintAccessP,
       economicCommitteeCreatorFacet,
+      chainStorage,
       chainTimerService,
     },
     produce: { psmCreatorFacet, psmGovernorCreatorFacet },
@@ -105,6 +107,11 @@ export const startPSM = async (
     },
   };
 
+  const chainStoragePresence = await chainStorage;
+  const storageNode = await (chainStoragePresence &&
+    E(chainStoragePresence).getChildNode('psm'));
+  const marshaller = E(board).getPublishingMarshaller();
+
   const governorFacets = await E(zoe).startInstance(
     governor,
     {},
@@ -115,7 +122,12 @@ export const startPSM = async (
       governed: harden({
         terms,
         issuerKeywordRecord: { [keyword]: anchorIssuer },
-        privateArgs: { feeMintAccess, initialPoserInvitation },
+        privateArgs: {
+          feeMintAccess,
+          initialPoserInvitation,
+          marshaller,
+          storageNode,
+        },
       }),
     },
     harden({ economicCommitteeCreatorFacet }),
@@ -211,6 +223,8 @@ export const PSM_MANIFEST = harden({
   [startPSM.name]: {
     consume: {
       agoricNamesAdmin: true,
+      board: true,
+      chainStorage: true,
       zoe: 'zoe',
       feeMintAccess: 'zoe',
       economicCommitteeCreatorFacet: 'economicCommittee',

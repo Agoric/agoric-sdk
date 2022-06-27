@@ -10,7 +10,6 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
-import { makeStoredPublisherKit } from '@agoric/notifier';
 
 import { AmountMath } from '@agoric/ertp';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
@@ -50,14 +49,17 @@ function stageTransfer(from, to, txFrom, txTo = txFrom) {
  *    anchorBrand: Brand,
  *    anchorPerStable: Ratio,
  * }>} zcf
- * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation}} privateArgs
+ * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation, storageNode?: StorageNode, marshaller?: Marshaller}} privateArgs
  */
-export const start = async (zcf, { feeMintAccess, initialPoserInvitation }) => {
+export const start = async (zcf, privateArgs) => {
   const { anchorBrand, anchorPerStable } = zcf.getTerms();
 
   // TODO should this know that the name is 'Stable'
   // TODO get the RUN magic out of here so the contract is more reusable
-  const stableMint = await zcf.registerFeeMint('Stable', feeMintAccess);
+  const stableMint = await zcf.registerFeeMint(
+    'Stable',
+    privateArgs.feeMintAccess,
+  );
   const { brand: stableBrand } = stableMint.getIssuerRecord();
   assert(
     anchorPerStable.numerator.brand === anchorBrand &&
@@ -72,12 +74,17 @@ export const start = async (zcf, { feeMintAccess, initialPoserInvitation }) => {
   const emptyAnchor = AmountMath.makeEmpty(anchorBrand);
 
   const { augmentPublicFacet, makeGovernorFacet, params } =
-    // TODO https://github.com/Agoric/agoric-sdk/issues/5386
-    await handleParamGovernance(zcf, initialPoserInvitation, {
-      GiveStableFee: ParamTypes.RATIO,
-      MintLimit: ParamTypes.AMOUNT,
-      WantStableFee: ParamTypes.RATIO,
-    });
+    await handleParamGovernance(
+      zcf,
+      privateArgs.initialPoserInvitation,
+      {
+        GiveStableFee: ParamTypes.RATIO,
+        MintLimit: ParamTypes.AMOUNT,
+        WantStableFee: ParamTypes.RATIO,
+      },
+      privateArgs.storageNode,
+      privateArgs.marshaller,
+    );
 
   const { zcfSeat: anchorPool } = zcf.makeEmptySeatKit();
   const { zcfSeat: feePool } = zcf.makeEmptySeatKit();

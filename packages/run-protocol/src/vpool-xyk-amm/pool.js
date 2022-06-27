@@ -24,6 +24,10 @@ export const publicPrices = prices => {
 };
 
 /**
+ * @typedef {Record<string, Amount>} NotificationState
+ */
+
+/**
  * @typedef {Readonly<{
  * liquidityBrand: Brand<'nat'>,
  * secondaryBrand: Brand<'nat'>,
@@ -36,14 +40,14 @@ export const publicPrices = prices => {
  * protocolSeat: ZCFSeat,
  * zcf: ZCF,
  * timer: TimerService,
- * paramAccessor,
+ * paramAccessor: import('./multipoolMarketMaker.js').AMMParamGetters,
+ * updater: IterationObserver<NotificationState>,
+ * notifier: Notifier<NotificationState>,
+ * metricsPublication: IterationObserver<PoolMetricsNotification>,
+ * metricsSubscription: Subscription<PoolMetricsNotification>
  * }>} ImmutableState
  *
  * @typedef {{
- * updater: IterationObserver<any>,
- * notifier: Notifier<any>,
- * metricsPublication: IterationObserver<PoolMetricsNotification>,
- * metricsSubscription: Subscription<PoolMetricsNotification>
  * poolSeat: ZCFSeat,
  * liqTokenSupply: bigint,
  * }} MutableState
@@ -263,10 +267,11 @@ const poolBehavior = {
     facets.helper.updateMetrics();
     return 'Liquidity successfully removed.';
   },
-  getNotifier: ({ state: { notifier } }) => notifier,
+  getNotifier: (/** @type {MethodContext} */ { state: { notifier } }) =>
+    notifier,
   updateState: ({ state: { updater }, facets: { pool, helper } }) => {
     helper.updateMetrics();
-    return updater.updateState(pool);
+    updater.updateState(pool);
   },
   getToCentralPriceAuthority: ({ state }) => state.toCentralPriceAuthority,
   getFromCentralPriceAuthority: ({ state }) => state.fromCentralPriceAuthority,

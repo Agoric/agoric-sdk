@@ -2,7 +2,6 @@
 // @jessie-check
 import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
-import { makeStoredPublisherKit } from '@agoric/notifier';
 import { E, Far } from '@endo/far';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeAttestationFacets } from './attestation.js';
@@ -67,6 +66,8 @@ const { values } = Object;
  *   feeMintAccess: FeeMintAccess,
  *   initialPoserInvitation: Invitation,
  *   lienBridge: ERef<StakingAuthority>,
+ *   storageNode?: StorageNode,
+ *   marshaller?: Marshaller,
  * }} RunStakePrivateArgs
  *
  * The creator facet can make an `AttestationMaker` for each account, which
@@ -81,7 +82,13 @@ const { values } = Object;
  */
 export const start = async (
   zcf,
-  { feeMintAccess, initialPoserInvitation, lienBridge },
+  {
+    feeMintAccess,
+    initialPoserInvitation,
+    lienBridge,
+    storageNode,
+    marshaller,
+  },
 ) => {
   const {
     brands: { Stake: stakeBrand },
@@ -100,13 +107,18 @@ export const start = async (
   const attestBrand = await E(att.publicFacet).getBrand();
 
   const { augmentPublicFacet, makeGovernorFacet, params } =
-    // TODO https://github.com/Agoric/agoric-sdk/issues/5386
-    await handleParamGovernance(zcf, initialPoserInvitation, {
-      DebtLimit: ParamTypes.AMOUNT,
-      InterestRate: ParamTypes.RATIO,
-      LoanFee: ParamTypes.RATIO,
-      MintingRatio: ParamTypes.RATIO,
-    });
+    await handleParamGovernance(
+      zcf,
+      initialPoserInvitation,
+      {
+        DebtLimit: ParamTypes.AMOUNT,
+        InterestRate: ParamTypes.RATIO,
+        LoanFee: ParamTypes.RATIO,
+        MintingRatio: ParamTypes.RATIO,
+      },
+      storageNode,
+      marshaller,
+    );
 
   /** For temporary staging of newly minted tokens */
   const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();

@@ -193,6 +193,8 @@ const RUN_STAKE_MANIFEST = harden({
   },
   [econBehaviors.startRunStake.name]: {
     consume: {
+      board: 'board',
+      chainStorage: true,
       zoe: 'zoe',
       feeMintAccess: 'zoe',
       lienBridge: true,

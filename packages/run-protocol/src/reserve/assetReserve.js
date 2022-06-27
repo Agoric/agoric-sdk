@@ -4,7 +4,6 @@ import { E, Far } from '@endo/far';
 import { makeStore } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
-import { makeStoredPublisherKit } from '@agoric/notifier';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { AMM_INSTANCE } from './params.js';
@@ -77,10 +76,15 @@ const start = async (zcf, privateArgs) => {
   };
 
   const { augmentPublicFacet, makeGovernorFacet, params } =
-    // TODO https://github.com/Agoric/agoric-sdk/issues/5386
-    await handleParamGovernance(zcf, privateArgs.initialPoserInvitation, {
-      [AMM_INSTANCE]: ParamTypes.INSTANCE,
-    });
+    await handleParamGovernance(
+      zcf,
+      privateArgs.initialPoserInvitation,
+      {
+        [AMM_INSTANCE]: ParamTypes.INSTANCE,
+      },
+      privateArgs.storageNode,
+      privateArgs.marshaller,
+    );
 
   /** @type {Promise<XYKAMMPublicFacet>} */
   const ammPublicFacet = E(zcf.getZoeService()).getPublicFacet(

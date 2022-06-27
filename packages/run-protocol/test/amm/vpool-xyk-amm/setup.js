@@ -9,6 +9,7 @@ import {
   makeAgoricNamesAccess,
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
+import { makeBoard } from '@agoric/vats/src/lib-board.js';
 
 import * as Collect from '../../../src/collect.js';
 import {
@@ -59,6 +60,7 @@ export const setupAMMBootstrap = async (
   if (!farZoeKit) {
     farZoeKit = await setUpZoeForTest();
   }
+  trace('setupAMMBootstrap');
   const { zoe } = farZoeKit;
 
   const space = /** @type {any} */ (makePromiseSpace());
@@ -76,6 +78,7 @@ export const setupAMMBootstrap = async (
 
   installGovernance(zoe, spaces.installation.produce);
   produce.chainStorage.resolve(mockChainStorageRoot());
+  produce.board.resolve(makeBoard());
 
   return { produce, consume, ...spaces };
 };

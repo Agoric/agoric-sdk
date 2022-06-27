@@ -1195,6 +1195,11 @@ test('storage keys', async t => {
   );
 
   t.is(
+    await subscriptionKey(E(amm.ammPublicFacet).getSubscription()),
+    'mockChainStorageRoot.amm.governance',
+  );
+
+  t.is(
     await subscriptionKey(E(amm.ammPublicFacet).getMetrics()),
     'mockChainStorageRoot.amm.metrics',
   );

@@ -132,12 +132,17 @@ const start = async (zcf, privateArgs) => {
     { augmentPublicFacet, makeGovernorFacet, params },
     centralDisplayInfo,
   ] = await Promise.all([
-    // TODO https://github.com/Agoric/agoric-sdk/issues/5386
-    handleParamGovernance(zcf, privateArgs.initialPoserInvitation, {
-      [POOL_FEE_KEY]: ParamTypes.NAT,
-      [PROTOCOL_FEE_KEY]: ParamTypes.NAT,
-      [MIN_INITIAL_POOL_LIQUIDITY_KEY]: ParamTypes.AMOUNT,
-    }),
+    handleParamGovernance(
+      zcf,
+      privateArgs.initialPoserInvitation,
+      {
+        [POOL_FEE_KEY]: ParamTypes.NAT,
+        [PROTOCOL_FEE_KEY]: ParamTypes.NAT,
+        [MIN_INITIAL_POOL_LIQUIDITY_KEY]: ParamTypes.AMOUNT,
+      },
+      privateArgs.storageNode,
+      privateArgs.marshaller,
+    ),
     E(centralBrand).getDisplayInfo(),
     privateArgs.storageNode,
     privateArgs.marshaller,
@@ -348,7 +353,7 @@ const start = async (zcf, privateArgs) => {
     'RUN',
   );
 
-  /** @type {XYKAMMPublicFacet} */
+  /** @type {GovernedPublicFacet<XYKAMMPublicFacet>} */
   const publicFacet = augmentPublicFacet(
     Far('AMM public facet', {
       addPoolInvitation,

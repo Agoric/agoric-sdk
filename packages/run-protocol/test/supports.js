@@ -9,6 +9,7 @@ import {
   makeAgoricNamesAccess,
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
+import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { makeChainStorageRoot } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
@@ -72,6 +73,7 @@ export const setupBootstrap = (t, optTimer = undefined) => {
   const timer = optTimer || buildManualTimer(t.log);
   produce.chainTimerService.resolve(timer);
   produce.chainStorage.resolve(mockChainStorageRoot());
+  produce.board.resolve(makeBoard());
 
   const { zoe, feeMintAccess, run } = t.context;
   produce.zoe.resolve(zoe);
