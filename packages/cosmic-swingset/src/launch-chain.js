@@ -12,7 +12,7 @@ import {
   loadBasedir,
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { openSwingStore, DEFAULT_LMDB_MAP_SIZE } from '@agoric/swing-store';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';

@@ -3,7 +3,7 @@
 import '../../../exported.js';
 import { Far } from '@endo/marshal';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { AmountMath } from '@agoric/ertp';
 
 import { scheduleLiquidation } from './scheduleLiquidation.js';

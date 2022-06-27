@@ -3,7 +3,7 @@
 import { E as defaultE } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeStore } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network.js';
 
 import '@agoric/store/exported.js';

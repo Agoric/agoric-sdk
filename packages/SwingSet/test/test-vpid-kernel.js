@@ -3,7 +3,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import anylogger from 'anylogger';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 import { createSHA256 } from '../src/lib-nodejs/hasher.js';
 import { provideHostStorage } from '../src/controller/hostStorage.js';

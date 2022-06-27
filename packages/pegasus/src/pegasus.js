@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { makeLegacyWeakMap, makeLegacyMap } from '@agoric/store';
 import { E, Far } from '@endo/far';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';

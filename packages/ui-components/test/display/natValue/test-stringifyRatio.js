@@ -5,7 +5,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeIssuerKit, AssetKind } from '@agoric/ertp';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { stringifyRatioAsFraction } from '../../../src/display/natValue/stringifyRatioAsFraction.js';
 import { stringifyRatio } from '../../../src/display/natValue/stringifyRatio.js';
 import { stringifyRatioAsPercent } from '../../../src/display/natValue/stringifyRatioAsPercent.js';

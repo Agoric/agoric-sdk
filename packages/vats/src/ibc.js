@@ -6,7 +6,7 @@ import {
 } from '@agoric/swingset-vat/src/vats/network/index.js';
 import { makeStore, makeLegacyMap } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { Far } from '@endo/far';
 
 import '@agoric/store/exported.js';

@@ -1,7 +1,7 @@
 // @ts-check
 
 import { Nat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { Far, passStyleOf } from '@endo/marshal';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';

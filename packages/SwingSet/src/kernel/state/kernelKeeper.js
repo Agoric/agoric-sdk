@@ -1,6 +1,6 @@
 // @ts-check
 import { Nat, isNat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { wrapStorage } from './storageWrapper.js';
 import { initializeVatState, makeVatKeeper } from './vatKeeper.js';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper.js';

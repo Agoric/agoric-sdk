@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { Far } from '@endo/marshal';
 
 export function buildRootObject(vatPowers, vatParameters) {

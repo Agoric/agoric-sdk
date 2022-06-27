@@ -1,6 +1,6 @@
 /* eslint-disable no-underscore-dangle */
 import { html } from 'lit';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 export const makeBridgeIframeConnector = component => {
   const connectedOnMessage = ev => {

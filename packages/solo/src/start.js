@@ -16,7 +16,7 @@ import anylogger from 'anylogger';
 // import connect from 'lotion-connect';
 // import djson from 'deterministic-json';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import {
   makeSlogSenderFromModule,
   getTelemetryProviders,

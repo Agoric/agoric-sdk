@@ -1,5 +1,5 @@
 import { Nat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 // Local object/promise references (in the comms vat) contain a two-tuple of
 // (type, index).  All object references point to entries in the Local Object

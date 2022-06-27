@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import buildCommsDispatch from '../src/vats/comms/index.js';
 import { debugState } from '../src/vats/comms/dispatch.js';
 import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot.js';

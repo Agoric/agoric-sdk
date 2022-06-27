@@ -2,7 +2,7 @@
 
 import { makeStore } from '@agoric/store';
 import '@agoric/store/exported.js';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { Far } from '@endo/far';
 
 /**

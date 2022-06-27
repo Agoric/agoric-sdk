@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 /* eslint-disable jsdoc/require-returns-check */
 /**

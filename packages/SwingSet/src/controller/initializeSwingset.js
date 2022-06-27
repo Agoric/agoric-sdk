@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import bundleSource from '@endo/bundle-source';
 
 import '../types-ambient.js';

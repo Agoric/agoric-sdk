@@ -66,7 +66,7 @@
 
 import { Nat } from '@agoric/nat';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 // This Map-based mailboxState object is a good starting point, but we may
 // replace it with one that tracks which parts of the state have been

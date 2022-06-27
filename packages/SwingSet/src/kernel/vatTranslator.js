@@ -1,5 +1,5 @@
 // @ts-check
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { insistMessage } from '../lib/message.js';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
 import { insistVatType, parseVatSlot } from '../lib/parseVatSlots.js';

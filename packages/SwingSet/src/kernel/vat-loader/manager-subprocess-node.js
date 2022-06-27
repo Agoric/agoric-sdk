@@ -1,6 +1,6 @@
 // import { spawn } from 'child_process'; // not from Compartment
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeManagerKit } from './manager-helper.js';
 

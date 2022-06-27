@@ -2,7 +2,7 @@
 
 import { E } from '@endo/eventual-send';
 import { makeStore } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { Far } from '@endo/marshal';
 
 /**

@@ -1,6 +1,6 @@
 import { Nat } from '@agoric/nat';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 // Vats are identified by an integer index, which (for typechecking purposes)
 // is encoded as `vNN`. Devices are similarly identified as `dNN`. Both have

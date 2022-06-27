@@ -1,5 +1,5 @@
 // @ts-check
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { isNat } from '@agoric/nat';
 import { importBundle } from '@endo/import-bundle';
 import { stringify } from '@endo/marshal';

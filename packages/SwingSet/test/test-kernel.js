@@ -2,7 +2,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
 import { makeVatSlot } from '../src/lib/parseVatSlots.js';

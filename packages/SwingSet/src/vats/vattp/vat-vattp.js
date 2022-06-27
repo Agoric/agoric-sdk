@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';

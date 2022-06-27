@@ -1,7 +1,7 @@
 import { Nat } from '@agoric/nat';
 import { Far } from '@endo/marshal';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;

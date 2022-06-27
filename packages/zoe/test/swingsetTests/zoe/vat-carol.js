@@ -2,7 +2,7 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { keyEQ } from '@agoric/store';
 import { showPurseBalance, setupIssuers } from '../helpers.js';
 

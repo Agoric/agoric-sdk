@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { makeWeakStore, makeStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';

@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { parseVatSlot, insistVatType } from '../../lib/parseVatSlots.js';
 import { parseLocalSlot } from './parseLocalSlots.js';
 import { cdebug } from './cdebug.js';

@@ -7,7 +7,7 @@ import {
   multiplyRatios,
   quantize,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;
 const BASIS_POINTS = 10000;

@@ -12,7 +12,7 @@ import { Worker } from 'worker_threads';
 import anylogger from 'anylogger';
 import microtime from 'microtime';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { importBundle } from '@endo/import-bundle';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
 

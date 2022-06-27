@@ -1,5 +1,5 @@
 /* global Buffer */
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 // adapted from 'netstring-stream', https://github.com/tlivings/netstring-stream/
 import { Transform } from 'stream';

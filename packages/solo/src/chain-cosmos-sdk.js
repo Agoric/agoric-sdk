@@ -11,7 +11,7 @@ import anylogger from 'anylogger';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import {
   DEFAULT_BATCH_TIMEOUT_MS,
   makeBatchedDeliver,

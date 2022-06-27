@@ -1,7 +1,7 @@
 // @ts-check
 
 import { makeStore } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { AmountMath } from '@agoric/ertp';
 
 import '../../exported.js';

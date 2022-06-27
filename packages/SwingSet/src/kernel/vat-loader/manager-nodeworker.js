@@ -1,6 +1,6 @@
 // @ts-check
 // import { Worker } from 'worker_threads'; // not from a Compartment
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeManagerKit } from './manager-helper.js';
 

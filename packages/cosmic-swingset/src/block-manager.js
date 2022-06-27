@@ -2,7 +2,7 @@
 /* global process */
 import anylogger from 'anylogger';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 import * as BRIDGE_ID from '@agoric/vats/src/bridge-ids.js';
 

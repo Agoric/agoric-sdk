@@ -2,7 +2,7 @@
 
 import '../../../exported.js';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { Nat } from '@agoric/nat';
 
 import {

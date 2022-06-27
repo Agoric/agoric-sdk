@@ -4,7 +4,7 @@ import {
   getInterfaceOf,
   makeMarshal,
 } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { isNat } from '@agoric/nat';
 import { isPromise } from '@endo/promise-kit';
 import {

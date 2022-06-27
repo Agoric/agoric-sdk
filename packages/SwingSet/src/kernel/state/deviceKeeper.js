@@ -3,7 +3,7 @@
  */
 
 import { Nat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { parseKernelSlot } from '../parseKernelSlots.js';
 import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
 import { insistDeviceID } from '../../lib/id.js';

@@ -1,5 +1,5 @@
 // @ts-check
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { E } from '@endo/far';
 
 /** @type {AssertOfferResult} */

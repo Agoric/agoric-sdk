@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { assertKnownOptions } from '../../lib/assertOptions.js';
 import { makeLocalVatManagerFactory } from './manager-local.js';
 import { makeNodeWorkerVatManagerFactory } from './manager-nodeworker.js';

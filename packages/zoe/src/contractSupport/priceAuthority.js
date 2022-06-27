@@ -2,7 +2,7 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { makePromiseKit } from '@endo/promise-kit';
 import { AmountMath } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';

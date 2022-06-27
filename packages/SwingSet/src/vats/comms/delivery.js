@@ -1,7 +1,7 @@
 // @ts-check
 /* eslint-disable no-use-before-define */
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
 import { makeUndeliverableError } from '../../lib/makeUndeliverableError.js';
 import { extractSingleSlot, insistCapData } from '../../lib/capdata.js';

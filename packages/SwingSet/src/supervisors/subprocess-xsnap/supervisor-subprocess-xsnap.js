@@ -1,6 +1,6 @@
 /* global globalThis WeakRef FinalizationRegistry */
 // @ts-check
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
 import '../../types-ambient.js';

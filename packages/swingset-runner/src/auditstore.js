@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { parseReachableAndVatSlot } from '@agoric/swingset-vat/src/kernel/state/reachable.js';
 import { parseVatSlot } from '@agoric/swingset-vat/src/lib/parseVatSlots.js';
 

@@ -1,7 +1,7 @@
 import { makePromiseKit } from '@endo/promise-kit';
 import { Nat } from '@agoric/nat';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 export default function buildCommand(broadcastCallback) {
   assert(broadcastCallback, X`broadcastCallback must be provided.`);

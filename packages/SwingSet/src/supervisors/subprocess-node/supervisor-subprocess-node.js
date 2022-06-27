@@ -7,7 +7,7 @@ import '@endo/init';
 import anylogger from 'anylogger';
 import fs from 'fs';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
 import engineGC from '../../lib-nodejs/engine-gc.js';

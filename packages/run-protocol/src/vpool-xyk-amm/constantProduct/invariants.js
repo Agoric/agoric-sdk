@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { AmountMath } from '@agoric/ertp';
 
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';

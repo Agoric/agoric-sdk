@@ -7,7 +7,7 @@ import path from 'path';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { setup } from '../setupBasicMints.js';

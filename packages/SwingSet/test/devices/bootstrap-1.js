@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { extractMessage } from '../vat-util.js';
 
 export default function setup(syscall, state, _helpers, vatPowers) {

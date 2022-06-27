@@ -3,7 +3,7 @@
 // FIXME: This is just hacked together for the legacy wallet.
 
 import { E } from '@endo/eventual-send';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import path from 'path';
 
 const filename = new URL(import.meta.url).pathname;

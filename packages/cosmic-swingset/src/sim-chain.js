@@ -12,7 +12,7 @@ import anylogger from 'anylogger';
 import { makeSlogSenderFromModule } from '@agoric/telemetry';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { makeWithQueue } from '@agoric/vats/src/queue.js';
 import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver.js';
 import stringify from './json-stable-stringify.js';

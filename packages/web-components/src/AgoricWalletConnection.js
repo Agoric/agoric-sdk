@@ -2,7 +2,7 @@
 // @ts-check
 import { html, css, LitElement } from 'lit';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { makeCache } from '@agoric/cache';
 import { makeLeader } from '@agoric/casting/src/leader-netconfig.js';
 import { makeCapTP as defaultMakeCapTP } from '@endo/captp';

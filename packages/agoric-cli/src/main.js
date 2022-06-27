@@ -1,7 +1,7 @@
 /* global process */
 import { Command } from 'commander';
 import path from 'path';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import {
   DEFAULT_KEEP_POLLING_SECONDS,
   DEFAULT_JITTER_SECONDS,

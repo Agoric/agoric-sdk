@@ -5,7 +5,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import {
   calculateMedian,
   makeOnewayPriceAuthorityKit,

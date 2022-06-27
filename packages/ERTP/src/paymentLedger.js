@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { E } from '@endo/eventual-send';
 import { isPromise } from '@endo/promise-kit';
 import { Far, assertCopyArray } from '@endo/marshal';

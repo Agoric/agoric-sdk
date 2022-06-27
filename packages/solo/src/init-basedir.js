@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import anylogger from 'anylogger';
 import { HELPER } from './chain-cosmos-sdk.js';
 

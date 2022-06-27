@@ -6,7 +6,7 @@ import {
 } from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
 import { makeBufferedStorage } from '@agoric/swingset-vat/src/lib/storageAPI.js';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { makeSlogSenderFromModule } from '@agoric/telemetry';
 
 import * as STORAGE_PATH from '@agoric/vats/src/chain-storage-paths.js';

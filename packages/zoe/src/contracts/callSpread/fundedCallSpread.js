@@ -3,7 +3,7 @@
 import '../../../exported.js';
 import './types.js';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';

@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 
 // XXX Do these "StorageAPI" functions belong in their own package?
 

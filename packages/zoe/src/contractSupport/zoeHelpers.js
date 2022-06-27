@@ -1,7 +1,7 @@
 // @ts-check
 import '../../exported.js';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { keyEQ, fit } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';

@@ -1,7 +1,7 @@
 // @ts-check
 /* global globalThis */
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { importBundle } from '@endo/import-bundle';
 import { makeLiveSlots } from '../../liveslots/liveslots.js';
 import { makeManagerKit } from './manager-helper.js';

@@ -2,7 +2,7 @@
 
 import '../../../exported.js';
 
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';

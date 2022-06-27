@@ -6,7 +6,7 @@ import { Far } from '@endo/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import {
   calculateMedian,
   natSafeMath,

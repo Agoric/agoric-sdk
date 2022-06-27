@@ -6,7 +6,7 @@ import {
   makeNotifierFromAsyncIterable,
 } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { Far } from '@endo/marshal';
 
 import { natSafeMath } from '../src/contractSupport/index.js';

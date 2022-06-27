@@ -8,7 +8,7 @@ import path from 'path';
 import { E } from '@endo/eventual-send';
 
 import { AmountMath, AssetKind } from '@agoric/ertp';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
 import { installationPFromSource } from '../installFromSource.js';

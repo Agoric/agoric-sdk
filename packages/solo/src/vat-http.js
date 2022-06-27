@@ -2,7 +2,7 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { makeCache } from '@agoric/cache';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+const { details: X } = assert;
 import { getReplHandler } from '@agoric/vats/src/repl.js';
 import { makePromiseKit } from '@endo/promise-kit';
 import { getCapTPHandler } from './captp.js';
