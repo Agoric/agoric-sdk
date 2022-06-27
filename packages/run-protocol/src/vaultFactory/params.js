@@ -8,6 +8,7 @@ import {
   makeParamManager,
   ParamTypes,
 } from '@agoric/governance';
+import { makeStoredPublisherKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { amountPattern, ratioPattern } from '../contractSupport.js';
 
@@ -62,13 +63,14 @@ const makeVaultDirectorParams = (
   });
 };
 
-/** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').ParamTypesMapFromRecords<ReturnType<typeof makeVaultDirectorParams>>} VaultDirectorParams */
+/** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').ParamTypesMapFromRecord<ReturnType<typeof makeVaultDirectorParams>>} VaultDirectorParams */
 
 /**
+ * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {VaultManagerParamValues} initial
  */
-const makeVaultParamManager = initial =>
-  makeParamManagerSync({
+const makeVaultParamManager = (publisherKit, initial) =>
+  makeParamManagerSync(publisherKit, {
     [DEBT_LIMIT_KEY]: [ParamTypes.AMOUNT, initial.debtLimit],
     [LIQUIDATION_MARGIN_KEY]: [ParamTypes.RATIO, initial.liquidationMargin],
     [LIQUIDATION_PENALTY_KEY]: [ParamTypes.RATIO, initial.liquidationPenalty],
@@ -89,6 +91,7 @@ export const vaultParamPattern = M.split(
 );
 
 /**
+ * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {ERef<ZoeService>} zoe
  * @param {Invitation} electorateInvitation
  * @param {Installation} liquidationInstall
@@ -97,6 +100,7 @@ export const vaultParamPattern = M.split(
  * @param {Invitation} shortfallInvitation
  */
 const makeVaultDirectorParamManager = async (
+  publisherKit,
   zoe,
   electorateInvitation,
   liquidationInstall,
@@ -105,6 +109,7 @@ const makeVaultDirectorParamManager = async (
   shortfallInvitation,
 ) => {
   return makeParamManager(
+    publisherKit,
     {
       [CONTRACT_ELECTORATE]: [ParamTypes.INVITATION, electorateInvitation],
       [LIQUIDATION_INSTALL_KEY]: [ParamTypes.INSTALLATION, liquidationInstall],
@@ -117,6 +122,7 @@ const makeVaultDirectorParamManager = async (
 };
 
 /**
+ * @param {{storageNode?: ERef<StorageNode>, marshaller?: ERef<Marshaller>}} caps
  * @param {{
  *   electorateInvitationAmount: Amount,
  *   minInitialDebt: Amount,
@@ -132,26 +138,35 @@ const makeVaultDirectorParamManager = async (
  *   shortfallInvitationAmount: Amount,
  * }} opts
  */
-const makeGovernedTerms = ({
-  ammPublicFacet,
-  bootstrapPaymentValue,
-  electorateInvitationAmount,
-  liquidationInstall,
-  liquidationTerms,
-  loanTiming,
-  minInitialDebt,
-  priceAuthority,
-  reservePublicFacet,
-  timer,
-  vaultManagerParams,
-  shortfallInvitationAmount,
-}) => {
-  const loanTimingParams = makeParamManagerSync({
-    [CHARGING_PERIOD_KEY]: ['nat', loanTiming.chargingPeriod],
-    [RECORDING_PERIOD_KEY]: ['nat', loanTiming.recordingPeriod],
-  }).getParams();
+const makeGovernedTerms = (
+  { storageNode, marshaller },
+  {
+    ammPublicFacet,
+    bootstrapPaymentValue,
+    electorateInvitationAmount,
+    liquidationInstall,
+    liquidationTerms,
+    loanTiming,
+    minInitialDebt,
+    priceAuthority,
+    reservePublicFacet,
+    timer,
+    vaultManagerParams,
+    shortfallInvitationAmount,
+  },
+) => {
+  const loanTimingParams = makeParamManagerSync(
+    makeStoredPublisherKit(storageNode, marshaller, 'timingParams'),
+    {
+      [CHARGING_PERIOD_KEY]: ['nat', loanTiming.chargingPeriod],
+      [RECORDING_PERIOD_KEY]: ['nat', loanTiming.recordingPeriod],
+    },
+  ).getParams();
 
-  const loanParams = makeVaultParamManager(vaultManagerParams).getParams();
+  const loanParams = makeVaultParamManager(
+    makeStoredPublisherKit(storageNode, marshaller, 'collateralParams'),
+    vaultManagerParams,
+  ).getParams();
 
   return harden({
     ammPublicFacet,

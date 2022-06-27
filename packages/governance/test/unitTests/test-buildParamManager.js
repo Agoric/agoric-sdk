@@ -1,21 +1,21 @@
 // @ts-check
-
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
+
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { makeStoredPublisherKit } from '@agoric/notifier';
+import { keyEQ } from '@agoric/store';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { keyEQ } from '@agoric/store';
-
-import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
-import { ParamTypes, makeParamManagerBuilder } from '../../src/index.js';
+import { makeParamManagerBuilder, ParamTypes } from '../../src/index.js';
 
 test('two parameters', t => {
   const drachmaKit = makeIssuerKit('drachma');
 
   const drachmaBrand = drachmaKit.brand;
-  const paramManager = makeParamManagerBuilder()
+  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
     .addBrand('Currency', drachmaBrand)
     .addAmount('Amt', AmountMath.make(drachmaBrand, 37n))
     .build();
@@ -33,7 +33,7 @@ test('getParams', t => {
 
   const drachmaBrand = drachmaKit.brand;
   const drachmas = AmountMath.make(drachmaBrand, 37n);
-  const paramManager = makeParamManagerBuilder()
+  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
     .addBrand('Currency', drachmaBrand)
     .addAmount('Amt', drachmas)
     .build();
@@ -58,7 +58,7 @@ test('params duplicate entry', async t => {
   const { brand: stiltonBrand } = makeIssuerKit('stilton', AssetKind.SET);
   t.throws(
     () =>
-      makeParamManagerBuilder()
+      makeParamManagerBuilder(makeStoredPublisherKit())
         .addNat(stuffKey, 37n)
         .addUnknown(stuffKey, stiltonBrand)
         .build(),
@@ -71,7 +71,7 @@ test('params duplicate entry', async t => {
 test('Amount', async t => {
   const { brand: floorBrand } = makeIssuerKit('floor wax');
   const { brand: dessertBrand } = makeIssuerKit('dessertTopping');
-  const paramManager = makeParamManagerBuilder()
+  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
     .addAmount('Shimmer', AmountMath.make(floorBrand, 2n))
     .build();
   t.deepEqual(
@@ -117,7 +117,7 @@ test('params one installation', async t => {
     getBundle: () => ({ obfuscated: 42 }),
   });
 
-  const paramManager = makeParamManagerBuilder()
+  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
     .addInstallation('PName', installationHandle)
     .build();
 
@@ -158,7 +158,7 @@ test('params one instance', async t => {
   // isInstallation() (#3344), we'll need to make a mockZoe.
   const instanceHandle = makeHandle(handleType);
 
-  const paramManager = makeParamManagerBuilder()
+  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
     .addInstance('PName', instanceHandle)
     .build();
 
@@ -205,7 +205,10 @@ test('Invitation', async t => {
 
   const drachmaBrand = drachmaKit.brand;
   const drachmaAmount = AmountMath.make(drachmaBrand, 37n);
-  const paramManagerBuilder = makeParamManagerBuilder(zoe)
+  const paramManagerBuilder = makeParamManagerBuilder(
+    makeStoredPublisherKit(),
+    zoe,
+  )
     .addBrand('Currency', drachmaBrand)
     .addAmount('Amt', drachmaAmount);
   // addInvitation is async, so it can't be part of the cascade.
@@ -242,7 +245,7 @@ test('Invitation', async t => {
 });
 
 test('two Nats', async t => {
-  const paramManager = makeParamManagerBuilder()
+  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
     .addNat('Acres', 50n)
     .addNat('SpeedLimit', 299_792_458n)
     .build();
@@ -266,7 +269,7 @@ test('Ratio', async t => {
   const unitlessBrand = makeIssuerKit('unitless').brand;
 
   const ratio = makeRatio(16180n, unitlessBrand, 10_000n);
-  const paramManager = makeParamManagerBuilder()
+  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
     .addRatio('GoldenRatio', ratio)
     .build();
   t.is(paramManager.getRatio('GoldenRatio'), ratio);
@@ -305,7 +308,7 @@ test('Record', async t => {
     C2: 'Flying',
     D: 'Blue Jay Way',
   });
-  const paramManager = makeParamManagerBuilder()
+  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
     .addRecord('BestEP', epRecord)
     .build();
   t.is(paramManager.getRecord('BestEP'), epRecord);
@@ -355,7 +358,7 @@ test('Record', async t => {
 });
 
 test('Strings', async t => {
-  const paramManager = makeParamManagerBuilder()
+  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
     .addNat('Acres', 50n)
     .addString('OurWeapons', 'fear')
     .build();
@@ -379,7 +382,7 @@ test('Strings', async t => {
 });
 
 test('Unknown', async t => {
-  const paramManager = makeParamManagerBuilder()
+  const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
     .addString('Label', 'birthday')
     .addUnknown('Surprise', 'party')
     .build();

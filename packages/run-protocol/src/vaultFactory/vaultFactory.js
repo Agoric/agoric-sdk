@@ -20,6 +20,7 @@ import '@agoric/zoe/src/contracts/exported.js';
 // { getParamMgrRetriever, getInvitation, getLimitedCreatorFacet }.
 
 import { assertElectorateMatches } from '@agoric/governance';
+import { makeStoredPublisherKit } from '@agoric/notifier';
 import {
   makeVaultDirectorParamManager,
   LIQUIDATION_INSTALL_KEY,
@@ -32,7 +33,7 @@ import { makeVaultDirector } from './vaultDirector.js';
  * @typedef {ZCF<GovernanceTerms<import('./params').VaultDirectorParams> & {
  *   ammPublicFacet: AutoswapPublicFacet,
  *   liquidationInstall: Installation<import('./liquidateMinimum.js').start>,
- *   loanTimingParams: {ChargingPeriod: ParamRecord<'nat'>, RecordingPeriod: ParamRecord<'nat'>},
+ *   loanTimingParams: {ChargingPeriod: ParamValueTyped<'nat'>, RecordingPeriod: ParamValueTyped<'nat'>},
  *   minInitialDebt: Amount,
  *   priceAuthority: ERef<PriceAuthority>,
  *   reservePublicFacet: AssetReservePublicFacet,
@@ -66,6 +67,11 @@ export const start = async (zcf, privateArgs) => {
   } = zcf.getTerms().governedParams;
   /** a powerful object; can modify the invitation */
   const vaultDirectorParamManager = await makeVaultDirectorParamManager(
+    makeStoredPublisherKit(
+      privateArgs.storageNode,
+      privateArgs.marshaller,
+      'governance',
+    ),
     zcf.getZoeService(),
     initialPoserInvitation,
     liqInstall,

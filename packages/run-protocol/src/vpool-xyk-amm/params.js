@@ -5,6 +5,7 @@ import {
   makeParamManager,
   ParamTypes,
 } from '@agoric/governance';
+import { makeStoredPublisherKit } from '@agoric/notifier';
 
 export const POOL_FEE_KEY = 'PoolFee';
 export const PROTOCOL_FEE_KEY = 'ProtocolFee';
@@ -28,6 +29,8 @@ const makeAmmParamManager = async (
   poserInvitation,
 ) => {
   return makeParamManager(
+    // TODO https://github.com/Agoric/agoric-sdk/issues/5386
+    makeStoredPublisherKit(),
     {
       [POOL_FEE_KEY]: [ParamTypes.NAT, poolFeeBP],
       [PROTOCOL_FEE_KEY]: [ParamTypes.NAT, protocolFeeBP],
