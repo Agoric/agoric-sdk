@@ -100,18 +100,13 @@ export const start = async (
   const attestBrand = await E(att.publicFacet).getBrand();
 
   const { augmentPublicFacet, makeGovernorFacet, params } =
-    await handleParamGovernance(
-      // TODO https://github.com/Agoric/agoric-sdk/issues/5386
-      makeStoredPublisherKit(),
-      zcf,
-      initialPoserInvitation,
-      {
-        DebtLimit: ParamTypes.AMOUNT,
-        InterestRate: ParamTypes.RATIO,
-        LoanFee: ParamTypes.RATIO,
-        MintingRatio: ParamTypes.RATIO,
-      },
-    );
+    // TODO https://github.com/Agoric/agoric-sdk/issues/5386
+    await handleParamGovernance(zcf, initialPoserInvitation, {
+      DebtLimit: ParamTypes.AMOUNT,
+      InterestRate: ParamTypes.RATIO,
+      LoanFee: ParamTypes.RATIO,
+      MintingRatio: ParamTypes.RATIO,
+    });
 
   /** For temporary staging of newly minted tokens */
   const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();

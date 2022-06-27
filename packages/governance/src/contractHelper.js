@@ -1,13 +1,14 @@
 // @ts-check
 
 import { Far } from '@endo/marshal';
+import { makeStoredPublisherKit } from '@agoric/notifier';
 import { keyEQ } from '@agoric/store';
-// eslint-disable-next-line -- https://github.com/Agoric/agoric-sdk/pull/4837
-import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
 import { assertElectorateMatches } from './contractGovernance/paramManager.js';
 import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
 
 const { details: X, quote: q } = assert;
+
+export const GOVERNANCE_STORAGE_KEY = 'governance';
 
 /**
  * Utility function for `makeParamGovernance`.
@@ -116,17 +117,25 @@ const facetHelpers = (zcf, paramManager) => {
  *
  * @template {import('./contractGovernance/typedParamManager').ParamTypesMap} M
  *   Map of types of custom governed terms
- * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {ZCF<GovernanceTerms<M>>} zcf
  * @param {Invitation} initialPoserInvitation
  * @param {M} paramTypesMap
+ * @param {ERef<StorageNode>} [storageNode]
+ * @param {ERef<Marshaller>} [marshaller]
  */
 const handleParamGovernance = async (
-  publisherKit,
   zcf,
   initialPoserInvitation,
   paramTypesMap,
+  storageNode,
+  marshaller,
 ) => {
+  /** @type {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} */
+  const publisherKit = makeStoredPublisherKit(
+    storageNode,
+    marshaller,
+    GOVERNANCE_STORAGE_KEY,
+  );
   const paramManager = await makeParamManagerFromTerms(
     publisherKit,
     zcf,

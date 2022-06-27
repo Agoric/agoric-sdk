@@ -72,17 +72,12 @@ export const start = async (zcf, { feeMintAccess, initialPoserInvitation }) => {
   const emptyAnchor = AmountMath.makeEmpty(anchorBrand);
 
   const { augmentPublicFacet, makeGovernorFacet, params } =
-    await handleParamGovernance(
-      // TODO https://github.com/Agoric/agoric-sdk/issues/5386
-      makeStoredPublisherKit(),
-      zcf,
-      initialPoserInvitation,
-      {
-        GiveStableFee: ParamTypes.RATIO,
-        MintLimit: ParamTypes.AMOUNT,
-        WantStableFee: ParamTypes.RATIO,
-      },
-    );
+    // TODO https://github.com/Agoric/agoric-sdk/issues/5386
+    await handleParamGovernance(zcf, initialPoserInvitation, {
+      GiveStableFee: ParamTypes.RATIO,
+      MintLimit: ParamTypes.AMOUNT,
+      WantStableFee: ParamTypes.RATIO,
+    });
 
   const { zcfSeat: anchorPool } = zcf.makeEmptySeatKit();
   const { zcfSeat: feePool } = zcf.makeEmptySeatKit();

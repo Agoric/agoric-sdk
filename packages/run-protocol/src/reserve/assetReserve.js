@@ -77,15 +77,10 @@ const start = async (zcf, privateArgs) => {
   };
 
   const { augmentPublicFacet, makeGovernorFacet, params } =
-    await handleParamGovernance(
-      // TODO https://github.com/Agoric/agoric-sdk/issues/5386
-      makeStoredPublisherKit(),
-      zcf,
-      privateArgs.initialPoserInvitation,
-      {
-        [AMM_INSTANCE]: ParamTypes.INSTANCE,
-      },
-    );
+    // TODO https://github.com/Agoric/agoric-sdk/issues/5386
+    await handleParamGovernance(zcf, privateArgs.initialPoserInvitation, {
+      [AMM_INSTANCE]: ParamTypes.INSTANCE,
+    });
 
   /** @type {Promise<XYKAMMPublicFacet>} */
   const ammPublicFacet = E(zcf.getZoeService()).getPublicFacet(

@@ -5,7 +5,6 @@ import { Far } from '@endo/marshal';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
-import { makeStoredPublisherKit } from '@agoric/notifier';
 import {
   assertIssuerKeywords,
   offerTo,
@@ -133,18 +132,15 @@ const start = async (zcf, privateArgs) => {
     { augmentPublicFacet, makeGovernorFacet, params },
     centralDisplayInfo,
   ] = await Promise.all([
-    handleParamGovernance(
-      // TODO https://github.com/Agoric/agoric-sdk/issues/5386
-      makeStoredPublisherKit(),
-      zcf,
-      privateArgs.initialPoserInvitation,
-      {
-        [POOL_FEE_KEY]: ParamTypes.NAT,
-        [PROTOCOL_FEE_KEY]: ParamTypes.NAT,
-        [MIN_INITIAL_POOL_LIQUIDITY_KEY]: ParamTypes.AMOUNT,
-      },
-    ),
+    // TODO https://github.com/Agoric/agoric-sdk/issues/5386
+    handleParamGovernance(zcf, privateArgs.initialPoserInvitation, {
+      [POOL_FEE_KEY]: ParamTypes.NAT,
+      [PROTOCOL_FEE_KEY]: ParamTypes.NAT,
+      [MIN_INITIAL_POOL_LIQUIDITY_KEY]: ParamTypes.AMOUNT,
+    }),
     E(centralBrand).getDisplayInfo(),
+    privateArgs.storageNode,
+    privateArgs.marshaller,
   ]);
 
   assert.equal(
