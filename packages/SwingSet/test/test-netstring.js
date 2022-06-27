@@ -81,7 +81,7 @@ test('decode', t => {
     const encPayloads = expPayloads.map(Buffer.from);
     const encLeftover = Buffer.from(expLeftover);
 
-    const { payloads, leftover } = decode(Buffer.from(input));
+    const { payloads, leftover } = decode(Buffer.from(input), 25);
     t.deepEqual(payloads, encPayloads);
     t.deepEqual(leftover, encLeftover);
   }
@@ -102,12 +102,13 @@ test('decode', t => {
   eq(expectedBuffer, [emoji], '');
 
   function bad(input, message) {
-    t.throws(() => decode(Buffer.from(input)), { message });
+    t.throws(() => decode(Buffer.from(input), 25), { message });
   }
 
   // bad('a', 'non-numeric length prefix');
   bad('a:', /unparseable size .*, should be integer/);
   bad('1:ab', 'malformed netstring: not terminated by comma');
+  bad('26:x', /size .* exceeds limit of 25/);
 });
 
 test('decode stream', async t => {

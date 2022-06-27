@@ -26,13 +26,7 @@ export function makeTranscriptManager(
     };
   }
 
-  const gcSyscalls = new Set(['dropImports', 'retireImports', 'retireExports']);
-
   function addSyscall(d, response) {
-    const type = d[0];
-    if (gcSyscalls.has(type)) {
-      return;
-    }
     if (currentEntry) {
       currentEntry.syscalls.push({ d, response });
     }
@@ -65,10 +59,6 @@ export function makeTranscriptManager(
   let replayError;
 
   function simulateSyscall(newSyscall) {
-    const type = newSyscall[0];
-    if (gcSyscalls.has(type)) {
-      return ['ok', undefined];
-    }
     const s = playbackSyscalls.shift();
     const newReplayError = compareSyscalls(vatID, s.d, newSyscall);
     if (newReplayError) {

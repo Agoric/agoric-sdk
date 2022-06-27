@@ -526,6 +526,7 @@ test('kernelKeeper promises', async t => {
   t.deepEqual(k2.getKernelPromise(p1).queue, [m1, m2]);
 
   const ko = k.addKernelObject('v1');
+  t.is(k.getStats().kernelObjects, 1);
   // when we resolve the promise, all its queued messages are moved to the
   // run-queue, and its refcount remains the same
   const capdata = harden({
@@ -569,6 +570,9 @@ test('kernelKeeper promises', async t => {
     ['kernel.snapshotInterval', '200'],
     ['meter.nextID', '1'],
   ]);
+
+  k.deleteKernelObject(ko);
+  t.is(k.getStats().kernelObjects, 0);
 });
 
 test('kernelKeeper promise resolveToData', async t => {
