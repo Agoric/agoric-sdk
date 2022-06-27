@@ -116,16 +116,19 @@ const facetHelpers = (zcf, paramManager) => {
  *
  * @template {import('./contractGovernance/typedParamManager').ParamTypesMap} M
  *   Map of types of custom governed terms
+ * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {ZCF<GovernanceTerms<M>>} zcf
  * @param {Invitation} initialPoserInvitation
  * @param {M} paramTypesMap
  */
 const handleParamGovernance = async (
+  publisherKit,
   zcf,
   initialPoserInvitation,
   paramTypesMap,
 ) => {
   const paramManager = await makeParamManagerFromTerms(
+    publisherKit,
     zcf,
     initialPoserInvitation,
     paramTypesMap,

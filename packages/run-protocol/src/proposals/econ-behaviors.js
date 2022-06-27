@@ -459,25 +459,29 @@ export const startVaultFactory = async (
   const priceAuthority = await priceAuthorityP;
   const reservePublicFacet = await E(zoe).getPublicFacet(reserveInstance);
   const timer = await chainTimerService;
-  const vaultFactoryTerms = makeGovernedTerms({
-    priceAuthority,
-    reservePublicFacet,
-    loanTiming: loanParams,
-    liquidationInstall: installations.liquidate,
-    timer,
-    electorateInvitationAmount: poserInvitationAmount,
-    vaultManagerParams,
-    ammPublicFacet,
-    liquidationTerms: liquidationDetailTerms(centralBrand),
-    minInitialDebt: AmountMath.make(centralBrand, minInitialDebt),
-    bootstrapPaymentValue: 0n,
-    shortfallInvitationAmount,
-  });
 
   const chainStoragePresence = await chainStorage;
   const storageNode = await (chainStoragePresence &&
     E(chainStoragePresence).getChildNode(STORAGE_PATH));
   const marshaller = E(board).getReadonlyMarshaller();
+
+  const vaultFactoryTerms = makeGovernedTerms(
+    { storageNode, marshaller },
+    {
+      priceAuthority,
+      reservePublicFacet,
+      loanTiming: loanParams,
+      liquidationInstall: installations.liquidate,
+      timer,
+      electorateInvitationAmount: poserInvitationAmount,
+      vaultManagerParams,
+      ammPublicFacet,
+      liquidationTerms: liquidationDetailTerms(centralBrand),
+      minInitialDebt: AmountMath.make(centralBrand, minInitialDebt),
+      bootstrapPaymentValue: 0n,
+      shortfallInvitationAmount,
+    },
+  );
 
   const governorTerms = harden({
     timer,

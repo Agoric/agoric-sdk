@@ -17,13 +17,14 @@ const contractRoot = `${dirname}/zcfTesterContract.js`;
 /**
  * Test setup utility
  *
+ * @template {object} [T=object] terms
  * @param {IssuerKeywordRecord} [issuerKeywordRecord]
- * @param {Record<string, unknown>} [terms]
+ * @param {T} [terms]
  */
 export const setupZCFTest = async (issuerKeywordRecord, terms) => {
-  /** @type {ZCF} */
+  /** @type {ZCF<T>} */
   let zcf;
-  /** @type {ZCF} */
+  /** @type {ZCF<T>} */
   let zcf2;
 
   // We would like to start two contract instances in order to get two
@@ -46,12 +47,18 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
   const { creatorFacet, instance } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
+    // @ts-expect-error generics mismatch
     terms,
   );
   // In case a second zcf is needed
   const { creatorFacet: creatorFacet2, instance: instance2 } = await E(
     zoe,
-  ).startInstance(installation, issuerKeywordRecord, terms);
+  ).startInstance(
+    installation,
+    issuerKeywordRecord,
+    // @ts-expect-error generics mismatch
+    terms,
+  );
   const { vatAdminState } = fakeVatAdmin;
   // @ts-expect-error setZCF may not have been called yet
   assert(zcf, 'zcf is required; did you forget to setZCF?');

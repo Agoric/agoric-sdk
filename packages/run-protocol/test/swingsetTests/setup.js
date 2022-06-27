@@ -207,20 +207,23 @@ const buildOwner = async (
   // @ts-expect-error cast, never used
   const shortfallInvitationAmount = null;
 
-  const terms = makeVaultFactoryTerms({
-    priceAuthority: priceAuthorityKit.priceAuthority,
-    loanTiming,
-    liquidationInstall: installations.liquidateMinimum,
-    timer,
-    electorateInvitationAmount: poserInvitationAmount,
-    vaultManagerParams,
-    ammPublicFacet: ammMock,
-    liquidationTerms: liquidationDetailTerms(runBrand),
-    minInitialDebt: AmountMath.make(runBrand, 100n),
-    bootstrapPaymentValue: 0n,
-    reservePublicFacet,
-    shortfallInvitationAmount,
-  });
+  const terms = makeVaultFactoryTerms(
+    {},
+    {
+      priceAuthority: priceAuthorityKit.priceAuthority,
+      loanTiming,
+      liquidationInstall: installations.liquidateMinimum,
+      timer,
+      electorateInvitationAmount: poserInvitationAmount,
+      vaultManagerParams,
+      ammPublicFacet: ammMock,
+      liquidationTerms: liquidationDetailTerms(runBrand),
+      minInitialDebt: AmountMath.make(runBrand, 100n),
+      bootstrapPaymentValue: 0n,
+      reservePublicFacet,
+      shortfallInvitationAmount,
+    },
+  );
 
   const privateVaultFactoryArgs = { feeMintAccess, initialPoserInvitation };
 

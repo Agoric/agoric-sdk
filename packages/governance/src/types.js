@@ -55,7 +55,7 @@
 
 /**
  * @template {ParamType} [T=ParamType]
- * @typedef {{ type: T, value: ParamValueForType<T> }} ParamRecord<T>
+ * @typedef {{ type: T, value: ParamValueForType<T> }} ParamValueTyped<T>
  */
 
 /**
@@ -356,14 +356,15 @@
  */
 
 /**
- * @callback GetParams - getParams() retrieves a Record containing
+ * @typedef {Record<Keyword, ParamValueTyped>} ParamStateRecord a Record containing
  *   keyword pairs with descriptions of parameters under governance.
- * @returns {Record<Keyword,ParamRecord>}
  */
+
+/** @typedef {{current: ParamStateRecord}} GovernanceSubscriptionState */
 
 /**
  * @typedef {object} ParamManagerBase The base paramManager with typed getters
- * @property {() => Record<Keyword, ParamRecord>} getParams
+ * @property {() => ParamStateRecord} getParams
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
  * @property {(name: string) => Instance} getInstance
@@ -377,13 +378,12 @@
  *   most types, the visible value is the same as proposedValue. For Invitations
  *   the visible value is the amount of the invitation.
  * @property {(name: string) => Promise<Invitation>} getInternalParamValue
- * @property {() => Subscription<ParamRecord>} getSubscription
+ * @property {() => StoredSubscription<GovernanceSubscriptionState>} getSubscription
  */
 
 /**
  * @callback UpdateParams
  * @param {Record<string,ParamValue>} paramChanges
- * @returns {Promise<ParamValue[]>}
  */
 
 /**
@@ -394,10 +394,6 @@
  *
  * @typedef {Record<string, any>} ParamManagerGettersAndUpdaters
  * @typedef {ParamManagerBase & ParamManagerGettersAndUpdaters & {updateParams: UpdateParams}} AnyParamManager
- */
-
-/**
- * @typedef {Iterable<ParamRecord>} ParamRecords
  */
 
 /**
@@ -418,7 +414,7 @@
  *   instantiated inside the contract, the contract has synchronous access to
  *   the values, and clients of the contract can verify that a ContractGovernor
  *   can change the values in a legible way.
- * @param {ParamRecords} paramDescriptions
+ * @param {Iterable<ParamValueTyped>} paramDescriptions
  * @returns {AnyParamManager}
  */
 
@@ -515,9 +511,9 @@
 
 /**
  * @typedef GovernedPublicFacetMethods
- * @property {() => Subscription<ParamRecord>} getSubscription
+ * @property {() => StoredSubscription<GovernanceSubscriptionState>} getSubscription
  * @property {() => Instance} getContractGovernor
- * @property {GetParams} getGovernedParams - get descriptions of
+ * @property {() => ParamStateRecord} getGovernedParams - get descriptions of
  *   all the governed parameters
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand

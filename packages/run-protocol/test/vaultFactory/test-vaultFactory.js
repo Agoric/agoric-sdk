@@ -7,6 +7,10 @@ import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import {
+  makeNotifierFromAsyncIterable,
+  makeStoredPublisherKit,
+} from '@agoric/notifier';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import {
@@ -41,6 +45,7 @@ import {
   setUpZoeForTest,
   withAmountUtils,
   produceInstallations,
+  subscriptionKey,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 import {
@@ -1939,7 +1944,7 @@ test('mutable liquidity triggers and interest', async t => {
 test('bad chargingPeriod', async t => {
   t.throws(
     () =>
-      makeParamManagerBuilder()
+      makeParamManagerBuilder(makeStoredPublisherKit())
         // @ts-expect-error bad value for test
         .addNat(CHARGING_PERIOD_KEY, 2)
         .addNat(RECORDING_PERIOD_KEY, 10n)
@@ -2496,17 +2501,28 @@ test('storage keys', async t => {
 
   // Root vault factory
   const { lender, vaultFactory } = services.vaultFactory;
-  const directorMetrics = await E(lender).getMetrics();
-  const directorStoreKey = await E(directorMetrics).getStoreKey();
-  t.is(directorStoreKey.key, 'mockChainStorageRoot.vaultFactory.metrics');
+  t.is(
+    await subscriptionKey(E(lender).getMetrics()),
+    'mockChainStorageRoot.vaultFactory.metrics',
+  );
+  t.is(
+    await subscriptionKey(E(lender).getElectorateSubscription()),
+    'mockChainStorageRoot.vaultFactory.governance',
+  );
 
   // First manager
   const manager0 = await E(lender).getCollateralManager(aeth.brand);
-  const manager0Metrics = await E(manager0).getMetrics();
-  const manager0StoreKey = await E(manager0Metrics).getStoreKey();
   t.is(
-    manager0StoreKey.key,
+    await subscriptionKey(E(manager0).getMetrics()),
     'mockChainStorageRoot.vaultFactory.manager0.metrics',
+  );
+  t.is(
+    await subscriptionKey(
+      E(lender).getSubscription({
+        collateralBrand: aeth.brand,
+      }),
+    ),
+    'mockChainStorageRoot.vaultFactory.manager0.governance',
   );
 
   // Second manager
@@ -2516,11 +2532,17 @@ test('storage keys', async t => {
     'Chit',
     defaultParamValues(chit.brand),
   );
-  const manager1Metrics = await E(E(manager1).getPublicFacet()).getMetrics();
-  const manager1StoreKey = await E(manager1Metrics).getStoreKey();
   t.is(
-    manager1StoreKey.key,
+    await subscriptionKey(E(E(manager1).getPublicFacet()).getMetrics()),
     'mockChainStorageRoot.vaultFactory.manager1.metrics',
+  );
+  t.is(
+    await subscriptionKey(
+      E(lender).getSubscription({
+        collateralBrand: chit.brand,
+      }),
+    ),
+    'mockChainStorageRoot.vaultFactory.manager1.governance',
   );
 });
 
@@ -2878,4 +2900,49 @@ test('manager notifiers', async t => {
     totalCollateral: { value: 0n },
     totalDebt: { value: 0n },
   });
+});
+
+test('governance publisher', async t => {
+  const { aeth } = t.context;
+  t.context.loanTiming = {
+    chargingPeriod: 2n,
+    recordingPeriod: 10n,
+  };
+
+  const services = await setupServices(
+    t,
+    [500n, 15n],
+    aeth.make(900n),
+    undefined,
+    undefined,
+    500n,
+  );
+  const { lender } = services.vaultFactory;
+  const directorGovNotifier = makeNotifierFromAsyncIterable(
+    E(lender).getElectorateSubscription(),
+  );
+  let {
+    value: { current },
+  } = await directorGovNotifier.getUpdateSince();
+  // can't deepEqual because of non-literal objects
+  t.is(current.Electorate.type, 'invitation');
+  t.is(current.LiquidationInstall.type, 'installation');
+  t.is(current.LiquidationTerms.type, 'unknown');
+  t.is(current.MinInitialDebt.type, 'amount');
+  t.is(current.ShortfallInvitation.type, 'invitation');
+
+  const managerGovNotifier = makeNotifierFromAsyncIterable(
+    E(lender).getSubscription({
+      collateralBrand: aeth.brand,
+    }),
+  );
+  ({
+    value: { current },
+  } = await managerGovNotifier.getUpdateSince());
+  // can't deepEqual because of non-literal objects
+  t.is(current.DebtLimit.type, 'amount');
+  t.is(current.InterestRate.type, 'ratio');
+  t.is(current.LiquidationMargin.type, 'ratio');
+  t.is(current.LiquidationPenalty.type, 'ratio');
+  t.is(current.LoanFee.type, 'ratio');
 });

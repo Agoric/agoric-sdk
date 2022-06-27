@@ -18,7 +18,7 @@ import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { defineKindMulti } from '@agoric/vat-data';
-import { observeIteration } from '@agoric/notifier';
+import { makeStoredPublisherKit, observeIteration } from '@agoric/notifier';
 import { makeVaultManager } from './vaultManager.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import {
@@ -298,8 +298,20 @@ const machineBehavior = {
       `Collateral brand ${collateralBrand} has already been added`,
     );
 
+    const managerStorageNode =
+      state.storageNode &&
+      E(state.storageNode).getChildNode(`manager${state.managerCounter}`);
+    state.managerCounter += 1;
+
     /** a powerful object; can modify parameters */
-    const vaultParamManager = makeVaultParamManager(initialParamValues);
+    const vaultParamManager = makeVaultParamManager(
+      makeStoredPublisherKit(
+        managerStorageNode,
+        state.marshaller,
+        'governance',
+      ),
+      initialParamValues,
+    );
     vaultParamManagers.init(collateralBrand, vaultParamManager);
 
     const { timerService } = zcf.getTerms();
@@ -370,11 +382,6 @@ const machineBehavior = {
       },
       burnDebt,
     });
-
-    const managerStorageNode =
-      state.storageNode &&
-      E(state.storageNode).getChildNode(`manager${state.managerCounter}`);
-    state.managerCounter += 1;
 
     const vm = makeVaultManager(
       zcf,
@@ -477,11 +484,10 @@ const publicBehavior = {
    * subscription for the paramManager for a particular vaultManager
    *
    * @param {MethodContext} context
+   * @param {{ collateralBrand: Brand }} selector
    */
-  getSubscription:
-    ({ state }) =>
-    paramDesc =>
-      state.vaultParamManagers.get(paramDesc.collateralBrand).getSubscription(),
+  getSubscription: ({ state }, { collateralBrand }) =>
+    state.vaultParamManagers.get(collateralBrand).getSubscription(),
   /**
    * subscription for the paramManager for the vaultFactory's electorate
    *
@@ -536,7 +542,7 @@ const finish = async ({ state }) => {
  * @param {ZCF<GovernanceTerms<{}> & {
  *   ammPublicFacet: AutoswapPublicFacet,
  *   liquidationInstall: Installation<import('./liquidateMinimum.js').start>,
- *   loanTimingParams: {ChargingPeriod: ParamRecord<'nat'>, RecordingPeriod: ParamRecord<'nat'>},
+ *   loanTimingParams: {ChargingPeriod: ParamValueTyped<'nat'>, RecordingPeriod: ParamValueTyped<'nat'>},
  *   reservePublicFacet: AssetReservePublicFacet,
  *   timerService: TimerService,
  *   priceAuthority: ERef<PriceAuthority>
