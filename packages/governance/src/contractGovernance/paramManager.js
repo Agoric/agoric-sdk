@@ -4,7 +4,6 @@ import { Far, passStyleOf } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { Nat } from '@agoric/nat';
-import { makeStoredPublisherKit } from '@agoric/notifier';
 import { keyEQ, makeStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { ParamTypes } from '../constants.js';
@@ -55,13 +54,16 @@ const assertElectorateMatches = (paramManager, governedParams) => {
  */
 
 /**
+ * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {ERef<ZoeService>} [zoe]
  */
-const makeParamManagerBuilder = zoe => {
+const makeParamManagerBuilder = (publisherKit, zoe) => {
   /** @type {Store<Keyword, any>} */
   const namesToParams = makeStore('Parameter Name');
-  /** @type {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} */
-  const { publisher, subscriber } = makeStoredPublisherKit();
+  const { publisher, subscriber } = publisherKit;
+  assert(publisher, 'missing publisher');
+  assert(subscriber, 'missing subscriber');
+
   const getters = {};
   const setters = {};
 

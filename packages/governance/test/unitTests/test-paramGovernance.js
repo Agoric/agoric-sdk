@@ -227,7 +227,7 @@ test('change multiple params', async t => {
     await E(publicFacet).getSubscription(),
   );
   const update1 = await notifier.getUpdateSince();
-  // this part of the update has objects that can't be literals here for deepEqual
+  // constructing the fixture to deepEqual would complicate this with insufficient benefit
   t.is(
     // @ts-expect-error reaching into unknown values
     update1.value.current.Electorate.value.value[0].description,

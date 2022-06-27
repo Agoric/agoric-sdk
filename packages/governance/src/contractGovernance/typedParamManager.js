@@ -70,12 +70,13 @@ const isAsync = {
 /**
  * @see makeParamManagerSync
  * @template {Record<Keyword, AsyncSpecTuple | SyncSpecTuple>} T
+ * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {T} spec
  * @param {ERef<ZoeService>} zoe
  * @returns {Promise<TypedParamManager<{[K in keyof T]: T[K][0]}>>}
  */
-const makeParamManager = async (spec, zoe) => {
-  const builder = makeParamManagerBuilder(zoe);
+const makeParamManager = async (publisherKit, spec, zoe) => {
+  const builder = makeParamManagerBuilder(publisherKit, zoe);
 
   const promises = [];
   for (const [name, [type, value]] of Object.entries(spec)) {
@@ -98,11 +99,12 @@ const makeParamManager = async (spec, zoe) => {
  *
  * @see makeParamManager
  * @template {Record<Keyword, SyncSpecTuple>} T
+ * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {T} spec
  * @returns {TypedParamManager<{[K in keyof T]: T[K][0]}>}
  */
-const makeParamManagerSync = spec => {
-  const builder = makeParamManagerBuilder();
+const makeParamManagerSync = (publisherKit, spec) => {
+  const builder = makeParamManagerBuilder(publisherKit);
 
   for (const [name, [type, value]] of Object.entries(spec)) {
     const add = builder[builderMethodName(type)];
@@ -116,12 +118,14 @@ const makeParamManagerSync = spec => {
 
 /**
  * @template {ParamTypesMap} M Map of types of custom governed terms
+ * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {ZCF<GovernanceTerms<M>>} zcf
  * @param {Payment} initialPoserInvitation
  * @param {M} paramTypesMap
  * @returns {Promise<TypedParamManager<M & {Electorate: 'invitation'}>>}
  */
 const makeParamManagerFromTerms = async (
+  publisherKit,
   zcf,
   initialPoserInvitation,
   paramTypesMap,
@@ -144,6 +148,7 @@ const makeParamManagerFromTerms = async (
   ]);
   // @ts-expect-error cast
   return makeParamManager(
+    publisherKit,
     Object.fromEntries(makerSpecEntries),
     zcf.getZoeService(),
   );

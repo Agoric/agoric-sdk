@@ -2,6 +2,7 @@
 // @jessie-check
 import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
+import { makeStoredPublisherKit } from '@agoric/notifier';
 import { E, Far } from '@endo/far';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeAttestationFacets } from './attestation.js';
@@ -99,12 +100,18 @@ export const start = async (
   const attestBrand = await E(att.publicFacet).getBrand();
 
   const { augmentPublicFacet, makeGovernorFacet, params } =
-    await handleParamGovernance(zcf, initialPoserInvitation, {
-      DebtLimit: ParamTypes.AMOUNT,
-      InterestRate: ParamTypes.RATIO,
-      LoanFee: ParamTypes.RATIO,
-      MintingRatio: ParamTypes.RATIO,
-    });
+    await handleParamGovernance(
+      // TODO https://github.com/Agoric/agoric-sdk/issues/5386
+      makeStoredPublisherKit(),
+      zcf,
+      initialPoserInvitation,
+      {
+        DebtLimit: ParamTypes.AMOUNT,
+        InterestRate: ParamTypes.RATIO,
+        LoanFee: ParamTypes.RATIO,
+        MintingRatio: ParamTypes.RATIO,
+      },
+    );
 
   /** For temporary staging of newly minted tokens */
   const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();

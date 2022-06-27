@@ -2,6 +2,7 @@
 
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { makeStoredPublisherKit } from '@agoric/notifier';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { E } from '@endo/eventual-send';
@@ -20,7 +21,7 @@ const drachmaBrand = drachmaKit.brand;
 
 test('types', async t => {
   t.throws(() =>
-    makeParamManagerSync({
+    makeParamManagerSync(makeStoredPublisherKit(), {
       // @ts-expect-error invalid value for the declared type
       BrokenBrand: [ParamTypes.BRAND, 'not a brand'],
 
@@ -31,7 +32,7 @@ test('types', async t => {
       ],
     }),
   );
-  const mgr = makeParamManagerSync({
+  const mgr = makeParamManagerSync(makeStoredPublisherKit(), {
     Working: [ParamTypes.NAT, 0n],
   });
   mgr.getWorking().valueOf();
@@ -50,6 +51,7 @@ test('makeParamManagerFromTerms', async t => {
   const { zcf } = await setupZCFTest(issuerKeywordRecord, terms);
 
   const paramManager = await makeParamManagerFromTerms(
+    makeStoredPublisherKit(),
     // @ts-expect-error missing governance terms
     zcf,
     zcf.makeInvitation(() => null, 'mock poser invitation'),
@@ -62,7 +64,7 @@ test('makeParamManagerFromTerms', async t => {
 
 test('readonly', t => {
   const drachmas = AmountMath.make(drachmaBrand, 37n);
-  const paramManager = makeParamManagerSync({
+  const paramManager = makeParamManagerSync(makeStoredPublisherKit(), {
     Currency: [ParamTypes.BRAND, drachmaBrand],
     Amt: [ParamTypes.AMOUNT, drachmas],
   });
@@ -73,7 +75,7 @@ test('readonly', t => {
 
 test('two parameters', t => {
   const drachmas = AmountMath.make(drachmaBrand, 37n);
-  const paramManager = makeParamManagerSync({
+  const paramManager = makeParamManagerSync(makeStoredPublisherKit(), {
     Currency: [ParamTypes.BRAND, drachmaBrand],
     Amt: [ParamTypes.AMOUNT, drachmas],
   });
@@ -99,7 +101,7 @@ test('two parameters', t => {
 test('Amount', async t => {
   const { brand: floorBrand } = makeIssuerKit('floor wax');
   const { brand: dessertBrand } = makeIssuerKit('dessertTopping');
-  const paramManager = makeParamManagerSync({
+  const paramManager = makeParamManagerSync(makeStoredPublisherKit(), {
     Shimmer: [ParamTypes.AMOUNT, AmountMath.make(floorBrand, 2n)],
   });
   t.deepEqual(paramManager.getShimmer(), AmountMath.make(floorBrand, 2n));
@@ -149,6 +151,7 @@ test('params one installation', async t => {
   });
 
   const paramManager = await makeParamManager(
+    makeStoredPublisherKit(),
     {
       PName: ['installation', installationHandle],
     },
@@ -188,7 +191,7 @@ test('params one instance', async t => {
   // isInstallation() (#3344), we'll need to make a mockZoe.
   const instanceHandle = makeHandle(instanceKey);
 
-  const paramManager = makeParamManagerSync({
+  const paramManager = makeParamManagerSync(makeStoredPublisherKit(), {
     PName: ['instance', instanceHandle],
   });
 
@@ -234,6 +237,7 @@ test('Invitation', async t => {
 
   const drachmaAmount = AmountMath.make(drachmaBrand, 37n);
   const paramManager = await makeParamManager(
+    makeStoredPublisherKit(),
     {
       Currency: [ParamTypes.BRAND, drachmaBrand],
       Amt: [ParamTypes.AMOUNT, drachmaAmount],
@@ -270,7 +274,7 @@ test('Invitation', async t => {
 });
 
 test('two Nats', async t => {
-  const paramManager = makeParamManagerSync({
+  const paramManager = makeParamManagerSync(makeStoredPublisherKit(), {
     Acres: [ParamTypes.NAT, 50n],
     SpeedLimit: [ParamTypes.NAT, 299_792_458n],
   });
@@ -294,7 +298,7 @@ test('Ratio', async t => {
   const unitlessBrand = makeIssuerKit('unitless').brand;
 
   const ratio = makeRatio(16180n, unitlessBrand, 10_000n);
-  const paramManager = makeParamManagerSync({
+  const paramManager = makeParamManagerSync(makeStoredPublisherKit(), {
     Acres: [ParamTypes.NAT, 50n],
     GoldenRatio: ['ratio', ratio],
   });
@@ -326,7 +330,7 @@ test('Ratio', async t => {
 });
 
 test('Strings', async t => {
-  const paramManager = makeParamManagerSync({
+  const paramManager = makeParamManagerSync(makeStoredPublisherKit(), {
     Acres: [ParamTypes.NAT, 50n],
     OurWeapons: ['string', 'fear'],
   });
@@ -343,7 +347,7 @@ test('Strings', async t => {
 });
 
 test('Unknown', async t => {
-  const paramManager = makeParamManagerSync({
+  const paramManager = makeParamManagerSync(makeStoredPublisherKit(), {
     Label: ['string', 'birthday'],
     Surprise: ['unknown', 'party'],
   });
