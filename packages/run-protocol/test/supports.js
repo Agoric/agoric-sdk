@@ -185,3 +185,13 @@ export const withAmountUtils = kit => {
   };
 };
 /** @typedef {ReturnType<typeof withAmountUtils>} AmountUtils */
+
+/**
+ *
+ * @param {Promise<StoredSubscription<unknown>>} subscription
+ */
+export const subscriptionKey = subscription => {
+  return E(subscription)
+    .getStoreKey()
+    .then(storeKey => storeKey.key);
+};

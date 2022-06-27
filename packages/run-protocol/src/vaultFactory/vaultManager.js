@@ -85,7 +85,7 @@ const trace = makeTracer('VM');
  * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
  * marshaller?: ERef<Marshaller>,
  * metricsPublication: IterationObserver<MetricsNotification>,
- * metricsSubscription: Subscription<MetricsNotification>,
+ * metricsSubscription: StoredSubscription<MetricsNotification>,
  * periodNotifier: ERef<Notifier<bigint>>,
  * poolIncrementSeat: ZCFSeat,
  * priceAuthority: ERef<PriceAuthority>,

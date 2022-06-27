@@ -20,6 +20,7 @@ import '@agoric/zoe/src/contracts/exported.js';
 // { getParamMgrRetriever, getInvitation, getLimitedCreatorFacet }.
 
 import { assertElectorateMatches } from '@agoric/governance';
+import { makeStoredPublisherKit } from '@agoric/notifier';
 import {
   makeVaultDirectorParamManager,
   LIQUIDATION_INSTALL_KEY,
@@ -66,6 +67,11 @@ export const start = async (zcf, privateArgs) => {
   } = zcf.getTerms().governedParams;
   /** a powerful object; can modify the invitation */
   const vaultDirectorParamManager = await makeVaultDirectorParamManager(
+    makeStoredPublisherKit(
+      privateArgs.storageNode,
+      privateArgs.marshaller,
+      'governance',
+    ),
     zcf.getZoeService(),
     initialPoserInvitation,
     liqInstall,
