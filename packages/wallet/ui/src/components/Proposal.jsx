@@ -2,6 +2,7 @@ import { Nat } from '@agoric/nat';
 import { stringifyPurseValue } from '@agoric/ui-components';
 import { icons, defaultIcon } from '../util/Icons.js';
 import Petname from './Petname';
+import PurseValue from './PurseValue';
 import { formatDateNow } from '../util/Date';
 
 import './Offer.scss';
@@ -22,13 +23,11 @@ const OfferEntry = (type, [role, { amount, pursePetname }]) => {
           width="32px"
         />
         <div>
-          <div className="Value">
-            {stringifyPurseValue({
-              value,
-              displayInfo: amount.displayInfo,
-            })}{' '}
-            <Petname name={amount.brand.petname} />
-          </div>
+          <PurseValue
+            value={value}
+            displayInfo={amount.displayInfo}
+            brandPetname={amount.brand.petname}
+          />
           {type.move} <Petname name={pursePetname} />
         </div>
       </div>

@@ -1,6 +1,5 @@
-/* eslint-disable import/no-extraneous-dependencies */
-import { stringifyPurseValue } from '@agoric/ui-components';
 import Petname from './Petname';
+import PurseValue from './PurseValue';
 import { icons, defaultIcon } from '../util/Icons.js';
 
 const PurseAmount = ({ brandPetname, pursePetname, value, displayInfo }) => {
@@ -14,13 +13,11 @@ const PurseAmount = ({ brandPetname, pursePetname, value, displayInfo }) => {
       />
       <div>
         <Petname name={pursePetname} />
-        <div className="Value">
-          {stringifyPurseValue({
-            value,
-            displayInfo,
-          })}{' '}
-          <Petname name={brandPetname} />
-        </div>
+        <PurseValue
+          value={value}
+          displayInfo={displayInfo}
+          brandPetname={brandPetname}
+        />
       </div>
     </div>
   );
