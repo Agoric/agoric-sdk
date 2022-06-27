@@ -18,7 +18,7 @@ const addLiquidPool = async (
   space,
   t,
   moola,
-  moolaR,
+  moolaKit,
   zoe,
 ) => {
   const poolVal = 1000n;
@@ -32,11 +32,11 @@ const addLiquidPool = async (
     },
   });
   const ammPayments = {
-    Secondary: moolaR.mint.mintPayment(moola(poolVal)),
+    Secondary: moolaKit.mint.mintPayment(moola(poolVal)),
     Central: runPayment,
   };
 
-  await E(ammPublicFacet).addIssuer(moolaR.issuer, 'Moola');
+  await E(ammPublicFacet).addIssuer(moolaKit.issuer, 'Moola');
   const addPoolInvitation = await E(ammPublicFacet).addPoolInvitation();
 
   const addLiquiditySeat = await E(zoe).offer(
@@ -87,8 +87,8 @@ test.before(async t => {
 
 test('reserve add collateral', async t => {
   /** @param {NatValue} value */
-  const moolaR = makeIssuerKit('moola');
-  const moola = value => AmountMath.make(moolaR.brand, value);
+  const moolaKit = makeIssuerKit('moola');
+  const moola = value => AmountMath.make(moolaKit.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   const timer = buildManualTimer(t.log);
@@ -103,13 +103,13 @@ test('reserve add collateral', async t => {
     faucetInstallation,
     AmountMath.make(runBrand, 1000n),
   );
-  await addLiquidPool(runPayment, runIssuer, space, t, moola, moolaR, zoe);
+  await addLiquidPool(runPayment, runIssuer, space, t, moola, moolaKit, zoe);
   const invitation = await E(
     reserve.reservePublicFacet,
   ).makeAddCollateralInvitation();
 
   const proposal = { give: { Collateral: moola(100_000n) } };
-  const moolaPayment = moolaR.mint.mintPayment(moola(100000n));
+  const moolaPayment = moolaKit.mint.mintPayment(moola(100000n));
   const payments = { Collateral: moolaPayment };
   const collateralSeat = E(zoe).offer(invitation, proposal, payments);
 
@@ -121,7 +121,7 @@ test('reserve add collateral', async t => {
 
   const { ammPublicFacet } = space.amm;
   const moolaLiquidityIssuer = E(ammPublicFacet).getLiquidityIssuer(
-    moolaR.brand,
+    moolaKit.brand,
   );
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
   t.deepEqual(
@@ -136,8 +136,8 @@ test('reserve add collateral', async t => {
 
 test('governance add Liquidity to the AMM', async t => {
   /** @param {NatValue} value */
-  const moolaR = makeIssuerKit('moola');
-  const moola = value => AmountMath.make(moolaR.brand, value);
+  const moolaKit = makeIssuerKit('moola');
+  const moola = value => AmountMath.make(moolaKit.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 1 };
   const timer = buildManualTimer(t.log);
@@ -155,15 +155,15 @@ test('governance add Liquidity to the AMM', async t => {
 
   const { ammPublicFacet } = space.amm;
 
-  await addLiquidPool(runPayment, runIssuer, space, t, moola, moolaR, zoe);
+  await addLiquidPool(runPayment, runIssuer, space, t, moola, moolaKit, zoe);
 
   const moolaLiquidityIssuer = E(ammPublicFacet).getLiquidityIssuer(
-    moolaR.brand,
+    moolaKit.brand,
   );
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
 
   t.deepEqual(
-    await E(ammPublicFacet).getPoolAllocation(moolaR.brand),
+    await E(ammPublicFacet).getPoolAllocation(moolaKit.brand),
     harden({
       Central: AmountMath.make(runBrand, 1000n),
       Secondary: moola(1000n),
@@ -177,7 +177,7 @@ test('governance add Liquidity to the AMM', async t => {
   ).makeAddCollateralInvitation();
 
   const proposal = { give: { Collateral: moola(100_000n) } };
-  const moolaPayment = moolaR.mint.mintPayment(moola(100_000n));
+  const moolaPayment = moolaKit.mint.mintPayment(moola(100_000n));
   const payments = { Collateral: moolaPayment };
   const collateralSeat = E(zoe).offer(invitation, proposal, payments);
 
@@ -221,7 +221,7 @@ test('governance add Liquidity to the AMM', async t => {
   );
 
   t.deepEqual(
-    await E(ammPublicFacet).getPoolAllocation(moolaR.brand),
+    await E(ammPublicFacet).getPoolAllocation(moolaKit.brand),
     harden({
       Central: AmountMath.make(runBrand, 80_999n),
       Secondary: moola(90_675n),
@@ -233,8 +233,8 @@ test('governance add Liquidity to the AMM', async t => {
 
 test('request more collateral than available', async t => {
   /** @param {NatValue} value */
-  const moolaR = makeIssuerKit('moola');
-  const moola = value => AmountMath.make(moolaR.brand, value);
+  const moolaKit = makeIssuerKit('moola');
+  const moola = value => AmountMath.make(moolaKit.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 1 };
   const timer = buildManualTimer(t.log);
@@ -250,14 +250,14 @@ test('request more collateral than available', async t => {
     faucetInstallation,
     AmountMath.make(runBrand, 1000n),
   );
-  await addLiquidPool(runPayment, runIssuer, space, t, moola, moolaR, zoe);
+  await addLiquidPool(runPayment, runIssuer, space, t, moola, moolaKit, zoe);
 
   const invitation = await E(
     reserve.reservePublicFacet,
   ).makeAddCollateralInvitation();
 
   const proposal = { give: { Collateral: moola(10_000n) } };
-  const moolaPayment = moolaR.mint.mintPayment(moola(10_000n));
+  const moolaPayment = moolaKit.mint.mintPayment(moola(10_000n));
   const payments = { Collateral: moolaPayment };
   const collateralSeat = E(zoe).offer(invitation, proposal, payments);
 
@@ -296,7 +296,7 @@ test('request more collateral than available', async t => {
 
   const { ammPublicFacet } = space.amm;
   const moolaLiquidityIssuer = E(ammPublicFacet).getLiquidityIssuer(
-    moolaR.brand,
+    moolaKit.brand,
   );
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
   t.deepEqual(

@@ -227,7 +227,8 @@ test('zoe - coveredCall', async t => {
 
 test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, async t => {
   t.plan(13);
-  const { moolaR, simoleanR, moola, simoleans, zoe, vatAdminState } = setup();
+  const { moolaKit, simoleanKit, moola, simoleans, zoe, vatAdminState } =
+    setup();
   // Pack the contract.
   const bundle = await bundleSource(coveredCallRoot);
   vatAdminState.installBundle('b1-coveredcall', bundle);
@@ -237,19 +238,19 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   const timer = buildManualTimer(t.log);
 
   // Setup Alice
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3n));
-  const aliceMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const aliceSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
+  const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(3n));
+  const aliceMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const aliceSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
 
   // Setup Bob
-  const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(7n));
-  const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
+  const bobSimoleanPayment = simoleanKit.mint.mintPayment(simoleans(7n));
+  const bobMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const bobSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
 
   // Alice creates a coveredCall instance
   const issuerKeywordRecord = harden({
-    UnderlyingAsset: moolaR.issuer,
-    StrikePrice: simoleanR.issuer,
+    UnderlyingAsset: moolaKit.issuer,
+    StrikePrice: simoleanKit.issuer,
   });
   const { creatorInvitation: aliceInvitation } = await E(zoe).startInstance(
     coveredCallInstallation,
@@ -318,11 +319,11 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   const aliceSimoleanPayout = await E(aliceSeat).getPayout('StrikePrice');
 
   // Alice gets back what she put in
-  t.deepEqual(await moolaR.issuer.getAmountOf(aliceMoolaPayout), moola(3n));
+  t.deepEqual(await moolaKit.issuer.getAmountOf(aliceMoolaPayout), moola(3n));
 
   // Alice doesn't get what she wanted
   t.deepEqual(
-    await simoleanR.issuer.getAmountOf(aliceSimoleanPayout),
+    await simoleanKit.issuer.getAmountOf(aliceSimoleanPayout),
     simoleans(0n),
   );
 
@@ -352,9 +353,9 @@ test('zoe - coveredCall with swap for invitation', async t => {
   // Setup the environment
   const timer = buildManualTimer(t.log);
   const {
-    moolaR,
-    simoleanR,
-    bucksR,
+    moolaKit,
+    simoleanKit,
+    bucksKit,
     moola,
     simoleans,
     bucks,
@@ -375,28 +376,28 @@ test('zoe - coveredCall with swap for invitation', async t => {
 
   // Setup Alice
   // Alice starts with 3 moola
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3n));
-  const aliceMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const aliceSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
+  const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(3n));
+  const aliceMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const aliceSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
 
   // Setup Bob
   // Bob starts with nothing
-  const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
-  const bobBucksPurse = bucksR.issuer.makeEmptyPurse();
+  const bobMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const bobSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
+  const bobBucksPurse = bucksKit.issuer.makeEmptyPurse();
 
   // Setup Dave
   // Dave starts with 1 buck
-  const daveSimoleanPayment = simoleanR.mint.mintPayment(simoleans(7n));
-  const daveBucksPayment = bucksR.mint.mintPayment(bucks(1n));
-  const daveMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const daveSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
-  const daveBucksPurse = bucksR.issuer.makeEmptyPurse();
+  const daveSimoleanPayment = simoleanKit.mint.mintPayment(simoleans(7n));
+  const daveBucksPayment = bucksKit.mint.mintPayment(bucks(1n));
+  const daveMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const daveSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
+  const daveBucksPurse = bucksKit.issuer.makeEmptyPurse();
 
   // Alice creates a coveredCall instance of moola for simoleans
   const issuerKeywordRecord = harden({
-    UnderlyingAsset: moolaR.issuer,
-    StrikePrice: simoleanR.issuer,
+    UnderlyingAsset: moolaKit.issuer,
+    StrikePrice: simoleanKit.issuer,
   });
   const { creatorInvitation: aliceInvitation } = await E(zoe).startInstance(
     coveredCallInstallation,
@@ -454,7 +455,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
   // invitation for bucks.
   const swapIssuerKeywordRecord = harden({
     Asset: invitationIssuer,
-    Price: bucksR.issuer,
+    Price: bucksKit.issuer,
   });
   const { creatorInvitation: bobSwapInvitation } = await E(zoe).startInstance(
     swapInstallationId,
@@ -502,7 +503,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
       daveSwapIssuers,
       harden({
         Asset: invitationIssuer,
-        Price: bucksR.issuer,
+        Price: bucksKit.issuer,
       }),
     ),
   );
@@ -566,15 +567,15 @@ test('zoe - coveredCall with swap for invitation', async t => {
   const bobInvitationPayout = await bobSwapSeat.getPayout('Asset');
   const bobBucksPayout = await bobSwapSeat.getPayout('Price');
 
-  t.deepEqual(await moolaR.issuer.getAmountOf(daveMoolaPayout), moola(3n));
+  t.deepEqual(await moolaKit.issuer.getAmountOf(daveMoolaPayout), moola(3n));
   t.deepEqual(
-    await simoleanR.issuer.getAmountOf(daveSimoleanPayout),
+    await simoleanKit.issuer.getAmountOf(daveSimoleanPayout),
     simoleans(0n),
   );
 
-  t.deepEqual(await moolaR.issuer.getAmountOf(aliceMoolaPayout), moola(0n));
+  t.deepEqual(await moolaKit.issuer.getAmountOf(aliceMoolaPayout), moola(0n));
   t.deepEqual(
-    await simoleanR.issuer.getAmountOf(aliceSimoleanPayout),
+    await simoleanKit.issuer.getAmountOf(aliceSimoleanPayout),
     simoleans(7n),
   );
 
@@ -582,7 +583,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
     await E(invitationIssuer).getAmountOf(bobInvitationPayout),
     AmountMath.makeEmpty(invitationBrand, AssetKind.SET),
   );
-  t.deepEqual(await bucksR.issuer.getAmountOf(bobBucksPayout), bucks(1n));
+  t.deepEqual(await bucksKit.issuer.getAmountOf(bobBucksPayout), bucks(1n));
 
   // Alice deposits her payouts
   await aliceMoolaPurse.deposit(aliceMoolaPayout);
@@ -617,9 +618,9 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   // Setup the environment
   const timer = buildManualTimer(t.log);
   const {
-    moolaR,
-    simoleanR,
-    bucksR,
+    moolaKit,
+    simoleanKit,
+    bucksKit,
     moola,
     simoleans,
     bucks,
@@ -637,28 +638,28 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
 
   // Setup Alice
   // Alice starts with 3 moola
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3n));
-  const aliceMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const aliceSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
+  const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(3n));
+  const aliceMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const aliceSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
 
   // Setup Bob
   // Bob starts with nothing
-  const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
-  const bobBucksPurse = bucksR.issuer.makeEmptyPurse();
+  const bobMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const bobSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
+  const bobBucksPurse = bucksKit.issuer.makeEmptyPurse();
 
   // Setup Dave
   // Dave starts with 1 buck and 7 simoleans
-  const daveSimoleanPayment = simoleanR.mint.mintPayment(simoleans(7n));
-  const daveBucksPayment = bucksR.mint.mintPayment(bucks(1n));
-  const daveMoolaPurse = moolaR.issuer.makeEmptyPurse();
-  const daveSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
-  const daveBucksPurse = bucksR.issuer.makeEmptyPurse();
+  const daveSimoleanPayment = simoleanKit.mint.mintPayment(simoleans(7n));
+  const daveBucksPayment = bucksKit.mint.mintPayment(bucks(1n));
+  const daveMoolaPurse = moolaKit.issuer.makeEmptyPurse();
+  const daveSimoleanPurse = simoleanKit.issuer.makeEmptyPurse();
+  const daveBucksPurse = bucksKit.issuer.makeEmptyPurse();
 
   // Alice creates a coveredCall instance of moola for simoleans
   const issuerKeywordRecord = harden({
-    UnderlyingAsset: moolaR.issuer,
-    StrikePrice: simoleanR.issuer,
+    UnderlyingAsset: moolaKit.issuer,
+    StrikePrice: simoleanKit.issuer,
   });
   const { creatorInvitation: aliceCoveredCallInvitation } = await E(
     zoe,
@@ -714,7 +715,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   // this time to trade this invitation for bucks.
   const issuerKeywordRecord2 = harden({
     UnderlyingAsset: invitationIssuer,
-    StrikePrice: bucksR.issuer,
+    StrikePrice: bucksKit.issuer,
   });
   const { creatorInvitation: bobInvitationForSecondCoveredCall } = await E(
     zoe,
@@ -845,15 +846,15 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   const bobInvitationPayout = await bobSeat.getPayout('UnderlyingAsset');
   const bobBucksPayout = await bobSeat.getPayout('StrikePrice');
 
-  t.deepEqual(await moolaR.issuer.getAmountOf(daveMoolaPayout), moola(3n));
+  t.deepEqual(await moolaKit.issuer.getAmountOf(daveMoolaPayout), moola(3n));
   t.deepEqual(
-    await simoleanR.issuer.getAmountOf(daveSimoleanPayout),
+    await simoleanKit.issuer.getAmountOf(daveSimoleanPayout),
     simoleans(0n),
   );
 
-  t.deepEqual(await moolaR.issuer.getAmountOf(aliceMoolaPayout), moola(0n));
+  t.deepEqual(await moolaKit.issuer.getAmountOf(aliceMoolaPayout), moola(0n));
   t.deepEqual(
-    await simoleanR.issuer.getAmountOf(aliceSimoleanPayout),
+    await simoleanKit.issuer.getAmountOf(aliceSimoleanPayout),
     simoleans(7n),
   );
 
@@ -862,7 +863,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     await E(invitationIssuer).getAmountOf(bobInvitationPayout),
     AmountMath.makeEmpty(invitationBrand, AssetKind.SET),
   );
-  t.deepEqual(await bucksR.issuer.getAmountOf(bobBucksPayout), bucks(1n));
+  t.deepEqual(await bucksKit.issuer.getAmountOf(bobBucksPayout), bucks(1n));
 
   // Alice deposits her payouts
   await aliceMoolaPurse.deposit(aliceMoolaPayout);

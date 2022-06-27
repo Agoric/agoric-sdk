@@ -109,10 +109,10 @@ test('amm with valid offers', async t => {
   const centralR = makeIssuerKit('central');
   /** @param {NatValue} value */
   const centralTokens = value => AmountMath.make(centralR.brand, value);
-  const moolaR = makeIssuerKit('moola');
-  const moola = value => AmountMath.make(moolaR.brand, value);
-  const simoleanR = makeIssuerKit('simoleans');
-  const simoleans = value => AmountMath.make(simoleanR.brand, value);
+  const moolaKit = makeIssuerKit('moola');
+  const moola = value => AmountMath.make(moolaKit.brand, value);
+  const simoleanKit = makeIssuerKit('simoleans');
+  const simoleans = value => AmountMath.make(simoleanKit.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
 
@@ -127,9 +127,9 @@ test('amm with valid offers', async t => {
   );
   const publicFacet = amm.ammPublicFacet;
   const alicePurses = [
-    makePurseWith(moolaR, 100_000n),
+    makePurseWith(moolaKit, 100_000n),
     makePurseWith(centralR, 50_000n + 4300n),
-    makePurseWith(simoleanR, 39800n),
+    makePurseWith(simoleanKit, 39800n),
   ];
   const alice = await makeTrader(
     alicePurses,
@@ -151,7 +151,7 @@ test('amm with valid offers', async t => {
     t,
     aliceDetails,
     aliceExpected,
-    moolaR.issuer,
+    moolaKit.issuer,
     'Moola',
   );
 
@@ -167,7 +167,7 @@ test('amm with valid offers', async t => {
 
   const bobStartingMoola = 17_000n;
   const bobPurses = [
-    makePurseWith(moolaR, bobStartingMoola),
+    makePurseWith(moolaKit, bobStartingMoola),
     makePurseWith(centralR, 700n),
   ];
   const bob = await makeTrader(bobPurses, zoe, publicFacet, centralR.issuer);
@@ -196,7 +196,7 @@ test('amm with valid offers', async t => {
 
   assertAmountsEqual(
     t,
-    await E(moolaR.issuer).getAmountOf(bobMoolaPayout1),
+    await E(moolaKit.issuer).getAmountOf(bobMoolaPayout1),
     AmountMath.subtract(moola(bobStartingMoola), costInMoola),
     `bob might get moola back`,
   );
@@ -212,7 +212,7 @@ test('amm with valid offers', async t => {
   moolaPools.Central -= AmountMath.add(priceInCentrals, runningFees).value;
 
   t.deepEqual(
-    await E(publicFacet).getPoolAllocation(moolaR.brand),
+    await E(publicFacet).getPoolAllocation(moolaKit.brand),
     {
       Secondary: moola(moolaPools.Secondary),
       Central: centralTokens(moolaPools.Central),
@@ -227,7 +227,7 @@ test('amm with valid offers', async t => {
   // Bob looks up how much 700 central tokens are worth in moola
   const priceFor700 = await E(publicFacet).getInputPrice(
     centralTokens(700n),
-    AmountMath.makeEmpty(moolaR.brand),
+    AmountMath.makeEmpty(moolaKit.brand),
   );
   t.deepEqual(
     priceFor700,
@@ -261,7 +261,7 @@ test('amm with valid offers', async t => {
 
   const { toCentral: priceAuthority } = await E(
     publicFacet,
-  ).getPriceAuthorities(moolaR.brand);
+  ).getPriceAuthorities(moolaKit.brand);
 
   const quoteBob2 = await E(priceAuthority).quoteGiven(
     moola(5000n),
@@ -277,7 +277,7 @@ test('amm with valid offers', async t => {
   const bobCentralPayout2 = await E(bobSeat2).getPayout('In');
 
   t.deepEqual(
-    await E(moolaR.issuer).getAmountOf(bobMoolaPayout2),
+    await E(moolaKit.issuer).getAmountOf(bobMoolaPayout2),
     moola(1877n),
     `bob gets 1877 moola back`,
   );
@@ -287,7 +287,7 @@ test('amm with valid offers', async t => {
     `bob gets no central tokens back`,
   );
   t.deepEqual(
-    await E(publicFacet).getPoolAllocation(moolaR.brand),
+    await E(publicFacet).getPoolAllocation(moolaKit.brand),
     {
       Secondary: moola(115121n),
       Central: centralTokens(43453n),
@@ -316,7 +316,7 @@ test('amm with valid offers', async t => {
       t,
       simoleanLiquidityDetail,
       simoleanLiquidityExpected,
-      simoleanR.issuer,
+      simoleanKit.issuer,
       'Simoleans',
     );
 
@@ -347,7 +347,7 @@ test('amm with valid offers', async t => {
     `simoleanLiquidity minted was equal to the amount of central tokens added to pool`,
   );
   t.deepEqual(
-    await E(publicFacet).getPoolAllocation(simoleanR.brand),
+    await E(publicFacet).getPoolAllocation(simoleanKit.brand),
     harden({
       Secondary: simoleans(39800n),
       Central: centralTokens(4300n),
@@ -361,10 +361,10 @@ test('amm doubleSwap', async t => {
   // Set up central token
   const centralR = makeIssuerKit('central');
   const centralTokens = value => AmountMath.make(centralR.brand, value);
-  const moolaR = makeIssuerKit('moola');
-  const moola = value => AmountMath.make(moolaR.brand, value);
-  const simoleanR = makeIssuerKit('simoleans');
-  const simoleans = value => AmountMath.make(simoleanR.brand, value);
+  const moolaKit = makeIssuerKit('moola');
+  const moola = value => AmountMath.make(moolaKit.brand, value);
+  const simoleanKit = makeIssuerKit('simoleans');
+  const simoleans = value => AmountMath.make(simoleanKit.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   // This timer is only used to build quotes. Let's make it non-zero
@@ -378,14 +378,14 @@ test('amm doubleSwap', async t => {
   );
 
   // Setup Alice
-  const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000n));
+  const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(100000n));
   // Let's assume that central tokens are worth 2x as much as moola
   const aliceCentralPayment = centralR.mint.mintPayment(centralTokens(50000n));
-  const aliceSimoleanPayment = simoleanR.mint.mintPayment(simoleans(39800n));
+  const aliceSimoleanPayment = simoleanKit.mint.mintPayment(simoleans(39800n));
 
   // Setup Bob
-  const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(4000n));
-  const bobMoolaPayment = moolaR.mint.mintPayment(moola(5000n));
+  const bobSimoleanPayment = simoleanKit.mint.mintPayment(simoleans(4000n));
+  const bobMoolaPayment = moolaKit.mint.mintPayment(moola(5000n));
 
   const ammInstance = await amm.instance;
 
@@ -401,39 +401,39 @@ test('amm doubleSwap', async t => {
     t,
     zoe,
     amm,
-    moolaR,
+    moolaKit,
     centralR,
     'Moola',
   );
 
-  await m.assertChange({ XYK: { 0: moolaR.brand } });
+  await m.assertChange({ XYK: { 0: moolaKit.brand } });
 
   const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
   const moolaLiquidity = value => AmountMath.make(moolaLiquidityBrand, value);
 
   const { liquidityIssuer: simoleanLiquidityIssuer } =
-    await makePoolWithLiquidity(t, zoe, amm, simoleanR, centralR, 'Simolean');
+    await makePoolWithLiquidity(t, zoe, amm, simoleanKit, centralR, 'Simolean');
 
   const simoleanLiquidityBrand = await E(simoleanLiquidityIssuer).getBrand();
   const simoleanLiquidity = value =>
     AmountMath.make(simoleanLiquidityBrand, value);
 
-  await m.assertChange({ XYK: { 1: simoleanR.brand } });
+  await m.assertChange({ XYK: { 1: simoleanKit.brand } });
 
   const issuerKeywordRecord = await E(zoe).getIssuers(ammInstance);
   t.deepEqual(
     issuerKeywordRecord,
     harden({
       Central: centralR.issuer,
-      Moola: moolaR.issuer,
+      Moola: moolaKit.issuer,
       MoolaLiquidity: moolaLiquidityIssuer,
-      Simolean: simoleanR.issuer,
+      Simolean: simoleanKit.issuer,
       SimoleanLiquidity: simoleanLiquidityIssuer,
     }),
     `There are keywords for central token and two additional tokens and liquidity`,
   );
   t.deepEqual(
-    await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
+    await E(amm.ammPublicFacet).getPoolAllocation(moolaKit.brand),
     {
       Central: centralTokens(initPoolCentral),
       Liquidity: moolaLiquidity(0n),
@@ -442,7 +442,7 @@ test('amm doubleSwap', async t => {
     `The pool for moola should be initalized`,
   );
   t.deepEqual(
-    await E(amm.ammPublicFacet).getPoolAllocation(simoleanR.brand),
+    await E(amm.ammPublicFacet).getPoolAllocation(simoleanKit.brand),
     {
       Central: centralTokens(initPoolCentral),
       Liquidity: simoleanLiquidity(0n),
@@ -512,7 +512,7 @@ test('amm doubleSwap', async t => {
   // Bob looks up the value of 4000 simoleans in moola
   const { amountOut: priceInMoola } = await E(amm.ammPublicFacet).getInputPrice(
     simoleans(4000n),
-    AmountMath.makeEmpty(moolaR.brand),
+    AmountMath.makeEmpty(moolaKit.brand),
   );
 
   const bobInvitation = await E(amm.ammPublicFacet).makeSwapInInvitation();
@@ -532,9 +532,9 @@ test('amm doubleSwap', async t => {
     simsForMoolaPayments,
   );
   const bobMoolaPayout = await E(bobSeat1).getPayout('Out');
-  console.log('payout', await moolaR.issuer.getAmountOf(bobMoolaPayout));
+  console.log('payout', await moolaKit.issuer.getAmountOf(bobMoolaPayout));
   t.deepEqual(
-    await moolaR.issuer.getAmountOf(bobMoolaPayout),
+    await moolaKit.issuer.getAmountOf(bobMoolaPayout),
     moola(3975n),
     `bob gets 3975 moola`,
   );
@@ -549,7 +549,7 @@ test('amm doubleSwap', async t => {
   // Bob looks up the value of 5000 moola in simoleans
   const { amountOut: priceInSimoleans } = await E(
     amm.ammPublicFacet,
-  ).getInputPrice(moola(5000n), AmountMath.makeEmpty(simoleanR.brand));
+  ).getInputPrice(moola(5000n), AmountMath.makeEmpty(simoleanKit.brand));
 
   const bobInvitation2 = await E(amm.ammPublicFacet).makeSwapInInvitation();
   const bobMoolaForSimsProposal = harden({
@@ -561,7 +561,7 @@ test('amm doubleSwap', async t => {
   });
 
   const prices = await E(amm.ammPublicFacet).getOutputPrice(
-    AmountMath.makeEmpty(moolaR.brand),
+    AmountMath.makeEmpty(moolaKit.brand),
     simoleans(4000n),
   );
   t.deepEqual(
@@ -581,7 +581,7 @@ test('amm doubleSwap', async t => {
   const bobSimoleanPayout = await E(bobSeat2).getPayout('Out');
 
   t.deepEqual(
-    await simoleanR.issuer.getAmountOf(bobSimoleanPayout),
+    await simoleanKit.issuer.getAmountOf(bobSimoleanPayout),
     simoleans(4970n),
     `bob gets 4970 simoleans`,
   );
@@ -616,10 +616,10 @@ test('amm jig - swapOut uneven', async t => {
   // Set up central token
   const centralR = makeIssuerKit('central');
   const centralTokens = value => AmountMath.make(centralR.brand, value);
-  const moolaR = makeIssuerKit('moola');
-  const moola = value => AmountMath.make(moolaR.brand, value);
-  const simoleanR = makeIssuerKit('simoleans');
-  const simoleans = value => AmountMath.make(simoleanR.brand, value);
+  const moolaKit = makeIssuerKit('moola');
+  const moola = value => AmountMath.make(moolaKit.brand, value);
+  const simoleanKit = makeIssuerKit('simoleans');
+  const simoleans = value => AmountMath.make(simoleanKit.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
 
@@ -636,10 +636,10 @@ test('amm jig - swapOut uneven', async t => {
   const centralPayment = centralR.mint.mintPayment(centralTokens(30000000n));
   const centralPurse = centralR.issuer.makeEmptyPurse();
   await centralPurse.deposit(centralPayment);
-  const moolaPurse = moolaR.issuer.makeEmptyPurse();
-  moolaPurse.deposit(moolaR.mint.mintPayment(moola(20000000n)));
-  const simoleanPurse = simoleanR.issuer.makeEmptyPurse();
-  simoleanPurse.deposit(simoleanR.mint.mintPayment(simoleans(20000000n)));
+  const moolaPurse = moolaKit.issuer.makeEmptyPurse();
+  moolaPurse.deposit(moolaKit.mint.mintPayment(moola(20000000n)));
+  const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
+  simoleanPurse.deposit(simoleanKit.mint.mintPayment(simoleans(20000000n)));
 
   /** @type {XYKAMMPublicFacet} */
   const publicFacet = amm.ammPublicFacet;
@@ -649,16 +649,23 @@ test('amm jig - swapOut uneven', async t => {
     t,
     zoe,
     amm,
-    moolaR,
+    moolaKit,
     centralR,
     'Moola',
   );
 
   const { liquidityIssuer: simoleanLiquidityIssuer } =
-    await makePoolWithLiquidity(t, zoe, amm, simoleanR, centralR, 'Simoleans');
+    await makePoolWithLiquidity(
+      t,
+      zoe,
+      amm,
+      simoleanKit,
+      centralR,
+      'Simoleans',
+    );
 
   const mIssuerKeywordRecord = {
-    Secondary: moolaR.issuer,
+    Secondary: moolaKit.issuer,
     Liquidity: moolaLiquidityIssuer,
   };
   const purses = [
@@ -824,8 +831,8 @@ test('amm jig - breaking scenario', async t => {
   // Set up central token
   const centralR = makeIssuerKit('central');
   const centralTokens = value => AmountMath.make(centralR.brand, value);
-  const moolaR = makeIssuerKit('moola');
-  const moola = value => AmountMath.make(moolaR.brand, value);
+  const moolaKit = makeIssuerKit('moola');
+  const moola = value => AmountMath.make(moolaKit.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
 
@@ -846,8 +853,10 @@ test('amm jig - breaking scenario', async t => {
   );
   const centralPurse = E(centralR.issuer).makeEmptyPurse();
   await E(centralPurse).deposit(centralPayment);
-  const moolaPurse = moolaR.issuer.makeEmptyPurse();
-  moolaPurse.deposit(moolaR.mint.mintPayment(moola(2396247730468n + 4145005n)));
+  const moolaPurse = moolaKit.issuer.makeEmptyPurse();
+  moolaPurse.deposit(
+    moolaKit.mint.mintPayment(moola(2396247730468n + 4145005n)),
+  );
 
   const purses = [moolaPurse, centralPurse];
   const alice = await makeTrader(purses, zoe, publicFacet, centralR.issuer);
@@ -868,7 +877,7 @@ test('amm jig - breaking scenario', async t => {
       t,
       initMoolaLiquidityDetails,
       initMoolaLiquidityExpected,
-      moolaR.issuer,
+      moolaKit.issuer,
       'Moola',
     );
 
@@ -880,7 +889,7 @@ test('amm jig - breaking scenario', async t => {
 
   const quoteFromRun = await E(publicFacet).getInputPrice(
     centralTokens(73000000n),
-    AmountMath.makeEmpty(moolaR.brand),
+    AmountMath.makeEmpty(moolaKit.brand),
   );
   t.deepEqual(quoteFromRun, {
     amountIn: centralTokens(72999997n),
@@ -889,18 +898,18 @@ test('amm jig - breaking scenario', async t => {
 
   const newQuoteFromRun = await E(publicFacet).getInputPrice(
     quoteFromRun.amountIn,
-    AmountMath.makeEmpty(moolaR.brand),
+    AmountMath.makeEmpty(moolaKit.brand),
   );
 
   t.truthy(AmountMath.isGTE(quoteFromRun.amountIn, newQuoteFromRun.amountIn));
   t.truthy(AmountMath.isGTE(newQuoteFromRun.amountOut, quoteFromRun.amountOut));
 
   const quoteToRun = await E(publicFacet).getOutputPrice(
-    AmountMath.makeEmpty(moolaR.brand),
+    AmountMath.makeEmpty(moolaKit.brand),
     centralTokens(370000000n),
   );
   const newQuoteToRun = await E(publicFacet).getOutputPrice(
-    AmountMath.makeEmpty(moolaR.brand),
+    AmountMath.makeEmpty(moolaKit.brand),
     quoteToRun.amountOut,
   );
   t.deepEqual(quoteToRun.amountIn, newQuoteToRun.amountIn);
@@ -946,13 +955,13 @@ test('zoe allow empty reallocations', async t => {
   );
 });
 
-const makeAddInitialLiquidity = (t, zoe, amm, moolaR, centralR) => {
+const makeAddInitialLiquidity = (t, zoe, amm, moolaKit, centralR) => {
   return async (moola, central) => {
     const centralTokens = value => AmountMath.make(centralR.brand, value);
-    const makeMoola = value => AmountMath.make(moolaR.brand, value);
+    const makeMoola = value => AmountMath.make(moolaKit.brand, value);
 
     const purses = [
-      makePurseWith(moolaR, moola),
+      makePurseWith(moolaKit, moola),
       makePurseWith(centralR, central),
     ];
     const alice = await makeTrader(
@@ -976,7 +985,7 @@ const makeAddInitialLiquidity = (t, zoe, amm, moolaR, centralR) => {
       t,
       details,
       aliceExpected,
-      moolaR.issuer,
+      moolaKit.issuer,
       'Moola',
     );
 
@@ -990,13 +999,13 @@ const makeAddInitialLiquidity = (t, zoe, amm, moolaR, centralR) => {
   };
 };
 
-const makeAddLiquidity = (t, zoe, amm, moolaR, centralR, moolaLiqIssuer) => {
+const makeAddLiquidity = (t, zoe, amm, moolaKit, centralR, moolaLiqIssuer) => {
   return async (moola, central, priorState, expected) => {
     const centralTokens = value => AmountMath.make(centralR.brand, value);
-    const makeMoola = value => AmountMath.make(moolaR.brand, value);
+    const makeMoola = value => AmountMath.make(moolaKit.brand, value);
 
     const purses = [
-      makePurseWith(moolaR, moola),
+      makePurseWith(moolaKit, moola),
       makePurseWith(centralR, central),
     ];
     const alice = await makeTrader(
@@ -1013,7 +1022,7 @@ const makeAddLiquidity = (t, zoe, amm, moolaR, centralR, moolaLiqIssuer) => {
 
     await alice.addLiquidityAtRateAndCheck(t, priorState, details, expected, {
       Liquidity: moolaLiqIssuer,
-      Secondary: moolaR.issuer,
+      Secondary: moolaKit.issuer,
     });
   };
 };
@@ -1021,8 +1030,8 @@ const makeAddLiquidity = (t, zoe, amm, moolaR, centralR, moolaLiqIssuer) => {
 test('amm adding liquidity', async t => {
   // Set up central token
   const centralR = makeIssuerKit('central');
-  const moolaR = makeIssuerKit('moola');
-  const moola = value => AmountMath.make(moolaR.brand, value);
+  const moolaKit = makeIssuerKit('moola');
+  const moola = value => AmountMath.make(moolaKit.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   // This timer is only used to build quotes. Let's make it non-zero
@@ -1039,7 +1048,7 @@ test('amm adding liquidity', async t => {
   await m.assertInitial({ XYK: [] });
 
   await t.throwsAsync(
-    () => E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
+    () => E(amm.ammPublicFacet).getPoolAllocation(moolaKit.brand),
     { message: /"secondaryBrand" not found: / },
     "The pool hasn't been created yet",
   );
@@ -1048,16 +1057,16 @@ test('amm adding liquidity', async t => {
     t,
     zoe,
     amm,
-    moolaR,
+    moolaKit,
     centralR,
   );
   // add initial liquidity at 10000:50000
   const liquidityIssuer = await addInitialLiquidity(10000n, 50000n);
   const liquidityBrand = await E(liquidityIssuer).getBrand();
-  await m.assertChange({ XYK: { 0: moolaR.brand } });
+  await m.assertChange({ XYK: { 0: moolaKit.brand } });
 
   const poolMetricsSub = await E(amm.ammPublicFacet).getPoolMetrics(
-    moolaR.brand,
+    moolaKit.brand,
   );
   const p = await subscriptionTracker(t, poolMetricsSub);
   await p.assertInitial({
@@ -1073,7 +1082,7 @@ test('amm adding liquidity', async t => {
   });
 
   t.deepEqual(
-    await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
+    await E(amm.ammPublicFacet).getPoolAllocation(moolaKit.brand),
     allocation(50000n, 0n, 10000n),
     `poolAllocation after initialization`,
   );
@@ -1114,7 +1123,7 @@ test('amm adding liquidity', async t => {
     t,
     zoe,
     amm,
-    moolaR,
+    moolaKit,
     centralR,
     liquidityIssuer,
   );
@@ -1131,7 +1140,7 @@ test('amm adding liquidity', async t => {
 
   // The pool will have 10K + 20K and 50K + 70K after
   t.deepEqual(
-    await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
+    await E(amm.ammPublicFacet).getPoolAllocation(moolaKit.brand),
     allocation(119_996n, 0n, 29_989n),
     `poolAllocation after initialization`,
   );
@@ -1163,7 +1172,7 @@ test('amm adding liquidity', async t => {
 
   // The pool should now have just under 50K + 70K + 60K and 10K + 14K + 12K
   t.deepEqual(
-    await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
+    await E(amm.ammPublicFacet).getPoolAllocation(moolaKit.brand),
     allocation(219985n, 0n, 41973n),
     `poolAllocation after initialization`,
   );
