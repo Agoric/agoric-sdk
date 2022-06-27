@@ -1,8 +1,9 @@
 // @ts-check
-import { assert, details as X, quote as q } from '@agoric/assert';
 import { isNat } from '@agoric/nat';
 import { makeVatTranslators } from './vatTranslator.js';
 import { insistVatDeliveryResult } from '../lib/message.js';
+
+const { details: X, quote: q } = assert;
 
 /** @param {number} max */
 export const makeLRU = max => {

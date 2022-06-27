@@ -16,7 +16,6 @@ import anylogger from 'anylogger';
 // import connect from 'lotion-connect';
 // import djson from 'deterministic-json';
 
-const { details: X } = assert;
 import {
   makeSlogSenderFromModule,
   getTelemetryProviders,
@@ -46,6 +45,8 @@ import { connectToPipe } from './pipe.js';
 import { makeHTTPListener } from './web.js';
 
 import { connectToChain } from './chain-cosmos-sdk.js';
+
+const { details: X } = assert;
 
 const log = anylogger('start');
 

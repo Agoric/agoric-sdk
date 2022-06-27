@@ -5,7 +5,6 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Far } from '@endo/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
-import { details as X } from '@agoric/assert';
 import { makeOffer } from '../makeOffer.js';
 
 import { setup } from '../setupBasicMints.js';
@@ -13,6 +12,8 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 
 import { setupZCFTest } from './setupZcfTest.js';
 import { assertAmountsEqual } from '../../zoeTestHelpers.js';
+
+const { details: X } = assert;
 
 test(`zcf.getZoeService`, async t => {
   const { zoe, zcf } = await setupZCFTest();

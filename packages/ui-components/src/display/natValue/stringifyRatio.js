@@ -1,6 +1,7 @@
-import { assert, details } from '@agoric/assert';
 import { captureNum } from './helpers/captureNum.js';
 import { roundToDecimalPlaces } from './helpers/roundToDecimalPlaces.js';
+
+const { details } = assert;
 
 const PLACES_TO_SHOW = 2;
 

@@ -1,4 +1,4 @@
-import { quote } from '@agoric/assert';
+const { quote } = assert;
 
 const IDLE = 'idle';
 const STARTUP = 'startup';

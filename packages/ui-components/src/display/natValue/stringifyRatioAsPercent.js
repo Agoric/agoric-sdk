@@ -1,10 +1,11 @@
 // @ts-check
 
-import { assert, details } from '@agoric/assert';
 import '@agoric/zoe/exported.js';
 
 import { captureNum } from './helpers/captureNum.js';
 import { roundToDecimalPlaces } from './helpers/roundToDecimalPlaces.js';
+
+const { details } = assert;
 
 const PERCENT_BASE = 100n;
 const PLACES_TO_SHOW = 0;

@@ -1,11 +1,12 @@
 import { E } from '@endo/eventual-send';
-const { details: X } = assert;
 import { keyEQ } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { showPurseBalance, setupIssuers } from './helpers.js';
 
 import { makePrintLog } from './printLog.js';
+
+const { details: X } = assert;
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const { moola, simoleans, bucks, purses } = await setupIssuers(zoe, issuers);

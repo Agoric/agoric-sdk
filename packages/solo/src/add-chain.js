@@ -1,12 +1,12 @@
 /* global process */
-import fetch from 'node-fetch';
 import crypto from 'crypto';
 import djson from 'deterministic-json';
-import path from 'path';
 import fs from 'fs';
+import fetch from 'node-fetch';
+import path from 'path';
+import setGCIIngress from './set-gci-ingress.js';
 
 const { details: X } = assert;
-import setGCIIngress from './set-gci-ingress.js';
 
 const DEFAULT_CHAIN_CONFIG = 'https://testnet.agoric.com/network-config';
 

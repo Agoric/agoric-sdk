@@ -1,5 +1,5 @@
 // @ts-check
-import { assert, details } from '@agoric/assert';
+const { details } = assert;
 
 export const roundToDecimalPlaces = (
   rightOfDecimalStr = '',

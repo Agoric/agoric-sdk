@@ -2,13 +2,13 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeIssuerKit, AssetKind } from '@agoric/ertp';
+import { stringifyRatio } from '../../../src/display/natValue/stringifyRatio.js';
+import { stringifyRatioAsFraction } from '../../../src/display/natValue/stringifyRatioAsFraction.js';
+import { stringifyRatioAsPercent } from '../../../src/display/natValue/stringifyRatioAsPercent.js';
 
 const { details: X } = assert;
-import { stringifyRatioAsFraction } from '../../../src/display/natValue/stringifyRatioAsFraction.js';
-import { stringifyRatio } from '../../../src/display/natValue/stringifyRatio.js';
-import { stringifyRatioAsPercent } from '../../../src/display/natValue/stringifyRatioAsPercent.js';
 
 test('stringifyRatio dollars for one eth', t => {
   // 1 dollar is 100 cents, or 2 decimal points to the right

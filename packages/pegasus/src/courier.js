@@ -1,9 +1,9 @@
 // @ts-check
-import { details as X } from '@agoric/assert';
-
 import { AmountMath } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 import { makeOncePromiseKit } from './once-promise-kit.js';
+
+const { details: X } = assert;
 
 /**
  * Create or return an existing courier promise kit.

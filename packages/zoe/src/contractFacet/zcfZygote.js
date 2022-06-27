@@ -1,6 +1,5 @@
 // @ts-check
 
-import { assert, details as X, makeAssert } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import { Far, Remotable, passStyleOf } from '@endo/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
@@ -25,6 +24,8 @@ import '../internal-types.js';
 import './internal-types.js';
 
 import '@agoric/swingset-vat/src/types-ambient.js';
+
+const { details: X, makeAssert } = assert;
 
 /**
  * Make the ZCF vat in zygote-usable form. First, a generic ZCF is

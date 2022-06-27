@@ -6,7 +6,6 @@ import {
 } from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
 import { makeBufferedStorage } from '@agoric/swingset-vat/src/lib/storageAPI.js';
 
-const { details: X } = assert;
 import { makeSlogSenderFromModule } from '@agoric/telemetry';
 
 import * as STORAGE_PATH from '@agoric/vats/src/chain-storage-paths.js';
@@ -14,6 +13,8 @@ import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import makeBlockManager from './block-manager.js';
 import { getTelemetryProviders } from './kernel-stats.js';
+
+const { details: X } = assert;
 
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;

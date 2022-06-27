@@ -2,7 +2,6 @@
 
 import '../../../exported.js';
 
-const { details: X } = assert;
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -19,6 +18,8 @@ import { scheduleLiquidation } from './scheduleLiquidation.js';
 import { calculateInterest, makeDebtCalculator } from './updateDebt.js';
 import { makeCloseLoanInvitation } from './close.js';
 import { makeAddCollateralInvitation } from './addCollateral.js';
+
+const { details: X } = assert;
 
 /** @type {MakeBorrowInvitation} */
 export const makeBorrowInvitation = (zcf, config) => {

@@ -5,9 +5,10 @@
 
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
-import { quote as q } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 import { ignore } from './vat-util.js';
+
+const { quote: q } = assert;
 
 // Exercise a set of increasingly complex object-capability message patterns,
 // for testing.

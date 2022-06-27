@@ -1,10 +1,11 @@
 // @ts-check
-import { assert, details } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import '@agoric/ertp/exported.js';
 
 import { captureNum } from './helpers/captureNum.js';
 import { roundToDecimalPlaces } from './helpers/roundToDecimalPlaces.js';
+
+const { details } = assert;
 
 /**
  * Parse a string as a Nat, using `decimalPlaces`, the number of

@@ -1,12 +1,12 @@
 // @ts-check
 /* global process */
+import { execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import { execFileSync } from 'child_process';
 
-const { details: X } = assert;
 import anylogger from 'anylogger';
 import { HELPER } from './chain-cosmos-sdk.js';
+const { details: X } = assert;
 
 const console = anylogger('ag-solo:init');
 
