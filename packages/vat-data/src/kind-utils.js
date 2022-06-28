@@ -15,6 +15,14 @@ export const provideKindHandle = (baggage, kindName) =>
 // @ts-expect-error TODO statically recognize harden
 harden(provideKindHandle);
 
+/**
+ * @template T
+ * @param {import('@agoric/store').MapStore<string, unknown>} baggage
+ * @param {string} kindName
+ * @param {T} methods
+ * @param {import('./types.js').DefineKindOptions<unknown>} [options]
+ * @returns {T}
+ */
 export const ProvideFar = (baggage, kindName, methods, options = undefined) => {
   const kindHandle = provideKindHandle(baggage, kindName);
   const behavior = fromEntries(

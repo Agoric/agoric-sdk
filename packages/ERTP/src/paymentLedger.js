@@ -487,7 +487,6 @@ export const makeDurablePaymentLedger = (
     mintPayment,
   });
 
-  // @ts-expect-error Cannot figure out types.
   const brand = /** @type {Brand} */ (
     ProvideFar(issuerBaggage, `${allegedName} brand`, {
       isMyIssuer: allegedIssuerP =>
@@ -508,7 +507,6 @@ export const makeDurablePaymentLedger = (
     assetKind,
     elementSchema,
   );
-  // @ts-expect-error Just too much typing foo for now.
   return issuerKit;
 };
 harden(makeDurablePaymentLedger);
