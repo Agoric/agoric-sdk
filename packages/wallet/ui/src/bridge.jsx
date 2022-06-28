@@ -117,7 +117,20 @@ const conn = installDappConnection({
 });
 
 const signalBridge = () => {
-  conn.connectStorage(window.localStorage);
+  if ('requestStorageAccess' in document) {
+    document
+      .requestStorageAccess()
+      .then(() => {
+        console.debug('bridge: storage access granted');
+        conn.connectStorage(window.localStorage);
+      })
+      .catch(whyNot =>
+        console.error('bridge: requestStorageAccess rejected with', whyNot),
+      );
+  } else {
+    console.debug('bridge: SKIP document.requestStorageAccess');
+    conn.connectStorage(window.localStorage);
+  }
 };
 
 ReactDOM.render(
