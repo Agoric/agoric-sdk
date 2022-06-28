@@ -99,20 +99,21 @@ const installDappConnection = ({ addEventListener, parentPost, t0 }) => {
   });
 };
 
-// const sameParent = () => {
-//   const me = window;
-//   const { parent } = window;
-//   if (me === parent) {
-//     // eslint-disable-next-line no-debugger
-//     debugger;
-//     throw Error('window.parent === parent!!!');
-//   }
-//   return false;
-// };
+const sameParent = () => {
+  const me = window;
+  const { parent } = window;
+  if (me === parent) {
+    // eslint-disable-next-line no-debugger
+    debugger;
+    throw Error('window.parent === parent!!!');
+  }
+  return false;
+};
 
 const conn = installDappConnection({
   addEventListener: window.addEventListener,
-  parentPost: (payload, origin) => window.parent.postMessage(payload, origin),
+  parentPost: (payload, origin) =>
+    !sameParent() && window.parent.postMessage(payload, origin),
   t0: Date.now(),
 });
 
