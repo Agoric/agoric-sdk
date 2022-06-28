@@ -1,5 +1,7 @@
 import path from 'path';
+import { performance } from 'perf_hooks';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
 import { waitUntilQuiescent } from '@agoric/swingset-vat/src/lib-nodejs/waitUntilQuiescent.js';
 import {
   importMailbox,
@@ -407,7 +409,15 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       // that the commit-block reply has been sent to agcc through replier.resolve
       await waitUntilQuiescent();
 
-      return {};
+      const t0 = performance.now();
+      engineGC();
+      const t1 = performance.now();
+
+      return {
+        statsTime: {
+          forcedGc: t1 - t0,
+        },
+      };
     };
 
     const s = await launch({
