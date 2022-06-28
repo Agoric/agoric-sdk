@@ -63,8 +63,8 @@ export const makeAddIssuer = (
 
     /** @template T @typedef {import('@endo/promise-kit').PromiseKit<T>} PromiseKit */
     /** @type {PromiseKit<Issuer<'nat'>>} */
-    const promiseKit = makePromiseKit();
-    brandToLiquidityIssuer.init(secondaryBrand, promiseKit.promise);
+    const liquidityPromiseKit = makePromiseKit();
+    brandToLiquidityIssuer.init(secondaryBrand, liquidityPromiseKit.promise);
 
     const liquidityKeyword = `${keyword}Liquidity`;
     zcf.assertUniqueKeyword(liquidityKeyword);
@@ -82,7 +82,7 @@ export const makeAddIssuer = (
         // before the pool is created
         brandToLiquidityMint.init(secondaryBrand, mint);
         const { issuer: liquidityIssuer } = mint.getIssuerRecord();
-        promiseKit.resolve(liquidityIssuer);
+        liquidityPromiseKit.resolve(liquidityIssuer);
         // defer lookup until necessary. more aligned with governed
         // param we expect this to be eventually.
         const addIssuerToReserve = getAddIssuerToReserve();
@@ -94,8 +94,9 @@ export const makeAddIssuer = (
         console.log(
           X`Failure Saving issuer ${secondaryIssuer}. Not added to Reserve`,
         );
-        promiseKit.reject(e);
+        liquidityPromiseKit.reject(e);
         brandToLiquidityIssuer.delete(secondaryBrand);
+        brandToLiquidityMint.delete(secondaryBrand);
         throw e;
       });
   };
