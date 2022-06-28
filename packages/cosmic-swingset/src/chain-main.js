@@ -1,6 +1,7 @@
 import path from 'path';
 import v8 from 'node:v8';
 import process from 'node:process';
+import fs from 'node:fs';
 import { performance } from 'perf_hooks';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
@@ -376,6 +377,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       LMDB_MAP_SIZE,
       SWING_STORE_TRACE,
       XSNAP_KEEP_SNAPSHOTS,
+      NODE_HEAP_SNAPSHOTS = -1,
     } = env;
     const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
       stateDir: stateDBDir,
@@ -406,10 +408,23 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const keepSnapshots =
       XSNAP_KEEP_SNAPSHOTS === '1' || XSNAP_KEEP_SNAPSHOTS === 'true';
 
+    const nodeHeapSnapshots = Number.parseInt(NODE_HEAP_SNAPSHOTS, 10);
+
+    let lastCommitTime = 0;
+    let commitCallsSinceLastSnapshot = NaN;
+    const snapshotBaseDir = path.resolve(stateDBDir, 'node-heap-snapshots');
+
+    if (nodeHeapSnapshots >= 0) {
+      fs.mkdirSync(snapshotBaseDir, { recursive: true });
+    }
+
     const afterCommitCallback = async () => {
       // delay until all current promise reactions are drained so we can be sure
       // that the commit-block reply has been sent to agcc through replier.resolve
       await waitUntilQuiescent();
+
+      let heapSnapshot;
+      let heapSnapshotTime;
 
       const t0 = performance.now();
       engineGC();
@@ -419,13 +434,29 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       const heapStats = v8.getHeapStatistics();
       const t3 = performance.now();
 
+      commitCallsSinceLastSnapshot += 1;
+      if (
+        (nodeHeapSnapshots >= 0 && t0 - lastCommitTime > 30 * 1000) ||
+        (nodeHeapSnapshots > 0 &&
+          !(nodeHeapSnapshots > commitCallsSinceLastSnapshot))
+      ) {
+        commitCallsSinceLastSnapshot = 0;
+        heapSnapshot = `Heap-${process.pid}-${Date.now()}.heapsnapshot`;
+        const snapshotPath = path.resolve(snapshotBaseDir, heapSnapshot);
+        v8.writeHeapSnapshot(snapshotPath);
+        heapSnapshotTime = performance.now() - t3;
+      }
+      lastCommitTime = t0;
+
       return {
         memoryUsage,
         heapStats,
+        heapSnapshot,
         statsTime: {
           forcedGc: t1 - t0,
           memoryUsage: t2 - t1,
           heapStats: t3 - t2,
+          heapSnapshot: heapSnapshotTime,
         },
       };
     };
