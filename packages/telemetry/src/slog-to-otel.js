@@ -89,6 +89,13 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
 
   const extractMethod = methargs => JSON.parse(methargs.body)[0];
 
+  const cleanVatParameters = vatParameters => {
+    if (!vatParameters || !vatParameters.slots) {
+      return undefined;
+    }
+    return { slots: vatParameters.slots.join(',') };
+  };
+
   const extractMessageAttrs = ({ type: messageType, ...message }) => {
     /** @type {Record<string, any>} */
     const attrs = { 'message.type': messageType, ...message };
@@ -99,6 +106,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         if (attrs.source.bundle) {
           attrs.source = { ...attrs.source, bundle: '*elided*' };
         }
+        attrs.vatParameters = cleanVatParameters(attrs.vatParameters);
         break;
       }
       case 'send': {
@@ -124,6 +132,12 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         }
         break;
       }
+      case 'startVat': {
+        // The vat parameters can be pretty big
+        attrs.vatParameters = cleanVatParameters(attrs.vatParameters);
+        break;
+      }
+      case 'stopVat':
       case 'dropExports':
       case 'retireExports':
       case 'retireImports':
@@ -311,7 +325,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
   };
 
   const slogSender = obj => {
-    const { time, type: slogType, ...slogAttrs } = obj;
+    const { time, monotime: _mt, type: slogType, ...slogAttrs } = obj;
 
     // Set up the context for this slog entry.
     nowFloat = time;
@@ -434,6 +448,10 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
           dr: [status, _1, meterResult],
           // ...attrs
         } = slogAttrs;
+        // remove timestamps for now
+        if (meterResult) {
+          delete meterResult.timestamps;
+        }
         spans.get(getCrankKey()).setAttributes(
           cleanAttrs({
             status,
@@ -516,7 +534,8 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
           case 'vatstoreDelete':
           case 'dropImports':
           case 'retireImports':
-          case 'retireExports': {
+          case 'retireExports':
+          case 'exit': {
             // TODO: Maybe too noisy and mostly irrelevant?
             // makeSyscallSpan(ksc[0]);
             break;
@@ -632,6 +651,11 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         // We don't care about console messages.  They are out of consensus and
         // can be really huge.
         // spans.top()?.addEvent('console', cleanAttrs(slogAttrs), now);
+        break;
+      }
+      case 'terminate': {
+        spans.start('terminate', spans.top());
+        spans.end(`terminate`);
         break;
       }
       default: {
