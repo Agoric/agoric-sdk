@@ -1,4 +1,6 @@
 import path from 'path';
+import v8 from 'node:v8';
+import process from 'node:process';
 import { performance } from 'perf_hooks';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
@@ -412,10 +414,18 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       const t0 = performance.now();
       engineGC();
       const t1 = performance.now();
+      const memoryUsage = process.memoryUsage();
+      const t2 = performance.now();
+      const heapStats = v8.getHeapStatistics();
+      const t3 = performance.now();
 
       return {
+        memoryUsage,
+        heapStats,
         statsTime: {
           forcedGc: t1 - t0,
+          memoryUsage: t2 - t1,
+          heapStats: t3 - t2,
         },
       };
     };
