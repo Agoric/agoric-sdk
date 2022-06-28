@@ -24,6 +24,10 @@ export const publicPrices = prices => {
 };
 
 /**
+ * @typedef {{ central: Amount, secondary: Amount }} NotificationState
+ */
+
+/**
  * @typedef {Readonly<{
  * liquidityBrand: Brand<'nat'>,
  * secondaryBrand: Brand<'nat'>,
@@ -36,14 +40,14 @@ export const publicPrices = prices => {
  * protocolSeat: ZCFSeat,
  * zcf: ZCF,
  * timer: TimerService,
- * paramAccessor,
+ * paramAccessor: import('./multipoolMarketMaker.js').AMMParamGetters,
+ * updater: IterationObserver<NotificationState>,
+ * notifier: Notifier<NotificationState>,
+ * metricsPublication: IterationObserver<PoolMetricsNotification>,
+ * metricsSubscription: Subscription<PoolMetricsNotification>
  * }>} ImmutableState
  *
  * @typedef {{
- * updater: IterationObserver<any>,
- * notifier: Notifier<any>,
- * metricsPublication: IterationObserver<PoolMetricsNotification>,
- * metricsSubscription: Subscription<PoolMetricsNotification>
  * poolSeat: ZCFSeat,
  * liqTokenSupply: bigint,
  * }} MutableState
@@ -62,13 +66,6 @@ export const publicPrices = prices => {
  * @property {Amount} secondaryAmount
  * @property {Amount} liquidityTokens - outstanding tokens
  */
-
-export const updateUpdaterState = (updater, pool) =>
-  // TODO: when governance can change the interest rate, include it here
-  updater.updateState({
-    central: pool.getCentralAmount(),
-    secondary: pool.getSecondaryAmount(),
-  });
 
 const helperBehavior = {
   /** @type {import('@agoric/vat-data/src/types').PlusContext<MethodContext, AddLiquidityInternal>} */
@@ -120,14 +117,13 @@ const helperBehavior = {
   },
   /** @type {import('@agoric/vat-data/src/types').PlusContext<MethodContext, AddLiquidityActual>} */
   addLiquidityActual: (
-    { state, facets },
+    { facets },
     pool,
     zcfSeat,
     secondaryAmount,
     poolCentralAmount,
     feeSeat,
   ) => {
-    const { updater } = state;
     const { helper } = facets;
 
     helper.addLiquidityInternal(
@@ -137,8 +133,7 @@ const helperBehavior = {
       feeSeat,
     );
     zcfSeat.exit();
-    updateUpdaterState(updater, pool);
-    facets.helper.updateMetrics();
+    facets.pool.updateState();
     return 'Added liquidity.';
   },
   /** @param {MethodContext} context */
@@ -259,14 +254,23 @@ const poolBehavior = {
     state.liqTokenSupply -= liquidityValueIn;
 
     userSeat.exit();
-    updateUpdaterState(state.updater, facets.pool);
-    facets.helper.updateMetrics();
+    facets.pool.updateState();
     return 'Liquidity successfully removed.';
   },
-  getNotifier: ({ state: { notifier } }) => notifier,
+  getNotifier: (/** @type {MethodContext} */ { state: { notifier } }) =>
+    notifier,
+  /**
+   * Update metrics and primary state
+   *
+   * @param {MethodContext} context
+   */
   updateState: ({ state: { updater }, facets: { pool, helper } }) => {
     helper.updateMetrics();
-    return updater.updateState(pool);
+    // TODO: when governance can change the interest rate, include it here
+    updater.updateState({
+      central: pool.getCentralAmount(),
+      secondary: pool.getSecondaryAmount(),
+    });
   },
   getToCentralPriceAuthority: ({ state }) => state.toCentralPriceAuthority,
   getFromCentralPriceAuthority: ({ state }) => state.fromCentralPriceAuthority,

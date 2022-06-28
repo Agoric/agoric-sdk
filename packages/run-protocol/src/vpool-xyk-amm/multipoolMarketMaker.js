@@ -5,7 +5,6 @@ import { Far } from '@endo/marshal';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
-import { makeStoredPublisherKit } from '@agoric/notifier';
 import {
   assertIssuerKeywords,
   offerTo,
@@ -134,8 +133,6 @@ const start = async (zcf, privateArgs) => {
     centralDisplayInfo,
   ] = await Promise.all([
     handleParamGovernance(
-      // TODO https://github.com/Agoric/agoric-sdk/issues/5386
-      makeStoredPublisherKit(),
       zcf,
       privateArgs.initialPoserInvitation,
       {
@@ -143,8 +140,12 @@ const start = async (zcf, privateArgs) => {
         [PROTOCOL_FEE_KEY]: ParamTypes.NAT,
         [MIN_INITIAL_POOL_LIQUIDITY_KEY]: ParamTypes.AMOUNT,
       },
+      privateArgs.storageNode,
+      privateArgs.marshaller,
     ),
     E(centralBrand).getDisplayInfo(),
+    privateArgs.storageNode,
+    privateArgs.marshaller,
   ]);
 
   assert.equal(
@@ -352,7 +353,7 @@ const start = async (zcf, privateArgs) => {
     'RUN',
   );
 
-  /** @type {XYKAMMPublicFacet} */
+  /** @type {GovernedPublicFacet<XYKAMMPublicFacet>} */
   const publicFacet = augmentPublicFacet(
     Far('AMM public facet', {
       addPoolInvitation,

@@ -10,7 +10,7 @@ import {
   makeAgoricNamesAccess,
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
-
+import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
@@ -23,7 +23,13 @@ import {
   startRunStake,
 } from '../../src/proposals/econ-behaviors.js';
 import * as Collect from '../../src/collect.js';
-import { makeVoterTool, setUpZoeForTest, mintRunPayment } from '../supports.js';
+import {
+  makeVoterTool,
+  setUpZoeForTest,
+  mintRunPayment,
+  subscriptionKey,
+  mockChainStorageRoot,
+} from '../supports.js';
 import { ManagerKW as KW } from '../../src/runStake/constants.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 
@@ -246,6 +252,9 @@ const bootstrapRunStake = async (t, timer) => {
     },
   });
   produce.client.resolve(mockClient);
+
+  produce.chainStorage.resolve(mockChainStorageRoot());
+  produce.board.resolve(makeBoard());
 
   await Promise.all([
     startEconomicCommittee(space, {
@@ -978,4 +987,17 @@ test('payoff more than you owe', async t => {
   await d.checkRUNDebt(0n);
   await d.checkBLDLiened(0n);
   await d.checkRUNBalance(16n);
+});
+
+test('storage keys', async t => {
+  const {
+    space: { consume, instance },
+  } = await bootstrapRunStake(t);
+  const { zoe } = consume;
+  const publicFacet = await E(zoe).getPublicFacet(instance.consume.runStake);
+
+  t.is(
+    await subscriptionKey(E(publicFacet).getSubscription()),
+    'mockChainStorageRoot.stakeFactory.governance',
+  );
 });

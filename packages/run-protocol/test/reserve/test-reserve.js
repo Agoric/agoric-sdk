@@ -11,6 +11,7 @@ import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { setupReserveServices } from './setup.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 import { subscriptionTracker } from '../metrics.js';
+import { subscriptionKey } from '../supports.js';
 
 const addLiquidPool = async (
   runPayment,
@@ -454,4 +455,23 @@ test('reserve burn IST', async t => {
     },
     allocations: { RUN: AmountMath.makeEmpty(runBrand) },
   });
+});
+
+test('storage keys', async t => {
+  /** @param {NatValue} value */
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+  const timer = buildManualTimer(t.log);
+
+  const { reserve } = await setupReserveServices(t, electorateTerms, timer);
+
+  t.is(
+    // @ts-expect-error problem with E() and GovernedPublicFacet<>
+    await subscriptionKey(E(reserve.reservePublicFacet).getSubscription()),
+    'mockChainStorageRoot.reserve.governance',
+  );
+
+  t.is(
+    await subscriptionKey(E(reserve.reserveCreatorFacet).getMetrics()),
+    'mockChainStorageRoot.reserve.metrics',
+  );
 });

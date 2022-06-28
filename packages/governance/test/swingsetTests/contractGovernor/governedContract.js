@@ -1,6 +1,5 @@
 // @ts-check
 
-import { makeStoredPublisherKit } from '@agoric/notifier';
 import { handleParamGovernance } from '../../../src/contractHelper.js';
 import { ParamTypes } from '../../../src/index.js';
 import { CONTRACT_ELECTORATE } from '../../../src/contractGovernance/governParam.js';
@@ -30,14 +29,9 @@ const makeTerms = (number, invitationAmount) => {
  */
 const start = async (zcf, privateArgs) => {
   const { augmentPublicFacet, makeGovernorFacet, params } =
-    await handleParamGovernance(
-      makeStoredPublisherKit(),
-      zcf,
-      privateArgs.initialPoserInvitation,
-      {
-        [MALLEABLE_NUMBER]: ParamTypes.NAT,
-      },
-    );
+    await handleParamGovernance(zcf, privateArgs.initialPoserInvitation, {
+      [MALLEABLE_NUMBER]: ParamTypes.NAT,
+    });
 
   let governanceAPICalled = 0;
   const governanceApi = () => (governanceAPICalled += 1);

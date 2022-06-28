@@ -2,7 +2,6 @@
 // @jessie-check
 import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
-import { makeStoredPublisherKit } from '@agoric/notifier';
 import { E, Far } from '@endo/far';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeAttestationFacets } from './attestation.js';
@@ -67,6 +66,8 @@ const { values } = Object;
  *   feeMintAccess: FeeMintAccess,
  *   initialPoserInvitation: Invitation,
  *   lienBridge: ERef<StakingAuthority>,
+ *   storageNode?: StorageNode,
+ *   marshaller?: Marshaller,
  * }} RunStakePrivateArgs
  *
  * The creator facet can make an `AttestationMaker` for each account, which
@@ -81,7 +82,13 @@ const { values } = Object;
  */
 export const start = async (
   zcf,
-  { feeMintAccess, initialPoserInvitation, lienBridge },
+  {
+    feeMintAccess,
+    initialPoserInvitation,
+    lienBridge,
+    storageNode,
+    marshaller,
+  },
 ) => {
   const {
     brands: { Stake: stakeBrand },
@@ -101,8 +108,6 @@ export const start = async (
 
   const { augmentPublicFacet, makeGovernorFacet, params } =
     await handleParamGovernance(
-      // TODO https://github.com/Agoric/agoric-sdk/issues/5386
-      makeStoredPublisherKit(),
       zcf,
       initialPoserInvitation,
       {
@@ -111,6 +116,8 @@ export const start = async (
         LoanFee: ParamTypes.RATIO,
         MintingRatio: ParamTypes.RATIO,
       },
+      storageNode,
+      marshaller,
     );
 
   /** For temporary staging of newly minted tokens */

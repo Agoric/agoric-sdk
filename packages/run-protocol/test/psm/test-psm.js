@@ -16,9 +16,15 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
+import { makeBoard } from '@agoric/vats/src/lib-board.js';
+
 import { makeTracer } from '../../src/makeTracer.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
-import { setUpZoeForTest } from '../supports.js';
+import {
+  mockChainStorageRoot,
+  setUpZoeForTest,
+  subscriptionKey,
+} from '../supports.js';
 
 /** @type {import('ava').TestInterface<Awaited<ReturnType<makeTestContext>>>} */
 // @ts-expect-error cast
@@ -110,8 +116,10 @@ const makeTestContext = async () => {
     privateArgs: harden({
       feeMintAccess: await feeMintAccess,
       initialPoserInvitation,
+      storageNode: mockChainStorageRoot().getChildNode('psm'),
+      marshaller: makeBoard().getReadonlyMarshaller(),
     }),
-    runKit: { runIssuer, runBrand },
+    run: { issuer: runIssuer, brand: runBrand },
     anchorKit,
     installs: { committeeInstall, psmInstall },
     mintLimit,
@@ -147,7 +155,7 @@ test('simple trades', async t => {
     privateArgs,
     terms,
     installs: { psmInstall },
-    runKit: { runIssuer, runBrand },
+    run,
     anchorKit: { brand: anchorBrand, issuer: anchorIssuer, mint: anchorMint },
   } = t.context;
   const { publicFacet, creatorFacet } = await E(zoe).startInstance(
@@ -164,13 +172,13 @@ test('simple trades', async t => {
   );
   const runPayout = await E(seat1).getPayout('Out');
   const expectedRun = minusAnchorFee(giveAnchor, terms.anchorPerStable);
-  const actualRun = await E(runIssuer).getAmountOf(runPayout);
+  const actualRun = await E(run.issuer).getAmountOf(runPayout);
   t.deepEqual(actualRun, expectedRun);
   const liq = await E(publicFacet).getPoolBalance();
   t.true(AmountMath.isEqual(liq, giveAnchor));
-  const giveRun = AmountMath.make(runBrand, 100n * 1_000_000n);
+  const giveRun = AmountMath.make(run.brand, 100n * 1_000_000n);
   trace('get stable', { giveRun, expectedRun, actualRun, liq });
-  const [runPayment, _moreRun] = await E(runIssuer).split(runPayout, giveRun);
+  const [runPayment, _moreRun] = await E(run.issuer).split(runPayout, giveRun);
   const seat2 = await E(zoe).offer(
     E(publicFacet).makeSwapInvitation(),
     harden({ give: { In: giveRun } }),
@@ -196,7 +204,7 @@ test('simple trades', async t => {
   await E(collectFeesSeat).getOfferResult();
   const feePayoutAmount = await E.get(E(collectFeesSeat).getCurrentAllocation())
     .RUN;
-  const expectedFee = AmountMath.make(runBrand, 50000n);
+  const expectedFee = AmountMath.make(run.brand, 50000n);
   trace('Reward Fee', { feePayoutAmount, expectedFee });
   t.truthy(AmountMath.isEqual(feePayoutAmount, expectedFee));
 });
@@ -258,10 +266,10 @@ test('anchor is 2x stable', async t => {
     privateArgs,
     terms,
     installs: { psmInstall },
-    runKit: { runIssuer, runBrand },
+    run,
     anchorKit: { brand: anchorBrand, issuer: anchorIssuer, mint: anchorMint },
   } = t.context;
-  const anchorPerStable = makeRatio(200n, anchorBrand, 100n, runBrand);
+  const anchorPerStable = makeRatio(200n, anchorBrand, 100n, run.brand);
   const { publicFacet } = await E(zoe).startInstance(
     psmInstall,
     harden({ AUSD: anchorIssuer }),
@@ -276,13 +284,13 @@ test('anchor is 2x stable', async t => {
   );
   const runPayout = await E(seat1).getPayout('Out');
   const expectedRun = minusAnchorFee(giveAnchor, anchorPerStable);
-  const actualRun = await E(runIssuer).getAmountOf(runPayout);
+  const actualRun = await E(run.issuer).getAmountOf(runPayout);
   t.deepEqual(actualRun, expectedRun);
   const liq = await E(publicFacet).getPoolBalance();
   t.true(AmountMath.isEqual(liq, giveAnchor));
-  const giveRun = AmountMath.make(runBrand, 100n * 1_000_000n);
+  const giveRun = AmountMath.make(run.brand, 100n * 1_000_000n);
   trace('get stable ratio', { giveRun, expectedRun, actualRun, liq });
-  const [runPayment, _moreRun] = await E(runIssuer).split(runPayout, giveRun);
+  const [runPayment, _moreRun] = await E(run.issuer).split(runPayout, giveRun);
   const seat2 = await E(zoe).offer(
     E(publicFacet).makeSwapInvitation(),
     harden({ give: { In: giveRun } }),
@@ -298,4 +306,29 @@ test('anchor is 2x stable', async t => {
   const liq2 = await E(publicFacet).getPoolBalance();
   t.deepEqual(AmountMath.subtract(giveAnchor, expectedAnchor), liq2);
   trace('get anchor', { runGive: giveRun, expectedRun, actualAnchor, liq2 });
+});
+
+// NB: most 'storage keys' tests integrate bootstrap config, but this uses startInstance directly
+// because there are as yet no startPSM tests.
+test('storage keys', async t => {
+  const {
+    zoe,
+    privateArgs,
+    terms,
+    installs: { psmInstall },
+    anchorKit: { issuer: anchorIssuer },
+  } = t.context;
+  /** @type {Awaited<ReturnType<typeof import('../../src/psm/psm.js').start>>} */
+  const { publicFacet } = await E(zoe).startInstance(
+    psmInstall,
+    harden({ AUSD: anchorIssuer }),
+    terms,
+    privateArgs,
+  );
+
+  t.is(
+    // @ts-expect-error problem with E() and GovernedPublicFacet<>
+    await subscriptionKey(E(publicFacet).getSubscription()),
+    'mockChainStorageRoot.psm.governance',
+  );
 });

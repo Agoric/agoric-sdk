@@ -40,14 +40,14 @@ const CENTRAL_DENOM_NAME = 'urun';
  *   ammCreatorFacet: XYKAMMCreatorFacet,
  *   ammGovernorCreatorFacet: GovernedContractFacetAccess<XYKAMMCreatorFacet>,
  *   economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet,
- *   feeDistributorCreatorFacet: FeeDistributorCreatorFacet,
- *   feeDistributorPublicFacet: FeeDistributorPublicFacet,
+ *   feeDistributorCreatorFacet: import('../feeDistributor.js').FeeDistributorCreatorFacet,
+ *   feeDistributorPublicFacet: import('../feeDistributor.js').FeeDistributorPublicFacet,
  *   periodicFeeCollectors: import('../feeDistributor.js').PeriodicFeeCollector[],
  *   bankMints: Mint[],
  *   psmCreatorFacet: unknown,
  *   psmGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
- *   reservePublicFacet: AssetReservePublicFacet,
- *   reserveCreatorFacet: AssetReserveCreatorFacet,
+ *   reservePublicFacet: import('../reserve/assetReserve.js').AssetReservePublicFacet,
+ *   reserveCreatorFacet: import('../reserve/assetReserve.js').AssetReserveCreatorFacet,
  *   reserveGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
  *   runStakeCreatorFacet: import('../runStake/runStake.js').RunStakeCreator,
  *   vaultFactoryCreator: VaultFactory,
@@ -55,11 +55,6 @@ const CENTRAL_DENOM_NAME = 'urun';
  *   vaultFactoryVoteCreator: unknown,
  *   minInitialDebt: NatValue,
  * }>} EconomyBootstrapSpace
- *
- * @typedef {import('../feeDistributor.js').FeeDistributorCreatorFacet} FeeDistributorCreatorFacet
- * @typedef {import('../feeDistributor.js').FeeDistributorPublicFacet} FeeDistributorPublicFacet
- * @typedef {import('../reserve/assetReserve.js').AssetReserveCreatorFacet} AssetReserveCreatorFacet
- * @typedef {import('../reserve/assetReserve.js').AssetReservePublicFacet} AssetReservePublicFacet
  */
 
 /**
@@ -96,6 +91,7 @@ export const startEconomicCommittee = async (
   },
   { options: { econCommitteeOptions = {} } = {} },
 ) => {
+  trace('startEconomicCommittee');
   const {
     committeeName = 'Initial Economic Committee',
     committeeSize = 3,
@@ -202,6 +198,8 @@ export const setupAmm = async (
   },
   { options = {} } = {},
 ) => {
+  trace('setupAmm');
+
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
   const [poserInvitation, poserInvitationAmount, runBrand] = await Promise.all([
     poserInvitationP,
@@ -219,9 +217,9 @@ export const setupAmm = async (
   );
 
   const chainStoragePresence = await chainStorage;
-  const ammChainStorage = await (chainStoragePresence &&
+  const storageNode = await (chainStoragePresence &&
     E(chainStoragePresence).getChildNode(AMM_STORAGE_PATH));
-  const marshaller = E(board).getPublishingMarshaller();
+  const marshaller = await E(board).getPublishingMarshaller();
 
   const ammGovernorTerms = {
     timer,
@@ -232,7 +230,7 @@ export const setupAmm = async (
       issuerKeywordRecord: { Central: centralIssuer },
       privateArgs: {
         initialPoserInvitation: poserInvitation,
-        storageNode: ammChainStorage,
+        storageNode,
         marshaller,
       },
     },
@@ -785,12 +783,14 @@ export const startLienBridge = async ({
 export const startRunStake = async (
   {
     consume: {
+      board,
       zoe,
       // ISSUE: is there some reason Zoe shouldn't await this???
       feeMintAccess: feeMintAccessP,
       lienBridge,
       client,
       chainTimerService,
+      chainStorage,
       economicCommitteeCreatorFacet,
     },
     // @ts-expect-error TODO: add to BootstrapPowers
@@ -820,6 +820,8 @@ export const startRunStake = async (
     recordingPeriod = SECONDS_PER_DAY,
   } = {},
 ) => {
+  const STORAGE_PATH = 'stakeFactory';
+
   const [feeMintAccess, bldBrand, runBrand, governor, installation, timer] =
     await Promise.all([
       feeMintAccessP,
@@ -864,6 +866,11 @@ export const startRunStake = async (
     },
   );
 
+  const chainStoragePresence = await chainStorage;
+  const storageNode = await (chainStoragePresence &&
+    E(chainStoragePresence).getChildNode(STORAGE_PATH));
+  const marshaller = await E(board).getReadonlyMarshaller();
+
   /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<unknown>}} */
   const governorFacets = await E(zoe).startInstance(
     installations.governor,
@@ -875,7 +882,13 @@ export const startRunStake = async (
       governed: harden({
         terms: runStakeTerms,
         issuerKeywordRecord: { Stake: bldIssuer },
-        privateArgs: { feeMintAccess, initialPoserInvitation, lienBridge },
+        privateArgs: {
+          feeMintAccess,
+          initialPoserInvitation,
+          lienBridge,
+          storageNode,
+          marshaller,
+        },
       }),
     },
   );

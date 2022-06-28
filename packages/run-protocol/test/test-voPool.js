@@ -1,12 +1,43 @@
 // @ts-check
 
 import { runVOTest, test } from '@agoric/swingset-vat/tools/vo-test-harness.js';
+
+import { makeParamManager } from '@agoric/governance';
+import { makeStoredPublisherKit } from '@agoric/notifier';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 import { definePoolKind } from '../src/vpool-xyk-amm/pool.js';
-import { makeAmmParamManager } from '../src/vpool-xyk-amm/params.js';
+import { makeAmmParams } from '../src/vpool-xyk-amm/params.js';
+import { mapValues } from '../src/collect.js';
+
+/**
+ * @param {ERef<ZoeService>} zoe
+ * @param {bigint} poolFeeBP
+ * @param {bigint} protocolFeeBP
+ * @param {Amount} minInitialLiquidity
+ * @param {Invitation} poserInvitation - invitation for the question poser
+ */
+const makeAmmParamManager = async (
+  zoe,
+  poolFeeBP,
+  protocolFeeBP,
+  minInitialLiquidity,
+  poserInvitation,
+) => {
+  const initial = mapValues(
+    makeAmmParams(
+      poserInvitation,
+      protocolFeeBP,
+      poolFeeBP,
+      minInitialLiquidity,
+    ),
+    v => [v.type, v.value],
+  );
+  // @ts-expect-error loose
+  return makeParamManager(makeStoredPublisherKit(), initial, zoe);
+};
 
 const voPoolTest = async (t, mutation, postTest) => {
   let makePool;
@@ -45,6 +76,7 @@ const voPoolTest = async (t, mutation, postTest) => {
       centralBrand,
       timer,
       quoteIssuerKit,
+      // @ts-expect-error loose
       paramAccessor,
       protocolSeat,
     );
