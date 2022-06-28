@@ -88,7 +88,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
   const buildCopyParam = (name, value, assertion, type) => {
     let current;
     assertKeywordName(name);
-    assert(value !== undefined, X`param ${name} must be defined`);
+    assert(value !== undefined, X`param ${q(name)} must be defined`);
 
     const setParamValue = newValue => {
       assertion(newValue);
@@ -127,7 +127,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
   /** @type {(name: string, value: Amount, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addAmount = (name, value, builder) => {
     const assertAmount = a => {
-      assert(a.brand, X`Expected an Amount for ${name}, got "${a}"`);
+      assert(a.brand, X`Expected an Amount for ${q(name)}, got: ${a}`);
       return AmountMath.coerce(value.brand, a);
     };
     buildCopyParam(name, value, assertAmount, ParamTypes.AMOUNT);
@@ -282,7 +282,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
   /** @type {(name: string, value: Invitation, builder: ParamManagerBuilder) => Promise<ParamManagerBuilder>} */
   const addInvitation = async (name, value, builder) => {
     assertKeywordName(name);
-    assert(value !== null, X`param ${name} must be defined`);
+    assert(value !== null, X`param ${q(name)} must be defined`);
     await Promise.all([
       assertInvitation(value),
       buildInvitationParam(name, value),

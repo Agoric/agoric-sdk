@@ -30,7 +30,7 @@ import {
 } from './params.js';
 import { makeMetricsPublisherKit } from '../contractSupport.js';
 
-const { details: X } = assert;
+const { details: X, quote: q } = assert;
 
 /**
  * @typedef {{
@@ -295,7 +295,7 @@ const machineBehavior = {
     // We create only one vault per collateralType.
     assert(
       !collateralTypes.has(collateralBrand),
-      X`Collateral brand ${collateralBrand} has already been added`,
+      X`Collateral brand ${q(collateralBrand)} has already been added`,
     );
 
     const managerStorageNode =

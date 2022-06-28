@@ -543,7 +543,7 @@ export const fundAMM = async ({
         );
         assert(secondaryPayment, X`no payment for ${q(issuerName)}`);
 
-        assert(kit.issuer, X`No issuer for ${issuerName}`);
+        assert(kit.issuer, X`No issuer for ${q(issuerName)}`);
         const liquidityIssuer = E(ammPublicFacet).addIssuer(
           kit.issuer,
           issuerName,

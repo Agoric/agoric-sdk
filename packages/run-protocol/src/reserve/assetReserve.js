@@ -10,7 +10,7 @@ import { AMM_INSTANCE } from './params.js';
 import { makeTracer } from '../makeTracer.js';
 import { makeMetricsPublisherKit } from '../contractSupport.js';
 
-const { details: X } = assert;
+const { details: X, quote: q } = assert;
 
 const trace = makeTracer('Reserve', false);
 
@@ -108,7 +108,7 @@ const start = async (zcf, privateArgs) => {
     trace('addIssuer', { brand, keyword });
     assert(
       keyword !== RunKW && brand !== runKit.brand,
-      X`${RunKW} is a special case handled by the reserve contract`,
+      X`${q(RunKW)} is a special case handled by the reserve contract`,
     );
 
     trace('addIssuer storing', {
@@ -170,7 +170,7 @@ const start = async (zcf, privateArgs) => {
   const addIssuerFromAmm = async ammSecondaryBrand => {
     assert(
       ammSecondaryBrand !== runKit.brand,
-      X`${RunKW} is a special case handled by the reserve contract`,
+      X`${q(RunKW)} is a special case handled by the reserve contract`,
     );
 
     const keyword = await conjureKeyword(ammSecondaryBrand);
@@ -185,7 +185,7 @@ const start = async (zcf, privateArgs) => {
   const getKeywordForBrand = brand => {
     assert(
       keywordForBrand.has(brand),
-      X`Issuer not defined for brand ${brand}; first call addIssuer()`,
+      X`Issuer not defined for brand ${q(brand)}; first call addIssuer()`,
     );
     return keywordForBrand.get(brand);
   };

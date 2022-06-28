@@ -11,7 +11,7 @@ import { addSubtract, assertOnlyKeys, stageDelta } from '../contractSupport.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { ManagerKW as KW } from './constants.js';
 
-const { details: X, quote: q } = assert;
+const { details: X } = assert;
 
 const trace = makeTracer('R1');
 
@@ -293,9 +293,7 @@ const helperBehavior = {
     );
     assert(
       giveRUNonly || AmountMath.isGTE(newMaxDebt, newDebt),
-      X`cannot borrow ${q(newDebt)} against ${q(amountLiened)}; max is ${q(
-        newMaxDebt,
-      )}`,
+      X`cannot borrow ${newDebt} against ${amountLiened}; max is ${newMaxDebt}`,
     );
 
     trace('adjustBalancesHook', {

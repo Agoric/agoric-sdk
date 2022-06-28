@@ -204,7 +204,7 @@ const helperBehavior = {
     const validNewPhases = validTransitions[phase];
     assert(
       validNewPhases.includes(newPhase),
-      X`Vault cannot transition from ${phase} to ${newPhase}`,
+      X`Vault cannot transition from ${q(phase)} to ${q(newPhase)}`,
     );
     state.phase = newPhase;
   },
