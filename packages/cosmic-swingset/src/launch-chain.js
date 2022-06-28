@@ -184,6 +184,7 @@ export async function launch({
   mapSize = DEFAULT_LMDB_MAP_SIZE,
   swingStoreTraceFile,
   keepSnapshots,
+  afterCommitCallback = async () => ({}),
 }) {
   console.info('Launching SwingSet kernel');
 
@@ -272,10 +273,32 @@ export async function launch({
     savedBlockTime,
     savedChainSends,
   ) {
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-commit-block-start',
+      blockHeight: savedHeight,
+      blockTime: savedBlockTime,
+    });
     kvStore.set(getHostKey('height'), `${savedHeight}`);
     kvStore.set(getHostKey('blockTime'), `${savedBlockTime}`);
     kvStore.set(getHostKey('chainSends'), JSON.stringify(savedChainSends));
+
     await commit();
+    void Promise.resolve()
+      .then(afterCommitCallback)
+      .then((afterCommitStats = {}) => {
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-after-commit-block',
+          blockHeight: savedHeight,
+          blockTime: savedBlockTime,
+          ...afterCommitStats,
+        });
+      });
+
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-commit-block-finish',
+      blockHeight: savedHeight,
+      blockTime: savedBlockTime,
+    });
   }
 
   async function deliverInbound(sender, messages, ack) {

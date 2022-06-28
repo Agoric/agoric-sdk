@@ -300,6 +300,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       },
 
       top: () => spanStack[spanStack.length - 1]?.span,
+      topName: () => spanStack[spanStack.length - 1]?.name,
     });
     return sp;
   };
@@ -579,13 +580,34 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'cosmic-swingset-begin-block': {
+        if (spans.topName() === `intra-block`) {
+          spans.pop(`intra-block`);
+        }
+
         while (spans.top()) {
-          // Reset the stack, if we didn't get all the events.
+          // Reset the stack
           spans.pop();
         }
+
+        // TODO: Move the encompassing `block` root span to cosmos
         spans.push(`block ${slogAttrs.blockHeight}`);
         spans.start(`begin-block`, spans.top());
         spans.end(`begin-block`);
+        break;
+      }
+      case 'cosmic-swingset-commit-block-start': {
+        spans.start(['commit-block', slogAttrs.blockHeight], spans.top());
+        break;
+      }
+      case 'cosmic-swingset-commit-block-finish': {
+        spans.end(['commit-block', slogAttrs.blockHeight]);
+        // Push a span to capture the time between blocks from cosmic-swingset POV
+        spans.push(`intra-block`);
+        break;
+      }
+      case 'cosmic-swingset-after-commit-block': {
+        // Add the event to whatever the current top span is (most likely intra-block)
+        spans.top()?.addEvent('after-commit', cleanAttrs(slogAttrs), now);
         break;
       }
       case 'cosmic-swingset-deliver-inbound': {

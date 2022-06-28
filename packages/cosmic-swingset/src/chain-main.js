@@ -1,5 +1,6 @@
 import path from 'path';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { waitUntilQuiescent } from '@agoric/swingset-vat/src/lib-nodejs/waitUntilQuiescent.js';
 import {
   importMailbox,
   exportMailbox,
@@ -401,6 +402,14 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const keepSnapshots =
       XSNAP_KEEP_SNAPSHOTS === '1' || XSNAP_KEEP_SNAPSHOTS === 'true';
 
+    const afterCommitCallback = async () => {
+      // delay until all current promise reactions are drained so we can be sure
+      // that the commit-block reply has been sent to agcc through replier.resolve
+      await waitUntilQuiescent();
+
+      return {};
+    };
+
     const s = await launch({
       actionQueue,
       kernelStateDBDir: stateDBDir,
@@ -416,6 +425,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       mapSize,
       swingStoreTraceFile,
       keepSnapshots,
+      afterCommitCallback,
     });
     return s;
   }
