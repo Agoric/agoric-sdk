@@ -632,12 +632,17 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'crank-start': {
-        const [name, crankAttrs, links] = extractMessageAttrs(
-          slogAttrs.message,
+        const { message, ...crankAttrs } = slogAttrs;
+        const [name, messageAttrs, links] = extractMessageAttrs(message);
+        spans.startNamed(
+          name,
+          getCrankKey(true),
+          spans.top(),
+          { ...crankAttrs, ...messageAttrs },
+          {
+            links,
+          },
         );
-        spans.startNamed(name, getCrankKey(true), spans.top(), crankAttrs, {
-          links,
-        });
         break;
       }
       case 'clist': {

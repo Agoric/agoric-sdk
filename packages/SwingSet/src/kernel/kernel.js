@@ -1011,7 +1011,12 @@ export default function buildKernel(
   async function processDeliveryMessage(message) {
     kdebug(`processQ ${JSON.stringify(message)}`);
     kdebug(legibilizeMessage(message));
-    kernelSlog.write({ type: 'crank-start', message });
+    kernelSlog.write({
+      type: 'crank-start',
+      crankType: 'delivery',
+      crankNum: kernelKeeper.getCrankNumber(),
+      message,
+    });
     /** @type { PolicyInput } */
     let policyInput = ['none'];
     if (message.type === 'create-vat') {
@@ -1184,7 +1189,12 @@ export default function buildKernel(
   async function processAcceptanceMessage(message) {
     // kdebug(`processAcceptanceQ ${JSON.stringify(message)}`);
     // kdebug(legibilizeMessage(message));
-    kernelSlog.write({ type: 'crank-start', message });
+    kernelSlog.write({
+      type: 'crank-start',
+      crankType: 'routing',
+      crankNum: kernelKeeper.getCrankNumber(),
+      message,
+    });
     /** @type { PolicyInput } */
     const policyInput = ['none'];
 
