@@ -19,7 +19,6 @@ const BridgeProtocol = /** @type {const} */ ({
  * the dApp are forwarded to localStorage and vice versa.
  *
  * @param {{
- *   sameParent: () => boolean,
  *   addEventListener: typeof window.addEventListener,
  *   storage: typeof window.localStorage,
  *   parentPost: typeof window.postMessage,
@@ -28,7 +27,6 @@ const BridgeProtocol = /** @type {const} */ ({
  */
 const installDappConnection = async ({
   addEventListener,
-  sameParent,
   parentPost,
   storage,
   t0,
@@ -37,11 +35,6 @@ const installDappConnection = async ({
   let origin;
 
   console.debug('bridge: installDappConnection');
-
-  if (sameParent()) {
-    // console.debug('bridge: ignored message to self');
-    return;
-  }
 
   parentPost({ type: BridgeProtocol.loaded }, '*');
   parentPost({ type: BridgeProtocol.opened }, '*');
@@ -87,9 +80,19 @@ const installDappConnection = async ({
   });
 };
 
+// const sameParent = () => {
+//   const me = window;
+//   const { parent } = window;
+//   if (me === parent) {
+//     // eslint-disable-next-line no-debugger
+//     debugger;
+//     throw Error('window.parent === parent!!!');
+//   }
+//   return false;
+// };
+
 installDappConnection({
   addEventListener: window.addEventListener,
-  sameParent: () => window.parent === window,
   parentPost: (payload, origin) => window.parent.postMessage(payload, origin),
   storage: window.localStorage,
   t0: Date.now(),
