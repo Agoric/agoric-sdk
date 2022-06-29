@@ -5,7 +5,6 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
 import {
   calculateMedian,
   makeOnewayPriceAuthorityKit,
@@ -429,7 +428,7 @@ const start = async (
       /** @type {OracleAdmin} */
       const oracleAdmin = Far('OracleAdmin', {
         async delete() {
-          assert(records.has(record), X`Oracle record is already deleted`);
+          assert(records.has(record), 'Oracle record is already deleted');
 
           // The actual deletion is synchronous.
           oracleRecords.delete(record);
@@ -463,7 +462,7 @@ const start = async (
       // Obtain the oracle's publicFacet.
       assert(oracleInstance);
       const oracle = await E(zoe).getPublicFacet(oracleInstance);
-      assert(records.has(record), X`Oracle record is already deleted`);
+      assert(records.has(record), 'Oracle record is already deleted');
 
       let lastWakeTimestamp = 0n;
 

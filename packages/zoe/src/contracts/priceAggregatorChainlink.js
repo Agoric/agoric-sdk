@@ -6,7 +6,6 @@ import { Far } from '@endo/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
 import {
   calculateMedian,
   natSafeMath,
@@ -672,12 +671,12 @@ const start = async (
       };
 
       // Obtain the oracle's publicFacet.
-      assert(records.has(record), X`Oracle record is already deleted`);
+      assert(records.has(record), 'Oracle record is already deleted');
 
       /** @type {OracleAdmin} */
       const oracleAdmin = {
         async delete() {
-          assert(records.has(record), X`Oracle record is already deleted`);
+          assert(records.has(record), 'Oracle record is already deleted');
 
           // The actual deletion is synchronous.
           oracleStatuses.delete(oracleKey);

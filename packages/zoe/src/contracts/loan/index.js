@@ -2,7 +2,6 @@
 
 import '../../../exported.js';
 
-import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 
 import {
@@ -80,9 +79,9 @@ const start = async zcf => {
     mmr = makeRatio(150n, loanBrand), // Maintenance Margin Requirement
   } = zcf.getTerms();
 
-  assert(autoswapInstance, X`autoswapInstance must be provided`);
-  assert(priceAuthority, X`priceAuthority must be provided`);
-  assert(periodNotifier, X`periodNotifier must be provided`);
+  assert(autoswapInstance, 'autoswapInstance must be provided');
+  assert(priceAuthority, 'priceAuthority must be provided');
+  assert(periodNotifier, 'periodNotifier must be provided');
   Nat(interestPeriod);
 
   /** @type {LoanTerms} */

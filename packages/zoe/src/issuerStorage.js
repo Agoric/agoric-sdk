@@ -1,7 +1,6 @@
 // @ts-check
 
 import { makeWeakStore } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 
 import { arrayToObj } from './objArrayConversion.js';
@@ -19,7 +18,7 @@ export const makeIssuerStorage = () => {
 
   let instantiated = false;
   const assertInstantiated = () =>
-    assert(instantiated, X`issuerStorage has not been instantiated`);
+    assert(instantiated, 'issuerStorage has not been instantiated');
 
   /**
    * If we already know the entire issuer record, such as for a
@@ -184,7 +183,7 @@ export const makeIssuerStorage = () => {
   const instantiate = (issuerRecords = []) => {
     assert(
       instantiated === false,
-      X`issuerStorage can only be instantiated once`,
+      'issuerStorage can only be instantiated once',
     );
     instantiated = true;
     issuerRecords.forEach(storeIssuerRecord);

@@ -60,7 +60,7 @@ const assertSimpleIssue = issue => {
  */
 
 const assertParamChangeIssue = issue => {
-  assert(issue, X`argument to assertParamChangeIssue cannot be null`);
+  assert(issue, 'argument to assertParamChangeIssue cannot be null');
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
   assert(issue?.spec?.paramPath, X`Issue ("${issue}") must have a paramPath`);
   assert(issue?.spec?.changes, X`Issue ("${issue}") must have changes`);
@@ -126,7 +126,7 @@ const positionIncluded = (positions, p) => positions.some(e => keyEQ(e, p));
  */
 
 function assertClosingRule(closingRule) {
-  assert(closingRule, X`argument to assertClosingRule cannot be null`);
+  assert(closingRule, 'argument to assertClosingRule cannot be null');
   assert.typeof(
     closingRule,
     'object',
@@ -165,7 +165,7 @@ const coerceQuestionSpec = ({
   assert(
     positions.every(
       p => passStyleOf(p) === 'copyRecord',
-      X`positions must be records`,
+      'positions must be records',
     ),
   );
   assert(
@@ -176,7 +176,7 @@ const coerceQuestionSpec = ({
   assertEnumIncludes(ElectionType, electionType, 'ElectionType');
   assertEnumIncludes(ChoiceMethod, method, 'ChoiceMethod');
   assert(maxChoices > 0, X`maxChoices must be positive: ${maxChoices}`);
-  assert(maxChoices <= positions.length, X`Choices must not exceed length`);
+  assert(maxChoices <= positions.length, 'Choices must not exceed length');
 
   assertClosingRule(closingRule);
 

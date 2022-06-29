@@ -11,7 +11,7 @@ import {
   coerceQuestionSpec,
 } from '../question.js';
 
-const { details: X } = assert;
+const { details: X, quote: q } = assert;
 
 /**
  * Make a pair of positions for a question about whether to invoke an API. If
@@ -100,7 +100,9 @@ const setupApiGovernance = async (
         if (keyEQ(positive, outcome)) {
           assert(
             keyEQ(outcome, harden({ apiMethodName, methodArgs })),
-            `The question's method name (${apiMethodName}) and args (${methodArgs}) didn't match the outcome ${outcome}`,
+            X`The question's method name (${q(
+              apiMethodName,
+            )}) and args (${methodArgs}) didn't match the outcome ${outcome}`,
           );
 
           // E(remote)[name](args) invokes the method named 'name' on remote.

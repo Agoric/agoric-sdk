@@ -173,7 +173,7 @@ const start = async zcf => {
     return poserFacet;
   };
   await getUpdatedPoserFacet();
-  assert(poserFacet, X`question poser facet must be initialized`);
+  assert(poserFacet, 'question poser facet must be initialized');
 
   // All governed contracts have at least a governed electorate
   const { voteOnParamChanges, createdQuestion: createdParamQuestion } =
@@ -220,14 +220,14 @@ const start = async zcf => {
     const createdApiQ = await E(createdApiQuestion)(voteCounter);
     assert(
       createdParamQ || createdApiQ,
-      X`VoteCounter was not created by this contractGovernor`,
+      'VoteCounter was not created by this contractGovernor',
     );
     return true;
   };
 
   /** @param {ClosingRule} closingRule */
   const validateTimer = closingRule => {
-    assert(closingRule.timer === timer, X`closing rule must use my timer`);
+    assert(closingRule.timer === timer, 'closing rule must use my timer');
     return true;
   };
 
@@ -236,7 +236,7 @@ const start = async zcf => {
       const electorateInstance = await getElectorateInstance();
       assert(
         reg === electorateInstance,
-        X`Electorate doesn't match my Electorate`,
+        "Electorate doesn't match my Electorate",
       );
       return true;
     });
