@@ -56,6 +56,7 @@ const testRequire = function require(specifier) {
       return { wrapTest: test => test };
     case '@endo/init':
     case '@endo/init/debug.js':
+    case '@endo/init/pre.js':
       return undefined;
     case '@agoric/install-metering-and-ses':
       console.log('TODO: @agoric/install-metering-and-ses');

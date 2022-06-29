@@ -26,11 +26,11 @@
     "@cosmjs/proto-signing": "0.28.4",
     "@cosmjs/stargate": "0.28.4",
     "@cosmjs/tendermint-rpc": "0.28.4",
-    "@endo/far": "^0.2.3",
-    "@endo/init": "^0.5.41",
-    "@endo/lockdown": "^0.1.13",
-    "@endo/marshal": "^0.6.7",
-    "@endo/promise-kit": "^0.2.41",
+    "@endo/far": "^0.2.5",
+    "@endo/init": "^0.5.43",
+    "@endo/lockdown": "^0.1.15",
+    "@endo/marshal": "^0.6.9",
+    "@endo/promise-kit": "^0.2.43",
     "node-fetch": "^2.6.0"
   },
   "devDependencies": {
@@ -38,7 +38,7 @@
     "c8": "^7.7.2",
     "express": "^4.17.1",
     "ws": "^7.2.0",
-    "@endo/ses-ava": "^0.2.25"
+    "@endo/ses-ava": "^0.2.27"
   },
   "publishConfig": {
     "access": "public"
