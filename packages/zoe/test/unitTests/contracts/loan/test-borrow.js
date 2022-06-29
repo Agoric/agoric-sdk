@@ -144,7 +144,13 @@ test('borrow assert customProps', async t => {
 
 test('borrow not enough collateral', async t => {
   // collateral is 0
-  const { borrowSeat } = await setupBorrowFacet(0n);
+  const { borrowSeat, borrowFacet } = await setupBorrowFacet(0n);
+  // Sink unhandled rejection
+  E.when(
+    borrowFacet,
+    () => {},
+    () => {},
+  );
   await t.throwsAsync(() => E(borrowSeat).getOfferResult(), {
     message: /The required margin is .*% but collateral only had value of .*/,
   });
@@ -362,7 +368,16 @@ test('borrow collateral just too low', async t => {
   const collateralAmount = await E(offerResult).getRecentCollateralAmount();
   t.is(collateralAmount.value, 75n);
 
-  const { borrowSeat: borrowSeatBad } = await setupBorrowFacet(74n);
+  const { borrowSeat: borrowSeatBad, borrowFacet: borrowFacetBad } =
+    await setupBorrowFacet(74n);
+
+  // Sink unhandled rejection
+  E.when(
+    borrowFacetBad,
+    () => {},
+    () => {},
+  );
+
   await t.throwsAsync(() => E(borrowSeatBad).getOfferResult(), {
     message: /The required margin is .*% but collateral only had value of .*/,
   });

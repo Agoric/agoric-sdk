@@ -100,12 +100,12 @@ test('SES deep stacks work on xsnap', async t => {
     const send = msg => issueCommand(encoder.encode(JSON.stringify(msg)).buffer);
 
     const err = Error('msg');
-    send('stack' in err);
+    send(err.stack);
     const msg = getStackString(err);
     send(msg);
   `);
-  const [stackInErr, msg] = opts.messages.map(s => JSON.parse(s));
-  t.assert(!stackInErr);
+  const [stack, msg] = opts.messages.map(s => JSON.parse(s));
+  t.is(stack, 'Error: msg'); // No frames
   t.is(typeof msg, 'string');
   t.assert(msg.length >= 1);
 });

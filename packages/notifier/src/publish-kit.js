@@ -7,6 +7,8 @@ import { Far } from '@endo/marshal';
 
 import './types.js';
 
+const sink = () => {};
+
 /**
  * Asyncronously iterates over the contents of a PublicationList as it appears.
  * As it proceeds, it must drop the parts of the list it no longer needs.
@@ -23,6 +25,12 @@ const makeEachIterator = pubList => {
     next: () => {
       const resultP = E.get(pubList).head;
       pubList = E.get(pubList).tail;
+      // We expect the tail to be the "cannot read past end" error at the end
+      // of the happy path.
+      // Since we are wrapping that error with eventual send, we sink the
+      // rejection here too so it doesn't become an invalid unhandled rejection
+      // later.
+      E.when(pubList, sink, sink);
       return resultP;
     },
   });

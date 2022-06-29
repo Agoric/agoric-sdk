@@ -662,6 +662,6 @@ test('amm bad add liquidity offer', async t => {
 
   await t.throwsAsync(
     async () => E(amm.ammPublicFacet).getPoolMetrics(moolaKit.brand),
-    { message: '"secondaryBrand" not found: "[Alleged: moola brand]"' },
+    { message: '"secondaryBrandToPool" not found: "[Alleged: moola brand]"' },
   );
 });

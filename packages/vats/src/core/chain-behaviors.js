@@ -125,7 +125,7 @@ export const makeProvisioner = async ({
   vats: { comms, vattp },
   produce: { provisioning },
 }) => {
-  const provisionerVat = E(loadVat)('provisioning');
+  const provisionerVat = await E(loadVat)('provisioning');
   await E(provisionerVat).register(clientCreator, comms, vattp);
   provisioning.resolve(provisionerVat);
 };
@@ -400,6 +400,8 @@ export const setupNetworkProtocols = async ({
     ibc: E(loadVat)('ibc'),
     provisioning,
   };
+  // don't proceed if loadVat fails
+  await Promise.all(Object.values(vats));
 
   networkVat.reset();
   networkVat.resolve(vats.network);

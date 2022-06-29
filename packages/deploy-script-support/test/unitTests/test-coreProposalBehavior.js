@@ -2,7 +2,10 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/far';
 import '@agoric/vats/src/core/types.js';
-import { runModuleBehaviors } from '@agoric/vats/src/core/utils.js';
+import {
+  makeAgoricNamesAccess,
+  runModuleBehaviors,
+} from '@agoric/vats/src/core/utils.js';
 import { makeCoreProposalBehavior } from '../../src/coreProposalBehavior.js';
 
 test('coreProposalBehavior', async t => {
@@ -14,8 +17,14 @@ test('coreProposalBehavior', async t => {
     getManifestCall,
     log: t.log,
   });
+  const { agoricNamesAdmin } = makeAgoricNamesAccess(t.log);
   const result = await behavior({
-    consume: { board: { getValue: id => `boardValue:${id}` } },
+    consume: {
+      board: {
+        getValue: id => `boardValue:${id}`,
+      },
+      agoricNamesAdmin,
+    },
     aParams: 'aparms',
     bParams: 'bparms',
     cParams: 'cparms',

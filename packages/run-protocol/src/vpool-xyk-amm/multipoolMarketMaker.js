@@ -157,7 +157,7 @@ const start = async (zcf, privateArgs) => {
   );
 
   /** @type {Store<Brand,PoolFacets>} */
-  const secondaryBrandToPool = makeStore('secondaryBrand');
+  const secondaryBrandToPool = makeStore('secondaryBrandToPool');
   const getPool = brand => secondaryBrandToPool.get(brand).pool;
   const getPoolHelper = brand => secondaryBrandToPool.get(brand).helper;
   const initPool = secondaryBrandToPool.init;
@@ -239,8 +239,12 @@ const start = async (zcf, privateArgs) => {
     trace('handlePoolAdded done');
   };
 
+  /** @param {Brand} brand */
+  const getLiquidityIssuer = brand =>
+    secondaryBrandToLiquidityMint.get(brand).getIssuerRecord().issuer;
+  /** @param {Brand} brand */
   const getLiquiditySupply = brand => getPool(brand).getLiquiditySupply();
-  const getLiquidityIssuer = brand => getPool(brand).getLiquidityIssuer();
+
   /** @param {Brand} brand */
   const getSecondaryIssuer = brand => {
     assert(
