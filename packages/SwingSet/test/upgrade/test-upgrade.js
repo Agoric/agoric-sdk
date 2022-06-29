@@ -126,10 +126,11 @@ const testUpgrade = async (t, defaultManagerType) => {
     const s = kvStore.get(`${vatID}.c.${kref}`);
     return parseReachableAndVatSlot(s).vatSlot;
   };
-  const krefReachable = kref => {
-    const s = kvStore.get(`${vatID}.c.${kref}`);
-    return !!(s && parseReachableAndVatSlot(s).isReachable);
-  };
+  // const krefReachable = kref => {
+  //   const s = kvStore.get(`${vatID}.c.${kref}`);
+  //   return !!(s && parseReachableAndVatSlot(s).isReachable);
+  // };
+
   // We look in the vat's vatstore to see if the virtual/durable
   // object exists or not (as a state record).
   const vomHas = vref => {
@@ -190,9 +191,12 @@ const testUpgrade = async (t, defaultManagerType) => {
   // dumpState(hostStorage, vatID);
 
   // all the merely-virtual exports should be gone
-  for (let i = 1; i < NUM_SENSORS + 1; i += 1) {
-    t.false(vomHas(virVref(i)));
-  }
+  // for (let i = 1; i < NUM_SENSORS + 1; i += 1) {
+  //   t.false(vomHas(virVref(i)));
+  // }
+
+  /* Disabling this portion of the test as it is irrelevant and non-working so
+     long as non-durable object cleanup in stop-vat is also disabled.
 
   // of the durables, only these survive
   const survivingDurables = [
@@ -247,6 +251,7 @@ const testUpgrade = async (t, defaultManagerType) => {
     // const s = kvStore.get(`${vatID}.c.${impKref}`);
     // console.log(`${i}: ${vomS} imp: ${reachS} ${matchS}  ${impKref} ${s}`);
   }
+  */
 
   // check koNN.owner to confirm the exported virtuals (2/5/7) are abandoned
   t.false(kvStore.has(`${vir2Kref}.owner`));
