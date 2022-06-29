@@ -61,18 +61,17 @@ export const makeAddIssuer = (
       return issuer;
     }
 
-    /** @template T @typedef {import('@endo/promise-kit').PromiseKit<T>} PromiseKit */
-    /** @type {PromiseKit<Issuer<'nat'>>} */
+    /** @type {import('@endo/promise-kit').PromiseKit<Issuer<'nat'>>} */
     const liquidityPromiseKit = makePromiseKit();
     brandToLiquidityIssuer.init(secondaryBrand, liquidityPromiseKit.promise);
 
     const liquidityKeyword = `${keyword}Liquidity`;
     zcf.assertUniqueKeyword(liquidityKeyword);
 
-    const decimals = harden({ decimalPlaces: DECIMAL_PLACES });
+    const displayInfo = harden({ decimalPlaces: DECIMAL_PLACES });
     return Promise.all([
       zcf.saveIssuer(secondaryIssuer, keyword),
-      zcf.makeZCFMint(liquidityKeyword, AssetKind.NAT, decimals),
+      zcf.makeZCFMint(liquidityKeyword, AssetKind.NAT, displayInfo),
     ])
       .then(([issuer, mint]) => {
         console.log(
@@ -91,7 +90,7 @@ export const makeAddIssuer = (
         return addIssuerToReserve(secondaryBrand).then(() => liquidityIssuer);
       })
       .catch(e => {
-        console.log(
+        console.error(
           X`Failure Saving issuer ${secondaryIssuer}. Not added to Reserve`,
         );
         liquidityPromiseKit.reject(e);
