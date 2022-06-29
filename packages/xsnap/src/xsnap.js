@@ -13,6 +13,7 @@
 
 import { makeNetstringReader, makeNetstringWriter } from '@endo/netstring';
 import { makeNodeReader, makeNodeWriter } from '@endo/stream-node';
+import { racePromises } from '@endo/promise-kit';
 import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api.js';
 import { defer } from './defer.js';
 
@@ -29,6 +30,8 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
 const { freeze } = Object;
+
+const noop = freeze(() => {});
 
 /**
  * @param {Uint8Array} arg
@@ -211,8 +214,8 @@ export function xsnap(options) {
       await messagesToXsnap.next(encoder.encode(`e${code}`));
       return runToIdle();
     });
-    baton = result.then(() => {}).catch(() => {});
-    return Promise.race([vatCancelled, result]);
+    baton = result.then(noop, noop);
+    return racePromises([vatCancelled, result]);
   }
 
   /**
@@ -224,8 +227,8 @@ export function xsnap(options) {
       await messagesToXsnap.next(encoder.encode(`s${fileName}`));
       await runToIdle();
     });
-    baton = result.catch(() => {});
-    return Promise.race([vatCancelled, result]);
+    baton = result.then(noop, noop);
+    return racePromises([vatCancelled, result]);
   }
 
   /**
@@ -237,8 +240,8 @@ export function xsnap(options) {
       await messagesToXsnap.next(encoder.encode(`m${fileName}`));
       await runToIdle();
     });
-    baton = result.catch(() => {});
-    return Promise.race([vatCancelled, result]);
+    baton = result.then(noop, noop);
+    return racePromises([vatCancelled, result]);
   }
 
   /**
@@ -249,8 +252,8 @@ export function xsnap(options) {
       await messagesToXsnap.next(encoder.encode(`R`));
       await runToIdle();
     });
-    baton = result.catch(() => {});
-    return Promise.race([vatCancelled, result]);
+    baton = result.then(noop, noop);
+    return racePromises([vatCancelled, result]);
   }
 
   /**
@@ -265,11 +268,8 @@ export function xsnap(options) {
       await messagesToXsnap.next(request);
       return runToIdle();
     });
-    baton = result.then(
-      () => {},
-      () => {},
-    );
-    return Promise.race([vatCancelled, result]);
+    baton = result.then(noop, noop);
+    return racePromises([vatCancelled, result]);
   }
 
   /**
@@ -290,8 +290,8 @@ export function xsnap(options) {
       await messagesToXsnap.next(encoder.encode(`w${file}`));
       await runToIdle();
     });
-    baton = result.catch(() => {});
-    return Promise.race([vatExit.promise, baton]);
+    baton = result.then(noop, noop);
+    return racePromises([vatExit.promise, baton]);
   }
 
   /**
@@ -302,7 +302,7 @@ export function xsnap(options) {
       await messagesToXsnap.return(undefined);
       throw new Error(`${name} closed`);
     });
-    baton.catch(() => {}); // Suppress Node.js unhandled exception warning.
+    baton.catch(noop); // Suppress Node.js unhandled exception warning.
     return vatExit.promise;
   }
 
@@ -312,9 +312,9 @@ export function xsnap(options) {
   async function terminate() {
     xsnapProcess.kill();
     baton = Promise.reject(new Error(`${name} terminated`));
-    baton.catch(() => {}); // Suppress Node.js unhandled exception warning.
+    baton.catch(noop); // Suppress Node.js unhandled exception warning.
     // Mute the vatExit exception: it is expected.
-    return vatExit.promise.catch(() => {});
+    return vatExit.promise.catch(noop);
   }
 
   return freeze({
