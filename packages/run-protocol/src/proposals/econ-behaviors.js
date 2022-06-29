@@ -427,20 +427,6 @@ export const startVaultFactory = async (
 
   const centralBrand = await centralBrandP;
 
-  /**
-   * Types for the governed params for the vaultFactory; addVaultType() sets actual values
-   *
-   * @type {VaultManagerParamValues}
-   */
-  const vaultManagerParams = {
-    // XXX the values aren't used. May be addressed by https://github.com/Agoric/agoric-sdk/issues/4861
-    debtLimit: AmountMath.make(centralBrand, 0n),
-    liquidationMargin: makeRatio(0n, centralBrand),
-    liquidationPenalty: makeRatio(10n, centralBrand, 100n),
-    interestRate: makeRatio(0n, centralBrand, BASIS_POINTS),
-    loanFee: makeRatio(0n, centralBrand, BASIS_POINTS),
-  };
-
   const [
     ammInstance,
     electorateInstance,
@@ -472,7 +458,6 @@ export const startVaultFactory = async (
       liquidationInstall: installations.liquidate,
       timer,
       electorateInvitationAmount: poserInvitationAmount,
-      vaultManagerParams,
       ammPublicFacet,
       liquidationTerms: liquidationDetailTerms(centralBrand),
       minInitialDebt: AmountMath.make(centralBrand, minInitialDebt),
