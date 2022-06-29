@@ -1,6 +1,5 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
 import { makeWeakStore, makeStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
@@ -10,6 +9,8 @@ import { isOfferSafe } from './offerSafety.js';
 import { assertRightsConserved } from './rightsConservation.js';
 import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 import { coerceAmountKeywordRecord } from '../cleanProposal.js';
+
+const { details: X } = assert;
 
 /** @type {CreateSeatManager} */
 export const createSeatManager = (
@@ -33,7 +34,7 @@ export const createSeatManager = (
    * @returns {void}
    */
   const assertActive = zcfSeat => {
-    assert(activeZCFSeats.has(zcfSeat), X`seat has been exited`);
+    assert(activeZCFSeats.has(zcfSeat), 'seat has been exited');
   };
 
   /**
@@ -95,7 +96,7 @@ export const createSeatManager = (
   const assertStagedAllocation = zcfSeat => {
     assert(
       hasStagedAllocation(zcfSeat),
-      X`Reallocate failed because a seat had no staged allocation. Please add or subtract from the seat and then reallocate.`,
+      'Reallocate failed because a seat had no staged allocation. Please add or subtract from the seat and then reallocate.',
     );
   };
 
@@ -151,7 +152,7 @@ export const createSeatManager = (
     // Discussion at: https://github.com/Agoric/agoric-sdk/issues/1017
     assert(
       seats.length >= 2,
-      X`reallocating must be done over two or more seats`,
+      'reallocating must be done over two or more seats',
     );
 
     seats.forEach(assertActive);
@@ -257,7 +258,7 @@ export const createSeatManager = (
           reason = Error(reason);
           assert.note(
             reason,
-            X`ZCFSeat.fail was called with a string reason, but requires an Error argument.`,
+            'ZCFSeat.fail was called with a string reason, but requires an Error argument.',
           );
         }
         if (!hasExited(zcfSeat)) {
@@ -276,7 +277,7 @@ export const createSeatManager = (
         }
         assert(
           brand,
-          X`A brand must be supplied when the keyword is not defined`,
+          'A brand must be supplied when the keyword is not defined',
         );
         const assetKind = getAssetKindByBrand(brand);
         return AmountMath.makeEmpty(brand, assetKind);

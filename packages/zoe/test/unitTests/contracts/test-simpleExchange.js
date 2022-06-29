@@ -8,7 +8,6 @@ import path from 'path';
 import { E } from '@endo/eventual-send';
 
 import { AmountMath, AssetKind } from '@agoric/ertp';
-import { assert, details as X } from '@agoric/assert';
 import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
 import { installationPFromSource } from '../installFromSource.js';
@@ -133,11 +132,11 @@ test('simpleExchange with valid offers', async t => {
 
   assert(
     bobIssuers.Asset === moolaIssuer,
-    X`The Asset issuer should be the moola issuer`,
+    'The Asset issuer should be the moola issuer',
   );
   assert(
     bobIssuers.Price === simoleanIssuer,
-    X`The Price issuer should be the simolean issuer`,
+    'The Price issuer should be the simolean issuer',
   );
 
   // Bob creates a buy order, saying that he wants exactly 3 moola,
@@ -379,11 +378,11 @@ test('simpleExchange with non-fungible assets', async t => {
   const bobIssuers = await E(zoe).getIssuers(bobInstance);
   assert(
     bobIssuers.Asset === rpgIssuer,
-    X`The Asset issuer should be the RPG issuer`,
+    'The Asset issuer should be the RPG issuer',
   );
   assert(
     bobIssuers.Price === ccIssuer,
-    X`The Price issuer should be the CryptoCat issuer`,
+    'The Price issuer should be the CryptoCat issuer',
   );
 
   // Bob creates a buy order, saying that he wants the Spell of Binding,

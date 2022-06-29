@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { assert, details as X, q } from '@agoric/assert';
+
 import { Far } from '@endo/marshal';
 import { makeStore } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
@@ -11,6 +11,8 @@ import {
 } from '../../../src/contractSupport/index.js';
 
 import '../../../exported.js';
+
+const { details: X, quote: q } = assert;
 
 /**
  * This contract implements coin voting. There are two roles: the
@@ -59,7 +61,7 @@ const start = zcf => {
       vote: response => {
         // Throw if the offer is no longer active, i.e. the user has
         // completed their offer and the assets are no longer escrowed.
-        assert(!voterSeat.hasExited(), X`the voter seat has exited`);
+        assert(!voterSeat.hasExited(), 'the voter seat has exited');
 
         assertResponse(response);
 

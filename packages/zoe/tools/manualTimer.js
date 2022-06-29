@@ -31,12 +31,12 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
     assert.typeof(delay, 'bigint');
     assert(
       delay % timeStep === 0n,
-      `timer has a resolution of ${timeStep}; ${delay} is not divisible`,
+      X`timer has a resolution of ${timeStep}; ${delay} is not divisible`,
     );
     assert.typeof(interval, 'bigint');
     assert(
       interval % timeStep === 0n,
-      `timer has a resolution of ${timeStep}; ${interval} is not divisible`,
+      X`timer has a resolution of ${timeStep}; ${interval} is not divisible`,
     );
 
     /** @type {Array<ERef<TimerWaker>> | null} */
@@ -49,7 +49,7 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
         assert.typeof(timestamp, 'bigint');
         assert(
           timestamp % timeStep === 0n,
-          `timer has a resolution of ${timeStep}; ${timestamp} is not divisible`,
+          X`timer has a resolution of ${timeStep}; ${timestamp} is not divisible`,
         );
         if (!wakers) {
           return;
@@ -63,7 +63,7 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
     /** @type {TimerRepeater} */
     const repeater = Far('TimerRepeater', {
       schedule(waker) {
-        assert(wakers, X`Cannot schedule on a disabled repeater`);
+        assert(wakers, 'Cannot schedule on a disabled repeater');
         wakers.push(waker);
         return nextWakeup;
       },
@@ -115,7 +115,7 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
       assert.typeof(baseTime, 'bigint');
       assert(
         baseTime % timeStep === 0n,
-        `timer has a resolution of ${timeStep}; ${baseTime} is not divisible`,
+        X`timer has a resolution of ${timeStep}; ${baseTime} is not divisible`,
       );
       if (baseTime <= ticks) {
         log(`&& task was past its deadline when scheduled: ${baseTime} &&`);
@@ -155,12 +155,12 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
       assert.typeof(delay, 'bigint');
       assert(
         delay % timeStep === 0n,
-        `timer has a resolution of ${timeStep}; ${delay} is not divisible`,
+        X`timer has a resolution of ${timeStep}; ${delay} is not divisible`,
       );
       assert.typeof(interval, 'bigint');
       assert(
         interval % timeStep === 0n,
-        `timer has a resolution of ${timeStep}; ${interval} is not divisible`,
+        X`timer has a resolution of ${timeStep}; ${interval} is not divisible`,
       );
       const { notifier, updater } = makeNotifierKit();
       /** @type {TimerWaker} */
@@ -178,7 +178,7 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
       assert.typeof(delay, 'bigint');
       assert(
         delay % timeStep === 0n,
-        `timer has a resolution of ${timeStep}; ${delay} is not divisible`,
+        X`timer has a resolution of ${timeStep}; ${delay} is not divisible`,
       );
       const promiseKit = makePromiseKit();
       const delayWaker = Far('delayWaker', {

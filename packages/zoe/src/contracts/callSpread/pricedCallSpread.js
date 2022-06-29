@@ -3,7 +3,6 @@
 import '../../../exported.js';
 import './types.js';
 
-import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -17,6 +16,8 @@ import {
 } from '../../contractSupport/index.js';
 import { makePayoffHandler } from './payoffHandler.js';
 import { Position } from './position.js';
+
+const { details: X } = assert;
 
 const PERCENT_BASE = 100n;
 const BASIS_POINTS = 10000n;
@@ -75,7 +76,7 @@ const start = zcf => {
 
   assert(
     AmountMath.isGTE(strikePrice2, strikePrice1),
-    X`strikePrice2 must be greater than strikePrice1`,
+    'strikePrice2 must be greater than strikePrice1',
   );
 
   zcf.saveIssuer(zcf.getInvitationIssuer(), 'Options');
@@ -131,7 +132,7 @@ const start = zcf => {
       assert(
         spreadAmount.Option.value[0].instance ===
           desiredOption.value[0].instance,
-        X`wanted option not a match`,
+        'wanted option not a match',
       );
 
       depositSeat.incrementBy(collateralSeat.decrementBy(harden(spreadAmount)));

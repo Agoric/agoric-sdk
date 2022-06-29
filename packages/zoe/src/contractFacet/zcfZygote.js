@@ -1,6 +1,5 @@
 // @ts-check
 
-import { assert, details as X, makeAssert } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import { Far, Remotable, passStyleOf } from '@endo/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
@@ -25,6 +24,8 @@ import '../internal-types.js';
 import './internal-types.js';
 
 import '@agoric/swingset-vat/src/types-ambient.js';
+
+const { details: X, makeAssert } = assert;
 
 /**
  * Make the ZCF vat in zygote-usable form. First, a generic ZCF is
@@ -171,7 +172,7 @@ export const makeZCFZygote = (
         // that any bug within Zoe that may affect this is caught.
         assert(
           zcfSeat.isOfferSafe(allocationPlusGains),
-          `The allocation after minting gains ${allocationPlusGains} for the zcfSeat was not offer safe`,
+          X`The allocation after minting gains ${allocationPlusGains} for the zcfSeat was not offer safe`,
         );
         // No effects above, apart from incrementBy. Note COMMIT POINT within
         // reallocateForZCFMint. The following two steps *should* be
@@ -197,7 +198,7 @@ export const makeZCFZygote = (
         // verifies offer safety
         assert(
           zcfSeat.isOfferSafe(allocationMinusLosses),
-          `The allocation after burning losses ${allocationMinusLosses}for the zcfSeat was not offer safe`,
+          X`The allocation after burning losses ${allocationMinusLosses} for the zcfSeat was not offer safe`,
         );
 
         // Decrement the stagedAllocation if it exists so that the

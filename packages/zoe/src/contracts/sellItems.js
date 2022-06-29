@@ -1,6 +1,5 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 import { Nat } from '@agoric/nat';
 import { AmountMath } from '@agoric/ertp';
@@ -13,6 +12,8 @@ import {
 } from '../contractSupport/index.js';
 
 import '../../exported.js';
+
+const { details: X } = assert;
 
 /**
  * Sell items in exchange for money. Items may be fungible or
@@ -69,7 +70,7 @@ const start = zcf => {
   };
 
   const getAvailableItems = () => {
-    assert(sellerSeat && !sellerSeat.hasExited(), X`no items are for sale`);
+    assert(sellerSeat && !sellerSeat.hasExited(), 'no items are for sale');
     return sellerSeat.getAmountAllocated('Items');
   };
 
@@ -127,7 +128,7 @@ const start = zcf => {
     const itemsAmount = sellerSeat.getAmountAllocated('Items');
     assert(
       sellerSeat && !AmountMath.isEmpty(itemsAmount),
-      X`no items are for sale`,
+      'no items are for sale',
     );
     return zcf.makeInvitation(buy, 'buyer');
   };

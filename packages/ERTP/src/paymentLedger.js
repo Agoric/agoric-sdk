@@ -1,6 +1,5 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import { isPromise } from '@endo/promise-kit';
 import { Far, assertCopyArray } from '@endo/marshal';
@@ -11,6 +10,8 @@ import { definePaymentKind } from './payment.js';
 import { makePurseMaker } from './purse.js';
 
 import '@agoric/store/exported.js';
+
+const { details: X } = assert;
 
 /**
  * Make the paymentLedger, the source of truth for the balances of
@@ -179,7 +180,7 @@ export const makePaymentLedger = (
       payments.forEach(payment => {
         assert(
           !antiAliasingStore.has(payment),
-          `same payment ${payment} seen twice`,
+          X`same payment ${payment} seen twice`,
         );
         antiAliasingStore.add(payment);
       });

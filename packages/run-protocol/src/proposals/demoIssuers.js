@@ -1,5 +1,5 @@
 // @ts-check
-import { assert } from '@agoric/assert';
+
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import {
   natSafeMath,
@@ -543,7 +543,7 @@ export const fundAMM = async ({
         );
         assert(secondaryPayment, X`no payment for ${q(issuerName)}`);
 
-        assert(kit.issuer, `No issuer for ${issuerName}`);
+        assert(kit.issuer, X`No issuer for ${q(issuerName)}`);
         const liquidityIssuer = E(ammPublicFacet).addIssuer(
           kit.issuer,
           issuerName,

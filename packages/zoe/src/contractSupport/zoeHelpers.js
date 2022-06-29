@@ -1,7 +1,6 @@
 // @ts-check
 import '../../exported.js';
 
-import { assert, details as X } from '@agoric/assert';
 import { keyEQ, fit } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -9,6 +8,8 @@ import { AssetKind } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
+
+const { details: X } = assert;
 
 const getKeysSorted = obj =>
   harden(Object.getOwnPropertyNames(obj || {}).sort());
@@ -125,7 +126,7 @@ export const fitProposalShape = (seat, proposalShape) =>
  */
 export const assertProposalShape = (seat, expected) => {
   assert.typeof(expected, 'object');
-  assert(!Array.isArray(expected), X`Expected must be an non-array object`);
+  assert(!Array.isArray(expected), 'Expected must be an non-array object');
   const assertValuesNull = e => {
     if (e !== undefined) {
       Object.values(e).forEach(value =>
@@ -161,7 +162,7 @@ export const assertProposalShape = (seat, expected) => {
 export const assertNatAssetKind = (zcf, brand) => {
   assert(
     zcf.getAssetKind(brand) === AssetKind.NAT,
-    X`brand must be AssetKind.NAT`,
+    'brand must be AssetKind.NAT',
   );
 };
 

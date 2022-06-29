@@ -1,6 +1,5 @@
 // @ts-check
 
-import { assert, details as X, quote as q } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far, passStyleOf } from '@endo/marshal';
@@ -9,6 +8,8 @@ import { makeWeakStore } from '@agoric/store';
 import { makeZoeSeatAdminKit } from './zoeSeat.js';
 import { makeHandle } from '../makeHandle.js';
 import { handlePKitWarning } from '../handleWarning.js';
+
+const { details: X, quote: q } = assert;
 
 /**
  * @param {Promise<ZoeService>} zoeServicePromise
@@ -235,7 +236,7 @@ export const makeStartInstance = (
       if (creatorInvitation !== undefined) {
         assert(
           isLiveResult.status === 'fulfilled' && isLiveResult.value,
-          X`The contract did not correctly return a creatorInvitation`,
+          'The contract did not correctly return a creatorInvitation',
         );
       }
       const adminFacet = Far('adminFacet', {

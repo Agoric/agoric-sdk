@@ -2,7 +2,6 @@
 
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
-import { assert } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
@@ -55,7 +54,7 @@ export const makeZoeSeatAdminKit = (
     replaceAllocation: replacementAllocation => {
       assert(
         !hasExited(zoeSeatAdmin),
-        `Cannot replace allocation. Seat has already exited`,
+        'Cannot replace allocation. Seat has already exited',
       );
       harden(replacementAllocation);
       // Merging happens in ZCF, so replacementAllocation can
@@ -66,7 +65,7 @@ export const makeZoeSeatAdminKit = (
     exit: reason => {
       assert(
         !hasExited(zoeSeatAdmin),
-        `Cannot exit seat. Seat has already exited`,
+        'Cannot exit seat. Seat has already exited',
       );
       updater.finish(reason);
       doExit(zoeSeatAdmin);
@@ -74,7 +73,7 @@ export const makeZoeSeatAdminKit = (
     fail: reason => {
       assert(
         !hasExited(zoeSeatAdmin),
-        `Cannot fail seat. Seat has already exited`,
+        'Cannot fail seat. Seat has already exited',
       );
       updater.fail(reason);
       doExit(zoeSeatAdmin);

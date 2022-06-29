@@ -5,7 +5,6 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Far } from '@endo/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
-import { details as X } from '@agoric/assert';
 import { makeOffer } from '../makeOffer.js';
 
 import { setup } from '../setupBasicMints.js';
@@ -629,7 +628,7 @@ test('burnLosses - offer safety violation no staged allocation', async t => {
       ),
     {
       message:
-        'The allocation after burning losses [object Object]for the zcfSeat was not offer safe',
+        'The allocation after burning losses {"DownPayment":{"brand":"[Alleged: Yen brand]","value":"[50n]"},"Bonus":{"brand":"[Alleged: Doubloons brand]","value":"[0n]"}} for the zcfSeat was not offer safe',
     },
   );
   t.truthy(zcfSeat.hasStagedAllocation());
@@ -1362,7 +1361,7 @@ test(`zcf.shutdownWithFailure - no further offers accepted`, async t => {
 test(`zcf.assert - no further offers accepted`, async t => {
   const { zoe, zcf, vatAdminState } = await setupZCFTest();
   const invitation = await zcf.makeInvitation(() => {}, 'seat');
-  t.throws(() => zcf.assert(false, X`And do not come back`), {
+  t.throws(() => zcf.assert(false, 'And do not come back'), {
     message: /And do not come back/,
   });
   await t.throwsAsync(() => E(zoe).offer(invitation), {

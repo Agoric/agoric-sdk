@@ -62,7 +62,7 @@ test('makeParamManagerFromTerms', async t => {
   t.is(paramManager.getMmr(), terms.governedParams.Mmr.value);
 });
 
-test('readonly', t => {
+test.only('readonly', t => {
   const drachmas = AmountMath.make(drachmaBrand, 37n);
   const paramManager = makeParamManagerSync(makeStoredPublisherKit(), {
     Currency: [ParamTypes.BRAND, drachmaBrand],
@@ -112,7 +112,7 @@ test('Amount', async t => {
   await t.throwsAsync(
     () => paramManager.updateParams({ Shimmer: 'fear,loathing' }),
     {
-      message: 'Expected an Amount for Shimmer, got "fear,loathing"',
+      message: 'Expected an Amount for "Shimmer", got: "fear,loathing"',
     },
   );
 
@@ -130,7 +130,7 @@ test('Amount', async t => {
   await t.throwsAsync(
     () => paramManager.updateParams({ Shimmer: 'fear,loathing' }),
     {
-      message: 'Expected an Amount for Shimmer, got "fear,loathing"',
+      message: 'Expected an Amount for "Shimmer", got ""fear,loathing""',
     },
   );
 });
