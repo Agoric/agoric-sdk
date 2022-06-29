@@ -35,7 +35,10 @@ jest.mock('../../contexts/Application', () => {
 
 jest.mock('../ChainConnector', () => () => 'Chain Connector');
 
-jest.mock('../WalletConnection', () => () => 'Wallet Connection');
+jest.mock(
+  '../ConnectionSettingsDialog',
+  () => () => 'ConnectionSettingsDialog',
+);
 
 const appTheme = createTheme({
   pallete: {
