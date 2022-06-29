@@ -215,7 +215,6 @@ const buildOwner = async (
       liquidationInstall: installations.liquidateMinimum,
       timer,
       electorateInvitationAmount: poserInvitationAmount,
-      vaultManagerParams,
       ammPublicFacet: ammMock,
       liquidationTerms: liquidationDetailTerms(runBrand),
       minInitialDebt: AmountMath.make(runBrand, 100n),

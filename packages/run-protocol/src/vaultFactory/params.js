@@ -133,7 +133,6 @@ const makeVaultDirectorParamManager = async (
  *   liquidationInstall: Installation,
  *   loanTiming: LoanTiming,
  *   liquidationTerms: import('./liquidation.js').LiquidationTerms,
- *   vaultManagerParams: VaultManagerParamValues,
  *   ammPublicFacet: XYKAMMPublicFacet,
  *   shortfallInvitationAmount: Amount,
  * }} opts
@@ -151,7 +150,6 @@ const makeGovernedTerms = (
     priceAuthority,
     reservePublicFacet,
     timer,
-    vaultManagerParams,
     shortfallInvitationAmount,
   },
 ) => {
@@ -163,15 +161,9 @@ const makeGovernedTerms = (
     },
   ).getParams();
 
-  const loanParams = makeVaultParamManager(
-    makeStoredPublisherKit(storageNode, marshaller, 'collateralParams'),
-    vaultManagerParams,
-  ).getParams();
-
   return harden({
     ammPublicFacet,
     priceAuthority,
-    loanParams,
     loanTimingParams,
     reservePublicFacet,
     timerService: timer,
