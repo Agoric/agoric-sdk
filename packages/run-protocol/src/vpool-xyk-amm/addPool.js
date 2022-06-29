@@ -32,7 +32,7 @@ export const makeAddIssuer = (
    * @param {Issuer} secondaryIssuer
    * @param {string} keyword
    */
-  return async (secondaryIssuer, keyword) => {
+  const addIssuer = async (secondaryIssuer, keyword) => {
     const [secondaryAssetKind, secondaryBrand] = await Promise.all([
       E(secondaryIssuer).getAssetKind(),
       E(secondaryIssuer).getBrand(),
@@ -104,6 +104,7 @@ export const makeAddIssuer = (
         throw e;
       });
   };
+  return addIssuer;
 };
 
 /**
