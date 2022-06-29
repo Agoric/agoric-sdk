@@ -41,7 +41,8 @@ function makeCollector() {
 function makeRescheduler() {
   let called = false;
 
-  async function fakeReschedule() {
+  async function fakeReschedule(ratio) {
+    assert(ratio);
     called = true;
     return called;
   }
@@ -216,7 +217,8 @@ test('removals', async t => {
 
 test('highestRatio', async t => {
   const reschedulePriceCheck = makeRescheduler();
-  const vaults = makePrioritizedVaults(reschedulePriceCheck.fakeReschedule);
+  const vaults = makePrioritizedVaults();
+  vaults.onHigherHighest(reschedulePriceCheck.fakeReschedule);
 
   vaults.addVault(
     'id-fakeVault1',
