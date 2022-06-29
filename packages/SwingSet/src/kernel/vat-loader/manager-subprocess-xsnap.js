@@ -113,6 +113,11 @@ export function makeXsSubprocessFactory({
 
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const lastSnapshot = vatKeeper.getLastSnapshot();
+    if (lastSnapshot) {
+      const { snapshotID } = lastSnapshot;
+      kernelSlog.write({ type: 'heap-snapshot-load', vatID, snapshotID });
+    }
+
     // `startXSnap` adds `argName` as a dummy argument so that 'ps'
     // shows which worker is for which vat, but is careful to prevent
     // a shell-escape attack
