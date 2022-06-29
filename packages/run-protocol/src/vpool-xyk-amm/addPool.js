@@ -10,7 +10,6 @@ import { definePoolKind } from './pool.js';
 const { details: X } = assert;
 
 const DISPLAY_INFO = harden({ decimalPlaces: 6 });
-const DECIMAL_PLACES = 6;
 
 /**
  * @param {ZCF} zcf
@@ -68,10 +67,9 @@ export const makeAddIssuer = (
     const liquidityKeyword = `${keyword}Liquidity`;
     zcf.assertUniqueKeyword(liquidityKeyword);
 
-    const displayInfo = harden({ decimalPlaces: DECIMAL_PLACES });
     return Promise.all([
       zcf.saveIssuer(secondaryIssuer, keyword),
-      zcf.makeZCFMint(liquidityKeyword, AssetKind.NAT, displayInfo),
+      zcf.makeZCFMint(liquidityKeyword, AssetKind.NAT, DISPLAY_INFO),
     ])
       .then(([issuer, mint]) => {
         console.log(
