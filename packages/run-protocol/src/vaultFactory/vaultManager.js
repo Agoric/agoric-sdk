@@ -1,3 +1,4 @@
+/* eslint-disable consistent-return */
 // @ts-check
 /**
  * @file Vault Manager object manages vault-based debts for a collateral type.
@@ -332,15 +333,7 @@ const helperBehavior = {
    * @returns {Promise<void>}
    */
   reschedulePriceCheck: async ({ state, facets }) => {
-    const { prioritizedVaults } = state;
-    const highestDebtRatio = prioritizedVaults.highestRatio();
-    trace('reschedulePriceCheck', { highestDebtRatio });
-    if (!highestDebtRatio) {
-      // if there aren't any open vaults, we don't need an outstanding RFQ.
-      trace('no open vaults');
-      return;
-    }
-
+    trace('reschedulePriceCheck', { liquidationQueueing });
     // INTERLOCK: the first time through, start the activity to wait for
     // and process liquidations over time.
     if (!liquidationInProgress) {
@@ -356,6 +349,14 @@ const helperBehavior = {
 
     if (!outstandingQuote) {
       // the new threshold will be picked up by the next quote request
+      return;
+    }
+
+    const { prioritizedVaults } = state;
+    const highestDebtRatio = prioritizedVaults.highestRatio();
+    if (!highestDebtRatio) {
+      // if there aren't any open vaults, we don't need an outstanding RFQ.
+      trace('no open vaults');
       return;
     }
 
