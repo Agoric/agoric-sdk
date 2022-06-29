@@ -80,9 +80,14 @@ export const makeAddIssuer = (
         brandToLiquidityMint.init(secondaryBrand, mint);
         const { issuer: liquidityIssuer } = mint.getIssuerRecord();
         liquidityPromiseKit.resolve(liquidityIssuer);
+        // we only need entries in this table until brandToLiquidityIssuer knows
+        // the issuer and the promise is resolved.
+        brandToLiquidityIssuer.delete(secondaryBrand);
+
         // defer lookup until necessary. more aligned with governed
         // param we expect this to be eventually.
         const addIssuerToReserve = getAddIssuerToReserve();
+
         // tell the reserve about this brand, which it will validate by
         // calling back to AMM for the issuer
         return addIssuerToReserve(secondaryBrand).then(() => liquidityIssuer);
