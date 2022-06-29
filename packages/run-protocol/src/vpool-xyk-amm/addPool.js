@@ -67,10 +67,12 @@ export const makeAddIssuer = (
     const liquidityKeyword = `${keyword}Liquidity`;
     zcf.assertUniqueKeyword(liquidityKeyword);
 
-    return Promise.all([
-      zcf.saveIssuer(secondaryIssuer, keyword),
-      zcf.makeZCFMint(liquidityKeyword, AssetKind.NAT, DISPLAY_INFO),
-    ])
+    return E.when(
+      Promise.all([
+        zcf.saveIssuer(secondaryIssuer, keyword),
+        zcf.makeZCFMint(liquidityKeyword, AssetKind.NAT, DISPLAY_INFO),
+      ]),
+    )
       .then(([issuer, mint]) => {
         console.log(
           X`Saved issuer ${secondaryIssuer} to keyword ${keyword} and got back ${issuer}`,
