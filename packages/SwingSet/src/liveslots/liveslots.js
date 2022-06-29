@@ -26,20 +26,6 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
 const SYSCALL_CAPDATA_BODY_SIZE_LIMIT = 10_000_000;
 const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
 
-let syscallCapdataBodySizeLimit = SYSCALL_CAPDATA_BODY_SIZE_LIMIT;
-let syscallCapdataSlotsLengthLimit = SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT;
-
-function assertAcceptableSyscallCapdataSize(capdata) {
-  assert(
-    capdata.body.length < syscallCapdataBodySizeLimit,
-    'syscall capdata body too large',
-  );
-  assert(
-    capdata.slots.length < syscallCapdataSlotsLengthLimit,
-    'syscall capdata slots array too long',
-  );
-}
-
 // 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
 // of local objects which have been exported. These cannot be persisted
 // beyond the runtime of the javascript environment, so this mechanism is not
@@ -85,6 +71,31 @@ function build(
   let didStopVat = false;
 
   const outstandingProxies = new WeakSet();
+
+  let syscallCapdataBodySizeLimit = SYSCALL_CAPDATA_BODY_SIZE_LIMIT;
+  let syscallCapdataSlotsLengthLimit = SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT;
+
+  function setSyscallCapdataLimits(
+    bodySizeLimit = SYSCALL_CAPDATA_BODY_SIZE_LIMIT,
+    slotsLengthLimit = SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT,
+  ) {
+    syscallCapdataBodySizeLimit = bodySizeLimit;
+    syscallCapdataSlotsLengthLimit = slotsLengthLimit;
+  }
+
+  function assertAcceptableSyscallCapdataSize(capdatas) {
+    let bodySizeTotal = 0;
+    let slotsLengthTotal = 0;
+    for (const capdata of capdatas) {
+      bodySizeTotal += capdata.body.length;
+      slotsLengthTotal += capdata.slots.length;
+    }
+    assert(
+      bodySizeTotal <= syscallCapdataBodySizeLimit &&
+        slotsLengthTotal <= syscallCapdataSlotsLengthLimit,
+      'syscall capdata too large',
+    );
+  }
 
   /**
    * Translation and tracking tables to map in-vat object/promise references
@@ -858,7 +869,7 @@ function build(
 
     meterControl.assertIsMetered(); // else userspace getters could escape
     const serMethargs = m.serialize(harden(methargs));
-    assertAcceptableSyscallCapdataSize(serMethargs);
+    assertAcceptableSyscallCapdataSize([serMethargs]);
     serMethargs.slots.map(retainExportedVref);
 
     const resultVPID = allocatePromiseID();
@@ -924,9 +935,10 @@ function build(
     const resolutions = resolutionCollector().forSlots(serMethargs.slots);
     if (resolutions.length > 0) {
       try {
-        resolutions.forEach(([_xvpid, _isReject, resolutionCD]) => {
-          assertAcceptableSyscallCapdataSize(resolutionCD);
-        });
+        const resolutionCDs = resolutions.map(
+          ([_xvpid, _isReject, resolutionCD]) => resolutionCD,
+        );
+        assertAcceptableSyscallCapdataSize(resolutionCDs);
       } catch (e) {
         syscall.exit(true, e);
         return null;
@@ -979,7 +991,7 @@ function build(
         return (...args) => {
           meterControl.assertIsMetered(); // userspace getters shouldn't escape
           const serArgs = m.serialize(harden(args));
-          assertAcceptableSyscallCapdataSize(serArgs);
+          assertAcceptableSyscallCapdataSize([serArgs]);
           serArgs.slots.map(retainExportedVref);
           // if we didn't forbid promises, we'd need to
           // maybeExportPromise() here
@@ -1124,9 +1136,10 @@ function build(
       const rc = resolutionCollector();
       const resolutions = rc.forPromise(vpid, isReject, value);
       try {
-        resolutions.forEach(([_xvpid, _isReject, resolutionCD]) => {
-          assertAcceptableSyscallCapdataSize(resolutionCD);
-        });
+        const resolutionCDs = resolutions.map(
+          ([_xvpid, _isReject, resolutionCD]) => resolutionCD,
+        );
+        assertAcceptableSyscallCapdataSize(resolutionCDs);
       } catch (e) {
         syscall.exit(true, e);
         return;
@@ -1308,14 +1321,6 @@ function build(
     WeakMap: vom.VirtualObjectAwareWeakMap,
     WeakSet: vom.VirtualObjectAwareWeakSet,
   });
-
-  function setSyscallCapdataLimits(
-    bodySizeLimit = SYSCALL_CAPDATA_BODY_SIZE_LIMIT,
-    slotsLengthLimit = SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT,
-  ) {
-    syscallCapdataBodySizeLimit = bodySizeLimit;
-    syscallCapdataSlotsLengthLimit = slotsLengthLimit;
-  }
 
   const testHooks = harden({
     ...vom.testHooks,
