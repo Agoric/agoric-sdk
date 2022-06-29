@@ -66,19 +66,7 @@ async function run() {
       }
       case 'syscall-result': {
         console.log(` -- syscall-result`);
-        // The vatstoreGet result is null when key was missing. To match the
-        // transcript extracted from a DB (in which a missing key gets
-        // 'undefined', causing the .response to be omitted entirely),
-        // special-case a vatstoreGet with a null result.
-        //
-        // vatstoreSet result is always null
-        const [status, result] = e.vsr; // e.g. ["ok", string]
-        if (status !== 'ok') {
-          throw Error(`encountered non-ok syscall result`);
-        }
-        if (!(syscall.d[0] === 'vatstoreGet' && result === null)) {
-          syscall.response = result;
-        }
+        syscall.response = e.vsr;
         syscalls.push(syscall);
         break;
       }

@@ -47,7 +47,7 @@ function compareSyscalls(vatID, originalSyscall, newSyscall) {
 // 3.8s v8-false, 27.5s v8-gc
 // 10.8s xs-no-gc, 15s xs-gc
 const worker = 'xs-worker';
-const gcEveryCrank = false;
+const gcEveryCrank = true; // false means GC is hard-disabled
 
 async function replay(transcriptFile) {
   let vatID; // we learn this from the first line of the transcript
@@ -58,8 +58,13 @@ async function replay(transcriptFile) {
       addToTranscript: () => undefined,
       getLastSnapshot: () => undefined,
     }),
+    getRelaxDurabilityRules: () => false,
   };
-  const kernelSlog = { write() {} };
+  const kernelSlog = {
+    write() {},
+    delivery: () => () => undefined,
+    syscall: () => () => undefined,
+  };
   const testLog = undefined;
   const meterControl = makeDummyMeterControl();
   const gcTools = harden({
@@ -127,6 +132,7 @@ async function replay(transcriptFile) {
     transcriptF = transcriptF.pipe(zlib.createGunzip());
   }
   const lines = readline.createInterface({ input: transcriptF });
+  let deliveryNum = 0; // TODO is this aligned?
   let lineNumber = 1;
   for await (const line of lines) {
     if (lineNumber % 1000 === 0) {
@@ -160,14 +166,15 @@ async function replay(transcriptFile) {
       // syscalls = [{ d, response }, ..]
       // console.log(`replaying:`);
       console.log(
-        `delivery ${lineNumber}:`,
+        `delivery ${deliveryNum} (L ${lineNumber}):`,
         JSON.stringify(delivery).slice(0, 200),
       );
       // for (const s of syscalls) {
       //   s.response = 'nope';
       //   console.log(` syscall:`, s.d, s.response);
       // }
-      await manager.replayOneDelivery(delivery, syscalls);
+      await manager.replayOneDelivery(delivery, syscalls, deliveryNum);
+      deliveryNum += 1;
       // console.log(`dr`, dr);
     }
   }

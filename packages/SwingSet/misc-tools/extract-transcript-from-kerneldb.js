@@ -1,8 +1,8 @@
-// XXX this is wrong; it needs to use the swingstore instead of opening the LMDB
-// file directly, then use stream store reads to get the transcript entries.
-import lmdb from 'lmdb';
+import 'lmdb';
+import '@endo/init';
 import process from 'process';
 import fs from 'fs';
+import { isSwingStore, openSwingStore } from '@agoric/swing-store';
 
 const argv = process.argv.splice(2);
 const dirPath = argv[0];
@@ -16,19 +16,12 @@ if (!dirPath) {
   process.exit(0);
 }
 
-const lmdbEnv = new lmdb.Env();
-lmdbEnv.open({
-  path: dirPath,
-  mapSize: 2 * 1024 * 1024 * 1024, // XXX need to tune this
-});
-
-const dbi = lmdbEnv.openDbi({
-  name: 'swingset-kernel-state',
-  create: false,
-});
-const txn = lmdbEnv.beginTxn();
+if (!isSwingStore(dirPath)) {
+  throw Error(`${dirPath} does not appear to be a swingstore (no ./data.mdb)`);
+}
+const { kvStore, streamStore } = openSwingStore(dirPath);
 function get(key) {
-  return txn.getString(dbi, key);
+  return kvStore.get(key);
 }
 
 const allVatNames = JSON.parse(get('vat.names'));
@@ -38,15 +31,27 @@ if (!vatName) {
   console.log(`all vats:`);
   for (const name of allVatNames) {
     const vatID = get(`vat.name.${name}`);
-    const transcriptLength = Number(get(`${vatID}.t.nextID`));
-    console.log(`${vatID} : ${name}       (${transcriptLength} deliveries)`);
+    const startPos = JSON.parse(get(`${vatID}.t.startPosition`)).itemCount;
+    const endPos = JSON.parse(get(`${vatID}.t.endPosition`)).itemCount;
+    const len = `${endPos - startPos}`;
+    const status = `(static)`;
+    console.log(
+      `${vatID.padEnd(3)} : ${name.padEnd(15)} ${status.padEnd(
+        20,
+      )} ${len.padStart(10)} deliveries`,
+    );
   }
   for (const vatID of allDynamicVatIDs) {
-    const transcriptLength = Number(get(`${vatID}.t.nextID`));
+    const startPos = JSON.parse(get(`${vatID}.t.startPosition`)).itemCount;
+    const endPos = JSON.parse(get(`${vatID}.t.endPosition`)).itemCount;
+    const len = `${endPos - startPos}`;
+    const options = JSON.parse(get(`${vatID}.options`));
+    const { name, managerType } = options;
+    const status = `(dynamic, ${managerType})`;
     console.log(
-      `${vatID} : (dynamic)`,
-      get(`${vatID}.options`),
-      `   (${transcriptLength} deliveries)`,
+      `${vatID.padEnd(3)} : ${name.padEnd(15)} ${status.padEnd(
+        20,
+      )} ${len.padStart(10)} deliveries`,
     );
   }
 } else {
@@ -64,7 +69,18 @@ if (!vatName) {
 
   const dynamic = allDynamicVatIDs.includes(vatID);
   const source = JSON.parse(get(`${vatID}.source`));
-  const vatSourceBundle = source.bundle || get(`bundle.${source.bundleName}`);
+  let vatSourceBundle;
+  if (source.bundleID) {
+    console.log(`source bundleID: ${source.bundleID}`);
+    vatSourceBundle = JSON.parse(get(`bundle.${source.bundleID}`));
+  } else {
+    // this doesn't actually happen, now that Zoe launches ZCF by bundlecap
+    vatSourceBundle = JSON.parse(source.bundle);
+    const { moduleFormat, endoZipBase64 } = vatSourceBundle;
+    console.log(
+      `source is bundle, format=${moduleFormat}, endoZipBase64.length=${endoZipBase64.length}`,
+    );
+  }
   const options = JSON.parse(get(`${vatID}.options`));
   console.log(`options:`, options);
   const { vatParameters } = options;
@@ -83,28 +99,43 @@ if (!vatName) {
   fs.writeSync(fd, JSON.stringify(first));
   fs.writeSync(fd, '\n');
 
-  const transcriptLength = Number(get(`${vatID}.t.nextID`));
-  console.log(`${transcriptLength} transcript entries`);
-  for (let i = 0; i < transcriptLength; i += 1) {
-    const t = { transcriptNum, ...JSON.parse(get(`${vatID}.t.${i}`)) };
-    transcriptNum += 1;
-    // vatstoreGet can lack .response when key was missing
-    // vatstoreSet has .response: null
-    // console.log(`t.${i} : ${t}`);
-    fs.writeSync(fd, `${JSON.stringify(t)}\n`);
-  }
-  fs.closeSync(fd);
+  // The streamStore holds concatenated transcripts from all upgraded
+  // versions. For each old version, it holds every delivery from
+  // `startVat` through `stopVat`. For the current version, it holds
+  // every delivery from `startVat` up through the last delivery
+  // attempted, which might include one or more deliveries that have
+  // been rewound (either because a single crank was abandoned, or the
+  // host application failed to commit the kvStore).
+  //
+  // The kvStore `${vatID}.t.startPosition` tells us the index of the
+  // first entry of the most recent version (the most recent
+  // `startVat`), while `${vatID}.t.endPosition` tells us the last
+  // committed entry.
+  //
+  // We ignore the heap snapshot ID, because we're deliberately
+  // replaying everything from `startVat`, and therefore we also
+  // ignore `snapshot.startPos` (the index of the first delivery
+  // *after* the snapshot was taken, where normal operation would
+  // start a replay).
 
-  /*
-  let c = new lmdb.Cursor(txn, dbi);
-  let key = c.goToFirst();
-  while(0) {
-    //console.log(key);
-    console.log(key, txn.getString(dbi, key));
-    key = c.goToNext();
-    if (!key) {
-      break;
-    }
+  const startPos = JSON.parse(get(`${vatID}.t.startPosition`));
+  const endPos = JSON.parse(get(`${vatID}.t.endPosition`));
+  const transcriptLength = endPos.itemCount - startPos.itemCount;
+  console.log(`${transcriptLength} transcript entries`);
+
+  let deliveryNum = 0;
+  const transcriptStream = `transcript-${vatID}`;
+  const stream = streamStore.readStream(transcriptStream, startPos, endPos);
+  for (const entry of stream) {
+    // entry is JSON.stringify({ d, syscalls }), syscall is { d, response }
+    const t = { transcriptNum, ...JSON.parse(entry) };
+    // console.log(`t.${deliveryNum} : ${t}`);
+    fs.writeSync(fd, `${JSON.stringify(t)}\n`);
+    // eslint-disable-next-line no-unused-vars
+    deliveryNum += 1;
+    transcriptNum += 1;
   }
-*/
+
+  fs.closeSync(fd);
+  console.log(`wrote ${transcriptNum} entries for vat ${vatID} into ${fn}`);
 }
