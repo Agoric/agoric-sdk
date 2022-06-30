@@ -161,70 +161,77 @@ export const makeNotifierKit = (...initialStateArr) => {
 export const makeNotifierFromAsyncIterable = asyncIterableP => {
   const iteratorP = E(asyncIterableP)[Symbol.asyncIterator]();
 
+  /** @type {WeakMap<Promise<{value: any, done: boolean}>, Promise<{value, updateCount}>>} */
   const resultPromiseMap = new WeakMap();
-  let latestResultInP, latestResultOutP, nextResultInR, nextResultOutP;
+  /** @type {Promise<{value: any, done: boolean}>} */
+  let latestResultInP;
+  /** @type {undefined | Promise<{value, updateCount}>} */
+  let latestResultOutP;
+  /** @type {undefined | Promise<{value, updateCount}>} */
+  let nextResultOutP;
+  /** @type {undefined | ((resolution?: any) => void)} */
+  let nextResultInR;
+  /** @type {UpdateCount & bigint} */
   let latestUpdateCount = 0n;
   let finished = false;
-  let finalResultOut = undefined;
+  let finalResultOut;
 
   // Consume results as soon as their predecessors settle.
-  (async function() {
+  (async function consumeEagerly() {
     try {
-      do {
+      let done = false;
+      while (!done) {
+        // TODO: Fix this typing friction.
+        // @ts-expect-error Tolerate done: undefined.
         latestResultInP = E(iteratorP).next();
         if (nextResultInR) {
           nextResultInR(latestResultInP);
           nextResultInR = undefined;
         }
-      } while (!(await latestResultInP).done);
-    } catch (err) {}
+        // eslint-disable-next-line no-await-in-loop
+        ({ done } = await latestResultInP);
+      }
+    } catch (err) {} // eslint-disable-line no-empty
     if (nextResultInR) {
+      // @ts-expect-error It really is fine to use latestResultInP here.
       nextResultInR(latestResultInP);
       nextResultInR = undefined;
     }
   })();
 
   // Create outbound results on-demand, but at most once.
-  function getLatestResultOutP() {
-    if (!latestResultOutP) {
-      assert(latestResultInP !== undefined);
-      latestResultOutP = resultPromiseMap.get(latestResultInP);
-      if (!latestResultOutP) {
-        latestResultOutP = translateInboundResult(latestResultInP);
-        resultPromiseMap.set(latestResultInP, latestResultOutP);
-      }
-    }
-    return latestResultOutP;
-  }
+  /**
+   * @param {Promise<{value: any, done: boolean}>} resultInP
+   * @returns {Promise<{value, updateCount}>}
+   */
   function translateInboundResult(resultInP) {
     return resultInP.then(
-      ({value, done}) => {
+      ({ value, done }) => {
         // If this is resolving a post-finish request, preserve the final result.
         if (finished) {
           return finalResultOut;
         }
 
-        let updateCount = undefined;
         if (done) {
           finished = true;
 
           // If there is a pending next-value promise, resolve it.
           if (nextResultInR) {
-            nextResultInR(/*resultInP*/);
+            nextResultInR(/* irrelevant becaused finished is true */);
             nextResultInR = undefined;
           }
 
-          finalResultOut = harden({value, updateCount});
+          // Final results have undefined updateCount.
+          finalResultOut = harden({ value, updateCount: undefined });
           return finalResultOut;
         }
 
-        latestUpdateCount += 1n;
-        updateCount = latestUpdateCount;
-
         // Discard any pending promise.
+        // eslint-disable-next-line no-multi-assign
         latestResultOutP = nextResultOutP = nextResultInR = undefined;
 
-        return harden({value, updateCount});
+        latestUpdateCount += 1n;
+        return harden({ value, updateCount: latestUpdateCount });
       },
       rejection => {
         if (!finished) {
@@ -240,6 +247,17 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
       },
     );
   }
+  function getLatestResultOutP() {
+    if (!latestResultOutP) {
+      assert(latestResultInP !== undefined);
+      latestResultOutP = resultPromiseMap.get(latestResultInP);
+      if (!latestResultOutP) {
+        latestResultOutP = translateInboundResult(latestResultInP);
+        resultPromiseMap.set(latestResultInP, latestResultOutP);
+      }
+    }
+    return latestResultOutP;
+  }
 
   /**
    * @template T
@@ -247,14 +265,18 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
    */
   const baseNotifier = Far('baseNotifier', {
     getUpdateSince(updateCount = -1n) {
-      assert(updateCount <= latestUpdateCount, 'argument must be a previously-issued updateCount.');
+      assert(
+        updateCount <= latestUpdateCount,
+        'argument must be a previously-issued updateCount.',
+      );
 
       // If we don't yet have an inbound result or a promise for an outbound result,
       // create the latter.
       if (!latestResultInP && !latestResultOutP) {
         const { promise, resolve } = makePromiseKit();
         nextResultInR = resolve;
-        latestResultOutP = nextResultOutP = translateInboundResult(promise);
+        nextResultOutP = translateInboundResult(promise);
+        latestResultOutP = nextResultOutP;
       }
 
       if (updateCount < latestUpdateCount) {
