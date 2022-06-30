@@ -14,9 +14,12 @@ import {
 } from '@agoric/run-protocol/src/proposals/demoIssuers.js';
 import { makeClientManager } from '../src/core/chain-behaviors.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from '../src/core/utils.js';
-import { buildRootObject as bldMintRoot } from '../src/vat-mints.js';
+import { buildRootObject as mintsRoot } from '../src/vat-mints.js';
+import { buildRootObject as boardRoot } from '../src/vat-board.js';
 import {
   installBootContracts,
+  makeAddressNameHubs,
+  makeBoard,
   makeClientBanks,
 } from '../src/core/basic-behaviors.js';
 
@@ -37,12 +40,16 @@ const setUpZoeForTest = async () => {
 };
 harden(setUpZoeForTest);
 
+/**
+ * @typedef {{
+ *   (n: 'board'): import('../src/core/basic-behaviors.js').BoardVat
+ *   (n: 'mint'): MintsVat
+ * }} LoadVat
+ */
 test('connectFaucet produces payments', async t => {
   const space = /** @type {any} */ (makePromiseSpace(t.log));
   const { consume, produce } =
-    /** @type { BootstrapPowers & { consume: { loadVat: (n: 'mints') => MintsVat }} } */ (
-      space
-    );
+    /** @type { BootstrapPowers & { consume: { loadVat: LoadVat }} } */ (space);
   const { agoricNames, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
@@ -51,14 +58,22 @@ test('connectFaucet produces payments', async t => {
   produce.feeMintAccess.resolve(feeMintAccess);
 
   produce.loadVat.resolve(name => {
-    assert.equal(name, 'mints');
-    return bldMintRoot();
+    switch (name) {
+      case 'mints':
+        return mintsRoot();
+      case 'board':
+        return boardRoot();
+      default:
+        throw Error('unknown loadVat name');
+    }
   });
 
   t.plan(4); // be sure bank.deposit() gets called
 
   const bldKit = makeIssuerKit('BLD');
   produce.bldIssuerKit.resolve(bldKit);
+  produce.chainStorage.resolve(undefined);
+
   const runIssuer = E(zoe).getFeeIssuer();
   produce.bankManager.resolve(
     Promise.resolve(
@@ -76,6 +91,8 @@ test('connectFaucet produces payments', async t => {
                 return amt;
               },
             }),
+            // @ts-expect-error mock
+            getAssetSubscription: () => null,
           }),
       }),
     ),
@@ -98,6 +115,9 @@ test('connectFaucet produces payments', async t => {
   };
 
   await Promise.all([
+    // @ts-expect-error missing keys: devices, vats, vatPowers, vatParameters, and 2 more.
+    makeBoard({ consume, produce, ...spaces }),
+    makeAddressNameHubs({ consume, produce, ...spaces }),
     installBootContracts({ vatPowers, devices, consume, produce, ...spaces }),
     makeClientManager({ consume, produce, ...spaces }),
     connectFaucet({ consume, produce, ...spaces }),

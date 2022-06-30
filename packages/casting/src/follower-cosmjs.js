@@ -317,6 +317,10 @@ export const makeCosmjsFollower = (
       const getProvenValue = () => getProvenValueAtHeight(allegedBlockHeight);
 
       const buf = await queryVerifier(getProvenValue, crash, getAllegedValue);
+      if (buf.length === 0) {
+        fail(Error('No query results'));
+        return;
+      }
       attempt = 0;
       if (!committer.isValid()) {
         return;

@@ -1,6 +1,6 @@
-import bundleCentralSupply from '../bundles/bundle-centralSupply.js';
-import bundleMintHolder from '../bundles/bundle-mintHolder.js';
-import bundleSingleWallet from '../bundles/bundle-singleWallet.js';
+import bundleCentralSupply from '@agoric/vats/bundles/bundle-centralSupply.js';
+import bundleMintHolder from '@agoric/vats/bundles/bundle-mintHolder.js';
+import bundleSingleWallet from '@agoric/vats/bundles/bundle-singleWallet.js';
 
 export const devices = {
   vatAdmin: {

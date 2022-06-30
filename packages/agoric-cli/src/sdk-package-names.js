@@ -19,6 +19,7 @@ export default [
   "@agoric/run-protocol",
   "@agoric/same-structure",
   "@agoric/sharing-service",
+  "@agoric/smart-wallet",
   "@agoric/solo",
   "@agoric/sparse-ints",
   "@agoric/spawner",

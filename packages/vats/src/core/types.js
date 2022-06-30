@@ -136,7 +136,8 @@
  *   issuer: |
  *     'RUN' | 'BLD' | 'Attestation' | 'AUSD',
  *   installation: |
- *     'centralSupply' | 'mintHolder' | 'feeDistributor' |
+ *     'centralSupply' | 'mintHolder' | 'singleWallet' |
+ *     'feeDistributor' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'amm' | 'VaultFactory' | 'liquidate' | 'runStake' |
  *     'Pegasus' | 'reserve' | 'psm' | 'interchainPool',
