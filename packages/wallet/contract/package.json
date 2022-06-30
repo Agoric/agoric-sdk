@@ -13,7 +13,11 @@
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
-    "ava": "^3.12.1"
+    "ava": "^3.12.1",
+    "@agoric/ertp": "^0.10.0",
+    "@agoric/run-protocol": "^0.10.0",
+    "@agoric/vats": "^0.10.0",
+    "@endo/captp": "^0.2.3"
   },
   "dependencies": {
     "@agoric/wallet-backend": "0.12.1",
