@@ -55,9 +55,8 @@ export const start = async (zcf, privateArgs) => {
     purses: E(admin).getPursesNotifier(),
   };
   const mutableState = fromEntries(keys(notifierParts).map(key => [key, []]));
-  const { subscription, publication } = makeSubscriptionKit({
-    ...mutableState,
-  });
+  const { subscription, publication } = makeSubscriptionKit();
+  publication.updateState({ ...mutableState });
 
   entries(notifierParts).forEach(([key, notifier]) => {
     void observeIteration(notifier, {
