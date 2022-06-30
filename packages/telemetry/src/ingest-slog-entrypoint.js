@@ -81,7 +81,7 @@ async function run() {
   let update = false;
   for await (const line of lines) {
     lineCount += 1;
-    const obj = JSON.parse(line);
+    const obj = harden(JSON.parse(line));
     update ||= obj.time >= progress.lastSlogTime;
     if (update) {
       progress.lastSlogTime = obj.time;
