@@ -285,6 +285,19 @@ export function xsnap(options) {
    * @param {string} file
    * @returns {Promise<void>}
    */
+  async function readSnapshot(file) {
+    const result = baton.then(async () => {
+      await messagesToXsnap.next(encoder.encode(`r${file}`));
+      await runToIdle();
+    });
+    baton = result.then(noop, noop);
+    return racePromises([vatExit.promise, baton]);
+  }
+
+  /**
+   * @param {string} file
+   * @returns {Promise<void>}
+   */
   async function writeSnapshot(file) {
     const result = baton.then(async () => {
       await messagesToXsnap.next(encoder.encode(`w${file}`));
@@ -328,5 +341,6 @@ export function xsnap(options) {
     execute,
     import: importModule,
     snapshot: writeSnapshot,
+    load: readSnapshot,
   });
 }

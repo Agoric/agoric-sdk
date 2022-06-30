@@ -39,7 +39,7 @@ async function main() {
     output: process.stdout,
   });
 
-  let vat = xsnap({ ...xsnapOptions, handleCommand });
+  const vat = xsnap({ ...xsnapOptions, handleCommand });
 
   await vat.evaluate(`
     const compartment = new Compartment({
@@ -73,8 +73,9 @@ async function main() {
       break;
     } else if (answer === 'load') {
       const file = await ask('file> ');
-      await vat.close();
-      vat = xsnap({ ...xsnapOptions, handleCommand, snapshot: file });
+      // await vat.close();
+      // vat = xsnap({ ...xsnapOptions, handleCommand, snapshot: file });
+      await vat.load(file);
     } else if (answer === 'save') {
       const file = await ask('file> ');
       await vat.snapshot(file);

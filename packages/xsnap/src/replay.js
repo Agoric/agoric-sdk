@@ -137,7 +137,7 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
   return freeze({
     name: it.name,
     isReady: async () => {
-      nextFile('isReady');
+      nextFile('isReady').putText('');
       return it.isReady();
     },
     /** @param {Uint8Array} msg */
@@ -164,6 +164,10 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
     snapshot: async file => {
       nextFile('snapshot').putText(file);
       return it.snapshot(file);
+    },
+    load: async file => {
+      nextFile('load').putText(file);
+      return it.load(file);
     },
   });
 }

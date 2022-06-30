@@ -213,8 +213,11 @@ export function makeXsSubprocessFactory({
      * @param {SnapStore} snapStore
      * @returns {Promise<string>}
      */
-    function makeSnapshot(snapStore) {
-      return snapStore.save(fn => worker.snapshot(fn));
+    async function makeSnapshot(snapStore) {
+      return snapStore.save(async fileName => {
+        await worker.snapshot(fileName);
+        return { done: worker.load(fileName) };
+      });
     }
 
     return mk.getManager(shutdown, makeSnapshot);

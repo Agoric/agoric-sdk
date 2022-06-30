@@ -184,14 +184,14 @@ export function makeSnapStore(
   const toDelete = new Set();
 
   /**
-   * @param {(fn: string) => Promise<void>} saveRaw
+   * @param {(fn: string) => Promise<{done: Promise<void>} | void>} saveRaw
    * @returns {Promise<string>} sha256 hash of (uncompressed) snapshot
    */
   async function save(saveRaw) {
     return withTempName(async snapFile => {
-      await saveRaw(snapFile);
-      const stats = await stat(snapFile);
-      const rawsize = stats.size;
+      const { done: rawDone } = (await saveRaw(snapFile)) ?? {
+        done: Promise.resolve(),
+      };
       const h = await fileHash(snapFile);
       if (toDelete.has(h)) {
         toDelete.delete(h);
@@ -203,16 +203,21 @@ export function makeSnapStore(
         }
         throw e;
       });
-      if (fileStat) {
-        return h;
+      if (!fileStat) {
+        const [res, rawsize] = await Promise.all([
+          atomicWrite(`${h}.gz`, gztmp =>
+            filter(snapFile, createGzip(), gztmp, { flush: true }),
+          ),
+          stat(snapFile).then(stats => stats.size),
+        ]);
+        // TODO: remove once #5419 is resolved
+        console.log(
+          `XS snapshot written to ${res.filename} : ${
+            res.size
+          } bytes compressed, ${await rawsize} raw`,
+        );
       }
-      const res = await atomicWrite(`${h}.gz`, gztmp =>
-        filter(snapFile, createGzip(), gztmp, { flush: true }),
-      );
-      // TODO: remove once #5419 is resolved
-      console.log(
-        `XS snapshot written to ${res.filename} : ${res.size} bytes compressed, ${rawsize} raw`,
-      );
+      await rawDone;
       return h;
     }, 'save-raw');
   }
