@@ -13,6 +13,7 @@ import {
   buildMailboxStateMap,
   buildMailbox,
 } from '../../src/devices/mailbox/mailbox.js';
+import { bundleOpts } from '../util.js';
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
@@ -37,13 +38,14 @@ test('mailbox outbound', async t => {
       },
     },
   };
-  const deviceEndowments = {
+  const devEndows = {
     mailbox: { ...mb.endowments },
   };
 
+  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
   const hostStorage = provideHostStorage();
-  await initializeSwingset(config, ['mailbox1'], hostStorage, t.context.data);
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  await initializeSwingset(config, ['mailbox1'], hostStorage, initOpts);
+  const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
   await c.run();
   // exportToData() provides plain Numbers to the host that needs to convey the messages
   t.deepEqual(s.exportToData(), {
@@ -85,13 +87,14 @@ test('mailbox inbound', async t => {
       },
     },
   };
-  const deviceEndowments = {
+  const devEndows = {
     mailbox: { ...mb.endowments },
   };
 
+  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
   const hostStorage = provideHostStorage();
-  await initializeSwingset(config, ['mailbox2'], hostStorage, t.context.data);
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  await initializeSwingset(config, ['mailbox2'], hostStorage, initOpts);
+  const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
   await c.run();
   const m1 = [1, 'msg1'];
   const m2 = [2, 'msg2'];
@@ -143,23 +146,25 @@ async function initializeMailboxKernel(t) {
       },
     },
   };
+  const { initOpts } = bundleOpts(t.context.data);
   const hostStorage = provideHostStorage();
   await initializeSwingset(
     config,
     ['mailbox-determinism'],
     hostStorage,
-    t.context.data,
+    initOpts,
   );
   return hostStorage;
 }
 
-async function makeMailboxKernel(hostStorage) {
+async function makeMailboxKernel(t, hostStorage) {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
-  const deviceEndowments = {
+  const devEndows = {
     mailbox: { ...mb.endowments },
   };
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  const { runtimeOpts } = bundleOpts(t.context.data);
+  const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
   c.pinVatRoot('bootstrap');
   await c.run();
   return [c, mb];
@@ -169,8 +174,8 @@ test('mailbox determinism', async t => {
   // we run two kernels in parallel
   const hostStorage1 = await initializeMailboxKernel(t);
   const hostStorage2 = await initializeMailboxKernel(t);
-  const [c1a, mb1a] = await makeMailboxKernel(hostStorage1);
-  const [c2, mb2] = await makeMailboxKernel(hostStorage2);
+  const [c1a, mb1a] = await makeMailboxKernel(t, hostStorage1);
+  const [c2, mb2] = await makeMailboxKernel(t, hostStorage2);
 
   // they get the same inbound message
   const msg1 = [[1, 'msg1']];
@@ -195,7 +200,7 @@ test('mailbox determinism', async t => {
   );
 
   // then one is restarted, but the other keeps running
-  const [c1b, mb1b] = await makeMailboxKernel(hostStorage1);
+  const [c1b, mb1b] = await makeMailboxKernel(t, hostStorage1);
 
   // Now we repeat delivery of that message to both. The mailbox should send
   // it to vattp, even though it's duplicate, because the mailbox doesn't

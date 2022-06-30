@@ -171,3 +171,10 @@ export function makeKernelEndowments() {
     createSHA256,
   };
 }
+
+export function bundleOpts(data, extraRuntimeOpts) {
+  const { kernel: kernelBundle, ...kernelBundles } = data.kernelBundles;
+  const initOpts = { kernelBundles };
+  const runtimeOpts = { kernelBundle, ...extraRuntimeOpts };
+  return { initOpts, runtimeOpts };
+}

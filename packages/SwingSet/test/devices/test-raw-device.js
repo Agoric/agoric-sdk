@@ -11,6 +11,7 @@ import {
   makeSwingsetController,
   buildKernelBundles,
 } from '../../src/index.js';
+import { bundleOpts } from '../util.js';
 
 function dfile(name) {
   return new URL(`./${name}`, import.meta.url).pathname;
@@ -41,15 +42,16 @@ test('d1', async t => {
       },
     },
   };
-  const deviceEndowments = {
+  const devEndows = {
     dr: {
       shared: sharedArray,
     },
   };
 
+  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
   const hostStorage = provideHostStorage();
-  await initializeSwingset(config, [], hostStorage, t.context.data);
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  await initializeSwingset(config, [], hostStorage, initOpts);
+  const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
   c.pinVatRoot('bootstrap');
   await c.run();
 

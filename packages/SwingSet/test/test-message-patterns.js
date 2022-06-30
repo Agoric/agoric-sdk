@@ -19,6 +19,7 @@ import {
   buildVatController,
   buildKernelBundles,
 } from '../src/index.js';
+import { bundleOpts } from './util.js';
 import { buildLoopbox } from '../src/devices/loopbox/loopbox.js';
 import { buildPatterns } from './message-patterns.js';
 
@@ -127,7 +128,7 @@ for (const name of Array.from(bp.patterns.keys()).sort()) {
 }
 
 export async function runVatsInComms(t, name) {
-  const { commsConfig, kernelBundles } = t.context.data;
+  const { commsConfig } = t.context.data;
   const { passOneMessage, loopboxSrcPath, loopboxEndowments } =
     buildLoopbox('queued');
   const devices = {
@@ -139,12 +140,13 @@ export async function runVatsInComms(t, name) {
     },
   };
   const config = { ...commsConfig, devices };
-  const deviceEndowments = {
+  const devEndows = {
     loopbox: { ...loopboxEndowments },
   };
+  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
   const hostStorage = provideHostStorage();
-  await initializeSwingset(config, [name], hostStorage, { kernelBundles });
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  await initializeSwingset(config, [name], hostStorage, initOpts);
+  const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
   t.teardown(c.shutdown);
 
   // await runWithTrace(c);
