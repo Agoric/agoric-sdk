@@ -182,6 +182,7 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
       let done = false;
       while (!done) {
         // TODO: Fix this typing friction.
+        // Possibly related: https://github.com/microsoft/TypeScript/issues/38479
         // @ts-expect-error Tolerate done: undefined.
         latestResultInP = E(iteratorP).next();
         if (nextResultInR) {
@@ -189,7 +190,8 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
           nextResultInR = undefined;
         }
         // eslint-disable-next-line no-await-in-loop
-        ({ done } = await latestResultInP);
+        const latestResultIn = await latestResultInP;
+        ({ done } = latestResultIn);
       }
     } catch (err) {} // eslint-disable-line no-empty
     if (nextResultInR) {

@@ -223,10 +223,9 @@ test('change multiple params', async t => {
 
   /** @type {GovernedPublicFacet<unknown>} */
   const publicFacet = await E(governorFacets.creatorFacet).getPublicFacet();
-  const notifier = makeNotifierFromAsyncIterable(
-    await E(publicFacet).getSubscription(),
-  );
-  const update1 = await notifier.getUpdateSince();
+  const governorSubscription = await E(publicFacet).getSubscription();
+  const governorUpdates = await E(governorSubscription)[Symbol.asyncIterator]();
+  const update1 = await E(governorUpdates).next();
   // constructing the fixture to deepEqual would complicate this with insufficient benefit
   t.is(
     // @ts-expect-error reaching into unknown values
@@ -279,7 +278,7 @@ test('change multiple params', async t => {
     t.fail(`expected success, got ${e}`);
   });
 
-  const update2 = await notifier.getUpdateSince(update1.updateCount);
+  const update2 = await E(governorUpdates).next();
   t.like(update2, {
     value: {
       current: {

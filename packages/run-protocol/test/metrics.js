@@ -16,27 +16,27 @@ const trace = makeTracer('TestMetrics', false);
  * @template {object} N
  */
 export const subscriptionTracker = async (t, subscription) => {
-  const metrics = makeNotifierFromAsyncIterable(subscription);
+  const metrics = await E(subscription)[Symbol.asyncIterator]();
   /** @type {UpdateRecord<N>} */
   let notif;
   const getLastNotif = () => notif;
 
   /** @param {Record<keyof N, N[keyof N]>} expectedValue */
   const assertInitial = async expectedValue => {
-    notif = await metrics.getUpdateSince();
+    notif = await E(metrics).next();
     trace('assertInitial notif', notif);
     t.deepEqual(notif.value, expectedValue);
   };
   const assertChange = async expectedDelta => {
     const prevNotif = notif;
-    notif = await metrics.getUpdateSince(notif.updateCount);
+    notif = await E(metrics).next();
     trace('assertChange notif', notif);
     // @ts-expect-error diff() overly constrains
     const actualDelta = diff(prevNotif.value, notif.value);
     t.deepEqual(actualDelta, expectedDelta, 'Unexpected delta');
   };
   const assertState = async expectedState => {
-    notif = await metrics.getUpdateSince(notif.updateCount);
+    notif = await E(metrics).next();
     t.deepEqual(notif.value, expectedState, 'Unexpected state');
   };
   return { assertChange, assertInitial, assertState, getLastNotif };
