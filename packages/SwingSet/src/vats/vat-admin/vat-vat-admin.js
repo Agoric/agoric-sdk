@@ -12,13 +12,7 @@ import { Nat, isNat } from '@agoric/nat';
 
 const { details: X } = assert;
 
-const managerTypes = [
-  'local',
-  'nodeWorker',
-  'node-subprocess',
-  'xs-worker',
-  'xs-worker-no-gc',
-];
+const managerTypes = ['local', 'nodeWorker', 'node-subprocess', 'xs-worker'];
 
 function producePRR() {
   const { promise, resolve, reject } = makePromiseKit();

@@ -304,13 +304,7 @@ export default function makeKernelKeeper(
 
   function insistManagerType(mt) {
     assert(
-      [
-        'local',
-        'nodeWorker',
-        'node-subprocess',
-        'xs-worker',
-        'xs-worker-no-gc',
-      ].includes(mt),
+      ['local', 'nodeWorker', 'node-subprocess', 'xs-worker'].includes(mt),
     );
   }
 

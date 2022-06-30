@@ -104,10 +104,10 @@ bootstrap vat.  If this property is missing, there will be no
 bootstrap vat, which may be disallowed in certain use cases.
 
 The `defaultManagerType` property indicates what sort of vat worker to run vats
-in if they are not specifically configured otherwise.  Currently allowed manager
-types are `'local'`, `'nodeWorker'`, `'node-subprocess'`, `'xs-worker'`, and
-`'xs-worker-no-gc'`.  Of these, only `'local'` and `'xs-worker'` are fully
-supported; the others are experimental.  If omitted, it defaults to `'local'`.
+in if they are not specifically configured otherwise.  Currently allowed
+manager types are `'local'`, `'nodeWorker'`, `'node-subprocess'`, and
+`'xs-worker'`.  Of these, only `'local'` and `'xs-worker'` are fully supported;
+the others are experimental.  If omitted, it defaults to `'local'`.
 
 The `includeDevDependencies` property, if `true`, instructs the bundler which
 creates bundles to include the SwingSet package's dev dependencies as well as

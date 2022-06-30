@@ -186,7 +186,6 @@ function makeWorker(port) {
    * @param {unknown} virtualObjectCacheSize
    * @param {boolean} enableDisavow
    * @param {boolean} relaxDurabilityRules
-   * @param {boolean} [gcEveryCrank]
    * @returns {Promise<Tagged>}
    */
   async function setBundle(
@@ -195,7 +194,6 @@ function makeWorker(port) {
     virtualObjectCacheSize,
     enableDisavow,
     relaxDurabilityRules,
-    gcEveryCrank,
   ) {
     /** @type { (vso: VatSyscallObject) => VatSyscallResult } */
     function syscallToManager(vatSyscallObject) {
@@ -230,9 +228,7 @@ function makeWorker(port) {
       WeakRef,
       FinalizationRegistry,
       waitUntilQuiescent,
-      // FIXME(mfig): Here is where GC-per-crank is silently disabled.
-      // We need to do a better analysis of the tradeoffs.
-      gcAndFinalize: makeGcAndFinalize(gcEveryCrank && globalThis.gc),
+      gcAndFinalize: makeGcAndFinalize(globalThis.gc),
       meterControl,
     });
 
@@ -312,14 +308,12 @@ function makeWorker(port) {
         assert(!dispatch, 'cannot setBundle again');
         const enableDisavow = !!args[3];
         const relaxDurabilityRules = !!args[4];
-        const gcEveryCrank = args[5] === undefined ? true : !!args[5];
         return setBundle(
           args[0],
           args[1],
           args[2],
           enableDisavow,
           relaxDurabilityRules,
-          gcEveryCrank,
         );
       }
       case 'deliver': {
