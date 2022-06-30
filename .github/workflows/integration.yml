@@ -17,6 +17,7 @@ on:
 
 jobs:
   pre_check:
+    if: ${{ github.repository_owner == 'agoric' }}
     uses: ./.github/workflows/pre-check-integration.yml
 
   # This job is meant to emulate what developers working with the Agoric platform will experience
