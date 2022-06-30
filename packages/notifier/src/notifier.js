@@ -161,13 +161,85 @@ export const makeNotifierKit = (...initialStateArr) => {
 export const makeNotifierFromAsyncIterable = asyncIterableP => {
   const iteratorP = E(asyncIterableP)[Symbol.asyncIterator]();
 
-  /** @type {Promise<UpdateRecord<T>>|undefined} */
-  let optNextPromise;
-  /** @type {UpdateCount & bigint} */
-  let currentUpdateCount = 0n;
-  /** @type {ERef<UpdateRecord<T>>|undefined} */
-  let currentResponse;
-  let final = false;
+  const resultPromiseMap = new WeakMap();
+  let latestResultInP, latestResultOutP, nextResultInR, nextResultOutP;
+  let latestUpdateCount = 0n;
+  let finished = false;
+  let finalResultOut = undefined;
+
+  // Consume results as soon as their predecessors settle.
+  (async function() {
+    try {
+      do {
+        latestResultInP = E(iteratorP).next();
+        if (nextResultInR) {
+          nextResultInR(latestResultInP);
+          nextResultInR = undefined;
+        }
+      } while (!(await latestResultInP).done);
+    } catch (err) {}
+    if (nextResultInR) {
+      nextResultInR(latestResultInP);
+      nextResultInR = undefined;
+    }
+  })();
+
+  // Create outbound results on-demand, but at most once.
+  function getLatestResultOutP() {
+    if (!latestResultOutP) {
+      assert(latestResultInP !== undefined);
+      latestResultOutP = resultPromiseMap.get(latestResultInP);
+      if (!latestResultOutP) {
+        latestResultOutP = translateInboundResult(latestResultInP);
+        resultPromiseMap.set(latestResultInP, latestResultOutP);
+      }
+    }
+    return latestResultOutP;
+  }
+  function translateInboundResult(resultInP) {
+    return resultInP.then(
+      ({value, done}) => {
+        // If this is resolving a post-finish request, preserve the final result.
+        if (finished) {
+          return finalResultOut;
+        }
+
+        let updateCount = undefined;
+        if (done) {
+          finished = true;
+
+          // If there is a pending next-value promise, resolve it.
+          if (nextResultInR) {
+            nextResultInR(/*resultInP*/);
+            nextResultInR = undefined;
+          }
+
+          finalResultOut = harden({value, updateCount});
+          return finalResultOut;
+        }
+
+        latestUpdateCount += 1n;
+        updateCount = latestUpdateCount;
+
+        // Discard any pending promise.
+        latestResultOutP = nextResultOutP = nextResultInR = undefined;
+
+        return harden({value, updateCount});
+      },
+      rejection => {
+        if (!finished) {
+          finished = true;
+
+          // If there is a pending next-value promise, resolve it.
+          if (nextResultInR) {
+            nextResultInR(resultInP);
+            nextResultInR = undefined;
+          }
+        }
+        throw rejection;
+      },
+    );
+  }
 
   /**
    * @template T
@@ -175,49 +247,33 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
    */
   const baseNotifier = Far('baseNotifier', {
     getUpdateSince(updateCount = -1n) {
-      if (updateCount < currentUpdateCount) {
-        if (currentResponse) {
-          return Promise.resolve(currentResponse);
-        }
-      } else if (updateCount !== currentUpdateCount) {
-        throw new Error(
-          'getUpdateSince argument must be a previously-issued updateCount.',
-        );
+      assert(updateCount <= latestUpdateCount, 'argument must be a previously-issued updateCount.');
+
+      // If we don't yet have an inbound result or a promise for an outbound result,
+      // create the latter.
+      if (!latestResultInP && !latestResultOutP) {
+        const { promise, resolve } = makePromiseKit();
+        nextResultInR = resolve;
+        latestResultOutP = nextResultOutP = translateInboundResult(promise);
       }
 
-      // Return a final response if we have one, otherwise a promise for the next state.
-      if (final) {
-        assert(currentResponse !== undefined);
-        return Promise.resolve(currentResponse);
+      if (updateCount < latestUpdateCount) {
+        // Each returned promise is unique.
+        return getLatestResultOutP().then();
       }
-      if (!optNextPromise) {
-        const nextIterResultP = E(iteratorP).next();
-        optNextPromise = E.when(
-          nextIterResultP,
-          ({ done, value }) => {
-            assert(!final);
-            if (done) {
-              final = true;
-            }
-            currentUpdateCount += 1n;
-            currentResponse = harden({
-              value,
-              updateCount: done ? undefined : currentUpdateCount,
-            });
-            optNextPromise = undefined;
-            return currentResponse;
-          },
-          _reason => {
-            final = true;
-            currentResponse =
-              /** @type {Promise<UpdateRecord<T>>} */
-              (nextIterResultP);
-            optNextPromise = undefined;
-            return currentResponse;
-          },
-        );
+
+      if (!nextResultOutP) {
+        if (finished) {
+          nextResultOutP = getLatestResultOutP();
+        } else {
+          const { promise, resolve } = makePromiseKit();
+          nextResultInR = resolve;
+          nextResultOutP = translateInboundResult(promise);
+        }
       }
-      return optNextPromise;
+
+      // Each returned promise is unique.
+      return nextResultOutP.then();
     },
   });
 
