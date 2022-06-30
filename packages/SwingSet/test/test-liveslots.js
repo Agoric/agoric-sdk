@@ -37,6 +37,13 @@ function slotArg(index, iface) {
 }
 const slot0arg = slotArg(0);
 
+function expectError(t, expectedError, messagePattern) {
+  const ebody = JSON.parse(expectedError.body);
+  t.is(ebody['@qclass'], 'error');
+  t.is(ebody.name, 'Error');
+  t.regex(ebody.message, messagePattern);
+}
+
 test('calls', async t => {
   const { log, syscall } = buildSyscall();
 
@@ -608,7 +615,7 @@ test('capdata size limit on syscalls', async t => {
   const { log, syscall } = buildSyscall();
 
   function build(vatPowers) {
-    const { D } = vatPowers;
+    const { D, exitVat, exitVatWithFailure } = vatPowers;
     const obj1 = Far('obj1', {});
     const obj2 = Far('obj2', {});
     return Far('root', {
@@ -638,10 +645,10 @@ test('capdata size limit on syscalls', async t => {
         await E(target).takeThis(pk.promise);
         pk.resolve(longString);
       },
-      async returnTooManySlots() {
+      returnTooManySlots() {
         return [obj1, obj2];
       },
-      async returnBodyTooBig() {
+      returnBodyTooBig() {
         return longString;
       },
       async callTooManySlots(dev) {
@@ -659,6 +666,18 @@ test('capdata size limit on syscalls', async t => {
         } catch (e) {
           log.push(`fail: ${e.message}`);
         }
+      },
+      exitVatTooManySlots() {
+        exitVat([obj1, obj2]);
+      },
+      exitVatBodyTooBig() {
+        exitVat(longString);
+      },
+      exitVatFailTooManySlots() {
+        exitVatWithFailure([obj1, obj2]);
+      },
+      exitVatWithFailureBodyTooBig() {
+        exitVatWithFailure(longString);
       },
     });
   }
@@ -739,11 +758,12 @@ test('capdata size limit on syscalls', async t => {
   t.deepEqual(log.shift(), { type: 'subscribe', target: result5 });
   matchIDCounterSet(t, log);
   await dispatch(makeResolve(result5, undefinedArg));
-  t.deepEqual(log.shift(), {
+  let failure = log.shift();
+  t.like(failure, {
     type: 'exit',
     isFailure: true,
-    info: Error('syscall capdata too large'),
   });
+  expectError(t, failure.info, /syscall capdata too large/);
   t.deepEqual(log.shift(), {
     type: 'resolve',
     resolutions: [[rp5, false, undefinedArg]],
@@ -765,11 +785,12 @@ test('capdata size limit on syscalls', async t => {
   t.deepEqual(log.shift(), { type: 'subscribe', target: result6 });
   matchIDCounterSet(t, log);
   await dispatch(makeResolve(result6, undefinedArg));
-  t.deepEqual(log.shift(), {
+  failure = log.shift();
+  t.like(failure, {
     type: 'exit',
     isFailure: true,
-    info: Error('syscall capdata too large'),
   });
+  expectError(t, failure.info, /syscall capdata too large/);
   t.deepEqual(log.shift(), {
     type: 'resolve',
     resolutions: [[rp6, false, undefinedArg]],
@@ -778,20 +799,70 @@ test('capdata size limit on syscalls', async t => {
 
   const rp7 = 'p-7';
   await dispatch(makeMessage(rootA, 'returnTooManySlots', [], [], rp7));
-  t.deepEqual(log.shift(), {
+  failure = log.shift();
+  t.like(failure, {
     type: 'exit',
     isFailure: true,
-    info: Error('syscall capdata too large'),
   });
+  expectError(t, failure.info, /syscall capdata too large/);
   t.deepEqual(log, []);
 
   const rp8 = 'p-8';
   await dispatch(makeMessage(rootA, 'returnBodyTooBig', [], [], rp8));
-  t.deepEqual(log.shift(), {
+  failure = log.shift();
+  t.like(failure, {
     type: 'exit',
     isFailure: true,
-    info: Error('syscall capdata too large'),
   });
+  expectError(t, failure.info, /syscall capdata too large/);
+  t.deepEqual(log, []);
+
+  const rp9 = 'p-9';
+  await dispatch(makeMessage(rootA, 'exitVatTooManySlots', [], [], rp9));
+  failure = log.shift();
+  t.like(failure, {
+    type: 'exit',
+    isFailure: true,
+  });
+  expectError(t, failure.info, /syscall capdata too large/);
+  t.deepEqual(log.shift(), {
+    type: 'resolve',
+    resolutions: [[rp9, false, undefinedArg]],
+  });
+  t.deepEqual(log, []);
+
+  const rp10 = 'p-10';
+  await dispatch(makeMessage(rootA, 'exitVatTooBig', [], [], rp10));
+  failure = log.shift();
+  t.like(failure, {
+    type: 'exit',
+    isFailure: true,
+  });
+  expectError(t, failure.info, /syscall capdata too large/);
+  t.deepEqual(log, []);
+
+  const rp11 = 'p-11';
+  await dispatch(makeMessage(rootA, 'exitVatFailTooManySlots', [], [], rp11));
+  failure = log.shift();
+  t.like(failure, {
+    type: 'exit',
+    isFailure: true,
+  });
+  expectError(t, failure.info, /syscall capdata too large/);
+  t.deepEqual(log.shift(), {
+    type: 'resolve',
+    resolutions: [[rp11, false, undefinedArg]],
+  });
+  t.deepEqual(log, []);
+
+  const rp12 = 'p-12';
+  await dispatch(makeMessage(rootA, 'exitVatWithFailureTooBig', [], [], rp12));
+  failure = log.shift();
+  t.like(failure, {
+    type: 'exit',
+    isFailure: true,
+  });
+  expectError(t, failure.info, /syscall capdata too large/);
   t.deepEqual(log, []);
 });
 
@@ -1652,10 +1723,7 @@ test('unserializable promise resolution', async t => {
   } catch (e) {
     expectedError = m.serialize(e);
   }
-  const ebody = JSON.parse(expectedError.body);
-  t.is(ebody['@qclass'], 'error');
-  t.is(ebody.name, 'Error');
-  t.regex(ebody.message, /Remotables must be explicitly declared/);
+  expectError(t, expectedError, /Remotables must be explicitly declared/);
 
   t.deepEqual(l2.resolutions[0], [expectedPA, true, expectedError]);
 });
@@ -1713,10 +1781,7 @@ test('unserializable promise rejection', async t => {
   } catch (e) {
     expectedError = m.serialize(e);
   }
-  const ebody = JSON.parse(expectedError.body);
-  t.is(ebody['@qclass'], 'error');
-  t.is(ebody.name, 'Error');
-  t.regex(ebody.message, /Remotables must be explicitly declared/);
+  expectError(t, expectedError, /Remotables must be explicitly declared/);
 
   t.deepEqual(l2.resolutions[0], [expectedPA, true, expectedError]);
 });

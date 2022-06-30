@@ -83,16 +83,22 @@ function build(
     syscallCapdataSlotsLengthLimit = slotsLengthLimit;
   }
 
-  function assertAcceptableSyscallCapdataSize(capdatas) {
+  function isAcceptableSyscallCapdataSize(capdatas) {
     let bodySizeTotal = 0;
     let slotsLengthTotal = 0;
     for (const capdata of capdatas) {
       bodySizeTotal += capdata.body.length;
       slotsLengthTotal += capdata.slots.length;
     }
-    assert(
+    return (
       bodySizeTotal <= syscallCapdataBodySizeLimit &&
-        slotsLengthTotal <= syscallCapdataSlotsLengthLimit,
+      slotsLengthTotal <= syscallCapdataSlotsLengthLimit
+    );
+  }
+
+  function assertAcceptableSyscallCapdataSize(capdatas) {
+    assert(
+      isAcceptableSyscallCapdataSize(capdatas),
       'syscall capdata too large',
     );
   }
@@ -940,7 +946,7 @@ function build(
         );
         assertAcceptableSyscallCapdataSize(resolutionCDs);
       } catch (e) {
-        syscall.exit(true, e);
+        syscall.exit(true, m.serialize(e));
         return null;
       }
       syscall.resolve(resolutions);
@@ -1141,7 +1147,7 @@ function build(
         );
         assertAcceptableSyscallCapdataSize(resolutionCDs);
       } catch (e) {
-        syscall.exit(true, e);
+        syscall.exit(true, m.serialize(e));
         return;
       }
       syscall.resolve(resolutions);
@@ -1271,16 +1277,24 @@ function build(
   function exitVat(completion) {
     meterControl.assertIsMetered(); // else userspace getters could escape
     const args = m.serialize(harden(completion));
-    args.slots.map(retainExportedVref);
-    syscall.exit(false, args);
+    if (isAcceptableSyscallCapdataSize([args])) {
+      args.slots.map(retainExportedVref);
+      syscall.exit(false, args);
+    } else {
+      syscall.exit(true, m.serialize(Error('syscall capdata too large')));
+    }
   }
 
   /** @type {ExitVatWithFailure} */
   function exitVatWithFailure(reason) {
     meterControl.assertIsMetered(); // else userspace getters could escape
     const args = m.serialize(harden(reason));
-    args.slots.map(retainExportedVref);
-    syscall.exit(true, args);
+    if (isAcceptableSyscallCapdataSize([args])) {
+      args.slots.map(retainExportedVref);
+      syscall.exit(true, args);
+    } else {
+      syscall.exit(true, m.serialize(Error('syscall capdata too large')));
+    }
   }
 
   function disavow(presence) {
