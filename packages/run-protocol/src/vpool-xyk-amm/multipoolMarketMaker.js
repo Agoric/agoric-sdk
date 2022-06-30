@@ -166,10 +166,15 @@ const start = async (zcf, privateArgs) => {
   const isSecondary = secondaryBrandToPool.has;
 
   // The liquidityBrand has to exist to allow the addPool Offer to specify want
-  /** @type {WeakStore<Brand,ZCFMint>} */
+  /** @type {WeakStore<Brand,ZCFMint<'nat'>>} */
   const secondaryBrandToLiquidityMint = makeWeakStore(
     'secondaryBrandToLiquidityMint',
   );
+  // To manage races in addIssuer, we keep a promise from the time of the
+  // first request until the Issuer is set up.
+  /** @type {WeakStore<Brand,ERef<Issuer<'nat'>>>} */
+  const secondaryBrandToLiquidityIssuerPromise =
+    makeWeakStore('secondaryBrand');
 
   const quoteIssuerKit = makeIssuerKit('Quote', AssetKind.SET);
 
@@ -275,6 +280,7 @@ const start = async (zcf, privateArgs) => {
     zcf,
     isSecondary,
     secondaryBrandToLiquidityMint,
+    secondaryBrandToLiquidityIssuerPromise,
     () => {
       assert(reserveFacet, 'Must first resolveReserveFacet');
       return E(reserveFacet).addIssuerFromAmm;
