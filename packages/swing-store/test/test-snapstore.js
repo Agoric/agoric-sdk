@@ -60,7 +60,7 @@ test('snapStore prepare / commit delete is robust', async t => {
   }
   t.is(fs.readdirSync(pool.name).length, 5);
 
-  t.notThrows(() => store.commitDeletes());
+  await t.notThrowsAsync(() => store.commitDeletes());
 
   // @ts-expect-error
   t.throws(() => store.prepareToDelete(1));
@@ -68,24 +68,24 @@ test('snapStore prepare / commit delete is robust', async t => {
   t.throws(() => store.prepareToDelete('/etc/passwd'));
 
   store.prepareToDelete(hashes[2]);
-  store.commitDeletes();
+  await store.commitDeletes();
   t.deepEqual(fs.readdirSync(pool.name).length, 4);
 
   // Restore (re-save) between prepare and commit.
   store.prepareToDelete(hashes[3]);
   await store.save(async fn => fs.promises.writeFile(fn, `file 3`));
-  store.commitDeletes();
+  await store.commitDeletes();
   t.true(fs.readdirSync(pool.name).includes(`${hashes[3]}.gz`));
 
   hashes.forEach(store.prepareToDelete);
   store.prepareToDelete('does not exist');
-  t.throws(() => store.commitDeletes());
+  await t.throwsAsync(() => store.commitDeletes());
   // but it deleted the rest of the files
   t.deepEqual(fs.readdirSync(pool.name), []);
 
   // ignore errors while clearing out pending deletes
-  store.commitDeletes(true);
+  await store.commitDeletes(true);
 
   // now we shouldn't see any errors
-  store.commitDeletes();
+  await store.commitDeletes();
 });

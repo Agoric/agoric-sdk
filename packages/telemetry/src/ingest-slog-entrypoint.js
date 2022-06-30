@@ -78,10 +78,11 @@ async function run() {
 
   console.log(`parsing`, slogFileName);
 
+  let update = false;
   for await (const line of lines) {
     lineCount += 1;
     const obj = JSON.parse(line);
-    const update = obj.time >= progress.lastSlogTime;
+    update ||= obj.time >= progress.lastSlogTime;
     if (update) {
       progress.lastSlogTime = obj.time;
     }

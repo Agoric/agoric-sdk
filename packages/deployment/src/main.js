@@ -473,6 +473,7 @@ show-config      display the client connection parameters
         'XSNAP_TEST_RECORD',
         'SWING_STORE_TRACE',
         'XSNAP_KEEP_SNAPSHOTS',
+        'NODE_HEAP_SNAPSHOTS',
       ]) {
         if (env[envName]) {
           serviceLines.push(`Environment="${envName}=${env[envName]}"`);
