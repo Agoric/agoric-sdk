@@ -114,7 +114,7 @@ export function xsnap(options) {
     stdio: ['ignore', stdout, stderr, 'pipe', 'pipe'],
   });
 
-  xsnapProcess.on('exit', (code, signal) => {
+  xsnapProcess.once('exit', (code, signal) => {
     if (code === 0) {
       vatExit.resolve();
     } else if (signal !== null) {
