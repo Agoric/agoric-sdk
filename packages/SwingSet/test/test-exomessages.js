@@ -12,6 +12,7 @@ async function beginning(t, mode) {
     },
   };
   const controller = await buildVatController(config, [mode]);
+  t.teardown(controller.shutdown);
   t.is(controller.kpStatus(controller.bootstrapResult), 'unresolved');
   return controller;
 }

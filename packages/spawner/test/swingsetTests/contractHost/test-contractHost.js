@@ -25,6 +25,7 @@ async function main(t, mode) {
   const { kernelBundles, trivialBundle } = t.context.data;
   const argv = [mode, trivialBundle];
   const controller = await buildVatController(config, argv, { kernelBundles });
+  t.teardown(controller.shutdown);
   await controller.run();
   return controller.dump();
 }

@@ -81,6 +81,7 @@ test('bridge device', async t => {
   };
 
   const c2 = await makeSwingsetController(hostStorage, endowments2);
+  t.teardown(c2.shutdown);
   await c2.run();
   // The bootstrap is reloaded from transcript, which means it doesn't run
   // any syscalls (they are switched off during replay), so it won't re-run

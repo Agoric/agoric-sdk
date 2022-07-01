@@ -32,6 +32,7 @@ async function doTerminateNonCritical(
     ...t.context.data,
     hostStorage,
   });
+  t.teardown(controller.shutdown);
   t.is(controller.kpStatus(controller.bootstrapResult), 'unresolved');
   const preProbe = hostStorage.kvStore.get(`${deadVatID}.options`);
   if (!dynamic) {
@@ -76,6 +77,7 @@ async function doTerminateCritical(t, deadVatID, mode, dynamic) {
     ...t.context.data,
     hostStorage,
   });
+  t.teardown(controller.shutdown);
   t.is(controller.kpStatus(controller.bootstrapResult), 'unresolved');
   const preProbe = hostStorage.kvStore.get(`${deadVatID}.options`);
   if (!dynamic) {
@@ -297,6 +299,7 @@ test('exit with presence', async t => {
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
   const controller = await buildVatController(config, [], t.context.data);
+  t.teardown(controller.shutdown);
   await controller.run();
   t.deepEqual(controller.dump().log, [
     'preparing dynamic vat',
@@ -317,6 +320,7 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
       hostStorage: hostStorage1,
       kernelBundles: t.context.data.kernelBundles,
     });
+    t.teardown(c1.shutdown);
     c1.pinVatRoot('bootstrap');
     await c1.run();
     t.deepEqual(c1.kpResolution(c1.bootstrapResult), capargs('bootstrap done'));
@@ -337,6 +341,7 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
       hostStorage: hostStorage2,
       kernelBundles: t.context.data.kernelBundles,
     });
+    t.teardown(c2.shutdown);
     const r2 = c2.queueToVatRoot('bootstrap', 'speakAgain', [], 'panic');
     await c2.run();
     t.is(c2.kpStatus(r2), 'fulfilled');
@@ -354,6 +359,7 @@ test('invalid criticalVatKey causes vat creation to fail', async t => {
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
   const controller = await buildVatController(config, [], t.context.data);
+  t.teardown(controller.shutdown);
   await t.throwsAsync(() => controller.run(), {
     message: /invalid criticalVatKey/,
   });
@@ -369,6 +375,7 @@ test('dead vat state removed', async t => {
     hostStorage,
     kernelBundles: t.context.data.kernelBundles,
   });
+  t.teardown(controller.shutdown);
   controller.pinVatRoot('bootstrap');
   await controller.run();
   t.deepEqual(
@@ -394,6 +401,7 @@ test('terminate with presence', async t => {
   ).pathname;
   const config = await loadSwingsetConfigFile(configPath);
   const controller = await buildVatController(config, [], t.context.data);
+  t.teardown(controller.shutdown);
   await controller.run();
   t.deepEqual(controller.dump().log, [
     'FOO 1',

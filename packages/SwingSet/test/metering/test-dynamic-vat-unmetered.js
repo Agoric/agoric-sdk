@@ -30,6 +30,7 @@ test('unmetered dynamic vat', async t => {
     },
   };
   const c = await buildVatController(config, []);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
   // let the vatAdminService get wired up before we create any new vats

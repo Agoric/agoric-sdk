@@ -66,4 +66,5 @@ test('vat reload from snapshot', async t => {
   await c2.run();
   t.deepEqual(c2.dump().log, expected2); // note: *not* 0-11
   t.deepEqual(getPositions(), [13, 13]);
+  await c2.shutdown();
 });

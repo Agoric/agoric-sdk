@@ -26,10 +26,10 @@ async function testCranks(t, mode) {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
+  t.teardown(c.shutdown);
   c.pinVatRoot('left');
   const rightKref = c.pinVatRoot('right');
   const rightID = c.vatNameToID('right');
-  t.teardown(c.shutdown);
   await c.run();
 
   if (mode === 'messages' || mode === 'wallclock') {

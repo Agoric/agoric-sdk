@@ -1071,6 +1071,7 @@ test('terminated vat', async t => {
     },
   };
   const c = await buildVatController(config, []);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
   function getRefCountsAndOwners() {
@@ -1217,6 +1218,7 @@ test.serial('device transfer', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
   // The bootstrap() message is already queued. When we call c.step(), it

@@ -76,6 +76,7 @@ async function doTestSetup(t, enableSlog = false) {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  t.teardown(c.shutdown);
   const id44 = await c.validateAndInstallBundle(bundles.vat44Bundle);
   const idRC = await c.validateAndInstallBundle(bundles.vatRefcountBundle);
   c.pinVatRoot('bootstrap');

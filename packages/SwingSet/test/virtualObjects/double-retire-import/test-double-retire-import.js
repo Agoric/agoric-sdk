@@ -28,6 +28,7 @@ async function testUpgrade(t, defaultManagerType) {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
 

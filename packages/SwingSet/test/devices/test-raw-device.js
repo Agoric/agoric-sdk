@@ -52,6 +52,7 @@ test('d1', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
 

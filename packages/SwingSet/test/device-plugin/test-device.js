@@ -62,6 +62,7 @@ async function setupVatController(t) {
     t.context.hostStorage,
     deviceEndowments,
   );
+  t.teardown(c.shutdown);
   const cycle = async () => {
     await c.run();
     while (inputQueue.length) {
