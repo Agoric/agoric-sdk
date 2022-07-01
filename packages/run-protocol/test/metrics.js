@@ -1,5 +1,4 @@
 // @ts-check
-import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { diff } from 'deep-object-diff';
 
@@ -17,7 +16,7 @@ const trace = makeTracer('TestMetrics', false);
  */
 export const subscriptionTracker = async (t, subscription) => {
   const metrics = await E(subscription)[Symbol.asyncIterator]();
-  /** @type {UpdateRecord<N>} */
+  /** @type {IteratorResult<N, N>} */
   let notif;
   const getLastNotif = () => notif;
 
