@@ -28,43 +28,59 @@ const { keys, values, fromEntries } = Object;
 const allValues = async obj =>
   fromEntries(zip(keys(obj), await Promise.all(values(obj))));
 
+const bundleRelative = rel =>
+  bundleSource(new URL(rel, import.meta.url).pathname);
+const bundleRelativeGE = rel =>
+  bundleSource(new URL(rel, import.meta.url).pathname, { format: 'getExport' });
+
 /**
- * Build the source bundles for the kernel and xsnap vat worker.
- *
- * @param {object} [options]
- * @param {ModuleFormat} [options.bundleFormat]
+ * Build the source bundles for the kernel. makeSwingsetController()
+ * calls this on each launch, to get the
+ * current kernel sources
  */
-export async function buildKernelBundles(options = {}) {
-  // this takes 2.7s on my computer
+export async function buildKernelBundle() {
+  // this takes about 1.0s on my computer
+  const kernelBundle = await bundleRelative('../kernel/kernel.js');
+  return harden(kernelBundle);
+}
 
-  const { bundleFormat = undefined } = options;
-
-  const src = rel =>
-    bundleSource(new URL(rel, import.meta.url).pathname, {
-      format: bundleFormat,
-    });
-  const srcGE = rel =>
-    bundleSource(new URL(rel, import.meta.url).pathname, {
-      format: 'getExport',
-    });
-
+/**
+ * Build the source bundles for built-in vats and devices, and for the
+ * xsnap vat worker.
+ */
+export async function buildVatAndDeviceBundles() {
   const bundles = await allValues({
-    kernel: src('../kernel/kernel.js'),
-    adminDevice: src('../devices/vat-admin/device-vat-admin.js'),
-    adminVat: src('../vats/vat-admin/vat-vat-admin.js'),
-    comms: src('../vats/comms/index.js'),
-    vattp: src('../vats/vattp/vat-vattp.js'),
-    timer: src('../vats/timer/vat-timer.js'),
+    adminDevice: bundleRelative('../devices/vat-admin/device-vat-admin.js'),
+    adminVat: bundleRelative('../vats/vat-admin/vat-vat-admin.js'),
+    comms: bundleRelative('../vats/comms/index.js'),
+    vattp: bundleRelative('../vats/vattp/vat-vattp.js'),
+    timer: bundleRelative('../vats/timer/vat-timer.js'),
 
-    lockdown: srcGE(
+    lockdown: bundleRelativeGE(
       '../supervisors/subprocess-xsnap/lockdown-subprocess-xsnap.js',
     ),
-    supervisor: srcGE(
+    supervisor: bundleRelativeGE(
       '../supervisors/subprocess-xsnap/supervisor-subprocess-xsnap.js',
     ),
   });
 
   return harden(bundles);
+}
+
+// Unit tests can call this to amortize the bundling costs: pass the
+// result to initializeSwingset's initializationOptions.kernelBundles
+// (for the vat/device/worker bundles), and you can pass .kernelBundle
+// individually to makeSwingsetController's
+// runtimeOptions.kernelBundle
+
+// Tests can also pass the whole result to buildVatController's
+// runtimeOptions.kernelBundles, which will pass it through to both.
+
+export async function buildKernelBundles() {
+  const bp = buildVatAndDeviceBundles();
+  const kp = buildKernelBundle();
+  const [vdBundles, kernelBundle] = await Promise.all([bp, kp]);
+  return harden({ kernel: kernelBundle, ...vdBundles });
 }
 
 function byName(a, b) {
@@ -256,7 +272,7 @@ function sortObjectProperties(obj, firsts = []) {
   return result;
 }
 
-/** @typedef {{ kernelBundles?: Record<string, string>, verbose?: boolean,
+/** @typedef {{ kernelBundles?: Record<string, Bundle>, verbose?: boolean,
  *              addVatAdmin?: boolean, addComms?: boolean, addVattp?: boolean,
  *              addTimer?: boolean,
  *            }} InitializationOptions
@@ -318,9 +334,7 @@ export async function initializeSwingset(
   }
 
   const {
-    kernelBundles = await buildKernelBundles({
-      bundleFormat: config.bundleFormat,
-    }),
+    kernelBundles = await buildVatAndDeviceBundles(),
     verbose,
     addVatAdmin = true,
     addComms = true,
@@ -328,7 +342,6 @@ export async function initializeSwingset(
     addTimer = true,
   } = initializationOptions;
 
-  kvStore.set('kernelBundle', JSON.stringify(kernelBundles.kernel));
   kvStore.set('lockdownBundle', JSON.stringify(kernelBundles.lockdown));
   kvStore.set('supervisorBundle', JSON.stringify(kernelBundles.supervisor));
 

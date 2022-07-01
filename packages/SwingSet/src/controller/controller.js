@@ -26,6 +26,7 @@ import { makeGcAndFinalize } from '../lib-nodejs/gc-and-finalize.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import { provideHostStorage } from './hostStorage.js';
 import {
+  buildKernelBundle,
   swingsetIsInitialized,
   initializeSwingset,
 } from './initializeSwingset.js';
@@ -168,7 +169,8 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
  *   warehousePolicy?: { maxVatsOnline?: number },
  *   overrideVatManagerOptions?: unknown,
  *   spawn?: typeof import('child_process').spawn,
- *   env?: Record<string, string | undefined>
+ *   env?: Record<string, string | undefined>,
+ *   kernelBundle?: Bundle
  * }} runtimeOptions
  */
 export async function makeSwingsetController(
@@ -238,6 +240,10 @@ export async function makeSwingsetController(
   // see https://github.com/Agoric/SES-shim/issues/292 for details
   harden(console);
 
+  writeSlogObject({ type: 'bundle-kernel-start' });
+  const { kernelBundle = await buildKernelBundle() } = runtimeOptions;
+  writeSlogObject({ type: 'bundle-kernel-finish' });
+
   // FIXME: Put this somewhere better.
   const handlers = process.listeners('unhandledRejection');
   let haveUnhandledRejectionHandler = false;
@@ -254,8 +260,6 @@ export async function makeSwingsetController(
   function kernelRequire(what) {
     assert.fail(X`kernelRequire unprepared to satisfy require(${what})`);
   }
-  // @ts-expect-error assume kernelBundle is set
-  const kernelBundle = JSON.parse(kvStore.get('kernelBundle'));
   writeSlogObject({ type: 'import-kernel-start' });
   const kernelNS = await importBundle(kernelBundle, {
     filePrefix: 'kernel/...',
@@ -515,7 +519,7 @@ export async function makeSwingsetController(
  * @param {SwingSetConfig} config
  * @param {string[]} argv
  * @param {{ hostStorage?: HostStore, env?: Record<string, string>, verbose?:
- *   boolean, kernelBundles?: Record<string, string>, debugPrefix?: string,
+ *   boolean, kernelBundles?: Record<string, Bundle>, debugPrefix?: string,
  *   slogCallbacks?: unknown, testTrackDecref?: unknown, warehousePolicy?: {
  *   maxVatsOnline?: number }, slogFile?: string }} runtimeOptions
  * @typedef { import('@agoric/swing-store').KVStore } KVStore
@@ -529,12 +533,15 @@ export async function buildVatController(
     hostStorage = provideHostStorage(),
     env,
     verbose,
-    kernelBundles,
+    kernelBundles: kernelAndOtherBundles = {},
     debugPrefix,
     slogCallbacks,
     warehousePolicy,
     slogFile,
   } = runtimeOptions;
+  const { kernel: kernelBundle, ...otherBundles } = kernelAndOtherBundles;
+  const kernelBundles = runtimeOptions.kernelBundles ? otherBundles : undefined;
+
   const actualRuntimeOptions = {
     env,
     verbose,
@@ -542,6 +549,7 @@ export async function buildVatController(
     slogCallbacks,
     warehousePolicy,
     slogFile,
+    kernelBundle,
   };
   const initializationOptions = { verbose, kernelBundles };
   let bootstrapResult;

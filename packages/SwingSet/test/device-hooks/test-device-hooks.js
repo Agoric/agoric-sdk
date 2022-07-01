@@ -59,8 +59,10 @@ test('add hook', async t => {
     addVattp: false,
     addTimer: false,
   };
+  const { kernelBundle } = t.context.data.kernelBundles;
+  const runtimeOpts = { kernelBundle };
   await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, {});
+  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
 
   let hookreturn;
   function setHookReturn(args, slots = []) {

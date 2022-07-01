@@ -52,7 +52,6 @@ const enableKernelGC = true;
 // device.nextID = $NN
 // meter.nextID = $NN // used to make m$NN
 
-// kernelBundle = JSON(bundle)
 // namedBundleID.$NAME = bundleID
 // bundle.$BUNDLEID = JSON(bundle)
 //
