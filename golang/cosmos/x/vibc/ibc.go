@@ -7,18 +7,21 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	channeltypes "github.com/cosmos/ibc-go/v2/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v2/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v2/modules/core/24-host"
+	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 
-	"github.com/cosmos/ibc-go/v2/modules/core/exported"
+	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-type portHandler struct {
-	ibcModule porttypes.IBCModule
-	keeper    Keeper
+var (
+	_ porttypes.IBCModule = IBCModule{}
+)
+
+type IBCModule struct {
+	keeper Keeper
 }
 
 type portMessage struct { // comes from swingset's IBC handler
@@ -54,14 +57,13 @@ func orderToString(order channeltypes.Order) string {
 	}
 }
 
-func NewPortHandler(ibcModule porttypes.IBCModule, keeper Keeper) portHandler {
-	return portHandler{
-		ibcModule: ibcModule,
-		keeper:    keeper,
+func NewIBCModule(keeper Keeper) IBCModule {
+	return IBCModule{
+		keeper: keeper,
 	}
 }
 
-func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string, err error) {
+func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, err error) {
 	// fmt.Println("ibc.go downcall", str)
 	keeper := ch.keeper
 
@@ -149,27 +151,14 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 	return
 }
 
-func (am AppModule) PushAction(ctx sdk.Context, action vm.Jsonable) error {
+func (im IBCModule) PushAction(ctx sdk.Context, action vm.Jsonable) error {
 	// fmt.Println("ibc.go upcall", send)
-	return am.keeper.PushAction(ctx, action)
+	return im.keeper.PushAction(ctx, action)
 	// fmt.Println("ibc.go upcall reply", reply, err)
 }
 
-func (AppModule) NegotiateAppVersion(
-	ctx sdk.Context,
-	order channeltypes.Order,
-	connectionID string,
-	portID string,
-	counterparty channeltypes.Counterparty,
-	proposedVersion string,
-) (version string, err error) {
-	// FIXME: We cannot guarantee a synchronous response from the controller, so
-	// we always accept the proposed version.
-	return proposedVersion, err
-}
-
 // Implement IBCModule callbacks
-func (am AppModule) OnChanOpenInit(
+func (im IBCModule) OnChanOpenInit(
 	ctx sdk.Context,
 	order channeltypes.Order,
 	connectionHops []string,
@@ -199,7 +188,7 @@ type channelOpenTryEvent struct {
 	BlockTime           int64                     `json:"blockTime"`
 }
 
-func (am AppModule) OnChanOpenTry(
+func (im IBCModule) OnChanOpenTry(
 	ctx sdk.Context,
 	order channeltypes.Order,
 	connectionHops []string,
@@ -207,9 +196,8 @@ func (am AppModule) OnChanOpenTry(
 	channelID string,
 	channelCap *capability.Capability,
 	counterparty channeltypes.Counterparty,
-	version,
 	counterpartyVersion string,
-) error {
+) (string, error) {
 	event := channelOpenTryEvent{
 		Type:                "IBC_EVENT",
 		Event:               "channelOpenTry",
@@ -218,23 +206,23 @@ func (am AppModule) OnChanOpenTry(
 		PortID:              portID,
 		ChannelID:           channelID,
 		Counterparty:        counterparty,
-		Version:             version,
+		Version:             counterpartyVersion, // TODO: Don't just use the counterparty version.
 		CounterpartyVersion: counterpartyVersion,
 		BlockHeight:         ctx.BlockHeight(),
 		BlockTime:           ctx.BlockTime().Unix(),
 	}
 
-	err := am.PushAction(ctx, event)
+	err := im.PushAction(ctx, event)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Claim channel capability passed back by IBC module
-	if err = am.keeper.ClaimCapability(ctx, channelCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
-		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, err.Error())
+	if err = im.keeper.ClaimCapability(ctx, channelCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
+		return "", sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, err.Error())
 	}
 
-	return err
+	return event.Version, err
 }
 
 type channelOpenAckEvent struct {
@@ -249,15 +237,16 @@ type channelOpenAckEvent struct {
 	BlockTime           int64                     `json:"blockTime"`
 }
 
-func (am AppModule) OnChanOpenAck(
+func (im IBCModule) OnChanOpenAck(
 	ctx sdk.Context,
 	portID,
-	channelID string,
+	channelID,
+	counterpartyChannelID,
 	counterpartyVersion string,
 ) error {
 	// We don't care if the channel was found.  If it wasn't then GetChannel
 	// returns an empty channel object that we can still use without crashing.
-	channel, _ := am.keeper.GetChannel(ctx, portID, channelID)
+	channel, _ := im.keeper.GetChannel(ctx, portID, channelID)
 
 	event := channelOpenAckEvent{
 		Type:                "IBC_EVENT",
@@ -271,7 +260,7 @@ func (am AppModule) OnChanOpenAck(
 		BlockTime:           ctx.BlockTime().Unix(),
 	}
 
-	return am.PushAction(ctx, event)
+	return im.PushAction(ctx, event)
 }
 
 type channelOpenConfirmEvent struct {
@@ -283,7 +272,7 @@ type channelOpenConfirmEvent struct {
 	BlockTime   int64  `json:"blockTime"`
 }
 
-func (am AppModule) OnChanOpenConfirm(
+func (im IBCModule) OnChanOpenConfirm(
 	ctx sdk.Context,
 	portID,
 	channelID string,
@@ -297,7 +286,7 @@ func (am AppModule) OnChanOpenConfirm(
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
-	return am.PushAction(ctx, event)
+	return im.PushAction(ctx, event)
 }
 
 type channelCloseInitEvent struct {
@@ -309,7 +298,7 @@ type channelCloseInitEvent struct {
 	BlockTime   int64  `json:"blockTime"`
 }
 
-func (am AppModule) OnChanCloseInit(
+func (im IBCModule) OnChanCloseInit(
 	ctx sdk.Context,
 	portID,
 	channelID string,
@@ -323,7 +312,7 @@ func (am AppModule) OnChanCloseInit(
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
-	err := am.PushAction(ctx, event)
+	err := im.PushAction(ctx, event)
 	return err
 }
 
@@ -336,7 +325,7 @@ type channelCloseConfirmEvent struct {
 	BlockTime   int64  `json:"blockTime"`
 }
 
-func (am AppModule) OnChanCloseConfirm(
+func (im IBCModule) OnChanCloseConfirm(
 	ctx sdk.Context,
 	portID,
 	channelID string,
@@ -350,7 +339,7 @@ func (am AppModule) OnChanCloseConfirm(
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
-	err := am.PushAction(ctx, event)
+	err := im.PushAction(ctx, event)
 	return err
 }
 
@@ -362,7 +351,7 @@ type receivePacketEvent struct {
 	BlockTime   int64               `json:"blockTime"`
 }
 
-func (am AppModule) OnRecvPacket(
+func (im IBCModule) OnRecvPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
@@ -383,7 +372,7 @@ func (am AppModule) OnRecvPacket(
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
-	err := am.PushAction(ctx, event)
+	err := im.PushAction(ctx, event)
 	if err != nil {
 		return channeltypes.NewErrorAcknowledgement(err.Error())
 	}
@@ -400,7 +389,7 @@ type acknowledgementPacketEvent struct {
 	BlockTime       int64               `json:"blockTime"`
 }
 
-func (am AppModule) OnAcknowledgementPacket(
+func (im IBCModule) OnAcknowledgementPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
@@ -415,7 +404,7 @@ func (am AppModule) OnAcknowledgementPacket(
 		BlockTime:       ctx.BlockTime().Unix(),
 	}
 
-	err := am.PushAction(ctx, event)
+	err := im.PushAction(ctx, event)
 	if err != nil {
 		return err
 	}
@@ -431,7 +420,7 @@ type timeoutPacketEvent struct {
 	BlockTime   int64               `json:"blockTime"`
 }
 
-func (am AppModule) OnTimeoutPacket(
+func (im IBCModule) OnTimeoutPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
@@ -444,7 +433,7 @@ func (am AppModule) OnTimeoutPacket(
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
-	err := am.PushAction(ctx, event)
+	err := im.PushAction(ctx, event)
 	if err != nil {
 		return err
 	}
