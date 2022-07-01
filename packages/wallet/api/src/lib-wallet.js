@@ -580,8 +580,6 @@ export function makeWallet({
     E(agoricNames)?.lookup('issuer', 'Attestation'),
   );
 
-  const getAttBrand = makeMemoizedGetter(() => E(getAttIssuer()).getBrand());
-
   /** @type import('@endo/promise-kit').PromiseKit<AttestationTool> */
   const attMakerPK = makePromiseKit();
 
@@ -670,9 +668,9 @@ export function makeWallet({
         keywordPaymentPs.map(async keywordPaymentP => {
           // Wait for the withdrawal to complete.  This protects against a race
           // when updating paymentToPurse.
-          const [_keyword, payment] = await keywordPaymentP;
+          const [keyword, payment] = await keywordPaymentP;
 
-          if ((await E(payment).getAllegedBrand()) === (await getAttBrand())) {
+          if (keywordToAttestation.has(keyword)) {
             return depositAttestation(payment);
           }
 
