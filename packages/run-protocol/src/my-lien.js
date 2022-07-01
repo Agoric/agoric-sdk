@@ -22,14 +22,14 @@ const XLien = /** @type { const } */ ({
 
 /**
  * @param {ERef<BridgeManager>} bridgeManager
- * @param {Brand<'nat'>} stake
+ * @param {Brand<'nat'>} brand
  * @param {string} [denom]
  * @returns {StakingAuthority}
  */
-export const makeStakeReporter = (bridgeManager, stake, denom = 'ubld') => {
+export const makeStakeReporter = (bridgeManager, brand, denom = 'ubld') => {
   const { make: makeAmt } = AmountMath;
   /** @param {string} numeral */
-  const toStake = numeral => makeAmt(stake, BigInt(numeral));
+  const toStake = numeral => makeAmt(brand, BigInt(numeral));
   /**
    * @param {string} address
    * @param {bigint} delta
@@ -49,17 +49,17 @@ export const makeStakeReporter = (bridgeManager, stake, denom = 'ubld') => {
   /** @type {StakingAuthority} */
   const stakeReporter = Far('stakeReporter', {
     increaseLiened: async (address, increase) => {
-      const delta = AmountMath.getValue(stake, increase);
+      const delta = AmountMath.getValue(brand, increase);
       return changeLiened(address, delta);
     },
     decreaseLiened: async (address, decrease) => {
-      const delta = -1n * AmountMath.getValue(stake, decrease);
+      const delta = -1n * AmountMath.getValue(brand, decrease);
       return changeLiened(address, delta);
     },
     getAccountState: async (address, wantedBrand) => {
       assert(
-        wantedBrand === stake,
-        X`Cannot getAccountState for ${wantedBrand}. Expected ${stake}.`,
+        wantedBrand === brand,
+        X`Cannot getAccountState for ${wantedBrand}. Expected ${brand}.`,
       );
       /** @type { AccountState<string> } */
       const { currentTime, bonded, liened, locked, total, unbonding } = await E(
