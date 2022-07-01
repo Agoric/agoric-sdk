@@ -1,24 +1,23 @@
 // @ts-check
 
-import { E, Far } from '@endo/far';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/core/utils.js';
+import '../../exported.js';
+
+import { AmountMath } from '@agoric/ertp';
 import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
-
-import { AmountMath } from '@agoric/ertp';
-import { makeGovernedTerms } from '../vaultFactory/params.js';
-import { makeAmmTerms } from '../vpool-xyk-amm/params.js';
-import { makeReserveTerms } from '../reserve/params.js';
-
-import '../../exported.js';
-
+import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/core/utils.js';
+import { getChildNode } from '@agoric/vats/src/lib-chainStorage.js';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import { E, Far } from '@endo/far';
 import * as Collect from '../collect.js';
+import { makeTracer } from '../makeTracer.js';
+import { makeStakeReporter } from '../my-lien.js';
+import { makeReserveTerms } from '../reserve/params.js';
 import { makeRunStakeTerms } from '../runStake/params.js';
 import { liquidationDetailTerms } from '../vaultFactory/liquidation.js';
-import { makeStakeReporter } from '../my-lien.js';
-import { makeTracer } from '../makeTracer.js';
+import { makeGovernedTerms } from '../vaultFactory/params.js';
+import { makeAmmTerms } from '../vpool-xyk-amm/params.js';
 
 const trace = makeTracer('RunEconBehaviors', false);
 
@@ -216,9 +215,7 @@ export const setupAmm = async (
     AmountMath.make(runBrand, minInitialPoolLiquidity),
   );
 
-  const chainStoragePresence = await chainStorage;
-  const storageNode = await (chainStoragePresence &&
-    E(chainStoragePresence).getChildNode(AMM_STORAGE_PATH));
+  const storageNode = await getChildNode(chainStorage, AMM_STORAGE_PATH);
   const marshaller = await E(board).getPublishingMarshaller();
 
   const ammGovernorTerms = {
@@ -312,9 +309,7 @@ export const setupReserve = async ({
 
   const feeMintAccess = await feeMintAccessP;
 
-  const chainStoragePresence = await chainStorage;
-  const storageNode = await (chainStoragePresence &&
-    E(chainStoragePresence).getChildNode(STORAGE_PATH));
+  const storageNode = await getChildNode(chainStorage, STORAGE_PATH);
   const marshaller = E(board).getReadonlyMarshaller();
 
   const reserveGovernorTerms = {
@@ -444,9 +439,7 @@ export const startVaultFactory = async (
   const reservePublicFacet = await E(zoe).getPublicFacet(reserveInstance);
   const timer = await chainTimerService;
 
-  const chainStoragePresence = await chainStorage;
-  const storageNode = await (chainStoragePresence &&
-    E(chainStoragePresence).getChildNode(STORAGE_PATH));
+  const storageNode = await getChildNode(chainStorage, STORAGE_PATH);
   const marshaller = E(board).getReadonlyMarshaller();
 
   const vaultFactoryTerms = makeGovernedTerms(
@@ -851,9 +844,7 @@ export const startRunStake = async (
     },
   );
 
-  const chainStoragePresence = await chainStorage;
-  const storageNode = await (chainStoragePresence &&
-    E(chainStoragePresence).getChildNode(STORAGE_PATH));
+  const storageNode = await getChildNode(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
   /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<unknown>}} */

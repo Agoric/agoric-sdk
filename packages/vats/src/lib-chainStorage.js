@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far } from '@endo/far';
+import { E, Far } from '@endo/far';
 
 const { details: X } = assert;
 
@@ -59,3 +59,16 @@ export function makeChainStorageRoot(toStorage, storeName, rootPath) {
   const rootNode = makeChainStorageNode(rootPath);
   return rootNode;
 }
+
+/**
+ *
+ * @param {ERef<ChainStorageNode | undefined>} chainStorage
+ * @param {string} childName
+ */
+export async function getChildNode(chainStorage, childName) {
+  const chainStoragePresence = await chainStorage;
+  const storageNode = await (chainStoragePresence &&
+    E(chainStoragePresence).getChildNode(childName));
+  return storageNode;
+}
+harden(getChildNode);

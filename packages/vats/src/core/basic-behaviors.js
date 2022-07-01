@@ -1,12 +1,11 @@
 // @ts-check
-import { E, Far } from '@endo/far';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-
 import { Nat } from '@agoric/nat';
 import { makeScalarMapStore } from '@agoric/store';
 import { provide } from '@agoric/store/src/stores/store-utils.js';
+import { E, Far } from '@endo/far';
+import { getChildNode } from '../lib-chainStorage.js';
 import { makeNameHubKit } from '../nameHub.js';
-
 import { feeIssuerConfig } from './utils.js';
 
 const { details: X } = assert;
