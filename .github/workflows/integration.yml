@@ -17,7 +17,6 @@ on:
 
 jobs:
   pre_check:
-    if: ${{ github.repository_owner == 'agoric' }}
     uses: ./.github/workflows/pre-check-integration.yml
 
   # This job is meant to emulate what developers working with the Agoric platform will experience
@@ -115,7 +114,9 @@ jobs:
           SOLO_MAX_DEBUG_LENGTH: '1024'
 
       - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
+        if: >
+          failure() && github.event_name != 'pull_request' &&
+          github.repository_owner == 'agoric'
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
