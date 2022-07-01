@@ -1,3 +1,4 @@
+/* eslint-disable consistent-return */
 // @ts-check
 /**
  * @file Vault Manager object manages vault-based debts for a collateral type.
@@ -127,7 +128,7 @@ const trace = makeTracer('VM');
  */
 
 // FIXME https://github.com/Agoric/agoric-sdk/issues/5622
-let liquidationInProgress = false;
+let liquidationQueueing = false;
 let outstandingQuote = null;
 
 /**
@@ -280,6 +281,7 @@ const helperBehavior = {
 
     facets.helper.assetNotify();
     trace('chargeAllVaults complete');
+    // price to check against has changed
     return facets.helper.reschedulePriceCheck();
   },
 
@@ -329,33 +331,34 @@ const helperBehavior = {
    * level.
    *
    * @param {MethodContext} context
+   * @param {Ratio} [highestRatio]
    * @returns {Promise<void>}
    */
-  reschedulePriceCheck: async ({ state, facets }) => {
-    const { prioritizedVaults } = state;
-    const highestDebtRatio = prioritizedVaults.highestRatio();
-    trace('reschedulePriceCheck', { highestDebtRatio });
-    if (!highestDebtRatio) {
-      // if there aren't any open vaults, we don't need an outstanding RFQ.
-      trace('no open vaults');
-      return;
-    }
-
+  reschedulePriceCheck: async ({ state, facets }, highestRatio) => {
+    trace('reschedulePriceCheck', { liquidationQueueing });
     // INTERLOCK: the first time through, start the activity to wait for
     // and process liquidations over time.
-    if (!liquidationInProgress) {
-      liquidationInProgress = true;
+    if (!liquidationQueueing) {
+      liquidationQueueing = true;
       // eslint-disable-next-line consistent-return
       return facets.helper
         .processLiquidations()
         .catch(e => console.error('Liquidator failed', e))
         .finally(() => {
-          liquidationInProgress = false;
+          liquidationQueueing = false;
         });
     }
 
     if (!outstandingQuote) {
       // the new threshold will be picked up by the next quote request
+      return;
+    }
+
+    const { prioritizedVaults } = state;
+    const highestDebtRatio = highestRatio || prioritizedVaults.highestRatio();
+    if (!highestDebtRatio) {
+      // if there aren't any open vaults, we don't need an outstanding RFQ.
+      trace('no open vaults');
       return;
     }
 
@@ -774,7 +777,7 @@ const selfBehavior = {
 
 /** @param {MethodContext} context */
 const finish = ({ state, facets: { helper } }) => {
-  state.prioritizedVaults.onHighestRatioChanged(helper.reschedulePriceCheck);
+  state.prioritizedVaults.onHigherHighest(helper.reschedulePriceCheck);
 
   // push initial state of metrics
   helper.updateMetrics();

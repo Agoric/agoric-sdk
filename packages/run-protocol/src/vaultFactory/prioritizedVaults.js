@@ -43,22 +43,26 @@ export const currentDebtToCollateral = vault =>
   );
 
 /**
- * Vaults, ordered by their liquidation ratio so that all the
- * vaults below a threshold can be quickly found and liquidated.
+ * Vaults, ordered by their debt ratio so that all the vaults below a threshold
+ * can be quickly found and liquidated.
  *
- * @param {() => void} highestChanged called when there is a new
- * `highestRatio` (least-collateralized vault)
+ * @param {(highestRatio: Ratio) => void} higherHighestCb called when a new
+ * vault has a higher debt ratio than the previous highest
  */
-export const makePrioritizedVaults = (highestChanged = () => {}) => {
+export const makePrioritizedVaults = (higherHighestCb = () => {}) => {
   const vaults = makeOrderedVaultStore();
 
   /**
-   * Set the callback for when there is a new least-collateralized vault
+   * Called back when there's a new highestRatio and it's higher than the previous.
    *
-   * @param {() => void} callback
+   * In other words, when a new highestRatio results from adding a vault. Removing the
+   * first vault also changes the highest, but necessarily to a lower highest,
+   * for which there are no use cases requiring notification.
+   *
+   * @param {(highestRatio: Ratio) => void} callback
    */
-  const onHighestRatioChanged = callback => {
-    highestChanged = callback;
+  const onHigherHighest = callback => {
+    higherHighestCb = callback;
   };
 
   // To deal with fluctuating prices and varying collateralization, we schedule a
@@ -76,6 +80,7 @@ export const makePrioritizedVaults = (highestChanged = () => {}) => {
   /** @param {Ratio} collateralToDebt */
 
   /**
+   * Ratio of the least-collateralized vault, if there is one.
    *
    * @returns {Ratio=} actual debt over collateral
    */
@@ -109,9 +114,6 @@ export const makePrioritizedVaults = (highestChanged = () => {}) => {
    */
   const removeVault = key => {
     const vault = vaults.removeByKey(key);
-    // don't call reschedulePriceCheck, but do reset the highest.
-    // This could be expensive if we delete individual entries in
-    // order. Will know once we have perf data.
     trace('removeVault', key, fromVaultKey(key), 'when first:', firstKey);
     if (keyEQ(key, firstKey)) {
       const [secondKey] = vaults.keys();
@@ -145,7 +147,7 @@ export const makePrioritizedVaults = (highestChanged = () => {}) => {
     trace('addVault', key, 'when first:', firstKey);
     if (!firstKey || keyLT(key, firstKey)) {
       firstKey = key;
-      highestChanged();
+      higherHighestCb(currentDebtToCollateral(vault));
     }
     return key;
   };
@@ -186,6 +188,6 @@ export const makePrioritizedVaults = (highestChanged = () => {}) => {
     highestRatio,
     removeVault,
     removeVaultByAttributes,
-    onHighestRatioChanged,
+    onHigherHighest,
   });
 };
