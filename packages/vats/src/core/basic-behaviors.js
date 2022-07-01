@@ -236,22 +236,29 @@ export const makeClientBanks = async ({
     zoe,
   },
   installation: {
-    consume: { singleWallet },
+    consume: { walletFactory },
   },
 }) => {
   const STORAGE_PATH = 'wallet';
 
   const storageNode = await getChildNode(chainStorage, STORAGE_PATH);
   const marshaller = E(board).getPublishingMarshaller();
+  const { creatorFacet } = await E(zoe).startInstance(
+    walletFactory,
+    {},
+    { agoricNames, namesByAddress, board },
+    { storageNode, marshaller },
+  );
   return E(client).assignBundle([
     address => {
       const bank = E(bankManager).getBankForAddress(address);
+      /** @type {ERef<MyAddressNameAdmin>} */
       const myAddressNameAdmin = E(namesByAddressAdmin).lookupAdmin(address);
-      const smartWallet = E(zoe).startInstance(
-        singleWallet,
-        {},
-        { agoricNames, bank, namesByAddress, myAddressNameAdmin, board },
-        { storageNode, marshaller },
+
+      const smartWallet = E(creatorFacet).provideSmartWallet(
+        address,
+        bank,
+        myAddressNameAdmin,
       );
 
       // sets these values in REPL home by way of registerWallet
@@ -267,13 +274,13 @@ export const installBootContracts = async ({
   devices: { vatAdmin },
   consume: { zoe },
   installation: {
-    produce: { centralSupply, mintHolder, singleWallet },
+    produce: { centralSupply, mintHolder, walletFactory },
   },
 }) => {
   for (const [name, producer] of Object.entries({
     centralSupply,
     mintHolder,
-    singleWallet,
+    walletFactory,
   })) {
     const bundleCap = D(vatAdmin).getNamedBundleCap(name);
     const bundle = D(bundleCap).getBundle();

@@ -53,6 +53,7 @@ const cmp = (a, b) => {
   return -1;
 };
 
+// TODO rename to makeWalletKit
 /**
  * @typedef {object} MakeWalletParams
  * @property {ERef<ZoeService>} zoe
@@ -75,6 +76,8 @@ export function makeWallet({
   inboxStateChangeHandler = noActionStateChangeHandler,
   dateNow = undefined,
 }) {
+  assert(myAddressNameAdmin, 'missing myAddressNameAdmin');
+
   let lastId = 0;
 
   /**

@@ -22,6 +22,8 @@
   "dependencies": {
     "@agoric/wallet-backend": "0.12.1",
     "@agoric/deploy-script-support": "^0.9.0",
+    "@agoric/store": "^0.7.2",
+    "@agoric/vat-data": "^0.3.1",
     "@agoric/zoe": "^0.24.0",
     "@agoric/notifier": "^0.4.0",
     "@endo/far": "^0.2.5"

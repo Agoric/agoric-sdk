@@ -113,7 +113,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
       chainStorage: true,
       zoe: 'zoe',
     },
-    installation: { consume: { singleWallet: 'zoe' } },
+    installation: { consume: { walletFactory: 'zoe' } },
     home: { produce: { bank: 'bank' } },
   },
   installBootContracts: {
@@ -124,7 +124,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
       produce: {
         centralSupply: 'zoe',
         mintHolder: 'zoe',
-        singleWallet: 'zoe',
+        walletFactory: 'zoe',
       },
     },
   },

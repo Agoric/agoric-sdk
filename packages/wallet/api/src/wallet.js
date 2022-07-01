@@ -92,6 +92,8 @@ export function buildRootObject(vatPowers) {
     localTimerService,
     localTimerPollInterval,
   }) {
+    assert(myAddressNameAdmin, 'missing myAddressNameAdmin');
+
     /** @type {ERef<() => number> | undefined} */
     let dateNowP;
     if (timerDevice) {
