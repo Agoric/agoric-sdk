@@ -46,6 +46,7 @@ test('mailbox outbound', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, ['mailbox1'], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
+  t.teardown(c.shutdown);
   await c.run();
   // exportToData() provides plain Numbers to the host that needs to convey the messages
   t.deepEqual(s.exportToData(), {
@@ -95,6 +96,7 @@ test('mailbox inbound', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, ['mailbox2'], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
+  t.teardown(c.shutdown);
   await c.run();
   const m1 = [1, 'msg1'];
   const m2 = [2, 'msg2'];
@@ -165,6 +167,7 @@ async function makeMailboxKernel(t, hostStorage) {
   };
   const { runtimeOpts } = bundleOpts(t.context.data);
   const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
   return [c, mb];

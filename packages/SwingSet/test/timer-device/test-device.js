@@ -34,6 +34,7 @@ test('wake', async t => {
 
   await initializeSwingset(timerConfig, ['timer'], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  t.teardown(c.shutdown);
   timer.poll(1);
   await c.run();
   timer.poll(5);
@@ -50,6 +51,7 @@ test('repeater', async t => {
 
   await initializeSwingset(timerConfig, ['repeater', 3, 2], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  t.teardown(c.shutdown);
   timer.poll(1);
   await c.run();
   timer.poll(5);
@@ -70,6 +72,7 @@ test('repeater2', async t => {
 
   await initializeSwingset(timerConfig, ['repeater', 3, 2], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  t.teardown(c.shutdown);
   timer.poll(1n);
   await c.run();
   timer.poll(5n);
@@ -93,6 +96,7 @@ test('repeaterZero', async t => {
 
   await initializeSwingset(timerConfig, ['repeater', 0, 3], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  t.teardown(c.shutdown);
   timer.poll(1);
   await c.run();
   timer.poll(2);

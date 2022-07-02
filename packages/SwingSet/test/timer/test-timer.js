@@ -22,6 +22,7 @@ test('timer vat', async t => {
   };
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   timer.poll(1n); // initial time
   await c.run();

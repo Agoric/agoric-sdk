@@ -9,6 +9,7 @@ test('install bundle', async t => {
   const config = {};
   const controller = await buildVatController(config);
   await controller.run();
+  t.teardown(controller.shutdown);
 
   const bundleFile = new URL('./bootstrap-bundles.js', import.meta.url)
     .pathname;
@@ -26,6 +27,7 @@ test('install bundle', async t => {
 test('install bundle without ID', async t => {
   const config = {};
   const controller = await buildVatController(config);
+  t.teardown(controller.shutdown);
   await controller.run();
 
   const bundleFile = new URL('./bootstrap-bundles.js', import.meta.url)
@@ -40,6 +42,7 @@ test('install bundle without ID', async t => {
 test('install invalid bundle fails', async t => {
   const config = {};
   const controller = await buildVatController(config);
+  t.teardown(controller.shutdown);
   await controller.run();
 
   const bundleFile = new URL('./bootstrap-bundles.js', import.meta.url)
@@ -59,6 +62,7 @@ test('install invalid bundle fails', async t => {
 test('install corrupt bundle fails', async t => {
   const config = {};
   const controller = await buildVatController(config);
+  t.teardown(controller.shutdown);
   await controller.run();
 
   const bundleFile = new URL('./bootstrap-bundles.js', import.meta.url)

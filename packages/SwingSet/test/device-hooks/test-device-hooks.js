@@ -63,6 +63,7 @@ test('add hook', async t => {
   const runtimeOpts = { kernelBundle };
   await initializeSwingset(config, [], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  t.teardown(c.shutdown);
 
   let hookreturn;
   function setHookReturn(args, slots = []) {

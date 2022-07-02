@@ -39,6 +39,7 @@ async function testChangeParameters(t) {
   const { kvStore } = hostStorage;
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage, null);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
   t.is(kvStore.get('kernel.defaultReapInterval'), '1');

@@ -44,6 +44,7 @@ test('VO property deletion is not short-circuited', async t => {
   const { kvStore } = hostStorage;
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   c.pinVatRoot('target');
   const vatID = c.vatNameToID('target');

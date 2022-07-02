@@ -49,6 +49,7 @@ test('replay after upgrade', async t => {
   {
     await initializeSwingset(copy(config), [], hostStorage1, initOpts);
     const c1 = await makeSwingsetController(hostStorage1, {}, runtimeOpts);
+    t.teardown(c1.shutdown);
     c1.pinVatRoot('bootstrap');
     await c1.run();
 
@@ -70,6 +71,7 @@ test('replay after upgrade', async t => {
   setAllState(hostStorage2, state1);
   {
     const c2 = await makeSwingsetController(hostStorage2, {}, runtimeOpts);
+    t.teardown(c2.shutdown);
     c2.pinVatRoot('bootstrap');
     await c2.run();
 

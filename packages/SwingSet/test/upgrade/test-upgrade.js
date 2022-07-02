@@ -73,6 +73,7 @@ const testUpgrade = async (t, defaultManagerType) => {
   const { kvStore } = hostStorage;
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
 
@@ -285,6 +286,7 @@ test('vat upgrade - omit vatParameters', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
 
@@ -323,6 +325,7 @@ test('failed upgrade - relaxed durable rules', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
 
@@ -365,6 +368,7 @@ test('failed upgrade - lost kind', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
 
@@ -412,6 +416,7 @@ test('failed upgrade - unknown options', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
 

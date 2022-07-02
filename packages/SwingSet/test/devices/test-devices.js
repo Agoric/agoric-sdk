@@ -66,6 +66,7 @@ test.serial('d0', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  t.teardown(c.shutdown);
   await c.run();
 
   // console.log(util.inspect(c.dump(), { depth: null }));
@@ -120,6 +121,7 @@ test.serial('d1', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
 
@@ -156,6 +158,7 @@ async function test2(t, mode) {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run(); // startup
 
@@ -247,6 +250,7 @@ test.serial('device state', async t => {
   // from bootstrap, and read it back.
   await initializeSwingset(config, ['write+read'], hostStorage, initOpts);
   const c1 = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  t.teardown(c1.shutdown);
   const d3 = c1.deviceNameToID('d3');
   await c1.run();
   t.deepEqual(c1.dump().log, ['undefined', 'w+r', 'called', 'got {"s":"new"}']);
@@ -279,6 +283,7 @@ test.serial('command broadcast', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   c.queueToVatRoot('bootstrap', 'doCommand1', [], 'panic');
   await c.run();
@@ -308,6 +313,7 @@ test.serial('command deliver', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   c.queueToVatRoot('bootstrap', 'doCommand2', [], 'panic');
   await c.run();
@@ -350,6 +356,7 @@ test.serial('liveslots throws when D() gets promise', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
   // When liveslots catches an attempt to send a promise into D(), it throws
@@ -389,6 +396,7 @@ test.serial('syscall.callNow(promise) is vat-fatal', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
 
@@ -430,6 +438,7 @@ test.serial('device errors cause vat-catchable D error', async t => {
     initOpts,
   );
   const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  t.teardown(c.shutdown);
   await c.run();
 
   t.is(c.kpStatus(bootstrapResult), 'fulfilled'); // not 'rejected'
@@ -469,6 +478,7 @@ test.serial('foreign device nodes cause a catchable error', async t => {
     initOpts,
   );
   const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  t.teardown(c.shutdown);
   await c.run();
 
   t.is(c.kpStatus(bootstrapResult), 'fulfilled'); // not 'rejected'
