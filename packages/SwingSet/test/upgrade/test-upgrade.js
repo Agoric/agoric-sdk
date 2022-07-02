@@ -8,12 +8,20 @@ import { getAllState } from '@agoric/swing-store';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { parseReachableAndVatSlot } from '../../src/kernel/state/reachable.js';
 import { parseVatSlot } from '../../src/lib/parseVatSlots.js';
-import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
-import { capargs, capdataOneSlot } from '../util.js';
+import {
+  buildKernelBundles,
+  initializeSwingset,
+  makeSwingsetController,
+} from '../../src/index.js';
+import { bundleOpts, capargs, capdataOneSlot } from '../util.js';
 
 import { NUM_SENSORS } from './num-sensors.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
+test.before(async t => {
+  const kernelBundles = await buildKernelBundles();
+  t.context.data = { kernelBundles };
+});
 
 const get = (capdata, propname) => {
   const body = JSON.parse(capdata.body);
@@ -71,8 +79,9 @@ const testUpgrade = async (t, defaultManagerType) => {
 
   const hostStorage = provideHostStorage();
   const { kvStore } = hostStorage;
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
+  await initializeSwingset(config, [], hostStorage, initOpts);
+  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
@@ -284,8 +293,9 @@ test('vat upgrade - omit vatParameters', async t => {
   };
 
   const hostStorage = provideHostStorage();
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
+  await initializeSwingset(config, [], hostStorage, initOpts);
+  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
@@ -323,8 +333,9 @@ test('failed upgrade - relaxed durable rules', async t => {
   };
 
   const hostStorage = provideHostStorage();
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
+  await initializeSwingset(config, [], hostStorage, initOpts);
+  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
@@ -366,8 +377,9 @@ test('failed upgrade - lost kind', async t => {
   };
 
   const hostStorage = provideHostStorage();
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
+  await initializeSwingset(config, [], hostStorage, initOpts);
+  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
@@ -390,7 +402,6 @@ test('failed upgrade - lost kind', async t => {
   console.log(`also: 'vat-upgrade failure notification not implemented'`);
   const [v2status, v2capdata] = await run('upgradeV2WhichLosesKind', []);
   t.is(v2status, 'rejected');
-  console.log(v2capdata);
   const e = parse(v2capdata.body);
   t.truthy(e instanceof Error);
   t.regex(e.message, /vat-upgrade failure/);
@@ -414,8 +425,9 @@ test('failed upgrade - unknown options', async t => {
   };
 
   const hostStorage = provideHostStorage();
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
+  await initializeSwingset(config, [], hostStorage, initOpts);
+  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
