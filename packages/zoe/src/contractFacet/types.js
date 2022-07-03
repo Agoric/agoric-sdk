@@ -188,7 +188,7 @@
  * @typedef {object} ZCFSeat
  * @property {() => void} exit
  * @property {ZCFSeatFail} fail
- * @property {() => Notifier<Allocation>} getNotifier
+ * @property {() => Promise<Notifier<Allocation>>} getNotifier
  * @property {() => boolean} hasExited
  * @property {() => ProposalRecord} getProposal
  * @property {ZCFGetAmountAllocated} getAmountAllocated

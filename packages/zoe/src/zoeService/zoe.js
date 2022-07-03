@@ -18,14 +18,13 @@ import '../internal-types.js';
 import { AssetKind } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@endo/promise-kit';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
 import { makeOfferMethod } from './offer/offer.js';
 import { makeInvitationQueryFns } from './invitationQueries.js';
-import { setupCreateZCFVat } from './createZCFVat.js';
+import { getZcfBundleCap, setupCreateZCFVat } from './createZCFVat.js';
 import { createFeeMint } from './feeMint.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
@@ -57,23 +56,28 @@ const makeZoeKit = (
   zcfSpec = { name: 'zcf' },
   zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
 ) => {
-  // We must pass the ZoeService to `makeStartInstance` before it is
-  // defined. See below where the promise is resolved.
-  /** @type {PromiseRecord<ZoeService>} */
-  const zoeServicePromiseKit = makePromiseKit();
-
   const { feeMintAccess, getFeeIssuerKit, feeIssuer, feeBrand } = createFeeMint(
     feeIssuerConfig,
     shutdownZoeVat,
   );
 
-  const getBundleCapFromID = bundleID =>
+  /** @type {GetBundleCapForID} */
+  const getBundleCapForID = bundleID =>
     E(vatAdminSvc).waitForBundleCap(bundleID);
 
+  const zcfBundleCap = getZcfBundleCap(zcfSpec, vatAdminSvc);
   // This method contains the power to create a new ZCF Vat, and must
   // be closely held. vatAdminSvc is even more powerful - any vat can
   // be created. We severely restrict access to vatAdminSvc for this reason.
-  const createZCFVat = setupCreateZCFVat(vatAdminSvc, zcfSpec);
+  const createZCFVat = setupCreateZCFVat(
+    vatAdminSvc,
+    zcfBundleCap,
+    // eslint-disable-next-line no-use-before-define
+    () => invitationIssuer,
+    // eslint-disable-next-line no-use-before-define
+    () => zoeService,
+  );
+  const getBundleCapByIdNow = id => E(vatAdminSvc).getBundleCap(id);
 
   // The ZoeStorageManager composes and consolidates capabilities
   // needed by Zoe according to POLA.
@@ -95,7 +99,7 @@ const makeZoeKit = (
     getProposalSchemaForInvitation,
   } = makeZoeStorageManager(
     createZCFVat,
-    getBundleCapFromID,
+    getBundleCapForID,
     getFeeIssuerKit,
     shutdownZoeVat,
     feeIssuer,
@@ -105,9 +109,10 @@ const makeZoeKit = (
 
   // Pass the capabilities necessary to create E(zoe).startInstance
   const startInstance = makeStartInstance(
-    zoeServicePromiseKit.promise,
     makeZoeInstanceStorageManager,
     unwrapInstallation,
+    zcfBundleCap,
+    getBundleCapByIdNow,
   );
 
   // Pass the capabilities necessary to create E(zoe).offer
@@ -164,11 +169,6 @@ const makeZoeKit = (
     getBundleIDFromInstallation,
     getProposalSchemaForInvitation,
   });
-
-  // startInstance must pass the ZoeService to the newly created ZCF
-  // vat, but the zoeService is not yet defined when startInstance is
-  // defined. So, we pass a promise and then resolve the promise here.
-  zoeServicePromiseKit.resolve(zoeService);
 
   return harden({
     zoeService,

@@ -45,6 +45,7 @@
  * @property {(allocation: Allocation) => void} replaceAllocation
  * @property {ZoeSeatAdminExit} exit
  * @property {ShutdownWithFailure} fail called with the reason
+ * @property {() => Promise<Notifier<Allocation>> } getNotifier
  * for calling fail on this seat, where reason is normally an instanceof Error.
  */
 
@@ -89,7 +90,6 @@
  *
  * @typedef {object} HandleOfferObj
  * @property {(invitationHandle: InvitationHandle,
- *             zoeSeatAdmin: ZoeSeatAdmin,
  *             seatData: SeatData,
  *            ) => HandleOfferResult} handleOffer
  */
@@ -115,6 +115,9 @@
  * @property {ReplaceAllocations} replaceAllocations
  * @property {(completion: Completion) => void} exitAllSeats
  * @property {ShutdownWithFailure} failAllSeats
+ * @property {(seatHandle: SeatHandle, completion: Completion) => void} exitSeat
+ * @property {(seatHandle: SeatHandle, reason: Error) => void} failSeat
+ * @property {(seatHandle: SeatHandle) => Promise<Notifier<Allocation>>} getSeatNotifier
  * @property {() => void} stopAcceptingOffers
  */
 
@@ -148,7 +151,7 @@
  * @param {ProposalRecord} proposal
  * @param {ExitObj} exitObj
  * @param {SeatHandle} seatHandle
- * @returns {ZoeSeatAdminKit}
+ * @returns {{userSeat: UserSeat, notifier: Notifier<Allocation>}}
  */
 
 /**
@@ -175,9 +178,12 @@
 
 /**
  * @typedef {object} ZCFRoot
- * @property {ExecuteContract} executeContract
- *
- * @typedef {object} ExecuteContractResult
+ * @property {StartZcf} startZcf
+ * @property {RestartContract} restartContract
+ */
+
+/**
+ * @typedef {object} ExecuteClassicContractResult
  * @property {object} creatorFacet
  * @property {Promise<Invitation>} creatorInvitation
  * @property {object} publicFacet
@@ -185,15 +191,29 @@
  */
 
 /**
- * @callback ExecuteContract
- * @param {SourceBundle} bundle
- * @param {ERef<ZoeService>} zoeService
- * @param {Issuer} invitationIssuer
+ * @typedef {object} ExecuteUpgradeableContractResult
+ * @property {object} creatorFacet
+ * @property {object} publicFacet
+ * @property {HandleOfferObj} handleOfferObj
+ */
+
+/**
+ * @typedef {ExecuteClassicContractResult|ExecuteUpgradeableContractResult} ExecuteContractResult
+ */
+
+/**
+ * @callback StartZcf
  * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
  * @param {InstanceRecord} instanceRecordFromZoe
  * @param {IssuerRecords} issuerStorageFromZoe
  * @param {object=} privateArgs
  * @returns {Promise<ExecuteContractResult>}
+ */
+
+/**
+ * @callback RestartContract
+ * @param {object=} privateArgs
+ * @returns {Promise<ExecuteUpgradeableContractResult>}
  */
 
 /**
@@ -209,7 +229,7 @@
  */
 
 /**
- * @typedef {Handle<'SeatHandle'>} SeatHandle
+ * @typedef {Handle<'Seat'>} SeatHandle
  */
 
 /**
@@ -230,6 +250,7 @@
  * promise will fulfill to the completion value.
  * @property {ShutdownWithFailure} terminateWithFailure
  * Terminate the vat in which the contract is running as a failure.
+ * @property {(bundleCap: BundleCap, options?: Record<string, any>) => Promise<RootAndAdminNode>} upgrade
  */
 
 /**
@@ -248,7 +269,6 @@
 
 /**
  * @callback MakeZCFSeat
- * @param {ERef<ZoeSeatAdmin>} zoeSeatAdmin
  * @param {SeatData} seatData
  * @returns {ZCFSeat}
  */
@@ -278,6 +298,7 @@
  * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
  * @param {GetAssetKindByBrand} getAssetKindByBrand
  * @param {ShutdownWithFailure} shutdownWithFailure
+ * @param {import('@agoric/vat-data').Baggage} zcfBaggage
  * @returns {{ makeZCFSeat: MakeZCFSeat,
     reallocate: Reallocate,
     reallocateForZCFMint: ReallocateForZCFMint,

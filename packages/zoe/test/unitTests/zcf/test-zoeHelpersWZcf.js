@@ -151,7 +151,8 @@ test(`zcf assertNatAssetKind - brand not registered`, async t => {
       // https://github.com/endojs/endo/pull/640
       //
       // /"brand" not found: .*/,
-      /.* not found: .*/,
+      // / not found: /,
+      /no ordinal /,
   });
 });
 
@@ -217,8 +218,9 @@ test(`zcf saveAllIssuers - duplicate keyword`, async t => {
         // disclosure bug is fixed. See
         // https://github.com/endojs/endo/pull/640
         //
-        // /"issuer" not found: .*/,
-        /.* not found: .*/,
+        // /"issuer" not found: /,
+        // /not found: /,
+        /no ordinal for /,
     },
     'issuer should not be found',
   );
@@ -230,8 +232,9 @@ test(`zcf saveAllIssuers - duplicate keyword`, async t => {
       // disclosure bug is fixed. See
       // https://github.com/endojs/endo/pull/640
       //
-      // /"brand" not found: .*/,
-      /.* not found: .*/,
+      // /"brand" not found: /,
+      // /not found: /,
+      /no ordinal for /,
   });
 });
 
@@ -368,6 +371,12 @@ test(`zoeHelper with zcf - assertProposalShape`, async t => {
   );
 });
 
+const containsAll = (arr1, arr2) =>
+  arr2.every(arr2Item => arr1.includes(arr2Item));
+
+const sameMembers = (arr1, arr2) =>
+  containsAll(arr1, arr2) && containsAll(arr2, arr1);
+
 test(`zoeHelper w/zcf - swapExact`, async t => {
   const {
     moolaIssuer,
@@ -409,10 +418,12 @@ test(`zoeHelper w/zcf - swapExact`, async t => {
     await userSeatA.getPayout('B'),
     simoleans(0n),
   );
-  t.deepEqual(Object.getOwnPropertyNames(await userSeatA.getPayouts()), [
-    'B',
-    'A',
-  ]);
+  t.truthy(
+    sameMembers(Object.getOwnPropertyNames(await userSeatA.getPayouts()), [
+      'B',
+      'A',
+    ]),
+  );
   t.truthy(zcfSeatB.hasExited(), 'exit right');
   await assertPayoutAmount(
     t,
@@ -426,10 +437,12 @@ test(`zoeHelper w/zcf - swapExact`, async t => {
     await userSeatB.getPayout('D'),
     moola(0n),
   );
-  t.deepEqual(Object.getOwnPropertyNames(await userSeatB.getPayouts()), [
-    'D',
-    'C',
-  ]);
+  t.truthy(
+    sameMembers(Object.getOwnPropertyNames(await userSeatB.getPayouts()), [
+      'D',
+      'C',
+    ]),
+  );
 });
 
 test(`zoeHelper w/zcf - swapExact w/shortage`, async t => {
