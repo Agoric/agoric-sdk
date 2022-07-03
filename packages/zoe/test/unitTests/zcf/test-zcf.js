@@ -628,7 +628,7 @@ test('burnLosses - offer safety violation no staged allocation', async t => {
       ),
     {
       message:
-        'The allocation after burning losses {"DownPayment":{"brand":"[Alleged: Yen brand]","value":"[50n]"},"Bonus":{"brand":"[Alleged: Doubloons brand]","value":"[0n]"}} for the zcfSeat was not offer safe',
+        /The allocation after burning losses .* for the zcfSeat was not offer safe/,
     },
   );
   t.truthy(zcfSeat.hasStagedAllocation());
@@ -789,17 +789,17 @@ const allocateEasy = async (
 
 test(`zcfSeat.getNotifier`, async t => {
   const { zcf } = await setupZCFTest();
-  const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
+  const { zcfSeat } = zcf.makeEmptySeatKit();
   const notifier = zcfSeat.getNotifier();
-  // These are different notifiers
-  t.not(notifier, await E(userSeat).getNotifier());
 
   // Mint some gains to change the allocation.
   const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3n);
   let notifierResult;
   for (let remainingTries = 2; remainingTries >= 0; remainingTries -= 1) {
     // eslint-disable-next-line no-await-in-loop
-    notifierResult = await notifier.getUpdateSince(notifierResult?.updateCount);
+    notifierResult = await E(notifier).getUpdateSince(
+      notifierResult?.updateCount,
+    );
     if (notifierResult.value?.A) {
       break;
     }
@@ -812,7 +812,7 @@ test(`zcfSeat.getNotifier`, async t => {
   });
 
   const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6n);
-  notifierResult = await notifier.getUpdateSince(notifierResult.updateCount);
+  notifierResult = await E(notifier).getUpdateSince(notifierResult.updateCount);
   t.deepEqual(notifierResult.value, {
     A: {
       brand: brand1,
@@ -826,7 +826,7 @@ test(`zcfSeat.getNotifier`, async t => {
 
   zcfSeat.exit();
 
-  notifierResult = await notifier.getUpdateSince(notifierResult.updateCount);
+  notifierResult = await E(notifier).getUpdateSince(notifierResult.updateCount);
   t.deepEqual(notifierResult, {
     updateCount: undefined,
     value: undefined,

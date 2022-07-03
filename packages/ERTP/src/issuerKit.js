@@ -15,6 +15,17 @@ import './types.js';
 
 /**
  * @template {AssetKind} K
+ * The allegedName becomes part of the brand in asset descriptions. The
+ * allegedName doesn't have to be a string, but it will only be used for
+ * its value. The allegedName is useful for debugging and double-checking
+ * assumptions, but should not be trusted.
+ *
+ * The assetKind will be used to import a specific mathHelpers
+ * from the mathHelpers library. For example, natMathHelpers, the
+ * default, is used for basic fungible tokens.
+ *
+ *  `displayInfo` gives information to the UI on how to display the amount.
+ *
  * @param {Baggage} issuerBaggage
  * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
  * in the middle of an atomic action (which btw should never happen), it

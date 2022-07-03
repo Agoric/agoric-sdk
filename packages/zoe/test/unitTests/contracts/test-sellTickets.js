@@ -589,7 +589,7 @@ test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
     E(birdSalesPublicFacet).getAvailableItemsNotifier();
 
   const birdsForSalePresolved = await E(birdsForSaleNotifier).getUpdateSince();
-  t.is(birdsForSale, birdsForSalePresolved.value);
+  t.deepEqual(birdsForSale, birdsForSalePresolved.value);
   t.is(birdsForSale.brand, birdBrand);
   t.is(birdsForSalePresolved.value.brand, birdBrand);
 });

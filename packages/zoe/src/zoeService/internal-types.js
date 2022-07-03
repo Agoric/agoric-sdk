@@ -104,6 +104,7 @@
  * @param {object} customTerms
  * @param {IssuerKeywordRecord} uncleanIssuerKeywordRecord
  * @param {Instance} instance
+ * @param {BundleCap} contractBundleCap
  * @returns {ZoeInstanceStorageManager}
  */
 
@@ -143,6 +144,7 @@
  * ZCF bundle
  *
  * @callback CreateZCFVat
+ * @param {BundleCap} contractBundleCap
  * @returns {Promise<RootAndAdminNode>}
  */
 

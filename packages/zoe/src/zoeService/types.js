@@ -251,10 +251,10 @@
 
 /**
  * @typedef {object} VatAdminSvc
- * @property {(BundleID: id) => Promise<BundleCap>} waitForBundleCap
- * @property {(BundleID: id) => Promise<BundleCap>} getBundleCap
- * @property {(name: string) => Promise<BundleCap>} getNamedBundleCap
- * @property {(bundleCap: BundleCap, options?: Record<string, any>) => Promise<RootAndAdminNode>} createVat
+ * @property {(id: BundleID) => ERef<BundleCap>} waitForBundleCap
+ * @property {(id: BundleID) => ERef<BundleCap>} getBundleCap
+ * @property {(name: string) => ERef<BundleCap>} getNamedBundleCap
+ * @property {(bundleCap: BundleCap, options?: Record<string, any>) => ERef<RootAndAdminNode>} createVat
  */
 
 /**

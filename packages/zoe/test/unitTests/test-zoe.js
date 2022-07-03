@@ -112,6 +112,8 @@ test(`E(zoe).startInstance no issuerKeywordRecord, no terms`, async t => {
   facetHasMethods(t, result.publicFacet, ['makeInvitation']);
   t.deepEqual(Object.getOwnPropertyNames(result.adminFacet).sort(), [
     'getVatShutdownPromise',
+    'restartContract',
+    'upgradeContract',
   ]);
 });
 
@@ -137,6 +139,8 @@ test(`E(zoe).startInstance promise for installation`, async t => {
   facetHasMethods(t, result.publicFacet, ['makeInvitation']);
   t.deepEqual(Object.getOwnPropertyNames(result.adminFacet).sort(), [
     'getVatShutdownPromise',
+    'restartContract',
+    'upgradeContract',
   ]);
 });
 

@@ -1,22 +1,37 @@
 // @ts-check
 
-import { makeWeakStore } from '@agoric/store';
+import {
+  makeScalarBigMapStore,
+  provideDurableWeakMapStore,
+} from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 
 import { arrayToObj } from './objArrayConversion.js';
 import { cleanKeywords } from './cleanProposal.js';
 import { makeIssuerRecord } from './issuerRecord.js';
 
-/**
- *  Make the Issuer Storage.
- */
-export const makeIssuerStorage = () => {
-  /** @type {WeakStore<Brand,IssuerRecord>} */
-  const brandToIssuerRecord = makeWeakStore('brand');
-  /** @type {WeakStore<Issuer,IssuerRecord>} */
-  const issuerToIssuerRecord = makeWeakStore('issuer');
+const STORAGE_INSTANTIATED_KEY = 'IssuerStorageInstantiated';
 
-  let instantiated = false;
+/**
+ * Make the Issuer Storage.
+ *
+ * @param {import('@agoric/vat-data').Baggage} zcfBaggage
+ */
+export const makeIssuerStorage = (
+  zcfBaggage = makeScalarBigMapStore('zcfBaggage', { durable: true }),
+) => {
+  /** @type {WeakStore<Brand,IssuerRecord>} */
+  const brandToIssuerRecord = provideDurableWeakMapStore(
+    zcfBaggage,
+    'brandToIssuerRecord',
+  );
+  /** @type {WeakStore<Issuer,IssuerRecord>} */
+  const issuerToIssuerRecord = provideDurableWeakMapStore(
+    zcfBaggage,
+    'issuerToIssuerRecord',
+  );
+
+  let instantiated = zcfBaggage.has(STORAGE_INSTANTIATED_KEY);
   const assertInstantiated = () =>
     assert(instantiated, 'issuerStorage has not been instantiated');
 
@@ -182,9 +197,10 @@ export const makeIssuerStorage = () => {
 
   const instantiate = (issuerRecords = []) => {
     assert(
-      instantiated === false,
+      !zcfBaggage.has(STORAGE_INSTANTIATED_KEY),
       'issuerStorage can only be instantiated once',
     );
+    zcfBaggage.init(STORAGE_INSTANTIATED_KEY, true);
     instantiated = true;
     issuerRecords.forEach(storeIssuerRecord);
   };

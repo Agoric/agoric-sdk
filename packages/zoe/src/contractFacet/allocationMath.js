@@ -1,6 +1,7 @@
 // @ts-check
-import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
+
+const { details: X } = assert;
 
 /**
  * @callback Operation
@@ -37,7 +38,7 @@ const doOperation = (allocation, amountKeywordRecord, operationFn) => {
     })
     .filter(([_keyword, result]) => result !== undefined);
 
-  return Object.fromEntries(entries);
+  return harden(Object.fromEntries(entries));
 };
 
 /** @type {Operation} */

@@ -222,7 +222,7 @@ test(`offerTo - violates offer safety of fromSeat`, async t => {
       ),
     {
       message:
-        'Offer safety was violated by the proposed allocation: {"TokenK":{"brand":"[Alleged: bucks brand]","value":"[0n]"},"TokenJ":{"brand":"[Alleged: moola brand]","value":"[0n]"}}. Proposal was {"want":{"TokenJ":{"brand":"[Alleged: moola brand]","value":"[3n]"}},"give":{"TokenK":{"brand":"[Alleged: bucks brand]","value":"[5n]"}},"exit":{"onDemand":null}}',
+        /Offer safety was violated by the proposed allocation: {"Token[JK]":{"brand":"\[Alleged: .* brand]","value":"\[0n]"},"Token[KJ]":{"brand":"\[Alleged: .* brand]","value":"\[0n]"}}. Proposal was/,
     },
   );
 

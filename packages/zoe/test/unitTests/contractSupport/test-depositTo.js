@@ -27,8 +27,8 @@ async function setupContract(moolaIssuer, bucksIssuer) {
   const { zoeService: zoe } = makeZoeKit(fakeVatAdmin.admin);
 
   // pack the contract
-  const bundle = await bundleSource(contractRoot);
-  fakeVatAdmin.vatAdminState.installBundle('b1-contract', bundle);
+  const contractBundle = await bundleSource(contractRoot);
+  fakeVatAdmin.vatAdminState.installBundle('b1-contract', contractBundle);
 
   // install the contract
   const installation = await E(zoe).installBundleID('b1-contract');
