@@ -2,11 +2,9 @@ import {
   defineDurableKindMulti,
   makeScalarBigSetStore,
   provideKindHandle,
-  makeScalarBigWeakMapStore,
 } from '@agoric/vat-data';
-import { provide } from '@agoric/store';
-import { makeNotifierKit } from '@agoric/notifier';
 import { AmountMath } from './amountMath.js';
+import { makeTransientNotifierKit } from './transientNotifier.js';
 
 const { details: X } = assert;
 
@@ -20,27 +18,11 @@ export const defineDurablePurse = (
 ) => {
   // Note: Virtual for high cardinality, but *not* durable, and so
   // broken across an upgrade.
-  /** @type {WeakMapStore<Purse, NotifierRecord<Amount>>} */
-  const transientNotiferKits = makeScalarBigWeakMapStore(
-    'transientNotiferKits',
-  );
-
-  const provideNotifierKit = purse =>
-    provide(transientNotiferKits, purse, () =>
-      makeNotifierKit(purse.getCurrentAmount()),
-    );
-
-  const provideNotifier = purse => provideNotifierKit(purse).notifier;
-  const notifyBalance = purse => {
-    if (transientNotiferKits.has(purse)) {
-      const { updater } = transientNotiferKits.get(purse);
-      updater.updateState(purse.getCurrentAmount());
-    }
-  };
+  const { provideNotifier, update: updateBalance } = makeTransientNotifierKit();
 
   const updatePurseBalance = (state, newPurseBalance, purse) => {
     state.currentBalance = newPurseBalance;
-    notifyBalance(purse);
+    updateBalance(purse, purse.getCurrentAmount());
   };
 
   // - This kind is a pair of purse and depositFacet that have a 1:1

@@ -66,7 +66,7 @@ const amountSchemaFromElementSchema = (brand, assetKind, elementSchema) => {
  * payments. All minting and transfer authority originates here.
  *
  * @template {AssetKind} [K=AssetKind]
- * @param {MapStore<string,any>} issuerBaggage
+ * @param {import('@agoric/vat-data').Baggage} issuerBaggage
  * @param {string} allegedName
  * @param {AssetKind} assetKind
  * @param {DisplayInfo} displayInfo

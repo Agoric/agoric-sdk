@@ -4,7 +4,7 @@ import { defineDurableKind, provideKindHandle } from '@agoric/vat-data';
 
 /**
  * @template {AssetKind} K
- * @param {MapStore<string,any>} issuerBaggage
+ * @param {import('@agoric/vat-data').Baggage} issuerBaggage
  * @param {string} allegedName
  * @param {() => Brand<K>} getBrand must not be called before the issuerKit is
  * created

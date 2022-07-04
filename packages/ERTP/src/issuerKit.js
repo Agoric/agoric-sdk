@@ -24,7 +24,7 @@ import './types.js';
  *
  *  `displayInfo` gives information to the UI on how to display the amount.
  *
- * @param {MapStore<string,any>} issuerBaggage
+ * @param {import('@agoric/vat-data').Baggage} issuerBaggage
  * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
  * in the middle of an atomic action (which btw should never happen), it
  * potentially leaves its ledger in a corrupted state. If this function was
@@ -94,7 +94,7 @@ harden(provideDurableIssuerKit);
  *
  *  `displayInfo` gives information to the UI on how to display the amount.
  *
- * @param {MapStore<string,any>} issuerBaggage
+ * @param {import('@agoric/vat-data').Baggage} issuerBaggage
  * @param {string} allegedName
  * @param {K} [assetKind=AssetKind.NAT]
  * @param {AdditionalDisplayInfo} [displayInfo={}]

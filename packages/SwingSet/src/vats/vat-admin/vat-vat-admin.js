@@ -110,7 +110,7 @@ export function buildRootObject(vatPowers) {
           bundleID = D(bundlecap).getBundleID();
         } catch (e) {
           // 'bundlecap' probably wasn't a bundlecap
-          throw Error('vat adminNode.upgrade() requires a bundlecap');
+          throw Error('vat adminNode.upgrade() requires a bundlecap: ', e);
         }
         const upgradeID = D(vatAdminNode).upgradeVat(
           vatID,

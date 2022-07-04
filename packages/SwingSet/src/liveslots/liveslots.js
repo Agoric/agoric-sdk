@@ -1259,6 +1259,7 @@ function build(
       defineDurableKind: vom.defineDurableKind,
       defineDurableKindMulti: vom.defineDurableKindMulti,
       makeKindHandle: vom.makeKindHandle,
+      isDurableObject: vom.isDurableObject,
       providePromiseWatcher: watchedPromiseManager.providePromiseWatcher,
       watchPromise: watchedPromiseManager.watchPromise,
       makeScalarBigMapStore: collectionManager.makeScalarBigMapStore,

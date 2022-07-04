@@ -96,6 +96,7 @@ export type VatData = {
     label: string,
     options?: StoreOptions,
   ) => WeakSetStore<K>;
+  isDurableObject: (specimen: any) => boolean;
 };
 
 // The JSDoc is repeated here and at the function definition so it appears

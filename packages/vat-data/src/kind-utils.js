@@ -36,9 +36,11 @@ export const objectMap = (original, mapPairFn) => {
   return /** @type {Record<K, U>} */ (harden(Object.fromEntries(mapEnts)));
 };
 
+/** @typedef {import('@agoric/store').MapStore<string,unknown>} Baggage */
+
 /**
  * @template T
- * @param {import('@agoric/store').MapStore<string, unknown>} baggage
+ * @param {Baggage} baggage
  * @param {string} kindName
  * @param {T} methods
  * @param {import('./types.js').DefineKindOptions<unknown>} [options]
@@ -53,6 +55,7 @@ export const ProvideFar = (baggage, kindName, methods, options = undefined) => {
     behavior,
     options,
   );
+
   return provide(baggage, `the_${kindName}`, () => makeSingleton());
 };
 // @ts-expect-error TODO statically recognize harden

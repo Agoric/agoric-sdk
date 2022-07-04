@@ -40,6 +40,7 @@ if ('VatData' in globalThis) {
     makeScalarBigWeakMapStore: unvailable,
     makeScalarBigSetStore: unvailable,
     makeScalarBigWeakSetStore: unvailable,
+    isDurableObject: unvailable,
   };
 }
 
@@ -55,6 +56,7 @@ export const {
   makeScalarBigWeakMapStore,
   makeScalarBigSetStore,
   makeScalarBigWeakSetStore,
+  isDurableObject,
 } = VatDataGlobal;
 
 /**
