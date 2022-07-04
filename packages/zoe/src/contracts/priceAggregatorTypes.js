@@ -1,8 +1,8 @@
 /**
  * @typedef {object} OracleAdmin
- * @property {() => Promise<void>} delete
+ * @property {() => ERef<void>} delete
  * Remove the oracle from the aggregator
- * @property {(result: any) => Promise<void>} pushResult
+ * @property {(result: any) => ERef<void>} pushResult
  * Rather than waiting for the polling query, push a result directly from this oracle
  */
 
@@ -20,14 +20,14 @@
 /**
  * @typedef {object} PriceAggregatorCreatorFacet
  * @property {PriceAggregatorCreatorFacetInitOracle} initOracle
- * @property {(oracleKey: OracleKey) => Promise<void>} deleteOracle
- * @property {(oracleKey?: OracleKey) => Promise<Invitation>} makeOracleInvitation
+ * @property {(oracleKey: OracleKey) => ERef<void>} deleteOracle
+ * @property {(oracleKey?: OracleKey) => ERef<Invitation>} makeOracleInvitation
  */
 
 /**
  * @typedef {object} PriceAggregatorPublicFacet
  * @property {() => PriceAuthority} getPriceAuthority
- * @property {() => Promise<Notifier<bigint> | undefined>} getRoundStartNotifier
+ * @property {() => ERef<Notifier<bigint> | undefined>} getRoundStartNotifier
  * @property {() => Promise<Notifier<{
  *   submitted: [OracleKey, bigint][],
  *   authenticatedQuote: Payment<'set'>,
@@ -67,7 +67,7 @@
  * Get the current fee amounts
  * @property {OracleCreatorFacetMakeWithdrawInvitation} makeWithdrawInvitation
  * Create an invitation to withdraw fees
- * @property {() => Promise<Invitation>} makeShutdownInvitation
+ * @property {() => ERef<Invitation>} makeShutdownInvitation
  * Make an invitation to withdraw all fees and shutdown
  */
 
@@ -104,7 +104,7 @@
 
 /**
  * @typedef {object} OracleHandler
- * @property {(query: any, fee: Amount) => Promise<OracleReply>} onQuery
+ * @property {(query: any, fee: Amount) => ERef<OracleReply>} onQuery
  * Callback to reply to a query
  * @property {(query: any, reason: any) => void} onError
  * Notice an error

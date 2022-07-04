@@ -811,7 +811,7 @@ export function makeWallet({
 
   /**
    * @param {Petname} petname
-   * @param {ERef<{receive: (payment: Payment) => Promise<void>}>} actions
+   * @param {ERef<{receive: (payment: Payment) => ERef<void>}>} actions
    * @param {string} [address]
    */
   const addContact = async (petname, actions, address = undefined) => {

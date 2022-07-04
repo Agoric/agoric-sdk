@@ -20,7 +20,7 @@ export const permits = {
  * @param {Record<string, Record<string, unknown>>} [opts.overrideManifest]
  * @param {typeof import('@endo/far').E} opts.E
  * @param {(...args: unknown[]) => void} [opts.log]
- * @param {(ref: unknown) => Promise<unknown>} [opts.restoreRef]
+ * @param {(ref: unknown) => ERef<unknown>} [opts.restoreRef]
  * @returns {(vatPowers: unknown) => Promise<unknown>}
  */
 export const makeCoreProposalBehavior = ({

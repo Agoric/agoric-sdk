@@ -16,7 +16,7 @@
  * allow passing a remote iterable, there would be an inordinate number of round
  * trips for the contents of even the simplest nameHub.
  *
- * @property {(...path: Array<string>) => Promise<any>} lookup Look up a
+ * @property {(...path: Array<string>) => ERef<any>} lookup Look up a
  * path of keys starting from the current NameHub.  Wait on any reserved
  * promises.
  * @property {() => [string, unknown][]} entries get all the entries
@@ -44,7 +44,7 @@
  * } update Fulfill an outstanding reserved promise (if any) to the newValue and
  * set the key to the newValue.  If newAdmin is provided, set that to return via
  * lookupAdmin.
- * @property {(...path: Array<string>) => Promise<any>} lookupAdmin Look up the
+ * @property {(...path: Array<string>) => ERef<any>} lookupAdmin Look up the
  * `newAdmin` from the path of keys starting from the current NameAdmin.  Wait
  * on any reserved promises.
  * @property {(key: string) => void} delete Delete a value and reject an

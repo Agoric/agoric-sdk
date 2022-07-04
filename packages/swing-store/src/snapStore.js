@@ -79,10 +79,10 @@ export function makeSnapStore(
   },
   { keepSnapshots = false } = {},
 ) {
-  /** @type {(opts: unknown) => Promise<string>} */
+  /** @type {(opts: unknown) => ERef<string>} */
   const ptmpName = promisify(tmpName);
   /**
-   * @param {(name: string) => Promise<T>} thunk
+   * @param {(name: string) => ERef<T>} thunk
    * @param {string=} prefix
    * @returns {Promise<T>}
    * @template T
@@ -164,7 +164,7 @@ export function makeSnapStore(
     }
   }
 
-  /** @type {(filename: string) => Promise<string>} */
+  /** @type {(filename: string) => ERef<string>} */
   async function fileHash(filename) {
     const hash = createHash('sha256');
     const input = createReadStream(filename);
@@ -184,7 +184,7 @@ export function makeSnapStore(
   const toDelete = new Set();
 
   /**
-   * @param {(fn: string) => Promise<void>} saveRaw
+   * @param {(fn: string) => ERef<void>} saveRaw
    * @returns {Promise<string>} sha256 hash of (uncompressed) snapshot
    */
   async function save(saveRaw) {
@@ -219,7 +219,7 @@ export function makeSnapStore(
 
   /**
    * @param {string} hash
-   * @param {(fn: string) => Promise<T>} loadRaw
+   * @param {(fn: string) => ERef<T>} loadRaw
    * @template T
    */
   async function load(hash, loadRaw) {

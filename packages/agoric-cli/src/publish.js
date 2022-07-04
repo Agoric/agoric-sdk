@@ -108,7 +108,7 @@ const assertCosmosConnectionSpec = connectionSpec => {
 /**
  * @param {object} powers
  * @param {JsonHttpCall} powers.jsonHttpCall
- * @param {(hostPort: string) => Promise<string>} powers.getAccessToken
+ * @param {(hostPort: string) => ERef<string>} powers.getAccessToken
  */
 export const makeHttpBundlePublisher = ({ jsonHttpCall, getAccessToken }) => {
   /** @type {PublishBundleHttp} */
@@ -339,7 +339,7 @@ const publishBundle = async (
 /**
  * @param {object} powers
  * @param {JsonHttpCall} [powers.jsonHttpCall]
- * @param {(hostPort: string) => Promise<string>} [powers.getAccessToken]
+ * @param {(hostPort: string) => ERef<string>} [powers.getAccessToken]
  * @param {PublishBundleCosmos} [powers.publishBundleCosmos]
  * @param {PublishBundleHttp} [powers.publishBundleHttp]
  * @param {() => ConnectionSpec} [powers.getDefaultConnection]

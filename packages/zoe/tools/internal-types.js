@@ -1,7 +1,7 @@
 /**
  * @typedef {object} ManualTimerAdmin
- * @property {(msg?: string) => Promise<void>} tick
- * @property {(nTimes: number, msg?: string) => Promise<void>} tickN
+ * @property {(msg?: string) => ERef<void>} tick
+ * @property {(nTimes: number, msg?: string) => ERef<void>} tickN
  */
 
 /**

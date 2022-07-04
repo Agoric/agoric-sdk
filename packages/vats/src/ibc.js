@@ -45,7 +45,7 @@ const DEFAULT_PACKET_TIMEOUT_NS = 10n * 60n * 1_000_000_000n;
  * and from the bridge.
  *
  * @param {typeof import('@endo/far').E} E
- * @param {(method: string, params: any) => Promise<any>} rawCallIBCDevice
+ * @param {(method: string, params: any) => ERef<any>} rawCallIBCDevice
  * @returns {ProtocolHandler & BridgeHandler} Protocol/Bridge handler
  */
 export function makeIBCProtocolHandler(E, rawCallIBCDevice) {

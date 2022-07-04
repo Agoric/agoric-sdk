@@ -44,7 +44,7 @@ const assertElectorateMatches = (paramManager, governedParams) => {
  * @property {(name: string, value: Brand) => ParamManagerBuilder} addBrand
  * @property {(name: string, value: Installation) => ParamManagerBuilder} addInstallation
  * @property {(name: string, value: Instance) => ParamManagerBuilder} addInstance
- * @property {(name: string, value: Invitation) => Promise<ParamManagerBuilder>} addInvitation
+ * @property {(name: string, value: Invitation) => ERef<ParamManagerBuilder>} addInvitation
  * @property {(name: string, value: bigint) => ParamManagerBuilder} addNat
  * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatio
  * @property {(name: string, value: import('@endo/marshal').CopyRecord<unknown>) => ParamManagerBuilder} addRecord
@@ -279,7 +279,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     return name;
   };
 
-  /** @type {(name: string, value: Invitation, builder: ParamManagerBuilder) => Promise<ParamManagerBuilder>} */
+  /** @type {(name: string, value: Invitation, builder: ParamManagerBuilder) => ERef<ParamManagerBuilder>} */
   const addInvitation = async (name, value, builder) => {
     assertKeywordName(name);
     assert(value !== null, X`param ${q(name)} must be defined`);

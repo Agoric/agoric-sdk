@@ -47,10 +47,10 @@
 /**
  * @typedef  {object} VaultFactory - the creator facet
  * @property {AddVaultType} addVaultType
- * @property {() => Promise<Array<Collateral>>} getCollaterals
+ * @property {() => ERef<Array<Collateral>>} getCollaterals
  * @property {() => Allocation} getRewardAllocation
  * @property {() => Instance} getContractGovernor
- * @property {() => Promise<Invitation>} makeCollectFeesInvitation
+ * @property {() => ERef<Invitation>} makeCollectFeesInvitation
  * @property {() => void} updateMetrics
  */
 
@@ -83,7 +83,7 @@
  * @typedef {object} GetVaultParams
  * @property {() => Ratio} getLiquidationMargin
  * @property {() => Ratio} getLoanFee
- * @property {() => Promise<PriceQuote>} getCollateralQuote
+ * @property {() => ERef<PriceQuote>} getCollateralQuote
  * @property {() => Ratio} getInterestRate - The annual interest rate on a loan
  * @property {() => RelativeTime} getChargingPeriod - The period (in seconds) at
  *   which interest is charged to the loan.
@@ -111,12 +111,12 @@
  * @typedef {object} LiquidationStrategy
  * @property {() => KeywordKeywordRecord} keywordMapping
  * @property {(collateral: Amount, run: Amount) => Proposal} makeProposal
- * @property {(runDebt: Amount) => Promise<Invitation>} makeInvitation
+ * @property {(runDebt: Amount) => ERef<Invitation>} makeInvitation
  */
 
 /**
  * @typedef {object} Liquidator
- * @property {() => Promise<Invitation<{ debt: Amount<'nat'> }, void>>} makeLiquidateInvitation
+ * @property {() => ERef<Invitation<{ debt: Amount<'nat'> }, void>>} makeLiquidateInvitation
  */
 
 /**

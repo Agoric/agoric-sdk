@@ -35,7 +35,7 @@ const makeApiInvocationPositions = (apiMethodName, methodArgs) => {
  * @param {ERef<{ [methodName: string]: (...args: any) => unknown }>} governedApis
  * @param {string[]} governedNames names of the governed API methods
  * @param {ERef<TimerService>} timer
- * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
+ * @param {() => ERef<PoserFacet>} getUpdatedPoserFacet
  * @returns {Promise<ApiGovernor>}
  */
 const setupApiGovernance = async (

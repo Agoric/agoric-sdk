@@ -67,7 +67,7 @@ export const reserveThenDeposit = async (
   console.info('confirmed deposit for', debugName);
 };
 
-/** @type {<T>(store: any, key: string, make: () => T) => Promise<T>} */
+/** @type {<T>(store: any, key: string, make: () => T) => ERef<T>} */
 const provide = async (store, key, make) => {
   const found = await E(store).get(key);
   if (found) {
@@ -82,7 +82,7 @@ const provide = async (store, key, make) => {
  *
  * @param {{ scratch: ERef<MapStore<string, unknown>> }} homeP
  * @param {object} opts
- * @param {(specifier: string) => Promise<{default: Bundle}>} opts.loadBundle
+ * @param {(specifier: string) => ERef<{default: Bundle}>} opts.loadBundle
  * @param {string} [opts.installCacheKey]
  */
 export const makeInstallCache = async (

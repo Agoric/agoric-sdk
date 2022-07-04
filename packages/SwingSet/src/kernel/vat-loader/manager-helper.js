@@ -132,7 +132,7 @@ function makeManagerKit(
   let deliverToWorker;
 
   /**
-   * @param {(delivery: VatDeliveryObject) => Promise<VatDeliveryResult>} dtw
+   * @param {(delivery: VatDeliveryObject) => ERef<VatDeliveryResult>} dtw
    */
   function setDeliverToWorker(dtw) {
     assert(!deliverToWorker, `setDeliverToWorker called twice`);
@@ -264,8 +264,8 @@ function makeManagerKit(
 
   /**
    *
-   * @param { () => Promise<void>} shutdown
-   * @param {(ss: SnapStore) => Promise<string>} makeSnapshot
+   * @param { () => ERef<void>} shutdown
+   * @param {(ss: SnapStore) => ERef<string>} makeSnapshot
    * @returns {VatManager}
    */
   function getManager(shutdown, makeSnapshot) {

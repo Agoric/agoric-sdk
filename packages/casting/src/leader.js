@@ -37,7 +37,7 @@ export const makeRoundRobinLeader = (endpoints, leaderOptions = {}) => {
     /**
      * @template T
      * @param {string} where
-     * @param {(endpoint: string) => Promise<T>} callback
+     * @param {(endpoint: string) => ERef<T>} callback
      */
     mapEndpoints: async (where, callback) => {
       where = `${where} (round-robin endpoints)`;

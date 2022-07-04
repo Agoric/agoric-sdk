@@ -38,7 +38,7 @@ import {
  * @typedef {object} TestContext
  * @property {ZoeService} zoe
  * @property {MakeFakePriceOracle} makeFakePriceOracle
- * @property {(POLL_INTERVAL: bigint) => Promise<PriceAggregatorKit & { instance: Instance }>} makeMedianAggregator
+ * @property {(POLL_INTERVAL: bigint) => ERef<PriceAggregatorKit & { instance: Instance }>} makeMedianAggregator
  * @property {Amount} feeAmount
  * @property {IssuerKit} link
  *

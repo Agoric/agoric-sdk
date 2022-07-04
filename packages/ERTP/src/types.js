@@ -107,7 +107,7 @@
  * represents the issuer they intended, since the same brand can be reused by
  * a misbehaving issuer.
  *
- * @property {(allegedIssuer: ERef<Issuer>) => Promise<boolean>} isMyIssuer
+ * @property {(allegedIssuer: ERef<Issuer>) => ERef<boolean>} isMyIssuer
  * Should be used with `issuer.getBrand` to ensure an issuer and brand match.
  * @property {() => string} getAllegedName
  * @property {() => DisplayInfo} getDisplayInfo

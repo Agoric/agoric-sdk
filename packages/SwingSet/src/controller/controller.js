@@ -114,7 +114,7 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
 
   /**
    * @param {string} name
-   * @param {(request: Uint8Array) => Promise<Uint8Array>} handleCommand
+   * @param {(request: Uint8Array) => ERef<Uint8Array>} handleCommand
    * @param {boolean} [metered]
    * @param {string} [snapshotHash]
    */

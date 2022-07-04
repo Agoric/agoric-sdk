@@ -1553,7 +1553,7 @@ export default function buildKernel(
 
   function getNextMessageAndProcessor() {
     let message = getNextAcceptanceMessage();
-    /** @type {(message:any) => Promise<PolicyInput>} */
+    /** @type {(message:any) => ERef<PolicyInput>} */
     let processor = processAcceptanceMessage;
     if (!message) {
       message = getNextDeliveryMessage();

@@ -36,7 +36,7 @@
  * Create and return a Notifier that will deliver updates repeatedly at times
  * that are a multiple of interval following delay.
  *
- * @property {(delay: RelativeTime) => Promise<Timestamp>} delay
+ * @property {(delay: RelativeTime) => ERef<Timestamp>} delay
  * Create and return a promise that will resolve after the relative time has
  * passed.
  */

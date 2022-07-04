@@ -94,28 +94,28 @@
 
 /**
  * @typedef {object} XYKAMMCreatorFacet
- * @property {() => Promise<Invitation>} makeCollectFeesInvitation
+ * @property {() => ERef<Invitation>} makeCollectFeesInvitation
  * @property {(facet: AssetReservePublicFacet) => void} resolveReserveFacet
  */
 /**
  * @typedef {object} XYKAMMPublicFacet
- * @property {() => Promise<Invitation>} addPoolInvitation
+ * @property {() => ERef<Invitation>} addPoolInvitation
  * add a new liquidity pool
- * @property {(secondaryIssuer: ERef<Issuer>, keyword: Keyword) => Promise<Issuer>} addIssuer
- * @property {() => Promise<Invitation>} makeSwapInvitation synonym for
+ * @property {(secondaryIssuer: ERef<Issuer>, keyword: Keyword) => ERef<Issuer>} addIssuer
+ * @property {() => ERef<Invitation>} makeSwapInvitation synonym for
  * makeSwapInInvitation
- * @property {() => Promise<Invitation>} makeSwapInInvitation make an invitation
+ * @property {() => ERef<Invitation>} makeSwapInInvitation make an invitation
  * that allows one to do a swap in which the In amount is specified and the Out
  * amount is calculated
- * @property {() => Promise<Invitation>} makeSwapOutInvitation make an invitation
+ * @property {() => ERef<Invitation>} makeSwapOutInvitation make an invitation
  * that allows one to do a swap in which the Out amount is specified and the In
  * amount is calculated
- * @property {() => Promise<Invitation>} makeAddLiquidityInvitation make an
+ * @property {() => ERef<Invitation>} makeAddLiquidityInvitation make an
  * invitation that allows one to add liquidity to the pool.
- * @property {() => Promise<Invitation>} makeAddLiquidityAtRateInvitation make
+ * @property {() => ERef<Invitation>} makeAddLiquidityAtRateInvitation make
  * an invitation that allows one to add liquidity to the pool at an arbitrary
  * ratio of collateral to Central.
- * @property {() => Promise<Invitation>} makeRemoveLiquidityInvitation make an
+ * @property {() => ERef<Invitation>} makeRemoveLiquidityInvitation make an
  * invitation that allows one to remove liquidity from the pool.
  * @property {(brand: Brand) => Issuer} getLiquidityIssuer
  * @property {(brand: Brand) => bigint} getLiquiditySupply get the current value of

@@ -14,11 +14,11 @@ import '@agoric/notifier/exported.js';
 /**
  * @typedef {object} VirtualPurseController The object that determines the
  * remote behaviour of a virtual purse.
- * @property {(amount: Amount) => Promise<void>} pushAmount Tell the controller
+ * @property {(amount: Amount) => ERef<void>} pushAmount Tell the controller
  * to send an amount from "us" to the "other side".  This should resolve on
  * success and reject on failure.  IT IS IMPORTANT NEVER TO FAIL in normal
  * operation.  That will irrecoverably lose assets.
- * @property {(amount: Amount) => Promise<void>} pullAmount Tell the controller
+ * @property {(amount: Amount) => ERef<void>} pullAmount Tell the controller
  * to send an amount from the "other side" to "us".  This should resolve on
  * success and reject on failure.  We can still recover assets from failure to
  * pull.

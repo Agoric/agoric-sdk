@@ -22,7 +22,7 @@ const contractRoots = contractRefs.map(ref =>
   url.fileURLToPath(new URL(ref, import.meta.url)),
 );
 
-/** @type {<T>(store: any, key: string, make: () => T) => Promise<T>} */
+/** @type {<T>(store: any, key: string, make: () => T) => ERef<T>} */
 const provide = async (store, key, make) => {
   const found = await E(store).get(key);
   if (found) {

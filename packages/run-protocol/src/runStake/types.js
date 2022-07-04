@@ -1,10 +1,10 @@
 /**
  * @typedef AttestationTool
- * @property {(amountToLien: Amount<'nat'>) => Promise<Payment>} makeAttestation
- * @property {() => Promise<AccountState>} getAccountState
+ * @property {(amountToLien: Amount<'nat'>) => ERef<Payment>} makeAttestation
+ * @property {() => ERef<AccountState>} getAccountState
  * @property {(lienedAmount: Amount<'nat'>) => Amount<'copyBag'>} wrapLienedAmount
  * @property {(attAmount: Amount<'copyBag'>) => Amount<'nat'>} unwrapLienedAmount
- * @property {() => Promise<Invitation>} makeReturnAttInvitation Make an invitation for returning an attestation.
+ * @property {() => ERef<Invitation>} makeReturnAttInvitation Make an invitation for returning an attestation.
  */
 
 /**
@@ -18,7 +18,7 @@
 
 /**
  * @typedef {object} StakingAuthority
- * @property {(address: Address, previous: Amount, target: Amount<'nat'>) => Promise<void>} setLiened
+ * @property {(address: Address, previous: Amount, target: Amount<'nat'>) => ERef<void>} setLiened
  * @property {(address: Address, brand: Brand<'nat'>) => ERef<AccountState> } getAccountState
  * @typedef {object} AccountState
  * @property {Amount<'nat'>} bonded

@@ -186,9 +186,9 @@
  * @typedef {object} VoteCounterPublicFacet
  * @property {() => boolean} isOpen
  * @property {() => Question} getQuestion
- * @property {() => Promise<Position>} getOutcome
+ * @property {() => ERef<Position>} getOutcome
  * @property {() => QuestionDetails} getDetails
- * @property {() => Promise<VoteStatistics>} getStats
+ * @property {() => ERef<VoteStatistics>} getStats
  */
 
 /**
@@ -254,7 +254,7 @@
  * @property {AddQuestion} addQuestion can be used directly when the creator doesn't need any
  *  reassurance. When someone needs to connect addQuestion to the Electorate
  *  instance, getPoserInvitation() lets them get addQuestion with assurance.
- * @property {() => Promise<Invitation>} getPoserInvitation
+ * @property {() => ERef<Invitation>} getPoserInvitation
  * @property {() => Subscription<QuestionDetails>} getQuestionSubscription
  * @property {() => ElectoratePublic} getPublicFacet
  */
@@ -377,7 +377,7 @@
  * @property {(name: string, proposedValue: ParamValue) => ParamValue} getVisibleValue - for
  *   most types, the visible value is the same as proposedValue. For Invitations
  *   the visible value is the amount of the invitation.
- * @property {(name: string) => Promise<Invitation>} getInternalParamValue
+ * @property {(name: string) => ERef<Invitation>} getInternalParamValue
  * @property {() => StoredSubscription<GovernanceSubscriptionState>} getSubscription
  */
 
@@ -447,10 +447,10 @@
 
 /**
  * @typedef {object} GovernorPublic
- * @property {() => Promise<Instance>} getElectorate
+ * @property {() => ERef<Instance>} getElectorate
  * @property {() => Instance} getGovernedContract
- * @property {(voteCounter: Instance) => Promise<boolean>} validateVoteCounter
- * @property {(regP: ERef<Instance>) => Promise<boolean>} validateElectorate
+ * @property {(voteCounter: Instance) => ERef<boolean>} validateVoteCounter
+ * @property {(regP: ERef<Instance>) => ERef<boolean>} validateElectorate
  * @property {(closingRule: ClosingRule) => boolean} validateTimer
  */
 
@@ -492,7 +492,7 @@
  *   A powerful facet that carries access to both the creatorFacet to be passed
  *   to the caller and the paramManager, which will be used exclusively by the
  *   ContractGovernor.
- * @property {() => Promise<LimitedCreatorFacet<any>>} getLimitedCreatorFacet
+ * @property {() => ERef<LimitedCreatorFacet<any>>} getLimitedCreatorFacet
  * @property {() => ParamManagerRetriever} getParamMgrRetriever
  */
 
@@ -501,7 +501,7 @@
  * @typedef {object} GovernedContractFacetAccess
  * @property {VoteOnParamChanges} voteOnParamChanges
  * @property {VoteOnApiInvocation} voteOnApiInvocation
- * @property {() => Promise<LimitedCreatorFacet<any>>} getCreatorFacet - creator
+ * @property {() => ERef<LimitedCreatorFacet<any>>} getCreatorFacet - creator
  *   facet of the governed contract, without the tightly held ability to change
  *   param values.
  * @property {() => GovernedPublicFacet<PF>} getPublicFacet - public facet of the governed contract
@@ -540,7 +540,7 @@
  * @property {() => LimitedCreatorFacet<CF>} getLimitedCreatorFacet - the creator
  *   facet of the governed contract. Doesn't provide access to any governance
  *   functionality
- * @property {(name: string) => Promise<Invitation>} getInvitation
+ * @property {(name: string) => ERef<Invitation>} getInvitation
  */
 
 /**
@@ -603,7 +603,7 @@
  * @param {ERef<ParamManagerRetriever>} paramManagerRetriever
  * @param {Instance} contractInstance
  * @param {TimerService} timer
- * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
+ * @param {() => ERef<PoserFacet>} getUpdatedPoserFacet
  * @returns {ParamGovernor}
  */
 

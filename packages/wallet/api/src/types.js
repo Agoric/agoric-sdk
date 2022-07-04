@@ -10,7 +10,7 @@
  * the evolving WalletAdminFacet (in internal-types.js).  See
  * https://github.com/Agoric/agoric-sdk/issues/2042 for details.
  *
- * @property {() => Promise<WalletBridge>} getBridge
+ * @property {() => ERef<WalletBridge>} getBridge
  * Return the wallet bridge
  * that bypasses Dapp-authorization.  This should only be used within the REPL
  * or deployment scripts that want to use the WalletBridge API without the
@@ -18,17 +18,17 @@
  *
  * @property {(suggestedDappPetname: Petname,
  *             dappOrigin: string
- * ) => Promise<WalletBridge>} getScopedBridge
+ * ) => ERef<WalletBridge>} getScopedBridge
  * Return a wallet bridge corresponding
  * to an origin that must be approved in the wallet UI.  This is available for
  * completeness in order to provide the underlying API that's available over the
  * standard wallet-bridge.html.
  *
- * @property {(payment: ERef<Payment>) => Promise<void>} addPayment
+ * @property {(payment: ERef<Payment>) => ERef<void>} addPayment
  * Add a payment of any brand to the wallet for deposit to the user-specified
  * purse (either an autodeposit or manually approved).
  *
- * @property {(brandBoardId: string) => Promise<string>} getDepositFacetId
+ * @property {(brandBoardId: string) => ERef<string>} getDepositFacetId
  * Return the board ID to use to receive payments of the specified brand (used
  * by existing deploy scripts).
  * @property {() => Array<[Petname, Issuer]>} getIssuers
@@ -48,43 +48,43 @@
  * exposed via the iframe/WebSocket bridge that a Dapp UI can use to access the
  * wallet.
  *
- * @property {(offer: OfferState) => Promise<string>} addOffer
- * @property {() => Promise<import('@agoric/cache').Coordinator>} getCacheCoordinator
- * @property {(brandBoardId: string) => Promise<string>} getDepositFacetId
+ * @property {(offer: OfferState) => ERef<string>} addOffer
+ * @property {() => ERef<import('@agoric/cache').Coordinator>} getCacheCoordinator
+ * @property {(brandBoardId: string) => ERef<string>} getDepositFacetId
  * Return the board ID to use to receive payments of the specified brand.
- * @property {() => Promise<Notifier<Array<PursesJSONState>>>} getPursesNotifier
+ * @property {() => ERef<Notifier<Array<PursesJSONState>>>} getPursesNotifier
  * Follow changes to the purses.
  * @property {(
- * ) => Promise<Notifier<Array<[Petname, BrandRecord]>>>} getIssuersNotifier
+ * ) => ERef<Notifier<Array<[Petname, BrandRecord]>>>} getIssuersNotifier
  * Follow changes to the issuers
- * @property {() => Promise<Notifier<Array<OfferState>>>} getOffersNotifier
+ * @property {() => ERef<Notifier<Array<OfferState>>>} getOffersNotifier
  * Follow changes to the offers.
  * @property {(petname: Petname,
  *             issuerBoardId: string
- * ) => Promise<void>} suggestIssuer
+ * ) => ERef<void>} suggestIssuer
  * Introduce an ERTP issuer to the wallet, with a suggested petname.
  * @property {(petname: Petname,
  *             installationBoardId: string
- * ) => Promise<void>} suggestInstallation
+ * ) => ERef<void>} suggestInstallation
  * Introduce a Zoe contract installation to the wallet, with suggested petname.
  * @property {(petname: Petname,
  *             instanceBoardId: string
- * ) => Promise<void>} suggestInstance
+ * ) => ERef<void>} suggestInstance
  * Introduce a Zoe contract instance to the wallet, with suggested petname.
- * @property {(rawId: string) => Promise<Notifier<any>>} getUINotifier
+ * @property {(rawId: string) => ERef<Notifier<any>>} getUINotifier
  * Get the UI notifier from the offerResult for a particular offer,
  * identified by id. This notifier should only contain information that
  * is safe to pass to the dapp UI.
- * @property {() => Promise<ZoeService>} getZoe
+ * @property {() => ERef<ZoeService>} getZoe
  * Get the Zoe Service
- * @property {() => Promise<Board>} getBoard
+ * @property {() => ERef<Board>} getBoard
  * Get the Board
- * @property {(...path: Array<unknown>) => Promise<unknown>} getAgoricNames
+ * @property {(...path: Array<unknown>) => ERef<unknown>} getAgoricNames
  * Get the curated Agoric public naming hub
- * @property {(...path: Array<unknown>) => Promise<unknown>} getNamesByAddress
+ * @property {(...path: Array<unknown>) => ERef<unknown>} getNamesByAddress
  * Get the Agoric address mapped to its public naming hub
  * @property {(brands: Array<Brand>
- * ) => Promise<Array<Petname>>} getBrandPetnames
+ * ) => ERef<Array<Petname>>} getBrandPetnames
  * Get the petnames for the brands that are passed in
  */
 
@@ -132,10 +132,10 @@
 /**
  * @template T
  * @typedef {object} PetnameManager
- * @property {(petname: Petname, object: T) => Promise<void>} rename
+ * @property {(petname: Petname, object: T) => ERef<void>} rename
  * @property {(petname: Petname) => T} get
  * @property { () => Array<[Petname, T]>} getAll
- * @property {(petname: Petname, object: T) => Promise<void>} add
+ * @property {(petname: Petname, object: T) => ERef<void>} add
  */
 
 /**
@@ -158,6 +158,6 @@
  * @property {(issuer: Issuer) => IssuerRecord} getByIssuer
  * @property {(issuerP: ERef<Issuer>,
  *             addMeta?: (x: any) => any
- * ) => Promise<IssuerRecord>} initIssuer
+ * ) => ERef<IssuerRecord>} initIssuer
  * @property {(issuerRecord: IssuerRecord) => void } initIssuerByRecord
  */

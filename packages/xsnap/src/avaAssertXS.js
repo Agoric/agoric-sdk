@@ -108,7 +108,7 @@ function createHarness(send) {
   let testNum = 0;
   /** @type {((ot: { context: object }) => Promise<void>)[]} */
   const beforeHooks = [];
-  /** @type {Record<string, () => Promise<void>>} */
+  /** @type {Record<string, () => ERef<void>>} */
   const suitesToRun = {};
   const context = {};
 
@@ -327,7 +327,7 @@ function makeTester(htest, out) {
 
 /**
  * @param {string} label
- * @param {(t: Tester) => Promise<void>} run
+ * @param {(t: Tester) => ERef<void>} run
  * @param {Harness?} htestOpt
  */
 const test = (label, run, htestOpt) => {

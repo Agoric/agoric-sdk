@@ -16,13 +16,13 @@ const { details: X } = assert;
 /**
  * @typedef {object} PeriodicFeeCollector
  * @property {() => FeeCollector} getCollector
- * @property {() => Promise<void>} collectAndDistributeNow
+ * @property {() => ERef<void>} collectAndDistributeNow
  * @property {() => void} stop
  */
 
 /**
  * @typedef {object} CollectibleContractFacet
- * @property {() => Promise<Invitation>} makeCollectFeesInvitation
+ * @property {() => ERef<Invitation>} makeCollectFeesInvitation
  */
 
 /**
@@ -49,7 +49,7 @@ export const makeContractFeeCollector = (zoe, creatorFacet) => {
  * for fees that have been collected to date and send that payment to the
  * depositFacet.
  *
- * @param {() => Promise<unknown>} schedulePayments - distribute to the destinations
+ * @param {() => ERef<unknown>} schedulePayments - distribute to the destinations
  * @param {ERef<TimerService>} timerService - timer that is used to schedule collections
  * @param {RelativeTime} [collectionInterval] - how often to collect fees in the
  * `timerService` unit

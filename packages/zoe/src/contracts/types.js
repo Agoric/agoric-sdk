@@ -4,7 +4,7 @@
  * @property {() => Amount} getAvailableItems
  *
  * @typedef {object} SellItemsCreatorOnly
- * @property {() => Promise<Invitation>} makeBuyerInvitation
+ * @property {() => ERef<Invitation>} makeBuyerInvitation
  *
  * @typedef {SellItemsPublicFacet & SellItemsCreatorOnly} SellItemsCreatorFacet
  */
@@ -24,29 +24,29 @@
  * @property {SellItemsPublicFacet} sellItemsPublicFacet
  *
  * @typedef {object} MintAndSellNFTCreatorFacet
- * @property {(sellParams: SellItemsParameters) => Promise<SellItemsResult>} sellTokens
+ * @property {(sellParams: SellItemsParameters) => ERef<SellItemsResult>} sellTokens
  * @property {() => Issuer} getIssuer
  */
 
 /**
  * @typedef {object} AutomaticRefundPublicFacet
  * @property {() => bigint} getOffersCount
- * @property {() => Promise<Invitation>} makeInvitation
+ * @property {() => ERef<Invitation>} makeInvitation
  */
 
 /**
  * @typedef {object} AutoswapPublicFacet
- * @property {() => Promise<Invitation>} makeSwapInvitation synonym for
+ * @property {() => ERef<Invitation>} makeSwapInvitation synonym for
  * makeSwapInInvitation
- * @property {() => Promise<Invitation>} makeSwapInInvitation make an invitation
+ * @property {() => ERef<Invitation>} makeSwapInInvitation make an invitation
  * that allows one to do a swap in which the In amount is specified and the Out
  * amount is calculated
- * @property {() => Promise<Invitation>} makeSwapOutInvitation make an invitation
+ * @property {() => ERef<Invitation>} makeSwapOutInvitation make an invitation
  * that allows one to do a swap in which the Out amount is specified and the In
  * amount is calculated
- * @property {() => Promise<Invitation>} makeAddLiquidityInvitation make an
+ * @property {() => ERef<Invitation>} makeAddLiquidityInvitation make an
  * invitation that allows one to add liquidity to the pool.
- * @property {() => Promise<Invitation>} makeRemoveLiquidityInvitation make an
+ * @property {() => ERef<Invitation>} makeRemoveLiquidityInvitation make an
  * invitation that allows one to remove liquidity from the pool.
  * @property {() => Issuer} getLiquidityIssuer
  * @property {() => bigint} getLiquiditySupply get the current value of

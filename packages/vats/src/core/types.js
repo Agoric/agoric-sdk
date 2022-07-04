@@ -128,7 +128,7 @@
  *
  * @typedef {object} ClientCreator
  * @property {CreateUserBundle} createUserBundle Required for vat-provisioning, but deprecated in favor of {@link createClient}.
- * @property {(nickname: string, clientAddress: string, powerFlags: string[]) => Promise<ClientFacet>} createClientFacet
+ * @property {(nickname: string, clientAddress: string, powerFlags: string[]) => ERef<ClientFacet>} createClientFacet
  */
 
 /**

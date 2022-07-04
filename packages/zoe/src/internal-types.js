@@ -108,7 +108,7 @@
  * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
  * @property {(issuerP: ERef<Issuer>,
  *             keyword: Keyword
- *            ) => Promise<IssuerRecord>} saveIssuer
+ *            ) => ERef<IssuerRecord>} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {RegisterFeeMint} registerFeeMint
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
@@ -223,7 +223,7 @@
  * A powerful object that can be used to terminate the vat in which a contract
  * is running, to get statistics, or to be notified when it terminates.
  *
- * @property {() => Promise<Completion>} done
+ * @property {() => ERef<Completion>} done
  * returns a promise that will be fulfilled or rejected when the contract is
  * terminated. If the contract terminates with a failure, the promise will be
  * rejected with the reason. If the contract terminates successfully, the

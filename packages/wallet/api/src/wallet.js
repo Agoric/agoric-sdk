@@ -127,7 +127,7 @@ export function buildRootObject(vatPowers) {
    * compromising the wallet's integrity.  This is the preferred way to use the
    * wallet.
    *
-   * @param {() => Promise<void>} approve return a promise that resolves only
+   * @param {() => ERef<void>} approve return a promise that resolves only
    * when the dapp is allowed to interact with the wallet.
    * @param {string} dappOrigin the Web origin of the connecting dapp
    * @param {Record<string, any>} meta metadata for this dapp's connection

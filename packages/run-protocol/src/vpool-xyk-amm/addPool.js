@@ -16,7 +16,7 @@ const DISPLAY_INFO = harden({ decimalPlaces: 6 });
  * @param {(Brand) => boolean} isInSecondaries
  * @param {WeakStore<Brand,ZCFMint>} brandToLiquidityMint
  * @param {WeakStore<Brand,ERef<Issuer>>} brandToLiquidityIssuer
- * @param {() => (secondaryBrand: Brand) => Promise<void>} getAddIssuerToReserve
+ * @param {() => (secondaryBrand: Brand) => ERef<void>} getAddIssuerToReserve
  */
 export const makeAddIssuer = (
   zcf,
@@ -116,7 +116,7 @@ export const makeAddIssuer = (
  * @param {import('./multipoolMarketMaker.js').AMMParamGetters} params retrieve governed params
  * @param {ZCFSeat} protocolSeat seat that holds collected fees
  * @param {WeakStore<Brand,ZCFMint>} brandToLiquidityMint
- * @param {(secondaryBrand: Brand, reserveLiquidityTokenSeat: ZCFSeat, liquidityKeyword: Keyword) => Promise<void>} onOfferHandled
+ * @param {(secondaryBrand: Brand, reserveLiquidityTokenSeat: ZCFSeat, liquidityKeyword: Keyword) => ERef<void>} onOfferHandled
  * @param {ERef<StorageNode>} [storageNode]
  * @param {ERef<Marshaller>} [marshaller]
  */
@@ -144,7 +144,7 @@ export const makeAddPoolInvitation = (
     marshaller,
   );
 
-  /** @type {(Brand) => Promise<{poolFacets: PoolFacets, liquidityZcfMint: ZCFMint}>} */
+  /** @type {(Brand) => ERef<{poolFacets: PoolFacets, liquidityZcfMint: ZCFMint}>} */
   const addPool = async secondaryBrand => {
     const liquidityZcfMint = brandToLiquidityMint.get(secondaryBrand);
 

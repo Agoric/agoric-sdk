@@ -196,16 +196,16 @@
 /**
  * @typedef {object} BorrowFacet
  *
- * @property {() => Promise<Invitation>} makeCloseLoanInvitation
+ * @property {() => ERef<Invitation>} makeCloseLoanInvitation
  *
  * Make an invitation to close the loan by repaying the debt
  *   (including interest).
  *
- * @property {() => Promise<Invitation>} makeAddCollateralInvitation
+ * @property {() => ERef<Invitation>} makeAddCollateralInvitation
  *
  * Make an invitation to add collateral to protect against liquidation
  *
- * @property {() => Promise<PriceQuote>} getLiquidationPromise
+ * @property {() => ERef<PriceQuote>} getLiquidationPromise
  *
  * Get a promise for a priceQuote that will resolve if liquidation
  * occurs. The priceQuote is for the value of the collateral that

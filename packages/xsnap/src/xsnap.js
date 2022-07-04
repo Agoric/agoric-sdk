@@ -47,7 +47,7 @@ function echoCommand(arg) {
  * @typedef {object} XSnapOptions
  * @property {string} os
  * @property {Spawn} spawn
- * @property {(request:Uint8Array) => Promise<Uint8Array>} [handleCommand]
+ * @property {(request:Uint8Array) => ERef<Uint8Array>} [handleCommand]
  * @property {string=} [name]
  * @property {boolean=} [debug]
  * @property {number=} [parserBufferSize] in kB (must be an integer)

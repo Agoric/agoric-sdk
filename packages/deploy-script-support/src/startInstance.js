@@ -6,10 +6,10 @@ import { E, passStyleOf } from '@endo/far';
 /**
  * @template T
  * @typedef {object} PetnameManager
- * @property {(petname: Petname, object: T) => Promise<void>} rename
+ * @property {(petname: Petname, object: T) => ERef<void>} rename
  * @property {(petname: Petname) => T} get
  * @property { () => Array<[Petname, T]>} getAll
- * @property {(petname: Petname, object: T) => Promise<void>} add
+ * @property {(petname: Petname, object: T) => ERef<void>} add
  */
 
 /**

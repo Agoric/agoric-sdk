@@ -10,7 +10,7 @@ import { Far } from '@endo/marshal';
 // can be terminated, i.e., finished or failed.
 
 /**
- * @param {(delay: RelativeTime) => Promise<Timestamp>} delayFn
+ * @param {(delay: RelativeTime) => ERef<Timestamp>} delayFn
  * @param {() => Timestamp} getCurrentTime
  * @param {Timestamp} baseTime
  * @param {RelativeTime} interval
@@ -62,7 +62,7 @@ export const makeTimedIterator = (
 };
 
 /**
- * @param {(delay: RelativeTime) => Promise<Timestamp>} delayFn
+ * @param {(delay: RelativeTime) => ERef<Timestamp>} delayFn
  * @param {() => Timestamp} getCurrentTime
  * @param {Timestamp} baseTime
  * @param {RelativeTime} interval

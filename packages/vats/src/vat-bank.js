@@ -22,7 +22,7 @@ import '@agoric/notifier/exported.js';
  */
 
 /**
- * @param {(obj: any) => Promise<any>} bankCall
+ * @param {(obj: any) => ERef<any>} bankCall
  * @param {string} denom
  * @param {Brand} brand
  * @param {string} address

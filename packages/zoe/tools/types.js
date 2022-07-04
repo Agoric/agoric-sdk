@@ -40,7 +40,7 @@
 
 /**
  * @typedef {object} PriceAuthorityAdmin
- * @property {(createQuote: PriceQuoteCreate) => Promise<void>} fireTriggers
+ * @property {(createQuote: PriceQuoteCreate) => ERef<void>} fireTriggers
  */
 
 /**
@@ -79,38 +79,38 @@
  * @property {(deadline: Timestamp,
  *             amountIn: Amount,
  *             brandOut: Brand
- * ) => Promise<PriceQuote>} quoteAtTime
+ * ) => ERef<PriceQuote>} quoteAtTime
  * Resolves after `deadline` passes on the
  * priceAuthority's timerService with the price quote of `amountIn` at that time
  *
  * @property {(amountIn: Amount,
  *             brandOut: Brand
- * ) => Promise<PriceQuote>} quoteGiven
+ * ) => ERef<PriceQuote>} quoteGiven
  * Get a quote corresponding to the specified amountIn
  *
  * @property {(brandIn: Brand,
- *             amountOut: Amount) => Promise<PriceQuote>} quoteWanted
+ *             amountOut: Amount) => ERef<PriceQuote>} quoteWanted
  * Get a quote corresponding to the specified amountOut
  *
  * @property {(amountIn: Amount,
  *             amountOutLimit: Amount
- * ) => Promise<PriceQuote>} quoteWhenGT
+ * ) => ERef<PriceQuote>} quoteWhenGT
  * Resolve when a price quote of `amountIn` exceeds `amountOutLimit`
  *
  * @property {(amountIn: Amount,
  *             amountOutLimit: Amount
- * ) => Promise<PriceQuote>} quoteWhenGTE
+ * ) => ERef<PriceQuote>} quoteWhenGTE
  * Resolve when a price quote of `amountIn` reaches or exceeds `amountOutLimit`
  *
  * @property {(amountIn: Amount,
  *             amountOutLimit: Amount
- * ) => Promise<PriceQuote>} quoteWhenLTE
+ * ) => ERef<PriceQuote>} quoteWhenLTE
  * Resolve when a price quote of `amountIn` reaches or drops below
  * `amountOutLimit`
  *
  * @property {(amountIn: Amount,
  *             amountOutLimit: Amount
- * ) => Promise<PriceQuote>} quoteWhenLT
+ * ) => ERef<PriceQuote>} quoteWhenLT
  * Resolve when the price quote of `amountIn` drops below `amountOutLimit`
  *
  * @property {(amountIn: Amount,

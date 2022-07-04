@@ -132,7 +132,7 @@ function managerPort(issueCommand) {
     /**
      * Wrap an async Tagged handler in the xsnap async reporting idiom.
      *
-     * @param {(item: Tagged) => Promise<Tagged>} f async Tagged handler
+     * @param {(item: Tagged) => ERef<Tagged>} f async Tagged handler
      * @returns {(msg: ArrayBuffer) => Report<ArrayBuffer>} xsnap style handleCommand
      *
      * @typedef { { result?: T } } Report<T> report T when idle

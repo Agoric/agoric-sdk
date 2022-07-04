@@ -24,7 +24,7 @@ import process from 'process';
  * @typedef {{ board: Board, chainTimerService, scratch, zoe }} Home
  * @param {Promise<Home>} homePromise
  * @param {object} root0
- * @param {(...path: string[]) => Promise<any>} root0.lookup
+ * @param {(...path: string[]) => ERef<any>} root0.lookup
  * A promise for the references available from REPL home
  */
 export default async function priceAuthorityFromNotifier(

@@ -39,7 +39,7 @@
  * Return an object with the instance, installation, description, invitation
  * handle, and any custom properties specific to the contract.
  * @property {GetFeeIssuer} getFeeIssuer
- * @property {() => Promise<Purse>} makeFeePurse
+ * @property {() => ERef<Purse>} makeFeePurse
  * Deprecated. Does nothing useful but provided during transition so less old
  * code breaks.
  * @property {(defaultFeePurse: ERef<Purse>) => ZoeService} bindDefaultFeePurse
@@ -176,15 +176,15 @@
 /**
  * @template {object} [OR=any]
  * @typedef {object} UserSeat
- * @property {() => Promise<Allocation>} getCurrentAllocation
+ * @property {() => ERef<Allocation>} getCurrentAllocation
  * TODO remove getCurrentAllocation query
- * @property {() => Promise<ProposalRecord>} getProposal
- * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
- * @property {(keyword: Keyword) => Promise<Payment>} getPayout
- * @property {() => Promise<OR>} getOfferResult
+ * @property {() => ERef<ProposalRecord>} getProposal
+ * @property {() => ERef<PaymentPKeywordRecord>} getPayouts
+ * @property {(keyword: Keyword) => ERef<Payment>} getPayout
+ * @property {() => ERef<OR>} getOfferResult
  * @property {() => void=} tryExit
- * @property {() => Promise<boolean>} hasExited
- * @property {() => Promise<Notifier<Allocation>>} getNotifier
+ * @property {() => ERef<boolean>} hasExited
+ * @property {() => ERef<Notifier<Allocation>>} getNotifier
  */
 
 /**
@@ -251,10 +251,10 @@
 
 /**
  * @typedef {object} VatAdminSvc
- * @property {(BundleID: id) => Promise<BundleCap>} waitForBundleCap
- * @property {(BundleID: id) => Promise<BundleCap>} getBundleCap
- * @property {(name: string) => Promise<BundleCap>} getNamedBundleCap
- * @property {(bundleCap: BundleCap, options?: Record<string, any>) => Promise<RootAndAdminNode>} createVat
+ * @property {(BundleID: id) => ERef<BundleCap>} waitForBundleCap
+ * @property {(BundleID: id) => ERef<BundleCap>} getBundleCap
+ * @property {(name: string) => ERef<BundleCap>} getNamedBundleCap
+ * @property {(bundleCap: BundleCap, options?: Record<string, any>) => ERef<RootAndAdminNode>} createVat
  */
 
 /**

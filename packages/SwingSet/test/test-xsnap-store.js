@@ -38,7 +38,7 @@ const snapSize = {
 
 /**
  * @param {string} name
- * @param {(request:Uint8Array) => Promise<Uint8Array>} handleCommand
+ * @param {(request:Uint8Array) => ERef<Uint8Array>} handleCommand
  * @param {string} script to execute
  */
 async function bootWorker(name, handleCommand, script) {
@@ -58,7 +58,7 @@ async function bootWorker(name, handleCommand, script) {
 
 /**
  * @param {string} name
- * @param {(request:Uint8Array) => Promise<Uint8Array>} handleCommand
+ * @param {(request:Uint8Array) => ERef<Uint8Array>} handleCommand
  */
 async function bootSESWorker(name, handleCommand) {
   const bootScript = await ld.asset(

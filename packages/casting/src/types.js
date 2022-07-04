@@ -10,8 +10,8 @@ export {};
 /**
  * @typedef {object} LeaderOptions
  * @property {null | ((where: string, err: any, attempt?: number) => Promise<void>)} [retryCallback]
- * @property {(where: string) => Promise<void>} [jitter]
- * @property {(where: string) => Promise<boolean>} [keepPolling]
+ * @property {(where: string) => ERef<void>} [jitter]
+ * @property {(where: string) => ERef<boolean>} [keepPolling]
  */
 
 /**
@@ -22,11 +22,11 @@ export {};
 
 /**
  * @typedef {object} Leader
- * @property {(where: string, error: any, attempt?: number) => Promise<void>} retry
- * @property {(where: string) => Promise<void>} jitter
+ * @property {(where: string, error: any, attempt?: number) => ERef<void>} retry
+ * @property {(where: string) => ERef<void>} jitter
  * @property {() => LeaderOptions} getOptions
- * @property {<T>(where: string, callback: (endpoint: string) => Promise<T>) => Promise<T[]>} mapEndpoints
- * @property {(spec: ERef<CastingSpec>) => Promise<Follower<CastingChange>>} watchCasting
+ * @property {<T>(where: string, callback: (endpoint: string) => ERef<T>) => Promise<T[]>} mapEndpoints
+ * @property {(spec: ERef<CastingSpec>) => ERef<Follower<CastingChange>>} watchCasting
  */
 
 /** @typedef {ERef<Leader> | (() => ERef<Leader>)} LeaderOrMaker */
@@ -34,8 +34,8 @@ export {};
 /**
  * @template T
  * @typedef {object} Follower
- * @property {() => Promise<AsyncIterable<T>>} getLatestIterable
- * @property {() => Promise<AsyncIterable<T>>} getEachIterable
+ * @property {() => ERef<AsyncIterable<T>>} getLatestIterable
+ * @property {() => ERef<AsyncIterable<T>>} getEachIterable
  */
 
 /**

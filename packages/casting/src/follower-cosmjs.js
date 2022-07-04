@@ -44,9 +44,9 @@ const collectSingle = values => {
 
 /**
  * @callback QueryVerifier
- * @param {() => Promise<Uint8Array>} getProvenValue
+ * @param {() => ERef<Uint8Array>} getProvenValue
  * @param {(reason?: unknown) => void} crash
- * @param {() => Promise<Uint8Array>} getAllegedValue
+ * @param {() => ERef<Uint8Array>} getAllegedValue
  */
 
 /**

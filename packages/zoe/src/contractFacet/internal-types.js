@@ -11,5 +11,5 @@
  *     instanceRecordFromZoe: InstanceRecord,
  *     issuerStorageFromZoe: IssuerRecords,
  *     privateArgs?: object,
- * ) => Promise<ExecuteContractResult>} startContract
+ * ) => ERef<ExecuteContractResult>} startContract
  */

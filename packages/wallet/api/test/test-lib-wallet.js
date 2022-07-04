@@ -177,7 +177,7 @@ async function setupTest(
  * Run a thunk and wait for the notifier to fire.
  *
  * @param {ERef<Notifier<any>>} notifier
- * @param {() => Promise<any>} thunk
+ * @param {() => ERef<any>} thunk
  */
 const waitForUpdate = async (notifier, thunk) => {
   const { updateCount } = await E(notifier).getUpdateSince();
