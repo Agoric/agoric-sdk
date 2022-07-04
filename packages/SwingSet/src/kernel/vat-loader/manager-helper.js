@@ -142,7 +142,7 @@ function makeManagerKit(
   /**
    *
    * @param {VatDeliveryObject} delivery
-   * @returns {Promise<VatDeliveryResult>} // or Error
+   * @returns {ERef<VatDeliveryResult>} // or Error
    */
   async function deliver(delivery) {
     if (transcriptManager) {
@@ -194,7 +194,7 @@ function makeManagerKit(
 
   /**
    * @param {StreamPosition | undefined} startPos
-   * @returns {Promise<number?>} number of deliveries, or null if !useTranscript
+   * @returns {ERef<number?>} number of deliveries, or null if !useTranscript
    */
   async function replayTranscript(startPos) {
     // console.log('replay from', { vatID, startPos });

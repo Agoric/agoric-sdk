@@ -227,7 +227,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
      * Async phase to prepare for synchronous setting
      *
      * @param {Invitation} invite
-     * @returns {Promise<SetInvitationParam>}
+     * @returns {ERef<SetInvitationParam>}
      */
     const prepareToSetInvitation = async invite => {
       const [preparedAmount] = await Promise.all([

@@ -23,7 +23,7 @@ import { makeTracer } from '../src/makeTracer.js';
  * @param {*} t
  * @param {string} sourceRoot
  * @param {string} bundleName
- * @returns {Promise<SourceBundle>}
+ * @returns {ERef<SourceBundle>}
  */
 export const provideBundle = (t, sourceRoot, bundleName) => {
   assert(
@@ -136,7 +136,7 @@ export const makeVoterTool = async (
  *   feeMintAccess: ERef<FeeMintAccess>,
  *   zoe: ERef<ZoeService>,
  * }} powers
- * @returns {Promise<Payment>}
+ * @returns {ERef<Payment>}
  */
 export const mintRunPayment = async (
   value,

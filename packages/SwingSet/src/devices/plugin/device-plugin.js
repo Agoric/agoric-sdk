@@ -51,7 +51,7 @@ export function buildRootDeviceNode(tools) {
    * @param {string} mod module with an exported `bootPlugin(state = undefined)`
    * @param {number} index the module instance index
    * @param {number} epoch which generation of CapTP instances this is
-   * @returns {Promise<(obj: Record<string, any>) => void>} send a message to the module
+   * @returns {ERef<(obj: Record<string, any>) => void>} send a message to the module
    */
   async function createConnection(mod, index, epoch) {
     try {

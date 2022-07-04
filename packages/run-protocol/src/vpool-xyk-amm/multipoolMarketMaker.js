@@ -199,7 +199,7 @@ const start = async (zcf, privateArgs) => {
    * @param {Brand} secondaryBrand
    * @param {ZCFSeat} reserveLiquidityTokenSeat
    * @param {Keyword} liquidityKeyword
-   * @returns {Promise<void>} up to caller whether to await or handle rejections
+   * @returns {ERef<void>} up to caller whether to await or handle rejections
    */
   const handlePoolAdded = async (
     secondaryBrand,

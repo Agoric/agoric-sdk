@@ -138,7 +138,7 @@ function createHarness(send) {
     },
     /**
      * @param {string} name
-     * @returns {Promise<void>}
+     * @returns {ERef<void>}
      */
     async run(name) {
       for await (const hook of beforeHooks) {

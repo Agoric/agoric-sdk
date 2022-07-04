@@ -167,7 +167,7 @@ export function makeXsSubprocessFactory({
 
     /**
      * @param { VatDeliveryObject} delivery
-     * @returns {Promise<VatDeliveryResult>}
+     * @returns {ERef<VatDeliveryResult>}
      */
     async function deliverToWorker(delivery) {
       parentLog(vatID, `sending delivery`, delivery);
@@ -211,7 +211,7 @@ export function makeXsSubprocessFactory({
     }
     /**
      * @param {SnapStore} snapStore
-     * @returns {Promise<string>}
+     * @returns {ERef<string>}
      */
     function makeSnapshot(snapStore) {
       return snapStore.save(fn => worker.snapshot(fn));

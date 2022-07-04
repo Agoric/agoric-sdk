@@ -177,7 +177,7 @@ export const depositToSeatSuccessMsg = `Deposit and reallocation successful.`;
  * @param {ZCFSeat} recipientSeat
  * @param {AmountKeywordRecord} amounts
  * @param {PaymentPKeywordRecord} payments
- * @returns {Promise<string>} `Deposit and reallocation successful.`
+ * @returns {ERef<string>} `Deposit and reallocation successful.`
  */
 
 export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
@@ -220,7 +220,7 @@ export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
  * @param {ZCF} zcf
  * @param {ZCFSeat} seat
  * @param {AmountKeywordRecord} amounts
- * @returns {Promise<PaymentPKeywordRecord>}
+ * @returns {ERef<PaymentPKeywordRecord>}
  */
 export async function withdrawFromSeat(zcf, seat, amounts) {
   assert(!seat.hasExited(), 'The seat cannot have exited.');
@@ -308,7 +308,7 @@ const reverse = (keywordRecord = {}) => {
  * @param {A} [offerArgs]
  *   Aditional contract-specific optional arguments in a record.
  *
- * @returns {Promise<{userSeatPromise: Promise<UserSeat<R>>, deposited: Promise<AmountKeywordRecord>}>}
+ * @returns {ERef<{userSeatPromise: Promise<UserSeat<R>>, deposited: Promise<AmountKeywordRecord>}>}
  *   A promise for the userSeat for the offer to the other contract, and a
  *   promise (`deposited`) which resolves when the payout for the offer has been
  *   deposited to the `toSeat`.

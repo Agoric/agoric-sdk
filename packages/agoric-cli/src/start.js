@@ -51,7 +51,7 @@ const GAS_ADJUSTMENT = '1.2';
  * Resolve after a delay in milliseconds.
  *
  * @param {number} ms
- * @returns {Promise<void>}
+ * @returns {ERef<void>}
  */
 const delay = ms => new Promise(resolve => setTimeout(() => resolve(), ms));
 

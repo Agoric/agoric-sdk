@@ -70,7 +70,7 @@ const installContracts = async (zoe, cb) => {
  * @param {ERef<ZoeService>} zoe
  * @param {Record<string, Installation>} installations
  * @param {Record<string, unknown>} electorateTerms
- * @returns {Promise<{electorateCreatorFacet: *, electorateInstance: Instance}>}
+ * @returns {ERef<{electorateCreatorFacet: *, electorateInstance: Instance}>}
  */
 const startElectorate = async (zoe, installations, electorateTerms) => {
   const { creatorFacet: electorateCreatorFacet, instance: electorateInstance } =
@@ -108,7 +108,7 @@ const votersVote = async (detailsP, votersP, selections) => {
  * @param {Instance} electorateInstance
  * @param {ERef<Instance>} governorInstanceP
  * @param {Record<string, Installation>} installations
- * @returns {Promise<void>}
+ * @returns {ERef<void>}
  */
 const oneVoterValidate = async (
   votersP,

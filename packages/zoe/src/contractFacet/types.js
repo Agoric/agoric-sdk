@@ -80,7 +80,7 @@
  *
  * @param {ERef<Issuer>} issuerP Promise for issuer
  * @param {Keyword} keyword Keyword for added issuer
- * @returns {Promise<IssuerRecord>} Issuer is added and ready
+ * @returns {ERef<IssuerRecord>} Issuer is added and ready
  */
 
 /**
@@ -101,7 +101,7 @@
  * @param {string} description
  * @param {object=} customProperties
  * @param {Pattern} [proposalSchema]
- * @returns {Promise<Invitation<OR>>}
+ * @returns {ERef<Invitation<OR>>}
  */
 
 /**

@@ -41,7 +41,7 @@ const isGT = (amount, amountLimit) => !AmountMath.isGTE(amountLimit, amount);
 /**
  * @callback Trigger
  * @param {PriceQuoteCreate} createInstantQuote
- * @returns {Promise<void>}
+ * @returns {ERef<void>}
  */
 
 /**
@@ -70,7 +70,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
 
   /**
    * @param {PriceQuoteCreate} triggerCreateQuote
-   * @returns {Promise<void>}
+   * @returns {ERef<void>}
    */
   const fireTriggers = async triggerCreateQuote => {
     if (!haveFirstQuote) {

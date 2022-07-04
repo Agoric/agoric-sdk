@@ -5,7 +5,7 @@
 /**
  * @callback MakeOptionInvitation
  * @param {PositionKind} positionKind
- * @returns {Promise<Payment>}
+ * @returns {ERef<Payment>}
  */
 
 /**

@@ -65,7 +65,7 @@
  * It's alright to expose to the holder of the connection.
  *
  * @param {Denom} receiveDenom
- * @returns {Promise<void>}
+ * @returns {ERef<void>}
  */
 
 /**
@@ -76,7 +76,7 @@
  * @param {Denom} remoteDenom
  * @param {AssetKind} [assetKind] The kind of the pegged values
  * @param {DisplayInfo} [displayInfo]
- * @returns {Promise<Peg>}
+ * @returns {ERef<Peg>}
  */
 
 /**
@@ -86,7 +86,7 @@
  * @param {string} allegedName
  * @param {Issuer} localIssuer Local ERTP issuer whose assets should be
  * pegged to the connection
- * @returns {Promise<Peg>}
+ * @returns {ERef<Peg>}
  */
 
 /**

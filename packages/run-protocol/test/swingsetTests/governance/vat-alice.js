@@ -17,7 +17,7 @@ const { details: X, quote: q } = assert;
  * @param {Brand[]} brands
  * @param {Payment[]} payments
  * @param {ManualTimer} timer configured to tick one day (@see setup.js)
- * @returns {Promise<{startTest: Function}>}
+ * @returns {ERef<{startTest: Function}>}
  */
 const build = async (log, zoe, brands, payments, timer) => {
   const [moolaBrand] = brands;
@@ -96,7 +96,7 @@ const build = async (log, zoe, brands, payments, timer) => {
     /**
      * @param {string} testName
      * @param {VFC['publicFacet']} vaultFactory
-     * @returns {Promise<void>}
+     * @returns {ERef<void>}
      */
     startTest: async (testName, vaultFactory) => {
       switch (testName) {

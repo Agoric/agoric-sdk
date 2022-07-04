@@ -27,7 +27,7 @@ async function main() {
    * For the purposes of the REPL, the only command is effectively `print`.
    *
    * @param {Uint8Array} message
-   * @returns {Promise<Uint8Array>}
+   * @returns {ERef<Uint8Array>}
    */
   async function handleCommand(message) {
     console.log(decoder.decode(message));
@@ -59,7 +59,7 @@ async function main() {
 
   /**
    * @param {string} prompt
-   * @returns {Promise<string>}
+   * @returns {ERef<string>}
    */
   function ask(prompt) {
     const { promise, resolve } = /** @type {Deferred<string>} */ (defer());

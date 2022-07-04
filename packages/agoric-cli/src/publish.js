@@ -12,7 +12,7 @@
  * @callback JsonHttpCall
  * @param {JsonHttpRequest} request
  * @param {unknown} requestBody
- * @returns {Promise<unknown>}
+ * @returns {ERef<unknown>}
  */
 
 /**
@@ -214,7 +214,7 @@ export const makeCosmosBundlePublisher = ({
  * @callback PublishBundleHttp
  * @param {SourceBundle} bundle
  * @param {HttpConnectionSpec} connectionSpec
- * @returns {Promise<void>}
+ * @returns {ERef<void>}
  */
 
 /**
@@ -232,7 +232,7 @@ export const makeCosmosBundlePublisher = ({
  * @callback PublishBundleCosmos
  * @param {SourceBundle} bundle
  * @param {CosmosConnectionSpec} connectionSpec
- * @returns {Promise<void>}
+ * @returns {ERef<void>}
  */
 
 /**
@@ -246,7 +246,7 @@ export const makeCosmosBundlePublisher = ({
  * @param {PublishBundleCosmos} [powers.publishBundleCosmos]
  * @param {PublishBundleHttp} [powers.publishBundleHttp]
  * @param {() => ConnectionSpec} [powers.getDefaultConnection]
- * @returns {Promise<Bundle>}
+ * @returns {ERef<Bundle>}
  */
 const publishBundle = async (
   bundle,

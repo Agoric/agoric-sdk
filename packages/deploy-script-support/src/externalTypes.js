@@ -48,14 +48,14 @@
  * @param {ERef<Issuer>} issuer
  * @param {Petname} brandPetname
  * @param {Petname} pursePetname
- * @returns {Promise<Petname>}
+ * @returns {ERef<Petname>}
  */
 
 /**
  * @callback AssertOfferResult
  * @param {ERef<UserSeat>} seat
  * @param {string} expectedOfferResult
- * @returns {Promise<void>}
+ * @returns {ERef<void>}
  */
 
 /**

@@ -444,7 +444,7 @@ const helperBehavior = {
    *
    * @param {MethodContext} context
    * @param {ZCFSeat} clientSeat
-   * @returns {Promise<string>} success message
+   * @returns {ERef<string>} success message
    */
   adjustBalancesHook: async ({ state, facets }, clientSeat) => {
     const { self, helper } = facets;
@@ -660,7 +660,7 @@ const selfBehavior = {
 
   /**
    * @param {MethodContext} context
-   * @returns {Promise<Invitation>}
+   * @returns {ERef<Invitation>}
    */
   makeTransferInvitation: ({ state, facets }) => {
     const { self, helper } = facets;

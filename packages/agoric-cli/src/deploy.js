@@ -435,7 +435,7 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
                * ['wallet', 'issuer', 'RUN']
                *
                * @param  {...string[]} namePath
-               * @returns {Promise<any>}
+               * @returns {ERef<any>}
                */
               lookup: (...namePath) => {
                 if (namePath.length === 1 && Array.isArray(namePath[0])) {

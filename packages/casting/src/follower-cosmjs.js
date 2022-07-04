@@ -139,7 +139,7 @@ export const makeCosmjsFollower = (
     method =>
     /**
      * @param {number} [height]
-     * @returns {Promise<Uint8Array>}
+     * @returns {ERef<Uint8Array>}
      */
     async height => {
       const {
@@ -231,7 +231,7 @@ export const makeCosmjsFollower = (
 
     /**
      * @param {import('./types.js').CastingChange} castingChange
-     * @returns {Promise<void>}
+     * @returns {ERef<void>}
      */
     const queryAndUpdateOnce = castingChange =>
       new Promise((resolve, reject) => {

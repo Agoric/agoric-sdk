@@ -81,7 +81,7 @@ const startElectorate = async (zoe, installations) => {
  *
  * @param {CommitteeElectorateCreatorFacet} electorateCreatorFacet
  * @param {*} voterCreator
- * @returns {Promise<unknown[]>}
+ * @returns {ERef<unknown[]>}
  */
 const createCommittee = async (electorateCreatorFacet, voterCreator) => {
   const invitations = await E(electorateCreatorFacet).getVoterInvitations();

@@ -96,7 +96,7 @@ export const makeAsyncIterableFromNotifier = notifierP => {
  * @template T
  * @param {ERef<AsyncIterator<T>>} asyncIteratorP
  * @param {Partial<IterationObserver<T>>} iterationObserver
- * @returns {Promise<undefined>}
+ * @returns {ERef<undefined>}
  */
 export const observeIterator = (asyncIteratorP, iterationObserver) => {
   return new Promise((ack, observerError) => {
@@ -132,7 +132,7 @@ export const observeIterator = (asyncIteratorP, iterationObserver) => {
  * @template T
  * @param {ERef<AsyncIterable<T>>} asyncIterableP
  * @param {Partial<IterationObserver<T>>} iterationObserver
- * @returns {Promise<undefined>}
+ * @returns {ERef<undefined>}
  */
 export const observeIteration = (asyncIterableP, iterationObserver) => {
   const iteratorP = E(asyncIterableP)[Symbol.asyncIterator]();
@@ -144,7 +144,7 @@ export const observeIteration = (asyncIterableP, iterationObserver) => {
  * @template T
  * @param {Partial<IterationObserver<T>>} iterationObserver
  * @param {ERef<AsyncIterable<T>>} asyncIterableP
- * @returns {Promise<undefined>}
+ * @returns {ERef<undefined>}
  */
 export const updateFromIterable = (iterationObserver, asyncIterableP) =>
   observeIteration(asyncIterableP, iterationObserver);
@@ -158,7 +158,7 @@ export const updateFromIterable = (iterationObserver, asyncIterableP) =>
  * @template T
  * @param {ERef<Notifier<T>>} notifierP
  * @param {Partial<IterationObserver<T>>} iterationObserver
- * @returns {Promise<undefined>}
+ * @returns {ERef<undefined>}
  */
 export const observeNotifier = (notifierP, iterationObserver) =>
   observeIteration(makeAsyncIterableFromNotifier(notifierP), iterationObserver);
@@ -168,7 +168,7 @@ export const observeNotifier = (notifierP, iterationObserver) =>
  * @template T
  * @param {Partial<IterationObserver<T>>} iterationObserver
  * @param {ERef<Notifier<T>>} notifierP
- * @returns {Promise<undefined>}
+ * @returns {ERef<undefined>}
  */
 export const updateFromNotifier = (iterationObserver, notifierP) =>
   observeIteration(makeAsyncIterableFromNotifier(notifierP), iterationObserver);

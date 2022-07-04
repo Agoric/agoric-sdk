@@ -41,7 +41,7 @@
  * @param {Issuer} collateralIssuer
  * @param {Keyword} collateralKeyword
  * @param {VaultManagerParamValues} params
- * @returns {Promise<VaultManager>}
+ * @returns {ERef<VaultManager>}
  */
 
 /**

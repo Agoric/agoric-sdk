@@ -6,7 +6,7 @@ import { DEFAULT_KEEP_POLLING } from './defaults.js';
  * Just return an unspecified allegedValue every poll period.
  *
  * @param {import('./types').Leader} leader
- * @returns {Promise<import('./types.js').Follower<import('./types').CastingChange>>}
+ * @returns {ERef<import('./types.js').Follower<import('./types').CastingChange>>}
  */
 export const makePollingChangeFollower = async leader => {
   const { keepPolling = DEFAULT_KEEP_POLLING } = await E(leader).getOptions();

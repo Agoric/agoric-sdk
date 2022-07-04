@@ -7,7 +7,7 @@ import { E } from '@endo/eventual-send';
  * @param {ZoeService} zoe
  * @param {*} vatAdminState
  * @param {string} path
- * @returns {Promise<Installation>}
+ * @returns {ERef<Installation>}
  */
 export const installationPFromSource = async (zoe, vatAdminState, path) => {
   const bundle = await bundleSource(path);

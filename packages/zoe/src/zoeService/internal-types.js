@@ -31,7 +31,7 @@
  * @callback DepositPayments
  * @param {ProposalRecord} proposal
  * @param {PaymentPKeywordRecord} payments
- * @returns {Promise<Allocation>}
+ * @returns {ERef<Allocation>}
  */
 
 /**
@@ -110,7 +110,7 @@
 /**
  * @callback GetBundleCapForID
  * @param {BundleID} id
- * @returns {Promise<BundleCap>}
+ * @returns {ERef<BundleCap>}
  */
 
 /**
@@ -143,7 +143,7 @@
  * ZCF bundle
  *
  * @callback CreateZCFVat
- * @returns {Promise<RootAndAdminNode>}
+ * @returns {ERef<RootAndAdminNode>}
  */
 
 /**

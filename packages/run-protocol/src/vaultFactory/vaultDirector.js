@@ -504,7 +504,7 @@ const publicBehavior = {
     state.vaultParamManagers.get(collateralBrand).getParams(),
   /**
    * @param {MethodContext} context
-   * @returns {Promise<GovernorPublic>}
+   * @returns {ERef<GovernorPublic>}
    */
   getContractGovernor: ({ state: { zcf } }) =>
     // PERF consider caching

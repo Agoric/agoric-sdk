@@ -24,7 +24,7 @@ import '../types-ambient.js';
 function makeSupervisorDispatch(dispatch) {
   /**
    * @param {VatDeliveryObject} delivery
-   * @returns {Promise<VatDeliveryResult>}
+   * @returns {ERef<VatDeliveryResult>}
    *
    */
   async function dispatchToVat(delivery) {

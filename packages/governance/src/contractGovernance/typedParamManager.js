@@ -75,7 +75,7 @@ const isAsync = {
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {T} spec
  * @param {ERef<ZoeService>} zoe
- * @returns {Promise<TypedParamManager<{[K in keyof T]: T[K][0]}>>}
+ * @returns {ERef<TypedParamManager<{[K in keyof T]: T[K][0]}>>}
  */
 const makeParamManager = async (publisherKit, spec, zoe) => {
   const builder = makeParamManagerBuilder(publisherKit, zoe);
@@ -124,7 +124,7 @@ const makeParamManagerSync = (publisherKit, spec) => {
  * @param {ZCF<GovernanceTerms<M>>} zcf
  * @param {Payment} initialPoserInvitation
  * @param {M} paramTypesMap
- * @returns {Promise<TypedParamManager<M & {Electorate: 'invitation'}>>}
+ * @returns {ERef<TypedParamManager<M & {Electorate: 'invitation'}>>}
  */
 const makeParamManagerFromTerms = async (
   publisherKit,

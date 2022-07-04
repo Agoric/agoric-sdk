@@ -30,7 +30,7 @@ export function makeVatLoader(stuff) {
    * @param {Translators} translators
    * @param {*} dynamicOptions  Options bag governing vat creation
    *
-   * @returns {Promise<VatManager>}
+   * @returns {ERef<VatManager>}
    */
   function createVatDynamically(
     vatID,
@@ -51,7 +51,7 @@ export function makeVatLoader(stuff) {
    * @param {Translators} translators
    * @param {*} dynamicOptions  Options bag governing vat creation
    *
-   * @returns {Promise<VatManager>} fires when the vat is ready for messages
+   * @returns {ERef<VatManager>} fires when the vat is ready for messages
    */
   function recreateDynamicVat(vatID, source, translators, dynamicOptions) {
     // eslint-disable-next-line no-use-before-define
@@ -73,7 +73,7 @@ export function makeVatLoader(stuff) {
    * @param {Translators} translators
    * @param {*} staticOptions  Options bag governing vat creation
    *
-   * @returns {Promise<VatManager>} A Promise which fires when the
+   * @returns {ERef<VatManager>} A Promise which fires when the
    * vat is ready for messages.
    */
   function recreateStaticVat(vatID, source, translators, staticOptions) {
@@ -177,7 +177,7 @@ export function makeVatLoader(stuff) {
    *    if false, it's a static vat (these have differences in their allowed
    *    options and some of their option defaults).
    *
-   * @returns {Promise<VatManager>} A Promise which fires when the
+   * @returns {ERef<VatManager>} A Promise which fires when the
    * vat is ready for messages.
    */
   async function create(vatID, source, translators, options, isDynamic) {

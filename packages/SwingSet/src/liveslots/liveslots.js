@@ -1442,7 +1442,7 @@ function build(
   }
 
   /**
-   * @returns {Promise<void>}
+   * @returns {ERef<void>}
    */
   async function stopVat() {
     assert(
@@ -1532,7 +1532,7 @@ function build(
    * to fail: only a bug in liveslots should trigger a failure.
    *
    * @param {VatDeliveryObject} delivery
-   * @returns {Promise<void>}
+   * @returns {ERef<void>}
    */
   async function dispatch(delivery) {
     // We must short-circuit dispatch to bringOutYourDead here because it has to

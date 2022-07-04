@@ -17,7 +17,7 @@ import {
 
 /**
  * @param {string} [prefix]
- * @returns {Promise<[string, () => void]>}
+ * @returns {ERef<[string, () => void]>}
  */
 const tmpDir = prefix =>
   new Promise((resolve, reject) => {

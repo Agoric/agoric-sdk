@@ -44,7 +44,7 @@ const getOrElse = (store, key, make) => {
  * @template {AssetKind} K
  * @param {ZCFMint<K>} zcfMint
  * @param {Amount<K>} amountToMint
- * @returns {Promise<Payment<K>>}
+ * @returns {ERef<Payment<K>>}
  */
 const mintZCFMintPayment = (zcf, zcfMint, amountToMint) => {
   const { userSeat, zcfSeat } = zcf.makeEmptySeatKit();

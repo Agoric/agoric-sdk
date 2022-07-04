@@ -9,7 +9,7 @@ import { assert } from '@agoric/assert';
  * @param {Proposal=} proposal
  * @param {PaymentPKeywordRecord=} payments
  * @param {Pattern} [proposalSchema]
- * @returns {Promise<{zcfSeat: ZCFSeat, userSeat: UserSeat}>}
+ * @returns {ERef<{zcfSeat: ZCFSeat, userSeat: UserSeat}>}
  */
 export const makeOffer = async (
   zoe,

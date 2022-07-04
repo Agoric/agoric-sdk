@@ -16,7 +16,7 @@ const noPath = /** @type {import('fs').PathLike} */ (
 /**
  *
  * @param {import("fs").ReadStream | import("fs").WriteStream} stream
- * @returns {Promise<void>}
+ * @returns {ERef<void>}
  */
 export const fsStreamReady = stream =>
   new Promise((resolve, reject) => {
@@ -84,7 +84,7 @@ export function makeSnapStore(
   /**
    * @param {(name: string) => ERef<T>} thunk
    * @param {string=} prefix
-   * @returns {Promise<T>}
+   * @returns {ERef<T>}
    * @template T
    */
   async function withTempName(thunk, prefix = 'tmp') {
@@ -185,7 +185,7 @@ export function makeSnapStore(
 
   /**
    * @param {(fn: string) => ERef<void>} saveRaw
-   * @returns {Promise<string>} sha256 hash of (uncompressed) snapshot
+   * @returns {ERef<string>} sha256 hash of (uncompressed) snapshot
    */
   async function save(saveRaw) {
     return withTempName(async snapFile => {

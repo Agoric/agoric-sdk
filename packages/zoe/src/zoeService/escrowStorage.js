@@ -68,7 +68,7 @@ export const makeEscrowStorage = () => {
    *
    * @param {ERef<Payment>} paymentP
    * @param {Amount} amount
-   * @returns {Promise<Amount>}
+   * @returns {ERef<Amount>}
    */
   const doDepositPayment = (paymentP, amount) => {
     const purse = brandToPurse.get(amount.brand);

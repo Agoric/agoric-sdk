@@ -129,7 +129,7 @@
  *
  * @param {ERef<Payment>} payment
  * @param {Pattern=} optAmountShape
- * @returns {Promise<Amount>}
+ * @returns {ERef<Amount>}
  */
 
 /**
@@ -146,7 +146,7 @@
  *
  * @param {ERef<Payment>} payment
  * @param {Pattern=} optAmountShape
- * @returns {Promise<Payment>}
+ * @returns {ERef<Payment>}
  */
 
 /**
@@ -158,7 +158,7 @@
  * resolution.
  *
  * @param {ERef<Payment>} payment
- * @returns {Promise<boolean>}
+ * @returns {ERef<boolean>}
  */
 
 /**
@@ -173,7 +173,7 @@
  * resolution.
  *
  * @param {ERef<Payment>} payment
- * @returns {Promise<Amount<K>>}
+ * @returns {ERef<Amount<K>>}
  */
 
 /**
@@ -186,7 +186,7 @@
  *
  * @param {ERef<Payment>[]} paymentsArray
  * @param {Amount=} optTotalAmount
- * @returns {Promise<Payment>}
+ * @returns {ERef<Payment>}
  */
 
 /**
@@ -200,7 +200,7 @@
  *
  * @param {ERef<Payment>} payment
  * @param {Amount} paymentAmountA
- * @returns {Promise<Payment[]>}
+ * @returns {ERef<Payment[]>}
  */
 
 /**
@@ -214,7 +214,7 @@
  *
  * @param {ERef<Payment>} payment
  * @param {Amount[]} amounts
- * @returns {Promise<Payment[]>}
+ * @returns {ERef<Payment[]>}
  *
  */
 

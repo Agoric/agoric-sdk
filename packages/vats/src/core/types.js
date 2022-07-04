@@ -114,7 +114,7 @@
  * @param {string} nickname
  * @param {string} clientAddress
  * @param {string[]} powerFlags
- * @returns {Promise<Record<string, Promise<any>>>}
+ * @returns {ERef<Record<string, Promise<any>>>}
  *
  * @typedef {object} ClientFacet
  * @property {() => ERef<Record<string, any>>} getChainBundle Required for ag-solo, but deprecated in favour of getConfiguration

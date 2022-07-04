@@ -159,7 +159,7 @@ export function xsnap(options) {
    */
 
   /**
-   * @returns {Promise<RunResult<Uint8Array>>}
+   * @returns {ERef<RunResult<Uint8Array>>}
    */
   async function runToIdle() {
     for (;;) {
@@ -207,7 +207,7 @@ export function xsnap(options) {
 
   /**
    * @param {string} code
-   * @returns {Promise<RunResult<Uint8Array>>}
+   * @returns {ERef<RunResult<Uint8Array>>}
    */
   async function evaluate(code) {
     const result = baton.then(async () => {
@@ -220,7 +220,7 @@ export function xsnap(options) {
 
   /**
    * @param {string} fileName
-   * @returns {Promise<void>}
+   * @returns {ERef<void>}
    */
   async function execute(fileName) {
     const result = baton.then(async () => {
@@ -233,7 +233,7 @@ export function xsnap(options) {
 
   /**
    * @param {string} fileName
-   * @returns {Promise<void>}
+   * @returns {ERef<void>}
    */
   async function importModule(fileName) {
     const result = baton.then(async () => {
@@ -245,7 +245,7 @@ export function xsnap(options) {
   }
 
   /**
-   * @returns {Promise<void>}
+   * @returns {ERef<void>}
    */
   async function isReady() {
     const result = baton.then(async () => {
@@ -258,7 +258,7 @@ export function xsnap(options) {
 
   /**
    * @param {Uint8Array} message
-   * @returns {Promise<RunResult<Uint8Array>>}
+   * @returns {ERef<RunResult<Uint8Array>>}
    */
   async function issueCommand(message) {
     const result = baton.then(async () => {
@@ -274,7 +274,7 @@ export function xsnap(options) {
 
   /**
    * @param {string} message
-   * @returns {Promise<RunResult<string>>}
+   * @returns {ERef<RunResult<string>>}
    */
   async function issueStringCommand(message) {
     const result = await issueCommand(encoder.encode(message));
@@ -283,7 +283,7 @@ export function xsnap(options) {
 
   /**
    * @param {string} file
-   * @returns {Promise<void>}
+   * @returns {ERef<void>}
    */
   async function writeSnapshot(file) {
     const result = baton.then(async () => {
@@ -295,7 +295,7 @@ export function xsnap(options) {
   }
 
   /**
-   * @returns {Promise<void>}
+   * @returns {ERef<void>}
    */
   async function close() {
     baton = baton.then(async () => {
@@ -307,7 +307,7 @@ export function xsnap(options) {
   }
 
   /**
-   * @returns {Promise<void>}
+   * @returns {ERef<void>}
    */
   async function terminate() {
     xsnapProcess.kill();

@@ -31,7 +31,7 @@ import {
  * @callback MakeFakePriceOracle
  * @param {ExecutionContext} t
  * @param {bigint} [valueOut]
- * @returns {Promise<OracleKit & { instance: Instance }>}
+ * @returns {ERef<OracleKit & { instance: Instance }>}
  */
 
 /**

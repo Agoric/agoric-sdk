@@ -222,13 +222,13 @@
 
 /**
  * @callback GetOpenQuestions
- * @returns {Promise<Handle<'Question'>[]>}
+ * @returns {ERef<Handle<'Question'>[]>}
  */
 
 /**
  * @callback GetQuestion
  * @param {Handle<'Question'>} h
- * @returns {Promise<Question>}
+ * @returns {ERef<Question>}
  */
 
 /**
@@ -302,7 +302,7 @@
  * @callback AddQuestion
  * @param {ERef<Installation>} voteCounter
  * @param {QuestionSpec} questionSpec
- * @returns {Promise<AddQuestionReturn>}
+ * @returns {ERef<AddQuestionReturn>}
  */
 
 /**
@@ -318,7 +318,7 @@
  *   this electionManager to manage parameters
  * @param {Instance} contractInstance - include the instance of the contract
  * @param {ClosingRule} closingRule - deadline and timer for closing voting
- * @returns {Promise<QuestionDetails>}
+ * @returns {ERef<QuestionDetails>}
  */
 
 /**
@@ -635,7 +635,7 @@
  * @param {Instance} allegedGoverned
  * @param {Instance} allegedGovernor
  * @param {Installation} contractGovernorInstallation
- * @returns {Promise<GovernancePair>}
+ * @returns {ERef<GovernancePair>}
  */
 
 /**

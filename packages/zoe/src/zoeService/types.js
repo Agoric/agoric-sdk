@@ -52,12 +52,12 @@
 
 /**
  * @callback GetInvitationIssuer
- * @returns {Promise<Issuer>}
+ * @returns {ERef<Issuer>}
  */
 
 /**
  * @callback GetFeeIssuer
- * @returns {Promise<Issuer>}
+ * @returns {ERef<Issuer>}
  */
 
 /**
@@ -70,49 +70,49 @@
 /**
  * @callback GetPublicFacet
  * @param {ERef<Instance>} instanceP
- * @returns {Promise<object>}
+ * @returns {ERef<object>}
  */
 
 /**
  * @callback GetIssuers
  * @param {Instance} instance
- * @returns {Promise<IssuerKeywordRecord>}
+ * @returns {ERef<IssuerKeywordRecord>}
  */
 
 /**
  * @callback GetBrands
  * @param {Instance} instance
- * @returns {Promise<BrandKeywordRecord>}
+ * @returns {ERef<BrandKeywordRecord>}
  */
 
 /**
  * @callback GetTerms
  * @param {Instance} instance
- * @returns {Promise<AnyTerms>}
+ * @returns {ERef<AnyTerms>}
  */
 
 /**
  * @callback GetInstallationForInstance
  * @param {Instance} instance
- * @returns {Promise<Installation>}
+ * @returns {ERef<Installation>}
  */
 
 /**
  * @callback GetInstance
  * @param {ERef<Invitation>} invitation
- * @returns {Promise<Instance>}
+ * @returns {ERef<Instance>}
  */
 
 /**
  * @callback GetInstallation
  * @param {ERef<Invitation>} invitation
- * @returns {Promise<Installation>}
+ * @returns {ERef<Installation>}
  */
 
 /**
  * @callback GetInvitationDetails
  * @param {ERef<Invitation>} invitation
- * @returns {Promise<InvitationDetails>}
+ * @returns {ERef<InvitationDetails>}
  */
 
 // TODO remove support for source bundles, leaving only support for hash bundles.
@@ -124,7 +124,7 @@
  * registering it with Zoe. Returns an installation.
  *
  * @param {Bundle | SourceBundle} bundle
- * @returns {Promise<Installation>}
+ * @returns {ERef<Installation>}
  */
 
 // TODO consolidate installBundleID into install.
@@ -135,7 +135,7 @@
  * Create an installation from a Bundle ID. Returns an installation.
  *
  * @param {BundleID} bundleID
- * @returns {Promise<Installation>}
+ * @returns {ERef<Installation>}
  */
 
 /**
@@ -145,7 +145,7 @@
  * will use for contract code.
  *
  * @param {ERef<Installation>}
- * @returns {Promise<BundleID>}
+ * @returns {ERef<BundleID>}
  */
 
 /**
@@ -170,7 +170,7 @@
  * @param {Proposal=} proposal
  * @param {PaymentPKeywordRecord=} paymentKeywordRecord
  * @param {object=} offerArgs
- * @returns {Promise<UserSeat<OR>>} seat
+ * @returns {ERef<UserSeat<OR>>} seat
  */
 
 /**

@@ -63,7 +63,7 @@ const start = zcf => {
    * @param {AmountKeywordRecord} assets
    * @param {Timer} timeAuthority
    * @param {any} deadline
-   * @returns {Promise<Payment>}
+   * @returns {ERef<Payment>}
    */
   const makeQuote = async (price, assets, timeAuthority, deadline) => {
     /** @type {{ creatorInvitation: Invitation<unknown, Payment>} } */
@@ -122,7 +122,7 @@ const start = zcf => {
      * or can be added immediately before a quote.
      *
      * @param {IssuerKeywordRecord=} issuerKeywordRecord
-     * @returns {Promise<Payment>}
+     * @returns {ERef<Payment>}
      */
     makeAddInventoryInvitation: async (issuerKeywordRecord = harden({})) => {
       await saveAllIssuers(zcf, issuerKeywordRecord);
@@ -133,7 +133,7 @@ const start = zcf => {
      * used for active quotes is escrowed separately within the coveredCall
      * instance.
      *
-     * @returns {Promise<Payment>}
+     * @returns {ERef<Payment>}
      */
     makeRemoveInventoryInvitation: () => {
       return zcf.makeInvitation(removeInventory, 'removeInventory');

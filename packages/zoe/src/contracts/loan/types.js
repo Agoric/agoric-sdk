@@ -107,21 +107,21 @@
  * @callback MakeLendInvitation
  * @param {ZCF} zcf
  * @param {LoanTerms} config
- * @returns {Promise<Invitation>} lendInvitation
+ * @returns {ERef<Invitation>} lendInvitation
  */
 
 /**
  * @callback MakeBorrowInvitation
  * @param {ZCF} zcf
  * @param {LoanConfigWithLender} config
- * @returns {Promise<Invitation>} borrowInvitation
+ * @returns {ERef<Invitation>} borrowInvitation
  */
 
 /**
  * @callback MakeCloseLoanInvitation
  * @param {ZCF} zcf
  * @param {LoanConfigWithBorrower} config
- * @returns {Promise<Invitation>} closeLoanInvitation
+ * @returns {ERef<Invitation>} closeLoanInvitation
  */
 
 /**
@@ -131,7 +131,7 @@
  * @callback MakeAddCollateralInvitation
  * @param {ZCF} zcf
  * @param {LoanConfigWithBorrower} config
- * @returns {Promise<Invitation>} addCollateralInvitation
+ * @returns {ERef<Invitation>} addCollateralInvitation
  */
 
 /**

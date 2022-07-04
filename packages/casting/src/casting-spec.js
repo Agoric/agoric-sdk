@@ -93,7 +93,7 @@ export const makeCastingSpecFromObject = specObj => {
 
 /**
  * @param {ERef<any>} specCap
- * @returns {Promise<import('./types').CastingSpec>}
+ * @returns {ERef<import('./types').CastingSpec>}
  */
 export const makeCastingSpecFromRef = async specCap => {
   const specObj = await E(specCap).getStoreKey();
@@ -102,7 +102,7 @@ export const makeCastingSpecFromRef = async specCap => {
 
 /**
  * @param {ERef<any>} sourceP
- * @returns {Promise<import('./types').CastingSpec>}
+ * @returns {ERef<import('./types').CastingSpec>}
  */
 export const makeCastingSpec = async sourceP => {
   const spec = await sourceP;

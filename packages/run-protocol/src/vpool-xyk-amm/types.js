@@ -146,5 +146,5 @@
  * @param {bigint} poolFeeBP
  * @param {bigint} protocolFeeBP
  * @param {Invitation} poserInvitation - invitation for the question poser
- * @returns {Promise<ParamManagerFull>}
+ * @returns {ERef<ParamManagerFull>}
  */

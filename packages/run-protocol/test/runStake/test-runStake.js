@@ -435,7 +435,7 @@ test('extra offer keywords are rejected', async t => {
 /**
  * @param {StartFaker['publicFacet']} faker
  * @param {Brand} bldBrand
- * @returns {Promise<[Amount, Payment]>}
+ * @returns {ERef<[Amount, Payment]>}
  *
  * @param { (faker: ERef<StartFaker['publicFacet']>, bldBrand: Brand)
  *            => Promise<[Amount, Payment]> } [mockAttestation]

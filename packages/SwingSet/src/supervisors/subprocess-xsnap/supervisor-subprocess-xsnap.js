@@ -187,7 +187,7 @@ function makeWorker(port) {
    * @param {boolean} enableDisavow
    * @param {boolean} relaxDurabilityRules
    * @param {boolean} [gcEveryCrank]
-   * @returns {Promise<Tagged>}
+   * @returns {ERef<Tagged>}
    */
   async function setBundle(
     vatID,

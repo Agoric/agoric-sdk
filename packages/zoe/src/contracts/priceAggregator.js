@@ -303,7 +303,7 @@ const start = async (
        * @param {object} param1
        * @param {Notifier<OraclePriceSubmission>} [param1.notifier] optional notifier that produces oracle price submissions
        * @param {number} [param1.scaleValueOut]
-       * @returns {Promise<OracleAdmin>}
+       * @returns {ERef<OracleAdmin>}
        */
       const offerHandler = async (
         seat,

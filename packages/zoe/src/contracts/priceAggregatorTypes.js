@@ -14,7 +14,7 @@
  * @callback PriceAggregatorCreatorFacetInitOracle
  * @param {Instance | string} [oracleInstance]
  * @param {unknown} [query]
- * @returns {Promise<OracleAdmin>}
+ * @returns {ERef<OracleAdmin>}
  */
 
 /**

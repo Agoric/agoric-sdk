@@ -25,7 +25,7 @@ const test = rawTest;
  *
  * @param {Record<string, unknown>} contractBundles
  * @param {string[]} vatNames
- * @returns {Promise<SwingSetConfig>}
+ * @returns {ERef<SwingSetConfig>}
  */
 export const buildSwingSetConfig = async (contractBundles, vatNames) => {
   const filename = new URL(import.meta.url).pathname;

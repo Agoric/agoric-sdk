@@ -49,7 +49,7 @@ const makeSubscriptionFollower = spec => {
  * @param {ERef<import('./types').CastingSpec>} specP
  * @param {import('./types').LeaderOrMaker} [leaderOrMaker]
  * @param {import('./types').FollowerOptions} [options]
- * @returns {Promise<import('./types').Follower<import('./types').FollowerElement<T>>>}
+ * @returns {ERef<import('./types').Follower<import('./types').FollowerElement<T>>>}
  */
 export const makeFollower = async (specP, leaderOrMaker, options) => {
   const spec = await makeCastingSpec(specP);
