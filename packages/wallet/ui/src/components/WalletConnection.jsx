@@ -48,7 +48,7 @@ const WalletConnection = ({
     }
     const bridge = E(wc).getAdminBootstrap(
       connectionConfig.accessToken,
-      makeFixedWebSocketConnector(connectionConfig),
+      makeFixedWebSocketConnector(connectionConfig.href),
     );
 
     const { backendIt, cancel } = makeBackendFromWalletBridge(bridge);

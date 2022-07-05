@@ -19,7 +19,10 @@ import MenuItem from '@mui/material/MenuItem';
 import InputLabel from '@mui/material/InputLabel';
 
 import { withApplicationContext } from '../contexts/Application';
-import { ConnectionConfigType } from '../util/connections';
+import {
+  ConnectionConfigType,
+  SmartConnectionMethod,
+} from '../util/connections';
 import { maybeSave, maybeLoad } from '../util/storage';
 
 const useStyles = makeStyles(_ => ({
@@ -32,7 +35,12 @@ const Errors = {
   INVALID_URL: 'invalid url',
   INVALID_ACCESS_TOKEN: 'invalid access token',
   INVALID_ADDRESS: 'invalid address',
-  READ_ONLY_UNSPECIFIED: 'read only unspecified',
+  SMART_CONNECTION_METHOD_UNSPECIFIED: 'smart wallet connection unspecified',
+};
+
+const Tabs = {
+  SMART: 'smart',
+  SOLO: 'solo',
 };
 
 const ErrorLabel = ({ children }) => {
@@ -101,40 +109,41 @@ const ConnectionSettingsDialog = ({
 }) => {
   const classes = useStyles();
   const smartConnectionHrefs = allConnectionConfigs
-    .filter(({ type }) => type === ConnectionConfigType.Smart)
+    .filter(({ type }) => type === ConnectionConfigType.SMART)
     .map(({ href }) => href);
 
   const soloConnectionHrefs = allConnectionConfigs
-    .filter(({ type }) => type === ConnectionConfigType.Solo)
+    .filter(({ type }) => type === ConnectionConfigType.SOLO)
     .map(({ href }) => href);
 
   const [smartWalletConfig, setSmartWalletConfig] = useState(
-    connectionConfig?.type === ConnectionConfigType.Smart
+    connectionConfig?.type === ConnectionConfigType.SMART
       ? connectionConfig
       : {
-          type: ConnectionConfigType.Smart,
+          type: ConnectionConfigType.SMART,
           href: smartConnectionHrefs[0],
-          readOnly: false,
+          smartConnectionMethod: SmartConnectionMethod.KEPLR,
         },
   );
 
   const [soloWalletConfig, setSoloWalletConfig] = useState(
-    connectionConfig?.type === ConnectionConfigType.Solo
+    connectionConfig?.type === ConnectionConfigType.SOLO
       ? connectionConfig
       : {
-          type: ConnectionConfigType.Solo,
+          type: ConnectionConfigType.SOLO,
           href: soloConnectionHrefs[0],
           accessToken: getAccessToken(),
         },
   );
 
   const [currentTab, setCurrentTab] = useState(
-    connectionConfig && connectionConfig.type === ConnectionConfigType.Solo
-      ? '1'
-      : '0',
+    connectionConfig && connectionConfig.type === ConnectionConfigType.SOLO
+      ? Tabs.SOLO
+      : Tabs.SMART,
   );
 
-  const config = currentTab === '0' ? smartWalletConfig : soloWalletConfig;
+  const config =
+    currentTab === Tabs.SMART ? smartWalletConfig : soloWalletConfig;
 
   const [selectInputId] = useState(uuid());
 
@@ -147,16 +156,19 @@ const ConnectionSettingsDialog = ({
     errors.add(Errors.INVALID_URL);
   }
 
-  if (config.type === ConnectionConfigType.Smart) {
-    if (config.readOnly && !config.publicAddress) {
+  if (config.type === ConnectionConfigType.SMART) {
+    if (
+      config.smartConnectionMethod === SmartConnectionMethod.READ_ONLY &&
+      !config.publicAddress
+    ) {
       errors.add(Errors.INVALID_ADDRESS);
     }
-    if (config.readOnly === undefined) {
-      errors.add(Errors.READ_ONLY_UNSPECIFIED);
+    if (config.smartConnectionMethod === undefined) {
+      errors.add(Errors.SMART_CONNECTION_METHOD_UNSPECIFIED);
     }
   }
 
-  if (config.type === ConnectionConfigType.Solo && !config.accessToken) {
+  if (config.type === ConnectionConfigType.SOLO && !config.accessToken) {
     errors.add(Errors.INVALID_ACCESS_TOKEN);
   }
 
@@ -218,36 +230,39 @@ const ConnectionSettingsDialog = ({
       <FormControl sx={{ mt: 2 }}>
         <InputLabel id={selectInputId}>Connection Method</InputLabel>
         <Select
-          value={smartWalletConfig.readOnly}
+          value={smartWalletConfig.smartConnectionMethod}
           labelId={selectInputId}
           label="Connection Method"
           onChange={e => {
-            const readOnly = e.target.value;
+            const smartConnectionMethod = e.target.value;
             setSmartWalletConfig(swConfig => ({
               ...swConfig,
-              readOnly,
+              smartConnectionMethod,
               publicAddress: undefined,
             }));
           }}
-          error={errors.has(Errors.READ_ONLY_UNSPECIFIED)}
+          error={errors.has(Errors.SMART_CONNECTION_METHOD_UNSPECIFIED)}
           sx={{ width: 360 }}
         >
-          <MenuItem value={false}>Keplr</MenuItem>
-          <MenuItem value={true}>Read-only Address</MenuItem>
+          <MenuItem value={SmartConnectionMethod.KEPLR}>Keplr</MenuItem>
+          <MenuItem value={SmartConnectionMethod.READ_ONLY}>
+            Read-only Address
+          </MenuItem>
         </Select>
         <ErrorLabel>
-          {errors.has(Errors.READ_ONLY_UNSPECIFIED)
+          {errors.has(Errors.SMART_CONNECTION_METHOD_UNSPECIFIED)
             ? 'Select a connection method'
             : ''}
         </ErrorLabel>
-        {smartWalletConfig.readOnly && (
+        {smartWalletConfig.smartConnectionMethod ===
+          SmartConnectionMethod.READ_ONLY && (
           <>
             <TextField
               sx={{ width: 360, mt: 2 }}
               label="Public Address"
               error={errors.has(Errors.INVALID_ADDRESS)}
               autoComplete="off"
-              value={smartWalletConfig.publicAddress}
+              value={smartWalletConfig.publicAddress ?? ''}
               onChange={e => {
                 const publicAddress = e.target.value;
                 setSmartWalletConfig(swConfig => ({
@@ -334,12 +349,12 @@ const ConnectionSettingsDialog = ({
               onChange={handleTabChange}
               aria-label="connection type"
             >
-              <Tab label="Smart Wallet" value="0" />
-              <Tab label="Solo Wallet" value="1" />
+              <Tab label="Smart Wallet" value={Tabs.SMART} />
+              <Tab label="Solo Wallet" value={Tabs.SOLO} />
             </TabList>
           </Box>
-          <TabPanel value="0">{smartWalletConfigForm}</TabPanel>
-          <TabPanel value="1">{soloWalletConfigForm}</TabPanel>
+          <TabPanel value={Tabs.SMART}>{smartWalletConfigForm}</TabPanel>
+          <TabPanel value={Tabs.SOLO}>{soloWalletConfigForm}</TabPanel>
         </TabContext>
       </DialogContent>
       <DialogActions>
@@ -353,7 +368,9 @@ const ConnectionSettingsDialog = ({
             JSON.stringify(config) === JSON.stringify(connectionConfig)
           }
         >
-          {currentTab === '0' ? 'Connect Smart Wallet' : 'Connect Solo Wallet'}
+          {currentTab === Tabs.SMART
+            ? 'Connect Smart Wallet'
+            : 'Connect Solo Wallet'}
         </Button>
       </DialogActions>
     </Dialog>
