@@ -70,11 +70,12 @@ export const AppBarWithoutContext = ({
   setWantConnection,
   connectionState,
   connectionStatus,
+  connectionConfig,
 }) => {
   const theme = useTheme();
   const classes = useStyles(theme);
 
-  const [dialogOpened, setDialogOpened] = useState(false);
+  const [dialogOpened, setDialogOpened] = useState(connectionConfig === null);
   const handleClosed = () => {
     setDialogOpened(false);
   };
@@ -97,14 +98,15 @@ export const AppBarWithoutContext = ({
         </a>
       </div>
       <div className={classes.appBarSection}>
-        <ConnectionSettingsDialog open={dialogOpened} onClose={handleClosed} />
         <div className={classes.connector}>
           {connectionComponent}
           <Tooltip title={connectionTitle}>
             <IconButton
               size="medium"
               color={wantConnection ? 'primary' : 'secondary'}
-              onClick={() => setWantConnection(!wantConnection)}
+              onClick={() =>
+                setWantConnection(!wantConnection && connectionConfig !== null)
+              }
             >
               <Public
                 className={
@@ -156,4 +158,5 @@ export default withApplicationContext(AppBarWithoutContext, context => ({
   wantConnection: context.wantConnection,
   setWantConnection: context.setWantConnection,
   connectionStatus: context.connectionStatus,
+  connectionConfig: context.connectionConfig,
 }));

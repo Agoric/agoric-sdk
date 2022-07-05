@@ -7,6 +7,10 @@ import Dapps from '../views/Dapps';
 import Contacts from '../views/Contacts';
 import Issuers from '../views/Issuers';
 
+jest.mock(
+  '../components/ConnectionSettingsDialog',
+  () => () => 'ConnectionSettingsDialog',
+);
 jest.mock('../components/WalletConnection', () => () => 'WalletConnection');
 jest.mock('../views/Dashboard', () => () => 'Dashboard');
 jest.mock('../views/Dapps', () => () => 'Dapps');

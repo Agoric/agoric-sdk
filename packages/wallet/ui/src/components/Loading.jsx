@@ -8,20 +8,20 @@ import {
   withApplicationContext,
 } from '../contexts/Application';
 
-const statusMessage = (status, url, defaultMessage) => {
+const statusMessage = (status, config, defaultMessage) => {
   switch (status) {
     case ConnectionStatus.Connecting:
-      return `Connecting to ${url}`;
+      return `Connecting to ${config.type} wallet at ${config.href}`;
     case ConnectionStatus.Disconnected:
-      return `Disconnected from ${url}`;
+      return `Disconnected from ${config.href}`;
     case ConnectionStatus.Error:
-      return `Error connecting to ${url}`;
+      return `Error connecting to ${config.type} wallet at ${config.href}`;
     default:
       return defaultMessage;
   }
 };
 
-const Loading = ({ walletConnection, connectionStatus, defaultMessage }) => {
+const Loading = ({ connectionConfig, connectionStatus, defaultMessage }) => {
   const graphic = (() => {
     if (connectionStatus === ConnectionStatus.Error) {
       return <ErrorIcon color="error" fontSize="large" />;
@@ -41,18 +41,18 @@ const Loading = ({ walletConnection, connectionStatus, defaultMessage }) => {
         width: '100%',
       }}
     >
-      {walletConnection ? (
+      {connectionConfig ? (
         <>
           {graphic}
           <Typography className="text-gray" sx={{ p: 1 }}>
-            {statusMessage(connectionStatus, walletConnection, defaultMessage)}
+            {statusMessage(connectionStatus, connectionConfig, defaultMessage)}
           </Typography>
         </>
       ) : (
         <>
-          <WarningIcon color="warning" fontSize="large" />)
+          <WarningIcon color="warning" fontSize="large" />
           <Typography sx={{ p: 1 }}>
-            No configured wallet connection; see settings!
+            No configured wallet connection—see settings.
           </Typography>
         </>
       )}
@@ -62,5 +62,5 @@ const Loading = ({ walletConnection, connectionStatus, defaultMessage }) => {
 
 export default withApplicationContext(Loading, context => ({
   connectionStatus: context.connectionStatus,
-  walletConnection: context.walletConnection,
+  connectionConfig: context.connectionConfig,
 }));

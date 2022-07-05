@@ -42,6 +42,7 @@ jest.mock('../../util/fixed-websocket-connector.js', () => {
 const setConnectionState = jest.fn();
 const setBackend = jest.fn();
 const connectionStatus = 'idle';
+const connectionConfig = { accessToken: 'foo' };
 const withApplicationContext =
   (Component, _) =>
   ({ ...props }) => {
@@ -51,6 +52,7 @@ const withApplicationContext =
         connectionState={connectionStatus}
         connectionStatus={connectionStatus}
         setBackend={setBackend}
+        connectionConfig={connectionConfig}
         {...props}
       />
     );
@@ -101,104 +103,31 @@ describe('WalletConnection', () => {
   });
 
   describe('on idle state', () => {
-    const accessToken = 'asdf';
-    const setItem = jest.fn();
-    const getItem = _ => `?accessToken=${accessToken}`;
     let getAdminBootstrap;
 
     beforeEach(() => {
       getAdminBootstrap = jest.fn(_ => ({}));
-
-      delete window.localStorage;
-      window.localStorage = {
-        setItem,
-        getItem,
-      };
     });
 
-    describe('with an access token in the url', () => {
-      beforeEach(() => {
-        delete window.location;
-        window.location = {
-          hash: `#accessToken=${accessToken}`,
-        };
-
-        act(() =>
-          component
-            .find('wallet-connection')
-            .props()
-            .onState({
-              detail: {
-                walletConnection: {
-                  getAdminBootstrap,
-                },
-                state: 'idle',
+    test('calls getAdminBootstrap with the access token', () => {
+      act(() =>
+        component
+          .find('wallet-connection')
+          .props()
+          .onState({
+            detail: {
+              walletConnection: {
+                getAdminBootstrap,
               },
-            }),
-        );
-      });
+              state: 'idle',
+            },
+          }),
+      );
 
-      test('calls getAdminBootstrap with the access token', () => {
-        expect(getAdminBootstrap).toHaveBeenCalledWith(
-          accessToken,
-          fixedWebSocketConnector,
-        );
-      });
-
-      test('clears the accessToken from the url', () => {
-        expect(window.location.hash).toEqual('');
-      });
-
-      test('stores the access token in local storage', () => {
-        expect(setItem).toHaveBeenCalledWith(
-          'accessTokenParams',
-          `?accessToken=${accessToken}`,
-        );
-      });
-
-      test('updates the store with the notifier data', () => {
-        expect(makeBackendFromWalletBridge).toHaveBeenCalledWith(
-          getAdminBootstrap(),
-        );
-        expect(observeIterator).toHaveBeenCalledWith('mockBackendIterator', {
-          updateState: expect.any(Function),
-        });
-        observeIterator.mock.calls[0][1].updateState('foo');
-        expect(setBackend).toHaveBeenCalledWith('foo');
-      });
-    });
-
-    describe('with no access token in the url', () => {
-      beforeEach(() => {
-        delete window.location;
-        window.location = {
-          hash: '',
-        };
-      });
-
-      test('calls getAdminBootstrap with the access token from local storage', () => {
-        const getItemSpy = jest.spyOn(window.localStorage, 'getItem');
-
-        act(() =>
-          component
-            .find('wallet-connection')
-            .props()
-            .onState({
-              detail: {
-                walletConnection: {
-                  getAdminBootstrap,
-                },
-                state: 'idle',
-              },
-            }),
-        );
-
-        expect(getItemSpy).toHaveBeenCalledWith('accessTokenParams');
-        expect(getAdminBootstrap).toHaveBeenCalledWith(
-          accessToken,
-          fixedWebSocketConnector,
-        );
-      });
+      expect(getAdminBootstrap).toHaveBeenCalledWith(
+        'foo',
+        fixedWebSocketConnector,
+      );
     });
   });
 });

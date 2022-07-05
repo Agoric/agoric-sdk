@@ -5,7 +5,10 @@ import { useEffect, useState, useReducer } from 'react';
 
 import { ApplicationContext, ConnectionStatus } from './Application';
 
-import { DEFAULT_WALLET_CONNECTIONS } from '../util/defaults';
+import {
+  ConnectionConfigType,
+  DEFAULT_CONNECTION_CONFIGS,
+} from '../util/connections';
 import { maybeLoad, maybeSave } from '../util/storage';
 
 const useDebugLogging = (state, watch) => {
@@ -118,26 +121,27 @@ const Provider = ({ children }) => {
   const [services, setServices] = useState(null);
   const [backend, setBackend] = useState(null);
   const [schemaActions, setSchemaActions] = useState(null);
-  const [useChainBackend, setUseChainBackend] = useState(false);
-  const [wantConnection, setWantConnection] = useState(true);
   const [connectionComponent, setConnectionComponent] = useState(null);
+
+  const RESTORED_CONNECTION_CONFIGS = [...DEFAULT_CONNECTION_CONFIGS];
+  const userConnectionConfigs = maybeLoad('userConnectionConfigs');
+  if (userConnectionConfigs) {
+    RESTORED_CONNECTION_CONFIGS.unshift(...userConnectionConfigs);
+  }
+  const restoredConnectionConfig = maybeLoad('connectionConfig') || null;
+
+  const [connectionConfig, setConnectionConfig] = useState(
+    restoredConnectionConfig,
+  );
+  const [allConnectionConfigs, setAllConnectionConfigs] = useState([
+    ...RESTORED_CONNECTION_CONFIGS,
+  ]);
+
+  const [wantConnection, setWantConnection] = useState(
+    restoredConnectionConfig !== null,
+  );
   const [connectionStatus, setConnectionStatus] = useState(
     wantConnection ? 'connecting' : 'disconnected',
-  );
-
-  const RESTORED_WALLET_CONNECTIONS = [...DEFAULT_WALLET_CONNECTIONS];
-  const userConnections = maybeLoad('userWalletConnections');
-  if (userConnections) {
-    RESTORED_WALLET_CONNECTIONS.unshift(...userConnections);
-  }
-  const restoredWalletConnection =
-    maybeLoad('walletConnection') || RESTORED_WALLET_CONNECTIONS[0];
-
-  const [walletConnection, setWalletConnection] = useState(
-    restoredWalletConnection,
-  );
-  const [allWalletConnections, setAllWalletConnections] = useState(
-    harden([...RESTORED_WALLET_CONNECTIONS]),
   );
 
   useEffect(() => {
@@ -167,25 +171,22 @@ const Provider = ({ children }) => {
   }, [connectionState, connectionComponent]);
 
   useEffect(() => {
-    maybeSave('walletConnection', walletConnection);
+    maybeSave('connectionConfig', connectionConfig);
 
-    const updatedUserConnections = [];
-    for (const url of allWalletConnections) {
-      const found = DEFAULT_WALLET_CONNECTIONS.find(
-        defaultUrl => url === defaultUrl,
+    const updatedConnectionConfigs = [];
+
+    for (const config of allConnectionConfigs) {
+      const found = DEFAULT_CONNECTION_CONFIGS.find(
+        defaultConfig =>
+          defaultConfig.href === config.href &&
+          defaultConfig.type === config.type,
       );
       if (!found) {
-        updatedUserConnections.push(url);
+        updatedConnectionConfigs.push(config);
       }
     }
-    maybeSave('userWalletConnections', updatedUserConnections);
-  }, [walletConnection]);
-
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const onChain = urlParams.get('onchain') === 'true';
-    setUseChainBackend(onChain);
-  }, []);
+    maybeSave('userConnectionConfigs', updatedConnectionConfigs);
+  }, [connectionConfig]);
 
   const backendSetters = new Map([
     ['services', setServices],
@@ -243,14 +244,13 @@ const Provider = ({ children }) => {
 
   let attempts = 0;
   useEffect(() => {
-    if (!walletConnection || !wantConnection) {
+    if (!connectionConfig || !wantConnection) {
       disconnect();
       return () => {};
     }
     if (connectionComponent) {
       return () => {};
     }
-    const u = new URL(walletConnection);
 
     let outdated = false;
     let retryTimeout;
@@ -258,7 +258,7 @@ const Provider = ({ children }) => {
       if (outdated) {
         return;
       }
-      console.error('Connection to', walletConnection, 'failed:', e);
+      console.error('Connection to', connectionConfig.href, 'failed:', e);
       const backoff = Math.ceil(
         Math.min(Math.random() * 2 ** attempts * 1_000, 10_000),
       );
@@ -283,7 +283,7 @@ const Provider = ({ children }) => {
       setConnectionComponent(<WalletConnection />);
       attempts = 0;
     };
-    if (u.pathname.endsWith('/network-config')) {
+    if (connectionConfig.type === ConnectionConfigType.Smart) {
       importer = () => import('../components/SmartWalletConnection');
     } else {
       importer = () => import('../components/WalletConnection');
@@ -295,7 +295,7 @@ const Provider = ({ children }) => {
         clearTimeout(retryTimeout);
       }
     };
-  }, [walletConnection, wantConnection, connectionComponent]);
+  }, [connectionComponent, wantConnection, connectionComponent]);
 
   const [pendingPurseCreations, setPendingPurseCreations] = useReducer(
     pendingPurseCreationsReducer,
@@ -354,13 +354,12 @@ const Provider = ({ children }) => {
     setDeclinedOffers,
     closedOffers,
     setClosedOffers,
-    useChainBackend,
     setWantConnection,
     wantConnection,
-    walletConnection,
-    setWalletConnection,
-    allWalletConnections,
-    setAllWalletConnections,
+    connectionConfig,
+    setConnectionConfig,
+    allConnectionConfigs,
+    setAllConnectionConfigs,
     connectionComponent,
     disconnect,
     connectionStatus,
