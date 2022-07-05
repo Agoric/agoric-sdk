@@ -31,6 +31,8 @@ import { makeDeviceTranslators } from './deviceTranslator.js';
 import { notifyTermination } from './notifyTermination.js';
 import { makeVatAdminHooks } from './vat-admin-hooks.js';
 
+/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
+
 function abbreviateReplacer(_, arg) {
   if (typeof arg === 'bigint') {
     return Number(arg);
