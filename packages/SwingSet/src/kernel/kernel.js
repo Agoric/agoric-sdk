@@ -371,7 +371,7 @@ export default function buildKernel(
    * @param {VatID} vatID
    * @param {KernelDeliveryObject} kd
    * @param {VatDeliveryObject} vd
-   * @returns {ERef<DeliveryStatus>}
+   * @returns {Promise<DeliveryStatus>}
    */
   async function deliverAndLogToVat(vatID, kd, vd) {
     // eslint-disable-next-line no-use-before-define
@@ -404,7 +404,7 @@ export default function buildKernel(
    * @param {VatID} vatID
    * @param {string} target
    * @param {Message} msg
-   * @returns {ERef<DeliveryStatus | null>}
+   * @returns {Promise<DeliveryStatus | null>}
    */
   async function processSend(vatID, target, msg) {
     insistMessage(msg);
@@ -436,7 +436,7 @@ export default function buildKernel(
   /**
    *
    * @param {RunQueueEventNotify} message
-   * @returns {ERef<DeliveryStatus | null>}
+   * @returns {Promise<DeliveryStatus | null>}
    */
   async function processNotify(message) {
     const { vatID, kpid } = message;
@@ -483,7 +483,7 @@ export default function buildKernel(
   /**
    *
    * @param {RunQueueEventDropExports | RunQueueEventRetireImports | RunQueueEventRetireExports} message
-   * @returns {ERef<DeliveryStatus | null>}
+   * @returns {Promise<DeliveryStatus | null>}
    */
   async function processGCMessage(message) {
     // used for dropExports, retireExports, and retireImports
@@ -512,7 +512,7 @@ export default function buildKernel(
   /**
    *
    * @param {RunQueueEventBringOutYourDead} message
-   * @returns {ERef<DeliveryStatus | null>}
+   * @returns {Promise<DeliveryStatus | null>}
    */
   async function processBringOutYourDead(message) {
     const { type, vatID } = message;
@@ -543,7 +543,7 @@ export default function buildKernel(
    * without requiring any further analysis to be sure).
    *
    * @param {RunQueueEventStartVat} message
-   * @returns {ERef<DeliveryStatus>}
+   * @returns {Promise<DeliveryStatus>}
    */
   async function processStartVat(message) {
     const { vatID, vatParameters } = message;
@@ -569,7 +569,7 @@ export default function buildKernel(
   /**
    *
    * @param {RunQueueEventCreateVat} message
-   * @returns {ERef<DeliveryStatus | null>}
+   * @returns {Promise<DeliveryStatus | null>}
    */
   async function processCreateVat(message) {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
@@ -654,7 +654,7 @@ export default function buildKernel(
   /**
    *
    * @param {RunQueueEventChangeVatOptions} message
-   * @returns {ERef<DeliveryStatus | null>}
+   * @returns {Promise<DeliveryStatus | null>}
    */
   async function processChangeVatOptions(message) {
     const { vatID, options } = message;
@@ -688,7 +688,7 @@ export default function buildKernel(
   /**
    *
    * @param {RunQueueEventUpgradeVat} message
-   * @returns {ERef<DeliveryStatus | null>}
+   * @returns {Promise<DeliveryStatus | null>}
    */
   async function processUpgradeVat(message) {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
@@ -935,7 +935,7 @@ export default function buildKernel(
    * 'send' does not yet know which vat will be involved (if any).
    *
    * @param {RunQueueEvent} message
-   * @returns {ERef<DeliveryStatus | null>}
+   * @returns {Promise<DeliveryStatus | null>}
    */
   async function deliverRunQueueEvent(message) {
     // Decref everything in the message, under the assumption that most of
@@ -1609,7 +1609,7 @@ export default function buildKernel(
    * Run the kernel until the policy says to stop, or the queue is empty.
    *
    * @param {RunPolicy?} policy - a RunPolicy to limit the work being done
-   * @returns {ERef<number>} The number of cranks that were executed.
+   * @returns {Promise<number>} The number of cranks that were executed.
    */
   async function run(policy = foreverPolicy()) {
     assert(policy);

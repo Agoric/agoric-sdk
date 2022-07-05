@@ -97,7 +97,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   /**
    * @param {string} vatID
    * @param {boolean} recreate
-   * @returns {ERef<VatInfo>}
+   * @returns {Promise<VatInfo>}
    */
   async function ensureVatOnline(vatID, recreate) {
     const info = ephemeral.vats.get(vatID);
@@ -207,7 +207,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    * does not modify the kernelDB
    *
    * @param {string} vatID
-   * @returns {ERef<unknown>}
+   * @returns {Promise<unknown>}
    */
   async function evict(vatID) {
     assert(lookup(vatID));
@@ -351,7 +351,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
 
   /**
    * @param {string} vatID
-   * @returns {ERef<void>}
+   * @returns {Promise<void>}
    */
   async function vatWasTerminated(vatID) {
     try {

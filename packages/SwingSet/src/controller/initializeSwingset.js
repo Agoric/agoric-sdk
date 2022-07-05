@@ -22,7 +22,7 @@ const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 const { keys, values, fromEntries } = Object;
 /**
  * @param {Record<string, Promise<V>>} obj
- * @returns {ERef<Record<string, V>>}
+ * @returns {Promise<Record<string, V>>}
  * @template V
  */
 const allValues = async obj =>
@@ -166,7 +166,7 @@ export function loadBasedir(basedir, options = {}) {
  * @param {string} referrer  URL of file or directory containing the config file
  * @param {string} specPath  Path found in a `sourceSpec` or `bundleSpec` property
  *
- * @returns {ERef<string>} the absolute path corresponding to `specPath` if it can be
+ * @returns {Promise<string>} the absolute path corresponding to `specPath` if it can be
  *    determined.
  */
 async function resolveSpecFromConfig(referrer, specPath) {
@@ -221,7 +221,7 @@ async function normalizeConfigDescriptor(desc, referrer, expectParameters) {
  *
  * @param {string} configPath  Path to the config file to be processed
  *
- * @returns {ERef<SwingSetConfig | null>} the contained config object, in normalized form, or null if the
+ * @returns {Promise<SwingSetConfig | null>} the contained config object, in normalized form, or null if the
  *    requested config file did not exist.
  *
  * @throws {Error} if the file existed but was inaccessible, malformed, or otherwise

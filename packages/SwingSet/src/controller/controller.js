@@ -355,7 +355,7 @@ export async function makeSwingsetController(
    *
    * @param {EndoZipBase64Bundle} bundle
    * @param {BundleID} [allegedBundleID]
-   * @returns {ERef<BundleID>}
+   * @returns {Promise<BundleID>}
    */
   async function validateAndInstallBundle(bundle, allegedBundleID) {
     // TODO The following assertion may be removed when checkBundle subsumes

@@ -3,6 +3,8 @@
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
+import { E } from '@endo/eventual-send';
+
 import '../../types-ambient.js';
 // grumble... waitUntilQuiescent is exported and closes over ambient authority
 import { waitUntilQuiescent } from '../../lib-nodejs/waitUntilQuiescent.js';
@@ -142,11 +144,10 @@ function managerPort(issueCommand) {
       const lastResort = encoder.encode(`exception from ${f.name}`).buffer;
       return msg => {
         const report = {};
-        f(decode(msg))
-          .then(item => {
-            workerLog('result', item);
-            report.result = encode(item);
-          })
+        E.when(f(decode(msg)), item => {
+          workerLog('result', item);
+          report.result = encode(item);
+        })
           .catch(err => {
             report.result = encode(['err', err.name, err.message]);
           })
@@ -187,7 +188,7 @@ function makeWorker(port) {
    * @param {boolean} enableDisavow
    * @param {boolean} relaxDurabilityRules
    * @param {boolean} [gcEveryCrank]
-   * @returns {ERef<Tagged>}
+   * @returns {Promise<Tagged>}
    */
   async function setBundle(
     vatID,

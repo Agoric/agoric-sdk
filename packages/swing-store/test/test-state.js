@@ -15,6 +15,8 @@ import {
   isSwingStore,
 } from '../src/swingStore.js';
 
+/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
+
 /**
  * @param {string} [prefix]
  * @returns {ERef<[string, () => void]>}

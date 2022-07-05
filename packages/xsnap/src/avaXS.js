@@ -87,7 +87,7 @@ function isMatch(specimen, pattern) {
  *   dirname: typeof import('path').dirname,
  *   basename: typeof import('path').basename,
  * }} io
- * @returns {ERef<TestResults>}
+ * @returns {Promise<TestResults>}
  *
  * @typedef {{ total: number, pass: number, fail: { filename: string, name: string }[] }} TestResults
  * @typedef { 'ok' | 'not ok' | 'SKIP' } Status
@@ -218,7 +218,7 @@ async function runTestScript(
  *   readFile: typeof import('fs').promises.readFile,
  *   glob: typeof import('glob')
  * }} io
- * @returns {ERef<AvaXSConfig>}
+ * @returns {Promise<AvaXSConfig>}
  *
  * @typedef {object} AvaXSConfig
  * @property {string[]} files - files from args or else ava.files

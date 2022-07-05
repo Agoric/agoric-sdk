@@ -220,8 +220,8 @@ export {};
  *            } } VatManagerFactory
  * @typedef { { deliver: (delivery: VatDeliveryObject) => Promise<VatDeliveryResult>,
  *              replayTranscript: (startPos: StreamPosition | undefined) => Promise<number?>,
- *              makeSnapshot?: (ss: SnapStore) => Promise<string>,
- *              shutdown: () => Promise<void>,
+ *              makeSnapshot?: (ss: SnapStore) => ERef<string>,
+ *              shutdown: () => ERef<void>,
  *            } } VatManager
  * @typedef { ReturnType<typeof import('@agoric/swing-store').makeSnapStore> } SnapStore
  * @typedef { () => Promise<void> } WaitUntilQuiescent

@@ -1,7 +1,9 @@
 // @ts-check
 /* global setTimeout */
-import { Far } from '@endo/far';
+import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
+
+/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
 
 /**
  * Default to the local chain.
@@ -74,7 +76,10 @@ export const DEFAULT_RETRY_CALLBACK = (where, err, attempt = 0) => {
  * @returns {ERef<boolean>}
  */
 export const DEFAULT_KEEP_POLLING = () =>
-  delay(randomBackoff(DEFAULT_KEEP_POLLING_SECONDS * 1_000)).then(() => true);
+  E.when(
+    delay(randomBackoff(DEFAULT_KEEP_POLLING_SECONDS * 1_000)),
+    () => true,
+  );
 
 export const MAKE_DEFAULT_DECODER = () => {
   const td = new TextDecoder();

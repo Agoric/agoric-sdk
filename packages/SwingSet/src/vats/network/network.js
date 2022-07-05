@@ -348,6 +348,7 @@ export function makeNetworkProtocol(protocolHandler) {
         revoked = RevokeState.REVOKED;
 
         // Clean up everything we did.
+        /** @type {ERef<void>[]} */
         const ps = [...currentConnections.get(port)].map(conn =>
           E(conn)
             .close()

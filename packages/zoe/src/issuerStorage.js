@@ -73,7 +73,7 @@ export const makeIssuerStorage = () => {
    * Otherwise, make and save the issuerRecord.
    *
    * @param {ERef<Issuer>} issuerP
-   * @returns {ERef<IssuerRecord>}
+   * @returns {Promise<IssuerRecord>}
    */
   const storeIssuer = async issuerP => {
     assertInstantiated();

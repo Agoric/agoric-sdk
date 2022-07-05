@@ -1,8 +1,9 @@
 // @ts-check
 import { assert, details as X, q } from '@agoric/assert';
 import { ExitCode } from '@agoric/xsnap/api.js';
-import { makeManagerKit } from './manager-helper.js';
+import { E } from '@endo/eventual-send';
 
+import { makeManagerKit } from './manager-helper.js';
 import {
   insistVatSyscallObject,
   insistVatDeliveryResult,
@@ -167,7 +168,7 @@ export function makeXsSubprocessFactory({
 
     /**
      * @param { VatDeliveryObject} delivery
-     * @returns {ERef<VatDeliveryResult>}
+     * @returns {Promise<VatDeliveryResult>}
      */
     async function deliverToWorker(delivery) {
       parentLog(vatID, `sending delivery`, delivery);
@@ -207,7 +208,7 @@ export function makeXsSubprocessFactory({
     mk.setDeliverToWorker(deliverToWorker);
 
     function shutdown() {
-      return worker.close().then(_ => undefined);
+      return E.when(worker.close(), _ => undefined);
     }
     /**
      * @param {SnapStore} snapStore

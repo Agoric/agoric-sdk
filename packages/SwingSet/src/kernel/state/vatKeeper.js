@@ -570,7 +570,7 @@ export function makeVatKeeper(
    * Store a snapshot, if given a snapStore.
    *
    * @param {VatManager} manager
-   * @returns {ERef<boolean>}
+   * @returns {Promise<boolean>}
    */
   async function saveSnapshot(manager) {
     if (!snapStore || !manager.makeSnapshot) {

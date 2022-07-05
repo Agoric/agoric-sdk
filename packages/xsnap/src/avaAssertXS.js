@@ -4,6 +4,8 @@
 
 /** global print */
 
+/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
+
 const { assign, freeze, keys } = Object;
 
 /**
@@ -138,7 +140,7 @@ function createHarness(send) {
     },
     /**
      * @param {string} name
-     * @returns {ERef<void>}
+     * @returns {Promise<void>}
      */
     async run(name) {
       for await (const hook of beforeHooks) {

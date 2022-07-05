@@ -47,8 +47,8 @@ import { makeTranscriptManager } from './transcript.js';
 
 /**
  *
- * @typedef { { getManager: (shutdown: () => Promise<void>,
- *                           makeSnapshot?: (ss: SnapStore) => Promise<string>) => VatManager,
+ * @typedef { { getManager: (shutdown: () => ERef<void>,
+ *                           makeSnapshot?: (ss: SnapStore) => ERef<string>) => VatManager,
  *              syscallFromWorker: (vso: VatSyscallObject) => VatSyscallResult,
  *              setDeliverToWorker: (dtw: unknown) => void,
  *            } } ManagerKit
@@ -128,7 +128,7 @@ function makeManagerKit(
     );
   }
 
-  /** @type { (delivery: VatDeliveryObject) => Promise<VatDeliveryResult> } */
+  /** @type { (delivery: VatDeliveryObject) => ERef<VatDeliveryResult> } */
   let deliverToWorker;
 
   /**
@@ -142,7 +142,7 @@ function makeManagerKit(
   /**
    *
    * @param {VatDeliveryObject} delivery
-   * @returns {ERef<VatDeliveryResult>} // or Error
+   * @returns {Promise<VatDeliveryResult>} // or Error
    */
   async function deliver(delivery) {
     if (transcriptManager) {
@@ -194,7 +194,7 @@ function makeManagerKit(
 
   /**
    * @param {StreamPosition | undefined} startPos
-   * @returns {ERef<number?>} number of deliveries, or null if !useTranscript
+   * @returns {Promise<number?>} number of deliveries, or null if !useTranscript
    */
   async function replayTranscript(startPos) {
     // console.log('replay from', { vatID, startPos });

@@ -2,11 +2,13 @@
 import { E, Far } from '@endo/far';
 import { DEFAULT_KEEP_POLLING } from './defaults.js';
 
+/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
+
 /**
  * Just return an unspecified allegedValue every poll period.
  *
  * @param {import('./types').Leader} leader
- * @returns {ERef<import('./types.js').Follower<import('./types').CastingChange>>}
+ * @returns {Promise<import('./types.js').Follower<import('./types').CastingChange>>}
  */
 export const makePollingChangeFollower = async leader => {
   const { keepPolling = DEFAULT_KEEP_POLLING } = await E(leader).getOptions();
@@ -18,7 +20,8 @@ export const makePollingChangeFollower = async leader => {
       return Far('polling change follower iterator', {
         next: async () => {
           if (!nextPollPromise) {
-            nextPollPromise = keepPolling('polling change follower').then(
+            nextPollPromise = E.when(
+              keepPolling('polling change follower'),
               cont => {
                 if (cont) {
                   return E(leader)

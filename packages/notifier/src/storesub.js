@@ -60,10 +60,17 @@ export const makeStoredSubscription = (
 
   if (storageNode) {
     // Start publishing the source.
-    observeIteration(subscription, {
-      updateState: publishValue,
-      finish: publishValue,
-    }).catch(fail);
+    E.when(
+      observeIteration(subscription, {
+        updateState: publishValue,
+        finish: publishValue,
+        // TODO: Why not
+        // fail,
+        // here in the observer?
+      }),
+      undefined,
+      fail,
+    );
   }
 
   /** @type {StoredSubscription<T>} */

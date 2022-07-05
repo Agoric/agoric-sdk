@@ -177,7 +177,7 @@ export function makeVatLoader(stuff) {
    *    if false, it's a static vat (these have differences in their allowed
    *    options and some of their option defaults).
    *
-   * @returns {ERef<VatManager>} A Promise which fires when the
+   * @returns {Promise<VatManager>} A Promise which fires when the
    * vat is ready for messages.
    */
   async function create(vatID, source, translators, options, isDynamic) {

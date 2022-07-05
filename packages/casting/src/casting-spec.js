@@ -2,6 +2,8 @@
 import * as encodingStar from '@cosmjs/encoding';
 import { E, getInterfaceOf } from '@endo/far';
 
+/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
+
 const { toAscii } = encodingStar;
 
 /**
@@ -93,7 +95,7 @@ export const makeCastingSpecFromObject = specObj => {
 
 /**
  * @param {ERef<any>} specCap
- * @returns {ERef<import('./types').CastingSpec>}
+ * @returns {Promise<import('./types').CastingSpec>}
  */
 export const makeCastingSpecFromRef = async specCap => {
   const specObj = await E(specCap).getStoreKey();
@@ -102,7 +104,7 @@ export const makeCastingSpecFromRef = async specCap => {
 
 /**
  * @param {ERef<any>} sourceP
- * @returns {ERef<import('./types').CastingSpec>}
+ * @returns {Promise<import('./types').CastingSpec>}
  */
 export const makeCastingSpec = async sourceP => {
   const spec = await sourceP;

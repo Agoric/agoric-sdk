@@ -5,6 +5,8 @@ import { createGzip, createGunzip } from 'zlib';
 import { assert, details as d } from '@agoric/assert';
 import { promisify } from 'util';
 
+/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
+
 const pipe = promisify(pipeline);
 
 const { freeze } = Object;
@@ -84,7 +86,7 @@ export function makeSnapStore(
   /**
    * @param {(name: string) => ERef<T>} thunk
    * @param {string=} prefix
-   * @returns {ERef<T>}
+   * @returns {Promise<T>}
    * @template T
    */
   async function withTempName(thunk, prefix = 'tmp') {
@@ -164,7 +166,7 @@ export function makeSnapStore(
     }
   }
 
-  /** @type {(filename: string) => ERef<string>} */
+  /** @type {(filename: string) => Promise<string>} */
   async function fileHash(filename) {
     const hash = createHash('sha256');
     const input = createReadStream(filename);
@@ -185,7 +187,7 @@ export function makeSnapStore(
 
   /**
    * @param {(fn: string) => ERef<void>} saveRaw
-   * @returns {ERef<string>} sha256 hash of (uncompressed) snapshot
+   * @returns {Promise<string>} sha256 hash of (uncompressed) snapshot
    */
   async function save(saveRaw) {
     return withTempName(async snapFile => {
