@@ -67,7 +67,7 @@ export const reserveThenDeposit = async (
   console.info('confirmed deposit for', debugName);
 };
 
-/** @type {<T>(store: any, key: string, make: () => T) => Promise<T>} */
+/** @type {<T>(store: ERef<MapStore>, key: string, make: () => T) => Promise<T>} */
 const provide = async (store, key, make) => {
   const found = await E(store).get(key);
   if (found) {

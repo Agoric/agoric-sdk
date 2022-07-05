@@ -2,7 +2,10 @@
 
 import { E } from '@endo/far';
 
-/** @type {MakeDepositInvitation} */
+/**
+ * @param {ERef<Purse>} zoeInvitationPurse
+ * @returns {DepositInvitation}
+ */
 export const makeDepositInvitation = zoeInvitationPurse => {
   /** @type {DepositInvitation} */
   const depositInvitation = async invitationP => {

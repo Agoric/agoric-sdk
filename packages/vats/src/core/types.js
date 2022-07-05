@@ -169,7 +169,9 @@
  *   },
  *   installation:{
  *     produce: Record<WellKnownName['installation'], Producer<Installation>>,
- *     consume: Record<WellKnownName['installation'], Promise<Installation>>,
+ *     consume: Record<WellKnownName['installation'], Promise<Installation<unknown>>> & {
+ *       singleWallet: Promise<Installation<import('@agoric/smart-wallet/src/singleWallet.js').start>>,
+ *     },
  *   },
  *   instance:{
  *     produce: Record<WellKnownName['instance'], Producer<Instance>>,

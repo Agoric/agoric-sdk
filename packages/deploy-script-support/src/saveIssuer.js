@@ -2,7 +2,12 @@
 
 import { E } from '@endo/far';
 
-/** @type {MakeSaveIssuerHelper} */
+/**
+ * @param {ERef<any>} walletAdmin - an internal type of the
+ * wallet, not defined here
+ * @param {ERef<import('./startInstance').IssuerManager>} issuerManager
+ * @returns {SaveIssuerHelper}
+ */
 export const makeSaveIssuer = (walletAdmin, issuerManager) => {
   /** @type {SaveIssuerHelper} */
   const saveIssuer = async (issuerP, brandPetname, pursePetname) => {
