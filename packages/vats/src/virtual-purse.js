@@ -102,18 +102,22 @@ function makeVirtualPurse(vpc, kit) {
     rej.catch(_ => {});
     lastBalance = rej;
   };
-  observeIteration(E(vpc).getBalances(brand), {
+  E.when(
+    observeIteration(E(vpc).getBalances(brand), {
+      fail,
+      updateState(nonFinalValue) {
+        balanceUpdater.updateState(nonFinalValue);
+        lastBalance = nonFinalValue;
+      },
+      finish(completion) {
+        balanceUpdater.finish(completion);
+        lastBalance = completion;
+      },
+      // Propagate a failed balance properly if the iteration observer fails.
+    }),
+    undefined,
     fail,
-    updateState(nonFinalValue) {
-      balanceUpdater.updateState(nonFinalValue);
-      lastBalance = nonFinalValue;
-    },
-    finish(completion) {
-      balanceUpdater.finish(completion);
-      lastBalance = completion;
-    },
-    // Propagate a failed balance properly if the iteration observer fails.
-  }).catch(fail);
+  );
 
   /** @type {EOnly<DepositFacet>} */
   const depositFacet = Far('Virtual Deposit Facet', {

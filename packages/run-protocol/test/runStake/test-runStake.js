@@ -206,7 +206,7 @@ const mockChain = genesisData => {
             currentTime: (currentTime += 3n),
           });
         },
-        /** @type {(addr: string, p: Amount<'nat'>, t: Amount<'nat'>) => ERef<void>} */
+        /** @type {(addr: string, p: Amount<'nat'>, t: Amount<'nat'>) => Promise<void>} */
         setLiened: async (address, previous, target) => {
           const { value } = AmountMath.coerce(stakingBrand, target);
           assert(AmountMath.isEqual(previous, ubld(qty(address, liened))));

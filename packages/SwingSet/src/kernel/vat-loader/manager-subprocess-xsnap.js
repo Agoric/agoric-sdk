@@ -11,6 +11,8 @@ import {
 import '../../types-ambient.js';
 import './types.js';
 
+/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
+
 // eslint-disable-next-line no-unused-vars
 function parentLog(first, ...args) {
   // console.error(`--parent: ${first}`, ...args);

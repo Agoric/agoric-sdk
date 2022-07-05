@@ -171,7 +171,7 @@ export const testManualConsumer = (t, iterable, lossy = false) => {
  * @param {Assertions} t
  * @param {AsyncIterable<Passable>} iterable
  * @param {boolean} lossy
- * @returns {ERef<Passable>}
+ * @returns {Promise<Passable>}
  */
 export const testAutoConsumer = async (t, iterable, lossy = false) => {
   let i = 0;
@@ -238,7 +238,7 @@ export const paula = iterationObserver => {
  * See the Alice example  in the README
  *
  * @param {AsyncIterable<Passable>} asyncIterable
- * @returns {ERef<Passable[]>}
+ * @returns {Promise<Passable[]>}
  */
 export const alice = async asyncIterable => {
   const log = [];
@@ -258,7 +258,7 @@ export const alice = async asyncIterable => {
  * See the Bob example in the README
  *
  * @param {ERef<AsyncIterable<Passable>>} asyncIterableP
- * @returns {ERef<Passable[]>}
+ * @returns {Promise<Passable[]>}
  */
 export const bob = async asyncIterableP => {
   const log = [];
@@ -278,7 +278,7 @@ export const bob = async asyncIterableP => {
  * subscriptions.
  *
  * @param {ERef<Subscription<Passable>>} subscriptionP
- * @returns {ERef<Passable[]>}
+ * @returns {Promise<Passable[]>}
  */
 export const carol = async subscriptionP => {
   const subscriptionIteratorP = E(subscriptionP)[Symbol.asyncIterator]();

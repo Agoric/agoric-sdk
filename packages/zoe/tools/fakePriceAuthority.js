@@ -32,7 +32,7 @@ const { details: X } = assert;
  * in different directions?
  *
  * @param {FakePriceAuthorityOptions} options
- * @returns {ERef<PriceAuthority>}
+ * @returns {Promise<PriceAuthority>}
  */
 export async function makeFakePriceAuthority(options) {
   const {

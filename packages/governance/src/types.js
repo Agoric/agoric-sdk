@@ -261,7 +261,7 @@
 
 /**
  * @typedef { ElectorateCreatorFacet & {
- *   getVoterInvitations: () => Promise<Invitation>[]
+ *   getVoterInvitations: () => ERef<Invitation>[]
  * }} CommitteeElectorateCreatorFacet
  */
 

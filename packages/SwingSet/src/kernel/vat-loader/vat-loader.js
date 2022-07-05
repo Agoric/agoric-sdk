@@ -3,6 +3,8 @@ import { assert, details as X } from '@agoric/assert';
 import { assertKnownOptions } from '../../lib/assertOptions.js';
 import { makeVatSlot } from '../../lib/parseVatSlots.js';
 
+/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
+
 export function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0n);
 }

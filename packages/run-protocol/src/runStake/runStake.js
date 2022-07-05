@@ -43,8 +43,8 @@ const { values } = Object;
  * or to return an attestation in order to release a lien on staked assets.
  *
  * @typedef {{
- *   makeLoanInvitation: () => Promise<Invitation>,
- *   makeReturnAttInvitation: () => Promise<Invitation>,
+ *   makeLoanInvitation: () => ERef<Invitation>,
+ *   makeReturnAttInvitation: () => ERef<Invitation>,
  * }} RunStakePublic
  *
  * To take out a loan, get an `AttestationMaker` for your address from
@@ -74,7 +74,7 @@ const { values } = Object;
  * authorizes placing a lien some of the staked assets in that account.
  * @typedef {{
  *   provideAttestationMaker: (addr: string) => AttestationTool,
- *   makeCollectFeesInvitation: () => Promise<Invitation>,
+ *   makeCollectFeesInvitation: () => ERef<Invitation>,
  * }} RunStakeCreator
  *
  * @type {ContractStartFn<RunStakePublic, ERef<GovernedCreatorFacet<RunStakeCreator>>,

@@ -56,7 +56,7 @@ test.before(
     const feeAmount = AmountMath.make(link.brand, 1000n);
     /**
      * @param {ExecutionContext} _t
-     * @returns {ERef<OracleKit>}
+     * @returns {Promise<OracleKit>}
      */
     const makePingOracle = async _t => {
       /** @type {OracleHandler} */

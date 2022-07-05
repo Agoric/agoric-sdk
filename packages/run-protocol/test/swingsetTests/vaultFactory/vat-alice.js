@@ -12,7 +12,7 @@ import { AmountMath } from '@agoric/ertp';
  * @param {Brand[]} brands
  * @param {Payment[]} payments
  * @param {ManualTimer} timer configured to tick one day (@see setup.js)
- * @returns {ERef<{startTest: Function}>}
+ * @returns {Promise<{startTest: Function}>}
  */
 const build = async (log, zoe, brands, payments, timer) => {
   const [moolaBrand] = brands;

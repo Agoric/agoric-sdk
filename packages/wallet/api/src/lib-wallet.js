@@ -1868,9 +1868,9 @@ export function makeWallet({
     const addInviteDepositFacet = () =>
       E(wallet).enableAutoDeposit(ZOE_INVITE_PURSE_PETNAME);
 
-    await addZoeIssuer(inviteIssuerP)
-      .then(makeInvitePurse)
-      .then(addInviteDepositFacet);
+    await E.when(addZoeIssuer(inviteIssuerP), makeInvitePurse).then(
+      addInviteDepositFacet,
+    );
     zoeInvitePurse = wallet.getPurse(ZOE_INVITE_PURSE_PETNAME);
 
     await E(myAddressNameAdmin).update('depositFacet', selfDepositFacet);
@@ -1881,28 +1881,30 @@ export function makeWallet({
   // themselves in the foot with it by importing an asset/virtual purse they
   // don't really trust.
   const importBankAssets = async bank => {
-    observeIteration(E(bank).getAssetSubscription(), {
-      async updateState({ proposedName, issuerName, issuer, brand }) {
-        try {
-          issuerName = await addIssuer(issuerName, issuer);
-          const purse = await E(bank).getPurse(brand);
-          // We can import this purse, because we trust the bank.
-          await internalUnsafeImportPurse(
-            issuerName,
-            proposedName,
-            true,
-            purse,
-          );
-        } catch (e) {
-          console.error('/// could not add bank asset purse', e, {
-            issuerName,
-            proposedName,
-            issuer,
-            brand,
-          });
-        }
-      },
-    }).finally(() => console.error('/// This is the end of the bank assets'));
+    Promise.resolve(
+      observeIteration(E(bank).getAssetSubscription(), {
+        async updateState({ proposedName, issuerName, issuer, brand }) {
+          try {
+            issuerName = await addIssuer(issuerName, issuer);
+            const purse = await E(bank).getPurse(brand);
+            // We can import this purse, because we trust the bank.
+            await internalUnsafeImportPurse(
+              issuerName,
+              proposedName,
+              true,
+              purse,
+            );
+          } catch (e) {
+            console.error('/// could not add bank asset purse', e, {
+              issuerName,
+              proposedName,
+              issuer,
+              brand,
+            });
+          }
+        },
+      }),
+    ).finally(() => console.error('/// This is the end of the bank assets'));
   };
   return {
     admin: wallet,

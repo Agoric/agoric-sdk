@@ -61,7 +61,7 @@ export const startDistributing = (
 ) => {
   const timeObserver = {
     updateState: _ =>
-      schedulePayments().catch(e => {
+      E.when(schedulePayments(), undefined, e => {
         console.error('failed with', e);
         throw e;
       }),
@@ -77,7 +77,7 @@ export const startDistributing = (
     0n,
     collectionInterval,
   );
-  observeNotifier(collectionNotifier, timeObserver).catch(e => {
+  E.when(observeNotifier(collectionNotifier, timeObserver), undefined, e => {
     console.error('fee distributor failed with', e);
   });
 };

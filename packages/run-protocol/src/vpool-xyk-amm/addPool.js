@@ -92,7 +92,10 @@ export const makeAddIssuer = (
 
         // tell the reserve about this brand, which it will validate by
         // calling back to AMM for the issuer
-        return addIssuerToReserve(secondaryBrand).then(() => liquidityIssuer);
+        return E.when(
+          addIssuerToReserve(secondaryBrand),
+          () => liquidityIssuer,
+        );
       })
       .catch(e => {
         console.error(
@@ -144,7 +147,7 @@ export const makeAddPoolInvitation = (
     marshaller,
   );
 
-  /** @type {(Brand) => ERef<{poolFacets: PoolFacets, liquidityZcfMint: ZCFMint}>} */
+  /** @type {(Brand) => Promise<{poolFacets: PoolFacets, liquidityZcfMint: ZCFMint}>} */
   const addPool = async secondaryBrand => {
     const liquidityZcfMint = brandToLiquidityMint.get(secondaryBrand);
 

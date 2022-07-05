@@ -147,7 +147,7 @@ const start = async zcf => {
     privateContractArgs,
   );
 
-  /** @type {() => ERef<Instance>} */
+  /** @type {() => Promise<Instance>} */
   const getElectorateInstance = async () => {
     const invitationAmount = await E(governedPF).getInvitationAmount(
       CONTRACT_ELECTORATE,
@@ -160,7 +160,7 @@ const start = async zcf => {
 
   let currentInvitation;
   let poserFacet;
-  /** @type {() => ERef<PoserFacet>} */
+  /** @type {() => Promise<PoserFacet>} */
   const getUpdatedPoserFacet = async () => {
     const newInvitation = await E(
       E(E(governedCF).getParamMgrRetriever()).get({ key: 'governedParams' }),
@@ -186,7 +186,7 @@ const start = async zcf => {
     );
 
   // this conditional was extracted so both sides are equally asynchronous
-  /** @type {() => ERef<ApiGovernor>} */
+  /** @type {() => Promise<ApiGovernor>} */
   const initApiGovernance = async () => {
     const [governedApis, governedNames] = await Promise.all([
       E(governedCF).getGovernedApis(),

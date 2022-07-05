@@ -2,6 +2,8 @@
 // @ts-check
 /* eslint no-await-in-loop: ["off"] */
 
+/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
+
 /**
  * @typedef {typeof import('child_process').spawn} Spawn
  */

@@ -180,7 +180,7 @@ const run2places = f =>
  *   feeMintAccess: ERef<FeeMintAccess>,
  *   zoe: ERef<ZoeService>,
  * }} powers
- * @returns {ERef<Payment>}
+ * @returns {Promise<Payment>}
  */
 const mintRunPayment = async (
   value,
@@ -324,7 +324,7 @@ export const connectFaucet = async ({
       /**
        * reap the spoils of our on-chain provisioning.
        *
-       * @returns {ERef<Array<UserPaymentRecord>>}
+       * @returns {Promise<Array<UserPaymentRecord>>}
        */
       tapFaucet: async () => faucetPaymentInfo,
       getFeePurse() {

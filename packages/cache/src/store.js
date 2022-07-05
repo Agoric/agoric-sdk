@@ -58,14 +58,14 @@ export const makeScalarStoreCoordinator = (
    * @param {string} keyStr
    * @param {(oldValue: unknown) => unknown} txn
    * @param {Pattern} guardPattern
-   * @returns {ERef<unknown>} the updated state
+   * @returns {Promise<unknown>} the updated state
    */
   const applyCacheTransaction = async (keyStr, txn, guardPattern) => {
     /**
      * Retrieve a potential updated state from the transaction.
      *
      * @param {import('./types').State} basisState
-     * @returns {ERef<import('./types').State | null>} the updated state, or null if no longer applicable
+     * @returns {Promise<import('./types').State | null>} the updated state, or null if no longer applicable
      */
     const getUpdatedState = async basisState => {
       const { value } = basisState;

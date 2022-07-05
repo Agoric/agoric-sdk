@@ -160,6 +160,7 @@ test('payments without matching give keywords', async t => {
     },
   });
 
+  // @ts-expect-error An ERef arg should be acceptable to a PromiseLike param
   await t.throwsAsync(() => depositPayments(proposal, paymentPKeywordRecord), {
     message:
       'The "Moola" keyword in the paymentKeywordRecord was not a keyword in proposal.give, which had keywords: ["GameTicket","Money"]',
@@ -193,6 +194,7 @@ test(`give keywords without matching payments`, async t => {
     },
   });
 
+  // @ts-expect-error An ERef arg should be acceptable to a PromiseLike param
   await t.throwsAsync(() => depositPayments(proposal, paymentPKeywordRecord), {
     message:
       'The "Money" keyword in proposal.give did not have an associated payment in the paymentKeywordRecord, which had keywords: ["GameTicket"]',

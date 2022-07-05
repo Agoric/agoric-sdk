@@ -5,6 +5,7 @@ import { Far } from '@endo/marshal';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
+import { E } from '@endo/eventual-send';
 
 import { scheduleLiquidation } from './scheduleLiquidation.js';
 import { ceilMultiplyBy } from '../../contractSupport/index.js';
@@ -71,7 +72,7 @@ export const makeDebtCalculator = debtCalculatorConfig => {
     },
   });
 
-  observeNotifier(periodNotifier, periodObserver).catch(reason => {
+  E.when(observeNotifier(periodNotifier, periodObserver), undefined, reason => {
     assert.note(
       reason,
       X`Unable to updateDebt originally: ${originalDebt}, started: ${basetime}, debt: ${debt}`,

@@ -6,6 +6,8 @@ export {};
  * includes standard services which user-provided vat code might interact
  * with, like VatAdminService. */
 
+/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
+
 /**
  * @typedef {'getExport' | 'nestedEvaluate' | 'endoZipBase64'} BundleFormat
  */

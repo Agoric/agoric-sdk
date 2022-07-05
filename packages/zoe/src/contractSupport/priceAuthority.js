@@ -70,7 +70,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
 
   /**
    * @param {PriceQuoteCreate} triggerCreateQuote
-   * @returns {ERef<void>}
+   * @returns {Promise<void>}
    */
   const fireTriggers = async triggerCreateQuote => {
     if (!haveFirstQuote) {

@@ -52,7 +52,7 @@ export const inviteCommitteeMembers = async (
   assert.equal(invitations.length, values(voterAddresses).length);
 
   /**
-   * @param {[string, Promise<Invitation>][]} addrInvitations
+   * @param {[string, ERef<Invitation>][]} addrInvitations
    */
   const distributeInvitations = async addrInvitations => {
     await Promise.all(

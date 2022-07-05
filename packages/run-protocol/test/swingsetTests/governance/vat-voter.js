@@ -29,7 +29,7 @@ const build = async (log, zoe) => {
          * @param {Instance} governorInstance
          * @param {{ parameterName: string, paramPath: unknown}} paramSpec
          * @param {Record<string, Installation>} installations
-         * @returns {ERef<void>}
+         * @returns {Promise<void>}
          */
         validate: async (
           counterInstance,

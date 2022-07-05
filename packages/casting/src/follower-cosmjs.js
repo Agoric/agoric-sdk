@@ -56,7 +56,7 @@ export const proofToQueryVerifier = harden({
   strict: async (getProvenValue, crash, _getAllegedValue) => {
     // Just ignore the alleged value.
     // Crash hard if we can't prove.
-    return getProvenValue().catch(crash);
+    return E.when(getProvenValue(), undefined, crash);
   },
   none: async (_getProvenValue, _crash, getAllegedValue) => {
     // Fast and loose.
@@ -65,18 +65,22 @@ export const proofToQueryVerifier = harden({
   optimistic: async (getProvenValue, crash, getAllegedValue) => {
     const allegedValue = await getAllegedValue();
     // Prove later, since it may take time we say we can't afford.
-    getProvenValue().then(provenValue => {
-      if (provenValue.length === allegedValue.length) {
-        if (provenValue.every((proven, i) => proven === allegedValue[i])) {
-          return;
+    E.when(
+      getProvenValue(),
+      provenValue => {
+        if (provenValue.length === allegedValue.length) {
+          if (provenValue.every((proven, i) => proven === allegedValue[i])) {
+            return;
+          }
         }
-      }
-      crash(
-        assert.error(
-          X`Alleged value ${allegedValue} did not match proof ${provenValue}`,
-        ),
-      );
-    }, crash);
+        crash(
+          assert.error(
+            X`Alleged value ${allegedValue} did not match proof ${provenValue}`,
+          ),
+        );
+      },
+      crash,
+    );
 
     // Speculate that we got the right value.
     return allegedValue;
@@ -139,7 +143,7 @@ export const makeCosmjsFollower = (
     method =>
     /**
      * @param {number} [height]
-     * @returns {ERef<Uint8Array>}
+     * @returns {Promise<Uint8Array>}
      */
     async height => {
       const {

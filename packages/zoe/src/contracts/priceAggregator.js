@@ -303,7 +303,7 @@ const start = async (
        * @param {object} param1
        * @param {Notifier<OraclePriceSubmission>} [param1.notifier] optional notifier that produces oracle price submissions
        * @param {number} [param1.scaleValueOut]
-       * @returns {ERef<OracleAdmin>}
+       * @returns {Promise<OracleAdmin>}
        */
       const offerHandler = async (
         seat,
@@ -359,7 +359,7 @@ const start = async (
             }
           }
 
-          admin.pushResult(result).catch(console.error);
+          E.when(admin.pushResult(result), undefined, console.error);
         };
 
         // Start the notifier.

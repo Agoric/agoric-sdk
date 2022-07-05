@@ -332,7 +332,7 @@ const helperBehavior = {
    *
    * @param {MethodContext} context
    * @param {Ratio} [highestRatio]
-   * @returns {ERef<void>}
+   * @returns {Promise<void>}
    */
   reschedulePriceCheck: async ({ state, facets }, highestRatio) => {
     trace('reschedulePriceCheck', { liquidationQueueing });

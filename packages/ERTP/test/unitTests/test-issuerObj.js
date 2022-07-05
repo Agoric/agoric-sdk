@@ -104,7 +104,7 @@ test('issuer.makeEmptyPurse', async t => {
   const performWithdrawal = () => purse.withdraw(fungible837);
 
   const checkWithdrawal = async newPayment => {
-    issuer.getAmountOf(newPayment).then(amount => {
+    E.when(issuer.getAmountOf(newPayment), amount => {
       t.assert(
         AmountMath.isEqual(amount, fungible837),
         `the withdrawn payment has the right balance`,
@@ -255,6 +255,8 @@ test('issuer.burn', async t => {
     AmountMath.isEqual(burntBalance, AmountMath.make(brand, 837n)),
     `entire minted payment was burnt`,
   );
+  // @ts-expect-error ERef arg should be compat to Promise or PromiseLike
+  // param
   await t.throwsAsync(() => issuer.getAmountOf(payment1), {
     message: /was not a live payment for brand/,
   });
@@ -267,7 +269,7 @@ test('issuer.claim', async t => {
   await E(issuer)
     .claim(payment1, AmountMath.make(brand, 2n))
     .then(async newPayment1 => {
-      await issuer.getAmountOf(newPayment1).then(amount => {
+      await E.when(issuer.getAmountOf(newPayment1), amount => {
         t.assert(
           AmountMath.isEqual(amount, AmountMath.make(brand, 2n)),
           `new payment has equal balance to old payment`,
@@ -279,6 +281,8 @@ test('issuer.claim', async t => {
         );
       });
 
+      // @ts-expect-error ERef arg should be compat to Promise or PromiseLike
+      // param
       return t.throwsAsync(() => issuer.getAmountOf(payment1), {
         message: /was not a live payment for brand/,
       });
@@ -314,6 +318,8 @@ test('issuer.splitMany good amount', async t => {
       );
     }
     await t.throwsAsync(
+      // @ts-expect-error ERef arg should be compat to Promise or PromiseLike
+      // param
       () => issuer.getAmountOf(oldPayment),
       { message: /was not a live payment for brand/ },
       `oldPayment no longer exists`,
@@ -356,6 +362,8 @@ test('issuer.split good amount', async t => {
       );
     }
     await t.throwsAsync(
+      // @ts-expect-error ERef arg should be compat to Promise or PromiseLike
+      // param
       () => issuer.getAmountOf(oldPayment),
       {
         message: `"[Alleged: fungible payment]" was not a live payment for brand "[Alleged: fungible brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.`,
@@ -389,6 +397,8 @@ test('issuer.combine good payments', async t => {
     await Promise.all(
       payments.map(payment =>
         t.throwsAsync(
+          // @ts-expect-error ERef arg should be compat to Promise or
+          // PromiseLike param
           () => issuer.getAmountOf(payment),
           { message: /was not a live payment for brand/ },
           `original payments no longer exist`,
@@ -411,7 +421,7 @@ test('issuer.combine array of promises', async t => {
   harden(paymentsP);
 
   const checkCombinedResult = paymentP => {
-    issuer.getAmountOf(paymentP).then(pAmount => {
+    E.when(issuer.getAmountOf(paymentP), pAmount => {
       t.is(pAmount.value, 100n);
     });
   };

@@ -31,6 +31,8 @@ import {
   initializeSwingset,
 } from './initializeSwingset.js';
 
+/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
+
 /** @param {Uint8Array} bytes */
 export function computeSha512(bytes) {
   const hash = crypto.createHash('sha512');

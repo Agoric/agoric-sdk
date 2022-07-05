@@ -1,5 +1,7 @@
 // @ts-check
 /* global fetch */
+import { E } from '@endo/far';
+
 import { makeRoundRobinLeader } from './leader.js';
 import {
   DEFAULT_BOOTSTRAP,
@@ -55,8 +57,7 @@ export const makeLeaderFromNetworkConfig = (netconfigURL, options = {}) => {
       return makeLeaderFromRpcAddresses(rpcAddrs, options);
     };
     const retryLeader = async err => {
-      retry(where, err, attempt)
-        .then(() => jitter(where))
+      E.when(retry(where, err, attempt), () => jitter(where))
         .then(() => makeLeader().then(resolve, retryLeader))
         .catch(reject);
       attempt += 1;

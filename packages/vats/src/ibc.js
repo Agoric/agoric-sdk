@@ -160,7 +160,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
      * @param {ConnectionHandler} _handler
      * @param {object} root0
      * @param {bigint} [root0.relativeTimeoutNs]
-     * @returns {ERef<Bytes>} Acknowledgement data
+     * @returns {Promise<Bytes>} Acknowledgement data
      */
     let onReceive = async (
       _conn,

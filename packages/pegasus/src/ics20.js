@@ -41,7 +41,7 @@ const safeJSONParseObject = s => {
  * Convert an inbound packet to a local amount.
  *
  * @param {Bytes} packet
- * @returns {ERef<PacketParts>}
+ * @returns {Promise<PacketParts>}
  */
 export const parseICS20TransferPacket = async packet => {
   const ics20Packet = safeJSONParseObject(packet);
@@ -69,7 +69,7 @@ export const parseICS20TransferPacket = async packet => {
  * fungible (bigint) amounts.
  *
  * @param {PacketParts} param0
- * @returns {ERef<Bytes>}
+ * @returns {Promise<Bytes>}
  */
 export const makeICS20TransferPacket = async ({
   value,
@@ -96,7 +96,7 @@ export const makeICS20TransferPacket = async ({
  * Check the results of the transfer.
  *
  * @param {Bytes} ack
- * @returns {ERef<void>}
+ * @returns {Promise<void>}
  */
 export const assertICS20TransferPacketAck = async ack => {
   const { result, error } = safeJSONParseObject(ack);
@@ -115,7 +115,7 @@ export const assertICS20TransferPacketAck = async ack => {
  *
  * @param {boolean} success
  * @param {any} error
- * @returns {ERef<Bytes>}
+ * @returns {Promise<Bytes>}
  */
 export const makeICS20TransferPacketAck = async (success, error) => {
   if (success) {

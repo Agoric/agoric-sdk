@@ -303,7 +303,7 @@ export function buildRootObject(_vatPowers) {
          * Get the address of named module account.
          *
          * @param {string} moduleName
-         * @returns {ERef<string | null>} address of named module account, or
+         * @returns {Promise<string | null>} address of named module account, or
          * null if unimplemented (no bankCall)
          */
         getModuleAccountAddress: async moduleName => {

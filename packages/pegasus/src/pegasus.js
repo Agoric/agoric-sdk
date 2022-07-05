@@ -450,7 +450,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
      *
      * @param {ERef<Peg>} pegP the peg over which to transfer
      * @param {DepositAddress} depositAddress the remote receiver's address
-     * @returns {ERef<Invitation>} to transfer, make an offer of { give: { Transfer: pegAmount } } to this invitation
+     * @returns {Promise<Invitation>} to transfer, make an offer of { give: { Transfer: pegAmount } } to this invitation
      */
     async makeInvitationToTransfer(pegP, depositAddress) {
       // Verify the peg.

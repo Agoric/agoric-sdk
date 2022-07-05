@@ -9,7 +9,7 @@ export {};
 
 /**
  * @typedef {object} LeaderOptions
- * @property {null | ((where: string, err: any, attempt?: number) => Promise<void>)} [retryCallback]
+ * @property {null | ((where: string, err: any, attempt?: number) => ERef<void>)} [retryCallback]
  * @property {(where: string) => ERef<void>} [jitter]
  * @property {(where: string) => ERef<boolean>} [keepPolling]
  */

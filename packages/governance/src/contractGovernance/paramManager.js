@@ -227,7 +227,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
      * Async phase to prepare for synchronous setting
      *
      * @param {Invitation} invite
-     * @returns {ERef<SetInvitationParam>}
+     * @returns {Promise<SetInvitationParam>}
      */
     const prepareToSetInvitation = async invite => {
       const [preparedAmount] = await Promise.all([
@@ -279,7 +279,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     return name;
   };
 
-  /** @type {(name: string, value: Invitation, builder: ParamManagerBuilder) => ERef<ParamManagerBuilder>} */
+  /** @type {(name: string, value: Invitation, builder: ParamManagerBuilder) => Promise<ParamManagerBuilder>} */
   const addInvitation = async (name, value, builder) => {
     assertKeywordName(name);
     assert(value !== null, X`param ${q(name)} must be defined`);

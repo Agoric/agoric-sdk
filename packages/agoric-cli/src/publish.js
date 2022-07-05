@@ -246,7 +246,7 @@ export const makeCosmosBundlePublisher = ({
  * @param {PublishBundleCosmos} [powers.publishBundleCosmos]
  * @param {PublishBundleHttp} [powers.publishBundleHttp]
  * @param {() => ConnectionSpec} [powers.getDefaultConnection]
- * @returns {ERef<Bundle>}
+ * @returns {Promise<Bundle>}
  */
 const publishBundle = async (
   bundle,

@@ -33,7 +33,7 @@ const votersVote = async (detailsP, votersP, selections) => {
  * @param {Instance} governorInstanceP
  * @param {Record<string, Installation>} installations
  * @param {string} parameterName
- * @returns {ERef<void>}
+ * @returns {Promise<void>}
  */
 const oneVoterValidate = async (
   votersP,

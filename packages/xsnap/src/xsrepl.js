@@ -27,7 +27,7 @@ async function main() {
    * For the purposes of the REPL, the only command is effectively `print`.
    *
    * @param {Uint8Array} message
-   * @returns {ERef<Uint8Array>}
+   * @returns {Promise<Uint8Array>}
    */
   async function handleCommand(message) {
     console.log(decoder.decode(message));

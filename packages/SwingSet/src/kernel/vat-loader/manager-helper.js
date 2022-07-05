@@ -45,6 +45,8 @@ import { makeTranscriptManager } from './transcript.js';
 // slots on the outbound (syscall) path, and kernel slots back into vat
 // slots on the inbound (dispatch) path.
 
+/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
+
 /**
  *
  * @typedef { { getManager: (shutdown: () => ERef<void>,

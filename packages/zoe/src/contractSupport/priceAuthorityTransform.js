@@ -57,7 +57,7 @@ export const makePriceAuthorityTransform = async ({
 
   /**
    * @param {PriceQuote} sourceQuote
-   * @returns {ERef<PriceQuote>}
+   * @returns {Promise<PriceQuote>}
    */
   const scaleQuote = async sourceQuote => {
     const { quotePayment: sourceQuotePayment } = sourceQuote;

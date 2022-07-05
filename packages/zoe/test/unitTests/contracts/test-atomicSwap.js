@@ -216,27 +216,22 @@ test('zoe - non-fungible atomicSwap', async t => {
 
         const seat = await E(zoe).offer(firstInvitation, proposal, payments);
 
-        seat
-          .getPayout('Asset')
-          .then(ccPurse.deposit)
-          .then(amountDeposited =>
-            t.deepEqual(
-              amountDeposited,
-              cryptoCats(harden([])),
-              `Alice didn't get any of what she put in`,
-            ),
-          );
+        E.when(seat.getPayout('Asset'), ccPurse.deposit).then(amountDeposited =>
+          t.deepEqual(
+            amountDeposited,
+            cryptoCats(harden([])),
+            `Alice didn't get any of what she put in`,
+          ),
+        );
 
-        seat
-          .getPayout('Price')
-          .then(rpgPurse.deposit)
-          .then(amountDeposited =>
+        E.when(seat.getPayout('Price'), rpgPurse.deposit).then(
+          amountDeposited =>
             t.deepEqual(
               amountDeposited,
               proposal.want.Price,
               `Alice got exactly what she wanted`,
             ),
-          );
+        );
 
         // The result of making the first offer is an invitation to swap by
         // providing the other goods.
@@ -290,27 +285,23 @@ test('zoe - non-fungible atomicSwap', async t => {
           'The offer has been accepted. Once the contract has been completed, please check your payout',
         );
 
-        await seat
-          .getPayout('Asset')
-          .then(ccPurse.deposit)
-          .then(amountDeposited =>
+        await E.when(seat.getPayout('Asset'), ccPurse.deposit).then(
+          amountDeposited =>
             t.deepEqual(
               amountDeposited,
               proposal.want.Asset,
               `Bob got what he wanted`,
             ),
-          );
+        );
 
-        await seat
-          .getPayout('Price')
-          .then(rpgPurse.deposit)
-          .then(amountDeposited =>
+        await E.when(seat.getPayout('Price'), rpgPurse.deposit).then(
+          amountDeposited =>
             t.deepEqual(
               amountDeposited,
               rpgItems(harden([])),
               `Bob didn't get anything back`,
             ),
-          );
+        );
       },
     });
   };
