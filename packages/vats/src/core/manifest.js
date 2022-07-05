@@ -180,7 +180,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
       bridgeManager: true,
     },
   },
-  makeClientManager: {
+  setupClientManager: {
     produce: {
       client: true,
       clientCreator: true,

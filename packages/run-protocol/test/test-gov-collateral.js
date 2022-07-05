@@ -15,7 +15,7 @@ import {
 import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 import {
   bridgeCoreEval,
-  makeClientManager,
+  setupClientManager,
 } from '@agoric/vats/src/core/chain-behaviors.js';
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 import { makeCoreProposalBehavior } from '@agoric/deploy-script-support/src/coreProposalBehavior.js';
@@ -169,7 +169,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
     return Promise.all([
       // @ts-expect-error TODO: align types better
       addBankAssets(space),
-      makeClientManager(space),
+      setupClientManager(space),
       makeAddressNameHubs(space),
       // @ts-expect-error TODO: align types better
       makeBoard(space),

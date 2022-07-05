@@ -172,7 +172,7 @@ const missingKeys = (pattern, specimen) =>
  * @param {BootstrapSpace} powers
  * @param {{ template?: Record<string, unknown> }} config
  */
-export const makeClientManager = async (
+export const setupClientManager = async (
   { produce: { client, clientCreator: clientCreatorP } },
   {
     template = {
@@ -187,7 +187,7 @@ export const makeClientManager = async (
   } = {},
 ) => {
   // Create a subscription of chain configurations.
-  /** @type {SubscriptionRecord<PropertyMakers>} */
+  /** @type {SubscriptionRecord<PropertyMaker[]>} */
   const { subscription, publication } = makeSubscriptionKit();
 
   /** @type {ClientManager} */
@@ -252,7 +252,7 @@ export const makeClientManager = async (
   clientCreatorP.resolve(clientCreator);
   client.resolve(clientManager);
 };
-harden(makeClientManager);
+harden(setupClientManager);
 
 /** @param {BootstrapPowers} powers */
 export const startTimerService = async ({

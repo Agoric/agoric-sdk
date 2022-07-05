@@ -14,7 +14,7 @@ import {
   makeAddressNameHubs,
   makeBoard,
 } from '@agoric/vats/src/core/basic-behaviors.js';
-import { makeClientManager } from '@agoric/vats/src/core/chain-behaviors.js';
+import { setupClientManager } from '@agoric/vats/src/core/chain-behaviors.js';
 import {
   makeAgoricNamesAccess,
   makePromiseSpace,
@@ -110,7 +110,7 @@ const makeTestContext = async t => {
     makeBoard({ consume, produce, ...spaces }),
     makeAddressNameHubs({ consume, produce, ...spaces }),
     installBootContracts({ vatPowers, devices, consume, produce, ...spaces }),
-    makeClientManager({ consume, produce, ...spaces }),
+    setupClientManager({ consume, produce, ...spaces }),
     connectFaucet({ consume, produce, ...spaces }),
   ]);
 

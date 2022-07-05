@@ -12,7 +12,7 @@ import {
   connectFaucet,
   showAmount,
 } from '@agoric/run-protocol/src/proposals/demoIssuers.js';
-import { makeClientManager } from '../src/core/chain-behaviors.js';
+import { setupClientManager } from '../src/core/chain-behaviors.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from '../src/core/utils.js';
 import { buildRootObject as mintsRoot } from '../src/vat-mints.js';
 import { buildRootObject as boardRoot } from '../src/vat-board.js';
@@ -119,7 +119,7 @@ test('connectFaucet produces payments', async t => {
     makeBoard({ consume, produce, ...spaces }),
     makeAddressNameHubs({ consume, produce, ...spaces }),
     installBootContracts({ vatPowers, devices, consume, produce, ...spaces }),
-    makeClientManager({ consume, produce, ...spaces }),
+    setupClientManager({ consume, produce, ...spaces }),
     connectFaucet({ consume, produce, ...spaces }),
     makeClientBanks({ consume, produce, ...spaces }),
     stubProps({ consume, produce, ...spaces }),

@@ -95,10 +95,10 @@
  * }} PromiseSpace
  *
  * @typedef {{
- *   assignBundle: (ps: PropertyMakers) => void
- * }} ClientManager
+ *   assignBundle: (ps: PropertyMaker[]) => void
+ * }} ClientManager tool to put properties onto the `home` object of the client
  *
- * @typedef {Array<(addr: string) => Record<string, unknown>>} PropertyMakers
+ * @typedef {(addr: string) => Record<string, unknown>} PropertyMaker callback to assign a property onto the `home` object of the client
  */
 
 /**
