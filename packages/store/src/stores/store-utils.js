@@ -106,3 +106,69 @@ export const provide = (mapStore, key, makeValue) => {
   return mapStore.get(key);
 };
 harden(provide);
+
+/**
+ * Helper for use cases in which the maker function is async. For two provide
+ * calls with the same key, one may be making when the other call starts and it
+ * would make again. (Then there'd be a collision when the second tries to store
+ * the key.) This prevents that race condition by immediately storing a Promise
+ * for the maker in an ephemeral store.
+ *
+ * Upon termination, the ephemeral store of pending makes will be lost. It's
+ * possible for termination to happen after the make completes and before it
+ * reaches durable storage.
+ *
+ * @template K
+ * @template V
+ * @param {MapStore<K, V>} durableStore
+ */
+export const makeAtomicProvider = durableStore => {
+  /** @type {Map<K, Promise<V>>} */
+  const pending = new Map();
+
+  /**
+   * Call `provideAsync` to get or make the value associated with the key,
+   * when the maker is asynchronous.
+   * If there already is one, return that. Otherwise,
+   * call `makeValue(key)`, remember it as the value for
+   * that key, and return it.
+   *
+   * @param {K} key
+   * @param {(key: K) => Promise<V>} makeValue
+   * @param {(key: K, value: V) => Promise<void>} [finishValue]
+   * @returns {Promise<V>}
+   */
+  const provideAsync = (key, makeValue, finishValue) => {
+    if (durableStore.has(key)) {
+      return Promise.resolve(durableStore.get(key));
+    }
+    if (!pending.has(key)) {
+      const valP = makeValue(key)
+        .then(v => {
+          durableStore.init(key, v);
+          return v;
+        })
+        .then(v => {
+          if (finishValue) {
+            return finishValue(key, v).then(() => v);
+          }
+          return v;
+        })
+        .finally(() => {
+          pending.delete(key);
+        });
+      pending.set(key, valP);
+    }
+    const valP = pending.get(key);
+    assert(valP);
+    return valP;
+  };
+
+  return harden({ provideAsync });
+};
+harden(makeAtomicProvider);
+/**
+ * @template K
+ * @template V
+ * @typedef {ReturnType<typeof makeAtomicProvider<K, V>>} AtomicProvider<K, V>
+ */
