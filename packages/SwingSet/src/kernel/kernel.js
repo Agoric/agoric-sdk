@@ -251,7 +251,7 @@ export default function buildKernel(
    * @param {boolean} shouldReject
    * @param {SwingSetCapData} info
    */
-  function terminateVat(vatID, shouldReject, info) {
+  async function terminateVat(vatID, shouldReject, info) {
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const critical = vatKeeper.getOptions().critical;
     insistCapData(info);
@@ -264,7 +264,7 @@ export default function buildKernel(
       // TODO: if a static vat terminates, panic the kernel?
 
       // ISSUE: terminate stuff in its own crank like creation?
-      void vatWarehouse.vatWasTerminated(vatID);
+      await vatWarehouse.vatWasTerminated(vatID);
     }
     if (critical) {
       // The following error construction is a bit awkward, but (1) it saves us
@@ -1119,7 +1119,7 @@ export default function buildKernel(
 
       // state changes reflecting the termination must also survive, so these
       // happen after a possible abortCrank()
-      terminateVat(vatID, reject, info);
+      await terminateVat(vatID, reject, info);
       kernelSlog.terminateVat(vatID, reject, info);
       kdebug(`vat terminated: ${JSON.stringify(info)}`);
     }

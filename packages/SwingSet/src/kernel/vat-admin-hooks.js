@@ -109,7 +109,10 @@ export function makeVatAdminHooks(tools) {
       // we don't need to incrementRefCount because if terminateVat sends
       // 'reason' to vat-admin, it uses notifyTermination / queueToKref /
       // doSend, and doSend() does its own incref
-      terminateVat(vatID, true, reasonCD);
+      void terminateVat(vatID, true, reasonCD);
+      // TODO: terminateVat is async, result doesn't fire until worker
+      // is dead. To fix this we'll probably need to move termination
+      // to a run-queue ['terminate-vat', vatID] event, like createVat
       return harden({ body: stringify(undefined), slots: [] });
     },
 
