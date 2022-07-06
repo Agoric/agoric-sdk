@@ -191,6 +191,17 @@ const testUpgrade = async (t, defaultManagerType) => {
   const remoerr = parse(JSON.stringify(get(v2capdata, 'remoerr')));
   t.deepEqual(remoerr, Error('vat terminated'));
 
+  // newDur() (the first Durandal instance created in vat-ulrik-2)
+  // should get a new vref, because the per-Kind instance counter
+  // should persist and pick up where it left off. If that was broken,
+  // newDur would have the same vref as dur1 (the first Durandal
+  // instance created in vat-ulrik-1). And since it's durable, the
+  // c-list entry will still exist, so we'll see the same kref as
+  // before.
+  t.is(get(v2capdata, 'newDur')[0], 'slot');
+  const newDurKref = get(v2capdata, 'newDur')[1];
+  t.not(newDurKref, dur1Kref);
+
   // the old version's non-durable promises should be rejected
   t.is(c.kpStatus(v1p1Kref), 'rejected');
   const vatUpgradedError = capargs('vat upgraded');

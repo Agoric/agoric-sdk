@@ -48,6 +48,9 @@ const buildExports = (baggage, imp) => {
     dur.push(makeDurandal(`d${i}`, imp[i], { name: `d${i}` }));
   }
 
+  // note: to test #5725, dur[0] must be the first new Durandal
+  // instance created in this version of the vat
+
   // vc1+vc2 form a cycle, as do vir[7]+vir[8], and our lack of
   // cycle-collection means we don't GC it during the lifetime of the
   // vat, however they'll be deleted during upgrade because stopVat()

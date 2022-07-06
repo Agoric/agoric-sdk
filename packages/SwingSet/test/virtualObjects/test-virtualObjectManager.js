@@ -542,7 +542,10 @@ test('durable kind IDs can be reanimated', t => {
 
   // Create a durable kind ID, but don't use it yet
   let kindHandle = makeKindHandle('testkind');
-  t.is(log.shift(), 'set vom.dkind.10 {"kindID":"10","tag":"testkind"}');
+  t.is(
+    log.shift(),
+    'set vom.dkind.10 {"kindID":"10","tag":"testkind","nextInstanceID":1}',
+  );
   t.deepEqual(log, []);
   const khid = `o+1/10`;
 
@@ -570,7 +573,10 @@ test('durable kind IDs can be reanimated', t => {
   // Fetch it from the store, which should reanimate it
   const fetchedKindID = placeToPutIt.get('savedKindID');
   t.is(log.shift(), `get vc.1.ssavedKindID => ${kindSer}`);
-  t.is(log.shift(), 'get vom.dkind.10 => {"kindID":"10","tag":"testkind"}');
+  t.is(
+    log.shift(),
+    'get vom.dkind.10 => {"kindID":"10","tag":"testkind","nextInstanceID":1}',
+  );
   t.deepEqual(log, []);
 
   // Use it now, to define a durable kind
@@ -580,6 +586,10 @@ test('durable kind IDs can be reanimated', t => {
   // Make an instance of the new kind, just to be sure it's there
   makeThing('laterThing');
   flushCache();
+  t.is(
+    log.shift(),
+    'set vom.dkind.10 {"kindID":"10","tag":"testkind","nextInstanceID":2}',
+  );
   t.is(
     log.shift(),
     'set vom.o+10/1 {"counter":{"body":"0","slots":[]},"label":{"body":"\\"laterThing\\"","slots":[]},"resetCounter":{"body":"0","slots":[]}}',

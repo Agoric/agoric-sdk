@@ -16,7 +16,10 @@ const behavior = {
 
 export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
   const durandalHandle = baggage.get('durandalHandle');
-  defineDurableKind(durandalHandle, initialize, behavior);
+  const makeDurandal = defineDurableKind(durandalHandle, initialize, behavior);
+  // note: to test #5725, newDur must be the first new Durandal
+  // instance in this version of the vat
+  const newDur = makeDurandal('dur-new', undefined, { name: 'd1' });
 
   const root = Far('root', {
     getVersion: () => 'v2',
@@ -41,6 +44,7 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
       const imp38 = baggage.get('imp38');
       return { imp33, imp35, imp37, imp38 };
     },
+    getNewDurandal: () => newDur,
   });
   // exercise async return
   return Promise.resolve(root);
