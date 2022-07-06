@@ -8,7 +8,7 @@ The `singleWalet` contract manages a single smart wallet.
 
 The `walletFactory` contract provisions and manages smart wallets.
 
-# Common
+## Common
 
 There can be zero or one wallets per Cosmos address.
 
@@ -29,3 +29,28 @@ By design there's a 1:1 across all four.
 `namesByAddress` and `board` are shared by everybody.
 
 `myAddressNamesAdmin` is from the account you provision.
+
+# Testing
+There are no automated tests yet verifying the smart wallet running on chain. Here are procedures you can use instead.
+
+## Notifiers
+
+```
+# tab 1 (chain)
+cd packages/cosmic-swingset/
+make scenario2-setup scenario2-run-chain
+# starts bare chain, don’t need AMM
+
+# tab 2 (client server)
+cd packages/cosmic-swingset/
+make scenario2-run-client
+# confirm no errors in logs
+
+# tab 3 (interactive)
+agoric open --repl
+# confirm in browser that `home.wallet` and `home.smartWallet` exist
+agd query vstorage keys 'published.wallet'
+# confirm it has a key like `published.wallet.agoric1nqxg4pye30n3trct0hf7dclcwfxz8au84hr3ht`
+agoric follow :published.wallet.agoric1nqxg4pye30n3trct0hf7dclcwfxz8au84hr3ht
+# confirm it has JSON data
+```
