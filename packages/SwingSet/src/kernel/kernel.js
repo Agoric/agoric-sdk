@@ -648,6 +648,7 @@ export default function buildKernel(
       kdebug(`vat ${vatID} terminated before startVat delivered`);
       return NO_DELIVERY_CRANK_RESULTS;
     }
+    const { meterID } = vatInfo;
     /** @type { KernelDeliveryStartVat } */
     const kd = harden(['startVat', vatParameters]);
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
@@ -660,7 +661,7 @@ export default function buildKernel(
     // note: if deliveryCrankResults() learns to suspend vats,
     // startVat errors should still terminate them
     const results = harden({
-      ...deliveryCrankResults(vatID, status, true),
+      ...deliveryCrankResults(vatID, status, true, meterID),
       popDelivery: true,
     });
     return results;
@@ -1168,6 +1169,12 @@ export default function buildKernel(
     /** @type { PolicyInput } */
     let policyInput = ['crank', {}];
     if (message.type === 'create-vat') {
+      // TODO: create-vat now gets metering, at least for the
+      // dispatch.startVat . We should probably tell the policy about
+      // the creation too since there's extra overhead (we're
+      // launching a new child process, at least, although that
+      // sometimes happens randomly because of vat eviction policy
+      // which should not affect the in-consensus policyInput)
       policyInput = ['create-vat', {}];
     }
 
