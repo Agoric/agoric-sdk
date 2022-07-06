@@ -9,6 +9,7 @@ on:
 
 jobs:
   snapshot:
+    if: ${{ github.repository_owner == 'agoric' }}
     runs-on: ubuntu-latest
     outputs:
       tag: '${{ steps.snapshot-tag.outputs.tag }}'

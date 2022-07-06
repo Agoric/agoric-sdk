@@ -114,7 +114,9 @@ jobs:
           SOLO_MAX_DEBUG_LENGTH: '1024'
 
       - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
+        if: >
+          failure() && github.event_name != 'pull_request' &&
+          github.repository_owner == 'agoric'
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
