@@ -255,6 +255,7 @@ export default function buildKernel(
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const critical = vatKeeper.getOptions().critical;
     insistCapData(info);
+    // ISSUE: terminate stuff in its own crank like creation?
     // guard against somebody telling vatAdmin to kill a vat twice
     if (kernelKeeper.vatIsAlive(vatID)) {
       const promisesToReject = kernelKeeper.cleanupAfterTerminatedVat(vatID);
@@ -263,8 +264,8 @@ export default function buildKernel(
       }
       // TODO: if a static vat terminates, panic the kernel?
 
-      // ISSUE: terminate stuff in its own crank like creation?
-      await vatWarehouse.vatWasTerminated(vatID);
+      // worker needs to be stopped, if any
+      await vatWarehouse.terminate(vatID);
     }
     if (critical) {
       // The following error construction is a bit awkward, but (1) it saves us
@@ -695,7 +696,7 @@ export default function buildKernel(
     }
 
     // stop the worker, delete the transcript and any snapshot
-    await vatWarehouse.destroyWorker(vatID);
+    await vatWarehouse.abandonWorker(vatID);
     const source = { bundleID };
     const { options } = vatKeeper.getSourceAndOptions();
     vatKeeper.setSourceAndOptions(source, options);

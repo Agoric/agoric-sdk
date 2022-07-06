@@ -71,7 +71,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    * @typedef {{
    *   manager: VatManager,
    *   enablePipelining: boolean,
-   *   options: { name?: string, managerType?: ManagerType },
+   *   options: { name?: string, managerType?: ManagerType, meterID?: MeterID },
    * }} VatInfo
    * @typedef { ReturnType<typeof import('./vatTranslator').makeVatTranslators> } VatTranslators
    */
@@ -181,23 +181,28 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   }
 
   /**
+   * @typedef { import('../types-internal.js').MeterID } MeterID
+   */
+
+  /**
    * @param {string} vatID
-   * @returns {{ enablePipelining?: boolean }
+   * @returns {{ enablePipelining?: boolean, meterID?: MeterID }
    *  | undefined // if the vat is dead or never initialized
    * }
    */
   function lookup(vatID) {
     const liveInfo = ephemeral.vats.get(vatID);
     if (liveInfo) {
-      const { enablePipelining } = liveInfo;
-      return { enablePipelining };
+      const { enablePipelining, options } = liveInfo;
+      const { meterID } = options;
+      return { enablePipelining, meterID };
     }
     if (!kernelKeeper.vatIsAlive(vatID)) {
       return undefined;
     }
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    const { enablePipelining } = vatKeeper.getOptions();
-    return { enablePipelining };
+    const { enablePipelining, meterID } = vatKeeper.getOptions();
+    return { enablePipelining, meterID };
   }
 
   const recent = makeLRU(maxVatsOnline);
@@ -353,7 +358,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    * @param {string} vatID
    * @returns {Promise<void>}
    */
-  async function vatWasTerminated(vatID) {
+  async function killWorker(vatID) {
     try {
       await evict(vatID);
     } catch (err) {
@@ -361,11 +366,18 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     }
   }
 
-  async function destroyWorker(vatID) {
+  async function abandonWorker(vatID) {
     // stop any existing worker, delete transcript and any snapshot
     await evict(vatID);
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     vatKeeper.removeSnapshotAndTranscript();
+  }
+
+  async function terminate(vatID) {
+    // worker may or may not be online
+    if (ephemeral.vats.has(vatID)) {
+      await killWorker(vatID);
+    }
   }
 
   // mostly used by tests, only needed with thread/process-based workers
@@ -392,13 +404,14 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     maybeSaveSnapshot,
     setSnapshotInterval,
 
-    destroyWorker,
+    killWorker,
+    terminate,
+    abandonWorker,
 
     // mostly for testing?
     activeVatsInfo: () =>
       [...ephemeral.vats].map(([id, { options }]) => ({ id, options })),
 
-    vatWasTerminated,
     shutdown,
   });
 }
