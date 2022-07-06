@@ -550,7 +550,7 @@ export default function makeKernelKeeper(
     assert.equal(ownerVat, oldVat, `export ${kref} not owned by old vat`);
     kvStore.delete(ownerKey);
     // note that we do not delete the object here: it will be
-    // colelcted if/when all other references are dropped
+    // collected if/when all other references are dropped
   }
 
   function deleteKernelObject(koid) {
@@ -1013,29 +1013,41 @@ export default function makeKernelKeeper(
     return harden({ remaining, threshold });
   }
 
-  function deductMeter(meterID, spent) {
+  function checkMeter(meterID, spent) {
+    // Can this meter accomodate the spend? (read-only)
     insistMeterID(meterID);
     assert.typeof(spent, 'bigint');
     Nat(spent);
-    let underflow = false;
-    let notify = false;
+    /** @type { bigint | string } */
+    const oldRemaining = getRequired(`${meterID}.remaining`);
+    if (oldRemaining === 'unlimited') {
+      return true;
+    } else {
+      return BigInt(oldRemaining) >= spent;
+    }
+  }
+
+  function deductMeter(meterID, spent) {
+    // Deduct the meter, and return true if it crossed the
+    // notification threshold
+    insistMeterID(meterID);
+    assert.typeof(spent, 'bigint');
+    Nat(spent);
     /** @type { bigint | string } */
     let oldRemaining = getRequired(`${meterID}.remaining`);
-    if (oldRemaining !== 'unlimited') {
+    if (oldRemaining === 'unlimited') {
+      return false;
+    } else {
       oldRemaining = BigInt(oldRemaining);
       const threshold = BigInt(getRequired(`${meterID}.threshold`));
       let remaining = oldRemaining - spent;
       if (remaining < 0n) {
-        underflow = true;
         remaining = 0n;
       }
-      if (remaining < threshold && oldRemaining >= threshold) {
-        // only notify once per crossing
-        notify = true;
-      }
       kvStore.set(`${meterID}.remaining`, `${Nat(remaining)}`);
+      // only notify once per crossing
+      return remaining < threshold && oldRemaining >= threshold;
     }
-    return harden({ underflow, notify });
   }
 
   function deleteMeter(meterID) {
@@ -1586,6 +1598,7 @@ export default function makeKernelKeeper(
     addMeterRemaining,
     setMeterThreshold,
     getMeter,
+    checkMeter,
     deductMeter,
     deleteMeter,
 

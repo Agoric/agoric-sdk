@@ -1042,10 +1042,8 @@ export default function buildKernel(
         // and if both vat and delivery are metered, deduct from the Meter
         if (useMeter && meterID) {
           deduction = { meterID, computrons }; // in case we must rededuct
-          const { notify, underflow } = kernelKeeper.deductMeter(
-            meterID,
-            computrons,
-          );
+          const underflow = !kernelKeeper.checkMeter(meterID, computrons);
+          const notify = kernelKeeper.deductMeter(meterID, computrons);
           if (notify) {
             notifyMeterThreshold(meterID);
           }
@@ -1099,7 +1097,7 @@ export default function buildKernel(
         // but metering deductions and underflow notifications must survive
         if (deduction) {
           const { meterID, computrons } = deduction; // re-deduct metering
-          const { notify } = kernelKeeper.deductMeter(meterID, computrons);
+          const notify = kernelKeeper.deductMeter(meterID, computrons);
           if (notify) {
             notifyMeterThreshold(meterID); // re-queue notification
           }
