@@ -118,6 +118,7 @@ export default function buildKernel(
 
   const kernelKeeper = makeKernelKeeper(hostStorage, kernelSlog, createSHA256);
 
+  let vatWarehouse;
   let started = false;
 
   /**
@@ -263,7 +264,6 @@ export default function buildKernel(
       // TODO: if a static vat terminates, panic the kernel?
 
       // ISSUE: terminate stuff in its own crank like creation?
-      // eslint-disable-next-line no-use-before-define
       void vatWarehouse.vatWasTerminated(vatID);
     }
     if (critical) {
@@ -374,13 +374,11 @@ export default function buildKernel(
    * @returns {Promise<DeliveryStatus>}
    */
   async function deliverAndLogToVat(vatID, kd, vd) {
-    // eslint-disable-next-line no-use-before-define
     assert(vatWarehouse.lookup(vatID));
     // Ensure that the vatSlogger is available before clist translation.
     const vs = kernelSlog.provideVatSlogger(vatID).vatSlog;
     try {
       /** @type { VatDeliveryResult } */
-      // eslint-disable-next-line no-use-before-define
       const deliveryResult = await vatWarehouse.deliverToVat(vatID, kd, vd, vs);
 
       insistVatDeliveryResult(deliveryResult);
@@ -411,7 +409,6 @@ export default function buildKernel(
     kernelKeeper.incStat('dispatches');
     kernelKeeper.incStat('dispatchDeliver');
 
-    // eslint-disable-next-line no-use-before-define
     const vatInfo = vatWarehouse.lookup(vatID);
     if (!vatInfo) {
       // splat
@@ -423,7 +420,6 @@ export default function buildKernel(
 
     /** @type { KernelDeliveryMessage } */
     const kd = harden(['message', target, msg]);
-    // eslint-disable-next-line no-use-before-define
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
 
     if (vatInfo.enablePipelining && msg.result) {
@@ -443,7 +439,6 @@ export default function buildKernel(
     insistVatID(vatID);
     insistKernelType('promise', kpid);
     kernelKeeper.incStat('dispatches');
-    // eslint-disable-next-line no-use-before-define
     if (!vatWarehouse.lookup(vatID)) {
       kdebug(`dropping notify of ${kpid} to ${vatID} because vat is dead`);
       return null;
@@ -473,7 +468,6 @@ export default function buildKernel(
     }
     /** @type { KernelDeliveryNotify } */
     const kd = harden(['notify', resolutions]);
-    // eslint-disable-next-line no-use-before-define
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
     vatKeeper.deleteCListEntriesForKernelSlots(targets);
 
@@ -490,7 +484,6 @@ export default function buildKernel(
     const { type, vatID, krefs } = message;
     // console.log(`-- processGCMessage(${vatID} ${type} ${krefs.join(',')})`);
     insistVatID(vatID);
-    // eslint-disable-next-line no-use-before-define
     if (!vatWarehouse.lookup(vatID)) {
       return null; // can't collect from the dead
     }
@@ -504,7 +497,6 @@ export default function buildKernel(
         // console.log(`   deleted ${kref}`);
       }
     }
-    // eslint-disable-next-line no-use-before-define
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
     return deliverAndLogToVat(vatID, kd, vd);
   }
@@ -518,13 +510,11 @@ export default function buildKernel(
     const { type, vatID } = message;
     // console.log(`-- processBringOutYourDead(${vatID})`);
     insistVatID(vatID);
-    // eslint-disable-next-line no-use-before-define
     if (!vatWarehouse.lookup(vatID)) {
       return null; // can't collect from the dead
     }
     /** @type { KernelDeliveryBringOutYourDead } */
     const kd = harden([type]);
-    // eslint-disable-next-line no-use-before-define
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
     return deliverAndLogToVat(vatID, kd, vd);
   }
@@ -550,11 +540,9 @@ export default function buildKernel(
     // console.log(`-- processStartVat(${vatID})`);
     insistVatID(vatID);
     insistCapData(vatParameters);
-    // eslint-disable-next-line no-use-before-define
     assert(vatWarehouse.lookup(vatID));
     /** @type { KernelDeliveryStartVat } */
     const kd = harden(['startVat', vatParameters]);
-    // eslint-disable-next-line no-use-before-define
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
     // decref slots now that create-vat is off run-queue
     for (const kref of vatParameters.slots) {
@@ -616,7 +604,6 @@ export default function buildKernel(
     // TODO warner think through failure paths
 
     return (
-      // eslint-disable-next-line no-use-before-define
       vatWarehouse
         .createDynamicVat(vatID)
         // if createDynamicVat fails, go directly to makeErrorResponse
@@ -659,7 +646,6 @@ export default function buildKernel(
   async function processChangeVatOptions(message) {
     const { vatID, options } = message;
     insistVatID(vatID);
-    // eslint-disable-next-line no-use-before-define
     if (!vatWarehouse.lookup(vatID)) {
       return null; // vat is dead, splat
     }
@@ -676,7 +662,6 @@ export default function buildKernel(
     if (haveOptionsForVat) {
       /** @type { KernelDeliveryChangeVatOptions } */
       const kd = harden(['changeVatOptions', optionsForVat]);
-      // eslint-disable-next-line no-use-before-define
       const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
       const status = await deliverAndLogToVat(vatID, kd, vd);
       return { ...status, discardFailedDelivery: true };
@@ -695,14 +680,12 @@ export default function buildKernel(
     const { vatID, upgradeID, bundleID, vatParameters } = message;
     insistCapData(vatParameters);
 
-    // eslint-disable-next-line no-use-before-define
     if (!vatWarehouse.lookup(vatID)) {
       return null; // vat is dead, splat
     }
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     /** @type { import('../types-external.js').KernelDeliveryStopVat } */
     const kd1 = harden(['stopVat']);
-    // eslint-disable-next-line no-use-before-define
     const vd1 = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd1);
     const status1 = await deliverAndLogToVat(vatID, kd1, vd1);
     if (status1.terminate) {
@@ -712,7 +695,6 @@ export default function buildKernel(
     }
 
     // stop the worker, delete the transcript and any snapshot
-    // eslint-disable-next-line no-use-before-define
     await vatWarehouse.destroyWorker(vatID);
     const source = { bundleID };
     const { options } = vatKeeper.getSourceAndOptions();
@@ -725,7 +707,6 @@ export default function buildKernel(
     // deliver a startVat with the new vatParameters
     /** @type { import('../types-external.js').KernelDeliveryStartVat } */
     const kd2 = harden(['startVat', vatParameters]);
-    // eslint-disable-next-line no-use-before-define
     const vd2 = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd2);
     // decref vatParameters now that translation did incref
     for (const kref of vatParameters.slots) {
@@ -865,7 +846,6 @@ export default function buildKernel(
           return requeue();
         } else {
           insistVatID(kp.decider);
-          // eslint-disable-next-line no-use-before-define
           const deciderVat = vatWarehouse.lookup(kp.decider);
           if (!deciderVat) {
             // decider is dead
@@ -1147,7 +1127,6 @@ export default function buildKernel(
     }
 
     if (!didAbort) {
-      // eslint-disable-next-line no-use-before-define
       await vatWarehouse.maybeSaveSnapshot();
     }
     kernelKeeper.processRefcounts();
@@ -1272,7 +1251,6 @@ export default function buildKernel(
      * @returns {VatSyscallResult}
      */
     function vatSyscallHandler(vatSyscallObject) {
-      // eslint-disable-next-line no-use-before-define
       if (!vatWarehouse.lookup(vatID)) {
         // This is a safety check -- this case should never happen unless the
         // vatManager is somehow confused.
@@ -1354,11 +1332,7 @@ export default function buildKernel(
     overrideVatManagerOptions,
   });
 
-  const vatWarehouse = makeVatWarehouse(
-    kernelKeeper,
-    vatLoader,
-    warehousePolicy,
-  );
+  vatWarehouse = makeVatWarehouse(kernelKeeper, vatLoader, warehousePolicy);
 
   /**
    * Create a dynamically generated vat for testing purposes.  Such vats are
