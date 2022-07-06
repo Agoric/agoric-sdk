@@ -45,7 +45,7 @@ test('imported promises in vdata', async t => {
   await c.run();
   t.is(c.kpStatus(kpid1), 'fulfilled');
   const res1 = c.kpResolution(kpid1);
-  console.log(res1); // [p1, p2, p3]
+  // console.log(res1); // [p1, p2, p3]
   t.deepEqual(JSON.parse(res1.body), [
     { '@qclass': 'slot', index: 0 },
     { '@qclass': 'slot', index: 1 },
@@ -60,7 +60,6 @@ test('imported promises in vdata', async t => {
   await c.run();
   t.is(c.kpStatus(kpid2), 'fulfilled');
   const res2 = c.kpResolution(kpid2);
-  console.log(res2); // [1, 2, 2, 3, 3]
   t.deepEqual(res2, capargs([1, 2, 2, 3, 3]));
 
   // check clist for promise retirement
@@ -90,7 +89,7 @@ test('result promises in vdata', async t => {
   await c.run();
   t.is(c.kpStatus(kpid1), 'fulfilled');
   const res1 = c.kpResolution(kpid1);
-  console.log(res1); // [p4, p5, p6]
+  // console.log(res1); // [p4, p5, p6]
   t.deepEqual(JSON.parse(res1.body), [
     { '@qclass': 'slot', index: 0 },
     { '@qclass': 'slot', index: 1 },
@@ -134,7 +133,7 @@ test('exported promises in vdata', async t => {
   await c.run();
   t.is(c.kpStatus(kpid1), 'fulfilled');
   const res1 = c.kpResolution(kpid1);
-  console.log(res1); // { data, resolutions }
+  // console.log(res1); // { data, resolutions }
   t.deepEqual(JSON.parse(res1.body).data.is, {
     p7is: true,
     p8is: true,
@@ -150,17 +149,21 @@ test('exported promises in vdata', async t => {
     p13: 13,
     p14: 14,
   });
-  const promises = JSON.parse(res1.body).ret;
-  console.log(promises);
-  // all these promises should be resolved by now, and retired from
-  // the clist
 
   function has(kref) {
     const s = kvStore.get(`${vatID}.c.${kref}`);
     // returns undefined, or { vatSlot, isReachable }
     return s && parseReachableAndVatSlot(s);
   }
-  for (const kref of res1.slots) {
+
+  // all these promises should be resolved by now, and retired from
+  // the clist
+  const promises = JSON.parse(res1.body).data.ret;
+  for (const pname of Object.keys(promises)) {
+    const obj = promises[pname];
+    t.is(obj['@qclass'], 'slot');
+    const slot = obj.index;
+    const kref = res1.slots[slot];
     t.falsy(has(kref));
   }
 });

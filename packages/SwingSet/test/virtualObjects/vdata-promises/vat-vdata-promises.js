@@ -49,9 +49,7 @@ export function buildRootObject() {
     // p1/p2/p3 are resolved before importPromiseStep2 is called
 
     importPromiseStep2() {
-      console.log(`vc.get(p3)`);
       const p3a = vc.get('p3');
-      console.log(` got ${p3a}`);
       importStash.push(p3a);
       vc.delete('p3');
 
@@ -95,9 +93,7 @@ export function buildRootObject() {
     },
 
     resultPromiseStep3() {
-      console.log(`vc.get(p6)`);
       const p6a = vc.get('p6');
-      console.log(` got ${p6a}`);
       resultStash.push(p6a);
       vc.delete('p6');
 
