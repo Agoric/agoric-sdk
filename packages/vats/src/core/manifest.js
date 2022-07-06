@@ -104,9 +104,16 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
   },
   makeClientBanks: {
     consume: {
+      agoricNames: true,
+      namesByAddress: true,
+      namesByAddressAdmin: true,
       bankManager: 'bank',
+      board: 'board',
       client: true,
+      chainStorage: true,
+      zoe: 'zoe',
     },
+    installation: { consume: { singleWallet: 'zoe' } },
     home: { produce: { bank: 'bank' } },
   },
   installBootContracts: {
@@ -117,6 +124,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
       produce: {
         centralSupply: 'zoe',
         mintHolder: 'zoe',
+        singleWallet: 'zoe',
       },
     },
   },
@@ -172,7 +180,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
       bridgeManager: true,
     },
   },
-  makeClientManager: {
+  setupClientManager: {
     produce: {
       client: true,
       clientCreator: true,

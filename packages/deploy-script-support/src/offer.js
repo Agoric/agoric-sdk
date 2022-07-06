@@ -4,7 +4,13 @@ import { E } from '@endo/far';
 import { assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
-/** @type {MakeOfferAndFindInvitationAmount} */
+/**
+ * @param {ERef<any>} walletAdmin - an internal type of the
+ * wallet, not defined here
+ * @param {ERef<ZoeService>} zoe
+ * @param {ERef<Purse>} zoeInvitationPurse
+ * @returns {{ offer: OfferHelper, findInvitationAmount: FindInvitationAmount }}
+ */
 export const makeOfferAndFindInvitationAmount = (
   walletAdmin,
   zoe,

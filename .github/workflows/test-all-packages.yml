@@ -93,6 +93,8 @@ jobs:
         run: cd packages/assert && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (wallet/api)
         run: cd packages/wallet/api && yarn ${{ steps.vars.outputs.test }}
+      - name: yarn test (wallet/contract)
+        run: cd packages/wallet/contract && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (deployment)
         run: cd packages/deployment && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (ERTP)

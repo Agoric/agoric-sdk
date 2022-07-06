@@ -1,7 +1,10 @@
 import { E, Far } from '@endo/far';
 import walletBundle from '@agoric/wallet-backend/bundles/bundle-wallet.js';
 
-export const buildRootObject = _vatPowers => {
+/**
+ * @deprecated
+ */
+export const buildRootObject = () => {
   return Far('walletManager root', {
     buildWalletManager: vatAdminSvc =>
       Far('walletManager', {

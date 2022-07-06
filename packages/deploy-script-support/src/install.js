@@ -1,11 +1,17 @@
 // @ts-check
 
 import './externalTypes.js';
-import './internalTypes.js';
 
 import { E } from '@endo/far';
 
-/** @type {MakeInstallSaveAndPublish} */
+// XXX board is Board but specifying that leads to type errors with imports which aren't worth fixing right now
+/**
+ * @param {BundleSource} bundleSource
+ * @param {ERef<ZoeService>} zoe
+ * @param {ERef<import('./startInstance.js').InstallationManager>} installationManager
+ * @param {ERef<any>} board
+ * @returns {InstallSaveAndPublish}
+ */
 export const makeInstall = (bundleSource, zoe, installationManager, board) => {
   /** @type {InstallSaveAndPublish} */
   const install = async (resolvedPath, contractPetname) => {

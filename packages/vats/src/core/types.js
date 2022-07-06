@@ -95,10 +95,10 @@
  * }} PromiseSpace
  *
  * @typedef {{
- *   assignBundle: (ps: PropertyMakers) => void
- * }} ClientManager
+ *   assignBundle: (ps: PropertyMaker[]) => void
+ * }} ClientManager tool to put properties onto the `home` object of the client
  *
- * @typedef {Array<(addr: string) => Record<string, unknown>>} PropertyMakers
+ * @typedef {(addr: string) => Record<string, unknown>} PropertyMaker callback to assign a property onto the `home` object of the client
  */
 
 /**
@@ -136,7 +136,8 @@
  *   issuer: |
  *     'RUN' | 'BLD' | 'Attestation' | 'AUSD',
  *   installation: |
- *     'centralSupply' | 'mintHolder' | 'feeDistributor' |
+ *     'centralSupply' | 'mintHolder' | 'singleWallet' |
+ *     'feeDistributor' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'amm' | 'VaultFactory' | 'liquidate' | 'runStake' |
  *     'Pegasus' | 'reserve' | 'psm' | 'interchainPool',
@@ -168,7 +169,9 @@
  *   },
  *   installation:{
  *     produce: Record<WellKnownName['installation'], Producer<Installation>>,
- *     consume: Record<WellKnownName['installation'], Promise<Installation>>,
+ *     consume: Record<WellKnownName['installation'], Promise<Installation<unknown>>> & {
+ *       singleWallet: Promise<Installation<import('@agoric/smart-wallet/src/singleWallet.js').start>>,
+ *     },
  *   },
  *   instance:{
  *     produce: Record<WellKnownName['instance'], Producer<Instance>>,

@@ -1,8 +1,9 @@
 // @ts-check
-import { E } from '@endo/far';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
+import { getChildNode } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import { E } from '@endo/far';
 import { reserveThenGetNamePaths } from './utils.js';
 
 const BASIS_POINTS = 10000n;
@@ -107,9 +108,7 @@ export const startPSM = async (
     },
   };
 
-  const chainStoragePresence = await chainStorage;
-  const storageNode = await (chainStoragePresence &&
-    E(chainStoragePresence).getChildNode('psm'));
+  const storageNode = await getChildNode(chainStorage, 'psm');
   const marshaller = E(board).getPublishingMarshaller();
 
   const governorFacets = await E(zoe).startInstance(
