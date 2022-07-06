@@ -12,6 +12,7 @@ test('transcript-light load', async t => {
   );
   const hostStorage = provideHostStorage();
   const c = await buildVatController(config, ['one'], { hostStorage });
+  t.teardown(c.shutdown);
   const state0 = getAllState(hostStorage);
   t.is(state0.kvStuff.initialized, 'true');
   t.is(state0.kvStuff.runQueue, '[]');
@@ -43,6 +44,7 @@ test('transcript-light load', async t => {
   const c0 = await buildVatController(cfg0, ['one'], {
     hostStorage: hostStorage0,
   });
+  t.teardown(c0.shutdown);
 
   await c0.step();
   t.deepEqual(state1, getAllState(hostStorage0), `p1`);
@@ -69,6 +71,7 @@ test('transcript-light load', async t => {
   const c1 = await buildVatController(cfg1, ['one'], {
     hostStorage: hostStorage1,
   });
+  t.teardown(c1.shutdown);
 
   t.deepEqual(state1, getAllState(hostStorage1), `p6`); // actual, expected
 
@@ -94,6 +97,7 @@ test('transcript-light load', async t => {
   const c2 = await buildVatController(cfg2, ['one'], {
     hostStorage: hostStorage2,
   });
+  t.teardown(c2.shutdown);
 
   t.deepEqual(state2, getAllState(hostStorage2), `p11`);
 

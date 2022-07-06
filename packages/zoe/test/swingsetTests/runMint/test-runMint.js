@@ -70,6 +70,7 @@ test.before(async t => {
 async function main(t, argv) {
   const { kernelBundles, config } = t.context.data;
   const controller = await buildVatController(config, argv, { kernelBundles });
+  t.teardown(controller.shutdown);
   await controller.run();
   return controller.dump();
 }

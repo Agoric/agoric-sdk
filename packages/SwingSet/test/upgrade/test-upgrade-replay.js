@@ -9,7 +9,7 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '../../src/index.js';
-import { capargs } from '../util.js';
+import { capargs, bundleOpts } from '../util.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
@@ -43,13 +43,13 @@ test('replay after upgrade', async t => {
       upton: { sourceSpec: bfile('vat-upton-replay.js') },
     },
   };
+  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
 
   const hostStorage1 = provideHostStorage();
   {
-    await initializeSwingset(copy(config), [], hostStorage1, {
-      kernelBundles: t.context.data.kernelBundles,
-    });
-    const c1 = await makeSwingsetController(hostStorage1);
+    await initializeSwingset(copy(config), [], hostStorage1, initOpts);
+    const c1 = await makeSwingsetController(hostStorage1, {}, runtimeOpts);
+    t.teardown(c1.shutdown);
     c1.pinVatRoot('bootstrap');
     await c1.run();
 
@@ -70,7 +70,8 @@ test('replay after upgrade', async t => {
   const hostStorage2 = provideHostStorage();
   setAllState(hostStorage2, state1);
   {
-    const c2 = await makeSwingsetController(hostStorage2);
+    const c2 = await makeSwingsetController(hostStorage2, {}, runtimeOpts);
+    t.teardown(c2.shutdown);
     c2.pinVatRoot('bootstrap');
     await c2.run();
 

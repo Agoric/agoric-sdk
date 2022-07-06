@@ -76,6 +76,7 @@ async function testForExpectedGlobals(t, workerType) {
   const c = await buildVatController(config, [], {
     hostStorage,
   });
+  t.teardown(c.shutdown);
   await c.run();
   t.deepEqual(c.dump().log, [
     'control sample: undefined',

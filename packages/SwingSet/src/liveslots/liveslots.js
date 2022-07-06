@@ -1628,16 +1628,12 @@ export function makeLiveSlots(
   buildVatNamespace,
   relaxDurabilityRules = false,
 ) {
-  const allVatPowers = {
-    ...vatPowers,
-    makeMarshal,
-  };
   const r = build(
     syscall,
     forVatID,
     cacheSize,
     enableDisavow,
-    allVatPowers,
+    vatPowers,
     gcTools,
     liveSlotsConsole,
     buildVatNamespace,

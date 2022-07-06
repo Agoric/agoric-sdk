@@ -46,6 +46,7 @@ async function testPromiseWatcher(t) {
   // ? const { kvStore } = hostStorage;
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
 

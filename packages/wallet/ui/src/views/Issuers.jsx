@@ -101,6 +101,7 @@ export const IssuersWithoutContext = ({
       </CardItem>
     );
   };
+
   const issuerItems = (issuers && issuers.map(Issuer)) ?? (
     <Loading defaultMessage="Fetching issuers..." />
   );

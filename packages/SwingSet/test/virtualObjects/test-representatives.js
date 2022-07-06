@@ -84,6 +84,7 @@ test.serial('exercise cache', async t => {
     loggingHostStorage,
   );
   const c = await makeSwingsetController(loggingHostStorage, {});
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
   const nextLog = makeNextLog(c);
@@ -371,6 +372,7 @@ test('virtual object gc', async t => {
   const hostStorage = provideHostStorage();
 
   const c = await buildVatController(config, [], { hostStorage });
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
   await c.run();
@@ -446,6 +448,7 @@ async function orphanTest(t, mode) {
   const hostStorage = provideHostStorage();
 
   const c = await buildVatController(config, [mode], { hostStorage });
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
   await c.run();

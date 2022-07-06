@@ -18,6 +18,7 @@ test('flush', async t => {
     new URL('basedir-promises', import.meta.url).pathname,
   );
   const c = await buildVatController(config, ['flush'], t.context.data);
+  t.teardown(c.shutdown);
   // all promises should settle before c.run() fires
   await c.run();
   t.deepEqual(c.dump().log, ['then1', 'then2']);
@@ -28,6 +29,7 @@ test('E() resolve', async t => {
     new URL('basedir-promises', import.meta.url).pathname,
   );
   const c = await buildVatController(config, ['e-then'], t.context.data);
+  t.teardown(c.shutdown);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -43,6 +45,7 @@ test('E(E(x).foo()).bar()', async t => {
     new URL('basedir-promises', import.meta.url).pathname,
   );
   const c = await buildVatController(config, ['chain1'], t.context.data);
+  t.teardown(c.shutdown);
 
   /*
   while (true) {
@@ -67,6 +70,7 @@ test('E(Promise.resolve(presence)).foo()', async t => {
     new URL('basedir-promises', import.meta.url).pathname,
   );
   const c = await buildVatController(config, ['chain2'], t.context.data);
+  t.teardown(c.shutdown);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -82,6 +86,7 @@ test('E(local).foo()', async t => {
     new URL('basedir-promises', import.meta.url).pathname,
   );
   const c = await buildVatController(config, ['local1'], t.context.data);
+  t.teardown(c.shutdown);
 
   await c.run();
   t.deepEqual(c.dump().log, ['b.local1.finish', 'local.foo 1', 'b.resolved 2']);
@@ -92,6 +97,7 @@ test('resolve-to-local', async t => {
     new URL('basedir-promises', import.meta.url).pathname,
   );
   const c = await buildVatController(config, ['local2'], t.context.data);
+  t.teardown(c.shutdown);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -107,6 +113,7 @@ test('send-promise-resolve-to-local', async t => {
     new URL('basedir-promises', import.meta.url).pathname,
   );
   const c = await buildVatController(config, ['send-promise1'], t.context.data);
+  t.teardown(c.shutdown);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -127,6 +134,7 @@ test('send-harden-promise-1', async t => {
     ['harden-promise-1'],
     t.context.data,
   );
+  t.teardown(c.shutdown);
 
   await c.run();
   t.deepEqual(c.dump().log, [
@@ -148,6 +156,7 @@ test('circular promise resolution data', async t => {
     new URL('basedir-circular', import.meta.url).pathname,
   );
   const c = await buildVatController(config, [], t.context.data);
+  t.teardown(c.shutdown);
 
   await c.run();
   const expectedPromises = [
@@ -187,6 +196,7 @@ test('refcount while queued', async t => {
     new URL('basedir-promises-3', import.meta.url).pathname,
   );
   const c = await buildVatController(config, [], t.context.data);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
   // bootstrap() sets up an unresolved promise (p2, the result promise of

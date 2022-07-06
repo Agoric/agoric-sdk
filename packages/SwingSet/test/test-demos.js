@@ -32,7 +32,9 @@ async function main(basedir, argv) {
     deviceEndowments,
   );
   await controller.run();
-  return controller.dump();
+  const res = controller.dump();
+  await controller.shutdown();
+  return res;
 }
 
 const encouragementBotGolden = [

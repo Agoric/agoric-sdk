@@ -21,52 +21,11 @@ const useStyles = makeStyles(_ => ({
 // the app's instance of React.
 const AgoricWalletConnection = makeReactAgoricWalletConnection(React);
 
-const getAccessToken = () => {
-  // Fetch the access token from the window's URL.
-  let accessTokenParams = `?${window.location.hash.slice(1)}`;
-  let accessToken = new URLSearchParams(accessTokenParams).get('accessToken');
-
-  try {
-    if (accessToken) {
-      // Store the access token for later use.
-      window.localStorage.setItem('accessTokenParams', accessTokenParams);
-    } else {
-      // Try reviving it from localStorage.
-      accessTokenParams =
-        window.localStorage.getItem('accessTokenParams') || '?';
-      accessToken = new URLSearchParams(accessTokenParams).get('accessToken');
-    }
-  } catch (e) {
-    console.log('Error fetching accessTokenParams', e);
-  }
-
-  // Now that we've captured it, clear out the access token from the URL bar.
-  window.location.hash = '';
-
-  window.addEventListener('hashchange', _ev => {
-    // See if we should update the access token params.
-    const atp = `?${window.location.hash.slice(1)}`;
-    const at = new URLSearchParams(atp).get('accessToken');
-
-    if (at) {
-      // We have new params, so replace them.
-      accessTokenParams = atp;
-      accessToken = at;
-      localStorage.setItem('accessTokenParams', accessTokenParams);
-    }
-
-    // Keep it clear.
-    window.location.hash = '';
-  });
-
-  return accessToken;
-};
-
 const WalletConnection = ({
   setBackend,
   setConnectionState,
   disconnect,
-  walletConnection,
+  connectionConfig,
 }) => {
   const classes = useStyles();
   const [wc, setWC] = useState(null);
@@ -88,8 +47,8 @@ const WalletConnection = ({
       return () => {};
     }
     const bridge = E(wc).getAdminBootstrap(
-      getAccessToken(),
-      makeFixedWebSocketConnector(walletConnection),
+      connectionConfig.accessToken,
+      makeFixedWebSocketConnector(connectionConfig.href),
     );
 
     const { backendIt, cancel } = makeBackendFromWalletBridge(bridge);
@@ -127,5 +86,5 @@ export default withApplicationContext(WalletConnection, context => ({
   setConnectionState: context.setConnectionState,
   disconnect: context.disconnect,
   setBackend: context.setBackend,
-  walletConnection: context.walletConnection,
+  connectionConfig: context.connectionConfig,
 }));

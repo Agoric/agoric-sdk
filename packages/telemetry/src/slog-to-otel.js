@@ -454,13 +454,11 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       }
       case 'deliver-result': {
         const {
-          dr: [status, _1, meterResult],
+          dr: [status, _1, rawMeterResult],
           // ...attrs
         } = slogAttrs;
         // remove timestamps for now
-        if (meterResult) {
-          delete meterResult.timestamps;
-        }
+        const { timestamps: _t, ...meterResult } = rawMeterResult ?? {};
         spans.get(getCrankKey()).setAttributes(
           cleanAttrs({
             status,

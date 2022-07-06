@@ -34,6 +34,7 @@ test.serial('vattp', async t => {
 
   await initializeSwingset(config, ['1'], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  t.teardown(c.shutdown);
   await c.run();
   t.deepEqual(s.exportToData(), {});
 
@@ -79,6 +80,7 @@ test.serial('vattp 2', async t => {
 
   await initializeSwingset(config, ['2'], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  t.teardown(c.shutdown);
   await c.run();
   t.deepEqual(s.exportToData(), {
     remote1: { outbox: [[1, 'out1']], inboundAck: 0 },

@@ -29,7 +29,9 @@ async function main(argv) {
   config.bundles = { zcf: { bundle: zcfBundle }, ...contractBundles };
   const controller = await buildVatController(config, argv);
   await controller.run();
-  return controller.dump();
+  const res = controller.dump();
+  await controller.shutdown();
+  return res;
 }
 
 const throwInOfferLog = [

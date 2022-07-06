@@ -27,6 +27,7 @@ function removeTriple(arr, a, b, c) {
 test('load empty', async t => {
   const config = {};
   const controller = await buildVatController(config);
+  t.teardown(controller.shutdown);
   await controller.run();
   t.truthy(true);
 });
@@ -42,6 +43,7 @@ async function simpleCall(t) {
   };
   const hostStorage = provideHostStorage();
   const controller = await buildVatController(config, [], { hostStorage });
+  t.teardown(controller.shutdown);
   const data = controller.dump();
   // note: data.vatTables is sorted by vatID, but we have no particular
   // reason to believe that vat1 will get a lower ID than vatAdmin, because
@@ -113,6 +115,7 @@ test('bootstrap', async t => {
     new URL('basedir-controller-2', import.meta.url).pathname,
   );
   const c = await buildVatController(config);
+  t.teardown(c.shutdown);
   await c.run();
   t.deepEqual(c.dump().log, ['buildRootObject called', 'bootstrap called']);
 });
@@ -124,6 +127,7 @@ test('XS bootstrap', async t => {
   config.defaultManagerType = 'xs-worker';
   const hostStorage = provideHostStorage();
   const c = await buildVatController(config, [], { hostStorage });
+  t.teardown(c.shutdown);
   await c.run();
   t.deepEqual(c.dump().log, ['buildRootObject called', 'bootstrap called']);
   t.is(
@@ -158,6 +162,7 @@ test('static vats are unmetered on XS', async t => {
       },
     },
   );
+  t.teardown(c.shutdown);
   await c.run();
   t.deepEqual(c.dump().log, ['buildRootObject called', 'bootstrap called']);
   t.deepEqual(limited, [false, false, false, false]);
@@ -179,6 +184,7 @@ test.serial('bootstrap export', async t => {
   );
   config.defaultManagerType = 'xs-worker';
   const c = await buildVatController(config);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   const vatAdminVatID = c.vatNameToID('vatAdmin');
   const vatAdminDevID = c.deviceNameToID('vatAdmin');

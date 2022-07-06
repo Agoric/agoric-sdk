@@ -32,6 +32,7 @@ async function doTerminateNonCritical(
     ...t.context.data,
     hostStorage,
   });
+  t.teardown(controller.shutdown);
   t.is(controller.kpStatus(controller.bootstrapResult), 'unresolved');
   const preProbe = hostStorage.kvStore.get(`${deadVatID}.options`);
   if (!dynamic) {
@@ -67,6 +68,38 @@ async function doTerminateNonCritical(
   t.is(postProbe, undefined);
 }
 
+async function doTerminateCritical(t, deadVatID, mode, dynamic) {
+  const configPath = new URL('swingset-terminate.json', import.meta.url)
+    .pathname;
+  const config = await loadSwingsetConfigFile(configPath);
+  const hostStorage = provideHostStorage();
+  const controller = await buildVatController(config, [mode, true, dynamic], {
+    ...t.context.data,
+    hostStorage,
+  });
+  t.teardown(controller.shutdown);
+  t.is(controller.kpStatus(controller.bootstrapResult), 'unresolved');
+  const preProbe = hostStorage.kvStore.get(`${deadVatID}.options`);
+  if (!dynamic) {
+    t.truthy(preProbe);
+  }
+
+  const err = await t.throwsAsync(() => controller.run());
+  const body = JSON.parse(err.message);
+  if (typeof body === 'string') {
+    t.is(body, mode);
+  } else {
+    t.is(body['@qclass'], 'error');
+    t.is(body.message, mode);
+  }
+  t.is(
+    controller.kpStatus(controller.bootstrapResult),
+    dynamic ? 'unresolved' : 'fulfilled',
+  );
+  const postProbe = hostStorage.kvStore.get(`${deadVatID}.options`);
+  t.is(postProbe, undefined);
+}
+
 test('terminate (dynamic, non-critical)', async t => {
   await doTerminateNonCritical(
     t,
@@ -78,6 +111,12 @@ test('terminate (dynamic, non-critical)', async t => {
 });
 
 // no test 'terminate (static, non-critical)' because static vats can't be killed
+
+test('terminate (dynamic, critical)', async t => {
+  await doTerminateCritical(t, 'v8', 'kill', true);
+});
+
+// no test 'terminate (static, critical)' because static vats can't be killed
 
 test('exit happy path simple result (dynamic, non-critical)', async t => {
   await doTerminateNonCritical(
@@ -97,6 +136,14 @@ test('exit happy path simple result (static, non-critical)', async t => {
     false,
     'done result happy (Error=false)',
   );
+});
+
+test('exit happy path simple result (dynamic, critical)', async t => {
+  await doTerminateCritical(t, 'v8', 'happy', true);
+});
+
+test('exit happy path simple result (static, critical)', async t => {
+  await doTerminateCritical(t, 'v6', 'happy', false);
 });
 
 test('exit happy path complex result (dynamic, non-critical)', async t => {
@@ -119,6 +166,14 @@ test('exit happy path complex result (static, non-critical)', async t => {
   );
 });
 
+test('exit happy path complex result (dynamic, critical)', async t => {
+  await doTerminateCritical(t, 'v8', 'exceptionallyHappy', true);
+});
+
+test('exit happy path complex result (static, critical)', async t => {
+  await doTerminateCritical(t, 'v6', 'exceptionallyHappy', false);
+});
+
 test('exit sad path simple result (dynamic, non-critical)', async t => {
   await doTerminateNonCritical(
     t,
@@ -137,6 +192,14 @@ test('exit sad path simple result (static, non-critical)', async t => {
     false,
     'done exception sad (Error=false)',
   );
+});
+
+test('exit sad path simple result (dynamic, critical)', async t => {
+  await doTerminateCritical(t, 'v8', 'sad', true);
+});
+
+test('exit sad path simple result (static, critical)', async t => {
+  await doTerminateCritical(t, 'v6', 'sad', false);
 });
 
 test('exit sad path complex result (dynamic, non-critical)', async t => {
@@ -159,6 +222,14 @@ test('exit sad path complex result (static, non-critical)', async t => {
   );
 });
 
+test('exit sad path complex result (dynamic, critical)', async t => {
+  await doTerminateCritical(t, 'v8', 'exceptionallySad', true);
+});
+
+test('exit sad path complex result (static, critical)', async t => {
+  await doTerminateCritical(t, 'v6', 'exceptionallySad', false);
+});
+
 test('exit happy path with ante-mortem message (dynamic, non-critical)', async t => {
   await doTerminateNonCritical(
     t,
@@ -179,6 +250,14 @@ test('exit happy path with ante-mortem message (static, non-critical)', async t 
     'done result happyTalkFirst (Error=false)',
     ['GOT QUERY not dead quite yet'],
   );
+});
+
+test('exit happy path with ante-mortem message (dynamic, critical)', async t => {
+  await doTerminateCritical(t, 'v8', 'happyTalkFirst', true);
+});
+
+test('exit happy path with ante-mortem message (static, critical)', async t => {
+  await doTerminateCritical(t, 'v6', 'happyTalkFirst', false);
 });
 
 test('exit sad path with ante-mortem message (dynamic, non-critical)', async t => {
@@ -207,11 +286,20 @@ test('exit sad path with ante-mortem message (static, non-critical)', async t =>
   );
 });
 
+test('exit sad path with ante-mortem message (dynamic, critical)', async t => {
+  await doTerminateCritical(t, 'v8', 'sadTalkFirst', true);
+});
+
+test('exit sad path with ante-mortem message (static, critical)', async t => {
+  await doTerminateCritical(t, 'v6', 'sadTalkFirst', false);
+});
+
 test('exit with presence', async t => {
   const configPath = new URL('swingset-die-with-presence.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
   const controller = await buildVatController(config, [], t.context.data);
+  t.teardown(controller.shutdown);
   await controller.run();
   t.deepEqual(controller.dump().log, [
     'preparing dynamic vat',
@@ -232,6 +320,7 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
       hostStorage: hostStorage1,
       kernelBundles: t.context.data.kernelBundles,
     });
+    t.teardown(c1.shutdown);
     c1.pinVatRoot('bootstrap');
     await c1.run();
     t.deepEqual(c1.kpResolution(c1.bootstrapResult), capargs('bootstrap done'));
@@ -252,6 +341,7 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
       hostStorage: hostStorage2,
       kernelBundles: t.context.data.kernelBundles,
     });
+    t.teardown(c2.shutdown);
     const r2 = c2.queueToVatRoot('bootstrap', 'speakAgain', [], 'panic');
     await c2.run();
     t.is(c2.kpStatus(r2), 'fulfilled');
@@ -264,6 +354,17 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
   }
 });
 
+test('invalid criticalVatKey causes vat creation to fail', async t => {
+  const configPath = new URL('swingset-bad-vat-key.json', import.meta.url)
+    .pathname;
+  const config = await loadSwingsetConfigFile(configPath);
+  const controller = await buildVatController(config, [], t.context.data);
+  t.teardown(controller.shutdown);
+  await t.throwsAsync(() => controller.run(), {
+    message: /invalid criticalVatKey/,
+  });
+});
+
 test('dead vat state removed', async t => {
   const configPath = new URL('swingset-die-cleanly.json', import.meta.url)
     .pathname;
@@ -274,6 +375,7 @@ test('dead vat state removed', async t => {
     hostStorage,
     kernelBundles: t.context.data.kernelBundles,
   });
+  t.teardown(controller.shutdown);
   controller.pinVatRoot('bootstrap');
   await controller.run();
   t.deepEqual(
@@ -299,6 +401,7 @@ test('terminate with presence', async t => {
   ).pathname;
   const config = await loadSwingsetConfigFile(configPath);
   const controller = await buildVatController(config, [], t.context.data);
+  t.teardown(controller.shutdown);
   await controller.run();
   t.deepEqual(controller.dump().log, [
     'FOO 1',

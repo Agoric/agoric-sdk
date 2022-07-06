@@ -44,6 +44,7 @@ async function dropPresence(t, dropExport) {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   t.teardown(c.shutdown);
   await c.run();
@@ -116,6 +117,7 @@ test('forward to fake zoe', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   const targetID = c.vatNameToID('target');
   c.pinVatRoot('target');

@@ -24,6 +24,7 @@ test('create with setup and buildRootObject', async t => {
     },
   };
   const c = await buildVatController(config, []);
+  t.teardown(c.shutdown);
   c.pinVatRoot('setup');
   c.pinVatRoot('liveslots');
   let r = c.queueToVatRoot('setup', 'increment', [], 'panic');

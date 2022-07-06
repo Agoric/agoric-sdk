@@ -10,7 +10,7 @@ import {
   makeSwingsetController,
   loadBasedir,
 } from '../../src/index.js';
-import { capSlot } from '../util.js';
+import { capSlot, bundleOpts } from '../util.js';
 import { extractMethod } from '../../src/lib/kdebug.js';
 
 function nonBundleFunction(_E) {
@@ -51,7 +51,7 @@ test.before(async t => {
 });
 
 async function doTestSetup(t, enableSlog = false) {
-  const { bundles, kernelBundles } = t.context.data;
+  const { bundles } = t.context.data;
   const config = await loadBasedir(new URL('./', import.meta.url).pathname);
   config.defaultManagerType = 'xs-worker';
   config.bundles = {
@@ -60,8 +60,6 @@ async function doTestSetup(t, enableSlog = false) {
     brokenRoot: { bundle: bundles.brokenRootVatBundle },
     brokenHang: { bundle: bundles.brokenHangVatBundle },
   };
-  const hostStorage = provideHostStorage();
-  await initializeSwingset(config, [], hostStorage, { kernelBundles });
   let doSlog = false;
   function slogSender(_, s) {
     if (!doSlog) return;
@@ -74,7 +72,11 @@ async function doTestSetup(t, enableSlog = false) {
       console.log(JSON.stringify(o));
     }
   }
-  const c = await makeSwingsetController(hostStorage, {}, { slogSender });
+  const { initOpts, runtimeOpts } = bundleOpts(t.context.data, { slogSender });
+  const hostStorage = provideHostStorage();
+  await initializeSwingset(config, [], hostStorage, initOpts);
+  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  t.teardown(c.shutdown);
   const id44 = await c.validateAndInstallBundle(bundles.vat44Bundle);
   const idRC = await c.validateAndInstallBundle(bundles.vatRefcountBundle);
   c.pinVatRoot('bootstrap');

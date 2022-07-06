@@ -1011,7 +1011,7 @@ test('lib-wallet offer methods', async (/** @type {LibWalletTestContext} */ t) =
           description: 'getRefund',
           handle: {
             kind: 'unnamed',
-            petname: 'unnamed-6',
+            petname: 'unnamed-7',
           },
           installation: {
             kind: 'unnamed',
@@ -1024,7 +1024,7 @@ test('lib-wallet offer methods', async (/** @type {LibWalletTestContext} */ t) =
         },
         inviteHandleBoardId: 'board0257',
         meta: {
-          id: 8,
+          id: 9,
         },
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
