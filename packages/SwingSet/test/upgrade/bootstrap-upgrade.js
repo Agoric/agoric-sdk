@@ -141,18 +141,55 @@ export const buildRootObject = () => {
 
     buildV1WithLostKind: async () => {
       const bcap = await E(vatAdmin).getNamedBundleCap('ulrik1');
+      const events = [];
+      const handler = Far('handler', { ping: msg => events.push(msg) });
       const vatParameters = { youAre: 'v1', marker };
       const options = { vatParameters };
       const res = await E(vatAdmin).createVat(bcap, options);
       ulrikRoot = res.root;
       ulrikAdmin = res.adminNode;
       await E(ulrikRoot).makeLostKind();
+      await E(ulrikRoot).pingback(handler); // pushes 'ping 1' on events
+      return events;
     },
 
     upgradeV2WhichLosesKind: async () => {
       const bcap = await E(vatAdmin).getNamedBundleCap('ulrik2');
-      const vatParameters = { youAre: 'v2', marker };
-      await E(ulrikAdmin).upgrade(bcap, { vatParameters }); // throws
+      const events = [];
+      const handler = Far('handler', { ping: msg => events.push(msg) });
+      await E(ulrikRoot).pingback(handler); // pushes 'ping 2' on events
+      const vatParameters = { youAre: 'v2', marker, handler };
+      // vp.handler causes v2 to handler~.ping(), but that gets unwound
+      const p = E(ulrikAdmin).upgrade(bcap, { vatParameters }); // throws
+      await p.catch(e => events.push(e)); // pushes upgrade Error on events
+      await E(ulrikRoot).pingback(handler); // v1 pushes 'ping 3' on events
+      return events;
+    },
+
+    buildV1WithPing: async () => {
+      const bcap = await E(vatAdmin).getNamedBundleCap('ulrik1');
+      const events = [];
+      const handler = Far('handler', { ping: msg => events.push(msg) });
+      const vatParameters = { youAre: 'v1', handler };
+      const options = { vatParameters };
+      const res = await E(vatAdmin).createVat(bcap, options);
+      ulrikRoot = res.root;
+      ulrikAdmin = res.adminNode;
+      await E(ulrikRoot).pingback(handler); // goes to v1
+      return events;
+    },
+
+    upgradeV2WhichExplodes: async () => {
+      const bcap = await E(vatAdmin).getNamedBundleCap('ulrik2');
+      const events = [];
+      const handler = Far('handler', { ping: msg => events.push(msg) });
+      const explode = 'kaboom';
+      const vatParameters = { youAre: 'v2', marker, handler, explode };
+      // vp.handler causes v2 to handler~.ping(), but that gets unwound
+      const p = E(ulrikAdmin).upgrade(bcap, { vatParameters }); // throws
+      await p.catch(e => events.push(e));
+      await E(ulrikRoot).pingback(handler); // goes to post-rewind v1
+      return events;
     },
 
     doUpgradeWithBadOption: async () => {
