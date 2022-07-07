@@ -577,14 +577,10 @@ export function makeVirtualObjectManager(
     init,
     multifaceted,
     behavior,
-    options,
+    options = {},
     durable,
   ) {
-    let finish;
-    if (options) {
-      ({ finish } = options);
-    }
-    let nextInstanceID = 1;
+    const { finish } = options;
     let facetNames;
     let behaviorTemplate;
 
@@ -726,8 +722,8 @@ export function makeVirtualObjectManager(
     }
 
     function makeNewInstance(...args) {
-      const baseRef = `o+${kindID}/${nextInstanceID}`;
-      nextInstanceID += 1;
+      const id = getNextInstanceID(kindID, durable);
+      const baseRef = `o+${kindID}/${id}`;
       // kdebug(`vo make ${baseRef}`);
 
       const initialData = init ? init(...args) : {};
@@ -759,9 +755,45 @@ export function makeVirtualObjectManager(
     return makeNewInstance;
   }
 
+  let kindIDID;
+  const kindHandleToID = new WeakMap();
+  const kindIDToDescriptor = new Map();
+  const definedDurableKinds = new Set(); // kindID
+
+  function initializeKindHandleKind() {
+    kindIDID = syscall.vatstoreGet('kindIDID');
+    if (!kindIDID) {
+      kindIDID = `${allocateExportID()}`;
+      syscall.vatstoreSet('kindIDID', kindIDID);
+    }
+    vrm.registerKind(kindIDID, reanimateDurableKindID, () => null, true);
+  }
+
+  const nextInstanceIDs = new Map(); // kindID -> nextInstanceID
+
+  function getNextInstanceID(kindID, durable) {
+    assert.typeof(kindID, 'string');
+    // nextInstanceID is initialized to 1 for brand new kinds, loaded
+    // from DB when redefining existing kinds, held in RAM, and
+    // written to DB after each increment as part of
+    // kindDescriptors[kindID]
+    const id = nextInstanceIDs.get(kindID);
+    assert(id !== undefined);
+    const next = id + 1;
+    nextInstanceIDs.set(kindID, next);
+    if (durable) {
+      const descriptor = kindIDToDescriptor.get(kindID);
+      assert(descriptor);
+      descriptor.nextInstanceID = next;
+      syscall.vatstoreSet(`vom.dkind.${kindID}`, JSON.stringify(descriptor));
+    }
+    return id;
+  }
+
   function defineKind(tag, init, behavior, options) {
     const kindID = `${allocateExportID()}`;
     syscall.vatstoreSet(`vom.vkind.${kindID}`, JSON.stringify({ kindID, tag }));
+    nextInstanceIDs.set(kindID, 1);
     return defineKindInternal(
       kindID,
       tag,
@@ -776,6 +808,7 @@ export function makeVirtualObjectManager(
   function defineKindMulti(tag, init, behavior, options) {
     const kindID = `${allocateExportID()}`;
     syscall.vatstoreSet(`vom.vkind.${kindID}`, JSON.stringify({ kindID, tag }));
+    nextInstanceIDs.set(kindID, 1);
     return defineKindInternal(
       kindID,
       tag,
@@ -787,28 +820,20 @@ export function makeVirtualObjectManager(
     );
   }
 
-  let kindIDID;
-  const kindDescriptors = new WeakMap();
-  const definedDurableKinds = new Set(); // kindID
-
-  function initializeKindHandleKind() {
-    kindIDID = syscall.vatstoreGet('kindIDID');
-    if (!kindIDID) {
-      kindIDID = `${allocateExportID()}`;
-      syscall.vatstoreSet('kindIDID', kindIDID);
-    }
-    vrm.registerKind(kindIDID, reanimateDurableKindID, () => null, true);
-  }
-
   function reanimateDurableKindID(vobjID) {
-    const { subid: kindID } = parseVatSlot(vobjID);
+    const kindID = `${parseVatSlot(vobjID).subid}`;
     const raw = syscall.vatstoreGet(`vom.dkind.${kindID}`);
     assert(raw, X`unknown kind ID ${kindID}`);
-    const durableKindDescriptor = harden(JSON.parse(raw));
+    const durableKindDescriptor = JSON.parse(raw);
     const kindHandle = Far('kind', {});
     linkToCohort.set(Object.getPrototypeOf(kindHandle), kindHandle);
     unweakable.add(Object.getPrototypeOf(kindHandle));
-    kindDescriptors.set(kindHandle, durableKindDescriptor);
+    kindHandleToID.set(kindHandle, kindID);
+    // we load the descriptor (including .nextInstanceID) every time
+    // the vat makes a new DurableKindHandle representative (during
+    // deserialization). The handle is held weakly and can be dropped,
+    // but the KindID-to-descriptor mapping remains in memory.
+    kindIDToDescriptor.set(kindID, durableKindDescriptor);
     return kindHandle;
   }
 
@@ -816,11 +841,12 @@ export function makeVirtualObjectManager(
     assert(kindIDID, `initializeKindHandleKind not called yet`);
     const kindID = `${allocateExportID()}`;
     const kindIDvref = `o+${kindIDID}/${kindID}`;
-    const durableKindDescriptor = harden({ kindID, tag });
+    const durableKindDescriptor = { kindID, tag, nextInstanceID: 1 };
     const kindHandle = Far('kind', {});
     linkToCohort.set(Object.getPrototypeOf(kindHandle), kindHandle);
     unweakable.add(Object.getPrototypeOf(kindHandle));
-    kindDescriptors.set(kindHandle, durableKindDescriptor);
+    kindHandleToID.set(kindHandle, kindID);
+    kindIDToDescriptor.set(kindID, durableKindDescriptor);
     registerValue(kindIDvref, kindHandle, false);
     syscall.vatstoreSet(
       `vom.dkind.${kindID}`,
@@ -830,13 +856,16 @@ export function makeVirtualObjectManager(
   };
 
   function defineDurableKind(kindHandle, init, behavior, options) {
-    const durableKindDescriptor = kindDescriptors.get(kindHandle);
+    assert(kindHandleToID.has(kindHandle), `unknown handle ${kindHandle}`);
+    const kindID = kindHandleToID.get(kindHandle);
+    const durableKindDescriptor = kindIDToDescriptor.get(kindID);
     assert(durableKindDescriptor);
-    const { kindID, tag } = durableKindDescriptor;
+    const { tag, nextInstanceID } = durableKindDescriptor;
     assert(
       !definedDurableKinds.has(kindID),
       `redefinition of durable kind "${tag}"`,
     );
+    nextInstanceIDs.set(kindID, nextInstanceID);
     const maker = defineKindInternal(
       kindID,
       tag,
@@ -851,13 +880,16 @@ export function makeVirtualObjectManager(
   }
 
   function defineDurableKindMulti(kindHandle, init, behavior, options) {
-    const durableKindDescriptor = kindDescriptors.get(kindHandle);
+    assert(kindHandleToID.has(kindHandle), `unknown handle ${kindHandle}`);
+    const kindID = kindHandleToID.get(kindHandle);
+    const durableKindDescriptor = kindIDToDescriptor.get(kindID);
     assert(durableKindDescriptor);
-    const { kindID, tag } = durableKindDescriptor;
+    const { tag, nextInstanceID } = durableKindDescriptor;
     assert(
       !definedDurableKinds.has(kindID),
       `redefinition of durable kind "${tag}"`,
     );
+    nextInstanceIDs.set(kindID, nextInstanceID);
     const maker = defineKindInternal(
       kindID,
       tag,

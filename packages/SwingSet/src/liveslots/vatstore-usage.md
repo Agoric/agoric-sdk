@@ -98,6 +98,7 @@ The KindHandle is a durable virtual object of a special internal Kind. This is t
 
 For each virtual object kind that is defined we store a metadata record for purposes of scanning directly through the defined kinds when a vat is stopped or upgraded.  For durable kinds this record is stored in `vom.dkind.${kindID}`; for non-durable kinds it is stored in `vom.vkind.${kindID}`.  Currently this metadata takes the form of a JSON-serialized record `{ kindID, tag }`, where the `kindID` property is the kind ID (redundantly) and `tag` is the tag string as provided in the `defineKind` or `makeKindHandle` call.
 
+Durable kinds need to store their `nextInstanceID` in the DB, so subsequent versions can begin allocating new instances from a non-overlapping starting point. For durable kinds, the metadata record is `{ kindID, tag, nextInstanceID }`, and is updated after every durable-object allocation.
 
 # Virtual/Durable Collections (aka Stores)
 

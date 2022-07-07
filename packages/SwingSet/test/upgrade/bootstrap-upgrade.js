@@ -133,7 +133,10 @@ export const buildRootObject = () => {
       await insistMissing(retain.rem3);
 
       resolve(`message for your predecessor, don't freak out`);
-      return { version, data, remoerr, ...parameters };
+
+      const newDur = await E(ulrikRoot).getNewDurandal();
+
+      return { version, data, remoerr, newDur, ...parameters };
     },
 
     buildV1WithLostKind: async () => {
