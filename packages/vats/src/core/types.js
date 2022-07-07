@@ -136,7 +136,7 @@
  *   issuer: |
  *     'RUN' | 'BLD' | 'Attestation' | 'AUSD',
  *   installation: |
- *     'centralSupply' | 'mintHolder' | 'singleWallet' |
+ *     'centralSupply' | 'mintHolder' | 'singleWallet' | 'walletFactory' |
  *     'feeDistributor' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'amm' | 'VaultFactory' | 'liquidate' | 'runStake' |
@@ -171,6 +171,7 @@
  *     produce: Record<WellKnownName['installation'], Producer<Installation>>,
  *     consume: Record<WellKnownName['installation'], Promise<Installation<unknown>>> & {
  *       singleWallet: Promise<Installation<import('@agoric/smart-wallet/src/singleWallet.js').start>>,
+ *       walletFactory: Promise<Installation<import('@agoric/smart-wallet/src/walletFactory.js').start>>,
  *     },
  *   },
  *   instance:{

@@ -12,6 +12,10 @@ const sourceToBundle = [
     `@agoric/wallet/contract/src/singleWallet.js`,
     `../bundles/bundle-singleWallet.js`,
   ],
+  [
+    `@agoric/wallet/contract/src/walletFactory.js`,
+    `../bundles/bundle-walletFactory.js`,
+  ],
 ];
 
 createBundles(sourceToBundle, dirname);
