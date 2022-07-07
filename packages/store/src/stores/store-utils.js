@@ -114,15 +114,15 @@ harden(provide);
  * the key.) This prevents that race condition by immediately storing a Promise
  * for the maker in an ephemeral store.
  *
- * Upon termination, the ephemeral store of pending makes will be lost. It's
- * possible for termination to happen after the make completes and before it
- * reaches durable storage.
+ * When the `store` argument is durable storage, note that it's possible for
+ * termination to happen after the make completes and before it reaches durable
+ * storage.
  *
  * @template K
  * @template V
- * @param {MapStore<K, V>} durableStore
+ * @param {WeakMapStore<K, V>} store
  */
-export const makeAtomicProvider = durableStore => {
+export const makeAtomicProvider = store => {
   /** @type {Map<K, Promise<V>>} */
   const pending = new Map();
 
@@ -139,13 +139,13 @@ export const makeAtomicProvider = durableStore => {
    * @returns {Promise<V>}
    */
   const provideAsync = (key, makeValue, finishValue) => {
-    if (durableStore.has(key)) {
-      return Promise.resolve(durableStore.get(key));
+    if (store.has(key)) {
+      return Promise.resolve(store.get(key));
     }
     if (!pending.has(key)) {
       const valP = makeValue(key)
         .then(v => {
-          durableStore.init(key, v);
+          store.init(key, v);
           return v;
         })
         .then(v => {
