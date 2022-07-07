@@ -243,8 +243,8 @@ const getLiquidationConfig = directorParamManager => ({
  *
  * @param {State['directorParamManager']} govParams
  * @param {VaultManager} vaultManager
- * @param {*} oldInstall
- * @param {*} oldTerms
+ * @param {Installation<unknown>} oldInstall
+ * @param {unknown} oldTerms
  */
 const watchGovernance = (govParams, vaultManager, oldInstall, oldTerms) => {
   const subscription = govParams.getSubscription();
