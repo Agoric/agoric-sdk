@@ -13,41 +13,63 @@ import '../src/types.js';
 test('race', async t => {
   const store = makeScalarMapStore('foo');
   const provider = makeAtomicProvider(store);
+
   let i = 0;
-  const makeValue = k =>
+  const make = k =>
     // in Node 15+ use timers/promise
     new Promise(resolve => setTimeout(() => resolve(`${k} ${(i += 1)}`), 10));
 
-  t.is(await provider.provideAsync('a', makeValue), 'a 1');
-  t.is(await provider.provideAsync('a', makeValue), 'a 1');
+  let finishCalled = 0;
+  const finish = () => {
+    finishCalled += 1;
+    return Promise.resolve();
+  };
 
-  provider.provideAsync('b', makeValue);
-  provider.provideAsync('b', makeValue);
-  t.is(await provider.provideAsync('b', makeValue), 'b 2');
-  t.is(await provider.provideAsync('b', makeValue), 'b 2');
+  t.is(await provider.provideAsync('a', make, finish), 'a 1');
+  t.is(await provider.provideAsync('a', make, finish), 'a 1');
+  t.is(finishCalled, 1);
+
+  provider.provideAsync('b', make, finish);
+  provider.provideAsync('b', make, finish);
+  t.is(await provider.provideAsync('b', make, finish), 'b 2');
+  t.is(await provider.provideAsync('b', make, finish), 'b 2');
+  t.is(finishCalled, 2);
 });
 
 test('reject', async t => {
   const store = makeScalarMapStore('foo');
   const provider = makeAtomicProvider(store);
-  let i = 0;
-  const makeValue = k => Promise.reject(Error(`failure ${k} ${(i += 1)}`));
 
-  await t.throwsAsync(provider.provideAsync('a', makeValue), {
+  let i = 0;
+  const makeFail = k => Promise.reject(Error(`failure ${k} ${(i += 1)}`));
+
+  let finishCalled = 0;
+  const finish = () => {
+    finishCalled += 1;
+    return Promise.resolve();
+  };
+
+  await t.throwsAsync(provider.provideAsync('a', makeFail, finish), {
     message: 'failure a 1',
   });
-  await t.throwsAsync(provider.provideAsync('a', makeValue), {
+  await t.throwsAsync(provider.provideAsync('a', makeFail, finish), {
     // makeValue runs again (i += 1)
     message: 'failure a 2',
   });
 
-  await t.throwsAsync(provider.provideAsync('b', makeValue), {
+  await t.throwsAsync(provider.provideAsync('b', makeFail, finish), {
     message: 'failure b 3',
   });
-
-  await t.throwsAsync(provider.provideAsync('b', makeValue), {
+  await t.throwsAsync(provider.provideAsync('b', makeFail, finish), {
     message: 'failure b 4',
   });
+
+  t.is(finishCalled, 0);
+
+  // success after failure
+  const makeValue = () => Promise.resolve('success');
+  t.is(await provider.provideAsync('a', makeValue, finish), 'success');
+  t.is(finishCalled, 1);
 });
 
 test('far keys', async t => {

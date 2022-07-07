@@ -134,8 +134,8 @@ export const makeAtomicProvider = durableStore => {
    * that key, and return it.
    *
    * @param {K} key
-   * @param {(key: K) => Promise<V>} makeValue
-   * @param {(key: K, value: V) => Promise<void>} [finishValue]
+   * @param {(key: K) => Promise<V>} makeValue make the value for the store if it hasn't been made yet or the last make failed
+   * @param {(key: K, value: V) => Promise<void>} [finishValue] runs exactly once after a new value is added to the store
    * @returns {Promise<V>}
    */
   const provideAsync = (key, makeValue, finishValue) => {
