@@ -161,12 +161,6 @@ const initState = (
 };
 
 // TODO put on machineFacet for use again in publicFacet
-/**
- * Make a loan in the vaultManager based on the collateral type.
- *
- * @deprecated
- * @param {MethodContext} context
- */
 const getCollaterals = async ({ state }) => {
   const { collateralTypes } = state;
   // should be collateralTypes.map((vm, brand) => ({
