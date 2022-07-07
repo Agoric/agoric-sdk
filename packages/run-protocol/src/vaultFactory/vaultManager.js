@@ -295,7 +295,11 @@ const helperBehavior = {
       compoundedInterest: state.compoundedInterest,
       interestRate,
       latestInterestUpdate: state.latestInterestUpdate,
-      // XXX move to governance and type as present with null
+      // NB: the liquidator is determined by governance but the resulting
+      // instance is a concern of the manager. The param manager knows only
+      // about the installation and terms of the liqudation contract. We could
+      // have another notifier for state downstream of governance changes, but
+      // that doesn't seem to be cost-effective.
       liquidatorInstance: state.liquidatorInstance,
     });
     state.assetUpdater.updateState(payload);

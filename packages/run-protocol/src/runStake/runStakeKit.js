@@ -164,13 +164,10 @@ const helperBehavior = {
    * @param {MethodContext} context
    *  @param {boolean} newActive */
   snapshotState: ({ state, facets }, newActive) => {
-    const { debtSnapshot: debt, interestSnapshot: interest, manager } = state;
+    const { debtSnapshot: debt, interestSnapshot: interest } = state;
     const { helper } = facets;
     /** @type {VaultNotification} */
     const result = harden({
-      // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
-      interestRate: manager.getInterestRate(),
-      liquidationRatio: manager.getMintingRatio(),
       debtSnapshot: { debt, interest },
       locked: helper.getCollateralAmount(),
       // newPhase param is so that makeTransferInvitation can finish without setting the vault's phase
