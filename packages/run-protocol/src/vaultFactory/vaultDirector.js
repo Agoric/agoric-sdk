@@ -474,8 +474,6 @@ const publicBehavior = {
   getMetrics: ({ state }) => state.metricsSubscription,
 
   /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
-  makeLoanInvitation: makeVaultInvitation,
-  /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
   makeVaultInvitation,
   getCollaterals,
   /** @param {MethodContext} context */
