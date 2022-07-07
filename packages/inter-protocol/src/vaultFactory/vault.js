@@ -8,7 +8,11 @@ import {
   floorMultiplyBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
-import { defineKindMulti, pickFacet } from '@agoric/vat-data';
+import {
+  defineDurableKindMulti,
+  makeKindHandle,
+  pickFacet,
+} from '@agoric/vat-data';
 import { makeTracer } from '../makeTracer.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { makeVaultKit } from './vaultKit.js';
@@ -777,10 +781,14 @@ const selfBehavior = {
   },
 };
 
-const makeVaultBase = defineKindMulti('Vault', initState, {
-  self: selfBehavior,
-  helper: helperBehavior,
-});
+const makeVaultBase = defineDurableKindMulti(
+  makeKindHandle('Vault'),
+  initState,
+  {
+    self: selfBehavior,
+    helper: helperBehavior,
+  },
+);
 
 /**
  * @param {ZCF} zcf

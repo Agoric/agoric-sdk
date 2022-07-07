@@ -3,7 +3,7 @@
  */
 // @ts-check
 import { makeStoredPublishKit } from '@agoric/notifier';
-import { defineKindMulti } from '@agoric/vat-data';
+import { defineDurableKindMulti, makeKindHandle } from '@agoric/vat-data';
 import '@agoric/zoe/exported.js';
 
 const { details: X } = assert;
@@ -86,8 +86,8 @@ const holder = {
 
 const behavior = { helper, holder };
 
-export const makeVaultHolder = defineKindMulti(
-  'VaultHolder',
+export const makeVaultHolder = defineDurableKindMulti(
+  makeKindHandle('VaultHolder'),
   initState,
   behavior,
 );

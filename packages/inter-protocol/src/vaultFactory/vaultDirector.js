@@ -17,7 +17,7 @@ import { Far } from '@endo/marshal';
 
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
-import { defineKindMulti } from '@agoric/vat-data';
+import { defineDurableKindMulti, makeKindHandle } from '@agoric/vat-data';
 import { makeStoredPublisherKit, observeIteration } from '@agoric/notifier';
 import { makeVaultManager } from './vaultManager.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
@@ -547,8 +547,8 @@ const finish = async ({ state }) => {
  * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} directorParamManager
  * @param {ZCFMint<"nat">} debtMint
  */
-const makeVaultDirector = defineKindMulti(
-  'VaultDirector',
+const makeVaultDirector = defineDurableKindMulti(
+  makeKindHandle('VaultDirector'),
   initState,
   behavior,
   { finish },

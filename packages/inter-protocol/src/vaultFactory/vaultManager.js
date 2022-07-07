@@ -18,7 +18,11 @@ import '@agoric/zoe/exported.js';
 import { AmountMath } from '@agoric/ertp';
 import { Nat } from '@agoric/nat';
 import { makeStoredPublishKit, observeNotifier } from '@agoric/notifier';
-import { defineKindMulti, pickFacet } from '@agoric/vat-data';
+import {
+  defineDurableKindMulti,
+  makeKindHandle,
+  pickFacet,
+} from '@agoric/vat-data';
 import {
   assertProposalShape,
   ceilDivideBy,
@@ -861,8 +865,8 @@ const behavior = {
   self: selfBehavior,
 };
 
-const makeVaultManagerKit = defineKindMulti(
-  'VaultManagerKit',
+const makeVaultManagerKit = defineDurableKindMulti(
+  makeKindHandle('VaultManagerKit'),
   initState,
   behavior,
   {
