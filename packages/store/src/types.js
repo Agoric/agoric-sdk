@@ -97,14 +97,22 @@
  * of them as standard options. A given store maker should document which
  * options it supports, as well as its positions on dimensions for which it
  * does not support options.
- * @property {boolean=} longLived Which way to optimize a weak store. True means
+ * @property {boolean} [longLived=true] Which way to optimize a weak store. True means
  * that we expect this weak store to outlive most of its keys, in which
  * case we internally may use a JavaScript `WeakMap`. Otherwise we internally
  * may use a JavaScript `Map`.
  * Defaults to true, so please mark short lived stores explicitly.
- * @property {boolean=} durable  The contents of this store survive termination
+ * @property {boolean} [durable=false]  The contents of this store survive termination
  *   of its containing process, allowing for restart or upgrade but at the cost
  *   of forbidding storage of references to ephemeral data.  Defaults to false.
+ * @property {boolean} [fakeDurable=false]  This store pretends to be a durable store
+ *   but does not enforce that the things stored in it actually be themselves
+ *   durable (whereas an actual durable store would forbid storage of such
+ *   items).  This is in service of allowing incremental transition to use of
+ *   durable stores, to enable normal operation and testing when some stuff
+ *   intended to eventually be durable has not yet been made durable.  A store
+ *   marked as fakeDurable will appear to operate normally but any attempt to
+ *   upgrade its containing vat will fail with an error.
  * @property {Pattern=} keySchema
  * @property {Pattern=} valueSchema
  */
