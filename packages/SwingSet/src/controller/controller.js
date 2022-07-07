@@ -240,6 +240,8 @@ export async function makeSwingsetController(
   // see https://github.com/Agoric/SES-shim/issues/292 for details
   harden(console);
 
+  writeSlogObject({ type: 'kernel-init-start' });
+
   writeSlogObject({ type: 'bundle-kernel-start' });
   const { kernelBundle = await buildKernelBundle() } = runtimeOptions;
   writeSlogObject({ type: 'bundle-kernel-finish' });
@@ -499,6 +501,8 @@ export async function makeSwingsetController(
       return kpid;
     },
   });
+
+  writeSlogObject({ type: 'kernel-init-finish' });
 
   return controller;
 }
