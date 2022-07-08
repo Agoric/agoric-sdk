@@ -672,7 +672,7 @@ const collateralBehavior = {
   makeVaultInvitation: ({ state: { zcf }, facets: { self } }) =>
     zcf.makeInvitation(self.makeVaultKit, 'MakeVault'),
   /** @param {MethodContext} context */
-  getNotifier: ({ state }) => state.assetSubscriber,
+  getSubscriber: ({ state }) => state.assetSubscriber,
   /** @param {MethodContext} context */
   getMetrics: ({ state }) => state.metricsSubscription,
   /** @param {MethodContext} context */
