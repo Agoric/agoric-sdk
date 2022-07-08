@@ -6,6 +6,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeAsyncIterableFromNotifier } from './asyncIterableAdaptor.js';
+import { subscribeLatest } from './publish-kit.js';
 
 import './types.js';
 
@@ -152,7 +153,106 @@ export const makeNotifierKit = (...initialStateArr) => {
 };
 
 /**
- * Adaptor from async iterable to notifier.
+ * @template T
+ * @param {ERef<Subscriber<T>>} subscriberP
+ * @returns {Promise<Notifier<T>>}
+ */
+export const makeNotifierFromSubscriber = async subscriberP => {
+  const iterable = subscribeLatest(subscriberP);
+  const iterator = iterable[Symbol.asyncIterator]();
+
+  /** @type {undefined | Promise<{value, updateCount}>} */
+  let latestResultOutP;
+  /** @type {undefined | Promise<{value, updateCount}>} */
+  let nextResultOutP;
+  /** @type {UpdateCount & bigint} */
+  let latestUpdateCount = 0n;
+  let finished = false;
+
+  /**
+   * @param {Promise<IteratorResult<any, any>>} resultInP
+   * @returns {Promise<{value, updateCount}>}
+   */
+  function translateInboundResult(resultInP) {
+    return resultInP.then(
+      ({ value, done }) => {
+        // Shift the result-out promises.
+        latestResultOutP = nextResultOutP;
+        nextResultOutP = undefined;
+
+        if (done) {
+          finished = true;
+
+          // Final results have undefined updateCount.
+          return harden({ value, updateCount: undefined });
+        }
+
+        latestUpdateCount += 1n;
+        return harden({ value, updateCount: latestUpdateCount });
+      },
+      rejection => {
+        // Shift the result-out promises.
+        latestResultOutP = nextResultOutP;
+        nextResultOutP = undefined;
+
+        finished = true;
+        throw rejection;
+      },
+    );
+  }
+
+  /**
+   * @template T
+   * @type {BaseNotifier<T>}
+   */
+  const baseNotifier = Far('baseNotifier', {
+    getUpdateSince(updateCount = -1n) {
+      assert(
+        updateCount <= latestUpdateCount,
+        'argument must be a previously-issued updateCount.',
+      );
+
+      // If we don't yet have a promise for the latest outbound result, create it.
+      if (!latestResultOutP) {
+        nextResultOutP = translateInboundResult(iterator.next());
+        latestResultOutP = nextResultOutP;
+      }
+
+      let resultP =
+        updateCount < latestUpdateCount || finished
+          ? latestResultOutP
+          : nextResultOutP;
+
+      if (!resultP) {
+        nextResultOutP = translateInboundResult(iterator.next());
+        resultP = nextResultOutP;
+      }
+
+      // Each returned promise is unique.
+      return resultP.then();
+    },
+  });
+
+  /** @type {Notifier<T>} */
+  const notifier = Far('notifier', {
+    ...makeAsyncIterableFromNotifier(baseNotifier),
+    ...baseNotifier,
+
+    /**
+     * Use this to distribute a Notifier efficiently over the network,
+     * by obtaining this from the Notifier to be replicated, and applying
+     * `makeNotifier` to it at the new site to get an equivalent local
+     * Notifier at that site.
+     */
+    getSharableNotifierInternals: () => baseNotifier,
+    getStoreKey: () => harden({ notifier }),
+  });
+  return notifier;
+};
+harden(makeNotifierFromSubscriber);
+
+/**
+ * Deprecated adaptor from async iterable to notifier.
  *
  * @template T
  * @param {ERef<AsyncIterable<T>>} asyncIterableP
