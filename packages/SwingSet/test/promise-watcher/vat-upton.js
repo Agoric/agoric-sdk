@@ -2,29 +2,16 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import {
-  makeKindHandle,
+  provideKindHandle,
   providePromiseWatcher,
   defineDurableKindMulti,
   watchPromise,
 } from '@agoric/vat-data';
 
-const provideStoredObj = (key, mapStore, makeObj) => {
-  if (mapStore.has(key)) {
-    return mapStore.get(key);
-  } else {
-    const obj = makeObj();
-    mapStore.init(key, obj);
-    return obj;
-  }
-};
-
-const provideKindHandle = (tag, mapStore) =>
-  provideStoredObj(tag, mapStore, () => makeKindHandle(tag));
-
 export function buildRootObject(vatPowers, vatParameters, baggage) {
   const log = vatPowers.testLog;
-  const pwHandle = provideKindHandle('pwhandle', baggage);
-  const dkHandle = provideKindHandle('dkhandle', baggage);
+  const pwHandle = provideKindHandle(baggage, 'pwhandle');
+  const dkHandle = provideKindHandle(baggage, 'dkhandle');
 
   // prettier-ignore
   const pw = providePromiseWatcher(
