@@ -2,13 +2,18 @@
 
 import { makeWeakStore } from '@agoric/store';
 import { ToFarFunction } from '@endo/marshal';
-import { isDurableObject, provideDurableWeakMapStore } from '@agoric/vat-data';
+import { canBeDurable, provideDurableWeakMapStore } from '@agoric/vat-data';
 
 import { defineDurableHandle } from '../makeHandle.js';
 
 export const makeOfferHandlerStorage = zcfBaggage => {
   const makeInvitationHandle = defineDurableHandle(zcfBaggage, 'Invitation');
   /** @type {WeakStore<InvitationHandle, OfferHandler>} */
+
+  // ZCF needs to ephemerally hold on to ephemeral handlers, and durably hold
+  // onto durable handlers, so we keep two stores, and store it in the right
+  // one, and look for them in both. If Zoe restarts, the ephemeral ones will
+  // be lost, and the durable ones will survive.
   const invitationHandleToEphemeralHandler = makeWeakStore('invitationHandle');
   /** @type {WeakStore<InvitationHandle, OfferHandler>} */
   const invitationHandleToDurableHandler = provideDurableWeakMapStore(
@@ -21,7 +26,7 @@ export const makeOfferHandlerStorage = zcfBaggage => {
     if (typeof offerHandler === 'function') {
       offerHandler = ToFarFunction('offerHandler', offerHandler);
     }
-    const invitationHandleToHandler = isDurableObject(offerHandler)
+    const invitationHandleToHandler = canBeDurable(offerHandler)
       ? invitationHandleToDurableHandler
       : invitationHandleToEphemeralHandler;
 

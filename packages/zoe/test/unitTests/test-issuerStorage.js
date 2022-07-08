@@ -3,9 +3,16 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeIssuerKit, AssetKind } from '@agoric/ertp';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
-import { makeIssuerStorage } from '../../src/issuerStorage.js';
+import { makeIssuerStorage as makeIssuerStorageOrig } from '../../src/issuerStorage.js';
 import { makeIssuerRecord } from '../../src/issuerRecord.js';
+
+const makeIssuerStorage = () => {
+  return makeIssuerStorageOrig(
+    makeScalarBigMapStore('zcfBaggage', { durable: true }),
+  );
+};
 
 const setupIssuersForTest = () => {
   const currencyKit = makeIssuerKit(

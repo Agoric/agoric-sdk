@@ -1,9 +1,6 @@
 // @ts-check
 
-import {
-  makeScalarBigMapStore,
-  provideDurableWeakMapStore,
-} from '@agoric/vat-data';
+import { provideDurableWeakMapStore } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 
 import { arrayToObj } from './objArrayConversion.js';
@@ -17,9 +14,7 @@ const STORAGE_INSTANTIATED_KEY = 'IssuerStorageInstantiated';
  *
  * @param {import('@agoric/vat-data').Baggage} zcfBaggage
  */
-export const makeIssuerStorage = (
-  zcfBaggage = makeScalarBigMapStore('zcfBaggage', { durable: true }),
-) => {
+export const makeIssuerStorage = zcfBaggage => {
   /** @type {WeakStore<Brand,IssuerRecord>} */
   const brandToIssuerRecord = provideDurableWeakMapStore(
     zcfBaggage,

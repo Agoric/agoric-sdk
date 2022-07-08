@@ -8,6 +8,7 @@ import {
   zcfBundleCap,
 } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 
 import { makeZoeKit } from '@agoric/zoe';
 import { buildRootObject } from '../src/core/boot.js';
@@ -113,7 +114,9 @@ const testRole = (ROLE, governanceActions) => {
       assert(name);
       switch (name) {
         case 'zcf':
-          return fakeVatAdmin.createVat(zcfBundleCap);
+          return fakeVatAdmin.createVat(zcfBundleCap, {
+            vatParameters: { contractBundleCap: makeHandle('FakeBundleCap') },
+          });
         default: {
           const buildRoot = vatRoots[name];
           if (!buildRoot) {
