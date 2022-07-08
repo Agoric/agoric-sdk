@@ -161,13 +161,105 @@ export const makeNotifierKit = (...initialStateArr) => {
 export const makeNotifierFromAsyncIterable = asyncIterableP => {
   const iteratorP = E(asyncIterableP)[Symbol.asyncIterator]();
 
-  /** @type {Promise<UpdateRecord<T>>|undefined} */
-  let optNextPromise;
+  /** @type {WeakMap<Promise<{value: any, done: boolean}>, Promise<{value, updateCount}>>} */
+  const resultPromiseMap = new WeakMap();
+  /** @type {Promise<{value: any, done: boolean}>} */
+  let latestResultInP;
+  /** @type {undefined | Promise<{value, updateCount}>} */
+  let latestResultOutP;
+  /** @type {undefined | Promise<{value, updateCount}>} */
+  let nextResultOutP;
+  /** @type {undefined | ((resolution?: any) => void)} */
+  let nextResultInR;
   /** @type {UpdateCount & bigint} */
-  let currentUpdateCount = 0n;
-  /** @type {ERef<UpdateRecord<T>>|undefined} */
-  let currentResponse;
-  let final = false;
+  let latestUpdateCount = 0n;
+  let finished = false;
+  let finalResultOut;
+
+  // Consume results as soon as their predecessors settle.
+  (async function consumeEagerly() {
+    try {
+      let done = false;
+      while (!done) {
+        // TODO: Fix this typing friction.
+        // Possibly related: https://github.com/microsoft/TypeScript/issues/38479
+        // @ts-expect-error Tolerate done: undefined.
+        latestResultInP = E(iteratorP).next();
+        if (nextResultInR) {
+          nextResultInR(latestResultInP);
+          nextResultInR = undefined;
+        }
+        // eslint-disable-next-line no-await-in-loop
+        const latestResultIn = await latestResultInP;
+        ({ done } = latestResultIn);
+      }
+    } catch (err) {} // eslint-disable-line no-empty
+    if (nextResultInR) {
+      // @ts-expect-error It really is fine to use latestResultInP here.
+      nextResultInR(latestResultInP);
+      nextResultInR = undefined;
+    }
+  })();
+
+  // Create outbound results on-demand, but at most once.
+  /**
+   * @param {Promise<{value: any, done: boolean}>} resultInP
+   * @returns {Promise<{value, updateCount}>}
+   */
+  function translateInboundResult(resultInP) {
+    return resultInP.then(
+      ({ value, done }) => {
+        // If this is resolving a post-finish request, preserve the final result.
+        if (finished) {
+          return finalResultOut;
+        }
+
+        if (done) {
+          finished = true;
+
+          // If there is a pending next-value promise, resolve it.
+          if (nextResultInR) {
+            nextResultInR(/* irrelevant becaused finished is true */);
+            nextResultInR = undefined;
+          }
+
+          // Final results have undefined updateCount.
+          finalResultOut = harden({ value, updateCount: undefined });
+          return finalResultOut;
+        }
+
+        // Discard any pending promise.
+        // eslint-disable-next-line no-multi-assign
+        latestResultOutP = nextResultOutP = nextResultInR = undefined;
+
+        latestUpdateCount += 1n;
+        return harden({ value, updateCount: latestUpdateCount });
+      },
+      rejection => {
+        if (!finished) {
+          finished = true;
+
+          // If there is a pending next-value promise, resolve it.
+          if (nextResultInR) {
+            nextResultInR(resultInP);
+            nextResultInR = undefined;
+          }
+        }
+        throw rejection;
+      },
+    );
+  }
+  function getLatestResultOutP() {
+    if (!latestResultOutP) {
+      assert(latestResultInP !== undefined);
+      latestResultOutP = resultPromiseMap.get(latestResultInP);
+      if (!latestResultOutP) {
+        latestResultOutP = translateInboundResult(latestResultInP);
+        resultPromiseMap.set(latestResultInP, latestResultOutP);
+      }
+    }
+    return latestResultOutP;
+  }
 
   /**
    * @template T
@@ -175,49 +267,37 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
    */
   const baseNotifier = Far('baseNotifier', {
     getUpdateSince(updateCount = -1n) {
-      if (updateCount < currentUpdateCount) {
-        if (currentResponse) {
-          return Promise.resolve(currentResponse);
-        }
-      } else if (updateCount !== currentUpdateCount) {
-        throw new Error(
-          'getUpdateSince argument must be a previously-issued updateCount.',
-        );
+      assert(
+        updateCount <= latestUpdateCount,
+        'argument must be a previously-issued updateCount.',
+      );
+
+      // If we don't yet have an inbound result or a promise for an outbound result,
+      // create the latter.
+      if (!latestResultInP && !latestResultOutP) {
+        const { promise, resolve } = makePromiseKit();
+        nextResultInR = resolve;
+        nextResultOutP = translateInboundResult(promise);
+        latestResultOutP = nextResultOutP;
       }
 
-      // Return a final response if we have one, otherwise a promise for the next state.
-      if (final) {
-        assert(currentResponse !== undefined);
-        return Promise.resolve(currentResponse);
+      if (updateCount < latestUpdateCount) {
+        // Each returned promise is unique.
+        return getLatestResultOutP().then();
       }
-      if (!optNextPromise) {
-        const nextIterResultP = E(iteratorP).next();
-        optNextPromise = E.when(
-          nextIterResultP,
-          ({ done, value }) => {
-            assert(!final);
-            if (done) {
-              final = true;
-            }
-            currentUpdateCount += 1n;
-            currentResponse = harden({
-              value,
-              updateCount: done ? undefined : currentUpdateCount,
-            });
-            optNextPromise = undefined;
-            return currentResponse;
-          },
-          _reason => {
-            final = true;
-            currentResponse =
-              /** @type {Promise<UpdateRecord<T>>} */
-              (nextIterResultP);
-            optNextPromise = undefined;
-            return currentResponse;
-          },
-        );
+
+      if (!nextResultOutP) {
+        if (finished) {
+          nextResultOutP = getLatestResultOutP();
+        } else {
+          const { promise, resolve } = makePromiseKit();
+          nextResultInR = resolve;
+          nextResultOutP = translateInboundResult(promise);
+        }
       }
-      return optNextPromise;
+
+      // Each returned promise is unique.
+      return nextResultOutP.then();
     },
   });
 

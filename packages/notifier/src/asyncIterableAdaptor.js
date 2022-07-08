@@ -38,49 +38,34 @@ import './types.js';
 export const makeAsyncIterableFromNotifier = notifierP => {
   return Far('asyncIterableFromNotifier', {
     [Symbol.asyncIterator]: () => {
+      /** @type {boolean} */
+      let done = false;
       /** @type {UpdateCount} */
       let localUpdateCount;
-      /** @type {Promise<{value: T, done: boolean}> | undefined} */
-      let myIterationResultP;
+      /** @type {{value: T, done: boolean}} */
+      let myIterationResult;
       return Far('asyncIteratorFromNotifier', {
-        next: () => {
-          if (!myIterationResultP) {
-            // In this adaptor, once `next()` is called and returns an
-            // unresolved promise, `myIterationResultP`, and until
-            // `myIterationResultP` is fulfilled with an
-            // iteration result, further `next()` calls will return the same
-            // `myIterationResultP` promise again without asking the notifier
-            // for more updates. If there's already an unanswered ask in the
-            // air, all further asks should just reuse the result of that one.
-            //
-            // This reuse behavior is only needed for code that uses the async
-            // iterator protocol explicitly. When this async iterator is
-            // consumed by a for/await/of loop, `next()` will only be called
-            // after the promise for the previous iteration result has
-            // fulfilled. If it fulfills with `done: true`, the for/await/of
-            // loop will never call `next()` again.
-            //
-            // See
+        next: async () => {
+          // Request another result only if the notifier has not terminated
+          // (in which case the final result is used for all subsequent
+          // `next()` calls).
+          if (!done) {
+            // This adaptor waits for each result promise to settle
+            // before returning its own.
+            // The eager consumption inherent to a notifier is not
+            // compatible with direct use of the async iterator protocol
+            // to collect multiple pending results, even though such use
+            // cases do exist in general as documented at
             // https://2ality.com/2016/10/asynchronous-iteration.html#queuing-next()-invocations
-            // for an explicit use that sends `next()` without waiting.
-            myIterationResultP = E(notifierP)
+            myIterationResult = await E(notifierP)
               .getUpdateSince(localUpdateCount)
               .then(({ value, updateCount }) => {
                 localUpdateCount = updateCount;
-                const done = localUpdateCount === undefined;
-                if (!done) {
-                  // Once the outstanding question has been answered, stop
-                  // using that answer, so any further `next()` questions
-                  // cause a new `getUpdateSince` request.
-                  //
-                  // But only if more answers are expected. Once the notifier
-                  // is `done`, that was the last answer so reuse it forever.
-                  myIterationResultP = undefined;
-                }
+                done = localUpdateCount === undefined;
                 return harden({ value, done });
               });
           }
-          return myIterationResultP;
+          return myIterationResult;
         },
       });
     },

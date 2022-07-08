@@ -46,8 +46,8 @@ const makeSubscriptionIterator = tailP => {
   return Far('SubscriptionIterator', {
     subscribe: () => makeSubscription(tailP),
     [Symbol.asyncIterator]: () => makeSubscriptionIterator(tailP),
-    next: () => {
-      const resultP = E.get(tailP).head;
+    next: async () => {
+      const resultP = await E.get(tailP).head;
       tailP = E.get(tailP).tail;
       Promise.resolve(tailP).catch(() => {}); // suppress unhandled rejection error
       return resultP;
