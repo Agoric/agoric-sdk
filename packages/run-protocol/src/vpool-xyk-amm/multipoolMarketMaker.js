@@ -1,34 +1,34 @@
 // @ts-check
 
-import { makeStore, makeWeakStore } from '@agoric/store';
-import { Far } from '@endo/marshal';
+import '@agoric/zoe/exported.js';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
+import { makeStore, makeWeakStore } from '@agoric/store';
+import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import {
   assertIssuerKeywords,
   offerTo,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
-import { makeAddIssuer, makeAddPoolInvitation } from './addPool.js';
-import { publicPrices } from './pool.js';
+import { Far } from '@endo/marshal';
+import { makeMakeCollectFeesInvitation } from '../collectFees.js';
+import { makeMetricsPublisherKit } from '../contractSupport.js';
+import { makeTracer } from '../makeTracer.js';
 import {
   makeMakeAddLiquidityAtRateInvitation,
   makeMakeAddLiquidityInvitation,
 } from './addLiquidity.js';
-import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity.js';
-
-import '@agoric/zoe/exported.js';
-import { makeMakeCollectFeesInvitation } from '../collectFees.js';
-import { makeMakeSwapInvitation } from './swap.js';
+import { makeAddIssuer, makeAddPoolInvitation } from './addPool.js';
 import { makeDoublePool } from './doublePool.js';
 import {
+  MIN_INITIAL_POOL_LIQUIDITY_KEY,
   POOL_FEE_KEY,
   PROTOCOL_FEE_KEY,
-  MIN_INITIAL_POOL_LIQUIDITY_KEY,
 } from './params.js';
-import { makeTracer } from '../makeTracer.js';
-import { makeMetricsPublisherKit } from '../contractSupport.js';
+import { publicPrices } from './pool.js';
+import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity.js';
+import { makeMakeSwapInvitation } from './swap.js';
 
 const { quote: q, details: X } = assert;
 
@@ -166,15 +166,13 @@ const start = async (zcf, privateArgs) => {
   const isSecondary = secondaryBrandToPool.has;
 
   // The liquidityBrand has to exist to allow the addPool Offer to specify want
-  /** @type {WeakStore<Brand,ZCFMint<'nat'>>} */
+  /** @type {WeakMapStore<Brand,ZCFMint<'nat'>>} */
   const secondaryBrandToLiquidityMint = makeWeakStore(
     'secondaryBrandToLiquidityMint',
   );
-  // To manage races in addIssuer, we keep a promise from the time of the
-  // first request until the Issuer is set up.
-  /** @type {WeakStore<Brand,ERef<Issuer<'nat'>>>} */
-  const secondaryBrandToLiquidityIssuerPromise =
-    makeWeakStore('secondaryBrand');
+  const secondaryBrandToLiquidityMintProvider = makeAtomicProvider(
+    secondaryBrandToLiquidityMint,
+  );
 
   const quoteIssuerKit = makeIssuerKit('Quote', AssetKind.SET);
 
@@ -279,8 +277,7 @@ const start = async (zcf, privateArgs) => {
   const addIssuer = makeAddIssuer(
     zcf,
     isSecondary,
-    secondaryBrandToLiquidityMint,
-    secondaryBrandToLiquidityIssuerPromise,
+    secondaryBrandToLiquidityMintProvider,
     () => {
       assert(reserveFacet, 'Must first resolveReserveFacet');
       return E(reserveFacet).addIssuerFromAmm;
