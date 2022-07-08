@@ -17,11 +17,7 @@ import '@agoric/zoe/exported.js';
 
 import { AmountMath } from '@agoric/ertp';
 import { Nat } from '@agoric/nat';
-import {
-  makeNotifierFromSubscriber,
-  makeStoredPublishKit,
-  observeNotifier,
-} from '@agoric/notifier';
+import { makeStoredPublishKit, observeNotifier } from '@agoric/notifier';
 import { defineKindMulti, pickFacet } from '@agoric/vat-data';
 import {
   assertProposalShape,
@@ -588,7 +584,7 @@ const managerBehavior = {
     state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
   },
   /** @param {MethodContext} context */
-  getNotifier: ({ state }) => makeNotifierFromSubscriber(state.assetSubscriber),
+  getAssetSubscriber: ({ state }) => state.assetSubscriber,
   /** @param {MethodContext} context */
   getCollateralBrand: ({ state }) => state.collateralBrand,
   /** @param {MethodContext} context */
