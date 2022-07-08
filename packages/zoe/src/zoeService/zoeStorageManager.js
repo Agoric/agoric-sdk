@@ -2,7 +2,10 @@
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
-import { makeScalarBigWeakMapStore } from '@agoric/vat-data';
+import {
+  makeScalarBigMapStore,
+  makeScalarBigWeakMapStore,
+} from '@agoric/vat-data';
 
 import { makeIssuerStorage } from '../issuerStorage.js';
 import { makeAndStoreInstanceRecord } from '../instanceRecordStorage.js';
@@ -14,6 +17,8 @@ import { makeInstallationStorage } from './installationStorage.js';
 
 import './types.js';
 import './internal-types.js';
+
+/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 /**
  * The Zoe Storage Manager encapsulates and composes important
@@ -32,6 +37,7 @@ import './internal-types.js';
  * @param {ShutdownWithFailure} shutdownZoeVat
  * @param {Issuer} feeIssuer
  * @param {Brand} feeBrand
+ * @param {Baggage} [zoeBaggage]
  * @returns {ZoeStorageManager}
  */
 export const makeZoeStorageManager = (
@@ -41,6 +47,7 @@ export const makeZoeStorageManager = (
   shutdownZoeVat,
   feeIssuer,
   feeBrand,
+  zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
 ) => {
   // issuerStorage contains the issuers that the ZoeService knows
   // about, as well as information about them such as their brand,
@@ -90,7 +97,7 @@ export const makeZoeStorageManager = (
     installBundleID,
     unwrapInstallation,
     getBundleIDFromInstallation,
-  } = makeInstallationStorage(getBundleCapForID);
+  } = makeInstallationStorage(getBundleCapForID, zoeBaggage);
 
   const proposalSchemas = makeScalarBigWeakMapStore('proposal schemas');
 

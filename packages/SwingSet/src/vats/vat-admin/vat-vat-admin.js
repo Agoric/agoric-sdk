@@ -9,7 +9,8 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
 import { Far, passStyleOf } from '@endo/marshal';
 import { Nat, isNat } from '@agoric/nat';
-import { assert } from '@agoric/assert';
+
+const { details: X } = assert;
 
 const managerTypes = [
   'local',
@@ -103,14 +104,14 @@ export function buildRootObject(vatPowers) {
         const leftovers = Object.keys(rest);
         if (leftovers.length) {
           const bad = leftovers.join(',');
-          assert.fail(`upgrade() received unknown options: ${bad}`);
+          assert.fail(X`upgrade() received unknown options: ${bad}`);
         }
         let bundleID;
         try {
           bundleID = D(bundlecap).getBundleID();
         } catch (e) {
           // 'bundlecap' probably wasn't a bundlecap
-          throw Error('vat adminNode.upgrade() requires a bundlecap');
+          assert.fail(X`vat adminNode.upgrade() requires a bundlecap: ${e}`);
         }
         const upgradeID = D(vatAdminNode).upgradeVat(
           vatID,

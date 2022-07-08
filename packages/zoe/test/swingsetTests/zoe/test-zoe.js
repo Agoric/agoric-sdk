@@ -66,6 +66,7 @@ test.before(async t => {
   };
   const config = { bootstrap: 'bootstrap', vats, bundles };
   config.defaultManagerType = 'xs-worker';
+  config.relaxDurabilityRules = true;
 
   const step4 = Date.now();
   const ktime = `${(step2 - start) / 1000}s kernel`;

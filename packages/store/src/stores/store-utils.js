@@ -94,7 +94,7 @@ harden(makeCurrentKeysKit);
  * that key, and return it.
  *
  * @template K,V
- * @param {MapStore<K,V>} mapStore
+ * @param {WeakMapStore<K,V>} mapStore
  * @param {K} key
  * @param {(key: K) => V} makeValue
  * @returns {V}
