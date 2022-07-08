@@ -639,6 +639,7 @@ function build(
     m.serialize,
     unmeteredUnserialize,
     cacheSize,
+    assertAcceptableSyscallCapdataSize,
   );
 
   const collectionManager = makeCollectionManager(
@@ -653,6 +654,7 @@ function build(
     registerValue,
     m.serialize,
     unmeteredUnserialize,
+    assertAcceptableSyscallCapdataSize,
   );
 
   const watchedPromiseManager = makeWatchedPromiseManager(
