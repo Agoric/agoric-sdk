@@ -9,7 +9,7 @@ import {
 
 import { AssetKind, makeDurableIssuerKit, vivifyIssuerKit } from '../../../src';
 
-function vivifyErtpService(baggage, exitVatWithFailure) {
+export const vivifyErtpService = (baggage, exitVatWithFailure) => {
   const issuerBaggageSet = provideDurableSetStore(baggage, 'BaggageSet');
   const ertpService = vivifySingleton(baggage, 'ERTPService', {
     makeIssuerKit: (
@@ -38,7 +38,7 @@ function vivifyErtpService(baggage, exitVatWithFailure) {
   }
 
   return ertpService;
-}
+};
 
 export const buildRootObject = async (vatPowers, _vatParams, baggage) => {
   const ertpService = vivifyErtpService(baggage, vatPowers.exitVatWithFailure);
