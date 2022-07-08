@@ -1,16 +1,15 @@
 // @ts-check
 
+import '@agoric/zoe/exported.js';
+
 import { AmountMath, isNatValue } from '@agoric/ertp';
 import { makeNotifierKit, makeStoredPublisherKit } from '@agoric/notifier';
-
+import { defineKindMulti } from '@agoric/vat-data';
 import {
   calcLiqValueToMint,
   calcSecondaryRequired,
   calcValueToRemove,
 } from '@agoric/zoe/src/contractSupport/index.js';
-
-import '@agoric/zoe/exported.js';
-import { defineKindMulti } from '@agoric/vat-data';
 import { Far } from '@endo/marshal';
 import { makePriceAuthority } from './priceAuthority.js';
 import { singlePool } from './singlePool.js';

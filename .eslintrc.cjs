@@ -72,6 +72,24 @@ module.exports = {
   ],
   overrides: [
     {
+      // Tighten rules for exported code.
+      files: ['packages/*/src/**/*.js'],
+      rules: {
+        // The rule is “no nested awaits” but the architectural goal is
+        // “no possibility of ‘awaits sometimes but not always’”. That is our
+        // architectural rule. If it’s too constraining you have to fall back to
+        // promise.then or get a reviewed exception.  “sometimes awaits” is a
+        // bug farm for particularly pernicious bugs in which you can combine
+        // two correct pieces of code to have emergent incorrect behavior.
+        // It’s absolutely critical for shared service code. That means
+        // contracts, but it also means kernel components that are used by
+        // multiple clients. So we enable it throughout the repo and exceptions
+        // are code-reviewed.
+        // TODO upgrade this to 'error'
+        '@jessie.js/no-nested-await': 'warn',
+      },
+    },
+    {
       // disable type-aware linting in HTML
       files: ['*.html'],
       parserOptions: {
