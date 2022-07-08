@@ -7,14 +7,14 @@ import { makeVaultHolder } from './vaultHolder.js';
  * Create a kit of utilities for use of the vault.
  *
  * @param {Vault} vault
- * @param {Notifier<import('./vaultManager').AssetState>} assetNotifier
+ * @param {Promise<Notifier<import('./vaultManager').AssetState>>} assetSubscriber
  */
-export const makeVaultKit = (vault, assetNotifier) => {
+export const makeVaultKit = (vault, assetSubscriber) => {
   const { holder, helper } = makeVaultHolder(vault);
   const vaultKit = harden({
     publicNotifiers: {
       vault: holder.getNotifier(),
-      asset: assetNotifier,
+      asset: assetSubscriber,
     },
     invitationMakers: Far('invitation makers', {
       AdjustBalances: holder.makeAdjustBalancesInvitation,

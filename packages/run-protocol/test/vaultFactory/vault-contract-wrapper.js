@@ -132,7 +132,7 @@ export async function start(zcf, privateArgs) {
     },
     getDebtBrand: () => runBrand,
 
-    getNotifier: () => managerNotifier,
+    getNotifier: () => Promise.resolve(managerNotifier),
     maxDebtFor,
     mintAndReallocate,
     burnAndRecord,
