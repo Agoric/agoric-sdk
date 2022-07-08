@@ -84,6 +84,16 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
       const vatBaggage = makeScalarBigMapStore('fake vat baggage', {
         durable: true,
       });
+
+      // XXX Notice that this call isn't wrapping vatParams.  We (BW, CH) tried
+      // doing this, but backed out when it got complex.
+      //
+      // const ns = await evalContractBundle(zcfBundle);
+      // const ns2 = makeRemote(
+      //   Far('wrappedRoot', {
+      //     buildRootObject: vp => ns.buildRootObject(vpow, vp, vatBaggage),
+      //   }),
+      // );
       return Promise.resolve(
         harden({
           root: makeRemote(
