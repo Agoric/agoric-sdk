@@ -253,6 +253,7 @@ harden(makeNotifierFromSubscriber);
 
 /**
  * Adaptor from async iterable to notifier.
+ *
  * @deprecated The resulting notifier is lossless, which is not desirable.
  * Prefer makeNotifierFromSubscriber, and refer to
  * https://github.com/Agoric/agoric-sdk/issues/5413 and

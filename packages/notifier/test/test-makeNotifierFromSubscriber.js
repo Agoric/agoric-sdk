@@ -178,9 +178,9 @@ test('makeNotifierFromSubscriber - getUpdateSince timing', async t => {
 
   const sequence = [];
   const firstP = notifier.getUpdateSince();
-  firstP.then(_ => sequence.push('resolve firstP'));
+  void firstP.then(_ => sequence.push('resolve firstP'));
   const firstP2 = notifier.getUpdateSince();
-  firstP2.then(_ => sequence.push('resolve firstP2'));
+  void firstP2.then(_ => sequence.push('resolve firstP2'));
 
   await delayByTurns(2);
   t.deepEqual(
