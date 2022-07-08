@@ -71,7 +71,7 @@
  *     proposal: ProposalRecord,
  *     offerArgs?: object,
  * ) => UserSeat } makeUserSeat
- * @property {MakeNoEscrowSeat} makeNoEscrowSeat
+ * @property {MakeNoEscrowSeatKit} makeNoEscrowSeatKit
  * @property {() => Instance} getInstance
  * @property {() => object} getPublicFacet
  * @property {() => IssuerKeywordRecord} getIssuers
@@ -111,7 +111,7 @@
  *            ) => Promise<IssuerRecord>} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {RegisterFeeMint} registerFeeMint
- * @property {MakeNoEscrowSeat} makeNoEscrowSeat
+ * @property {MakeNoEscrowSeatKit} makeNoEscrowSeatKit
  * @property {ReplaceAllocations} replaceAllocations
  * @property {(completion: Completion) => void} exitAllSeats
  * @property {ShutdownWithFailure} failAllSeats
@@ -146,7 +146,7 @@
  */
 
 /**
- * @callback MakeNoEscrowSeat
+ * @callback MakeNoEscrowSeatKit
  * @param {Allocation} initialAllocation
  * @param {ProposalRecord} proposal
  * @param {ExitObj} exitObj

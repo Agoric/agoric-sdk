@@ -164,7 +164,7 @@ export const makeStartInstance = (
           // return the userSeat before the offerHandler is called
           return userSeat;
         },
-        makeNoEscrowSeat: (
+        makeNoEscrowSeatKit: (
           initialAllocation,
           proposal,
           exitObj,
@@ -202,7 +202,7 @@ export const makeStartInstance = (
       // checks of keyword done on zcf side
       saveIssuer: zoeInstanceStorageManager.saveIssuer,
       // A Seat requested by the contract without any payments to escrow
-      makeNoEscrowSeat: instanceAdmin.makeNoEscrowSeat,
+      makeNoEscrowSeatKit: instanceAdmin.makeNoEscrowSeatKit,
       exitAllSeats: completion => instanceAdmin.exitAllSeats(completion),
       failAllSeats: reason => instanceAdmin.failAllSeats(reason),
       exitSeat: (seatHandle, completion) => {

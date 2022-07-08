@@ -119,7 +119,7 @@ export const makeZCFZygote = async (
     const exitObj = makeExitObj(seatData.proposal, zcfSeat);
 
     E(zoeInstanceAdmin)
-      .makeNoEscrowSeat(initialAllocation, proposal, exitObj, seatHandle)
+      .makeNoEscrowSeatKit(initialAllocation, proposal, exitObj, seatHandle)
       .then(({ notifier: zoeNotifier, userSeat }) => {
         observeNotifier(zoeNotifier, updater);
         userSeatPromiseKit.resolve(userSeat);
