@@ -256,13 +256,13 @@ export const makeZCFZygote = async (
       // TODO: provide a details that's a better diagnostic for the
       // ephemeral offerHandler that did not survive upgrade.
       const offerHandler = takeOfferHandler(invitationHandle);
-      const offerResultPromise =
+      const offerResultP =
         typeof offerHandler === 'function'
           ? E(offerHandler)(zcfSeat, seatData.offerArgs)
           : // @ts-expect-error Type issues?
             E(offerHandler).handle(zcfSeat, seatData.offerArgs);
 
-      const offerResultP = offerResultPromise.catch(reason => {
+      const offerResultPromise = offerResultP.catch(reason => {
         if (reason === undefined) {
           const newErr = new Error(
             `If an offerHandler throws, it must provide a reason of type Error, but the reason was undefined. Please fix the contract code to specify a reason for throwing.`,
@@ -273,7 +273,7 @@ export const makeZCFZygote = async (
       });
       const exitObj = makeExitObj(seatData.proposal, zcfSeat);
       /** @type {HandleOfferResult} */
-      return harden({ offerResultP, exitObj });
+      return harden({ offerResultPromise, exitObj });
     },
   });
   const handleOfferObj = makeHandleOfferObj();

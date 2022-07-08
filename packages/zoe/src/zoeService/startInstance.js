@@ -17,10 +17,9 @@ const { details: X, quote: q } = assert;
 /**
  * @param {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @param {UnwrapInstallation} unwrapInstallation
- * @param {Baggage} [zoeBaggage]
  * @param {ERef<BundleCap>} zcfBundleCapP
  * @param {(id: string) => BundleCap} getBundleCapByIdNow
- * @param {import('@agoric/vat-data').Baggage} [zoeBaggage]
+ * @param {Baggage} [zoeBaggage]
  * @returns {import('./utils.js').StartInstance}
  */
 export const makeStartInstance = (
@@ -152,8 +151,8 @@ export const makeStartInstance = (
               invitationHandle,
               seatData,
             ),
-            ({ offerResultP, exitObj }) => {
-              offerResultPromiseKit.resolve(offerResultP);
+            ({ offerResultPromise, exitObj }) => {
+              offerResultPromiseKit.resolve(offerResultPromise);
               exitObjPromiseKit.resolve(exitObj);
             },
             err => {

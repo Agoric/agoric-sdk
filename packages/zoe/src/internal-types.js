@@ -55,7 +55,7 @@
 
 /**
  * @typedef {object} HandleOfferResult
- * @property {Promise<any>} offerResultP
+ * @property {Promise<any>} offerResultPromise
  * @property {object} exitObj
  */
 
