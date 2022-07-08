@@ -14,7 +14,7 @@ export const makeVaultKit = (vault, assetSubscriber) => {
   const { holder, helper } = makeVaultHolder(vault);
   const vaultKit = harden({
     publicNotifiers: {
-      vault: holder.getNotifier(),
+      vault: makeNotifierFromSubscriber(holder.getSubscriber()),
       asset: makeNotifierFromSubscriber(assetSubscriber),
     },
     invitationMakers: Far('invitation makers', {

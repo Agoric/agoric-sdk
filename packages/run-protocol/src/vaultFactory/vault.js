@@ -101,7 +101,7 @@ const validTransitions = {
  *
  * @typedef {{
  *   interestSnapshot: Ratio,
- *   outerUpdater: IterationObserver<VaultNotification> | null,
+ *   outerUpdater: Publisher<VaultNotification> | null,
  *   phase: VaultPhase,
  *   debtSnapshot: Amount<'nat'>,
  * }} MutableState
@@ -335,7 +335,7 @@ const helperBehavior = {
       case Phase.ACTIVE:
       case Phase.LIQUIDATING:
       case Phase.LIQUIDATED:
-        outerUpdater.updateState(uiState);
+        outerUpdater.publish(uiState);
         break;
       case Phase.CLOSED:
         outerUpdater.finish(uiState);

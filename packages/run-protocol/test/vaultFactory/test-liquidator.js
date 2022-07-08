@@ -571,10 +571,15 @@ test('price drop', async t => {
   await d.checkRewards(run.make(14n));
 
   await dv.close();
-  await dv.notified(Phase.CLOSED, {
-    locked: aeth.makeEmpty(),
-    updateCount: undefined,
-  });
+  await dv.notified(
+    Phase.CLOSED,
+    {
+      locked: aeth.makeEmpty(),
+      updateCount: undefined,
+    },
+    // ??? why is AT_NEXT necessary now
+    AT_NEXT,
+  );
   await d.checkPayouts(debtExpected, collateralExpected);
   await dv.checkBalance(debtExpected, aeth.makeEmpty());
 });
@@ -718,8 +723,10 @@ test('liquidate many', async t => {
 
   await d.setPrice(await overThreshold(dv5));
   await eventLoopIteration();
-  await dv1.notified(Phase.LIQUIDATED);
-  await dv2.notified(Phase.LIQUIDATED);
+  // ??? why is AT_NEXT necessary now
+  await dv1.notified(Phase.LIQUIDATED, null, AT_NEXT);
+  // FIXME this one triggers: argument must be a previously-issued updateCount.
+  await dv2.notified(Phase.LIQUIDATED, null, AT_NEXT);
   await dv3.notified(Phase.LIQUIDATED);
   await dv4.notified(Phase.LIQUIDATED);
   await dv5.notified(Phase.ACTIVE);
