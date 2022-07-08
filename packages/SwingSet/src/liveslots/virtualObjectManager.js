@@ -962,7 +962,6 @@ export function makeVirtualObjectManager(
     flushCache: cache.flush,
     testHooks,
     canBeDurable,
-    isDurableObject,
   });
 }
 /**

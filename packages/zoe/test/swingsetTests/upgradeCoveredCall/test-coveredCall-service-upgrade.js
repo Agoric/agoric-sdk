@@ -7,7 +7,7 @@ import { buildVatController } from '@agoric/swingset-vat';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 
-test('ertp service upgrade', async t => {
+test('coveredCall service upgrade', async t => {
   const config = {
     // includeDevDependencies: true, // for vat-data
     defaultManagerType: 'xs-worker', // 'local',
