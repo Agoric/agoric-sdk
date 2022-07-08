@@ -110,7 +110,7 @@ harden(subscribeLatest);
  * @template T
  * @returns {PublishKit<T>}
  */
-export const makeEmptyPublishKit = () => {
+export const makePublishKit = () => {
   /** @type {Promise<PublicationRecord<T>>} */
   let tailP;
   /** @type {undefined | ((value: ERef<PublicationRecord<T>>) => void)} */
@@ -187,22 +187,5 @@ export const makeEmptyPublishKit = () => {
     },
   });
   return harden({ publisher, subscriber });
-};
-harden(makeEmptyPublishKit);
-
-/**
- * Makes a `{ publisher, subscriber }` pair for doing efficient
- * distributed pub/sub supporting both "each" and "latest" iteration
- * of published values.
- *
- * @template T
- * @param {T} initialValue The initial published value, as if with a call
- * to `.publish(initialValue)`
- * @returns {PublishKit<T>}
- */
-export const makePublishKit = initialValue => {
-  const publishKit = makeEmptyPublishKit();
-  publishKit.publisher.publish(initialValue);
-  return publishKit;
 };
 harden(makePublishKit);
