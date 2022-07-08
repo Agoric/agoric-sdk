@@ -252,7 +252,11 @@ export const makeNotifierFromSubscriber = async subscriberP => {
 harden(makeNotifierFromSubscriber);
 
 /**
- * Deprecated adaptor from async iterable to notifier.
+ * Adaptor from async iterable to notifier.
+ * @deprecated The resulting notifier is lossless, which is not desirable.
+ * Prefer makeNotifierFromSubscriber, and refer to
+ * https://github.com/Agoric/agoric-sdk/issues/5413 and
+ * https://github.com/Agoric/agoric-sdk/pull/5695 for context.
  *
  * @template T
  * @param {ERef<AsyncIterable<T>>} asyncIterableP

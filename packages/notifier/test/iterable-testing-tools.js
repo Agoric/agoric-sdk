@@ -13,6 +13,16 @@ export const invertPromiseSettlement = promise =>
     rejection => rejection,
   );
 
+// Return a promise that will resolve in the specified number of turns,
+// supporting asynchronous sleep.
+export const delayByTurns = async turnCount => {
+  while (turnCount) {
+    turnCount -= 1;
+    // eslint-disable-next-line no-await-in-loop
+    await undefined;
+  }
+};
+
 /** @typedef {import('@endo/marshal').Passable} Passable */
 
 /** @typedef {import('ava').Assertions} Assertions */
