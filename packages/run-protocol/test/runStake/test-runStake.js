@@ -185,9 +185,32 @@ const mockChain = genesisData => {
     makeLienBridge: stakingBrand => {
       /** @param {bigint} v */
       const ubld = v => AmountMath.make(stakingBrand, v);
+      /** @type {(addr: string, delta: bigint) => Promise<Amount<'nat'>>} */
+      const changeLiened = async (address, delta) => {
+        const current = qty(address, liened);
+        const value = current + delta;
+        liened.set(address, value);
+        return ubld(value);
+      };
 
       /** @type {StakingAuthority} */
       const authority = Far('stakeReporter', {
+        /**
+         * @param {string} address
+         * @param {Amount<'nat'>} increase
+         */
+        increaseLiened: (address, increase) => {
+          const delta = AmountMath.getValue(stakingBrand, increase);
+          return changeLiened(address, delta);
+        },
+        /**
+         * @param {string} address
+         * @param {Amount<'nat'>} decrease
+         */
+        decreaseLiened: (address, decrease) => {
+          const delta = -1n * AmountMath.getValue(stakingBrand, decrease);
+          return changeLiened(address, delta);
+        },
         /**
          * @param {string} address
          * @param {Brand} brand
@@ -205,12 +228,6 @@ const mockChain = genesisData => {
             unbonding: ubld(0n),
             currentTime: (currentTime += 3n),
           });
-        },
-        /** @type {(addr: string, p: Amount<'nat'>, t: Amount<'nat'>) => Promise<void>} */
-        setLiened: async (address, previous, target) => {
-          const { value } = AmountMath.coerce(stakingBrand, target);
-          assert(AmountMath.isEqual(previous, ubld(qty(address, liened))));
-          liened.set(address, value);
         },
       });
       return authority;

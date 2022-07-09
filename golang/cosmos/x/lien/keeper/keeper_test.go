@@ -448,7 +448,7 @@ func TestVesting(t *testing.T) {
 	}
 }
 
-func TestUpdateLien(t *testing.T) {
+func TestChangeLien(t *testing.T) {
 	for _, tt := range []struct {
 		name     string
 		state    types.AccountState
@@ -533,15 +533,20 @@ func TestUpdateLien(t *testing.T) {
 				t.Fatalf("account state want %+v, got %+v", tt.state, gotState)
 			}
 			bondDenom := sk.BondDenom(ctx)
-			newLien := sdk.NewInt64Coin(bondDenom, tt.newLien)
-			err := lk.UpdateLien(ctx, addr2, newLien)
+			delta := tt.newLien - tt.state.Liened.AmountOf(bondDenom).Int64()
+			gotInt, err := lk.ChangeLien(ctx, addr2, bondDenom, sdk.NewInt(delta))
 			if err != nil {
 				if !tt.wantFail {
 					t.Errorf("Update lien failed: %v", err)
 				}
 			} else if tt.wantFail {
 				t.Errorf("Update lien succeeded, but wanted failure")
+			} else {
+				if !gotInt.Equal(sdk.NewInt(tt.newLien)) {
+					t.Errorf("want new lien balance %s, got %d", gotInt, tt.newLien)
+				}
 			}
+
 		})
 	}
 }
