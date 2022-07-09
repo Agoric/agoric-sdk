@@ -77,7 +77,7 @@
  * @property {() => ZCFSeat} getPoolSeat
  * @property {() => Amount} getSecondaryAmount
  * @property {() => Amount} getCentralAmount
- * @property {() => Notifier<Record<string, Amount>>} getNotifier
+ * @property {() => Subscriber<Record<string, Amount>>} getSubscriber
  * @property {() => void} updateState
  * @property {() => PriceAuthority} getToCentralPriceAuthority
  * @property {() => PriceAuthority} getFromCentralPriceAuthority

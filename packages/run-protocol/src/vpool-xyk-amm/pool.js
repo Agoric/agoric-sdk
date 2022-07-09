@@ -3,7 +3,11 @@
 import '@agoric/zoe/exported.js';
 
 import { AmountMath, isNatValue } from '@agoric/ertp';
-import { makeNotifierKit, makeStoredPublisherKit } from '@agoric/notifier';
+import {
+  makeNotifierFromSubscriber,
+  makePublishKit,
+  makeStoredPublisherKit,
+} from '@agoric/notifier';
 import { defineKindMulti } from '@agoric/vat-data';
 import {
   calcLiqValueToMint,
@@ -40,8 +44,8 @@ export const publicPrices = prices => {
  * zcf: ZCF,
  * timer: TimerService,
  * paramAccessor: import('./multipoolMarketMaker.js').AMMParamGetters,
- * updater: IterationObserver<NotificationState>,
- * notifier: Notifier<NotificationState>,
+ * publisher: Publisher<NotificationState>,
+ * subscriber: Subscriber<NotificationState>,
  * metricsPublication: IterationObserver<PoolMetricsNotification>,
  * metricsSubscription: Subscription<PoolMetricsNotification>
  * }>} ImmutableState
@@ -256,17 +260,16 @@ const poolBehavior = {
     facets.pool.updateState();
     return 'Liquidity successfully removed.';
   },
-  getNotifier: (/** @type {MethodContext} */ { state: { notifier } }) =>
-    notifier,
+  getSubscriber: (/** @type {MethodContext} */ { state }) => state.subscriber,
   /**
    * Update metrics and primary state
    *
    * @param {MethodContext} context
    */
-  updateState: ({ state: { updater }, facets: { pool, helper } }) => {
+  updateState: ({ state: { publisher }, facets: { pool, helper } }) => {
     helper.updateMetrics();
     // TODO: when governance can change the interest rate, include it here
-    updater.updateState({
+    publisher.publish({
       central: pool.getCentralAmount(),
       secondary: pool.getSecondaryAmount(),
     });
@@ -279,7 +282,7 @@ const poolBehavior = {
 
 /** @param {MethodContext} context */
 const finish = context => {
-  const { notifier, secondaryBrand, centralBrand, timer, zcf } = context.state;
+  const { subscriber, secondaryBrand, centralBrand, timer } = context.state;
   const quoteIssuerKit = context.state.quoteIssuerKit;
 
   const getInputPriceForPA = (amountIn, brandOut) => {
@@ -298,13 +301,14 @@ const finish = context => {
       ),
     );
 
+  const notifier = makeNotifierFromSubscriber(subscriber);
+
   const toCentralPriceAuthority = makePriceAuthority(
     getInputPriceForPA,
     getOutputPriceForPA,
     secondaryBrand,
     centralBrand,
     timer,
-    zcf,
     notifier,
     quoteIssuerKit,
   );
@@ -314,7 +318,6 @@ const finish = context => {
     centralBrand,
     secondaryBrand,
     timer,
-    zcf,
     notifier,
     quoteIssuerKit,
   );
@@ -349,7 +352,7 @@ export const definePoolKind = (
   const poolInit = (liquidityZcfMint, poolSeat, secondaryBrand) => {
     const { brand: liquidityBrand, issuer: liquidityIssuer } =
       liquidityZcfMint.getIssuerRecord();
-    const { notifier, updater } = makeNotifierKit();
+    const { subscriber, publisher } = makePublishKit();
     const { publisher: metricsPublication, subscriber: metricsSubscription } =
       makeStoredPublisherKit(storageNode, marshaller, 'metrics');
 
@@ -368,8 +371,8 @@ export const definePoolKind = (
       liquidityBrand,
       secondaryBrand,
       liquidityZcfMint,
-      updater,
-      notifier,
+      publisher,
+      subscriber,
       toCentralPriceAuthority: undefined,
       fromCentralPriceAuthority: undefined,
       quoteIssuerKit,

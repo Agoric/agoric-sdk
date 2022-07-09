@@ -3,7 +3,10 @@
 import { runVOTest, test } from '@agoric/swingset-vat/tools/vo-test-harness.js';
 
 import { makeParamManager } from '@agoric/governance';
-import { makeStoredPublisherKit } from '@agoric/notifier';
+import {
+  makeNotifierFromSubscriber,
+  makeStoredPublisherKit,
+} from '@agoric/notifier';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
@@ -11,6 +14,9 @@ import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { definePoolKind } from '../src/vpool-xyk-amm/pool.js';
 import { makeAmmParams } from '../src/vpool-xyk-amm/params.js';
 import { mapValues } from '../src/collect.js';
+
+/** @typedef {ReturnType<typeof definePoolKind>} MakePoolMulti */
+/** @typedef {ReturnType<MakePoolMulti>} PoolMulti */
 
 /**
  * @param {ERef<ZoeService>} zoe
@@ -40,6 +46,7 @@ const makeAmmParamManager = async (
 };
 
 const voPoolTest = async (t, mutation, postTest) => {
+  /** @type {MakePoolMulti=} */
   let makePool;
   const { zoe, zcf } = await setupZCFTest();
   const invitation = await zcf.makeInvitation(() => {}, 'fake invitation');
@@ -83,21 +90,24 @@ const voPoolTest = async (t, mutation, postTest) => {
   };
 
   const state = {};
-  const testVPool = async (context, phase) => {
-    const { pool, singlePool } = context;
+  /** @param {PoolMulti} vobj
+   *  @param {'before' | 'after'} phase
+   */
+  const testVPool = async (vobj, phase) => {
+    const { pool, singlePool } = vobj;
     if (phase === 'before') {
-      state.notifier = pool.getNotifier();
+      state.notifier = pool.getSubscriber();
       state.toCentralPA = pool.getToCentralPriceAuthority();
       state.singlePool = pool.getVPool();
       state.liquidityIssuer = pool.getLiquidityIssuer();
-      await mutation(context);
+      await mutation(vobj);
     } else if (phase === 'after') {
-      const newNotifier = pool.getNotifier();
+      const newNotifier = pool.getSubscriber();
       t.is(state.notifier, newNotifier);
       t.is(state.toCentralPA, pool.getToCentralPriceAuthority());
       t.is(state.singlePool, singlePool);
       t.is(state.liquidityIssuer, pool.getLiquidityIssuer());
-      t.truthy(postTest(context));
+      t.truthy(postTest(vobj));
     }
   };
 
@@ -106,6 +116,7 @@ const voPoolTest = async (t, mutation, postTest) => {
   };
 
   const makeTestObject = () => {
+    assert(makePool, 'prepare not called');
     return makePool(liquidityZcfMint, poolSeat, secondaryBrand);
   };
 
@@ -119,15 +130,21 @@ test.serial('unchanged', async t => {
 });
 
 test.serial('one update', async t => {
+  /** @type {Notifier<unknown>=} */
+  let notifier;
   let initialNotifierCount;
   await voPoolTest(
     t,
-    async context => {
-      initialNotifierCount = await context.pool.getNotifier().getUpdateSince();
-      return context.pool.updateState();
+    /** @param {PoolMulti} vobj */
+    async vobj => {
+      notifier = makeNotifierFromSubscriber(await vobj.pool.getSubscriber());
+      initialNotifierCount = await notifier.getUpdateSince();
+      return vobj.pool.updateState();
     },
-    async context => {
-      const notification = await context.pool.getNotifier().getUpdateSince();
+    async () => {
+      assert(notifier);
+      const notification = await notifier.getUpdateSince();
+      assert(notification.updateCount);
       t.is(
         BigInt(notification.updateCount),
         BigInt(initialNotifierCount) + 1n,
