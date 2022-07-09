@@ -14,6 +14,10 @@ export const SmartConnectionMethod = {
 const DEFAULT_CONNECTION_CONFIGS = [
   {
     type: ConnectionConfigType.SMART,
+    href: 'http://localhost:8000/wallet/network-config',
+  },
+  {
+    type: ConnectionConfigType.SMART,
     href: 'https://devnet.agoric.net/network-config',
   },
   {

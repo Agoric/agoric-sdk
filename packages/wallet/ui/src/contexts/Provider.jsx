@@ -122,6 +122,7 @@ const Provider = ({ children }) => {
   const [backend, setBackend] = useState(null);
   const [schemaActions, setSchemaActions] = useState(null);
   const [connectionComponent, setConnectionComponent] = useState(null);
+  const [backendErrorHandler, setBackendErrorHandler] = useState(null);
 
   const RESTORED_CONNECTION_CONFIGS = [...DEFAULT_CONNECTION_CONFIGS];
   const userConnectionConfigs = maybeLoad('userConnectionConfigs');
@@ -283,7 +284,7 @@ const Provider = ({ children }) => {
       setConnectionComponent(<WalletConnection />);
       attempts = 0;
     };
-    if (connectionConfig.type === ConnectionConfigType.Smart) {
+    if (connectionConfig.type === ConnectionConfigType.SMART) {
       importer = () => import('../components/SmartWalletConnection');
     } else {
       importer = () => import('../components/WalletConnection');
@@ -295,7 +296,7 @@ const Provider = ({ children }) => {
         clearTimeout(retryTimeout);
       }
     };
-  }, [connectionComponent, wantConnection, connectionComponent]);
+  }, [connectionComponent, wantConnection]);
 
   const [pendingPurseCreations, setPendingPurseCreations] = useReducer(
     pendingPurseCreationsReducer,
@@ -363,6 +364,8 @@ const Provider = ({ children }) => {
     connectionComponent,
     disconnect,
     connectionStatus,
+    backendErrorHandler,
+    setBackendErrorHandler,
   };
 
   useDebugLogging(state, [

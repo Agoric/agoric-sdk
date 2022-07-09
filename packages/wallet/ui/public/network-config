@@ -1,0 +1,4 @@
+{
+  "chainName": "agoric",
+  "rpcAddrs": ["http://localhost:26657"]
+}
