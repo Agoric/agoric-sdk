@@ -28,11 +28,10 @@ export {};
  *   enableSetup: true,
  * }} HasSetup
  *
- * @typedef { 'local' | 'nodeWorker' | 'node-subprocess' | 'xs-worker' | 'xs-worker-no-gc' } ManagerType
+ * @typedef { 'local' | 'nodeWorker' | 'node-subprocess' | 'xs-worker' } ManagerType
  * @typedef {{
  *   enablePipelining?: boolean,
  *   managerType: ManagerType,
- *   gcEveryCrank?: boolean,
  *   metered?: boolean,
  *   critical?: boolean,
  *   enableDisavow?: boolean,

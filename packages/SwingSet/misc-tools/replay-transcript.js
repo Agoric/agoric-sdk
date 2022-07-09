@@ -47,7 +47,6 @@ function compareSyscalls(vatID, originalSyscall, newSyscall) {
 // 3.8s v8-false, 27.5s v8-gc
 // 10.8s xs-no-gc, 15s xs-gc
 const worker = 'xs-worker';
-const gcEveryCrank = true; // false means GC is hard-disabled
 
 async function replay(transcriptFile) {
   let vatID; // we learn this from the first line of the transcript
@@ -71,7 +70,7 @@ async function replay(transcriptFile) {
     WeakRef,
     FinalizationRegistry,
     waitUntilQuiescent,
-    gcAndFinalize: makeGcAndFinalize(gcEveryCrank ? engineGC : false),
+    gcAndFinalize: makeGcAndFinalize(engineGC),
     meterControl,
   });
   const allVatPowers = { testLog };
@@ -151,7 +150,6 @@ async function replay(transcriptFile) {
         vatParameters,
         compareSyscalls,
         useTranscript: true,
-        gcEveryCrank,
       };
       const vatSyscallHandler = undefined;
       manager = await factory.createFromBundle(
