@@ -10,6 +10,7 @@ import {
   zeroPad,
   makeEncodePassable,
   makeDecodePassable,
+  isEncodedRemotable,
   makeCopySet,
   makeCopyMap,
 } from '@agoric/store';
@@ -64,6 +65,10 @@ const MAX_DBKEY_LENGTH = 220;
 
 function pattEq(p1, p2) {
   return compareRank(p1, p2) === 0;
+}
+
+function matchAny(patt) {
+  return patt === undefined || pattEq(patt, M.any());
 }
 
 function throwNotDurable(value, slotIndex, serializedValue) {
@@ -271,8 +276,10 @@ export function makeCollectionManager(
     // the resulting function will encode only `Key` arguments.
     const encodeKey = makeEncodePassable({ encodeRemotable });
 
+    const vrefFromDBKey = dbKey => dbKey.substring(BIGINT_TAG_LEN + 2);
+
     const decodeRemotable = encodedKey =>
-      convertSlotToVal(encodedKey.substring(BIGINT_TAG_LEN + 2));
+      convertSlotToVal(vrefFromDBKey(encodedKey));
 
     // `makeDecodePassable` has three named options:
     // `decodeRemotable`, `decodeError`, and `decodePromise`.
@@ -459,8 +466,8 @@ export function makeCollectionManager(
       let priorDBKey = '';
       const start = prefix(coverStart);
       const end = prefix(coverEnd);
-      const ignoreKeys = !needKeys && pattEq(keyPatt, M.any());
-      const ignoreValues = !needValues && pattEq(valuePatt, M.any());
+      const ignoreKeys = !needKeys && matchAny(keyPatt);
+      const ignoreValues = !needValues && matchAny(valuePatt);
       /**
        * @yields {[any, any]}
        * @returns {Generator<[any, any], void, unknown>}
@@ -516,10 +523,60 @@ export function makeCollectionManager(
       return iter();
     }
 
+    /**
+     * Clear the entire contents of a collection non-selectively.  Since we are
+     * being unconditional, we don't need to inspect any of the keys to decide
+     * what to do and therefor can avoid deserializing the keys.  In particular,
+     * this avoids swapping in any virtual objects that were used as keys, which
+     * can needlessly thrash the virtual object cache when an entire collection
+     * is being deleted.
+     *
+     * @returns {boolean} true if this operation introduces a potential
+     *   opportunity to do further GC.
+     */
+    function clearInternalFull() {
+      let doMoreGC = false;
+      const [coverStart, coverEnd] = getRankCover(M.any(), encodeKey);
+      let priorDBKey = '';
+      const start = prefix(coverStart);
+      const end = prefix(coverEnd);
+      while (priorDBKey !== undefined) {
+        const [dbKey, dbValue] = syscall.vatstoreGetAfter(
+          priorDBKey,
+          start,
+          end,
+        );
+        if (!dbKey) {
+          break;
+        }
+        if (dbKey < end) {
+          priorDBKey = dbKey;
+          const value = JSON.parse(dbValue);
+          doMoreGC =
+            value.slots.map(vrm.removeReachableVref).some(b => b) || doMoreGC;
+          syscall.vatstoreDelete(dbKey);
+          if (isEncodedRemotable(dbKey)) {
+            const keyVref = vrefFromDBKey(dbKey);
+            if (hasWeakKeys) {
+              vrm.removeRecognizableVref(keyVref, `${collectionID}`, true);
+            } else {
+              doMoreGC = vrm.removeReachableVref(keyVref) || doMoreGC;
+            }
+            syscall.vatstoreDelete(prefix(`|${keyVref}`));
+          }
+        }
+      }
+      return doMoreGC;
+    }
+
     function clearInternal(isDeleting, keyPatt, valuePatt) {
       let doMoreGC = false;
-      for (const k of keys(keyPatt, valuePatt)) {
-        doMoreGC = doMoreGC || deleteInternal(k);
+      if (isDeleting || (matchAny(keyPatt) && matchAny(valuePatt))) {
+        doMoreGC = clearInternalFull();
+      } else {
+        for (const k of keys(keyPatt, valuePatt)) {
+          doMoreGC = deleteInternal(k) || doMoreGC;
+        }
       }
       if (!hasWeakKeys && !isDeleting) {
         syscall.vatstoreSet(prefix('|entryCount'), '0');
@@ -559,10 +616,7 @@ export function makeCollectionManager(
     }
 
     function getSize(keyPatt, valuePatt) {
-      if (
-        (keyPatt === undefined || pattEq(keyPatt, M.any())) &&
-        (valuePatt === undefined || pattEq(valuePatt, M.any()))
-      ) {
+      if (matchAny(keyPatt) && matchAny(valuePatt)) {
         return Number.parseInt(syscall.vatstoreGet(prefix('|entryCount')), 10);
       }
       return countEntries(keyPatt, valuePatt);
