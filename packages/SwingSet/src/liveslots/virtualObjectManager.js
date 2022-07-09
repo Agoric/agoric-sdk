@@ -157,6 +157,8 @@ export function makeCache(size, fetch, store) {
  * @param {*} unserialize  Unserializer for this vat
  * @param {number} cacheSize  How many virtual objects this manager should cache
  *   in memory.
+ * @param {*} assertAcceptableSyscallCapdataSize  Function to check for oversized
+ *   syscall params
  *
  * @returns a new virtual object manager.
  *
@@ -197,6 +199,7 @@ export function makeVirtualObjectManager(
   serialize,
   unserialize,
   cacheSize,
+  assertAcceptableSyscallCapdataSize,
 ) {
   const canBeDurable = specimen => {
     const capData = serialize(specimen);
@@ -648,6 +651,7 @@ export function makeVirtualObjectManager(
             ensureState();
             const before = innerSelf.rawState[prop];
             const after = serialize(value);
+            assertAcceptableSyscallCapdataSize([after]);
             if (durable) {
               after.slots.forEach((vref, index) => {
                 assert(
@@ -737,6 +741,7 @@ export function makeVirtualObjectManager(
       const rawState = {};
       for (const prop of Object.getOwnPropertyNames(initialData)) {
         const data = serialize(initialData[prop]);
+        assertAcceptableSyscallCapdataSize([data]);
         if (durable) {
           data.slots.forEach(vref => {
             assert(vrm.isDurable(vref), X`value for ${q(prop)} is not durable`);

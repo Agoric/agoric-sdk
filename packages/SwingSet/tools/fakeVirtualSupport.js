@@ -224,6 +224,8 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     valToSlot.delete(val);
   }
 
+  function assertAcceptableSyscallCapdataSize(_capdatas) {}
+
   return {
     syscall,
     allocateExportID,
@@ -243,6 +245,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     addToPossiblyRetiredSet,
     dumpStore,
     setVrm,
+    assertAcceptableSyscallCapdataSize,
   };
 }
 
