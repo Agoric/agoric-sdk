@@ -35,7 +35,7 @@ const calculateFee = (feeCoeff, currentDebt, giveAmount, wantAmount) => {
  *   collateralBrand: Brand,
  *   debtBrand: Brand,
  *   manager: import('./runStakeManager.js').RunStakeManager,
- *   notifier: NotifierRecord<unknown>['notifier'],
+ *   subscriber: Subscriber<unknown>
  *   vaultSeat: ZCFSeat,
  *   zcf: ZCF,
  * }>} ImmutableState
@@ -43,7 +43,7 @@ const calculateFee = (feeCoeff, currentDebt, giveAmount, wantAmount) => {
  *   open: boolean,
  *   debtSnapshot: Amount<'nat'>,
  *   interestSnapshot: Ratio,
- *   updater: NotifierRecord<unknown>['updater'] | null,
+ *   publisher: Publisher<unknown> | null,
  * }} MutableState
  * @typedef {MutableState & ImmutableState} State
  * @typedef {{
@@ -111,14 +111,14 @@ const initState = (zcf, startSeat, manager) => {
   })();
   manager.applyDebtDelta(emptyDebt, initialDebt);
 
-  const { notifier, updater } = makeNotifierKit();
+  const { notifier, publisher } = makeNotifierKit();
 
   /** @type {ImmutableState} */
   const immutable = {
     collateralBrand,
     debtBrand,
     manager,
-    notifier,
+    subscriber,
     vaultSeat,
     zcf,
   };
@@ -128,7 +128,7 @@ const initState = (zcf, startSeat, manager) => {
     // Two values from the same moment
     interestSnapshot: manager.getCompoundedInterest(),
     debtSnapshot: initialDebt,
-    updater,
+    publisher,
   };
 };
 const helperBehavior = {
@@ -183,19 +183,19 @@ const helperBehavior = {
    * @param {MethodContext} context
    */
   updateUiState: async ({ state, facets }) => {
-    const { open: active, updater } = state;
-    if (!updater) {
-      console.warn('updateUiState called after ui.updater removed');
+    const { open: active, publisher } = state;
+    if (!publisher) {
+      console.warn('updateUiState called after ui.publisher removed');
       return;
     }
     const uiState = facets.helper.snapshotState(active);
     trace('updateUiState', uiState);
 
     if (active) {
-      updater.updateState(uiState);
+      publisher.updateState(uiState);
     } else {
-      updater.finish(uiState);
-      state.updater = null;
+      publisher.finish(uiState);
+      state.publisher = null;
     }
   },
 

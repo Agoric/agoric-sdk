@@ -192,7 +192,7 @@ export const start = async (
 
     return harden({
       publicNotifiers: {
-        asset: manager.getAssetNotifier(),
+        asset: manager.getAssetSubscriber(),
         vault: pot.getNotifier(),
       },
       invitationMakers: Far('invitation makers', {
