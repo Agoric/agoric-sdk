@@ -3,7 +3,7 @@
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { ceilMultiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { makeNotifierKit } from '@agoric/notifier';
+import { makePublishKit } from '@agoric/notifier';
 import { M, matches } from '@agoric/store';
 import { defineKindMulti } from '@agoric/vat-data';
 import { makeTracer } from '../makeTracer.js';
@@ -111,7 +111,7 @@ const initState = (zcf, startSeat, manager) => {
   })();
   manager.applyDebtDelta(emptyDebt, initialDebt);
 
-  const { notifier, publisher } = makeNotifierKit();
+  const { publisher, subscriber } = makePublishKit();
 
   /** @type {ImmutableState} */
   const immutable = {
@@ -192,7 +192,7 @@ const helperBehavior = {
     trace('updateUiState', uiState);
 
     if (active) {
-      publisher.updateState(uiState);
+      publisher.publish(uiState);
     } else {
       publisher.finish(uiState);
       state.publisher = null;
@@ -362,7 +362,7 @@ const helperBehavior = {
 
 const potBehavior = {
   /** @param {MethodContext} context */
-  getNotifier: ({ state }) => state.notifier,
+  getSubscriber: ({ state }) => state.subscriber,
   /** @param {MethodContext} context */
   makeAdjustBalancesInvitation: ({ state, facets }) => {
     const { zcf } = state;
