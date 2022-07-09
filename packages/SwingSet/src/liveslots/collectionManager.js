@@ -106,6 +106,7 @@ export function makeCollectionManager(
   registerValue,
   serialize,
   unserialize,
+  assertAcceptableSyscallCapdataSize,
 ) {
   // TODO(#5058): we hold a list of all collections (both virtual and
   // durable) in RAM, so we can delete the virtual ones during
@@ -361,6 +362,7 @@ export function makeCollectionManager(
       }
       currentGenerationNumber += 1;
       const serializedValue = serialize(value);
+      assertAcceptableSyscallCapdataSize([serializedValue]);
       if (durable) {
         serializedValue.slots.forEach((vref, slotIndex) => {
           if (!vrm.isDurable(vref)) {
@@ -400,6 +402,7 @@ export function makeCollectionManager(
         );
       }
       const after = serialize(harden(value));
+      assertAcceptableSyscallCapdataSize([after]);
       if (durable) {
         after.slots.forEach((vref, i) => {
           if (!vrm.isDurable(vref)) {
