@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 import { makeStyles } from '@mui/styles';
 import Autocomplete from '@mui/material/Autocomplete';
@@ -17,6 +17,7 @@ import DialogActions from '@mui/material/DialogActions';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import InputLabel from '@mui/material/InputLabel';
+import { deepEquals } from '../util/DeepEquals';
 
 import { withApplicationContext } from '../contexts/Application';
 import {
@@ -173,9 +174,14 @@ const ConnectionSettingsDialog = ({
     errors.add(Errors.INVALID_ACCESS_TOKEN);
   }
 
+  const hasChanges = useMemo(
+    () => !deepEquals(config, connectionConfig),
+    [config, connectionConfig],
+  );
+
   const saveAndClose = () => {
     if (
-      JSON.stringify(config) === JSON.stringify(connectionConfig) &&
+      !hasChanges &&
       config.smartConnectionMethod === SmartConnectionMethod.KEPLR
     ) {
       // Allow the user to force another retry to connect to Keplr without
@@ -377,7 +383,7 @@ const ConnectionSettingsDialog = ({
           onClick={saveAndClose}
           disabled={
             errors.size > 0 ||
-            (JSON.stringify(config) === JSON.stringify(connectionConfig) &&
+            (!hasChanges &&
               config.smartConnectionMethod !== SmartConnectionMethod.KEPLR)
           }
         >
