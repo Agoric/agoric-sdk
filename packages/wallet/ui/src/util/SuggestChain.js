@@ -1,10 +1,5 @@
 import { SigningStargateClient } from '@cosmjs/stargate';
 
-export const NETWORK_CONFIGS = [
-  ['https://main.agoric.net/network-config', 'Agoric Mainnet'],
-  ['https://testnet.agoric.net/network-config', 'Agoric Testnet'],
-];
-
 export const AGORIC_COIN_TYPE = 564;
 export const COSMOS_COIN_TYPE = 118;
 
@@ -94,6 +89,7 @@ export async function suggestChain(networkConfig, caption = undefined) {
     'enjoy!',
   );
  */
+  const accounts = await offlineSigner.getAccounts();
 
-  return cosmJS;
+  return [cosmJS, accounts[0]?.address];
 }

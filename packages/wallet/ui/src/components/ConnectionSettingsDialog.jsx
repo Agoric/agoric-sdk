@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 import { makeStyles } from '@mui/styles';
 import Autocomplete from '@mui/material/Autocomplete';
@@ -17,6 +17,7 @@ import DialogActions from '@mui/material/DialogActions';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import InputLabel from '@mui/material/InputLabel';
+import { deepEquals } from '../util/DeepEquals';
 
 import { withApplicationContext } from '../contexts/Application';
 import {
@@ -106,6 +107,7 @@ const ConnectionSettingsDialog = ({
   setConnectionConfig,
   allConnectionConfigs,
   setAllConnectionConfigs,
+  tryKeplrConnect,
 }) => {
   const classes = useStyles();
   const smartConnectionHrefs = allConnectionConfigs
@@ -172,7 +174,23 @@ const ConnectionSettingsDialog = ({
     errors.add(Errors.INVALID_ACCESS_TOKEN);
   }
 
+  const hasChanges = useMemo(
+    () => !deepEquals(config, connectionConfig),
+    [config, connectionConfig],
+  );
+
   const saveAndClose = () => {
+    if (
+      !hasChanges &&
+      config.smartConnectionMethod === SmartConnectionMethod.KEPLR
+    ) {
+      // Allow the user to force another retry to connect to Keplr without
+      // reloading the page.
+      tryKeplrConnect();
+      onClose();
+      return;
+    }
+
     if (config) {
       if (config.accessToken) {
         maybeSave('accessToken', config.accessToken);
@@ -365,7 +383,8 @@ const ConnectionSettingsDialog = ({
           onClick={saveAndClose}
           disabled={
             errors.size > 0 ||
-            JSON.stringify(config) === JSON.stringify(connectionConfig)
+            (!hasChanges &&
+              config.smartConnectionMethod !== SmartConnectionMethod.KEPLR)
           }
         >
           {currentTab === Tabs.SMART
@@ -383,4 +402,5 @@ export default withApplicationContext(ConnectionSettingsDialog, context => ({
   setConnectionConfig: context.setConnectionConfig,
   allConnectionConfigs: context.allConnectionConfigs,
   setAllConnectionConfigs: context.setAllConnectionConfigs,
+  tryKeplrConnect: context.tryKeplrConnect,
 }));
