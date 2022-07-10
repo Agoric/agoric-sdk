@@ -106,6 +106,7 @@ const ConnectionSettingsDialog = ({
   setConnectionConfig,
   allConnectionConfigs,
   setAllConnectionConfigs,
+  tryKeplrConnect,
 }) => {
   const classes = useStyles();
   const smartConnectionHrefs = allConnectionConfigs
@@ -173,6 +174,17 @@ const ConnectionSettingsDialog = ({
   }
 
   const saveAndClose = () => {
+    if (
+      JSON.stringify(config) === JSON.stringify(connectionConfig) &&
+      config.smartConnectionMethod === SmartConnectionMethod.KEPLR
+    ) {
+      // Allow the user to force another retry to connect to Keplr without
+      // reloading the page.
+      tryKeplrConnect();
+      onClose();
+      return;
+    }
+
     if (config) {
       if (config.accessToken) {
         maybeSave('accessToken', config.accessToken);
@@ -365,7 +377,8 @@ const ConnectionSettingsDialog = ({
           onClick={saveAndClose}
           disabled={
             errors.size > 0 ||
-            JSON.stringify(config) === JSON.stringify(connectionConfig)
+            (JSON.stringify(config) === JSON.stringify(connectionConfig) &&
+              config.smartConnectionMethod !== SmartConnectionMethod.KEPLR)
           }
         >
           {currentTab === Tabs.SMART
@@ -383,4 +396,5 @@ export default withApplicationContext(ConnectionSettingsDialog, context => ({
   setConnectionConfig: context.setConnectionConfig,
   allConnectionConfigs: context.allConnectionConfigs,
   setAllConnectionConfigs: context.setAllConnectionConfigs,
+  tryKeplrConnect: context.tryKeplrConnect,
 }));

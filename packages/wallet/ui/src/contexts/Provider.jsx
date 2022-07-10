@@ -8,8 +8,10 @@ import { ApplicationContext, ConnectionStatus } from './Application';
 import {
   ConnectionConfigType,
   DEFAULT_CONNECTION_CONFIGS,
+  SmartConnectionMethod,
 } from '../util/connections';
 import { maybeLoad, maybeSave } from '../util/storage';
+import { suggestChain } from '../util/SuggestChain';
 
 const useDebugLogging = (state, watch) => {
   useEffect(() => console.log(state), watch);
@@ -144,6 +146,15 @@ const Provider = ({ children }) => {
   const [connectionStatus, setConnectionStatus] = useState(
     wantConnection ? 'connecting' : 'disconnected',
   );
+  const [keplrConnection, setKeplrConnection] = useState(null);
+
+  const tryKeplrConnect = async () => {
+    const [cosmjs, address] = await suggestChain(connectionConfig.href);
+    setKeplrConnection({
+      cosmjs,
+      address,
+    });
+  };
 
   useEffect(() => {
     if (!connectionComponent) {
@@ -187,6 +198,12 @@ const Provider = ({ children }) => {
       }
     }
     maybeSave('userConnectionConfigs', updatedConnectionConfigs);
+
+    if (
+      connectionConfig?.smartConnectionMethod === SmartConnectionMethod.KEPLR
+    ) {
+      tryKeplrConnect();
+    }
   }, [connectionConfig]);
 
   const backendSetters = new Map([
@@ -366,6 +383,8 @@ const Provider = ({ children }) => {
     connectionStatus,
     backendErrorHandler,
     setBackendErrorHandler,
+    keplrConnection,
+    tryKeplrConnect,
   };
 
   useDebugLogging(state, [
