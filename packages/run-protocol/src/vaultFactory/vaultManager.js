@@ -36,7 +36,11 @@ import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
 import { chargeInterest } from '../interest.js';
-import { checkDebtLimit, makeMetricsPublisherKit } from '../contractSupport.js';
+import {
+  checkDebtLimit,
+  makeEphemeraProvider,
+  makeMetricsPublisherKit,
+} from '../contractSupport.js';
 
 const { details: X } = assert;
 
@@ -127,33 +131,20 @@ const trace = makeTracer('VM');
  * }>} MethodContext
  */
 
-// #region Ephemeral states
-/** @typedef {{
- * liquidationQueueing: boolean,
- * outstandingQuote: Promise<MutableQuote>?,
- * }} Ephemera */
-/** @type {() => Ephemera} */
-const initEphemera = () => ({
+/**
+ * Ephemera are the elements of state that cannot (or need not) be durable.
+ * When there's a single instance it can be held in a closure, but there are
+ * many vault manaager objects. So we hold their ephemera keyed by the durable
+ * vault manager object reference.
+ *
+ * @type {(key: VaultManager) => {
+ *   liquidationQueueing: boolean,
+ *   outstandingQuote: Promise<MutableQuote>?,
+ * }} */
+const provideEphemera = makeEphemeraProvider(() => ({
   liquidationQueueing: false,
   outstandingQuote: null,
-});
-/** @type {Map<VaultManager, Ephemera>} */
-const ephemeras = new Map();
-/**
- * Provide an object to hold state that need not (or cannot) be durable.
- *
- * @type {(key: VaultManager) => Ephemera}
- */
-const provideEphemera = key => {
-  if (ephemeras.has(key)) {
-    // @ts-expect-error cast
-    return ephemeras.get(key);
-  }
-  const newEph = initEphemera();
-  ephemeras.set(key, newEph);
-  return newEph;
-};
-// #endregion
+}));
 
 /**
  * Create state for the Vault Manager kind
