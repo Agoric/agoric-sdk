@@ -14,6 +14,8 @@ import { handlePKitWarning } from '../handleWarning.js';
 
 const { details: X, quote: q } = assert;
 
+const isASCII = /^[a-zA-Z0-9_]+$/;
+
 /**
  * @param {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @param {UnwrapInstallation} unwrapInstallation
@@ -60,6 +62,18 @@ export const makeStartInstance = (
     }
 
     const instance = makeInstanceHandle();
+
+    const snoozedStrings = [];
+    const isSnoozed = string =>
+      snoozedStrings.some(s => string.indexOf(s) > -1);
+    const updateSnoozedList = strings => {
+      assert(
+        strings.every(s => typeof s === 'string' && isASCII.test(s)),
+        X`Snoozed strings (${q(strings)}) must be non-empty ascii strings.`,
+      );
+
+      snoozedStrings.splice(0, snoozedStrings.length, ...strings);
+    };
 
     const zoeInstanceStorageManager = await makeZoeInstanceStorageManager(
       installation,
@@ -181,6 +195,7 @@ export const makeStartInstance = (
           seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
           return { userSeat, notifier };
         },
+        isSnoozed,
       });
       return instanceAdmin;
     };
@@ -226,6 +241,7 @@ export const makeStartInstance = (
         }
       },
       stopAcceptingOffers: () => instanceAdmin.stopAcceptingOffers(),
+      updateSnoozedList,
     });
 
     // At this point, the contract will start executing. All must be

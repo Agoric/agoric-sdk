@@ -4,6 +4,7 @@ import { fit } from '@agoric/store';
 
 import { cleanProposal } from '../../cleanProposal.js';
 import { burnInvitation } from './burnInvitation.js';
+import { makeInvitationQueryFns } from '../invitationQueries.js';
 
 import '@agoric/ertp/exported.js';
 import '@agoric/store/exported.js';
@@ -34,14 +35,24 @@ export const makeOfferMethod = (
     paymentKeywordRecord = harden({}),
     offerArgs = undefined,
   ) => {
-    const { instanceHandle, invitationHandle } = await burnInvitation(
-      invitationIssuer,
+    const query = makeInvitationQueryFns(invitationIssuer);
+    const { instance, description } = await query.getInvitationDetails(
       invitation,
     );
     // AWAIT ///
 
-    const instanceAdmin = getInstanceAdmin(instanceHandle);
+    const instanceAdmin = getInstanceAdmin(instance);
+    assert(
+      !instanceAdmin.isSnoozed(description),
+      `not accepting offer with description '${description}'`,
+    );
     instanceAdmin.assertAcceptingOffers();
+
+    const { invitationHandle } = await burnInvitation(
+      invitationIssuer,
+      invitation,
+    );
+    // AWAIT ///
 
     const proposal = cleanProposal(uncleanProposal, getAssetKindByBrand);
     const proposalSchema = getProposalSchemaForInvitation(invitationHandle);

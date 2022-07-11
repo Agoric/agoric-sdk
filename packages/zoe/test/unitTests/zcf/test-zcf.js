@@ -1398,3 +1398,30 @@ test(`zcf.stopAcceptingOffers`, async t => {
     'can still query live seat',
   );
 });
+
+test(`zcf.updateSnoozedList - illegal string`, async t => {
+  const { zcf } = await setupZCFTest();
+  await t.throwsAsync(() => zcf.updateSnoozedList(['try-this']), {
+    message: /must be non-empty ascii strings/,
+  });
+  await t.throwsAsync(() => zcf.updateSnoozedList([374]), {
+    message: /must be non-empty ascii strings/,
+  });
+});
+
+test(`zcf.updateSnoozedList - illegal strings`, async t => {
+  const { zcf } = await setupZCFTest();
+  await t.throwsAsync(() => zcf.updateSnoozedList(['try this', 'or this*']), {
+    message: /must be non-empty ascii strings/,
+  });
+  await t.throwsAsync(() => zcf.updateSnoozedList('non_list'), {
+    message: /strings.every is not a function/,
+  });
+});
+
+test(`zcf.updateSnoozedList - legal lists`, async t => {
+  const { zcf } = await setupZCFTest();
+  t.is(await zcf.updateSnoozedList([]), undefined);
+  t.is(await zcf.updateSnoozedList(['fooOffer']), undefined);
+  t.is(await zcf.updateSnoozedList(['fooOffer', 'barOffer']), undefined);
+});
