@@ -309,21 +309,28 @@ function makeSwingStore(dirPath, forceReset, options) {
     keepSnapshots,
   });
 
+  /** @param {boolean} [abort] */
+  function doCommit(abort) {
+    if (!txnFinish) {
+      return undefined;
+    }
+    txnFinish(abort ? lmdbAbort : undefined);
+    return Promise.resolve(txnDone)
+      .then(() => {
+        trace(`${abort ? 'abort' : 'commit'}-tx`);
+      })
+      .finally(() => {
+        txnDone = null;
+        txnFinish = null;
+      });
+  }
+
   /**
    * Commit unsaved changes.
    */
   async function commit() {
     assert(db);
-    if (txnFinish) {
-      txnFinish();
-      try {
-        await txnDone;
-        trace(`commit-tx`);
-      } finally {
-        txnDone = null;
-        txnFinish = null;
-      }
-    }
+    await doCommit(false);
 
     // NOTE: The kvstore (which used to contain vatA -> snapshot1, and
     //   is being replaced with vatA -> snapshot2)
@@ -339,16 +346,7 @@ function makeSwingStore(dirPath, forceReset, options) {
    */
   async function close() {
     assert(db);
-    if (txnFinish) {
-      txnFinish(lmdbAbort);
-      try {
-        await txnDone;
-        trace(`abort-tx`);
-      } finally {
-        txnDone = null;
-        txnFinish = null;
-      }
-    }
+    await doCommit(true);
     await db.close();
     db = null;
     stopTrace();
