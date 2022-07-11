@@ -18,7 +18,6 @@ const { assign, entries, keys, fromEntries } = Object;
  * @param {{
  * agoricNames: NameHub,
  * board: Board
- * marshaller?: ERef<Marshaller>,
  * namesByAddress: NameHub,
  * storageNode?: ERef<StorageNode>,
  * zoe: ERef<ZoeService>,
@@ -26,7 +25,7 @@ const { assign, entries, keys, fromEntries } = Object;
  */
 export const makeSmartWallet = async (
   { address, bank, myAddressNameAdmin },
-  { agoricNames, board, marshaller, namesByAddress, storageNode, zoe },
+  { agoricNames, board, namesByAddress, storageNode, zoe },
 ) => {
   assert.typeof(address, 'string', 'invalid address');
   assert(bank, 'missing bank');
@@ -64,6 +63,8 @@ export const makeSmartWallet = async (
         }),
     });
   });
+
+  const marshaller = wallet.getMarshaller();
 
   const myWalletStorageNode =
     storageNode && E(storageNode).getChildNode(address);

@@ -242,12 +242,11 @@ export const makeClientBanks = async ({
   const STORAGE_PATH = 'wallet';
 
   const storageNode = await getChildNode(chainStorage, STORAGE_PATH);
-  const marshaller = E(board).getPublishingMarshaller();
   const { creatorFacet } = await E(zoe).startInstance(
     walletFactory,
     {},
     { agoricNames, namesByAddress, board },
-    { storageNode, marshaller },
+    { storageNode },
   );
   return E(client).assignBundle([
     address => {

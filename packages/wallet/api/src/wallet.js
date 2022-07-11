@@ -23,6 +23,7 @@ export function buildRootObject(vatPowers) {
   // See if we have the device vat power.
   const { D } = vatPowers || {};
 
+  /** @type {ReturnType<makeWallet>} */
   let walletRoot;
   /** @type {WalletAdminFacet} */
   let walletAdmin;
@@ -340,6 +341,8 @@ export function buildRootObject(vatPowers) {
       getIssuers: walletAdmin.getIssuers,
       getPurse: walletAdmin.getPurse,
       getPurses: walletAdmin.getPurses,
+
+      getMarshaller: walletAdmin.getMarshaller,
 
       lookup: walletAdmin.lookup,
     });
