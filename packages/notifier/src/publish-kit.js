@@ -30,7 +30,7 @@ const makeEachIterator = pubList => {
       // Since we are wrapping that error with eventual send, we sink the
       // rejection here too so it doesn't become an invalid unhandled rejection
       // later.
-      E.when(pubList, sink, sink);
+      void E.when(pubList, sink, sink);
       return resultP;
     },
   });

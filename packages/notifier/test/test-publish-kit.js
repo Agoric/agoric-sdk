@@ -383,15 +383,15 @@ test('subscribeAfter resolution sequencing', async t => {
 
   const sub1FirstLateAll = [];
   const sub1SecondAll = [];
-  Promise.resolve(sub1.subscribeAfter()).then(result =>
-    sub1FirstLateAll.push(result),
-  );
-  Promise.resolve(sub1.subscribeAfter(0n)).then(result =>
-    sub1FirstLateAll.push(result),
-  );
-  Promise.resolve(sub1.subscribeAfter(sub1FirstAll[0].publishCount)).then(
-    result => sub1SecondAll.push(result),
-  );
+  Promise.resolve(sub1.subscribeAfter())
+    .then(result => sub1FirstLateAll.push(result))
+    .catch(t.fail);
+  Promise.resolve(sub1.subscribeAfter(0n))
+    .then(result => sub1FirstLateAll.push(result))
+    .catch(t.fail);
+  Promise.resolve(sub1.subscribeAfter(sub1FirstAll[0].publishCount))
+    .then(result => sub1SecondAll.push(result))
+    .catch(t.fail);
 
   pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter(sub2LIFO[0].publishCount));
@@ -427,15 +427,15 @@ test('subscribeAfter resolution sequencing', async t => {
 
   const sub1SecondLateAll = [];
   const sub1FinalAll = [];
-  Promise.resolve(sub1.subscribeAfter()).then(result =>
-    sub1SecondLateAll.push(result),
-  );
-  Promise.resolve(sub1.subscribeAfter(0n)).then(result =>
-    sub1SecondLateAll.push(result),
-  );
-  Promise.resolve(sub1.subscribeAfter(sub1SecondAll[0].publishCount)).then(
-    result => sub1FinalAll.push(result),
-  );
+  Promise.resolve(sub1.subscribeAfter())
+    .then(result => sub1SecondLateAll.push(result))
+    .catch(t.fail);
+  Promise.resolve(sub1.subscribeAfter(0n))
+    .then(result => sub1SecondLateAll.push(result))
+    .catch(t.fail);
+  Promise.resolve(sub1.subscribeAfter(sub1SecondAll[0].publishCount))
+    .then(result => sub1FinalAll.push(result))
+    .catch(t.fail);
 
   pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter(sub2LIFO[0].publishCount));
