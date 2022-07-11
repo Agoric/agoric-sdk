@@ -24,6 +24,7 @@ export function makeFakeVirtualObjectManager(vrm, fakeStuff, options = {}) {
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
     flushCache,
+    canBeDurable,
   } = makeVirtualObjectManager(
     fakeStuff.syscall,
     vrm,
@@ -33,6 +34,7 @@ export function makeFakeVirtualObjectManager(vrm, fakeStuff, options = {}) {
     fakeStuff.marshal.serialize,
     fakeStuff.marshal.unserialize,
     cacheSize,
+    fakeStuff.assertAcceptableSyscallCapdataSize,
   );
 
   const normalVOM = {
@@ -42,6 +44,7 @@ export function makeFakeVirtualObjectManager(vrm, fakeStuff, options = {}) {
     defineDurableKind,
     defineDurableKindMulti,
     makeKindHandle,
+    canBeDurable,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
   };

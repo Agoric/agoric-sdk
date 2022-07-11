@@ -1,7 +1,7 @@
 import { Far } from '@endo/far';
 import { makeZoeKit } from '@agoric/zoe';
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
   return Far('root', {
     buildZoe: async (adminVat, feeIssuerConfig, zcfBundleName) => {
       const shutdownZoeVat = vatPowers.exitVatWithFailure;
@@ -11,6 +11,7 @@ export function buildRootObject(vatPowers) {
         shutdownZoeVat,
         feeIssuerConfig,
         { name: zcfBundleName },
+        zoeBaggage,
       );
       return harden({
         zoeService,

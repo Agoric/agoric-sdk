@@ -4,12 +4,13 @@ import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { makeWeakStore } from '@agoric/store';
 import { assert, details as X, q } from '@agoric/assert';
+import { objectMap } from '@agoric/vat-data';
 
 import './types.js';
 import './internal-types.js';
 
 import { cleanKeywords } from '../cleanProposal.js';
-import { arrayToObj, objectMap } from '../objArrayConversion.js';
+import { arrayToObj } from '../objArrayConversion.js';
 
 /**
  * Store the pool purses whose purpose is to escrow assets, with one
@@ -53,14 +54,10 @@ export const makeEscrowStorage = () => {
   };
 
   /** @type {WithdrawPayments} */
-  const withdrawPayments = allocation => {
-    return harden(
-      objectMap(allocation, ([keyword, amount]) => {
-        const purse = brandToPurse.get(amount.brand);
-        return [keyword, E(purse).withdraw(amount)];
-      }),
+  const withdrawPayments = allocation =>
+    objectMap(allocation, amount =>
+      E(brandToPurse.get(amount.brand)).withdraw(amount),
     );
-  };
 
   /**
    *

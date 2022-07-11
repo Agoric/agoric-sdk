@@ -8,27 +8,33 @@ This documents the messages sent across the bridge to the Javascript swingset.
 
 ## From Javascript to Golang
 
-### LIEN_SET_LIENED
+### LIEN_CHANGE_LIENED
 
-* type: "LIEN_SET_LIENED"
+Request: JSON object with the fields
+
+* type: "LIEN_CHANGE_LIENED"
 * address: string, bech32-encoded
 * denom: string
-* amount: string encoding nonnegative integer
+* delta: string encoding integer of change to liened amount
 
-Response: boolean indicating whether the total lien for the account
-successfully set to the new total. The following rules are used:
+Response: JSON string encoding nonnegative integer holding the current lien amount.
+
+The following rules are used:
 
 * The total liened amount can always be decreased.
-* When increasing the total liened amount, the new total must be less than
-  or equal to the bonded amount.
+* When increasing the total liened amount, the new total liened plus unvested
+  must be less than or equal to the bonded amount.
+* Can be used to change from zero balance or to zero balance.
 
 ### LIEN_GET_ACCOUNT_STATE
+
+Request: JSON object with the fields
 
 * type: "LIEN_GET_ACCOUNT_STATE"
 * address: string, bech32-encoded
 * denom: string
 
-Response:
+Response: JSON object with the fields
 
 * currentTime: string timestamp
 * total: string encoding nonnegativeinteger
@@ -41,11 +47,13 @@ See [Concepts](01_concepts.md) for the meaning of the amounts.
 
 ### LIEN_GET_STAKING
 
+Request: JSON object with the fields
+
 * type: "LIEN_GET_STAKING"
 * validators: array of strings of bech32-encoded operator addresses
 * delegators: array of strings of bech32-encoded account addresses
 
-Response:
+Response: JSON object with the fields
 
 * epoch_tag: string encoding the staking epoch.
 If it is the same in two different responses, the results can be
@@ -81,4 +89,8 @@ None.
 The LIEN_SET_TOTAL operation checks the Golang-side state and might reject
 the operation. It has the power to do so to avoid a race between checking
 the account state and updating the liened amount, vs other cosmos-sdk
-operations which might change the account state.
+operations which might change the account state. The cosmos-side lien amount
+is the source of truth for the lien.
+
+The LIEN_GET_STAKING call is categorized as a lien operation onlyb because
+of the similarity to LIEN_GET_ACCOUNT_STATE.

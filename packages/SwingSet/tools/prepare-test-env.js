@@ -19,6 +19,7 @@ const {
   defineDurableKind,
   defineDurableKindMulti,
   makeKindHandle,
+  canBeDurable,
 } = vom;
 
 const {
@@ -42,6 +43,7 @@ const VatData = harden({
   makeScalarBigWeakMapStore,
   makeScalarBigSetStore,
   makeScalarBigWeakSetStore,
+  canBeDurable,
 });
 
 globalThis.VatData = VatData;

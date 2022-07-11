@@ -256,14 +256,14 @@ export function makeVirtualReferenceManager(
    */
   function isDurable(vref) {
     const { type, id, virtual, allocatedByVat } = parseVatSlot(vref);
-    if (type !== 'object') {
+    if (relaxDurabilityRules) {
+      // we'll pretend an object is durable if running with relaxed rules
+      return true;
+    } else if (type !== 'object') {
       // promises and devices are not durable
       return false;
     } else if (!allocatedByVat) {
       // imports are durable
-      return true;
-    } else if (relaxDurabilityRules) {
-      // we'll pretend an object is durable if running with relaxed rules
       return true;
     } else if (virtual) {
       // stores and virtual objects are durable if their kinds are so configured

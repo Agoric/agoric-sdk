@@ -50,7 +50,6 @@ export function makeVatManagerFactory({
     assertKnownOptions(managerOptions, [
       'enablePipelining',
       'managerType',
-      'gcEveryCrank',
       'setup',
       'bundle',
       'metered',
@@ -85,12 +84,7 @@ export function makeVatManagerFactory({
       enableSetup,
     } = managerOptions;
 
-    if (
-      metered &&
-      managerType !== 'local' &&
-      managerType !== 'xs-worker' &&
-      managerType !== 'xs-worker-no-gc'
-    ) {
+    if (metered && managerType !== 'local' && managerType !== 'xs-worker') {
       console.warn(`TODO: support metered with ${managerType}`);
     }
     if (setup && managerType !== 'local') {
@@ -139,19 +133,11 @@ export function makeVatManagerFactory({
       );
     }
 
-    if (managerType === 'xs-worker' || managerType === 'xs-worker-no-gc') {
-      const transformedOptions = {
-        ...managerOptions,
-        managerType: 'xs-worker',
-      };
-      if (managerOptions.gcEveryCrank === undefined) {
-        // Explicitly enable/disable gcEveryCrank.
-        transformedOptions.gcEveryCrank = managerType !== 'xs-worker-no-gc';
-      }
+    if (managerType === 'xs-worker') {
       return xsWorkerFactory.createFromBundle(
         vatID,
         bundle,
-        transformedOptions,
+        managerOptions,
         vatSyscallHandler,
       );
     }

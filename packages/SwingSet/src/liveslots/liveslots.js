@@ -23,6 +23,9 @@ import { releaseOldState } from './stop-vat.js';
 
 const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
 
+const SYSCALL_CAPDATA_BODY_SIZE_LIMIT = 10_000_000;
+const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
+
 // 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
 // of local objects which have been exported. These cannot be persisted
 // beyond the runtime of the javascript environment, so this mechanism is not
@@ -68,6 +71,37 @@ function build(
   let didStopVat = false;
 
   const outstandingProxies = new WeakSet();
+
+  let syscallCapdataBodySizeLimit = SYSCALL_CAPDATA_BODY_SIZE_LIMIT;
+  let syscallCapdataSlotsLengthLimit = SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT;
+
+  function setSyscallCapdataLimits(
+    bodySizeLimit = SYSCALL_CAPDATA_BODY_SIZE_LIMIT,
+    slotsLengthLimit = SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT,
+  ) {
+    syscallCapdataBodySizeLimit = bodySizeLimit;
+    syscallCapdataSlotsLengthLimit = slotsLengthLimit;
+  }
+
+  function isAcceptableSyscallCapdataSize(capdatas) {
+    let bodySizeTotal = 0;
+    let slotsLengthTotal = 0;
+    for (const capdata of capdatas) {
+      bodySizeTotal += capdata.body.length;
+      slotsLengthTotal += capdata.slots.length;
+    }
+    return (
+      bodySizeTotal <= syscallCapdataBodySizeLimit &&
+      slotsLengthTotal <= syscallCapdataSlotsLengthLimit
+    );
+  }
+
+  function assertAcceptableSyscallCapdataSize(capdatas) {
+    assert(
+      isAcceptableSyscallCapdataSize(capdatas),
+      'syscall capdata too large',
+    );
+  }
 
   /**
    * Translation and tracking tables to map in-vat object/promise references
@@ -605,6 +639,7 @@ function build(
     m.serialize,
     unmeteredUnserialize,
     cacheSize,
+    assertAcceptableSyscallCapdataSize,
   );
 
   const collectionManager = makeCollectionManager(
@@ -619,6 +654,7 @@ function build(
     registerValue,
     m.serialize,
     unmeteredUnserialize,
+    assertAcceptableSyscallCapdataSize,
   );
 
   const watchedPromiseManager = makeWatchedPromiseManager(
@@ -841,6 +877,7 @@ function build(
 
     meterControl.assertIsMetered(); // else userspace getters could escape
     const serMethargs = m.serialize(harden(methargs));
+    assertAcceptableSyscallCapdataSize([serMethargs]);
     serMethargs.slots.map(retainExportedVref);
 
     const resultVPID = allocatePromiseID();
@@ -905,6 +942,15 @@ function build(
     const maybeNewVPIDs = new Set(serMethargs.slots);
     const resolutions = resolutionCollector().forSlots(serMethargs.slots);
     if (resolutions.length > 0) {
+      try {
+        const resolutionCDs = resolutions.map(
+          ([_xvpid, _isReject, resolutionCD]) => resolutionCD,
+        );
+        assertAcceptableSyscallCapdataSize(resolutionCDs);
+      } catch (e) {
+        syscall.exit(true, m.serialize(e));
+        return null;
+      }
       syscall.resolve(resolutions);
       resolutions.forEach(([_xvpid, _isReject, resolutionCD]) => {
         resolutionCD.slots.forEach(vref => maybeNewVPIDs.add(vref));
@@ -953,6 +999,7 @@ function build(
         return (...args) => {
           meterControl.assertIsMetered(); // userspace getters shouldn't escape
           const serArgs = m.serialize(harden(args));
+          assertAcceptableSyscallCapdataSize([serArgs]);
           serArgs.slots.map(retainExportedVref);
           // if we didn't forbid promises, we'd need to
           // maybeExportPromise() here
@@ -1096,6 +1143,15 @@ function build(
       assert(exportedVPIDs.has(vpid), vpid);
       const rc = resolutionCollector();
       const resolutions = rc.forPromise(vpid, isReject, value);
+      try {
+        const resolutionCDs = resolutions.map(
+          ([_xvpid, _isReject, resolutionCD]) => resolutionCD,
+        );
+        assertAcceptableSyscallCapdataSize(resolutionCDs);
+      } catch (e) {
+        syscall.exit(true, m.serialize(e));
+        return;
+      }
       syscall.resolve(resolutions);
 
       const maybeNewVPIDs = new Set();
@@ -1223,16 +1279,24 @@ function build(
   function exitVat(completion) {
     meterControl.assertIsMetered(); // else userspace getters could escape
     const args = m.serialize(harden(completion));
-    args.slots.map(retainExportedVref);
-    syscall.exit(false, args);
+    if (isAcceptableSyscallCapdataSize([args])) {
+      args.slots.map(retainExportedVref);
+      syscall.exit(false, args);
+    } else {
+      syscall.exit(true, m.serialize(Error('syscall capdata too large')));
+    }
   }
 
   /** @type {ExitVatWithFailure} */
   function exitVatWithFailure(reason) {
     meterControl.assertIsMetered(); // else userspace getters could escape
     const args = m.serialize(harden(reason));
-    args.slots.map(retainExportedVref);
-    syscall.exit(true, args);
+    if (isAcceptableSyscallCapdataSize([args])) {
+      args.slots.map(retainExportedVref);
+      syscall.exit(true, args);
+    } else {
+      syscall.exit(true, m.serialize(Error('syscall capdata too large')));
+    }
   }
 
   function disavow(presence) {
@@ -1259,6 +1323,7 @@ function build(
       defineDurableKind: vom.defineDurableKind,
       defineDurableKindMulti: vom.defineDurableKindMulti,
       makeKindHandle: vom.makeKindHandle,
+      canBeDurable: vom.canBeDurable,
       providePromiseWatcher: watchedPromiseManager.providePromiseWatcher,
       watchPromise: watchedPromiseManager.watchPromise,
       makeScalarBigMapStore: collectionManager.makeScalarBigMapStore,
@@ -1277,6 +1342,7 @@ function build(
     ...vom.testHooks,
     ...vrm.testHooks,
     ...collectionManager.testHooks,
+    setSyscallCapdataLimits,
   });
 
   function setVatOption(option, value) {
@@ -1323,6 +1389,7 @@ function build(
     if (enableDisavow) {
       vpow.disavow = disavow;
     }
+    harden(vpow);
 
     initializeIDCounters();
     vom.initializeKindHandleKind();
@@ -1350,11 +1417,7 @@ function build(
     );
 
     // here we finally invoke the vat code, and get back the root object
-    const rootObject = await buildRootObject(
-      harden(vpow),
-      harden(vatParameters),
-      baggage,
-    );
+    const rootObject = await buildRootObject(vpow, vatParameters, baggage);
     assert.equal(
       passStyleOf(rootObject),
       'remotable',

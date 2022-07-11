@@ -350,10 +350,6 @@ export function validateDeleteMetadataOnly(
         refValString(contentRef, contentType),
       ]),
     );
-    validate(
-      v,
-      matchVatstoreGet(`vc.${idx}.sfoo`, refValString(contentRef, contentType)),
-    );
     if (!nonVirtual) {
       validateUpdate(v, `vom.rc.${contentRef}`, `${rc}`, `${rc - 1}`);
     }
