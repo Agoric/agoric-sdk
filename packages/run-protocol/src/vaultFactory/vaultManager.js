@@ -259,7 +259,9 @@ const helperBehavior = {
    * @param {ZCFSeat} poolIncrementSeat
    */
   chargeAllVaults: async ({ state, facets }, updateTime, poolIncrementSeat) => {
-    trace('chargeAllVaults', { updateTime });
+    trace('chargeAllVaults', state.collateralBrand, {
+      updateTime,
+    });
     const interestRate = state.factoryPowers
       .getGovernedParams()
       .getInterestRate();
@@ -295,7 +297,7 @@ const helperBehavior = {
     state.totalDebt = changes.totalDebt;
 
     facets.helper.assetNotify();
-    trace('chargeAllVaults complete');
+    trace('chargeAllVaults complete', state.collateralBrand);
     // price to check against has changed
     return facets.helper.reschedulePriceCheck();
   },
@@ -355,7 +357,9 @@ const helperBehavior = {
    */
   reschedulePriceCheck: async ({ state, facets }, highestRatio) => {
     const ephemera = provideEphemera(facets.self);
-    trace('reschedulePriceCheck', ephemera);
+    trace('reschedulePriceCheck', state.collateralBrand, {
+      ephemera,
+    });
     // INTERLOCK: the first time through, start the activity to wait for
     // and process liquidations over time.
     if (!ephemera.liquidationQueueing) {
@@ -392,7 +396,7 @@ const helperBehavior = {
       highestDebtRatio.denominator, // collateral
       liquidationThreshold(highestDebtRatio, liquidationMargin),
     );
-    trace('update quote', highestDebtRatio);
+    trace('update quote', state.collateralBrand, highestDebtRatio);
   },
 
   /**
@@ -418,7 +422,7 @@ const helperBehavior = {
           highestDebtRatio.denominator, // collateral
           liquidationThreshold(highestDebtRatio, liquidationMargin),
         );
-        trace('posted quote request', highestDebtRatio);
+        trace('posted quote request', state.collateralBrand, highestDebtRatio);
 
         // The rest of this method will not happen until after a quote is received.
         // This may not happen until much later, when the market changes.
@@ -433,7 +437,7 @@ const helperBehavior = {
           ceilDivideBy(getAmountOut(quote), liquidationMargin),
           getAmountIn(quote),
         );
-        trace('quote', quote, quoteRatioPlusMargin);
+        trace('quote', state.collateralBrand, quote, quoteRatioPlusMargin);
 
         // Liquidate the head of the queue
         const [next] =
@@ -445,7 +449,7 @@ const helperBehavior = {
     }
     for await (const next of eventualLiquidations()) {
       await facets.helper.liquidateAndRemove(next);
-      trace('price check liq', next && next[0]);
+      trace('price check liq', state.collateralBrand, next && next[0]);
     }
   },
 
@@ -456,7 +460,7 @@ const helperBehavior = {
   liquidateAndRemove: ({ state, facets }, [key, vault]) => {
     const { factoryPowers, prioritizedVaults, zcf } = state;
     const vaultSeat = vault.getVaultSeat();
-    trace('liquidating', vaultSeat.getProposal());
+    trace('liquidating', state.collateralBrand, vaultSeat.getProposal());
 
     const collateralPre = vault.getCollateralAmount();
 
@@ -497,7 +501,7 @@ const helperBehavior = {
           accounting.shortfall,
         );
         prioritizedVaults.removeVault(key);
-        trace('liquidated');
+        trace('liquidated', state.collateralBrand);
         state.numLiquidationsCompleted += 1;
         facets.helper.updateMetrics();
 
@@ -568,7 +572,10 @@ const managerBehavior = {
    * @param {ZCFSeat} seat
    */
   burnAndRecord: ({ state }, toBurn, seat) => {
-    trace('burnAndRecord', { toBurn, totalDebt: state.totalDebt });
+    trace('burnAndRecord', state.collateralBrand, {
+      toBurn,
+      totalDebt: state.totalDebt,
+    });
     const { burnDebt } = state.factoryPowers;
     burnDebt(toBurn, seat);
     state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
@@ -752,7 +759,7 @@ const selfBehavior = {
     const zoe = zcf.getZoeService();
     const collateralIssuer = zcf.getIssuerForBrand(collateralBrand);
     const debtIssuer = zcf.getIssuerForBrand(debtBrand);
-    trace('setup liquidator', {
+    trace('setup liquidator', state.collateralBrand, {
       debtBrand,
       debtIssuer,
       collateralBrand,
@@ -770,7 +777,7 @@ const selfBehavior = {
         timerService,
       }),
     );
-    trace('setup liquidator complete', {
+    trace('setup liquidator complete', state.collateralBrand, {
       instance,
       old: state.liquidatorInstance,
       equal: state.liquidatorInstance === instance,
