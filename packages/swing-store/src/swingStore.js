@@ -270,7 +270,9 @@ function makeSwingStore(dirPath, forceReset, options) {
   function set(key, value) {
     assert.typeof(key, 'string');
     assert.typeof(value, 'string');
-    ensureTxn().put(key, value);
+    // synchronous read after write within a transaction is safe
+    // The transaction's overall success will be awaited during commit
+    void ensureTxn().put(key, value);
     trace('set', key, value);
   }
 
@@ -285,7 +287,9 @@ function makeSwingStore(dirPath, forceReset, options) {
   function del(key) {
     assert.typeof(key, 'string');
     if (has(key)) {
-      ensureTxn().remove(key);
+      // synchronous read after write within a transaction is safe
+      // The transaction's overall success will be awaited during commit
+      void ensureTxn().remove(key);
       trace('del', key);
     }
   }
