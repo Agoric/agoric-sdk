@@ -127,9 +127,33 @@ const trace = makeTracer('VM');
  * }>} MethodContext
  */
 
-// FIXME https://github.com/Agoric/agoric-sdk/issues/5622
-let liquidationQueueing = false;
-let outstandingQuote = null;
+// #region Ephemeral states
+/** @typedef {{
+ * liquidationQueueing: boolean,
+ * outstandingQuote: Promise<MutableQuote>?,
+ * }} Ephemera */
+/** @type {() => Ephemera} */
+const initEphemera = () => ({
+  liquidationQueueing: false,
+  outstandingQuote: null,
+});
+/** @type {Map<VaultManager, Ephemera>} */
+const ephemeras = new Map();
+/**
+ * Provide an object to hold state that need not (or cannot) be durable.
+ *
+ * @type {(key: VaultManager) => Ephemera}
+ */
+const provideEphemera = key => {
+  if (ephemeras.has(key)) {
+    // @ts-expect-error cast
+    return ephemeras.get(key);
+  }
+  const newEph = initEphemera();
+  ephemeras.set(key, newEph);
+  return newEph;
+};
+// #endregion
 
 /**
  * Create state for the Vault Manager kind
@@ -339,21 +363,22 @@ const helperBehavior = {
    * @returns {Promise<void>}
    */
   reschedulePriceCheck: async ({ state, facets }, highestRatio) => {
-    trace('reschedulePriceCheck', { liquidationQueueing });
+    const ephemera = provideEphemera(facets.self);
+    trace('reschedulePriceCheck', ephemera);
     // INTERLOCK: the first time through, start the activity to wait for
     // and process liquidations over time.
-    if (!liquidationQueueing) {
-      liquidationQueueing = true;
+    if (!ephemera.liquidationQueueing) {
+      ephemera.liquidationQueueing = true;
       // eslint-disable-next-line consistent-return
       return facets.helper
         .processLiquidations()
         .catch(e => console.error('Liquidator failed', e))
         .finally(() => {
-          liquidationQueueing = false;
+          ephemera.liquidationQueueing = false;
         });
     }
 
-    if (!outstandingQuote) {
+    if (!ephemera.outstandingQuote) {
       // the new threshold will be picked up by the next quote request
       return;
     }
@@ -372,7 +397,7 @@ const helperBehavior = {
     const govParams = state.factoryPowers.getGovernedParams();
     const liquidationMargin = govParams.getLiquidationMargin();
     // Safe to call extraneously (lightweight and idempotent)
-    E(outstandingQuote).updateLevel(
+    E(ephemera.outstandingQuote).updateLevel(
       highestDebtRatio.denominator, // collateral
       liquidationThreshold(highestDebtRatio, liquidationMargin),
     );
@@ -385,6 +410,7 @@ const helperBehavior = {
   processLiquidations: async ({ state, facets }) => {
     const { prioritizedVaults, priceAuthority } = state;
     const govParams = state.factoryPowers.getGovernedParams();
+    const ephemera = provideEphemera(facets.self);
 
     async function* eventualLiquidations() {
       while (true) {
@@ -397,7 +423,7 @@ const helperBehavior = {
         // ask to be alerted when the price level falls enough that the vault
         // with the highest debt to collateral ratio will no longer be valued at the
         // liquidationMargin above its debt.
-        outstandingQuote = E(priceAuthority).mutableQuoteWhenLT(
+        ephemera.outstandingQuote = E(priceAuthority).mutableQuoteWhenLT(
           highestDebtRatio.denominator, // collateral
           liquidationThreshold(highestDebtRatio, liquidationMargin),
         );
@@ -406,8 +432,8 @@ const helperBehavior = {
         // The rest of this method will not happen until after a quote is received.
         // This may not happen until much later, when the market changes.
         // eslint-disable-next-line no-await-in-loop
-        const quote = await E(outstandingQuote).getPromise();
-        outstandingQuote = null;
+        const quote = await E(ephemera.outstandingQuote).getPromise();
+        ephemera.outstandingQuote = null;
         // When we receive a quote, we check whether the vault with the highest
         // ratio of debt to collateral is below the liquidationMargin, and if so,
         // we liquidate it. We use ceilDivide to round up because ratios above
