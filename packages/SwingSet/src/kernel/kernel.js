@@ -368,6 +368,7 @@ export default function buildKernel(
    * @typedef { {
    *    abort?: boolean, // changes should be discarded, not committed
    *    popDelivery?: boolean, // discard the aborted delivery
+   *    didDelivery?: boolean, // we made a delivery to a vat, for run policy
    *    computrons?: BigInt, // computron count for run policy
    *    meterID?: string, // deduct those computrons from a meter
    *    decrementReapCount?: { vatID: VatID }, // the reap counter should decrement
@@ -453,7 +454,7 @@ export default function buildKernel(
     // TODO metering.allocate, some day
 
     /** @type {CrankResults} */
-    const results = { computrons };
+    const results = { didDelivery: true, computrons };
 
     if (meterID && computrons) {
       results.meterID = meterID; // decrement meter when we're done
@@ -708,6 +709,7 @@ export default function buildKernel(
     } catch (err) {
       const info = makeError(`${err}`);
       const results = {
+        didDelivery: true, // ok, it failed, but we did spend the time
         abort: true, // delete partial vat state
         popDelivery: true, // don't repeat createVat
         terminate: { vatID, reject: true, info },
@@ -1171,16 +1173,7 @@ export default function buildKernel(
       message,
     });
     /** @type { PolicyInput } */
-    let policyInput = ['crank', {}];
-    if (message.type === 'create-vat') {
-      // TODO: create-vat now gets metering, at least for the
-      // dispatch.startVat . We should probably tell the policy about
-      // the creation too since there's extra overhead (we're
-      // launching a new child process, at least, although that
-      // sometimes happens randomly because of vat eviction policy
-      // which should not affect the in-consensus policyInput)
-      policyInput = ['create-vat', {}];
-    }
+    let policyInput = ['none', {}];
 
     // TODO: policyInput=['crank-failed',{}] is meant to cover
     // deliveries which fail so badly we don't get metering data (but
@@ -1200,6 +1193,20 @@ export default function buildKernel(
 
     const crankResults = await deliverRunQueueEvent(message);
     // { abort/commit, deduct, terminate+notify, popDelivery }
+
+    if (crankResults.didDelivery) {
+      if (message.type === 'create-vat') {
+        // TODO: create-vat now gets metering, at least for the
+        // dispatch.startVat . We should probably tell the policy about
+        // the creation too since there's extra overhead (we're
+        // launching a new child process, at least, although that
+        // sometimes happens randomly because of vat eviction policy
+        // which should not affect the in-consensus policyInput)
+        policyInput = ['create-vat', {}];
+      } else {
+        policyInput = ['crank', {}];
+      }
+    }
 
     // Deliveries cause syscalls, syscalls might cause errors
     // (Reported through vatFatalSyscall() and the 'illegalSyscall'
@@ -1232,7 +1239,7 @@ export default function buildKernel(
     const { computrons, meterID } = crankResults;
     if (computrons) {
       assert.typeof(computrons, 'bigint');
-      policyInput = ['crank', { computrons: BigInt(computrons) }];
+      policyInput[1].computrons = BigInt(computrons);
       if (meterID) {
         const notify = kernelKeeper.deductMeter(meterID, computrons);
         if (notify) {
@@ -1315,7 +1322,7 @@ export default function buildKernel(
       message,
     });
     /** @type { PolicyInput } */
-    const policyInput = ['none'];
+    const policyInput = ['none', {}];
 
     // By default we're moving events from one queue to another. Any references
     // in the events remain the kernel's responsibility and the refcounts persist

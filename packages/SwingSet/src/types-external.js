@@ -303,10 +303,11 @@ export {};
  */
 
 /**
- * @typedef { [tag: 'none'] } PolicyInputNone
- * @typedef { [tag: 'create-vat', details: {} ]} PolicyInputCreateVat
- * @typedef { [tag: 'crank', details: { computrons?: bigint }] } PolicyInputCrankComplete
- * @typedef { [tag: 'crank-failed', details: {}]} PolicyInputCrankFailed
+ * @typedef { { computrons?: bigint } } PolicyInputDetails
+ * @typedef { [tag: 'none', details: PolicyInputDetails ] } PolicyInputNone
+ * @typedef { [tag: 'create-vat', details: PolicyInputDetails  ]} PolicyInputCreateVat
+ * @typedef { [tag: 'crank', details: PolicyInputDetails ] } PolicyInputCrankComplete
+ * @typedef { [tag: 'crank-failed', details: PolicyInputDetails ]} PolicyInputCrankFailed
  * @typedef { PolicyInputNone | PolicyInputCreateVat | PolicyInputCrankComplete | PolicyInputCrankFailed } PolicyInput
  * @typedef { boolean } PolicyOutput
  * @typedef { { vatCreated: (details: {}) => PolicyOutput,
