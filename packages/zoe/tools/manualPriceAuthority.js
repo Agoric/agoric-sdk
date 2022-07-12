@@ -10,6 +10,16 @@ import {
   floorDivideBy,
 } from '../src/contractSupport/index.js';
 
+/**
+ *
+ * @param {object} options
+ * @param {Brand} options.actualBrandIn
+ * @param {Brand} options.actualBrandOut
+ * @param {Ratio} options.initialPrice
+ * @param {TimerService} options.timer
+ * @param {IssuerKit} [options.quoteIssuerKit]
+ * @returns {PriceAuthority & { setPrice: (Ratio) => void }}
+ */
 export function makeManualPriceAuthority(options) {
   const {
     actualBrandIn,
@@ -70,7 +80,7 @@ export function makeManualPriceAuthority(options) {
     adminFacet: { fireTriggers },
   } = makeOnewayPriceAuthorityKit(priceAuthorityOptions);
 
-  return Far('PriceAuthority', {
+  return Far('ManualPriceAuthority', {
     setPrice: newPrice => {
       currentPrice = newPrice;
       updater.updateState(currentPrice);
