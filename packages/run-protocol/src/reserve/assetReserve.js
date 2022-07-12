@@ -25,6 +25,8 @@ const nonalphanumeric = /[^A-Za-z0-9]/g;
  *
  * @property {AmountKeywordRecord} allocations
  * @property {Amount<'nat'>} shortfallBalance shortfall from liquiditation that
+ * @property {Amount<'nat'>} mintedRUN total RUN minted to date
+ * @property {Amount<'nat'>} burnedRUN total RUN burned to date
  *   has not yet been compensated.
  */
 
@@ -222,6 +224,9 @@ const start = async (zcf, privateArgs) => {
 
   const { brand: runBrand } = await E(runMint).getIssuerRecord();
 
+  let mintedRUN = AmountMath.makeEmpty(runBrand);
+  let burnedRUN = AmountMath.makeEmpty(runBrand);
+
   // shortfall in Vaults due to liquidations less than debt. This value can be
   // reduced by various actions which burn RUN.
   let shortfallBalance = AmountMath.makeEmpty(runBrand);
@@ -236,6 +241,8 @@ const start = async (zcf, privateArgs) => {
     const metrics = harden({
       allocations: getAllocations(),
       shortfallBalance,
+      mintedRUN,
+      burnedRUN,
     });
     metricsPublication.updateState(metrics);
   };
@@ -270,6 +277,8 @@ const start = async (zcf, privateArgs) => {
 
     // create the RUN
     const offerToSeat = runMint.mintGains(harden({ RUN: runAmount }));
+    mintedRUN = AmountMath.add(mintedRUN, runAmount);
+
     offerToSeat.incrementBy(
       collateralSeat.decrementBy(
         harden({
@@ -316,6 +325,7 @@ const start = async (zcf, privateArgs) => {
       }),
     );
     zcf.reallocate(offerToSeat, collateralSeat);
+    updateMetrics();
   };
 
   const burnRUNToReduceShortfall = reduction => {
@@ -328,6 +338,8 @@ const start = async (zcf, privateArgs) => {
     }
 
     runMint.burnLosses(harden({ [runKeyword]: amountToBurn }), collateralSeat);
+    burnedRUN = AmountMath.add(burnedRUN, amountToBurn);
+
     reduceLiquidationShortfall(amountToBurn);
   };
 

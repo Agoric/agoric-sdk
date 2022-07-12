@@ -10,7 +10,7 @@ import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 
 import { setupReserveServices } from './setup.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
-import { subscriptionTracker } from '../metrics.js';
+import { reserveInitialState, subscriptionTracker } from '../metrics.js';
 import { subscriptionKey } from '../supports.js';
 
 const addLiquidPool = async (
@@ -173,6 +173,10 @@ test('governance add Liquidity to the AMM', async t => {
     'should be 80K',
   );
 
+  const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
+  const m = await subscriptionTracker(t, metricsSub);
+  await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
+
   const invitation = await E(
     reserve.reservePublicFacet,
   ).makeAddCollateralInvitation();
@@ -230,6 +234,14 @@ test('governance add Liquidity to the AMM', async t => {
     }),
     'should be 80K',
   );
+
+  await m.assertChange({
+    mintedRUN: { value: 80_000n },
+    allocations: {
+      Rmoola: moola(10_000n),
+      RmoolaLiquidity: AmountMath.make(moolaLiquidityBrand, 85_622n),
+    },
+  });
 });
 
 test('request more collateral than available', async t => {
@@ -335,10 +347,7 @@ test('reserve track shortfall', async t => {
 
   const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
   const m = await subscriptionTracker(t, metricsSub);
-  await m.assertInitial({
-    allocations: {},
-    shortfallBalance: AmountMath.makeEmpty(runBrand),
-  });
+  await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
   await m.assertChange({
     shortfallBalance: { value: runningShortfall },
   });
@@ -390,10 +399,7 @@ test('reserve burn IST', async t => {
 
   const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
   const m = await subscriptionTracker(t, metricsSub);
-  await m.assertInitial({
-    allocations: {},
-    shortfallBalance: AmountMath.makeEmpty(runBrand),
-  });
+  await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
   await m.assertChange({
     shortfallBalance: { value: runningShortfall },
   });
@@ -454,6 +460,7 @@ test('reserve burn IST', async t => {
       value: runningShortfall,
     },
     allocations: { RUN: AmountMath.makeEmpty(runBrand) },
+    burnedRUN: { value: 1000n },
   });
 });
 
