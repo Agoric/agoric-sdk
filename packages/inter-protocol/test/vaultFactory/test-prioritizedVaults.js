@@ -1,18 +1,19 @@
 // @ts-check
 
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import {
   currentDebtToCollateral,
   makePrioritizedVaults,
 } from '../../src/vaultFactory/prioritizedVaults.js';
 import {
-  makeFakeVault,
   makeCompoundedInterestProvider,
+  makeFakeVault,
 } from './interestSupport.js';
 
 /** @typedef {import('../../src/vaultFactory/vault.js').Vault} Vault */
@@ -55,8 +56,9 @@ function makeRescheduler() {
 }
 
 test('add to vault', async t => {
+  const store = makeScalarBigMapStore('orderedVaultStore');
   const rescheduler = makeRescheduler();
-  const vaults = makePrioritizedVaults(rescheduler.fakeReschedule);
+  const vaults = makePrioritizedVaults(store, rescheduler.fakeReschedule);
   vaults.addVault(
     'id-fakeVaultKit',
     makeFakeVault('id-fakeVaultKit', AmountMath.make(brand, 130n)),
@@ -76,8 +78,9 @@ test('add to vault', async t => {
 });
 
 test('updates', async t => {
+  const store = makeScalarBigMapStore('orderedVaultStore');
   const rescheduler = makeRescheduler();
-  const vaults = makePrioritizedVaults(rescheduler.fakeReschedule);
+  const vaults = makePrioritizedVaults(store, rescheduler.fakeReschedule);
 
   vaults.addVault(
     'id-fakeVault1',
@@ -99,8 +102,9 @@ test('updates', async t => {
 });
 
 test('update changes ratio', async t => {
+  const store = makeScalarBigMapStore('orderedVaultStore');
   const rescheduler = makeRescheduler();
-  const vaults = makePrioritizedVaults(rescheduler.fakeReschedule);
+  const vaults = makePrioritizedVaults(store, rescheduler.fakeReschedule);
 
   // default collateral of makeFakeVaultKit
   const defaultCollateral = AmountMath.make(brand, 100n);
@@ -166,8 +170,9 @@ test('update changes ratio', async t => {
 });
 
 test('removals', async t => {
+  const store = makeScalarBigMapStore('orderedVaultStore');
   const rescheduler = makeRescheduler();
-  const vaults = makePrioritizedVaults(rescheduler.fakeReschedule);
+  const vaults = makePrioritizedVaults(store, rescheduler.fakeReschedule);
 
   // Add fakes 1,2,3
   vaults.addVault(
@@ -216,9 +221,10 @@ test('removals', async t => {
 });
 
 test('highestRatio', async t => {
-  const reschedulePriceCheck = makeRescheduler();
-  const vaults = makePrioritizedVaults();
-  vaults.onHigherHighest(reschedulePriceCheck.fakeReschedule);
+  const store = makeScalarBigMapStore('orderedVaultStore');
+  const rescheduler = makeRescheduler();
+  const vaults = makePrioritizedVaults(store);
+  vaults.onHigherHighest(rescheduler.fakeReschedule);
 
   vaults.addVault(
     'id-fakeVault1',
@@ -265,8 +271,9 @@ test('highestRatio', async t => {
 });
 
 test('stable ordering as interest accrues', async t => {
-  const reschedulePriceCheck = makeRescheduler();
-  const vaults = makePrioritizedVaults(reschedulePriceCheck.fakeReschedule);
+  const store = makeScalarBigMapStore('orderedVaultStore');
+  const rescheduler = makeRescheduler();
+  const vaults = makePrioritizedVaults(store, rescheduler.fakeReschedule);
 
   const m = makeCompoundedInterestProvider(brand);
 

@@ -92,7 +92,7 @@ const trace = makeTracer('VM');
  * debtBrand: Brand<'nat'>,
  * debtMint: ZCFMint<'nat'>,
  * poolIncrementSeat: ZCFSeat,
- * prioritizedVaults: ReturnType<typeof makePrioritizedVaults>,
+ * unsettledVaults: MapStore<string, Vault>,
  * }>} ImmutableState
  */
 
@@ -197,16 +197,18 @@ const initState = (
     marshaller,
   );
 
+  /** @type {MapStore<string, Vault>} */
+  const unsettledVaults = makeScalarBigMapStore('orderedVaultStore', {
+    durable: true,
+  });
+
   /** @type {ImmutableState} */
   const fixed = {
     collateralBrand,
     debtBrand,
     debtMint,
     poolIncrementSeat: zcf.makeEmptySeatKit().zcfSeat,
-    /**
-     * A store for vaultKits prioritized by their collaterization ratio.
-     */
-    prioritizedVaults: makePrioritizedVaults(),
+    unsettledVaults,
   };
 
   const compoundedInterest = makeRatio(100n, fixed.debtBrand); // starts at 1.0, no interest
@@ -235,7 +237,7 @@ const initState = (
     metricsSubscription,
     periodNotifier,
     priceAuthority,
-    prioritizedVaults: makePrioritizedVaults(),
+    prioritizedVaults: makePrioritizedVaults(unsettledVaults),
     storageNode,
     zcf,
   });
@@ -347,12 +349,14 @@ const helperBehavior = {
 
   /** @param {MethodContext} context */
   updateMetrics: ({ state }) => {
-    const { metricsPublication } = provideEphemera(state.collateralBrand);
-    assert(metricsPublication);
+    const { metricsPublication, prioritizedVaults } = provideEphemera(
+      state.collateralBrand,
+    );
+    assert(metricsPublication && prioritizedVaults);
 
     /** @type {MetricsNotification} */
     const payload = harden({
-      numVaults: state.prioritizedVaults.getCount(),
+      numVaults: prioritizedVaults.getCount(),
       totalCollateral: state.totalCollateral,
       totalDebt: state.totalDebt,
 
@@ -382,8 +386,10 @@ const helperBehavior = {
    * @returns {Promise<void>}
    */
   reschedulePriceCheck: async ({ state, facets }, highestRatio) => {
-    const ephemera = provideEphemera(state.collateralBrand);
-    assert(ephemera.factoryPowers);
+    const { prioritizedVaults, ...ephemera } = provideEphemera(
+      state.collateralBrand,
+    );
+    assert(ephemera.factoryPowers && prioritizedVaults);
     trace('reschedulePriceCheck', state.collateralBrand, ephemera);
     // INTERLOCK: the first time through, start the activity to wait for
     // and process liquidations over time.
@@ -403,7 +409,6 @@ const helperBehavior = {
       return;
     }
 
-    const { prioritizedVaults } = state;
     const highestDebtRatio = highestRatio || prioritizedVaults.highestRatio();
     if (!highestDebtRatio) {
       // if there aren't any open vaults, we don't need an outstanding RFQ.
@@ -428,13 +433,15 @@ const helperBehavior = {
    * @param {MethodContext} context
    */
   processLiquidations: async ({ state, facets }) => {
-    const { prioritizedVaults } = state;
-    const ephemera = provideEphemera(state.collateralBrand);
+    const { prioritizedVaults, ...ephemera } = provideEphemera(
+      state.collateralBrand,
+    );
     assert(ephemera.factoryPowers && ephemera.priceAuthority);
     const { priceAuthority } = ephemera;
     const govParams = ephemera.factoryPowers.getGovernedParams();
 
     async function* eventualLiquidations() {
+      assert(prioritizedVaults);
       while (true) {
         const highestDebtRatio = prioritizedVaults.highestRatio();
         if (!highestDebtRatio) {
@@ -485,9 +492,10 @@ const helperBehavior = {
    * @param {[key: string, vaultKit: Vault]} record
    */
   liquidateAndRemove: ({ state, facets }, [key, vault]) => {
-    const { prioritizedVaults } = state;
-    const { factoryPowers, zcf } = provideEphemera(state.collateralBrand);
-    assert(factoryPowers && zcf);
+    const { factoryPowers, prioritizedVaults, zcf } = provideEphemera(
+      state.collateralBrand,
+    );
+    assert(factoryPowers && prioritizedVaults && zcf);
     const vaultSeat = vault.getVaultSeat();
     trace('liquidating', state.collateralBrand, vaultSeat.getProposal());
 
@@ -655,7 +663,8 @@ const managerBehavior = {
     vaultPhase,
     vault,
   ) => {
-    const { prioritizedVaults } = state;
+    const { prioritizedVaults } = provideEphemera(state.collateralBrand);
+    assert(prioritizedVaults);
 
     // the manager holds only vaults that can accrue interest or be liquidated;
     // i.e. vaults that have debt. The one exception is at the outset when
@@ -743,7 +752,8 @@ const selfBehavior = {
    * @param {MethodContext} context
    */
   liquidateAll: async ({ state, facets: { helper } }) => {
-    const { prioritizedVaults } = state;
+    const { prioritizedVaults } = provideEphemera(state.collateralBrand);
+    assert(prioritizedVaults);
     const toLiquidate = Array.from(prioritizedVaults.entries()).map(
       helper.liquidateAndRemove,
     );
@@ -890,10 +900,12 @@ const selfBehavior = {
 
 /** @param {MethodContext} context */
 const finish = ({ state, facets: { helper } }) => {
-  const { periodNotifier, zcf } = provideEphemera(state.collateralBrand);
-  assert(periodNotifier && zcf);
+  const { periodNotifier, prioritizedVaults, zcf } = provideEphemera(
+    state.collateralBrand,
+  );
+  assert(periodNotifier && prioritizedVaults && zcf);
 
-  state.prioritizedVaults.onHigherHighest(helper.reschedulePriceCheck);
+  prioritizedVaults.onHigherHighest(helper.reschedulePriceCheck);
 
   // push initial state of metrics
   helper.updateMetrics();

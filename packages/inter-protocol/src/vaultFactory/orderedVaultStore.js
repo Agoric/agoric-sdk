@@ -1,5 +1,4 @@
 // @ts-check
-import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { fromVaultKey, toVaultKey } from './storeUtils.js';
 
 /**
@@ -15,10 +14,10 @@ import { fromVaultKey, toVaultKey } from './storeUtils.js';
 /** @typedef {import('./vault').Vault} Vault */
 /** @typedef {import('./storeUtils').CompositeKey} CompositeKey */
 
-export const makeOrderedVaultStore = () => {
-  /** @type {MapStore<string, Vault>} */
-  const store = makeScalarBigMapStore('orderedVaultStore', { durable: true });
-
+/**
+ * @param {MapStore<string, Vault>} store
+ */
+export const makeOrderedVaultStore = store => {
   /**
    *
    * @param {string} vaultId

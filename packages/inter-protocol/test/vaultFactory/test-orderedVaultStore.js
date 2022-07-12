@@ -3,6 +3,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { Far } from '@endo/marshal';
 import { makeOrderedVaultStore } from '../../src/vaultFactory/orderedVaultStore.js';
 import { fromVaultKey } from '../../src/vaultFactory/storeUtils.js';
@@ -39,7 +40,11 @@ const fixture = [
 ];
 
 test('ordering', t => {
-  const vaults = makeOrderedVaultStore();
+  const vaults = makeOrderedVaultStore(
+    makeScalarBigMapStore('orderedVaultStore', {
+      durable: true,
+    }),
+  );
 
   for (const [vaultId, runCount, collateralCount] of fixture) {
     const vault = mockVault(vaultId, runCount, collateralCount);
@@ -52,7 +57,11 @@ test('ordering', t => {
 });
 
 test('uniqueness', t => {
-  const vaults = makeOrderedVaultStore();
+  const vaults = makeOrderedVaultStore(
+    makeScalarBigMapStore('orderedVaultStore', {
+      durable: true,
+    }),
+  );
 
   for (const [vaultId, runCount, collateralCount] of fixture) {
     const vault = mockVault(vaultId, runCount, collateralCount);
