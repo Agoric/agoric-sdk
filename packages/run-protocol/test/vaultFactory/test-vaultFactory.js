@@ -313,7 +313,7 @@ const setupServices = async (
   const { consume, produce } = space;
   trace(t, 'amm', { ammFacets });
 
-  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
+  const quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET);
   // Cheesy hack for easy use of manual price authority
   const pa = Array.isArray(priceOrList)
     ? makeScriptedPriceAuthority({
@@ -321,7 +321,7 @@ const setupServices = async (
         actualBrandOut: run.brand,
         priceList: priceOrList,
         timer,
-        quoteMint,
+        quoteMint: quoteIssuerKit.mint,
         unitAmountIn,
         quoteInterval,
       })
@@ -330,7 +330,7 @@ const setupServices = async (
         actualBrandOut: run.brand,
         initialPrice: priceOrList,
         timer,
-        quoteMint,
+        quoteIssuerKit,
       });
   produce.priceAuthority.resolve(pa);
 

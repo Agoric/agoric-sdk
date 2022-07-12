@@ -103,3 +103,29 @@ harden(makeMetricsPublisherKit);
  * @property {IterationObserver<T>} metricsPublication
  * @property {StoredSubscription<T>} metricsSubscription
  */
+
+/**
+ * @template K Key
+ * @template {{}} E Ephemeral state
+ * @param {() => E} init
+ */
+export const makeEphemeraProvider = init => {
+  /** @type {Map<K, E>} */
+  const ephemeras = new Map();
+
+  /**
+   * Provide an object to hold state that need not (or cannot) be durable.
+   *
+   * @type {(key: K) => E}
+   */
+  return key => {
+    if (ephemeras.has(key)) {
+      // @ts-expect-error cast
+      return ephemeras.get(key);
+    }
+    const newEph = init();
+    ephemeras.set(key, newEph);
+    return newEph;
+  };
+};
+harden(makeEphemeraProvider);
