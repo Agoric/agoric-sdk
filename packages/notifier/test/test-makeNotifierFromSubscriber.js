@@ -6,7 +6,10 @@ import {
   makeEmptyPublishKit,
   makeNotifierFromSubscriber,
 } from '../src/index.js';
-import { delayByTurns } from './iterable-testing-tools.js';
+import {
+  delayByTurns,
+  invertPromiseSettlement,
+} from './iterable-testing-tools.js';
 
 /** @param {{conclusionMethod: 'finish' | 'fail', conclusionValue: any}} config */
 const makeBatchPublishKit = ({ conclusionMethod, conclusionValue }) => {
@@ -86,8 +89,6 @@ test('makeNotifierFromSubscriber(finishes) - getUpdateSince', async t => {
     }
     // eslint-disable-next-line no-await-in-loop
     await publishNextBatch();
-    // eslint-disable-next-line no-await-in-loop
-    t.deepEqual(await notifier.getUpdateSince(), result);
   }
 
   t.deepEqual(
@@ -153,8 +154,6 @@ test('makeNotifierFromSubscriber(fails) - getUpdateSince', async t => {
       }
       // eslint-disable-next-line no-await-in-loop
       await publishNextBatch();
-      // eslint-disable-next-line no-await-in-loop
-      t.deepEqual(await notifier.getUpdateSince(), result);
     }
     throw new Error('for-await-of completed successfully');
   } catch (err) {
@@ -198,37 +197,43 @@ test('makeNotifierFromSubscriber - getUpdateSince timing', async t => {
   );
 
   publishNextBatch();
-  t.deepEqual(
-    [await firstP, await firstP2, await notifier.getUpdateSince()].map(
-      result => result.value,
-    ),
-    [1, 1, 1],
-    'early getUpdateSince() should resolve to the first value',
+  t.like(
+    await Promise.all([firstP, firstP2]),
+    { ...[{ value: 1 }, { value: 1 }], length: 2 },
+    'early getUpdateSince() should settle to the first result',
+  );
+  t.like(
+    await notifier.getUpdateSince(),
+    { value: 2 },
+    'getUpdateSince() should settle to the latest result',
   );
 
   publishNextBatch();
   const lateResult = await notifier.getUpdateSince();
-  t.deepEqual(
-    lateResult.value,
-    1,
-    'late getUpdateSince() should still fulfill with the latest value',
+  t.like(
+    lateResult,
+    { value: 4 },
+    'getUpdateSince() should settle to a just-published result',
   );
-  t.deepEqual(
-    [
-      await notifier.getUpdateSince(lateResult.updateCount),
-      await notifier.getUpdateSince(),
-      await notifier.getUpdateSince(),
-    ].map(result => result.value),
-    [4, 4, 4],
-    'getUpdateSince(updateCount) should advance to the latest value',
+
+  const pendingResultP = notifier.getUpdateSince(lateResult.updateCount);
+  publishNextBatch();
+  t.like(
+    await Promise.all([
+      pendingResultP,
+      notifier.getUpdateSince(),
+      notifier.getUpdateSince(),
+    ]),
+    { ...[{ value: 8 }, { value: 8 }, { value: 8 }], length: 3 },
+    'getUpdateSince(latestUpdateCount) should settle to the next result',
   );
 
   publishNextBatch();
-  await delayByTurns(4);
-  t.deepEqual(
-    (await notifier.getUpdateSince(lateResult.updateCount)).value,
-    4,
-    'getUpdateSince(oldUpdateCount) should fulfill with the latest value',
+  publishNextBatch();
+  t.like(
+    await notifier.getUpdateSince(lateResult.updateCount),
+    { value: 32 },
+    'getUpdateSince(oldUpdateCount) should settle to the latest result',
   );
 });
 
@@ -241,30 +246,57 @@ test('makeNotifierFromSubscriber - updateCount validation', async t => {
   t.throws(() => notifier.getUpdateSince(1n));
 });
 
-test('makeNotifierFromSubscriber - getUpdateSince() promise uniqueness', async t => {
+test('makeNotifierFromSubscriber - getUpdateSince() result identity', async t => {
   const { initialize, publishNextBatch, subscriber } = makeBatchPublishKit({
     conclusionMethod: 'finish',
     conclusionValue: 'done',
   });
   const notifier = await makeNotifierFromSubscriber(subscriber);
   const firstP = notifier.getUpdateSince();
-  t.not(
-    notifier.getUpdateSince(),
-    firstP,
-    'early getUpdateSince() promises should be distinct',
-  );
+  const firstP2 = notifier.getUpdateSince();
+  t.not(firstP, firstP2, 'early getUpdateSince() promises should be distinct');
 
   initialize();
-  await delayByTurns(4);
-  const { updateCount } = await firstP;
+  const [firstResult, firstResult2] = await Promise.all([firstP, firstP2]);
+  let { updateCount } = firstResult;
+  t.deepEqual(
+    new Set([
+      firstResult,
+      firstResult2,
+      ...(await Promise.all([
+        notifier.getUpdateSince(),
+        notifier.getUpdateSince(),
+      ])),
+      await notifier.getUpdateSince(),
+    ]),
+    new Set([firstResult]),
+    'first results should be identical',
+  );
+
+  const secondP = notifier.getUpdateSince(updateCount);
+  const secondP2 = notifier.getUpdateSince(updateCount);
   t.not(
-    notifier.getUpdateSince(updateCount),
-    notifier.getUpdateSince(updateCount),
+    secondP,
+    secondP2,
     'getUpdateSince(updateCount) promises should be distinct',
   );
 
   publishNextBatch();
-  await notifier.getUpdateSince(updateCount);
+  const [secondResult, secondResult2] = await Promise.all([secondP, secondP2]);
+  t.deepEqual(
+    new Set([
+      secondResult,
+      secondResult2,
+      ...(await Promise.all([
+        notifier.getUpdateSince(),
+        notifier.getUpdateSince(updateCount),
+      ])),
+      await notifier.getUpdateSince(),
+    ]),
+    new Set([secondResult]),
+    'late results should be identical',
+  );
+
   t.not(
     notifier.getUpdateSince(),
     notifier.getUpdateSince(),
@@ -274,5 +306,56 @@ test('makeNotifierFromSubscriber - getUpdateSince() promise uniqueness', async t
     notifier.getUpdateSince(),
     notifier.getUpdateSince(updateCount),
     'getUpdateSince() promises should be distinct from getUpdateSince(updateCount) promises',
+  );
+
+  let previousResult = secondResult;
+  let finalResultP;
+  let finalResult;
+  while (updateCount) {
+    finalResultP = notifier.getUpdateSince(updateCount);
+    publishNextBatch();
+    // eslint-disable-next-line no-await-in-loop
+    finalResult = await finalResultP;
+    ({ updateCount } = finalResult);
+    if (updateCount) {
+      previousResult = finalResult;
+    }
+  }
+  t.deepEqual(
+    new Set([
+      finalResult,
+      ...(await Promise.all([
+        notifier.getUpdateSince(),
+        notifier.getUpdateSince(updateCount),
+      ])),
+      await notifier.getUpdateSince(previousResult.updateCount),
+      await notifier.getUpdateSince(),
+    ]),
+    new Set([finalResult]),
+    'final results should be identical',
+  );
+
+  const { publisher, subscriber: failureSubscriber } = makeEmptyPublishKit();
+  const failureNotifier = await makeNotifierFromSubscriber(failureSubscriber);
+  publisher.publish('first value');
+  ({ updateCount } = await failureNotifier.getUpdateSince());
+  const failureP = failureNotifier.getUpdateSince();
+  const failureP2 = failureNotifier.getUpdateSince();
+  const failure = new Error('failure');
+  publisher.fail(failure);
+  t.deepEqual(
+    new Set(
+      await Promise.all(
+        [
+          failureP,
+          failureP2,
+          failureNotifier.getUpdateSince(),
+          failureNotifier.getUpdateSince(updateCount),
+          failureNotifier.getUpdateSince(),
+        ].map(invertPromiseSettlement),
+      ),
+    ),
+    new Set([failure]),
+    'failure results should be identical',
   );
 });

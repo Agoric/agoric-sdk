@@ -6,7 +6,6 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeAsyncIterableFromNotifier } from './asyncIterableAdaptor.js';
-import { subscribeLatest } from './publish-kit.js';
 
 import './types.js';
 
@@ -155,51 +154,39 @@ export const makeNotifierKit = (...initialStateArr) => {
 /**
  * @template T
  * @param {ERef<Subscriber<T>>} subscriberP
- * @returns {Promise<Notifier<T>>}
+ * @returns {Notifier<T>}
  */
-export const makeNotifierFromSubscriber = async subscriberP => {
-  const iterable = subscribeLatest(subscriberP);
-  const iterator = iterable[Symbol.asyncIterator]();
-
-  /** @type {undefined | Promise<{value, updateCount}>} */
-  let latestResultOutP;
-  /** @type {undefined | Promise<{value, updateCount}>} */
-  let nextResultOutP;
+export const makeNotifierFromSubscriber = subscriberP => {
+  /** @type {bigint} */
+  let latestInboundCount;
   /** @type {UpdateCount & bigint} */
   let latestUpdateCount = 0n;
-  let finished = false;
+  /** @type {WeakMap<PublicationRecord<T>, Promise<UpdateRecord<T>>>} */
+  const outboundResults = new WeakMap();
 
   /**
-   * @param {Promise<IteratorResult<any, any>>} resultInP
-   * @returns {Promise<{value, updateCount}>}
+   * @param {PublicationRecord<T>} record
+   * @returns {Promise<UpdateRecord<T>>}
    */
-  function translateInboundResult(resultInP) {
-    return resultInP.then(
-      ({ value, done }) => {
-        // Shift the result-out promises.
-        latestResultOutP = nextResultOutP;
-        nextResultOutP = undefined;
+  const translateInboundPublicationRecord = record => {
+    // Leverage identity preservation of `record`.
+    const existingOutboundResult = outboundResults.get(record);
+    if (existingOutboundResult) {
+      return existingOutboundResult;
+    }
 
-        if (done) {
-          finished = true;
-
-          // Final results have undefined updateCount.
-          return harden({ value, updateCount: undefined });
-        }
-
-        latestUpdateCount += 1n;
-        return harden({ value, updateCount: latestUpdateCount });
-      },
-      rejection => {
-        // Shift the result-out promises.
-        latestResultOutP = nextResultOutP;
-        nextResultOutP = undefined;
-
-        finished = true;
-        throw rejection;
-      },
-    );
-  }
+    latestInboundCount = record.publishCount;
+    latestUpdateCount += 1n;
+    const resultP = E.when(record.head, ({ value, done }) => {
+      if (done) {
+        // Final results have undefined updateCount.
+        return harden({ value, updateCount: undefined });
+      }
+      return harden({ value, updateCount: latestUpdateCount });
+    });
+    outboundResults.set(record, resultP);
+    return resultP;
+  };
 
   /**
    * @template T
@@ -212,24 +199,26 @@ export const makeNotifierFromSubscriber = async subscriberP => {
         'argument must be a previously-issued updateCount.',
       );
 
-      // If we don't yet have a promise for the latest outbound result, create it.
-      if (!latestResultOutP) {
-        nextResultOutP = translateInboundResult(iterator.next());
-        latestResultOutP = nextResultOutP;
+      if (updateCount < latestUpdateCount) {
+        // Return the most recent result possible without imposing an unnecessary delay.
+        return E(subscriberP)
+          .subscribeAfter()
+          .then(translateInboundPublicationRecord);
       }
 
-      let resultP =
-        updateCount < latestUpdateCount || finished
-          ? latestResultOutP
-          : nextResultOutP;
-
-      if (!resultP) {
-        nextResultOutP = translateInboundResult(iterator.next());
-        resultP = nextResultOutP;
-      }
-
-      // Each returned promise is unique.
-      return resultP.then();
+      // Return a result that follows the last-returned result,
+      // skipping over intermediate results if latestInboundCount
+      // no longer corresponds with the latest result.
+      // Note that unlike notifiers and subscribers respectively returned by
+      // makeNotifierKit and makePublishKit, this result is not guaranteed
+      // to follow the result returned when a non-latest updateCount is provided
+      // (e.g., it is possible for `notifierFromSubscriber.getUpdateSince()` and
+      // `notifierFromSubscriber.getUpdateSince(latestUpdateCount)` to both
+      // settle to the same object `newLatest` where `newLatest.updateCount`
+      // is one greater than `latestUpdateCount`).
+      return E(subscriberP)
+        .subscribeAfter(latestInboundCount)
+        .then(translateInboundPublicationRecord);
     },
   });
 
