@@ -355,28 +355,31 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   }
 
   /**
+   * stop any existing worker, delete transcript and any snapshot, so
+   * the next time we send a delivery, we'll start a new worker (maybe
+   * with new source code)
+   *
    * @param {string} vatID
    * @returns {Promise<void>}
    */
-  async function killWorker(vatID) {
-    try {
-      await evict(vatID);
-    } catch (err) {
-      console.debug('vat termination was already reported; ignoring:', err);
-    }
-  }
-
-  async function abandonWorker(vatID) {
-    // stop any existing worker, delete transcript and any snapshot
+  async function resetWorker(vatID) {
     await evict(vatID);
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     vatKeeper.removeSnapshotAndTranscript();
   }
 
-  async function terminate(vatID) {
+  /**
+   * @param {string} vatID
+   * @returns {Promise<void>}
+   */
+  async function stopWorker(vatID) {
     // worker may or may not be online
     if (ephemeral.vats.has(vatID)) {
-      await killWorker(vatID);
+      try {
+        await evict(vatID);
+      } catch (err) {
+        console.debug('vat termination was already reported; ignoring:', err);
+      }
     }
   }
 
@@ -404,9 +407,8 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     maybeSaveSnapshot,
     setSnapshotInterval,
 
-    killWorker,
-    terminate,
-    abandonWorker,
+    resetWorker,
+    stopWorker,
 
     // mostly for testing?
     activeVatsInfo: () =>

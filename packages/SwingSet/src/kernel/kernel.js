@@ -298,7 +298,7 @@ export default function buildKernel(
     }
 
     // worker needs to be stopped, if any
-    await vatWarehouse.terminate(vatID);
+    await vatWarehouse.stopWorker(vatID);
   }
 
   function notifyMeterThreshold(meterID) {
@@ -418,8 +418,8 @@ export default function buildKernel(
         //   Kinds, and we're not going to use the worker
         //
         // So in all cases, our caller should abandon the worker.
-        await vatWarehouse.killWorker(vatID);
-        // TODO: does killWorker work if the worker just died?
+        await vatWarehouse.stopWorker(vatID);
+        // TODO: does stopWorker work if the worker process just died?
         status.deliveryError = deliveryResult[1];
       }
       return harden(status);
@@ -862,7 +862,7 @@ export default function buildKernel(
     if (results1.terminate) {
       // get rid of the worker, so the next delivery to this vat will
       // re-create one from the previous state
-      await vatWarehouse.killWorker(vatID);
+      await vatWarehouse.stopWorker(vatID);
 
       // notify vat-admin of the failed upgrade
       const vatAdminMethargs = makeFailure(results1.terminate.info);
@@ -882,7 +882,7 @@ export default function buildKernel(
     // stopVat succeeded, so now we stop the worker, delete the
     // transcript and any snapshot
 
-    await vatWarehouse.abandonWorker(vatID);
+    await vatWarehouse.resetWorker(vatID);
     const source = { bundleID };
     const { options } = vatKeeper.getSourceAndOptions();
     vatKeeper.setSourceAndOptions(source, options);
@@ -905,7 +905,7 @@ export default function buildKernel(
 
     if (results2.terminate) {
       // unwind just like above
-      await vatWarehouse.killWorker(vatID);
+      await vatWarehouse.stopWorker(vatID);
       const vatAdminMethargs = makeFailure(results2.terminate.info);
       const results = harden({
         ...results2,
