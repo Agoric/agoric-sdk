@@ -233,6 +233,7 @@ export const makeClientBanks = async ({
     client,
     chainStorage,
     bankManager,
+    bridgeManager: bridgeManagerP,
     zoe,
   },
   installation: {
@@ -241,12 +242,15 @@ export const makeClientBanks = async ({
 }) => {
   const STORAGE_PATH = 'wallet';
 
-  const storageNode = await getChildNode(chainStorage, STORAGE_PATH);
-  const { creatorFacet } = await E(zoe).startInstance(
+  const [storageNode, bridgeManager] = await Promise.all([
+    getChildNode(chainStorage, STORAGE_PATH),
+    bridgeManagerP,
+  ]);
+  const { creatorFacet } = await bE(zoe).startInstance(
     walletFactory,
     {},
     { agoricNames, namesByAddress, board },
-    { storageNode },
+    { storageNode, bridgeManager },
   );
   return E(client).assignBundle([
     address => {

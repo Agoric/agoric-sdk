@@ -108,6 +108,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
       namesByAddress: true,
       namesByAddressAdmin: true,
       bankManager: 'bank',
+      bridgeManager: true,
       board: 'board',
       client: true,
       chainStorage: true,
