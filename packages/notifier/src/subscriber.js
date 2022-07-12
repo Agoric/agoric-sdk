@@ -4,7 +4,7 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeEmptyPublishKit } from './publish-kit.js';
+import { makePublishKit } from './publish-kit.js';
 
 import './types.js';
 
@@ -63,7 +63,7 @@ const makeSubscriptionIterator = tailP => {
  * @returns {SubscriptionRecord<T>}
  */
 const makeSubscriptionKit = () => {
-  const { publisher, subscriber } = makeEmptyPublishKit();
+  const { publisher, subscriber } = makePublishKit();
 
   // The publish kit subscriber is prefix-lossy, so making *this* subscriber completely
   // lossless requires eager consumption of the former.
