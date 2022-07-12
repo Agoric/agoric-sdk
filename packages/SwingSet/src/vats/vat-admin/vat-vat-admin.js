@@ -324,7 +324,13 @@ export function buildRootObject(vatPowers) {
     }
   }
 
-  // the kernel queues this to us when a vat upgrade completes or fails
+  /**
+   * the kernel queues this to us when a vat upgrade completes or fails
+   *
+   * @param {UpgradeID} upgradeID
+   * @param {boolean} success
+   * @param {Error | undefined} error
+   */
   function vatUpgradeCallback(upgradeID, success, error) {
     const { resolve, reject } = pendingUpgrades.get(upgradeID);
     pendingUpgrades.delete(upgradeID);

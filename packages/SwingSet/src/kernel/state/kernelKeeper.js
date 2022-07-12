@@ -1024,6 +1024,10 @@ export default function makeKernelKeeper(
       return true;
     } else {
       return BigInt(oldRemaining) >= spent;
+      // note: this function is read-only, but if it indicates
+      // underrun, then the caller in kernel.js (probably
+      // processDeliveryMessage) will turn around and call
+      // deductMeter() to zero out the stored value
     }
   }
 

@@ -118,6 +118,7 @@ export default function buildKernel(
 
   const kernelKeeper = makeKernelKeeper(hostStorage, kernelSlog, createSHA256);
 
+  /** @type {ReturnType<makeVatWarehouse>} */
   let vatWarehouse;
   let started = false;
 
@@ -351,7 +352,7 @@ export default function buildKernel(
 
   /**
    *
-   * @typedef { { compute: number } } MeterConsumption
+   * @typedef { import('../types-external.js').MeterConsumption } MeterConsumption
    * @typedef { import('../types-internal.js').MeterID } MeterID
    *
    *  Any delivery crank (send, notify, start-vat.. anything which is allowed
@@ -361,8 +362,8 @@ export default function buildKernel(
    * @typedef { {
    *    metering?: MeterConsumption | null, // delivery metering results
    *    deliveryError?: string, // delivery failed
-   *    illegalSyscall?: { vatID: VatID, info: SwingSetCapData }, // 'problem' indicated by an illegal syscall
-   *    vatRequestedTermination?: { reject: boolean, info: SwingSetCapData },
+   *    illegalSyscall: { vatID: VatID, info: SwingSetCapData } | undefined,
+   *    vatRequestedTermination: { reject: boolean, info: SwingSetCapData } | undefined,
    *  } } DeliveryStatus
    * @typedef { {
    *    abort?: boolean, // changes should be discarded, not committed
@@ -370,7 +371,7 @@ export default function buildKernel(
    *    computrons?: BigInt, // computron count for run policy
    *    meterID?: string, // deduct those computrons from a meter
    *    decrementReapCount?: { vatID: VatID }, // the reap counter should decrement
-   *    terminate?: { vatID: VatID, reject: boolean, info: SwingSetCapData }, // terminate the vat and notify vat-admin
+   *    terminate?: { vatID: VatID, reject: boolean, info: SwingSetCapData }, // terminate vat, notify vat-admin
    *    vatAdminMethargs?: SwingSetCapData, // methargs to notify vat-admin about create/upgrade results
    * } } CrankResults
    */
@@ -383,7 +384,6 @@ export default function buildKernel(
    * @param {VatID} vatID
    * @param {KernelDeliveryObject} kd
    * @param {VatDeliveryObject} vd
-   * @returns {Promise<DeliveryStatus>}
    */
   async function deliverAndLogToVat(vatID, kd, vd) {
     vatRequestedTermination = undefined;
@@ -397,6 +397,7 @@ export default function buildKernel(
       insistVatDeliveryResult(deliveryResult);
       // const [ ok, problem, usage ] = deliveryResult;
 
+      /** @type {DeliveryStatus} */
       const status = { illegalSyscall, vatRequestedTermination };
       // we get metering for all non-throwing deliveries (both 'ok'
       // and 'error') except for hard metering faults
@@ -430,7 +431,9 @@ export default function buildKernel(
 
   /**
    * Given the results of a delivery, build a set of instructions for
-   * finishing up the crank.
+   * finishing up the crank. This is a helper function whose return
+   * value should be further customized as needed by each run-queue
+   * event handler.
    *
    * Two flags influence this:
    *  `decrementReapCount` is used for deliveries that run userspace code
@@ -439,8 +442,7 @@ export default function buildKernel(
    * @param {VatID} vatID
    * @param {DeliveryStatus} status
    * @param {boolean} decrementReapCount
-   * @param {MeterID=} meterID
-   * @returns {CrankResults}
+   * @param {MeterID} [meterID]
    */
   function deliveryCrankResults(vatID, status, decrementReapCount, meterID) {
     let meterUnderrun = false;
@@ -450,6 +452,7 @@ export default function buildKernel(
     }
     // TODO metering.allocate, some day
 
+    /** @type {CrankResults} */
     const results = { computrons };
 
     if (meterID && computrons) {
@@ -821,6 +824,7 @@ export default function buildKernel(
     const vd1 = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd1);
     const status1 = await deliverAndLogToVat(vatID, kd1, vd1);
 
+    // make arguments for vat-vat-admin.js vatUpgradeCallback()
     function makeFailure(_errorCD) {
       insistCapData(_errorCD); // capdata(Error)
       // const args = [upgradeID, false, JSON.parse(errorCD.body)];
