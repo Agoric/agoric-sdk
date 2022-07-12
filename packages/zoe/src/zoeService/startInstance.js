@@ -63,24 +63,26 @@ export const makeStartInstance = (
 
     const instance = makeInstanceHandle();
 
+    // Invitations whose descriptions contain any of the strings will be blocked
     /** @type {Readonly<string[]>} */
-    let snoozedStrings = [];
+    let offerFilterStrings = [];
     // if any string in the list matches, don't process the invitation
-    const isSnoozed = string =>
-      snoozedStrings.some(s => string.indexOf(s) > -1);
-    const updateSnoozedList = strings => {
+    const isBlocked = string =>
+      offerFilterStrings.some(s => string.indexOf(s) > -1);
+
+    const setOfferFilter = strings => {
       assert(Array.isArray(strings), `${q(strings)} must be an Array`);
       const proposedStrings = Array.from(strings);
       assert(
         proposedStrings.every(
           s => typeof s === 'string' && isAlphanumeric.test(s),
         ),
-        X`Snoozed strings (${q(
+        X`Blocked strings (${q(
           strings,
         )}) must be a (possibly empty) Array of alpha-numeric strings.`,
       );
 
-      snoozedStrings = proposedStrings;
+      offerFilterStrings = proposedStrings;
     };
 
     const zoeInstanceStorageManager = await makeZoeInstanceStorageManager(
@@ -203,7 +205,7 @@ export const makeStartInstance = (
           seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
           return { userSeat, notifier };
         },
-        isSnoozed,
+        isBlocked,
       });
       return instanceAdmin;
     };
@@ -249,7 +251,7 @@ export const makeStartInstance = (
         }
       },
       stopAcceptingOffers: () => instanceAdmin.stopAcceptingOffers(),
-      updateSnoozedList,
+      setOfferFilter,
     });
 
     // At this point, the contract will start executing. All must be

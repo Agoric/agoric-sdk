@@ -1399,29 +1399,29 @@ test(`zcf.stopAcceptingOffers`, async t => {
   );
 });
 
-test.only(`zcf.updateSnoozedList - illegal string`, async t => {
+test(`zcf.setOfferFilter - illegal string`, async t => {
   const { zcf } = await setupZCFTest();
-  await t.throwsAsync(() => zcf.updateSnoozedList(['try-this']), {
+  await t.throwsAsync(() => zcf.setOfferFilter(['try-this']), {
     message: /must be a \(possibly empty\) Array of alpha-numeric strings/,
   });
-  await t.throwsAsync(() => zcf.updateSnoozedList([374]), {
+  await t.throwsAsync(() => zcf.setOfferFilter([374]), {
     message: /must be a \(possibly empty\) Array of alpha-numeric strings/,
   });
 });
 
-test.only(`zcf.updateSnoozedList - illegal lists`, async t => {
+test(`zcf.setOfferFilter - illegal lists`, async t => {
   const { zcf } = await setupZCFTest();
-  await t.throwsAsync(() => zcf.updateSnoozedList(['try this', 'or this*']), {
+  await t.throwsAsync(() => zcf.setOfferFilter(['try this', 'or this*']), {
     message: /must be a \(possibly empty\) Array of alpha-numeric strings/,
   });
-  await t.throwsAsync(() => zcf.updateSnoozedList('nonList'), {
+  await t.throwsAsync(() => zcf.setOfferFilter('nonList'), {
     message: /"nonList" must be an Array/,
   });
 });
 
-test.only(`zcf.updateSnoozedList - legal lists`, async t => {
+test(`zcf.setOfferFilter - legal lists`, async t => {
   const { zcf } = await setupZCFTest();
-  t.is(await zcf.updateSnoozedList(['fooOffer']), undefined);
-  t.is(await zcf.updateSnoozedList([]), undefined);
-  t.is(await zcf.updateSnoozedList(['fooOffer', 'barOffer']), undefined);
+  t.is(await zcf.setOfferFilter(['fooOffer']), undefined);
+  t.is(await zcf.setOfferFilter([]), undefined);
+  t.is(await zcf.setOfferFilter(['fooOffer', 'barOffer']), undefined);
 });

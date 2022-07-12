@@ -80,7 +80,7 @@
  * @property {(completion: Completion) => void} exitAllSeats
  * @property {ShutdownWithFailure} failAllSeats
  * @property {() => void} stopAcceptingOffers
- * @property {(string: string) => boolean} isSnoozed
+ * @property {(string: string) => boolean} isBlocked
  */
 
 /**
@@ -119,7 +119,7 @@
  * @property {(seatHandle: SeatHandle, reason: Error) => void} failSeat
  * @property {(seatHandle: SeatHandle) => Promise<Notifier<Allocation>>} getSeatNotifier
  * @property {() => void} stopAcceptingOffers
- * @property {(strings: Array<string>) => void} updateSnoozedList
+ * @property {(strings: Array<string>) => void} setOfferFilter
  */
 
 /**

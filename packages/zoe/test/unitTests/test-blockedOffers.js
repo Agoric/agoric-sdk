@@ -49,10 +49,10 @@ const setupContract = async (moolaIssuer, bucksIssuer) => {
   return { zoe, zcf };
 };
 
-test(`snoozedOffers - deny`, async t => {
+test(`blockedOffers - deny`, async t => {
   const { moola, moolaIssuer, bucksMint, bucks, bucksIssuer } = setup();
   const { zoe, zcf } = await setupContract(moolaIssuer, bucksIssuer);
-  await zcf.updateSnoozedList(['eat']);
+  await zcf.setOfferFilter(['eat']);
 
   await t.throwsAsync(
     () =>
@@ -66,7 +66,7 @@ test(`snoozedOffers - deny`, async t => {
   );
 });
 
-test(`snoozedOffers - allow empty`, async t => {
+test(`blockedOffers - allow empty`, async t => {
   const { moola, moolaIssuer, bucksMint, bucks, bucksIssuer } = setup();
   const { zoe, zcf } = await setupContract(moolaIssuer, bucksIssuer);
 
@@ -84,10 +84,10 @@ test(`snoozedOffers - allow empty`, async t => {
   await assertPayoutAmount(t, bucksIssuer, promises.C, bucks(2n), 'C is 2');
 });
 
-test(`snoozedOffers - allow`, async t => {
+test(`blockedOffers - allow`, async t => {
   const { moola, moolaIssuer, bucksMint, bucks, bucksIssuer } = setup();
   const { zoe, zcf } = await setupContract(moolaIssuer, bucksIssuer);
-  await zcf.updateSnoozedList(['seats', 'simple']);
+  await zcf.setOfferFilter(['seats', 'simple']);
 
   const { zcfSeat } = await makeOffer(
     zoe,
