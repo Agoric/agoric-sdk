@@ -37,7 +37,7 @@ const WalletConnection = ({
    *   getAdminBootstrap: (string, unknown) => WalletBridge
    * }} WalletConnection
    * @typedef {{
-   *   getScopedBridge: (o: unknown) => unknown
+   *   getScopedBridge: (petname: unknown, origin: unknown) => unknown
    * }} WalletBridge
    */
   const [wc, setWC] = useState(/** @type {WalletConnection|null} */ (null));
@@ -118,8 +118,7 @@ const WalletConnection = ({
           );
           ix += 1; // ISSUE: overflow?
         };
-
-        const makeBoot = () => E(bridge).getScopedBridge(origin);
+        const makeBoot = () => E(bridge).getScopedBridge(origin, origin);
         // console.debug('new capTP connection', { origin, epoch });
         conn = makeCapTP(`from ${origin} at ${epoch}`, send, makeBoot);
         ix = 0;

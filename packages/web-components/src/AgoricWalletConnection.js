@@ -22,7 +22,9 @@ const RESET_DELAY_MS = 3000;
 
 // TODO: Use something on agoric.app instead.
 const DEFAULT_LOCATOR_URL =
-  'https://local.agoric.com/?append=/wallet/bridge.html';
+  'https://local.agoric.com/?append=/wallet-bridge.html';
+
+const LOCAL_STORAGE_LOCATOR_URL = 'https://local.agoric.com/?append=/wallet/bridge.html'
 
 const delay = (ms, resolution) =>
   new Promise(resolve => setTimeout(resolve, ms, resolution));
@@ -33,7 +35,7 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
       return css`
         :host {
           display: block;
-          padding: 25px;
+          padding: 24px;
           color: var(--agoric-wallet-connection-text-color, #000);
         }
       `;
@@ -42,6 +44,7 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
     static get properties() {
       return {
         state: { type: String },
+        useLocalStorage: { type: Boolean },
       };
     }
 
@@ -140,7 +143,7 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
 
     constructor() {
       super();
-
+      this.useLocalStorage = false;
       // This state machine integration is much like lit-robot, but also raises
       // state events.
       const machine = makeConnectionMachine();
@@ -180,14 +183,6 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
           this.service.send({ type: 'dappApproved', dappOrigin });
         },
       });
-    }
-
-    onOpen(ev) {
-      console.log(this.state, 'open', ev);
-      if (this.state === 'bridged') {
-        assert(this._captp);
-        this._bridgePK.resolve(this._captp.getBootstrap());
-      }
     }
 
     onLocateMessage(ev) {
@@ -243,8 +238,7 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
         case 'locating': {
           backend = html`
             <agoric-iframe-messenger
-              src=${DEFAULT_LOCATOR_URL}
-              @open=${this.onOpen}
+              src=${this.useLocalStorage ? LOCAL_STORAGE_LOCATOR_URL : DEFAULT_LOCATOR_URL}
               @message=${this.onLocateMessage}
               @error=${this.onError}
             ></agoric-iframe-messenger>

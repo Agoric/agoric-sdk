@@ -1,6 +1,6 @@
 /* eslint-disable no-underscore-dangle */
 // @ts-check
-import { LitElement, html } from 'lit';
+import { LitElement, html, css } from 'lit';
 
 import { assert } from '@agoric/assert';
 
@@ -10,6 +10,19 @@ export const makeAgoricIframeMessenger = (registerThis = _that => {}) =>
   class AgoricIframeMessenger extends LitElement {
     static get properties() {
       return { src: { type: String } };
+    }
+
+    static get styles() {
+      return css`
+        :host {
+          display: block;
+        }
+        iframe {
+          border: none;
+          overflow: auto;
+          height: 40px;
+        }
+      `;
     }
 
     constructor() {
@@ -43,6 +56,7 @@ export const makeAgoricIframeMessenger = (registerThis = _that => {}) =>
           @load=${this._onLoad}
           @abort=${this._onError}
           @error=${this._onError}
+          scrolling="no"
         ></iframe>
       `;
     }
@@ -62,9 +76,7 @@ export const makeAgoricIframeMessenger = (registerThis = _that => {}) =>
 
     _onLoad(event) {
       event.preventDefault();
-      const ev = new CustomEvent('open', { detail: { send: this.send } });
       this._origin = new URL(this.src).origin;
-      this.dispatchEvent(ev);
     }
 
     _onMessage(event) {
@@ -72,6 +84,7 @@ export const makeAgoricIframeMessenger = (registerThis = _that => {}) =>
       if (event.source !== this._contentWindow) {
         return;
       }
+
       if (this._timeout) {
         window.clearTimeout(this._timeout);
         this._timeout = undefined;

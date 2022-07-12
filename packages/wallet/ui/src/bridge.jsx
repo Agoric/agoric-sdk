@@ -65,7 +65,6 @@ const installDappConnection = ({ addEventListener, parentPost, t0 }) => {
       console.debug('bridge: message from dapp->buffer', origin, ev.data);
       buffer.push(harden(ev.data));
     }
-    outIx += 1; // ISSUE: overflow?
   });
 
   return harden({
@@ -85,7 +84,10 @@ const installDappConnection = ({ addEventListener, parentPost, t0 }) => {
         console.debug('bridge: storage -> message to dapp', origin, payload);
         parentPost(payload, '*');
       });
-      setItem = (key, value) => storage.setItem(key, value);
+      setItem = (key, value) => {
+        storage.setItem(key, value);
+        outIx += 1;
+      };
       if (buffer.length) {
         console.debug('sending', buffer.length, 'queued messages from', origin);
         while (buffer.length) {

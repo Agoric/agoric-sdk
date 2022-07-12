@@ -154,11 +154,13 @@ command-line request to open the Agoric wallet.`);
         });
       };
 
-      // Start the flow of messages.
-      if (window.parent !== window) {
-        window.parent.postMessage({ type: 'walletBridgeLoaded' }, '*');
-      }
-      retryWebSocket();
+      window.addEventListener('load', () => {
+        // Start the flow of messages.
+        if (window.parent !== window) {
+          window.parent.postMessage({ type: 'walletBridgeLoaded' }, '*');
+        }
+        retryWebSocket();
+      });
     </script>
   </body>
 </html>

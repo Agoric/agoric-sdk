@@ -43,8 +43,9 @@ const OfferWithoutContext = ({
   const {
     instancePetname,
     instanceHandleBoardId,
-    requestContext: { date, dappOrigin, origin = 'unknown origin' } = {},
+    requestContext: { dappOrigin, origin = 'unknown origin' } = {},
     id,
+    meta: { creationStamp: date },
   } = offer;
   let status = offer.status || 'proposed';
 
