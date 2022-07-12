@@ -1402,17 +1402,17 @@ test(`zcf.stopAcceptingOffers`, async t => {
 test(`zcf.updateSnoozedList - illegal string`, async t => {
   const { zcf } = await setupZCFTest();
   await t.throwsAsync(() => zcf.updateSnoozedList(['try-this']), {
-    message: /must be non-empty ascii strings/,
+    message: /must be non-empty alpha-numeric strings/,
   });
   await t.throwsAsync(() => zcf.updateSnoozedList([374]), {
-    message: /must be non-empty ascii strings/,
+    message: /must be non-empty alpha-numeric strings/,
   });
 });
 
 test(`zcf.updateSnoozedList - illegal strings`, async t => {
   const { zcf } = await setupZCFTest();
   await t.throwsAsync(() => zcf.updateSnoozedList(['try this', 'or this*']), {
-    message: /must be non-empty ascii strings/,
+    message: /must be non-empty alpha-numeric strings/,
   });
   await t.throwsAsync(() => zcf.updateSnoozedList('non_list'), {
     message: /strings.every is not a function/,

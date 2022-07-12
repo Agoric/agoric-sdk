@@ -10,14 +10,17 @@ import bundleSource from '@endo/bundle-source';
 import { setup } from './setupBasicMints.js';
 import { makeZoeKit } from '../../src/zoeService/zoe.js';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
-import { depositToSeat, withdrawFromSeat } from '../../src/contractSupport';
+import {
+  depositToSeat,
+  withdrawFromSeat,
+} from '../../src/contractSupport/index.js';
 import { assertPayoutAmount } from '../zoeTestHelpers.js';
 import { makeOffer } from './makeOffer.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
-const contractRoot = `${dirname}/../zcf/zcfTesterContract.js`;
+const contractRoot = `${dirname}/zcf/zcfTesterContract.js`;
 
 const setupContract = async (moolaIssuer, bucksIssuer) => {
   let testJig;
@@ -59,7 +62,7 @@ test(`snoozedOffers - deny`, async t => {
         harden({ want: { A: moola(3n) }, give: { B: bucks(5n) } }),
         harden({ B: bucksMint.mintPayment(bucks(5n)) }),
       ),
-    { message: "not accepting offer with description 'seat'" },
+    { message: 'not accepting offer with description "seat"' },
   );
 });
 

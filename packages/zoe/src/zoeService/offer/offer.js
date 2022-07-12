@@ -44,7 +44,7 @@ export const makeOfferMethod = (
     const instanceAdmin = getInstanceAdmin(instance);
     assert(
       !instanceAdmin.isSnoozed(description),
-      `not accepting offer with description '${description}'`,
+      `not accepting offer with description ${q(description)}`,
     );
     instanceAdmin.assertAcceptingOffers();
 

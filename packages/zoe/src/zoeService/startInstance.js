@@ -14,7 +14,7 @@ import { handlePKitWarning } from '../handleWarning.js';
 
 const { details: X, quote: q } = assert;
 
-const isASCII = /^[a-zA-Z0-9_]+$/;
+const isAlphanumeric = /^[a-zA-Z0-9]+$/;
 
 /**
  * @param {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
@@ -64,12 +64,15 @@ export const makeStartInstance = (
     const instance = makeInstanceHandle();
 
     const snoozedStrings = [];
+    // if any string in the list matches, don't process the invitation
     const isSnoozed = string =>
       snoozedStrings.some(s => string.indexOf(s) > -1);
     const updateSnoozedList = strings => {
       assert(
-        strings.every(s => typeof s === 'string' && isASCII.test(s)),
-        X`Snoozed strings (${q(strings)}) must be non-empty ascii strings.`,
+        strings.every(s => typeof s === 'string' && isAlphanumeric.test(s)),
+        X`Snoozed strings (${q(
+          strings,
+        )}) must be non-empty alpha-numeric strings.`,
       );
 
       snoozedStrings.splice(0, snoozedStrings.length, ...strings);
