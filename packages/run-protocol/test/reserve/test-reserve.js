@@ -236,7 +236,7 @@ test('governance add Liquidity to the AMM', async t => {
   );
 
   await m.assertChange({
-    mintedRUN: { value: 80_000n },
+    totalFeeMinted: { value: 80_000n },
     allocations: {
       Rmoola: moola(10_000n),
       RmoolaLiquidity: AmountMath.make(moolaLiquidityBrand, 85_622n),
@@ -460,7 +460,7 @@ test('reserve burn IST', async t => {
       value: runningShortfall,
     },
     allocations: { RUN: AmountMath.makeEmpty(runBrand) },
-    burnedRUN: { value: 1000n },
+    totalFeeBurned: { value: 1000n },
   });
 });
 
