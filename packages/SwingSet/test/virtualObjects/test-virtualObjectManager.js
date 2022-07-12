@@ -581,6 +581,10 @@ test('durable kind IDs can be reanimated', t => {
 
   // Use it now, to define a durable kind
   const makeThing = defineDurableKind(fetchedKindID, initThing, thingBehavior);
+  t.is(
+    log.shift(),
+    'set vom.dkind.10 {"kindID":"10","tag":"testkind","nextInstanceID":1,"unfaceted":true}',
+  );
   t.deepEqual(log, []);
 
   // Make an instance of the new kind, just to be sure it's there
@@ -588,7 +592,7 @@ test('durable kind IDs can be reanimated', t => {
   flushCache();
   t.is(
     log.shift(),
-    'set vom.dkind.10 {"kindID":"10","tag":"testkind","nextInstanceID":2}',
+    'set vom.dkind.10 {"kindID":"10","tag":"testkind","nextInstanceID":2,"unfaceted":true}',
   );
   t.is(
     log.shift(),

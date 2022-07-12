@@ -153,6 +153,13 @@ export const buildRootObject = () => {
       return events;
     },
 
+    upgradeV2Simple: async mode => {
+      const bcap = await E(vatAdmin).getNamedBundleCap('ulrik2');
+      const vatParameters = { youAre: 'v2', marker, mode };
+      await E(ulrikAdmin).upgrade(bcap, { vatParameters });
+      return [];
+    },
+
     upgradeV2WhichLosesKind: async () => {
       const bcap = await E(vatAdmin).getNamedBundleCap('ulrik2');
       const events = [];
@@ -177,6 +184,20 @@ export const buildRootObject = () => {
       ulrikAdmin = res.adminNode;
       await E(ulrikRoot).pingback(handler); // goes to v1
       return events;
+    },
+
+    buildV1WithMultiKind: async mode => {
+      const bcap = await E(vatAdmin).getNamedBundleCap('ulrik1');
+      const vatParameters = { youAre: 'v1', marker };
+      const options = { vatParameters };
+      const res = await E(vatAdmin).createVat(bcap, options);
+      ulrikRoot = res.root;
+      ulrikAdmin = res.adminNode;
+      retain = await E(ulrikRoot).getExports(importSensors);
+      ulrikRoot = res.root;
+      ulrikAdmin = res.adminNode;
+      await E(ulrikRoot).makeMultiKind(mode);
+      return [];
     },
 
     upgradeV2WhichExplodes: async () => {

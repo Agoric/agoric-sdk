@@ -491,6 +491,16 @@ export function makeVirtualObjectManager(
   }
 
   /**
+   * @typedef {{
+   *  kindID: string,
+   *  nextInstanceID: number,
+   *  tag: string,
+   *  unfaceted?: boolean,
+   *  facets?: string[],
+   * }} DurableKindDescriptor
+   */
+
+  /**
    * Define a new kind of virtual object.
    *
    * @param {string} kindID  The kind ID to associate with the new kind.
@@ -512,8 +522,11 @@ export function makeVirtualObjectManager(
    *    optional finisher function that can perform post-creation initialization
    *    operations, such as inserting the new object in a cyclical object graph.
    *
-   * @param {boolean} durable  A flag indicating whether or not the newly defined
+   * @param {boolean} isDurable  A flag indicating whether or not the newly defined
    *    kind should be a durable kind.
+   *
+   * @param {DurableKindDescriptor} [durableKindDescriptor]  Descriptor for the
+   *    durable kind, if it is, in fact, durable
    *
    * @returns {*} a maker function that can be called to manufacture new
    *    instances of this kind of object.  The parameters of the maker function
@@ -586,7 +599,8 @@ export function makeVirtualObjectManager(
     multifaceted,
     behavior,
     options = {},
-    durable,
+    isDurable,
+    durableKindDescriptor,
   ) {
     const { finish } = options;
     let facetNames;
@@ -596,7 +610,7 @@ export function makeVirtualObjectManager(
     switch (facetiousness) {
       case 'one': {
         assert(!multifaceted);
-        facetNames = null;
+        facetNames = undefined;
         behaviorTemplate = copyMethods(behavior);
         break;
       }
@@ -618,7 +632,40 @@ export function makeVirtualObjectManager(
       default:
         assert.fail(X`unexepected facetiousness: ${q(facetiousness)}`);
     }
-    vrm.registerKind(kindID, reanimate, deleteStoredVO, durable);
+
+    if (durableKindDescriptor) {
+      const { unfaceted, facets } = durableKindDescriptor;
+      if (multifaceted) {
+        assert(
+          !unfaceted,
+          `durable kind "${tag}" originally defined as single-faceted`,
+        );
+        if (facets) {
+          const m = `durable kind "${tag}" facets don't match original definition`;
+          assert(
+            facetNames !== undefined && facets.length === facetNames.length,
+            m,
+          );
+          for (const [idx, facet] of facetNames.entries()) {
+            assert(facet === facets[idx], m);
+          }
+        } else {
+          durableKindDescriptor.facets = facetNames;
+          saveDurableKindDescriptor(durableKindDescriptor);
+        }
+      } else {
+        assert(
+          !facets,
+          `durable kind "${tag}" originally defined as multi-faceted`,
+        );
+        if (!unfaceted) {
+          durableKindDescriptor.unfaceted = true;
+          saveDurableKindDescriptor(durableKindDescriptor);
+        }
+      }
+    }
+
+    vrm.registerKind(kindID, reanimate, deleteStoredVO, isDurable);
     vrm.rememberFacetNames(kindID, facetNames);
     harden(behaviorTemplate);
 
@@ -652,7 +699,7 @@ export function makeVirtualObjectManager(
             const before = innerSelf.rawState[prop];
             const after = serialize(value);
             assertAcceptableSyscallCapdataSize([after]);
-            if (durable) {
+            if (isDurable) {
               after.slots.forEach((vref, index) => {
                 assert(
                   vrm.isDurable(vref),
@@ -676,7 +723,7 @@ export function makeVirtualObjectManager(
       let toHold;
       let toExpose;
       unweakable.add(state);
-      if (facetNames === null) {
+      if (!facetNames) {
         const context = { state };
         // `context` does not need a linkToCohort because it holds the facets (which hold the cohort)
         unweakable.add(context);
@@ -733,7 +780,7 @@ export function makeVirtualObjectManager(
     }
 
     function makeNewInstance(...args) {
-      const id = getNextInstanceID(kindID, durable);
+      const id = getNextInstanceID(kindID, isDurable);
       const baseRef = `o+${kindID}/${id}`;
       // kdebug(`vo make ${baseRef}`);
 
@@ -742,7 +789,7 @@ export function makeVirtualObjectManager(
       for (const prop of Object.getOwnPropertyNames(initialData)) {
         const data = serialize(initialData[prop]);
         assertAcceptableSyscallCapdataSize([data]);
-        if (durable) {
+        if (isDurable) {
           data.slots.forEach(vref => {
             assert(vrm.isDurable(vref), X`value for ${q(prop)} is not durable`);
           });
@@ -769,6 +816,7 @@ export function makeVirtualObjectManager(
 
   let kindIDID;
   const kindHandleToID = new WeakMap();
+  /** @type Map<string, DurableKindDescriptor> */
   const kindIDToDescriptor = new Map();
   const definedDurableKinds = new Set(); // kindID
 
@@ -783,7 +831,17 @@ export function makeVirtualObjectManager(
 
   const nextInstanceIDs = new Map(); // kindID -> nextInstanceID
 
-  function getNextInstanceID(kindID, durable) {
+  /**
+   * @param {DurableKindDescriptor} durableKindDescriptor
+   */
+  function saveDurableKindDescriptor(durableKindDescriptor) {
+    syscall.vatstoreSet(
+      `vom.dkind.${durableKindDescriptor.kindID}`,
+      JSON.stringify(durableKindDescriptor),
+    );
+  }
+
+  function getNextInstanceID(kindID, isDurable) {
     assert.typeof(kindID, 'string');
     // nextInstanceID is initialized to 1 for brand new kinds, loaded
     // from DB when redefining existing kinds, held in RAM, and
@@ -793,11 +851,11 @@ export function makeVirtualObjectManager(
     assert(id !== undefined);
     const next = id + 1;
     nextInstanceIDs.set(kindID, next);
-    if (durable) {
-      const descriptor = kindIDToDescriptor.get(kindID);
-      assert(descriptor);
-      descriptor.nextInstanceID = next;
-      syscall.vatstoreSet(`vom.dkind.${kindID}`, JSON.stringify(descriptor));
+    if (isDurable) {
+      const durableKindDescriptor = kindIDToDescriptor.get(kindID);
+      assert(durableKindDescriptor);
+      durableKindDescriptor.nextInstanceID = next;
+      saveDurableKindDescriptor(durableKindDescriptor);
     }
     return id;
   }
@@ -860,10 +918,7 @@ export function makeVirtualObjectManager(
     kindHandleToID.set(kindHandle, kindID);
     kindIDToDescriptor.set(kindID, durableKindDescriptor);
     registerValue(kindIDvref, kindHandle, false);
-    syscall.vatstoreSet(
-      `vom.dkind.${kindID}`,
-      JSON.stringify(durableKindDescriptor),
-    );
+    saveDurableKindDescriptor(durableKindDescriptor);
     return kindHandle;
   };
 
@@ -886,6 +941,7 @@ export function makeVirtualObjectManager(
       behavior,
       options,
       true,
+      durableKindDescriptor,
     );
     definedDurableKinds.add(kindID);
     return maker;
@@ -910,6 +966,7 @@ export function makeVirtualObjectManager(
       behavior,
       options,
       true,
+      durableKindDescriptor,
     );
     definedDurableKinds.add(kindID);
     return maker;
@@ -925,9 +982,9 @@ export function makeVirtualObjectManager(
     const prefix = 'vom.dkind.';
     let [key, value] = syscall.vatstoreGetAfter('', prefix);
     while (key) {
-      const descriptor = JSON.parse(value);
-      if (!definedDurableKinds.has(descriptor.kindID)) {
-        missing.push(descriptor.tag);
+      const durableKindDescriptor = JSON.parse(value);
+      if (!definedDurableKinds.has(durableKindDescriptor.kindID)) {
+        missing.push(durableKindDescriptor.tag);
       }
       [key, value] = syscall.vatstoreGetAfter(key, prefix);
     }

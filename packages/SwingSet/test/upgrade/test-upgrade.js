@@ -495,6 +495,99 @@ test('failed upgrade - explode', async t => {
   // vat? only the console?
 });
 
+async function testMultiKindUpgradeChecks(t, mode, complaint) {
+  const config = {
+    includeDevDependencies: true, // for vat-data
+    defaultManagerType: 'xs-worker',
+    bootstrap: 'bootstrap',
+    defaultReapInterval: 'never',
+    vats: {
+      bootstrap: { sourceSpec: bfile('bootstrap-upgrade.js') },
+    },
+    bundles: {
+      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
+      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
+    },
+  };
+
+  const hostStorage = provideHostStorage();
+  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
+  await initializeSwingset(config, [], hostStorage, initOpts);
+  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  t.teardown(c.shutdown);
+  c.pinVatRoot('bootstrap');
+  await c.run();
+
+  const run = async (method, args = []) => {
+    assert(Array.isArray(args));
+    const kpid = c.queueToVatRoot('bootstrap', method, args);
+    await c.run();
+    const status = c.kpStatus(kpid);
+    const capdata = c.kpResolution(kpid);
+    return [status, capdata];
+  };
+
+  // create initial version
+  const [v1status] = await run('buildV1WithMultiKind', [mode]);
+  t.is(v1status, 'fulfilled');
+
+  // upgrade should fail
+  if (complaint) {
+    console.log(`note: expect a '${complaint}' error below`);
+  }
+  const [v2status, v2capdata] = await run('upgradeV2Simple', [mode]);
+  if (complaint) {
+    t.is(v2status, 'rejected');
+    const e = parse(v2capdata.body);
+    t.truthy(e instanceof Error);
+    t.regex(e.message, /vat-upgrade failure/);
+    // TODO: who should see the details of what v2 did wrong? calling
+    // vat? only the console?
+  } else {
+    t.is(v2status, 'fulfilled');
+  }
+}
+
+test('facet kind redefinition - fail on facet count mismatch', async t => {
+  await testMultiKindUpgradeChecks(
+    t,
+    'facetCountMismatch',
+    `durable kind "multi" facets don't match original definition`,
+  );
+});
+
+test('facet kind redefinition - fail on facet name mismatch', async t => {
+  await testMultiKindUpgradeChecks(
+    t,
+    'facetNameMismatch',
+    `durable kind "multi" facets don't match original definition`,
+  );
+});
+
+test('facet kind redefinition - succeed on facet order mismatch', async t => {
+  await testMultiKindUpgradeChecks(t, 'facetOrderMismatch', false);
+});
+
+test('facet kind redefinition - succeed on exact facet match', async t => {
+  await testMultiKindUpgradeChecks(t, 'normal', false);
+});
+
+test('facet kind redefinition - fail on single- to multi-facet redefinition', async t => {
+  await testMultiKindUpgradeChecks(
+    t,
+    's2mFacetiousnessMismatch',
+    `durable kind "multi" originally defined as single-faceted`,
+  );
+});
+
+test('facet kind redefinition - fail on multi- to single-facet redefinition', async t => {
+  await testMultiKindUpgradeChecks(
+    t,
+    'm2sFacetiousnessMismatch',
+    `durable kind "multi" originally defined as multi-faceted`,
+  );
+});
+
 test('failed upgrade - unknown options', async t => {
   const config = {
     includeDevDependencies: true, // for vat-data

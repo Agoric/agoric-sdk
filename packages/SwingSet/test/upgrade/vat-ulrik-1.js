@@ -4,6 +4,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 import {
   makeKindHandle,
   defineDurableKind,
+  defineDurableKindMulti,
   defineKind,
   makeScalarBigMapStore,
   makeScalarBigWeakMapStore,
@@ -173,7 +174,78 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
     returnEternalPromise: () => p2,
 
     makeLostKind: () => {
-      makeKindHandle('unhandled', []);
+      makeKindHandle('unhandled');
+    },
+
+    makeMultiKind: mode => {
+      const mkh = makeKindHandle('multi');
+      baggage.init('mkh', mkh);
+      switch (mode) {
+        case 's2mFacetiousnessMismatch': {
+          // upgrade should fail
+          defineDurableKind(mkh, () => ({}), {
+            fooMethod: () => 1,
+          });
+          break;
+        }
+        case 'facetCountMismatch': {
+          // upgrade should fail
+          defineDurableKindMulti(mkh, () => ({}), {
+            foo: {
+              fooMethod: () => 1,
+            },
+            bar: {
+              barMethod: () => 1,
+            },
+          });
+          break;
+        }
+        case 'facetNameMismatch': {
+          // upgrade should fail
+          defineDurableKindMulti(mkh, () => ({}), {
+            foo: {
+              fooMethod: () => 1,
+            },
+            bar: {
+              barMethod: () => 1,
+            },
+            belch: {
+              belchMethod: () => 1,
+            },
+          });
+          break;
+        }
+        case 'facetOrderMismatch': {
+          // upgrade should succeed since facet names get sorted
+          defineDurableKindMulti(mkh, () => ({}), {
+            baz: {
+              bazMethod: () => 1,
+            },
+            foo: {
+              fooMethod: () => 1,
+            },
+            bar: {
+              barMethod: () => 1,
+            },
+          });
+          break;
+        }
+        default: {
+          // upgrade should succeed
+          defineDurableKindMulti(mkh, () => ({}), {
+            foo: {
+              fooMethod: () => 1,
+            },
+            bar: {
+              barMethod: () => 1,
+            },
+            baz: {
+              bazMethod: () => 1,
+            },
+          });
+          break;
+        }
+      }
     },
     pingback: handler => {
       counter += 1;

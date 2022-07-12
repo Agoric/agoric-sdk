@@ -263,7 +263,7 @@ function build(
       // Yes, we know this is an await inside a loop.  Too bad.  (Also, it's a
       // `do {} while` loop, which means there's no conditional bypass of the
       // await.)
-      // eslint-disable-next-line no-await-in-loop
+      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       await gcTools.gcAndFinalize();
 
       // `deadSet` is the subset of those vrefs which lack an in-memory
@@ -1529,6 +1529,7 @@ function build(
       watchedPromiseManager.prepareShutdownRejections(importedVPIDsSet);
       // reject all "exported" vpids now
       const deciderVPIDs = Array.from(exportedVPIDs.keys()).sort();
+      // eslint-disable-next-line @jessie.js/no-nested-await
       await releaseOldState({
         m,
         deciderVPIDs,
