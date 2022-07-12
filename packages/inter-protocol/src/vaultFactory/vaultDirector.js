@@ -57,7 +57,7 @@ const { details: X, quote: q } = assert;
  * @type {Ephemera}
  */
 // @ts-expect-error not actually full until after initState
-// ??? would't this be good to have first-class in the durable kind maker? so you don't have to refactor everything when you discover a need for ephemera?
+// UNTIL resolution to https://github.com/Agoric/agoric-sdk/issues/5759
 const ephemera = {};
 
 /**
@@ -67,15 +67,9 @@ const ephemera = {};
  * }} MetricsNotification
  *
  * @typedef {Readonly<{
- * debtMint: ZCFMint<'nat'>,
  * collateralTypes: Store<Brand,VaultManager>,
- * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>,
- * metricsPublication: IterationObserver<MetricsNotification>
- * metricsSubscription: StoredSubscription<MetricsNotification>
  * mintSeat: ZCFSeat,
  * rewardPoolSeat: ZCFSeat,
- * vaultParamManagers: Store<Brand, import('./params.js').VaultParamManager>,
- * zcf: import('./vaultFactory.js').VaultFactoryZCF,
  * shortfallInvitation: Invitation,
  * }>} ImmutableState
  *
@@ -100,7 +94,7 @@ const ephemera = {};
 
 /**
  * @param {ERef<ZoeService>} zoe
- * @param {State['directorParamManager']} paramMgr
+ * @param {Ephemera['directorParamManager']} paramMgr
  * @param {import('../reserve/assetReserve.js').ShortfallReporter} [oldShortfallReporter]
  * @param {ERef<Invitation>} [oldInvitation]
  * @returns {Promise<{
@@ -148,9 +142,9 @@ const metricsOf = state => {
 };
 
 /**
- * @param {State['zcf']} zcf
- * @param {State['directorParamManager']} directorParamManager
- * @param {State['debtMint']} debtMint
+ * @param {Ephemera['zcf']} zcf
+ * @param {Ephemera['directorParamManager']} directorParamManager
+ * @param {Ephemera['debtMint']} debtMint
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
  * @returns {State}
@@ -179,21 +173,25 @@ const initState = (
     marshaller,
   );
 
-  return {
-    collateralTypes,
+  Object.assign(ephemera, {
     debtMint,
     directorParamManager,
-    managerCounter: 0,
     marshaller,
-    metricsSubscription,
     metricsPublication,
-    mintSeat,
-    rewardPoolSeat,
+    // Subscription can't yet be held durably https://github.com/Agoric/agoric-sdk/issues/4567
+    metricsSubscription,
     storageNode,
     vaultParamManagers,
+    zcf,
+  });
+
+  return {
+    collateralTypes,
+    managerCounter: 0,
+    mintSeat,
+    rewardPoolSeat,
     // @ts-expect-error defined in finish()
     shortfallInvitation: undefined,
-    zcf,
   };
 };
 
@@ -204,7 +202,9 @@ const initState = (
  * @param {MethodContext} context
  */
 const makeVaultInvitation = ({ state }) => {
-  const { collateralTypes, zcf } = state;
+  const { zcf } = ephemera;
+
+  const { collateralTypes } = state;
 
   /** @param {ZCFSeat} seat */
   const makeVaultHook = async seat => {
@@ -225,10 +225,10 @@ const makeVaultInvitation = ({ state }) => {
     assert(
       AmountMath.isGTE(
         requestedAmount,
-        state.directorParamManager.getMinInitialDebt(),
+        ephemera.directorParamManager.getMinInitialDebt(),
       ),
       X`The request must be for at least ${
-        state.directorParamManager.getMinInitialDebt().value
+        ephemera.directorParamManager.getMinInitialDebt().value
       }. ${requestedAmount.value} is too small`,
     );
 
@@ -265,7 +265,7 @@ const getCollaterals = async ({ state }) => {
   );
 };
 /**
- * @param {State['directorParamManager']} directorParamManager
+ * @param {Ephemera['directorParamManager']} directorParamManager
  */
 const getLiquidationConfig = directorParamManager => ({
   install: directorParamManager.getLiquidationInstall(),
@@ -274,7 +274,7 @@ const getLiquidationConfig = directorParamManager => ({
 
 /**
  *
- * @param {State['directorParamManager']} govParams
+ * @param {Ephemera['directorParamManager']} govParams
  * @param {VaultManager} vaultManager
  * @param {Installation<unknown>} oldInstall
  * @param {unknown} oldTerms
@@ -313,13 +313,13 @@ const machineBehavior = {
   ) => {
     const {
       debtMint,
-      collateralTypes,
-      mintSeat,
-      rewardPoolSeat,
       vaultParamManagers,
       directorParamManager,
+      marshaller,
+      storageNode,
       zcf,
-    } = state;
+    } = ephemera;
+    const { collateralTypes, mintSeat, rewardPoolSeat } = state;
     fit(collateralIssuer, M.remotable());
     assertKeywordName(collateralKeyword);
     fit(initialParamValues, vaultParamPattern);
@@ -330,8 +330,6 @@ const machineBehavior = {
       !collateralTypes.has(collateralBrand),
       X`Collateral brand ${q(collateralBrand)} has already been added`,
     );
-
-    const { storageNode, marshaller } = ephemera;
 
     const managerStorageNode =
       storageNode &&
@@ -435,7 +433,8 @@ const machineBehavior = {
   getCollaterals,
   /** @param {MethodContext} context */
   makeCollectFeesInvitation: ({ state }) => {
-    const { debtMint, rewardPoolSeat, zcf } = state;
+    const { debtMint, zcf } = ephemera;
+    const { rewardPoolSeat } = state;
     return makeMakeCollectFeesInvitation(
       zcf,
       rewardPoolSeat,
@@ -443,11 +442,10 @@ const machineBehavior = {
       'RUN',
     ).makeCollectFeesInvitation();
   },
-  /** @param {MethodContext} context */
-  getContractGovernor: ({ state }) => state.zcf.getTerms().electionManager,
+  getContractGovernor: () => ephemera.zcf.getTerms().electionManager,
   /** @param {MethodContext} context */
   updateMetrics: ({ state }) => {
-    state.metricsPublication.updateState(metricsOf(harden(state)));
+    ephemera.metricsPublication.updateState(metricsOf(harden(state)));
   },
 
   // XXX accessors for tests
@@ -457,17 +455,14 @@ const machineBehavior = {
 };
 
 const creatorBehavior = {
-  /** @param {MethodContext} context */
-  getParamMgrRetriever: ({
-    state: { directorParamManager, vaultParamManagers },
-  }) =>
+  getParamMgrRetriever: () =>
     Far('paramManagerRetriever', {
       /** @param {VaultFactoryParamPath} paramPath */
       get: paramPath => {
         if (paramPath.key === 'governedParams') {
-          return directorParamManager;
+          return ephemera.directorParamManager;
         } else if (paramPath.key.collateralBrand) {
-          return vaultParamManagers.get(paramPath.key.collateralBrand);
+          return ephemera.vaultParamManagers.get(paramPath.key.collateralBrand);
         } else {
           assert.fail('Unsupported paramPath');
         }
@@ -477,8 +472,8 @@ const creatorBehavior = {
    * @param {MethodContext} context
    * @param {string} name
    */
-  getInvitation: ({ state }, name) =>
-    state.directorParamManager.getInternalParamValue(name),
+  getInvitation: (context, name) =>
+    ephemera.directorParamManager.getInternalParamValue(name),
   /** @param {MethodContext} context */
   getLimitedCreatorFacet: context => context.facets.machine,
   getGovernedApis: () => harden({}),
@@ -499,53 +494,48 @@ const publicBehavior = {
     /** @type {VaultManager} */
     return collateralTypes.get(brandIn).getPublicFacet();
   },
-  /**
-   * @param {MethodContext} context
-   */
-  getMetrics: ({ state }) => state.metricsSubscription,
+  getMetrics: () => ephemera.metricsSubscription,
 
   /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
   makeLoanInvitation: makeVaultInvitation,
   /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
   makeVaultInvitation,
   getCollaterals,
-  /** @param {MethodContext} context */
-  getRunIssuer: ({ state }) => state.debtMint.getIssuerRecord().issuer,
+  getRunIssuer: () => ephemera.debtMint.getIssuerRecord().issuer,
   /**
    * subscription for the paramManager for a particular vaultManager
    *
    * @param {MethodContext} context
    * @param {{ collateralBrand: Brand }} selector
    */
-  getSubscription: ({ state }, { collateralBrand }) =>
-    state.vaultParamManagers.get(collateralBrand).getSubscription(),
+  getSubscription: (context, { collateralBrand }) =>
+    ephemera.vaultParamManagers.get(collateralBrand).getSubscription(),
   /**
    * subscription for the paramManager for the vaultFactory's electorate
-   *
-   * @param {MethodContext} context
    */
-  getElectorateSubscription: ({ state }) =>
-    state.directorParamManager.getSubscription(),
+  getElectorateSubscription: () =>
+    ephemera.directorParamManager.getSubscription(),
   /**
    * @param {MethodContext} context
    * @param {{ collateralBrand: Brand }} selector
    */
-  getGovernedParams: ({ state }, { collateralBrand }) =>
+  getGovernedParams: (context, { collateralBrand }) =>
     // TODO use named getters of TypedParamManager
-    state.vaultParamManagers.get(collateralBrand).getParams(),
+    ephemera.vaultParamManagers.get(collateralBrand).getParams(),
   /**
-   * @param {MethodContext} context
    * @returns {Promise<GovernorPublic>}
    */
-  getContractGovernor: ({ state: { zcf } }) =>
+  getContractGovernor: () =>
     // PERF consider caching
-    E(zcf.getZoeService()).getPublicFacet(zcf.getTerms().electionManager),
+    E(ephemera.zcf.getZoeService()).getPublicFacet(
+      ephemera.zcf.getTerms().electionManager,
+    ),
   /**
    * @param {MethodContext} context
    * @param {string} name
    */
-  getInvitationAmount: ({ state }, name) =>
-    state.directorParamManager.getInvitationAmount(name),
+  getInvitationAmount: (context, name) =>
+    ephemera.directorParamManager.getInvitationAmount(name),
 };
 
 const behavior = {
@@ -558,8 +548,8 @@ const behavior = {
 const finish = async ({ state }) => {
   const { shortfallReporter, shortfallInvitation } =
     await updateShortfallReporter(
-      state.zcf.getZoeService(),
-      state.directorParamManager,
+      ephemera.zcf.getZoeService(),
+      ephemera.directorParamManager,
     );
   ephemera.shortfallReporter = shortfallReporter;
   // @ts-expect-error write once
