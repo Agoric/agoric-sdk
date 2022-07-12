@@ -63,19 +63,24 @@ export const makeStartInstance = (
 
     const instance = makeInstanceHandle();
 
-    const snoozedStrings = [];
+    /** @type {Readonly<string[]>} */
+    let snoozedStrings = [];
     // if any string in the list matches, don't process the invitation
     const isSnoozed = string =>
       snoozedStrings.some(s => string.indexOf(s) > -1);
     const updateSnoozedList = strings => {
+      assert(Array.isArray(strings), `${q(strings)} must be an Array`);
+      const proposedStrings = Array.from(strings);
       assert(
-        strings.every(s => typeof s === 'string' && isAlphanumeric.test(s)),
+        proposedStrings.every(
+          s => typeof s === 'string' && isAlphanumeric.test(s),
+        ),
         X`Snoozed strings (${q(
           strings,
-        )}) must be non-empty alpha-numeric strings.`,
+        )}) must be a (possibly empty) Array of alpha-numeric strings.`,
       );
 
-      snoozedStrings.splice(0, snoozedStrings.length, ...strings);
+      snoozedStrings = proposedStrings;
     };
 
     const zoeInstanceStorageManager = await makeZoeInstanceStorageManager(
