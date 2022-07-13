@@ -8,7 +8,11 @@ import { AssetKind, makeIssuerKit, AmountMath } from '../../src/index.js';
 
 test('makeIssuerKit bad allegedName', async t => {
   // @ts-expect-error Intentional wrong type for testing
-  t.throws(() => makeIssuerKit({}), { message: `{} must be a string` });
+  t.throws(() => makeIssuerKit(harden({})), { message: `{} must be a string` });
+  // @ts-expect-error Intentional wrong type for testing
+  t.throws(() => makeIssuerKit({}), {
+    message: `Cannot pass non-frozen objects like {}. Use harden()`,
+  });
 });
 
 test('makeIssuerKit bad assetKind', async t => {
@@ -107,11 +111,11 @@ test('makeIssuerKit malicious displayInfo', async t => {
         'myTokens',
         AssetKind.NAT,
         // @ts-expect-error Intentional wrong type for testing
-        Far('malicious', { doesSomething: () => {} }),
+        'bad displayInfo',
       ),
     {
       message:
-        '"displayInfo" "[Alleged: malicious]" must be a pass-by-copy record, not "remotable"',
+        '"displayInfo" "bad displayInfo" must be a pass-by-copy record, not "string"',
     },
   );
 });
@@ -131,6 +135,10 @@ test('makeIssuerKit bad optShutdownWithFailure', async t => {
 test('brand.isMyIssuer bad issuer', async t => {
   const { brand } = makeIssuerKit('myTokens');
   // @ts-expect-error Intentional wrong type for testing
+  // but for some reason it is no longer complaining about the string
+  // being the wrong type. Hovering over `isMyIssuer` in vscode does
+  // show the correct type for the parameter.
+  // TODO(MSM): ask a typing person
   const result = await brand.isMyIssuer('not an issuer');
   t.false(result);
 });

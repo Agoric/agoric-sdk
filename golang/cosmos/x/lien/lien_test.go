@@ -73,10 +73,13 @@ func (m *mockLienKeeper) SetLien(ctx sdk.Context, addr sdk.AccAddress, lien type
 func (m *mockLienKeeper) IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, lien types.Lien) bool) {
 }
 
-func (m *mockLienKeeper) UpdateLien(ctx sdk.Context, addr sdk.AccAddress, newLien sdk.Coin) error {
+func (m *mockLienKeeper) ChangeLien(ctx sdk.Context, addr sdk.AccAddress, denom string, delta sdk.Int) (sdk.Int, error) {
+	state := m.GetAccountState(ctx, addr)
+	oldLiened := state.Liened.AmountOf(denom)
+	newLiened := oldLiened.Add(delta)
 	m.updateAddr = addr
-	m.updateCoin = newLien
-	return nil
+	m.updateCoin = sdk.NewCoin(denom, newLiened)
+	return newLiened, nil
 }
 
 func (m *mockLienKeeper) GetAccountState(ctx sdk.Context, addr sdk.AccAddress) types.AccountState {
@@ -216,10 +219,10 @@ func TestSetLiened_badAddr(t *testing.T) {
 	keeper := mockLienKeeper{}
 	ph := NewPortHandler(&keeper)
 	msg := portMessage{
-		Type:    "LIEN_SET_LIENED",
+		Type:    "LIEN_CHANGE_LIENED",
 		Address: "foo",
 		Denom:   "ubld",
-		Amount:  i(123),
+		Delta:   i(123),
 	}
 	jsonMsg, err := json.Marshal(&msg)
 	if err != nil {
@@ -237,10 +240,10 @@ func TestSetLiened_badDenom(t *testing.T) {
 	keeper := mockLienKeeper{}
 	ph := NewPortHandler(&keeper)
 	msg := portMessage{
-		Type:    "LIEN_SET_LIENED",
+		Type:    "LIEN_CHANGE_LIENED",
 		Address: addr1,
 		Denom:   "x",
-		Amount:  i(123),
+		Delta:   i(123),
 	}
 	jsonMsg, err := json.Marshal(&msg)
 	if err != nil {
@@ -258,10 +261,10 @@ func TestSetLiened(t *testing.T) {
 	keeper := mockLienKeeper{}
 	ph := NewPortHandler(&keeper)
 	msg := portMessage{
-		Type:    "LIEN_SET_LIENED",
+		Type:    "LIEN_CHANGE_LIENED",
 		Address: addr1,
 		Denom:   "ubld",
-		Amount:  i(123),
+		Delta:   i(123),
 	}
 	jsonMsg, err := json.Marshal(&msg)
 	if err != nil {
@@ -271,8 +274,8 @@ func TestSetLiened(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Receive error %v", err)
 	}
-	if reply != "true" {
-		t.Fatalf("Receive returned %s, want true", reply)
+	if reply != `"123"` {
+		t.Fatalf(`Receive returned %s, want "123"`, reply)
 	}
 	if keeper.updateAddr.String() != addr1 {
 		t.Errorf("lien update with address %s, want %s", keeper.updateAddr, addr1)

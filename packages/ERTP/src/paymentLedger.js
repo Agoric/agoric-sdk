@@ -1,40 +1,92 @@
+/* eslint-disable no-use-before-define */
 // @ts-check
 
 import { E } from '@endo/eventual-send';
 import { isPromise } from '@endo/promise-kit';
-import { Far, assertCopyArray } from '@endo/marshal';
-import { fit } from '@agoric/store';
-import { makeScalarBigWeakMapStore } from '@agoric/vat-data';
+import { assertCopyArray } from '@endo/marshal';
+import { fit, M } from '@agoric/store';
+import { vivifySingleton, provideDurableWeakMapStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
-import { definePaymentKind } from './payment.js';
-import { makePurseMaker } from './purse.js';
+import { vivifyPaymentKind } from './payment.js';
+import { vivifyPurseKind } from './purse.js';
 
 import '@agoric/store/exported.js';
 
-const { details: X } = assert;
+/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+
+const { details: X, quote: q } = assert;
+
+const amountSchemaFromElementSchema = (brand, assetKind, elementSchema) => {
+  let valueSchema;
+  switch (assetKind) {
+    case 'nat': {
+      valueSchema = M.nat();
+      assert(
+        elementSchema === undefined,
+        X`Fungible assets cannot have an elementSchema: ${q(elementSchema)}`,
+      );
+      break;
+    }
+    case 'set': {
+      if (elementSchema === undefined) {
+        valueSchema = M.arrayOf(M.key());
+      } else {
+        valueSchema = M.arrayOf(M.and(M.key(), elementSchema));
+      }
+      break;
+    }
+    case 'copySet': {
+      if (elementSchema === undefined) {
+        valueSchema = M.set();
+      } else {
+        valueSchema = M.setOf(elementSchema);
+      }
+      break;
+    }
+    case 'copyBag': {
+      if (elementSchema === undefined) {
+        valueSchema = M.bag();
+      } else {
+        valueSchema = M.bagOf(elementSchema);
+      }
+      break;
+    }
+    default: {
+      assert.fail(X`unexpected asset kind ${q(assetKind)}`);
+    }
+  }
+
+  const amountSchema = harden({
+    brand, // matches only this exact brand
+    value: valueSchema,
+  });
+  return amountSchema;
+};
 
 /**
  * Make the paymentLedger, the source of truth for the balances of
  * payments. All minting and transfer authority originates here.
  *
  * @template {AssetKind} [K=AssetKind]
- * @param {string} allegedName
- * @param {Brand} brand
+ * @param {Baggage} issuerBaggage
+ * @param {string} name
  * @param {AssetKind} assetKind
  * @param {DisplayInfo} displayInfo
- * @param {Pattern} amountSchema
+ * @param {Pattern} elementSchema
  * @param {ShutdownWithFailure=} optShutdownWithFailure
- * @returns {{ issuer: Issuer<K>, mint: Mint<K> }}
+ * @returns {{ issuer: Issuer<K>, mint: Mint<K>, brand: Brand<K> }}
  */
-export const makePaymentLedger = (
-  allegedName,
-  brand,
+export const vivifyPaymentLedger = (
+  issuerBaggage,
+  name,
   assetKind,
   displayInfo,
-  amountSchema,
+  elementSchema,
   optShutdownWithFailure = undefined,
 ) => {
-  const makePayment = definePaymentKind(allegedName, brand);
+  const getBrand = () => brand;
+
+  const makePayment = vivifyPaymentKind(issuerBaggage, name, getBrand);
 
   /** @type {ShutdownWithFailure} */
   const shutdownLedgerWithFailure = reason => {
@@ -52,7 +104,10 @@ export const makePaymentLedger = (
   };
 
   /** @type {WeakMapStore<Payment, Amount>} */
-  const paymentLedger = makeScalarBigWeakMapStore('payment');
+  const paymentLedger = provideDurableWeakMapStore(
+    issuerBaggage,
+    'paymentLedger',
+  );
 
   /**
    * A withdrawn live payment is associated with the recovery set of
@@ -74,7 +129,10 @@ export const makePaymentLedger = (
    *
    * @type {WeakMapStore<Payment, SetStore<Payment>>}
    */
-  const paymentRecoverySets = makeScalarBigWeakMapStore('payment-recovery');
+  const paymentRecoverySets = provideDurableWeakMapStore(
+    issuerBaggage,
+    'paymentRecoverySets',
+  );
 
   /**
    * To maintain the invariants listed in the `paymentRecoverySets` comment,
@@ -117,9 +175,6 @@ export const makePaymentLedger = (
   const coerce = allegedAmount => AmountMath.coerce(brand, allegedAmount);
   /** @type {(left: Amount, right: Amount) => boolean } */
   const isEqual = (left, right) => AmountMath.isEqual(left, right, brand);
-
-  /** @type {Amount} */
-  const emptyAmount = AmountMath.makeEmpty(brand, assetKind);
 
   /**
    * Methods like deposit() have an optional second parameter
@@ -399,20 +454,18 @@ export const makePaymentLedger = (
     return payment;
   };
 
-  const purseMethods = {
-    depositInternal,
-    withdrawInternal,
-  };
-
-  const makeEmptyPurse = makePurseMaker(
-    allegedName,
+  const makeEmptyPurse = vivifyPurseKind(
+    issuerBaggage,
+    name,
     assetKind,
-    brand,
-    purseMethods,
+    getBrand,
+    harden({
+      depositInternal,
+      withdrawInternal,
+    }),
   );
 
-  /** @type {Issuer<K>} */
-  const issuer = Far(`${allegedName} issuer`, {
+  const issuer = vivifySingleton(issuerBaggage, `${name} issuer`, {
     isLive,
     getAmountOf,
     burn,
@@ -421,22 +474,39 @@ export const makePaymentLedger = (
     split,
     splitMany,
     getBrand: () => brand,
-    getAllegedName: () => allegedName,
+    getAllegedName: () => name,
     getAssetKind: () => assetKind,
     getDisplayInfo: () => displayInfo,
     makeEmptyPurse,
   });
 
-  /** @type {Mint<K>} */
-  const mint = Far(`${allegedName} mint`, {
+  const mint = vivifySingleton(issuerBaggage, `${name} mint`, {
     getIssuer: () => issuer,
     mintPayment,
   });
 
-  return harden({
-    issuer,
-    mint,
-  });
-};
+  const brand = /** @type {Brand} */ (
+    vivifySingleton(issuerBaggage, `${name} brand`, {
+      isMyIssuer: allegedIssuerP =>
+        E.when(allegedIssuerP, allegedIssuer => allegedIssuer === issuer),
 
-/** @typedef {ReturnType<makePaymentLedger>} PaymentLedger */
+      getAllegedName: () => name,
+      // Give information to UI on how to display the amount.
+      getDisplayInfo: () => displayInfo,
+      getAmountSchema: () => amountSchema,
+    })
+  );
+
+  const issuerKit = harden({ issuer, mint, brand });
+
+  const emptyAmount = AmountMath.makeEmpty(brand, assetKind);
+  const amountSchema = amountSchemaFromElementSchema(
+    brand,
+    assetKind,
+    elementSchema,
+  );
+  return issuerKit;
+};
+harden(vivifyPaymentLedger);
+
+/** @typedef {ReturnType<vivifyPaymentLedger>} PaymentLedger */

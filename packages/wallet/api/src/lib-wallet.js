@@ -114,7 +114,7 @@ export function makeWallet({
 
   // Create the petname maps so we can dehydrate information sent to
   // the frontend.
-  const { makeMapping, dehydrate, edgeMapping } = makeDehydrator();
+  const { makeMapping, hydrate, dehydrate, edgeMapping } = makeDehydrator();
   /** @type {Mapping<Purse>} */
   const purseMapping = makeMapping('purse');
   /** @type {Mapping<Brand>} */
@@ -1731,6 +1731,9 @@ export function makeWallet({
 
   const firstPathToLookup = createRootLookups();
 
+  /** @type {ReturnType<typeof makeMarshal>} */
+  const marshaller = harden({ unserialize: hydrate, serialize: dehydrate });
+
   const wallet = Far('wallet', {
     lookup: (...path) => {
       // Provide an entrypoint to the wallet's naming hub.
@@ -1744,6 +1747,7 @@ export function makeWallet({
       }
       return E(firstValue).lookup(...remaining);
     },
+    getMarshaller: () => marshaller,
     resolveAttMaker: attMaker => attMakerPK.resolve(attMaker),
     getAttMaker: () => attMakerPK.promise,
     getDappCacheCoordinator: dappOrigin =>

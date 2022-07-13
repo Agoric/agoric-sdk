@@ -11,8 +11,8 @@ const { details: X } = assert;
  */
 const XLien = /** @type { const } */ ({
   name: 'lien',
+  LIEN_CHANGE_LIENED: 'LIEN_CHANGE_LIENED',
   LIEN_GET_ACCOUNT_STATE: 'LIEN_GET_ACCOUNT_STATE',
-  LIEN_SET_LIENED: 'LIEN_SET_LIENED',
 });
 
 /**
@@ -22,21 +22,44 @@ const XLien = /** @type { const } */ ({
 
 /**
  * @param {ERef<BridgeManager>} bridgeManager
- * @param {Brand<'nat'>} stake
+ * @param {Brand<'nat'>} brand
  * @param {string} [denom]
  * @returns {StakingAuthority}
  */
-export const makeStakeReporter = (bridgeManager, stake, denom = 'ubld') => {
+export const makeStakeReporter = (bridgeManager, brand, denom = 'ubld') => {
   const { make: makeAmt } = AmountMath;
   /** @param {string} numeral */
-  const toStake = numeral => makeAmt(stake, BigInt(numeral));
+  const toStake = numeral => makeAmt(brand, BigInt(numeral));
+  /**
+   * @param {string} address
+   * @param {bigint} delta
+   * @returns {Promise<Amount<`nat`>>}
+   */
+  const changeLiened = async (address, delta) => {
+    assert.typeof(address, 'string');
+    const newAmount = await E(bridgeManager).toBridge(XLien.name, {
+      type: XLien.LIEN_CHANGE_LIENED,
+      address,
+      denom,
+      delta: `${delta}`,
+    });
+    return harden(toStake(newAmount));
+  };
 
   /** @type {StakingAuthority} */
   const stakeReporter = Far('stakeReporter', {
+    increaseLiened: async (address, increase) => {
+      const delta = AmountMath.getValue(brand, increase);
+      return changeLiened(address, delta);
+    },
+    decreaseLiened: async (address, decrease) => {
+      const delta = -1n * AmountMath.getValue(brand, decrease);
+      return changeLiened(address, delta);
+    },
     getAccountState: async (address, wantedBrand) => {
       assert(
-        wantedBrand === stake,
-        X`Cannot getAccountState for ${wantedBrand}. Expected ${stake}.`,
+        wantedBrand === brand,
+        X`Cannot getAccountState for ${wantedBrand}. Expected ${brand}.`,
       );
       /** @type { AccountState<string> } */
       const { currentTime, bonded, liened, locked, total, unbonding } = await E(
@@ -55,18 +78,6 @@ export const makeStakeReporter = (bridgeManager, stake, denom = 'ubld') => {
         unbonding: toStake(unbonding),
         currentTime: BigInt(currentTime),
       });
-    },
-    setLiened: async (address, previous, target) => {
-      assert.typeof(address, 'string');
-      AmountMath.coerce(stake, previous); // TODO
-      const amount = AmountMath.getValue(stake, target);
-      const success = await E(bridgeManager).toBridge(XLien.name, {
-        type: XLien.LIEN_SET_LIENED,
-        address,
-        denom,
-        amount: `${amount}`,
-      });
-      assert(success);
     },
   });
 

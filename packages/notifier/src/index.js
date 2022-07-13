@@ -1,7 +1,6 @@
 // @ts-check
 
 export {
-  makeEmptyPublishKit,
   makePublishKit,
   subscribeEach,
   subscribeLatest,

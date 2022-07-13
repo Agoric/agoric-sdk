@@ -52,6 +52,7 @@ import {
   metricsTracker,
   vaultManagerMetricsTracker,
   subscriptionTracker,
+  reserveInitialState,
 } from '../metrics.js';
 
 /** @typedef {Record<string, any> & {
@@ -313,7 +314,7 @@ const setupServices = async (
   const { consume, produce } = space;
   trace(t, 'amm', { ammFacets });
 
-  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
+  const quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET);
   // Cheesy hack for easy use of manual price authority
   const pa = Array.isArray(priceOrList)
     ? makeScriptedPriceAuthority({
@@ -321,7 +322,7 @@ const setupServices = async (
         actualBrandOut: run.brand,
         priceList: priceOrList,
         timer,
-        quoteMint,
+        quoteMint: quoteIssuerKit.mint,
         unitAmountIn,
         quoteInterval,
       })
@@ -330,7 +331,7 @@ const setupServices = async (
         actualBrandOut: run.brand,
         initialPrice: priceOrList,
         timer,
-        quoteMint,
+        quoteIssuerKit,
       });
   produce.priceAuthority.resolve(pa);
 
@@ -637,10 +638,7 @@ test('price drop', async t => {
 
   const metricsSub = await E(reserveCreatorFacet).getMetrics();
   const m = await subscriptionTracker(t, metricsSub);
-  await m.assertInitial({
-    allocations: {},
-    shortfallBalance: run.makeEmpty(),
-  });
+  await m.assertInitial(reserveInitialState(run.makeEmpty()));
 
   const debtAmountAfter = await E(vault).getCurrentDebt();
   const finalNotification = await E(vaultNotifier).getUpdateSince();
@@ -764,11 +762,7 @@ test('price falls precipitously', async t => {
 
   const metricsSub = await E(reserveCreatorFacet).getMetrics();
   const m = await subscriptionTracker(t, metricsSub);
-  await m.assertInitial({
-    allocations: {},
-    shortfallBalance: run.makeEmpty(),
-  });
-
+  await m.assertInitial(reserveInitialState(run.makeEmpty()));
   await manualTimer.tick();
   await assertDebtIs(debtAmount.value);
 
@@ -1741,10 +1735,7 @@ test('mutable liquidity triggers and interest', async t => {
 
   const metricsSub = await E(reserveCreatorFacet).getMetrics();
   const m = await subscriptionTracker(t, metricsSub);
-  await m.assertInitial({
-    allocations: {},
-    shortfallBalance: run.makeEmpty(),
-  });
+  await m.assertInitial(reserveInitialState(run.makeEmpty()));
   let shortfallBalance = 0n;
 
   // initial loans /////////////////////////////////////

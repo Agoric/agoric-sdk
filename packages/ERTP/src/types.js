@@ -254,6 +254,15 @@
  */
 
 /**
+ * @template {AssetKind} [K=AssetKind]
+ * @typedef {object} IssuerKit
+ * @property {Mint<K>} mint
+ * @property {Issuer<K>} issuer
+ * @property {Brand<K>} brand
+ * @property {DisplayInfo} displayInfo
+ */
+
+/**
  * @typedef {object} AdditionalDisplayInfo
  *
  * @property {number=} decimalPlaces Tells the display software how

@@ -26,7 +26,6 @@ import { makeSmartWallet } from './smartWallet';
  * @param {ZCF<SmartWalletContractTerms>} zcf
  * @param {{
  *   storageNode?: ERef<StorageNode>,
- *   marshaller?: ERef<Marshaller>,
  * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
@@ -35,7 +34,7 @@ export const start = async (zcf, privateArgs) => {
   assert(namesByAddress, 'missing namesByAddress');
   assert(agoricNames, 'missing agoricNames');
   const zoe = zcf.getZoeService();
-  const { storageNode, marshaller } = privateArgs;
+  const { storageNode } = privateArgs;
 
   /** @type {MapStore<string, import('./smartWallet').SmartWallet>} */
   const walletsByAddress = makeScalarBigMapStore('walletsByAddress');
@@ -46,7 +45,6 @@ export const start = async (zcf, privateArgs) => {
     board,
     namesByAddress,
     storageNode,
-    marshaller,
     zoe,
   };
 

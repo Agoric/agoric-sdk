@@ -1,38 +1,35 @@
 // @ts-check
 
-import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
+import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import {
+  ceilMultiplyBy,
+  makeRatioFromAmounts,
+} from '@agoric/zoe/src/contractSupport/index.js';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
-
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
-import {
-  makeRatioFromAmounts,
-  ceilMultiplyBy,
-} from '@agoric/zoe/src/contractSupport/index.js';
-import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
-
+import * as Collect from '../../src/collect.js';
 import { makeTracer } from '../../src/makeTracer.js';
 import {
-  startEconomicCommittee,
-  startVaultFactory,
   setupAmm,
   setupReserve,
+  startEconomicCommittee,
+  startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
-import * as Collect from '../../src/collect.js';
-
+import { unsafeMakeBundleCache } from '../bundleTool.js';
 import {
-  makeVoterTool,
-  setUpZoeForTest,
-  setupBootstrap,
   installGovernance,
+  makeVoterTool,
+  setupBootstrap,
+  setUpZoeForTest,
   withAmountUtils,
 } from '../supports.js';
-import { unsafeMakeBundleCache } from '../bundleTool.js';
 
 /** @typedef {Record<string, any> & {
  *   aeth: IssuerKit & import('../supports.js').AmountUtils,
@@ -284,14 +281,13 @@ const setupServices = async (
   const { consume, produce } = space;
   trace(t, 'amm', { ammFacets });
 
-  const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
   // Cheesy hack for easy use of manual price authority
   const priceAuthority = makeManualPriceAuthority({
     actualBrandIn: aeth.brand,
     actualBrandOut: run.brand,
     initialPrice: makeRatioFromAmounts(initialPrice, priceBase),
     timer,
-    quoteMint,
+    quoteIssuerKit: makeIssuerKit('quote', AssetKind.SET),
   });
   produce.priceAuthority.resolve(priceAuthority);
 
@@ -316,7 +312,7 @@ const setupServices = async (
     rates,
   );
 
-  /** @type {[any, VaultFactory, VFC['publicFacet']]} */
+  /** @type {[any, VaultFactory, VFC['publicFacet'], VaultManager]} */
   // @ts-expect-error cast
   const [governorInstance, vaultFactory, lender, aethVaultManager] =
     await Promise.all([
@@ -327,24 +323,19 @@ const setupServices = async (
     ]);
   trace(t, 'pa', { governorInstance, vaultFactory, lender, priceAuthority });
 
-  const { g, v } = {
-    g: {
+  return {
+    zoe,
+    // installs,
+    governor: {
       governorInstance,
       governorPublicFacet: E(zoe).getPublicFacet(governorInstance),
       governorCreatorFacet,
     },
-    v: {
+    vaultFactory: {
       vaultFactory,
       lender,
       aethVaultManager,
     },
-  };
-
-  return {
-    zoe,
-    // installs,
-    governor: g,
-    vaultFactory: v,
     ammFacets,
     priceAuthority,
   };
@@ -530,6 +521,7 @@ const makeDriver = async (t, initialPrice, priceBase) => {
 
 test('price drop', async t => {
   const { aeth, run, rates } = t.context;
+
   // When the price falls to 636, the loan will get liquidated. 636 for 900
   // Aeth is 1.4 each. The loan is 270 RUN. The margin is 1.05, so at 636, 400
   // Aeth collateral could support a loan of 268.

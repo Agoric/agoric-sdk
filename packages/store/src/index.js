@@ -59,6 +59,7 @@ export { compareRank, isRankSorted, sortByRank } from './patterns/rankOrder.js';
 export {
   makeDecodePassable,
   makeEncodePassable,
+  isEncodedRemotable,
   zeroPad,
 } from './patterns/encodePassable.js';
 

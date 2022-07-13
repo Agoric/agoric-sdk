@@ -17,6 +17,7 @@ export function makeFakeCollectionManager(vrm, fakeStuff, _options = {}) {
     fakeStuff.registerEntry,
     fakeStuff.marshal.serialize,
     fakeStuff.marshal.unserialize,
+    fakeStuff.assertAcceptableSyscallCapdataSize,
   );
   initializeStoreKindInfo();
 

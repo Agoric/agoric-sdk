@@ -19,7 +19,7 @@ type Keeper interface {
 	GetLien(ctx sdk.Context, addr sdk.AccAddress) types.Lien
 	SetLien(ctx sdk.Context, addr sdk.AccAddress, lien types.Lien)
 	IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, lien types.Lien) bool)
-	UpdateLien(ctx sdk.Context, addr sdk.AccAddress, newCoin sdk.Coin) error
+	ChangeLien(ctx sdk.Context, addr sdk.AccAddress, denom string, delta sdk.Int) (sdk.Int, error)
 	GetAccountState(ctx sdk.Context, addr sdk.AccAddress) types.AccountState
 	BondDenom(ctx sdk.Context) string
 	GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
@@ -103,30 +103,34 @@ func (lk keeperImpl) IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, 
 	}
 }
 
-// UpdateLien changes the liened amount of a single denomination in the given account.
+// ChangeLien changes the liened amount of a single denomination in the given account.
 // Either the old or new amount of the denomination can be zero.
 // Liens can always be decreased, but to increase a lien, the new total amount must
 // be vested and either bonded (for the staking token) or in the bank (for other tokens).
 // The total lien can have several different denominations. Each is adjusted
 // independently.
-func (lk keeperImpl) UpdateLien(ctx sdk.Context, addr sdk.AccAddress, newCoin sdk.Coin) error {
+//
+// The delta is given as a raw Int instead of a Coin since it may be negative.
+func (lk keeperImpl) ChangeLien(ctx sdk.Context, addr sdk.AccAddress, denom string, delta sdk.Int) (sdk.Int, error) {
 	oldLien := lk.GetLien(ctx, addr)
 	oldCoins := oldLien.Coins
-	denom := newCoin.Denom
-	newAmount := newCoin.Amount
-	oldAmount := oldCoins.AmountOf(denom)
-	if newAmount.Equal(oldAmount) {
+	oldAmt := oldCoins.AmountOf(denom)
+	if delta.IsZero() {
 		// no-op, no need to do anything
-		return nil
+		return oldAmt, nil
 	}
-
-	newCoins := oldCoins.Sub(sdk.NewCoins(sdk.NewCoin(denom, oldAmount))).Add(newCoin)
+	newAmt := oldAmt.Add(delta)
+	if newAmt.IsNegative() {
+		return oldAmt, fmt.Errorf("lien delta of %s is larger than existing balance %s", delta, oldAmt)
+	}
+	newCoin := sdk.NewCoin(denom, newAmt)
+	newCoins := oldCoins.Sub(sdk.NewCoins(sdk.NewCoin(denom, oldAmt))).Add(newCoin)
 	newLien := types.Lien{
 		Coins:     newCoins,
 		Delegated: oldLien.Delegated,
 	}
 
-	if newAmount.GT(oldAmount) {
+	if delta.IsPositive() {
 		// See if it's okay to increase the lien.
 		// Lien can be increased if the new amount is vested,
 		// not already liened, and if it's the bond denom,
@@ -135,21 +139,20 @@ func (lk keeperImpl) UpdateLien(ctx sdk.Context, addr sdk.AccAddress, newCoin sd
 		if denom == lk.BondDenom(ctx) {
 			bonded := state.Bonded.AmountOf(denom)
 			unvested := state.Unvested.AmountOf(denom)
-			if !newAmount.Add(unvested).LTE(bonded) {
-				return fmt.Errorf("want to lien %s but only %s vested and bonded", newCoin, bonded.Sub(unvested))
+			if !newAmt.Add(unvested).LTE(bonded) {
+				return oldAmt, fmt.Errorf("want to lien %s but only %s vested and bonded", newCoin, bonded.Sub(unvested))
 			}
 			newDelegated := bonded.Add(state.Unbonding.AmountOf(denom))
 			newLien.Delegated = sdk.NewCoins(sdk.NewCoin(denom, newDelegated))
 		} else {
 			inBank := lk.bankKeeper.GetBalance(ctx, addr, denom)
-			if !newAmount.LTE(inBank.Amount) {
-				return fmt.Errorf("want to lien %s but only %s available", newCoin, inBank)
+			if !newAmt.LTE(inBank.Amount) {
+				return oldAmt, fmt.Errorf("want to lien %s but only %s available", newCoin, inBank)
 			}
 		}
-		// XXX check vested
 	}
 	lk.SetLien(ctx, addr, newLien)
-	return nil
+	return newAmt, nil
 }
 
 // GetAccountState retrieves the AccountState for addr.

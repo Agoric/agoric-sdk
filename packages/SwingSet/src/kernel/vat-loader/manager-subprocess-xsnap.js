@@ -53,7 +53,6 @@ export function makeXsSubprocessFactory({
     const {
       virtualObjectCacheSize,
       enableDisavow,
-      gcEveryCrank = true,
       name: vatName,
       metered,
       compareSyscalls,
@@ -155,7 +154,6 @@ export function makeXsSubprocessFactory({
         virtualObjectCacheSize,
         enableDisavow,
         kernelKeeper.getRelaxDurabilityRules(),
-        gcEveryCrank,
       ]);
       if (bundleReply[0] === 'dispatchReady') {
         parentLog(vatID, `bundle loaded. dispatch ready.`);

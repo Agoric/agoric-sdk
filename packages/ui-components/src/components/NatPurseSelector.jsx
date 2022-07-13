@@ -11,9 +11,9 @@ import { stringifyValue } from '../display/index.js';
  * @param {Array<PursesJSONState> | null} purses Unfiltered purses. This may be null to simplify use in UIs.
  * @param {Brand} [optBrand] - optional brand to filter for
  * @returns {PursesJSONState[] | null}
- *
  * @typedef {{ brand: Brand, displayInfo: any }} PursesJSONState
  * see wallet/api/src/types.js
+ * @deprecated
  */
 export const filterPurses = (purses, optBrand) => {
   if (!purses) {
@@ -24,6 +24,10 @@ export const filterPurses = (purses, optBrand) => {
     assetKind === AssetKind.NAT && (!optBrand || brand === optBrand);
   return purses.filter(filter);
 };
+
+/**
+ * @typedef {{ pursePetname: string, brandPetname: string, value: AmountValue, displayInfo: DisplayInfo }} Purse
+ */
 
 const isNatPurse = ({ displayInfo: { assetKind } }) =>
   assetKind === AssetKind.NAT;
@@ -42,9 +46,20 @@ const makeNatPurseSelector =
     PurseIcon,
     makeStyles,
   }) =>
+  /**
+   *
+   * @param {object} param0
+   * @param {Purse?} [param0.purseSelected]
+   * @param {string} [param0.label]
+   * @param {*} [param0.onChange]
+   * @param {boolean} [param0.disabled=false]
+   * @param {*} [param0.error]
+   * @param {Purse[]} [param0.purses]
+   * @param {string} [param0.className]
+   */
   ({
     label = 'Purse',
-    purseSelected = /** @type {any} */ (null),
+    purseSelected = null,
     onChange = _p => {},
     disabled = false,
     error = false,

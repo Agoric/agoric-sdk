@@ -2,7 +2,6 @@
 
 import { test } from './prepare-test-env-ava.js';
 import {
-  makeEmptyPublishKit,
   makePublishKit,
   subscribeEach,
   subscribeLatest,
@@ -10,8 +9,8 @@ import {
 import '../src/types.js';
 import { invertPromiseSettlement } from './iterable-testing-tools.js';
 
-test('makeEmptyPublishKit', async t => {
-  const { publisher, subscriber } = makeEmptyPublishKit();
+test('makePublishKit', async t => {
+  const { publisher, subscriber } = makePublishKit();
 
   const pubFirst = Symbol('first');
   publisher.publish(pubFirst);
@@ -136,8 +135,8 @@ test('makeEmptyPublishKit', async t => {
   );
 });
 
-test('makeEmptyPublishKit - immediate finish', async t => {
-  const { publisher, subscriber } = makeEmptyPublishKit();
+test('makePublishKit - immediate finish', async t => {
+  const { publisher, subscriber } = makePublishKit();
 
   const pubFinal = Symbol('done');
   publisher.finish(pubFinal);
@@ -189,8 +188,8 @@ test('makeEmptyPublishKit - immediate finish', async t => {
   );
 });
 
-test('makeEmptyPublishKit - fail', async t => {
-  const { publisher, subscriber } = makeEmptyPublishKit();
+test('makePublishKit - fail', async t => {
+  const { publisher, subscriber } = makePublishKit();
 
   publisher.publish(undefined);
   const subFirst = await subscriber.subscribeAfter();
@@ -231,8 +230,8 @@ test('makeEmptyPublishKit - fail', async t => {
   );
 });
 
-test('makeEmptyPublishKit - immediate fail', async t => {
-  const { publisher, subscriber } = makeEmptyPublishKit();
+test('makePublishKit - immediate fail', async t => {
+  const { publisher, subscriber } = makePublishKit();
 
   const pubFailure = Symbol('fail');
   publisher.fail(pubFailure);
@@ -265,51 +264,8 @@ test('makeEmptyPublishKit - immediate fail', async t => {
   );
 });
 
-test('makePublishKit', async t => {
-  const expectedInitialCount = (
-    await makePublishKit(undefined).subscriber.subscribeAfter()
-  ).publishCount;
-  t.true(expectedInitialCount > 0n);
-  const initialValues = {
-    // harden([1, -0, undefined, NaN, obj, unresP, rejP, null]);
-    array: [],
-    bigint: 0n,
-    date: new Date(0),
-    error: new Error(''),
-    false: false,
-    infinity: Infinity,
-    math: Math,
-    nan: NaN,
-    'negative zero': -0,
-    null: null,
-    object: {},
-    symbol: Symbol(''),
-    true: true,
-    undefined,
-  };
-  for (const [label, initialValue] of Object.entries(initialValues)) {
-    const { subscriber } = makePublishKit(initialValue);
-    // eslint-disable-next-line no-await-in-loop
-    const subAll = await Promise.all([
-      subscriber.subscribeAfter(),
-      subscriber.subscribeAfter(expectedInitialCount - 1n),
-    ]);
-    const [subFirst] = subAll;
-    t.like(subFirst, {
-      head: { done: false },
-      publishCount: expectedInitialCount,
-    });
-    t.is(
-      subFirst.head.value,
-      initialValue,
-      `initial value should be accepted: ${label}`,
-    );
-    t.deepEqual(new Set(subAll), new Set([subFirst]));
-  }
-});
-
 test('subscribeLatest', async t => {
-  const { publisher, subscriber } = makeEmptyPublishKit();
+  const { publisher, subscriber } = makePublishKit();
   const latestIterator = subscribeLatest(subscriber);
 
   // Publish in geometric batches: [1], [2], [3, 4], [5, 6, 7, 8], ...
@@ -336,7 +292,7 @@ test('subscribeLatest', async t => {
 });
 
 test('subscribeEach', async t => {
-  const { publisher, subscriber } = makeEmptyPublishKit();
+  const { publisher, subscriber } = makePublishKit();
   const latestIterator = subscribeEach(subscriber);
 
   // Publish in geometric batches: [1], [2], [3, 4], [5, 6, 7, 8], ...
@@ -370,7 +326,7 @@ test('subscribeEach', async t => {
 });
 
 test('subscribeAfter bounds checking', async t => {
-  const { publisher, subscriber } = makeEmptyPublishKit();
+  const { publisher, subscriber } = makePublishKit();
 
   for (const badCount of [1n, 0, '', false]) {
     const repr =
@@ -390,17 +346,17 @@ test('subscribeAfter bounds checking', async t => {
 
 test('subscribeAfter resolution sequencing', async t => {
   // Demonstrate sequencing by publishing to two destinations.
-  const { publisher: pub1, subscriber: sub1 } = makeEmptyPublishKit();
-  const { publisher: pub2, subscriber: sub2 } = makeEmptyPublishKit();
+  const { publisher: pub1, subscriber: sub1 } = makePublishKit();
+  const { publisher: pub2, subscriber: sub2 } = makePublishKit();
   const sub2LIFO = [];
 
   const sub1FirstAll = [];
-  Promise.resolve(sub1.subscribeAfter()).then(result =>
-    sub1FirstAll.push(result),
-  );
-  Promise.resolve(sub1.subscribeAfter(0n)).then(result =>
-    sub1FirstAll.push(result),
-  );
+  Promise.resolve(sub1.subscribeAfter())
+    .then(result => sub1FirstAll.push(result))
+    .catch(t.fail);
+  Promise.resolve(sub1.subscribeAfter(0n))
+    .then(result => sub1FirstAll.push(result))
+    .catch(t.fail);
 
   pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter());
@@ -427,15 +383,15 @@ test('subscribeAfter resolution sequencing', async t => {
 
   const sub1FirstLateAll = [];
   const sub1SecondAll = [];
-  Promise.resolve(sub1.subscribeAfter()).then(result =>
-    sub1FirstLateAll.push(result),
-  );
-  Promise.resolve(sub1.subscribeAfter(0n)).then(result =>
-    sub1FirstLateAll.push(result),
-  );
-  Promise.resolve(sub1.subscribeAfter(sub1FirstAll[0].publishCount)).then(
-    result => sub1SecondAll.push(result),
-  );
+  Promise.resolve(sub1.subscribeAfter())
+    .then(result => sub1FirstLateAll.push(result))
+    .catch(t.fail);
+  Promise.resolve(sub1.subscribeAfter(0n))
+    .then(result => sub1FirstLateAll.push(result))
+    .catch(t.fail);
+  Promise.resolve(sub1.subscribeAfter(sub1FirstAll[0].publishCount))
+    .then(result => sub1SecondAll.push(result))
+    .catch(t.fail);
 
   pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter(sub2LIFO[0].publishCount));
@@ -471,15 +427,15 @@ test('subscribeAfter resolution sequencing', async t => {
 
   const sub1SecondLateAll = [];
   const sub1FinalAll = [];
-  Promise.resolve(sub1.subscribeAfter()).then(result =>
-    sub1SecondLateAll.push(result),
-  );
-  Promise.resolve(sub1.subscribeAfter(0n)).then(result =>
-    sub1SecondLateAll.push(result),
-  );
-  Promise.resolve(sub1.subscribeAfter(sub1SecondAll[0].publishCount)).then(
-    result => sub1FinalAll.push(result),
-  );
+  Promise.resolve(sub1.subscribeAfter())
+    .then(result => sub1SecondLateAll.push(result))
+    .catch(t.fail);
+  Promise.resolve(sub1.subscribeAfter(0n))
+    .then(result => sub1SecondLateAll.push(result))
+    .catch(t.fail);
+  Promise.resolve(sub1.subscribeAfter(sub1SecondAll[0].publishCount))
+    .then(result => sub1FinalAll.push(result))
+    .catch(t.fail);
 
   pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter(sub2LIFO[0].publishCount));

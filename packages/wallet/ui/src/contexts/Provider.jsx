@@ -8,8 +8,10 @@ import { ApplicationContext, ConnectionStatus } from './Application';
 import {
   ConnectionConfigType,
   DEFAULT_CONNECTION_CONFIGS,
+  SmartConnectionMethod,
 } from '../util/connections';
 import { maybeLoad, maybeSave } from '../util/storage';
+import { suggestChain } from '../util/SuggestChain';
 
 const useDebugLogging = (state, watch) => {
   useEffect(() => console.log(state), watch);
@@ -122,6 +124,7 @@ const Provider = ({ children }) => {
   const [backend, setBackend] = useState(null);
   const [schemaActions, setSchemaActions] = useState(null);
   const [connectionComponent, setConnectionComponent] = useState(null);
+  const [backendErrorHandler, setBackendErrorHandler] = useState(null);
 
   const RESTORED_CONNECTION_CONFIGS = [...DEFAULT_CONNECTION_CONFIGS];
   const userConnectionConfigs = maybeLoad('userConnectionConfigs');
@@ -143,6 +146,15 @@ const Provider = ({ children }) => {
   const [connectionStatus, setConnectionStatus] = useState(
     wantConnection ? 'connecting' : 'disconnected',
   );
+  const [keplrConnection, setKeplrConnection] = useState(null);
+
+  const tryKeplrConnect = async () => {
+    const [cosmjs, address] = await suggestChain(connectionConfig.href);
+    setKeplrConnection({
+      cosmjs,
+      address,
+    });
+  };
 
   useEffect(() => {
     if (!connectionComponent) {
@@ -186,6 +198,12 @@ const Provider = ({ children }) => {
       }
     }
     maybeSave('userConnectionConfigs', updatedConnectionConfigs);
+
+    if (
+      connectionConfig?.smartConnectionMethod === SmartConnectionMethod.KEPLR
+    ) {
+      tryKeplrConnect();
+    }
   }, [connectionConfig]);
 
   const backendSetters = new Map([
@@ -283,7 +301,7 @@ const Provider = ({ children }) => {
       setConnectionComponent(<WalletConnection />);
       attempts = 0;
     };
-    if (connectionConfig.type === ConnectionConfigType.Smart) {
+    if (connectionConfig.type === ConnectionConfigType.SMART) {
       importer = () => import('../components/SmartWalletConnection');
     } else {
       importer = () => import('../components/WalletConnection');
@@ -295,7 +313,7 @@ const Provider = ({ children }) => {
         clearTimeout(retryTimeout);
       }
     };
-  }, [connectionComponent, wantConnection, connectionComponent]);
+  }, [connectionComponent, wantConnection]);
 
   const [pendingPurseCreations, setPendingPurseCreations] = useReducer(
     pendingPurseCreationsReducer,
@@ -363,6 +381,10 @@ const Provider = ({ children }) => {
     connectionComponent,
     disconnect,
     connectionStatus,
+    backendErrorHandler,
+    setBackendErrorHandler,
+    keplrConnection,
+    tryKeplrConnect,
   };
 
   useDebugLogging(state, [
