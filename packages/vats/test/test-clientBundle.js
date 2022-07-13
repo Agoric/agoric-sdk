@@ -114,7 +114,7 @@ test('connectFaucet produces payments', async t => {
       board: true,
       zoe: true,
     };
-    E(client).assignBundle([_a => stub]);
+    void E(client).assignBundle([_a => stub]);
   };
 
   const vatPowers = {
