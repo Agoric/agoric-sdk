@@ -2,10 +2,7 @@
 
 import { test } from './prepare-test-env-ava.js';
 
-import {
-  makeEmptyPublishKit,
-  makeNotifierFromSubscriber,
-} from '../src/index.js';
+import { makePublishKit, makeNotifierFromSubscriber } from '../src/index.js';
 import {
   delayByTurns,
   invertPromiseSettlement,
@@ -13,7 +10,7 @@ import {
 
 /** @param {{conclusionMethod: 'finish' | 'fail', conclusionValue: any}} config */
 const makeBatchPublishKit = ({ conclusionMethod, conclusionValue }) => {
-  const { publisher, subscriber } = makeEmptyPublishKit();
+  const { publisher, subscriber } = makePublishKit();
 
   // Publish in power-of-two batches: [1], [2], [3, 4], [5, 6, 7, 8], ...
   let nextValue = 1;
@@ -335,7 +332,7 @@ test('makeNotifierFromSubscriber - getUpdateSince() result identity', async t =>
     'final results should be identical',
   );
 
-  const { publisher, subscriber: failureSubscriber } = makeEmptyPublishKit();
+  const { publisher, subscriber: failureSubscriber } = makePublishKit();
   const failureNotifier = await makeNotifierFromSubscriber(failureSubscriber);
   publisher.publish('first value');
   ({ updateCount } = await failureNotifier.getUpdateSince());
