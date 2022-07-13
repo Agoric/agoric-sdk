@@ -24,7 +24,8 @@ const RESET_DELAY_MS = 3000;
 const DEFAULT_LOCATOR_URL =
   'https://local.agoric.com/?append=/wallet-bridge.html';
 
-const LOCAL_STORAGE_LOCATOR_URL = 'https://local.agoric.com/?append=/wallet/bridge.html'
+const LOCAL_STORAGE_LOCATOR_URL =
+  'https://local.agoric.com/?append=/wallet/bridge.html';
 
 const delay = (ms, resolution) =>
   new Promise(resolve => setTimeout(resolve, ms, resolution));
@@ -238,7 +239,9 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
         case 'locating': {
           backend = html`
             <agoric-iframe-messenger
-              src=${this.useLocalStorage ? LOCAL_STORAGE_LOCATOR_URL : DEFAULT_LOCATOR_URL}
+              src=${this.useLocalStorage
+                ? LOCAL_STORAGE_LOCATOR_URL
+                : DEFAULT_LOCATOR_URL}
               @message=${this.onLocateMessage}
               @error=${this.onError}
             ></agoric-iframe-messenger>
