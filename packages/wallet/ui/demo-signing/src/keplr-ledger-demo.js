@@ -119,8 +119,8 @@ const makeSigner = async (ui, keplr) => {
     const signerData = { accountNumber, sequence, chainId };
     console.log('sign', { address, msgs, fee, memo, signerData });
 
-    // const tx = await offlineSigner.sign(address, msgs, fee, memo, signerData);
-    const tx = await keplr.signAmino(chainId, address, signDoc);
+    const tx = await offlineSigner.signAmino(address, signDoc);
+    // const tx = await keplr.signAmino(chainId, address, signDoc);
 
     console.log({ tx });
     // Example transaction
