@@ -59,15 +59,15 @@ const makeChainInfo = (networkConfig, rpcAddr, chainId, caption) => {
 
 export async function suggestChain(
   networkConfig,
-  caption = undefined,
-  io = {
-    fetch,
-    window,
-    SigningStargateClient,
-    random: Math.random,
-  },
+  /** @type {string} */ caption = undefined,
+  io = {},
 ) {
-  const { fetch, window, SigningStargateClient: SigningClient, random } = io;
+  const {
+    fetch = globalThis.fetch,
+    keplr = window.keplr,
+    SigningClient = SigningStargateClient,
+    random = Math.random,
+  } = io;
 
   const res = await fetch(networkConfig);
   if (!res.ok) {
@@ -77,10 +77,10 @@ export async function suggestChain(
   const rpcAddr = rpcAddrs[Math.floor(random() * rpcAddrs.length)];
 
   const chainInfo = makeChainInfo(networkConfig, rpcAddr, chainId, caption);
-  await window.keplr.experimentalSuggestChain(chainInfo);
-  await window.keplr.enable(chainId);
+  await keplr.experimentalSuggestChain(chainInfo);
+  await keplr.enable(chainId);
 
-  const offlineSigner = window.getOfflineSigner(chainId);
+  const offlineSigner = keplr.getOfflineSigner(chainId);
   const cosmJS = await SigningClient.connectWithSigner(
     chainInfo.rpc,
     offlineSigner,
