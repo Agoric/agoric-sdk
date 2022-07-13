@@ -36,7 +36,11 @@ import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
 import { chargeInterest } from '../interest.js';
-import { checkDebtLimit, makeMetricsPublisherKit } from '../contractSupport.js';
+import {
+  checkDebtLimit,
+  makeEphemeraProvider,
+  makeMetricsPublisherKit,
+} from '../contractSupport.js';
 
 const { details: X } = assert;
 
@@ -127,9 +131,20 @@ const trace = makeTracer('VM');
  * }>} MethodContext
  */
 
-// FIXME https://github.com/Agoric/agoric-sdk/issues/5622
-let liquidationQueueing = false;
-let outstandingQuote = null;
+/**
+ * Ephemera are the elements of state that cannot (or need not) be durable.
+ * When there's a single instance it can be held in a closure, but there are
+ * many vault manaager objects. So we hold their ephemera keyed by the durable
+ * vault manager object reference.
+ *
+ * @type {(key: VaultManager) => {
+ *   liquidationQueueing: boolean,
+ *   outstandingQuote: Promise<MutableQuote>?,
+ * }} */
+const provideEphemera = makeEphemeraProvider(() => ({
+  liquidationQueueing: false,
+  outstandingQuote: null,
+}));
 
 /**
  * Create state for the Vault Manager kind
@@ -244,7 +259,9 @@ const helperBehavior = {
    * @param {ZCFSeat} poolIncrementSeat
    */
   chargeAllVaults: async ({ state, facets }, updateTime, poolIncrementSeat) => {
-    trace('chargeAllVaults', { updateTime });
+    trace('chargeAllVaults', state.collateralBrand, {
+      updateTime,
+    });
     const interestRate = state.factoryPowers
       .getGovernedParams()
       .getInterestRate();
@@ -280,7 +297,7 @@ const helperBehavior = {
     state.totalDebt = changes.totalDebt;
 
     facets.helper.assetNotify();
-    trace('chargeAllVaults complete');
+    trace('chargeAllVaults complete', state.collateralBrand);
     // price to check against has changed
     return facets.helper.reschedulePriceCheck();
   },
@@ -339,21 +356,24 @@ const helperBehavior = {
    * @returns {Promise<void>}
    */
   reschedulePriceCheck: async ({ state, facets }, highestRatio) => {
-    trace('reschedulePriceCheck', { liquidationQueueing });
+    const ephemera = provideEphemera(facets.self);
+    trace('reschedulePriceCheck', state.collateralBrand, {
+      ephemera,
+    });
     // INTERLOCK: the first time through, start the activity to wait for
     // and process liquidations over time.
-    if (!liquidationQueueing) {
-      liquidationQueueing = true;
+    if (!ephemera.liquidationQueueing) {
+      ephemera.liquidationQueueing = true;
       // eslint-disable-next-line consistent-return
       return facets.helper
         .processLiquidations()
         .catch(e => console.error('Liquidator failed', e))
         .finally(() => {
-          liquidationQueueing = false;
+          ephemera.liquidationQueueing = false;
         });
     }
 
-    if (!outstandingQuote) {
+    if (!ephemera.outstandingQuote) {
       // the new threshold will be picked up by the next quote request
       return;
     }
@@ -372,11 +392,11 @@ const helperBehavior = {
     const govParams = state.factoryPowers.getGovernedParams();
     const liquidationMargin = govParams.getLiquidationMargin();
     // Safe to call extraneously (lightweight and idempotent)
-    E(outstandingQuote).updateLevel(
+    E(ephemera.outstandingQuote).updateLevel(
       highestDebtRatio.denominator, // collateral
       liquidationThreshold(highestDebtRatio, liquidationMargin),
     );
-    trace('update quote', highestDebtRatio);
+    trace('update quote', state.collateralBrand, highestDebtRatio);
   },
 
   /**
@@ -385,6 +405,7 @@ const helperBehavior = {
   processLiquidations: async ({ state, facets }) => {
     const { prioritizedVaults, priceAuthority } = state;
     const govParams = state.factoryPowers.getGovernedParams();
+    const ephemera = provideEphemera(facets.self);
 
     async function* eventualLiquidations() {
       while (true) {
@@ -397,17 +418,17 @@ const helperBehavior = {
         // ask to be alerted when the price level falls enough that the vault
         // with the highest debt to collateral ratio will no longer be valued at the
         // liquidationMargin above its debt.
-        outstandingQuote = E(priceAuthority).mutableQuoteWhenLT(
+        ephemera.outstandingQuote = E(priceAuthority).mutableQuoteWhenLT(
           highestDebtRatio.denominator, // collateral
           liquidationThreshold(highestDebtRatio, liquidationMargin),
         );
-        trace('posted quote request', highestDebtRatio);
+        trace('posted quote request', state.collateralBrand, highestDebtRatio);
 
         // The rest of this method will not happen until after a quote is received.
         // This may not happen until much later, when the market changes.
         // eslint-disable-next-line no-await-in-loop
-        const quote = await E(outstandingQuote).getPromise();
-        outstandingQuote = null;
+        const quote = await E(ephemera.outstandingQuote).getPromise();
+        ephemera.outstandingQuote = null;
         // When we receive a quote, we check whether the vault with the highest
         // ratio of debt to collateral is below the liquidationMargin, and if so,
         // we liquidate it. We use ceilDivide to round up because ratios above
@@ -416,7 +437,7 @@ const helperBehavior = {
           ceilDivideBy(getAmountOut(quote), liquidationMargin),
           getAmountIn(quote),
         );
-        trace('quote', quote, quoteRatioPlusMargin);
+        trace('quote', state.collateralBrand, quote, quoteRatioPlusMargin);
 
         // Liquidate the head of the queue
         const [next] =
@@ -428,7 +449,7 @@ const helperBehavior = {
     }
     for await (const next of eventualLiquidations()) {
       await facets.helper.liquidateAndRemove(next);
-      trace('price check liq', next && next[0]);
+      trace('price check liq', state.collateralBrand, next && next[0]);
     }
   },
 
@@ -439,7 +460,7 @@ const helperBehavior = {
   liquidateAndRemove: ({ state, facets }, [key, vault]) => {
     const { factoryPowers, prioritizedVaults, zcf } = state;
     const vaultSeat = vault.getVaultSeat();
-    trace('liquidating', vaultSeat.getProposal());
+    trace('liquidating', state.collateralBrand, vaultSeat.getProposal());
 
     const collateralPre = vault.getCollateralAmount();
 
@@ -480,7 +501,7 @@ const helperBehavior = {
           accounting.shortfall,
         );
         prioritizedVaults.removeVault(key);
-        trace('liquidated');
+        trace('liquidated', state.collateralBrand);
         state.numLiquidationsCompleted += 1;
         facets.helper.updateMetrics();
 
@@ -551,7 +572,10 @@ const managerBehavior = {
    * @param {ZCFSeat} seat
    */
   burnAndRecord: ({ state }, toBurn, seat) => {
-    trace('burnAndRecord', { toBurn, totalDebt: state.totalDebt });
+    trace('burnAndRecord', state.collateralBrand, {
+      toBurn,
+      totalDebt: state.totalDebt,
+    });
     const { burnDebt } = state.factoryPowers;
     burnDebt(toBurn, seat);
     state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
@@ -735,7 +759,7 @@ const selfBehavior = {
     const zoe = zcf.getZoeService();
     const collateralIssuer = zcf.getIssuerForBrand(collateralBrand);
     const debtIssuer = zcf.getIssuerForBrand(debtBrand);
-    trace('setup liquidator', {
+    trace('setup liquidator', state.collateralBrand, {
       debtBrand,
       debtIssuer,
       collateralBrand,
@@ -753,7 +777,7 @@ const selfBehavior = {
         timerService,
       }),
     );
-    trace('setup liquidator complete', {
+    trace('setup liquidator complete', state.collateralBrand, {
       instance,
       old: state.liquidatorInstance,
       equal: state.liquidatorInstance === instance,
