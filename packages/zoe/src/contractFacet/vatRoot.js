@@ -73,7 +73,7 @@ export async function buildRootObject(powers, vatParameters, baggage) {
       zoeInstanceAdmin,
       instanceRecordFromZoe,
       issuerStorageFromZoe,
-      privateArgs = undefined,
+      privateArgs,
     ) => {
       assert(firstTime);
 
