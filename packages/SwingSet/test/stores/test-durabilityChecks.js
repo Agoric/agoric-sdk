@@ -272,3 +272,34 @@ async function runDurabilityCheckTest(t, relaxDurabilityRules) {
 
 test('durability checks (strict)', t => runDurabilityCheckTest(t, false));
 test('durability checks (relaxed)', t => runDurabilityCheckTest(t, true));
+
+test('heapOnly', async t => {
+  const { vom } = makeFakeVirtualStuff({
+    cacheSize: 3,
+  });
+
+  const { defineDurableKind, makeKindHandle } = vom;
+
+  const handle = makeKindHandle('mixed');
+
+  const initState = () => ({
+    greeting: 'hello',
+    promise: Promise.resolve('success'),
+  });
+  const behavior = {
+    getGreeting: ({ state }) => {
+      return state.greeting;
+    },
+    getPromise: ({ state }) => {
+      return state.promise;
+    },
+  };
+
+  const make = defineDurableKind(handle, initState, behavior, {
+    heapOnly: ['promise'],
+  });
+
+  const first = make();
+  t.is(first.getGreeting(), 'hello');
+  t.is(await first.getPromise(), 'success');
+});

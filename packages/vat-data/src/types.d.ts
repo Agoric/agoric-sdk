@@ -41,8 +41,11 @@ declare class DurableKindHandleClass {
 export type DurableKindHandle = DurableKindHandleClass;
 
 type DefineKindOptions<C> = {
+  heapOnly?: string[];
   finish?: (context: C) => void;
+  // FIXME option not read by anything
   durable?: boolean;
+  // FIXME option not read by anything
   fakeDurable?: boolean;
 };
 

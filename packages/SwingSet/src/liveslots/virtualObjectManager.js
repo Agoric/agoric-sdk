@@ -507,10 +507,11 @@ export function makeVirtualObjectManager(
    *    object) or a bag of bags of functions (in the case of a multi-faceted
    *    object) that will become the methods of the object or its facets.
    *
-   * @param {*} options Additional options to configure the virtual object kind
-   *    being defined.  Currently the only supported option is `finish`, an
-   *    optional finisher function that can perform post-creation initialization
+   * @param {object} options Additional options to configure the virtual object kind
+   *    being defined.
+   * @param {(context: unknown) => void} [options.finish] function that can perform post-creation initialization
    *    operations, such as inserting the new object in a cyclical object graph.
+   * @param {string[]} [options.heapOnly] list of properties that should not be serialized/virtualized/durabilized
    *
    * @param {boolean} durable  A flag indicating whether or not the newly defined
    *    kind should be a durable kind.
@@ -641,6 +642,18 @@ export function makeVirtualObjectManager(
       if (!initializing) {
         ensureState();
       }
+      for (const prop of Object.getOwnPropertyNames(innerSelf.heapState)) {
+        Object.defineProperty(state, prop, {
+          get: () => {
+            ensureState();
+            return innerSelf.heapState[prop];
+          },
+          set: value => {
+            ensureState();
+            innerSelf.heapState[prop] = value;
+          },
+        });
+      }
       for (const prop of Object.getOwnPropertyNames(innerSelf.rawState)) {
         Object.defineProperty(state, prop, {
           get: () => {
@@ -738,8 +751,31 @@ export function makeVirtualObjectManager(
       // kdebug(`vo make ${baseRef}`);
 
       const initialData = init ? init(...args) : {};
+
+      const heapKeys = Object.fromEntries(
+        (options.heapOnly || []).map(k => [k, k]),
+      );
+
+      // XXX we could use _.partition
+      const [heapPropNames, serializablePropNames] = Object.getOwnPropertyNames(
+        initialData,
+      ).reduce(
+        /** @type {(acc: string[][], name: string) => string[][]} */
+        (acc, name) => {
+          acc[heapKeys[name] ? 0 : 1].push(name);
+          return acc;
+        },
+        [[], []],
+      );
+
+      // REVIEW rename to serializedState ?
       const rawState = {};
-      for (const prop of Object.getOwnPropertyNames(initialData)) {
+      const heapState = {};
+
+      for (const prop of heapPropNames) {
+        heapState[prop] = initialData[prop];
+      }
+      for (const prop of serializablePropNames) {
         const data = serialize(initialData[prop]);
         assertAcceptableSyscallCapdataSize([data]);
         if (durable) {
@@ -750,7 +786,7 @@ export function makeVirtualObjectManager(
         data.slots.forEach(vrm.addReachableVref);
         rawState[prop] = data;
       }
-      const innerSelf = { baseRef, rawState, repCount: 0 };
+      const innerSelf = { baseRef, heapState, rawState, repCount: 0 };
       const [toHold, toExpose, state] = makeRepresentative(innerSelf, true);
       registerValue(baseRef, toHold, Array.isArray(toHold));
       if (finish) {
