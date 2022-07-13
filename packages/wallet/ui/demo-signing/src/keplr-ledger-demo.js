@@ -44,6 +44,16 @@ const check = {
 };
 
 /**
+ * @typedef {{
+ *   type: string, // WALLET_ACTION
+ *   owner: string,
+ *   spendAction: string,
+ *   blockHeight: unknown, // int64
+ *   blockTime: unknown, // int64
+ * }} WalletAction
+ */
+
+/**
  * @param {ReturnType<typeof makeUI>} ui
  * @param {*} keplr
  */
@@ -83,21 +93,29 @@ const makeSigner = async (ui, keplr) => {
     // console.log({ cosmJS });
     const { address } = account;
 
-    const msgs = [
-      {
-        type: 'cosmos-sdk/MsgSend',
-        value: {
-          amount: [
-            {
-              amount: '1234567',
-              denom: 'ucosm',
-            },
-          ],
-          from_address: address,
-          to_address: address,
-        },
+    /** @type {WalletAction} */
+    const act1 = {
+      type: 'WALLET_ACTION',
+      owner: address,
+      spendAction: JSON.stringify(['TODO']),
+      blockHeight: 123,
+      blockTime: 456,
+    };
+
+    const send1 = {
+      type: 'cosmos-sdk/MsgSend',
+      value: {
+        amount: [
+          {
+            amount: '1234567',
+            denom: 'ucosm',
+          },
+        ],
+        from_address: address,
+        to_address: address,
       },
-    ];
+    };
+    const msgs = [send1, act1];
     const fee = {
       amount: [{ amount: '100', denom: 'ucosm' }],
       gas: '250',
