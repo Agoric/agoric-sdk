@@ -32,12 +32,12 @@ export async function buildRootObject(powers, vatParameters, baggage) {
   const { testJigSetter } = powers;
   const { contractBundleCap } = vatParameters;
   assert(
-    contractBundleCap !== undefined,
+    contractBundleCap,
     X`expected vatParameters.contractBundleCap ${vatParameters}`,
   );
   let { zoeService, invitationIssuer } = vatParameters;
-  const didStart = baggage.has('DidStart');
-  if (!didStart) {
+  const firstTime = !baggage.has('DidStart');
+  if (firstTime) {
     baggage.init('DidStart', true);
     baggage.init('zoeService', zoeService);
     baggage.init('invitationIssuer', invitationIssuer);
@@ -61,7 +61,7 @@ export async function buildRootObject(powers, vatParameters, baggage) {
 
   // snapshot zygote here //////////////////
 
-  if (didStart) {
+  if (!firstTime) {
     return E.when(E(zcfZygote).restartContract(vatParameters.privateArgs), () =>
       Far('upgraded contractRunner', {}),
     );
@@ -75,7 +75,7 @@ export async function buildRootObject(powers, vatParameters, baggage) {
       issuerStorageFromZoe,
       privateArgs = undefined,
     ) => {
-      assert(!didStart);
+      assert(firstTime);
 
       /** @type {ZCFZygote} */
       return E(zcfZygote).startContract(

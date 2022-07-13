@@ -343,12 +343,7 @@ export const createSeatManager = (
       hasStagedAllocation: ({ self }) => hasStagedAllocation(self),
     },
   );
-  const makeZCFSeat = ({
-    proposal,
-    notifier: _notifier,
-    initialAllocation,
-    seatHandle,
-  }) => {
+  const makeZCFSeat = ({ proposal, initialAllocation, seatHandle }) => {
     const zcfSeat = makeZCFSeatInternal(proposal);
 
     activeZCFSeats.init(zcfSeat, initialAllocation);

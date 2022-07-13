@@ -2,7 +2,6 @@
 /**
  * @typedef {object} SeatData
  * @property {ProposalRecord} proposal
- * @property {Notifier<Allocation>} notifier
  * @property {Allocation} initialAllocation
  * @property {SeatHandle} seatHandle
  * @property {object=} offerArgs

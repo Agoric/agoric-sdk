@@ -124,7 +124,7 @@ export const makeStartInstance = (
           handlePKitWarning(exitObjPromiseKit);
           const seatHandle = makeSeatHandle();
 
-          const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
+          const { userSeat, zoeSeatAdmin } = makeZoeSeatAdminKit(
             initialAllocation,
             exitZoeSeatAdmin,
             hasExited,
@@ -139,7 +139,6 @@ export const makeStartInstance = (
           const seatData = harden({
             proposal,
             initialAllocation,
-            notifier,
             seatHandle,
             offerArgs,
           });
