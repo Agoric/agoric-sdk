@@ -44,7 +44,7 @@ export const makeOfferMethod = (
     const instanceAdmin = getInstanceAdmin(instance);
     assert(
       !instanceAdmin.isBlocked(description),
-      `not accepting offer with description ${q(description)}`,
+      X`not accepting offer with description ${q(description)}`,
     );
     instanceAdmin.assertAcceptingOffers();
 

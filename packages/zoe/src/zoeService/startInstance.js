@@ -71,7 +71,7 @@ export const makeStartInstance = (
       offerFilterStrings.some(s => string.indexOf(s) > -1);
 
     const setOfferFilter = strings => {
-      assert(Array.isArray(strings), `${q(strings)} must be an Array`);
+      assert(Array.isArray(strings), X`${q(strings)} must be an Array`);
       const proposedStrings = Array.from(strings);
       assert(
         proposedStrings.every(
