@@ -378,16 +378,26 @@ test('map fail on concurrent modification', t => {
   });
   primes.forEach((v, i) => primeMap.init(v, `${v} is prime #${i + 1}`));
 
-  let pos = 0;
-  t.throws(() => {
-    // eslint-disable-next-line no-unused-vars
-    for (const k of primeMap.keys()) {
-      pos += 1;
-      if (pos === 5) {
-        primeMap.init(8, 'nonsense');
-      }
-    }
-  }, m(`keys in store cannot be added to during iteration`));
+  let iter = primeMap.keys();
+  t.deepEqual(iter.next(), { done: false, value: 2 });
+  // insert behind iterator, still kills iterator
+  primeMap.init(1, 'pretty clever, wiseguy');
+  t.throws(
+    () => iter.next(),
+    m(`keys in store cannot be added to during iteration`),
+  );
+
+  iter = primeMap.keys();
+  t.deepEqual(iter.next(), { done: false, value: 1 });
+  t.deepEqual(iter.next(), { done: false, value: 2 });
+  t.deepEqual(iter.next(), { done: false, value: 3 });
+  t.deepEqual(iter.next(), { done: false, value: 5 });
+  // insert ahead of iterator, kills iterator
+  primeMap.init(6, 'awfully smooth for a prime, buddy');
+  t.throws(
+    () => iter.next(),
+    m(`keys in store cannot be added to during iteration`),
+  );
 });
 
 test('set fail on concurrent modification', t => {
@@ -396,16 +406,57 @@ test('set fail on concurrent modification', t => {
   });
   primes.forEach(v => primeSet.add(v));
 
-  let pos = 0;
-  t.throws(() => {
-    // eslint-disable-next-line no-unused-vars
-    for (const k of primeSet.keys()) {
-      pos += 1;
-      if (pos === 5) {
-        primeSet.add(8);
-      }
-    }
-  }, m(`keys in store cannot be added to during iteration`));
+  let iter = primeSet.keys();
+  t.deepEqual(iter.next(), { done: false, value: 2 });
+  // insert behind iterator, still kills iterator
+  primeSet.add(1);
+  t.throws(
+    () => iter.next(),
+    m(`keys in store cannot be added to during iteration`),
+  );
+
+  iter = primeSet.keys();
+  t.deepEqual(iter.next(), { done: false, value: 1 });
+  t.deepEqual(iter.next(), { done: false, value: 2 });
+  t.deepEqual(iter.next(), { done: false, value: 3 });
+  t.deepEqual(iter.next(), { done: false, value: 5 });
+  // insert ahead of iterator, kills iterator
+  primeSet.add(6);
+  t.throws(
+    () => iter.next(),
+    m(`keys in store cannot be added to during iteration`),
+  );
+});
+
+test('map ok with concurrent deletion', t => {
+  const primeMap = makeScalarBigMapStore('fmap', {
+    keySchema: M.number(),
+  });
+  primes.forEach((v, i) => primeMap.init(v, `${v} is prime #${i + 1}`));
+  const iter = primeMap.keys();
+  t.deepEqual(iter.next(), { done: false, value: 2 });
+  primeMap.delete(3);
+  // so we skip 3:
+  // t.deepEqual(iter.next(), { done: false, value: 3 });
+  t.deepEqual(iter.next(), { done: false, value: 5 });
+  primeMap.delete(5);
+  t.deepEqual(iter.next(), { done: false, value: 7 });
+});
+
+test('set ok with concurrent deletion', t => {
+  const primeSet = makeScalarBigSetStore('fset', {
+    keySchema: M.number(),
+  });
+  primes.forEach(v => primeSet.add(v));
+
+  const iter = primeSet.keys();
+  t.deepEqual(iter.next(), { done: false, value: 2 });
+  primeSet.delete(3);
+  // so we skip 3:
+  // t.deepEqual(iter.next(), { done: false, value: 3 });
+  t.deepEqual(iter.next(), { done: false, value: 5 });
+  primeSet.delete(5);
+  t.deepEqual(iter.next(), { done: false, value: 7 });
 });
 
 test('fail on oversized keys', t => {
