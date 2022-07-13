@@ -9,13 +9,15 @@ export function buildRootObject() {
       events.push(time);
     },
   });
+  const cancelToken = Far('cancel', {});
+  let repeater;
 
   return Far('root', {
     async bootstrap(vats, devices) {
       ts = await E(vats.timer).createTimerService(devices.timer);
     },
     async installWakeup(baseTime) {
-      return E(ts).setWakeup(baseTime, handler);
+      return E(ts).setWakeup(baseTime, handler, cancelToken);
     },
     async getEvents() {
       // we need 'events' to remain mutable, but return values are
@@ -24,8 +26,8 @@ export function buildRootObject() {
       events.length = 0;
       return ret;
     },
-    async removeWakeup() {
-      return E(ts).removeWakeup(handler);
+    async cancel() {
+      return E(ts).cancel(cancelToken);
     },
 
     async banana(baseTime) {
@@ -36,6 +38,29 @@ export function buildRootObject() {
         return e.message;
       }
       throw Error('banana too slippery');
+    },
+
+    async goodRepeater(delay, interval) {
+      repeater = await E(ts).makeRepeater(delay, interval);
+      await E(repeater).schedule(handler);
+    },
+
+    async stopRepeater() {
+      await E(repeater).disable();
+    },
+
+    async repeaterBadSchedule(delay, interval) {
+      repeater = await E(ts).makeRepeater(delay, interval);
+      try {
+        await E(repeater).schedule('norb'); // missing arguments #4282
+        return 'should have failed';
+      } catch (e) {
+        return e.message;
+      }
+    },
+
+    async badCancel() {
+      await E(ts).cancel('bogus');
     },
   });
 }

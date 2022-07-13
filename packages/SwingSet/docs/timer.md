@@ -2,7 +2,7 @@
 
 There's documentation elsewhere about [how devices fit into the SwingSet
 architecture](devices.md). In order to install a Timer device, you first build
-a timer object in order to create the timer's endowments, source code, and 
+a timer object in order to create the timer's endowments, source code, and
 `poll()` function.
 
 ## Kernel Configuration
@@ -67,42 +67,82 @@ A single application might have multiple sources of time, which would require th
 The `timerService` object can be distributed to other vats as necessary.
 
 ```js
-  // for this example, assume poll() provides seconds-since-epoch as a BigInt
+  // for this example, assume poll() provides seconds-since-epoch
 
   const now = await E(timerService).getCurrentTimestamp();
-  
-  // simple non-cancellable Promise-based delay
-  const p = E(timerService).delay(30); // fires 30 seconds from now
-  await p;
 
-  // to cancel wakeups, first build a handler
+  // simple one-shot Promise-based relative delay
+  const p1 = E(timerService).delay(30n); // fires 30 seconds from now
+  await p1;
 
+  // same, but cancellable
+  const cancel2 = Far('cancel', {}); // any pass-by-reference object
+  // the cancelToken is always optional
+  const p2 = E(timerService).delay(30n, cancel2);
+  // E(timerService).cancel(cancel2) will cancel that
+
+  // same, but absolute instead of relative-to-now
+  const monday = 1660000000;
+  const p3 = E(timerService).wakeAt(monday, cancel2);
+  await p3; // fires Mon Aug  8 16:06:40 2022 PDT
+
+  // non-Promise API functions needs a handler callback
   const handler = Far('handler', {
-    wake(t) { console.log(`woken up at ${t}`); },
+    wake(t) { console.log(`woken up, scheduled for ${t}`); },
   });
-  
-  // then for one-shot wakeups:
-  await E(timerService).setWakeup(startTime, handler);
-  // handler.wake(t) will be called shortly after 'startTime'
+
+  // then for one-shot absolute wakeups:
+  await E(timerService).setWakeup(monday, handler, cancel2);
+  // handler.wake(t) will be called shortly after monday
 
   // cancel early:
-  await E(timerService).removeWakeup(handler);
+  await E(timerService).cancel(cancel2);
 
   // wake up at least 60 seconds from now:
-  await E(timerService).setWakeup(now + 60n, handler);
+  await E(timerService).setWakeup(now + 60n, handler, cancel2);
 
-
-  // makeRepeater() creates a repeating wakeup service: the handler will
+  // repeatAfter() creates a repeating wakeup service: the handler will
   // fire somewhat after 80 seconds from now (delay+interval), and again
-  // every 60 seconds thereafter. Individual wakeups might be delayed,
-  // but the repeater will not accumulate drift.
+  // every 60 seconds thereafter. The next wakeup will not be scheduled
+  // until the handler message is acknowledged (when its return promise is
+  // fulfilled), so wakeups might be skipped, but they will always be
+  // scheduled for the next 'start + k * repeat', so they will not
+  // accumulate drift. If the handler rejects, the repeater will be
+  // cancelled.
 
   const delay = 20n;
   const interval = 60n;
+  E(timerService).repeatAfter(delay, interval, handler, cancel2);
+
+  // repeating wakeup service, Notifier-style . This supports both
+  // the native 'notifier.getUpdateSince()' Notifier protocol, and
+  // and an asyncIterator
+
+  const notifier = E(timerService).makeNotifier(delay, interval, cancel2);
+
+  for await (const scheduled of notifier) {
+    console.log(`woken up, scheduled for ${scheduled}`);
+    // note: runs forever, once per 'interval'
+    break; // unless you escape early
+  }
+
+  // the old `makeRepeater` API creates a "repeater object" with .schedule
+  // and .disable methods to turn it on and off.
+
   const r = E(timerService).makeRepeater(delay, interval);
   E(r).schedule(handler);
   E(r).disable(); // cancel and delete entire repeater
-  
-  // repeating wakeup service, Notifier-style
-  const notifier = E(timerService).makeNotifier(delay, interval);
+
+  // the 'clock' facet offers `getCurrentTimestamp` and nothing else
+  const clock = await E(timerService).getClock();
+  const now2 = await E(clock).getCurrentTimestamp();
+
+  // a "Timer Brand" is an object that identifies the source of time
+  // used by any given TimerService, without exposing any authority
+  // to get the time or schedule wakeups
+
+  const brand1 = await E(timerService).getTimerBrand();
+  const brand2 = await E(clock).getTimerBrand();
+  assert.equal(brand1, brand2);
+  assert(await E(brand1).isMyTimerService(timerService));
 ```

@@ -89,12 +89,6 @@ declare global {
      */
     setWakeup: (baseTime: Timestamp, waker: ERef<TimerWaker>) => Timestamp;
     /**
-     * Remove the waker
-     * from all its scheduled wakeups, whether produced by `timer.setWakeup(h)` or
-     * `repeater.schedule(h)`.
-     */
-    removeWakeup: (waker: ERef<TimerWaker>) => Array<Timestamp>;
-    /**
      * Create and return a repeater that will schedule `wake()` calls
      * repeatedly at times that are a multiple of interval following delay.
      * Interval is the difference between successive times at which wake will be
