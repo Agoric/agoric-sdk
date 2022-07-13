@@ -3,7 +3,6 @@
 import { E } from '@endo/eventual-send';
 import { Far, Remotable, passStyleOf } from '@endo/marshal';
 import { AssetKind } from '@agoric/ertp';
-import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assertPattern } from '@agoric/store';
 import {
@@ -103,7 +102,6 @@ export const makeZCFZygote = async (
   const makeEmptySeatKit = (exit = undefined) => {
     const initialAllocation = harden({});
     const proposal = cleanProposal(harden({ exit }), getAssetKindByBrand);
-    const { notifier, updater } = makeNotifierKit();
     const userSeatPromiseKit = makePromiseKit();
     handlePKitWarning(userSeatPromiseKit);
     const seatHandle = makeSeatHandle();
@@ -111,7 +109,6 @@ export const makeZCFZygote = async (
     const seatData = harden({
       proposal,
       initialAllocation,
-      notifier,
       seatHandle,
     });
     const zcfSeat = makeZCFSeat(seatData);
@@ -120,10 +117,7 @@ export const makeZCFZygote = async (
 
     E(zoeInstanceAdmin)
       .makeNoEscrowSeatKit(initialAllocation, proposal, exitObj, seatHandle)
-      .then(({ notifier: zoeNotifier, userSeat }) => {
-        observeNotifier(zoeNotifier, updater);
-        userSeatPromiseKit.resolve(userSeat);
-      });
+      .then(({ userSeat }) => userSeatPromiseKit.resolve(userSeat));
 
     return { zcfSeat, userSeat: userSeatPromiseKit.promise };
   };
