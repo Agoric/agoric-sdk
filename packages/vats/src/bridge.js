@@ -18,7 +18,7 @@ import { Far } from '@endo/far';
 
 /**
  * @typedef {object} BridgeHandler An object that can receive messages from the bridge device
- * @property {(srcId: string, obj: any) => Promise<any>} fromBridge Handle an inbound message
+ * @property {(srcId: string, obj: any) => Promise<undefined>} fromBridge Handle an inbound message
  *
  * @typedef {object} BridgeManager The object to manage this bridge
  * @property {(dstID: string, obj: any) => any} toBridge
@@ -46,7 +46,7 @@ export function makeBridgeManager(E, D, bridgeDevice) {
     // );
 
     // Notify the specific handler, if there was one.
-    E(srcHandlers.get(srcID)).fromBridge(srcID, obj);
+    void E(srcHandlers.get(srcID)).fromBridge(srcID, obj);
 
     // No return value.
   }
