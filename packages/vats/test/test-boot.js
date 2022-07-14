@@ -211,3 +211,17 @@ test('evaluateInstallation is available to core eval', async t => {
   // @ts-expect-error
   t.deepEqual(typeof actual.extract, 'function');
 });
+
+test('bootstrap provides a way to pass items to CORE_EVAL', async t => {
+  const root = buildRootObject(
+    // @ts-expect-error Device<T> is a little goofy
+    { D: d => d, logger: t.log },
+    { argv: argvByRole.chain, governanceActions: false },
+  );
+
+  await E(root).produceItem('swissArmyKnife', [1, 2, 3]);
+  t.deepEqual(await E(root).consumeItem('swissArmyKnife'), [1, 2, 3]);
+  await E(root).resetItem('swissArmyKnife');
+  await E(root).produceItem('swissArmyKnife', 4);
+  t.deepEqual(await E(root).consumeItem('swissArmyKnife'), 4);
+});
