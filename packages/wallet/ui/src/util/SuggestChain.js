@@ -1,3 +1,4 @@
+/* global globalThis */
 import { SigningStargateClient } from '@cosmjs/stargate';
 
 export const AGORIC_COIN_TYPE = 564;
