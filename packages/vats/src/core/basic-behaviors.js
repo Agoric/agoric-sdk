@@ -246,7 +246,7 @@ export const makeClientBanks = async ({
     getChildNode(chainStorage, STORAGE_PATH),
     bridgeManagerP,
   ]);
-  const { creatorFacet } = await bE(zoe).startInstance(
+  const { creatorFacet } = await E(zoe).startInstance(
     walletFactory,
     {},
     { agoricNames, namesByAddress, board },
