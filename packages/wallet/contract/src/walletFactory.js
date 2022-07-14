@@ -53,14 +53,16 @@ export const start = async (zcf, privateArgs) => {
   const handleWalletAction = Far('walletActionHandler', {
     /**
      *
-     * @param {string} _srcID
+     * @param {string} srcID
      * @param {WalletAction} obj
      */
-    fromBridge: async (_srcID, obj) => {
+    fromBridge: async (srcID, obj) => {
+      console.log('walletFactory.fromBridge:', srcID, obj);
       assert(obj, 'missing wallet action');
       assert.typeof(obj, 'object');
       assert.typeof(obj.owner, 'string');
       const wallet = walletsByAddress.get(obj.owner); // or throw
+      console.log('walletFactory:', { wallet });
       return E(wallet).performAction(obj); // TODO: add performAction to lib-wallet.js
     },
   });
