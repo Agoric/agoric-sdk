@@ -405,17 +405,92 @@ test('failed upgrade - lost kind', async t => {
   };
 
   // create initial version
-  const [v1status] = await run('buildV1WithLostKind', []);
+  const [v1status, v1capdata] = await run('buildV1WithLostKind', []);
   t.is(v1status, 'fulfilled');
+  t.deepEqual(parse(v1capdata.body), ['ping 1']);
 
-  // upgrade should fail
+  // upgrade should fail, get rewound
   console.log(`note: expect a 'defineDurableKind not called' error below`);
-  console.log(`also: 'vat-upgrade failure notification not implemented'`);
   const [v2status, v2capdata] = await run('upgradeV2WhichLosesKind', []);
-  t.is(v2status, 'rejected');
-  const e = parse(v2capdata.body);
+  t.is(v2status, 'fulfilled');
+  const events = parse(v2capdata.body);
+  t.is(events[0], 'ping 2');
+
+  // The v2 vat starts with a 'ping from v2' (which will be unwound).
+  // Then v2 finishes startVat without reattaching all kinds, so v2 is
+  // unwound.  Then the `E(ulrikAdmin).upgrade()` promise rejects,
+  // pushing the error onto 'events'
+
+  const e = events[1];
   t.truthy(e instanceof Error);
   t.regex(e.message, /vat-upgrade failure/);
+
+  // then upgradeV2WhichLosesKind sends pingback() to the vat, which should
+  // arrive on the newly-restored v1, and push 'ping 3' onto events
+
+  t.is(events[2], 'ping 3');
+
+  // if the failed upgrade didn't put v1 back, then the pingback()
+  // will be delivered to v2, and would push 'ping 21'
+
+  // if v1 wasn't restored properly, then the pingback() might push
+  // 'ping 2' again instead of 'ping 3'
+
+  // TODO: who should see the details of what v2 did wrong? calling
+  // vat? only the console?
+});
+
+// TODO: test stopVat failure
+
+test('failed upgrade - explode', async t => {
+  const config = {
+    includeDevDependencies: true, // for vat-data
+    defaultManagerType: 'xs-worker',
+    bootstrap: 'bootstrap',
+    defaultReapInterval: 'never',
+    vats: {
+      bootstrap: { sourceSpec: bfile('bootstrap-upgrade.js') },
+    },
+    bundles: {
+      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
+      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
+    },
+  };
+
+  const hostStorage = provideHostStorage();
+  await initializeSwingset(config, [], hostStorage);
+  const c = await makeSwingsetController(hostStorage);
+  c.pinVatRoot('bootstrap');
+  await c.run();
+
+  const run = async (method, args = []) => {
+    assert(Array.isArray(args));
+    const kpid = c.queueToVatRoot('bootstrap', method, args);
+    await c.run();
+    const status = c.kpStatus(kpid);
+    const capdata = c.kpResolution(kpid);
+    return [status, capdata];
+  };
+
+  // create initial version
+  const [v1status, v1capdata] = await run('buildV1WithPing', []);
+  t.is(v1status, 'fulfilled');
+  t.deepEqual(parse(v1capdata.body), ['hello from v1', 'ping 1']);
+
+  // upgrade should fail, error returned in array
+  const [v2status, v2capdata] = await run('upgradeV2WhichExplodes', []);
+  t.is(v2status, 'fulfilled');
+  const events = parse(v2capdata.body);
+  const e = events[0];
+  t.truthy(e instanceof Error);
+  t.regex(e.message, /vat-upgrade failure/);
+  // bootstrap sends pingback() to the vat post-upgrade, which sends
+  // back an event with the current counter value. If we restored
+  // ulrik-1 correctly, we'll get '2'. If we're still talking to
+  // ulrik-2, we'd see '21'. If we somehow rewound ulrik-1 to the
+  // beginning, we'd see '1'.
+  t.is(events[1], 'ping 2');
+
   // TODO: who should see the details of what v2 did wrong? calling
   // vat? only the console?
 });

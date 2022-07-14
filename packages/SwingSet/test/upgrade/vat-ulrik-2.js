@@ -1,4 +1,5 @@
 import { Far } from '@endo/marshal';
+import { E } from '@endo/eventual-send';
 import { assert } from '@agoric/assert';
 import { defineDurableKind } from '@agoric/vat-data';
 
@@ -20,6 +21,15 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
   // note: to test #5725, newDur must be the first new Durandal
   // instance in this version of the vat
   const newDur = makeDurandal('dur-new', undefined, { name: 'd1' });
+  let counter = 20;
+
+  if (vatParameters?.handler) {
+    E(vatParameters.handler).ping('hello from v2');
+  }
+
+  if (vatParameters?.explode) {
+    throw Error(vatParameters.explode);
+  }
 
   const root = Far('root', {
     getVersion: () => 'v2',
@@ -43,6 +53,10 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
       const imp37 = baggage.get('dur37').getImport();
       const imp38 = baggage.get('imp38');
       return { imp33, imp35, imp37, imp38 };
+    },
+    pingback: handler => {
+      counter += 1;
+      return E(handler).ping(`ping ${counter}`);
     },
     getNewDurandal: () => newDur,
   });

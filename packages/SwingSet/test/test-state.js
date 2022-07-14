@@ -693,34 +693,52 @@ test('meters', async t => {
   t.not(m1, m2);
   k.deleteMeter(m2);
   t.deepEqual(k.getMeter(m1), { remaining: 100n, threshold: 10n });
-  t.deepEqual(k.deductMeter(m1, 10n), { underflow: false, notify: false });
-  t.deepEqual(k.deductMeter(m1, 10n), { underflow: false, notify: false });
+  // checkMeter has no side-effects
+  t.is(k.checkMeter(m1, 10n), true);
+  t.is(k.checkMeter(m1, 100n), true);
+  t.is(k.checkMeter(m1, 101n), false);
+  t.is(k.checkMeter(m1, 10n), true);
+
+  t.is(k.checkMeter(m1, 10n), true);
+  t.is(k.deductMeter(m1, 10n), false);
+  t.is(k.checkMeter(m1, 10n), true);
+  t.is(k.deductMeter(m1, 10n), false);
   t.deepEqual(k.getMeter(m1), { remaining: 80n, threshold: 10n });
-  t.deepEqual(k.deductMeter(m1, 70n), { underflow: false, notify: false });
-  t.deepEqual(k.deductMeter(m1, 1n), { underflow: false, notify: true });
+  t.is(k.checkMeter(m1, 70n), true);
+  t.is(k.deductMeter(m1, 70n), false);
+  t.is(k.checkMeter(m1, 1n), true);
+  t.is(k.deductMeter(m1, 1n), true);
   t.deepEqual(k.getMeter(m1), { remaining: 9n, threshold: 10n });
-  t.deepEqual(k.deductMeter(m1, 1n), { underflow: false, notify: false });
-  t.deepEqual(k.deductMeter(m1, 9n), { underflow: true, notify: false });
+  t.is(k.checkMeter(m1, 1n), true);
+  t.is(k.deductMeter(m1, 1n), false);
+  t.is(k.checkMeter(m1, 9n), false);
+  t.is(k.deductMeter(m1, 9n), false);
   t.deepEqual(k.getMeter(m1), { remaining: 0n, threshold: 10n });
-  t.deepEqual(k.deductMeter(m1, 2n), { underflow: true, notify: false });
+  t.is(k.checkMeter(m1, 2n), false);
+  t.is(k.deductMeter(m1, 2n), false);
   t.deepEqual(k.getMeter(m1), { remaining: 0n, threshold: 10n });
   k.addMeterRemaining(m1, 50n);
   t.deepEqual(k.getMeter(m1), { remaining: 50n, threshold: 10n });
-  t.deepEqual(k.deductMeter(m1, 30n), { underflow: false, notify: false });
-  t.deepEqual(k.deductMeter(m1, 25n), { underflow: true, notify: true });
+  t.is(k.checkMeter(m1, 30n), true);
+  t.is(k.deductMeter(m1, 30n), false);
+  t.is(k.checkMeter(m1, 25n), false);
+  t.is(k.deductMeter(m1, 25n), true);
   t.deepEqual(k.getMeter(m1), { remaining: 0n, threshold: 10n });
 
   k.addMeterRemaining(m1, 50n);
   k.setMeterThreshold(m1, 40n);
   t.deepEqual(k.getMeter(m1), { remaining: 50n, threshold: 40n });
-  t.deepEqual(k.deductMeter(m1, 10n), { underflow: false, notify: false });
-  t.deepEqual(k.deductMeter(m1, 10n), { underflow: false, notify: true });
+  t.is(k.checkMeter(m1, 10n), true);
+  t.is(k.deductMeter(m1, 10n), false);
+  t.is(k.checkMeter(m1, 10n), true);
+  t.is(k.deductMeter(m1, 10n), true);
   t.deepEqual(k.getMeter(m1), { remaining: 30n, threshold: 40n });
 
   const m3 = k.allocateMeter('unlimited', 10n);
   k.setMeterThreshold(m3, 5n);
   t.deepEqual(k.getMeter(m3), { remaining: 'unlimited', threshold: 5n });
-  t.deepEqual(k.deductMeter(m3, 1000n), { underflow: false, notify: false });
+  t.is(k.checkMeter(m3, 1000n), true);
+  t.is(k.deductMeter(m3, 1000n), false);
   t.deepEqual(k.getMeter(m3), { remaining: 'unlimited', threshold: 5n });
 });
 

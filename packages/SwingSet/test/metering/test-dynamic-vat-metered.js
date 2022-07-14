@@ -92,6 +92,7 @@ function kpidRejected(t, c, kpid, message) {
 }
 
 async function createMeteredVat(c, t, dynamicVatBundle, capacity, threshold) {
+  // startVat (liveslots init plus a simple buildRootObject) uses 8M
   assert.typeof(capacity, 'bigint');
   assert.typeof(threshold, 'bigint');
   const cmargs = [capacity, threshold];
@@ -113,6 +114,11 @@ async function createMeteredVat(c, t, dynamicVatBundle, capacity, threshold) {
     meterKref,
   ]);
   await c.run();
+  if (c.kpStatus(kp2) === 'rejected') {
+    console.log(c.kpResolution(kp2));
+    throw Error('dynamic vat not created, test cannot continue');
+  }
+  t.is(c.kpStatus(kp2), 'fulfilled');
   const res2 = c.kpResolution(kp2);
   t.is(JSON.parse(res2.body)[0], 'created', res2.body);
   const doneKPID = res2.slots[0];
@@ -171,7 +177,7 @@ async function overflowCrank(t, explosion) {
   await c.run();
 
   // create a meter with 10M remaining
-  const cmargs = [10000000n, 5000000n]; // remaining, notifyThreshold
+  const cmargs = [10_000_000n, 5_000_000n]; // remaining, notifyThreshold
   const kp1 = c.queueToVatRoot('bootstrap', 'createMeter', cmargs);
   await c.run();
   const { marg, meterKref } = extractSlot(t, c.kpResolution(kp1));
@@ -277,15 +283,20 @@ test('meter decrements', async t => {
   await c.run();
 
   // First we need to measure how much a consume() costs: create a
-  // large-capacity meter with a zero notifyThreshold, and run consume()
-  // twice. Initial experiments showed a simple 'run()' used 36918 computrons
-  // the first time, 36504 the subsequent times, but this is sensitive to SES
-  // and other libraries, so we try to be tolerant of variation over time.
+  // large-capacity meter with a zero notifyThreshold, and run
+  // consume() twice. Initial experiments showed that
+  // dispatch.startVat (liveslots init plus a simple userspace
+  // buildRootObject) used 8_048_744 computrons, then a simple 'run()'
+  // used 39_444 computrons the first time, 39_220 the subsequent
+  // times, but this is sensitive to SES and other libraries, so we
+  // try to be tolerant of variation over time.
 
-  const lots = 1000000n;
+  const lots = 100_000_000n; // TODO 100m
   const t0 = await createMeteredVat(c, t, dynamicVatBundle, lots, 0n);
-  const remaining0 = await t0.getMeter();
-  t.is(remaining0, lots);
+  let remaining0 = await t0.getMeter();
+  const consumedByStartVat = lots - remaining0;
+  console.log(`-- consumedByStartVat`, consumedByStartVat);
+  t.not(remaining0, lots);
   await t0.consume(true);
   const remaining1 = await t0.getMeter();
   const firstConsume = remaining0 - remaining1;
@@ -298,25 +309,25 @@ test('meter decrements', async t => {
   // they should, and the vat is terminated upon underflow
 
   // first create a meter with capacity FIRST+1.5*SECOND
-  const cap = firstConsume + (3n * secondConsume) / 2n;
+  const cap = consumedByStartVat + firstConsume + (3n * secondConsume) / 2n;
   const thresh = secondConsume;
 
   const t1 = await createMeteredVat(c, t, dynamicVatBundle, cap, thresh);
-  let remaining = await t1.getMeter();
-  t.is(remaining, cap);
+  remaining0 = await t1.getMeter();
+  t.not(remaining0, cap);
 
   // message one should decrement the meter, but not trigger a notification
   await t1.consume(true);
-  remaining = await t1.getMeter();
-  console.log(remaining);
-  t.not(remaining, cap);
+  let remaining = await t1.getMeter();
+  // console.log(remaining);
+  t.not(remaining, remaining0);
   t.is(c.kpStatus(t1.notifyKPID), 'unresolved');
   t.is(c.kpStatus(t1.doneKPID), 'unresolved');
 
   // message two should trigger notification, but not underflow
   await t1.consume(true);
   remaining = await t1.getMeter();
-  console.log(remaining);
+  // console.log(remaining);
   t.is(c.kpStatus(t1.notifyKPID), 'fulfilled');
   const notification = c.kpResolution(t1.notifyKPID);
   t.is(parse(notification.body).value, remaining);
@@ -325,7 +336,7 @@ test('meter decrements', async t => {
   // message three should underflow
   await t1.consume(false);
   remaining = await t1.getMeter();
-  console.log(remaining);
+  // console.log(remaining);
   t.is(remaining, 0n); // this checks postAbortActions.deductMeter
   // TODO: we currently provide a different .done error message for 1: a
   // single crank exceeds the fixed per-crank limit, and 2: the cumulative
@@ -335,7 +346,7 @@ test('meter decrements', async t => {
   // Now test that notification and termination can happen during the same
   // crank (the very first one). Without postAbortActions, the notify would
   // get unwound by the vat termination, and would never be delivered.
-  const cap2 = firstConsume / 2n;
+  const cap2 = consumedByStartVat + firstConsume / 2n;
   const t2 = await createMeteredVat(c, t, dynamicVatBundle, cap2, 1n);
 
   await t2.consume(false);

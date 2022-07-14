@@ -108,8 +108,9 @@ export {};
  *            | VatDeliveryRetireExports | VatDeliveryRetireImports | VatDeliveryChangeVatOptions
  *            | VatDeliveryStartVat | VatDeliveryStopVat | VatDeliveryBringOutYourDead
  *          } VatDeliveryObject
- * @typedef { [tag: 'ok', message: null, usage: { compute: number } | null] |
- *            [tag: 'error', message: string, usage: unknown | null] } VatDeliveryResult
+ * @typedef { { compute: number } } MeterConsumption
+ * @typedef { [tag: 'ok', message: null, usage: MeterConsumption | null] |
+ *            [tag: 'error', message: string, usage: MeterConsumption | null] } VatDeliveryResult
  *
  * @typedef { [tag: 'send', target: string, msg: Message] } VatSyscallSend
  * @typedef { [tag: 'callNow', target: string, method: string, args: SwingSetCapData]} VatSyscallCallNow
@@ -302,10 +303,11 @@ export {};
  */
 
 /**
- * @typedef { [tag: 'none'] } PolicyInputNone
- * @typedef { [tag: 'create-vat', details: {} ]} PolicyInputCreateVat
- * @typedef { [tag: 'crank', details: { computrons?: bigint }] } PolicyInputCrankComplete
- * @typedef { [tag: 'crank-failed', details: {}]} PolicyInputCrankFailed
+ * @typedef { { computrons?: bigint } } PolicyInputDetails
+ * @typedef { [tag: 'none', details: PolicyInputDetails ] } PolicyInputNone
+ * @typedef { [tag: 'create-vat', details: PolicyInputDetails  ]} PolicyInputCreateVat
+ * @typedef { [tag: 'crank', details: PolicyInputDetails ] } PolicyInputCrankComplete
+ * @typedef { [tag: 'crank-failed', details: PolicyInputDetails ]} PolicyInputCrankFailed
  * @typedef { PolicyInputNone | PolicyInputCreateVat | PolicyInputCrankComplete | PolicyInputCrankFailed } PolicyInput
  * @typedef { boolean } PolicyOutput
  * @typedef { { vatCreated: (details: {}) => PolicyOutput,
