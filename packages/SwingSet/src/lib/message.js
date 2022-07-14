@@ -72,7 +72,9 @@ export function insistVatDeliveryObject(vdo) {
       break;
     }
     case 'stopVat': {
-      assert(rest.length === 0);
+      assert(rest.length === 1);
+      const [disconnectObjectCapData] = rest;
+      insistCapData(disconnectObjectCapData);
       break;
     }
     case 'bringOutYourDead': {

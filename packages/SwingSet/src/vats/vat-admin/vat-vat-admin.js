@@ -94,12 +94,17 @@ export function buildRootObject(vatPowers) {
         return doneP;
       },
       upgrade(bundlecap, options = {}) {
-        const { vatParameters, ...rest } = options;
+        const {
+          vatParameters,
+          upgradeMessage = 'vat upgraded',
+          ...rest
+        } = options;
         const leftovers = Object.keys(rest);
         if (leftovers.length) {
           const bad = leftovers.join(',');
           assert.fail(X`upgrade() received unknown options: ${bad}`);
         }
+        assert.typeof(upgradeMessage, 'string', 'upgradeMessage not a string');
         let bundleID;
         try {
           bundleID = D(bundlecap).getBundleID();
@@ -111,6 +116,7 @@ export function buildRootObject(vatPowers) {
           vatID,
           bundleID,
           vatParameters,
+          upgradeMessage,
         );
         const [upgradeCompleteP, upgradeRR] = producePRR();
         pendingUpgrades.set(upgradeID, upgradeRR);
@@ -330,12 +336,13 @@ export function buildRootObject(vatPowers) {
    * @param {UpgradeID} upgradeID
    * @param {boolean} success
    * @param {Error | undefined} error
+   * @param {number} incarnationNumber
    */
-  function vatUpgradeCallback(upgradeID, success, error) {
+  function vatUpgradeCallback(upgradeID, success, error, incarnationNumber) {
     const { resolve, reject } = pendingUpgrades.get(upgradeID);
     pendingUpgrades.delete(upgradeID);
     if (success) {
-      resolve('ok'); // TODO maybe provide the root object again?
+      resolve({ incarnationNumber }); // TODO maybe provide the root object again?
     } else {
       reject(error);
     }

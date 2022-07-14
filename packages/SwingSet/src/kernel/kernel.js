@@ -394,6 +394,7 @@ export default function buildKernel(
     const vs = kernelSlog.provideVatSlogger(vatID).vatSlog;
     try {
       /** @type { VatDeliveryResult } */
+      // eslint-disable-next-line @jessie.js/no-nested-await
       const deliveryResult = await vatWarehouse.deliverToVat(vatID, kd, vd, vs);
       insistVatDeliveryResult(deliveryResult);
       // const [ ok, problem, usage ] = deliveryResult;
@@ -812,8 +813,10 @@ export default function buildKernel(
    */
   async function processUpgradeVat(message) {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
-    const { vatID, upgradeID, bundleID, vatParameters } = message;
+    const { vatID, upgradeID, bundleID, vatParameters, upgradeMessage } =
+      message;
     insistCapData(vatParameters);
+    assert.typeof(upgradeMessage, 'string');
 
     const vatInfo = vatWarehouse.lookup(vatID);
     if (!vatInfo) {
@@ -821,8 +824,17 @@ export default function buildKernel(
     }
     const { meterID } = vatInfo;
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    const disconnectObject = {
+      name: 'vatUpgraded',
+      upgradeMessage,
+      incarnationNumber: vatKeeper.getIncarnationNumber(),
+    };
+    const disconnectObjectCapData = {
+      body: JSON.stringify(disconnectObject),
+      slots: [],
+    };
     /** @type { import('../types-external.js').KernelDeliveryStopVat } */
-    const kd1 = harden(['stopVat']);
+    const kd1 = harden(['stopVat', disconnectObjectCapData]);
     const vd1 = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd1);
     const status1 = await deliverAndLogToVat(vatID, kd1, vd1);
 
@@ -886,6 +898,7 @@ export default function buildKernel(
     const source = { bundleID };
     const { options } = vatKeeper.getSourceAndOptions();
     vatKeeper.setSourceAndOptions(source, options);
+    const incarnationNumber = vatKeeper.incIncarnationNumber();
     // TODO: decref the bundleID once setSourceAndOptions increfs it
 
     // pause, take a deep breath, appreciate this moment of silence
@@ -918,7 +931,7 @@ export default function buildKernel(
       return results;
     }
 
-    const args = [upgradeID, true, undefined];
+    const args = [upgradeID, true, undefined, incarnationNumber];
     const vatAdminMethargs = {
       body: JSON.stringify(['vatUpgradeCallback', args]),
       slots: [],
@@ -1076,7 +1089,8 @@ export default function buildKernel(
    *              dynamicOptions: InternalDynamicVatOptions }
    *          } RunQueueEventCreateVat
    * @typedef { { type: 'upgrade-vat', vatID: VatID, upgradeID: string,
-   *              bundleID: BundleID, vatParameters: SwingSetCapData } } RunQueueEventUpgradeVat
+   *              bundleID: BundleID, vatParameters: SwingSetCapData,
+   *              upgradeMessage: string } } RunQueueEventUpgradeVat
    * @typedef { { type: 'changeVatOptions', vatID: VatID, options: Record<string, unknown> } } RunQueueEventChangeVatOptions
    * @typedef { { type: 'startVat', vatID: VatID, vatParameters: SwingSetCapData } } RunQueueEventStartVat
    * @typedef { { type: 'dropExports', vatID: VatID, krefs: string[] } } RunQueueEventDropExports
@@ -1297,10 +1311,11 @@ export default function buildKernel(
     }
     processQueueRunning = Error('here');
     try {
-      return await processor(message).finally(() => {
-        processQueueRunning = undefined;
-      });
+      const result = await processor(message);
+      processQueueRunning = undefined;
+      return result;
     } catch (err) {
+      processQueueRunning = undefined;
       // panic() sets the kernelPanic flag which will be checked on the way out
       // by run() or step().
       panic(`error during tryProcessMessage: ${err}`, err);
@@ -1594,7 +1609,7 @@ export default function buildKernel(
 
       const bundle = kernelKeeper.getBundle(source.bundleID);
       assert(bundle);
-      // eslint-disable-next-line no-await-in-loop
+      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       const NS = await importBundle(bundle, {
         filePrefix: `dev-${name}/...`,
         endowments: harden({ ...vatEndowments, console: devConsole, assert }),
@@ -1694,6 +1709,7 @@ export default function buildKernel(
     const { processor, message } = getNextMessageAndProcessor();
     // process a single message
     if (message) {
+      // eslint-disable-next-line @jessie.js/no-nested-await
       await tryProcessMessage(processor, message);
       if (kernelPanic) {
         throw kernelPanic;
@@ -1748,7 +1764,7 @@ export default function buildKernel(
       }
       count += 1;
       /** @type { PolicyInput } */
-      // eslint-disable-next-line no-await-in-loop
+      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       const policyInput = await tryProcessMessage(processor, message);
       if (kernelPanic) {
         throw kernelPanic;

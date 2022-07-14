@@ -4,7 +4,6 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import { Far } from '@endo/marshal';
 import {
   setupTestLiveslots,
-  matchVatstoreDelete,
   matchVatstoreGet,
   matchVatstoreGetAfter,
   matchVatstoreSet,
@@ -63,8 +62,6 @@ test.serial('exercise baggage', async t => {
   validate(v, matchVatstoreGet('vc.1.|entryCount', '0'));
   validate(v, matchVatstoreSet('vc.1.|entryCount', '1'));
   validate(v, matchVatstoreGet('deadPromises', NONE));
-  validate(v, matchVatstoreDelete('deadPromises'));
-  validate(v, matchVatstoreGetAfter('', 'vc.4.', 'vc.4.{', [NONE, NONE]));
   validate(v, matchVatstoreGetAfter('', 'vom.dkind.', NONE, [NONE, NONE]));
   validateDone(v);
 

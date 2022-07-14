@@ -93,6 +93,7 @@ export {};
  * }} Message
  *
  * @typedef { 'none' | 'ignore' | 'logAlways' | 'logFailure' | 'panic' } ResolutionPolicy
+ * @typedef {{ name: string, upgradeMessage: string, incarnationNumber: number }} DisconnectObject
  *
  * @typedef { [tag: 'message', target: string, msg: Message]} VatDeliveryMessage
  * @typedef { [vpid: string, isReject: boolean, data: SwingSetCapData ] } VatOneResolution
@@ -102,7 +103,7 @@ export {};
  * @typedef { [tag: 'retireImports', vrefs: string[] ]} VatDeliveryRetireImports
  * @typedef { [tag: 'changeVatOptions', options: Record<string, unknown> ]} VatDeliveryChangeVatOptions
  * @typedef { [tag: 'startVat', vatParameters: SwingSetCapData ]} VatDeliveryStartVat
- * @typedef { [tag: 'stopVat' ]} VatDeliveryStopVat
+ * @typedef { [tag: 'stopVat', disconnectObject: SwingSetCapData ]} VatDeliveryStopVat
  * @typedef { [tag: 'bringOutYourDead' ]} VatDeliveryBringOutYourDead
  * @typedef { VatDeliveryMessage | VatDeliveryNotify | VatDeliveryDropExports
  *            | VatDeliveryRetireExports | VatDeliveryRetireImports | VatDeliveryChangeVatOptions
@@ -145,7 +146,7 @@ export {};
  * @typedef { [tag: 'retireImports', krefs: string[] ]} KernelDeliveryRetireImports
  * @typedef { [tag: 'changeVatOptions', options: Record<string, unknown> ]} KernelDeliveryChangeVatOptions
  * @typedef { [tag: 'startVat', vatParameters: SwingSetCapData ]} KernelDeliveryStartVat
- * @typedef { [tag: 'stopVat' ]} KernelDeliveryStopVat
+ * @typedef { [tag: 'stopVat', disconnectObject: SwingSetCapData ]} KernelDeliveryStopVat
  * @typedef { [tag: 'bringOutYourDead']} KernelDeliveryBringOutYourDead
  * @typedef { KernelDeliveryMessage | KernelDeliveryNotify | KernelDeliveryDropExports
  *            | KernelDeliveryRetireExports | KernelDeliveryRetireImports | KernelDeliveryChangeVatOptions
