@@ -1,7 +1,12 @@
 // @ts-check
-import { SigningStargateClient } from '@cosmjs/stargate';
+import { AminoTypes, SigningStargateClient } from '@cosmjs/stargate';
 import { html, render } from 'lit-html';
-import { NETWORK_CONFIGS, suggestChain } from './chainInfo.js';
+import {
+  AGORIC_COIN_TYPE,
+  stakeCurrency,
+  stableCurrency,
+  bech32Config,
+} from './chainInfo.js';
 
 const { freeze } = Object;
 
@@ -45,62 +50,88 @@ const check = {
 
 /**
  * @typedef {{
- *   type: string, // WALLET_ACTION
- *   owner: string,
- *   spendAction: string,
- *   blockHeight: unknown, // int64
- *   blockTime: unknown, // int64
+ *   typeUrl: '/agoric.swingset.MsgWalletAction',
+ *   value: {
+ *     owner: string,
+ *     action: string,
+ *   }
  * }} WalletAction
  */
+
+/**
+ * /agoric.swingset.XXX matches package agoric.swingset in swingset/msgs.go
+ */
+/** @type {import('@cosmjs/stargate').AminoConverters} */
+const SwingsetConverters = {
+  // '/agoric.swingset.MsgProvision': {
+  //   /* ... */
+  // },
+  '/agoric.swingset.MsgWalletAction': {
+    aminoType: 'swingset/MsgWalletAction',
+    toAmino: ({ owner, action }) => ({ owner, action }),
+    fromAmino: ({ owner, action }) => ({ owner, action }),
+  },
+};
+
+// agoric start local-chain
+const localChainInfo = {
+  rpc: 'http://localhost:26657',
+  // rest: api,
+  chainId: 'agoric',
+  chainName: 'Agoric local-chain',
+  stakeCurrency,
+  // walletUrlForStaking: `https://${network}.staking.agoric.app`,
+  bip44: {
+    coinType: AGORIC_COIN_TYPE,
+  },
+  bech32Config,
+  currencies: [stakeCurrency, stableCurrency],
+  feeCurrencies: [stableCurrency],
+  features: ['stargate', 'ibc-transfer'],
+};
 
 /**
  * @param {ReturnType<typeof makeUI>} ui
  * @param {*} keplr
  */
 const makeSigner = async (ui, keplr) => {
-  const chainId = ui.selectValue('select[name="chainId"]');
-  console.log({ chainId });
+  // const chainId = ui.selectValue('select[name="chainId"]');
+  // console.log({ chainId });
 
-  // Enabling before using the Keplr is recommended.
-  // This method will ask the user whether to allow access if they haven't visited this website.
-  // Also, it will request that the user unlock the wallet if the wallet is locked.
+  const chainInfo = localChainInfo;
+  const { chainId } = chainInfo;
+  const { coinMinimalDenom: denom } = stakeCurrency;
+
+  await keplr.experimentalSuggestChain(chainInfo);
   await keplr.enable(chainId);
 
   // https://docs.keplr.app/api/#get-address-public-key
   const key = await keplr.getKey(chainId);
   console.log({ key });
   if (!key.isNanoLedger) {
-    throw Error('This demo requires a ledger key');
+    throw Error('This demo is designed for a ledger key');
   }
 
   const offlineSigner = keplr.getOfflineSignerOnlyAmino(chainId);
+  // const offlineSigner = keplr.getOfflineSignerAuto(chainId);
   console.log({ offlineSigner });
 
   // Currently, Keplr extension manages only one address/public key pair.
   const [account] = await offlineSigner.getAccounts();
+  const { address } = account;
 
-  ui.showItems('#accounts', [account.address]);
+  ui.showItems('#accounts', [address]);
 
-  const [_main, [networkConfig, caption]] = NETWORK_CONFIGS;
+  const cosmJS = await SigningStargateClient.connectWithSigner(
+    chainInfo.rpc,
+    offlineSigner,
+    { aminoTypes: new AminoTypes(SwingsetConverters) },
+  );
+  console.log({ cosmJS });
+
   ui.onClick('#sign', async _ev => {
-    // const cosmJS = await suggestChain(networkConfig, caption, {
-    //   fetch,
-    //   keplr,
-    //   SigningClient: SigningStargateClient,
-    //   random: Math.random,
-    // });
-
-    // console.log({ cosmJS });
-    const { address } = account;
-
-    /** @type {WalletAction} */
-    const act1 = {
-      type: 'WALLET_ACTION',
-      owner: address,
-      spendAction: JSON.stringify(['TODO']),
-      blockHeight: 123,
-      blockTime: 456,
-    };
+    const { accountNumber, sequence } = await cosmJS.getSequence(address);
+    console.log({ accountNumber, sequence });
 
     const send1 = {
       type: 'cosmos-sdk/MsgSend',
@@ -108,26 +139,34 @@ const makeSigner = async (ui, keplr) => {
         amount: [
           {
             amount: '1234567',
-            denom: 'ucosm',
+            denom,
           },
         ],
         from_address: address,
         to_address: address,
       },
     };
-    const msgs = [send1, act1];
+
+    /** @type {WalletAction} */
+    const act1 = {
+      typeUrl: '/agoric.swingset.MsgWalletAction',
+      value: {
+        owner: address,
+        action: JSON.stringify(['TODO']),
+      },
+    };
+
+    const msgs = [act1];
     const fee = {
-      amount: [{ amount: '100', denom: 'ucosm' }],
+      amount: [{ amount: '100', denom }],
       gas: '250',
     };
     const memo = 'Some memo';
-    const sequence = '0'; // @@
-    const accountNumber = '0';
 
     const signDoc = {
       chain_id: chainId,
-      account_number: accountNumber,
-      sequence: '0',
+      account_number: `${accountNumber}`,
+      sequence: `${sequence}`,
       fee,
       memo,
       msgs,
@@ -137,30 +176,11 @@ const makeSigner = async (ui, keplr) => {
     const signerData = { accountNumber, sequence, chainId };
     console.log('sign', { address, msgs, fee, memo, signerData });
 
-    const tx = await offlineSigner.signAmino(address, signDoc);
-    // const tx = await keplr.signAmino(chainId, address, signDoc);
+    // const tx = await offlineSigner.signAmino(address, signDoc);
+
+    const tx = await cosmJS.signAndBroadcast(address, msgs, fee, memo);
 
     console.log({ tx });
-    // Example transaction
-    // const amount = {
-    //   denom: 'ubld',
-    //   amount: '1234567',
-    // };
-    // await cosmJS.sendTokens(
-    //   account.address,
-    //   'agoric123456',
-    //   [amount],
-    //   {
-    //     amount: [
-    //       {
-    //         amount: '500000',
-    //         denom: 'urun',
-    //       },
-    //     ],
-    //     gas: '890000',
-    //   },
-    //   'enjoy!',
-    // );
   });
 };
 

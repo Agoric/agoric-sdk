@@ -8,20 +8,20 @@ export const NETWORK_CONFIGS = [
 export const AGORIC_COIN_TYPE = 564;
 export const COSMOS_COIN_TYPE = 118;
 
-const stakeCurrency = {
+export const stakeCurrency = {
   coinDenom: 'BLD',
   coinMinimalDenom: 'ubld',
   coinDecimals: 6,
   coinGeckoId: undefined,
 };
-const stableCurrency = {
+export const stableCurrency = {
   coinDenom: 'RUN',
   coinMinimalDenom: 'urun',
   coinDecimals: 6,
   coinGeckoId: undefined,
 };
 
-const bech32Config = {
+export const bech32Config = {
   bech32PrefixAccAddr: 'agoric',
   bech32PrefixAccPub: 'agoricpub',
   bech32PrefixValAddr: 'agoricvaloper',
