@@ -1,32 +1,60 @@
 // @ts-check
+/* global setImmediate */
 
 // eslint-disable-next-line import/order
 import { test } from './prepare-test-env-ava.js';
 
 import { E } from '@endo/eventual-send';
-import { Far, makeMarshal } from '@endo/marshal';
-import { makeSubscriptionKit, makeStoredSubscription } from '../src/index.js';
+import { makeMarshal } from '@endo/marshal';
+import {
+  makePublishKit,
+  makeStoredPublishKit,
+  makeStoredSubscriber,
+  makeStoredSubscription,
+  makeSubscriptionKit,
+  subscribeEach,
+} from '../src/index.js';
 
 import '../src/types.js';
 import { jsonPairs } from './marshal-corpus.js';
 
+export const eventLoopIteration = async () =>
+  new Promise(resolve => setImmediate(resolve));
+
+/**
+ *
+ * @param {string} path
+ * @param {IterationObserver<unknown>} [publication]
+ */
 const makeFakeStorage = (path, publication) => {
+  let setValueCalls = 0;
   const fullPath = `publish.${path}`;
   const storeKey = harden({
     storeName: 'swingset',
     storeSubkey: `swingset/data:${fullPath}`,
   });
   /** @type {StorageNode} */
-  const storage = Far('fakeStorage', {
+  const storage = {
     getStoreKey: () => storeKey,
     setValue: value => {
+      setValueCalls += 1;
       assert.typeof(value, 'string');
+      if (!publication) {
+        throw Error('publication undefined');
+      }
       publication.updateState(value);
     },
     getChildNode: () => storage,
-  });
+    // @ts-expect-error
+    countSetValueCalls: () => setValueCalls,
+  };
   return storage;
 };
+
+const makeFakeMarshaller = () =>
+  makeMarshal(undefined, undefined, {
+    marshalSaveError: () => {},
+  });
 
 test('stored subscription', async t => {
   t.plan((jsonPairs.length + 2) * 4 + 1);
@@ -51,7 +79,10 @@ test('stored subscription', async t => {
   const { unserialize } = makeMarshal();
   const check = async (description, origValue, expectedDone) => {
     const { done: storedDone, value: storedEncoded } = await storeAit.next();
-    t.assert(!storedDone, `check not stored done for ${description}`);
+    t.assert(
+      !storedDone,
+      `storage iterator should not report done for ${description}`,
+    );
     const storedDecoded = JSON.parse(storedEncoded);
     const storedValue = await E(unserializer).unserialize(storedDecoded);
     t.deepEqual(
@@ -79,4 +110,111 @@ test('stored subscription', async t => {
   const terminalNull = null;
   await E(publication).finish(terminalNull);
   await check('terminal null', terminalNull, true);
+});
+
+test('stored subscriber', async t => {
+  t.plan((jsonPairs.length + 2) * 4 + 1);
+
+  const initialValue = 'first value';
+  const { publication: pubStorage, subscription: subStorage } =
+    makeSubscriptionKit();
+  const storage = makeFakeStorage('publish.foo.bar', pubStorage);
+
+  const { publisher, subscriber } = makePublishKit();
+
+  publisher.publish(initialValue);
+  const storesub = makeStoredSubscriber(
+    subscriber,
+    storage,
+    makeFakeMarshaller(),
+  );
+
+  t.deepEqual(await E(storesub).getStoreKey(), await E(storage).getStoreKey());
+  const unserializer = E(storesub).getUnserializer();
+
+  const storedSubscriberIterable = subscribeEach(subscriber);
+  const storedSubscriberIterator = E(storedSubscriberIterable)[
+    Symbol.asyncIterator
+  ]();
+  const storageIterator = subStorage[Symbol.asyncIterator]();
+
+  const { unserialize } = makeMarshal();
+  const check = async (description, origValue, expectedDone) => {
+    const { done: storedDone, value: storedEncoded } =
+      await storageIterator.next();
+    t.assert(
+      !storedDone,
+      `storage iterator should not report done for ${description}`,
+    );
+    const storedDecoded = JSON.parse(storedEncoded);
+    const storedValue = await E(unserializer).unserialize(storedDecoded);
+    t.deepEqual(
+      storedValue,
+      origValue,
+      `check stored value against original ${description}`,
+    );
+
+    const { done, value } = await E(storedSubscriberIterator).next();
+    t.is(done, expectedDone, `check doneness for ${description}`);
+    t.deepEqual(
+      value,
+      origValue,
+      `check value against original ${description}`,
+    );
+  };
+
+  await check(initialValue, initialValue, false);
+  for await (const [encoded] of jsonPairs) {
+    const origValue = unserialize({ body: encoded, slots: [] });
+    await E(publisher).publish(origValue);
+    await check(encoded, origValue, false);
+  }
+
+  const terminalNull = null;
+  await E(publisher).finish(terminalNull);
+  await check('terminal null', terminalNull, true);
+});
+
+test('stored subscriber with setValue failure', async t => {
+  const initialValue = 'first value';
+  // no publication param, will fail setValue
+  const storage = makeFakeStorage('publish.foo.bar');
+
+  const { publisher, subscriber } = makePublishKit();
+
+  makeStoredSubscriber(subscriber, storage, makeFakeMarshaller());
+
+  // @ts-expect-error test
+  t.is(storage.countSetValueCalls(), 0);
+  publisher.publish(initialValue); // fails setValue
+  // should increment
+  await eventLoopIteration();
+  // @ts-expect-error test
+  t.is(storage.countSetValueCalls(), 1);
+
+  // stops trying after a failure
+  publisher.publish(initialValue); // fails setValue
+  // should not increment
+  await eventLoopIteration();
+  // @ts-expect-error test
+  t.is(storage.countSetValueCalls(), 1);
+});
+
+test.failing('stored subscriber with subscriber failure', async t => {
+  // No error handling rn
+  t.fail();
+});
+
+test('StoredPublisher', async t => {
+  const storageNode = makeFakeStorage('publish.foo.bar');
+  const marshaller = makeFakeMarshaller();
+
+  const { subscriber } = makeStoredPublishKit(storageNode, marshaller);
+
+  t.deepEqual(await subscriber.getStoreKey(), {
+    storeName: 'swingset',
+    storeSubkey: 'swingset/data:publish.publish.foo.bar',
+  });
+  // could test that the unserializer is the one from the fake marshaller but this suffices
+  t.truthy(subscriber.getUnserializer);
 });

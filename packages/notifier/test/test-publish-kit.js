@@ -124,11 +124,13 @@ test('makePublishKit', async t => {
     'failure should not be allowed after finalization',
   );
   await t.throwsAsync(
+    // @ts-ignore known to be promise version of PublicationList; expect after https://github.com/Agoric/agoric-sdk/pull/5774/
     subFinal.tail,
     undefined,
     'tail promise of final result should be rejected',
   );
   await t.throwsAsync(
+    // @ts-ignore known to be promise version of PublicationList; expect after https://github.com/Agoric/agoric-sdk/pull/5774/
     subscriber.subscribeAfter(subFinal.publishCount),
     undefined,
     'subscribeAfter(finalPublishCount) should be rejected',
@@ -177,11 +179,13 @@ test('makePublishKit - immediate finish', async t => {
     'failure should not be allowed after finalization',
   );
   await t.throwsAsync(
+    // @ts-ignore known to be promise version of PublicationList; expect after https://github.com/Agoric/agoric-sdk/pull/5774/
     subFinal.tail,
     undefined,
     'tail promise of final result should be rejected',
   );
   await t.throwsAsync(
+    // @ts-ignore known to be promise version of PublicationList; expect after https://github.com/Agoric/agoric-sdk/pull/5774/
     subscriber.subscribeAfter(subFinal.publishCount),
     undefined,
     'subscribeAfter(finalPublishCount) should be rejected',
