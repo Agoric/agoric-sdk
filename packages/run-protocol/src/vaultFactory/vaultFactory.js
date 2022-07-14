@@ -48,8 +48,8 @@ import { makeVaultDirector } from './vaultDirector.js';
  *   feeMintAccess: FeeMintAccess,
  *   initialPoserInvitation: Invitation,
  *   initialShortfallInvitation: Invitation,
- *   storageNode?: ERef<StorageNode>,
- *   marshaller?: ERef<Marshaller>,
+ *   storageNode: ERef<StorageNode>,
+ *   marshaller: ERef<Marshaller>,
  * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {

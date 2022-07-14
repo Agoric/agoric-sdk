@@ -83,11 +83,12 @@ export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
 
 /**
  * @template T
- * @param {ERef<StorageNode>} [storageNode]
- * @param {ERef<Marshaller>} [marshaller]
+ * @param {ERef<StorageNode>} storageNode
+ * @param {ERef<Marshaller>} marshaller
  * @returns {MetricsPublisherKit<T>}
  */
 export const makeMetricsPublisherKit = (storageNode, marshaller) => {
+  assert(storageNode && marshaller, 'Missing storageNode or marshaller');
   /** @type {import('@agoric/notifier').StoredPublisherKit<T>} */
   const kit = makeStoredPublisherKit(storageNode, marshaller, 'metrics');
   return {

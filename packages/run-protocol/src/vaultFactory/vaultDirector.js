@@ -50,8 +50,8 @@ const { details: X, quote: q } = assert;
  * zcf: import('./vaultFactory.js').VaultFactoryZCF,
  * shortfallInvitation: Invitation,
  * shortfallReporter: import('../reserve/assetReserve.js').ShortfallReporter,
- * storageNode?: ERef<StorageNode>,
- * marshaller?: ERef<Marshaller>,
+ * storageNode: ERef<StorageNode>,
+ * marshaller: ERef<Marshaller>,
  * }>} ImmutableState
  *
  * @typedef {{
@@ -117,8 +117,8 @@ const metricsOf = state => {
  * @param {State['zcf']} zcf
  * @param {State['directorParamManager']} directorParamManager
  * @param {State['debtMint']} debtMint
- * @param {ERef<StorageNode>} [storageNode]
- * @param {ERef<Marshaller>} [marshaller]
+ * @param {ERef<StorageNode>} storageNode
+ * @param {ERef<Marshaller>} marshaller
  * @returns {State}
  */
 const initState = (

@@ -89,14 +89,14 @@ const trace = makeTracer('VM');
  * debtBrand: Brand<'nat'>,
  * debtMint: ZCFMint<'nat'>,
  * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
- * marshaller?: ERef<Marshaller>,
+ * marshaller: ERef<Marshaller>,
  * metricsPublication: IterationObserver<MetricsNotification>,
  * metricsSubscription: StoredSubscription<MetricsNotification>,
  * periodNotifier: ERef<Notifier<bigint>>,
  * poolIncrementSeat: ZCFSeat,
  * priceAuthority: ERef<PriceAuthority>,
  * prioritizedVaults: ReturnType<typeof makePrioritizedVaults>,
- * storageNode?: ERef<StorageNode>,
+ * storageNode: ERef<StorageNode>,
  * zcf: import('./vaultFactory.js').VaultFactoryZCF,
  * }>} ImmutableState
  */
@@ -155,8 +155,8 @@ const provideEphemera = makeEphemeraProvider(() => ({
  * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
  * @param {Timestamp} startTimeStamp
- * @param {ERef<StorageNode>} [storageNode]
- * @param {ERef<Marshaller>} [marshaller]
+ * @param {ERef<StorageNode>} storageNode
+ * @param {ERef<Marshaller>} marshaller
  */
 const initState = (
   zcf,
@@ -169,6 +169,8 @@ const initState = (
   storageNode,
   marshaller,
 ) => {
+  assert(storageNode && marshaller, 'Missing storageNode or marshaller');
+
   const periodNotifier = E(timerService).makeNotifier(
     0n,
     factoryPowers.getGovernedParams().getChargingPeriod(),
@@ -195,6 +197,7 @@ const initState = (
     debtBrand,
     debtMint,
     factoryPowers,
+    marshaller,
     metricsSubscription,
     metricsPublication,
     periodNotifier,
@@ -204,6 +207,7 @@ const initState = (
      * A store for vaultKits prioritized by their collaterization ratio.
      */
     prioritizedVaults: makePrioritizedVaults(),
+    storageNode,
     zcf,
   };
 

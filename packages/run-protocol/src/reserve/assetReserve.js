@@ -48,8 +48,8 @@ const nonalphanumeric = /[^A-Za-z0-9]/g;
  * @param {{
  *   feeMintAccess: FeeMintAccess,
  *   initialPoserInvitation: Payment,
- *   marshaller?: ERef<Marshaller>,
- *   storageNode?: ERef<StorageNode>,
+ *   marshaller: ERef<Marshaller>,
+ *   storageNode: ERef<StorageNode>,
  * }} privateArgs
  */
 const start = async (zcf, privateArgs) => {
