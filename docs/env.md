@@ -126,10 +126,7 @@ Lifetime: until we decide not to support Prometheus for metrics export
 
 Affects: solo
 
-Until dApps are converted to connect to the smart-wallet UI directly,
-this allows them to continue to connect to `/wallet-bridge.html` and such
-on the solo and have these endpoints serviced by `/wallet/bridge.html`
-and such in a wallet UI.
+This enables a proxy so that the solo bridge interface (/wallet-bridge.html) is backed by the smart wallet (/wallet/bridge.html). Dapps designed for the solo bridge can enable this until they connect to the smart wallet directly.
 
 ```
 BRIDGE_TARGET=http://localhost:3001 make BASE_PORT=8002 scenario3-run

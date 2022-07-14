@@ -5,13 +5,13 @@
 import { makeReactAgoricWalletConnection } from '@agoric/wallet-connection/react.js';
 import React, { useState, useEffect } from 'react';
 import { E } from '@endo/eventual-send';
-import { makeCapTP } from '@endo/captp';
 import { observeIterator } from '@agoric/notifier';
 import { makeStyles } from '@mui/styles';
 
 import { withApplicationContext } from '../contexts/Application.jsx';
 import { makeBackendFromWalletBridge } from '../util/WalletBackendAdapter.js';
 import { makeFixedWebSocketConnector } from '../util/fixed-websocket-connector.js';
+import { bridgeStorageMessages } from '../util/BridgeStorage.js';
 
 const useStyles = makeStyles(_ => ({
   hidden: {
@@ -31,13 +31,13 @@ const WalletConnection = ({
 }) => {
   const classes = useStyles();
   /**
-   * ISSUE: where to get the full types for these?
+   * TODO: where to get the full types for these?
    *
    * @typedef {{
-   *   getAdminBootstrap: (string, unknown) => WalletBridge
+   *   getAdminBootstrap: (accessToken: any, makeConnector?: any) => WalletBridge
    * }} WalletConnection
    * @typedef {{
-   *   getScopedBridge: (petname: unknown, origin: unknown) => unknown
+   *   getScopedBridge: (suggestedDappPetname: unknown, dappOrigin?: unknown, makeConnector?: unknown) => unknown
    * }} WalletBridge
    */
   const [wc, setWC] = useState(/** @type {WalletConnection|null} */ (null));
@@ -79,70 +79,11 @@ const WalletConnection = ({
       },
     }).catch(rethrowIfNotCancelled);
 
-    /** @type {Map<string,[ReturnType<typeof makeCapTP>, number]>} */
-    const dappToConn = new Map();
-    const {
-      localStorage: storage,
-      addEventListener,
-      removeEventListener,
-    } = window; // WARNING: ambient
-
-    function handleStorageMessage(key, newValue) {
-      const keyParts = JSON.parse(key);
-      assert(Array.isArray(keyParts));
-      const [tag, origin, epoch, _ix] = /** @type {unknown[]} */ (keyParts);
-      const payload = JSON.parse(newValue);
-      if (tag !== 'out' || !payload || typeof payload.type !== 'string') {
-        return;
-      }
-
-      // console.debug('handleStorageMessage', payload);
-      const obj = {
-        ...payload,
-        dappOrigin: origin,
-      };
-      const dappKey = JSON.stringify([origin, epoch]);
-      /** @type {ReturnType<typeof makeCapTP>}  */
-      let conn;
-      /** @type {number} */
-      let ix;
-      if (dappToConn.has(dappKey)) {
-        [conn, ix] = dappToConn.get(dappKey) || assert.fail();
-      } else {
-        /** @param {unknown} payloadOut */
-        const send = payloadOut => {
-          console.debug('WalletConnect: message -> storage', payloadOut);
-          storage.setItem(
-            JSON.stringify(['in', origin, epoch, ix]),
-            JSON.stringify(payloadOut),
-          );
-          ix += 1; // ISSUE: overflow?
-        };
-        const makeBoot = () => E(bridge).getScopedBridge(origin, origin);
-        // console.debug('new capTP connection', { origin, epoch });
-        conn = makeCapTP(`from ${origin} at ${epoch}`, send, makeBoot);
-        ix = 0;
-      }
-      dappToConn.set(dappKey, [conn, ix + 1]);
-      console.debug('WalletConnect: storage -> dispatch', obj);
-      conn.dispatch(obj);
-      storage.removeItem(key);
-    }
-    addEventListener('storage', ev => {
-      const { key, newValue } = ev;
-      // removeItem causes an event where newValue is null
-      if (key && newValue) {
-        handleStorageMessage(key, newValue);
-      }
-    });
+    const cleanupStorageBridge = bridgeStorageMessages(bridge);
 
     return () => {
       cancelled = true;
-      removeEventListener('storage', handleStorageMessage);
-      for (const [conn, _ix] of dappToConn.values()) {
-        // @ts-expect-error capTP abort has wrong type?
-        conn.abort(Error('wallet connection cancelled'));
-      }
+      cleanupStorageBridge();
       disconnect();
       cancel();
     };

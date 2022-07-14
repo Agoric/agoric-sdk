@@ -14,6 +14,14 @@ const BridgeProtocol = /** @type {const} */ ({
   opened: 'walletBridgeOpened',
 });
 
+const checkParentWindow = () => {
+  const me = window;
+  const { parent } = window;
+  if (me === parent) {
+    throw Error('window.parent === parent!!!');
+  }
+};
+
 /**
  * Install a dApp "connection" where messages posted from
  * the dApp are forwarded to localStorage and vice versa.
@@ -25,6 +33,8 @@ const BridgeProtocol = /** @type {const} */ ({
  * }} io
  */
 const installDappConnection = ({ addEventListener, parentPost, t0 }) => {
+  checkParentWindow();
+
   /** @type { string } */
   let origin;
 
@@ -44,18 +54,12 @@ const installDappConnection = ({ addEventListener, parentPost, t0 }) => {
   const { stringify, parse } = JSON;
 
   addEventListener('message', ev => {
-    // console.debug('bridge: handling message:', ev.data);
-    if (
-      !ev.data ||
-      typeof ev.data.type !== 'string' ||
-      !ev.data.type.startsWith('CTP_')
-    ) {
+    if (!ev.data?.type?.startsWith('CTP_')) {
       return;
     }
 
     if (origin === undefined) {
       // First-come, first-serve.
-      // console.debug('bridge: setting origin to', origin);
       origin = ev.origin;
     }
     if (setItem) {
@@ -71,7 +75,6 @@ const installDappConnection = ({ addEventListener, parentPost, t0 }) => {
     /** @param {typeof window.localStorage} storage */
     connectStorage: storage => {
       addEventListener('storage', ev => {
-        // console.debug('from storage', origin, ev.key, ev.newValue);
         if (!ev.key || !ev.newValue) {
           return;
         }
@@ -101,21 +104,9 @@ const installDappConnection = ({ addEventListener, parentPost, t0 }) => {
   });
 };
 
-const sameParent = () => {
-  const me = window;
-  const { parent } = window;
-  if (me === parent) {
-    // eslint-disable-next-line no-debugger
-    debugger;
-    throw Error('window.parent === parent!!!');
-  }
-  return false;
-};
-
 const conn = installDappConnection({
   addEventListener: window.addEventListener,
-  parentPost: (payload, origin) =>
-    !sameParent() && window.parent.postMessage(payload, origin),
+  parentPost: (payload, origin) => window.parent.postMessage(payload, origin),
   t0: Date.now(),
 });
 

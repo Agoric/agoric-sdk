@@ -154,6 +154,9 @@ command-line request to open the Agoric wallet.`);
         });
       };
 
+      // This ensures the message wont be posted until after the iframe's
+      // "onLoad" event fires so we can rely on the consistent ordering of
+      // events in the WalletConnection component.
       window.addEventListener('load', () => {
         // Start the flow of messages.
         if (window.parent !== window) {
