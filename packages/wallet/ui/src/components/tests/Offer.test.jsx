@@ -68,9 +68,11 @@ const offer = {
     decline: jest.fn(),
   },
   requestContext: {
-    date: 1636614038901,
     dappOrigin: 'https://tokenpalace.app',
     origin: 'unknown origin',
+  },
+  meta: {
+    creationStamp: 1636614038901,
   },
   proposalForDisplay: {
     arguments: [],
@@ -176,7 +178,7 @@ test('renders the timestamp', () => {
   const component = mount(<Offer offer={offer} />);
 
   expect(component.find('.Date').text()).toContain(
-    formatDateNow(offer.requestContext.date),
+    formatDateNow(offer.meta.creationStamp),
   );
 });
 

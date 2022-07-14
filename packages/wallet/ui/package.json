@@ -36,6 +36,7 @@
     "eslint-plugin-react-hooks": "^4.3.0",
     "process": "^0.11.10",
     "react": "^16.8.0",
+    "react-app-rewire-multiple-entry": "^2.2.3",
     "react-app-rewired": "^2.2.1",
     "react-dom": "^16.8.0",
     "react-router-dom": "^5.3.0",

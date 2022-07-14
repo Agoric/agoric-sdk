@@ -335,7 +335,11 @@ export function buildRootObject(vatPowers) {
       },
       getDepositFacetId: walletAdmin.getDepositFacetId,
       getAdminFacet() {
-        return Far('adminFacet', { ...walletAdmin, ...notifiers });
+        return Far('adminFacet', {
+          ...walletAdmin,
+          ...notifiers,
+          getScopedBridge: wallet.getScopedBridge,
+        });
       },
       getIssuer: walletAdmin.getIssuer,
       getIssuers: walletAdmin.getIssuers,

@@ -1,3 +1,4 @@
+// @ts-check
 /* eslint-disable no-underscore-dangle */
 /* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable react/display-name */
@@ -10,6 +11,7 @@ import { makeStyles } from '@mui/styles';
 import { withApplicationContext } from '../contexts/Application.jsx';
 import { makeBackendFromWalletBridge } from '../util/WalletBackendAdapter.js';
 import { makeFixedWebSocketConnector } from '../util/fixed-websocket-connector.js';
+import { bridgeStorageMessages } from '../util/BridgeStorage.js';
 
 const useStyles = makeStyles(_ => ({
   hidden: {
@@ -28,7 +30,17 @@ const WalletConnection = ({
   connectionConfig,
 }) => {
   const classes = useStyles();
-  const [wc, setWC] = useState(null);
+  /**
+   * TODO: where to get the full types for these?
+   *
+   * @typedef {{
+   *   getAdminBootstrap: (accessToken: any, makeConnector?: any) => WalletBridge
+   * }} WalletConnection
+   * @typedef {{
+   *   getScopedBridge: (suggestedDappPetname: unknown, dappOrigin?: unknown, makeConnector?: unknown) => unknown
+   * }} WalletBridge
+   */
+  const [wc, setWC] = useState(/** @type {WalletConnection|null} */ (null));
 
   let cancelled = null;
   const onWalletState = ev => {
@@ -67,8 +79,11 @@ const WalletConnection = ({
       },
     }).catch(rethrowIfNotCancelled);
 
+    const cleanupStorageBridge = bridgeStorageMessages(bridge);
+
     return () => {
       cancelled = true;
+      cleanupStorageBridge();
       disconnect();
       cancel();
     };

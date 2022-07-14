@@ -15,6 +15,10 @@ jest.mock('@endo/eventual-send', () => ({
     }),
 }));
 
+jest.mock('@endo/captp', () => ({
+  makeCapTP: jest.fn(),
+}));
+
 jest.mock('@agoric/web-components/react.js', () => {
   return {
     makeReactAgoricWalletConnection: jest.fn(() => 'wallet-connection'),

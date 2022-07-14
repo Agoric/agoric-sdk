@@ -36,6 +36,7 @@ export const makeBridgeIframeConnector = component => {
 
     // Received bridge announcement, so mark the connection as bridged.
     component.service.send({ type: 'connected' });
+    component._bridgePK.resolve(component._captp.getBootstrap());
   };
 
   return {
@@ -52,7 +53,6 @@ export const makeBridgeIframeConnector = component => {
       return html`
         <agoric-iframe-messenger
           src=${url.href}
-          @open=${component.onOpen}
           @message=${onMessage}
           @error=${component.onError}
         ></agoric-iframe-messenger>
