@@ -9,6 +9,7 @@ export {
   makeNotifier,
   makeNotifierKit,
   makeNotifierFromAsyncIterable,
+  makeNotifierFromSubscriber,
 } from './notifier.js';
 export { makeSubscription, makeSubscriptionKit } from './subscriber.js';
 export {

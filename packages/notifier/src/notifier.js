@@ -152,7 +152,101 @@ export const makeNotifierKit = (...initialStateArr) => {
 };
 
 /**
+ * @template T
+ * @param {ERef<Subscriber<T>>} subscriberP
+ * @returns {Notifier<T>}
+ */
+export const makeNotifierFromSubscriber = subscriberP => {
+  /** @type {bigint} */
+  let latestInboundCount;
+  /** @type {UpdateCount & bigint} */
+  let latestUpdateCount = 0n;
+  /** @type {WeakMap<PublicationRecord<T>, Promise<UpdateRecord<T>>>} */
+  const outboundResults = new WeakMap();
+
+  /**
+   * @param {PublicationRecord<T>} record
+   * @returns {Promise<UpdateRecord<T>>}
+   */
+  const translateInboundPublicationRecord = record => {
+    // Leverage identity preservation of `record`.
+    const existingOutboundResult = outboundResults.get(record);
+    if (existingOutboundResult) {
+      return existingOutboundResult;
+    }
+
+    latestInboundCount = record.publishCount;
+    latestUpdateCount += 1n;
+    const resultP = E.when(record.head, ({ value, done }) => {
+      if (done) {
+        // Final results have undefined updateCount.
+        return harden({ value, updateCount: undefined });
+      }
+      return harden({ value, updateCount: latestUpdateCount });
+    });
+    outboundResults.set(record, resultP);
+    return resultP;
+  };
+
+  /**
+   * @template T
+   * @type {BaseNotifier<T>}
+   */
+  const baseNotifier = Far('baseNotifier', {
+    getUpdateSince(updateCount = -1n) {
+      assert(
+        updateCount <= latestUpdateCount,
+        'argument must be a previously-issued updateCount.',
+      );
+
+      if (updateCount < latestUpdateCount) {
+        // Return the most recent result possible without imposing an unnecessary delay.
+        return E(subscriberP)
+          .subscribeAfter()
+          .then(translateInboundPublicationRecord);
+      }
+
+      // Return a result that follows the last-returned result,
+      // skipping over intermediate results if latestInboundCount
+      // no longer corresponds with the latest result.
+      // Note that unlike notifiers and subscribers respectively returned by
+      // makeNotifierKit and makePublishKit, this result is not guaranteed
+      // to follow the result returned when a non-latest updateCount is provided
+      // (e.g., it is possible for `notifierFromSubscriber.getUpdateSince()` and
+      // `notifierFromSubscriber.getUpdateSince(latestUpdateCount)` to both
+      // settle to the same object `newLatest` where `newLatest.updateCount`
+      // is one greater than `latestUpdateCount`).
+      return E(subscriberP)
+        .subscribeAfter(latestInboundCount)
+        .then(translateInboundPublicationRecord);
+    },
+  });
+
+  /** @type {Notifier<T>} */
+  const notifier = Far('notifier', {
+    ...makeAsyncIterableFromNotifier(baseNotifier),
+    ...baseNotifier,
+
+    /**
+     * Use this to distribute a Notifier efficiently over the network,
+     * by obtaining this from the Notifier to be replicated, and applying
+     * `makeNotifier` to it at the new site to get an equivalent local
+     * Notifier at that site.
+     */
+    getSharableNotifierInternals: () => baseNotifier,
+    getStoreKey: () => harden({ notifier }),
+  });
+  return notifier;
+};
+harden(makeNotifierFromSubscriber);
+
+/**
  * Adaptor from async iterable to notifier.
+ *
+ * @deprecated The resulting notifier is lossless, which is not desirable.
+ * Prefer makeNotifierFromSubscriber, and refer to
+ * https://github.com/Agoric/agoric-sdk/issues/5413 and
+ * https://github.com/Agoric/agoric-sdk/pull/5695 for context.
  *
  * @template T
  * @param {ERef<AsyncIterable<T>>} asyncIterableP
