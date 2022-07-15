@@ -157,6 +157,7 @@ export const buildRootObject = () => {
 
       const upgradeResult = await E(instanceAdmin2).upgradeContract(v3BundleId);
       assert.equal(upgradeResult, 'ok');
+      console.log('Boot  starting upgrade V2');
 
       // exercise an invitation from before the upgrade
       const seat2BP = acceptCall(zoe, invitation2B, kits, 42n, 22n);
@@ -172,8 +173,26 @@ export const buildRootObject = () => {
         'The upgraded option was exercised. Please collect the assets in your payout.',
       );
 
-      await depositPayout(seat2B, 'Bucks', bucksPurse, bucks(0n));
+      // Complete round-trip with post-upgraded instance
+      console.log('Boot  starting post-upgrade contract');
+      const installationV3 = await E(zoe).installBundleID(v3BundleId);
+      const facets3 = await E(zoe).startInstance(installationV3, issuerReccord);
+      const creator3 = facets3.creatorFacet;
+      const seat3A = await offerCall(zoe, creator3, kits, timer, 15n, 30n);
+      const invitation3B = await E(seat3A).getOfferResult();
+      const seat3B = await acceptCall(zoe, invitation3B, kits, 30n, 15n);
+      const offerResult3B = await E(seat3B).getOfferResult();
+      assert.equal(
+        offerResult3B,
+        'The upgraded option was exercised. Please collect the assets in your payout.',
+      );
+      await depositPayout(seat3A, 'Bucks', bucksPurse, bucks(30n));
+      await depositPayout(seat3A, 'Doubloons', doubloonsPurse, doubloons(0n));
+      await depositPayout(seat3B, 'Bucks', bucksPurse, bucks(0n));
+      await depositPayout(seat3B, 'Doubloons', doubloonsPurse, doubloons(15n));
       await depositPayout(seat2B, 'Doubloons', doubloonsPurse, doubloons(22n));
+
+      console.log('Boot finished test');
       return true;
     },
   });

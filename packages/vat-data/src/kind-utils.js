@@ -91,3 +91,8 @@ export const vivifySingleton = (
 };
 // @ts-expect-error TODO statically recognize harden
 harden(vivifySingleton);
+
+export const vivifyKind = (baggage, name, init, behavior) =>
+  defineDurableKind(provideKindHandle(baggage, name), init, behavior);
+// @ts-expect-error TODO statically recognize harden
+harden(vivifyKind);
