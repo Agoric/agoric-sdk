@@ -1,5 +1,9 @@
 {
   "scripts": {
+    "build:proto-prep": "mkdir -p proto; cd proto; ln -s ../../../../../golang/cosmos/proto/agoric/swingset .; ln -s ../../../../../golang/cosmos/third_party/proto/gogoproto .; ln -s ../node_modules/protobufjs/google .",
+    "install:protoc": "sudo apt install protobuf-compiler",
+    "build:proto": "mkdir -p src/gen && protoc --plugin=node_modules/ts-proto/protoc-gen-ts_proto --ts_proto_opt='esModuleInterop=true,forceLong=long,useOptionals=true' --ts_proto_out=./src/gen ./proto/swingset/msgs.proto -I./proto",
+    "build:proto-js": "tsc --downlevelIteration --target esnext --allowSyntheticDefaultImports --moduleResolution node ./src/gen/**/*.ts",
     "start": "parcel src/keplr-ledger-demo.html"
   },
   "devDependencies": {
@@ -7,7 +11,9 @@
     "crypto-browserify": "^3.12.0",
     "parcel": "^2.6.2",
     "path-browserify": "^1.0.1",
-    "stream-browserify": "^3.0.0"
+    "stream-browserify": "^3.0.0",
+    "ts-proto": "^1.117.0",
+    "typescript": "^4.7.4"
   },
   "dependencies": {
     "@cosmjs/stargate": "^0.28.10"
