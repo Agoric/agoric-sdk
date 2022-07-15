@@ -67,11 +67,9 @@ const sellSeatExpiredMsg = `The covered call option is expired.`;
  * specified in the invitation value, and want the underlying assets
  * exactly.
  *
- * @param _privateArgs unknown
+ * @param {ZCF} zcf
+ * @param {unknown} _privateArgs
  * @param {import('@agoric/vat-data').Baggage} instanceBaggage
- * @param {ZCF} zcf passed in setupInstallation, but not completely initialized
- *    until setupInstance. Passed early because it will often need to be
- *    captured lexically by durable kinds.
  */
 const start = async (zcf, _privateArgs, instanceBaggage) => {
   const makeExerciser = vivifyKind(

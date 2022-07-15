@@ -43,7 +43,6 @@ export type DurableKindHandle = DurableKindHandleClass;
 type DefineKindOptions<C> = {
   finish?: (context: C) => void;
   durable?: boolean;
-  fakeDurable?: boolean;
 };
 
 export type VatData = {
