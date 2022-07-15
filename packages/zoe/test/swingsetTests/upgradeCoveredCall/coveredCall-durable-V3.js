@@ -3,12 +3,7 @@
 import { M, fit } from '@agoric/store';
 import '../../../exported.js';
 
-import {
-  defineDurableKind,
-  provideDurableMapStore,
-  provideKindHandle,
-} from '@agoric/vat-data';
-import { Far } from '@endo/marshal';
+import { vivifyKind, vivifySingleton } from '@agoric/vat-data';
 import { swapExact } from '../../../src/contractSupport/index.js';
 import { isAfterDeadlineExitRule } from '../../../src/typeGuards.js';
 
@@ -72,22 +67,17 @@ const sellSeatExpiredMsg = `The covered call option is expired.`;
  * specified in the invitation value, and want the underlying assets
  * exactly.
  *
- * @param {import('@agoric/vat-data').Baggage} installationBaggage
  * @param {ZCF} zcf
+ * @param {unknown} _privateArgs
+ * @param {import('@agoric/vat-data').Baggage} instanceBaggage
  */
-const setupInstallation = (installationBaggage, zcf) => {
-  const instanceBaggage = provideDurableMapStore(
-    installationBaggage,
-    'instance',
-  );
-
-  const makeExerciserKindHandle = provideKindHandle(
+const vivify = async (zcf, _privateArgs, instanceBaggage) => {
+  // TODO the exerciseOption offer handler that this makes is an object rather
+  // than a function for now only because we do not yet support durable
+  // functions.
+  const makeExerciser = vivifyKind(
     instanceBaggage,
     'makeExerciserKindHandle',
-  );
-
-  const makeExerciser = defineDurableKind(
-    makeExerciserKindHandle,
     sellSeat => ({ sellSeat }),
     {
       handle: ({ state: { sellSeat } }, buySeat) => {
@@ -126,24 +116,11 @@ const setupInstallation = (installationBaggage, zcf) => {
     return zcf.makeInvitation(exerciseOption, 'exerciseOption', customProps);
   };
 
-  const setupInstance = _privateArgs => {
-    // define instance kinds
-
-    const makeInstanceKit = () => {
-      // the creatorFacet could be made durable for this demonstration, but if
-      // it's not initiated before upgrade, there's no state to lose.
-      const creatorFacet = Far('creatorFacet', {
-        makeInvitation: () => zcf.makeInvitation(makeOption, 'makeCallOption'),
-      });
-      return harden({ creatorFacet });
-    };
-    return harden(makeInstanceKit);
-  };
-
-  // redefine kinds.
-
-  return harden(setupInstance);
+  const creatorFacet = vivifySingleton(instanceBaggage, 'creatorFacet', {
+    makeInvitation: () => zcf.makeInvitation(makeOption, 'makeCallOption'),
+  });
+  return harden({ creatorFacet });
 };
 
-harden(setupInstallation);
-export { setupInstallation };
+harden(vivify);
+export { vivify };
