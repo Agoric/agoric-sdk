@@ -14,8 +14,10 @@ import {
 import { GenericAuthorization } from 'cosmjs-types/cosmos/authz/v1beta1/authz';
 import { QueryClientImpl } from 'cosmjs-types/cosmos/authz/v1beta1/query';
 
-// generated via ts-proto, as is conventional for cosmjs
-import { MsgWalletAction } from './gen/swingset/msgs';
+import {
+  MsgWalletAction,
+  MsgWalletSpendAction,
+} from '@agoric/cosmic-proto/swingset/msgs.js';
 
 // TODO: export these from '../../src/util/SuggestChain.js'
 import { stableCurrency, bech32Config } from './chainInfo.js';
