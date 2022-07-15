@@ -93,8 +93,9 @@ const localChainInfo = {
 /**
  * @param {ReturnType<typeof makeUI>} ui
  * @param {*} keplr
+ * @param {typeof SigningStargateClient.connectWithSigner} connectWithSigner
  */
-const makeSigner = async (ui, keplr) => {
+const makeSigner = async (ui, keplr, connectWithSigner) => {
   // const chainId = ui.selectValue('select[name="chainId"]');
   // console.log({ chainId });
 
@@ -122,11 +123,9 @@ const makeSigner = async (ui, keplr) => {
 
   ui.showItems('#accounts', [address]);
 
-  const cosmJS = await SigningStargateClient.connectWithSigner(
-    chainInfo.rpc,
-    offlineSigner,
     { aminoTypes: new AminoTypes(SwingsetConverters) },
   );
+  const cosmJS = await connectWithSigner(chainInfo.rpc, offlineSigner, {
   console.log({ cosmJS });
 
   ui.onClick('#sign', async _ev => {
@@ -216,5 +215,5 @@ window.addEventListener('load', _ev => {
   }
   // @ts-expect-error keplr is injected
   const { keplr } = window;
-  makeSigner(makeUI(document), keplr);
+  makeSigner(makeUI(document), keplr, SigningStargateClient.connectWithSigner);
 });
