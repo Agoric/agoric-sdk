@@ -1,5 +1,10 @@
 // @ts-check
-import { AminoTypes, SigningStargateClient } from '@cosmjs/stargate';
+import {
+  AminoTypes,
+  SigningStargateClient,
+  defaultRegistryTypes,
+} from '@cosmjs/stargate';
+import { Registry } from '@cosmjs/proto-signing';
 import { html, render } from 'lit-html';
 import {
   AGORIC_COIN_TYPE,
@@ -7,6 +12,7 @@ import {
   stableCurrency,
   bech32Config,
 } from './chainInfo.js';
+import { MsgWalletAction } from './gen/swingset/msgs';
 
 const { freeze } = Object;
 
@@ -61,17 +67,29 @@ const check = {
 /**
  * /agoric.swingset.XXX matches package agoric.swingset in swingset/msgs.go
  */
+const SwingsetMsgs = {
+  MsgWalletAction: {
+    typeUrl: '/agoric.swingset.MsgWalletAction',
+    aminoType: 'swingset/MsgWalletAction',
+  },
+};
+
 /** @type {import('@cosmjs/stargate').AminoConverters} */
 const SwingsetConverters = {
   // '/agoric.swingset.MsgProvision': {
   //   /* ... */
   // },
-  '/agoric.swingset.MsgWalletAction': {
-    aminoType: 'swingset/MsgWalletAction',
+  [SwingsetMsgs.MsgWalletAction.typeUrl]: {
+    aminoType: SwingsetMsgs.MsgWalletAction.aminoType,
     toAmino: ({ owner, action }) => ({ owner, action }),
     fromAmino: ({ owner, action }) => ({ owner, action }),
   },
 };
+
+const aRegistry = new Registry([
+  ...defaultRegistryTypes,
+  [SwingsetMsgs.MsgWalletAction.typeUrl, MsgWalletAction],
+]);
 
 // agoric start local-chain
 const localChainInfo = {
@@ -123,9 +141,10 @@ const makeSigner = async (ui, keplr, connectWithSigner) => {
 
   ui.showItems('#accounts', [address]);
 
-    { aminoTypes: new AminoTypes(SwingsetConverters) },
-  );
   const cosmJS = await connectWithSigner(chainInfo.rpc, offlineSigner, {
+    aminoTypes: new AminoTypes(SwingsetConverters),
+    registry: aRegistry,
+  });
   console.log({ cosmJS });
 
   ui.onClick('#sign', async _ev => {
