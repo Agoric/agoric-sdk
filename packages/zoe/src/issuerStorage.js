@@ -14,7 +14,7 @@ const STORAGE_INSTANTIATED_KEY = 'IssuerStorageInstantiated';
  *
  * @param {import('@agoric/vat-data').Baggage} zcfBaggage
  */
-export const makeIssuerStorage = zcfBaggage => {
+export const provideIssuerStorage = zcfBaggage => {
   /** @type {WeakStore<Brand,IssuerRecord>} */
   const brandToIssuerRecord = provideDurableWeakMapStore(
     zcfBaggage,

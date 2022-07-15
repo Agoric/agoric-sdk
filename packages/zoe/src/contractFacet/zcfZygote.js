@@ -6,18 +6,17 @@ import { AssetKind } from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assertPattern } from '@agoric/store';
 import {
-  defineDurableKind,
   makeScalarBigMapStore,
   provideDurableMapStore,
-  provideKindHandle,
   canBeDurable,
+  vivifyKind,
 } from '@agoric/vat-data';
 
 import { cleanProposal } from '../cleanProposal.js';
 import { evalContractBundle } from './evalContractCode.js';
 import { makeExitObj } from './exit.js';
 import { defineDurableHandle } from '../makeHandle.js';
-import { makeIssuerStorage } from '../issuerStorage.js';
+import { provideIssuerStorage } from '../issuerStorage.js';
 import { createSeatManager } from './zcfSeat.js';
 import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
 import { handlePKitWarning } from '../handleWarning.js';
@@ -64,7 +63,7 @@ export const makeZCFZygote = async (
     getBrandForIssuer,
     getIssuerForBrand,
     instantiate: instantiateIssuerStorage,
-  } = makeIssuerStorage(zcfBaggage);
+  } = provideIssuerStorage(zcfBaggage);
 
   /** @type {ShutdownWithFailure} */
   const shutdownWithFailure = reason => {
@@ -243,35 +242,39 @@ export const makeZCFZygote = async (
     getInstance: () => getInstanceRecord().instance,
   });
 
-  const handleOfferHandle = provideKindHandle(zcfBaggage, 'handleOfferObj');
   // handleOfferObject gives Zoe the ability to notify ZCF when a new seat is
   // added in offer(). ZCF responds with the exitObj and offerResult.
-  const makeHandleOfferObj = defineDurableKind(handleOfferHandle, () => ({}), {
-    handleOffer: (_context, invitationHandle, seatData) => {
-      const zcfSeat = makeZCFSeat(seatData);
-      // TODO: provide a details that's a better diagnostic for the
-      // ephemeral offerHandler that did not survive upgrade.
-      const offerHandler = takeOfferHandler(invitationHandle);
-      const offerResultP =
-        typeof offerHandler === 'function'
-          ? E(offerHandler)(zcfSeat, seatData.offerArgs)
-          : // @ts-expect-error Type issues?
-            E(offerHandler).handle(zcfSeat, seatData.offerArgs);
+  const makeHandleOfferObj = vivifyKind(
+    zcfBaggage,
+    'handleOfferObj',
+    () => ({}),
+    {
+      handleOffer: (_context, invitationHandle, seatData) => {
+        const zcfSeat = makeZCFSeat(seatData);
+        // TODO: provide a details that's a better diagnostic for the
+        // ephemeral offerHandler that did not survive upgrade.
+        const offerHandler = takeOfferHandler(invitationHandle);
+        const offerResultP =
+          typeof offerHandler === 'function'
+            ? E(offerHandler)(zcfSeat, seatData.offerArgs)
+            : // @ts-expect-error Type issues?
+              E(offerHandler).handle(zcfSeat, seatData.offerArgs);
 
-      const offerResultPromise = offerResultP.catch(reason => {
-        if (reason === undefined) {
-          const newErr = new Error(
-            `If an offerHandler throws, it must provide a reason of type Error, but the reason was undefined. Please fix the contract code to specify a reason for throwing.`,
-          );
-          throw zcfSeat.fail(newErr);
-        }
-        throw zcfSeat.fail(reason);
-      });
-      const exitObj = makeExitObj(seatData.proposal, zcfSeat);
-      /** @type {HandleOfferResult} */
-      return harden({ offerResultPromise, exitObj });
+        const offerResultPromise = offerResultP.catch(reason => {
+          if (reason === undefined) {
+            const newErr = new Error(
+              `If an offerHandler throws, it must provide a reason of type Error, but the reason was undefined. Please fix the contract code to specify a reason for throwing.`,
+            );
+            throw zcfSeat.fail(newErr);
+          }
+          throw zcfSeat.fail(reason);
+        });
+        const exitObj = makeExitObj(seatData.proposal, zcfSeat);
+        /** @type {HandleOfferResult} */
+        return harden({ offerResultPromise, exitObj });
+      },
     },
-  });
+  );
   const handleOfferObj = makeHandleOfferObj();
 
   const evaluateContract = () => {
@@ -291,9 +294,9 @@ export const makeZCFZygote = async (
   if (start === undefined && vivify === undefined) {
     assert(
       buildRootObject === undefined,
-      X`Did you provide a vat bundle instead of a contract bundle?`,
+      'Did you provide a vat bundle instead of a contract bundle?',
     );
-    assert.fail(X`unrecognized contract exports`);
+    assert.fail('unrecognized contract exports');
   }
   assert(!start || !vivify, 'do not provide both start and vivify');
 
@@ -340,7 +343,7 @@ export const makeZCFZygote = async (
             creatorFacet,
             publicFacet,
             creatorInvitation,
-          ].every(o => canBeDurable(o));
+          ].every(canBeDurable);
           if (vivify || allDurable) {
             zcfBaggage.init('creatorFacet', creatorFacet);
             zcfBaggage.init('publicFacet', publicFacet);
@@ -361,9 +364,6 @@ export const makeZCFZygote = async (
       const instanceAdmin = zcfBaggage.get('instanceAdmin');
       zoeInstanceAdminPromiseKit.resolve(instanceAdmin);
       assert(vivify, 'vivify must be defined to upgrade a contract');
-
-      // For version-2 or later, we know we've already been started, so
-      // allow the contract to set up its instance Kinds
 
       // restart an upgradeable contract
       return E.when(

@@ -39,6 +39,7 @@ export const vivifyErtpService = (baggage, exitVatWithFailure) => {
 
   return ertpService;
 };
+harden(vivifyErtpService);
 
 export const buildRootObject = async (vatPowers, _vatParams, baggage) => {
   const ertpService = vivifyErtpService(baggage, vatPowers.exitVatWithFailure);

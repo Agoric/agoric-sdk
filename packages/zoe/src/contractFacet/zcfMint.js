@@ -19,6 +19,8 @@ import './types.js';
 
 import '@agoric/swingset-vat/src/types-ambient.js';
 
+const { details: X } = assert;
+
 // helpers for the code shared between MakeZCFMint and RegisterZCFMint
 
 export const makeZCFMintFactory = async (
@@ -54,9 +56,8 @@ export const makeZCFMintFactory = async (
     recordIssuer(keyword, mintyIssuerRecord);
 
     const empty = AmountMath.makeEmpty(mintyBrand, mintyDisplayInfo.assetKind);
-    const add = (total, amountToAdd) => {
-      return AmountMath.add(total, amountToAdd, mintyBrand);
-    };
+    const add = (total, amountToAdd) =>
+      AmountMath.add(total, amountToAdd, mintyBrand);
 
     return vivifySingleton(
       zcfMintBaggage,
@@ -98,7 +99,7 @@ export const makeZCFMintFactory = async (
           assert(
             // @ts-expect-error It's non-null
             zcfSeat.isOfferSafe(allocationPlusGains),
-            `The allocation after minting gains ${allocationPlusGains} for the zcfSeat was not offer safe`,
+            X`The allocation after minting gains ${allocationPlusGains} for the zcfSeat was not offer safe`,
           );
           // No effects above, apart from incrementBy. Note COMMIT POINT within
           // reallocateForZCFMint. The following two steps *should* be
@@ -124,7 +125,7 @@ export const makeZCFMintFactory = async (
           // verifies offer safety
           assert(
             zcfSeat.isOfferSafe(allocationMinusLosses),
-            `The allocation after burning losses ${allocationMinusLosses} for the zcfSeat was not offer safe`,
+            X`The allocation after burning losses ${allocationMinusLosses} for the zcfSeat was not offer safe`,
           );
 
           // Decrement the stagedAllocation if it exists so that the
