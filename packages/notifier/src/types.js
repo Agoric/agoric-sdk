@@ -217,11 +217,7 @@
  */
 
 /** @typedef {ReturnType<typeof import('@endo/marshal').makeMarshal>} Marshaller */
-
-/**
- * @typedef {object} Unserializer
- * @property {Marshaller['unserialize']} unserialize
- */
+/** @typedef {Pick<Marshaller, 'unserialize'>} Unserializer */
 
 /**
  * @typedef {object} StorageNode

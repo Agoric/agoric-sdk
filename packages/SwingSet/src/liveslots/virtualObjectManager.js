@@ -153,8 +153,8 @@ export function makeCache(size, fetch, store) {
  *   IDs
  * @param {*} registerValue  Function to register a new slot+value in liveSlot's
  *   various tables
- * @param {*} serialize  Serializer for this vat
- * @param {*} unserialize  Unserializer for this vat
+ * @param {import('@endo/marshal').Serialize<unknown>} serialize  Serializer for this vat
+ * @param {import('@endo/marshal').Unserialize<unknown>} unserialize  Unserializer for this vat
  * @param {number} cacheSize  How many virtual objects this manager should cache
  *   in memory.
  * @param {*} assertAcceptableSyscallCapdataSize  Function to check for oversized
