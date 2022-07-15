@@ -193,7 +193,7 @@ const makeSigner = async (ui, keplr, connectWithSigner) => {
     const msgs = [act1];
     const fee = {
       amount: [{ amount: '100', denom }],
-      gas: '250',
+      gas: '100000',
     };
     const memo = 'Some memo';
 
