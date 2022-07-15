@@ -207,6 +207,25 @@ t1-provision-one-with-powers: wait-for-cosmos
 		  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
 		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) -ojson | tee /dev/stderr | grep -q '"code":0'; }
 	
+fund-acct: wait-for-cosmos
+	$(AGCH) \
+	  --home=t1/bootstrap --keyring-backend=test --from=bootstrap \
+	  tx bank send bootstrap $(ACCT_ADDR) $(SOLO_COINS) \
+	  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID)
+
+FROM_KEY=bootstrap
+SIGN_MODE=
+wallet-action: wait-for-cosmos
+	$(AGCH) \
+	  --home=t1/bootstrap --keyring-backend=test --from=$(FROM_KEY) $(SIGN_MODE)\
+	  tx swingset wallet-action '{"give": 10, "want": 1}' \
+	  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID)
+
+wallet-action-gen:
+	$(AGCH) --chain-id=$(CHAIN_ID) \
+	  --home=t1/bootstrap --keyring-backend=test --from=$$(cat t1/bootstrap-address) $(SIGN_MODE)\
+	  tx swingset wallet-action '{"action":1}' \
+	  --generate-only --offline
 
 t1-provision-one: wait-for-cosmos
 	@addrfile=t1/$(BASE_PORT)/cosmos-client-account; \
