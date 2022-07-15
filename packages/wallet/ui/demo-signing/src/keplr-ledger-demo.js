@@ -4,6 +4,7 @@ import {
   SigningStargateClient,
   defaultRegistryTypes,
 } from '@cosmjs/stargate';
+import { fromBech32 } from '@cosmjs/encoding';
 import { Registry } from '@cosmjs/proto-signing';
 import { html, render } from 'lit-html';
 import {
@@ -74,6 +75,11 @@ const SwingsetMsgs = {
   },
 };
 
+/** @type {(address: string) => Uint8Array} */
+export function toAccAddress(address) {
+  return fromBech32(address).data;
+}
+
 /** @type {import('@cosmjs/stargate').AminoConverters} */
 const SwingsetConverters = {
   // '/agoric.swingset.MsgProvision': {
@@ -81,8 +87,18 @@ const SwingsetConverters = {
   // },
   [SwingsetMsgs.MsgWalletAction.typeUrl]: {
     aminoType: SwingsetMsgs.MsgWalletAction.aminoType,
-    toAmino: ({ owner, action }) => ({ owner, action }),
-    fromAmino: ({ owner, action }) => ({ owner, action }),
+    toAmino: proto => {
+      const { owner, action } = proto;
+      const amino = { owner, action };
+      console.log('@@toAmino:', { proto, amino });
+      return amino;
+    },
+    fromAmino: amino => {
+      const { owner, action } = amino;
+      const proto = { owner: toAccAddress(owner), action };
+      console.log('@@fromAmino:', { amino, proto });
+      return proto;
+    },
   },
 };
 
