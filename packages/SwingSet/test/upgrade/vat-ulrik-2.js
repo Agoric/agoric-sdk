@@ -1,7 +1,7 @@
 import { Far } from '@endo/marshal';
 import { E } from '@endo/eventual-send';
 import { assert } from '@agoric/assert';
-import { defineDurableKind } from '@agoric/vat-data';
+import { defineDurableKind, defineDurableKindMulti } from '@agoric/vat-data';
 
 const initialize = (name, imp, value) => {
   return harden({ name, imp, value });
@@ -29,6 +29,27 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
 
   if (vatParameters?.explode) {
     throw Error(vatParameters.explode);
+  }
+
+  if (baggage.has('mkh')) {
+    const mkh = baggage.get('mkh');
+    if (vatParameters.mode === 'm2sFacetiousnessMismatch') {
+      defineDurableKind(mkh, () => ({}), {
+        fooMethod: () => 2,
+      });
+    } else {
+      defineDurableKindMulti(mkh, () => ({}), {
+        bar: {
+          barMethod: () => 2,
+        },
+        foo: {
+          fooMethod: () => 2,
+        },
+        baz: {
+          bazMethod: () => 2,
+        },
+      });
+    }
   }
 
   const root = Far('root', {
@@ -60,6 +81,9 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
     },
     getNewDurandal: () => newDur,
   });
-  // exercise async return
+  // buildRootObject() is allowed to return a Promise, as long as it fulfills
+  // promptly (we added this in #5246 to allow ZCF to use the async
+  // importBundle() during contract upgrade).  We return a pre-fulfilled Promise
+  // here to exercise this ability.
   return Promise.resolve(root);
 };

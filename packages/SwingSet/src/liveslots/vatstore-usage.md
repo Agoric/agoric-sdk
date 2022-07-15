@@ -98,7 +98,9 @@ The KindHandle is a durable virtual object of a special internal Kind. This is t
 
 For each virtual object kind that is defined we store a metadata record for purposes of scanning directly through the defined kinds when a vat is stopped or upgraded.  For durable kinds this record is stored in `vom.dkind.${kindID}`; for non-durable kinds it is stored in `vom.vkind.${kindID}`.  Currently this metadata takes the form of a JSON-serialized record `{ kindID, tag }`, where the `kindID` property is the kind ID (redundantly) and `tag` is the tag string as provided in the `defineKind` or `makeKindHandle` call.
 
-Durable kinds need to store their `nextInstanceID` in the DB, so subsequent versions can begin allocating new instances from a non-overlapping starting point. For durable kinds, the metadata record is `{ kindID, tag, nextInstanceID }`, and is updated after every durable-object allocation.
+Durable kinds need to store their `nextInstanceID` in the DB, so that subsequent versions can begin allocating new instances from a non-overlapping starting point. For durable kinds, the metadata record is initially `{ kindID, tag, nextInstanceID }`, and the `nextInstance` property is updated after every durable-object allocation.
+
+In addition, durable kinds also need to keep track of whether they are single- or multi-faceted and, if the latter, what the names of the facets are. This information is required so that kind definitions in upgraded versions of the containing vat are maintained in a backwards compatible manner over time.  When a kind becomes defined as a single-faceted kind, a property `unfaceted` (with the value `true`) will be added to the descriptor record.  For a multi-faceted kind, the record will be given a property `facets` whose value is an array of the facet names, in the same order as the assignment of facet indices within the cohort record.
 
 # Virtual/Durable Collections (aka Stores)
 
