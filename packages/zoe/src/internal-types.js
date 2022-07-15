@@ -182,22 +182,11 @@
  */
 
 /**
- * @typedef {object} ExecuteClassicContractResult
+ * @typedef {object} ExecuteContractResult
  * @property {object} creatorFacet
  * @property {Promise<Invitation>} creatorInvitation
  * @property {object} publicFacet
  * @property {HandleOfferObj} handleOfferObj
- */
-
-/**
- * @typedef {object} ExecuteUpgradeableContractResult
- * @property {object} creatorFacet
- * @property {object} publicFacet
- * @property {HandleOfferObj} handleOfferObj
- */
-
-/**
- * @typedef {ExecuteClassicContractResult|ExecuteUpgradeableContractResult} ExecuteContractResult
  */
 
 /**

@@ -6,10 +6,11 @@ import { AssetKind } from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assertPattern } from '@agoric/store';
 import {
+  defineDurableKind,
   makeScalarBigMapStore,
   provideDurableMapStore,
   provideKindHandle,
-  defineDurableKind,
+  canBeDurable,
 } from '@agoric/vat-data';
 
 import { cleanProposal } from '../cleanProposal.js';
@@ -19,7 +20,7 @@ import { defineDurableHandle } from '../makeHandle.js';
 import { makeIssuerStorage } from '../issuerStorage.js';
 import { createSeatManager } from './zcfSeat.js';
 import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
-import { handlePWarning, handlePKitWarning } from '../handleWarning.js';
+import { handlePKitWarning } from '../handleWarning.js';
 import { makeOfferHandlerStorage } from './offerHandlerStorage.js';
 import { makeZCFMintFactory } from './zcfMint.js';
 
@@ -284,62 +285,23 @@ export const makeZCFZygote = async (
     }
     return evalContractBundle(bundle);
   };
-  // evaluate the contract (either the first version, or an upgrade). start is
-  // from a non-upgradeable contract, setupInstallation for upgradeable ones.
-  const { setupInstallation, start, buildRootObject } =
-    await evaluateContract();
+  // evaluate the contract (either the first version, or an upgrade)
+  const { start, buildRootObject, vivify } = await evaluateContract();
 
-  if (start === undefined && setupInstallation === undefined) {
+  if (start === undefined && vivify === undefined) {
     assert(
       buildRootObject === undefined,
       X`Did you provide a vat bundle instead of a contract bundle?`,
     );
     assert.fail(X`unrecognized contract exports`);
   }
-
-  const contractBaggage = provideDurableMapStore(zcfBaggage, 'contractBaggage');
-
-  // start a non-upgradeable contract
-  const startClassicContract = privateArgs => {
-    /** @type {Promise<ExecuteClassicContractResult>} */
-    const result = E.when(
-      start(zcf, privateArgs),
-      ({
-        creatorFacet = undefined,
-        publicFacet = undefined,
-        creatorInvitation = undefined,
-      }) => {
-        return harden({
-          creatorFacet,
-          publicFacet,
-          creatorInvitation,
-          handleOfferObj,
-        });
-      },
-    );
-    handlePWarning(result);
-    return result;
-  };
-
-  // If the contract is upgradeable, call setupInstallation now.
-  let setupInstanceP;
-  if (setupInstallation) {
-    // setupInstallation is a fn returned by the contract that sets up
-    // installation-specific state and defines kinds, then returns
-    // setupInstance. setupInstance does instance-specific setup and returns
-    // makeInstanceKit.
-
-    // notice that we're passing the zcf object here.  It's not completely
-    // initialized at this point, but the contract will often want to capture it
-    // in durableKinds defined before setupInstance is called.
-    setupInstanceP = setupInstallation(contractBaggage, zcf);
-  }
+  assert(!start || !vivify, 'do not provide both start and vivify');
 
   // snapshot zygote here //////////////////
   // the zygote object below will be created now, but its methods won't be
   // invoked until after the snapshot is taken.
 
-  const setupInstance = await setupInstanceP;
+  const contractBaggage = provideDurableMapStore(zcfBaggage, 'contractBaggage');
 
   /**
    * A zygote is a pre-image of a vat that can quickly be instantiated because
@@ -365,40 +327,70 @@ export const makeZCFZygote = async (
       instantiateInstanceRecordStorage(instanceRecordFromZoe);
       instantiateIssuerStorage(issuerStorageFromZoe);
 
-      // If it's a non-upgradeable contract, start it now.
-      if (!setupInstallation) {
-        return startClassicContract(privateArgs);
-      }
+      const startFn = start || vivify;
+      // start a contract for the first time
+      return E.when(
+        startFn(zcf, privateArgs, contractBaggage),
+        ({
+          creatorFacet = undefined,
+          publicFacet = undefined,
+          creatorInvitation = undefined,
+        }) => {
+          const allDurable = [
+            creatorFacet,
+            publicFacet,
+            creatorInvitation,
+          ].every(o => canBeDurable(o));
+          if (vivify || allDurable) {
+            zcfBaggage.init('creatorFacet', creatorFacet);
+            zcfBaggage.init('publicFacet', publicFacet);
+            zcfBaggage.init('creatorInvitation', creatorInvitation);
+          }
 
-      // now that our clone is differentiated, we can do
-      // instance-specific setup and get back the contract runner
-      const makeInstanceKit = await setupInstance(privateArgs);
-
-      // and invoke makeInstanceKit() for the first and only time
-      const { publicFacet, creatorFacet } = makeInstanceKit();
-      /** @type {ExecuteUpgradeableContractResult} */
-      const upgradeableResult = harden({
-        publicFacet,
-        creatorFacet,
-        handleOfferObj,
-      });
-      return upgradeableResult;
+          return harden({
+            creatorFacet,
+            publicFacet,
+            creatorInvitation,
+            handleOfferObj,
+          });
+        },
+      );
     },
+
     restartContract: async (privateArgs = undefined) => {
       const instanceAdmin = zcfBaggage.get('instanceAdmin');
       zoeInstanceAdminPromiseKit.resolve(instanceAdmin);
+      assert(vivify, 'vivify must be defined to upgrade a contract');
 
       // For version-2 or later, we know we've already been started, so
       // allow the contract to set up its instance Kinds
 
-      // now that our clone is differentiated, we can do
-      // instance-specific setup and get back the contract runner
-      // however we do not call makeInstanceKit() again
-      // eslint-disable-next-line no-underscore-dangle
-      const _makeInstanceKit = await setupInstance(privateArgs);
+      // restart an upgradeable contract
+      return E.when(
+        vivify(zcf, privateArgs, contractBaggage),
+        ({
+          creatorFacet = undefined,
+          publicFacet = undefined,
+          creatorInvitation = undefined,
+        }) => {
+          const priorCreatorFacet = zcfBaggage.get('creatorFacet');
+          const priorPublicFacet = zcfBaggage.get('publicFacet');
+          const priorCreatorInvitation = zcfBaggage.get('creatorInvitation');
 
-      // Nothing is returned from restartContract(). If there is new behavior or
-      // new facets, they must be accessed through the existing facets.
+          assert(
+            priorCreatorFacet === creatorFacet &&
+              priorPublicFacet === publicFacet &&
+              priorCreatorInvitation === creatorInvitation,
+            'restartContract failed: facets returned by contract changed identity',
+          );
+          return harden({
+            creatorFacet,
+            publicFacet,
+            creatorInvitation,
+            handleOfferObj,
+          });
+        },
+      );
     },
   };
   return harden(zcfZygote);

@@ -234,7 +234,6 @@ export const makeStartInstance = (
     const {
       creatorFacet = Far('emptyCreatorFacet', {}),
       publicFacet = Far('emptyPublicFacet', {}),
-      // @ts-expect-error classic contracts can return creatorInvititation
       creatorInvitation: creatorInvitationP,
       handleOfferObj,
     } = await E(zcfRoot).startZcf(
