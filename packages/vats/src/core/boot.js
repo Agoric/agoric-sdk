@@ -137,6 +137,18 @@ const buildRootObject = (vatPowers, vatParameters) => {
         console.error('BOOTSTRAP FAILED:', e);
         throw e;
       }),
+    consumeItem: name => {
+      assert.typeof(name, 'string');
+      return consume[name];
+    },
+    produceItem: (name, resolution) => {
+      assert.typeof(name, 'string');
+      produce[name].resolve(resolution);
+    },
+    resetItem: name => {
+      assert.typeof(name, 'string');
+      produce[name].reset();
+    },
   });
 };
 
