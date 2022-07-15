@@ -31,6 +31,8 @@ func init() {
 func RegisterCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgDeliverInbound{}, ModuleName+"/DeliverInbound", nil)
 	cdc.RegisterConcrete(&MsgProvision{}, ModuleName+"/Provision", nil)
+	cdc.RegisterConcrete(&MsgWalletAction{}, ModuleName+"/WalletAction", nil)
+	cdc.RegisterConcrete(&MsgWalletSpendAction{}, ModuleName+"/WalletSpendAction", nil)
 }
 
 // RegisterInterfaces registers the x/swingset interfaces types with the interface registry
