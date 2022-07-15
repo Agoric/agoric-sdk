@@ -72,6 +72,9 @@ const sellSeatExpiredMsg = `The covered call option is expired.`;
  * @param {import('@agoric/vat-data').Baggage} instanceBaggage
  */
 const vivify = async (zcf, _privateArgs, instanceBaggage) => {
+  // TODO the exerciseOption offer handler that this makes is an object rather
+  // than a function for now only because we do not yet support durable
+  // functions.
   const makeExerciser = vivifyKind(
     instanceBaggage,
     'makeExerciserKindHandle',
