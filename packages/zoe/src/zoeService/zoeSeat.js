@@ -78,7 +78,7 @@ export const makeZoeSeatAdminKit = (
       updater.fail(reason);
       doExit(zoeSeatAdmin);
     },
-    getNotifier: async () => notifier,
+    getNotifier: () => Promise.resolve(notifier),
   });
 
   /** @type {UserSeat} */

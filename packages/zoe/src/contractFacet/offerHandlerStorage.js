@@ -11,14 +11,16 @@ export const makeOfferHandlerStorage = zcfBaggage => {
   /** @type {WeakStore<InvitationHandle, OfferHandler>} */
 
   // ZCF needs to ephemerally hold on to ephemeral handlers, and durably hold
-  // onto durable handlers, so we keep two stores, and store it in the right
-  // one, and look for them in both. If Zoe restarts, the ephemeral ones will
-  // be lost, and the durable ones will survive.
-  const invitationHandleToEphemeralHandler = makeWeakStore('invitationHandle');
+  // onto durable handlers. We keep two stores and store each handler in the
+  // right one and look for them in both. If Zoe restarts, the ephemeral ones
+  // will be lost, and the durable ones will survive.
+  const invitationHandleToEphemeralHandler = makeWeakStore(
+    'invitationHandleToEphemeralHandler',
+  );
   /** @type {WeakStore<InvitationHandle, OfferHandler>} */
   const invitationHandleToDurableHandler = provideDurableWeakMapStore(
     zcfBaggage,
-    'invitationHandle',
+    'invitationHandleToDurableHandler',
   );
 
   /** @type {(offerHandler: OfferHandler) => InvitationHandle} */

@@ -295,7 +295,7 @@ export const makeStartInstance = (
       return {
         creatorFacet,
 
-        // XXX - it would be nice to suppress this for upgradeable contracts
+        // TODO (#5775) deprecate this return value from contracts.
         creatorInvitation,
         instance,
         publicFacet,

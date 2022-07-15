@@ -7,65 +7,16 @@ import { vivifyKind, vivifySingleton } from '@agoric/vat-data';
 import { swapExact } from '../../../src/contractSupport/index.js';
 import { isAfterDeadlineExitRule } from '../../../src/typeGuards.js';
 
+const { details: X } = assert;
+
 const sellSeatExpiredMsg = `The covered call option is expired.`;
 
 /**
- * A call option is the right (but not the obligation) to buy digital
- * assets at a pre-determined price, called the strike price. This
- * call option is "covered," meaning that the owner of the digital
- * assets must put the assets in escrow. This guarantees that the
- * assets can be transferred without relying on the owner of the
- * digital assets to keep their promise.
+ * @see original version in .../zoe/src/contracts/coveredCall.js and upgradeable
+ * version in contracts/coveredCall-durable.js.
  *
- * https://agoric.com/documentation/zoe/guide/contracts/covered-call.html
- *
- * The call option has an expiration date, when the opportunity is
- * cancelled. The owner of the digital assets cannot remove the assets
- * from escrow before the expiration date.
- *
- * The `creatorInvitation` of this contract is an invitation to escrow
- * the underlying assets. The proposal to escrow assets can have any
- * `give` and `want` with any keywords. Any number of assets of
- * different brands can be escrowed under different keywords. The
- * proposal must have an exit record with the key "afterDeadline":
- * {
- *    give: { ... },
- *    want: { ... },
- *    exit: {
- *      afterDeadline: { deadline: time, timer: myTimer }
- *    },
- * }
- *
- * This deadline serves as the expiration date for the covered call
- * option. After this deadline, if the option has not been exercised,
- * the underlying assets are automatically paid out to the creator of
- * the contract as a refund.
- *
- * After the owner of the digital assets escrows the assets in the
- * initial offer, they receive a seat. The payout for this seat will
- * either be a refund of the underlying assets (as mentioned above) or
- * payments in the amount of the strike price. Zoe's enforcement of
- * offer safety guarantees that the payout is either a refund or
- * payments in the amount of the strike price, regardless of whether
- * this contract is buggy.
- *
- * The offerResult of this initial seat resolves to the call option
- * itself: an inspectable invitation to buy the underlying assets. The
- * call option invitation has this additional information in the
- * value: {expirationDate, timeAuthority, underlyingAssets,
- * strikePrice }
- *
- * The invitation itself can be traded as a valuable digital asset: a
- * covered call option.
- *
- * The recipient of a covered call option (buying it on some other
- * exchange or through some other trading contract) can exercise the
- * option before the deadline by using the option as an invitation to
- * this contract, paying the strike price and receiving the underlying
- * assets. The recipient of a covered call option can use whatever
- * keywords they wish, as long as they give the strike price as
- * specified in the invitation value, and want the underlying assets
- * exactly.
+ * This variant has minor changes to the returned strings that make it
+ * identifiable, to demonstrate that upgrade has occurred.
  *
  * @param {ZCF} zcf
  * @param {unknown} _privateArgs
@@ -102,7 +53,7 @@ const vivify = async (zcf, _privateArgs, instanceBaggage) => {
     const sellSeatExitRule = sellSeat.getProposal().exit;
     assert(
       isAfterDeadlineExitRule(sellSeatExitRule),
-      `the seller must have an afterDeadline exitRule, but instead had ${sellSeatExitRule}`,
+      X`the seller must have an afterDeadline exitRule, but instead had ${sellSeatExitRule}`,
     );
 
     const exerciseOption = makeExerciser(sellSeat);

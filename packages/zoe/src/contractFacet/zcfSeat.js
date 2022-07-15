@@ -4,8 +4,7 @@ import {
   provideDurableWeakMapStore,
   provideDurableMapStore,
   makeScalarBigMapStore,
-  provideKindHandle,
-  defineDurableKind,
+  vivifyKind,
   dropContext,
   makeScalarBigWeakMapStore,
 } from '@agoric/vat-data';
@@ -235,9 +234,7 @@ export const createSeatManager = (
     }
   };
 
-  /**
-   * @param {ZCFSeat} zcfSeat
-   */
+  /** @param {ZCFSeat} zcfSeat */
   const assertNoStagedAllocation = zcfSeat => {
     if (hasStagedAllocation(zcfSeat)) {
       assert.fail(
@@ -248,10 +245,9 @@ export const createSeatManager = (
     }
   };
 
-  const zcfSeatKindHandle = provideKindHandle(zcfBaggage, 'zcfSeat');
-
-  const makeZCFSeatInternal = defineDurableKind(
-    zcfSeatKindHandle,
+  const makeZCFSeatInternal = vivifyKind(
+    zcfBaggage,
+    'zcfSeat',
     proposal => ({ proposal }),
     {
       getNotifier: ({ self }) =>
@@ -345,7 +341,6 @@ export const createSeatManager = (
   );
   const makeZCFSeat = ({ proposal, initialAllocation, seatHandle }) => {
     const zcfSeat = makeZCFSeatInternal(proposal);
-
     activeZCFSeats.init(zcfSeat, initialAllocation);
     zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
     return zcfSeat;

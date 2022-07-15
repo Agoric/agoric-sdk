@@ -19,10 +19,9 @@ const { details: X } = assert;
 
 /**
  * @param {VatPowers & { testJigSetter: TestJigSetter }} powers
- * @param {{contractBundleCap: BundleCap, zoeService: ZoeService, invitationIssuer: Issuer, privateArgs: any}} vatParameters
+ * @param {{contractBundleCap: BundleCap, zoeService: ZoeService, invitationIssuer: Issuer, privateArgs?: any}} vatParameters
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
-// * @returns {{ executeContract: ExecuteContract}}
 export async function buildRootObject(powers, vatParameters, baggage) {
   // Currently, there is only one function, `executeContract` called
   // by the Zoe Service. However, when there is kernel support for
@@ -42,10 +41,10 @@ export async function buildRootObject(powers, vatParameters, baggage) {
     baggage.init('zoeService', zoeService);
     baggage.init('invitationIssuer', invitationIssuer);
   } else {
-    assert(!zoeService);
+    assert(!zoeService, 'zoeService is required');
     zoeService = baggage.get('zoeService');
 
-    assert(!invitationIssuer);
+    assert(!invitationIssuer, 'invitationIssuer is required');
     invitationIssuer = baggage.get('invitationIssuer');
   }
 
@@ -69,14 +68,13 @@ export async function buildRootObject(powers, vatParameters, baggage) {
 
   return Far('contractRunner', {
     // initialize instance-specific state of the contract
+    /** @type {StartZcf} */
     startZcf: (
       zoeInstanceAdmin,
       instanceRecordFromZoe,
       issuerStorageFromZoe,
       privateArgs,
     ) => {
-      assert(firstTime);
-
       /** @type {ZCFZygote} */
       return E(zcfZygote).startContract(
         zoeInstanceAdmin,

@@ -45,7 +45,7 @@ const acceptCall = async (zoe, invitation, kits, give, want) => {
   );
 };
 
-const depositPayout = (seat, keyword, purse, expectedAmount) => {
+const assertDeposit = (seat, keyword, purse, expectedAmount) => {
   return E(seat)
     .getPayout(keyword)
     .then(payout => {
@@ -121,10 +121,10 @@ export const buildRootObject = () => {
         offerResult1B,
         'The option was exercised. Please collect the assets in your payout.',
       );
-      await depositPayout(seat1A, 'Bucks', bucksPurse, bucks(30n));
-      await depositPayout(seat1A, 'Doubloons', doubloonPurse, doubloons(0n));
-      await depositPayout(seat1B, 'Bucks', bucksPurse, bucks(0n));
-      await depositPayout(seat1B, 'Doubloons', doubloonsPurse, doubloons(15n));
+      await assertDeposit(seat1A, 'Bucks', bucksPurse, bucks(30n));
+      await assertDeposit(seat1A, 'Doubloons', doubloonPurse, doubloons(0n));
+      await assertDeposit(seat1B, 'Bucks', bucksPurse, bucks(0n));
+      await assertDeposit(seat1B, 'Doubloons', doubloonsPurse, doubloons(15n));
 
       // Create the call, and hand off the invitation for exercise after upgrade
       const facets2 = await E(zoe).startInstance(installation, issuerReccord);
@@ -136,8 +136,8 @@ export const buildRootObject = () => {
       E(seat2A)
         .getOfferResult()
         .then(async _invitation => {
-          await depositPayout(seat2A, 'Bucks', bucksPurse, bucks(42n));
-          await depositPayout(
+          await assertDeposit(seat2A, 'Bucks', bucksPurse, bucks(42n));
+          await assertDeposit(
             seat2A,
             'Doubloons',
             doubloonPurse,
@@ -186,11 +186,11 @@ export const buildRootObject = () => {
         offerResult3B,
         'The upgraded option was exercised. Please collect the assets in your payout.',
       );
-      await depositPayout(seat3A, 'Bucks', bucksPurse, bucks(30n));
-      await depositPayout(seat3A, 'Doubloons', doubloonsPurse, doubloons(0n));
-      await depositPayout(seat3B, 'Bucks', bucksPurse, bucks(0n));
-      await depositPayout(seat3B, 'Doubloons', doubloonsPurse, doubloons(15n));
-      await depositPayout(seat2B, 'Doubloons', doubloonsPurse, doubloons(22n));
+      await assertDeposit(seat3A, 'Bucks', bucksPurse, bucks(30n));
+      await assertDeposit(seat3A, 'Doubloons', doubloonsPurse, doubloons(0n));
+      await assertDeposit(seat3B, 'Bucks', bucksPurse, bucks(0n));
+      await assertDeposit(seat3B, 'Doubloons', doubloonsPurse, doubloons(15n));
+      await assertDeposit(seat2B, 'Doubloons', doubloonsPurse, doubloons(22n));
 
       console.log('Boot finished test');
       return true;

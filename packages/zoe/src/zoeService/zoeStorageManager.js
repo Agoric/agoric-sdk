@@ -7,7 +7,7 @@ import {
   makeScalarBigWeakMapStore,
 } from '@agoric/vat-data';
 
-import { makeIssuerStorage } from '../issuerStorage.js';
+import { provideIssuerStorage } from '../issuerStorage.js';
 import { makeAndStoreInstanceRecord } from '../instanceRecordStorage.js';
 import { makeIssuerRecord } from '../issuerRecord.js';
 import { makeEscrowStorage } from './escrowStorage.js';
@@ -52,7 +52,7 @@ export const makeZoeStorageManager = (
   // issuerStorage contains the issuers that the ZoeService knows
   // about, as well as information about them such as their brand,
   // assetKind, and displayInfo
-  const issuerStorage = makeIssuerStorage(zoeBaggage);
+  const issuerStorage = provideIssuerStorage(zoeBaggage);
   issuerStorage.instantiate();
 
   // EscrowStorage holds the purses that Zoe uses for escrow. This

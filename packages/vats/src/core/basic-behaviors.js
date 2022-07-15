@@ -286,7 +286,7 @@ export const installBootContracts = async ({
     const bundleCap = D(vatAdmin).getNamedBundleCap(name);
 
     const bundle = D(bundleCap).getBundle();
-    // this should be E(zoe).installBundleID(bundleID);
+    // TODO (#4374) this should be E(zoe).installBundleID(bundleID);
     const installation = E(zoe).install(bundle);
     producer.resolve(installation);
   }

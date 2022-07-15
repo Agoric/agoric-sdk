@@ -72,22 +72,27 @@ export const objectMap = (original, mapFn) => {
 };
 
 /**
- * @template P,S,T
+ * @template P,S,B
  * @param {Baggage} baggage
- * @param {string} name
+ * @param {string} kindName
  * @param {(...args: P[]) => S} init
- * @param {T} behavior
+ * @param {B} behavior
  * @param {DefineKindOptions<unknown>} [options]
- * @returns {(...args: P[]) => KindFacet<T>}
+ * @returns {(...args: P[]) => KindFacet<B>}
  */
 export const vivifyKind = (
   baggage,
-  name,
+  kindName,
   init,
   behavior,
   options = undefined,
 ) =>
-  defineDurableKind(provideKindHandle(baggage, name), init, behavior, options);
+  defineDurableKind(
+    provideKindHandle(baggage, kindName),
+    init,
+    behavior,
+    options,
+  );
 // @ts-expect-error TODO statically recognize harden
 harden(vivifyKind);
 
