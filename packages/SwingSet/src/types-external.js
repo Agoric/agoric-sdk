@@ -216,6 +216,7 @@ export {};
  * @typedef { { createFromBundle: (vatID: string,
  *                                 bundle: Bundle,
  *                                 managerOptions: ManagerOptions,
+ *                                 liveSlotsOptions: LiveSlotsOptions,
  *                                 vatSyscallHandler: unknown) => Promise<VatManager>,
  *            } } VatManagerFactory
  * @typedef { { deliver: (delivery: VatDeliveryObject) => Promise<VatDeliveryResult>,
@@ -315,6 +316,14 @@ export {};
  *              crankFailed: (details: {}) => PolicyOutput,
  *              emptyCrank: () => PolicyOutput,
  *             } } RunPolicy
+ */
+
+/**
+ * @typedef {{
+ *   virtualObjectCacheSize?: number, // Maximum number of entries in the virtual object state cache
+ *   enableDisavow?: boolean,
+ *   relaxDurabilityRules?: boolean,
+ * }} LiveSlotsOptions
  */
 
 /**

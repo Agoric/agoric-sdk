@@ -216,7 +216,7 @@ function makeManagerKit(
         //   console.debug(`replay vatID:${vatID} deliveryNum:${deliveryNum} / ${total}`);
         // }
         //
-        // eslint-disable-next-line no-await-in-loop
+        // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
         await replayOneDelivery(t.d, t.syscalls, deliveryNum);
         deliveryNum += 1;
       }

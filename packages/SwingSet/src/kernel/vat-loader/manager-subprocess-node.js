@@ -15,13 +15,14 @@ function parentLog(first, ...args) {
 export function makeNodeSubprocessFactory(tools) {
   const { startSubprocessWorker, kernelKeeper, kernelSlog, testLog } = tools;
 
-  function createFromBundle(vatID, bundle, managerOptions, vatSyscallHandler) {
-    const {
-      virtualObjectCacheSize,
-      enableDisavow,
-      compareSyscalls,
-      useTranscript,
-    } = managerOptions;
+  function createFromBundle(
+    vatID,
+    bundle,
+    managerOptions,
+    liveSlotsOptions,
+    vatSyscallHandler,
+  ) {
+    const { compareSyscalls, useTranscript } = managerOptions;
     assert(!managerOptions.enableSetup, 'not supported at all');
     assert(useTranscript, 'node-subprocess: useTranscript=false not supported');
 
@@ -100,13 +101,7 @@ export function makeNodeSubprocessFactory(tools) {
     fromChild.on('data', handleUpstream);
 
     parentLog(`instructing worker to load bundle..`);
-    sendToWorker([
-      'setBundle',
-      bundle,
-      virtualObjectCacheSize,
-      enableDisavow,
-      kernelKeeper.getRelaxDurabilityRules(),
-    ]);
+    sendToWorker(['setBundle', bundle, liveSlotsOptions]);
 
     function shutdown() {
       terminate();

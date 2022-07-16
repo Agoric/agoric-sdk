@@ -183,18 +183,10 @@ function makeWorker(port) {
   /**
    * @param {unknown} vatID
    * @param {unknown} bundle
-   * @param {unknown} virtualObjectCacheSize
-   * @param {boolean} enableDisavow
-   * @param {boolean} relaxDurabilityRules
+   * @param {LiveSlotsOptions} liveSlotsOptions
    * @returns {Promise<Tagged>}
    */
-  async function setBundle(
-    vatID,
-    bundle,
-    virtualObjectCacheSize,
-    enableDisavow,
-    relaxDurabilityRules,
-  ) {
+  async function setBundle(vatID, bundle, liveSlotsOptions) {
     /** @type { (vso: VatSyscallObject) => VatSyscallResult } */
     function syscallToManager(vatSyscallObject) {
       workerLog('doSyscall', vatSyscallObject);
@@ -218,11 +210,6 @@ function makeWorker(port) {
           ),
         ]),
     };
-
-    const cacheSize =
-      typeof virtualObjectCacheSize === 'number'
-        ? virtualObjectCacheSize
-        : undefined;
 
     const gcTools = harden({
       WeakRef,
@@ -286,12 +273,10 @@ function makeWorker(port) {
       syscall,
       vatID,
       vatPowers,
-      cacheSize,
-      enableDisavow,
+      liveSlotsOptions,
       gcTools,
       makeVatConsole(makeLogMaker('ls')),
       buildVatNamespace,
-      relaxDurabilityRules,
     );
 
     assert(ls.dispatch);
@@ -306,15 +291,8 @@ function makeWorker(port) {
     switch (tag) {
       case 'setBundle': {
         assert(!dispatch, 'cannot setBundle again');
-        const enableDisavow = !!args[3];
-        const relaxDurabilityRules = !!args[4];
-        return setBundle(
-          args[0],
-          args[1],
-          args[2],
-          enableDisavow,
-          relaxDurabilityRules,
-        );
+        const liveSlotsOptions = /** @type LiveSlotsOptions */ (args[2]);
+        return setBundle(args[0], args[1], liveSlotsOptions);
       }
       case 'deliver': {
         assert(dispatch, 'cannot deliver before setBundle');

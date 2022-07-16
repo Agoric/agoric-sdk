@@ -69,13 +69,12 @@ export function makeLocalVatManagerFactory(tools) {
     vatID,
     bundle,
     managerOptions,
+    liveSlotsOptions,
     vatSyscallHandler,
   ) {
     const {
-      enableDisavow = false,
       enableSetup = false,
       sourcedConsole,
-      virtualObjectCacheSize,
       compareSyscalls,
       useTranscript,
     } = managerOptions;
@@ -125,6 +124,7 @@ export function makeLocalVatManagerFactory(tools) {
     }
 
     if (enableSetup) {
+      // eslint-disable-next-line @jessie.js/no-nested-await
       const vatNS = await buildVatNamespace({}, {});
       const setup = vatNS.default;
       assert(setup, X`vat source bundle lacks (default) setup() function`);
@@ -138,12 +138,10 @@ export function makeLocalVatManagerFactory(tools) {
         syscall,
         vatID,
         vatPowers,
-        virtualObjectCacheSize,
-        enableDisavow,
+        liveSlotsOptions,
         gcTools,
         makeVatConsole(makeLogMaker('ls')),
         buildVatNamespace,
-        kernelKeeper.getRelaxDurabilityRules(),
       );
       assert(ls.dispatch);
       return finish(ls.dispatch);

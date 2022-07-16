@@ -35,13 +35,14 @@ function parentLog(first, ...args) {
 export function makeNodeWorkerVatManagerFactory(tools) {
   const { makeNodeWorker, kernelKeeper, kernelSlog, testLog } = tools;
 
-  function createFromBundle(vatID, bundle, managerOptions, vatSyscallHandler) {
-    const {
-      virtualObjectCacheSize,
-      enableDisavow,
-      compareSyscalls,
-      useTranscript,
-    } = managerOptions;
+  function createFromBundle(
+    vatID,
+    bundle,
+    managerOptions,
+    liveSlotsOptions,
+    vatSyscallHandler,
+  ) {
+    const { compareSyscalls, useTranscript } = managerOptions;
     assert(!managerOptions.enableSetup, 'not supported at all');
     assert(useTranscript, 'node worker: useTranscript=false not supported');
 
@@ -105,13 +106,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
     gotWorker(worker);
 
     parentLog(`instructing worker to load bundle..`);
-    sendToWorker([
-      'setBundle',
-      bundle,
-      virtualObjectCacheSize,
-      enableDisavow,
-      kernelKeeper.getRelaxDurabilityRules(),
-    ]);
+    sendToWorker(['setBundle', bundle, liveSlotsOptions]);
 
     function deliverToWorker(delivery) {
       parentLog(`sending delivery`, delivery);
