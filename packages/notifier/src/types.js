@@ -94,6 +94,13 @@
  * @property {Subscriber<T>} subscriber
  */
 
+/**
+ * @template T
+ * @typedef {object} StoredPublishKit<T>
+ * @property {Publisher<T>} publisher
+ * @property {StoredSubscriber<T>} subscriber
+ */
+
 // /////////////////////////////////////////////////////////////////////////////
 
 // TODO: Narrow to exclude number.
@@ -157,8 +164,6 @@
  * ```
  * The resulting `localIterable` also supports such remote use, and
  * will return access to the same representation.
- * @property {StorageNode['getStoreKey']} getStoreKey get the
- * externally-reachable store key for this notifier
  */
 
 /**
@@ -172,13 +177,7 @@
 
 /**
  * @template T
- * @typedef {{}} BaseSubscription<T>
- */
-
-/**
- * @template T
- * @typedef {BaseSubscription<T> &
- *   ConsistentAsyncIterable<T> &
+ * @typedef {ConsistentAsyncIterable<T> &
  *   SharableSubscription<T>} Subscription<T>
  * A form of AsyncIterable supporting distributed and multicast usage.
  */
@@ -217,11 +216,7 @@
  */
 
 /** @typedef {ReturnType<typeof import('@endo/marshal').makeMarshal>} Marshaller */
-
-/**
- * @typedef {object} Unserializer
- * @property {Marshaller['unserialize']} unserialize
- */
+/** @typedef {Pick<Marshaller, 'unserialize'>} Unserializer */
 
 /**
  * @typedef {object} StorageNode
@@ -240,4 +235,9 @@
 /**
  * @template T
  * @typedef {Subscription<T> & StoredFacet} StoredSubscription
+ */
+
+/**
+ * @template T
+ * @typedef {Subscriber<T> & StoredFacet} StoredSubscriber
  */
