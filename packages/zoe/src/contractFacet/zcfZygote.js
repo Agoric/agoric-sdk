@@ -145,9 +145,6 @@ export const makeZCFZygote = async (
   ) => {
     assertUniqueKeyword(keyword);
 
-    // TODO is this AWAIT ok? Or does this need atomicity?
-    // We probably need the same keyword reservation logic that
-    // was added to addPool
     const zoeMint = await E(zoeInstanceAdmin).makeZoeMint(
       keyword,
       assetKind,
@@ -160,7 +157,6 @@ export const makeZCFZygote = async (
   const registerFeeMint = async (keyword, feeMintAccess) => {
     assertUniqueKeyword(keyword);
 
-    // TODO is this AWAIT ok? Or does this need atomicity?
     const zoeMint = await E(zoeInstanceAdmin).registerFeeMint(
       keyword,
       feeMintAccess,

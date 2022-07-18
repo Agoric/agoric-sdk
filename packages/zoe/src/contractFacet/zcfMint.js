@@ -156,7 +156,6 @@ export const makeZCFMintFactory = async (
       const zcfMintBaggage = makeScalarBigMapStore('zcfMintBaggage', {
         durable: true,
       });
-      // TODO is this AWAIT ok? Or does this need atomicity?
       const zcfMint = await makeDurableZcfMint(
         keyword,
         zoeMint,
