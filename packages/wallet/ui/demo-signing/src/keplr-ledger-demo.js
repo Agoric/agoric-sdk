@@ -48,6 +48,14 @@ const check = {
     return elt;
   },
 
+  /** @type { (elt: unknown) => HTMLTextAreaElement } */
+  theTextArea(elt) {
+    if (!(elt instanceof HTMLTextAreaElement)) {
+      throw Error('not input');
+    }
+    return elt;
+  },
+
   theSelect(elt) {
     if (!(elt instanceof HTMLSelectElement)) {
       throw Error('not select');
@@ -152,12 +160,9 @@ const makeSigner = async (ui, keplr, connectWithSigner) => {
   console.log({ key });
 
   ui.setChecked('*[name="isNanoLedger"]', key.isNanoLedger);
-  if (!key.isNanoLedger) {
-    throw Error('This demo is designed for a ledger key');
-  }
 
-  const offlineSigner = keplr.getOfflineSignerOnlyAmino(chainId);
-  // const offlineSigner = keplr.getOfflineSignerAuto(chainId);
+  // const offlineSigner = await keplr.getOfflineSignerOnlyAmino(chainId);
+  const offlineSigner = await keplr.getOfflineSignerAuto(chainId);
   console.log({ offlineSigner });
 
   // Currently, Keplr extension manages only one address/public key pair.
@@ -194,7 +199,7 @@ const makeSigner = async (ui, keplr, connectWithSigner) => {
       typeUrl: '/agoric.swingset.MsgWalletAction',
       value: {
         owner: toBase64(toAccAddress(address)),
-        action: ui.inputValue('*[name="action"]'),
+        action: ui.textValue('*[name="action"]'),
       },
     };
 
@@ -203,7 +208,7 @@ const makeSigner = async (ui, keplr, connectWithSigner) => {
       amount: [{ amount: '100', denom }],
       gas: '100000',
     };
-    const memo = 'Some memo';
+    const memo = ui.inputValue('*[name="memo"]');
 
     const signDoc = {
       chain_id: chainId,
@@ -232,6 +237,8 @@ const makeUI = document => {
     /** @param { string } selector */
     inputValue: selector =>
       check.theInput(document.querySelector(selector)).value,
+    textValue: selector =>
+      check.theTextArea(document.querySelector(selector)).value,
     setValue: (selector, value) =>
       (check.theInput(document.querySelector(selector)).value = value),
     setChecked: (selector, value) =>
