@@ -193,7 +193,7 @@
  *   bldIssuerKit: RemoteIssuerKit,
  *   board: Board,
  *   bridgeManager: OptionalBridgeManager,
- *   chainStorage: ChainStorageNode | undefined,
+ *   chainStorage: ChainStorageNode | null,
  *   chainTimerService: TimerService,
  *   client: ClientManager,
  *   clientCreator: ClientCreator,

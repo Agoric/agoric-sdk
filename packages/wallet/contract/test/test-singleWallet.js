@@ -1,4 +1,4 @@
-// @ts-nocheck FIXME
+// @ts-check
 
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -20,7 +20,7 @@ import {
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
 import {
-  getChildNode,
+  makeStorageNode,
   makeChainStorageRoot,
 } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
@@ -88,6 +88,7 @@ const makeTestContext = async t => {
   produce.bankManager.resolve(
     Promise.resolve(
       Far('mockBankManager', {
+        // @ts-expect-error
         getBankForAddress: _a =>
           Far('mockBank', {
             getPurse: () => ({
@@ -147,7 +148,8 @@ const makeTestContext = async t => {
     `${dirname}/../src/singleWallet.js`,
     'singleWallet',
   );
-  /** @type {Installation<import('../src/singleWallet.js').start>} */
+  /** @type {Promise<Installation<import('../src/singleWallet.js').start>>} */
+  // @ts-expect-error cast
   const installation = E(zoe).install(bundle);
   // #endregion
 
@@ -158,7 +160,7 @@ const makeTestContext = async t => {
   );
 
   // copied from makeClientBanks()
-  const storageNode = await getChildNode(consume.chainStorage, 'wallet');
+  const storageNode = await makeStorageNode(consume.chainStorage, 'wallet');
   const marshaller = E(consume.board).getPublishingMarshaller();
 
   const singleWallet = E(zoe).startInstance(

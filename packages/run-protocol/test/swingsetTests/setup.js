@@ -208,6 +208,7 @@ const buildOwner = async (
   const shortfallInvitationAmount = null;
 
   const terms = makeVaultFactoryTerms(
+    // @ts-expect-error missing storageNode and marshaller
     {},
     {
       priceAuthority: priceAuthorityKit.priceAuthority,

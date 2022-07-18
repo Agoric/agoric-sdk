@@ -4,7 +4,7 @@ import { Nat } from '@agoric/nat';
 import { makeScalarMapStore } from '@agoric/store';
 import { provide } from '@agoric/store/src/stores/store-utils.js';
 import { E, Far } from '@endo/far';
-import { getChildNode } from '../lib-chainStorage.js';
+import { makeStorageNode } from '../lib-chainStorage.js';
 import { makeNameHubKit } from '../nameHub.js';
 import { feeIssuerConfig } from './utils.js';
 
@@ -241,7 +241,7 @@ export const makeClientBanks = async ({
 }) => {
   const STORAGE_PATH = 'wallet';
 
-  const storageNode = await getChildNode(chainStorage, STORAGE_PATH);
+  const storageNode = await makeStorageNode(chainStorage, STORAGE_PATH);
   const { creatorFacet } = await E(zoe).startInstance(
     walletFactory,
     {},
