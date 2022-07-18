@@ -27,6 +27,12 @@ const sellSeatExpiredMsg = 'The covered call option is expired.';
  * @param {import('@agoric/vat-data').Baggage} instanceBaggage
  */
 const start = async (zcf, _privateArgs, instanceBaggage) => {
+  // for use by upgraded versions.
+  const firstTime = !instanceBaggage.has('DidStart');
+  if (firstTime) {
+    instanceBaggage.init('DidStart', true);
+  }
+
   // TODO the exerciseOption offer handler that this makes is an object rather
   // than a function for now only because we do not yet support durable
   // functions.

@@ -23,6 +23,12 @@ const sellSeatExpiredMsg = 'The covered call option is expired.';
  * @param {import('@agoric/vat-data').Baggage} instanceBaggage
  */
 const vivify = async (zcf, _privateArgs, instanceBaggage) => {
+  const firstTime = !instanceBaggage.has('DidStart');
+  if (firstTime) {
+    instanceBaggage.init('DidStart', true);
+  }
+  const upgraded = firstTime ? 'V3 ' : 'V3 upgraded ';
+
   // TODO the exerciseOption offer handler that this makes is an object rather
   // than a function for now only because we do not yet support durable
   // functions.
@@ -37,13 +43,13 @@ const vivify = async (zcf, _privateArgs, instanceBaggage) => {
           swapExact(zcf, sellSeat, buySeat);
         } catch (err) {
           console.log(
-            'Upgraded swap failed. Please make sure your offer has the same underlyingAssets and strikePrice as specified in the invitation details. The keywords should not matter.',
+            `Swap ${upgraded}failed. Please make sure your offer has the same underlyingAssets and strikePrice as specified in the invitation details. The keywords should not matter.`,
             err,
           );
           throw err;
         }
-        zcf.shutdown('Swap (upgraded) completed.');
-        return 'The upgraded option was exercised. Please collect the assets in your payout.';
+        zcf.shutdown(`Swap ${upgraded}completed.`);
+        return `The ${upgraded}option was exercised. Please collect the assets in your payout.`;
       },
     },
   );

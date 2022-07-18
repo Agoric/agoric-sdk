@@ -170,7 +170,7 @@ export const buildRootObject = () => {
       const offerResult2B = await E(seat2B).getOfferResult();
       assert.equal(
         offerResult2B,
-        'The upgraded option was exercised. Please collect the assets in your payout.',
+        'The V3 upgraded option was exercised. Please collect the assets in your payout.',
       );
 
       // Complete round-trip with post-upgraded instance
@@ -184,7 +184,7 @@ export const buildRootObject = () => {
       const offerResult3B = await E(seat3B).getOfferResult();
       assert.equal(
         offerResult3B,
-        'The upgraded option was exercised. Please collect the assets in your payout.',
+        'The V3 option was exercised. Please collect the assets in your payout.',
       );
       await depositPayout(seat3A, 'Bucks', bucksPurse, bucks(30n));
       await depositPayout(seat3A, 'Doubloons', doubloonsPurse, doubloons(0n));
