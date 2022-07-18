@@ -162,7 +162,7 @@ test('update liquidator', async t => {
   let govNotify = await d.managerNotified();
   const oldLiquidator = govNotify.value.liquidatorInstance;
   trace(t, 'gov start', oldLiquidator, govNotify);
-  await d.setLiquidationTerms(
+  await d.setGovernedParam(
     'LiquidationTerms',
     harden({
       MaxImpactBP: 80n,

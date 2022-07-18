@@ -3,14 +3,23 @@
 import '@agoric/zoe/exported.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import {
   ceilMultiplyBy,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 import * as Collect from '../../src/collect.js';
 import { makeTracer } from '../../src/makeTracer.js';
+import {
+  setupAmm,
+  setupReserve,
+  startEconomicCommittee,
+  startVaultFactory,
+} from '../../src/proposals/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 import {
@@ -20,15 +29,6 @@ import {
   setUpZoeForTest,
   withAmountUtils,
 } from '../supports.js';
-import {
-  setupAmm,
-  setupReserve,
-  startEconomicCommittee,
-  startVaultFactory,
-} from '../../src/proposals/econ-behaviors.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
-import { makeNotifierFromSubscriber } from '@agoric/notifier';
 
 /** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
 
@@ -353,10 +353,14 @@ const setupServices = async (
 
 /**
  * @param {import('ava').ExecutionContext<DriverContext>} t
- * @param {Amount<'nat'>} initialPrice
- * @param {Amount<'nat'>} priceBase
+ * @param {Amount<'nat'>} [initialPrice]
+ * @param {Amount<'nat'>} [priceBase]
  */
-export const makeManagerDriver = async (t, initialPrice, priceBase) => {
+export const makeManagerDriver = async (
+  t,
+  initialPrice = t.context.run.make(500n),
+  priceBase = t.context.aeth.make(100n),
+) => {
   const timer = buildManualTimer(t.log);
   const services = await setupServices(t, initialPrice, priceBase, timer);
 
@@ -376,10 +380,13 @@ export const makeManagerDriver = async (t, initialPrice, priceBase) => {
   let currentOfferResult;
   /**
    *
-   * @param {Amount<'nat'>} collateral
-   * @param {Amount<'nat'>} debt
+   * @param {Amount<'nat'>} [collateral]
+   * @param {Amount<'nat'>} [debt]
    */
-  const makeVaultDriver = async (collateral, debt) => {
+  const makeVaultDriver = async (
+    collateral = aeth.make(1000n),
+    debt = run.make(50n),
+  ) => {
     /** @type {UserSeat<VaultKit>} */
     const vaultSeat = await E(zoe).offer(
       await E(lender).makeVaultInvitation(),
@@ -394,9 +401,11 @@ export const makeManagerDriver = async (t, initialPrice, priceBase) => {
     const {
       vault,
       publicNotifiers: { vault: notifier },
+      publicSubscribers,
     } = await E(vaultSeat).getOfferResult();
     t.true(await E(vaultSeat).hasExited());
     return {
+      getVaultSubscriber: () => publicSubscribers.vault,
       vault: () => vault,
       vaultSeat: () => vaultSeat,
       notification: () => notification,
@@ -443,12 +452,24 @@ export const makeManagerDriver = async (t, initialPrice, priceBase) => {
   };
 
   const driver = {
+    getVaultDirectorPublic: () => lender,
     managerNotification: () => managerNotification,
+    // XXX should return another ManagerDriver and maybe there should be a Director driver above them
+    addVaultType: async keyword => {
+      /** @type {IssuerKit<'nat'>} */
+      const kit = makeIssuerKit(keyword.toLowerCase());
+      const manager = await E(vaultFactory).addVaultType(
+        kit.issuer,
+        keyword,
+        defaultParamValues(withAmountUtils(kit)),
+      );
+      return /** @type {const} */ ([manager, withAmountUtils(kit)]);
+    },
     currentSeat: () => currentSeat,
     lastOfferResult: () => currentOfferResult,
     timer: () => timer,
     tick: async (ticks = 1) => {
-      await timer.tickN(ticks, 'TestLiq driver');
+      await timer.tickN(ticks, 'test driver');
     },
     makeVaultDriver,
     checkPayouts: async (expectedRUN, expectedAEth) => {
@@ -485,8 +506,7 @@ export const makeManagerDriver = async (t, initialPrice, priceBase) => {
       }
     },
     setPrice: p => priceAuthority.setPrice(makeRatioFromAmounts(p, priceBase)),
-    // setLiquidationTerms('MaxImpactBP', 80n)
-    setLiquidationTerms: async (name, newValue) => {
+    setGovernedParam: async (name, newValue) => {
       const deadline = 3n;
       const { cast, outcome } = await E(t.context.committee).changeParam(
         harden({
