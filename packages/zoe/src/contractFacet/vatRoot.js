@@ -37,14 +37,17 @@ export async function buildRootObject(powers, vatParameters, baggage) {
   let { zoeService, invitationIssuer } = vatParameters;
   const firstTime = !baggage.has('DidStart');
   if (firstTime) {
-    baggage.init('DidStart', true);
+    baggage.init('DidStart', 'DidStart');
     baggage.init('zoeService', zoeService);
     baggage.init('invitationIssuer', invitationIssuer);
   } else {
     assert(!zoeService, 'On restart zoeService must not be in vatParameters');
     zoeService = baggage.get('zoeService');
 
-    assert(!invitationIssuer, 'invitationIssuer is required');
+    assert(
+      !invitationIssuer,
+      'On restart invitationIssuer must not be in vatParameters',
+    );
     invitationIssuer = baggage.get('invitationIssuer');
   }
 

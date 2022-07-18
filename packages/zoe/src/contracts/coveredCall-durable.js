@@ -33,7 +33,7 @@ const start = async (zcf, _privateArgs, instanceBaggage) => {
     instanceBaggage.init('DidStart', true);
   }
 
-  // TODO the exerciseOption offer handler that this makes is an object rather
+  // XXX the exerciseOption offer handler that this makes is an object rather
   // than a function for now only because we do not yet support durable
   // functions.
   const makeExerciser = vivifyKind(

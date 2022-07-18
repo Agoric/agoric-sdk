@@ -294,7 +294,10 @@ export const makeZCFZygote = async (
     );
     assert.fail('unrecognized contract exports');
   }
-  assert(!start || !vivify, 'do not provide both start and vivify');
+  assert(
+    !start || !vivify,
+    'contract must provide exactly one of "start" and "vivify"',
+  );
 
   // snapshot zygote here //////////////////
   // the zygote object below will be created now, but its methods won't be
@@ -312,7 +315,7 @@ export const makeZCFZygote = async (
    * startContract every time a contract instance is created.
    *
    * @type {ZCFZygote}
-   * */
+   */
   const zcfZygote = {
     // wire zcf up to zoe instance-specific interfaces
     startContract: async (
