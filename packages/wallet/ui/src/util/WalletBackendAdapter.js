@@ -5,6 +5,8 @@ import {
   makeNotifierKit,
 } from '@agoric/notifier';
 import { iterateLatest } from '@agoric/casting';
+import { getScopedBridge } from '../service/ScopedBridge.js';
+import { getDappService } from '../service/Dapps.js';
 
 const newId = kind => `${kind}${Math.random()}`;
 
@@ -87,11 +89,13 @@ export const makeBackendFromWalletBridge = walletBridge => {
 
 /**
  * @param {import('@agoric/casting').Follower} follower
+ * @param {string} publicAddress
  * @param {(e: unknown) => void} [errorHandler]
  * @param {() => void} [firstCallback]
  */
 export const makeWalletBridgeFromFollower = (
   follower,
+  publicAddress,
   errorHandler = e => {
     // Make an unhandled rejection.
     throw e;
@@ -101,7 +105,6 @@ export const makeWalletBridgeFromFollower = (
   const notifiers = {
     getPursesNotifier: 'purses',
     getContactsNotifier: 'contacts',
-    getDappsNotifier: 'dapps',
     getIssuersNotifier: 'issuers',
     getOffersNotifier: 'offers',
     getPaymentsNotifier: 'payments',
@@ -125,15 +128,42 @@ export const makeWalletBridgeFromFollower = (
       });
     }
   };
+
   followLatest().catch(errorHandler);
+
   const getNotifierMethods = Object.fromEntries(
     Object.entries(notifiers).map(([method, stateName]) => {
       const { notifier } = notifierKits[stateName];
       return [method, () => notifier];
     }),
   );
+
+  const makeEmptyPurse = () => {
+    console.log('make empty purse');
+  };
+
+  const addContact = () => {
+    console.log('add contact');
+  };
+
+  const addIssuer = () => {
+    console.log('add issuer');
+  };
+
+  const dappService = getDappService(publicAddress);
+
   const walletBridge = Far('follower wallet bridge', {
     ...getNotifierMethods,
+    getDappsNotifier: () => dappService.notifier,
+    makeEmptyPurse,
+    addContact,
+    addIssuer,
+    getScopedBridge: (origin, suggestedDappPetname) =>
+      getScopedBridge(origin, suggestedDappPetname, {
+        dappService,
+        ...getNotifierMethods,
+      }),
   });
+
   return walletBridge;
 };
