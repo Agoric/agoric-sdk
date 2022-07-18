@@ -4,7 +4,7 @@ import {
   SigningStargateClient,
   defaultRegistryTypes,
 } from '@cosmjs/stargate';
-import { fromBech32 } from '@cosmjs/encoding';
+import { fromBech32, toBech32, fromBase64, toBase64 } from '@cosmjs/encoding';
 import { Registry } from '@cosmjs/proto-signing';
 import { html, render } from 'lit-html';
 import {
@@ -12,6 +12,7 @@ import {
   stakeCurrency,
   stableCurrency,
   bech32Config,
+  COSMOS_COIN_TYPE,
 } from './chainInfo.js';
 import { MsgWalletAction } from './gen/swingset/msgs';
 
@@ -59,7 +60,7 @@ const check = {
  * @typedef {{
  *   typeUrl: '/agoric.swingset.MsgWalletAction',
  *   value: {
- *     owner: string,
+ *     owner: string, // base64 of raw bech32 data
  *     action: string,
  *   }
  * }} WalletAction
@@ -71,7 +72,7 @@ const check = {
 const SwingsetMsgs = {
   MsgWalletAction: {
     typeUrl: '/agoric.swingset.MsgWalletAction',
-    aminoType: 'swingset/MsgWalletAction',
+    aminoType: 'swingset/WalletAction',
   },
 };
 
@@ -88,14 +89,18 @@ const SwingsetConverters = {
   [SwingsetMsgs.MsgWalletAction.typeUrl]: {
     aminoType: SwingsetMsgs.MsgWalletAction.aminoType,
     toAmino: proto => {
-      const { owner, action } = proto;
-      const amino = { owner, action };
+      const { action, owner } = proto;
+      // NOTE: keep "dictionaries" sorted
+      const amino = {
+        action,
+        owner: toBech32(bech32Config.bech32PrefixAccAddr, fromBase64(owner)),
+      };
       console.log('@@toAmino:', { proto, amino });
       return amino;
     },
     fromAmino: amino => {
-      const { owner, action } = amino;
-      const proto = { owner: toAccAddress(owner), action };
+      const { action, owner } = amino;
+      const proto = { action, owner: toBase64(toAccAddress(owner)) };
       console.log('@@fromAmino:', { amino, proto });
       return proto;
     },
@@ -116,7 +121,8 @@ const localChainInfo = {
   stakeCurrency,
   // walletUrlForStaking: `https://${network}.staking.agoric.app`,
   bip44: {
-    coinType: AGORIC_COIN_TYPE,
+    coinType: COSMOS_COIN_TYPE,
+    // coinType: AGORIC_COIN_TYPE, // ISSUE: how do we switch on this before we know isNanoLedger?
   },
   bech32Config,
   currencies: [stakeCurrency, stableCurrency],
@@ -135,6 +141,7 @@ const makeSigner = async (ui, keplr, connectWithSigner) => {
 
   const chainInfo = localChainInfo;
   const { chainId } = chainInfo;
+  ui.setValue('*[name="chainId"]', chainId);
   const { coinMinimalDenom: denom } = stakeCurrency;
 
   await keplr.experimentalSuggestChain(chainInfo);
@@ -143,6 +150,8 @@ const makeSigner = async (ui, keplr, connectWithSigner) => {
   // https://docs.keplr.app/api/#get-address-public-key
   const key = await keplr.getKey(chainId);
   console.log({ key });
+
+  ui.setChecked('*[name="isNanoLedger"]', key.isNanoLedger);
   if (!key.isNanoLedger) {
     throw Error('This demo is designed for a ledger key');
   }
@@ -154,8 +163,7 @@ const makeSigner = async (ui, keplr, connectWithSigner) => {
   // Currently, Keplr extension manages only one address/public key pair.
   const [account] = await offlineSigner.getAccounts();
   const { address } = account;
-
-  ui.showItems('#accounts', [address]);
+  ui.setValue('*[name="account"]', address);
 
   const cosmJS = await connectWithSigner(chainInfo.rpc, offlineSigner, {
     aminoTypes: new AminoTypes(SwingsetConverters),
@@ -168,7 +176,7 @@ const makeSigner = async (ui, keplr, connectWithSigner) => {
     console.log({ accountNumber, sequence });
 
     const send1 = {
-      type: 'cosmos-sdk/MsgSend',
+      typeUrl: '/cosmos.bank.v1beta1.MsgSend',
       value: {
         amount: [
           {
@@ -176,8 +184,8 @@ const makeSigner = async (ui, keplr, connectWithSigner) => {
             denom,
           },
         ],
-        from_address: address,
-        to_address: address,
+        fromAddress: address,
+        toAddress: address,
       },
     };
 
@@ -185,8 +193,8 @@ const makeSigner = async (ui, keplr, connectWithSigner) => {
     const act1 = {
       typeUrl: '/agoric.swingset.MsgWalletAction',
       value: {
-        owner: address,
-        action: JSON.stringify(['TODO']),
+        owner: toBase64(toAccAddress(address)),
+        action: ui.inputValue('*[name="action"]'),
       },
     };
 
@@ -224,6 +232,10 @@ const makeUI = document => {
     /** @param { string } selector */
     inputValue: selector =>
       check.theInput(document.querySelector(selector)).value,
+    setValue: (selector, value) =>
+      (check.theInput(document.querySelector(selector)).value = value),
+    setChecked: (selector, value) =>
+      (check.theInput(document.querySelector(selector)).checked = value),
     /** @param { string } selector */
     selectValue: selector => {
       const sel = check.theSelect(document.querySelector(selector));
