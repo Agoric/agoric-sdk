@@ -67,4 +67,17 @@ test('storage keys', async t => {
     'mockChainStorageRoot.vaultFactory.manager1.governance',
   );
 
+  // First aeth vault
+  const vda1 = await d.makeVaultDriver(aeth.make(1000n), run.make(50n));
+  t.is(
+    await subscriptionKey(vda1.getVaultSubscriber()),
+    'mockChainStorageRoot.vaultFactory.manager0.vaults.vault1',
+  );
+
+  // Second aeth vault
+  const vda2 = await d.makeVaultDriver(aeth.make(1000n), run.make(50n));
+  t.is(
+    await subscriptionKey(vda2.getVaultSubscriber()),
+    'mockChainStorageRoot.vaultFactory.manager0.vaults.vault2',
+  );
 });

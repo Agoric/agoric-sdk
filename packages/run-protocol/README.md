@@ -25,3 +25,99 @@ Each interest charging period (say daily) the actual debts in all vaults are aff
 - a debtSnapshot on the vault by which one can calculate the actual debt
 
 To maintain that the keys of vaults to liquidate are stable requires that its keys are also time-independent so they're recorded as a "normalized collateralization ratio", with the actual collateral divided by the normalized debt.
+
+## Reading data off-chain
+
+VaultFactory publishes data using StoredPublishKit which tees writes to off-chain storage. These can then be followed off-chain like so,
+```js
+  const key = `published.vaultFactory.metrics`; // or whatever the stream of interest is
+  const leader = makeDefaultLeader();
+  const follower = makeFollower(storeKey, leader);
+  for await (const { value } of iterateLatest(follower)) {
+    console.log(`here's a value`, value);
+  }
+```
+
+The canonical keys (under `published`) are as follows. Non-terminal nodes could have data but don't yet. A `0` indicates the index of that child in added order. To get the actual key look it up in parent. High cardinality types get a parent key for enumeration (e.g. `vaults`.)
+- `published`
+    - `vaultFactory`
+        - `governance`
+        - `metrics`
+        - `manager0`
+            - `metrics`
+            - `governance`
+            - `vaults`
+              - `vault0`
+    - `amm`
+        - `metrics`
+        - `governance`
+        - `pool0`
+            - `metrics`
+    - `psm`
+        - `governance`
+        - ~~`metrics`~~ TODO
+    - `stakeFactory`
+        - `governance`
+
+### Demo
+
+Start the chain in one terminal:
+```sh
+cd packages/cosmic-swingset
+make scenario2-setup scenario2-run-chain-economy
+```
+Once you see a string like `block 17 commit` then the chain is available. In another terminal,
+```sh
+# shows keys of the vaultFactory
+agd query vstorage keys 'published.vaultFactory'
+# lists vaults
+agd query vstorage keys 'published.vaultFactory.manager0.vaults'
+# follow metrics
+agoric follow :published.vaultFactory.manager0.metrics
+```
+
+Start a new terminal to get a prompt.
+```sh
+cd packages/cosmic-swingset/
+make scenario2-run-client
+```
+
+In yet another,
+```
+cd packages/cosmic-swingset/t1
+agoric open --repl
+```
+
+Connect the wallet and use its REPL as follows. Comments are for explanations and can't be parsed by REPL. The history numbers may be different for your shell. `history[-1]` means whatever number the last history output was.
+```
+# get an instance of the VaultFactory
+vaultFactoryInstance = E(home.agoricNames).lookup('instance', 'VaultFactory')
+# get its public facet
+vaultFactoryPublicFacet = E(home.zoe).getPublicFacet(vaultFactoryInstance)
+# get a reference to the minted brand (soon to be IST)
+E(home.agoricNames).lookup('brand', 'RUN');
+runBrand=history[-1]
+# get a reference to the collateral brand
+E(home.agoricNames).lookup('brand', 'IbcATOM')
+atomBrand=history[-1]
+# get a reference to the collateral manager, using history because the brand must be the same object
+collateralManager = E(vaultFactoryPublicFacet).getCollateralManager(atomBrand)
+# proposal
+proposal = ({
+  give: { Collateral: { brand: atomBrand, value: 1000n } },
+  want: { RUN: { brand: runBrand, value: 1n } },
+})
+# get the ATOM purse
+E(home.wallet).getPurses()
+# get the "ATOM" purse
+atomPurse = history[-1][0][1]
+# prepare funds
+E(atomPurse).withdraw(proposal.give.Collateral)
+collateral = history[-1]
+# make a vault invitation to the collateral manager
+invitation = E(collateralManager).makeVaultInvitation()
+# make the offer with invitation, proposal, payments
+seat = E(home.zoe).offer(invitation, proposal, { Collateral: collateral})
+# get the offer result
+E(seat).getOfferResult()
+```

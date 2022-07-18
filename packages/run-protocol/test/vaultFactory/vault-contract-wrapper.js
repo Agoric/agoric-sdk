@@ -2,27 +2,33 @@
 
 import '@agoric/zoe/src/types.js';
 
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js';
 import {
   floorDivideBy,
   makeRatio,
   multiplyRatios,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { Far } from '@endo/marshal';
 
 import { makePublishKit } from '@agoric/notifier';
+import {
+  makeFakeMarshaller,
+  makeFakeStorage,
+} from '@agoric/notifier/tools/testSupports.js';
 import { getAmountOut } from '@agoric/zoe/src/contractSupport';
 import { E } from '@endo/eventual-send';
-import { makeVault } from '../../src/vaultFactory/vault.js';
 import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';
+import { makeVault } from '../../src/vaultFactory/vault.js';
 
 const BASIS_POINTS = 10000n;
 const SECONDS_PER_HOUR = 60n * 60n;
 const DAY = SECONDS_PER_HOUR * 24n;
+
+const marshaller = makeFakeMarshaller();
 
 /**
  * @param {ZCF} zcf
@@ -153,6 +159,8 @@ export async function start(zcf, privateArgs) {
     managerMock,
     // eslint-disable-next-line no-plusplus
     String(vaultCounter++),
+    makeFakeStorage('test.vaultContractWrapper'),
+    marshaller,
   );
 
   const advanceRecordingPeriod = async () => {
@@ -182,7 +190,11 @@ export async function start(zcf, privateArgs) {
   }));
 
   async function makeHook(seat) {
-    const vaultKit = await vault.initVaultKit(seat);
+    const vaultKit = await vault.initVaultKit(
+      seat,
+      makeFakeStorage('test'),
+      marshaller,
+    );
     return {
       vault,
       runMint,
