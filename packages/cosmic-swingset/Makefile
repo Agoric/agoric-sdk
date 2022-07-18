@@ -216,6 +216,12 @@ fund-acct: wait-for-cosmos
 	  tx bank send bootstrap $(ACCT_ADDR) $(SOLO_COINS) \
 	  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID)
 
+wallet-action: wait-for-cosmos
+	$(AGCH) \
+	  --home=t1/bootstrap --keyring-backend=test --from=bootstrap \
+	  tx swingset wallet-action '{"action":1}' \
+	  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID)
+
 t1-provision-one: wait-for-cosmos
 	@addrfile=t1/$(BASE_PORT)/cosmos-client-account; \
 		test -f $$addrfile || addrfile=t1/$(BASE_PORT)/ag-cosmos-helper-address; \
