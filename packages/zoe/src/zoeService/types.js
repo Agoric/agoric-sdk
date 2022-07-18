@@ -174,7 +174,7 @@
  */
 
 /**
- * @template {object} [OR=any]
+ * @template {object} [OR=unknown]
  * @typedef {object} UserSeat
  * @property {() => Promise<Allocation>} getCurrentAllocation
  * TODO remove getCurrentAllocation query

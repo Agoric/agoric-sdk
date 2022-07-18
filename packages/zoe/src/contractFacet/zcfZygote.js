@@ -153,7 +153,6 @@ export const makeZCFZygote = async (
       assetKind,
       displayInfo,
     );
-    // @ts-expect-error type issues?
     return zcfMintFactory.makeZCFMintInternal(keyword, zoeMint);
   };
 
@@ -166,7 +165,6 @@ export const makeZCFZygote = async (
       keyword,
       feeMintAccess,
     );
-    // @ts-expect-error type issues?
     return zcfMintFactory.makeZCFMintInternal(keyword, zoeMint);
   };
 
@@ -256,8 +254,7 @@ export const makeZCFZygote = async (
         const offerResultP =
           typeof offerHandler === 'function'
             ? E(offerHandler)(zcfSeat, seatData.offerArgs)
-            : // @ts-expect-error Type issues?
-              E(offerHandler).handle(zcfSeat, seatData.offerArgs);
+            : E(offerHandler).handle(zcfSeat, seatData.offerArgs);
 
         const offerResultPromise = offerResultP.catch(reason => {
           if (reason === undefined) {

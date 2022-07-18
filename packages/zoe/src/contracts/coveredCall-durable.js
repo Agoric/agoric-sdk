@@ -68,7 +68,6 @@ const start = async (zcf, _privateArgs, instanceBaggage) => {
       underlyingAssets: sellSeat.getProposal().give,
       strikePrice: sellSeat.getProposal().want,
     });
-    // @ts-expect-error durable handlers need typing
     return zcf.makeInvitation(exerciseOption, 'exerciseOption', customProps);
   };
 
