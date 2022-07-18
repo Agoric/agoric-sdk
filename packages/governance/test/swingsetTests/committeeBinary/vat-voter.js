@@ -35,8 +35,8 @@ const build = async (log, zoe) => {
       const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);
       const seat = E(zoe).offer(invitation);
       const voteFacet = E(seat).getOfferResult();
-      E.when(E(seat).getPayouts(), async () => {
-        E.when(E(seat).hasExited(), exited => {
+      void E.when(E(seat).getPayouts(), async () => {
+        void E.when(E(seat).hasExited(), exited => {
           log(`Seat ${name} ${exited ? 'has exited' : 'is open'}`);
         });
       });
@@ -48,7 +48,7 @@ const build = async (log, zoe) => {
         },
       });
       const subscription = E(electoratePublicFacet).getQuestionSubscription();
-      observeIteration(subscription, votingObserver);
+      void observeIteration(subscription, votingObserver);
 
       return Far(`Voter ${name}`, {
         verifyBallot: (question, instances) =>
@@ -74,7 +74,7 @@ const build = async (log, zoe) => {
         },
       });
       const subscription = E(electoratePublicFacet).getQuestionSubscription();
-      observeIteration(subscription, votingObserver);
+      void observeIteration(subscription, votingObserver);
 
       return Far(`Voter ${name}`, {
         verifyBallot: (question, instances) =>

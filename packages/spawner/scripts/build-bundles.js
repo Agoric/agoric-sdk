@@ -9,4 +9,4 @@ const sourceToBundle = [
   [`../src/vat-spawned.js`, `../bundles/bundle-spawn.js`],
 ];
 
-createBundles(sourceToBundle, dirname);
+await createBundles(sourceToBundle, dirname);

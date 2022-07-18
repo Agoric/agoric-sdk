@@ -162,7 +162,7 @@ const watchParams = async (zoe, contractInstanceP, log) => {
       prev = current;
     },
   });
-  observeIteration(subscription, paramChangeObserver);
+  void observeIteration(subscription, paramChangeObserver);
 };
 
 const setupParameterChanges = async (
@@ -399,7 +399,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
 
       await E(timer).tick();
       await E(timer).tick();
-      E.when(
+      void E.when(
         electorateOutcome,
         o => log(`vote (unexpected) successful outcome: ${o} `),
         e => log(`vote rejected outcome: ${e}`),
@@ -450,7 +450,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
 
       await E(timer).tick();
       await E(timer).tick();
-      E.when(
+      void E.when(
         electorateOutcome,
         o => log(`successful outcome: ${q(o)} `),
         e => log(`vote (unexpected) rejected outcome: ${e}`),
