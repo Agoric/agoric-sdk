@@ -28,6 +28,7 @@ import {
   MIN_INITIAL_DEBT_KEY,
 } from './params.js';
 import { makeVaultDirector } from './vaultDirector.js';
+import { assertKeysDefined } from '../contractSupport.js';
 
 /**
  * @typedef {ZCF<GovernanceTerms<import('./params').VaultDirectorParams> & {
@@ -53,6 +54,13 @@ import { makeVaultDirector } from './vaultDirector.js';
  * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
+  assertKeysDefined(privateArgs, [
+    'feeMintAccess',
+    'initialPoserInvitation',
+    'initialShortfallInvitation',
+    'storageNode',
+    'marshaller',
+  ]);
   const { feeMintAccess, initialPoserInvitation, initialShortfallInvitation } =
     privateArgs;
   const debtMint = await zcf.registerFeeMint('RUN', feeMintAccess);

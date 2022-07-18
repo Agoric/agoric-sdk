@@ -169,7 +169,10 @@ const initState = (
   storageNode,
   marshaller,
 ) => {
-  assert(storageNode && marshaller, 'Missing storageNode or marshaller');
+  assert(
+    storageNode && marshaller,
+    'VaultManager missing storageNode or marshaller',
+  );
 
   const periodNotifier = E(timerService).makeNotifier(
     0n,
