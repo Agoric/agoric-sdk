@@ -67,28 +67,22 @@ export const makeZCFMintFactory = async (
         getIssuerRecord: () => {
           return mintyIssuerRecord;
         },
-        mintGains: (gains, zcfSeat = undefined) => {
+        /** @type {(gains: Record<string, Amount>, zcfSeat?: ZCFSeat) => ZCFSeat} */
+        mintGains: (gains, zcfSeat = makeEmptySeatKit().zcfSeat) => {
           gains = coerceAmountKeywordRecord(gains, getAssetKindByBrand);
-          if (zcfSeat === undefined) {
-            zcfSeat = makeEmptySeatKit().zcfSeat;
-          }
           const totalToMint = Object.values(gains).reduce(add, empty);
           assert(
-            // @ts-expect-error It's non-null
             !zcfSeat.hasExited(),
             'zcfSeat must be active to mint gains for the zcfSeat',
           );
           const allocationPlusGains = addToAllocation(
-            // @ts-expect-error It's non-null
             zcfSeat.getCurrentAllocation(),
             gains,
           );
 
           // Increment the stagedAllocation if it exists so that the
           // stagedAllocation is kept up to the currentAllocation
-          // @ts-expect-error It's non-null
           if (zcfSeat.hasStagedAllocation()) {
-            // @ts-expect-error It's non-null
             zcfSeat.incrementBy(gains);
           }
 
@@ -97,7 +91,6 @@ export const makeZCFMintFactory = async (
           // all reallocations are covered by offer safety checks, and
           // that any bug within Zoe that may affect this is caught.
           assert(
-            // @ts-expect-error It's non-null
             zcfSeat.isOfferSafe(allocationPlusGains),
             X`The allocation after minting gains ${allocationPlusGains} for the zcfSeat was not offer safe`,
           );
