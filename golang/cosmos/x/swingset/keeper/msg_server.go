@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
@@ -69,6 +70,7 @@ type walletAction struct {
 }
 
 func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWalletAction) (*types.MsgWalletActionResponse, error) {
+	fmt.Fprintf(os.Stderr, "WalletAction()...\n")
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	action := &walletAction{
@@ -78,10 +80,10 @@ func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWallet
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
-	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
+	fmt.Fprintf(os.Stderr, "WalletAction: action %+v , context %+v\n", action, ctx)
 
 	err := keeper.PushAction(ctx, action)
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	fmt.Fprintln(os.Stderr, "Returned from SwingSet", err)
 	if err != nil {
 		return nil, err
 	}
