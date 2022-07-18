@@ -76,7 +76,7 @@ export const makeZCFMintFactory = async (
           assert(
             // @ts-expect-error It's non-null
             !zcfSeat.hasExited(),
-            `zcfSeat must be active to mint gains for the zcfSeat`,
+            'zcfSeat must be active to mint gains for the zcfSeat',
           );
           const allocationPlusGains = addToAllocation(
             // @ts-expect-error It's non-null
@@ -115,7 +115,7 @@ export const makeZCFMintFactory = async (
           const totalToBurn = Object.values(losses).reduce(add, empty);
           assert(
             !zcfSeat.hasExited(),
-            `zcfSeat must be active to burn losses from the zcfSeat`,
+            'zcfSeat must be active to burn losses from the zcfSeat',
           );
           const allocationMinusLosses = subtractFromAllocation(
             zcfSeat.getCurrentAllocation(),

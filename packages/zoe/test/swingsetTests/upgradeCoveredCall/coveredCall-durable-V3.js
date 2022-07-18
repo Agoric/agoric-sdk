@@ -9,7 +9,7 @@ import { isAfterDeadlineExitRule } from '../../../src/typeGuards.js';
 
 const { details: X } = assert;
 
-const sellSeatExpiredMsg = `The covered call option is expired.`;
+const sellSeatExpiredMsg = 'The covered call option is expired.';
 
 /**
  * @see original version in .../zoe/src/contracts/coveredCall.js and upgradeable
@@ -42,7 +42,7 @@ const vivify = async (zcf, _privateArgs, instanceBaggage) => {
           throw err;
         }
         zcf.shutdown('Swap (upgraded) completed.');
-        return `The upgraded option was exercised. Please collect the assets in your payout.`;
+        return 'The upgraded option was exercised. Please collect the assets in your payout.';
       },
     },
   );

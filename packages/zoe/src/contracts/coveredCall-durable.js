@@ -9,7 +9,7 @@ import { isAfterDeadlineExitRule } from '../typeGuards.js';
 
 const { details: X } = assert;
 
-const sellSeatExpiredMsg = `The covered call option is expired.`;
+const sellSeatExpiredMsg = 'The covered call option is expired.';
 
 /**
  * @see comment on functionality in ./coveredCall.js.
@@ -47,7 +47,7 @@ const start = async (zcf, _privateArgs, instanceBaggage) => {
           throw err;
         }
         zcf.shutdown('Swap completed.');
-        return `The option was exercised. Please collect the assets in your payout.`;
+        return 'The option was exercised. Please collect the assets in your payout.';
       },
     },
   );
