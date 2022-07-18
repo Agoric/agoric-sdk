@@ -295,7 +295,7 @@ export const makeChainStorage = async ({
   const bridgeManager = await bridgeManagerP;
   if (!bridgeManager) {
     console.warn('Cannot support chainStorage without an actual chain.');
-    chainStorageP.resolve(undefined);
+    chainStorageP.resolve(null);
     return;
   }
 

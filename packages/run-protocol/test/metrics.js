@@ -12,7 +12,7 @@ const trace = makeTracer('TestMetrics', false);
 
 /**
  * @param {import('ava').ExecutionContext} t
- * @param {Subscription<N>} subscription
+ * @param {ConsistentAsyncIterable<N>} subscription
  * @template {object} N
  */
 export const subscriptionTracker = async (t, subscription) => {
@@ -46,7 +46,7 @@ export const subscriptionTracker = async (t, subscription) => {
  * For public facets that have a `getMetrics` method.
  *
  * @param {import('ava').ExecutionContext} t
- * @param {{getMetrics?: () => Subscription<unknown>}} publicFacet
+ * @param {{getMetrics?: () => ConsistentAsyncIterable<unknown>}} publicFacet
  * @template {object} N
  */
 export const metricsTracker = async (t, publicFacet) => {

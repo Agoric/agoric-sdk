@@ -15,8 +15,10 @@
  */
 import '@agoric/zoe/exported.js';
 
-import { E } from '@endo/eventual-send';
+import { AmountMath } from '@agoric/ertp';
 import { Nat } from '@agoric/nat';
+import { makeStoredPublishKit, observeNotifier } from '@agoric/notifier';
+import { defineKindMulti, pickFacet } from '@agoric/vat-data';
 import {
   assertProposalShape,
   ceilDivideBy,
@@ -27,20 +29,17 @@ import {
   makeRatio,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
-import { AmountMath } from '@agoric/ertp';
-
-import { defineKindMulti, pickFacet } from '@agoric/vat-data';
-import { makeVault, Phase } from './vault.js';
-import { makePrioritizedVaults } from './prioritizedVaults.js';
-import { liquidate } from './liquidation.js';
-import { makeTracer } from '../makeTracer.js';
-import { chargeInterest } from '../interest.js';
+import { E } from '@endo/eventual-send';
 import {
   checkDebtLimit,
   makeEphemeraProvider,
   makeMetricsPublisherKit,
 } from '../contractSupport.js';
+import { chargeInterest } from '../interest.js';
+import { makeTracer } from '../makeTracer.js';
+import { liquidate } from './liquidation.js';
+import { makePrioritizedVaults } from './prioritizedVaults.js';
+import { makeVault, Phase } from './vault.js';
 
 const { details: X } = assert;
 
@@ -84,26 +83,26 @@ const trace = makeTracer('VM');
 
 /**
  * @typedef {Readonly<{
+ * assetSubscriber: Subscriber<AssetState>,
+ * assetPublisher: Publisher<AssetState>,
  * collateralBrand: Brand<'nat'>,
  * debtBrand: Brand<'nat'>,
  * debtMint: ZCFMint<'nat'>,
  * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
- * marshaller?: ERef<Marshaller>,
+ * marshaller: ERef<Marshaller>,
  * metricsPublication: IterationObserver<MetricsNotification>,
  * metricsSubscription: StoredSubscription<MetricsNotification>,
  * periodNotifier: ERef<Notifier<bigint>>,
  * poolIncrementSeat: ZCFSeat,
  * priceAuthority: ERef<PriceAuthority>,
  * prioritizedVaults: ReturnType<typeof makePrioritizedVaults>,
- * storageNode?: ERef<StorageNode>,
+ * storageNode: ERef<StorageNode>,
  * zcf: import('./vaultFactory.js').VaultFactoryZCF,
  * }>} ImmutableState
  */
 
 /**
  * @typedef {{
- * assetNotifier: Notifier<AssetState>,
- * assetUpdater: IterationObserver<AssetState>,
  * compoundedInterest: Ratio,
  * latestInterestUpdate: bigint,
  * liquidator?: Liquidator
@@ -156,8 +155,8 @@ const provideEphemera = makeEphemeraProvider(() => ({
  * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
  * @param {Timestamp} startTimeStamp
- * @param {ERef<StorageNode>} [storageNode]
- * @param {ERef<Marshaller>} [marshaller]
+ * @param {ERef<StorageNode>} storageNode
+ * @param {ERef<Marshaller>} marshaller
  */
 const initState = (
   zcf,
@@ -170,6 +169,11 @@ const initState = (
   storageNode,
   marshaller,
 ) => {
+  assert(
+    storageNode && marshaller,
+    'VaultManager missing storageNode or marshaller',
+  );
+
   const periodNotifier = E(timerService).makeNotifier(
     0n,
     factoryPowers.getGovernedParams().getChargingPeriod(),
@@ -184,12 +188,19 @@ const initState = (
     marshaller,
   );
 
+  /** @type {PublishKit<AssetState>} */
+  const { publisher: assetPublisher, subscriber: assetSubscriber } =
+    makeStoredPublishKit(storageNode, marshaller);
+
   /** @type {ImmutableState} */
   const fixed = {
+    assetSubscriber,
+    assetPublisher,
     collateralBrand,
     debtBrand,
     debtMint,
     factoryPowers,
+    marshaller,
     metricsSubscription,
     metricsPublication,
     periodNotifier,
@@ -199,6 +210,7 @@ const initState = (
      * A store for vaultKits prioritized by their collaterization ratio.
      */
     prioritizedVaults: makePrioritizedVaults(),
+    storageNode,
     zcf,
   };
 
@@ -206,7 +218,7 @@ const initState = (
   // timestamp of most recent update to interest
   const latestInterestUpdate = startTimeStamp;
 
-  const { updater: assetUpdater, notifier: assetNotifier } = makeNotifierKit(
+  assetPublisher.publish(
     harden({
       compoundedInterest,
       interestRate: fixed.factoryPowers.getGovernedParams().getInterestRate(),
@@ -217,8 +229,6 @@ const initState = (
   /** @type {MutableState & ImmutableState} */
   const state = {
     ...fixed,
-    assetNotifier,
-    assetUpdater,
     compoundedInterest,
     debtBrand: fixed.debtBrand,
     latestInterestUpdate,
@@ -319,7 +329,7 @@ const helperBehavior = {
       // that doesn't seem to be cost-effective.
       liquidatorInstance: state.liquidatorInstance,
     });
-    state.assetUpdater.updateState(payload);
+    state.assetPublisher.publish(payload);
   },
 
   /** @param {MethodContext} context */
@@ -581,7 +591,7 @@ const managerBehavior = {
     state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
   },
   /** @param {MethodContext} context */
-  getNotifier: ({ state }) => state.assetNotifier,
+  getAssetSubscriber: ({ state }) => state.assetSubscriber,
   /** @param {MethodContext} context */
   getCollateralBrand: ({ state }) => state.collateralBrand,
   /** @param {MethodContext} context */
@@ -665,7 +675,7 @@ const collateralBehavior = {
   makeVaultInvitation: ({ state: { zcf }, facets: { self } }) =>
     zcf.makeInvitation(self.makeVaultKit, 'MakeVault'),
   /** @param {MethodContext} context */
-  getNotifier: ({ state }) => state.assetNotifier,
+  getSubscriber: ({ state }) => state.assetSubscriber,
   /** @param {MethodContext} context */
   getMetrics: ({ state }) => state.metricsSubscription,
   /** @param {MethodContext} context */

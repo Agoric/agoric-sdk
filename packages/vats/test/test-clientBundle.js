@@ -72,7 +72,7 @@ test('connectFaucet produces payments', async t => {
 
   const bldKit = makeIssuerKit('BLD');
   produce.bldIssuerKit.resolve(bldKit);
-  produce.chainStorage.resolve(undefined);
+  produce.chainStorage.resolve(null);
 
   const runIssuer = E(zoe).getFeeIssuer();
   produce.bankManager.resolve(

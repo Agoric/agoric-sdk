@@ -66,8 +66,8 @@ const { values } = Object;
  *   feeMintAccess: FeeMintAccess,
  *   initialPoserInvitation: Invitation,
  *   lienBridge: ERef<StakingAuthority>,
- *   storageNode?: StorageNode,
- *   marshaller?: Marshaller,
+ *   storageNode: StorageNode,
+ *   marshaller: Marshaller,
  * }} RunStakePrivateArgs
  *
  * The creator facet can make an `AttestationMaker` for each account, which
@@ -98,6 +98,7 @@ export const start = async (
   } = zcf.getTerms();
   assert.typeof(chargingPeriod, 'bigint', 'chargingPeriod must be a bigint');
   assert.typeof(recordingPeriod, 'bigint', 'recordingPeriod must be a bigint');
+  assert(storageNode && marshaller, 'missing storageNode or marshaller');
 
   /** @type {ZCFMint<'nat'>} */
   const debtMint = await zcf.registerFeeMint(KW.Debt, feeMintAccess);
@@ -192,8 +193,8 @@ export const start = async (
 
     return harden({
       publicNotifiers: {
-        asset: manager.getAssetNotifier(),
-        vault: pot.getNotifier(),
+        asset: manager.getAssetSubscriber(),
+        vault: pot.getSubscriber(),
       },
       invitationMakers: Far('invitation makers', {
         AdjustBalances: () =>

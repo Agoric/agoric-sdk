@@ -83,11 +83,15 @@ export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
 
 /**
  * @template T
- * @param {ERef<StorageNode>} [storageNode]
- * @param {ERef<Marshaller>} [marshaller]
+ * @param {ERef<StorageNode>} storageNode
+ * @param {ERef<Marshaller>} marshaller
  * @returns {MetricsPublisherKit<T>}
  */
 export const makeMetricsPublisherKit = (storageNode, marshaller) => {
+  assert(
+    storageNode && marshaller,
+    'makeMetricsPublisherKit missing storageNode or marshaller',
+  );
   /** @type {import('@agoric/notifier').StoredPublisherKit<T>} */
   const kit = makeStoredPublisherKit(storageNode, marshaller, 'metrics');
   return {
@@ -129,3 +133,14 @@ export const makeEphemeraProvider = init => {
   };
 };
 harden(makeEphemeraProvider);
+
+/**
+ * @template {Record<string, unknown>} T
+ * @param {T} specimen
+ * @param {Array<keyof T>} keyList
+ */
+export const assertKeysDefined = (specimen, keyList) => {
+  for (const key of keyList) {
+    assert(specimen[key], X`Missing ${q(key)}`);
+  }
+};

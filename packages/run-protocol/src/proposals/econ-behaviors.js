@@ -7,7 +7,7 @@ import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
 import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/core/utils.js';
-import { getChildNode } from '@agoric/vats/src/lib-chainStorage.js';
+import { makeStorageNode } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E, Far } from '@endo/far';
 import * as Collect from '../collect.js';
@@ -215,7 +215,7 @@ export const setupAmm = async (
     AmountMath.make(runBrand, minInitialPoolLiquidity),
   );
 
-  const storageNode = await getChildNode(chainStorage, AMM_STORAGE_PATH);
+  const storageNode = await makeStorageNode(chainStorage, AMM_STORAGE_PATH);
   const marshaller = await E(board).getPublishingMarshaller();
 
   const ammGovernorTerms = {
@@ -309,7 +309,7 @@ export const setupReserve = async ({
 
   const feeMintAccess = await feeMintAccessP;
 
-  const storageNode = await getChildNode(chainStorage, STORAGE_PATH);
+  const storageNode = await makeStorageNode(chainStorage, STORAGE_PATH);
   const marshaller = E(board).getReadonlyMarshaller();
 
   const reserveGovernorTerms = {
@@ -439,7 +439,7 @@ export const startVaultFactory = async (
   const reservePublicFacet = await E(zoe).getPublicFacet(reserveInstance);
   const timer = await chainTimerService;
 
-  const storageNode = await getChildNode(chainStorage, STORAGE_PATH);
+  const storageNode = await makeStorageNode(chainStorage, STORAGE_PATH);
   const marshaller = E(board).getReadonlyMarshaller();
 
   const vaultFactoryTerms = makeGovernedTerms(
@@ -844,7 +844,7 @@ export const startRunStake = async (
     },
   );
 
-  const storageNode = await getChildNode(chainStorage, STORAGE_PATH);
+  const storageNode = await makeStorageNode(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
   /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<unknown>}} */

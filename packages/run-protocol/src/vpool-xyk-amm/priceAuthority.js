@@ -7,13 +7,23 @@ import { observeNotifier } from '@agoric/notifier';
 
 import { makeOnewayPriceAuthorityKit } from '@agoric/zoe/src/contractSupport/index.js';
 
+/**
+ *
+ * @param {*} getOutputForGivenInput
+ * @param {*} getInputForWantedOutput
+ * @param {Brand} actualBrandIn
+ * @param {Brand} actualBrandOut
+ * @param {TimerService} timer
+ * @param {Notifier<import('./pool').NotificationState>} notifier
+ * @param {IssuerKit} quoteIssuerKit
+ * @returns {PriceAuthority}
+ */
 export const makePriceAuthority = (
   getOutputForGivenInput,
   getInputForWantedOutput,
   actualBrandIn,
   actualBrandOut,
   timer,
-  zcf,
   notifier,
   quoteIssuerKit,
 ) => {

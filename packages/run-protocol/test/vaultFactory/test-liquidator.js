@@ -4,6 +4,7 @@ import '@agoric/zoe/exported.js';
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import {
   ceilMultiplyBy,
   makeRatioFromAmounts,
@@ -359,9 +360,9 @@ const makeDriver = async (t, initialPrice, priceBase) => {
     vaultFactory: { lender, vaultFactory },
     priceAuthority,
   } = services;
-  const managerNotifier = await E(
-    E(lender).getCollateralManager(aeth.brand),
-  ).getNotifier();
+  const managerNotifier = await makeNotifierFromSubscriber(
+    E(E(lender).getCollateralManager(aeth.brand)).getSubscriber(),
+  );
   let managerNotification = await E(managerNotifier).getUpdateSince();
 
   /** @type {UserSeat} */
@@ -402,11 +403,9 @@ const makeDriver = async (t, initialPrice, priceBase) => {
        *
        * @param {import('../../src/vaultFactory/vault.js').VaultPhase} phase
        * @param {object} [likeExpected]
-       * @param {AT_NEXT|number} [optSince]
+       * @param {AT_NEXT|number} [optSince] AT_NEXT is an alias for updateCount of the last update, forcing to wait for another
        */
       notified: async (phase, likeExpected, optSince) => {
-        // optSince can be AT_NEXT in order to wait for the
-        // next update.
         notification = await E(notifier).getUpdateSince(
           optSince === AT_NEXT ? notification.updateCount : optSince,
         );
@@ -490,6 +489,11 @@ const makeDriver = async (t, initialPrice, priceBase) => {
       await driver.tick(3);
       await outcome;
     },
+    /**
+     *
+     * @param {object} [likeExpected]
+     * @param {AT_NEXT|number} [optSince] AT_NEXT is an alias for updateCount of the last update, forcing to wait for another
+     */
     managerNotified: async (likeExpected, optSince) => {
       managerNotification = await E(managerNotifier).getUpdateSince(
         optSince === AT_NEXT ? managerNotification.updateCount : optSince,

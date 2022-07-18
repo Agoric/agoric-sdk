@@ -2,7 +2,7 @@
  * @file Object representing ownership of a vault
  */
 // @ts-check
-import { makeNotifierKit } from '@agoric/notifier';
+import { makePublishKit } from '@agoric/notifier';
 import { defineKindMulti } from '@agoric/vat-data';
 import '@agoric/zoe/exported.js';
 
@@ -10,8 +10,8 @@ const { details: X } = assert;
 
 /**
  * @typedef {{
- * notifier: NotifierRecord<VaultNotification>['notifier'],
- * updater: NotifierRecord<VaultNotification>['updater'],
+ * publisher: PublishKit<VaultNotification>['publisher'],
+ * subscriber: PublishKit<VaultNotification>['subscriber'],
  * vault: Vault | null,
  * }} State
  * @typedef {Readonly<{
@@ -29,10 +29,10 @@ const { details: X } = assert;
  * @returns {State}
  */
 const initState = vault => {
-  /** @type {NotifierRecord<VaultNotification>} */
-  const { updater, notifier } = makeNotifierKit();
+  /** @type {PublishKit<VaultNotification>} */
+  const { subscriber, publisher } = makePublishKit();
 
-  return { notifier, updater, vault };
+  return { publisher, subscriber, vault };
 };
 
 const helper = {
@@ -46,12 +46,12 @@ const helper = {
     return vault;
   },
   /** @param {MethodContext} context */
-  getUpdater: ({ state }) => state.updater,
+  getUpdater: ({ state }) => state.publisher,
 };
 
 const holder = {
   /** @param {MethodContext} context */
-  getNotifier: ({ state }) => state.notifier,
+  getSubscriber: ({ state }) => state.subscriber,
   /** @param {MethodContext} context */
   makeAdjustBalancesInvitation: ({ facets }) =>
     facets.helper.owned().makeAdjustBalancesInvitation(),

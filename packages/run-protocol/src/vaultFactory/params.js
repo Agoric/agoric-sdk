@@ -122,7 +122,7 @@ const makeVaultDirectorParamManager = async (
 };
 
 /**
- * @param {{storageNode?: ERef<StorageNode>, marshaller?: ERef<Marshaller>}} caps
+ * @param {{storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} caps
  * @param {{
  *   electorateInvitationAmount: Amount,
  *   minInitialDebt: Amount,

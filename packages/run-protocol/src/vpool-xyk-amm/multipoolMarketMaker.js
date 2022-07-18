@@ -112,8 +112,8 @@ const trace = makeTracer('XykAmm', false);
  * @param {ZCF<AMMTerms>} zcf
  * @param {{
  *   initialPoserInvitation: Invitation,
- *   storageNode?: ERef<StorageNode>,
- *   marshaller?: ERef<Marshaller>,
+ *   storageNode: ERef<StorageNode>,
+ *   marshaller: ERef<Marshaller>,
  * }} privateArgs
  */
 const start = async (zcf, privateArgs) => {

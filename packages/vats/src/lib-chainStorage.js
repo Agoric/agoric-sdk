@@ -61,14 +61,26 @@ export function makeChainStorageRoot(toStorage, storeName, rootPath) {
 }
 
 /**
- *
- * @param {ERef<ChainStorageNode | undefined>} chainStorage
- * @param {string} childName
+ * @returns {StorageNode} an object that confirms to StorageNode API but does not store anywhere.
  */
-export async function getChildNode(chainStorage, childName) {
-  const chainStoragePresence = await chainStorage;
-  const storageNode = await (chainStoragePresence &&
-    E(chainStoragePresence).getChildNode(childName));
+const makeNullStorageNode = () => {
+  // XXX re-use "ChainStorage" methods above which don't actually depend on chains
+  return makeChainStorageRoot(() => null, 'swingset', 'null');
+};
+
+/**
+ * Convience function for falling back to non-storage when chain storage isn't available.
+ * Also takes an optional childname.
+ *
+ * @param {ERef<ChainStorageNode?>} chainStorage
+ * @param {string} [childName]
+ * @returns {Promise<StorageNode>}
+ */
+export async function makeStorageNode(chainStorage, childName) {
+  const storageNode = (await chainStorage) || makeNullStorageNode();
+  if (childName) {
+    return E(storageNode).getChildNode(childName);
+  }
   return storageNode;
 }
-harden(getChildNode);
+harden(makeStorageNode);

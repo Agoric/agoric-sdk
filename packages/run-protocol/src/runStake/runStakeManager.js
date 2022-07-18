@@ -1,16 +1,16 @@
 // @ts-check
 // @jessie-check
 import { AmountMath } from '@agoric/ertp';
+import { makePublishKit, observeNotifier } from '@agoric/notifier';
+import { fit, getCopyBagEntries, M } from '@agoric/store';
+import { defineKindMulti } from '@agoric/vat-data';
 import { floorMultiplyBy } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { fit, getCopyBagEntries, M } from '@agoric/store';
-import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { E } from '@endo/far';
-import { defineKindMulti } from '@agoric/vat-data';
-import { makeTracer } from '../makeTracer.js';
-import { chargeInterest } from '../interest.js';
-import { ManagerKW as KW } from './constants.js';
 import { checkDebtLimit } from '../contractSupport.js';
+import { chargeInterest } from '../interest.js';
+import { makeTracer } from '../makeTracer.js';
+import { ManagerKW as KW } from './constants.js';
 
 const { details: X } = assert;
 
@@ -29,8 +29,8 @@ const trace = makeTracer('RSM', false);
  *   totalDebt: Amount<'nat'>,
  * }} AssetState
  * @typedef {Readonly<{
- *   assetNotifier: Notifier<AssetState>,
- *   assetUpdater: IterationObserver<AssetState>,
+ *   assetPublisher: Publisher<AssetState>,
+ *   assetSubscriber: Subscriber<AssetState>,
  *   brands: { debt: Brand<'nat'>, Attestation: Brand<'copyBag'>, Stake: Brand<'nat'> },
  *   mintPowers: { burnDebt: BurnDebt, getGovernedParams: () => ParamManager, mintAndReallocate: MintAndReallocate },
  *   chargingPeriod: bigint,
@@ -74,7 +74,9 @@ const initState = (
   const compoundedInterest = makeRatio(100n, brands.debt); // starts at 1.0, no interest
   const latestInterestUpdate = startTimeStamp;
 
-  const { updater: assetUpdater, notifier: assetNotifier } = makeNotifierKit(
+  const { publisher: assetPublisher, subscriber: assetSubscriber } =
+    makePublishKit();
+  assetPublisher.publish(
     harden({
       compoundedInterest,
       interestRate: mintPowers.getGovernedParams().getInterestRate(),
@@ -86,8 +88,8 @@ const initState = (
   const { zcfSeat: poolIncrementSeat } = zcf.makeEmptySeatKit();
 
   return {
-    assetNotifier,
-    assetUpdater,
+    assetSubscriber,
+    assetPublisher,
     brands,
     chargingPeriod,
     compoundedInterest,
@@ -172,8 +174,8 @@ const helper = {
       latestInterestUpdate: state.latestInterestUpdate,
       totalDebt: state.totalDebt,
     });
-    const { assetUpdater } = state;
-    assetUpdater.updateState(payload);
+    const { assetPublisher: assetUpdater } = state;
+    assetUpdater.publish(payload);
 
     trace('chargeAllVaults complete', payload);
   },
@@ -278,7 +280,7 @@ const manager = {
   /** @param {MethodContext} context */
   getCompoundedInterest: ({ state }) => state.compoundedInterest,
   /** @param {MethodContext} context */
-  getAssetNotifier: ({ state }) => state.assetNotifier,
+  getAssetSubscriber: ({ state }) => state.assetSubscriber,
 };
 
 const behavior = { helper, manager };

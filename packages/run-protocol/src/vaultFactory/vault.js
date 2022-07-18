@@ -76,7 +76,7 @@ const validTransitions = {
 // XXX masks typedef from types.js, but using that causes circular def problems
 /**
  * @typedef {object} VaultManager
- * @property {() => Notifier<import('./vaultManager').AssetState>} getNotifier
+ * @property {() => Subscriber<import('./vaultManager').AssetState>} getAssetSubscriber
  * @property {(collateralAmount: Amount) => ERef<Amount<'nat'>>} maxDebtFor
  * @property {() => Brand} getCollateralBrand
  * @property {() => Brand<'nat'>} getDebtBrand
@@ -101,7 +101,7 @@ const validTransitions = {
  *
  * @typedef {{
  *   interestSnapshot: Ratio,
- *   outerUpdater: IterationObserver<VaultNotification> | null,
+ *   outerUpdater: Publisher<VaultNotification> | null,
  *   phase: VaultPhase,
  *   debtSnapshot: Amount<'nat'>,
  * }} MutableState
@@ -335,7 +335,7 @@ const helperBehavior = {
       case Phase.ACTIVE:
       case Phase.LIQUIDATING:
       case Phase.LIQUIDATED:
-        outerUpdater.updateState(uiState);
+        outerUpdater.publish(uiState);
         break;
       case Phase.CLOSED:
         outerUpdater.finish(uiState);
@@ -528,7 +528,7 @@ const helperBehavior = {
     helper.assertCloseable();
     seat.exit();
     // eslint-disable-next-line no-use-before-define
-    const vaultKit = makeVaultKit(self, state.manager.getNotifier());
+    const vaultKit = makeVaultKit(self, state.manager.getAssetSubscriber());
     state.outerUpdater = vaultKit.vaultUpdater;
     helper.updateUiState();
 
@@ -596,7 +596,7 @@ const selfBehavior = {
     state.manager.mintAndReallocate(toMint, fee, seat, vaultSeat);
     helper.updateDebtAccounting(normalizedDebtPre, collateralPre, newDebtPre);
 
-    const vaultKit = makeVaultKit(self, state.manager.getNotifier());
+    const vaultKit = makeVaultKit(self, state.manager.getAssetSubscriber());
     state.outerUpdater = vaultKit.vaultUpdater;
     helper.updateUiState();
     return vaultKit;

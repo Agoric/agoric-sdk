@@ -14,7 +14,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
 
-import { makeNotifierKit } from '@agoric/notifier';
+import { makePublishKit } from '@agoric/notifier';
 import { getAmountOut } from '@agoric/zoe/src/contractSupport';
 import { E } from '@endo/eventual-send';
 import { makeVault } from '../../src/vaultFactory/vault.js';
@@ -50,7 +50,7 @@ export async function start(zcf, privateArgs) {
 
   const { zcfSeat: stage } = zcf.makeEmptySeatKit();
 
-  const { notifier: managerNotifier } = makeNotifierKit();
+  const { subscriber: assetSubscriber } = makePublishKit();
 
   const timer = buildManualTimer(console.log, 0n, DAY);
   const options = {
@@ -132,7 +132,7 @@ export async function start(zcf, privateArgs) {
     },
     getDebtBrand: () => runBrand,
 
-    getNotifier: () => managerNotifier,
+    getAssetSubscriber: () => assetSubscriber,
     maxDebtFor,
     mintAndReallocate,
     burnAndRecord,
