@@ -38,6 +38,7 @@ const vivify = async (zcf, _privateArgs, instanceBaggage) => {
         } catch (err) {
           console.log(
             'Upgraded swap failed. Please make sure your offer has the same underlyingAssets and strikePrice as specified in the invitation details. The keywords should not matter.',
+            err,
           );
           throw err;
         }

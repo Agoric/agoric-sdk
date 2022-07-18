@@ -14,7 +14,7 @@ const sellSeatExpiredMsg = 'The covered call option is expired.';
 /**
  * @see comment on functionality in ./coveredCall.js.
  *
- * This variant has been made durable and upgradeable. The exceriser survives
+ * This variant has been made durable and upgradeable. The exerciser survives
  * upgrade so the exerciseOption invitation will continue to work after upgrade.
  *
  * The version in

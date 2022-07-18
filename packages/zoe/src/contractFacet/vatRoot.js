@@ -41,7 +41,7 @@ export async function buildRootObject(powers, vatParameters, baggage) {
     baggage.init('zoeService', zoeService);
     baggage.init('invitationIssuer', invitationIssuer);
   } else {
-    assert(!zoeService, 'zoeService is required');
+    assert(!zoeService, 'On restart zoeService must not be in vatParameters');
     zoeService = baggage.get('zoeService');
 
     assert(!invitationIssuer, 'invitationIssuer is required');
