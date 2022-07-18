@@ -156,6 +156,7 @@ async function replay(transcriptFile) {
         vatID,
         vatSourceBundle,
         managerOptions,
+        {},
         vatSyscallHandler,
       );
       console.log(`manager created`);

@@ -37,6 +37,7 @@
 
 /**
  * @typedef { import('./types-external.js').Message } Message
+ * @typedef { import('./types-external.js').LiveSlotsOptions } LiveSlotsOptions
  *
  * @typedef { import('./types-external.js').ResolutionPolicy } ResolutionPolicy
  *

@@ -37,28 +37,29 @@ const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
  *
  * @param {*} syscall  Kernel syscall interface that the vat will have access to
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
- * @param {number} cacheSize  Maximum number of entries in the virtual object state cache
- * @param {boolean} enableDisavow
  * @param {*} vatPowers
+ * @param {LiveSlotsOptions} liveSlotsOptions
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize,
  *                      meterControl }
  * @param {Console} console
  * @param {*} buildVatNamespace
- * @param {boolean} relaxDurabilityRules
  *
  * @returns {*} { dispatch }
  */
 function build(
   syscall,
   forVatID,
-  cacheSize,
-  enableDisavow,
   vatPowers,
+  liveSlotsOptions,
   gcTools,
   console,
   buildVatNamespace,
-  relaxDurabilityRules,
 ) {
+  const {
+    virtualObjectCacheSize = DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
+    enableDisavow = false,
+    relaxDurabilityRules = false,
+  } = liveSlotsOptions;
   const { WeakRef, FinalizationRegistry, meterControl } = gcTools;
   const enableLSDebug = false;
   function lsdebug(...args) {
@@ -638,7 +639,7 @@ function build(
     registerValue,
     m.serialize,
     unmeteredUnserialize,
-    cacheSize,
+    virtualObjectCacheSize,
     assertAcceptableSyscallCapdataSize,
   );
 
@@ -1650,12 +1651,10 @@ function build(
  * @param {*} syscall  Kernel syscall interface that the vat will have access to
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {*} vatPowers
- * @param {number} cacheSize  Upper bound on virtual object cache size
- * @param {boolean} enableDisavow
+ * @param {LiveSlotsOptions} liveSlotsOptions
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
  * @param {*} buildVatNamespace
- * @param {boolean} relaxDurabilityRules
  *
  * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch }
  *
@@ -1685,23 +1684,19 @@ export function makeLiveSlots(
   syscall,
   forVatID = 'unknown',
   vatPowers = harden({}),
-  cacheSize = DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
-  enableDisavow = false,
+  liveSlotsOptions,
   gcTools,
   liveSlotsConsole = console,
   buildVatNamespace,
-  relaxDurabilityRules = false,
 ) {
   const r = build(
     syscall,
     forVatID,
-    cacheSize,
-    enableDisavow,
     vatPowers,
+    liveSlotsOptions,
     gcTools,
     liveSlotsConsole,
     buildVatNamespace,
-    relaxDurabilityRules,
   );
   const { dispatch, startVat, possiblyDeadSet, testHooks } = r; // omit 'm'
   return harden({
@@ -1714,14 +1709,6 @@ export function makeLiveSlots(
 
 // for tests
 export function makeMarshaller(syscall, gcTools, vatID = 'forVatID') {
-  const { m } = build(
-    syscall,
-    vatID,
-    DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
-    false,
-    {},
-    gcTools,
-    console,
-  );
+  const { m } = build(syscall, vatID, {}, {}, gcTools, console);
   return { m };
 }

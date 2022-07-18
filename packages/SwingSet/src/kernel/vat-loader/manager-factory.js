@@ -74,7 +74,12 @@ export function makeVatManagerFactory({
   }
 
   // returns promise for new vatManager
-  function vatManagerFactory(vatID, managerOptions, vatSyscallHandler) {
+  function vatManagerFactory(
+    vatID,
+    managerOptions,
+    liveSlotsOptions,
+    vatSyscallHandler,
+  ) {
     validateManagerOptions(managerOptions);
     const {
       managerType = defaultManagerType,
@@ -103,6 +108,7 @@ export function makeVatManagerFactory({
           vatID,
           bundle,
           managerOptions,
+          liveSlotsOptions,
           vatSyscallHandler,
         );
       }
@@ -111,6 +117,7 @@ export function makeVatManagerFactory({
         vatID,
         bundle,
         managerOptions,
+        liveSlotsOptions,
         vatSyscallHandler,
       );
     }
@@ -120,6 +127,7 @@ export function makeVatManagerFactory({
         vatID,
         bundle,
         managerOptions,
+        liveSlotsOptions,
         vatSyscallHandler,
       );
     }
@@ -129,6 +137,7 @@ export function makeVatManagerFactory({
         vatID,
         bundle,
         managerOptions,
+        liveSlotsOptions,
         vatSyscallHandler,
       );
     }
@@ -138,6 +147,7 @@ export function makeVatManagerFactory({
         vatID,
         bundle,
         managerOptions,
+        liveSlotsOptions,
         vatSyscallHandler,
       );
     }

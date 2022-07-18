@@ -235,15 +235,18 @@ export function makeVatLoader(stuff) {
       managerType,
       bundle: vatSourceBundle,
       metered: !!meterID,
-      enableDisavow,
       enableSetup,
       enablePipelining,
       sourcedConsole: makeSourcedConsole(vatID),
-      virtualObjectCacheSize,
       useTranscript,
       critical,
       name,
       ...overrideVatManagerOptions,
+    };
+    const liveSlotsOptions = {
+      virtualObjectCacheSize,
+      enableDisavow,
+      relaxDurabilityRules: kernelKeeper.getRelaxDurabilityRules(),
     };
 
     const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);
@@ -252,6 +255,7 @@ export function makeVatLoader(stuff) {
     const manager = await vatManagerFactory(
       vatID,
       managerOptions,
+      liveSlotsOptions,
       vatSyscallHandler,
     );
     starting && finish();
@@ -271,6 +275,7 @@ export function makeVatLoader(stuff) {
     const manager = await vatManagerFactory(
       vatID,
       managerOptions,
+      {},
       vatSyscallHandler,
     );
     return manager;

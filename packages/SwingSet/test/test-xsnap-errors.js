@@ -64,6 +64,7 @@ test('child termination distinguished from meter exhaustion', async t => {
     'v1',
     bundle,
     managerOptions,
+    {},
     schandler,
   );
 

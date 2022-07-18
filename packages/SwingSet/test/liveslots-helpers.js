@@ -124,8 +124,7 @@ export async function makeDispatch(
   syscall,
   build,
   vatID = 'vatA',
-  enableDisavow = false,
-  cacheSize = undefined,
+  liveSlotsOptions = {},
   returnTestHooks = undefined,
 ) {
   const gcTools = harden({
@@ -139,14 +138,12 @@ export async function makeDispatch(
     syscall,
     vatID,
     {},
-    cacheSize,
-    enableDisavow,
+    liveSlotsOptions,
     gcTools,
     undefined,
     () => {
       return { buildRootObject: build };
     },
-    false,
   );
   await startVat(capargs());
   if (returnTestHooks) {
@@ -177,8 +174,7 @@ export async function setupTestLiveslots(
     syscall,
     buildRootObject,
     vatName,
-    false,
-    0,
+    { virtualObjectCacheSize: 0 },
     th,
   );
   const [testHooks] = th;
