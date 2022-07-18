@@ -35,6 +35,7 @@ func GetTxCmd(storeKey string) *cobra.Command {
 		GetCmdDeliver(),
 		GetCmdProvisionOne(),
 		GetCmdInstallBundle(),
+		GetCmdWalletAction(),
 	)
 
 	return swingsetTxCmd
