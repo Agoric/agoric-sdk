@@ -9,6 +9,7 @@ import { assert } from '@agoric/assert';
  * @param {Proposal=} proposal
  * @param {PaymentPKeywordRecord=} payments
  * @param {Pattern} [proposalSchema]
+ * @param {string} [description]
  * @returns {Promise<{zcfSeat: ZCFSeat, userSeat: UserSeat}>}
  */
 export const makeOffer = async (
@@ -17,6 +18,7 @@ export const makeOffer = async (
   proposal,
   payments,
   proposalSchema = undefined,
+  description = 'seat',
 ) => {
   let zcfSeat;
   const getSeat = seat => {
@@ -24,7 +26,7 @@ export const makeOffer = async (
   };
   const invitationP = zcf.makeInvitation(
     getSeat,
-    'seat',
+    description,
     undefined,
     proposalSchema,
   );

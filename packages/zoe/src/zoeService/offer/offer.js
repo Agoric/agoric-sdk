@@ -46,13 +46,13 @@ export const makeOfferMethod = (
       !instanceAdmin.isBlocked(description),
       X`not accepting offer with description ${q(description)}`,
     );
-    instanceAdmin.assertAcceptingOffers();
-
     const { invitationHandle } = await burnInvitation(
       invitationIssuer,
       invitation,
     );
     // AWAIT ///
+
+    instanceAdmin.assertAcceptingOffers();
 
     const proposal = cleanProposal(uncleanProposal, getAssetKindByBrand);
     const proposalSchema = getProposalSchemaForInvitation(invitationHandle);

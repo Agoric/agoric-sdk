@@ -16,6 +16,9 @@ const { details: X, quote: q } = assert;
 
 const isAlphanumeric = /^[a-zA-Z0-9]+$/;
 
+const isAlphaNumericString = s =>
+  typeof s === 'string' && isAlphanumeric.test(s);
+
 /**
  * @param {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @param {UnwrapInstallation} unwrapInstallation
@@ -72,14 +75,12 @@ export const makeStartInstance = (
 
     const setOfferFilter = strings => {
       assert(Array.isArray(strings), X`${q(strings)} must be an Array`);
-      const proposedStrings = Array.from(strings);
+      const proposedStrings = harden([...strings]);
       assert(
-        proposedStrings.every(
-          s => typeof s === 'string' && isAlphanumeric.test(s),
-        ),
+        proposedStrings.every(isAlphaNumericString),
         X`Blocked strings (${q(
-          strings,
-        )}) must be a (possibly empty) Array of alpha-numeric strings.`,
+          proposedStrings,
+        )}) must be an Array of alpha-numeric strings.`,
       );
 
       offerFilterStrings = proposedStrings;

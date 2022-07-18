@@ -1402,17 +1402,20 @@ test(`zcf.stopAcceptingOffers`, async t => {
 test(`zcf.setOfferFilter - illegal string`, async t => {
   const { zcf } = await setupZCFTest();
   await t.throwsAsync(() => zcf.setOfferFilter(['try-this']), {
-    message: /must be a \(possibly empty\) Array of alpha-numeric strings/,
+    message:
+      'Blocked strings (["try-this"]) must be an Array of alpha-numeric strings.',
   });
   await t.throwsAsync(() => zcf.setOfferFilter([374]), {
-    message: /must be a \(possibly empty\) Array of alpha-numeric strings/,
+    message:
+      'Blocked strings ([374]) must be an Array of alpha-numeric strings.',
   });
 });
 
 test(`zcf.setOfferFilter - illegal lists`, async t => {
   const { zcf } = await setupZCFTest();
   await t.throwsAsync(() => zcf.setOfferFilter(['try this', 'or this*']), {
-    message: /must be a \(possibly empty\) Array of alpha-numeric strings/,
+    message:
+      'Blocked strings (["try this","or this*"]) must be an Array of alpha-numeric strings.',
   });
   await t.throwsAsync(() => zcf.setOfferFilter('nonList'), {
     message: /"nonList" must be an Array/,

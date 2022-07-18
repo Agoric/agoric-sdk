@@ -49,10 +49,12 @@ const setupContract = async (moolaIssuer, bucksIssuer) => {
   return { zoe, zcf };
 };
 
+const description = 'offerSeatForTest';
+
 test(`blockedOffers - deny`, async t => {
   const { moola, moolaIssuer, bucksMint, bucks, bucksIssuer } = setup();
   const { zoe, zcf } = await setupContract(moolaIssuer, bucksIssuer);
-  await zcf.setOfferFilter(['eat']);
+  await zcf.setOfferFilter(['offerSeatFor']);
 
   await t.throwsAsync(
     () =>
@@ -61,8 +63,10 @@ test(`blockedOffers - deny`, async t => {
         zcf,
         harden({ want: { A: moola(3n) }, give: { B: bucks(5n) } }),
         harden({ B: bucksMint.mintPayment(bucks(5n)) }),
+        undefined,
+        description,
       ),
-    { message: 'not accepting offer with description "seat"' },
+    { message: `not accepting offer with description "${description}"` },
   );
 });
 
@@ -75,6 +79,8 @@ test(`blockedOffers - allow empty`, async t => {
     zcf,
     harden({ want: { A: moola(3n) }, give: { B: bucks(5n) } }),
     harden({ B: bucksMint.mintPayment(bucks(5n)) }),
+    undefined,
+    description,
   );
 
   const newBucks = bucksMint.mintPayment(bucks(2n));
@@ -94,6 +100,8 @@ test(`blockedOffers - allow`, async t => {
     zcf,
     harden({ want: { A: moola(3n) }, give: { B: bucks(5n) } }),
     harden({ B: bucksMint.mintPayment(bucks(5n)) }),
+    undefined,
+    description,
   );
 
   const newBucks = bucksMint.mintPayment(bucks(2n));
