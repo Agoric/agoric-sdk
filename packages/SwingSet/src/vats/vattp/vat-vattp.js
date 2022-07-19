@@ -1,4 +1,9 @@
 import { assert, details as X } from '@agoric/assert';
+import {
+  makeScalarBigMapStore,
+  defineDurableKindMulti,
+  provideKindHandle,
+} from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
@@ -29,21 +34,60 @@ function makeCounter(render, initialValue = 7) {
   return harden(get);
 }
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(vatPowers, _vatParams, baggage) {
   const { D } = vatPowers;
   let mailbox; // mailbox device
-  const remotes = new Map();
-  // { outbound: { highestRemoved, highestAdded },
-  //   inbound: { highestDelivered, receiver } }
 
-  function getRemote(name) {
-    if (!remotes.has(name)) {
-      remotes.set(name, {
-        outbound: { highestRemoved: 0, highestAdded: 0 },
-        inbound: { highestDelivered: 0, receiver: null },
-      });
+  const mailboxKindHandle = provideKindHandle(baggage, 'Mailbox');
+  const initMailboxState = () => ({
+    outboundHighestAdded: 0,
+    outboundHighestRemoved: 0,
+    inboundHighestDelivered: 0,
+    inboundReceiver: null,
+  });
+  const makeMailbox = defineDurableKindMulti(
+    mailboxKindHandle,
+    initMailboxState,
+    {
+      outbound: {
+        getHighestAdded: ({ state }) => state.outboundHighestAdded,
+        setHighestAdded: ({ state }, highestAdded) => {
+          assert(highestAdded >= state.outboundHighestAdded);
+          state.outboundHighestAdded = highestAdded;
+        },
+        getHighestRemoved: ({ state }) => state.outboundHighestRemoved,
+        setHighestRemoved: ({ state }, highestRemoved) => {
+          assert(highestRemoved >= state.outboundHighestRemoved);
+          state.outboundHighestRemoved = highestRemoved;
+        },
+      },
+      inbound: {
+        getReceiver: ({ state }) => state.inboundReceiver,
+        initReceiver: ({ state }, receiver) => {
+          assert.equal(state.inboundReceiver, null);
+          state.inboundReceiver = receiver;
+        },
+        getHighestDelivered: ({ state }) => state.inboundHighestDelivered,
+        setHighestDelivered: ({ state }, highestDelivered) => {
+          assert(highestDelivered >= state.inboundHighestDelivered);
+          state.inboundHighestDelivered = highestDelivered;
+        },
+      },
+    },
+  );
+
+  if (!baggage.has('mailboxes')) {
+    baggage.init(
+      'mailboxes',
+      makeScalarBigMapStore('mailboxes', { durable: true }),
+    );
+  }
+  const mailboxes = baggage.get('mailboxes');
+  function provideMailbox(name) {
+    if (!mailboxes.has(name)) {
+      mailboxes.init(name, makeMailbox());
     }
-    return remotes.get(name);
+    return mailboxes.get(name);
   }
 
   const receivers = new WeakMap(); // connection -> receiver
@@ -140,51 +184,54 @@ export function buildRootObject(vatPowers) {
       mailbox = mailboxDevnode;
     },
 
-    /*
-     * 'name' is a string, and must match the name you pass to
-     * deliverInboundMessages/deliverInboundAck
+    /**
+     * @param {string} name  Unique name identifying the remote for "deliverInbound" functions
      */
     addRemote(name) {
-      assert(!remotes.has(name), X`already have remote ${name}`);
-      const r = getRemote(name);
+      assert(!mailboxes.has(name), X`already have remote ${name}`);
+      const r = provideMailbox(name);
       const transmitter = Far('transmitter', {
         transmit(msg) {
-          const o = r.outbound;
-          const num = o.highestAdded + 1;
-          // console.debug(`transmit to ${name}[${num}]: ${msg}`);
+          // Durability question: are these references to `r` and `name` safe?
+          // If not, then what is the proper strategy?
+          // Do we need to be durable all the way up, with "vat-tp handler" being
+          // a durable singleton with state referencing `mailboxes` from baggage,
+          // an addRemote function reaching into that state and returning a
+          // durable object of its own, and deliverInboundMessages/deliverInboundAck
+          // functions that also leverage that state?
+          const num = r.outbound.getHighestAdded() + 1;
           D(mailbox).add(name, num, msg);
-          o.highestAdded = num;
+          r.outbound.setHighestAdded(num);
         },
       });
       const setReceiver = Far('receiver setter', {
         setReceiver(newReceiver) {
-          assert(!r.inbound.receiver, X`setReceiver is call-once`);
-          r.inbound.receiver = newReceiver;
+          assert(!r.inbound.getReceiver(), X`setReceiver is call-once`);
+          r.inbound.initReceiver(newReceiver);
         },
       });
       return harden({ transmitter, setReceiver });
     },
 
     deliverInboundMessages(name, newMessages) {
-      const i = getRemote(name).inbound;
+      const i = provideMailbox(name).inbound;
       newMessages.forEach(m => {
         const [num, body] = m;
-        if (num > i.highestDelivered) {
+        if (num > i.getHighestDelivered()) {
           // TODO: SO() / sendOnly()
-          // console.debug(`receive from ${name}[${num}]: ${body}`);
-          E(i.receiver).receive(body);
-          i.highestDelivered = num;
+          E(i.getReceiver()).receive(body);
+          i.setHighestDelivered(num);
           D(mailbox).ackInbound(name, num);
         }
       });
     },
 
     deliverInboundAck(name, ack) {
-      const o = getRemote(name).outbound;
-      let num = o.highestRemoved + 1;
-      while (num <= o.highestAdded && num <= ack) {
+      const o = provideMailbox(name).outbound;
+      let num = o.getHighestRemoved() + 1;
+      while (num <= o.getHighestAdded() && num <= ack) {
         D(mailbox).remove(name, num);
-        o.highestRemoved = num;
+        o.setHighestRemoved(num);
         num += 1;
       }
     },
