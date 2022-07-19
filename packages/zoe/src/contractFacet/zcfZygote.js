@@ -319,7 +319,6 @@ export const makeZCFZygote = (
     /** @type {SetTestJig} */
     setTestJig: (testFn = () => ({})) => {
       if (testJigSetter) {
-        console.warn('TEST ONLY: capturing test data', testFn);
         testJigSetter({ ...testFn(), zcf });
       }
     },

@@ -2,13 +2,8 @@
 /* eslint dot-notation: "off" */
 /* eslint object-shorthand: "off" */
 
-// `test.serial` does not yet seem compatible with ses-ava
-// See https://github.com/endojs/endo/issues/647
-// TODO restore
-// import { test } from '../tools/prepare-test-env-ava.js';
-import '../tools/prepare-test-env.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
+// eslint-disable-next-line import/order -- has side-effects AND exports
+import { test } from '../tools/prepare-test-env-ava.js';
 
 import path from 'path';
 import bundleSource from '@endo/bundle-source';

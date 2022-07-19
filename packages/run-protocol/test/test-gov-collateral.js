@@ -586,4 +586,4 @@ test('Committee can raise debt limit', async t => {
   });
 });
 
-// test.todo('users can open vaults');
+test.todo('users can open vaults');

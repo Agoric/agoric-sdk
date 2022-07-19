@@ -1,7 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava'; // TODO ses-ava doesn't yet have test.todo
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { parseAsValue } from '../../src/display/display.js';
 

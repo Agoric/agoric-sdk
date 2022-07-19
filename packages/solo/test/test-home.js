@@ -1,12 +1,6 @@
 /* global process */
 
-// `test.after.always` does not yet seem compatible with ses-ava
-// See https://github.com/endojs/endo/issues/647
-// TODO restore
-// import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import '@agoric/swingset-vat/tools/prepare-test-env.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
