@@ -14,11 +14,6 @@ import { handlePKitWarning } from '../handleWarning.js';
 
 const { details: X, quote: q } = assert;
 
-const isAlphanumeric = /^[a-zA-Z0-9]+$/;
-
-const isAlphaNumericString = s =>
-  typeof s === 'string' && isAlphanumeric.test(s);
-
 /**
  * @param {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @param {UnwrapInstallation} unwrapInstallation
@@ -69,18 +64,20 @@ export const makeStartInstance = (
     // Invitations whose descriptions contain any of the strings will be blocked
     /** @type {Readonly<string[]>} */
     let offerFilterStrings = [];
-    // if any string in the list matches, don't process the invitation
-    const isBlocked = string =>
-      offerFilterStrings.some(s => string.indexOf(s) > -1);
+    // if any string in the list matches, don't process the invitation. Strings
+    // that end in ':' may be prefix matches, others must match exactly.
+    const isBlocked = string => {
+      return offerFilterStrings.some(s => {
+        return string === s || (s.slice(-1) === ':' && string.startsWith(s));
+      });
+    };
 
     const setOfferFilter = strings => {
       assert(Array.isArray(strings), X`${q(strings)} must be an Array`);
       const proposedStrings = harden([...strings]);
       assert(
-        proposedStrings.every(isAlphaNumericString),
-        X`Blocked strings (${q(
-          proposedStrings,
-        )}) must be an Array of alpha-numeric strings.`,
+        proposedStrings.every(s => typeof s === 'string'),
+        X`Blocked strings (${q(proposedStrings)}) must be an Array of strings.`,
       );
 
       offerFilterStrings = proposedStrings;
