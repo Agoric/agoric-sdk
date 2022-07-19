@@ -84,8 +84,20 @@ const start = async (zcf, privateArgs, baggage) => {
     'liquidityBrandForBrand',
   );
 
+  const takeFeeMint = async () => {
+    if (baggage.has('runMint')) {
+      return baggage.get('runMint');
+    }
+
+    const runMintTemp = await zcf.registerFeeMint(
+      RunKW,
+      privateArgs.feeMintAccess,
+    );
+    baggage.init('runMint', runMintTemp);
+    return runMintTemp;
+  };
   /** @type {ZCFMint} */
-  const runMint = await zcf.registerFeeMint(RunKW, privateArgs.feeMintAccess);
+  const runMint = await takeFeeMint();
   const runKit = runMint.getIssuerRecord();
 
   const getTotalFeeMinted = () =>
@@ -110,7 +122,9 @@ const start = async (zcf, privateArgs, baggage) => {
 
   // shortfall in Vaults due to liquidations less than debt. This value can be
   // reduced by various actions which burn RUN.
-  let shortfallBalance = AmountMath.makeEmpty(runKit.brand);
+  let shortfallBalance = provide(baggage, 'shortfallBalance', () =>
+    AmountMath.makeEmpty(runKit.brand),
+  );
 
   /**
    * @param {Brand} brand
@@ -124,7 +138,7 @@ const start = async (zcf, privateArgs, baggage) => {
   saveBrandKeyword(runKit.brand, RunKW);
   // no need to saveIssuer() b/c registerFeeMint did it
 
-  const { augmentDurablePublicFacet, makeDurableGovernorFacet, params } =
+  const { augmentPublicFacet, makeGovernorFacet, params } =
     await handleParamGovernance(
       zcf,
       privateArgs.initialPoserInvitation,
@@ -283,14 +297,17 @@ const start = async (zcf, privateArgs, baggage) => {
 
   const increaseLiquidationShortfall = shortfall => {
     shortfallBalance = AmountMath.add(shortfallBalance, shortfall);
+    baggage.set('shortfallBalance', shortfallBalance);
     updateMetrics();
   };
+
   const reduceLiquidationShortfall = reduction => {
     if (AmountMath.isGTE(reduction, shortfallBalance)) {
       shortfallBalance = AmountMath.makeEmptyFromAmount(shortfallBalance);
     } else {
       shortfallBalance = AmountMath.subtract(shortfallBalance, reduction);
     }
+    baggage.set('shortfallBalance', shortfallBalance);
     updateMetrics();
   };
 
@@ -391,7 +408,7 @@ const start = async (zcf, privateArgs, baggage) => {
     );
   };
 
-  const creatorFacet = makeDurableGovernorFacet(
+  const creatorFacet = makeGovernorFacet(
     {
       makeAddCollateralInvitation,
       // add makeRedeemLiquidityTokensInvitation later. For now just store them
@@ -403,7 +420,7 @@ const start = async (zcf, privateArgs, baggage) => {
     { addLiquidityToAmmPool, burnRUNToReduceShortfall },
   );
 
-  const publicFacet = augmentDurablePublicFacet(
+  const publicFacet = augmentPublicFacet(
     Far('Collateral Reserve public', {
       makeAddCollateralInvitation,
       addIssuerFromAmm,
