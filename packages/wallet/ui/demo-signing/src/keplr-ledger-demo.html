@@ -5,9 +5,13 @@
 <form>
     <label>Chain: <input name="chainId" readonly /></label>
     <br />
-    <label>Account: <input name="account" readonly />
+    <label>Spending Account: <input name="account" readonly />
         <input type="checkbox" name="isNanoLedger" /> isNanoLedger
     </label>
+    <br />
+    <label>Messaging Account: <input name="messagingAccount" readonly />
+    </label>
+    <button type="button" id="makeMessagingAccount">Grant</button>
     <br />
     <fieldset><legend>Offer 1</legend>
         <label>Action: <br /><textarea name="action" rows="4" cols="60">{"give": 10, "want": 1}</textarea></label>
