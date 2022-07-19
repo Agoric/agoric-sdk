@@ -203,11 +203,8 @@ const makeVaultInvitation = ({ state }) => {
   return zcf.makeInvitation(makeVaultHook, 'MakeVault');
 };
 
-// TODO put on machineFacet for use again in publicFacet
 /**
- * Make a loan in the vaultManager based on the collateral type.
- *
- * @deprecated
+ * @deprecated get `collaterals` list from metrics
  * @param {MethodContext} context
  */
 const getCollaterals = async ({ state }) => {
