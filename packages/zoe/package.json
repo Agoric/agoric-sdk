@@ -94,6 +94,7 @@
       "test/unitTests/zcf/test-feeMintAccess.js",
       "# import.meta.url by way of setupZcfTest",
       "test/unitTests/test-zoe.js",
+      "test/unitTests/test-blockedOffers.js",
       "test/unitTests/zcf/test-reallocate-empty.js",
       "test/unitTests/zcf/test-zoeHelpersWZcf.js",
       "test/unitTests/zcf/test-reallocateForZCFMint.js",

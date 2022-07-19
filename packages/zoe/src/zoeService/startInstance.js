@@ -61,6 +61,28 @@ export const makeStartInstance = (
 
     const instance = makeInstanceHandle();
 
+    // Invitations whose descriptions match any of the strings will be blocked
+    /** @type {Readonly<string[]>} */
+    let offerFilterStrings = [];
+    // if any string in the list matches, don't process the invitation. Strings
+    // that end in ':' may be prefix matches, others must match exactly.
+    const isBlocked = string => {
+      return offerFilterStrings.some(s => {
+        return string === s || (s.slice(-1) === ':' && string.startsWith(s));
+      });
+    };
+
+    const setOfferFilter = strings => {
+      assert(Array.isArray(strings), X`${q(strings)} must be an Array`);
+      const proposedStrings = harden([...strings]);
+      assert(
+        proposedStrings.every(s => typeof s === 'string'),
+        X`Blocked strings (${q(proposedStrings)}) must be an Array of strings.`,
+      );
+
+      offerFilterStrings = proposedStrings;
+    };
+
     const zoeInstanceStorageManager = await makeZoeInstanceStorageManager(
       installation,
       customTerms,
@@ -181,6 +203,7 @@ export const makeStartInstance = (
           seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
           return { userSeat, notifier };
         },
+        isBlocked,
       });
       return instanceAdmin;
     };
@@ -226,6 +249,7 @@ export const makeStartInstance = (
         }
       },
       stopAcceptingOffers: () => instanceAdmin.stopAcceptingOffers(),
+      setOfferFilter,
     });
 
     // At this point, the contract will start executing. All must be

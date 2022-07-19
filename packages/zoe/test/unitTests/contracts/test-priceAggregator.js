@@ -11,7 +11,6 @@ import { Far } from '@endo/marshal';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';
 
-import { assert } from '@agoric/assert';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
@@ -382,17 +381,19 @@ test('oracle invitation', /** @param {ExecutionContext} t */ async t => {
   updater1.updateState('1234');
   await E(oracleTimer).tick();
   await E(oracleTimer).tick();
+  await E(oracleTimer).tick();
   const { value: value1, updateCount: uc1 } = await E(
     notifier,
   ).getUpdateSince();
-  t.deepEqual(value1.quoteAmount.value, makeQuoteValue(2n, 1_234_000_000n));
+  t.deepEqual(value1.quoteAmount.value, makeQuoteValue(3n, 1_234_000_000n));
 
   updater1.updateState('1234.567');
+  await E(oracleTimer).tick();
   await E(oracleTimer).tick();
   const { value: value2, updateCount: uc2 } = await E(notifier).getUpdateSince(
     uc1,
   );
-  t.deepEqual(value2.quoteAmount.value, makeQuoteValue(3n, 1_234_567_000n));
+  t.deepEqual(value2.quoteAmount.value, makeQuoteValue(5n, 1_234_567_000n));
 
   const inv2 = await E(aggregator.creatorFacet).makeOracleInvitation('oracle2');
   const { notifier: oracle2, updater: updater2 } = makeNotifierKit();
@@ -403,6 +404,7 @@ test('oracle invitation', /** @param {ExecutionContext} t */ async t => {
   const oracleAdmin2 = E(or2).getOfferResult();
 
   updater2.updateState('1234');
+  await E(oracleTimer).tick();
   await E(oracleTimer).tick();
   await E(oracleTimer).tick();
   const { value: value3, updateCount: uc3 } = await E(notifier).getUpdateSince(
@@ -418,7 +420,7 @@ test('oracle invitation', /** @param {ExecutionContext} t */ async t => {
   );
   t.deepEqual(
     value3.quoteAmount.value,
-    makeQuoteValue(5n, multiplyBy(amountIn, medianPrice).value),
+    makeQuoteValue(8n, multiplyBy(amountIn, medianPrice).value),
   );
 
   await E(oracleAdmin1).delete();
@@ -428,23 +430,22 @@ test('oracle invitation', /** @param {ExecutionContext} t */ async t => {
   const { value: value4, updateCount: uc4 } = await E(notifier).getUpdateSince(
     uc3,
   );
-  t.deepEqual(value4.quoteAmount.value, makeQuoteValue(6n, 1_234_000n));
+  t.deepEqual(value4.quoteAmount.value, makeQuoteValue(9n, 1_234_000n));
 
   updater2.updateState('1234.567890');
   await E(oracleTimer).tick();
   const { value: value5, updateCount: uc5 } = await E(notifier).getUpdateSince(
     uc4,
   );
-  t.deepEqual(value5.quoteAmount.value, makeQuoteValue(7n, 1_234_567n));
+  t.deepEqual(value5.quoteAmount.value, makeQuoteValue(10n, 1_234_567n));
 
   updater2.updateState(makeRatio(987_654n, brandOut, 500_000n, brandIn));
   await E(oracleTimer).tick();
-  const { value: value6, updateCount: uc6 } = await E(notifier).getUpdateSince(
+  const { value: value6, updateCount: _uc6 } = await E(notifier).getUpdateSince(
     uc5,
   );
-  t.deepEqual(value6.quoteAmount.value, makeQuoteValue(8n, 987_654n * 2n));
+  t.deepEqual(value6.quoteAmount.value, makeQuoteValue(11n, 987_654n * 2n));
 
-  uc6;
   await E(oracleAdmin2).delete();
 });
 

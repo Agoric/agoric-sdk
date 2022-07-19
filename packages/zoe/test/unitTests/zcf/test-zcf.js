@@ -1398,3 +1398,18 @@ test(`zcf.stopAcceptingOffers`, async t => {
     'can still query live seat',
   );
 });
+
+test(`zcf.setOfferFilter - illegal lists`, async t => {
+  const { zcf } = await setupZCFTest();
+  await t.throwsAsync(() => zcf.setOfferFilter('nonList'), {
+    message: /"nonList" must be an Array/,
+  });
+});
+
+test(`zcf.setOfferFilter - legal lists`, async t => {
+  const { zcf } = await setupZCFTest();
+  t.is(await zcf.setOfferFilter(['fooOffer']), undefined);
+  t.is(await zcf.setOfferFilter([]), undefined);
+  t.is(await zcf.setOfferFilter(['fooOffer', 'barOffer']), undefined);
+  t.is(await zcf.setOfferFilter(['fooOffer: ', 'bar Offer']), undefined);
+});
