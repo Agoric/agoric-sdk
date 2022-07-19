@@ -13,6 +13,8 @@ import type {
   WeakSetStore,
 } from '@agoric/store';
 
+type Baggage = MapStore<string, unknown>;
+
 type Tail<T extends any[]> = T extends [head: any, ...rest: infer Rest]
   ? Rest
   : [];
@@ -116,3 +118,19 @@ interface PickFacet {
     facetName: F,
   ): (...args: Parameters<M>) => ReturnType<M>[F];
 }
+
+type VivifyKind = <P, S, F>(
+  baggage: Baggage,
+  tag: string,
+  init: (...args: P) => S,
+  facet: F,
+  options?: DefineKindOptions<KindContext<S, F>>,
+) => (...args: P) => KindFacet<F>;
+
+type VivifyKindMulti = <P, S, B>(
+  baggage: Baggage,
+  tag: string,
+  init: (...args: P) => S,
+  behavior: B,
+  options?: DefineKindOptions<MultiKindContext<S, B>>,
+) => (...args: P) => KindFacets<B>;
