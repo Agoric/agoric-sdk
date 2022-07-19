@@ -4,12 +4,12 @@ import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
 import { makeStore } from '@agoric/store';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
-import { assert } from '@agoric/assert';
 import { evalContractBundle } from '../src/contractFacet/evalContractCode.js';
 import { handlePKitWarning } from '../src/handleWarning.js';
 import { makeHandle } from '../src/makeHandle.js';
-import zcfContractBundle from '../bundles/bundle-contractFacet.js';
+import zcfBundle from '../bundles/bundle-contractFacet.js';
 
 /** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */
 /** @typedef { import('@agoric/swingset-vat').EndoZipBase64Bundle} EndoZipBase64Bundle */
@@ -17,7 +17,8 @@ import zcfContractBundle from '../bundles/bundle-contractFacet.js';
 // this simulates a bundlecap, which is normally a swingset "device node"
 /** @typedef { import('@agoric/swingset-vat').BundleCap } BundleCap */
 /** @type {() => BundleCap} */
-const fakeBundleCap = () => makeHandle('BundleCap');
+const fakeBundleCap = () => makeHandle('FakeBundleCap');
+const bogusBundleCap = () => makeHandle('BogusBundleCap');
 export const zcfBundleCap = fakeBundleCap();
 
 /**
@@ -52,13 +53,13 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   const admin = Far('vatAdmin', {
     getBundleCap: bundleID => {
       if (!idToBundleCap.has(bundleID)) {
-        idToBundleCap.init(bundleID, fakeBundleCap());
+        idToBundleCap.init(bundleID, bogusBundleCap());
       }
       return Promise.resolve(idToBundleCap.get(bundleID));
     },
     waitForBundleCap: bundleID => {
       if (!idToBundleCap.has(bundleID)) {
-        idToBundleCap.init(bundleID, fakeBundleCap());
+        idToBundleCap.init(bundleID, bogusBundleCap());
       }
       return Promise.resolve(idToBundleCap.get(bundleID));
     },
@@ -66,9 +67,8 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
       assert.equal(name, 'zcf', 'fakeVatAdmin only knows ZCF');
       return Promise.resolve(zcfBundleCap);
     },
-    createVat: bundleCap => {
+    createVat: (bundleCap, { vatParameters = {} } = {}) => {
       assert.equal(bundleCap, zcfBundleCap, 'fakeVatAdmin only knows ZCF');
-      const bundle = zcfContractBundle;
       const exitKit = makePromiseKit();
       handlePKitWarning(exitKit);
       const exitVat = completion => {
@@ -77,19 +77,38 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
         exitWithFailure = false;
         exitKit.resolve(completion);
       };
+      const vpow = harden({
+        ...fakeVatPowers,
+        exitVat,
+      });
+      const vatBaggage = makeScalarBigMapStore('fake vat baggage', {
+        durable: true,
+      });
+
+      // XXX Notice that this call isn't wrapping vatParams.  We (BW, CH) tried
+      // doing this, but backed out when it got complex.
+      //
+      // const ns = await evalContractBundle(zcfBundle);
+      // const ns2 = makeRemote(
+      //   Far('wrappedRoot', {
+      //     buildRootObject: vp => ns.buildRootObject(vpow, vp, vatBaggage),
+      //   }),
+      // );
       return Promise.resolve(
         harden({
           root: makeRemote(
-            E(evalContractBundle(bundle)).buildRootObject({
-              ...fakeVatPowers,
-              exitVat,
-            }),
+            E(evalContractBundle(zcfBundle)).buildRootObject(
+              vpow,
+              vatParameters,
+              vatBaggage,
+            ),
           ),
           adminNode: Far('adminNode', {
             done: () => {
               return exitKit.promise;
             },
             terminateWithFailure: () => {},
+            upgrade: (_bundleCap, _options) => assert.fail('upgrade not faked'),
           }),
         }),
       );

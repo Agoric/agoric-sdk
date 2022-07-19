@@ -7,7 +7,7 @@ import {
   makeScalarBigWeakMapStore,
 } from '@agoric/vat-data';
 
-import { makeIssuerStorage } from '../issuerStorage.js';
+import { provideIssuerStorage } from '../issuerStorage.js';
 import { makeAndStoreInstanceRecord } from '../instanceRecordStorage.js';
 import { makeIssuerRecord } from '../issuerRecord.js';
 import { makeEscrowStorage } from './escrowStorage.js';
@@ -52,7 +52,7 @@ export const makeZoeStorageManager = (
   // issuerStorage contains the issuers that the ZoeService knows
   // about, as well as information about them such as their brand,
   // assetKind, and displayInfo
-  const issuerStorage = makeIssuerStorage();
+  const issuerStorage = provideIssuerStorage(zoeBaggage);
   issuerStorage.instantiate();
 
   // EscrowStorage holds the purses that Zoe uses for escrow. This
@@ -114,6 +114,7 @@ export const makeZoeStorageManager = (
     customTerms,
     uncleanIssuerKeywordRecord,
     instance,
+    contractBundleCap,
   ) => {
     // Clean the issuerKeywordRecord we receive in `startInstance`
     // from the user, and save the issuers in Zoe if they are not
@@ -243,7 +244,7 @@ export const makeZoeStorageManager = (
       proposalSchemas,
     );
 
-    const { root, adminNode } = await createZCFVat();
+    const { root, adminNode } = await createZCFVat(contractBundleCap);
 
     return harden({
       getTerms: instanceRecordManager.getTerms,

@@ -281,9 +281,14 @@ export const installBootContracts = async ({
     mintHolder,
     walletFactory,
   })) {
+    // This really wants to be E(vatAdminSvc).getBundleIDByName, but it's
+    // good enough to do D(vatAdmin).getBundleIDByName
     const bundleCap = D(vatAdmin).getNamedBundleCap(name);
+
     const bundle = D(bundleCap).getBundle();
-    producer.resolve(E(zoe).install(bundle));
+    // TODO (#4374) this should be E(zoe).installBundleID(bundleID);
+    const installation = E(zoe).install(bundle);
+    producer.resolve(installation);
   }
 };
 

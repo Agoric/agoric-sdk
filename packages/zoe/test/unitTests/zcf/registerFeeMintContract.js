@@ -2,6 +2,7 @@
 
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
 /**
  * Tests zcf.registerFeeMint
@@ -26,7 +27,7 @@ const start = async (zcf, privateArgs) => {
     zcfSeat,
   );
 
-  const creatorFacet = harden({
+  const creatorFacet = Far('mint creator facet', {
     getMintedAmount: () => zcfSeat.getAmountAllocated('Winnings'),
     getMintedPayout: () => {
       zcfSeat.exit();

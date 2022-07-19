@@ -2,6 +2,10 @@ import { provide } from '@agoric/store';
 import { defineDurableKind, makeKindHandle } from './vat-data-bindings.js';
 
 /** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>} RemotableBrand */
+/** @typedef {import('@agoric/store').MapStore<string,unknown>} Baggage */
+/** @template T @typedef {import('./types.js').DefineKindOptions<T>} DefineKindOptions */
+/** @template T @typedef {import('./types.js').KindFacet<T>} KindFacet */
+/** @typedef {import('./types.js').DurableKindHandle} DurableKindHandle */
 
 const { entries, fromEntries } = Object;
 
@@ -12,6 +16,11 @@ export const dropContext =
 // @ts-expect-error TODO statically recognize harden
 harden(dropContext);
 
+/**
+ * @param {Baggage} baggage
+ * @param {string} kindName
+ * @returns {DurableKindHandle}
+ */
 export const provideKindHandle = (baggage, kindName) =>
   provide(baggage, `${kindName}_kindHandle`, () => makeKindHandle(kindName));
 // @ts-expect-error TODO statically recognize harden
@@ -62,14 +71,37 @@ export const objectMap = (original, mapFn) => {
   return /** @type {Record<K, U>} */ (harden(fromEntries(mapEnts)));
 };
 
-/** @typedef {import('@agoric/store').MapStore<string,unknown>} Baggage */
+/**
+ * @template P,S,B
+ * @param {Baggage} baggage
+ * @param {string} kindName
+ * @param {(...args: P[]) => S} init
+ * @param {B} behavior
+ * @param {DefineKindOptions<unknown>} [options]
+ * @returns {(...args: P[]) => KindFacet<B>}
+ */
+export const vivifyKind = (
+  baggage,
+  kindName,
+  init,
+  behavior,
+  options = undefined,
+) =>
+  defineDurableKind(
+    provideKindHandle(baggage, kindName),
+    init,
+    behavior,
+    options,
+  );
+// @ts-expect-error TODO statically recognize harden
+harden(vivifyKind);
 
 /**
  * @template T
  * @param {Baggage} baggage
  * @param {string} kindName
  * @param {T} methods
- * @param {import('./types.js').DefineKindOptions<unknown>} [options]
+ * @param {DefineKindOptions<unknown>} [options]
  * @returns {T & RemotableBrand<{}, T>}
  */
 export const vivifySingleton = (
@@ -78,10 +110,10 @@ export const vivifySingleton = (
   methods,
   options = undefined,
 ) => {
-  const kindHandle = provideKindHandle(baggage, kindName);
   const behavior = objectMap(methods, dropContext);
-  const makeSingleton = defineDurableKind(
-    kindHandle,
+  const makeSingleton = vivifyKind(
+    baggage,
+    kindName,
     () => ({}),
     behavior,
     options,

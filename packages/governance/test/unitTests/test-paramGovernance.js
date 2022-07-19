@@ -9,7 +9,6 @@ import bundleSource from '@endo/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { E } from '@endo/eventual-send';
-import { makeLoopback } from '@endo/captp';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
@@ -34,7 +33,7 @@ const voteCounterBundleP = makeBundle(voteCounterRoot);
 const governedBundleP = makeBundle(governedRoot);
 
 const setUpZoeForTest = async setJig => {
-  const { makeFar } = makeLoopback('zoeTest');
+  const makeFar = o => o;
 
   /**
    * These properties will be assigned by `setJig` in the contract.
@@ -44,7 +43,6 @@ const setUpZoeForTest = async setJig => {
    * @property {IssuerRecord} runIssuerRecord
    * @property {IssuerRecord} govIssuerRecord
    */
-
   const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
     makeFakeVatAdmin(setJig, o => makeFar(o)).admin,
   );

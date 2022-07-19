@@ -85,6 +85,6 @@ test('throw in offerHandler', async t => {
       // https://github.com/endojs/endo/pull/640
       //
       // /"brand" not found: .*/,
-      /.* not found: .*/,
+      /no ordinal for .*/,
   });
 });

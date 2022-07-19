@@ -33,6 +33,11 @@ export const makeInstanceRecordStorage = () => {
     );
 
   const addIssuerToInstanceRecord = (keyword, issuerRecord) => {
+    assert(
+      !(keyword in issuerRecord),
+      X`conflicting definition of ${q(keyword)}`,
+    );
+
     assertInstantiated();
     instanceRecord = {
       ...instanceRecord,

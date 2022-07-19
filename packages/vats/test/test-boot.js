@@ -108,19 +108,22 @@ const testRole = (ROLE, governanceActions) => {
       fakeBundleCaps.set(bundleCap, name);
       return bundleCap;
     };
-    const createVat = bundleCap => {
+    const createVat = (bundleCap, options) => {
       const name = fakeBundleCaps.get(bundleCap);
       assert(name);
       switch (name) {
         case 'zcf':
-          return fakeVatAdmin.createVat(zcfBundleCap);
+          return fakeVatAdmin.createVat(zcfBundleCap, options);
         default: {
           const buildRoot = vatRoots[name];
           if (!buildRoot) {
             throw Error(`TODO: load vat ${name}`);
           }
-          const vatParameters = {};
+          const vatParameters = { ...options?.vatParameters };
           if (name === 'zoe') {
+            // basic-behaviors.js:buildZoe() provides hard-coded zcf BundleName
+            // and vat-zoe.js ignores vatParameters, but this would be the
+            // preferred way to pass the name.
             vatParameters.zcfBundleName = 'zcf';
           }
           return { root: buildRoot({}, vatParameters), admin: {} };

@@ -84,7 +84,7 @@
  */
 
 /**
- * @template {object} [OR=any] OR is OfferResult
+ * @template {object} [OR=unknown] OR is OfferResult
  * @callback MakeInvitation
  *
  * Make a credible Zoe invitation for a particular smart contract
@@ -188,7 +188,7 @@
  * @typedef {object} ZCFSeat
  * @property {() => void} exit
  * @property {ZCFSeatFail} fail
- * @property {() => Notifier<Allocation>} getNotifier
+ * @property {() => Promise<Notifier<Allocation>>} getNotifier
  * @property {() => boolean} hasExited
  * @property {() => ProposalRecord} getProposal
  * @property {ZCFGetAmountAllocated} getAmountAllocated
@@ -206,11 +206,13 @@
  */
 
 /**
- * @template {object} [OR=any]
- * @callback OfferHandler
- * @param {ZCFSeat} seat
- * @param {object=} offerArgs
- * @returns {OR}
+ * @template {object} OR Offer results
+ * @typedef {(seat: ZCFSeat, offerArgs?: object) => OR} HandleOffer
+ */
+
+/**
+ * @template {object} [OR=unknown] Offer results
+ * @typedef {HandleOffer<OR> | { handle: HandleOffer<OR> }} OfferHandler
  */
 
 /**

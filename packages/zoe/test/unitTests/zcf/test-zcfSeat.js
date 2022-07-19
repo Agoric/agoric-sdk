@@ -69,9 +69,11 @@ test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
   const userSeat1 = await E(zoe).offer(invitation1);
   const userSeat2 = await E(zoe).offer(invitation2);
 
-  t.is(await E(userSeat1).getOfferResult(), 'ok', `userSeat1 offer result`);
+  const result = await E(userSeat1).getOfferResult();
+  t.is(result, 'ok', `userSeat1 offer result`);
 
-  t.deepEqual(await E(userSeat2).getPayouts(), {});
+  const payouts = await E(userSeat2).getPayouts();
+  t.deepEqual(payouts, {});
 
   await t.throwsAsync(E(userSeat2).getOfferResult(), {
     message: 'second seat failed',

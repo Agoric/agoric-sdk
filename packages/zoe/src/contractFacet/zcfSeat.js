@@ -1,9 +1,15 @@
 // @ts-check
 
-import { makeWeakStore, makeStore } from '@agoric/store';
+import {
+  provideDurableWeakMapStore,
+  provideDurableMapStore,
+  makeScalarBigMapStore,
+  vivifyKind,
+  dropContext,
+  makeScalarBigWeakMapStore,
+} from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
-import { Far } from '@endo/marshal';
 
 import { isOfferSafe } from './offerSafety.js';
 import { assertRightsConserved } from './rightsConservation.js';
@@ -17,14 +23,21 @@ export const createSeatManager = (
   zoeInstanceAdmin,
   getAssetKindByBrand,
   shutdownWithFailure,
+  zcfBaggage = makeScalarBigMapStore('zcfBaggage', { durable: true }),
 ) => {
   /** @type {WeakStore<ZCFSeat, Allocation>}  */
-  let activeZCFSeats = makeWeakStore('zcfSeat');
+  let activeZCFSeats = provideDurableWeakMapStore(zcfBaggage, 'activeZCFSeats');
   /** @type {Store<ZCFSeat, Allocation>} */
-  const zcfSeatToStagedAllocations = makeStore('zcfSeat');
+  const zcfSeatToStagedAllocations = provideDurableMapStore(
+    zcfBaggage,
+    'zcfSeatToStagedAllocations',
+  );
 
   /** @type {WeakStore<ZCFSeat, SeatHandle>} */
-  let zcfSeatToSeatHandle = makeWeakStore('zcfSeat');
+  let zcfSeatToSeatHandle = provideDurableWeakMapStore(
+    zcfBaggage,
+    'zcfSeatToSeatHandle',
+  );
 
   /** @type {(zcfSeat: ZCFSeat) => boolean} */
   const hasExited = zcfSeat => !activeZCFSeats.has(zcfSeat);
@@ -221,35 +234,33 @@ export const createSeatManager = (
     }
   };
 
-  /** @type {MakeZCFSeat} */
-  const makeZCFSeat = (
-    zoeSeatAdmin,
-    { proposal, notifier, initialAllocation, seatHandle },
-  ) => {
-    /**
-     * @param {ZCFSeat} zcfSeat
-     */
-    const assertNoStagedAllocation = zcfSeat => {
-      if (hasStagedAllocation(zcfSeat)) {
-        assert.fail(
-          X`The seat could not be exited with a staged but uncommitted allocation: ${getStagedAllocation(
-            zcfSeat,
-          )}. Please reallocate over this seat or clear the staged allocation.`,
-        );
-      }
-    };
+  /** @param {ZCFSeat} zcfSeat */
+  const assertNoStagedAllocation = zcfSeat => {
+    if (hasStagedAllocation(zcfSeat)) {
+      assert.fail(
+        X`The seat could not be exited with a staged but uncommitted allocation: ${getStagedAllocation(
+          zcfSeat,
+        )}. Please reallocate over this seat or clear the staged allocation.`,
+      );
+    }
+  };
 
-    /** @type {ZCFSeat} */
-    const zcfSeat = Far('zcfSeat', {
-      getNotifier: () => notifier,
-      getProposal: () => proposal,
-      exit: completion => {
-        assertActive(zcfSeat);
-        assertNoStagedAllocation(zcfSeat);
-        doExitSeat(zcfSeat);
-        E(zoeSeatAdmin).exit(completion);
+  const makeZCFSeatInternal = vivifyKind(
+    zcfBaggage,
+    'zcfSeat',
+    proposal => ({ proposal }),
+    {
+      getNotifier: ({ self }) =>
+        E(zoeInstanceAdmin).getSeatNotifier(zcfSeatToSeatHandle.get(self)),
+      getProposal: ({ state }) => state.proposal,
+      exit: ({ self }, completion) => {
+        assertActive(self);
+        assertNoStagedAllocation(self);
+        doExitSeat(self);
+        E(zoeInstanceAdmin).exitSeat(zcfSeatToSeatHandle.get(self), completion);
       },
       fail: (
+        { self },
         reason = new Error(
           'Seat exited with failure. Please check the log for more information.',
         ),
@@ -261,17 +272,20 @@ export const createSeatManager = (
             'ZCFSeat.fail was called with a string reason, but requires an Error argument.',
           );
         }
-        if (!hasExited(zcfSeat)) {
-          doExitSeat(zcfSeat);
-          E(zoeSeatAdmin).fail(harden(reason));
+        if (!hasExited(self)) {
+          doExitSeat(self);
+          E(zoeInstanceAdmin).failSeat(
+            zcfSeatToSeatHandle.get(self),
+            harden(reason),
+          );
         }
         return reason;
       },
-      hasExited: () => hasExited(zcfSeat),
+      hasExited: ({ self }) => hasExited(self),
 
-      getAmountAllocated: (keyword, brand) => {
-        assertActive(zcfSeat);
-        const currentAllocation = getCurrentAllocation(zcfSeat);
+      getAmountAllocated: ({ self }, keyword, brand) => {
+        assertActive(self);
+        const currentAllocation = getCurrentAllocation(self);
         if (currentAllocation[keyword] !== undefined) {
           return currentAllocation[keyword];
         }
@@ -282,59 +296,69 @@ export const createSeatManager = (
         const assetKind = getAssetKindByBrand(brand);
         return AmountMath.makeEmpty(brand, assetKind);
       },
-      getCurrentAllocation: () => getCurrentAllocation(zcfSeat),
-      getStagedAllocation: () => getStagedAllocation(zcfSeat),
-      isOfferSafe: newAllocation => {
-        assertActive(zcfSeat);
-        const currentAllocation = getCurrentAllocation(zcfSeat);
+      getCurrentAllocation: ({ self }) => getCurrentAllocation(self),
+      getStagedAllocation: ({ self }) => getStagedAllocation(self),
+      isOfferSafe: ({ state, self }, newAllocation) => {
+        assertActive(self);
+        const currentAllocation = getCurrentAllocation(self);
         const reallocation = harden({
           ...currentAllocation,
           ...newAllocation,
         });
 
-        return isOfferSafe(proposal, reallocation);
+        return isOfferSafe(state.proposal, reallocation);
       },
-      incrementBy: amountKeywordRecord => {
-        assertActive(zcfSeat);
+      incrementBy: ({ self }, amountKeywordRecord) => {
+        assertActive(self);
         amountKeywordRecord = coerceAmountKeywordRecord(
           amountKeywordRecord,
           getAssetKindByBrand,
         );
         setStagedAllocation(
-          zcfSeat,
-          addToAllocation(getStagedAllocation(zcfSeat), amountKeywordRecord),
+          self,
+          addToAllocation(getStagedAllocation(self), amountKeywordRecord),
         );
         return amountKeywordRecord;
       },
-      decrementBy: amountKeywordRecord => {
-        assertActive(zcfSeat);
+      decrementBy: ({ self }, amountKeywordRecord) => {
+        assertActive(self);
         amountKeywordRecord = coerceAmountKeywordRecord(
           amountKeywordRecord,
           getAssetKindByBrand,
         );
         setStagedAllocation(
-          zcfSeat,
+          self,
           subtractFromAllocation(
-            getStagedAllocation(zcfSeat),
+            getStagedAllocation(self),
             amountKeywordRecord,
           ),
         );
         return amountKeywordRecord;
       },
-      clear,
-      hasStagedAllocation: () => hasStagedAllocation(zcfSeat),
-    });
-
+      clear: dropContext(clear),
+      hasStagedAllocation: ({ self }) => hasStagedAllocation(self),
+    },
+  );
+  const makeZCFSeat = ({ proposal, initialAllocation, seatHandle }) => {
+    const zcfSeat = makeZCFSeatInternal(proposal);
     activeZCFSeats.init(zcfSeat, initialAllocation);
     zcfSeatToSeatHandle.init(zcfSeat, seatHandle);
-
     return zcfSeat;
+  };
+
+  const replaceDurableWeakMapStore = (baggage, key) => {
+    const mapStore = makeScalarBigWeakMapStore(key, { durable: true });
+    baggage.set(key, mapStore);
+    return mapStore;
   };
 
   /** @type {DropAllReferences} */
   const dropAllReferences = () => {
-    activeZCFSeats = makeWeakStore('zcfSeat');
-    zcfSeatToSeatHandle = makeWeakStore('zcfSeat');
+    activeZCFSeats = replaceDurableWeakMapStore(zcfBaggage, 'activeZCFSeats');
+    zcfSeatToSeatHandle = replaceDurableWeakMapStore(
+      zcfBaggage,
+      'zcfSeatToSeatHandle',
+    );
   };
 
   return harden({

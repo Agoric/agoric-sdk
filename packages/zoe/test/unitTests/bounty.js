@@ -16,10 +16,11 @@ import { AmountMath } from '@agoric/ertp';
  */
 import { assertProposalShape } from '../../src/contractSupport/index.js';
 
+/** @param {ZCF<any>} zcf */
 const start = async zcf => {
   const { oracle, deadline, condition, timer, fee } = zcf.getTerms();
 
-  /** @type {OfferHandler} */
+  /** @type {(funderSeat: ZCFSeat) => Promise<Invitation>} */
   function funder(funderSeat) {
     const endowBounty = harden({
       give: { Bounty: null },
@@ -48,7 +49,7 @@ const start = async zcf => {
       zcf.shutdown('The bounty was not earned');
     }
 
-    /** @type {OfferHandler} */
+    /** @type {(bountySeat: ZCFSeat) => void} */
     function beneficiary(bountySeat) {
       const feeProposal = harden({
         give: { Fee: null },

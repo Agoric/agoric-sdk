@@ -15,21 +15,22 @@ import { handlePKitWarning } from '../handleWarning.js';
 const { details: X, quote: q } = assert;
 
 /**
- * @param {Promise<ZoeService>} zoeServicePromise
  * @param {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @param {UnwrapInstallation} unwrapInstallation
+ * @param {ERef<BundleCap>} zcfBundleCapP
+ * @param {(id: string) => BundleCap} getBundleCapByIdNow
  * @param {Baggage} [zoeBaggage]
  * @returns {import('./utils.js').StartInstance}
  */
 export const makeStartInstance = (
-  zoeServicePromise,
   makeZoeInstanceStorageManager,
   unwrapInstallation,
+  zcfBundleCapP,
+  getBundleCapByIdNow,
   zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
 ) => {
   const makeInstanceHandle = defineDurableHandle(zoeBaggage, 'Instance');
-  // TODO(MSM): Should be 'Seat' rather than 'SeatHandle'
-  const makeSeatHandle = defineDurableHandle(zoeBaggage, 'SeatHandle');
+  const makeSeatHandle = defineDurableHandle(zoeBaggage, 'Seat');
 
   const startInstance = async (
     installationP,
@@ -45,8 +46,8 @@ export const makeStartInstance = (
     );
     // AWAIT ///
 
-    const bundleOrBundleCap = bundle || bundleCap;
-    assert(bundleOrBundleCap);
+    const contractBundleCap = bundle || bundleCap;
+    assert(contractBundleCap);
 
     if (privateArgs !== undefined) {
       const passStyle = passStyleOf(privateArgs);
@@ -65,6 +66,7 @@ export const makeStartInstance = (
       customTerms,
       uncleanIssuerKeywordRecord,
       instance,
+      contractBundleCap,
     );
     // AWAIT ///
 
@@ -122,7 +124,7 @@ export const makeStartInstance = (
           handlePKitWarning(exitObjPromiseKit);
           const seatHandle = makeSeatHandle();
 
-          const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
+          const { userSeat, zoeSeatAdmin } = makeZoeSeatAdminKit(
             initialAllocation,
             exitZoeSeatAdmin,
             hasExited,
@@ -137,24 +139,31 @@ export const makeStartInstance = (
           const seatData = harden({
             proposal,
             initialAllocation,
-            notifier,
             seatHandle,
             offerArgs,
           });
 
           zoeSeatAdmins.add(zoeSeatAdmin);
 
-          E(handleOfferObjPromiseKit.promise)
-            .handleOffer(invitationHandle, zoeSeatAdmin, seatData)
-            .then(({ offerResultP, exitObj }) => {
-              offerResultPromiseKit.resolve(offerResultP);
+          E.when(
+            E(handleOfferObjPromiseKit.promise).handleOffer(
+              invitationHandle,
+              seatData,
+            ),
+            ({ offerResultPromise, exitObj }) => {
+              offerResultPromiseKit.resolve(offerResultPromise);
               exitObjPromiseKit.resolve(exitObj);
-            });
+            },
+            err => {
+              adminNode.terminateWithFailure(err);
+              throw err;
+            },
+          );
 
           // return the userSeat before the offerHandler is called
           return userSeat;
         },
-        makeNoEscrowSeat: (
+        makeNoEscrowSeatKit: (
           initialAllocation,
           proposal,
           exitObj,
@@ -170,7 +179,7 @@ export const makeStartInstance = (
           );
           zoeSeatAdmins.add(zoeSeatAdmin);
           seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
-          return { userSeat, notifier, zoeSeatAdmin };
+          return { userSeat, notifier };
         },
       });
       return instanceAdmin;
@@ -192,9 +201,17 @@ export const makeStartInstance = (
       // checks of keyword done on zcf side
       saveIssuer: zoeInstanceStorageManager.saveIssuer,
       // A Seat requested by the contract without any payments to escrow
-      makeNoEscrowSeat: instanceAdmin.makeNoEscrowSeat,
+      makeNoEscrowSeatKit: instanceAdmin.makeNoEscrowSeatKit,
       exitAllSeats: completion => instanceAdmin.exitAllSeats(completion),
       failAllSeats: reason => instanceAdmin.failAllSeats(reason),
+      exitSeat: (seatHandle, completion) => {
+        seatHandleToZoeSeatAdmin.get(seatHandle).exit(completion);
+      },
+      failSeat: (seatHandle, reason) => {
+        seatHandleToZoeSeatAdmin.get(seatHandle).fail(reason);
+      },
+      getSeatNotifier: seatHandle =>
+        seatHandleToZoeSeatAdmin.get(seatHandle).getNotifier(),
       makeZoeMint: zoeInstanceStorageManager.makeZoeMint,
       registerFeeMint: zoeInstanceStorageManager.registerFeeMint,
       replaceAllocations: seatHandleAllocations => {
@@ -219,10 +236,7 @@ export const makeStartInstance = (
       publicFacet = Far('emptyPublicFacet', {}),
       creatorInvitation: creatorInvitationP,
       handleOfferObj,
-    } = await E(zcfRoot).executeContract(
-      bundleOrBundleCap,
-      zoeServicePromise,
-      zoeInstanceStorageManager.invitationIssuer,
+    } = await E(zcfRoot).startZcf(
       zoeInstanceAdminForZcf,
       zoeInstanceStorageManager.getInstanceRecord(),
       zoeInstanceStorageManager.getIssuerRecords(),
@@ -237,7 +251,8 @@ export const makeStartInstance = (
     return Promise.allSettled([
       creatorInvitationP,
       zoeInstanceStorageManager.invitationIssuer.isLive(creatorInvitationP),
-    ]).then(([invitationResult, isLiveResult]) => {
+      zcfBundleCapP,
+    ]).then(([invitationResult, isLiveResult, zcfBundleCapResult]) => {
       let creatorInvitation;
       if (invitationResult.status === 'fulfilled') {
         creatorInvitation = invitationResult.value;
@@ -248,13 +263,39 @@ export const makeStartInstance = (
           'The contract did not correctly return a creatorInvitation',
         );
       }
+      if (zcfBundleCapResult !== undefined) {
+        assert(
+          zcfBundleCapResult.status === 'fulfilled' && zcfBundleCapResult.value,
+          'the budnle cap was broken',
+        );
+      }
       const adminFacet = Far('adminFacet', {
         getVatShutdownPromise: () => E(adminNode).done(),
+        restartContract: _newPrivateArgs => {
+          const vatParameters = { contractBundleCap };
+          return E(adminNode).upgrade(zcfBundleCapResult.value, {
+            vatParameters,
+          });
+        },
+        upgradeContract: async (contractBundleId, newPrivateArgs) => {
+          const newContractBundleCap = await getBundleCapByIdNow(
+            contractBundleId,
+          );
+          const vatParameters = {
+            contractBundleCap: newContractBundleCap,
+            privateArgs: newPrivateArgs,
+          };
+          return E(adminNode).upgrade(zcfBundleCapResult.value, {
+            vatParameters,
+          });
+        },
       });
 
       // Actually returned to the user.
       return {
         creatorFacet,
+
+        // TODO (#5775) deprecate this return value from contracts.
         creatorInvitation,
         instance,
         publicFacet,

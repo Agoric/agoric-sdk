@@ -2,22 +2,26 @@
 
 import { E } from '@endo/eventual-send';
 import { Far, Remotable, passStyleOf } from '@endo/marshal';
-import { AssetKind, AmountMath } from '@agoric/ertp';
-import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
+import { AssetKind } from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assertPattern } from '@agoric/store';
+import {
+  makeScalarBigMapStore,
+  provideDurableMapStore,
+  canBeDurable,
+  vivifyKind,
+} from '@agoric/vat-data';
 
-import { cleanProposal, coerceAmountKeywordRecord } from '../cleanProposal.js';
+import { cleanProposal } from '../cleanProposal.js';
 import { evalContractBundle } from './evalContractCode.js';
 import { makeExitObj } from './exit.js';
-import { makeHandle } from '../makeHandle.js';
-import { makeIssuerStorage } from '../issuerStorage.js';
-import { makeIssuerRecord } from '../issuerRecord.js';
+import { defineDurableHandle } from '../makeHandle.js';
+import { provideIssuerStorage } from '../issuerStorage.js';
 import { createSeatManager } from './zcfSeat.js';
 import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
-import { handlePWarning, handlePKitWarning } from '../handleWarning.js';
+import { handlePKitWarning } from '../handleWarning.js';
 import { makeOfferHandlerStorage } from './offerHandlerStorage.js';
-import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
+import { makeZCFMintFactory } from './zcfMint.js';
 
 import '../../exported.js';
 import '../internal-types.js';
@@ -36,14 +40,19 @@ const { details: X, makeAssert } = assert;
  * @param {ERef<ZoeService>} zoeService
  * @param {Issuer} invitationIssuer
  * @param {TestJigSetter} testJigSetter
- * @returns {ZCFZygote}
+ * @param {BundleCap} contractBundleCap
+ * @param {import('@agoric/vat-data').Baggage} zcfBaggage
+ * @returns {Promise<ZCFZygote>}
  */
-export const makeZCFZygote = (
+export const makeZCFZygote = async (
   powers,
   zoeService,
   invitationIssuer,
   testJigSetter,
+  contractBundleCap,
+  zcfBaggage = makeScalarBigMapStore('zcfBaggage', { durable: true }),
 ) => {
+  const makeSeatHandle = defineDurableHandle(zcfBaggage, 'Seat');
   /** @type {PromiseRecord<ZoeInstanceAdmin>} */
   const zoeInstanceAdminPromiseKit = makePromiseKit();
   const zoeInstanceAdmin = zoeInstanceAdminPromiseKit.promise;
@@ -54,7 +63,7 @@ export const makeZCFZygote = (
     getBrandForIssuer,
     getIssuerForBrand,
     instantiate: instantiateIssuerStorage,
-  } = makeIssuerStorage();
+  } = provideIssuerStorage(zcfBaggage);
 
   /** @type {ShutdownWithFailure} */
   const shutdownWithFailure = reason => {
@@ -70,9 +79,11 @@ export const makeZCFZygote = (
       zoeInstanceAdmin,
       getAssetKindByBrand,
       shutdownWithFailure,
+      zcfBaggage,
     );
 
-  const { storeOfferHandler, takeOfferHandler } = makeOfferHandlerStorage();
+  const { storeOfferHandler, takeOfferHandler } =
+    makeOfferHandlerStorage(zcfBaggage);
 
   // Make the instanceRecord
   const {
@@ -91,133 +102,33 @@ export const makeZCFZygote = (
   const makeEmptySeatKit = (exit = undefined) => {
     const initialAllocation = harden({});
     const proposal = cleanProposal(harden({ exit }), getAssetKindByBrand);
-    const { notifier, updater } = makeNotifierKit();
-    /** @type {PromiseRecord<ZoeSeatAdmin>} */
-    const zoeSeatAdminPromiseKit = makePromiseKit();
-    handlePKitWarning(zoeSeatAdminPromiseKit);
     const userSeatPromiseKit = makePromiseKit();
     handlePKitWarning(userSeatPromiseKit);
-    const seatHandle = makeHandle('SeatHandle');
+    const seatHandle = makeSeatHandle();
 
     const seatData = harden({
       proposal,
       initialAllocation,
-      notifier,
       seatHandle,
     });
-    const zcfSeat = makeZCFSeat(zoeSeatAdminPromiseKit.promise, seatData);
+    const zcfSeat = makeZCFSeat(seatData);
 
     const exitObj = makeExitObj(seatData.proposal, zcfSeat);
 
     E(zoeInstanceAdmin)
-      .makeNoEscrowSeat(initialAllocation, proposal, exitObj, seatHandle)
-      .then(({ zoeSeatAdmin, notifier: zoeNotifier, userSeat }) => {
-        observeNotifier(zoeNotifier, updater);
-        zoeSeatAdminPromiseKit.resolve(zoeSeatAdmin);
-        userSeatPromiseKit.resolve(userSeat);
-      });
+      .makeNoEscrowSeatKit(initialAllocation, proposal, exitObj, seatHandle)
+      .then(({ userSeat }) => userSeatPromiseKit.resolve(userSeat));
 
     return { zcfSeat, userSeat: userSeatPromiseKit.promise };
   };
 
-  // A helper for the code shared between MakeZCFMint and RegisterZCFMint
-  const doMakeZCFMint = async (keyword, zoeMintP) => {
-    const {
-      brand: mintyBrand,
-      issuer: mintyIssuer,
-      displayInfo: mintyDisplayInfo,
-    } = await E(zoeMintP).getIssuerRecord();
-    // AWAIT
-    const mintyIssuerRecord = makeIssuerRecord(
-      mintyBrand,
-      mintyIssuer,
-      mintyDisplayInfo,
-    );
-    recordIssuer(keyword, mintyIssuerRecord);
-
-    const empty = AmountMath.makeEmpty(mintyBrand, mintyDisplayInfo.assetKind);
-    const add = (total, amountToAdd) => {
-      return AmountMath.add(total, amountToAdd, mintyBrand);
-    };
-
-    /** @type {ZCFMint} */
-    const zcfMint = Far('zcfMint', {
-      getIssuerRecord: () => {
-        return mintyIssuerRecord;
-      },
-      mintGains: (gains, zcfSeat = undefined) => {
-        gains = coerceAmountKeywordRecord(gains, getAssetKindByBrand);
-        if (zcfSeat === undefined) {
-          zcfSeat = makeEmptySeatKit().zcfSeat;
-        }
-        const totalToMint = Object.values(gains).reduce(add, empty);
-        assert(
-          !zcfSeat.hasExited(),
-          `zcfSeat must be active to mint gains for the zcfSeat`,
-        );
-        const allocationPlusGains = addToAllocation(
-          zcfSeat.getCurrentAllocation(),
-          gains,
-        );
-
-        // Increment the stagedAllocation if it exists so that the
-        // stagedAllocation is kept up to the currentAllocation
-        if (zcfSeat.hasStagedAllocation()) {
-          zcfSeat.incrementBy(gains);
-        }
-
-        // Offer safety should never be able to be violated here, as
-        // we are adding assets. However, we keep this check so that
-        // all reallocations are covered by offer safety checks, and
-        // that any bug within Zoe that may affect this is caught.
-        assert(
-          zcfSeat.isOfferSafe(allocationPlusGains),
-          X`The allocation after minting gains ${allocationPlusGains} for the zcfSeat was not offer safe`,
-        );
-        // No effects above, apart from incrementBy. Note COMMIT POINT within
-        // reallocateForZCFMint. The following two steps *should* be
-        // committed atomically, but it is not a disaster if they are
-        // not. If we minted only, no one would ever get those
-        // invisibly-minted assets.
-        E(zoeMintP).mintAndEscrow(totalToMint);
-        reallocateForZCFMint(zcfSeat, allocationPlusGains);
-        return zcfSeat;
-      },
-      burnLosses: (losses, zcfSeat) => {
-        losses = coerceAmountKeywordRecord(losses, getAssetKindByBrand);
-        const totalToBurn = Object.values(losses).reduce(add, empty);
-        assert(
-          !zcfSeat.hasExited(),
-          `zcfSeat must be active to burn losses from the zcfSeat`,
-        );
-        const allocationMinusLosses = subtractFromAllocation(
-          zcfSeat.getCurrentAllocation(),
-          losses,
-        );
-
-        // verifies offer safety
-        assert(
-          zcfSeat.isOfferSafe(allocationMinusLosses),
-          X`The allocation after burning losses ${allocationMinusLosses} for the zcfSeat was not offer safe`,
-        );
-
-        // Decrement the stagedAllocation if it exists so that the
-        // stagedAllocation is kept up to the currentAllocation
-        if (zcfSeat.hasStagedAllocation()) {
-          zcfSeat.decrementBy(losses);
-        }
-
-        // No effects above, apart from decrementBy. Note COMMIT POINT within
-        // reallocateForZCFMint. The following two steps *should* be
-        // committed atomically, but it is not a disaster if they are
-        // not. If we only commit the allocationMinusLosses no one would
-        // ever get the unburned assets.
-        reallocateForZCFMint(zcfSeat, allocationMinusLosses);
-        E(zoeMintP).withdrawAndBurn(totalToBurn);
-      },
-    });
-    return zcfMint;
-  };
+  const zcfMintFactory = await makeZCFMintFactory(
+    zcfBaggage,
+    recordIssuer,
+    getAssetKindByBrand,
+    makeEmptySeatKit,
+    reallocateForZCFMint,
+  );
 
   /**
    * @template {AssetKind} [K='nat']
@@ -234,24 +145,23 @@ export const makeZCFZygote = (
   ) => {
     assertUniqueKeyword(keyword);
 
-    const zoeMintP = E(zoeInstanceAdmin).makeZoeMint(
+    const zoeMint = await E(zoeInstanceAdmin).makeZoeMint(
       keyword,
       assetKind,
       displayInfo,
     );
-
-    return doMakeZCFMint(keyword, zoeMintP);
+    return zcfMintFactory.makeZCFMintInternal(keyword, zoeMint);
   };
 
   /** @type {ZCFRegisterFeeMint} */
   const registerFeeMint = async (keyword, feeMintAccess) => {
     assertUniqueKeyword(keyword);
 
-    const zoeMintP = E(zoeInstanceAdmin).registerFeeMint(
+    const zoeMint = await E(zoeInstanceAdmin).registerFeeMint(
       keyword,
       feeMintAccess,
     );
-    return doMakeZCFMint(keyword, zoeMintP);
+    return zcfMintFactory.makeZCFMintInternal(keyword, zoeMint);
   };
 
   /** @type {ZCF} */
@@ -327,13 +237,22 @@ export const makeZCFZygote = (
 
   // handleOfferObject gives Zoe the ability to notify ZCF when a new seat is
   // added in offer(). ZCF responds with the exitObj and offerResult.
-  /** @type {HandleOfferObj} */
-  const handleOfferObj = Far('handleOfferObj', {
-    handleOffer: (invitationHandle, zoeSeatAdmin, seatData) => {
-      const zcfSeat = makeZCFSeat(zoeSeatAdmin, seatData);
-      const offerHandler = takeOfferHandler(invitationHandle);
-      const offerResultP = E(offerHandler)(zcfSeat, seatData.offerArgs).catch(
-        reason => {
+  const makeHandleOfferObj = vivifyKind(
+    zcfBaggage,
+    'handleOfferObj',
+    () => ({}),
+    {
+      handleOffer: (_context, invitationHandle, seatData) => {
+        const zcfSeat = makeZCFSeat(seatData);
+        // TODO: provide a details that's a better diagnostic for the
+        // ephemeral offerHandler that did not survive upgrade.
+        const offerHandler = takeOfferHandler(invitationHandle);
+        const offerResultP =
+          typeof offerHandler === 'function'
+            ? E(offerHandler)(zcfSeat, seatData.offerArgs)
+            : E(offerHandler).handle(zcfSeat, seatData.offerArgs);
+
+        const offerResultPromise = offerResultP.catch(reason => {
           if (reason === undefined) {
             const newErr = new Error(
               `If an offerHandler throws, it must provide a reason of type Error, but the reason was undefined. Please fix the contract code to specify a reason for throwing.`,
@@ -341,15 +260,46 @@ export const makeZCFZygote = (
             throw zcfSeat.fail(newErr);
           }
           throw zcfSeat.fail(reason);
-        },
-      );
-      const exitObj = makeExitObj(seatData.proposal, zcfSeat);
-      /** @type {HandleOfferResult} */
-      return harden({ offerResultP, exitObj });
+        });
+        const exitObj = makeExitObj(seatData.proposal, zcfSeat);
+        /** @type {HandleOfferResult} */
+        return harden({ offerResultPromise, exitObj });
+      },
     },
-  });
+  );
+  const handleOfferObj = makeHandleOfferObj();
 
-  let contractCode;
+  const evaluateContract = () => {
+    let bundle;
+    if (passStyleOf(contractBundleCap) === 'remotable') {
+      const bundleCap = contractBundleCap;
+      // @ts-expect-error vatPowers is not typed correctly: https://github.com/Agoric/agoric-sdk/issues/3239
+      bundle = powers.D(bundleCap).getBundle();
+    } else {
+      bundle = contractBundleCap;
+    }
+    return evalContractBundle(bundle);
+  };
+  // evaluate the contract (either the first version, or an upgrade)
+  const { start, buildRootObject, vivify } = await evaluateContract();
+
+  if (start === undefined && vivify === undefined) {
+    assert(
+      buildRootObject === undefined,
+      'Did you provide a vat bundle instead of a contract bundle?',
+    );
+    assert.fail('unrecognized contract exports');
+  }
+  assert(
+    !start || !vivify,
+    'contract must provide exactly one of "start" and "vivify"',
+  );
+
+  // snapshot zygote here //////////////////
+  // the zygote object below will be created now, but its methods won't be
+  // invoked until after the snapshot is taken.
+
+  const contractBaggage = provideDurableMapStore(zcfBaggage, 'contractBaggage');
 
   /**
    * A zygote is a pre-image of a vat that can quickly be instantiated because
@@ -361,50 +311,81 @@ export const makeZCFZygote = (
    * startContract every time a contract instance is created.
    *
    * @type {ZCFZygote}
-   * */
+   */
   const zcfZygote = {
-    evaluateContract: bundleOrBundleCap => {
-      let bundle;
-      if (passStyleOf(bundleOrBundleCap) === 'remotable') {
-        const bundleCap = bundleOrBundleCap;
-        // @ts-expect-error vatPowers is not typed correctly: https://github.com/Agoric/agoric-sdk/issues/3239
-        bundle = powers.D(bundleCap).getBundle();
-      } else {
-        bundle = bundleOrBundleCap;
-      }
-      contractCode = evalContractBundle(bundle);
-      handlePWarning(contractCode);
-    },
-    startContract: (
+    // wire zcf up to zoe instance-specific interfaces
+    startContract: async (
       instanceAdminFromZoe,
       instanceRecordFromZoe,
       issuerStorageFromZoe,
       privateArgs = undefined,
     ) => {
       zoeInstanceAdminPromiseKit.resolve(instanceAdminFromZoe);
+      zcfBaggage.init('instanceAdmin', instanceAdminFromZoe);
       instantiateInstanceRecordStorage(instanceRecordFromZoe);
       instantiateIssuerStorage(issuerStorageFromZoe);
 
-      // Next, execute the contract code, passing in zcf
-      /** @type {Promise<ExecuteContractResult>} */
-      const result = E(contractCode)
-        .start(zcf, privateArgs)
-        .then(
-          ({
-            creatorFacet = Far('emptyCreatorFacet', {}),
-            publicFacet = Far('emptyPublicFacet', {}),
-            creatorInvitation = undefined,
-          }) => {
-            return harden({
-              creatorFacet,
-              publicFacet,
-              creatorInvitation,
-              handleOfferObj,
-            });
-          },
-        );
-      handlePWarning(result);
-      return result;
+      const startFn = start || vivify;
+      // start a contract for the first time
+      return E.when(
+        startFn(zcf, privateArgs, contractBaggage),
+        ({
+          creatorFacet = undefined,
+          publicFacet = undefined,
+          creatorInvitation = undefined,
+        }) => {
+          const allDurable = [
+            creatorFacet,
+            publicFacet,
+            creatorInvitation,
+          ].every(canBeDurable);
+          if (vivify || allDurable) {
+            zcfBaggage.init('creatorFacet', creatorFacet);
+            zcfBaggage.init('publicFacet', publicFacet);
+            zcfBaggage.init('creatorInvitation', creatorInvitation);
+          }
+
+          return harden({
+            creatorFacet,
+            publicFacet,
+            creatorInvitation,
+            handleOfferObj,
+          });
+        },
+      );
+    },
+
+    restartContract: async (privateArgs = undefined) => {
+      const instanceAdmin = zcfBaggage.get('instanceAdmin');
+      zoeInstanceAdminPromiseKit.resolve(instanceAdmin);
+      assert(vivify, 'vivify must be defined to upgrade a contract');
+
+      // restart an upgradeable contract
+      return E.when(
+        vivify(zcf, privateArgs, contractBaggage),
+        ({
+          creatorFacet = undefined,
+          publicFacet = undefined,
+          creatorInvitation = undefined,
+        }) => {
+          const priorCreatorFacet = zcfBaggage.get('creatorFacet');
+          const priorPublicFacet = zcfBaggage.get('publicFacet');
+          const priorCreatorInvitation = zcfBaggage.get('creatorInvitation');
+
+          assert(
+            priorCreatorFacet === creatorFacet &&
+              priorPublicFacet === publicFacet &&
+              priorCreatorInvitation === creatorInvitation,
+            'restartContract failed: facets returned by contract changed identity',
+          );
+          return harden({
+            creatorFacet,
+            publicFacet,
+            creatorInvitation,
+            handleOfferObj,
+          });
+        },
+      );
     },
   };
   return harden(zcfZygote);
