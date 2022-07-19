@@ -49,7 +49,7 @@ const start = async zcf => {
       zcf.shutdown('The bounty was not earned');
     }
 
-    /** @type {(bountSeat: ZCFSeat) => void} */
+    /** @type {(bountySeat: ZCFSeat) => void} */
     function beneficiary(bountySeat) {
       const feeProposal = harden({
         give: { Fee: null },
