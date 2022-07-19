@@ -5,16 +5,23 @@ import {
   defaultRegistryTypes,
 } from '@cosmjs/stargate';
 import { fromBech32, toBech32, fromBase64, toBase64 } from '@cosmjs/encoding';
-import { Registry } from '@cosmjs/proto-signing';
+import { DirectSecp256k1Wallet, Registry } from '@cosmjs/proto-signing';
 import { html, render } from 'lit-html';
 import {
   AGORIC_COIN_TYPE,
+  COSMOS_COIN_TYPE,
   stakeCurrency,
   stableCurrency,
   bech32Config,
-  COSMOS_COIN_TYPE,
+  SwingsetMsgs,
 } from './chainInfo.js';
 import { MsgWalletAction } from './gen/swingset/msgs';
+import {
+  makeExecMessage,
+  makeFeeGrantMessage,
+  makeGrantWalletActionMessage,
+  makeMessagingSigner,
+} from './messagingKey.js';
 
 const { freeze } = Object;
 
@@ -73,16 +80,6 @@ const check = {
  *   }
  * }} WalletAction
  */
-
-/**
- * /agoric.swingset.XXX matches package agoric.swingset in swingset/msgs.go
- */
-const SwingsetMsgs = {
-  MsgWalletAction: {
-    typeUrl: '/agoric.swingset.MsgWalletAction',
-    aminoType: 'swingset/WalletAction',
-  },
-};
 
 /** @type {(address: string) => Uint8Array} */
 export function toAccAddress(address) {
@@ -150,7 +147,7 @@ const makeSigner = async (ui, keplr, connectWithSigner) => {
   const chainInfo = localChainInfo;
   const { chainId } = chainInfo;
   ui.setValue('*[name="chainId"]', chainId);
-  const { coinMinimalDenom: denom } = stakeCurrency;
+  const { coinMinimalDenom: denom } = stableCurrency;
 
   await keplr.experimentalSuggestChain(chainInfo);
   await keplr.enable(chainId);
@@ -176,58 +173,65 @@ const makeSigner = async (ui, keplr, connectWithSigner) => {
   });
   console.log({ cosmJS });
 
-  ui.onClick('#sign', async _ev => {
-    const { accountNumber, sequence } = await cosmJS.getSequence(address);
-    console.log({ accountNumber, sequence });
+  const fee = {
+    amount: [{ amount: '100', denom }],
+    gas: '100000', // TODO: estimate gas?
+  };
+  const allowance = '250000'; // 0.25 IST
 
-    const send1 = {
-      typeUrl: '/cosmos.bank.v1beta1.MsgSend',
-      value: {
-        amount: [
-          {
-            amount: '1234567',
-            denom,
-          },
-        ],
-        fromAddress: address,
-        toAddress: address,
-      },
-    };
+  return freeze({
+    address, // TODO: address can change
+    authorizeMessagingKey: async (grantee, t0) => {
+      const expiration = t0 / 1000 + 4 * 60 * 60;
+      const msgs = [
+        makeGrantWalletActionMessage(address, grantee, expiration),
 
-    /** @type {WalletAction} */
-    const act1 = {
-      typeUrl: '/agoric.swingset.MsgWalletAction',
-      value: {
-        owner: toBase64(toAccAddress(address)),
-        action: ui.textValue('*[name="action"]'),
-      },
-    };
+        // cosmos support for fee-account in MsgExec hasn't landed yet
+        // https://github.com/cosmos/cosmjs/issues/1155
+        // https://github.com/cosmos/cosmjs/pull/1159
+        // makeFeeGrantMessage(address, grantee, allowance, expiration),
+      ];
+      console.log('sign', { address, msgs, fee });
+      const tx = await cosmJS.signAndBroadcast(address, msgs, fee, '');
 
-    const msgs = [act1];
-    const fee = {
-      amount: [{ amount: '100', denom }],
-      gas: '100000',
-    };
-    const memo = ui.inputValue('*[name="memo"]');
+      console.log({ tx });
+      return tx;
+    },
+    acceptOffer: async (action, memo) => {
+      const { accountNumber, sequence } = await cosmJS.getSequence(address);
+      console.log({ accountNumber, sequence });
 
-    const signDoc = {
-      chain_id: chainId,
-      account_number: `${accountNumber}`,
-      sequence: `${sequence}`,
-      fee,
-      memo,
-      msgs,
-    };
+      /** @type {WalletAction} */
+      const act1 = {
+        typeUrl: '/agoric.swingset.MsgWalletAction', // TODO: SpendAction
+        value: {
+          owner: toBase64(toAccAddress(address)),
+          action,
+        },
+      };
 
-    // const tx = await cosmJS.signAmino(chainId, account.address, signDoc);
-    const signerData = { accountNumber, sequence, chainId };
-    console.log('sign', { address, msgs, fee, memo, signerData });
+      const msgs = [act1];
 
-    // const tx = await offlineSigner.signAmino(address, signDoc);
+      // const signDoc = {
+      //   chain_id: chainId,
+      //   account_number: `${accountNumber}`,
+      //   sequence: `${sequence}`,
+      //   fee,
+      //   memo,
+      //   msgs,
+      // };
 
-    const tx = await cosmJS.signAndBroadcast(address, msgs, fee, memo);
+      // const tx = await cosmJS.signAmino(chainId, account.address, signDoc);
+      // const signerData = { accountNumber, sequence, chainId };
+      console.log('sign', { address, msgs, fee, memo });
 
-    console.log({ tx });
+      // const tx = await offlineSigner.signAmino(address, signDoc);
+
+      const tx = await cosmJS.signAndBroadcast(address, msgs, fee, memo);
+
+      console.log({ tx });
+      return tx;
+    },
   });
 };
 
@@ -262,12 +266,77 @@ const makeUI = document => {
   });
 };
 
-window.addEventListener('load', _ev => {
+window.addEventListener('load', async _ev => {
   if (!('keplr' in window)) {
     // eslint-disable-next-line no-alert
     alert('Please install keplr extension');
   }
   // @ts-expect-error keplr is injected
   const { keplr } = window;
-  makeSigner(makeUI(document), keplr, SigningStargateClient.connectWithSigner);
+  const ui = makeUI(document);
+
+  const s1 = await makeSigner(
+    ui,
+    keplr,
+    SigningStargateClient.connectWithSigner,
+  );
+
+  ui.onClick('#acceptOffer', async _bev =>
+    s1.acceptOffer(
+      ui.textValue('*[name="spendAction"]'),
+      ui.inputValue('*[name="memo"]'),
+    ),
+  );
+
+  const s2 = await makeMessagingSigner({ localStorage: window.localStorage });
+  ui.setValue('*[name="messagingAccount"]', s2.address);
+
+  ui.onClick('#makeMessagingAccount', async _bev =>
+    s1.authorizeMessagingKey(s2.address, Date.now()),
+  );
+
+  const chainInfo = localChainInfo;
+  const lowPrivilegeClient = await SigningStargateClient.connectWithSigner(
+    chainInfo.rpc,
+    s2.wallet,
+    {
+      registry: aRegistry,
+    },
+  );
+  console.log({ lowPrivilegeClient });
+  console.log('low priv signer accounts', await s2.wallet.getAccounts());
+
+  ui.onClick('#sendMessages', async _bev => {
+    const { address } = s2;
+    const { accountNumber, sequence } = await lowPrivilegeClient.getSequence(
+      address,
+    );
+    console.log({ accountNumber, sequence });
+
+    const act1 = {
+      typeUrl: SwingsetMsgs.MsgWalletAction.typeUrl,
+      value: {
+        owner: toBase64(toAccAddress(s1.address)),
+        action: ui.inputValue('*[name="action"]'),
+      },
+    };
+    const msgs = [makeExecMessage(s2.address, [act1], aRegistry)];
+    const memo = ui.inputValue('*[name="memo"]');
+
+    const { coinMinimalDenom: denom } = stableCurrency;
+    const fee = {
+      amount: [{ amount: '0', denom }],
+      gas: '100000', // TODO: estimate gas?
+    };
+
+    console.log('sign', { address, msgs, fee, memo });
+    const tx = await lowPrivilegeClient.signAndBroadcast(
+      address,
+      msgs,
+      fee,
+      memo,
+    );
+
+    console.log({ tx });
+  });
 });
