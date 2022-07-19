@@ -76,7 +76,7 @@ export async function buildRootObject(powers, vatParameters, baggage) {
       zoeInstanceAdmin,
       instanceRecordFromZoe,
       issuerStorageFromZoe,
-      privateArgs,
+      privateArgs = undefined,
     ) => {
       /** @type {ZCFZygote} */
       return E(zcfZygote).startContract(
