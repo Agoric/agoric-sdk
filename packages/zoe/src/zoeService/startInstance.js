@@ -61,7 +61,7 @@ export const makeStartInstance = (
 
     const instance = makeInstanceHandle();
 
-    // Invitations whose descriptions contain any of the strings will be blocked
+    // Invitations whose descriptions match any of the strings will be blocked
     /** @type {Readonly<string[]>} */
     let offerFilterStrings = [];
     // if any string in the list matches, don't process the invitation. Strings
