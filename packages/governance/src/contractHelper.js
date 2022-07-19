@@ -58,6 +58,21 @@ const facetHelpers = (zcf, paramManager) => {
   };
 
   /**
+   * @template {{}} PF public facet
+   * @param {PF} originalPublicFacet
+   * @returns {GovernedPublicFacet<PF>}
+   */
+  const augmentDurablePublicFacet = originalPublicFacet => {
+    return Far('publicFacet', {
+      ...originalPublicFacet,
+      getSubscription: _context => paramManager.getSubscription(),
+      getContractGovernor: () => electionManager,
+      getGovernedParams: _context => paramManager.getParams(),
+      ...typedAccessors,
+    });
+  };
+
+  /**
    * @template {{}} CF creator facet
    * @param {CF} originalCreatorFacet
    * @returns {ERef<LimitedCreatorFacet<CF>>}
@@ -81,10 +96,41 @@ const facetHelpers = (zcf, paramManager) => {
     // exclusively for contractGovernor, which only reveals limitedCreatorFacet
     return Far('governorFacet', {
       // @ts-expect-error special case
-      getParamMgrRetriever: () => {
+      getParamMgrRetriever: () =>
+        Far('paramRetriever', { get: () => paramManager }),
+      getInvitation: name => paramManager.getInternalParamValue(name),
+      getLimitedCreatorFacet: () => limitedCreatorFacet,
+      // The contract provides a facet with the APIs that can be invoked by
+      // governance
+      getGovernedApis: () => Far('governedAPIs', governedApis),
+      // The facet returned by getGovernedApis is Far, so we can't see what
+      // methods it has. There's no clean way to have contracts specify the APIs
+      // without also separately providing their names.
+      getGovernedApiNames: () => Object.keys(governedApis),
+    });
+  };
+
+  /**
+   * @template {{}} CF creator facet
+   * @param {ERef<CF>} originalCreatorFacet
+   * @param {Record<string, (...args: any[]) => any>} governedApis
+   * @returns {ERef<GovernedCreatorFacet<CF>>}
+   */
+  const makeDurableGovernorFacet = (
+    originalCreatorFacet,
+    governedApis = {},
+  ) => {
+    const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
+
+    // exclusively for contractGovernor, which only reveals limitedCreatorFacet
+    return Far('governorFacet', {
+      // @ts-expect-error special case
+      getParamMgrRetriever: _context => {
         return Far('paramRetriever', { get: () => paramManager });
       },
-      getInvitation: name => paramManager.getInternalParamValue(name),
+      getInvitation: (_context, name) => {
+        return paramManager.getInternalParamValue(name);
+      },
       getLimitedCreatorFacet: () => limitedCreatorFacet,
       // The contract provides a facet with the APIs that can be invoked by
       // governance
@@ -98,7 +144,9 @@ const facetHelpers = (zcf, paramManager) => {
 
   return harden({
     augmentPublicFacet,
+    augmentDurablePublicFacet,
     makeGovernorFacet,
+    makeDurableGovernorFacet,
     params: paramManager.readonly(),
   });
 };

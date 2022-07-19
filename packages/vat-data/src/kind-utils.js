@@ -1,5 +1,9 @@
 import { provide } from '@agoric/store';
-import { defineDurableKind, makeKindHandle } from './vat-data-bindings.js';
+import {
+  defineDurableKind,
+  defineDurableKindMulti,
+  makeKindHandle,
+} from './vat-data-bindings.js';
 
 /** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>} RemotableBrand */
 /** @typedef {import('@agoric/store').MapStore<string,unknown>} Baggage */
@@ -95,6 +99,31 @@ export const vivifyKind = (
   );
 // @ts-expect-error TODO statically recognize harden
 harden(vivifyKind);
+
+/**
+ * @template P,S,B
+ * @param {Baggage} baggage
+ * @param {string} kindName
+ * @param {(...args: P[]) => S} init
+ * @param {B} behavior
+ * @param {DefineKindOptions<unknown>} [options]
+ * @returns {(...args: P[]) => KindFacet<B>}
+ */
+export const vivifyKindMulti = (
+  baggage,
+  kindName,
+  init,
+  behavior,
+  options = undefined,
+) =>
+  defineDurableKindMulti(
+    provideKindHandle(baggage, kindName),
+    init,
+    behavior,
+    options,
+  );
+// @ts-expect-error TODO statically recognize harden
+harden(vivifyKindMulti);
 
 /**
  * @template T

@@ -1,10 +1,11 @@
 // @ts-check
 
 import { E, Far } from '@endo/far';
-import { makeStore } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
+import { provideDurableMapStore, vivifyKindMulti } from '@agoric/vat-data';
+import { provide } from '@agoric/store';
 
 import { AMM_INSTANCE } from './params.js';
 import { makeTracer } from '../makeTracer.js';
@@ -31,6 +32,15 @@ const nonalphanumeric = /[^A-Za-z0-9]/g;
  */
 
 /**
+ * @typedef {{
+ *   state: {},
+ *   facets: { AssetReservePublicFacet, AssetReserveCreatorFacet },
+ * }} MethodContext
+ */
+
+/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+
+/**
  * Asset Reserve holds onto assets for the RUN protocol, and can
  * dispense it for various purposes under governance control. It currently
  * supports governance decisions to add liquidity to an AMM pool.
@@ -51,24 +61,56 @@ const nonalphanumeric = /[^A-Za-z0-9]/g;
  *   marshaller: ERef<Marshaller>,
  *   storageNode: ERef<StorageNode>,
  * }} privateArgs
+ * @param {Baggage} baggage
  */
-const start = async (zcf, privateArgs) => {
+const start = async (zcf, privateArgs, baggage) => {
   /**
    * Used to look up the unique keyword for each brand, including RUN.
    *
    * @type {MapStore<Brand, Keyword>}
    */
-  const keywordForBrand = makeStore('keywords');
+  const keywordForBrand = provideDurableMapStore(baggage, 'keywordForBrand');
   /**
    * Used to look up the brands for keywords, excluding RUN because it's a special case.
    *
    * @type {MapStore<Keyword, Brand>}
    */
-  const brandForKeyword = makeStore('brands');
+  const brandForKeyword = provideDurableMapStore(baggage, 'brandForKeyword');
   /**
    * @type {MapStore<Brand, Brand>}
    */
-  const liquidityBrandForBrand = makeStore('liquidityBrands');
+  const liquidityBrandForBrand = provideDurableMapStore(
+    baggage,
+    'liquidityBrandForBrand',
+  );
+
+  /** @type {ZCFMint} */
+  const runMint = await zcf.registerFeeMint(RunKW, privateArgs.feeMintAccess);
+  const runKit = runMint.getIssuerRecord();
+
+  const getTotalFeeMinted = () =>
+    provide(baggage, 'TotalFeeMinted', () =>
+      AmountMath.makeEmpty(runKit.brand),
+    );
+  const addFeeMinted = amount =>
+    baggage.set(
+      'TotalFeeMinted',
+      AmountMath.add(amount, baggage.get('TotalFeeMinted')),
+    );
+
+  const getTotalFeeBurned = () =>
+    provide(baggage, 'TotalFeeBurned', () =>
+      AmountMath.makeEmpty(runKit.brand),
+    );
+  const addFeeBurned = amount =>
+    baggage.set(
+      'TotalFeeBurned',
+      AmountMath.add(amount, baggage.get('TotalFeeBurned')),
+    );
+
+  // shortfall in Vaults due to liquidations less than debt. This value can be
+  // reduced by various actions which burn RUN.
+  let shortfallBalance = AmountMath.makeEmpty(runKit.brand);
 
   /**
    * @param {Brand} brand
@@ -79,7 +121,10 @@ const start = async (zcf, privateArgs) => {
     brandForKeyword.init(keyword, brand);
   };
 
-  const { augmentPublicFacet, makeGovernorFacet, params } =
+  saveBrandKeyword(runKit.brand, RunKW);
+  // no need to saveIssuer() b/c registerFeeMint did it
+
+  const { augmentDurablePublicFacet, makeDurableGovernorFacet, params } =
     await handleParamGovernance(
       zcf,
       privateArgs.initialPoserInvitation,
@@ -95,17 +140,12 @@ const start = async (zcf, privateArgs) => {
     params.getAmmInstance(),
   );
 
-  /** @type {ZCFMint} */
-  const runMint = await zcf.registerFeeMint(RunKW, privateArgs.feeMintAccess);
-  const runKit = runMint.getIssuerRecord();
-  saveBrandKeyword(runKit.brand, RunKW);
-  // no need to saveIssuer() b/c registerFeeMint does it
-
   /**
+   * @param {MethodContext} _context
    * @param {Issuer} issuer
    * @param {string} keyword
    */
-  const addIssuer = async (issuer, keyword) => {
+  const addIssuer = async (_context, issuer, keyword) => {
     const brand = await E(issuer).getBrand();
     trace('addIssuer', { brand, keyword });
     assert(
@@ -123,9 +163,10 @@ const start = async (zcf, privateArgs) => {
   };
 
   /**
+   * @param {MethodContext} _context
    * @param {Issuer} baseIssuer on which the liquidity issuer is based
    */
-  const addLiquidityIssuer = async baseIssuer => {
+  const addLiquidityIssuer = async (_context, baseIssuer) => {
     const getBrand = () => {
       try {
         return zcf.getBrandForIssuer(baseIssuer);
@@ -167,9 +208,10 @@ const start = async (zcf, privateArgs) => {
   };
 
   /**
+   * @param {MethodContext} context
    * @param {Brand} ammSecondaryBrand
    */
-  const addIssuerFromAmm = async ammSecondaryBrand => {
+  const addIssuerFromAmm = async (context, ammSecondaryBrand) => {
     assert(
       ammSecondaryBrand !== runKit.brand,
       X`${q(RunKW)} is a special case handled by the reserve contract`,
@@ -181,7 +223,7 @@ const start = async (zcf, privateArgs) => {
     const issuer = await E(ammPublicFacet).getSecondaryIssuer(
       ammSecondaryBrand,
     );
-    await addIssuer(issuer, keyword);
+    await addIssuer(context, issuer, keyword);
   };
 
   const getKeywordForBrand = brand => {
@@ -222,15 +264,6 @@ const start = async (zcf, privateArgs) => {
   const makeAddCollateralInvitation = () =>
     zcf.makeInvitation(addCollateralHook, 'Add Collateral');
 
-  const { brand: runBrand } = await E(runMint).getIssuerRecord();
-
-  let totalFeeMinted = AmountMath.makeEmpty(runBrand);
-  let totalFeeBurned = AmountMath.makeEmpty(runBrand);
-
-  // shortfall in Vaults due to liquidations less than debt. This value can be
-  // reduced by various actions which burn RUN.
-  let shortfallBalance = AmountMath.makeEmpty(runBrand);
-
   /** @type {import('../contractSupport.js').MetricsPublisherKit<MetricsNotification>} */
   const { metricsPublication, metricsSubscription } = makeMetricsPublisherKit(
     privateArgs.storageNode,
@@ -241,8 +274,8 @@ const start = async (zcf, privateArgs) => {
     const metrics = harden({
       allocations: getAllocations(),
       shortfallBalance,
-      totalFeeMinted,
-      totalFeeBurned,
+      totalFeeMinted: getTotalFeeMinted(),
+      totalFeeBurned: getTotalFeeBurned(),
     });
     metricsPublication.updateState(metrics);
   };
@@ -277,7 +310,7 @@ const start = async (zcf, privateArgs) => {
 
     // create the RUN
     const offerToSeat = runMint.mintGains(harden({ RUN: runAmount }));
-    totalFeeMinted = AmountMath.add(totalFeeMinted, runAmount);
+    addFeeMinted(runAmount);
 
     offerToSeat.incrementBy(
       collateralSeat.decrementBy(
@@ -329,8 +362,8 @@ const start = async (zcf, privateArgs) => {
   };
 
   const burnRUNToReduceShortfall = reduction => {
-    reduction = AmountMath.coerce(runBrand, reduction);
-    const runKeyword = keywordForBrand.get(runBrand);
+    reduction = AmountMath.coerce(runKit.brand, reduction);
+    const runKeyword = keywordForBrand.get(runKit.brand);
     const runBalance = collateralSeat.getAmountAllocated(runKeyword);
     const amountToBurn = AmountMath.min(reduction, runBalance);
     if (AmountMath.isEmpty(amountToBurn)) {
@@ -338,7 +371,7 @@ const start = async (zcf, privateArgs) => {
     }
 
     runMint.burnLosses(harden({ [runKeyword]: amountToBurn }), collateralSeat);
-    totalFeeBurned = AmountMath.add(totalFeeBurned, amountToBurn);
+    addFeeBurned(amountToBurn);
 
     reduceLiquidationShortfall(amountToBurn);
   };
@@ -358,7 +391,7 @@ const start = async (zcf, privateArgs) => {
     );
   };
 
-  const creatorFacet = makeGovernorFacet(
+  const creatorFacet = makeDurableGovernorFacet(
     {
       makeAddCollateralInvitation,
       // add makeRedeemLiquidityTokensInvitation later. For now just store them
@@ -370,7 +403,7 @@ const start = async (zcf, privateArgs) => {
     { addLiquidityToAmmPool, burnRUNToReduceShortfall },
   );
 
-  const publicFacet = augmentPublicFacet(
+  const publicFacet = augmentDurablePublicFacet(
     Far('Collateral Reserve public', {
       makeAddCollateralInvitation,
       addIssuerFromAmm,
@@ -378,7 +411,16 @@ const start = async (zcf, privateArgs) => {
     }),
   );
 
-  return harden({ creatorFacet, publicFacet });
+  const makeAssetReserve = vivifyKindMulti(
+    baggage,
+    'assetReserve',
+    () => ({}),
+    {
+      publicFacet,
+      creatorFacet,
+    },
+  );
+  return makeAssetReserve();
 };
 
 harden(start);
