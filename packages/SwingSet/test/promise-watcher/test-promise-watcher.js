@@ -65,18 +65,18 @@ async function testPromiseWatcher(t) {
   const beforeReference = [
     'lp1-pw resolved lval1 version v1 via watcher []',
     'lp1-dk resolved lval1 version v1 via VDO',
-    'lp2-pw rejected lerr2 version v1 via watcher []',
-    'lp2-dk rejected lerr2 version v1 via VDO',
+    'lp2-pw rejected "lerr2" version v1 via watcher []',
+    'lp2-dk rejected "lerr2" version v1 via VDO',
     'rp1-pw resolved rvalbefore version v1 via watcher []',
     'rp1-dk resolved rvalbefore version v1 via VDO',
-    'rp2-pw rejected rerrbefore version v1 via watcher []',
-    'rp2-dk rejected rerrbefore version v1 via VDO',
+    'rp2-pw rejected "rerrbefore" version v1 via watcher []',
+    'rp2-dk rejected "rerrbefore" version v1 via VDO',
     'p1-pw resolved val1 version v1 via watcher []',
     'p1-dk.full resolved val1 version v1 via VDO',
     'p1-dk.res resolved val1 version v1 via VDO (res)',
-    'p2-pw rejected err2 version v1 via watcher [a]',
-    'p2-dk.full rejected err2 version v1 via VDO',
-    'p2-dk.rej rejected err2 version v1 via VDO (rej)',
+    'p2-pw rejected "err2" version v1 via watcher [a]',
+    'p2-dk.full rejected "err2" version v1 via VDO',
+    'p2-dk.rej rejected "err2" version v1 via VDO (rej)',
   ];
   t.deepEqual(c.dump().log, beforeReference);
   if (os.platform() === 'darwin') {
@@ -88,22 +88,24 @@ async function testPromiseWatcher(t) {
   // console.log(`-- starting upgradeV2`);
   const [v2status /* , v2capdata */] = await run('upgradeV2', []);
   t.is(v2status, 'fulfilled');
+  const doString =
+    '{"name":"vatUpgraded","upgradeMessage":"test upgrade","incarnationNumber":1}';
   t.deepEqual(c.dump().log, [
     ...beforeReference,
-    'lp3-pw rejected vat upgraded version v2 via watcher []',
-    'lp3-dk rejected vat upgraded version v2 via VDO',
-    'lp4-pw rejected vat upgraded version v2 via watcher []',
-    'lp4-dk rejected vat upgraded version v2 via VDO',
+    `lp3-pw rejected ${doString} version v2 via watcher []`,
+    `lp3-dk rejected ${doString} version v2 via VDO`,
+    `lp4-pw rejected ${doString} version v2 via watcher []`,
+    `lp4-dk rejected ${doString} version v2 via VDO`,
     'p3-pw resolved val3 version v2 via watcher [b,c]',
     'p3-dk.full resolved val3 version v2 via VDO',
     'p3-dk.res resolved val3 version v2 via VDO (res)',
-    'p4-pw rejected err4 version v2 via watcher [d,e,f]',
-    'p4-dk.full rejected err4 version v2 via VDO',
-    'p4-dk.rej rejected err4 version v2 via VDO (rej)',
+    'p4-pw rejected "err4" version v2 via watcher [d,e,f]',
+    'p4-dk.full rejected "err4" version v2 via VDO',
+    'p4-dk.rej rejected "err4" version v2 via VDO (rej)',
     'rp3-pw resolved rvalafter version v2 via watcher []',
     'rp3-dk resolved rvalafter version v2 via VDO',
-    'rp4-pw rejected rerrafter version v2 via watcher []',
-    'rp4-dk rejected rerrafter version v2 via VDO',
+    'rp4-pw rejected "rerrafter" version v2 via watcher []',
+    'rp4-dk rejected "rerrafter" version v2 via VDO',
   ]);
   if (os.platform() === 'darwin') {
     t.deepEqual(unhandledRejections, ['err2', 'err4']);

@@ -32,7 +32,7 @@ import { makeVatSlot, parseVatSlot } from '../lib/parseVatSlots.js';
 
 const rootSlot = makeVatSlot('object', true, 0n);
 
-function rejectAllPromises({ m, deciderVPIDs, syscall }) {
+function rejectAllPromises({ deciderVPIDs, syscall, disconnectObjectCapData }) {
   // Pretend that userspace rejected all non-durable promises. We
   // basically do the same thing that `thenReject(p, vpid)(rejection)`
   // would have done, but we skip ahead to the syscall.resolve
@@ -41,8 +41,11 @@ function rejectAllPromises({ m, deciderVPIDs, syscall }) {
   // and attached a .then to it), and stopVat() must not allow
   // userspace to gain agency.
 
-  const rejectCapData = m.serialize('vat upgraded');
-  const rejections = deciderVPIDs.map(vpid => [vpid, true, rejectCapData]);
+  const rejections = deciderVPIDs.map(vpid => [
+    vpid,
+    true,
+    disconnectObjectCapData,
+  ]);
   if (rejections.length) {
     syscall.resolve(rejections);
   }

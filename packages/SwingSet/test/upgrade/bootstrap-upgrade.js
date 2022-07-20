@@ -79,7 +79,11 @@ export const buildRootObject = () => {
     upgradeV2: async () => {
       const bcap = await E(vatAdmin).getNamedBundleCap('ulrik2');
       const vatParameters = { youAre: 'v2', marker };
-      await E(ulrikAdmin).upgrade(bcap, { vatParameters });
+      const upgradeMessage = 'test upgrade';
+      const upgradeResult = await E(ulrikAdmin).upgrade(bcap, {
+        vatParameters,
+        upgradeMessage,
+      });
       const version = await E(ulrikRoot).getVersion();
       const parameters = await E(ulrikRoot).getParameters();
       const m2 = await E(ulrikRoot).getPresence();
@@ -136,7 +140,7 @@ export const buildRootObject = () => {
 
       const newDur = await E(ulrikRoot).getNewDurandal();
 
-      return { version, data, remoerr, newDur, ...parameters };
+      return { version, data, remoerr, newDur, upgradeResult, ...parameters };
     },
 
     buildV1WithLostKind: async () => {

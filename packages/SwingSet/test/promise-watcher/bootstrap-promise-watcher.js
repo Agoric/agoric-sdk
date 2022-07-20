@@ -54,7 +54,10 @@ export function buildRootObject() {
     async upgradeV2() {
       const bcap = await E(vatAdmin).getNamedBundleCap('upton');
       const vatParameters = { version: 'v2' };
-      await E(uptonAdmin).upgrade(bcap, { vatParameters });
+      await E(uptonAdmin).upgrade(bcap, {
+        vatParameters,
+        upgradeMessage: 'test upgrade',
+      });
       pk3.resolve('val3');
       pk4.reject('err4');
       for (const { rp, withSuccess } of resolveAfterUpgrade) {

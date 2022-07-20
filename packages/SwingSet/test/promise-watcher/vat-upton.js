@@ -22,16 +22,17 @@ export function buildRootObject(vatPowers, vatParameters, baggage) {
       ),
     (err, tag, ...args) =>
       log(
-        `${tag} rejected ${err} version ${vatParameters.version} via watcher [${args.join(',')}]`,
+        `${tag} rejected ${JSON.stringify(err)} version ${vatParameters.version} via watcher [${args.join(',')}]`,
       ),
   );
 
+  // prettier-ignore
   const makeDK = defineDurableKindMulti(dkHandle, () => ({}), {
     full: {
       onFulfilled: (_context, res, tag) =>
         log(`${tag} resolved ${res} version ${vatParameters.version} via VDO`),
       onRejected: (_context, err, tag) =>
-        log(`${tag} rejected ${err} version ${vatParameters.version} via VDO`),
+        log(`${tag} rejected ${JSON.stringify(err)} version ${vatParameters.version} via VDO`),
     },
     res: {
       onFulfilled: (_context, res, tag) =>
@@ -42,7 +43,7 @@ export function buildRootObject(vatPowers, vatParameters, baggage) {
     rej: {
       onRejected: (_context, err, tag) =>
         log(
-          `${tag} rejected ${err} version ${vatParameters.version} via VDO (rej)`,
+          `${tag} rejected ${JSON.stringify(err)} version ${vatParameters.version} via VDO (rej)`,
         ),
     },
   });

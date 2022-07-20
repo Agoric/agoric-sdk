@@ -668,6 +668,7 @@ function build(
     unmeteredConvertSlotToVal,
     // eslint-disable-next-line no-use-before-define
     meterControl.unmetered(revivePromise),
+    unmeteredUnserialize,
   );
 
   function convertValToSlot(val) {
@@ -1506,9 +1507,12 @@ function build(
   }
 
   /**
+   * @param { SwingSetCapData } disconnectObjectCapData
    * @returns {Promise<void>}
    */
-  async function stopVat() {
+  async function stopVat(disconnectObjectCapData) {
+    insistCapData(disconnectObjectCapData);
+    assert(disconnectObjectCapData.slots.length === 0);
     assert(
       !relaxDurabilityRules,
       'stopVat not available when relaxDurabilityRules is true',
@@ -1527,12 +1531,16 @@ function build(
     try {
       // mark "imported" plus "neither" for rejection at next startup
       const importedVPIDsSet = new Set(importedVPIDs.keys());
-      watchedPromiseManager.prepareShutdownRejections(importedVPIDsSet);
+      watchedPromiseManager.prepareShutdownRejections(
+        importedVPIDsSet,
+        disconnectObjectCapData,
+      );
       // reject all "exported" vpids now
       const deciderVPIDs = Array.from(exportedVPIDs.keys()).sort();
       // eslint-disable-next-line @jessie.js/no-nested-await
       await releaseOldState({
         m,
+        disconnectObjectCapData,
         deciderVPIDs,
         syscall,
         exportedRemotables,
@@ -1605,7 +1613,7 @@ function build(
     if (delivery[0] === 'bringOutYourDead') {
       return meterControl.runWithoutMeteringAsync(bringOutYourDead);
     } else if (delivery[0] === 'stopVat') {
-      return meterControl.runWithoutMeteringAsync(stopVat);
+      return meterControl.runWithoutMeteringAsync(() => stopVat(delivery[1]));
     } else {
       let complete = false;
       // Start user code running, record any internal liveslots errors. We do

@@ -206,14 +206,19 @@ export function buildDevice(tools, endowments) {
           return returnFromInvoke(vatID);
         }
 
-        // D(devices.vatAdmin).upgradeVat(vatID, bundleID, vatParameters) -> upgradeID
+        // D(devices.vatAdmin).upgradeVat(vatID, bundleID, vatParameters, upgradeMessage) -> upgradeID
         if (method === 'upgradeVat') {
           const args = JSON.parse(argsCapdata.body);
           assert(Array.isArray(args), 'upgradeVat() args array');
-          assert.equal(args.length, 3, `upgradeVat() args length`);
-          const [vatID, bundleID, _vatParameters] = args;
+          assert.equal(args.length, 4, `upgradeVat() args length`);
+          const [vatID, bundleID, _vatParameters, upgradeMessage] = args;
           insistVatID(vatID);
           assert.typeof(bundleID, 'string', `upgradeVat() bundleID`);
+          assert.typeof(
+            upgradeMessage,
+            'string',
+            'upgradeVat() upgradeMessage',
+          );
 
           const res = syscall.callKernelHook('upgrade', argsCapdata);
           const upgradeID = JSON.parse(res.body);

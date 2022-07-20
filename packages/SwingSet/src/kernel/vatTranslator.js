@@ -175,11 +175,12 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     return startVatMessageVatDelivery;
   }
 
-  /** @type { import('../types-external.js').VatDeliveryStopVat } */
-  const stopVatMessage = harden(['stopVat']);
-
-  function translateStopVat() {
-    return stopVatMessage;
+  /**
+   * @param { SwingSetCapData } disconnectObjectCapData
+   * @returns { import('../types-external.js').VatDeliveryStopVat }
+   */
+  function translateStopVat(disconnectObjectCapData) {
+    return harden(['stopVat', disconnectObjectCapData]);
   }
 
   /** @type { VatDeliveryBringOutYourDead } */
@@ -241,8 +242,8 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     //  ['dropExports', vrefs]
     //  ['retireExports', vrefs]
     //  ['retireImports', vrefs]
-    //  ['startVat']
-    //  ['stopVat']
+    //  ['startVat', vatParameters]
+    //  ['stopVat', disconnectObject]
     //  ['bringOutYourDead']
   }
 
