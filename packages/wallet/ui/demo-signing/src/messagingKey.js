@@ -8,6 +8,7 @@ import { BasicAllowance } from 'cosmjs-types/cosmos/feegrant/v1beta1/feegrant';
 import { bech32Config, SwingsetMsgs } from './chainInfo.js';
 
 const CosmosMessages = {
+const CosmosMessages = /** @type {const} */ ({
   authz: {
     MsgGrant: {
       typeUrl: '/cosmos.authz.v1beta1.MsgGrant',
@@ -24,7 +25,7 @@ const CosmosMessages = {
       typeUrl: '/cosmos.feegrant.v1beta1.BasicAllowance',
     },
   },
-};
+});
 
 const { freeze } = Object;
 /**
@@ -60,6 +61,11 @@ export const makeMessagingSigner = async ({ localStorage }) => {
   return freeze({ address });
 };
 
+/**
+ * @param {string} granter bech32 address
+ * @param {string} grantee bech32 address
+ * @param {number} seconds expiration as seconds (Date.now() / 1000)
+ */
 export const makeGrantWalletActionMessage = (granter, grantee, seconds) => {
   return {
     typeUrl: CosmosMessages.authz.MsgGrant.typeUrl,
@@ -81,6 +87,12 @@ export const makeGrantWalletActionMessage = (granter, grantee, seconds) => {
   };
 };
 
+/**
+ * @param {string} granter bech32 address
+ * @param {string} grantee bech32 address
+ * @param {string} allowance number of uist (TODO: fix uist magic string denom)
+ * @param {number} seconds expiration as seconds (Date.now() / 1000)
+ */
 export const makeFeeGrantMessage = (granter, grantee, allowance, seconds) => {
   return {
     typeUrl: CosmosMessages.feegrant.MsgGrantAllowance.typeUrl,
