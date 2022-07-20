@@ -13,7 +13,7 @@
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
-    "ava": "^3.12.1",
+    "ava": "^4.3.1",
     "@agoric/ertp": "^0.14.2",
     "@agoric/inter-protocol": "^0.11.0",
     "@agoric/swingset-vat": "^0.28.0",
