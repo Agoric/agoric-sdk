@@ -2,12 +2,16 @@
 import { fromBase64, toBase64 } from '@cosmjs/encoding';
 import { Random } from '@cosmjs/crypto';
 import { DirectSecp256k1Wallet } from '@cosmjs/proto-signing';
+import { GenericAuthorization } from 'cosmjs-types/cosmos/authz/v1beta1/authz';
 
 import { bech32Config, SwingsetMsgs } from './chainInfo.js';
 
 const CosmosMessages = {
   MsgGrant: {
     typeUrl: '/cosmos.authz.v1beta1.MsgGrant',
+  },
+  GenericAuthorization: {
+    typeUrl: '/cosmos.authz.v1beta1.GenericAuthorization',
   },
 };
 
@@ -52,7 +56,14 @@ export const makeGrantWalletActionMessage = (granter, grantee, seconds) => {
       granter,
       grantee,
       grant: {
-        authorization: { typeUrl: SwingsetMsgs.MsgWalletAction.typeUrl },
+        authorization: {
+          typeUrl: CosmosMessages.GenericAuthorization.typeUrl,
+          value: GenericAuthorization.encode(
+            GenericAuthorization.fromPartial({
+              msg: SwingsetMsgs.MsgWalletAction.typeUrl,
+            }),
+          ).finish(),
+        },
         expiration: { seconds },
       },
     },
