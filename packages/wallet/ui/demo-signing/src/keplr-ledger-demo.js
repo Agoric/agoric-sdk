@@ -17,6 +17,7 @@ import {
 } from './chainInfo.js';
 import { MsgWalletAction } from './gen/swingset/msgs';
 import {
+  makeFeeGrantMessage,
   makeGrantWalletActionMessage,
   makeMessagingSigner,
 } from './messagingKey.js';
@@ -175,11 +176,15 @@ const makeSigner = async (ui, keplr, connectWithSigner) => {
     amount: [{ amount: '100', denom }],
     gas: '100000', // TODO: estimate gas?
   };
+  const allowance = '250000'; // 0.25 IST
 
   return freeze({
     authorizeMessagingKey: async (grantee, t0) => {
       const expiration = t0 / 1000 + 4 * 60 * 60;
-      const msgs = [makeGrantWalletActionMessage(address, grantee, expiration)];
+      const msgs = [
+        makeGrantWalletActionMessage(address, grantee, expiration),
+        makeFeeGrantMessage(address, grantee, allowance, expiration),
+      ];
       const tx = await cosmJS.signAndBroadcast(address, msgs, fee, '');
 
       console.log({ tx });

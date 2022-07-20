@@ -3,15 +3,26 @@ import { fromBase64, toBase64 } from '@cosmjs/encoding';
 import { Random } from '@cosmjs/crypto';
 import { DirectSecp256k1Wallet } from '@cosmjs/proto-signing';
 import { GenericAuthorization } from 'cosmjs-types/cosmos/authz/v1beta1/authz';
+import { BasicAllowance } from 'cosmjs-types/cosmos/feegrant/v1beta1/feegrant';
 
 import { bech32Config, SwingsetMsgs } from './chainInfo.js';
 
 const CosmosMessages = {
-  MsgGrant: {
-    typeUrl: '/cosmos.authz.v1beta1.MsgGrant',
+  authz: {
+    MsgGrant: {
+      typeUrl: '/cosmos.authz.v1beta1.MsgGrant',
+    },
+    GenericAuthorization: {
+      typeUrl: '/cosmos.authz.v1beta1.GenericAuthorization',
+    },
   },
-  GenericAuthorization: {
-    typeUrl: '/cosmos.authz.v1beta1.GenericAuthorization',
+  feegrant: {
+    MsgGrantAllowance: {
+      typeUrl: '/cosmos.feegrant.v1beta1.MsgGrantAllowance',
+    },
+    BasicAllowance: {
+      typeUrl: '/cosmos.feegrant.v1beta1.BasicAllowance',
+    },
   },
 };
 
@@ -51,13 +62,13 @@ export const makeMessagingSigner = async ({ localStorage }) => {
 
 export const makeGrantWalletActionMessage = (granter, grantee, seconds) => {
   return {
-    typeUrl: CosmosMessages.MsgGrant.typeUrl,
+    typeUrl: CosmosMessages.authz.MsgGrant.typeUrl,
     value: {
       granter,
       grantee,
       grant: {
         authorization: {
-          typeUrl: CosmosMessages.GenericAuthorization.typeUrl,
+          typeUrl: CosmosMessages.authz.GenericAuthorization.typeUrl,
           value: GenericAuthorization.encode(
             GenericAuthorization.fromPartial({
               msg: SwingsetMsgs.MsgWalletAction.typeUrl,
@@ -65,6 +76,25 @@ export const makeGrantWalletActionMessage = (granter, grantee, seconds) => {
           ).finish(),
         },
         expiration: { seconds },
+      },
+    },
+  };
+};
+
+export const makeFeeGrantMessage = (granter, grantee, allowance, seconds) => {
+  return {
+    typeUrl: CosmosMessages.feegrant.MsgGrantAllowance.typeUrl,
+    value: {
+      granter,
+      grantee,
+      allowance: {
+        typeUrl: CosmosMessages.feegrant.BasicAllowance.typeUrl,
+        value: BasicAllowance.encode(
+          BasicAllowance.fromPartial({
+            spendLimit: [{ denom: 'uist', amount: allowance }],
+            expiration: { seconds },
+          }),
+        ).finish(),
       },
     },
   };
