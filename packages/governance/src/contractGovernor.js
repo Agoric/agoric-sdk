@@ -98,11 +98,11 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * contract (as electionManager) so clients will be able to look up the state
  * of the governed parameters.
  *
- * @template {object} PF Public facet of governed
+ * @template {{}} PF Public facet of governed
  * @template {ContractPowerfulCreatorFacet} CF Creator facet of governed
  * @type {ContractStartFn<
  * GovernorPublic,
- * GovernedContractFacetAccess<PF>,
+ * GovernedContractFacetAccess<PF,CF>,
  * {
  *   timer: TimerService,
  *   electorateInstance: Instance,

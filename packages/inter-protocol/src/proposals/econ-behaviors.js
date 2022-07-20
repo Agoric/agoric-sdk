@@ -32,25 +32,31 @@ const MILLI = 1_000_000n;
 const CENTRAL_DENOM_NAME = 'urun';
 
 /**
+ * @typedef {GovernedCreatorFacet<import('../runStake/runStake.js').RunStakeCreator>} RunStakeCreator
+ * @typedef {import('../runStake/runStake.js').RunStakePublic} RunStakePublic
+ * @typedef {import('../reserve/assetReserve.js').GovernedAssetReserveFacetAccess} GovernedAssetReserveFacetAccess
+ */
+
+/**
  * @typedef { WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace
  * } EconomyBootstrapPowers
  * @typedef {PromiseSpaceOf<{
  *   ammInstanceWithoutReserve: Instance,
  *   ammCreatorFacet: XYKAMMCreatorFacet,
- *   ammGovernorCreatorFacet: GovernedContractFacetAccess<XYKAMMCreatorFacet>,
+ *   ammGovernorCreatorFacet: GovernedContractFacetAccess<XYKAMMPublicFacet,XYKAMMCreatorFacet>,
  *   economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet,
  *   feeDistributorCreatorFacet: import('../feeDistributor.js').FeeDistributorCreatorFacet,
  *   feeDistributorPublicFacet: import('../feeDistributor.js').FeeDistributorPublicFacet,
  *   periodicFeeCollectors: import('../feeDistributor.js').PeriodicFeeCollector[],
  *   bankMints: Mint[],
  *   psmCreatorFacet: unknown,
- *   psmGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
+ *   psmGovernorCreatorFacet: GovernedContractFacetAccess<{},{}>,
  *   reservePublicFacet: import('../reserve/assetReserve.js').AssetReservePublicFacet,
  *   reserveCreatorFacet: import('../reserve/assetReserve.js').AssetReserveCreatorFacet,
- *   reserveGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
- *   runStakeCreatorFacet: import('../runStake/runStake.js').RunStakeCreator,
+ *   reserveGovernorCreatorFacet: GovernedAssetReserveFacetAccess,
+ *   runStakeCreatorFacet: RunStakeCreator,
  *   vaultFactoryCreator: VaultFactory,
- *   vaultFactoryGovernorCreator: GovernedContractFacetAccess<unknown>,
+ *   vaultFactoryGovernorCreator: GovernedContractFacetAccess<{},{}>,
  *   vaultFactoryVoteCreator: unknown,
  *   minInitialDebt: NatValue,
  * }>} EconomyBootstrapSpace
@@ -232,7 +238,7 @@ export const setupAmm = async (
       },
     },
   };
-  /** @type {{ creatorFacet: GovernedContractFacetAccess<XYKAMMCreatorFacet>, publicFacet: GovernorPublic, instance: Instance }} */
+  /** @type {{ creatorFacet: GovernedContractFacetAccess<XYKAMMPublicFacet,XYKAMMCreatorFacet>, publicFacet: GovernorPublic, instance: Instance }} */
   const g = await E(zoe).startInstance(
     governorInstallation,
     {},
@@ -327,7 +333,7 @@ export const setupReserve = async ({
       },
     },
   };
-  /** @type {{ creatorFacet: GovernedContractFacetAccess<AssetReserveCreatorFacet>, publicFacet: GovernorPublic, instance: Instance }} */
+  /** @type {{ creatorFacet: GovernedAssetReserveFacetAccess, publicFacet: GovernorPublic, instance: Instance }} */
   const g = await E(zoe).startInstance(
     governorInstallation,
     {},
@@ -345,7 +351,6 @@ export const setupReserve = async ({
 
   reserveGovernorCreatorFacet.resolve(g.creatorFacet);
   reserveCreatorFacet.resolve(creatorFacet);
-  // @ts-expect-error bad types
   reservePublicFacet.resolve(publicFacet);
 
   reserveInstanceProducer.resolve(instance);
@@ -355,7 +360,6 @@ export const setupReserve = async ({
   // time because Reserve requires AMM itself in order to be started.
   // Now that we have the reserve, provide it to the AMM.
   trace('Resolving the reserve public facet on the AMM');
-  // @ts-expect-error bad types
   await E(ammCreatorFacet).resolveReserveFacet(publicFacet);
   // it now has the reserve
   ammInstanceProducer.resolve(ammInstanceWithoutReserve);
@@ -847,7 +851,7 @@ export const startRunStake = async (
   const storageNode = await makeStorageNode(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
-  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<unknown>}} */
+  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<RunStakePublic,RunStakeCreator>}} */
   const governorFacets = await E(zoe).startInstance(
     installations.governor,
     {},

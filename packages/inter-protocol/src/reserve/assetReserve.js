@@ -138,7 +138,7 @@ const start = async (zcf, privateArgs, baggage) => {
   saveBrandKeyword(runKit.brand, RunKW);
   // no need to saveIssuer() b/c registerFeeMint did it
 
-  const { augmentPublicFacet, makeGovernorFacet, params } =
+  const { augmentVirtualPublicFacet, makeVirtualGovernorFacet, params } =
     await handleParamGovernance(
       zcf,
       privateArgs.initialPoserInvitation,
@@ -408,7 +408,7 @@ const start = async (zcf, privateArgs, baggage) => {
     );
   };
 
-  const creatorFacet = makeGovernorFacet(
+  const governorFacet = makeVirtualGovernorFacet(
     {
       makeAddCollateralInvitation,
       // add makeRedeemLiquidityTokensInvitation later. For now just store them
@@ -420,7 +420,7 @@ const start = async (zcf, privateArgs, baggage) => {
     { addLiquidityToAmmPool, burnRUNToReduceShortfall },
   );
 
-  const publicFacet = augmentPublicFacet(
+  const publicFacet = augmentVirtualPublicFacet(
     Far('Collateral Reserve public', {
       makeAddCollateralInvitation,
       addIssuerFromAmm,
@@ -434,7 +434,7 @@ const start = async (zcf, privateArgs, baggage) => {
     () => ({}),
     {
       publicFacet,
-      creatorFacet,
+      creatorFacet: governorFacet,
     },
   );
   return makeAssetReserve();
@@ -450,5 +450,22 @@ export { start };
  * @property {(shortfall: Amount) => void} reduceLiquidationShortfall
  */
 
-/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} AssetReservePublicFacet */
-/** @typedef {Awaited<ReturnType<typeof start>>['creatorFacet']} AssetReserveCreatorFacet */
+/**
+ * @typedef {object} OriginalAssetReserveCreatorFacet
+ * @property {() => Invitation} makeAddCollateralInvitation
+ * @property {() => Allocation} getAllocations
+ * @property {(issuer: Issuer) => void} addIssuer
+ * @property {() => Invitation} makeShortfallReportingInvitation
+ * @property {() => MetricsNotification} getMetrics
+ */
+
+/**
+ * @typedef {object} OriginalAssetReservePublicFacet
+ * @property {() => Invitation} makeAddCollateralInvitation
+ * @property {(brand: Brand) => void} addIssuerFromAmm
+ * @property {(issuer: Issuer) => void} addLiquidityIssuer
+ */
+
+/** @typedef {OriginalAssetReservePublicFacet & GovernedPublicFacetMethods} AssetReservePublicFacet */
+/** @typedef {GovernedCreatorFacet<OriginalAssetReserveCreatorFacet>} AssetReserveCreatorFacet */
+/** @typedef {GovernedContractFacetAccess<AssetReservePublicFacet,AssetReserveCreatorFacet>} GovernedAssetReserveFacetAccess */

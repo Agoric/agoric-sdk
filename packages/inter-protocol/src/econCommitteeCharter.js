@@ -19,7 +19,7 @@ import { E, Far } from '@endo/far';
 
 /**
  * @param {ZCF<{binaryVoteCounterInstallation:Installation}>} zcf
- * @param {{reserve:GovernedContractFacetAccess<unknown>, amm:GovernedCreatorFacet<unknown>, vaults:GovernedCreatorFacet<unknown>}} privateArgs
+ * @param {{reserve:GovernedContractFacetAccess<{},{}>, amm:GovernedCreatorFacet<unknown>, vaults:GovernedCreatorFacet<unknown>}} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
   const { binaryVoteCounterInstallation: counter } = zcf.getTerms();

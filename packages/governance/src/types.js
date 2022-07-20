@@ -497,11 +497,12 @@
  */
 
 /**
- * @template {object} PF Public facet of governed contract
+ * @template {{}} PF Public facet of governed contract
+ * @template {{}} CF Creator facet of governed contract
  * @typedef {object} GovernedContractFacetAccess
  * @property {VoteOnParamChanges} voteOnParamChanges
  * @property {VoteOnApiInvocation} voteOnApiInvocation
- * @property {() => Promise<LimitedCreatorFacet<any>>} getCreatorFacet - creator
+ * @property {() => Promise<LimitedCreatorFacet<CF>>} getCreatorFacet - creator
  *   facet of the governed contract, without the tightly held ability to change
  *   param values.
  * @property {() => GovernedPublicFacet<PF>} getPublicFacet - public facet of the governed contract
