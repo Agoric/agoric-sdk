@@ -3,11 +3,9 @@ import { fromBase64, toBase64 } from '@cosmjs/encoding';
 import { Random } from '@cosmjs/crypto';
 import { DirectSecp256k1Wallet } from '@cosmjs/proto-signing';
 import { GenericAuthorization } from 'cosmjs-types/cosmos/authz/v1beta1/authz';
-import { BasicAllowance } from 'cosmjs-types/cosmos/feegrant/v1beta1/feegrant';
 
 import { bech32Config, SwingsetMsgs } from './chainInfo.js';
 
-const CosmosMessages = {
 const CosmosMessages = /** @type {const} */ ({
   authz: {
     MsgGrant: {
@@ -15,6 +13,9 @@ const CosmosMessages = /** @type {const} */ ({
     },
     GenericAuthorization: {
       typeUrl: '/cosmos.authz.v1beta1.GenericAuthorization',
+    },
+    MsgExec: {
+      typeUrl: '/cosmos.authz.v1beta1.MsgExec',
     },
   },
   feegrant: {
@@ -58,7 +59,11 @@ export const makeMessagingSigner = async ({ localStorage }) => {
   console.log({ accounts });
 
   const [{ address }] = accounts;
-  return freeze({ address });
+
+  return freeze({
+    address,
+    wallet,
+  });
 };
 
 /**
@@ -101,13 +106,23 @@ export const makeFeeGrantMessage = (granter, grantee, allowance, seconds) => {
       grantee,
       allowance: {
         typeUrl: CosmosMessages.feegrant.BasicAllowance.typeUrl,
-        value: BasicAllowance.encode(
-          BasicAllowance.fromPartial({
-            spendLimit: [{ denom: 'uist', amount: allowance }],
-            expiration: { seconds },
-          }),
-        ).finish(),
+        value: {
+          spendLimit: [{ denom: 'urun', amount: allowance }],
+          expiration: { seconds },
+        },
       },
     },
+  };
+};
+
+/**
+ *
+ * @param {string} grantee
+ * @param {import('@cosmjs/proto-signing').EncodeObject[]} msgs
+ */
+export const makeExecMessage = (grantee, msgs) => {
+  return {
+    typeUrl: CosmosMessages.authz.MsgExec.typeUrl,
+    value: { grantee, msgs },
   };
 };

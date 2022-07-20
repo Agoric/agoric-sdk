@@ -17,6 +17,7 @@ import {
 } from './chainInfo.js';
 import { MsgWalletAction } from './gen/swingset/msgs';
 import {
+  makeExecMessage,
   makeFeeGrantMessage,
   makeGrantWalletActionMessage,
   makeMessagingSigner,
@@ -146,7 +147,7 @@ const makeSigner = async (ui, keplr, connectWithSigner) => {
   const chainInfo = localChainInfo;
   const { chainId } = chainInfo;
   ui.setValue('*[name="chainId"]', chainId);
-  const { coinMinimalDenom: denom } = stakeCurrency;
+  const { coinMinimalDenom: denom } = stableCurrency;
 
   await keplr.experimentalSuggestChain(chainInfo);
   await keplr.enable(chainId);
@@ -179,38 +180,26 @@ const makeSigner = async (ui, keplr, connectWithSigner) => {
   const allowance = '250000'; // 0.25 IST
 
   return freeze({
+    address, // TODO: address can change
     authorizeMessagingKey: async (grantee, t0) => {
       const expiration = t0 / 1000 + 4 * 60 * 60;
       const msgs = [
         makeGrantWalletActionMessage(address, grantee, expiration),
         makeFeeGrantMessage(address, grantee, allowance, expiration),
       ];
+      console.log('sign', { address, msgs, fee });
       const tx = await cosmJS.signAndBroadcast(address, msgs, fee, '');
 
       console.log({ tx });
       return tx;
     },
-    sign: async (action, memo) => {
+    acceptOffer: async (action, memo) => {
       const { accountNumber, sequence } = await cosmJS.getSequence(address);
       console.log({ accountNumber, sequence });
 
-      const send1 = {
-        typeUrl: '/cosmos.bank.v1beta1.MsgSend',
-        value: {
-          amount: [
-            {
-              amount: '1234567',
-              denom,
-            },
-          ],
-          fromAddress: address,
-          toAddress: address,
-        },
-      };
-
       /** @type {WalletAction} */
       const act1 = {
-        typeUrl: '/agoric.swingset.MsgWalletAction',
+        typeUrl: '/agoric.swingset.MsgWalletAction', // TODO: SpendAction
         value: {
           owner: toBase64(toAccAddress(address)),
           action,
@@ -219,18 +208,18 @@ const makeSigner = async (ui, keplr, connectWithSigner) => {
 
       const msgs = [act1];
 
-      const signDoc = {
-        chain_id: chainId,
-        account_number: `${accountNumber}`,
-        sequence: `${sequence}`,
-        fee,
-        memo,
-        msgs,
-      };
+      // const signDoc = {
+      //   chain_id: chainId,
+      //   account_number: `${accountNumber}`,
+      //   sequence: `${sequence}`,
+      //   fee,
+      //   memo,
+      //   msgs,
+      // };
 
       // const tx = await cosmJS.signAmino(chainId, account.address, signDoc);
-      const signerData = { accountNumber, sequence, chainId };
-      console.log('sign', { address, msgs, fee, memo, signerData });
+      // const signerData = { accountNumber, sequence, chainId };
+      console.log('sign', { address, msgs, fee, memo });
 
       // const tx = await offlineSigner.signAmino(address, signDoc);
 
@@ -288,8 +277,11 @@ window.addEventListener('load', async _ev => {
     SigningStargateClient.connectWithSigner,
   );
 
-  ui.onClick('#sign', async _bev =>
-    s1.sign(ui.textValue('*[name="action"]'), ui.inputValue('*[name="memo"]')),
+  ui.onClick('#acceptOffer', async _bev =>
+    s1.acceptOffer(
+      ui.textValue('*[name="spendAction"]'),
+      ui.inputValue('*[name="memo"]'),
+    ),
   );
 
   const s2 = await makeMessagingSigner({ localStorage: window.localStorage });
@@ -298,4 +290,49 @@ window.addEventListener('load', async _ev => {
   ui.onClick('#makeMessagingAccount', async _bev =>
     s1.authorizeMessagingKey(s2.address, Date.now()),
   );
+
+  const chainInfo = localChainInfo;
+  const lowPrivilegeClient = await SigningStargateClient.connectWithSigner(
+    chainInfo.rpc,
+    s2.wallet,
+    {
+      registry: aRegistry,
+    },
+  );
+  console.log({ lowPrivilegeClient });
+  console.log('low priv signer accounts', await s2.wallet.getAccounts());
+
+  ui.onClick('#sendMessages', async _bev => {
+    const { address } = s2;
+    const { accountNumber, sequence } = await lowPrivilegeClient.getSequence(
+      address,
+    );
+    console.log({ accountNumber, sequence });
+
+    const act1 = {
+      typeUrl: '/agoric.swingset.MsgWalletAction',
+      value: {
+        owner: toBase64(toAccAddress(s1.address)),
+        action: ui.inputValue('*[name="action"]'),
+      },
+    };
+    const msgs = [makeExecMessage(s2.address, [act1])];
+    const memo = ui.inputValue('*[name="memo"]');
+
+    const { coinMinimalDenom: denom } = stableCurrency;
+    const fee = {
+      amount: [{ amount: '0', denom }],
+      gas: '100000', // TODO: estimate gas?
+    };
+
+    console.log('sign', { address, msgs, fee, memo });
+    const tx = await lowPrivilegeClient.signAndBroadcast(
+      address,
+      msgs,
+      fee,
+      memo,
+    );
+
+    console.log({ tx });
+  });
 });
