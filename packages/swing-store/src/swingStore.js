@@ -270,7 +270,9 @@ function makeSwingStore(dirPath, forceReset, options) {
   function set(key, value) {
     assert.typeof(key, 'string');
     assert.typeof(value, 'string');
-    ensureTxn().put(key, value);
+    // synchronous read after write within a transaction is safe
+    // The transaction's overall success will be awaited during commit
+    void ensureTxn().put(key, value);
     trace('set', key, value);
   }
 
@@ -285,7 +287,9 @@ function makeSwingStore(dirPath, forceReset, options) {
   function del(key) {
     assert.typeof(key, 'string');
     if (has(key)) {
-      ensureTxn().remove(key);
+      // synchronous read after write within a transaction is safe
+      // The transaction's overall success will be awaited during commit
+      void ensureTxn().remove(key);
       trace('del', key);
     }
   }
@@ -305,21 +309,28 @@ function makeSwingStore(dirPath, forceReset, options) {
     keepSnapshots,
   });
 
+  /** @param {boolean} [abort] */
+  function doCommit(abort) {
+    if (!txnFinish) {
+      return undefined;
+    }
+    txnFinish(abort ? lmdbAbort : undefined);
+    return Promise.resolve(txnDone)
+      .then(() => {
+        trace(`${abort ? 'abort' : 'commit'}-tx`);
+      })
+      .finally(() => {
+        txnDone = null;
+        txnFinish = null;
+      });
+  }
+
   /**
    * Commit unsaved changes.
    */
   async function commit() {
     assert(db);
-    if (txnFinish) {
-      txnFinish();
-      try {
-        await txnDone;
-        trace(`commit-tx`);
-      } finally {
-        txnDone = null;
-        txnFinish = null;
-      }
-    }
+    await doCommit(false);
 
     // NOTE: The kvstore (which used to contain vatA -> snapshot1, and
     //   is being replaced with vatA -> snapshot2)
@@ -335,16 +346,7 @@ function makeSwingStore(dirPath, forceReset, options) {
    */
   async function close() {
     assert(db);
-    if (txnFinish) {
-      txnFinish(lmdbAbort);
-      try {
-        await txnDone;
-        trace(`abort-tx`);
-      } finally {
-        txnDone = null;
-        txnFinish = null;
-      }
-    }
+    await doCommit(true);
     await db.close();
     db = null;
     stopTrace();
