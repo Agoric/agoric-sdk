@@ -98,7 +98,7 @@
  *   assignBundle: (ps: PropertyMaker[]) => void
  * }} ClientManager tool to put properties onto the `home` object of the client
  *
- * @typedef {(addr: string) => Record<string, unknown>} PropertyMaker callback to assign a property onto the `home` object of the client
+ * @typedef {(addr: string) => Promise<Record<string, unknown>>} PropertyMaker callback to assign a property onto the `home` object of the client
  */
 
 /**

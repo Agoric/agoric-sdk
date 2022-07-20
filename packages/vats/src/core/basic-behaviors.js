@@ -249,12 +249,12 @@ export const makeClientBanks = async ({
     { storageNode },
   );
   return E(client).assignBundle([
-    address => {
+    async address => {
       const bank = E(bankManager).getBankForAddress(address);
       /** @type {ERef<MyAddressNameAdmin>} */
       const myAddressNameAdmin = E(namesByAddressAdmin).lookupAdmin(address);
 
-      const smartWallet = E(creatorFacet).provideSmartWallet(
+      const smartWallet = await E(creatorFacet).provideSmartWallet(
         address,
         bank,
         myAddressNameAdmin,
