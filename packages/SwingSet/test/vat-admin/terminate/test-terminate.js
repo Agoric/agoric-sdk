@@ -16,6 +16,18 @@ test.before(async t => {
   t.context.data = { kernelBundles };
 });
 
+// Note: all tests in this file create a kernel, which (under
+// SWINGSET_WORKER_TYPE=xs-worker) launches 5 or 6 xsnap-worker
+// processes for the brief duration of the test. There are (as of
+// 19-jul-2022) 32 tests, and if we allowed AVA to run all of them in
+// parallel, that causes about 170 simultaneous workers (in addition
+// to any other test programs currently running). We've observed CI
+// failures that appear to be the Linux OOM Killer taking out the AVA
+// worker handling this file, due to memory pressure coming from the
+// large number of simultaneous xsnap workers. To avoid this, we use
+// `test.serial()` instead of `test()` for all of them, which slows
+// the test but reduces the peak memory pressure considerably.
+
 async function doTerminateNonCritical(
   t,
   deadVatID,
@@ -100,7 +112,7 @@ async function doTerminateCritical(t, deadVatID, mode, dynamic) {
   t.is(postProbe, undefined);
 }
 
-test('terminate (dynamic, non-critical)', async t => {
+test.serial('terminate (dynamic, non-critical)', async t => {
   await doTerminateNonCritical(
     t,
     'v8',
@@ -112,23 +124,26 @@ test('terminate (dynamic, non-critical)', async t => {
 
 // no test 'terminate (static, non-critical)' because static vats can't be killed
 
-test('terminate (dynamic, critical)', async t => {
+test.serial('terminate (dynamic, critical)', async t => {
   await doTerminateCritical(t, 'v8', 'kill', true);
 });
 
 // no test 'terminate (static, critical)' because static vats can't be killed
 
-test('exit happy path simple result (dynamic, non-critical)', async t => {
-  await doTerminateNonCritical(
-    t,
-    'v8',
-    'happy',
-    true,
-    'done result happy (Error=false)',
-  );
-});
+test.serial(
+  'exit happy path simple result (dynamic, non-critical)',
+  async t => {
+    await doTerminateNonCritical(
+      t,
+      'v8',
+      'happy',
+      true,
+      'done result happy (Error=false)',
+    );
+  },
+);
 
-test('exit happy path simple result (static, non-critical)', async t => {
+test.serial('exit happy path simple result (static, non-critical)', async t => {
   await doTerminateNonCritical(
     t,
     'v7',
@@ -138,43 +153,49 @@ test('exit happy path simple result (static, non-critical)', async t => {
   );
 });
 
-test('exit happy path simple result (dynamic, critical)', async t => {
+test.serial('exit happy path simple result (dynamic, critical)', async t => {
   await doTerminateCritical(t, 'v8', 'happy', true);
 });
 
-test('exit happy path simple result (static, critical)', async t => {
+test.serial('exit happy path simple result (static, critical)', async t => {
   await doTerminateCritical(t, 'v6', 'happy', false);
 });
 
-test('exit happy path complex result (dynamic, non-critical)', async t => {
-  await doTerminateNonCritical(
-    t,
-    'v8',
-    'exceptionallyHappy',
-    true,
-    'done result Error: exceptionallyHappy (Error=true)',
-  );
-});
+test.serial(
+  'exit happy path complex result (dynamic, non-critical)',
+  async t => {
+    await doTerminateNonCritical(
+      t,
+      'v8',
+      'exceptionallyHappy',
+      true,
+      'done result Error: exceptionallyHappy (Error=true)',
+    );
+  },
+);
 
-test('exit happy path complex result (static, non-critical)', async t => {
-  await doTerminateNonCritical(
-    t,
-    'v7',
-    'exceptionallyHappy',
-    false,
-    'done result Error: exceptionallyHappy (Error=true)',
-  );
-});
+test.serial(
+  'exit happy path complex result (static, non-critical)',
+  async t => {
+    await doTerminateNonCritical(
+      t,
+      'v7',
+      'exceptionallyHappy',
+      false,
+      'done result Error: exceptionallyHappy (Error=true)',
+    );
+  },
+);
 
-test('exit happy path complex result (dynamic, critical)', async t => {
+test.serial('exit happy path complex result (dynamic, critical)', async t => {
   await doTerminateCritical(t, 'v8', 'exceptionallyHappy', true);
 });
 
-test('exit happy path complex result (static, critical)', async t => {
+test.serial('exit happy path complex result (static, critical)', async t => {
   await doTerminateCritical(t, 'v6', 'exceptionallyHappy', false);
 });
 
-test('exit sad path simple result (dynamic, non-critical)', async t => {
+test.serial('exit sad path simple result (dynamic, non-critical)', async t => {
   await doTerminateNonCritical(
     t,
     'v8',
@@ -184,7 +205,7 @@ test('exit sad path simple result (dynamic, non-critical)', async t => {
   );
 });
 
-test('exit sad path simple result (static, non-critical)', async t => {
+test.serial('exit sad path simple result (static, non-critical)', async t => {
   await doTerminateNonCritical(
     t,
     'v7',
@@ -194,15 +215,15 @@ test('exit sad path simple result (static, non-critical)', async t => {
   );
 });
 
-test('exit sad path simple result (dynamic, critical)', async t => {
+test.serial('exit sad path simple result (dynamic, critical)', async t => {
   await doTerminateCritical(t, 'v8', 'sad', true);
 });
 
-test('exit sad path simple result (static, critical)', async t => {
+test.serial('exit sad path simple result (static, critical)', async t => {
   await doTerminateCritical(t, 'v6', 'sad', false);
 });
 
-test('exit sad path complex result (dynamic, non-critical)', async t => {
+test.serial('exit sad path complex result (dynamic, non-critical)', async t => {
   await doTerminateNonCritical(
     t,
     'v8',
@@ -212,7 +233,7 @@ test('exit sad path complex result (dynamic, non-critical)', async t => {
   );
 });
 
-test('exit sad path complex result (static, non-critical)', async t => {
+test.serial('exit sad path complex result (static, non-critical)', async t => {
   await doTerminateNonCritical(
     t,
     'v7',
@@ -222,79 +243,103 @@ test('exit sad path complex result (static, non-critical)', async t => {
   );
 });
 
-test('exit sad path complex result (dynamic, critical)', async t => {
+test.serial('exit sad path complex result (dynamic, critical)', async t => {
   await doTerminateCritical(t, 'v8', 'exceptionallySad', true);
 });
 
-test('exit sad path complex result (static, critical)', async t => {
+test.serial('exit sad path complex result (static, critical)', async t => {
   await doTerminateCritical(t, 'v6', 'exceptionallySad', false);
 });
 
-test('exit happy path with ante-mortem message (dynamic, non-critical)', async t => {
-  await doTerminateNonCritical(
-    t,
-    'v8',
-    'happyTalkFirst',
-    true,
-    'done result happyTalkFirst (Error=false)',
-    ['GOT QUERY not dead quite yet'],
-  );
-});
+test.serial(
+  'exit happy path with ante-mortem message (dynamic, non-critical)',
+  async t => {
+    await doTerminateNonCritical(
+      t,
+      'v8',
+      'happyTalkFirst',
+      true,
+      'done result happyTalkFirst (Error=false)',
+      ['GOT QUERY not dead quite yet'],
+    );
+  },
+);
 
-test('exit happy path with ante-mortem message (static, non-critical)', async t => {
-  await doTerminateNonCritical(
-    t,
-    'v7',
-    'happyTalkFirst',
-    false,
-    'done result happyTalkFirst (Error=false)',
-    ['GOT QUERY not dead quite yet'],
-  );
-});
+test.serial(
+  'exit happy path with ante-mortem message (static, non-critical)',
+  async t => {
+    await doTerminateNonCritical(
+      t,
+      'v7',
+      'happyTalkFirst',
+      false,
+      'done result happyTalkFirst (Error=false)',
+      ['GOT QUERY not dead quite yet'],
+    );
+  },
+);
 
-test('exit happy path with ante-mortem message (dynamic, critical)', async t => {
-  await doTerminateCritical(t, 'v8', 'happyTalkFirst', true);
-});
+test.serial(
+  'exit happy path with ante-mortem message (dynamic, critical)',
+  async t => {
+    await doTerminateCritical(t, 'v8', 'happyTalkFirst', true);
+  },
+);
 
-test('exit happy path with ante-mortem message (static, critical)', async t => {
-  await doTerminateCritical(t, 'v6', 'happyTalkFirst', false);
-});
+test.serial(
+  'exit happy path with ante-mortem message (static, critical)',
+  async t => {
+    await doTerminateCritical(t, 'v6', 'happyTalkFirst', false);
+  },
+);
 
-test('exit sad path with ante-mortem message (dynamic, non-critical)', async t => {
-  await doTerminateNonCritical(
-    t,
-    'v8',
-    'sadTalkFirst',
-    true,
-    'done exception Error: sadTalkFirst (Error=true)',
-    // The following would be observed on the happy path but explicitly should
-    // *not* be observed here
-    // ['GOT QUERY not dead quite yet'],
-  );
-});
+test.serial(
+  'exit sad path with ante-mortem message (dynamic, non-critical)',
+  async t => {
+    await doTerminateNonCritical(
+      t,
+      'v8',
+      'sadTalkFirst',
+      true,
+      'done exception Error: sadTalkFirst (Error=true)',
+      // The following would be observed on the happy path but explicitly should
+      // *not* be observed here
+      // ['GOT QUERY not dead quite yet'],
+    );
+  },
+);
 
-test('exit sad path with ante-mortem message (static, non-critical)', async t => {
-  await doTerminateNonCritical(
-    t,
-    'v7',
-    'sadTalkFirst',
-    false,
-    'done exception Error: sadTalkFirst (Error=true)',
-    // The following would be observed on the happy path but explicitly should
-    // *not* be observed here
-    // ['GOT QUERY not dead quite yet'],
-  );
-});
+test.serial(
+  'exit sad path with ante-mortem message (static, non-critical)',
+  async t => {
+    await doTerminateNonCritical(
+      t,
+      'v7',
+      'sadTalkFirst',
+      false,
+      'done exception Error: sadTalkFirst (Error=true)',
+      // The following would be observed on the happy path but explicitly should
+      // *not* be observed here
+      // ['GOT QUERY not dead quite yet'],
+    );
+  },
+);
 
-test('exit sad path with ante-mortem message (dynamic, critical)', async t => {
-  await doTerminateCritical(t, 'v8', 'sadTalkFirst', true);
-});
+test.serial(
+  'exit sad path with ante-mortem message (dynamic, critical)',
+  async t => {
+    await doTerminateCritical(t, 'v8', 'sadTalkFirst', true);
+  },
+);
 
-test('exit sad path with ante-mortem message (static, critical)', async t => {
-  await doTerminateCritical(t, 'v6', 'sadTalkFirst', false);
-});
+test.serial(
+  'exit sad path with ante-mortem message (static, critical)',
+  async t => {
+    await doTerminateCritical(t, 'v6', 'sadTalkFirst', false);
+  },
+);
 
-test('exit with presence', async t => {
+test.serial('exit with presence', async t => {
   const configPath = new URL('swingset-die-with-presence.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
@@ -354,7 +399,7 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
   }
 });
 
-test('invalid criticalVatKey causes vat creation to fail', async t => {
+test.serial('invalid criticalVatKey causes vat creation to fail', async t => {
   const configPath = new URL('swingset-bad-vat-key.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
@@ -365,7 +410,7 @@ test('invalid criticalVatKey causes vat creation to fail', async t => {
   });
 });
 
-test('dead vat state removed', async t => {
+test.serial('dead vat state removed', async t => {
   const configPath = new URL('swingset-die-cleanly.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
@@ -394,7 +439,7 @@ test('dead vat state removed', async t => {
   t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 0);
 });
 
-test('terminate with presence', async t => {
+test.serial('terminate with presence', async t => {
   const configPath = new URL(
     'swingset-terminate-with-presence.json',
     import.meta.url,
