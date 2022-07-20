@@ -1,5 +1,4 @@
 // @ts-check
-/* global setImmediate */
 
 // eslint-disable-next-line import/order
 import { test } from './prepare-test-env-ava.js';
@@ -14,47 +13,14 @@ import {
   makeSubscriptionKit,
   subscribeEach,
 } from '../src/index.js';
+import {
+  eventLoopIteration,
+  makeFakeStorage,
+  makeFakeMarshaller,
+} from '../tools/testSupports.js';
 
 import '../src/types.js';
 import { jsonPairs } from './marshal-corpus.js';
-
-export const eventLoopIteration = async () =>
-  new Promise(resolve => setImmediate(resolve));
-
-/**
- *
- * @param {string} path
- * @param {IterationObserver<unknown>} [publication]
- */
-const makeFakeStorage = (path, publication) => {
-  let setValueCalls = 0;
-  const fullPath = `publish.${path}`;
-  const storeKey = harden({
-    storeName: 'swingset',
-    storeSubkey: `swingset/data:${fullPath}`,
-  });
-  /** @type {StorageNode} */
-  const storage = {
-    getStoreKey: () => storeKey,
-    setValue: value => {
-      setValueCalls += 1;
-      assert.typeof(value, 'string');
-      if (!publication) {
-        throw Error('publication undefined');
-      }
-      publication.updateState(value);
-    },
-    getChildNode: () => storage,
-    // @ts-expect-error
-    countSetValueCalls: () => setValueCalls,
-  };
-  return storage;
-};
-
-const makeFakeMarshaller = () =>
-  makeMarshal(undefined, undefined, {
-    marshalSaveError: () => {},
-  });
 
 test('stored subscription', async t => {
   t.plan((jsonPairs.length + 2) * 4 + 1);

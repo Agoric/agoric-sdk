@@ -3,11 +3,7 @@
 import '@agoric/zoe/exported.js';
 
 import { AmountMath, isNatValue } from '@agoric/ertp';
-import {
-  makeNotifierFromSubscriber,
-  makePublishKit,
-  makeStoredPublisherKit,
-} from '@agoric/notifier';
+import { makeStoredPublisherKit, makeStoredPublishKit } from '@agoric/notifier';
 import { defineKindMulti } from '@agoric/vat-data';
 import {
   calcLiqValueToMint,
@@ -47,7 +43,7 @@ export const publicPrices = prices => {
  * publisher: Publisher<NotificationState>,
  * subscriber: Subscriber<NotificationState>,
  * metricsPublication: IterationObserver<PoolMetricsNotification>,
- * metricsSubscription: Subscription<PoolMetricsNotification>
+ * metricsSubscription: StoredSubscription<PoolMetricsNotification>
  * }>} ImmutableState
  *
  * @typedef {{
@@ -274,9 +270,13 @@ const poolBehavior = {
       secondary: pool.getSecondaryAmount(),
     });
   },
+  /** @param {MethodContext} context */
   getToCentralPriceAuthority: ({ state }) => state.toCentralPriceAuthority,
+  /** @param {MethodContext} context */
   getFromCentralPriceAuthority: ({ state }) => state.fromCentralPriceAuthority,
+  /** @param {MethodContext} context */
   getVPool: ({ facets }) => facets.singlePool,
+  /** @param {MethodContext} context */
   getMetrics: ({ state }) => state.metricsSubscription,
 };
 
@@ -301,15 +301,13 @@ const finish = context => {
       ),
     );
 
-  const notifier = makeNotifierFromSubscriber(subscriber);
-
   const toCentralPriceAuthority = makePriceAuthority(
     getInputPriceForPA,
     getOutputPriceForPA,
     secondaryBrand,
     centralBrand,
     timer,
-    notifier,
+    subscriber,
     quoteIssuerKit,
   );
   const fromCentralPriceAuthority = makePriceAuthority(
@@ -318,7 +316,7 @@ const finish = context => {
     centralBrand,
     secondaryBrand,
     timer,
-    notifier,
+    subscriber,
     quoteIssuerKit,
   );
 
@@ -336,8 +334,8 @@ const finish = context => {
  * @param {IssuerKit} quoteIssuerKit
  * @param {import('./multipoolMarketMaker.js').AMMParamGetters} paramAccessor retrieve governed params
  * @param {ZCFSeat} protocolSeat seat that holds collected fees
- * @param {ERef<StorageNode>} [storageNode]
- * @param {ERef<Marshaller>} [marshaller]
+ * @param {ERef<StorageNode>} storageNode
+ * @param {ERef<Marshaller>} marshaller
  */
 export const definePoolKind = (
   zcf,
@@ -352,7 +350,10 @@ export const definePoolKind = (
   const poolInit = (liquidityZcfMint, poolSeat, secondaryBrand) => {
     const { brand: liquidityBrand, issuer: liquidityIssuer } =
       liquidityZcfMint.getIssuerRecord();
-    const { subscriber, publisher } = makePublishKit();
+    const { subscriber, publisher } = makeStoredPublishKit(
+      storageNode,
+      marshaller,
+    );
     const { publisher: metricsPublication, subscriber: metricsSubscription } =
       makeStoredPublisherKit(storageNode, marshaller, 'metrics');
 

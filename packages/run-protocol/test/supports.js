@@ -62,7 +62,12 @@ export const mockChainStorageRoot = () => {
   return makeChainStorageRoot(toStorage, 'swingset', 'mockChainStorageRoot');
 };
 
-export const setupBootstrap = (t, optTimer = undefined) => {
+/**
+ *
+ * @param {*} t
+ * @param {TimerService} [optTimer]
+ */
+export const setupBootstrap = (t, optTimer) => {
   const trace = makeTracer('PromiseSpace', false);
   const space = /** @type {any} */ (makePromiseSpace(trace));
   const { produce, consume } =
@@ -190,7 +195,7 @@ export const withAmountUtils = kit => {
 
 /**
  *
- * @param {Promise<StoredSubscription<unknown>>} subscription
+ * @param {Promise<StoredSubscription<unknown>> | StoredSubscriber<unknown>} subscription
  */
 export const subscriptionKey = subscription => {
   return E(subscription)

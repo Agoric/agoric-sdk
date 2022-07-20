@@ -1,8 +1,8 @@
 /**
- * @file Object representing ownership of a vault
+ * @file Use-object for the owner of a vault
  */
 // @ts-check
-import { makePublishKit } from '@agoric/notifier';
+import { makeStoredPublishKit } from '@agoric/notifier';
 import { defineKindMulti } from '@agoric/vat-data';
 import '@agoric/zoe/exported.js';
 
@@ -10,8 +10,8 @@ const { details: X } = assert;
 
 /**
  * @typedef {{
- * publisher: PublishKit<VaultNotification>['publisher'],
- * subscriber: PublishKit<VaultNotification>['subscriber'],
+ * publisher: StoredPublishKit<VaultNotification>['publisher'],
+ * subscriber: StoredPublishKit<VaultNotification>['subscriber'],
  * vault: Vault | null,
  * }} State
  * @typedef {Readonly<{
@@ -26,11 +26,16 @@ const { details: X } = assert;
 /**
  *
  * @param {Vault} vault
+ * @param {ERef<StorageNode>} storageNode
+ * @param {ERef<Marshaller>} marshaller
  * @returns {State}
  */
-const initState = vault => {
-  /** @type {PublishKit<VaultNotification>} */
-  const { subscriber, publisher } = makePublishKit();
+const initState = (vault, storageNode, marshaller) => {
+  /** @type {StoredPublishKit<VaultNotification>} */
+  const { subscriber, publisher } = makeStoredPublishKit(
+    storageNode,
+    marshaller,
+  );
 
   return { publisher, subscriber, vault };
 };

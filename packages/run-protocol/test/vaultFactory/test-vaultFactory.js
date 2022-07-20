@@ -45,7 +45,6 @@ import {
   setUpZoeForTest,
   withAmountUtils,
   produceInstallations,
-  subscriptionKey,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 import {
@@ -2470,64 +2469,6 @@ test('addVaultType: extra, unexpected params', async t => {
     extraParams,
   );
   t.true(matches(actual, M.remotable()), 'unexpected params are ignored');
-});
-
-test('storage keys', async t => {
-  const { aeth } = t.context;
-  const services = await setupServices(
-    t,
-    [500n, 15n],
-    aeth.make(900n),
-    undefined,
-    undefined,
-    500n,
-  );
-
-  // Root vault factory
-  const { lender, vaultFactory } = services.vaultFactory;
-  t.is(
-    await subscriptionKey(E(lender).getMetrics()),
-    'mockChainStorageRoot.vaultFactory.metrics',
-  );
-  t.is(
-    await subscriptionKey(E(lender).getElectorateSubscription()),
-    'mockChainStorageRoot.vaultFactory.governance',
-  );
-
-  // First manager
-  const manager0 = await E(lender).getCollateralManager(aeth.brand);
-  t.is(
-    await subscriptionKey(E(manager0).getMetrics()),
-    'mockChainStorageRoot.vaultFactory.manager0.metrics',
-  );
-  t.is(
-    await subscriptionKey(
-      E(lender).getSubscription({
-        collateralBrand: aeth.brand,
-      }),
-    ),
-    'mockChainStorageRoot.vaultFactory.manager0.governance',
-  );
-
-  // Second manager
-  const chit = makeIssuerKit('chit');
-  const manager1 = await E(vaultFactory).addVaultType(
-    chit.issuer,
-    'Chit',
-    defaultParamValues(chit.brand),
-  );
-  t.is(
-    await subscriptionKey(E(E(manager1).getPublicFacet()).getMetrics()),
-    'mockChainStorageRoot.vaultFactory.manager1.metrics',
-  );
-  t.is(
-    await subscriptionKey(
-      E(lender).getSubscription({
-        collateralBrand: chit.brand,
-      }),
-    ),
-    'mockChainStorageRoot.vaultFactory.manager1.governance',
-  );
 });
 
 test('director notifiers', async t => {
