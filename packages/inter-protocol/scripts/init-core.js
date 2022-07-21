@@ -1,6 +1,7 @@
 /* global process */
 // @ts-check
 import { makeHelpers } from '@agoric/deploy-script-support';
+import { objectMap } from '@agoric/vat-data';
 
 import {
   getManifestForRunProtocol,
@@ -57,13 +58,6 @@ const installKeyGroups = {
   },
 };
 
-const { entries, fromEntries } = Object;
-
-/** @type { <K extends string, T, U>(obj: Record<K, T>, f: (t: T) => U) => Record<K, U>} */
-const mapValues = (obj, f) =>
-  // @ts-expect-error entries() loses the K type
-  harden(fromEntries(entries(obj).map(([p, v]) => [p, f(v)])));
-
 /**
  *
  * @param {object} opts
@@ -85,7 +79,7 @@ export const committeeProposalBuilder = async ({
 
   /** @param {Record<string, [string, string]>} group */
   const publishGroup = group =>
-    mapValues(group, ([mod, bundle]) =>
+    objectMap(group, ([mod, bundle]) =>
       publishRef(install(mod, bundle, { persist: true })),
     );
   return harden({
@@ -124,7 +118,7 @@ export const mainProposalBuilder = async ({
   const persist = true;
   /** @param {Record<string, [string, string]>} group */
   const publishGroup = group =>
-    mapValues(group, ([mod, bundle]) =>
+    objectMap(group, ([mod, bundle]) =>
       publishRef(install(mod, bundle, { persist })),
     );
   return harden({
@@ -168,7 +162,7 @@ export const defaultProposalBuilder = async (
 
   /** @param {Record<string, [string, string]>} group */
   const publishGroup = group =>
-    mapValues(group, ([mod, bundle]) => publishRef(install(mod, bundle)));
+    objectMap(group, ([mod, bundle]) => publishRef(install(mod, bundle)));
 
   const anchorOptions = anchorDenom && {
     denom: anchorDenom,

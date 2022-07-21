@@ -1,38 +1,37 @@
 // @ts-check
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { E, Far } from '@endo/far';
-import { deeplyFulfilled } from '@endo/marshal';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
+import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
+import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
 import { makeCopyBag } from '@agoric/store';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { objectMap } from '@agoric/vat-data';
+import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
+import mintHolderBundle from '@agoric/vats/bundles/bundle-mintHolder.js';
 import {
   makeAgoricNamesAccess,
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
-import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
-import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
-import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
-import mintHolderBundle from '@agoric/vats/bundles/bundle-mintHolder.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
-
+import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { E, Far } from '@endo/far';
+import { deeplyFulfilled } from '@endo/marshal';
 import {
   startEconomicCommittee,
   startRunStake,
 } from '../../src/proposals/econ-behaviors.js';
-import * as Collect from '../../src/collect.js';
+import { ManagerKW as KW } from '../../src/runStake/constants.js';
 import {
   makeVoterTool,
-  setUpZoeForTest,
   mintRunPayment,
-  subscriptionKey,
   mockChainStorageRoot,
+  setUpZoeForTest,
+  subscriptionKey,
 } from '../supports.js';
-import { ManagerKW as KW } from '../../src/runStake/constants.js';
-import { unsafeMakeBundleCache } from '../bundleTool.js';
 
 // 8	Partial repayment from reward stream - TODO
 // TODO: #4728 case 9: Extending LoC - unbonded (FAIL)
@@ -88,7 +87,7 @@ test.before(async t => {
   };
   t.log(
     'bundled:',
-    Collect.mapValues(bundles, b => b.endoZipBase64.length),
+    objectMap(bundles, b => b.endoZipBase64.length),
   );
   console.timeEnd('bundling');
 

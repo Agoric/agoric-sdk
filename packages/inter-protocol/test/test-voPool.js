@@ -12,9 +12,9 @@ import {
   makeFakeMarshaller,
   makeFakeStorage,
 } from '@agoric/notifier/tools/testSupports.js';
+import { objectMap } from '@agoric/vat-data';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { mapValues } from '../src/collect.js';
 import { makeAmmParams } from '../src/vpool-xyk-amm/params.js';
 import { definePoolKind } from '../src/vpool-xyk-amm/pool.js';
 
@@ -35,7 +35,7 @@ const makeAmmParamManager = async (
   minInitialLiquidity,
   poserInvitation,
 ) => {
-  const initial = mapValues(
+  const initial = objectMap(
     makeAmmParams(
       poserInvitation,
       protocolFeeBP,
