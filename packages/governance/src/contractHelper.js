@@ -43,6 +43,12 @@ const facetHelpers = (zcf, paramManager) => {
 
   const { electionManager } = terms;
 
+  const commonPublicMethods = {
+    getSubscription: () => paramManager.getSubscription(),
+    getContractGovernor: () => electionManager,
+    getGovernedParams: () => paramManager.getParams(),
+  };
+
   /**
    * Add required methods to publicFacet
    *
@@ -53,9 +59,7 @@ const facetHelpers = (zcf, paramManager) => {
   const augmentPublicFacet = originalPublicFacet => {
     return Far('publicFacet', {
       ...originalPublicFacet,
-      getSubscription: () => paramManager.getSubscription(),
-      getContractGovernor: () => electionManager,
-      getGovernedParams: () => paramManager.getParams(),
+      ...commonPublicMethods,
       ...typedAccessors,
     });
   };
@@ -68,9 +72,7 @@ const facetHelpers = (zcf, paramManager) => {
   const augmentVirtualPublicFacet = originalPublicFacet => {
     return Far('publicFacet', {
       ...originalPublicFacet,
-      getSubscription: () => paramManager.getSubscription(),
-      getContractGovernor: () => electionManager,
-      getGovernedParams: () => paramManager.getParams(),
+      ...commonPublicMethods,
       ...objectMap(typedAccessors, dropContext),
     });
   };
@@ -87,19 +89,7 @@ const facetHelpers = (zcf, paramManager) => {
     });
   };
 
-  /**
-   * Add required methods to a creatorFacet
-   *
-   * @template {{}} CF creator facet
-   * @param {CF} originalCreatorFacet
-   * @param {Record<string, (...args: any[]) => any>} governedApis
-   * @returns {GovernedCreatorFacet<CF>}
-   */
-  const makeGovernorFacet = (originalCreatorFacet, governedApis = {}) => {
-    const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
-
-    // exclusively for contractGovernor, which only reveals limitedCreatorFacet
-    // @ts-expect-error type confusion
+  function governorFacet(limitedCreatorFacet, governedApis) {
     return Far('governorFacet', {
       getParamMgrRetriever: () =>
         Far('paramRetriever', { get: () => paramManager }),
@@ -113,6 +103,22 @@ const facetHelpers = (zcf, paramManager) => {
       // without also separately providing their names.
       getGovernedApiNames: () => Object.keys(governedApis),
     });
+  }
+
+  /**
+   * Add required methods to a creatorFacet
+   *
+   * @template {{}} CF creator facet
+   * @param {CF} originalCreatorFacet
+   * @param {Record<string, (...args: any[]) => any>} governedApis
+   * @returns {GovernedCreatorFacet<CF>}
+   */
+  const makeGovernorFacet = (originalCreatorFacet, governedApis = {}) => {
+    const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
+
+    // exclusively for contractGovernor, which only reveals limitedCreatorFacet
+    // @ts-expect-error type confusion
+    return governorFacet(limitedCreatorFacet, governedApis);
   };
 
   /**
@@ -128,21 +134,8 @@ const facetHelpers = (zcf, paramManager) => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
 
     // exclusively for contractGovernor, which only reveals limitedCreatorFacet
-    // ts-expect-error ??? TBD
-    return Far('governorFacet', {
-      getParamMgrRetriever: () =>
-        Far('paramRetriever', { get: () => paramManager }),
-      getInvitation: (_context, name) =>
-        paramManager.getInternalParamValue(name),
-      getLimitedCreatorFacet: () => limitedCreatorFacet,
-      // The contract provides a facet with the APIs that can be invoked by
-      // governance
-      getGovernedApis: () => Far('governedAPIs', governedApis),
-      // The facet returned by getGovernedApis is Far, so we can't see what
-      // methods it has. There's no clean way to have contracts specify the APIs
-      // without also separately providing their names.
-      getGovernedApiNames: () => Object.keys(governedApis),
-    });
+    const facet = governorFacet(limitedCreatorFacet, governedApis);
+    return objectMap(facet, dropContext);
   };
 
   return harden({
