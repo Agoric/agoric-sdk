@@ -274,7 +274,12 @@ export function makeFakeWatchedPromiseManager(vrm, vom, cm, fakeStuff) {
     fakeStuff.convertSlotToVal,
   );
 }
-
+/**
+ * Configure virtual stuff with relaxed durability rules and fake liveslots
+ *
+ * @param {object} [options]
+ * @param {boolean} [options.relaxDurabilityRules=true]
+ */
 export function makeFakeVirtualStuff(options = {}) {
   const fakeStuff = makeFakeLiveSlotsStuff(options);
   const { relaxDurabilityRules = true } = options;
