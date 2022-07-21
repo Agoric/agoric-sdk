@@ -3,14 +3,13 @@
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
-
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
-import { setupAmmServices } from './setup.js';
-import { unsafeMakeBundleCache } from '../../bundleTool.js';
+import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { E } from '@endo/eventual-send';
 import { subscriptionTracker } from '../../metrics.js';
+import { setupAmmServices } from './setup.js';
 
 /** @typedef {Record<string, any> & {
  *   bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>,

@@ -5,21 +5,20 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 import '../../src/vaultFactory/types.js';
 
-import path from 'path';
-import { E } from '@endo/eventual-send';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
+import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import {
-  makeRatio,
   floorDivideBy,
   floorMultiplyBy,
+  makeRatio,
   natSafeMath as NatMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
-import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
-
+import { E } from '@endo/eventual-send';
+import path from 'path';
 import { makeTracer } from '../../src/makeTracer.js';
-import { unsafeMakeBundleCache } from '../bundleTool.js';
 import {
   mockChainStorageRoot,
   setUpZoeForTest,

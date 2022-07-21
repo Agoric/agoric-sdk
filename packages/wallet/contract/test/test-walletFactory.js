@@ -7,7 +7,7 @@ import '@agoric/zoe/exported.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { connectFaucet } from '@agoric/inter-protocol/src/proposals/demoIssuers.js';
-import { unsafeMakeBundleCache } from '@agoric/inter-protocol/test/bundleTool.js';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { subscriptionKey } from '@agoric/inter-protocol/test/supports.js';
 import {
   installBootContracts,

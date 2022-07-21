@@ -1,17 +1,16 @@
 // @ts-check
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import '@endo/init/debug.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import rawTest from 'ava';
-import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
-import bundleSource from '@endo/bundle-source';
-import { E } from '@endo/eventual-send';
-import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
+
+import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
 import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
-import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
-import { unsafeMakeBundleCache } from '../../bundleTool.js';
+import { buildKernelBundles, buildVatController } from '@agoric/swingset-vat';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
+import bundleSource from '@endo/bundle-source';
+import { E } from '@endo/eventual-send';
+import rawTest from 'ava';
 
 // import '../../../src/vaultFactory/vaultFactory.js';
 

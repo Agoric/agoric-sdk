@@ -21,7 +21,7 @@ import {
   startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
-import { unsafeMakeBundleCache } from '../bundleTool.js';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
   installGovernance,
   makeVoterTool,

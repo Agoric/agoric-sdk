@@ -40,6 +40,7 @@ import '../../src/vaultFactory/types.js';
 import * as Collect from '../../src/collect.js';
 import { calculateCurrentDebt } from '../../src/interest-math.js';
 
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
   installGovernance,
   setupBootstrap,
@@ -47,7 +48,6 @@ import {
   withAmountUtils,
   produceInstallations,
 } from '../supports.js';
-import { unsafeMakeBundleCache } from '../bundleTool.js';
 import {
   metricsTracker,
   vaultManagerMetricsTracker,

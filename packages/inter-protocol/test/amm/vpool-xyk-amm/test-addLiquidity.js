@@ -3,8 +3,8 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { balancesToReachRatio } from '../../../src/vpool-xyk-amm/addLiquidity.js';
-import { unsafeMakeBundleCache } from '../../bundleTool.js';
 import { setupMintKits } from '../constantProduct/setupMints.js';
 
 test.before(async t => {

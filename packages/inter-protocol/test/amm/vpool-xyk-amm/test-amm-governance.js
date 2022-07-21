@@ -3,22 +3,19 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { E } from '@endo/eventual-send';
-
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE } from '@agoric/governance';
-
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { E } from '@endo/eventual-send';
+import { startEconomicCommittee } from '../../../src/proposals/econ-behaviors.js';
+import { amountGT } from '../../../src/vpool-xyk-amm/constantProduct/calcFees.js';
 import {
   MIN_INITIAL_POOL_LIQUIDITY_KEY,
   POOL_FEE_KEY,
   PROTOCOL_FEE_KEY,
 } from '../../../src/vpool-xyk-amm/params.js';
-import { amountGT } from '../../../src/vpool-xyk-amm/constantProduct/calcFees.js';
-import { startEconomicCommittee } from '../../../src/proposals/econ-behaviors.js';
-
-import { setupAmmServices, setupAMMBootstrap } from './setup.js';
-import { unsafeMakeBundleCache } from '../../bundleTool.js';
+import { setupAMMBootstrap, setupAmmServices } from './setup.js';
 
 test.before(async t => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
