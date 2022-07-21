@@ -8,7 +8,6 @@ import '@agoric/zoe/exported.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { connectFaucet } from '@agoric/inter-protocol/src/proposals/demoIssuers.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { subscriptionKey } from '@agoric/inter-protocol/test/supports.js';
 import {
   installBootContracts,
   makeAddressNameHubs,
@@ -32,6 +31,7 @@ import { makeLoopback } from '@endo/captp';
 import { E, Far } from '@endo/far';
 import path from 'path';
 import { devices } from './devices.js';
+import { subscriptionKey } from './supports.js';
 
 /** @type {import('ava').TestInterface<Awaited<ReturnType<makeTestContext>>>} */
 // @ts-expect-error cast
