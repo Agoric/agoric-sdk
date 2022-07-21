@@ -6,9 +6,9 @@ import '@agoric/vats/src/core/types.js';
 import '@agoric/zoe/exported.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
-import { connectFaucet } from '@agoric/run-protocol/src/proposals/demoIssuers.js';
-import { unsafeMakeBundleCache } from '@agoric/run-protocol/test/bundleTool.js';
-import { subscriptionKey } from '@agoric/run-protocol/test/supports.js';
+import { connectFaucet } from '@agoric/inter-protocol/src/proposals/demoIssuers.js';
+import { unsafeMakeBundleCache } from '@agoric/inter-protocol/test/bundleTool.js';
+import { subscriptionKey } from '@agoric/inter-protocol/test/supports.js';
 import {
   installBootContracts,
   makeAddressNameHubs,
@@ -20,8 +20,8 @@ import {
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
 import {
-  makeStorageNode,
   makeChainStorageRoot,
+  makeStorageNode,
 } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { buildRootObject as boardRoot } from '@agoric/vats/src/vat-board.js';

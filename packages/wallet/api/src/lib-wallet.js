@@ -35,7 +35,7 @@ import { makePaymentActions } from './actions.js';
 
 import '@agoric/store/exported.js';
 import '@agoric/zoe/exported.js';
-import '@agoric/run-protocol/exported.js';
+import '@agoric/inter-protocol/exported.js';
 
 import './internal-types.js';
 import './types.js';

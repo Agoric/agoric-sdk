@@ -1,6 +1,6 @@
 [
   {
-    "module": "@agoric/run-protocol/scripts/init-core.js",
+    "module": "@agoric/inter-protocol/scripts/init-core.js",
     "entrypoint": "defaultProposalBuilder",
     "args": [
       {
@@ -13,7 +13,7 @@
   },
   "@agoric/pegasus/scripts/init-core.js",
   {
-    "module": "@agoric/run-protocol/scripts/add-collateral-core.js",
+    "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
     "entrypoint": "defaultProposalBuilder",
     "args": [
       {
@@ -28,7 +28,7 @@
     ]
   },
   {
-    "module": "@agoric/run-protocol/scripts/add-collateral-core.js",
+    "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
     "entrypoint": "psmProposalBuilder",
     "args": [
       {
@@ -42,7 +42,7 @@
     ]
   },
   {
-    "module": "@agoric/run-protocol/scripts/price-feed-core.js",
+    "module": "@agoric/inter-protocol/scripts/price-feed-core.js",
     "entrypoint": "defaultProposalBuilder",
     "args": [
       {
@@ -66,7 +66,7 @@
     ]
   },
   {
-    "module": "@agoric/run-protocol/scripts/invite-committee-core.js",
+    "module": "@agoric/inter-protocol/scripts/invite-committee-core.js",
     "entrypoint": "defaultProposalBuilder",
     "args": [
       {
