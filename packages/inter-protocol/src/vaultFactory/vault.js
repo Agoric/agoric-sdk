@@ -101,7 +101,6 @@ const validTransitions = {
  * idInManager: VaultId,
  * manager: VaultManager,
  * vaultSeat: ZCFSeat,
- * zcf: ZCF,
  * }>} ImmutableState
  */
 
@@ -135,6 +134,7 @@ const validTransitions = {
  * @type {(key: VaultId) => {
  * storageNode: ERef<StorageNode>,
  * marshaller: ERef<Marshaller>,
+ * zcf: ZCF,
  * }} */
 // @ts-expect-error not yet defined
 const provideEphemera = makeEphemeraProvider(() => ({}));
@@ -150,6 +150,7 @@ const initState = (zcf, manager, idInManager, storageNode, marshaller) => {
   const ephemera = provideEphemera(idInManager);
   ephemera.storageNode = storageNode;
   ephemera.marshaller = marshaller;
+  ephemera.zcf = zcf;
 
   /**
    * @type {ImmutableState & MutableState}
@@ -159,7 +160,6 @@ const initState = (zcf, manager, idInManager, storageNode, marshaller) => {
     manager,
     outerUpdater: null,
     phase: Phase.ACTIVE,
-    zcf,
 
     // vaultSeat will hold the collateral until the loan is retired. The
     // payout from it will be handed to the user: if the vault dies early
@@ -382,6 +382,7 @@ const helperBehavior = {
     const { self, helper } = facets;
     helper.assertCloseable();
     const { phase, vaultSeat } = state;
+    const { zcf } = provideEphemera(state.idInManager);
 
     // Held as keys for cleanup in the manager
     const oldDebtNormalized = self.getNormalizedDebt();
@@ -407,14 +408,14 @@ const helperBehavior = {
 
       // Return any overpayment
       seat.incrementBy(vaultSeat.decrementBy(vaultSeat.getCurrentAllocation()));
-      state.zcf.reallocate(seat, vaultSeat);
+      zcf.reallocate(seat, vaultSeat);
       state.manager.burnAndRecord(debt, seat);
     } else if (phase === Phase.LIQUIDATED) {
       // Simply reallocate vault assets to the offer seat.
       // Don't take anything from the offer, even if vault is underwater.
       // TODO verify that returning RUN here doesn't mess up debt limits
       seat.incrementBy(vaultSeat.decrementBy(vaultSeat.getCurrentAllocation()));
-      state.zcf.reallocate(seat, vaultSeat);
+      zcf.reallocate(seat, vaultSeat);
     } else {
       throw new Error('only active and liquidated vaults can be closed');
     }
@@ -681,10 +682,8 @@ const selfBehavior = {
   makeAdjustBalancesInvitation: ({ state, facets }) => {
     const { helper } = facets;
     helper.assertActive();
-    return state.zcf.makeInvitation(
-      helper.adjustBalancesHook,
-      'AdjustBalances',
-    );
+    const { zcf } = provideEphemera(state.idInManager);
+    return zcf.makeInvitation(helper.adjustBalancesHook, 'AdjustBalances');
   },
 
   /**
@@ -693,7 +692,8 @@ const selfBehavior = {
   makeCloseInvitation: ({ state, facets }) => {
     const { helper } = facets;
     helper.assertCloseable();
-    return state.zcf.makeInvitation(helper.closeHook, 'CloseVault');
+    const { zcf } = provideEphemera(state.idInManager);
+    return zcf.makeInvitation(helper.closeHook, 'CloseVault');
   },
 
   /**
@@ -719,7 +719,8 @@ const selfBehavior = {
       locked: self.getCollateralAmount(),
       vaultState: phase,
     };
-    return state.zcf.makeInvitation(
+    const { zcf } = provideEphemera(state.idInManager);
+    return zcf.makeInvitation(
       helper.makeTransferInvitationHook,
       'TransferVault',
       transferState,
