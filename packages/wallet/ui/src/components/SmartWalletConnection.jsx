@@ -10,6 +10,7 @@ import {
   makeWalletBridgeFromFollower,
 } from '../util/WalletBackendAdapter';
 import { SmartConnectionMethod } from '../util/connections';
+import { bridgeStorageMessages } from '../util/BridgeStorage';
 
 const Alert = React.forwardRef(function Alert({ children, ...props }, ref) {
   return (
@@ -58,6 +59,7 @@ const SmartWalletConnection = ({
     }
 
     let cancelIterator;
+    let cleanupStorageBridge;
     const follow = async () => {
       const { href, smartConnectionMethod } = connectionConfig;
       let publicAddress;
@@ -78,10 +80,14 @@ const SmartWalletConnection = ({
         makeCastingSpec(`:published.wallet.${publicAddress}`),
         leader,
       );
-      const bridge = makeWalletBridgeFromFollower(follower, backendError, () =>
-        setConnectionState('bridged'),
+      const bridge = makeWalletBridgeFromFollower(
+        follower,
+        publicAddress,
+        backendError,
+        () => setConnectionState('bridged'),
       );
       const { backendIt, cancel } = await makeBackendFromWalletBridge(bridge);
+      cleanupStorageBridge = bridgeStorageMessages(bridge);
       cancelIterator = cancel;
       // Need to thunk the error handler, or it gets called immediately.
       setBackendErrorHandler(() => backendError);
@@ -102,6 +108,8 @@ const SmartWalletConnection = ({
     return () => {
       cancelIterator && cancelIterator();
       cancelIterator = undefined;
+      cleanupStorageBridge && cleanupStorageBridge();
+      cleanupStorageBridge = undefined;
     };
   }, [connectionConfig, keplrConnection]);
 
