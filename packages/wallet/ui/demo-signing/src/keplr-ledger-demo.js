@@ -186,7 +186,11 @@ const makeSigner = async (ui, keplr, connectWithSigner) => {
       const expiration = t0 / 1000 + 4 * 60 * 60;
       const msgs = [
         makeGrantWalletActionMessage(address, grantee, expiration),
-        makeFeeGrantMessage(address, grantee, allowance, expiration),
+
+        // cosmos support for fee-account in MsgExec hasn't landed yet
+        // https://github.com/cosmos/cosmjs/issues/1155
+        // https://github.com/cosmos/cosmjs/pull/1159
+        // makeFeeGrantMessage(address, grantee, allowance, expiration),
       ];
       console.log('sign', { address, msgs, fee });
       const tx = await cosmJS.signAndBroadcast(address, msgs, fee, '');
