@@ -67,7 +67,8 @@ const facetHelpers = (zcf, paramManager) => {
   /**
    * Add required methods to publicFacet, for a virtual/durable contract
    *
-   * @param {{}} originalPublicFacet
+   * @param {OPF} originalPublicFacet
+   * @template {{}} OPF
    */
   const augmentVirtualPublicFacet = originalPublicFacet => {
     return Far('publicFacet', {
@@ -115,7 +116,6 @@ const facetHelpers = (zcf, paramManager) => {
     });
 
     // exclusively for contractGovernor, which only reveals limitedCreatorFacet
-    // @ts-expect-error type confusion
     return governorFacet;
   };
 

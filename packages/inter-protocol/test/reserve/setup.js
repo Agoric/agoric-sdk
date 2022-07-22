@@ -55,7 +55,7 @@ const setupReserveBootstrap = async (
 
 /**
  * @typedef {{
- * reserveCreatorFacet: import('../../src/reserve/assetReserve').AssetReserveCreatorFacet,
+ * reserveCreatorFacet: import('../../src/reserve/assetReserve').AssetReserveLimitedCreatorFacet,
  * reservePublicFacet: import('../../src/reserve/assetReserve').AssetReservePublicFacet,
  * instance: Instance,
  * }} ReserveKit
@@ -106,7 +106,7 @@ export const setupReserveServices = async (
   };
   const governedInstance = E(governorPublicFacet).getGovernedContract();
 
-  /** @type { GovernedPublicFacet } */
+  /** @type { AssetReservePublicFacet } */
   const reservePublicFacet = await E(governorCreatorFacet).getPublicFacet();
 
   /** @type {ReserveKit} */

@@ -52,7 +52,7 @@ const CENTRAL_DENOM_NAME = 'urun';
  *   psmCreatorFacet: unknown,
  *   psmGovernorCreatorFacet: GovernedContractFacetAccess<{},{}>,
  *   reservePublicFacet: import('../reserve/assetReserve.js').AssetReservePublicFacet,
- *   reserveCreatorFacet: import('../reserve/assetReserve.js').AssetReserveCreatorFacet,
+ *   reserveCreatorFacet: import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet,
  *   reserveGovernorCreatorFacet: GovernedAssetReserveFacetAccess,
  *   runStakeCreatorFacet: RunStakeCreator,
  *   vaultFactoryCreator: VaultFactory,
