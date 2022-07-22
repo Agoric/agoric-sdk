@@ -45,6 +45,7 @@ export const makeMessagingSigner = async ({ localStorage }) => {
     if (stored) {
       return fromBase64(stored);
     }
+    console.log('generating Agoric Messaging Key');
     const seed = Random.getBytes(KEY_SIZE);
     save(seed);
     return seed;
