@@ -5,7 +5,6 @@ import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
 import { provideDurableMapStore, vivifyKindMulti } from '@agoric/vat-data';
-import { provide } from '@agoric/store';
 
 import { AMM_INSTANCE } from './params.js';
 import { makeTracer } from '../makeTracer.js';
@@ -64,6 +63,11 @@ const nonalphanumeric = /[^A-Za-z0-9]/g;
  * @param {Baggage} baggage
  */
 const start = async (zcf, privateArgs, baggage) => {
+  // This contract mixes two styles of access to durable state. durableStores
+  // are declared at the top level and referenced lexically. local state is
+  // accessed via the `state` object. The latter means updates are made directly
+  // to state and don't require reference to baggage.
+
   /**
    * Used to look up the unique keyword for each brand, including RUN.
    *
@@ -99,32 +103,7 @@ const start = async (zcf, privateArgs, baggage) => {
   /** @type {ZCFMint} */
   const runMint = await takeFeeMint();
   const runKit = runMint.getIssuerRecord();
-
-  const getTotalFeeMinted = () =>
-    provide(baggage, 'TotalFeeMinted', () =>
-      AmountMath.makeEmpty(runKit.brand),
-    );
-  const addFeeMinted = amount =>
-    baggage.set(
-      'TotalFeeMinted',
-      AmountMath.add(amount, baggage.get('TotalFeeMinted')),
-    );
-
-  const getTotalFeeBurned = () =>
-    provide(baggage, 'TotalFeeBurned', () =>
-      AmountMath.makeEmpty(runKit.brand),
-    );
-  const addFeeBurned = amount =>
-    baggage.set(
-      'TotalFeeBurned',
-      AmountMath.add(amount, baggage.get('TotalFeeBurned')),
-    );
-
-  // shortfall in Vaults due to liquidations less than debt. This value can be
-  // reduced by various actions which burn RUN.
-  let shortfallBalance = provide(baggage, 'shortfallBalance', () =>
-    AmountMath.makeEmpty(runKit.brand),
-  );
+  const emptyAmount = AmountMath.makeEmpty(runKit.brand);
 
   /**
    * @param {Brand} brand
@@ -284,36 +263,50 @@ const start = async (zcf, privateArgs, baggage) => {
     privateArgs.marshaller,
   );
 
-  const updateMetrics = () => {
+  const updateMetrics = ({ state }) => {
     const metrics = harden({
       allocations: getAllocations(),
-      shortfallBalance,
-      totalFeeMinted: getTotalFeeMinted(),
-      totalFeeBurned: getTotalFeeBurned(),
+      shortfallBalance: state.shortfallBalance,
+      totalFeeMinted: state.totalFeeMinted,
+      totalFeeBurned: state.totalFeeBurned,
     });
     metricsPublication.updateState(metrics);
   };
-  updateMetrics();
 
-  const increaseLiquidationShortfall = shortfall => {
-    shortfallBalance = AmountMath.add(shortfallBalance, shortfall);
-    baggage.set('shortfallBalance', shortfallBalance);
-    updateMetrics();
+  const increaseLiquidationShortfall = ({ state }, shortfall) => {
+    state.shortfallBalance = AmountMath.add(state.shortfallBalance, shortfall);
+    updateMetrics({ state });
   };
 
-  const reduceLiquidationShortfall = reduction => {
-    if (AmountMath.isGTE(reduction, shortfallBalance)) {
-      shortfallBalance = AmountMath.makeEmptyFromAmount(shortfallBalance);
+  const reduceLiquidationShortfall = ({ state }, reduction) => {
+    if (AmountMath.isGTE(reduction, state.shortfallBalance)) {
+      state.shortfallBalance = emptyAmount;
     } else {
-      shortfallBalance = AmountMath.subtract(shortfallBalance, reduction);
+      state.shortfallBalance = AmountMath.subtract(
+        state.shortfallBalance,
+        reduction,
+      );
     }
-    baggage.set('shortfallBalance', shortfallBalance);
-    updateMetrics();
+    updateMetrics({ state });
+  };
+
+  const init = () => {
+    const initialState = {
+      totalFeeMinted: emptyAmount,
+      totalFeeBurned: emptyAmount,
+      shortfallBalance: emptyAmount,
+    };
+    updateMetrics({ state: initialState });
+    return initialState;
   };
 
   // Takes collateral from the reserve, mints RUN to accompany it, and uses both
   // to add Liquidity to a pool in the AMM.
-  const addLiquidityToAmmPool = async (collateralAmount, runAmount) => {
+  const addLiquidityToAmmPool = async (
+    { state },
+    collateralAmount,
+    runAmount,
+  ) => {
     // verify we have the funds
     const collateralKeyword = getKeywordForBrand(collateralAmount.brand);
     if (
@@ -327,7 +320,7 @@ const start = async (zcf, privateArgs, baggage) => {
 
     // create the RUN
     const offerToSeat = runMint.mintGains(harden({ RUN: runAmount }));
-    addFeeMinted(runAmount);
+    state.totalFeeMinted = AmountMath.add(state.totalFeeMinted, runAmount);
 
     offerToSeat.incrementBy(
       collateralSeat.decrementBy(
@@ -375,10 +368,10 @@ const start = async (zcf, privateArgs, baggage) => {
       }),
     );
     zcf.reallocate(offerToSeat, collateralSeat);
-    updateMetrics();
+    updateMetrics({ state });
   };
 
-  const burnRUNToReduceShortfall = reduction => {
+  const burnRUNToReduceShortfall = ({ state }, reduction) => {
     reduction = AmountMath.coerce(runKit.brand, reduction);
     const runKeyword = keywordForBrand.get(runKit.brand);
     const runBalance = collateralSeat.getAmountAllocated(runKeyword);
@@ -388,18 +381,19 @@ const start = async (zcf, privateArgs, baggage) => {
     }
 
     runMint.burnLosses(harden({ [runKeyword]: amountToBurn }), collateralSeat);
-    addFeeBurned(amountToBurn);
-
-    reduceLiquidationShortfall(amountToBurn);
+    state.totalFeeBurned = AmountMath.add(state.totalFeeBurned, amountToBurn);
+    updateMetrics({ state });
   };
 
-  const makeShortfallReportingInvitation = () => {
+  const shortfallReportingFacet = {
+    increaseLiquidationShortfall,
+    // currently exposed for testing. Maybe it only gets called internally?
+    reduceLiquidationShortfall,
+  };
+
+  const makeShortfallReportingInvitation = ({ facets }) => {
     const handleShortfallReportingOffer = () => {
-      return Far('shortfallReporter', {
-        increaseLiquidationShortfall,
-        // currently exposed for testing. Maybe it only gets called internally?
-        reduceLiquidationShortfall,
-      });
+      return facets.shortfallReportingFacet;
     };
 
     return zcf.makeInvitation(
@@ -408,17 +402,16 @@ const start = async (zcf, privateArgs, baggage) => {
     );
   };
 
-  const governorFacet = makeVirtualGovernorFacet(
-    {
-      makeAddCollateralInvitation,
-      // add makeRedeemLiquidityTokensInvitation later. For now just store them
-      getAllocations,
-      addIssuer,
-      makeShortfallReportingInvitation,
-      getMetrics: () => metricsSubscription,
-    },
-    { addLiquidityToAmmPool, burnRUNToReduceShortfall },
-  );
+  const { governorFacet, limitedCreatorFacet } = makeVirtualGovernorFacet({
+    makeAddCollateralInvitation,
+    // add makeRedeemLiquidityTokensInvitation later. For now just store them
+    getAllocations,
+    addIssuer,
+    makeShortfallReportingInvitation,
+    getMetrics: () => metricsSubscription,
+  });
+
+  const governedApis = { addLiquidityToAmmPool, burnRUNToReduceShortfall };
 
   const publicFacet = augmentVirtualPublicFacet(
     Far('Collateral Reserve public', {
@@ -428,16 +421,16 @@ const start = async (zcf, privateArgs, baggage) => {
     }),
   );
 
-  const makeAssetReserve = vivifyKindMulti(
-    baggage,
-    'assetReserve',
-    () => ({}),
-    {
-      publicFacet,
-      creatorFacet: governorFacet,
-    },
-  );
-  return makeAssetReserve();
+  const makeAssetReserve = vivifyKindMulti(baggage, 'assetReserve', init, {
+    publicFacet,
+    creatorFacet: governorFacet,
+    shortfallReportingFacet,
+    limitedCreatorFacet,
+    governedApis,
+  });
+
+  const { creatorFacet, publicFacet: pFacet } = makeAssetReserve();
+  return { creatorFacet, publicFacet: pFacet };
 };
 
 harden(start);

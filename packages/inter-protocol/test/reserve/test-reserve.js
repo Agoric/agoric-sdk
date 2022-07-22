@@ -49,7 +49,6 @@ const addLiquidPool = async (
 };
 
 /**
- *
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<FeeMintAccess>} feeMintAccessP
  * @param {*} faucetInstallation
@@ -397,7 +396,7 @@ test('reserve burn IST', async t => {
 
   const oneKRun = AmountMath.make(runBrand, 1000n);
   await E(reporterFacet).increaseLiquidationShortfall(oneKRun);
-  let runningShortfall = 1000n;
+  const runningShortfall = 1000n;
 
   const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
   // @ts-expect-error type confusion
@@ -456,12 +455,7 @@ test('reserve burn IST', async t => {
   await timer.tick();
   await timer.tick();
 
-  runningShortfall = 0n;
-
   await m.assertChange({
-    shortfallBalance: {
-      value: runningShortfall,
-    },
     allocations: { RUN: AmountMath.makeEmpty(runBrand) },
     totalFeeBurned: { value: 1000n },
   });

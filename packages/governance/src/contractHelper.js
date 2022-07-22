@@ -89,22 +89,6 @@ const facetHelpers = (zcf, paramManager) => {
     });
   };
 
-  function governorFacet(limitedCreatorFacet, governedApis) {
-    return Far('governorFacet', {
-      getParamMgrRetriever: () =>
-        Far('paramRetriever', { get: () => paramManager }),
-      getInvitation: name => paramManager.getInternalParamValue(name),
-      getLimitedCreatorFacet: () => limitedCreatorFacet,
-      // The contract provides a facet with the APIs that can be invoked by
-      // governance
-      getGovernedApis: () => Far('governedAPIs', governedApis),
-      // The facet returned by getGovernedApis is Far, so we can't see what
-      // methods it has. There's no clean way to have contracts specify the APIs
-      // without also separately providing their names.
-      getGovernedApiNames: () => Object.keys(governedApis),
-    });
-  }
-
   /**
    * Add required methods to a creatorFacet
    *
@@ -115,27 +99,50 @@ const facetHelpers = (zcf, paramManager) => {
    */
   const makeGovernorFacet = (originalCreatorFacet, governedApis = {}) => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
+    const governorFacet = Far('governorFacet', {
+      getParamMgrRetriever: () =>
+        Far('paramRetriever', { get: () => paramManager }),
+      getInvitation: (_context, name) =>
+        paramManager.getInternalParamValue(name),
+      getLimitedCreatorFacet: () => limitedCreatorFacet,
+      // The contract provides a facet with the APIs that can be invoked by
+      // governance
+      getGovernedApis: () => Far('governedAPIs', governedApis),
+      // The facet returned by getGovernedApis is Far, so we can't see what
+      // methods it has. There's no clean way to have contracts specify the APIs
+      // without also separately providing their names.
+      getGovernedApiNames: () => Object.keys(governedApis),
+    });
 
     // exclusively for contractGovernor, which only reveals limitedCreatorFacet
     // @ts-expect-error type confusion
-    return governorFacet(limitedCreatorFacet, governedApis);
+    return governorFacet;
   };
 
   /**
    * Add required methods to a creatorFacet for a virtual/durable contract.
    *
    * @param {{ [methodName: string]: (context?: unknown, ...rest: unknown[]) => unknown}} originalCreatorFacet
-   * @param {Record<string, (...args: any[]) => any>} governedApis
    */
-  const makeVirtualGovernorFacet = (
-    originalCreatorFacet,
-    governedApis = {},
-  ) => {
+  const makeVirtualGovernorFacet = originalCreatorFacet => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
 
-    // exclusively for contractGovernor, which only reveals limitedCreatorFacet
-    const facet = governorFacet(limitedCreatorFacet, governedApis);
-    return objectMap(facet, dropContext);
+    const governorFacet = Far('governorFacet', {
+      getParamMgrRetriever: () =>
+        Far('paramRetriever', { get: () => paramManager }),
+      getInvitation: (_context, name) =>
+        paramManager.getInternalParamValue(name),
+      getLimitedCreatorFacet: ({ facets }) => facets.limitedCreatorFacet,
+      // The contract provides a facet with the APIs that can be invoked by
+      // governance
+      getGovernedApis: ({ facets }) => facets.governedApis,
+      // The facet returned by getGovernedApis is Far, so we can't see what
+      // methods it has. There's no clean way to have contracts specify the APIs
+      // without also separately providing their names.
+      getGovernedApiNames: ({ facets }) => Object.keys(facets.governedApis),
+    });
+
+    return { governorFacet, limitedCreatorFacet };
   };
 
   return harden({
