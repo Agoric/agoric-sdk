@@ -53,7 +53,7 @@ const MILLI = 1_000_000n;
  *   reserveCreatorFacet: import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet,
  *   reserveGovernorCreatorFacet: GovernedAssetReserveFacetAccess,
  *   runStakeCreatorFacet: RunStakeCreator,
- *   vaultFactoryCreator: VaultFactory,
+ *   vaultFactoryCreator: VaultFactoryCreatorFacet,
  *   vaultFactoryGovernorCreator: GovernedContractFacetAccess<{},{}>,
  *   vaultFactoryVoteCreator: unknown,
  *   minInitialDebt: NatValue,

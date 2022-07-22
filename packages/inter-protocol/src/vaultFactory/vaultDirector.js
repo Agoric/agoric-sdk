@@ -296,7 +296,7 @@ const watchGovernance = (govParams, vaultManager, oldInstall, oldTerms) => {
   });
 };
 
-/** @type {import('@agoric/vat-data/src/types').FunctionsPlusContext<MethodContext, VaultFactory>} */
+/** @type {import('@agoric/vat-data/src/types').FunctionsPlusContext<MethodContext, VaultFactoryCreatorFacet>} */
 const machineBehavior = {
   // TODO move this under governance #3924
   /**
