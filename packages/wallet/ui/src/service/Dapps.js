@@ -24,18 +24,14 @@ export const getDappService = publicAddress => {
 
   const setDappPetname = (origin, petname) => {
     const dapp = dapps.get(origin);
-    if (!dapp) return;
-
-    const newValue = { ...dapp, petname };
-    upsertDapp(newValue);
+    assert(dapp, `Tried to set petname on undefined dapp ${origin}`);
+    upsertDapp({ ...dapp, petname });
   };
 
   const enableDapp = origin => {
     const dapp = dapps.get(origin);
-    if (!dapp) return;
-
-    const newValue = { ...dapp, enable: true };
-    upsertDapp(newValue);
+    assert(dapp, `Tried to enable undefined dapp ${origin}`);
+    upsertDapp({ ...dapp, enable: true });
   };
 
   const storedDapps = load(publicAddress);

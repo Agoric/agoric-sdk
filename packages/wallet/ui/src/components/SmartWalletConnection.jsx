@@ -108,7 +108,7 @@ const SmartWalletConnection = ({
     return () => {
       cancelIterator && cancelIterator();
       cancelIterator = undefined;
-      cleanupStorageBridge = cleanupStorageBridge();
+      cleanupStorageBridge && cleanupStorageBridge();
       cleanupStorageBridge = undefined;
     };
   }, [connectionConfig, keplrConnection]);
