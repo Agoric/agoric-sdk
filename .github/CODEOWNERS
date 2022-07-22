@@ -1,3 +1,3 @@
 # We are currently only using CODEOWNERS for a small subset of our packages.
-/packages/run-protocol/ @turadg
-/packages/run-protocol/src/vaultFactory/ @dtribble @turadg
+/packages/inter-protocol/ @turadg
+/packages/inter-protocol/src/vaultFactory/ @dtribble @turadg
