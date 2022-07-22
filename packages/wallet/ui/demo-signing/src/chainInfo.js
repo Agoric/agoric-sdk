@@ -30,16 +30,6 @@ export const bech32Config = {
   bech32PrefixConsPub: 'agoricvalconspub',
 };
 
-/**
- * /agoric.swingset.XXX matches package agoric.swingset in swingset/msgs.go
- */
-export const SwingsetMsgs = /** @type {const} */ ({
-  MsgWalletAction: {
-    typeUrl: '/agoric.swingset.MsgWalletAction',
-    aminoType: 'swingset/WalletAction',
-  },
-});
-
 const makeChainInfo = (networkConfig, rpcAddr, chainId, caption) => {
   const coinType = Number(
     new URL(networkConfig).searchParams.get('coinType') || AGORIC_COIN_TYPE,
