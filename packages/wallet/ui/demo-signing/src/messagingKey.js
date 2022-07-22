@@ -118,9 +118,16 @@ export const makeFeeGrantMessage = (granter, grantee, allowance, seconds) => {
 /**
  *
  * @param {string} grantee
- * @param {import('@cosmjs/proto-signing').EncodeObject[]} msgs
+ * @param {import('@cosmjs/proto-signing').EncodeObject[]} msgObjs
+ * @param {import('@cosmjs/proto-signing').Registry} registry
  */
-export const makeExecMessage = (grantee, msgs) => {
+export const makeExecMessage = (grantee, msgObjs, registry) => {
+  console.log('@@exec', { msgObjs });
+  const msgs = msgObjs.map(obj => ({
+    typeUrl: obj.typeUrl,
+    value: registry.encode(obj),
+  }));
+  console.log('@@exec', { msgs });
   return {
     typeUrl: CosmosMessages.authz.MsgExec.typeUrl,
     value: { grantee, msgs },

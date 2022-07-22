@@ -310,13 +310,13 @@ window.addEventListener('load', async _ev => {
     console.log({ accountNumber, sequence });
 
     const act1 = {
-      typeUrl: '/agoric.swingset.MsgWalletAction',
+      typeUrl: SwingsetMsgs.MsgWalletAction.typeUrl,
       value: {
         owner: toBase64(toAccAddress(s1.address)),
         action: ui.inputValue('*[name="action"]'),
       },
     };
-    const msgs = [makeExecMessage(s2.address, [act1])];
+    const msgs = [makeExecMessage(s2.address, [act1], aRegistry)];
     const memo = ui.inputValue('*[name="memo"]');
 
     const { coinMinimalDenom: denom } = stableCurrency;
