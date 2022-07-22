@@ -6,6 +6,7 @@ import {
 } from '@cosmjs/stargate';
 import { fromBech32, toBech32, fromBase64, toBase64 } from '@cosmjs/encoding';
 import { DirectSecp256k1Wallet, Registry } from '@cosmjs/proto-signing';
+import * as tendermintRpcStar from '@cosmjs/tendermint-rpc';
 import { html, render } from 'lit-html';
 import {
   AGORIC_COIN_TYPE,
@@ -292,6 +293,14 @@ window.addEventListener('load', async _ev => {
   );
 
   const chainInfo = localChainInfo;
+  const { Tendermint34Client } = tendermintRpcStar;
+  const rpcClient = await Tendermint34Client.connect(chainInfo.rpc);
+  const grants = await s2.queryGrants(
+    { granter: s1.address, msgTypeUrl: SwingsetMsgs.MsgWalletAction.typeUrl },
+    rpcClient,
+  );
+  console.log('@@@', { grants });
+
   const lowPrivilegeClient = await SigningStargateClient.connectWithSigner(
     chainInfo.rpc,
     s2.wallet,

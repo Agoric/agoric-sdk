@@ -3,8 +3,16 @@ import { fromBase64, toBase64 } from '@cosmjs/encoding';
 import { Random } from '@cosmjs/crypto';
 import { DirectSecp256k1Wallet } from '@cosmjs/proto-signing';
 import { GenericAuthorization } from 'cosmjs-types/cosmos/authz/v1beta1/authz';
+import {
+  QueryClientImpl,
+  QueryGrantsResponse,
+} from 'cosmjs-types/cosmos/authz/v1beta1/query';
+
+import * as stargateStar from '@cosmjs/stargate';
 
 import { bech32Config, SwingsetMsgs } from './chainInfo.js';
+
+const { QueryClient } = stargateStar;
 
 const CosmosMessages = /** @type {const} */ ({
   authz: {
@@ -61,9 +69,31 @@ export const makeMessagingSigner = async ({ localStorage }) => {
 
   const [{ address }] = accounts;
 
+  /**
+   *
+   * @param {{ granter: string, msgTypeUrl: string}} constraints
+   * @param {import('@cosmjs/tendermint-rpc').Tendermint34Client} rpcClient
+   */
+  const queryGrants = async ({ granter, msgTypeUrl }, rpcClient) => {
+    const base = QueryClient.withExtensions(rpcClient);
+    const rpc = stargateStar.createProtobufRpcClient(base);
+    const queryService = new QueryClientImpl(rpc);
+    const result = await queryService.Grants({
+      granter,
+      grantee: address,
+      msgTypeUrl: '',
+    });
+    for (const g of result.grants) {
+      console.log('g.authorization:', g.authorization);
+      const x = GenericAuthorization.decode(g.authorization.value);
+      console.log({ x });
+    }
+    return result;
+  };
   return freeze({
     address,
     wallet,
+    queryGrants,
   });
 };
 
