@@ -3,34 +3,62 @@
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 
-import { E } from '@endo/eventual-send';
 import '@agoric/governance/src/exported.js';
+import { E } from '@endo/eventual-send';
 
 import { fit, keyEQ, M, makeScalarMap } from '@agoric/store';
 import {
   assertProposalShape,
-  getAmountOut,
   getAmountIn,
+  getAmountOut,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
 
 import { AmountMath } from '@agoric/ertp';
-import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
-import { defineKindMulti } from '@agoric/vat-data';
 import { makeStoredPublisherKit, observeIteration } from '@agoric/notifier';
-import { makeVaultManager } from './vaultManager.js';
-import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import {
+  defineDurableKindMulti,
+  makeKindHandle,
+  makeScalarBigMapStore,
+} from '@agoric/vat-data';
+import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
+import { makeMakeCollectFeesInvitation } from '../collectFees.js';
+import { makeMetricsPublisherKit } from '../contractSupport.js';
+import {
+  CHARGING_PERIOD_KEY,
   makeVaultParamManager,
   RECORDING_PERIOD_KEY,
-  CHARGING_PERIOD_KEY,
-  vaultParamPattern,
   SHORTFALL_INVITATION_KEY,
+  vaultParamPattern,
 } from './params.js';
-import { makeMetricsPublisherKit } from '../contractSupport.js';
+import { makeVaultManager } from './vaultManager.js';
 
 const { details: X, quote: q } = assert;
+
+/** @typedef {{
+ * debtMint: ZCFMint<'nat'>,
+ * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>,
+ * marshaller: ERef<Marshaller>,
+ * metricsPublication: IterationObserver<MetricsNotification>
+ * metricsSubscription: StoredSubscription<MetricsNotification>
+ * shortfallReporter: import('../reserve/assetReserve.js').ShortfallReporter,
+ * storageNode: ERef<StorageNode>,
+ * vaultParamManagers: Store<Brand, import('./params.js').VaultParamManager>,
+ * zcf: import('./vaultFactory.js').VaultFactoryZCF,
+ * }} Ephemera
+ */
+
+/**
+ * Ephemera is the state we cannot (or merely need not) keep durably. For
+ * vaultDirector we can keep it in module scope because there is (exactly) one
+ * vaultDirector per vaultFactory contract and (exactly) one contract per vat.
+ *
+ * @type {Ephemera}
+ */
+// @ts-expect-error not actually full until after initState
+// UNTIL resolution to https://github.com/Agoric/agoric-sdk/issues/5759
+const ephemera = {};
 
 /**
  * @typedef {{
@@ -39,19 +67,10 @@ const { details: X, quote: q } = assert;
  * }} MetricsNotification
  *
  * @typedef {Readonly<{
- * debtMint: ZCFMint<'nat'>,
  * collateralTypes: Store<Brand,VaultManager>,
- * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>,
- * metricsPublication: IterationObserver<MetricsNotification>
- * metricsSubscription: StoredSubscription<MetricsNotification>
  * mintSeat: ZCFSeat,
  * rewardPoolSeat: ZCFSeat,
- * vaultParamManagers: Store<Brand, import('./params.js').VaultParamManager>,
- * zcf: import('./vaultFactory.js').VaultFactoryZCF,
  * shortfallInvitation: Invitation,
- * shortfallReporter: import('../reserve/assetReserve.js').ShortfallReporter,
- * storageNode: ERef<StorageNode>,
- * marshaller: ERef<Marshaller>,
  * }>} ImmutableState
  *
  * @typedef {{
@@ -75,9 +94,13 @@ const { details: X, quote: q } = assert;
 
 /**
  * @param {ERef<ZoeService>} zoe
- * @param {State['directorParamManager']} paramMgr
+ * @param {Ephemera['directorParamManager']} paramMgr
  * @param {import('../reserve/assetReserve.js').ShortfallReporter} [oldShortfallReporter]
  * @param {ERef<Invitation>} [oldInvitation]
+ * @returns {Promise<{
+ *   shortfallInvitation: ERef<Invitation>,
+ *   shortfallReporter: import('../reserve/assetReserve.js').ShortfallReporter,
+ * }>}
  */
 const updateShortfallReporter = async (
   zoe,
@@ -91,10 +114,15 @@ const updateShortfallReporter = async (
 
   if (newInvitation !== oldInvitation) {
     return {
+      // @ts-expect-error cast
       shortfallReporter: E(E(zoe).offer(newInvitation)).getOfferResult(),
       shortfallInvitation: newInvitation,
     };
   } else {
+    assert(
+      oldShortfallReporter,
+      'updateShortFallReported called with repeat invitation and no oldShortfallReporter',
+    );
     return {
       shortfallReporter: oldShortfallReporter,
       shortfallInvitation: oldInvitation,
@@ -114,9 +142,9 @@ const metricsOf = state => {
 };
 
 /**
- * @param {State['zcf']} zcf
- * @param {State['directorParamManager']} directorParamManager
- * @param {State['debtMint']} debtMint
+ * @param {Ephemera['zcf']} zcf
+ * @param {Ephemera['directorParamManager']} directorParamManager
+ * @param {Ephemera['debtMint']} debtMint
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
  * @returns {State}
@@ -132,32 +160,38 @@ const initState = (
   const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
   const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
 
-  const collateralTypes = makeScalarMap('brand');
+  const collateralTypes = makeScalarBigMapStore('collateralTypes', {
+    durable: true,
+  });
 
-  const vaultParamManagers = makeScalarMap('brand');
+  // Non-durable map because param managers aren't durable.
+  // In the event they're needed they can be reconstructed from contract terms and off-chain data.
+  const vaultParamManagers = makeScalarMap('vaultParamManagers');
 
   const { metricsPublication, metricsSubscription } = makeMetricsPublisherKit(
     storageNode,
     marshaller,
   );
 
-  return {
-    collateralTypes,
+  Object.assign(ephemera, {
     debtMint,
     directorParamManager,
-    managerCounter: 0,
     marshaller,
-    metricsSubscription,
     metricsPublication,
-    mintSeat,
-    rewardPoolSeat,
+    // Subscription can't yet be held durably https://github.com/Agoric/agoric-sdk/issues/4567
+    metricsSubscription,
     storageNode,
     vaultParamManagers,
-    // @ts-expect-error defined in finish()
-    shortfallReporter: undefined,
+    zcf,
+  });
+
+  return {
+    collateralTypes,
+    managerCounter: 0,
+    mintSeat,
+    rewardPoolSeat,
     // @ts-expect-error defined in finish()
     shortfallInvitation: undefined,
-    zcf,
   };
 };
 
@@ -168,7 +202,9 @@ const initState = (
  * @param {MethodContext} context
  */
 const makeVaultInvitation = ({ state }) => {
-  const { collateralTypes, zcf } = state;
+  const { zcf } = ephemera;
+
+  const { collateralTypes } = state;
 
   /** @param {ZCFSeat} seat */
   const makeVaultHook = async seat => {
@@ -189,10 +225,10 @@ const makeVaultInvitation = ({ state }) => {
     assert(
       AmountMath.isGTE(
         requestedAmount,
-        state.directorParamManager.getMinInitialDebt(),
+        ephemera.directorParamManager.getMinInitialDebt(),
       ),
       X`The request must be for at least ${
-        state.directorParamManager.getMinInitialDebt().value
+        ephemera.directorParamManager.getMinInitialDebt().value
       }. ${requestedAmount.value} is too small`,
     );
 
@@ -229,7 +265,7 @@ const getCollaterals = async ({ state }) => {
   );
 };
 /**
- * @param {State['directorParamManager']} directorParamManager
+ * @param {Ephemera['directorParamManager']} directorParamManager
  */
 const getLiquidationConfig = directorParamManager => ({
   install: directorParamManager.getLiquidationInstall(),
@@ -238,7 +274,7 @@ const getLiquidationConfig = directorParamManager => ({
 
 /**
  *
- * @param {State['directorParamManager']} govParams
+ * @param {Ephemera['directorParamManager']} govParams
  * @param {VaultManager} vaultManager
  * @param {Installation<unknown>} oldInstall
  * @param {unknown} oldTerms
@@ -277,13 +313,13 @@ const machineBehavior = {
   ) => {
     const {
       debtMint,
-      collateralTypes,
-      mintSeat,
-      rewardPoolSeat,
       vaultParamManagers,
       directorParamManager,
+      marshaller,
+      storageNode,
       zcf,
-    } = state;
+    } = ephemera;
+    const { collateralTypes, mintSeat, rewardPoolSeat } = state;
     fit(collateralIssuer, M.remotable());
     assertKeywordName(collateralKeyword);
     fit(initialParamValues, vaultParamPattern);
@@ -296,17 +332,13 @@ const machineBehavior = {
     );
 
     const managerStorageNode =
-      state.storageNode &&
-      E(state.storageNode).getChildNode(`manager${state.managerCounter}`);
+      storageNode &&
+      E(storageNode).getChildNode(`manager${state.managerCounter}`);
     state.managerCounter += 1;
 
     /** a powerful object; can modify parameters */
     const vaultParamManager = makeVaultParamManager(
-      makeStoredPublisherKit(
-        managerStorageNode,
-        state.marshaller,
-        'governance',
-      ),
+      makeStoredPublisherKit(managerStorageNode, marshaller, 'governance'),
       initialParamValues,
     );
     vaultParamManagers.init(collateralBrand, vaultParamManager);
@@ -372,7 +404,7 @@ const machineBehavior = {
         const reporterKit = await updateShortfallReporter(
           zcf.getZoeService(),
           directorParamManager,
-          state.shortfallReporter,
+          ephemera.shortfallReporter,
           state.shortfallInvitation,
         );
         return reporterKit.shortfallReporter;
@@ -389,7 +421,7 @@ const machineBehavior = {
       timerService,
       startTimeStamp,
       managerStorageNode,
-      state.marshaller,
+      ephemera.marshaller,
     );
     collateralTypes.init(collateralBrand, vm);
     const { install, terms } = getLiquidationConfig(directorParamManager);
@@ -401,7 +433,8 @@ const machineBehavior = {
   getCollaterals,
   /** @param {MethodContext} context */
   makeCollectFeesInvitation: ({ state }) => {
-    const { debtMint, rewardPoolSeat, zcf } = state;
+    const { debtMint, zcf } = ephemera;
+    const { rewardPoolSeat } = state;
     return makeMakeCollectFeesInvitation(
       zcf,
       rewardPoolSeat,
@@ -409,11 +442,10 @@ const machineBehavior = {
       'RUN',
     ).makeCollectFeesInvitation();
   },
-  /** @param {MethodContext} context */
-  getContractGovernor: ({ state }) => state.zcf.getTerms().electionManager,
+  getContractGovernor: () => ephemera.zcf.getTerms().electionManager,
   /** @param {MethodContext} context */
   updateMetrics: ({ state }) => {
-    state.metricsPublication.updateState(metricsOf(harden(state)));
+    ephemera.metricsPublication.updateState(metricsOf(harden(state)));
   },
 
   // XXX accessors for tests
@@ -423,17 +455,14 @@ const machineBehavior = {
 };
 
 const creatorBehavior = {
-  /** @param {MethodContext} context */
-  getParamMgrRetriever: ({
-    state: { directorParamManager, vaultParamManagers },
-  }) =>
+  getParamMgrRetriever: () =>
     Far('paramManagerRetriever', {
       /** @param {VaultFactoryParamPath} paramPath */
       get: paramPath => {
         if (paramPath.key === 'governedParams') {
-          return directorParamManager;
+          return ephemera.directorParamManager;
         } else if (paramPath.key.collateralBrand) {
-          return vaultParamManagers.get(paramPath.key.collateralBrand);
+          return ephemera.vaultParamManagers.get(paramPath.key.collateralBrand);
         } else {
           assert.fail('Unsupported paramPath');
         }
@@ -443,8 +472,8 @@ const creatorBehavior = {
    * @param {MethodContext} context
    * @param {string} name
    */
-  getInvitation: ({ state }, name) =>
-    state.directorParamManager.getInternalParamValue(name),
+  getInvitation: (context, name) =>
+    ephemera.directorParamManager.getInternalParamValue(name),
   /** @param {MethodContext} context */
   getLimitedCreatorFacet: context => context.facets.machine,
   getGovernedApis: () => harden({}),
@@ -465,53 +494,48 @@ const publicBehavior = {
     /** @type {VaultManager} */
     return collateralTypes.get(brandIn).getPublicFacet();
   },
-  /**
-   * @param {MethodContext} context
-   */
-  getMetrics: ({ state }) => state.metricsSubscription,
+  getMetrics: () => ephemera.metricsSubscription,
 
   /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
   makeLoanInvitation: makeVaultInvitation,
   /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
   makeVaultInvitation,
   getCollaterals,
-  /** @param {MethodContext} context */
-  getRunIssuer: ({ state }) => state.debtMint.getIssuerRecord().issuer,
+  getRunIssuer: () => ephemera.debtMint.getIssuerRecord().issuer,
   /**
    * subscription for the paramManager for a particular vaultManager
    *
    * @param {MethodContext} context
    * @param {{ collateralBrand: Brand }} selector
    */
-  getSubscription: ({ state }, { collateralBrand }) =>
-    state.vaultParamManagers.get(collateralBrand).getSubscription(),
+  getSubscription: (context, { collateralBrand }) =>
+    ephemera.vaultParamManagers.get(collateralBrand).getSubscription(),
   /**
    * subscription for the paramManager for the vaultFactory's electorate
-   *
-   * @param {MethodContext} context
    */
-  getElectorateSubscription: ({ state }) =>
-    state.directorParamManager.getSubscription(),
+  getElectorateSubscription: () =>
+    ephemera.directorParamManager.getSubscription(),
   /**
    * @param {MethodContext} context
    * @param {{ collateralBrand: Brand }} selector
    */
-  getGovernedParams: ({ state }, { collateralBrand }) =>
+  getGovernedParams: (context, { collateralBrand }) =>
     // TODO use named getters of TypedParamManager
-    state.vaultParamManagers.get(collateralBrand).getParams(),
+    ephemera.vaultParamManagers.get(collateralBrand).getParams(),
   /**
-   * @param {MethodContext} context
    * @returns {Promise<GovernorPublic>}
    */
-  getContractGovernor: ({ state: { zcf } }) =>
+  getContractGovernor: () =>
     // PERF consider caching
-    E(zcf.getZoeService()).getPublicFacet(zcf.getTerms().electionManager),
+    E(ephemera.zcf.getZoeService()).getPublicFacet(
+      ephemera.zcf.getTerms().electionManager,
+    ),
   /**
    * @param {MethodContext} context
    * @param {string} name
    */
-  getInvitationAmount: ({ state }, name) =>
-    state.directorParamManager.getInvitationAmount(name),
+  getInvitationAmount: (context, name) =>
+    ephemera.directorParamManager.getInvitationAmount(name),
 };
 
 const behavior = {
@@ -524,11 +548,10 @@ const behavior = {
 const finish = async ({ state }) => {
   const { shortfallReporter, shortfallInvitation } =
     await updateShortfallReporter(
-      state.zcf.getZoeService(),
-      state.directorParamManager,
+      ephemera.zcf.getZoeService(),
+      ephemera.directorParamManager,
     );
-  // @ts-expect-error write once
-  state.shortfallReporter = shortfallReporter;
+  ephemera.shortfallReporter = shortfallReporter;
   // @ts-expect-error write once
   state.shortfallInvitation = shortfallInvitation;
 };
@@ -547,8 +570,8 @@ const finish = async ({ state }) => {
  * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} directorParamManager
  * @param {ZCFMint<"nat">} debtMint
  */
-const makeVaultDirector = defineKindMulti(
-  'VaultDirector',
+const makeVaultDirector = defineDurableKindMulti(
+  makeKindHandle('VaultDirector'),
   initState,
   behavior,
   { finish },

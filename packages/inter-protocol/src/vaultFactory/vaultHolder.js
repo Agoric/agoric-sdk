@@ -2,16 +2,29 @@
  * @file Use-object for the owner of a vault
  */
 // @ts-check
-import { makeStoredPublishKit } from '@agoric/notifier';
-import { defineKindMulti } from '@agoric/vat-data';
 import '@agoric/zoe/exported.js';
+
+import { makeStoredPublishKit } from '@agoric/notifier';
+import { defineDurableKindMulti, makeKindHandle } from '@agoric/vat-data';
+import { makeEphemeraProvider } from '../contractSupport';
 
 const { details: X } = assert;
 
+// XXX durable key to an ephemeral object
+// UNTIL https://github.com/Agoric/agoric-sdk/issues/4567
+let holderId = 0n;
+
 /**
- * @typedef {{
+ * @type {(key: bigint) => {
  * publisher: StoredPublishKit<VaultNotification>['publisher'],
  * subscriber: StoredPublishKit<VaultNotification>['subscriber'],
+ * }} */
+// @ts-expect-error not yet defined
+const provideEphemera = makeEphemeraProvider(() => ({}));
+
+/**
+ * @typedef {{
+ * holderId: bigint,
  * vault: Vault | null,
  * }} State
  * @typedef {Readonly<{
@@ -37,7 +50,12 @@ const initState = (vault, storageNode, marshaller) => {
     marshaller,
   );
 
-  return { publisher, subscriber, vault };
+  holderId += 1n;
+  const ephemera = provideEphemera(holderId);
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4567
+  Object.assign(ephemera, { subscriber, publisher });
+
+  return { holderId, vault };
 };
 
 const helper = {
@@ -51,12 +69,12 @@ const helper = {
     return vault;
   },
   /** @param {MethodContext} context */
-  getUpdater: ({ state }) => state.publisher,
+  getUpdater: ({ state }) => provideEphemera(state.holderId).publisher,
 };
 
 const holder = {
   /** @param {MethodContext} context */
-  getSubscriber: ({ state }) => state.subscriber,
+  getSubscriber: ({ state }) => provideEphemera(state.holderId).subscriber,
   /** @param {MethodContext} context */
   makeAdjustBalancesInvitation: ({ facets }) =>
     facets.helper.owned().makeAdjustBalancesInvitation(),
@@ -86,8 +104,8 @@ const holder = {
 
 const behavior = { helper, holder };
 
-export const makeVaultHolder = defineKindMulti(
-  'VaultHolder',
+export const makeVaultHolder = defineDurableKindMulti(
+  makeKindHandle('VaultHolder'),
   initState,
   behavior,
 );

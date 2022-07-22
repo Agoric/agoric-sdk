@@ -1,6 +1,4 @@
 // @ts-check
-// XXX avoid deep imports https://github.com/Agoric/agoric-sdk/issues/4255#issuecomment-1032117527
-import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { fromVaultKey, toVaultKey } from './storeUtils.js';
 
 /**
@@ -16,11 +14,10 @@ import { fromVaultKey, toVaultKey } from './storeUtils.js';
 /** @typedef {import('./vault').Vault} Vault */
 /** @typedef {import('./storeUtils').CompositeKey} CompositeKey */
 
-export const makeOrderedVaultStore = () => {
-  // TODO make it work durably https://github.com/Agoric/agoric-sdk/issues/4550
-  /** @type {MapStore<string, Vault>} */
-  const store = makeScalarBigMapStore('orderedVaultStore', { durable: false });
-
+/**
+ * @param {MapStore<string, Vault>} store
+ */
+export const makeOrderedVaultStore = store => {
   /**
    *
    * @param {string} vaultId

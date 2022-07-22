@@ -8,10 +8,10 @@ import '@agoric/deploy-script-support/exported.js';
 import '@agoric/wallet-backend/src/types.js'; // TODO avoid ambient types
 import '@agoric/zoe/exported.js';
 
-import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils';
+import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { Far } from '@endo/far';
-import { makeSmartWallet } from './smartWallet';
+import { makeSmartWallet } from './smartWallet.js';
 
 /**
  * @typedef {{

@@ -18,7 +18,12 @@ import '@agoric/zoe/exported.js';
 import { AmountMath } from '@agoric/ertp';
 import { Nat } from '@agoric/nat';
 import { makeStoredPublishKit, observeNotifier } from '@agoric/notifier';
-import { defineKindMulti, pickFacet } from '@agoric/vat-data';
+import {
+  defineDurableKindMulti,
+  makeKindHandle,
+  makeScalarBigMapStore,
+  pickFacet,
+} from '@agoric/vat-data';
 import {
   assertProposalShape,
   ceilDivideBy,
@@ -83,21 +88,11 @@ const trace = makeTracer('VM');
 
 /**
  * @typedef {Readonly<{
- * assetSubscriber: Subscriber<AssetState>,
- * assetPublisher: Publisher<AssetState>,
  * collateralBrand: Brand<'nat'>,
  * debtBrand: Brand<'nat'>,
  * debtMint: ZCFMint<'nat'>,
- * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
- * marshaller: ERef<Marshaller>,
- * metricsPublication: IterationObserver<MetricsNotification>,
- * metricsSubscription: StoredSubscription<MetricsNotification>,
- * periodNotifier: ERef<Notifier<bigint>>,
  * poolIncrementSeat: ZCFSeat,
- * priceAuthority: ERef<PriceAuthority>,
- * prioritizedVaults: ReturnType<typeof makePrioritizedVaults>,
- * storageNode: ERef<StorageNode>,
- * zcf: import('./vaultFactory.js').VaultFactoryZCF,
+ * unsettledVaults: MapStore<string, Vault>,
  * }>} ImmutableState
  */
 
@@ -134,15 +129,29 @@ const trace = makeTracer('VM');
  * Ephemera are the elements of state that cannot (or need not) be durable.
  * When there's a single instance it can be held in a closure, but there are
  * many vault manaager objects. So we hold their ephemera keyed by the durable
- * vault manager object reference.
+ * vault manager.
  *
- * @type {(key: VaultManager) => {
- *   liquidationQueueing: boolean,
- *   outstandingQuote: Promise<MutableQuote>?,
- * }} */
+ * XXX However since we don't have the vault manager object during
+ * initState when we hold values that need to go into ephemera, we key for now
+ * using a proxy for the manager object, collateralBrand.
+ *
+ * @type {(collateralBrand: Brand) => Partial<{
+ * assetSubscriber: Subscriber<AssetState>,
+ * assetPublisher: Publisher<AssetState>,
+ * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet?,
+ * liquidationQueueing: boolean,
+ * outstandingQuote: Promise<MutableQuote>?,
+ * marshaller: ERef<Marshaller>,
+ * periodNotifier: ERef<Notifier<bigint>>,
+ * priceAuthority: ERef<PriceAuthority>,
+ * prioritizedVaults: ReturnType<typeof makePrioritizedVaults>,
+ * metricsPublication: IterationObserver<MetricsNotification>,
+ * metricsSubscription: StoredSubscription<MetricsNotification>,
+ * storageNode: ERef<StorageNode>,
+ * zcf: import('./vaultFactory.js').VaultFactoryZCF,
+ * }>} */
 const provideEphemera = makeEphemeraProvider(() => ({
   liquidationQueueing: false,
-  outstandingQuote: null,
 }));
 
 /**
@@ -188,43 +197,50 @@ const initState = (
     marshaller,
   );
 
-  /** @type {PublishKit<AssetState>} */
-  const { publisher: assetPublisher, subscriber: assetSubscriber } =
-    makeStoredPublishKit(storageNode, marshaller);
+  /** @type {MapStore<string, Vault>} */
+  const unsettledVaults = makeScalarBigMapStore('orderedVaultStore', {
+    durable: true,
+  });
 
   /** @type {ImmutableState} */
   const fixed = {
-    assetSubscriber,
-    assetPublisher,
     collateralBrand,
     debtBrand,
     debtMint,
-    factoryPowers,
-    marshaller,
-    metricsSubscription,
-    metricsPublication,
-    periodNotifier,
     poolIncrementSeat: zcf.makeEmptySeatKit().zcfSeat,
-    priceAuthority,
-    /**
-     * A store for vaultKits prioritized by their collaterization ratio.
-     */
-    prioritizedVaults: makePrioritizedVaults(),
-    storageNode,
-    zcf,
+    unsettledVaults,
   };
 
   const compoundedInterest = makeRatio(100n, fixed.debtBrand); // starts at 1.0, no interest
   // timestamp of most recent update to interest
   const latestInterestUpdate = startTimeStamp;
 
+  /** @type {PublishKit<AssetState>} */
+  const { publisher: assetPublisher, subscriber: assetSubscriber } =
+    makeStoredPublishKit(storageNode, marshaller);
+
   assetPublisher.publish(
     harden({
       compoundedInterest,
-      interestRate: fixed.factoryPowers.getGovernedParams().getInterestRate(),
+      interestRate: factoryPowers.getGovernedParams().getInterestRate(),
       latestInterestUpdate,
     }),
   );
+
+  const ephemera = provideEphemera(collateralBrand);
+  Object.assign(ephemera, {
+    assetSubscriber,
+    assetPublisher,
+    factoryPowers,
+    marshaller,
+    metricsPublication,
+    metricsSubscription,
+    periodNotifier,
+    priceAuthority,
+    prioritizedVaults: makePrioritizedVaults(unsettledVaults),
+    storageNode,
+    zcf,
+  });
 
   /** @type {MutableState & ImmutableState} */
   const state = {
@@ -272,27 +288,24 @@ const helperBehavior = {
     trace('chargeAllVaults', state.collateralBrand, {
       updateTime,
     });
-    const interestRate = state.factoryPowers
-      .getGovernedParams()
-      .getInterestRate();
+    const { factoryPowers } = provideEphemera(state.collateralBrand);
+    assert(factoryPowers);
+
+    const interestRate = factoryPowers.getGovernedParams().getInterestRate();
 
     // Update state with the results of charging interest
 
     const changes = chargeInterest(
       {
         mint: state.debtMint,
-        mintAndReallocateWithFee: state.factoryPowers.mintAndReallocate,
+        mintAndReallocateWithFee: factoryPowers.mintAndReallocate,
         poolIncrementSeat,
         seatAllocationKeyword: 'RUN',
       },
       {
         interestRate,
-        chargingPeriod: state.factoryPowers
-          .getGovernedParams()
-          .getChargingPeriod(),
-        recordingPeriod: state.factoryPowers
-          .getGovernedParams()
-          .getRecordingPeriod(),
+        chargingPeriod: factoryPowers.getGovernedParams().getChargingPeriod(),
+        recordingPeriod: factoryPowers.getGovernedParams().getRecordingPeriod(),
       },
       {
         latestInterestUpdate: state.latestInterestUpdate,
@@ -314,7 +327,9 @@ const helperBehavior = {
 
   /** @param {MethodContext} context */
   assetNotify: ({ state }) => {
-    const interestRate = state.factoryPowers
+    const ephemera = provideEphemera(state.collateralBrand);
+    assert(ephemera.factoryPowers && ephemera.assetPublisher);
+    const interestRate = ephemera.factoryPowers
       .getGovernedParams()
       .getInterestRate();
     /** @type {AssetState} */
@@ -329,14 +344,19 @@ const helperBehavior = {
       // that doesn't seem to be cost-effective.
       liquidatorInstance: state.liquidatorInstance,
     });
-    state.assetPublisher.publish(payload);
+    ephemera.assetPublisher.publish(payload);
   },
 
   /** @param {MethodContext} context */
   updateMetrics: ({ state }) => {
+    const { metricsPublication, prioritizedVaults } = provideEphemera(
+      state.collateralBrand,
+    );
+    assert(metricsPublication && prioritizedVaults);
+
     /** @type {MetricsNotification} */
     const payload = harden({
-      numVaults: state.prioritizedVaults.getCount(),
+      numVaults: prioritizedVaults.getCount(),
       totalCollateral: state.totalCollateral,
       totalDebt: state.totalDebt,
 
@@ -346,7 +366,7 @@ const helperBehavior = {
       totalProceedsReceived: state.totalProceedsReceived,
       totalShortfallReceived: state.totalShortfallReceived,
     });
-    state.metricsPublication.updateState(payload);
+    metricsPublication.updateState(payload);
   },
 
   /**
@@ -366,10 +386,11 @@ const helperBehavior = {
    * @returns {Promise<void>}
    */
   reschedulePriceCheck: async ({ state, facets }, highestRatio) => {
-    const ephemera = provideEphemera(facets.self);
-    trace('reschedulePriceCheck', state.collateralBrand, {
-      ephemera,
-    });
+    const { prioritizedVaults, ...ephemera } = provideEphemera(
+      state.collateralBrand,
+    );
+    assert(ephemera.factoryPowers && prioritizedVaults);
+    trace('reschedulePriceCheck', state.collateralBrand, ephemera);
     // INTERLOCK: the first time through, start the activity to wait for
     // and process liquidations over time.
     if (!ephemera.liquidationQueueing) {
@@ -388,7 +409,6 @@ const helperBehavior = {
       return;
     }
 
-    const { prioritizedVaults } = state;
     const highestDebtRatio = highestRatio || prioritizedVaults.highestRatio();
     if (!highestDebtRatio) {
       // if there aren't any open vaults, we don't need an outstanding RFQ.
@@ -399,7 +419,7 @@ const helperBehavior = {
     // There is already an activity processing liquidations. It may be
     // waiting for the oracle price to cross a threshold.
     // Update the current in-progress quote.
-    const govParams = state.factoryPowers.getGovernedParams();
+    const govParams = ephemera.factoryPowers.getGovernedParams();
     const liquidationMargin = govParams.getLiquidationMargin();
     // Safe to call extraneously (lightweight and idempotent)
     E(ephemera.outstandingQuote).updateLevel(
@@ -413,11 +433,15 @@ const helperBehavior = {
    * @param {MethodContext} context
    */
   processLiquidations: async ({ state, facets }) => {
-    const { prioritizedVaults, priceAuthority } = state;
-    const govParams = state.factoryPowers.getGovernedParams();
-    const ephemera = provideEphemera(facets.self);
+    const { prioritizedVaults, ...ephemera } = provideEphemera(
+      state.collateralBrand,
+    );
+    assert(ephemera.factoryPowers && ephemera.priceAuthority);
+    const { priceAuthority } = ephemera;
+    const govParams = ephemera.factoryPowers.getGovernedParams();
 
     async function* eventualLiquidations() {
+      assert(prioritizedVaults);
       while (true) {
         const highestDebtRatio = prioritizedVaults.highestRatio();
         if (!highestDebtRatio) {
@@ -468,7 +492,10 @@ const helperBehavior = {
    * @param {[key: string, vaultKit: Vault]} record
    */
   liquidateAndRemove: ({ state, facets }, [key, vault]) => {
-    const { factoryPowers, prioritizedVaults, zcf } = state;
+    const { factoryPowers, prioritizedVaults, zcf } = provideEphemera(
+      state.collateralBrand,
+    );
+    assert(factoryPowers && prioritizedVaults && zcf);
     const vaultSeat = vault.getVaultSeat();
     trace('liquidating', state.collateralBrand, vaultSeat.getProposal());
 
@@ -536,14 +563,22 @@ const helperBehavior = {
 
 const managerBehavior = {
   /** @param {MethodContext} context */
-  getGovernedParams: ({ state }) => state.factoryPowers.getGovernedParams(),
+  getGovernedParams: ({ state }) => {
+    const ephemera = provideEphemera(state.collateralBrand);
+    assert(ephemera.factoryPowers);
+    return ephemera.factoryPowers.getGovernedParams();
+  },
 
   /**
    * @param {MethodContext} context
    * @param {Amount<'nat'>} collateralAmount
    */
   maxDebtFor: async ({ state }, collateralAmount) => {
-    const { debtBrand, priceAuthority } = state;
+    const { debtBrand } = state;
+    const { priceAuthority, ...ephemera } = provideEphemera(
+      state.collateralBrand,
+    );
+    assert(ephemera.factoryPowers && priceAuthority);
     const quoteAmount = await E(priceAuthority).quoteGiven(
       collateralAmount,
       debtBrand,
@@ -551,7 +586,7 @@ const managerBehavior = {
     // floorDivide because we want the debt ceiling lower
     return floorDivideBy(
       getAmountOut(quoteAmount),
-      state.factoryPowers.getGovernedParams().getLiquidationMargin(),
+      ephemera.factoryPowers.getGovernedParams().getLiquidationMargin(),
     );
   },
   /**
@@ -566,14 +601,16 @@ const managerBehavior = {
    * @returns {void}
    */
   mintAndReallocate: ({ state }, toMint, fee, seat, ...otherSeats) => {
-    const { factoryPowers, totalDebt } = state;
+    const { totalDebt } = state;
+    const { factoryPowers } = provideEphemera(state.collateralBrand);
+    assert(factoryPowers);
 
     checkDebtLimit(
       factoryPowers.getGovernedParams().getDebtLimit(),
       totalDebt,
       toMint,
     );
-    state.factoryPowers.mintAndReallocate(toMint, fee, seat, ...otherSeats);
+    factoryPowers.mintAndReallocate(toMint, fee, seat, ...otherSeats);
     state.totalDebt = AmountMath.add(state.totalDebt, toMint);
   },
   /**
@@ -582,16 +619,22 @@ const managerBehavior = {
    * @param {ZCFSeat} seat
    */
   burnAndRecord: ({ state }, toBurn, seat) => {
+    const { factoryPowers } = provideEphemera(state.collateralBrand);
+    assert(factoryPowers);
     trace('burnAndRecord', state.collateralBrand, {
       toBurn,
       totalDebt: state.totalDebt,
     });
-    const { burnDebt } = state.factoryPowers;
+    const { burnDebt } = factoryPowers;
     burnDebt(toBurn, seat);
     state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
   },
   /** @param {MethodContext} context */
-  getAssetSubscriber: ({ state }) => state.assetSubscriber,
+  getAssetSubscriber: ({ state }) => {
+    const { assetSubscriber } = provideEphemera(state.collateralBrand);
+    assert(assetSubscriber);
+    return assetSubscriber;
+  },
   /** @param {MethodContext} context */
   getCollateralBrand: ({ state }) => state.collateralBrand,
   /** @param {MethodContext} context */
@@ -620,7 +663,8 @@ const managerBehavior = {
     vaultPhase,
     vault,
   ) => {
-    const { prioritizedVaults } = state;
+    const { prioritizedVaults } = provideEphemera(state.collateralBrand);
+    assert(prioritizedVaults);
 
     // the manager holds only vaults that can accrue interest or be liquidated;
     // i.e. vaults that have debt. The one exception is at the outset when
@@ -672,19 +716,34 @@ const managerBehavior = {
 
 const collateralBehavior = {
   /** @param {MethodContext} context */
-  makeVaultInvitation: ({ state: { zcf }, facets: { self } }) =>
-    zcf.makeInvitation(self.makeVaultKit, 'MakeVault'),
+  makeVaultInvitation: ({ state, facets: { self } }) => {
+    const { zcf } = provideEphemera(state.collateralBrand);
+    assert(zcf);
+    return zcf.makeInvitation(self.makeVaultKit, 'MakeVault');
+  },
   /** @param {MethodContext} context */
-  getSubscriber: ({ state }) => state.assetSubscriber,
+  getSubscriber: ({ state }) => {
+    const { assetSubscriber } = provideEphemera(state.collateralBrand);
+    assert(assetSubscriber);
+    return assetSubscriber;
+  },
   /** @param {MethodContext} context */
-  getMetrics: ({ state }) => state.metricsSubscription,
+  getMetrics: ({ state }) => {
+    const { metricsSubscription } = provideEphemera(state.collateralBrand);
+    assert(metricsSubscription);
+    return metricsSubscription;
+  },
   /** @param {MethodContext} context */
   getCompoundedInterest: ({ state }) => state.compoundedInterest,
 };
 
 const selfBehavior = {
   /** @param {MethodContext} context */
-  getGovernedParams: ({ state }) => state.factoryPowers.getGovernedParams(),
+  getGovernedParams: ({ state }) => {
+    const { factoryPowers } = provideEphemera(state.collateralBrand);
+    assert(factoryPowers);
+    return factoryPowers.getGovernedParams();
+  },
 
   /**
    * In extreme situations, system health may require liquidating all vaults.
@@ -693,7 +752,8 @@ const selfBehavior = {
    * @param {MethodContext} context
    */
   liquidateAll: async ({ state, facets: { helper } }) => {
-    const { prioritizedVaults } = state;
+    const { prioritizedVaults } = provideEphemera(state.collateralBrand);
+    assert(prioritizedVaults);
     const toLiquidate = Array.from(prioritizedVaults.entries()).map(
       helper.liquidateAndRemove,
     );
@@ -705,7 +765,13 @@ const selfBehavior = {
    * @param {ZCFSeat} seat
    */
   makeVaultKit: async ({ state, facets: { manager } }, seat) => {
-    const { prioritizedVaults, zcf } = state;
+    const { marshaller, prioritizedVaults, storageNode, zcf } = provideEphemera(
+      state.collateralBrand,
+    );
+    assert(marshaller, 'makeVaultKit missing marshaller');
+    assert(prioritizedVaults, 'makeVaultKit missing prioritizedVaults');
+    assert(storageNode, 'makeVaultKit missing storageNode');
+    assert(zcf, 'makeVaultKit missing zcf');
     assertProposalShape(seat, {
       give: { Collateral: null },
       want: { RUN: null },
@@ -714,16 +780,16 @@ const selfBehavior = {
     state.vaultCounter += 1;
     const vaultId = String(state.vaultCounter);
 
-    const storageNode = E(
-      E(state.storageNode).getChildNode(`vaults`),
+    const vaultStorageNode = E(
+      E(storageNode).getChildNode(`vaults`),
     ).getChildNode(`vault${vaultId}`);
 
     const vault = makeVault(
       zcf,
       manager,
       vaultId,
-      storageNode,
-      state.marshaller,
+      vaultStorageNode,
+      marshaller,
     );
 
     try {
@@ -731,8 +797,8 @@ const selfBehavior = {
       // eslint-disable-next-line @jessie.js/no-nested-await
       const vaultKit = await vault.initVaultKit(
         seat,
-        storageNode,
-        state.marshaller,
+        vaultStorageNode,
+        marshaller,
       );
       // initVaultKit calls back to handleBalanceChange() which will add the
       // vault to prioritizedVaults
@@ -777,7 +843,9 @@ const selfBehavior = {
     liquidationInstall,
     liquidationTerms,
   ) => {
-    const { zcf, debtBrand, collateralBrand } = state;
+    const { zcf } = provideEphemera(state.collateralBrand);
+    assert(zcf);
+    const { debtBrand, collateralBrand } = state;
     const { ammPublicFacet, priceAuthority, reservePublicFacet, timerService } =
       zcf.getTerms();
     const zoe = zcf.getZoeService();
@@ -813,11 +881,14 @@ const selfBehavior = {
 
   /** @param {MethodContext} context */
   getCollateralQuote: async ({ state }) => {
+    const { priceAuthority } = provideEphemera(state.collateralBrand);
+    assert(priceAuthority);
+
     const { debtBrand } = state;
     // get a quote for one unit of the collateral
     const displayInfo = await E(state.collateralBrand).getDisplayInfo();
     const decimalPlaces = displayInfo.decimalPlaces || 0n;
-    return E(state.priceAuthority).quoteGiven(
+    return E(priceAuthority).quoteGiven(
       AmountMath.make(state.collateralBrand, 10n ** Nat(decimalPlaces)),
       debtBrand,
     );
@@ -829,12 +900,17 @@ const selfBehavior = {
 
 /** @param {MethodContext} context */
 const finish = ({ state, facets: { helper } }) => {
-  state.prioritizedVaults.onHigherHighest(helper.reschedulePriceCheck);
+  const { periodNotifier, prioritizedVaults, zcf } = provideEphemera(
+    state.collateralBrand,
+  );
+  assert(periodNotifier && prioritizedVaults && zcf);
+
+  prioritizedVaults.onHigherHighest(helper.reschedulePriceCheck);
 
   // push initial state of metrics
   helper.updateMetrics();
 
-  void observeNotifier(state.periodNotifier, {
+  void observeNotifier(periodNotifier, {
     updateState: updateTime =>
       helper
         .chargeAllVaults(updateTime, state.poolIncrementSeat)
@@ -842,12 +918,12 @@ const finish = ({ state, facets: { helper } }) => {
           console.error('🚨 vaultManager failed to charge interest', e),
         ),
     fail: reason => {
-      state.zcf.shutdownWithFailure(
+      zcf.shutdownWithFailure(
         assert.error(X`Unable to continue without a timer: ${reason}`),
       );
     },
     finish: done => {
-      state.zcf.shutdownWithFailure(
+      zcf.shutdownWithFailure(
         assert.error(X`Unable to continue without a timer: ${done}`),
       );
     },
@@ -861,8 +937,8 @@ const behavior = {
   self: selfBehavior,
 };
 
-const makeVaultManagerKit = defineKindMulti(
-  'VaultManagerKit',
+const makeVaultManagerKit = defineDurableKindMulti(
+  makeKindHandle('VaultManagerKit'),
   initState,
   behavior,
   {
