@@ -7,6 +7,7 @@
     "start": "parcel src/keplr-ledger-demo.html"
   },
   "devDependencies": {
+    "@keplr-wallet/types": "^0.10.13",
     "crypto-browserify": "^3.12.0",
     "parcel": "^2.6.2",
     "path-browserify": "^1.0.1",
