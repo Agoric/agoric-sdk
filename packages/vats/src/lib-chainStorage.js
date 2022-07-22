@@ -34,7 +34,7 @@ export function makeChainStorageRoot(toStorage, storeName, rootPath) {
         assert.typeof(name, 'string');
         assert(
           pathSegmentPattern.test(name),
-          X`Path segment must be a short ASCII identifier: ${name}`,
+          X`Path segment must be a short snake_case alphanumeric identifier: ${name}`,
         );
         return makeChainStorageNode(`${path}.${name}`);
       },

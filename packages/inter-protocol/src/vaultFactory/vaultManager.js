@@ -714,12 +714,26 @@ const selfBehavior = {
     state.vaultCounter += 1;
     const vaultId = String(state.vaultCounter);
 
-    const vault = makeVault(zcf, manager, vaultId);
+    const storageNode = E(
+      E(state.storageNode).getChildNode(`vaults`),
+    ).getChildNode(`vault${vaultId}`);
+
+    const vault = makeVault(
+      zcf,
+      manager,
+      vaultId,
+      storageNode,
+      state.marshaller,
+    );
 
     try {
       // TODO `await` is allowed until the above ordering is fixed
       // eslint-disable-next-line @jessie.js/no-nested-await
-      const vaultKit = await vault.initVaultKit(seat);
+      const vaultKit = await vault.initVaultKit(
+        seat,
+        storageNode,
+        state.marshaller,
+      );
       // initVaultKit calls back to handleBalanceChange() which will add the
       // vault to prioritizedVaults
       seat.exit();

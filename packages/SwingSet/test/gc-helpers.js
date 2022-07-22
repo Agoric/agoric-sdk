@@ -536,8 +536,6 @@ export function validateInit(v) {
   validateCreateHolder(v, 5);
 
   validate(v, matchVatstoreGet('deadPromises', NONE));
-  validate(v, matchVatstoreDelete('deadPromises'));
-  validate(v, matchVatstoreGetAfter('', 'vc.4.', 'vc.4.{', [NONE, NONE]));
   validate(v, matchVatstoreGetAfter('', 'vom.dkind.', NONE, [NONE, NONE]));
 }
 

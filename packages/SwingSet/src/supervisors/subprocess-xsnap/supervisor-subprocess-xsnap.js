@@ -297,6 +297,7 @@ function makeWorker(port) {
       case 'deliver': {
         assert(dispatch, 'cannot deliver before setBundle');
         const [vatDeliveryObject] = args;
+        harden(vatDeliveryObject);
         insistVatDeliveryObject(vatDeliveryObject);
         return dispatch(vatDeliveryObject);
       }

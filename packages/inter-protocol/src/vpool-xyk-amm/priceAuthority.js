@@ -1,9 +1,13 @@
 // @ts-check
 
 import { AmountMath } from '@agoric/ertp';
+import {
+  makeNotifierFromSubscriber,
+  observeIteration,
+  subscribeLatest,
+} from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { observeNotifier } from '@agoric/notifier';
 
 import { makeOnewayPriceAuthorityKit } from '@agoric/zoe/src/contractSupport/index.js';
 
@@ -14,7 +18,7 @@ import { makeOnewayPriceAuthorityKit } from '@agoric/zoe/src/contractSupport/ind
  * @param {Brand} actualBrandIn
  * @param {Brand} actualBrandOut
  * @param {TimerService} timer
- * @param {Notifier<import('./pool').NotificationState>} notifier
+ * @param {Subscriber<import('./pool').NotificationState>} subscriber
  * @param {IssuerKit} quoteIssuerKit
  * @returns {PriceAuthority}
  */
@@ -24,7 +28,7 @@ export const makePriceAuthority = (
   actualBrandIn,
   actualBrandOut,
   timer,
-  notifier,
+  subscriber,
   quoteIssuerKit,
 ) => {
   const { brand, issuer: quoteIssuer } = quoteIssuerKit;
@@ -66,7 +70,7 @@ export const makePriceAuthority = (
     actualBrandIn,
     actualBrandOut,
     quoteIssuer,
-    notifier,
+    notifier: makeNotifierFromSubscriber(subscriber),
   });
 
   const {
@@ -74,16 +78,17 @@ export const makePriceAuthority = (
     adminFacet: { fireTriggers },
   } = makeOnewayPriceAuthorityKit(priceAuthorityOptions);
 
-  // An observer on a notifier that gets updated every time the pool's balances
+  // An observer on a notifier that gets updated when the pool's balances
   // change via swap or liquidity operations. It checks the comparison predicate
-  // for each active trigger.
+  // for each active trigger. Due to `subscribeLatest` below it may drop
+  // intermediate values.
   const priceObserver = Far('priceObserver', {
     updateState: () => {
       void fireTriggers(createQuote);
     },
   });
 
-  void observeNotifier(notifier, priceObserver);
+  void observeIteration(subscribeLatest(subscriber), priceObserver);
 
   return priceAuthority;
 };

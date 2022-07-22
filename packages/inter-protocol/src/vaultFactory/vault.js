@@ -12,7 +12,12 @@ import { defineKindMulti, pickFacet } from '@agoric/vat-data';
 import { makeTracer } from '../makeTracer.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { makeVaultKit } from './vaultKit.js';
-import { addSubtract, assertOnlyKeys, stageDelta } from '../contractSupport.js';
+import {
+  addSubtract,
+  assertOnlyKeys,
+  makeEphemeraProvider,
+  stageDelta,
+} from '../contractSupport.js';
 
 const { details: X, quote: q } = assert;
 
@@ -118,11 +123,30 @@ const validTransitions = {
  */
 
 /**
+ * Ephemera are the elements of state that cannot (or need not) be durable.
+ * When there's a single instance it can be held in a closure, but there are
+ * many vault manaager objects. So we hold their ephemera keyed by the durable
+ * vault manager object reference.
+ *
+ * @type {(key: VaultId) => {
+ * storageNode: ERef<StorageNode>,
+ * marshaller: ERef<Marshaller>,
+ * }} */
+// @ts-expect-error not yet defined
+const provideEphemera = makeEphemeraProvider(() => ({}));
+
+/**
  * @param {ZCF} zcf
  * @param {VaultManager} manager
  * @param {VaultId} idInManager
+ * @param {ERef<StorageNode>} storageNode
+ * @param {ERef<Marshaller>} marshaller
  */
-const initState = (zcf, manager, idInManager) => {
+const initState = (zcf, manager, idInManager, storageNode, marshaller) => {
+  const ephemera = provideEphemera(idInManager);
+  ephemera.storageNode = storageNode;
+  ephemera.marshaller = marshaller;
+
   /**
    * @type {ImmutableState & MutableState}
    */
@@ -527,8 +551,16 @@ const helperBehavior = {
     const { self, helper } = facets;
     helper.assertCloseable();
     seat.exit();
+
+    const ephemera = provideEphemera(state.idInManager);
+
     // eslint-disable-next-line no-use-before-define
-    const vaultKit = makeVaultKit(self, state.manager.getAssetSubscriber());
+    const vaultKit = makeVaultKit(
+      self,
+      ephemera.storageNode,
+      ephemera.marshaller,
+      state.manager.getAssetSubscriber(),
+    );
     state.outerUpdater = vaultKit.vaultUpdater;
     helper.updateUiState();
 
@@ -545,8 +577,12 @@ const selfBehavior = {
   /**
    * @param {MethodContext} context
    * @param {ZCFSeat} seat
+   * @param {ERef<StorageNode>} storageNode
+   * @param {ERef<Marshaller>} marshaller
    */
-  initVaultKit: async ({ state, facets }, seat) => {
+  initVaultKit: async ({ state, facets }, seat, storageNode, marshaller) => {
+    assert(seat && storageNode && marshaller, 'initVaultKit missing argument');
+
     const { self, helper } = facets;
 
     const normalizedDebtPre = self.getNormalizedDebt();
@@ -596,7 +632,12 @@ const selfBehavior = {
     state.manager.mintAndReallocate(toMint, fee, seat, vaultSeat);
     helper.updateDebtAccounting(normalizedDebtPre, collateralPre, newDebtPre);
 
-    const vaultKit = makeVaultKit(self, state.manager.getAssetSubscriber());
+    const vaultKit = makeVaultKit(
+      self,
+      storageNode,
+      marshaller,
+      state.manager.getAssetSubscriber(),
+    );
     state.outerUpdater = vaultKit.vaultUpdater;
     helper.updateUiState();
     return vaultKit;

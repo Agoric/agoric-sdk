@@ -16,6 +16,7 @@ import { parseVatSlot } from '../lib/parseVatSlots.js';
  * @param {*} convertValToSlot
  * @param {*} convertSlotToVal
  * @param {*} revivePromise
+ * @param {*} unserialize
  */
 export function makeWatchedPromiseManager(
   syscall,
@@ -25,6 +26,7 @@ export function makeWatchedPromiseManager(
   convertValToSlot,
   convertSlotToVal,
   revivePromise,
+  unserialize,
 ) {
   const { makeScalarBigMapStore } = cm;
   const { defineDurableKind } = vom;
@@ -102,11 +104,17 @@ export function makeWatchedPromiseManager(
     );
   }
 
-  const VatUpgradedMessage = 'vat upgraded'; // part of the SwingSet API
-
   function loadWatchedPromiseTable() {
-    const deadPromisesRaw = syscall.vatstoreGet('deadPromises') || '';
+    const deadPromisesRaw = syscall.vatstoreGet('deadPromises');
+    if (!deadPromisesRaw) {
+      return;
+    }
+    const disconnectObjectCapData = JSON.parse(
+      syscall.vatstoreGet('deadPromiseDO'),
+    );
+    const disconnectObject = unserialize(disconnectObjectCapData);
     syscall.vatstoreDelete('deadPromises');
+    syscall.vatstoreDelete('deadPromiseDO');
     const deadPromises = new Set(deadPromisesRaw.split(','));
 
     for (const [vpid, watches] of watchedPromiseTable.entries()) {
@@ -116,10 +124,9 @@ export function makeWatchedPromiseManager(
           const [watcher, ...args] = watch;
           void Promise.resolve().then(() => {
             if (watcher.onRejected) {
-              watcher.onRejected(VatUpgradedMessage, ...args);
+              watcher.onRejected(disconnectObject, ...args);
             } else {
-              // eslint-disable-next-line no-throw-literal
-              throw VatUpgradedMessage;
+              throw disconnectObject;
             }
           });
         }
@@ -201,7 +208,10 @@ export function makeWatchedPromiseManager(
     });
   }
 
-  function prepareShutdownRejections(importedVPIDsSet) {
+  function prepareShutdownRejections(
+    importedVPIDsSet,
+    disconnectObjectCapData,
+  ) {
     const deadPromises = [];
     for (const vpid of watchedPromiseTable.keys()) {
       if (!importedVPIDsSet.has(vpid)) {
@@ -210,6 +220,10 @@ export function makeWatchedPromiseManager(
     }
     deadPromises.sort(); // just in case
     syscall.vatstoreSet('deadPromises', deadPromises.join(','));
+    syscall.vatstoreSet(
+      'deadPromiseDO',
+      JSON.stringify(disconnectObjectCapData),
+    );
   }
 
   return harden({

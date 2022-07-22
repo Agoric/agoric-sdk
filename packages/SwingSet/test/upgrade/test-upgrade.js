@@ -188,6 +188,7 @@ const testUpgrade = async (t, defaultManagerType) => {
   t.deepEqual(get(v2capdata, 'youAre'), 'v2');
   t.deepEqual(get(v2capdata, 'marker'), ['slot', markerKref]);
   t.deepEqual(get(v2capdata, 'data'), ['some', 'data']);
+  t.deepEqual(get(v2capdata, 'upgradeResult'), { incarnationNumber: 2 });
   const remoerr = parse(JSON.stringify(get(v2capdata, 'remoerr')));
   t.deepEqual(remoerr, Error('vat terminated'));
 
@@ -204,7 +205,11 @@ const testUpgrade = async (t, defaultManagerType) => {
 
   // the old version's non-durable promises should be rejected
   t.is(c.kpStatus(v1p1Kref), 'rejected');
-  const vatUpgradedError = capargs('vat upgraded');
+  const vatUpgradedError = capargs({
+    name: 'vatUpgraded',
+    upgradeMessage: 'test upgrade',
+    incarnationNumber: 1,
+  });
   t.deepEqual(c.kpResolution(v1p1Kref), vatUpgradedError);
   t.is(c.kpStatus(v1p2Kref), 'rejected');
   t.deepEqual(c.kpResolution(v1p2Kref), vatUpgradedError);

@@ -2,18 +2,21 @@
 
 import { runVOTest, test } from '@agoric/swingset-vat/tools/vo-test-harness.js';
 
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeParamManager } from '@agoric/governance';
 import {
   makeNotifierFromSubscriber,
   makeStoredPublisherKit,
 } from '@agoric/notifier';
+import {
+  makeFakeMarshaller,
+  makeFakeStorage,
+} from '@agoric/notifier/tools/testSupports.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-
-import { definePoolKind } from '../src/vpool-xyk-amm/pool.js';
-import { makeAmmParams } from '../src/vpool-xyk-amm/params.js';
 import { mapValues } from '../src/collect.js';
+import { makeAmmParams } from '../src/vpool-xyk-amm/params.js';
+import { definePoolKind } from '../src/vpool-xyk-amm/pool.js';
 
 /** @typedef {ReturnType<typeof definePoolKind>} MakePoolMulti */
 /** @typedef {ReturnType<MakePoolMulti>} PoolMulti */
@@ -78,6 +81,9 @@ const voPoolTest = async (t, mutation, postTest) => {
 
     const paramAccessor = paramManager.readonly();
 
+    const storageNode = makeFakeStorage('voPoolTest');
+    const marshaller = makeFakeMarshaller();
+
     return definePoolKind(
       zcf,
       centralBrand,
@@ -86,6 +92,8 @@ const voPoolTest = async (t, mutation, postTest) => {
       // @ts-expect-error loose
       paramAccessor,
       protocolSeat,
+      storageNode,
+      marshaller,
     );
   };
 
