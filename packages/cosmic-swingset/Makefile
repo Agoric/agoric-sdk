@@ -221,7 +221,7 @@ SIGN_MODE=
 wallet-action: wait-for-cosmos
 	$(AGCH) \
 	  --home=t1/bootstrap --keyring-backend=test --from=$(FROM_KEY) $(SIGN_MODE)\
-	  tx swingset wallet-action '{"action":1}' \
+	  tx swingset wallet-action '{"give": 10, "want": 1}' \
 	  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID)
 
 wallet-action-gen:
