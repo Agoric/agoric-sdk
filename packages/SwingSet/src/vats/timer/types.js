@@ -14,13 +14,13 @@
 
 /**
  * @typedef {object} TimestampRecord
- * @property {TimerService} timerBrand
+ * @property {TimerService} timeAuthority
  * @property {TimestampValue} absoluteTimeValue
  */
 
 /**
  * @typedef {object} RelativeTimeRecord
- * @property {TimerService} timerBrand
+ * @property {TimerService} timeAuthority
  * @property {RelativeTimeValue} relativeTimeValue
  */
 

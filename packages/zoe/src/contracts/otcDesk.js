@@ -36,11 +36,11 @@ import '../../exported.js';
  * removed, but should not give anything.
  *
  * To make a quote, the creator can call
- * `E(creatorFacet).makeQuote(price, assets, timerBrand,
+ * `E(creatorFacet).makeQuote(price, assets, timeAuthority,
  * deadline)`. `price` and `assets` are amountKeywordRecords that will
  * be used in the coveredCall. The assets are the underlyingAssets in
  * the call option, and the price is used as the strikePrice. The
- * timerBrand should be a timer, and the deadline can be any time
+ * timeAuthority should be a timer, and the deadline can be any time
  * understood by the timer. The quote will be cancelled after the
  * deadline. `makeQuote` returns a covered call option that can be
  * given away for free or sold. Importantly, if the recipient chooses
@@ -61,11 +61,11 @@ const start = zcf => {
    *
    * @param {AmountKeywordRecord} price
    * @param {AmountKeywordRecord} assets
-   * @param {Timer} timerBrand
+   * @param {Timer} timeAuthority
    * @param {any} deadline
    * @returns {Promise<Payment>}
    */
-  const makeQuote = async (price, assets, timerBrand, deadline) => {
+  const makeQuote = async (price, assets, timeAuthority, deadline) => {
     /** @type {{ creatorInvitation: Invitation<unknown, Payment>} } */
     const { creatorInvitation } = await E(zoe).startInstance(
       coveredCallInstallation,
@@ -79,7 +79,7 @@ const start = zcf => {
       exit: {
         afterDeadline: {
           deadline,
-          timer: timerBrand,
+          timer: timeAuthority,
         },
       },
     });

@@ -146,7 +146,7 @@ test('zoe - coveredCall', async t => {
         );
 
         t.is(invitationValue.expirationDate, 1n);
-        t.deepEqual(invitationValue.timerBrand, timer);
+        t.deepEqual(invitationValue.timeAuthority, timer);
 
         const proposal = harden({
           give: { StrikePrice1: simoleans(7n), StrikePrice2: bucks(2n) },
@@ -294,7 +294,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   t.deepEqual(optionValue.underlyingAssets, { UnderlyingAsset: moola(3n) });
   t.deepEqual(optionValue.strikePrice, { StrikePrice: simoleans(7n) });
   t.is(optionValue.expirationDate, 1n);
-  t.deepEqual(optionValue.timerBrand, timer);
+  t.deepEqual(optionValue.timeAuthority, timer);
 
   const bobPayments = { StrikePrice: bobSimoleanPayment };
 
@@ -449,7 +449,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
   t.deepEqual(optionDesc.underlyingAssets, { UnderlyingAsset: moola(3n) });
   t.deepEqual(optionDesc.strikePrice, { StrikePrice: simoleans(7n) });
   t.is(optionDesc.expirationDate, 100n);
-  t.deepEqual(optionDesc.timerBrand, timer);
+  t.deepEqual(optionDesc.timeAuthority, timer);
 
   // Let's imagine that Bob wants to create a swap to trade this
   // invitation for bucks.
@@ -709,7 +709,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   t.deepEqual(optionValue.underlyingAssets, { UnderlyingAsset: moola(3n) });
   t.deepEqual(optionValue.strikePrice, { StrikePrice: simoleans(7n) });
   t.is(optionValue.expirationDate, 100n);
-  t.deepEqual(optionValue.timerBrand, timer);
+  t.deepEqual(optionValue.timeAuthority, timer);
 
   // Let's imagine that Bob wants to create another coveredCall, but
   // this time to trade this invitation for bucks.
@@ -759,7 +759,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   t.is(daveOptionValue.description, 'exerciseOption');
   assertAmountsEqual(t, daveOptionValue.strikePrice.StrikePrice, bucks(1n));
   t.is(daveOptionValue.expirationDate, 100n);
-  t.deepEqual(daveOptionValue.timerBrand, timer);
+  t.deepEqual(daveOptionValue.timeAuthority, timer);
 
   // What about the underlying asset (the other option)?
   t.is(
@@ -777,7 +777,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
     simoleans(7n),
   );
   t.deepEqual(
-    daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].timerBrand,
+    daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].timeAuthority,
     timer,
   );
 
@@ -981,7 +981,7 @@ test('zoe - coveredCall non-fungible', async t => {
     aGloriousShieldAmount,
   );
   t.is(optionValue.expirationDate, 1n);
-  t.deepEqual(optionValue.timerBrand, timer);
+  t.deepEqual(optionValue.timeAuthority, timer);
 
   const bobPayments = { StrikePrice: bobRpgPayment };
 

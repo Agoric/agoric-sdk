@@ -140,7 +140,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       Ask: simoleanIssuer,
     });
     const terms = harden({
-      timerBrand: timer,
+      timeAuthority: timer,
       winnerPriceOption: SECOND_PRICE,
       bidDuration: 1n,
     });

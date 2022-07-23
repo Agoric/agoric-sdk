@@ -15,13 +15,13 @@ const sharedTimeAuthority = (left, right) => {
     if (typeof right === 'bigint') {
       return undefined;
     } else {
-      return right.timerBrand;
+      return right.timeAuthority;
     }
   } else if (typeof right === 'bigint') {
-    return left.timerBrand;
+    return left.timeAuthority;
   } else {
-    const result = left.timerBrand;
-    assert.equal(result, right.timerBrand);
+    const result = left.timeAuthority;
+    assert.equal(result, right.timeAuthority);
     return result;
   }
 };
@@ -34,10 +34,10 @@ const sharedTimeAuthority = (left, right) => {
  */
 const absLike = (left, right, absoluteTimeValue) => {
   Nat(absoluteTimeValue);
-  const timerBrand = sharedTimeAuthority(left, right);
-  if (timerBrand) {
+  const timeAuthority = sharedTimeAuthority(left, right);
+  if (timeAuthority) {
     return harden({
-      timerBrand,
+      timeAuthority,
       absoluteTimeValue,
     });
   } else {
@@ -53,10 +53,10 @@ const absLike = (left, right, absoluteTimeValue) => {
  */
 const relLike = (left, right, relativeTimeValue) => {
   Nat(relativeTimeValue);
-  const timerBrand = sharedTimeAuthority(left, right);
-  if (timerBrand) {
+  const timeAuthority = sharedTimeAuthority(left, right);
+  if (timeAuthority) {
     return harden({
-      timerBrand,
+      timeAuthority,
       relativeTimeValue,
     });
   } else {

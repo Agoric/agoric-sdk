@@ -101,7 +101,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         ),
       );
       assert(optionValue[0].expirationDate === 1n, X`wrong expirationDate`);
-      assert(optionValue[0].timerBrand === timer, 'wrong timer');
+      assert(optionValue[0].timeAuthority === timer, 'wrong timer');
       const { UnderlyingAsset, StrikePrice } = issuerKeywordRecord;
 
       assert(
@@ -169,7 +169,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         X`wrong strike price`,
       );
       assert(optionValue[0].expirationDate === 100n, X`wrong expiration date`);
-      assert(optionValue[0].timerBrand === timer, X`wrong timer`);
+      assert(optionValue[0].timeAuthority === timer, X`wrong timer`);
       assert(
         UnderlyingAsset === moolaIssuer,
         X`The underlyingAsset issuer should be the moola issuer`,

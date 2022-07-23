@@ -70,7 +70,7 @@ const start = async (zcf, _privateArgs, instanceBaggage) => {
     const exerciseOption = makeExerciser(sellSeat);
     const customProps = harden({
       expirationDate: sellSeatExitRule.afterDeadline.deadline,
-      timerBrand: sellSeatExitRule.afterDeadline.timer,
+      timeAuthority: sellSeatExitRule.afterDeadline.timer,
       underlyingAssets: sellSeat.getProposal().give,
       strikePrice: sellSeat.getProposal().want,
     });

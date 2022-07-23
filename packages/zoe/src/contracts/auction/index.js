@@ -23,7 +23,7 @@ const SECOND_PRICE = 'second-price';
  * NOT TO BE USED IN PRODUCTION CODE. BIDS ARE PUBLIC. An auction
  * contract in which the seller offers an Asset for sale, and states a
  * minimum price. The auction closes at the deadline specified by the
- * timerBrand, bidDuration, winnerPriceOption parameters in the terms provided by
+ * timeAuthority, bidDuration, winnerPriceOption parameters in the terms provided by
  * the creator of the contract instance.
  * Winner price option can be `first-price` or `second-price`, default to `second-price`.
  *
@@ -37,14 +37,14 @@ const SECOND_PRICE = 'second-price';
  * null } want: { Asset: null } }.
  *
  * @param {ZCF<{
- * timerBrand: TimerService,
+ * timeAuthority: TimerService,
  * winnerPriceOption?: FIRST_PRICE | SECOND_PRICE,
  * bidDuration: bigint,
  * }>} zcf
  */
 const start = zcf => {
   const {
-    timerBrand,
+    timeAuthority,
     winnerPriceOption = SECOND_PRICE,
     bidDuration,
   } = zcf.getTerms();
@@ -74,10 +74,10 @@ const start = zcf => {
 
     // XXX toggle flag before `await` to avoid race-condition of 2 consecutive bids
     isTimerStarted = true;
-    const currentTs = await E(timerBrand).getCurrentTimestamp();
+    const currentTs = await E(timeAuthority).getCurrentTimestamp();
     closesAfter = TimeMath.addAbsRel(currentTs, bidDuration);
 
-    E(timerBrand)
+    E(timeAuthority)
       .setWakeup(
         closesAfter,
         Far('wakeObj', {
@@ -89,7 +89,7 @@ const start = zcf => {
       )
       .catch(err => {
         console.error(
-          `Could not schedule the close of the auction at the 'closesAfter' deadline ${closesAfter} using this timer ${timerBrand}`,
+          `Could not schedule the close of the auction at the 'closesAfter' deadline ${closesAfter} using this timer ${timeAuthority}`,
         );
         console.error(err);
         throw err;
@@ -112,7 +112,7 @@ const start = zcf => {
       winnerPriceOption,
       closesAfter,
       bidDuration,
-      timerBrand,
+      timeAuthority,
       bids: getCurrentBids(),
     });
   };

@@ -52,7 +52,7 @@ const { details: X, quote: q } = assert;
  * The offerResult of this initial seat resolves to the call option
  * itself: an inspectable invitation to buy the underlying assets. The
  * call option invitation has this additional information in the
- * value: {expirationDate, timerBrand, underlyingAssets,
+ * value: {expirationDate, timeAuthority, underlyingAssets,
  * strikePrice }
  *
  * The invitation itself can be traded as a valuable digital asset: a
@@ -99,7 +99,7 @@ const start = zcf => {
 
     const customProps = harden({
       expirationDate: sellSeatExitRule.afterDeadline.deadline,
-      timerBrand: sellSeatExitRule.afterDeadline.timer,
+      timeAuthority: sellSeatExitRule.afterDeadline.timer,
       underlyingAssets: sellSeat.getProposal().give,
       strikePrice: sellSeat.getProposal().want,
     });

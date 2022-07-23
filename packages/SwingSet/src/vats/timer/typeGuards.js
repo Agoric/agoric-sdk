@@ -5,12 +5,12 @@ export const TimestampValueShape = M.nat();
 export const RelativeTimeValueShape = M.nat(); // Should we allow negatives?
 
 export const TimestampRecordShape = harden({
-  timerBrand: TimerBrandShape,
+  timeAuthority: TimerBrandShape,
   absoluteTimeValue: TimestampValueShape,
 });
 
 export const RelativeTimeRecordShape = harden({
-  timerBrand: TimerBrandShape,
+  timeAuthority: TimerBrandShape,
   relativeTimeValue: RelativeTimeValueShape,
 });
 
