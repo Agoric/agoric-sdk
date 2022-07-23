@@ -6,16 +6,16 @@ import { TimeMath } from './timeMath.js';
 
 // TODO There's nothing SwingSet specific in this file. It should probably
 // live in @agoric/notifier. But we'd also need to move the
-// type definitions of `AbsoluteTimeish` and `Durationish` there.
+// type definitions of `Timestamp` and `RelativeTime` there.
 // We should also somehow extend the abstraction so the iterator
 // can be terminated, i.e., finished or failed.
 
 /**
- * @param {(delay: Durationish) => Promise<AbsoluteTimeish>} delayFn
- * @param {() => AbsoluteTimeish} getCurrentTime
- * @param {AbsoluteTimeish} baseTime
- * @param {Durationish} interval
- * @returns {AsyncIterator<AbsoluteTimeish>}
+ * @param {(delay: RelativeTime) => Promise<Timestamp>} delayFn
+ * @param {() => Timestamp} getCurrentTime
+ * @param {Timestamp} baseTime
+ * @param {RelativeTime} interval
+ * @returns {AsyncIterator<Timestamp>}
  */
 export const makeTimedIterator = (
   delayFn,
@@ -71,11 +71,11 @@ export const makeTimedIterator = (
 };
 
 /**
- * @param {(delay: Durationish) => Promise<AbsoluteTimeish>} delayFn
- * @param {() => AbsoluteTimeish} getCurrentTime
- * @param {AbsoluteTimeish} baseTime
- * @param {Durationish} interval
- * @returns {AsyncIterable<AbsoluteTimeish>}
+ * @param {(delay: RelativeTime) => Promise<Timestamp>} delayFn
+ * @param {() => Timestamp} getCurrentTime
+ * @param {Timestamp} baseTime
+ * @param {RelativeTime} interval
+ * @returns {AsyncIterable<Timestamp>}
  */
 export const makeTimedIterable = (
   delayFn,

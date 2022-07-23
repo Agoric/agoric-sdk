@@ -8,7 +8,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { fit } from '@agoric/store';
 
 import { makeTimedIterable } from './timed-iteration.js';
-import { AbsoluteTimeishShape, DurationishShape } from './typeGuards.js';
+import { TimestampShape, RelativeTimeShape } from './typeGuards.js';
 import { TimeMath } from './timeMath.js';
 
 export function buildRootObject(vatPowers) {
@@ -22,7 +22,7 @@ export function buildRootObject(vatPowers) {
         return Nat(D(timerNode).getLastPolled());
       },
       setWakeup(baseTime, handler) {
-        fit(baseTime, AbsoluteTimeishShape);
+        fit(baseTime, TimestampShape);
         assert(passStyleOf(handler) === 'remotable', 'bad setWakeup() handler');
         return D(timerNode).setWakeup(baseTime, handler);
       },
@@ -35,8 +35,8 @@ export function buildRootObject(vatPowers) {
         return D(timerNode).removeWakeup(handler);
       },
       makeRepeater(delay, interval) {
-        fit(delay, DurationishShape);
-        fit(interval, DurationishShape);
+        fit(delay, RelativeTimeShape);
+        fit(interval, RelativeTimeShape);
         assert(
           TimeMath.relativeTimeValue(interval) > 0,
           X`makeRepeater's second parameter must be a positive integer: ${interval}`,
@@ -57,8 +57,8 @@ export function buildRootObject(vatPowers) {
         return vatRepeater;
       },
       makeNotifier(delay, interval) {
-        fit(delay, DurationishShape);
-        fit(interval, DurationishShape);
+        fit(delay, RelativeTimeShape);
+        fit(interval, RelativeTimeShape);
         assert(
           TimeMath.relativeTimeValue(interval) > 0,
           X`makeNotifier's second parameter must be a positive integer: ${interval}`,
@@ -82,7 +82,7 @@ export function buildRootObject(vatPowers) {
         return notifier;
       },
       delay(delay) {
-        fit(delay, DurationishShape);
+        fit(delay, RelativeTimeShape);
         const now = timerService.getCurrentTimestamp();
         const baseTime = TimeMath.addAbsRel(now, delay);
         const promiseKit = makePromiseKit();

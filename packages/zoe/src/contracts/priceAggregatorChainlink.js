@@ -26,7 +26,7 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * timer: TimerService,
  * maxSubmissionCount: number,
  * minSubmissionCount: number,
- * restartDelay: Durationish,
+ * restartDelay: RelativeTime,
  * timeout: number,
  * minSubmissionValue: number,
  * maxSubmissionValue: number,
@@ -96,8 +96,8 @@ const start = async (
 
   /**
    * @param {number} answer
-   * @param {AbsoluteTimeish} startedAt
-   * @param {AbsoluteTimeish} updatedAt
+   * @param {Timestamp} startedAt
+   * @param {Timestamp} updatedAt
    * @param {bigint} answeredInRound
    */
   const makeRound = (answer, startedAt, updatedAt, answeredInRound) => {
@@ -170,7 +170,7 @@ const start = async (
 
   /**
    * @typedef {object} OracleRecord
-   * @property {(timestamp: AbsoluteTimeish) => Promise<void>=} querier
+   * @property {(timestamp: Timestamp) => Promise<void>=} querier
    * @property {number} lastSample
    */
 
@@ -184,7 +184,7 @@ const start = async (
   /**
    * @param {object} param0
    * @param {number} [param0.overrideValueOut]
-   * @param {AbsoluteTimeish} [param0.timestamp]
+   * @param {Timestamp} [param0.timestamp]
    */
   const makeCreateQuote = ({ overrideValueOut, timestamp } = {}) =>
     /**
@@ -266,7 +266,7 @@ const start = async (
 
   /**
    * @param {bigint} _roundId
-   * @param {AbsoluteTimeish} blockTimestamp
+   * @param {Timestamp} blockTimestamp
    */
   const timedOut = (_roundId, blockTimestamp) => {
     if (!details.has(_roundId) || !rounds.has(_roundId)) {
@@ -285,7 +285,7 @@ const start = async (
 
   /**
    * @param {bigint} _roundId
-   * @param {AbsoluteTimeish} blockTimestamp
+   * @param {Timestamp} blockTimestamp
    */
   const updateTimedOutRoundInfo = (_roundId, blockTimestamp) => {
     // round 0 is non-existent, so we avoid that case -- round 1 is ignored
@@ -316,7 +316,7 @@ const start = async (
 
   /**
    * @param {bigint} _roundId
-   * @param {AbsoluteTimeish} blockTimestamp
+   * @param {Timestamp} blockTimestamp
    */
   const initializeNewRound = (_roundId, blockTimestamp) => {
     updateTimedOutRoundInfo(subtract(_roundId, 1), blockTimestamp);
@@ -345,7 +345,7 @@ const start = async (
   /**
    * @param {bigint} _roundId
    * @param {OracleKey} _oracle
-   * @param {AbsoluteTimeish} blockTimestamp
+   * @param {Timestamp} blockTimestamp
    */
   const oracleInitializeNewRound = (_roundId, _oracle, blockTimestamp) => {
     if (!newRound(_roundId)) return;
@@ -383,7 +383,7 @@ const start = async (
 
   /**
    * @param {bigint} _roundId
-   * @param {AbsoluteTimeish} blockTimestamp
+   * @param {Timestamp} blockTimestamp
    */
   const updateRoundAnswer = (_roundId, blockTimestamp) => {
     if (
@@ -434,7 +434,7 @@ const start = async (
 
   /**
    * @param {bigint} _roundId
-   * @param {AbsoluteTimeish} blockTimestamp
+   * @param {Timestamp} blockTimestamp
    */
   const supersedable = (_roundId, blockTimestamp) => {
     return (
@@ -454,7 +454,7 @@ const start = async (
   /**
    * @param {OracleKey} _oracle
    * @param {bigint} _roundId
-   * @param {AbsoluteTimeish} blockTimestamp
+   * @param {Timestamp} blockTimestamp
    */
   const validateOracleRound = (_oracle, _roundId, blockTimestamp) => {
     // cache storage reads
@@ -497,7 +497,7 @@ const start = async (
    * only to be callable by oracleStatuses. Not for use by contracts to read state.
    *
    * @param {OracleKey} _oracle
-   * @param {AbsoluteTimeish} blockTimestamp
+   * @param {Timestamp} blockTimestamp
    */
   const oracleRoundStateSuggestRound = (_oracle, blockTimestamp) => {
     const oracle = oracleStatuses.get(_oracle);
@@ -550,7 +550,7 @@ const start = async (
   /**
    * @param {OracleKey} _oracle
    * @param {bigint} _queriedRoundId
-   * @param {AbsoluteTimeish} blockTimestamp
+   * @param {Timestamp} blockTimestamp
    */
   const eligibleForSpecificRound = (
     _oracle,

@@ -21,8 +21,8 @@ const COMPOUNDED_INTEREST_DENOMINATOR = 10n ** 20n;
 
 /**
  * @param {Ratio} annualRate
- * @param {Durationish} chargingPeriod
- * @param {Durationish} recordingPeriod
+ * @param {RelativeTime} chargingPeriod
+ * @param {RelativeTime} recordingPeriod
  * @returns {CalculatorKit}
  */
 export const makeInterestCalculator = (

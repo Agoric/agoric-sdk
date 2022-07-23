@@ -21,7 +21,7 @@
  * The quoted result of trading `amountIn`
  * @property {TimerService} timer
  * The service that gave the `timestamp`
- * @property {AbsoluteTimeish} timestamp
+ * @property {Timestamp} timestamp
  * A timestamp according to `timer` for the quote
  * @property {any=} conditions
  * Additional conditions for the quote
@@ -76,7 +76,7 @@
  * `amountIn`.  The rate at which these are issued may be very different between
  * `priceAuthorities`.
  *
- * @property {(deadline: AbsoluteTimeish,
+ * @property {(deadline: Timestamp,
  *             amountIn: Amount,
  *             brandOut: Brand
  * ) => Promise<PriceQuote>} quoteAtTime
@@ -144,5 +144,5 @@
  * @callback PriceQuery
  * @param {PriceCalculator} calcAmountIn
  * @param {PriceCalculator} calcAmountOut
- * @returns {{ amountIn: Amount, amountOut: Amount, timestamp?: AbsoluteTimeish }=}
+ * @returns {{ amountIn: Amount, amountOut: Amount, timestamp?: Timestamp }=}
  */

@@ -1,5 +1,5 @@
 /**
- * @typedef {Notifier<AbsoluteTimeish>} PeriodNotifier
+ * @typedef {Notifier<Timestamp>} PeriodNotifier
  *
  *  The Notifier that provides notifications that periods have passed.
  *  Since notifiers can't be relied on to produce an output every time
@@ -35,7 +35,7 @@
  *   The rate in basis points that will be multiplied with the debt on
  *   every period to compound interest.
  *
- * @property {Durationish} interestPeriod
+ * @property {RelativeTime} interestPeriod
  *
  * @property {Brand} loanBrand
  * @property {Brand} collateralBrand
@@ -169,14 +169,14 @@
  *   The AsyncIterable to notify when a period has occurred
  *
  * @property {Ratio} interestRate
- * @property {Durationish} interestPeriod
+ * @property {RelativeTime} interestPeriod
  *
  *  the period at which the outstanding debt increases by the interestRate
  *
  * @property {ZCF} zcf
  *
  * @property {LoanConfigWithBorrowerMinusDebt} configMinusGetDebt
- * @property {AbsoluteTimeish} basetime The starting point from which to calculate
+ * @property {Timestamp} basetime The starting point from which to calculate
  * interest.
  */
 
@@ -189,7 +189,7 @@
  * @property {PriceAuthority} priceAuthority
  * @property {PeriodNotifier} periodNotifier
  * @property {bigint} interestRate
- * @property {Durationish} interestPeriod
+ * @property {RelativeTime} interestPeriod
  * @property {ZCFSeat} lenderSeat
  */
 
@@ -212,7 +212,7 @@
  * triggered the liquidation. This may be lower than expected if the
  * price is moving quickly.
  *
- * @property {() => AbsoluteTimeish} getLastCalculationTimestamp
+ * @property {() => Timestamp} getLastCalculationTimestamp
  *
  * Get the timestamp at which the debt was most recently recalculated.
  *

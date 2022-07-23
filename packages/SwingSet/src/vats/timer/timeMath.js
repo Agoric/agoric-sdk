@@ -6,8 +6,8 @@ import { Nat } from '@agoric/nat';
 import './types.js';
 
 /**
- * @param {AbsoluteTimeish | Durationish} left
- * @param {AbsoluteTimeish | Durationish} right
+ * @param {Timestamp | RelativeTime} left
+ * @param {Timestamp | RelativeTime} right
  * @returns {TimerService | undefined}
  */
 const sharedTimeAuthority = (left, right) => {
@@ -27,10 +27,10 @@ const sharedTimeAuthority = (left, right) => {
 };
 
 /**
- * @param {AbsoluteTimeish | Durationish} left
- * @param {AbsoluteTimeish | Durationish} right
- * @param {Timestamp} absoluteTimeValue
- * @returns {AbsoluteTimeish}
+ * @param {Timestamp | RelativeTime} left
+ * @param {Timestamp | RelativeTime} right
+ * @param {TimestampValue} absoluteTimeValue
+ * @returns {Timestamp}
  */
 const absLike = (left, right, absoluteTimeValue) => {
   Nat(absoluteTimeValue);
@@ -46,10 +46,10 @@ const absLike = (left, right, absoluteTimeValue) => {
 };
 
 /**
- * @param {AbsoluteTimeish | Durationish} left
- * @param {AbsoluteTimeish | Durationish} right
- * @param {RelativeTime} relativeTimeValue
- * @returns {Durationish}
+ * @param {Timestamp | RelativeTime} left
+ * @param {Timestamp | RelativeTime} right
+ * @param {RelativeTimeValue} relativeTimeValue
+ * @returns {RelativeTime}
  */
 const relLike = (left, right, relativeTimeValue) => {
   Nat(relativeTimeValue);

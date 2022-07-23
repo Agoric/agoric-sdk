@@ -65,7 +65,7 @@ export function makeManualPriceAuthority(options) {
       );
   }
 
-  /* --* @type {ERef<Notifier<AbsoluteTimeish>>} */
+  /* --* @type {ERef<Notifier<Timestamp>>} */
   const priceAuthorityOptions = harden({
     timer,
     createQuote,

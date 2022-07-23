@@ -270,7 +270,7 @@ const getRunFromFaucet = async (t, amount) => {
  * @param {Array<NatValue> | Ratio} priceOrList
  * @param {Amount | undefined} unitAmountIn
  * @param {TimerService} timer
- * @param {Durationish} quoteInterval
+ * @param {RelativeTime} quoteInterval
  * @param {bigint} runInitialLiquidity
  */
 const setupServices = async (

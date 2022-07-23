@@ -2,7 +2,7 @@
  * @typedef {object} QuestionRecord
  * @property {ERef<VoteCounterCreatorFacet>} voteCap
  * @property {VoteCounterPublicFacet} publicFacet
- * @property {AbsoluteTimeish} deadline
+ * @property {Timestamp} deadline
  */
 
 /**

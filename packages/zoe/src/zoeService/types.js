@@ -211,7 +211,7 @@
  */
 
 /**
- * @typedef {AbsoluteTimeish} Deadline
+ * @typedef {Timestamp} Deadline
  */
 
 /**

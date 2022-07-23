@@ -51,7 +51,7 @@ export const makeContractFeeCollector = (zoe, creatorFacet) => {
  *
  * @param {() => Promise<unknown>} schedulePayments - distribute to the destinations
  * @param {ERef<TimerService>} timerService - timer that is used to schedule collections
- * @param {Durationish} [collectionInterval] - how often to collect fees in the
+ * @param {RelativeTime} [collectionInterval] - how often to collect fees in the
  * `timerService` unit
  */
 export const startDistributing = (
@@ -161,7 +161,7 @@ export const sharePayment = async (
 
 /**
  * @param {ERef<Issuer>} feeIssuer
- * @param {{ keywordShares: Record<Keyword, bigint>, timerService: ERef<TimerService>, collectionInterval: Durationish}} terms
+ * @param {{ keywordShares: Record<Keyword, bigint>, timerService: ERef<TimerService>, collectionInterval: RelativeTime}} terms
  */
 export const makeFeeDistributor = (feeIssuer, terms) => {
   const { timerService, collectionInterval } = terms;
