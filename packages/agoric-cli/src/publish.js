@@ -175,6 +175,18 @@ export const makeHttpBundlePublisher = ({ jsonHttpCall, getAccessToken }) => {
 };
 
 /**
+ * @param {string} address - a host or URL
+ */
+const urlForRpcAddress = address => {
+  try {
+    return new URL(address).href;
+  } catch {
+    // lift host strings to HTTP URLs.
+    return `http://${address}`;
+  }
+};
+
+/**
  * @param {object} args
  * @param {ReturnType<import('./helpers.js').makePspawn>} args.pspawn
  * @param {string} args.cosmosHelper
@@ -218,7 +230,7 @@ export const makeCosmosBundlePublisher = ({
         '--home',
         homeDirectory,
         '--node',
-        `http://${rpcAddress}`,
+        urlForRpcAddress(rpcAddress),
         '--keyring-backend',
         'test',
         '--from',
