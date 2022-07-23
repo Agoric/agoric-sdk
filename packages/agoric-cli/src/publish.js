@@ -45,11 +45,12 @@ const { details: X, quote: q } = assert;
 /**
  * @template T
  * @param {Array<T>} array
+ * @param {number} randomNumber
  * @returns {T}
  */
-const choose = array => {
+const choose = (array, randomNumber) => {
   assert(array.length > 0);
-  const index = Math.floor(array.length * Math.random());
+  const index = Math.floor(array.length * randomNumber);
   return array[index];
 };
 
@@ -180,6 +181,7 @@ export const makeHttpBundlePublisher = ({ jsonHttpCall, getAccessToken }) => {
  * @param {typeof import('path').resolve} args.pathResolve
  * @param {typeof import('fs').promises.writeFile} args.writeFile
  * @param {typeof import('tmp').dirSync} args.tmpDirSync
+ * @param {() => number} args.random
  */
 export const makeCosmosBundlePublisher = ({
   pspawn,
@@ -187,6 +189,7 @@ export const makeCosmosBundlePublisher = ({
   pathResolve,
   writeFile,
   tmpDirSync,
+  random,
 }) => {
   /**
    * @param {unknown} bundle
@@ -195,7 +198,7 @@ export const makeCosmosBundlePublisher = ({
   const publishBundleCosmos = async (bundle, connectionSpec) => {
     const { chainID = 'agoric', homeDirectory, rpcAddresses } = connectionSpec;
 
-    const rpcAddress = choose(rpcAddresses);
+    const rpcAddress = choose(rpcAddresses, random());
 
     const { name: tempDirPath, removeCallback } = tmpDirSync({
       unsafeCleanup: true,

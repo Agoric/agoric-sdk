@@ -199,6 +199,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
     pathResolve: path.resolve,
     writeFile: fs.writeFile,
     tmpDirSync: tmp.dirSync,
+    random: Math.random,
   });
   const publishBundleHttp = makeHttpBundlePublisher({
     getAccessToken,
