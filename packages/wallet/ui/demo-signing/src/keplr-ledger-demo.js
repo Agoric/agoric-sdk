@@ -125,6 +125,7 @@ const makeUI = document => {
       ui.setValue('*[name="account"]', s1.address);
       ui.setChecked('*[name="isNanoLedger"]', s1.isNanoLedger);
 
+      // TODO: catch rejections in event handlers
       ui.onClick('#acceptOffer', async _bev =>
         s1.submitSpendAction(
           ui.textValue('*[name="spendAction"]'),
@@ -135,7 +136,7 @@ const makeUI = document => {
       ui.setValue('*[name="messagingAccount"]', s2.address);
 
       const grants = await s2.queryGrants(s1.address, rpcClient);
-      console.log('@@@', { grants });
+      console.log({ grants });
 
       ui.onClick('#makeMessagingAccount', async _bev =>
         s1.authorizeLocalKey(s2.address, Date.now()),
