@@ -6,6 +6,8 @@ import { Far } from '@endo/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
+import { TimeMath } from '@agoric/swingset-vat';
+
 import {
   calculateMedian,
   natSafeMath,
@@ -24,7 +26,7 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * timer: TimerService,
  * maxSubmissionCount: number,
  * minSubmissionCount: number,
- * restartDelay: bigint,
+ * restartDelay: Durationish,
  * timeout: number,
  * minSubmissionValue: number,
  * maxSubmissionValue: number,
@@ -94,8 +96,8 @@ const start = async (
 
   /**
    * @param {number} answer
-   * @param {bigint} startedAt
-   * @param {bigint} updatedAt
+   * @param {AbsoluteTimeish} startedAt
+   * @param {AbsoluteTimeish} updatedAt
    * @param {bigint} answeredInRound
    */
   const makeRound = (answer, startedAt, updatedAt, answeredInRound) => {
@@ -168,7 +170,7 @@ const start = async (
 
   /**
    * @typedef {object} OracleRecord
-   * @property {(timestamp: Timestamp) => Promise<void>=} querier
+   * @property {(timestamp: AbsoluteTimeish) => Promise<void>=} querier
    * @property {number} lastSample
    */
 
@@ -182,7 +184,7 @@ const start = async (
   /**
    * @param {object} param0
    * @param {number} [param0.overrideValueOut]
-   * @param {Timestamp} [param0.timestamp]
+   * @param {AbsoluteTimeish} [param0.timestamp]
    */
   const makeCreateQuote = ({ overrideValueOut, timestamp } = {}) =>
     /**
@@ -264,7 +266,7 @@ const start = async (
 
   /**
    * @param {bigint} _roundId
-   * @param {bigint} blockTimestamp
+   * @param {AbsoluteTimeish} blockTimestamp
    */
   const timedOut = (_roundId, blockTimestamp) => {
     if (!details.has(_roundId) || !rounds.has(_roundId)) {
@@ -274,7 +276,7 @@ const start = async (
     const startedAt = rounds.get(_roundId).startedAt;
     const roundTimeout = details.get(_roundId).roundTimeout;
     const roundTimedOut =
-      startedAt > 0 &&
+      TimeMath.absoluteTimeValue(startedAt) > 0 &&
       roundTimeout > 0 &&
       add(startedAt, roundTimeout) < blockTimestamp;
 
@@ -283,7 +285,7 @@ const start = async (
 
   /**
    * @param {bigint} _roundId
-   * @param {bigint} blockTimestamp
+   * @param {AbsoluteTimeish} blockTimestamp
    */
   const updateTimedOutRoundInfo = (_roundId, blockTimestamp) => {
     // round 0 is non-existent, so we avoid that case -- round 1 is ignored
@@ -314,7 +316,7 @@ const start = async (
 
   /**
    * @param {bigint} _roundId
-   * @param {bigint} blockTimestamp
+   * @param {AbsoluteTimeish} blockTimestamp
    */
   const initializeNewRound = (_roundId, blockTimestamp) => {
     updateTimedOutRoundInfo(subtract(_roundId, 1), blockTimestamp);
@@ -343,7 +345,7 @@ const start = async (
   /**
    * @param {bigint} _roundId
    * @param {OracleKey} _oracle
-   * @param {bigint} blockTimestamp
+   * @param {AbsoluteTimeish} blockTimestamp
    */
   const oracleInitializeNewRound = (_roundId, _oracle, blockTimestamp) => {
     if (!newRound(_roundId)) return;
@@ -381,7 +383,7 @@ const start = async (
 
   /**
    * @param {bigint} _roundId
-   * @param {bigint} blockTimestamp
+   * @param {AbsoluteTimeish} blockTimestamp
    */
   const updateRoundAnswer = (_roundId, blockTimestamp) => {
     if (
@@ -432,7 +434,7 @@ const start = async (
 
   /**
    * @param {bigint} _roundId
-   * @param {bigint} blockTimestamp
+   * @param {AbsoluteTimeish} blockTimestamp
    */
   const supersedable = (_roundId, blockTimestamp) => {
     return (
@@ -452,7 +454,7 @@ const start = async (
   /**
    * @param {OracleKey} _oracle
    * @param {bigint} _roundId
-   * @param {bigint} blockTimestamp
+   * @param {AbsoluteTimeish} blockTimestamp
    */
   const validateOracleRound = (_oracle, _roundId, blockTimestamp) => {
     // cache storage reads
@@ -495,7 +497,7 @@ const start = async (
    * only to be callable by oracleStatuses. Not for use by contracts to read state.
    *
    * @param {OracleKey} _oracle
-   * @param {bigint} blockTimestamp
+   * @param {AbsoluteTimeish} blockTimestamp
    */
   const oracleRoundStateSuggestRound = (_oracle, blockTimestamp) => {
     const oracle = oracleStatuses.get(_oracle);
@@ -548,7 +550,7 @@ const start = async (
   /**
    * @param {OracleKey} _oracle
    * @param {bigint} _queriedRoundId
-   * @param {bigint} blockTimestamp
+   * @param {AbsoluteTimeish} blockTimestamp
    */
   const eligibleForSpecificRound = (
     _oracle,

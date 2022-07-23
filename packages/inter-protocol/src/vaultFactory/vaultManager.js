@@ -163,7 +163,7 @@ const provideEphemera = makeEphemeraProvider(() => ({
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
- * @param {Timestamp} startTimeStamp
+ * @param {AbsoluteTimeish} startTimeStamp
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
  */
@@ -958,7 +958,7 @@ const makeVaultManagerKit = defineDurableKindMulti(
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
- * @param {Timestamp} startTimeStamp
+ * @param {AbsoluteTimeish} startTimeStamp
  */
 export const makeVaultManager = pickFacet(makeVaultManagerKit, 'self');
 

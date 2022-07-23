@@ -211,7 +211,7 @@
  */
 
 /**
- * @typedef {bigint} Deadline
+ * @typedef {AbsoluteTimeish} Deadline
  */
 
 /**

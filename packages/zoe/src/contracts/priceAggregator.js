@@ -70,7 +70,7 @@ const start = async (
 
   /**
    * @typedef {object} OracleRecord
-   * @property {(timestamp: Timestamp) => Promise<void>=} querier
+   * @property {(timestamp: AbsoluteTimeish) => Promise<void>=} querier
    * @property {Ratio} lastSample
    * @property {OracleKey} oracleKey
    */
@@ -109,7 +109,7 @@ const start = async (
   /**
    * @param {object} param0
    * @param {Ratio} [param0.overridePrice]
-   * @param {Timestamp} [param0.timestamp]
+   * @param {AbsoluteTimeish} [param0.timestamp]
    */
   const makeCreateQuote = ({ overridePrice, timestamp } = {}) =>
     /**
@@ -188,7 +188,7 @@ const start = async (
     );
 
   /**
-   * @param {Timestamp} timestamp
+   * @param {AbsoluteTimeish} timestamp
    */
   const updateQuote = async timestamp => {
     const submitted = [...oracleRecords.values()].map(
@@ -464,10 +464,11 @@ const start = async (
       const oracle = await E(zoe).getPublicFacet(oracleInstance);
       assert(records.has(record), 'Oracle record is already deleted');
 
+      /** @type {AbsoluteTimeish} */
       let lastWakeTimestamp = 0n;
 
       /**
-       * @param {Timestamp} timestamp
+       * @param {AbsoluteTimeish} timestamp
        */
       record.querier = async timestamp => {
         // Submit the query.

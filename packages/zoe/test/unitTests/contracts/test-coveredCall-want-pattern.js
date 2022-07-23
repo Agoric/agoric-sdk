@@ -123,7 +123,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
   t.deepEqual(optionDesc.underlyingAssets, { UnderlyingAsset: moola(3n) });
   t.deepEqual(optionDesc.strikePrice, { StrikePrice: simoleans(7n) });
   t.is(optionDesc.expirationDate, 100n);
-  t.deepEqual(optionDesc.timeAuthority, timer);
+  t.deepEqual(optionDesc.timerBrand, timer);
 
   // Let's imagine that Bob wants to create a swap to trade this
   // invitation for bucks.
@@ -192,7 +192,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
         description: 'exerciseOption',
         underlyingAssets: { UnderlyingAsset: M.gte(moola(2n)) },
         strikePrice: { StrikePrice: M.lte(simoleans(8n)) },
-        timeAuthority: timer,
+        timerBrand: timer,
         expirationDate: M.and(M.gte(50n), M.lte(300n)),
       },
     ],
@@ -208,7 +208,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
         description: 'exerciseOption',
         underlyingAssets: { UnderlyingAsset: M.gte(moola(2n)) },
         strikePrice: { StrikePrice: M.lte(simoleans(8n)) },
-        timeAuthority: timer,
+        timerBrand: timer,
         expirationDate: M.and(M.gte(50n), M.lte(300n)),
       }),
     ],

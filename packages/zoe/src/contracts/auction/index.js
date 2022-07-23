@@ -2,6 +2,7 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { TimeMath } from '@agoric/swingset-vat';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
@@ -22,7 +23,7 @@ const SECOND_PRICE = 'second-price';
  * NOT TO BE USED IN PRODUCTION CODE. BIDS ARE PUBLIC. An auction
  * contract in which the seller offers an Asset for sale, and states a
  * minimum price. The auction closes at the deadline specified by the
- * timeAuthority, bidDuration, winnerPriceOption parameters in the terms provided by
+ * timerBrand, bidDuration, winnerPriceOption parameters in the terms provided by
  * the creator of the contract instance.
  * Winner price option can be `first-price` or `second-price`, default to `second-price`.
  *
@@ -36,14 +37,14 @@ const SECOND_PRICE = 'second-price';
  * null } want: { Asset: null } }.
  *
  * @param {ZCF<{
- * timeAuthority: TimerService,
+ * timerBrand: TimerService,
  * winnerPriceOption?: FIRST_PRICE | SECOND_PRICE,
  * bidDuration: bigint,
  * }>} zcf
  */
 const start = zcf => {
   const {
-    timeAuthority,
+    timerBrand,
     winnerPriceOption = SECOND_PRICE,
     bidDuration,
   } = zcf.getTerms();
@@ -73,10 +74,10 @@ const start = zcf => {
 
     // XXX toggle flag before `await` to avoid race-condition of 2 consecutive bids
     isTimerStarted = true;
-    const currentTs = await E(timeAuthority).getCurrentTimestamp();
-    closesAfter = currentTs + bidDuration;
+    const currentTs = await E(timerBrand).getCurrentTimestamp();
+    closesAfter = TimeMath.addAbsRel(currentTs, bidDuration);
 
-    E(timeAuthority)
+    E(timerBrand)
       .setWakeup(
         closesAfter,
         Far('wakeObj', {
@@ -88,7 +89,7 @@ const start = zcf => {
       )
       .catch(err => {
         console.error(
-          `Could not schedule the close of the auction at the 'closesAfter' deadline ${closesAfter} using this timer ${timeAuthority}`,
+          `Could not schedule the close of the auction at the 'closesAfter' deadline ${closesAfter} using this timer ${timerBrand}`,
         );
         console.error(err);
         throw err;
@@ -111,7 +112,7 @@ const start = zcf => {
       winnerPriceOption,
       closesAfter,
       bidDuration,
-      timeAuthority,
+      timerBrand,
       bids: getCurrentBids(),
     });
   };

@@ -21,3 +21,7 @@ export { buildPlugin } from './devices/plugin/plugin.js';
 
 // eslint-disable-next-line import/export
 export * from './types-external.js';
+
+export { TimeMath } from './vats/timer/timeMath.js';
+
+export * from './vats/timer/typeGuards.js';

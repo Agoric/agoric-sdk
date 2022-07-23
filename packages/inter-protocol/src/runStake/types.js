@@ -12,8 +12,8 @@
  */
 
 /**
- * @typedef {{getTime: () => Timestamp, updateTime: (currentTime:
- * Timestamp) => void}} StoredTime
+ * @typedef {{getTime: () => AbsoluteTimeish, updateTime: (currentTime:
+ * AbsoluteTimeish) => void}} StoredTime
  */
 
 /**

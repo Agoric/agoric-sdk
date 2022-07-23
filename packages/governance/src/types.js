@@ -280,7 +280,7 @@
 /**
  * @typedef {object} ClosingRule
  * @property {ERef<Timer>} timer
- * @property {Timestamp} deadline
+ * @property {AbsoluteTimeish} deadline
  */
 
 /**
@@ -294,7 +294,7 @@
  * @property {VoteCounterPublicFacet} publicFacet
  * @property {VoteCounterCreatorFacet} creatorFacet
  * @property {Instance} instance
- * @property {Timestamp} deadline
+ * @property {AbsoluteTimeish} deadline
  * @property {Handle<'Question'>} questionHandle
  */
 
@@ -571,7 +571,7 @@
  *
  * @callback VoteOnParamChanges
  * @param {Installation} voteCounterInstallation
- * @param {Timestamp} deadline
+ * @param {AbsoluteTimeish} deadline
  * @param {ParamChangesSpec<P>} paramSpec
  * @returns {ContractGovernanceVoteResult}
  */
@@ -581,7 +581,7 @@
  * @param {string} apiMethodName
  * @param {unknown[]} methodArgs
  * @param {Installation} voteCounterInstallation
- * @param {Timestamp} deadline
+ * @param {AbsoluteTimeish} deadline
  * @returns {ContractGovernanceVoteResult}
  */
 

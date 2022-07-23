@@ -112,7 +112,7 @@ test.before(
     };
 
     /**
-     * @param {RelativeTime} POLL_INTERVAL
+     * @param {Durationish} POLL_INTERVAL
      */
     const makeMedianAggregator = async POLL_INTERVAL => {
       const timer = buildManualTimer(() => {});

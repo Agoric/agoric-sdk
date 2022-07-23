@@ -138,7 +138,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       Ask: simoleanIssuer,
     });
     const now = await E(timer).getCurrentTimestamp();
-    const terms = harden({ timeAuthority: timer, closesAfter: now + 1n });
+    const terms = harden({ timerBrand: timer, closesAfter: now + 1n });
     const { creatorInvitation: sellAssetsInvitation } = await E(
       zoe,
     ).startInstance(

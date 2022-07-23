@@ -22,7 +22,7 @@ const { details: X } = assert;
  * @property {Array<number>} [priceList]
  * @property {Array<[number, number]>} [tradeList]
  * @property {ERef<TimerService>} timer
- * @property {RelativeTime} [quoteInterval]
+ * @property {Durationish} [quoteInterval]
  * @property {ERef<Mint>} [quoteMint]
  * @property {Amount} [unitAmountIn]
  */
@@ -86,7 +86,7 @@ export async function makeFakePriceAuthority(options) {
   const quoteBrand = await E(quoteIssuer).getBrand();
 
   /**
-   * @type {NotifierRecord<Timestamp>} We need to have a notifier driven by the
+   * @type {NotifierRecord<AbsoluteTimeish>} We need to have a notifier driven by the
    * TimerService because if the timer pushes updates to individual
    * QuoteNotifiers, we have a dependency inversion and the timer can never know
    * when the QuoteNotifier goes away.  (Don't even mention WeakRefs... they're
@@ -105,7 +105,7 @@ export async function makeFakePriceAuthority(options) {
    *
    * @param {Amount} amountIn
    * @param {Brand} brandOut
-   * @param {Timestamp} quoteTime
+   * @param {AbsoluteTimeish} quoteTime
    * @returns {PriceQuote}
    */
   function priceInQuote(amountIn, brandOut, quoteTime) {
@@ -137,7 +137,7 @@ export async function makeFakePriceAuthority(options) {
   /**
    * @param {Brand} brandIn
    * @param {Amount} amountOut
-   * @param {Timestamp} quoteTime
+   * @param {AbsoluteTimeish} quoteTime
    * @returns {PriceQuote}
    */
   function priceOutQuote(brandIn, amountOut, quoteTime) {
