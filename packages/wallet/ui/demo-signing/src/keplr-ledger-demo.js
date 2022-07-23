@@ -1,4 +1,5 @@
 // @ts-check
+import { Random } from '@cosmjs/crypto';
 import { SigningStargateClient } from '@cosmjs/stargate';
 import * as tendermintRpcStar from '@cosmjs/tendermint-rpc';
 import { html, render } from 'lit-html';
@@ -12,14 +13,32 @@ import {
 } from './chainInfo.js';
 
 import {
-  makeSigner,
-  makeMessagingSigner,
+  makeOfferSigner,
+  makeLocalStorageSigner,
   makeExecActionMessages,
   trivialFee,
 } from './keyManagement.js';
 
 const { freeze } = Object;
 const { Tendermint34Client } = tendermintRpcStar;
+
+// agoric start local-chain
+const localChainInfo = {
+  rpc: 'http://localhost:26657',
+  rest: '@@TODO: fixme',
+  chainId: 'agoric',
+  chainName: 'Agoric local-chain',
+  stakeCurrency,
+  // walletUrlForStaking: `https://${network}.staking.agoric.app`,
+  bip44: {
+    coinType: COSMOS_COIN_TYPE,
+    // coinType: AGORIC_COIN_TYPE, // ISSUE: how do we switch on this before we know isNanoLedger?
+  },
+  bech32Config,
+  currencies: [stakeCurrency, stableCurrency],
+  feeCurrencies: [stableCurrency],
+  features: ['stargate', 'ibc-transfer'],
+};
 
 const check = {
   /**
@@ -67,24 +86,6 @@ const check = {
   },
 };
 
-// agoric start local-chain
-const localChainInfo = {
-  rpc: 'http://localhost:26657',
-  rest: '@@TODO: fixme',
-  chainId: 'agoric',
-  chainName: 'Agoric local-chain',
-  stakeCurrency,
-  // walletUrlForStaking: `https://${network}.staking.agoric.app`,
-  bip44: {
-    coinType: COSMOS_COIN_TYPE,
-    // coinType: AGORIC_COIN_TYPE, // ISSUE: how do we switch on this before we know isNanoLedger?
-  },
-  bech32Config,
-  currencies: [stakeCurrency, stableCurrency],
-  feeCurrencies: [stableCurrency],
-  features: ['stargate', 'ibc-transfer'],
-};
-
 /** @param {typeof document} document */
 const makeUI = document => {
   const ui = freeze({
@@ -115,17 +116,17 @@ const makeUI = document => {
       ),
 
     /**
-     * @param {Awaited<ReturnType<typeof makeSigner>>} s1
-     * @param {Awaited<ReturnType<typeof makeMessagingSigner>>} s2
-     * @param {import('@cosmjs/stargate').SigningStargateClient} lowPrivilegeSigning
+     * @param {Awaited<ReturnType<typeof makeOfferSigner>>} s1
+     * @param {Awaited<ReturnType<typeof makeLocalStorageSigner>>} s2
      * @param {tendermintRpcStar.Tendermint34Client} rpcClient
+     * @param {import('@cosmjs/stargate').SigningStargateClient} lowPrivilegeSigning
      */
     attach: async (s1, s2, rpcClient, lowPrivilegeSigning) => {
       ui.setValue('*[name="account"]', s1.address);
       ui.setChecked('*[name="isNanoLedger"]', s1.isNanoLedger);
 
       ui.onClick('#acceptOffer', async _bev =>
-        s1.acceptOffer(
+        s1.submitSpendAction(
           ui.textValue('*[name="spendAction"]'),
           ui.inputValue('*[name="memo"]'),
         ),
@@ -133,17 +134,11 @@ const makeUI = document => {
 
       ui.setValue('*[name="messagingAccount"]', s2.address);
 
-      const grants = await s2.queryGrants(
-        {
-          granter: s1.address,
-          msgTypeUrl: SwingsetMsgs.MsgWalletAction.typeUrl,
-        },
-        rpcClient,
-      );
+      const grants = await s2.queryGrants(s1.address, rpcClient);
       console.log('@@@', { grants });
 
       ui.onClick('#makeMessagingAccount', async _bev =>
-        s1.authorizeMessagingKey(s2.address, Date.now()),
+        s1.authorizeLocalKey(s2.address, Date.now()),
       );
 
       ui.onClick('#sendMessages', async _bev => {
@@ -161,7 +156,8 @@ const makeUI = document => {
 
         const fee = trivialFee();
 
-        console.log('sign', { address, msgs, fee, memo });
+        // TODO: should s2 do the signAndBroadcast like s1?
+        console.log('sign non-spend actions', { address, msgs, fee, memo });
         const tx = await lowPrivilegeSigning.signAndBroadcast(
           address,
           msgs,
@@ -188,16 +184,21 @@ window.addEventListener('load', async _ev => {
 
   const chainInfo = localChainInfo;
   await keplr.experimentalSuggestChain(chainInfo);
+
+  // const chainId = ui.selectValue('select[name="chainId"]');
   const { chainId } = chainInfo;
   await keplr.enable(chainId);
   ui.setValue('*[name="chainId"]', chainId);
 
-  const s1 = await makeSigner(
+  const s1 = await makeOfferSigner(
     chainInfo,
     keplr,
     SigningStargateClient.connectWithSigner,
   );
-  const s2 = await makeMessagingSigner({ localStorage: window.localStorage });
+  const s2 = await makeLocalStorageSigner({
+    localStorage: window.localStorage,
+    getBytes: Random.getBytes,
+  });
 
   const rpcClient = await Tendermint34Client.connect(chainInfo.rpc);
 
