@@ -192,6 +192,7 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
           promiseKit.resolve(timestamp);
         },
       });
+      // TODO Is this mismatch of absolute and relative a bug before this PR?
       timer.setWakeup(delay, delayWaker);
       return promiseKit.promise;
     },

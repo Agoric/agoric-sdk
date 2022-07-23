@@ -118,7 +118,7 @@ const finish = ({ state, facets }) => {
   void observeNotifier(periodNotifier, {
     updateState: updateTime =>
       helper
-        .chargeAllVaults(updateTime)
+        .chargeAllVaults(TimeMath.absoluteTimeValue(updateTime))
         .catch(e =>
           console.error('🚨 runStakeManager failed to charge interest', e),
         ),

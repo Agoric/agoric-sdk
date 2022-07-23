@@ -38,7 +38,7 @@ export function buildRootObject(vatPowers) {
         fit(delay, RelativeTimeShape);
         fit(interval, RelativeTimeShape);
         assert(
-          TimeMath.relativeTimeValue(interval) > 0,
+          TimeMath.relativeTimeValue(interval) > 0n,
           X`makeRepeater's second parameter must be a positive integer: ${interval}`,
         );
 
@@ -60,7 +60,7 @@ export function buildRootObject(vatPowers) {
         fit(delay, RelativeTimeShape);
         fit(interval, RelativeTimeShape);
         assert(
-          TimeMath.relativeTimeValue(interval) > 0,
+          TimeMath.relativeTimeValue(interval) > 0n,
           X`makeNotifier's second parameter must be a positive integer: ${interval}`,
         );
 
