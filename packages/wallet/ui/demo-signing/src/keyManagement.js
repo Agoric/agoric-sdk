@@ -7,7 +7,10 @@ import {
   QueryClient,
   createProtobufRpcClient,
   assertIsDeliverTxSuccess,
+  createBankAminoConverters,
+  createAuthzAminoConverters,
 } from '@cosmjs/stargate';
+
 import { GenericAuthorization } from 'cosmjs-types/cosmos/authz/v1beta1/authz';
 import { QueryClientImpl } from 'cosmjs-types/cosmos/authz/v1beta1/query';
 
@@ -297,8 +300,14 @@ export const makeOfferSigner = async (chainInfo, keplr, connectWithSigner) => {
   const [account] = await offlineSigner.getAccounts();
   const { address } = account;
 
+  const converters = {
+    ...SwingsetConverters,
+    ...createBankAminoConverters(),
+    ...createAuthzAminoConverters(),
+  };
+  console.log('@@@@', { converters });
   const signingClient = await connectWithSigner(chainInfo.rpc, offlineSigner, {
-    aminoTypes: new AminoTypes(SwingsetConverters),
+    aminoTypes: new AminoTypes(converters),
     registry: SwingsetRegistry,
   });
   console.log('OfferSigner', { signingClient });
