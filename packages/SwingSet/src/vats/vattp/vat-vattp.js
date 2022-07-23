@@ -1,8 +1,10 @@
 import { assert, details as X } from '@agoric/assert';
+import { provide } from '@agoric/store';
 import {
   makeScalarBigMapStore,
   defineDurableKindMulti,
   provideKindHandle,
+  vivifySingleton,
 } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -36,10 +38,18 @@ function makeCounter(render, initialValue = 7) {
 
 export function buildRootObject(vatPowers, _vatParams, baggage) {
   const { D } = vatPowers;
-  let mailbox; // mailbox device
 
-  const mailboxKindHandle = provideKindHandle(baggage, 'Mailbox');
-  const initMailboxState = () => ({
+  let mailboxDevice;
+  // TODO: How can we persist a mailbox device reference across upgrades?
+  // const mailboxDeviceBaggageKey = 'mailboxDevice';
+  // if (baggage.has(mailboxDeviceBaggageKey)) {
+  //   mailboxDevice = baggage.get(mailboxDeviceBaggageKey);
+  // }
+
+  // QUESTION: Is there a convention around capitalization here?
+  const mailboxKindHandle = provideKindHandle(baggage, 'mailbox');
+  const initMailboxState = name => ({
+    name,
     outboundHighestAdded: 0,
     outboundHighestRemoved: 0,
     inboundHighestDelivered: 0,
@@ -49,43 +59,55 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
     mailboxKindHandle,
     initMailboxState,
     {
-      outbound: {
-        getHighestAdded: ({ state }) => state.outboundHighestAdded,
-        setHighestAdded: ({ state }, highestAdded) => {
-          assert(highestAdded >= state.outboundHighestAdded);
-          state.outboundHighestAdded = highestAdded;
+      transmitter: {
+        transmit: ({ state }, msg) => {
+          const num = state.outboundHighestAdded + 1;
+          D(mailboxDevice).add(state.name, num, msg);
+          state.outboundHighestAdded = num;
         },
-        getHighestRemoved: ({ state }) => state.outboundHighestRemoved,
-        setHighestRemoved: ({ state }, highestRemoved) => {
-          assert(highestRemoved >= state.outboundHighestRemoved);
-          state.outboundHighestRemoved = highestRemoved;
+      },
+      setReceiver: {
+        setReceiver: ({ state }, newReceiver) => {
+          assert(!state.inboundReceiver, X`setReceiver is call-once`);
+          state.inboundReceiver = newReceiver;
         },
       },
       inbound: {
-        getReceiver: ({ state }) => state.inboundReceiver,
-        initReceiver: ({ state }, receiver) => {
-          assert.equal(state.inboundReceiver, null);
-          state.inboundReceiver = receiver;
+        deliverMessages: ({ state }, newMessages) => {
+          // TODO: Minimize state interactions. `try..finally`?
+          newMessages.forEach(m => {
+            const [num, body] = m;
+            if (num > state.inboundHighestDelivered) {
+              // TODO: SO() / sendOnly()
+              E(state.inboundReceiver).receive(body);
+              state.inboundHighestDelivered = num;
+              D(mailboxDevice).ackInbound(state.name, num);
+            }
+          });
         },
-        getHighestDelivered: ({ state }) => state.inboundHighestDelivered,
-        setHighestDelivered: ({ state }, highestDelivered) => {
-          assert(highestDelivered >= state.inboundHighestDelivered);
-          state.inboundHighestDelivered = highestDelivered;
+        deliverAck: ({ state }, ack) => {
+          // TODO: Minimize state interactions. `try..finally`?
+          let num = state.outboundHighestRemoved + 1;
+          while (num <= state.outboundHighestAdded && num <= ack) {
+            D(mailboxDevice).remove(state.name, num);
+            state.outboundHighestRemoved = num;
+            num += 1;
+          }
         },
       },
     },
   );
 
-  if (!baggage.has('mailboxes')) {
-    baggage.init(
-      'mailboxes',
-      makeScalarBigMapStore('mailboxes', { durable: true }),
-    );
-  }
-  const mailboxes = baggage.get('mailboxes');
+  const mailboxCollectionBaggageKey = 'mailboxes';
+  /** @type {MapStore<string, ReturnType<typeof makeMailbox>>} */
+  const mailboxes = provide(baggage, mailboxCollectionBaggageKey, () =>
+    makeScalarBigMapStore(mailboxCollectionBaggageKey, { durable: true }),
+  );
   function provideMailbox(name) {
     if (!mailboxes.has(name)) {
-      mailboxes.init(name, makeMailbox());
+      // TODO: Is there a way to avoid this duplication of `name`
+      // as both a map key and internal mailbox state?
+      mailboxes.init(name, makeMailbox(name));
     }
     return mailboxes.get(name);
   }
@@ -179,9 +201,15 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
     return harden({ host, handler });
   }
 
-  const handler = Far('vat-tp handler', {
-    registerMailboxDevice(mailboxDevnode) {
-      mailbox = mailboxDevnode;
+  const handlerMethods = {
+    registerMailboxDevice(newMailboxDevice) {
+      // TODO: How can we persist a mailbox device reference across upgrades?
+      // if (baggage.has(mailboxDeviceBaggageKey)) {
+      //   baggage.set(mailboxDeviceBaggageKey, newMailboxDevice);
+      // } else {
+      //   baggage.init(mailboxDeviceBaggageKey, newMailboxDevice);
+      // }
+      mailboxDevice = newMailboxDevice;
     },
 
     /**
@@ -189,55 +217,25 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
      */
     addRemote(name) {
       assert(!mailboxes.has(name), X`already have remote ${name}`);
-      const r = provideMailbox(name);
-      const transmitter = Far('transmitter', {
-        transmit(msg) {
-          // Durability question: are these references to `r` and `name` safe?
-          // If not, then what is the proper strategy?
-          // Do we need to be durable all the way up, with "vat-tp handler" being
-          // a durable singleton with state referencing `mailboxes` from baggage,
-          // an addRemote function reaching into that state and returning a
-          // durable object of its own, and deliverInboundMessages/deliverInboundAck
-          // functions that also leverage that state?
-          const num = r.outbound.getHighestAdded() + 1;
-          D(mailbox).add(name, num, msg);
-          r.outbound.setHighestAdded(num);
-        },
-      });
-      const setReceiver = Far('receiver setter', {
-        setReceiver(newReceiver) {
-          assert(!r.inbound.getReceiver(), X`setReceiver is call-once`);
-          r.inbound.initReceiver(newReceiver);
-        },
-      });
+      const { transmitter, setReceiver } = provideMailbox(name);
       return harden({ transmitter, setReceiver });
     },
 
     deliverInboundMessages(name, newMessages) {
-      const i = provideMailbox(name).inbound;
-      newMessages.forEach(m => {
-        const [num, body] = m;
-        if (num > i.getHighestDelivered()) {
-          // TODO: SO() / sendOnly()
-          E(i.getReceiver()).receive(body);
-          i.setHighestDelivered(num);
-          D(mailbox).ackInbound(name, num);
-        }
-      });
+      // TODO: Stop silently creating mailboxes.
+      const { inbound } = provideMailbox(name);
+      inbound.deliverMessages(newMessages);
     },
 
     deliverInboundAck(name, ack) {
-      const o = provideMailbox(name).outbound;
-      let num = o.getHighestRemoved() + 1;
-      while (num <= o.getHighestAdded() && num <= ack) {
-        D(mailbox).remove(name, num);
-        o.setHighestRemoved(num);
-        num += 1;
-      }
+      // TODO: Stop silently creating mailboxes.
+      const { inbound } = provideMailbox(name);
+      inbound.deliverAck(ack);
     },
 
     makeNetworkHost,
-  });
+  };
 
+  const handler = vivifySingleton(baggage, 'vat-tp handler', handlerMethods);
   return handler;
 }
