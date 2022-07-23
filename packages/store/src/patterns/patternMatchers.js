@@ -549,7 +549,9 @@ const makePatternKit = () => {
       if (patts.some(patt => matches(specimen, patt))) {
         return true;
       }
-      return check(false, X`${specimen} - Must match one of ${patts}`);
+      // TODO undo the q on specimen
+      // TODO consider spreading q to all patterns
+      return check(false, X`${q(specimen)} - Must match one of ${q(patts)}`);
     },
 
     checkIsMatcherPayload: matchAndHelper.checkIsMatcherPayload,
