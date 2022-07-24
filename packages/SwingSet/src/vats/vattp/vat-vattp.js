@@ -74,24 +74,38 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
       },
       inbound: {
         deliverMessages: ({ state }, newMessages) => {
-          // TODO: Minimize state interactions. `try..finally`?
-          newMessages.forEach(m => {
-            const [num, body] = m;
-            if (num > state.inboundHighestDelivered) {
+          // Minimize interactions with durable storage,
+          // assuming state won't change underneath us
+          // and remote methods won't synchronously throw.
+          const { name, inboundReceiver, inboundHighestDelivered } = state;
+          let newHighestDelivered = inboundHighestDelivered;
+          for (const [num, body] of newMessages) {
+            if (num > newHighestDelivered) {
               // TODO: SO() / sendOnly()
-              E(state.inboundReceiver).receive(body);
-              state.inboundHighestDelivered = num;
-              D(mailboxDevice).ackInbound(state.name, num);
+              E(inboundReceiver).receive(body);
+              newHighestDelivered = num;
+              D(mailboxDevice).ackInbound(name, num);
             }
-          });
+          }
+          if (newHighestDelivered > inboundHighestDelivered) {
+            state.inboundHighestDelivered = newHighestDelivered;
+          }
         },
         deliverAck: ({ state }, ack) => {
-          // TODO: Minimize state interactions. `try..finally`?
-          let num = state.outboundHighestRemoved + 1;
-          while (num <= state.outboundHighestAdded && num <= ack) {
-            D(mailboxDevice).remove(state.name, num);
-            state.outboundHighestRemoved = num;
-            num += 1;
+          // Minimize interactions with durable storage,
+          // assuming state won't change underneath us
+          // and remote methods won't synchronously throw.
+          const { name, outboundHighestAdded, outboundHighestRemoved } = state;
+          let newHighestRemoved = outboundHighestRemoved;
+          while (
+            newHighestRemoved < outboundHighestAdded &&
+            newHighestRemoved < ack
+          ) {
+            newHighestRemoved += 1;
+            D(mailboxDevice).remove(name, newHighestRemoved);
+          }
+          if (newHighestRemoved > outboundHighestRemoved) {
+            state.outboundHighestRemoved = newHighestRemoved;
           }
         },
       },
