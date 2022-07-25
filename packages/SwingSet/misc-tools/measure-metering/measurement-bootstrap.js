@@ -1,7 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies,no-unused-vars,no-empty-function */
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import vaultFactoryBundle from '@agoric/run-protocol/bundles/bundle-vaultFactory.js';
+import vaultFactoryBundle from '@agoric/inter-protocol/bundles/bundle-vaultFactory.js';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 export function buildRootObject() {
