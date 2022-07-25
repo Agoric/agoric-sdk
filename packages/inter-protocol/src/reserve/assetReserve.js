@@ -32,8 +32,21 @@ const nonalphanumeric = /[^A-Za-z0-9]/g;
 
 /**
  * @typedef {{
+ *   increaseLiquidationShortfall: (increase: Amount) => void
+ *   reduceLiquidationShortfall: (reduction: Amount) => void
+ * }} ShortfallReportingFacet
+ */
+
+/**
+ * @typedef {{
  *   state: {},
- *   facets: { AssetReservePublicFacet, AssetReserveCreatorFacet },
+ *   facets: {
+ *     publicFacet: AssetReservePublicFacet,
+ *     creatorFacet: AssetReserveCreatorFacet,
+ *     shortfallReportingFacet: ShortfallReportingFacet,
+ *     limitedCreatorFacet: LimitedCreatorFacet<AssetReserveCreatorFacet>,
+ *     governedApis: {},
+ *      },
  * }} MethodContext
  */
 

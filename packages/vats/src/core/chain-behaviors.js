@@ -14,8 +14,8 @@ import {
   makeNonceMaker,
 } from '@agoric/swingset-vat/src/vats/network/index.js';
 import { importBundle } from '@endo/import-bundle';
-
 import * as Collect from '@agoric/inter-protocol/src/collect.js';
+
 import { makeBridgeManager as makeBridgeManagerKit } from '../bridge.js';
 import * as BRIDGE_ID from '../bridge-ids.js';
 import * as STORAGE_PATH from '../chain-storage-paths.js';
