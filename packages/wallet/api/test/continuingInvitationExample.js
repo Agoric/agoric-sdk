@@ -1,15 +1,16 @@
 // @ts-check
 
-import { makeNotifierKit } from '@agoric/notifier';
+import { makeNotifierFromSubscriber, makePublishKit } from '@agoric/notifier';
 import { Far } from '@endo/marshal';
 
 import '@agoric/zoe/exported.js';
 
 export const start = zcf => {
-  const { notifier, updater } = makeNotifierKit();
+  const { subscriber, publisher } = makePublishKit();
+  const notifier = makeNotifierFromSubscriber(subscriber);
 
   const secondOfferHandler = seat => {
-    updater.updateState('second offer made');
+    publisher.publish('second offer made');
     seat.exit();
     return 'done';
   };
@@ -19,10 +20,10 @@ export const start = zcf => {
 
   const offerHandler = seat => {
     seat.exit();
-    updater.updateState('first offer made');
+    publisher.publish('first offer made');
     return harden({
       uiNotifier: notifier,
-      publicNotifiers: { offers: notifier },
+      publicSubscribers: { offers: subscriber },
       invitationMakers: Far('second thing inviter', {
         SecondThing: makeDoSecondThingInvitation,
       }),
