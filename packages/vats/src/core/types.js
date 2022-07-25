@@ -191,6 +191,7 @@
  * @typedef {PromiseSpaceOf<{
  *   agoricNames: NameHub,
  *   agoricNamesAdmin: NameAdmin,
+ *   aggregators: Map<unknown, { aggregator: PriceAuthority, deleter: import('@agoric/zoe/tools/priceAuthorityRegistry').Deleter }>,
  *   bankManager: Awaited<BankManager>,
  *   bldIssuerKit: RemoteIssuerKit,
  *   board: Board,

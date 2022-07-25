@@ -11,6 +11,19 @@ const { details: X } = assert;
 const pathSegmentPattern = /^[a-zA-Z0-9_-]{1,100}$/;
 
 /**
+ * @param {string} name
+ */
+export const sanitizePathSegment = name => {
+  const candidate = name.replace(/[- ]/g, '_');
+  assert(
+    pathSegmentPattern.test(candidate),
+    `Path sanitization failed for ${name}`,
+  );
+  return candidate;
+};
+harden(sanitizePathSegment);
+
+/**
  * Create a root storage node for a given backing function and root path.
  *
  * @param {(message: any) => any} toStorage a function for sending a storageMessage object to the storage implementation (cf. golang/cosmos/x/swingset/storage.go)

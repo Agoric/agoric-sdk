@@ -588,7 +588,7 @@ const start = async (
   };
 
   /**
-   * @type {Omit<PriceAggregatorCreatorFacet, 'makeOracleInvitation'> & {
+   * @type {Omit<import('./priceAggregator').PriceAggregatorContract['creatorFacet'], 'makeOracleInvitation'> & {
    *   getRoundData(_roundId: BigInt): Promise<any>,
    *   oracleRoundState(_oracle: OracleKey, _queriedRoundId: BigInt): Promise<any>
    * }}

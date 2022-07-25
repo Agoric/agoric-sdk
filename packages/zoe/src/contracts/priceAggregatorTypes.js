@@ -18,26 +18,9 @@
  */
 
 /**
- * @typedef {object} PriceAggregatorCreatorFacet
- * @property {PriceAggregatorCreatorFacetInitOracle} initOracle
- * @property {(oracleKey: OracleKey) => Promise<void>} deleteOracle
- * @property {(oracleKey?: OracleKey) => Promise<Invitation>} makeOracleInvitation
- */
-
-/**
- * @typedef {object} PriceAggregatorPublicFacet
- * @property {() => PriceAuthority} getPriceAuthority
- * @property {() => Promise<Notifier<bigint> | undefined>} getRoundStartNotifier
- * @property {() => Promise<Notifier<{
- *   submitted: [OracleKey, bigint][],
- *   authenticatedQuote: Payment<'set'>,
- * }>>} getRoundCompleteNotifier
- */
-
-/**
  * @typedef {object} PriceAggregatorKit
- * @property {PriceAggregatorPublicFacet} publicFacet
- * @property {PriceAggregatorCreatorFacet} creatorFacet
+ * @property {import("./priceAggregator").PriceAggregatorContract['publicFacet']} publicFacet
+ * @property {import("./priceAggregator").PriceAggregatorContract['creatorFacet']} creatorFacet
  */
 
 /**
@@ -46,11 +29,18 @@
  */
 
 /**
+ * @typedef {Record<string, unknown> & {
+ * kind?: string,
+ * increment?: bigint,
+ * }} OracleQuery
+ */
+
+/**
  * @typedef {object} OraclePublicFacet
  * The public methods accessible from the contract instance
- * @property {(query: any) => ERef<Invitation>} makeQueryInvitation
+ * @property {(query: OracleQuery) => ERef<Invitation>} makeQueryInvitation
  * Create an invitation for an oracle query
- * @property {(query: any) => ERef<any>} query
+ * @property {(query: OracleQuery) => ERef<unknown>} query
  * Make an unpaid query
  */
 
@@ -104,12 +94,12 @@
 
 /**
  * @typedef {object} OracleHandler
- * @property {(query: any, fee: Amount) => Promise<OracleReply>} onQuery
+ * @property {(query: OracleQuery, fee: Amount) => Promise<OracleReply>} onQuery
  * Callback to reply to a query
- * @property {(query: any, reason: any) => void} onError
+ * @property {(query: OracleQuery, reason: unknown) => void} onError
  * Notice an error
- * @property {(query: any,
- *             reply: any,
+ * @property {(query: OracleQuery,
+ *             reply: unknown,
  *             requiredFee: Amount | undefined
  * ) => void} onReply
  * Notice a successful reply
