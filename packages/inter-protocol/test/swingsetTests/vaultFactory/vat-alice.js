@@ -4,6 +4,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { assert, details as X, q } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
+import { makeNotifierFromSubscriber } from '@agoric/notifier';
 
 /**
  *
@@ -37,9 +38,10 @@ const build = async (log, zoe, brands, payments, timer) => {
     );
 
     const {
-      publicNotifiers: { asset: assetNotifier },
+      publicSubscribers: { asset: assetSubscriber },
       vault,
     } = await E(loanSeat).getOfferResult();
+    const assetNotifier = makeNotifierFromSubscriber(assetSubscriber);
     const firstNotif = await E(assetNotifier).getUpdateSince();
     log(`Alice owes ${q(await E(vault).getCurrentDebt())} after borrowing`);
     await E(timer).tick();

@@ -1,5 +1,4 @@
 // @ts-check
-import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import '@agoric/zoe/exported.js';
 import { Far } from '@endo/marshal';
 import { makeVaultHolder } from './vaultHolder.js';
@@ -20,12 +19,9 @@ export const makeVaultKit = (
 ) => {
   const { holder, helper } = makeVaultHolder(vault, storageNode, marshaller);
   const vaultKit = harden({
-    /** @deprecated */
-    publicNotifiers: {
-      vault: makeNotifierFromSubscriber(holder.getSubscriber()),
-      asset: makeNotifierFromSubscriber(assetSubscriber),
-    },
     publicSubscribers: {
+      // XXX should come from manager directly https://github.com/Agoric/agoric-sdk/issues/5814
+      asset: assetSubscriber,
       vault: holder.getSubscriber(),
     },
     invitationMakers: Far('invitation makers', {
