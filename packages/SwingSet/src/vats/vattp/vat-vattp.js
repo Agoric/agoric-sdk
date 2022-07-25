@@ -54,9 +54,10 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
         },
       },
       setReceiver: {
-        setReceiver: ({ state }, newReceiver) => {
+        setReceiver: ({ state }, receiver) => {
           assert(!state.inboundReceiver, X`setReceiver is call-once`);
-          state.inboundReceiver = newReceiver;
+          assert(receiver, X`receiver must not be empty`);
+          state.inboundReceiver = receiver;
         },
       },
       inbound: {
@@ -215,6 +216,7 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
       commsSetReceiver: {
         setReceiver: ({ state }, receiver) => {
           assert(!state.receiver, X`setReceiver is call-once`);
+          assert(receiver, X`receiver must not be empty`);
           state.receiver = receiver;
         },
       },
@@ -252,6 +254,7 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
         },
         onClose: ({ state }, _connection, ..._args) => {
           state.receiver = null;
+          // TODO: What would it take to fully support this?
           console.warn(`deleting connection is not fully supported in comms`);
         },
         infoMessage: ({ state }, ...args) => {
