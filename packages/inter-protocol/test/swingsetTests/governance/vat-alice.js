@@ -4,6 +4,8 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
+import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
+
 import { daysForVoting } from './bootstrap';
 import { ONE_DAY } from '../setup';
 
@@ -54,7 +56,9 @@ const build = async (log, zoe, brands, payments, timer) => {
 
     const timeLog = async msg =>
       log(
-        `at ${(await E(timer).getCurrentTimestamp()) / ONE_DAY} days: ${msg}`,
+        `at ${
+          TimeMath.absValue(await E(timer).getCurrentTimestamp()) / ONE_DAY
+        } days: ${msg}`,
       );
 
     let lastAssetN = await E(assetNotifier).getUpdateSince();

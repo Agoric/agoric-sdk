@@ -543,13 +543,13 @@ const makePatternKit = () => {
       if (length === 0) {
         return check(
           false,
-          X`${specimen} - no pattern disjuncts to match: ${patts}`,
+          X`${specimen} - no pattern disjuncts to match: ${q(patts)}`,
         );
       }
       if (patts.some(patt => matches(specimen, patt))) {
         return true;
       }
-      return check(false, X`${specimen} - Must match one of ${patts}`);
+      return check(false, X`${specimen} - Must match one of ${q(patts)}`);
     },
 
     checkIsMatcherPayload: matchAndHelper.checkIsMatcherPayload,
