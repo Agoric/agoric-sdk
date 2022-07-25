@@ -28,11 +28,10 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
   const { D } = vatPowers;
 
   let mailboxDevice;
-  // TODO: How can we persist a mailbox device reference across upgrades?
-  // const mailboxDeviceBaggageKey = 'mailboxDevice';
-  // if (baggage.has(mailboxDeviceBaggageKey)) {
-  //   mailboxDevice = baggage.get(mailboxDeviceBaggageKey);
-  // }
+  const mailboxDeviceBaggageKey = 'mailboxDevice';
+  if (baggage.has(mailboxDeviceBaggageKey)) {
+    mailboxDevice = baggage.get(mailboxDeviceBaggageKey);
+  }
 
   // QUESTION: Is there a convention around capitalization here?
   const mailboxKindHandle = provideKindHandle(baggage, 'mailbox');
@@ -112,12 +111,11 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
   }
   const mailboxMethods = {
     registerMailboxDevice(newMailboxDevice) {
-      // TODO: How can we persist a mailbox device reference across upgrades?
-      // if (baggage.has(mailboxDeviceBaggageKey)) {
-      //   baggage.set(mailboxDeviceBaggageKey, newMailboxDevice);
-      // } else {
-      //   baggage.init(mailboxDeviceBaggageKey, newMailboxDevice);
-      // }
+      if (baggage.has(mailboxDeviceBaggageKey)) {
+        baggage.set(mailboxDeviceBaggageKey, newMailboxDevice);
+      } else {
+        baggage.init(mailboxDeviceBaggageKey, newMailboxDevice);
+      }
       mailboxDevice = newMailboxDevice;
     },
 
