@@ -109,7 +109,6 @@ const validTransitions = {
  *
  * @typedef {{
  *   interestSnapshot: Ratio,
- *   outerUpdater: Publisher<VaultNotification> | null,
  *   phase: VaultPhase,
  *   debtSnapshot: Amount<'nat'>,
  * }} MutableState
@@ -134,6 +133,7 @@ const validTransitions = {
  * @type {(key: VaultId) => {
  * storageNode: ERef<StorageNode>,
  * marshaller: ERef<Marshaller>,
+ * outerUpdater: Publisher<VaultNotification> | null,
  * zcf: ZCF,
  * }} */
 // @ts-expect-error not yet defined
@@ -350,7 +350,8 @@ const helperBehavior = {
    * @param {MethodContext} context
    */
   updateUiState: ({ state, facets }) => {
-    const { outerUpdater } = state;
+    const ephemera = provideEphemera(state.idInManager);
+    const { outerUpdater } = ephemera;
     if (!outerUpdater) {
       // It's not an error to change to liquidating during transfer
       return;
@@ -367,7 +368,7 @@ const helperBehavior = {
         break;
       case Phase.CLOSED:
         outerUpdater.finish(uiState);
-        state.outerUpdater = null;
+        ephemera.outerUpdater = null;
         break;
       default:
         throw Error(`unreachable vault phase: ${phase}`);
@@ -470,7 +471,9 @@ const helperBehavior = {
    */
   adjustBalancesHook: async ({ state, facets }, clientSeat) => {
     const { self, helper } = facets;
-    const { vaultSeat, outerUpdater: updaterPre } = state;
+    const ephemera = provideEphemera(state.idInManager);
+    const { outerUpdater: updaterPre } = ephemera;
+    const { vaultSeat } = state;
     const proposal = clientSeat.getProposal();
     assertOnlyKeys(proposal, ['Collateral', 'RUN']);
 
@@ -488,7 +491,7 @@ const helperBehavior = {
     // max debt supported by current Collateral as modified by proposal
     const maxDebtPre = await state.manager.maxDebtFor(newCollateralPre);
     assert(
-      updaterPre === state.outerUpdater,
+      updaterPre === ephemera.outerUpdater,
       X`Transfer during vault adjustment`,
     );
     helper.assertActive();
@@ -566,7 +569,7 @@ const helperBehavior = {
       ephemera.marshaller,
       state.manager.getAssetSubscriber(),
     );
-    state.outerUpdater = vaultKit.vaultUpdater;
+    ephemera.outerUpdater = vaultKit.vaultUpdater;
     helper.updateUiState();
 
     return vaultKit;
@@ -587,6 +590,7 @@ const selfBehavior = {
    */
   initVaultKit: async ({ state, facets }, seat, storageNode, marshaller) => {
     assert(seat && storageNode && marshaller, 'initVaultKit missing argument');
+    const ephemera = provideEphemera(state.idInManager);
 
     const { self, helper } = facets;
 
@@ -643,7 +647,7 @@ const selfBehavior = {
       marshaller,
       state.manager.getAssetSubscriber(),
     );
-    state.outerUpdater = vaultKit.vaultUpdater;
+    ephemera.outerUpdater = vaultKit.vaultUpdater;
     helper.updateUiState();
     return vaultKit;
   },
@@ -701,18 +705,15 @@ const selfBehavior = {
    * @returns {Promise<Invitation>}
    */
   makeTransferInvitation: ({ state, facets }) => {
+    const ephemera = provideEphemera(state.idInManager);
+    const { outerUpdater } = ephemera;
     const { self, helper } = facets;
     // Bring the debt snapshot current for the final report before transfer
     helper.updateDebtSnapshot(self.getCurrentDebt());
-    const {
-      outerUpdater,
-      debtSnapshot: debt,
-      interestSnapshot: interest,
-      phase,
-    } = state;
+    const { debtSnapshot: debt, interestSnapshot: interest, phase } = state;
     if (outerUpdater) {
       outerUpdater.finish(helper.getStateSnapshot(Phase.TRANSFER));
-      state.outerUpdater = null;
+      ephemera.outerUpdater = null;
     }
     const transferState = {
       debtSnapshot: { debt, interest },
