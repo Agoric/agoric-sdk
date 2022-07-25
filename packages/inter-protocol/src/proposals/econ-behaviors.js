@@ -888,6 +888,7 @@ export const startRunStake = async (
   return Promise.all([
     E(client).assignBundle([
       address => ({
+        // @ts-expect-error ??? creatorFacet is a RunStakeCreator; it has the method
         attMaker: E(creatorFacet).provideAttestationMaker(address),
       }),
     ]),

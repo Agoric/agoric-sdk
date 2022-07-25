@@ -41,10 +41,10 @@ const nonalphanumeric = /[^A-Za-z0-9]/g;
  * @typedef {{
  *   state: {},
  *   facets: {
- *     publicFacet: AssetReservePublicFacet,
- *     creatorFacet: AssetReserveCreatorFacet,
+ *     publicFacet: {},
+ *     creatorFacet: {},
  *     shortfallReportingFacet: ShortfallReportingFacet,
- *     limitedCreatorFacet: LimitedCreatorFacet<AssetReserveCreatorFacet>,
+ *     limitedCreatorFacet: {},
  *     governedApis: {},
  *      },
  * }} MethodContext
