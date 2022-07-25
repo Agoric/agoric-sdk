@@ -131,12 +131,14 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
 
     deliverInboundMessages(name, newMessages) {
       // TODO: Stop silently creating mailboxes.
+      // https://github.com/Agoric/agoric-sdk/issues/5824
       const { inbound } = provideMailbox(name);
       inbound.deliverMessages(newMessages);
     },
 
     deliverInboundAck(name, ack) {
       // TODO: Stop silently creating mailboxes.
+      // https://github.com/Agoric/agoric-sdk/issues/5824
       const { inbound } = provideMailbox(name);
       inbound.deliverAck(ack);
     },
