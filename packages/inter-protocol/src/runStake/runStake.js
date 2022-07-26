@@ -192,7 +192,8 @@ export const start = async (
     const { helper, pot } = makeRunStakeKit(zcf, seat, manager);
 
     return harden({
-      publicNotifiers: {
+      publicSubscribers: {
+        // XXX should come from manager directly https://github.com/Agoric/agoric-sdk/issues/5814
         asset: manager.getAssetSubscriber(),
         vault: pot.getSubscriber(),
       },

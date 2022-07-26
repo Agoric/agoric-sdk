@@ -3,6 +3,7 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
+import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { daysForVoting } from './bootstrap';
 import { ONE_DAY } from '../setup';
 
@@ -32,9 +33,11 @@ const build = async (log, zoe, brands, payments, timer) => {
     const runIssuer = await E(vaultFactory).getRunIssuer();
     const runBrand = await E(runIssuer).getBrand();
 
+    const collateralManager = E(vaultFactory).getCollateralManager(moolaBrand);
+
     /** @type {UserSeat<VaultKit>} */
     const loanSeat = await E(zoe).offer(
-      E(vaultFactory).makeVaultInvitation(),
+      E(collateralManager).makeVaultInvitation(),
       harden({
         give: { Collateral: AmountMath.make(moolaBrand, 100n) },
         want: { RUN: AmountMath.make(runBrand, 500000n) },
@@ -44,10 +47,10 @@ const build = async (log, zoe, brands, payments, timer) => {
       }),
     );
 
-    const {
-      publicNotifiers: { asset: assetNotifier },
-      vault,
-    } = await E(loanSeat).getOfferResult();
+    const assetNotifier = makeNotifierFromSubscriber(
+      E(collateralManager).getSubscriber(),
+    );
+    const { vault } = await E(loanSeat).getOfferResult();
 
     const timeLog = async msg =>
       log(

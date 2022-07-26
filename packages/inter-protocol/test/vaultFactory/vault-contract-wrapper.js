@@ -204,7 +204,6 @@ export async function start(zcf, privateArgs) {
           return vaultKit.invitationMakers.AdjustBalances();
         },
       }),
-      notifier: vaultKit.publicNotifiers.vault,
     };
   }
 

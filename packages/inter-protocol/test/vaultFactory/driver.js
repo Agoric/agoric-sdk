@@ -397,12 +397,9 @@ export const makeManagerDriver = async (
         Collateral: aeth.mint.mintPayment(collateral),
       }),
     );
-    const {
-      vault,
-      publicNotifiers: { vault: notifier },
-      publicSubscribers,
-    } = await E(vaultSeat).getOfferResult();
+    const { vault, publicSubscribers } = await E(vaultSeat).getOfferResult();
     t.true(await E(vaultSeat).hasExited());
+    const notifier = makeNotifierFromSubscriber(publicSubscribers.vault);
     return {
       getVaultSubscriber: () => publicSubscribers.vault,
       vault: () => vault,

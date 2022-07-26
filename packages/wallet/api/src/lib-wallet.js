@@ -14,13 +14,14 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { makeScalarStoreCoordinator } from '@agoric/cache';
 import { makeLegacyMap, makeScalarMap, makeScalarWeakMap } from '@agoric/store';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeScalarBigMapStore, objectMap } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 
 import { makeMarshal, passStyleOf, Far, mapIterable } from '@endo/marshal';
 import { Nat } from '@agoric/nat';
 import {
+  makeNotifierFromSubscriber,
   makeNotifierKit,
   observeIteration,
   observeNotifier,
@@ -1623,6 +1624,13 @@ export function makeWallet({
     return invitationHandleToOfferResult.get(invitationHandle);
   }
 
+  /**
+   * @deprecated use getPublicSubscribers instead
+   *
+   * @param {string} rawId - The offer's raw id.
+   * @param {string} dappOrigin - The origin of the dapp the offer came from.
+   * @throws if the offer result doesn't have a uiNotifier.
+   */
   async function getUINotifier(rawId, dappOrigin = 'unknown') {
     const id = makeId(dappOrigin, rawId);
     const offerResult = await idToOfferResultPromiseKit.get(id).promise;
@@ -1635,32 +1643,46 @@ export function makeWallet({
   }
 
   /**
-   * Gets the public notifiers from an offer's result.
+   * Gets the public subscribers from an offer's result.
    *
    * @param {string} rawId - The offer's raw id.
    * @param {string} dappOrigin - The origin of the dapp the offer came from.
-   * @throws if the offer result doesn't have notifiers.
+   * @throws if the offer result doesn't have subscribers.
+   * @returns {Promise<Record<string, Subscriber<unknown>>>}
    */
-  async function getPublicNotifiers(rawId, dappOrigin = 'unknown') {
+  async function getPublicSubscribers(rawId, dappOrigin = 'unknown') {
     const id = makeId(dappOrigin, rawId);
 
     const offerResult = await idToOfferResultPromiseKit.get(id).promise;
     assert(
       passStyleOf(offerResult) === 'copyRecord',
-      `offerResult ${offerResult} must be a record to have publicNotifiers`,
+      `offerResult ${offerResult} must be a record to have publicSubscribers`,
     );
 
-    const { publicNotifiers } = offerResult;
+    const { publicSubscribers } = offerResult;
     assert(
-      publicNotifiers,
-      X`offerResult ${offerResult} does not have notifiers`,
+      publicSubscribers,
+      X`offerResult ${offerResult} does not have publicSubscribers`,
     );
     assert(
-      passStyleOf(publicNotifiers) === 'copyRecord',
-      X`publicNotifiers ${publicNotifiers} must be a record`,
+      passStyleOf(publicSubscribers) === 'copyRecord',
+      X`publicSubscribers ${publicSubscribers} must be a record`,
     );
 
-    return publicNotifiers;
+    return publicSubscribers;
+  }
+
+  /**
+   * @deprecated use getPublicSubscribers instead
+   *
+   * @param {string} rawId - The offer's raw id.
+   * @param {string} dappOrigin - The origin of the dapp the offer came from.
+   * @throws if the offer result doesn't have notifiers.
+   * @returns {Promise<Record<string, Notifier<unknown>>>}
+   */
+  async function getPublicNotifiers(rawId, dappOrigin = 'unknown') {
+    const publicSubscribers = await getPublicSubscribers(rawId, dappOrigin);
+    return objectMap(publicSubscribers, makeNotifierFromSubscriber);
   }
 
   // Create a map from the first "wallet" path element, to the next naming hub
@@ -1831,9 +1853,11 @@ export function makeWallet({
     getPaymentsNotifier() {
       return paymentsNotifier;
     },
-    /** @deprecated use `getPublicNotifiers` instead. */
+    /** @deprecated use `getPublicSubscribers` instead. */
     getUINotifier,
+    /** @deprecated use `getPublicSubscribers` instead. */
     getPublicNotifiers,
+    getPublicSubscribers,
     getZoe() {
       return zoe;
     },
