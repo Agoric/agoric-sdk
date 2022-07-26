@@ -83,7 +83,6 @@ export const makeZoeSeatAdminKit = (
 
   /** @type {UserSeat} */
   const userSeat = Far('userSeat', {
-    getCurrentAllocation: async () => currentAllocation,
     getProposal: async () => proposal,
     getPayouts: async () => payoutPromiseKit.promise,
     getPayout: async keyword => {
@@ -93,7 +92,9 @@ export const makeZoeSeatAdminKit = (
     getOfferResult: async () => offerResult,
     hasExited: async () => hasExited(zoeSeatAdmin),
     tryExit: async () => E(exitObj).exit(),
-    getNotifier: async () => notifier,
+
+    getCurrentAllocationJig: async () => currentAllocation,
+    getAllocationNotifierJig: async () => notifier,
   });
 
   return { userSeat, zoeSeatAdmin, notifier };

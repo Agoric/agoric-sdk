@@ -496,7 +496,7 @@ export const makeManagerDriver = async (
       );
       currentOfferResult = await E(currentSeat).getOfferResult();
       if (expected) {
-        const payouts = await E(currentSeat).getCurrentAllocation();
+        const payouts = await E(currentSeat).getCurrentAllocationJig();
         trace(t, 'AMM payouts', payouts);
         t.like(payouts, expected);
       }

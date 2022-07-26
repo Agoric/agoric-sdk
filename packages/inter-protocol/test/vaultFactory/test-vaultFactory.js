@@ -476,7 +476,7 @@ test('first', async t => {
   );
   trace(t, 'correct debt', debtAmount);
 
-  const { RUN: lentAmount } = await E(vaultSeat).getCurrentAllocation();
+  const { RUN: lentAmount } = await E(vaultSeat).getCurrentAllocationJig();
   const loanProceeds = await E(vaultSeat).getPayouts();
   const runLent = await loanProceeds.RUN;
   t.deepEqual(lentAmount, loanAmount, 'received 47 RUN');
@@ -611,7 +611,7 @@ test('price drop', async t => {
     debt: AmountMath.add(loanAmount, fee),
     interest: makeRatio(100n, run.brand),
   });
-  const { RUN: lentAmount } = await E(vaultSeat).getCurrentAllocation();
+  const { RUN: lentAmount } = await E(vaultSeat).getCurrentAllocationJig();
   t.truthy(AmountMath.isEqual(lentAmount, loanAmount), 'received 470 RUN');
   t.deepEqual(
     await E(vault).getCollateralAmount(),
@@ -751,7 +751,7 @@ test('price falls precipitously', async t => {
   );
   trace(t, 'correct debt', debtAmount);
 
-  const { RUN: lentAmount } = await E(userSeat).getCurrentAllocation();
+  const { RUN: lentAmount } = await E(userSeat).getCurrentAllocationJig();
   t.deepEqual(lentAmount, loanAmount, 'received 470 RUN');
   t.deepEqual(
     await E(vault).getCollateralAmount(),
@@ -928,7 +928,7 @@ test('interest on multiple vaults', async t => {
     'vault lent 4700 RUN + fees',
   );
 
-  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocation();
+  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocationJig();
   const loanProceeds = await E(aliceLoanSeat).getPayouts();
   t.deepEqual(lentAmount, aliceLoanAmount, 'received 4700 RUN');
 
@@ -967,7 +967,7 @@ test('interest on multiple vaults', async t => {
     'vault lent 3200 RUN + fees',
   );
 
-  const { RUN: bobLentAmount } = await E(bobLoanSeat).getCurrentAllocation();
+  const { RUN: bobLentAmount } = await E(bobLoanSeat).getCurrentAllocationJig();
   const bobLoanProceeds = await E(bobLoanSeat).getPayouts();
   t.deepEqual(bobLentAmount, bobLoanAmount, 'received 4700 RUN');
 
@@ -1115,7 +1115,7 @@ test('adjust balances', async t => {
   let collateralLevel = aeth.make(1000n);
 
   t.deepEqual(debtAmount, runDebtLevel, 'vault lent 5000 RUN + fees');
-  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocation();
+  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocationJig();
   const loanProceeds = await E(aliceLoanSeat).getPayouts();
   t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 RUN');
 
@@ -1164,7 +1164,7 @@ test('adjust balances', async t => {
 
   const { RUN: lentAmount2 } = await E(
     aliceAddCollateralSeat1,
-  ).getCurrentAllocation();
+  ).getCurrentAllocationJig();
   const loanProceeds2 = await E(aliceAddCollateralSeat1).getPayouts();
   t.deepEqual(lentAmount2, run.makeEmpty(), 'no payout');
 
@@ -1208,7 +1208,7 @@ test('adjust balances', async t => {
   await E(aliceAddCollateralSeat2).getOfferResult();
   const { RUN: lentAmount3 } = await E(
     aliceAddCollateralSeat2,
-  ).getCurrentAllocation();
+  ).getCurrentAllocationJig();
   const loanProceeds3 = await E(aliceAddCollateralSeat2).getPayouts();
   t.deepEqual(lentAmount3, run.make(50n));
 
@@ -1257,7 +1257,7 @@ test('adjust balances', async t => {
 
   const { RUN: lentAmount4 } = await E(
     aliceReduceCollateralSeat,
-  ).getCurrentAllocation();
+  ).getCurrentAllocationJig();
   const loanProceeds4 = await E(aliceReduceCollateralSeat).getPayouts();
   t.deepEqual(lentAmount4, run.make(50n));
 
@@ -1384,7 +1384,7 @@ test('adjust balances - withdraw RUN', async t => {
 
   const { RUN: lentAmount2 } = await E(
     aliceWithdrawRunSeat,
-  ).getCurrentAllocation();
+  ).getCurrentAllocationJig();
   const loanProceeds2 = await E(aliceWithdrawRunSeat).getPayouts();
   t.deepEqual(lentAmount2, additionalRUN, '100 RUN');
 
@@ -1541,7 +1541,7 @@ test('transfer vault', async t => {
   // make the invitation first so that we can arrange the interleaving
   // of adjust and tranfer
   const adjustInvitation = E(transferVault).makeAdjustBalancesInvitation();
-  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocation();
+  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocationJig();
   const aliceProceeds = await E(aliceLoanSeat).getPayouts();
   t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 RUN');
   const borrowedRun = await aliceProceeds.RUN;
@@ -1636,7 +1636,7 @@ test('overdeposit', async t => {
   const runDebt = AmountMath.add(aliceLoanAmount, fee);
 
   t.deepEqual(debtAmount, runDebt, 'vault lent 5000 RUN + fees');
-  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocation();
+  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocationJig();
   const aliceProceeds = await E(aliceLoanSeat).getPayouts();
   t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 RUN');
 
@@ -1697,7 +1697,9 @@ test('overdeposit', async t => {
   debtAmount = await E(aliceVault).getCurrentDebt();
   t.deepEqual(debtAmount, run.makeEmpty());
 
-  const { RUN: lentAmount5 } = await E(aliceOverpaySeat).getCurrentAllocation();
+  const { RUN: lentAmount5 } = await E(
+    aliceOverpaySeat,
+  ).getCurrentAllocationJig();
   const loanProceeds5 = await E(aliceOverpaySeat).getPayouts();
   t.deepEqual(lentAmount5, run.make(750n));
 
@@ -1713,7 +1715,7 @@ test('overdeposit', async t => {
   await E(collectFeesSeat).getOfferResult();
   assertAmountsEqual(
     t,
-    await E.get(E(collectFeesSeat).getCurrentAllocation()).RUN,
+    await E.get(E(collectFeesSeat).getCurrentAllocationJig()).RUN,
     run.make(300n),
   );
 });
@@ -1795,7 +1797,7 @@ test('mutable liquidity triggers and interest', async t => {
   t.deepEqual(aliceDebtAmount, aliceRunDebtLevel, 'vault lent 5000 RUN + fees');
   const { RUN: aliceLentAmount } = await E(
     aliceLoanSeat,
-  ).getCurrentAllocation();
+  ).getCurrentAllocationJig();
   const aliceLoanProceeds = await E(aliceLoanSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceLoanAmount, 'received 5000 RUN');
   trace(t, 'alice vault');
@@ -1837,7 +1839,7 @@ test('mutable liquidity triggers and interest', async t => {
   const bobRunDebtLevel = AmountMath.add(bobLoanAmount, bobFee);
 
   t.deepEqual(bobDebtAmount, bobRunDebtLevel, 'vault lent 5000 RUN + fees');
-  const { RUN: bobLentAmount } = await E(bobLoanSeat).getCurrentAllocation();
+  const { RUN: bobLentAmount } = await E(bobLoanSeat).getCurrentAllocationJig();
   const bobLoanProceeds = await E(bobLoanSeat).getPayouts();
   t.deepEqual(bobLentAmount, bobLoanAmount, 'received 5000 RUN');
   trace(t, 'bob vault');
@@ -1868,7 +1870,7 @@ test('mutable liquidity triggers and interest', async t => {
 
   const { Collateral: aliceWithdrawnAeth } = await E(
     aliceReduceCollateralSeat,
-  ).getCurrentAllocation();
+  ).getCurrentAllocationJig();
   const loanProceeds4 = await E(aliceReduceCollateralSeat).getPayouts();
   t.deepEqual(aliceWithdrawnAeth, aeth.make(300n));
 
@@ -2005,7 +2007,7 @@ test('collect fees from loan and AMM', async t => {
   t.deepEqual(debtAmount, AmountMath.add(loanAmount, fee), 'vault loaned RUN');
   trace(t, 'correct debt', debtAmount);
 
-  const { RUN: lentAmount } = await E(vaultSeat).getCurrentAllocation();
+  const { RUN: lentAmount } = await E(vaultSeat).getCurrentAllocationJig();
   const loanProceeds = await E(vaultSeat).getPayouts();
   await loanProceeds.RUN;
   t.deepEqual(lentAmount, loanAmount, 'received 47 RUN');
@@ -2043,8 +2045,9 @@ test('collect fees from loan and AMM', async t => {
     E(vaultFactory).makeCollectFeesInvitation(),
   );
   await E(collectFeesSeat).getOfferResult();
-  const feePayoutAmount = await E.get(E(collectFeesSeat).getCurrentAllocation())
-    .RUN;
+  const feePayoutAmount = await E.get(
+    E(collectFeesSeat).getCurrentAllocationJig(),
+  ).RUN;
   trace(t, 'Fee', feePoolBalance, feePayoutAmount);
   t.truthy(AmountMath.isGTE(feePayoutAmount, feePoolBalance.RUN));
 });
@@ -2089,7 +2092,7 @@ test('close loan', async t => {
   const runDebtLevel = AmountMath.add(aliceLoanAmount, fee);
 
   t.deepEqual(debtAmount, runDebtLevel, 'vault lent 5000 RUN + fees');
-  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocation();
+  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocationJig();
   const loanProceeds = await E(aliceLoanSeat).getPayouts();
   t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 RUN');
 
@@ -2146,7 +2149,7 @@ test('close loan', async t => {
   const closeOfferResult = await E(aliceCloseSeat).getOfferResult();
   t.is(closeOfferResult, 'your loan is closed, thank you for your business');
 
-  const closeAlloc = await E(aliceCloseSeat).getCurrentAllocation();
+  const closeAlloc = await E(aliceCloseSeat).getCurrentAllocationJig();
   t.deepEqual(closeAlloc, {
     RUN: run.make(750n),
     Collateral: aeth.make(1000n),
@@ -2327,7 +2330,7 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   t.deepEqual(aliceDebtAmount, aliceRunDebtLevel, 'vault lent 5000 RUN + fees');
   const { RUN: aliceLentAmount } = await E(
     aliceLoanSeat,
-  ).getCurrentAllocation();
+  ).getCurrentAllocationJig();
   const aliceLoanProceeds = await E(aliceLoanSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceLoanAmount, 'received 5000 RUN');
 
@@ -2366,7 +2369,7 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   const bobRunDebtLevel = AmountMath.add(bobLoanAmount, bobFee);
 
   t.deepEqual(bobDebtAmount, bobRunDebtLevel, 'vault lent 5000 RUN + fees');
-  const { RUN: bobLentAmount } = await E(bobLoanSeat).getCurrentAllocation();
+  const { RUN: bobLentAmount } = await E(bobLoanSeat).getCurrentAllocationJig();
   const bobLoanProceeds = await E(bobLoanSeat).getPayouts();
   t.deepEqual(bobLentAmount, bobLoanAmount, 'received 5000 RUN');
 
@@ -2395,7 +2398,7 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
 
   await E(aliceReduceCollateralSeat).getOfferResult();
 
-  await E(aliceReduceCollateralSeat).getCurrentAllocation();
+  await E(aliceReduceCollateralSeat).getCurrentAllocationJig();
   const loanProceeds4 = await E(aliceReduceCollateralSeat).getPayouts();
   // t.deepEqual(aliceWithdrawnAeth, aeth.make(210n));
 

@@ -176,15 +176,19 @@
 /**
  * @template {object} [OR=unknown]
  * @typedef {object} UserSeat
- * @property {() => Promise<Allocation>} getCurrentAllocation
- * TODO remove getCurrentAllocation query
  * @property {() => Promise<ProposalRecord>} getProposal
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
  * @property {(keyword: Keyword) => Promise<Payment>} getPayout
  * @property {() => Promise<OR>} getOfferResult
  * @property {() => void=} tryExit
  * @property {() => Promise<boolean>} hasExited
- * @property {() => Promise<Notifier<Allocation>>} getNotifier
+ *
+ * @property {() => Promise<Allocation>} getCurrentAllocationJig
+ * Labelled "Jig" because it *should* only be used for tests, though
+ * nothing prevents it from being used otherwise.
+ * @property {() => Promise<Notifier<Allocation>>} getAllocationNotifierJig
+ * Labelled "Jig" because it *should* only be used for tests, though
+ * nothing prevents it from being used otherwise.
  */
 
 /**
