@@ -1,4 +1,4 @@
-TITLE = RUN Protocol Preview: Interchain Asset Vaults
+TITLE = Inter Protocol Preview: Interchain Asset Vaults
 
 EVAL_DEPOSIT = 1000000ubld
 GAS_ADJUSTMENT = 1.2

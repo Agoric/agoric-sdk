@@ -1,4 +1,4 @@
-# RUN protocol
+# Inter protocol
 
 ## Overview
 

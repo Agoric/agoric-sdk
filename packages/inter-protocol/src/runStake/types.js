@@ -1,4 +1,10 @@
 /**
+ * For example, an agoric1... Cosmos address
+ *
+ * @typedef {string} Address
+ */
+
+/**
  * @typedef AttestationTool
  * @property {(amountToLien: Amount<'nat'>) => Promise<Payment>} makeAttestation
  * @property {() => Promise<AccountState>} getAccountState
