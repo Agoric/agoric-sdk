@@ -73,7 +73,7 @@ be able to use `AddLiquidityAtRate` to avoid paying fees on what is effectively 
 
 ## Economics
 
-The RUN Protocol mechanism is envisioned as a major provider of liquidity. It may leave
+The Inter Protocol mechanism is envisioned as a major provider of liquidity. It may leave
 its liquidity in the pool over the long term, and never or seldom collect earnings. Does
 this affect prices or trading volumes adverselyj? (More liquidity is expected to provide
 better prices for traders, so this would be a surprise.)

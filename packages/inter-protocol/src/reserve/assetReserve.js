@@ -53,7 +53,7 @@ const nonalphanumeric = /[^A-Za-z0-9]/g;
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 /**
- * Asset Reserve holds onto assets for the RUN protocol, and can
+ * Asset Reserve holds onto assets for the Inter Protocol, and can
  * dispense it for various purposes under governance control. It currently
  * supports governance decisions to add liquidity to an AMM pool.
  *
