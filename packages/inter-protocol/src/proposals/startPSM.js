@@ -239,7 +239,7 @@ export const PSM_MANIFEST = harden({
       produce: { psm: 'psm', psmGovernor: 'psm' },
     },
     brand: {
-      consume: { AUSD: 'bank', RUN: 'zoe' },
+      consume: { AUSD: 'bank', IST: 'zoe' },
     },
     issuer: {
       consume: { AUSD: 'bank' },
