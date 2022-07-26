@@ -178,10 +178,9 @@ export const makeHttpBundlePublisher = ({ jsonHttpCall, getAccessToken }) => {
  * @param {string} address - a host or URL
  */
 const urlForRpcAddress = address => {
-  try {
-    return new URL(address).href;
-  } catch {
-    // lift host strings to HTTP URLs.
+  if (address.includes('://')) {
+    return address;
+  } else {
     return `http://${address}`;
   }
 };
