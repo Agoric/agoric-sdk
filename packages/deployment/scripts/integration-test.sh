@@ -54,7 +54,7 @@ then
     "$AG_SETUP_COSMOS_HOME/faucet-helper.sh" add-egress loadgen "$SOLO_ADDR"
   SDK_BUILD=0 SDK_SRC=/usr/src/agoric-sdk OUTPUT_DIR="$RESULTSDIR" ./start.sh \
     --stage.save-storage --trace kvstore swingstore xsnap \
-    --stages=3 --stage.duration=4 \
+    --stages=3 --stage.duration=10 --stage.loadgen.cycles=4 \
     --stage.loadgen.vault.interval=12 --stage.loadgen.vault.limit=2 \
     --stage.loadgen.amm.interval=12 --stage.loadgen.amm.wait=6 --stage.loadgen.amm.limit=2 \
     --profile=testnet "--testnet-origin=file://$RESULTSDIR" \
