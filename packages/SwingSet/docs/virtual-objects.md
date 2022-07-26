@@ -65,6 +65,8 @@ setup is needed for the object to do its job.
 For example:
 
 ```javascript
+  const counterRegistry = makeScalarBigMapStore('counters');
+
   const initCounter = (name) => ({ counter: 0, name });
 
   const counterBehavior = {
@@ -74,24 +76,21 @@ For example:
     dec: ({state}) => {
       state.counter -= 1;
     },
-    reset: ({state}) => {
-      state.counter = 0;
-    },
-    rename: ({state}, newName) => {
-      state.name = newName;
+    setCount: ({state}, count) => {
+      state.counter = count;
     },
     getCount: ({state}) => state.counter,
     getName: ({state}) => state.name,
   };
 
-  const finishCounter = (state, counter) => {
-    addToCounterRegistry(counter, state.name);
+  const finishCounter = ({ state, self }) => {
+    counterRegistry.init(state.name, self);
   };
 
   const makeCounter = defineKind('counter', initCounter, counterBehavior, { finish: finishCounter });
 ```
 
-This defines a simple virtual counter object with two properties in its state: a count and a name.  Note that none of the methods bother to declare the `self` context parameter because none of them need to refer to it.  You'd use it like this:
+This defines a simple virtual counter object with two properties in its state: a count and a name.  Note that none of the methods bother to read `self` from the context parameter because none of them need to refer to it.  You'd use it like this:
 
 ```javascript
   const fooCounter = makeCounter('foo');
@@ -99,13 +98,13 @@ This defines a simple virtual counter object with two properties in its state: a
 
   fooCounter.inc();
   fooCounter.inc();
+  counterRegistry.get('bar').setCount(1);
   barCounter.inc();
-  barCounter.rename('new bar');
   console.log(`${fooCounter.getName()} count is ${fooCounter.getCount()`); // "foo count is 2"
-  console.log(`${barCounter.getName()} count is ${barCounter.getCount()`); // "new bar count is 1"
+  console.log(`${barCounter.getName()} count is ${barCounter.getCount()`); // "bar count is 2"
 ```
 
-Suppose you instead wanted to provide a version with the increment and decrement capabilities made available as independent facets.  A simplified version of the above (without the name property, counter registry, and `reset` method) might look like:
+Suppose you instead wanted to provide a version with the increment and decrement capabilities made available as independent facets.  A simplified version of the above (without the name property, counter registry, and `setCount` method) might look like:
 
 ```javascript
   const initFacetedCounter = () => ({ counter: 0 });
@@ -151,43 +150,17 @@ In either case you'd use it like:
   console.log(`count is ${incr.getCount()`); // "count is 1"
 ```
 
-Note that the `init` and `finish` functions, as well as the behavior, are defined explicitly in the above examples for clarity of exposition, but in practice you'd usually declare them inline in the parameters of the `defineKind` call:
-
-```javascript
-  const getCount = ({state}) => state.counter;
-  const makeFacetedCounter = defineKindMulti(
-    'counter',
-    () => ({ counter: 0 }),
-    (state) => {
-      return {
-        incr: {
-          step: ({state}) => {
-            state.counter += 1;
-          },
-          getCount,
-        },
-        decr: {
-          step: ({state}) => {
-            state.counter -= 1;
-          },
-          getCount,
-        },
-      };
-    },
-  );
-```
-
 Additional important details:
 
-- The set of state properties of an instance is fully determined by the `init` function.  That is, the set of properties present in instance's `state` is completely determined by the named enumerable properties of the object that `init` returns.  State properties cannot thereafter be added or removed from the instance.  Currently there is no requirement that all instances of a given kind have the same set of properties, but code authors should not rely on this as such enforcement may be added in the future.
+- The set of state properties is completely determined by the named enumerable properties of the object that `init` returns.  State properties cannot thereafter be added or removed from the instance.  Currently there is no requirement that all instances of a given kind have the same set of properties, but code authors should not rely on this as such enforcement may be added in the future.
 
-- The values a state property may take are limited to things that are serializable and which may be hardened (and, in fact, _are_ hardened and serialized the moment they are assigned).  That is, you can replace what value a state property _has_, but you cannot modify a state property's value in situ.  In other words, you can do things like:
+- The values a state property may take are limited to things that are serializable and which may be hardened (and, in fact, _are_ hardened and serialized the moment they are assigned).  You can replace the value of a state property, but you cannot mutate it.  In other words, you can do things like:
 
-  `state.zot = [1, 2, 3];`
+  `state.zot = [...state.zot, 'last'];`
 
   but you can't do things like:
 
-  `state.zot.push(4);`
+  `state.zot.push('last');`
 
 - A VDO can be passed as a parameter in messages to other vats.  It will be passed by presence, just like any other non-data object you might send in a message parameter.
 
