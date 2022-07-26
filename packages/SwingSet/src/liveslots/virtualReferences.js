@@ -259,8 +259,11 @@ export function makeVirtualReferenceManager(
     if (relaxDurabilityRules) {
       // we'll pretend an object is durable if running with relaxed rules
       return true;
+    } else if (type === 'device') {
+      // devices are durable
+      return true;
     } else if (type !== 'object') {
-      // promises and devices are not durable
+      // promises are not durable
       return false;
     } else if (!allocatedByVat) {
       // imports are durable
