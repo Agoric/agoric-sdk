@@ -49,7 +49,6 @@ const addLiquidPool = async (
 };
 
 /**
- *
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<FeeMintAccess>} feeMintAccessP
  * @param {*} faucetInstallation
@@ -174,6 +173,7 @@ test('governance add Liquidity to the AMM', async t => {
   );
 
   const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
+  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
 
@@ -346,6 +346,7 @@ test('reserve track shortfall', async t => {
   let runningShortfall = 1000n;
 
   const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
+  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
   await m.assertChange({
@@ -395,9 +396,10 @@ test('reserve burn IST', async t => {
 
   const oneKRun = AmountMath.make(runBrand, 1000n);
   await E(reporterFacet).increaseLiquidationShortfall(oneKRun);
-  let runningShortfall = 1000n;
+  const runningShortfall = 1000n;
 
   const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
+  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
   await m.assertChange({
@@ -453,12 +455,7 @@ test('reserve burn IST', async t => {
   await timer.tick();
   await timer.tick();
 
-  runningShortfall = 0n;
-
   await m.assertChange({
-    shortfallBalance: {
-      value: runningShortfall,
-    },
     allocations: { RUN: AmountMath.makeEmpty(runBrand) },
     totalFeeBurned: { value: 1000n },
   });
@@ -472,12 +469,12 @@ test('storage keys', async t => {
   const { reserve } = await setupReserveServices(t, electorateTerms, timer);
 
   t.is(
-    // @ts-expect-error problem with E() and GovernedPublicFacet<>
     await subscriptionKey(E(reserve.reservePublicFacet).getSubscription()),
     'mockChainStorageRoot.reserve.governance',
   );
 
   t.is(
+    // @ts-expect-error Type confusion
     await subscriptionKey(E(reserve.reserveCreatorFacet).getMetrics()),
     'mockChainStorageRoot.reserve.metrics',
   );

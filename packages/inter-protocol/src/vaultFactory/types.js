@@ -6,7 +6,7 @@
  * @typedef {import('./vaultKit').VaultKit} VaultKit
  * @typedef {import('./vaultManager').VaultManager} VaultManager
  * @typedef {import('./vaultManager').CollateralManager} CollateralManager
- * @typedef {import('../reserve/assetReserve.js').AssetReserveCreatorFacet} AssetReserveCreatorFacet
+ * @typedef {import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet} AssetReserveCreatorFacet
  * @typedef {import('../reserve/assetReserve.js').AssetReservePublicFacet} AssetReservePublicFacet
  */
 

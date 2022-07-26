@@ -106,7 +106,7 @@ export const installGovernance = (zoe, produce) => {
  *
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<CommitteeElectorateCreatorFacet>} electorateCreator
- * @param {ERef<GovernedContractFacetAccess<unknown>>} runStakeGovernorCreatorFacet
+ * @param {ERef<GovernedContractFacetAccess<{},{}>>} runStakeGovernorCreatorFacet
  * @param {Installation} counter
  */
 export const makeVoterTool = async (

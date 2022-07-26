@@ -177,7 +177,6 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   );
 
   /** @type { GovernedPublicFacet<XYKAMMPublicFacet> } */
-  // @ts-expect-error cast from unknown
   const ammPublicFacet = await E(governorCreatorFacet).getPublicFacet();
 
   const liquidityIssuer = await E(ammPublicFacet).addIssuer(

@@ -191,7 +191,6 @@ const setupAmmAndElectorateAndReserve = async (
   const governedInstance = E(governorPublicFacet).getGovernedContract();
 
   /** @type { GovernedPublicFacet<XYKAMMPublicFacet> } */
-  // @ts-expect-error cast from unknown
   const ammPublicFacet = await E(governorCreatorFacet).getPublicFacet();
 
   const liquidityIssuer = await E(ammPublicFacet).addIssuer(
@@ -343,6 +342,7 @@ const setupServices = async (
 
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
   /** @type {Promise<VaultFactory & LimitedCreatorFacet<VaultFactory>>} */
+  // @ts-expect-error TypeScript is confused
   const vaultFactoryCreatorFacetP = E(governorCreatorFacet).getCreatorFacet();
   const reserveCreatorFacet = consume.reserveCreatorFacet;
   const reserveFacets = { reserveCreatorFacet };
@@ -636,6 +636,7 @@ test('price drop', async t => {
   t.truthy(await E(vaultSeat).hasExited());
 
   const metricsSub = await E(reserveCreatorFacet).getMetrics();
+  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(run.makeEmpty()));
 
@@ -760,6 +761,7 @@ test('price falls precipitously', async t => {
   };
 
   const metricsSub = await E(reserveCreatorFacet).getMetrics();
+  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(run.makeEmpty()));
   await manualTimer.tick();
@@ -1733,6 +1735,7 @@ test('mutable liquidity triggers and interest', async t => {
   } = services;
 
   const metricsSub = await E(reserveCreatorFacet).getMetrics();
+  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(run.makeEmpty()));
   let shortfallBalance = 0n;

@@ -3,6 +3,7 @@
 import { Far } from '@endo/marshal';
 import { makeStoredPublisherKit } from '@agoric/notifier';
 import { keyEQ } from '@agoric/store';
+import { objectMap, dropContext } from '@agoric/vat-data';
 import { assertElectorateMatches } from './contractGovernance/paramManager.js';
 import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
 
@@ -42,7 +43,15 @@ const facetHelpers = (zcf, paramManager) => {
 
   const { electionManager } = terms;
 
+  const commonPublicMethods = {
+    getSubscription: () => paramManager.getSubscription(),
+    getContractGovernor: () => electionManager,
+    getGovernedParams: () => paramManager.getParams(),
+  };
+
   /**
+   * Add required methods to publicFacet
+   *
    * @template {{}} PF public facet
    * @param {PF} originalPublicFacet
    * @returns {GovernedPublicFacet<PF>}
@@ -50,17 +59,29 @@ const facetHelpers = (zcf, paramManager) => {
   const augmentPublicFacet = originalPublicFacet => {
     return Far('publicFacet', {
       ...originalPublicFacet,
-      getSubscription: () => paramManager.getSubscription(),
-      getContractGovernor: () => electionManager,
-      getGovernedParams: () => paramManager.getParams(),
+      ...commonPublicMethods,
       ...typedAccessors,
+    });
+  };
+
+  /**
+   * Add required methods to publicFacet, for a virtual/durable contract
+   *
+   * @param {OPF} originalPublicFacet
+   * @template {{}} OPF
+   */
+  const augmentVirtualPublicFacet = originalPublicFacet => {
+    return Far('publicFacet', {
+      ...originalPublicFacet,
+      ...commonPublicMethods,
+      ...objectMap(typedAccessors, dropContext),
     });
   };
 
   /**
    * @template {{}} CF creator facet
    * @param {CF} originalCreatorFacet
-   * @returns {ERef<LimitedCreatorFacet<CF>>}
+   * @returns {LimitedCreatorFacet<CF>}
    */
   const makeLimitedCreatorFacet = originalCreatorFacet => {
     return Far('governedContract creator facet', {
@@ -70,21 +91,20 @@ const facetHelpers = (zcf, paramManager) => {
   };
 
   /**
+   * Add required methods to a creatorFacet
+   *
    * @template {{}} CF creator facet
-   * @param {ERef<CF>} originalCreatorFacet
+   * @param {CF} originalCreatorFacet
    * @param {Record<string, (...args: any[]) => any>} governedApis
-   * @returns {ERef<GovernedCreatorFacet<CF>>}
+   * @returns {GovernedCreatorFacet<CF>}
    */
   const makeGovernorFacet = (originalCreatorFacet, governedApis = {}) => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
-
-    // exclusively for contractGovernor, which only reveals limitedCreatorFacet
-    return Far('governorFacet', {
-      // @ts-expect-error special case
-      getParamMgrRetriever: () => {
-        return Far('paramRetriever', { get: () => paramManager });
-      },
-      getInvitation: name => paramManager.getInternalParamValue(name),
+    const governorFacet = Far('governorFacet', {
+      getParamMgrRetriever: () =>
+        Far('paramRetriever', { get: () => paramManager }),
+      getInvitation: (_context, name) =>
+        paramManager.getInternalParamValue(name),
       getLimitedCreatorFacet: () => limitedCreatorFacet,
       // The contract provides a facet with the APIs that can be invoked by
       // governance
@@ -94,11 +114,42 @@ const facetHelpers = (zcf, paramManager) => {
       // without also separately providing their names.
       getGovernedApiNames: () => Object.keys(governedApis),
     });
+
+    // exclusively for contractGovernor, which only reveals limitedCreatorFacet
+    return governorFacet;
+  };
+
+  /**
+   * Add required methods to a creatorFacet for a virtual/durable contract.
+   *
+   * @param {{ [methodName: string]: (context?: unknown, ...rest: unknown[]) => unknown}} originalCreatorFacet
+   */
+  const makeVirtualGovernorFacet = originalCreatorFacet => {
+    const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
+
+    const governorFacet = Far('governorFacet', {
+      getParamMgrRetriever: () =>
+        Far('paramRetriever', { get: () => paramManager }),
+      getInvitation: (_context, name) =>
+        paramManager.getInternalParamValue(name),
+      getLimitedCreatorFacet: ({ facets }) => facets.limitedCreatorFacet,
+      // The contract provides a facet with the APIs that can be invoked by
+      // governance
+      getGovernedApis: ({ facets }) => facets.governedApis,
+      // The facet returned by getGovernedApis is Far, so we can't see what
+      // methods it has. There's no clean way to have contracts specify the APIs
+      // without also separately providing their names.
+      getGovernedApiNames: ({ facets }) => Object.keys(facets.governedApis),
+    });
+
+    return { governorFacet, limitedCreatorFacet };
   };
 
   return harden({
     augmentPublicFacet,
+    augmentVirtualPublicFacet,
     makeGovernorFacet,
+    makeVirtualGovernorFacet,
     params: paramManager.readonly(),
   });
 };

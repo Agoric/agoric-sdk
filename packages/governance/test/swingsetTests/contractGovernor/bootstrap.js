@@ -14,7 +14,7 @@ const { quote: q } = assert;
  * @param {ERef<ZoeService>} zoe
  * @param {(string:string) => undefined} log
  * @param {Record<string,Installation>} installations
- * @param {ERef<GovernedContractFacetAccess<unknown>>} contractFacetAccess
+ * @param {ERef<GovernedContractFacetAccess<{},{}>>} contractFacetAccess
  * @param {bigint} deadline
  */
 const voteToChangeParameter = async (
