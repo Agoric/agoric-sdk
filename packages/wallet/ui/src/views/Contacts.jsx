@@ -13,7 +13,7 @@ import { withApplicationContext } from '../contexts/Application';
 import './Contacts.scss';
 
 const importingContactsReducer = (state, action) => {
-  return { count: state.count + action.difference };
+  return harden({ count: state.count + action.difference });
 };
 
 // Exported for testing only.

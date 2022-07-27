@@ -61,7 +61,7 @@ const genericAskApiKey =
     ];
     const ret = await inquirer.prompt(questions);
     if (!ret.API_KEYS) {
-      return { CANCEL: true };
+      return harden({ CANCEL: true });
     }
     return ret;
   };
@@ -93,7 +93,7 @@ const genericAskDatacenter =
 
     const { DATACENTER } = await inquirer.prompt(questions);
     if (!DATACENTER) {
-      return { MORE: false };
+      return harden({ MORE: false });
     }
 
     const { NUM_NODES } = await inquirer.prompt([
@@ -105,7 +105,7 @@ const genericAskDatacenter =
         validate: num => Math.floor(num) === num && num >= 0,
       },
     ]);
-    return { DATACENTER, NUM_NODES, MORE: true };
+    return harden({ DATACENTER, NUM_NODES, MORE: true });
   };
 
 const DOCKER_DATACENTER = 'default';
@@ -263,7 +263,7 @@ const askPlacement =
     ];
     const second = first.PLACEMENT ? await inquirer.prompt(roleQuestions) : {};
 
-    return { ...first, ...second };
+    return harden({ ...first, ...second });
   };
 
 const askProvider =

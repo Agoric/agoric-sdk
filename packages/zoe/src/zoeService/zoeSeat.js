@@ -97,5 +97,5 @@ export const makeZoeSeatAdminKit = (
     getAllocationNotifierJig: async () => notifier,
   });
 
-  return { userSeat, zoeSeatAdmin, notifier };
+  return harden({ userSeat, zoeSeatAdmin, notifier });
 };

@@ -150,7 +150,7 @@ export function parseVatSlot(vref) {
     facet = Nat(BigInt(facetStr));
   }
 
-  return { type, allocatedByVat, virtual, id, subid, baseRef, facet };
+  return harden({ type, allocatedByVat, virtual, id, subid, baseRef, facet });
 }
 
 /**

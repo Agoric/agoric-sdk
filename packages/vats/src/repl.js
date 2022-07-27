@@ -200,7 +200,7 @@ export function getReplHandler(replObjects, send) {
 
   const handler = {
     getHighestHistory() {
-      return { highestHistory };
+      return harden({ highestHistory });
     },
 
     rebroadcastHistory() {
@@ -262,7 +262,7 @@ export function getReplHandler(replObjects, send) {
         ).then(_ => updateHistorySlot(histnum));
       }
       updateHistorySlot(histnum);
-      return {};
+      return harden({});
     },
   };
 

@@ -166,7 +166,7 @@ const start = zcf => {
     const longInvitation = makeOptionInvitation(Position.LONG, longRequired);
     const shortInvitation = makeOptionInvitation(Position.SHORT, shortRequired);
     payoffHandler.schedulePayoffs();
-    return { longInvitation, shortInvitation };
+    return harden({ longInvitation, shortInvitation });
   }
 
   const creatorFacet = Far('creatorFacet', { makeInvitationPair });

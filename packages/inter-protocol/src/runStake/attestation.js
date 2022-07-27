@@ -78,7 +78,7 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     /** @type {[Address, bigint][]} */
     const [[address, valueReturned]] = attestationAmount.value.payload;
     const lienedAmount = AmountMath.make(stakeBrand, valueReturned);
-    return { address, lienedAmount };
+    return harden({ address, lienedAmount });
   };
 
   /**

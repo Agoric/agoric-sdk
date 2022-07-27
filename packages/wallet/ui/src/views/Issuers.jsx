@@ -17,7 +17,7 @@ import { withApplicationContext } from '../contexts/Application';
 import './Issuers.scss';
 
 const importingIssuersReducer = (state, action) => {
-  return { count: state.count + action.difference };
+  return harden({ count: state.count + action.difference });
 };
 
 // Exported for testing only.

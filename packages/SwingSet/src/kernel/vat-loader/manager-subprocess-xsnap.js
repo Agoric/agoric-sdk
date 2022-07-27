@@ -140,7 +140,7 @@ export function makeXsSubprocessFactory({
       const reply = JSON.parse(result.reply);
       assert(Array.isArray(reply));
       const [tag, ...rest] = reply;
-      return { ...result, reply: [tag, ...rest] };
+      return harden({ ...result, reply: [tag, ...rest] });
     }
 
     if (lastSnapshot) {

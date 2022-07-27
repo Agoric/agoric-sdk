@@ -84,7 +84,7 @@ export const makeBackendFromWalletBridge = walletBridge => {
     backendUpdater.fail(e);
   };
 
-  return { backendIt, cancel };
+  return harden({ backendIt, cancel });
 };
 
 /**

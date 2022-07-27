@@ -49,7 +49,7 @@ function deepDifference(x, y) {
           return null;
         }
       } else {
-        return { actual: { extraProperty: prop } };
+        return harden({ actual: { extraProperty: prop } });
       }
     }
 
@@ -168,7 +168,7 @@ function checkExpectation(exc, expectation) {
     if (exc instanceof expectation.instanceOf) {
       return null;
     } else {
-      return { expected: expectation.instanceOf, actual: exc };
+      return harden({ expected: expectation.instanceOf, actual: exc });
     }
   }
   if ('message' in expectation) {
@@ -180,7 +180,7 @@ function checkExpectation(exc, expectation) {
     if (ok) {
       return null;
     } else {
-      return { actual: exc.message, expected: message };
+      return harden({ actual: exc.message, expected: message });
     }
   }
   throw Error(`not implemented: ${JSON.stringify(expectation)}`);

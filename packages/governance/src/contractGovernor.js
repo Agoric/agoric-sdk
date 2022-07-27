@@ -258,7 +258,7 @@ const start = async zcf => {
     validateTimer,
   });
 
-  return { creatorFacet, publicFacet };
+  return harden({ creatorFacet, publicFacet });
 };
 
 harden(start);

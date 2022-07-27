@@ -119,7 +119,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
             }
 
             // Generate the quote.
-            return { amountIn, amountOut };
+            return harden({ amountIn, amountOut });
           });
 
           if (!quoteP) {
@@ -193,7 +193,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
             }
 
             // Generate the quote.
-            return { amountIn, amountOut };
+            return harden({ amountIn, amountOut });
           });
 
           if (!quoteP) {
@@ -306,7 +306,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
           AmountMath.isGTE(actualAmountOut, amountOut),
           X`Calculation of ${actualAmountOut} didn't cover expected ${amountOut}`,
         );
-        return { amountIn, amountOut };
+        return harden({ amountIn, amountOut });
       });
       assert(quote);
       return quote;
@@ -353,5 +353,5 @@ export function makeOnewayPriceAuthorityKit(opts) {
     mutableQuoteWhenGTE: makeMutableQuote(isGTE),
   });
 
-  return { priceAuthority, adminFacet: { fireTriggers } };
+  return harden({ priceAuthority, adminFacet: { fireTriggers } });
 }

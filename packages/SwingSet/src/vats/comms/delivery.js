@@ -251,10 +251,10 @@ export function makeDeliveryKit(
       const remoteID = state.getObject(target);
       if (remoteID === 'kernel') {
         // target lives in some other vat on this machine, send into the kernel
-        return { send: target, kernel: true };
+        return harden({ send: target, kernel: true });
       } else {
         // the target lives on a remote machine
-        return { send: target, kernel: false, remoteID };
+        return harden({ send: target, kernel: false, remoteID });
       }
     }
 
@@ -266,24 +266,24 @@ export function makeDeliveryKit(
     if (status !== 'unresolved') {
       const data = state.getPromiseData(target);
       if (status === 'rejected') {
-        return { reject: data };
+        return harden({ reject: data });
       }
       const targetSlot = extractSingleSlot(data);
       if (targetSlot && parseLocalSlot(targetSlot).type === 'object') {
         return resolveTarget(targetSlot);
       } else {
-        return { reject: makeUndeliverableError(methargs) };
+        return harden({ reject: makeUndeliverableError(methargs) });
       }
     }
 
     // unresolved
     const remoteID = state.deciderIsRemote(target);
     if (remoteID) {
-      return { send: target, kernel: false, remoteID };
+      return harden({ send: target, kernel: false, remoteID });
     }
 
     state.insistDeciderIsKernel(target);
-    return { send: target, kernel: true };
+    return harden({ send: target, kernel: true });
   }
 
   function resolutionCollector() {

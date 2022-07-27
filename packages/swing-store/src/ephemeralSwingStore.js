@@ -278,7 +278,7 @@ export function getAllState(swingStore) {
       streamStuff.set(streamName, Array.from(stream));
     }
   }
-  return { kvStuff, streamStuff };
+  return harden({ kvStuff, streamStuff });
 }
 
 /**

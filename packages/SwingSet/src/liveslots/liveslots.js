@@ -1718,5 +1718,5 @@ export function makeLiveSlots(
 // for tests
 export function makeMarshaller(syscall, gcTools, vatID = 'forVatID') {
   const { m } = build(syscall, vatID, {}, {}, gcTools, console);
-  return { m };
+  return harden({ m });
 }

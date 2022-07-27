@@ -147,7 +147,7 @@ function makeStorageInMemory() {
     delete: del,
   };
 
-  return { storage, state };
+  return harden({ storage, state });
 }
 
 /**
@@ -221,7 +221,7 @@ function makeJSONStore(dirPath, forceReset = false) {
     // Nothing to do here.
   }
 
-  return { storage, commit, close };
+  return harden({ storage, commit, close });
 }
 
 /**

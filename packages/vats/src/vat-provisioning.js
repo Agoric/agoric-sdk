@@ -58,7 +58,7 @@ export function buildRootObject(_vatPowers) {
         });
       });
 
-    return { ingressIndex: INDEX };
+    return harden({ ingressIndex: INDEX });
   }
 
   return Far('root', { register, pleaseProvision });

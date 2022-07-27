@@ -53,7 +53,7 @@ const testRequire = function require(specifier) {
         },
       };
     case '@endo/ses-ava':
-      return { wrapTest: test => test };
+      return harden({ wrapTest: test => test });
     case '@endo/init':
     case '@endo/init/debug.js':
     case '@endo/init/pre.js':

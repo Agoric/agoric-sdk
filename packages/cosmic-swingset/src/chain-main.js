@@ -110,7 +110,7 @@ const makeChainStorage = (call, prefix = '', options = {}) => {
     onCommit: resetCache,
     onAbort: resetCache,
   });
-  return { ...buffered, commit, abort };
+  return harden({ ...buffered, commit, abort });
 };
 
 /**
@@ -150,32 +150,32 @@ const makeChainQueue = (call, prefix = '') => {
         const tail = storage.get('tail') || 0;
         return {
           next: () => {
-            if (done) return { done };
+            if (done) return harden({ done });
             if (head < tail) {
               // Still within the queue.
               const headKey = `${head}`;
               const value = storage.get(headKey);
               storage.delete(headKey);
               head += 1;
-              return { value, done };
+              return harden({ value, done });
             }
             // Reached the end, so clean up our indices.
             storage.delete('head');
             storage.delete('tail');
             storage.commit();
             done = true;
-            return { done };
+            return harden({ done });
           },
           return: () => {
-            if (done) return { done };
+            if (done) return harden({ done });
             // We're done consuming, so save our state.
             storage.set('head', head);
             storage.commit();
             done = true;
-            return { done };
+            return harden({ done });
           },
           throw: err => {
-            if (done) return { done };
+            if (done) return harden({ done });
             // Don't change our state.
             storage.abort();
             done = true;

@@ -20,5 +20,5 @@ export function makeStatLogger(tag, headers, options) {
     out.end();
   }
 
-  return { log, close };
+  return harden({ log, close });
 }

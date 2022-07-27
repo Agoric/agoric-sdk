@@ -201,7 +201,7 @@ export const makeStartInstance = (
           );
           zoeSeatAdmins.add(zoeSeatAdmin);
           seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
-          return { userSeat, notifier };
+          return harden({ userSeat, notifier });
         },
         isBlocked,
       });

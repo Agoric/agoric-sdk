@@ -130,7 +130,7 @@ export function sqlStreamStore(dbDir, io) {
         ON CONFLICT(streamName, position) DO UPDATE SET item = ?
       `,
     ).run(streamName, item, position.itemCount, item);
-    return { itemCount: position.itemCount + 1 };
+    return harden({ itemCount: position.itemCount + 1 });
   };
 
   /** @param {string} streamName */

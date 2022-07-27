@@ -153,7 +153,7 @@ export function makeSlogCallbacks({ metricMeter, attributes = {} }) {
     if (VAT_ID_IS_TOO_HIGH_CARDINALITY) {
       return undefined;
     }
-    return { vatID };
+    return harden({ vatID });
   };
 
   /**

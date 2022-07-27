@@ -523,7 +523,7 @@ export function makeVatKeeper(
     const { snapshotID, startPos } = JSON.parse(notation);
     assert.typeof(snapshotID, 'string');
     assert(startPos);
-    return { snapshotID, startPos };
+    return harden({ snapshotID, startPos });
   }
 
   function transcriptSnapshotStats() {
@@ -532,7 +532,7 @@ export function makeVatKeeper(
     const snapshottedEntries = lastSnapshot
       ? lastSnapshot.startPos.itemCount
       : 0;
-    return { totalEntries, snapshottedEntries };
+    return harden({ totalEntries, snapshottedEntries });
   }
 
   /**

@@ -9,7 +9,7 @@ const CONNECTION_TIMEOUT_MS = 5000;
 export const makeAgoricIframeMessenger = (registerThis = _that => {}) =>
   class AgoricIframeMessenger extends LitElement {
     static get properties() {
-      return { src: { type: String } };
+      return harden({ src: { type: String } });
     }
 
     static get styles() {

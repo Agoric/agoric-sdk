@@ -131,5 +131,5 @@ export const start = (zcf, { bankManager }) => {
     makeInterchainPoolInvitation: () =>
       zcf.makeInvitation(step1Handler, 'interchain pool step 1'),
   });
-  return { publicFacet };
+  return harden({ publicFacet });
 };

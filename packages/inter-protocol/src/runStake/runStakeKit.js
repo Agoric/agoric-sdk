@@ -27,7 +27,7 @@ const calculateFee = (feeCoeff, currentDebt, giveAmount, wantAmount) => {
   const fee = ceilMultiplyBy(wantAmount, feeCoeff);
   const toMint = AmountMath.add(wantAmount, fee);
   const newDebt = addSubtract(currentDebt, toMint, giveAmount);
-  return { newDebt, toMint, fee };
+  return harden({ newDebt, toMint, fee });
 };
 
 /**

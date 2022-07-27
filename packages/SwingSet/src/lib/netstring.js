@@ -72,7 +72,7 @@ export function decode(data, optMaxChunkSize) {
   }
 
   const leftover = data.subarray(start);
-  return { leftover, payloads };
+  return harden({ leftover, payloads });
 }
 
 // input is a byte pipe, output is a sequence of Buffers

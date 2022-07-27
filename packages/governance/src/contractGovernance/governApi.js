@@ -24,7 +24,7 @@ const { details: X, quote: q } = assert;
 const makeApiInvocationPositions = (apiMethodName, methodArgs) => {
   const positive = harden({ apiMethodName, methodArgs });
   const negative = harden({ dontInvoke: apiMethodName });
-  return { positive, negative };
+  return harden({ positive, negative });
 };
 
 /**

@@ -43,7 +43,7 @@ export function makeLocalVatManagerFactory(tools) {
       return mk.getManager(shutdown);
     }
     const syscall = makeSupervisorSyscall(mk.syscallFromWorker, true);
-    return { syscall, finish };
+    return harden({ syscall, finish });
   }
 
   function createFromSetup(vatID, setup, managerOptions, vatSyscallHandler) {

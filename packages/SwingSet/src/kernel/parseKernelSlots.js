@@ -40,7 +40,7 @@ export function parseKernelSlot(s) {
     assert.fail(X`invalid kernelSlot ${s}`);
   }
   const id = Nat(BigInt(idSuffix));
-  return { type, id };
+  return harden({ type, id });
 }
 
 /**

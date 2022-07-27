@@ -29,5 +29,5 @@ export function defer() {
   });
   assert(resolve !== undefined);
   assert(reject !== undefined);
-  return { promise, resolve, reject };
+  return harden({ promise, resolve, reject });
 }

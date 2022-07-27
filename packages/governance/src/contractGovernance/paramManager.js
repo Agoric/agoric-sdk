@@ -252,7 +252,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     setInvitation(inviteAndAmount);
 
     const makeDescription = () => {
-      return { type: ParamTypes.INVITATION, value: currentAmount };
+      return harden({ type: ParamTypes.INVITATION, value: currentAmount });
     };
 
     const getVisibleValue = async allegedInvitation =>

@@ -492,7 +492,7 @@ export default function makeKernelKeeper(
       reachable <= recognizable,
       `refmismatch(get) ${kernelSlot} ${reachable},${recognizable}`,
     );
-    return { reachable, recognizable };
+    return harden({ reachable, recognizable });
   }
 
   function setObjectRefCount(kernelSlot, { reachable, recognizable }) {

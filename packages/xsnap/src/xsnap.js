@@ -278,7 +278,7 @@ export function xsnap(options) {
    */
   async function issueStringCommand(message) {
     const result = await issueCommand(encoder.encode(message));
-    return { ...result, reply: decoder.decode(result.reply) };
+    return harden({ ...result, reply: decoder.decode(result.reply) });
   }
 
   /**

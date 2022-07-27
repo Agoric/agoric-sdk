@@ -443,7 +443,7 @@ const start = async (zcf, privateArgs, baggage) => {
   });
 
   const { creatorFacet, publicFacet: pFacet } = makeAssetReserve();
-  return { creatorFacet, publicFacet: pFacet };
+  return harden({ creatorFacet, publicFacet: pFacet });
 };
 
 harden(start);

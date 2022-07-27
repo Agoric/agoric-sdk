@@ -226,7 +226,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
   ) {
     const found = vatSlogs.get(vatID);
     if (found) {
-      return { vatSlog: found, starting: false };
+      return harden({ vatSlog: found, starting: false });
     }
     const vatSlog = makeVatSlog(vatID);
     vatSlogs.set(vatID, vatSlog);
@@ -240,7 +240,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
       vatParameters,
       vatSourceBundle,
     });
-    return { vatSlog, starting: true };
+    return harden({ vatSlog, starting: true });
   }
 
   function replayVatTranscript(vatID) {

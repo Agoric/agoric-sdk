@@ -344,7 +344,7 @@ const fpj = fetch('/package.json')
   .then(resp => resp.json())
   .catch(e => {
     console.log('Cannot fetch /package.json', e);
-    return {};
+    return harden({});
   });
 fetches.push(fpj);
 

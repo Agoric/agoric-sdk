@@ -285,7 +285,7 @@ export const connectFaucet = async ({
                 name,
                 vats.mints,
               );
-              return { issuer, brand, mint };
+              return harden({ issuer, brand, mint });
             }
           }
         };
@@ -443,7 +443,7 @@ export const poolRates = (issuerName, record, kits, central) => {
     interestRate: toRatio(config.interestRate, central.brand),
     loanFee: toRatio(config.loanFee, central.brand),
   };
-  return { rates, initialValue: inCollateral(config.collateralValue) };
+  return harden({ rates, initialValue: inCollateral(config.collateralValue) });
 };
 
 /**
@@ -492,7 +492,7 @@ export const fundAMM = async ({
               centralIssuer,
               centralBrand,
             ]);
-            return { mint: undefined, issuer, brand };
+            return harden({ mint: undefined, issuer, brand });
           }
           case 'BLD':
             return bldIssuerKit;
@@ -624,7 +624,7 @@ export const fundAMM = async ({
           .getPriceAuthorities(brand)
           .catch(_e => {
             // console.warn('could not get AMM priceAuthorities', _e);
-            return { toCentral: undefined, fromCentral: undefined };
+            return harden({ toCentral: undefined, fromCentral: undefined });
           }));
       }
 

@@ -31,7 +31,7 @@ const kv = (keyObj, val) => {
   const key = Object.values(keyObj)[0];
   const text = Array.isArray(key) ? key.join('.') : key;
   const id = val.meta?.id;
-  return { ...val, ...keyObj, id: id ?? text, text, value: val };
+  return harden({ ...val, ...keyObj, id: id ?? text, text, value: val });
 };
 
 const inboxReducer = (_, newInbox) =>

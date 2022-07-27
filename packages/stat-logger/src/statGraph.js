@@ -34,7 +34,7 @@ function scanMax(filePath, fields) {
       }
     }
   }
-  return { field: maxField, value: maxValue, filePath };
+  return harden({ field: maxField, value: maxValue, filePath });
 }
 
 function scanMaxFile(filePaths, fields) {

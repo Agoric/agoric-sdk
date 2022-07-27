@@ -121,5 +121,5 @@ export const makeInstallCache = async (
     return detail.installation;
   };
 
-  return { wrapInstall, saveCache };
+  return harden({ wrapInstall, saveCache });
 };

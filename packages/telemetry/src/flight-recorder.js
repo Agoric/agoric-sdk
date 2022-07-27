@@ -134,11 +134,11 @@ export const makeMemoryMappedCircularBuffer = async ({
         Number(arenaSize) - readStart,
       );
       if (readStart >= circEnd && readStart < circStart) {
-        return { done: true, value: undefined };
+        return harden({ done: true, value: undefined });
       }
     } else if (readStart < circStart || readStart >= circEnd) {
       // The data is contiguous, like ---AAABBB---
-      return { done: true, value: undefined };
+      return harden({ done: true, value: undefined });
     }
     outbuf.set(arena.subarray(readStart, readStart + firstReadLength));
     if (firstReadLength < outbuf.byteLength) {
@@ -147,7 +147,7 @@ export const makeMemoryMappedCircularBuffer = async ({
         firstReadLength,
       );
     }
-    return { done: false, value: outbuf };
+    return harden({ done: false, value: outbuf });
   };
 
   /** @param {Uint8Array} data */
@@ -238,7 +238,7 @@ export const makeMemoryMappedCircularBuffer = async ({
     writeCircBuf(data);
   };
 
-  return { readCircBuf, writeCircBuf, writeJSON };
+  return harden({ readCircBuf, writeCircBuf, writeJSON });
 };
 
 export const makeSlogSender = async opts => {

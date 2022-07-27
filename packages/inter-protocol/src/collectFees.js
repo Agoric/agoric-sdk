@@ -26,5 +26,5 @@ export const makeMakeCollectFeesInvitation = (
   const makeCollectFeesInvitation = () =>
     zcf.makeInvitation(collectFees, 'collect fees');
 
-  return { makeCollectFeesInvitation };
+  return harden({ makeCollectFeesInvitation });
 };

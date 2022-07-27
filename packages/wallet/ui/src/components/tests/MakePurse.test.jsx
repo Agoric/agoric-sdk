@@ -73,7 +73,7 @@ const withApplicationContext =
   };
 
 jest.mock('../../contexts/Application', () => {
-  return { withApplicationContext };
+  return harden({ withApplicationContext });
 });
 
 test('renders the issuer petname', () => {

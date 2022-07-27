@@ -289,7 +289,7 @@ export function makeFakeVirtualStuff(options = {}) {
   fakeStuff.setVrm(vrm);
   const cm = makeFakeCollectionManager(vrm, fakeStuff, options);
   const wpm = makeFakeWatchedPromiseManager(vrm, vom, cm, fakeStuff);
-  return { fakeStuff, vrm, vom, cm, wpm };
+  return harden({ fakeStuff, vrm, vom, cm, wpm });
 }
 
 export function makeStandaloneFakeVirtualObjectManager(options = {}) {

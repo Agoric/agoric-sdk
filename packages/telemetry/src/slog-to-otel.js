@@ -100,7 +100,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
     if (!vatParameters || !vatParameters.slots) {
       return undefined;
     }
-    return { slots: vatParameters.slots.join(',') };
+    return harden({ slots: vatParameters.slots.join(',') });
   };
 
   const extractMessageAttrs = ({ type: messageType, ...message }) => {
@@ -706,5 +706,5 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
     }
   };
 
-  return { slogSender: wrappedSlogSender, finish };
+  return harden({ slogSender: wrappedSlogSender, finish });
 };

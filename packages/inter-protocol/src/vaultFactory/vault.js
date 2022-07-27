@@ -459,7 +459,7 @@ const helperBehavior = {
     );
     const toMint = AmountMath.add(wantAmount, fee);
     const newDebt = addSubtract(currentDebt, toMint, giveAmount);
-    return { newDebt, toMint, fee };
+    return harden({ newDebt, toMint, fee });
   },
 
   /**

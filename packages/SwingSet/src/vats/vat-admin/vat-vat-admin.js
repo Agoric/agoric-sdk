@@ -143,7 +143,7 @@ export function buildRootObject(vatPowers) {
       },
     });
     return promise.then(root => {
-      return { adminNode, root };
+      return harden({ adminNode, root });
     });
   }
 

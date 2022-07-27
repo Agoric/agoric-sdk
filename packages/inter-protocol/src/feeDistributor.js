@@ -101,7 +101,7 @@ export const makeShareConfig = (destinations = {}, keywordShares = {}) => {
         destination,
       };
     });
-  return { shares, totalShares };
+  return harden({ shares, totalShares });
 };
 
 /** @typedef {ReturnType<typeof makeShareConfig>} ShareConfig */

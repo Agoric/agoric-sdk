@@ -55,7 +55,7 @@ const initState = (vault, storageNode, marshaller) => {
   // UNTIL https://github.com/Agoric/agoric-sdk/issues/4567
   Object.assign(ephemera, { subscriber, publisher });
 
-  return { holderId, vault };
+  return harden({ holderId, vault });
 };
 
 const helper = {

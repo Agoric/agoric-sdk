@@ -348,7 +348,7 @@ export function makeState(syscall) {
     const reachable = Nat(BigInt(store.getRequired(reaKey)));
     const recKey = `${lref}.recognizable`;
     const recognizable = Nat(BigInt(store.getRequired(recKey)));
-    return { reachable, recognizable };
+    return harden({ reachable, recognizable });
   }
 
   /**
@@ -565,7 +565,7 @@ export function makeState(syscall) {
       isReachable = remote.isReachable(lref);
       isRecognizable = !!remote.mapToRemote(lref);
     }
-    return { owner, isReachable, isRecognizable };
+    return harden({ owner, isReachable, isRecognizable });
   }
 
   function deciderIsKernel(lpid) {
@@ -649,14 +649,14 @@ export function makeState(syscall) {
   function getPromiseData(lpid) {
     const body = store.get(`${lpid}.data.body`);
     const slots = commaSplit(store.get(`${lpid}.data.slots`));
-    return { body, slots };
+    return harden({ body, slots });
   }
 
   function getPromiseSubscribers(lpid) {
     const rawSubscribers = store.get(`${lpid}.subscribers`);
     const subscribers = commaSplit(rawSubscribers);
     const kernelIsSubscribed = !!store.get(`${lpid}.kernelSubscribed`);
-    return { subscribers, kernelIsSubscribed };
+    return harden({ subscribers, kernelIsSubscribed });
   }
 
   function insistPromiseIsUnresolved(lpid) {
@@ -736,7 +736,7 @@ export function makeState(syscall) {
     store.set(`r.${receiverID}`, remoteID);
     // prettier-ignore
     cdebug(`comms add remote ${remoteID}/${name} xmit:${transmitterID} recv:${receiverID}`);
-    return { remoteID, receiverID };
+    return harden({ remoteID, receiverID });
   }
 
   function getRemoteIDForName(remoteName) {

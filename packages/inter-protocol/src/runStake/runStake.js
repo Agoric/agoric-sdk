@@ -227,6 +227,6 @@ export const start = async (
     },
   });
 
-  return { publicFacet, creatorFacet: makeGovernorFacet(creatorFacet) };
+  return harden({ publicFacet, creatorFacet: makeGovernorFacet(creatorFacet) });
 };
 harden(start);

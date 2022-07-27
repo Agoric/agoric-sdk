@@ -40,7 +40,7 @@ export const running = (process, { exec, spawn }) => {
       cp.process.stderr.pipe(process.stderr);
 
       const code = await cp;
-      return { stdout: outbuf, code };
+      return harden({ stdout: outbuf, code });
     },
 
     backtick: async cmd => {

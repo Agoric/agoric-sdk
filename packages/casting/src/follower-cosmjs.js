@@ -169,10 +169,10 @@ export const makeCosmjsFollower = (
           [method](queryPath, storeSubkey, height)
           .then(
             result => {
-              return { result, error: null };
+              return harden({ result, error: null });
             },
             error => {
-              return { result: null, error };
+              return harden({ result: null, error });
             },
           );
       });

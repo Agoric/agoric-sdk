@@ -164,7 +164,7 @@ const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
     getStats: () => tallyPromise.promise,
     getDetails: () => details,
   });
-  return { publicFacet, creatorFacet, closeFacet };
+  return harden({ publicFacet, creatorFacet, closeFacet });
 };
 
 // The contract wrapper extracts the terms and runs makeBinaryVoteCounter().
@@ -194,7 +194,7 @@ const start = zcf => {
     ...publicFacet,
     getInstance: zcf.getInstance,
   });
-  return { publicFacet: publicFacetWithGetInstance, creatorFacet };
+  return harden({ publicFacet: publicFacetWithGetInstance, creatorFacet });
 };
 
 harden(start);

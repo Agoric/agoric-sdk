@@ -216,7 +216,7 @@ export const makeAddressNameHubs = async ({
     myAddressNameAdmin.reserve('depositFacet');
     // Register it with the namesByAddress hub.
     namesByAddressAdmin.update(address, myAddressNameHub, myAddressNameAdmin);
-    return { agoricNames, namesByAddress, myAddressNameAdmin };
+    return harden({ agoricNames, namesByAddress, myAddressNameAdmin });
   };
 
   return E(client).assignBundle([perAddress]);
@@ -261,7 +261,7 @@ export const makeClientBanks = async ({
       );
 
       // sets these values in REPL home by way of registerWallet
-      return { bank, smartWallet };
+      return harden({ bank, smartWallet });
     },
   ]);
 };

@@ -46,14 +46,14 @@ export function buildRootObject(_vatPowers) {
       if (mintsAndBrands.has(issuerName)) {
         const { mint, brand } = mintsAndBrands.get(issuerName);
         const issuer = mint.getIssuer();
-        return { mint, issuer, brand };
+        return harden({ mint, issuer, brand });
       } else {
         const { mint, issuer, brand } = makeIssuerKit(
           issuerName,
           ...issuerArgs,
         );
         mintsAndBrands.init(issuerName, { mint, brand });
-        return { mint, issuer, brand };
+        return harden({ mint, issuer, brand });
       }
     },
     /**

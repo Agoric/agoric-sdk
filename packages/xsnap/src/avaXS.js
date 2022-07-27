@@ -271,7 +271,7 @@ async function avaConfig(args, options, { glob, readFile }) {
   const pkgMeta = JSON.parse(txt);
 
   if (!pkgMeta.ava) {
-    return { files: [], require: [], debug, verbose };
+    return harden({ files: [], require: [], debug, verbose });
   }
   const expected = ['files', 'require'];
   const unsupported = keys(pkgMeta.ava).filter(k => !expected.includes(k));

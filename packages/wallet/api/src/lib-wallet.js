@@ -110,7 +110,7 @@ export function makeWallet({
       }
       meta.updatedStamp = nowStamp;
     }
-    return { ...record, meta };
+    return harden({ ...record, meta });
   };
 
   // Create the petname maps so we can dehydrate information sent to
@@ -774,7 +774,7 @@ export function makeWallet({
 
     // Return a promise that will resolve after successful deposit, as well as
     // the promise for the seat.
-    return { depositedP, seat };
+    return harden({ depositedP, seat });
   }
 
   // === API
@@ -995,7 +995,7 @@ export function makeWallet({
       exit,
     };
 
-    return { proposal, arguments: args, purseKeywordRecord };
+    return harden({ proposal, arguments: args, purseKeywordRecord });
   };
 
   const compileOffer = async offer => {

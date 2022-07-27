@@ -103,7 +103,7 @@ export function buildCrankBuffer(
     const activityhash = hasher.finish();
     kvStore.set('activityhash', activityhash);
 
-    return { crankhash, activityhash };
+    return harden({ crankhash, activityhash });
   }
 
   return harden({ crankBuffer, commitCrank, abortCrank: abort });
@@ -171,5 +171,5 @@ export function wrapStorage(kvStore, createSHA256, getKeyType) {
     getKeyType,
   );
   const enhancedCrankBuffer = addHelpers(crankBuffer);
-  return { enhancedCrankBuffer, commitCrank, abortCrank };
+  return harden({ enhancedCrankBuffer, commitCrank, abortCrank });
 }

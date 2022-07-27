@@ -142,7 +142,7 @@ const facetHelpers = (zcf, paramManager) => {
       getGovernedApiNames: ({ facets }) => Object.keys(facets.governedApis),
     });
 
-    return { governorFacet, limitedCreatorFacet };
+    return harden({ governorFacet, limitedCreatorFacet });
   };
 
   return harden({

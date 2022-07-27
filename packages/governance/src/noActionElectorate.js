@@ -44,7 +44,7 @@ const start = zcf => {
     getPublicFacet: () => publicFacet,
   });
 
-  return { publicFacet, creatorFacet };
+  return harden({ publicFacet, creatorFacet });
 };
 
 harden(start);

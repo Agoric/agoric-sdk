@@ -65,5 +65,5 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
   const makeSwapOutInvitation = () =>
     zcf.makeInvitation(swapOut, 'autoswap swapOut');
 
-  return { makeSwapInInvitation, makeSwapOutInvitation };
+  return harden({ makeSwapInInvitation, makeSwapOutInvitation });
 };

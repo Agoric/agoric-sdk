@@ -162,7 +162,7 @@ function makeGCKit(state, syscall, transmit) {
     if (lref && ackSeqNum >= remote.getLastSent(lref)) {
       informed = true;
     }
-    return { lref, informed };
+    return harden({ lref, informed });
   }
 
   function gcFromRemote(remoteID, message, ackSeqNum) {

@@ -148,7 +148,7 @@ const makeEstimator = (centralBrand, rates) => {
     return AmountMath.add(required, charge(slippageBP, required));
   };
 
-  return { estimateProceeds, estimateRequired };
+  return harden({ estimateProceeds, estimateRequired });
 };
 harden(makeEstimator);
 

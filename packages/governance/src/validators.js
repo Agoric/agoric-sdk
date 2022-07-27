@@ -44,7 +44,7 @@ const assertContractGovernance = async (
     'The governed contract is not governed by an instance of the provided installation.',
   );
 
-  return { governor: realGovernorInstance, governed: realGovernedInstance };
+  return harden({ governor: realGovernorInstance, governed: realGovernedInstance });
 };
 
 /**

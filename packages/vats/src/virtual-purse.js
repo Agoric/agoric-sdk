@@ -73,7 +73,7 @@ function makeVirtualPurse(vpc, kit) {
       const retain = (payment, optAmountShape = undefined) =>
         E(issuer).burn(payment, optAmountShape);
       const redeem = amount => recoverableClaim(E(mint).mintPayment(amount));
-      return { retain, redeem };
+      return harden({ retain, redeem });
     }
 
     // If we can't mint, then we need to escrow.
@@ -83,7 +83,7 @@ function makeVirtualPurse(vpc, kit) {
     const redeem = amount =>
       recoverableClaim(E(myEscrowPurse).withdraw(amount));
 
-    return { retain, redeem };
+    return harden({ retain, redeem });
   };
 
   const { retain, redeem } = makeRetainRedeem();

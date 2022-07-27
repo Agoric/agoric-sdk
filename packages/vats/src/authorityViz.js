@@ -165,7 +165,7 @@ const manifest2graph = manifest => {
       addEdge(fnName, `runBehaviors`);
     }
   }
-  return { nodes, neighbors };
+  return harden({ nodes, neighbors });
 };
 
 /**

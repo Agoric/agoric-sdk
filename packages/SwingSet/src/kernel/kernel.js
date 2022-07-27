@@ -1010,12 +1010,12 @@ export default function buildKernel(
       if (!vatID) {
         return splat(VAT_TERMINATION_ERROR);
       }
-      return { vatID, target: targetObject };
+      return harden({ vatID, target: targetObject });
     }
 
     function requeue() {
       // message will be requeued, not sent to a vat right now
-      return { vatID: null, target };
+      return harden({ vatID: null, target });
     }
 
     if (type === 'object') {
@@ -1049,7 +1049,7 @@ export default function buildKernel(
             return splat(VAT_TERMINATION_ERROR);
           }
           if (deciderVat.enablePipelining) {
-            return { vatID: kp.decider, target };
+            return harden({ vatID: kp.decider, target });
           }
           return requeue();
         }
@@ -1696,7 +1696,7 @@ export default function buildKernel(
       processor = processDeliveryMessage;
     }
 
-    return { message, processor };
+    return harden({ message, processor });
   }
 
   async function step() {
@@ -1931,7 +1931,7 @@ export default function buildKernel(
       // a time, so any log() calls that were interleaved during their
       // original execution will be sorted by vat in the replay). Logs are
       // not kept in the persistent state, only in ephemeral state.
-      return { log: ephemeral.log, ...kernelKeeper.dump() };
+      return harden({ log: ephemeral.log, ...kernelKeeper.dump() });
     },
     kdebugEnable,
 

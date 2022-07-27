@@ -33,7 +33,7 @@ export function parseRemoteSlot(s) {
   }
 
   const id = Nat(BigInt(indexSuffix));
-  return { type, allocatedByRecipient, id };
+  return harden({ type, allocatedByRecipient, id });
 }
 
 export function makeRemoteSlot(type, allocatedByRecipient, id) {

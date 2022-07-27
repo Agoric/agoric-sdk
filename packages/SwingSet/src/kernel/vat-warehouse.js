@@ -195,14 +195,14 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     if (liveInfo) {
       const { enablePipelining, options } = liveInfo;
       const { meterID } = options;
-      return { enablePipelining, meterID };
+      return harden({ enablePipelining, meterID });
     }
     if (!kernelKeeper.vatIsAlive(vatID)) {
       return undefined;
     }
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const { enablePipelining, meterID } = vatKeeper.getOptions();
-    return { enablePipelining, meterID };
+    return harden({ enablePipelining, meterID });
   }
 
   const recent = makeLRU(maxVatsOnline);

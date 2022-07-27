@@ -224,7 +224,7 @@ export const createSeatManager = (
 
       const seatHandleAllocations = seats.map(seat => {
         const seatHandle = zcfSeatToSeatHandle.get(seat);
-        return { seatHandle, allocation: seat.getCurrentAllocation() };
+        return harden({ seatHandle, allocation: seat.getCurrentAllocation() });
       });
 
       E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);

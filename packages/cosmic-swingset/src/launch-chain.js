@@ -118,7 +118,7 @@ async function buildSwingset(
   // We DON'T want to run the kernel yet, only when the application decides
   // (either on bootstrap block (0) or in endBlock).
 
-  return { controller, mb, bridgeInbound, timer };
+  return harden({ controller, mb, bridgeInbound, timer });
 }
 
 function computronCounter({

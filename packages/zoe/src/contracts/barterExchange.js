@@ -119,7 +119,7 @@ const start = zcf => {
     makeInvitation: () => zcf.makeInvitation(exchangeOfferHandler, 'exchange'),
   });
 
-  return { publicFacet };
+  return harden({ publicFacet });
 };
 
 harden(start);

@@ -19,7 +19,7 @@ import { singlePool } from './singlePool.js';
 // single pool or multiple hops.
 
 export const publicPrices = prices => {
-  return { amountIn: prices.swapperGives, amountOut: prices.swapperGets };
+  return harden({ amountIn: prices.swapperGives, amountOut: prices.swapperGets });
 };
 
 /**

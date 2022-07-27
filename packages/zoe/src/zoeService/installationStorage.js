@@ -109,10 +109,10 @@ export const makeInstallationStorage = (
       if (installationsBundleCap.has(installation)) {
         const { bundleCap, bundleID } =
           installationsBundleCap.get(installation);
-        return { bundleCap, bundleID, installation };
+        return harden({ bundleCap, bundleID, installation });
       } else if (installationsBundle.has(installation)) {
         const bundle = installationsBundle.get(installation);
-        return { bundle, installation };
+        return harden({ bundle, installation });
       } else {
         assert.fail(X`${installation} was not a valid installation`);
       }

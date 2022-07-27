@@ -36,8 +36,8 @@ export const parseParams = params => {
   const feeUnitPrice = rawFeeUnitPrice.map(({ denom, amount }) => {
     assert.typeof(denom, 'string', X`denom ${denom} must be a string`);
     assert(denom, X`denom ${denom} must be non-empty`);
-    return { denom, amount: stringToNat(amount) };
+    return harden({ denom, amount: stringToNat(amount) });
   });
 
-  return { beansPerUnit, feeUnitPrice };
+  return harden({ beansPerUnit, feeUnitPrice });
 };

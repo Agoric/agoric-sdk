@@ -247,5 +247,5 @@ export function makeBufferedStorage(kvStore, listeners = {}) {
     deletions.clear();
     if (onAbort !== undefined) onAbort();
   }
-  return { kvStore: buffered, commit, abort };
+  return harden({ kvStore: buffered, commit, abort });
 }

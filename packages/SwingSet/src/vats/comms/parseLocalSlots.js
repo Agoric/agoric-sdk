@@ -33,7 +33,7 @@ export function parseLocalSlot(s) {
     assert.fail(X`invalid localSlot ${s}`);
   }
   const id = Nat(BigInt(idSuffix));
-  return { type, id };
+  return harden({ type, id });
 }
 
 /**

@@ -47,7 +47,7 @@ export const parseAsAmount = (
   assetKind = AssetKind.NAT,
   decimalPlaces = 0,
 ) => {
-  return { brand, value: parseAsValue(str, assetKind, decimalPlaces) };
+  return harden({ brand, value: parseAsValue(str, assetKind, decimalPlaces) });
 };
 
 /**

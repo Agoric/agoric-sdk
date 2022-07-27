@@ -9,7 +9,7 @@ function parseAction(s) {
   insistVatID(vatID);
   assert(typePriority.includes(type), `unknown type ${type}`);
   insistKernelType('object', kref);
-  return { vatID, type, kref };
+  return harden({ vatID, type, kref });
 }
 
 export function processNextGCAction(kernelKeeper) {

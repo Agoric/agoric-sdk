@@ -67,7 +67,7 @@ const assertEqualPerBrand = (leftSumsByBrand, rightSumsByBrand) => {
     if (rightSum === undefined) {
       rightSum = AmountMath.makeEmptyFromAmount(leftSum);
     }
-    return { leftSum, rightSum };
+    return harden({ leftSum, rightSum });
   };
 
   const allBrands = new Set([

@@ -131,7 +131,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
       bundleCapToBundle.init(bundleCap, bundle);
     },
   };
-  return { admin, vatAdminState };
+  return harden({ admin, vatAdminState });
 }
 
 // Tests which use this global/shared fakeVatAdmin should really import

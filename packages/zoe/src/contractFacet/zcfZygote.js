@@ -119,7 +119,7 @@ export const makeZCFZygote = async (
       .makeNoEscrowSeatKit(initialAllocation, proposal, exitObj, seatHandle)
       .then(({ userSeat }) => userSeatPromiseKit.resolve(userSeat));
 
-    return { zcfSeat, userSeat: userSeatPromiseKit.promise };
+    return harden({ zcfSeat, userSeat: userSeatPromiseKit.promise });
   };
 
   const zcfMintFactory = await makeZCFMintFactory(

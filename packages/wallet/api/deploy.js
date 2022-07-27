@@ -72,7 +72,7 @@ export default async function deployWallet(
       purses.map(async ([pursePetname, purse]) => {
         const brand = await E(purse).getAllegedBrand();
         const { issuerPetname, issuer } = brandToIssuer.get(brand);
-        return { issuerPetname, pursePetname, issuer, purse };
+        return harden({ issuerPetname, pursePetname, issuer, purse });
       }),
     );
   };

@@ -55,7 +55,7 @@ const start = zcf => {
     'firstOffer',
   );
 
-  return { creatorInvitation };
+  return harden({ creatorInvitation });
 };
 
 harden(start);

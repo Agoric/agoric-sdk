@@ -25,7 +25,7 @@ export const makeInstall = (bundleSource, zoe, installationManager, board) => {
     console.log(`- Installed Contract Name: ${contractPetname}`);
 
     const id = await E(board).getId(installation);
-    return { installation, id };
+    return harden({ installation, id });
   };
   return install;
 };

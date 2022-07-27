@@ -82,7 +82,7 @@ const liquidate = async (
   // remaining funds are left on the vault for the user to close and claim
 
   // for manager's accounting
-  return { proceeds: proceeds.RUN, overage, runToBurn, shortfall };
+  return harden({ proceeds: proceeds.RUN, overage, runToBurn, shortfall });
 };
 
 const liquidationDetailTerms = debtBrand =>

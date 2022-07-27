@@ -14,7 +14,7 @@ export function parseReachableAndVatSlot(value) {
   } else {
     assert(`flag (${flag}) must be 'R' or '_'`);
   }
-  return { isReachable, vatSlot };
+  return harden({ isReachable, vatSlot });
 }
 harden(parseReachableAndVatSlot);
 

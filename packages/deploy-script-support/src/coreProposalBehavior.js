@@ -102,7 +102,7 @@ export const makeCoreProposalBehavior = ({
       manifest: overrideManifest || manifest,
       makeConfig: (name, _permit) => {
         log('coreProposal:', name);
-        return { options };
+        return harden({ options });
       },
     });
   };

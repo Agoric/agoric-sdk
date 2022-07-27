@@ -36,7 +36,7 @@ function calculateShares(collateralBrand, price, strikePrice1, strikePrice2) {
     collateralBrand,
     denominator.value,
   );
-  return { longShare, shortShare: oneMinus(longShare) };
+  return harden({ longShare, shortShare: oneMinus(longShare) });
 }
 
 harden(calculateShares);

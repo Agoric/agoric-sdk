@@ -25,6 +25,6 @@ export const makeTransientNotifierKit = () => {
     }
   };
 
-  return { provideNotifier, update };
+  return harden({ provideNotifier, update });
 };
 harden(makeTransientNotifierKit);

@@ -208,7 +208,7 @@ const manager = {
     const [[_addr, valueLiened]] = getCopyBagEntries(attestationGiven.value);
     const amountLiened = AmountMath.make(brands.Stake, valueLiened);
     const maxDebt = floorMultiplyBy(amountLiened, mintingRatio);
-    return { maxDebt, amountLiened };
+    return harden({ maxDebt, amountLiened });
   },
 
   /**

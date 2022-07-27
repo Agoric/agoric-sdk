@@ -19,7 +19,7 @@ import { defineKind } from '@agoric/vat-data';
  * @param {ZCF} zcf
  */
 const initState = (address, lienMint, stakeBrand, zcf) => {
-  return { address, lienMint, stakeBrand, zcf };
+  return harden({ address, lienMint, stakeBrand, zcf });
 };
 
 const behavior = {

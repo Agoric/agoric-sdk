@@ -98,7 +98,7 @@ const start = async zcf => {
 
   const creatorInvitation = makeLendInvitation(zcf, harden(config));
 
-  return { creatorInvitation };
+  return harden({ creatorInvitation });
 };
 
 harden(start);

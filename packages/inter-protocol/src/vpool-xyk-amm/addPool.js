@@ -135,7 +135,7 @@ export const makeAddPoolInvitation = (
     const poolFacets = makePool(liquidityZcfMint, poolSeat, secondaryBrand);
 
     initPool(secondaryBrand, poolFacets);
-    return { liquidityZcfMint, poolFacets };
+    return harden({ liquidityZcfMint, poolFacets });
   };
 
   /** @param {ZCFSeat} seat */

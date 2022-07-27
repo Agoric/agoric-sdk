@@ -433,7 +433,7 @@ const start = async (basedir, argv) => {
   );
   const connections = rawConnections.map(connection => {
     if (['chain-cosmos-sdk', 'fake-chain'].includes(connection.type)) {
-      return { ...connection, homeDirectory };
+      return harden({ ...connection, homeDirectory });
     }
     return connection;
   });
@@ -459,7 +459,7 @@ const start = async (basedir, argv) => {
       switch (c.type) {
         case 'chain-cosmos-sdk':
         case 'fake-chain':
-          return { FIXME_GCI: c.GCI };
+          return harden({ FIXME_GCI: c.GCI });
         default:
       }
     }

@@ -477,10 +477,10 @@ export async function makeSwingsetController(
     ) {
       function replacer(_, arg) {
         if (typeof arg === 'bigint') {
-          return { [QCLASS]: 'bigint', digits: String(arg) };
+          return harden({ [QCLASS]: 'bigint', digits: String(arg) });
         }
         if (arg === undefined) {
-          return { [QCLASS]: 'undefined' };
+          return harden({ [QCLASS]: 'undefined' });
         }
         return arg;
       }
