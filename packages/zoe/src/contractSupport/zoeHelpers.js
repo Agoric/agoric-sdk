@@ -354,7 +354,10 @@ export const offerTo = async (
   const depositedPromiseKit = makePromiseKit();
 
   const doDeposit = async payoutPayments => {
-    const amounts = await E(userSeatPromise).getCurrentAllocation();
+    // TODO This uses getCurrentAllocationJig for production, and so
+    // is likely wrong
+    // https://github.com/Agoric/agoric-sdk/issues/5833
+    const amounts = await E(userSeatPromise).getCurrentAllocationJig();
 
     // Map back to the original contract's keywords
     const mappedAmounts = mapKeywords(amounts, mappingReversed);
