@@ -56,7 +56,7 @@ export const makeInterestCalculator = (
     let growingDebt = newDebt;
     while (newRecent + chargingPeriod <= currentTime) {
       newRecent += chargingPeriod;
-      // The `ceil` implies that a vault with any debt will accrue at least one µRUN.
+      // The `ceil` implies that a vault with any debt will accrue at least one unit.
       const newInterest = natSafeMath.ceilDivide(
         growingDebt * ratePerChargingPeriod.numerator.value,
         ratePerChargingPeriod.denominator.value,

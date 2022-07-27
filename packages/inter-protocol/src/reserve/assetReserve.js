@@ -16,8 +16,6 @@ const trace = makeTracer('Reserve', false);
 
 const makeLiquidityKeyword = keyword => `${keyword}Liquidity`;
 
-const RunKW = 'RUN';
-
 const nonalphanumeric = /[^A-Za-z0-9]/g;
 
 /**
@@ -25,8 +23,8 @@ const nonalphanumeric = /[^A-Za-z0-9]/g;
  *
  * @property {AmountKeywordRecord} allocations
  * @property {Amount<'nat'>} shortfallBalance shortfall from liquiditation that
- * @property {Amount<'nat'>} totalFeeMinted total RUN minted to date
- * @property {Amount<'nat'>} totalFeeBurned total RUN burned to date
+ * @property {Amount<'nat'>} totalFeeMinted total Fee tokens minted to date
+ * @property {Amount<'nat'>} totalFeeBurned total Fee tokens burned to date
  *   has not yet been compensated.
  */
 
@@ -39,7 +37,9 @@ const nonalphanumeric = /[^A-Za-z0-9]/g;
 
 /**
  * @typedef {{
- *   state: {},
+ *   state: {
+ *     totalFeeMinted: Amount<'nat'>,
+ *   },
  *   facets: {
  *     publicFacet: {},
  *     creatorFacet: {},
@@ -53,14 +53,15 @@ const nonalphanumeric = /[^A-Za-z0-9]/g;
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 /**
- * Asset Reserve holds onto assets for the RUN protocol, and can
+ * Asset Reserve holds onto assets for the Inter Protocol, and can
  * dispense it for various purposes under governance control. It currently
  * supports governance decisions to add liquidity to an AMM pool.
  *
- * This contract has the ability to mint RUN. When adding liquidity to an AMM
- * pool, it takes a specified amount of collateral on hand, and mints new RUN to
- * accompany it, and deposits both into an AMM pool, using the AMM's method that
- * allows the pool balance to be determined based on the contributed funds.
+ * This contract has the ability to mint Fee tokens, granted through its private
+ * arguments. When adding liquidity to an AMM pool, it mints new Fee tokens and
+ * merges them with the specified amount of collateral on hand. It then deposits
+ * both into an AMM pool by using the AMM's method that allows the pool balance
+ * to be determined based on the contributed funds.
  *
  * @param {ZCF<GovernanceTerms<{AmmInstance: 'instance'}> &
  * {
@@ -82,13 +83,13 @@ const start = async (zcf, privateArgs, baggage) => {
   // to state and don't require reference to baggage.
 
   /**
-   * Used to look up the unique keyword for each brand, including RUN.
+   * Used to look up the unique keyword for each brand, including Fee brand.
    *
    * @type {MapStore<Brand, Keyword>}
    */
   const keywordForBrand = provideDurableMapStore(baggage, 'keywordForBrand');
   /**
-   * Used to look up the brands for keywords, excluding RUN because it's a special case.
+   * Used to look up the brands for keywords, excluding Fee because it's a special case.
    *
    * @type {MapStore<Keyword, Brand>}
    */
@@ -102,21 +103,21 @@ const start = async (zcf, privateArgs, baggage) => {
   );
 
   const takeFeeMint = async () => {
-    if (baggage.has('runMint')) {
-      return baggage.get('runMint');
+    if (baggage.has('feeMint')) {
+      return baggage.get('feeMint');
     }
 
-    const runMintTemp = await zcf.registerFeeMint(
-      RunKW,
+    const feeMintTemp = await zcf.registerFeeMint(
+      'Fee',
       privateArgs.feeMintAccess,
     );
-    baggage.init('runMint', runMintTemp);
-    return runMintTemp;
+    baggage.init('feeMint', feeMintTemp);
+    return feeMintTemp;
   };
   /** @type {ZCFMint} */
-  const runMint = await takeFeeMint();
-  const runKit = runMint.getIssuerRecord();
-  const emptyAmount = AmountMath.makeEmpty(runKit.brand);
+  const feeMint = await takeFeeMint();
+  const feeKit = feeMint.getIssuerRecord();
+  const emptyAmount = AmountMath.makeEmpty(feeKit.brand);
 
   /**
    * @param {Brand} brand
@@ -127,7 +128,7 @@ const start = async (zcf, privateArgs, baggage) => {
     brandForKeyword.init(keyword, brand);
   };
 
-  saveBrandKeyword(runKit.brand, RunKW);
+  saveBrandKeyword(feeKit.brand, 'Fee');
   // no need to saveIssuer() b/c registerFeeMint did it
 
   const { augmentVirtualPublicFacet, makeVirtualGovernorFacet, params } =
@@ -155,8 +156,8 @@ const start = async (zcf, privateArgs, baggage) => {
     const brand = await E(issuer).getBrand();
     trace('addIssuer', { brand, keyword });
     assert(
-      keyword !== RunKW && brand !== runKit.brand,
-      X`${q(RunKW)} is a special case handled by the reserve contract`,
+      keyword !== 'Fee' && brand !== feeKit.brand,
+      `'Fee' brand is a special case handled by the reserve contract`,
     );
 
     trace('addIssuer storing', {
@@ -219,8 +220,8 @@ const start = async (zcf, privateArgs, baggage) => {
    */
   const addIssuerFromAmm = async (context, ammSecondaryBrand) => {
     assert(
-      ammSecondaryBrand !== runKit.brand,
-      X`${q(RunKW)} is a special case handled by the reserve contract`,
+      ammSecondaryBrand !== feeKit.brand,
+      'Fee is a special case handled by the reserve contract',
     );
 
     const keyword = await conjureKeyword(ammSecondaryBrand);
@@ -313,51 +314,53 @@ const start = async (zcf, privateArgs, baggage) => {
     return initialState;
   };
 
-  // Takes collateral from the reserve, mints RUN to accompany it, and uses both
-  // to add Liquidity to a pool in the AMM.
-  const addLiquidityToAmmPool = async (
-    { state },
-    collateralAmount,
-    runAmount,
-  ) => {
+  /**
+   * Takes collateral from the reserve, mints Fee tokens to accompany it, and uses both
+   * to add Liquidity to a pool in the AMM.
+   *
+   * @param {MethodContext} context
+   * @param {Amount} collateral
+   * @param {Amount} fee
+   */
+  const addLiquidityToAmmPool = async ({ state }, collateral, fee) => {
     // verify we have the funds
-    const collateralKeyword = getKeywordForBrand(collateralAmount.brand);
+    const collateralKeyword = getKeywordForBrand(collateral.brand);
     if (
       !AmountMath.isGTE(
         collateralSeat.getCurrentAllocation()[collateralKeyword],
-        collateralAmount,
+        collateral,
       )
     ) {
       throw new Error('insufficient reserves for that transaction');
     }
 
-    // create the RUN
-    const offerToSeat = runMint.mintGains(harden({ RUN: runAmount }));
-    state.totalFeeMinted = AmountMath.add(state.totalFeeMinted, runAmount);
+    // create the Fee tokens
+    const offerToSeat = feeMint.mintGains(harden({ Fee: fee }));
+    state.totalFeeMinted = AmountMath.add(state.totalFeeMinted, fee);
 
     offerToSeat.incrementBy(
       collateralSeat.decrementBy(
         harden({
-          [collateralKeyword]: collateralAmount,
+          [collateralKeyword]: collateral,
         }),
       ),
     );
     zcf.reallocate(collateralSeat, offerToSeat);
 
-    // Add RUN and collateral to the AMM
+    // Add Fee tokens and collateral to the AMM
     const invitation = await E(
       ammPublicFacet,
     ).makeAddLiquidityAtRateInvitation();
     const mapping = harden({
-      RUN: 'Central',
+      Fee: 'Central',
       [collateralKeyword]: 'Secondary',
     });
 
-    const liqBrand = liquidityBrandForBrand.get(collateralAmount.brand);
+    const liqBrand = liquidityBrandForBrand.get(collateral.brand);
     const proposal = harden({
       give: {
-        Central: runAmount,
-        Secondary: collateralAmount,
+        Central: fee,
+        Secondary: collateral,
       },
       want: { Liquidity: AmountMath.makeEmpty(liqBrand) },
     });
@@ -384,16 +387,16 @@ const start = async (zcf, privateArgs, baggage) => {
     updateMetrics({ state });
   };
 
-  const burnRUNToReduceShortfall = ({ state }, reduction) => {
-    reduction = AmountMath.coerce(runKit.brand, reduction);
-    const runKeyword = keywordForBrand.get(runKit.brand);
-    const runBalance = collateralSeat.getAmountAllocated(runKeyword);
-    const amountToBurn = AmountMath.min(reduction, runBalance);
+  const burnFeesToReduceShortfall = ({ state }, reduction) => {
+    reduction = AmountMath.coerce(feeKit.brand, reduction);
+    const feeKeyword = keywordForBrand.get(feeKit.brand);
+    const feeBalance = collateralSeat.getAmountAllocated(feeKeyword);
+    const amountToBurn = AmountMath.min(reduction, feeBalance);
     if (AmountMath.isEmpty(amountToBurn)) {
       return;
     }
 
-    runMint.burnLosses(harden({ [runKeyword]: amountToBurn }), collateralSeat);
+    feeMint.burnLosses(harden({ [feeKeyword]: amountToBurn }), collateralSeat);
     state.totalFeeBurned = AmountMath.add(state.totalFeeBurned, amountToBurn);
     updateMetrics({ state });
   };
@@ -424,7 +427,7 @@ const start = async (zcf, privateArgs, baggage) => {
     getMetrics: () => metricsSubscription,
   });
 
-  const governedApis = { addLiquidityToAmmPool, burnRUNToReduceShortfall };
+  const governedApis = { addLiquidityToAmmPool, burnFeesToReduceShortfall };
 
   const publicFacet = augmentVirtualPublicFacet(
     Far('Collateral Reserve public', {

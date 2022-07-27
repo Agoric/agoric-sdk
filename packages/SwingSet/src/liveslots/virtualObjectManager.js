@@ -713,6 +713,7 @@ export function makeVirtualObjectManager(
             innerSelf.rawState[prop] = after;
             cache.markDirty(innerSelf);
           },
+          enumerable: true,
         });
       }
       harden(state);

@@ -1,37 +1,37 @@
 // @ts-check
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { E, Far } from '@endo/far';
-import { deeplyFulfilled } from '@endo/marshal';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
+import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
+import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
 import { makeCopyBag } from '@agoric/store';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { objectMap } from '@agoric/vat-data';
+import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
+import mintHolderBundle from '@agoric/vats/bundles/bundle-mintHolder.js';
 import {
   makeAgoricNamesAccess,
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { Stable } from '@agoric/vats/src/tokens.js';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
-import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
-import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
-import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
-import mintHolderBundle from '@agoric/vats/bundles/bundle-mintHolder.js';
-
+import { E, Far } from '@endo/far';
+import { deeplyFulfilled } from '@endo/marshal';
 import {
   startEconomicCommittee,
   startRunStake,
 } from '../../src/proposals/econ-behaviors.js';
-import * as Collect from '../../src/collect.js';
+import { ManagerKW as KW } from '../../src/runStake/constants.js';
 import {
   makeVoterTool,
-  setUpZoeForTest,
   mintRunPayment,
-  subscriptionKey,
   mockChainStorageRoot,
+  setUpZoeForTest,
+  subscriptionKey,
 } from '../supports.js';
-import { ManagerKW as KW } from '../../src/runStake/constants.js';
-import { unsafeMakeBundleCache } from '../bundleTool.js';
 
 // 8	Partial repayment from reward stream - TODO
 // TODO: #4728 case 9: Extending LoC - unbonded (FAIL)
@@ -61,8 +61,8 @@ const micro = harden({
  * @typedef {{
  *   zoe: ZoeService,
  *   feeMintAccess: FeeMintAccess,
- *   issuer: Record<'RUN' | 'BLD', Issuer<'nat'>>,
- *   brand: Record<'RUN' | 'BLD', Brand<'nat'>>,
+ *   issuer: Record<'IST' | 'BLD', Issuer<'nat'>>,
+ *   brand: Record<'IST' | 'BLD', Brand<'nat'>>,
  *   installation: {
  *     runStake: Installation<typeof import('../../src/runStake/runStake.js').start>,
  *     faker: Installation,
@@ -87,18 +87,18 @@ test.before(async t => {
   };
   t.log(
     'bundled:',
-    Collect.mapValues(bundles, b => b.endoZipBase64.length),
+    objectMap(bundles, b => b.endoZipBase64.length),
   );
   console.timeEnd('bundling');
 
   const { zoe, feeMintAccess } = await setUpZoeForTest(() => {});
   const bld = makeIssuerKit('BLD', AssetKind.NAT, micro.displayInfo);
   const issuer = {
-    RUN: await E(zoe).getFeeIssuer(),
+    [Stable.symbol]: await E(zoe).getFeeIssuer(),
     BLD: bld.issuer,
   };
   const brand = {
-    RUN: E(issuer.RUN).getBrand(),
+    [Stable.symbol]: E(issuer.IST).getBrand(),
     BLD: bld.brand,
   };
   const govInstalls = {
@@ -258,9 +258,9 @@ const bootstrapRunStake = async (t, timer) => {
   produce.lienBridge.resolve(lienBridge);
   produce.chainTimerService.resolve(timer);
   brandS.produce.BLD.resolve(brand.BLD);
-  brandS.produce.RUN.resolve(brand.RUN);
+  brandS.produce.IST.resolve(brand.IST);
   issuerS.produce.BLD.resolve(issuer.BLD);
-  issuerS.produce.RUN.resolve(issuer.RUN);
+  issuerS.produce.IST.resolve(issuer.IST);
   space.installation.produce.runStake.resolve(installation.runStake);
 
   const mockClient = harden({
@@ -362,9 +362,9 @@ test('runStake API usage', async t => {
   const { chain, space } = await bootstrapRunStake(t, timer);
   const { consume } = space;
   const { zoe, runStakeCreatorFacet: creatorFacet } = consume;
-  const runBrand = await space.brand.consume.RUN;
+  const runBrand = await space.brand.consume.IST;
   const bldBrand = await space.brand.consume.BLD;
-  const runIssuer = await space.issuer.consume.RUN;
+  const runIssuer = await space.issuer.consume.IST;
   const publicFacet = E(zoe).getPublicFacet(space.instance.consume.runStake);
 
   const founder = chain.provisionAccount('Alice', 'addr1a');
@@ -409,7 +409,7 @@ test('extra offer keywords are rejected', async t => {
   const { chain, space } = await bootstrapRunStake(t, timer);
   const { consume } = space;
   const { zoe, runStakeCreatorFacet: creatorFacet } = consume;
-  const runBrand = await space.brand.consume.RUN;
+  const runBrand = await space.brand.consume.IST;
   const bldBrand = await space.brand.consume.BLD;
   const publicFacet = E(zoe).getPublicFacet(space.instance.consume.runStake);
 
@@ -466,7 +466,7 @@ test('forged Attestation fails', async t => {
   const { chain, space } = await bootstrapRunStake(t, timer);
   const { consume } = space;
   const { zoe } = consume;
-  const runBrand = await space.brand.consume.RUN;
+  const runBrand = await space.brand.consume.IST;
   const bldBrand = await space.brand.consume.BLD;
   const publicFacet = E(zoe).getPublicFacet(space.instance.consume.runStake);
 
@@ -515,10 +515,10 @@ const makeWorld = async t => {
   const { consume } = space;
 
   const { zoe, runStakeCreatorFacet, lienBridge } = consume;
-  const { RUN: runIssuer } = space.issuer.consume;
+  const { IST: runIssuer } = space.issuer.consume;
   const [bldBrand, runBrand] = await Promise.all([
     space.brand.consume.BLD,
-    space.brand.consume.RUN,
+    space.brand.consume.IST,
   ]);
   const { runStake: runStakeinstance } = space.instance.consume;
   const runStake = {
@@ -787,7 +787,7 @@ test('borrowing past the debt limit', async t => {
   await t.throwsAsync(driver.borrowRUN(threshold), {
     message:
       // XXX brittle string to fail if numeric parameters change
-      'Minting {"brand":"[Alleged: RUN brand]","value":"[1020000000000n]"} past {"brand":"[Alleged: RUN brand]","value":"[0n]"} would hit total debt limit {"brand":"[Alleged: RUN brand]","value":"[1000000000000n]"}',
+      'Minting {"brand":"[Alleged: IST brand]","value":"[1020000000000n]"} past {"brand":"[Alleged: IST brand]","value":"[0n]"} would hit total debt limit {"brand":"[Alleged: IST brand]","value":"[1000000000000n]"}',
   });
 });
 

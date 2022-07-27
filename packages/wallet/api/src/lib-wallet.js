@@ -552,7 +552,10 @@ export function makeWallet({
    */
   async function subscribeToNotifier(id, seat) {
     E(seat)
-      .getNotifier()
+      // TODO This uses getAllocationNotifierJig for production, and so
+      // is likely wrong
+      // See https://github.com/Agoric/agoric-sdk/issues/5834
+      .getAllocationNotifierJig()
       .then(offerNotifierP => {
         if (!idToNotifierP.has(id)) {
           idToNotifierP.init(id, offerNotifierP);

@@ -669,8 +669,8 @@ const similarToNormalUserSeat = async (t, emptySeat, normalSeat) => {
   t.deepEqual(Object.keys(emptySeat), Object.keys(normalSeat));
   t.deepEqual(await emptySeat.getProposal(), await normalSeat.getProposal());
   t.deepEqual(
-    await emptySeat.getCurrentAllocation(),
-    await normalSeat.getCurrentAllocation(),
+    await emptySeat.getCurrentAllocationJig(),
+    await normalSeat.getCurrentAllocationJig(),
   );
   t.is(await emptySeat.hasExited(), await normalSeat.hasExited());
   t.is(await emptySeat.getOfferResult(), await normalSeat.getOfferResult());
@@ -839,7 +839,7 @@ test(`zcfSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
 
   t.deepEqual(
     zcfSeat.getCurrentAllocation(),
-    await E(userSeat).getCurrentAllocation(),
+    await E(userSeat).getCurrentAllocationJig(),
   );
   t.deepEqual(zcfSeat.getCurrentAllocation(), {});
 
@@ -869,7 +869,7 @@ test(`zcfSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
 
   t.deepEqual(
     zcfSeat.getCurrentAllocation(),
-    await E(userSeat).getCurrentAllocation(),
+    await E(userSeat).getCurrentAllocationJig(),
   );
 });
 
@@ -925,14 +925,14 @@ test(`zcfSeat.incrementBy, decrementBy, zcf.reallocate from zcf.makeEmptySeatKit
 
 test(`userSeat from zcf.makeEmptySeatKit - only these properties exist`, async t => {
   const expectedMethods = [
-    'getCurrentAllocation',
     'getProposal',
     'getPayouts',
     'getPayout',
     'getOfferResult',
     'hasExited',
     'tryExit',
-    'getNotifier',
+    'getCurrentAllocationJig',
+    'getAllocationNotifierJig',
   ];
   const { zcf } = await setupZCFTest();
   const { userSeat: userSeatP } = zcf.makeEmptySeatKit();
@@ -997,20 +997,20 @@ test(`userSeat.tryExit from zcf.makeEmptySeatKit - afterDeadline`, async t => {
   t.deepEqual(payouts, {});
 });
 
-test(`userSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
+test(`userSeat.getCurrentAllocationJig from zcf.makeEmptySeatKit`, async t => {
   const { zcf } = await setupZCFTest();
   const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
 
   t.deepEqual(
     zcfSeat.getCurrentAllocation(),
-    await E(userSeat).getCurrentAllocation(),
+    await E(userSeat).getCurrentAllocationJig(),
   );
-  t.deepEqual(await E(userSeat).getCurrentAllocation(), {});
+  t.deepEqual(await E(userSeat).getCurrentAllocationJig(), {});
 
   // Mint some gains to change the allocation.
   const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3n);
 
-  t.deepEqual(await E(userSeat).getCurrentAllocation(), {
+  t.deepEqual(await E(userSeat).getCurrentAllocationJig(), {
     A: {
       brand: brand1,
       value: 3n,
@@ -1020,7 +1020,7 @@ test(`userSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
   // Again, mint some gains to change the allocation.
   const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6n);
 
-  t.deepEqual(await E(userSeat).getCurrentAllocation(), {
+  t.deepEqual(await E(userSeat).getCurrentAllocationJig(), {
     A: {
       brand: brand1,
       value: 3n,
@@ -1033,7 +1033,7 @@ test(`userSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
 
   t.deepEqual(
     zcfSeat.getCurrentAllocation(),
-    await E(userSeat).getCurrentAllocation(),
+    await E(userSeat).getCurrentAllocationJig(),
   );
 });
 
@@ -1044,10 +1044,10 @@ test(`userSeat.getOfferResult from zcf.makeEmptySeatKit`, async t => {
   t.is(result, undefined);
 });
 
-test(`userSeat.getNotifier`, async t => {
+test(`userSeat.getAllocationNotifierJig`, async t => {
   const { zcf } = await setupZCFTest();
   const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
-  const notifier = await E(userSeat).getNotifier();
+  const notifier = await E(userSeat).getAllocationNotifierJig();
 
   // Mint some gains to change the allocation.
   const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3n);
@@ -1110,7 +1110,7 @@ test(`userSeat.getPayouts, getPayout from zcf.makeEmptySeatKit`, async t => {
     6n,
   );
 
-  t.deepEqual(await E(userSeat).getCurrentAllocation(), {
+  t.deepEqual(await E(userSeat).getCurrentAllocationJig(), {
     A: {
       brand: brand1,
       value: 3n,
@@ -1393,7 +1393,7 @@ test(`zcf.stopAcceptingOffers`, async t => {
   );
 
   t.deepEqual(
-    await E(seat).getCurrentAllocation(),
+    await E(seat).getCurrentAllocationJig(),
     {},
     'can still query live seat',
   );

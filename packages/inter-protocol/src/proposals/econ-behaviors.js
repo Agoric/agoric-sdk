@@ -6,10 +6,10 @@ import { AmountMath } from '@agoric/ertp';
 import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
-import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/core/utils.js';
 import { makeStorageNode } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E, Far } from '@endo/far';
+import { Stake, Stable } from '@agoric/vats/src/tokens.js';
 import * as Collect from '../collect.js';
 import { makeTracer } from '../makeTracer.js';
 import { makeStakeReporter } from '../my-lien.js';
@@ -28,8 +28,6 @@ const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
 
 const BASIS_POINTS = 10_000n;
 const MILLI = 1_000_000n;
-
-const CENTRAL_DENOM_NAME = 'urun';
 
 /**
  * @typedef {GovernedCreatorFacet<import('../runStake/runStake.js').RunStakeCreator>} RunStakeCreator
@@ -55,7 +53,7 @@ const CENTRAL_DENOM_NAME = 'urun';
  *   reserveCreatorFacet: import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet,
  *   reserveGovernorCreatorFacet: GovernedAssetReserveFacetAccess,
  *   runStakeCreatorFacet: RunStakeCreator,
- *   vaultFactoryCreator: VaultFactory,
+ *   vaultFactoryCreator: VaultFactoryCreatorFacet,
  *   vaultFactoryGovernorCreator: GovernedContractFacetAccess<{},{}>,
  *   vaultFactoryVoteCreator: unknown,
  *   minInitialDebt: NatValue,
@@ -130,10 +128,10 @@ export const startInterchainPool = async (
       produce: { interchainPool: _viaAgoricNamesAdmin },
     },
     brand: {
-      consume: { RUN: centralBrandP },
+      consume: { [Stable.symbol]: centralBrandP },
     },
     issuer: {
-      consume: { RUN: centralIssuerP },
+      consume: { [Stable.symbol]: centralIssuerP },
     },
   },
   { interchainPoolOptions = {} } = {},
@@ -188,10 +186,10 @@ export const setupAmm = async (
       ammGovernorCreatorFacet,
     },
     brand: {
-      consume: { RUN: runBrandP },
+      consume: { [Stable.symbol]: runBrandP },
     },
     issuer: {
-      consume: { [CENTRAL_ISSUER_NAME]: centralIssuer },
+      consume: { [Stable.symbol]: centralIssuer },
     },
     instance: {
       consume: { economicCommittee: electorateInstance },
@@ -280,7 +278,7 @@ export const setupReserve = async ({
     reservePublicFacet,
   },
   issuer: {
-    consume: { [CENTRAL_ISSUER_NAME]: centralIssuer },
+    consume: { [Stable.symbol]: centralIssuer },
   },
   instance: {
     consume: { economicCommittee: electorateInstance },
@@ -387,7 +385,7 @@ export const startVaultFactory = async (
     },
     produce, // {  vaultFactoryCreator }
     brand: {
-      consume: { [CENTRAL_ISSUER_NAME]: centralBrandP },
+      consume: { [Stable.symbol]: centralBrandP },
     },
     instance,
     installation: {
@@ -541,10 +539,10 @@ harden(grantVaultFactoryControl);
 export const configureVaultFactoryUI = async ({
   consume: { board, zoe },
   issuer: {
-    consume: { [CENTRAL_ISSUER_NAME]: centralIssuerP },
+    consume: { [Stable.symbol]: centralIssuerP },
   },
   brand: {
-    consume: { [CENTRAL_ISSUER_NAME]: centralBrandP },
+    consume: { [Stable.symbol]: centralBrandP },
   },
   installation: {
     consume: {
@@ -646,10 +644,10 @@ export const startRewardDistributor = async ({
     consume: { feeDistributor },
   },
   issuer: {
-    consume: { RUN: centralIssuerP },
+    consume: { [Stable.symbol]: centralIssuerP },
   },
   brand: {
-    consume: { RUN: centralBrandP },
+    consume: { [Stable.symbol]: centralBrandP },
   },
 }) => {
   trace('startRewardDistributor');
@@ -669,7 +667,7 @@ export const startRewardDistributor = async ({
   ]);
 
   const rewardDistributorDepositFacet = await E(bankManager)
-    .getRewardDistributorDepositFacet(CENTRAL_DENOM_NAME, {
+    .getRewardDistributorDepositFacet(Stable.denom, {
       issuer: centralIssuer,
       brand: centralBrand,
     })
@@ -731,7 +729,7 @@ export const startLienBridge = async ({
   consume: { bridgeManager: bridgeOptP },
   produce: { lienBridge },
   brand: {
-    consume: { BLD: bldP },
+    consume: { [Stake.symbol]: bldP },
   },
 }) => {
   const bridgeManager = await bridgeOptP;
@@ -785,11 +783,11 @@ export const startRunStake = async (
       produce: { runStake: runStakeinstanceR },
     },
     brand: {
-      consume: { BLD: bldBrandP, RUN: runBrandP },
+      consume: { [Stake.symbol]: bldBrandP, [Stable.symbol]: runBrandP },
       produce: { Attestation: attestationBrandR },
     },
     issuer: {
-      consume: { BLD: bldIssuer },
+      consume: { [Stake.symbol]: bldIssuer },
       produce: { Attestation: attestationIssuerR },
     },
   },

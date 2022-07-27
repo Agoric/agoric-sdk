@@ -27,8 +27,10 @@ export const addSubtract = (base, gain, loss) =>
   AmountMath.subtract(AmountMath.add(base, gain), loss);
 
 /**
+ * Verifies that every key in the proposal is in the provided list
+ *
  * @param {ProposalRecord} proposal
- * @param {string[]} keys usually 'Collateral' and 'RUN'
+ * @param {string[]} keys
  */
 export const assertOnlyKeys = (proposal, keys) => {
   /** @param {AmountKeywordRecord} clause */

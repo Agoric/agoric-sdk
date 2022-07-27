@@ -92,8 +92,8 @@ export const setupReserveServices = async (
   installation.produce.reserve.resolve(E(zoe).install(reserveBundle));
   const faucetBundle = await provideBundle(t, faucetRoot, 'faucet');
   const faucetInstallation = E(zoe).install(faucetBundle);
-  brand.produce.RUN.resolve(runBrand);
-  issuer.produce.RUN.resolve(runIssuer);
+  brand.produce.IST.resolve(runBrand);
+  issuer.produce.IST.resolve(runIssuer);
   produce.feeMintAccess.resolve(await feeMintAccess);
 
   const governorCreatorFacet = consume.reserveGovernorCreatorFacet;

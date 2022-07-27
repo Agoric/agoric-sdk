@@ -63,10 +63,12 @@ harden(provideKindHandle);
  * if all the mapped values are Passable, then the returned object will be
  * a CopyRecord.
  *
- * @template V, U
- * @param {Record<string,V>} original
- * @param {(value: V, key?: string) => U} mapFn
- * @returns {Record<string,U>}
+ * @template {string} K
+ * @template T
+ * @template U
+ * @param {Record<K,T>} original
+ * @param {(value: T, key?: string) => U} mapFn
+ * @returns {Record<K,U>}
  */
 export const objectMap = (original, mapFn) => {
   const ents = entries(original);

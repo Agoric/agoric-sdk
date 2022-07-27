@@ -1,59 +1,57 @@
 // @ts-check
 
-import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
-
-import { E } from '@endo/eventual-send';
-import { deeplyFulfilled } from '@endo/marshal';
+import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { makeParamManagerBuilder } from '@agoric/governance';
 import {
   makeNotifierFromAsyncIterable,
   makeNotifierFromSubscriber,
   makeStoredPublisherKit,
 } from '@agoric/notifier';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { M, matches } from '@agoric/store';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { objectMap } from '@agoric/vat-data';
 import {
   ceilMultiplyBy,
   makeRatio,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
-import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { assertAmountsEqual } from '@agoric/zoe/test/zoeTestHelpers.js';
-import { M, matches } from '@agoric/store';
-import { makeParamManagerBuilder } from '@agoric/governance';
-
-import { makeTracer } from '../../src/makeTracer.js';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
+import { E } from '@endo/eventual-send';
+import { deeplyFulfilled } from '@endo/marshal';
+import * as Collect from '../../src/collect.js';
+import { calculateCurrentDebt } from '../../src/interest-math.js';
 import { SECONDS_PER_YEAR } from '../../src/interest.js';
-import {
-  CHARGING_PERIOD_KEY,
-  RECORDING_PERIOD_KEY,
-} from '../../src/vaultFactory/params.js';
+import { makeTracer } from '../../src/makeTracer.js';
 import {
   setupAmm,
   setupReserve,
   startEconomicCommittee,
   startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
+import {
+  CHARGING_PERIOD_KEY,
+  RECORDING_PERIOD_KEY,
+} from '../../src/vaultFactory/params.js';
 import '../../src/vaultFactory/types.js';
-import * as Collect from '../../src/collect.js';
-import { calculateCurrentDebt } from '../../src/interest-math.js';
-
+import {
+  metricsTracker,
+  reserveInitialState,
+  subscriptionTracker,
+  vaultManagerMetricsTracker,
+} from '../metrics.js';
 import {
   installGovernance,
+  produceInstallations,
   setupBootstrap,
   setUpZoeForTest,
   withAmountUtils,
-  produceInstallations,
 } from '../supports.js';
-import { unsafeMakeBundleCache } from '../bundleTool.js';
-import {
-  metricsTracker,
-  vaultManagerMetricsTracker,
-  subscriptionTracker,
-  reserveInitialState,
-} from '../metrics.js';
 
 /** @typedef {Record<string, any> & {
  * aeth: IssuerKit & import('../supports.js').AmountUtils,
@@ -128,9 +126,7 @@ test.before(async t => {
     amm: bundleCache.load(contractRoots.amm, 'amm'),
     reserve: bundleCache.load(contractRoots.reserve, 'reserve'),
   });
-  const installation = Collect.mapValues(bundles, bundle =>
-    E(zoe).install(bundle),
-  );
+  const installation = objectMap(bundles, bundle => E(zoe).install(bundle));
 
   const contextPs = {
     zoe,
@@ -365,7 +361,7 @@ const setupServices = async (
   await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
 
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
-  /** @type {Promise<VaultFactory & LimitedCreatorFacet<VaultFactory>>} */
+  /** @type {Promise<VaultFactoryCreatorFacet & LimitedCreatorFacet<VaultFactoryCreatorFacet>>} */
   // @ts-expect-error TypeScript is confused
   const vaultFactoryCreatorFacetP = E(governorCreatorFacet).getCreatorFacet();
   const reserveCreatorFacet = consume.reserveCreatorFacet;
@@ -378,7 +374,7 @@ const setupServices = async (
     'AEth',
     rates,
   );
-  /** @type {[any, VaultFactory, VFC['publicFacet'], VaultManager, PriceAuthority]} */
+  /** @type {[any, VaultFactoryCreatorFacet, VFC['publicFacet'], VaultManager, PriceAuthority]} */
   // @ts-expect-error cast
   const [
     governorInstance,
@@ -448,7 +444,7 @@ test('first', async t => {
   const { vaultFactory, lender, aethVaultManager } = services.vaultFactory;
   trace(t, 'services', { services, vaultFactory, lender });
 
-  // Create a loan for 470 RUN with 1100 aeth collateral
+  // Create a loan for 470 Minted with 1100 aeth collateral
   const collateralAmount = aeth.make(1100n);
   const loanAmount = run.make(470n);
   /** @type {UserSeat<VaultKit>} */
@@ -456,7 +452,7 @@ test('first', async t => {
     await E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
-      want: { RUN: loanAmount },
+      want: { Minted: loanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(collateralAmount),
@@ -472,14 +468,14 @@ test('first', async t => {
   t.deepEqual(
     debtAmount,
     AmountMath.add(loanAmount, fee),
-    'vault lent 470 RUN',
+    'vault lent 470 Minted',
   );
   trace(t, 'correct debt', debtAmount);
 
-  const { RUN: lentAmount } = await E(vaultSeat).getCurrentAllocation();
+  const { Minted: lentAmount } = await E(vaultSeat).getCurrentAllocationJig();
   const loanProceeds = await E(vaultSeat).getPayouts();
-  const runLent = await loanProceeds.RUN;
-  t.deepEqual(lentAmount, loanAmount, 'received 47 RUN');
+  const runLent = await loanProceeds.Minted;
+  t.deepEqual(lentAmount, loanAmount, 'received 47 Minted');
   t.deepEqual(
     await E(vault).getCollateralAmount(),
     aeth.make(1100n),
@@ -500,20 +496,20 @@ test('first', async t => {
   const seat = await E(zoe).offer(
     await E(vault).makeAdjustBalancesInvitation(),
     harden({
-      give: { RUN: paybackAmount },
+      give: { Minted: paybackAmount },
       want: { Collateral: collateralWanted },
     }),
     harden({
-      RUN: paybackPayment,
+      Minted: paybackPayment,
     }),
   );
 
   const payouts = E(seat).getPayouts();
-  const { Collateral: returnedCollateral, RUN: returnedRun } = await payouts;
+  const { Collateral: returnedCollateral, Minted: returnedRun } = await payouts;
   t.deepEqual(
     await E(vault).getCurrentDebt(),
     run.make(294n),
-    'debt reduced to 294 RUN',
+    'debt reduced to 294 Minted',
   );
   t.deepEqual(
     await E(vault).getCollateralAmount(),
@@ -542,7 +538,7 @@ test('first', async t => {
   );
 
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
-    RUN: run.make(24n),
+    Minted: run.make(24n),
   });
 });
 
@@ -551,7 +547,7 @@ test('price drop', async t => {
 
   const manualTimer = buildManualTimer(t.log);
   // When the price falls to 636, the loan will get liquidated. 636 for 900
-  // Aeth is 1.4 each. The loan is 270 RUN. The margin is 1.05, so at 636, 400
+  // Aeth is 1.4 each. The loan is 270 Minted. The margin is 1.05, so at 636, 400
   // Aeth collateral could support a loan of 268.
   t.context.loanTiming = {
     chargingPeriod: 2n,
@@ -574,7 +570,7 @@ test('price drop', async t => {
     reserveFacets: { reserveCreatorFacet },
   } = services;
 
-  // Create a loan for 270 RUN with 400 aeth collateral
+  // Create a loan for 270 Minted with 400 aeth collateral
   const collateralAmount = aeth.make(400n);
   const loanAmount = run.make(270n);
   /** @type {UserSeat<VaultKit>} */
@@ -582,7 +578,7 @@ test('price drop', async t => {
     await E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
-      want: { RUN: loanAmount },
+      want: { Minted: loanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(collateralAmount),
@@ -600,7 +596,7 @@ test('price drop', async t => {
   t.deepEqual(
     debtAmount,
     AmountMath.add(loanAmount, fee),
-    'borrower RUN amount does not match',
+    'borrower Minted amount does not match',
   );
 
   let notification = await E(vaultNotifier).getUpdateSince();
@@ -611,8 +607,8 @@ test('price drop', async t => {
     debt: AmountMath.add(loanAmount, fee),
     interest: makeRatio(100n, run.brand),
   });
-  const { RUN: lentAmount } = await E(vaultSeat).getCurrentAllocation();
-  t.truthy(AmountMath.isEqual(lentAmount, loanAmount), 'received 470 RUN');
+  const { Minted: lentAmount } = await E(vaultSeat).getCurrentAllocationJig();
+  t.truthy(AmountMath.isEqual(lentAmount, loanAmount), 'received 470 Minted');
   t.deepEqual(
     await E(vault).getCollateralAmount(),
     aeth.make(400n),
@@ -677,7 +673,7 @@ test('price drop', async t => {
   });
 
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
-    RUN: run.make(14n),
+    Minted: run.make(14n),
   });
 
   /** @type {UserSeat<string>} */
@@ -687,7 +683,7 @@ test('price drop', async t => {
   const closeProceeds = await E(closeSeat).getPayouts();
   const collProceeds = await aeth.issuer.getAmountOf(closeProceeds.Collateral);
   const runProceeds = await E(services.runKit.issuer).getAmountOf(
-    closeProceeds.RUN,
+    closeProceeds.Minted,
   );
 
   t.deepEqual(runProceeds, run.make(0n));
@@ -703,12 +699,12 @@ test('price falls precipitously', async t => {
   };
   t.context.aethInitialLiquidity = aeth.make(900n);
 
-  // The borrower will deposit 4 Aeth, and ask to borrow 470 RUN. The
+  // The borrower will deposit 4 Aeth, and ask to borrow 470 Minted. The
   // PriceAuthority's initial quote is 180. The max loan on 4 Aeth would be 600
   // (to make the margin 20%).
   // When the price falls to 123, the loan will get liquidated. At that point, 4
   // Aeth is worth 492, with a 5% margin, 493 is required.
-  // The Autowap provides 534 RUN for the 4 Aeth collateral, so the borrower
+  // The Autowap provides 534 Minted for the 4 Aeth collateral, so the borrower
   // gets 41 back
 
   const manualTimer = buildManualTimer(t.log);
@@ -723,7 +719,7 @@ test('price falls precipitously', async t => {
   const { vaultFactory, lender } = services.vaultFactory;
 
   const { reserveCreatorFacet } = services.reserveFacets;
-  // Create a loan for 370 RUN with 400 aeth collateral
+  // Create a loan for 370 Minted with 400 aeth collateral
   const collateralAmount = aeth.make(400n);
   const loanAmount = run.make(370n);
   /** @type {UserSeat<VaultKit>} */
@@ -731,7 +727,7 @@ test('price falls precipitously', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
-      want: { RUN: loanAmount },
+      want: { Minted: loanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(collateralAmount),
@@ -747,12 +743,12 @@ test('price falls precipitously', async t => {
   t.deepEqual(
     debtAmount,
     AmountMath.add(loanAmount, fee),
-    'borrower owes 388 RUN',
+    'borrower owes 388 Minted',
   );
   trace(t, 'correct debt', debtAmount);
 
-  const { RUN: lentAmount } = await E(userSeat).getCurrentAllocation();
-  t.deepEqual(lentAmount, loanAmount, 'received 470 RUN');
+  const { Minted: lentAmount } = await E(userSeat).getCurrentAllocationJig();
+  t.deepEqual(lentAmount, loanAmount, 'received 470 Minted');
   t.deepEqual(
     await E(vault).getCollateralAmount(),
     aeth.make(400n),
@@ -813,7 +809,7 @@ test('price falls precipitously', async t => {
   });
 
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
-    RUN: run.make(19n),
+    Minted: run.make(19n),
   });
 
   t.deepEqual(
@@ -836,13 +832,13 @@ test('price falls precipitously', async t => {
 
   /** @type {UserSeat<string>} */
   const closeSeat = await E(zoe).offer(E(vault).makeCloseInvitation());
-  // closing with 64n RUN remaining in debt
+  // closing with 64n Minted remaining in debt
   await E(closeSeat).getOfferResult();
 
   const closeProceeds = await E(closeSeat).getPayouts();
   const collProceeds = await aeth.issuer.getAmountOf(closeProceeds.Collateral);
   const runProceeds = await E(services.runKit.issuer).getAmountOf(
-    closeProceeds.RUN,
+    closeProceeds.Minted,
   );
 
   t.deepEqual(runProceeds, run.make(0n));
@@ -901,7 +897,7 @@ test('interest on multiple vaults', async t => {
   );
   const { vaultFactory, lender } = services.vaultFactory;
 
-  // Create a loan for Alice for 4700 RUN with 1100 aeth collateral
+  // Create a loan for Alice for 4700 Minted with 1100 aeth collateral
   const collateralAmount = aeth.make(1100n);
   const aliceLoanAmount = run.make(4700n);
   /** @type {UserSeat<VaultKit>} */
@@ -909,7 +905,7 @@ test('interest on multiple vaults', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
-      want: { RUN: aliceLoanAmount },
+      want: { Minted: aliceLoanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(collateralAmount),
@@ -925,14 +921,16 @@ test('interest on multiple vaults', async t => {
   t.deepEqual(
     debtAmount,
     AmountMath.add(aliceLoanAmount, fee),
-    'vault lent 4700 RUN + fees',
+    'vault lent 4700 Minted + fees',
   );
 
-  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocation();
+  const { Minted: lentAmount } = await E(
+    aliceLoanSeat,
+  ).getCurrentAllocationJig();
   const loanProceeds = await E(aliceLoanSeat).getPayouts();
-  t.deepEqual(lentAmount, aliceLoanAmount, 'received 4700 RUN');
+  t.deepEqual(lentAmount, aliceLoanAmount, 'received 4700 Minted');
 
-  const runLent = await loanProceeds.RUN;
+  const runLent = await loanProceeds.Minted;
   t.truthy(
     AmountMath.isEqual(
       await E(run.issuer).getAmountOf(runLent),
@@ -940,7 +938,7 @@ test('interest on multiple vaults', async t => {
     ),
   );
 
-  // Create a loan for Bob for 3200 RUN with 800 aeth collateral
+  // Create a loan for Bob for 3200 Minted with 800 aeth collateral
   const bobCollateralAmount = aeth.make(800n);
   const bobLoanAmount = run.make(3200n);
   /** @type {UserSeat<VaultKit>} */
@@ -948,7 +946,7 @@ test('interest on multiple vaults', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
-      want: { RUN: bobLoanAmount },
+      want: { Minted: bobLoanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(bobCollateralAmount),
@@ -964,14 +962,16 @@ test('interest on multiple vaults', async t => {
   t.deepEqual(
     bobDebtAmount,
     AmountMath.add(bobLoanAmount, bobFee),
-    'vault lent 3200 RUN + fees',
+    'vault lent 3200 Minted + fees',
   );
 
-  const { RUN: bobLentAmount } = await E(bobLoanSeat).getCurrentAllocation();
+  const { Minted: bobLentAmount } = await E(
+    bobLoanSeat,
+  ).getCurrentAllocationJig();
   const bobLoanProceeds = await E(bobLoanSeat).getPayouts();
-  t.deepEqual(bobLentAmount, bobLoanAmount, 'received 4700 RUN');
+  t.deepEqual(bobLentAmount, bobLoanAmount, 'received 4700 Minted');
 
-  const bobRunLent = await bobLoanProceeds.RUN;
+  const bobRunLent = await bobLoanProceeds.Minted;
   t.truthy(
     AmountMath.isEqual(
       await E(run.issuer).getAmountOf(bobRunLent),
@@ -1019,10 +1019,10 @@ test('interest on multiple vaults', async t => {
   const rewardAllocation = await E(vaultFactory).getRewardAllocation();
   const rewardRunCount = aliceAddedDebt + bobAddedDebt;
   t.is(
-    rewardAllocation.RUN.value,
+    rewardAllocation.Minted.value,
     rewardRunCount,
     // reward includes 5% fees on two loans plus 1% interest three times on each
-    `Should be ${rewardRunCount}, was ${rewardAllocation.RUN.value}`,
+    `Should be ${rewardRunCount}, was ${rewardAllocation.Minted.value}`,
   );
 
   // try opening a vault that can't cover fees
@@ -1031,7 +1031,7 @@ test('interest on multiple vaults', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(200n) },
-      want: { RUN: run.make(0n) }, // no debt
+      want: { Minted: run.make(0n) }, // no debt
     }),
     harden({
       Collateral: aeth.mint.mintPayment(aeth.make(200n)),
@@ -1050,7 +1050,7 @@ test('interest on multiple vaults', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(2_000n) },
-      want: { RUN: run.make(wantedRun) },
+      want: { Minted: run.make(wantedRun) },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(aeth.make(2_000n)),
@@ -1090,7 +1090,7 @@ test('adjust balances', async t => {
 
   // initial loan /////////////////////////////////////
 
-  // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
+  // Create a loan for Alice for 5000 Minted with 1000 aeth collateral
   const collateralAmount = aeth.make(1000n);
   const aliceLoanAmount = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
@@ -1098,7 +1098,7 @@ test('adjust balances', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
-      want: { RUN: aliceLoanAmount },
+      want: { Minted: aliceLoanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(collateralAmount),
@@ -1114,12 +1114,14 @@ test('adjust balances', async t => {
   let runDebtLevel = AmountMath.add(aliceLoanAmount, fee);
   let collateralLevel = aeth.make(1000n);
 
-  t.deepEqual(debtAmount, runDebtLevel, 'vault lent 5000 RUN + fees');
-  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocation();
+  t.deepEqual(debtAmount, runDebtLevel, 'vault lent 5000 Minted + fees');
+  const { Minted: lentAmount } = await E(
+    aliceLoanSeat,
+  ).getCurrentAllocationJig();
   const loanProceeds = await E(aliceLoanSeat).getPayouts();
-  t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 RUN');
+  t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 Minted');
 
-  const runLent = await loanProceeds.RUN;
+  const runLent = await loanProceeds.Minted;
   t.truthy(
     AmountMath.isEqual(
       await E(run.issuer).getAmountOf(runLent),
@@ -1136,7 +1138,7 @@ test('adjust balances', async t => {
 
   // increase collateral 1 ///////////////////////////////////// (give both)
 
-  // Alice increase collateral by 100, paying in 50 RUN against debt
+  // Alice increase collateral by 100, paying in 50 Minted against debt
   const collateralIncrement = aeth.make(100n);
   const depositRunAmount = run.make(50n);
   runDebtLevel = AmountMath.subtract(runDebtLevel, depositRunAmount);
@@ -1150,11 +1152,11 @@ test('adjust balances', async t => {
   const aliceAddCollateralSeat1 = await E(zoe).offer(
     E(aliceVault).makeAdjustBalancesInvitation(),
     harden({
-      give: { Collateral: collateralIncrement, RUN: depositRunAmount },
+      give: { Collateral: collateralIncrement, Minted: depositRunAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(collateralIncrement),
-      RUN: paybackPayment,
+      Minted: paybackPayment,
     }),
   );
 
@@ -1162,13 +1164,13 @@ test('adjust balances', async t => {
   debtAmount = await E(aliceVault).getCurrentDebt();
   t.deepEqual(debtAmount, runDebtLevel);
 
-  const { RUN: lentAmount2 } = await E(
+  const { Minted: lentAmount2 } = await E(
     aliceAddCollateralSeat1,
-  ).getCurrentAllocation();
+  ).getCurrentAllocationJig();
   const loanProceeds2 = await E(aliceAddCollateralSeat1).getPayouts();
   t.deepEqual(lentAmount2, run.makeEmpty(), 'no payout');
 
-  const runLent2 = await loanProceeds2.RUN;
+  const runLent2 = await loanProceeds2.Minted;
   t.truthy(
     AmountMath.isEqual(
       await E(run.issuer).getAmountOf(runLent2),
@@ -1181,7 +1183,7 @@ test('adjust balances', async t => {
 
   // increase collateral 2 ////////////////////////////////// (want:s, give:c)
 
-  // Alice increase collateral by 100, withdrawing 50 RUN
+  // Alice increase collateral by 100, withdrawing 50 Minted
   const collateralIncrement2 = aeth.make(100n);
   const withdrawRunAmount = run.make(50n);
   const withdrawRunAmountWithFees = ceilMultiplyBy(
@@ -1198,7 +1200,7 @@ test('adjust balances', async t => {
     E(aliceVault).makeAdjustBalancesInvitation(),
     harden({
       give: { Collateral: collateralIncrement2 },
-      want: { RUN: withdrawRunAmount },
+      want: { Minted: withdrawRunAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(collateralIncrement2),
@@ -1206,16 +1208,16 @@ test('adjust balances', async t => {
   );
 
   await E(aliceAddCollateralSeat2).getOfferResult();
-  const { RUN: lentAmount3 } = await E(
+  const { Minted: lentAmount3 } = await E(
     aliceAddCollateralSeat2,
-  ).getCurrentAllocation();
+  ).getCurrentAllocationJig();
   const loanProceeds3 = await E(aliceAddCollateralSeat2).getPayouts();
   t.deepEqual(lentAmount3, run.make(50n));
 
   debtAmount = await E(aliceVault).getCurrentDebt();
   t.deepEqual(debtAmount, runDebtLevel);
 
-  const runLent3 = await loanProceeds3.RUN;
+  const runLent3 = await loanProceeds3.Minted;
   t.truthy(
     AmountMath.isEqual(
       await E(run.issuer).getAmountOf(runLent3),
@@ -1232,7 +1234,7 @@ test('adjust balances', async t => {
 
   // reduce collateral  ///////////////////////////////////// (want both)
 
-  // Alice reduce collateral by 100, withdrawing 50 RUN
+  // Alice reduce collateral by 100, withdrawing 50 Minted
   const collateralDecrement = aeth.make(100n);
   const withdrawRun2 = run.make(50n);
   const withdrawRun2WithFees = ceilMultiplyBy(withdrawRun2, rates.loanFee);
@@ -1244,7 +1246,7 @@ test('adjust balances', async t => {
   const aliceReduceCollateralSeat = await E(zoe).offer(
     E(aliceVault).makeAdjustBalancesInvitation(),
     harden({
-      want: { RUN: withdrawRun2, Collateral: collateralDecrement },
+      want: { Minted: withdrawRun2, Collateral: collateralDecrement },
     }),
     harden({}),
   );
@@ -1255,13 +1257,13 @@ test('adjust balances', async t => {
   t.deepEqual(debtAmount, runDebtLevel);
   t.deepEqual(collateralLevel, await E(aliceVault).getCollateralAmount());
 
-  const { RUN: lentAmount4 } = await E(
+  const { Minted: lentAmount4 } = await E(
     aliceReduceCollateralSeat,
-  ).getCurrentAllocation();
+  ).getCurrentAllocationJig();
   const loanProceeds4 = await E(aliceReduceCollateralSeat).getPayouts();
   t.deepEqual(lentAmount4, run.make(50n));
 
-  const runBorrowed = await loanProceeds4.RUN;
+  const runBorrowed = await loanProceeds4.Minted;
   t.truthy(
     AmountMath.isEqual(
       await E(run.issuer).getAmountOf(runBorrowed),
@@ -1281,7 +1283,7 @@ test('adjust balances', async t => {
 
   // NSF  ///////////////////////////////////// (want too much of both)
 
-  // Alice reduce collateral by 100, withdrawing 50 RUN
+  // Alice reduce collateral by 100, withdrawing 50 Minted
   const collateralDecr2 = aeth.make(800n);
   const withdrawRun3 = run.make(500n);
   const withdrawRun3WithFees = ceilMultiplyBy(withdrawRun3, rates.loanFee);
@@ -1292,15 +1294,15 @@ test('adjust balances', async t => {
   const aliceReduceCollateralSeat2 = await E(zoe).offer(
     E(aliceVault).makeAdjustBalancesInvitation(),
     harden({
-      want: { RUN: withdrawRun3, Collateral: collateralDecr2 },
+      want: { Minted: withdrawRun3, Collateral: collateralDecr2 },
     }),
   );
 
   await t.throwsAsync(() => E(aliceReduceCollateralSeat2).getOfferResult(), {
     // Double-disclosure bug endojs/endo#640
     // wildcards were:
-    // "brand":"[Alleged: RUN brand]","value":"[5829n]"
-    // "value":"[3750n]","brand":"[Alleged: RUN brand]"
+    // "brand":"[Alleged: IST brand]","value":"[5829n]"
+    // "value":"[3750n]","brand":"[Alleged: IST brand]"
     message: / is more than the collateralization ratio allows:/,
     // message: /The requested debt {.*} is more than the collateralization ratio allows: {.*}/,
   });
@@ -1310,7 +1312,7 @@ test('adjust balances', async t => {
     E(aliceVault).makeAdjustBalancesInvitation(),
     harden({
       want: {
-        RUN: run.makeEmpty(),
+        Minted: run.makeEmpty(),
         Collateral: aeth.makeEmpty(),
       },
     }),
@@ -1346,7 +1348,7 @@ test('adjust balances - withdraw RUN', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
-      want: { RUN: aliceLoanAmount },
+      want: { Minted: aliceLoanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(collateralAmount),
@@ -1370,7 +1372,7 @@ test('adjust balances - withdraw RUN', async t => {
   const aliceWithdrawRunSeat = await E(zoe).offer(
     E(aliceVault).makeAdjustBalancesInvitation(),
     harden({
-      want: { RUN: additionalRUN },
+      want: { Minted: additionalRUN },
     }),
   );
 
@@ -1382,13 +1384,13 @@ test('adjust balances - withdraw RUN', async t => {
   );
   t.deepEqual(debtAmount, runDebtLevel);
 
-  const { RUN: lentAmount2 } = await E(
+  const { Minted: lentAmount2 } = await E(
     aliceWithdrawRunSeat,
-  ).getCurrentAllocation();
+  ).getCurrentAllocationJig();
   const loanProceeds2 = await E(aliceWithdrawRunSeat).getPayouts();
   t.deepEqual(lentAmount2, additionalRUN, '100 RUN');
 
-  const runLent2 = await loanProceeds2.RUN;
+  const { Minted: runLent2 } = await loanProceeds2;
   t.deepEqual(await E(run.issuer).getAmountOf(runLent2), additionalRUN);
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
@@ -1427,7 +1429,7 @@ test('adjust balances after interest charges', async t => {
     await E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(AMPLE) },
-      want: { RUN: run.make(LOAN1) },
+      want: { Minted: run.make(LOAN1) },
     }),
     harden({
       Collateral: t.context.aeth.mint.mintPayment(aeth.make(AMPLE)),
@@ -1445,11 +1447,11 @@ test('adjust balances after interest charges', async t => {
   const takeCollateralSeat = await E(services.zoe).offer(
     adjustBalances1,
     harden({
-      give: { RUN: given },
+      give: { Minted: given },
       want: {},
     }),
     harden({
-      RUN: await getRunFromFaucet(t, 60n),
+      Minted: await getRunFromFaucet(t, 60n),
     }),
   );
   const result = await E(takeCollateralSeat).getOfferResult();
@@ -1471,7 +1473,7 @@ test('transfer vault', async t => {
 
   // initial loan /////////////////////////////////////
 
-  // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
+  // Create a loan for Alice for 5000 Minted with 1000 aeth collateral
   const collateralAmount = aeth.make(1000n);
   const aliceLoanAmount = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
@@ -1479,7 +1481,7 @@ test('transfer vault', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
-      want: { RUN: aliceLoanAmount },
+      want: { Minted: aliceLoanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(collateralAmount),
@@ -1509,7 +1511,7 @@ test('transfer vault', async t => {
   } = await legacyOfferResult(transferSeat);
   await t.throwsAsync(() => E(aliceVault).getCurrentDebt());
   const debtAfter = await E(transferVault).getCurrentDebt();
-  t.deepEqual(debtAfter, debtAmount, 'vault lent 5000 RUN + fees');
+  t.deepEqual(debtAfter, debtAmount, 'vault lent 5000 Minted + fees');
   const collateralAfter = await E(transferVault).getCollateralAmount();
   t.deepEqual(collateralAmount, collateralAfter, 'vault has 1000n aEth');
 
@@ -1541,10 +1543,12 @@ test('transfer vault', async t => {
   // make the invitation first so that we can arrange the interleaving
   // of adjust and tranfer
   const adjustInvitation = E(transferVault).makeAdjustBalancesInvitation();
-  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocation();
+  const { Minted: lentAmount } = await E(
+    aliceLoanSeat,
+  ).getCurrentAllocationJig();
   const aliceProceeds = await E(aliceLoanSeat).getPayouts();
-  t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 RUN');
-  const borrowedRun = await aliceProceeds.RUN;
+  t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 Minted');
+  const borrowedRun = await aliceProceeds.Minted;
   const payoffRun2 = run.make(600n);
   const [paybackPayment, _remainingPayment] = await E(run.issuer).split(
     borrowedRun,
@@ -1555,9 +1559,9 @@ test('transfer vault', async t => {
   const adjustSeatPromise = E(zoe).offer(
     adjustInvitation,
     harden({
-      give: { RUN: payoffRun2 },
+      give: { Minted: payoffRun2 },
     }),
-    harden({ RUN: paybackPayment }),
+    harden({ Minted: paybackPayment }),
   );
   const t2Invite = await E(transferVault).makeTransferInvitation();
   /** @type {UserSeat<VaultKit>} */
@@ -1575,7 +1579,7 @@ test('transfer vault', async t => {
   );
   await t.throwsAsync(() => E(transferVault).getCurrentDebt());
   const debtAfter2 = await E(t2Vault).getCurrentDebt();
-  t.deepEqual(debtAmount, debtAfter2, 'vault lent 5000 RUN + fees');
+  t.deepEqual(debtAmount, debtAfter2, 'vault lent 5000 Minted + fees');
 
   const collateralAfter2 = await E(t2Vault).getCollateralAmount();
   t.deepEqual(collateralAmount, collateralAfter2, 'vault has 1000n aEth');
@@ -1595,7 +1599,7 @@ test('transfer vault', async t => {
   );
 });
 
-// Alice will over repay her borrowed RUN. In order to make that possible,
+// Alice will over repay her borrowed Minted. In order to make that possible,
 // Bob will also take out a loan and will give her the proceeds.
 test('overdeposit', async t => {
   const { aeth, zoe, run, rates } = t.context;
@@ -1612,7 +1616,7 @@ test('overdeposit', async t => {
 
   // Alice's loan /////////////////////////////////////
 
-  // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
+  // Create a loan for Alice for 5000 Minted with 1000 aeth collateral
   const collateralAmount = aeth.make(1000n);
   const aliceLoanAmount = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
@@ -1620,7 +1624,7 @@ test('overdeposit', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
-      want: { RUN: aliceLoanAmount },
+      want: { Minted: aliceLoanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(collateralAmount),
@@ -1635,12 +1639,14 @@ test('overdeposit', async t => {
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
   const runDebt = AmountMath.add(aliceLoanAmount, fee);
 
-  t.deepEqual(debtAmount, runDebt, 'vault lent 5000 RUN + fees');
-  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocation();
+  t.deepEqual(debtAmount, runDebt, 'vault lent 5000 Minted + fees');
+  const { Minted: lentAmount } = await E(
+    aliceLoanSeat,
+  ).getCurrentAllocationJig();
   const aliceProceeds = await E(aliceLoanSeat).getPayouts();
-  t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 RUN');
+  t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 Minted');
 
-  const borrowedRun = await aliceProceeds.RUN;
+  const borrowedRun = await aliceProceeds.Minted;
   t.truthy(
     AmountMath.isEqual(
       await E(run.issuer).getAmountOf(borrowedRun),
@@ -1654,7 +1660,7 @@ test('overdeposit', async t => {
 
   // Bob's loan /////////////////////////////////////
 
-  // Create a loan for Bob for 1000 RUN with 200 aeth collateral
+  // Create a loan for Bob for 1000 Minted with 200 aeth collateral
   const bobCollateralAmount = aeth.make(200n);
   const bobLoanAmount = run.make(1000n);
   /** @type {UserSeat<VaultKit>} */
@@ -1662,7 +1668,7 @@ test('overdeposit', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
-      want: { RUN: bobLoanAmount },
+      want: { Minted: bobLoanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(bobCollateralAmount),
@@ -1670,7 +1676,7 @@ test('overdeposit', async t => {
   );
   const bobProceeds = await E(bobLoanSeat).getPayouts();
   await E(bobLoanSeat).getOfferResult();
-  const bobRun = await bobProceeds.RUN;
+  const bobRun = await bobProceeds.Minted;
   t.truthy(
     AmountMath.isEqual(
       await E(run.issuer).getAmountOf(bobRun),
@@ -1678,7 +1684,7 @@ test('overdeposit', async t => {
     ),
   );
 
-  // overpay debt ///////////////////////////////////// (give RUN)
+  // overpay debt ///////////////////////////////////// (give Minted)
 
   const combinedRun = await E(run.issuer).combine(
     harden([borrowedRun, bobRun]),
@@ -1688,20 +1694,22 @@ test('overdeposit', async t => {
   const aliceOverpaySeat = await E(zoe).offer(
     E(aliceVault).makeAdjustBalancesInvitation(),
     harden({
-      give: { RUN: depositRun2 },
+      give: { Minted: depositRun2 },
     }),
-    harden({ RUN: combinedRun }),
+    harden({ Minted: combinedRun }),
   );
 
   await E(aliceOverpaySeat).getOfferResult();
   debtAmount = await E(aliceVault).getCurrentDebt();
   t.deepEqual(debtAmount, run.makeEmpty());
 
-  const { RUN: lentAmount5 } = await E(aliceOverpaySeat).getCurrentAllocation();
+  const { Minted: lentAmount5 } = await E(
+    aliceOverpaySeat,
+  ).getCurrentAllocationJig();
   const loanProceeds5 = await E(aliceOverpaySeat).getPayouts();
   t.deepEqual(lentAmount5, run.make(750n));
 
-  const runReturned = await loanProceeds5.RUN;
+  const runReturned = await loanProceeds5.Minted;
   t.deepEqual(await E(run.issuer).getAmountOf(runReturned), run.make(750n));
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
@@ -1713,7 +1721,7 @@ test('overdeposit', async t => {
   await E(collectFeesSeat).getOfferResult();
   assertAmountsEqual(
     t,
-    await E.get(E(collectFeesSeat).getCurrentAllocation()).RUN,
+    await E.get(E(collectFeesSeat).getCurrentAllocationJig()).Fee,
     run.make(300n),
   );
 });
@@ -1727,7 +1735,7 @@ test('mutable liquidity triggers and interest', async t => {
   const { zoe, aeth, run, rates: defaultRates } = t.context;
   t.context.aethInitialLiquidity = aeth.make(90_000_000n);
 
-  // Add a vaultManager with 10000 aeth collateral at a 200 aeth/RUN rate
+  // Add a vaultManager with 10000 aeth collateral at a 200 aeth/Minted rate
   const rates = harden({
     ...defaultRates,
     // charge 5% interest
@@ -1768,7 +1776,7 @@ test('mutable liquidity triggers and interest', async t => {
 
   // ALICE ////////////////////////////////////////////
 
-  // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
+  // Create a loan for Alice for 5000 Minted with 1000 aeth collateral
   // ratio is 4:1
   const aliceCollateralAmount = aeth.make(1000n);
   const aliceLoanAmount = run.make(5000n);
@@ -1777,7 +1785,7 @@ test('mutable liquidity triggers and interest', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: aliceCollateralAmount },
-      want: { RUN: aliceLoanAmount },
+      want: { Minted: aliceLoanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(aliceCollateralAmount),
@@ -1792,15 +1800,19 @@ test('mutable liquidity triggers and interest', async t => {
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
   const aliceRunDebtLevel = AmountMath.add(aliceLoanAmount, fee);
 
-  t.deepEqual(aliceDebtAmount, aliceRunDebtLevel, 'vault lent 5000 RUN + fees');
-  const { RUN: aliceLentAmount } = await E(
+  t.deepEqual(
+    aliceDebtAmount,
+    aliceRunDebtLevel,
+    'vault lent 5000 Minted + fees',
+  );
+  const { Minted: aliceLentAmount } = await E(
     aliceLoanSeat,
-  ).getCurrentAllocation();
+  ).getCurrentAllocationJig();
   const aliceLoanProceeds = await E(aliceLoanSeat).getPayouts();
-  t.deepEqual(aliceLentAmount, aliceLoanAmount, 'received 5000 RUN');
+  t.deepEqual(aliceLentAmount, aliceLoanAmount, 'received 5000 Minted');
   trace(t, 'alice vault');
 
-  const aliceRunLent = await aliceLoanProceeds.RUN;
+  const aliceRunLent = await aliceLoanProceeds.Minted;
   t.truthy(
     AmountMath.isEqual(
       await E(run.issuer).getAmountOf(aliceRunLent),
@@ -1813,7 +1825,7 @@ test('mutable liquidity triggers and interest', async t => {
 
   // BOB //////////////////////////////////////////////
 
-  // Create a loan for Bob for 650 RUN with 100 Aeth collateral
+  // Create a loan for Bob for 650 Minted with 100 Aeth collateral
   const bobCollateralAmount = aeth.make(100n);
   const bobLoanAmount = run.make(512n);
   /** @type {UserSeat<VaultKit>} */
@@ -1821,7 +1833,7 @@ test('mutable liquidity triggers and interest', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
-      want: { RUN: bobLoanAmount },
+      want: { Minted: bobLoanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(bobCollateralAmount),
@@ -1836,13 +1848,15 @@ test('mutable liquidity triggers and interest', async t => {
   const bobFee = ceilMultiplyBy(bobLoanAmount, rates.loanFee);
   const bobRunDebtLevel = AmountMath.add(bobLoanAmount, bobFee);
 
-  t.deepEqual(bobDebtAmount, bobRunDebtLevel, 'vault lent 5000 RUN + fees');
-  const { RUN: bobLentAmount } = await E(bobLoanSeat).getCurrentAllocation();
+  t.deepEqual(bobDebtAmount, bobRunDebtLevel, 'vault lent 5000 Minted + fees');
+  const { Minted: bobLentAmount } = await E(
+    bobLoanSeat,
+  ).getCurrentAllocationJig();
   const bobLoanProceeds = await E(bobLoanSeat).getPayouts();
-  t.deepEqual(bobLentAmount, bobLoanAmount, 'received 5000 RUN');
+  t.deepEqual(bobLentAmount, bobLoanAmount, 'received 5000 Minted');
   trace(t, 'bob vault');
 
-  const bobRunLent = await bobLoanProceeds.RUN;
+  const bobRunLent = await bobLoanProceeds.Minted;
   t.truthy(
     AmountMath.isEqual(
       await E(run.issuer).getAmountOf(bobRunLent),
@@ -1868,7 +1882,7 @@ test('mutable liquidity triggers and interest', async t => {
 
   const { Collateral: aliceWithdrawnAeth } = await E(
     aliceReduceCollateralSeat,
-  ).getCurrentAllocation();
+  ).getCurrentAllocationJig();
   const loanProceeds4 = await E(aliceReduceCollateralSeat).getPayouts();
   t.deepEqual(aliceWithdrawnAeth, aeth.make(300n));
 
@@ -1906,7 +1920,7 @@ test('mutable liquidity triggers and interest', async t => {
   trace(t, 'bob not liquidating?', bobUpdate.value.vaultState);
   t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
 
-  // Bob's loan is now 777 RUN (including interest) on 100 Aeth, with the price
+  // Bob's loan is now 777 Minted (including interest) on 100 Aeth, with the price
   // at 7. 100 * 7 > 1.05 * 777. When interest is charged again, Bob should get
   // liquidated.
   await manualTimer.tickN(8);
@@ -1972,7 +1986,7 @@ test('collect fees from loan and AMM', async t => {
   const unitAmountIn = aeth.make(900n);
   const manualTimer = buildManualTimer(t.log);
 
-  // Add a pool with 900 aeth collateral at a 201 aeth/RUN rate
+  // Add a pool with 900 aeth collateral at a 201 aeth/Minted rate
 
   const services = await setupServices(
     t,
@@ -1984,7 +1998,7 @@ test('collect fees from loan and AMM', async t => {
   );
   const { vaultFactory, lender } = services.vaultFactory;
 
-  // Create a loan for 470 RUN with 1100 aeth collateral
+  // Create a loan for 470 Minted with 1100 aeth collateral
   const collateralAmount = aeth.make(1100n);
   const loanAmount = run.make(470n);
   /** @type {UserSeat<VaultKit>} */
@@ -1992,7 +2006,7 @@ test('collect fees from loan and AMM', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
-      want: { RUN: loanAmount },
+      want: { Minted: loanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(collateralAmount),
@@ -2002,13 +2016,17 @@ test('collect fees from loan and AMM', async t => {
   const { vault } = await E(vaultSeat).getOfferResult();
   const debtAmount = await E(vault).getCurrentDebt();
   const fee = ceilMultiplyBy(run.make(470n), rates.loanFee);
-  t.deepEqual(debtAmount, AmountMath.add(loanAmount, fee), 'vault loaned RUN');
+  t.deepEqual(
+    debtAmount,
+    AmountMath.add(loanAmount, fee),
+    'vault loaned Minted',
+  );
   trace(t, 'correct debt', debtAmount);
 
-  const { RUN: lentAmount } = await E(vaultSeat).getCurrentAllocation();
+  const { Minted: lentAmount } = await E(vaultSeat).getCurrentAllocationJig();
   const loanProceeds = await E(vaultSeat).getPayouts();
-  await loanProceeds.RUN;
-  t.deepEqual(lentAmount, loanAmount, 'received 47 RUN');
+  await loanProceeds.Minted;
+  t.deepEqual(lentAmount, loanAmount, 'received 47 Minted');
   t.deepEqual(
     await E(vault).getCollateralAmount(),
     aeth.make(1100n),
@@ -2016,7 +2034,7 @@ test('collect fees from loan and AMM', async t => {
   );
 
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
-    RUN: run.make(24n),
+    Minted: run.make(24n),
   });
 
   const amm = services.ammFacets.ammPublicFacet;
@@ -2043,10 +2061,11 @@ test('collect fees from loan and AMM', async t => {
     E(vaultFactory).makeCollectFeesInvitation(),
   );
   await E(collectFeesSeat).getOfferResult();
-  const feePayoutAmount = await E.get(E(collectFeesSeat).getCurrentAllocation())
-    .RUN;
+  const feePayoutAmount = await E.get(
+    E(collectFeesSeat).getCurrentAllocationJig(),
+  ).Fee;
   trace(t, 'Fee', feePoolBalance, feePayoutAmount);
-  t.truthy(AmountMath.isGTE(feePayoutAmount, feePoolBalance.RUN));
+  t.truthy(AmountMath.isGTE(feePayoutAmount, feePoolBalance.Fee));
 });
 
 test('close loan', async t => {
@@ -2065,7 +2084,7 @@ test('close loan', async t => {
 
   // initial loan /////////////////////////////////////
 
-  // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
+  // Create a loan for Alice for 5000 Minted with 1000 aeth collateral
   const collateralAmount = aeth.make(1000n);
   const aliceLoanAmount = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
@@ -2073,7 +2092,7 @@ test('close loan', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
-      want: { RUN: aliceLoanAmount },
+      want: { Minted: aliceLoanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(collateralAmount),
@@ -2088,12 +2107,14 @@ test('close loan', async t => {
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
   const runDebtLevel = AmountMath.add(aliceLoanAmount, fee);
 
-  t.deepEqual(debtAmount, runDebtLevel, 'vault lent 5000 RUN + fees');
-  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocation();
+  t.deepEqual(debtAmount, runDebtLevel, 'vault lent 5000 Minted + fees');
+  const { Minted: lentAmount } = await E(
+    aliceLoanSeat,
+  ).getCurrentAllocationJig();
   const loanProceeds = await E(aliceLoanSeat).getPayouts();
-  t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 RUN');
+  t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 Minted');
 
-  const runLent = await loanProceeds.RUN;
+  const runLent = await loanProceeds.Minted;
   t.truthy(
     AmountMath.isEqual(
       await E(run.issuer).getAmountOf(runLent),
@@ -2105,7 +2126,7 @@ test('close loan', async t => {
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
   t.deepEqual(aliceUpdate.value.locked, collateralAmount);
 
-  // Create a loan for Bob for 1000 RUN with 200 aeth collateral
+  // Create a loan for Bob for 1000 Minted with 200 aeth collateral
   const bobCollateralAmount = aeth.make(200n);
   const bobLoanAmount = run.make(1000n);
   /** @type {UserSeat<VaultKit>} */
@@ -2113,7 +2134,7 @@ test('close loan', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
-      want: { RUN: bobLoanAmount },
+      want: { Minted: bobLoanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(bobCollateralAmount),
@@ -2121,7 +2142,7 @@ test('close loan', async t => {
   );
   const bobProceeds = await E(bobLoanSeat).getPayouts();
   await E(bobLoanSeat).getOfferResult();
-  const bobRun = await bobProceeds.RUN;
+  const bobRun = await bobProceeds.Minted;
   t.truthy(
     AmountMath.isEqual(
       await E(run.issuer).getAmountOf(bobRun),
@@ -2129,7 +2150,7 @@ test('close loan', async t => {
     ),
   );
 
-  // close loan, using Bob's RUN /////////////////////////////////////
+  // close loan, using Bob's Minted /////////////////////////////////////
 
   const runRepayment = await E(run.issuer).combine(harden([bobRun, runLent]));
 
@@ -2137,23 +2158,23 @@ test('close loan', async t => {
   const aliceCloseSeat = await E(zoe).offer(
     E(aliceVault).makeCloseInvitation(),
     harden({
-      give: { RUN: run.make(6000n) },
+      give: { Minted: run.make(6000n) },
       want: { Collateral: aeth.makeEmpty() },
     }),
-    harden({ RUN: runRepayment }),
+    harden({ Minted: runRepayment }),
   );
 
   const closeOfferResult = await E(aliceCloseSeat).getOfferResult();
   t.is(closeOfferResult, 'your loan is closed, thank you for your business');
 
-  const closeAlloc = await E(aliceCloseSeat).getCurrentAllocation();
+  const closeAlloc = await E(aliceCloseSeat).getCurrentAllocationJig();
   t.deepEqual(closeAlloc, {
-    RUN: run.make(750n),
+    Minted: run.make(750n),
     Collateral: aeth.make(1000n),
   });
   const closeProceeds = await E(aliceCloseSeat).getPayouts();
   const collProceeds = await aeth.issuer.getAmountOf(closeProceeds.Collateral);
-  const runProceeds = await E(run.issuer).getAmountOf(closeProceeds.RUN);
+  const runProceeds = await E(run.issuer).getAmountOf(closeProceeds.Minted);
 
   t.deepEqual(runProceeds, run.make(750n));
   t.deepEqual(collProceeds, aeth.make(1000n));
@@ -2173,7 +2194,7 @@ test('excessive loan', async t => {
   );
   const { lender } = services.vaultFactory;
 
-  // Try to Create a loan for Alice for 5000 RUN with 100 aeth collateral
+  // Try to Create a loan for Alice for 5000 Minted with 100 aeth collateral
   const collateralAmount = aeth.make(100n);
   const aliceLoanAmount = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
@@ -2181,7 +2202,7 @@ test('excessive loan', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
-      want: { RUN: aliceLoanAmount },
+      want: { Minted: aliceLoanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(collateralAmount),
@@ -2206,7 +2227,7 @@ test('loan too small', async t => {
   );
   const { lender } = services.vaultFactory;
 
-  // Try to Create a loan for Alice for 5000 RUN with 100 aeth collateral
+  // Try to Create a loan for Alice for 5000 Minted with 100 aeth collateral
   const collateralAmount = aeth.make(100n);
   const aliceLoanAmount = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
@@ -2214,7 +2235,7 @@ test('loan too small', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
-      want: { RUN: aliceLoanAmount },
+      want: { Minted: aliceLoanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(collateralAmount),
@@ -2252,7 +2273,7 @@ test('excessive debt on collateral type', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
-      want: { RUN: centralAmount },
+      want: { Minted: centralAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(collateralAmount),
@@ -2260,7 +2281,7 @@ test('excessive debt on collateral type', async t => {
   );
   await t.throwsAsync(() => E(loanSeat).getOfferResult(), {
     message:
-      'Minting {"brand":"[Alleged: RUN brand]","value":"[1050000n]"} past {"brand":"[Alleged: RUN brand]","value":"[0n]"} would hit total debt limit {"brand":"[Alleged: RUN brand]","value":"[1000000n]"}',
+      'Minting {"brand":"[Alleged: IST brand]","value":"[1050000n]"} past {"brand":"[Alleged: IST brand]","value":"[0n]"} would hit total debt limit {"brand":"[Alleged: IST brand]","value":"[1000000n]"}',
   });
 });
 
@@ -2279,7 +2300,7 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
     recordingPeriod: SECONDS_PER_WEEK,
   };
 
-  // Add a vaultManager with 10000 aeth collateral at a 200 aeth/RUN rate
+  // Add a vaultManager with 10000 aeth collateral at a 200 aeth/Minted rate
   const rates = harden({
     ...defaultRates,
     // charge 5% interest
@@ -2301,7 +2322,7 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   // initial loans /////////////////////////////////////
   const { lender } = services.vaultFactory;
 
-  // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
+  // Create a loan for Alice for 5000 Minted with 1000 aeth collateral
   const aliceCollateralAmount = aeth.make(1000n);
   const aliceLoanAmount = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
@@ -2309,7 +2330,7 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: aliceCollateralAmount },
-      want: { RUN: aliceLoanAmount },
+      want: { Minted: aliceLoanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(aliceCollateralAmount),
@@ -2324,14 +2345,18 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
   const aliceRunDebtLevel = AmountMath.add(aliceLoanAmount, fee);
 
-  t.deepEqual(aliceDebtAmount, aliceRunDebtLevel, 'vault lent 5000 RUN + fees');
-  const { RUN: aliceLentAmount } = await E(
+  t.deepEqual(
+    aliceDebtAmount,
+    aliceRunDebtLevel,
+    'vault lent 5000 Minted + fees',
+  );
+  const { Minted: aliceLentAmount } = await E(
     aliceLoanSeat,
-  ).getCurrentAllocation();
+  ).getCurrentAllocationJig();
   const aliceLoanProceeds = await E(aliceLoanSeat).getPayouts();
-  t.deepEqual(aliceLentAmount, aliceLoanAmount, 'received 5000 RUN');
+  t.deepEqual(aliceLentAmount, aliceLoanAmount, 'received 5000 Minted');
 
-  const aliceRunLent = await aliceLoanProceeds.RUN;
+  const aliceRunLent = await aliceLoanProceeds.Minted;
   t.truthy(
     AmountMath.isEqual(
       await E(run.issuer).getAmountOf(aliceRunLent),
@@ -2342,7 +2367,7 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
 
-  // Create a loan for Bob for 740 RUN with 100 Aeth collateral
+  // Create a loan for Bob for 740 Minted with 100 Aeth collateral
   const bobCollateralAmount = aeth.make(100n);
   const bobLoanAmount = run.make(740n);
   /** @type {UserSeat<VaultKit>} */
@@ -2350,7 +2375,7 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
     E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
-      want: { RUN: bobLoanAmount },
+      want: { Minted: bobLoanAmount },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(bobCollateralAmount),
@@ -2365,12 +2390,14 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   const bobFee = ceilMultiplyBy(bobLoanAmount, rates.loanFee);
   const bobRunDebtLevel = AmountMath.add(bobLoanAmount, bobFee);
 
-  t.deepEqual(bobDebtAmount, bobRunDebtLevel, 'vault lent 5000 RUN + fees');
-  const { RUN: bobLentAmount } = await E(bobLoanSeat).getCurrentAllocation();
+  t.deepEqual(bobDebtAmount, bobRunDebtLevel, 'vault lent 5000 Minted + fees');
+  const { Minted: bobLentAmount } = await E(
+    bobLoanSeat,
+  ).getCurrentAllocationJig();
   const bobLoanProceeds = await E(bobLoanSeat).getPayouts();
-  t.deepEqual(bobLentAmount, bobLoanAmount, 'received 5000 RUN');
+  t.deepEqual(bobLentAmount, bobLoanAmount, 'received 5000 Minted');
 
-  const bobRunLent = await bobLoanProceeds.RUN;
+  const bobRunLent = await bobLoanProceeds.Minted;
   t.truthy(
     AmountMath.isEqual(
       await E(run.issuer).getAmountOf(bobRunLent),
@@ -2395,7 +2422,7 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
 
   await E(aliceReduceCollateralSeat).getOfferResult();
 
-  await E(aliceReduceCollateralSeat).getCurrentAllocation();
+  await E(aliceReduceCollateralSeat).getCurrentAllocationJig();
   const loanProceeds4 = await E(aliceReduceCollateralSeat).getPayouts();
   // t.deepEqual(aliceWithdrawnAeth, aeth.make(210n));
 
@@ -2411,7 +2438,7 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
   t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
 
-  // Bob's loan is now 777 RUN (including interest) on 100 Aeth, with the price
+  // Bob's loan is now 777 Minted (including interest) on 100 Aeth, with the price
   // at 7. 100 * 7 > 1.05 * 777. When interest is charged again, Bob should get
   // liquidated.
   // Advance time to trigger interest collection.
@@ -2588,7 +2615,7 @@ test('manager notifiers', async t => {
     await E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(AMPLE) },
-      want: { RUN: run.make(LOAN1) },
+      want: { Minted: run.make(LOAN1) },
     }),
     harden({
       Collateral: t.context.aeth.mint.mintPayment(aeth.make(AMPLE)),
@@ -2637,7 +2664,7 @@ test('manager notifiers', async t => {
     await E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(AMPLE) },
-      want: { RUN: run.make(LOAN1) },
+      want: { Minted: run.make(LOAN1) },
     }),
     harden({
       Collateral: t.context.aeth.mint.mintPayment(aeth.make(AMPLE)),
@@ -2657,7 +2684,7 @@ test('manager notifiers', async t => {
     await E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(ENOUGH) },
-      want: { RUN: run.make(LOAN2) },
+      want: { Minted: run.make(LOAN2) },
     }),
     harden({
       Collateral: t.context.aeth.mint.mintPayment(aeth.make(ENOUGH)),
@@ -2698,7 +2725,7 @@ test('manager notifiers', async t => {
     await E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(ENOUGH) },
-      want: { RUN: run.make(LOAN2) },
+      want: { Minted: run.make(LOAN2) },
     }),
     harden({
       Collateral: t.context.aeth.mint.mintPayment(aeth.make(ENOUGH)),
@@ -2728,7 +2755,7 @@ test('manager notifiers', async t => {
     await E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(AMPLE) },
-      want: { RUN: run.make(LOAN1) },
+      want: { Minted: run.make(LOAN1) },
     }),
     harden({
       Collateral: t.context.aeth.mint.mintPayment(aeth.make(AMPLE)),
@@ -2751,7 +2778,7 @@ test('manager notifiers', async t => {
     await E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(ENOUGH) },
-      want: { RUN: run.make(LOAN2) },
+      want: { Minted: run.make(LOAN2) },
     }),
     harden({
       Collateral: t.context.aeth.mint.mintPayment(aeth.make(ENOUGH)),
@@ -2798,7 +2825,7 @@ test('manager notifiers', async t => {
     await E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(AMPLE) },
-      want: { RUN: run.make(LOAN1) },
+      want: { Minted: run.make(LOAN1) },
     }),
     harden({
       Collateral: t.context.aeth.mint.mintPayment(aeth.make(AMPLE)),
@@ -2823,7 +2850,7 @@ test('manager notifiers', async t => {
     harden({
       // nominal collateral
       give: { Collateral: given },
-      want: { RUN: run.make(WANT_EXTRA) },
+      want: { Minted: run.make(WANT_EXTRA) },
     }),
     harden({
       Collateral: t.context.aeth.mint.mintPayment(given),
@@ -2839,11 +2866,11 @@ test('manager notifiers', async t => {
   vaultSeat = await E(services.zoe).offer(
     await E(vault).makeCloseInvitation(),
     harden({
-      give: { RUN: run.make(DEBT1_EXTRA) },
+      give: { Minted: run.make(DEBT1_EXTRA) },
       want: {},
     }),
     harden({
-      RUN: await getRunFromFaucet(t, DEBT1_EXTRA),
+      Minted: await getRunFromFaucet(t, DEBT1_EXTRA),
     }),
   );
   await E(vaultSeat).getOfferResult();

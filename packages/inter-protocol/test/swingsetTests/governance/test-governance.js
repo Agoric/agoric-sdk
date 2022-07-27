@@ -1,17 +1,16 @@
 // @ts-check
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import '@endo/init/debug.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import rawTest from 'ava';
-import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
-import bundleSource from '@endo/bundle-source';
-import { E } from '@endo/eventual-send';
-import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
+
+import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
 import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
-import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
-import { unsafeMakeBundleCache } from '../../bundleTool.js';
+import { buildKernelBundles, buildVatController } from '@agoric/swingset-vat';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
+import bundleSource from '@endo/bundle-source';
+import { E } from '@endo/eventual-send';
+import rawTest from 'ava';
 
 // import '../../../src/vaultFactory/vaultFactory.js';
 
@@ -85,20 +84,20 @@ test.skip('vaultFactory', async t => {
     '=> alice and the vaultFactory are set up',
     '=> voter and electorate vats are set up',
     'before vote, InterestRate numerator is 250',
-    'Voter Bob cast a ballot for {"changes":{"InterestRate":{"denominator":{"brand":"[Alleged: RUN brand]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[4321n]"}}}}',
+    'Voter Bob cast a ballot for {"changes":{"InterestRate":{"denominator":{"brand":"[Alleged: IST brand]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[4321n]"}}}}',
     'Voter Carol cast a ballot for {"noChange":["InterestRate"]}',
     'Voter Dave cast a ballot for {"noChange":["InterestRate"]}',
-    'Voter Emma cast a ballot for {"changes":{"InterestRate":{"denominator":{"brand":"[Alleged: RUN brand]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[4321n]"}}}}',
-    'Voter Flora cast a ballot for {"changes":{"InterestRate":{"denominator":{"brand":"[Alleged: RUN brand]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[4321n]"}}}}',
+    'Voter Emma cast a ballot for {"changes":{"InterestRate":{"denominator":{"brand":"[Alleged: IST brand]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[4321n]"}}}}',
+    'Voter Flora cast a ballot for {"changes":{"InterestRate":{"denominator":{"brand":"[Alleged: IST brand]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[4321n]"}}}}',
     'governor from governed matches governor instance',
     '=> alice.oneLoanWithInterest called',
-    'at 0 days: Alice owes {"brand":"[Alleged: RUN brand]","value":"[510000n]"}',
-    'at 1 days: Alice owes {"brand":"[Alleged: RUN brand]","value":"[510035n]"}',
+    'at 0 days: Alice owes {"brand":"[Alleged: IST brand]","value":"[510000n]"}',
+    'at 1 days: Alice owes {"brand":"[Alleged: IST brand]","value":"[510035n]"}',
     'at 2 days: vote ready to close',
-    'at 2 days: Alice owes {"brand":"[Alleged: RUN brand]","value":"[510070n]"}',
+    'at 2 days: Alice owes {"brand":"[Alleged: IST brand]","value":"[510070n]"}',
     'after vote on (InterestRate), InterestRate numerator is 4321',
     'at 3 days: vote closed',
-    'at 3 days: Alice owes {"brand":"[Alleged: RUN brand]","value":"[510105n]"}',
+    'at 3 days: Alice owes {"brand":"[Alleged: IST brand]","value":"[510105n]"}',
     'at 3 days: 1 day after votes cast, assetNotifier update #7 has interestRate.numerator 250',
     'at 4 days: 2 days after votes cast, assetNotifier update #8 has interestRate.numerator 4321',
   ]);

@@ -5,6 +5,7 @@
 /**
  * @typedef {string} Denom
  * @typedef {string} DepositAddress
+ * @typedef {string} Address
  */
 
 /**

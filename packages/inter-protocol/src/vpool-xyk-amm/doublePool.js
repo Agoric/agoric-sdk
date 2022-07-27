@@ -17,6 +17,12 @@ const { details: X } = assert;
 // price that brand is the outPool.
 
 /**
+ * doublePool is the virtualPool implementation for calculating prices when
+ * transiting through two pools. virtual pools wrap something that can do a swap
+ * and calculate prices. Current wrapped pools are single pools and pairs of
+ * pools, but we've also contemplated using a similar virtual wrapper for other
+ * curves.
+ *
  * @param {ZCF} zcf
  * @param {XYKPool} collateralInPool
  * @param {XYKPool} collateralOutPool
@@ -59,7 +65,7 @@ export const makeDoublePool = (
     seat.incrementBy(harden({ Out: prices.swapperGets }));
     inPoolSeat.incrementBy(harden({ Secondary: prices.inPoolIncrement }));
     outPoolSeat.incrementBy(harden({ Central: prices.outPoolIncrement }));
-    feeSeat.incrementBy(harden({ RUN: prices.protocolFee }));
+    feeSeat.incrementBy(harden({ Fee: prices.protocolFee }));
 
     zcf.reallocate(outPoolSeat, inPoolSeat, feeSeat, seat);
     seat.exit();

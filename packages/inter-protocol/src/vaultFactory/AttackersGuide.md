@@ -7,18 +7,18 @@ list should correspond pretty closely to the set of assurances that the Vault Fa
 to support.
 
 The VaultFactory's purpose is to make it possible for users to deposit valuable tokens and
-borrow RUN in exchange. They will pay interest on the total outstanding balance, and have
+borrow `Minted` in exchange. They will pay interest on the total outstanding balance, and have
 to pay off the debt or deposit additional collateral to ensure that the ratio of debt to
 collateral stays above a threshold. When the VaultManager detects that the ratio has
 fallen below the limit, their collateral will be sold.
 
-Part of the purpose of the Vault mechanism is to link the price of RUN to
+Part of the purpose of the Vault mechanism is to link the price of `Minted` to
 dollar-equivalents. We're currently getting prices from a configured PriceAuthority in
 RUN, but this should (https://github.com/Agoric/agoric-sdk/issues/4714) be changed to be
-priced in US Dollars. Tying the price at which Vaults lend RUN to the dollar price of the
-collateral is intended to set a ceiling on what one might pay for RUN. The fact that
+priced in US Dollars. Tying the price at which Vaults lend `Minted` to the dollar price of the
+collateral is intended to set a ceiling on what one might pay for `Minted`. The fact that
 vaults get liquidated to the AMM if the dollar-value of the collateral falls below the
-required ratio should restore the value of RUN when collateral values fall. In DAI, the
+required ratio should restore the value of `Minted` when collateral values fall. In DAI, the
 same linkage is enforced by auctioning off the collateral. Does selling into the AMM
 achieve the same end?
 
@@ -39,10 +39,10 @@ Fees are charged when Vaults are opened, and as interest is charged. That money 
 available to be collected by the creator of the VaultFactory. Is the fee collection
 interface guarded carefully enough? Can any unintended party collect the fees?
 
-## RUN Mint
+## `Minted` Mint
 
-The VaultManager has access to the RUN mint, and can create new RUN freely. This power is
-shared with every Vault, so if they can be suborned, arbitrary RUN can be created. Is this
+The VaultManager has access to the `Minted` mint, and can create new `Minted` freely. This power is
+shared with every Vault, so if they can be suborned, arbitrary `Minted` can be created. Is this
 power sufficiently constrained?
 
 ## Vaults
@@ -65,7 +65,7 @@ liquidation?
 
 We burn amounts from liquidation and from paying off debts. Do we always get the amounts
 right? Do we burn everywhere we should? Reallocate ensures that rights are conserved, so
-no RUN is created or destroyed in reallocation. If we burn the wrong amounts, someone will
+no `Minted` is created or destroyed in reallocation. If we burn the wrong amounts, someone will
 end up with too much or too little.
 
 ## Liquidation

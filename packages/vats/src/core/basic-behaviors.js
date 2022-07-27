@@ -7,26 +7,10 @@ import { E, Far } from '@endo/far';
 import { makeStorageNode } from '../lib-chainStorage.js';
 import { makeNameHubKit } from '../nameHub.js';
 import { feeIssuerConfig } from './utils.js';
+import { Stable, Stake } from '../tokens.js';
 
 const { details: X } = assert;
 
-// TODO/TECHDEBT: move to run-protocol?
-const Tokens = harden({
-  RUN: {
-    name: 'RUN',
-    denom: 'urun',
-    proposedName: 'Agoric RUN currency',
-    assetKind: AssetKind.NAT,
-    displayInfo: { decimalPlaces: 6 },
-  },
-  BLD: {
-    name: 'BLD',
-    denom: 'ubld',
-    proposedName: 'Agoric staking token',
-    assetKind: AssetKind.NAT,
-    displayInfo: { decimalPlaces: 6 },
-  },
-});
 // These two are inextricably linked with ../../golang/cosmos.
 const RESERVE_MODULE_ACCOUNT = 'vbank/reserve';
 const RESERVE_ADDRESS = 'agoric1ae0lmtzlgrcnla9xjkpaarq5d5dfez63h3nucl';
@@ -36,7 +20,7 @@ const RESERVE_ADDRESS = 'agoric1ae0lmtzlgrcnla9xjkpaarq5d5dfez63h3nucl';
  * cosmosInitAction with type AG_COSMOS_INIT,
  * with the following shape.
  *
- * The urun supplyCoins value is taken from genesis,
+ * The uist supplyCoins value is taken from genesis,
  * thereby authorizing the minting an initial supply of RUN.
  */
 // eslint-disable-next-line no-unused-vars
@@ -48,7 +32,7 @@ const bootMsgEx = {
     { denom: 'provisionpass', amount: '100' },
     { denom: 'sendpacketpass', amount: '100' },
     { denom: 'ubld', amount: '1000000000000000' },
-    { denom: 'urun', amount: '50000000000' },
+    { denom: 'uist', amount: '50000000000' },
   ],
   vbankPort: 3,
   vibcPort: 2,
@@ -180,7 +164,7 @@ harden(makeBoard);
  * Make the agoricNames, namesByAddress name hierarchies.
  *
  * agoricNames are well-known items such as the RUN issuer,
- * available as E(home.agoricNames).lookup('issuer', 'RUN')
+ * available as E(home.agoricNames).lookup('issuer', 'IST')
  *
  * namesByAddress is a NameHub for each provisioned client,
  * available, for example, as `E(home.namesByAddress).lookup('agoric1...')`.
@@ -313,7 +297,7 @@ export const mintInitialSupply = async ({
 
   const { supplyCoins = [] } = bootMsg || {};
   const centralBootstrapSupply = supplyCoins.find(
-    ({ denom }) => denom === Tokens.RUN.denom,
+    ({ denom }) => denom === Stable.denom,
   ) || { amount: '0' };
   const bootstrapPaymentValue = Nat(BigInt(centralBootstrapSupply.amount));
 
@@ -360,9 +344,9 @@ export const addBankAssets = async ({
       mintHolder,
       harden({}),
       harden({
-        keyword: Tokens.BLD.name,
-        assetKind: AssetKind.NAT,
-        displayInfo: Tokens.BLD.displayInfo,
+        keyword: Stake.symbol,
+        assetKind: Stake.assetKind,
+        displayInfo: Stake.displayInfo,
       }),
     ),
   );
@@ -387,20 +371,20 @@ export const addBankAssets = async ({
   }
 
   produceIssuer.BLD.resolve(bldKit.issuer);
-  produceIssuer.RUN.resolve(runKit.issuer);
+  produceIssuer.IST.resolve(runKit.issuer);
   produceBrand.BLD.resolve(bldKit.brand);
-  produceBrand.RUN.resolve(runKit.brand);
+  produceBrand.IST.resolve(runKit.brand);
   return Promise.all([
     E(bankMgr).addAsset(
-      Tokens.BLD.denom,
-      Tokens.BLD.name,
-      Tokens.BLD.proposedName,
+      Stake.denom,
+      Stake.symbol,
+      Stake.proposedName,
       bldKit, // with mint
     ),
     E(bankMgr).addAsset(
-      Tokens.RUN.denom,
-      Tokens.RUN.name,
-      Tokens.RUN.proposedName,
+      Stable.denom,
+      Stable.symbol,
+      Stable.proposedName,
       runKit, // without mint, with payment
     ),
   ]);

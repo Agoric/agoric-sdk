@@ -71,7 +71,7 @@ async function launch(zoeP, sourceRoot) {
   const collateral50 = AmountMath.make(collaterlBrand, 50n);
   const proposal = harden({
     give: { Collateral: collateral50 },
-    want: { RUN: AmountMath.make(runBrand, 70n) },
+    want: { Minted: AmountMath.make(runBrand, 70n) },
   });
   const payments = harden({
     Collateral: collateralMint.mintPayment(collateral50),
@@ -88,8 +88,8 @@ test('charges', async t => {
   const { creatorSeat, creatorFacet } = await launch(zoe, vaultRoot);
 
   // Our wrapper gives us a Vault which holds 50 Collateral, has lent out 70
-  // RUN (charging 3 RUN fee), which uses an automatic market maker that
-  // presents a fixed price of 4 RUN per Collateral.
+  // Minted (charging 3 Minted fee), which uses an automatic market maker that
+  // presents a fixed price of 4 Minted per Collateral.
   await E(creatorSeat).getOfferResult();
   const { runMint, collateralKit, vault } = testJig;
   const { brand: runBrand } = runMint.getIssuerRecord();
@@ -100,7 +100,7 @@ test('charges', async t => {
   t.deepEqual(
     vault.getCurrentDebt(),
     AmountMath.make(runBrand, startingDebt),
-    'borrower owes 74 RUN',
+    'borrower owes 74 Minted',
   );
   t.deepEqual(
     vault.getCollateralAmount(),
@@ -131,10 +131,10 @@ test('charges', async t => {
   const paybackSeat = E(zoe).offer(
     vault.makeAdjustBalancesInvitation(),
     harden({
-      give: { RUN: paybackAmount },
+      give: { Minted: paybackAmount },
       want: { Collateral: collateralWanted },
     }),
-    harden({ RUN: payback }),
+    harden({ Minted: payback }),
   );
   await E(paybackSeat).getOfferResult();
   t.deepEqual(

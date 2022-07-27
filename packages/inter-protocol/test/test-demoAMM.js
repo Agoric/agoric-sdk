@@ -2,6 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { Stable } from '@agoric/vats/src/tokens.js';
 
 import {
   AMMDemoState,
@@ -14,24 +15,28 @@ import {
   splitAllCentralPayments,
 } from '../src/proposals/demoIssuers.js';
 
-/** @param {bigint} n */
-const showRUN = n => `${decimal(n, 6)} RUN`;
+/** @param { bigint } n */
+const showIST = n => `${decimal(n, 6)} IST`;
 
-test('urun -> RUN formatting test utility', t => {
-  t.is(showRUN(123456789n), '123.456789 RUN', 'RUN decimal point');
-  t.is(showRUN(1234567890n), '1_234.56789 RUN', 'thousands separators');
-  t.is(showRUN(3286010000000000n), '3_286_010_000 RUN', 'regression 1');
+test('uist -> IST formatting test utility', t => {
+  t.is(showIST(123456789n), '123.456789 IST', 'IST decimal point');
+  t.is(showIST(1234567890n), '1_234.56789 IST', 'thousands separators');
+  t.is(showIST(3286010000000000n), '3_286_010_000 IST', 'regression 1');
 });
 
 test('ammPoolRunDeposits: check total, WETH', t => {
   const actual = ammPoolRunDeposits(AMMDemoState);
   // t.log(actual);
-  t.deepEqual(showRUN(actual.ammTotal), '3_380_790_000 RUN');
-  t.deepEqual(showRUN(actual.balances.WETH), '3_286_010_000 RUN');
+  t.deepEqual(showIST(actual.ammTotal), '3_380_790_000 IST');
+  t.deepEqual(showIST(actual.balances.WETH), '3_286_010_000 IST');
 });
 
 test('splitAllCentralPayments: count entries, spot check', async t => {
-  const central = makeIssuerKit('RUN', 'nat', harden({ decimalPlaces: 6 }));
+  const central = makeIssuerKit(
+    Stable.symbol,
+    'nat',
+    harden({ decimalPlaces: 6 }),
+  );
   const deposits = ammPoolRunDeposits(AMMDemoState);
   const bootstrapPayment = central.mint.mintPayment(
     AmountMath.make(central.brand, deposits.ammTotal),
@@ -43,14 +48,18 @@ test('splitAllCentralPayments: count entries, spot check', async t => {
   );
   // t.log(actual);
   t.is(actual.ATOM.amount.brand, central.brand);
-  t.deepEqual(showAmount(actual.ATOM.amount), '33_280_000 RUN');
+  t.deepEqual(showAmount(actual.ATOM.amount), '33_280_000 IST');
   t.deepEqual(Object.keys(actual), ['BLD', 'ATOM', 'WETH', 'LINK', 'USDC']);
 });
 
 test('poolRates: spot check WETH', t => {
-  const central = makeIssuerKit('RUN', 'nat', harden({ decimalPlaces: 6 }));
+  const central = makeIssuerKit(
+    Stable.symbol,
+    'nat',
+    harden({ decimalPlaces: 6 }),
+  );
   const weth = makeIssuerKit('WETH', 'nat', harden({ decimalPlaces: 18 }));
-  const kits = { RUN: central, WETH: weth };
+  const kits = { [Stable.symbol]: central, WETH: weth };
   const { rates, initialValue } = poolRates(
     'WETH',
     AMMDemoState.WETH,
@@ -61,8 +70,8 @@ test('poolRates: spot check WETH', t => {
   t.is(decimal(initialValue, DecimalPlaces.WETH), '1_000_000');
   t.is((AMMDemoState.WETH.config || {}).collateralValue, 1_000_000n);
 
-  t.is(showBrand(rates.interestRate.numerator.brand), 'RUN');
-  t.is(showAmount(rates.interestRate.numerator), '0.00025 RUN');
+  t.is(showBrand(rates.interestRate.numerator.brand), Stable.symbol);
+  t.is(showAmount(rates.interestRate.numerator), '0.00025 IST');
 
   const showRatio = ({ numerator, denominator }) =>
     numerator.brand === denominator.brand
@@ -74,7 +83,7 @@ test('poolRates: spot check WETH', t => {
         )}`
       : `${showAmount(numerator)} / ${showAmount(denominator)}`;
   const expected = {
-    initialPrice: '3_286.01 RUN / 1 WETH',
+    initialPrice: '3_286.01 IST / 1 WETH',
     initialMargin: '1.5',
     liquidationMargin: '1.25',
     interestRate: '0.025',
