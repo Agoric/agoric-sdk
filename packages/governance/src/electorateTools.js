@@ -36,7 +36,13 @@ const startCounter = async (
 
   questionStore.init(questionHandle, voteCounterFacets);
 
-  return harden({ creatorFacet, publicFacet, instance, deadline, questionHandle });
+  return harden({
+    creatorFacet,
+    publicFacet,
+    instance,
+    deadline,
+    questionHandle,
+  });
 };
 
 /** @param {Store<Handle<'Question'>, QuestionRecord>} questionStore */
