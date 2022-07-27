@@ -3,10 +3,20 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { parse } from '@endo/marshal';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
-import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
+import {
+  buildKernelBundles,
+  initializeSwingset,
+  makeSwingsetController,
+} from '../../src/index.js';
+import { bundleOpts } from '../util.js';
 import { buildTimer } from '../../src/devices/timer/timer.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
+test.before(async t => {
+  const opts = { skip: ['comms', 'vattp'] };
+  const kernelBundles = await buildKernelBundles(opts);
+  t.context.data = { kernelBundles };
+});
 
 test('timer vat', async t => {
   const timer = buildTimer();
@@ -15,13 +25,16 @@ test('timer vat', async t => {
     vats: { bootstrap: { sourceSpec: bfile('bootstrap-timer.js') } },
     devices: { timer: { sourceSpec: timer.srcPath } },
   };
+  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
+  initOpts.addComms = false;
+  initOpts.addVattp = false;
 
   const hostStorage = provideHostStorage();
-  const deviceEndowments = {
+  const devEndow = {
     timer: { ...timer.endowments },
   };
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  await initializeSwingset(config, [], hostStorage, initOpts);
+  const c = await makeSwingsetController(hostStorage, devEndow, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   timer.poll(1n); // initial time
