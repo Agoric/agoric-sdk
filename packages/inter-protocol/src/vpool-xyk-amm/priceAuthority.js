@@ -32,6 +32,7 @@ export const makePriceAuthority = (
   quoteIssuerKit,
 ) => {
   const { brand, issuer: quoteIssuer } = quoteIssuerKit;
+
   /** @param {PriceQuoteValue} quote */
   const authenticateQuote = quote => {
     const quoteAmount = AmountMath.make(brand, harden(quote));

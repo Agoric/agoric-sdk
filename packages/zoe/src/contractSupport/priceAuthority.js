@@ -57,9 +57,6 @@ export function makeOnewayPriceAuthorityKit(opts) {
     quoteIssuer,
     notifier,
   } = opts;
-  if (!actualBrandOut) {
-    debugger;
-  }
 
   let haveFirstQuote = false;
 

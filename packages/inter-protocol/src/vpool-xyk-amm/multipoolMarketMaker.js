@@ -323,17 +323,17 @@ const start = async (zcf, privateArgs, baggage) => {
 
   // shared AMM state that will be lexically accessible to all pools
   /** @type {AmmState} */
-  const ammState = {
+  // @ts-expect-error type confusion due to harden()
+  const ammState = harden({
     zcf,
     secondaryBrandToPool,
     secondaryBrandToLiquidityMint,
     centralBrand,
     timer,
     quoteIssuerKit,
-    // @ts-expect-error TS is confused
     params,
     protocolSeat,
-  };
+  });
   const addPoolInvitation = makeAddPoolInvitation(
     baggage,
     ammState,
@@ -433,8 +433,6 @@ const start = async (zcf, privateArgs, baggage) => {
     'Fee',
   );
 
-  // How do I remember the identity of these facets so they can be reconnected?
-
   const publicFacet = augmentVirtualPublicFacet(
     Far('AMM public facet', {
       addPoolInvitation,
@@ -467,7 +465,8 @@ const start = async (zcf, privateArgs, baggage) => {
     Far('AMM Fee Collector facet', {
       makeCollectFeesInvitation,
       /**
-       * Must be called before adding pools. Not provided at contract start time due to cyclic dependency.
+       * Must be called before adding pools. Not provided at contract start time
+       * due to cyclic dependency.
        *
        * @param {MethodContext} _context
        * @param {AssetReservePublicFacet} facet

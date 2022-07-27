@@ -106,7 +106,7 @@ export const makeAddPoolInvitation = (
   storageNode,
   marshaller,
 ) => {
-  const zcf = ammState.zcf;
+  const { zcf } = ammState;
   const makePool = definePoolKind(baggage, ammState, storageNode, marshaller);
 
   /** @type {(Brand) => Promise<{poolFacets: PoolFacets, liquidityZcfMint: ZCFMint}>} */
