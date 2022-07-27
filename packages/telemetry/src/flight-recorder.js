@@ -238,7 +238,7 @@ export const makeMemoryMappedCircularBuffer = async ({
     writeCircBuf(data);
   };
 
-  return harden({ readCircBuf, writeCircBuf, writeJSON });
+  return { readCircBuf, writeCircBuf, writeJSON };
 };
 
 export const makeSlogSender = async opts => {
