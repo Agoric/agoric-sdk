@@ -1,59 +1,57 @@
 // @ts-check
 
-import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
-
-import { E } from '@endo/eventual-send';
-import { deeplyFulfilled } from '@endo/marshal';
+import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { makeParamManagerBuilder } from '@agoric/governance';
 import {
   makeNotifierFromAsyncIterable,
   makeNotifierFromSubscriber,
   makeStoredPublisherKit,
 } from '@agoric/notifier';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { M, matches } from '@agoric/store';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { objectMap } from '@agoric/vat-data';
 import {
   ceilMultiplyBy,
   makeRatio,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
-import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { assertAmountsEqual } from '@agoric/zoe/test/zoeTestHelpers.js';
-import { M, matches } from '@agoric/store';
-import { makeParamManagerBuilder } from '@agoric/governance';
-
-import { makeTracer } from '../../src/makeTracer.js';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
+import { E } from '@endo/eventual-send';
+import { deeplyFulfilled } from '@endo/marshal';
+import * as Collect from '../../src/collect.js';
+import { calculateCurrentDebt } from '../../src/interest-math.js';
 import { SECONDS_PER_YEAR } from '../../src/interest.js';
-import {
-  CHARGING_PERIOD_KEY,
-  RECORDING_PERIOD_KEY,
-} from '../../src/vaultFactory/params.js';
+import { makeTracer } from '../../src/makeTracer.js';
 import {
   setupAmm,
   setupReserve,
   startEconomicCommittee,
   startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
+import {
+  CHARGING_PERIOD_KEY,
+  RECORDING_PERIOD_KEY,
+} from '../../src/vaultFactory/params.js';
 import '../../src/vaultFactory/types.js';
-import * as Collect from '../../src/collect.js';
-import { calculateCurrentDebt } from '../../src/interest-math.js';
-
+import {
+  metricsTracker,
+  reserveInitialState,
+  subscriptionTracker,
+  vaultManagerMetricsTracker,
+} from '../metrics.js';
 import {
   installGovernance,
+  produceInstallations,
   setupBootstrap,
   setUpZoeForTest,
   withAmountUtils,
-  produceInstallations,
 } from '../supports.js';
-import { unsafeMakeBundleCache } from '../bundleTool.js';
-import {
-  metricsTracker,
-  vaultManagerMetricsTracker,
-  subscriptionTracker,
-  reserveInitialState,
-} from '../metrics.js';
 
 /** @typedef {Record<string, any> & {
  * aeth: IssuerKit & import('../supports.js').AmountUtils,
@@ -128,9 +126,7 @@ test.before(async t => {
     amm: bundleCache.load(contractRoots.amm, 'amm'),
     reserve: bundleCache.load(contractRoots.reserve, 'reserve'),
   });
-  const installation = Collect.mapValues(bundles, bundle =>
-    E(zoe).install(bundle),
-  );
+  const installation = objectMap(bundles, bundle => E(zoe).install(bundle));
 
   const contextPs = {
     zoe,
@@ -365,7 +361,7 @@ const setupServices = async (
   await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
 
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
-  /** @type {Promise<VaultFactory & LimitedCreatorFacet<VaultFactory>>} */
+  /** @type {Promise<VaultFactoryCreatorFacet & LimitedCreatorFacet<VaultFactoryCreatorFacet>>} */
   // @ts-expect-error TypeScript is confused
   const vaultFactoryCreatorFacetP = E(governorCreatorFacet).getCreatorFacet();
   const reserveCreatorFacet = consume.reserveCreatorFacet;
@@ -378,7 +374,7 @@ const setupServices = async (
     'AEth',
     rates,
   );
-  /** @type {[any, VaultFactory, VFC['publicFacet'], VaultManager, PriceAuthority]} */
+  /** @type {[any, VaultFactoryCreatorFacet, VFC['publicFacet'], VaultManager, PriceAuthority]} */
   // @ts-expect-error cast
   const [
     governorInstance,

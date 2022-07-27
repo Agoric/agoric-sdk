@@ -4,6 +4,8 @@ import '@agoric/zoe/exported.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { objectMap } from '@agoric/vat-data';
 import {
   ceilMultiplyBy,
   makeRatioFromAmounts,
@@ -21,7 +23,6 @@ import {
   startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
-import { unsafeMakeBundleCache } from '../bundleTool.js';
 import {
   installGovernance,
   makeVoterTool,
@@ -104,7 +105,7 @@ export const makeDriverContext = async () => {
   const bundleCache = await unsafeMakeBundleCache('./bundles/'); // package-relative
 
   // note that the liquidation might be a different bundle name
-  // Collect.mapValues(contractRoots, (root, k) => loader.load(root, k)),
+  // objectMap(contractRoots, (root, k) => loader.load(root, k)),
   const bundles = await Collect.allValues({
     faucet: bundleCache.load(contractRoots.faucet, 'faucet'),
     liquidate: bundleCache.load(
@@ -115,9 +116,7 @@ export const makeDriverContext = async () => {
     amm: bundleCache.load(contractRoots.amm, 'amm'),
     reserve: bundleCache.load(contractRoots.reserve, 'reserve'),
   });
-  const installation = Collect.mapValues(bundles, bundle =>
-    E(zoe).install(bundle),
-  );
+  const installation = objectMap(bundles, bundle => E(zoe).install(bundle));
   const contextPs = {
     bundles,
     installation,
@@ -309,7 +308,7 @@ const setupServices = async (
   await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
 
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
-  /** @type {Promise<VaultFactory & LimitedCreatorFacet<any>>} */
+  /** @type {Promise<VaultFactoryCreatorFacet & LimitedCreatorFacet<any>>} */
   const vaultFactoryCreatorFacet = /** @type { any } */ (
     E(governorCreatorFacet).getCreatorFacet()
   );
@@ -321,7 +320,7 @@ const setupServices = async (
     rates,
   );
 
-  /** @type {[any, VaultFactory, VFC['publicFacet'], VaultManager]} */
+  /** @type {[any, VaultFactoryCreatorFacet, VFC['publicFacet'], VaultManager]} */
   // @ts-expect-error cast
   const [governorInstance, vaultFactory, lender, aethVaultManager] =
     await Promise.all([

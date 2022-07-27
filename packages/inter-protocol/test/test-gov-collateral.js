@@ -22,7 +22,7 @@ import { makeCoreProposalBehavior } from '@agoric/deploy-script-support/src/core
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { Stable } from '@agoric/vats/src/tokens.js';
-import { makeNodeBundleCache } from './bundleTool.js';
+import { makeNodeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { setupBootstrap, setUpZoeForTest, mintRunPayment } from './supports.js';
 
 /** @template T @typedef {import('@endo/promise-kit').PromiseKit<T>} PromiseKit */

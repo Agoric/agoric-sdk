@@ -1,13 +1,14 @@
 // @ts-check
 
 import { AmountMath, AssetKind } from '@agoric/ertp';
+import { objectMap } from '@agoric/vat-data';
 import {
-  natSafeMath,
   makeRatio,
+  natSafeMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { Nat } from '@endo/nat';
 import { E, Far } from '@endo/far';
 import { Stake, Stable } from '@agoric/vats/src/tokens.js';
+import { Nat } from '@endo/nat';
 import * as Collect from '../collect.js';
 
 const { details: X, quote: q } = assert;
@@ -487,7 +488,7 @@ export const fundAMM = async ({
   const vats = { mints, priceAuthority: priceAuthorityVat };
 
   const kits = await Collect.allValues(
-    Collect.mapValues(
+    objectMap(
       fromEntries([Stable.symbol, ...keys(AMMDemoState)].map(n => [n, n])),
       async issuerName => {
         switch (issuerName) {

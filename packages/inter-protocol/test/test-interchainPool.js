@@ -1,13 +1,13 @@
 // @ts-check
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { makeNodeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { makeNodeBundleCache } from './bundleTool.js';
-import { setUpZoeForTest } from './supports.js';
-import { setupAmmServices } from './amm/vpool-xyk-amm/setup.js';
 import { startInterchainPool } from '../src/proposals/econ-behaviors.js';
+import { setupAmmServices } from './amm/vpool-xyk-amm/setup.js';
+import { setUpZoeForTest } from './supports.js';
 
 /** @template T @typedef {import('@endo/promise-kit').PromiseKit<T>} PromiseKit */
 

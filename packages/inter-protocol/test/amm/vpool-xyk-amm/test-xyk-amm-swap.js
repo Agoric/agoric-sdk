@@ -4,30 +4,29 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
-
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
-  makeTrader,
-  updatePoolState,
-  priceFromTargetOutput,
-  outputFromInputPrice,
-} from '@agoric/zoe/test/autoswapJig.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import {
+  ceilMultiplyBy,
   getAmountOut,
   makeRatio,
-  ceilMultiplyBy,
   natSafeMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  makeTrader,
+  outputFromInputPrice,
+  priceFromTargetOutput,
+  updatePoolState,
+} from '@agoric/zoe/test/autoswapJig.js';
 import {
   assertAmountsEqual,
   assertPayoutAmount,
 } from '@agoric/zoe/test/zoeTestHelpers.js';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { E } from '@endo/eventual-send';
 import { BASIS_POINTS } from '../../../src/vpool-xyk-amm/constantProduct/defaults.js';
-import { setupAmmServices } from './setup.js';
-import { unsafeMakeBundleCache } from '../../bundleTool.js';
 import { subscriptionTracker } from '../../metrics.js';
 import { subscriptionKey } from '../../supports.js';
+import { setupAmmServices } from './setup.js';
 
 const { quote: q } = assert;
 const { ceilDivide } = natSafeMath;
