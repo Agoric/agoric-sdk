@@ -716,7 +716,7 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		ChainID:     ctx.ChainID(),
 		Params:      app.SwingSetKeeper.GetParams(ctx),
 		StoragePort: app.vstoragePort,
-		SupplyCoins: sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "urun")),
+		SupplyCoins: sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
 		VibcPort:    app.vibcPort,
 		VbankPort:   app.vbankPort,
 		LienPort:    app.lienPort,

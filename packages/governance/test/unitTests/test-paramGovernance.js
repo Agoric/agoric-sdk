@@ -40,7 +40,7 @@ const setUpZoeForTest = async setJig => {
    *
    * @typedef {object} TestContext
    * @property {ZCF} zcf
-   * @property {IssuerRecord} runIssuerRecord
+   * @property {IssuerRecord} mintedIssuerRecord
    * @property {IssuerRecord} govIssuerRecord
    */
   const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(

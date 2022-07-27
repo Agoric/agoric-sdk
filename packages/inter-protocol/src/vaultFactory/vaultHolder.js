@@ -6,7 +6,7 @@ import '@agoric/zoe/exported.js';
 
 import { makeStoredPublishKit } from '@agoric/notifier';
 import { defineDurableKindMulti, makeKindHandle } from '@agoric/vat-data';
-import { makeEphemeraProvider } from '../contractSupport';
+import { makeEphemeraProvider } from '../contractSupport.js';
 
 const { details: X } = assert;
 

@@ -4,7 +4,7 @@ import '@agoric/governance/src/exported.js';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 
-// The vaultFactory owns a number of VaultManagers and a mint for RUN.
+// The vaultFactory owns a number of VaultManagers and a mint for Minted.
 //
 // addVaultType is a closely held method that adds a brand new collateral type.
 // It specifies the initial exchange rate for that type. It depends on a
@@ -63,9 +63,9 @@ export const start = async (zcf, privateArgs) => {
   ]);
   const { feeMintAccess, initialPoserInvitation, initialShortfallInvitation } =
     privateArgs;
-  const debtMint = await zcf.registerFeeMint('RUN', feeMintAccess);
+  const debtMint = await zcf.registerFeeMint('Minted', feeMintAccess);
   zcf.setTestJig(() => ({
-    runIssuerRecord: debtMint.getIssuerRecord(),
+    mintedIssuerRecord: debtMint.getIssuerRecord(),
   }));
 
   const {

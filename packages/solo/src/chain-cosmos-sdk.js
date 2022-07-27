@@ -165,7 +165,7 @@ export async function connectToChain(
   // The helper address may not have a token balance, and instead uses a
   // separate fee account, set up with something like:
   //
-  // agd tx feegrant grant --period=5 --period-limit=200000urun \
+  // agd tx feegrant grant --period=5 --period-limit=200000uist \
   // $(cat cosmos-fee-account) $(cat ag-cosmos-helper-address)
   const feeAccountAddr = await readOrDefault(
     path.join(basedir, 'cosmos-fee-account'),

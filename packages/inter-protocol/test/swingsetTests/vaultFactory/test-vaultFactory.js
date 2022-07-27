@@ -90,7 +90,7 @@ test.skip('vaultFactory', async t => {
   t.deepEqual(dump.log, [
     '=> alice and the vaultFactory are set up',
     '=> alice.oneLoanWithInterest called',
-    'Alice owes {"brand":"[Alleged: RUN brand]","value":"[510000n]"} after borrowing',
-    'Alice owes {"brand":"[Alleged: RUN brand]","value":"[510035n]"} after interest',
+    'Alice owes {"brand":"[Alleged: IST brand]","value":"[510000n]"} after borrowing',
+    'Alice owes {"brand":"[Alleged: IST brand]","value":"[510035n]"} after interest',
   ]);
 });

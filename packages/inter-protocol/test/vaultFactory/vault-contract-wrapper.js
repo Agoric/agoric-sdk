@@ -42,7 +42,10 @@ export async function start(zcf, privateArgs) {
   const { brand: collateralBrand } = collateralKit;
   await zcf.saveIssuer(collateralKit.issuer, 'Collateral'); // todo: CollateralETH, etc
 
-  const runMint = await zcf.registerFeeMint('RUN', privateArgs.feeMintAccess);
+  const runMint = await zcf.registerFeeMint(
+    'Minted',
+    privateArgs.feeMintAccess,
+  );
   const { brand: runBrand } = runMint.getIssuerRecord();
 
   const LIQUIDATION_MARGIN = makeRatio(105n, runBrand);
@@ -79,20 +82,20 @@ export async function start(zcf, privateArgs) {
 
   const reallocateWithFee = (fee, wanted, seat, ...otherSeats) => {
     const toMint = AmountMath.add(wanted, fee);
-    runMint.mintGains(harden({ RUN: toMint }), stage);
+    runMint.mintGains(harden({ Minted: toMint }), stage);
     try {
-      vaultFactorySeat.incrementBy(stage.decrementBy(harden({ RUN: fee })));
-      seat.incrementBy(stage.decrementBy(harden({ RUN: wanted })));
+      vaultFactorySeat.incrementBy(stage.decrementBy(harden({ Minted: fee })));
+      seat.incrementBy(stage.decrementBy(harden({ Minted: wanted })));
       zcf.reallocate(vaultFactorySeat, stage, seat, ...otherSeats);
     } catch (e) {
       stage.clear();
       vaultFactorySeat.clear();
-      runMint.burnLosses(harden({ RUN: toMint }), stage);
+      runMint.burnLosses(harden({ Minted: toMint }), stage);
       throw e;
     } finally {
       assert(
-        AmountMath.isEmpty(stage.getAmountAllocated('RUN', runBrand)),
-        `Stage should be empty of RUN`,
+        AmountMath.isEmpty(stage.getAmountAllocated('Minted', runBrand)),
+        `Stage should be empty of Minted`,
       );
     }
   };
@@ -103,7 +106,7 @@ export async function start(zcf, privateArgs) {
   };
 
   const burnAndRecord = (toBurn, seat) => {
-    runMint.burnLosses(harden({ RUN: toBurn }), seat);
+    runMint.burnLosses(harden({ Minted: toBurn }), seat);
   };
 
   /** @type {Parameters<typeof makeVault>[1]} */
@@ -150,7 +153,7 @@ export async function start(zcf, privateArgs) {
       console.warn('mock handleBalanceChange does nothing');
     },
     mintforVault: async amount => {
-      runMint.mintGains({ RUN: amount });
+      runMint.mintGains({ Minted: amount });
     },
   });
 

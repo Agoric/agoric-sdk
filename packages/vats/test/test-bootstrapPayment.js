@@ -11,11 +11,18 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { AmountMath } from '@agoric/ertp';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
+import { Stable } from '../src/tokens.js';
 
 const setUpZoeForTest = setJig => {
   const { makeFar } = makeLoopback('zoeTest');
   const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
     makeFakeVatAdmin(setJig).admin,
+    undefined,
+    {
+      name: Stable.symbol,
+      assetKind: Stable.assetKind,
+      displayInfo: Stable.displayInfo,
+    },
   );
   /** @type {ERef<ZoeService>} */
   const zoe = makeFar(zoeService);
@@ -31,8 +38,8 @@ const setUpZoeForTest = setJig => {
  * @typedef {import('ava').ExecutionContext<{
  *   zoe: ZoeService,
  *   feeMintAccess: FeeMintAccess,
- *   issuer: Record<'run', Issuer>,
- *   brand: Record<'run', Brand>,
+ *   issuer: Record<'IST', Issuer>,
+ *   brand: Record<'IST', Brand>,
  *   installation: Record<'centralSupply', Installation<import('../src/centralSupply.js').CentralSupplyContract>>,
  * }>} CentralSupplyTestContext
  */
@@ -40,10 +47,10 @@ const setUpZoeForTest = setJig => {
 test.before(async (/** @type {CentralSupplyTestContext} */ t) => {
   const { zoe, feeMintAccess } = await setUpZoeForTest(() => {});
   const issuer = {
-    run: E(zoe).getFeeIssuer(),
+    IST: E(zoe).getFeeIssuer(),
   };
   const brand = {
-    run: E(issuer.run).getBrand(),
+    IST: E(issuer.IST).getBrand(),
   };
 
   const installation = {
@@ -86,8 +93,8 @@ const startContract = (t, bootstrapPaymentValue) => {
 test('bootstrap payment', async (/** @type {CentralSupplyTestContext} */ t) => {
   const bootstrapPaymentValue = 20000n * 10n ** 6n;
   const {
-    issuer: { run: runIssuer },
-    brand: { run: runBrand },
+    issuer: { IST: runIssuer },
+    brand: { IST: runBrand },
   } = t.context;
 
   const { creatorFacet } = await startContract(t, bootstrapPaymentValue);
@@ -110,21 +117,21 @@ test('bootstrap payment - only minted once', async (/** @type {CentralSupplyTest
   const bootstrapPaymentValue = 20000n * 10n ** 6n;
 
   const {
-    issuer: { run: runIssuer },
-    brand: { run: runBrand },
+    issuer: { IST: istIssuer },
+    brand: { IST: istBrand },
   } = t.context;
   const { creatorFacet } = await startContract(t, bootstrapPaymentValue);
   const bootstrapPayment = E(creatorFacet).getBootstrapPayment();
 
-  const issuers = { RUN: runIssuer };
+  const issuers = { IST: istIssuer };
 
-  const claimedPayment = await E(issuers.RUN).claim(bootstrapPayment);
-  const bootstrapAmount = await E(issuers.RUN).getAmountOf(claimedPayment);
+  const claimedPayment = await E(issuers.IST).claim(bootstrapPayment);
+  const bootstrapAmount = await E(issuers.IST).getAmountOf(claimedPayment);
 
   t.true(
     AmountMath.isEqual(
       bootstrapAmount,
-      AmountMath.make(runBrand, bootstrapPaymentValue),
+      AmountMath.make(istBrand, bootstrapPaymentValue),
     ),
   );
 
@@ -132,23 +139,23 @@ test('bootstrap payment - only minted once', async (/** @type {CentralSupplyTest
 
   const bootstrapPayment2 = E(creatorFacet).getBootstrapPayment();
 
-  await t.throwsAsync(() => E(issuers.RUN).claim(bootstrapPayment2), {
+  await t.throwsAsync(() => E(issuers.IST).claim(bootstrapPayment2), {
     message: /was not a live payment/,
   });
 });
 
 test('bootstrap payment - default value is 0n', async (/** @type {CentralSupplyTestContext} */ t) => {
   const {
-    issuer: { run: runIssuer },
-    brand: { run: runBrand },
+    issuer: { IST: runIssuer },
+    brand: { IST: runBrand },
   } = t.context;
   const { creatorFacet } = await startContract(t, 0n);
 
-  const issuers = { RUN: runIssuer };
+  const issuers = { IST: runIssuer };
 
   const bootstrapPayment = E(creatorFacet).getBootstrapPayment();
 
-  const bootstrapAmount = await E(issuers.RUN).getAmountOf(bootstrapPayment);
+  const bootstrapAmount = await E(issuers.IST).getAmountOf(bootstrapPayment);
 
   t.true(AmountMath.isEqual(bootstrapAmount, AmountMath.make(runBrand, 0n)));
 });

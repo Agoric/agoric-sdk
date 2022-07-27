@@ -25,12 +25,12 @@ import {
 
 const { details: X, quote: q } = assert;
 
-const trace = makeTracer('IV');
+const trace = makeTracer('IV', false);
 
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 
 /**
- * @file This has most of the logic for a Vault, to borrow RUN against collateral.
+ * @file This has most of the logic for a Vault, to borrow Minted against collateral.
  *
  * The logic here is for Vault which is the majority of logic of vaults but
  * the user view is the `vault` value contained in VaultKit.
@@ -164,7 +164,7 @@ const initState = (zcf, manager, idInManager, storageNode, marshaller) => {
     // vaultSeat will hold the collateral until the loan is retired. The
     // payout from it will be handed to the user: if the vault dies early
     // (because the vaultFactory vat died), they'll get all their
-    // collateral back. If that happens, the issuer for the RUN will be dead,
+    // collateral back. If that happens, the issuer for the Minted will be dead,
     // so their loan will be worthless.
     vaultSeat: zcf.makeEmptySeatKit().zcfSeat,
 
@@ -296,14 +296,14 @@ const helperBehavior = {
    */
   getCollateralAllocated: ({ facets }, seat) =>
     seat.getAmountAllocated('Collateral', facets.helper.collateralBrand()),
-  getRunAllocated: ({ facets }, seat) =>
-    seat.getAmountAllocated('RUN', facets.helper.debtBrand()),
+  getMintedAllocated: ({ facets }, seat) =>
+    seat.getAmountAllocated('Minted', facets.helper.debtBrand()),
 
-  assertVaultHoldsNoRun: ({ state, facets }) => {
+  assertVaultHoldsNoMinted: ({ state, facets }) => {
     const { vaultSeat } = state;
     assert(
-      AmountMath.isEmpty(facets.helper.getRunAllocated(vaultSeat)),
-      X`Vault should be empty of RUN`,
+      AmountMath.isEmpty(facets.helper.getMintedAllocated(vaultSeat)),
+      X`Vault should be empty of Minted`,
     );
   },
 
@@ -391,13 +391,13 @@ const helperBehavior = {
 
     if (phase === Phase.ACTIVE) {
       assertProposalShape(seat, {
-        give: { RUN: null },
+        give: { Minted: null },
       });
 
       // you're paying off the debt, you get everything back.
       const debt = self.getCurrentDebt();
       const {
-        give: { RUN: given },
+        give: { Minted: given },
       } = seat.getProposal();
 
       // you must pay off the entire remainder but if you offer too much, we won't
@@ -414,7 +414,7 @@ const helperBehavior = {
     } else if (phase === Phase.LIQUIDATED) {
       // Simply reallocate vault assets to the offer seat.
       // Don't take anything from the offer, even if vault is underwater.
-      // TODO verify that returning RUN here doesn't mess up debt limits
+      // TODO verify that returning Minted here doesn't mess up debt limits
       seat.incrementBy(vaultSeat.decrementBy(vaultSeat.getCurrentAllocation()));
       zcf.reallocate(seat, vaultSeat);
     } else {
@@ -426,7 +426,7 @@ const helperBehavior = {
     helper.updateDebtSnapshot(helper.emptyDebt());
     helper.updateUiState();
 
-    helper.assertVaultHoldsNoRun();
+    helper.assertVaultHoldsNoMinted();
     vaultSeat.exit();
 
     state.manager.handleBalanceChange(
@@ -475,7 +475,7 @@ const helperBehavior = {
     const { outerUpdater: updaterPre } = ephemera;
     const { vaultSeat } = state;
     const proposal = clientSeat.getProposal();
-    assertOnlyKeys(proposal, ['Collateral', 'RUN']);
+    assertOnlyKeys(proposal, ['Collateral', 'Minted']);
 
     const allEmpty = amounts => {
       return amounts.every(a => AmountMath.isEmpty(a));
@@ -502,12 +502,12 @@ const helperBehavior = {
     const newCollateral = addSubtract(collateral, giveColl, wantColl);
 
     const debt = self.getCurrentDebt();
-    const giveRUN = AmountMath.min(
-      proposal.give.RUN || helper.emptyDebt(),
+    const giveMinted = AmountMath.min(
+      proposal.give.Minted || helper.emptyDebt(),
       debt,
     );
-    const wantRUN = proposal.want.RUN || helper.emptyDebt();
-    if (allEmpty([giveColl, giveRUN, wantColl, wantRUN])) {
+    const wantMinted = proposal.want.Minted || helper.emptyDebt();
+    if (allEmpty([giveColl, giveMinted, wantColl, wantMinted])) {
       clientSeat.exit();
       return 'no transaction, as requested';
     }
@@ -515,7 +515,11 @@ const helperBehavior = {
     // Calculate the fee, the amount to mint and the resulting debt. We'll
     // verify that the target debt doesn't violate the collateralization ratio,
     // then mint, reallocate, and burn.
-    const { newDebt, fee, toMint } = helper.loanFee(debt, giveRUN, wantRUN);
+    const { newDebt, fee, toMint } = helper.loanFee(
+      debt,
+      giveMinted,
+      wantMinted,
+    );
 
     trace('adjustBalancesHook', state.idInManager, {
       newCollateralPre,
@@ -530,19 +534,19 @@ const helperBehavior = {
     }
 
     stageDelta(clientSeat, vaultSeat, giveColl, wantColl, 'Collateral');
-    // `wantRUN` is allocated in the reallocate and mint operation, and so not here
-    stageDelta(clientSeat, vaultSeat, giveRUN, helper.emptyDebt(), 'RUN');
+    // `wantMinted` is allocated in the reallocate and mint operation, and so not here
+    stageDelta(clientSeat, vaultSeat, giveMinted, helper.emptyDebt(), 'Minted');
 
     /** @type {Array<ZCFSeat>} */
-    const vaultSeatOpt = allEmpty([giveColl, giveRUN, wantColl])
+    const vaultSeatOpt = allEmpty([giveColl, giveMinted, wantColl])
       ? []
       : [vaultSeat];
     state.manager.mintAndReallocate(toMint, fee, clientSeat, ...vaultSeatOpt);
 
     // parent needs to know about the change in debt
     helper.updateDebtAccounting(normalizedDebtPre, collateralPre, newDebt);
-    state.manager.burnAndRecord(giveRUN, vaultSeat);
-    helper.assertVaultHoldsNoRun();
+    state.manager.burnAndRecord(giveMinted, vaultSeat);
+    helper.assertVaultHoldsNoMinted();
 
     helper.updateUiState();
     clientSeat.exit();
@@ -612,23 +616,23 @@ const selfBehavior = {
     // contract abandons
     const {
       give: { Collateral: giveCollateral },
-      want: { RUN: wantRUN },
+      want: { Minted: wantMinted },
     } = seat.getProposal();
 
     const {
       newDebt: newDebtPre,
       fee,
       toMint,
-    } = helper.loanFee(actualDebtPre, helper.emptyDebt(), wantRUN);
+    } = helper.loanFee(actualDebtPre, helper.emptyDebt(), wantMinted);
     assert(
       !AmountMath.isEmpty(fee),
-      X`loan requested (${wantRUN}) is too small; cannot accrue interest`,
+      X`loan requested (${wantMinted}) is too small; cannot accrue interest`,
     );
     assert(AmountMath.isEqual(newDebtPre, toMint), X`fee mismatch for vault`);
     trace(
       'initVault',
       state.idInManager,
-      { wantedRun: wantRUN, fee },
+      { wantedRun: wantMinted, fee },
       self.getCollateralAmount(),
     );
 

@@ -9,11 +9,11 @@ DELEGATES="$thisdir/cosmos-delegates.txt"
 
 MAX_LINES=-1
 STAKE=75000000ubld
-# GIFT=251000000000urun
-GIFT=100000000urun
+# GIFT=251000000000uist
+GIFT=100000000uist
 # Use the env value if already set, e.g. by the deployment integration test
-SOLO_COINS=${SOLO_COINS-100000000urun}
-# SOLO_COINS=220000000000urun,75000000ubld
+SOLO_COINS=${SOLO_COINS-100000000uist}
+# SOLO_COINS=220000000000uist,75000000ubld
 
 
 OP=$1

@@ -1,4 +1,5 @@
 // @ts-check
+import { Stable } from '@agoric/vats/src/tokens.js';
 import * as econBehaviors from './econ-behaviors.js';
 import * as simBehaviors from './sim-behaviors.js';
 
@@ -37,8 +38,8 @@ const SHARED_MAIN_MANIFEST = harden({
       ammInstanceWithoutReserve: 'amm',
       ammGovernorCreatorFacet: 'amm',
     },
-    issuer: { consume: { RUN: 'zoe' } },
-    brand: { consume: { RUN: 'zoe' } },
+    issuer: { consume: { [Stable.symbol]: 'zoe' } },
+    brand: { consume: { [Stable.symbol]: 'zoe' } },
     installation: {
       consume: { contractGovernor: 'zoe', amm: 'zoe' },
     },
@@ -53,10 +54,10 @@ const SHARED_MAIN_MANIFEST = harden({
       consume: { interchainPool: 'zoe' },
     },
     brand: {
-      consume: { RUN: 'zoe' },
+      consume: { [Stable.symbol]: 'zoe' },
     },
     issuer: {
-      consume: { RUN: 'zoe' },
+      consume: { [Stable.symbol]: 'zoe' },
     },
     instance: {
       consume: { amm: 'amm' },
@@ -79,7 +80,7 @@ const SHARED_MAIN_MANIFEST = harden({
       vaultFactoryGovernorCreator: 'VaultFactory',
       vaultFactoryVoteCreator: 'VaultFactory',
     },
-    brand: { consume: { RUN: 'zoe' } },
+    brand: { consume: { [Stable.symbol]: 'zoe' } },
     oracleBrand: { consume: { USD: true } },
     installation: {
       consume: {
@@ -125,8 +126,8 @@ const SHARED_MAIN_MANIFEST = harden({
       reserveGovernorCreatorFacet: 'reserve',
       reservePublicFacet: 'reserve',
     },
-    issuer: { consume: { RUN: 'zoe' } },
-    brand: { consume: { RUN: 'zoe' } },
+    issuer: { consume: { [Stable.symbol]: 'zoe' } },
+    brand: { consume: { [Stable.symbol]: 'zoe' } },
     installation: {
       consume: { contractGovernor: 'zoe', reserve: 'zoe' },
     },
@@ -145,8 +146,8 @@ const SHARED_MAIN_MANIFEST = harden({
       board: true,
       zoe: true,
     },
-    issuer: { consume: { RUN: 'zoe' } },
-    brand: { consume: { RUN: 'zoe' } },
+    issuer: { consume: { [Stable.symbol]: 'zoe' } },
+    brand: { consume: { [Stable.symbol]: 'zoe' } },
     installation: {
       consume: {
         amm: 'zoe',
@@ -178,8 +179,8 @@ const REWARD_MANIFEST = harden({
     produce: { feeDistributorCreatorFacet: true, periodicFeeCollectors: true },
     instance: { produce: { feeDistributor: true } },
     installation: { consume: { feeDistributor: true } },
-    issuer: { consume: { RUN: 'zoe' } },
-    brand: { consume: { RUN: 'zoe' } },
+    issuer: { consume: { [Stable.symbol]: 'zoe' } },
+    brand: { consume: { [Stable.symbol]: 'zoe' } },
   },
 });
 
@@ -214,7 +215,7 @@ const RUN_STAKE_MANIFEST = harden({
       produce: { runStake: 'runStake' },
     },
     brand: {
-      consume: { BLD: 'BLD', RUN: 'zoe' },
+      consume: { BLD: 'BLD', [Stable.symbol]: 'zoe' },
       produce: { Attestation: 'runStake' },
     },
     issuer: {
@@ -243,10 +244,10 @@ export const SIM_CHAIN_MANIFEST = harden({
       consume: { centralSupply: 'zoe' },
     },
     issuer: {
-      consume: { RUN: 'zoe' },
+      consume: { [Stable.symbol]: 'zoe' },
     },
     brand: {
-      consume: { RUN: 'zoe' },
+      consume: { [Stable.symbol]: 'zoe' },
     },
     instance: {
       consume: { amm: 'amm' },

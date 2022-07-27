@@ -391,7 +391,7 @@ export const makeManagerDriver = async (
       await E(lender).makeVaultInvitation(),
       harden({
         give: { Collateral: collateral },
-        want: { RUN: debt },
+        want: { Minted: debt },
       }),
       harden({
         Collateral: aeth.mint.mintPayment(collateral),
@@ -436,7 +436,7 @@ export const makeManagerDriver = async (
         t.deepEqual(
           debtAmount,
           AmountMath.add(loanAmount, fee),
-          'borrower RUN amount does not match',
+          'borrower Minted amount does not match',
         );
         return debtAmount;
       },
@@ -471,13 +471,13 @@ export const makeManagerDriver = async (
     checkPayouts: async (expectedRUN, expectedAEth) => {
       const payouts = await E(currentSeat).getPayouts();
       const collProceeds = await aeth.issuer.getAmountOf(payouts.Collateral);
-      const runProceeds = await E(run.issuer).getAmountOf(payouts.RUN);
+      const runProceeds = await E(run.issuer).getAmountOf(payouts.Minted);
       t.deepEqual(runProceeds, expectedRUN);
       t.deepEqual(collProceeds, expectedAEth);
     },
     checkRewards: async expectedRUN => {
       t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
-        RUN: expectedRUN,
+        Minted: expectedRUN,
       });
     },
     sellOnAMM: async (give, want, optStopAfter, expected) => {
@@ -541,7 +541,7 @@ export const makeManagerDriver = async (
 
       t.deepEqual(reserveAllocations, {
         RaEthLiquidity: AmountMath.make(liquidityBrand, liquidityValue),
-        RUN: run.make(stableValue),
+        Fee: run.make(stableValue),
       });
     },
   };
