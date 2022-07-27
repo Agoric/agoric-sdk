@@ -69,14 +69,16 @@ const makeNullStorageNode = () => {
 };
 
 /**
- * Convience function for falling back to non-storage when chain storage isn't available.
- * Also takes an optional childname.
+ * Convenience function for returning a storage node at or under its input,
+ * falling back to an inert object with the correct interface (but incomplete
+ * behavior) when that is unavailable.
  *
  * @param {ERef<ChainStorageNode?>} chainStorage
  * @param {string} [childName]
  * @returns {Promise<StorageNode>}
  */
 export async function makeStorageNode(chainStorage, childName) {
+  // eslint-disable-next-line @jessie.js/no-nested-await
   const storageNode = (await chainStorage) || makeNullStorageNode();
   if (childName) {
     return E(storageNode).getChildNode(childName);
