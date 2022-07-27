@@ -995,7 +995,7 @@ export function makeWallet({
       exit,
     };
 
-    return harden({ proposal, arguments: args, purseKeywordRecord });
+    return { proposal, arguments: args, purseKeywordRecord };
   };
 
   const compileOffer = async offer => {

@@ -53,7 +53,7 @@ const withApplicationContext =
   };
 
 jest.mock('../../contexts/Application', () => {
-  return harden({ withApplicationContext });
+  return { withApplicationContext };
 });
 
 const offer = {

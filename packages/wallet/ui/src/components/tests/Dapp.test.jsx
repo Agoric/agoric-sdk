@@ -26,7 +26,7 @@ const withApplicationContext =
   };
 
 jest.mock('../../contexts/Application', () => {
-  return harden({ withApplicationContext });
+  return { withApplicationContext };
 });
 
 jest.mock('@endo/eventual-send', () => ({
