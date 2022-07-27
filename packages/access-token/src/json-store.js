@@ -147,6 +147,7 @@ function makeStorageInMemory() {
     delete: del,
   };
 
+  // TODO explain why not hardened
   return { storage, state };
 }
 
@@ -221,6 +222,7 @@ function makeJSONStore(dirPath, forceReset = false) {
     // Nothing to do here.
   }
 
+  // TODO explain why not hardened
   return { storage, commit, close };
 }
 

@@ -1931,6 +1931,7 @@ export default function buildKernel(
       // a time, so any log() calls that were interleaved during their
       // original execution will be sorted by vat in the replay). Logs are
       // not kept in the persistent state, only in ephemeral state.
+      // TODO explain why not hardened
       return { log: ephemeral.log, ...kernelKeeper.dump() };
     },
     kdebugEnable,

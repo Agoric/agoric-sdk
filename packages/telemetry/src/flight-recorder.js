@@ -238,6 +238,7 @@ export const makeMemoryMappedCircularBuffer = async ({
     writeCircBuf(data);
   };
 
+  // TODO explain why not hardened
   return { readCircBuf, writeCircBuf, writeJSON };
 };
 

@@ -995,6 +995,7 @@ export function makeWallet({
       exit,
     };
 
+    // TODO explain why not hardened
     return { proposal, arguments: args, purseKeywordRecord };
   };
 
