@@ -318,9 +318,9 @@ export function exportKernelStats({
     schedulerBlockTimeHistogram.record((now - blockStart) / 1000, attributes);
   }
 
-  return {
+  return harden({
     crankScheduler,
     schedulerCrankTimeHistogram,
     schedulerBlockTimeHistogram,
-  };
+  });
 }

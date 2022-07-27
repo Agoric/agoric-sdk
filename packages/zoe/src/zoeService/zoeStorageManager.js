@@ -267,7 +267,7 @@ export const makeZoeStorageManager = (
     });
   };
 
-  return {
+  return harden({
     makeZoeInstanceStorageManager,
     getAssetKindByBrand: issuerStorage.getAssetKindByBrand,
     depositPayments: escrowStorage.depositPayments,
@@ -283,5 +283,5 @@ export const makeZoeStorageManager = (
     getInstanceAdmin,
     unwrapInstallation,
     getProposalSchemaForInvitation,
-  };
+  });
 };

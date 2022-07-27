@@ -631,7 +631,7 @@ export function makeCollectionManager(
     const snapshotMap = (keyPatt, valuePatt) =>
       makeCopyMap(entries(keyPatt, valuePatt));
 
-    return {
+    return harden({
       has,
       get,
       getSize,
@@ -646,7 +646,7 @@ export function makeCollectionManager(
       sizeInternal,
       clear,
       clearInternal,
-    };
+    });
   }
 
   function summonCollection(

@@ -97,18 +97,18 @@ export const balancesToReachRatio = (poolX, poolY, giveX, giveY) => {
   const desiredRatio = Number(endX) / Number(endY);
 
   if (imbalancedRequest(desiredRatio, startK)) {
-    return {
+    return harden({
       targetX: AmountMath.makeEmpty(poolX.brand),
       targetY: AmountMath.makeEmpty(poolY.brand),
-    };
+    });
   }
   const targetY = Math.sqrt(Number(startK) / desiredRatio);
   const targetX = targetY * desiredRatio;
 
-  return {
+  return harden({
     targetX: AmountMath.make(poolX.brand, BigInt(Math.trunc(targetX))),
     targetY: AmountMath.make(poolY.brand, BigInt(Math.trunc(targetY))),
-  };
+  });
 };
 
 /**

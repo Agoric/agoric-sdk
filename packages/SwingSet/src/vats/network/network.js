@@ -584,10 +584,10 @@ export function makeLoopbackProtocolHandler(
       const remoteInstance = await E(protocolHandler)
         .onInstantiate(lport, remoteAddr, localAddr, protocolHandler)
         .catch(rethrowUnlessMissing);
-      return {
+      return harden({
         remoteInstance,
         handler: rchandler,
-      };
+      });
     },
     onInstantiate,
     async onListen(port, localAddr, listenHandler, _protocolHandler) {

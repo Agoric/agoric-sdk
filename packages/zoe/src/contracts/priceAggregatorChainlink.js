@@ -99,12 +99,12 @@ const start = async (
    * @param {bigint} answeredInRound
    */
   const makeRound = (answer, startedAt, updatedAt, answeredInRound) => {
-    return {
+    return harden({
       answer,
       startedAt,
       updatedAt,
       answeredInRound,
-    };
+    });
   };
 
   /**
@@ -119,12 +119,12 @@ const start = async (
     minSubmissions,
     roundTimeout,
   ) => {
-    return {
+    return harden({
       submissions,
       maxSubmissions,
       minSubmissions,
       roundTimeout,
-    };
+    });
   };
 
   /**
@@ -143,14 +143,14 @@ const start = async (
     latestSubmission,
     index,
   ) => {
-    return {
+    return harden({
       startingRound,
       endingRound,
       lastReportedRound,
       lastStartedRound,
       latestSubmission,
       index,
-    };
+    });
   };
 
   /**
@@ -535,14 +535,14 @@ const start = async (
       eligibleToSubmit = false;
     }
 
-    return {
+    return harden({
       eligibleForSpecificRound: eligibleToSubmit,
       queriedRoundId: roundId,
       oracleStatus: oracle.latestSubmission,
       startedAt,
       roundTimeout,
       oracleCount: oracleCount(),
-    };
+    });
   };
 
   /**
@@ -734,13 +734,13 @@ const start = async (
 
       assert(r.answeredInRound > 0 && validRoundId(roundId), V3_NO_DATA_ERROR);
 
-      return {
+      return harden({
         roundId,
         answer: r.answer,
         startedAt: r.startedAt,
         updatedAt: r.updatedAt,
         answeredInRound: r.answeredInRound,
-      };
+      });
     },
 
     /**
@@ -755,7 +755,7 @@ const start = async (
       if (_queriedRoundId > 0) {
         const round = rounds.get(_queriedRoundId);
         const detail = details.get(_queriedRoundId);
-        return {
+        return harden({
           eligibleForSpecificRound: eligibleForSpecificRound(
             _oracle,
             _queriedRoundId,
@@ -766,7 +766,7 @@ const start = async (
           startedAt: round.startedAt,
           roundTimeout: detail.roundTimeout,
           oracleCount: oracleCount(),
-        };
+        });
       } else {
         return oracleRoundStateSuggestRound(_oracle, blockTimestamp);
       }

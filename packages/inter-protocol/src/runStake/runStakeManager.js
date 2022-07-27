@@ -87,7 +87,7 @@ const initState = (
 
   const { zcfSeat: poolIncrementSeat } = zcf.makeEmptySeatKit();
 
-  return {
+  return harden({
     assetSubscriber,
     assetPublisher,
     brands,
@@ -102,7 +102,7 @@ const initState = (
     timerService,
     totalDebt,
     zcf,
-  };
+  });
 };
 
 /**

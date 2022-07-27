@@ -290,10 +290,10 @@ const start = async (zcf, privateArgs) => {
 
   const getPriceAuthorities = brand => {
     const pool = getPool(brand);
-    return {
+    return harden({
       toCentral: pool.getToCentralPriceAuthority(),
       fromCentral: pool.getFromCentralPriceAuthority(),
-    };
+    });
   };
 
   /** @param {Brand} brand */

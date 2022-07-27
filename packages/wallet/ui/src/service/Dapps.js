@@ -59,12 +59,12 @@ export const getDappService = publicAddress => {
   });
   broadcastUpdates();
 
-  return {
+  return harden({
     dapps,
     notifier,
     addDapp: upsertDapp,
     setDappPetname,
     deleteDapp,
     enableDapp,
-  };
+  });
 };

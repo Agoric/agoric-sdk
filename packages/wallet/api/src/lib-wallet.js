@@ -1939,9 +1939,9 @@ export function makeWallet({
       },
     }).finally(() => console.error('/// This is the end of the bank assets'));
   };
-  return {
+  return harden({
     admin: wallet,
     initialized: initialize(),
     importBankAssets,
-  };
+  });
 }

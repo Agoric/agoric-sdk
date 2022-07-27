@@ -365,7 +365,7 @@ export const definePoolKind = (
       ...paramAccessor,
     });
 
-    return {
+    return harden({
       zcf,
       liqTokenSupply: 0n,
       liquidityIssuer,
@@ -384,7 +384,7 @@ export const definePoolKind = (
       paramAccessor: params,
       metricsPublication,
       metricsSubscription,
-    };
+    });
   };
 
   const facets = harden({

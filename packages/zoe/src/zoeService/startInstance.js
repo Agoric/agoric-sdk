@@ -316,7 +316,7 @@ export const makeStartInstance = (
       });
 
       // Actually returned to the user.
-      return {
+      return harden({
         creatorFacet,
 
         // TODO (#5775) deprecate this return value from contracts.
@@ -324,7 +324,7 @@ export const makeStartInstance = (
         instance,
         publicFacet,
         adminFacet,
-      };
+      });
     });
   };
   // @ts-expect-error cast

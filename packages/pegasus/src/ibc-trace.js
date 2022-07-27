@@ -25,16 +25,16 @@ const sourcePrefixedDenom = (addr, denom) => {
 /** @type {DenomTransformer} */
 const transformer = {
   getDenomsForLocalPeg: async (denom, _localAddress, remoteAddress) => {
-    return {
+    return harden({
       sendDenom: denom,
       receiveDenom: sourcePrefixedDenom(remoteAddress, denom),
-    };
+    });
   },
   getDenomsForRemotePeg: async (denom, localAddress, _remoteAddress) => {
-    return {
+    return harden({
       sendDenom: sourcePrefixedDenom(localAddress, denom),
       receiveDenom: denom,
-    };
+    });
   },
 };
 

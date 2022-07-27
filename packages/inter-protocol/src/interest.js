@@ -64,11 +64,11 @@ export const makeInterestCalculator = (
       growingInterest += newInterest;
       growingDebt += newInterest;
     }
-    return {
+    return harden({
       latestInterestUpdate: newRecent,
       interest: growingInterest,
       newDebt: growingDebt,
-    };
+    });
   };
 
   /**
@@ -168,11 +168,11 @@ export const chargeInterest = (powers, params, prior, accruedUntil) => {
 
   // done if none
   if (interestAccrued === 0n) {
-    return {
+    return harden({
       compoundedInterest: prior.compoundedInterest,
       latestInterestUpdate: debtStatus.latestInterestUpdate,
       totalDebt: prior.totalDebt,
-    };
+    });
   }
 
   // NB: This method of inferring the compounded rate from the ratio of debts
@@ -196,9 +196,9 @@ export const chargeInterest = (powers, params, prior, accruedUntil) => {
   const rewarded = AmountMath.make(brand, interestAccrued);
   powers.mintAndReallocateWithFee(rewarded, rewarded, powers.poolIncrementSeat);
 
-  return {
+  return harden({
     compoundedInterest,
     latestInterestUpdate: debtStatus.latestInterestUpdate,
     totalDebt,
-  };
+  });
 };

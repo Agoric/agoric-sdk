@@ -17,7 +17,7 @@ export const DEFAULT_LMDB_MAP_SIZE = 2 * 1024 * 1024 * 1024;
 export { makeSnapStore };
 
 export function makeSnapStoreIO() {
-  return {
+  return harden({
     tmpName,
     createReadStream: fs.createReadStream,
     createWriteStream: fs.createWriteStream,
@@ -26,7 +26,7 @@ export function makeSnapStoreIO() {
     stat: fs.promises.stat,
     unlink: fs.promises.unlink,
     resolve: path.resolve,
-  };
+  });
 }
 
 /**

@@ -41,10 +41,10 @@ const start = zcf => {
   assertIssuerKeywords(zcf, harden(['Asset', 'Price']));
 
   function dropExit(p) {
-    return {
+    return harden({
       want: p.want,
       give: p.give,
-    };
+    });
   }
 
   function flattenOrders(seats) {
@@ -53,10 +53,10 @@ const start = zcf => {
   }
 
   function getBookOrders() {
-    return {
+    return harden({
       buys: flattenOrders(buySeats),
       sells: flattenOrders(sellSeats),
-    };
+    });
   }
 
   // Tell the notifier that there has been a change to the book orders

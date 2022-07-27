@@ -64,7 +64,7 @@ export const makeHelpers = async (homePromise, endowments) => {
     getBundlerMaker,
   });
 
-  return {
+  return harden({
     install,
     startInstance,
     offer,
@@ -75,5 +75,5 @@ export const makeHelpers = async (homePromise, endowments) => {
     depositInvitation,
     assertOfferResult,
     writeCoreProposal,
-  };
+  });
 };

@@ -184,10 +184,10 @@ export const makeStoredPublisherKit = (storageNode, marshaller, childPath) => {
     marshaller,
   );
 
-  return {
+  return harden({
     publisher: publication,
     subscriber,
-  };
+  });
 };
 
 /**
@@ -205,10 +205,10 @@ export const makeStoredPublisherKit = (storageNode, marshaller, childPath) => {
 export const makeStoredPublishKit = (storageNode, marshaller) => {
   const { publisher, subscriber } = makePublishKit();
 
-  return {
+  return harden({
     publisher,
     // wrap the subscriber to tee events to storage
     subscriber: makeStoredSubscriber(subscriber, storageNode, marshaller),
-  };
+  });
 };
 harden(makeStoredPublishKit);

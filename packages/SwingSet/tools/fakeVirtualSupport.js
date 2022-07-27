@@ -226,7 +226,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
 
   function assertAcceptableSyscallCapdataSize(_capdatas) {}
 
-  return {
+  return harden({
     syscall,
     allocateExportID,
     allocateCollectionID,
@@ -246,7 +246,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     dumpStore,
     setVrm,
     assertAcceptableSyscallCapdataSize,
-  };
+  });
 }
 
 export function makeFakeVirtualReferenceManager(

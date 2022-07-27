@@ -492,9 +492,9 @@ const makePegasus = (zcf, board, namesByAddress) => {
 const start = zcf => {
   const { board, namesByAddress } = zcf.getTerms();
 
-  return {
+  return harden({
     publicFacet: makePegasus(zcf, board, namesByAddress),
-  };
+  });
 };
 
 harden(start);

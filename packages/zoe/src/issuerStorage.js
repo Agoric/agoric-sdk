@@ -200,7 +200,7 @@ export const provideIssuerStorage = zcfBaggage => {
     issuerRecords.forEach(storeIssuerRecord);
   };
 
-  return {
+  return harden({
     storeIssuerKeywordRecord,
     storeIssuer,
     storeIssuerRecord,
@@ -209,5 +209,5 @@ export const provideIssuerStorage = zcfBaggage => {
     getIssuerForBrand,
     getIssuerRecords,
     instantiate,
-  };
+  });
 };

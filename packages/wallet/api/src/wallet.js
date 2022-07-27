@@ -500,10 +500,10 @@ export function buildRootObject(vatPowers) {
 
             switch (type) {
               case 'walletGetPurses': {
-                return {
+                return harden({
                   type: 'walletUpdatePurses',
                   data: bigintStringify(pursesState),
-                };
+                });
               }
               case 'walletAddOffer': {
                 let handled = false;
@@ -536,10 +536,10 @@ export function buildRootObject(vatPowers) {
                 const { channelHandle } = meta;
 
                 if (!channelHandle) {
-                  return {
+                  return harden({
                     type: 'walletSubscribedOffers',
                     data: false,
-                  };
+                  });
                 }
 
                 // TODO: Maybe use the contract instanceId instead.
@@ -547,10 +547,10 @@ export function buildRootObject(vatPowers) {
                   origin: dappOrigin,
                   status,
                 });
-                return {
+                return harden({
                   type: 'walletSubscribedOffers',
                   data: true,
-                };
+                });
               }
 
               case 'walletGetOffers': {
@@ -567,10 +567,10 @@ export function buildRootObject(vatPowers) {
                   );
                 }
 
-                return {
+                return harden({
                   type: 'walletOfferDescriptions',
                   data: result,
-                };
+                });
               }
 
               case 'walletGetDepositFacetId': {
@@ -578,10 +578,10 @@ export function buildRootObject(vatPowers) {
                 const result = await walletAdmin.getDepositFacetId(
                   brandBoardId,
                 );
-                return {
+                return harden({
                   type: 'walletDepositFacetIdResponse',
                   data: result,
-                };
+                });
               }
 
               case 'walletSuggestIssuer': {
@@ -591,10 +591,10 @@ export function buildRootObject(vatPowers) {
                   boardId,
                   dappOrigin,
                 );
-                return {
+                return harden({
                   type: 'walletSuggestIssuerResponse',
                   data: result,
-                };
+                });
               }
 
               case 'walletSuggestInstance': {
@@ -604,10 +604,10 @@ export function buildRootObject(vatPowers) {
                   boardId,
                   dappOrigin,
                 );
-                return {
+                return harden({
                   type: 'walletSuggestInstanceResponse',
                   data: result,
-                };
+                });
               }
 
               case 'walletSuggestInstallation': {
@@ -617,10 +617,10 @@ export function buildRootObject(vatPowers) {
                   boardId,
                   dappOrigin,
                 );
-                return {
+                return harden({
                   type: 'walletSuggestInstallationResponse',
                   data: result,
-                };
+                });
               }
 
               default:

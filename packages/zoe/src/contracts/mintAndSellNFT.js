@@ -58,10 +58,10 @@ const start = zcf => {
           .fill(undefined)
           .map((_, i) => {
             const tokenNumber = i + 1;
-            return {
+            return harden({
               ...customValueProperties,
               number: tokenNumber,
-            };
+            });
           }),
       ),
     );

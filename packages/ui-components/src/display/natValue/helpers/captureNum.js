@@ -19,8 +19,8 @@ export const captureNum = str => {
   assert(match, details`${str} must be a non-negative decimal number`);
   const leftOfDecimal = match[1] || '0';
   const rightOfDecimal = match[3] || '';
-  return {
+  return harden({
     left: leftOfDecimal,
     right: rightOfDecimal,
-  };
+  });
 };

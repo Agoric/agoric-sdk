@@ -94,10 +94,10 @@ export const makeMetricsPublisherKit = (storageNode, marshaller) => {
   );
   /** @type {import('@agoric/notifier').StoredPublisherKit<T>} */
   const kit = makeStoredPublisherKit(storageNode, marshaller, 'metrics');
-  return {
+  return harden({
     metricsPublication: kit.publisher,
     metricsSubscription: kit.subscriber,
-  };
+  });
 };
 harden(makeMetricsPublisherKit);
 

@@ -137,10 +137,10 @@ export const makeKernelStats = kernelStatsMetrics => {
       'Kernel stats not initialized',
     );
 
-    return {
+    return harden({
       consensusStats: JSON.stringify(kernelConsensusStats),
       localStats: JSON.stringify(kernelLocalStats),
-    };
+    });
   };
 
   /**
@@ -174,12 +174,12 @@ export const makeKernelStats = kernelStatsMetrics => {
     };
   };
 
-  return {
+  return harden({
     incStat,
     decStat,
     getStats,
     initializeStats,
     loadFromSerializedStats,
     getSerializedStats,
-  };
+  });
 };

@@ -113,14 +113,14 @@ export const makeOfferAndFindInvitationAmount = (
       invitationDetails.handle,
       offerResultP,
     );
-    return {
+    return harden({
       seat,
       deposited,
       invitationDetails,
-    };
+    });
   };
-  return {
+  return harden({
     offer,
     findInvitationAmount,
-  };
+  });
 };

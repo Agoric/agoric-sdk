@@ -97,11 +97,11 @@ const start = zcf => {
       want: { Out: amountOut },
     } = seat.getProposal();
 
-    return {
+    return harden({
       seat,
       amountIn,
       amountOut,
-    };
+    });
   }
 
   /** @type {OfferHandler} */

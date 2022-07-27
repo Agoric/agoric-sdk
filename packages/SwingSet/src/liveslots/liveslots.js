@@ -868,10 +868,10 @@ function build(
       return resolutions;
     }
 
-    return {
+    return harden({
       forPromise,
       forSlots,
-    };
+    });
   }
 
   function queueMessage(targetSlot, prop, args, returnedP) {

@@ -694,10 +694,10 @@ export default function buildKernel(
     vatKeeper.initializeReapCountdown(options.reapInterval);
 
     function makeVatAdminMessage(arg, slots) {
-      return {
+      return harden({
         body: JSON.stringify(['newVatCallback', [vatID, arg]]),
         slots,
-      };
+      });
     }
 
     // createDynamicVat makes the worker, installs lockdown and
@@ -849,10 +849,10 @@ export default function buildKernel(
         message: 'vat-upgrade failure',
       };
       const args = [upgradeID, false, error];
-      return {
+      return harden({
         body: JSON.stringify(['vatUpgradeCallback', args]),
         slots: [],
-      };
+      });
     }
 
     // We use deliveryCrankResults to parse the stopVat status.
@@ -1919,10 +1919,10 @@ export default function buildKernel(
       assert.typeof(acceptanceQueueLength, 'number');
       assert.typeof(promiseQueuesLength, 'number');
 
-      return {
+      return harden({
         activeQueues: runQueueLength + acceptanceQueueLength,
         inactiveQueues: promiseQueuesLength,
-      };
+      });
     },
 
     dump() {

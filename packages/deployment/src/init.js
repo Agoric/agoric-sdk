@@ -160,11 +160,11 @@ const makeProviders = ({ env, inquirer, wr, setup, fetch, needBacktick }) => ({
           validate: num => Math.floor(num) === num && num >= 0,
         },
       ]);
-      return {
+      return harden({
         DATACENTER: DOCKER_DATACENTER,
         NUM_NODES,
         MORE: false,
-      };
+      });
     },
     createPlacementFiles: (provider, PLACEMENT, PREFIX) =>
       wr.createFile(

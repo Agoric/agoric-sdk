@@ -16,15 +16,15 @@ import { make100Percent, make0Percent } from './percent.js';
  * @type {CalculateShares} */
 function calculateShares(collateralBrand, price, strikePrice1, strikePrice2) {
   if (AmountMath.isGTE(strikePrice1, price)) {
-    return {
+    return harden({
       longShare: make0Percent(collateralBrand),
       shortShare: make100Percent(collateralBrand),
-    };
+    });
   } else if (AmountMath.isGTE(price, strikePrice2)) {
-    return {
+    return harden({
       longShare: make100Percent(collateralBrand),
       shortShare: make0Percent(collateralBrand),
-    };
+    });
   }
 
   const denominator = AmountMath.subtract(strikePrice2, strikePrice1);

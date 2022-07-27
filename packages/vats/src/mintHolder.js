@@ -21,9 +21,9 @@ export const start = zcf => {
 
   const { mint, issuer } = makeIssuerKit(keyword, assetKind, displayInfo);
 
-  return {
+  return harden({
     publicFacet: issuer,
     creatorFacet: mint,
-  };
+  });
 };
 harden(start);

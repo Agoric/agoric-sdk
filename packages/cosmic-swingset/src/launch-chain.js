@@ -346,7 +346,7 @@ export async function launch({
 
   const { validateAndInstallBundle } = controller;
 
-  return {
+  return harden({
     actionQueue,
     deliverInbound,
     doBridgeInbound,
@@ -360,5 +360,5 @@ export async function launch({
     savedBlockTime,
     savedChainSends,
     validateAndInstallBundle,
-  };
+  });
 }

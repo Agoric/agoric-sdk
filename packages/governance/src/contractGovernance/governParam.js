@@ -159,11 +159,11 @@ const setupParamGovernance = async (
         return negative;
       });
 
-    return {
+    return harden({
       outcomeOfUpdate,
       instance: voteCounter,
       details: E(counterPublicFacet).getDetails(),
-    };
+    });
   };
 
   return Far('paramGovernor', {

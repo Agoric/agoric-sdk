@@ -342,9 +342,9 @@ export const makeAgoricNamesAccess = (
   const typedSpaces = /** @type { WellKnownSpaces } */ (
     /** @type {any} */ (spaces)
   );
-  return {
+  return harden({
     agoricNames,
     agoricNamesAdmin,
     spaces: typedSpaces,
-  };
+  });
 };

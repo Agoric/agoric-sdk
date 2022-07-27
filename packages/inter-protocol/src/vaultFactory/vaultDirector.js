@@ -113,20 +113,20 @@ const updateShortfallReporter = async (
   );
 
   if (newInvitation !== oldInvitation) {
-    return {
+    return harden({
       // @ts-expect-error cast
       shortfallReporter: E(E(zoe).offer(newInvitation)).getOfferResult(),
       shortfallInvitation: newInvitation,
-    };
+    });
   } else {
     assert(
       oldShortfallReporter,
       'updateShortFallReported called with repeat invitation and no oldShortfallReporter',
     );
-    return {
+    return harden({
       shortfallReporter: oldShortfallReporter,
       shortfallInvitation: oldInvitation,
-    };
+    });
   }
 };
 
@@ -185,14 +185,14 @@ const initState = (
     zcf,
   });
 
-  return {
+  return harden({
     collateralTypes,
     managerCounter: 0,
     mintSeat,
     rewardPoolSeat,
     // @ts-expect-error defined in finish()
     shortfallInvitation: undefined,
-  };
+  });
 };
 
 /**
@@ -250,7 +250,7 @@ const getCollaterals = async ({ state }) => {
     Promise.all(
       [...collateralTypes.entries()].map(async ([brand, vm]) => {
         const priceQuote = await vm.getCollateralQuote();
-        return {
+        return harden({
           brand,
           interestRate: vm.getGovernedParams().getInterestRate(),
           liquidationMargin: vm.getGovernedParams().getLiquidationMargin(),
@@ -259,7 +259,7 @@ const getCollaterals = async ({ state }) => {
             getAmountOut(priceQuote),
             getAmountIn(priceQuote),
           ),
-        };
+        });
       }),
     ),
   );

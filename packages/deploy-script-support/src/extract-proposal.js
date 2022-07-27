@@ -226,9 +226,9 @@ const makeCoreProposalBehavior = ${makeCoreProposalBehavior};
 `;
 
   // console.debug('created bundles from proposals:', coreProposals, bundles);
-  return {
+  return harden({
     bundles,
     code: defangAndTrim(code),
     bundleHandleToAbsolutePaths,
-  };
+  });
 };

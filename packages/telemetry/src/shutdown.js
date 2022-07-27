@@ -49,14 +49,14 @@ export const makeFreshShutdown = (verbose = true) => {
     shutdown(-1);
   });
 
-  return {
+  return harden({
     registerShutdown: thunk => {
       shutdownThunks.add(thunk);
       return () => {
         shutdownThunks.delete(thunk);
       };
     },
-  };
+  });
 };
 
 let cachedShutdown = null;

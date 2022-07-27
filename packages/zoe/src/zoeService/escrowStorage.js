@@ -130,10 +130,10 @@ export const makeEscrowStorage = () => {
     return initialAllocation;
   };
 
-  return {
+  return harden({
     createPurse, // createPurse does not return a purse
     makeLocalPurse,
     withdrawPayments,
     depositPayments,
-  };
+  });
 };

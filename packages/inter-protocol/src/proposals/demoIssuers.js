@@ -370,10 +370,10 @@ export const ammPoolRunDeposits = issuers => {
       ammTotal += poolBalance;
       return /** @type {[string, bigint]} */ ([issuerName, poolBalance]);
     });
-  return {
+  return harden({
     ammTotal,
     balances: fromEntries(balanceEntries),
-  };
+  });
 };
 
 /**

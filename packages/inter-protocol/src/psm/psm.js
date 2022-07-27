@@ -191,8 +191,8 @@ export const start = async (zcf, privateArgs) => {
     makeCollectFeesInvitation,
   });
 
-  return {
+  return harden({
     creatorFacet: makeGovernorFacet(creatorFacet),
     publicFacet: augmentPublicFacet(publicFacet),
-  };
+  });
 };

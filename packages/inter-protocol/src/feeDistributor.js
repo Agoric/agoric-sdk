@@ -96,10 +96,10 @@ export const makeShareConfig = (destinations = {}, keywordShares = {}) => {
       const share = keywordShares[kw];
       assert.typeof(share, 'bigint', X`${kw} must be a bigint; got ${share}`);
       totalShares += share;
-      return {
+      return harden({
         share,
         destination,
-      };
+      });
     });
   return harden({ shares, totalShares });
 };

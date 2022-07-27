@@ -88,10 +88,10 @@ export function exportMailbox(inout) {
     messages.push([Number(msgnum), body]);
   });
   messages.sort((a, b) => a[0] - b[0]);
-  return {
+  return harden({
     ack: Number(inout.ack),
     outbox: messages,
-  };
+  });
 }
 
 export function buildMailboxStateMap(state = harden(new Map())) {

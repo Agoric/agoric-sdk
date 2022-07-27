@@ -105,13 +105,13 @@ export const makeStartInstance = (
       console.log(`- Created Contract Instance: ${instancePetname}`);
 
       const creatorInvitationDetails = invitationAmount.value[0];
-      return {
+      return harden({
         creatorFacet,
         publicFacet,
         instance,
         adminFacet,
         creatorInvitationDetails,
-      };
+      });
     }
     console.log(`- Created Contract Instance: ${instancePetname}`);
     return startInstanceResult;
