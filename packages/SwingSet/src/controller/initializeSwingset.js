@@ -47,23 +47,41 @@ export async function buildKernelBundle() {
 /**
  * Build the source bundles for built-in vats and devices, and for the
  * xsnap vat worker.
+ *
+ * @param { { skip?: string[] } } options
  */
-export async function buildVatAndDeviceBundles() {
-  const bundles = await allValues({
-    adminDevice: bundleRelative('../devices/vat-admin/device-vat-admin.js'),
-    adminVat: bundleRelative('../vats/vat-admin/vat-vat-admin.js'),
-    comms: bundleRelative('../vats/comms/index.js'),
-    vattp: bundleRelative('../vats/vattp/vat-vattp.js'),
-    timer: bundleRelative('../vats/timer/vat-timer.js'),
-
-    lockdown: bundleRelativeGE(
+export async function buildVatAndDeviceBundles(options = {}) {
+  const wanted = {
+    adminDevice: ['', '../devices/vat-admin/device-vat-admin.js'],
+    adminVat: ['', '../vats/vat-admin/vat-vat-admin.js'],
+    comms: ['', '../vats/comms/index.js'],
+    vattp: ['', '../vats/vattp/vat-vattp.js'],
+    timer: ['', '../vats/timer/vat-timer.js'],
+    lockdown: [
+      'ge',
       '../supervisors/subprocess-xsnap/lockdown-subprocess-xsnap.js',
-    ),
-    supervisor: bundleRelativeGE(
+    ],
+    supervisor: [
+      'ge',
       '../supervisors/subprocess-xsnap/supervisor-subprocess-xsnap.js',
-    ),
-  });
+    ],
+  };
+  const { skip = [] } = options;
 
+  /** @type { Record<string, Promise<Bundle>> } */
+  const bundleps = {};
+  for (const [name, [mode, relpath]] of Object.entries(wanted)) {
+    if (skip.indexOf(name) === -1) {
+      if (mode === '') {
+        bundleps[name] = bundleRelative(relpath);
+      } else if (mode === 'ge') {
+        bundleps[name] = bundleRelativeGE(relpath);
+      } else {
+        assert.fail(`unknown mode ${mode}`);
+      }
+    }
+  }
+  const bundles = await allValues(bundleps);
   return harden(bundles);
 }
 
@@ -76,8 +94,8 @@ export async function buildVatAndDeviceBundles() {
 // Tests can also pass the whole result to buildVatController's
 // runtimeOptions.kernelBundles, which will pass it through to both.
 
-export async function buildKernelBundles() {
-  const bp = buildVatAndDeviceBundles();
+export async function buildKernelBundles(options) {
+  const bp = buildVatAndDeviceBundles(options);
   const kp = buildKernelBundle();
   const [vdBundles, kernelBundle] = await Promise.all([bp, kp]);
   return harden({ kernel: kernelBundle, ...vdBundles });
