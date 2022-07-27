@@ -4,14 +4,21 @@ import '@agoric/zoe/exported.js';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
-import { makeStore, makeWeakStore } from '@agoric/store';
-import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
+import {
+  makeAtomicProvider,
+  provide,
+} from '@agoric/store/src/stores/store-utils.js';
 import {
   assertIssuerKeywords,
   offerTo,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { Far } from '@endo/marshal';
+import {
+  provideDurableMapStore,
+  provideDurableWeakMapStore,
+  vivifyKindMulti,
+} from '@agoric/vat-data';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeMetricsPublisherKit } from '../contractSupport.js';
 import { makeTracer } from '../makeTracer.js';
@@ -30,6 +37,8 @@ import { publicPrices } from './pool.js';
 import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity.js';
 import { makeMakeSwapInvitation } from './swap.js';
 
+import '@agoric/governance/src/exported.js';
+
 const { quote: q, details: X } = assert;
 
 const trace = makeTracer('XykAmm', false);
@@ -38,6 +47,29 @@ const trace = makeTracer('XykAmm', false);
  * @typedef {object} MetricsNotification
  * @property {Brand[]} XYK brands of pools that use an X*Y=K pricing policy
  */
+
+/**
+ * @typedef {GovernanceTerms< {MinInitialPoolLiquidity: 'amount'} & {ProtocolFee: 'amount'} & {PoolFee: 'amount'}>} AmmGovernanceParams
+ */
+
+/**
+ * @typedef {Readonly<{
+ * zcf: ZCF,
+ * secondaryBrandToPool: WeakMapStore<Brand,PoolFacets>,
+ * secondaryBrandToLiquidityMint: WeakMapStore<Brand,ZCFMint>,
+ * centralBrand: Brand,
+ * timer: TimerService,
+ * quoteIssuerKit: IssuerKit,
+ * params: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').AmmParams>,
+ * protocolSeat: ZCFSeat,
+ * }>} AmmState
+ */
+
+/**
+ * @typedef {{}} MethodContext
+ */
+
+/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 /**
  * Multipool AMM is a rewrite of Uniswap that supports multiple liquidity pools,
@@ -115,8 +147,9 @@ const trace = makeTracer('XykAmm', false);
  *   storageNode: ERef<StorageNode>,
  *   marshaller: ERef<Marshaller>,
  * }} privateArgs
+ * @param {Baggage} baggage
  */
-const start = async (zcf, privateArgs) => {
+const start = async (zcf, privateArgs, baggage) => {
   /**
    * This contract must have a "Central" keyword and issuer in the
    * IssuerKeywordRecord.
@@ -129,7 +162,7 @@ const start = async (zcf, privateArgs) => {
   assert(centralBrand !== undefined, 'centralBrand must be present');
 
   const [
-    { augmentPublicFacet, makeGovernorFacet, params },
+    { augmentVirtualPublicFacet, makeVirtualGovernorFacet, params },
     centralDisplayInfo,
   ] = await Promise.all([
     handleParamGovernance(
@@ -157,24 +190,36 @@ const start = async (zcf, privateArgs) => {
   );
 
   /** @type {Store<Brand,PoolFacets>} */
-  const secondaryBrandToPool = makeStore('secondaryBrandToPool');
-  const getPool = brand => secondaryBrandToPool.get(brand).pool;
+  const secondaryBrandToPool = provideDurableMapStore(
+    baggage,
+    'secondaryBrandToPool',
+  );
+  const getPool = brand => {
+    // TODO: https://github.com/Agoric/agoric-sdk/issues/5776
+    assert(
+      secondaryBrandToPool.has(brand),
+      `"secondaryBrandToPool" not found: ${q(brand)}`,
+    );
+    return secondaryBrandToPool.get(brand).pool;
+  };
   const getPoolHelper = brand => secondaryBrandToPool.get(brand).helper;
-  const initPool = secondaryBrandToPool.init;
   // XXX a brand can be in secondaryBrandToLiquidityMint and return false for this check
   // if it's called between addIssuer and addPool
   const isSecondary = secondaryBrandToPool.has;
 
   // The liquidityBrand has to exist to allow the addPool Offer to specify want
   /** @type {WeakMapStore<Brand,ZCFMint<'nat'>>} */
-  const secondaryBrandToLiquidityMint = makeWeakStore(
+  const secondaryBrandToLiquidityMint = provideDurableWeakMapStore(
+    baggage,
     'secondaryBrandToLiquidityMint',
   );
   const secondaryBrandToLiquidityMintProvider = makeAtomicProvider(
     secondaryBrandToLiquidityMint,
   );
 
-  const quoteIssuerKit = makeIssuerKit('Quote', AssetKind.SET);
+  const quoteIssuerKit = provide(baggage, 'quoteIssuerKit', () =>
+    makeIssuerKit('Quote', AssetKind.SET),
+  );
 
   const { metricsPublication, metricsSubscription } = makeMetricsPublisherKit(
     privateArgs.storageNode,
@@ -189,10 +234,14 @@ const start = async (zcf, privateArgs) => {
 
   // For now, this seat collects protocol fees. It needs to be connected to
   // something that will extract the fees.
-  const { zcfSeat: protocolSeat } = zcf.makeEmptySeatKit();
+  const { zcfSeat: protocolSeat } = provide(baggage, 'protocolSeat', () =>
+    harden(zcf.makeEmptySeatKit()),
+  );
 
   /** @type {AssetReservePublicFacet=} */
-  let reserveFacet;
+  let reserveFacet = baggage.has('reserveFacet')
+    ? baggage.get('reserveFacet')
+    : undefined;
   /**
    * @param {Brand} secondaryBrand
    * @param {ZCFSeat} reserveLiquidityTokenSeat
@@ -242,14 +291,24 @@ const start = async (zcf, privateArgs) => {
     trace('handlePoolAdded done');
   };
 
-  /** @param {Brand} brand */
-  const getLiquidityIssuer = brand =>
+  /**
+   * @param {MethodContext} _context
+   * @param {Brand} brand
+   */
+  const getLiquidityIssuer = (_context, brand) =>
     secondaryBrandToLiquidityMint.get(brand).getIssuerRecord().issuer;
-  /** @param {Brand} brand */
-  const getLiquiditySupply = brand => getPool(brand).getLiquiditySupply();
+  /**
+   * @param {MethodContext} _context
+   * @param {Brand} brand
+   */
+  const getLiquiditySupply = (_context, brand) =>
+    getPool(brand).getLiquiditySupply();
 
-  /** @param {Brand} brand */
-  const getSecondaryIssuer = brand => {
+  /**
+   * @param {MethodContext} _context
+   * @param {Brand} brand
+   */
+  const getSecondaryIssuer = (_context, brand) => {
     assert(
       secondaryBrandToLiquidityMint.has(brand),
       'Brand not a secondary of the AMM',
@@ -261,15 +320,23 @@ const start = async (zcf, privateArgs) => {
       // NB: the set of pools grows monotonically
       `pool${secondaryBrandToPool.getSize()}`,
     ));
-  const addPoolInvitation = makeAddPoolInvitation(
+
+  // shared AMM state that will be lexically accessible to all pools
+  /** @type {AmmState} */
+  const ammState = {
     zcf,
-    initPool,
+    secondaryBrandToPool,
+    secondaryBrandToLiquidityMint,
     centralBrand,
     timer,
     quoteIssuerKit,
+    // @ts-expect-error TS is confused
     params,
     protocolSeat,
-    secondaryBrandToLiquidityMint,
+  };
+  const addPoolInvitation = makeAddPoolInvitation(
+    baggage,
+    ammState,
     handlePoolAdded,
     poolStorageNode,
     privateArgs.marshaller,
@@ -284,11 +351,14 @@ const start = async (zcf, privateArgs) => {
     },
   );
 
-  /** @param {Brand} brand */
-  const getPoolAllocation = brand =>
+  /**
+   * @param {unknown} _context
+   * @param {Brand} brand
+   */
+  const getPoolAllocation = (_context, brand) =>
     getPool(brand).getPoolSeat().getCurrentAllocation();
 
-  const getPriceAuthorities = brand => {
+  const getPriceAuthorities = (_context, brand) => {
     const pool = getPool(brand);
     return {
       toCentral: pool.getToCentralPriceAuthority(),
@@ -296,8 +366,11 @@ const start = async (zcf, privateArgs) => {
     };
   };
 
-  /** @param {Brand} brand */
-  const getPoolMetrics = brand => getPool(brand).getMetrics();
+  /**
+   * @param {MethodContext} _context
+   * @param {Brand} brand
+   */
+  const getPoolMetrics = (_context, brand) => getPool(brand).getMetrics();
 
   /**
    * @param {Brand} brandIn
@@ -324,12 +397,12 @@ const start = async (zcf, privateArgs) => {
     return pool.getVPool();
   };
 
-  const getInputPrice = (amountIn, amountOut) => {
+  const getInputPrice = (_context, amountIn, amountOut) => {
     const pool = provideVPool(amountIn.brand, amountOut.brand);
     return publicPrices(pool.getPriceForInput(amountIn, amountOut));
   };
 
-  const getOutputPrice = (amountIn, amountOut) => {
+  const getOutputPrice = (_context, amountIn, amountOut) => {
     const pool = provideVPool(amountIn.brand, amountOut.brand);
     return publicPrices(pool.getPriceForOutput(amountIn, amountOut));
   };
@@ -360,8 +433,9 @@ const start = async (zcf, privateArgs) => {
     'Fee',
   );
 
-  /** @type {GovernedPublicFacet<XYKAMMPublicFacet>} */
-  const publicFacet = augmentPublicFacet(
+  // How do I remember the identity of these facets so they can be reconnected?
+
+  const publicFacet = augmentVirtualPublicFacet(
     Far('AMM public facet', {
       addPoolInvitation,
       addIssuer,
@@ -384,25 +458,35 @@ const start = async (zcf, privateArgs) => {
       getProtocolPoolBalance: () => protocolSeat.getCurrentAllocation(),
       getMetrics: () => metricsSubscription,
       getPoolMetrics,
+      ...params,
     }),
   );
 
-  /** @type {GovernedCreatorFacet<*>} */
-  const creatorFacet = makeGovernorFacet(
+  const { governorFacet, limitedCreatorFacet } = makeVirtualGovernorFacet(
+    // @ts-expect-error TS is confused.
     Far('AMM Fee Collector facet', {
       makeCollectFeesInvitation,
       /**
        * Must be called before adding pools. Not provided at contract start time due to cyclic dependency.
        *
+       * @param {MethodContext} _context
        * @param {AssetReservePublicFacet} facet
        */
-      resolveReserveFacet: facet => {
+      resolveReserveFacet: (_context, facet) => {
         assert(!reserveFacet, 'reserveFacet already resolved');
         reserveFacet = facet;
+        baggage.init('reserveFacet', facet);
       },
     }),
   );
-  return harden({ publicFacet, creatorFacet });
+
+  const makeAMM = vivifyKindMulti(baggage, 'AMM', () => ({}), {
+    publicFacet,
+    creatorFacet: governorFacet,
+    limitedCreatorFacet,
+  });
+  const { creatorFacet, publicFacet: pFacet } = makeAMM();
+  return { creatorFacet, publicFacet: pFacet };
 };
 
 harden(start);

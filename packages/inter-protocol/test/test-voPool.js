@@ -12,9 +12,10 @@ import {
   makeFakeMarshaller,
   makeFakeStorage,
 } from '@agoric/notifier/tools/testSupports.js';
-import { objectMap } from '@agoric/vat-data';
+import { objectMap, makeScalarBigMapStore } from '@agoric/vat-data';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+
 import { makeAmmParams } from '../src/vpool-xyk-amm/params.js';
 import { definePoolKind } from '../src/vpool-xyk-amm/pool.js';
 
@@ -84,14 +85,24 @@ const voPoolTest = async (t, mutation, postTest) => {
     const storageNode = makeFakeStorage('voPoolTest');
     const marshaller = makeFakeMarshaller();
 
-    return definePoolKind(
+    /** @type {import('../src/vpool-xyk-amm/multipoolMarketMaker.js').AmmState} */
+    const ammState = {
       zcf,
+      // @ts-expect-error test unused
+      secondaryBrandToPool: undefined,
+      // @ts-expect-error test unused
+      secondaryBrandToLiquidityMint: undefined,
       centralBrand,
       timer,
       quoteIssuerKit,
-      // @ts-expect-error loose
-      paramAccessor,
+      // @ts-expect-error TS is confused
+      params: paramAccessor,
       protocolSeat,
+    };
+
+    return definePoolKind(
+      makeScalarBigMapStore('virtualPool', { durable: true }),
+      ammState,
       storageNode,
       marshaller,
     );

@@ -40,7 +40,7 @@ test('start Economic Committee', async t => {
   t.truthy(creator);
 });
 
-test('amm change param via Governance', async t => {
+test.only('amm change param via Governance', async t => {
   const centralR = makeIssuerKit('central');
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   const timer = buildManualTimer(t.log);
@@ -96,8 +96,8 @@ test('amm change param via Governance', async t => {
   await timer.tick();
   await timer.tick();
 
-  const paramValue = await E(amm.ammPublicFacet).getNat(PROTOCOL_FEE_KEY);
-  t.deepEqual(paramValue, 20n, 'updated value');
+  const protocolFee = await E(amm.ammPublicFacet).getProtocolFee();
+  t.deepEqual(protocolFee, 20n, 'updated value');
 });
 
 test('price check after Governance param change', async t => {

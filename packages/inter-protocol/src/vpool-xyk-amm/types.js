@@ -97,6 +97,7 @@
  * @property {() => Promise<Invitation>} makeCollectFeesInvitation
  * @property {(facet: AssetReservePublicFacet) => void} resolveReserveFacet
  */
+
 /**
  * @typedef {object} XYKAMMPublicFacet
  * @property {() => Promise<Invitation>} addPoolInvitation
@@ -138,6 +139,9 @@
  * @property {() => Allocation} getProtocolPoolBalance
  * @property {() => StoredSubscription<MetricsNotification>} getMetrics
  * @property {(brand: Brand) => StoredSubscription<PoolMetricsNotification>} getPoolMetrics
+ * @property {() => bigint} getProtocolFee
+ * @property {() => bigint} getPoolFee
+ * @property {() => bigint} getMinInitialPoolLiquidity
  */
 
 /**
