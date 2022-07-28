@@ -177,7 +177,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     p.then(
       res => {
         // console.error(`Replying in Node to ${str} with`, res);
-        replier.resolve(`${res}`);
+        replier.resolve(stringify(res !== undefined ? res : null));
       },
       rej => {
         // console.error(`Rejecting in Node to ${str} with`, rej);
