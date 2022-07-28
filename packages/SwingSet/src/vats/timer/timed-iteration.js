@@ -2,6 +2,7 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { TimeMath } from './timeMath.js';
 
 // TODO There's nothing SwingSet specific in this file. It should probably
 // live in @agoric/notifier. But we'd also need to move the
@@ -36,12 +37,18 @@ export const makeTimedIterator = (
       const now = getCurrentTime();
 
       // Calculate where we are relative to our base time.
-      const currentOffset = now > baseTime ? now - baseTime : 0n;
-      const intervalRemaining = interval - (currentOffset % interval);
+      const currentOffset = TimeMath.clampedSubtractAbsAbs(now, baseTime);
+      const intervalRemaining = TimeMath.subtractRelRel(
+        interval,
+        TimeMath.modRelRel(currentOffset, interval),
+      );
 
       // Find the previous wakeup relative to our last one.
-      const nextWakeup = baseTime + currentOffset + intervalRemaining;
-      const priorWakeup = nextWakeup - interval;
+      const nextWakeup = TimeMath.addAbsRel(
+        TimeMath.addAbsRel(baseTime, currentOffset),
+        intervalRemaining,
+      );
+      const priorWakeup = TimeMath.subtractAbsRel(nextWakeup, interval);
 
       if (priorWakeup > latestNotifiedStamp) {
         // At least one interval has passed since the prior one we notified
@@ -52,8 +59,9 @@ export const makeTimedIterator = (
         // The last notification we know about is in the future, so notify
         // later because the client is waiting on a promise.
         latestNotifiedStamp = nextWakeup;
-        return E.when(delayFn(nextWakeup - now), wakeTime =>
-          harden({ done: false, value: wakeTime }),
+        return E.when(
+          delayFn(TimeMath.subtractAbsAbs(nextWakeup, now)),
+          wakeTime => harden({ done: false, value: wakeTime }),
         );
       }
     },

@@ -41,6 +41,7 @@
     "@endo/import-bundle": "^0.2.47",
     "@endo/init": "^0.5.43",
     "@endo/marshal": "^0.6.9",
+    "@endo/nat": "^4.1.14",
     "@endo/promise-kit": "^0.2.43",
     "@endo/zip": "^0.2.27",
     "anylogger": "^0.21.0",

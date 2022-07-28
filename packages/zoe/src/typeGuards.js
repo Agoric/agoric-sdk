@@ -2,6 +2,7 @@
 
 import { AmountShape } from '@agoric/ertp';
 import { M } from '@agoric/store';
+import { TimestampValueShape } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';
 
 export const AmountKeywordRecordShape = M.recordOf(M.string(), AmountShape);
 export const AmountPatternKeywordRecordShape = M.recordOf(
@@ -24,7 +25,7 @@ export const ProposalShape = harden({
       waived: null,
       afterDeadline: {
         timer: M.remotable(),
-        deadline: M.nat(),
+        deadline: TimestampValueShape,
       },
     },
     {},

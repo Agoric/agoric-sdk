@@ -128,7 +128,7 @@ test.serial('home.wallet - central issuer setup', async t => {
 
 test.serial('home.localTimerService makeNotifier', async t => {
   const { localTimerService } = E.get(home);
-  const notifier = E(localTimerService).makeNotifier(1, 1);
+  const notifier = E(localTimerService).makeNotifier(1n, 1n);
   const update1 = await E(notifier).getUpdateSince();
   const firstUpdate = update1.updateCount;
   t.truthy(firstUpdate > 0);
@@ -160,10 +160,10 @@ function makeHandler() {
 test.serial('home.localTimerService makeRepeater', async t => {
   const { localTimerService } = E.get(home);
   const timestamp = await E(localTimerService).getCurrentTimestamp();
-  const repeater = E(localTimerService).makeRepeater(1, 1);
+  const repeater = E(localTimerService).makeRepeater(1n, 1n);
   const handler = makeHandler();
   await E(repeater).schedule(handler);
-  const notifier = E(localTimerService).makeNotifier(1, 1);
+  const notifier = E(localTimerService).makeNotifier(1n, 1n);
   await E(notifier).getUpdateSince();
 
   t.truthy(handler.getCalls() >= 1);
