@@ -1,7 +1,7 @@
 // @ts-check
 
 import { makeMarshal, mapIterable } from '@endo/marshal';
-import { makeLegacyMap, makeScalarMap } from '@agoric/store';
+import { makeLegacyMap, makeScalarMap, makeScalarWeakMap } from '@agoric/store';
 import { assert, details as X, q } from '@agoric/assert';
 
 /**
@@ -159,6 +159,8 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       },
     };
 
+    const valToBoardId = makeScalarWeakMap('boardId');
+
     /**
      * @param {Path} path
      * @param {any} val
@@ -217,6 +219,11 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       if (isPath(petname)) {
         addPath(petname, val);
       }
+    };
+
+    const addBoardId = (boardId, val) => {
+      assert(!valToBoardId.has(val), X`val ${val} already has a board id`);
+      valToBoardId.init(val, boardId);
     };
 
     const renamePetname = (petname, val) => {
@@ -289,12 +296,14 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       valToPetname,
       valToPaths,
       petnameToVal,
+      valToBoardId,
       addPetname,
       addPath,
       renamePetname,
       deletePetname,
       suggestPetname,
       kind,
+      addBoardId,
     });
     petnameKindToMapping.init(kind, mapping);
     return mapping;
@@ -319,11 +328,12 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   const convertValToName = val => {
     for (let i = 0; i < searchOrder.length; i += 1) {
       const kind = searchOrder[i];
-      const { valToPetname } = petnameKindToMapping.get(kind);
+      const { valToPetname, valToBoardId } = petnameKindToMapping.get(kind);
       if (valToPetname.has(val)) {
         return harden({
           kind,
           petname: valToPetname.get(val),
+          ...(valToBoardId.has(val) ? { boardId: valToBoardId.get(val) } : {}),
         });
       }
     }
@@ -340,6 +350,10 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     return placeholderName;
   };
 
+  /**
+   * @param {{ kind: string, petname: Petname, boardId?: string}} slot
+   * @param {string} [_iface]
+   */
   const convertNameToVal = ({ kind, petname }, _iface = undefined) => {
     const { petnameToVal } = petnameKindToMapping.get(kind);
     return petnameToVal.get(petname);
