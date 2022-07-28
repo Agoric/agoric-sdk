@@ -208,14 +208,18 @@ export const setupClientManager = async (
       );
       return E(c).getChainBundle();
     },
-    createClientFacet: async (_nickname, clientAddress, _powerFlags) => {
+    createClientFacet: async (_nickname, clientAddress, powerFlags) => {
       /** @type {Record<string, unknown>} */
       let clientHome = {};
       const bundleReady = makePromiseKit();
 
       const makeUpdatedConfiguration = async (newPropertyMakers = []) => {
         // Specialize the property makers with the client address.
-        const newProperties = callProperties(newPropertyMakers, clientAddress);
+        const newProperties = callProperties(
+          newPropertyMakers,
+          clientAddress,
+          powerFlags,
+        );
         clientHome = { ...clientHome, ...newProperties };
 
         const todo = missingKeys(template, clientHome);
