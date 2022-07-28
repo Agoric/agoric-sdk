@@ -34,6 +34,8 @@ import {
 } from './params.js';
 import { makeVaultManager } from './vaultManager.js';
 
+/** @typedef {import('../reserve/assetReserve.js').ShortfallReporter} ShortfallReporter */
+
 const { details: X, quote: q } = assert;
 
 /** @typedef {{
@@ -42,7 +44,7 @@ const { details: X, quote: q } = assert;
  * marshaller: ERef<Marshaller>,
  * metricsPublication: IterationObserver<MetricsNotification>
  * metricsSubscription: StoredSubscription<MetricsNotification>
- * shortfallReporter: import('../reserve/assetReserve.js').ShortfallReporter,
+ * shortfallReporter: ERef<ShortfallReporter>,
  * storageNode: ERef<StorageNode>,
  * vaultParamManagers: Store<Brand, import('./params.js').VaultParamManager>,
  * zcf: import('./vaultFactory.js').VaultFactoryZCF,
@@ -58,6 +60,7 @@ const { details: X, quote: q } = assert;
  */
 // @ts-expect-error not actually full until after initState
 // UNTIL resolution to https://github.com/Agoric/agoric-sdk/issues/5759
+// Purposely left mutable because it is updated until hardened in `finish`.
 const ephemera = {};
 
 /**
@@ -83,7 +86,7 @@ const ephemera = {};
  *  burnDebt: BurnDebt,
  *  getGovernedParams: () => import('./vaultManager.js').GovernedParamGetters,
  *  mintAndReallocate: MintAndReallocate,
- *  getShortfallReporter: () => Promise<import('../reserve/assetReserve.js').ShortfallReporter>,
+ *  getShortfallReporter: () => Promise<ShortfallReporter>,
  * }} FactoryPowersFacet
  *
  * @typedef {Readonly<{
@@ -95,11 +98,11 @@ const ephemera = {};
 /**
  * @param {ERef<ZoeService>} zoe
  * @param {Ephemera['directorParamManager']} paramMgr
- * @param {import('../reserve/assetReserve.js').ShortfallReporter} [oldShortfallReporter]
+ * @param {ERef<ShortfallReporter>} [oldShortfallReporter]
  * @param {ERef<Invitation>} [oldInvitation]
  * @returns {Promise<{
  *   shortfallInvitation: ERef<Invitation>,
- *   shortfallReporter: import('../reserve/assetReserve.js').ShortfallReporter,
+ *   shortfallReporter: ERef<ShortfallReporter>,
  * }>}
  */
 const updateShortfallReporter = async (
@@ -114,7 +117,6 @@ const updateShortfallReporter = async (
 
   if (newInvitation !== oldInvitation) {
     return harden({
-      // @ts-expect-error cast
       shortfallReporter: E(E(zoe).offer(newInvitation)).getOfferResult(),
       shortfallInvitation: newInvitation,
     });
@@ -185,14 +187,14 @@ const initState = (
     zcf,
   });
 
-  return harden({
+  return {
     collateralTypes,
     managerCounter: 0,
     mintSeat,
     rewardPoolSeat,
     // @ts-expect-error defined in finish()
     shortfallInvitation: undefined,
-  });
+  };
 };
 
 /**
@@ -552,6 +554,7 @@ const finish = async ({ state }) => {
       ephemera.directorParamManager,
     );
   ephemera.shortfallReporter = shortfallReporter;
+  harden(ephemera);
   // @ts-expect-error write once
   state.shortfallInvitation = shortfallInvitation;
 };

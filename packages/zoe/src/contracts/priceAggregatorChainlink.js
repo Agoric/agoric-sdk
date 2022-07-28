@@ -76,13 +76,24 @@ const start = async (
       add(reportingRoundId, 1),
     );
 
-  /** @type {LegacyMap<OracleKey, ReturnType<typeof makeOracleStatus>>} */
+  /**
+   * @type {LegacyMap<OracleKey, ReturnType<typeof makeOracleStatus>>}
+   * Using LegacyMap because OracleStatusRecord is a mutable record, not a
+   * passable
+   */
   const oracleStatuses = makeLegacyMap('oracleStatus');
 
-  /** @type {LegacyMap<bigint, ReturnType<typeof makeRound>>} */
+  /**
+   * @type {LegacyMap<bigint, ReturnType<typeof makeRound>>}
+   * Using LegacyMap because RoundRecord is a mutable record, not a passable
+   */
   const rounds = makeLegacyMap('rounds');
 
-  /** @type {LegacyMap<bigint, ReturnType<typeof makeRoundDetails>>} */
+  /**
+   * @type {LegacyMap<bigint, ReturnType<typeof makeRoundDetails>>}
+   * Using LegacyMap because RoundDetailsRecord is a mutable record, not a
+   * passable
+   */
   const details = makeLegacyMap('details');
 
   /** @type {bigint} */
@@ -99,12 +110,14 @@ const start = async (
    * @param {bigint} answeredInRound
    */
   const makeRound = (answer, startedAt, updatedAt, answeredInRound) => {
-    return harden({
+    // Left mutable because the properties are modified in place. See
+    // `rounds`
+    return {
       answer,
       startedAt,
       updatedAt,
       answeredInRound,
-    });
+    };
   };
 
   /**
@@ -119,12 +132,14 @@ const start = async (
     minSubmissions,
     roundTimeout,
   ) => {
-    return harden({
+    // Left mutable because the properties are modified in place. See
+    // `roundDetails`
+    return {
       submissions,
       maxSubmissions,
       minSubmissions,
       roundTimeout,
-    });
+    };
   };
 
   /**
@@ -143,14 +158,16 @@ const start = async (
     latestSubmission,
     index,
   ) => {
-    return harden({
+    // Left mutable because the properties are modified in place. See
+    // `oracleStatuses`
+    return {
       startingRound,
       endingRound,
       lastReportedRound,
       lastStartedRound,
       latestSubmission,
       index,
-    });
+    };
   };
 
   /**
@@ -176,7 +193,16 @@ const start = async (
    * @typedef {{}} OracleKey
    */
 
-  /** @type {LegacyMap<OracleKey, Set<OracleRecord>>} */
+  /**
+   * @type {LegacyMap<OracleKey, Set<OracleRecord>>}
+   * Using LegacyMap because a JavaScript Sets is not a passable.
+   * We use a JavaScript `Set` because the set is indexed by the *identity* of
+   * the OracleRecord, not its value, and so not treating it as a
+   * passable record (i.e., a CopyRecord).
+   *
+   * Each OracleRecord is also modified in place, which is at least
+   * consistent with indexing them by identity rather than contents.
+   */
   const keyToRecords = makeLegacyMap('oracleKey');
 
   /**
@@ -596,12 +622,17 @@ const start = async (
       keyToRecords.delete(oracleKey);
     },
 
-    // unlike the median case, no query argument is passed, since polling behavior is undesired
+    // unlike the median case, no query argument is passed, since polling
+    // behavior is undesired
     async initOracle(oracleInstance) {
       /** @type {OracleKey} */
       const oracleKey = oracleInstance || Far('oracleKey', {});
 
-      /** @type {OracleRecord} */
+      /**
+       * @type {OracleRecord}
+       * Left mutable because the properties are modified in place. See
+       * `keyToRecords`
+       */
       const record = { querier: undefined, lastSample: 0 };
 
       /** @type {Set<OracleRecord>} */
