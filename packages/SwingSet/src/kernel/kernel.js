@@ -419,6 +419,7 @@ export default function buildKernel(
         //   Kinds, and we're not going to use the worker
         //
         // So in all cases, our caller should abandon the worker.
+        // eslint-disable-next-line @jessie.js/no-nested-await
         await vatWarehouse.stopWorker(vatID);
         // TODO: does stopWorker work if the worker process just died?
         status.deliveryError = deliveryResult[1];
@@ -706,6 +707,7 @@ export default function buildKernel(
     // supervisor bundles are bad.
 
     try {
+      // eslint-disable-next-line @jessie.js/no-nested-await
       await vatWarehouse.createDynamicVat(vatID);
     } catch (err) {
       const info = makeError(`${err}`);
@@ -874,6 +876,7 @@ export default function buildKernel(
     if (results1.terminate) {
       // get rid of the worker, so the next delivery to this vat will
       // re-create one from the previous state
+      // eslint-disable-next-line @jessie.js/no-nested-await
       await vatWarehouse.stopWorker(vatID);
 
       // notify vat-admin of the failed upgrade
@@ -918,6 +921,7 @@ export default function buildKernel(
 
     if (results2.terminate) {
       // unwind just like above
+      // eslint-disable-next-line @jessie.js/no-nested-await
       await vatWarehouse.stopWorker(vatID);
       const vatAdminMethargs = makeFailure(results2.terminate.info);
       const results = harden({
@@ -1178,6 +1182,7 @@ export default function buildKernel(
   }
 
   async function processDeliveryMessage(message) {
+    kdebug('');
     kdebug(`processQ ${JSON.stringify(message)}`);
     kdebug(legibilizeMessage(message));
     kernelSlog.write({
@@ -1248,6 +1253,7 @@ export default function buildKernel(
       // other deliveries should be re-attempted on the next crank, so they
       // get the right error: we leave those on the queue
     } else {
+      // eslint-disable-next-line @jessie.js/no-nested-await
       await vatWarehouse.maybeSaveSnapshot();
     }
     const { computrons, meterID } = crankResults;
@@ -1279,6 +1285,7 @@ export default function buildKernel(
       kdebug(`vat terminated: ${JSON.stringify(info)}`);
       kernelSlog.terminateVat(vatID, reject, info);
       // this deletes state, rejects promises, notifies vat-admin
+      // eslint-disable-next-line @jessie.js/no-nested-await
       await terminateVat(vatID, reject, info);
     }
 
@@ -1311,6 +1318,7 @@ export default function buildKernel(
     }
     processQueueRunning = Error('here');
     try {
+      // eslint-disable-next-line @jessie.js/no-nested-await
       const result = await processor(message);
       processQueueRunning = undefined;
       return result;

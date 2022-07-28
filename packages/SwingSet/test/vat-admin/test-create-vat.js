@@ -10,7 +10,7 @@ import {
   makeSwingsetController,
   loadBasedir,
 } from '../../src/index.js';
-import { capSlot, bundleOpts } from '../util.js';
+import { capSlot, bundleOpts, restartVatAdminVat } from '../util.js';
 import { extractMethod } from '../../src/lib/kdebug.js';
 
 function nonBundleFunction(_E) {
@@ -50,7 +50,7 @@ test.before(async t => {
   t.context.data = { kernelBundles, bundles };
 });
 
-async function doTestSetup(t, enableSlog = false) {
+async function doTestSetup(t, doVatAdminRestart = false, enableSlog = false) {
   const { bundles } = t.context.data;
   const config = await loadBasedir(new URL('./', import.meta.url).pathname);
   config.defaultManagerType = 'xs-worker';
@@ -85,46 +85,81 @@ async function doTestSetup(t, enableSlog = false) {
     // for debugging, set enableSlog=true to start tracing after setup
     doSlog = true;
   }
+  if (doVatAdminRestart) {
+    await restartVatAdminVat(c);
+  }
   return { c, id44, idRC, vat13Bundle: bundles.vat13Bundle, hostStorage };
 }
 
-test('createVatByBundle', async t => {
-  const { c, vat13Bundle } = await doTestSetup(t);
+async function testCreateVatByBundle(t, doVatAdminRestart) {
+  const { c, vat13Bundle } = await doTestSetup(t, doVatAdminRestart);
   const kpid = c.queueToVatRoot('bootstrap', 'byBundle', [vat13Bundle]);
   await c.run();
   t.deepEqual(JSON.parse(c.kpResolution(kpid).body), 13);
+}
+
+test('createVatByBundle', async t => {
+  await testCreateVatByBundle(t, false);
 });
 
-test('createVatByName', async t => {
-  const { c } = await doTestSetup(t);
+test('createVatByBundle with VA upgrade', async t => {
+  await testCreateVatByBundle(t, true);
+});
+
+async function testCreateVatByName(t, doVatAdminRestart) {
+  const { c } = await doTestSetup(t, doVatAdminRestart);
   const kpid = c.queueToVatRoot('bootstrap', 'byName', ['new13']);
   await c.run();
   t.deepEqual(JSON.parse(c.kpResolution(kpid).body), 13);
+}
+
+test('createVatByName', async t => {
+  await testCreateVatByName(t, false);
 });
 
-test('createVat by named bundlecap', async t => {
-  const { c } = await doTestSetup(t);
+test('createVatByName with VA upgrade', async t => {
+  await testCreateVatByName(t, true);
+});
+
+async function testCreateVatByNamedBundleCap(t, doVatAdminRestart) {
+  const { c } = await doTestSetup(t, doVatAdminRestart);
   const kpid = c.queueToVatRoot('bootstrap', 'byNamedBundleCap', ['new13']);
   await c.run();
   t.deepEqual(JSON.parse(c.kpResolution(kpid).body), 13);
+}
+
+test('createVat by named bundlecap', async t => {
+  await testCreateVatByNamedBundleCap(t, false);
 });
 
-test('createVat by ID', async t => {
-  const { c, id44 } = await doTestSetup(t);
+test('createVat by named bundlecap with VA upgrade', async t => {
+  await testCreateVatByNamedBundleCap(t, true);
+});
+
+async function testCreateVatByID(t, doVatAdminRestart) {
+  const { c, id44 } = await doTestSetup(t, doVatAdminRestart);
   const kpid = c.queueToVatRoot('bootstrap', 'byID', [id44]);
   await c.run();
   t.deepEqual(JSON.parse(c.kpResolution(kpid).body), 44);
+}
+
+test('createVat by ID', async t => {
+  await testCreateVatByID(t, false);
+});
+
+test('createVat by ID with VA upgrade', async t => {
+  await testCreateVatByID(t, true);
 });
 
 test('counter test', async t => {
-  const { c } = await doTestSetup(t);
+  const { c } = await doTestSetup(t, false);
   const kpid = c.queueToVatRoot('bootstrap', 'counters', ['new13']);
   await c.run();
   t.deepEqual(JSON.parse(c.kpResolution(kpid).body), [4, 9, 2, 8]);
 });
 
 async function brokenVatTest(t, bundleName, expected) {
-  const { c } = await doTestSetup(t);
+  const { c } = await doTestSetup(t, false);
   const kpid = c.queueToVatRoot('bootstrap', 'brokenVat', [bundleName]);
   await c.run();
   t.is(c.kpStatus(kpid), 'rejected');
@@ -148,7 +183,7 @@ test('broken vat creation fails (buildRootObject hangs)', async t => {
 });
 
 test('error creating vat from non-bundle', async t => {
-  const { c } = await doTestSetup(t);
+  const { c } = await doTestSetup(t, false);
   const kpid = c.queueToVatRoot('bootstrap', 'nonBundleCap', []);
   await c.run();
   t.is(c.kpStatus(kpid), 'rejected');
@@ -159,7 +194,7 @@ test('error creating vat from non-bundle', async t => {
 });
 
 test('create vat with good-sized name', async t => {
-  const { c } = await doTestSetup(t);
+  const { c } = await doTestSetup(t, false);
   const name = 'n'.repeat(199);
   const kpid = c.queueToVatRoot('bootstrap', 'vatName', [name]);
   await c.run();
@@ -167,7 +202,7 @@ test('create vat with good-sized name', async t => {
 });
 
 test('error creating vat with oversized name', async t => {
-  const { c } = await doTestSetup(t);
+  const { c } = await doTestSetup(t, false);
   const name = 'n'.repeat(200);
   const kpid = c.queueToVatRoot('bootstrap', 'vatName', [name]);
   await c.run();
@@ -179,7 +214,7 @@ test('error creating vat with oversized name', async t => {
 });
 
 test('error creating vat with bad characters in name', async t => {
-  const { c } = await doTestSetup(t);
+  const { c } = await doTestSetup(t, false);
   const name = 'no spaces';
   const kpid = c.queueToVatRoot('bootstrap', 'vatName', [name]);
   await c.run();
@@ -191,7 +226,7 @@ test('error creating vat with bad characters in name', async t => {
 });
 
 test('error creating vat with unknown options', async t => {
-  const { c } = await doTestSetup(t);
+  const { c } = await doTestSetup(t, false);
   const kpid = c.queueToVatRoot('bootstrap', 'badOptions', []);
   await c.run();
   t.is(c.kpStatus(kpid), 'rejected');
@@ -226,7 +261,7 @@ function findRefs(kvStore, koid) {
 
 test('createVat holds refcount', async t => {
   const printSlog = false; // set true to debug this test
-  const { c, idRC, hostStorage } = await doTestSetup(t, printSlog);
+  const { c, idRC, hostStorage } = await doTestSetup(t, false, printSlog);
   const { kvStore } = hostStorage;
 
   // The bootstrap vat starts by fetching 'held' from vat-export-held, during
