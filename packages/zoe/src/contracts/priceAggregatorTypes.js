@@ -18,9 +18,7 @@
  */
 
 /**
- * @typedef {object} PriceAggregatorKit
- * @property {import("./priceAggregator").PriceAggregatorContract['publicFacet']} publicFacet
- * @property {import("./priceAggregator").PriceAggregatorContract['creatorFacet']} creatorFacet
+ * @typedef {Pick<import("./priceAggregator").PriceAggregatorContract, 'creatorFacet' | 'publicFacet'>} PriceAggregatorKit
  */
 
 /**
