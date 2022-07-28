@@ -1,15 +1,28 @@
+// @ts-check
+
 import { provide } from '@agoric/store';
 import {
   defineDurableKind,
   defineDurableKindMulti,
   makeKindHandle,
+  makeScalarBigMapStore,
+  provideDurableMapStore,
+  provideDurableSetStore,
+  provideDurableWeakMapStore,
+  provideDurableWeakSetStore,
 } from './vat-data-bindings.js';
+
+// TODO Why doesn't this replace the need for the individual type
+// imports below?
+// import './types.d.ts';
 
 /** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>} RemotableBrand */
 /** @typedef {import('./types.js').Baggage} Baggage */
 /** @template T @typedef {import('./types.js').DefineKindOptions<T>} DefineKindOptions */
 /** @template T @typedef {import('./types.js').KindFacet<T>} KindFacet */
+/** @template S,F @typedef {import('./types.js').KindContext<S, F>} KindContext */
 /** @typedef {import('./types.js').DurableKindHandle} DurableKindHandle */
+/** @typedef {import('./types.js').Porter} Porter */
 
 const { entries, fromEntries } = Object;
 
@@ -138,3 +151,70 @@ export const vivifySingleton = (
 };
 // @ts-expect-error TODO statically recognize harden
 harden(vivifySingleton);
+
+/**
+ * @param {Baggage} rootBaggage
+ * TODO When I put square brackets on `rootBaggage` to indicate it is
+ * optional, or indicate it is optional in all other static ways I
+ * happen to know (`=}`, `|undefined}`), and then hover over `rootBaggage`
+ * in my IDE, it looses its `MapStore` typing and instead falls back to `any`.
+ * Nothing similar happens, for example, with `porterKindOptions`.
+ * @param {DefineKindOptions<any>} [porterKindOptions]
+ * @returns {Porter}
+ */
+export const vivifyRootPorter = (
+  rootBaggage = makeScalarBigMapStore('root baggage', { durable: true }),
+  porterKindOptions = {},
+) => {
+  /**
+   * @param {Baggage} baggage
+   * @returns {Porter}
+   */
+  const makePorter = vivifyKind(
+    rootBaggage,
+    'Porter',
+    baggage => ({ baggage }),
+    {
+      provide: ({ state: { baggage } }, label, makeValue) =>
+        provide(baggage, label, makeValue),
+
+      providePorter: ({ state: { baggage } }, label, options = {}) =>
+        provide(baggage, `${label} porter`, () =>
+          makePorter(makeScalarBigMapStore(`${label} baggage`, options)),
+        ),
+      makeFreshPorter: (
+        _context,
+        baggage = makeScalarBigMapStore('fresh baggage', { durable: true }),
+      ) => makePorter(baggage),
+
+      getBaggage: ({ state: { baggage } }) => baggage,
+
+      provideMapStore: ({ state: { baggage } }, label, options = {}) =>
+        provideDurableMapStore(baggage, label, options),
+      provideWeakMapStore: ({ state: { baggage } }, label, options = {}) =>
+        provideDurableWeakMapStore(baggage, label, options),
+      provideSetStore: ({ state: { baggage } }, label, options = {}) =>
+        provideDurableSetStore(baggage, label, options),
+      provideWeakSetStore: ({ state: { baggage } }, label, options = {}) =>
+        provideDurableWeakSetStore(baggage, label, options),
+
+      vivifyKind: ({ state: { baggage } }, tag, init, facet, options = {}) =>
+        vivifyKind(baggage, tag, init, facet, options),
+
+      vivifyKindMulti: (
+        { state: { baggage } },
+        tag,
+        init,
+        behavior,
+        options = {},
+      ) => vivifyKindMulti(baggage, tag, init, behavior, options),
+
+      vivifySingleton: ({ state: { baggage } }, tag, methods, options = {}) =>
+        vivifySingleton(baggage, tag, methods, options),
+    },
+    porterKindOptions,
+  );
+  return makePorter(rootBaggage);
+};
+// @ts-expect-error TODO statically recognize harden
+harden(vivifyRootPorter);

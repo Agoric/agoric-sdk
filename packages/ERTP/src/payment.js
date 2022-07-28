@@ -1,20 +1,17 @@
 // @ts-check
 
-import { defineDurableKind, provideKindHandle } from '@agoric/vat-data';
-
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @typedef {import('@agoric/vat-data').Porter} Porter */
 
 /**
  * @template {AssetKind} K
- * @param {Baggage} issuerBaggage
+ * @param {Porter} issuerPorter
  * @param {string} name
  * @param {() => Brand<K>} getBrand must not be called before the issuerKit is
  * created
  * @returns {() => Payment<K>}
  */
-export const vivifyPaymentKind = (issuerBaggage, name, getBrand) => {
-  const paymentKindHandle = provideKindHandle(issuerBaggage, `${name} payment`);
-  const makePayment = defineDurableKind(paymentKindHandle, () => ({}), {
+export const vivifyPaymentKind = (issuerPorter, name, getBrand) => {
+  const makePayment = issuerPorter.vivifyKind(`${name} payment`, () => ({}), {
     getAllegedBrand: getBrand,
   });
   return makePayment;

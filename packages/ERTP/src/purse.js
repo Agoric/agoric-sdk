@@ -1,16 +1,21 @@
-import {
-  defineDurableKindMulti,
-  makeScalarBigSetStore,
-  provideKindHandle,
-} from '@agoric/vat-data';
+import { makeScalarBigSetStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';
 
+/** @typedef {import('@agoric/vat-data').Porter} Porter */
+
 const { details: X } = assert;
 
-//  `getBrand` must not be called before the issuerKit is created
+/**
+ * @param {Porter} issuerPorter
+ * @param {string} name
+ * @param {AssetKind} assetKind
+ * @param {() => Brand} getBrand
+ * `getBrand` must not be called before the issuerKit is created
+ * @param {depositInternal: any, withdrawInternal: any} purseMethods
+ */
 export const vivifyPurseKind = (
-  issuerBaggage,
+  issuerPorter,
   name,
   assetKind,
   getBrand,
@@ -32,9 +37,8 @@ export const vivifyPurseKind = (
   //   that created depositFacet as needed. But this approach ensures a constant
   //   identity for the facet and exercises the multi-faceted object style.
   const { depositInternal, withdrawInternal } = purseMethods;
-  const purseKitKindHandle = provideKindHandle(issuerBaggage, `${name} Purse`);
-  const makePurseKit = defineDurableKindMulti(
-    purseKitKindHandle,
+  const makePurseKit = issuerPorter.vivifyKindMulti(
+    `${name} Purse`,
     () => {
       const currentBalance = AmountMath.makeEmpty(getBrand(), assetKind);
 

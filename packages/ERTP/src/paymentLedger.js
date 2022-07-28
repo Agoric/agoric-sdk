@@ -5,14 +5,13 @@ import { E } from '@endo/eventual-send';
 import { isPromise } from '@endo/promise-kit';
 import { assertCopyArray } from '@endo/marshal';
 import { fit, M } from '@agoric/store';
-import { vivifySingleton, provideDurableWeakMapStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { vivifyPaymentKind } from './payment.js';
 import { vivifyPurseKind } from './purse.js';
 
 import '@agoric/store/exported.js';
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @typedef {import('@agoric/vat-data').Porter} Porter */
 
 const { details: X, quote: q } = assert;
 
@@ -68,7 +67,7 @@ const amountSchemaFromElementSchema = (brand, assetKind, elementSchema) => {
  * payments. All minting and transfer authority originates here.
  *
  * @template {AssetKind} [K=AssetKind]
- * @param {Baggage} issuerBaggage
+ * @param {Porter} issuerPorter
  * @param {string} name
  * @param {AssetKind} assetKind
  * @param {DisplayInfo} displayInfo
@@ -77,7 +76,7 @@ const amountSchemaFromElementSchema = (brand, assetKind, elementSchema) => {
  * @returns {{ issuer: Issuer<K>, mint: Mint<K>, brand: Brand<K> }}
  */
 export const vivifyPaymentLedger = (
-  issuerBaggage,
+  issuerPorter,
   name,
   assetKind,
   displayInfo,
@@ -86,7 +85,7 @@ export const vivifyPaymentLedger = (
 ) => {
   const getBrand = () => brand;
 
-  const makePayment = vivifyPaymentKind(issuerBaggage, name, getBrand);
+  const makePayment = vivifyPaymentKind(issuerPorter, name, getBrand);
 
   /** @type {ShutdownWithFailure} */
   const shutdownLedgerWithFailure = reason => {
@@ -104,10 +103,7 @@ export const vivifyPaymentLedger = (
   };
 
   /** @type {WeakMapStore<Payment, Amount>} */
-  const paymentLedger = provideDurableWeakMapStore(
-    issuerBaggage,
-    'paymentLedger',
-  );
+  const paymentLedger = issuerPorter.provideWeakMapStore('paymentLedger');
 
   /**
    * A withdrawn live payment is associated with the recovery set of
@@ -129,8 +125,7 @@ export const vivifyPaymentLedger = (
    *
    * @type {WeakMapStore<Payment, SetStore<Payment>>}
    */
-  const paymentRecoverySets = provideDurableWeakMapStore(
-    issuerBaggage,
+  const paymentRecoverySets = issuerPorter.provideWeakMapStore(
     'paymentRecoverySets',
   );
 
@@ -455,7 +450,7 @@ export const vivifyPaymentLedger = (
   };
 
   const makeEmptyPurse = vivifyPurseKind(
-    issuerBaggage,
+    issuerPorter,
     name,
     assetKind,
     getBrand,
@@ -465,7 +460,7 @@ export const vivifyPaymentLedger = (
     }),
   );
 
-  const issuer = vivifySingleton(issuerBaggage, `${name} issuer`, {
+  const issuer = issuerPorter.vivifySingleton(`${name} issuer`, {
     isLive,
     getAmountOf,
     burn,
@@ -480,13 +475,15 @@ export const vivifyPaymentLedger = (
     makeEmptyPurse,
   });
 
-  const mint = vivifySingleton(issuerBaggage, `${name} mint`, {
+  const mint = issuerPorter.vivifySingleton(`${name} mint`, {
     getIssuer: () => issuer,
     mintPayment,
   });
 
+  // @ts-expect-error TS seems to know it has the shape of a Brand
+  // but disagrees on details I have not figured out.
   const brand = /** @type {Brand} */ (
-    vivifySingleton(issuerBaggage, `${name} brand`, {
+    issuerPorter.vivifySingleton(`${name} brand`, {
       isMyIssuer: allegedIssuerP =>
         E.when(allegedIssuerP, allegedIssuer => allegedIssuer === issuer),
 
@@ -505,6 +502,8 @@ export const vivifyPaymentLedger = (
     assetKind,
     elementSchema,
   );
+  // @ts-expect-error TS seems to know it has the shape of an IssuerKit
+  // but disagrees on details I have not figured out.
   return issuerKit;
 };
 harden(vivifyPaymentLedger);

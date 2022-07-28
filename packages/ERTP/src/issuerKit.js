@@ -3,7 +3,7 @@
 
 import { assert } from '@agoric/assert';
 import { assertPattern } from '@agoric/store';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeScalarBigMapStore, vivifyRootPorter } from '@agoric/vat-data';
 
 import { AssetKind, assertAssetKind } from './amountMath.js';
 import { coerceDisplayInfo } from './displayInfo.js';
@@ -11,11 +11,11 @@ import { vivifyPaymentLedger } from './paymentLedger.js';
 
 import './types.js';
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @typedef {import('@agoric/vat-data').Porter} Porter */
 
 /**
  * @template {AssetKind} K
- * @param {Baggage} issuerBaggage
+ * @param {Porter} issuerPorter
  * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
  * in the middle of an atomic action (which btw should never happen), it
  * potentially leaves its ledger in a corrupted state. If this function was
@@ -26,9 +26,10 @@ import './types.js';
  * @returns {IssuerKit<K>}
  */
 export const vivifyIssuerKit = (
-  issuerBaggage,
+  issuerPorter,
   optShutdownWithFailure = undefined,
 ) => {
+  const issuerBaggage = issuerPorter.getBaggage();
   const name = issuerBaggage.get('name');
   const assetKind = issuerBaggage.get('assetKind');
   const displayInfo = issuerBaggage.get('displayInfo');
@@ -48,7 +49,7 @@ export const vivifyIssuerKit = (
 
   // Attenuate the powerful authority to mint and change balances
   const { issuer, mint, brand } = vivifyPaymentLedger(
-    issuerBaggage,
+    issuerPorter,
     name,
     assetKind,
     cleanDisplayInfo,
@@ -80,7 +81,7 @@ harden(vivifyIssuerKit);
  *
  *  `displayInfo` gives information to the UI on how to display the amount.
  *
- * @param {Baggage} issuerBaggage
+ * @param {Porter} issuerPorter
  * @param {string} name
  * @param {K} [assetKind=AssetKind.NAT]
  * @param {AdditionalDisplayInfo} [displayInfo={}]
@@ -95,7 +96,7 @@ harden(vivifyIssuerKit);
  * @returns {IssuerKit<K>}
  */
 export const makeDurableIssuerKit = (
-  issuerBaggage,
+  issuerPorter,
   name,
   // @ts-expect-error K could be instantiated with a different subtype of AssetKind
   assetKind = AssetKind.NAT,
@@ -103,11 +104,12 @@ export const makeDurableIssuerKit = (
   optShutdownWithFailure = undefined,
   { elementSchema = undefined } = {},
 ) => {
+  const issuerBaggage = issuerPorter.getBaggage();
   issuerBaggage.init('name', name);
   issuerBaggage.init('assetKind', assetKind);
   issuerBaggage.init('displayInfo', displayInfo);
   issuerBaggage.init('elementSchema', elementSchema);
-  return vivifyIssuerKit(issuerBaggage, optShutdownWithFailure);
+  return vivifyIssuerKit(issuerPorter, optShutdownWithFailure);
 };
 harden(makeDurableIssuerKit);
 
@@ -148,7 +150,9 @@ export const makeIssuerKit = (
   { elementSchema = undefined } = {},
 ) =>
   makeDurableIssuerKit(
-    makeScalarBigMapStore('dropped issuer kit', { durable: true }),
+    vivifyRootPorter(
+      makeScalarBigMapStore('dropped issuer kit', { durable: true }),
+    ),
     name,
     assetKind,
     displayInfo,

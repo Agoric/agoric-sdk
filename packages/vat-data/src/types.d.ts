@@ -13,6 +13,8 @@ import type {
   WeakSetStore,
 } from '@agoric/store';
 
+import type { RemotableBrand } from '@endo/eventual-send';
+
 type Baggage = MapStore<string, unknown>;
 
 type Tail<T extends any[]> = T extends [head: any, ...rest: infer Rest]
@@ -45,6 +47,50 @@ export type DurableKindHandle = DurableKindHandleClass;
 type DefineKindOptions<C> = {
   finish?: (context: C) => void;
   durable?: boolean;
+};
+
+export type Porter = {
+  provide: <V>(label: string, makeValue: (key: string) => V) => V;
+
+  providePorter: (label: string, options?: StoreOptions) => Porter;
+
+  makeFreshPorter: (baggage: Baggage) => Porter;
+
+  getBaggage: () => Baggage;
+
+  provideMapStore: <K, V>(
+    label: string,
+    options?: StoreOptions,
+  ) => MapStore<K, V>;
+  provideWeakMapStore: <K, V>(
+    label: string,
+    options?: StoreOptions,
+  ) => WeakMapStore<K, V>;
+  provideSetStore: <K>(label: string, options?: StoreOptions) => SetStore<K>;
+  provideSetStore: <K>(
+    label: string,
+    options?: StoreOptions,
+  ) => WeakSetStore<K>;
+
+  // virtual kinds
+  vivifyKind: <P, S, F>(
+    tag: string,
+    init: (...args: P) => S,
+    facet: F,
+    options?: DefineKindOptions<KindContext<S, F>>,
+  ) => (...args: P) => KindFacet<F>;
+  vivifyKindMulti: <P, S, B>(
+    tag: string,
+    init: (...args: P) => S,
+    behavior: B,
+    options?: DefineKindOptions<MultiKindContext<S, B>>,
+  ) => (...args: P) => KindFacets<B>;
+  // virtual kinds
+  vivifySingleton: <T>(
+    tag: string,
+    methods: T,
+    options?: DefineKindOptions<{}>,
+  ) => () => T & RemotableBrand<{}, T>;
 };
 
 export type VatData = {
