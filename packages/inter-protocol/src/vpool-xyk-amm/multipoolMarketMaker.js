@@ -48,19 +48,19 @@ const trace = makeTracer('XykAmm', false);
  * @property {Brand[]} XYK brands of pools that use an X*Y=K pricing policy
  */
 
-/**
- * @typedef {GovernanceTerms< {MinInitialPoolLiquidity: 'amount'} & {ProtocolFee: 'amount'} & {PoolFee: 'amount'}>} AmmGovernanceParams
- */
+/** @typedef {GovernanceTerms< {MinInitialPoolLiquidity: 'amount'} & {ProtocolFee: 'amount'} & {PoolFee: 'amount'}>} AmmGovernanceParams */
+
+/** @typedef {{brands:BrandKeywordRecord,timer:TimerService}} AmmTerms */
 
 /**
  * @typedef {Readonly<{
- * zcf: ZCF,
+ * zcf: ZCF<AmmTerms>,
  * secondaryBrandToPool: WeakMapStore<Brand,PoolFacets>,
  * secondaryBrandToLiquidityMint: WeakMapStore<Brand,ZCFMint>,
  * centralBrand: Brand,
  * timer: TimerService,
  * quoteIssuerKit: IssuerKit,
- * params: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').AmmParams>,
+ * params: import('@agoric/governance/src/contractGovernance/typedParamManager').Getters<import('./params.js').AmmParams>,
  * protocolSeat: ZCFSeat,
  * }>} AmmState
  */
@@ -242,6 +242,7 @@ const start = async (zcf, privateArgs, baggage) => {
   let reserveFacet = baggage.has('reserveFacet')
     ? baggage.get('reserveFacet')
     : undefined;
+
   /**
    * @param {Brand} secondaryBrand
    * @param {ZCFSeat} reserveLiquidityTokenSeat
@@ -323,7 +324,6 @@ const start = async (zcf, privateArgs, baggage) => {
 
   // shared AMM state that will be lexically accessible to all pools
   /** @type {AmmState} */
-  // @ts-expect-error type confusion due to harden()
   const ammState = harden({
     zcf,
     secondaryBrandToPool,

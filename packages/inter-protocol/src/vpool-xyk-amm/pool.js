@@ -30,17 +30,13 @@ export const publicPrices = prices => {
  * }} MetricsPayload
  */
 
-/**
- * @typedef {{ central: Amount, secondary: Amount }} NotificationState
- */
+/** @typedef {{ central: Amount, secondary: Amount }} NotificationState */
 
 /**
  * @typedef {Readonly<{
  * poolSeat: ZCFSeat,
  * secondaryBrand: Brand<'nat'>,
  * liquidityZcfMint: ZCFMint,
- * toCentralPriceAuthority: PriceAuthority,
- * fromCentralPriceAuthority: PriceAuthority,
  * publisher: Publisher<NotificationState>,
  * subscriber: Subscriber<NotificationState>,
  * metricsPublication: IterationObserver<PoolMetricsNotification>,
@@ -48,9 +44,7 @@ export const publicPrices = prices => {
  * }>} ImmutableState
  */
 
-/**
- * @typedef {{liqTokenSupply: bigint}} MutableState
- */
+/** @typedef {{liqTokenSupply: bigint}} MutableState */
 
 /**
  * @typedef {{
@@ -108,14 +102,67 @@ export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
       liquidityZcfMint,
       publisher,
       subscriber,
-      // @ts-expect-error assigned in finish
-      toCentralPriceAuthority: undefined,
-      // @ts-expect-error assigned in finish
-      fromCentralPriceAuthority: undefined,
       metricsPublication,
       // @ts-expect-error  TS didn't understand PublishKit<MetricsPayload>
       metricsSubscription,
     };
+  };
+
+  const curryPriceGetters = context => {
+    const getPAInputPrice = (amountIn, brandOut) => {
+      return publicPrices(
+        context.facets.singlePool.getPriceForInput(
+          amountIn,
+          AmountMath.makeEmpty(brandOut),
+        ),
+      );
+    };
+    const getPAOutputPrice = (brandIn, amountout) =>
+      publicPrices(
+        context.facets.singlePool.getPriceForOutput(
+          AmountMath.makeEmpty(brandIn),
+          amountout,
+        ),
+      );
+    return { getPAInputPrice, getPAOutputPrice };
+  };
+
+  let toCentralPriceAuthority;
+  const provideToCentralPriceAuthority = context => {
+    if (!toCentralPriceAuthority) {
+      const { getPAInputPrice, getPAOutputPrice } = curryPriceGetters(context);
+      const { subscriber, secondaryBrand } = context.state;
+      const quoteIssuerKit = ammState.quoteIssuerKit;
+      toCentralPriceAuthority = makePriceAuthority(
+        getPAInputPrice,
+        getPAOutputPrice,
+        secondaryBrand,
+        ammState.centralBrand,
+        ammState.timer,
+        subscriber,
+        quoteIssuerKit,
+      );
+    }
+    return toCentralPriceAuthority;
+  };
+
+  let fromCentralPriceAuthority;
+  const provideFromCentralPriceAuthority = context => {
+    if (!fromCentralPriceAuthority) {
+      const { getPAInputPrice, getPAOutputPrice } = curryPriceGetters(context);
+      const { subscriber, secondaryBrand } = context.state;
+      const quoteIssuerKit = ammState.quoteIssuerKit;
+      fromCentralPriceAuthority = makePriceAuthority(
+        getPAInputPrice,
+        getPAOutputPrice,
+        ammState.centralBrand,
+        secondaryBrand,
+        ammState.timer,
+        subscriber,
+        quoteIssuerKit,
+      );
+    }
+    return fromCentralPriceAuthority;
   };
 
   const poolBehavior = {
@@ -239,11 +286,11 @@ export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
         secondary: pool.getSecondaryAmount(),
       });
     },
-    /** @param {MethodContext} context */
-    getToCentralPriceAuthority: ({ state }) => state.toCentralPriceAuthority,
-    /** @param {MethodContext} context */
-    getFromCentralPriceAuthority: ({ state }) =>
-      state.fromCentralPriceAuthority,
+
+    // TODO(hibbert) drop these priceAuthorities. They're expensive and unneeded.
+    getToCentralPriceAuthority: provideToCentralPriceAuthority,
+    getFromCentralPriceAuthority: provideFromCentralPriceAuthority,
+
     /** @param {MethodContext} context */
     getVPool: ({ facets }) => facets.singlePool,
     /** @param {MethodContext} context */
@@ -252,48 +299,6 @@ export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
 
   /** @param {MethodContext} context */
   const finish = context => {
-    const { subscriber, secondaryBrand } = context.state;
-    const quoteIssuerKit = ammState.quoteIssuerKit;
-
-    const getInputPriceForPA = (amountIn, brandOut) => {
-      return publicPrices(
-        context.facets.singlePool.getPriceForInput(
-          amountIn,
-          AmountMath.makeEmpty(brandOut),
-        ),
-      );
-    };
-    const getOutputPriceForPA = (brandIn, amountout) =>
-      publicPrices(
-        context.facets.singlePool.getPriceForOutput(
-          AmountMath.makeEmpty(brandIn),
-          amountout,
-        ),
-      );
-
-    const toCentralPriceAuthority = makePriceAuthority(
-      getInputPriceForPA,
-      getOutputPriceForPA,
-      secondaryBrand,
-      ammState.centralBrand,
-      ammState.timer,
-      subscriber,
-      quoteIssuerKit,
-    );
-    const fromCentralPriceAuthority = makePriceAuthority(
-      getInputPriceForPA,
-      getOutputPriceForPA,
-      ammState.centralBrand,
-      secondaryBrand,
-      ammState.timer,
-      subscriber,
-      quoteIssuerKit,
-    );
-
-    // @ts-expect-error declared read-only, set value once
-    context.state.toCentralPriceAuthority = toCentralPriceAuthority;
-    // @ts-expect-error declared read-only, set value once
-    context.state.fromCentralPriceAuthority = fromCentralPriceAuthority;
     context.facets.helper.updateMetrics();
   };
 
