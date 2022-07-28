@@ -6,7 +6,6 @@ import { Nat } from '@agoric/nat';
 import { fit } from '@agoric/store';
 
 import { RelativeTimeShape, TimestampShape } from './typeGuards.js';
-import './types.js';
 
 const { details: X, quote: q } = assert;
 
