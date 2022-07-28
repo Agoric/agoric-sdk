@@ -1,6 +1,7 @@
 package gaia
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	stdlog "log"
@@ -779,9 +780,22 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		VbankPort:   app.vbankPort,
 		LienPort:    app.lienPort,
 	}
-	_, err := app.SwingSetKeeper.BlockingSend(ctx, action)
+	out, err := app.SwingSetKeeper.BlockingSend(ctx, action)
+
+	// fmt.Fprintf(os.Stderr, "AG_COSMOS_INIT Returned from SwingSet: %s, %v\n", out, err)
+
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Cannot initialize Controller", err)
+		os.Exit(1)
+	}
+	var res bool
+	err = json.Unmarshal([]byte(out), &res)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Cannot unmarshal Controller init response", out, err)
+		os.Exit(1)
+	}
+	if !res {
+		fmt.Fprintln(os.Stderr, "Controller negative init response")
 		os.Exit(1)
 	}
 }

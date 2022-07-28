@@ -1,6 +1,8 @@
 package swingset
 
 import (
+	// "fmt"
+	// "os"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/telemetry"
@@ -45,7 +47,7 @@ func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) erro
 	}
 	_, err := keeper.BlockingSend(ctx, action)
 
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	// fmt.Fprintf(os.Stderr, "BEGIN_BLOCK Returned from SwingSet: %s, %v\n", out, err)
 	return err
 }
 
@@ -62,7 +64,7 @@ func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.
 	}
 	_, err := keeper.BlockingSend(ctx, action)
 
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	// fmt.Fprintf(os.Stderr, "END_BLOCK Returned from SwingSet: %s, %v\n", out, err)
 	if err != nil {
 		// NOTE: A failed END_BLOCK means that the SwingSet state is inconsistent.
 		// Panic here, in the hopes that a replay from scratch will fix the problem.
@@ -86,7 +88,7 @@ func CommitBlock(keeper Keeper) error {
 	}
 	_, err := keeper.BlockingSend(sdk.Context{}, action)
 
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	// fmt.Fprintf(os.Stderr, "COMMIT_BLOCK Returned from SwingSet: %s, %v\n", out, err)
 	if err != nil {
 		// NOTE: A failed COMMIT_BLOCK means that the SwingSet state is inconsistent.
 		// Panic here, in the hopes that a replay from scratch will fix the problem.

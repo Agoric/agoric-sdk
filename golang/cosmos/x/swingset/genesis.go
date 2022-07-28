@@ -1,8 +1,7 @@
 package swingset
 
 import (
-	// "fmt"
-
+	// "os"
 	"fmt"
 	stdlog "log"
 
@@ -52,6 +51,7 @@ func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abc
 
 	_, err := keeper.BlockingSend(ctx, action)
 
+	// fmt.Fprintf(os.Stderr, "BOOTSTRAP_BLOCK Returned from swingset: %s, %v\n", out, err)
 	if err != nil {
 		// NOTE: A failed BOOTSTRAP_BLOCK means that the SwingSet state is inconsistent.
 		// Panic here, in the hopes that a replay from scratch will fix the problem.
