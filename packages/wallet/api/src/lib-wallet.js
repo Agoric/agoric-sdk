@@ -131,6 +131,22 @@ export function makeWallet({
   const installationMapping = makeMapping('installation');
 
   const brandTable = makeIssuerTable();
+
+  const initBrandToBoardId = async brand => {
+    const { valToBoardId: brandToBoardId } = brandMapping;
+    if (brandToBoardId.has(brand)) {
+      return brandToBoardId.get(brand);
+    }
+
+    const brandBoardId = await E(board).getId(brand);
+    if (brandToBoardId.has(brand)) {
+      return brandToBoardId.get(brand);
+    }
+
+    brandMapping.addBoardId(brandBoardId, brand);
+    return brandBoardId;
+  };
+
   /** @type {WeakStore<Issuer, string>} */
   const issuerToBoardId = makeScalarWeakMap('issuer');
 
@@ -296,7 +312,7 @@ export function makeWallet({
     const { value, brand } = currentAmount;
     const brandPetname = brandMapping.valToPetname.get(brand);
     const dehydratedCurrentAmount = dehydrate(currentAmount);
-    const brandBoardId = await E(board).getId(brand);
+    const brandBoardId = brandMapping.valToBoardId.get(brand);
 
     let depositBoardId;
     if (
@@ -786,6 +802,7 @@ export function makeWallet({
       : brandTable.initIssuer(issuer, addMeta);
     const { brand } = await recP;
     await initIssuerToBoardId(issuer);
+    await initBrandToBoardId(brand);
     const addBrandPetname = () => {
       let p;
       const already = brandMapping.valToPetname.has(brand);
@@ -807,6 +824,7 @@ export function makeWallet({
   const publishIssuer = async brand => {
     const { issuer } = brandTable.getByBrand(brand);
     const issuerBoardId = await initIssuerToBoardId(issuer);
+    await initBrandToBoardId(brand);
     updateAllIssuersState();
     return issuerBoardId;
   };
@@ -1602,6 +1620,7 @@ export function makeWallet({
     add: async (petname, issuerP) => {
       const { brand, issuer } = await brandTable.initIssuer(issuerP, addMeta);
       await initIssuerToBoardId(issuer);
+      await initBrandToBoardId(brand);
       brandMapping.suggestPetname(petname, brand);
       await updateAllIssuersState();
     },

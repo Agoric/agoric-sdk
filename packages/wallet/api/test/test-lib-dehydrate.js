@@ -112,7 +112,13 @@ test('makeDehydrator', async t => {
     dehydrate(harden({ handle: handle1 })),
     {
       body: '{"handle":{"@qclass":"slot","iface":"Alleged: handle1","index":0}}',
-      slots: [{ kind: 'instanceHandle', petname: 'simpleExchange' }],
+      slots: [
+        {
+          boardId: undefined,
+          kind: 'instanceHandle',
+          petname: 'simpleExchange',
+        },
+      ],
     },
     `serialize val with petname`,
   );
@@ -135,7 +141,7 @@ test('makeDehydrator', async t => {
     dehydrate(harden({ brand: brand1, value: 40 })),
     harden({
       body: '{"brand":{"@qclass":"slot","iface":"Alleged: mock brand","index":0},"value":40}',
-      slots: [{ kind: 'brand', petname: 'moola' }],
+      slots: [{ boardId: undefined, kind: 'brand', petname: 'moola' }],
     }),
     `serialize brand with petname`,
   );
@@ -170,10 +176,14 @@ test('makeDehydrator', async t => {
       body: '{"exit":{"afterDeadline":{"deadline":55,"timer":{"@qclass":"slot","iface":"Alleged: timer","index":0}}},"give":{"Price":{"brand":{"@qclass":"slot","iface":"Alleged: mock brand","index":1},"value":3}},"want":{"Asset1":{"brand":{"@qclass":"slot","iface":"Alleged: mock brand","index":2},"value":60},"Asset2":{"brand":{"@qclass":"slot","iface":"Alleged: mock brand","index":3},"value":{"instanceHandle":{"@qclass":"slot","iface":"Alleged: handle3","index":4}}}}}',
       slots: [
         { kind: 'unnamed', petname: 'unnamed-1' },
-        { kind: 'brand', petname: 'simolean' },
-        { kind: 'brand', petname: 'moola' },
-        { kind: 'brand', petname: 'zoeInvite' },
-        { kind: 'instanceHandle', petname: 'automaticRefund' },
+        { boardId: undefined, kind: 'brand', petname: 'simolean' },
+        { boardId: undefined, kind: 'brand', petname: 'moola' },
+        { boardId: undefined, kind: 'brand', petname: 'zoeInvite' },
+        {
+          boardId: undefined,
+          kind: 'instanceHandle',
+          petname: 'automaticRefund',
+        },
       ],
     },
     `dehydrated proposal`,
@@ -219,7 +229,9 @@ test('makeDehydrator', async t => {
     dehydrate(harden({ handle: handle4 })),
     {
       body: '{"handle":{"@qclass":"slot","iface":"Alleged: handle4","index":0}}',
-      slots: [{ kind: 'instanceHandle', petname: 'autoswap' }],
+      slots: [
+        { boardId: undefined, kind: 'instanceHandle', petname: 'autoswap' },
+      ],
     },
     `serialize val with new petname`,
   );

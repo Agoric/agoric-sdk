@@ -1,9 +1,10 @@
-import { makeFollower, makeLeader, makeCastingSpec } from '@agoric/casting';
+import { makeFollower, makeLeader } from '@agoric/casting';
 import React, { useEffect, useState } from 'react';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
 import { observeIterator } from '@agoric/notifier';
 
+import { makeSharingUnserializer } from '@agoric/wallet-backend/src/sharingUnserializer';
 import { withApplicationContext } from '../contexts/Application';
 import {
   makeBackendFromWalletBridge,
@@ -75,13 +76,17 @@ const SmartWalletConnection = ({
         setConnectionState('error');
       };
 
+      const { high, low } = makeSharingUnserializer();
       const leader = makeLeader(href);
       const follower = makeFollower(
-        makeCastingSpec(`:published.wallet.${publicAddress}`),
+        `:published.wallet.${publicAddress}`,
         leader,
+        { unserializer: high },
       );
       const bridge = makeWalletBridgeFromFollower(
         follower,
+        leader,
+        low,
         publicAddress,
         backendError,
         () => setConnectionState('bridged'),

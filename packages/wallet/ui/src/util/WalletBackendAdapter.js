@@ -89,12 +89,16 @@ export const makeBackendFromWalletBridge = walletBridge => {
 
 /**
  * @param {import('@agoric/casting').Follower} follower
+ * @param {import('@agoric/casting').Leader} leader
+ * @param {import('@agoric/casting').Unserializer} unserializer
  * @param {string} publicAddress
  * @param {(e: unknown) => void} [errorHandler]
  * @param {() => void} [firstCallback]
  */
 export const makeWalletBridgeFromFollower = (
   follower,
+  leader,
+  unserializer,
   publicAddress,
   errorHandler = e => {
     // Make an unhandled rejection.
@@ -161,6 +165,9 @@ export const makeWalletBridgeFromFollower = (
     getScopedBridge: (origin, suggestedDappPetname) =>
       getScopedBridge(origin, suggestedDappPetname, {
         dappService,
+        leader,
+        unserializer,
+        publicAddress,
         ...getNotifierMethods,
       }),
   });

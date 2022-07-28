@@ -43,9 +43,6 @@ export const getDappService = publicAddress => {
         res();
       };
     });
-    if (d.enable) {
-      enableAction();
-    }
 
     dapps.set(d.origin, {
       ...d,
@@ -56,6 +53,10 @@ export const getDappService = publicAddress => {
         delete: () => deleteDapp(d.origin),
       },
     });
+
+    if (d.enable) {
+      enableAction();
+    }
   });
   broadcastUpdates();
 

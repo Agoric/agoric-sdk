@@ -62,13 +62,14 @@ test('getPursesNotifier', async t => {
   t.is(moolaPurseInfo.brandBoardId, 'board0425');
   t.is(moolaPurseInfo.brandPetname, MOOLA_ISSUER_PETNAME);
   t.deepEqual(moolaPurseInfo.currentAmount, {
-    brand: { kind: 'brand', petname: 'moola' }, // not a real amount
+    brand: { boardId: 'board0425', kind: 'brand', petname: 'moola' }, // not a real amount
     value: 0n,
   });
   t.deepEqual(moolaPurseInfo.currentAmountSlots, {
     body: '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"0"}}',
     slots: [
       {
+        boardId: 'board0425',
         kind: 'brand',
         petname: 'moola',
       },
@@ -96,13 +97,14 @@ test('getAttenuatedPursesNotifier', async t => {
   t.is(moolaPurseInfo.brandBoardId, 'board0425');
   t.is(moolaPurseInfo.brandPetname, MOOLA_ISSUER_PETNAME);
   t.deepEqual(moolaPurseInfo.currentAmount, {
-    brand: { kind: 'brand', petname: 'moola' }, // not a real amount
+    brand: { boardId: 'board0425', kind: 'brand', petname: 'moola' }, // not a real amount
     value: 0n,
   });
   t.deepEqual(moolaPurseInfo.currentAmountSlots, {
     body: '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"0"}}',
     slots: [
       {
+        boardId: 'board0425',
         kind: 'brand',
         petname: 'moola',
       },

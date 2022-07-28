@@ -318,16 +318,18 @@ test('lib-wallet issuer and purse methods', async (/** @type {LibWalletTestConte
         value: [],
         currentAmountSlots: {
           body: '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[]}',
-          slots: [{ kind: 'brand', petname: 'zoe invite' }],
+          slots: [
+            { boardId: 'board0223', kind: 'brand', petname: 'zoe invite' },
+          ],
         },
         currentAmount: {
-          brand: { kind: 'brand', petname: 'zoe invite' },
+          brand: { boardId: 'board0223', kind: 'brand', petname: 'zoe invite' },
           value: [],
         },
       },
       {
         brand: purseLog[1].brand,
-        brandBoardId: 'board0566',
+        brandBoardId: 'board0425',
         brandPetname: 'moola',
         depositBoardId: 'board0371',
         displayInfo: {
@@ -340,10 +342,10 @@ test('lib-wallet issuer and purse methods', async (/** @type {LibWalletTestConte
         value: 100,
         currentAmountSlots: {
           body: '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"100"}}',
-          slots: [{ kind: 'brand', petname: 'moola' }],
+          slots: [{ boardId: 'board0425', kind: 'brand', petname: 'moola' }],
         },
         currentAmount: {
-          brand: { kind: 'brand', petname: 'moola' },
+          brand: { boardId: 'board0425', kind: 'brand', petname: 'moola' },
           value: 100,
         },
       },
@@ -471,14 +473,14 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async (
       currentAmountSlots: {
         body: '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","iface":"Alleged: InvitationHandle","index":1},"installation":{"@qclass":"slot","iface":"Alleged: BundleInstallation","index":2},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":3}}]}',
         slots: [
-          { kind: 'brand', petname: 'zoe invite' },
+          { boardId: 'board0223', kind: 'brand', petname: 'zoe invite' },
           { kind: 'unnamed', petname: 'unnamed-4' },
           { kind: 'unnamed', petname: 'unnamed-2' },
           { kind: 'unnamed', petname: 'unnamed-3' },
         ],
       },
       currentAmount: {
-        brand: { kind: 'brand', petname: 'zoe invite' },
+        brand: { boardId: 'board0223', kind: 'brand', petname: 'zoe invite' },
         value: [
           {
             description: 'getRefund',
@@ -558,14 +560,14 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async (
       currentAmountSlots: {
         body: '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","iface":"Alleged: InvitationHandle","index":1},"installation":{"@qclass":"slot","iface":"Alleged: BundleInstallation","index":2},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":3}}]}',
         slots: [
-          { kind: 'brand', petname: 'zoe invite' },
+          { boardId: 'board0223', kind: 'brand', petname: 'zoe invite' },
           { kind: 'unnamed', petname: 'unnamed-4' },
           { kind: 'installation', petname: 'automaticRefund' },
           { kind: 'instance', petname: 'automaticRefund' },
         ],
       },
       currentAmount: {
-        brand: { kind: 'brand', petname: 'zoe invite' },
+        brand: { kind: 'brand', petname: 'zoe invite', boardId: 'board0223' },
         value: [
           {
             description: 'getRefund',
@@ -697,14 +699,14 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async (
       currentAmountSlots: {
         body: '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","iface":"Alleged: InvitationHandle","index":1},"installation":{"@qclass":"slot","iface":"Alleged: BundleInstallation","index":2},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":3}}]}',
         slots: [
-          { kind: 'brand', petname: 'zoe invite' },
+          { boardId: 'board0223', kind: 'brand', petname: 'zoe invite' },
           { kind: 'unnamed', petname: 'unnamed-4' },
           { kind: 'installation', petname: 'automaticRefund2' },
           { kind: 'instance', petname: 'automaticRefund' },
         ],
       },
       currentAmount: {
-        brand: { kind: 'brand', petname: 'zoe invite' },
+        brand: { kind: 'brand', petname: 'zoe invite', boardId: 'board0223' },
         value: [
           {
             description: 'getRefund',
@@ -903,10 +905,10 @@ test('lib-wallet offer methods', async (/** @type {LibWalletTestContext} */ t) =
       value: [],
       currentAmountSlots: {
         body: '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[]}',
-        slots: [{ kind: 'brand', petname: 'zoe invite' }],
+        slots: [{ kind: 'brand', petname: 'zoe invite', boardId: 'board0223' }],
       },
       currentAmount: {
-        brand: { kind: 'brand', petname: 'zoe invite' },
+        brand: { boardId: 'board0223', kind: 'brand', petname: 'zoe invite' },
         value: [],
       },
     },
@@ -926,13 +928,13 @@ test('lib-wallet offer methods', async (/** @type {LibWalletTestContext} */ t) =
       value: 100,
       currentAmountSlots: {
         body: '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"100"}}',
-        slots: [{ kind: 'brand', petname: 'moola' }],
+        slots: [{ boardId: 'board0425', kind: 'brand', petname: 'moola' }],
       },
       meta: {
         id: 5,
       },
       currentAmount: {
-        brand: { kind: 'brand', petname: 'moola' },
+        brand: { boardId: 'board0425', kind: 'brand', petname: 'moola' },
         value: 100,
       },
     },
@@ -990,6 +992,7 @@ test('lib-wallet offer methods', async (/** @type {LibWalletTestContext} */ t) =
               purse: {}, // JSON doesn't keep the purse.
               amount: {
                 brand: {
+                  boardId: 'board0425',
                   kind: 'brand',
                   petname: 'moola',
                 },
@@ -1042,6 +1045,7 @@ test('lib-wallet offer methods', async (/** @type {LibWalletTestContext} */ t) =
               purse: {}, // JSON doesn't keep the purse.
               amount: {
                 brand: {
+                  boardId: 'board0425',
                   kind: 'brand',
                   petname: 'moola',
                 },
