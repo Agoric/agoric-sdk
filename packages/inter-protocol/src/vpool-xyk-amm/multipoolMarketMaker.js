@@ -62,12 +62,13 @@ const trace = makeTracer('XykAmm', false);
  * quoteIssuerKit: IssuerKit,
  * params: import('@agoric/governance/src/contractGovernance/typedParamManager').Getters<import('./params.js').AmmParams>,
  * protocolSeat: ZCFSeat,
- * }>} AmmState
+ * }>} AmmPowers
  */
 
-/**
- * @typedef {{}} MethodContext
- */
+//  All the state at the AMM level is shared lexically. Some functions here have
+//  to ignore their first parameter since they have other parameters and are
+//  included in virtual/durable facets.
+/** @typedef {{}} MethodContext */
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -325,8 +326,8 @@ const start = async (zcf, privateArgs, baggage) => {
     ));
 
   // shared AMM state that will be lexically accessible to all pools
-  /** @type {AmmState} */
-  const ammState = harden({
+  /** @type {AmmPowers} */
+  const ammPowers = harden({
     zcf,
     secondaryBrandToPool,
     secondaryBrandToLiquidityMint,
@@ -338,7 +339,7 @@ const start = async (zcf, privateArgs, baggage) => {
   });
   const addPoolInvitation = makeAddPoolInvitation(
     baggage,
-    ammState,
+    ammPowers,
     handlePoolAdded,
     poolStorageNode,
     privateArgs.marshaller,

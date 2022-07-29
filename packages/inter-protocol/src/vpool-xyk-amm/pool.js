@@ -67,15 +67,15 @@ export const publicPrices = prices => {
  */
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
-/** @typedef {import('./multipoolMarketMaker.js').AmmState} AmmState */
+/** @typedef {import('./multipoolMarketMaker.js').AmmPowers} AmmPowers */
 
 /**
  * @param {Baggage} baggage
- * @param {AmmState} ammState
+ * @param {AmmPowers} ammPowers
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
  */
-export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
+export const definePoolKind = (baggage, ammPowers, storageNode, marshaller) => {
   /** @type {StoredPublishKit<NotificationState>} */
   const { subscriber, publisher } = makeStoredPublishKit(
     storageNode,
@@ -102,7 +102,8 @@ export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
     };
   };
 
-  const curryPriceGetters = context => {
+  /** @param {MethodContext} context */
+  const makePriceGetters = context => {
     const getPAInputPrice = (amountIn, brandOut) => {
       return publicPrices(
         context.facets.singlePool.getPriceForInput(
@@ -124,15 +125,15 @@ export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
   let toCentralPriceAuthority;
   const provideToCentralPriceAuthority = context => {
     if (!toCentralPriceAuthority) {
-      const { getPAInputPrice, getPAOutputPrice } = curryPriceGetters(context);
+      const { getPAInputPrice, getPAOutputPrice } = makePriceGetters(context);
       const { secondaryBrand } = context.state;
-      const quoteIssuerKit = ammState.quoteIssuerKit;
+      const { quoteIssuerKit } = ammPowers;
       toCentralPriceAuthority = makePriceAuthority(
         getPAInputPrice,
         getPAOutputPrice,
         secondaryBrand,
-        ammState.centralBrand,
-        ammState.timer,
+        ammPowers.centralBrand,
+        ammPowers.timer,
         subscriber,
         quoteIssuerKit,
       );
@@ -143,15 +144,15 @@ export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
   let fromCentralPriceAuthority;
   const provideFromCentralPriceAuthority = context => {
     if (!fromCentralPriceAuthority) {
-      const { getPAInputPrice, getPAOutputPrice } = curryPriceGetters(context);
+      const { getPAInputPrice, getPAOutputPrice } = makePriceGetters(context);
       const { secondaryBrand } = context.state;
-      const quoteIssuerKit = ammState.quoteIssuerKit;
+      const quoteIssuerKit = ammPowers.quoteIssuerKit;
       fromCentralPriceAuthority = makePriceAuthority(
         getPAInputPrice,
         getPAOutputPrice,
-        ammState.centralBrand,
+        ammPowers.centralBrand,
         secondaryBrand,
-        ammState.timer,
+        ammPowers.timer,
         subscriber,
         quoteIssuerKit,
       );
@@ -165,7 +166,7 @@ export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
       liquidityZcfMint.getIssuerRecord().issuer,
     getPoolSeat: ({ state: { poolSeat } }) => poolSeat,
     getCentralAmount: ({ state: { poolSeat } }) =>
-      poolSeat.getAmountAllocated('Central', ammState.centralBrand),
+      poolSeat.getAmountAllocated('Central', ammPowers.centralBrand),
     getSecondaryAmount: ({ state }) =>
       state.poolSeat.getAmountAllocated('Secondary', state.secondaryBrand),
 
@@ -231,7 +232,7 @@ export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
       const liquidityValueIn = liquidityIn.value;
       assert(isNatValue(liquidityValueIn), 'User Liquidity');
       const centralTokenAmountOut = AmountMath.make(
-        ammState.centralBrand,
+        ammPowers.centralBrand,
         calcValueToRemove(
           state.liqTokenSupply,
           facets.pool.getCentralAmount().value,
@@ -259,7 +260,7 @@ export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
           }),
         ),
       );
-      ammState.zcf.reallocate(userSeat, poolSeat);
+      ammPowers.zcf.reallocate(userSeat, poolSeat);
       state.liqTokenSupply -= liquidityValueIn;
 
       userSeat.exit();
@@ -274,15 +275,15 @@ export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
      */
     updateState: ({ facets: { pool, helper } }) => {
       helper.updateMetrics();
-      // TODO: when governance can change the interest rate, include it here
       publisher.publish({
         central: pool.getCentralAmount(),
         secondary: pool.getSecondaryAmount(),
       });
     },
 
-    // TODO(hibbert) drop these priceAuthorities. They're expensive and unneeded.
+    /** @deprecated priceAuthorities will not be provided by the AMM */
     getToCentralPriceAuthority: provideToCentralPriceAuthority,
+    /** @deprecated priceAuthorities will not be provided by the AMM */
     getFromCentralPriceAuthority: provideFromCentralPriceAuthority,
 
     /** @param {MethodContext} context */
@@ -338,9 +339,9 @@ export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
         poolSeat.decrementBy(harden({ Liquidity: liquidityAmountOut })),
       );
       if (feeSeat) {
-        ammState.zcf.reallocate(poolSeat, zcfSeat, feeSeat);
+        ammPowers.zcf.reallocate(poolSeat, zcfSeat, feeSeat);
       } else {
-        ammState.zcf.reallocate(poolSeat, zcfSeat);
+        ammPowers.zcf.reallocate(poolSeat, zcfSeat);
       }
     },
     /** @type {import('@agoric/vat-data/src/types').PlusContext<MethodContext, AddLiquidityActual>} */
@@ -383,7 +384,7 @@ export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
   const facets = harden({
     helper: helperBehavior,
     pool: poolBehavior,
-    singlePool: makeSinglePool(ammState),
+    singlePool: makeSinglePool(ammPowers),
   });
 
   return vivifyKindMulti(baggage, 'pool', poolInit, facets, { finish });

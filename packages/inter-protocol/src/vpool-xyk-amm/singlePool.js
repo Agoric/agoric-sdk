@@ -14,11 +14,11 @@ const getPools = pool => ({
   Secondary: pool.getSecondaryAmount(),
 });
 
-export const makeSinglePool = ammState => ({
+export const makeSinglePool = ammPowers => ({
   allocateGainsAndLosses: (context, seat, prices) => {
     const { pool } = context.facets;
     const { poolSeat } = context.state;
-    const { zcf, protocolSeat } = ammState;
+    const { zcf, protocolSeat } = ammPowers;
     seat.decrementBy(harden({ In: prices.swapperGives }));
     seat.incrementBy(harden({ Out: prices.swapperGets }));
     protocolSeat.incrementBy(harden({ Fee: prices.protocolFee }));
@@ -44,7 +44,7 @@ export const makeSinglePool = ammState => ({
    * @param {Amount} amountOut
    */
   getPriceForInput: ({ facets }, amountIn, amountOut) => {
-    const { params } = ammState;
+    const { params } = ammPowers;
     return pricesForStatedInput(
       amountIn,
       getPools(facets.pool),
@@ -60,7 +60,7 @@ export const makeSinglePool = ammState => ({
    * @param {Amount} amountOut
    */
   getPriceForOutput: ({ facets }, amountIn, amountOut) => {
-    const { params } = ammState;
+    const { params } = ammPowers;
     return pricesForStatedOutput(
       amountIn,
       getPools(facets.pool),

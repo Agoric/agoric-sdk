@@ -94,30 +94,30 @@ export const makeAddIssuer = (
 
 /**
  * @param {Baggage} baggage
- * @param {import('./multipoolMarketMaker.js').AmmState} ammState
+ * @param {import('./multipoolMarketMaker.js').AmmPowers} ammPowers
  * @param {(secondaryBrand: Brand, reserveLiquidityTokenSeat: ZCFSeat, liquidityKeyword: Keyword) => Promise<void>} onOfferHandled
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
  */
 export const makeAddPoolInvitation = (
   baggage,
-  ammState,
+  ammPowers,
   onOfferHandled,
   storageNode,
   marshaller,
 ) => {
-  const { zcf } = ammState;
-  const makePool = definePoolKind(baggage, ammState, storageNode, marshaller);
+  const { zcf } = ammPowers;
+  const makePool = definePoolKind(baggage, ammPowers, storageNode, marshaller);
 
   /** @type {(Brand) => Promise<{poolFacets: PoolFacets, liquidityZcfMint: ZCFMint}>} */
   const addPool = async secondaryBrand => {
     const liquidityZcfMint =
-      ammState.secondaryBrandToLiquidityMint.get(secondaryBrand);
+      ammPowers.secondaryBrandToLiquidityMint.get(secondaryBrand);
 
-    const { zcfSeat: poolSeat } = ammState.zcf.makeEmptySeatKit();
+    const { zcfSeat: poolSeat } = ammPowers.zcf.makeEmptySeatKit();
     const poolFacets = makePool(liquidityZcfMint, poolSeat, secondaryBrand);
 
-    ammState.secondaryBrandToPool.init(secondaryBrand, poolFacets);
+    ammPowers.secondaryBrandToPool.init(secondaryBrand, poolFacets);
     return { liquidityZcfMint, poolFacets };
   };
 
@@ -134,11 +134,11 @@ export const makeAddPoolInvitation = (
     const secondaryBrand = secondaryAmount.brand;
 
     const { brand: liquidityBrand, issuer } =
-      ammState.secondaryBrandToLiquidityMint
+      ammPowers.secondaryBrandToLiquidityMint
         .get(secondaryBrand)
         .getIssuerRecord();
 
-    const minPoolLiquidity = ammState.params.getMinInitialPoolLiquidity();
+    const minPoolLiquidity = ammPowers.params.getMinInitialPoolLiquidity();
 
     if (proposalWant.Liquidity) {
       const { Liquidity: wantLiquidityAmount } = proposalWant;

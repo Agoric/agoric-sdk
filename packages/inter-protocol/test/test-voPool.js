@@ -85,8 +85,8 @@ const voPoolTest = async (t, mutation, postTest) => {
     const storageNode = makeFakeStorage('voPoolTest');
     const marshaller = makeFakeMarshaller();
 
-    /** @type {import('../src/vpool-xyk-amm/multipoolMarketMaker.js').AmmState} */
-    const ammState = {
+    /** @type {import('../src/vpool-xyk-amm/multipoolMarketMaker.js').AmmPowers} */
+    const ammPowers = {
       zcf,
       // @ts-expect-error test unused
       secondaryBrandToPool: undefined,
@@ -102,7 +102,7 @@ const voPoolTest = async (t, mutation, postTest) => {
 
     return definePoolKind(
       makeScalarBigMapStore('virtualPool', { durable: true }),
-      ammState,
+      ammPowers,
       storageNode,
       marshaller,
     );
