@@ -1,5 +1,7 @@
 /* global globalThis */
 import { SigningStargateClient } from '@cosmjs/stargate';
+import { Random } from '@cosmjs/crypto';
+import { makeLocalStorageSigner, makeOfferSigner } from './keyManagement.js';
 
 export const AGORIC_COIN_TYPE = 564;
 export const COSMOS_COIN_TYPE = 118;
@@ -27,6 +29,8 @@ export const bech32Config = {
 };
 
 const makeChainInfo = (networkConfig, rpcAddr, chainId, caption) => {
+  console.log('@@makeChainInfo', { networkConfig });
+
   const coinType = Number(
     new URL(networkConfig).searchParams.get('coinType') || AGORIC_COIN_TYPE,
   );
@@ -34,6 +38,7 @@ const makeChainInfo = (networkConfig, rpcAddr, chainId, caption) => {
   const network = hostname.split('.')[0];
   let rpc;
   let api;
+  console.log('@@makeChainInfo', { networkConfig, hostname, network, rpcAddr });
   if (network !== hostname) {
     rpc = `https://${network}.rpc.agoric.net`;
     api = `https://${network}.api.agoric.net`;
@@ -78,14 +83,18 @@ export async function suggestChain(
   const rpcAddr = rpcAddrs[Math.floor(random() * rpcAddrs.length)];
 
   const chainInfo = makeChainInfo(networkConfig, rpcAddr, chainId, caption);
+  console.log('@@SuggestChain', { networkConfig, chainInfo, keplr });
   await keplr.experimentalSuggestChain(chainInfo);
   await keplr.enable(chainId);
+  console.log('@@keplr.enable', chainId, 'done');
 
   const offlineSigner = keplr.getOfflineSigner(chainId);
-  const cosmJS = await SigningClient.connectWithSigner(
-    chainInfo.rpc,
-    offlineSigner,
-  );
+  // @@@@@ const cosmJS = await SigningClient.connectWithSigner(
+  //   chainInfo.rpc,
+  //   offlineSigner,
+  // );
+  let cosmJS;
+  console.log('@@', { cosmJS });
 
   /*
   // Example transaction 
@@ -112,5 +121,15 @@ export async function suggestChain(
  */
   const accounts = await offlineSigner.getAccounts();
 
-  return [cosmJS, accounts[0]?.address];
+  console.log('@@SuggestChain', { chainInfo, accounts });
+  const offerSigner = await makeOfferSigner(
+    chainInfo,
+    keplr,
+    SigningClient.connectWithSigner,
+  );
+
+  const { getBytes } = Random;
+  const localSigner = await makeLocalStorageSigner({ localStorage, getBytes });
+
+  return [cosmJS, accounts[0]?.address, { offerSigner, localSigner }];
 }
