@@ -474,9 +474,9 @@ export const makeManagerDriver = async (
       t.deepEqual(runProceeds, expectedRUN);
       t.deepEqual(collProceeds, expectedAEth);
     },
-    checkRewards: async expectedRUN => {
+    checkRewards: async expectedMinted => {
       t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
-        Minted: expectedRUN,
+        Minted: expectedMinted,
       });
     },
     sellOnAMM: async (give, want, optStopAfter, expected) => {

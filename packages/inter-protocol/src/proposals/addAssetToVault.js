@@ -239,7 +239,7 @@ export const addAssetToVault = async (
   {
     consume: { vaultFactoryCreator, agoricNamesAdmin },
     brand: {
-      consume: { [Stable.symbol]: runP },
+      consume: { [Stable.symbol]: stableP },
     },
   },
   { options: { interchainAssetOptions } },
@@ -252,14 +252,14 @@ export const addAssetToVault = async (
     [keyword],
   );
 
-  const RUN = await runP;
+  const stable = await stableP;
   await E(vaultFactoryCreator).addVaultType(interchainIssuer, oracleBrand, {
-    debtLimit: AmountMath.make(RUN, 0n),
+    debtLimit: AmountMath.make(stable, 0n),
     // the rest of these are arbitrary, TBD by gov cttee
-    interestRate: makeRatio(1n, RUN),
-    liquidationMargin: makeRatio(1n, RUN),
-    liquidationPenalty: makeRatio(1n, RUN),
-    loanFee: makeRatio(1n, RUN),
+    interestRate: makeRatio(1n, stable),
+    liquidationMargin: makeRatio(1n, stable),
+    liquidationPenalty: makeRatio(1n, stable),
+    loanFee: makeRatio(1n, stable),
   });
 };
 

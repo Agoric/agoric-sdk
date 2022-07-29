@@ -751,8 +751,8 @@ export const startLienBridge = async ({
 /**
  * @param {RunStakeBootstrapPowers } powers
  * @param {object} config
- * @param {bigint} [config.debtLimit] count of RUN
- * @param {Rational} [config.mintingRatio] ratio of RUN minted to BLD
+ * @param {bigint} [config.debtLimit] count of Minted
+ * @param {Rational} [config.mintingRatio] ratio of Minted to BLD
  * @param {bigint} [config.interestRateBP]
  * @param {bigint} [config.loanFeeBP]
  * @param {bigint} [config.chargingPeriod]
