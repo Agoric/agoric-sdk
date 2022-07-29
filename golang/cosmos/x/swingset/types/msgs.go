@@ -104,6 +104,28 @@ func (msg MsgWalletAction) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Owner}
 }
 
+// GetSignBytes encodes the message for signing
+func (msg MsgWalletAction) GetSignBytes() []byte {
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
+}
+
+// Route should return the name of the module
+func (msg MsgWalletAction) Route() string { return RouterKey }
+
+// Type should return the action
+func (msg MsgWalletAction) Type() string { return "wallet_action" }
+
+// Route should return the name of the module
+func (msg MsgWalletSpendAction) Route() string { return RouterKey }
+
+// Type should return the action
+func (msg MsgWalletSpendAction) Type() string { return "wallet_spend_action" }
+
+// GetSignBytes encodes the message for signing
+func (msg MsgWalletSpendAction) GetSignBytes() []byte {
+	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
+}
+
 // ValidateBasic runs stateless checks on the message
 func (msg MsgWalletAction) ValidateBasic() error {
 	if msg.Owner.Empty() {
