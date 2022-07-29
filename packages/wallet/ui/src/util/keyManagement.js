@@ -11,8 +11,8 @@ import {
   createAuthzAminoConverters,
 } from '@cosmjs/stargate';
 
-import { GenericAuthorization } from 'cosmjs-types/cosmos/authz/v1beta1/authz';
-import { QueryClientImpl } from 'cosmjs-types/cosmos/authz/v1beta1/query';
+import { GenericAuthorization } from 'cosmjs-types/cosmos/authz/v1beta1/authz.js';
+import { QueryClientImpl } from 'cosmjs-types/cosmos/authz/v1beta1/query.js';
 
 // generated via ts-proto, as is conventional for cosmjs
 import { MsgWalletAction } from '../gen/swingset/msgs.js';
