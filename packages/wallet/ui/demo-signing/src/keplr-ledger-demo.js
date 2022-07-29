@@ -17,7 +17,7 @@ import {
   makeLocalStorageSigner,
   makeExecActionMessages,
   trivialFee,
-} from './keyManagement.js';
+} from '../../src/util/keyManagement.js';
 
 const { freeze } = Object;
 const { Tendermint34Client } = tendermintRpcStar;
