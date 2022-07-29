@@ -16,6 +16,7 @@
     "@endo/captp": "^2.0.9",
     "@endo/eventual-send": "^0.15.5",
     "@endo/init": "^0.5.43",
+    "@keplr-wallet/types": "^0.10.13",
     "@mui/icons-material": "^5.1.0",
     "@mui/lab": "^5.0.0-alpha.67",
     "@mui/material": "^5.1.0",
@@ -147,5 +148,9 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "cosmjs-types": "^0.5.0",
+    "protobufjs": "^7.0.0"
   }
 }
