@@ -174,6 +174,7 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
   // Define the durable NetworkHost kind
   // and retain a durable monotonic connection number counter and set of names.
   // TODO: Should this collection be Weak (non-iterable)?
+  /** @type {SetStore<string>} */
   const networkHostNames = provideDurableSetStore(
     baggage,
     networkHostNamesBaggageKey,
