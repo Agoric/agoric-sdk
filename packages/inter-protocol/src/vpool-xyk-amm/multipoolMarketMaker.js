@@ -234,8 +234,10 @@ const start = async (zcf, privateArgs, baggage) => {
 
   // For now, this seat collects protocol fees. It needs to be connected to
   // something that will extract the fees.
-  const { zcfSeat: protocolSeat } = provide(baggage, 'protocolSeat', () =>
-    harden(zcf.makeEmptySeatKit()),
+  const protocolSeat = provide(
+    baggage,
+    'protocolSeat',
+    () => zcf.makeEmptySeatKit().zcfSeat,
   );
 
   /** @type {AssetReservePublicFacet=} */

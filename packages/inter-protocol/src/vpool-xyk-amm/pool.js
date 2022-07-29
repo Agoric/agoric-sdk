@@ -37,10 +37,6 @@ export const publicPrices = prices => {
  * poolSeat: ZCFSeat,
  * secondaryBrand: Brand<'nat'>,
  * liquidityZcfMint: ZCFMint,
- * publisher: Publisher<NotificationState>,
- * subscriber: Subscriber<NotificationState>,
- * metricsPublication: IterationObserver<PoolMetricsNotification>,
- * metricsSubscription: StoredSubscription<PoolMetricsNotification>
  * }>} ImmutableState
  */
 
@@ -80,6 +76,15 @@ export const publicPrices = prices => {
  * @param {ERef<Marshaller>} marshaller
  */
 export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
+  /** @type {StoredPublishKit<NotificationState>} */
+  const { subscriber, publisher } = makeStoredPublishKit(
+    storageNode,
+    marshaller,
+  );
+  /** @type {{publisher: IterationObserver<PoolMetricsNotification>,subscriber: StoredSubscription<PoolMetricsNotification>}} */
+  const { publisher: metricsPublication, subscriber: metricsSubscription } =
+    makeStoredPublisherKit(storageNode, marshaller, 'metrics');
+
   /**
    * @param {ZCFMint} liquidityZcfMint
    * @param {ZCFSeat} poolSeat
@@ -88,23 +93,12 @@ export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
    */
   const poolInit = (liquidityZcfMint, poolSeat, secondaryBrand) => {
     /** @type {PublishKit<{secondary: Amount, central: Amount}>} */
-    const { subscriber, publisher } = makeStoredPublishKit(
-      storageNode,
-      marshaller,
-    );
-    const { publisher: metricsPublication, subscriber: metricsSubscription } =
-      makeStoredPublisherKit(storageNode, marshaller, 'metrics');
 
     return {
       liqTokenSupply: 0n,
       poolSeat,
       secondaryBrand,
       liquidityZcfMint,
-      publisher,
-      subscriber,
-      metricsPublication,
-      // @ts-expect-error  TS didn't understand PublishKit<MetricsPayload>
-      metricsSubscription,
     };
   };
 
@@ -131,7 +125,7 @@ export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
   const provideToCentralPriceAuthority = context => {
     if (!toCentralPriceAuthority) {
       const { getPAInputPrice, getPAOutputPrice } = curryPriceGetters(context);
-      const { subscriber, secondaryBrand } = context.state;
+      const { secondaryBrand } = context.state;
       const quoteIssuerKit = ammState.quoteIssuerKit;
       toCentralPriceAuthority = makePriceAuthority(
         getPAInputPrice,
@@ -150,7 +144,7 @@ export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
   const provideFromCentralPriceAuthority = context => {
     if (!fromCentralPriceAuthority) {
       const { getPAInputPrice, getPAOutputPrice } = curryPriceGetters(context);
-      const { subscriber, secondaryBrand } = context.state;
+      const { secondaryBrand } = context.state;
       const quoteIssuerKit = ammState.quoteIssuerKit;
       fromCentralPriceAuthority = makePriceAuthority(
         getPAInputPrice,
@@ -272,13 +266,13 @@ export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
       facets.pool.updateState();
       return 'Liquidity successfully removed.';
     },
-    getSubscriber: (/** @type {MethodContext} */ { state }) => state.subscriber,
+    getSubscriber: () => subscriber,
     /**
      * Update metrics and primary state
      *
      * @param {MethodContext} context
      */
-    updateState: ({ state: { publisher }, facets: { pool, helper } }) => {
+    updateState: ({ facets: { pool, helper } }) => {
       helper.updateMetrics();
       // TODO: when governance can change the interest rate, include it here
       publisher.publish({
@@ -293,8 +287,7 @@ export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
 
     /** @param {MethodContext} context */
     getVPool: ({ facets }) => facets.singlePool,
-    /** @param {MethodContext} context */
-    getMetrics: ({ state }) => state.metricsSubscription,
+    getMetrics: () => metricsSubscription,
   };
 
   /** @param {MethodContext} context */
@@ -383,7 +376,7 @@ export const definePoolKind = (baggage, ammState, storageNode, marshaller) => {
         ),
       });
 
-      state.metricsPublication.updateState(payload);
+      metricsPublication.updateState(payload);
     },
   };
 
