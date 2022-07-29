@@ -5,6 +5,8 @@ import type { RankComparison } from '@agoric/store';
 
 /// <reference types="@agoric/notifier/src/types.js"/>
 
+// These aren't in the global runtime environment. They are just types that are
+// meant to be globally accessible as a side-effect of importing this module.
 declare global {
   /**
    * TODO As of PR #5821 there is no `TimerBrand` yet. The purpose of #5821
@@ -17,7 +19,7 @@ declare global {
    * See https://github.com/Agoric/agoric-sdk/issues/5798
    * and https://github.com/Agoric/agoric-sdk/pull/5821
    */
-  export type TimerBrand = {
+  type TimerBrand = {
     isMyTimer: (timer: TimerService) => ERef<boolean>;
   };
 
@@ -30,7 +32,7 @@ declare global {
    * point. But what the starting point is and what units are counted is purely up
    * to the meaning of that particular TimerService
    */
-  export type TimestampValue = bigint;
+  type TimestampValue = bigint;
 
   /**
    * @deprecated use RelativeTimeRecord
@@ -38,14 +40,14 @@ declare global {
    * Difference between two TimestampValues.  Note that different timer services
    * may have different interpretations of TimestampValues values.
    */
-  export type RelativeTimeValue = bigint;
+  type RelativeTimeValue = bigint;
 
-  export type TimestampRecord = {
+  type TimestampRecord = {
     timerBrand: TimerBrand;
     absValue: TimestampValue;
   };
 
-  export type RelativeTimeRecord = {
+  type RelativeTimeRecord = {
     timerBrand: TimerBrand;
     relValue: RelativeTimeValue;
   };
@@ -59,7 +61,7 @@ declare global {
    * to the current definition of `TimestampRecord`, which will itself
    * be deleted. All Timestamps will then be labeled by TimerBrands.
    */
-  export type Timestamp = TimestampRecord | TimestampValue;
+  type Timestamp = TimestampRecord | TimestampValue;
 
   /**
    * @deprecated use RelativeTimeRecord
@@ -70,14 +72,14 @@ declare global {
    * to the current definition of `RelativeTimeRecord`, which will itself
    * be deleted. All RelativeTimes will then be labeled by TimerBrands.
    */
-  export type RelativeTime = RelativeTimeRecord | RelativeTimeValue;
+  type RelativeTime = RelativeTimeRecord | RelativeTimeValue;
 
   /**
    * Gives the ability to get the current time,
    * schedule a single wake() call, create a repeater that will allow scheduling
    * of events at regular intervals, or remove scheduled calls.
    */
-  export type TimerService = {
+  type TimerService = {
     /**
      * Retrieve the latest timestamp
      */
@@ -120,7 +122,7 @@ declare global {
     delay: (delay: RelativeTime) => Promise<Timestamp>;
   };
 
-  export type TimerWaker = {
+  type TimerWaker = {
     /**
      * The timestamp passed to `wake()` is the time that the call was scheduled
      * to occur.
@@ -128,7 +130,7 @@ declare global {
     wake: (timestamp: Timestamp) => void;
   };
 
-  export type TimerRepeater = {
+  type TimerRepeater = {
     /**
      * Returns the time scheduled for
      * the first call to `E(waker).wake()`.  The waker will continue to be scheduled
@@ -143,7 +145,7 @@ declare global {
     disable: () => void;
   };
 
-  export type TimeMathType = {
+  type TimeMathType = {
     /**
      * Validates that the operand represents a `Timestamp` and returns the bigint
      * representing its absolute time value.
