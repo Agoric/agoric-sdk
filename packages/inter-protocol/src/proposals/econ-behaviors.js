@@ -14,7 +14,7 @@ import * as Collect from '../collect.js';
 import { makeTracer } from '../makeTracer.js';
 import { makeStakeReporter } from '../my-lien.js';
 import { makeReserveTerms } from '../reserve/params.js';
-import { makeRunStakeTerms } from '../runStake/params.js';
+import { makeStakeFactoryTerms } from '../stakeFactory/params.js';
 import { liquidationDetailTerms } from '../vaultFactory/liquidation.js';
 import { makeGovernedTerms } from '../vaultFactory/params.js';
 import { makeAmmTerms } from '../vpool-xyk-amm/params.js';
@@ -30,8 +30,8 @@ const BASIS_POINTS = 10_000n;
 const MILLI = 1_000_000n;
 
 /**
- * @typedef {GovernedCreatorFacet<import('../runStake/runStake.js').RunStakeCreator>} RunStakeCreator
- * @typedef {import('../runStake/runStake.js').RunStakePublic} RunStakePublic
+ * @typedef {GovernedCreatorFacet<import('../stakeFactory/stakeFactory.js').StakeFactoryCreator>} StakeFactoryCreator
+ * @typedef {import('../stakeFactory/stakeFactory.js').StakeFactoryPublic} StakeFactoryPublic
  * @typedef {import('../reserve/assetReserve.js').GovernedAssetReserveFacetAccess} GovernedAssetReserveFacetAccess
  */
 
@@ -52,7 +52,7 @@ const MILLI = 1_000_000n;
  *   reservePublicFacet: import('../reserve/assetReserve.js').AssetReservePublicFacet,
  *   reserveCreatorFacet: import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet,
  *   reserveGovernorCreatorFacet: GovernedAssetReserveFacetAccess,
- *   runStakeCreatorFacet: RunStakeCreator,
+ *   stakeFactoryCreatorFacet: StakeFactoryCreator,
  *   vaultFactoryCreator: VaultFactoryCreatorFacet,
  *   vaultFactoryGovernorCreator: GovernedContractFacetAccess<{},{}>,
  *   vaultFactoryVoteCreator: unknown,
@@ -629,7 +629,7 @@ export const startRewardDistributor = async ({
     vaultFactoryCreator,
     periodicFeeCollectors,
     ammCreatorFacet,
-    runStakeCreatorFacet,
+    stakeFactoryCreatorFacet,
     reservePublicFacet,
     zoe,
   },
@@ -704,7 +704,7 @@ export const startRewardDistributor = async ({
   const collectorFacets = {
     vaultFactory: vaultFactoryCreator,
     amm: ammCreatorFacet,
-    runStake: runStakeCreatorFacet,
+    stakeFactory: stakeFactoryCreatorFacet,
   };
   await Promise.all(
     Object.entries(collectorFacets).map(async ([debugName, collectorFacet]) => {
@@ -745,11 +745,11 @@ export const startLienBridge = async ({
  * @typedef {EconomyBootstrapPowers & PromiseSpaceOf<{
  *   client: ClientManager,
  *   lienBridge: StakingAuthority,
- * }>} RunStakeBootstrapPowers
+ * }>} StakeFactoryBootstrapPowers
  */
 
 /**
- * @param {RunStakeBootstrapPowers } powers
+ * @param {StakeFactoryBootstrapPowers } powers
  * @param {object} config
  * @param {bigint} [config.debtLimit] count of Minted
  * @param {Rational} [config.mintingRatio] ratio of Minted to BLD
@@ -758,9 +758,9 @@ export const startLienBridge = async ({
  * @param {bigint} [config.chargingPeriod]
  * @param {bigint} [config.recordingPeriod]
  * @typedef {[bigint, bigint]} Rational
- * @typedef {Awaited<ReturnType<typeof import('../runStake/runStake.js').start>>} StartRunStake
+ * @typedef {Awaited<ReturnType<typeof import('../stakeFactory/stakeFactory.js').start>>} StartStakeFactory
  */
-export const startRunStake = async (
+export const startStakeFactory = async (
   {
     consume: {
       board,
@@ -774,13 +774,13 @@ export const startRunStake = async (
       economicCommitteeCreatorFacet,
     },
     // @ts-expect-error TODO: add to BootstrapPowers
-    produce: { runStakeCreatorFacet, runStakeGovernorCreatorFacet },
+    produce: { stakeFactoryCreatorFacet, stakeFactoryGovernorCreatorFacet },
     installation: {
-      consume: { contractGovernor, runStake: installationP },
+      consume: { contractGovernor, stakeFactory: installationP },
     },
     instance: {
       consume: { economicCommittee: electorateInstance },
-      produce: { runStake: runStakeinstanceR },
+      produce: { stakeFactory: stakeFactoryinstanceR },
     },
     brand: {
       consume: { [Stake.symbol]: bldBrandP, [Stable.symbol]: runBrandP },
@@ -814,7 +814,7 @@ export const startRunStake = async (
 
   const installations = {
     governor,
-    runStake: installation,
+    stakeFactory: installation,
   };
 
   const poserInvitationP = E(
@@ -826,7 +826,7 @@ export const startRunStake = async (
       E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
     ]);
 
-  const runStakeTerms = makeRunStakeTerms(
+  const stakeFactoryTerms = makeStakeFactoryTerms(
     {
       timerService: timer,
       chargingPeriod,
@@ -849,16 +849,16 @@ export const startRunStake = async (
   const storageNode = await makeStorageNode(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
-  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<RunStakePublic,RunStakeCreator>}} */
+  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<StakeFactoryPublic,StakeFactoryCreator>}} */
   const governorFacets = await E(zoe).startInstance(
     installations.governor,
     {},
     {
       timer,
       electorateInstance,
-      governedContractInstallation: installations.runStake,
+      governedContractInstallation: installations.stakeFactory,
       governed: harden({
-        terms: runStakeTerms,
+        terms: stakeFactoryTerms,
         issuerKeywordRecord: { Stake: bldIssuer },
         privateArgs: {
           feeMintAccess,
@@ -878,18 +878,18 @@ export const startRunStake = async (
     brands: { Attestation: attBrand },
   } = await E(zoe).getTerms(governedInstance);
 
-  runStakeCreatorFacet.resolve(creatorFacet);
-  runStakeGovernorCreatorFacet.resolve(governorFacets.creatorFacet);
-  runStakeinstanceR.resolve(governedInstance);
+  stakeFactoryCreatorFacet.resolve(creatorFacet);
+  stakeFactoryGovernorCreatorFacet.resolve(governorFacets.creatorFacet);
+  stakeFactoryinstanceR.resolve(governedInstance);
   attestationBrandR.resolve(attBrand);
   attestationIssuerR.resolve(attIssuer);
   return Promise.all([
     E(client).assignBundle([
       address => ({
-        // @ts-expect-error ??? creatorFacet is a RunStakeCreator; it has the method
+        // @ts-expect-error ??? creatorFacet is a StakeFactoryCreator; it has the method
         attMaker: E(creatorFacet).provideAttestationMaker(address),
       }),
     ]),
   ]);
 };
-harden(startRunStake);
+harden(startStakeFactory);

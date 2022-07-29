@@ -1,12 +1,12 @@
-# RUNstake design notes
+# stakeFactory design notes
 
-The RUNstake contract provides loans on the basis of
+The stakeFactory contract provides loans on the basis of
 staked assets that earn rewards.
 
-The following sequence diagram shows an interaction between runStake and:
+The following sequence diagram shows an interaction between stakeFactory and:
   - dapp: with rich interaction but low privilege
   - walletBridge: with high privilege and constrained interaction
-  - attestation: a service within the runStake contract
+  - attestation: a service within the stakeFactory contract
   - Cosmos_SDK: the Cosmos SDK layer, including the `x/lien` module
 
 Before this interaction, an `ag123` account has been provisioned,
@@ -19,7 +19,7 @@ sequenceDiagram
     actor dapp
     participant walletBridge
     participant attestation
-    participant runStake
+    participant stakeFactory
     participant Cosmos_SDK
 
     note right of dapp: How dapp finds the current state
@@ -45,18 +45,18 @@ sequenceDiagram
 
     attestation -->> walletBridge: Payment of 500 BLD-Att liened on ag123
 
-    walletBridge ->> runStake: offer w/payment for {give: 500 BLD-Att, want: 450 RUN} 
+    walletBridge ->> stakeFactory: offer w/payment for {give: 500 BLD-Att, want: 450 RUN} 
 
-    runStake --> walletBridge: Payment for 450RUN and offerResult
+    stakeFactory --> walletBridge: Payment for 450RUN and offerResult
     walletBridge --> dapp: notifiers from offerResult
 ```
 
 ## Components
 
-In addition to the `runStake.js` module with the contract `start` function:
+In addition to the `stakeFactory.js` module with the contract `start` function:
 
  - `params.js`: utilities for governance parameters
- - `runStakeKit.js`: `makeRunStakeKit` is called once per loan
- - `runStakeManager.js`: handles interest etc. for all loans
+ - `stakeFactoryKit.js`: `makeStakeFactoryKit` is called once per loan
+ - `stakeFactoryManager.js`: handles interest etc. for all loans
  - `attestation.js`: minting tokens that attest to liens,
       and wrapping them in per-user attestation maker authorities.

@@ -6,8 +6,8 @@ import { E, Far } from '@endo/far';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeAttestationFacets } from './attestation.js';
 import { ManagerKW as KW } from './constants.js';
-import { makeRunStakeKit } from './runStakeKit.js';
-import { makeRunStakeManager } from './runStakeManager.js';
+import { makeStakeFactoryKit } from './stakeFactoryKit.js';
+import { makeStakeFactoryManager } from './stakeFactoryManager.js';
 
 const { details: X } = assert;
 const { values } = Object;
@@ -27,17 +27,17 @@ const { values } = Object;
  *   MintingRatio: 'ratio',
  *   InterestRate: 'ratio',
  *   LoanFee: 'ratio',
- * }} RunStakeParams
+ * }} StakeFactoryParams
  *
  * As in vaultFactory, `timerService` provides the periodic signal to
  * charge interest according to `chargingPeriod` and `recordingPeriod`.
  *
- * @typedef { GovernanceTerms<RunStakeParams> & {
+ * @typedef { GovernanceTerms<StakeFactoryParams> & {
  *   timerService: TimerService,
  *   chargingPeriod: bigint,
  *   recordingPeriod: bigint,
  *   lienAttestationName?: string,
- * }} RunStakeTerms
+ * }} StakeFactoryTerms
  *
  * The public facet provides access to invitations to get a loan
  * or to return an attestation in order to release a lien on staked assets.
@@ -45,7 +45,7 @@ const { values } = Object;
  * @typedef {{
  *   makeLoanInvitation: () => Promise<Invitation>,
  *   makeReturnAttInvitation: () => Promise<Invitation>,
- * }} RunStakePublic
+ * }} StakeFactoryPublic
  *
  * To take out a loan, get an `AttestationMaker` for your address from
  * the creator of this contract, and use
@@ -68,17 +68,17 @@ const { values } = Object;
  *   lienBridge: ERef<StakingAuthority>,
  *   storageNode: StorageNode,
  *   marshaller: Marshaller,
- * }} RunStakePrivateArgs
+ * }} StakeFactoryPrivateArgs
  *
  * The creator facet can make an `AttestationMaker` for each account, which
  * authorizes placing a lien some of the staked assets in that account.
  * @typedef {{
  *   provideAttestationMaker: (addr: string) => AttestationTool,
  *   makeCollectFeesInvitation: () => Promise<Invitation>,
- * }} RunStakeCreator
+ * }} StakeFactoryCreator
  *
- * @type {ContractStartFn<RunStakePublic, ERef<GovernedCreatorFacet<RunStakeCreator>>,
- *                        RunStakeTerms, RunStakePrivateArgs>}
+ * @type {ContractStartFn<StakeFactoryPublic, ERef<GovernedCreatorFacet<StakeFactoryCreator>>,
+ *                        StakeFactoryTerms, StakeFactoryPrivateArgs>}
  */
 export const start = async (
   zcf,
@@ -177,7 +177,7 @@ export const start = async (
   });
 
   const startTimeStamp = await E(timerService).getCurrentTimestamp();
-  const { manager } = makeRunStakeManager(
+  const { manager } = makeStakeFactoryManager(
     zcf,
     debtMint,
     harden({ Attestation: attestBrand, debt: debtBrand, Stake: stakeBrand }),
@@ -189,7 +189,7 @@ export const start = async (
    * @param {ZCFSeat} seat
    */
   const offerHandler = seat => {
-    const { helper, pot } = makeRunStakeKit(zcf, seat, manager);
+    const { helper, pot } = makeStakeFactoryKit(zcf, seat, manager);
 
     return harden({
       publicSubscribers: {
@@ -207,15 +207,15 @@ export const start = async (
   };
 
   const publicFacet = augmentPublicFacet(
-    Far('runStake public', {
+    Far('stakeFactory public', {
       makeLoanInvitation: () =>
         zcf.makeInvitation(offerHandler, 'make RUNstake'),
       makeReturnAttInvitation: att.publicFacet.makeReturnAttInvitation,
     }),
   );
 
-  /** @type {ERef<RunStakeCreator>} */
-  const creatorFacet = Far('runStake creator', {
+  /** @type {ERef<StakeFactoryCreator>} */
+  const creatorFacet = Far('stakeFactory creator', {
     provideAttestationMaker: att.creatorFacet.provideAttestationTool,
     makeCollectFeesInvitation: () => {
       return makeMakeCollectFeesInvitation(

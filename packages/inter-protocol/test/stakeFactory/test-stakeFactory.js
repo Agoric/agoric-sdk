@@ -22,9 +22,9 @@ import { E, Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import {
   startEconomicCommittee,
-  startRunStake,
+  startStakeFactory,
 } from '../../src/proposals/econ-behaviors.js';
-import { ManagerKW as KW } from '../../src/runStake/constants.js';
+import { ManagerKW as KW } from '../../src/stakeFactory/constants.js';
 import {
   makeVoterTool,
   mintRunPayment,
@@ -42,8 +42,8 @@ import {
 // 13	Add collateral - CR increase ok
 
 const contractRoots = {
-  runStake: './src/runStake/runStake.js',
-  faker: './test/runStake/attestationFaker.js',
+  stakeFactory: './src/stakeFactory/stakeFactory.js',
+  faker: './test/stakeFactory/attestationFaker.js',
 };
 
 const { entries } = Object;
@@ -64,16 +64,16 @@ const micro = harden({
  *   issuer: Record<'IST' | 'BLD', Issuer<'nat'>>,
  *   brand: Record<'IST' | 'BLD', Brand<'nat'>>,
  *   installation: {
- *     runStake: Installation<typeof import('../../src/runStake/runStake.js').start>,
+ *     stakeFactory: Installation<typeof import('../../src/stakeFactory/stakeFactory.js').start>,
  *     faker: Installation,
  *     committee: Installation,
  *     contractGovernor: Installation,
  *     binaryVoteCounter: Installation,
  *     centralSupply: Installation,
  *   },
- * }} RunStakeTestContext
+ * }} StakeFactoryTestContext
  */
-/** @type {import('ava').TestInterface<RunStakeTestContext>} */
+/** @type {import('ava').TestInterface<StakeFactoryTestContext>} */
 // @ts-expect-error cast
 const test = unknownTest;
 
@@ -82,7 +82,7 @@ test.before(async t => {
   console.time('bundling');
   const bc = await unsafeMakeBundleCache('bundles/');
   const bundles = {
-    runStake: await bc.load(contractRoots.runStake, 'runStake'),
+    stakeFactory: await bc.load(contractRoots.stakeFactory, 'stakeFactory'),
     faker: await bc.load(contractRoots.faker, 'faker'),
   };
   t.log(
@@ -107,7 +107,7 @@ test.before(async t => {
     binaryVoteCounter: E(zoe).install(binaryVoteCounterBundle),
   };
   const installation = {
-    runStake: E(zoe).install(bundles.runStake),
+    stakeFactory: E(zoe).install(bundles.stakeFactory),
     faker: E(zoe).install(bundles.faker),
     centralSupply: E(zoe).install(centralSupplyBundle),
     mintHolder: E(zoe).install(mintHolderBundle),
@@ -130,7 +130,7 @@ export const setupBootstrap = async (t, timer = buildManualTimer(t.log)) => {
 
   const space = /** @type {any} */ (makePromiseSpace(t.log));
   const { produce, consume } =
-    /** @type { import('../../src/proposals/econ-behaviors.js').RunStakeBootstrapPowers } */ (
+    /** @type { import('../../src/proposals/econ-behaviors.js').StakeFactoryBootstrapPowers } */ (
       space
     );
 
@@ -246,7 +246,7 @@ const mockChain = genesisData => {
   return it;
 };
 
-const bootstrapRunStake = async (t, timer) => {
+const bootstrapStakeFactory = async (t, timer) => {
   const { feeMintAccess, brand, issuer, installation } = t.context;
 
   const chain = mockChain({ addr1a: 1_000_000_000n * micro.unit });
@@ -261,7 +261,7 @@ const bootstrapRunStake = async (t, timer) => {
   brandS.produce.IST.resolve(brand.IST);
   issuerS.produce.BLD.resolve(issuer.BLD);
   issuerS.produce.IST.resolve(issuer.IST);
-  space.installation.produce.runStake.resolve(installation.runStake);
+  space.installation.produce.stakeFactory.resolve(installation.stakeFactory);
 
   const mockClient = harden({
     assignBundle: _fns => {
@@ -282,7 +282,7 @@ const bootstrapRunStake = async (t, timer) => {
         },
       },
     }),
-    startRunStake(space),
+    startStakeFactory(space),
   ]);
   return { chain, space };
 };
@@ -298,10 +298,10 @@ const makeWalletMaker = creatorFacet => {
 test('wrap liened amount', async t => {
   const timer = buildManualTimer(t.log, 0n, 1n);
 
-  const { chain, space } = await bootstrapRunStake(t, timer);
+  const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume, instance } = space;
-  const { zoe, runStakeCreatorFacet: creatorFacet } = consume;
-  const { runStake: runStakeinstance } = instance.consume;
+  const { zoe, stakeFactoryCreatorFacet: creatorFacet } = consume;
+  const { stakeFactory: stakeFactoryinstance } = instance.consume;
   const walletMaker = makeWalletMaker(creatorFacet);
   const bob = chain.provisionAccount('Bob', 'addr1b');
 
@@ -310,7 +310,7 @@ test('wrap liened amount', async t => {
 
   const {
     brands: { [KW.Attestation]: attBrand },
-  } = await E(zoe).getTerms(await runStakeinstance);
+  } = await E(zoe).getTerms(await stakeFactoryinstance);
 
   const bldBrand = await space.brand.consume.BLD;
   const bldValue = 2_000n * micro.unit;
@@ -326,10 +326,10 @@ test('wrap liened amount', async t => {
 test('unwrap liened amount', async t => {
   const timer = buildManualTimer(t.log, 0n, 1n);
 
-  const { chain, space } = await bootstrapRunStake(t, timer);
+  const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume, instance } = space;
-  const { zoe, runStakeCreatorFacet: creatorFacet } = consume;
-  const { runStake: runStakeinstance } = instance.consume;
+  const { zoe, stakeFactoryCreatorFacet: creatorFacet } = consume;
+  const { stakeFactory: stakeFactoryinstance } = instance.consume;
   const walletMaker = makeWalletMaker(creatorFacet);
   const bob = chain.provisionAccount('Bob', 'addr1b');
 
@@ -338,7 +338,7 @@ test('unwrap liened amount', async t => {
 
   const {
     brands: { [KW.Attestation]: attBrand },
-  } = await E(zoe).getTerms(await runStakeinstance);
+  } = await E(zoe).getTerms(await stakeFactoryinstance);
 
   const bldBrand = await space.brand.consume.BLD;
   const bldValue = 2_000n * micro.unit;
@@ -356,16 +356,18 @@ test('unwrap liened amount', async t => {
   t.deepEqual(unwrapped, bldAmount);
 });
 
-test('runStake API usage', async t => {
+test('stakeFactory API usage', async t => {
   const timer = buildManualTimer(t.log, 0n, 1n);
 
-  const { chain, space } = await bootstrapRunStake(t, timer);
+  const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume } = space;
-  const { zoe, runStakeCreatorFacet: creatorFacet } = consume;
+  const { zoe, stakeFactoryCreatorFacet: creatorFacet } = consume;
   const runBrand = await space.brand.consume.IST;
   const bldBrand = await space.brand.consume.BLD;
   const runIssuer = await space.issuer.consume.IST;
-  const publicFacet = E(zoe).getPublicFacet(space.instance.consume.runStake);
+  const publicFacet = E(zoe).getPublicFacet(
+    space.instance.consume.stakeFactory,
+  );
 
   const founder = chain.provisionAccount('Alice', 'addr1a');
   const bob = chain.provisionAccount('Bob', 'addr1b');
@@ -380,12 +382,12 @@ test('runStake API usage', async t => {
   // Bob gets a lien against 2k of his 3k staked BLD.
   const bobToLien = AmountMath.make(bldBrand, 2_000n * micro.unit);
   const attPmt = E(bobWallet.attMaker).makeAttestation(bobToLien);
-  const runStakeTerms = await E(zoe).getTerms(
-    await space.instance.consume.runStake,
+  const stakeFactoryTerms = await E(zoe).getTerms(
+    await space.instance.consume.stakeFactory,
   );
   const {
     issuers: { [KW.Attestation]: attIssuer },
-  } = runStakeTerms;
+  } = stakeFactoryTerms;
   const attAmt = await E(attIssuer).getAmountOf(attPmt);
 
   // Bob borrows 200 RUN against the lien.
@@ -406,12 +408,14 @@ test('runStake API usage', async t => {
 test('extra offer keywords are rejected', async t => {
   const timer = buildManualTimer(t.log, 0n, SECONDS_PER_DAY);
 
-  const { chain, space } = await bootstrapRunStake(t, timer);
+  const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume } = space;
-  const { zoe, runStakeCreatorFacet: creatorFacet } = consume;
+  const { zoe, stakeFactoryCreatorFacet: creatorFacet } = consume;
   const runBrand = await space.brand.consume.IST;
   const bldBrand = await space.brand.consume.BLD;
-  const publicFacet = E(zoe).getPublicFacet(space.instance.consume.runStake);
+  const publicFacet = E(zoe).getPublicFacet(
+    space.instance.consume.stakeFactory,
+  );
 
   const founder = chain.provisionAccount('Alice', 'addr1a');
   const bob = chain.provisionAccount('Bob', 'addr1b');
@@ -428,7 +432,7 @@ test('extra offer keywords are rejected', async t => {
   const attPmt = E(bobWallet.attMaker).makeAttestation(bobToLien);
   const {
     issuers: { [KW.Attestation]: attIssuer },
-  } = await E(zoe).getTerms(await space.instance.consume.runStake);
+  } = await E(zoe).getTerms(await space.instance.consume.stakeFactory);
   const attAmt = await E(attIssuer).getAmountOf(attPmt);
 
   // Bob borrows 200 RUN against the lien.
@@ -463,12 +467,14 @@ test('extra offer keywords are rejected', async t => {
 test('forged Attestation fails', async t => {
   const timer = buildManualTimer(t.log, 0n, 1n);
 
-  const { chain, space } = await bootstrapRunStake(t, timer);
+  const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume } = space;
   const { zoe } = consume;
   const runBrand = await space.brand.consume.IST;
   const bldBrand = await space.brand.consume.BLD;
-  const publicFacet = E(zoe).getPublicFacet(space.instance.consume.runStake);
+  const publicFacet = E(zoe).getPublicFacet(
+    space.instance.consume.stakeFactory,
+  );
 
   const {
     installation: { faker: fakerInstallation },
@@ -511,39 +517,39 @@ const approxEqual = (t, actual, expected, epsilon) => {
 
 const makeWorld = async t => {
   const timer = buildManualTimer(t.log, 0n, SECONDS_PER_DAY);
-  const { chain, space } = await bootstrapRunStake(t, timer);
+  const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume } = space;
 
-  const { zoe, runStakeCreatorFacet, lienBridge } = consume;
+  const { zoe, stakeFactoryCreatorFacet, lienBridge } = consume;
   const { IST: runIssuer } = space.issuer.consume;
   const [bldBrand, runBrand] = await Promise.all([
     space.brand.consume.BLD,
     space.brand.consume.IST,
   ]);
-  const { runStake: runStakeinstance } = space.instance.consume;
-  const runStake = {
-    instance: runStakeinstance,
-    publicFacet: E(zoe).getPublicFacet(runStakeinstance),
-    creatorFacet: runStakeCreatorFacet,
+  const { stakeFactory: stakeFactoryinstance } = space.instance.consume;
+  const stakeFactory = {
+    instance: stakeFactoryinstance,
+    publicFacet: E(zoe).getPublicFacet(stakeFactoryinstance),
+    creatorFacet: stakeFactoryCreatorFacet,
   };
 
   const counter = await space.installation.consume.binaryVoteCounter;
   const committee = makeVoterTool(
     zoe,
     space.consume.economicCommitteeCreatorFacet,
-    // @ts-expect-error TODO: add runStakeGovernorCreatorFacet to vats/src/types.js
-    space.consume.runStakeGovernorCreatorFacet,
+    // @ts-expect-error TODO: add stakeFactoryGovernorCreatorFacet to vats/src/types.js
+    space.consume.stakeFactoryGovernorCreatorFacet,
     counter,
   );
 
   const {
     issuers: { [KW.Attestation]: attIssuer },
     brands: { [KW.Attestation]: attBrand },
-  } = await E(zoe).getTerms(await runStake.instance);
+  } = await E(zoe).getTerms(await stakeFactory.instance);
 
   /** @param {Payment} att */
   const returnAttestation = async att => {
-    const invitation = E(runStake.publicFacet).makeReturnAttInvitation();
+    const invitation = E(stakeFactory.publicFacet).makeReturnAttInvitation();
     const attestationAmount = await E(attIssuer).getAmountOf(att);
     const proposal = harden({ give: { [KW.Attestation]: attestationAmount } });
     const payments = harden({ [KW.Attestation]: att });
@@ -554,7 +560,7 @@ const makeWorld = async t => {
   const founder = chain.provisionAccount('founder', 'addr1a');
   const bob = chain.provisionAccount('Bob', 'addr1b');
 
-  const walletMaker = makeWalletMaker(runStake.creatorFacet);
+  const walletMaker = makeWalletMaker(stakeFactory.creatorFacet);
 
   // Bob introduces himself to the Agoric JS VM.
   const bobWallet = walletMaker(bob.getAddress());
@@ -625,7 +631,7 @@ const makeWorld = async t => {
         want: { [KW.Debt]: AmountMath.make(runBrand, n * micro.unit) },
       });
       const seat = E(zoe).offer(
-        E(runStake.publicFacet).makeLoanInvitation(),
+        E(stakeFactory.publicFacet).makeLoanInvitation(),
         proposal,
         harden({ [KW.Attestation]: attPmt }),
       );
@@ -1009,9 +1015,11 @@ test('payoff more than you owe', async t => {
 test('storage keys', async t => {
   const {
     space: { consume, instance },
-  } = await bootstrapRunStake(t);
+  } = await bootstrapStakeFactory(t);
   const { zoe } = consume;
-  const publicFacet = await E(zoe).getPublicFacet(instance.consume.runStake);
+  const publicFacet = await E(zoe).getPublicFacet(
+    instance.consume.stakeFactory,
+  );
 
   t.is(
     await subscriptionKey(E(publicFacet).getSubscription()),

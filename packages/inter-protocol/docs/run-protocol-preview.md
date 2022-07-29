@@ -3,7 +3,7 @@
 We propose to launch a preview of the Inter Protocol on Devnet,
 comprising the following contracts:
 
-  - runStake - borrow RUN against staked BLD
+  - stakeFactory - borrow Minted against staked BLD
   - AMM - Automated Market Maker
   - VaultFactory - collateralized RUN debt positions
     - liquidateMinimum

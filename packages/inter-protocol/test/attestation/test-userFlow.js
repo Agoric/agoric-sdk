@@ -8,7 +8,7 @@ import { E } from '@endo/eventual-send';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 
 import { makeCopyBag } from '@agoric/store';
-import { makeAttestationFacets } from '../../src/runStake/attestation.js';
+import { makeAttestationFacets } from '../../src/stakeFactory/attestation.js';
 import { makeMockLienBridge } from './test-attestation.js';
 
 const makeDoReturnAttestation =
