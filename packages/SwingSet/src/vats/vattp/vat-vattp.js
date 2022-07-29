@@ -27,14 +27,22 @@ import { E } from '@endo/eventual-send';
 export function buildRootObject(vatPowers, _vatParams, baggage) {
   const { D } = vatPowers;
 
-  let mailboxDevice;
+  // Define all durable baggage keys and kind handles.
+  const serviceSingletonBaggageKey = 'vat-tp handler';
   const mailboxDeviceBaggageKey = 'mailboxDevice';
+  const mailboxHandle = provideKindHandle(baggage, 'mailboxHandle');
+  const mailboxMapBaggageKey = 'mailboxes';
+  const networkHostHandle = provideKindHandle(baggage, 'networkHostHandle');
+  const networkHostCounterBaggageKey = 'networkHostCounter';
+  const networkHostNamesBaggageKey = 'networkHostNames';
+
+  // Retain a durable reference to the mailbox device across upgrades.
+  let mailboxDevice;
   if (baggage.has(mailboxDeviceBaggageKey)) {
     mailboxDevice = baggage.get(mailboxDeviceBaggageKey);
   }
 
-  // QUESTION: Is there a convention around capitalization here?
-  const mailboxKindHandle = provideKindHandle(baggage, 'mailbox');
+  // Define the durable Mailbox kind.
   const initMailboxState = name => ({
     name,
     outboundHighestAdded: 0,
@@ -42,75 +50,75 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
     inboundHighestDelivered: 0,
     inboundReceiver: null,
   });
-  const makeMailbox = defineDurableKindMulti(
-    mailboxKindHandle,
-    initMailboxState,
-    {
-      transmitter: {
-        transmit: ({ state }, msg) => {
-          const num = state.outboundHighestAdded + 1;
-          D(mailboxDevice).add(state.name, num, msg);
-          state.outboundHighestAdded = num;
-        },
-      },
-      setReceiver: {
-        setReceiver: ({ state }, receiver) => {
-          assert(!state.inboundReceiver, X`setReceiver is call-once`);
-          assert(receiver, X`receiver must not be empty`);
-          state.inboundReceiver = receiver;
-        },
-      },
-      inbound: {
-        deliverMessages: ({ state }, newMessages) => {
-          // Minimize interactions with durable storage,
-          // assuming state won't change underneath us
-          // and remote methods won't synchronously throw.
-          const { name, inboundReceiver, inboundHighestDelivered } = state;
-          let newHighestDelivered = inboundHighestDelivered;
-          for (const [num, body] of newMessages) {
-            if (num > newHighestDelivered) {
-              // TODO: SO() / sendOnly()
-              E(inboundReceiver).receive(body);
-              newHighestDelivered = num;
-              D(mailboxDevice).ackInbound(name, num);
-            }
-          }
-          if (newHighestDelivered > inboundHighestDelivered) {
-            state.inboundHighestDelivered = newHighestDelivered;
-          }
-        },
-        deliverAck: ({ state }, ack) => {
-          // Minimize interactions with durable storage,
-          // assuming state won't change underneath us
-          // and remote methods won't synchronously throw.
-          const { name, outboundHighestAdded, outboundHighestRemoved } = state;
-          let newHighestRemoved = outboundHighestRemoved;
-          while (
-            newHighestRemoved < outboundHighestAdded &&
-            newHighestRemoved < ack
-          ) {
-            newHighestRemoved += 1;
-            D(mailboxDevice).remove(name, newHighestRemoved);
-          }
-          if (newHighestRemoved > outboundHighestRemoved) {
-            state.outboundHighestRemoved = newHighestRemoved;
-          }
-        },
+  const makeMailbox = defineDurableKindMulti(mailboxHandle, initMailboxState, {
+    // The transmitter facet is used to send outbound messages.
+    transmitter: {
+      transmit: ({ state }, msg) => {
+        const num = state.outboundHighestAdded + 1;
+        D(mailboxDevice).add(state.name, num, msg);
+        state.outboundHighestAdded = num;
       },
     },
-  );
+    // The setReceiver facet is used to initialize the receiver object.
+    setReceiver: {
+      setReceiver: ({ state }, receiver) => {
+        assert(!state.inboundReceiver, X`setReceiver is call-once`);
+        assert(receiver, X`receiver must not be empty`);
+        state.inboundReceiver = receiver;
+      },
+    },
+    // The inbound facet is used to deliver inbound messages to the receiver.
+    inbound: {
+      deliverMessages: ({ state }, newMessages) => {
+        // Minimize interactions with durable storage,
+        // assuming state won't change underneath us
+        // and remote methods won't synchronously throw.
+        const { name, inboundReceiver, inboundHighestDelivered } = state;
+        let newHighestDelivered = inboundHighestDelivered;
+        for (const [num, body] of newMessages) {
+          if (num > newHighestDelivered) {
+            // TODO: SO() / sendOnly()
+            E(inboundReceiver).receive(body);
+            newHighestDelivered = num;
+            D(mailboxDevice).ackInbound(name, num);
+          }
+        }
+        if (newHighestDelivered > inboundHighestDelivered) {
+          state.inboundHighestDelivered = newHighestDelivered;
+        }
+      },
+      deliverAck: ({ state }, ack) => {
+        // Minimize interactions with durable storage,
+        // assuming state won't change underneath us
+        // and remote methods won't synchronously throw.
+        const { name, outboundHighestAdded, outboundHighestRemoved } = state;
+        let newHighestRemoved = outboundHighestRemoved;
+        while (
+          newHighestRemoved < outboundHighestAdded &&
+          newHighestRemoved < ack
+        ) {
+          newHighestRemoved += 1;
+          D(mailboxDevice).remove(name, newHighestRemoved);
+        }
+        if (newHighestRemoved > outboundHighestRemoved) {
+          state.outboundHighestRemoved = newHighestRemoved;
+        }
+      },
+    },
+  });
 
+  // Retain a durable map of name -> mailbox for routing inbound messages.
   /** @type {MapStore<string, ReturnType<typeof makeMailbox>>} */
-  const mailboxes = provideDurableMapStore(baggage, 'mailboxes');
+  const mailboxes = provideDurableMapStore(baggage, mailboxMapBaggageKey);
   function provideMailbox(name) {
     if (!mailboxes.has(name)) {
-      // TODO: Is there a way to avoid this duplication of `name`
-      // as both a map key and internal mailbox state?
       mailboxes.init(name, makeMailbox(name));
     }
     return mailboxes.get(name);
   }
-  const mailboxMethods = {
+
+  // Define the mailbox functions of our external interface.
+  const serviceMailboxFunctions = {
     registerMailboxDevice(newMailboxDevice) {
       if (baggage.has(mailboxDeviceBaggageKey)) {
         baggage.set(mailboxDeviceBaggageKey, newMailboxDevice);
@@ -163,24 +171,27 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
   //   E(agoric.ibcport[1]).connect('/ibc-port/portADDR/ordered/vattp-1', handler);
   //   E(E(host).lookup(helloAddress)).hello();
 
-  const nextConnectionNumberBaggageKey = 'networkHostNextConnectionNumber';
-  let nextConnectionNumber = provide(
-    baggage,
-    nextConnectionNumberBaggageKey,
-    () => 7n,
-  );
+  // Define the durable NetworkHost kind
+  // and retain a durable monotonic connection number counter and set of names.
   // TODO: Should this collection be Weak (non-iterable)?
-  const networkHostNames = provideDurableSetStore(baggage, 'networkHostNames');
-  const networkHostKindHandle = provideKindHandle(baggage, 'networkHost');
+  const networkHostNames = provideDurableSetStore(
+    baggage,
+    networkHostNamesBaggageKey,
+  );
+  let networkHostCounter = provide(
+    baggage,
+    networkHostCounterBaggageKey,
+    () => 0n,
+  );
   const initNetworkHostState = (allegedName, comms, console) => {
     assert(
       !networkHostNames.has(allegedName),
       X`already have host for ${allegedName}`,
     );
     networkHostNames.add(allegedName);
-    const connectionName = `connection-${nextConnectionNumber}`;
-    nextConnectionNumber += 1n;
-    baggage.set(nextConnectionNumberBaggageKey, nextConnectionNumber);
+    networkHostCounter += 1n;
+    baggage.set(networkHostCounterBaggageKey, networkHostCounter);
+    const connectionName = `connection-${networkHostCounter}`;
     return {
       comms,
       console,
@@ -201,7 +212,7 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
     };
   };
   const makeNetworkHost = defineDurableKindMulti(
-    networkHostKindHandle,
+    networkHostHandle,
     initNetworkHostState,
     {
       host: {
@@ -234,7 +245,7 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
         },
       },
       handler: {
-        onOpen: async ({ state, facets: self }, connection, ..._args) => {
+        onOpen: async ({ state, facets }, connection, ..._args) => {
           const name = state.connectionName;
           assert(!state.connection, X`host ${name} already opened`);
           state.connection = connection;
@@ -243,10 +254,10 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
           // TODO: Can these calls be made in parallel?
           await E(comms).addRemote(
             name,
-            self.commsTransmitter,
-            self.commsSetReceiver,
+            facets.commsTransmitter,
+            facets.commsSetReceiver,
           );
-          await E(comms).addEgress(name, 0, self.localLocatorUnum);
+          await E(comms).addEgress(name, 0, facets.localLocatorUnum);
           state.remoteLocatorUnum = await E(comms).addIngress(name, 0);
         },
         onReceive: ({ state }, _connection, msg) => {
@@ -266,12 +277,12 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
     },
   );
 
-  const vatFacets = vivifySingleton(baggage, 'vat-tp handler', {
-    ...mailboxMethods,
+  // Expose a durable service singleton.
+  return vivifySingleton(baggage, serviceSingletonBaggageKey, {
+    ...serviceMailboxFunctions,
     makeNetworkHost: (allegedName, comms, cons = console) => {
       const { host, handler } = makeNetworkHost(allegedName, comms, cons);
-      return { host, handler };
+      return harden({ host, handler });
     },
   });
-  return vatFacets;
 }
