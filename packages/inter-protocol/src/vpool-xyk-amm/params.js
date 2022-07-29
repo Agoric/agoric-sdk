@@ -35,6 +35,8 @@ const makeAmmParams = (
   });
 };
 
+/** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').ParamTypesMapFromRecord<ReturnType<typeof makeAmmParams>>} AmmParams */
+
 const makeAmmTerms = (
   timer,
   poserInvitationAmount,

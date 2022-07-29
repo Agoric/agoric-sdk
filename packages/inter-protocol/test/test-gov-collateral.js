@@ -23,6 +23,8 @@ import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeNodeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
+
 import { setupBootstrap, setUpZoeForTest, mintRunPayment } from './supports.js';
 
 /** @template T @typedef {import('@endo/promise-kit').PromiseKit<T>} PromiseKit */
@@ -541,7 +543,7 @@ test('Committee can raise debt limit', async t => {
   const timer = /** @type {any } */ (s.space.consume.chainTimerService);
 
   const now = await E(timer).getCurrentTimestamp();
-  const deadline = now + 3n;
+  const deadline = TimeMath.addAbsRel(now, 3n);
   const actual = await E(pf).voteOnVaultParamChanges(
     params,
     {

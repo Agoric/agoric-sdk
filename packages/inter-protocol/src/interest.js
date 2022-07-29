@@ -8,6 +8,7 @@ import {
   quantize,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { assert, details as X } from '@agoric/assert';
+import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
 
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;
 const BASIS_POINTS = 10000;
@@ -35,7 +36,8 @@ export const makeInterestCalculator = (
   const denominatorValue = Number(annualRate.denominator.value);
 
   const rawAnnualRate = numeratorValue / denominatorValue;
-  const chargingFrequency = Number(chargingPeriod) / Number(SECONDS_PER_YEAR);
+  const chargingFrequency =
+    Number(TimeMath.relValue(chargingPeriod)) / Number(SECONDS_PER_YEAR);
   const periodicRate = (1 + rawAnnualRate) ** chargingFrequency - 1;
 
   const ratePerChargingPeriod = makeRatio(
@@ -54,9 +56,15 @@ export const makeInterestCalculator = (
     let newRecent = latestInterestUpdate;
     let growingInterest = debtStatus.interest;
     let growingDebt = newDebt;
-    while (newRecent + chargingPeriod <= currentTime) {
-      newRecent += chargingPeriod;
-      // The `ceil` implies that a vault with any debt will accrue at least one unit.
+    while (
+      TimeMath.compareAbs(
+        TimeMath.addAbsRel(newRecent, chargingPeriod),
+        currentTime,
+      ) <= 0
+    ) {
+      newRecent = TimeMath.addAbsRel(newRecent, chargingPeriod);
+      // The `ceil` implies that a vault with any debt will accrue at least one
+      // unit.
       const newInterest = natSafeMath.ceilDivide(
         growingDebt * ratePerChargingPeriod.numerator.value,
         ratePerChargingPeriod.denominator.value,
@@ -81,8 +89,14 @@ export const makeInterestCalculator = (
    */
   const calculateReportingPeriod = (debtStatus, currentTime) => {
     const { latestInterestUpdate } = debtStatus;
-    const overshoot = (currentTime - latestInterestUpdate) % recordingPeriod;
-    return calculate(debtStatus, currentTime - overshoot);
+    const overshoot = TimeMath.modRelRel(
+      TimeMath.subtractAbsAbs(currentTime, latestInterestUpdate),
+      recordingPeriod,
+    );
+    return calculate(
+      debtStatus,
+      TimeMath.subtractAbsRel(currentTime, overshoot),
+    );
   };
 
   return harden({
@@ -137,14 +151,14 @@ const validatedBrand = (mint, debt) => {
  *  seatAllocationKeyword: Keyword }} powers
  * @param {{
  *  interestRate: Ratio,
- *  chargingPeriod: bigint,
- *  recordingPeriod: bigint}} params
+ *  chargingPeriod: RelativeTime,
+ *  recordingPeriod: RelativeTime}} params
  * @param {{
- *  latestInterestUpdate: bigint,
+ *  latestInterestUpdate: Timestamp,
  *  compoundedInterest: Ratio,
  *  totalDebt: Amount<'nat'>}} prior
- * @param {bigint} accruedUntil
- * @returns {{compoundedInterest: Ratio, latestInterestUpdate: bigint, totalDebt: Amount<'nat'> }}
+ * @param {Timestamp} accruedUntil
+ * @returns {{compoundedInterest: Ratio, latestInterestUpdate: Timestamp, totalDebt: Amount<'nat'> }}
  */
 export const chargeInterest = (powers, params, prior, accruedUntil) => {
   const brand = validatedBrand(powers.mint, prior.totalDebt);

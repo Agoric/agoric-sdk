@@ -10,6 +10,8 @@ const { details: X } = assert;
 
 const DISPLAY_INFO = harden({ decimalPlaces: 6 });
 
+/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+
 /**
  * @param {ZCF} zcf
  * @param {(Brand) => boolean} isInSecondaries
@@ -26,10 +28,11 @@ export const makeAddIssuer = (
    * Add a new issuer. If we previously received a request for the same issuer,
    * we'll return the issuer or a promise for it.
    *
+   * @param {import('./pool.js').MethodContext} _context
    * @param {Issuer} secondaryIssuer
    * @param {string} keyword
    */
-  const addIssuer = async (secondaryIssuer, keyword) => {
+  const addIssuer = async (_context, secondaryIssuer, keyword) => {
     const [secondaryAssetKind, secondaryBrand] = await Promise.all([
       E(secondaryIssuer).getAssetKind(),
       E(secondaryIssuer).getBrand(),
@@ -90,51 +93,31 @@ export const makeAddIssuer = (
 };
 
 /**
- * @param {ZCF<import('./multipoolMarketMaker.js').AMMTerms>} zcf
- * @param {(brand: Brand, pool: PoolFacets) => void} initPool add new pool to store
- * @param {Brand} centralBrand
- * @param {ERef<Timer>} timer
- * @param {IssuerKit} quoteIssuerKit
- * @param {import('./multipoolMarketMaker.js').AMMParamGetters} params retrieve governed params
- * @param {ZCFSeat} protocolSeat seat that holds collected fees
- * @param {WeakStore<Brand,ZCFMint>} brandToLiquidityMint
+ * @param {Baggage} baggage
+ * @param {import('./multipoolMarketMaker.js').AmmPowers} ammPowers
  * @param {(secondaryBrand: Brand, reserveLiquidityTokenSeat: ZCFSeat, liquidityKeyword: Keyword) => Promise<void>} onOfferHandled
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
  */
 export const makeAddPoolInvitation = (
-  zcf,
-  initPool,
-  centralBrand,
-  timer,
-  quoteIssuerKit,
-  params,
-  protocolSeat,
-  brandToLiquidityMint,
+  baggage,
+  ammPowers,
   onOfferHandled,
   storageNode,
   marshaller,
 ) => {
-  const makePool = definePoolKind(
-    zcf,
-    centralBrand,
-    timer,
-    quoteIssuerKit,
-    params,
-    protocolSeat,
-    storageNode,
-    marshaller,
-  );
+  const { zcf } = ammPowers;
+  const makePool = definePoolKind(baggage, ammPowers, storageNode, marshaller);
 
   /** @type {(Brand) => Promise<{poolFacets: PoolFacets, liquidityZcfMint: ZCFMint}>} */
   const addPool = async secondaryBrand => {
-    const liquidityZcfMint = brandToLiquidityMint.get(secondaryBrand);
+    const liquidityZcfMint =
+      ammPowers.secondaryBrandToLiquidityMint.get(secondaryBrand);
 
-    const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
-    /** @type {PoolFacets} */
+    const { zcfSeat: poolSeat } = ammPowers.zcf.makeEmptySeatKit();
     const poolFacets = makePool(liquidityZcfMint, poolSeat, secondaryBrand);
 
-    initPool(secondaryBrand, poolFacets);
+    ammPowers.secondaryBrandToPool.init(secondaryBrand, poolFacets);
     return { liquidityZcfMint, poolFacets };
   };
 
@@ -150,11 +133,12 @@ export const makeAddPoolInvitation = (
     } = seat.getProposal();
     const secondaryBrand = secondaryAmount.brand;
 
-    const { brand: liquidityBrand, issuer } = brandToLiquidityMint
-      .get(secondaryBrand)
-      .getIssuerRecord();
+    const { brand: liquidityBrand, issuer } =
+      ammPowers.secondaryBrandToLiquidityMint
+        .get(secondaryBrand)
+        .getIssuerRecord();
 
-    const minPoolLiquidity = params.getMinInitialPoolLiquidity();
+    const minPoolLiquidity = ammPowers.params.getMinInitialPoolLiquidity();
 
     if (proposalWant.Liquidity) {
       const { Liquidity: wantLiquidityAmount } = proposalWant;

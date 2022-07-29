@@ -10,6 +10,7 @@ import {
 } from '@agoric/governance';
 import { makeStoredPublisherKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
+import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
 import { amountPattern, ratioPattern } from '../contractSupport.js';
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';
@@ -156,8 +157,14 @@ const makeGovernedTerms = (
   const loanTimingParams = makeParamManagerSync(
     makeStoredPublisherKit(storageNode, marshaller, 'timingParams'),
     {
-      [CHARGING_PERIOD_KEY]: ['nat', loanTiming.chargingPeriod],
-      [RECORDING_PERIOD_KEY]: ['nat', loanTiming.recordingPeriod],
+      [CHARGING_PERIOD_KEY]: [
+        'nat',
+        TimeMath.relValue(loanTiming.chargingPeriod),
+      ],
+      [RECORDING_PERIOD_KEY]: [
+        'nat',
+        TimeMath.relValue(loanTiming.recordingPeriod),
+      ],
     },
   ).getParams();
 

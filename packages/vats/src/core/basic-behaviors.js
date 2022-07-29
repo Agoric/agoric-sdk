@@ -16,6 +16,16 @@ const RESERVE_MODULE_ACCOUNT = 'vbank/reserve';
 const RESERVE_ADDRESS = 'agoric1ae0lmtzlgrcnla9xjkpaarq5d5dfez63h3nucl';
 
 /**
+ * non-exhaustive list of powerFlags
+ * REMOTE_WALLET is currently a default.
+ */
+const PowerFlags = /** @type {const} */ ({
+  SMART_WALLET: 'SMART_WALLET',
+  /** The ag-solo wallet is remote. */
+  REMOTE_WALLET: 'REMOTE_WALLET',
+});
+
+/**
  * In golang/cosmos/app/app.go, we define
  * cosmosInitAction with type AG_COSMOS_INIT,
  * with the following shape.
@@ -233,8 +243,15 @@ export const makeClientBanks = async ({
     { storageNode },
   );
   return E(client).assignBundle([
-    address => {
+    (address, powerFlags) => {
       const bank = E(bankManager).getBankForAddress(address);
+      if (!powerFlags.includes(PowerFlags.SMART_WALLET)) {
+        return { bank };
+      }
+      assert(
+        !powerFlags.includes(PowerFlags.REMOTE_WALLET),
+        `REMOTE and SMART_WALLET are exclusive`,
+      );
       /** @type {ERef<MyAddressNameAdmin>} */
       const myAddressNameAdmin = E(namesByAddressAdmin).lookupAdmin(address);
 
