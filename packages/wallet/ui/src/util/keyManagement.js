@@ -18,7 +18,24 @@ import { QueryClientImpl } from 'cosmjs-types/cosmos/authz/v1beta1/query.js';
 import { MsgWalletAction } from '../gen/swingset/msgs.js';
 
 // TODO: export these from '../../src/util/SuggestChain.js'
-import { stableCurrency, bech32Config } from './SuggestChain.js';
+// TODO: fix cycle?!?!?!
+// import { stableCurrency, bech32Config } from './SuggestChain.js';
+
+const stableCurrency = {
+  coinDenom: 'RUN',
+  coinMinimalDenom: 'urun',
+  coinDecimals: 6,
+  coinGeckoId: undefined,
+};
+
+const bech32Config = {
+  bech32PrefixAccAddr: 'agoric',
+  bech32PrefixAccPub: 'agoricpub',
+  bech32PrefixValAddr: 'agoricvaloper',
+  bech32PrefixValPub: 'agoricvaloperpub',
+  bech32PrefixConsAddr: 'agoricvalcons',
+  bech32PrefixConsPub: 'agoricvalconspub',
+};
 
 const { freeze } = Object;
 
