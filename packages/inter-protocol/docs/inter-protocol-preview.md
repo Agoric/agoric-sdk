@@ -5,7 +5,7 @@ comprising the following contracts:
 
   - stakeFactory - borrow Minted against staked BLD
   - AMM - Automated Market Maker
-  - VaultFactory - collateralized RUN debt positions
+  - VaultFactory - collateralized debt positions
     - liquidateMinimum
   - PSM - Parity Stability Module
     - mintHolder
