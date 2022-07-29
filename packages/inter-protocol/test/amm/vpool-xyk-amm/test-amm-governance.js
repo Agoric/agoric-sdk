@@ -96,8 +96,8 @@ test('amm change param via Governance', async t => {
   await timer.tick();
   await timer.tick();
 
-  const paramValue = await E(amm.ammPublicFacet).getNat(PROTOCOL_FEE_KEY);
-  t.deepEqual(paramValue, 20n, 'updated value');
+  const protocolFee = await E(amm.ammPublicFacet).getProtocolFee();
+  t.deepEqual(protocolFee, 20n, 'updated value');
 });
 
 test('price check after Governance param change', async t => {
