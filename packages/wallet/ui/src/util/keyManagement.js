@@ -19,8 +19,7 @@ import {
   MsgWalletSpendAction,
 } from '@agoric/cosmic-proto/swingset/msgs.js';
 
-// TODO: export these from '../../src/util/SuggestChain.js'
-import { stableCurrency, bech32Config } from './SuggestChain.js';
+import { stableCurrency, bech32Config } from './chainInfo.js';
 
 const { freeze } = Object;
 

@@ -3,30 +3,10 @@ import { SigningStargateClient } from '@cosmjs/stargate';
 import { Random } from '@cosmjs/crypto';
 import { makeLocalStorageSigner, makeOfferSigner } from './keyManagement.js';
 
+import { stakeCurrency, stableCurrency, bech32Config } from './chainInfo.js';
+
 export const AGORIC_COIN_TYPE = 564;
 export const COSMOS_COIN_TYPE = 118;
-
-export const stakeCurrency = {
-  coinDenom: 'BLD',
-  coinMinimalDenom: 'ubld',
-  coinDecimals: 6,
-  coinGeckoId: undefined,
-};
-export const stableCurrency = {
-  coinDenom: 'RUN',
-  coinMinimalDenom: 'urun',
-  coinDecimals: 6,
-  coinGeckoId: undefined,
-};
-
-export const bech32Config = {
-  bech32PrefixAccAddr: 'agoric',
-  bech32PrefixAccPub: 'agoricpub',
-  bech32PrefixValAddr: 'agoricvaloper',
-  bech32PrefixValPub: 'agoricvaloperpub',
-  bech32PrefixConsAddr: 'agoricvalcons',
-  bech32PrefixConsPub: 'agoricvalconspub',
-};
 
 const makeChainInfo = (networkConfig, rpcAddr, chainId, caption) => {
   console.log('@@makeChainInfo', { networkConfig });
