@@ -36,8 +36,8 @@ sequenceDiagram
     attestation  -->> dapp: account status in which 4000 BLD liened
     note right of dapp: Treasury now knows
 
-    note right of dapp: Want to get 450 RUN by liening 500 BLD
-    dapp ->> walletBridge: getReturnableAttestation(want: 450 RUN, give: 500 BLD-Att)
+    note right of dapp: Want to get 450 IST by liening 500 BLD
+    dapp ->> walletBridge: getReturnableAttestation(want: 450 IST, give: 500 BLD-Att)
     note right of walletBridge: Blocks on user approval in wallet
     walletBridge ->> attestation: makeAttestation(500 BLD)
     attestation ->> Cosmos_SDK: increaseLiened(+500 BLD)
@@ -45,9 +45,9 @@ sequenceDiagram
 
     attestation -->> walletBridge: Payment of 500 BLD-Att liened on ag123
 
-    walletBridge ->> stakeFactory: offer w/payment for {give: 500 BLD-Att, want: 450 RUN} 
+    walletBridge ->> stakeFactory: offer w/payment for {give: 500 BLD-Att, want: 450 IST} 
 
-    stakeFactory --> walletBridge: Payment for 450RUN and offerResult
+    stakeFactory --> walletBridge: Payment for 450 IST and offerResult
     walletBridge --> dapp: notifiers from offerResult
 ```
 
