@@ -10,8 +10,10 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
-
+import { vivifyKindMulti } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
+import { provide } from '@agoric/store';
+
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 
 const { details: X } = assert;
@@ -34,11 +36,13 @@ const { details: X } = assert;
  * @param {AmountKeywordRecord} txFrom
  * @param {AmountKeywordRecord} txTo
  */
-function stageTransfer(from, to, txFrom, txTo = txFrom) {
+const stageTransfer = (from, to, txFrom, txTo = txFrom) => {
   assert(AmountMath.isEqual(Object.values(txFrom)[0], Object.values(txTo)[0]));
   from.decrementBy(txFrom);
   to.incrementBy(txTo);
-}
+};
+
+/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 /**
  * @param {ZCF<GovernanceTerms<{
@@ -50,8 +54,9 @@ function stageTransfer(from, to, txFrom, txTo = txFrom) {
  *    anchorPerStable: Ratio,
  * }>} zcf
  * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation, storageNode?: StorageNode, marshaller?: Marshaller}} privateArgs
+ * @param {Baggage} baggage
  */
-export const start = async (zcf, privateArgs) => {
+export const start = async (zcf, privateArgs, baggage) => {
   const { anchorBrand, anchorPerStable } = zcf.getTerms();
 
   const stableMint = await zcf.registerFeeMint(
@@ -84,9 +89,13 @@ export const start = async (zcf, privateArgs) => {
       privateArgs.marshaller,
     );
 
-  const { zcfSeat: anchorPool } = zcf.makeEmptySeatKit();
-  const { zcfSeat: feePool } = zcf.makeEmptySeatKit();
-  const { zcfSeat: stage } = zcf.makeEmptySeatKit();
+  const provideEmptyZcfSeat = name => {
+    return provide(baggage, name, () => zcf.makeEmptySeatKit().zcfSeat);
+  };
+
+  const anchorPool = provideEmptyZcfSeat('anchorPoolSeat');
+  const feePool = provideEmptyZcfSeat('feePoolSeat');
+  const stage = provideEmptyZcfSeat('stageSeat');
 
   /**
    * @param {Amount<'nat'>} given
@@ -189,8 +198,9 @@ export const start = async (zcf, privateArgs) => {
     makeCollectFeesInvitation,
   });
 
-  return {
+  const makePSM = vivifyKindMulti(baggage, 'PSM', () => ({}), {
     creatorFacet: makeGovernorFacet(creatorFacet),
     publicFacet: augmentPublicFacet(publicFacet),
-  };
+  });
+  return makePSM();
 };
