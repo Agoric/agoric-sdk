@@ -22,6 +22,8 @@ declare global {
   };
 
   /**
+   * @deprecated use TimestampRecord
+   *
    * An absolute time returned by a TimerService. Note that different timer
    * services may have different interpretations of actual TimestampValue values.
    * Will generally be a count of some number of units starting at some starting
@@ -31,6 +33,8 @@ declare global {
   export type TimestampValue = bigint;
 
   /**
+   * @deprecated use RelativeTimeRecord
+   *
    * Difference between two TimestampValues.  Note that different timer services
    * may have different interpretations of TimestampValues values.
    */
@@ -47,6 +51,8 @@ declare global {
   };
 
   /**
+   * @deprecated use TimestampRecord
+   *
    * Transitional measure until all are converted to TimestampRecord.
    * See `TimeMath` comment for an explanation of the representation
    * during this transition. After the transition, `Timestamp` will simplify
@@ -56,6 +62,8 @@ declare global {
   export type Timestamp = TimestampRecord | TimestampValue;
 
   /**
+   * @deprecated use RelativeTimeRecord
+   *
    * Transitional measure until all are converted to RelativeTimeRecord
    * See `TimeMath` comment for an explanation of the representation
    * during this transition. After the transition, `RelativeTime` will simplify
