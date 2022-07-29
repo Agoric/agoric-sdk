@@ -10,8 +10,9 @@ import '@agoric/zoe/exported.js';
 
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { Far } from '@endo/far';
-import { makeSmartWallet } from './smartWallet.js';
+import * as BRIDGE_ID from '@agoric/vats/src/bridge-ids.js';
+import { E, Far } from '@endo/far';
+import { makeSmartWallet } from './smartWallet';
 
 /**
  * @typedef {{
@@ -19,6 +20,14 @@ import { makeSmartWallet } from './smartWallet.js';
  *   board: Board,
  *   namesByAddress: NameHub,
  * }} SmartWalletContractTerms
+ *
+ * @typedef {{
+ * 	 type: string, // WALLET_ACTION
+ *   owner: string,
+ *   spendAction: string,
+ *   blockHeight: unknown, // int64
+ *   blockTime: unknown, // int64
+ * }} WalletAction
  */
 
 /**
@@ -26,6 +35,7 @@ import { makeSmartWallet } from './smartWallet.js';
  * @param {ZCF<SmartWalletContractTerms>} zcf
  * @param {{
  *   storageNode?: ERef<StorageNode>,
+ *   bridgeManager?: BridgeManager,
  * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
@@ -34,11 +44,31 @@ export const start = async (zcf, privateArgs) => {
   assert(namesByAddress, 'missing namesByAddress');
   assert(agoricNames, 'missing agoricNames');
   const zoe = zcf.getZoeService();
-  const { storageNode } = privateArgs;
+  const { storageNode, bridgeManager } = privateArgs;
 
   /** @type {MapStore<string, import('./smartWallet').SmartWallet>} */
   const walletsByAddress = makeScalarBigMapStore('walletsByAddress');
   const provider = makeAtomicProvider(walletsByAddress);
+
+  const handleWalletAction = Far('walletActionHandler', {
+    /**
+     *
+     * @param {string} srcID
+     * @param {WalletAction} obj
+     */
+    fromBridge: async (srcID, obj) => {
+      console.log('walletFactory.fromBridge:', srcID, obj);
+      assert(obj, 'missing wallet action');
+      assert.typeof(obj, 'object');
+      assert.typeof(obj.owner, 'string');
+      const wallet = walletsByAddress.get(obj.owner); // or throw
+      console.log('walletFactory:', { wallet });
+      return E(wallet).performAction(obj); // TODO: add performAction to lib-wallet.js
+    },
+  });
+
+  await (bridgeManager &&
+    E(bridgeManager).register(BRIDGE_ID.WALLET, handleWalletAction));
 
   const shared = {
     agoricNames,
