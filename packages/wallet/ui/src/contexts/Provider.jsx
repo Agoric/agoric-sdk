@@ -149,10 +149,13 @@ const Provider = ({ children }) => {
   const [keplrConnection, setKeplrConnection] = useState(null);
 
   const tryKeplrConnect = async () => {
-    const [cosmjs, address] = await suggestChain(connectionConfig.href);
+    const [cosmjs, address, signers] = await suggestChain(
+      connectionConfig.href,
+    );
     setKeplrConnection({
       cosmjs,
       address,
+      signers,
     });
   };
 
