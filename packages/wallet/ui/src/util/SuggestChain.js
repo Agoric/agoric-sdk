@@ -38,7 +38,7 @@ const makeChainInfo = (networkConfig, rpcAddr, chainId, caption) => {
     rpc = `https://${network}.rpc.agoric.net`;
     api = `https://${network}.api.agoric.net`;
   } else {
-    rpc = `http://${rpcAddr}`;
+    rpc = rpcAddr.match(/:\/\//) ? rpcAddr : `http://${rpcAddr}`;
     api = rpc.replace(/(:\d+)?$/, ':1317');
   }
   return {
