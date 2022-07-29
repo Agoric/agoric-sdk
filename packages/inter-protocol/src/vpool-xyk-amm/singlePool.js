@@ -14,10 +14,11 @@ const getPools = pool => ({
   Secondary: pool.getSecondaryAmount(),
 });
 
-export const singlePool = {
+export const makeSinglePool = ammPowers => ({
   allocateGainsAndLosses: (context, seat, prices) => {
     const { pool } = context.facets;
-    const { poolSeat, zcf, protocolSeat } = context.state;
+    const { poolSeat } = context.state;
+    const { zcf, protocolSeat } = ammPowers;
     seat.decrementBy(harden({ In: prices.swapperGives }));
     seat.incrementBy(harden({ Out: prices.swapperGets }));
     protocolSeat.incrementBy(harden({ Fee: prices.protocolFee }));
@@ -42,17 +43,14 @@ export const singlePool = {
    * @param {Amount} amountIn
    * @param {Amount} amountOut
    */
-  getPriceForInput: ({ state, facets }, amountIn, amountOut) => {
-    const { paramAccessor } = state;
+  getPriceForInput: ({ facets }, amountIn, amountOut) => {
+    const { params } = ammPowers;
     return pricesForStatedInput(
       amountIn,
       getPools(facets.pool),
       amountOut,
-      makeFeeRatio(
-        paramAccessor.getProtocolFee(),
-        getCentralBrand(facets.pool),
-      ),
-      makeFeeRatio(paramAccessor.getPoolFee(), amountOut.brand),
+      makeFeeRatio(params.getProtocolFee(), getCentralBrand(facets.pool)),
+      makeFeeRatio(params.getPoolFee(), amountOut.brand),
     );
   },
 
@@ -61,17 +59,15 @@ export const singlePool = {
    * @param {Amount} amountIn
    * @param {Amount} amountOut
    */
-  getPriceForOutput: ({ state, facets }, amountIn, amountOut) => {
-    const { paramAccessor } = state;
+  getPriceForOutput: ({ facets }, amountIn, amountOut) => {
+    const { params } = ammPowers;
     return pricesForStatedOutput(
       amountIn,
       getPools(facets.pool),
       amountOut,
-      makeFeeRatio(
-        paramAccessor.getProtocolFee(),
-        getCentralBrand(facets.pool),
-      ),
-      makeFeeRatio(paramAccessor.getPoolFee(), amountIn.brand),
+      makeFeeRatio(params.getProtocolFee(), getCentralBrand(facets.pool)),
+      makeFeeRatio(params.getPoolFee(), amountIn.brand),
     );
   },
-};
+});
+harden(makeSinglePool);
