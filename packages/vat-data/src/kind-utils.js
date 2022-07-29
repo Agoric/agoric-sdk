@@ -24,14 +24,26 @@ import {
 /** @typedef {import('./types.js').DurableKindHandle} DurableKindHandle */
 /** @typedef {import('./types.js').Porter} Porter */
 
+// TODO figure this out and then restore all `hardenx` calls back to `harden`
+// and delete `harden`.
+// If we annotate the `harden` with at-ts-expect-error, then a `yarn lint`
+// in packages/wallet/ui complains that the ts-expect-error directive is unused.
+// If we don't annotate it with anything, then a `yarn lint` in this package,
+// packages/vat-data, complains that it cannot find the name `hardem`.
+// If we annotate it only at-ts-ignore, then `yarn lint` here complains that
+// we should use at-expect-error instead. So we have to suppress the error
+// about using the wrong error suppressor.
+// eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+// @ts-ignore
+const hardenx = arg => harden(arg);
+
 const { entries, fromEntries } = Object;
 
 export const dropContext =
   fn =>
   (_, ...args) =>
     fn(...args);
-// @ts-expect-error TODO statically recognize harden
-harden(dropContext);
+hardenx(dropContext);
 
 /**
  * @param {Baggage} baggage
@@ -40,8 +52,7 @@ harden(dropContext);
  */
 export const provideKindHandle = (baggage, kindName) =>
   provide(baggage, `${kindName}_kindHandle`, () => makeKindHandle(kindName));
-// @ts-expect-error TODO statically recognize harden
-harden(provideKindHandle);
+hardenx(provideKindHandle);
 
 /**
  * By analogy with how `Array.prototype.map` will map the elements of
@@ -86,8 +97,7 @@ harden(provideKindHandle);
 export const objectMap = (original, mapFn) => {
   const ents = entries(original);
   const mapEnts = ents.map(([k, v]) => [k, mapFn(v, k)]);
-  // @ts-expect-error TODO statically recognize harden
-  return /** @type {Record<K, U>} */ (harden(fromEntries(mapEnts)));
+  return /** @type {Record<K, U>} */ (hardenx(fromEntries(mapEnts)));
 };
 
 /** @type {import('./types.js').VivifyKind} */
@@ -104,8 +114,7 @@ export const vivifyKind = (
     behavior,
     options,
   );
-// @ts-expect-error TODO statically recognize harden
-harden(vivifyKind);
+hardenx(vivifyKind);
 
 /** @type {import('./types.js').VivifyKindMulti} */
 export const vivifyKindMulti = (
@@ -121,8 +130,7 @@ export const vivifyKindMulti = (
     behavior,
     options,
   );
-// @ts-expect-error TODO statically recognize harden
-harden(vivifyKindMulti);
+hardenx(vivifyKindMulti);
 
 /**
  * @template T
@@ -147,10 +155,15 @@ export const vivifySingleton = (
     options,
   );
 
+  // Similar double suppression dance going on. In this package, a `yarn lint`
+  // doesn't need any suppression and is happy with the code as is.
+  // But a `yarn lint` in packages/wallet/ui considers it ill typed.
+  // TODO figure this out and remove the double suppression.
+  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+  // @ts-ignore
   return provide(baggage, `the_${kindName}`, () => makeSingleton());
 };
-// @ts-expect-error TODO statically recognize harden
-harden(vivifySingleton);
+hardenx(vivifySingleton);
 
 /**
  * @param {Baggage} rootBaggage
@@ -216,5 +229,4 @@ export const vivifyRootPorter = (
   );
   return makePorter(rootBaggage);
 };
-// @ts-expect-error TODO statically recognize harden
-harden(vivifyRootPorter);
+hardenx(vivifyRootPorter);
