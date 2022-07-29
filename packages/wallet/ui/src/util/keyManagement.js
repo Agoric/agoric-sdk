@@ -11,8 +11,8 @@ import {
   createAuthzAminoConverters,
 } from '@cosmjs/stargate';
 
-import { GenericAuthorization } from 'cosmjs-types/cosmos/authz/v1beta1/authz';
-import { QueryClientImpl } from 'cosmjs-types/cosmos/authz/v1beta1/query';
+import { GenericAuthorization } from 'cosmjs-types/cosmos/authz/v1beta1/authz.js';
+import { QueryClientImpl } from 'cosmjs-types/cosmos/authz/v1beta1/query.js';
 
 import {
   MsgWalletAction,
@@ -20,7 +20,7 @@ import {
 } from '@agoric/cosmic-proto/swingset/msgs.js';
 
 // TODO: export these from '../../src/util/SuggestChain.js'
-import { stableCurrency, bech32Config } from './chainInfo.js';
+import { stableCurrency, bech32Config } from './SuggestChain.js';
 
 const { freeze } = Object;
 
