@@ -8,9 +8,11 @@ import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js'
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
+import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
+
+import { setupReserveServices } from './setup.js';
 import { reserveInitialState, subscriptionTracker } from '../metrics.js';
 import { subscriptionKey } from '../supports.js';
-import { setupReserveServices } from './setup.js';
 
 const addLiquidPool = async (
   runPayment,
@@ -204,7 +206,7 @@ test('governance add Liquidity to the AMM', async t => {
     'addLiquidityToAmmPool',
     params,
     await space.installation.consume.binaryVoteCounter,
-    timer.getCurrentTimestamp() + 2n,
+    TimeMath.addAbsRel(timer.getCurrentTimestamp(), 2n),
   );
   const details = await detailsP;
 
@@ -292,7 +294,7 @@ test('request more collateral than available', async t => {
     'addLiquidityToAmmPool',
     params,
     await space.installation.consume.binaryVoteCounter,
-    timer.getCurrentTimestamp() + 2n,
+    TimeMath.addAbsRel(timer.getCurrentTimestamp(), 2n),
   );
   const details = await detailsP;
 
@@ -445,7 +447,7 @@ test('reserve burn IST', async t => {
     'burnFeesToReduceShortfall',
     params,
     await space.installation.consume.binaryVoteCounter,
-    timer.getCurrentTimestamp() + 2n,
+    TimeMath.addAbsRel(timer.getCurrentTimestamp(), 2n),
   );
   const details = await detailsP;
   await E(voterFacet).castBallotFor(details.questionHandle, [

@@ -71,13 +71,13 @@ const trace = makeTracer('VM');
  * @typedef {{
  *  compoundedInterest: Ratio,
  *  interestRate: Ratio,
- *  latestInterestUpdate: bigint,
+ *  latestInterestUpdate: Timestamp,
  *  liquidatorInstance?: Instance,
  * }} AssetState
  *
  * @typedef {{
- *  getChargingPeriod: () => bigint,
- *  getRecordingPeriod: () => bigint,
+ *  getChargingPeriod: () => RelativeTime,
+ *  getRecordingPeriod: () => RelativeTime,
  *  getDebtLimit: () => Amount<'nat'>,
  *  getInterestRate: () => Ratio,
  *  getLiquidationMargin: () => Ratio,
@@ -99,7 +99,7 @@ const trace = makeTracer('VM');
 /**
  * @typedef {{
  * compoundedInterest: Ratio,
- * latestInterestUpdate: bigint,
+ * latestInterestUpdate: Timestamp,
  * liquidator?: Liquidator
  * liquidatorInstance?: Instance
  * numLiquidationsCompleted: number,
@@ -142,7 +142,7 @@ const trace = makeTracer('VM');
  * liquidationQueueing: boolean,
  * outstandingQuote: Promise<MutableQuote>?,
  * marshaller: ERef<Marshaller>,
- * periodNotifier: ERef<Notifier<bigint>>,
+ * periodNotifier: ERef<Notifier<Timestamp>>,
  * priceAuthority: ERef<PriceAuthority>,
  * prioritizedVaults: ReturnType<typeof makePrioritizedVaults>,
  * metricsPublication: IterationObserver<MetricsNotification>,
@@ -281,7 +281,7 @@ const liquidationThreshold = (highestDebtRatio, liquidationMargin) =>
 const helperBehavior = {
   /**
    * @param {MethodContext} context
-   * @param {bigint} updateTime
+   * @param {Timestamp} updateTime
    * @param {ZCFSeat} poolIncrementSeat
    */
   chargeAllVaults: async ({ state, facets }, updateTime, poolIncrementSeat) => {

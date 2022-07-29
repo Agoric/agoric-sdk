@@ -19,6 +19,7 @@
     "demo/**/*.js", 
     "lib/**/*.js", 
     "src/**/*.js", 
+    "src/**/*.ts",
     "misc-tools/**/*.js", 
     "test/**/*.js", 
     "tools/**/*.js", 

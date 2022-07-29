@@ -2,6 +2,7 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
@@ -74,7 +75,7 @@ const start = zcf => {
     // XXX toggle flag before `await` to avoid race-condition of 2 consecutive bids
     isTimerStarted = true;
     const currentTs = await E(timeAuthority).getCurrentTimestamp();
-    closesAfter = currentTs + bidDuration;
+    closesAfter = TimeMath.addAbsRel(currentTs, bidDuration);
 
     E(timeAuthority)
       .setWakeup(

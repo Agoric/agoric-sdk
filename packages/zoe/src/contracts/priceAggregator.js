@@ -464,6 +464,7 @@ const start = async (
       const oracle = await E(zoe).getPublicFacet(oracleInstance);
       assert(records.has(record), 'Oracle record is already deleted');
 
+      /** @type {Timestamp} */
       let lastWakeTimestamp = 0n;
 
       /**

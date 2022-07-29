@@ -2,7 +2,7 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import vaultFactoryBundle from '@agoric/inter-protocol/bundles/bundle-vaultFactory.js';
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { makeIssuerKit } from '@agoric/ertp';
 
 export function buildRootObject() {
   let control;

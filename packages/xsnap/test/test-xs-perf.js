@@ -63,7 +63,7 @@ test('meter details', async t => {
     },
     'evaluate returns meter details',
   );
-  t.is(meterType, 'xs-meter-15');
+  t.is(meterType, 'xs-meter-16');
 });
 
 (globalThis.performance ? test : test.skip)('meter timestamps', async t => {
