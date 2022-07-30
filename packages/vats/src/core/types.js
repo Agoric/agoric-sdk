@@ -191,11 +191,12 @@
  * @typedef {PromiseSpaceOf<{
  *   agoricNames: NameHub,
  *   agoricNamesAdmin: NameAdmin,
+ *   aggregators: Map<unknown, { aggregator: PriceAuthority, deleter: import('@agoric/zoe/tools/priceAuthorityRegistry').Deleter }>,
  *   bankManager: Awaited<BankManager>,
  *   bldIssuerKit: RemoteIssuerKit,
  *   board: Board,
  *   bridgeManager: OptionalBridgeManager,
- *   chainStorage: ChainStorageNode | null,
+ *   chainStorage: import('../lib-chainStorage.js').ChainStorageNode | null,
  *   chainTimerService: TimerService,
  *   client: ClientManager,
  *   clientCreator: ClientCreator,
@@ -213,8 +214,6 @@
  *   provisioning: Awaited<ProvisioningVat>,
  *   zoe: ZoeService,
  * }>} ChainBootstrapSpace
- *
- * @typedef {ReturnType<import('../lib-chainStorage.js').makeChainStorageRoot>} ChainStorageNode
  *
  * IDEA/TODO: make types of demo stuff invisible in production behaviors
  * @typedef {{
