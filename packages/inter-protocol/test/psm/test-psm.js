@@ -327,7 +327,6 @@ test('storage keys', async t => {
   );
 
   t.is(
-    // @ts-expect-error problem with E() and GovernedPublicFacet<>
     await subscriptionKey(E(publicFacet).getSubscription()),
     'mockChainStorageRoot.psm.governance',
   );
