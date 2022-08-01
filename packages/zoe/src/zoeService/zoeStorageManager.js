@@ -4,7 +4,7 @@ import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import {
   makeScalarBigMapStore,
-  makeScalarBigWeakMapStore,
+  provideDurableWeakMapStore,
 } from '@agoric/vat-data';
 
 import { provideIssuerStorage } from '../issuerStorage.js';
@@ -101,7 +101,10 @@ export const makeZoeStorageManager = (
     getBundleIDFromInstallation,
   } = makeInstallationStorage(getBundleCapForID, zoeBaggage);
 
-  const proposalSchemas = makeScalarBigWeakMapStore('proposal schemas');
+  const proposalSchemas = provideDurableWeakMapStore(
+    zoeBaggage,
+    'proposal schemas',
+  );
 
   const getProposalSchemaForInvitation = invitationHandle => {
     if (proposalSchemas.has(invitationHandle)) {
