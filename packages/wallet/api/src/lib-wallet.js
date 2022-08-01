@@ -55,16 +55,16 @@ const cmp = (a, b) => {
 };
 
 /**
- * @typedef {object} MakeWalletParams
- * @property {ERef<ZoeService>} zoe
- * @property {ERef<Board>} board
- * @property {ERef<NameHub>} [agoricNames]
- * @property {ERef<NameHub>} [namesByAddress]
- * @property {ERef<MyAddressNameAdmin>} myAddressNameAdmin
- * @property {(state: any) => void} [pursesStateChangeHandler=noActionStateChangeHandler]
- * @property {(state: any) => void} [inboxStateChangeHandler=noActionStateChangeHandler]
- * @property {() => number} [dateNow]
- * @param {MakeWalletParams} param0
+ * @param {{
+ * agoricNames?: ERef<NameHub>
+ * board: ERef<Board>
+ * dateNow?: () => number,
+ * inboxStateChangeHandler?: (state: any) => void,
+ * myAddressNameAdmin: ERef<MyAddressNameAdmin>
+ * namesByAddress?: ERef<NameHub>
+ * pursesStateChangeHandler?: (state: any) => void,
+ * zoe: ERef<ZoeService>,
+ * }} opt
  */
 export function makeWalletRoot({
   zoe,

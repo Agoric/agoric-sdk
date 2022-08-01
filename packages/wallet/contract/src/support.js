@@ -8,6 +8,7 @@ import { E } from '@endo/far';
  * @param {{
  * agoricNames: ERef<NameHub>,
  * board: ERef<Board>,
+ * cacheStorageNode: ERef<StorageNode>,
  * myAddressNameAdmin: ERef<MyAddressNameAdmin>,
  * namesByAddress: ERef<NameHub>,
  * zoe: ERef<ZoeService>,
