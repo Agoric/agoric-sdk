@@ -67,6 +67,8 @@ export const start = async (zcf, privateArgs) => {
     },
   });
 
+  // NOTE: both `MsgWalletAction` and `MsgWalletSpendAction` arrive as BRIDGE_ID.WALLET
+  // by way of makeBlockManager() in cosmic-swingset/src/block-manager.js
   await (bridgeManager &&
     E(bridgeManager).register(BRIDGE_ID.WALLET, handleWalletAction));
 
