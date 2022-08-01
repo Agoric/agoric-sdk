@@ -4,7 +4,7 @@ import { E } from '@endo/far';
 
 /**
  *
- * @param {Promise<StoredSubscription<unknown>> | StoredSubscriber<unknown>} subscription
+ * @param {Promise<StoredFacet>} subscription
  */
 export const subscriptionKey = subscription => {
   return E(subscription)

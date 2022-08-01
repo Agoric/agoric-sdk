@@ -226,7 +226,7 @@ test('notifiers', async t => {
     );
 
     t.is(
-      await subscriptionKey(E(smartWallet).getSubscription()),
+      await subscriptionKey(E(smartWallet).getSubscriber()),
       `mockChainStorageRoot.wallet.${address}`,
     );
   }
