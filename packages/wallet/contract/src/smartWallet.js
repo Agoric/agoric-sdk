@@ -4,8 +4,8 @@ import {
   makeStoredSubscriber,
   observeIteration,
 } from '@agoric/notifier';
-import spawn from '@agoric/wallet-backend/src/wallet.js';
 import { E, Far } from '@endo/far';
+import { makeWallet } from './support.js';
 
 const { assign, entries, keys, fromEntries } = Object;
 
@@ -32,7 +32,7 @@ export const makeSmartWallet = async (
   assert(myAddressNameAdmin, 'missing myAddressNameAdmin');
   assert(storageNode, 'missing storageNode');
 
-  const walletVat = spawn({
+  const wallet = await makeWallet(bank, {
     agoricNames,
     namesByAddress,
     // ??? why do we make this instead of passing the address itself?
@@ -41,7 +41,6 @@ export const makeSmartWallet = async (
     board,
   });
 
-  const wallet = await E(walletVat).getWallet(bank);
   const admin = E(wallet).getAdminFacet();
 
   /** @type {Record<string, ERef<Notifier<unknown>>>} */
