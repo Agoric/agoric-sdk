@@ -5,6 +5,7 @@ import { matches, makeScalarMapStore } from '@agoric/store';
 
 import '@agoric/store/exported.js';
 
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { withGroundState, makeState } from './state.js';
 
 /**
@@ -104,6 +105,21 @@ const applyCacheTransaction = async (
 };
 
 /**
+ * @param {MapStore<string, import('./types').State>} stateStore
+ * @param {Marshaller} marshaller
+ * @returns {Promise<string>}
+ */
+const stringifyStateStore = async (stateStore, marshaller) => {
+  const obj = {};
+  for (const [key, value] of stateStore.entries()) {
+    obj[key] = E(marshaller).serialize(value);
+  }
+  return deeplyFulfilled(harden(obj)).then(fulfilledObj =>
+    JSON.stringify(fulfilledObj),
+  );
+};
+
+/**
  * Make a cache coordinator backed by a MapStore.  This coordinator doesn't
  * currently enforce any cache eviction, but that would be a useful feature.
  *
@@ -149,22 +165,80 @@ export const makeScalarStoreCoordinator = (
   return coord;
 };
 
-// TODO make this like the MapStore wrapper but handle async b/c
+/**
+ * Don't write any marshalled value that's older than what's already pushed
+ *
+ * @param {MapStore<string, import('./types').State>} stateStore
+ * @param {ERef<StorageNode>} storageNode
+ * @param {ERef<Marshaller>} marshaller
+ * @returns {<T>(storedValue: T) => Promise<T>}
+ */
+const makeLastWinsUpdater = (stateStore, marshaller, storageNode) => {
+  let lastPrepareTicket = 0n;
+  let lastCommitTicket = 0n;
+
+  return async storedValue => {
+    // NB: two phase write (serialize/setValue)
+    // Make sure we're not racing ahead if the marshaller is taking too long, by skipping
+    // setValue (commit) for any serialized (prepare) that's older than the latest commit.
+    lastPrepareTicket += 1n;
+    const marshallTicket = lastPrepareTicket;
+    const serializedStore = await stringifyStateStore(stateStore, marshaller);
+    if (marshallTicket < lastCommitTicket) {
+      // skip setValue() so we don't regress the store state
+      return storedValue;
+    }
+    await E(storageNode).setValue(serializedStore);
+    lastCommitTicket = marshallTicket;
+    return storedValue;
+  };
+};
+
 /**
  * Make a cache coordinator backed by a MapStore.  This coordinator doesn't
  * currently enforce any cache eviction, but that would be a useful feature.
  *
- * @param {MapStore<string, import('./types').State>} [stateStore]
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
  */
-/*
-export const makeChainStorageCoordinator = (
-  stateStore = makeScalarMapStore(),
-  storageNode,
-  marshaller,
-) => {};
-*/
+export const makeChainStorageCoordinator = (storageNode, marshaller) => {
+  const stateStore = makeScalarBigMapStore('stateKey');
+
+  const sanitize = deeplyFulfilled;
+  const serializePassable = makeKeyToString(sanitize);
+
+  const defaultStateStore = withGroundState(stateStore);
+
+  const updateStorageNode = makeLastWinsUpdater(
+    defaultStateStore,
+    marshaller,
+    storageNode,
+  );
+
+  /** @type {import('./types').Coordinator} */
+  const coord = Far('store cache coordinator', {
+    getRecentValue: async key => {
+      const keyStr = await serializePassable(key);
+      return defaultStateStore.get(keyStr).value;
+    },
+    setCacheValue: async (key, newValue, guardPattern) => {
+      const keyStr = await serializePassable(key);
+      const storedValue = await applyCacheTransaction(
+        keyStr,
+        () => newValue,
+        guardPattern,
+        sanitize,
+        defaultStateStore,
+      );
+      return updateStorageNode(storedValue);
+    },
+    updateCacheValue: async (key, updater, guardPattern) => {
+      const keyStr = await serializePassable(key);
+      const storedValue = await applyCacheTransaction(
+        keyStr,
+        oldValue => E(updater).update(oldValue),
+        guardPattern,
+        sanitize,
         defaultStateStore,
       );
       return updateStorageNode(storedValue);

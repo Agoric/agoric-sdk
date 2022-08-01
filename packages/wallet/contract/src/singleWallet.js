@@ -26,7 +26,7 @@ const { assign, entries, keys, fromEntries } = Object;
 /**
  * @param {ZCF<SmartWalletContractTerms>} zcf
  * @param {{
- *   storageNode?: ERef<StorageNode>,
+ *   storageNode: ERef<StorageNode>,
  *   marshaller?: ERef<Marshaller>,
  * }} privateArgs
  */
@@ -37,18 +37,23 @@ export const start = async (zcf, privateArgs) => {
   assert(myAddressNameAdmin, 'missing myAddressNameAdmin');
   assert(namesByAddress, 'missing namesByAddress');
   assert(agoricNames, 'missing agoricNames');
+
   const zoe = zcf.getZoeService();
+
+  const address = await E(myAddressNameAdmin).getMyAddress();
+  const { storageNode, marshaller } = privateArgs;
+  assert(storageNode, 'missing storageNode');
+
+  const cacheStorageNode = E(storageNode).getChildNode('cache');
 
   const wallet = await makeWallet(bank, {
     agoricNames,
+    cacheStorageNode,
     namesByAddress,
     myAddressNameAdmin,
     zoe,
     board,
   });
-
-  const address = await E(myAddressNameAdmin).getMyAddress();
-  const { storageNode, marshaller } = privateArgs;
 
   const myWalletStorageNode =
     storageNode && E(storageNode).getChildNode(address);

@@ -23,6 +23,7 @@ import './internal-types.js';
  * @typedef {{
  * agoricNames: ERef<NameHub>,
  * board: ERef<Board>,
+ * cacheStorageNode: ERef<StorageNode>,
  * localTimerPollInterval?: bigint,
  * localTimerService?: TimerService,
  * myAddressNameAdmin: ERef<MyAddressNameAdmin>,
@@ -102,6 +103,7 @@ export function buildRootObject(vatPowers) {
   async function startup({
     zoe,
     board,
+    cacheStorageNode,
     agoricNames,
     namesByAddress,
     myAddressNameAdmin,
@@ -127,6 +129,7 @@ export function buildRootObject(vatPowers) {
     const dateNow = await dateNowP;
     const w = makeWalletRoot({
       agoricNames,
+      cacheStorageNode,
       namesByAddress,
       myAddressNameAdmin,
       zoe,
