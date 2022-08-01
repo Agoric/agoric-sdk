@@ -132,33 +132,21 @@ export function makeWallet({
 
   const brandTable = makeIssuerTable();
 
-  const initBrandToBoardId = async brand => {
-    const { valToBoardId: brandToBoardId } = brandMapping;
-    if (brandToBoardId.has(brand)) {
-      return brandToBoardId.get(brand);
-    }
-
-    const brandBoardId = await E(board).getId(brand);
-    if (brandToBoardId.has(brand)) {
-      return brandToBoardId.get(brand);
-    }
-
-    brandMapping.addBoardId(brandBoardId, brand);
-    return brandBoardId;
-  };
-
   /** @type {WeakStore<Issuer, string>} */
   const issuerToBoardId = makeScalarWeakMap('issuer');
 
-  // Idempotently initialize the issuer's synchronous boardId mapping.
-  const initIssuerToBoardId = async issuer => {
+  // Idempotently initialize the issuer and brand's synchronous boardId mapping.
+  const initIssuerToBoardId = async (issuer, brand) => {
     if (issuerToBoardId.has(issuer)) {
       // We already have a mapping for this issuer.
       return issuerToBoardId.get(issuer);
     }
 
     // This is an interleaving point.
-    const issuerBoardId = await E(board).getId(issuer);
+    const [issuerBoardId, brandBoardId] = await Promise.all([
+      E(board).getId(issuer),
+      E(board).getId(brand),
+    ]);
     if (issuerToBoardId.has(issuer)) {
       // Somebody else won the race to .init.
       return issuerToBoardId.get(issuer);
@@ -166,6 +154,7 @@ export function makeWallet({
 
     // We won the race, so .init ourselves.
     issuerToBoardId.init(issuer, issuerBoardId);
+    brandMapping.addBoardId(brandBoardId, brand);
     return issuerBoardId;
   };
 
@@ -801,8 +790,7 @@ export function makeWallet({
       ? brandTable.getByIssuer(issuer)
       : brandTable.initIssuer(issuer, addMeta);
     const { brand } = await recP;
-    await initIssuerToBoardId(issuer);
-    await initBrandToBoardId(brand);
+    await initIssuerToBoardId(issuer, brand);
     const addBrandPetname = () => {
       let p;
       const already = brandMapping.valToPetname.has(brand);
@@ -823,8 +811,7 @@ export function makeWallet({
 
   const publishIssuer = async brand => {
     const { issuer } = brandTable.getByBrand(brand);
-    const issuerBoardId = await initIssuerToBoardId(issuer);
-    await initBrandToBoardId(brand);
+    const issuerBoardId = await initIssuerToBoardId(issuer, brand);
     updateAllIssuersState();
     return issuerBoardId;
   };
@@ -1619,8 +1606,7 @@ export function makeWallet({
     },
     add: async (petname, issuerP) => {
       const { brand, issuer } = await brandTable.initIssuer(issuerP, addMeta);
-      await initIssuerToBoardId(issuer);
-      await initBrandToBoardId(brand);
+      await initIssuerToBoardId(issuer, brand);
       brandMapping.suggestPetname(petname, brand);
       await updateAllIssuersState();
     },

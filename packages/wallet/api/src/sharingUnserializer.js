@@ -4,14 +4,23 @@ import { Far, makeMarshal } from '@endo/marshal';
 /**
  * Make a pair of unserializers that share low-privilege values.
  *
- * @param {string} [lowProperty]
+ * The "high" privilege unserializer can understand objects as slots, such as
+ * those from the wallet serializer. The "low" privilege unserializer can only
+ * understand strings as slots, such as those from the board serializer.
+ *
+ * This provides a way, for instance, to get identical brand references from
+ * both a public contract and a user's purses.
+ *
+ * @param {string} [lowProperty] - The key name to check on a high privilege
+ * slot object. If the string value at this key is equivalent to the value of
+ * another low privilege slot, the high privilege unserializer will return the
+ * same object for both slots.
  */
-export const makeSharingUnserializer = (lowProperty = 'boardId') => {
+export const makeSharingUnserializer = lowProperty => {
+  assert(lowProperty, 'lowProperty must be specified for sharing unserializer');
   const seen = {
-    // high privilege - e.g. wallet purses
-    // hi: new WeakMap(),  // ISSUE: WeakMap conflicts with string keys
+    // high: new WeakMap(),  // ISSUE: WeakMap conflicts with string keys
     high: new Map(),
-    // low privilege - e.g. stuff on the board
     low: new Map(),
   };
 

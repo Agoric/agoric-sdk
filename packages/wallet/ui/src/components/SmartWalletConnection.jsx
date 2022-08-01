@@ -76,7 +76,7 @@ const SmartWalletConnection = ({
         setConnectionState('error');
       };
 
-      const { high, low } = makeSharingUnserializer();
+      const { high, low } = makeSharingUnserializer('boardId');
       const leader = makeLeader(href);
       const follower = makeFollower(
         `:published.wallet.${publicAddress}`,

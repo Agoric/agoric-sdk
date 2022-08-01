@@ -337,7 +337,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
         return harden({
           kind,
           petname: valToPetname.get(val),
-          boardId,
+          ...(boardId ? { boardId } : {}),
         });
       }
     }

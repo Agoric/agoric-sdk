@@ -55,7 +55,7 @@ const makeWallet = board => {
 };
 
 test('preserve identity of brands across AMM and wallet', t => {
-  const { low: fromAMM, high: fromWallet } = makeSharingUnserializer();
+  const { low: fromAMM, high: fromWallet } = makeSharingUnserializer('boardId');
 
   const board = makeBoard(0, { prefix: 'b' });
   const amm = makeAMM(board);
@@ -84,7 +84,6 @@ test('preserve identity of brands across AMM and wallet', t => {
         petname: 'ATOM',
       },
       {
-        boardId: undefined,
         kind: 'purse',
         petname: 'ATOM',
       },
