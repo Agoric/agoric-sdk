@@ -1,13 +1,15 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
-import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
+import { AmountMath, makeDurableIssuerKit, AssetKind } from '@agoric/ertp';
 import { InvitationElementShape } from '../typeGuards.js';
 
 /**
+ * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ShutdownWithFailure | undefined} shutdownZoeVat
  */
-export const createInvitationKit = (shutdownZoeVat = undefined) => {
-  const invitationKit = makeIssuerKit(
+export const createInvitationKit = (baggage, shutdownZoeVat = undefined) => {
+  const invitationKit = makeDurableIssuerKit(
+    baggage,
     'Zoe Invitation',
     AssetKind.SET,
     undefined,
