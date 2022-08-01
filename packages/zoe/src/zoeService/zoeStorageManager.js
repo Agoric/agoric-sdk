@@ -58,7 +58,7 @@ export const makeZoeStorageManager = (
   // EscrowStorage holds the purses that Zoe uses for escrow. This
   // object should be closely held and tracked: all of the digital
   // assets that users escrow are contained within these purses.
-  const escrowStorage = makeEscrowStorage();
+  const escrowStorage = makeEscrowStorage(zoeBaggage);
 
   // Add a purse for escrowing user funds (not for fees). Create the
   // local, non-remote escrow purse for the fee mint immediately.

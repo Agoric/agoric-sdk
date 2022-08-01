@@ -5,6 +5,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 
 import { E } from '@endo/eventual-send';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeEscrowStorage } from '../../../src/zoeService/escrowStorage.js';
 import {
   assertAmountsEqual,
@@ -13,7 +14,7 @@ import {
 
 test('makeEscrowStorage', async t => {
   const { createPurse, makeLocalPurse, withdrawPayments, depositPayments } =
-    makeEscrowStorage();
+    makeEscrowStorage(makeScalarBigMapStore('zoe baggage', { durable: true }));
 
   const currencyKit = makeIssuerKit(
     'currency',
@@ -132,7 +133,9 @@ const setupPurses = async createPurse => {
 };
 
 test('payments without matching give keywords', async t => {
-  const { createPurse, depositPayments } = makeEscrowStorage();
+  const { createPurse, depositPayments } = makeEscrowStorage(
+    makeScalarBigMapStore('zoe baggage', { durable: true }),
+  );
 
   const { ticketKit, currencyKit } = await setupPurses(createPurse);
 
@@ -167,7 +170,9 @@ test('payments without matching give keywords', async t => {
 });
 
 test(`give keywords without matching payments`, async t => {
-  const { createPurse, depositPayments } = makeEscrowStorage();
+  const { createPurse, depositPayments } = makeEscrowStorage(
+    makeScalarBigMapStore('zoe baggage', { durable: true }),
+  );
 
   const { ticketKit, currencyKit } = await setupPurses(createPurse);
 
