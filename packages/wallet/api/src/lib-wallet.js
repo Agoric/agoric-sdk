@@ -54,7 +54,6 @@ const cmp = (a, b) => {
   return -1;
 };
 
-// TODO rename to makeWalletKit
 /**
  * @typedef {object} MakeWalletParams
  * @property {ERef<ZoeService>} zoe
@@ -67,7 +66,7 @@ const cmp = (a, b) => {
  * @property {() => number} [dateNow]
  * @param {MakeWalletParams} param0
  */
-export function makeWallet({
+export function makeWalletRoot({
   zoe,
   board,
   agoricNames,
@@ -1944,3 +1943,4 @@ export function makeWallet({
     importBankAssets,
   };
 }
+/** @typedef {ReturnType<typeof makeWalletRoot>} WalletRoot */

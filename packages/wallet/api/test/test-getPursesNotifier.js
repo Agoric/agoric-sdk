@@ -9,7 +9,7 @@ import { makeBoard } from '@agoric/vats/src/lib-board.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { Far } from '@endo/marshal';
-import { makeWallet } from '../src/lib-wallet.js';
+import { makeWalletRoot } from '../src/lib-wallet.js';
 
 import '../src/types.js';
 
@@ -30,7 +30,7 @@ const setup = async () => {
   const pursesStateChangeHandler = _data => {};
   const inboxStateChangeHandler = _data => {};
 
-  const { admin: wallet, initialized } = makeWallet({
+  const { admin: wallet, initialized } = makeWalletRoot({
     zoe,
     board,
     myAddressNameAdmin: makeFakeMyAddressNameAdmin(),

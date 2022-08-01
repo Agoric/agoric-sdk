@@ -91,6 +91,6 @@
  * would make them part of the WalletUser available as `home.wallet` in the
  * REPL.  Then, the Wallet UI could use that instead.
  *
- * @typedef {ReturnType<typeof import('./lib-wallet').makeWallet>['admin']}
+ * @typedef {import('./lib-wallet').WalletRoot['admin']}
  * WalletAdminFacet
  */

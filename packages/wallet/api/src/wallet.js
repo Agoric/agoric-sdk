@@ -12,7 +12,7 @@ import { E } from '@endo/eventual-send';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 import { Far } from '@endo/marshal';
 
-import { makeWallet } from './lib-wallet.js';
+import { makeWalletRoot } from './lib-wallet.js';
 import pubsub from './pubsub.js';
 import { bigintStringify } from './bigintStringify.js';
 import { makeTimerDeviceDateNow, makeTimerServiceDateNow } from './date-now.js';
@@ -23,7 +23,7 @@ export function buildRootObject(vatPowers) {
   // See if we have the device vat power.
   const { D } = vatPowers || {};
 
-  /** @type {ReturnType<makeWallet>} */
+  /** @type {import('./lib-wallet.js').WalletRoot} */
   let walletRoot;
   /** @type {WalletAdminFacet} */
   let walletAdmin;
@@ -108,7 +108,7 @@ export function buildRootObject(vatPowers) {
     }
 
     const dateNow = await dateNowP;
-    const w = makeWallet({
+    const w = makeWalletRoot({
       agoricNames,
       namesByAddress,
       myAddressNameAdmin,
@@ -353,7 +353,7 @@ export function buildRootObject(vatPowers) {
     return harden(wallet);
   }
 
-  function setHTTPObject(o, _ROLES) {
+  function setHTTPObject(o) {
     http = o;
   }
 
