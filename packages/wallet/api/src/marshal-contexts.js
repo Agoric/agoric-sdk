@@ -1,0 +1,169 @@
+// @ts-check
+import { makeScalarMap } from '@agoric/store';
+import { Far, makeMarshal } from '@endo/marshal';
+
+const { details: X, quote: q } = assert;
+
+/**
+ * Make context for exporting wallet data where brands etc. can be recognized by boardId.
+ *
+ * All purses, brands, etc. must be registered before serialization / unserialization.
+ * Neither the serializer nor the unserializer creates new presences.
+ */
+export const makeExportContext = () => {
+  const toVal = {
+    /** @type {MapStore<string, Purse>} */
+    purse: makeScalarMap(),
+    /** @type {MapStore<string, Brand>} */
+    brand: makeScalarMap(),
+    /** @type {MapStore<string, Issuer>} */
+    issuer: makeScalarMap(),
+    // TODO: 6 in total, right?
+    // offer
+    // contact
+    // dapp
+  };
+  const fromVal = {
+    /** @type {MapStore<Purse, string>} */
+    purse: makeScalarMap(),
+    /** @type {MapStore<Brand, string>} */
+    brand: makeScalarMap(),
+    /** @type {MapStore<Issuer, string>} */
+    issuer: makeScalarMap(),
+    // TODO: 6 in total, right?
+  };
+  /** @type {MapStore<unknown, string>} */
+  const sharedData = makeScalarMap();
+
+  /**
+   * @param {string} slot
+   * @param {string} _iface
+   */
+  const slotToVal = (slot, _iface) => {
+    const kind = Object.keys(toVal).find(k => slot.startsWith(k));
+    assert(kind, X`bad slot kind: ${slot}`);
+    const id = slot.slice(kind.length + 1);
+    const val = toVal[kind].get(id); // or throw
+    return val;
+  };
+
+  const valToSlot = val => {
+    if (sharedData.has(val)) {
+      return sharedData.get(val);
+    }
+    for (const kind of Object.keys(fromVal)) {
+      if (fromVal[kind].has(val)) {
+        const id = fromVal[kind].get(val);
+        return `${kind}:${id}`;
+      }
+    }
+    assert.fail(X`cannot serialize ${val}`);
+  };
+
+  return harden({
+    initPurseId: (id, purse) => {
+      toVal.purse.init(id, purse);
+      fromVal.purse.init(purse, id);
+    },
+    purseEntries: toVal.purse.entries,
+    initBrandId: (id, brand) => {
+      toVal.brand.init(id, brand);
+      fromVal.brand.init(brand, id);
+    },
+    brandEntries: toVal.purse.entries,
+    initIssuerId: (id, issuer) => {
+      toVal.issuer.init(id, issuer);
+      fromVal.issuer.init(issuer, id);
+    },
+    initBoardId: (id, val) => {
+      sharedData.init(val, id);
+    },
+    issuerEntries: toVal.purse.entries,
+    ...makeMarshal(valToSlot, slotToVal),
+  });
+};
+
+/**
+ * Make context for unserializing wallet or board data.
+ */
+export const makeImportContext = () => {
+  // constraint: none of these keys has another as a prefix.
+  // and none overlaps with board
+  const myData = {
+    /** @type {MapStore<string, Purse>} */
+    purse: makeScalarMap(),
+    /** @type {MapStore<string, Brand>} */
+    brand: makeScalarMap(),
+    /** @type {MapStore<string, Issuer>} */
+    issuer: makeScalarMap(),
+    // TODO: 6 in total, right?
+  };
+  /** @type {MapStore<string, unknown>} */
+  const sharedData = makeScalarMap();
+
+  const kindOf = slot => Object.keys(myData).find(k => slot.startsWith(k));
+  const makePresence = (slot, iface) => {
+    const severed = `SEVERED: ${iface.replace(/^Alleged: /, '')}`;
+    const thing = /** @type {any} */ (Far(severed, {}));
+    return thing;
+  };
+
+  const slotToVal = {
+    /**
+     * @param {string} slot
+     * @param {string} iface
+     */
+    fromBoard: (slot, iface) => {
+      if (sharedData.has(slot)) {
+        return sharedData.get(slot);
+      }
+      const kind = kindOf(slot);
+      if (kind) {
+        assert.fail(X`bad shared slot ${q(slot)}`);
+      }
+      // TODO: assert(slot.startswith('board'))?
+      const it = makePresence(slot, iface);
+
+      sharedData.init(slot, it);
+      return it;
+    },
+
+    /**
+     * @param {string} slot
+     * @param {string} iface
+     */
+    fromPart: (slot, iface) => {
+      const kind = kindOf(slot);
+      const key = kind ? slot.slice(kind.length + 1) : slot;
+      const table = kind ? myData[kind] : sharedData;
+      if (table.has(key)) {
+        return table.get(key);
+      }
+
+      const it = makePresence(slot, iface);
+      table.init(key, it);
+      return it;
+    },
+  };
+
+  const marshal = {
+    fromBoard: makeMarshal(undefined, slotToVal.fromBoard, {
+      marshalName: 'fromBoard',
+    }),
+    fromPart: makeMarshal(undefined, slotToVal.fromPart, {
+      marshalName: 'fromPart',
+    }),
+  };
+
+  return harden({
+    fromWallet: Far('wallet unserializer', {
+      unserialize: marshal.fromPart.unserialize,
+    }),
+    fromBoard: Far('unserializer from board', {
+      /**
+       * @throws on an attempt to refer to un-published wallet objects.
+       */
+      unserialize: marshal.fromBoard.unserialize,
+    }),
+  });
+};
