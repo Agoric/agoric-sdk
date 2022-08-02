@@ -11,8 +11,7 @@
   "packages": [
     "golang/cosmos",
     "packages/*",
-    "packages/wallet/api",
-    "packages/wallet/ui"
+    "packages/wallet/*"
   ],
   "version": "independent"
 }

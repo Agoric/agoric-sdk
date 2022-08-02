@@ -54,20 +54,19 @@ const cmp = (a, b) => {
   return -1;
 };
 
-// TODO rename to makeWalletKit
 /**
  * @typedef {object} MakeWalletParams
  * @property {ERef<ZoeService>} zoe
- * @property {Board} board
- * @property {NameHub} [agoricNames]
- * @property {NameHub} [namesByAddress]
- * @property {MyAddressNameAdmin} myAddressNameAdmin
+ * @property {ERef<Board>} board
+ * @property {ERef<NameHub>} [agoricNames]
+ * @property {ERef<NameHub>} [namesByAddress]
+ * @property {ERef<MyAddressNameAdmin>} myAddressNameAdmin
  * @property {(state: any) => void} [pursesStateChangeHandler=noActionStateChangeHandler]
  * @property {(state: any) => void} [inboxStateChangeHandler=noActionStateChangeHandler]
  * @property {() => number} [dateNow]
  * @param {MakeWalletParams} param0
  */
-export function makeWallet({
+export function makeWalletRoot({
   zoe,
   board,
   agoricNames,
@@ -917,6 +916,11 @@ export function makeWallet({
   };
 
   // This function is exposed to the walletAdmin.
+  /**
+   * @param {Petname} brandPetname
+   * @param {Petname} petnameForPurse
+   * @param {boolean} [defaultAutoDeposit]
+   */
   const makeEmptyPurse = (
     brandPetname,
     petnameForPurse,
@@ -929,6 +933,10 @@ export function makeWallet({
       undefined,
     );
 
+  /**
+   * @param {Petname} pursePetname
+   * @param {Payment} payment
+   */
   async function deposit(pursePetname, payment) {
     const purse = purseMapping.petnameToVal.get(pursePetname);
     return E(purse).deposit(payment);
@@ -938,10 +946,12 @@ export function makeWallet({
     return [...purseMapping.petnameToVal.entries()];
   }
 
+  /** @param {Petname} pursePetname */
   function getPurse(pursePetname) {
     return purseMapping.petnameToVal.get(pursePetname);
   }
 
+  /** @param {Petname} pursePetname */
   function getPurseIssuer(pursePetname) {
     const purse = purseMapping.petnameToVal.get(pursePetname);
     const brand = purseToBrand.get(purse);
@@ -949,6 +959,7 @@ export function makeWallet({
     return issuer;
   }
 
+  /** @param {{origin?: string?}} opt */
   function getOffers({ origin = null } = {}) {
     // return the offers sorted by id
     return [...idToOffer.entries()]
@@ -1047,8 +1058,9 @@ export function makeWallet({
     dappsUpdater.updateState([...dappOrigins.values()]);
   };
 
-  const sharedCacheStore = makeScalarBigMapStore(`shared cache`);
-  const sharedCacheCoordinator = makeScalarStoreCoordinator(sharedCacheStore);
+  const sharedCacheCoordinator = makeScalarStoreCoordinator(
+    makeScalarBigMapStore(`shared cache`),
+  );
 
   async function waitForDappApproval(
     suggestedPetname,
@@ -1063,8 +1075,9 @@ export function makeWallet({
       let reject;
       let approvalP;
 
-      const cacheStore = makeScalarBigMapStore(`origin ${origin} cache`);
-      const cacheCoordinator = makeScalarStoreCoordinator(cacheStore);
+      const cacheCoordinator = makeScalarStoreCoordinator(
+        makeScalarBigMapStore(`origin ${origin} cache`),
+      );
       dappRecord = addMeta({
         suggestedPetname,
         petname: suggestedPetname,
@@ -1914,6 +1927,7 @@ export function makeWallet({
   // We don't want to expose this mechanism to the user, in case they shoot
   // themselves in the foot with it by importing an asset/virtual purse they
   // don't really trust.
+  // The param is{import('@agoric/vats/src/vat-bank.js').Bank} but that here triggers https://github.com/Agoric/agoric-sdk/issues/4620
   const importBankAssets = async bank => {
     observeIteration(E(bank).getAssetSubscription(), {
       async updateState({ proposedName, issuerName, issuer, brand }) {
@@ -1944,3 +1958,4 @@ export function makeWallet({
     importBankAssets,
   };
 }
+/** @typedef {ReturnType<typeof makeWalletRoot>} WalletRoot */

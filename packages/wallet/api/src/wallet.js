@@ -12,18 +12,32 @@ import { E } from '@endo/eventual-send';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 import { Far } from '@endo/marshal';
 
-import { makeWallet } from './lib-wallet.js';
+import { makeWalletRoot } from './lib-wallet.js';
 import pubsub from './pubsub.js';
 import { bigintStringify } from './bigintStringify.js';
 import { makeTimerDeviceDateNow, makeTimerServiceDateNow } from './date-now.js';
 
 import './internal-types.js';
 
+/**
+ * @typedef {{
+ * agoricNames: ERef<NameHub>,
+ * board: ERef<Board>,
+ * localTimerPollInterval?: bigint,
+ * localTimerService?: TimerService,
+ * myAddressNameAdmin: ERef<MyAddressNameAdmin>,
+ * namesByAddress: ERef<NameHub>,
+ * timerDevice?: unknown,
+ * timerDeviceScale?: number,
+ * zoe: ERef<ZoeService>,
+ * }} StartupTerms
+ */
+
 export function buildRootObject(vatPowers) {
   // See if we have the device vat power.
   const { D } = vatPowers || {};
 
-  /** @type {ReturnType<makeWallet>} */
+  /** @type {import('./lib-wallet.js').WalletRoot} */
   let walletRoot;
   /** @type {WalletAdminFacet} */
   let walletAdmin;
@@ -82,6 +96,9 @@ export function buildRootObject(vatPowers) {
     },
   });
 
+  /**
+   * @param {StartupTerms} terms
+   */
   async function startup({
     zoe,
     board,
@@ -108,7 +125,7 @@ export function buildRootObject(vatPowers) {
     }
 
     const dateNow = await dateNowP;
-    const w = makeWallet({
+    const w = makeWalletRoot({
       agoricNames,
       namesByAddress,
       myAddressNameAdmin,
@@ -118,9 +135,9 @@ export function buildRootObject(vatPowers) {
       inboxStateChangeHandler: inboxPublish,
       dateNow,
     });
-    console.error('waiting for wallet to initialize');
+    console.debug('waiting for wallet to initialize');
     await w.initialized;
-    console.error('wallet initialized');
+    console.debug('wallet initialized');
     walletAdmin = w.admin;
     walletRoot = w;
   }
@@ -316,7 +333,7 @@ export function buildRootObject(vatPowers) {
      * WalletAdminFacet (which is not yet standardized, but necessary for the
      * operation of the Wallet UI, and useful for the REPL).
      *
-     * @type {WalletUser & { getAdminFacet: () => WalletAdminFacet }}
+     * @type {WalletUser & { getAdminFacet: () => WalletAdminFacet, getMarshaller: () => Marshaller }}
      */
     const wallet = Far('wallet', {
       addPayment: walletAdmin.addPayment,
@@ -353,7 +370,7 @@ export function buildRootObject(vatPowers) {
     return harden(wallet);
   }
 
-  function setHTTPObject(o, _ROLES) {
+  function setHTTPObject(o) {
     http = o;
   }
 
@@ -650,7 +667,13 @@ export function buildRootObject(vatPowers) {
   });
 }
 
-// Adapter for spawner.
+/**
+ * Adapter for spawner.
+ * See @agoric/spawner/src/vat-spawned.js
+ *
+ * @param {StartupTerms} terms
+ * @param {*} _inviteMaker
+ */
 export default function spawn(terms, _inviteMaker) {
   const walletVat = buildRootObject();
   return walletVat.startup(terms).then(_ => walletVat);

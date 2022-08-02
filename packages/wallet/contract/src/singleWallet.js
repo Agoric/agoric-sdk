@@ -7,7 +7,7 @@ import {
 } from '@agoric/notifier';
 import '@agoric/deploy-script-support/exported.js';
 import '@agoric/zoe/exported.js';
-import spawn from '@agoric/wallet-backend/src/wallet.js';
+import { makeWallet } from './support.js';
 
 import '@agoric/wallet-backend/src/types.js'; // TODO avoid ambient types
 
@@ -18,7 +18,7 @@ const { assign, entries, keys, fromEntries } = Object;
  *   agoricNames: NameHub,
  *   bank: import('@agoric/vats/src/vat-bank').Bank,
  *   board: Board,
- *   myAddressNameAdmin: MyAddressNameAdmin,
+ *   myAddressNameAdmin: ERef<MyAddressNameAdmin>,
  *   namesByAddress: NameHub,
  * }} SmartWalletContractTerms
  */
@@ -39,16 +39,14 @@ export const start = async (zcf, privateArgs) => {
   assert(agoricNames, 'missing agoricNames');
   const zoe = zcf.getZoeService();
 
-  const walletVat = spawn({
+  const wallet = await makeWallet(bank, {
     agoricNames,
     namesByAddress,
     myAddressNameAdmin,
     zoe,
     board,
-    localTimerService: undefined,
   });
 
-  const wallet = await E(walletVat).getWallet(bank);
   const address = await E(myAddressNameAdmin).getMyAddress();
   const { storageNode, marshaller } = privateArgs;
 

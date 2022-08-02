@@ -41,7 +41,7 @@ import { makeSmartWallet } from './smartWallet';
  *
  * @param {ZCF<SmartWalletContractTerms>} zcf
  * @param {{
- *   storageNode?: ERef<StorageNode>,
+ *   storageNode: ERef<StorageNode>,
  *   bridgeManager?: BridgeManager,
  * }} privateArgs
  */

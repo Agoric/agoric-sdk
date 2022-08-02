@@ -246,3 +246,15 @@ test('Text encode / decode edge cases with CESU-8', async t => {
     ],
   );
 });
+
+test('String.prototype.localeCompare', async t => {
+  const opts = options(io);
+  const vat = xsnap(opts);
+  await vat.evaluate(`
+  const encoder = new TextEncoder();
+  const send = it => issueCommand(encoder.encode(JSON.stringify(it)).buffer);
+  send('abc'.localeCompare('def') < 0)
+  `);
+  t.deepEqual(opts.messages, ['true']);
+  await vat.terminate();
+});
