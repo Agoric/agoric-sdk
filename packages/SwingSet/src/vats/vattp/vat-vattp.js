@@ -1,7 +1,14 @@
 import { assert, details as X } from '@agoric/assert';
+import { provide } from '@agoric/store';
+import {
+  defineDurableKindMulti,
+  makeScalarBigMapStore,
+  provideDurableMapStore,
+  provideDurableSetStore,
+  provideKindHandle,
+  vivifySingleton,
+} from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
-import { makePromiseKit } from '@endo/promise-kit';
-import { Far } from '@endo/marshal';
 
 // See ../../docs/delivery.md for a description of the architecture of the
 // comms system.
@@ -16,181 +23,271 @@ import { Far } from '@endo/marshal';
 //   const { transmitter, setReceiver } = await E(vats.vattp).addRemote(name);
 //   const receiver = await E(vats.comms).addRemote(name, transmitter);
 //   await E(setReceiver).setReceiver(receiver);
-//   const receiver = await E(vats.comms).addRemote(name, transmitter);
-//   await E(setReceiver).setReceiver(receiver);
 
-function makeCounter(render, initialValue = 7) {
-  let nextValue = initialValue;
-  function get() {
-    const n = nextValue;
-    nextValue += 1;
-    return render(n);
-  }
-  return harden(get);
-}
-
-export function buildRootObject(vatPowers) {
+export function buildRootObject(vatPowers, _vatParams, baggage) {
   const { D } = vatPowers;
-  let mailbox; // mailbox device
-  const remotes = new Map();
-  // { outbound: { highestRemoved, highestAdded },
-  //   inbound: { highestDelivered, receiver } }
 
-  function getRemote(name) {
-    if (!remotes.has(name)) {
-      remotes.set(name, {
-        outbound: { highestRemoved: 0, highestAdded: 0 },
-        inbound: { highestDelivered: 0, receiver: null },
-      });
+  // Define all durable baggage keys and kind handles.
+  const serviceSingletonBaggageKey = 'vat-tp handler';
+  const mailboxDeviceBaggageKey = 'mailboxDevice';
+  const mailboxHandle = provideKindHandle(baggage, 'mailboxHandle');
+  const mailboxMapBaggageKey = 'mailboxes';
+  const networkHostHandle = provideKindHandle(baggage, 'networkHostHandle');
+  const networkHostCounterBaggageKey = 'networkHostCounter';
+  const networkHostNamesBaggageKey = 'networkHostNames';
+
+  // Retain a durable reference to the mailbox device across upgrades.
+  let mailboxDevice;
+  if (baggage.has(mailboxDeviceBaggageKey)) {
+    mailboxDevice = baggage.get(mailboxDeviceBaggageKey);
+  }
+
+  // Define the durable Mailbox kind.
+  const initMailboxState = name => ({
+    name,
+    outboundHighestAdded: 0,
+    outboundHighestRemoved: 0,
+    inboundHighestDelivered: 0,
+    inboundReceiver: null,
+  });
+  const makeMailbox = defineDurableKindMulti(mailboxHandle, initMailboxState, {
+    // The transmitter facet is used to send outbound messages.
+    transmitter: {
+      transmit: ({ state }, msg) => {
+        const num = state.outboundHighestAdded + 1;
+        D(mailboxDevice).add(state.name, num, msg);
+        state.outboundHighestAdded = num;
+      },
+    },
+    // The setReceiver facet is used to initialize the receiver object.
+    setReceiver: {
+      setReceiver: ({ state }, receiver) => {
+        assert(!state.inboundReceiver, X`setReceiver is call-once`);
+        assert(receiver, X`receiver must not be empty`);
+        state.inboundReceiver = receiver;
+      },
+    },
+    // The inbound facet is used to deliver inbound messages to the receiver.
+    inbound: {
+      deliverMessages: ({ state }, newMessages) => {
+        // Minimize interactions with durable storage,
+        // assuming state won't change underneath us
+        // and remote methods won't synchronously throw.
+        const { name, inboundReceiver, inboundHighestDelivered } = state;
+        let newHighestDelivered = inboundHighestDelivered;
+        for (const [num, body] of newMessages) {
+          if (num > newHighestDelivered) {
+            // TODO: SO() / sendOnly()
+            E(inboundReceiver).receive(body);
+            newHighestDelivered = num;
+            D(mailboxDevice).ackInbound(name, num);
+          }
+        }
+        if (newHighestDelivered > inboundHighestDelivered) {
+          state.inboundHighestDelivered = newHighestDelivered;
+        }
+      },
+      deliverAck: ({ state }, ack) => {
+        // Minimize interactions with durable storage,
+        // assuming state won't change underneath us
+        // and remote methods won't synchronously throw.
+        const { name, outboundHighestAdded, outboundHighestRemoved } = state;
+        let newHighestRemoved = outboundHighestRemoved;
+        while (
+          newHighestRemoved < outboundHighestAdded &&
+          newHighestRemoved < ack
+        ) {
+          newHighestRemoved += 1;
+          D(mailboxDevice).remove(name, newHighestRemoved);
+        }
+        if (newHighestRemoved > outboundHighestRemoved) {
+          state.outboundHighestRemoved = newHighestRemoved;
+        }
+      },
+    },
+  });
+
+  // Retain a durable map of name -> mailbox for routing inbound messages.
+  /** @type {MapStore<string, ReturnType<typeof makeMailbox>>} */
+  const mailboxes = provideDurableMapStore(baggage, mailboxMapBaggageKey);
+  function provideMailbox(name) {
+    if (!mailboxes.has(name)) {
+      mailboxes.init(name, makeMailbox(name));
     }
-    return remotes.get(name);
+    return mailboxes.get(name);
   }
 
-  const receivers = new WeakMap(); // connection -> receiver
-  const connectionNames = new WeakMap(); // hostHandle -> name
-
-  const makeConnectionName = makeCounter(n => `connection-${n}`);
-
-  /*
-  // A:
-  E(agoric.ibcport[0]).addListener( { onAccept() => {
-    const { host, handler } = await E(agoric.vattp).makeNetworkHost('ag-chain-B', comms);
-    const helloAddress = await E(host).publish(hello);
-    // helloAddress = '/alleged-chain/${chainID}/egress/${clistIndex}'
-    return handler;
-   });
-
-   // B:
-   const { host, handler } = await E(agoric.vattp).makeNetworkHost('ag-chain-A', comms, console);
-   E(agoric.ibcport[1]).connect('/ibc-port/portADDR/ordered/vattp-1', handler);
-   E(E(host).lookup(helloAddress)).hello()
-  */
-
-  function makeNetworkHost(allegedName, comms, cons = console) {
-    const makeAddress = makeCounter(
-      n => `/alleged-name/${allegedName}/egress/${n}`,
-    );
-    const exportedObjects = new Map(); // address -> object
-    const locatorUnum = harden({
-      lookup(address) {
-        return exportedObjects.get(address);
-      },
-    });
-    const { promise: theirLocatorUnum, resolve: gotTheirLocatorUnum } =
-      makePromiseKit();
-    const name = makeConnectionName();
-    let openCalled = false;
-    assert(!connectionNames.has(name), X`already have host for ${name}`);
-    const host = Far('host', {
-      publish(obj) {
-        const address = makeAddress();
-        exportedObjects.set(address, obj);
-        return address;
-      },
-      lookup(address) {
-        return E(theirLocatorUnum).lookup(address);
-      },
-    });
-
-    const handler = Far('host handler', {
-      async onOpen(connection, ..._args) {
-        // make a new Remote for this new connection
-        assert(!openCalled, X`host ${name} already opened`);
-        openCalled = true;
-
-        // transmitter
-        const transmitter = harden({
-          transmit(msg) {
-            // 'msg' will be a string (vats/comms/outbound.js deliverToRemote)
-            E(connection).send(msg);
-          },
-        });
-        // the comms 'addRemote' API is kind of weird because it's written to
-        // deal with cycles, where vattp has a tx/rx pair that need to be
-        // wired to comms's tx/rx pair. Somebody has to go first, so there's
-        // a cycle. TODO: maybe change comms to be easier
-        const receiverReceiver = harden({
-          setReceiver(receiver) {
-            receivers.set(connection, receiver);
-          },
-        });
-        await E(comms).addRemote(name, transmitter, receiverReceiver);
-        await E(comms).addEgress(name, 0, locatorUnum);
-        gotTheirLocatorUnum(E(comms).addIngress(name, 0));
-      },
-      onReceive(connection, msg) {
-        // setReceiver ought to be called before there's any chance of
-        // onReceive being called
-        E(receivers.get(connection)).receive(msg);
-      },
-      onClose(connection, ..._args) {
-        receivers.delete(connection);
-        console.warn(`deleting connection is not fully supported in comms`);
-      },
-      infoMessage(...args) {
-        void E(cons).log('VatTP connection info:', ...args);
-      },
-    });
-
-    return harden({ host, handler });
-  }
-
-  const handler = Far('vat-tp handler', {
-    registerMailboxDevice(mailboxDevnode) {
-      mailbox = mailboxDevnode;
+  // Define the mailbox functions of our external interface.
+  const serviceMailboxFunctions = {
+    registerMailboxDevice: newMailboxDevice => {
+      if (baggage.has(mailboxDeviceBaggageKey)) {
+        baggage.set(mailboxDeviceBaggageKey, newMailboxDevice);
+      } else {
+        baggage.init(mailboxDeviceBaggageKey, newMailboxDevice);
+      }
+      mailboxDevice = newMailboxDevice;
     },
 
-    /*
-     * 'name' is a string, and must match the name you pass to
-     * deliverInboundMessages/deliverInboundAck
+    /**
+     * @param {string} name  Unique name identifying the remote for "deliverInbound" functions
      */
-    addRemote(name) {
-      assert(!remotes.has(name), X`already have remote ${name}`);
-      const r = getRemote(name);
-      const transmitter = Far('transmitter', {
-        transmit(msg) {
-          const o = r.outbound;
-          const num = o.highestAdded + 1;
-          // console.debug(`transmit to ${name}[${num}]: ${msg}`);
-          D(mailbox).add(name, num, msg);
-          o.highestAdded = num;
-        },
-      });
-      const setReceiver = Far('receiver setter', {
-        setReceiver(newReceiver) {
-          assert(!r.inbound.receiver, X`setReceiver is call-once`);
-          r.inbound.receiver = newReceiver;
-        },
-      });
+    addRemote: name => {
+      assert(!mailboxes.has(name), X`already have remote ${name}`);
+      const { transmitter, setReceiver } = provideMailbox(name);
       return harden({ transmitter, setReceiver });
     },
 
-    deliverInboundMessages(name, newMessages) {
-      const i = getRemote(name).inbound;
-      newMessages.forEach(m => {
-        const [num, body] = m;
-        if (num > i.highestDelivered) {
-          // TODO: SO() / sendOnly()
-          // console.debug(`receive from ${name}[${num}]: ${body}`);
-          E(i.receiver).receive(body);
-          i.highestDelivered = num;
-          D(mailbox).ackInbound(name, num);
-        }
-      });
+    deliverInboundMessages: (name, newMessages) => {
+      // TODO: Stop silently creating mailboxes.
+      // https://github.com/Agoric/agoric-sdk/issues/5824
+      const { inbound } = provideMailbox(name);
+      inbound.deliverMessages(newMessages);
     },
 
-    deliverInboundAck(name, ack) {
-      const o = getRemote(name).outbound;
-      let num = o.highestRemoved + 1;
-      while (num <= o.highestAdded && num <= ack) {
-        D(mailbox).remove(name, num);
-        o.highestRemoved = num;
-        num += 1;
-      }
+    deliverInboundAck: (name, ack) => {
+      // TODO: Stop silently creating mailboxes.
+      // https://github.com/Agoric/agoric-sdk/issues/5824
+      const { inbound } = provideMailbox(name);
+      inbound.deliverAck(ack);
     },
+  };
 
-    makeNetworkHost,
+  // Network comms pattern:
+  //
+  // A:
+  //
+  //   E(agoric.ibcport[0]).addListener({
+  //     onAccept: () => {
+  //       const { host, handler } = await E(agoric.vattp).makeNetworkHost('ag-chain-B', comms);
+  //       const helloAddress = await E(host).publish(hello);
+  //       // helloAddress = '/alleged-chain/${chainID}/egress/${clistIndex}'
+  //       return handler;
+  //     },
+  //   });
+  //
+  // B:
+  //
+  //   const { host, handler } = await E(agoric.vattp).makeNetworkHost('ag-chain-A', comms);
+  //   E(agoric.ibcport[1]).connect('/ibc-port/portADDR/ordered/vattp-1', handler);
+  //   E(E(host).lookup(helloAddress)).hello();
+
+  // Define the durable NetworkHost kind
+  // and retain a durable monotonic connection number counter and set of names.
+  // TODO: Should this collection be Weak (non-iterable)?
+  /** @type {SetStore<string>} */
+  const networkHostNames = provideDurableSetStore(
+    baggage,
+    networkHostNamesBaggageKey,
+  );
+  let networkHostCounter = provide(
+    baggage,
+    networkHostCounterBaggageKey,
+    () => 0n,
+  );
+  const initNetworkHostState = (allegedName, comms, console) => {
+    assert(
+      !networkHostNames.has(allegedName),
+      X`already have host for ${allegedName}`,
+    );
+    networkHostNames.add(allegedName);
+    networkHostCounter += 1n;
+    baggage.set(networkHostCounterBaggageKey, networkHostCounter);
+    const connectionName = `connection-${networkHostCounter}`;
+    return {
+      comms,
+      console,
+
+      allegedName,
+      connection: null,
+      connectionName,
+      exportedObjects: makeScalarBigMapStore(
+        `network host exported objects by address: ${connectionName} as ${allegedName}`,
+        { durable: true },
+      ),
+      nextAddressNumber: 1n,
+      // This assumes one connection per host.
+      // If that is not the case, receiver should instead be a
+      // durable makeScalarBigWeakMapStore keyed by connection.
+      receiver: null,
+      remoteLocatorUnum: null,
+    };
+  };
+  const makeNetworkHost = defineDurableKindMulti(
+    networkHostHandle,
+    initNetworkHostState,
+    {
+      host: {
+        publish: ({ state }, obj) => {
+          const address = `/alleged-name/${state.allegedName}/egress/${state.nextAddressNumber}`;
+          state.nextAddressNumber += 1n;
+          state.exportedObjects.init(address, obj);
+          return address;
+        },
+        lookup: ({ state }, address) => {
+          return E(state.remoteLocatorUnum).lookup(address);
+        },
+      },
+      commsSetReceiver: {
+        setReceiver: ({ state }, receiver) => {
+          assert(!state.receiver, X`setReceiver is call-once`);
+          assert(receiver, X`receiver must not be empty`);
+          state.receiver = receiver;
+        },
+      },
+      commsTransmitter: {
+        transmit: ({ state }, msg) => {
+          // 'msg' will be a string (vats/comms/outbound.js deliverToRemote)
+          E(state.connection).send(msg);
+        },
+      },
+      localLocatorUnum: {
+        lookup: ({ state }, address) => {
+          return state.exportedObjects.get(address);
+        },
+      },
+      handler: {
+        onOpen: async ({ state, facets }, connection, ..._args) => {
+          const name = state.connectionName;
+          assert(!state.connection, X`host ${name} already opened`);
+          state.connection = connection;
+
+          const comms = state.comms;
+          // TODO: Can these calls be made in parallel?
+          await E(comms).addRemote(
+            name,
+            facets.commsTransmitter,
+            facets.commsSetReceiver,
+          );
+          await E(comms).addEgress(name, 0, facets.localLocatorUnum);
+          state.remoteLocatorUnum = await E(comms).addIngress(name, 0);
+        },
+        onReceive: ({ state }, _connection, msg) => {
+          // setReceiver ought to be called before there's any chance of
+          // onReceive being called
+          E(state.receiver).receive(msg);
+        },
+        onClose: ({ state }, _connection, ..._args) => {
+          state.receiver = null;
+          // TODO: What would it take to fully support this?
+          console.warn(`deleting connection is not fully supported in comms`);
+        },
+        infoMessage: ({ state }, ...args) => {
+          void E(state.console).log('VatTP connection info:', ...args);
+        },
+      },
+    },
+  );
+
+  const serviceNetworkFunctions = {
+    makeNetworkHost: (allegedName, comms, cons = console) => {
+      const { host, handler } = makeNetworkHost(allegedName, comms, cons);
+      return harden({ host, handler });
+    },
+  };
+
+  // Expose a durable service singleton.
+  return vivifySingleton(baggage, serviceSingletonBaggageKey, {
+    ...serviceMailboxFunctions,
+    ...serviceNetworkFunctions,
   });
-
-  return handler;
 }
