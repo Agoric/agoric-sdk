@@ -25,7 +25,7 @@ import {
 
 const { details: X, quote: q } = assert;
 
-const trace = makeTracer('IV', false);
+const trace = makeTracer('IV');
 
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 
@@ -361,7 +361,7 @@ const helperBehavior = {
     }
     const { phase } = state;
     const uiState = facets.helper.getStateSnapshot(phase);
-    trace('updateUiState', state.idInManager, uiState);
+    trace(`updateUiState vault${state.idInManager}`, uiState);
 
     switch (phase) {
       case Phase.ACTIVE:

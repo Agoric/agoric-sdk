@@ -251,18 +251,19 @@ test('liquidate thousands', async t => {
   // Aeth collateral could support a loan of 268.
 
   const collateralN = 300n;
-  const priceBase = aeth.make(900n);
-  const overThreshold = async v => {
-    const debt = await E(v.vault()).getCurrentDebt();
-    const collateral = await E(v.vault()).getCollateralAmount();
+  const priceBase = aeth.make(1_000n);
+  // The price at which a vault will be underwater. Basically the liquidation threshold minus some.
+  const underwaterPrice = async dv => {
+    const debt = await E(dv.vault()).getCurrentDebt();
+    const collateral = await E(dv.vault()).getCollateralAmount();
     return ceilMultiplyBy(
       ceilMultiplyBy(debt, rates.liquidationMargin),
-      run.makeRatio(priceBase.value, collateral.value),
+      run.makeRatio(priceBase.value - 2n, collateral.value),
     );
   };
 
   const d = await makeManagerDriver(t, run.make(1500n), priceBase);
-  const maxVaults = 4n;
+  const maxVaults = 100n;
   const debt = run.make(400n);
   const vaultDriverPs = [];
   for (let i = 0n; i < maxVaults; i += 1n) {
@@ -270,16 +271,17 @@ test('liquidate thousands', async t => {
     vaultDriverPs.push(d.makeVaultDriver(collateral, debt));
   }
   const vaultDrivers = await Promise.all(vaultDriverPs);
-  for await (const dv of vaultDrivers) {
-    const threshold = await overThreshold(dv);
-    console.log('THRESHOLD', Number(threshold.value) / Number(priceBase.value));
-  }
 
-  await d.setPrice(await overThreshold(vaultDrivers[1]));
-  await eventLoopIteration();
-  await vaultDrivers[0].notified(Phase.ACTIVE);
-  await vaultDrivers[1].notified(Phase.LIQUIDATED);
-  // await Promise.all(vaultDrivers.map(dv => dv.notified(Phase.LIQUIDATED)));
+  const priceToLiquidate = async vd => {
+    await d.setPrice(await underwaterPrice(vd));
+    await eventLoopIteration();
+    await vd.notified(Phase.LIQUIDATED, undefined, AT_NEXT);
+  };
+
+  // Iterate serially to simulate price fall.
+  for await (const vd of vaultDrivers) {
+    await priceToLiquidate(vd);
+  }
 });
 
 // 1) `give` sells for more than `stopAfter`, and got some of the input back
