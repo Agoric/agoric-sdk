@@ -63,6 +63,7 @@ test('connectFaucet produces payments', async t => {
   const { zoe, feeMintAccess } = await setUpZoeForTest();
   produce.zoe.resolve(zoe);
   produce.feeMintAccess.resolve(feeMintAccess);
+  produce.bridgeManager.resolve(undefined);
 
   produce.loadVat.resolve(name => {
     switch (name) {
