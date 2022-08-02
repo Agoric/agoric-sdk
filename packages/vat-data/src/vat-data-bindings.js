@@ -10,6 +10,11 @@ import {
   provideLazy,
 } from '@agoric/store';
 
+// TODO import from proper place. See note in that module.
+import { makeEnvironmentCaptor } from './environment-options.js';
+
+/** @typedef {import('./types.js').Baggage} Baggage */
+
 export {
   M,
   makeScalarMapStore,
@@ -17,6 +22,12 @@ export {
   makeScalarSetStore,
   makeScalarWeakSetStore,
 };
+
+const { getEnvironmentOption } = makeEnvironmentCaptor(globalThis);
+const DETECT_PROVIDE_COLLISIONS =
+  getEnvironmentOption('DETECT_PROVIDE_COLLISIONS', 'false') === 'true';
+
+const { details: X, quote: q } = assert;
 
 /** @type {import('./types').VatData} */
 let VatDataGlobal;
@@ -90,6 +101,83 @@ export const partialAssign = (target, source) => {
 harden(partialAssign);
 
 /**
+ * @template {string} K
+ * @template V
+ * @typedef {Map<K, (key:K) => V>} ProvisionEntries
+ */
+
+/**
+ * @template {string} K
+ * @template V
+ * @type {WeakMap<Baggage, ProvisionEntries<K,V>>}
+ */
+// @ts-expect-error I only use it when DETECT_PROVIDE_COLLISIONS , so I
+// know it is not `undefined` in those cases.
+const provisionTracker = DETECT_PROVIDE_COLLISIONS ? new WeakMap() : undefined;
+
+/**
+ * HAZARD: `assertUniqueProvide` uses top-level mutable state, but only for
+ * diagnostic purposes.
+ * Aside from being able to provoke it to throw an error, it is not
+ * otherwise usable as a top-level communications channel. The throwing-or-not
+ * of the error is the only way in which this top level state is observable.
+ *
+ * TODO since this still does violate our security assumptions, we should
+ * consider making it development-time only, and turn it off in production.
+ * Or better, adapt it to stop using top-level state.
+ *
+ * The condition it checks for is that, within one incarnation, the
+ * `provide` is never called twice with the same `mapStore`
+ * and the same `key`. For a given `mapStore` and `key`, there should be at
+ * most one `provide` call but any number of `get` calls.
+ *
+ * When the `mapStore` is baggage, for purposes of upgrade, then we
+ * expect `provide` to be called with the same `baggage` and `key`
+ * (and some `makeValue`) in each incarnation of that vat.
+ * In the incarnation that first registers this `baggage`,`key` pair, the
+ * `provide` will actually call the `makeValue`. The one `provide` call
+ * for this pair in each succeeding incarnation will merely retrieve the value it
+ * inherited from the previous incarnation. But even for this case, it should
+ * only call `provide` for that pair once during that incarnation.
+ *
+ * @template {string} K
+ * @template V
+ * @param {Baggage} baggage
+ * @param {K} key
+ * @param {(key: K) => V} makeValue
+ */
+const assertUniqueProvide = (baggage, key, makeValue) => {
+  if (provisionTracker.has(baggage)) {
+    /** @type {ProvisionEntries<K,V>} */
+    // @ts-expect-error TS doesn't understand that .has guarantees .get
+    const submap = provisionTracker.get(baggage);
+    assert(submap !== undefined);
+    if (submap.has(key)) {
+      if (submap.get(key) === makeValue) {
+        // The error message also tells us if the colliding calls happened
+        // to use the same `makeValue` only as a clue about whether
+        // these are two separate evaluations at of the same call site or
+        // two distinct call sites. However, this clue is unreliable in
+        // both directions.
+        assert.fail(
+          X`provide collision on ${q(
+            key,
+          )} with same makeValue. Consider provideLazy()`,
+        );
+      } else {
+        assert.fail(X`provide collision on ${q(key)} with different makeValue`);
+      }
+    } else {
+      submap.set(key, makeValue);
+    }
+  } else {
+    const submap = new Map([[key, makeValue]]);
+    // @ts-expect-error This type error I don't understand
+    provisionTracker.set(baggage, submap);
+  }
+};
+
+/**
  * Unlike `provideLazy`, `provide` should be called at most once
  * within any vat incarnation with a given `baggage`,`key` pair.
  *
@@ -108,19 +196,20 @@ harden(partialAssign);
  * What is expected to be high cardinality are the instances of the kinds,
  * and the members of the non-bagggage collections.
  *
- * TODO https://github.com/Agoric/agoric-sdk/pull/5875 :
- * Implement development-time instrumentation to detect when
- * `provide` violates the above prescription, and is called more
- * than one in the same vat incarnation with the same
- * baggage,key pair.
- *
- * @template K,V
- * @param {import('./types.js').Baggage} baggage
+ * @template {string} K
+ * @template V
+ * @param {Baggage} baggage
  * @param {K} key
  * @param {(key: K) => V} makeValue
  * @returns {V}
  */
-export const provide = provideLazy;
+export const provide = (baggage, key, makeValue) => {
+  if (DETECT_PROVIDE_COLLISIONS) {
+    assertUniqueProvide(baggage, key, makeValue);
+  }
+  return provideLazy(baggage, key, makeValue);
+};
+harden(provide);
 
 export const provideDurableMapStore = (baggage, name) =>
   provide(baggage, name, () => makeScalarBigMapStore(name, { durable: true }));

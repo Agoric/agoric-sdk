@@ -1,6 +1,5 @@
 /// <reference types="ses"/>
 export * from './vat-data-bindings.js';
-export * from './kind-utils.js';
 export {
   defineVirtualFarClass,
   defineVirtualFarClassKit,
@@ -13,3 +12,9 @@ export {
 } from './far-class-utils.js';
 
 /** @template T @typedef {import('./types.js').DefineKindOptions<T>} DefineKindOptions */
+export {
+  ignoreContext,
+  provideKindHandle,
+  vivifyKind,
+  vivifyKindMulti,
+} from './kind-utils.js';
