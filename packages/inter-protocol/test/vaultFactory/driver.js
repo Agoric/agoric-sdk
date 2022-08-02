@@ -500,7 +500,14 @@ export const makeManagerDriver = async (
         t.like(payouts, expected);
       }
     },
-    setPrice: p => priceAuthority.setPrice(makeRatioFromAmounts(p, priceBase)),
+    setPrice: p => {
+      trace(
+        'setPrice',
+        Number(p.value) / Number(priceBase.value),
+        makeRatioFromAmounts(p, priceBase),
+      );
+      priceAuthority.setPrice(makeRatioFromAmounts(p, priceBase));
+    },
     setGovernedParam: async (name, newValue) => {
       const deadline = 3n;
       const { cast, outcome } = await E(t.context.committee).changeParam(

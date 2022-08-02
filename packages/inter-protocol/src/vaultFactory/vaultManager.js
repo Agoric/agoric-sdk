@@ -390,7 +390,7 @@ const helperBehavior = {
       state.collateralBrand,
     );
     assert(ephemera.factoryPowers && prioritizedVaults);
-    trace('reschedulePriceCheck', state.collateralBrand, ephemera);
+    trace('reschedulePriceCheck', state.collateralBrand);
     // INTERLOCK: the first time through, start the activity to wait for
     // and process liquidations over time.
     if (!ephemera.liquidationQueueing) {
@@ -460,7 +460,7 @@ const helperBehavior = {
 
         // The rest of this method will not happen until after a quote is received.
         // This may not happen until much later, when the market changes.
-        // eslint-disable-next-line no-await-in-loop
+        // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
         const quote = await E(ephemera.outstandingQuote).getPromise();
         ephemera.outstandingQuote = null;
         // When we receive a quote, we check whether the vault with the highest

@@ -187,14 +187,17 @@ test('liquidate many', async t => {
   // Aeth is 1.4 each. The loan is 270 RUN. The margin is 1.05, so at 636, 400
   // Aeth collateral could support a loan of 268.
 
+  const priceBase = aeth.make(900n);
   const overThreshold = async v => {
     const debt = await E(v.vault()).getCurrentDebt();
+    const collateral = await E(v.vault()).getCollateralAmount();
     return ceilMultiplyBy(
       ceilMultiplyBy(debt, rates.liquidationMargin),
-      run.makeRatio(300n),
+      run.makeRatio(priceBase.value, collateral.value),
     );
   };
-  const d = await makeManagerDriver(t, run.make(1500n), aeth.make(900n));
+
+  const d = await makeManagerDriver(t, run.make(1500n), priceBase);
   const collateral = aeth.make(300n);
   const dv0 = await d.makeVaultDriver(collateral, run.make(390n));
   const dv1 = await d.makeVaultDriver(collateral, run.make(380n));
@@ -239,6 +242,44 @@ test('liquidate many', async t => {
   await dv7.notified(Phase.LIQUIDATED);
   await dv8.notified(Phase.LIQUIDATED);
   await dv9.notified(Phase.LIQUIDATED);
+});
+
+test('liquidate thousands', async t => {
+  const { aeth, run, rates } = t.context;
+  // When the price falls to 636, the loan will get liquidated. 636 for 900
+  // Aeth is 1.4 each. The loan is 270 RUN. The margin is 1.05, so at 636, 400
+  // Aeth collateral could support a loan of 268.
+
+  const collateralN = 300n;
+  const priceBase = aeth.make(900n);
+  const overThreshold = async v => {
+    const debt = await E(v.vault()).getCurrentDebt();
+    const collateral = await E(v.vault()).getCollateralAmount();
+    return ceilMultiplyBy(
+      ceilMultiplyBy(debt, rates.liquidationMargin),
+      run.makeRatio(priceBase.value, collateral.value),
+    );
+  };
+
+  const d = await makeManagerDriver(t, run.make(1500n), priceBase);
+  const maxVaults = 4n;
+  const debt = run.make(400n);
+  const vaultDriverPs = [];
+  for (let i = 0n; i < maxVaults; i += 1n) {
+    const collateral = aeth.make(collateralN + i * 10n);
+    vaultDriverPs.push(d.makeVaultDriver(collateral, debt));
+  }
+  const vaultDrivers = await Promise.all(vaultDriverPs);
+  for await (const dv of vaultDrivers) {
+    const threshold = await overThreshold(dv);
+    console.log('THRESHOLD', Number(threshold.value) / Number(priceBase.value));
+  }
+
+  await d.setPrice(await overThreshold(vaultDrivers[1]));
+  await eventLoopIteration();
+  await vaultDrivers[0].notified(Phase.ACTIVE);
+  await vaultDrivers[1].notified(Phase.LIQUIDATED);
+  // await Promise.all(vaultDrivers.map(dv => dv.notified(Phase.LIQUIDATED)));
 });
 
 // 1) `give` sells for more than `stopAfter`, and got some of the input back

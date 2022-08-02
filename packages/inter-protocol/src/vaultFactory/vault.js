@@ -341,6 +341,9 @@ const helperBehavior = {
       // newPhase param is so that makeTransferInvitation can finish without setting the vault's phase
       // TODO refactor https://github.com/Agoric/agoric-sdk/issues/4415
       vaultState: newPhase,
+      // hack for debugging
+      ratio:
+        Number(debt.value) / Number(facets.self.getCollateralAmount().value),
     });
   },
 
