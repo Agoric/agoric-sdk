@@ -22,12 +22,19 @@ import { makeSmartWallet } from './smartWallet';
  * }} SmartWalletContractTerms
  *
  * @typedef {{
- * 	 type: string, // WALLET_ACTION
+ * 	 type: 'WALLET_ACTION',
+ *   owner: string,
+ *   action: string,
+ *   blockHeight: unknown, // int64
+ *   blockTime: unknown, // int64
+ * }} WalletAction
+ * @typedef {{
+ * 	 type: 'WALLET_SPEND_ACTION',
  *   owner: string,
  *   spendAction: string,
  *   blockHeight: unknown, // int64
  *   blockTime: unknown, // int64
- * }} WalletAction
+ * }} WalletSpendAction
  */
 
 /**
@@ -54,7 +61,7 @@ export const start = async (zcf, privateArgs) => {
     /**
      *
      * @param {string} srcID
-     * @param {WalletAction} obj
+     * @param {WalletAction|WalletSpendAction} obj
      */
     fromBridge: async (srcID, obj) => {
       console.log('walletFactory.fromBridge:', srcID, obj);
