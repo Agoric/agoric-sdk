@@ -40,6 +40,7 @@ import '@agoric/inter-protocol/exported.js';
 
 import './internal-types.js';
 import './types.js';
+import { makeExportContext } from './marshal-contexts.js';
 
 // does nothing
 const noActionStateChangeHandler = _newState => {};
@@ -112,9 +113,10 @@ export function makeWalletRoot({
     return { ...record, meta };
   };
 
+  const context = makeExportContext();
   // Create the petname maps so we can dehydrate information sent to
   // the frontend.
-  const { makeMapping, hydrate, dehydrate, edgeMapping } = makeDehydrator();
+  const { makeMapping, dehydrate, edgeMapping } = makeDehydrator();
   /** @type {Mapping<Purse>} */
   const purseMapping = makeMapping('purse');
   /** @type {Mapping<Brand>} */
@@ -134,18 +136,26 @@ export function makeWalletRoot({
   const issuerToBoardId = makeScalarWeakMap('issuer');
 
   // Idempotently initialize the issuer's synchronous boardId mapping.
-  const initIssuerToBoardId = async issuer => {
+  const initIssuerToBoardId = async (issuer, brand) => {
     if (issuerToBoardId.has(issuer)) {
       // We already have a mapping for this issuer.
       return issuerToBoardId.get(issuer);
     }
 
     // This is an interleaving point.
-    const issuerBoardId = await E(board).getId(issuer);
+    const [issuerBoardId, brandBoardId] = await Promise.all([
+      E(board).getId(issuer),
+      E(board).getId(brand),
+    ]);
     if (issuerToBoardId.has(issuer)) {
       // Somebody else won the race to .init.
       return issuerToBoardId.get(issuer);
     }
+
+    // The board id would already be registered if the issuer was added through
+    // suggestIssuer.
+    context.ensureBoardId(issuerBoardId, issuer);
+    context.initBoardId(brandBoardId, brand);
 
     // We won the race, so .init ourselves.
     issuerToBoardId.init(issuer, issuerBoardId);
@@ -784,7 +794,7 @@ export function makeWalletRoot({
       ? brandTable.getByIssuer(issuer)
       : brandTable.initIssuer(issuer, addMeta);
     const { brand } = await recP;
-    await initIssuerToBoardId(issuer);
+    await initIssuerToBoardId(issuer, brand);
     const addBrandPetname = () => {
       let p;
       const already = brandMapping.valToPetname.has(brand);
@@ -805,7 +815,7 @@ export function makeWalletRoot({
 
   const publishIssuer = async brand => {
     const { issuer } = brandTable.getByBrand(brand);
-    const issuerBoardId = await initIssuerToBoardId(issuer);
+    const issuerBoardId = await initIssuerToBoardId(issuer, brand);
     updateAllIssuersState();
     return issuerBoardId;
   };
@@ -887,9 +897,9 @@ export function makeWalletRoot({
 
     /** @type {Purse} */
     const purse = await (purseToImport || E(issuer).makeEmptyPurse());
-
     purseToBrand.init(purse, brand);
     petnameForPurse = purseMapping.suggestPetname(petnameForPurse, purse);
+    context.initPurseId(petnameForPurse, purse);
 
     if (defaultAutoDeposit && !brandToAutoDepositPurse.has(brand)) {
       // Try to initialize the autodeposit purse for this brand.
@@ -1482,7 +1492,10 @@ export function makeWalletRoot({
 
     return E(board)
       .getValue(boardId)
-      .then(value => acceptFn(petname, value));
+      .then(value => {
+        context.ensureBoardId(boardId, value);
+        return acceptFn(petname, value);
+      });
   }
 
   /**
@@ -1520,7 +1533,6 @@ export function makeWalletRoot({
     // TODO: add an approval step in the wallet UI in which
     // suggestion can be rejected and the suggested petname can be
     // changed
-
     return acceptPetname(
       addInstance,
       suggestedPetname,
@@ -1614,7 +1626,7 @@ export function makeWalletRoot({
     },
     add: async (petname, issuerP) => {
       const { brand, issuer } = await brandTable.initIssuer(issuerP, addMeta);
-      await initIssuerToBoardId(issuer);
+      await initIssuerToBoardId(issuer, brand);
       brandMapping.suggestPetname(petname, brand);
       await updateAllIssuersState();
     },
@@ -1770,7 +1782,10 @@ export function makeWalletRoot({
   const firstPathToLookup = createRootLookups();
 
   /** @type {ReturnType<typeof makeMarshal>} */
-  const marshaller = harden({ unserialize: hydrate, serialize: dehydrate });
+  const marshaller = harden({
+    unserialize: context.unserialize,
+    serialize: context.serialize,
+  });
 
   const wallet = Far('wallet', {
     lookup: (...path) => {
