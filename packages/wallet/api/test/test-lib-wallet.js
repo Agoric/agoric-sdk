@@ -327,7 +327,7 @@ test('lib-wallet issuer and purse methods', async (/** @type {LibWalletTestConte
       },
       {
         brand: purseLog[1].brand,
-        brandBoardId: 'board0566',
+        brandBoardId: 'board0425',
         brandPetname: 'moola',
         depositBoardId: 'board0371',
         displayInfo: {
