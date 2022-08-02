@@ -119,7 +119,7 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
 
   // Define the mailbox functions of our external interface.
   const serviceMailboxFunctions = {
-    registerMailboxDevice(newMailboxDevice) {
+    registerMailboxDevice: newMailboxDevice => {
       if (baggage.has(mailboxDeviceBaggageKey)) {
         baggage.set(mailboxDeviceBaggageKey, newMailboxDevice);
       } else {
@@ -131,20 +131,20 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
     /**
      * @param {string} name  Unique name identifying the remote for "deliverInbound" functions
      */
-    addRemote(name) {
+    addRemote: name => {
       assert(!mailboxes.has(name), X`already have remote ${name}`);
       const { transmitter, setReceiver } = provideMailbox(name);
       return harden({ transmitter, setReceiver });
     },
 
-    deliverInboundMessages(name, newMessages) {
+    deliverInboundMessages: (name, newMessages) => {
       // TODO: Stop silently creating mailboxes.
       // https://github.com/Agoric/agoric-sdk/issues/5824
       const { inbound } = provideMailbox(name);
       inbound.deliverMessages(newMessages);
     },
 
-    deliverInboundAck(name, ack) {
+    deliverInboundAck: (name, ack) => {
       // TODO: Stop silently creating mailboxes.
       // https://github.com/Agoric/agoric-sdk/issues/5824
       const { inbound } = provideMailbox(name);
@@ -278,12 +278,16 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
     },
   );
 
-  // Expose a durable service singleton.
-  return vivifySingleton(baggage, serviceSingletonBaggageKey, {
-    ...serviceMailboxFunctions,
+  const serviceNetworkFunctions = {
     makeNetworkHost: (allegedName, comms, cons = console) => {
       const { host, handler } = makeNetworkHost(allegedName, comms, cons);
       return harden({ host, handler });
     },
+  };
+
+  // Expose a durable service singleton.
+  return vivifySingleton(baggage, serviceSingletonBaggageKey, {
+    ...serviceMailboxFunctions,
+    ...serviceNetworkFunctions,
   });
 }
