@@ -48,7 +48,7 @@ Test the following transfer scenarios:
 - bank-purse-to-purse
 - bank-purse-to-bank-purse
 
-The initial BLD and RUN purses are bank purses, but newly-created purses will
+The initial BLD and IST purses are bank purses, but newly-created purses will
 not be bank purses by default.
 
 ## Governance

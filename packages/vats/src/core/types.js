@@ -141,12 +141,12 @@
  *     'centralSupply' | 'mintHolder' | 'singleWallet' | 'walletFactory' |
  *     'feeDistributor' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
- *     'amm' | 'VaultFactory' | 'liquidate' | 'runStake' |
+ *     'amm' | 'VaultFactory' | 'liquidate' | 'stakeFactory' |
  *     'Pegasus' | 'reserve' | 'psm' | 'interchainPool',
  *   instance: |
  *     'economicCommittee' | 'feeDistributor' |
  *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' |
- *     'runStake' | 'runStakeGovernor' |
+ *     'stakeFactory' | 'stakeFactoryGovernor' |
  *     'psm' | 'psmGovernor' | 'interchainPool' |
  *     'Treasury' | 'reserve' | 'reserveGovernor' | 'Pegasus',
  *   oracleBrand:

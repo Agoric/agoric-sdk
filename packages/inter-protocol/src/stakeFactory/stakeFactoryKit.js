@@ -34,7 +34,7 @@ const calculateFee = (feeCoeff, currentDebt, giveAmount, wantAmount) => {
  * @typedef {Readonly<{
  *   collateralBrand: Brand,
  *   debtBrand: Brand,
- *   manager: import('./runStakeManager.js').RunStakeManager,
+ *   manager: import('./stakeFactoryManager.js').StakeFactoryManager,
  *   subscriber: Subscriber<unknown>
  *   vaultSeat: ZCFSeat,
  *   zcf: ZCF,
@@ -60,7 +60,7 @@ const calculateFee = (feeCoeff, currentDebt, giveAmount, wantAmount) => {
  *
  * @param {ZCF} zcf
  * @param {ZCFSeat} startSeat
- * @param {import('./runStakeManager.js').RunStakeManager} manager
+ * @param {import('./stakeFactoryManager.js').StakeFactoryManager} manager
  * @returns {State}
  */
 const initState = (zcf, startSeat, manager) => {
@@ -418,14 +418,14 @@ const finish = ({ facets }) => {
 };
 
 /**
- * Make RUNstake kit, subject to runStake terms.
+ * Make RUNstake kit, subject to stakeFactory terms.
  *
  * @param {ZCF} zcf
  * @param {ZCFSeat} startSeat
- * @param {import('./runStakeManager.js').RunStakeManager} manager
+ * @param {import('./stakeFactoryManager.js').StakeFactoryManager} manager
  * @throws {Error} if startSeat proposal is not consistent with governance parameters in manager
  */
-export const makeRunStakeKit = defineKindMulti(
+export const makeStakeFactoryKit = defineKindMulti(
   'RUNStakeKit',
   initState,
   behavior,

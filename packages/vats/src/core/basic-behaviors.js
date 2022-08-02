@@ -173,7 +173,7 @@ harden(makeBoard);
 /**
  * Make the agoricNames, namesByAddress name hierarchies.
  *
- * agoricNames are well-known items such as the RUN issuer,
+ * agoricNames are well-known items such as the IST issuer,
  * available as E(home.agoricNames).lookup('issuer', 'IST')
  *
  * namesByAddress is a NameHub for each provisioned client,
@@ -298,7 +298,7 @@ export const installBootContracts = async ({
 };
 
 /**
- * Mint RUN genesis supply.
+ * Mint IST genesis supply.
  *
  * @param { BootstrapPowers & {
  *   vatParameters: { argv: { bootMsg?: typeof bootMsgEx }},
@@ -336,7 +336,7 @@ export const mintInitialSupply = async ({
 harden(mintInitialSupply);
 
 /**
- * Add RUN (with initialSupply payment), BLD (with mint) to BankManager.
+ * Add IST (with initialSupply payment), BLD (with mint) to BankManager.
  *
  * @param { BootstrapSpace & {
  *   consume: { loadVat: ERef<VatLoader<BankVat>> },

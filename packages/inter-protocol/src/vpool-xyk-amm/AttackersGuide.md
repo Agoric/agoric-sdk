@@ -27,8 +27,8 @@ long as people are dealing wiht Brands and Issuers, they shouldn't be confused b
 this. Does the Wallet UI provide enough clarity in the face of this?
 
 Zoe holds the collaterral for all the pools in common. We segragate it by Pool, so each
-pool's allocation includes some RUN (the central currency) and some of another
-collateral. The doublePool trades move RUN between pools, but Zoe's rights conservation
+pool's allocation includes some IST (the central currency) and some of another
+collateral. The doublePool trades move IST between pools, but Zoe's rights conservation
 enforcement ensure that none is ever gained or lost.
 
 ## Fees
@@ -62,7 +62,7 @@ Adding liquidity adds funds to both pools so, of course, it changes X and Y. But
 in the case of `AddLiquidityAtRate`), it should keep X and Y in the same proportion.
 
 I don't know whether anyone else has done an implementation of the multi-pool swap that
-works like ours. If neither X nor Y is RUN, then we trade X for RUN and RUN for
+works like ours. If neither X nor Y is IST, then we trade X for IST and IST for
 Y. Attributing fees in this case took some art. This is also addressed in
 `constantProduct/README.md`.
 
