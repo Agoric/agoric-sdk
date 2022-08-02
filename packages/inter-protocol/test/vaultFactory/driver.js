@@ -374,7 +374,6 @@ export const makeManagerDriver = async (
 
   /** @type {UserSeat} */
   let currentSeat;
-  let notification = {};
   let currentOfferResult;
   /**
    *
@@ -399,6 +398,8 @@ export const makeManagerDriver = async (
     const { vault, publicSubscribers } = await E(vaultSeat).getOfferResult();
     t.true(await E(vaultSeat).hasExited());
     const notifier = makeNotifierFromSubscriber(publicSubscribers.vault);
+    /** @type {UpdateRecord<VaultNotification>?} */
+    let notification = null;
     return {
       getVaultSubscriber: () => publicSubscribers.vault,
       vault: () => vault,
@@ -421,9 +422,13 @@ export const makeManagerDriver = async (
        */
       notified: async (phase, likeExpected, optSince) => {
         notification = await E(notifier).getUpdateSince(
-          optSince === AT_NEXT ? notification.updateCount : optSince,
+          optSince === AT_NEXT ? notification?.updateCount : optSince,
         );
-        t.is(notification.value.vaultState, phase);
+        t.is(
+          notification.value.vaultState,
+          phase,
+          `${notification.value.vaultState} vault should be ${phase}`,
+        );
         if (likeExpected) {
           t.like(notification.value, likeExpected);
         }
@@ -500,6 +505,7 @@ export const makeManagerDriver = async (
         t.like(payouts, expected);
       }
     },
+    /** @param {Amount<'nat'>} p over priceBase */
     setPrice: p => {
       trace(
         'setPrice',
