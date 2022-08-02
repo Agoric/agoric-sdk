@@ -2,35 +2,39 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { E, Far } from '@endo/far';
+import { Remotable } from '@endo/marshal';
 import { HandledPromise } from '@endo/eventual-send'; // TODO: convince tsc this isn't needed
+import { makeImportContext } from '../src/marshal-contexts.js';
 
 /**
+ * @param {string} iface
  * @param {{
  *   applyMethod: (target: unknown, method: string | symbol, args: unknown[]) => void,
  *   applyFunction: (target: unknown, args: unknown[]) => void,
  * }} handler
  */
-const makePresence = handler => {
+const makePresence = (iface, handler) => {
   let it;
   const hp = new HandledPromise((resolve, reject, resolveWithPresence) => {
     it = resolveWithPresence(handler);
   });
   assert(it);
   assert(hp);
-  return it;
+  return Remotable(iface, undefined, it);
 };
 
 /**
+ * @param {string} iface
  * @param {(parts: unknown[]) => void} log
  */
-const makeLoggingPresence = log => {
+const makeLoggingPresence = (iface, log) => {
   /** @type {any} */ // TODO: solve types puzzle
-  const it = makePresence({
+  const it = makePresence(iface, {
     applyMethod: (target, method, args) => {
-      log(['applyMethod', target, method, args]);
+      log(harden(['applyMethod', target, method, args]));
     },
     applyFunction: (target, args) => {
-      log(['applyFunction', target, args]);
+      log(harden(['applyFunction', target, args]));
     },
   });
   return it;
@@ -40,7 +44,7 @@ test('presences for actions log their work', async t => {
   const msgs = [];
   const enqueue = m => msgs.push(m);
   const purse = {
-    actions: makeLoggingPresence(enqueue),
+    actions: await makeLoggingPresence('Alleged: purse.actions', enqueue),
   };
   const myPayment = Far('payment', {});
   await E(purse.actions).deposit(myPayment);
@@ -49,22 +53,24 @@ test('presences for actions log their work', async t => {
     ['applyMethod', purse.actions, 'deposit', [myPayment]],
     ['applyFunction', purse.actions, [1, 'thing']],
   ]);
-});
 
-// marshalData1 = JSON.stringify({
-//     body: [
-//       'applyMethod',
-//       {"@qclass":"slot", index: 0},
-//       'deposit',
-//       [
-//         {
-//           amount: {“@qclass”:”bigint”, digits: “3000000”},
-//           brand: {"@qclass": "slot", index:1 },
-//         }
-//       ]
-//     ],
-//     slots: [[‘purse’, ["MyPurse"]], [‘brand’, ["IST"], {decimalPlaces:6}]],
-//   });
+  const ctx = makeImportContext();
+  ctx.savePurseActions(purse.actions);
+  ctx.savePaymentActions(myPayment);
+  const capData = ctx.fromWallet.serialize(harden([...msgs]));
+  t.deepEqual(capData, {
+    body: JSON.stringify([
+      [
+        'applyMethod',
+        { '@qclass': 'slot', iface: 'Alleged: purse.actions', index: 0 },
+        'deposit',
+        [{ '@qclass': 'slot', iface: 'Alleged: payment', index: 1 }],
+      ],
+      ['applyFunction', { '@qclass': 'slot', index: 0 }, [1, 'thing']],
+    ]),
+    slots: ['purse:1', 'payment:1'],
+  });
+});
 
 //   {
 //     type: "WalletReversibleAction",

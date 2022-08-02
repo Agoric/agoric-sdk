@@ -90,12 +90,18 @@ export const makeImportContext = () => {
   // constraint: none of these keys has another as a prefix.
   // and none overlaps with board
   const myData = {
-    /** @type {MapStore<string, Purse>} */
-    purse: makeScalarMap(),
-    /** @type {MapStore<string, Brand>} */
-    brand: makeScalarMap(),
-    /** @type {MapStore<string, Issuer>} */
-    issuer: makeScalarMap(),
+    purse: {
+      /** @type {MapStore<string, PurseActions>} */
+      bySlot: makeScalarMap(),
+      /** @type {MapStore<PurseActions, string>} */
+      byVal: makeScalarMap(),
+    },
+    payment: {
+      /** @type {MapStore<string, PaymentActions>} */
+      bySlot: makeScalarMap(),
+      /** @type {MapStore<PaymentActions, string>} */
+      byVal: makeScalarMap(),
+    },
     // TODO: 6 in total, right?
   };
   /** @type {MapStore<string, unknown>} */
@@ -135,7 +141,7 @@ export const makeImportContext = () => {
     fromPart: (slot, iface) => {
       const kind = kindOf(slot);
       const key = kind ? slot.slice(kind.length + 1) : slot;
-      const table = kind ? myData[kind] : sharedData;
+      const table = kind ? myData[kind].bySlot : sharedData;
       if (table.has(key)) {
         return table.get(key);
       }
@@ -146,24 +152,40 @@ export const makeImportContext = () => {
     },
   };
 
+  const valToSlot = {
+    fromWallet: val => {
+      for (const kind of Object.keys(myData)) {
+        if (myData[kind].byVal.has(val)) {
+          const id = myData[kind].byVal.get(val);
+          return `${kind}:${id}`;
+        }
+      }
+      throw Error(`valToSlot(${val})???@@@`);
+    },
+  };
+
   const marshal = {
     fromBoard: makeMarshal(undefined, slotToVal.fromBoard, {
       marshalName: 'fromBoard',
     }),
-    fromPart: makeMarshal(undefined, slotToVal.fromPart, {
+    fromPart: makeMarshal(valToSlot.fromWallet, slotToVal.fromPart, {
       marshalName: 'fromPart',
     }),
   };
 
+  const makeSaver = (kind, tables) => {
+    let nonce = 0;
+    return val => {
+      const slot = `${(nonce += 1)}`;
+      tables.bySlot.init(slot, val);
+      tables.byVal.init(val, slot);
+    };
+  };
+
   return harden({
-    fromWallet: Far('wallet unserializer', {
-      unserialize: marshal.fromPart.unserialize,
-    }),
-    fromBoard: Far('unserializer from board', {
-      /**
-       * @throws on an attempt to refer to un-published wallet objects.
-       */
-      unserialize: marshal.fromBoard.unserialize,
-    }),
+    savePurseActions: makeSaver('purse', myData.purse),
+    savePaymentActions: makeSaver('payment', myData.payment),
+    fromWallet: Far('wallet marshaller', { ...marshal.fromPart }),
+    fromBoard: Far('board marshaller', { ...marshal.fromBoard }),
   });
 };
