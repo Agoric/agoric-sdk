@@ -20,25 +20,10 @@ export const makeExportContext = () => {
   const toVal = {
     /** @type {MapStore<string, Purse>} */
     purse: makeScalarMap(),
-    /** @type {MapStore<string, Brand>} */
-    brand: makeScalarMap(),
-    /** @type {MapStore<string, Issuer>} */
-    issuer: makeScalarMap(),
-    // TODO: 6 in total, right?
-    // offer
-    // contact
-    // dapp
   };
   const fromVal = {
     /** @type {MapStore<Purse, string>} */
     purse: makeScalarMap(),
-    /** @type {MapStore<Brand, string>} */
-    brand: makeScalarMap(),
-    /** @type {MapStore<Issuer, string>} */
-    issuer: makeScalarMap(),
-    // offer
-    // contact
-    // dapp
   };
   /** @type {MapStore<unknown, string>} */
   const sharedData = makeScalarMap();
@@ -79,15 +64,6 @@ export const makeExportContext = () => {
       fromVal.purse.init(purse, id);
     },
     purseEntries: toVal.purse.entries,
-    initBrandId: (id, brand) => {
-      toVal.brand.init(id, brand);
-      fromVal.brand.init(brand, id);
-    },
-    brandEntries: toVal.purse.entries,
-    initIssuerId: (id, issuer) => {
-      toVal.issuer.init(id, issuer);
-      fromVal.issuer.init(issuer, id);
-    },
     // Public values.
     initBoardId: (id, val) => {
       sharedData.init(val, id);
@@ -96,7 +72,6 @@ export const makeExportContext = () => {
       if (sharedData.has(val)) return;
       sharedData.init(val, id);
     },
-    issuerEntries: toVal.purse.entries,
     ...makeMarshal(valToSlot, slotToVal),
   });
 };
@@ -110,13 +85,6 @@ export const makeImportContext = () => {
   const myData = {
     /** @type {MapStore<string, Purse>} */
     purse: makeScalarMap(),
-    /** @type {MapStore<string, Brand>} */
-    brand: makeScalarMap(),
-    /** @type {MapStore<string, Issuer>} */
-    issuer: makeScalarMap(),
-    // offer
-    // contact
-    // dapp
   };
   /** @type {MapStore<string, unknown>} */
   const sharedData = makeScalarMap();
@@ -136,7 +104,6 @@ export const makeImportContext = () => {
       if (kind) {
         assert.fail(X`bad shared slot ${q(slot)}`);
       }
-      // TODO: assert(slot.startswith('board'))?
       const it = makePresence(slot, iface);
 
       sharedData.init(slot, it);
