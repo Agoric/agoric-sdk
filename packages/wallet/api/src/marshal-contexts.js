@@ -4,6 +4,12 @@ import { Far, makeMarshal } from '@endo/marshal';
 
 const { details: X, quote: q } = assert;
 
+const makePresence = (_slot, iface) => {
+  const severed = `SEVERED: ${iface.replace(/^Alleged: /, '')}`;
+  const thing = /** @type {any} */ (Far(severed, {}));
+  return thing;
+};
+
 /**
  * Make context for exporting wallet data where brands etc. can be recognized by boardId.
  *
@@ -30,7 +36,9 @@ export const makeExportContext = () => {
     brand: makeScalarMap(),
     /** @type {MapStore<Issuer, string>} */
     issuer: makeScalarMap(),
-    // TODO: 6 in total, right?
+    // offer
+    // contact
+    // dapp
   };
   /** @type {MapStore<unknown, string>} */
   const sharedData = makeScalarMap();
@@ -47,6 +55,8 @@ export const makeExportContext = () => {
     return val;
   };
 
+  let nonce = 0;
+
   const valToSlot = val => {
     if (sharedData.has(val)) {
       return sharedData.get(val);
@@ -57,7 +67,10 @@ export const makeExportContext = () => {
         return `${kind}:${id}`;
       }
     }
-    assert.fail(X`cannot serialize ${val}`);
+    nonce += 1;
+    const slot = `unknown:${nonce}`;
+    sharedData.init(val, slot);
+    return slot;
   };
 
   return harden({
@@ -75,7 +88,12 @@ export const makeExportContext = () => {
       toVal.issuer.init(id, issuer);
       fromVal.issuer.init(issuer, id);
     },
+    // Public values.
     initBoardId: (id, val) => {
+      sharedData.init(val, id);
+    },
+    ensureBoardId: (id, val) => {
+      if (sharedData.has(val)) return;
       sharedData.init(val, id);
     },
     issuerEntries: toVal.purse.entries,
@@ -96,17 +114,14 @@ export const makeImportContext = () => {
     brand: makeScalarMap(),
     /** @type {MapStore<string, Issuer>} */
     issuer: makeScalarMap(),
-    // TODO: 6 in total, right?
+    // offer
+    // contact
+    // dapp
   };
   /** @type {MapStore<string, unknown>} */
   const sharedData = makeScalarMap();
 
   const kindOf = slot => Object.keys(myData).find(k => slot.startsWith(k));
-  const makePresence = (slot, iface) => {
-    const severed = `SEVERED: ${iface.replace(/^Alleged: /, '')}`;
-    const thing = /** @type {any} */ (Far(severed, {}));
-    return thing;
-  };
 
   const slotToVal = {
     /**
