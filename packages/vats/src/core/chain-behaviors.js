@@ -97,7 +97,7 @@ export const bridgeCoreEval = async allPowers => {
                   throw err;
                 }),
             ),
-          );
+          ).then(_ => {});
         }
         default:
           assert.fail(X`Unrecognized request ${obj.type}`);
@@ -150,7 +150,8 @@ export const bridgeProvisioner = async ({
             .pleaseProvision(nickname, address, powerFlags)
             .catch(e =>
               console.error(`Error provisioning ${nickname} ${address}:`, e),
-            );
+            )
+            .then(_ => {});
         }
         default:
           assert.fail(X`Unrecognized request ${obj.type}`);

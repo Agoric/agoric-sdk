@@ -63,6 +63,7 @@ test('connectFaucet produces payments', async t => {
   const { zoe, feeMintAccess } = await setUpZoeForTest();
   produce.zoe.resolve(zoe);
   produce.feeMintAccess.resolve(feeMintAccess);
+  produce.bridgeManager.resolve(undefined);
 
   produce.loadVat.resolve(name => {
     switch (name) {
@@ -114,7 +115,7 @@ test('connectFaucet produces payments', async t => {
       board: true,
       zoe: true,
     };
-    E(client).assignBundle([_a => stub]);
+    void E(client).assignBundle([_a => stub]);
   };
 
   const vatPowers = {
