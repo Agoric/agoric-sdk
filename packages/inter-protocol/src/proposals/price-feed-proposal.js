@@ -1,5 +1,9 @@
 import { E } from '@endo/far';
 import { makeIssuerKit } from '@agoric/ertp';
+import {
+  makeStorageNode,
+  sanitizePathSegment,
+} from '@agoric/vats/src/lib-chainStorage.js';
 
 import { reserveThenGetNames, reserveThenDeposit } from './utils.js';
 
@@ -48,11 +52,17 @@ export const ensureOracleBrands = async (
   ]);
 };
 
+/**
+ * @param {ChainBootstrapSpace} powers
+ * @param {{options: {priceFeedOptions: {AGORIC_INSTANCE_NAME: string, oracleAddresses: UNKNOWN, contractTerms: unknown, IN_BRAND_NAME: string, OUT_BRAND_NAME: string}}}} config
+ */
 export const createPriceFeed = async (
   {
     consume: {
       agoricNamesAdmin,
       aggregators,
+      board,
+      chainStorage,
       chainTimerService,
       client,
       namesByAddressAdmin,
@@ -74,12 +84,19 @@ export const createPriceFeed = async (
     },
   },
 ) => {
+  const STORAGE_PATH = 'priceFeed';
+
   // Default to an empty Map and home.priceAuthority.
   produceAggregators.resolve(new Map());
   E(client).assignBundle([_addr => ({ priceAuthority })]);
 
   const timer = await chainTimerService;
 
+  /**
+   * Values come from economy-template.json, which at this writing had IN:ATOM, OUT:USD
+   *
+   * @type {[[Brand, Brand], [Installation]]}
+   */
   const [[brandIn, brandOut], [priceAggregator]] = await Promise.all([
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
       IN_BRAND_NAME,
@@ -90,6 +107,7 @@ export const createPriceFeed = async (
     ]),
   ]);
 
+  /** @type {import('@agoric/zoe/src/contracts/priceAggregator.js').PriceAggregatorContract['terms']} */
   const terms = {
     ...contractTerms,
     description: AGORIC_INSTANCE_NAME,
@@ -98,11 +116,20 @@ export const createPriceFeed = async (
     timer,
   };
 
+  const storageNode = await makeStorageNode(chainStorage, STORAGE_PATH);
+  const marshaller = E(board).getReadonlyMarshaller();
+
   // Create the price feed.
   const aggregator = await E(zoe).startInstance(
     priceAggregator,
     undefined,
     terms,
+    {
+      storageNode: E(storageNode).getChildNode(
+        sanitizePathSegment(AGORIC_INSTANCE_NAME),
+      ),
+      marshaller,
+    },
   );
   E(aggregators).set(terms, { aggregator });
 
@@ -153,6 +180,8 @@ export const getManifestForPriceFeed = async (
       consume: {
         aggregators: t,
         agoricNamesAdmin: t,
+        board: t,
+        chainStorage: t,
         chainTimerService: t,
         client: t,
         namesByAddressAdmin: t,

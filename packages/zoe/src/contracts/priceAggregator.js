@@ -3,7 +3,11 @@
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeNotifierKit } from '@agoric/notifier';
+import {
+  makeNotifierKit,
+  makeStoredPublishKit,
+  observeNotifier,
+} from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
 import {
   calculateMedian,
@@ -18,6 +22,7 @@ import {
   floorMultiplyBy,
   ceilDivideBy,
   multiplyRatios,
+  ratiosSame,
 } from '../contractSupport/ratio.js';
 
 import '../../tools/types.js';
@@ -32,15 +37,21 @@ import '../../tools/types.js';
  * brandIn: Brand,
  * brandOut: Brand,
  * }>} zcf
- * @param {object} root0
- * @param {ERef<Mint>} [root0.quoteMint]
+ * @param {{
+ * marshaller: Marshaller,
+ * quoteMint?: ERef<Mint>,
+ * storageNode: StorageNode,
+ * }} privateArgs
  */
-const start = async (
-  zcf,
-  { quoteMint = makeIssuerKit('quote', AssetKind.SET).mint } = {},
-) => {
+const start = async (zcf, privateArgs) => {
   const { timer, POLL_INTERVAL, brandIn, brandOut } = zcf.getTerms();
+  assert(privateArgs, 'Missing privateArgs in priceAggregator start');
+  const { marshaller, storageNode } = privateArgs;
+  assert(marshaller, 'missing marshaller');
+  assert(storageNode, 'missing storageNode');
 
+  const quoteMint =
+    privateArgs.quoteMint || makeIssuerKit('quote', AssetKind.SET).mint;
   const quoteIssuerRecord = await zcf.saveIssuer(
     E(quoteMint).getIssuer(),
     'Quote',
@@ -63,9 +74,20 @@ const start = async (
     return harden({ quoteAmount, quotePayment });
   };
 
-  const { notifier, updater } = makeNotifierKit();
+  // To notify the price authority of a new median
+  const { notifier: medianNotifier, updater: medianUpdater } =
+    makeNotifierKit();
+
+  // For diagnostics
   const { notifier: roundCompleteNotifier, updater: roundCompleteUpdater } =
     makeNotifierKit();
+
+  // For publishing priceAuthority values to off-chain storage
+  const { publisher, subscriber } = makeStoredPublishKit(
+    storageNode,
+    marshaller,
+  );
+
   const zoe = zcf.getZoeService();
 
   /**
@@ -168,12 +190,27 @@ const start = async (
   const { priceAuthority, adminFacet: priceAuthorityAdmin } =
     makeOnewayPriceAuthorityKit({
       createQuote: makeCreateQuote(),
-      notifier,
+      notifier: medianNotifier,
       quoteIssuer: quoteKit.issuer,
       timer,
       actualBrandIn: brandIn,
       actualBrandOut: brandOut,
     });
+
+  // for each new quote from the priceAuthority, publish it to off-chain storage
+  // XXX https://github.com/Agoric/agoric-sdk/issues/5853
+  observeNotifier(
+    priceAuthority.makeQuoteNotifier(AmountMath.make(brandIn, 1n), brandOut),
+    {
+      updateState: quote => publisher.publish(quote),
+      fail: reason => {
+        throw Error(`priceAuthority observer failed: ${reason}`);
+      },
+      finish: done => {
+        throw Error(`priceAuthority observer died: ${done}`);
+      },
+    },
+  );
 
   /**
    * @param {Ratio} r
@@ -236,10 +273,15 @@ const start = async (
       return;
     }
 
+    if (lastPrice && ratiosSame(lastPrice, median)) {
+      // No change in the median so don't publish
+      return;
+    }
+
     // Publish a new authenticated quote.
     publishedTimestamp = timestamp;
     lastPrice = median;
-    updater.updateState(authenticatedQuote);
+    medianUpdater.updateState(authenticatedQuote);
   };
 
   /** @param {ERef<Brand>} brand */
@@ -280,7 +322,6 @@ const start = async (
     return multiplyRatios(unscaled, unitPriceScale);
   };
 
-  /** @type {PriceAggregatorCreatorFacet} */
   const creatorFacet = Far('PriceAggregatorCreatorFacet', {
     /**
      * An "oracle invitation" is an invitation to be able to submit data to
@@ -461,6 +502,7 @@ const start = async (
 
       // Obtain the oracle's publicFacet.
       assert(oracleInstance);
+      /** @type {import('./oracle.js').OracleContract['publicFacet']} */
       const oracle = await E(zoe).getPublicFacet(oracleInstance);
       assert(records.has(record), 'Oracle record is already deleted');
 
@@ -490,14 +532,12 @@ const start = async (
     },
   });
 
-  /** @type {PriceAggregatorPublicFacet} */
   const publicFacet = Far('publicFacet', {
     getPriceAuthority() {
       return priceAuthority;
     },
-    async getRoundStartNotifier() {
-      return undefined;
-    },
+    getSubscriber: () => subscriber,
+    /** Diagnostic tool */
     async getRoundCompleteNotifier() {
       return roundCompleteNotifier;
     },
@@ -507,3 +547,4 @@ const start = async (
 };
 
 export { start };
+/** @typedef {ContractOf<typeof start>} PriceAggregatorContract */

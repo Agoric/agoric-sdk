@@ -1,5 +1,9 @@
 # Maintainer Hints
 
+Review the [next release](
+https://github.com/Agoric/agoric-sdk/labels/next%20release
+) label for additional tasks particular to this release.
+
 ```sh
 # Create a release branch.
 now=`date -u +%Y%m%dT%H%M%S`

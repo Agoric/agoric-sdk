@@ -18,3 +18,36 @@ smart contract on Zoe is easy: all of the Zoe smart contracts are
 written in the familiar language of JavaScript.
 
 To learn more, please see the [Zoe guide](https://agoric.com/documentation/zoe/guide/). 
+
+## Reading data off-chain
+
+Some Zoe contracts publish data using StoredPublishKit which tees writes to off-chain storage. These can then be followed off-chain like so,
+```js
+  const key = `published.priceAggregator`; // or whatever the stream of interest is
+  const leader = makeDefaultLeader();
+  const follower = makeFollower(storeKey, leader);
+  for await (const { value } of iterateLatest(follower)) {
+    console.log(`here's a value`, value);
+  }
+```
+
+The canonical keys (under `published`) are as follows. Non-terminal nodes could have data but don't yet. A `0` indicates the index of that child in added order. To get the actual key look it up in parent. High cardinality types get a parent key for enumeration (e.g. `vaults`.)
+- `published`
+    - `priceAggregator`
+
+### Demo
+
+Start the chain in one terminal:
+```sh
+cd packages/cosmic-swingset
+make scenario2-setup scenario2-run-chain-economy
+```
+Once you see a string like `block 17 commit` then the chain is available. In another terminal,
+```sh
+# shows keys of the priceAggregator
+agd query vstorage keys 'published.priceFeed'
+# follow quotes
+agoric follow :published.priceFeed.ATOM_USD_price_feed
+```
+
+ TODO document more of https://github.com/Agoric/documentation/issues/672

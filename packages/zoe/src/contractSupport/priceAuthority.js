@@ -29,23 +29,19 @@ const isGTE = (amount, amountLimit) => AmountMath.isGTE(amount, amountLimit);
 const isGT = (amount, amountLimit) => !AmountMath.isGTE(amountLimit, amount);
 
 /**
- * @typedef {object} OnewayPriceAuthorityOptions
- * @property {Issuer} quoteIssuer
- * @property {ERef<Notifier<unknown>>} notifier
- * @property {ERef<TimerService>} timer
- * @property {PriceQuoteCreate} createQuote
- * @property {Brand} actualBrandIn
- * @property {Brand} actualBrandOut
- */
-
-/**
  * @callback Trigger
  * @param {PriceQuoteCreate} createInstantQuote
  * @returns {Promise<void>}
  */
 
 /**
- * @param {OnewayPriceAuthorityOptions} opts
+ * @param {object} opts
+ * @param {Issuer} opts.quoteIssuer
+ * @param {ERef<Notifier<unknown>>} opts.notifier
+ * @param {ERef<TimerService>} opts.timer
+ * @param {PriceQuoteCreate} opts.createQuote
+ * @param {Brand} opts.actualBrandIn
+ * @param {Brand} opts.actualBrandOut
  * @returns {PriceAuthorityKit}
  */
 export function makeOnewayPriceAuthorityKit(opts) {
