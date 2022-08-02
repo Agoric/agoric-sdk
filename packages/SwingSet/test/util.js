@@ -1,6 +1,8 @@
 /* global WeakRef, FinalizationRegistry */
 import anylogger from 'anylogger';
 
+import bundleSource from '@endo/bundle-source';
+
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 import { provideHostStorage } from '../src/controller/hostStorage.js';
 import { createSHA256 } from '../src/lib-nodejs/hasher.js';
@@ -177,4 +179,13 @@ export function bundleOpts(data, extraRuntimeOpts) {
   const initOpts = { kernelBundles };
   const runtimeOpts = { kernelBundle, ...extraRuntimeOpts };
   return { initOpts, runtimeOpts };
+}
+
+export async function restartVatAdminVat(controller) {
+  const vaBundle = await bundleSource(
+    new URL('../src/vats/vat-admin/vat-vat-admin.js', import.meta.url).pathname,
+  );
+  const bundleID = await controller.validateAndInstallBundle(vaBundle);
+  controller.upgradeStaticVat('vatAdmin', true, bundleID, {});
+  await controller.run();
 }

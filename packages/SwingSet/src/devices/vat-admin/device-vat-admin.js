@@ -93,9 +93,15 @@ bundleID before submitting to the kernel), or (temporarily) a full bundle.
  */
 
 export function buildDevice(tools, endowments) {
-  const { hasBundle, getBundle, getNamedBundleID } = endowments;
-  const { meterCreate, meterAddRemaining, meterSetThreshold, meterGet } =
-    endowments;
+  const {
+    hasBundle,
+    getBundle,
+    getNamedBundleID,
+    meterCreate,
+    meterAddRemaining,
+    meterSetThreshold,
+    meterGet,
+  } = endowments;
 
   const { syscall } = tools;
   const dtools = buildSerializationTools(syscall, 'bundle');

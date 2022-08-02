@@ -147,7 +147,7 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
         bundle.moduleFormat === 'getExport',
         X`unexpected: ${bundle.moduleFormat}`,
       );
-      // eslint-disable-next-line no-await-in-loop
+      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       await worker.evaluate(`(${bundle.source}\n)()`.trim());
     }
     return worker;
@@ -200,6 +200,7 @@ export async function makeSwingsetController(
   }
 
   const slogF =
+    // eslint-disable-next-line @jessie.js/no-nested-await
     slogFile && (await fs.createWriteStream(slogFile, { flags: 'a' })); // append
 
   function writeSlogObject(obj) {
@@ -241,6 +242,7 @@ export async function makeSwingsetController(
   harden(console);
 
   writeSlogObject({ type: 'bundle-kernel-start' });
+  // eslint-disable-next-line @jessie.js/no-nested-await
   const { kernelBundle = await buildKernelBundle() } = runtimeOptions;
   writeSlogObject({ type: 'bundle-kernel-finish' });
 
@@ -498,6 +500,26 @@ export async function makeSwingsetController(
       }
       return kpid;
     },
+
+    upgradeStaticVat(vatName, shouldPauseFirst, bundleID, options = {}) {
+      const vatID = kernel.vatNameToID(vatName);
+      let pauseTargetBody = null;
+      let pauseTargetSlots = [];
+      if (shouldPauseFirst) {
+        pauseTargetBody = { [QCLASS]: 'slot', index: 0 };
+        pauseTargetSlots = [kernel.getRootObject(vatID)];
+      }
+      if (!options.upgradeMessage) {
+        options.upgradeMessage = `vat ${vatName} upgraded`;
+      }
+      return controller.queueToVatRoot(
+        'vatAdmin',
+        'upgradeStaticVat',
+        [vatID, pauseTargetBody, bundleID, options],
+        'ignore',
+        pauseTargetSlots,
+      );
+    },
   });
 
   return controller;
@@ -554,6 +576,7 @@ export async function buildVatController(
   const initializationOptions = { verbose, kernelBundles };
   let bootstrapResult;
   if (!swingsetIsInitialized(hostStorage)) {
+    // eslint-disable-next-line @jessie.js/no-nested-await
     bootstrapResult = await initializeSwingset(
       config,
       argv,
