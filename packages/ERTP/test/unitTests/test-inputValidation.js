@@ -32,7 +32,7 @@ test('makeIssuerKit bad displayInfo.decimalPlaces', async t => {
         // @ts-expect-error Intentional wrong type for testing
         harden({ decimalPlaces: 'hello' }),
       ),
-    { message: `decimalPlaces "hello" is not a safe integer` },
+    { message: /"hello" - Must be >= -100/ },
   );
 
   t.throws(
@@ -58,13 +58,13 @@ test('makeIssuerKit bad displayInfo.decimalPlaces', async t => {
   t.throws(
     () =>
       makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: 101 })),
-    { message: 'decimalPlaces 101 exceeds 100' },
+    { message: /101 - Must be <= 100/ },
   );
 
   t.throws(
     () =>
       makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: -101 })),
-    { message: 'decimalPlaces -101 is less than -100' },
+    { message: /-101 - Must be >= -100/ },
   );
 });
 
@@ -81,7 +81,7 @@ test('makeIssuerKit bad displayInfo.assetKind', async t => {
       ),
     {
       message:
-        'displayInfo.assetKind was present ("something") and did not match the assetKind argument ("nat")',
+        /"something" - Must match one of \["nat","set","copySet","copyBag"\]/,
     },
   );
 });
@@ -98,8 +98,7 @@ test('makeIssuerKit bad displayInfo.whatever', async t => {
         }),
       ),
     {
-      message:
-        'key "whatever" was not one of the expected keys ["decimalPlaces","assetKind"]',
+      message: /Remainder \{"whatever":"something"\} - Must match \{\}/,
     },
   );
 });
@@ -114,8 +113,7 @@ test('makeIssuerKit malicious displayInfo', async t => {
         'bad displayInfo',
       ),
     {
-      message:
-        '"displayInfo" "bad displayInfo" must be a pass-by-copy record, not "string"',
+      message: /"bad displayInfo" - Must have shape of base: "copyRecord"/,
     },
   );
 });
