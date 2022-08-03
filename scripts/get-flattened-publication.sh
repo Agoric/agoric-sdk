@@ -55,7 +55,7 @@ vars="$(
       name = JSON_TO_VAR[substr($1, 2, length($1) - 2)];
       if (name) {
         # Constrain the alphabet for values.
-        if ($2 ~ /^[[:alnum:]."_ \-]*$/) {
+        if ($2 ~ /^[[:alnum:]=."_ \-]*$/) {
           printf "%s=%s\n", name, $2;
         }
       }
@@ -65,10 +65,10 @@ vars="$(
 eval "$vars"
 
 # Decode the value into flat JSON and insert a member for the block height.
-printf '%s' "$value_base64" | \
+printf '%s' "${value_base64:-}" | \
   base64 -d | \
   awk -f "$FLATTENER" -v unwrap=value -v capdata=true | \
-  awk -v height="$block_height" '{
+  awk -v height="${block_height:-}" '{
     # A following comma is necessary if and only if the object is not empty
     # (i.e., that it is not `{}`).
     separator = ",";
