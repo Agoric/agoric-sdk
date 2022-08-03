@@ -83,6 +83,7 @@ const trace = makeTracer('VM');
  *  getLiquidationMargin: () => Ratio,
  *  getLiquidationPenalty: () => Ratio,
  *  getLoanFee: () => Ratio,
+ *  getMinInitialDebt: () => Amount<'nat'>,
  * }} GovernedParamGetters
  */
 
@@ -765,9 +766,9 @@ const selfBehavior = {
    * @param {ZCFSeat} seat
    */
   makeVaultKit: async ({ state, facets: { manager } }, seat) => {
-    const { marshaller, prioritizedVaults, storageNode, zcf } = provideEphemera(
-      state.collateralBrand,
-    );
+    const { factoryPowers, marshaller, prioritizedVaults, storageNode, zcf } =
+      provideEphemera(state.collateralBrand);
+    assert(factoryPowers, 'makeVaultKit missing factoryPowers');
     assert(marshaller, 'makeVaultKit missing marshaller');
     assert(prioritizedVaults, 'makeVaultKit missing prioritizedVaults');
     assert(storageNode, 'makeVaultKit missing storageNode');
@@ -776,6 +777,22 @@ const selfBehavior = {
       give: { Collateral: null },
       want: { Minted: null },
     });
+    const {
+      give: { Collateral: collateralAmount },
+      want: { Minted: requestedAmount },
+    } = seat.getProposal();
+    assert(
+      collateralAmount.brand === state.collateralBrand,
+      X`Proposal collateral type ${collateralAmount.brand} not valid for ${state.collateralBrand} manager`,
+    );
+
+    const minInitialDebt = factoryPowers
+      .getGovernedParams()
+      .getMinInitialDebt();
+    assert(
+      AmountMath.isGTE(requestedAmount, minInitialDebt),
+      X`The request must be for at least ${minInitialDebt.value}. ${requestedAmount.value} is too small`,
+    );
 
     state.vaultCounter += 1;
     const vaultId = String(state.vaultCounter);

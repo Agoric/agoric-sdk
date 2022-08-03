@@ -398,6 +398,7 @@ const machineBehavior = {
     const factoryPowers = Far('vault factory powers', {
       getGovernedParams: () => ({
         ...vaultParamManager.readonly(),
+        ...directorParamManager.readonly(),
         getChargingPeriod: () => loanTimingParams[CHARGING_PERIOD_KEY].value,
         getRecordingPeriod: () => loanTimingParams[RECORDING_PERIOD_KEY].value,
       }),
