@@ -1032,6 +1032,7 @@ export function makeWalletRoot({
     const invitationP = findOrMakeInvitation(
       idToOfferResultPromiseKit,
       board,
+      zoe,
       zoeInvitePurse,
       invitationBrand,
       offer,
@@ -1787,13 +1788,22 @@ export function makeWalletRoot({
     serialize: context.serialize,
   });
 
+  const handleAcceptOfferAction = async offer => {
+    const { requestContext } = offer;
+    const rawId = await addOffer(offer, requestContext);
+    const dappOrigin =
+      requestContext.dappOrigin || requestContext.origin || 'unknown';
+    return acceptOffer(`${dappOrigin}#${rawId}`);
+  };
+
   const performAction = async obj => {
-    console.log('@@@ PERFORM ACTION IN LIB WALLET', obj);
-    /* const data = JSON.parse(obj);
-    if (data.action.action === 'acceptOffer') {
-      await addOffer(data.action.data);
-      await acceptOffer(data.action.data.id);
-    } */
+    const { type, data } = JSON.parse(obj.action);
+    switch (type) {
+      case 'acceptOffer':
+        return handleAcceptOfferAction(data);
+      default:
+        throw new Error(`Unknown wallet action ${type}`);
+    }
   };
 
   const wallet = Far('wallet', {
