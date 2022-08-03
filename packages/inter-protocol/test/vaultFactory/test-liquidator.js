@@ -270,18 +270,23 @@ test('liquidate thousands', async t => {
     const collateral = aeth.make(collateralN + i * 10n);
     vaultDriverPs.push(d.makeVaultDriver(collateral, debt));
   }
+  // put the lowest risk vault first
   const vaultDrivers = await Promise.all(vaultDriverPs);
+  // pop the least risk vault, and then set the price to liquidate all vaults except that one
+  const lowest = vaultDrivers.pop();
+  const secondLowestPrice = await underwaterPrice(
+    vaultDrivers[vaultDrivers.length - 1],
+  );
+  await d.setPrice(secondLowestPrice);
+  await eventLoopIteration();
 
-  const priceToLiquidate = async vd => {
-    await d.setPrice(await underwaterPrice(vd));
-    await eventLoopIteration();
-    await vd.notified(Phase.LIQUIDATED, undefined, AT_NEXT);
-  };
-
-  // Iterate serially to simulate price fall.
+  // verify that vaults liquidated
   for await (const vd of vaultDrivers) {
-    await priceToLiquidate(vd);
+    await vd.notified(Phase.LIQUIDATED);
   }
+  // Could also use this, but the above works better in tests
+  // await Promise.all(vaultDrivers.map(vd => vd.notified(Phase.LIQUIDATED)));
+  await lowest.notified(Phase.ACTIVE);
 });
 
 // 1) `give` sells for more than `stopAfter`, and got some of the input back
