@@ -39,7 +39,16 @@ FLATTENER="$SCRIPTS_DIR/flatten_json_sequence.awk"
 #     }
 #   }
 vars="$(
-  curl -sS "${URL_PREFIX%/}/abci_query?path=%22/custom/vstorage/data/$STORAGE_KEY%22" | \
+  # Avoid the GET interface in case interpretation of `path` as JSON is ever fixed.
+  # curl -sS "${URL_PREFIX%/}/abci_query?path=%22/custom/vstorage/data/$STORAGE_KEY%22" | \
+  curl -sS "$URL_PREFIX" --request POST --header 'Content-Type: application/json' --data "$(
+    printf '{
+      "jsonrpc": "2.0",
+      "id": -1,
+      "method": "abci_query",
+      "params": { "path": "/custom/vstorage/data/%s" }
+    }' "$STORAGE_KEY"
+  )" | \
   # Flatten into compact JSON.
   awk -f "$FLATTENER" | \
   # Remove the enclosing braces.
