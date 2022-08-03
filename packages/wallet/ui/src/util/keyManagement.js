@@ -156,7 +156,7 @@ export const makeLocalStorageSigner = async ({ localStorage, getBytes }) => {
   );
 
   const accounts = await wallet.getAccounts();
-  console.log('device account(s):', accounts);
+  console.debug('device account(s):', accounts);
 
   const [{ address }] = accounts;
 
@@ -291,7 +291,6 @@ export const makeOfferSigner = async (chainInfo, keplr, connectWithSigner) => {
   // TODO: const { coinMinimalDenom: denom } = stableCurrency;
 
   const key = await keplr.getKey(chainId);
-  // console.debug({ key });
 
   // const offlineSigner = await keplr.getOfflineSignerOnlyAmino(chainId);
   const offlineSigner = await keplr.getOfflineSignerAuto(chainId);
@@ -306,12 +305,11 @@ export const makeOfferSigner = async (chainInfo, keplr, connectWithSigner) => {
     ...createBankAminoConverters(),
     ...createAuthzAminoConverters(),
   };
-  console.log('@@@@', { converters });
   const signingClient = await connectWithSigner(chainInfo.rpc, offlineSigner, {
     aminoTypes: new AminoTypes(converters),
     registry: SwingsetRegistry,
   });
-  console.log('OfferSigner', { signingClient });
+  console.debug('OfferSigner', { signingClient });
 
   const fee = trivialFee();
 
@@ -349,7 +347,7 @@ export const makeOfferSigner = async (chainInfo, keplr, connectWithSigner) => {
 
       console.log('sign Grant', { address, msgs, fee });
       const tx = await signingClient.signAndBroadcast(address, msgs, fee);
-      console.log({ tx });
+      console.log('Grant sign result tx', tx);
       assertIsDeliverTxSuccess(tx);
 
       return tx;
@@ -377,10 +375,10 @@ export const makeOfferSigner = async (chainInfo, keplr, connectWithSigner) => {
       };
 
       const msgs = [act1];
-      console.log('sign offer', { address, msgs, fee, memo });
+      console.log('sign spend action', { address, msgs, fee });
 
       const tx = await signingClient.signAndBroadcast(address, msgs, fee, memo);
-      console.log({ tx });
+      console.log('spend action result tx', tx);
       assertIsDeliverTxSuccess(tx);
 
       return tx;
