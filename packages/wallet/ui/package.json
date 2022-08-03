@@ -8,6 +8,7 @@
   "type": "module",
   "devDependencies": {
     "@agoric/assert": "^0.4.0",
+    "@agoric/cosmic-proto": "0.1.0",
     "@agoric/notifier": "^0.4.0",
     "@agoric/ui-components": "^0.2.33",
     "@cosmjs/stargate": "0.28.4",
