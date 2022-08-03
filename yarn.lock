@@ -1853,6 +1853,13 @@
     unique-filename "^1.1.1"
     which "^1.3.1"
 
+"@fast-check/ava@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@fast-check/ava/-/ava-1.0.1.tgz#d116fd93cbfc59a3011bf74894bd9906cb7a2753"
+  integrity sha512-9BAgwNS4WRf/tEZAiDje1xgRpKYeytc6L9s+S0/nYzxLf2TfOBDJQUFQqVRgZRa1dj7+bickUOZTnPiNVr1rng==
+  dependencies:
+    fast-check "^3.0.0"
+
 "@gar/promisify@^1.0.1":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@gar/promisify/-/promisify-1.1.2.tgz#30aa825f11d438671d585bd44e7fd564535fc210"
@@ -8750,12 +8757,12 @@ extsprintf@^1.2.0:
   resolved "https://registry.yarnpkg.com/extsprintf/-/extsprintf-1.4.0.tgz#e2689f8f356fad62cca65a3a91c5df5f9551692f"
   integrity sha1-4mifjzVvrWLMplo6kcXfX5VRaS8=
 
-fast-check@^2.21.0:
-  version "2.21.0"
-  resolved "https://registry.yarnpkg.com/fast-check/-/fast-check-2.21.0.tgz#0d2e20bc65343ee67ec0f58373358140c08a1217"
-  integrity sha512-hkTRytqMceXfnSwPnryIqKkxKJjfcvtVqJrWRb8tgmfyUsGajIgQqDFxCJ+As+l9VLUCcmx6XIYoXeQe2Ih0UA==
+fast-check@^3.0.0:
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/fast-check/-/fast-check-3.1.1.tgz#72c5ae7022a4e86504762e773adfb8a5b0b01252"
+  integrity sha512-3vtXinVyuUKCKFKYcwXhGE6NtGWkqF8Yh3rvMZNzmwz8EPrgoc/v4pDdLHyLnCyCI5MZpZZkDEwFyXyEONOxpA==
   dependencies:
-    pure-rand "^5.0.0"
+    pure-rand "^5.0.1"
 
 fast-deep-equal@3.1.1:
   version "3.1.1"
@@ -14773,10 +14780,10 @@ puppeteer-core@^11.0.0:
     unbzip2-stream "1.4.3"
     ws "8.2.3"
 
-pure-rand@^5.0.0:
-  version "5.0.0"
-  resolved "https://registry.yarnpkg.com/pure-rand/-/pure-rand-5.0.0.tgz#87f5bdabeadbd8904e316913a5c0b8caac517b37"
-  integrity sha512-lD2/y78q+7HqBx2SaT6OT4UcwtvXNRfEpzYEzl0EQ+9gZq2Qi3fa0HDnYPeqQwhlHJFBUhT7AO3mLU3+8bynHA==
+pure-rand@^5.0.1:
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/pure-rand/-/pure-rand-5.0.1.tgz#97a287b4b4960b2a3448c0932bf28f2405cac51d"
+  integrity sha512-ksWccjmXOHU2gJBnH0cK1lSYdvSZ0zLoCMSz/nTGh6hDvCSgcRxDyIcOBD6KNxFz3xhMPm/T267Tbe2JRymKEQ==
 
 q@^1.1.2, q@^1.5.1:
   version "1.5.1"

@@ -2,7 +2,7 @@
 /* eslint-disable no-bitwise */
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import fc from 'fast-check';
+import { fc } from '@fast-check/ava';
 import { isKey } from '../src/keys/checkKey.js';
 import { compareKeys, keyEQ } from '../src/keys/compareKeys.js';
 import {
