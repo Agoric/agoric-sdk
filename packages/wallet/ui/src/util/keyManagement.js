@@ -77,6 +77,10 @@ export const SwingsetMsgs = /** @type {const} */ ({
     typeUrl: '/agoric.swingset.MsgWalletAction',
     aminoType: 'swingset/WalletAction',
   },
+  MsgWalletSpendAction: {
+    typeUrl: '/agoric.swingset.MsgWalletSpendAction',
+    aminoType: 'swingset/WalletAction',
+  },
 });
 
 /**
@@ -84,11 +88,16 @@ export const SwingsetMsgs = /** @type {const} */ ({
  *   owner: string, // base64 of raw bech32 data
  *   action: string,
  * }} WalletAction
+ * @typedef {{
+ *   owner: string, // base64 of raw bech32 data
+ *   spendAction: string,
+ * }} WalletSpendAction
  */
 
 export const SwingsetRegistry = new Registry([
   ...defaultRegistryTypes,
   [SwingsetMsgs.MsgWalletAction.typeUrl, MsgWalletAction],
+  [SwingsetMsgs.MsgWalletSpendAction.typeUrl, MsgWalletSpendAction],
 ]);
 
 /**
@@ -112,7 +121,6 @@ const SwingsetConverters = {
   // '/agoric.swingset.MsgProvision': {
   //   /* ... */
   // },
-  // TODO: WalletSpendAction
   [SwingsetMsgs.MsgWalletAction.typeUrl]: {
     aminoType: SwingsetMsgs.MsgWalletAction.aminoType,
     toAmino: ({ action, owner }) => ({
@@ -124,6 +132,16 @@ const SwingsetConverters = {
       owner: toBase64(toAccAddress(owner)),
     }),
   },
+  [SwingsetMsgs.MsgWalletSpendAction.typeUrl]: {
+    aminoType: SwingsetMsgs.MsgWalletAction.aminoType,
+    toAmino: ({ spendAction, owner }) => ({
+      spendAction,
+      owner: toBech32(bech32Config.bech32PrefixAccAddr, fromBase64(owner)),
+    }),
+    fromAmino: ({ spendAction, owner }) => ({
+      spendAction,
+      owner: toBase64(toAccAddress(owner)),
+    }),
   },
 };
 
@@ -373,20 +391,20 @@ export const makeOfferSigner = async (chainInfo, keplr, connectWithSigner) => {
     /**
      * Sign and broadcast WalletSpendAction
      *
-     * @param {string} action marshaled offer
+     * @param {string} spendAction marshaled offer
      */
-    submitSpendAction: async action => {
+    submitSpendAction: async spendAction => {
       const { accountNumber, sequence } = await signingClient.getSequence(
         address,
       );
       console.log({ accountNumber, sequence });
 
       const act1 = {
-        typeUrl: '/agoric.swingset.MsgWalletAction', // TODO: SpendAction
-        /** @type {WalletAction} */
+        typeUrl: SwingsetMsgs.MsgWalletSpendAction.typeUrl,
+        /** @type {WalletSpendAction} */
         value: {
           owner: toBase64(toAccAddress(address)),
-          action,
+          spendAction,
         },
       };
 
