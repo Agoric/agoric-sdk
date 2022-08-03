@@ -1,5 +1,6 @@
 {
   "bootstrap": "bootstrap",
+  "defaultReapInterval": 1000,
   "coreProposals": [
     "@agoric/inter-protocol/scripts/init-core.js",
     "@agoric/pegasus/scripts/init-core.js"
