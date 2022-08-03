@@ -20,26 +20,23 @@ fi
 SCRIPTS_DIR="$(dirname "$(realpath "$0")")"
 FLATTENER="$SCRIPTS_DIR/flatten_json_sequence.awk"
 
-# Make the request and extract data from a response that looks like
+# Make the abci_query request and extract data from a response.
+# cf. https://docs.tendermint.com/master/rpc/#/ABCI/abci_query
+#
 #   {
 #     "jsonrpc": "2.0",
-#     "id": -1,
+#     "id": <integer>,
 #     "result": {
 #       "response": {
-#         "code": 0,
-#         "log": "",
-#         "info": "",
-#         "index": "0",
-#         "key": null,
 #         "value": "<base64-encoded JSON text>",
-#         "proofOps": null,
 #         "height": "<decimal digits>",
-#         "codespace": ""
+#         ...
 #       }
 #     }
 #   }
 vars="$(
   # Avoid the GET interface in case interpretation of `path` as JSON is ever fixed.
+  # https://github.com/tendermint/tendermint/issues/9164
   # curl -sS "${URL_PREFIX%/}/abci_query?path=%22/custom/vstorage/data/$STORAGE_KEY%22" | \
   curl -sS "$URL_PREFIX" --request POST --header 'Content-Type: application/json' --data "$(
     printf '{
