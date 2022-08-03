@@ -19,15 +19,6 @@
  */
 
 /**
- * @typedef {object} Collateral
- * @property {Ratio} liquidationMargin
- * @property {Ratio} stabilityFee
- * @property {Ratio} marketPrice
- * @property {Ratio} interestRate
- * @property {Brand} brand
- */
-
-/**
  * @typedef {object} VaultManagerParamValues
  * @property {Ratio} liquidationMargin - margin below which collateral will be
  * liquidated to satisfy the debt.

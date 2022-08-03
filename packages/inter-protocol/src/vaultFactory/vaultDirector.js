@@ -224,7 +224,6 @@ export const prepareVaultDirector = (
       }),
       public: M.interface('public', {
         getCollateralManager: M.call(BrandShape).returns(M.remotable()),
-        getCollaterals: M.call().returns(M.promise()),
         getMetrics: M.call().returns(SubscriberShape),
         getRunIssuer: M.call().returns(IssuerShape),
         getSubscription: M.call({ collateralBrand: BrandShape }).returns(
@@ -454,31 +453,6 @@ export const prepareVaultDirector = (
             Fail`Not a supported collateral type ${brandIn}`;
           /** @type {VaultManager} */
           return collateralTypes.get(brandIn).getPublicFacet();
-        },
-        /**
-         * @deprecated get `collaterals` list from metrics
-         */
-        async getCollaterals() {
-          // should be collateralTypes.map((vm, brand) => ({
-          return harden(
-            Promise.all(
-              [...collateralTypes.entries()].map(async ([brand, vm]) => {
-                const priceQuote = await vm.getCollateralQuote();
-                return {
-                  brand,
-                  interestRate: vm.getGovernedParams().getInterestRate(),
-                  liquidationMargin: vm
-                    .getGovernedParams()
-                    .getLiquidationMargin(),
-                  stabilityFee: vm.getGovernedParams().getLoanFee(),
-                  marketPrice: makeRatioFromAmounts(
-                    getAmountOut(priceQuote),
-                    getAmountIn(priceQuote),
-                  ),
-                };
-              }),
-            ),
-          );
         },
         /** @deprecated use getPublicTopics */
         getMetrics() {
