@@ -116,6 +116,9 @@ export async function start(zcf, privateArgs) {
         getDebtLimit() {
           throw Error('not implemented');
         },
+        getMinInitialDebt() {
+          throw Error('not implemented');
+        },
         getLiquidationMargin() {
           return LIQUIDATION_MARGIN;
         },

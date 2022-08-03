@@ -367,8 +367,9 @@ export const makeManagerDriver = async (
     vaultFactory: { lender, vaultFactory },
     priceAuthority,
   } = services;
+  const manager = E(lender).getCollateralManager(aeth.brand);
   const managerNotifier = await makeNotifierFromSubscriber(
-    E(E(lender).getCollateralManager(aeth.brand)).getSubscriber(),
+    E(manager).getSubscriber(),
   );
   let managerNotification = await E(managerNotifier).getUpdateSince();
 
@@ -387,7 +388,7 @@ export const makeManagerDriver = async (
   ) => {
     /** @type {UserSeat<VaultKit>} */
     const vaultSeat = await E(zoe).offer(
-      await E(lender).makeVaultInvitation(),
+      await E(manager).makeVaultInvitation(),
       harden({
         give: { Collateral: collateral },
         want: { Minted: debt },
@@ -453,12 +454,12 @@ export const makeManagerDriver = async (
     addVaultType: async keyword => {
       /** @type {IssuerKit<'nat'>} */
       const kit = makeIssuerKit(keyword.toLowerCase());
-      const manager = await E(vaultFactory).addVaultType(
+      const newManager = await E(vaultFactory).addVaultType(
         kit.issuer,
         keyword,
         defaultParamValues(withAmountUtils(kit)),
       );
-      return /** @type {const} */ ([manager, withAmountUtils(kit)]);
+      return /** @type {const} */ ([newManager, withAmountUtils(kit)]);
     },
     currentSeat: () => currentSeat,
     lastOfferResult: () => currentOfferResult,

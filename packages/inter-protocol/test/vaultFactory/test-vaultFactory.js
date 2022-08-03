@@ -449,7 +449,7 @@ test('first', async t => {
   const loanAmount = run.make(470n);
   /** @type {UserSeat<VaultKit>} */
   const vaultSeat = await E(zoe).offer(
-    await E(lender).makeVaultInvitation(),
+    await E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: loanAmount },
@@ -575,7 +575,7 @@ test('price drop', async t => {
   const loanAmount = run.make(270n);
   /** @type {UserSeat<VaultKit>} */
   const vaultSeat = await E(zoe).offer(
-    await E(lender).makeVaultInvitation(),
+    await E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: loanAmount },
@@ -724,7 +724,7 @@ test('price falls precipitously', async t => {
   const loanAmount = run.make(370n);
   /** @type {UserSeat<VaultKit>} */
   const userSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: loanAmount },
@@ -902,7 +902,7 @@ test('interest on multiple vaults', async t => {
   const aliceLoanAmount = run.make(4700n);
   /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: aliceLoanAmount },
@@ -943,7 +943,7 @@ test('interest on multiple vaults', async t => {
   const bobLoanAmount = run.make(3200n);
   /** @type {UserSeat<VaultKit>} */
   const bobLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
       want: { Minted: bobLoanAmount },
@@ -1028,7 +1028,7 @@ test('interest on multiple vaults', async t => {
   // try opening a vault that can't cover fees
   /** @type {UserSeat<VaultKit>} */
   const caroleLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(200n) },
       want: { Minted: run.make(0n) }, // no debt
@@ -1047,7 +1047,7 @@ test('interest on multiple vaults', async t => {
   const wantedRun = 1_000n;
   /** @type {UserSeat<VaultKit>} */
   const danLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(2_000n) },
       want: { Minted: run.make(wantedRun) },
@@ -1095,7 +1095,7 @@ test('adjust balances', async t => {
   const aliceLoanAmount = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: aliceLoanAmount },
@@ -1345,7 +1345,7 @@ test('adjust balances - withdraw RUN', async t => {
   const aliceLoanAmount = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: aliceLoanAmount },
@@ -1426,7 +1426,7 @@ test('adjust balances after interest charges', async t => {
 
   trace('0. Take out loan');
   const vaultSeat = await E(services.zoe).offer(
-    await E(lender).makeVaultInvitation(),
+    await E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(AMPLE) },
       want: { Minted: run.make(LOAN1) },
@@ -1478,7 +1478,7 @@ test('transfer vault', async t => {
   const aliceLoanAmount = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: aliceLoanAmount },
@@ -1621,7 +1621,7 @@ test('overdeposit', async t => {
   const aliceLoanAmount = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: aliceLoanAmount },
@@ -1665,7 +1665,7 @@ test('overdeposit', async t => {
   const bobLoanAmount = run.make(1000n);
   /** @type {UserSeat<VaultKit>} */
   const bobLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
       want: { Minted: bobLoanAmount },
@@ -1782,7 +1782,7 @@ test('mutable liquidity triggers and interest', async t => {
   const aliceLoanAmount = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: aliceCollateralAmount },
       want: { Minted: aliceLoanAmount },
@@ -1830,7 +1830,7 @@ test('mutable liquidity triggers and interest', async t => {
   const bobLoanAmount = run.make(512n);
   /** @type {UserSeat<VaultKit>} */
   const bobLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
       want: { Minted: bobLoanAmount },
@@ -2003,7 +2003,7 @@ test('collect fees from loan and AMM', async t => {
   const loanAmount = run.make(470n);
   /** @type {UserSeat<VaultKit>} */
   const vaultSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: loanAmount },
@@ -2089,7 +2089,7 @@ test('close loan', async t => {
   const aliceLoanAmount = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: aliceLoanAmount },
@@ -2131,7 +2131,7 @@ test('close loan', async t => {
   const bobLoanAmount = run.make(1000n);
   /** @type {UserSeat<VaultKit>} */
   const bobLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
       want: { Minted: bobLoanAmount },
@@ -2199,7 +2199,7 @@ test('excessive loan', async t => {
   const aliceLoanAmount = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: aliceLoanAmount },
@@ -2227,15 +2227,15 @@ test('loan too small', async t => {
   );
   const { lender } = services.vaultFactory;
 
-  // Try to Create a loan for Alice for 5000 Minted with 100 aeth collateral
-  const collateralAmount = aeth.make(100n);
-  const aliceLoanAmount = run.make(5000n);
+  // ample collateral. we want to failure to be on requesting too little debt.
+  const collateralAmount = aeth.make(10_000n);
+
   /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
-      want: { Minted: aliceLoanAmount },
+      want: { Minted: run.make(5_000n) },
     }),
     harden({
       Collateral: aeth.mint.mintPayment(collateralAmount),
@@ -2270,7 +2270,7 @@ test('excessive debt on collateral type', async t => {
   const centralAmount = run.make(1_000_000n);
   /** @type {UserSeat<VaultKit>} */
   const loanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: centralAmount },
@@ -2327,7 +2327,7 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   const aliceLoanAmount = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: aliceCollateralAmount },
       want: { Minted: aliceLoanAmount },
@@ -2372,7 +2372,7 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   const bobLoanAmount = run.make(740n);
   /** @type {UserSeat<VaultKit>} */
   const bobLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
       want: { Minted: bobLoanAmount },
@@ -2612,7 +2612,7 @@ test('manager notifiers', async t => {
   trace('1. Create a loan with ample collateral');
   /** @type {UserSeat<VaultKit>} */
   let vaultSeat = await E(services.zoe).offer(
-    await E(lender).makeVaultInvitation(),
+    await E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(AMPLE) },
       want: { Minted: run.make(LOAN1) },
@@ -2661,7 +2661,7 @@ test('manager notifiers', async t => {
 
   trace('4. Make another LOAN1 loan');
   vaultSeat = await E(services.zoe).offer(
-    await E(lender).makeVaultInvitation(),
+    await E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(AMPLE) },
       want: { Minted: run.make(LOAN1) },
@@ -2681,7 +2681,7 @@ test('manager notifiers', async t => {
 
   trace('5. Make a LOAN2 loan');
   vaultSeat = await E(services.zoe).offer(
-    await E(lender).makeVaultInvitation(),
+    await E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(ENOUGH) },
       want: { Minted: run.make(LOAN2) },
@@ -2722,7 +2722,7 @@ test('manager notifiers', async t => {
 
   trace('7. Make another LOAN2 loan');
   vaultSeat = await E(services.zoe).offer(
-    await E(lender).makeVaultInvitation(),
+    await E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(ENOUGH) },
       want: { Minted: run.make(LOAN2) },
@@ -2752,7 +2752,7 @@ test('manager notifiers', async t => {
 
   trace('9. Loan interest');
   vaultSeat = await E(services.zoe).offer(
-    await E(lender).makeVaultInvitation(),
+    await E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(AMPLE) },
       want: { Minted: run.make(LOAN1) },
@@ -2775,7 +2775,7 @@ test('manager notifiers', async t => {
 
   trace('make another loan to trigger a publish');
   vaultSeat = await E(services.zoe).offer(
-    await E(lender).makeVaultInvitation(),
+    await E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(ENOUGH) },
       want: { Minted: run.make(LOAN2) },
@@ -2822,7 +2822,7 @@ test('manager notifiers', async t => {
   trace('11. Create a loan with ample collateral');
   /** @type {UserSeat<VaultKit>} */
   vaultSeat = await E(services.zoe).offer(
-    await E(lender).makeVaultInvitation(),
+    await E(E(lender).getCollateralManager(aeth.brand)).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(AMPLE) },
       want: { Minted: run.make(LOAN1) },

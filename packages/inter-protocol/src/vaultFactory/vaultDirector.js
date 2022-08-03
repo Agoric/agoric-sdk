@@ -8,7 +8,6 @@ import { E } from '@endo/eventual-send';
 
 import { fit, keyEQ, M, makeScalarMap } from '@agoric/store';
 import {
-  assertProposalShape,
   getAmountIn,
   getAmountOut,
 } from '@agoric/zoe/src/contractSupport/index.js';
@@ -193,50 +192,6 @@ const initState = (
     // @ts-expect-error defined in finish()
     shortfallInvitation: undefined,
   };
-};
-
-/**
- * Make a loan in the vaultManager based on the collateral type.
- *
- * @deprecated
- * @param {MethodContext} context
- */
-const makeVaultInvitation = ({ state }) => {
-  const { zcf } = ephemera;
-
-  const { collateralTypes } = state;
-
-  /** @param {ZCFSeat} seat */
-  const makeVaultHook = async seat => {
-    assertProposalShape(seat, {
-      give: { Collateral: null },
-      want: { Minted: null },
-    });
-    const {
-      give: { Collateral: collateralAmount },
-      want: { Minted: requestedAmount },
-    } = seat.getProposal();
-    const { brand: brandIn } = collateralAmount;
-    assert(
-      collateralTypes.has(brandIn),
-      X`Not a supported collateral type ${brandIn}`,
-    );
-
-    assert(
-      AmountMath.isGTE(
-        requestedAmount,
-        ephemera.directorParamManager.getMinInitialDebt(),
-      ),
-      X`The request must be for at least ${
-        ephemera.directorParamManager.getMinInitialDebt().value
-      }. ${requestedAmount.value} is too small`,
-    );
-
-    /** @type {VaultManager} */
-    const mgr = collateralTypes.get(brandIn);
-    return mgr.makeVaultKit(seat);
-  };
-  return zcf.makeInvitation(makeVaultHook, 'MakeVault');
 };
 
 /**
@@ -499,10 +454,6 @@ const publicBehavior = {
   },
   getMetrics: () => ephemera.metricsSubscription,
 
-  /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
-  makeLoanInvitation: makeVaultInvitation,
-  /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
-  makeVaultInvitation,
   getCollaterals,
   getRunIssuer: () => ephemera.debtMint.getIssuerRecord().issuer,
   /**
