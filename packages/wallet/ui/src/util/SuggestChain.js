@@ -96,29 +96,6 @@ export async function suggestChain(
   let cosmJS;
   console.log('@@', { cosmJS });
 
-  /*
-  // Example transaction 
-  const amount = {
-    denom: 'ubld',
-    amount: '1234567',
-  };
-  const accounts = await offlineSigner.getAccounts();
-  await cosmJS.sendTokens(
-    accounts[0].address,
-    'agoric123456',
-    [amount],
-    {
-      amount: [
-        {
-          amount: '500000',
-          denom: 'uist',
-        },
-      ],
-      gas: '890000',
-    },
-    'enjoy!',
-  );
- */
   const accounts = await offlineSigner.getAccounts();
 
   console.log('@@SuggestChain', { chainInfo, accounts });

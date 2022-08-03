@@ -1787,6 +1787,15 @@ export function makeWalletRoot({
     serialize: context.serialize,
   });
 
+  const performAction = async obj => {
+    console.log('@@@ PERFORM ACTION IN LIB WALLET', obj);
+    /* const data = JSON.parse(obj);
+    if (data.action.action === 'acceptOffer') {
+      await addOffer(data.action.data);
+      await acceptOffer(data.action.data.id);
+    } */
+  };
+
   const wallet = Far('wallet', {
     lookup: (...path) => {
       // Provide an entrypoint to the wallet's naming hub.
@@ -1872,6 +1881,7 @@ export function makeWalletRoot({
       return doEnableAutoDeposit(pursePetname, true);
     },
     disableAutoDeposit,
+    performAction,
     getDepositFacetId,
     suggestIssuer,
     suggestInstance,

@@ -76,6 +76,7 @@ export const makeSmartWallet = async (
   return Far('SmartWallet', {
     ...wallet,
     getSubscriber: () => storedSubscriber,
+    performAction: obj => E(admin).performAction(obj),
   });
 };
 harden(makeSmartWallet);

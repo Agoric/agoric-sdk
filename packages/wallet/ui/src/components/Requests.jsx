@@ -14,7 +14,6 @@ const RequestsInternal = ({
   pendingOffers,
   declinedOffers,
   closedOffers,
-  keplrConnection,
 }) => {
   const hasNoAutodeposit = payment =>
     payment.status !== 'deposited' &&
@@ -61,23 +60,12 @@ const RequestsInternal = ({
     }
   };
 
-  const signOffer = () => {
-    const {
-      signers: { offerSigner },
-    } = keplrConnection;
-    offerSigner
-      .submitSpendAction('{"give": 1, "want": 2}')
-      .catch(err => console.error('@@@@TODO', err));
-  };
   return (
     <div className="Requests">
       {requests.length ? (
         requests.map(Item)
       ) : (
         <div className="Empty">
-          <button type="button" onClick={signOffer}>
-            PRESS ME!
-          </button>
           <img
             className="Splash-image"
             src="agoric-city.svg"

@@ -362,9 +362,7 @@ export function buildRootObject(vatPowers) {
       getIssuers: walletAdmin.getIssuers,
       getPurse: walletAdmin.getPurse,
       getPurses: walletAdmin.getPurses,
-
       getMarshaller: walletAdmin.getMarshaller,
-
       lookup: walletAdmin.lookup,
     });
     return harden(wallet);
