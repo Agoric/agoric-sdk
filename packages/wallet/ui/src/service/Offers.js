@@ -25,10 +25,8 @@ export const getOfferService = (publicAddress, signSpendAction) => {
   const acceptOffer = async id => {
     const offer = offers.get(id);
     assert(offer, `Tried to accept undefined offer ${id}`);
-    await signSpendAction(
-      JSON.stringify({ action: 'acceptOffer', data: offer }),
-    );
-    upsertOffer({ ...offer, staus: 'pending' });
+    const action = JSON.stringify({ type: 'acceptOffer', data: offer });
+    await signSpendAction(action);
   };
 
   const cancelOffer = _id => {

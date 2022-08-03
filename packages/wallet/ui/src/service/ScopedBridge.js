@@ -50,7 +50,6 @@ export const getScopedBridge = (origin, suggestedDappPetname, bridge) => {
       offerService.addOffer({
         id: currentTime,
         instancePetname: `instance@${config.instanceHandleBoardId}`,
-        instanceHandleBoardId: config.instanceHandleBoardId,
         requestContext: { dappOrigin: origin, origin },
         meta: {
           id: currentTime,
@@ -58,6 +57,7 @@ export const getScopedBridge = (origin, suggestedDappPetname, bridge) => {
         },
         proposalForDisplay: config.proposalTemplate,
         status: 'proposed',
+        ...config,
       });
     },
     async suggestIssuer(petname, boardId) {

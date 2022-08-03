@@ -9,11 +9,11 @@ import './Offer.scss';
 
 const OfferEntry = (
   type,
-  [role, { value: stringifiedValue, purseId }],
+  [role, { value: stringifiedValue, pursePetname }],
   purses,
 ) => {
   const value = BigInt(stringifiedValue);
-  const purse = purses.find(({ id }) => id === purseId);
+  const purse = purses.find(p => p.pursePetname === pursePetname);
   console.log('using purse', purse);
   return (
     <div className="OfferEntry" key={purse.brand.petname}>
