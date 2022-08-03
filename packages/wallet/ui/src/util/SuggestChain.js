@@ -1,7 +1,7 @@
 /* global globalThis */
 import { SigningStargateClient } from '@cosmjs/stargate';
 import { Random } from '@cosmjs/crypto';
-import { makeLocalStorageSigner, makeOfferSigner } from './keyManagement.js';
+import { makeNonspendingSigner, makeOfferSigner } from './keyManagement.js';
 
 import { stakeCurrency, stableCurrency, bech32Config } from './chainInfo.js';
 
@@ -109,7 +109,7 @@ export async function suggestChain(
   );
 
   const { getBytes } = Random;
-  const localSigner = await makeLocalStorageSigner({ localStorage, getBytes });
+  const localSigner = await makeNonspendingSigner({ localStorage, getBytes });
 
   return [cosmJS, accounts[0]?.address, { offerSigner, localSigner }];
 }
