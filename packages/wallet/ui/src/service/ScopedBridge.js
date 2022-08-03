@@ -1,7 +1,16 @@
+import { makeFollower } from '@agoric/casting';
 import { Far } from '@endo/captp';
 
 export const getScopedBridge = (origin, suggestedDappPetname, bridge) => {
-  const { getPursesNotifier, getOffersNotifier, dappService } = bridge;
+  console.log('GET SCOPED BRIDGE', origin);
+  const {
+    getPursesNotifier,
+    getOffersNotifier,
+    dappService,
+    offerService,
+    leader,
+    unserializer,
+  } = bridge;
 
   const { dapps, addDapp, setDappPetname, deleteDapp, enableDapp } =
     dappService;
@@ -35,9 +44,21 @@ export const getScopedBridge = (origin, suggestedDappPetname, bridge) => {
   }
 
   return Far('scoped bridge', {
-    async addOffer(offer) {
+    async addOffer(config) {
+      const currentTime = new Date().getTime();
       await dapp.approvedP;
-      console.log('TODO: implement add offer', offer);
+      offerService.addOffer({
+        id: currentTime,
+        instancePetname: `instance@${config.instanceHandleBoardId}`,
+        instanceHandleBoardId: config.instanceHandleBoardId,
+        requestContext: { dappOrigin: origin, origin },
+        meta: {
+          id: currentTime,
+          creationStamp: currentTime,
+        },
+        proposalForDisplay: config.proposalTemplate,
+        status: 'proposed',
+      });
     },
     async suggestIssuer(petname, boardId) {
       await dapp.approvedP;
@@ -60,6 +81,10 @@ export const getScopedBridge = (origin, suggestedDappPetname, bridge) => {
       await dapp.approvedP;
       // TODO: filter offers by dapp origin
       return getOffersNotifier();
+    },
+    async makeFollower(spec) {
+      await dapp.approvedP;
+      return makeFollower(spec, leader, { unserializer });
     },
   });
 };

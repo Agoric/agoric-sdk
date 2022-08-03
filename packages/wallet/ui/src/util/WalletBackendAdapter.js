@@ -7,6 +7,7 @@ import {
 import { iterateLatest } from '@agoric/casting';
 import { getScopedBridge } from '../service/ScopedBridge.js';
 import { getDappService } from '../service/Dapps.js';
+import { getOfferService } from '../service/Offers.js';
 
 const newId = kind => `${kind}${Math.random()}`;
 
@@ -89,13 +90,19 @@ export const makeBackendFromWalletBridge = walletBridge => {
 
 /**
  * @param {import('@agoric/casting').Follower} follower
+ * @param {import('@agoric/casting').Leader} leader
+ * @param {import('@agoric/casting').Unserializer} unserializer
  * @param {string} publicAddress
+ * @param {object} keplrConnection
  * @param {(e: unknown) => void} [errorHandler]
  * @param {() => void} [firstCallback]
  */
 export const makeWalletBridgeFromFollower = (
   follower,
+  leader,
+  unserializer,
   publicAddress,
+  keplrConnection,
   errorHandler = e => {
     // Make an unhandled rejection.
     throw e;
@@ -106,7 +113,6 @@ export const makeWalletBridgeFromFollower = (
     getPursesNotifier: 'purses',
     getContactsNotifier: 'contacts',
     getIssuersNotifier: 'issuers',
-    getOffersNotifier: 'offers',
     getPaymentsNotifier: 'payments',
   };
 
@@ -150,17 +156,41 @@ export const makeWalletBridgeFromFollower = (
     console.log('add issuer');
   };
 
+  const signSpendAction = data => {
+    const {
+      signers: { offerSigner },
+    } = keplrConnection;
+    if (!offerSigner) {
+      throw new Error(
+        'Cannot sign a transaction in read only mode, connect to keplr.',
+      );
+    }
+    return offerSigner
+      .submitSpendAction(data)
+      .catch(err => console.error('@@@@SPEND ACTION ERROR', err));
+  };
+
   const dappService = getDappService(publicAddress);
+  const offerService = getOfferService(publicAddress, signSpendAction);
+  const { acceptOffer, declineOffer, cancelOffer } = offerService;
 
   const walletBridge = Far('follower wallet bridge', {
     ...getNotifierMethods,
     getDappsNotifier: () => dappService.notifier,
+    getOffersNotifier: () => offerService.notifier,
+    acceptOffer,
+    declineOffer,
+    cancelOffer,
     makeEmptyPurse,
     addContact,
     addIssuer,
     getScopedBridge: (origin, suggestedDappPetname) =>
       getScopedBridge(origin, suggestedDappPetname, {
         dappService,
+        offerService,
+        leader,
+        unserializer,
+        publicAddress,
         ...getNotifierMethods,
       }),
   });

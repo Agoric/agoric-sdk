@@ -1,34 +1,39 @@
-import { Nat } from '@agoric/nat';
 import { stringifyPurseValue } from '@agoric/ui-components';
 import { icons, defaultIcon } from '../util/Icons.js';
 import Petname from './Petname';
 import PurseValue from './PurseValue';
 import { formatDateNow } from '../util/Date';
+import { withApplicationContext } from '../contexts/Application.jsx';
 
 import './Offer.scss';
 
-const OfferEntry = (type, [role, { amount, pursePetname }]) => {
-  const value =
-    amount.displayInfo.assetKind === 'nat' ? Nat(amount.value) : amount.value;
+const OfferEntry = (
+  type,
+  [role, { value: stringifiedValue, purseId }],
+  purses,
+) => {
+  const value = BigInt(stringifiedValue);
+  const purse = purses.find(({ id }) => id === purseId);
+  console.log('using purse', purse);
   return (
-    <div className="OfferEntry" key={amount.brand.petname}>
+    <div className="OfferEntry" key={purse.brand.petname}>
       <h6>
         {type.header} {role}
       </h6>
       <div className="Token">
         <img
           alt="icon"
-          src={icons[amount.brand.petname] ?? defaultIcon}
+          src={icons[purse.brand.petname] ?? defaultIcon}
           height="32px"
           width="32px"
         />
         <div>
           <PurseValue
             value={value}
-            displayInfo={amount.displayInfo}
-            brandPetname={amount.brand.petname}
+            displayInfo={purse.displayInfo}
+            brandPetname={purse.brandPetname}
           />
-          {type.move} <Petname name={pursePetname} />
+          {type.move} <Petname name={purse.pursePetname} />
         </div>
       </div>
     </div>
@@ -40,8 +45,8 @@ const entryTypes = {
   give: { header: 'Give', move: 'from' },
 };
 
-const Give = entry => OfferEntry(entryTypes.give, entry);
-const Want = entry => OfferEntry(entryTypes.want, entry);
+const Give = (entry, purses) => OfferEntry(entryTypes.give, entry, purses);
+const Want = (entry, purses) => OfferEntry(entryTypes.want, entry, purses);
 
 const cmp = (a, b) => {
   if (a < b) {
@@ -56,11 +61,14 @@ const cmp = (a, b) => {
 const sortedEntries = entries =>
   Object.entries(entries).sort(([kwa], [kwb]) => cmp(kwa, kwb));
 
-const Proposal = ({ offer }) => {
+const Proposal = ({ offer, purses }) => {
+  console.log('showing offer proposal for', offer);
   const {
     proposalForDisplay: { give = {}, want = {}, arguments: args } = {},
     invitationDetails: { fee, feePursePetname, expiry } = {},
   } = offer;
+
+  if (!purses) return <></>;
 
   const feeEntry = fee && (
     <div className="OfferEntry">
@@ -88,8 +96,8 @@ const Proposal = ({ offer }) => {
     </div>
   );
 
-  const Gives = sortedEntries(give).map(Give);
-  const Wants = sortedEntries(want).map(Want);
+  const Gives = sortedEntries(give).map(g => Give(g, purses));
+  const Wants = sortedEntries(want).map(w => Want(w, purses));
 
   return (
     <>
@@ -114,4 +122,6 @@ const Proposal = ({ offer }) => {
   );
 };
 
-export default Proposal;
+export default withApplicationContext(Proposal, ({ purses }) => ({
+  purses,
+}));

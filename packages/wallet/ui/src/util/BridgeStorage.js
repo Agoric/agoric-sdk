@@ -13,6 +13,7 @@ export const bridgeStorageMessages = bridge => {
     if (tag !== 'out' || !payload || typeof payload.type !== 'string') {
       return;
     }
+    console.log('got storage message', key, newValue);
 
     const obj = {
       ...payload,
@@ -23,6 +24,7 @@ export const bridgeStorageMessages = bridge => {
     let conn;
     /** @type {number} */
     let ix;
+    console.log('dappToConn', dappToConn);
     if (dappToConn.has(dappKey)) {
       [conn, ix] = dappToConn.get(dappKey) || assert.fail();
     } else {

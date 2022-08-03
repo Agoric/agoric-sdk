@@ -70,7 +70,7 @@ export const start = async (zcf, privateArgs) => {
       assert.typeof(obj.owner, 'string');
       const wallet = walletsByAddress.get(obj.owner); // or throw
       console.log('walletFactory:', { wallet });
-      // return E(wallet).performAction(obj); // TODO: add performAction to lib-wallet.js
+      return E(wallet).performAction(obj);
     },
   });
 
