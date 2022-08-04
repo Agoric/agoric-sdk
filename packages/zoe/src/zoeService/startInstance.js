@@ -40,6 +40,9 @@ export const makeStartInstance = (
   ) => {
     /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
     const seatHandleToZoeSeatAdmin = makeWeakStore('seatHandle');
+    const instanceBaggage = makeScalarBigMapStore('instanceBaggage', {
+      durable: true,
+    });
 
     const { installation, bundle, bundleCap } = await unwrapInstallation(
       installationP,
@@ -89,6 +92,7 @@ export const makeStartInstance = (
       uncleanIssuerKeywordRecord,
       instance,
       contractBundleCap,
+      instanceBaggage,
     );
     // AWAIT ///
 

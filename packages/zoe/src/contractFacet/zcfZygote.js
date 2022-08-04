@@ -92,7 +92,7 @@ export const makeZCFZygote = async (
     assertUniqueKeyword,
     getInstanceRecord,
     instantiate: instantiateInstanceRecordStorage,
-  } = makeInstanceRecordStorage();
+  } = makeInstanceRecordStorage(zcfBaggage);
 
   const recordIssuer = (keyword, issuerRecord) => {
     addIssuerToInstanceRecord(keyword, issuerRecord);

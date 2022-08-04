@@ -105,6 +105,7 @@
  * @param {IssuerKeywordRecord} uncleanIssuerKeywordRecord
  * @param {Instance} instance
  * @param {BundleCap} contractBundleCap
+ * @param {import('@agoric/vat-data').Baggage} instanceBaggage
  * @returns {ZoeInstanceStorageManager}
  */
 
