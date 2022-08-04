@@ -37,45 +37,47 @@ const vatRoots = {
 
 const noop = () => {};
 
-const makeMock = t => ({
-  devices: {
-    command: /** @type { any } */ ({ registerInboundHandler: noop }),
-    mailbox: /** @type { any } */ ({
-      registerInboundHandler: noop,
-    }),
-    timer: /** @type { any } */ ({}),
-    plugin: /** @type { any } */ ({ registerReceiver: noop }),
-    ...devices,
-  },
-  vats: {
-    vattp: /** @type { any } */ (
-      Far('vattp', {
-        registerMailboxDevice: noop,
-        addRemote: () => ({}),
-      })
-    ),
-    comms: Far('comms', {
-      addRemote: noop,
-      addEgress: noop,
-      addIngress: async () => ({
-        getConfiguration: () => ({ _: 'client configuration' }),
+const makeMock = t =>
+  harden({
+    devices: {
+      command: /** @type { any } */ ({ registerInboundHandler: noop }),
+      mailbox: /** @type { any } */ ({
+        registerInboundHandler: noop,
       }),
-    }),
-    http: { setPresences: noop, setCommandDevice: noop },
-    spawner: {
-      buildSpawner: () => ({ _: 'spawner' }),
+      timer: /** @type { any } */ ({}),
+      plugin: /** @type { any } */ ({ registerReceiver: noop }),
+      ...devices,
     },
-    timer: Far('TimerVat', {
-      createTimerService: async () => buildManualTimer(t.log),
-    }),
-    uploads: { getUploads: () => ({ _: 'uploads' }) },
+    vats: {
+      vattp: /** @type { any } */ (
+        Far('vattp', {
+          registerMailboxDevice: noop,
+          addRemote: () => harden({}),
+        })
+      ),
+      comms: Far('comms', {
+        addRemote: noop,
+        addEgress: noop,
+        addIngress: async () =>
+          harden({
+            getConfiguration: () => harden({ _: 'client configuration' }),
+          }),
+      }),
+      http: { setPresences: noop, setCommandDevice: noop },
+      spawner: {
+        buildSpawner: () => harden({ _: 'spawner' }),
+      },
+      timer: Far('TimerVat', {
+        createTimerService: async () => buildManualTimer(t.log),
+      }),
+      uploads: { getUploads: () => harden({ _: 'uploads' }) },
 
-    network: Far('network', {
-      registerProtocolHandler: noop,
-      bind: () => ({ addListener: noop }),
-    }),
-  },
-});
+      network: Far('network', {
+        registerProtocolHandler: noop,
+        bind: () => harden({ addListener: noop }),
+      }),
+    },
+  });
 
 const argvByRole = {
   chain: {
