@@ -7,6 +7,8 @@ import path from 'path';
 
 import { makeIssuerKit, AssetKind } from '@agoric/ertp';
 import bundleSource from '@endo/bundle-source';
+import { Far } from '@endo/marshal';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import {
   makeAndStoreInstanceRecord,
@@ -34,7 +36,7 @@ const setupIssuersForTest = () => {
 test('makeAndStoreInstanceRecord', async t => {
   const { currencyKit, ticketKit } = setupIssuersForTest();
   const bundle = await bundleSource(root);
-  const fakeInstallation = { getBundle: () => bundle };
+  const fakeInstallation = Far('fakeInstallation', { getBundle: () => bundle });
   const fakeInstance = /** @type {Instance} */ ({});
   const customTerms = harden({ time: 2n });
   const issuers = harden({
@@ -54,6 +56,9 @@ test('makeAndStoreInstanceRecord', async t => {
     getBrands,
     assertUniqueKeyword,
   } = makeAndStoreInstanceRecord(
+    makeScalarBigMapStore('instanceBaggage', {
+      durable: true,
+    }),
     fakeInstallation,
     fakeInstance,
     customTerms,
@@ -96,7 +101,7 @@ test('makeAndStoreInstanceRecord', async t => {
 test('makeInstanceRecordStorage', async t => {
   const { currencyKit, ticketKit } = setupIssuersForTest();
   const bundle = await bundleSource(root);
-  const fakeInstallation = { getBundle: () => bundle };
+  const fakeInstallation = Far('fakeInstallation', { getBundle: () => bundle });
   const fakeInstance = /** @type {Instance} */ ({});
   const issuers = harden({
     Currency: currencyKit.issuer,
@@ -114,12 +119,18 @@ test('makeInstanceRecordStorage', async t => {
     getBrands,
     assertUniqueKeyword,
     instantiate,
-  } = makeInstanceRecordStorage();
-  instantiate({
-    installation: fakeInstallation,
-    instance: fakeInstance,
-    terms: { time: 2n, issuers, brands },
-  });
+  } = makeInstanceRecordStorage(
+    makeScalarBigMapStore('instanceBaggage', {
+      durable: true,
+    }),
+  );
+  instantiate(
+    harden({
+      installation: fakeInstallation,
+      instance: fakeInstance,
+      terms: { time: 2n, issuers, brands },
+    }),
+  );
 
   t.deepEqual(getInstanceRecord(), {
     installation: fakeInstallation,

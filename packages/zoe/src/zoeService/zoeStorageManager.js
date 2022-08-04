@@ -120,6 +120,7 @@ export const makeZoeStorageManager = (
     uncleanIssuerKeywordRecord,
     instance,
     contractBundleCap,
+    instanceBaggage,
   ) => {
     // Clean the issuerKeywordRecord we receive in `startInstance`
     // from the user, and save the issuers in Zoe if they are not
@@ -142,6 +143,7 @@ export const makeZoeStorageManager = (
     // for a contract instance. Contract code has similar query
     // capabilities from the ZCF side.
     const instanceRecordManager = makeAndStoreInstanceRecord(
+      instanceBaggage,
       installation,
       instance,
       customTerms,
