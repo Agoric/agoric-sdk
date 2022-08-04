@@ -63,11 +63,11 @@ const RequestsInternal = ({
 
   const signOffer = () => {
     const {
-      signers: { offerSigner },
+      signers: { interactiveSigner },
     } = keplrConnection;
-    offerSigner
+    interactiveSigner
       .submitSpendAction('{"give": 1, "want": 2}')
-      .catch(err => console.error('@@@@TODO', err));
+      .catch(err => console.error('TODO: handle sign/broadcast errors', err));
   };
   return (
     <div className="Requests">
@@ -76,7 +76,7 @@ const RequestsInternal = ({
       ) : (
         <div className="Empty">
           <button type="button" onClick={signOffer}>
-            PRESS ME!
+            Test WalletSpendAction Signing
           </button>
           <img
             className="Splash-image"

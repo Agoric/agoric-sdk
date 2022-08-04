@@ -161,7 +161,7 @@ export const STORAGE_KEY = 'agoric.eis0Aigi';
  * @param {typeof window.localStorage} io.localStorage
  * @param {typeof import('@cosmjs/crypto').Random.getBytes} io.getBytes for key generation
  */
-export const makeNonspendingSigner = async ({ localStorage, getBytes }) => {
+export const makeBackgroundSigner = async ({ localStorage, getBytes }) => {
   const provideLocalKey = () => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -317,7 +317,11 @@ export const makeExecActionMessages = (granter, grantee, action) => {
  * @param {typeof import('@cosmjs/stargate').SigningStargateClient.connectWithSigner} connectWithSigner
  * @typedef {import('@keplr-wallet/types').Window} KeplrWindow
  */
-export const makeOfferSigner = async (chainInfo, keplr, connectWithSigner) => {
+export const makeInteractiveSigner = async (
+  chainInfo,
+  keplr,
+  connectWithSigner,
+) => {
   const { chainId } = chainInfo;
 
   const key = await keplr.getKey(chainId);

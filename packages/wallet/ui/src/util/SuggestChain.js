@@ -1,7 +1,4 @@
 /* global globalThis */
-import { SigningStargateClient } from '@cosmjs/stargate';
-import { Random } from '@cosmjs/crypto';
-import { makeNonspendingSigner, makeOfferSigner } from './keyManagement.js';
 
 import { stakeCurrency, stableCurrency, bech32Config } from './chainInfo.js';
 
@@ -9,8 +6,6 @@ export const AGORIC_COIN_TYPE = 564;
 export const COSMOS_COIN_TYPE = 118;
 
 const makeChainInfo = (networkConfig, rpcAddr, chainId, caption) => {
-  console.log('@@makeChainInfo', { networkConfig });
-
   const coinType = Number(
     new URL(networkConfig).searchParams.get('coinType') || AGORIC_COIN_TYPE,
   );
@@ -18,7 +13,7 @@ const makeChainInfo = (networkConfig, rpcAddr, chainId, caption) => {
   const network = hostname.split('.')[0];
   let rpc;
   let api;
-  console.log('@@makeChainInfo', { networkConfig, hostname, network, rpcAddr });
+
   if (network !== hostname) {
     rpc = `https://${network}.rpc.agoric.net`;
     api = `https://${network}.api.agoric.net`;
@@ -26,6 +21,7 @@ const makeChainInfo = (networkConfig, rpcAddr, chainId, caption) => {
     rpc = rpcAddr.match(/:\/\//) ? rpcAddr : `http://${rpcAddr}`;
     api = rpc.replace(/(:\d+)?$/, ':1317');
   }
+
   return {
     rpc,
     rest: api,
@@ -51,10 +47,10 @@ export async function suggestChain(
   const {
     fetch = globalThis.fetch,
     keplr = window.keplr,
-    SigningClient = SigningStargateClient,
     random = Math.random,
   } = io;
 
+  console.log('suggestChain: fetch', networkConfig); // log net IO
   const res = await fetch(networkConfig);
   if (!res.ok) {
     throw Error(`Cannot fetch network: ${res.status}`);
@@ -63,53 +59,9 @@ export async function suggestChain(
   const rpcAddr = rpcAddrs[Math.floor(random() * rpcAddrs.length)];
 
   const chainInfo = makeChainInfo(networkConfig, rpcAddr, chainId, caption);
-  console.log('@@SuggestChain', { networkConfig, chainInfo, keplr });
   await keplr.experimentalSuggestChain(chainInfo);
   await keplr.enable(chainId);
-  console.log('@@keplr.enable', chainId, 'done');
+  console.log('keplr.enable chainId =', chainId, 'done');
 
-  const offlineSigner = keplr.getOfflineSigner(chainId);
-  // @@@@@ const cosmJS = await SigningClient.connectWithSigner(
-  //   chainInfo.rpc,
-  //   offlineSigner,
-  // );
-  let cosmJS;
-  console.log('@@', { cosmJS });
-
-  /*
-  // Example transaction 
-  const amount = {
-    denom: 'ubld',
-    amount: '1234567',
-  };
-  const accounts = await offlineSigner.getAccounts();
-  await cosmJS.sendTokens(
-    accounts[0].address,
-    'agoric123456',
-    [amount],
-    {
-      amount: [
-        {
-          amount: '500000',
-          denom: 'uist',
-        },
-      ],
-      gas: '890000',
-    },
-    'enjoy!',
-  );
- */
-  const accounts = await offlineSigner.getAccounts();
-
-  console.log('@@SuggestChain', { chainInfo, accounts });
-  const offerSigner = await makeOfferSigner(
-    chainInfo,
-    keplr,
-    SigningClient.connectWithSigner,
-  );
-
-  const { getBytes } = Random;
-  const localSigner = await makeNonspendingSigner({ localStorage, getBytes });
-
-  return [cosmJS, accounts[0]?.address, { offerSigner, localSigner }];
+  return chainInfo;
 }
