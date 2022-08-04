@@ -1,0 +1,49 @@
+{
+  "name": "@agoric/cosmic-proto",
+  "version": "0.1.0",
+  "description": "Protobuf stubs for the Agoric cosmos-sdk module",
+  "keywords": [],
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/Agoric/agoric-sdk/tree/master/packages/cosmic-proto#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
+  },
+  "type": "module",
+  "exports": {
+    "./swingset/msgs.js": "./swingset/msgs.js",
+    "./swingset/msgs.ts": "./swingset/msgs.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "echo Use yarn rebuild",
+    "rebuild": "rm -rf gen && mkdir -p gen && yarn build:ts && yarn build:js && prettier -w .",
+    "build:ts": "protoc --plugin=node_modules/.bin/protoc-gen-ts_proto --ts_proto_opt='esModuleInterop=true,forceLong=long,useOptionals=true' --ts_proto_out=./gen --ts_proto_opt=importSuffix=.js ./proto/agoric/swingset/msgs.proto -I./proto",
+    "build:js": "tsc --build jsconfig.json",
+    "test": "node test/sanity-test.js",
+    "test:xs": "exit 0",
+    "lint": "exit 0",
+    "lint-fix": "exit 0"
+  },
+  "dependencies": {
+    "protobufjs": "^7.0.0"
+  },
+  "devDependencies": {
+    "ts-proto": "^1.121.1"
+  },
+  "files": [
+    "build",
+    "LICENSE*"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  }
+}
