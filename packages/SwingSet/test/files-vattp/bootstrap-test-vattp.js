@@ -9,16 +9,21 @@ export function buildRootObject(vatPowers, vatParameters) {
       log(`ch.receive ${body}`);
     },
   });
+  let transmitter;
 
   return Far('root', {
     async bootstrap(vats, devices) {
+      // to exercise vat-vattp upgrade, we need the vatAdminService to
+      // be configured, even though we don't use it ourselves
+      await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
       const { argv } = vatParameters;
       D(devices.mailbox).registerInboundHandler(vats.vattp);
       await E(vats.vattp).registerMailboxDevice(devices.mailbox);
       const name = 'remote1';
-      const { transmitter, setReceiver } = await E(vats.vattp).addRemote(name);
+      const res = await E(vats.vattp).addRemote(name);
+      transmitter = res.transmitter;
       // replace the E(vats.comms).addRemote() we'd normally do
-      await E(setReceiver).setReceiver(receiver);
+      await E(res.setReceiver).setReceiver(receiver);
 
       if (argv[0] === '1') {
         log('not sending anything');
@@ -27,6 +32,9 @@ export function buildRootObject(vatPowers, vatParameters) {
       } else {
         assert.fail(X`unknown argv mode '${argv[0]}'`);
       }
+    },
+    transmit(msg) {
+      E(transmitter).transmit(msg);
     },
   });
 }

@@ -1,12 +1,22 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
+import bundleSource from '@endo/bundle-source';
 import { provideHostStorage } from '../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../src/index.js';
 import {
   buildMailboxStateMap,
   buildMailbox,
 } from '../src/devices/mailbox/mailbox.js';
+
+async function restartVatTP(controller) {
+  const vaBundle = await bundleSource(
+    new URL('../src/vats/vattp/vat-vattp.js', import.meta.url).pathname,
+  );
+  const bundleID = await controller.validateAndInstallBundle(vaBundle);
+  controller.upgradeStaticVat('vattp', false, bundleID, {});
+  await controller.run();
+}
 
 test.serial('vattp', async t => {
   const s = buildMailboxStateMap();
@@ -81,6 +91,7 @@ test.serial('vattp 2', async t => {
   await initializeSwingset(config, ['2'], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
   t.teardown(c.shutdown);
+  c.pinVatRoot('bootstrap');
   await c.run();
   t.deepEqual(s.exportToData(), {
     remote1: { outbox: [[1, 'out1']], inboundAck: 0 },
@@ -104,4 +115,32 @@ test.serial('vattp 2', async t => {
   await c.run();
   t.deepEqual(c.dump().log, ['ch.receive msg1', 'ch.receive msg2']);
   t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });
+
+  // now upgrade vattp, and see if the state is retained
+  await restartVatTP(c);
+
+  // vattp remembers the inbound seqnum: duplicates are ignored
+  t.is(mb.deliverInbound('remote1', [m2], 1), true);
+  t.deepEqual(c.dump().log, ['ch.receive msg1', 'ch.receive msg2']);
+  // vattp remembers the inboundAck number
+  t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });
+
+  // vattp remembers the receiver: new inbound msgs are still delivered
+  const m3 = [3, 'msg3'];
+  t.is(mb.deliverInbound('remote1', [m3], 1), true);
+  await c.run();
+  t.deepEqual(c.dump().log, [
+    'ch.receive msg1',
+    'ch.receive msg2',
+    'ch.receive msg3',
+  ]);
+  t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 3 } });
+
+  // vattp still supports the transmitter object
+  c.queueToVatRoot('bootstrap', 'transmit', ['out2']);
+  await c.run();
+  // vattp remembers the outbound seqnum
+  t.deepEqual(s.exportToData(), {
+    remote1: { outbox: [[2, 'out2']], inboundAck: 3 },
+  });
 });
