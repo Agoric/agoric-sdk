@@ -34,7 +34,6 @@ test('setupCreateZCFVat', async t => {
       () => undefined, // getZoeService
     )(undefined),
     {
-      // @ts-expect-error fakeVatAdminSvc is mocked
       adminNode: undefined,
       root: undefined,
     },

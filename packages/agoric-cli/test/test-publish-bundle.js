@@ -30,6 +30,7 @@ test('fake publish bundle ok', async t => {
         t.is(hostname, 'localhost');
         t.is(port, 8080);
         t.is(path, '/publish-bundle?accessToken=TO%20KEN');
+        // @ts-expect-error unknown
         t.is(bundle, receivedBundle);
         return { ok: true };
       },

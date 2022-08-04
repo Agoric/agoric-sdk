@@ -13,23 +13,6 @@ import { provide } from '../src/stores/store-utils.js';
 
 import '../src/types.js';
 
-/**
- * Simulate ava v4 "assertions now return a boolean indicating whether they passed" behavior
- * https://github.com/avajs/ava/releases/tag/v4.0.0#:~:text=Assertions%20as%20type%20guards
- *
- * @param {boolean | undefined} assertionResult
- * @param {() => boolean} getFallbackResult
- * @returns {boolean}
- */
-export const assertionPassed = (assertionResult, getFallbackResult) => {
-  if (assertionResult === undefined) return getFallbackResult();
-  console.warn(
-    'Got non-undefined assertion result, has ava been upgraded to v4+? ' +
-      'Consider removing assertionPassed.',
-  );
-  return assertionResult;
-};
-
 function check(t, mode, objMaker) {
   // Check the full API, and make sure object identity isn't a problem by
   // creating two potentially-similar things for use as keys.

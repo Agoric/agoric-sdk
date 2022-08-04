@@ -12,8 +12,7 @@ import { E, Far } from '@endo/far';
 import path from 'path';
 import { makeTestSpace, subscriptionKey } from './supports.js';
 
-/** @type {import('ava').TestInterface<Awaited<ReturnType<makeTestContext>>>} */
-// @ts-expect-error cast
+/** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
 
 const makeTestContext = async t => {

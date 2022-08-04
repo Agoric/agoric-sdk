@@ -18,7 +18,7 @@
     "@agoric/vats": "^0.10.0",
     "@endo/bundle-source": "^2.2.2",
     "@endo/init": "^0.5.43",
-    "ava": "^3.12.1"
+    "ava": "^4.3.1"
   },
   "dependencies": {
     "@agoric/assert": "^0.4.0",
@@ -50,7 +50,8 @@
     "files": [
       "test/**/test-*.js"
     ],
-    "timeout": "2m"
+    "timeout": "2m",
+    "workerThreads": false
   },
   "publishConfig": {
     "access": "public"
