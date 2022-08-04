@@ -1,0 +1,32 @@
+diff --git a/node_modules/@endo/eventual-send/src/track-turns.js b/node_modules/@endo/eventual-send/src/track-turns.js
+index 5b31b91..a470a11 100644
+--- a/node_modules/@endo/eventual-send/src/track-turns.js
++++ b/node_modules/@endo/eventual-send/src/track-turns.js
+@@ -1,6 +1,14 @@
+ /* global globalThis */
+ // @ts-nocheck
+ 
++/**
++ * In this patch, we just make it a constant set to false to suppress the
++ * collection of these diagnostics. TODO A future endo release is expected
++ * to make this switchable through some kind of configuration option.
++ * See https://github.com/Agoric/agoric-sdk/issues/5886
++ */
++const SHOULD_TRACK_TURNS = false;
++
+ // NOTE: We can't import these because they're not in scope before lockdown.
+ // import { assert, details as X } from '@agoric/assert';
+ 
+@@ -40,7 +48,11 @@ const VERBOSE = false;
+  * @returns {T}
+  */
+ export const trackTurns = funcs => {
+-  if (typeof globalThis === 'undefined' || !globalThis.assert) {
++  if (
++    typeof globalThis === 'undefined' ||
++    !globalThis.assert ||
++    !SHOULD_TRACK_TURNS
++  ) {
+     return funcs;
+   }
+   const { details: X } = assert;
