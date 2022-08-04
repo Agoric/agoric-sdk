@@ -6,6 +6,7 @@ export default [
   "@agoric/assert",
   "@agoric/cache",
   "@agoric/casting",
+  "@agoric/cosmic-proto",
   "@agoric/cosmic-swingset",
   "@agoric/cosmos",
   "@agoric/deploy-script-support",
