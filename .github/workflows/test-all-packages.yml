@@ -123,6 +123,8 @@ jobs:
         run: cd packages/web-components && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (wallet-connection)
         run: cd packages/wallet-connection && yarn ${{ steps.vars.outputs.test }}
+      - name: yarn test (cosmic-proto)
+        run: cd packages/cosmic-proto && yarn ${{ steps.vars.outputs.test }}
 
   test-quick2:
     # BEGIN-TEST-BOILERPLATE
