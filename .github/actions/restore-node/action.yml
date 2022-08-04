@@ -38,10 +38,15 @@ runs:
       with:
         path: .
         key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-node-${{ inputs.node-version }}-built-${{ inputs.xsnap-random-init }}-${{ github.sha }}
-    - name: yarn install --frozen-lockfile
-      run: yarn install --frozen-lockfile
+    # This and the git diff below are to detect if `yarn install` results in a
+    # change to the lock file.
+    - name: yarn install
+      run: yarn install
       shell: bash
       if: steps.built.outputs.cache-hit != 'true'
+    - name: git diff --exit-code yarn.lock
+      run: git diff --exit-code yarn.lock
+      shell: bash
     - name: yarn build
       run: yarn build
       shell: bash
