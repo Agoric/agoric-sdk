@@ -32,7 +32,7 @@ test('makeIssuerKit bad displayInfo.decimalPlaces', async t => {
         // @ts-expect-error Intentional wrong type for testing
         harden({ decimalPlaces: 'hello' }),
       ),
-    { message: /"hello" - Must be >= -100/ },
+    { message: /^displayInfo: "hello" - Must be >= -100$/ },
   );
 
   t.throws(
@@ -58,13 +58,13 @@ test('makeIssuerKit bad displayInfo.decimalPlaces', async t => {
   t.throws(
     () =>
       makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: 101 })),
-    { message: /101 - Must be <= 100/ },
+    { message: /^displayInfo: 101 - Must be <= 100$/ },
   );
 
   t.throws(
     () =>
       makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: -101 })),
-    { message: /-101 - Must be >= -100/ },
+    { message: /^displayInfo: -101 - Must be >= -100$/ },
   );
 });
 
@@ -81,7 +81,7 @@ test('makeIssuerKit bad displayInfo.assetKind', async t => {
       ),
     {
       message:
-        /"something" - Must match one of \["nat","set","copySet","copyBag"\]/,
+        /^displayInfo: "something" - Must match one of \["nat","set","copySet","copyBag"\]$/,
     },
   );
 });
@@ -98,7 +98,8 @@ test('makeIssuerKit bad displayInfo.whatever', async t => {
         }),
       ),
     {
-      message: /Remainder \{"whatever":"something"\} - Must match \{\}/,
+      message:
+        /^displayInfo: Remainder \{"whatever":"something"\} - Must match \{\}$/,
     },
   );
 });
@@ -110,10 +111,11 @@ test('makeIssuerKit malicious displayInfo', async t => {
         'myTokens',
         AssetKind.NAT,
         // @ts-expect-error Intentional wrong type for testing
-        'bad displayInfo',
+        'badness',
       ),
     {
-      message: /"bad displayInfo" - Must have shape of base: "copyRecord"/,
+      message:
+        /^displayInfo: "badness" - Must have shape of base: "copyRecord"$/,
     },
   );
 });
