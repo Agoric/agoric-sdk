@@ -40,8 +40,17 @@ export const makeFakeStorage = (path, publication) => {
 };
 harden(makeFakeStorage);
 
-export const makeFakeMarshaller = () =>
-  makeMarshal(undefined, undefined, {
-    marshalSaveError: () => {},
+export const makeFakeMarshaller = () => {
+  const vals = [];
+  const fromVal = val => {
+    vals.push(val);
+    return vals.length;
+  };
+  const toVal = slot => vals[slot];
+  return makeMarshal(fromVal, toVal, {
+    marshalSaveError: err => {
+      throw err;
+    },
   });
+};
 harden(makeFakeMarshaller);
