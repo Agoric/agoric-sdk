@@ -14,7 +14,6 @@ const RequestsInternal = ({
   pendingOffers,
   declinedOffers,
   closedOffers,
-  keplrConnection,
 }) => {
   const hasNoAutodeposit = payment =>
     payment.status !== 'deposited' &&
@@ -60,24 +59,12 @@ const RequestsInternal = ({
       return <DappConnection dapp={request.data} key={request.data.id} />;
     }
   };
-
-  const signOffer = () => {
-    const {
-      signers: { interactiveSigner },
-    } = keplrConnection;
-    interactiveSigner
-      .submitSpendAction('{"give": 1, "want": 2}')
-      .catch(err => console.error('TODO: handle sign/broadcast errors', err));
-  };
   return (
     <div className="Requests">
       {requests.length ? (
         requests.map(Item)
       ) : (
         <div className="Empty">
-          <button type="button" onClick={signOffer}>
-            Test WalletSpendAction Signing
-          </button>
           <img
             className="Splash-image"
             src="agoric-city.svg"
@@ -100,5 +87,4 @@ export default withApplicationContext(RequestsInternal, context => ({
   pendingOffers: context.pendingOffers,
   declinedOffers: context.declinedOffers,
   closedOffers: context.closedOffers,
-  keplrConnection: context.keplrConnection,
 }));
