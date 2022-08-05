@@ -120,7 +120,7 @@ const finish = ({ state, facets }) => {
       helper
         .chargeAllVaults(updateTime)
         .catch(e =>
-          console.error('🚨 runStakeManager failed to charge interest', e),
+          console.error('🚨 stakeFactoryManager failed to charge interest', e),
         ),
     fail: reason => {
       zcf.shutdownWithFailure(
@@ -285,12 +285,12 @@ const manager = {
 
 const behavior = { helper, manager };
 
-export const makeRunStakeManager = defineKindMulti(
-  'RunStakeManager',
+export const makeStakeFactoryManager = defineKindMulti(
+  'StakeFactoryManager',
   initState,
   behavior,
   { finish },
 );
 /**
- * @typedef {ReturnType<typeof makeRunStakeManager>['manager']} RunStakeManager
+ * @typedef {ReturnType<typeof makeStakeFactoryManager>['manager']} StakeFactoryManager
  */

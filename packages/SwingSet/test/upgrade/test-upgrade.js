@@ -4,6 +4,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
 import { parse } from '@endo/marshal';
+import bundleSource from '@endo/bundle-source';
 import { getAllState } from '@agoric/swing-store';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { parseReachableAndVatSlot } from '../../src/kernel/state/reachable.js';
@@ -13,7 +14,12 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '../../src/index.js';
-import { bundleOpts, capargs, capdataOneSlot } from '../util.js';
+import {
+  bundleOpts,
+  capargs,
+  capdataOneSlot,
+  restartVatAdminVat,
+} from '../util.js';
 
 import { NUM_SENSORS } from './num-sensors.js';
 
@@ -61,7 +67,11 @@ const dumpState = (hostStorage, vatID) => {
   }
 };
 
-const testUpgrade = async (t, defaultManagerType) => {
+const testUpgrade = async (
+  t,
+  defaultManagerType,
+  doVatAdminRestart = false,
+) => {
   const config = {
     includeDevDependencies: true, // for vat-data
     defaultManagerType,
@@ -108,6 +118,10 @@ const testUpgrade = async (t, defaultManagerType) => {
   const impKrefs = ['skip0'];
   for (let i = 1; i < NUM_SENSORS + 1; i += 1) {
     impKrefs.push(getImportSensorKref(impcapdata, i)[1]);
+  }
+
+  if (doVatAdminRestart) {
+    await restartVatAdminVat(c);
   }
 
   // create initial version
@@ -177,6 +191,10 @@ const testUpgrade = async (t, defaultManagerType) => {
     const d = getRetained(v1capdata, name);
     t.is(d[0], 'slot');
     retainedKrefs[name] = d[1];
+  }
+
+  if (doVatAdminRestart) {
+    await restartVatAdminVat(c);
   }
 
   // now perform the upgrade
@@ -286,7 +304,11 @@ const testUpgrade = async (t, defaultManagerType) => {
 };
 
 test('vat upgrade - local', async t => {
-  return testUpgrade(t, 'local');
+  return testUpgrade(t, 'local', false);
+});
+
+test('vat upgrade - local with VA restarts', async t => {
+  return testUpgrade(t, 'local', true);
 });
 
 test('vat upgrade - xsnap', async t => {
@@ -633,4 +655,53 @@ test('failed upgrade - unknown options', async t => {
   // following should have worked.
   // t.regex(e.message, /upgrade\(\) received unknown options: bad/);
   t.regex(e.message, /upgrade\(\) received unknown options: \(a string\)/);
+});
+
+test('failed vatAdmin upgrade - bad replacement code', async t => {
+  const config = {
+    includeDevDependencies: true, // for vat-data
+    bootstrap: 'bootstrap',
+    defaultReapInterval: 'never',
+    vats: {
+      bootstrap: { sourceSpec: bfile('bootstrap-upgrade.js') },
+    },
+    bundles: {
+      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
+    },
+  };
+
+  const hostStorage = provideHostStorage();
+  await initializeSwingset(config, [], hostStorage);
+  const c = await makeSwingsetController(hostStorage);
+  c.pinVatRoot('bootstrap');
+  await c.run();
+
+  const run = async (method, args = []) => {
+    assert(Array.isArray(args));
+    const kpid = c.queueToVatRoot('bootstrap', method, args);
+    await c.run();
+    const status = c.kpStatus(kpid);
+    const capdata = c.kpResolution(kpid);
+    return [status, capdata];
+  };
+
+  const badVABundle = await bundleSource(
+    new URL('./vat-junk.js', import.meta.url).pathname,
+  );
+  const bundleID = await c.validateAndInstallBundle(badVABundle);
+  const kpid = c.upgradeStaticVat('vatAdmin', true, bundleID, {});
+  await c.run();
+  const vaUpgradeStatus = c.kpStatus(kpid);
+  const vaUpgradeCapdata = c.kpResolution(kpid);
+
+  t.is(vaUpgradeStatus, 'rejected');
+  const e = parse(vaUpgradeCapdata.body);
+  t.truthy(e instanceof Error);
+  t.regex(e.message, /vat-upgrade failure/);
+
+  // Now try doing something that uses vatAdmin to verify that original vatAdmin is intact.
+  const [v1status, v1capdata] = await run('buildV1', []);
+  t.is(v1status, 'fulfilled');
+  // Just a taste to verify that the create went right; other tests check the rest
+  t.deepEqual(get(v1capdata, 'data'), ['some', 'data']);
 });

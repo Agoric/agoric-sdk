@@ -58,7 +58,7 @@
   "devDependencies": {
     "@agoric/ertp": "^0.14.2",
     "@endo/bundle-source": "^2.2.2",
-    "ava": "^3.12.1",
+    "ava": "^4.3.1",
     "c8": "^7.7.2"
   },
   "publishConfig": {
@@ -71,6 +71,7 @@
     "files": [
       "test/**/test-*.js"
     ],
-    "timeout": "20m"
+    "timeout": "20m",
+    "workerThreads": false
   }
 }

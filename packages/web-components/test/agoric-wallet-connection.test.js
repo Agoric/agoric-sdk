@@ -40,7 +40,7 @@ const makeMockCapTP = (_, rawSend, __, ___) => {
         getUpdateSince: () => ({ updateCount: 3n, value: [] }),
       },
       wallet: {
-        getAdminFacet: () => ({ isAdmin: true }),
+        getAdminFacet: () => ({ getCacheCoordinator: () => null }),
       },
     }),
   };
@@ -197,7 +197,7 @@ describe('AgoricWalletConnection', () => {
     it('returns the admin bootstrap', async () => {
       iframeOnMessage('http://localhost:8000');
 
-      expect(await adminBootstrap).to.deep.equal({ isAdmin: true });
+      expect(await adminBootstrap).to.have.property('getCacheCoordinator');
     });
   });
 

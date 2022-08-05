@@ -19,7 +19,7 @@ import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { Far } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { makeWallet } from '../src/lib-wallet.js';
+import { makeWalletRoot } from '../src/lib-wallet.js';
 
 import '../src/types.js';
 
@@ -134,7 +134,7 @@ async function setupTest(
     },
   ] = await Promise.all([automaticRefundP, autoswapP, attestationP]);
 
-  const { admin: wallet, initialized } = makeWallet({
+  const { admin: wallet, initialized } = makeWalletRoot({
     zoe: t.context.zoe,
     board,
     myAddressNameAdmin: makeFakeMyAddressNameAdmin(),
@@ -1759,7 +1759,7 @@ test('addOffer makeContinuingInvitation', async (/** @type {LibWalletTestContext
     inboxStateChangeLog.push(data);
   };
 
-  const { admin: wallet, initialized } = makeWallet({
+  const { admin: wallet, initialized } = makeWalletRoot({
     zoe: t.context.zoe,
     board,
     myAddressNameAdmin: makeFakeMyAddressNameAdmin(),
@@ -1830,7 +1830,7 @@ test('getZoe, getBoard', async (/** @type {LibWalletTestContext} */ t) => {
   const pursesStateChangeHandler = (/** @type {any} */ _data) => {};
   const inboxStateChangeHandler = (/** @type {any} */ _data) => {};
 
-  const { admin: wallet, initialized } = makeWallet({
+  const { admin: wallet, initialized } = makeWalletRoot({
     zoe: t.context.zoe,
     board,
     myAddressNameAdmin: makeFakeMyAddressNameAdmin(),
@@ -1850,7 +1850,7 @@ test('stamps from dateNow', async (/** @type {LibWalletTestContext} */ t) => {
   let currentDateMS = startDateMS;
   const dateNow = () => currentDateMS;
 
-  const { admin: wallet, initialized } = makeWallet({
+  const { admin: wallet, initialized } = makeWalletRoot({
     zoe: t.context.zoe,
     board,
     myAddressNameAdmin: makeFakeMyAddressNameAdmin(),

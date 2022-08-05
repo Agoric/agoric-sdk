@@ -7,7 +7,7 @@ import { E, Far } from '@endo/far';
 
 import { makeCopyBag } from '@agoric/store';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
-import { makeAttestationFacets } from '../../src/runStake/attestation.js';
+import { makeAttestationFacets } from '../../src/stakeFactory/attestation.js';
 
 /**
  * @param {Brand<'nat'>} uBrand

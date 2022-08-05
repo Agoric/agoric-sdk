@@ -25,8 +25,7 @@ import {
   subscriptionKey,
 } from '../supports.js';
 
-/** @type {import('ava').TestInterface<Awaited<ReturnType<makeTestContext>>>} */
-// @ts-expect-error cast
+/** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
 
 const pathname = new URL(import.meta.url).pathname;
@@ -244,7 +243,7 @@ test('limit', async t => {
   trace('gone over limit');
 
   const paymentPs = await E(seat1).getPayouts();
-  // We should get 0 RUN and all our anchor back
+  // We should get 0 Stable  and all our anchor back
   // TODO should this be expecteed to be an empty Out?
   t.falsy(paymentPs.Out);
   // const actualRun = await E(runIssuer).getAmountOf(runPayout);

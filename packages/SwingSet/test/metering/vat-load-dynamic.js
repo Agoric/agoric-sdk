@@ -41,6 +41,7 @@ export function buildRootObject(vatPowers) {
       const bundlecap = await E(service).getNamedBundleCap(name);
       control = await E(service).createVat(bundlecap, dynamicOptions);
       const done = E(control.adminNode).done();
+      done.catch(() => 'hush');
       // the caller checks this later, but doesn't wait for it
       return ['created', done];
     },

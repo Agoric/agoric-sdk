@@ -33,9 +33,6 @@
     "@agoric/store": "^0.7.2",
     "@endo/marshal": "^0.6.9"
   },
-  "devDependencies": {
-    "ava": "^3.12.1"
-  },
   "files": [
     "*.js",
     "NEWS.md"
@@ -45,11 +42,5 @@
   ],
   "publishConfig": {
     "access": "public"
-  },
-  "ava": {
-    "files": [
-      "test/**/test-*.js"
-    ],
-    "timeout": "2m"
   }
 }

@@ -7,7 +7,7 @@ import bundleSource from '@endo/bundle-source';
 import { parse } from '@endo/marshal';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { buildKernelBundles, buildVatController } from '../../src/index.js';
-import { capargs } from '../util.js';
+import { capargs, restartVatAdminVat } from '../util.js';
 
 async function prepare() {
   const kernelBundles = await buildKernelBundles();
@@ -33,7 +33,7 @@ function extractSlot(t, data) {
   return { marg, meterKref: data.slots[0] };
 }
 
-test('meter objects', async t => {
+async function meterObjectsTest(t, doVatAdminRestarts) {
   const { kernelBundles, bootstrapBundle } = t.context.data;
   const config = {
     bootstrap: 'bootstrap',
@@ -53,6 +53,13 @@ test('meter objects', async t => {
 
   // let the vatAdminService get wired up before we create any new vats
   await c.run();
+
+  async function vaRestart() {
+    if (doVatAdminRestarts) {
+      await restartVatAdminVat(c);
+    }
+  }
+  await vaRestart();
 
   // create and manipulate a meter without attaching it to a vat
   const cmargs = [10n, 5n]; // remaining, notify threshold
@@ -75,11 +82,24 @@ test('meter objects', async t => {
     return parse(res.body);
   }
 
+  await vaRestart();
   t.deepEqual(await getMeter(), { remaining: 10n, threshold: 5n });
+  await vaRestart();
   await doMeter('addMeterRemaining', 8n);
+  await vaRestart();
   t.deepEqual(await getMeter(), { remaining: 18n, threshold: 5n });
+  await vaRestart();
   await doMeter('setMeterThreshold', 7n);
+  await vaRestart();
   t.deepEqual(await getMeter(), { remaining: 18n, threshold: 7n });
+}
+
+test('meter objects', async t => {
+  await meterObjectsTest(t, false);
+});
+
+test('meter objects with VA restarts', async t => {
+  await meterObjectsTest(t, true);
 });
 
 function kpidRejected(t, c, kpid, message) {
@@ -87,8 +107,12 @@ function kpidRejected(t, c, kpid, message) {
   const resCapdata = c.kpResolution(kpid);
   t.deepEqual(resCapdata.slots, []);
   const body = JSON.parse(resCapdata.body);
-  delete body.errorId;
-  t.deepEqual(body, { '@qclass': 'error', name: 'Error', message });
+  if (typeof message === 'string') {
+    delete body.errorId;
+    t.deepEqual(body, { '@qclass': 'error', name: 'Error', message });
+  } else {
+    t.deepEqual(body, message);
+  }
 }
 
 async function createMeteredVat(c, t, dynamicVatBundle, capacity, threshold) {
@@ -358,7 +382,7 @@ test('meter decrements', async t => {
   kpidRejected(t, c, t2.doneKPID, 'meter underflow, vat terminated');
 });
 
-test('unlimited meter', async t => {
+async function unlimitedMeterTest(t, doVatAdminRestarts) {
   const managerType = 'xs-worker';
   const { kernelBundles, dynamicVatBundle, bootstrapBundle } = t.context.data;
   const config = {
@@ -384,6 +408,13 @@ test('unlimited meter', async t => {
 
   // let the vatAdminService get wired up before we create any new vats
   await c.run();
+
+  async function vaRestart() {
+    if (doVatAdminRestarts) {
+      await restartVatAdminVat(c);
+    }
+  }
+  await vaRestart();
 
   // create an unlimited meter
   const kp1 = c.queueToVatRoot('bootstrap', 'createUnlimitedMeter', []);
@@ -424,15 +455,35 @@ test('unlimited meter', async t => {
 
   let remaining = await getMeter();
   t.is(remaining, 'unlimited');
+  await vaRestart();
 
   // messages to the vat do not decrement the meter
   await consume(true);
   remaining = await getMeter();
   t.is(remaining, 'unlimited');
+  await vaRestart();
 
   // but each crank is still limited, so an infinite loop will kill the vat
   const kp4 = c.queueToVatRoot('bootstrap', 'explode', ['compute']);
   await c.run();
   kpidRejected(t, c, kp4, 'vat terminated');
-  kpidRejected(t, c, doneKPID, 'Compute meter exceeded');
+  if (doVatAdminRestarts) {
+    // if we restarted the vatAdmin vat, that will have broken the done promise
+    // for the vat that's going to outrun the compute meter
+    kpidRejected(t, c, doneKPID, {
+      incarnationNumber: 2,
+      name: 'vatUpgraded',
+      upgradeMessage: 'vat vatAdmin upgraded',
+    });
+  } else {
+    kpidRejected(t, c, doneKPID, 'Compute meter exceeded');
+  }
+}
+
+test('unlimited meter', async t => {
+  await unlimitedMeterTest(t, false);
+});
+
+test('unlimited meter with VA restarts', async t => {
+  await unlimitedMeterTest(t, true);
 });

@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "noEmit": false,
+    "target": "esnext",
+    "module": "esnext",
+    "downlevelIteration": true,
+    "strictNullChecks": true,
+    "moduleResolution": "node"
+  },
+  "include": ["gen/**/*.ts"]
+}

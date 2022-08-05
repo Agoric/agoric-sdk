@@ -11,8 +11,7 @@ import { makeDriverContext, makeManagerDriver } from './driver.js';
 
 /** @typedef {import('./driver.js').DriverContext & {
  * }} Context */
-/** @type {import('ava').TestInterface<Context>} */
-// @ts-expect-error cast
+/** @type {import('ava').TestFn<Context>} */
 const test = unknownTest;
 
 const trace = makeTracer('TestLiq');

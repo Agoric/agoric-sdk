@@ -1,38 +1,46 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers, vatParameters) {
+export function buildRootObject(vatPowers) {
   const { testLog } = vatPowers;
-  const [mode, critical, dynamic] = vatParameters.argv;
+  let vatAdminService;
+  let staticVats;
+  let criticalVatKey;
+  let root;
+  let adminNode;
 
   const self = Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap(vats, devices) {
+      vatAdminService = E(vats.vatAdmin).createVatAdminService(
+        devices.vatAdmin,
+      );
+      staticVats = vats;
+    },
+
+    async setupCriticalVatKey() {
+      criticalVatKey = await E(staticVats.vatAdmin).getCriticalVatKey();
+    },
+
+    async setupTestVat(critical, dynamic) {
       // create a dynamic vat, send it a message and let it respond, to make
       // sure everything is working
-      let root;
-      let adminNode;
       if (dynamic) {
-        const vatMaker = E(vats.vatAdmin).createVatAdminService(
-          devices.vatAdmin,
-        );
-        let criticalVatKey = false;
-        if (critical) {
-          criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
-        }
-        const dude = await E(vatMaker).createVatByName('dude', {
-          critical: criticalVatKey,
+        const dude = await E(vatAdminService).createVatByName('dude', {
+          critical: critical ? criticalVatKey : false,
         });
         root = dude.root;
         adminNode = dude.adminNode;
       } else if (critical) {
-        root = vats.staticCritical;
+        root = staticVats.staticCritical;
       } else {
-        root = vats.staticNonCritical;
+        root = staticVats.staticNonCritical;
       }
       const count1 = await E(root).foo(1);
       // pushes 'FOO 1' to testLog
       testLog(`count1 ${count1}`); // 'count1 FOO SAYS 1'
+    },
 
+    async performTest(mode) {
       // get a promise that will never be resolved, at least not until the
       // vat dies
       const foreverP = E(root).never();
@@ -102,9 +110,13 @@ export function buildRootObject(vatPowers, vatParameters) {
         answer => testLog(`foo4P.then ${answer}`),
         err => testLog(`foo4P.catch ${err}`),
       );
-      // then we try to kill the vat again, which should be idempotent
+      // then we try to kill the vat again, which should fail
       if (mode === 'kill') {
-        E(adminNode).terminateWithFailure('because we said so');
+        const termP = E(adminNode).terminateWithFailure('because we said so');
+        termP.then(
+          val => testLog(`termP.then ${val}`),
+          err => testLog(`termP.catch ${err}`),
+        );
       }
 
       // the run-queue should now look like:
@@ -175,7 +187,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       }
       testLog('done');
 
-      return 'bootstrap done';
+      return 'test done';
     },
     query(arg) {
       testLog(`GOT QUERY ${arg}`);

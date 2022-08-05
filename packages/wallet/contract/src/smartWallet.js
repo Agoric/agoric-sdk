@@ -1,11 +1,11 @@
 // @ts-check
-import { E, Far } from '@endo/far';
 import {
-  makeStoredSubscription,
-  makeSubscriptionKit,
+  makePublishKit,
+  makeStoredSubscriber,
   observeIteration,
 } from '@agoric/notifier';
-import spawn from '@agoric/wallet-backend/src/wallet.js';
+import { E, Far } from '@endo/far';
+import { makeWallet } from './support.js';
 
 const { assign, entries, keys, fromEntries } = Object;
 
@@ -19,7 +19,7 @@ const { assign, entries, keys, fromEntries } = Object;
  * agoricNames: NameHub,
  * board: Board
  * namesByAddress: NameHub,
- * storageNode?: ERef<StorageNode>,
+ * storageNode: ERef<StorageNode>,
  * zoe: ERef<ZoeService>,
  * }} shared
  */
@@ -30,8 +30,9 @@ export const makeSmartWallet = async (
   assert.typeof(address, 'string', 'invalid address');
   assert(bank, 'missing bank');
   assert(myAddressNameAdmin, 'missing myAddressNameAdmin');
+  assert(storageNode, 'missing storageNode');
 
-  const walletVat = spawn({
+  const wallet = await makeWallet(bank, {
     agoricNames,
     namesByAddress,
     // ??? why do we make this instead of passing the address itself?
@@ -40,7 +41,6 @@ export const makeSmartWallet = async (
     board,
   });
 
-  const wallet = await E(walletVat).getWallet(bank);
   const admin = E(wallet).getAdminFacet();
 
   /** @type {Record<string, ERef<Notifier<unknown>>>} */
@@ -53,12 +53,12 @@ export const makeSmartWallet = async (
     purses: E(admin).getPursesNotifier(),
   };
   const mutableState = fromEntries(keys(notifierParts).map(key => [key, []]));
-  const { subscription, publication } = makeSubscriptionKit();
-  publication.updateState({ ...mutableState });
+  const { subscriber, publisher } = makePublishKit();
+  publisher.publish({ ...mutableState });
   entries(notifierParts).forEach(([key, notifier]) => {
     void observeIteration(notifier, {
       updateState: value =>
-        publication.updateState({
+        publisher.publish({
           ...assign(mutableState, { [key]: value }),
         }),
     });
@@ -66,17 +66,16 @@ export const makeSmartWallet = async (
 
   const marshaller = wallet.getMarshaller();
 
-  const myWalletStorageNode =
-    storageNode && E(storageNode).getChildNode(address);
-  const storedSubscription = makeStoredSubscription(
-    subscription,
+  const myWalletStorageNode = E(storageNode).getChildNode(address);
+  const storedSubscriber = makeStoredSubscriber(
+    subscriber,
     myWalletStorageNode,
     marshaller,
   );
 
   return Far('SmartWallet', {
     ...wallet,
-    getSubscription: () => storedSubscription,
+    getSubscriber: () => storedSubscriber,
     performAction: obj => E(admin).performAction(obj),
   });
 };

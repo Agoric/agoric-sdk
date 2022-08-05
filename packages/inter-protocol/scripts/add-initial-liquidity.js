@@ -120,6 +120,10 @@ const addInitialLiquidity = async (homeP, { now = () => Date.now() }) => {
     const purses = toRecord(purseEntries);
     const issuers = toRecord(issuerEntries);
     console.log({ purses: keys(purses), issuers: keys(issuers) });
+    assert(
+      issuers.IbcATOM,
+      'Issuers not complete. Try again after purses are provisioned',
+    );
     const liqIssuer = E(amm.pub).getLiquidityIssuer(issuers.IbcATOM.brand);
     const liqBrand = await E(liqIssuer).getBrand();
 

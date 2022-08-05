@@ -12,7 +12,7 @@ import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import * as BRIDGE_ID from '@agoric/vats/src/bridge-ids.js';
 import { E, Far } from '@endo/far';
-import { makeSmartWallet } from './smartWallet';
+import { makeSmartWallet } from './smartWallet.js';
 
 /**
  * @typedef {{
@@ -41,7 +41,7 @@ import { makeSmartWallet } from './smartWallet';
  *
  * @param {ZCF<SmartWalletContractTerms>} zcf
  * @param {{
- *   storageNode?: ERef<StorageNode>,
+ *   storageNode: ERef<StorageNode>,
  *   bridgeManager?: BridgeManager,
  * }} privateArgs
  */

@@ -17,8 +17,8 @@ import '@agoric/notifier/exported.js';
 
 /**
  * @callback BalanceUpdater
- * @param {any} value
- * @param {any} [nonce]
+ * @param {string} value
+ * @param {string} [nonce]
  */
 
 /**

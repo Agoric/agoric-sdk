@@ -9,7 +9,7 @@ import {
   loadSwingsetConfigFile,
   buildKernelBundles,
 } from '../../../src/index.js';
-import { capargs } from '../../util.js';
+import { capargs, restartVatAdminVat } from '../../util.js';
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
@@ -35,12 +35,13 @@ async function doTerminateNonCritical(
   dynamic,
   reference,
   extraMessage = [],
+  doVatAdminRestart = false,
 ) {
   const configPath = new URL('swingset-terminate.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
   const hostStorage = provideHostStorage();
-  const controller = await buildVatController(config, [mode, false, dynamic], {
+  const controller = await buildVatController(config, [], {
     ...t.context.data,
     hostStorage,
   });
@@ -50,15 +51,27 @@ async function doTerminateNonCritical(
   if (!dynamic) {
     t.truthy(preProbe);
   }
-
+  controller.pinVatRoot('bootstrap');
   await controller.run();
-  t.is(controller.kpStatus(controller.bootstrapResult), 'fulfilled');
-  t.deepEqual(
-    controller.kpResolution(controller.bootstrapResult),
-    capargs('bootstrap done'),
-  );
+
+  if (doVatAdminRestart) {
+    await restartVatAdminVat(controller);
+  }
+
+  controller.queueToVatRoot('bootstrap', 'setupTestVat', [false, dynamic]);
+  await controller.run();
+
+  if (doVatAdminRestart) {
+    await restartVatAdminVat(controller);
+  }
+
+  const kpid = controller.queueToVatRoot('bootstrap', 'performTest', [mode]);
+  await controller.run();
+  t.is(controller.kpStatus(kpid), 'fulfilled');
+  t.deepEqual(controller.kpResolution(kpid), capargs('test done'));
+
   const staticDone = dynamic ? [] : ['done'];
-  const dynamicDone = dynamic ? [reference, 'done'] : [];
+  const dynamicDone = dynamic ? [...reference, 'done'] : [];
   t.deepEqual(controller.dump().log, [
     'FOO 1',
     'count1 FOO SAYS 1',
@@ -80,12 +93,18 @@ async function doTerminateNonCritical(
   t.is(postProbe, undefined);
 }
 
-async function doTerminateCritical(t, deadVatID, mode, dynamic) {
+async function doTerminateCritical(
+  t,
+  deadVatID,
+  mode,
+  dynamic,
+  doVatAdminRestart = false,
+) {
   const configPath = new URL('swingset-terminate.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
   const hostStorage = provideHostStorage();
-  const controller = await buildVatController(config, [mode, true, dynamic], {
+  const controller = await buildVatController(config, [], {
     ...t.context.data,
     hostStorage,
   });
@@ -95,7 +114,30 @@ async function doTerminateCritical(t, deadVatID, mode, dynamic) {
   if (!dynamic) {
     t.truthy(preProbe);
   }
+  controller.pinVatRoot('bootstrap');
+  await controller.run();
 
+  if (doVatAdminRestart) {
+    await restartVatAdminVat(controller);
+  }
+
+  if (dynamic) {
+    controller.queueToVatRoot('bootstrap', 'setupCriticalVatKey');
+    await controller.run();
+  }
+
+  if (doVatAdminRestart) {
+    await restartVatAdminVat(controller);
+  }
+
+  controller.queueToVatRoot('bootstrap', 'setupTestVat', [true, dynamic]);
+  await controller.run();
+
+  if (doVatAdminRestart) {
+    await restartVatAdminVat(controller);
+  }
+
+  const kpid = controller.queueToVatRoot('bootstrap', 'performTest', [mode]);
   const err = await t.throwsAsync(() => controller.run());
   const body = JSON.parse(err.message);
   if (typeof body === 'string') {
@@ -104,10 +146,7 @@ async function doTerminateCritical(t, deadVatID, mode, dynamic) {
     t.is(body['@qclass'], 'error');
     t.is(body.message, mode);
   }
-  t.is(
-    controller.kpStatus(controller.bootstrapResult),
-    dynamic ? 'unresolved' : 'fulfilled',
-  );
+  t.is(controller.kpStatus(kpid), dynamic ? 'unresolved' : 'fulfilled');
   const postProbe = hostStorage.kvStore.get(`${deadVatID}.options`);
   t.is(postProbe, undefined);
 }
@@ -118,14 +157,38 @@ test.serial('terminate (dynamic, non-critical)', async t => {
     'v8',
     'kill',
     true,
-    'done exception kill (Error=false)',
+    [
+      'termP.catch Error: vatAdminService rejecting attempt to perform "terminateWithFailure"() on non-running vat "v8"',
+      'done exception kill (Error=false)',
+    ],
+    [],
+    false,
+  );
+});
+
+test.serial('terminate (dynamic, non-critical) with VA restarts', async t => {
+  await doTerminateNonCritical(
+    t,
+    'v8',
+    'kill',
+    true,
+    [
+      'termP.catch Error: vatAdminService rejecting attempt to perform "terminateWithFailure"() on non-running vat "v8"',
+      'done exception kill (Error=false)',
+    ],
+    [],
+    true,
   );
 });
 
 // no test 'terminate (static, non-critical)' because static vats can't be killed
 
 test.serial('terminate (dynamic, critical)', async t => {
-  await doTerminateCritical(t, 'v8', 'kill', true);
+  await doTerminateCritical(t, 'v8', 'kill', true, false);
+});
+
+test.serial('terminate (dynamic, critical) with VA restarts', async t => {
+  await doTerminateCritical(t, 'v8', 'kill', true, true);
 });
 
 // no test 'terminate (static, critical)' because static vats can't be killed
@@ -133,24 +196,16 @@ test.serial('terminate (dynamic, critical)', async t => {
 test.serial(
   'exit happy path simple result (dynamic, non-critical)',
   async t => {
-    await doTerminateNonCritical(
-      t,
-      'v8',
-      'happy',
-      true,
+    await doTerminateNonCritical(t, 'v8', 'happy', true, [
       'done result happy (Error=false)',
-    );
+    ]);
   },
 );
 
 test.serial('exit happy path simple result (static, non-critical)', async t => {
-  await doTerminateNonCritical(
-    t,
-    'v7',
-    'happy',
-    false,
+  await doTerminateNonCritical(t, 'v7', 'happy', false, [
     'done result happy (Error=false)',
-  );
+  ]);
 });
 
 test.serial('exit happy path simple result (dynamic, critical)', async t => {
@@ -164,26 +219,18 @@ test.serial('exit happy path simple result (static, critical)', async t => {
 test.serial(
   'exit happy path complex result (dynamic, non-critical)',
   async t => {
-    await doTerminateNonCritical(
-      t,
-      'v8',
-      'exceptionallyHappy',
-      true,
+    await doTerminateNonCritical(t, 'v8', 'exceptionallyHappy', true, [
       'done result Error: exceptionallyHappy (Error=true)',
-    );
+    ]);
   },
 );
 
 test.serial(
   'exit happy path complex result (static, non-critical)',
   async t => {
-    await doTerminateNonCritical(
-      t,
-      'v7',
-      'exceptionallyHappy',
-      false,
+    await doTerminateNonCritical(t, 'v7', 'exceptionallyHappy', false, [
       'done result Error: exceptionallyHappy (Error=true)',
-    );
+    ]);
   },
 );
 
@@ -196,23 +243,15 @@ test.serial('exit happy path complex result (static, critical)', async t => {
 });
 
 test.serial('exit sad path simple result (dynamic, non-critical)', async t => {
-  await doTerminateNonCritical(
-    t,
-    'v8',
-    'sad',
-    true,
+  await doTerminateNonCritical(t, 'v8', 'sad', true, [
     'done exception sad (Error=false)',
-  );
+  ]);
 });
 
 test.serial('exit sad path simple result (static, non-critical)', async t => {
-  await doTerminateNonCritical(
-    t,
-    'v7',
-    'sad',
-    false,
+  await doTerminateNonCritical(t, 'v7', 'sad', false, [
     'done exception sad (Error=false)',
-  );
+  ]);
 });
 
 test.serial('exit sad path simple result (dynamic, critical)', async t => {
@@ -224,23 +263,15 @@ test.serial('exit sad path simple result (static, critical)', async t => {
 });
 
 test.serial('exit sad path complex result (dynamic, non-critical)', async t => {
-  await doTerminateNonCritical(
-    t,
-    'v8',
-    'exceptionallySad',
-    true,
+  await doTerminateNonCritical(t, 'v8', 'exceptionallySad', true, [
     'done exception Error: exceptionallySad (Error=true)',
-  );
+  ]);
 });
 
 test.serial('exit sad path complex result (static, non-critical)', async t => {
-  await doTerminateNonCritical(
-    t,
-    'v7',
-    'exceptionallySad',
-    false,
+  await doTerminateNonCritical(t, 'v7', 'exceptionallySad', false, [
     'done exception Error: exceptionallySad (Error=true)',
-  );
+  ]);
 });
 
 test.serial('exit sad path complex result (dynamic, critical)', async t => {
@@ -259,7 +290,7 @@ test.serial(
       'v8',
       'happyTalkFirst',
       true,
-      'done result happyTalkFirst (Error=false)',
+      ['done result happyTalkFirst (Error=false)'],
       ['GOT QUERY not dead quite yet'],
     );
   },
@@ -273,7 +304,7 @@ test.serial(
       'v7',
       'happyTalkFirst',
       false,
-      'done result happyTalkFirst (Error=false)',
+      ['done result happyTalkFirst (Error=false)'],
       ['GOT QUERY not dead quite yet'],
     );
   },
@@ -301,7 +332,7 @@ test.serial(
       'v8',
       'sadTalkFirst',
       true,
-      'done exception Error: sadTalkFirst (Error=true)',
+      ['done exception Error: sadTalkFirst (Error=true)'],
       // The following would be observed on the happy path but explicitly should
       // *not* be observed here
       // ['GOT QUERY not dead quite yet'],
@@ -317,7 +348,7 @@ test.serial(
       'v7',
       'sadTalkFirst',
       false,
-      'done exception Error: sadTalkFirst (Error=true)',
+      ['done exception Error: sadTalkFirst (Error=true)'],
       // The following would be observed on the happy path but explicitly should
       // *not* be observed here
       // ['GOT QUERY not dead quite yet'],
