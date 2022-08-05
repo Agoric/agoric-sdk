@@ -87,12 +87,12 @@ export const makeStartInstance = (
     };
 
     const zoeInstanceStorageManager = await makeZoeInstanceStorageManager(
+      instanceBaggage,
       installation,
       customTerms,
       uncleanIssuerKeywordRecord,
       instance,
       contractBundleCap,
-      instanceBaggage,
     );
     // AWAIT ///
 

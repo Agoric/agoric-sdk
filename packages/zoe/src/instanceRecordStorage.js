@@ -43,7 +43,7 @@ export const makeInstanceRecordStorage = baggage => {
 
     assertInstantiated();
     const instanceRecord = baggage.get('instanceRecord');
-    const nextInstanceRecord = {
+    const nextInstanceRecord = harden({
       ...instanceRecord,
       terms: {
         ...instanceRecord.terms,
@@ -56,14 +56,14 @@ export const makeInstanceRecordStorage = baggage => {
           [keyword]: issuerRecord.brand,
         },
       },
-    };
+    });
     baggage.set('instanceRecord', nextInstanceRecord);
   };
 
   /** @type {GetInstanceRecord} */
   const getInstanceRecord = () => {
     assertInstantiated();
-    return harden(baggage.get('instanceRecord'));
+    return baggage.get('instanceRecord');
   };
   const getTerms = () => {
     assertInstantiated();

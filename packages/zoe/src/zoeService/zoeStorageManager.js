@@ -115,12 +115,12 @@ export const makeZoeStorageManager = (
 
   /** @type {MakeZoeInstanceStorageManager} */
   const makeZoeInstanceStorageManager = async (
+    instanceBaggage,
     installation,
     customTerms,
     uncleanIssuerKeywordRecord,
     instance,
     contractBundleCap,
-    instanceBaggage,
   ) => {
     // Clean the issuerKeywordRecord we receive in `startInstance`
     // from the user, and save the issuers in Zoe if they are not
