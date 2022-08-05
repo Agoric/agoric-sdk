@@ -32,7 +32,7 @@
       "sourceSpec": "@agoric/vats/src/vat-mints.js"
     },
     "network": {
-      "sourceSpec": "@agoric/vats/src/vat-network.js"
+      "sourceSpec": "@agoric/vats/src/network/vat-network.js"
     },
     "priceAuthority": {
       "sourceSpec": "@agoric/vats/src/vat-priceAuthority.js"

@@ -17,7 +17,7 @@ import { buildRootObject as bankRoot } from '../src/vat-bank.js';
 import { buildRootObject as boardRoot } from '../src/vat-board.js';
 import { buildRootObject as ibcRoot } from '../src/vat-ibc.js';
 import { buildRootObject as mintsRoot } from '../src/vat-mints.js';
-import { buildRootObject as networkRoot } from '../src/vat-network.js';
+import { buildRootObject as networkRoot } from '../src/network/vat-network.js';
 import { buildRootObject as priceAuthorityRoot } from '../src/vat-priceAuthority.js';
 import { buildRootObject as provisioningRoot } from '../src/vat-provisioning.js';
 import { buildRootObject as zoeRoot } from '../src/vat-zoe.js';

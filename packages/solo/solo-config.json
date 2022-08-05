@@ -10,7 +10,7 @@
       "sourceSpec": "./src/vat-http.js"
     },
     "network": {
-      "sourceSpec": "@agoric/vats/src/vat-network.js"
+      "sourceSpec": "@agoric/vats/src/network/vat-network.js"
     },
     "uploads": {
       "sourceSpec": "./src/vat-uploads.js"

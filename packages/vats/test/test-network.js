@@ -1,217 +1,312 @@
-// @ts-check
-// eslint-disable-next-line import/no-extraneous-dependencies
+// eslint-disable-next-line import/order
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { E, Far } from '@endo/far';
-import { makeSubscriptionKit } from '@agoric/notifier';
+import { makePromiseKit } from '@endo/promise-kit';
+import { Far } from '@endo/marshal';
 
-import { buildRootObject as ibcBuildRootObject } from '../src/vat-ibc.js';
-import { buildRootObject as networkBuildRootObject } from '../src/vat-network.js';
+import { parse, unparse } from '../src/network/multiaddr.js';
+import { makeRouter } from '../src/network/router.js';
+import {
+  makeEchoConnectionHandler,
+  makeLoopbackProtocolHandler,
+  makeNetworkProtocol,
+} from '../src/network/network.js';
 
-test('network - ibc', async t => {
-  const networkVat = E(networkBuildRootObject)();
-  const ibcVat = E(ibcBuildRootObject)();
+// eslint-disable-next-line no-constant-condition
+const log = false ? console.log : () => {};
 
-  const { subscription, publication } = makeSubscriptionKit();
-
-  const events = subscription[Symbol.asyncIterator]();
-  const callbacks = Far('ibcCallbacks', {
-    downcall: (method, params) => {
-      publication.updateState([method, params]);
-      if (method === 'sendPacket') {
-        const { packet } = params;
-        return { ...packet, sequence: '39' };
+/**
+ * @param {*} t
+ * @returns {import('../src/network').ProtocolHandler} A testing handler
+ */
+const makeProtocolHandler = t => {
+  /**
+   * @type {import('../src/network').ListenHandler}
+   */
+  let l;
+  let lp;
+  let nonce = 0;
+  return Far('ProtocolHandler', {
+    async onCreate(_protocol, _impl) {
+      log('created', _protocol, _impl);
+    },
+    async generatePortID() {
+      nonce += 1;
+      return `${nonce}`;
+    },
+    async onBind(port, localAddr) {
+      t.assert(port, `port is supplied to onBind`);
+      t.assert(localAddr, `local address is supplied to onBind`);
+    },
+    async onConnect(port, localAddr, remoteAddr) {
+      t.assert(port, `port is tracked in onConnect`);
+      t.assert(localAddr, `local address is supplied to onConnect`);
+      t.assert(remoteAddr, `remote address is supplied to onConnect`);
+      if (lp) {
+        return l
+          .onAccept(lp, localAddr, remoteAddr, l)
+          .then(ch => [localAddr, ch]);
       }
-      return undefined;
+      return { handler: makeEchoConnectionHandler() };
+    },
+    async onListen(port, localAddr, listenHandler) {
+      t.assert(port, `port is tracked in onListen`);
+      t.assert(localAddr, `local address is supplied to onListen`);
+      t.assert(listenHandler, `listen handler is tracked in onListen`);
+      lp = port;
+      l = listenHandler;
+      log('listening', port.getLocalAddress(), listenHandler);
+    },
+    async onListenRemove(port, localAddr, listenHandler) {
+      t.assert(port, `port is tracked in onListen`);
+      t.assert(localAddr, `local address is supplied to onListen`);
+      t.is(listenHandler, l, `listenHandler is tracked in onListenRemove`);
+      l = undefined;
+      lp = undefined;
+      log('port done listening', port.getLocalAddress());
+    },
+    async onRevoke(port, localAddr) {
+      t.assert(port, `port is tracked in onRevoke`);
+      t.assert(localAddr, `local address is supplied to onRevoke`);
+      log('port done revoking', port.getLocalAddress());
+    },
+  });
+};
+
+test('handled protocol', async t => {
+  const protocol = makeNetworkProtocol(makeProtocolHandler(t));
+
+  const closed = makePromiseKit();
+  const port = await protocol.bind('/ibc/*/ordered');
+  await port.connect(
+    '/ibc/*/ordered/echo',
+    Far('ProtocolHandler', {
+      async onOpen(connection, localAddr, remoteAddr) {
+        t.is(localAddr, '/ibc/*/ordered');
+        t.is(remoteAddr, '/ibc/*/ordered/echo');
+        const ack = await connection.send('ping');
+        // log(ack);
+        t.is(`${ack}`, 'ping', 'received pong');
+        void connection.close();
+      },
+      async onClose(_connection, reason) {
+        t.is(reason, undefined, 'no close reason');
+        closed.resolve();
+      },
+      async onReceive(_connection, bytes) {
+        t.is(`${bytes}`, 'ping');
+        return 'pong';
+      },
+    }),
+  );
+  await closed.promise;
+  await port.revoke();
+});
+
+test('protocol connection listen', async t => {
+  const protocol = makeNetworkProtocol(makeProtocolHandler(t));
+
+  const closed = makePromiseKit();
+
+  const port = await protocol.bind('/net/ordered/ordered/some-portname');
+
+  /**
+   * @type {import('../src/network').ListenHandler}
+   */
+  const listener = Far('listener', {
+    async onListen(p, listenHandler) {
+      t.is(p, port, `port is tracked in onListen`);
+      t.assert(listenHandler, `listenHandler is tracked in onListen`);
+    },
+    async onAccept(p, localAddr, remoteAddr, listenHandler) {
+      t.assert(localAddr, `local address is passed to onAccept`);
+      t.assert(remoteAddr, `remote address is passed to onAccept`);
+      t.is(p, port, `port is tracked in onAccept`);
+      t.is(listenHandler, listener, `listenHandler is tracked in onAccept`);
+      let handler;
+      return harden({
+        async onOpen(connection, _localAddr, _remoteAddr, connectionHandler) {
+          t.assert(connectionHandler, `connectionHandler is tracked in onOpen`);
+          handler = connectionHandler;
+          const ack = await connection.send('ping');
+          t.is(`${ack}`, 'ping', 'received pong');
+          connection.close();
+        },
+        async onClose(c, reason, connectionHandler) {
+          t.is(
+            connectionHandler,
+            handler,
+            `connectionHandler is tracked in onClose`,
+          );
+          handler = undefined;
+          t.assert(c, 'connection is passed to onClose');
+          t.is(reason, undefined, 'no close reason');
+          closed.resolve();
+        },
+        async onReceive(c, packet, connectionHandler) {
+          t.is(
+            connectionHandler,
+            handler,
+            `connectionHandler is tracked in onReceive`,
+          );
+          t.assert(c, 'connection is passed to onReceive');
+          t.is(`${packet}`, 'ping', 'expected ping');
+          return 'pong';
+        },
+      });
+    },
+    async onError(p, rej, listenHandler) {
+      t.is(p, port, `port is tracked in onError`);
+      t.is(listenHandler, listener, `listenHandler is tracked in onError`);
+      t.isNot(rej, rej, 'unexpected error');
+    },
+    async onRemove(p, listenHandler) {
+      t.is(listenHandler, listener, `listenHandler is tracked in onRemove`);
+      t.is(p, port, `port is passed to onReset`);
     },
   });
 
-  const ibcHandler = await E(ibcVat).createInstance(callbacks);
-  await E(networkVat).registerProtocolHandler(
-    ['/ibc-port', '/ibc-hop'],
-    ibcHandler,
+  await port.addListener(listener);
+
+  const port2 = await protocol.bind('/net/ordered');
+  const connectionHandler = makeEchoConnectionHandler();
+  await port2.connect(
+    '/net/ordered/ordered/some-portname',
+    Far('connectionHandlerWithOpen', {
+      ...connectionHandler,
+      async onOpen(connection, localAddr, remoteAddr, c) {
+        if (connectionHandler.onOpen) {
+          await connectionHandler.onOpen(connection, localAddr, remoteAddr, c);
+        }
+        void connection.send('ping');
+      },
+    }),
   );
 
-  // Actually test the ibc port binding.
-  // TODO: Do more tests on the returned Port object.
-  const p = E(networkVat).bind('/ibc-port/');
-  await p;
-  const ev1 = await events.next();
-  t.assert(!ev1.done);
-  t.deepEqual(ev1.value, ['bindPort', { packet: { source_port: 'port-1' } }]);
+  await closed.promise;
 
-  const testEcho = async () => {
-    await E(p).addListener(
-      Far('ibcListener', {
-        async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
-          /** @type {ConnectionHandler} */
-          const handler = Far('plusOne', {
-            async onReceive(_c, packetBytes) {
-              return `${packetBytes}1`;
-            },
-            async onOpen(_c, localAddr, remoteAddr, _connectionHandler) {
-              publication.updateState([
-                'plusOne-open',
-                { localAddr, remoteAddr },
-              ]);
-            },
-          });
-          return handler;
+  await port.removeListener(listener);
+  await port.revoke();
+});
+
+test('loopback protocol', async t => {
+  const protocol = makeNetworkProtocol(makeLoopbackProtocolHandler());
+
+  const closed = makePromiseKit();
+
+  const port = await protocol.bind('/loopback/foo');
+
+  /**
+   * @type {import('../src/network').ListenHandler}
+   */
+  const listener = Far('listener', {
+    async onAccept(_p, _localAddr, _remoteAddr, _listenHandler) {
+      return harden({
+        async onReceive(c, packet, _connectionHandler) {
+          t.is(`${packet}`, 'ping', 'expected ping');
+          return 'pingack';
         },
-        async onListen(port, _listenHandler) {
-          console.debug(`listening on echo port: ${port}`);
-        },
-      }),
+      });
+    },
+  });
+  await port.addListener(listener);
+
+  const port2 = await protocol.bind('/loopback/bar');
+  await port2.connect(
+    port.getLocalAddress(),
+    Far('opener', {
+      async onOpen(c, localAddr, remoteAddr, _connectionHandler) {
+        t.is(localAddr, '/loopback/bar/nonce/1');
+        t.is(remoteAddr, '/loopback/foo/nonce/2');
+        const pingack = await c.send('ping');
+        t.is(pingack, 'pingack', 'expected pingack');
+        closed.resolve();
+      },
+    }),
+  );
+
+  await closed.promise;
+
+  await port.removeListener(listener);
+});
+
+test('routing', async t => {
+  const router = makeRouter();
+  t.deepEqual(router.getRoutes('/if/local'), [], 'get routes matches none');
+  router.register('/if/', 'a');
+  t.deepEqual(
+    router.getRoutes('/if/foo'),
+    [['/if/', 'a']],
+    'get routes matches prefix',
+  );
+  router.register('/if/foo', 'b');
+  t.deepEqual(
+    router.getRoutes('/if/foo'),
+    [
+      ['/if/foo', 'b'],
+      ['/if/', 'a'],
+    ],
+    'get routes matches all',
+  );
+  t.deepEqual(
+    router.getRoutes('/if/foob'),
+    [['/if/', 'a']],
+    'get routes needs separator',
+  );
+  router.register('/ibc/*/ordered', 'c');
+  t.deepEqual(
+    router.getRoutes('/if/foo'),
+    [
+      ['/if/foo', 'b'],
+      ['/if/', 'a'],
+    ],
+    'get routes avoids nonmatching paths',
+  );
+  t.deepEqual(
+    router.getRoutes('/ibc/*/ordered'),
+    [['/ibc/*/ordered', 'c']],
+    'direct match',
+  );
+  t.deepEqual(
+    router.getRoutes('/ibc/*/ordered/zot'),
+    [['/ibc/*/ordered', 'c']],
+    'prefix matches',
+  );
+  t.deepEqual(router.getRoutes('/ibc/*/barfo'), [], 'no match');
+
+  t.throws(
+    () => router.unregister('/ibc/*/ordered', 'a'),
+    { message: /Router is not registered/ },
+    'unregister fails for no match',
+  );
+  router.unregister('/ibc/*/ordered', 'c');
+  t.deepEqual(
+    router.getRoutes('/ibc/*/ordered'),
+    [],
+    'no match after unregistration',
+  );
+});
+
+test('multiaddr', async t => {
+  t.deepEqual(parse('/if/local'), [['if', 'local']]);
+  t.deepEqual(parse('/zot'), [['zot']]);
+  t.deepEqual(parse('/zot/foo/bar/baz/bot'), [
+    ['zot', 'foo'],
+    ['bar', 'baz'],
+    ['bot'],
+  ]);
+  for (const str of ['', 'foobar']) {
+    t.throws(
+      () => parse(str),
+      { message: /Error parsing Multiaddr/ },
+      `expected failure of ${str}`,
     );
-
-    const c = E(p).connect('/ibc-port/port-1/unordered/foo');
-
-    const ack = await E(c).send('hello198');
-    t.is(ack, 'hello1981', 'expected echo');
-    await c;
-
-    await E(c).close();
-  };
-
-  await testEcho();
-
-  const testIBCOutbound = async () => {
-    const c = E(p).connect(
-      '/ibc-hop/connection-11/ibc-port/port-98/unordered/bar',
+  }
+  for (const str of ['/', '//', '/foo', '/foobib/bar', '/k1/v1/k2/v2/k3/v3']) {
+    t.is(
+      unparse(parse(str)),
+      str,
+      `round-trip of ${JSON.stringify(str)} matches`,
     );
-
-    const evopen = await events.next();
-    t.assert(!evopen.done);
-    t.deepEqual(evopen.value, [
-      'plusOne-open',
-      {
-        localAddr: '/ibc-port/port-1/unordered/foo',
-        remoteAddr: '/ibc-port/port-1',
-      },
-    ]);
-
-    const ev2 = await events.next();
-    t.assert(!ev2.done);
-    t.deepEqual(ev2.value, [
-      'startChannelOpenInit',
-      {
-        packet: { source_port: 'port-1', destination_port: 'port-98' },
-        order: 'UNORDERED',
-        hops: ['connection-11'],
-        version: 'bar',
-      },
-    ]);
-
-    await E(ibcHandler).fromBridge('dontcare', {
-      event: 'channelOpenAck',
-      portID: 'port-1',
-      channelID: 'channel-1',
-      counterparty: { port_id: 'port-98', channel_id: 'channel-22' },
-      counterpartyVersion: 'bar',
-      connectionHops: ['connection-11'],
-    });
-
-    await c;
-    const ack = E(c).send('some-transfer-message');
-
-    const ev3 = await events.next();
-    t.assert(!ev3.done);
-    t.deepEqual(ev3.value, [
-      'sendPacket',
-      {
-        packet: {
-          data: 'c29tZS10cmFuc2Zlci1tZXNzYWdl',
-          destination_channel: 'channel-22',
-          destination_port: 'port-98',
-          source_channel: 'channel-1',
-          source_port: 'port-1',
-        },
-        relativeTimeoutNs: 600_000_000_000n, // 10 minutes in nanoseconds.
-      },
-    ]);
-
-    await E(ibcHandler).fromBridge('stilldontcare', {
-      event: 'acknowledgementPacket',
-      packet: {
-        data: 'c29tZS10cmFuc2Zlci1tZXNzYWdl',
-        destination_channel: 'channel-22',
-        destination_port: 'port-98',
-        source_channel: 'channel-1',
-        source_port: 'port-1',
-        sequence: '39',
-      },
-      acknowledgement: 'YS10cmFuc2Zlci1yZXBseQ==',
-    });
-
-    t.is(await ack, 'a-transfer-reply');
-
-    await E(c).close();
-  };
-
-  await testIBCOutbound();
-
-  const testIBCInbound = async () => {
-    await E(ibcHandler).fromBridge('reallydontcare', {
-      event: 'channelOpenTry',
-      channelID: 'channel-2',
-      portID: 'port-1',
-      counterparty: { port_id: 'port-99', channel_id: 'channel-23' },
-      connectionHops: ['connection-12'],
-      order: 'ORDERED',
-      version: 'bazi',
-      counterpartyVersion: 'bazo',
-    });
-
-    await E(ibcHandler).fromBridge('stillreallydontcare', {
-      event: 'channelOpenConfirm',
-      portID: 'port-1',
-      channelID: 'channel-2',
-    });
-
-    const evopen = await events.next();
-    t.assert(!evopen.done);
-    t.deepEqual(evopen.value, [
-      'plusOne-open',
-      {
-        localAddr: '/ibc-port/port-1/ordered/bazi/ibc-channel/channel-2',
-        remoteAddr:
-          '/ibc-hop/connection-12/ibc-port/port-99/ordered/bazo/ibc-channel/channel-23',
-      },
-    ]);
-
-    await E(ibcHandler).fromBridge('notevenyet', {
-      event: 'receivePacket',
-      packet: {
-        data: 'aW5ib3VuZC1tc2c=',
-        destination_port: 'port-1',
-        destination_channel: 'channel-2',
-        source_channel: 'channel-23',
-        source_port: 'port-99',
-      },
-    });
-
-    const ev4 = await events.next();
-    t.assert(!ev4.done);
-    t.deepEqual(ev4.value, [
-      'receiveExecuted',
-      {
-        ack: 'aW5ib3VuZC1tc2cx',
-        packet: {
-          data: 'aW5ib3VuZC1tc2c=',
-          destination_channel: 'channel-2',
-          destination_port: 'port-1',
-          source_channel: 'channel-23',
-          source_port: 'port-99',
-        },
-      },
-    ]);
-  };
-
-  await testIBCInbound();
-
-  // Verify that we consumed all the published events.
-  publication.finish([]);
-  const evend = await events.next();
-  t.assert(evend.done);
-  t.deepEqual(evend.value, []);
+  }
 });

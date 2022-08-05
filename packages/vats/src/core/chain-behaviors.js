@@ -12,7 +12,7 @@ import {
   makeLoopbackProtocolHandler,
   makeEchoConnectionHandler,
   makeNonceMaker,
-} from '@agoric/swingset-vat/src/vats/network/index.js';
+} from '../network/network.js';
 import { importBundle } from '@endo/import-bundle';
 import * as Collect from '@agoric/inter-protocol/src/collect.js';
 

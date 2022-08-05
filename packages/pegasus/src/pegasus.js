@@ -7,7 +7,7 @@ import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeSubscriptionKit } from '@agoric/notifier';
 
 import '@agoric/vats/exported.js';
-import '@agoric/swingset-vat/src/vats/network/types.js';
+import '@agoric/vats/src/network/types.js';
 import '@agoric/zoe/exported.js';
 
 import '../exported.js';

@@ -3,14 +3,14 @@
 import {
   dataToBase64,
   base64ToBytes,
-} from '@agoric/swingset-vat/src/vats/network/index.js';
+} from './network/bytes.js';
 import { makeStore, makeLegacyMap } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/far';
 
 import '@agoric/store/exported.js';
-import '@agoric/swingset-vat/src/vats/network/types.js';
+import './network/types.js';
 
 import { makeWithQueue } from './queue.js';
 

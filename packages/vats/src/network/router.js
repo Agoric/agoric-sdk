@@ -1,6 +1,6 @@
 // @ts-check
 
-import { E as defaultE } from '@endo/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
@@ -21,7 +21,7 @@ import './types.js';
  *
  * @returns {Router} a new Router
  */
-export default function makeRouter() {
+export function makeRouter() {
   /**
    * @type {Store<string, any>}
    */
@@ -73,12 +73,11 @@ export default function makeRouter() {
 /**
  * Create a router that behaves like a Protocol.
  *
- * @param {typeof defaultE} [E=defaultE] Eventual sender
  * @returns {RouterProtocol} The new delegated protocol
  */
-export function makeRouterProtocol(E = defaultE) {
+export function makeRouterProtocol() {
   const router = makeRouter();
-  const protocols = makeStore('prefix');
+  const protocols = makeStore('prefix'); // XXX what is this for?  The collection is mainained but not actually used.  Is it a GC thing or something in anticipation of future features or a mistake?
   const protocolHandlers = makeStore('prefix');
 
   function registerProtocolHandler(paths, protocolHandler) {
