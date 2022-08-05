@@ -219,6 +219,21 @@ export function makeSnapStore(
 
   /**
    * @param {string} hash
+   * @returns {Promise<boolean>}
+   */
+  function has(hash) {
+    return stat(hashPath(hash))
+      .then(_stats => true)
+      .catch(err => {
+        if (err.code === 'ENOENT') {
+          return false;
+        }
+        throw err;
+      });
+  }
+
+  /**
+   * @param {string} hash
    * @param {(fn: string) => Promise<T>} loadRaw
    * @template T
    */
@@ -268,5 +283,5 @@ export function makeSnapStore(
     }
   }
 
-  return freeze({ load, save, prepareToDelete, commitDeletes });
+  return freeze({ has, load, save, prepareToDelete, commitDeletes });
 }
