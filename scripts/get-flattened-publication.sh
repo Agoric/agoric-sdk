@@ -17,8 +17,16 @@ if [ ":${1:-}" = '--help' -o ":$URL_PREFIX" = : -o ":$STORAGE_KEY" = : -o $# -gt
   exit 64
 fi
 
-SCRIPTS_DIR="$(dirname "$(realpath "$0")")"
-FLATTENER="$SCRIPTS_DIR/flatten_json_sequence.awk"
+# Verify jq version.
+jq --version | awk '
+  /^jq-1[.]([6-9]|[1-9][0-9])/ {
+    exit;
+  }
+  {
+    print "jq version out of range (must be >=1.6 <2.0): " $0 > "/dev/stderr";
+    exit 1;
+  }
+'
 
 # Make the abci_query request and extract data from a response.
 # cf. https://docs.tendermint.com/master/rpc/#/ABCI/abci_query
@@ -34,53 +42,51 @@ FLATTENER="$SCRIPTS_DIR/flatten_json_sequence.awk"
 #       }
 #     }
 #   }
-vars="$(
-  # Avoid the GET interface in case interpretation of `path` as JSON is ever fixed.
-  # https://github.com/tendermint/tendermint/issues/9164
-  # curl -sS "${URL_PREFIX%/}/abci_query?path=%22/custom/vstorage/data/$STORAGE_KEY%22" | \
-  curl -sS "$URL_PREFIX" --request POST --header 'Content-Type: application/json' --data "$(
-    printf '{
-      "jsonrpc": "2.0",
-      "id": -1,
-      "method": "abci_query",
-      "params": { "path": "/custom/vstorage/data/%s" }
-    }' "$STORAGE_KEY"
-  )" | \
-  # Flatten into compact JSON.
-  awk -f "$FLATTENER" | \
-  # Remove the enclosing braces.
-  awk '{ sub(/^[{]/, ""); sub(/[}]$/, ""); print; }' | \
-  # Extract block height and value into shell variable assignment format (`name=value`).
-  awk -v RS=, -F: '
-    BEGIN {
-      JSON_TO_VAR["result-response-height"] = "block_height";
-      JSON_TO_VAR["result-response-value"] = "value_base64";
-    }
-    {
-      # Ignore the enclosing quotes when checking each member.
-      name = JSON_TO_VAR[substr($1, 2, length($1) - 2)];
-      if (name) {
-        # Constrain the alphabet for values.
-        if ($2 ~ /^[[:alnum:]=."_ \-]*$/) {
-          printf "%s=%s\n", name, $2;
-        }
-      }
-    }
-  '
-)"
-eval "$vars"
 
-# Decode the value into flat JSON and insert a member for the block height.
-printf '%s' "${value_base64:-}" | \
-  base64 -d | \
-  awk -f "$FLATTENER" -v unwrap=value -v capdata=true | \
-  awk -v height="${block_height:-}" '{
-    # A following comma is necessary if and only if the object is not empty
-    # (i.e., that it is not `{}`).
-    separator = ",";
-    if (substr($0, 2, 1) == "}") {
-      separator = "";
-    }
-    sub(/^[{]/, sprintf("{\"blockHeight\":\"%s\"%s", height, separator));
-    print;
-  }'
+# Avoid the GET interface in case interpretation of `path` as JSON is ever fixed.
+# https://github.com/tendermint/tendermint/issues/9164
+# curl -sS "${URL_PREFIX%/}/abci_query?path=%22/custom/vstorage/data/$STORAGE_KEY%22" | \
+curl -sS "$URL_PREFIX" --request POST --header 'Content-Type: application/json' --data "$(
+  printf '{
+    "jsonrpc": "2.0",
+    "id": -1,
+    "method": "abci_query",
+    "params": { "path": "/custom/vstorage/data/%s" }
+  }' "$STORAGE_KEY"
+)" | \
+# Decode, simplify, flatten, and compact the output.
+jq -c '
+  # Capture block height.
+  .result.response.height? as $height |
+
+  # Decode `value` as base64, then decode that as JSON.
+  .result.response.value | @base64d | fromjson |
+
+  # Decode `value` as JSON, capture `slots`, then decode `body` as JSON.
+  .value | fromjson | .slots as $slots | .body | fromjson |
+
+  # Add block height.
+  (.blockHeight |= $height) |
+
+  # Replace select capdata.
+  walk(
+    if type=="object" and .["@qclass"]=="bigint" then
+      # Replace bigint capdata with the sequence of digits.
+      .digits
+    elif type=="object" and .["@qclass"]=="slot" then
+      # Replace slot reference capdata with {
+      #   id: <value from global `slots`>,
+      #   allegedName: <extracted from local `iface`>,
+      # }.
+      {
+        id: $slots[.index],
+        allegedName: .iface | sub("^Alleged: (?<name>.*) brand$"; "\(.name)"; "m")
+      }
+    else
+      .
+    end
+  ) |
+
+  # Flatten the resulting structure, joining deep member names with "-".
+  [ paths(scalars) as $path | { key: $path | join("-"), value: getpath($path) } ] | from_entries
+'
