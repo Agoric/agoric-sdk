@@ -59,7 +59,7 @@ test('makeParamManagerFromTerms', async t => {
       Mmr: 'ratio',
     },
   );
-  t.is(paramManager.getMmr(), terms.governedParams.Mmr.value);
+  t.deepEqual(paramManager.getMmr(), terms.governedParams.Mmr.value);
 });
 
 test('readonly', t => {
