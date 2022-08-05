@@ -235,6 +235,11 @@ export const makeClientBanks = async ({
   },
 }) => {
   const STORAGE_PATH = 'wallet';
+  [agoricNames, board, namesByAddress] = await Promise.all([
+    agoricNames,
+    board,
+    namesByAddress,
+  ]);
 
   const [storageNode, bridgeManager] = await Promise.all([
     makeStorageNode(chainStorage, STORAGE_PATH),

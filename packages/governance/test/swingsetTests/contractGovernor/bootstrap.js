@@ -255,7 +255,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
 
   log(`=> voter and electorate vats are set up`);
 
-  const initialPoserInvitation = E(
+  const initialPoserInvitation = await E(
     firstElectorateCreatorFacet,
   ).getPoserInvitation();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
