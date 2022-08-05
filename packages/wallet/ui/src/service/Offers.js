@@ -1,14 +1,23 @@
-import { makeNotifierKit } from '@agoric/notifier';
+import {
+  makeNotifierKit,
+  makeAsyncIterableFromNotifier,
+} from '@agoric/notifier';
 import {
   loadOffers as load,
   removeOffer as remove,
   addOffer as add,
 } from '../store/Offers.js';
 
-export const getOfferService = (publicAddress, signSpendAction) => {
+export const getOfferService = (
+  publicAddress,
+  signSpendAction,
+  chainOffersNotifier,
+) => {
   const offers = new Map();
+  let chainOffers = [];
   const { notifier, updater } = makeNotifierKit();
-  const broadcastUpdates = () => updater.updateState([...offers.values()]);
+  const broadcastUpdates = () =>
+    updater.updateState([...offers.values(), ...chainOffers]);
 
   const upsertOffer = offer => {
     offers.set(offer.id, offer);
@@ -17,8 +26,9 @@ export const getOfferService = (publicAddress, signSpendAction) => {
   };
 
   const declineOffer = id => {
-    offers.delete(id);
-    remove(publicAddress, id);
+    const offer = offers.get(id);
+    assert(offer, `Tried to decline undefined offer ${id}`);
+    upsertOffer({ ...offer, status: 'decline' });
     broadcastUpdates();
   };
 
@@ -26,7 +36,7 @@ export const getOfferService = (publicAddress, signSpendAction) => {
     const offer = offers.get(id);
     assert(offer, `Tried to accept undefined offer ${id}`);
     const action = JSON.stringify({ type: 'acceptOffer', data: offer });
-    await signSpendAction(action);
+    return signSpendAction(action);
   };
 
   const cancelOffer = _id => {
@@ -35,11 +45,32 @@ export const getOfferService = (publicAddress, signSpendAction) => {
 
   const storedOffers = load(publicAddress);
   storedOffers.forEach(o => {
+    if (o.status === 'decline') {
+      remove(publicAddress, o.id);
+    }
     offers.set(o.id, {
       ...o,
     });
   });
   broadcastUpdates();
+
+  const watchChainOffers = async () => {
+    for await (const state of makeAsyncIterableFromNotifier(
+      chainOffersNotifier,
+    )) {
+      state?.forEach(offer => {
+        const splitId = offer.id.split('#');
+        const rawId = splitId[splitId.length - 1];
+        if (offers.has(rawId)) {
+          offers.delete(rawId);
+          remove(publicAddress, rawId);
+        }
+        chainOffers = state;
+        broadcastUpdates();
+      });
+    }
+  };
+  watchChainOffers();
 
   return {
     offers,

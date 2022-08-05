@@ -113,6 +113,7 @@ export const makeWalletBridgeFromFollower = (
     getPursesNotifier: 'purses',
     getContactsNotifier: 'contacts',
     getIssuersNotifier: 'issuers',
+    getOffersNotifier: 'offers',
     getPaymentsNotifier: 'payments',
   };
 
@@ -129,6 +130,7 @@ export const makeWalletBridgeFromFollower = (
         firstCallback();
         firstCallback = undefined;
       }
+      console.log('got state', state);
       Object.entries(notifierKits).forEach(([stateName, { updater }]) => {
         updater.updateState(state[stateName]);
       });
@@ -165,13 +167,15 @@ export const makeWalletBridgeFromFollower = (
         'Cannot sign a transaction in read only mode, connect to keplr.',
       );
     }
-    return offerSigner
-      .submitSpendAction(data)
-      .catch(err => console.error('@@@@SPEND ACTION ERROR', err));
+    return offerSigner.submitSpendAction(data);
   };
 
   const dappService = getDappService(publicAddress);
-  const offerService = getOfferService(publicAddress, signSpendAction);
+  const offerService = getOfferService(
+    publicAddress,
+    signSpendAction,
+    getNotifierMethods.getOffersNotifier(),
+  );
   const { acceptOffer, declineOffer, cancelOffer } = offerService;
 
   const walletBridge = Far('follower wallet bridge', {

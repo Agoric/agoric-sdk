@@ -62,9 +62,14 @@ const OfferWithoutContext = ({
     status = 'decline';
   }
 
-  const approve = () => {
+  const approve = async () => {
     setPendingOffers({ offerId: id, isPending: true });
-    E(offer.actions).accept().catch(console.error);
+    try {
+      await E(offer.actions).accept();
+    } catch (e) {
+      setPendingOffers({ offerId: id, isPending: false });
+      console.error('Failed to approve offer', e);
+    }
   };
 
   const decline = () => {

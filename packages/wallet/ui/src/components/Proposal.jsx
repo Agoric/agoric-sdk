@@ -1,3 +1,4 @@
+import { Nat } from '@agoric/nat';
 import { stringifyPurseValue } from '@agoric/ui-components';
 import { icons, defaultIcon } from '../util/Icons.js';
 import Petname from './Petname';
@@ -7,14 +8,13 @@ import { withApplicationContext } from '../contexts/Application.jsx';
 
 import './Offer.scss';
 
-const OfferEntry = (
+const OfferEntryFromTemplate = (
   type,
   [role, { value: stringifiedValue, pursePetname }],
   purses,
 ) => {
   const value = BigInt(stringifiedValue);
   const purse = purses.find(p => p.pursePetname === pursePetname);
-  console.log('using purse', purse);
   return (
     <div className="OfferEntry" key={purse.brand.petname}>
       <h6>
@@ -40,13 +40,48 @@ const OfferEntry = (
   );
 };
 
+const OfferEntryFromDisplayInfo = (type, [role, { amount, pursePetname }]) => {
+  const value =
+    amount.displayInfo.assetKind === 'nat' ? Nat(amount.value) : amount.value;
+  return (
+    <div className="OfferEntry" key={amount.brand.petname}>
+      <h6>
+        {type.header} {role}
+      </h6>
+      <div className="Token">
+        <img
+          alt="icon"
+          src={icons[amount.brand.petname] ?? defaultIcon}
+          height="32px"
+          width="32px"
+        />
+        <div>
+          <PurseValue
+            value={value}
+            displayInfo={amount.displayInfo}
+            brandPetname={amount.brand.petname}
+          />
+          {type.move} <Petname name={pursePetname} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const entryTypes = {
   want: { header: 'Want', move: 'into' },
   give: { header: 'Give', move: 'from' },
 };
 
-const Give = (entry, purses) => OfferEntry(entryTypes.give, entry, purses);
-const Want = (entry, purses) => OfferEntry(entryTypes.want, entry, purses);
+const GiveFromDisplayInfo = entry =>
+  OfferEntryFromDisplayInfo(entryTypes.give, entry);
+const WantFromDisplayInfo = entry =>
+  OfferEntryFromDisplayInfo(entryTypes.want, entry);
+
+const GiveFromTemplate = (entry, purses) =>
+  OfferEntryFromTemplate(entryTypes.give, entry, purses);
+const WantFromTemplate = (entry, purses) =>
+  OfferEntryFromTemplate(entryTypes.want, entry, purses);
 
 const cmp = (a, b) => {
   if (a < b) {
@@ -62,11 +97,25 @@ const sortedEntries = entries =>
   Object.entries(entries).sort(([kwa], [kwb]) => cmp(kwa, kwb));
 
 const Proposal = ({ offer, purses }) => {
-  console.log('showing offer proposal for', offer);
   const {
-    proposalForDisplay: { give = {}, want = {}, arguments: args } = {},
+    proposalForDisplay,
+    proposalTemplate,
     invitationDetails: { fee, feePursePetname, expiry } = {},
   } = offer;
+  let give = {};
+  let want = {};
+  let args;
+  let hasDisplayInfo = false;
+  if (proposalForDisplay) {
+    give = proposalForDisplay.give ?? {};
+    want = proposalForDisplay.want ?? {};
+    args = proposalForDisplay.arguments;
+    hasDisplayInfo = true;
+  } else if (proposalTemplate) {
+    give = proposalTemplate.give ?? {};
+    want = proposalTemplate.want ?? {};
+    args = proposalTemplate.arguments;
+  }
 
   if (!purses) return <></>;
 
@@ -96,8 +145,12 @@ const Proposal = ({ offer, purses }) => {
     </div>
   );
 
-  const Gives = sortedEntries(give).map(g => Give(g, purses));
-  const Wants = sortedEntries(want).map(w => Want(w, purses));
+  const Gives = sortedEntries(give).map(g =>
+    hasDisplayInfo ? GiveFromDisplayInfo(g) : GiveFromTemplate(g, purses),
+  );
+  const Wants = sortedEntries(want).map(w =>
+    hasDisplayInfo ? WantFromDisplayInfo(w) : WantFromTemplate(w, purses),
+  );
 
   return (
     <>
