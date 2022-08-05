@@ -11,7 +11,7 @@ import { DisplayInfoShape } from './typeGuards.js';
  * @returns {DisplayInfo}
  */
 export const coerceDisplayInfo = (allegedDisplayInfo, assetKind) => {
-  fit(allegedDisplayInfo, DisplayInfoShape);
+  fit(allegedDisplayInfo, DisplayInfoShape, 'displayInfo');
 
   if (allegedDisplayInfo.assetKind !== undefined) {
     assert(
