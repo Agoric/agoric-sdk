@@ -167,8 +167,8 @@ test.serial('brokenUpdateStart', async t => {
     // TODO: allow either message
     // 'vote rejected outcome: Error: (an object) was not a live payment for brand (an object). It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
     // 'update failed: Error: (an object) was not a live payment for brand (an object). It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
-    'vote rejected outcome: Error: A Zoe invitation is required, not (an object)',
-    'update failed: Error: A Zoe invitation is required, not (an object)',
+    'vote rejected outcome: Error: A Zoe invitation is required, not "[Alleged: Zoe Invitation payment]"',
+    'update failed: Error: A Zoe invitation is required, not "[Alleged: Zoe Invitation payment]"',
   ]);
 });
 
