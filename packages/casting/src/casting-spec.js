@@ -101,7 +101,9 @@ export const makeCastingSpecFromRef = async specCap => {
 };
 
 /**
- * @param {ERef<any>} sourceP
+ * Create an abstract type from a given source representation
+ *
+ * @param {ERef<unknown>} sourceP
  * @returns {Promise<import('./types').CastingSpec>}
  */
 export const makeCastingSpec = async sourceP => {
