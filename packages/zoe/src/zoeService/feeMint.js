@@ -1,8 +1,9 @@
 // @ts-check
 
-import { makeIssuerKit, AssetKind } from '@agoric/ertp';
+import { makeDurableIssuerKit, AssetKind } from '@agoric/ertp';
+import { vivifyKindMulti, provideDurableMapStore } from '@agoric/vat-data';
 
-import { makeHandle } from '../makeHandle.js';
+const FEE_MINT_KIT = 'FeeMintKit';
 
 export const defaultFeeIssuerConfig = harden(
   /** @type {const} */ ({
@@ -13,42 +14,52 @@ export const defaultFeeIssuerConfig = harden(
 );
 
 /**
+ * @param {import('@agoric/vat-data').Baggage} zoeBaggage
  * @param {FeeIssuerConfig} feeIssuerConfig
  * @param {ShutdownWithFailure} shutdownZoeVat
  * @returns {{
- *    feeMintAccess: FeeMintAccess,
+ *    getFeeMintAccess: () => FeeMintAccess,
  *    getFeeIssuerKit: GetFeeIssuerKit,
- *    feeIssuer: Issuer,
- *    feeBrand: Brand,
+ *    getFeeIssuer: () => Issuer,
+ *    getFeeBrand: () => Brand,
  * }}
  */
-const createFeeMint = (feeIssuerConfig, shutdownZoeVat) => {
-  /** @type {IssuerKit} */
-  const feeIssuerKit = makeIssuerKit(
-    feeIssuerConfig.name,
-    feeIssuerConfig.assetKind,
-    feeIssuerConfig.displayInfo,
-    shutdownZoeVat,
-  );
+const vivifyFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
+  const mintBaggage = provideDurableMapStore(zoeBaggage, 'mintBaggage');
+  if (!zoeBaggage.has(FEE_MINT_KIT)) {
+    /** @type {IssuerKit} */
+    const feeIssuerKit = makeDurableIssuerKit(
+      mintBaggage,
+      feeIssuerConfig.name,
+      feeIssuerConfig.assetKind,
+      feeIssuerConfig.displayInfo,
+      shutdownZoeVat,
+    );
+    mintBaggage.init(FEE_MINT_KIT, feeIssuerKit);
+  }
 
-  /** @type {FeeMintAccess} */
-  const feeMintAccess = makeHandle('feeMintAccess');
-
-  /** @type {GetFeeIssuerKit} */
-  const getFeeIssuerKit = allegedFeeMintAccess => {
+  const getFeeIssuerKit = ({ facets }, allegedFeeMintAccess) => {
     assert(
-      feeMintAccess === allegedFeeMintAccess,
+      facets.feeMintAccess === allegedFeeMintAccess,
       'The object representing access to the fee brand mint was not provided',
     );
-    return feeIssuerKit;
+    return mintBaggage.get(FEE_MINT_KIT);
   };
 
-  return harden({
-    feeMintAccess,
-    getFeeIssuerKit,
-    feeIssuer: feeIssuerKit.issuer,
-    feeBrand: feeIssuerKit.brand,
+  const makeFeeMintKit = vivifyKindMulti(mintBaggage, 'FeeMint', () => ({}), {
+    feeMint: {
+      getFeeIssuerKit,
+      getFeeMintAccess: ({ facets }) => facets.feeMintAccess,
+      getFeeIssuer: () => mintBaggage.get(FEE_MINT_KIT).issuer,
+      getFeeBrand: () => mintBaggage.get(FEE_MINT_KIT).brand,
+    },
+    // feeMintAccess is an opaque durable object representing the right to get
+    // the fee mint.
+    feeMintAccess: {},
   });
+
+  const { feeMint } = makeFeeMintKit();
+  return feeMint;
 };
 
-export { createFeeMint };
+export { vivifyFeeMint };

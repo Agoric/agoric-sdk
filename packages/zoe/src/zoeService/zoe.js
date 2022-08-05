@@ -24,7 +24,7 @@ import { makeStartInstance } from './startInstance.js';
 import { makeOfferMethod } from './offer/offer.js';
 import { makeInvitationQueryFns } from './invitationQueries.js';
 import { getZcfBundleCap, setupCreateZCFVat } from './createZCFVat.js';
-import { createFeeMint, defaultFeeIssuerConfig } from './feeMint.js';
+import { vivifyFeeMint, defaultFeeIssuerConfig } from './feeMint.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -51,10 +51,7 @@ const makeZoeKit = (
   zcfSpec = { name: 'zcf' },
   zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
 ) => {
-  const { feeMintAccess, getFeeIssuerKit, feeIssuer, feeBrand } = createFeeMint(
-    feeIssuerConfig,
-    shutdownZoeVat,
-  );
+  const feeMint = vivifyFeeMint(zoeBaggage, feeIssuerConfig, shutdownZoeVat);
 
   /** @type {GetBundleCapForID} */
   const getBundleCapForID = bundleID =>
@@ -95,10 +92,10 @@ const makeZoeKit = (
   } = makeZoeStorageManager(
     createZCFVat,
     getBundleCapForID,
-    getFeeIssuerKit,
+    feeMint.getFeeIssuerKit,
     shutdownZoeVat,
-    feeIssuer,
-    feeBrand,
+    feeMint.getFeeIssuer(),
+    feeMint.getFeeBrand(),
     zoeBaggage,
   );
 
@@ -140,7 +137,7 @@ const makeZoeKit = (
      * @deprecated Useless but provided during transition to keep old
      * code from breaking.
      */
-    makeFeePurse: async () => feeIssuer.makeEmptyPurse(),
+    makeFeePurse: async () => feeMint.getFeeIssuer().makeEmptyPurse(),
     /**
      * @deprecated Useless but provided during transition to keep old
      * code from breaking.
@@ -152,7 +149,7 @@ const makeZoeKit = (
     // The functions below are getters only and have no impact on
     // state within Zoe
     getInvitationIssuer: async () => invitationIssuer,
-    getFeeIssuer: async () => feeIssuer,
+    getFeeIssuer: async () => feeMint.getFeeIssuer(),
     getBrands,
     getIssuers,
     getTerms,
@@ -167,7 +164,7 @@ const makeZoeKit = (
 
   return harden({
     zoeService,
-    feeMintAccess,
+    feeMintAccess: feeMint.getFeeMintAccess(),
   });
 };
 
