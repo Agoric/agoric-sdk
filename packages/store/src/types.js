@@ -25,8 +25,9 @@
  * CopyTaggeds recognized as keys.
  *
  * Distributed equality is location independent.
- * The same two keys, passed to another location, will be equal there iff
- * they are equal here.
+ * The same two keys, passed to another location, will be `keyEQ` there iff
+ * they are `keyEQ` here. (`keyEQ` tests equality according to the
+ * key distributed equality semantics.)
  */
 
 /**
@@ -35,8 +36,9 @@
  * CopySet, CopyBag, CopyMap) that end in either Keys or Matchers. Each pattern
  * acts as a declarative passable predicate over passables, where each passable
  * either passes a given pattern, or does not. Every key is also a pattern.
- * Used as a pattern, a key matches only "itself", i.e., keys that are equal
- * to it according to the key distributed equality semantics.
+ * Used as a pattern, a key matches only "itself", i.e., keys that are
+ * `keyEQ` to it, that is, equal according to the
+ * key distributed equality semantics.
  *
  * Patterns cannot contain promises or errors, as these do
  * not have a useful distributed equality or matching semantics. Likewise,
