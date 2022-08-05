@@ -40,6 +40,8 @@ export const startPegasus = async ({
     produce: { [CONTRACT_NAME]: produceInstance },
   },
 }) => {
+  [board, namesByAddress] = await Promise.all([board, namesByAddress]);
+
   const terms = {
     board,
     namesByAddress,

@@ -36,7 +36,7 @@ export const startPSM = async (
       consume: { contractGovernor, psm: psmInstallP },
     },
     instance: {
-      consume: { economicCommittee },
+      consume: { economicCommittee: economicCommitteeP },
       produce: { psm: psmInstanceR, psmGovernor: psmGovernorR },
     },
     brand: {
@@ -63,6 +63,7 @@ export const startPSM = async (
     governor,
     psmInstall,
     timer,
+    economicCommittee,
   ] = await Promise.all([
     feeMintAccessP,
     runBrandP,
@@ -73,6 +74,7 @@ export const startPSM = async (
     contractGovernor,
     psmInstallP,
     chainTimerService,
+    economicCommitteeP,
   ]);
 
   const poserInvitationP = E(
@@ -110,7 +112,7 @@ export const startPSM = async (
   };
 
   const storageNode = await makeStorageNode(chainStorage, 'psm');
-  const marshaller = E(board).getPublishingMarshaller();
+  const marshaller = await E(board).getPublishingMarshaller();
 
   const governorFacets = await E(zoe).startInstance(
     governor,
