@@ -14,12 +14,12 @@ import {
 
 const { entries, fromEntries } = Object;
 
-export const dropContext =
+export const ignoreContext =
   fn =>
   (_, ...args) =>
     fn(...args);
 // @ts-expect-error TODO statically recognize harden
-harden(dropContext);
+harden(ignoreContext);
 
 /**
  * @param {Baggage} baggage
@@ -126,7 +126,7 @@ export const vivifySingleton = (
   methods,
   options = undefined,
 ) => {
-  const behavior = objectMap(methods, dropContext);
+  const behavior = objectMap(methods, ignoreContext);
   const makeSingleton = vivifyKind(
     baggage,
     kindName,
