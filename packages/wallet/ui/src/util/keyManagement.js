@@ -21,8 +21,6 @@ import {
 
 import { stableCurrency, bech32Config } from './chainInfo.js';
 
-const { freeze } = Object;
-
 /** @type {(address: string) => Uint8Array} */
 export function toAccAddress(address) {
   return fromBech32(address).data;
@@ -211,7 +209,7 @@ export const makeBackgroundSigner = async ({ localStorage, getBytes }) => {
     return decoded;
   };
 
-  return freeze({
+  return harden({
     address,
     registry: SwingsetRegistry,
     wallet,
@@ -346,7 +344,7 @@ export const makeInteractiveSigner = async (
 
   const fee = zeroFee();
 
-  return freeze({
+  return harden({
     address, // TODO: address can change
     isNanoLedger: key.isNanoLedger,
 
