@@ -4,6 +4,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { AmountMath } from '@agoric/ertp';
 
 import { handlePKitWarning } from '../handleWarning.js';
 
@@ -95,6 +96,14 @@ export const makeZoeSeatAdminKit = (
 
     getCurrentAllocationJig: async () => currentAllocation,
     getAllocationNotifierJig: async () => notifier,
+
+    wasWantSatisfied: async () => {
+      return E.when(payoutPromiseKit.promise, () =>
+        Object.keys(proposal.want).every(kwd =>
+          AmountMath.isGTE(currentAllocation[kwd], proposal.want[kwd]),
+        ),
+      );
+    },
   });
 
   return { userSeat, zoeSeatAdmin, notifier };
