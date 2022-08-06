@@ -91,7 +91,7 @@ fees, we can add or subtract the fees and calculate the pool changes.
 
 The next table shows how the amount added to and subtracted from the pool (xIncr
 and yIncr) differs from what the trader gives or gets and the change in the pool
-values. While X' and Y' are the vaules resulting from the constant product
+values. While X' and Y' are the values resulting from the constant product
 formula, xHat and yHat are the new values in the pool, reflecting the
 contribution of the pool fee. From the diagram, xIncr is the difference between
 X and xHat, while yIncr is the difference between Y and yHat.
@@ -130,7 +130,7 @@ and BLD on lines 2 and 3.
 In the two right columns the protocolFee is either added to the amount the
 trader pays, or subtracted from the proceeds. The poolFee does the same on the
 left side, and it is either added to the amount deposited in the pool (xIncr)
-or deducted from the amout removed from the pool (yDecr).
+or deducted from the amount removed from the pool (yDecr).
 
 
 * line 1: the trader provides **sGive** IST; the pool will gain that minus

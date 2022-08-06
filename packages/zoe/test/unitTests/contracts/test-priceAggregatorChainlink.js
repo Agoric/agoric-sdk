@@ -197,7 +197,7 @@ test('basic', /** @param {ExecutionContext} t */ async t => {
   t.deepEqual(round2Attempt1.answer, 2500n);
 
   // ----- round 3: check oracle submission order
-  // unlike the previus test, if C initializes, all submissions should be recorded,
+  // unlike the previous test, if C initializes, all submissions should be recorded,
   // which means the median will be the expected 5000 here
   await oracleTimer.tick();
   await E(pricePushAdminC).pushResult({ roundId: 3, data: '5000' });
@@ -317,7 +317,7 @@ test('issue check', /** @param {ExecutionContext} t */ async t => {
     priceOracleC.instance,
   );
 
-  // ----- round 1: ignore too low valyes
+  // ----- round 1: ignore too low values
   await oracleTimer.tick();
   await E(pricePushAdminA).pushResult({ roundId: 1, data: '50' }); // should be IGNORED
   await oracleTimer.tick();

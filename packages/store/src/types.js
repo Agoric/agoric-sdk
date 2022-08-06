@@ -68,7 +68,7 @@
  * as accurate predicate, for use, for example, for input validation, would
  * need to supplement the pattern check with code to check for the residual
  * cases.
- * We hope the "Shape" metaphore helps remind us of this type-like imprecision
+ * We hope the "Shape" metaphor helps remind us of this type-like imprecision
  * of patterns.
  */
 

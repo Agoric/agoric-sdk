@@ -45,9 +45,9 @@ The expected lifetime of a weak store helps us optimize its representation.
 
 ## Ephemeral* vs Durable (Heap is always Ephemeral)
 
-Stores only exist in one vat at a time, giving us free transactional integrity. All heap stores are ephemeral. Virtual stores can be ephemeral or durable. Ephemeral and durable virtual stores are collectively referred to as "big", since they are able to grow to a large number of elements -- "Big" is an ergonmically friendlier alternative to "Virtual" in the names of the associated maker functions.
+Stores only exist in one vat at a time, giving us free transactional integrity. All heap stores are ephemeral. Virtual stores can be ephemeral or durable. Ephemeral and durable virtual stores are collectively referred to as "big", since they are able to grow to a large number of elements -- "Big" is an ergonomically friendlier alternative to "Virtual" in the names of the associated maker functions.
 * Ephemeral stores only exist in the vat that initially created them, dying when that vat dies. The content of virtual ephemeral stores can include references to ephemeral non-virtual remotables or promises.
-* A durable store can be part of a vat's "estate", to be transfered to that vat's heir/successor on the death of its current vat. A durable store can only contain keys and values that are still meaningful across such traumas, such as
+* A durable store can be part of a vat's "estate", to be transferred to that vat's heir/successor on the death of its current vat. A durable store can only contain keys and values that are still meaningful across such traumas, such as
     * durable objects (a kind of virtual object)
     * Remotes, a kind of remotable designating a far object in another vat
     * Promises, perhaps. These are tempting because they can be restored into a well-defined severed state, the rejected promise.

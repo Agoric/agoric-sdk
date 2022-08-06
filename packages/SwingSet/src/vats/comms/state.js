@@ -89,7 +89,7 @@ export function makeState(syscall) {
   //
   // The schema is:
   //
-  // initialized = true // present if this comms vat has had its storage intialized
+  // initialized = true // present if this comms vat has had its storage initialized
   //
   // o.nextID = $NN  // kernel-facing object identifier allocation counter (o+NN)
   // p.nextID = $NN  // kernel-facing promise identifier allocation counter (p+NN)

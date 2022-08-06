@@ -277,7 +277,7 @@ export async function makeHTTPListener(
     );
     const existing = createConnection(port, host, _c => {
       clearTimeout(to);
-      reject(Error(`Something is aready listening on ${host}:${port}`));
+      reject(Error(`Something is already listening on ${host}:${port}`));
     });
     existing.on('error', err => {
       clearTimeout(to);

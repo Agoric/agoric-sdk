@@ -160,7 +160,7 @@ const makeNoTransaction = (
  * As soon as we detect that we won't be able to satisfy the request, we return
  * noTransaction, indicating that no trade should take place. This can be due to
  * a request for more assets than the pool holds, a specified price the current
- * assets won't support, or the trade would requre more than the trader allowed,
+ * assets won't support, or the trade would require more than the trader allowed,
  * or provide less, or fees would eat up all the trader's proceeds.
  *
  * We start by calculating the amounts that would be traded if no fees were
@@ -218,7 +218,7 @@ export const swap = (
   // value. The pool fee is always charged on the unspecified side, so it is an
   // output of the calculation. When the specified value is in `Fee`, the protocol fee will
   // be deducted from amountGiven before adding to the pool or added to
-  // amountWanted to calculate amoutOut. Otherwise we add the protocol fee
+  // amountWanted to calculate amountOut. Otherwise we add the protocol fee
   // to amountWanted.
   const { amountIn, amountOut } = swapFn({
     amountGiven: subtractFees(amountGiven, fees),

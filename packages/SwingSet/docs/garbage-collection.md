@@ -141,7 +141,7 @@ If you had a `WeakRef` for the object, it would be "alive" (i.e. `.deref()` retu
 
 Note that there's no actual state machine with those values, and we can't observe all of the transitions from JavaScript. But we *can* describe what operations could cause a transition, and what our observations allow us to deduce about the state:
 
-* UKNOWN moves to REACHABLE when a delivery introduces a new import
+* UNKNOWN moves to REACHABLE when a delivery introduces a new import
   * or the vat exports/stores a newly created object
   * userspace holds a reference only in REACHABLE
 * REACHABLE moves to UNREACHABLE only during a userspace crank
@@ -293,7 +293,7 @@ When the vat delivery is a GC action (`dispatch.dropExports`, `dispatch.retireEx
 
 (TODO): describe the c-list entry "reachable" flag, the "reachable" and "recognizable" refcounts on all kernel objects, how these are updated by clist manipulation like `mapKernelSlotToVatSlot` and `mapVatSlotToKernelSlot`. Describe how syscalls are translated from vat space to kernel space, then processed by `kernelSyscall.js` in their kernel-space form. Describe the kernelKeeper `maybeFreeKrefs` ephemeral set, `processRefcounts()`, the durable "GC actions" set, `processOneGCAction()` and how it fits into the run-queue, and how the resulting deliveries like `dispatch.dropExports` are processed by translating from kernel space into vat space (and the refcount/reachable manipulation that occurs during translation). Describe vat-to-device invocations and how their clist entries are used on both sides of the control transfer.
 
-Because of the work done by liveslots and the comms vat, described above, the kernel can treat each vat as a monolithic importer or exporter of vrefs, and does not need to know anything about the vat's internal state. For each vref, a vat is either the single exporter, one of the (possibly multiple) importers, or neither. The kernel itself may be able to reach the vref (via queued messages, promise resolution data, or auxilliary data), or not.
+Because of the work done by liveslots and the comms vat, described above, the kernel can treat each vat as a monolithic importer or exporter of vrefs, and does not need to know anything about the vat's internal state. For each vref, a vat is either the single exporter, one of the (possibly multiple) importers, or neither. The kernel itself may be able to reach the vref (via queued messages, promise resolution data, or auxiliary data), or not.
 
 This section describes how the kernel keeps track of the SwingSet object's state, and the transitions that might occur.
 
@@ -313,7 +313,7 @@ The second is the queue of messages for each unresolved promise. When the decide
 
 The third is the table of resolved promises. Ideally these promises are quickly retired (since all vats retire their c-list entry once the promise is resolved), but cycles or other kernel-side references might keep them around for a while, and promise resolution data can contain SwingSet objects. Each resolved promise that references a kref will maintain a "reachable" reference.
 
-The fourth and final source of kernel-side references is the upcoming [#2069](https://github.com/Agoric/agoric-sdk/issues/2069) "auxilliary data". This is an immutable capdata structure attached to each SwingSet object. Any other SwingSet objects included in the auxdata must be kept alive until the enclosing object is released. This does enable cycles in the dependency graph, so when we implement this, we must either implement a full mark-and-sweep GC system, find a cheaper hack ([#2870](https://github.com/Agoric/agoric-sdk/issues/2870)), or simply tolerate the indefinite retention of anything involved in a cycle.
+The fourth and final source of kernel-side references is the upcoming [#2069](https://github.com/Agoric/agoric-sdk/issues/2069) "auxiliary data". This is an immutable capdata structure attached to each SwingSet object. Any other SwingSet objects included in the auxdata must be kept alive until the enclosing object is released. This does enable cycles in the dependency graph, so when we implement this, we must either implement a full mark-and-sweep GC system, find a cheaper hack ([#2870](https://github.com/Agoric/agoric-sdk/issues/2870)), or simply tolerate the indefinite retention of anything involved in a cycle.
 
 ## Reference Counters
 
@@ -352,7 +352,7 @@ When a vat exports a Remotable or Representative, that object remains "reachable
 
 At this point, the exporting vat performs `syscall.retireExport` to inform the kernel. This means the vat no longer has a Remotable (or a virtual object is no longer reachable), and its `valToSlot` and `slotToVal` tables will not have an entry for the vref. In addition, since this is the *exporting* vat, we know the vref appears nowhere else in the vat (if it were kept alive by virtualized data, it would not retire the export, and if it were used as a key in a weak collection, that collection's entry will be removed once the vref is unreachable).
 
-The kernel translates the `syscall.retireExport` into kernelspace (krefs), and deletes the importing vat's clist entry. Then it consults the kernel object table to get a list of subscribers (vats which have the kref in their own clists). For each subscribing vat, the kernel adds a `retireImport ${vatID} ${kref}` item to the GC action set (described below). Then the kernel decrefs any auxilliary data the kernel object might have had (which may push krefs onto `makybeFreeKrefs`). Finally the kernel deletes the kernel object table entry, and returns control to the exporting vat.
+The kernel translates the `syscall.retireExport` into kernelspace (krefs), and deletes the importing vat's clist entry. Then it consults the kernel object table to get a list of subscribers (vats which have the kref in their own clists). For each subscribing vat, the kernel adds a `retireImport ${vatID} ${kref}` item to the GC action set (described below). Then the kernel decrefs any auxiliary data the kernel object might have had (which may push krefs onto `makybeFreeKrefs`). Finally the kernel deletes the kernel object table entry, and returns control to the exporting vat.
 
 At this point, the kref is only referenced in the queued `retireImport` action and the importing vats' clists. We know these vats cannot export the kref (their "reachable" flag is clear, otherwise the exporting vat couldn't have retired it). So nothing can save the kref. Eventually the `retireImport` actions will be processed, as described below. The kernel will translate the kref through the subscribing vat's clist, delete the clist entry, then deliver the message. The vat reacts to `dispatch.retireImport` by notifying any weak collections about the vref, which can delete the virtual entry indexed by it. This may provoke more drops or retirements.
 
@@ -387,7 +387,7 @@ The general process of `processRefcounts` is:
 
 Then, when the kernel is considering pulling an item off the run-queue, it should first consult the GC action set for notices that can be delivered. These are processed like regular vat deliveries, just at a higher priority. They cause `dispatch.dropExport`, `dispatch.retireImport`, and `dispatch.retireExport` deliveries. These deliveries may cause more drop/retire syscalls, queueing more GC deliveries. As a matter of scheduling policy, the kernel will complete all GC work before doing any normal vat deliveries. However it may hit a block meter limit first, in which case the GC work will be resumed in the next block (possibly with device input events interleaved).
 
-Between deliveries, `maybeFreeKrefs` will be empty (syscalls add to it, post-delivery GC processing in `processRefcounts` drains it). After a delivery, the GC action set may contain work to do. All of this work is completed before begining a regular `dispatch.deliver`/`.notify` delivery.
+Between deliveries, `maybeFreeKrefs` will be empty (syscalls add to it, post-delivery GC processing in `processRefcounts` drains it). After a delivery, the GC action set may contain work to do. All of this work is completed before beginning a regular `dispatch.deliver`/`.notify` delivery.
 
 The specific sequence is:
 
@@ -395,7 +395,7 @@ The specific sequence is:
 * any `promise` with a zero refcount can be deleted:
   * we only retire *resolved* promises, so the promise table entry will have no queued messages
   * we delete the resolution data, which decrements both reachable+recognizable counts for any krefs it used to contain
-  * no vat needs to be notifed about the promise deletion itself, however this might trigger the release of objects, which may eventually cause vats to be notified about something else
+  * no vat needs to be notified about the promise deletion itself, however this might trigger the release of objects, which may eventually cause vats to be notified about something else
 * any reachable `object` with a zero reachability count can be dropped (but not retired)
   * we look up the exporting vat (`.owner`) and check the reachability flag in its c-list entry
   * if the flag is clear, the vat already knows the object is unreachable, and we stop processing
@@ -466,7 +466,7 @@ The delivery of each GC action is processed as follows:
   * so the vat's notion of dropped-or-not always matches its clist's reachability flag
   * note that we do not delete the `ko$NN` kernelDB data at this point, because:
     * the object retains its identity until retired (which cannot happen until it is fully unrecognizable)
-    * any [#2069](https://github.com/Agoric/agoric-sdk/issues/2069) auxilliary data is part of the object's identity, and must be retained until the object is retired
+    * any [#2069](https://github.com/Agoric/agoric-sdk/issues/2069) auxiliary data is part of the object's identity, and must be retained until the object is retired
 * the `retireExport ${vatID} ${kref}` action will:
   * decref any auxdata slots
   * delete the kernel object table entry and auxdata
@@ -527,7 +527,7 @@ Once an object ceases to be reachable and is dropped, the next step is to retire
 
 Alternatively, the exporter might retire the object itself (typically when the exporter does not have any internal references to the object, so an incoming `dropExport` causes the object to be deleted entirely). When this happens, a cascade of `retireImport` messages will flow *downstream* towards the importers.
 
-These two kinds of messages might cross in the middle, so we must accomodate a variety of exceptional conditions where they meet.
+These two kinds of messages might cross in the middle, so we must accommodate a variety of exceptional conditions where they meet.
 
 ## Comms GC Retirement (upstream)
 
@@ -582,7 +582,7 @@ When comms receives an informed(TODO??) `dropImport` (which will always be from 
 If comms receives a `retireExport` or `retireImport` for a ref that is not in the c-list, it should just ignore it. There are two reasons/phases where this might happen. The "normal" one is during a race between the importer sending `retireExport` and the exporter sending `retireImport`. We could choose to track this race in the same way we handle the retirement of promises:
 * importer sends `retireExport`, and tracks the (sent seqnum, rref) pair in an ordered list
   * if a message arrives that effectively acks that seqnum, delete the pair: the window for a race has closed
-  * if a re-introduction arrives before that point, delete the pair: the race has been superceded by a replacement object
+  * if a re-introduction arrives before that point, delete the pair: the race has been superseded by a replacement object
   * if a `retireImport` arrives before that point, ignore it: there was a race, no big deal
   * if a `retireImport` arrives after that point (i.e. neither the clist nor the ordered `retireExport`-sent list knows the rref): this is the weird case, we might decide to kill the connection, or log-but-ignore, or just ignore
  * follow the same pattern when the exporter sends `retireImport`

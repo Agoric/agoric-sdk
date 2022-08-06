@@ -80,7 +80,7 @@ export function buildRootObject(_vatPowers, vatParameters) {
 
       ({ alice, bob } = makeVats(vats, zoe, installations, startingValues));
       // Zoe appears to do some one-time setup the first time it's used, so this
-      // is a sacrifical benchmark round to prime the pump.
+      // is a sacrificial benchmark round to prime the pump.
       if (vatParameters.argv[0] === '--prime') {
         await E(alice).initiateSwap(bob);
         await E(bob).initiateSwap(alice);

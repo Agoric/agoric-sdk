@@ -793,7 +793,7 @@ export function buildPatterns(log) {
       // now send two messages in quick succession, so commsA will send the
       // second before hearing about the resolution of billP. The
       // cross-machine queue will ensure that commsB processes the first
-      // (resolving billP) before processing the second (targetting billP).
+      // (resolving billP) before processing the second (targeting billP).
       E(b.bob).b82_two(); // tell bob to resolve it
       E(billP).log_bill('three'); // 1: promise second appears as target
     };

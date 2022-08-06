@@ -8,10 +8,10 @@ import './types.js';
 
 /**
  * Adaptor from a notifierP to an async iterable.
- * The notifierP can be any object that has an eventually invokable
+ * The notifierP can be any object that has an eventually invocable
  * `getUpdateSince` method that behaves according to the notifier
  * spec. This can be a notifier, a promise for a local or remote
- * notfier, or a presence of a remote notifier.
+ * notifier, or a presence of a remote notifier.
  *
  * It is also used internally by notifier.js so that a notifier itself is an
  * async iterable.

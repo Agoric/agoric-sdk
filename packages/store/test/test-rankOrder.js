@@ -355,9 +355,9 @@ const queries = harden([
 
 // XXX This test is skipped because of unresolved impedance mismatch between the
 // older value-as-cover scheme and the newer string-encoded-key-as-cover scheme
-// that we currently use.  Whoever sorts that mismatch out (likely as part of
+// that we currently use. Whoever sorts that mismatch out (likely as part of
 // adding composite key handling to the durable store implementation) will need
-// to reenable and (likely) update this test.
+// to re-enable and (likely) update this test.
 test.skip('range queries', t => {
   t.assert(isRankSorted(rangeSample, compareRank));
   for (const [rankCover, indexRange] of queries) {
