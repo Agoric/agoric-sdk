@@ -260,7 +260,7 @@ const makeFeeGrantMessage = (granter, grantee, allowance, seconds) => {
       allowance: {
         typeUrl: CosmosMessages.feegrant.BasicAllowance.typeUrl,
         value: {
-          spendLimit: [{ denom: 'urun', amount: allowance }],
+          spendLimit: [{ denom: 'uist', amount: allowance }],
           expiration: { seconds },
         },
       },
