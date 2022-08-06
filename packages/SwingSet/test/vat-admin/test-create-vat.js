@@ -258,31 +258,8 @@ function findRefs(kvStore, koid) {
   const refcount = refcountString.split(',').map(Number);
   return { refs, refcount };
 }
-/**
- * TODO Figure out why #5892 causes a refcount difference, and
- * unskip this.
- *
- * Skipping this as of https://github.com/Agoric/agoric-sdk/pull/5892
- * because refcount differences are scary and I am out of my depth.
- *
- * #5892 turns off deep-stack bookkeeping (and therefore reporting),
- * which may enable some objects to be collected that were previously
- * leaking. I have no idea if this may account for the difference seen here.
- *
- * Difference see at
- * https://github.com/Agoric/agoric-sdk/runs/7665021858?check_suite_focus=true
- * is
- * ```
- *
- *   [
- * -   4,
- * -   4,
- * +   5,
- * +   5,
- *   ]
- * ```
- */
-test.skip('createVat holds refcount', async t => {
+
+test('createVat holds refcount', async t => {
   const printSlog = false; // set true to debug this test
   const { c, idRC, hostStorage } = await doTestSetup(t, false, printSlog);
   const { kvStore } = hostStorage;
@@ -397,15 +374,11 @@ test.skip('createVat holds refcount', async t => {
   t.deepEqual(r2.refcount, [expectedRefcount, expectedRefcount]);
   t.is(r2.refs.length, expectedCLists);
 
-  // Allow the vat-admin bringOutYourDead to be delivered, which *ought* to
-  // allow it to drop its reference to 'held'. NOTE: for some reason,
-  // `createVat()` does not drop that reference right away. I *think* it
-  // holds onto them until the result promise resolves, which doesn't happen
-  // until `newVatCallback()` is delivered. So this -=1 is commented out
-  // until we figure out how to fix that.. maybe a HandledPromise thing.
+  // Allow the vat-admin bringOutYourDead to be delivered, which
+  // allows it to drop its reference to 'held'.
 
-  // expectedRefcount -= 1; // vat-vat-admin retires
-  // expectedCLists -= 1; // vat-vat-admin retires
+  expectedRefcount -= 1; // vat-vat-admin retires
+  expectedCLists -= 1; // vat-vat-admin retires
 
   // In addition, device-vat-admin does not yet participate in GC, and holds
   // its references forever. So this -=1 remains commented out until we
