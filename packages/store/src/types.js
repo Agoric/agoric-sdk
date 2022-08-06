@@ -434,6 +434,7 @@
  * @param {Passable} specimen
  * @param {Pattern} pattern
  * @param {Checker=} check
+ * @returns {boolean}
  */
 
 /**
@@ -556,7 +557,7 @@
 /**
  * @typedef {object} PatternKit
  * @property {(specimen: Passable, patt: Pattern) => boolean} matches
- * @property {(specimen: Passable, patt: Pattern) => void} fit
+ * @property {(specimen: Passable, patt: Pattern, label?: string) => void} fit
  * @property {(patt: Pattern) => void} assertPattern
  * @property {(patt: Passable) => boolean} isPattern
  * @property {(patt: Pattern) => void} assertKeyPattern
