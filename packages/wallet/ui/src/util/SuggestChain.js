@@ -1,41 +1,34 @@
-import { SigningStargateClient } from '@cosmjs/stargate';
+// @ts-check
+import { stakeCurrency, stableCurrency, bech32Config } from './chainInfo.js';
 
 export const AGORIC_COIN_TYPE = 564;
 export const COSMOS_COIN_TYPE = 118;
 
-export async function suggestChain(networkConfig, caption = undefined) {
+/**
+ * @param {string} networkConfig URL
+ * @param {string} rpcAddr URL or origin
+ * @param {string} chainId
+ * @param {string} [caption]
+ * @returns {import('@keplr-wallet/types').ChainInfo}
+ */
+const makeChainInfo = (networkConfig, rpcAddr, chainId, caption) => {
   const coinType = Number(
     new URL(networkConfig).searchParams.get('coinType') || AGORIC_COIN_TYPE,
   );
-  const res = await fetch(networkConfig);
-  if (!res.ok) {
-    throw Error(`Cannot fetch network: ${res.status}`);
-  }
-  const { chainName: chainId, rpcAddrs } = await res.json();
   const hostname = new URL(networkConfig).hostname;
   const network = hostname.split('.')[0];
   let rpc;
   let api;
+
   if (network !== hostname) {
     rpc = `https://${network}.rpc.agoric.net`;
     api = `https://${network}.api.agoric.net`;
   } else {
-    rpc = `http://${rpcAddrs[Math.floor(Math.random() * rpcAddrs.length)]}`;
+    rpc = rpcAddr.match(/:\/\//) ? rpcAddr : `http://${rpcAddr}`;
     api = rpc.replace(/(:\d+)?$/, ':1317');
   }
-  const stakeCurrency = {
-    coinDenom: 'BLD',
-    coinMinimalDenom: 'ubld',
-    coinDecimals: 6,
-    coinGeckoId: undefined,
-  };
-  const stableCurrency = {
-    coinDenom: 'RUN',
-    coinMinimalDenom: 'uist',
-    coinDecimals: 6,
-    coinGeckoId: undefined,
-  };
-  const chainInfo = {
+
+  return {
     rpc,
     rest: api,
     chainId,
@@ -45,51 +38,38 @@ export async function suggestChain(networkConfig, caption = undefined) {
     bip44: {
       coinType,
     },
-    bech32Config: {
-      bech32PrefixAccAddr: 'agoric',
-      bech32PrefixAccPub: 'agoricpub',
-      bech32PrefixValAddr: 'agoricvaloper',
-      bech32PrefixValPub: 'agoricvaloperpub',
-      bech32PrefixConsAddr: 'agoricvalcons',
-      bech32PrefixConsPub: 'agoricvalconspub',
-    },
+    bech32Config,
     currencies: [stakeCurrency, stableCurrency],
     feeCurrencies: [stableCurrency],
     features: ['stargate', 'ibc-transfer'],
   };
-  await window.keplr.experimentalSuggestChain(chainInfo);
-  await window.keplr.enable(chainId);
+};
 
-  const offlineSigner = window.getOfflineSigner(chainId);
-  const cosmJS = await SigningStargateClient.connectWithSigner(
-    rpc,
-    offlineSigner,
-  );
-
-  /*
-  // Example transaction 
-  const amount = {
-    denom: 'ubld',
-    amount: '1234567',
-  };
-  const accounts = await offlineSigner.getAccounts();
-  await cosmJS.sendTokens(
-    accounts[0].address,
-    'agoric123456',
-    [amount],
-    {
-      amount: [
-        {
-          amount: '500000',
-          denom: 'uist',
-        },
-      ],
-      gas: '890000',
-    },
-    'enjoy!',
-  );
+/**
+ * @param {string} networkConfig URL
+ * @param {object} io
+ * @param {typeof fetch} io.fetch
+ * @param {import('@keplr-wallet/types').Keplr} io.keplr
+ * @param {typeof Math.random} io.random
+ * @param {string} [caption]
  */
-  const accounts = await offlineSigner.getAccounts();
+export async function suggestChain(
+  networkConfig,
+  { fetch, keplr, random },
+  caption = undefined,
+) {
+  console.log('suggestChain: fetch', networkConfig); // log net IO
+  const res = await fetch(networkConfig);
+  if (!res.ok) {
+    throw Error(`Cannot fetch network: ${res.status}`);
+  }
+  const { chainName: chainId, rpcAddrs } = await res.json();
+  const rpcAddr = rpcAddrs[Math.floor(random() * rpcAddrs.length)];
 
-  return [cosmJS, accounts[0]?.address];
+  const chainInfo = makeChainInfo(networkConfig, rpcAddr, chainId, caption);
+  await keplr.experimentalSuggestChain(chainInfo);
+  await keplr.enable(chainId);
+  console.log('keplr.enable chainId =', chainId, 'done');
+
+  return chainInfo;
 }

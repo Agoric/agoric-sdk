@@ -2,6 +2,8 @@
 import { observeIterator } from '@agoric/notifier';
 import { E } from '@endo/far';
 import { useEffect, useState, useReducer } from 'react';
+import { SigningStargateClient } from '@cosmjs/stargate';
+import { Random } from '@cosmjs/crypto';
 
 import { ApplicationContext, ConnectionStatus } from './Application';
 
@@ -12,6 +14,10 @@ import {
 } from '../util/connections';
 import { maybeLoad, maybeSave } from '../util/storage';
 import { suggestChain } from '../util/SuggestChain';
+import {
+  makeBackgroundSigner,
+  makeInteractiveSigner,
+} from '../util/keyManagement';
 
 const useDebugLogging = (state, watch) => {
   useEffect(() => console.log(state), watch);
@@ -148,11 +154,38 @@ const Provider = ({ children }) => {
   );
   const [keplrConnection, setKeplrConnection] = useState(null);
 
+  /**
+   * NOTE: relies on ambient window.fetch, window.keplr, Random.getBytes
+   */
   const tryKeplrConnect = async () => {
-    const [cosmjs, address] = await suggestChain(connectionConfig.href);
+    const { keplr, fetch } = window;
+    assert(fetch, 'Missing window.fetch');
+    assert(keplr, 'Missing window.keplr');
+    const { getBytes } = Random;
+
+    const chainInfo = await suggestChain(connectionConfig.href, {
+      fetch,
+      keplr,
+      random: Math.random,
+    });
+    const offlineSigner = keplr.getOfflineSigner(chainInfo.chainId);
+
+    const accounts = await offlineSigner.getAccounts();
+
+    const [interactiveSigner, backgroundSigner] = await Promise.all([
+      makeInteractiveSigner(
+        chainInfo,
+        keplr,
+        SigningStargateClient.connectWithSigner,
+      ),
+      makeBackgroundSigner({
+        localStorage,
+        csprng: getBytes,
+      }),
+    ]);
     setKeplrConnection({
-      cosmjs,
-      address,
+      address: accounts[0]?.address,
+      signers: { interactiveSigner, backgroundSigner },
     });
   };
 
@@ -202,7 +235,10 @@ const Provider = ({ children }) => {
     if (
       connectionConfig?.smartConnectionMethod === SmartConnectionMethod.KEPLR
     ) {
-      tryKeplrConnect();
+      // TODO: error toast
+      tryKeplrConnect().catch(reason =>
+        console.error('tryKeplrConnect failed', reason),
+      );
     }
   }, [connectionConfig]);
 

@@ -8,7 +8,6 @@ import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
 
 import { withApplicationContext } from '../contexts/Application';
-import { suggestChain } from '../util/SuggestChain';
 
 const useStyles = makeStyles(_ => ({
   connector: {
@@ -27,6 +26,7 @@ const ChainConnector = ({
   networkConfig,
   setNetworkConfig,
   setDialogOpened,
+  tryKeplrConnect,
 }) => {
   const classes = useStyles();
   const [connectionInProgress, setConnectionInProgress] = useState(false);
@@ -57,24 +57,24 @@ const ChainConnector = ({
         setNetworkConfig(null);
         setConnectionInProgress(false);
         showError('Please install the Keplr extension');
-      } else if (window.keplr.experimentalSuggestChain) {
-        try {
-          const cosmJS = await suggestChain(networkConfig[0]);
-          if (!networkChanged) {
-            setConnectionInProgress(false);
-            window.cosmJS = cosmJS;
-          }
-        } catch (e) {
-          if (!networkChanged) {
-            showError('Failed to connect to Keplr');
-            console.error(e);
-            setConnectionInProgress(false);
-            setNetworkConfig(null);
-          }
-        }
-      } else {
+        return;
+      } else if (!window.keplr.experimentalSuggestChain) {
         setNetworkConfig(null);
         showError('Please use the most recent version of the Keplr extension');
+        return;
+      }
+      try {
+        tryKeplrConnect();
+        if (!networkChanged) {
+          setConnectionInProgress(false);
+        }
+      } catch (e) {
+        if (!networkChanged) {
+          showError('Failed to connect to Keplr');
+          console.error(e);
+          setConnectionInProgress(false);
+          setNetworkConfig(null);
+        }
       }
     };
     connect();
@@ -116,4 +116,5 @@ const ChainConnector = ({
 export default withApplicationContext(ChainConnector, context => ({
   networkConfig: context.networkConfig,
   setNetworkConfig: context.setNetworkConfig,
+  tryKeplrConnect: context.tryKeplrConnect,
 }));
