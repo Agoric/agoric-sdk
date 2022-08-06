@@ -304,7 +304,10 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
       vatKeeper.transcriptSnapshotStats();
     if (snapshotInitial === totalEntries) {
       reason = { snapshotInitial };
-    } else if (totalEntries - snapshottedEntries >= snapshotInterval) {
+    } else if (
+      totalEntries > snapshotInitial &&
+      totalEntries - snapshottedEntries >= snapshotInterval
+    ) {
       reason = { snapshotInterval };
     }
     // console.log('maybeSaveSnapshot: reason:', reason);
