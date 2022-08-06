@@ -94,6 +94,7 @@ export const SwingsetMsgs = /** @type {const} */ ({
 
 export const SwingsetRegistry = new Registry([
   ...defaultRegistryTypes,
+  // XXX should this list be "upstreamed" to @agoric/cosmic-proto?
   [SwingsetMsgs.MsgWalletAction.typeUrl, MsgWalletAction],
   [SwingsetMsgs.MsgWalletSpendAction.typeUrl, MsgWalletSpendAction],
 ]);
