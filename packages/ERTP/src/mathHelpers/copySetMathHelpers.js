@@ -20,7 +20,7 @@ const empty = makeCopySet([]);
  */
 export const copySetMathHelpers = harden({
   doCoerce: set => {
-    fit(set, M.set());
+    fit(set, M.set(), 'set of amount');
     return set;
   },
   doMakeEmpty: () => empty,

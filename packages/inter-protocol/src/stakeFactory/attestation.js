@@ -74,7 +74,11 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
       attestationAmount.brand === attBrand,
       X`The escrowed attestation ${attestationAmount} was not of the attestation brand ${attBrand}`,
     );
-    fit(attestationAmount.value.payload, harden([[M.string(), M.bigint()]]));
+    fit(
+      attestationAmount.value.payload,
+      harden([[M.string(), M.bigint()]]),
+      'attestationAmount',
+    );
     /** @type {[Address, bigint][]} */
     const [[address, valueReturned]] = attestationAmount.value.payload;
     const lienedAmount = AmountMath.make(stakeBrand, valueReturned);

@@ -74,7 +74,11 @@ const start = zcf => {
 
   /** @type {OfferHandler} */
   const makeOption = sellSeat => {
-    fit(sellSeat.getProposal(), M.split({ exit: { afterDeadline: M.any() } }));
+    fit(
+      sellSeat.getProposal(),
+      M.split({ exit: { afterDeadline: M.any() } }),
+      'exit afterDeadline',
+    );
     const sellSeatExitRule = sellSeat.getProposal().exit;
     assert(
       isAfterDeadlineExitRule(sellSeatExitRule),
