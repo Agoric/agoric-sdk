@@ -157,9 +157,9 @@ export const STORAGE_KEY = 'agoric.eis0Aigi';
  *
  * @param {object} io
  * @param {typeof window.localStorage} io.localStorage
- * @param {typeof import('@cosmjs/crypto').Random.getBytes} io.getBytes for key generation
+ * @param {typeof import('@cosmjs/crypto').Random.getBytes} io.csprng
  */
-export const makeBackgroundSigner = async ({ localStorage, getBytes }) => {
+export const makeBackgroundSigner = async ({ localStorage, csprng }) => {
   const provideLocalKey = () => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -168,8 +168,8 @@ export const makeBackgroundSigner = async ({ localStorage, getBytes }) => {
     console.debug(
       `localStorage.setItem(${STORAGE_KEY}, Random.getBytes(${KEY_SIZE}))`,
     );
-    const seed = getBytes(KEY_SIZE);
     localStorage.setItem(STORAGE_KEY, toBase64(seed));
+    const seed = csprng(KEY_SIZE);
     return seed;
   };
   const seed = provideLocalKey();

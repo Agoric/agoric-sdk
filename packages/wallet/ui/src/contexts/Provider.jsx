@@ -178,7 +178,7 @@ const Provider = ({ children }) => {
       ),
       makeBackgroundSigner({
         localStorage,
-        getBytes,
+        csprng: getBytes,
       }),
     ]);
     setKeplrConnection({
