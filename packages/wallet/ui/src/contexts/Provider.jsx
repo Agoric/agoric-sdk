@@ -159,6 +159,8 @@ const Provider = ({ children }) => {
    */
   const tryKeplrConnect = async () => {
     const { keplr, fetch } = window;
+    assert(fetch, 'Missing window.fetch');
+    assert(keplr, 'Missing window.keplr');
     const { getBytes } = Random;
 
     const chainInfo = await suggestChain(connectionConfig.href, {
@@ -233,6 +235,7 @@ const Provider = ({ children }) => {
     if (
       connectionConfig?.smartConnectionMethod === SmartConnectionMethod.KEPLR
     ) {
+      // TODO: error toast
       tryKeplrConnect().catch(reason =>
         console.error('tryKeplrConnect failed', reason),
       );
