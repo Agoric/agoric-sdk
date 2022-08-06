@@ -165,7 +165,7 @@ export const makeBackgroundSigner = async ({ localStorage, getBytes }) => {
     if (stored) {
       return fromBase64(stored);
     }
-    console.log(
+    console.debug(
       `localStorage.setItem(${STORAGE_KEY}, Random.getBytes(${KEY_SIZE}))`,
     );
     const seed = getBytes(KEY_SIZE);
@@ -325,7 +325,7 @@ export const makeInteractiveSigner = async (
   const key = await keplr.getKey(chainId);
 
   const offlineSigner = await keplr.getOfflineSignerAuto(chainId);
-  console.log('OfferSigner', { offlineSigner });
+  console.log('InteractiveSigner', { offlineSigner });
 
   // Currently, Keplr extension manages only one address/public key pair.
   const [account] = await offlineSigner.getAccounts();
@@ -340,7 +340,7 @@ export const makeInteractiveSigner = async (
     aminoTypes: new AminoTypes(converters),
     registry: SwingsetRegistry,
   });
-  console.debug('OfferSigner', { signingClient });
+  console.debug('InteractiveSigner', { signingClient });
 
   const fee = zeroFee();
 
