@@ -207,7 +207,7 @@ const manager = {
     fit(
       attestationGiven.value,
       M.bagOf([M.string(), M.bigint()]),
-      attestationGiven,
+      'attestationGiven',
     );
     const [[_addr, valueLiened]] = getCopyBagEntries(attestationGiven.value);
     const amountLiened = AmountMath.make(brands.Stake, valueLiened);
