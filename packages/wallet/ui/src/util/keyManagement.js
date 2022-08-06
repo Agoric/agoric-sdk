@@ -144,12 +144,12 @@ const SwingsetConverters = {
   },
 };
 
-/**
- * key for use in localStorage
- *
- * arbitrary; suffix chosen randomly to avoid collisions
- */
-export const STORAGE_KEY = 'agoric.eis0Aigi';
+// ack: justerest Sep 2019 https://stackoverflow.com/a/58110124/7963
+/** @template T @typedef {T extends false | '' | 0 | null | undefined ? never : T} Truthy<T> */
+/** @type {<T>(value: T) => value is Truthy<T>} */
+const truthy = value => !!value;
+
+export const BROWSER_STORAGE_KEY = 'agoric.wallet.backgroundSignerKey';
 
 /**
  * Maintain a key for signing non-spending messages in localStorage.
@@ -162,15 +162,15 @@ export const STORAGE_KEY = 'agoric.eis0Aigi';
  */
 export const makeBackgroundSigner = async ({ localStorage, csprng }) => {
   const provideLocalKey = () => {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(BROWSER_STORAGE_KEY);
     if (stored) {
       return fromBase64(stored);
     }
     console.debug(
-      `localStorage.setItem(${STORAGE_KEY}, Random.getBytes(${KEY_SIZE}))`,
+      `localStorage.setItem(${BROWSER_STORAGE_KEY}, Random.getBytes(${KEY_SIZE}))`,
     );
-    localStorage.setItem(STORAGE_KEY, toBase64(seed));
     const seed = csprng(KEY_SIZE);
+    localStorage.setItem(BROWSER_STORAGE_KEY, toBase64(seed));
     return seed;
   };
   const seed = provideLocalKey();
@@ -191,6 +191,7 @@ export const makeBackgroundSigner = async ({ localStorage, csprng }) => {
    *
    * @param {string} granter address
    * @param {import('@cosmjs/tendermint-rpc').Tendermint34Client} rpcClient
+   * @returns {Promise<GenericAuthorization[]>}
    */
   const queryGrants = async (granter, rpcClient) => {
     const base = QueryClient.withExtensions(rpcClient);
@@ -202,10 +203,11 @@ export const makeBackgroundSigner = async ({ localStorage, csprng }) => {
       grantee: address,
       msgTypeUrl: '', // wildcard
     });
-    const decoded = result.grants.map(
-      g =>
-        g.authorization && GenericAuthorization.decode(g.authorization.value),
-    );
+
+    const decoded = result.grants
+      .map(grant => grant.authorization)
+      .filter(truthy)
+      .map(authorization => GenericAuthorization.decode(authorization.value));
 
     return decoded;
   };
@@ -395,6 +397,9 @@ export const makeInteractiveSigner = async (
      * Sign and broadcast WalletSpendAction
      *
      * @param {string} spendAction marshaled offer
+     * @throws if account does not exist on chain, user cancels,
+     *         RPC connection fails, RPC service fails to broadcast (
+     *         for example, if signature verification fails)
      */
     submitSpendAction: async spendAction => {
       const { accountNumber, sequence } = await signingClient.getSequence(
