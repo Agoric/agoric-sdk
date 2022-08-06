@@ -14,9 +14,14 @@ import {
 
 const { entries, fromEntries } = Object;
 
+/**
+ * Make a version of the argument function that takes a kind context but ignores it.
+ *
+ * @type {<T extends Function>(fn: T) => import('./types.js').PlusContext<never, T>}
+ */
 export const ignoreContext =
   fn =>
-  (_, ...args) =>
+  (context, ...args) =>
     fn(...args);
 // @ts-expect-error TODO statically recognize harden
 harden(ignoreContext);
