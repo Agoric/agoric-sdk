@@ -1,10 +1,16 @@
-/* global globalThis */
-
+// @ts-check
 import { stakeCurrency, stableCurrency, bech32Config } from './chainInfo.js';
 
 export const AGORIC_COIN_TYPE = 564;
 export const COSMOS_COIN_TYPE = 118;
 
+/**
+ * @param {string} networkConfig URL
+ * @param {string} rpcAddr URL or origin
+ * @param {string} chainId
+ * @param {string} [caption]
+ * @returns {import('@keplr-wallet/types').ChainInfo}
+ */
 const makeChainInfo = (networkConfig, rpcAddr, chainId, caption) => {
   const coinType = Number(
     new URL(networkConfig).searchParams.get('coinType') || AGORIC_COIN_TYPE,
@@ -39,17 +45,19 @@ const makeChainInfo = (networkConfig, rpcAddr, chainId, caption) => {
   };
 };
 
+/**
+ * @param {string} networkConfig URL
+ * @param {object} io
+ * @param {typeof fetch} io.fetch
+ * @param {import('@keplr-wallet/types').Keplr} io.keplr
+ * @param {typeof Math.random} io.random
+ * @param {string} [caption]
+ */
 export async function suggestChain(
   networkConfig,
-  /** @type {string} */ caption = undefined,
-  io = {},
+  { fetch, keplr, random },
+  caption = undefined,
 ) {
-  const {
-    fetch = globalThis.fetch,
-    keplr = window.keplr,
-    random = Math.random,
-  } = io;
-
   console.log('suggestChain: fetch', networkConfig); // log net IO
   const res = await fetch(networkConfig);
   if (!res.ok) {
