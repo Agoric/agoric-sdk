@@ -124,7 +124,7 @@ const toAbs = (ts, brand = undefined) => {
   } else {
     const { timerBrand } = ts;
     agreedTimerBrand(timerBrand, brand);
-    fit(ts, TimestampShape);
+    fit(ts, TimestampShape, 'timestamp');
     return ts;
   }
 };
@@ -145,7 +145,7 @@ const toRel = (rt, brand = undefined) => {
   } else {
     const { timerBrand } = rt;
     agreedTimerBrand(timerBrand, brand);
-    fit(rt, RelativeTimeShape);
+    fit(rt, RelativeTimeShape, 'relativeTime');
     return rt;
   }
 };

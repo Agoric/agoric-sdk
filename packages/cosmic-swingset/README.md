@@ -21,7 +21,7 @@ In any case, for now, you will be needing to build the solo node from the source
 
 ### Build from source
 
-To build and install from sources, first follow the instructions at [Before Using Agoric Software](https://agoric.com/documentation/getting-started/before-using-agoric.html) to install the Agoric SDK and its prerequisities.
+To build and install from sources, first follow the instructions at [Before Using Agoric Software](https://agoric.com/documentation/getting-started/before-using-agoric.html) to install the Agoric SDK and its prerequisites.
 
 - **Warning:** There are some [known issues](https://github.com/Agoric/cosmic-swingset/issues/71) installing cosmic-swingset with [snap-based version of node.js on Ubuntu](https://github.com/nodesource/distributions/blob/master/README.md#snap). **We recommend** using a non-snap version
 
@@ -85,7 +85,7 @@ In this scenario, you run:
 
 The solo nodes communicate with the testnet node
 
-Before using this scenario, it is recommanded that you test your code with Scenario 3.
+Before using this scenario, it is recommended that you test your code with Scenario 3.
 
 Prepare the chain and solo nodes:
 ```sh

@@ -32,8 +32,7 @@ import { setupBootstrap, setUpZoeForTest, mintRunPayment } from './supports.js';
 const { details: X } = assert;
 const dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
-/** @type {import('ava').TestInterface<Awaited<ReturnType<typeof makeTestContext>>>} */
-// @ts-expect-error cast
+/** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;
 
 const contractRoots = {

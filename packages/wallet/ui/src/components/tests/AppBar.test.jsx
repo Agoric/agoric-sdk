@@ -41,7 +41,7 @@ jest.mock(
 );
 
 const appTheme = createTheme({
-  pallete: {
+  palette: {
     background: {
       default: '#fff',
     },

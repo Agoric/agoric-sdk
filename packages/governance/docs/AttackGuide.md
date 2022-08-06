@@ -121,7 +121,7 @@ than a weakness in the protocols or infrastructure.
 
 The contractGovernor needs to ensure that the facet for calling `updateFoo()`
 for a particular paramManager is only available in a visible way, but the code
-there is delicate. Is there a way to highjack the facet that wouldn't be
+there is delicate. Is there a way to hijack the facet that wouldn't be
 detectable to voters or onlookers?
 
 ## Create question that claims to govern a contract it doesn't have control over

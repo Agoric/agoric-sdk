@@ -168,7 +168,7 @@ for each vat or device.
 passed to the vat or device as one of its creation parameters as the second
 argument to the `buildRootObject` function.  The second argument to
 `buildVatController` or `initializeSwingset` is an array of strings, nominally
-representing command line paramaters such as would be given when launching a
+representing command line parameters such as would be given when launching a
 statically defined vat group via a command line tool such as `swingset-runner`
 or `ag-solo`.  If such command line parameters are given to one of the vat
 initiation functions, they are added to the bootstrap vat's `parameters` object

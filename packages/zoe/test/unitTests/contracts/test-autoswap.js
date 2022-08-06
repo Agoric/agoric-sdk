@@ -657,7 +657,7 @@ test('autoSwap jig - swap varying amounts', async t => {
   t.truthy(t, '..Alice traded B');
   poolState = updatePoolState(poolState, expectedB);
 
-  // Attempt (unsucessfully) to trade for a specified amount
+  // Attempt (unsuccessfully) to trade for a specified amount
   const failedSeat = await alice.offerAndTrade(simoleans(75n), moola(3n));
 
   t.throwsAsync(

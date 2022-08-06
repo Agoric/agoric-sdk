@@ -27,6 +27,7 @@ import {
   checkCopyMap,
   copyMapKeySet,
 } from '../keys/checkKey.js';
+import { applyLabelingError } from './match-helpers.js';
 
 /// <reference types="ses"/>
 
@@ -375,9 +376,10 @@ const makePatternKit = () => {
   /**
    * @param {Passable} specimen
    * @param {Pattern} patt
+   * @param {string} [label]
    */
-  const fit = (specimen, patt) => {
-    checkMatches(specimen, patt, assertChecker);
+  const fit = (specimen, patt, label = undefined) => {
+    applyLabelingError(checkMatches, [specimen, patt, assertChecker], label);
   };
 
   // /////////////////////// getRankCover //////////////////////////////////////

@@ -339,10 +339,12 @@ export async function main() {
     delete config.loopboxSenders;
     deviceEndowments.loopbox = { ...loopboxEndowments };
   }
-  if (useXS) {
-    config.defaultManagerType = 'xs-worker';
-  } else {
-    config.defaultManagerType = 'local';
+  if (!config.defaultManagerType) {
+    if (useXS) {
+      config.defaultManagerType = 'xs-worker';
+    } else {
+      config.defaultManagerType = 'local';
+    }
   }
   if (launchIndirectly) {
     config = generateIndirectConfig(config);

@@ -106,7 +106,7 @@ test('decode', t => {
   }
 
   // bad('a', 'non-numeric length prefix');
-  bad('a:', /unparseable size .*, should be integer/);
+  bad('a:', /unparsable size .*, should be integer/);
   bad('1:ab', 'malformed netstring: not terminated by comma');
   bad('26:x', /size .* exceeds limit of 25/);
 });

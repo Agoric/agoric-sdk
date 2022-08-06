@@ -80,8 +80,7 @@ const makePublicationChecker = async (t, aggregatorPublicFacet) => {
   };
 };
 
-/** @type {import('ava').TestInterface<TestContext>} */
-// @ts-expect-error cast
+/** @type {import('ava').TestFn<TestContext>} */
 const test = unknownTest;
 
 test.before('setup aggregator and oracles', async ot => {

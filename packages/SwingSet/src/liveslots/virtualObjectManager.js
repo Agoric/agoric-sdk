@@ -548,11 +548,11 @@ export function makeVirtualObjectManager(
    * However, if a representative becomes unreferenced in memory it is subject
    * to garbage collection, leaving the representation that is kept in the vat
    * store as the record of its state from which a mew representative can be
-   * reconsituted at need.  Since only one representative exists at a time,
+   * reconstituted at need.  Since only one representative exists at a time,
    * references to them may be compared with the equality operator (===).
    * Although the identity of a representative can change over time, this is
    * never visible to code running in the vat.  Methods invoked on a
-   * representative always operate on the underyling virtual object state.
+   * representative always operate on the underlying virtual object state.
    *
    * The inner self represents the in-memory information about an object, aside
    * from its state.  There is an inner self for each virtual object that is
@@ -578,7 +578,7 @@ export function makeVirtualObjectManager(
    * that method invocations always see the wrapper belonging to the invoking
    * representative.  The actual state object holds marshaled serializations of
    * each of the state properties.  When written to persistent storage, this is
-   * representated as a JSON-stringified object each of whose properties is one
+   * represented as a JSON-stringified object each of whose properties is one
    * of the marshaled property values.
    *
    * When a method of a virtual object attempts to access one of the properties

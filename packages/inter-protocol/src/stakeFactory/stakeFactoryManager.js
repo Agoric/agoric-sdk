@@ -204,7 +204,11 @@ const manager = {
       brands.Attestation,
       X`Invalid Attestation ${attestationGiven}. Expected brand ${brands.Attestation}`,
     );
-    fit(attestationGiven.value, M.bagOf([M.string(), M.bigint()]));
+    fit(
+      attestationGiven.value,
+      M.bagOf([M.string(), M.bigint()]),
+      'attestationGiven',
+    );
     const [[_addr, valueLiened]] = getCopyBagEntries(attestationGiven.value);
     const amountLiened = AmountMath.make(brands.Stake, valueLiened);
     const maxDebt = floorMultiplyBy(amountLiened, mintingRatio);

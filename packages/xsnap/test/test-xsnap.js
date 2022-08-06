@@ -54,7 +54,7 @@ test('evaluate infinite loop', async t => {
   t.deepEqual([], opts.messages);
 });
 
-// TODO: Reenable when this doesn't take 3.6 seconds.
+// TODO: Re-enable when this doesn't take 3.6 seconds.
 test('evaluate promise loop', async t => {
   const opts = options(io);
   const vat = xsnap(opts);
@@ -135,13 +135,16 @@ test('print - start compartment only', async t => {
     const send = it => issueCommand(new TextEncoder().encode(it).buffer);
     print('print:', 123);
     try {
-      (new Compartment()).evalate('print("456")');
-    } catch (_err) {
-      send('no print in Compartment');
+      (new Compartment()).evaluate('print("456")');
+    } catch (err) {
+      send('err:' + err);
     }
   `);
   await vat.close();
-  t.deepEqual(['no print in Compartment'], opts.messages);
+  t.deepEqual(
+    ['err:ReferenceError: ?: get print: undefined variable'],
+    opts.messages,
+  );
 });
 
 test('gc - start compartment only', async t => {
@@ -152,13 +155,16 @@ test('gc - start compartment only', async t => {
     const send = it => issueCommand(new TextEncoder().encode(it).buffer);
     gc();
     try {
-      (new Compartment()).evalate('gc()');
-    } catch (_err) {
-      send('no gc in Compartment');
+      (new Compartment()).evaluate('gc()');
+    } catch (err) {
+      send('err:' + err);
     }
   `);
   await vat.close();
-  t.deepEqual(['no gc in Compartment'], opts.messages);
+  t.deepEqual(
+    ['err:ReferenceError: ?: get gc: undefined variable'],
+    opts.messages,
+  );
 });
 
 test('run script until idle', async t => {

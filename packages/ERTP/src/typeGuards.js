@@ -110,3 +110,22 @@ harden(isSetValue);
  */
 export const isCopyBagValue = value => matches(value, CopyBagValueShape);
 harden(isCopyBagValue);
+
+// One GOOGOLth should be enough decimal places for anybody.
+export const MAX_ABSOLUTE_DECIMAL_PLACES = 100;
+
+export const AssetValueShape = M.or('nat', 'set', 'copySet', 'copyBag');
+
+export const DisplayInfoShape = M.partial(
+  harden({
+    decimalPlaces: M.and(
+      M.gte(-MAX_ABSOLUTE_DECIMAL_PLACES),
+      M.lte(MAX_ABSOLUTE_DECIMAL_PLACES),
+    ),
+    assetKind: AssetValueShape,
+  }),
+  harden({
+    // Including this empty `rest` ensures that there are no other
+    // properties beyond those in the `base` record.
+  }),
+);

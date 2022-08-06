@@ -3,7 +3,7 @@
 package Legend <<Rectangle>> #EEEEEE {
 
     class ContractA {
-        constract terms are documented above the line
+        contract terms are documented above the line
         --
           accessiblePublicState
         + publicMethod()

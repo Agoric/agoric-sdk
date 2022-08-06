@@ -374,15 +374,11 @@ test('createVat holds refcount', async t => {
   t.deepEqual(r2.refcount, [expectedRefcount, expectedRefcount]);
   t.is(r2.refs.length, expectedCLists);
 
-  // Allow the vat-admin bringOutYourDead to be delivered, which *ought* to
-  // allow it to drop its reference to 'held'. NOTE: for some reason,
-  // `createVat()` does not drop that reference right away. I *think* it
-  // holds onto them until the result promise resolves, which doesn't happen
-  // until `newVatCallback()` is delivered. So this -=1 is commented out
-  // until we figure out how to fix that.. maybe a HandledPromise thing.
+  // Allow the vat-admin bringOutYourDead to be delivered, which
+  // allows it to drop its reference to 'held'.
 
-  // expectedRefcount -= 1; // vat-vat-admin retires
-  // expectedCLists -= 1; // vat-vat-admin retires
+  expectedRefcount -= 1; // vat-vat-admin retires
+  expectedCLists -= 1; // vat-vat-admin retires
 
   // In addition, device-vat-admin does not yet participate in GC, and holds
   // its references forever. So this -=1 remains commented out until we

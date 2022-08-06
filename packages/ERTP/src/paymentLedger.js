@@ -190,7 +190,7 @@ export const vivifyPaymentLedger = (
    */
   const assertAmountConsistent = (paymentBalance, optAmountShape) => {
     if (optAmountShape !== undefined) {
-      fit(paymentBalance, optAmountShape);
+      fit(paymentBalance, optAmountShape, 'amount');
     }
   };
 
@@ -372,7 +372,7 @@ export const vivifyPaymentLedger = (
    */
   const mintPayment = newAmount => {
     newAmount = coerce(newAmount);
-    fit(newAmount, amountSchema);
+    fit(newAmount, amountSchema, 'minted amount');
     const payment = makePayment();
     initPayment(payment, newAmount, undefined);
     return payment;

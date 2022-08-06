@@ -32,6 +32,10 @@ test('build temp file; compress to cache file', async t => {
     'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
     hash,
   );
+  t.is(await store.has(hash), true);
+  const zero =
+    '0000000000000000000000000000000000000000000000000000000000000000';
+  t.is(await store.has(zero), false);
   t.falsy(
     fs.existsSync(keepTmp),
     'temp file should have been deleted after withTempName',

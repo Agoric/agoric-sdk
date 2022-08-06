@@ -87,7 +87,7 @@ export const makeScalarWeakSetStore = (
       X`Only remotables can be keys of scalar WeakStores: ${key}`,
     );
     if (keySchema !== undefined) {
-      fit(key, keySchema);
+      fit(key, keySchema, 'weakSetStore key');
     }
   };
 

@@ -170,7 +170,7 @@ export const cleanProposal = (proposal, getAssetKindByBrand) => {
     give: cleanedGive,
     exit,
   });
-  fit(cleanedProposal, ProposalShape);
+  fit(cleanedProposal, ProposalShape, 'proposal');
   assertExit(exit);
   assertKeywordNotInBoth(cleanedWant, cleanedGive);
   return cleanedProposal;

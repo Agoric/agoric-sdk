@@ -20,7 +20,7 @@ const empty = makeCopyBag([]);
  */
 export const copyBagMathHelpers = harden({
   doCoerce: bag => {
-    fit(bag, M.bag());
+    fit(bag, M.bag(), 'bag of amount');
     return bag;
   },
   doMakeEmpty: () => empty,

@@ -397,7 +397,7 @@ export function makeDeliveryKit(
     // All promises listed as *targets* in `resolutions` are by definition
     // unresolved when they arrive here: they are being decided by someone else
     // (the kernel, or a remote).  They are either primary (previously known to
-    // us) or auxilliary (imported, in an unresolved state, as the resolution
+    // us) or auxiliary (imported, in an unresolved state, as the resolution
     // data of the batch was translated from whatever kernel/remote sent the
     // batch into our local namespace).  The resolution data in `resolutions`
     // may point to both resolved and unresolved promises, but any cycles
@@ -443,7 +443,7 @@ export function makeDeliveryKit(
       // be handled properly
       state.markPromiseAsResolved(lpid, rejected, data);
     }
-    // At this point, both the primary and auxillary promises listed as
+    // At this point, both the primary and auxiliary promises listed as
     // targets in `resolutions` are marked as resolved.
 
     const auxResolutions = collector.getResolutions();

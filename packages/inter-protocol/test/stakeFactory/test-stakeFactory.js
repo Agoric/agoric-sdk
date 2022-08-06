@@ -73,8 +73,7 @@ const micro = harden({
  *   },
  * }} StakeFactoryTestContext
  */
-/** @type {import('ava').TestInterface<StakeFactoryTestContext>} */
-// @ts-expect-error cast
+/** @type {import('ava').TestFn<StakeFactoryTestContext>} */
 const test = unknownTest;
 
 test.before(async t => {

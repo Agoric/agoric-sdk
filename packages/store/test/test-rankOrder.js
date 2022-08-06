@@ -11,7 +11,6 @@ import {
   getPassStyleCover,
   assertRankSorted,
 } from '../src/patterns/rankOrder.js';
-import { assertionPassed } from './test-store.js';
 
 const { quote: q } = assert;
 
@@ -78,10 +77,7 @@ const { passable } = fc.letrec(tie => {
 test('compareRank is reflexive', async t => {
   await fc.assert(
     fc.property(passable, x => {
-      return assertionPassed(
-        t.is(compareRank(x, x), 0),
-        () => compareRank(x, x) === 0,
-      );
+      return t.is(compareRank(x, x), 0);
     }),
   );
 });
@@ -92,18 +88,12 @@ test('compareRank totally orders ranks', async t => {
       const ab = compareRank(a, b);
       const ba = compareRank(b, a);
       if (ab === 0) {
-        return assertionPassed(t.is(ba, 0), () => ba === 0);
+        return t.is(ba, 0);
       }
       return (
-        assertionPassed(t.true(Math.abs(ab) > 0), () => {
-          return Math.abs(ab) > 0;
-        }) &&
-        assertionPassed(t.true(Math.abs(ba) > 0), () => {
-          return Math.abs(ba) > 0;
-        }) &&
-        assertionPassed(t.is(Math.sign(ba), -Math.sign(ab)), () => {
-          return Object.is(Math.sign(ba), -Math.sign(ab));
-        })
+        t.true(Math.abs(ab) > 0) &&
+        t.true(Math.abs(ba) > 0) &&
+        t.is(Math.sign(ba), -Math.sign(ab))
       );
     }),
   );
@@ -127,51 +117,37 @@ test('compareRank is transitive', async t => {
         let resultOk;
 
         result = compareRank(a, b);
-        resultOk = assertionPassed(t.true(result <= 0, 'a <= b'), () => {
-          return result <= 0;
-        });
+        resultOk = t.true(result <= 0, 'a <= b');
         if (!resultOk) {
           failures.push(`Expected <= 0: ${result} from ${q(a)} vs. ${q(b)}`);
         }
         result = compareRank(a, c);
-        resultOk = assertionPassed(t.true(result <= 0, 'a <= c'), () => {
-          return result <= 0;
-        });
+        resultOk = t.true(result <= 0, 'a <= c');
         if (!resultOk) {
           failures.push(`Expected <= 0: ${result} from ${q(a)} vs. ${q(c)}`);
         }
         result = compareRank(b, c);
-        resultOk = assertionPassed(t.true(result <= 0, 'b <= c'), () => {
-          return result <= 0;
-        });
+        resultOk = t.true(result <= 0, 'b <= c');
         if (!resultOk) {
           failures.push(`Expected <= 0: ${result} from ${q(b)} vs. ${q(c)}`);
         }
         result = compareRank(c, b);
-        resultOk = assertionPassed(t.true(result >= 0, 'c >= b'), () => {
-          return result >= 0;
-        });
+        resultOk = t.true(result >= 0, 'c >= b');
         if (!resultOk) {
           failures.push(`Expected >= 0: ${result} from ${q(c)} vs. ${q(b)}`);
         }
         result = compareRank(c, a);
-        resultOk = assertionPassed(t.true(result >= 0, 'c >= a'), () => {
-          return result >= 0;
-        });
+        resultOk = t.true(result >= 0, 'c >= a');
         if (!resultOk) {
           failures.push(`Expected >= 0: ${result} from ${q(c)} vs. ${q(a)}`);
         }
         result = compareRank(b, a);
-        resultOk = assertionPassed(t.true(result >= 0, 'b >= a'), () => {
-          return result >= 0;
-        });
+        resultOk = t.true(result >= 0, 'b >= a');
         if (!resultOk) {
           failures.push(`Expected >= 0: ${result} from ${q(b)} vs. ${q(a)}`);
         }
 
-        return assertionPassed(t.deepEqual(failures, []), () => {
-          return failures.length === 0;
-        });
+        return t.deepEqual(failures, []);
       },
     ),
   );
@@ -379,9 +355,9 @@ const queries = harden([
 
 // XXX This test is skipped because of unresolved impedance mismatch between the
 // older value-as-cover scheme and the newer string-encoded-key-as-cover scheme
-// that we currently use.  Whoever sorts that mismatch out (likely as part of
+// that we currently use. Whoever sorts that mismatch out (likely as part of
 // adding composite key handling to the durable store implementation) will need
-// to reenable and (likely) update this test.
+// to re-enable and (likely) update this test.
 test.skip('range queries', t => {
   t.assert(isRankSorted(rangeSample, compareRank));
   for (const [rankCover, indexRange] of queries) {

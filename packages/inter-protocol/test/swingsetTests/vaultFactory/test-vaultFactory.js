@@ -1,9 +1,7 @@
 // @ts-check
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import '@endo/init/debug.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import rawTest from 'ava';
+import anyTest from 'ava';
 import path from 'path';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
@@ -17,9 +15,8 @@ import liquidateMinimumBundle from '../../../bundles/bundle-liquidateMinimum.js'
 import ammBundle from '../../../bundles/bundle-amm.js';
 import vaultFactoryBundle from '../../../bundles/bundle-vaultFactory.js';
 
-/** @type {import('ava').TestInterface<{ data: { kernelBundles: any, config: any } }>} */
-// @ts-expect-error cast
-const test = rawTest;
+/** @type {import('ava').TestFn<{ data: { kernelBundles: any, config: any } }>} */
+const test = anyTest;
 
 /**
  *

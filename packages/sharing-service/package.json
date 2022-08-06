@@ -33,7 +33,7 @@
   "devDependencies": {
     "@agoric/swingset-vat": "^0.28.0",
     "@endo/eventual-send": "^0.15.5",
-    "ava": "^3.12.1",
+    "ava": "^4.3.1",
     "c8": "^7.7.2"
   },
   "files": [
