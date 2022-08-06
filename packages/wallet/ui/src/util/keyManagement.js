@@ -144,11 +144,6 @@ const SwingsetConverters = {
   },
 };
 
-// ack: justerest Sep 2019 https://stackoverflow.com/a/58110124/7963
-/** @template T @typedef {T extends false | '' | 0 | null | undefined ? never : T} Truthy<T> */
-/** @type {<T>(value: T) => value is Truthy<T>} */
-const truthy = value => !!value;
-
 export const BROWSER_STORAGE_KEY = 'agoric.wallet.backgroundSignerKey';
 
 /**
@@ -204,10 +199,11 @@ export const makeBackgroundSigner = async ({ localStorage, csprng }) => {
       msgTypeUrl: '', // wildcard
     });
 
-    const decoded = result.grants
-      .map(grant => grant.authorization)
-      .filter(truthy)
-      .map(authorization => GenericAuthorization.decode(authorization.value));
+    const decoded = result.grants.flatMap(grant =>
+      grant.authorization
+        ? [GenericAuthorization.decode(grant.authorization.value)]
+        : [],
+    );
 
     return decoded;
   };
