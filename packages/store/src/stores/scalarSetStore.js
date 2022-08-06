@@ -102,7 +102,7 @@ export const makeScalarSetStore = (
 
     assertScalarKey(key);
     if (keySchema !== undefined) {
-      fit(key, keySchema);
+      fit(key, keySchema, 'setStore key');
     }
   };
 

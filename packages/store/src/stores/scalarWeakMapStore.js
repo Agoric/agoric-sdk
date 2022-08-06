@@ -105,7 +105,7 @@ export const makeScalarWeakMapStore = (
 
     assertPassable(value);
     if (valueSchema !== undefined) {
-      fit(value, valueSchema);
+      fit(value, valueSchema, 'weakMapStore value');
     }
   };
 
@@ -119,7 +119,7 @@ export const makeScalarWeakMapStore = (
       X`Only remotables can be keys of scalar WeakMapStores: ${key}`,
     );
     if (keySchema !== undefined) {
-      fit(key, keySchema);
+      fit(key, keySchema, 'weakMapStore key');
     }
     assertKVOkToSet(key, value);
   };

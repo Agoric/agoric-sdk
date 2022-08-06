@@ -110,7 +110,7 @@ export const swapExact = (zcf, leftSeat, rightSeat) => {
  */
 export const fitProposalShape = (seat, proposalShape) =>
   // TODO remove this harden, obligating our caller to harden.
-  fit(seat.getProposal(), harden(proposalShape));
+  fit(seat.getProposal(), harden(proposalShape), 'proposal');
 
 /**
  * Check the seat's proposal against an `expected` record that says

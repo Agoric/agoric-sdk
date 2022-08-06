@@ -147,7 +147,7 @@ export const makeScalarMapStore = (
 
     assertPassable(value);
     if (valueSchema !== undefined) {
-      fit(value, valueSchema);
+      fit(value, valueSchema, 'mapStore value');
     }
   };
 
@@ -158,7 +158,7 @@ export const makeScalarMapStore = (
 
     assertScalarKey(key);
     if (keySchema !== undefined) {
-      fit(key, keySchema);
+      fit(key, keySchema, 'mapStore key');
     }
     assertKVOkToSet(key, value);
   };

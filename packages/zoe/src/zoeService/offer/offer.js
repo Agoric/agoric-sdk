@@ -57,7 +57,7 @@ export const makeOfferMethod = (
     const proposal = cleanProposal(uncleanProposal, getAssetKindByBrand);
     const proposalSchema = getProposalSchemaForInvitation(invitationHandle);
     if (proposalSchema !== undefined) {
-      fit(proposal, proposalSchema);
+      fit(proposal, proposalSchema, 'proposal');
     }
 
     if (offerArgs !== undefined) {

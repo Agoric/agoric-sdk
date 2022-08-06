@@ -320,9 +320,9 @@ const machineBehavior = {
       zcf,
     } = ephemera;
     const { collateralTypes, mintSeat, rewardPoolSeat } = state;
-    fit(collateralIssuer, M.remotable());
+    fit(collateralIssuer, M.remotable(), 'collateralIssuer');
     assertKeywordName(collateralKeyword);
-    fit(initialParamValues, vaultParamPattern);
+    fit(initialParamValues, vaultParamPattern, 'initialParamValues');
     await zcf.saveIssuer(collateralIssuer, collateralKeyword);
     const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
     // We create only one vault per collateralType.
