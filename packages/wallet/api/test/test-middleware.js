@@ -43,23 +43,28 @@ test('makeLoggingPresence logs calls on purse/payment actions', async t => {
 });
 
 test('makeImportContext in wallet UI can unserialize messages', async t => {
-  const ctx = makeImportContext();
+  const msgs = [];
+  const enqueue = m => msgs.push(m);
+  const mkp = iface => makeLoggingPresence(iface, enqueue);
+
+  const ctx = makeImportContext(mkp);
 
   const stuff = ctx.fromMyWallet.unserialize(capData1);
   t.is(stuff.length, 2);
-  t.is(stuff[0][2], 'deposit');
-  // const msgs = [];
-  // const enqueue = m => msgs.push(m);
-  // const purse = {
-  //   actions: await makeLoggingPresence('Alleged: purse.actions', enqueue),
-  // };
-  // const brandM = Far('Moola brand', {});
-  // const amt = harden({ brand: brandM, value: 123n });
+  const [[_tag, purse, method, _args]] = stuff;
+  t.is(method, 'deposit');
+  await E(purse).transfer(1);
 
-  // await E(purse.actions).transfer(amt, 'there'); // promise resolves???
-  // t.deepEqual(msgs, [
-  //   ['applyMethod', purse.actions, 'transfer', [amt, 'there']],
-  // ]);
+  // unserialization is consistent
+  const stuff2 = ctx.fromMyWallet.unserialize(capData1);
+  t.deepEqual(stuff, stuff2);
+
+  const capData = ctx.fromMyWallet.serialize(harden([...msgs]));
+
+  t.deepEqual(capData, {
+    body: '[["applyMethod",{"@qclass":"slot","iface":"Alleged: purse.actions","index":0},"transfer",[1]]]',
+    slots: ['purse:1'],
+  });
 });
 
 //   {

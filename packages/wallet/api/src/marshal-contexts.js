@@ -117,10 +117,18 @@ export const makeExportContext = () => {
   });
 };
 
+const defaultMakePresence = iface => {
+  const severed = `SEVERED: ${iface.replace(/^Alleged: /, '')}`;
+  const thing = /** @type {any} */ (Far(severed, {}));
+  return thing;
+};
+
 /**
  * Make context for unserializing wallet or board data.
+ *
+ * @param {(iface: string) => unknown} [makePresence]
  */
-export const makeImportContext = () => {
+export const makeImportContext = (makePresence = defaultMakePresence) => {
   // constraint: none of these keys has another as a prefix.
   // and none overlaps with board
   const myData = {
@@ -138,15 +146,14 @@ export const makeImportContext = () => {
     },
     // TODO: 6 in total, right?
   };
-  /** @type {MapStore<string, unknown>} */
-  const sharedData = makeScalarMap();
+  const sharedData = {
+    /** @type {MapStore<string, unknown>} */
+    bySlot: makeScalarMap(),
+    /** @type {MapStore<unknown, string>} */
+    byVal: makeScalarMap(),
+  };
 
   const kindOf = slot => Object.keys(myData).find(k => slot.startsWith(k));
-  const makePresence = (slot, iface) => {
-    const severed = `SEVERED: ${iface.replace(/^Alleged: /, '')}`;
-    const thing = /** @type {any} */ (Far(severed, {}));
-    return thing;
-  };
 
   const slotToVal = {
     /**
@@ -154,17 +161,18 @@ export const makeImportContext = () => {
      * @param {string} iface
      */
     fromBoard: (slot, iface) => {
-      if (sharedData.has(slot)) {
-        return sharedData.get(slot);
+      if (sharedData.bySlot.has(slot)) {
+        return sharedData.bySlot.get(slot);
       }
       const kind = kindOf(slot);
       if (kind) {
         assert.fail(X`bad shared slot ${q(slot)}`);
       }
       // TODO: assert(slot.startswith('board'))?
-      const it = makePresence(slot, iface);
+      const it = makePresence(iface);
 
-      sharedData.init(slot, it);
+      sharedData.bySlot.init(slot, it);
+      sharedData.byVal.init(it, slot);
       return it;
     },
 
@@ -175,13 +183,14 @@ export const makeImportContext = () => {
     fromMyWallet: (slot, iface) => {
       const kind = kindOf(slot);
       const key = kind ? slot.slice(kind.length + 1) : slot;
-      const table = kind ? myData[kind].bySlot : sharedData;
-      if (table.has(key)) {
-        return table.get(key);
+      const table = kind ? myData[kind] : sharedData;
+      if (table.bySlot.has(key)) {
+        return table.bySlot.get(key);
       }
 
-      const it = makePresence(slot, iface);
-      table.init(key, it);
+      const it = makePresence(iface);
+      table.bySlot.init(key, it);
+      table.byVal.init(it, key);
       return it;
     },
   };
@@ -194,7 +203,7 @@ export const makeImportContext = () => {
           return `${kind}:${id}`;
         }
       }
-      throw Error(`valToSlot(${val})???@@@`);
+      assert.fail(X`cannot serialize unregisterd ${val}`);
     },
   };
 
