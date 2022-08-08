@@ -1440,7 +1440,7 @@ test('wasWantSatisfied: no', async t => {
   );
 
   await zcfSeat.exit();
-  t.false(await E(userSeat).wasWantSatisfied());
+  t.is(await E(userSeat).wasWantSatisfied(), 0);
 });
 
 test('wasWantSatisfied: yes', async t => {
@@ -1460,7 +1460,7 @@ test('wasWantSatisfied: yes', async t => {
   doubloonMint.mintGains(harden({ Bonus: doubloonAmount }), zcfSeat);
 
   await zcfSeat.exit();
-  t.true(await E(userSeat).wasWantSatisfied());
+  t.is(await E(userSeat).wasWantSatisfied(), 1);
 });
 
 test('wasWantSatisfied as promise', async t => {
@@ -1479,7 +1479,7 @@ test('wasWantSatisfied as promise', async t => {
   );
 
   const outcome = E.when(E(userSeat).wasWantSatisfied(), result =>
-    t.true(result),
+    t.is(result, 1),
   );
   doubloonMint.mintGains(harden({ Bonus: doubloonAmount }), zcfSeat);
 

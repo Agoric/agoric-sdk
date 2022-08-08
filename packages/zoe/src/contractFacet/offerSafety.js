@@ -7,20 +7,25 @@ import { AmountMath } from '@agoric/ertp';
  * allocationAmount greater than or equal to requiredAmount for every
  * keyword of giveOrWant?
  *
+ * To prepare for multiples, satisfiesWant and satisfiesGive return 0 or 1.
+ * isOfferSafe will still be boolean. When we have Multiples, satisfiesWant and
+ * satisfiesGive will tell how many times the offer was matched.
+ *
  * @param {AmountKeywordRecord} giveOrWant
  * @param {AmountKeywordRecord} allocation
+ * @returns {0|1}
  */
 const satisfiesInternal = (giveOrWant = {}, allocation) => {
   const isGTEByKeyword = ([keyword, requiredAmount]) => {
     // If there is no allocation for a keyword, we know the giveOrWant
     // is not satisfied without checking further.
     if (allocation[keyword] === undefined) {
-      return false;
+      return 0;
     }
     const allocationAmount = allocation[keyword];
-    return AmountMath.isGTE(allocationAmount, requiredAmount);
+    return AmountMath.isGTE(allocationAmount, requiredAmount) ? 1 : 0;
   };
-  return Object.entries(giveOrWant).every(isGTEByKeyword);
+  return Object.entries(giveOrWant).every(isGTEByKeyword) ? 1 : 0;
 };
 
 /**
@@ -77,8 +82,11 @@ const satisfiesGive = (proposal, allocation) =>
  */
 function isOfferSafe(proposal, allocation) {
   return (
-    satisfiesGive(proposal, allocation) || satisfiesWant(proposal, allocation)
+    satisfiesGive(proposal, allocation) > 0 ||
+    satisfiesWant(proposal, allocation) > 0
   );
 }
 
+harden(isOfferSafe);
+harden(satisfiesWant);
 export { isOfferSafe, satisfiesWant };

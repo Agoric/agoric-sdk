@@ -182,6 +182,7 @@
  * @property {() => Promise<OR>} getOfferResult
  * @property {() => void=} tryExit
  * @property {() => Promise<boolean>} hasExited
+ * @property {() => Promise<0|1>} wasWantSatisfied
  *
  * @property {() => Promise<Allocation>} getCurrentAllocationJig
  * Labelled "Jig" because it *should* only be used for tests, though
