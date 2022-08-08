@@ -15,23 +15,12 @@ export const makeExportContext = () => {
   const toVal = {
     /** @type {MapStore<string, Purse>} */
     purse: makeScalarMap(),
-    /** @type {MapStore<string, Brand>} */
-    brand: makeScalarMap(),
-    /** @type {MapStore<string, Issuer>} */
-    issuer: makeScalarMap(),
-    // TODO: 6 in total, right?
-    // offer
-    // contact
-    // dapp
+    // TODO: offer, contact, dapp
   };
   const fromVal = {
     /** @type {MapStore<Purse, string>} */
     purse: makeScalarMap(),
-    /** @type {MapStore<Brand, string>} */
-    brand: makeScalarMap(),
-    /** @type {MapStore<Issuer, string>} */
-    issuer: makeScalarMap(),
-    // TODO: 6 in total, right?
+    // TODO: offer, contact, dapp
   };
   /** @type {MapStore<unknown, string>} */
   const sharedData = makeScalarMap();
@@ -78,20 +67,10 @@ export const makeExportContext = () => {
     purseEntries: toVal.purse.entries,
     /**
      * @param {string} id
-     * @param {Brand} brand
+     * @param {unknown} val
      */
-    initBrandId: (id, brand) => {
-      toVal.brand.init(id, brand);
-      fromVal.brand.init(brand, id);
-    },
-    brandEntries: toVal.purse.entries,
-    /**
-     * @param {string} id
-     * @param {Issuer} issuer
-     */
-    initIssuerId: (id, issuer) => {
-      toVal.issuer.init(id, issuer);
-      fromVal.issuer.init(issuer, id);
+    initBoardId: (id, val) => {
+      sharedData.init(val, id);
     },
     /**
      * @param {string} id
