@@ -139,7 +139,7 @@ export const makeImportContext = () => {
      * @param {string} slot
      * @param {string} iface
      */
-    fromPart: (slot, iface) => {
+    fromMyWallet: (slot, iface) => {
       const kind = kindOf(slot);
       const key = kind ? slot.slice(kind.length + 1) : slot;
       const table = kind ? myData[kind].bySlot : sharedData;
@@ -154,7 +154,7 @@ export const makeImportContext = () => {
   };
 
   const valToSlot = {
-    fromWallet: val => {
+    fromMyWallet: val => {
       for (const kind of Object.keys(myData)) {
         if (myData[kind].byVal.has(val)) {
           const id = myData[kind].byVal.get(val);
@@ -169,7 +169,7 @@ export const makeImportContext = () => {
     fromBoard: makeMarshal(undefined, slotToVal.fromBoard, {
       marshalName: 'fromBoard',
     }),
-    fromPart: makeMarshal(valToSlot.fromWallet, slotToVal.fromPart, {
+    fromMyWallet: makeMarshal(valToSlot.fromMyWallet, slotToVal.fromMyWallet, {
       marshalName: 'fromPart',
     }),
   };
@@ -186,7 +186,7 @@ export const makeImportContext = () => {
   return harden({
     savePurseActions: makeSaver('purse', myData.purse),
     savePaymentActions: makeSaver('payment', myData.payment),
-    fromWallet: Far('wallet marshaller', { ...marshal.fromPart }),
+    fromMyWallet: Far('wallet marshaller', { ...marshal.fromMyWallet }),
     fromBoard: Far('board marshaller', { ...marshal.fromBoard }),
   });
 };

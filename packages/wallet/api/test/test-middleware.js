@@ -24,7 +24,7 @@ test('presences for actions log their work', async t => {
   const ctx = makeImportContext();
   ctx.savePurseActions(purse.actions);
   ctx.savePaymentActions(myPayment);
-  const capData = ctx.fromWallet.serialize(harden([...msgs]));
+  const capData = ctx.fromMyWallet.serialize(harden([...msgs]));
   t.deepEqual(capData, {
     body: JSON.stringify([
       [

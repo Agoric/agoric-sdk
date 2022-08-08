@@ -79,7 +79,7 @@ test('preserve identity of brands across AMM and wallet', t => {
     slots: ['board011', 'purse:ATOM'],
   });
 
-  const walletState = context.fromWallet.unserialize(walletCapData);
+  const walletState = context.fromMyWallet.unserialize(walletCapData);
   t.is(walletState[0].brand, b1, 'unserialization across sources');
 
   t.throws(
