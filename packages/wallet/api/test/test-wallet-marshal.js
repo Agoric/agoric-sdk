@@ -89,4 +89,17 @@ test('preserve identity of brands across AMM and wallet', t => {
   );
 });
 
-// TODO: test consistent deserialization of unregistered objects in fromWallet
+test('handle unregistered identites in serialization', t => {
+  const brand = Far('Zoe invitation brand', {});
+  const instance = Far('amm instance', {});
+  const invitationAmount = harden({ brand, value: [{ instance }] });
+
+  const context = makeExportContext();
+  context.initBoardId('b1', brand);
+  const actual = context.serialize(invitationAmount);
+
+  t.deepEqual(actual, {
+    body: '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe invitation brand","index":0},"value":[{"instance":{"@qclass":"slot","iface":"Alleged: amm instance","index":1}}]}',
+    slots: ['b1', 'unknown:1'],
+  });
+});

@@ -48,6 +48,8 @@ export const makeExportContext = () => {
     return val;
   };
 
+  let nonce = 0;
+
   const valToSlot = val => {
     if (sharedData.has(val)) {
       return sharedData.get(val);
@@ -58,24 +60,43 @@ export const makeExportContext = () => {
         return `${kind}:${id}`;
       }
     }
-    assert.fail(X`cannot serialize ${val}`);
+    nonce += 1;
+    const slot = `unknown:${nonce}`;
+    sharedData.init(val, slot);
+    return slot;
   };
 
   return harden({
+    /**
+     * @param {string} id
+     * @param {Purse} purse
+     */
     initPurseId: (id, purse) => {
       toVal.purse.init(id, purse);
       fromVal.purse.init(purse, id);
     },
     purseEntries: toVal.purse.entries,
+    /**
+     * @param {string} id
+     * @param {Brand} brand
+     */
     initBrandId: (id, brand) => {
       toVal.brand.init(id, brand);
       fromVal.brand.init(brand, id);
     },
     brandEntries: toVal.purse.entries,
+    /**
+     * @param {string} id
+     * @param {Issuer} issuer
+     */
     initIssuerId: (id, issuer) => {
       toVal.issuer.init(id, issuer);
       fromVal.issuer.init(issuer, id);
     },
+    /**
+     * @param {string} id
+     * @param {unknown} val
+     */
     initBoardId: (id, val) => {
       sharedData.init(val, id);
     },
