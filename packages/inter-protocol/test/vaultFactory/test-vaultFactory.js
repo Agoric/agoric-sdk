@@ -2597,6 +2597,7 @@ test('manager notifiers', async t => {
   await m.assertInitial({
     // present
     numVaults: 0,
+    liquidatingVaults: 0,
     totalCollateral: aeth.make(0n),
     totalDebt: run.make(0n),
 
@@ -2703,7 +2704,8 @@ test('manager notifiers', async t => {
   totalOverageReceived += 54n - DEBT2;
   await m.assertChange({
     numLiquidationsCompleted: 2,
-    numVaults: 1,
+    numVaults: 0,
+    liquidatingVaults: 1,
     totalCollateral: { value: AMPLE },
     totalDebt: { value: DEBT1 },
     totalOverageReceived: { value: totalOverageReceived },
@@ -2712,7 +2714,7 @@ test('manager notifiers', async t => {
   totalProceedsReceived += 473n;
   await m.assertChange({
     numLiquidationsCompleted: 3,
-    numVaults: 0,
+    liquidatingVaults: 0,
     totalCollateral: { value: 0n },
     totalDebt: { value: 0n },
     totalProceedsReceived: { value: totalProceedsReceived },
@@ -2799,7 +2801,8 @@ test('manager notifiers', async t => {
   totalProceedsReceived += nextProceeds;
   await m.assertChange({
     numLiquidationsCompleted: 5,
-    numVaults: 1,
+    numVaults: 0,
+    liquidatingVaults: 1,
     totalCollateral: { value: AMPLE },
     totalDebt: { value: DEBT1 + DEBT2 + interestAccrued - nextProceeds },
     totalProceedsReceived: { value: totalProceedsReceived },
@@ -2808,7 +2811,7 @@ test('manager notifiers', async t => {
   totalProceedsReceived += nextProceeds;
   await m.assertChange({
     numLiquidationsCompleted: 6,
-    numVaults: 0,
+    liquidatingVaults: 0,
     totalCollateral: { value: 0n },
     totalDebt: { value: 0n },
     totalProceedsReceived: { value: totalProceedsReceived },
