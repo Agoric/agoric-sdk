@@ -7,7 +7,7 @@ import {
   makeLoggingPresence,
 } from '../src/marshal-contexts.js';
 
-test('presences for actions log their work', async t => {
+test('makeLoggingPresence logs calls on purse/payment actions', async t => {
   const msgs = [];
   const enqueue = m => msgs.push(m);
   const purse = {

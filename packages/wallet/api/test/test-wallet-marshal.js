@@ -8,18 +8,14 @@ import {
   makeImportContext,
 } from '../src/marshal-contexts.js';
 
-/**
- * @param {ReturnType<typeof makeBoard>} board
- */
+/** @param {ReturnType<typeof makeBoard>} board */
 const makeAMM = board => {
   const atom = Far('ATOM brand', {});
   const pub = board.getPublishingMarshaller();
   return harden({ getMetrics: () => pub.serialize(harden([atom])) });
 };
 
-/**
- * @param {ReturnType<typeof makeBoard>} board
- */
+/** @param {ReturnType<typeof makeBoard>} board */
 const makeWallet = board => {
   const context = makeExportContext();
   let brand;
@@ -32,6 +28,7 @@ const makeWallet = board => {
       // only for private brands
       //   context.initBrandId(boardId, brand);
       context.initBoardId(boardId, brand);
+      // @ts-expect-error mock purse
       context.initPurseId(name, purse); // TODO: strong id rather than name?
     },
     publish: () =>
@@ -53,7 +50,7 @@ const makeWallet = board => {
   });
 };
 
-test('preserve identity of brands across AMM and wallet', t => {
+test('makeImportContext preserves identity across AMM and wallet', t => {
   const context = makeImportContext();
 
   const board = makeBoard(0, { prefix: 'board' });
@@ -89,7 +86,6 @@ test('preserve identity of brands across AMM and wallet', t => {
   );
 });
 
-test('handle unregistered identites in serialization', t => {
 test('ensureBoardId allows re-registration; initBoardId does not', t => {
   const brand = Far('Moola brand', {});
 
@@ -100,6 +96,7 @@ test('ensureBoardId allows re-registration; initBoardId does not', t => {
   t.throws(() => context.ensureBoardId('b2', brand));
 });
 
+test('makeExportContext.serialize handles unregistered identites', t => {
   const brand = Far('Zoe invitation brand', {});
   const instance = Far('amm instance', {});
   const invitationAmount = harden({ brand, value: [{ instance }] });
