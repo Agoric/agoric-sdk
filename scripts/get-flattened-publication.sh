@@ -19,12 +19,16 @@ fi
 
 # Verify jq version.
 jq --version | awk '
-  /^jq-1[.]([6-9]|[1-9][0-9])/ {
+  {
+    version = $0;
+    ok = match(version, /^jq-1[.]([6-9]|[1-9][0-9])/);
     exit;
   }
-  {
-    print "jq version out of range (must be >=1.6 <2.0): " $0 > "/dev/stderr";
-    exit 1;
+  END {
+    if (!ok) {
+      print "jq version out of range (must be >=1.6 <2.0): " version > "/dev/stderr";
+      exit 69;
+    }
   }
 '
 
