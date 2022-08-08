@@ -933,6 +933,7 @@ test(`userSeat from zcf.makeEmptySeatKit - only these properties exist`, async t
     'tryExit',
     'getCurrentAllocationJig',
     'getAllocationNotifierJig',
+    'wasWantSatisfied',
   ];
   const { zcf } = await setupZCFTest();
   const { userSeat: userSeatP } = zcf.makeEmptySeatKit();

@@ -4,9 +4,9 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { AmountMath } from '@agoric/ertp';
 
 import { handlePKitWarning } from '../handleWarning.js';
+import { satisfiesWant } from '../contractFacet/offerSafety.js';
 
 import '../types.js';
 import '../internal-types.js';
@@ -99,9 +99,7 @@ export const makeZoeSeatAdminKit = (
 
     wasWantSatisfied: async () => {
       return E.when(payoutPromiseKit.promise, () =>
-        Object.keys(proposal.want).every(kwd =>
-          AmountMath.isGTE(currentAllocation[kwd], proposal.want[kwd]),
-        ),
+        satisfiesWant(proposal, currentAllocation),
       );
     },
   });
