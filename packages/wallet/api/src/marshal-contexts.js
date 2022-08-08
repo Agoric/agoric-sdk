@@ -1,6 +1,7 @@
 // @ts-check
 import { makeScalarMap } from '@agoric/store';
-import { Far, makeMarshal } from '@endo/marshal';
+import { Far, makeMarshal, Remotable } from '@endo/marshal';
+import { HandledPromise } from '@endo/eventual-send'; // TODO: convince tsc this isn't needed
 
 const { details: X, quote: q } = assert;
 
@@ -188,4 +189,38 @@ export const makeImportContext = () => {
     fromWallet: Far('wallet marshaller', { ...marshal.fromPart }),
     fromBoard: Far('board marshaller', { ...marshal.fromBoard }),
   });
+};
+
+/**
+ * @param {string} iface
+ * @param {{
+ *   applyMethod: (target: unknown, method: string | symbol, args: unknown[]) => void,
+ *   applyFunction: (target: unknown, args: unknown[]) => void,
+ * }} handler
+ */
+const makePresence = (iface, handler) => {
+  let it;
+  const hp = new HandledPromise((resolve, reject, resolveWithPresence) => {
+    it = resolveWithPresence(handler);
+  });
+  assert(it);
+  assert(hp);
+  return Remotable(iface, undefined, it);
+};
+
+/**
+ * @param {string} iface
+ * @param {(parts: unknown[]) => void} log
+ */
+export const makeLoggingPresence = (iface, log) => {
+  /** @type {any} */ // TODO: solve types puzzle
+  const it = makePresence(iface, {
+    applyMethod: (target, method, args) => {
+      log(harden(['applyMethod', target, method, args]));
+    },
+    applyFunction: (target, args) => {
+      log(harden(['applyFunction', target, args]));
+    },
+  });
+  return it;
 };
