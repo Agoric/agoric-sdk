@@ -8,8 +8,12 @@ const { details: X, quote: q } = assert;
 /**
  * Make context for exporting wallet data where brands etc. can be recognized by boardId.
  *
- * All purses, brands, etc. must be registered before serialization / unserialization.
- * Neither the serializer nor the unserializer creates new presences.
+ * Objects should be registered before serialization:
+ *   - for closely-held object, use initPurseId etc.
+ *   - for published objects such as brands and issuers, use initBoardId / ensureBoardId
+ *
+ * Unregistered objects (such as instances in amounts) get serialized
+ * with a fresh slot.
  */
 export const makeExportContext = () => {
   const toVal = {
