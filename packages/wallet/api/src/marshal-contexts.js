@@ -16,78 +16,103 @@ const { details: X, quote: q } = assert;
  * with a fresh slot.
  */
 export const makeExportContext = () => {
-  const toVal = {
-    /** @type {MapStore<string, Purse>} */
-    purse: makeScalarMap(),
+  const myData = {
+    purse: {
+      /** @type {MapStore<string, Purse>} */
+      bySlot: makeScalarMap(),
+      /** @type {MapStore<Purse, string>} */
+      byVal: makeScalarMap(),
+    },
+    payment: {
+      /** @type {MapStore<string, Payment>} */
+      bySlot: makeScalarMap(),
+      /** @type {MapStore<Payment, string>} */
+      byVal: makeScalarMap(),
+    },
     // TODO: offer, contact, dapp
   };
-  const fromVal = {
-    /** @type {MapStore<Purse, string>} */
-    purse: makeScalarMap(),
-    // TODO: offer, contact, dapp
+  const sharedData = {
+    /** @type {MapStore<string, unknown>} */
+    bySlot: makeScalarMap(),
+    /** @type {MapStore<unknown, string>} */
+    byVal: makeScalarMap(),
   };
-  /** @type {MapStore<unknown, string>} */
-  const sharedData = makeScalarMap();
 
   /**
    * @param {string} slot
    * @param {string} _iface
    */
   const slotToVal = (slot, _iface) => {
-    const kind = Object.keys(toVal).find(k => slot.startsWith(k));
+    if (sharedData.bySlot.has(slot)) {
+      return sharedData.bySlot.get(slot);
+    }
+    const kind = Object.keys(myData).find(k => slot.startsWith(k));
     assert(kind, X`bad slot kind: ${slot}`);
     const id = slot.slice(kind.length + 1);
-    const val = toVal[kind].get(id); // or throw
+    const val = myData[kind].bySlot.get(id); // or throw
     return val;
   };
 
-  let nonce = 0;
+  let unknownNonce = 0;
 
   const valToSlot = val => {
-    if (sharedData.has(val)) {
-      return sharedData.get(val);
+    if (sharedData.byVal.has(val)) {
+      return sharedData.byVal.get(val);
     }
-    for (const kind of Object.keys(fromVal)) {
-      if (fromVal[kind].has(val)) {
-        const id = fromVal[kind].get(val);
+    for (const kind of Object.keys(myData)) {
+      if (myData[kind].byVal.has(val)) {
+        const id = myData[kind].byVal.get(val);
         return `${kind}:${id}`;
       }
     }
-    nonce += 1;
-    const slot = `unknown:${nonce}`;
-    sharedData.init(val, slot);
+    unknownNonce += 1;
+    const slot = `unknown:${unknownNonce}`;
+    sharedData.byVal.init(val, slot);
+    sharedData.bySlot.init(slot, val);
     return slot;
   };
 
+  const makeSaver = (kind, tables) => {
+    let nonce = 0;
+    return val => {
+      const slot = `${(nonce += 1)}`;
+      tables.bySlot.init(slot, val);
+      tables.byVal.init(val, slot);
+    };
+  };
+
   return harden({
+    savePurseActions: makeSaver('purse', myData.purse),
+    savePaymentActions: makeSaver('payment', myData.payment),
     /**
      * @param {string} id
      * @param {Purse} purse
      */
     initPurseId: (id, purse) => {
-      toVal.purse.init(id, purse);
-      fromVal.purse.init(purse, id);
+      myData.purse.bySlot.init(id, purse);
+      myData.purse.byVal.init(purse, id);
     },
-    purseEntries: toVal.purse.entries,
+    purseEntries: myData.purse.bySlot.entries,
     /**
      * @param {string} id
      * @param {unknown} val
      */
     initBoardId: (id, val) => {
-      sharedData.init(val, id);
+      sharedData.bySlot.init(id, val);
+      sharedData.byVal.init(val, id);
     },
     /**
      * @param {string} id
      * @param {unknown} val
      */
     ensureBoardId: (id, val) => {
-      if (sharedData.has(val)) {
-        assert.equal(sharedData.get(val), id);
+      if (sharedData.byVal.has(val)) {
+        assert.equal(sharedData.byVal.get(val), id);
         return;
       }
-      sharedData.init(val, id);
+      sharedData.bySlot.init(id, val);
+      sharedData.byVal.init(val, id);
     },
-    issuerEntries: toVal.purse.entries,
     ...makeMarshal(valToSlot, slotToVal),
   });
 };
@@ -182,18 +207,7 @@ export const makeImportContext = () => {
     }),
   };
 
-  const makeSaver = (kind, tables) => {
-    let nonce = 0;
-    return val => {
-      const slot = `${(nonce += 1)}`;
-      tables.bySlot.init(slot, val);
-      tables.byVal.init(val, slot);
-    };
-  };
-
   return harden({
-    savePurseActions: makeSaver('purse', myData.purse),
-    savePaymentActions: makeSaver('payment', myData.payment),
     fromMyWallet: Far('wallet marshaller', { ...marshal.fromMyWallet }),
     fromBoard: Far('board marshaller', { ...marshal.fromBoard }),
   });

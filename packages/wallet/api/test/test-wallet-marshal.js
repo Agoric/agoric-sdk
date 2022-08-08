@@ -87,13 +87,16 @@ test('makeImportContext preserves identity across AMM and wallet', t => {
 });
 
 test('ensureBoardId allows re-registration; initBoardId does not', t => {
-  const brand = Far('Moola brand', {});
+  const brandM = Far('Moola brand', {});
+  const brandS = Far('Semolean brand', {});
 
   const context = makeExportContext();
-  context.initBoardId('b1', brand);
-  t.throws(() => context.initBoardId('b1', brand));
-  context.ensureBoardId('b1', brand);
-  t.throws(() => context.ensureBoardId('b2', brand));
+  context.initBoardId('b1', brandM);
+  t.throws(() => context.initBoardId('b1', brandM));
+  context.ensureBoardId('b1', brandM);
+  t.throws(() => context.ensureBoardId('b2', brandM));
+  context.ensureBoardId('b2', brandS);
+  t.throws(() => context.initBoardId('b2', brandM));
 });
 
 test('makeExportContext.serialize handles unregistered identites', t => {
@@ -109,4 +112,15 @@ test('makeExportContext.serialize handles unregistered identites', t => {
     body: '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe invitation brand","index":0},"value":[{"instance":{"@qclass":"slot","iface":"Alleged: amm instance","index":1}}]}',
     slots: ['b1', 'unknown:1'],
   });
+
+  t.deepEqual(context.unserialize(actual), invitationAmount);
+
+  const myPayment = Far('payment', {});
+  context.savePaymentActions(myPayment);
+  const cap2 = context.serialize(myPayment);
+  t.deepEqual(cap2, {
+    body: '{"@qclass":"slot","iface":"Alleged: payment","index":0}',
+    slots: ['payment:1'],
+  });
+  t.deepEqual(context.unserialize(cap2), myPayment);
 });
