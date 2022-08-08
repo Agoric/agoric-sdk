@@ -5,7 +5,7 @@ import {
   provideDurableMapStore,
   makeScalarBigMapStore,
   vivifyKind,
-  dropContext,
+  ignoreContext,
   makeScalarBigWeakMapStore,
 } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
@@ -335,7 +335,7 @@ export const createSeatManager = (
         );
         return amountKeywordRecord;
       },
-      clear: dropContext(clear),
+      clear: ignoreContext(clear),
       hasStagedAllocation: ({ self }) => hasStagedAllocation(self),
     },
   );
