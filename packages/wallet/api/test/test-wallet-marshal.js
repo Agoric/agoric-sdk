@@ -90,6 +90,16 @@ test('preserve identity of brands across AMM and wallet', t => {
 });
 
 test('handle unregistered identites in serialization', t => {
+test('ensureBoardId allows re-registration; initBoardId does not', t => {
+  const brand = Far('Moola brand', {});
+
+  const context = makeExportContext();
+  context.initBoardId('b1', brand);
+  t.throws(() => context.initBoardId('b1', brand));
+  context.ensureBoardId('b1', brand);
+  t.throws(() => context.ensureBoardId('b2', brand));
+});
+
   const brand = Far('Zoe invitation brand', {});
   const instance = Far('amm instance', {});
   const invitationAmount = harden({ brand, value: [{ instance }] });

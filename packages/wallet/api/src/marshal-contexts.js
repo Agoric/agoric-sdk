@@ -80,7 +80,11 @@ export const makeExportContext = () => {
      * @param {string} id
      * @param {unknown} val
      */
-    initBoardId: (id, val) => {
+    ensureBoardId: (id, val) => {
+      if (sharedData.has(val)) {
+        assert.equal(sharedData.get(val), id);
+        return;
+      }
       sharedData.init(val, id);
     },
     issuerEntries: toVal.purse.entries,
