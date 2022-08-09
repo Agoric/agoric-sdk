@@ -7,7 +7,7 @@ import { InvitationElementShape } from '../typeGuards.js';
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ShutdownWithFailure | undefined} shutdownZoeVat
  */
-export const createInvitationKit = (baggage, shutdownZoeVat = undefined) => {
+export const vivifyInvitationKit = (baggage, shutdownZoeVat = undefined) => {
   const invitationKit = makeDurableIssuerKit(
     baggage,
     'Zoe Invitation',

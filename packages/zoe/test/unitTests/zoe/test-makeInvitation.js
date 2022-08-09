@@ -10,12 +10,12 @@ import {
   makeScalarBigMapStore,
 } from '@agoric/vat-data';
 
-import { createInvitationKit } from '../../../src/zoeService/makeInvitation.js';
+import { vivifyInvitationKit } from '../../../src/zoeService/makeInvitation.js';
 
 const proposalSchemas = makeScalarBigWeakMapStore('proposal schemas');
 
-test('createInvitationKit', async t => {
-  const { setupMakeInvitation, invitationIssuer } = createInvitationKit(
+test('vivifyInvitationKit', async t => {
+  const { setupMakeInvitation, invitationIssuer } = vivifyInvitationKit(
     makeScalarBigMapStore('zoe baggage', { durable: true }),
   );
 
@@ -63,7 +63,7 @@ test('createInvitationKit', async t => {
 });
 
 test('description is omitted, wrongly', async t => {
-  const { setupMakeInvitation } = createInvitationKit(
+  const { setupMakeInvitation } = vivifyInvitationKit(
     makeScalarBigMapStore('zoe baggage', { durable: true }),
   );
 
@@ -96,7 +96,7 @@ test('description is omitted, wrongly', async t => {
 });
 
 test('customProperties ok to omit', async t => {
-  const { setupMakeInvitation, invitationIssuer } = createInvitationKit(
+  const { setupMakeInvitation, invitationIssuer } = vivifyInvitationKit(
     makeScalarBigMapStore('zoe baggage', { durable: true }),
   );
 

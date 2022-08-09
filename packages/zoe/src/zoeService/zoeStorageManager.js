@@ -11,7 +11,7 @@ import { provideIssuerStorage } from '../issuerStorage.js';
 import { makeAndStoreInstanceRecord } from '../instanceRecordStorage.js';
 import { makeIssuerRecord } from '../issuerRecord.js';
 import { makeEscrowStorage } from './escrowStorage.js';
-import { createInvitationKit } from './makeInvitation.js';
+import { vivifyInvitationKit } from './makeInvitation.js';
 import { makeInstanceAdminStorage } from './instanceAdminStorage.js';
 import { makeInstallationStorage } from './installationStorage.js';
 
@@ -71,7 +71,7 @@ export const makeZoeStorageManager = (
   // In order to participate in a contract, users must have
   // invitations, which are ERTP payments made by Zoe. This code
   // contains the mint capability for invitations.
-  const { setupMakeInvitation, invitationIssuer } = createInvitationKit(
+  const { setupMakeInvitation, invitationIssuer } = vivifyInvitationKit(
     zoeBaggage,
     shutdownZoeVat,
   );
