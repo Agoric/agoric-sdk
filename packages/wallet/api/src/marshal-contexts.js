@@ -1,7 +1,8 @@
 // @ts-check
-import { makeScalarMap } from '@agoric/store';
+import makeLegacyMap, { makeScalarMap } from '@agoric/store';
 import { Far, makeMarshal, Remotable } from '@endo/marshal';
 import { HandledPromise } from '@endo/eventual-send'; // TODO: convince tsc this isn't needed
+import { makePromiseKit } from '@endo/promise-kit';
 
 const { details: X, quote: q } = assert;
 
@@ -237,9 +238,13 @@ const defaultMakePresence = iface => {
 /**
  * Make context for unserializing wallet or board data.
  *
- * @param {(iface: string) => unknown} [makePresence]
+ * @param {() => Promise<void>} flush
+ * @param {(iface: string) => any} [makePresence]
  */
-export const makeImportContext = (makePresence = defaultMakePresence) => {
+export const makeImportContext = (
+  flush,
+  makePresence = defaultMakePresence,
+) => {
   const walletObjects = {
     /** @type {IdTable<number, unknown>} */
     purse: {
@@ -322,7 +327,25 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
     }),
   };
 
+  let nonce = 0;
+
+  const registerUnknown = val => {
+    nonce += 1;
+    initSlotVal(walletObjects.unknown, nonce, val);
+    return nonce;
+  };
+  const wallet = makePresence('Remotable');
+  registerUnknown(wallet);
+
+  const all = async goals => {
+    await flush();
+    return Promise.all(goals);
+  };
+
   return harden({
+    getBootstrap: () => wallet,
+    all,
+    registerUnknown,
     fromMyWallet: Far('wallet marshaller', { ...marshal.fromMyWallet }),
     fromBoard: Far('board marshaller', { ...marshal.fromBoard }),
   });
@@ -347,16 +370,16 @@ const makePresence = (iface, handler) => {
 
 /**
  * @param {string} iface
- * @param {(parts: unknown[]) => void} log
+ * @param {(parts: unknown[], resultP: Promise<unknown>) => void} log
  */
 export const makeLoggingPresence = (iface, log) => {
   /** @type {any} */ // TODO: solve types puzzle
   const it = makePresence(iface, {
-    applyMethod: (target, method, args) => {
-      log(harden(['applyMethod', target, method, args]));
+    applyMethod: (target, method, args, resultP) => {
+      return log(harden(['applyMethod', target, method, args]), resultP);
     },
-    applyFunction: (target, args) => {
-      log(harden(['applyFunction', target, args]));
+    applyFunction: (target, args, resultP) => {
+      return log(harden(['applyFunction', target, args]), resultP);
     },
   });
   return it;
