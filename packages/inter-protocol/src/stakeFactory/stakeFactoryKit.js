@@ -56,7 +56,7 @@ const calculateFee = (feeCoeff, currentDebt, giveAmount, wantAmount) => {
  */
 
 /**
- * Make RUNstake kit state
+ * Make stakeFactory kit state
  *
  * @param {ZCF} zcf
  * @param {ZCFSeat} startSeat
@@ -358,7 +358,7 @@ const helperBehavior = {
     helper.assertVaultHoldsNoMinted();
     seat.exit();
 
-    return 'Your RUNstake is closed; thank you for your business.';
+    return 'Your stakeFactory is closed; thank you for your business.';
   },
 };
 
@@ -418,7 +418,7 @@ const finish = ({ facets }) => {
 };
 
 /**
- * Make RUNstake kit, subject to stakeFactory terms.
+ * Make stakeFactory kit, subject to stakeFactory terms.
  *
  * @param {ZCF} zcf
  * @param {ZCFSeat} startSeat
@@ -426,7 +426,7 @@ const finish = ({ facets }) => {
  * @throws {Error} if startSeat proposal is not consistent with governance parameters in manager
  */
 export const makeStakeFactoryKit = defineKindMulti(
-  'RUNStakeKit',
+  'stakeFactoryKit',
   initState,
   behavior,
   { finish },

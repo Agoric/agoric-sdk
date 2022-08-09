@@ -184,7 +184,7 @@ const REWARD_MANIFEST = harden({
   },
 });
 
-const RUN_STAKE_MANIFEST = harden({
+const STAKE_FACTORY_MANIFEST = harden({
   [econBehaviors.startLienBridge.name]: {
     consume: { bridgeManager: true },
     produce: { lienBridge: true },
@@ -296,13 +296,13 @@ export const getManifestForMain = (
 const roleToManifest = harden({
   chain: {
     ...REWARD_MANIFEST,
-    ...RUN_STAKE_MANIFEST,
+    ...STAKE_FACTORY_MANIFEST,
   },
   'sim-chain': SIM_CHAIN_MANIFEST,
   client: {},
 });
 
-export const getManifestForRunProtocol = (
+export const getManifestForInterProtocol = (
   { restoreRef },
   {
     ROLE = 'chain',

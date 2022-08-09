@@ -539,10 +539,10 @@ harden(grantVaultFactoryControl);
 export const configureVaultFactoryUI = async ({
   consume: { board, zoe },
   issuer: {
-    consume: { [Stable.symbol]: centralIssuerP },
+    consume: { [Stable.symbol]: stableIssuerP },
   },
   brand: {
-    consume: { [Stable.symbol]: centralBrandP },
+    consume: { [Stable.symbol]: stableBrandP },
   },
   installation: {
     consume: {
@@ -569,9 +569,9 @@ export const configureVaultFactoryUI = async ({
     amm: ammInstance,
     vaultFactory: vaultInstance,
   });
-  const [centralIssuer, centralBrand] = await Promise.all([
-    centralIssuerP,
-    centralBrandP,
+  const [stableIssuer, stableBrand] = await Promise.all([
+    stableIssuerP,
+    stableBrandP,
   ]);
 
   const invitationIssuer = await E(zoe).getInvitationIssuer();
@@ -589,8 +589,12 @@ export const configureVaultFactoryUI = async ({
   const boardIdValue = [
     ['INSTANCE_BOARD_ID', instances.vaultFactory],
     ['INSTALLATION_BOARD_ID', installs.vaultFactory],
-    ['RUN_ISSUER_BOARD_ID', centralIssuer],
-    ['RUN_BRAND_BOARD_ID', centralBrand],
+    // @deprecated
+    ['RUN_ISSUER_BOARD_ID', stableIssuer],
+    // @deprecated
+    ['RUN_BRAND_BOARD_ID', stableBrand],
+    ['STABLE_ISSUER_BOARD_ID', stableIssuer],
+    ['STABLE_BRAND_BOARD_ID', stableBrand],
     ['AMM_INSTALLATION_BOARD_ID', installs.amm],
     ['LIQ_INSTALLATION_BOARD_ID', installs.liquidate],
     ['BINARY_COUNTER_INSTALLATION_BOARD_ID', installs.binaryVoteCounter],
