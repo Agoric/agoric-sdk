@@ -2,7 +2,7 @@ package cli
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -63,7 +63,7 @@ func GetCmdDeliver() *cobra.Command {
 						return err
 					}
 				} else {
-					jsonBytes, err := ioutil.ReadFile(fname)
+					jsonBytes, err := os.ReadFile(fname)
 					if err != nil {
 						return err
 					}
@@ -109,7 +109,7 @@ func GetCmdInstallBundle() *cobra.Command {
 						return err
 					}
 				} else {
-					jsonBytes, err := ioutil.ReadFile(fname)
+					jsonBytes, err := os.ReadFile(fname)
 					if err != nil {
 						return err
 					}
@@ -234,13 +234,13 @@ Specify at least one pair of permit.json and code.js files`,
 			evals := make([]types.CoreEval, 0, npairs)
 			for j := 0; j < npairs; j++ {
 				permitFile := args[j*2]
-				permit, err := ioutil.ReadFile(permitFile)
+				permit, err := os.ReadFile(permitFile)
 				if err != nil {
 					return errors.Wrapf(err, "failed to read permit %s", permitFile)
 				}
 
 				codeFile := args[j*2+1]
-				code, err := ioutil.ReadFile(codeFile)
+				code, err := os.ReadFile(codeFile)
 				if err != nil {
 					return errors.Wrapf(err, "failed to read code %s", codeFile)
 				}
