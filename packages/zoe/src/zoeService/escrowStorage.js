@@ -2,9 +2,8 @@
 
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
-import { makeWeakStore } from '@agoric/store';
 import { assert, details as X, q } from '@agoric/assert';
-import { objectMap } from '@agoric/vat-data';
+import { objectMap, provideDurableWeakMapStore } from '@agoric/vat-data';
 
 import './types.js';
 import './internal-types.js';
@@ -15,10 +14,12 @@ import { arrayToObj } from '../objArrayConversion.js';
 /**
  * Store the pool purses whose purpose is to escrow assets, with one
  * purse per brand.
+ *
+ * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const makeEscrowStorage = () => {
+export const makeEscrowStorage = baggage => {
   /** @type {WeakStore<Brand, ERef<Purse>>} */
-  const brandToPurse = makeWeakStore('brand');
+  const brandToPurse = provideDurableWeakMapStore(baggage, 'brandToPurse');
 
   /** @type {CreatePurse} */
   const createPurse = (issuer, brand) => {

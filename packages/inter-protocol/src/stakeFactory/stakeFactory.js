@@ -209,7 +209,7 @@ export const start = async (
   const publicFacet = augmentPublicFacet(
     Far('stakeFactory public', {
       makeLoanInvitation: () =>
-        zcf.makeInvitation(offerHandler, 'make RUNstake'),
+        zcf.makeInvitation(offerHandler, 'make stakeFactory'),
       makeReturnAttInvitation: att.publicFacet.makeReturnAttInvitation,
     }),
   );

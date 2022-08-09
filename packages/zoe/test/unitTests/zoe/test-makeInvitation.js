@@ -5,14 +5,19 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeScalarBigWeakMapStore } from '@agoric/vat-data';
+import {
+  makeScalarBigWeakMapStore,
+  makeScalarBigMapStore,
+} from '@agoric/vat-data';
 
-import { createInvitationKit } from '../../../src/zoeService/makeInvitation.js';
+import { vivifyInvitationKit } from '../../../src/zoeService/makeInvitation.js';
 
 const proposalSchemas = makeScalarBigWeakMapStore('proposal schemas');
 
-test('createInvitationKit', async t => {
-  const { setupMakeInvitation, invitationIssuer } = createInvitationKit();
+test('vivifyInvitationKit', async t => {
+  const { setupMakeInvitation, invitationIssuer } = vivifyInvitationKit(
+    makeScalarBigMapStore('zoe baggage', { durable: true }),
+  );
 
   const mockInstance = Far('mockInstance', {});
   const mockInstallation = Far('mockInstallation', {});
@@ -58,7 +63,9 @@ test('createInvitationKit', async t => {
 });
 
 test('description is omitted, wrongly', async t => {
-  const { setupMakeInvitation } = createInvitationKit();
+  const { setupMakeInvitation } = vivifyInvitationKit(
+    makeScalarBigMapStore('zoe baggage', { durable: true }),
+  );
 
   const mockInstance = Far('mockInstance', {});
   const mockInstallation = Far('mockInstallation', {});
@@ -89,7 +96,9 @@ test('description is omitted, wrongly', async t => {
 });
 
 test('customProperties ok to omit', async t => {
-  const { setupMakeInvitation, invitationIssuer } = createInvitationKit();
+  const { setupMakeInvitation, invitationIssuer } = vivifyInvitationKit(
+    makeScalarBigMapStore('zoe baggage', { durable: true }),
+  );
 
   const mockInstance = Far('mockInstance', {});
   const mockInstallation = Far('mockInstallation', {});

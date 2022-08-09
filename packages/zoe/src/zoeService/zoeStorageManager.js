@@ -4,14 +4,14 @@ import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import {
   makeScalarBigMapStore,
-  makeScalarBigWeakMapStore,
+  provideDurableWeakMapStore,
 } from '@agoric/vat-data';
 
 import { provideIssuerStorage } from '../issuerStorage.js';
 import { makeAndStoreInstanceRecord } from '../instanceRecordStorage.js';
 import { makeIssuerRecord } from '../issuerRecord.js';
 import { makeEscrowStorage } from './escrowStorage.js';
-import { createInvitationKit } from './makeInvitation.js';
+import { vivifyInvitationKit } from './makeInvitation.js';
 import { makeInstanceAdminStorage } from './instanceAdminStorage.js';
 import { makeInstallationStorage } from './installationStorage.js';
 
@@ -58,7 +58,7 @@ export const makeZoeStorageManager = (
   // EscrowStorage holds the purses that Zoe uses for escrow. This
   // object should be closely held and tracked: all of the digital
   // assets that users escrow are contained within these purses.
-  const escrowStorage = makeEscrowStorage();
+  const escrowStorage = makeEscrowStorage(zoeBaggage);
 
   // Add a purse for escrowing user funds (not for fees). Create the
   // local, non-remote escrow purse for the fee mint immediately.
@@ -71,8 +71,10 @@ export const makeZoeStorageManager = (
   // In order to participate in a contract, users must have
   // invitations, which are ERTP payments made by Zoe. This code
   // contains the mint capability for invitations.
-  const { setupMakeInvitation, invitationIssuer } =
-    createInvitationKit(shutdownZoeVat);
+  const { setupMakeInvitation, invitationIssuer } = vivifyInvitationKit(
+    zoeBaggage,
+    shutdownZoeVat,
+  );
 
   // Every new instance of a contract creates a corresponding
   // "zoeInstanceAdmin" - an admin facet within the Zoe Service for
@@ -99,7 +101,10 @@ export const makeZoeStorageManager = (
     getBundleIDFromInstallation,
   } = makeInstallationStorage(getBundleCapForID, zoeBaggage);
 
-  const proposalSchemas = makeScalarBigWeakMapStore('proposal schemas');
+  const proposalSchemas = provideDurableWeakMapStore(
+    zoeBaggage,
+    'proposal schemas',
+  );
 
   const getProposalSchemaForInvitation = invitationHandle => {
     if (proposalSchemas.has(invitationHandle)) {
