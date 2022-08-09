@@ -57,8 +57,8 @@ const trace = makeTracer('VM');
 /**
  * @typedef {object} MetricsNotification
  *
- * @property {number}         numVaults          present count of vaults
- * @property {number}         liquidatingVaults  present count of liquidating vaults
+ * @property {number}         numActiveVaults          present count of vaults
+ * @property {number}         numLiquidatingVaults  present count of liquidating vaults
  * @property {Amount<'nat'>}  totalCollateral    present sum of collateral across all vaults
  * @property {Amount<'nat'>}  totalDebt          present sum of debt across all vaults
  *
@@ -211,7 +211,7 @@ const initState = (
    *
    * @type {SetStore<Vault>}
    */
-  const liquidatingVaults = makeScalarBigSetStore('orderedVaultStore', {
+  const liquidatingVaults = makeScalarBigSetStore('liquidatingVaults', {
     durable: true,
   });
 
@@ -370,8 +370,8 @@ const helperBehavior = {
 
     /** @type {MetricsNotification} */
     const payload = harden({
-      numVaults: prioritizedVaults.getCount(),
-      liquidatingVaults: state.liquidatingVaults.getSize(),
+      numActiveVaults: prioritizedVaults.getCount(),
+      numLiquidatingVaults: state.liquidatingVaults.getSize(),
       totalCollateral: state.totalCollateral,
       totalDebt: state.totalDebt,
 
