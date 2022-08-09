@@ -13,7 +13,7 @@ test('install, unwrap installations', async t => {
   const installation = await installBundle(fakeBundle);
   const unwrapped = await unwrapInstallation(installation);
   t.is(unwrapped.installation, installation);
-  t.is(unwrapped.bundle, fakeBundle);
+  t.deepEqual(unwrapped.bundle, fakeBundle);
 });
 
 test('install, unwrap installation of bundlecap', async t => {
@@ -37,7 +37,7 @@ test('unwrap promise for installation', async t => {
   const installation = await installBundle(fakeBundle);
   const unwrapped = await unwrapInstallation(Promise.resolve(installation));
   t.is(unwrapped.installation, installation);
-  t.is(unwrapped.bundle, fakeBundle);
+  t.deepEqual(unwrapped.bundle, fakeBundle);
 });
 
 test('install several', async t => {
@@ -48,12 +48,12 @@ test('install several', async t => {
   const installation1 = await installBundle(fakeBundle1);
   const unwrapped1 = await unwrapInstallation(installation1);
   t.is(unwrapped1.installation, installation1);
-  t.is(unwrapped1.bundle, fakeBundle1);
+  t.deepEqual(unwrapped1.bundle, fakeBundle1);
 
   const installation2 = await installBundle(fakeBundle2);
   const unwrapped2 = await unwrapInstallation(installation2);
   t.is(unwrapped2.installation, installation2);
-  t.is(unwrapped2.bundle, fakeBundle2);
+  t.deepEqual(unwrapped2.bundle, fakeBundle2);
 });
 
 test('install same twice', async t => {
@@ -66,7 +66,7 @@ test('install same twice', async t => {
   const installation1 = await installBundle(fakeBundle1);
   const unwrapped1 = await unwrapInstallation(installation1);
   t.is(unwrapped1.installation, installation1);
-  t.is(unwrapped1.bundle, fakeBundle1);
+  t.deepEqual(unwrapped1.bundle, fakeBundle1);
 
   // If the same bundle is installed twice, the bundle is the same,
   // but the installation is different. Zoe does not currently care about
@@ -75,7 +75,7 @@ test('install same twice', async t => {
   const unwrapped2 = await unwrapInstallation(installation2);
   t.is(unwrapped2.installation, installation2);
   t.not(installation2, installation1);
-  t.is(unwrapped2.bundle, fakeBundle1);
+  t.deepEqual(unwrapped2.bundle, fakeBundle1);
 
   // same for bundleIDs
   const installation3 = await installBundleID('id');
