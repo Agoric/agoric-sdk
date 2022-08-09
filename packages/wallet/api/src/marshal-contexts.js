@@ -105,12 +105,14 @@ const initSlotVal = (table, slot, val) => {
 /**
  * Make context for exporting wallet data where brands etc. can be recognized by boardId.
  *
- * Objects should be registered before serialization:
- *   - for closely-held object, use initPurseId etc.
- *   - for published objects such as brands and issuers, use initBoardId / ensureBoardId
+ * When serializing wallet state for, there's a tension between
  *
- * Unregistered objects (such as instances in amounts) get serialized
- * with a fresh slot.
+ *  - keeping purses etc. closely held
+ *  - recognizing identity of brands also referenced in the state of contracts such as the AMM
+ *
+ * `makeMarshal()` is parameterized by the type of slots. Here we use a disjoint union of
+ *   - board ids for widely shared objects
+ *   - kind:seq ids for closely held objects; for example purse:123
  */
 export const makeExportContext = () => {
   const walletObjects = {
