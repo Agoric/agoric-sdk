@@ -818,7 +818,7 @@ test('price falls precipitously', async t => {
   t.deepEqual(
     await E(vault).getCollateralAmount(),
     aeth.makeEmpty(),
-    'Excess collateral not  returned due to shortfall',
+    'Excess collateral not returned due to shortfall',
   );
 
   const finalNotification = await E(vaultNotifier).getUpdateSince();
