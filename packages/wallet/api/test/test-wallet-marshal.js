@@ -16,7 +16,7 @@ const makeAMM = board => {
 };
 
 /** @param {ReturnType<typeof makeBoard>} board */
-const makeWallet = board => {
+const makeOnChainWallet = board => {
   const context = makeExportContext();
   let brand;
   return harden({
@@ -70,7 +70,7 @@ test('makeImportContext preserves identity across AMM and wallet', t => {
   const [b2] = context.fromBoard.unserialize(amm.getMetrics());
   t.is(b1, b2, 'unserialization twice from same source');
 
-  const myWallet = makeWallet(board);
+  const myWallet = makeOnChainWallet(board);
   myWallet.suggestIssuer('ATOM', 'board011');
   const walletCapData = myWallet.publish();
   t.deepEqual(walletCapData, {
@@ -92,8 +92,16 @@ test('makeImportContext preserves identity across AMM and wallet', t => {
 
   t.throws(
     () => context.fromBoard.unserialize(walletCapData),
-    { message: /bad shared slot/ },
+    { message: /bad board slot/ },
     'AMM cannot refer to purses',
+  );
+
+  t.throws(
+    () => context.fromMyWallet.serialize(Far('widget', {})),
+    {
+      message: /unregistered/,
+    },
+    'import context never exports unregistered objects',
   );
 });
 
@@ -102,12 +110,12 @@ test('ensureBoardId allows re-registration; initBoardId does not', t => {
   const brandS = Far('Semolean brand', {});
 
   const context = makeExportContext();
-  context.initBoardId('b1', brandM);
-  t.throws(() => context.initBoardId('b1', brandM));
-  context.ensureBoardId('b1', brandM);
-  t.throws(() => context.ensureBoardId('b2', brandM));
-  context.ensureBoardId('b2', brandS);
-  t.throws(() => context.initBoardId('b2', brandM));
+  context.initBoardId('board1', brandM);
+  t.throws(() => context.initBoardId('board1', brandM));
+  context.ensureBoardId('board1', brandM);
+  t.throws(() => context.ensureBoardId('board12', brandM));
+  context.ensureBoardId('board12', brandS);
+  t.throws(() => context.initBoardId('board12', brandM));
 });
 
 test('makeExportContext.serialize handles unregistered identites', t => {
@@ -116,11 +124,10 @@ test('makeExportContext.serialize handles unregistered identites', t => {
   const invitationAmount = harden({ brand, value: [{ instance }] });
 
   const context = makeExportContext();
-  context.initBoardId('b1', brand);
+  context.initBoardId('board1', brand);
   const actual = context.serialize(invitationAmount);
 
   t.deepEqual(actual, {
-    slots: ['b1', 'unknown:1'],
     body: JSON.stringify({
       brand: {
         '@qclass': 'slot',
@@ -137,11 +144,14 @@ test('makeExportContext.serialize handles unregistered identites', t => {
         },
       ],
     }),
+    slots: ['board1', 'unknown:1'],
   });
 
   t.deepEqual(context.unserialize(actual), invitationAmount);
 
-  const myPayment = Far('payment', {});
+  const myPayment = /** @type {Payment} */ (
+    Far('payment', { getAllegedBrand: () => assert.fail('no impl') })
+  );
   context.savePaymentActions(myPayment);
   const cap2 = context.serialize(myPayment);
   t.deepEqual(cap2, {

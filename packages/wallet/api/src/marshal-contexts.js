@@ -6,6 +6,103 @@ import { HandledPromise } from '@endo/eventual-send'; // TODO: convince tsc this
 const { details: X, quote: q } = assert;
 
 /**
+ * For a value with a known id in the board, we can use
+ * that board id as a slot to preserve identity when marshaling.
+ *
+ * @typedef {`board${Digits}`} BoardId
+ */
+
+/**
+ * @param {unknown} specimen
+ * @returns {specimen is BoardId}
+ */
+const isBoardId = specimen => {
+  return typeof specimen === 'string' && !!specimen.match(/board[^:]/);
+};
+
+/**
+ * When marshaling a purse, payment, etc. we partition the slots
+ * using prefixes.
+ *
+ * @template {Record<string, IdTable<*,*>>} T
+ * @typedef {`${string & keyof T}:${Digits}`} WalletSlot<T>
+ */
+/**
+ * @template {string} K
+ * @typedef {`${K}:${Digits}`} KindSlot<K>
+ */
+
+/**
+ * @template {Record<string, IdTable<*,*>>} T
+ * @param {T} _tables
+ * @param {string & keyof T} kind
+ * @param {number} id
+ * @returns {WalletSlot<T>}
+ */
+const makeWalletSlot = (_tables, kind, id) => {
+  const digits = /** @type {Digits} */ (`${id}`);
+  return `${kind}:${digits}`;
+};
+
+/**
+ * @template {Record<string, IdTable<*,*>>} T
+ * @param {T} record
+ * @param {(value: string, index: number, obj: string[]) => boolean} predicate
+ * @returns {string & keyof T | undefined}
+ */
+const findKey = (record, predicate) => {
+  const key = Object.keys(record).find(predicate);
+  return key;
+};
+
+/**
+ * @template {Record<string, IdTable<*,*>>} T
+ * @param {T} tables
+ * @param {string} slot
+ * @returns {{ kind: undefined | string & keyof T, id: number }}
+ */
+const parseWalletSlot = (tables, slot) => {
+  const kind = findKey(tables, k => slot.startsWith(`${k}:`));
+  const id = kind ? Number(slot.slice(kind.length + 1)) : NaN;
+  return { kind, id };
+};
+
+/**
+ * Since KindSlots always include a colon and BoardIds never do,
+ * we an mix them without confusion.
+ *
+ * @template {Record<string, IdTable<*,*>>} T
+ * @typedef {WalletSlot<T> | BoardId} MixedSlot<T>
+ */
+/**
+ * @typedef {`1` | `12` | `123`} Digits - 1 or more digits.
+ * NOTE: the typescript definition here is more restrictive than
+ * actual usage.
+ */
+
+/**
+ * @template Slot
+ * @template Val
+ *
+ * @typedef {{
+ *   bySlot: MapStore<Slot, Val>,
+ *   byVal: MapStore<Val, Slot>,
+ * }} IdTable<Value>
+ */
+
+/**
+ * @template Slot
+ * @template Val
+ * @param {IdTable<Slot, Val>} table
+ * @param {Slot} slot
+ * @param {Val} val
+ */
+const initSlotVal = (table, slot, val) => {
+  table.bySlot.init(slot, val);
+  table.byVal.init(val, slot);
+};
+
+/**
  * Make context for exporting wallet data where brands etc. can be recognized by boardId.
  *
  * Objects should be registered before serialization:
@@ -16,102 +113,115 @@ const { details: X, quote: q } = assert;
  * with a fresh slot.
  */
 export const makeExportContext = () => {
-  const myData = {
+  const walletObjects = {
+    /** @type {IdTable<number, Purse>} */
     purse: {
-      /** @type {MapStore<string, Purse>} */
       bySlot: makeScalarMap(),
-      /** @type {MapStore<Purse, string>} */
       byVal: makeScalarMap(),
     },
+    /** @type {IdTable<number, Payment>} */
     payment: {
-      /** @type {MapStore<string, Payment>} */
       bySlot: makeScalarMap(),
-      /** @type {MapStore<Payment, string>} */
       byVal: makeScalarMap(),
     },
     // TODO: offer, contact, dapp
+    /** @type {IdTable<number, Payment>} */
+    unknown: {
+      bySlot: makeScalarMap(),
+      byVal: makeScalarMap(),
+    },
   };
-  const sharedData = {
-    /** @type {MapStore<string, unknown>} */
+  /** @type {IdTable<BoardId, unknown>} */
+  const boardObjects = {
     bySlot: makeScalarMap(),
-    /** @type {MapStore<unknown, string>} */
     byVal: makeScalarMap(),
   };
 
   /**
-   * @param {string} slot
+   * Look up the slot in mappings from published data
+   * else try walletObjects that we have seen.
+   *
+   * @throws if not found (a slotToVal function typically
+   *         conjures a new identity)
+   *
+   * @param {MixedSlot<typeof walletObjects>} slot
    * @param {string} _iface
    */
   const slotToVal = (slot, _iface) => {
-    if (sharedData.bySlot.has(slot)) {
-      return sharedData.bySlot.get(slot);
+    if (isBoardId(slot) && boardObjects.bySlot.has(slot)) {
+      return boardObjects.bySlot.get(slot);
     }
-    const kind = Object.keys(myData).find(k => slot.startsWith(k));
+    const { kind, id } = parseWalletSlot(walletObjects, slot);
     assert(kind, X`bad slot kind: ${slot}`);
-    const id = slot.slice(kind.length + 1);
-    const val = myData[kind].bySlot.get(id); // or throw
+    const val = walletObjects[kind].bySlot.get(id); // or throw
     return val;
   };
 
   let unknownNonce = 0;
 
+  /**
+   * @param {unknown} val
+   * @returns {MixedSlot<typeof walletObjects>}
+   */
   const valToSlot = val => {
-    if (sharedData.byVal.has(val)) {
-      return sharedData.byVal.get(val);
+    if (boardObjects.byVal.has(val)) {
+      return boardObjects.byVal.get(val);
     }
-    for (const kind of Object.keys(myData)) {
-      if (myData[kind].byVal.has(val)) {
-        const id = myData[kind].byVal.get(val);
-        return `${kind}:${id}`;
-      }
+    const kind = findKey(walletObjects, k => walletObjects[k].byVal.has(val));
+    if (kind) {
+      // @ts-expect-error has(val) above ensures val has the right type
+      const id = walletObjects[kind].byVal.get(val);
+      return makeWalletSlot(walletObjects, kind, id);
     }
     unknownNonce += 1;
-    const slot = `unknown:${unknownNonce}`;
-    sharedData.byVal.init(val, slot);
-    sharedData.bySlot.init(slot, val);
+    const slot = makeWalletSlot(walletObjects, 'unknown', unknownNonce);
+    initSlotVal(walletObjects.unknown, unknownNonce, val);
     return slot;
   };
 
-  const makeSaver = (kind, tables) => {
+  /**
+   * @template V
+   * @param {string & keyof typeof walletObjects} kind
+   * @param {IdTable<number, V>} table
+   */
+  const makeSaver = (kind, table) => {
     let nonce = 0;
-    return val => {
-      const slot = `${(nonce += 1)}`;
-      tables.bySlot.init(slot, val);
-      tables.byVal.init(val, slot);
+    /** @param {V} val */
+    const saver = val => {
+      nonce += 1;
+      initSlotVal(table, nonce, val);
     };
+    return saver;
   };
 
   return harden({
-    savePurseActions: makeSaver('purse', myData.purse),
-    savePaymentActions: makeSaver('payment', myData.payment),
+    savePurseActions: makeSaver('purse', walletObjects.purse),
+    savePaymentActions: makeSaver('payment', walletObjects.payment),
     /**
-     * @param {string} id
+     * @param {number} id
      * @param {Purse} purse
      */
     initPurseId: (id, purse) => {
-      myData.purse.bySlot.init(id, purse);
-      myData.purse.byVal.init(purse, id);
+      initSlotVal(walletObjects.purse, id, purse);
     },
-    purseEntries: myData.purse.bySlot.entries,
+    purseEntries: walletObjects.purse.bySlot.entries,
     /**
-     * @param {string} id
+     * @param {BoardId} id
      * @param {unknown} val
      */
     initBoardId: (id, val) => {
-      sharedData.bySlot.init(id, val);
-      sharedData.byVal.init(val, id);
+      initSlotVal(boardObjects, id, val);
     },
     /**
-     * @param {string} id
+     * @param {BoardId} id
      * @param {unknown} val
      */
     ensureBoardId: (id, val) => {
-      if (sharedData.byVal.has(val)) {
-        assert.equal(sharedData.byVal.get(val), id);
+      if (boardObjects.byVal.has(val)) {
+        assert.equal(boardObjects.byVal.get(val), id);
         return;
       }
-      sharedData.bySlot.init(id, val);
-      sharedData.byVal.init(val, id);
+      initSlotVal(boardObjects, id, val);
     },
     ...makeMarshal(valToSlot, slotToVal),
   });
@@ -119,8 +229,7 @@ export const makeExportContext = () => {
 
 const defaultMakePresence = iface => {
   const severed = `SEVERED: ${iface.replace(/^Alleged: /, '')}`;
-  const thing = /** @type {any} */ (Far(severed, {}));
-  return thing;
+  return Far(severed, {});
 };
 
 /**
@@ -129,31 +238,40 @@ const defaultMakePresence = iface => {
  * @param {(iface: string) => unknown} [makePresence]
  */
 export const makeImportContext = (makePresence = defaultMakePresence) => {
-  // constraint: none of these keys has another as a prefix.
-  // and none overlaps with board
-  const myData = {
+  const walletObjects = {
+    /** @type {IdTable<number, PurseActions>} */
     purse: {
-      /** @type {MapStore<string, PurseActions>} */
       bySlot: makeScalarMap(),
-      /** @type {MapStore<PurseActions, string>} */
       byVal: makeScalarMap(),
     },
+    /** @type {IdTable<number, PaymentActions>} */
     payment: {
-      /** @type {MapStore<string, PaymentActions>} */
       bySlot: makeScalarMap(),
-      /** @type {MapStore<PaymentActions, string>} */
       byVal: makeScalarMap(),
     },
-    // TODO: 6 in total, right?
+    // TODO: offer, contact, dapp
   };
-  const sharedData = {
-    /** @type {MapStore<string, unknown>} */
+  /** @type {IdTable<BoardId, unknown>} */
+  const boardObjects = {
     bySlot: makeScalarMap(),
-    /** @type {MapStore<unknown, string>} */
     byVal: makeScalarMap(),
   };
 
-  const kindOf = slot => Object.keys(myData).find(k => slot.startsWith(k));
+  /**
+   * @template Slot
+   * @template Val
+   * @param {IdTable<Slot, Val>} table
+   * @param {Slot} slot
+   * @param {string} iface
+   */
+  const provideVal = (table, slot, iface) => {
+    if (table.bySlot.has(slot)) {
+      return table.bySlot.get(slot);
+    }
+    const val = makePresence(iface);
+    initSlotVal(table, slot, val);
+    return val;
+  };
 
   const slotToVal = {
     /**
@@ -161,19 +279,8 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
      * @param {string} iface
      */
     fromBoard: (slot, iface) => {
-      if (sharedData.bySlot.has(slot)) {
-        return sharedData.bySlot.get(slot);
-      }
-      const kind = kindOf(slot);
-      if (kind) {
-        assert.fail(X`bad shared slot ${q(slot)}`);
-      }
-      // TODO: assert(slot.startswith('board'))?
-      const it = makePresence(iface);
-
-      sharedData.bySlot.init(slot, it);
-      sharedData.byVal.init(it, slot);
-      return it;
+      assert(isBoardId(slot), X`bad board slot ${q(slot)}`);
+      return provideVal(boardObjects, slot, iface);
     },
 
     /**
@@ -181,29 +288,24 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
      * @param {string} iface
      */
     fromMyWallet: (slot, iface) => {
-      const kind = kindOf(slot);
-      const key = kind ? slot.slice(kind.length + 1) : slot;
-      const table = kind ? myData[kind] : sharedData;
-      if (table.bySlot.has(key)) {
-        return table.bySlot.get(key);
-      }
-
-      const it = makePresence(iface);
-      table.bySlot.init(key, it);
-      table.byVal.init(it, key);
-      return it;
+      const { kind, id } = parseWalletSlot(walletObjects, slot);
+      return kind
+        ? // @ts-expect-error tsc isn't quite this clever
+          provideVal(walletObjects[kind], id, iface)
+        : slotToVal.fromBoard(slot, iface);
     },
   };
 
   const valToSlot = {
+    /** @param {unknown} val */
     fromMyWallet: val => {
-      for (const kind of Object.keys(myData)) {
-        if (myData[kind].byVal.has(val)) {
-          const id = myData[kind].byVal.get(val);
-          return `${kind}:${id}`;
-        }
+      const kind = findKey(walletObjects, k => walletObjects[k].byVal.has(val));
+      if (kind) {
+        // @ts-expect-error has(val) above ensures val has the right type
+        const id = walletObjects[kind].byVal.get(val);
+        return makeWalletSlot(walletObjects, kind, id);
       }
-      assert.fail(X`cannot serialize unregisterd ${val}`);
+      assert.fail(X`cannot serialize unregistered ${val}`);
     },
   };
 
@@ -212,7 +314,7 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
       marshalName: 'fromBoard',
     }),
     fromMyWallet: makeMarshal(valToSlot.fromMyWallet, slotToVal.fromMyWallet, {
-      marshalName: 'fromPart',
+      marshalName: 'fromMyWallet',
     }),
   };
 
@@ -230,13 +332,13 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
  * }} handler
  */
 const makePresence = (iface, handler) => {
-  let it;
-  const hp = new HandledPromise((resolve, reject, resolveWithPresence) => {
-    it = resolveWithPresence(handler);
+  let obj;
+  // eslint-disable-next-line no-new
+  new HandledPromise((resolve, reject, resolveWithPresence) => {
+    obj = resolveWithPresence(handler);
   });
-  assert(it);
-  assert(hp);
-  return Remotable(iface, undefined, it);
+  assert(obj);
+  return Remotable(iface, undefined, obj);
 };
 
 /**
