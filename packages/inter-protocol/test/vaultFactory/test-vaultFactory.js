@@ -267,7 +267,6 @@ const legacyOfferResult = vaultSeat => {
   return E(vaultSeat)
     .getOfferResult()
     .then(result => {
-      console.log('DEBUG', { result });
       const { vault, publicSubscribers } = result;
       assert(vault, 'missing vault');
       assert(publicSubscribers, 'missing publicSubscribers');
@@ -686,7 +685,7 @@ test('price drop', async t => {
   );
 
   t.deepEqual(runProceeds, run.make(0n));
-  t.deepEqual(collProceeds, aeth.make(2n));
+  t.deepEqual(collProceeds, aeth.make(0n));
   t.deepEqual(await E(vault).getCollateralAmount(), aeth.makeEmpty());
 });
 
@@ -813,16 +812,14 @@ test('price falls precipitously', async t => {
 
   t.deepEqual(
     await E(vault).getCollateralAmount(),
-    // XXX collateral left when there's still debt
-    aeth.make(1n),
+    aeth.makeEmpty(),
     'Collateral reduced after liquidation',
   );
-  // TODO take all collateral when vault is underwater https://github.com/Agoric/agoric-sdk/issues/5558
-  // t.deepEqual(
-  //   await E(vault).getCollateralAmount(),
-  //   aeth.makeEmpty(),
-  //   'Collateral used up trying to cover debt',
-  // );
+  t.deepEqual(
+    await E(vault).getCollateralAmount(),
+    aeth.makeEmpty(),
+    'Excess collateral not  returned due to shortfall',
+  );
 
   const finalNotification = await E(vaultNotifier).getUpdateSince();
   t.is(finalNotification.value.vaultState, Phase.LIQUIDATED);
@@ -841,7 +838,7 @@ test('price falls precipitously', async t => {
   );
 
   t.deepEqual(runProceeds, run.make(0n));
-  t.deepEqual(collProceeds, aeth.make(1n));
+  t.deepEqual(collProceeds, aeth.make(0n));
   t.deepEqual(await E(vault).getCollateralAmount(), aeth.makeEmpty());
 });
 
@@ -2600,6 +2597,7 @@ test('manager notifiers', async t => {
     numLiquidatingVaults: 0,
     totalCollateral: aeth.make(0n),
     totalDebt: run.make(0n),
+    totalCollateralHeld: aeth.make(0n),
 
     // running
     numLiquidationsCompleted: 0,
@@ -2813,6 +2811,7 @@ test('manager notifiers', async t => {
     numLiquidationsCompleted: 6,
     numLiquidatingVaults: 0,
     totalCollateral: { value: 0n },
+    totalCollateralHeld: { value: 5685n },
     totalDebt: { value: 0n },
     totalProceedsReceived: { value: totalProceedsReceived },
     totalShortfallReceived: {

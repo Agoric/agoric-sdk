@@ -61,6 +61,8 @@ const trace = makeTracer('VM');
  * @property {number}         numLiquidatingVaults  present count of liquidating vaults
  * @property {Amount<'nat'>}  totalCollateral    present sum of collateral across all vaults
  * @property {Amount<'nat'>}  totalDebt          present sum of debt across all vaults
+ * @property {Amount<'nat'>}  totalCollateralHeld collateral held as a result of not returning excess refunds
+ *                                                from AMM to owners of vaults liquidated with shortfalls
  *
  * @property {Amount<'nat'>}  totalCollateralSold       running sum of collateral sold in liquidation // totalCollateralSold
  * @property {Amount<'nat'>}  totalOverageReceived      running sum of overages, central received greater than debt
@@ -94,6 +96,7 @@ const trace = makeTracer('VM');
  * debtBrand: Brand<'nat'>,
  * debtMint: ZCFMint<'nat'>,
  * poolIncrementSeat: ZCFSeat,
+ * collateralHeldSeat: ZCFSeat,
  * unsettledVaults: MapStore<string, Vault>,
  * liquidatingVaults: SetStore<Vault>,
  * }>} ImmutableState
@@ -221,6 +224,7 @@ const initState = (
     debtBrand,
     debtMint,
     poolIncrementSeat: zcf.makeEmptySeatKit().zcfSeat,
+    collateralHeldSeat: zcf.makeEmptySeatKit().zcfSeat,
     unsettledVaults,
     liquidatingVaults,
   };
@@ -368,12 +372,16 @@ const helperBehavior = {
     );
     assert(metricsPublication && prioritizedVaults);
 
+    const totalCollateralHeld =
+      state.collateralHeldSeat.getCurrentAllocation()?.Collateral ??
+      AmountMath.makeEmpty(state.collateralBrand, 'nat');
     /** @type {MetricsNotification} */
     const payload = harden({
       numActiveVaults: prioritizedVaults.getCount(),
       numLiquidatingVaults: state.liquidatingVaults.getSize(),
       totalCollateral: state.totalCollateral,
       totalDebt: state.totalDebt,
+      totalCollateralHeld,
 
       numLiquidationsCompleted: state.numLiquidationsCompleted,
       totalCollateralSold: state.totalCollateralSold,
@@ -533,6 +541,26 @@ const helperBehavior = {
         facets.manager.burnAndRecord(accounting.toBurn, vaultSeat);
 
         // current values
+
+        // Sometimes, the AMM will sell less than all the collateral. If there
+        // was a shortfall, the investor doesn't keep the change, so we get it
+        const collateralPost = vault.getCollateralAmount();
+        if (!AmountMath.isEmpty(collateralPost)) {
+          if (!AmountMath.isEmpty(accounting.shortfall)) {
+            // XXX The borrower doesn't get any excess collateal remaining when
+            // liquidation results in a shortfall. We currently do nothing with
+            // it. We could hold it until it crosses some threshold, then sell
+            // it to the AMM, or we could transfer it to the reserve. At least
+            // it's visible in the accounting.
+            vaultSeat.decrementBy(
+              state.collateralHeldSeat.incrementBy({
+                Collateral: collateralPost,
+              }),
+            );
+            zcf.reallocate(vaultSeat, state.collateralHeldSeat);
+          }
+        }
+
         state.totalCollateral = AmountMath.subtract(
           state.totalCollateral,
           collateralPre,
