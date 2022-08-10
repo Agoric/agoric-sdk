@@ -2597,7 +2597,7 @@ test('manager notifiers', async t => {
     numLiquidatingVaults: 0,
     totalCollateral: aeth.make(0n),
     totalDebt: run.make(0n),
-    totalCollateralHeld: aeth.make(0n),
+    retainedCollateral: aeth.make(0n),
 
     // running
     numLiquidationsCompleted: 0,
@@ -2811,7 +2811,7 @@ test('manager notifiers', async t => {
     numLiquidationsCompleted: 6,
     numLiquidatingVaults: 0,
     totalCollateral: { value: 0n },
-    totalCollateralHeld: { value: 5685n },
+    retainedCollateral: { value: 5685n },
     totalDebt: { value: 0n },
     totalProceedsReceived: { value: totalProceedsReceived },
     totalShortfallReceived: {
