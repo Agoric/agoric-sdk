@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { Far, makeTagged } from '@endo/marshal';
-import fc from 'fast-check';
+import { fc } from '@fast-check/ava';
 import {
   FullRankCover,
   compareRank,
@@ -36,9 +36,11 @@ const { passable } = fc.letrec(tie => {
       fc
         .record({
           type: fc.constantFrom('copyMap', 'copySet', 'nonsense'),
-          payload: fc.set(fc.fullUnicodeString(), { maxLength: 3 }).chain(k => {
-            return fc.tuple(fc.constant(k), tie('leaf'));
-          }),
+          payload: fc
+            .uniqueArray(fc.fullUnicodeString(), { maxLength: 3 })
+            .chain(k => {
+              return fc.tuple(fc.constant(k), tie('leaf'));
+            }),
         })
         .map(({ type, payload }) => makeTagged(type, payload)),
       fc.array(tie('dag'), { maxLength: 3 }),
@@ -104,7 +106,7 @@ test('compareRank is transitive', async t => {
     fc.property(
       // operate on a set of three passables covering at least two ranks
       fc
-        .set(passable, { minLength: 3, maxLength: 3 })
+        .uniqueArray(passable, { minLength: 3, maxLength: 3 })
         .filter(
           ([a, b, c]) => compareRank(a, b) !== 0 || compareRank(a, c) !== 0,
         ),

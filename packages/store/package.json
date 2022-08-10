@@ -37,8 +37,8 @@
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.28.0",
-    "ava": "^4.3.1",
-    "fast-check": "^2.21.0"
+    "@fast-check/ava": "^1.0.1",
+    "ava": "^4.3.1"
   },
   "files": [
     "src/",
