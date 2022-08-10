@@ -1,4 +1,5 @@
 // @ts-check
+import { Buffer } from 'buffer';
 import './lockdown.js';
 
 import { makeMarshal } from '@endo/marshal';
@@ -63,9 +64,8 @@ const fakeStatusResult = {
   },
 };
 
-export const startFakeServer = (t, fakeValues) => {
+export const startFakeServer = (t, fakeValues, marshaller = makeMarshal()) => {
   const { log = console.log } = t;
-  const { serialize } = makeMarshal();
   lastPort += 1;
   const PORT = lastPort;
   return new Promise(resolve => {
@@ -107,6 +107,7 @@ export const startFakeServer = (t, fakeValues) => {
           result,
         });
       };
+      log('req.body', req.body);
       switch (req.body.method) {
         case 'status': {
           reply(fakeStatusResult);
@@ -116,14 +117,16 @@ export const startFakeServer = (t, fakeValues) => {
           const value =
             fakeValues.length === 0
               ? null
-              : encode(serialize(fakeValues.shift()));
+              : encode(marshaller.serialize(fakeValues.shift()));
           const result = {
             response: {
               code: 0,
               log: '',
               info: '',
               index: '0',
-              key: 'c3dpbmdzZXQvZGF0YTptYWlsYm94LmFnb3JpYzFmb29iYXJiYXo=',
+              key: Buffer.from(
+                'swingset/data:mailbox.agoric1foobarbaz',
+              ).toString('base64'),
               value,
               proofOps: null,
               height: '74863',
@@ -230,7 +233,7 @@ export const develop = async () => {
   const PORT = await startFakeServer(mockT, [...fakeValues]);
   console.log(
     `Try this in another terminal:
-    agoric follower :fake.path --bootstrap=http://localhost:${PORT}/network-config --sleep=0.5 --proof=none`,
+    agoric follow :fake.path --bootstrap=http://localhost:${PORT}/network-config --sleep=0.5 --proof=none`,
   );
   console.warn(`Control-C to interrupt...`);
   // Wait forever.

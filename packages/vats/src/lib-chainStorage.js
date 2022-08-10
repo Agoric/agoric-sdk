@@ -24,13 +24,26 @@ export const sanitizePathSegment = name => {
 harden(sanitizePathSegment);
 
 /**
+ * Must match the switch in vstorage.go using `vstorageMessage` type
+ *
+ * @typedef {'get' | 'getStoreKey' | 'set' | 'has' |'entries' | 'values' |'size' } StorageMessageMethod
+ */
+/**
+ * @typedef {{key: string, method: StorageMessageMethod, value?: unknown}} StorageMessage
+ */
+
+/**
  * Create a root storage node for a given backing function and root path.
  *
- * @param {(message: any) => any} toStorage a function for sending a storageMessage object to the storage implementation (cf. golang/cosmos/x/swingset/storage.go)
+ * @param {(message: StorageMessage) => any} handleStorageMessage a function for sending a storageMessage object to the storage implementation (cf. golang/cosmos/x/vstorage/vstorage.go)
  * @param {string} storeName currently limited to "swingset"
  * @param {string} rootPath
  */
-export function makeChainStorageRoot(toStorage, storeName, rootPath) {
+export function makeChainStorageRoot(
+  handleStorageMessage,
+  storeName,
+  rootPath,
+) {
   assert.equal(
     storeName,
     'swingset',
@@ -41,7 +54,7 @@ export function makeChainStorageRoot(toStorage, storeName, rootPath) {
   function makeChainStorageNode(path) {
     const node = {
       getStoreKey() {
-        return toStorage({ key: path, method: 'getStoreKey' });
+        return handleStorageMessage({ key: path, method: 'getStoreKey' });
       },
       getChildNode(name) {
         assert.typeof(name, 'string');
@@ -53,10 +66,10 @@ export function makeChainStorageRoot(toStorage, storeName, rootPath) {
       },
       setValue(value) {
         assert.typeof(value, 'string');
-        toStorage({ key: path, method: 'set', value });
+        handleStorageMessage({ key: path, method: 'set', value });
       },
       clearValue() {
-        toStorage({ key: path, method: 'set' });
+        handleStorageMessage({ key: path, method: 'set' });
       },
       // Possible extensions:
       // * getValue()

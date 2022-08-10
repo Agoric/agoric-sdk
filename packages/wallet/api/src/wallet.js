@@ -23,6 +23,7 @@ import './internal-types.js';
  * @typedef {{
  * agoricNames: ERef<NameHub>,
  * board: ERef<Board>,
+ * cacheStorageNode: ERef<StorageNode>,
  * localTimerPollInterval?: bigint,
  * localTimerService?: TimerService,
  * myAddressNameAdmin: ERef<MyAddressNameAdmin>,

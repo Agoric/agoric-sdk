@@ -6,12 +6,12 @@ backend.  Any passable object can be a cache key or a cache value.
 ## Demo
 
 ```js
-import { makeCache, makeStoreCoordinator } from '@agoric/cache';
+import { makeCache, makeScalarStoreCoordinator } from '@agoric/cache';
 import { M } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 const store = makeScalarBigMapStore('cache');
-const coordinator = makeStoreCoordinator(store);
+const coordinator = makeScalarStoreCoordinator(store);
 const cache = makeCache(coordinator);
 
 // Direct value manipulation.
@@ -49,14 +49,15 @@ follower)`.  If not specified, the default coordinator is just a local in-memory
 map without persistence.
 
 - the ground state for a cache key value is `undefined`.  It is impossible to distinguish a set value of `undefined` from an unset key
-- `cache(key): Promise<recentValue>` - get an eventually-consistent value for `key`
-- `cache(key, (oldValue) => ERef<newValue>): Promise<newValue>` -  call the
-  updater function transactionally with the current value of `key`, and update
-  it to `newValue`.  Rerun the updater function with a new value if the
-  transaction is stale.
-- `cache(key, (oldValue) => ERef<newValue>, guardPattern): Promise<newValue>` -
-  same as above, but only update the cache if guardPattern matches the current
-  value.  Return the updated value, or the value that matches guardPattern.
+- `cache(key, (oldValue) => ERef<newValue>, guardPattern?): Promise<newValue>` -
+  transactionally updates the value of `key` from a value matched by `guardPattern`
+  to the results of sanitizing the result of calling the updater function with
+  that value. Retries all three steps (read current value, attempt match, call updater),
+  if the transaction is stale. `guardPattern` defaults to matching only `undefined`.
+  Returns the current value after any resulting update.
+- `cache(key, passable, guardPattern?): Promise<newValue>` -
+  same as above with an updater function that ignores arguments and returns
+  `passable` (e.g., `() => passable`).
 
 ## Cache coordinator
 

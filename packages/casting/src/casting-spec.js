@@ -2,6 +2,10 @@
 import * as encodingStar from '@cosmjs/encoding';
 import { E, getInterfaceOf } from '@endo/far';
 
+import './types.js';
+// XXX without this ERef=any in IDE https://github.com/Agoric/agoric-sdk/issues/4620
+/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
+
 const { toAscii } = encodingStar;
 
 /**
@@ -101,7 +105,9 @@ export const makeCastingSpecFromRef = async specCap => {
 };
 
 /**
- * @param {ERef<any>} sourceP
+ * Create an abstract type from a given source representation
+ *
+ * @param {ERef<unknown>} sourceP
  * @returns {Promise<import('./types').CastingSpec>}
  */
 export const makeCastingSpec = async sourceP => {
@@ -109,6 +115,7 @@ export const makeCastingSpec = async sourceP => {
   if (typeof spec === 'string') {
     return makeCastingSpecFromString(spec);
   }
+  // @ts-expect-error type detection
   const { storeName, subscription, notifier } = spec;
   if (storeName || subscription || notifier) {
     return makeCastingSpecFromObject(spec);
@@ -118,3 +125,4 @@ export const makeCastingSpec = async sourceP => {
   }
   assert.fail(`CastingSpec ${spec} is not a string, object, or ref`);
 };
+/** @typedef {ReturnType<typeof makeCastingSpec>} CastingSpec */

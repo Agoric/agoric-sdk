@@ -22,3 +22,19 @@ export const makeState = (value, priorState = GROUND_STATE) =>
     generation: priorState.generation + 1n,
     value,
   });
+
+/**
+ * Wrap a state store to have a default value using the GROUND_STATE
+ *
+ * @param {MapStore<string, import('./types').State>} stateStore
+ */
+export const withGroundState = stateStore => ({
+  ...stateStore,
+  get: key => {
+    if (!stateStore.has(key)) {
+      return GROUND_STATE;
+    }
+    return stateStore.get(key);
+  },
+});
+harden(withGroundState);

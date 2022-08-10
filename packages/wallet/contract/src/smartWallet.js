@@ -32,8 +32,11 @@ export const makeSmartWallet = async (
   assert(myAddressNameAdmin, 'missing myAddressNameAdmin');
   assert(storageNode, 'missing storageNode');
 
+  const cacheStorageNode = E(storageNode).getChildNode('cache');
+
   const wallet = await makeWallet(bank, {
     agoricNames,
+    cacheStorageNode,
     namesByAddress,
     // ??? why do we make this instead of passing the address itself?
     myAddressNameAdmin,
