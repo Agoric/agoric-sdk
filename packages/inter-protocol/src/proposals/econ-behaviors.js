@@ -760,8 +760,11 @@ export const startLienBridge = async ({
     consume: { [Stake.symbol]: bldP },
   },
 }) => {
+  trace('lienBridge');
+
   const bridgeManager = await bridgeOptP;
   if (!bridgeManager) {
+    lienBridge.resolve(undefined);
     return;
   }
   const bldBrand = await bldP;
