@@ -299,13 +299,13 @@ test(`zoeHelper with zcf - fit proposal patterns`, async t => {
   });
 
   t.throws(() => fit(proposal, harden([])), {
-    message: /.* - Must be equivalent to: \[\]/,
+    message: /.* - Must be: \[\]/,
   });
   t.throws(
     () => fit(proposal, M.split({ want: { C: M.any() } })),
     {
       message:
-        /Must have same property names as record pattern: {"C":"\[match:any\]"}/,
+        /want: {"A":{"brand":"\[Alleged: moola brand\]","value":"\[20n\]"}} - Must have missing properties \["C"\]/,
     },
     'empty keywordRecord does not match',
   );
@@ -315,15 +315,14 @@ test(`zoeHelper with zcf - fit proposal patterns`, async t => {
     () => fit(proposal, M.split({ give: { c: M.any() } })),
     {
       message:
-        /Must have same property names as record pattern: {"c":"\[match:any\]"}/,
+        /give: {"B":{"brand":"\[Alleged: simoleans brand\]","value":"\[3n\]"}} - Must have missing properties \["c"\]/,
     },
     'wrong key in keywordRecord does not match',
   );
   t.throws(
     () => fit(proposal, M.split({ exit: { onDemaind: M.any() } })),
     {
-      message:
-        /Must have same property names as record pattern: {"exit":{"onDemaind":"\[match:any\]"}}/,
+      message: /split-base: {} - Must have missing properties \["exit"\]/,
     },
     'missing exit rule',
   );
@@ -619,7 +618,7 @@ test(`zcf/zoeHelper - fit proposal pattern w/bad Expected`, async t => {
   });
 
   t.throws(() => fit(proposal, M.split({ give: { B: moola(3n) } })), {
-    message: /.* - Must be equivalent to: .*/,
+    message: /.* - Must be: .*/,
   });
 });
 

@@ -45,7 +45,8 @@ test('mint.mintPayment set w strings AssetKind', async t => {
 
   const badAmount = AmountMath.make(brand, harden([['badElement']]));
   t.throws(() => mint.mintPayment(badAmount), {
-    message: / - Must have passStyle or tag "string"/,
+    message:
+      /minted amount: value: \[0\]: copyArray \["badElement"\] - Must be a string/,
   });
 });
 

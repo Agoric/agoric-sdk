@@ -45,7 +45,7 @@ test('bad display info', t => {
   // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => makeIssuerKit('fungible', AssetKind.NAT, displayInfo), {
     message:
-      /^displayInfo: Remainder \{"somethingUnexpected":3\} - Must match \{\}$/,
+      /displayInfo: partial-rest: {"somethingUnexpected":3} - Must be: {}/,
   });
 });
 

@@ -222,13 +222,13 @@ test('cleanProposal - other wrong stuff', t => {
     t,
     { exit: 'foo' },
     'nat',
-    /"foo" - Must have shape of base: "copyRecord"/,
+    /^proposal: exit: string "foo" - Must be a copyRecord$/,
   );
   proposeBad(
     t,
     { exit: { onDemand: 'foo' } },
     'nat',
-    /{"onDemand":"foo"} - Must be equivalent to: {"onDemand":null}/,
+    /{"onDemand":"foo"} - Must be: {"onDemand":null}/,
   );
   proposeBad(
     t,
@@ -240,7 +240,7 @@ test('cleanProposal - other wrong stuff', t => {
     t,
     { exit: { afterDeadline: { timer: 'foo', deadline: 3n } } },
     'nat',
-    /"foo" - Must have passStyle or tag "remotable"/,
+    /proposal: exit: partial-base: afterDeadline: timer: string "foo" - Must be a remotable/,
   );
   proposeBad(
     t,
@@ -252,19 +252,19 @@ test('cleanProposal - other wrong stuff', t => {
     t,
     { exit: { afterDeadline: { timer, deadline: 3n, extra: 'foo' } } },
     'nat',
-    /.* - Must have same property names as record pattern:.*/,
+    /proposal: exit: partial-base: afterDeadline: {"timer":"\[Alleged: ManualTimer\]","deadline":"\[3n\]","extra":"foo"} - Must not have unexpected properties: \["extra"\]/,
   );
   proposeBad(
     t,
     { exit: { afterDeadline: { timer } } },
     'nat',
-    /.* - Must have same property names as record pattern:.*/,
+    /proposal: exit: partial-base: afterDeadline: {"timer":"\[Alleged: ManualTimer\]"} - Must have missing properties \["deadline"\]/,
   );
   proposeBad(
     t,
     { exit: { afterDeadline: { deadline: 3n } } },
     'nat',
-    /.* - Must have same property names as record pattern:.*/,
+    /proposal: exit: partial-base: afterDeadline: {"deadline":"\[3n\]"} - Must have missing properties \["timer"\]/,
   );
   proposeBad(
     t,

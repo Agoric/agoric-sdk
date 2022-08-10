@@ -2,7 +2,7 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { makeCopySet } from '../src/keys/checkKey.js';
+import { makeCopyBag, makeCopyMap, makeCopySet } from '../src/keys/checkKey.js';
 import { fit, matches, M } from '../src/patterns/patternMatchers.js';
 import '../src/types.js';
 
@@ -34,17 +34,17 @@ const matchTests = harden([
       M.pattern(),
     ],
     noPatterns: [
-      [4, /3 - Must be equivalent to: 4/],
+      [4, /3 - Must be: 4/],
       [M.not(3), /3 - must fail negated pattern: 3/],
       [M.not(M.any()), /3 - must fail negated pattern: "\[match:any\]"/],
-      [M.string(), /3 - Must have passStyle or tag "string"/],
-      [[3, 4], /3 - Must be equivalent to: \[3,4\]/],
+      [M.string(), /number 3 - Must be a string/],
+      [[3, 4], /3 - Must be: \[3,4\]/],
       [M.gte(7), /3 - Must be >= 7/],
       [M.lte(2), /3 - Must be <= 2/],
       // incommensurate comparisons are neither <= nor >=
       [M.lte('x'), /3 - Must be <= "x"/],
       [M.gte('x'), /3 - Must be >= "x"/],
-      [M.and(3, 4), /3 - Must be equivalent to: 4/],
+      [M.and(3, 4), /3 - Must be: 4/],
       [M.or(4, 4), /3 - Must match one of \[4,4\]/],
       [M.or(), /3 - no pattern disjuncts to match: \[\]/],
     ],
@@ -74,24 +74,27 @@ const matchTests = harden([
       M.array(),
       M.key(),
       M.pattern(),
+      M.arrayOf(M.number()),
     ],
     noPatterns: [
-      [[4, 3], /\[3,4\] - Must be equivalent to: \[4,3\]/],
-      [[3], /\[3,4\] - Must be equivalent to: \[3\]/],
-      [[M.string(), M.any()], /3 - Must have passStyle or tag "string"/],
+      [[4, 3], /\[3,4\] - Must be: \[4,3\]/],
+      [[3], /\[3,4\] - Must be: \[3\]/],
+      [[M.string(), M.any()], /number 3 - Must be a string/],
       [M.lte([3, 3]), /\[3,4\] - Must be <= \[3,3\]/],
       [M.gte([4, 4]), /\[3,4\] - Must be >= \[4,4\]/],
       [M.lte([3]), /\[3,4\] - Must be <= \[3\]/],
       [M.gte([3, 4, 1]), /\[3,4\] - Must be >= \[3,4,1\]/],
 
-      [M.split([3, 4, 5, 6]), /\[3,4\] - Must be equivalent to: \[3,4,5,6\]/],
-      [M.split([5]), /\[3\] - Must be equivalent to: \[5\]/],
-      [M.split({}), /\[3,4\] - Must have shape of base: "copyRecord"/],
-      [M.split([3], 'x'), /Remainder \[4\] - Must match "x"/],
+      [M.split([3, 4, 5, 6]), /\[3,4\] - Must be: \[3,4,5,6\]/],
+      [M.split([5]), /\[3\] - Must be: \[5\]/],
+      [M.split({}), /^copyArray \[3,4\] - Must be a copyRecord$/],
+      [M.split([3], 'x'), /split-rest: \[4\] - Must be: "x"/],
 
-      [M.partial([5]), /\[3\] - Must be equivalent to: \[5\]/],
+      [M.partial([5]), /\[3\] - Must be: \[5\]/],
 
       [M.scalar(), /A "copyArray" cannot be a scalar key: \[3,4\]/],
+      [M.set(), /copyArray \[3,4\] - Must be a copySet/],
+      [M.arrayOf(M.string()), /\[0\]: number 3 - Must be a string/],
     ],
   },
   {
@@ -118,16 +121,11 @@ const matchTests = harden([
       M.record(),
       M.key(),
       M.pattern(),
+      M.recordOf(M.string(), M.number()),
     ],
     noPatterns: [
-      [
-        { foo: 4, bar: 3 },
-        /{"foo":3,"bar":4} - Must be equivalent to: {"foo":4,"bar":3}/,
-      ],
-      [
-        { foo: M.string(), bar: M.any() },
-        /3 - Must have passStyle or tag "string"/,
-      ],
+      [{ foo: 4, bar: 3 }, /{"foo":3,"bar":4} - Must be: {"foo":4,"bar":3}/],
+      [{ foo: M.string(), bar: M.any() }, /number 3 - Must be a string/],
       [
         M.lte({ foo: 3, bar: 3 }),
         /{"foo":3,"bar":4} - Must be <= {"foo":3,"bar":3}/,
@@ -151,21 +149,31 @@ const matchTests = harden([
       [M.lte({ baz: 3 }), /{"foo":3,"bar":4} - Must be <= {"baz":3}/],
       [M.gte({ baz: 3 }), /{"foo":3,"bar":4} - Must be >= {"baz":3}/],
 
-      [M.split([]), /{"foo":3,"bar":4} - Must have shape of base: "copyArray"/],
-      [
-        M.split({ foo: 3, z: 4 }),
-        /{"foo":3} - Must be equivalent to: {"foo":3,"z":4}/,
-      ],
+      [M.split([]), /^copyRecord {"foo":3,"bar":4} - Must be a copyArray$/],
+      [M.split({ foo: 3, z: 4 }), /{"foo":3} - Must be: {"foo":3,"z":4}/],
       [
         M.split({ foo: 3 }, { foo: 3, bar: 4 }),
-        /Remainder {"bar":4} - Must match {"foo":3,"bar":4}/,
+        /split-rest: {"bar":4} - Must be: {"foo":3,"bar":4}/,
+      ],
+      [
+        M.split({ foo: 3 }, { foo: M.any(), bar: 4 }),
+        /split-rest: {"bar":4} - Must have missing properties \["foo"\]/,
       ],
       [
         M.partial({ foo: 7, zip: 5 }, { bar: 4 }),
-        /{"foo":3} - Must be equivalent to: {"foo":7}/,
+        /{"foo":3} - Must be: {"foo":7}/,
       ],
 
       [M.scalar(), /A "copyRecord" cannot be a scalar key: {"foo":3,"bar":4}/],
+      [M.map(), /copyRecord {"foo":3,"bar":4} - Must be a copyMap/],
+      [
+        M.recordOf(M.number(), M.number()),
+        /foo: \[0\]: string "foo" - Must be a number/,
+      ],
+      [
+        M.recordOf(M.string(), M.string()),
+        /foo: \[1\]: number 3 - Must be a string/,
+      ],
     ],
   },
   {
@@ -174,17 +182,90 @@ const matchTests = harden([
       makeCopySet([4, 3]),
       M.gte(makeCopySet([])),
       M.lte(makeCopySet([3, 4, 5])),
+      M.set(),
+      M.setOf(M.number()),
     ],
     noPatterns: [
-      [makeCopySet([]), /"\[copySet\]" - Must be equivalent to: "\[copySet\]"/],
-      [
-        makeCopySet([3, 4, 5]),
-        /"\[copySet\]" - Must be equivalent to: "\[copySet\]"/,
-      ],
+      [makeCopySet([]), /"\[copySet\]" - Must be: "\[copySet\]"/],
+      [makeCopySet([3, 4, 5]), /"\[copySet\]" - Must be: "\[copySet\]"/],
       [M.lte(makeCopySet([])), /"\[copySet\]" - Must be <= "\[copySet\]"/],
       [
         M.gte(makeCopySet([3, 4, 5])),
         /\[copySet\]" - Must be >= "\[copySet\]"/,
+      ],
+      [M.bag(), /copySet "\[copySet\]" - Must be a copyBag/],
+      [M.setOf(M.string()), /\[0\]: number 4 - Must be a string/],
+    ],
+  },
+  {
+    specimen: makeCopyBag([
+      ['a', 2n],
+      ['b', 3n],
+    ]),
+    yesPatterns: [
+      M.gt(makeCopyBag([])),
+      M.gt(makeCopyBag([['a', 2n]])),
+      M.gt(
+        makeCopyBag([
+          ['a', 1n],
+          ['b', 3n],
+        ]),
+      ),
+      M.bag(),
+      M.bagOf(M.string()),
+      M.bagOf(M.string(), M.lt(5n)),
+    ],
+    noPatterns: [
+      [
+        M.gte(
+          makeCopyBag([
+            ['b', 2n],
+            ['c', 1n],
+          ]),
+        ),
+        /"\[copyBag\]" - Must be >= "\[copyBag\]"/,
+      ],
+      [
+        M.lte(
+          makeCopyBag([
+            ['b', 2n],
+            ['c', 1n],
+          ]),
+        ),
+        /"\[copyBag\]" - Must be <= "\[copyBag\]"/,
+      ],
+      [M.bagOf(M.boolean()), /keys\[0\]: string "b" - Must be a boolean/],
+      [M.bagOf('b'), /keys\[1\]: "a" - Must be: "b"/],
+      [
+        M.bagOf(M.any(), M.gt(5n)),
+        /counts\[0\]: "\[3n\]" - Must be > "\[5n\]"/,
+      ],
+      [
+        M.bagOf(M.any(), M.gt(2n)),
+        /counts\[1\]: "\[2n\]" - Must be > "\[2n\]"/,
+      ],
+    ],
+  },
+  {
+    specimen: makeCopyMap([
+      [{}, 'a'],
+      [{ foo: 3 }, 'b'],
+    ]),
+    yesPatterns: [
+      // M.gt(makeCopyMap([])), Map comparison not yet implemented
+      M.map(),
+      M.mapOf(M.record(), M.string()),
+    ],
+    noPatterns: [
+      [M.bag(), /copyMap "\[copyMap\]" - Must be a copyBag/],
+      [M.set(), /copyMap "\[copyMap\]" - Must be a copySet/],
+      [
+        M.mapOf(M.string(), M.string()),
+        /^keys\[0\]: copyRecord {"foo":3} - Must be a string$/,
+      ],
+      [
+        M.mapOf(M.record(), M.number()),
+        /^values\[0\]: string "b" - Must be a number$/,
       ],
     ],
   },
