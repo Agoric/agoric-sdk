@@ -23,6 +23,7 @@ import {
   makeKindHandle,
   makeScalarBigMapStore,
   pickFacet,
+  makeScalarBigSetStore,
 } from '@agoric/vat-data';
 import {
   assertProposalShape,
@@ -56,9 +57,10 @@ const trace = makeTracer('VM');
 /**
  * @typedef {object} MetricsNotification
  *
- * @property {number}         numVaults        present count of vaults
- * @property {Amount<'nat'>}  totalCollateral  present sum of collateral across all vaults
- * @property {Amount<'nat'>}  totalDebt        present sum of debt across all vaults
+ * @property {number}         numActiveVaults          present count of vaults
+ * @property {number}         numLiquidatingVaults  present count of liquidating vaults
+ * @property {Amount<'nat'>}  totalCollateral    present sum of collateral across all vaults
+ * @property {Amount<'nat'>}  totalDebt          present sum of debt across all vaults
  *
  * @property {Amount<'nat'>}  totalCollateralSold       running sum of collateral sold in liquidation // totalCollateralSold
  * @property {Amount<'nat'>}  totalOverageReceived      running sum of overages, central received greater than debt
@@ -93,6 +95,7 @@ const trace = makeTracer('VM');
  * debtMint: ZCFMint<'nat'>,
  * poolIncrementSeat: ZCFSeat,
  * unsettledVaults: MapStore<string, Vault>,
+ * liquidatingVaults: SetStore<Vault>,
  * }>} ImmutableState
  */
 
@@ -202,6 +205,16 @@ const initState = (
     durable: true,
   });
 
+  /**
+   * If things are going well, the set will contain at most one Vault. Otherwise
+   * failures remain and are available to be repaired via contract upgrade.
+   *
+   * @type {SetStore<Vault>}
+   */
+  const liquidatingVaults = makeScalarBigSetStore('liquidatingVaults', {
+    durable: true,
+  });
+
   /** @type {ImmutableState} */
   const fixed = {
     collateralBrand,
@@ -209,6 +222,7 @@ const initState = (
     debtMint,
     poolIncrementSeat: zcf.makeEmptySeatKit().zcfSeat,
     unsettledVaults,
+    liquidatingVaults,
   };
 
   const compoundedInterest = makeRatio(100n, fixed.debtBrand); // starts at 1.0, no interest
@@ -356,7 +370,8 @@ const helperBehavior = {
 
     /** @type {MetricsNotification} */
     const payload = harden({
-      numVaults: prioritizedVaults.getCount(),
+      numActiveVaults: prioritizedVaults.getCount(),
+      numLiquidatingVaults: state.liquidatingVaults.getSize(),
       totalCollateral: state.totalCollateral,
       totalDebt: state.totalDebt,
 
@@ -504,6 +519,9 @@ const helperBehavior = {
     // Start liquidation (vaultState: LIQUIDATING)
     const liquidator = state.liquidator;
     assert(liquidator);
+    state.liquidatingVaults.add(vault);
+    prioritizedVaults.removeVault(key);
+
     return liquidate(
       zcf,
       vault,
@@ -537,7 +555,7 @@ const helperBehavior = {
           state.totalShortfallReceived,
           accounting.shortfall,
         );
-        prioritizedVaults.removeVault(key);
+        state.liquidatingVaults.delete(vault);
         trace('liquidated', state.collateralBrand);
         state.numLiquidationsCompleted += 1;
         facets.helper.updateMetrics();

@@ -2596,7 +2596,8 @@ test('manager notifiers', async t => {
   trace('0. Creation');
   await m.assertInitial({
     // present
-    numVaults: 0,
+    numActiveVaults: 0,
+    numLiquidatingVaults: 0,
     totalCollateral: aeth.make(0n),
     totalDebt: run.make(0n),
 
@@ -2623,7 +2624,7 @@ test('manager notifiers', async t => {
   let { vault } = await E(vaultSeat).getOfferResult();
   m.addDebt(DEBT1);
   await m.assertChange({
-    numVaults: 1,
+    numActiveVaults: 1,
     totalCollateral: { value: AMPLE },
     totalDebt: { value: DEBT1 },
   });
@@ -2648,7 +2649,7 @@ test('manager notifiers', async t => {
   let totalProceedsReceived = 474n;
   let totalOverageReceived = totalProceedsReceived - DEBT1;
   await m.assertChange({
-    numVaults: 0,
+    numActiveVaults: 0,
     totalCollateral: { value: 0n },
     totalDebt: { value: 0n },
     numLiquidationsCompleted: 1,
@@ -2671,7 +2672,7 @@ test('manager notifiers', async t => {
   );
   ({ vault } = await E(vaultSeat).getOfferResult());
   await m.assertChange({
-    numVaults: 1,
+    numActiveVaults: 1,
     totalCollateral: { value: AMPLE },
     totalDebt: { value: DEBT1 },
   });
@@ -2691,7 +2692,7 @@ test('manager notifiers', async t => {
   );
   ({ vault } = await E(vaultSeat).getOfferResult());
   await m.assertChange({
-    numVaults: 2,
+    numActiveVaults: 2,
     totalCollateral: { value: AMPLE + ENOUGH },
     totalDebt: { value: DEBT1 + DEBT2 },
   });
@@ -2703,7 +2704,8 @@ test('manager notifiers', async t => {
   totalOverageReceived += 54n - DEBT2;
   await m.assertChange({
     numLiquidationsCompleted: 2,
-    numVaults: 1,
+    numActiveVaults: 0,
+    numLiquidatingVaults: 1,
     totalCollateral: { value: AMPLE },
     totalDebt: { value: DEBT1 },
     totalOverageReceived: { value: totalOverageReceived },
@@ -2712,7 +2714,7 @@ test('manager notifiers', async t => {
   totalProceedsReceived += 473n;
   await m.assertChange({
     numLiquidationsCompleted: 3,
-    numVaults: 0,
+    numLiquidatingVaults: 0,
     totalCollateral: { value: 0n },
     totalDebt: { value: 0n },
     totalProceedsReceived: { value: totalProceedsReceived },
@@ -2732,7 +2734,7 @@ test('manager notifiers', async t => {
   );
   ({ vault } = await E(vaultSeat).getOfferResult());
   await m.assertChange({
-    numVaults: 1,
+    numActiveVaults: 1,
     totalCollateral: { value: aeth.make(ENOUGH).value },
     totalDebt: { value: DEBT2 },
   });
@@ -2743,7 +2745,7 @@ test('manager notifiers', async t => {
   totalProceedsReceived += 53n;
   await m.assertChange({
     numLiquidationsCompleted: 4,
-    numVaults: 0,
+    numActiveVaults: 0,
     totalCollateral: { value: 0n },
     totalDebt: { value: 0n },
     totalProceedsReceived: { value: totalProceedsReceived },
@@ -2762,7 +2764,7 @@ test('manager notifiers', async t => {
   );
   ({ vault } = await E(vaultSeat).getOfferResult());
   await m.assertChange({
-    numVaults: 1,
+    numActiveVaults: 1,
     totalCollateral: { value: AMPLE },
     totalDebt: { value: DEBT1 },
   });
@@ -2785,7 +2787,7 @@ test('manager notifiers', async t => {
   );
   ({ vault } = await E(vaultSeat).getOfferResult());
   await m.assertChange({
-    numVaults: 2,
+    numActiveVaults: 2,
     totalCollateral: { value: AMPLE + ENOUGH },
     totalDebt: { value: DEBT1 + interestAccrued + DEBT2 },
   });
@@ -2799,7 +2801,8 @@ test('manager notifiers', async t => {
   totalProceedsReceived += nextProceeds;
   await m.assertChange({
     numLiquidationsCompleted: 5,
-    numVaults: 1,
+    numActiveVaults: 0,
+    numLiquidatingVaults: 1,
     totalCollateral: { value: AMPLE },
     totalDebt: { value: DEBT1 + DEBT2 + interestAccrued - nextProceeds },
     totalProceedsReceived: { value: totalProceedsReceived },
@@ -2808,7 +2811,7 @@ test('manager notifiers', async t => {
   totalProceedsReceived += nextProceeds;
   await m.assertChange({
     numLiquidationsCompleted: 6,
-    numVaults: 0,
+    numLiquidatingVaults: 0,
     totalCollateral: { value: 0n },
     totalDebt: { value: 0n },
     totalProceedsReceived: { value: totalProceedsReceived },
@@ -2833,7 +2836,7 @@ test('manager notifiers', async t => {
   ({ vault } = await E(vaultSeat).getOfferResult());
   m.addDebt(DEBT1);
   await m.assertChange({
-    numVaults: 1,
+    numActiveVaults: 1,
     totalCollateral: { value: AMPLE },
     totalDebt: { value: DEBT1 },
   });
@@ -2874,7 +2877,7 @@ test('manager notifiers', async t => {
   );
   await E(vaultSeat).getOfferResult();
   await m.assertChange({
-    numVaults: 0,
+    numActiveVaults: 0,
     totalCollateral: { value: 0n },
     totalDebt: { value: 0n },
   });

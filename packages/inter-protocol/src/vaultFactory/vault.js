@@ -49,7 +49,9 @@ const trace = makeTracer('IV', false);
  * Constants for vault phase.
  *
  * ACTIVE       - vault is in use and can be changed
- * LIQUIDATING  - vault is being liquidated by the vault manager, and cannot be changed by the user
+ * LIQUIDATING  - vault is being liquidated by the vault manager, and cannot be changed by the user.
+ *                If liquidation fails, vaults may remain in this state. An upgrade to the contract
+ *                might be able to recover them.
  * TRANSFER     - vault is able to be transferred (payments and debits frozen until it has a new owner)
  * CLOSED       - vault was closed by the user and all assets have been paid out
  * LIQUIDATED   - vault was closed by the manager, with remaining assets paid to owner
