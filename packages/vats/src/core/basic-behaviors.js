@@ -1,11 +1,11 @@
 // @ts-check
 
+import { deeplyFulfilled } from '@endo/marshal';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { Nat } from '@agoric/nat';
 import { makeScalarMapStore } from '@agoric/store';
 import { provide } from '@agoric/store/src/stores/store-utils.js';
 import { E, Far } from '@endo/far';
-import { deeplyFulfillTerms } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { makeStorageNode } from '../lib-chainStorage.js';
 import { makeNameHubKit } from '../nameHub.js';
@@ -244,11 +244,11 @@ export const makeClientBanks = async ({
     bridgeManagerP,
   ]);
 
-  const terms = await deeplyFulfillTerms({
+  const terms = await deeplyFulfilled(harden({
     agoricNames,
     namesByAddress,
     board,
-  });
+  }));
   const { creatorFacet } = await E(zoe).startInstance(
     walletFactory,
     {},

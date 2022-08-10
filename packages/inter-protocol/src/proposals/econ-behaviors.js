@@ -7,12 +7,10 @@ import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
 import { makeStorageNode } from '@agoric/vats/src/lib-chainStorage.js';
-import {
-  deeplyFulfillTerms,
-  makeRatio,
-} from '@agoric/zoe/src/contractSupport/index.js';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E, Far } from '@endo/far';
-import { Stable, Stake } from '@agoric/vats/src/tokens.js';
+import { Stake, Stable } from '@agoric/vats/src/tokens.js';
+import { deeplyFulfilled } from '@endo/marshal';
 import * as Collect from '../collect.js';
 import { makeTracer } from '../makeTracer.js';
 import { makeStakeReporter } from '../my-lien.js';
@@ -148,10 +146,10 @@ export const startInterchainPool = async (
     mgrP,
   ]);
 
-  const terms = await deeplyFulfillTerms({
+  const terms = await deeplyFulfilled(harden({
     minimumCentral: AmountMath.make(centralBrand, minimumCentral),
     amm,
-  });
+  }));
   const { instance } = await E(zoe).startInstance(
     installation,
     { Central: centralIssuer },
@@ -220,7 +218,7 @@ export const setupAmm = async (
   const storageNode = await makeStorageNode(chainStorage, AMM_STORAGE_PATH);
   const marshaller = await E(board).getPublishingMarshaller();
 
-  const ammGovernorTerms = await deeplyFulfillTerms({
+  const ammGovernorTerms = await deeplyFulfilled(harden({
     timer: chainTimerService,
     electorateInstance,
     governedContractInstallation: ammInstallation,
@@ -233,7 +231,7 @@ export const setupAmm = async (
         marshaller,
       },
     },
-  });
+  }));
 
   /** @type {{ creatorFacet: GovernedContractFacetAccess<XYKAMMPublicFacet,XYKAMMCreatorFacet>, publicFacet: GovernorPublic, instance: Instance }} */
   const g = await E(zoe).startInstance(
@@ -310,7 +308,7 @@ export const setupReserve = async ({
   const storageNode = await makeStorageNode(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
-  const reserveGovernorTerms = await deeplyFulfillTerms({
+  const reserveGovernorTerms = await deeplyFulfilled(harden({
     timer: chainTimerService,
     electorateInstance,
     governedContractInstallation: reserveInstallation,
@@ -324,7 +322,7 @@ export const setupReserve = async ({
         storageNode,
       },
     },
-  });
+  }));
   /** @type {{ creatorFacet: GovernedAssetReserveFacetAccess, publicFacet: GovernorPublic, instance: Instance }} */
   const g = await E(zoe).startInstance(
     governorInstallation,
@@ -449,7 +447,7 @@ export const startVaultFactory = async (
     },
   );
 
-  const governorTerms = await deeplyFulfillTerms({
+  const governorTerms = await deeplyFulfilled(harden({
     timer: chainTimerService,
     electorateInstance: economicCommitteeInstance,
     governedContractInstallation: vaultFactoryInstallation,
@@ -464,7 +462,7 @@ export const startVaultFactory = async (
         storageNode,
       }),
     },
-  });
+  }));
 
   const { creatorFacet: governorCreatorFacet, instance: governorInstance } =
     await E(zoe).startInstance(
@@ -644,14 +642,14 @@ export const startRewardDistributor = async ({
 }) => {
   trace('startRewardDistributor');
   const timerService = await chainTimerService;
-  const feeDistributorTerms = await deeplyFulfillTerms({
+  const feeDistributorTerms = await deeplyFulfilled(harden({
     timerService,
     collectionInterval: 60n * 60n, // 1 hour
     keywordShares: {
       RewardDistributor: 1n,
       Reserve: 1n,
     },
-  });
+  }));
 
   const [centralIssuer, centralBrand] = await Promise.all([
     centralIssuerP,
@@ -832,11 +830,11 @@ export const startStakeFactory = async (
   const storageNode = await makeStorageNode(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
-  const stakeTerms = await deeplyFulfillTerms({
+  const stakeTerms = await deeplyFulfilled(harden({
     timer: chainTimerService,
     electorateInstance,
     governedContractInstallation: stakeFactoryInstallation,
-    governed: harden({
+    governed: {
       terms: stakeFactoryTerms,
       issuerKeywordRecord: { Stake: bldIssuer },
       privateArgs: {
@@ -846,8 +844,8 @@ export const startStakeFactory = async (
         storageNode,
         marshaller,
       },
-    }),
-  });
+    },
+  }));
 
   /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<StakeFactoryPublic,StakeFactoryCreator>}} */
   const governorFacets = await E(zoe).startInstance(
