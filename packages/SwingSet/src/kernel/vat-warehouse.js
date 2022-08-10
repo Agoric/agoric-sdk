@@ -315,6 +315,8 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
       return false;
     }
     await vatKeeper.saveSnapshot(manager);
+    console.warn('EXPERIMENTAL: periodic eviction', lastVatID);
+    await evict(lastVatID);
     lastVatID = undefined;
     return true;
   }
