@@ -160,7 +160,23 @@ export const makeExportContext = () => {
     return val;
   };
 
-  let unknownNonce = 0;
+  /**
+   * @template V
+   * @param {string & keyof typeof walletObjects} kind
+   * @param {IdTable<number, V>} table
+   */
+  const makeSaver = (kind, table) => {
+    let nonce = 0;
+    /** @param {V} val */
+    const saver = val => {
+      nonce += 1;
+      initSlotVal(table, nonce, val);
+      console.log('@@@export: saved', kind, nonce);
+    };
+    return saver;
+  };
+
+  const saveUnknown = makeSaver('unknown', walletObjects.unknown);
 
   /**
    * @param {unknown} val
@@ -176,30 +192,15 @@ export const makeExportContext = () => {
       const id = walletObjects[kind].byVal.get(val);
       return makeWalletSlot(walletObjects, kind, id);
     }
-    unknownNonce += 1;
-    const slot = makeWalletSlot(walletObjects, 'unknown', unknownNonce);
-    initSlotVal(walletObjects.unknown, unknownNonce, val);
+    const seq = saveUnknown(val);
+    const slot = makeWalletSlot(walletObjects, 'unknown', seq);
     return slot;
-  };
-
-  /**
-   * @template V
-   * @param {string & keyof typeof walletObjects} kind
-   * @param {IdTable<number, V>} table
-   */
-  const makeSaver = (kind, table) => {
-    let nonce = 0;
-    /** @param {V} val */
-    const saver = val => {
-      nonce += 1;
-      initSlotVal(table, nonce, val);
-    };
-    return saver;
   };
 
   return harden({
     savePurseActions: makeSaver('purse', walletObjects.purse),
     savePaymentActions: makeSaver('payment', walletObjects.payment),
+    saveUnknown,
     /**
      * @param {number} id
      * @param {Purse} purse
@@ -334,7 +335,7 @@ export const makeImportContext = (
     initSlotVal(walletObjects.unknown, nonce, val);
     return nonce;
   };
-  const wallet = makePresence('Remotable');
+  const wallet = makePresence('Alleged: Wallet');
   registerUnknown(wallet);
 
   const all = async goals => {

@@ -4,6 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E, Far } from '@endo/far';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { isPromise, makePromiseKit } from '@endo/promise-kit';
+import { makeScalarMap } from '@agoric/store';
 import {
   makeExportContext,
   makeImportContext,
@@ -184,19 +185,20 @@ const makeWalletUI = (board, backgroundSigner, follower) => {
       msgs.push({ msg, resultP });
       const kit = makePromiseKit();
       const seq = ctx.registerUnknown(resultP);
-      console.log('registered', seq);
+      console.log('walletUI registered logging presence', seq);
       seqToKit.set(seq, kit);
       // TODO: arrange for kit.resolve() to fire when wallet state notification
       // includes an answer to this question (identified by seq???)
       return kit.promise;
     });
   const flush = async () => {
-    await null; // wait for E() stuff
-    console.warn('@@TODO: bg send', { msgs });
+    await Promise.resolve(null); // wait for E() stuff
     // eslint-disable-next-line no-use-before-define
-    const capData = ctx.fromMyWallet.serialize(harden([...msgs]));
+    const capData = ctx.fromMyWallet.serialize(
+      harden(msgs.map(({ msg }) => msg)),
+    );
     msgs.splice(0);
-    console.warn('@@TODO: bg send serialized', { capData });
+    // console.warn('@@TODO: bg send serialized', { capData });
     backgroundSigner.submitAction(JSON.stringify(capData));
   };
   const ctx = makeImportContext(flush, mkp);
@@ -206,17 +208,19 @@ const makeWalletUI = (board, backgroundSigner, follower) => {
   const agoricNames = E(walletP).getAgoricNames();
 
   (async () => {
-    for await (const { answers } of follower.getLatestIterable()) {
-      console.log('???', { answers });
-      for (const [ix, resultEnc] of answers) {
+    for await (const json of follower.getLatestIterable()) {
+      const { answers } = ctx.fromMyWallet.unserialize(JSON.parse(json));
+      for (const [ix, result] of answers) {
         if (seqToKit.has(ix)) {
           const kit = seqToKit.get(ix);
-          const result = ctx.fromMyWallet.unserialize(JSON.parse(resultEnc));
+          seqToKit.delete(ix);
+          console.log('deliver', result);
           if (result.ok) {
-            kit.resolve(result.value);
+            Promise.resolve(result.value).then(kit.resolve);
           } else {
             kit.reject(result.reason);
           }
+          console.log('pending', seqToKit);
         }
       }
     }
@@ -234,40 +238,82 @@ const makeWalletUI = (board, backgroundSigner, follower) => {
 
 test('get IST brand via agoricNames', async t => {
   const board = makeBoard(0, { prefix: 'board' });
-  const onChain = async () => {
+
+  const makeOnChain = () => {
     const brand = Far('IST brand', {});
-    await E(board).getId(brand);
+
+    const ctx = makeExportContext();
+    const nameHubState = [[['brand', 'IST'], brand]];
+    const agoricNames = Far('NameHub', {
+      lookup: async (...path) => {
+        for (const [k, v] of nameHubState) {
+          if (JSON.stringify(path) === JSON.stringify(k)) return v;
+        }
+        throw Error('not found');
+      },
+    });
+    const publicFacets = makeScalarMap();
+    const zoe = Far('Zoe Service', {
+      getPublicFacet: instance => publicFacets.get(instance),
+    });
+    const boot = Far('OnChain Wallet', {
+      getZoeService: () => zoe,
+      getAgoricNames: () => agoricNames,
+    });
+    ctx.saveUnknown(boot);
+    ctx.saveUnknown(agoricNames);
+    ctx.saveUnknown(zoe);
+
+    const answers = [];
+
+    const queryWallet = _addr => {
+      const state = harden({ purses: [], answers: [...answers] });
+      const capData = ctx.serialize(state);
+      return JSON.stringify(capData);
+    };
+
+    const registered = makePromiseKit();
+    const run = async () => {
+      const id = await E(board).getId(brand);
+      ctx.initBoardId(id, brand);
+      registered.resolve('go');
+    };
+
+    const submitActionTx = async action => {
+      const capData = JSON.parse(action);
+      await registered.promise;
+      const value = ctx.unserialize(capData);
+      console.log('TODO: deserialize, execute action', {
+        action,
+        capData,
+        value,
+      });
+      answers.push([2, { ok: true, value: agoricNames }]);
+      answers.push([3, { ok: true, value: zoe }]);
+      answers.push([4, { ok: true, value: brand }]);
+    };
+
+    return harden({
+      run,
+      submitActionTx,
+      queryWallet,
+    });
   };
+  const onChain = makeOnChain();
 
   const offChain = async () => {
-    const baton = makePromiseKit();
+    const tx1 = makePromiseKit();
+
     const bgSigner = harden({
       submitAction: action => {
-        console.log('@@submitAction', { action }); // t.log?
-        baton.resolve('go');
+        onChain.submitActionTx(action);
+        tx1.resolve('go');
       },
     });
     async function* getLatestIterable() {
-      await baton.promise;
-      yield {
-        purses: [],
-        answers: [
-          [
-            2,
-            JSON.stringify({
-              body: JSON.stringify({ ok: true, value: 'blue' }),
-              slots: [],
-            }),
-          ],
-          [
-            3,
-            JSON.stringify({
-              body: JSON.stringify({ ok: true, value: 'blue' }),
-              slots: [],
-            }),
-          ],
-        ],
-      };
+      yield onChain.queryWallet();
+      await tx1.promise;
+      yield onChain.queryWallet();
     }
     const follower = harden({
       getLatestIterable,
@@ -279,7 +325,7 @@ test('get IST brand via agoricNames', async t => {
     t.deepEqual(brand, '@@@');
   };
 
-  await Promise.all([onChain(), offChain()]);
+  await Promise.all([onChain.run(), offChain()]);
 });
 
 test.skip('get invitation amount via agoricNames, AMM public facet', async t => {
