@@ -1,6 +1,7 @@
 // eslint-disable-next-line import/order
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
 
@@ -9,7 +10,7 @@ import { makeRouter } from '../src/network/router.js';
 import {
   makeEchoConnectionHandler,
   makeLoopbackProtocolHandler,
-  makeNetworkProtocol,
+  initializeNetwork,
 } from '../src/network/network.js';
 
 // eslint-disable-next-line no-constant-condition
@@ -74,7 +75,9 @@ const makeProtocolHandler = t => {
 };
 
 test('handled protocol', async t => {
-  const protocol = makeNetworkProtocol(makeProtocolHandler(t));
+  const baggage = makeScalarBigMapStore('ersatz baggage', { durable: true });
+  const { makeNetworkProtocol } = initializeNetwork(baggage);
+  const protocol = makeNetworkProtocol('test', makeProtocolHandler(t));
 
   const closed = makePromiseKit();
   const port = await protocol.bind('/ibc/*/ordered');
@@ -104,7 +107,9 @@ test('handled protocol', async t => {
 });
 
 test('protocol connection listen', async t => {
-  const protocol = makeNetworkProtocol(makeProtocolHandler(t));
+  const baggage = makeScalarBigMapStore('ersatz baggage', { durable: true });
+  const { makeNetworkProtocol } = initializeNetwork(baggage);
+  const protocol = makeNetworkProtocol('test', makeProtocolHandler(t));
 
   const closed = makePromiseKit();
 
@@ -190,7 +195,12 @@ test('protocol connection listen', async t => {
 });
 
 test('loopback protocol', async t => {
-  const protocol = makeNetworkProtocol(makeLoopbackProtocolHandler());
+  const baggage = makeScalarBigMapStore('ersatz baggage', { durable: true });
+  const { makeNetworkProtocol } = initializeNetwork(baggage);
+  const protocol = makeNetworkProtocol(
+    'loopback',
+    makeLoopbackProtocolHandler(),
+  );
 
   const closed = makePromiseKit();
 
@@ -231,7 +241,8 @@ test('loopback protocol', async t => {
 });
 
 test('routing', async t => {
-  const router = makeRouter();
+  const baggage = makeScalarBigMapStore('ersatz baggage', { durable: true });
+  const router = makeRouter(baggage);
   t.deepEqual(router.getRoutes('/if/local'), [], 'get routes matches none');
   router.register('/if/', 'a');
   t.deepEqual(

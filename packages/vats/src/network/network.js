@@ -1,10 +1,16 @@
 // @ts-check
 
-import { makeScalarMap, makeLegacyMap } from '@agoric/store';
+import { makeScalarMap } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assert, details as X } from '@agoric/assert';
+import {
+  makeScalarBigMapStore,
+  makeScalarBigSetStore,
+  vivifyKind,
+  vivifyKindMulti,
+} from '@agoric/vat-data';
 import { toBytes } from './bytes.js';
 
 import '@agoric/store/exported.js';
@@ -209,309 +215,391 @@ export function getPrefixes(addr) {
 }
 
 /**
- * Create a protocol that has a handler.
- *
- * @param {ProtocolHandler} protocolHandler
- * @returns {Protocol} the local capability for connecting and listening
+ * @enum {number}
  */
-export function makeNetworkProtocol(protocolHandler) {
-  /** @type {LegacyMap<Port, Set<Closable>>} */
-  // Legacy because we're storing a JS Set
-  const currentConnections = makeLegacyMap('port');
+const RevokeState = {
+  NOT_REVOKED: 0,
+  REVOKING: 1,
+  REVOKED: 2,
+};
 
-  /**
-   * Currently must be a single listenHandler.
-   * TODO: Do something sensible with multiple handlers?
-   *
-   * @type {Store<Endpoint, [Port, ListenHandler]>}
-   */
-  const listening = makeScalarMap('localAddr');
+export function initializeNetwork(baggage) {
+  const makePort = vivifyKind(
+    baggage,
+    'port',
+    (
+      localAddr,
+      listening,
+      currentConnections,
+      boundPorts,
+      protocolHandler,
+      protocolImpl,
+    ) => ({
+      localAddr,
+      listening,
+      currentConnections,
+      boundPorts,
+      protocolHandler,
+      protocolImpl,
+      /**
+       * @type {RevokeState}
+       */
+      revoked: RevokeState.NOT_REVOKED,
 
-  /**
-   * @type {Store<string, Port>}
-   */
-  const boundPorts = makeScalarMap('localAddr');
+      openConnections: makeScalarBigSetStore('openConnections', {
+        durable: true,
+      }),
+    }),
+    {
+      getLocalAddress({ state }) {
+        // Works even after revoke().
+        return state.localAddr;
+      },
+      async addListener({ state, self }, listenHandler) {
+        assert(!state.revoked, X`Port ${state.localAddr} is revoked`);
+        assert(listenHandler, X`listenHandler is not defined`, TypeError);
+        if (state.listening.has(state.localAddr)) {
+          // Last one wins.
+          const [lport, lhandler] = state.listening.get(state.localAddr);
+          if (lhandler === listenHandler) {
+            return;
+          }
+          state.listening.set(state.localAddr, harden([self, listenHandler]));
+          E(lhandler).onRemove(lport, lhandler).catch(rethrowUnlessMissing);
+        } else {
+          state.listening.init(state.localAddr, harden([self, listenHandler]));
+        }
 
-  /**
-   * @param {Endpoint} localAddr
-   */
-  const bind = async localAddr => {
+        // TODO: Check that the listener defines onAccept.
+
+        await E(state.protocolHandler).onListen(
+          self,
+          state.localAddr,
+          listenHandler,
+          state.protocolHandler,
+        );
+        await E(listenHandler)
+          .onListen(self, listenHandler)
+          .catch(rethrowUnlessMissing);
+      },
+      async removeListener({ state, self }, listenHandler) {
+        assert(
+          state.listening.has(state.localAddr),
+          X`Port ${state.localAddr} is not listening`,
+        );
+        assert(
+          state.listening.get(state.localAddr)[1] === listenHandler,
+          X`Port ${state.localAddr} handler to remove is not listening`,
+        );
+        state.listening.delete(state.localAddr);
+        await E(state.protocolHandler).onListenRemove(
+          self,
+          state.localAddr,
+          listenHandler,
+          state.protocolHandler,
+        );
+        await E(listenHandler)
+          .onRemove(self, listenHandler)
+          .catch(rethrowUnlessMissing);
+      },
+      async connect({ state, self }, remotePort, connectionHandler = {}) {
+        assert(!state.revoked, X`Port ${state.localAddr} is revoked`);
+        /**
+         * @type {Endpoint}
+         */
+        const dst = harden(remotePort);
+        // eslint-disable-next-line no-use-before-define
+        const conn = await state.protocolImpl.outbound(
+          self,
+          dst,
+          connectionHandler,
+        );
+        if (state.revoked) {
+          void E(conn).close();
+        } else {
+          // XXX The next line adds to the `openConnections` set, but nowhere is
+          // anything ever removed from this set, nor is the set ever consulted
+          // for anything.  I suspect this is in support of some anticipated but
+          // currently unimplemented feature that might get filled in at some
+          // future time, but for now is a monotonically growing collection
+          // something really we want?  (It's possible that this is not an issue
+          // because the cardinality is expected to always be low, but still...)
+          state.openConnections.add(conn);
+        }
+        return conn;
+      },
+      async revoke({ state, self }) {
+        assert(
+          state.revoked !== RevokeState.REVOKED,
+          X`Port ${state.localAddr} is already revoked`,
+        );
+        state.revoked = RevokeState.REVOKING;
+        await E(state.protocolHandler).onRevoke(
+          self,
+          state.localAddr,
+          state.protocolHandler,
+        );
+        state.revoked = RevokeState.REVOKED;
+
+        // Clean up everything we did.
+        const conns = state.currentConnections.get(self).values();
+        const ps = [...conns].map(conn =>
+          E(conn)
+            .close()
+            .catch(_ => {}),
+        );
+        if (state.listening.has(state.localAddr)) {
+          const listener = state.listening.get(state.localAddr)[1];
+          ps.push(self.removeListener(listener));
+        }
+        await Promise.all(ps);
+        state.currentConnections.delete(self);
+        state.boundPorts.delete(state.localAddr);
+        return `Port ${state.localAddr} revoked`;
+      },
+    },
+  );
+
+  async function bind({ state, facets }, localAddr) {
     // Check if we are underspecified (ends in slash)
     if (localAddr.endsWith(ENDPOINT_SEPARATOR)) {
       for (;;) {
-        // eslint-disable-next-line no-await-in-loop
-        const portID = await E(protocolHandler).generatePortID(
+        // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
+        const portID = await E(state.protocolHandler).generatePortID(
           localAddr,
-          protocolHandler,
+          state.protocolHandler,
         );
         const newAddr = `${localAddr}${portID}`;
-        if (!boundPorts.has(newAddr)) {
+        if (!state.boundPorts.has(newAddr)) {
           localAddr = newAddr;
           break;
         }
       }
     }
 
-    if (boundPorts.has(localAddr)) {
-      return boundPorts.get(localAddr);
+    if (state.boundPorts.has(localAddr)) {
+      return state.boundPorts.get(localAddr);
     }
-
-    /**
-     * @enum {number}
-     */
-    const RevokeState = {
-      NOT_REVOKED: 0,
-      REVOKING: 1,
-      REVOKED: 2,
-    };
-
-    /**
-     * @type {RevokeState}
-     */
-    let revoked = RevokeState.NOT_REVOKED;
-    const openConnections = new Set();
 
     /**
      * @type {Port}
      */
-    const port = Far('Port', {
-      getLocalAddress() {
-        // Works even after revoke().
-        return localAddr;
-      },
-      async addListener(listenHandler) {
-        assert(!revoked, X`Port ${localAddr} is revoked`);
-        assert(listenHandler, X`listenHandler is not defined`, TypeError);
-        if (listening.has(localAddr)) {
-          // Last one wins.
-          const [lport, lhandler] = listening.get(localAddr);
-          if (lhandler === listenHandler) {
-            return;
-          }
-          listening.set(localAddr, [port, listenHandler]);
-          E(lhandler).onRemove(lport, lhandler).catch(rethrowUnlessMissing);
-        } else {
-          listening.init(localAddr, [port, listenHandler]);
-        }
+    const port = makePort(
+      localAddr,
+      state.listening,
+      state.currentConnections,
+      state.boundPorts,
+      state.protocolHandler,
+      facets.protocolImpl,
+    );
 
-        // TODO: Check that the listener defines onAccept.
-
-        await E(protocolHandler).onListen(
-          port,
-          localAddr,
-          listenHandler,
-          protocolHandler,
-        );
-        await E(listenHandler)
-          .onListen(port, listenHandler)
-          .catch(rethrowUnlessMissing);
-      },
-      async removeListener(listenHandler) {
-        assert(listening.has(localAddr), X`Port ${localAddr} is not listening`);
-        assert(
-          listening.get(localAddr)[1] === listenHandler,
-          X`Port ${localAddr} handler to remove is not listening`,
-        );
-        listening.delete(localAddr);
-        await E(protocolHandler).onListenRemove(
-          port,
-          localAddr,
-          listenHandler,
-          protocolHandler,
-        );
-        await E(listenHandler)
-          .onRemove(port, listenHandler)
-          .catch(rethrowUnlessMissing);
-      },
-      async connect(remotePort, connectionHandler = {}) {
-        assert(!revoked, X`Port ${localAddr} is revoked`);
-        /**
-         * @type {Endpoint}
-         */
-        const dst = harden(remotePort);
-        // eslint-disable-next-line no-use-before-define
-        const conn = await protocolImpl.outbound(port, dst, connectionHandler);
-        if (revoked) {
-          void E(conn).close();
-        } else {
-          openConnections.add(conn);
-        }
-        return conn;
-      },
-      async revoke() {
-        assert(
-          revoked !== RevokeState.REVOKED,
-          X`Port ${localAddr} is already revoked`,
-        );
-        revoked = RevokeState.REVOKING;
-        await E(protocolHandler).onRevoke(port, localAddr, protocolHandler);
-        revoked = RevokeState.REVOKED;
-
-        // Clean up everything we did.
-        const ps = [...currentConnections.get(port)].map(conn =>
-          E(conn)
-            .close()
-            .catch(_ => {}),
-        );
-        if (listening.has(localAddr)) {
-          const listener = listening.get(localAddr)[1];
-          ps.push(port.removeListener(listener));
-        }
-        await Promise.all(ps);
-        currentConnections.delete(port);
-        boundPorts.delete(localAddr);
-        return `Port ${localAddr} revoked`;
-      },
-    });
-
-    await E(protocolHandler).onBind(port, localAddr, protocolHandler);
-    boundPorts.init(localAddr, port);
-    currentConnections.init(port, new Set());
+    await E(state.protocolHandler).onBind(
+      port,
+      localAddr,
+      state.protocolHandler,
+    );
+    state.boundPorts.init(localAddr, port);
+    state.currentConnections.init(
+      port,
+      makeScalarBigSetStore('ports', { durable: true }),
+    );
     return port;
-  };
+  }
 
   /**
-   * @type {ProtocolImpl}
+   * Create a protocol that has a handler.
+   *
+   * @param {string} protocolName
+   * @param {ProtocolHandler} protocolHandler
+   * @returns {Protocol} the local capability for connecting and listening
    */
-  const protocolImpl = Far('ProtocolImpl', {
-    bind,
-    async inbound(listenAddr, remoteAddr) {
-      let lastFailure = Error(`No listeners for ${listenAddr}`);
-      for (const listenPrefix of getPrefixes(listenAddr)) {
-        if (!listening.has(listenPrefix)) {
-          // eslint-disable-next-line no-continue
-          continue;
-        }
-        const [port, listener] = listening.get(listenPrefix);
-        let localAddr;
-        try {
-          // See if our protocol is willing to receive this connection.
-          // eslint-disable-next-line no-await-in-loop
-          const localInstance = await E(protocolHandler)
-            .onInstantiate(port, listenPrefix, remoteAddr, protocolHandler)
-            .catch(rethrowUnlessMissing);
-          localAddr = localInstance
-            ? `${listenAddr}/${localInstance}`
-            : listenAddr;
-        } catch (e) {
-          lastFailure = e;
-          // eslint-disable-next-line no-continue
-          continue;
-        }
-        // We have a legitimate inbound attempt.
-        let consummated;
-        const current = currentConnections.get(port);
-        const inboundAttempt = Far('InboundAttempt', {
-          getLocalAddress() {
-            // Return address metadata.
-            return localAddr;
-          },
-          getRemoteAddress() {
-            return remoteAddr;
-          },
-          async close() {
-            if (consummated) {
-              throw consummated;
+  const makeNetworkProtocolCohort = vivifyKindMulti(
+    baggage,
+    'networkProtocol',
+    (protocolName, protocolHandler) => ({
+      /** @type {LegacyMap<Port, Set<Closable>>} */
+      // Legacy because we're storing a JS Set
+      currentConnections: makeScalarBigMapStore(
+        `${protocolName}-currentConnections`,
+        { durable: true },
+      ),
+
+      /**
+       * Currently must be a single listenHandler.
+       * TODO: Do something sensible with multiple handlers?
+       *
+       * @type {Store<Endpoint, [Port, ListenHandler]>}
+       */
+      listening: makeScalarBigMapStore(`${protocolName}-listening`, {
+        durable: true,
+      }),
+
+      /**
+       * @type {Store<string, Port>}
+       */
+      boundPorts: makeScalarBigMapStore(`${protocolName}-boundPorts`, {
+        durable: true,
+      }),
+
+      protocolHandler,
+    }),
+    {
+      networkProtocol: {
+        bind,
+      },
+      protocolImpl: {
+        bind,
+        inbound: async ({ state }, listenAddr, remoteAddr) => {
+          let lastFailure = Error(`No listeners for ${listenAddr}`);
+          for (const listenPrefix of getPrefixes(listenAddr)) {
+            if (!state.listening.has(listenPrefix)) {
+              // eslint-disable-next-line no-continue
+              continue;
             }
-            consummated = Error(`Already closed`);
-            current.delete(inboundAttempt);
-            await E(listener)
-              .onReject(port, localAddr, remoteAddr, listener)
-              .catch(rethrowUnlessMissing);
-          },
-          async accept({
-            localAddress = localAddr,
+            const [port, listener] = state.listening.get(listenPrefix);
+            let localAddr;
+            try {
+              // See if our protocol is willing to receive this connection.
+              // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
+              const localInstance = await E(state.protocolHandler)
+                .onInstantiate(
+                  port,
+                  listenPrefix,
+                  remoteAddr,
+                  state.protocolHandler,
+                )
+                .catch(rethrowUnlessMissing);
+              localAddr = localInstance
+                ? `${listenAddr}/${localInstance}`
+                : listenAddr;
+            } catch (e) {
+              lastFailure = e;
+              // eslint-disable-next-line no-continue
+              continue;
+            }
+            // We have a legitimate inbound attempt.
+            let consummated;
+            const current = state.currentConnections.get(port);
+            const inboundAttempt = Far('InboundAttempt', {
+              getLocalAddress() {
+                // Return address metadata.
+                return localAddr;
+              },
+              getRemoteAddress() {
+                return remoteAddr;
+              },
+              async close() {
+                if (consummated) {
+                  throw consummated;
+                }
+                consummated = Error(`Already closed`);
+                current.delete(inboundAttempt);
+                await E(listener)
+                  .onReject(port, localAddr, remoteAddr, listener)
+                  .catch(rethrowUnlessMissing);
+              },
+              async accept({
+                localAddress = localAddr,
+                remoteAddress = remoteAddr,
+                handler: rchandler,
+              }) {
+                if (consummated) {
+                  throw consummated;
+                }
+                consummated = Error(`Already accepted`);
+                current.delete(inboundAttempt);
+
+                const lchandler = await E(listener).onAccept(
+                  port,
+                  localAddr,
+                  remoteAddr,
+                  listener,
+                );
+
+                return crossoverConnection(
+                  lchandler,
+                  localAddress,
+                  rchandler,
+                  remoteAddress,
+                  current,
+                )[1];
+              },
+            });
+            current.add(inboundAttempt);
+            return inboundAttempt;
+          }
+          throw lastFailure;
+        },
+        outbound: async ({ state, facets }, port, remoteAddr, lchandler) => {
+          const localAddr =
+            /** @type {string} */
+            (await E(port).getLocalAddress());
+
+          // Allocate a local address.
+          const initialLocalInstance = await E(state.protocolHandler)
+            .onInstantiate(port, localAddr, remoteAddr, state.protocolHandler)
+            .catch(rethrowUnlessMissing);
+          const initialLocalAddr = initialLocalInstance
+            ? `${localAddr}/${initialLocalInstance}`
+            : localAddr;
+
+          let lastFailure;
+          try {
+            // Attempt the loopback connection.
+            // eslint-disable-next-line @jessie.js/no-nested-await
+            const attempt = await facets.protocolImpl.inbound(
+              remoteAddr,
+              initialLocalAddr,
+            );
+            return attempt.accept({ handler: lchandler });
+          } catch (e) {
+            lastFailure = e;
+          }
+
+          const {
             remoteAddress = remoteAddr,
             handler: rchandler,
-          }) {
-            if (consummated) {
-              throw consummated;
-            }
-            consummated = Error(`Already accepted`);
-            current.delete(inboundAttempt);
-
-            const lchandler = await E(listener).onAccept(
-              port,
-              localAddr,
-              remoteAddr,
-              listener,
+            localAddress = localAddr,
+          } =
+            /** @type {Partial<AttemptDescription>} */
+            (
+              await E(state.protocolHandler).onConnect(
+                port,
+                initialLocalAddr,
+                remoteAddr,
+                lchandler,
+                state.protocolHandler,
+              )
             );
 
-            return crossoverConnection(
-              lchandler,
-              localAddress,
-              rchandler,
-              remoteAddress,
-              current,
-            )[1];
-          },
-        });
-        current.add(inboundAttempt);
-        return inboundAttempt;
-      }
-      throw lastFailure;
-    },
-    async outbound(port, remoteAddr, lchandler) {
-      const localAddr =
-        /** @type {string} */
-        (await E(port).getLocalAddress());
+          if (!rchandler) {
+            throw lastFailure;
+          }
 
-      // Allocate a local address.
-      const initialLocalInstance = await E(protocolHandler)
-        .onInstantiate(port, localAddr, remoteAddr, protocolHandler)
-        .catch(rethrowUnlessMissing);
-      const initialLocalAddr = initialLocalInstance
-        ? `${localAddr}/${initialLocalInstance}`
-        : localAddr;
-
-      let lastFailure;
-      try {
-        // Attempt the loopback connection.
-        const attempt = await protocolImpl.inbound(
-          remoteAddr,
-          initialLocalAddr,
-        );
-        return attempt.accept({ handler: lchandler });
-      } catch (e) {
-        lastFailure = e;
-      }
-
-      const {
-        remoteAddress = remoteAddr,
-        handler: rchandler,
-        localAddress = localAddr,
-      } =
-        /** @type {Partial<AttemptDescription>} */
-        (
-          await E(protocolHandler).onConnect(
-            port,
-            initialLocalAddr,
-            remoteAddr,
+          const current = state.currentConnections.get(port);
+          return crossoverConnection(
             lchandler,
-            protocolHandler,
-          )
-        );
-
-      if (!rchandler) {
-        throw lastFailure;
-      }
-
-      const current = currentConnections.get(port);
-      return crossoverConnection(
-        lchandler,
-        localAddress,
-        rchandler,
-        remoteAddress,
-        current,
-      )[0];
+            localAddress,
+            rchandler,
+            remoteAddress,
+            current,
+          )[0];
+        },
+      },
     },
-  });
-
-  // Wire up the local protocol to the handler.
-  void E(protocolHandler).onCreate(protocolImpl, protocolHandler);
-
-  // Return the user-facing protocol.
-  return Far('binder', { bind });
+    {
+      finish: ({ state, facets }) => {
+        // Wire up the local protocol to the handler.
+        void E(state.protocolHandler).onCreate(
+          facets.protocolImpl,
+          state.protocolHandler,
+        );
+      },
+    },
+  );
+  const makeNetworkProtocol = (protocolName, protocolHandler) =>
+    makeNetworkProtocolCohort(protocolName, protocolHandler).networkProtocol;
+  return { makeNetworkProtocol };
 }
 
 /**

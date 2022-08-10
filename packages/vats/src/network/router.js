@@ -2,12 +2,15 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeStore } from '@agoric/store';
+import { provide } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
-import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network.js';
+import { makeScalarBigMapStore, vivifySingleton } from '@agoric/vat-data';
+import { initializeNetwork, ENDPOINT_SEPARATOR } from './network.js';
 
 import '@agoric/store/exported.js';
 import './types.js';
+
+/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 /**
  * @typedef {object} Router A delimited string router implementation
@@ -19,13 +22,16 @@ import './types.js';
 /**
  * Create a slash-delimited router.
  *
+ * @param {Baggage} baggage
  * @returns {Router} a new Router
  */
-export function makeRouter() {
+export function makeRouter(baggage) {
   /**
    * @type {Store<string, any>}
    */
-  const prefixToRoute = makeStore('prefix');
+  const prefixToRoute = provide(baggage, 'prefixToRoute', () =>
+    makeScalarBigMapStore('prefixToRoute', { durable: true }),
+  );
   return Far('Router', {
     getRoutes(addr) {
       const parts = addr.split(ENDPOINT_SEPARATOR);
@@ -63,25 +69,35 @@ export function makeRouter() {
     },
   });
 }
+
 /**
  * @typedef {object} RouterProtocol
  * @property {(prefix: string) => Promise<Port>} bind
- * @property {(paths: string[], protocolHandler: ProtocolHandler) => void} registerProtocolHandler
+ * @property {(paths: string[], protocolName: string, protocolHandler: ProtocolHandler) => void} registerProtocolHandler
  * @property {(prefix: string, protocolHandler: ProtocolHandler) => void} unregisterProtocolHandler
  */
 
 /**
  * Create a router that behaves like a Protocol.
  *
+ * @param {Baggage} baggage
  * @returns {RouterProtocol} The new delegated protocol
  */
-export function makeRouterProtocol() {
-  const router = makeRouter();
-  const protocols = makeStore('prefix'); // XXX what is this for?  The collection is mainained but not actually used.  Is it a GC thing or something in anticipation of future features or a mistake?
-  const protocolHandlers = makeStore('prefix');
+export function makeRouterProtocol(baggage) {
+  const router = vivifySingleton(baggage, 'router', makeRouter(baggage));
+  // XXX what is `protocols` for?  The collection is maintained but the contents
+  // are not actually used.  Is it a GC thing or something in anticipation of
+  // future features or a mistake?
+  const protocols = provide(baggage, 'protocols', () =>
+    makeScalarBigMapStore('protocols', { durable: true }),
+  );
+  const protocolHandlers = provide(baggage, 'protocolHandlers', () =>
+    makeScalarBigMapStore('protocolHandlers', { durable: true }),
+  );
+  const { makeNetworkProtocol } = initializeNetwork(baggage);
 
-  function registerProtocolHandler(paths, protocolHandler) {
-    const protocol = makeNetworkProtocol(protocolHandler);
+  function registerProtocolHandler(paths, protocolName, protocolHandler) {
+    const protocol = makeNetworkProtocol(protocolName, protocolHandler);
     for (const prefix of paths) {
       router.register(prefix, protocol);
       protocols.init(prefix, protocol);

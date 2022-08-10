@@ -3,9 +3,10 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import path from 'path';
 import { E, Far } from '@endo/far';
 import {
-  makeNetworkProtocol,
+  initializeNetwork,
   makeLoopbackProtocolHandler,
 } from '@agoric/vats/src/network/network.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
@@ -77,7 +78,12 @@ async function testRemotePeg(t) {
    * @type {import('../src/pegasus').Pegasus}
    */
   const pegasus = publicAPI;
-  const network = makeNetworkProtocol(makeLoopbackProtocolHandler());
+  const baggage = makeScalarBigMapStore('ersatz baggage', { durable: true });
+  const { makeNetworkProtocol } = initializeNetwork(baggage);
+  const network = makeNetworkProtocol(
+    'loopback',
+    makeLoopbackProtocolHandler(),
+  );
 
   const portP = E(network).bind('/ibc-channel/chanabc/ibc-port/portdef');
   const portName = await E(portP).getLocalAddress();

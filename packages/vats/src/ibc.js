@@ -1,13 +1,10 @@
 // @ts-check
 
-import {
-  dataToBase64,
-  base64ToBytes,
-} from './network/bytes.js';
 import { makeStore, makeLegacyMap } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/far';
+import { dataToBase64, base64ToBytes } from './network/bytes.js';
 
 import '@agoric/store/exported.js';
 import './network/types.js';
@@ -381,6 +378,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
           const attemptP = E(protocolImpl).inbound(localAddr, remoteAddr);
 
           // Tell what version string we negotiated.
+          // eslint-disable-next-line @jessie.js/no-nested-await
           const attemptedLocal = await E(attemptP).getLocalAddress();
           const match = attemptedLocal.match(
             // Match:  ... /ORDER/VERSION ...
@@ -495,6 +493,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
             rPortID,
             order,
           );
+          // eslint-disable-next-line @jessie.js/no-nested-await
           const localAddr = await E(attemptP).getLocalAddress();
           E(attemptP).accept({
             localAddress: `${localAddr}/ibc-channel/${channelID}`,
@@ -514,6 +513,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
           const connP = channelKeyToConnP.get(channelKey);
           const data = base64ToBytes(data64);
 
+          // eslint-disable-next-line @jessie.js/no-nested-await
           await E(connP)
             .send(data)
             .then(ack => {

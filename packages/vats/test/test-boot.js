@@ -8,6 +8,7 @@ import {
   zcfBundleCap,
 } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { makeZoeKit } from '@agoric/zoe';
 import { buildRootObject } from '../src/core/boot.js';
@@ -128,7 +129,10 @@ const testRole = (ROLE, governanceActions) => {
             // preferred way to pass the name.
             vatParameters.zcfBundleName = 'zcf';
           }
-          return { root: buildRoot({}, vatParameters), admin: {} };
+          const baggage = makeScalarBigMapStore('ersatz baggage', {
+            durable: true,
+          });
+          return { root: buildRoot({}, vatParameters, baggage), admin: {} };
         }
       }
     };

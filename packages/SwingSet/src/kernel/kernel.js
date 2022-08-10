@@ -158,6 +158,7 @@ export default function buildKernel(
   harden(testLog);
 
   function makeSourcedConsole(vatID) {
+    // return console; // uncomment this line to force debug output in extremis
     const origConsole = makeConsole(args => {
       const source = args.shift();
       return `${debugPrefix}SwingSet:${source}:${vatID}`;

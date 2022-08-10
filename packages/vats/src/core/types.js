@@ -248,7 +248,7 @@
  * @typedef {ERef<ReturnType<import('../vat-provisioning.js').buildRootObject>>} ProvisioningVat
  * @typedef {ERef<ReturnType<import('../vat-mints.js').buildRootObject>>} MintsVat
  * @typedef {ERef<ReturnType<import('../vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat
- * @typedef {ERef<ReturnType<import('../vat-network.js').buildRootObject>>} NetworkVat
+ * @typedef {ERef<ReturnType<import('../network/vat-network.js').buildRootObject>>} NetworkVat
  * @typedef {ERef<ReturnType<import('../vat-ibc.js').buildRootObject>>} IBCVat
  * @typedef { import('@agoric/zoe/tools/priceAuthorityRegistry').PriceAuthorityRegistryAdmin } PriceAuthorityRegistryAdmin
  */

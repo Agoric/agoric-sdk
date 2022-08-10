@@ -35,8 +35,11 @@
     "@agoric/sharing-service": "^0.2.2",
     "@agoric/store": "^0.7.2",
     "@agoric/swingset-vat": "^0.28.0",
+    "@agoric/vat-data": "^0.3.1",
     "@agoric/wallet-backend": "^0.12.1",
     "@agoric/zoe": "^0.24.0",
+    "@endo/base64": "^0.2.27",
+    "@endo/eventual-send": "^0.15.5",
     "@endo/far": "^0.2.5",
     "@endo/import-bundle": "^0.2.47",
     "@endo/init": "^0.5.43",
@@ -68,6 +71,7 @@
     "files": [
       "test/**/test-*.js"
     ],
+    "workerThreads": false,
     "timeout": "20m"
   }
 }

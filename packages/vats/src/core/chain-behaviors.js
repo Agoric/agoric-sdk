@@ -8,13 +8,13 @@ import {
   makeSubscriptionKit,
   observeIteration,
 } from '@agoric/notifier';
+import { importBundle } from '@endo/import-bundle';
+import * as Collect from '@agoric/inter-protocol/src/collect.js';
 import {
   makeLoopbackProtocolHandler,
   makeEchoConnectionHandler,
   makeNonceMaker,
 } from '../network/network.js';
-import { importBundle } from '@endo/import-bundle';
-import * as Collect from '@agoric/inter-protocol/src/collect.js';
 
 import { makeBridgeManager as makeBridgeManagerKit } from '../bridge.js';
 import * as BRIDGE_ID from '../bridge-ids.js';
@@ -337,6 +337,7 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
   ps.push(
     E(vats.network).registerProtocolHandler(
       ['/local'],
+      'local',
       makeLoopbackProtocolHandler(),
     ),
   );
@@ -352,11 +353,13 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
         });
       },
     });
+    // eslint-disable-next-line @jessie.js/no-nested-await
     const ibcHandler = await E(vats.ibc).createInstance(callbacks);
     dibcBridgeManager.register(BRIDGE_ID.DIBC, ibcHandler);
     ps.push(
       E(vats.network).registerProtocolHandler(
         ['/ibc-port', '/ibc-hop'],
+        'ibc',
         ibcHandler,
       ),
     );
@@ -364,7 +367,9 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
     const loHandler = makeLoopbackProtocolHandler(
       makeNonceMaker('ibc-channel/channel-'),
     );
-    ps.push(E(vats.network).registerProtocolHandler(['/ibc-port'], loHandler));
+    ps.push(
+      E(vats.network).registerProtocolHandler(['/ibc-port'], 'ibc', loHandler),
+    );
   }
   await Promise.all(ps);
 
