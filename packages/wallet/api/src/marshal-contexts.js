@@ -119,19 +119,19 @@ export const makeExportContext = () => {
   const walletObjects = {
     /** @type {IdTable<number, Purse>} */
     purse: {
-      bySlot: makeScalarMap(),
-      byVal: makeScalarMap(),
+      bySlot: makeScalarMap('purseSlot'),
+      byVal: makeScalarMap('purse'),
     },
     /** @type {IdTable<number, Payment>} */
     payment: {
-      bySlot: makeScalarMap(),
-      byVal: makeScalarMap(),
+      bySlot: makeScalarMap('paymentSlot'),
+      byVal: makeScalarMap('payment'),
     },
     // TODO: offer, contact, dapp
     /** @type {IdTable<number, unknown>} */
     unknown: {
-      bySlot: makeScalarMap(),
-      byVal: makeScalarMap(),
+      bySlot: makeScalarMap('unknownSlot'),
+      byVal: makeScalarMap('unknown'),
     },
   };
   /** @type {IdTable<BoardId, unknown>} */
