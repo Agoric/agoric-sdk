@@ -255,15 +255,28 @@ const makePatternKit = () => {
 
   // /////////////////////// matches ///////////////////////////////////////////
 
-  /** @type {CheckMatches} */
-  const checkMatches = (specimen, patt, check = x => x) => {
+  /**
+   * @param {Passable} specimen
+   * @param {Pattern} pattern
+   * @param {Checker=} check
+   * @param {string|number} [label]
+   * @returns {boolean}
+   */
+  const checkMatches = (specimen, pattern, check = x => x, label = undefined) =>
+    // eslint-disable-next-line no-use-before-define
+    applyLabelingError(checkMatchesInternal, [specimen, pattern, check], label);
+
+  /**
+   * @param {Passable} specimen
+   * @param {Pattern} patt
+   * @param {Checker=} check
+   * @returns {boolean}
+   */
+  const checkMatchesInternal = (specimen, patt, check = x => x) => {
     if (isKey(patt)) {
       // Takes care of all patterns which are keys, so the rest of this
       // logic can assume patterns that are not key.
-      return check(
-        keyEQ(specimen, patt),
-        X`${specimen} - Must be equivalent to: ${patt}`,
-      );
+      return check(keyEQ(specimen, patt), X`${specimen} - Must be: ${patt}`);
     }
     assertPattern(patt);
     const specStyle = passStyleOf(specimen);
@@ -283,7 +296,7 @@ const makePatternKit = () => {
             X`Array ${specimen} - Must be as long as copyArray pattern: ${patt}`,
           );
         }
-        return patt.every((p, i) => checkMatches(specimen[i], p, check));
+        return patt.every((p, i) => checkMatches(specimen[i], p, check, i));
       }
       case 'copyRecord': {
         if (specStyle !== 'copyRecord') {
@@ -295,12 +308,32 @@ const makePatternKit = () => {
         const [specNames, specValues] = recordParts(specimen);
         const [pattNames, pattValues] = recordParts(patt);
         if (!keyEQ(specNames, pattNames)) {
+          const specNameSet = new Set(specNames);
+          const missing = pattNames.filter(name => !specNameSet.has(name));
+          if (missing.length >= 1) {
+            return check(
+              false,
+              X`${specimen} - Must have missing properties ${q(missing)}`,
+            );
+          }
+          const passNameSet = new Set(pattNames);
+          const unexpected = specNames.filter(name => !passNameSet.has(name));
+          assert(
+            unexpected.length >= 1,
+            X`Internal: must have either missing or extra: ${q(
+              specNames,
+            )} vs ${q(pattNames)}`,
+          );
           return check(
             false,
-            X`Record ${specimen} - Must have same property names as record pattern: ${patt}`,
+            X`${specimen} - Must not have unexpected properties: ${q(
+              unexpected,
+            )}`,
           );
         }
-        return checkMatches(specValues, pattValues, check);
+        return pattNames.every((label, i) =>
+          checkMatches(specValues[i], pattValues[i], check, label),
+        );
       }
       case 'tagged': {
         const pattTag = getTag(patt);
@@ -338,7 +371,7 @@ const makePatternKit = () => {
               patt.payload.length === 1,
               X`Non-singleton copySets with matcher not yet implemented: ${patt}`,
             );
-            return checkMatches(specPayload[0], pattPayload[0], check);
+            return checkMatches(specPayload[0], pattPayload[0], check, 0);
           }
           case 'copyMap': {
             if (!checkCopySet(specimen, check)) {
@@ -376,11 +409,10 @@ const makePatternKit = () => {
   /**
    * @param {Passable} specimen
    * @param {Pattern} patt
-   * @param {string} [label]
+   * @param {string|number} [label]
    */
-  const fit = (specimen, patt, label = undefined) => {
-    applyLabelingError(checkMatches, [specimen, patt, assertChecker], label);
-  };
+  const fit = (specimen, patt, label = undefined) =>
+    checkMatches(specimen, patt, assertChecker, label);
 
   // /////////////////////// getRankCover //////////////////////////////////////
 
@@ -494,6 +526,49 @@ const makePatternKit = () => {
     return getPassStyleCover(passStyle);
   };
 
+  /**
+   * @typedef {string} Kind
+   * It is either a PassStyle other than 'tagged', or, if the underlying
+   * PassStyle is 'tagged', then the `getTag` value.
+   *
+   * We cannot further restrict this to only possible passStyles
+   * or known tags, because we wish to allow matching of tags that we
+   * don't know ahead of time. Do we need to separate the namespaces?
+   * TODO are we asking for trouble by lumping passStyles and tags
+   * together into kinds?
+   */
+
+  /**
+   * @param {Passable} specimen
+   * @returns {Kind}
+   */
+  const kindOf = specimen => {
+    const style = passStyleOf(specimen);
+    if (style === 'tagged') {
+      return getTag(specimen);
+    } else {
+      return style;
+    }
+  };
+
+  /**
+   * @param {Passable} specimen
+   * @param {Kind} kind
+   * @param {Checker} [check]
+   */
+  const checkKind = (specimen, kind, check = x => x) => {
+    const specimenKind = kindOf(specimen);
+    if (specimenKind === kind) {
+      return true;
+    }
+    const details = X(
+      // quoting without quotes
+      [`${specimenKind} `, ` - Must be a ${kind}`],
+      specimen,
+    );
+    return check(false, details);
+  };
+
   // /////////////////////// Match Helpers /////////////////////////////////////
 
   /** @type {MatchHelper} */
@@ -545,13 +620,13 @@ const makePatternKit = () => {
       if (length === 0) {
         return check(
           false,
-          X`${specimen} - no pattern disjuncts to match: ${q(patts)}`,
+          X`${specimen} - no pattern disjuncts to match: ${patts}`,
         );
       }
       if (patts.some(patt => matches(specimen, patt))) {
         return true;
       }
-      return check(false, X`${specimen} - Must match one of ${q(patts)}`);
+      return check(false, X`${specimen} - Must match one of ${patts}`);
     },
 
     checkIsMatcherPayload: matchAndHelper.checkIsMatcherPayload,
@@ -625,20 +700,10 @@ const makePatternKit = () => {
 
   /** @type {MatchHelper} */
   const matchKindHelper = Far('M.kind helper', {
-    checkMatches: (specimen, kind, check = x => x) =>
-      check(
-        passStyleOf(specimen) === kind ||
-          (passStyleOf(specimen) === 'tagged' && getTag(specimen) === kind),
-        X`${specimen} - Must have passStyle or tag ${q(kind)}`,
-      ),
+    checkMatches: checkKind,
 
     checkIsMatcherPayload: (allegedKeyKind, check = x => x) =>
       check(
-        // We cannot further restrict this to only possible passStyles
-        // or tags, because we wish to allow matching of tags that we
-        // don't know ahead of time. Do we need to separate the namespaces?
-        // TODO are we asking for trouble by lumping passStyles and tags
-        // together into kinds?
         typeof allegedKeyKind === 'string',
         X`A kind name must be a string: ${allegedKeyKind}`,
       ),
@@ -767,7 +832,7 @@ const makePatternKit = () => {
       check(
         passStyleOf(specimen) === 'copyArray',
         X`${specimen} - Must be an array`,
-      ) && specimen.every(el => checkMatches(el, subPatt, check)),
+      ) && specimen.every((el, i) => checkMatches(el, subPatt, check, i)),
 
     checkIsMatcherPayload: checkPattern,
 
@@ -785,7 +850,7 @@ const makePatternKit = () => {
         X`${specimen} - Must be a record`,
       ) &&
       Object.entries(specimen).every(el =>
-        checkMatches(harden(el), entryPatt, check),
+        checkMatches(harden(el), entryPatt, check, el[0]),
       ),
 
     checkIsMatcherPayload: (entryPatt, check = x => x) =>
@@ -806,7 +871,8 @@ const makePatternKit = () => {
       check(
         passStyleOf(specimen) === 'tagged' && getTag(specimen) === 'copySet',
         X`${specimen} - Must be a a CopySet`,
-      ) && specimen.payload.every(el => checkMatches(el, keyPatt, check)),
+      ) &&
+      specimen.payload.every((el, i) => checkMatches(el, keyPatt, check, i)),
 
     checkIsMatcherPayload: checkPattern,
 
@@ -824,9 +890,9 @@ const makePatternKit = () => {
         X`${specimen} - Must be a a CopyBag`,
       ) &&
       specimen.payload.every(
-        ([key, count]) =>
-          checkMatches(key, keyPatt, check) &&
-          checkMatches(count, countPatt, check),
+        ([key, count], i) =>
+          checkMatches(key, keyPatt, check, `keys[${i}]`) &&
+          checkMatches(count, countPatt, check, `counts[${i}]`),
       ),
 
     checkIsMatcherPayload: (entryPatt, check = x => x) =>
@@ -848,8 +914,12 @@ const makePatternKit = () => {
         passStyleOf(specimen) === 'tagged' && getTag(specimen) === 'copyMap',
         X`${specimen} - Must be a CopyMap`,
       ) &&
-      specimen.payload.keys.every(k => checkMatches(k, keyPatt, check)) &&
-      specimen.payload.values.every(v => checkMatches(v, valuePatt, check)),
+      specimen.payload.keys.every((k, i) =>
+        checkMatches(k, keyPatt, check, `keys[${i}]`),
+      ) &&
+      specimen.payload.values.every((v, i) =>
+        checkMatches(v, valuePatt, check, `values[${i}]`),
+      ),
 
     checkIsMatcherPayload: (entryPatt, check = x => x) =>
       check(
@@ -866,13 +936,9 @@ const makePatternKit = () => {
   /** @type {MatchHelper} */
   const matchSplitHelper = Far('match:split helper', {
     checkMatches: (specimen, [base, rest = undefined], check = x => x) => {
-      const specimenStyle = passStyleOf(specimen);
       const baseStyle = passStyleOf(base);
-      if (specimenStyle !== baseStyle) {
-        return check(
-          false,
-          X`${specimen} - Must have shape of base: ${q(baseStyle)}`,
-        );
+      if (!checkKind(specimen, baseStyle, check)) {
+        return false;
       }
       let specB;
       let specR;
@@ -897,12 +963,8 @@ const makePatternKit = () => {
       harden(specB);
       harden(specR);
       return (
-        checkMatches(specB, base, check) &&
-        (rest === undefined ||
-          check(
-            matches(specR, rest),
-            X`Remainder ${specR} - Must match ${rest}`,
-          ))
+        checkMatches(specB, base, check, 'required-parts') &&
+        (rest === undefined || checkMatches(specR, rest, check, 'rest-parts'))
       );
     },
 
@@ -937,13 +999,9 @@ const makePatternKit = () => {
   /** @type {MatchHelper} */
   const matchPartialHelper = Far('match:partial helper', {
     checkMatches: (specimen, [base, rest = undefined], check = x => x) => {
-      const specimenStyle = passStyleOf(specimen);
       const baseStyle = passStyleOf(base);
-      if (specimenStyle !== baseStyle) {
-        return check(
-          false,
-          X`${specimen} - Must have shape of base: ${q(baseStyle)}`,
-        );
+      if (!checkKind(specimen, baseStyle, check)) {
+        return false;
       }
       let specB;
       let specR;
@@ -976,12 +1034,8 @@ const makePatternKit = () => {
       harden(specR);
       harden(newBase);
       return (
-        checkMatches(specB, newBase, check) &&
-        (rest === undefined ||
-          check(
-            matches(specR, rest),
-            X`Remainder ${specR} - Must match ${rest}`,
-          ))
+        checkMatches(specB, newBase, check, 'optional-parts') &&
+        (rest === undefined || checkMatches(specR, rest, check, 'rest-parts'))
       );
     },
 

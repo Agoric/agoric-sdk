@@ -521,7 +521,7 @@ test('add wrong liquidity', async t => {
   );
 
   await t.throwsAsync(() => E(addLiquiditySeatBreaking).getOfferResult(), {
-    message: /liquidity brand must be "\[Alleged: MoolaLiquidity brand\]"/,
+    message: 'liquidity brand must be "[Alleged: MoolaLiquidity brand]"',
   });
 
   await E(addLiquiditySeatBreaking).getPayouts();

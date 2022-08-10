@@ -123,7 +123,7 @@ test('cleanProposal - want patterns', t => {
       exit: { afterDeadline: { timer, deadline: 100n } },
     },
     'nat',
-    /"keywordRecord" "\[match:any\]" must be a pass-by-copy record, not "tagged"/,
+    '"keywordRecord" "[match:any]" must be a pass-by-copy record, not "tagged"',
   );
 
   proposeBad(
@@ -134,7 +134,7 @@ test('cleanProposal - want patterns', t => {
       exit: { afterDeadline: { timer, deadline: 100n } },
     },
     'nat',
-    /A passable tagged "match:any" is not a key: "\[match:any\]"/,
+    'A passable tagged "match:any" is not a key: "[match:any]"',
   );
 
   proposeBad(
@@ -145,7 +145,7 @@ test('cleanProposal - want patterns', t => {
       exit: { afterDeadline: { timer, deadline: M.any() } },
     },
     'nat',
-    /A passable tagged "match:any" is not a key: "\[match:any\]"/,
+    'A passable tagged "match:any" is not a key: "[match:any]"',
   );
 });
 
@@ -222,13 +222,13 @@ test('cleanProposal - other wrong stuff', t => {
     t,
     { exit: 'foo' },
     'nat',
-    /"foo" - Must have shape of base: "copyRecord"/,
+    'proposal: exit: string "foo" - Must be a copyRecord',
   );
   proposeBad(
     t,
     { exit: { onDemand: 'foo' } },
     'nat',
-    /{"onDemand":"foo"} - Must be equivalent to: {"onDemand":null}/,
+    'proposal: exit: optional-parts: {"onDemand":"foo"} - Must be: {"onDemand":null}',
   );
   proposeBad(
     t,
@@ -240,43 +240,43 @@ test('cleanProposal - other wrong stuff', t => {
     t,
     { exit: { afterDeadline: { timer: 'foo', deadline: 3n } } },
     'nat',
-    /"foo" - Must have passStyle or tag "remotable"/,
+    'proposal: exit: optional-parts: afterDeadline: timer: string "foo" - Must be a remotable',
   );
   proposeBad(
     t,
     { exit: { afterDeadline: { timer, deadline: 'foo' } } },
     'nat',
-    /"foo" - Must be >= "\[0n\]"/,
+    'proposal: exit: optional-parts: afterDeadline: deadline: "foo" - Must be >= "[0n]"',
   );
   proposeBad(
     t,
     { exit: { afterDeadline: { timer, deadline: 3n, extra: 'foo' } } },
     'nat',
-    /.* - Must have same property names as record pattern:.*/,
+    'proposal: exit: optional-parts: afterDeadline: {"timer":"[Alleged: ManualTimer]","deadline":"[3n]","extra":"foo"} - Must not have unexpected properties: ["extra"]',
   );
   proposeBad(
     t,
     { exit: { afterDeadline: { timer } } },
     'nat',
-    /.* - Must have same property names as record pattern:.*/,
+    'proposal: exit: optional-parts: afterDeadline: {"timer":"[Alleged: ManualTimer]"} - Must have missing properties ["deadline"]',
   );
   proposeBad(
     t,
     { exit: { afterDeadline: { deadline: 3n } } },
     'nat',
-    /.* - Must have same property names as record pattern:.*/,
+    'proposal: exit: optional-parts: afterDeadline: {"deadline":"[3n]"} - Must have missing properties ["timer"]',
   );
   proposeBad(
     t,
     { exit: { afterDeadline: { timer, deadline: 3 } } },
     'nat',
-    /3 - Must be >= "\[0n\]"/,
+    'proposal: exit: optional-parts: afterDeadline: deadline: 3 - Must be >= "[0n]"',
   );
   proposeBad(
     t,
     { exit: { afterDeadline: { timer, deadline: -3n } } },
     'nat',
-    /"\[-3n\]" - Must be >= "\[0n\]"/,
+    'proposal: exit: optional-parts: afterDeadline: deadline: "[-3n]" - Must be >= "[0n]"',
   );
   proposeBad(t, { exit: {} }, 'nat', /exit {} should only have one key/);
   proposeBad(

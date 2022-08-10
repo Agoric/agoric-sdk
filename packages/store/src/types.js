@@ -436,14 +436,6 @@
  */
 
 /**
- * @callback CheckMatches
- * @param {Passable} specimen
- * @param {Pattern} pattern
- * @param {Checker=} check
- * @returns {boolean}
- */
-
-/**
  * @callback CheckPattern
  * @param {Passable} allegedPattern
  * @param {Checker=} check
@@ -568,7 +560,7 @@
 /**
  * @typedef {object} PatternKit
  * @property {(specimen: Passable, patt: Pattern) => boolean} matches
- * @property {(specimen: Passable, patt: Pattern, label?: string) => void} fit
+ * @property {(specimen: Passable, patt: Pattern, label?: string|number) => void} fit
  * @property {(patt: Pattern) => void} assertPattern
  * @property {(patt: Passable) => boolean} isPattern
  * @property {(patt: Pattern) => void} assertKeyPattern
@@ -600,7 +592,7 @@
  *
  * @property {(specimen: Passable,
  *             matcherPayload: Passable,
- *             check?: Checker
+ *             check?: Checker,
  * ) => boolean} checkMatches
  * Assuming a valid Matcher of this type with `matcherPayload` as its
  * payload, does this specimen match that Matcher?
