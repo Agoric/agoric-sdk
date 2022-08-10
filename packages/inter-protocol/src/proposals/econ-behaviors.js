@@ -676,14 +676,14 @@ export const startRewardDistributor = async ({
 }) => {
   trace('startRewardDistributor');
   const timerService = await chainTimerService;
-  const feeDistributorTerms = {
+  const feeDistributorTerms = await deeplyFulfillTerms({
     timerService,
     collectionInterval: 60n * 60n, // 1 hour
     keywordShares: {
       RewardDistributor: 1n,
       Reserve: 1n,
     },
-  };
+  });
 
   const [centralIssuer, centralBrand] = await Promise.all([
     centralIssuerP,
@@ -791,8 +791,7 @@ export const startStakeFactory = async (
     consume: {
       board,
       zoe,
-      // ISSUE: is there some reason Zoe shouldn't await this???
-      feeMintAccess: feeMintAccessP,
+      feeMintAccess,
       lienBridge,
       client,
       chainTimerService,
@@ -802,7 +801,10 @@ export const startStakeFactory = async (
     // @ts-expect-error TODO: add to BootstrapPowers
     produce: { stakeFactoryCreatorFacet, stakeFactoryGovernorCreatorFacet },
     installation: {
-      consume: { contractGovernor, stakeFactory: installationP },
+      consume: {
+        contractGovernor: contractGovernorInstallation,
+        stakeFactory: stakeFactoryInstallation,
+      },
     },
     instance: {
       consume: { economicCommittee: electorateInstance },
@@ -828,20 +830,7 @@ export const startStakeFactory = async (
 ) => {
   const STORAGE_PATH = 'stakeFactory';
 
-  const [feeMintAccess, bldBrand, runBrand, governor, installation, timer] =
-    await Promise.all([
-      feeMintAccessP,
-      bldBrandP,
-      runBrandP,
-      contractGovernor,
-      installationP,
-      chainTimerService,
-    ]);
-
-  const installations = {
-    governor,
-    stakeFactory: installation,
-  };
+  const [bldBrand, runBrand] = await Promise.all([bldBrandP, runBrandP]);
 
   const poserInvitationP = E(
     economicCommitteeCreatorFacet,
@@ -854,7 +843,7 @@ export const startStakeFactory = async (
 
   const stakeFactoryTerms = makeStakeFactoryTerms(
     {
-      timerService: timer,
+      timerService: chainTimerService,
       chargingPeriod,
       recordingPeriod,
     },
@@ -876,9 +865,9 @@ export const startStakeFactory = async (
   const marshaller = await E(board).getReadonlyMarshaller();
 
   const stakeTerms = await deeplyFulfillTerms({
-    timer,
+    timer: chainTimerService,
     electorateInstance,
-    governedContractInstallation: installations.stakeFactory,
+    governedContractInstallation: stakeFactoryInstallation,
     governed: harden({
       terms: stakeFactoryTerms,
       issuerKeywordRecord: { Stake: bldIssuer },
@@ -894,7 +883,7 @@ export const startStakeFactory = async (
 
   /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<StakeFactoryPublic,StakeFactoryCreator>}} */
   const governorFacets = await E(zoe).startInstance(
-    installations.governor,
+    contractGovernorInstallation,
     {},
     stakeTerms,
   );
