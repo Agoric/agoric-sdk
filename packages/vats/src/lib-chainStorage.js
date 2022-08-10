@@ -7,7 +7,7 @@ const { details: X } = assert;
 // TODO: Formalize segment constraints.
 // Must be nonempty and disallow (unescaped) `.`, and for simplicity
 // (and future possibility of e.g. escaping) we currently limit to
-// ASCII alphanumeric plus underscore.
+// ASCII alphanumeric plus underscore and dash.
 const pathSegmentPattern = /^[a-zA-Z0-9_-]{1,100}$/;
 
 /**
