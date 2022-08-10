@@ -2,11 +2,10 @@
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled, makeMarshal } from '@endo/marshal';
 import { matches, makeScalarMapStore } from '@agoric/store';
-
-import '@agoric/store/exported.js';
-
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { withGroundState, makeState } from './state.js';
+
+import './types.js';
 
 /**
  * @param {(obj: unknown) => unknown} [sanitize]
