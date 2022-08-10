@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { makeCopyBag } from '@agoric/store';
-import fc from 'fast-check';
+import { fc } from '@fast-check/ava';
 
 import { AmountMath as m, AssetKind } from '../../src/index.js';
 import { mockBrand } from './mathHelpers/mockBrand.js';

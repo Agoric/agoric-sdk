@@ -14,12 +14,17 @@ import {
 
 const { entries, fromEntries } = Object;
 
-export const dropContext =
+/**
+ * Make a version of the argument function that takes a kind context but ignores it.
+ *
+ * @type {<T extends Function>(fn: T) => import('./types.js').PlusContext<never, T>}
+ */
+export const ignoreContext =
   fn =>
-  (_, ...args) =>
+  (context, ...args) =>
     fn(...args);
 // @ts-expect-error TODO statically recognize harden
-harden(dropContext);
+harden(ignoreContext);
 
 /**
  * @param {Baggage} baggage
@@ -126,7 +131,7 @@ export const vivifySingleton = (
   methods,
   options = undefined,
 ) => {
-  const behavior = objectMap(methods, dropContext);
+  const behavior = objectMap(methods, ignoreContext);
   const makeSingleton = vivifyKind(
     baggage,
     kindName,

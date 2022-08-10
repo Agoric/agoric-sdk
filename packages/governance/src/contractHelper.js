@@ -3,7 +3,7 @@
 import { Far } from '@endo/marshal';
 import { makeStoredPublisherKit } from '@agoric/notifier';
 import { keyEQ } from '@agoric/store';
-import { objectMap, dropContext } from '@agoric/vat-data';
+import { objectMap, ignoreContext } from '@agoric/vat-data';
 import { assertElectorateMatches } from './contractGovernance/paramManager.js';
 import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
 
@@ -74,7 +74,7 @@ const facetHelpers = (zcf, paramManager) => {
     return Far('publicFacet', {
       ...originalPublicFacet,
       ...commonPublicMethods,
-      ...objectMap(typedAccessors, dropContext),
+      ...objectMap(typedAccessors, ignoreContext),
     });
   };
 

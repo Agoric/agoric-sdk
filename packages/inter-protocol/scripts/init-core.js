@@ -4,7 +4,7 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 import { objectMap } from '@agoric/vat-data';
 
 import {
-  getManifestForRunProtocol,
+  getManifestForInterProtocol,
   getManifestForEconCommittee,
   getManifestForMain,
 } from '../src/proposals/core-proposal.js';
@@ -181,7 +181,7 @@ export const defaultProposalBuilder = async (
   return harden({
     sourceSpec: '../src/proposals/core-proposal.js',
     getManifestCall: [
-      getManifestForRunProtocol.name,
+      getManifestForInterProtocol.name,
       {
         ROLE,
         vaultFactoryControllerAddress,

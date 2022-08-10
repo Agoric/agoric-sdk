@@ -2,11 +2,10 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
-import { makeWeakStore } from '@agoric/store';
 import {
-  defineDurableKind,
   makeScalarBigMapStore,
-  provideKindHandle,
+  provideDurableWeakMapStore,
+  vivifyKind,
 } from '@agoric/vat-data';
 
 /** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */
@@ -21,28 +20,26 @@ export const makeInstallationStorage = (
   zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
 ) => {
   /** @type {WeakStore<Installation, { bundleCap: BundleCap, bundleID: BundleID }>} */
-  const installationsBundleCap = makeWeakStore('installationsBundleCap');
+  const installationsBundleCap = provideDurableWeakMapStore(
+    zoeBaggage,
+    'installationsBundleCap',
+  );
   /** @type {WeakStore<Installation, SourceBundle>} */
-  const installationsBundle = makeWeakStore('installationsBundle');
+  const installationsBundle = provideDurableWeakMapStore(
+    zoeBaggage,
+    'installationsBundle',
+  );
 
-  const bundleIDInstallationKindHandle = provideKindHandle(
+  const makeBundleIDInstallation = vivifyKind(
     zoeBaggage,
     'BundleIDInstallation',
-  );
-
-  const bundleInstallationKindHandle = provideKindHandle(
-    zoeBaggage,
-    'BundleInstallation',
-  );
-
-  const makeBundleIDInstallation = defineDurableKind(
-    bundleIDInstallationKindHandle,
     () => ({}),
     { getBundle: _context => assert.fail('bundleID-based Installation') },
   );
 
-  const makeBundleInstallation = defineDurableKind(
-    bundleInstallationKindHandle,
+  const makeBundleInstallation = vivifyKind(
+    zoeBaggage,
+    'BundleInstallation',
     bundle => ({ bundle }),
     { getBundle: ({ state: { bundle } }) => bundle },
   );
@@ -68,7 +65,7 @@ export const makeInstallationStorage = (
     /** @type {Installation} */
     // @ts-expect-error cast
     const installation = makeBundleIDInstallation();
-    installationsBundleCap.init(installation, { bundleCap, bundleID });
+    installationsBundleCap.init(installation, harden({ bundleCap, bundleID }));
     return installation;
   };
 
