@@ -14,10 +14,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { makeNotifierKit, subscribeEach } from '@agoric/notifier';
 import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
 // eslint-disable-next-line import/no-extraneous-dependencies -- XXX refactor
-import {
-  makeChainStorageRoot,
-  sanitizePathSegment,
-} from '@agoric/vats/src/lib-chainStorage.js';
+import { makeChainStorageRoot } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
@@ -161,9 +158,7 @@ test.before('setup aggregator and oracles', async ot => {
       { timer, POLL_INTERVAL, brandIn: atomBrand, brandOut: usdBrand },
       {
         marshaller,
-        storageNode: E(storageNode).makeChildNode(
-          sanitizePathSegment('ATOM-USD price feed'),
-        ),
+        storageNode: E(storageNode).makeChildNode('ATOM-USD_price_feed'),
       },
     );
     return aggregator;
@@ -1020,6 +1015,6 @@ test('storage keys', async t => {
 
   t.is(
     await subscriberSubkey(E(publicFacet).getSubscriber()),
-    'paTest:mockChainStorageRoot.priceAggregator.ATOM_USD_price_feed',
+    'paTest:mockChainStorageRoot.priceAggregator.ATOM-USD_price_feed',
   );
 });

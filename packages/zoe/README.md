@@ -47,7 +47,7 @@ Once you see a string like `block 17 commit` then the chain is available. In ano
 # shows keys of the priceAggregator
 agd query vstorage keys 'published.priceFeed'
 # follow quotes
-agoric follow :published.priceFeed.ATOM_USD_price_feed
+agoric follow :published.priceFeed.ATOM-USD_price_feed
 ```
 
  TODO document more of https://github.com/Agoric/documentation/issues/672
