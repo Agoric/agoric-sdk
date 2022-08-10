@@ -17,6 +17,8 @@ export {
   getPriceDescription,
 } from './priceQuote.js';
 
+export { deeplyFulfillTerms } from './deeplyFulfillTerms.js';
+
 export { natSafeMath } from './safeMath.js';
 
 export { makeStateMachine } from './stateMachine.js';

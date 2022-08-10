@@ -1,9 +1,12 @@
 // @ts-check
+
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { Nat } from '@agoric/nat';
 import { makeScalarMapStore } from '@agoric/store';
 import { provide } from '@agoric/store/src/stores/store-utils.js';
 import { E, Far } from '@endo/far';
+import { deeplyFulfillTerms } from '@agoric/zoe/src/contractSupport/index.js';
+
 import { makeStorageNode } from '../lib-chainStorage.js';
 import { makeNameHubKit } from '../nameHub.js';
 import { feeIssuerConfig } from './utils.js';
@@ -235,20 +238,19 @@ export const makeClientBanks = async ({
   },
 }) => {
   const STORAGE_PATH = 'wallet';
-  [agoricNames, board, namesByAddress] = await Promise.all([
-    agoricNames,
-    board,
-    namesByAddress,
-  ]);
 
   const [storageNode, bridgeManager] = await Promise.all([
     makeStorageNode(chainStorage, STORAGE_PATH),
     bridgeManagerP,
   ]);
+
+  const terms = await deeplyFulfillTerms(
+    harden({ agoricNames, namesByAddress, board }),
+  );
   const { creatorFacet } = await E(zoe).startInstance(
     walletFactory,
     {},
-    { agoricNames, namesByAddress, board },
+    terms,
     { storageNode, bridgeManager },
   );
   return E(client).assignBundle([

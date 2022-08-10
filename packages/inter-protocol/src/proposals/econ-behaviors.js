@@ -7,10 +7,12 @@ import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
 import { makeStorageNode } from '@agoric/vats/src/lib-chainStorage.js';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  makeRatio,
+  deeplyFulfillTerms,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { E, Far } from '@endo/far';
 import { Stake, Stable } from '@agoric/vats/src/tokens.js';
-import { deeplyFulfilled } from '@endo/marshal';
 import * as Collect from '../collect.js';
 import { makeTracer } from '../makeTracer.js';
 import { makeStakeReporter } from '../my-lien.js';
@@ -764,7 +766,6 @@ export const startLienBridge = async ({
 
   const bridgeManager = await bridgeOptP;
   if (!bridgeManager) {
-    lienBridge.resolve(undefined);
     return;
   }
   const bldBrand = await bldP;
@@ -880,24 +881,22 @@ export const startStakeFactory = async (
   const storageNode = await makeStorageNode(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
-  const stakeTerms = await deeplyFulfilled(
-    harden({
-      timer,
-      electorateInstance,
-      governedContractInstallation: installations.stakeFactory,
-      governed: harden({
-        terms: stakeFactoryTerms,
-        issuerKeywordRecord: { Stake: bldIssuer },
-        privateArgs: {
-          feeMintAccess,
-          initialPoserInvitation,
-          lienBridge,
-          storageNode,
-          marshaller,
-        },
-      }),
+  const stakeTerms = await deeplyFulfillTerms({
+    timer,
+    electorateInstance,
+    governedContractInstallation: installations.stakeFactory,
+    governed: harden({
+      terms: stakeFactoryTerms,
+      issuerKeywordRecord: { Stake: bldIssuer },
+      privateArgs: {
+        feeMintAccess,
+        initialPoserInvitation,
+        lienBridge,
+        storageNode,
+        marshaller,
+      },
     }),
-  );
+  });
 
   /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<StakeFactoryPublic,StakeFactoryCreator>}} */
   const governorFacets = await E(zoe).startInstance(

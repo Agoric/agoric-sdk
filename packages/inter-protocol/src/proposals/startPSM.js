@@ -1,8 +1,12 @@
 // @ts-check
+
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeStorageNode } from '@agoric/vats/src/lib-chainStorage.js';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  deeplyFulfillTerms,
+  makeRatio,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { reserveThenGetNamePaths } from './utils.js';
@@ -74,7 +78,7 @@ export const startPSM = async (
     ]);
 
   const mintLimit = AmountMath.make(anchorBrand, MINT_LIMIT);
-  const terms = {
+  const terms = deeplyFulfillTerms({
     anchorBrand,
     anchorPerStable: makeRatio(100n, anchorBrand, 100n, runBrand),
     governedParams: {
@@ -96,7 +100,7 @@ export const startPSM = async (
       type: ParamTypes.INVITATION,
       value: electorateInvitationAmount,
     },
-  };
+  });
 
   const storageNode = await makeStorageNode(chainStorage, 'psm');
   const marshaller = await E(board).getPublishingMarshaller();
@@ -171,14 +175,14 @@ export const makeAnchorAsset = async (
   );
 
   /** @type {import('@agoric/vats/src/mintHolder.js').AssetTerms} */
-  const terms = {
+  const terms = await deeplyFulfillTerms({
     keyword,
     assetKind: AssetKind.NAT,
     displayInfo: {
       decimalPlaces,
       assetKind: AssetKind.NAT,
     },
-  };
+  });
   const { creatorFacet: mint, publicFacet: issuer } = E.get(
     E(zoe).startInstance(mintHolder, {}, terms),
   );

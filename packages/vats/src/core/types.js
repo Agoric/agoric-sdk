@@ -203,6 +203,7 @@
  *   coreEvalBridgeHandler: unknown,
  *   feeMintAccess: FeeMintAccess,
  *   initialSupply: Payment,
+ *   lienBridge: unknown,
  *   mints: MintsVat,
  *   namesByAddress: NameHub,
  *   namesByAddressAdmin: NameAdmin,
