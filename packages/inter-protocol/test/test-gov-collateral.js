@@ -249,8 +249,6 @@ const makeScenario = async (t, { env = process.env } = {}) => {
       );
     t.context.registerBundleHandles(bundleHandleToAbsolutePaths);
 
-    console.log(bundleHandleToAbsolutePaths, code);
-
     const coreEvalMessage = {
       type: 'CORE_EVAL',
       evals: [

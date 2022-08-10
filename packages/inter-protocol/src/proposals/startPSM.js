@@ -26,17 +26,17 @@ export const startPSM = async (
       agoricNamesAdmin,
       board,
       zoe,
-      feeMintAccess: feeMintAccessP,
+      feeMintAccess,
       economicCommitteeCreatorFacet,
       chainStorage,
       chainTimerService,
     },
     produce: { psmCreatorFacet, psmGovernorCreatorFacet },
     installation: {
-      consume: { contractGovernor, psm: psmInstallP },
+      consume: { contractGovernor, psm: psmInstall },
     },
     instance: {
-      consume: { economicCommittee: economicCommitteeP },
+      consume: { economicCommittee },
       produce: { psm: psmInstanceR, psmGovernor: psmGovernorR },
     },
     brand: {
@@ -56,25 +56,12 @@ export const startPSM = async (
     'string',
     X`anchorOptions.denom must be a string, not ${denom}`,
   );
-  const [
-    feeMintAccess,
-    runBrand,
-    [anchorBrand, anchorIssuer],
-    governor,
-    psmInstall,
-    timer,
-    economicCommittee,
-  ] = await Promise.all([
-    feeMintAccessP,
+  const [runBrand, [anchorBrand, anchorIssuer]] = await Promise.all([
     runBrandP,
     reserveThenGetNamePaths(agoricNamesAdmin, [
       ['brand', keyword],
       ['issuer', keyword],
     ]),
-    contractGovernor,
-    psmInstallP,
-    chainTimerService,
-    economicCommitteeP,
   ]);
 
   const poserInvitationP = E(
@@ -115,10 +102,10 @@ export const startPSM = async (
   const marshaller = await E(board).getPublishingMarshaller();
 
   const governorFacets = await E(zoe).startInstance(
-    governor,
+    contractGovernor,
     {},
     {
-      timer,
+      timer: chainTimerService,
       economicCommittee,
       governedContractInstallation: psmInstall,
       governed: harden({

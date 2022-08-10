@@ -10,6 +10,7 @@ import { makeStorageNode } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E, Far } from '@endo/far';
 import { Stake, Stable } from '@agoric/vats/src/tokens.js';
+import { deeplyFulfilled } from '@endo/marshal';
 import * as Collect from '../collect.js';
 import { makeTracer } from '../makeTracer.js';
 import { makeStakeReporter } from '../my-lien.js';
@@ -136,6 +137,7 @@ export const startInterchainPool = async (
   },
   { interchainPoolOptions = {} } = {},
 ) => {
+  trace('startInterchainPool');
   // TODO: get minimumCentral dynamically from the AMM
   const { minimumCentral = 100n * MILLI } = interchainPoolOptions;
   const [centralIssuer, centralBrand, installation, bankManager, amm] =
@@ -730,7 +732,7 @@ export const startRewardDistributor = async ({
   const collectorFacets = {
     vaultFactory: vaultFactoryCreator,
     amm: ammCreatorFacet,
-    stakeFactory: stakeFactoryCreatorFacet,
+    runStake: stakeFactoryCreatorFacet,
   };
   await Promise.all(
     Object.entries(collectorFacets).map(async ([debugName, collectorFacet]) => {
@@ -793,7 +795,7 @@ export const startStakeFactory = async (
       zoe,
       // ISSUE: is there some reason Zoe shouldn't await this???
       feeMintAccess: feeMintAccessP,
-      lienBridge: lienBridgeP,
+      lienBridge,
       client,
       chainTimerService,
       chainStorage,
@@ -805,7 +807,7 @@ export const startStakeFactory = async (
       consume: { contractGovernor, stakeFactory: installationP },
     },
     instance: {
-      consume: { economicCommittee: electorateInstanceP },
+      consume: { economicCommittee: electorateInstance },
       produce: { stakeFactory: stakeFactoryinstanceR },
     },
     brand: {
@@ -813,7 +815,7 @@ export const startStakeFactory = async (
       produce: { Attestation: attestationBrandR },
     },
     issuer: {
-      consume: { [Stake.symbol]: bldIssuerP },
+      consume: { [Stake.symbol]: bldIssuer },
       produce: { Attestation: attestationIssuerR },
     },
   },
@@ -846,20 +848,11 @@ export const startStakeFactory = async (
   const poserInvitationP = E(
     economicCommitteeCreatorFacet,
   ).getPoserInvitation();
-  const [
-    initialPoserInvitation,
-    electorateInvitationAmount,
-    lienBridge,
-    electorateInstance,
-    bldIssuer,
-  ] = await Promise.all([
-    poserInvitationP,
-    E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
-    lienBridgeP,
-    installations.runStake,
-    electorateInstanceP,
-    bldIssuerP,
-  ]);
+  const [initialPoserInvitation, electorateInvitationAmount] =
+    await Promise.all([
+      poserInvitationP,
+      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+    ]);
 
   const stakeFactoryTerms = makeStakeFactoryTerms(
     {
@@ -884,11 +877,8 @@ export const startStakeFactory = async (
   const storageNode = await makeStorageNode(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
-  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<StakeFactoryPublic,StakeFactoryCreator>}} */
-  const governorFacets = await E(zoe).startInstance(
-    installations.governor,
-    {},
-    {
+  const stakeTerms = await deeplyFulfilled(
+    harden({
       timer,
       electorateInstance,
       governedContractInstallation: installations.stakeFactory,
@@ -903,7 +893,14 @@ export const startStakeFactory = async (
           marshaller,
         },
       }),
-    },
+    }),
+  );
+
+  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<StakeFactoryPublic,StakeFactoryCreator>}} */
+  const governorFacets = await E(zoe).startInstance(
+    installations.governor,
+    {},
+    stakeTerms,
   );
   const governedInstance = await E(governorFacets.creatorFacet).getInstance();
   const creatorFacet = E(governorFacets.creatorFacet).getCreatorFacet();
