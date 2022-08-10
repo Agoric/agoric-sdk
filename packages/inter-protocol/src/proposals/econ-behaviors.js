@@ -124,10 +124,10 @@ export const startInterchainPool = async (
   {
     consume: { bankManager: mgrP, zoe, agoricNamesAdmin },
     installation: {
-      consume: { interchainPool: installationP },
+      consume: { interchainPool: installation },
     },
     instance: {
-      consume: { amm: ammP },
+      consume: { amm },
       produce: { interchainPool: _viaAgoricNamesAdmin },
     },
     brand: {
@@ -142,19 +142,16 @@ export const startInterchainPool = async (
   trace('startInterchainPool');
   // TODO: get minimumCentral dynamically from the AMM
   const { minimumCentral = 100n * MILLI } = interchainPoolOptions;
-  const [centralIssuer, centralBrand, installation, bankManager, amm] =
-    await Promise.all([
-      centralIssuerP,
-      centralBrandP,
-      installationP,
-      mgrP,
-      ammP,
-    ]);
+  const [centralIssuer, centralBrand, bankManager] = await Promise.all([
+    centralIssuerP,
+    centralBrandP,
+    mgrP,
+  ]);
 
-  const terms = {
+  const terms = await deeplyFulfillTerms({
     minimumCentral: AmountMath.make(centralBrand, minimumCentral),
     amm,
-  };
+  });
   const { instance } = await E(zoe).startInstance(
     installation,
     { Central: centralIssuer },
