@@ -27,7 +27,9 @@ test('makeLoggingPresence logs calls on purse/payment actions', async t => {
   const purse = {
     actions: await makeLoggingPresence('Alleged: purse.actions', enqueue),
   };
-  const myPayment = Far('payment', {});
+  const myPayment = Far('payment', {
+    getAllegedBrand: () => assert.fail('mock'),
+  });
   await E(purse.actions).deposit(myPayment); // promise resolves???
   await E(purse.actions)(1, 'thing');
   t.deepEqual(msgs, [
