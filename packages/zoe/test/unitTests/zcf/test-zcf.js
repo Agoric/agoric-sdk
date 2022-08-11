@@ -933,7 +933,7 @@ test(`userSeat from zcf.makeEmptySeatKit - only these properties exist`, async t
     'tryExit',
     'getCurrentAllocationJig',
     'getAllocationNotifierJig',
-    'wasWantSatisfied',
+    'numWantsSatisfied',
   ];
   const { zcf } = await setupZCFTest();
   const { userSeat: userSeatP } = zcf.makeEmptySeatKit();
@@ -1415,7 +1415,7 @@ test(`zcf.setOfferFilter - legal lists`, async t => {
   t.is(await zcf.setOfferFilter(['fooOffer: ', 'bar Offer']), undefined);
 });
 
-test('wasWantSatisfied: no', async t => {
+test('numWantsSatisfied: no', async t => {
   const { zcf } = await setupZCFTest();
   const doubloonMint = await zcf.makeZCFMint('Doubloons');
   const yenMint = await zcf.makeZCFMint('Yen');
@@ -1441,10 +1441,10 @@ test('wasWantSatisfied: no', async t => {
   );
 
   await zcfSeat.exit();
-  t.is(await E(userSeat).wasWantSatisfied(), 0);
+  t.is(await E(userSeat).numWantsSatisfied(), 0);
 });
 
-test('wasWantSatisfied: yes', async t => {
+test('numWantsSatisfied: yes', async t => {
   const { zcf } = await setupZCFTest();
   const doubloonMint = await zcf.makeZCFMint('Doubloons');
   const { brand: doubloonBrand } = doubloonMint.getIssuerRecord();
@@ -1461,10 +1461,10 @@ test('wasWantSatisfied: yes', async t => {
   doubloonMint.mintGains(harden({ Bonus: doubloonAmount }), zcfSeat);
 
   await zcfSeat.exit();
-  t.is(await E(userSeat).wasWantSatisfied(), 1);
+  t.is(await E(userSeat).numWantsSatisfied(), 1);
 });
 
-test('wasWantSatisfied as promise', async t => {
+test('numWantsSatisfied as promise', async t => {
   const { zcf } = await setupZCFTest();
   const doubloonMint = await zcf.makeZCFMint('Doubloons');
   const { brand: doubloonBrand } = doubloonMint.getIssuerRecord();
@@ -1479,7 +1479,7 @@ test('wasWantSatisfied as promise', async t => {
     proposal,
   );
 
-  const outcome = E.when(E(userSeat).wasWantSatisfied(), result =>
+  const outcome = E.when(E(userSeat).numWantsSatisfied(), result =>
     t.is(result, 1),
   );
   doubloonMint.mintGains(harden({ Bonus: doubloonAmount }), zcfSeat);
