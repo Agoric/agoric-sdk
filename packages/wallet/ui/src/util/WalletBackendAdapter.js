@@ -8,6 +8,7 @@ import { iterateLatest } from '@agoric/casting';
 import { getScopedBridge } from '../service/ScopedBridge.js';
 import { getDappService } from '../service/Dapps.js';
 import { getOfferService } from '../service/Offers.js';
+import { getIssuerService } from '../service/Issuers.js';
 
 const newId = kind => `${kind}${Math.random()}`;
 
@@ -72,6 +73,9 @@ export const makeBackendFromWalletBridge = walletBridge => {
     ),
     payments: iterateNotifier(E(walletBridge).getPaymentsNotifier()),
     purses: iterateNotifier(E(walletBridge).getPursesNotifier()),
+    issuerSuggestions: iterateNotifier(
+      E(walletBridge).getIssuerSuggestionsNotifier(),
+    ),
   });
 
   // Just produce a single update for the initial backend.
@@ -170,6 +174,7 @@ export const makeWalletBridgeFromFollower = (
     return offerSigner.submitSpendAction(data);
   };
 
+  const issuerService = getIssuerService(signSpendAction);
   const dappService = getDappService(publicAddress);
   const offerService = getOfferService(
     publicAddress,
@@ -182,6 +187,7 @@ export const makeWalletBridgeFromFollower = (
     ...getNotifierMethods,
     getDappsNotifier: () => dappService.notifier,
     getOffersNotifier: () => offerService.notifier,
+    getIssuerSuggestionsNotifier: () => issuerService.notifier,
     acceptOffer,
     declineOffer,
     cancelOffer,
@@ -195,6 +201,7 @@ export const makeWalletBridgeFromFollower = (
         leader,
         unserializer,
         publicAddress,
+        issuerService,
         ...getNotifierMethods,
       }),
   });

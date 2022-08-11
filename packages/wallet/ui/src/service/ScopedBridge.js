@@ -2,8 +2,14 @@ import { makeFollower } from '@agoric/casting';
 import { Far } from '@endo/captp';
 
 export const getScopedBridge = (origin, suggestedDappPetname, bridge) => {
-  const { getPursesNotifier, dappService, offerService, leader, unserializer } =
-    bridge;
+  const {
+    getPursesNotifier,
+    dappService,
+    offerService,
+    issuerService,
+    leader,
+    unserializer,
+  } = bridge;
 
   const { dapps, addDapp, setDappPetname, deleteDapp, enableDapp } =
     dappService;
@@ -56,7 +62,7 @@ export const getScopedBridge = (origin, suggestedDappPetname, bridge) => {
     },
     async suggestIssuer(petname, boardId) {
       await dapp.approvedP;
-      console.log('TODO: implement suggest issuer', petname, boardId);
+      issuerService.addSuggestion(petname, boardId);
     },
     async suggestInstallation(petname, boardId) {
       await dapp.approvedP;

@@ -4,6 +4,7 @@ import DappConnection from './DappConnection';
 import { withApplicationContext } from '../contexts/Application';
 
 import './Requests.scss';
+import IssuerSuggestion from './IssuerSuggestion';
 
 // Exported for testing only.
 const RequestsInternal = ({
@@ -11,6 +12,7 @@ const RequestsInternal = ({
   offers,
   dapps,
   purses,
+  issuerSuggestions,
   pendingOffers,
   declinedOffers,
   closedOffers,
@@ -46,17 +48,30 @@ const RequestsInternal = ({
     data: d,
   }));
 
-  const requests = [...payments, ...offers, ...dapps].sort(
-    (a, b) => a.data.id - b.data.id,
-  );
+  issuerSuggestions = (issuerSuggestions || []).map(s => ({
+    type: 'issuerSuggestion',
+    data: s,
+  }));
+
+  const requests = [
+    ...issuerSuggestions,
+    ...[...payments, ...offers, ...dapps].sort((a, b) => a.data.id - b.data.id),
+  ];
 
   const Item = request => {
     if (request.type === 'offer') {
       return <Offer offer={request.data} key={request.data.id} />;
     } else if (request.type === 'payment') {
       return <Payment key={request.data.id} />;
-    } else {
+    } else if (request.type === 'dapp') {
       return <DappConnection dapp={request.data} key={request.data.id} />;
+    } else {
+      return (
+        <IssuerSuggestion
+          suggestion={request.data}
+          key={request.data.boardId}
+        />
+      );
     }
   };
 
@@ -89,4 +104,5 @@ export default withApplicationContext(RequestsInternal, context => ({
   declinedOffers: context.declinedOffers,
   closedOffers: context.closedOffers,
   keplrConnection: context.keplrConnection,
+  issuerSuggestions: context.issuerSuggestions,
 }));

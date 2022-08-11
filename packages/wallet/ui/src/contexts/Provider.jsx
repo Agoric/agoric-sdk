@@ -125,6 +125,7 @@ const Provider = ({ children }) => {
   const [schemaActions, setSchemaActions] = useState(null);
   const [connectionComponent, setConnectionComponent] = useState(null);
   const [backendErrorHandler, setBackendErrorHandler] = useState(null);
+  const [issuerSuggestions, setIssuerSuggestions] = useState(null);
 
   const RESTORED_CONNECTION_CONFIGS = [...DEFAULT_CONNECTION_CONFIGS];
   const userConnectionConfigs = maybeLoad('userConnectionConfigs');
@@ -249,6 +250,18 @@ const Provider = ({ children }) => {
         },
       }).catch(rethrowIfNotCancelled);
     }
+
+    const issuerSuggestionsNotifier = E.get(backend).issuerSuggestions;
+    observeIterator(issuerSuggestionsNotifier, {
+      fail: rethrowIfNotCancelled,
+      updateState: state => {
+        if (cancelIteration) {
+          throw cancelIteration;
+        }
+        setIssuerSuggestions(state);
+      },
+    }).catch(rethrowIfNotCancelled);
+
     return () => {
       cancelIteration = Error('cancelled');
     };
@@ -365,6 +378,7 @@ const Provider = ({ children }) => {
     setPayments,
     issuers,
     setIssuers,
+    issuerSuggestions,
     pendingPurseCreations,
     setPendingPurseCreations,
     pendingTransfers,

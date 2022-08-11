@@ -1796,11 +1796,16 @@ export function makeWalletRoot({
     return acceptOffer(`${dappOrigin}#${rawId}`);
   };
 
+  const handleSuggestIssuerAction = ({ petname, boardId }) =>
+    suggestIssuer(petname, boardId);
+
   const performAction = async obj => {
     const { type, data } = JSON.parse(obj.action);
     switch (type) {
       case 'acceptOffer':
         return handleAcceptOfferAction(data);
+      case 'suggestIssuer':
+        return handleSuggestIssuerAction(data);
       default:
         throw new Error(`Unknown wallet action ${type}`);
     }
