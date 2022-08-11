@@ -190,17 +190,14 @@ export const setupAmm = async (
       consume: { [Stable.symbol]: runBrandP },
     },
     issuer: {
-      consume: { [Stable.symbol]: centralIssuerP },
+      consume: { [Stable.symbol]: centralIssuer },
     },
     instance: {
-      consume: { economicCommittee: electorateInstanceP },
+      consume: { economicCommittee: electorateInstance },
       produce: { ammGovernor },
     },
     installation: {
-      consume: {
-        contractGovernor: governorInstallation,
-        amm: ammInstallationP,
-      },
+      consume: { contractGovernor: governorInstallation, amm: ammInstallation },
     },
   },
   { options = {} } = {},
@@ -208,36 +205,23 @@ export const setupAmm = async (
   trace('setupAmm');
 
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
-  const [
-    poserInvitation,
-    poserInvitationAmount,
-    runBrand,
-    electorateInstance,
-    centralIssuer,
-    ammInstallation,
-  ] = await Promise.all([
+  const [poserInvitation, runBrand] = await Promise.all([
     poserInvitationP,
-    E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
     runBrandP,
-    electorateInstanceP,
-    centralIssuerP,
-    ammInstallationP,
   ]);
   const { minInitialPoolLiquidity = 1_000_000_000n } = options;
 
-  const timer = await chainTimerService; // avoid promise for legibility
-
   const ammTerms = makeAmmTerms(
-    timer,
-    poserInvitationAmount,
+    chainTimerService,
+    E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
     AmountMath.make(runBrand, minInitialPoolLiquidity),
   );
 
   const storageNode = await makeStorageNode(chainStorage, AMM_STORAGE_PATH);
   const marshaller = await E(board).getPublishingMarshaller();
 
-  const ammGovernorTerms = {
-    timer,
+  const ammGovernorTerms = await deeplyFulfillTerms({
+    timer: chainTimerService,
     electorateInstance,
     governedContractInstallation: ammInstallation,
     governed: {
@@ -249,7 +233,8 @@ export const setupAmm = async (
         marshaller,
       },
     },
-  };
+  });
+
   /** @type {{ creatorFacet: GovernedContractFacetAccess<XYKAMMPublicFacet,XYKAMMCreatorFacet>, publicFacet: GovernorPublic, instance: Instance }} */
   const g = await E(zoe).startInstance(
     governorInstallation,
