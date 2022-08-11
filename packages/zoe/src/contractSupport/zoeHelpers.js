@@ -37,12 +37,14 @@ export const assertIssuerKeywords = (zcf, expected) => {
  * check; whether the allocation constitutes a refund is not
  * checked. The update is merged with currentAllocation
  * (update's values prevailing if the keywords are the same)
- * to produce the newAllocation.
+ * to produce the newAllocation. The return value is 0 for
+ * false and 1 for true. When multiples are introduced, any
+ * positive return value will mean true.
  *
  * @param {ZCF} zcf
  * @param {ZcfSeatPartial} seat
  * @param {AmountKeywordRecord} update
- * @returns {boolean}
+ * @returns {0|1}
  */
 export const satisfies = (zcf, seat, update) => {
   const currentAllocation = seat.getCurrentAllocation();

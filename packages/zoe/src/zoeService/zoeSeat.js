@@ -6,6 +6,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 import { handlePKitWarning } from '../handleWarning.js';
+import { satisfiesWant } from '../contractFacet/offerSafety.js';
 
 import '../types.js';
 import '../internal-types.js';
@@ -95,6 +96,12 @@ export const makeZoeSeatAdminKit = (
 
     getCurrentAllocationJig: async () => currentAllocation,
     getAllocationNotifierJig: async () => notifier,
+
+    numWantsSatisfied: async () => {
+      return E.when(payoutPromiseKit.promise, () =>
+        satisfiesWant(proposal, currentAllocation),
+      );
+    },
   });
 
   return { userSeat, zoeSeatAdmin, notifier };
