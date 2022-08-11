@@ -3,10 +3,53 @@
 
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
-import { makeRatio, offerTo } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  ceilMultiplyBy,
+  makeRatio,
+  offerTo,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { makeTracer } from '../makeTracer.js';
 
 const trace = makeTracer('LIQ', false);
+
+/**
+ * Threshold to alert when the price level falls enough that the vault
+ * with the highest debt to collateral ratio will no longer be valued at the
+ * liquidationMargin above its debt.
+ *
+ * @param {Ratio} highestDebtRatio
+ * @param {Ratio} liquidationMargin
+ */
+const liquidationThreshold = (highestDebtRatio, liquidationMargin) =>
+  ceilMultiplyBy(
+    highestDebtRatio.numerator, // debt
+    liquidationMargin,
+  );
+
+/**
+ * @param {ERef<PriceAuthority>} priceAuthority
+ * @param {Ratio} highestDebtRatio
+ * @param {Ratio} liquidationMargin
+ */
+const makeQuote = (priceAuthority, highestDebtRatio, liquidationMargin) => {
+  return E(priceAuthority).mutableQuoteWhenLT(
+    highestDebtRatio.denominator, // collateral
+    liquidationThreshold(highestDebtRatio, liquidationMargin),
+  );
+};
+
+/**
+ *
+ * @param {PromiseLike<MutableQuote>} quote
+ * @param {Ratio} highestDebtRatio
+ * @param {Ratio} liquidationMargin
+ */
+const updateQuote = (quote, highestDebtRatio, liquidationMargin) => {
+  E(quote).updateLevel(
+    highestDebtRatio.denominator, // collateral
+    liquidationThreshold(highestDebtRatio, liquidationMargin),
+  );
+};
 
 /**
  * Liquidates a Vault, using the strategy to parameterize the particular
@@ -95,5 +138,7 @@ const liquidationDetailTerms = debtBrand =>
 
 harden(liquidate);
 harden(liquidationDetailTerms);
+harden(makeQuote);
+harden(updateQuote);
 
-export { liquidate, liquidationDetailTerms };
+export { liquidate, liquidationDetailTerms, makeQuote, updateQuote };

@@ -14,7 +14,7 @@ export {
   getAmountIn,
   getAmountOut,
   getTimestamp,
-  getQuoteValues,
+  getPriceDescription,
 } from './priceQuote.js';
 
 export { natSafeMath } from './safeMath.js';

@@ -5,7 +5,21 @@
 // and timestamp. The payment is issued by the quoteIssuer to support veracity
 // checking. These helpers make it easier to extract the components of the Quote
 
-export const getAmountIn = quote => quote.quoteAmount.value[0].amountIn;
-export const getAmountOut = quote => quote.quoteAmount.value[0].amountOut;
-export const getTimestamp = quote => quote.quoteAmount.value[0].timestamp;
-export const getQuoteValues = quote => quote.quoteAmount.value[0];
+/**
+ * @param {PriceQuote} quote
+ * @returns {PriceDescription}
+ */
+export const getPriceDescription = quote => {
+  assert(
+    quote.quoteAmount.value.length === 1,
+    'quoteAmount set must have one member',
+  );
+  return quote.quoteAmount.value[0];
+};
+
+/** @param {PriceQuote} quote */
+export const getAmountIn = quote => getPriceDescription(quote).amountIn;
+/** @param {PriceQuote} quote */
+export const getAmountOut = quote => getPriceDescription(quote).amountOut;
+/** @type {(quote: PriceQuote) => Timestamp} */
+export const getTimestamp = quote => getPriceDescription(quote).timestamp;
