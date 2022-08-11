@@ -933,6 +933,7 @@ test(`userSeat from zcf.makeEmptySeatKit - only these properties exist`, async t
     'tryExit',
     'getCurrentAllocationJig',
     'getAllocationNotifierJig',
+    'numWantsSatisfied',
   ];
   const { zcf } = await setupZCFTest();
   const { userSeat: userSeatP } = zcf.makeEmptySeatKit();
@@ -1412,4 +1413,77 @@ test(`zcf.setOfferFilter - legal lists`, async t => {
   t.is(await zcf.setOfferFilter([]), undefined);
   t.is(await zcf.setOfferFilter(['fooOffer', 'barOffer']), undefined);
   t.is(await zcf.setOfferFilter(['fooOffer: ', 'bar Offer']), undefined);
+});
+
+test('numWantsSatisfied: no', async t => {
+  const { zcf } = await setupZCFTest();
+  const doubloonMint = await zcf.makeZCFMint('Doubloons');
+  const yenMint = await zcf.makeZCFMint('Yen');
+  const { brand: doubloonBrand } = doubloonMint.getIssuerRecord();
+  const { brand: yenBrand } = yenMint.getIssuerRecord();
+  const yenAmount = AmountMath.make(yenBrand, 100n);
+  const proposal = harden({
+    give: { DownPayment: yenAmount },
+    want: { Bonus: AmountMath.make(doubloonBrand, 1_000_000n) },
+  });
+
+  const { zcfSeat: mintSeat, userSeat: payoutSeat } = zcf.makeEmptySeatKit();
+  yenMint.mintGains(harden({ Cost: yenAmount }), mintSeat);
+  mintSeat.exit();
+  const payout = await E(payoutSeat).getPayout('Cost');
+  const payment = { DownPayment: payout };
+
+  const { zcfSeat, userSeat } = await makeOffer(
+    zcf.getZoeService(),
+    zcf,
+    proposal,
+    payment,
+  );
+
+  await zcfSeat.exit();
+  t.is(await E(userSeat).numWantsSatisfied(), 0);
+});
+
+test('numWantsSatisfied: yes', async t => {
+  const { zcf } = await setupZCFTest();
+  const doubloonMint = await zcf.makeZCFMint('Doubloons');
+  const { brand: doubloonBrand } = doubloonMint.getIssuerRecord();
+  const doubloonAmount = AmountMath.make(doubloonBrand, 100n);
+
+  const proposal = harden({
+    want: { Bonus: doubloonAmount },
+  });
+  const { zcfSeat, userSeat } = await makeOffer(
+    zcf.getZoeService(),
+    zcf,
+    proposal,
+  );
+  doubloonMint.mintGains(harden({ Bonus: doubloonAmount }), zcfSeat);
+
+  await zcfSeat.exit();
+  t.is(await E(userSeat).numWantsSatisfied(), 1);
+});
+
+test('numWantsSatisfied as promise', async t => {
+  const { zcf } = await setupZCFTest();
+  const doubloonMint = await zcf.makeZCFMint('Doubloons');
+  const { brand: doubloonBrand } = doubloonMint.getIssuerRecord();
+  const doubloonAmount = AmountMath.make(doubloonBrand, 100n);
+
+  const proposal = harden({
+    want: { Bonus: doubloonAmount },
+  });
+  const { zcfSeat, userSeat } = await makeOffer(
+    zcf.getZoeService(),
+    zcf,
+    proposal,
+  );
+
+  const outcome = E.when(E(userSeat).numWantsSatisfied(), result =>
+    t.is(result, 1),
+  );
+  doubloonMint.mintGains(harden({ Bonus: doubloonAmount }), zcfSeat);
+
+  await zcfSeat.exit();
+  await outcome;
 });
