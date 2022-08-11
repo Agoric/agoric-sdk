@@ -259,6 +259,7 @@
  * @property {(id: BundleID) => ERef<BundleCap>} waitForBundleCap
  * @property {(id: BundleID) => ERef<BundleCap>} getBundleCap
  * @property {(name: string) => ERef<BundleCap>} getNamedBundleCap
+ * @property {(name: string) => BundleID} getBundleIDByName
  * @property {(bundleCap: BundleCap, options?: Record<string, any>) => ERef<RootAndAdminNode>} createVat
  */
 
