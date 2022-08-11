@@ -9,18 +9,17 @@ import type { RankComparison } from '@agoric/store';
 // meant to be globally accessible as a side-effect of importing this module.
 declare global {
   /**
-   * TODO As of PR #5821 there is no `TimerBrand` yet. The purpose of #5821
-   * is to prepare the ground for time objects labeled by `TimerBrand` in
-   * much the same way that `Amounts` are asset/money values labeled by
-   * `Brands`.
-   * As of #5821 (the time of this writing), a `TimerService` is actually
-   * used everywhere a `TimerBrand` is called for.
+   * TODO Timestamps are not yet labeled with the TimerBrand (in much
+   * the same way that `Amounts` are asset/money values labeled by
+   * `Brands`), and a `TimerService` is still used everywhere a
+   * `TimerBrand` is called for.
    *
    * See https://github.com/Agoric/agoric-sdk/issues/5798
    * and https://github.com/Agoric/agoric-sdk/pull/5821
    */
   type TimerBrand = {
     isMyTimer: (timer: TimerService) => ERef<boolean>;
+    isMyClock: (clock: Clock) => ERef<boolean>;
   };
 
   /**
@@ -75,6 +74,13 @@ declare global {
   type RelativeTime = RelativeTimeRecord | RelativeTimeValue;
 
   /**
+   * A CancelToken is an arbitrary marker object, passed in with
+   * each API call that creates a wakeup or repeater, and passed to
+   * cancel() to cancel them all.
+   */
+  type CancelToken = object;
+
+  /**
    * Gives the ability to get the current time,
    * schedule a single wake() call, create a repeater that will allow scheduling
    * of events at regular intervals, or remove scheduled calls.
@@ -87,13 +93,27 @@ declare global {
     /**
      * Return value is the time at which the call is scheduled to take place
      */
-    setWakeup: (baseTime: Timestamp, waker: ERef<TimerWaker>) => Timestamp;
+    setWakeup: (
+      baseTime: Timestamp,
+      waker: ERef<TimerWaker>,
+      cancelToken?: CancelToken,
+    ) => Timestamp;
     /**
-     * Remove the waker
-     * from all its scheduled wakeups, whether produced by `timer.setWakeup(h)` or
-     * `repeater.schedule(h)`.
+     * Create and return a promise that will resolve after the absolte
+     * time has passed.
      */
-    removeWakeup: (waker: ERef<TimerWaker>) => Array<Timestamp>;
+    wakeAt: (
+      baseTime: Timestamp,
+      cancelToken?: CancelToken,
+    ) => Promise<Timestamp>;
+    /**
+     * Create and return a promise that will resolve after the relative time has
+     * passed.
+     */
+    delay: (
+      delay: RelativeTime,
+      cancelToken?: CancelToken,
+    ) => Promise<Timestamp>;
     /**
      * Create and return a repeater that will schedule `wake()` calls
      * repeatedly at times that are a multiple of interval following delay.
@@ -106,7 +126,17 @@ declare global {
     makeRepeater: (
       delay: RelativeTime,
       interval: RelativeTime,
+      cancelToken?: CancelToken,
     ) => TimerRepeater;
+    /**
+     * Create a repeater with a handler directly.
+     */
+    repeatAfter: (
+      delay: RelativeTime,
+      interval: RelativeTime,
+      handler: TimerWaker,
+      cancelToken?: CancelToken,
+    ) => void;
     /**
      * Create and return a Notifier that will deliver updates repeatedly at times
      * that are a multiple of interval following delay.
@@ -114,12 +144,31 @@ declare global {
     makeNotifier: (
       delay: RelativeTime,
       interval: RelativeTime,
+      cancelToken?: CancelToken,
     ) => Notifier<Timestamp>;
     /**
-     * Create and return a promise that will resolve after the relative time has
-     * passed.
+     * Cancel a previously-established wakeup or repeater.
      */
-    delay: (delay: RelativeTime) => Promise<Timestamp>;
+    cancel: (cancelToken: CancelToken) => void;
+    /**
+     * Retrieve the read-only Clock facet.
+     */
+    getClock: () => Clock;
+    /**
+     * Retrieve the Brand for this timer service.
+     */
+    getTimerBrand: () => TimerBrand;
+  };
+
+  type Clock = {
+    /**
+     * Retrieve the latest timestamp
+     */
+    getCurrentTimestamp: () => Timestamp;
+    /**
+     * Retrieve the Brand for this timer service.
+     */
+    getTimerBrand: () => TimerBrand;
   };
 
   type TimerWaker = {
