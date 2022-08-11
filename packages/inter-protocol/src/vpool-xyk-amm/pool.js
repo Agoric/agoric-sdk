@@ -11,6 +11,7 @@ import {
   calcValueToRemove,
 } from '@agoric/zoe/src/contractSupport/index.js';
 
+import { E } from '@endo/eventual-send';
 import { makeMetricsPublisherKit } from '../contractSupport.js';
 import { makePriceAuthority } from './priceAuthority.js';
 import { makeSinglePool } from './singlePool.js';
@@ -22,6 +23,8 @@ import { makeSinglePool } from './singlePool.js';
 export const publicPrices = prices => {
   return { amountIn: prices.swapperGives, amountOut: prices.swapperGets };
 };
+
+/** @typedef {{ liquidityIssuerRecord: IssuerRecord<'nat'> }} InitPublication */
 
 /** @typedef {{ central: Amount, secondary: Amount }} NotificationState */
 
@@ -87,7 +90,14 @@ export const definePoolKind = (baggage, ammPowers, storageNode, marshaller) => {
    * @returns {ImmutableState & MutableState}
    */
   const poolInit = (liquidityZcfMint, poolSeat, secondaryBrand) => {
-    /** @type {PublishKit<{secondary: Amount, central: Amount}>} */
+    /** @type {StoredPublishKit<InitPublication>} */
+    const { publisher: initPublisher } = makeStoredPublishKit(
+      E(storageNode).getChildNode('init'),
+      marshaller,
+    );
+    initPublisher.finish({
+      liquidityIssuerRecord: liquidityZcfMint.getIssuerRecord(),
+    });
 
     return {
       liqTokenSupply: 0n,
