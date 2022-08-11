@@ -74,7 +74,7 @@ const liquidate = async (
       ];
 
   const toBurn = AmountMath.min(proceeds.Minted, debt);
-  // debt is fully settled, with toBurn and shortfall
+  // debt is fully accounted for, with toBurn and shortfall
   assert(AmountMath.isEqual(debt, AmountMath.add(toBurn, shortfall)));
 
   // Manager accounting changes determined. Update the vault state.
