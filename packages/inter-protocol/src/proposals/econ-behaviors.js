@@ -8,11 +8,11 @@ import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
 import { makeStorageNode } from '@agoric/vats/src/lib-chainStorage.js';
 import {
-  makeRatio,
   deeplyFulfillTerms,
+  makeRatio,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E, Far } from '@endo/far';
-import { Stake, Stable } from '@agoric/vats/src/tokens.js';
+import { Stable, Stake } from '@agoric/vats/src/tokens.js';
 import * as Collect from '../collect.js';
 import { makeTracer } from '../makeTracer.js';
 import { makeStakeReporter } from '../my-lien.js';
@@ -263,7 +263,7 @@ export const setupAmm = async (
 export const setupReserve = async ({
   consume: {
     ammCreatorFacet,
-    ammInstanceWithoutReserve: ammInstanceWithoutReserveP,
+    ammInstanceWithoutReserve,
     board,
     feeMintAccess: feeMintAccessP,
     chainStorage,
@@ -277,10 +277,10 @@ export const setupReserve = async ({
     reservePublicFacet,
   },
   issuer: {
-    consume: { [Stable.symbol]: centralIssuerP },
+    consume: { [Stable.symbol]: centralIssuer },
   },
   instance: {
-    consume: { economicCommittee: electorateInstanceP },
+    consume: { economicCommittee: electorateInstance },
     produce: {
       amm: ammInstanceProducer,
       reserve: reserveInstanceProducer,
@@ -290,55 +290,41 @@ export const setupReserve = async ({
   installation: {
     consume: {
       contractGovernor: governorInstallation,
-      reserve: reserveInstallationP,
+      reserve: reserveInstallation,
     },
   },
 }) => {
   const STORAGE_PATH = 'reserve';
   trace('setupReserve');
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
-  const [
-    poserInvitation,
-    poserInvitationAmount,
-    electorateInstance,
-    centralIssuer,
-    reserveInstallation,
-  ] = await Promise.all([
+  const [poserInvitation, poserInvitationAmount] = await Promise.all([
     poserInvitationP,
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
-    electorateInstanceP,
-    centralIssuerP,
-    reserveInstallationP,
   ]);
-  const timer = await chainTimerService; // avoid promise for legibility
-
-  const ammInstanceWithoutReserve = await ammInstanceWithoutReserveP;
 
   const reserveTerms = makeReserveTerms(
     poserInvitationAmount,
     ammInstanceWithoutReserve,
   );
 
-  const feeMintAccess = await feeMintAccessP;
-
   const storageNode = await makeStorageNode(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
-  const reserveGovernorTerms = {
-    timer,
+  const reserveGovernorTerms = await deeplyFulfillTerms({
+    timer: chainTimerService,
     electorateInstance,
     governedContractInstallation: reserveInstallation,
     governed: {
       terms: reserveTerms,
       issuerKeywordRecord: { Central: centralIssuer },
       privateArgs: {
-        feeMintAccess,
+        feeMintAccess: feeMintAccessP,
         initialPoserInvitation: poserInvitation,
         marshaller,
         storageNode,
       },
     },
-  };
+  });
   /** @type {{ creatorFacet: GovernedAssetReserveFacetAccess, publicFacet: GovernorPublic, instance: Instance }} */
   const g = await E(zoe).startInstance(
     governorInstallation,
