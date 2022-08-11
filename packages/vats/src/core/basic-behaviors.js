@@ -244,9 +244,11 @@ export const makeClientBanks = async ({
     bridgeManagerP,
   ]);
 
-  const terms = await deeplyFulfillTerms(
-    harden({ agoricNames, namesByAddress, board }),
-  );
+  const terms = await deeplyFulfillTerms({
+    agoricNames,
+    namesByAddress,
+    board,
+  });
   const { creatorFacet } = await E(zoe).startInstance(
     walletFactory,
     {},

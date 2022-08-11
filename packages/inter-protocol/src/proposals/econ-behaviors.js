@@ -456,13 +456,13 @@ export const startVaultFactory = async (
     governed: {
       terms: vaultFactoryTerms,
       issuerKeywordRecord: {},
-      privateArgs: harden({
+      privateArgs: {
         feeMintAccess: feeMintAccessP,
         initialPoserInvitation,
         initialShortfallInvitation,
         marshaller,
         storageNode,
-      }),
+      },
     },
   });
 
@@ -836,7 +836,7 @@ export const startStakeFactory = async (
     timer: chainTimerService,
     electorateInstance,
     governedContractInstallation: stakeFactoryInstallation,
-    governed: harden({
+    governed: {
       terms: stakeFactoryTerms,
       issuerKeywordRecord: { Stake: bldIssuer },
       privateArgs: {
@@ -846,7 +846,7 @@ export const startStakeFactory = async (
         storageNode,
         marshaller,
       },
-    }),
+    },
   });
 
   /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<StakeFactoryPublic,StakeFactoryCreator>}} */
