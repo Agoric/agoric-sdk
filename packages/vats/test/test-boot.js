@@ -103,13 +103,16 @@ const testRole = (ROLE, governanceActions) => {
       { argv: argvByRole[ROLE], governanceActions },
     );
 
-    const fakeVatAdmin = makeFakeVatAdmin(() => {}).admin;
+    const { admin: fakeVatAdmin } = makeFakeVatAdmin(() => {});
     const fakeBundleCaps = new Map(); // {} -> name
     const getNamedBundleCap = name => {
       const bundleCap = harden({});
       fakeBundleCaps.set(bundleCap, name);
       return bundleCap;
     };
+    const getBundleIDByName = name => `b1-${name}`;
+    const getBundleCap = id => devices.vatAdmin.getBundleCap(id);
+
     const createVat = (bundleCap, options) => {
       const name = fakeBundleCaps.get(bundleCap);
       assert(name);
@@ -141,7 +144,14 @@ const testRole = (ROLE, governanceActions) => {
       ...mock.vats,
       vatAdmin: /** @type { any } */ ({
         createVatAdminService: () =>
-          Far('vatAdminSvc', { getNamedBundleCap, createVat, createVatByName }),
+          Far('vatAdminSvc', {
+            getNamedBundleCap,
+            createVat,
+            createVatByName,
+            getBundleIDByName,
+            getBundleCap,
+            waitForBundleCap: getBundleCap,
+          }),
       }),
     };
     const actual = await E(root).bootstrap(vats, mock.devices);
@@ -167,6 +177,7 @@ test('evaluateInstallation is available to core eval', async t => {
       },
     };
 
+    // @ts-expect-error mock lacks getBundleIDByName
     const { zoeService } = makeZoeKit(makeFakeVatAdmin(() => {}).admin);
 
     const theBoard = boardRoot().getBoard();
