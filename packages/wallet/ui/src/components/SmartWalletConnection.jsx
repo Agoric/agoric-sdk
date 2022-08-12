@@ -1,8 +1,9 @@
-import { makeFollower, makeLeader, makeCastingSpec } from '@agoric/casting';
+import { makeFollower, makeLeader } from '@agoric/casting';
 import React, { useEffect, useState } from 'react';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
 import { observeIterator } from '@agoric/notifier';
+import { makeImportContext } from '@agoric/wallet/api/src/marshal-contexts';
 
 import { withApplicationContext } from '../contexts/Application';
 import {
@@ -75,14 +76,19 @@ const SmartWalletConnection = ({
         setConnectionState('error');
       };
 
+      const context = makeImportContext();
       const leader = makeLeader(href);
       const follower = makeFollower(
-        makeCastingSpec(`:published.wallet.${publicAddress}`),
+        `:published.wallet.${publicAddress}`,
         leader,
+        { unserializer: context.fromMyWallet },
       );
       const bridge = makeWalletBridgeFromFollower(
         follower,
+        leader,
+        context.fromBoard,
         publicAddress,
+        keplrConnection,
         backendError,
         () => setConnectionState('bridged'),
       );
