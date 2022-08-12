@@ -101,7 +101,7 @@ jq -c '
   ) |
 
   # Flatten the resulting structure, joining deep member names with "-".
-  [ paths(scalars) as $path | { key: $path | join("-"), value: getpath($path) } ] | from_entries |
+  [ paths(scalars==.) as $path | { key: $path | join("-"), value: getpath($path) } ] | from_entries |
 
   # Add block height information.
   (.dataBlockHeight |= $dataHeight) |
