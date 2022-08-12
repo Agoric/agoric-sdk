@@ -78,7 +78,7 @@ export const startPSM = async (
     ]);
 
   const mintLimit = AmountMath.make(anchorBrand, MINT_LIMIT);
-  const terms = deeplyFulfillTerms({
+  const terms = await deeplyFulfillTerms({
     anchorBrand,
     anchorPerStable: makeRatio(100n, anchorBrand, 100n, runBrand),
     governedParams: {
@@ -105,24 +105,25 @@ export const startPSM = async (
   const storageNode = await makeStorageNode(chainStorage, 'psm');
   const marshaller = await E(board).getPublishingMarshaller();
 
+  const governorTerms = await deeplyFulfillTerms({
+    timer: chainTimerService,
+    economicCommittee,
+    governedContractInstallation: psmInstall,
+    governed: {
+      terms,
+      issuerKeywordRecord: { [keyword]: anchorIssuer },
+      privateArgs: {
+        feeMintAccess,
+        initialPoserInvitation,
+        marshaller,
+        storageNode,
+      },
+    },
+  });
   const governorFacets = await E(zoe).startInstance(
     contractGovernor,
     {},
-    {
-      timer: chainTimerService,
-      economicCommittee,
-      governedContractInstallation: psmInstall,
-      governed: harden({
-        terms,
-        issuerKeywordRecord: { [keyword]: anchorIssuer },
-        privateArgs: {
-          feeMintAccess,
-          initialPoserInvitation,
-          marshaller,
-          storageNode,
-        },
-      }),
-    },
+    governorTerms,
     harden({ economicCommitteeCreatorFacet }),
   );
 

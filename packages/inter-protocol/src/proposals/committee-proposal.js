@@ -1,6 +1,7 @@
 // @ts-check
 import { E } from '@endo/far';
 
+import { deeplyFulfillTerms } from '@agoric/zoe/src/contractSupport/index.js';
 import { reserveThenDeposit } from './utils.js';
 
 const { values } = Object;
@@ -34,9 +35,9 @@ export const inviteCommitteeMembers = async (
     E(agoricNames).lookup('installation', 'econCommitteeCharter'),
     counterP,
   ]);
-  const terms = {
+  const terms = await deeplyFulfillTerms({
     binaryVoteCounterInstallation: counterInstall,
-  };
+  });
   const privateFacets = {
     reserve: reserveGovernorCreatorFacet,
     amm: ammGovernorCreatorFacet,

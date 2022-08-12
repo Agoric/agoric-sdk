@@ -1,6 +1,9 @@
 // @ts-check
 import { AmountMath, AssetKind } from '@agoric/ertp';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  deeplyFulfillTerms,
+  makeRatio,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { E } from '@endo/far';
 
@@ -215,7 +218,12 @@ export const registerScaledPriceAuthority = async (
     10n ** BigInt(decimalPlacesRun),
     runBrand,
   );
-  const terms = { sourcePriceAuthority, scaleIn, scaleOut };
+
+  const terms = await deeplyFulfillTerms({
+    sourcePriceAuthority,
+    scaleIn,
+    scaleOut,
+  });
   const { publicFacet } = E.get(
     E(zoe).startInstance(scaledPriceAuthority, undefined, terms),
   );
