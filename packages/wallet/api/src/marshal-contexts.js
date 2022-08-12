@@ -127,7 +127,7 @@ export const makeExportContext = () => {
       byVal: makeScalarMap(),
     },
     // TODO: offer, contact, dapp
-    /** @type {IdTable<number, Payment>} */
+    /** @type {IdTable<number, unknown>} */
     unknown: {
       bySlot: makeScalarMap(),
       byVal: makeScalarMap(),
@@ -251,7 +251,11 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
       bySlot: makeScalarMap(),
       byVal: makeScalarMap(),
     },
-    // TODO: offer, contact, dapp
+    /** @type {IdTable<number, unknown>} */
+    unknown: {
+      bySlot: makeScalarMap(),
+      byVal: makeScalarMap(),
+    },
   };
   /** @type {IdTable<BoardId, unknown>} */
   const boardObjects = {
@@ -292,8 +296,7 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
     fromMyWallet: (slot, iface) => {
       const { kind, id } = parseWalletSlot(walletObjects, slot);
       return kind
-        ? // @ts-expect-error tsc isn't quite this clever
-          provideVal(walletObjects[kind], id, iface)
+        ? provideVal(walletObjects[kind], id, iface)
         : slotToVal.fromBoard(slot, iface);
     },
   };
