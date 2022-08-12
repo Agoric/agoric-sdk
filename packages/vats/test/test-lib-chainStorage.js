@@ -2,48 +2,24 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { makeChainStorageRoot } from '../src/lib-chainStorage.js';
+import { makeFakeStorageKit } from '../tools/storage-test-utils.js';
 
 test('makeChainStorageRoot', async t => {
-  // Instantiate chain storage over a simple in-memory implementation.
-  const data = new Map();
-  const messages = [];
-  // eslint-disable-next-line consistent-return
-  const toStorage = message => {
-    messages.push(message);
-    switch (message.method) {
-      case 'getStoreKey': {
-        return {
-          storeName: 'swingset',
-          storeSubkey: `swingset/data:${message.key}`,
-        };
-      }
-      case 'set':
-        if ('value' in message) {
-          data.set(message.key, message.value);
-        } else {
-          data.delete(message.key);
-        }
-        break;
-      case 'size':
-        // Intentionally incorrect because it counts non-child descendants,
-        // but nevertheless supports a "has children" test.
-        return [...data.keys()].filter(k => k.startsWith(`${message.key}.`))
-          .length;
-      default:
-        throw new Error(`unsupported method: ${message.method}`);
-    }
-  };
   const rootPath = 'root';
-  const rootNode = makeChainStorageRoot(toStorage, 'swingset', rootPath);
+  const { rootNode, messages } = makeFakeStorageKit(rootPath);
   t.deepEqual(
     rootNode.getStoreKey(),
-    { storeName: 'swingset', storeSubkey: `swingset/data:${rootPath}` },
+    { storeName: 'swingset', storeSubkey: `fake:${rootPath}` },
     'root store key matches initialization input',
   );
 
   t.throws(() =>
     makeChainStorageRoot(
-      toStorage,
+      () => {
+        t.fail(
+          'toStorage should not have been called for non-"swingset" storeName',
+        );
+      },
       // @ts-expect-error
       'notswingset',
       rootPath,
@@ -116,7 +92,7 @@ test('makeChainStorageRoot', async t => {
     const childPath = `${rootPath}.${segment}`;
     t.deepEqual(
       child.getStoreKey(),
-      { storeName: 'swingset', storeSubkey: `swingset/data:${childPath}` },
+      { storeName: 'swingset', storeSubkey: `fake:${childPath}` },
       'path segments are dot-separated',
     );
     child.setValue('foo');
@@ -163,7 +139,7 @@ test('makeChainStorageRoot', async t => {
   const deepPath = `${childPath}.grandchild`;
   t.deepEqual(deepNode.getStoreKey(), {
     storeName: 'swingset',
-    storeSubkey: `swingset/data:${deepPath}`,
+    storeSubkey: `fake:${deepPath}`,
   });
   for (const [label, val] of nonStrings) {
     t.throws(
