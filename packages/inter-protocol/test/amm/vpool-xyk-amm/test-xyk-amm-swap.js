@@ -1179,7 +1179,7 @@ test('amm adding liquidity', async t => {
   );
 });
 
-test('storage keys', async t => {
+test('storage', async t => {
   // Set up central token
   const centralR = makeIssuerKit('central');
   const moolaR = makeIssuerKit('moola');
@@ -1187,22 +1187,32 @@ test('storage keys', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   // This timer is only used to build quotes. Let's make it non-zero
   const timer = buildManualTimer(t.log, 30n);
-  const { zoe, amm } = await setupAmmServices(
+  const { zoe, amm, mockChainStorage } = await setupAmmServices(
     t,
     electorateTerms,
     centralR,
     timer,
   );
-
   t.is(
     await subscriptionKey(E(amm.ammPublicFacet).getSubscription()),
     'mockChainStorageRoot.amm.governance',
   );
+  t.like(mockChainStorage.getBody('mockChainStorageRoot.amm.governance'), {
+    current: {
+      Electorate: { type: 'invitation' },
+      MinInitialPoolLiquidity: { type: 'amount' },
+      PoolFee: { type: 'nat' },
+      ProtocolFee: { type: 'nat' },
+    },
+  });
 
   t.is(
     await subscriptionKey(E(amm.ammPublicFacet).getMetrics()),
     'mockChainStorageRoot.amm.metrics',
   );
+  t.deepEqual(mockChainStorage.getBody('mockChainStorageRoot.amm.metrics'), {
+    XYK: [],
+  });
 
   const addInitialLiquidity = await makeAddInitialLiquidity(
     t,
@@ -1212,9 +1222,35 @@ test('storage keys', async t => {
     centralR,
   );
   await addInitialLiquidity(10000n, 50000n);
+  t.like(mockChainStorage.getBody('mockChainStorageRoot.amm.pool0.init'), {
+    liquidityIssuerRecord: {
+      assetKind: 'nat',
+      brand: { iface: 'Alleged: MoolaLiquidity brand' },
+      displayInfo: {
+        assetKind: 'nat',
+      },
+      issuer: {
+        iface: 'Alleged: MoolaLiquidity issuer',
+      },
+    },
+  });
 
   t.is(
     await subscriptionKey(E(amm.ammPublicFacet).getPoolMetrics(moolaR.brand)),
     'mockChainStorageRoot.amm.pool0.metrics',
   );
+  t.like(mockChainStorage.getBody('mockChainStorageRoot.amm.pool0.metrics'), {
+    centralAmount: {
+      brand: { iface: 'Alleged: central brand' },
+      value: 50000n,
+    },
+    liquidityTokens: {
+      brand: { iface: 'Alleged: MoolaLiquidity brand' },
+      value: 50000n,
+    },
+    secondaryAmount: {
+      brand: { iface: 'Alleged: moola brand' },
+      value: 10000n,
+    },
+  });
 });
