@@ -305,7 +305,7 @@ export const makeCosmjsFollower = (
      * @param {import('./types').CastingChange} allegedChange
      */
     const tryQueryAndUpdate = async allegedChange => {
-      const committer = prepareUpdateInOrder();
+      let committer = prepareUpdateInOrder();
 
       // Make an unproven query if we have no alleged value.
       const { values: allegedValues, blockHeight: allegedBlockHeight } =
@@ -334,18 +334,36 @@ export const makeCosmjsFollower = (
         }
       }
       lastBuf = buf;
-      const data = decode(buf);
-      if (!unserializer) {
-        /** @type {T} */
-        const value = data;
+      let streamCell = decode(buf);
+      // Upgrade a naked value to a JSON stream cell if necessary.
+      if (!streamCell.height || !streamCell.values) {
+        streamCell = { values: [JSON.stringify(streamCell)] };
+      }
+      for (let i = 0; i < streamCell.values.length; i += 1) {
+        const data = JSON.parse(streamCell.values[i]);
+        const last = i + 1 === streamCell.values.length;
+        if (!unserializer) {
+          /** @type {T} */
+          const value = data;
+          committer.commit({ value });
+          if (!last) {
+            committer = prepareUpdateInOrder();
+          }
+          // eslint-disable-next-line no-continue
+          continue;
+        }
+        // eslint-disable-next-line no-await-in-loop,@jessie.js/no-nested-await
+        const value = await E(unserializer).unserialize(data);
+        if (!committer.isValid()) {
+          // QUESTION: How would we get here, and what is the proper handling?
+          // eslint-disable-next-line no-continue
+          continue;
+        }
         committer.commit({ value });
-        return;
+        if (!last) {
+          committer = prepareUpdateInOrder();
+        }
       }
-      const value = await E(unserializer).unserialize(data);
-      if (!committer.isValid()) {
-        return;
-      }
-      committer.commit({ value });
     };
 
     const changeFollower = E(leader).watchCasting(castingSpecP);
@@ -362,6 +380,7 @@ export const makeCosmjsFollower = (
           return;
         }
         harden(allegedChange);
+        // eslint-disable-next-line @jessie.js/no-nested-await
         await queryAndUpdateOnce(allegedChange);
       }
     };

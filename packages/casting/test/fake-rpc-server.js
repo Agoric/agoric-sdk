@@ -64,10 +64,18 @@ const fakeStatusResult = {
   },
 };
 
-export const startFakeServer = (t, fakeValues, marshaller = makeMarshal()) => {
+/**
+ * @param {Assertions} t
+ * @param {Array<{any}>} fakeValues
+ * @param {object} [options]
+ * @param {Marshaller} [options.marshaller]
+ * @param {number} [options.batchSize] count of stream-cell results per response, or 0/absent to return lone naked values
+ */
+export const startFakeServer = (t, fakeValues, options = {}) => {
   const { log = console.log } = t;
   lastPort += 1;
   const PORT = lastPort;
+  const { marshaller = makeMarshal(), batchSize = 0 } = options;
   return new Promise(resolve => {
     log('starting http server on port', PORT);
     const app = express();
@@ -97,6 +105,8 @@ export const startFakeServer = (t, fakeValues, marshaller = makeMarshal()) => {
       buf.set(ascii, dataPrefix.length);
       return toBase64(buf);
     };
+    let height = 74863;
+    let responseValueBase64;
     app.post('/tendermint-rpc', (req, res) => {
       log('received', req.path, req.body, req.params);
       const reply = result => {
@@ -114,10 +124,23 @@ export const startFakeServer = (t, fakeValues, marshaller = makeMarshal()) => {
           break;
         }
         case 'abci_query': {
-          const value =
-            fakeValues.length === 0
-              ? null
-              : encode(marshaller.serialize(fakeValues.shift()));
+          height += 2;
+          const values = fakeValues.splice(0, Math.max(1, batchSize));
+          if (values.length > 0) {
+            if (batchSize > 0) {
+              // Return a JSON stream cell.
+              const serializedValues = values.map(val =>
+                JSON.stringify(marshaller.serialize(val)),
+              );
+              responseValueBase64 = encode({
+                height: String(height - 1),
+                values: serializedValues,
+              });
+            } else {
+              // Return a single naked value.
+              responseValueBase64 = encode(marshaller.serialize(values[0]));
+            }
+          }
           const result = {
             response: {
               code: 0,
@@ -127,9 +150,9 @@ export const startFakeServer = (t, fakeValues, marshaller = makeMarshal()) => {
               key: Buffer.from(
                 'swingset/data:mailbox.agoric1foobarbaz',
               ).toString('base64'),
-              value,
+              value: responseValueBase64,
               proofOps: null,
-              height: '74863',
+              height: String(height),
               codespace: '',
             },
           };
