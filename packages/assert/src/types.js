@@ -10,6 +10,7 @@
 /**
  * @callback BaseAssert
  * The `assert` function itself.
+ *
  * @param {*} flag The truthy/falsy value
  * @param {Details=} optDetails The details to throw
  * @param {ErrorConstructor=} ErrorConstructor An optional alternate error
@@ -73,36 +74,43 @@
  * @param {'bigint'} typename
  * @param {Details=} optDetails
  * @returns {asserts specimen is bigint}
+ *
  * @callback AssertTypeofBoolean
  * @param {any} specimen
  * @param {'boolean'} typename
  * @param {Details=} optDetails
  * @returns {asserts specimen is boolean}
+ *
  * @callback AssertTypeofFunction
  * @param {any} specimen
  * @param {'function'} typename
  * @param {Details=} optDetails
  * @returns {asserts specimen is Function}
+ *
  * @callback AssertTypeofNumber
  * @param {any} specimen
  * @param {'number'} typename
  * @param {Details=} optDetails
  * @returns {asserts specimen is number}
+ *
  * @callback AssertTypeofObject
  * @param {any} specimen
  * @param {'object'} typename
  * @param {Details=} optDetails
  * @returns {asserts specimen is Record<any, any> | null}
+ *
  * @callback AssertTypeofString
  * @param {any} specimen
  * @param {'string'} typename
  * @param {Details=} optDetails
  * @returns {asserts specimen is string}
+ *
  * @callback AssertTypeofSymbol
  * @param {any} specimen
  * @param {'symbol'} typename
  * @param {Details=} optDetails
  * @returns {asserts specimen is symbol}
+ *
  * @callback AssertTypeofUndefined
  * @param {any} specimen
  * @param {'undefined'} typename
@@ -135,6 +143,7 @@
  * Annotate this error with these details, potentially to be used by an
  * augmented console, like the causal console of `console.js`, to
  * provide extra information associated with logged errors.
+ *
  * @param {Error} error
  * @param {Details} detailsNote
  * @returns {void}
@@ -208,6 +217,7 @@
  * callback, where that callback actually performs that larger termination.
  * If possible, the callback should also report its `reason` parameter as
  * the alleged reason for the termination.
+ *
  * @param {Error} reason
  */
 
@@ -227,6 +237,7 @@
  * that prevents execution from reaching the following throw. However, if
  * `optRaise` returns normally, which would be unusual, the throw following
  * `optRaise(reason)` would still happen.
+ *
  * @param {Raise=} optRaise
  * @param {boolean=} unredacted
  * @returns {Assert}
