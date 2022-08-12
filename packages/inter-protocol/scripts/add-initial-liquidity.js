@@ -13,15 +13,12 @@ const config = {
   Secondary: { IbcATOM: 500n * dec4 }, // 20 IST per ATOM
 };
 
-// /** @type {<K extends string,V>(es: [K,V][]) => Record<K,V>} */
-// const recordFromEntries = Object.fromEntries;
-
 const getOfferResult = async (instance, wallet, walletAdmin) => {
   const offerIt = E(walletAdmin).getOffersNotifier();
   let result;
   console.log('awaiting offers...');
   for await (const offers of makeNotifierFromAsyncIterable(offerIt)) {
-    console.log('offers iterator:', offers);
+    console.log('offers iterator next:', offers);
     offers
       .filter(
         ({ status, invitationQuery }) =>
@@ -47,10 +44,6 @@ const addInitialLiquidity = async (homeP, { now = () => Date.now() }) => {
   const { wallet, agoricNames, zoe, scratch } = E.get(homeP);
 
   const walletBridge = E(wallet).getBridge();
-  //   const iNot = E(wb).getIssuersNotifier();
-  //   const { value: iEntries } = await E(iNot).getUpdateSince();
-  //   const issuers = recordFromEntries(iEntries);
-  //   console.log(issuers);
 
   const getService = async name => {
     console.log('lookup instance', name);
@@ -89,7 +82,6 @@ const addInitialLiquidity = async (homeP, { now = () => Date.now() }) => {
     const offerConfig = {
       id: `${now()}`,
       invitation,
-      // installationHandle: amm.installation,
       instanceHandle: amm.instance,
       proposalTemplate,
       requestContext: undefined,
