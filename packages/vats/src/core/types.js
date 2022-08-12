@@ -196,7 +196,7 @@
  *   bldIssuerKit: RemoteIssuerKit,
  *   board: Board,
  *   bridgeManager: OptionalBridgeManager,
- *   chainStorage: import('../lib-chainStorage.js').ChainStorageNode | null,
+ *   chainStorage: StorageNode | null,
  *   chainTimerService: TimerService,
  *   client: ClientManager,
  *   clientCreator: ClientCreator,

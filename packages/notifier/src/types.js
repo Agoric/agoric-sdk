@@ -219,6 +219,14 @@
 /** @typedef {Pick<Marshaller, 'unserialize'>} Unserializer */
 
 /**
+ * This represents a node in an IAVL tree.
+ *
+ * The active implementation is x/vstorage, an Agoric extension of the Cosmos SDK.
+ *
+ * Vstorage is a hierarchical externally-reachable storage structure that
+ * identifies children by restricted ASCII name and is associated with arbitrary
+ * string-valued data for each node, defaulting to the empty string.
+ *
  * @typedef {object} StorageNode
  * @property {(data: string) => void} setValue publishes some data
  * @property {() => ERef<Record<string, any>>} getStoreKey get the

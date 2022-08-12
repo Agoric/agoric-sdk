@@ -84,7 +84,6 @@ export function makeChainStorageRoot(
   const rootNode = makeChainStorageNode(rootPath);
   return rootNode;
 }
-/** @typedef {ReturnType<typeof makeChainStorageRoot>} ChainStorageNode */
 
 /**
  * @returns {StorageNode} an object that confirms to StorageNode API but does not store anywhere.
@@ -99,7 +98,7 @@ const makeNullStorageNode = () => {
  * falling back to an inert object with the correct interface (but incomplete
  * behavior) when that is unavailable.
  *
- * @param {ERef<ChainStorageNode?>} chainStorage
+ * @param {ERef<StorageNode?>} chainStorage
  * @param {string} [childName]
  * @returns {Promise<StorageNode>}
  */
