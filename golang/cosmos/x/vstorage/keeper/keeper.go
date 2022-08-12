@@ -2,6 +2,8 @@ package keeper
 
 import (
 	"bytes"
+	"encoding/json"
+	"strconv"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -10,6 +12,19 @@ import (
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 )
+
+// StreamCell is an envelope representing a sequence of values written at a path in a single block.
+// It is persisted to storage as a { "height": "<digits>", "values": ["...", ...] } JSON text
+// that off-chain consumers rely upon.
+type StreamCell struct {
+	Height string `json:"height"`
+	// XXX Should Values be []string or []interface{}?
+	// The latter would remove a layer of JSON encoding (e.g., `[{…}]` rather than `["{…}"]`,
+	// but would add a requirement exclusive to AppendStorageValueAndNotify that its input be JSON.
+	// On the other hand, we could always extend this format in the future to include an indication
+	// that values are subject to a different encoding, e.g. `"valueEncoding":"base64"`.
+	Values []string `json:"values"`
+}
 
 // Keeper maintains the link to data storage and exposes getter/setter methods
 // for the various parts of the state machine
@@ -125,6 +140,31 @@ func (k Keeper) SetStorageAndNotify(ctx sdk.Context, path, value string) {
 			[]byte(value),
 		),
 	)
+}
+
+func (k Keeper) AppendStorageValueAndNotify(ctx sdk.Context, path, value string) error {
+	height := strconv.FormatInt(ctx.BlockHeight(), 10)
+
+	// Preserve correctly-formatted data within the current block,
+	// otherwise initialize a blank cell.
+	currentData := k.GetData(ctx, path)
+	var cell StreamCell
+	_ = json.Unmarshal([]byte(currentData), &cell)
+	if cell.Height != height {
+		cell.Height = height
+		cell.Values = make([]string, 0, 1)
+	}
+
+	// Append the new value.
+	cell.Values = append(cell.Values, value)
+
+	// Perform the write.
+	bz, err := json.Marshal(cell)
+	if err != nil {
+		return err
+	}
+	k.SetStorageAndNotify(ctx, path, string(bz))
+	return nil
 }
 
 func componentsToPath(components []string) string {

@@ -61,7 +61,15 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 		keeper.SetStorageAndNotify(cctx.Context, msg.Path, msg.Value)
 		return "true", nil
 
+	case "append":
+		err = keeper.AppendStorageValueAndNotify(cctx.Context, msg.Path, msg.Value)
+		if err != nil {
+			return "", err
+		}
+		return "true", nil
+
 	case "get":
+		// Note that "get" does not (currently) unwrap a StreamCell.
 		value := keeper.GetData(cctx.Context, msg.Path)
 		if value == "" {
 			return "null", nil
