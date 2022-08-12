@@ -120,7 +120,7 @@ export const createPriceFeed = async (
   );
 
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
-  const marshaller = await E(board).getReadonlyMarshaller();
+  const marshaller = E(board).getReadonlyMarshaller();
 
   // Create the price feed.
   const aggregator = await E(zoe).startInstance(
@@ -128,7 +128,7 @@ export const createPriceFeed = async (
     undefined,
     terms,
     {
-      storageNode: E(storageNode).getChildNode(
+      storageNode: E(storageNode).makeChildNode(
         sanitizePathSegment(AGORIC_INSTANCE_NAME),
       ),
       marshaller,

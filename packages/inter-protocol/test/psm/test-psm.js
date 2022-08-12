@@ -114,7 +114,7 @@ const makeTestContext = async () => {
     privateArgs: harden({
       feeMintAccess: await feeMintAccess,
       initialPoserInvitation,
-      storageNode: makeMockChainStorageRoot().getChildNode('psm'),
+      storageNode: makeMockChainStorageRoot().makeChildNode('psm'),
       marshaller: makeBoard().getReadonlyMarshaller(),
     }),
     run: { issuer: runIssuer, brand: runBrand },

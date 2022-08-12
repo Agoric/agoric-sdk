@@ -92,7 +92,7 @@ export const definePoolKind = (baggage, ammPowers, storageNode, marshaller) => {
   const poolInit = (liquidityZcfMint, poolSeat, secondaryBrand) => {
     /** @type {StoredPublishKit<InitPublication>} */
     const { publisher: initPublisher } = makeStoredPublishKit(
-      E(storageNode).getChildNode('init'),
+      E(storageNode).makeChildNode('init'),
       marshaller,
     );
     initPublisher.finish({

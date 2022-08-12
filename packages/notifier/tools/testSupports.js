@@ -33,7 +33,7 @@ export const makeFakeStorage = (path, publication) => {
       }
       publication.updateState(value);
     },
-    getChildNode: () => storage,
+    makeChildNode: () => storage,
     // @ts-expect-error
     countSetValueCalls: () => setValueCalls,
   };

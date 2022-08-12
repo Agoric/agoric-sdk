@@ -174,7 +174,7 @@ export const makeStoredPublisherKit = (storageNode, marshaller, childPath) => {
   const { publication, subscription } = makeSubscriptionKit();
 
   if (storageNode && childPath) {
-    storageNode = E(storageNode).getChildNode(childPath);
+    storageNode = E(storageNode).makeChildNode(childPath);
   }
 
   // wrap the subscription to tee events to storage, repeating to this `subscriber`

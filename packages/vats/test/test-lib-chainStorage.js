@@ -89,7 +89,7 @@ test('makeChainStorageRoot', async t => {
       .repeat(Math.ceil(100 / validSegmentChars.length))
       .match(/.{1,100}/gsu) || [];
   for (const segment of extremeSegments) {
-    const child = rootNode.getChildNode(segment);
+    const child = rootNode.makeChildNode(segment);
     const childPath = `${rootPath}.${segment}`;
     t.deepEqual(
       child.getStoreKey(),
@@ -122,16 +122,16 @@ test('makeChainStorageRoot', async t => {
   for (const [label, val] of badSegments) {
     t.throws(
       // @ts-expect-error invalid value
-      () => rootNode.getChildNode(val),
+      () => rootNode.makeChildNode(val),
       undefined,
       `${label} segment is rejected`,
     );
   }
 
   // Level-skipping creation is allowed.
-  const childNode = rootNode.getChildNode('child');
+  const childNode = rootNode.makeChildNode('child');
   const childPath = `${rootPath}.child`;
-  const deepNode = childNode.getChildNode('grandchild');
+  const deepNode = childNode.makeChildNode('grandchild');
   const deepPath = `${childPath}.grandchild`;
   t.deepEqual(deepNode.getStoreKey(), {
     storeName: 'swingset',

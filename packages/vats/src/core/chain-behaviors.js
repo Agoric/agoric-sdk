@@ -325,7 +325,7 @@ export const publishAgoricNames = async ({
     console.warn('cannot publish agoricNames without chainStorage');
     return;
   }
-  const nameStorage = E(root).getChildNode('agoricNames');
+  const nameStorage = E(root).makeChildNode('agoricNames');
   const marshaller = E(board).getPublishingMarshaller();
 
   // brand, issuer, ...
@@ -333,7 +333,7 @@ export const publishAgoricNames = async ({
     keys(agoricNamesReserved).map(async kind => {
       const kindAdmin = await E(agoricNamesAdmin).lookupAdmin(kind);
 
-      const kindNode = await E(nameStorage).getChildNode(kind);
+      const kindNode = await E(nameStorage).makeChildNode(kind);
       const { publisher } = makeStoredPublishKit(kindNode, marshaller);
       publisher.publish([]);
       kindAdmin.onUpdate(publisher.publish);

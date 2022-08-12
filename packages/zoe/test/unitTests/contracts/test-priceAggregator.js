@@ -154,14 +154,14 @@ test.before('setup aggregator and oracles', async ot => {
    */
   const makeMedianAggregator = async POLL_INTERVAL => {
     const timer = buildManualTimer(() => {});
-    const storageNode = E(storageRoot).getChildNode('priceAggregator');
+    const storageNode = E(storageRoot).makeChildNode('priceAggregator');
     const aggregator = await E(zoe).startInstance(
       aggregatorInstallation,
       undefined,
       { timer, POLL_INTERVAL, brandIn: atomBrand, brandOut: usdBrand },
       {
         marshaller,
-        storageNode: E(storageNode).getChildNode(
+        storageNode: E(storageNode).makeChildNode(
           sanitizePathSegment('ATOM-USD price feed'),
         ),
       },

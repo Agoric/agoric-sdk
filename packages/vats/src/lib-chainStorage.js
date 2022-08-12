@@ -58,7 +58,8 @@ export function makeChainStorageRoot(
           value: '',
         });
       },
-      getChildNode(name) {
+      /** @type {(name: string) => StorageNode} */
+      makeChildNode(name) {
         assert.typeof(name, 'string');
         assert(
           pathSegmentPattern.test(name),
@@ -72,7 +73,7 @@ export function makeChainStorageRoot(
       },
       // Possible extensions:
       // * getValue()
-      // * getChildNames() and/or getChildNodes()
+      // * getChildNames() and/or makeChildNodes()
       // * getName()
       // * recursive delete
       // * batch operations
@@ -105,6 +106,6 @@ const makeNullStorageNode = () => {
 export async function makeStorageNodeChild(storageNodeRef, childName) {
   // eslint-disable-next-line @jessie.js/no-nested-await
   const storageNode = (await storageNodeRef) || makeNullStorageNode();
-  return E(storageNode).getChildNode(childName);
+  return E(storageNode).makeChildNode(childName);
 }
 harden(makeStorageNodeChild);

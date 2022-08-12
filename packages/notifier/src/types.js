@@ -231,7 +231,7 @@
  * @property {(data: string) => void} setValue publishes some data
  * @property {() => ERef<Record<string, any>>} getStoreKey get the
  * externally-reachable store key for this storage item
- * @property {(subPath: string) => StorageNode} getChildNode TODO: makeChildNode
+ * @property {(subPath: string) => StorageNode} makeChildNode
  */
 
 /**
