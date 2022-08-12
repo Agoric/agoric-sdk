@@ -55,8 +55,8 @@ export function makeChainStorageRoot(
           value: '',
         });
       },
-      /** @type {(name: string) => StorageNode} */
-      makeChildNode(name) {
+      /** @type {(name: string, childNodeOptions?: {sequence?: boolean}) => StorageNode} */
+      makeChildNode(name, childNodeOptions = {}) {
         assert.typeof(name, 'string');
         assertPathSegment(name);
         return makeChainStorageNode(`${path}.${name}`);

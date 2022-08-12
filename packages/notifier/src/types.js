@@ -238,7 +238,7 @@
  * @property {(data: string) => void} setValue publishes some data
  * @property {() => ERef<VStorageKey>} getStoreKey get the
  * externally-reachable store key for this storage item
- * @property {(subPath: string) => StorageNode} makeChildNode
+ * @property {(subPath: string, options?: {sequence?: boolean}) => StorageNode} makeChildNode
  */
 
 /**
