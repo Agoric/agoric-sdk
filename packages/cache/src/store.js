@@ -168,8 +168,8 @@ export const makeScalarStoreCoordinator = (
  * Don't write any marshalled value that's older than what's already pushed
  *
  * @param {MapStore<string, import('./types').State>} stateStore
- * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
+ * @param {ERef<StorageNode>} storageNode
  * @returns {<T>(storedValue: T) => Promise<T>}
  */
 const makeLastWinsUpdater = (stateStore, marshaller, storageNode) => {
