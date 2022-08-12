@@ -2,7 +2,6 @@
 import '@endo/init/pre-remoting.js';
 
 lockdown({
-  __allowUnsafeMonkeyPatching__: 'unsafe',
   errorTaming: 'unsafe',
   stackFiltering: 'verbose',
   overrideTaming: 'severe',

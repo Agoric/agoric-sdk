@@ -12,7 +12,6 @@ Math.pow = (base, exp) =>
     : mathPow(base, exp);
 
 lockdown({
-  __allowUnsafeMonkeyPatching__: 'unsafe',
   errorTaming: 'unsafe',
   overrideTaming: 'severe',
   consoleTaming,
