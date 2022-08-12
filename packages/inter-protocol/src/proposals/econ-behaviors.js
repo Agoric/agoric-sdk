@@ -6,7 +6,7 @@ import { AmountMath } from '@agoric/ertp';
 import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
-import { makeStorageNode } from '@agoric/vats/src/lib-chainStorage.js';
+import { makeStorageNodeChild } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E, Far } from '@endo/far';
 import { Stable, Stake } from '@agoric/vats/src/tokens.js';
@@ -217,7 +217,10 @@ export const setupAmm = async (
     AmountMath.make(runBrand, minInitialPoolLiquidity),
   );
 
-  const storageNode = await makeStorageNode(chainStorage, AMM_STORAGE_PATH);
+  const storageNode = await makeStorageNodeChild(
+    chainStorage,
+    AMM_STORAGE_PATH,
+  );
   const marshaller = await E(board).getPublishingMarshaller();
 
   const ammGovernorTerms = await deeplyFulfilled(
@@ -313,7 +316,7 @@ export const setupReserve = async ({
     ammInstanceWithoutReserve,
   );
 
-  const storageNode = await makeStorageNode(chainStorage, STORAGE_PATH);
+  const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
   const reserveGovernorTerms = await deeplyFulfilled(
@@ -439,7 +442,7 @@ export const startVaultFactory = async (
 
   const ammPublicFacet = await E(zoe).getPublicFacet(ammInstance);
   const reservePublicFacet = await E(zoe).getPublicFacet(reserveInstance);
-  const storageNode = await makeStorageNode(chainStorage, STORAGE_PATH);
+  const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
   const vaultFactoryTerms = makeGovernedTerms(
@@ -846,7 +849,7 @@ export const startStakeFactory = async (
     },
   );
 
-  const storageNode = await makeStorageNode(chainStorage, STORAGE_PATH);
+  const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
   const stakeTerms = await deeplyFulfilled(

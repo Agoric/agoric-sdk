@@ -99,15 +99,12 @@ const makeNullStorageNode = () => {
  * behavior) when that is unavailable.
  *
  * @param {ERef<StorageNode?>} chainStorage
- * @param {string} [childName]
+ * @param {string} childName
  * @returns {Promise<StorageNode>}
  */
-export async function makeStorageNode(chainStorage, childName) {
+export async function makeStorageNodeChild(chainStorage, childName) {
   // eslint-disable-next-line @jessie.js/no-nested-await
   const storageNode = (await chainStorage) || makeNullStorageNode();
-  if (childName) {
-    return E(storageNode).getChildNode(childName);
-  }
-  return storageNode;
+  return E(storageNode).getChildNode(childName);
 }
-harden(makeStorageNode);
+harden(makeStorageNodeChild);
