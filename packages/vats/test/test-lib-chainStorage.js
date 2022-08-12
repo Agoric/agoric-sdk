@@ -41,7 +41,14 @@ test('makeChainStorageRoot', async t => {
     'root store key matches initialization input',
   );
 
-  t.throws(() => makeChainStorageRoot(toStorage, 'notswingset', rootPath));
+  t.throws(() =>
+    makeChainStorageRoot(
+      toStorage,
+      // @ts-expect-error
+      'notswingset',
+      rootPath,
+    ),
+  );
 
   // Values must be strings.
   const nonStrings = new Map(

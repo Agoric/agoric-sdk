@@ -36,7 +36,7 @@ harden(sanitizePathSegment);
  * Create a root storage node for a given backing function and root path.
  *
  * @param {(message: StorageMessage) => any} handleStorageMessage a function for sending a storageMessage object to the storage implementation (cf. golang/cosmos/x/vstorage/vstorage.go)
- * @param {string} storeName currently limited to "swingset"
+ * @param {'swingset'} storeName currently limited to "swingset"
  * @param {string} rootPath
  */
 export function makeChainStorageRoot(
