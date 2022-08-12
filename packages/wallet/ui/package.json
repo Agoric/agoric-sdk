@@ -18,7 +18,7 @@
     "@cosmjs/crypto": "^0.28.11",
     "@cosmjs/encoding": "^0.28.11",
     "@cosmjs/proto-signing": "^0.28.11",
-    "@cosmjs/stargate": "0.28.4",
+    "@cosmjs/stargate": "^0.28.11",
     "@emotion/react": "^11.5.0",
     "@emotion/styled": "^11.3.0",
     "@endo/captp": "^2.0.9",
