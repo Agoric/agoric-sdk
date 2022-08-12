@@ -4,6 +4,15 @@ import Payment from '../Payment';
 import Offer from '../Offer';
 import DappConnection from '../DappConnection';
 
+jest.mock('@endo/eventual-send', () => ({
+  E: obj =>
+    new Proxy(obj, {
+      get(target, propKey) {
+        const method = target[propKey];
+        return (...args) => Promise.resolve(method.apply(this, args));
+      },
+    }),
+}));
 jest.mock('../Payment', () => () => 'Payment');
 jest.mock('../Offer', () => () => 'Offer');
 jest.mock('../DappConnection', () => () => 'DappConnection');

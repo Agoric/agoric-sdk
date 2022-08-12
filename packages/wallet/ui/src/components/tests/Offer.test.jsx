@@ -36,6 +36,7 @@ const setPendingOffers = jest.fn();
 const declinedOffers = new Set();
 const setDeclinedOffers = jest.fn();
 const setClosedOffers = jest.fn();
+const purses = [];
 
 const withApplicationContext =
   (Component, _) =>
@@ -47,6 +48,7 @@ const withApplicationContext =
         declinedOffers={declinedOffers}
         setDeclinedOffers={setDeclinedOffers}
         setClosedOffers={setClosedOffers}
+        purses={purses}
         {...props}
       />
     );
