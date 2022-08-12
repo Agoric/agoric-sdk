@@ -1,18 +1,19 @@
 // @ts-check
-import { E } from '@endo/eventual-send';
 import { makeLoopback } from '@endo/captp';
+import { E } from '@endo/eventual-send';
 
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { makeZoeKit } from '@agoric/zoe';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
   makeAgoricNamesAccess,
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
+import { makeZoeKit } from '@agoric/zoe';
+import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 import * as Collect from '../../../src/collect.js';
+import { makeTracer } from '../../../src/makeTracer.js';
 import {
   setupAmm,
   setupReserve,
@@ -20,10 +21,9 @@ import {
 } from '../../../src/proposals/econ-behaviors.js';
 import {
   installGovernance,
-  mockChainStorageRoot,
+  makeMockChainStorageRoot,
   provideBundle,
 } from '../../supports.js';
-import { makeTracer } from '../../../src/makeTracer.js';
 
 const ammRoot = './src/vpool-xyk-amm/multipoolMarketMaker.js'; // package relative
 const reserveRoot = './src/reserve/assetReserve.js'; // package relative
@@ -84,7 +84,7 @@ export const setupAMMBootstrap = async (
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   installGovernance(zoe, spaces.installation.produce);
-  produce.chainStorage.resolve(mockChainStorageRoot());
+  produce.chainStorage.resolve(makeMockChainStorageRoot());
   produce.board.resolve(makeBoard());
 
   return { produce, consume, ...spaces };
@@ -168,6 +168,11 @@ export const setupAmmServices = async (
   const poserInvitationAmount = await E(
     E(zoe).getInvitationIssuer(),
   ).getAmountOf(poserInvitationP);
+
+  /** @type {import('../../supports.js').MockChainStorageRoot} */
+  // @ts-expect-error cast
+  const mockChainStorage = await space.consume.chainStorage;
+
   return {
     zoe,
     installs,
@@ -177,6 +182,7 @@ export const setupAmmServices = async (
     governor: g,
     amm,
     invitationAmount: poserInvitationAmount,
+    mockChainStorage,
     space,
   };
 };

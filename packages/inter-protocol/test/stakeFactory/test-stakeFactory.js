@@ -28,7 +28,7 @@ import { ManagerKW as KW } from '../../src/stakeFactory/constants.js';
 import {
   makeVoterTool,
   mintRunPayment,
-  mockChainStorageRoot,
+  makeMockChainStorageRoot,
   setUpZoeForTest,
   subscriptionKey,
 } from '../supports.js';
@@ -269,7 +269,7 @@ const bootstrapStakeFactory = async (t, timer) => {
   });
   produce.client.resolve(mockClient);
 
-  produce.chainStorage.resolve(mockChainStorageRoot());
+  produce.chainStorage.resolve(makeMockChainStorageRoot());
   produce.board.resolve(makeBoard());
 
   await Promise.all([

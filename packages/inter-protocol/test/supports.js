@@ -10,14 +10,14 @@ import {
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
-import { makeChainStorageRoot } from '@agoric/vats/src/lib-chainStorage.js';
+import { makeFakeStorageKit } from '@agoric/vats/tools/storage-test-utils.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { makeLoopback } from '@endo/captp';
-import { E } from '@endo/far';
+import { makeLoopback, makeMarshal } from '@endo/captp';
+import { E, Far } from '@endo/far';
 import { makeTracer } from '../src/makeTracer.js';
 
 /**
@@ -64,10 +64,34 @@ export const setUpZoeForTest = (setJig = () => {}) => {
 };
 harden(setUpZoeForTest);
 
-export const mockChainStorageRoot = () => {
-  const toStorage = v => v;
-  return makeChainStorageRoot(toStorage, 'swingset', 'mockChainStorageRoot');
+export const makeMockChainStorageRoot = () => {
+  const { rootNode, data } = makeFakeStorageKit('mockChainStorageRoot');
+
+  const defaultMarshaller = makeMarshal(undefined, (_slotId, iface) => ({
+    iface,
+  }));
+
+  return Far('mockChainStorage', {
+    ...rootNode,
+    /**
+     *  Defaults to deserializing pass-by-presence objects into { iface } representations.
+     * Note that this is **not** a null transformation; capdata `@qclass` and `index` properties
+     * are dropped and `iface` is _added_ for repeat references.
+     *
+     * @param {string} path
+     * @param {Marshaller} marshaller
+     * @returns {unknown}
+     */
+    getBody: (path, marshaller = defaultMarshaller) => {
+      const dataStr = data.get(path);
+      assert(dataStr, `no data at ${path}`);
+      assert.typeof(dataStr, 'string');
+      const datum = JSON.parse(dataStr);
+      return marshaller.unserialize(datum);
+    },
+  });
 };
+/** @typedef {ReturnType<typeof makeMockChainStorageRoot>} MockChainStorageRoot */
 
 /**
  *
@@ -84,7 +108,7 @@ export const setupBootstrap = (t, optTimer) => {
 
   const timer = optTimer || buildManualTimer(t.log);
   produce.chainTimerService.resolve(timer);
-  produce.chainStorage.resolve(mockChainStorageRoot());
+  produce.chainStorage.resolve(makeMockChainStorageRoot());
   produce.board.resolve(makeBoard());
 
   const { zoe, feeMintAccess, run } = t.context;
@@ -207,5 +231,12 @@ export const withAmountUtils = kit => {
 export const subscriptionKey = subscription => {
   return E(subscription)
     .getStoreKey()
-    .then(storeKey => storeKey.key);
+    .then(storeKey => {
+      const [space, unique] = storeKey.storeSubkey.split(':');
+      assert(
+        space === 'fake',
+        'subscriptionKey only works with makeFakeStorageKit',
+      );
+      return unique;
+    });
 };
