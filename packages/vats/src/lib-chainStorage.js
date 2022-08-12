@@ -98,13 +98,13 @@ const makeNullStorageNode = () => {
  * falling back to an inert object with the correct interface (but incomplete
  * behavior) when that is unavailable.
  *
- * @param {ERef<StorageNode?>} chainStorage
+ * @param {ERef<StorageNode?>} storageNodeRef
  * @param {string} childName
  * @returns {Promise<StorageNode>}
  */
-export async function makeStorageNodeChild(chainStorage, childName) {
+export async function makeStorageNodeChild(storageNodeRef, childName) {
   // eslint-disable-next-line @jessie.js/no-nested-await
-  const storageNode = (await chainStorage) || makeNullStorageNode();
+  const storageNode = (await storageNodeRef) || makeNullStorageNode();
   return E(storageNode).getChildNode(childName);
 }
 harden(makeStorageNodeChild);
