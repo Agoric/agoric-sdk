@@ -58,10 +58,10 @@ const aggregatorPath = `${dirname}/../../../src/contracts/priceAggregator.js`;
  *
  * @param {Promise<StoredSubscriber<unknown>>} subscriber
  */
-export const subscriptionKey = subscriber => {
+export const subscriberSubkey = subscriber => {
   return E(subscriber)
     .getStoreKey()
-    .then(storeKey => storeKey.key);
+    .then(storeKey => storeKey.storeSubkey);
 };
 
 const makePublicationChecker = async (t, aggregatorPublicFacet) => {
@@ -110,7 +110,7 @@ test.before('setup aggregator and oracles', async ot => {
   // ??? why do we need the Far here and not in VaultFactory tests?
   const marshaller = Far('fake marshaller', { ...makeFakeMarshaller() });
   const storageRoot = makeChainStorageRoot(
-    v => v,
+    m => ({ storeSubkey: `paTest:${m.key}` }),
     'swingset',
     'mockChainStorageRoot',
   );
@@ -1019,7 +1019,7 @@ test('storage keys', async t => {
   const { publicFacet } = await t.context.makeMedianAggregator(1n);
 
   t.is(
-    await subscriptionKey(E(publicFacet).getSubscriber()),
-    'mockChainStorageRoot.priceAggregator.ATOM_USD_price_feed',
+    await subscriberSubkey(E(publicFacet).getSubscriber()),
+    'paTest:mockChainStorageRoot.priceAggregator.ATOM_USD_price_feed',
   );
 });

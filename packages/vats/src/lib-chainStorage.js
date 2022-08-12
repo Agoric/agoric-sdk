@@ -70,9 +70,6 @@ export function makeChainStorageRoot(
         assert.typeof(value, 'string');
         handleStorageMessage({ key: path, method: 'set', value });
       },
-      clearValue() {
-        handleStorageMessage({ key: path, method: 'set', value: '' });
-      },
       // Possible extensions:
       // * getValue()
       // * getChildNames() and/or getChildNodes()

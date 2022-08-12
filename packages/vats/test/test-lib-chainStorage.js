@@ -45,13 +45,14 @@ test('makeChainStorageRoot', async t => {
   );
   for (const [label, val] of nonStrings) {
     t.throws(
+      // @ts-expect-error invalid value
       () => rootNode.setValue(val),
       undefined,
       `${label} value for root node is rejected`,
     );
   }
 
-  rootNode.clearValue();
+  rootNode.setValue('');
   rootNode.setValue('foo');
   t.deepEqual(
     messages.slice(-1),
@@ -101,12 +102,6 @@ test('makeChainStorageRoot', async t => {
       [{ key: childPath, method: 'set', value: 'foo' }],
       'non-root setValue message',
     );
-    child.clearValue();
-    t.deepEqual(
-      messages.slice(-1),
-      [{ key: childPath, method: 'set', value: '' }],
-      'non-root clearValue message',
-    );
   }
 
   // Invalid path segments are non-strings, empty, too long, or contain unacceptable characters.
@@ -126,6 +121,7 @@ test('makeChainStorageRoot', async t => {
   badSegments.set('ASCII with combining diacritical mark', 'a\u0301');
   for (const [label, val] of badSegments) {
     t.throws(
+      // @ts-expect-error invalid value
       () => rootNode.getChildNode(val),
       undefined,
       `${label} segment is rejected`,
@@ -143,6 +139,7 @@ test('makeChainStorageRoot', async t => {
   });
   for (const [label, val] of nonStrings) {
     t.throws(
+      // @ts-expect-error invalid value
       () => deepNode.setValue(val),
       undefined,
       `${label} value for non-root node is rejected`,
@@ -155,22 +152,22 @@ test('makeChainStorageRoot', async t => {
     'level-skipping setValue message',
   );
 
-  childNode.clearValue();
+  childNode.setValue('');
   t.deepEqual(
     messages.slice(-1),
     [{ key: childPath, method: 'set', value: '' }],
-    'child clearValue message',
+    'child setValue message',
   );
-  deepNode.clearValue();
+  deepNode.setValue('');
   t.deepEqual(
     messages.slice(-1),
     [{ key: deepPath, method: 'set', value: '' }],
-    'granchild clearValue message',
+    'granchild setValue message',
   );
-  childNode.clearValue();
+  childNode.setValue('');
   t.deepEqual(
     messages.slice(-1),
     [{ key: childPath, method: 'set', value: '' }],
-    'child clearValue message',
+    'child setValue message',
   );
 });

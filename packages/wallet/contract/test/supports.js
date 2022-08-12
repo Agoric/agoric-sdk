@@ -24,9 +24,25 @@ import { devices } from './devices.js';
 import '@agoric/vats/src/core/types.js';
 import '@agoric/zoe/exported.js';
 
+// TODO use a common makeFakeStorageNode when available
 export const mockChainStorageRoot = () => {
-  const toStorage = v => v;
-  return makeChainStorageRoot(toStorage, 'swingset', 'mockChainStorageRoot');
+  const handleMessage = message => {
+    switch (message.method) {
+      case 'getStoreKey': {
+        return {
+          storeName: 'swingset',
+          storeSubkey: `fake:${message.key}`,
+        };
+      }
+      default:
+        return null;
+    }
+  };
+  return makeChainStorageRoot(
+    handleMessage,
+    'swingset',
+    'mockChainStorageRoot',
+  );
 };
 
 /**
@@ -36,7 +52,14 @@ export const mockChainStorageRoot = () => {
 export const subscriptionKey = subscription => {
   return E(subscription)
     .getStoreKey()
-    .then(storeKey => storeKey.key);
+    .then(storeKey => {
+      const [prefix, unique] = storeKey.storeSubkey.split(':');
+      assert(
+        prefix === 'fake',
+        'subscriptionKey helper only supports fake storage',
+      );
+      return unique;
+    });
 };
 
 const setUpZoeForTest = async () => {

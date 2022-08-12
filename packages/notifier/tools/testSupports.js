@@ -20,6 +20,7 @@ export const makeFakeStorage = (path, publication) => {
   const storeKey = harden({
     storeName: 'swingset',
     storeSubkey: `swingset/data:${fullPath}`,
+    dataPrefixBytes: '',
   });
   /** @type {StorageNode} */
   const storage = {

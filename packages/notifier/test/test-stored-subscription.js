@@ -178,6 +178,7 @@ test('StoredPublisher', async t => {
   const { subscriber } = makeStoredPublishKit(storageNode, marshaller);
 
   t.deepEqual(await subscriber.getStoreKey(), {
+    dataPrefixBytes: '',
     storeName: 'swingset',
     storeSubkey: 'swingset/data:publish.publish.foo.bar',
   });
