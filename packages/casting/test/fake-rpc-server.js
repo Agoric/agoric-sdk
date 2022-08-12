@@ -64,8 +64,9 @@ const fakeStatusResult = {
   },
 };
 
+/** @typedef {Partial<import('ava').ExecutionContext<{cleanups: Array<() => void>}>> & {context}} fakeServerTestContext */
 /**
- * @param {Assertions} t
+ * @param {fakeServerTestContext} t
  * @param {Array<{any}>} fakeValues
  * @param {object} [options]
  * @param {Marshaller} [options.marshaller]
@@ -249,10 +250,12 @@ export const develop = async () => {
       unserialize({ body: jsonMarshalled, slots: [] }),
     ),
   );
-  const mockT = {
-    log: console.log,
-    context: { cleanups: [] },
-  };
+  const mockT = /** @type {fakeServerTestContext} */ (
+    /** @type {unknown} */ ({
+      log: console.log,
+      context: { cleanups: [] },
+    })
+  );
   const PORT = await startFakeServer(mockT, [...fakeValues]);
   console.log(
     `Try this in another terminal:
