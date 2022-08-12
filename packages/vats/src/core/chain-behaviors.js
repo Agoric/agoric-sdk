@@ -312,6 +312,7 @@ export const makeChainStorage = async ({
     bridgeManager,
     BRIDGE_ID.STORAGE,
     ROOT_PATH,
+    { sequence: true },
   );
   chainStorageP.resolve(rootNodeP);
 };
