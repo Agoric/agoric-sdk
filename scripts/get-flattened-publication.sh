@@ -60,17 +60,26 @@ curl -sS "$URL_PREFIX" --request POST --header 'Content-Type: application/json' 
 )" | \
 # Decode, simplify, flatten, and compact the output.
 jq -c '
-  # Capture block height.
-  .result.response.height? as $height |
+  # Capture response block height.
+  .result.response.height? as $responseHeight |
 
   # Decode `value` as base64, then decode that as JSON.
   .result.response.value | @base64d | fromjson |
 
-  # Decode `value` as JSON, capture `slots`, then decode `body` as JSON.
-  .value | fromjson | .slots as $slots | .body | fromjson |
+  # Decode `value` as JSON.
+  .value | fromjson |
 
-  # Add block height.
-  (.blockHeight |= $height) |
+  # Upgrade a naked value to a stream cell if necessary.
+  if has("height") and has("values") then . else { values: [ . | tojson ] } end |
+
+  # Capture data block height.
+  .height as $dataHeight |
+
+  # Flatten each value independently.
+  .values[] | fromjson |
+
+  # Capture `slots`, then decode `body` as JSON.
+  .slots as $slots | .body | fromjson |
 
   # Replace select capdata.
   walk(
@@ -92,5 +101,9 @@ jq -c '
   ) |
 
   # Flatten the resulting structure, joining deep member names with "-".
-  [ paths(scalars) as $path | { key: $path | join("-"), value: getpath($path) } ] | from_entries
+  [ paths(scalars) as $path | { key: $path | join("-"), value: getpath($path) } ] | from_entries |
+
+  # Add block height information.
+  (.dataBlockHeight |= $dataHeight) |
+  (.blockHeight |= $responseHeight)
 '
