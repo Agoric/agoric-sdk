@@ -1,5 +1,6 @@
 /* eslint-env node */
 const process = require('process');
+
 const lintTypes = !!process.env.AGORIC_ESLINT_TYPES;
 
 module.exports = {
@@ -30,6 +31,8 @@ module.exports = {
     '@typescript-eslint/no-floating-promises': lintTypes ? 'warn' : 'off',
     // so that floating-promises can be explicitly permitted with void operator
     'no-void': ['error', { allowAsStatement: true }],
+    // Not severe but the default 'warning' clutters output and it's easy to fix
+    'jsdoc/check-param-names': 'error',
     'jsdoc/no-multi-asterisks': 'off',
     'jsdoc/multiline-blocks': 'off',
     // Use these rules to warn about JSDoc type problems, such as after

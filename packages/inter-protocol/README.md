@@ -52,6 +52,7 @@ The canonical keys (under `published`) are as follows. Non-terminal nodes could 
         - `metrics`
         - `governance`
         - `pool0`
+            - `init`
             - `metrics`
     - `psm`
         - `governance`

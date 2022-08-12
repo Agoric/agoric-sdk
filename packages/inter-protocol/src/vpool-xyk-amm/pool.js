@@ -3,14 +3,16 @@
 import '@agoric/zoe/exported.js';
 
 import { AmountMath, isNatValue } from '@agoric/ertp';
-import { makeStoredPublisherKit, makeStoredPublishKit } from '@agoric/notifier';
+import { makeStoredPublishKit } from '@agoric/notifier';
+import { vivifyKindMulti } from '@agoric/vat-data';
 import {
   calcLiqValueToMint,
   calcSecondaryRequired,
   calcValueToRemove,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { vivifyKindMulti } from '@agoric/vat-data';
 
+import { E } from '@endo/eventual-send';
+import { makeMetricsPublisherKit } from '../contractSupport.js';
 import { makePriceAuthority } from './priceAuthority.js';
 import { makeSinglePool } from './singlePool.js';
 
@@ -22,13 +24,7 @@ export const publicPrices = prices => {
   return { amountIn: prices.swapperGives, amountOut: prices.swapperGets };
 };
 
-/**
- * @typedef {{
- *   centralAmount: Amount,
- *   secondaryAmount: Amount,
- *   liquidityTokens: Amount,
- * }} MetricsPayload
- */
+/** @typedef {{ liquidityIssuerRecord: IssuerRecord<'nat'> }} InitPublication */
 
 /** @typedef {{ central: Amount, secondary: Amount }} NotificationState */
 
@@ -81,9 +77,11 @@ export const definePoolKind = (baggage, ammPowers, storageNode, marshaller) => {
     storageNode,
     marshaller,
   );
-  /** @type {{publisher: IterationObserver<PoolMetricsNotification>,subscriber: StoredSubscription<PoolMetricsNotification>}} */
-  const { publisher: metricsPublication, subscriber: metricsSubscription } =
-    makeStoredPublisherKit(storageNode, marshaller, 'metrics');
+  /** @type {import('../contractSupport.js').MetricsPublisherKit<PoolMetricsNotification>} */
+  const { metricsPublication, metricsSubscription } = makeMetricsPublisherKit(
+    storageNode,
+    marshaller,
+  );
 
   /**
    * @param {ZCFMint} liquidityZcfMint
@@ -92,7 +90,14 @@ export const definePoolKind = (baggage, ammPowers, storageNode, marshaller) => {
    * @returns {ImmutableState & MutableState}
    */
   const poolInit = (liquidityZcfMint, poolSeat, secondaryBrand) => {
-    /** @type {PublishKit<{secondary: Amount, central: Amount}>} */
+    /** @type {StoredPublishKit<InitPublication>} */
+    const { publisher: initPublisher } = makeStoredPublishKit(
+      E(storageNode).getChildNode('init'),
+      marshaller,
+    );
+    initPublisher.finish({
+      liquidityIssuerRecord: liquidityZcfMint.getIssuerRecord(),
+    });
 
     return {
       liqTokenSupply: 0n,
