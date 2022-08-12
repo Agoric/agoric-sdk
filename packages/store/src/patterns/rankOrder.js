@@ -56,7 +56,7 @@ const PassStyleRank = fromEntries(
   entries(PassStyleRankAndCover).map(([i, v]) => [v[0], Number(i)]),
 );
 setPrototypeOf(PassStyleRank, null);
-harden(setPrototypeOf);
+harden(PassStyleRank);
 
 /** @type {GetPassStyleCover} */
 export const getPassStyleCover = passStyle =>
