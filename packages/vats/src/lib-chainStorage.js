@@ -22,7 +22,7 @@ harden(assertPathSegment);
 /**
  * Must match the switch in vstorage.go using `vstorageMessage` type
  *
- * @typedef {'get' | 'getStoreKey' | 'set' | 'has' |'entries' | 'values' |'size' } StorageMessageMethod
+ * @typedef {'get' | 'getStoreKey' | 'set' | 'append' | 'has' |'entries' | 'values' |'size' } StorageMessageMethod
  * @typedef {{key: string, method: StorageMessageMethod, value: string}} StorageMessage
  */
 
