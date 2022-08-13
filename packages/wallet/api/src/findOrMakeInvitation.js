@@ -94,9 +94,31 @@ const makeContinuingInvitation = async (
   return invitationP;
 };
 
+/** @typedef {{method: string, args: Array<any> }} InvitationMaker */
+/**
+ * @param {InvitationMaker} invitationMaker
+ * @param {string} instanceHandleBoardId
+ * @param {Board} board
+ * @param {ZoeService} zoe
+ * @returns {Promise<Invitation>}
+ */
+const makeInvitation = async (
+  invitationMaker,
+  instanceHandleBoardId,
+  board,
+  zoe,
+) => {
+  const instance = E(board).getValue(instanceHandleBoardId);
+  const publicFacet = E(zoe).getPublicFacet(instance);
+  const { method, args = [] } = invitationMaker;
+
+  return E(publicFacet)[method](...args);
+};
+
 export const findOrMakeInvitation = async (
   idToOfferResultPromiseKit,
   board,
+  zoe,
   invitationPurse,
   invitationBrand,
   offer,
@@ -124,6 +146,15 @@ export const findOrMakeInvitation = async (
       boardId: offer.invitationHandleBoardId,
     };
     return findInvitation(findByBoardId, queryParams);
+  }
+
+  if (offer.invitationMaker) {
+    return makeInvitation(
+      offer.invitationMaker,
+      offer.instanceHandleBoardId,
+      board,
+      zoe,
+    );
   }
 
   if (offer.invitationQuery) {

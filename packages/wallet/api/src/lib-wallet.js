@@ -1033,6 +1033,7 @@ export function makeWalletRoot({
     const invitationP = findOrMakeInvitation(
       idToOfferResultPromiseKit,
       board,
+      zoe,
       zoeInvitePurse,
       invitationBrand,
       offer,
@@ -1790,6 +1791,34 @@ export function makeWalletRoot({
     serialize: context.serialize,
   });
 
+  const handleAcceptOfferAction = async offer => {
+    const { requestContext } = offer;
+    const rawId = await addOffer(offer, requestContext);
+    const dappOrigin =
+      requestContext.dappOrigin || requestContext.origin || 'unknown';
+    return acceptOffer(`${dappOrigin}#${rawId}`);
+  };
+
+  const handleSuggestIssuerAction = ({ petname, boardId }) =>
+    suggestIssuer(petname, boardId);
+
+  /** @typedef {{action: string}} Action */
+  /**
+   * @param {Action} obj
+   * @returns {Promise<any>}
+   */
+  const performAction = obj => {
+    const { type, data } = JSON.parse(obj.action);
+    switch (type) {
+      case 'acceptOffer':
+        return handleAcceptOfferAction(data);
+      case 'suggestIssuer':
+        return handleSuggestIssuerAction(data);
+      default:
+        throw new Error(`Unknown wallet action ${type}`);
+    }
+  };
+
   const wallet = Far('wallet', {
     lookup: (...path) => {
       // Provide an entrypoint to the wallet's naming hub.
@@ -1875,6 +1904,7 @@ export function makeWalletRoot({
       return doEnableAutoDeposit(pursePetname, true);
     },
     disableAutoDeposit,
+    performAction,
     getDepositFacetId,
     suggestIssuer,
     suggestInstance,
