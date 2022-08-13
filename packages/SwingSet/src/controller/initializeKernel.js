@@ -148,6 +148,10 @@ export function initializeKernel(config, hostStorage, verbose = false) {
     const bootstrapVatID = kernelKeeper.getVatIDForName(config.bootstrap);
     logStartup(`=> queueing bootstrap()`);
     bootstrapResultKpid = enqueueBootstrap(bootstrapVatID, kernelKeeper);
+    if (config.pinBootstrapRoot) {
+      const kref = exportRootObject(kernelKeeper, bootstrapVatID);
+      kernelKeeper.pinObject(kref);
+    }
   }
   kernelKeeper.setInitialized();
   kernelKeeper.commitCrank(); // commit initialized kernel state as crank #0

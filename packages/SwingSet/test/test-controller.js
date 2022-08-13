@@ -110,14 +110,84 @@ test('simple call', async t => {
   await simpleCall(t);
 });
 
-test('bootstrap', async t => {
+async function doTestBootstrap(t, doPin) {
   const config = await loadBasedir(
     new URL('basedir-controller-2', import.meta.url).pathname,
   );
+  if (doPin) {
+    config.pinBootstrapRoot = true;
+  }
   const c = await buildVatController(config);
   t.teardown(c.shutdown);
+
+  // figure out kernel object ID of bootstrap root object
+  const bootstrapVatID = c.vatNameToID('bootstrap');
+  const kernelTable = c.dump().kernelTable;
+  let rootKobjID;
+  for (const [kID, vatID, vobjID] of kernelTable) {
+    if (vatID === bootstrapVatID && vobjID === 'o+0') {
+      rootKobjID = kID;
+      break;
+    }
+  }
+  t.truthy(rootKobjID);
+
   await c.run();
-  t.deepEqual(c.dump().log, ['buildRootObject called', 'bootstrap called']);
+
+  // after run, if bootstrap root is pinned, it will be there, if not, not
+  const objects = c.dump().objects;
+  let reachableRoot = false;
+  for (const [kID, _vatID, reachable] of objects) {
+    if (kID === rootKobjID) {
+      reachableRoot = !!reachable;
+      break;
+    }
+  }
+  t.is(reachableRoot, doPin);
+
+  const kpid = c.queueToVatRoot('bootstrap', 'doMore');
+  await c.run();
+  const status = c.kpStatus(kpid);
+  const capdata = c.kpResolution(kpid);
+
+  if (doPin) {
+    // if pinned, second message will have been handled
+    t.deepEqual(status, 'fulfilled');
+    t.deepEqual(c.dump().log, [
+      'buildRootObject called',
+      'bootstrap called',
+      'more stuff',
+    ]);
+  } else {
+    // if not pinned, second message will go splat
+    t.deepEqual(status, 'rejected');
+    // If we don't pin the bootstrap root, then it will be GC'd after it
+    // finishes done processing the 'bootstrap' messsage.  This means that when
+    // the 'doMore' message is delivered it will be addressed to an object (o+0)
+    // whose vref doesn't (any longer) exist.  In normal operation this is a
+    // thing that cannot happen, since, to send the message in the first place
+    // the sender (which would normally be another vat) needs the target vref,
+    // which in turn requires that the target object would have to be exported,
+    // which in turn means that the object could not have been GC'd since export
+    // bumps the refcount.  Consequently, receiving a message addressed to a
+    // vref that doesn't exist means something terrible has gone wrong so the
+    // kernel will kill the vat if that happens.  But since `queueToVatRoot` has
+    // the root object vref, 'o+0', hardcoded into it as a string, it manages to
+    // violate the invariant; this kills the receiving vat, meaning that the GC
+    // symptom we see from the here is a "vat terminated" rejection
+    t.deepEqual(capdata, {
+      body: '{"@qclass":"error","name":"Error","message":"vat terminated"}',
+      slots: [],
+    });
+  }
+}
+
+test('bootstrap', async t => {
+  await doTestBootstrap(t, true);
+});
+
+test('bootstrap without pin', async t => {
+  await doTestBootstrap(t, false);
 });
 
 test('XS bootstrap', async t => {

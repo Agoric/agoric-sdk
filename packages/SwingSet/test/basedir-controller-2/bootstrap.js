@@ -6,5 +6,8 @@ export function buildRootObject(vatPowers) {
     bootstrap: () => {
       vatPowers.testLog(`bootstrap called`);
     },
+    doMore: () => {
+      vatPowers.testLog(`more stuff`);
+    },
   });
 }
