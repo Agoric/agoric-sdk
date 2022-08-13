@@ -241,12 +241,12 @@ const defaultMakePresence = iface => {
  */
 export const makeImportContext = (makePresence = defaultMakePresence) => {
   const walletObjects = {
-    /** @type {IdTable<number, PurseActions>} */
+    /** @type {IdTable<number, Purse>} */
     purse: {
       bySlot: makeScalarMap(),
       byVal: makeScalarMap(),
     },
-    /** @type {IdTable<number, PaymentActions>} */
+    /** @type {IdTable<number, Payment>} */
     payment: {
       bySlot: makeScalarMap(),
       byVal: makeScalarMap(),
