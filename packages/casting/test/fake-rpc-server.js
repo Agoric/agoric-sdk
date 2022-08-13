@@ -64,9 +64,9 @@ const fakeStatusResult = {
   },
 };
 
-/** @typedef {Partial<import('ava').ExecutionContext<{cleanups: Array<() => void>}>> & {context}} fakeServerTestContext */
+/** @typedef {Partial<import('ava').ExecutionContext<{cleanups: Array<() => void>}>> & {context}} FakeServerTestContext */
 /**
- * @param {fakeServerTestContext} t
+ * @param {FakeServerTestContext} t
  * @param {Array<{any}>} fakeValues
  * @param {object} [options]
  * @param {Marshaller} [options.marshaller]
@@ -250,7 +250,7 @@ export const develop = async () => {
       unserialize({ body: jsonMarshalled, slots: [] }),
     ),
   );
-  const mockT = /** @type {fakeServerTestContext} */ (
+  const mockT = /** @type {FakeServerTestContext} */ (
     /** @type {unknown} */ ({
       log: console.log,
       context: { cleanups: [] },

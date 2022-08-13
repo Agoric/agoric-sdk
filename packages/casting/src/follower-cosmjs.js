@@ -341,27 +341,20 @@ export const makeCosmjsFollower = (
       }
       for (let i = 0; i < streamCell.values.length; i += 1) {
         const data = JSON.parse(streamCell.values[i]);
-        const last = i + 1 === streamCell.values.length;
-        if (!unserializer) {
-          /** @type {T} */
-          const value = data;
+        const isLast = i + 1 === streamCell.values.length;
+        const value = /** @type {T} */ (
+          unserializer
+            ? // eslint-disable-next-line no-await-in-loop,@jessie.js/no-nested-await
+              await E(unserializer).unserialize(data)
+            : data
+        );
+        // QUESTION: How would reach a point where this `isValid()` fails,
+        // and what is the proper handling?
+        if (!unserializer || committer.isValid()) {
           committer.commit({ value });
-          if (!last) {
+          if (!isLast) {
             committer = prepareUpdateInOrder();
           }
-          // eslint-disable-next-line no-continue
-          continue;
-        }
-        // eslint-disable-next-line no-await-in-loop,@jessie.js/no-nested-await
-        const value = await E(unserializer).unserialize(data);
-        if (!committer.isValid()) {
-          // QUESTION: How would we get here, and what is the proper handling?
-          // eslint-disable-next-line no-continue
-          continue;
-        }
-        committer.commit({ value });
-        if (!last) {
-          committer = prepareUpdateInOrder();
         }
       }
     };
