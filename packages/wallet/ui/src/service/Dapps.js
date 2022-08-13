@@ -5,6 +5,9 @@ import {
   upsertDapp as upsert,
 } from '../store/Dapps.js';
 
+/**
+ * @param {string} publicAddress
+ */
 export const getDappService = publicAddress => {
   const dapps = new Map();
   const { notifier, updater } = makeNotifierKit();

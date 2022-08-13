@@ -107,6 +107,9 @@ const Proposal = ({ offer, purses }) => {
   let want = {};
   let args;
   let hasDisplayInfo = false;
+
+  // Proposed offers only have a `proposalTemplate`. Offers from the wallet
+  // contract have a `proposalForDisplay`.
   if (proposalForDisplay) {
     give = proposalForDisplay.give ?? {};
     want = proposalForDisplay.want ?? {};
@@ -116,6 +119,8 @@ const Proposal = ({ offer, purses }) => {
     give = proposalTemplate.give ?? {};
     want = proposalTemplate.want ?? {};
     args = proposalTemplate.arguments;
+  } else {
+    // The offer does not have a proposal.
   }
 
   if (!purses) return <></>;

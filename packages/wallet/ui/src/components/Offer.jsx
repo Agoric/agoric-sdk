@@ -64,12 +64,12 @@ const OfferWithoutContext = ({
 
   const approve = async () => {
     setPendingOffers({ offerId: id, isPending: true });
-    try {
-      await E(offer.actions).accept();
-    } catch (e) {
-      setPendingOffers({ offerId: id, isPending: false });
-      console.error('Failed to accept offer', e);
-    }
+    return E(offer.actions)
+      .accept()
+      .catch(e => {
+        setPendingOffers({ offerId: id, isPending: false });
+        console.error('Failed to accept offer', e);
+      });
   };
 
   const decline = () => {
