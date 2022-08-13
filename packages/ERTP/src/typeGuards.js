@@ -58,7 +58,7 @@ const SetValueShape = M.arrayOf(M.key());
  * will never be minted. That want will never be satisfied.
  * "You can't always get..."
  */
-const CopyBagValueShape = M.bagOf();
+const CopyBagValueShape = M.bag();
 
 const AmountValueShape = M.or(
   NatValueShape,

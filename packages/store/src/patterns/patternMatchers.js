@@ -806,7 +806,7 @@ const makePatternKit = () => {
       check(
         passStyleOf(specimen) === 'tagged' && getTag(specimen) === 'copySet',
         X`${specimen} - Must be a a CopySet`,
-      ) && specimen.payload.every(el => checkMatches(el, keyPatt)),
+      ) && specimen.payload.every(el => checkMatches(el, keyPatt, check)),
 
     checkIsMatcherPayload: checkPattern,
 
@@ -823,7 +823,9 @@ const makePatternKit = () => {
         passStyleOf(specimen) === 'tagged' && getTag(specimen) === 'copyBag',
         X`${specimen} - Must be a a CopyBag`,
       ) &&
-      specimen.payload.every(([key, _count]) => checkMatches(key, keyPatt)),
+      specimen.payload.every(([key, _count]) =>
+        checkMatches(key, keyPatt, check),
+      ),
 
     checkIsMatcherPayload: checkPattern,
 
