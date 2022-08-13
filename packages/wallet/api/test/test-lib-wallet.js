@@ -1,5 +1,5 @@
 // @ts-check
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@endo/bundle-source';
@@ -35,17 +35,20 @@ function makeFakeMyAddressNameAdmin() {
   });
 }
 
+/** @type {import('ava').TestFn<Awaited<LibWalletTestContext>>} */
+const test = anyTest;
+
 /**
- * @typedef {import('ava').ExecutionContext<{
+ * @typedef {{
  *   zoe: ZoeService,
  *   automaticRefundInstallation: Installation,
  *   autoswapInstallation: Installation,
  *   attestationInstallation: Installation,
- * }>} LibWalletTestContext
+ * }} LibWalletTestContext
  */
 
 async function setupTest(
-  /** @type {LibWalletTestContext} */ t,
+  /** @type {import('ava').ExecutionContext<LibWalletTestContext>} */ t,
   { autoswap = false, automaticRefund = false, attestation = false } = {},
 ) {
   const pursesStateChangeLog = [];
@@ -185,7 +188,7 @@ const waitForUpdate = async (notifier, thunk) => {
   return E(notifier).getUpdateSince(updateCount);
 };
 
-test.before(async (/** @type {LibWalletTestContext} */ t) => {
+test.before(async t => {
   const zoe = makeZoeKit(fakeVatAdmin).zoeService;
 
   // Create AutomaticRefund instance
@@ -226,7 +229,7 @@ test.before(async (/** @type {LibWalletTestContext} */ t) => {
   };
 });
 
-test('lib-wallet issuer and purse methods', async (/** @type {LibWalletTestContext} */ t) => {
+test('lib-wallet issuer and purse methods', async t => {
   t.plan(11);
   const {
     moolaBundle,
@@ -353,7 +356,7 @@ test('lib-wallet issuer and purse methods', async (/** @type {LibWalletTestConte
   t.deepEqual(inboxStateChangeLog, [], `inboxStateChangeLog`);
 });
 
-test('lib-wallet dapp suggests issuer, instance, installation petnames', async (/** @type {LibWalletTestContext} */ t) => {
+test('lib-wallet dapp suggests issuer, instance, installation petnames', async t => {
   t.plan(15);
   const {
     board,
@@ -757,7 +760,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async (
   );
 });
 
-test('lib-wallet offer methods', async (/** @type {LibWalletTestContext} */ t) => {
+test('lib-wallet offer methods', async t => {
   t.plan(9);
   const {
     moolaBundle,
@@ -1061,7 +1064,7 @@ test('lib-wallet offer methods', async (/** @type {LibWalletTestContext} */ t) =
   );
 });
 
-test('lib-wallet addOffer for autoswap swap', async (/** @type {LibWalletTestContext} */ t) => {
+test('lib-wallet addOffer for autoswap swap', async t => {
   t.plan(4);
   const {
     moolaBundle,
@@ -1193,8 +1196,7 @@ test('lib-wallet addOffer for autoswap swap', async (/** @type {LibWalletTestCon
   );
 });
 
-test('lib-wallet performAction suggestIssuer', async (/** @type {LibWalletTestContext} */ t) => {
-  t.plan(1);
+test('lib-wallet performAction suggestIssuer', async t => {
   const { board, wallet } = await setupTest(t);
   const { issuer: bucksIssuer } = makeIssuerKit('bucks');
   const bucksIssuerBoardId = await E(board).getId(bucksIssuer);
@@ -1205,7 +1207,7 @@ test('lib-wallet performAction suggestIssuer', async (/** @type {LibWalletTestCo
   });
   const done = await wallet.performAction({ action });
 
-  assert(done);
+  t.truthy(done);
   t.is(
     wallet.getIssuer('bucksIssuer'),
     bucksIssuer,
@@ -1213,7 +1215,7 @@ test('lib-wallet performAction suggestIssuer', async (/** @type {LibWalletTestCo
   );
 });
 
-test('lib-wallet performAction acceptOffer', async (/** @type {LibWalletTestContext} */ t) => {
+test('lib-wallet performAction acceptOffer', async t => {
   t.plan(4);
   const {
     moolaBundle,
@@ -1290,7 +1292,7 @@ test('lib-wallet performAction acceptOffer', async (/** @type {LibWalletTestCont
   const offer = {
     id: rawId,
     invitationMaker: {
-      description: 'makeSwapInvitation',
+      method: 'makeSwapInvitation',
     },
     instancePetname: `instance@${instanceBoardId}`,
     instanceHandleBoardId: instanceBoardId,
@@ -1353,7 +1355,7 @@ test('lib-wallet performAction acceptOffer', async (/** @type {LibWalletTestCont
   );
 });
 
-test('lib-wallet can give attestations in offers', async (/** @type {LibWalletTestContext} */ t) => {
+test('lib-wallet can give attestations in offers', async t => {
   const {
     wallet,
     attestationPublicFacet,
@@ -1428,7 +1430,7 @@ test('lib-wallet can give attestations in offers', async (/** @type {LibWalletTe
   ]);
 });
 
-test('lib-wallet can want attestations in offers', async (/** @type {LibWalletTestContext} */ t) => {
+test('lib-wallet can want attestations in offers', async t => {
   const {
     wallet,
     attestationPublicFacet,
@@ -1504,7 +1506,7 @@ test('lib-wallet can want attestations in offers', async (/** @type {LibWalletTe
   ]);
 });
 
-test('addOffer invitationQuery', async (/** @type {LibWalletTestContext} */ t) => {
+test('addOffer invitationQuery', async t => {
   const {
     moolaBundle,
     simoleanBundle,
@@ -1632,7 +1634,7 @@ test('addOffer invitationQuery', async (/** @type {LibWalletTestContext} */ t) =
   );
 });
 
-test('addOffer offer.invitation', async (/** @type {LibWalletTestContext} */ t) => {
+test('addOffer offer.invitation', async t => {
   const {
     moolaBundle,
     simoleanBundle,
@@ -1753,7 +1755,7 @@ test('addOffer offer.invitation', async (/** @type {LibWalletTestContext} */ t) 
   );
 });
 
-test('addOffer makeContinuingInvitation', async (/** @type {LibWalletTestContext} */ t) => {
+test('addOffer makeContinuingInvitation', async t => {
   const board = makeBoard();
 
   // Create ContinuingInvitationExample instance
@@ -1843,7 +1845,7 @@ test('addOffer makeContinuingInvitation', async (/** @type {LibWalletTestContext
   t.is(update2.value, 'second offer made');
 });
 
-test('getZoe, getBoard', async (/** @type {LibWalletTestContext} */ t) => {
+test('getZoe, getBoard', async t => {
   const board = makeBoard();
 
   const pursesStateChangeHandler = (/** @type {any} */ _data) => {};
@@ -1862,7 +1864,7 @@ test('getZoe, getBoard', async (/** @type {LibWalletTestContext} */ t) => {
   t.is(await E(wallet).getBoard(), board);
 });
 
-test('stamps from dateNow', async (/** @type {LibWalletTestContext} */ t) => {
+test('stamps from dateNow', async t => {
   const board = makeBoard();
 
   const startDateMS = new Date(2020, 0, 1).valueOf();
@@ -1943,7 +1945,7 @@ test('stamps from dateNow', async (/** @type {LibWalletTestContext} */ t) => {
   ]);
 });
 
-test('lookup', async (/** @type {LibWalletTestContext} */ t) => {
+test('lookup', async t => {
   const { moolaBundle, wallet } = await setupTest(t);
   await wallet.addIssuer('moola', moolaBundle.issuer);
 
@@ -1961,7 +1963,7 @@ test('lookup', async (/** @type {LibWalletTestContext} */ t) => {
   });
 });
 
-test('cache', async (/** @type {LibWalletTestContext} */ t) => {
+test('cache', async t => {
   const { wallet } = await setupTest(t);
 
   const cache = makeCache(wallet.getCacheCoordinator());

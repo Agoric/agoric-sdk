@@ -94,6 +94,14 @@ const makeContinuingInvitation = async (
   return invitationP;
 };
 
+/** @typedef {{method: string, args: Array<any> }} InvitationMaker */
+/**
+ * @param {InvitationMaker} invitationMaker
+ * @param {string} instanceHandleBoardId
+ * @param {Board} board
+ * @param {ZoeService} zoe
+ * @returns {Promise<Invitation>}
+ */
 const makeInvitation = async (
   invitationMaker,
   instanceHandleBoardId,
@@ -102,9 +110,9 @@ const makeInvitation = async (
 ) => {
   const instance = E(board).getValue(instanceHandleBoardId);
   const publicFacet = E(zoe).getPublicFacet(instance);
-  const { description, args = [] } = invitationMaker;
+  const { method, args = [] } = invitationMaker;
 
-  return E(publicFacet)[description](...args);
+  return E(publicFacet)[method](...args);
 };
 
 export const findOrMakeInvitation = async (

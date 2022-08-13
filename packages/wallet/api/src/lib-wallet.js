@@ -1802,7 +1802,12 @@ export function makeWalletRoot({
   const handleSuggestIssuerAction = ({ petname, boardId }) =>
     suggestIssuer(petname, boardId);
 
-  const performAction = async obj => {
+  /** @typedef {{action: string}} Action */
+  /**
+   * @param {Action} obj
+   * @returns {Promise<any>}
+   */
+  const performAction = obj => {
     const { type, data } = JSON.parse(obj.action);
     switch (type) {
       case 'acceptOffer':
