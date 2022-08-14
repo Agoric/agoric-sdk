@@ -5,17 +5,19 @@ import { makePollingChangeFollower } from './change-follower.js';
 import { makeRoundRobinEndpointMapper } from './round-robin-mapper.js';
 
 /**
- *
- * @param {import('./types').LeaderOptions} leaderOptions
+ * @param {string[]} endpoints
+ * @param {import('./types').LeaderOptions} [leaderOptions]
  * @returns {import('./types').Leader}
  */
-export const makeCosmJSLeader = leaderOptions => {
+export const makeCosmJSLeader = (endpoints, leaderOptions) => {
   const { retryCallback = DEFAULT_RETRY_CALLBACK, jitter = DEFAULT_JITTER } =
-    leaderOptions;
+    leaderOptions || {};
+
+  const actualOptions = { ...leaderOptions, retryCallback, jitter };
 
   /** @type {import('./types.js').Leader} */
   const leader = Far('cosmjs leader', {
-    getOptions: () => leaderOptions,
+    getOptions: () => actualOptions,
     makeClient: clientOptions => {
       const { mnemonic, keplr } = clientOptions;
       if (mnemonic) {
@@ -33,12 +35,17 @@ export const makeCosmJSLeader = leaderOptions => {
       }
       throw err;
     },
-    makeWatcher: castingSpec => makePollingChangeFollower(leader, castingSpec),
+    makeWatcher: async castingSpec => {
+      const spec = await castingSpec;
+      const follower = makePollingChangeFollower(leader, spec);
+      return follower;
+    },
     mapEndpoints: (where, callback) => {
-      const mapper = makeRoundRobinEndpointMapper(leader, endpoints);
-      return mapper(callback);
+      // eslint-disable-next-line no-use-before-define
+      return mapper(where, callback);
     },
   });
 
+  const mapper = makeRoundRobinEndpointMapper(leader, endpoints);
   return leader;
 };
