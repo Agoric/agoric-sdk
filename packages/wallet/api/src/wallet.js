@@ -330,11 +330,7 @@ export function buildRootObject(vatPowers) {
     await walletRoot.importBankAssets(bank);
 
     /**
-     * This is the complete wallet, including the means to get the
-     * WalletAdminFacet (which is not yet standardized, but necessary for the
-     * operation of the Wallet UI, and useful for the REPL).
-     *
-     * @type {WalletUser & { getAdminFacet: () => WalletAdminFacet, getMarshaller: () => Marshaller }}
+     * @type {WalletAdmin}
      */
     const wallet = Far('wallet', {
       addPayment: walletAdmin.addPayment,

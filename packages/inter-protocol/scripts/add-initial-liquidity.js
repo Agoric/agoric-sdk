@@ -35,7 +35,7 @@ const getOfferResult = async (instance, wallet, walletAdmin) => {
 
 /**
  *
- * @param { any } homeP
+ * @param { { agoricNames: ERef<NameHub>, scratch: ERef<import('@agoric/solo/src/scratch').ScratchPad>, wallet: ERef<WalletAdmin>, zoe: ERef<ZoeService>} } homeP
  * @param { {now?: () => number }} _endowments
  *
  * @typedef {ReturnType<typeof import('../../wallet/api/src/lib-wallet').makeWalletRoot>['admin']} Wallet
@@ -109,7 +109,9 @@ const addInitialLiquidity = async (homeP, { now = () => Date.now() }) => {
       E(E(walletBridge).getIssuersNotifier()).getUpdateSince(),
     ]);
 
+    // @ts-expect-error Petname can be string[]
     const purses = toRecord(purseEntries);
+    // @ts-expect-error Petname can be string[]
     const issuers = toRecord(issuerEntries);
     console.log({ purses: keys(purses), issuers: keys(issuers) });
     assert(
