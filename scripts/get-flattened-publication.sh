@@ -88,8 +88,19 @@ printf '%s' "$unwrapped_value" | jq -c --arg responseHeightJson "$response_heigh
   # Flatten each value independently.
   .values[] | fromjson |
 
-  # Capture `slots`, then decode `body` as JSON.
-  .slots as $slots | .body | fromjson |
+  # Capture `slots` values.
+  .slots as $slotValues |
+
+  # Decode `body` as JSON.
+  .body | fromjson |
+
+  # Capture slot names (which generally appear only at first reference).
+  (
+    [ .. | select(type=="object" and .["@qclass"]=="slot" and (.iface | type=="string")) ] |
+    map({ key: .index | tostring, value: .iface }) |
+    unique_by(.key) |
+    from_entries
+  ) as $slotNames |
 
   # Replace select capdata.
   walk(
@@ -99,11 +110,11 @@ printf '%s' "$unwrapped_value" | jq -c --arg responseHeightJson "$response_heigh
     elif type=="object" and .["@qclass"]=="slot" then
       # Replace slot reference capdata with {
       #   id: <value from global `slots`>,
-      #   allegedName: <extracted from local `iface`>,
+      #   allegedName: <extracted from local or previous `iface`>,
       # }.
       {
-        id: $slots[.index],
-        allegedName: .iface | sub("^Alleged: (?<name>.*) brand$"; "\(.name)"; "m")
+        id: $slotValues[.index],
+        allegedName: (try ((.iface // $slotNames[.index | tostring]) | sub("^Alleged: (?<name>.*) brand$"; "\(.name)"; "m")) catch null)
       }
     else
       .
