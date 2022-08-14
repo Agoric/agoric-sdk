@@ -50,3 +50,4 @@ export default function makeScratchPad() {
   });
   return scratch;
 }
+/** @typedef {ReturnType<typeof makeScratchPad>} ScratchPad */

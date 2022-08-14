@@ -6,27 +6,44 @@
   "license": "Apache-2.0",
   "homepage": "/wallet",
   "type": "module",
-  "devDependencies": {
+  "dependencies": {
     "@agoric/assert": "^0.4.0",
+    "@agoric/casting": "^0.1.0",
     "@agoric/cosmic-proto": "0.1.0",
+    "@agoric/ertp": "^0.14.2",
+    "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.4.0",
     "@agoric/ui-components": "^0.2.33",
+    "@agoric/wallet-backend": "^0.12.1",
+    "@cosmjs/crypto": "^0.28.11",
+    "@cosmjs/encoding": "^0.28.11",
+    "@cosmjs/proto-signing": "^0.28.11",
     "@cosmjs/stargate": "0.28.4",
     "@emotion/react": "^11.5.0",
     "@emotion/styled": "^11.3.0",
     "@endo/captp": "^2.0.9",
     "@endo/eventual-send": "^0.15.5",
+    "@endo/far": "^0.2.5",
     "@endo/init": "^0.5.43",
-    "@keplr-wallet/types": "^0.10.14",
+    "@endo/marshal": "^0.6.9",
     "@mui/icons-material": "^5.1.0",
     "@mui/lab": "^5.0.0-alpha.67",
     "@mui/material": "^5.1.0",
     "@mui/styles": "^5.1.0",
+    "clsx": "^1.1.1",
+    "cosmjs-types": "^0.5.0",
+    "protobufjs": "^7.0.0",
+    "react": "^16.8.0",
+    "react-dom": "^16.8.0",
+    "react-router-dom": "^5.3.0",
+    "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "@keplr-wallet/types": "^0.10.16",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",
     "agoric": "^0.16.0",
-    "clsx": "^1.1.1",
     "enzyme": "^3.11.0",
     "enzyme-adapter-react-16": "^1.15.6",
     "eslint": "^7.32.0",
@@ -37,15 +54,11 @@
     "eslint-plugin-react": "^7.28.0",
     "eslint-plugin-react-hooks": "^4.3.0",
     "process": "^0.11.10",
-    "react": "^16.8.0",
     "react-app-rewire-multiple-entry": "^2.2.3",
     "react-app-rewired": "^2.2.1",
-    "react-dom": "^16.8.0",
-    "react-router-dom": "^5.3.0",
     "react-scripts": "^5.0.1",
     "rimraf": "^3.0.2",
-    "sass": "^1.49.9",
-    "uuid": "^8.3.2"
+    "sass": "^1.49.9"
   },
   "scripts": {
     "start": "yarn build:ses && react-app-rewired start",
@@ -53,7 +66,7 @@
     "build:ses": "cp ../../../node_modules/ses/dist/lockdown.umd.js public/",
     "build:react": "react-app-rewired build",
     "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc --maxNodeModuleJsDepth 5 -p jsconfig.json",
+    "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json",
     "lint:eslint": "eslint '**/*.{js,jsx}'",
     "lint-fix": "yarn lint:eslint --fix",
     "test": "CI=true react-app-rewired test",
@@ -84,9 +97,17 @@
       "jest"
     ],
     "rules": {
+      "import/no-extraneous-dependencies": [
+        "error",
+        {
+          "devDependencies": [
+            "**/*.test.*",
+            "**/setupTests.js"
+          ]
+        }
+      ],
       "react/prop-types": "off",
       "react/react-in-jsx-scope": "off",
-      "import/no-extraneous-dependencies": "off",
       "react/display-name": "off",
       "@typescript-eslint/no-floating-promises": "off"
     },
@@ -150,9 +171,5 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "dependencies": {
-    "cosmjs-types": "^0.5.0",
-    "protobufjs": "^7.0.0"
   }
 }

@@ -1,4 +1,3 @@
-/* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable react/display-name */
 import React, { useEffect, useState } from 'react';
 import clsx from 'clsx';
