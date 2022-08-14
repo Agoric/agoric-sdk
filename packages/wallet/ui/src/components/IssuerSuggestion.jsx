@@ -10,7 +10,7 @@ const IssuerSuggestion = ({ suggestion }) => {
   const [petname, setPetname] = useState(suggestion.petname);
 
   const accept = () => E(suggestion.actions).accept(petname);
-  const decline = () => E(suggestion.actions).decline();
+  const decline = () => E(suggestion.actions).delete();
 
   return (
     <Request header="Issuer Suggestion">
