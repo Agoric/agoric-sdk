@@ -536,11 +536,12 @@
  * @property {(subPatt?: Pattern) => Matcher} arrayOf
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Matcher} recordOf
  * @property {(keyPatt?: Pattern) => Matcher} setOf
- * @property {(keyPatt?: Pattern) => Matcher} bagOf
+ * @property {(keyPatt?: Pattern, countPatt?: Pattern) => Matcher} bagOf
  * Parameterized by a keyPatt that is matched against every element of the
  * abstract bag. In terms of the bag representation, it is matched against
- * the first element of each pair. No pattern is run over the cardinality
- * numbers.
+ * the first element of each pair. If the second `countPatt` is provided,
+ * it is matched against the cardinality of each element. The `countPatt`
+ * is rarely expected to be useful, but is provided to minimize surprise.
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Matcher} mapOf
  * @property {(
  *   base: CopyRecord<*> | CopyArray<*>,
