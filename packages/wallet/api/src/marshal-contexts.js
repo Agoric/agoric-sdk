@@ -241,12 +241,12 @@ const defaultMakePresence = iface => {
  */
 export const makeImportContext = (makePresence = defaultMakePresence) => {
   const walletObjects = {
-    /** @type {IdTable<number, Purse>} */
+    /** @type {IdTable<number, unknown>} */
     purse: {
       bySlot: makeScalarMap(),
       byVal: makeScalarMap(),
     },
-    /** @type {IdTable<number, Payment>} */
+    /** @type {IdTable<number, unknown>} */
     payment: {
       bySlot: makeScalarMap(),
       byVal: makeScalarMap(),
@@ -306,7 +306,6 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
     fromMyWallet: val => {
       const kind = findKey(walletObjects, k => walletObjects[k].byVal.has(val));
       if (kind) {
-        // @ts-expect-error has(val) above ensures val has the right type
         const id = walletObjects[kind].byVal.get(val);
         return makeWalletSlot(walletObjects, kind, id);
       }
