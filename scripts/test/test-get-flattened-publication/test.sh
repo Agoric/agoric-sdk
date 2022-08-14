@@ -8,13 +8,13 @@ out="$(RESPONSE=NAKED ../../get-flattened-publication.sh HOST STORAGE_KEY)"
 if [ "$out" != "$(cat fixtures/flattened-naked.json)" ]; then
   failed=1
   echo 'Output did not match expectations for a naked result.'
-  printf '%s\n' "$out" | ${DIFF:-diff -u} ${DIFF_OPTS:-} fixtures/flattened-naked.json - || true
+  printf '%s\n' "$out" | ${DIFF:-diff -u} fixtures/flattened-naked.json - || true
 fi
 out="$(RESPONSE=STREAM_CELL ../../get-flattened-publication.sh HOST STORAGE_KEY)"
 if [ "$out" != "$(cat fixtures/flattened-streamcell.json)" ]; then
   failed=1
   echo 'Output did not match expectations for a stream cell result.'
-  printf '%s\n' "$out" | ${DIFF:-diff -u} ${DIFF_OPTS:-} fixtures/flattened-streamcell.json - || true
+  printf '%s\n' "$out" | ${DIFF:-diff -u} fixtures/flattened-streamcell.json - || true
 fi
 
 [ $failed = 1 ] && exit 1
