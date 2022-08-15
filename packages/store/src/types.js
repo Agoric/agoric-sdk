@@ -79,9 +79,13 @@
  * @typedef {CopyTagged} CopySet
  */
 
+// TODO parameterize CopyTagged so this can include it
 /**
  * @template K
- * @typedef {CopyTagged} CopyBag
+ * @typedef {{
+ *   [Symbol.toStringTag]: string;
+ *   payload: Array<[K, bigint]>;
+ * }} CopyBag
  */
 
 /**

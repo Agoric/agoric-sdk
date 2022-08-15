@@ -280,7 +280,7 @@ harden(assertCopyBag);
 /**
  * @template K
  * @param {CopyBag<K>} b
- * @returns {K[]}
+ * @returns {CopyBag<K>['payload']}
  */
 export const getCopyBagEntries = b => {
   assertCopyBag(b);
