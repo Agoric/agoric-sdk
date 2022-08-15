@@ -115,7 +115,7 @@ harden(coerceToBagEntries);
 
 /**
  * @template K
- * @param {Iterable<K>} bagEntryIter
+ * @param {Iterable<[K, bigint]>} bagEntryIter
  * @returns {CopyBag<K>}
  */
 export const makeBagOfEntries = bagEntryIter =>
