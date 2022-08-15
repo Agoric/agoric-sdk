@@ -72,8 +72,8 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * the Installation to be started, as well as an issuerKeywordRecord or terms
  * needed by the governed contract. Those details for the governed contract are
  * included in this contract's terms as a "governed" record. If the contract
- * expects privateArgs, those passed in this contracts privateArgs under the
- * key 'governed:'.
+ * expects privateArgs, those will be provided in this contract's `privateArgs`
+ * under 'governed:'.
  *
  * terms = {
  *    timer,
