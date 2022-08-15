@@ -5,7 +5,7 @@ import { Nat } from '@agoric/nat';
 import { makeScalarMapStore } from '@agoric/store';
 import { provide } from '@agoric/store/src/stores/store-utils.js';
 import { E, Far } from '@endo/far';
-import { deeplyFulfillTerms } from '@agoric/zoe/src/contractSupport/index.js';
+import { deeplyFulfilled } from '@endo/marshal';
 
 import { makeStorageNode } from '../lib-chainStorage.js';
 import { makeNameHubKit } from '../nameHub.js';
@@ -244,11 +244,13 @@ export const makeClientBanks = async ({
     bridgeManagerP,
   ]);
 
-  const terms = await deeplyFulfillTerms({
-    agoricNames,
-    namesByAddress,
-    board,
-  });
+  const terms = await deeplyFulfilled(
+    harden({
+      agoricNames,
+      namesByAddress,
+      board,
+    }),
+  );
   const { creatorFacet } = await E(zoe).startInstance(
     walletFactory,
     {},

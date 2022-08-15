@@ -4,9 +4,9 @@ import {
   makeStorageNode,
   sanitizePathSegment,
 } from '@agoric/vats/src/lib-chainStorage.js';
-import { deeplyFulfillTerms } from '@agoric/zoe/src/contractSupport/index.js';
+import { deeplyFulfilled } from '@endo/marshal';
 
-import { reserveThenGetNames, reserveThenDeposit } from './utils.js';
+import { reserveThenDeposit, reserveThenGetNames } from './utils.js';
 
 export const ensureOracleBrands = async (
   { consume: { agoricNamesAdmin } },
@@ -109,13 +109,15 @@ export const createPriceFeed = async (
   ]);
 
   /** @type {import('@agoric/zoe/src/contracts/priceAggregator.js').PriceAggregatorContract['terms']} */
-  const terms = await deeplyFulfillTerms({
-    ...contractTerms,
-    description: AGORIC_INSTANCE_NAME,
-    brandIn,
-    brandOut,
-    timer,
-  });
+  const terms = await deeplyFulfilled(
+    harden({
+      ...contractTerms,
+      description: AGORIC_INSTANCE_NAME,
+      brandIn,
+      brandOut,
+      timer,
+    }),
+  );
 
   const storageNode = await makeStorageNode(chainStorage, STORAGE_PATH);
   const marshaller = E(board).getReadonlyMarshaller();
