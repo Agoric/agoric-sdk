@@ -22,7 +22,6 @@ import * as BRIDGE_ID from '../bridge-ids.js';
 import * as STORAGE_PATH from '../chain-storage-paths.js';
 
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
-import { makeStorageNode } from '../lib-chainStorage.js';
 
 const { details: X } = assert;
 const { keys } = Object;
@@ -337,11 +336,7 @@ export const publishAgoricNames = async ({
       const kindNode = await E(nameStorage).getChildNode(kind);
       const { publisher } = makeStoredPublishKit(kindNode, marshaller);
       publisher.publish([]);
-      kindAdmin.onUpdate(entries => {
-        // watch out for trying to publish promises
-        console.debug('agoricNames publish', kind, entries);
-        publisher.publish(entries);
-      });
+      kindAdmin.onUpdate(publisher.publish);
     }),
   );
 };
