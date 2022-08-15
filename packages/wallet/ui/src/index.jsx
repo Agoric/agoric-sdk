@@ -1,4 +1,3 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import '@endo/eventual-send/shim';
 
 import ReactDOM from 'react-dom';

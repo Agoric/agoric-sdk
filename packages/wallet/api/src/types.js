@@ -1,6 +1,13 @@
 // @ts-check
 
 /**
+ * This is the complete wallet, including the means to get the WalletAdminFacet
+ * (necessary for the operation of the Wallet UI, and useful for the REPL).
+ *
+ * @typedef {WalletUser & { getAdminFacet: () => WalletAdminFacet, getMarshaller: () => Marshaller }} WalletAdmin
+ */
+
+/**
  * @typedef {object} WalletUser
  * The presence exposed as `local.wallet` (or
  * `home.wallet`).  The idea is to provide someplace from which all the rest of
