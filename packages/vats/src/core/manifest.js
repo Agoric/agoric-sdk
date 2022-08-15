@@ -102,6 +102,13 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
       chainStorage: 'chainStorage',
     },
   },
+  publishAgoricNames: {
+    consume: {
+      agoricNamesAdmin: true,
+      board: 'board',
+      chainStorage: 'chainStorage',
+    },
+  },
   makeClientBanks: {
     consume: {
       agoricNames: true,

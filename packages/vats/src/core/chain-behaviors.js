@@ -5,6 +5,7 @@ import * as farExports from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import {
   makeNotifierKit,
+  makeStoredPublishKit,
   makeSubscriptionKit,
   observeIteration,
 } from '@agoric/notifier';
@@ -20,7 +21,8 @@ import { makeBridgeManager as makeBridgeManagerKit } from '../bridge.js';
 import * as BRIDGE_ID from '../bridge-ids.js';
 import * as STORAGE_PATH from '../chain-storage-paths.js';
 
-import { callProperties, extractPowers } from './utils.js';
+import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
+import { makeStorageNode } from '../lib-chainStorage.js';
 
 const { details: X } = assert;
 const { keys } = Object;
@@ -313,6 +315,35 @@ export const makeChainStorage = async ({
     ROOT_PATH,
   );
   chainStorageP.resolve(rootNodeP);
+};
+
+/** @param {BootstrapPowers} powers */
+export const publishAgoricNames = async ({
+  consume: { agoricNamesAdmin, board, chainStorage: rootP },
+}) => {
+  const root = await rootP;
+  if (!root) {
+    console.warn('cannot publish agoricNames without chainStorage');
+    return;
+  }
+  const nameStorage = E(root).getChildNode('agoricNames');
+  const marshaller = E(board).getPublishingMarshaller();
+
+  // brand, issuer, ...
+  await Promise.all(
+    keys(agoricNamesReserved).map(async kind => {
+      const kindAdmin = await E(agoricNamesAdmin).lookupAdmin(kind);
+
+      const kindNode = await E(nameStorage).getChildNode(kind);
+      const { publisher } = makeStoredPublishKit(kindNode, marshaller);
+      publisher.publish([]);
+      kindAdmin.onUpdate(entries => {
+        // watch out for trying to publish promises
+        console.debug('agoricNames publish', kind, entries);
+        publisher.publish(entries);
+      });
+    }),
+  );
 };
 
 /**
