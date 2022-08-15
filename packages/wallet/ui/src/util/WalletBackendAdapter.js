@@ -7,6 +7,8 @@ import {
 import { iterateLatest } from '@agoric/casting';
 import { getScopedBridge } from '../service/ScopedBridge.js';
 import { getDappService } from '../service/Dapps.js';
+import { getOfferService } from '../service/Offers.js';
+import { getIssuerService } from '../service/Issuers.js';
 
 const newId = kind => `${kind}${Math.random()}`;
 
@@ -71,6 +73,9 @@ export const makeBackendFromWalletBridge = walletBridge => {
     ),
     payments: iterateNotifier(E(walletBridge).getPaymentsNotifier()),
     purses: iterateNotifier(E(walletBridge).getPursesNotifier()),
+    issuerSuggestions: iterateNotifier(
+      E(walletBridge).getIssuerSuggestionsNotifier(),
+    ),
   });
 
   // Just produce a single update for the initial backend.
@@ -89,13 +94,19 @@ export const makeBackendFromWalletBridge = walletBridge => {
 
 /**
  * @param {import('@agoric/casting').Follower} follower
+ * @param {import('@agoric/casting').Leader} leader
+ * @param {import('@agoric/casting').Unserializer} unserializer
  * @param {string} publicAddress
+ * @param {object} keplrConnection
  * @param {(e: unknown) => void} [errorHandler]
  * @param {() => void} [firstCallback]
  */
 export const makeWalletBridgeFromFollower = (
   follower,
+  leader,
+  unserializer,
   publicAddress,
+  keplrConnection,
   errorHandler = e => {
     // Make an unhandled rejection.
     throw e;
@@ -150,17 +161,46 @@ export const makeWalletBridgeFromFollower = (
     console.log('add issuer');
   };
 
+  const signSpendAction = data => {
+    const {
+      signers: { interactiveSigner },
+    } = keplrConnection;
+    if (!interactiveSigner) {
+      throw new Error(
+        'Cannot sign a transaction in read only mode, connect to keplr.',
+      );
+    }
+    return interactiveSigner.submitSpendAction(data);
+  };
+
+  const issuerService = getIssuerService(signSpendAction);
   const dappService = getDappService(publicAddress);
+  const offerService = getOfferService(
+    publicAddress,
+    signSpendAction,
+    getNotifierMethods.getOffersNotifier(),
+  );
+  const { acceptOffer, declineOffer, cancelOffer } = offerService;
 
   const walletBridge = Far('follower wallet bridge', {
     ...getNotifierMethods,
     getDappsNotifier: () => dappService.notifier,
+    getOffersNotifier: () => offerService.notifier,
+    getIssuerSuggestionsNotifier: () => issuerService.notifier,
+    acceptOffer,
+    declineOffer,
+    cancelOffer,
     makeEmptyPurse,
     addContact,
     addIssuer,
     getScopedBridge: (origin, suggestedDappPetname) =>
       getScopedBridge(origin, suggestedDappPetname, {
         dappService,
+        offerService,
+        leader,
+        unserializer,
+        publicAddress,
+        issuerService,
         ...getNotifierMethods,
       }),
   });

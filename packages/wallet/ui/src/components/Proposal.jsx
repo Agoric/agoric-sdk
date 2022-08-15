@@ -4,10 +4,43 @@ import { icons, defaultIcon } from '../util/Icons.js';
 import Petname from './Petname';
 import PurseValue from './PurseValue';
 import { formatDateNow } from '../util/Date';
+import { withApplicationContext } from '../contexts/Application.jsx';
 
 import './Offer.scss';
 
-const OfferEntry = (type, [role, { amount, pursePetname }]) => {
+const OfferEntryFromTemplate = (
+  type,
+  [role, { value: stringifiedValue, pursePetname }],
+  purses,
+) => {
+  const value = BigInt(stringifiedValue);
+  const purse = purses.find(p => p.pursePetname === pursePetname);
+  return (
+    <div className="OfferEntry" key={purse.brandPetname}>
+      <h6>
+        {type.header} {role}
+      </h6>
+      <div className="Token">
+        <img
+          alt="icon"
+          src={icons[purse.brand.petname] ?? defaultIcon}
+          height="32px"
+          width="32px"
+        />
+        <div>
+          <PurseValue
+            value={value}
+            displayInfo={purse.displayInfo}
+            brandPetname={purse.brandPetname}
+          />
+          {type.move} <Petname name={purse.pursePetname} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const OfferEntryFromDisplayInfo = (type, [role, { amount, pursePetname }]) => {
   const value =
     amount.displayInfo.assetKind === 'nat' ? Nat(amount.value) : amount.value;
   return (
@@ -40,8 +73,15 @@ const entryTypes = {
   give: { header: 'Give', move: 'from' },
 };
 
-const Give = entry => OfferEntry(entryTypes.give, entry);
-const Want = entry => OfferEntry(entryTypes.want, entry);
+const GiveFromDisplayInfo = entry =>
+  OfferEntryFromDisplayInfo(entryTypes.give, entry);
+const WantFromDisplayInfo = entry =>
+  OfferEntryFromDisplayInfo(entryTypes.want, entry);
+
+const GiveFromTemplate = (entry, purses) =>
+  OfferEntryFromTemplate(entryTypes.give, entry, purses);
+const WantFromTemplate = (entry, purses) =>
+  OfferEntryFromTemplate(entryTypes.want, entry, purses);
 
 const cmp = (a, b) => {
   if (a < b) {
@@ -56,11 +96,34 @@ const cmp = (a, b) => {
 const sortedEntries = entries =>
   Object.entries(entries).sort(([kwa], [kwb]) => cmp(kwa, kwb));
 
-const Proposal = ({ offer }) => {
+const Proposal = ({ offer, purses }) => {
   const {
-    proposalForDisplay: { give = {}, want = {}, arguments: args } = {},
+    proposalForDisplay,
+    proposalTemplate,
     invitationDetails: { fee, feePursePetname, expiry } = {},
   } = offer;
+
+  let give = {};
+  let want = {};
+  let args;
+  let hasDisplayInfo = false;
+
+  // Proposed offers only have a `proposalTemplate`. Offers from the wallet
+  // contract have a `proposalForDisplay`.
+  if (proposalForDisplay) {
+    give = proposalForDisplay.give ?? {};
+    want = proposalForDisplay.want ?? {};
+    args = proposalForDisplay.arguments;
+    hasDisplayInfo = true;
+  } else if (proposalTemplate) {
+    give = proposalTemplate.give ?? {};
+    want = proposalTemplate.want ?? {};
+    args = proposalTemplate.arguments;
+  } else {
+    // The offer does not have a proposal.
+  }
+
+  if (!purses) return <></>;
 
   const feeEntry = fee && (
     <div className="OfferEntry">
@@ -88,8 +151,12 @@ const Proposal = ({ offer }) => {
     </div>
   );
 
-  const Gives = sortedEntries(give).map(Give);
-  const Wants = sortedEntries(want).map(Want);
+  const Gives = sortedEntries(give).map(g =>
+    hasDisplayInfo ? GiveFromDisplayInfo(g) : GiveFromTemplate(g, purses),
+  );
+  const Wants = sortedEntries(want).map(w =>
+    hasDisplayInfo ? WantFromDisplayInfo(w) : WantFromTemplate(w, purses),
+  );
 
   return (
     <>
@@ -114,4 +181,6 @@ const Proposal = ({ offer }) => {
   );
 };
 
-export default Proposal;
+export default withApplicationContext(Proposal, ({ purses }) => ({
+  purses,
+}));

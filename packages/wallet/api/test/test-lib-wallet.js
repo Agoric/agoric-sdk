@@ -1205,7 +1205,7 @@ test('lib-wallet performAction suggestIssuer', async t => {
     type: 'suggestIssuer',
     data: { petname: 'bucksIssuer', boardId: bucksIssuerBoardId },
   });
-  const done = await wallet.performAction({ action });
+  const done = await wallet.performAction({ spendAction: action });
 
   t.truthy(done);
   t.is(
@@ -1329,7 +1329,7 @@ test('lib-wallet performAction acceptOffer', async t => {
     type: 'acceptOffer',
     data: offer,
   });
-  const accepted = await wallet.performAction({ action });
+  const accepted = await wallet.performAction({ spendAction: action });
   assert(accepted);
   const { depositedP } = accepted;
   await t.throwsAsync(

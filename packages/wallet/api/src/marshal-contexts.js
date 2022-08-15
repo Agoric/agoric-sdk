@@ -127,7 +127,7 @@ export const makeExportContext = () => {
       byVal: makeScalarMap(),
     },
     // TODO: offer, contact, dapp
-    /** @type {IdTable<number, Payment>} */
+    /** @type {IdTable<number, unknown>} */
     unknown: {
       bySlot: makeScalarMap(),
       byVal: makeScalarMap(),
@@ -241,17 +241,21 @@ const defaultMakePresence = iface => {
  */
 export const makeImportContext = (makePresence = defaultMakePresence) => {
   const walletObjects = {
-    /** @type {IdTable<number, PurseActions>} */
+    /** @type {IdTable<number, unknown>} */
     purse: {
       bySlot: makeScalarMap(),
       byVal: makeScalarMap(),
     },
-    /** @type {IdTable<number, PaymentActions>} */
+    /** @type {IdTable<number, unknown>} */
     payment: {
       bySlot: makeScalarMap(),
       byVal: makeScalarMap(),
     },
-    // TODO: offer, contact, dapp
+    /** @type {IdTable<number, unknown>} */
+    unknown: {
+      bySlot: makeScalarMap(),
+      byVal: makeScalarMap(),
+    },
   };
   /** @type {IdTable<BoardId, unknown>} */
   const boardObjects = {
@@ -292,8 +296,7 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
     fromMyWallet: (slot, iface) => {
       const { kind, id } = parseWalletSlot(walletObjects, slot);
       return kind
-        ? // @ts-expect-error tsc isn't quite this clever
-          provideVal(walletObjects[kind], id, iface)
+        ? provideVal(walletObjects[kind], id, iface)
         : slotToVal.fromBoard(slot, iface);
     },
   };
@@ -303,7 +306,6 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
     fromMyWallet: val => {
       const kind = findKey(walletObjects, k => walletObjects[k].byVal.has(val));
       if (kind) {
-        // @ts-expect-error has(val) above ensures val has the right type
         const id = walletObjects[kind].byVal.get(val);
         return makeWalletSlot(walletObjects, kind, id);
       }

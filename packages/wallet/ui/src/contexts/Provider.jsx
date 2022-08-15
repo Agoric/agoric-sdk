@@ -126,6 +126,7 @@ const Provider = ({ children }) => {
   const [contacts, setContacts] = useReducer(contactsReducer, null);
   const [payments, setPayments] = useReducer(paymentsReducer, null);
   const [issuers, setIssuers] = useReducer(issuersReducer, null);
+  const [issuerSuggestions, setIssuerSuggestions] = useState(null);
   const [services, setServices] = useState(null);
   const [backend, setBackend] = useState(null);
   const [schemaActions, setSchemaActions] = useState(null);
@@ -282,6 +283,18 @@ const Provider = ({ children }) => {
         },
       }).catch(rethrowIfNotCancelled);
     }
+
+    const issuerSuggestionsNotifier = E.get(backend).issuerSuggestions;
+    observeIterator(issuerSuggestionsNotifier, {
+      fail: rethrowIfNotCancelled,
+      updateState: state => {
+        if (cancelIteration) {
+          throw cancelIteration;
+        }
+        setIssuerSuggestions(state);
+      },
+    }).catch(rethrowIfNotCancelled);
+
     return () => {
       cancelIteration = Error('cancelled');
     };
@@ -398,6 +411,7 @@ const Provider = ({ children }) => {
     setPayments,
     issuers,
     setIssuers,
+    issuerSuggestions,
     pendingPurseCreations,
     setPendingPurseCreations,
     pendingTransfers,

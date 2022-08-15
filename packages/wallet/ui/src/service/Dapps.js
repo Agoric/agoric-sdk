@@ -5,6 +5,9 @@ import {
   upsertDapp as upsert,
 } from '../store/Dapps.js';
 
+/**
+ * @param {string} publicAddress
+ */
 export const getDappService = publicAddress => {
   const dapps = new Map();
   const { notifier, updater } = makeNotifierKit();
@@ -43,9 +46,6 @@ export const getDappService = publicAddress => {
         res();
       };
     });
-    if (d.enable) {
-      enableAction();
-    }
 
     dapps.set(d.origin, {
       ...d,
@@ -56,6 +56,10 @@ export const getDappService = publicAddress => {
         delete: () => deleteDapp(d.origin),
       },
     });
+
+    if (d.enable) {
+      enableAction();
+    }
   });
   broadcastUpdates();
 

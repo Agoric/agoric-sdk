@@ -1802,13 +1802,13 @@ export function makeWalletRoot({
   const handleSuggestIssuerAction = ({ petname, boardId }) =>
     suggestIssuer(petname, boardId);
 
-  /** @typedef {{action: string}} Action */
+  /** @typedef {{spendAction: string}} Action */
   /**
    * @param {Action} obj
    * @returns {Promise<any>}
    */
   const performAction = obj => {
-    const { type, data } = JSON.parse(obj.action);
+    const { type, data } = JSON.parse(obj.spendAction);
     switch (type) {
       case 'acceptOffer':
         return handleAcceptOfferAction(data);
