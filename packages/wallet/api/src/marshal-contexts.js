@@ -2,7 +2,7 @@
 import makeLegacyMap, { makeScalarMap } from '@agoric/store';
 import { Far, makeMarshal, Remotable } from '@endo/marshal';
 import { HandledPromise } from '@endo/eventual-send'; // TODO: convince tsc this isn't needed
-import { makePromiseKit } from '@endo/promise-kit';
+import { isPromise } from 'util/types';
 
 const { details: X, quote: q } = assert;
 
@@ -114,8 +114,10 @@ const initSlotVal = (table, slot, val) => {
  * `makeMarshal()` is parameterized by the type of slots. Here we use a disjoint union of
  *   - board ids for widely shared objects
  *   - kind:seq ids for closely held objects; for example purse:123
+ *
+ * @param {(log?: MessageLog[]) => Promise<void>} flush
  */
-export const makeExportContext = () => {
+export const makeExportContext = flush => {
   const walletObjects = {
     /** @type {IdTable<number, Purse>} */
     purse: {
@@ -132,6 +134,11 @@ export const makeExportContext = () => {
     unknown: {
       bySlot: makeScalarMap('unknownSlot'),
       byVal: makeScalarMap('unknown'),
+    },
+    /** TODO type {IdTable<number, Promise<unknown>>} */
+    promise: {
+      bySlot: makeLegacyMap('promiseSlot'),
+      byVal: makeLegacyMap('promise'),
     },
   };
   /** @type {IdTable<BoardId, unknown>} */
@@ -172,11 +179,13 @@ export const makeExportContext = () => {
       nonce += 1;
       initSlotVal(table, nonce, val);
       console.log('@@@export: saved', kind, nonce);
+      return nonce;
     };
     return saver;
   };
 
   const saveUnknown = makeSaver('unknown', walletObjects.unknown);
+  const savePromise = makeSaver('promise', walletObjects.promise);
 
   /**
    * @param {unknown} val
@@ -191,6 +200,16 @@ export const makeExportContext = () => {
       // @ts-expect-error has(val) above ensures val has the right type
       const id = walletObjects[kind].byVal.get(val);
       return makeWalletSlot(walletObjects, kind, id);
+    }
+
+    if (isPromise(val)) {
+      const seq = savePromise(val);
+      val.then(
+        r => flush([['fulfill', seq, r]]),
+        e => flush([['reject', seq, e]]),
+      );
+      const slot = makeWalletSlot(walletObjects, 'promise', seq);
+      return slot;
     }
     const seq = saveUnknown(val);
     const slot = makeWalletSlot(walletObjects, 'unknown', seq);
@@ -239,7 +258,7 @@ const defaultMakePresence = iface => {
 /**
  * Make context for unserializing wallet or board data.
  *
- * @param {() => Promise<void>} flush
+ * @param {(log?: MessageLog[]) => Promise<void>} flush
  * @param {(iface: string) => any} [makePresence]
  */
 export const makeImportContext = (
@@ -261,6 +280,10 @@ export const makeImportContext = (
     unknown: {
       bySlot: makeScalarMap(),
       byVal: makeScalarMap(),
+    },
+    promise: {
+      bySlot: makeLegacyMap(),
+      byVal: makeLegacyMap(),
     },
   };
   /** @type {IdTable<BoardId, unknown>} */
@@ -339,7 +362,6 @@ export const makeImportContext = (
   registerUnknown(wallet);
 
   const all = async goals => {
-    await flush();
     return Promise.all(goals);
   };
 
@@ -371,7 +393,12 @@ const makePresence = (iface, handler) => {
 
 /**
  * @param {string} iface
- * @param {(parts: unknown[], resultP: Promise<unknown>) => void} log
+ * @param {(call: MethodCall | FnCall, resultP: Promise<unknown>) => void} log
+ * @typedef {MethodCall | FnCall | PromiseFulfillment | PromiseRejection} MessageLog
+ * @typedef {[tag: 'applyMethod', target: unknown, method: string, args: unknown[]]} MethodCall
+ * @typedef {[tag: 'applyFunction', target: unknown, args: unknown[]]} FnCall
+ * @typedef {[tag: 'fulfill', promiseId: number, resolution: unknown]} PromiseFulfillment
+ * @typedef {[tag: 'reject', promiseId: number, reason: unknown]} PromiseRejection
  */
 export const makeLoggingPresence = (iface, log) => {
   /** @type {any} */ // TODO: solve types puzzle

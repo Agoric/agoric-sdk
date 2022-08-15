@@ -180,24 +180,31 @@ test('makeExportContext.serialize handles unregistered identites', t => {
 const makeWalletUI = (board, backgroundSigner, follower) => {
   const msgs = [];
   const seqToKit = new Map();
+  let lastSeq = 0;
   const mkp = iface =>
     makeLoggingPresence(iface, (msg, resultP) => {
       msgs.push({ msg, resultP });
       const kit = makePromiseKit();
-      const seq = ctx.registerUnknown(resultP);
-      console.log('walletUI registered logging presence', seq);
+      // console.log('walletUI registered logging presence', seq);
+      lastSeq += 1;
+      const seq = lastSeq;
       seqToKit.set(seq, kit);
-      // TODO: arrange for kit.resolve() to fire when wallet state notification
-      // includes an answer to this question (identified by seq???)
       return kit.promise;
     });
-  const flush = async () => {
-    await Promise.resolve(null); // wait for E() stuff
+  const flush = async (addMsgs = []) => {
+    if (!addMsgs.length && !msgs.length) {
+      return;
+    }
+    await null; // wait for E() stuff
+
+    const allMsgs = [...addMsgs, ...msgs];
+    msgs.splice(0);
+
     // eslint-disable-next-line no-use-before-define
     const capData = ctx.fromMyWallet.serialize(
-      harden(msgs.map(({ msg }) => msg)),
+      harden(allMsgs.map(({ msg }) => msg)),
     );
-    msgs.splice(0);
+
     // console.warn('@@TODO: bg send serialized', { capData });
     backgroundSigner.submitAction(JSON.stringify(capData));
   };
@@ -209,6 +216,7 @@ const makeWalletUI = (board, backgroundSigner, follower) => {
 
   (async () => {
     for await (const json of follower.getLatestIterable()) {
+      console.log('have json', { json });
       const { answers } = ctx.fromMyWallet.unserialize(JSON.parse(json));
       for (const [ix, result] of answers) {
         if (seqToKit.has(ix)) {
@@ -216,18 +224,20 @@ const makeWalletUI = (board, backgroundSigner, follower) => {
           seqToKit.delete(ix);
           console.log('deliver', result);
           if (result.ok) {
-            Promise.resolve(result.value).then(kit.resolve);
+            kit.resolve(result.value);
           } else {
             kit.reject(result.reason);
           }
           console.log('pending', seqToKit);
         }
       }
+      console.log('waiting for', msgs);
     }
   })();
 
   return harden({
     all: ctx.all,
+    flush,
     getScopedBridge: async () =>
       harden({
         getZoeService: async () => zoe,
@@ -288,9 +298,9 @@ test('get IST brand via agoricNames', async t => {
         capData,
         value,
       });
-      answers.push([2, { ok: true, value: agoricNames }]);
-      answers.push([3, { ok: true, value: zoe }]);
-      answers.push([4, { ok: true, value: brand }]);
+      answers.push([1, { ok: true, value: agoricNames }]);
+      answers.push([2, { ok: true, value: zoe }]);
+      answers.push([3, { ok: true, value: brand }]);
     };
 
     return harden({
@@ -301,19 +311,21 @@ test('get IST brand via agoricNames', async t => {
   };
   const onChain = makeOnChain();
 
+  let queryWalletPK = makePromiseKit();
   const offChain = async () => {
-    const tx1 = makePromiseKit();
-
     const bgSigner = harden({
       submitAction: action => {
         onChain.submitActionTx(action);
-        tx1.resolve('go');
+        queryWalletPK.resolve('go');
       },
     });
     async function* getLatestIterable() {
-      yield onChain.queryWallet();
-      await tx1.promise;
-      yield onChain.queryWallet();
+      while (true) {
+        yield onChain.queryWallet();
+        // eslint-disable-next-line no-await-in-loop
+        await queryWalletPK.promise;
+        queryWalletPK = makePromiseKit();
+      }
     }
     const follower = harden({
       getLatestIterable,
@@ -321,8 +333,13 @@ test('get IST brand via agoricNames', async t => {
     const wallet = makeWalletUI(board, bgSigner, follower);
     const bridge = E(wallet).getScopedBridge();
     const agoricNames = E(bridge).getAgoricNames();
-    const [brand] = await wallet.all([E(agoricNames).lookup('brand', 'IST')]);
-    t.deepEqual(brand, '@@@');
+    const tp = wallet
+      .all([E(agoricNames).lookup('brand', 'IST')])
+      .then(([brand]) => t.deepEqual(brand, '@@@'));
+    await Promise.race([tp, wallet.flush()]);
+    await Promise.race([tp, wallet.flush()]);
+    await Promise.race([tp, wallet.flush()]);
+    await Promise.race([tp, wallet.flush()]);
   };
 
   await Promise.all([onChain.run(), offChain()]);
