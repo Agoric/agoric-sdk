@@ -713,6 +713,8 @@ test('price falls precipitously', async t => {
     undefined,
     1500n,
   );
+  // we start with time=0, price=2200
+
   const { vaultFactory, lender } = services.vaultFactory;
 
   const { reserveCreatorFacet } = services.reserveFacets;
@@ -781,16 +783,13 @@ test('price falls precipitously', async t => {
   // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(run.makeEmpty()));
-  await manualTimer.tick();
+  await manualTimer.tick(); // t 0->1, p 2200->19180
   await assertDebtIs(debtAmount.value);
 
-  await manualTimer.tick();
+  await manualTimer.tick(); // t 1->2, p 19180->1650
   await assertDebtIs(debtAmount.value);
 
-  await manualTimer.tick();
-  await assertDebtIs(debtAmount.value);
-
-  await manualTimer.tick();
+  await manualTimer.tick(); // t 2->3, p 1650->150, liquidates
 
   // shortfall 103n covered by the reserve
   t.deepEqual(
