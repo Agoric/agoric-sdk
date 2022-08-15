@@ -237,9 +237,9 @@ const buildOwner = async (
       governed: {
         terms,
         issuerKeywordRecord: {},
-        privateArgs: privateVaultFactoryArgs,
       },
     }),
+    { governed: privateVaultFactoryArgs },
   );
 
   const governedInstance = await E(governorFacets.creatorFacet).getInstance();

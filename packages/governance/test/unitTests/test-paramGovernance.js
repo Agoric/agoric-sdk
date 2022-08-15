@@ -106,7 +106,6 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
     governed: {
       terms: governedTerms,
       issuerKeywordRecord: {},
-      privateArgs: { initialPoserInvitation: poserInvitation },
     },
   };
 
@@ -114,6 +113,11 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
     governor,
     {},
     governorTerms,
+    {
+      governed: {
+        initialPoserInvitation: poserInvitation,
+      },
+    },
   );
 
   return { governorFacets, installs, invitationAmount, committeeCreator };

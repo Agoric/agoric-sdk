@@ -28,7 +28,7 @@ export const startPSM = async (
       agoricNamesAdmin,
       board,
       zoe,
-      feeMintAccess,
+      feeMintAccess: feeMintAccessP,
       economicCommitteeCreatorFacet,
       chainStorage,
       chainTimerService,
@@ -58,13 +58,15 @@ export const startPSM = async (
     'string',
     X`anchorOptions.denom must be a string, not ${denom}`,
   );
-  const [runBrand, [anchorBrand, anchorIssuer]] = await Promise.all([
-    runBrandP,
-    reserveThenGetNamePaths(agoricNamesAdmin, [
-      ['brand', keyword],
-      ['issuer', keyword],
-    ]),
-  ]);
+  const [runBrand, [anchorBrand, anchorIssuer], feeMintAccess] =
+    await Promise.all([
+      runBrandP,
+      reserveThenGetNamePaths(agoricNamesAdmin, [
+        ['brand', keyword],
+        ['issuer', keyword],
+      ]),
+      feeMintAccessP,
+    ]);
 
   const poserInvitationP = E(
     economicCommitteeCreatorFacet,
@@ -113,12 +115,6 @@ export const startPSM = async (
       governed: {
         terms,
         issuerKeywordRecord: { [keyword]: anchorIssuer },
-        privateArgs: {
-          feeMintAccess,
-          initialPoserInvitation,
-          marshaller,
-          storageNode,
-        },
       },
     }),
   );
@@ -126,7 +122,15 @@ export const startPSM = async (
     contractGovernor,
     {},
     governorTerms,
-    harden({ economicCommitteeCreatorFacet }),
+    harden({
+      economicCommitteeCreatorFacet,
+      governed: {
+        feeMintAccess,
+        initialPoserInvitation,
+        marshaller,
+        storageNode,
+      },
+    }),
   );
 
   const governedInstance = await E(governorFacets.creatorFacet).getInstance();
