@@ -104,7 +104,7 @@ test('makeChainStorageRoot', async t => {
     child.clearValue();
     t.deepEqual(
       messages.slice(-1),
-      [{ key: childPath, method: 'set' }],
+      [{ key: childPath, method: 'set', value: '' }],
       'non-root clearValue message',
     );
   }
@@ -158,19 +158,19 @@ test('makeChainStorageRoot', async t => {
   childNode.clearValue();
   t.deepEqual(
     messages.slice(-1),
-    [{ key: childPath, method: 'set' }],
+    [{ key: childPath, method: 'set', value: '' }],
     'child clearValue message',
   );
   deepNode.clearValue();
   t.deepEqual(
     messages.slice(-1),
-    [{ key: deepPath, method: 'set' }],
+    [{ key: deepPath, method: 'set', value: '' }],
     'granchild clearValue message',
   );
   childNode.clearValue();
   t.deepEqual(
     messages.slice(-1),
-    [{ key: childPath, method: 'set' }],
+    [{ key: childPath, method: 'set', value: '' }],
     'child clearValue message',
   );
 });

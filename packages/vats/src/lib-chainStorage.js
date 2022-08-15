@@ -27,9 +27,7 @@ harden(sanitizePathSegment);
  * Must match the switch in vstorage.go using `vstorageMessage` type
  *
  * @typedef {'get' | 'getStoreKey' | 'set' | 'has' |'entries' | 'values' |'size' } StorageMessageMethod
- */
-/**
- * @typedef {{key: string, method: StorageMessageMethod, value?: unknown}} StorageMessage
+ * @typedef {{key: string, method: StorageMessageMethod, value: string}} StorageMessage
  */
 
 /**
@@ -54,7 +52,11 @@ export function makeChainStorageRoot(
   function makeChainStorageNode(path) {
     const node = {
       getStoreKey() {
-        return handleStorageMessage({ key: path, method: 'getStoreKey' });
+        return handleStorageMessage({
+          key: path,
+          method: 'getStoreKey',
+          value: '',
+        });
       },
       getChildNode(name) {
         assert.typeof(name, 'string');
@@ -69,7 +71,7 @@ export function makeChainStorageRoot(
         handleStorageMessage({ key: path, method: 'set', value });
       },
       clearValue() {
-        handleStorageMessage({ key: path, method: 'set' });
+        handleStorageMessage({ key: path, method: 'set', value: '' });
       },
       // Possible extensions:
       // * getValue()
