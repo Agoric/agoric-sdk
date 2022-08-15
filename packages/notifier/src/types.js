@@ -219,6 +219,15 @@
 /** @typedef {Pick<Marshaller, 'unserialize'>} Unserializer */
 
 /**
+ * Defined by vstorageStoreKey in vstorage.go
+ *
+ * @typedef VStorageKey
+ * @property {string} storeName
+ * @property {string} storeSubkey
+ * @property {string} dataPrefixBytes
+ */
+
+/**
  * This represents a node in an IAVL tree.
  *
  * The active implementation is x/vstorage, an Agoric extension of the Cosmos SDK.
@@ -229,7 +238,7 @@
  *
  * @typedef {object} StorageNode
  * @property {(data: string) => void} setValue publishes some data
- * @property {() => ERef<Record<string, any>>} getStoreKey get the
+ * @property {() => ERef<VStorageKey>} getStoreKey get the
  * externally-reachable store key for this storage item
  * @property {(subPath: string) => StorageNode} makeChildNode
  */

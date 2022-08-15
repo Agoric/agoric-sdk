@@ -51,6 +51,7 @@ export function makeChainStorageRoot(
 
   function makeChainStorageNode(path) {
     const node = {
+      /** @type {() => VStorageKey} */
       getStoreKey() {
         return handleStorageMessage({
           key: path,
@@ -67,6 +68,7 @@ export function makeChainStorageRoot(
         );
         return makeChainStorageNode(`${path}.${name}`);
       },
+      /** @type {(value: string) => void} */
       setValue(value) {
         assert.typeof(value, 'string');
         handleStorageMessage({ key: path, method: 'set', value });
