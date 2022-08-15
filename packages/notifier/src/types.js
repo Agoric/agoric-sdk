@@ -194,8 +194,6 @@
  * ```
  * The resulting `localIterable` also supports such remote use, and
  * will return access to the same representation.
- * @property {StorageNode['getStoreKey']} getStoreKey get the
- * externally-reachable store key for this subscription
  */
 
 /**
@@ -250,6 +248,7 @@
  */
 
 /**
+ * @deprecated
  * @template T
  * @typedef {Subscription<T> & StoredFacet} StoredSubscription
  */

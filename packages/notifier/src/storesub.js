@@ -136,6 +136,7 @@ export const makeStoredSubscription = (
   }
 
   /** @type {StoredSubscription<T>} */
+  // @ts-expect-error getStoreKey invalid, deprecated type
   const storesub = Far('StoredSubscription', {
     getStoreKey: async () => {
       if (!storageNode) {
