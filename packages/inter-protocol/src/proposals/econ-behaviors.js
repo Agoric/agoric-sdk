@@ -371,9 +371,9 @@ export const startVaultFactory = async (
       board,
       chainStorage,
       chainTimerService,
-      priceAuthority: priceAuthorityP,
+      priceAuthority,
       zoe,
-      feeMintAccess: feeMintAccessP, // ISSUE: why doeszn't Zoe await this?
+      feeMintAccess,
       economicCommitteeCreatorFacet: electorateCreatorFacet,
       reserveCreatorFacet,
     },
@@ -435,7 +435,7 @@ export const startVaultFactory = async (
   const vaultFactoryTerms = makeGovernedTerms(
     { storageNode, marshaller },
     {
-      priceAuthority: priceAuthorityP,
+      priceAuthority,
       reservePublicFacet,
       loanTiming: loanParams,
       liquidationInstall: liquidateInstallation,
@@ -457,7 +457,7 @@ export const startVaultFactory = async (
       terms: vaultFactoryTerms,
       issuerKeywordRecord: {},
       privateArgs: {
-        feeMintAccess: feeMintAccessP,
+        feeMintAccess,
         initialPoserInvitation,
         initialShortfallInvitation,
         marshaller,
