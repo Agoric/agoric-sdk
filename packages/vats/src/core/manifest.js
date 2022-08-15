@@ -99,7 +99,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
       loadVat: true,
     },
     produce: {
-      chainStorage: true,
+      chainStorage: 'chainStorage',
     },
   },
   makeClientBanks: {
@@ -111,7 +111,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
       bridgeManager: true,
       board: 'board',
       client: true,
-      chainStorage: true,
+      chainStorage: 'chainStorage',
       zoe: 'zoe',
     },
     installation: { consume: { walletFactory: 'zoe' } },
