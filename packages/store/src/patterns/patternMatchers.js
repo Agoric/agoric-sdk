@@ -806,7 +806,7 @@ const makePatternKit = () => {
       check(
         passStyleOf(specimen) === 'tagged' && getTag(specimen) === 'copySet',
         X`${specimen} - Must be a a CopySet`,
-      ) && specimen.payload.every(el => checkMatches(el, keyPatt)),
+      ) && specimen.payload.every(el => checkMatches(el, keyPatt, check)),
 
     checkIsMatcherPayload: checkPattern,
 
@@ -818,19 +818,27 @@ const makePatternKit = () => {
 
   /** @type {MatchHelper} */
   const matchBagOfHelper = Far('match:bagOf helper', {
-    checkMatches: (specimen, keyPatt, check = x => x) =>
+    checkMatches: (specimen, [keyPatt, countPatt], check = x => x) =>
       check(
         passStyleOf(specimen) === 'tagged' && getTag(specimen) === 'copyBag',
         X`${specimen} - Must be a a CopyBag`,
       ) &&
-      specimen.payload.every(([key, _count]) => checkMatches(key, keyPatt)),
+      specimen.payload.every(
+        ([key, count]) =>
+          checkMatches(key, keyPatt, check) &&
+          checkMatches(count, countPatt, check),
+      ),
 
-    checkIsMatcherPayload: checkPattern,
+    checkIsMatcherPayload: (entryPatt, check = x => x) =>
+      check(
+        passStyleOf(entryPatt) === 'copyArray' && entryPatt.length === 2,
+        X`${entryPatt} - Must be an pair of patterns`,
+      ) && checkPattern(entryPatt, check),
 
     getRankCover: () => getPassStyleCover('tagged'),
 
     checkKeyPattern: (_, check = x => x) =>
-      check(false, X`CopySets not yet supported as keys`),
+      check(false, X`CopyBags not yet supported as keys`),
   });
 
   /** @type {MatchHelper} */
@@ -1080,7 +1088,8 @@ const makePatternKit = () => {
     recordOf: (keyPatt = M.any(), valuePatt = M.any()) =>
       makeMatcher('match:recordOf', [keyPatt, valuePatt]),
     setOf: (keyPatt = M.any()) => makeMatcher('match:setOf', keyPatt),
-    bagOf: (keyPatt = M.any()) => makeMatcher('match:bagOf', keyPatt),
+    bagOf: (keyPatt = M.any(), countPatt = M.any()) =>
+      makeMatcher('match:bagOf', [keyPatt, countPatt]),
     mapOf: (keyPatt = M.any(), valuePatt = M.any()) =>
       makeMatcher('match:mapOf', [keyPatt, valuePatt]),
     split: (base, rest = undefined) =>
