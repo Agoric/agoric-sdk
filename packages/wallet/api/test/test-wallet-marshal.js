@@ -1,9 +1,9 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { E, Far } from '@endo/far';
+import { E, Far, passStyleOf } from '@endo/far';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
-import { isPromise, makePromiseKit } from '@endo/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { makeScalarMap } from '@agoric/store';
 import {
   makeExportContext,
@@ -335,7 +335,7 @@ test('get IST brand via agoricNames', async t => {
     const agoricNames = E(bridge).getAgoricNames();
     const tp = wallet
       .all([E(agoricNames).lookup('brand', 'IST')])
-      .then(([brand]) => t.deepEqual(brand, '@@@'));
+      .then(([brand]) => t.is(passStyleOf(brand), 'remotable'));
     await Promise.race([tp, wallet.flush()]);
     await Promise.race([tp, wallet.flush()]);
     await Promise.race([tp, wallet.flush()]);
