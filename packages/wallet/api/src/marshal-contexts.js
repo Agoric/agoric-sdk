@@ -178,7 +178,7 @@ export const makeExportContext = flush => {
     const saver = val => {
       nonce += 1;
       initSlotVal(table, nonce, val);
-      console.log('@@@export: saved', kind, nonce);
+      // console.debug('export: saved', kind, nonce);
       return nonce;
     };
     return saver;
