@@ -1042,7 +1042,7 @@ test('iterator', async t => {
   t.is(done1, undefined);
 
   // concurrent next() is rejected
-  t.throws(iter.next, {
+  t.throws(() => iter.next(), {
     message: 'timer iterator dislikes overlapping next()',
   });
 
