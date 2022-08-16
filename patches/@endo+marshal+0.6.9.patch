@@ -1,0 +1,36 @@
+diff --git a/node_modules/@endo/marshal/src/helpers/remotable.js b/node_modules/@endo/marshal/src/helpers/remotable.js
+index c19adca..645bf10 100644
+--- a/node_modules/@endo/marshal/src/helpers/remotable.js
++++ b/node_modules/@endo/marshal/src/helpers/remotable.js
+@@ -77,6 +77,22 @@ const checkRemotableProtoOf = (original, check = x => x) => {
+    *        }}
+    */
+   const proto = getPrototypeOf(original);
++
++  // From agoric-sdk patch in anticipation of
++  // https://github.com/endojs/endo/pull/1251
++  // TODO: once agoric-sdk is upgraded to depend on that PR, remove this patch.
++  const protoProto = getPrototypeOf(proto);
++  if (
++    typeof original === 'object' &&
++    proto !== objectPrototype &&
++    protoProto !== objectPrototype
++  ) {
++    return (
++      // eslint-disable-next-line no-use-before-define
++      RemotableHelper.canBeValid(proto, check) && checkRemotable(proto, check)
++    );
++  }
++
+   if (
+     !(
+       check(
+@@ -95,8 +111,6 @@ const checkRemotableProtoOf = (original, check = x => x) => {
+     return false;
+   }
+
+-  const protoProto = getPrototypeOf(proto);
+-
+   if (typeof original === 'object') {
+     if (
+       !check(

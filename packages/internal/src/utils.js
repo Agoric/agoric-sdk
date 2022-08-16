@@ -172,6 +172,7 @@ export const bindAllMethods = obj =>
           name,
           {
             value: (...args) => apply(obj[name], obj, args),
+            enumerable: true,
           },
         ]),
       ),
