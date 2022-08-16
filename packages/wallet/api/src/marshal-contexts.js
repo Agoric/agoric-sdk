@@ -135,11 +135,6 @@ export const makeExportContext = flush => {
       bySlot: makeScalarMap('unknownSlot'),
       byVal: makeScalarMap('unknown'),
     },
-    /** @type {IdTable<number, Promise<unknown>>} */
-    promise: {
-      bySlot: makeLegacyMap('promiseSlot'),
-      byVal: makeLegacyMap('promise'),
-    },
   };
   /** @type {IdTable<BoardId, unknown>} */
   const boardObjects = {
@@ -185,7 +180,6 @@ export const makeExportContext = flush => {
   };
 
   const saveUnknown = makeSaver('unknown', walletObjects.unknown);
-  const savePromise = makeSaver('promise', walletObjects.promise);
 
   /**
    * @param {unknown} val
@@ -201,15 +195,7 @@ export const makeExportContext = flush => {
       return makeWalletSlot(walletObjects, kind, id);
     }
 
-    if (isPromise(val)) {
-      const seq = savePromise(val);
-      val.then(
-        r => flush([['fulfill', seq, r]]),
-        e => flush([['reject', seq, e]]),
-      );
-      const slot = makeWalletSlot(walletObjects, 'promise', seq);
-      return slot;
-    }
+    assert(!isPromise(val), 'cannot export promise');
     const seq = saveUnknown(val);
     const slot = makeWalletSlot(walletObjects, 'unknown', seq);
     return slot;
