@@ -1,4 +1,6 @@
 // @ts-check
+import '@agoric/inter-protocol/exported.js';
+import '@endo/captp/src/types.js';
 import '@agoric/zoe/exported.js';
 import { E } from '@endo/far';
 
