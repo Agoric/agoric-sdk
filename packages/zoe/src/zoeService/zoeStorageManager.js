@@ -115,6 +115,7 @@ export const makeZoeStorageManager = (
 
   /** @type {MakeZoeInstanceStorageManager} */
   const makeZoeInstanceStorageManager = async (
+    instanceBaggage,
     installation,
     customTerms,
     uncleanIssuerKeywordRecord,
@@ -142,6 +143,7 @@ export const makeZoeStorageManager = (
     // for a contract instance. Contract code has similar query
     // capabilities from the ZCF side.
     const instanceRecordManager = makeAndStoreInstanceRecord(
+      instanceBaggage,
       installation,
       instance,
       customTerms,

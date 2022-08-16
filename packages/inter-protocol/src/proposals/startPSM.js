@@ -1,10 +1,12 @@
 // @ts-check
+
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeStorageNode } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { Stable } from '@agoric/vats/src/tokens.js';
+import { deeplyFulfilled } from '@endo/marshal';
 import { reserveThenGetNamePaths } from './utils.js';
 
 const BASIS_POINTS = 10000n;
@@ -26,14 +28,14 @@ export const startPSM = async (
       agoricNamesAdmin,
       board,
       zoe,
-      feeMintAccess: feeMintAccessP,
+      feeMintAccess,
       economicCommitteeCreatorFacet,
       chainStorage,
       chainTimerService,
     },
     produce: { psmCreatorFacet, psmGovernorCreatorFacet },
     installation: {
-      consume: { contractGovernor, psm: psmInstallP },
+      consume: { contractGovernor, psm: psmInstall },
     },
     instance: {
       consume: { economicCommittee },
@@ -56,23 +58,12 @@ export const startPSM = async (
     'string',
     X`anchorOptions.denom must be a string, not ${denom}`,
   );
-  const [
-    feeMintAccess,
-    runBrand,
-    [anchorBrand, anchorIssuer],
-    governor,
-    psmInstall,
-    timer,
-  ] = await Promise.all([
-    feeMintAccessP,
+  const [runBrand, [anchorBrand, anchorIssuer]] = await Promise.all([
     runBrandP,
     reserveThenGetNamePaths(agoricNamesAdmin, [
       ['brand', keyword],
       ['issuer', keyword],
     ]),
-    contractGovernor,
-    psmInstallP,
-    chainTimerService,
   ]);
 
   const poserInvitationP = E(
@@ -85,41 +76,41 @@ export const startPSM = async (
     ]);
 
   const mintLimit = AmountMath.make(anchorBrand, MINT_LIMIT);
-  const terms = {
-    anchorBrand,
-    anchorPerStable: makeRatio(100n, anchorBrand, 100n, runBrand),
-    governedParams: {
+  const terms = await deeplyFulfilled(
+    harden({
+      anchorBrand,
+      anchorPerStable: makeRatio(100n, anchorBrand, 100n, runBrand),
+      governedParams: {
+        [CONTRACT_ELECTORATE]: {
+          type: ParamTypes.INVITATION,
+          value: electorateInvitationAmount,
+        },
+        WantStableFee: {
+          type: ParamTypes.RATIO,
+          value: makeRatio(WantStableFeeBP, runBrand, BASIS_POINTS),
+        },
+        GiveStableFee: {
+          type: ParamTypes.RATIO,
+          value: makeRatio(GiveStableFeeBP, runBrand, BASIS_POINTS),
+        },
+        MintLimit: { type: ParamTypes.AMOUNT, value: mintLimit },
+      },
       [CONTRACT_ELECTORATE]: {
         type: ParamTypes.INVITATION,
         value: electorateInvitationAmount,
       },
-      WantStableFee: {
-        type: ParamTypes.RATIO,
-        value: makeRatio(WantStableFeeBP, runBrand, BASIS_POINTS),
-      },
-      GiveStableFee: {
-        type: ParamTypes.RATIO,
-        value: makeRatio(GiveStableFeeBP, runBrand, BASIS_POINTS),
-      },
-      MintLimit: { type: ParamTypes.AMOUNT, value: mintLimit },
-    },
-    [CONTRACT_ELECTORATE]: {
-      type: ParamTypes.INVITATION,
-      value: electorateInvitationAmount,
-    },
-  };
+    }),
+  );
 
   const storageNode = await makeStorageNode(chainStorage, 'psm');
-  const marshaller = E(board).getPublishingMarshaller();
+  const marshaller = await E(board).getPublishingMarshaller();
 
-  const governorFacets = await E(zoe).startInstance(
-    governor,
-    {},
-    {
-      timer,
+  const governorTerms = await deeplyFulfilled(
+    harden({
+      timer: chainTimerService,
       economicCommittee,
       governedContractInstallation: psmInstall,
-      governed: harden({
+      governed: {
         terms,
         issuerKeywordRecord: { [keyword]: anchorIssuer },
         privateArgs: {
@@ -128,8 +119,13 @@ export const startPSM = async (
           marshaller,
           storageNode,
         },
-      }),
-    },
+      },
+    }),
+  );
+  const governorFacets = await E(zoe).startInstance(
+    contractGovernor,
+    {},
+    governorTerms,
     harden({ economicCommitteeCreatorFacet }),
   );
 
@@ -182,14 +178,16 @@ export const makeAnchorAsset = async (
   );
 
   /** @type {import('@agoric/vats/src/mintHolder.js').AssetTerms} */
-  const terms = {
-    keyword,
-    assetKind: AssetKind.NAT,
-    displayInfo: {
-      decimalPlaces,
+  const terms = await deeplyFulfilled(
+    harden({
+      keyword,
       assetKind: AssetKind.NAT,
-    },
-  };
+      displayInfo: {
+        decimalPlaces,
+        assetKind: AssetKind.NAT,
+      },
+    }),
+  );
   const { creatorFacet: mint, publicFacet: issuer } = E.get(
     E(zoe).startInstance(mintHolder, {}, terms),
   );

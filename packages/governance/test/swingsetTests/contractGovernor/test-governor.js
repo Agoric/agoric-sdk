@@ -2,7 +2,7 @@
 
 import '@endo/init/debug.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import path from 'path';
 
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';

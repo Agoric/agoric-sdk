@@ -1,9 +1,11 @@
 // @ts-check
 
-import { assert, details as X, q } from '@agoric/assert';
+import { provide } from '@agoric/store';
 import { assertKeywordName } from './cleanProposal.js';
 
 const { ownKeys } = Reflect;
+
+const { details: X, quote: q } = assert;
 
 /**
  * The InstanceRecord stores the installation, customTerms, issuers,
@@ -21,15 +23,16 @@ const { ownKeys } = Reflect;
  */
 
 /**
+ * @param {import('@agoric/vat-data').Baggage} baggage
  * @returns {InstanceRecordManager}
  */
-export const makeInstanceRecordStorage = () => {
-  let instanceRecord;
+export const makeInstanceRecordStorage = baggage => {
+  provide(baggage, 'instanceRecord', () => undefined);
 
   const assertInstantiated = () =>
     assert(
-      instanceRecord !== 'undefined',
-      X`instanceRecord has not been instantiated`,
+      baggage.get('instanceRecord') !== 'undefined',
+      'instanceRecord has not been instantiated',
     );
 
   const addIssuerToInstanceRecord = (keyword, issuerRecord) => {
@@ -39,7 +42,8 @@ export const makeInstanceRecordStorage = () => {
     );
 
     assertInstantiated();
-    instanceRecord = {
+    const instanceRecord = baggage.get('instanceRecord');
+    const nextInstanceRecord = harden({
       ...instanceRecord,
       terms: {
         ...instanceRecord.terms,
@@ -52,47 +56,50 @@ export const makeInstanceRecordStorage = () => {
           [keyword]: issuerRecord.brand,
         },
       },
-    };
+    });
+    baggage.set('instanceRecord', nextInstanceRecord);
   };
 
   /** @type {GetInstanceRecord} */
   const getInstanceRecord = () => {
     assertInstantiated();
-    return harden(instanceRecord);
+    return baggage.get('instanceRecord');
   };
   const getTerms = () => {
     assertInstantiated();
-    return instanceRecord.terms;
+    return baggage.get('instanceRecord').terms;
   };
   const getIssuers = () => {
     assertInstantiated();
-    return instanceRecord.terms.issuers;
+    return baggage.get('instanceRecord').terms.issuers;
   };
   const getBrands = () => {
     assertInstantiated();
-    return instanceRecord.terms.brands;
+    return baggage.get('instanceRecord').terms.brands;
   };
   /** @type {InstanceRecordManagerGetInstallationForInstance} */
   const getInstallationForInstance = () => {
     assertInstantiated();
-    return instanceRecord.installation;
+    return baggage.get('instanceRecord').installation;
   };
 
   const assertUniqueKeyword = keyword => {
     assertInstantiated();
     assertKeywordName(keyword);
     assert(
-      !ownKeys(instanceRecord.terms.issuers).includes(keyword),
+      !ownKeys(baggage.get('instanceRecord').terms.issuers).includes(keyword),
       X`keyword ${q(keyword)} must be unique`,
     );
   };
 
   const instantiate = startingInstanceRecord => {
     assert(
-      instanceRecord === undefined,
-      X`instanceRecord ${instanceRecord} can only be instantiated once`,
+      baggage.get('instanceRecord') === undefined,
+      X`instanceRecord ${baggage.get(
+        'instanceRecord',
+      )} can only be instantiated once`,
     );
-    instanceRecord = startingInstanceRecord;
+    baggage.set('instanceRecord', startingInstanceRecord);
   };
 
   return harden({
@@ -110,6 +117,7 @@ export const makeInstanceRecordStorage = () => {
 /**
  * Put together the instance record
  *
+ * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {Installation} installation
  * @param {Instance} instance
  * @param {object} customTerms
@@ -118,6 +126,7 @@ export const makeInstanceRecordStorage = () => {
  * @returns {InstanceRecordManager}
  */
 export const makeAndStoreInstanceRecord = (
+  baggage,
   installation,
   instance,
   customTerms,
@@ -134,7 +143,7 @@ export const makeAndStoreInstanceRecord = (
     },
   });
 
-  const instanceRecordStorage = makeInstanceRecordStorage();
+  const instanceRecordStorage = makeInstanceRecordStorage(baggage);
   instanceRecordStorage.instantiate(instanceRecord);
   return instanceRecordStorage;
 };
