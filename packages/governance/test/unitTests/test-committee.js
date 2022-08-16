@@ -42,9 +42,7 @@ const setupContract = async () => {
     E(zoe).install(counterBundle),
   ]);
   const terms = { committeeName: 'illuminati', committeeSize: 13 };
-  /** @type {import('@agoric/zoe/src/zoeService/utils').StartInstance} */
-  const startInstance = E(zoe).startInstance;
-  const electorateStartResult = await startInstance(
+  const electorateStartResult = await E(zoe).startInstance(
     electorateInstallation,
     {},
     terms,

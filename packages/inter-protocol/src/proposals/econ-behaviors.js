@@ -497,7 +497,9 @@ export const startVaultFactory = async (
   ]);
 
   const voteCreator = Far('vaultFactory vote creator', {
-    voteOnParamChanges: E(governorCreatorFacet).voteOnParamChanges,
+    /** @type {VoteOnParamChanges} */
+    voteOnParamChanges: (...args) =>
+      E(governorCreatorFacet).voteOnParamChanges(...args),
   });
 
   produce.vaultFactoryCreator.resolve(vaultFactoryCreator);

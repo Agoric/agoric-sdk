@@ -350,7 +350,10 @@ const start = async (zcf, privateArgs, baggage) => {
     secondaryBrandToLiquidityMintProvider,
     () => {
       assert(reserveFacet, 'Must first resolveReserveFacet');
-      return E(reserveFacet).addIssuerFromAmm;
+      return secondaryBrand =>
+        E(
+          /** @type {AssetReservePublicFacet} */ (reserveFacet),
+        ).addIssuerFromAmm(secondaryBrand);
     },
   );
 

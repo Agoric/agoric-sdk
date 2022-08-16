@@ -59,13 +59,13 @@ export const makeStoredSubscriber = (subscriber, storageNode, marshaller) => {
 
   /** @type {Unserializer} */
   const unserializer = Far('unserializer', {
-    unserialize: E(marshaller).unserialize,
+    unserialize: data => E(marshaller).unserialize(data),
   });
 
   /** @type {StoredSubscriber<T>} */
   const storesub = Far('StoredSubscriber', {
     ...subscriber,
-    getStoreKey: E(storageNode).getStoreKey,
+    getStoreKey: () => E(storageNode).getStoreKey(),
     getUnserializer: () => unserializer,
   });
   return storesub;
@@ -96,7 +96,7 @@ export const makeStoredSubscription = (
 ) => {
   /** @type {Unserializer} */
   const unserializer = Far('unserializer', {
-    unserialize: E(marshaller).unserialize,
+    unserialize: data => E(marshaller).unserialize(data),
   });
 
   // Abort the iteration on the next observation if the publisher ever fails.
