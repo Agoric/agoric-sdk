@@ -19,8 +19,6 @@
 export const makeKernelStats = kernelStatsMetrics => {
   /** @typedef {T extends KernelStatsMetric<'gauge', infer K> ? K : never} GaugeKeys */
   /** @typedef {T extends KernelStatsMetric<'counter', infer K> ? K : never} CounterKeys */
-  /** @typedef {(GaugeKeys | CounterKeys) extends never ? string : (GaugeKeys | CounterKeys) } IncStatKeys */
-  /** @typedef {(GaugeKeys | CounterKeys) extends never ? string : GaugeKeys } DecStatKeys */
 
   // These are the defined kernel statistics counters.
   //
@@ -88,7 +86,7 @@ export const makeKernelStats = kernelStatsMetrics => {
   };
 
   /**
-   * @param {IncStatKeys} stat
+   * @param {string} stat
    * @param {number} [delta]
    */
   const incStat = (stat, delta = 1) => {
@@ -108,7 +106,7 @@ export const makeKernelStats = kernelStatsMetrics => {
   };
 
   /**
-   * @param {DecStatKeys} stat
+   * @param {string} stat
    * @param {number} [delta]
    */
   const decStat = (stat, delta = 1) => {
