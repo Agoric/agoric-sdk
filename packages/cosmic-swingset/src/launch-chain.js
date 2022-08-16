@@ -100,6 +100,7 @@ async function buildSwingset(
       // Tell the bootstrap code how to run the core proposals.
       bootVat.parameters = { ...bootVat.parameters, coreProposalCode: code };
     }
+    config.pinBootstrapRoot = true;
 
     await initializeSwingset(config, argv, hostStorage, { debugPrefix });
   }
