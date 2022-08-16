@@ -114,10 +114,8 @@ const initSlotVal = (table, slot, val) => {
  * `makeMarshal()` is parameterized by the type of slots. Here we use a disjoint union of
  *   - board ids for widely shared objects
  *   - kind:seq ids for closely held objects; for example purse:123
- *
- * @param {(log?: MessageLog[]) => Promise<void>} flush
  */
-export const makeExportContext = flush => {
+export const makeExportContext = () => {
   const walletObjects = {
     /** @type {IdTable<number, unknown>} */
     purse: {
