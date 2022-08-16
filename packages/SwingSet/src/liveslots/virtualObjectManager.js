@@ -492,7 +492,7 @@ export function makeVirtualObjectManager(
       // We normally consider `this` unsafe because of the hazard of a
       // method of one abstraction being applied to an instance of
       // another abstraction. To prevent that attack, the bound method
-      // checks that it is in the map in which such its representatives
+      // checks that it's `this` is in the map in which its representatives
       // are registered.
       const { method } = {
         method(...args) {
@@ -769,14 +769,13 @@ export function makeVirtualObjectManager(
       unweakable.add(state);
       if (!facetNames) {
         const context = { state };
-        // `context` does not need a linkToCohort because it holds the facets (which hold the cohort)
+        // `context` does not need a linkToCohort because it holds the
+        // facets (which hold the cohort)
         unweakable.add(context);
         const self = harden({ __proto__: prototypeTemplate });
         context.self = self;
         contextMapTemplate.set(self, context);
         toHold = self;
-        // linkToCohort.set(Object.getPrototypeOf(toHold), toHold);
-        // unweakable.add(Object.getPrototypeOf(toHold));
         toExpose = toHold;
         harden(context);
       } else {
@@ -790,8 +789,6 @@ export function makeVirtualObjectManager(
           });
           contextMapTemplate[name].set(facet, context);
           facets[name] = facet;
-          // linkToCohort.set(Object.getPrototypeOf(facet), facet);
-          // unweakable.add(Object.getPrototypeOf(facet));
           toExpose[name] = facet;
           toHold.push(facet);
           linkToCohort.set(facet, toHold);
