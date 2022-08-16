@@ -3,6 +3,9 @@
 import fs from 'fs';
 import path from 'path';
 
+// XXX types resolution
+import '@endo/bundle-source/src/types.js';
+
 import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
 import { assert, details as X } from '@agoric/assert';
 import bundleSource from '@endo/bundle-source';
