@@ -271,13 +271,16 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
     governed: {
       issuerKeywordRecord: {},
       terms,
-      privateArgs: { initialPoserInvitation },
     },
   };
 
   const { creatorFacet: governor, instance: governorInstance } = await E(
     zoe,
-  ).startInstance(installations.contractGovernor, {}, governedContractTerms);
+  ).startInstance(installations.contractGovernor, {}, governedContractTerms, {
+    governed: {
+      initialPoserInvitation,
+    },
+  });
   const governedInstance = E(governor).getInstance();
   const governedPF = E(governor).getPublicFacet();
   await watchParams(zoe, governedInstance, log);

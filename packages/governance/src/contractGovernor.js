@@ -72,13 +72,14 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * the Installation to be started, as well as an issuerKeywordRecord or terms
  * needed by the governed contract. Those details for the governed contract are
  * included in this contract's terms as a "governed" record. If the contract
- * expects privateArgs, those can be supplied as well.
+ * expects privateArgs, those will be provided in this contract's `privateArgs`
+ * under 'governed:'.
  *
  * terms = {
  *    timer,
  *    electorateInstance,
  *    governedContractInstallation,
- *    governed: { issuerKeywordRecord, terms, privateArgs, },
+ *    governed: { issuerKeywordRecord, terms },
  * };
  *
  * The governedContract is responsible for supplying getParamMgrRetriever() in
@@ -114,7 +115,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  *   }
  * }>}
  */
-const start = async zcf => {
+const start = async (zcf, privateArgs) => {
   const zoe = zcf.getZoeService();
   const {
     timer,
@@ -122,7 +123,6 @@ const start = async zcf => {
     governed: {
       issuerKeywordRecord: governedIssuerKeywordRecord,
       terms: contractTerms,
-      privateArgs: privateContractArgs,
     },
   } = zcf.getTerms();
 
@@ -144,7 +144,7 @@ const start = async zcf => {
     governedContractInstallation,
     governedIssuerKeywordRecord,
     augmentedTerms,
-    privateContractArgs,
+    privateArgs.governed,
   );
 
   /** @type {() => Promise<Instance>} */
