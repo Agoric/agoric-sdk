@@ -44,8 +44,7 @@ test('bad display info', t => {
   const displayInfo = harden({ somethingUnexpected: 3 });
   // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => makeIssuerKit('fungible', AssetKind.NAT, displayInfo), {
-    message:
-      /^displayInfo: Remainder \{"somethingUnexpected":3\} - Must match \{\}$/,
+    message: 'displayInfo: rest-parts: {"somethingUnexpected":3} - Must be: {}',
   });
 });
 
@@ -434,7 +433,7 @@ test('issuer.combine bad payments', async t => {
   await t.throwsAsync(
     () => E(issuer).combine(payments),
     {
-      message: /"\[Alleged: other fungible payment\]"/,
+      message: /.* "\[Alleged: other fungible payment\]"/,
     },
     'payment from other mint is not found',
   );

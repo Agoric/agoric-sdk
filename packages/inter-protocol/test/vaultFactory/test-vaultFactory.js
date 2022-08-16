@@ -2510,7 +2510,10 @@ test('addVaultType: extra, unexpected params', async t => {
   await t.throwsAsync(
     // @ts-expect-error bad args
     E(vaultFactory).addVaultType(chit.issuer, 'Chit', missingParams),
-    { message: /Must have same property names/ },
+    {
+      message:
+        /initialParamValues: required-parts: .* - Must have missing properties \["interestRate"\]/,
+    },
   );
 
   const actual = await E(vaultFactory).addVaultType(

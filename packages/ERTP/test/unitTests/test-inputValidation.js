@@ -19,7 +19,7 @@ test('makeIssuerKit bad assetKind', async t => {
   // @ts-expect-error Intentional wrong type for testing
   t.throws(() => makeIssuerKit('myTokens', 'somethingWrong'), {
     message:
-      /The assetKind "somethingWrong" must be one of \["copyBag","copySet","nat","set"\]/,
+      'The assetKind "somethingWrong" must be one of ["copyBag","copySet","nat","set"]',
   });
 });
 
@@ -32,7 +32,10 @@ test('makeIssuerKit bad displayInfo.decimalPlaces', async t => {
         // @ts-expect-error Intentional wrong type for testing
         harden({ decimalPlaces: 'hello' }),
       ),
-    { message: /^displayInfo: "hello" - Must be >= -100$/ },
+    {
+      message:
+        'displayInfo: optional-parts: decimalPlaces: "hello" - Must be >= -100',
+    },
   );
 
   t.throws(
@@ -58,13 +61,19 @@ test('makeIssuerKit bad displayInfo.decimalPlaces', async t => {
   t.throws(
     () =>
       makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: 101 })),
-    { message: /^displayInfo: 101 - Must be <= 100$/ },
+    {
+      message:
+        'displayInfo: optional-parts: decimalPlaces: 101 - Must be <= 100',
+    },
   );
 
   t.throws(
     () =>
       makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: -101 })),
-    { message: /^displayInfo: -101 - Must be >= -100$/ },
+    {
+      message:
+        'displayInfo: optional-parts: decimalPlaces: -101 - Must be >= -100',
+    },
   );
 });
 
@@ -81,7 +90,7 @@ test('makeIssuerKit bad displayInfo.assetKind', async t => {
       ),
     {
       message:
-        /^displayInfo: "something" - Must match one of \["nat","set","copySet","copyBag"\]$/,
+        'displayInfo: optional-parts: assetKind: "something" - Must match one of ["nat","set","copySet","copyBag"]',
     },
   );
 });
@@ -99,7 +108,7 @@ test('makeIssuerKit bad displayInfo.whatever', async t => {
       ),
     {
       message:
-        /^displayInfo: Remainder \{"whatever":"something"\} - Must match \{\}$/,
+        'displayInfo: rest-parts: {"whatever":"something"} - Must be: {}',
     },
   );
 });
@@ -114,8 +123,7 @@ test('makeIssuerKit malicious displayInfo', async t => {
         'badness',
       ),
     {
-      message:
-        /^displayInfo: "badness" - Must have shape of base: "copyRecord"$/,
+      message: 'displayInfo: string "badness" - Must be a copyRecord',
     },
   );
 });

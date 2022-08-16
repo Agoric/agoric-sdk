@@ -102,7 +102,7 @@ test('reject promise keys', t => {
   const k = harden(Promise.resolve());
   const s = makeScalarMapStore('store1');
   t.throws(() => s.init(k, 1), {
-    message: /A "promise" cannot be a scalar key: "\[Promise\]"/,
+    message: 'A "promise" cannot be a scalar key: "[Promise]"',
   });
   t.is(s.has(k), false);
   t.throws(() => s.get(k), { message: /not found:/ });
