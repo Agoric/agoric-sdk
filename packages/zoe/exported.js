@@ -1,3 +1,7 @@
+// XXX without this types don't resolve
+// eslint-disable-next-line import/no-extraneous-dependencies -- TODO remove
+import '@agoric/inter-protocol/exported.js';
+
 import './src/contractFacet/types.js';
 import './src/zoeService/types.js';
 import './src/contractSupport/types.js';
