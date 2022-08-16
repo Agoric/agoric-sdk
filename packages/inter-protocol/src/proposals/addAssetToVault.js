@@ -126,12 +126,13 @@ export const publishInterchainAssetFromBank = async (
       assetKind: AssetKind.NAT,
     },
   };
-  const { creatorFacet: mint, publicFacet: issuer } = E.get(
+  const { creatorFacet: mint, publicFacet: issuerP } = E.get(
     E(zoe).startInstance(mintHolder, {}, terms),
   );
 
-  const [brand, runBrand] = await Promise.all([
-    E(issuer).getBrand(),
+  const [issuer, brand, runBrand] = await Promise.all([
+    issuerP,
+    E(issuerP).getBrand(),
     runBrandP,
   ]);
   const kit = { mint, issuer, brand };

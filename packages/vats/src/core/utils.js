@@ -1,5 +1,6 @@
 // @ts-check
 import { E } from '@endo/far';
+import { assertPassable } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeNameHubKit } from '../nameHub.js';
 import { Stable, Stake } from '../tokens.js';
@@ -324,7 +325,14 @@ export const makeAgoricNamesAccess = (
 
   const hubs = mapEntries(reserved, (key, _d) => {
     const { nameHub, nameAdmin } = makeNameHubKit();
-    agoricNamesAdmin.update(key, nameHub, nameAdmin);
+    const passableAdmin = {
+      ...nameAdmin,
+      update: (nameKey, val) => {
+        assertPassable(val); // else we can't publish
+        return nameAdmin.update(nameKey, val);
+      },
+    };
+    agoricNamesAdmin.update(key, nameHub, passableAdmin);
     return [key, { nameHub, nameAdmin }];
   });
   const spaces = mapEntries(reserved, (key, detail) => {

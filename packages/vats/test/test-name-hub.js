@@ -143,3 +143,27 @@ test('makeNameHubKit - default and set', async t => {
     message: 'key "not set" is not already initialized',
   });
 });
+
+test('makeNameHubKit - listen for updates', t => {
+  const { nameAdmin } = makeNameHubKit();
+
+  const brandBLD = harden({ name: 'BLD' });
+  nameAdmin.update('BLD', brandBLD);
+
+  const capture = [];
+  nameAdmin.onUpdate(entries => capture.push(entries));
+
+  const brandIST = harden({ name: 'IST' });
+  nameAdmin.update('IST', brandIST);
+  nameAdmin.reserve('AUSD', brandIST);
+
+  nameAdmin.delete('BLD');
+
+  t.deepEqual(capture, [
+    [
+      ['BLD', brandBLD],
+      ['IST', brandIST],
+    ],
+    [['IST', brandIST]],
+  ]);
+});
