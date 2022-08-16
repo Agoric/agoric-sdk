@@ -23,15 +23,15 @@ import { makeSmartWallet } from './smartWallet.js';
  *
  * @typedef {{
  * 	 type: 'WALLET_ACTION',
- *   owner: string,
- *   action: string,
+ *   owner: string, // address of signer of the action
+ *   action: string, // JSON-serialized SOMETHING {type: 'applyMethod' | 'suggestIssuer' }
  *   blockHeight: unknown, // int64
  *   blockTime: unknown, // int64
  * }} WalletAction
  * @typedef {{
  * 	 type: 'WALLET_SPEND_ACTION',
  *   owner: string,
- *   spendAction: string,
+ *   spendAction: string, // JSON-serialized SOMETHING including acceptOffer (which can spend) {type: 'applyMethod' | 'acceptOffer' | 'suggestIssuer' }
  *   blockHeight: unknown, // int64
  *   blockTime: unknown, // int64
  * }} WalletSpendAction
@@ -60,20 +60,28 @@ export const start = async (zcf, privateArgs) => {
   const handleWalletAction = Far('walletActionHandler', {
     /**
      *
-     * @param {string} srcID
+     * @param {BRIDGE_ID.WALLET} srcID
      * @param {WalletAction|WalletSpendAction} obj
      */
     fromBridge: async (srcID, obj) => {
       console.log('walletFactory.fromBridge:', srcID, obj);
+      assert.equal(srcID, 'wallet');
       assert(obj, 'missing wallet action');
       assert.typeof(obj, 'object');
       assert.typeof(obj.owner, 'string');
       const wallet = walletsByAddress.get(obj.owner); // or throw
       console.log('walletFactory:', { wallet });
+
+      // XXX obj has fields that are JSON serialized (action|spendAction).
+      // You might want to deserialize here but the bridge is changing anyway for SIGN_MODE_TEXTUAL
       return E(wallet).performAction(obj);
     },
   });
 
+  // TODO TURADG: mock a bridgeManager that passes the transaction that fakeRpcServer got
+  // back out to the bridgeManager such that handleWalletAction runs.
+  //   MIGHT BE by making bridgeManager not optional
+  //    see vats/src/bridge.js
   // NOTE: both `MsgWalletAction` and `MsgWalletSpendAction` arrive as BRIDGE_ID.WALLET
   // by way of makeBlockManager() in cosmic-swingset/src/block-manager.js
   await (bridgeManager &&

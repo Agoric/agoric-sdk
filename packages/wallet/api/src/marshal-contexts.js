@@ -116,6 +116,11 @@ const initSlotVal = (table, slot, val) => {
  */
 export const makeExportContext = () => {
   const walletObjects = {
+    /** @type {IdTable<number, unknown>} */
+    offerResult: {
+      bySlot: makeScalarMap(),
+      byVal: makeScalarMap(),
+    },
     /** @type {IdTable<number, Purse>} */
     purse: {
       bySlot: makeScalarMap(),

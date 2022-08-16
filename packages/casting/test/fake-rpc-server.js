@@ -5,9 +5,8 @@ import './lockdown.js';
 import { makeMarshal } from '@endo/marshal';
 
 import express from 'express';
-// import morgan from 'morgan';
 
-import { toAscii, toBase64 } from '@cosmjs/encoding';
+import { fromBase64, toAscii, toBase64 } from '@cosmjs/encoding';
 
 let lastPort = 8989;
 
@@ -80,7 +79,6 @@ export const startFakeServer = (t, fakeValues, options = {}) => {
   return new Promise(resolve => {
     log('starting http server on port', PORT);
     const app = express();
-    // app.use(morgan());
     app.use((req, _res, next) => {
       log('request', req.method, req.url);
       next();
@@ -109,7 +107,7 @@ export const startFakeServer = (t, fakeValues, options = {}) => {
     let blockHeight = 74863;
     let responseValueBase64;
     app.post('/tendermint-rpc', (req, res) => {
-      log('received', req.path, req.body, req.params);
+      log('received', req.path, req.params);
       const reply = result => {
         log('response', result);
         res.json({

@@ -23,13 +23,15 @@ test.after(t => {
 
 /**
  * Key material determines a Cosmos address (e.g. agoric1blahblahblah). Here the address is of a wallet from the smartWallet factory.
+ * Test that we can produce a transaction that CosmJS can send without error.
  */
-test('oracle uses transaction client', async t => {
+test.failing('CosmJS integration', async t => {
   const PORT = await t.context.startServer(t, []);
   const leader = makeLeader(`http://localhost:${PORT}/network-config`, {
     retryCallback: null,
     // jitter: null,
   });
+  t.log('awaiting makeClient');
   /** @type {import('../src/types.js').WalletActionClient} */
   const client = await E(leader).makeClient({
     // key material the client can use to access the previously signed offer result
@@ -39,7 +41,10 @@ test('oracle uses transaction client', async t => {
       1, 2, 3, 3, 2, 1, 0,
     ]),
   });
-  client.sendAction({
+  t.log('awaiting sendAction');
+  // FIXME make fake-rpc-server return a valid response for abci_query /cosmos.auth.v1beta1.Query/Account
+  // which currently results in "Account does not exist on chain. Send some tokens there before trying to query sequence."
+  await client.sendAction({
     type: 'applyMethod',
     body: JSON.stringify([
       { '@qclass': 'slot', index: 0 },
@@ -59,4 +64,19 @@ test('oracle uses transaction client', async t => {
     ]),
     slots: ['offerResult:3', 'board0133', 'board244'],
   });
+  /**
+   * HTTP traffic performed within sendAction by CosmJS: https://v1.cosmos.network/rpc/v0.44.5
+   * - GET account state
+   * - POST txs
+   */
+  // TODO make sure the CosmJS succeeded in POSTing (shallow validation of payload b/c deep is next test)
 });
+
+// Skip networks. Instead sign a transaction and then have it load through a fake bridgemanager to reach the "on-chain" handler logic.
+// Make sure exactly the right bytes come out of signing, validated by them being read out and handled.
+test.todo('Transaction message');
+// will need an offer in order to make the offer result
+// second thought… don't try to test the two ends in test suite. test transaction production here
+// and test transaction handling in lib-wallet
+// NOTE: offer result should never get into the board, so putting it the Cap table
+// so makeExportContext needs 'offerResult'

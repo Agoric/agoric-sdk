@@ -17,7 +17,7 @@ import { objectMap } from '@agoric/internal';
 import { makeLegacyMap, makeScalarMap, makeScalarWeakMap } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
+import { E, HandledPromise } from '@endo/eventual-send';
 
 import { makeMarshal, passStyleOf, Far, mapIterable } from '@endo/marshal';
 import { Nat } from '@agoric/nat';
@@ -1803,7 +1803,10 @@ export function makeWalletRoot({
   /** @param {import('@endo/marshal').CapData<string>} capData */
   const handleApplyMethodAction = async capData => {
     console.log('DEBUG handleApplyMethodAction got', capData);
-    throw Error('TODO');
+    // TODO validate shape before destructuring
+    // unserialize=fromCapData (consider a fromCapData abstraction that takes a pattern)
+    const [receiver, methodName, args] = marshaller.unserialize(capData);
+    HandledPromise.applyMethod(receiver, methodName, args);
   };
 
   const handleSuggestIssuerAction = ({ petname, boardId }) =>

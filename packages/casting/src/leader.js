@@ -48,7 +48,7 @@ const makeSeedClient = async (leader, clientOptions) => {
   return {
     getSigningClient: () => signingClient,
     /**
-     * @type {(action: import('./types.js').ApplyMethodPayload) => void}
+     * @type {(action: import('./types.js').ApplyMethodPayload) => Promise<import('@cosmjs/stargate').DeliverTxResponse>}
      */
     sendAction(action) {
       console.log('sendAction', action);
@@ -64,7 +64,7 @@ const makeSeedClient = async (leader, clientOptions) => {
 
       const msgs = [act1];
       console.log('sign spend action', { address, msgs });
-      signingClient.signAndBroadcast(address, msgs, fee);
+      return signingClient.signAndBroadcast(address, msgs, fee);
     },
   };
 };
