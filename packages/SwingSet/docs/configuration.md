@@ -23,9 +23,10 @@ config = {
   defaultManagerType: MANAGERTYPESTRING?
   includeDevDependencies: BOOL?
   defaultReapInterval: NUMBER|'never'?
-  enableFakeDurable: BOOL?
+  relaxDurabilityRules: BOOL?
   snapshotInitial: NUMBER?
   snapshotInterval: NUMBER?
+  pinBootstrapRoot: BOOL?
   vats: {
     VATNAME: {
       sourceSpec: PATHSTRING?
@@ -103,6 +104,17 @@ The `bootstrap` property, if present, names the vat that is to be the
 bootstrap vat.  If this property is missing, there will be no
 bootstrap vat, which may be disallowed in certain use cases.
 
+The `pinBootstrapRoot` property, if `true`, causes the bootstrap vat's root
+object's reference count to be artificially incremented by one as part of
+setting it up, so that the bootstrap root won't be garbage collected even if it
+becomes nominally unreferenced.  The bootstrap vat's root will generally be
+garbage collected after it finishes executing the `bootstrap` method unless that
+method formally exports the root object to some other vat.  However, the host
+retains the ability to deliver messages to it directly (for example, using
+`controller.queueToVatRoot()`), so if the host wants the bootstrap root to
+remain available to provide additional services after bootstrapping, this flag
+should be set.  Defaults to `false`.
+
 The `defaultManagerType` property indicates what sort of vat worker to run vats
 in if they are not specifically configured otherwise.  Currently allowed
 manager types are `'local'`, `'nodeWorker'`, `'node-subprocess'`, and
@@ -122,11 +134,11 @@ the number of deliveries that should be made to the vat before reaping, or the
 string `'never'`, indicating that such activity should never happen.  If
 defaults (yes, the default has a default) to 1.
 
-The `enableFakeDurable` property, if `true`, allows vat code running inside this
-swingset to use the `fakeDurable` option for stores and virtual objects.  It
-defaults to `false`, because this is a dangerous, development-time only feature;
-any vat using it will be left in a corrupted state after delivery of a `stopVat`
-directive.
+The `relaxDurabilityRules` property, if `true`, allows vat code running inside
+this swingset to store non-durable references inside durable objects and stores
+for testing purposes.  It defaults to `false`, because this is a dangerous,
+development-time only feature; any vat using it will be left in a corrupted
+state after delivery of a `stopVat` directive.
 
 The `snapshotInterval` property is the frequency (measured in numbers of
 deliveries) with which `'xs-worker'` vats will perform snapshots to disk of

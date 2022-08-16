@@ -53,6 +53,7 @@ export {};
  *   relaxDurabilityRules?: boolean,
  *   snapshotInitial?: number,
  *   snapshotInterval?: number,
+ *   pinBootstrapRoot?: boolean,
  * }} KernelOptions
  */
 
