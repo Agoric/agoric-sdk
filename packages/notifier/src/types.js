@@ -5,16 +5,17 @@
  * @typedef {import('@endo/far').ERef<T>} ERef
  */
 
+// XXX import src/types until https://github.com/endojs/endo/issues/1254
 /**
  * @template T
- * @typedef {import('@endo/promise-kit').PromiseKit<T>} PromiseKit
+ * @typedef {import('@endo/promise-kit/src/types.js').PromiseKit<T>} PromiseKit
  */
 
 /**
  * Deprecated. Use PromiseKit instead.
  *
  * @template T
- * @typedef {import('@endo/promise-kit').PromiseRecord<T>} PromiseRecord
+ * @typedef {import('@endo/promise-kit/src/types.js').PromiseRecord<T>} PromiseRecord
  */
 
 /**
