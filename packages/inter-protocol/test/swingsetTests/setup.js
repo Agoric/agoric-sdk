@@ -102,7 +102,9 @@ const makeVats = async (
   startingValues,
   feeMintAccess,
 ) => {
-  const timer = buildManualTimer(console.log, 0n, ONE_DAY);
+  const timer = buildManualTimer(console.log, 0n, {
+    timeStep: ONE_DAY,
+  });
   const { mints, issuers, brands } = setupBasicMints();
   const makePayments = values =>
     mints.map((mint, i) =>

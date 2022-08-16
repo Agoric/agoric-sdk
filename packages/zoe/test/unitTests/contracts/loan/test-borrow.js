@@ -20,6 +20,7 @@ import {
 
 import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
 import buildManualTimer from '../../../../tools/manualTimer.js';
+import { eventLoopIteration } from '../../../../tools/eventLoopIteration.js';
 
 import { makeBorrowInvitation } from '../../../../src/contracts/loan/borrow.js';
 import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addCollateral.js';
@@ -31,7 +32,7 @@ const BASIS_POINTS = 10000n;
 
 const setupBorrow = async (
   maxLoanValue = 100n,
-  timer = buildManualTimer(console.log),
+  timer = buildManualTimer(console.log, 0n, { eventLoopIteration }),
 ) => {
   const setup = await setupLoanUnitTest();
   const { zcf, loanKit, collateralKit, zoe, vatAdminState } = setup;

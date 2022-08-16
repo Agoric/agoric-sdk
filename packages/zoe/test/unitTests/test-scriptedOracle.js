@@ -15,6 +15,7 @@ import { makeZoeKit } from '../../src/zoeService/zoe.js';
 import '../../exported.js';
 import '../../src/contracts/exported.js';
 import buildManualTimer from '../../tools/manualTimer.js';
+import { eventLoopIteration } from '../../tools/eventLoopIteration.js';
 import { setup } from './setupBasicMints.js';
 import { assertPayoutAmount } from '../zoeTestHelpers.js';
 import { makeScriptedOracle } from '../../tools/scriptedOracle.js';
@@ -70,7 +71,7 @@ test.before(
 test('pay bounty', async t => {
   const { zoe, oracleInstallation, bountyInstallation } = t.context;
   // The timer is not build in test.before(), because each test needs its own.
-  const timer = buildManualTimer(t.log);
+  const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
   const { moolaIssuer, moolaMint, moola } = t.context;
   const script = { 0: 'Nothing', 1: 'Nothing', 2: 'Nothing', 3: 'Succeeded' };
 
@@ -155,7 +156,7 @@ test('pay bounty', async t => {
 test('pay no bounty', async t => {
   const { zoe, oracleInstallation, bountyInstallation } = t.context;
   // The timer is not build in test.before(), because each test needs its own.
-  const timer = buildManualTimer(t.log);
+  const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
   const { moolaIssuer, moolaMint, moola } = t.context;
   const script = { 0: 'Nothing', 1: 'Nothing', 2: 'Nothing', 3: 'Nothing' };
 

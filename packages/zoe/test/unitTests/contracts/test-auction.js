@@ -9,6 +9,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 import buildManualTimer from '../../../tools/manualTimer.js';
+import { eventLoopIteration } from '../../../tools/eventLoopIteration.js';
 import { setup } from '../setupBasicMints.js';
 import { setupMixed } from '../setupMixedMints.js';
 
@@ -200,7 +201,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
   };
 
   // Setup Alice
-  const timer = buildManualTimer(t.log);
+  const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
   const alice = await makeAlice(timer, moolaKit.mint.mintPayment(moola(1n)));
   const installation = await alice.installCode();
 
@@ -273,7 +274,7 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
     Asset: moolaKit.issuer,
     Ask: simoleanKit.issuer,
   });
-  const timer = buildManualTimer(t.log);
+  const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
   const terms = harden({ timeAuthority: timer, bidDuration: 1n });
   const { creatorInvitation: aliceInvitation } = await E(zoe).startInstance(
     installation,
@@ -424,7 +425,7 @@ test('zoe - secondPriceAuction - all bidders try to exit', async t => {
     Asset: moolaKit.issuer,
     Ask: simoleanKit.issuer,
   });
-  const timer = buildManualTimer(t.log);
+  const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
   const terms = harden({ timeAuthority: timer, bidDuration: 1n });
   const { creatorInvitation: aliceInvitation } = await E(zoe).startInstance(
     installation,
@@ -568,7 +569,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     Asset: ccIssuer,
     Ask: moolaIssuer,
   });
-  const timer = buildManualTimer(t.log);
+  const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
   const terms = harden({ timeAuthority: timer, bidDuration: 1n });
   const { creatorInvitation: aliceInvitation } = await E(zoe).startInstance(
     installation,
@@ -1005,7 +1006,7 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
   };
 
   // Setup Alice
-  const timer = buildManualTimer(t.log);
+  const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
   const alice = await makeAlice(timer, moolaKit.mint.mintPayment(moola(1n)));
   const installation = await alice.installCode();
 

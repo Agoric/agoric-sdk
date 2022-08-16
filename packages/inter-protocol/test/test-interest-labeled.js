@@ -11,6 +11,7 @@ import { makeInterestCalculator, SECONDS_PER_YEAR } from '../src/interest.js';
 
 const timerBrand = Far('fake timer brand', {
   isMyTimer: () => true,
+  isMyClock: () => true,
 });
 // const otherTimerBrand = Far('other fake timer brand', {});
 

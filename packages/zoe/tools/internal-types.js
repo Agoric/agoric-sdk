@@ -5,5 +5,9 @@
  */
 
 /**
- * @typedef {ManualTimerAdmin & TimerService} ManualTimer
+ * @typedef { import('@agoric/swingset-vat').ManualTimer } SwingSetManualTimer
+ */
+
+/**
+ * @typedef {ManualTimerAdmin & SwingSetManualTimer} ManualTimer
  */
