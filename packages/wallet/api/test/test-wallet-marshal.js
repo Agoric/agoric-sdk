@@ -205,7 +205,7 @@ const makeWalletUI = (board, backgroundSigner, follower) => {
       harden(allMsgs.map(({ msg }) => msg)),
     );
 
-    // console.warn('@@TODO: bg send serialized', { capData });
+    // console.warn('TODO: bg send serialized', { capData });
     backgroundSigner.submitAction(JSON.stringify(capData));
   };
   const ctx = makeImportContext(flush, mkp);
