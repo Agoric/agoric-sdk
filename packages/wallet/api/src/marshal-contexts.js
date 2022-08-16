@@ -1,5 +1,5 @@
 // @ts-check
-import makeLegacyMap, { makeScalarMap } from '@agoric/store';
+import { makeLegacyMap, makeScalarMap } from '@agoric/store';
 import { Far, makeMarshal, Remotable } from '@endo/marshal';
 import { HandledPromise } from '@endo/eventual-send'; // TODO: convince tsc this isn't needed
 import { isPromise } from 'util/types';
@@ -86,8 +86,8 @@ const parseWalletSlot = (tables, slot) => {
  * @template Val
  *
  * @typedef {{
- *   bySlot: MapStore<Slot, Val>,
- *   byVal: MapStore<Val, Slot>,
+ *   bySlot: LegacyMap<Slot, Val>,
+ *   byVal: LegacyMap<Val, Slot>,
  * }} IdTable<Value>
  */
 
@@ -119,12 +119,12 @@ const initSlotVal = (table, slot, val) => {
  */
 export const makeExportContext = flush => {
   const walletObjects = {
-    /** @type {IdTable<number, Purse>} */
+    /** @type {IdTable<number, unknown>} */
     purse: {
       bySlot: makeScalarMap('purseSlot'),
       byVal: makeScalarMap('purse'),
     },
-    /** @type {IdTable<number, Payment>} */
+    /** @type {IdTable<number, unknown>} */
     payment: {
       bySlot: makeScalarMap('paymentSlot'),
       byVal: makeScalarMap('payment'),
@@ -197,7 +197,6 @@ export const makeExportContext = flush => {
     }
     const kind = findKey(walletObjects, k => walletObjects[k].byVal.has(val));
     if (kind) {
-      // @ts-expect-error has(val) above ensures val has the right type
       const id = walletObjects[kind].byVal.get(val);
       return makeWalletSlot(walletObjects, kind, id);
     }
