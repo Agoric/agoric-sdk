@@ -243,11 +243,11 @@ const defaultMakePresence = iface => {
 /**
  * Make context for unserializing wallet or board data.
  *
- * @param {(log?: MessageLog[]) => Promise<void>} flush
+ * @param {(log?: MessageLog[]) => Promise<void>} [flush]
  * @param {(iface: string) => any} [makePresence]
  */
 export const makeImportContext = (
-  flush,
+  flush = async () => {},
   makePresence = defaultMakePresence,
 ) => {
   const walletObjects = {
