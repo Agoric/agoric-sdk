@@ -46,7 +46,7 @@ const makeSubscriptionFollower = spec => {
 
 /**
  * @template T
- * @param {ERef<import('./types').CastingSpec>} specP
+ * @param {ERef<import('./types').CastingSpec> | string} specP
  * @param {import('./types').LeaderOrMaker} [leaderOrMaker]
  * @param {import('./types').FollowerOptions} [options]
  * @returns {Promise<import('./types').Follower<import('./types').FollowerElement<T>>>}

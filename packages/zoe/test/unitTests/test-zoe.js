@@ -429,7 +429,7 @@ test(`zoe.getInstance - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInstance(), {
-    message: /A Zoe invitation is required, not "\[undefined\]"/,
+    message: 'A Zoe invitation is required, not "[undefined]"',
   });
 });
 
@@ -445,7 +445,7 @@ test(`zoe.getInstallation - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInstallation(), {
-    message: /A Zoe invitation is required, not "\[undefined\]"/,
+    message: 'A Zoe invitation is required, not "[undefined]"',
   });
 });
 
@@ -466,7 +466,7 @@ test(`zoe.getInvitationDetails - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInvitationDetails(), {
-    message: /A Zoe invitation is required, not "\[undefined\]"/,
+    message: 'A Zoe invitation is required, not "[undefined]"',
   });
 });
 

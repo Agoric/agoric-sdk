@@ -3,8 +3,6 @@ import * as encodingStar from '@cosmjs/encoding';
 import { E, getInterfaceOf } from '@endo/far';
 
 import './types.js';
-// XXX without this ERef=any in IDE https://github.com/Agoric/agoric-sdk/issues/4620
-/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
 
 const { toAscii } = encodingStar;
 

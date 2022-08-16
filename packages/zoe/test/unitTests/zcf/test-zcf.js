@@ -290,7 +290,7 @@ test(`zcf.makeInvitation - no description`, async t => {
   const { zcf } = await setupZCFTest();
   // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcf.makeInvitation(() => {}), {
-    message: /invitations must have a description string: "\[undefined\]"/,
+    message: 'invitations must have a description string: "[undefined]"',
   });
 });
 
@@ -391,7 +391,7 @@ test(`zcf.makeZCFMint - not a math kind`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint('A', 'whatever'), {
     message:
-      /The assetKind "whatever" must be one of \["copyBag","copySet","nat","set"\]/,
+      'The assetKind "whatever" must be one of ["copyBag","copySet","nat","set"]',
   });
 });
 

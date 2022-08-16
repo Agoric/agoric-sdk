@@ -2,7 +2,7 @@
 
 /**
  * @template T
- * @typedef {import('@endo/promise-kit').ERef<T>} ERef
+ * @typedef {import('@endo/far').ERef<T>} ERef
  */
 
 /**

@@ -20,7 +20,7 @@ import { E } from '@endo/eventual-send';
 import path from 'path';
 import { makeTracer } from '../../src/makeTracer.js';
 import {
-  mockChainStorageRoot,
+  makeMockChainStorageRoot,
   setUpZoeForTest,
   subscriptionKey,
 } from '../supports.js';
@@ -114,7 +114,7 @@ const makeTestContext = async () => {
     privateArgs: harden({
       feeMintAccess: await feeMintAccess,
       initialPoserInvitation,
-      storageNode: mockChainStorageRoot().getChildNode('psm'),
+      storageNode: makeMockChainStorageRoot().getChildNode('psm'),
       marshaller: makeBoard().getReadonlyMarshaller(),
     }),
     run: { issuer: runIssuer, brand: runBrand },
