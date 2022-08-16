@@ -8,14 +8,12 @@ import {
   makeNotifierFromSubscriber,
   makeStoredPublisherKit,
 } from '@agoric/notifier';
-import {
-  makeFakeMarshaller,
-  makeFakeStorage,
-} from '@agoric/notifier/tools/testSupports.js';
-import { objectMap, makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
+import { makeScalarBigMapStore, objectMap } from '@agoric/vat-data';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
+import { makeFakeStorageKit } from '@agoric/vats/tools/storage-test-utils.js';
 import { makeAmmParams } from '../src/vpool-xyk-amm/params.js';
 import { definePoolKind } from '../src/vpool-xyk-amm/pool.js';
 
@@ -82,7 +80,7 @@ const voPoolTest = async (t, mutation, postTest) => {
 
     const paramAccessor = paramManager.readonly();
 
-    const storageNode = makeFakeStorage('voPoolTest');
+    const { rootNode } = makeFakeStorageKit('voPoolTest');
     const marshaller = makeFakeMarshaller();
 
     /** @type {import('../src/vpool-xyk-amm/multipoolMarketMaker.js').AmmPowers} */
@@ -103,7 +101,7 @@ const voPoolTest = async (t, mutation, postTest) => {
     return definePoolKind(
       makeScalarBigMapStore('virtualPool', { durable: true }),
       ammPowers,
-      storageNode,
+      rootNode,
       marshaller,
     );
   };

@@ -12,6 +12,7 @@ const { details: X } = assert;
 /**
  * @param {string[]} rpcAddrs
  * @param {import('./types.js').LeaderOptions} [leaderOptions]
+ * @returns {import('./types.js').Leader}
  */
 export const makeLeaderFromRpcAddresses = (rpcAddrs, leaderOptions) => {
   assert(Array.isArray(rpcAddrs), X`rpcAddrs ${rpcAddrs} must be an array`);
@@ -68,6 +69,7 @@ export const makeLeaderFromNetworkConfig = (netconfigURL, options = {}) => {
 /**
  * @param {string} [bootstrap]
  * @param {import('./types.js').LeaderOptions} [options]
+ * @returns {ERef<import('./types.js').Leader>}
  */
 export const makeLeader = (bootstrap = DEFAULT_BOOTSTRAP, options) => {
   if (bootstrap.includes('network-config')) {
