@@ -73,7 +73,7 @@ test('fundedCallSpread below Strike1', async t => {
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3n,
+    expiration: 2n,
     underlyingAmount: simoleans(2n),
     priceAuthority,
     strikePrice1: moola(60n),
@@ -175,7 +175,7 @@ test('fundedCallSpread above Strike2', async t => {
   const priceAuthority = makeTestPriceAuthority(brands, [20, 55], manualTimer);
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3n,
+    expiration: 2n,
     underlyingAmount: simoleans(2n),
     priceAuthority,
     strikePrice1: moola(60n),
@@ -274,7 +274,7 @@ test('fundedCallSpread, mid-strike', async t => {
   const priceAuthority = makeTestPriceAuthority(brands, [20, 45], manualTimer);
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3n,
+    expiration: 2n,
     underlyingAmount: simoleans(2n),
     priceAuthority,
     strikePrice1: moola(60n),
@@ -372,7 +372,7 @@ test('fundedCallSpread, late exercise', async t => {
   const priceAuthority = makeTestPriceAuthority(brands, [20, 45], manualTimer);
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3n,
+    expiration: 2n,
     underlyingAmount: simoleans(2n),
     priceAuthority,
     strikePrice1: moola(60n),
@@ -474,7 +474,7 @@ test('fundedCallSpread, sell options', async t => {
   const priceAuthority = makeTestPriceAuthority(brands, [20, 45], manualTimer);
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3n,
+    expiration: 2n,
     underlyingAmount: simoleans(2n),
     priceAuthority,
     strikePrice1: moola(60n),
@@ -658,7 +658,7 @@ test('pricedCallSpread, mid-strike', async t => {
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3n,
+    expiration: 2n,
     underlyingAmount: simoleans(2n),
     priceAuthority,
     strikePrice1: moola(60n),

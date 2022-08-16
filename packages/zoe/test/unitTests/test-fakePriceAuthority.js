@@ -38,17 +38,17 @@ test('priceAuthority quoteAtTime', async t => {
   );
 
   const done = E(priceAuthority)
-    .quoteAtTime(3n, moola(5n), bucksBrand)
+    .quoteAtTime(2n, moola(5n), bucksBrand)
     .then(async quote => {
       assertAmountsEqual(t, moola(5n), getAmountIn(quote));
       assertAmountsEqual(t, bucks(55n * 5n), getAmountOut(quote));
-      t.is(3n, TimeMath.absValue(getTimestamp(quote)));
+      t.is(2n, TimeMath.absValue(getTimestamp(quote)));
     });
 
   await E(manualTimer).tick(); // t 0->1, idx 0->0, p 20->55
   await E(manualTimer).tick(); // t 1->2, idx 0->1, p 55->20
   await E(manualTimer).tick(); // t 2->3, idx 1->2, p 20->55 : fires
-  await E(manualTimer).tick(); // t 3->4, idx 2->3, p 55->20 : leftover
+  await E(manualTimer).tick(); // t 3->4, idx 2->3, p 55->20 : extra
   await done;
 });
 
