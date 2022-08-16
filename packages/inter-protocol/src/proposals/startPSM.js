@@ -188,9 +188,10 @@ export const makeAnchorAsset = async (
       },
     }),
   );
-  const { creatorFacet: mint, publicFacet: issuer } = E.get(
+  const { creatorFacet: mint, publicFacet: issuerP } = E.get(
     E(zoe).startInstance(mintHolder, {}, terms),
   );
+  const issuer = await issuerP; // identity of issuers is important
 
   const brand = await E(issuer).getBrand();
   const kit = { mint, issuer, brand };
