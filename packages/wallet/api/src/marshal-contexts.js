@@ -135,7 +135,7 @@ export const makeExportContext = flush => {
       bySlot: makeScalarMap('unknownSlot'),
       byVal: makeScalarMap('unknown'),
     },
-    /** TODO type {IdTable<number, Promise<unknown>>} */
+    /** @type {IdTable<number, Promise<unknown>>} */
     promise: {
       bySlot: makeLegacyMap('promiseSlot'),
       byVal: makeLegacyMap('promise'),
@@ -197,7 +197,7 @@ export const makeExportContext = flush => {
     }
     const kind = findKey(walletObjects, k => walletObjects[k].byVal.has(val));
     if (kind) {
-      const id = walletObjects[kind].byVal.get(val);
+      const id = walletObjects[kind].byVal.get(/** @type {any} */ (val));
       return makeWalletSlot(walletObjects, kind, id);
     }
 
