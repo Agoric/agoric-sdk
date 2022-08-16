@@ -15,7 +15,7 @@ test('transcript-light load', async t => {
   t.teardown(c.shutdown);
   const state0 = getAllState(hostStorage);
   t.is(state0.kvStuff.initialized, 'true');
-  t.is(state0.kvStuff.runQueue, '[]');
+  t.is(state0.kvStuff.runQueue, '[1,1]');
   t.not(state0.kvStuff.acceptanceQueue, '[]');
 
   await c.step();
