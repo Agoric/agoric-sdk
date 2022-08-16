@@ -478,16 +478,38 @@ export function makeVirtualObjectManager(
     return obj;
   }
 
-  function bindMethods(context, behaviorTemplate) {
-    const obj = {};
-    for (const prop of Reflect.ownKeys(behaviorTemplate)) {
-      const func = behaviorTemplate[prop];
+  function bindMethods(tag, contextMap, behaviorMethods) {
+    const prototype = {};
+    for (const prop of Reflect.ownKeys(behaviorMethods)) {
+      const func = behaviorMethods[prop];
       assert.typeof(func, 'function');
-      const method = (...args) => Reflect.apply(func, null, [context, ...args]);
+
+      // Violating all Jessie rules to create representative that inherit
+      // methods from a shared prototype. The bound method therefore needs
+      // to mention `this`. We define it using concise menthod syntax
+      // so that it will be `this` sensitive but not constructable.
+      //
+      // We normally consider `this` unsafe because of the hazard of a
+      // method of one abstraction being applied to an instance of
+      // another abstraction. To prevent that attack, the bound method
+      // checks that it is in the map in which such its representatives
+      // are registered.
+      const { method } = {
+        method(...args) {
+          const context = contextMap.get(this);
+          assert(
+            context,
+            X`${q(
+              `${tag}).${String(prop)}`,
+            )} may only be applied to a valid instance: ${this}`,
+          );
+          return Reflect.apply(func, null, [context, ...args]);
+        },
+      };
       unweakable.add(method);
-      obj[prop] = method;
+      prototype[prop] = method;
     }
-    return obj;
+    return Far(tag, prototype);
   }
 
   /**
@@ -605,6 +627,8 @@ export function makeVirtualObjectManager(
     const { finish } = options;
     let facetNames;
     let behaviorTemplate;
+    let contextMapTemplate;
+    let prototypeTemplate;
 
     const facetiousness = assessFacetiousness(behavior);
     switch (facetiousness) {
@@ -612,6 +636,12 @@ export function makeVirtualObjectManager(
         assert(!multifaceted);
         facetNames = undefined;
         behaviorTemplate = copyMethods(behavior);
+        contextMapTemplate = new WeakMap();
+        prototypeTemplate = bindMethods(
+          tag,
+          contextMapTemplate,
+          behaviorTemplate,
+        );
         break;
       }
       case 'many': {
@@ -622,8 +652,19 @@ export function makeVirtualObjectManager(
           'a multi-facet object must have multiple facets',
         );
         behaviorTemplate = {};
+        contextMapTemplate = {};
+        prototypeTemplate = {};
         for (const name of facetNames) {
-          behaviorTemplate[name] = copyMethods(behavior[name]);
+          const behaviorMethods = copyMethods(behavior[name]);
+          behaviorTemplate[name] = behaviorMethods;
+          const contextMap = new WeakMap();
+          contextMapTemplate[name] = contextMap;
+          const prototype = bindMethods(
+            `${tag} ${name}`,
+            contextMap,
+            behaviorMethods,
+          );
+          prototypeTemplate[name] = prototype;
         }
         break;
       }
@@ -668,6 +709,8 @@ export function makeVirtualObjectManager(
     vrm.registerKind(kindID, reanimate, deleteStoredVO, isDurable);
     vrm.rememberFacetNames(kindID, facetNames);
     harden(behaviorTemplate);
+    harden(contextMapTemplate);
+    harden(prototypeTemplate);
 
     function makeRepresentative(innerSelf, initializing) {
       assert(
@@ -728,10 +771,12 @@ export function makeVirtualObjectManager(
         const context = { state };
         // `context` does not need a linkToCohort because it holds the facets (which hold the cohort)
         unweakable.add(context);
-        context.self = bindMethods(context, behaviorTemplate);
-        toHold = Far(tag, context.self);
-        linkToCohort.set(Object.getPrototypeOf(toHold), toHold);
-        unweakable.add(Object.getPrototypeOf(toHold));
+        const self = harden({ __proto__: prototypeTemplate });
+        context.self = self;
+        contextMapTemplate.set(self, context);
+        toHold = self;
+        // linkToCohort.set(Object.getPrototypeOf(toHold), toHold);
+        // unweakable.add(Object.getPrototypeOf(toHold));
         toExpose = toHold;
         harden(context);
       } else {
@@ -740,10 +785,13 @@ export function makeVirtualObjectManager(
         const facets = {};
         const context = { state, facets };
         for (const name of facetNames) {
-          facets[name] = bindMethods(context, behaviorTemplate[name]);
-          const facet = Far(`${tag} ${name}`, facets[name]);
-          linkToCohort.set(Object.getPrototypeOf(facet), facet);
-          unweakable.add(Object.getPrototypeOf(facet));
+          const facet = harden({
+            __proto__: prototypeTemplate[name],
+          });
+          contextMapTemplate[name].set(facet, context);
+          facets[name] = facet;
+          // linkToCohort.set(Object.getPrototypeOf(facet), facet);
+          // unweakable.add(Object.getPrototypeOf(facet));
           toExpose[name] = facet;
           toHold.push(facet);
           linkToCohort.set(facet, toHold);
