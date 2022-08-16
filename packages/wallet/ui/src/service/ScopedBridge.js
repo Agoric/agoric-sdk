@@ -1,4 +1,3 @@
-import { makeFollower } from '@agoric/casting';
 import { Far } from '@endo/captp';
 
 export const getScopedBridge = (origin, suggestedDappPetname, bridge) => {
@@ -7,7 +6,6 @@ export const getScopedBridge = (origin, suggestedDappPetname, bridge) => {
     dappService,
     offerService,
     issuerService,
-    leader,
     unserializer,
   } = bridge;
 
@@ -82,9 +80,9 @@ export const getScopedBridge = (origin, suggestedDappPetname, bridge) => {
       // TODO: filter offers by dapp origin
       return offerService.notifier;
     },
-    async makeFollower(spec) {
+    async getUnserializer() {
       await dapp.approvedP;
-      return makeFollower(spec, leader, { unserializer });
+      return unserializer;
     },
   });
 };

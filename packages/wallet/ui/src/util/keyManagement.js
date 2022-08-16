@@ -337,7 +337,6 @@ export const makeInteractiveSigner = async (
   };
   const signingClient = await connectWithSigner(chainInfo.rpc, offlineSigner, {
     aminoTypes: new AminoTypes(converters),
-    // @ts-expect-error keplr types outdated https://github.com/chainapsis/keplr-wallet/blob/7c5951a35e904e5137e72b1eb77520d964e94aad/packages/types/package.json#L21
     registry: SwingsetRegistry,
   });
   console.debug('InteractiveSigner', { signingClient });
