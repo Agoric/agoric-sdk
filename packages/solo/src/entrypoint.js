@@ -1,5 +1,8 @@
 #! /usr/bin/env node
 
+// XXX types resolution
+import '@agoric/swingset-vat/exported.js';
+
 import '@endo/init/pre-bundle-source.js';
 
 // import lmdb early to work around SES incompatibility
