@@ -1,6 +1,6 @@
 // @ts-check
 /* global fetch */
-import { makeRoundRobinLeader } from './leader.js';
+import { makeCosmJSLeader } from './leader.js';
 import {
   DEFAULT_BOOTSTRAP,
   DEFAULT_JITTER,
@@ -26,7 +26,7 @@ export const makeLeaderFromRpcAddresses = (rpcAddrs, leaderOptions) => {
     return rpcAddr.includes('://') ? rpcAddr : `http://${rpcAddr}`;
   });
 
-  return makeRoundRobinLeader(rpcHrefs, leaderOptions);
+  return makeCosmJSLeader(rpcHrefs, leaderOptions);
 };
 
 /**

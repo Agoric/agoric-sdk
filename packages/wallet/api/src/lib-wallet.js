@@ -1800,6 +1800,12 @@ export function makeWalletRoot({
     return acceptOffer(`${dappOrigin}#${rawId}`);
   };
 
+  /** @param {import('@endo/marshal').CapData<string>} capData */
+  const handleApplyMethodAction = async capData => {
+    console.log('DEBUG handleApplyMethodAction got', capData);
+    throw Error('TODO');
+  };
+
   const handleSuggestIssuerAction = ({ petname, boardId }) =>
     suggestIssuer(petname, boardId);
 
@@ -1809,12 +1815,15 @@ export function makeWalletRoot({
    * @returns {Promise<any>}
    */
   const performAction = obj => {
-    const { type, data } = JSON.parse(obj.spendAction);
+    const { type, ...rest } = JSON.parse(obj.spendAction);
     switch (type) {
       case 'acceptOffer':
-        return handleAcceptOfferAction(data);
+        return handleAcceptOfferAction(rest.data);
+      /** @see ApplyMethodPayload */
+      case 'applyMethod':
+        return handleApplyMethodAction(rest);
       case 'suggestIssuer':
-        return handleSuggestIssuerAction(data);
+        return handleSuggestIssuerAction(rest.data);
       default:
         throw new Error(`Unknown wallet action ${type}`);
     }

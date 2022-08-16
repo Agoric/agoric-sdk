@@ -24,9 +24,9 @@ export {};
  * @typedef {object} Leader
  * @property {(where: string, error: any, attempt?: number) => Promise<void>} retry
  * @property {(where: string) => Promise<void>} jitter
- * @property {(opts: ClientOptions) => Client} makeClient
+ * @property {(opts: ClientOptions) => Promise<WalletActionClient>} makeClient
  * @property {() => LeaderOptions} getOptions
- * @property {<T>(where: string, callback: (endpoint: string) => Promise<T>) => Promise<T[]>} mapEndpoints
+ * @property {<T>(where: string, callback: (where: string, endpoint: string) => Promise<T>) => Promise<T[]>} mapEndpoints
  * @property {(spec: ERef<CastingSpec>) => Promise<Follower<CastingChange>>} watchCasting
  */
 
@@ -64,14 +64,22 @@ export {};
  */
 
 /**
+ * Requires exactly one of: seed, mnemonic, keplr
+ *
  * @typedef {object} ClientOptions
- * @property {string} [mnemonic]
- * @property {unknown} [keplr]
+ * @property {Uint8Array} [seed] private key
+ * @property {string} [mnemonic] 12 or 24 words
+ * @property {unknown} [keplr] external signer
  */
 
 /**
- * @typedef {object} Client
- * @property {123} something
+ * @typedef {import('@endo/marshal').CapData<string> & { type: 'applyMethod' }} ApplyMethodPayload
+ */
+
+/**
+ * @typedef {object} WalletActionClient
+ * @property {(ApplyMethodPayload) => void} sendAction
+ * @property {() => import('@cosmjs/stargate').SigningStargateClient} getSigningClient TODO document use case
  */
 
 /**
