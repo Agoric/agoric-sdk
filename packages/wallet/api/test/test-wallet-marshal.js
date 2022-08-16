@@ -24,12 +24,17 @@ const makeOnChainWallet = board => {
   let brand;
 
   const pub = new Map();
-  const zoe = harden({
+  const zoe = Far('Zoe Service', {
     getPublicFacet: async instance => pub.get(instance),
   });
-  const agoricNames = harden({
+  const agoricNames = Far('NameHub', {
     lookup: (...path) => assert.fail('TODO'),
   });
+  const walletBoot = Far('Wallet Facet???', {
+    getZoeService: () => zoe,
+    getAgoricNames: () => agoricNames,
+  });
+  context.saveUnknown(walletBoot);
 
   return harden({
     suggestIssuer: (name, boardId) => {
@@ -195,7 +200,7 @@ const makeWalletUI = (board, backgroundSigner, follower) => {
     if (!addMsgs.length && !msgs.length) {
       return;
     }
-    await null; // wait for E() stuff
+    await null; // wait for E() stuff?
 
     const allMsgs = [...addMsgs, ...msgs];
     msgs.splice(0);
@@ -205,8 +210,8 @@ const makeWalletUI = (board, backgroundSigner, follower) => {
       harden(allMsgs.map(({ msg }) => msg)),
     );
 
-    // console.warn('TODO: bg send serialized', { capData });
-    backgroundSigner.submitAction(JSON.stringify(capData));
+    console.log('@@@bg send serialized', { capData });
+    await backgroundSigner.submitAction(JSON.stringify(capData));
   };
   const ctx = makeImportContext(flush, mkp);
   const walletP = ctx.getBootstrap();
@@ -216,8 +221,8 @@ const makeWalletUI = (board, backgroundSigner, follower) => {
 
   (async () => {
     for await (const json of follower.getLatestIterable()) {
-      console.log('have json', { json });
       const { answers } = ctx.fromMyWallet.unserialize(JSON.parse(json));
+      console.log('RPC returned', answers);
       for (const [ix, result] of answers) {
         if (seqToKit.has(ix)) {
           const kit = seqToKit.get(ix);
@@ -228,10 +233,10 @@ const makeWalletUI = (board, backgroundSigner, follower) => {
           } else {
             kit.reject(result.reason);
           }
-          console.log('pending', seqToKit);
+          console.log('@@@pending', seqToKit);
         }
       }
-      console.log('waiting for', msgs);
+      console.log('@@waiting for', msgs);
     }
   })();
 
@@ -289,18 +294,49 @@ test('get IST brand via agoricNames', async t => {
       registered.resolve('go');
     };
 
+    let seq = 1; // ???
     const submitActionTx = async action => {
       const capData = JSON.parse(action);
       await registered.promise;
-      const value = ctx.unserialize(capData);
+      const msgs = ctx.unserialize(capData);
       console.log('TODO: deserialize, execute action', {
         action,
-        capData,
-        value,
+        // capData,
+        msgs,
       });
-      answers.push([1, { ok: true, value: agoricNames }]);
-      answers.push([2, { ok: true, value: zoe }]);
-      answers.push([3, { ok: true, value: brand }]);
+      assert(Array.isArray(msgs));
+      const start = seq;
+      seq += msgs.length;
+      return Promise.all(
+        msgs.map((msg, ix) => {
+          console.log('@@@tag', ix, msg[0]);
+          switch (msg[0]) {
+            case 'applyMethod': {
+              const [_tag, target, method, args] = msg;
+              E(target)
+                [method](...args)
+                .then(
+                  result =>
+                    answers.push([start + ix, { ok: true, value: result }]),
+                  reason => answers.push([start + ix, { ok: false, reason }]),
+                );
+              break;
+            }
+            case 'applyFunction': {
+              const [_tag, target, args] = msg;
+              E(target)(...args).then(
+                result =>
+                  answers.push([start + ix, { ok: true, value: result }]),
+                reason => answers.push([start + ix, { ok: false, reason }]),
+              );
+              break;
+            }
+            default:
+              assert.fail(`bad message: ${msg}`);
+          }
+          return undefined;
+        }),
+      );
     };
 
     return harden({
@@ -314,8 +350,8 @@ test('get IST brand via agoricNames', async t => {
   let queryWalletPK = makePromiseKit();
   const offChain = async () => {
     const bgSigner = harden({
-      submitAction: action => {
-        onChain.submitActionTx(action);
+      submitAction: async action => {
+        await onChain.submitActionTx(action);
         queryWalletPK.resolve('go');
       },
     });
@@ -333,13 +369,12 @@ test('get IST brand via agoricNames', async t => {
     const wallet = makeWalletUI(board, bgSigner, follower);
     const bridge = E(wallet).getScopedBridge();
     const agoricNames = E(bridge).getAgoricNames();
-    const tp = wallet
-      .all([E(agoricNames).lookup('brand', 'IST')])
-      .then(([brand]) => t.is(passStyleOf(brand), 'remotable'));
+    const tp = wallet.all([E(agoricNames).lookup('brand', 'IST')]);
     await Promise.race([tp, wallet.flush()]);
     await Promise.race([tp, wallet.flush()]);
     await Promise.race([tp, wallet.flush()]);
     await Promise.race([tp, wallet.flush()]);
+    tp.then(([brand]) => t.is(passStyleOf(brand), 'remotable'));
   };
 
   await Promise.all([onChain.run(), offChain()]);
