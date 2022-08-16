@@ -1,5 +1,9 @@
 /* eslint-disable @jessie.js/no-nested-await */
 /* global process */
+
+// XXX types resolution https://github.com/endojs/endo/issues/1254
+import '@endo/captp/src/types.js';
+
 import { Command } from 'commander';
 import path from 'path';
 import { assert, details as X } from '@agoric/assert';
