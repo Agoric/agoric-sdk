@@ -198,7 +198,6 @@ const start = async (zcf, privateArgs) => {
     });
 
   // for each new quote from the priceAuthority, publish it to off-chain storage
-  // XXX https://github.com/Agoric/agoric-sdk/issues/5853
   observeNotifier(
     priceAuthority.makeQuoteNotifier(AmountMath.make(brandIn, 1n), brandOut),
     {
