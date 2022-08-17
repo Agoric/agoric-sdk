@@ -147,48 +147,48 @@ const makeChainQueue = (call, prefix = '') => {
       const tail = BigInt(storage.get('tail') || 0);
       return Number(tail - head);
     },
-    /** @returns {Iterable<unknown>} */
-    consumeAll: () => ({
-      [Symbol.iterator]: () => {
-        let done = false;
-        let head = BigInt(storage.get('head') || 0);
-        const tail = BigInt(storage.get('tail') || 0);
-        return {
-          next: () => {
-            if (done) return { done };
-            if (head < tail) {
-              // Still within the queue.
-              const headKey = `${head}`;
-              const value = storage.get(headKey);
-              storage.delete(headKey);
-              head += 1n;
-              return { value, done };
-            }
-            // Reached the end, so clean up our indices.
-            storage.delete('head');
-            storage.delete('tail');
-            storage.commit();
-            done = true;
-            return { done };
-          },
-          return: () => {
-            if (done) return { done };
-            // We're done consuming, so save our state.
-            storage.set('head', head);
-            storage.commit();
-            done = true;
-            return { done };
-          },
-          throw: err => {
-            if (done) return { done };
-            // Don't change our state.
-            storage.abort();
-            done = true;
-            throw err;
-          },
-        };
-      },
-    }),
+    /** @returns {IterableIterator<unknown>} */
+    consumeAll: () => {
+      let done = false;
+      let head = BigInt(storage.get('head') || 0);
+      const tail = BigInt(storage.get('tail') || 0);
+      const iterator = {
+        [Symbol.iterator]: () => iterator,
+        next: () => {
+          if (done) return { done };
+          if (head < tail) {
+            // Still within the queue.
+            const headKey = `${head}`;
+            const value = storage.get(headKey);
+            storage.delete(headKey);
+            head += 1n;
+            return { value, done };
+          }
+          // Reached the end, so clean up our indices.
+          storage.delete('head');
+          storage.delete('tail');
+          storage.commit();
+          done = true;
+          return { done };
+        },
+        return: () => {
+          if (done) return { done };
+          // We're done consuming, so save our state.
+          storage.set('head', head);
+          storage.commit();
+          done = true;
+          return { done };
+        },
+        throw: err => {
+          if (done) return { done };
+          // Don't change our state.
+          storage.abort();
+          done = true;
+          throw err;
+        },
+      };
+      return iterator;
+    },
   };
   return queue;
 };
