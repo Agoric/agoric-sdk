@@ -7,7 +7,7 @@ import { provide } from '@agoric/store/src/stores/store-utils.js';
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 
-import { makeStorageNode } from '../lib-chainStorage.js';
+import { makeStorageNodeChild } from '../lib-chainStorage.js';
 import { makeNameHubKit } from '../nameHub.js';
 import { feeIssuerConfig } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
@@ -240,7 +240,7 @@ export const makeClientBanks = async ({
   const STORAGE_PATH = 'wallet';
 
   const [storageNode, bridgeManager] = await Promise.all([
-    makeStorageNode(chainStorage, STORAGE_PATH),
+    makeStorageNodeChild(chainStorage, STORAGE_PATH),
     bridgeManagerP,
   ]);
 

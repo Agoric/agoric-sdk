@@ -1,7 +1,7 @@
 import { E } from '@endo/far';
 import { makeIssuerKit } from '@agoric/ertp';
 import {
-  makeStorageNode,
+  makeStorageNodeChild,
   sanitizePathSegment,
 } from '@agoric/vats/src/lib-chainStorage.js';
 import { deeplyFulfilled } from '@endo/marshal';
@@ -119,7 +119,7 @@ export const createPriceFeed = async (
     }),
   );
 
-  const storageNode = await makeStorageNode(chainStorage, STORAGE_PATH);
+  const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = E(board).getReadonlyMarshaller();
 
   // Create the price feed.
@@ -128,7 +128,7 @@ export const createPriceFeed = async (
     undefined,
     terms,
     {
-      storageNode: E(storageNode).getChildNode(
+      storageNode: E(storageNode).makeChildNode(
         sanitizePathSegment(AGORIC_INSTANCE_NAME),
       ),
       marshaller,

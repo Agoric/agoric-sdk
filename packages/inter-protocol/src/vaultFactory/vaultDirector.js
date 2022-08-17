@@ -333,7 +333,7 @@ const machineBehavior = {
 
     const managerStorageNode =
       storageNode &&
-      E(storageNode).getChildNode(`manager${state.managerCounter}`);
+      E(storageNode).makeChildNode(`manager${state.managerCounter}`);
     state.managerCounter += 1;
 
     /** a powerful object; can modify parameters */

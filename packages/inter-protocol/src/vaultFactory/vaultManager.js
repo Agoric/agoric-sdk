@@ -814,8 +814,8 @@ const selfBehavior = {
     const vaultId = String(state.vaultCounter);
 
     const vaultStorageNode = E(
-      E(storageNode).getChildNode(`vaults`),
-    ).getChildNode(`vault${vaultId}`);
+      E(storageNode).makeChildNode(`vaults`),
+    ).makeChildNode(`vault${vaultId}`);
 
     const vault = makeVault(
       zcf,

@@ -45,13 +45,14 @@ test('makeChainStorageRoot', async t => {
   );
   for (const [label, val] of nonStrings) {
     t.throws(
+      // @ts-expect-error invalid value
       () => rootNode.setValue(val),
       undefined,
       `${label} value for root node is rejected`,
     );
   }
 
-  rootNode.clearValue();
+  rootNode.setValue('');
   rootNode.setValue('foo');
   t.deepEqual(
     messages.slice(-1),
@@ -88,7 +89,7 @@ test('makeChainStorageRoot', async t => {
       .repeat(Math.ceil(100 / validSegmentChars.length))
       .match(/.{1,100}/gsu) || [];
   for (const segment of extremeSegments) {
-    const child = rootNode.getChildNode(segment);
+    const child = rootNode.makeChildNode(segment);
     const childPath = `${rootPath}.${segment}`;
     t.deepEqual(
       child.getStoreKey(),
@@ -100,12 +101,6 @@ test('makeChainStorageRoot', async t => {
       messages.slice(-1),
       [{ key: childPath, method: 'set', value: 'foo' }],
       'non-root setValue message',
-    );
-    child.clearValue();
-    t.deepEqual(
-      messages.slice(-1),
-      [{ key: childPath, method: 'set', value: '' }],
-      'non-root clearValue message',
     );
   }
 
@@ -126,16 +121,17 @@ test('makeChainStorageRoot', async t => {
   badSegments.set('ASCII with combining diacritical mark', 'a\u0301');
   for (const [label, val] of badSegments) {
     t.throws(
-      () => rootNode.getChildNode(val),
+      // @ts-expect-error invalid value
+      () => rootNode.makeChildNode(val),
       undefined,
       `${label} segment is rejected`,
     );
   }
 
   // Level-skipping creation is allowed.
-  const childNode = rootNode.getChildNode('child');
+  const childNode = rootNode.makeChildNode('child');
   const childPath = `${rootPath}.child`;
-  const deepNode = childNode.getChildNode('grandchild');
+  const deepNode = childNode.makeChildNode('grandchild');
   const deepPath = `${childPath}.grandchild`;
   t.deepEqual(deepNode.getStoreKey(), {
     storeName: 'swingset',
@@ -143,6 +139,7 @@ test('makeChainStorageRoot', async t => {
   });
   for (const [label, val] of nonStrings) {
     t.throws(
+      // @ts-expect-error invalid value
       () => deepNode.setValue(val),
       undefined,
       `${label} value for non-root node is rejected`,
@@ -155,22 +152,22 @@ test('makeChainStorageRoot', async t => {
     'level-skipping setValue message',
   );
 
-  childNode.clearValue();
+  childNode.setValue('');
   t.deepEqual(
     messages.slice(-1),
     [{ key: childPath, method: 'set', value: '' }],
-    'child clearValue message',
+    'child setValue message',
   );
-  deepNode.clearValue();
+  deepNode.setValue('');
   t.deepEqual(
     messages.slice(-1),
     [{ key: deepPath, method: 'set', value: '' }],
-    'granchild clearValue message',
+    'granchild setValue message',
   );
-  childNode.clearValue();
+  childNode.setValue('');
   t.deepEqual(
     messages.slice(-1),
     [{ key: childPath, method: 'set', value: '' }],
-    'child clearValue message',
+    'child setValue message',
   );
 });

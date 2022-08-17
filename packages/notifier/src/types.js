@@ -194,8 +194,6 @@
  * ```
  * The resulting `localIterable` also supports such remote use, and
  * will return access to the same representation.
- * @property {StorageNode['getStoreKey']} getStoreKey get the
- * externally-reachable store key for this subscription
  */
 
 /**
@@ -219,11 +217,28 @@
 /** @typedef {Pick<Marshaller, 'unserialize'>} Unserializer */
 
 /**
+ * Defined by vstorageStoreKey in vstorage.go
+ *
+ * @typedef VStorageKey
+ * @property {string} storeName
+ * @property {string} storeSubkey
+ * @property {string} dataPrefixBytes
+ */
+
+/**
+ * This represents a node in an IAVL tree.
+ *
+ * The active implementation is x/vstorage, an Agoric extension of the Cosmos SDK.
+ *
+ * Vstorage is a hierarchical externally-reachable storage structure that
+ * identifies children by restricted ASCII name and is associated with arbitrary
+ * string-valued data for each node, defaulting to the empty string.
+ *
  * @typedef {object} StorageNode
  * @property {(data: string) => void} setValue publishes some data
- * @property {() => ERef<Record<string, any>>} getStoreKey get the
+ * @property {() => ERef<VStorageKey>} getStoreKey get the
  * externally-reachable store key for this storage item
- * @property {(subPath: string) => StorageNode} getChildNode TODO: makeChildNode
+ * @property {(subPath: string) => StorageNode} makeChildNode
  */
 
 /**
@@ -233,6 +248,7 @@
  */
 
 /**
+ * @deprecated
  * @template T
  * @typedef {Subscription<T> & StoredFacet} StoredSubscription
  */

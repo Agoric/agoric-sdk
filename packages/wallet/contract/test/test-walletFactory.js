@@ -6,7 +6,7 @@ import '@agoric/vats/src/core/types.js';
 import '@agoric/zoe/exported.js';
 
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { makeStorageNode } from '@agoric/vats/src/lib-chainStorage.js';
+import { makeStorageNodeChild } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { E, Far } from '@endo/far';
 import path from 'path';
@@ -59,7 +59,10 @@ const makeTestContext = async t => {
   // #endregion
 
   // copied from makeClientBanks()
-  const storageNode = await makeStorageNode(consume.chainStorage, 'wallet');
+  const storageNode = await makeStorageNodeChild(
+    consume.chainStorage,
+    'wallet',
+  );
   const marshaller = E(consume.board).getPublishingMarshaller();
 
   const walletFactory = E(zoe).startInstance(
