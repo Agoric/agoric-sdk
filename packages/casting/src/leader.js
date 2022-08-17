@@ -2,14 +2,13 @@
 // @ts-check
 import { Far } from '@endo/far';
 import { SigningStargateClient } from '@cosmjs/stargate';
-import { DirectSecp256k1Wallet } from '@cosmjs/proto-signing';
-import { bech32Config } from '@agoric/wallet-ui/src/util/chainInfo.js';
 import {
   SwingsetMsgs,
   SwingsetRegistry,
   zeroFee,
 } from '@agoric/wallet-ui/src/util/keyManagement.js';
 import { toBase64 } from '@cosmjs/encoding';
+import { TxRaw } from 'cosmjs-types/cosmos/tx/v1beta1/tx.js';
 import { toAccAddress } from '@cosmjs/stargate/build/queryclient/utils.js';
 import { DEFAULT_RETRY_CALLBACK, DEFAULT_JITTER } from './defaults.js';
 import { makePollingChangeFollower } from './change-follower.js';
@@ -17,17 +16,10 @@ import { makeRoundRobinEndpointMapper } from './round-robin-mapper.js';
 
 /**
  * @param {Leader} leader
- * @param clientOptions
- * @returns {Promise<import('./types.js').WalletActionClient>}
+ * @param {import('@cosmjs/proto-signing').OfflineSigner} signer
+ * @returns {Promise<SigningStargateClient>}
  */
-const makeSeedClient = async (leader, clientOptions) => {
-  console.log('makeSeedClient', clientOptions);
-  const fee = zeroFee();
-  const wallet = await DirectSecp256k1Wallet.fromKey(
-    clientOptions.seed,
-    // XXX move into this package
-    bech32Config.bech32PrefixAccAddr,
-  );
+const connectWithLeader = async (leader, signer) => {
   let rpcEndpoint;
   console.log('about to mapEndpoints');
   await leader.mapEndpoints('makeSeedClient', async (_where, endpoint) => {
@@ -35,38 +27,9 @@ const makeSeedClient = async (leader, clientOptions) => {
     rpcEndpoint = endpoint;
   });
   assert(rpcEndpoint);
-  const signingClient = await SigningStargateClient.connectWithSigner(
-    rpcEndpoint,
-    wallet,
-    {
-      registry: SwingsetRegistry,
-    },
-  );
-  const [account] = await wallet.getAccounts();
-  const { address } = account;
-
-  return {
-    getSigningClient: () => signingClient,
-    /**
-     * @type {(action: import('./types.js').ApplyMethodPayload) => Promise<import('@cosmjs/stargate').DeliverTxResponse>}
-     */
-    sendAction(action) {
-      console.log('sendAction', action);
-      const act1 = {
-        typeUrl: SwingsetMsgs.MsgWalletSpendAction.typeUrl,
-        /** @type {import('@agoric/wallet-ui/src/util/keyManagement.js').WalletAction} */
-        value: {
-          owner: toBase64(toAccAddress(address)),
-          // ??? document how this works
-          action: JSON.stringify(action),
-        },
-      };
-
-      const msgs = [act1];
-      console.log('sign spend action', { address, msgs });
-      return signingClient.signAndBroadcast(address, msgs, fee);
-    },
-  };
+  return SigningStargateClient.connectWithSigner(rpcEndpoint, signer, {
+    registry: SwingsetRegistry,
+  });
 };
 
 /**
@@ -81,23 +44,21 @@ export const makeCosmJSLeader = (endpoints, leaderOptions) => {
 
   const leader = Far('cosmjs leader', {
     getOptions: () => actualOptions,
-    makeSigningClient: clientOptions => {
-      const { mnemonic, keplr, seed } = clientOptions;
-      assert(!mnemonic && !keplr, 'NOT YET');
-      assert(seed, 'seed required');
-      return makeSeedClient(leader, clientOptions);
+    /** @param {import('@cosmjs/proto-signing').OfflineSigner} signer */
+    makeSigningClient: signer => {
+      return connectWithLeader(leader, signer);
     },
     /**
      * @param {SigningStargateClient} signingClient
      * @param {import('@cosmjs/proto-signing').AccountData} account
      */
-    makeClient: (signingClient, account) => {
+    makeCastingClient: (signingClient, account) => {
       const { address } = account;
       return {
         /**
          * @type {(action: import('./types.js').ApplyMethodPayload) => Promise<import('@cosmjs/stargate').DeliverTxResponse>}
          */
-        sendAction(action) {
+        async sendAction(action) {
           console.log('sendAction', action);
           const act1 = {
             typeUrl: SwingsetMsgs.MsgWalletSpendAction.typeUrl,
@@ -111,7 +72,20 @@ export const makeCosmJSLeader = (endpoints, leaderOptions) => {
 
           const msgs = [act1];
           console.log('sign spend action', { address, msgs });
-          return signingClient.signAndBroadcast(address, msgs, fee);
+
+          const txRaw = await signingClient.sign(
+            address,
+            msgs,
+            zeroFee(),
+            'casting leader sendAction',
+          );
+
+          const txBytes = TxRaw.encode(txRaw).finish();
+          return this.broadcastTx(
+            txBytes,
+            this.broadcastTimeoutMs,
+            this.broadcastPollIntervalMs,
+          );
         },
       };
     },

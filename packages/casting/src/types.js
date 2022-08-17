@@ -69,12 +69,6 @@ export {};
  */
 
 /**
- * @typedef {object} WalletActionClient
- * @property {(ApplyMethodPayload) => void} sendAction
- * @property {() => import('@cosmjs/stargate').SigningStargateClient} getSigningClient TODO document use case
- */
-
-/**
  * @typedef {object} CastingSpec
  * @property {string} [storeName]
  * @property {Uint8Array} [storeSubkey]

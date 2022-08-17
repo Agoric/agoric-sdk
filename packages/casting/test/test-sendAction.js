@@ -8,6 +8,11 @@ import { E } from '@endo/far';
 import { makeLeader } from '../src/main.js';
 
 import { startFakeServer } from './fake-rpc-server.js';
+import { DirectSecp256k1Wallet } from '@cosmjs/proto-signing';
+
+// XXX move into this package
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { bech32Config } from '@agoric/wallet-ui/src/util/chainInfo.js';
 
 /** @type {import('ava').TestFn<{cleanups: Function[], startServer: typeof startFakeServer}>} */
 const test = unknownTest;
@@ -31,20 +36,28 @@ test.failing('CosmJS integration', async t => {
     retryCallback: null,
     // jitter: null,
   });
-  t.log('awaiting makeClient');
-  /** @type {import('../src/types.js').WalletActionClient} */
-  const client = await E(leader).makeClient({
+  const signer = await DirectSecp256k1Wallet.fromKey(
     // key material the client can use to access the previously signed offer result
     // e.g. offerResult:3 was signed with this key…
-    seed: new Uint8Array([
+    new Uint8Array([
       0, 1, 2, 3, 3, 2, 1, 0, 0, 1, 2, 3, 3, 2, 1, 0, 0, 1, 2, 3, 3, 2, 1, 0, 0,
       1, 2, 3, 3, 2, 1, 0,
     ]),
-  });
+    bech32Config.bech32PrefixAccAddr,
+  );
+
+  t.log('awaiting makeSigningClient');
+  const signingClient = await E(leader).makeSigningClient(signer);
+  t.log('awaiting makeCastingClient');
+  const [account] = await signer.getAccounts();
+  const castingClient = await E(leader).makeCastingClient(
+    signingClient,
+    account,
+  );
   t.log('awaiting sendAction');
   // FIXME make fake-rpc-server return a valid response for abci_query /cosmos.auth.v1beta1.Query/Account
   // which currently results in "Account does not exist on chain. Send some tokens there before trying to query sequence."
-  await client.sendAction({
+  await castingClient.sendAction({
     type: 'applyMethod',
     body: JSON.stringify([
       { '@qclass': 'slot', index: 0 },
