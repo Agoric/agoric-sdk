@@ -36,8 +36,15 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
       return css`
         :host {
           display: block;
-          padding: 24px;
-          color: var(--agoric-wallet-connection-text-color, #000);
+          padding: 8px;
+          color: var(--agoric-wallet-connection-text-color, #737373);
+        }
+        .connection-message {
+          text-align: center;
+        }
+        .connection-message > a {
+          text-decoration: none;
+          color: #0ea5e9;
         }
       `;
     }
@@ -235,13 +242,15 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
     render() {
       /** @type {import('lit-html').TemplateResult<1> | undefined} */
       let backend;
+      const locatorHref = this.useLocalStorage
+        ? LOCAL_STORAGE_LOCATOR_URL
+        : DEFAULT_LOCATOR_URL;
+
       switch (this.state) {
         case 'locating': {
           backend = html`
             <agoric-iframe-messenger
-              src=${this.useLocalStorage
-                ? LOCAL_STORAGE_LOCATOR_URL
-                : DEFAULT_LOCATOR_URL}
+              src=${locatorHref}
               @message=${this.onLocateMessage}
               @error=${this.onError}
             ></agoric-iframe-messenger>
@@ -262,9 +271,16 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
         default:
       }
 
+      const locatorUrl = new URL(locatorHref);
+
       return html`
-        <div>Agoric Wallet Connection: ${this.state}</div>
-        ${backend}
+        <div class="connection">
+          ${backend}
+          <div class="connection-message">
+            Wallet URL configured in
+            <a href=${locatorUrl.origin} target="_blank">${locatorUrl.host}</a>
+          </div>
+        </div>
       `;
     }
   };

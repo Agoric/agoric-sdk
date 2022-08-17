@@ -4,6 +4,9 @@ import './lockdown.js';
 
 import React from 'react';
 import ReactDOM from 'react-dom';
+import AgoricLogo from './AgoricLogo';
+
+import './bridge.scss';
 
 Error.stackTraceLimit = Infinity;
 
@@ -126,9 +129,15 @@ const signalBridge = () => {
   }
 };
 
-ReactDOM.render(
-  <button id="signalBridge" onClick={signalBridge}>
-    Signal Bridge
-  </button>,
-  document.getElementById('root'),
-);
+const Bridge = () => {
+  return (
+    <button className="button" onClick={signalBridge}>
+      <div style={{ width: 64, height: 42 }}>
+        <AgoricLogo />
+      </div>
+      <div style={{ margin: 4 }}>Signal Wallet</div>
+    </button>
+  );
+};
+
+ReactDOM.render(<Bridge />, document.getElementById('root'));
