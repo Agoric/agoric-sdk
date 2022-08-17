@@ -1,5 +1,7 @@
 // @ts-check
 
+import { Fail } from '@agoric/assert';
+
 /**
  * @typedef {object} QueueStorage
  * @property {() => void} commit
@@ -32,6 +34,8 @@ export const makeQueue = storage => {
   const getHead = () => BigInt(storage.get('head') || 0);
   const getTail = () => BigInt(storage.get('tail') || 0);
 
+  /** @type {IterableIterator<T> | null} */
+  let currentIterator = null;
   const queue = {
     size: () => {
       return Number(getTail() - getHead());
@@ -42,6 +46,7 @@ export const makeQueue = storage => {
       storage.set('tail', String(tail + 1n));
       storage.set(`${tail}`, JSON.stringify(obj));
       storage.commit();
+      currentIterator = null;
     },
     /** @returns {IterableIterator<T>} */
     consumeAll: () => {
@@ -51,6 +56,7 @@ export const makeQueue = storage => {
       const iterator = {
         [Symbol.iterator]: () => iterator,
         next: () => {
+          currentIterator === iterator || Fail`invalid iterator`;
           if (!done) {
             if (head < tail) {
               // Still within the queue.
@@ -71,6 +77,7 @@ export const makeQueue = storage => {
           return { value: undefined, done };
         },
         return: () => {
+          currentIterator === iterator || Fail`invalid iterator`;
           if (!done) {
             // We're done consuming, so save our state.
             storage.set('head', String(head));
@@ -80,6 +87,7 @@ export const makeQueue = storage => {
           return { value: undefined, done };
         },
         throw: err => {
+          currentIterator === iterator || Fail`invalid iterator`;
           if (!done) {
             // Don't change our state.
             storage.abort();
@@ -89,6 +97,7 @@ export const makeQueue = storage => {
           return { value: undefined, done };
         },
       };
+      currentIterator = iterator;
       return iterator;
     },
   };
