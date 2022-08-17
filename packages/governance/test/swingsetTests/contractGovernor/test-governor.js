@@ -188,11 +188,11 @@ test.serial('changeTwoParams', async t => {
     '@@ tick:2 @@',
     '&& running a task scheduled for 2. &&',
     'vote outcome: {"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: BundleInstallation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}}',
-    'Validation complete: true',
     'params update: Electorate,MalleableNumber',
     'current value of MalleableNumber is 42',
     'updated to ({"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: BundleInstallation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}})',
     'successful outcome: {"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: BundleInstallation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}} ',
+    'Validation complete: true',
   ]);
 });
 
