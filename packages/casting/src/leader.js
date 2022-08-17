@@ -16,7 +16,7 @@ import { makePollingChangeFollower } from './change-follower.js';
 import { makeRoundRobinEndpointMapper } from './round-robin-mapper.js';
 
 /**
- * @param {import('./types.js').Leader} leader
+ * @param {Leader} leader
  * @param clientOptions
  * @returns {Promise<import('./types.js').WalletActionClient>}
  */
@@ -72,7 +72,6 @@ const makeSeedClient = async (leader, clientOptions) => {
 /**
  * @param {string[]} endpoints
  * @param {import('./types').LeaderOptions} [leaderOptions]
- * @returns {import('./types').Leader}
  */
 export const makeCosmJSLeader = (endpoints, leaderOptions) => {
   const { retryCallback = DEFAULT_RETRY_CALLBACK, jitter = DEFAULT_JITTER } =
@@ -80,14 +79,41 @@ export const makeCosmJSLeader = (endpoints, leaderOptions) => {
 
   const actualOptions = { ...leaderOptions, retryCallback, jitter };
 
-  /** @type {import('./types.js').Leader} */
   const leader = Far('cosmjs leader', {
     getOptions: () => actualOptions,
-    makeClient: clientOptions => {
+    makeSigningClient: clientOptions => {
       const { mnemonic, keplr, seed } = clientOptions;
       assert(!mnemonic && !keplr, 'NOT YET');
       assert(seed, 'seed required');
       return makeSeedClient(leader, clientOptions);
+    },
+    /**
+     * @param {SigningStargateClient} signingClient
+     * @param {import('@cosmjs/proto-signing').AccountData} account
+     */
+    makeClient: (signingClient, account) => {
+      const { address } = account;
+      return {
+        /**
+         * @type {(action: import('./types.js').ApplyMethodPayload) => Promise<import('@cosmjs/stargate').DeliverTxResponse>}
+         */
+        sendAction(action) {
+          console.log('sendAction', action);
+          const act1 = {
+            typeUrl: SwingsetMsgs.MsgWalletSpendAction.typeUrl,
+            /** @type {import('@agoric/wallet-ui/src/util/keyManagement.js').WalletAction} */
+            value: {
+              owner: toBase64(toAccAddress(address)),
+              // ??? document how this works
+              action: JSON.stringify(action),
+            },
+          };
+
+          const msgs = [act1];
+          console.log('sign spend action', { address, msgs });
+          return signingClient.signAndBroadcast(address, msgs, fee);
+        },
+      };
     },
     jitter: where => jitter && jitter(where),
     retry: async (where, err, attempt) => {
@@ -112,3 +138,4 @@ export const makeCosmJSLeader = (endpoints, leaderOptions) => {
   const mapper = makeRoundRobinEndpointMapper(leader, endpoints);
   return leader;
 };
+/** @typedef {ReturnType<typeof makeCosmJSLeader>} Leader */

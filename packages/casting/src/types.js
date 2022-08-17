@@ -7,6 +7,8 @@ export {};
 
 /** @template T @typedef {import('@endo/far').ERef<T>} ERef */
 
+/** @typedef {import('./leader.js').Leader} Leader */
+
 /**
  * @typedef {object} LeaderOptions
  * @property {null | ((where: string, err: any, attempt?: number) => Promise<void>)} [retryCallback]
@@ -18,16 +20,6 @@ export {};
  * @typedef {object} CastingChange
  * @property {number} [blockHeight]
  * @property {Uint8Array[]} values
- */
-
-/**
- * @typedef {object} Leader
- * @property {(where: string, error: any, attempt?: number) => Promise<void>} retry
- * @property {(where: string) => Promise<void>} jitter
- * @property {(opts: ClientOptions) => Promise<WalletActionClient>} makeClient
- * @property {() => LeaderOptions} getOptions
- * @property {<T>(where: string, callback: (where: string, endpoint: string) => Promise<T>) => Promise<T[]>} mapEndpoints
- * @property {(spec: ERef<CastingSpec>) => Promise<Follower<CastingChange>>} makeWatcher
  */
 
 /** @typedef {ERef<Leader> | (() => ERef<Leader>)} LeaderOrMaker */
