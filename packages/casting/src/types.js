@@ -27,7 +27,7 @@ export {};
  * @property {(opts: ClientOptions) => Promise<WalletActionClient>} makeClient
  * @property {() => LeaderOptions} getOptions
  * @property {<T>(where: string, callback: (where: string, endpoint: string) => Promise<T>) => Promise<T[]>} mapEndpoints
- * @property {(spec: ERef<CastingSpec>) => Promise<Follower<CastingChange>>} watchCasting
+ * @property {(spec: ERef<CastingSpec>) => Promise<Follower<CastingChange>>} makeWatcher
  */
 
 /** @typedef {ERef<Leader> | (() => ERef<Leader>)} LeaderOrMaker */

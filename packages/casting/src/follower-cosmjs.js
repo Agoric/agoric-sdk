@@ -362,7 +362,7 @@ export const makeCosmjsFollower = (
       }
     };
 
-    const changeFollower = E(leader).watchCasting(castingSpecP);
+    const changeFollower = E(leader).makeWatcher(castingSpecP);
     const queryWhenKeyChanges = async () => {
       // Initial query to get the first value from the store.
       await queryAndUpdateOnce(harden({ values: [] }));
