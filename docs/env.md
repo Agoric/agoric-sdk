@@ -86,6 +86,18 @@ end-of-block processing for `ag-chain-cosmos` and the sim-chain.
 
 Lifetime: until we have a more consistent load testing regimen
 
+## EVICT_AFTER_SNAPSHOT
+
+Affects: cosmic-swingset
+
+Purpose: work around possible memory leaks in vat workers
+
+Description: if set to non-empty string, vats are evicted
+after each snapshot, causing them to be restarted with a
+fresh process memory allocation.
+
+Lifetime: for the life of performance issues such as https://github.com/Agoric/agoric-sdk/issues/5910
+
 ## FAKE_CURRENCIES
 
 Affects: cosmic-swingset

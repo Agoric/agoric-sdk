@@ -113,6 +113,7 @@ async function buildSwingset(
       slogCallbacks,
       slogFile,
       slogSender,
+      warehousePolicy: { evictAfterSnapshot: !!env.EVICT_AFTER_SNAPSHOT },
     },
   );
 
