@@ -122,6 +122,7 @@ export const makeICS20TransferPacketAck = async (success, error) => {
     const ack = { result: ICS20_TRANSFER_SUCCESS_RESULT };
     return JSON.stringify(ack);
   }
+  console.log('nack', error);
   const nack = { error: `${error}` };
   return JSON.stringify(nack);
 };

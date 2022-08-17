@@ -710,6 +710,7 @@ export default function buildKernel(
       // eslint-disable-next-line @jessie.js/no-nested-await
       await vatWarehouse.createDynamicVat(vatID);
     } catch (err) {
+      console.log('error during creation', err);
       const info = makeError(`${err}`);
       const results = {
         didDelivery: true, // ok, it failed, but we did spend the time
