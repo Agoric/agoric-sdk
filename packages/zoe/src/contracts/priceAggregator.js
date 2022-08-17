@@ -36,6 +36,7 @@ import '../../tools/types.js';
  * POLL_INTERVAL: bigint,
  * brandIn: Brand,
  * brandOut: Brand,
+ * unitAmountIn: Amount<'nat'>,
  * }>} zcf
  * @param {{
  * marshaller: Marshaller,
@@ -44,7 +45,9 @@ import '../../tools/types.js';
  * }} privateArgs
  */
 const start = async (zcf, privateArgs) => {
-  const { timer, POLL_INTERVAL, brandIn, brandOut } = zcf.getTerms();
+  const { timer, POLL_INTERVAL, brandIn, brandOut, unitAmountIn } =
+    zcf.getTerms();
+  assert(unitAmountIn, 'missing unitAmountIn');
   assert(privateArgs, 'Missing privateArgs in priceAggregator start');
   const { marshaller, storageNode } = privateArgs;
   assert(marshaller, 'missing marshaller');
@@ -198,18 +201,15 @@ const start = async (zcf, privateArgs) => {
     });
 
   // for each new quote from the priceAuthority, publish it to off-chain storage
-  observeNotifier(
-    priceAuthority.makeQuoteNotifier(AmountMath.make(brandIn, 1n), brandOut),
-    {
-      updateState: quote => publisher.publish(quote),
-      fail: reason => {
-        throw Error(`priceAuthority observer failed: ${reason}`);
-      },
-      finish: done => {
-        throw Error(`priceAuthority observer died: ${done}`);
-      },
+  observeNotifier(priceAuthority.makeQuoteNotifier(unitAmountIn, brandOut), {
+    updateState: quote => publisher.publish(quote),
+    fail: reason => {
+      throw Error(`priceAuthority observer failed: ${reason}`);
     },
-  );
+    finish: done => {
+      throw Error(`priceAuthority observer died: ${done}`);
+    },
+  });
 
   /**
    * @param {Ratio} r

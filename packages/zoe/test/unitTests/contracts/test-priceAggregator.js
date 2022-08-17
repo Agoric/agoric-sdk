@@ -29,6 +29,7 @@ import {
   multiplyRatios,
   parseRatio,
 } from '../../../src/contractSupport/ratio.js';
+import { unitAmount } from '../../../src/contractSupport/priceQuote.js';
 
 /**
  * @callback MakeFakePriceOracle
@@ -152,11 +153,18 @@ test.before('setup aggregator and oracles', async ot => {
    */
   const makeMedianAggregator = async POLL_INTERVAL => {
     const timer = buildManualTimer(() => {}, 0n, { eventLoopIteration });
+    const unitAmountIn = await unitAmount(atomBrand);
     const storageNode = E(storageRoot).makeChildNode('priceAggregator');
     const aggregator = await E(zoe).startInstance(
       aggregatorInstallation,
       undefined,
-      { timer, POLL_INTERVAL, brandIn: atomBrand, brandOut: usdBrand },
+      {
+        timer,
+        POLL_INTERVAL,
+        brandIn: atomBrand,
+        brandOut: usdBrand,
+        unitAmountIn,
+      },
       {
         marshaller,
         storageNode: E(storageNode).makeChildNode('ATOM-USD_price_feed'),
@@ -178,7 +186,7 @@ test('median aggregator', async t => {
     brandIn,
     brandOut,
     issuers: { Quote: rawQuoteIssuer },
-    unitAmountIn = AmountMath.make(brandIn, 1n),
+    unitAmountIn,
   } = await E(zoe).getTerms(aggregator.instance);
   /** @type {Issuer<'set'>} */
   const quoteIssuer = rawQuoteIssuer;
@@ -189,10 +197,7 @@ test('median aggregator', async t => {
   const pricePush = await makeFakePriceOracle(t);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
-  const notifier = E(pa).makeQuoteNotifier(
-    AmountMath.make(brandIn, 1n),
-    brandOut,
-  );
+  const notifier = E(pa).makeQuoteNotifier(unitAmountIn, brandOut);
   await E(aggregator.creatorFacet).initOracle(price1000.instance, {
     increment: 10n,
   });
@@ -344,7 +349,7 @@ test('median aggregator - push only', async t => {
     brandIn,
     brandOut,
     issuers: { Quote: rawQuoteIssuer },
-    unitAmountIn = AmountMath.make(brandIn, 1n),
+    unitAmountIn,
   } = await E(zoe).getTerms(aggregator.instance);
   /** @type {Issuer<'set'>} */
   const quoteIssuer = rawQuoteIssuer;
@@ -352,10 +357,7 @@ test('median aggregator - push only', async t => {
   const pricePush = await makeFakePriceOracle(t);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
-  const notifier = E(pa).makeQuoteNotifier(
-    AmountMath.make(brandIn, 1n),
-    brandOut,
-  );
+  const notifier = E(pa).makeQuoteNotifier(unitAmountIn, brandOut);
 
   /** @type {UpdateRecord<PriceQuote>} */
   let lastRec;
