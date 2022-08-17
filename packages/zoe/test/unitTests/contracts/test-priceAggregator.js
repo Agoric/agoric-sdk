@@ -14,7 +14,8 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { makeNotifierKit, subscribeEach } from '@agoric/notifier';
 import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
 // eslint-disable-next-line import/no-extraneous-dependencies -- XXX refactor
-import { makeChainStorageRoot } from '@agoric/vats/src/lib-chainStorage.js';
+import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
+
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
@@ -32,7 +33,6 @@ import {
 
 /**
  * @callback MakeFakePriceOracle
- * @param {import('ava').ExecutionContext<TestContext>} t
  * @param {bigint} [valueOut]
  * @returns {Promise<OracleKit & { instance: Instance }>}
  */
@@ -41,7 +41,7 @@ import {
  * @typedef {object} TestContext
  * @property {ZoeService} zoe
  * @property {MakeFakePriceOracle} makeFakePriceOracle
- * @property {(unitValueIn?: bigint) => Promise<PriceAggregatorKit & { instance: Instance }>} makeMedianAggregator
+ * @property {(unitValueIn?: bigint) => Promise<PriceAggregatorKit & { instance: Instance, mockStorageRoot: import('@agoric/vats/tools/storage-test-utils.js').MockChainStorageRoot }>} makeMedianAggregator
  * @property {Amount} feeAmount
  * @property {IssuerKit} link
  */
@@ -81,7 +81,7 @@ const makePublicationChecker = async (t, aggregatorPublicFacet) => {
 /** @type {import('ava').TestFn<TestContext>} */
 const test = unknownTest;
 
-test.before('setup aggregator and oracles', async ot => {
+test.before('setup aggregator and oracles', async t => {
   // Outside of tests, we should use the long-lived Zoe on the
   // testnet. In this test, we must create a new Zoe.
   const { admin, vatAdminState } = makeFakeVatAdmin();
@@ -105,16 +105,10 @@ test.before('setup aggregator and oracles', async ot => {
   const { brand: atomBrand } = makeIssuerKit('$ATOM');
   const { brand: usdBrand } = makeIssuerKit('$USD');
 
-  // ??? why do we need the Far here and not in VaultFactory tests?
-  const marshaller = Far('fake marshaller', { ...makeFakeMarshaller() });
-  const storageRoot = makeChainStorageRoot(
-    m => ({ storeSubkey: `paTest:${m.key}` }),
-    'swingset',
-    'mockChainStorageRoot',
-  );
-
-  /** @type {MakeFakePriceOracle} */
-  const makeFakePriceOracle = async (t, valueOut = 0n) => {
+  /**
+   *  @type {MakeFakePriceOracle}
+   * */
+  const makeFakePriceOracle = async (valueOut = 0n) => {
     /** @type {OracleHandler} */
     const oracleHandler = Far('OracleHandler', {
       async onQuery({ increment }, _fee) {
@@ -151,6 +145,10 @@ test.before('setup aggregator and oracles', async ot => {
    * @param {bigint} [unitValueIn] unit size of amountIn brand
    */
   const makeMedianAggregator = async (unitValueIn = 1n) => {
+    // ??? why do we need the Far here and not in VaultFactory tests?
+    const marshaller = Far('fake marshaller', { ...makeFakeMarshaller() });
+    const storageRoot = makeMockChainStorageRoot();
+
     const timer = buildManualTimer(() => {}, 0n, { eventLoopIteration });
     const POLL_INTERVAL = 1n;
     const storageNode = E(storageRoot).makeChildNode('priceAggregator');
@@ -169,11 +167,12 @@ test.before('setup aggregator and oracles', async ot => {
         storageNode: E(storageNode).makeChildNode('ATOM-USD_price_feed'),
       },
     );
+    aggregator.mockStorageRoot = storageRoot;
     return aggregator;
   };
-  ot.context.zoe = zoe;
-  ot.context.makeFakePriceOracle = makeFakePriceOracle;
-  ot.context.makeMedianAggregator = makeMedianAggregator;
+  t.context.zoe = zoe;
+  t.context.makeFakePriceOracle = makeFakePriceOracle;
+  t.context.makeMedianAggregator = makeMedianAggregator;
 });
 
 test('median aggregator', async t => {
@@ -190,10 +189,10 @@ test('median aggregator', async t => {
   /** @type {Issuer<'set'>} */
   const quoteIssuer = rawQuoteIssuer;
 
-  const price1000 = await makeFakePriceOracle(t, 1000n);
-  const price1300 = await makeFakePriceOracle(t, 1300n);
-  const price800 = await makeFakePriceOracle(t, 800n);
-  const pricePush = await makeFakePriceOracle(t);
+  const price1000 = await makeFakePriceOracle(1000n);
+  const price1300 = await makeFakePriceOracle(1300n);
+  const price800 = await makeFakePriceOracle(800n);
+  const pricePush = await makeFakePriceOracle();
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const notifier = E(pa).makeQuoteNotifier(unitAmountIn, brandOut);
@@ -353,7 +352,7 @@ test('median aggregator - push only', async t => {
   /** @type {Issuer<'set'>} */
   const quoteIssuer = rawQuoteIssuer;
 
-  const pricePush = await makeFakePriceOracle(t);
+  const pricePush = await makeFakePriceOracle();
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const notifier = E(pa).makeQuoteNotifier(unitAmountIn, brandOut);
@@ -542,9 +541,9 @@ test('quoteAtTime', async t => {
   /** @type {Issuer<'set'>} */
   const quoteIssuer = rawQuoteIssuer;
 
-  const price1000 = await makeFakePriceOracle(t, 1000n);
-  const price1300 = await makeFakePriceOracle(t, 1300n);
-  const price800 = await makeFakePriceOracle(t, 800n);
+  const price1000 = await makeFakePriceOracle(1000n);
+  const price1300 = await makeFakePriceOracle(1300n);
+  const price800 = await makeFakePriceOracle(800n);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const quoteAtTime = E(pa).quoteAtTime(
@@ -666,9 +665,9 @@ test('quoteWhen', async t => {
   /** @type {Issuer<'set'>} */
   const quoteIssuer = rawQuoteIssuer;
 
-  const price1000 = await makeFakePriceOracle(t, 1000n);
-  const price1300 = await makeFakePriceOracle(t, 1300n);
-  const price800 = await makeFakePriceOracle(t, 800n);
+  const price1000 = await makeFakePriceOracle(1000n);
+  const price1300 = await makeFakePriceOracle(1300n);
+  const price800 = await makeFakePriceOracle(800n);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const quoteWhenGTE = E(pa).quoteWhenGTE(
@@ -787,9 +786,9 @@ test('mutableQuoteWhen no replacement', async t => {
   /** @type {Issuer<'set'>} */
   const quoteIssuer = rawQuoteIssuer;
 
-  const price1000 = await makeFakePriceOracle(t, 1000n);
-  const price1300 = await makeFakePriceOracle(t, 1300n);
-  const price800 = await makeFakePriceOracle(t, 800n);
+  const price1000 = await makeFakePriceOracle(1000n);
+  const price1300 = await makeFakePriceOracle(1300n);
+  const price800 = await makeFakePriceOracle(800n);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const mutableQuoteWhenGTE = E(pa).mutableQuoteWhenGTE(
@@ -917,7 +916,7 @@ test('mutableQuoteWhen with update', async t => {
   /** @type {Issuer<'set'>} */
   const quoteIssuer = rawQuoteIssuer;
 
-  const price1200 = await makeFakePriceOracle(t, 1200n);
+  const price1200 = await makeFakePriceOracle(1200n);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const mutableQuoteWhenGTE = E(pa).mutableQuoteWhenGTE(
@@ -988,7 +987,7 @@ test('cancel mutableQuoteWhen', async t => {
     brandOut,
   } = await E(zoe).getTerms(aggregator.instance);
 
-  const price1200 = await makeFakePriceOracle(t, 1200n);
+  const price1200 = await makeFakePriceOracle(1200n);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const mutableQuoteWhenGTE = E(pa).mutableQuoteWhenGTE(
@@ -1017,6 +1016,6 @@ test('storage keys', async t => {
 
   t.is(
     await subscriberSubkey(E(publicFacet).getSubscriber()),
-    'paTest:mockChainStorageRoot.priceAggregator.ATOM-USD_price_feed',
+    'fake:mockChainStorageRoot.priceAggregator.ATOM-USD_price_feed',
   );
 });
