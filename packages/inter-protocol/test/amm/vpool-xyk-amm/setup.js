@@ -169,7 +169,7 @@ export const setupAmmServices = async (
     E(zoe).getInvitationIssuer(),
   ).getAmountOf(poserInvitationP);
 
-  /** @type {import('../../supports.js').MockChainStorageRoot} */
+  /** @type {import('@agoric/vats/tools/storage-test-utils.js').MockChainStorageRoot} */
   // @ts-expect-error cast
   const mockChainStorage = await space.consume.chainStorage;
 

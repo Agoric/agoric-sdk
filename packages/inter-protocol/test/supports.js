@@ -10,15 +10,17 @@ import {
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
-import { makeFakeStorageKit } from '@agoric/vats/tools/storage-test-utils.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
+import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { makeLoopback, makeMarshal } from '@endo/captp';
-import { E, Far } from '@endo/far';
+import { makeLoopback } from '@endo/captp';
+import { E } from '@endo/far';
 import { makeTracer } from '../src/makeTracer.js';
+
+export { makeMockChainStorageRoot };
 
 /**
  * @param {*} t
@@ -63,35 +65,6 @@ export const setUpZoeForTest = (setJig = () => {}) => {
   };
 };
 harden(setUpZoeForTest);
-
-export const makeMockChainStorageRoot = () => {
-  const { rootNode, data } = makeFakeStorageKit('mockChainStorageRoot');
-
-  const defaultMarshaller = makeMarshal(undefined, (_slotId, iface) => ({
-    iface,
-  }));
-
-  return Far('mockChainStorage', {
-    ...rootNode,
-    /**
-     *  Defaults to deserializing pass-by-presence objects into { iface } representations.
-     * Note that this is **not** a null transformation; capdata `@qclass` and `index` properties
-     * are dropped and `iface` is _added_ for repeat references.
-     *
-     * @param {string} path
-     * @param {Marshaller} marshaller
-     * @returns {unknown}
-     */
-    getBody: (path, marshaller = defaultMarshaller) => {
-      const dataStr = data.get(path);
-      assert(dataStr, `no data at ${path}`);
-      assert.typeof(dataStr, 'string');
-      const datum = JSON.parse(dataStr);
-      return marshaller.unserialize(datum);
-    },
-  });
-};
-/** @typedef {ReturnType<typeof makeMockChainStorageRoot>} MockChainStorageRoot */
 
 /**
  *

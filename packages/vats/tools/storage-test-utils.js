@@ -1,4 +1,5 @@
 // @ts-check
+import { Far, makeMarshal } from '@endo/marshal';
 import { makeChainStorageRoot } from '../src/lib-chainStorage.js';
 
 /**
@@ -43,3 +44,36 @@ export const makeFakeStorageKit = rootPath => {
   return { rootNode, data, messages };
 };
 harden(makeFakeStorageKit);
+
+export const makeMockChainStorageRoot = () => {
+  const { rootNode, data } = makeFakeStorageKit('mockChainStorageRoot');
+
+  const defaultMarshaller = makeMarshal(undefined, (_slotId, iface) => ({
+    iface,
+  }));
+
+  return Far('mockChainStorage', {
+    ...rootNode,
+    /**
+     *  Defaults to deserializing pass-by-presence objects into { iface } representations.
+     * Note that this is **not** a null transformation; capdata `@qclass` and `index` properties
+     * are dropped and `iface` is _added_ for repeat references.
+     *
+     * @param {string} path
+     * @param {Marshaller} marshaller
+     * @returns {unknown}
+     */
+    getBody: (path, marshaller = defaultMarshaller) => {
+      assert(data.size, 'no data in storage');
+      const dataStr = data.get(path);
+      if (!dataStr) {
+        console.debug('mockChainStorage data:', data);
+        assert.fail(`no data at ${path}`);
+      }
+      assert.typeof(dataStr, 'string');
+      const datum = JSON.parse(dataStr);
+      return marshaller.unserialize(datum);
+    },
+  });
+};
+/** @typedef {ReturnType<typeof makeMockChainStorageRoot>} MockChainStorageRoot */
