@@ -29,17 +29,17 @@
  * @param {QueueStorage} storage a scoped queue storage
  */
 export const makeQueue = storage => {
-  const getHead = () => Number.parseInt(storage.get('head') || '0', 10);
-  const getTail = () => Number.parseInt(storage.get('tail') || '0', 10);
+  const getHead = () => BigInt(storage.get('head') || 0);
+  const getTail = () => BigInt(storage.get('tail') || 0);
 
   const queue = {
     size: () => {
-      return getTail() - getHead();
+      return Number(getTail() - getHead());
     },
     /** @param {T} obj */
     push: obj => {
       const tail = getTail();
-      storage.set('tail', String(tail + 1));
+      storage.set('tail', String(tail + 1n));
       storage.set(`${tail}`, JSON.stringify(obj));
       storage.commit();
     },
@@ -59,7 +59,7 @@ export const makeQueue = storage => {
                   /** @type {string} */ (storage.get(headKey)),
                 );
                 storage.delete(headKey);
-                head += 1;
+                head += 1n;
                 return { value, done };
               }
               // Reached the end, so clean up our indices.

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	stdlog "log"
 	"math"
-	"strconv"
+	"math/big"
 
 	"github.com/tendermint/tendermint/libs/log"
 
@@ -34,7 +34,8 @@ const (
 	StoragePathBundles      = "bundles"
 )
 
-const MaxUint53 = 9007199254740991 // Number.MAX_SAFE_INTEGER = 2**53 - 1
+// 2 ** 256 - 1
+var MaxSDKInt = sdk.NewIntFromBigInt(new(big.Int).Sub(new(big.Int).Exp(big.NewInt(2), big.NewInt(256), nil), big.NewInt(1)))
 
 const stateKey string = "state"
 
@@ -123,34 +124,40 @@ func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
 	}
 
 	// Get the current queue tail, defaulting to zero if its vstorage doesn't exist.
+	// The `tail` is the value of the next index to be inserted
 	tail, err := k.actionQueueIndex(ctx, "tail")
 	if err != nil {
 		return err
 	}
 
-	// JS uses IEEE 754 floats so avoid overflowing integers
-	if tail == MaxUint53 {
+	if tail.Equal(MaxSDKInt) {
 		return errors.New(StoragePathActionQueue + " overflow")
 	}
+	nextTail := tail.Add(sdk.NewInt(1))
 
 	// Set the vstorage corresponding to the queue entry for the current tail.
-	path := StoragePathActionQueue + "." + strconv.FormatUint(tail, 10)
+	path := StoragePathActionQueue + "." + tail.String()
 	k.vstorageKeeper.SetStorage(ctx, vstoragetypes.NewStorageEntry(path, string(bz)))
 
 	// Update the tail to point to the next available entry.
 	path = StoragePathActionQueue + ".tail"
-	k.vstorageKeeper.SetStorage(ctx, vstoragetypes.NewStorageEntry(path, strconv.FormatUint(tail+1, 10)))
+	k.vstorageKeeper.SetStorage(ctx, vstoragetypes.NewStorageEntry(path, nextTail.String()))
 	return nil
 }
 
-func (k Keeper) actionQueueIndex(ctx sdk.Context, name string) (uint64, error) {
-	index := uint64(0)
-	var err error
-	indexEntry := k.vstorageKeeper.GetEntry(ctx, StoragePathActionQueue+"."+name)
-	if indexEntry.HasData() {
-		index, err = strconv.ParseUint(indexEntry.StringValue(), 10, 64)
+func (k Keeper) actionQueueIndex(ctx sdk.Context, position string) (sdk.Int, error) {
+	// Position should be either "head" or "tail"
+	path := StoragePathActionQueue + "." + position
+	indexEntry := k.vstorageKeeper.GetEntry(ctx, path)
+	if !indexEntry.HasData() {
+		return sdk.NewInt(0), nil
 	}
-	return index, err
+
+	index, ok := sdk.NewIntFromString(indexEntry.StringValue())
+	if !ok {
+		return index, fmt.Errorf("couldn't parse %s as Int: %s", path, indexEntry.StringValue())
+	}
+	return index, nil
 }
 
 func (k Keeper) ActionQueueLength(ctx sdk.Context) (int32, error) {
@@ -162,11 +169,17 @@ func (k Keeper) ActionQueueLength(ctx sdk.Context) (int32, error) {
 	if err != nil {
 		return 0, err
 	}
-	size := tail - head
-	if size > math.MaxInt32 {
+	// The tail index is exclusive
+	size := tail.Sub(head)
+	if !size.IsInt64() {
+		return 0, fmt.Errorf("%s size too big: %s", StoragePathActionQueue, size)
+	}
+
+	int64Size := size.Int64()
+	if int64Size > math.MaxInt32 {
 		return math.MaxInt32, nil
 	}
-	return int32(size), nil
+	return int32(int64Size), nil
 }
 
 // BlockingSend sends a message to the controller and blocks the Golang process
