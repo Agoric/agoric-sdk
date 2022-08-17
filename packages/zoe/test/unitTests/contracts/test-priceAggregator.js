@@ -29,7 +29,6 @@ import {
   multiplyRatios,
   parseRatio,
 } from '../../../src/contractSupport/ratio.js';
-import { unitAmount } from '../../../src/contractSupport/priceQuote.js';
 
 /**
  * @callback MakeFakePriceOracle
@@ -42,7 +41,7 @@ import { unitAmount } from '../../../src/contractSupport/priceQuote.js';
  * @typedef {object} TestContext
  * @property {ZoeService} zoe
  * @property {MakeFakePriceOracle} makeFakePriceOracle
- * @property {(POLL_INTERVAL: bigint) => Promise<PriceAggregatorKit & { instance: Instance }>} makeMedianAggregator
+ * @property {(unitValueIn?: bigint) => Promise<PriceAggregatorKit & { instance: Instance }>} makeMedianAggregator
  * @property {Amount} feeAmount
  * @property {IssuerKit} link
  */
@@ -149,11 +148,11 @@ test.before('setup aggregator and oracles', async ot => {
   };
 
   /**
-   * @param {RelativeTime} POLL_INTERVAL
+   * @param {bigint} [unitValueIn] unit size of amountIn brand
    */
-  const makeMedianAggregator = async POLL_INTERVAL => {
+  const makeMedianAggregator = async (unitValueIn = 1n) => {
     const timer = buildManualTimer(() => {}, 0n, { eventLoopIteration });
-    const unitAmountIn = await unitAmount(atomBrand);
+    const POLL_INTERVAL = 1n;
     const storageNode = E(storageRoot).makeChildNode('priceAggregator');
     const aggregator = await E(zoe).startInstance(
       aggregatorInstallation,
@@ -163,7 +162,7 @@ test.before('setup aggregator and oracles', async ot => {
         POLL_INTERVAL,
         brandIn: atomBrand,
         brandOut: usdBrand,
-        unitAmountIn,
+        unitAmountIn: AmountMath.make(atomBrand, unitValueIn),
       },
       {
         marshaller,
@@ -180,7 +179,7 @@ test.before('setup aggregator and oracles', async ot => {
 test('median aggregator', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const aggregator = await t.context.makeMedianAggregator(1n);
+  const aggregator = await t.context.makeMedianAggregator();
   const {
     timer: oracleTimer,
     brandIn,
@@ -343,7 +342,7 @@ test('median aggregator', async t => {
 test('median aggregator - push only', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const aggregator = await t.context.makeMedianAggregator(1n);
+  const aggregator = await t.context.makeMedianAggregator();
   const {
     timer: oracleTimer,
     brandIn,
@@ -431,7 +430,7 @@ test('median aggregator - push only', async t => {
 test('oracle invitation', async t => {
   const { zoe } = t.context;
 
-  const aggregator = await t.context.makeMedianAggregator(1n);
+  const aggregator = await t.context.makeMedianAggregator();
   const {
     timer: oracleTimer,
     brandIn,
@@ -533,7 +532,7 @@ test('quoteAtTime', async t => {
 
   const userTimer = buildManualTimer(() => {}, 0n, { eventLoopIteration });
 
-  const aggregator = await t.context.makeMedianAggregator(1n);
+  const aggregator = await t.context.makeMedianAggregator();
   const {
     timer: oracleTimer,
     brandIn,
@@ -656,7 +655,7 @@ test('quoteAtTime', async t => {
 test('quoteWhen', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const aggregator = await t.context.makeMedianAggregator(1n);
+  const aggregator = await t.context.makeMedianAggregator();
 
   const {
     timer: oracleTimer,
@@ -777,7 +776,7 @@ test('quoteWhen', async t => {
 test('mutableQuoteWhen no replacement', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const aggregator = await t.context.makeMedianAggregator(1n);
+  const aggregator = await t.context.makeMedianAggregator();
 
   const {
     timer: oracleTimer,
@@ -907,7 +906,7 @@ test('mutableQuoteWhen no replacement', async t => {
 test('mutableQuoteWhen with update', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const aggregator = await t.context.makeMedianAggregator(1n);
+  const aggregator = await t.context.makeMedianAggregator();
 
   const {
     timer: oracleTimer,
@@ -981,7 +980,7 @@ test('mutableQuoteWhen with update', async t => {
 test('cancel mutableQuoteWhen', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const aggregator = await t.context.makeMedianAggregator(1n);
+  const aggregator = await t.context.makeMedianAggregator();
 
   const {
     timer: oracleTimer,
@@ -1014,7 +1013,7 @@ test('cancel mutableQuoteWhen', async t => {
 });
 
 test('storage keys', async t => {
-  const { publicFacet } = await t.context.makeMedianAggregator(1n);
+  const { publicFacet } = await t.context.makeMedianAggregator();
 
   t.is(
     await subscriberSubkey(E(publicFacet).getSubscriber()),
