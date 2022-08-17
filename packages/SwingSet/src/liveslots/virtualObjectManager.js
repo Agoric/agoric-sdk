@@ -506,7 +506,6 @@ export function makeVirtualObjectManager(
           return Reflect.apply(func, null, [context, ...args]);
         },
       };
-      unweakable.add(method);
       prototype[prop] = method;
     }
     return Far(tag, prototype);
