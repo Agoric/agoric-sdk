@@ -20,6 +20,7 @@ import (
 // Top-level paths for chain storage should remain synchronized with
 // packages/vats/src/chain-storage-paths.js
 const (
+	StoragePathActionQueue  = "actionQueue"
 	StoragePathActivityhash = "activityhash"
 	StoragePathBeansOwing   = "beansOwing"
 	StoragePathEgress       = "egress"

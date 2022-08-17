@@ -4,6 +4,7 @@
  * To avoid collisions, they should remain synchronized with
  * golang/cosmos/x/swingset/keeper/keeper.go
  */
+export const ACTION_QUEUE = 'actionQueue';
 export const ACTIVITYHASH = 'activityhash';
 export const BEANSOWING = 'beansOwing';
 export const EGRESS = 'egress';
