@@ -2,7 +2,7 @@
 
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
-import { makeStorageNode } from '@agoric/vats/src/lib-chainStorage.js';
+import { makeStorageNodeChild } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { Stable } from '@agoric/vats/src/tokens.js';
@@ -104,7 +104,7 @@ export const startPSM = async (
     }),
   );
 
-  const storageNode = await makeStorageNode(chainStorage, 'psm');
+  const storageNode = await makeStorageNodeChild(chainStorage, 'psm');
   const marshaller = await E(board).getPublishingMarshaller();
 
   const governorTerms = await deeplyFulfilled(

@@ -32,7 +32,7 @@ export const makeSmartWallet = async (
   assert(myAddressNameAdmin, 'missing myAddressNameAdmin');
   assert(storageNode, 'missing storageNode');
 
-  const cacheStorageNode = E(storageNode).getChildNode('cache');
+  const cacheStorageNode = E(storageNode).makeChildNode('cache');
 
   const wallet = await makeWallet(bank, {
     agoricNames,
@@ -69,7 +69,7 @@ export const makeSmartWallet = async (
 
   const marshaller = wallet.getMarshaller();
 
-  const myWalletStorageNode = E(storageNode).getChildNode(address);
+  const myWalletStorageNode = E(storageNode).makeChildNode(address);
   const storedSubscriber = makeStoredSubscriber(
     subscriber,
     myWalletStorageNode,

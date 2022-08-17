@@ -320,7 +320,7 @@ const start = async (zcf, privateArgs, baggage) => {
     return zcf.getIssuerForBrand(brand);
   };
   const poolStorageNode = await (privateArgs.storageNode &&
-    E(privateArgs.storageNode).getChildNode(
+    E(privateArgs.storageNode).makeChildNode(
       // NB: the set of pools grows monotonically
       `pool${secondaryBrandToPool.getSize()}`,
     ));

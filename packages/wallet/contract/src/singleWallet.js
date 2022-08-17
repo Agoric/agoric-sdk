@@ -44,7 +44,7 @@ export const start = async (zcf, privateArgs) => {
   const { storageNode, marshaller } = privateArgs;
   assert(storageNode, 'missing storageNode');
 
-  const cacheStorageNode = E(storageNode).getChildNode('cache');
+  const cacheStorageNode = E(storageNode).makeChildNode('cache');
 
   const wallet = await makeWallet(bank, {
     agoricNames,
@@ -56,7 +56,7 @@ export const start = async (zcf, privateArgs) => {
   });
 
   const myWalletStorageNode =
-    storageNode && E(storageNode).getChildNode(address);
+    storageNode && E(storageNode).makeChildNode(address);
   const admin = E(wallet).getAdminFacet();
 
   /** @type {Record<string, ERef<Notifier<unknown>>>} */

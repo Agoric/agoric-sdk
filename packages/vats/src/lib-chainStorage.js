@@ -51,6 +51,7 @@ export function makeChainStorageRoot(
 
   function makeChainStorageNode(path) {
     const node = {
+      /** @type {() => VStorageKey} */
       getStoreKey() {
         return handleStorageMessage({
           key: path,
@@ -58,7 +59,8 @@ export function makeChainStorageRoot(
           value: '',
         });
       },
-      getChildNode(name) {
+      /** @type {(name: string) => StorageNode} */
+      makeChildNode(name) {
         assert.typeof(name, 'string');
         assert(
           pathSegmentPattern.test(name),
@@ -66,16 +68,14 @@ export function makeChainStorageRoot(
         );
         return makeChainStorageNode(`${path}.${name}`);
       },
+      /** @type {(value: string) => void} */
       setValue(value) {
         assert.typeof(value, 'string');
         handleStorageMessage({ key: path, method: 'set', value });
       },
-      clearValue() {
-        handleStorageMessage({ key: path, method: 'set', value: '' });
-      },
       // Possible extensions:
       // * getValue()
-      // * getChildNames() and/or getChildNodes()
+      // * getChildNames() and/or makeChildNodes()
       // * getName()
       // * recursive delete
       // * batch operations
@@ -87,7 +87,6 @@ export function makeChainStorageRoot(
   const rootNode = makeChainStorageNode(rootPath);
   return rootNode;
 }
-/** @typedef {ReturnType<typeof makeChainStorageRoot>} ChainStorageNode */
 
 /**
  * @returns {StorageNode} an object that confirms to StorageNode API but does not store anywhere.
@@ -102,16 +101,13 @@ const makeNullStorageNode = () => {
  * falling back to an inert object with the correct interface (but incomplete
  * behavior) when that is unavailable.
  *
- * @param {ERef<ChainStorageNode?>} chainStorage
- * @param {string} [childName]
+ * @param {ERef<StorageNode?>} storageNodeRef
+ * @param {string} childName
  * @returns {Promise<StorageNode>}
  */
-export async function makeStorageNode(chainStorage, childName) {
+export async function makeStorageNodeChild(storageNodeRef, childName) {
   // eslint-disable-next-line @jessie.js/no-nested-await
-  const storageNode = (await chainStorage) || makeNullStorageNode();
-  if (childName) {
-    return E(storageNode).getChildNode(childName);
-  }
-  return storageNode;
+  const storageNode = (await storageNodeRef) || makeNullStorageNode();
+  return E(storageNode).makeChildNode(childName);
 }
-harden(makeStorageNode);
+harden(makeStorageNodeChild);
