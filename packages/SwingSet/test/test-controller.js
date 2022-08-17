@@ -214,28 +214,42 @@ test('XS bootstrap', async t => {
   );
 });
 
-test('static vats are unmetered on XS', async t => {
-  const hostStorage = provideHostStorage();
-  const config = await loadBasedir(
-    new URL('basedir-controller-2', import.meta.url).pathname,
-  );
-  config.defaultManagerType = 'xs-worker';
-  await initializeSwingset(config, [], hostStorage);
-  const limited = [];
-  const c = await makeSwingsetController(
-    hostStorage,
-    {},
-    {
-      spawn(command, args, options) {
-        limited.push(args.includes('-l'));
-        return spawn(command, args, options);
+const testXSUnmetered = (evictAfterSnapshot, expected) => {
+  test(`static vats are unmetered on XS (evict: ${evictAfterSnapshot})`, async t => {
+    const hostStorage = provideHostStorage();
+    const config = await loadBasedir(
+      new URL('basedir-controller-2', import.meta.url).pathname,
+    );
+    config.defaultManagerType = 'xs-worker';
+    await initializeSwingset(config, [], hostStorage);
+    const limited = [];
+    const c = await makeSwingsetController(
+      hostStorage,
+      {},
+      {
+        spawn(command, args, options) {
+          limited.push(args.includes('-l'));
+          return spawn(command, args, options);
+        },
+        warehousePolicy: { evictAfterSnapshot },
       },
-    },
-  );
-  t.teardown(c.shutdown);
-  await c.run();
-  t.deepEqual(c.dump().log, ['buildRootObject called', 'bootstrap called']);
-  t.deepEqual(limited, [false, false, false, false]);
+    );
+    t.teardown(c.shutdown);
+    await c.run();
+    t.deepEqual(c.dump().log, expected.log);
+    t.deepEqual(limited, expected.limited);
+  });
+};
+
+testXSUnmetered(false, {
+  log: ['buildRootObject called', 'bootstrap called'],
+  limited: [false, false, false, false],
+});
+
+// operations are re-played when periodic eviction is on
+testXSUnmetered(true, {
+  log: ['buildRootObject called', 'buildRootObject called', 'bootstrap called'],
+  limited: [false, false, false, false, false, false, false],
 });
 
 test('validate config.defaultManagerType', async t => {

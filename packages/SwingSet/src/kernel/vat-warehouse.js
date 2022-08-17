@@ -49,6 +49,7 @@ export const makeLRU = max => {
  * @param {ReturnType<typeof import('./vat-loader/vat-loader.js').makeVatLoader>} vatLoader
  * @param {{
  *   maxVatsOnline?: number,
+ *   evictAfterSnapshot?: boolean,
  * }=} policyOptions
  *
  * @typedef {(syscall: VatSyscallObject) => ['error', string] | ['ok', null] | ['ok', Capdata]} VatSyscallHandler
@@ -57,7 +58,8 @@ export const makeLRU = max => {
  * @typedef { { moduleFormat: string }} Bundle
  */
 export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
-  const { maxVatsOnline = 50 } = policyOptions || {};
+  const { maxVatsOnline = 50, evictAfterSnapshot = false } =
+    policyOptions || {};
   // Often a large contract evaluation is among the first few deliveries,
   // so let's do a snapshot after just a few deliveries.
   const snapshotInitial = kernelKeeper.getSnapshotInitial();
@@ -315,8 +317,13 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
       return false;
     }
     await vatKeeper.saveSnapshot(manager);
-    console.warn('EXPERIMENTAL: periodic eviction', lastVatID);
-    await evict(lastVatID);
+    await (async () => {
+      if (evictAfterSnapshot) {
+        console.warn('periodic eviction', lastVatID);
+        return evict(lastVatID);
+      }
+      return undefined;
+    })();
     lastVatID = undefined;
     return true;
   }
