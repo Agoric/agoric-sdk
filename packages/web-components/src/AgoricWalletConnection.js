@@ -39,12 +39,15 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
           padding: 8px;
           color: var(--agoric-wallet-connection-text-color, #737373);
         }
+        .connection {
+          background-color: #fff;
+        }
         .connection-message {
           text-align: center;
         }
         .connection-message > a {
           text-decoration: none;
-          color: #0ea5e9;
+          color: #1976d2;
         }
       `;
     }
