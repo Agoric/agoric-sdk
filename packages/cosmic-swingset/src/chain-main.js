@@ -137,17 +137,17 @@ const makeChainQueue = (call, prefix = '') => {
   const storage = makeChainStorage(call, prefix);
   const queue = {
     push: obj => {
-      const tail = storage.get('tail') || 0;
-      storage.set('tail', tail + 1);
+      const tail = BigInt(storage.get('tail') || 0);
+      storage.set('tail', tail + 1n);
       storage.set(`${tail}`, obj);
       storage.commit();
     },
-    /** @type {Iterable<unknown>} */
+    /** @returns {Iterable<unknown>} */
     consumeAll: () => ({
       [Symbol.iterator]: () => {
         let done = false;
-        let head = storage.get('head') || 0;
-        const tail = storage.get('tail') || 0;
+        let head = BigInt(storage.get('head') || 0);
+        const tail = BigInt(storage.get('tail') || 0);
         return {
           next: () => {
             if (done) return { done };
@@ -156,7 +156,7 @@ const makeChainQueue = (call, prefix = '') => {
               const headKey = `${head}`;
               const value = storage.get(headKey);
               storage.delete(headKey);
-              head += 1;
+              head += 1n;
               return { value, done };
             }
             // Reached the end, so clean up our indices.

@@ -1,3 +1,4 @@
+// @ts-check
 /* global process */
 import anylogger from 'anylogger';
 
@@ -122,6 +123,19 @@ async function buildSwingset(
   return { controller, mb, bridgeInbound, timer };
 }
 
+/** @typedef {import('@agoric/swingset-vat').RunPolicy & { shouldRun(): boolean; }} ChainRunPolicy */
+
+/**
+ * @typedef {object} BeansPerUnit
+ * @property {bigint} blockComputeLimit
+ * @property {bigint} vatCreation
+ * @property {bigint} xsnapComputron
+ */
+
+/**
+ * @param {BeansPerUnit} beansPerUnit
+ * @returns {ChainRunPolicy}
+ */
 function computronCounter({
   [BeansPerBlockComputeLimit]: blockComputeLimit,
   [BeansPerVatCreation]: vatCreation,
@@ -131,11 +145,12 @@ function computronCounter({
   assert.typeof(vatCreation, 'bigint');
   assert.typeof(xsnapComputron, 'bigint');
   let totalBeans = 0n;
-  /** @type { RunPolicy } */
+  const shouldRun = () => totalBeans < blockComputeLimit;
+
   const policy = harden({
     vatCreated() {
       totalBeans += vatCreation;
-      return totalBeans < blockComputeLimit;
+      return shouldRun();
     },
     crankComplete(details = {}) {
       assert.typeof(details, 'object');
@@ -146,16 +161,17 @@ function computronCounter({
         // Instead, SwingSet should describe the computron model it uses.
         totalBeans += details.computrons * xsnapComputron;
       }
-      return totalBeans < blockComputeLimit;
+      return shouldRun();
     },
     crankFailed() {
       const failedComputrons = 1000000n; // who knows, 1M is as good as anything
       totalBeans += failedComputrons * xsnapComputron;
-      return totalBeans < blockComputeLimit;
+      return shouldRun();
     },
     emptyCrank() {
-      return true;
+      return shouldRun();
     },
+    shouldRun,
   });
   return policy;
 }

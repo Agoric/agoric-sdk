@@ -2,7 +2,9 @@ package keeper
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/tendermint/tendermint/libs/log"
@@ -89,9 +91,14 @@ func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
 	tailStr := k.vstorageKeeper.GetData(ctx, "actionQueue.tail")
 	if len(tailStr) > 0 {
 		// Found, so parse it.
+		// JS uses BigInt so this may overflow
 		tail, err = strconv.ParseUint(tailStr, 10, 64)
 		if err != nil {
 			return err
+		}
+
+		if (tail == math.MaxUint64) {
+			return errors.New("actionQueue overflow")
 		}
 	}
 
