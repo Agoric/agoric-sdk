@@ -135,12 +135,15 @@ const makeChainStorage = (call, prefix = '', options = {}) => {
  */
 const makeChainQueue = (call, prefix = '') => {
   const storage = makeChainStorage(call, prefix);
+  /** @type {IterableIterator<unknown> | null} */
+  let currentIterator = null;
   const queue = {
     push: obj => {
       const tail = BigInt(storage.get('tail') || 0);
       storage.set('tail', tail + 1n);
       storage.set(`${tail}`, obj);
       storage.commit();
+      currentIterator = null;
     },
     getDepth: () => {
       const head = BigInt(storage.get('head') || 0);
@@ -155,6 +158,7 @@ const makeChainQueue = (call, prefix = '') => {
       const iterator = {
         [Symbol.iterator]: () => iterator,
         next: () => {
+          assert.equal(iterator, currentIterator);
           if (done) return { done };
           if (head < tail) {
             // Still within the queue.
@@ -172,6 +176,7 @@ const makeChainQueue = (call, prefix = '') => {
           return { done };
         },
         return: () => {
+          assert.equal(iterator, currentIterator);
           if (done) return { done };
           // We're done consuming, so save our state.
           storage.set('head', head);
@@ -180,6 +185,7 @@ const makeChainQueue = (call, prefix = '') => {
           return { done };
         },
         throw: err => {
+          assert.equal(iterator, currentIterator);
           if (done) return { done };
           // Don't change our state.
           storage.abort();
@@ -187,6 +193,7 @@ const makeChainQueue = (call, prefix = '') => {
           throw err;
         },
       };
+      currentIterator = iterator;
       return iterator;
     },
   };
