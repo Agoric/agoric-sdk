@@ -142,6 +142,11 @@ const makeChainQueue = (call, prefix = '') => {
       storage.set(`${tail}`, obj);
       storage.commit();
     },
+    getDepth: () => {
+      const head = BigInt(storage.get('head') || 0);
+      const tail = BigInt(storage.get('tail') || 0);
+      return Number(tail - head);
+    },
     /** @returns {Iterable<unknown>} */
     consumeAll: () => ({
       [Symbol.iterator]: () => {
