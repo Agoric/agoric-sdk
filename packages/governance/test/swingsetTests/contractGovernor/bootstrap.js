@@ -428,8 +428,10 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
         committeeName: 'ThirtyCommittee',
         committeeSize: 5,
       };
-      const { electorateCreatorFacet: secondElectorateCreatorFacet } =
-        await startElectorate(zoe, installations, secondElectorateTerms);
+      const {
+        electorateCreatorFacet: secondElectorateCreatorFacet,
+        electorateInstance: secondElectorateInstance,
+      } = await startElectorate(zoe, installations, secondElectorateTerms);
 
       const newPoserInvitationP = E(
         secondElectorateCreatorFacet,
@@ -459,14 +461,14 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
         e => log(`vote (unexpected) rejected outcome: ${e}`),
       );
 
+      await electorateOutcome;
       await validateElectorateChange(
         zoe,
         log,
         voters1,
         details1,
         governorInstance,
-        // The electorate didn't change
-        firstElectorateInstance,
+        secondElectorateInstance,
         E(zoe).getPublicFacet(governorInstance),
       );
 
