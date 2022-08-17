@@ -43,11 +43,17 @@ async function run() {
   console.log(`--pid`, pid);
 
   // populate the memory image a bit
-  await vat0.evaluate(`
-globalThis.hello = "Hello, World!";
-`);
+  let str = 'Hello, World!';
+  str = str+str+str+str;
+  // str = str+str+str+str; // etc
+  await vat0.evaluate('\nglobalThis.hello = "' + str + '";\n');
 
-  const COUNT = 100;
+  const num_globals = 10; // try 1000 too
+  for (let i = 0; i < num_globals; i++) {
+    await vat0.evaluate('\nglobalThis.hello' + i + ' = "' + str + '";\n');
+  }
+
+  const COUNT = 2000;
   // get past any initial allocations that skew the rate
   await vat0.snapshot('memleak-snapshot.xss');
   await vat0.snapshot('memleak-snapshot.xss');
@@ -64,6 +70,9 @@ globalThis.hello = "Hello, World!";
       console.log(`vmsize leak rate: ${vm_rate} bytes/snapshot`);
       const rss_rate = Math.floor((rss - first_rss) / COUNT);
       console.log(`rsssize leak rate: ${rss_rate} bytes/snapshot`);
+      console.log(`str.length ${str.length}`);
+      console.log(`num_globals ${num_globals}`);
+      // leak of both seems to be about (30 kB + num_globals) per snapshot write
       break;
     }
     if (vmsize > 2_000_000_000) {
