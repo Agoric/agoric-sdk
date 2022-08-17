@@ -1,4 +1,5 @@
 /* global WeakRef FinalizationRegistry */
+/* eslint-disable no-constant-condition */
 import fs from 'fs';
 // import '@endo/init';
 import '../tools/install-ses-debug.js';
@@ -74,6 +75,7 @@ async function replay(transcriptFile) {
     meterControl,
   });
   const allVatPowers = { testLog };
+  let xsnapPID;
 
   if (worker === 'xs-worker') {
     // disable to save a few seconds and rely upon the saved versions instead
@@ -89,7 +91,17 @@ async function replay(transcriptFile) {
     ];
     const snapstorePath = undefined;
     const env = {};
-    const startXSnap = makeStartXSnap(bundles, { snapstorePath, env, spawn });
+
+    const capturePIDSpawn = (...args) => {
+      const child = spawn(...args);
+      xsnapPID = child.pid;
+      return child;
+    };
+    const startXSnap = makeStartXSnap(bundles, {
+      snapstorePath,
+      env,
+      spawn: capturePIDSpawn,
+    });
     factory = makeXsSubprocessFactory({
       kernelKeeper: fakeKernelKeeper,
       kernelSlog,
@@ -159,7 +171,7 @@ async function replay(transcriptFile) {
         {},
         vatSyscallHandler,
       );
-      console.log(`manager created`);
+      console.log(`manager created, worker PID: ${xsnapPID}`);
     } else {
       const { d: delivery, syscalls } = data;
       // syscalls = [{ d, response }, ..]
@@ -175,6 +187,19 @@ async function replay(transcriptFile) {
       await manager.replayOneDelivery(delivery, syscalls, deliveryNum);
       deliveryNum += 1;
       // console.log(`dr`, dr);
+
+      // enable this to write periodic snapshots, for #5975 leak
+      if (false && deliveryNum % 10 === 8) {
+        console.log(`-- writing snapshot`, xsnapPID);
+        const fn = 'snapshot.xss';
+        const snapstore = {
+          save(thunk) {
+            return thunk(fn);
+          },
+        };
+        await manager.makeSnapshot(snapstore);
+        // const size = fs.statSync(fn).size;
+      }
     }
   }
 
