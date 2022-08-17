@@ -43,54 +43,54 @@ export const makeQueue = storage => {
       storage.set(`${tail}`, JSON.stringify(obj));
       storage.commit();
     },
-    /** @returns {Iterable<T>} */
-    consumeAll: () => ({
-      [Symbol.iterator]: () => {
-        let done = false;
-        let head = getHead();
-        const tail = getTail();
-        return {
-          next: () => {
-            if (!done) {
-              if (head < tail) {
-                // Still within the queue.
-                const headKey = `${head}`;
-                const value = JSON.parse(
-                  /** @type {string} */ (storage.get(headKey)),
-                );
-                storage.delete(headKey);
-                head += 1n;
-                return { value, done };
-              }
-              // Reached the end, so clean up our indices.
-              storage.delete('head');
-              storage.delete('tail');
-              storage.commit();
-              done = true;
+    /** @returns {IterableIterator<T>} */
+    consumeAll: () => {
+      let done = false;
+      let head = getHead();
+      const tail = getTail();
+      const iterator = {
+        [Symbol.iterator]: () => iterator,
+        next: () => {
+          if (!done) {
+            if (head < tail) {
+              // Still within the queue.
+              const headKey = `${head}`;
+              const value = JSON.parse(
+                /** @type {string} */ (storage.get(headKey)),
+              );
+              storage.delete(headKey);
+              head += 1n;
+              return { value, done };
             }
-            return { value: undefined, done };
-          },
-          return: () => {
-            if (!done) {
-              // We're done consuming, so save our state.
-              storage.set('head', String(head));
-              storage.commit();
-              done = true;
-            }
-            return { value: undefined, done };
-          },
-          throw: err => {
-            if (!done) {
-              // Don't change our state.
-              storage.abort();
-              done = true;
-              throw err;
-            }
-            return { value: undefined, done };
-          },
-        };
-      },
-    }),
+            // Reached the end, so clean up our indices.
+            storage.delete('head');
+            storage.delete('tail');
+            storage.commit();
+            done = true;
+          }
+          return { value: undefined, done };
+        },
+        return: () => {
+          if (!done) {
+            // We're done consuming, so save our state.
+            storage.set('head', String(head));
+            storage.commit();
+            done = true;
+          }
+          return { value: undefined, done };
+        },
+        throw: err => {
+          if (!done) {
+            // Don't change our state.
+            storage.abort();
+            done = true;
+            throw err;
+          }
+          return { value: undefined, done };
+        },
+      };
+      return iterator;
+    },
   };
   return queue;
 };
