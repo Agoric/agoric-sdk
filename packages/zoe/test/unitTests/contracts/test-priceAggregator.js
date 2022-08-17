@@ -1019,3 +1019,37 @@ test('storage keys', async t => {
     'fake:mockChainStorageRoot.priceAggregator.ATOM-USD_price_feed',
   );
 });
+
+test('storage', async t => {
+  const { zoe, makeFakePriceOracle, makeMedianAggregator } = t.context;
+  const aggregator = await makeMedianAggregator(1n);
+  const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
+
+  const price1000 = await makeFakePriceOracle(1000n);
+  await E(aggregator.creatorFacet).initOracle(price1000.instance, {
+    increment: 10n,
+  });
+  await E(oracleTimer).tick();
+  t.deepEqual(
+    aggregator.mockStorageRoot.getBody(
+      'mockChainStorageRoot.priceAggregator.ATOM-USD_price_feed',
+    ),
+    {
+      quoteAmount: {
+        brand: { iface: 'Alleged: quote brand' },
+        value: [
+          {
+            amountIn: { brand: { iface: 'Alleged: $ATOM brand' }, value: 1n },
+            amountOut: {
+              brand: { iface: 'Alleged: $USD brand' },
+              value: 1020n,
+            },
+            timer: { iface: 'Alleged: ManualTimer' },
+            timestamp: 1n,
+          },
+        ],
+      },
+      quotePayment: { iface: 'Alleged: quote payment' },
+    },
+  );
+});
