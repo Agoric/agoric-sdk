@@ -3,7 +3,8 @@
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { assert, details as X, q } from '@agoric/assert';
-import { objectMap, provideDurableWeakMapStore } from '@agoric/vat-data';
+import { objectMap } from '@agoric/store';
+import { provideDurableWeakMapStore } from '@agoric/vat-data';
 
 import './types.js';
 import './internal-types.js';

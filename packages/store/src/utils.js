@@ -1,4 +1,6 @@
 // @ts-check
+import { E } from '@endo/eventual-send';
+import { isPromise } from '@endo/promise-kit';
 
 // TODO https://github.com/Agoric/agoric-sdk/issues/5992
 // Many of the utilities accumulating in this module really have nothing
@@ -6,10 +8,115 @@
 // the entire utils.js module, to that independent sdk-internal package
 // that we will need to create.
 
-const { getPrototypeOf, create, fromEntries } = Object;
+/** @typedef {import('@endo/marshal/src/types').Remotable} Remotable */
+
+const { getPrototypeOf, create, entries, fromEntries } = Object;
 const { ownKeys, apply } = Reflect;
 
-/** @typedef {import('@endo/marshal/src/types').Remotable} Remotable */
+const { details: X } = assert;
+
+/**
+ * By analogy with how `Array.prototype.map` will map the elements of
+ * an array to transformed elements of an array of the same shape,
+ * `objectMap` will do likewise for the string-named own enumerable
+ * properties of an object.
+ *
+ * Typical usage applies `objectMap` to a CopyRecord, i.e.,
+ * an object for which `passStyleOf(original) === 'copyRecord'`. For these,
+ * none of the following edge cases arise. The result will be a CopyRecord
+ * with exactly the same property names, whose values are the mapped form of
+ * the original's values.
+ *
+ * When the original is not a CopyRecord, some edge cases to be aware of
+ *    * No matter how mutable the original object, the returned object is
+ *      hardened.
+ *    * Only the string-named enumerable own properties of the original
+ *      are mapped. All other properties are ignored.
+ *    * If any of the original properties were accessors, `Object.entries`
+ *      will cause its `getter` to be called and will use the resulting
+ *      value.
+ *    * No matter whether the original property was an accessor, writable,
+ *      or configurable, all the properties of the returned object will be
+ *      non-writable, non-configurable, data properties.
+ *    * No matter what the original object may have inherited from, and
+ *      no matter whether it was a special kind of object such as an array,
+ *      the returned object will always be a plain object inheriting directly
+ *      from `Object.prototype` and whose state is only these new mapped
+ *      own properties.
+ *
+ * With these differences, even if the original object was not a CopyRecord,
+ * if all the mapped values are Passable, then the returned object will be
+ * a CopyRecord.
+ *
+ * @template T
+ * @template U
+ * @param {Record<string,T>} original
+ * @param {(value: T, key?: string) => U} mapFn
+ * @returns {Record<string,U>}
+ */
+export const objectMap = (original, mapFn) => {
+  const ents = entries(original);
+  const mapEnts = ents.map(([k, v]) => [k, mapFn(v, k)]);
+  return /** @type {Record<string, U>} */ (harden(fromEntries(mapEnts)));
+};
+harden(objectMap);
+
+export const listDifference = (leftNames, rightNames) => {
+  const rightSet = new Set(rightNames);
+  return leftNames.filter(name => !rightSet.has(name));
+};
+harden(listDifference);
+
+/**
+ * @param {Error} innerErr
+ * @param {string|number} label
+ * @param {ErrorConstructor=} ErrorConstructor
+ * @returns {never}
+ */
+export const throwLabeled = (innerErr, label, ErrorConstructor = undefined) => {
+  if (typeof label === 'number') {
+    label = `[${label}]`;
+  }
+  const outerErr = assert.error(
+    `${label}: ${innerErr.message}`,
+    ErrorConstructor,
+  );
+  assert.note(outerErr, X`Caused by ${innerErr}`);
+  throw outerErr;
+};
+harden(throwLabeled);
+
+/**
+ * @template A,R
+ * @param {(...args: A[]) => R} func
+ * @param {A[]} args
+ * @param {string|number} [label]
+ * @returns {R}
+ */
+export const applyLabelingError = (func, args, label = undefined) => {
+  if (label === undefined) {
+    return func(...args);
+  }
+  let result;
+  try {
+    result = func(...args);
+  } catch (err) {
+    throwLabeled(err, label);
+  }
+  if (isPromise(result)) {
+    // @ts-expect-error If result is a rejected promise, this will
+    // return a promise with a different rejection reason. But this
+    // confuses TypeScript because it types that case as `Promise<never>`
+    // which is cool for a promise that will never fulfll.
+    // But TypeScript doesn't understand that this will only happen
+    // when `result` was a rejected promise. In only this case `R`
+    // should already allow `Promise<never>` as a subtype.
+    return E.when(result, undefined, reason => throwLabeled(reason, label));
+  } else {
+    return result;
+  }
+};
+harden(applyLabelingError);
 
 const compareStringified = (left, right) => {
   left = String(left);
