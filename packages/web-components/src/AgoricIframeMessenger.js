@@ -20,7 +20,7 @@ export const makeAgoricIframeMessenger = (registerThis = _that => {}) =>
         iframe {
           border: none;
           overflow: auto;
-          height: 40px;
+          height: 64px;
         }
       `;
     }
@@ -53,12 +53,15 @@ export const makeAgoricIframeMessenger = (registerThis = _that => {}) =>
         <iframe
           title="Agoric Iframe Messenger"
           src=${this.src}
-          @load=${this._onLoad}
           @abort=${this._onError}
           @error=${this._onError}
           scrolling="no"
         ></iframe>
       `;
+    }
+
+    updated() {
+      this._origin = new URL(this.src).origin;
     }
 
     firstUpdated() {
@@ -72,11 +75,6 @@ export const makeAgoricIframeMessenger = (registerThis = _that => {}) =>
         });
         this.dispatchEvent(ev);
       }, CONNECTION_TIMEOUT_MS);
-    }
-
-    _onLoad(event) {
-      event.preventDefault();
-      this._origin = new URL(this.src).origin;
     }
 
     _onMessage(event) {
