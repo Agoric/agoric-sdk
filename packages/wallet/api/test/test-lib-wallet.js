@@ -2,9 +2,9 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import bundleSource from '@endo/bundle-source';
 import { makeCache } from '@agoric/cache';
-import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import bundleSource from '@endo/bundle-source';
 
 import { M } from '@agoric/store';
 
@@ -1194,6 +1194,37 @@ test('lib-wallet addOffer for autoswap swap', async t => {
     AmountMath.make(simoleanBundle.brand, 516n),
     `simolean purse balance`,
   );
+});
+
+function makeCounter() {
+  let count = 0;
+  return Far('counter', {
+    add(delta) {
+      count += delta;
+    },
+    read() {
+      return count;
+    },
+  });
+}
+
+test('lib-wallet performAction applyMethod', async t => {
+  const { wallet } = await setupTest(t);
+
+  const counter = makeCounter();
+
+  const capData = wallet
+    .getMarshaller()
+    .serialize(harden([counter, 'add', [3]]));
+
+  const action = JSON.stringify({
+    ...capData,
+    type: 'applyMethod',
+  });
+  t.log('performAction spendAction: ', action);
+  await wallet.performAction({ spendAction: action });
+
+  t.is(counter.read(), 3);
 });
 
 test('lib-wallet performAction suggestIssuer', async t => {

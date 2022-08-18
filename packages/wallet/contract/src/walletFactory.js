@@ -42,7 +42,7 @@ import { makeSmartWallet } from './smartWallet.js';
  * @param {ZCF<SmartWalletContractTerms>} zcf
  * @param {{
  *   storageNode: ERef<StorageNode>,
- *   bridgeManager?: BridgeManager,
+ *   bridgeManager: BridgeManager,
  * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
@@ -84,8 +84,7 @@ export const start = async (zcf, privateArgs) => {
   //    see vats/src/bridge.js
   // NOTE: both `MsgWalletAction` and `MsgWalletSpendAction` arrive as BRIDGE_ID.WALLET
   // by way of makeBlockManager() in cosmic-swingset/src/block-manager.js
-  await (bridgeManager &&
-    E(bridgeManager).register(BRIDGE_ID.WALLET, handleWalletAction));
+  await E(bridgeManager).register(BRIDGE_ID.WALLET, handleWalletAction);
 
   const shared = {
     agoricNames,

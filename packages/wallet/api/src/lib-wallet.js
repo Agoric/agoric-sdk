@@ -1802,10 +1802,10 @@ export function makeWalletRoot({
 
   /** @param {import('@endo/marshal').CapData<string>} capData */
   const handleApplyMethodAction = async capData => {
-    console.log('DEBUG handleApplyMethodAction got', capData);
     // TODO validate shape before destructuring
     // unserialize=fromCapData (consider a fromCapData abstraction that takes a pattern)
     const [receiver, methodName, args] = marshaller.unserialize(capData);
+    // equivalent to: E(receiver)[methodName](...args);
     HandledPromise.applyMethod(receiver, methodName, args);
   };
 
