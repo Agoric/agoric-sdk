@@ -68,35 +68,35 @@ private:
 Napi::FunctionReference NodeReplier::constructor;
 
 static int daemonPort = -1;
-int SendToNode(int port, int replyPort, Body str) {
-    // std::cerr << "Send to node port " << port << " " << str << std::endl;
+int SendToNode(int port, int replyPort, Body msg) {
+    // std::cerr << "Send to node port " << port << " " << msg << std::endl;
     // FIXME: Make a better bootstrap, honouring an AG_COSMOS_START message.
     if (daemonPort < 0) {
         daemonPort = replyPort;
     }
-    std::string instr(str);
+    std::string msgStr(msg);
     // This call is queued on the main thread, so we can return immediately to Golang.
     dispatcher->call(
         // Prepare arguments.
-        [instr, port, replyPort](Napi::Env env, std::vector<napi_value>& args) {
-            // std::cerr << "Calling threadsafe callback with " << instr << std::endl;
+        [msgStr, port, replyPort](Napi::Env env, std::vector<napi_value>& args) {
+            // std::cerr << "Calling threadsafe callback with " << msgStr << std::endl;
             args = {
                 Napi::Number::New(env, port),
-                Napi::String::New(env, instr),
+                Napi::String::New(env, msgStr),
                 NodeReplier::New(env, replyPort),
             };
         });
-    // std::cerr << "Ending Send to Node " << str << std::endl;
+    // std::cerr << "Ending Send to Node " << msg << std::endl;
     return 0;
 }
 
 static Napi::Value send(const Napi::CallbackInfo& info) {
     // std::cerr << "Send to Go" << std::endl;
     Napi::Env env = info.Env();
-    int instance = info[0].As<Napi::Number>();
-    std::string tmp = info[1].As<Napi::String>().Utf8Value();
-    Body ret = SendToGo(instance, tmp.c_str());
-    return Napi::String::New(env, ret);
+    int port = info[0].As<Napi::Number>();
+    std::string msg = info[1].As<Napi::String>().Utf8Value();
+    Body resp = SendToGo(port, msg.c_str());
+    return Napi::String::New(env, resp);
 }
 
 static Napi::Value runAgCosmosDaemon(const Napi::CallbackInfo& info) {
