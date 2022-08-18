@@ -27,7 +27,7 @@ import {
   checkCopyMap,
   copyMapKeySet,
 } from '../keys/checkKey.js';
-import { applyLabelingError } from './match-helpers.js';
+import { applyLabelingError } from '../utils.js';
 
 /// <reference types="ses"/>
 

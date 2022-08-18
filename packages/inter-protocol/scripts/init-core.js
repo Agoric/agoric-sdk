@@ -1,7 +1,7 @@
 /* global process */
 // @ts-check
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { objectMap } from '@agoric/vat-data';
+import { objectMap } from '@agoric/store';
 
 import {
   getManifestForInterProtocol,

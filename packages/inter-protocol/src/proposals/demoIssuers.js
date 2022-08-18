@@ -1,7 +1,7 @@
 // @ts-check
 
 import { AmountMath, AssetKind } from '@agoric/ertp';
-import { objectMap } from '@agoric/vat-data';
+import { objectMap } from '@agoric/store';
 import {
   makeRatio,
   natSafeMath,

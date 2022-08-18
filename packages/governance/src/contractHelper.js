@@ -2,8 +2,8 @@
 
 import { Far } from '@endo/marshal';
 import { makeStoredPublisherKit } from '@agoric/notifier';
-import { getMethodNames, keyEQ } from '@agoric/store';
-import { objectMap, ignoreContext } from '@agoric/vat-data';
+import { getMethodNames, keyEQ, objectMap } from '@agoric/store';
+import { ignoreContext } from '@agoric/vat-data';
 import { assertElectorateMatches } from './contractGovernance/paramManager.js';
 import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
 
