@@ -131,7 +131,7 @@ const signalBridge = () => {
 
 const Bridge = () => {
   return (
-    <button className="button" onClick={signalBridge}>
+    <button className="signal-wallet-button" onClick={signalBridge}>
       <div style={{ width: 64, height: 42 }}>
         <AgoricLogo />
       </div>
