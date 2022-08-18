@@ -98,6 +98,7 @@ export const makeBackendFromWalletBridge = walletBridge => {
  * @param {import('@agoric/casting').Unserializer} unserializer
  * @param {string} publicAddress
  * @param {object} keplrConnection
+ * @param {string} networkConfig
  * @param {(e: unknown) => void} [errorHandler]
  * @param {() => void} [firstCallback]
  */
@@ -107,6 +108,7 @@ export const makeWalletBridgeFromFollower = (
   unserializer,
   publicAddress,
   keplrConnection,
+  networkConfig,
   errorHandler = e => {
     // Make an unhandled rejection.
     throw e;
@@ -201,6 +203,7 @@ export const makeWalletBridgeFromFollower = (
         unserializer,
         publicAddress,
         issuerService,
+        networkConfig,
         ...getNotifierMethods,
       }),
   });

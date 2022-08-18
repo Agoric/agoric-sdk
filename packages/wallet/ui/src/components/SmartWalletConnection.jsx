@@ -89,6 +89,7 @@ const SmartWalletConnection = ({
         context.fromBoard,
         publicAddress,
         keplrConnection,
+        href,
         backendError,
         () => setConnectionState('bridged'),
       );
