@@ -378,7 +378,7 @@ const start = async zcf => {
     return AmountMath.make(brandIn, outputValue);
   };
 
-  const getPoolAllocation = poolSeat.getCurrentAllocation;
+  const getPoolAllocation = () => poolSeat.getCurrentAllocation();
 
   /** @type {AutoswapPublicFacet} */
   const publicFacet = Far('publicFacet', {

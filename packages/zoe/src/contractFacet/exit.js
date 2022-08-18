@@ -26,7 +26,7 @@ export const makeExitObj = (proposal, zcfSeat) => {
     // data) and presences (local proxies for objects that may have
     // methods).
     return Far('exitObj', {
-      exit: zcfSeat.exit,
+      exit: () => zcfSeat.exit(),
     });
   }
 
@@ -36,7 +36,7 @@ export const makeExitObj = (proposal, zcfSeat) => {
       .setWakeup(
         exit.afterDeadline.deadline,
         Far('wakeObj', {
-          wake: zcfSeat.exit,
+          wake: () => zcfSeat.exit(),
         }),
       )
       .catch(reason => {

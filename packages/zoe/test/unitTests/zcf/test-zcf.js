@@ -5,6 +5,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Far } from '@endo/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
+import { getMethodNames } from '@agoric/store';
 import { makeOffer } from '../makeOffer.js';
 
 import { setup } from '../setupBasicMints.js';
@@ -712,7 +713,7 @@ test(`zcfSeat from zcf.makeEmptySeatKit - only these properties exist`, async t 
   const { zcf } = await setupZCFTest();
   const makeZCFSeat = () => zcf.makeEmptySeatKit().zcfSeat;
   const seat = makeZCFSeat();
-  t.deepEqual(Object.getOwnPropertyNames(seat).sort(), expectedMethods.sort());
+  t.deepEqual(getMethodNames(seat), expectedMethods.sort());
 });
 
 test(`zcfSeat.getProposal from zcf.makeEmptySeatKit`, async t => {

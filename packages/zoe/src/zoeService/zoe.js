@@ -92,7 +92,7 @@ const makeZoeKit = (
   } = makeZoeStorageManager(
     createZCFVat,
     getBundleCapForID,
-    feeMint.getFeeIssuerKit,
+    feeMintAccess => feeMint.getFeeIssuerKit(feeMintAccess),
     shutdownZoeVat,
     feeMint.getFeeIssuer(),
     feeMint.getFeeBrand(),

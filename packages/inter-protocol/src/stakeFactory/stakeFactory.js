@@ -199,8 +199,12 @@ export const start = async (
       },
       invitationMakers: Far('invitation makers', {
         AdjustBalances: () =>
-          zcf.makeInvitation(helper.adjustBalancesHook, 'AdjustBalances'),
-        CloseVault: () => zcf.makeInvitation(helper.closeHook, 'CloseVault'),
+          zcf.makeInvitation(
+            seatx => helper.adjustBalancesHook(seatx),
+            'AdjustBalances',
+          ),
+        CloseVault: () =>
+          zcf.makeInvitation(seatx => helper.closeHook(seatx), 'CloseVault'),
       }),
       vault: pot,
     });

@@ -79,7 +79,7 @@ test('zoe - coveredCall', async t => {
       processPayouts: async seat => {
         await E(seat)
           .getPayout('Moola')
-          .then(moolaPurse.deposit)
+          .then(payment => moolaPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -90,7 +90,7 @@ test('zoe - coveredCall', async t => {
 
         await E(seat)
           .getPayout('Simoleans')
-          .then(simoleanPurse.deposit)
+          .then(payment => simoleanPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -101,7 +101,7 @@ test('zoe - coveredCall', async t => {
 
         await E(seat)
           .getPayout('Bucks')
-          .then(bucksPurse.deposit)
+          .then(payment => bucksPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -169,14 +169,14 @@ test('zoe - coveredCall', async t => {
       processPayouts: async seat => {
         await E(seat)
           .getPayout('UnderlyingAsset')
-          .then(moolaPurse.deposit)
+          .then(payment => moolaPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(amountDeposited, moola(3n), `Bob got what he wanted`),
           );
 
         await E(seat)
           .getPayout('StrikePrice1')
-          .then(simoleanPurse.deposit)
+          .then(payment => simoleanPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -187,7 +187,7 @@ test('zoe - coveredCall', async t => {
 
         await E(seat)
           .getPayout('StrikePrice2')
-          .then(bucksPurse.deposit)
+          .then(payment => bucksPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,

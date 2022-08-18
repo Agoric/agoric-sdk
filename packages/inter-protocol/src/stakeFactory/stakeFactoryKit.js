@@ -4,7 +4,7 @@ import { AmountMath, AssetKind } from '@agoric/ertp';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { ceilMultiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makePublishKit } from '@agoric/notifier';
-import { M, matches } from '@agoric/store';
+import { bindAllMethods, M, matches } from '@agoric/store';
 import { defineKindMulti } from '@agoric/vat-data';
 import { makeTracer } from '../makeTracer.js';
 import { addSubtract, assertOnlyKeys, stageDelta } from '../contractSupport.js';
@@ -370,14 +370,17 @@ const potBehavior = {
     const { zcf } = state;
     const { helper } = facets;
     assert(state.open);
-    return zcf.makeInvitation(helper.adjustBalancesHook, 'AdjustBalances');
+    return zcf.makeInvitation(
+      seat => helper.adjustBalancesHook(seat),
+      'AdjustBalances',
+    );
   },
   /** @param {MethodContext} context */
   makeCloseInvitation: ({ state, facets }) => {
     const { zcf } = state;
     const { helper } = facets;
     assert(state.open);
-    return zcf.makeInvitation(helper.closeHook, 'CloseVault');
+    return zcf.makeInvitation(seat => helper.closeHook(seat), 'CloseVault');
   },
   /**
    * The actual current debt, including accrued interest.
@@ -425,9 +428,29 @@ const finish = ({ facets }) => {
  * @param {import('./stakeFactoryManager.js').StakeFactoryManager} manager
  * @throws {Error} if startSeat proposal is not consistent with governance parameters in manager
  */
-export const makeStakeFactoryKit = defineKindMulti(
+const makeStakeFactoryKitInternal = defineKindMulti(
   'stakeFactoryKit',
   initState,
   behavior,
   { finish },
 );
+
+/**
+ * Make stakeFactory kit, subject to stakeFactory terms.
+ *
+ * TODO refactor to remove this wrapper around the kind and to stop using
+ * `bindAllMethods`.
+ *
+ * @param {ZCF} zcf
+ * @param {ZCFSeat} startSeat
+ * @param {import('./stakeFactoryManager.js').StakeFactoryManager} manager
+ * @throws {Error} if startSeat proposal is not consistent with governance parameters in manager
+ */
+export const makeStakeFactoryKit = (zcf, startSeat, manager) => {
+  const { helper, pot } = makeStakeFactoryKitInternal(zcf, startSeat, manager);
+  return harden({
+    // XXX work- around for change from auto - binding
+    helper: bindAllMethods(helper),
+    pot,
+  });
+};
