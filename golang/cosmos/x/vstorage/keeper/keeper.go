@@ -14,13 +14,13 @@ import (
 )
 
 // StreamCell is an envelope representing a sequence of values written at a path in a single block.
-// It is persisted to storage as a { "height": "<digits>", "values": ["...", ...] } JSON text
+// It is persisted to storage as a { "blockHeight": "<digits>", "values": ["...", ...] } JSON text
 // that off-chain consumers rely upon.
 // Many of those consumers *also* rely upon the strings of "values" being valid JSON text
 // (cf. scripts/get-flattened-publication.sh), but we do not enforce that in this package.
 type StreamCell struct {
-	Height string   `json:"height"`
-	Values []string `json:"values"`
+	BlockHeight string   `json:"blockHeight"`
+	Values      []string `json:"values"`
 }
 
 // Keeper maintains the link to data storage and exposes getter/setter methods
@@ -140,16 +140,15 @@ func (k Keeper) SetStorageAndNotify(ctx sdk.Context, path, value string) {
 }
 
 func (k Keeper) AppendStorageValueAndNotify(ctx sdk.Context, path, value string) error {
-	height := strconv.FormatInt(ctx.BlockHeight(), 10)
+	blockHeight := strconv.FormatInt(ctx.BlockHeight(), 10)
 
 	// Preserve correctly-formatted data within the current block,
 	// otherwise initialize a blank cell.
 	currentData := k.GetData(ctx, path)
 	var cell StreamCell
 	_ = json.Unmarshal([]byte(currentData), &cell)
-	if cell.Height != height {
-		cell.Height = height
-		cell.Values = make([]string, 0, 1)
+	if cell.BlockHeight != blockHeight {
+		cell = StreamCell{BlockHeight: blockHeight, Values: make([]string, 0, 1)}
 	}
 
 	// Append the new value.

@@ -106,7 +106,7 @@ export const startFakeServer = (t, fakeValues, options = {}) => {
       buf.set(ascii, dataPrefix.length);
       return toBase64(buf);
     };
-    let height = 74863;
+    let blockHeight = 74863;
     let responseValueBase64;
     app.post('/tendermint-rpc', (req, res) => {
       log('received', req.path, req.body, req.params);
@@ -125,7 +125,7 @@ export const startFakeServer = (t, fakeValues, options = {}) => {
           break;
         }
         case 'abci_query': {
-          height += 2;
+          blockHeight += 2;
           const values = fakeValues.splice(0, Math.max(1, batchSize));
           if (values.length > 0) {
             if (batchSize > 0) {
@@ -134,7 +134,7 @@ export const startFakeServer = (t, fakeValues, options = {}) => {
                 JSON.stringify(marshaller.serialize(val)),
               );
               responseValueBase64 = encode({
-                height: String(height - 1),
+                blockHeight: String(blockHeight - 1),
                 values: serializedValues,
               });
             } else {
@@ -153,7 +153,7 @@ export const startFakeServer = (t, fakeValues, options = {}) => {
               ).toString('base64'),
               value: responseValueBase64,
               proofOps: null,
-              height: String(height),
+              height: String(blockHeight),
               codespace: '',
             },
           };

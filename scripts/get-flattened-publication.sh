@@ -80,10 +80,10 @@ fi
 # Simplify, flatten, and compact.
 printf '%s' "$unwrapped_value" | jq -c --arg responseHeightJson "$response_height_json" '
   # Upgrade a naked value to a stream cell if necessary.
-  if has("height") and has("values") then . else { values: [ . | tojson ] } end |
+  if has("blockHeight") and has("values") then . else { values: [ . | tojson ] } end |
 
   # Capture data block height.
-  .height as $dataHeight |
+  .blockHeight as $dataHeight |
 
   # Flatten each value independently.
   .values[] | fromjson |

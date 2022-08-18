@@ -10,7 +10,7 @@ case "${RESPONSE}" in
     ;;
   STREAM_CELL)
     # Emit a two-result stream cell.
-    jq '{ height: "41", values: [., .] | map(tojson) }' fixtures/capdata.json
+    jq '{ blockHeight: "41", values: [., .] | map(tojson) }' fixtures/capdata.json
     ;;
   *)
     printf 'Missing/invalid RESPONSE environment variable: %s\n' "$RESPONSE" >&2
