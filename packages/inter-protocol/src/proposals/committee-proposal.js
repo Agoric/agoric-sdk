@@ -1,6 +1,6 @@
 // @ts-check
+import { deeplyFulfilledObject } from '@agoric/internal';
 import { E } from '@endo/far';
-import { deeplyFulfilled } from '@endo/marshal';
 import { reserveThenDeposit } from './utils.js';
 
 const { values } = Object;
@@ -34,7 +34,7 @@ export const inviteCommitteeMembers = async (
     E(agoricNames).lookup('installation', 'econCommitteeCharter'),
     counterP,
   ]);
-  const terms = await deeplyFulfilled(
+  const terms = await deeplyFulfilledObject(
     harden({
       binaryVoteCounterInstallation: counterInstall,
     }),

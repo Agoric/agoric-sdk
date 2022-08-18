@@ -6,7 +6,7 @@ import { makeStorageNodeChild } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { Stable } from '@agoric/vats/src/tokens.js';
-import { deeplyFulfilled } from '@endo/marshal';
+import { deeplyFulfilledObject } from '@agoric/internal';
 import { reserveThenGetNamePaths } from './utils.js';
 
 const BASIS_POINTS = 10000n;
@@ -78,7 +78,7 @@ export const startPSM = async (
     ]);
 
   const mintLimit = AmountMath.make(anchorBrand, MINT_LIMIT);
-  const terms = await deeplyFulfilled(
+  const terms = await deeplyFulfilledObject(
     harden({
       anchorBrand,
       anchorPerStable: makeRatio(100n, anchorBrand, 100n, stable),
@@ -111,7 +111,7 @@ export const startPSM = async (
 
   const marshaller = await E(board).getPublishingMarshaller();
 
-  const governorTerms = await deeplyFulfilled(
+  const governorTerms = await deeplyFulfilledObject(
     harden({
       timer: chainTimerService,
       economicCommittee,
@@ -186,7 +186,7 @@ export const makeAnchorAsset = async (
   );
 
   /** @type {import('@agoric/vats/src/mintHolder.js').AssetTerms} */
-  const terms = await deeplyFulfilled(
+  const terms = await deeplyFulfilledObject(
     harden({
       keyword,
       assetKind: AssetKind.NAT,

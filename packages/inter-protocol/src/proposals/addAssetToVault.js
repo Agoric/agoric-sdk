@@ -1,10 +1,9 @@
 // @ts-check
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import { deeplyFulfilledObject } from '@agoric/internal';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { E } from '@endo/far';
-import { deeplyFulfilled } from '@endo/marshal';
-
 import { reserveThenGetNames } from './utils.js';
 
 export * from './startPSM.js';
@@ -218,7 +217,7 @@ export const registerScaledPriceAuthority = async (
     runBrand,
   );
 
-  const terms = await deeplyFulfilled(
+  const terms = await deeplyFulfilledObject(
     harden({
       sourcePriceAuthority,
       scaleIn,

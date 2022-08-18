@@ -4,7 +4,7 @@ import {
   makeStorageNodeChild,
   assertPathSegment,
 } from '@agoric/vats/src/lib-chainStorage.js';
-import { deeplyFulfilled } from '@endo/marshal';
+import { deeplyFulfilledObject } from '@agoric/internal';
 
 import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import { reserveThenDeposit, reserveThenGetNames } from './utils.js';
@@ -118,7 +118,7 @@ export const createPriceFeed = async (
 
   const unitAmountIn = await unitAmount(brandIn);
   /** @type {import('@agoric/zoe/src/contracts/priceAggregator.js').PriceAggregatorContract['terms']} */
-  const terms = await deeplyFulfilled(
+  const terms = await deeplyFulfilledObject(
     harden({
       ...contractTerms,
       description: AGORIC_INSTANCE_NAME,
