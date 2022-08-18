@@ -140,10 +140,9 @@ const makeChainQueue = (call, prefix = '') => {
   const queue = {
     push: obj => {
       const tail = BigInt(storage.get('tail') || 0);
-      storage.set('tail', tail + 1n);
       storage.set(`${tail}`, obj);
+      storage.set('tail', tail + 1n);
       storage.commit();
-      currentIterator = null;
     },
     getDepth: () => {
       const head = BigInt(storage.get('head') || 0);
@@ -154,12 +153,16 @@ const makeChainQueue = (call, prefix = '') => {
     consumeAll: () => {
       let done = false;
       let head = BigInt(storage.get('head') || 0);
-      const tail = BigInt(storage.get('tail') || 0);
+      let tail = 0;
       const iterator = {
         [Symbol.iterator]: () => iterator,
         next: () => {
           assert.equal(iterator, currentIterator);
           if (done) return { done };
+          if (tail <= head) {
+            // Check if new elements have been added since iteration started
+            tail = BigInt(storage.get('tail') || 0);
+          }
           if (head < tail) {
             // Still within the queue.
             const headKey = `${head}`;
