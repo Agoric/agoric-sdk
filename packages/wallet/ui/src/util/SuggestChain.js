@@ -42,6 +42,11 @@ const makeChainInfo = (networkConfig, rpcAddr, chainId, caption) => {
     currencies: [stakeCurrency, stableCurrency],
     feeCurrencies: [stableCurrency],
     features: ['stargate', 'ibc-transfer'],
+    gasPriceStep: {
+      low: 0,
+      average: 0,
+      high: 0,
+    },
   };
 };
 
@@ -67,6 +72,7 @@ export async function suggestChain(
   const rpcAddr = rpcAddrs[Math.floor(random() * rpcAddrs.length)];
 
   const chainInfo = makeChainInfo(networkConfig, rpcAddr, chainId, caption);
+  console.log('chainInfo', chainInfo);
   await keplr.experimentalSuggestChain(chainInfo);
   await keplr.enable(chainId);
   console.log('keplr.enable chainId =', chainId, 'done');
