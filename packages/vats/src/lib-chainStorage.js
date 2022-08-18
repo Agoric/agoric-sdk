@@ -7,21 +7,17 @@ const { details: X } = assert;
 // TODO: Formalize segment constraints.
 // Must be nonempty and disallow (unescaped) `.`, and for simplicity
 // (and future possibility of e.g. escaping) we currently limit to
-// ASCII alphanumeric plus underscore.
+// ASCII alphanumeric plus underscore and dash.
 const pathSegmentPattern = /^[a-zA-Z0-9_-]{1,100}$/;
 
-/**
- * @param {string} name
- */
-export const sanitizePathSegment = name => {
-  const candidate = name.replace(/[- ]/g, '_');
+/** @type {(name: string) => void} */
+export const assertPathSegment = name => {
   assert(
-    pathSegmentPattern.test(candidate),
-    `Path sanitization failed for ${name}`,
+    pathSegmentPattern.test(name),
+    X`Path segment names must consist of 1 to 100 characters limited to ASCII alphanumerics, underscores, and/or dashes: ${name}`,
   );
-  return candidate;
 };
-harden(sanitizePathSegment);
+harden(assertPathSegment);
 
 /**
  * Must match the switch in vstorage.go using `vstorageMessage` type
@@ -62,10 +58,7 @@ export function makeChainStorageRoot(
       /** @type {(name: string) => StorageNode} */
       makeChildNode(name) {
         assert.typeof(name, 'string');
-        assert(
-          pathSegmentPattern.test(name),
-          X`Path segment names must consist of 1 to 100 characters limited to ASCII alphanumerics, underscores, and/or dashes: ${name}`,
-        );
+        assertPathSegment(name);
         return makeChainStorageNode(`${path}.${name}`);
       },
       /** @type {(value: string) => void} */

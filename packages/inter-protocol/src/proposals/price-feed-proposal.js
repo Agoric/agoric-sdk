@@ -2,11 +2,18 @@ import { E } from '@endo/far';
 import { makeIssuerKit } from '@agoric/ertp';
 import {
   makeStorageNodeChild,
-  sanitizePathSegment,
+  assertPathSegment,
 } from '@agoric/vats/src/lib-chainStorage.js';
 import { deeplyFulfilled } from '@endo/marshal';
 
 import { reserveThenDeposit, reserveThenGetNames } from './utils.js';
+
+/** @type {(name: string) => void} */
+const sanitizePathSegment = name => {
+  const candidate = name.replace(/ /g, '_');
+  assertPathSegment(candidate);
+  return candidate;
+};
 
 export const ensureOracleBrands = async (
   { consume: { agoricNamesAdmin } },
