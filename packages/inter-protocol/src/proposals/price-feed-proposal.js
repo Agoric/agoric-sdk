@@ -104,7 +104,7 @@ export const createPriceFeed = async (
   /**
    * Values come from economy-template.json, which at this writing had IN:ATOM, OUT:USD
    *
-   * @type {[[Brand, Brand], [Installation]]}
+   * @type {[[Brand, Brand], [Installation<import('@agoric/zoe/src/contracts/priceAggregator.js').start>]]}
    */
   const [[brandIn, brandOut], [priceAggregator]] = await Promise.all([
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
@@ -128,6 +128,7 @@ export const createPriceFeed = async (
       unitAmountIn,
     }),
   );
+  terms.absent;
 
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = E(board).getReadonlyMarshaller();

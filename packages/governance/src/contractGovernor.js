@@ -143,6 +143,7 @@ const start = async (zcf, privateArgs) => {
   } = await E(zoe).startInstance(
     governedContractInstallation,
     governedIssuerKeywordRecord,
+    // @ts-expect-error XXX governance types
     augmentedTerms,
     privateArgs.governed,
   );

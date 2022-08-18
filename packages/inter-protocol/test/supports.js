@@ -141,7 +141,7 @@ export const makeVoterTool = async (
 /**
  * @param {bigint} value
  * @param {{
- *   centralSupply: ERef<Installation>,
+ *   centralSupply: ERef<Installation<import('@agoric/vats/src/centralSupply.js').start>>,
  *   feeMintAccess: ERef<FeeMintAccess>,
  *   zoe: ERef<ZoeService>,
  * }} powers

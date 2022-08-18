@@ -254,6 +254,7 @@ export const makeClientBanks = async ({
   const { creatorFacet } = await E(zoe).startInstance(
     walletFactory,
     {},
+    // @ts-expect-error FIXME 'board' types don't match
     terms,
     { storageNode, bridgeManager },
   );
