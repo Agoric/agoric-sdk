@@ -48,17 +48,16 @@ const { details: X } = assert;
  * if all the mapped values are Passable, then the returned object will be
  * a CopyRecord.
  *
- * @template {string} K
  * @template T
  * @template U
- * @param {Record<K,T>} original
+ * @param {Record<string,T>} original
  * @param {(value: T, key?: string) => U} mapFn
- * @returns {Record<K,U>}
+ * @returns {Record<string,U>}
  */
 export const objectMap = (original, mapFn) => {
   const ents = entries(original);
   const mapEnts = ents.map(([k, v]) => [k, mapFn(v, k)]);
-  return /** @type {Record<K, U>} */ (harden(fromEntries(mapEnts)));
+  return /** @type {Record<string, U>} */ (harden(fromEntries(mapEnts)));
 };
 harden(objectMap);
 
