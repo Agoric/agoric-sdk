@@ -77,6 +77,7 @@ export {
 } from './stores/scalarMapStore.js';
 
 export { provide } from './stores/store-utils.js';
+export { getMethodNames, bindAllMethods } from './utils.js';
 
 // /////////////////////// Deprecated Legacy ///////////////////////////////////
 

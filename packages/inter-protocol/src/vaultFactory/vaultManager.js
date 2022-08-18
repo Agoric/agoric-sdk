@@ -752,7 +752,7 @@ const collateralBehavior = {
   makeVaultInvitation: ({ state, facets: { self } }) => {
     const { zcf } = provideEphemera(state.collateralBrand);
     assert(zcf);
-    return zcf.makeInvitation(self.makeVaultKit, 'MakeVault');
+    return zcf.makeInvitation(seat => self.makeVaultKit(seat), 'MakeVault');
   },
   /** @param {MethodContext} context */
   getSubscriber: ({ state }) => {
@@ -787,8 +787,8 @@ const selfBehavior = {
   liquidateAll: async ({ state, facets: { helper } }) => {
     const { prioritizedVaults } = provideEphemera(state.collateralBrand);
     assert(prioritizedVaults);
-    const toLiquidate = Array.from(prioritizedVaults.entries()).map(
-      helper.liquidateAndRemove,
+    const toLiquidate = Array.from(prioritizedVaults.entries()).map(entry =>
+      helper.liquidateAndRemove(entry),
     );
     await Promise.all(toLiquidate);
   },
@@ -938,7 +938,7 @@ const finish = ({ state, facets: { helper } }) => {
   );
   assert(periodNotifier && prioritizedVaults && zcf);
 
-  prioritizedVaults.onHigherHighest(helper.reschedulePriceCheck);
+  prioritizedVaults.onHigherHighest(() => helper.reschedulePriceCheck());
 
   // push initial state of metrics
   helper.updateMetrics();

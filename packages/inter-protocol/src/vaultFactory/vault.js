@@ -693,7 +693,10 @@ const selfBehavior = {
     const { helper } = facets;
     helper.assertActive();
     const { zcf } = provideEphemera(state.idInManager);
-    return zcf.makeInvitation(helper.adjustBalancesHook, 'AdjustBalances');
+    return zcf.makeInvitation(
+      seat => helper.adjustBalancesHook(seat),
+      'AdjustBalances',
+    );
   },
 
   /**
@@ -703,7 +706,7 @@ const selfBehavior = {
     const { helper } = facets;
     helper.assertCloseable();
     const { zcf } = provideEphemera(state.idInManager);
-    return zcf.makeInvitation(helper.closeHook, 'CloseVault');
+    return zcf.makeInvitation(seat => helper.closeHook(seat), 'CloseVault');
   },
 
   /**
@@ -728,7 +731,7 @@ const selfBehavior = {
     };
     const { zcf } = provideEphemera(state.idInManager);
     return zcf.makeInvitation(
-      helper.makeTransferInvitationHook,
+      seat => helper.makeTransferInvitationHook(seat),
       'TransferVault',
       transferState,
     );

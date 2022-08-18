@@ -2,7 +2,7 @@
 
 import { Far } from '@endo/marshal';
 import { makeStoredPublisherKit } from '@agoric/notifier';
-import { keyEQ } from '@agoric/store';
+import { getMethodNames, keyEQ } from '@agoric/store';
 import { objectMap, ignoreContext } from '@agoric/vat-data';
 import { assertElectorateMatches } from './contractGovernance/paramManager.js';
 import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
@@ -140,7 +140,7 @@ const facetHelpers = (zcf, paramManager) => {
       // methods it has. There's no clean way to have contracts specify the APIs
       // without also separately providing their names.
       getGovernedApiNames: ({ facets }) =>
-        Object.keys(facets.governedApis || {}),
+        getMethodNames(facets.governedApis || {}),
     });
 
     return { governorFacet, limitedCreatorFacet };

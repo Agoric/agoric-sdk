@@ -64,7 +64,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       collectPayout: async seat => {
         await E(seat)
           .getPayout('Asset')
-          .then(moolaPurse.deposit)
+          .then(payment => moolaPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -75,7 +75,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
         await E(seat)
           .getPayout('Ask')
-          .then(simoleanPurse.deposit)
+          .then(payment => simoleanPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -140,14 +140,14 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       collectPayout: async seat => {
         await E(seat)
           .getPayout('Asset')
-          .then(moolaPurse.deposit)
+          .then(payment => moolaPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(amountDeposited, moola(1n), `Bob wins the auction`),
           );
 
         await E(seat)
           .getPayout('Bid')
-          .then(simoleanPurse.deposit)
+          .then(payment => simoleanPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -184,14 +184,14 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
       collectPayout: async seat => {
         await E(seat)
           .getPayout('Asset')
-          .then(moolaPurse.deposit)
+          .then(payment => moolaPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(amountDeposited, moola(0n), `didn't win the auction`),
           );
 
         await E(seat)
           .getPayout('Bid')
-          .then(simoleanPurse.deposit)
+          .then(payment => simoleanPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(amountDeposited, bidAmount, `full refund`),
           );
@@ -869,7 +869,7 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
       collectPayout: async seat => {
         await E(seat)
           .getPayout('Asset')
-          .then(moolaPurse.deposit)
+          .then(payment => moolaPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -880,7 +880,7 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
 
         await E(seat)
           .getPayout('Ask')
-          .then(simoleanPurse.deposit)
+          .then(payment => simoleanPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -945,14 +945,14 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
       collectPayout: async seat => {
         await E(seat)
           .getPayout('Asset')
-          .then(moolaPurse.deposit)
+          .then(payment => moolaPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(amountDeposited, moola(1n), `Bob wins the auction`),
           );
 
         await E(seat)
           .getPayout('Bid')
-          .then(simoleanPurse.deposit)
+          .then(payment => simoleanPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -989,14 +989,14 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
       collectPayout: async seat => {
         await E(seat)
           .getPayout('Asset')
-          .then(moolaPurse.deposit)
+          .then(payment => moolaPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(amountDeposited, moola(0n), `didn't win the auction`),
           );
 
         await E(seat)
           .getPayout('Bid')
-          .then(simoleanPurse.deposit)
+          .then(payment => simoleanPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(amountDeposited, bidAmount, `full refund`),
           );

@@ -237,7 +237,7 @@ test('purse.getDepositFacet', async t => {
   await checkNotifier();
   await E(purse)
     .getDepositFacet()
-    .then(({ receive }) => receive(payment))
+    .then(depositFacet => depositFacet.receive(payment))
     .then(checkDeposit);
 });
 

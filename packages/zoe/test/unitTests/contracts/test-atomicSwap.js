@@ -60,7 +60,7 @@ test('zoe - atomicSwap', async t => {
       collectPayouts: async seat => {
         await E(seat)
           .getPayout('Asset')
-          .then(moolaPurse.deposit)
+          .then(payment => moolaPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -71,7 +71,7 @@ test('zoe - atomicSwap', async t => {
 
         await E(seat)
           .getPayout('Price')
-          .then(simoleanPurse.deposit)
+          .then(payment => simoleanPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -127,7 +127,7 @@ test('zoe - atomicSwap', async t => {
 
         const r1 = E(seat)
           .getPayout('Asset')
-          .then(moolaPurse.deposit)
+          .then(payment => moolaPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -138,7 +138,7 @@ test('zoe - atomicSwap', async t => {
 
         const r2 = E(seat)
           .getPayout('Price')
-          .then(simoleanPurse.deposit)
+          .then(payment => simoleanPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -218,7 +218,7 @@ test('zoe - non-fungible atomicSwap', async t => {
 
         seat
           .getPayout('Asset')
-          .then(ccPurse.deposit)
+          .then(payment => ccPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -229,7 +229,7 @@ test('zoe - non-fungible atomicSwap', async t => {
 
         seat
           .getPayout('Price')
-          .then(rpgPurse.deposit)
+          .then(payment => rpgPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -292,7 +292,7 @@ test('zoe - non-fungible atomicSwap', async t => {
 
         await seat
           .getPayout('Asset')
-          .then(ccPurse.deposit)
+          .then(payment => ccPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
@@ -303,7 +303,7 @@ test('zoe - non-fungible atomicSwap', async t => {
 
         await seat
           .getPayout('Price')
-          .then(rpgPurse.deposit)
+          .then(payment => rpgPurse.deposit(payment))
           .then(amountDeposited =>
             t.deepEqual(
               amountDeposited,
