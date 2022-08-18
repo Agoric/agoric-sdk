@@ -92,9 +92,9 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 }
 
 //export ReplyToGo
-func ReplyToGo(replyPort C.int, isError C.int, str C.Body) C.int {
-	goStr := C.GoString(str)
-	// fmt.Fprintln(os.Stderr, "Reply to Go", goStr)
+func ReplyToGo(replyPort C.int, isError C.int, resp C.Body) C.int {
+	respStr := C.GoString(resp)
+	// fmt.Fprintln(os.Stderr, "Reply to Go", respStr)
 	returnCh := replies[int(replyPort)]
 	if returnCh == nil {
 		// Unexpected reply.
@@ -105,9 +105,9 @@ func ReplyToGo(replyPort C.int, isError C.int, str C.Body) C.int {
 	// Wake up the waiting goroutine
 	ret := goReturn{}
 	if int(isError) == 0 {
-		ret.str = goStr
+		ret.str = respStr
 	} else {
-		ret.err = errors.New(goStr)
+		ret.err = errors.New(respStr)
 	}
 	returnCh <- ret
 	return C.int(0)
@@ -118,23 +118,23 @@ type errorWrapper struct {
 }
 
 //export SendToGo
-func SendToGo(port C.int, str C.Body) C.Body {
-	goStr := C.GoString(str)
-	// fmt.Fprintln(os.Stderr, "Send to Go", goStr)
-	outstr, err := vm.ReceiveFromController(int(port), goStr)
+func SendToGo(port C.int, msg C.Body) C.Body {
+	msgStr := C.GoString(msg)
+	// fmt.Fprintln(os.Stderr, "Send to Go", msgStr)
+	respStr, err := vm.ReceiveFromController(int(port), msgStr)
 	if err != nil {
 		// fmt.Fprintln(os.Stderr, "Cannot receive from controller", err)
-		ret := errorWrapper{
+		errResp := errorWrapper{
 			Error: err.Error(),
 		}
-		bytes, err := json.Marshal(&ret)
+		respBytes, err := json.Marshal(&errResp)
 		if err != nil {
 			panic(err)
 		}
-		// fmt.Fprintln(os.Stderr, "Marshaled", ret, bytes)
-		outstr = string(bytes)
+		// fmt.Fprintln(os.Stderr, "Marshaled", errResp, respBytes)
+		respStr = string(respBytes)
 	}
-	return C.CString(outstr)
+	return C.CString(respStr)
 }
 
 // Do nothing in main.

@@ -324,7 +324,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     );
     const actionQueue = makeChainQueue(
       msg => chainSend(portNums.storage, msg),
-      'actionQueue.',
+      `${STORAGE_PATH.ACTION_QUEUE}.`,
     );
     function setActivityhash(activityhash) {
       const msg = stringify({
@@ -334,7 +334,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       });
       chainSend(portNums.storage, msg);
     }
-    function doOutboundBridge(dstID, obj) {
+    function doOutboundBridge(dstID, msg) {
       const portNum = portNums[dstID];
       if (portNum === undefined) {
         console.error(
@@ -345,11 +345,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
           `warning: doOutboundBridge called before AG_COSMOS_INIT gave us ${dstID}`,
         );
       }
-      const retStr = chainSend(portNum, stringify(obj));
+      const respStr = chainSend(portNum, stringify(msg));
       try {
-        return JSON.parse(retStr);
+        return JSON.parse(respStr);
       } catch (e) {
-        assert.fail(X`cannot JSON.parse(${JSON.stringify(retStr)}): ${e}`);
+        assert.fail(X`cannot JSON.parse(${JSON.stringify(respStr)}): ${e}`);
       }
     }
 
