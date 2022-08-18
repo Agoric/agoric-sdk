@@ -7,6 +7,7 @@ export const getScopedBridge = (origin, suggestedDappPetname, bridge) => {
     offerService,
     issuerService,
     unserializer,
+    networkConfig,
   } = bridge;
 
   const { dapps, addDapp, setDappPetname, deleteDapp, enableDapp } =
@@ -83,6 +84,10 @@ export const getScopedBridge = (origin, suggestedDappPetname, bridge) => {
     async getUnserializer() {
       await dapp.approvedP;
       return unserializer;
+    },
+    async getNetConfig() {
+      await dapp.approvedP;
+      return networkConfig;
     },
   });
 };
