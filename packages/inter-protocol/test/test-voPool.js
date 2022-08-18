@@ -8,8 +8,9 @@ import {
   makeNotifierFromSubscriber,
   makeStoredPublisherKit,
 } from '@agoric/notifier';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
-import { makeScalarBigMapStore, objectMap } from '@agoric/vat-data';
+import { objectMap } from '@agoric/store';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 

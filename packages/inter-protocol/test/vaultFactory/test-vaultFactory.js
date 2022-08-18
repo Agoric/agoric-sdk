@@ -10,9 +10,8 @@ import {
   makeNotifierFromSubscriber,
   makeStoredPublisherKit,
 } from '@agoric/notifier';
-import { M, matches } from '@agoric/store';
+import { M, matches, objectMap } from '@agoric/store';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { objectMap } from '@agoric/vat-data';
 import {
   ceilMultiplyBy,
   makeRatio,

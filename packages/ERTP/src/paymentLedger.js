@@ -509,4 +509,4 @@ export const vivifyPaymentLedger = (
 };
 harden(vivifyPaymentLedger);
 
-/** @typedef {ReturnType<vivifyPaymentLedger>} PaymentLedger */
+/** @typedef {ReturnType<typeof vivifyPaymentLedger>} PaymentLedger */
