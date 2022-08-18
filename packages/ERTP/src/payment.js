@@ -1,6 +1,7 @@
 // @ts-check
 
-import { defineDurableThisfulKind, provideKindHandle } from '@agoric/vat-data';
+import { vivifyFarClass } from '@agoric/vat-data';
+import { PaymentI } from './typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -13,12 +14,17 @@ import { defineDurableThisfulKind, provideKindHandle } from '@agoric/vat-data';
  * @returns {() => Payment<K>}
  */
 export const vivifyPaymentKind = (issuerBaggage, name, getBrand) => {
-  const paymentKindHandle = provideKindHandle(issuerBaggage, `${name} payment`);
-  const makePayment = defineDurableThisfulKind(paymentKindHandle, () => ({}), {
-    getAllegedBrand() {
-      return getBrand();
+  const makePayment = vivifyFarClass(
+    issuerBaggage,
+    `${name} payment`,
+    PaymentI,
+    () => ({}),
+    {
+      getAllegedBrand() {
+        return getBrand();
+      },
     },
-  });
+  );
   return makePayment;
 };
 harden(vivifyPaymentKind);

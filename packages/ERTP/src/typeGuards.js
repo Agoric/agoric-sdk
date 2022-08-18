@@ -129,3 +129,75 @@ export const DisplayInfoShape = M.partial(
     // properties beyond those in the `base` record.
   }),
 );
+
+// //////////////////////// Interfaces /////////////////////////////////////////
+
+export const BrandShape = M.remotable('Brand');
+export const IssuerShape = M.remotable('Issuer');
+export const PaymentShape = M.remotable('Payment');
+export const PurseShape = M.remotable('Purse');
+export const DepositFacetShape = M.remotable('DepositFacet');
+const NotifierShape = M.remotable('Notifier');
+export const MintShape = M.remotable('Mint');
+
+export const BrandI = M.interface('Brand', {
+  isMyIssuer: M.callWhen(M.await(IssuerShape)).returns(M.boolean()),
+  getAllegedName: M.call().returns(M.string()),
+  getDisplayInfo: M.call().returns(DisplayInfoShape),
+  getAmountSchema: M.call().returns(M.pattern()),
+});
+
+export const IssuerI = M.interface('Issuer', {
+  getBrand: M.call().returns(BrandShape),
+  getAllegedName: M.call().returns(M.string()),
+  getAssetKind: M.call().returns(M.or('nat', 'set')),
+  getDisplayInfo: M.call().returns(DisplayInfoShape),
+  makeEmptyPurse: M.call().returns(PurseShape),
+
+  isLive: M.callWhen(M.await(PaymentShape)).returns(M.boolean()),
+  getAmountOf: M.callWhen(M.await(PaymentShape)).returns(AmountShape),
+  burn: M.callWhen(M.await(PaymentShape))
+    .optional(M.pattern())
+    .returns(AmountShape),
+  claim: M.callWhen(M.await(PaymentShape))
+    .optional(M.pattern())
+    .returns(PaymentShape),
+  combine: M.call(M.arrayOf(M.eref(PaymentShape)))
+    .optional(AmountShape)
+    .returns(M.eref(PaymentShape)),
+  split: M.callWhen(M.await(PaymentShape), AmountShape).returns(
+    M.arrayOf(PaymentShape),
+  ),
+  splitMany: M.callWhen(M.await(PaymentShape), M.arrayOf(AmountShape)).returns(
+    M.arrayOf(PaymentShape),
+  ),
+});
+
+export const MintI = M.interface('Mint', {
+  getIssuer: M.call().returns(IssuerShape),
+  mintPayment: M.call(AmountShape).returns(PaymentShape),
+});
+
+export const PaymentI = M.interface('Payment', {
+  getAllegedBrand: M.call().returns(BrandShape),
+});
+
+export const PurseI = M.interface('Purse', {
+  getAllegedBrand: M.call().returns(BrandShape),
+  getCurrentAmount: M.call().returns(AmountShape),
+  getCurrentAmountNotifier: M.call().returns(NotifierShape),
+  deposit: M.call(PaymentShape).optional(M.pattern()).returns(AmountShape),
+  getDepositFacet: M.call().returns(DepositFacetShape),
+  withdraw: M.call(AmountShape).returns(PaymentShape),
+  getRecoverySet: M.call().returns(M.setOf(PaymentShape)),
+  recoverAll: M.call().returns(AmountShape),
+});
+
+export const DepositFacetI = M.interface('DepositFacet', {
+  receive: PurseI.methodGuards.deposit,
+});
+
+export const PurseIKit = harden({
+  purse: PurseI,
+  payment: PaymentI,
+});

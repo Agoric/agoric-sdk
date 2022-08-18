@@ -198,7 +198,10 @@ test('purse.deposit promise', async t => {
   await t.throwsAsync(
     // @ts-expect-error deliberate invalid arguments for testing
     () => E(purse).deposit(exclusivePaymentP, fungible25),
-    { message: /deposit does not accept promises/ },
+    {
+      message:
+        'fungible Purse purse.deposit args[0]: promise "[Promise]" - Must be a remotable',
+    },
     'failed to reject a promise for a payment',
   );
 });
@@ -409,11 +412,10 @@ test('issuer.combine array of promises', async t => {
   }
   harden(paymentsP);
 
-  const checkCombinedResult = paymentP => {
+  const checkCombinedResult = paymentP =>
     issuer.getAmountOf(paymentP).then(pAmount => {
       t.is(pAmount.value, 100n);
     });
-  };
 
   await E(issuer).combine(paymentsP).then(checkCombinedResult);
 });

@@ -2,6 +2,7 @@
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
 import { assert, details as X, q } from '@agoric/assert';
+import { defendPrototype } from '@agoric/store';
 import { Far } from '@endo/marshal';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
 
@@ -468,59 +469,6 @@ export function makeVirtualObjectManager(
     }
   }
 
-  function bindMethods(
-    tag,
-    contextMap,
-    behaviorMethods,
-    thisfulMethods = false,
-  ) {
-    const prototype = {};
-    for (const prop of Reflect.ownKeys(behaviorMethods)) {
-      const methodTag = `${tag}).${String(prop)}`;
-      const func = behaviorMethods[prop];
-      assert.typeof(func, 'function');
-
-      const getContext = self => {
-        const context = contextMap.get(self);
-        assert(
-          context,
-          X`${q(methodTag)} may only be applied to a valid instance: ${this}`,
-        );
-        return context;
-      };
-
-      // Violating all Jessie rules to create representatives that inherit
-      // methods from a shared prototype. The bound method therefore needs
-      // to mention `this`. We define it using concise menthod syntax
-      // so that it will be `this` sensitive but not constructable.
-      //
-      // We normally consider `this` unsafe because of the hazard of a
-      // method of one abstraction being applied to an instance of
-      // another abstraction. To prevent that attack, the bound method
-      // checks that it's `this` is in the map in which its representatives
-      // are registered.
-      const { method } = thisfulMethods
-        ? {
-            method(...args) {
-              const context = getContext(this);
-              return Reflect.apply(func, context, args);
-            },
-          }
-        : {
-            method(...args) {
-              const context = getContext(this);
-              return Reflect.apply(func, null, [context, ...args]);
-            },
-          };
-      Object.defineProperties(method, {
-        name: { value: methodTag },
-        length: { value: thisfulMethods ? func.length : func.length - 1 },
-      });
-      prototype[prop] = method;
-    }
-    return Far(tag, prototype);
-  }
-
   /**
    * @typedef {{
    *  kindID: string,
@@ -633,7 +581,11 @@ export function makeVirtualObjectManager(
     isDurable,
     durableKindDescriptor,
   ) {
-    const { finish, thisfulMethods = false } = options;
+    const {
+      finish,
+      thisfulMethods = false,
+      interfaceGuard = undefined,
+    } = options;
     let facetNames;
     let contextMapTemplate;
     let prototypeTemplate;
@@ -644,11 +596,12 @@ export function makeVirtualObjectManager(
         assert(!multifaceted);
         facetNames = undefined;
         contextMapTemplate = new WeakMap();
-        prototypeTemplate = bindMethods(
+        prototypeTemplate = defendPrototype(
           tag,
           contextMapTemplate,
           behavior,
           thisfulMethods,
+          interfaceGuard,
         );
         break;
       }
@@ -662,14 +615,15 @@ export function makeVirtualObjectManager(
         contextMapTemplate = {};
         prototypeTemplate = {};
         for (const name of facetNames) {
-          const behaviorMethods = behavior[name];
           const contextMap = new WeakMap();
           contextMapTemplate[name] = contextMap;
-          const prototype = bindMethods(
+          const prototype = defendPrototype(
             `${tag} ${name}`,
             contextMap,
-            behaviorMethods,
+            behavior[name],
             thisfulMethods,
+            // TODO some tool does not yet understand the `?.[` syntax
+            interfaceGuard && interfaceGuard[name],
           );
           prototypeTemplate[name] = prototype;
         }

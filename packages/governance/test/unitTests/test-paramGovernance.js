@@ -209,7 +209,10 @@ test('multiple params bad change', async t => {
         2n,
         paramChangesSpec,
       ),
-    { message: /".13n." was not a live payment for brand/ },
+    {
+      message:
+        'Zoe Invitation issuer.getAmountOf args[0]: bigint "[13n]" - Must be a remotable',
+    },
   );
 });
 

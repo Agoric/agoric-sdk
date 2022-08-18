@@ -55,7 +55,7 @@ export {
   matches,
   fit,
 } from './patterns/patternMatchers.js';
-export { I } from './patterns/interface-tools.js';
+export { defendPrototype } from './patterns/interface-tools.js';
 export { compareRank, isRankSorted, sortByRank } from './patterns/rankOrder.js';
 export {
   makeDecodePassable,
@@ -78,7 +78,12 @@ export {
 } from './stores/scalarMapStore.js';
 
 export { provide } from './stores/store-utils.js';
-export { objectMap, getMethodNames, bindAllMethods } from './utils.js';
+export {
+  objectMap,
+  getMethodNames,
+  bindAllMethods,
+  listDifference,
+} from './utils.js';
 
 // /////////////////////// Deprecated Legacy ///////////////////////////////////
 

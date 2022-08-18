@@ -284,7 +284,7 @@ test('vpurse.deposit promise', async t => {
   );
 });
 
-test('vpurse.getDepositFacet', async t => {
+test.only('vpurse.getDepositFacet', async t => {
   t.plan(8);
   const { balanceUpdater, mint, brand, vpurse, expected } = setup(t);
   const fungible25 = AmountMath.make(brand, 25n);

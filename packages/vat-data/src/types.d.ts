@@ -46,6 +46,7 @@ type DefineKindOptions<C> = {
   finish?: (context: C) => void;
   durable?: boolean;
   thisfulMethods?: boolean;
+  interfaceGuard?: object; // TODO type
 };
 
 export type VatData = {
