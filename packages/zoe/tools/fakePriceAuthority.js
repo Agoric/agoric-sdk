@@ -7,6 +7,7 @@ import {
 } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
 
 import { natSafeMath } from '../src/contractSupport/index.js';
 
@@ -14,6 +15,11 @@ import './types.js';
 import '../exported.js';
 
 const { details: X } = assert;
+
+// 'if (a >= b)' becomes 'if (timestampGTE(a,b))'
+const timestampGTE = (a, b) => TimeMath.compareAbs(a, b) >= 0;
+// 'if (a <= b)' becomes 'if (timestampLTE(a,b))'
+const timestampLTE = (a, b) => TimeMath.compareAbs(a, b) <= 0;
 
 /**
  * @typedef {object} FakePriceAuthorityOptions
@@ -158,6 +164,10 @@ export async function makeFakePriceAuthority(options) {
   // Keep track of the time of the latest price change.
   let latestTick;
 
+  // clients who are waiting for a specific timestamp
+  /** @type { [when: Timestamp, resolve: (quote: PriceQuote) => void][] } */
+  let timeClients = [];
+
   // Check if a comparison request has been satisfied.
   // Returns true if it has, false otherwise.
   function checkComparisonRequest(req) {
@@ -182,6 +192,11 @@ export async function makeFakePriceAuthority(options) {
     let firstTime = true;
     const handler = Far('wake handler', {
       wake: async t => {
+        if (t === 0n) {
+          // just in case makeRepeater() was called with delay=0,
+          // which schedules an immediate wakeup
+          return;
+        }
         if (firstTime) {
           firstTime = false;
         } else {
@@ -189,12 +204,22 @@ export async function makeFakePriceAuthority(options) {
         }
         latestTick = t;
         tickUpdater.updateState(t);
+        const remainingTimeClients = [];
+        for (const entry of timeClients) {
+          const [when, resolve] = entry;
+          if (timestampGTE(latestTick, when)) {
+            resolve(latestTick);
+          } else {
+            remainingTimeClients.push(entry);
+          }
+        }
+        timeClients = remainingTimeClients;
         for (const req of comparisonQueue) {
           checkComparisonRequest(req);
         }
       },
     });
-    const repeater = E(timer).makeRepeater(0n, quoteInterval);
+    const repeater = E(timer).makeRepeater(1n, quoteInterval);
     return E(repeater).schedule(handler);
   }
 
@@ -232,7 +257,7 @@ export async function makeFakePriceAuthority(options) {
 
   async function* generateQuotes(amountIn, brandOut) {
     let record = await ticker.getUpdateSince();
-    while (record.updateCount) {
+    while (record.updateCount !== undefined) {
       // eslint-disable-next-line no-await-in-loop
       const { value: timestamp } = record; // = await E(timer).getCurrentTimestamp();
       yield priceInQuote(amountIn, brandOut, timestamp);
@@ -258,16 +283,16 @@ export async function makeFakePriceAuthority(options) {
     quoteAtTime: (timeStamp, amountIn, brandOut) => {
       assert.typeof(timeStamp, 'bigint');
       assertBrands(amountIn.brand, brandOut);
-      const { promise, resolve } = makePromiseKit();
-      E(timer).setWakeup(
-        timeStamp,
-        Far('wake handler', {
-          wake: time => {
-            return resolve(priceInQuote(amountIn, brandOut, time));
-          },
-        }),
-      );
-      return promise;
+      if (latestTick && timestampLTE(timeStamp, latestTick)) {
+        return Promise.resolve(priceInQuote(amountIn, brandOut, timeStamp));
+      } else {
+        // follow ticker until it fires with >= timeStamp
+        const { promise, resolve } = makePromiseKit();
+        timeClients.push([timeStamp, resolve]);
+        return promise.then(ts => {
+          return priceInQuote(amountIn, brandOut, ts);
+        });
+      }
     },
     quoteGiven: async (amountIn, brandOut) => {
       assertBrands(amountIn.brand, brandOut);

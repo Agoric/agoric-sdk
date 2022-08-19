@@ -293,7 +293,7 @@ const setupServices = async (
   t,
   priceOrList,
   unitAmountIn,
-  timer = buildManualTimer(t.log),
+  timer = buildManualTimer(t.log, 0n, { eventLoopIteration }),
   quoteInterval = 1n,
   runInitialLiquidity,
 ) => {
@@ -704,7 +704,7 @@ test('price falls precipitously', async t => {
   // The Autowap provides 534 Minted for the 4 Aeth collateral, so the borrower
   // gets 41 back
 
-  const manualTimer = buildManualTimer(t.log);
+  const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
   const services = await setupServices(
     t,
     [2200n, 19180n, 1650n, 150n],
@@ -713,6 +713,8 @@ test('price falls precipitously', async t => {
     undefined,
     1500n,
   );
+  // we start with time=0, price=2200
+
   const { vaultFactory, lender } = services.vaultFactory;
 
   const { reserveCreatorFacet } = services.reserveFacets;
@@ -781,17 +783,13 @@ test('price falls precipitously', async t => {
   // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(run.makeEmpty()));
-  await manualTimer.tick();
+  await manualTimer.tick(); // t 0->1, p 2200->19180
   await assertDebtIs(debtAmount.value);
 
-  await manualTimer.tick();
+  await manualTimer.tick(); // t 1->2, p 19180->1650
   await assertDebtIs(debtAmount.value);
 
-  await manualTimer.tick();
-  await assertDebtIs(debtAmount.value);
-
-  await manualTimer.tick();
-  await eventLoopIteration();
+  await manualTimer.tick(); // t 2->3, p 1650->150, liquidates
 
   // shortfall 103n covered by the reserve
   t.deepEqual(
@@ -881,7 +879,10 @@ test('interest on multiple vaults', async t => {
     chargingPeriod: SECONDS_PER_WEEK,
     recordingPeriod: SECONDS_PER_WEEK,
   };
-  const manualTimer = buildManualTimer(t.log, 0n, SECONDS_PER_DAY);
+  const manualTimer = buildManualTimer(t.log, 0n, {
+    timeStep: SECONDS_PER_DAY,
+    eventLoopIteration,
+  });
   const services = await setupServices(
     t,
     [500n, 1500n],
@@ -977,7 +978,6 @@ test('interest on multiple vaults', async t => {
   // { chargingPeriod: weekly, recordingPeriod: weekly }
   // Advance 8 days, past one charging and recording period
   await manualTimer.tickN(8);
-  await eventLoopIteration();
 
   const assetUpdate = await E(assetNotifier).getUpdateSince();
   const aliceUpdate = await E(aliceNotifier).getUpdateSince();
@@ -1036,7 +1036,6 @@ test('interest on multiple vaults', async t => {
 
   // Advance another 7 days, past one charging and recording period
   await manualTimer.tickN(8);
-  await eventLoopIteration();
 
   // open a vault when manager's interest already compounded
   const wantedRun = 1_000n;
@@ -1398,7 +1397,9 @@ test('adjust balances after interest charges', async t => {
   const { aeth, run } = t.context;
 
   // charge interest on every tick
-  const manualTimer = buildManualTimer(trace, 0n, SECONDS_PER_DAY);
+  const manualTimer = buildManualTimer(trace, 0n, {
+    timeStep: SECONDS_PER_DAY,
+  });
   t.context.loanTiming = {
     chargingPeriod: SECONDS_PER_DAY,
     recordingPeriod: SECONDS_PER_DAY,
@@ -1745,7 +1746,10 @@ test('mutable liquidity triggers and interest', async t => {
   };
 
   // charge interest on every tick
-  const manualTimer = buildManualTimer(t.log, 0n, SECONDS_PER_WEEK);
+  const manualTimer = buildManualTimer(t.log, 0n, {
+    timeStep: SECONDS_PER_WEEK,
+    eventLoopIteration,
+  });
   const services = await setupServices(
     t,
     makeRatio(10n, run.brand, 1n, aeth.brand),
@@ -2070,7 +2074,7 @@ test('close loan', async t => {
     t,
     [15n],
     aeth.make(1n),
-    buildManualTimer(t.log),
+    buildManualTimer(t.log, 0n, { eventLoopIteration }),
     undefined,
     500n,
   );
@@ -2304,7 +2308,10 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   t.context.rates = rates;
 
   // charge interest on every tick
-  const manualTimer = buildManualTimer(t.log, 0n, SECONDS_PER_WEEK);
+  const manualTimer = buildManualTimer(t.log, 0n, {
+    timeStep: SECONDS_PER_WEEK,
+    eventLoopIteration,
+  });
   const services = await setupServices(
     t,
     [10n, 7n],
@@ -2440,7 +2447,6 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   await manualTimer.tick();
   // price levels changed and interest was charged.
 
-  await eventLoopIteration();
   bobUpdate = await E(bobNotifier).getUpdateSince(bobUpdate.updateCount);
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
 
@@ -2567,7 +2573,10 @@ test('manager notifiers', async t => {
   const ENOUGH = 10_000n;
 
   const { aeth, run } = t.context;
-  const manualTimer = buildManualTimer(t.log, 0n, SECONDS_PER_WEEK);
+  const manualTimer = buildManualTimer(t.log, 0n, {
+    timeStep: SECONDS_PER_WEEK,
+    eventLoopIteration,
+  });
   t.context.loanTiming = {
     chargingPeriod: SECONDS_PER_WEEK,
     recordingPeriod: SECONDS_PER_WEEK,

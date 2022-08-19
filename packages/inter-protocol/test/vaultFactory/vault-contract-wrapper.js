@@ -61,7 +61,7 @@ export async function start(zcf, privateArgs) {
 
   const { subscriber: assetSubscriber } = makePublishKit();
 
-  const timer = buildManualTimer(console.log, 0n, DAY);
+  const timer = buildManualTimer(console.log, 0n, { timeStep: DAY });
   const options = {
     actualBrandIn: collateralBrand,
     actualBrandOut: runBrand,

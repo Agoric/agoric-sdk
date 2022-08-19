@@ -28,6 +28,7 @@ test('timer vat', async t => {
   await c.run();
 
   const run = async (method, args = []) => {
+    await c.run(); // allow timer device/vat messages to settle
     assert(Array.isArray(args));
     const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
@@ -53,16 +54,15 @@ test('timer vat', async t => {
   await c.run();
 
   const cd4 = await run('getEvents');
-  t.deepEqual(parse(cd4.body), [3n]); // scheduled time
+  t.deepEqual(parse(cd4.body), [4n]); // current time
 
   const cd5 = await run('installWakeup', [5n]);
   t.deepEqual(parse(cd5.body), 5n);
   const cd6 = await run('installWakeup', [6n]);
   t.deepEqual(parse(cd6.body), 6n);
-  // If you added the same handler multiple times, removeWakeup()
-  // would remove them all. It returns a list of wakeup timestamps.
-  const cd7 = await run('removeWakeup');
-  t.deepEqual(parse(cd7.body), [5n, 6n]);
+  // you can cancel a wakeup if you provided a cancelToken
+  const cd7 = await run('cancel');
+  t.deepEqual(parse(cd7.body), undefined);
 
   timer.poll(7n);
   await c.run();
@@ -72,4 +72,48 @@ test('timer vat', async t => {
 
   const cd9 = await run('banana', [10n]);
   t.deepEqual(parse(cd9.body), 'bad setWakeup() handler');
+
+  // start a repeater that should first fire at now+delay+interval, so
+  // 7+20+10=27,37,47,57,..
+  await run('goodRepeater', [20n, 10n]);
+  timer.poll(25n);
+  const cd10 = await run('getEvents');
+  t.deepEqual(parse(cd10.body), []);
+  timer.poll(35n); // fire 27, reschedules for 37
+  const cd11 = await run('getEvents');
+  t.deepEqual(parse(cd11.body), [35n]);
+  timer.poll(40n); // fire 37, reschedules for 47
+  const cd12 = await run('getEvents');
+  t.deepEqual(parse(cd12.body), [40n]);
+
+  // disabling the repeater at t=40 should unschedule the t=47 event
+  await run('stopRepeater');
+  timer.poll(50n);
+  const cd13 = await run('getEvents');
+  t.deepEqual(parse(cd13.body), []);
+
+  // exercises #4282
+  const cd14 = await run('repeaterBadSchedule', [60n, 10n]);
+  t.deepEqual(parse(cd14.body), 'bad repeater.schedule() handler');
+  timer.poll(75n);
+  await c.run();
+  t.pass('survived timer.poll');
+
+  // using cancel() with a bogus token is ignored
+  const cd15 = await run('badCancel', []);
+  t.deepEqual(parse(cd15.body), undefined);
 });
+
+// DONE+TESTED 1: deleting a repeater should cancel all wakeups for it, but the next wakeup happens anyways
+
+// DONE-BY-DESIGN 2: deleting a repeater should free all memory used by it, but
+// there's an array which holds empty entries and never shrinks
+
+// DONE+TESTED 3: attempting to repeater.schedule an invalid handler should
+// throw, but succeeds and provokes a kernel panic later when poll()
+// is called (and tries to invoke the handler)
+
+// DONE(delay) 4: vat-timer.js and timer.md claim `makeRepeater(delay,
+// interval)` where the first arg is delay-from-now, but
+// device-timer.js provides `makeRepeater(startTime, interval)`, where
+// the arg is delay-from-epoch

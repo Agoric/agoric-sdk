@@ -7,6 +7,7 @@ import path from 'path';
 import { E } from '@endo/eventual-send';
 import '../../../exported.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
+import { eventLoopIteration } from '../../../tools/eventLoopIteration.js';
 
 import { setup } from '../setupBasicMints.js';
 import { installationPFromSource } from '../installFromSource.js';
@@ -64,7 +65,7 @@ test('fundedCallSpread below Strike1', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(t.log, 0n);
+  const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
   const priceAuthority = makeTestPriceAuthority(
     brands,
     [54, 20, 35, 15, 28],
@@ -72,7 +73,7 @@ test('fundedCallSpread below Strike1', async t => {
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3n,
+    expiration: 2n,
     underlyingAmount: simoleans(2n),
     priceAuthority,
     strikePrice1: moola(60n),
@@ -170,11 +171,11 @@ test('fundedCallSpread above Strike2', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(t.log, 0n);
+  const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
   const priceAuthority = makeTestPriceAuthority(brands, [20, 55], manualTimer);
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3n,
+    expiration: 2n,
     underlyingAmount: simoleans(2n),
     priceAuthority,
     strikePrice1: moola(60n),
@@ -269,11 +270,11 @@ test('fundedCallSpread, mid-strike', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(t.log, 0n);
+  const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
   const priceAuthority = makeTestPriceAuthority(brands, [20, 45], manualTimer);
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3n,
+    expiration: 2n,
     underlyingAmount: simoleans(2n),
     priceAuthority,
     strikePrice1: moola(60n),
@@ -367,11 +368,11 @@ test('fundedCallSpread, late exercise', async t => {
   // Setup Carol
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
-  const manualTimer = buildManualTimer(t.log, 0n);
+  const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
   const priceAuthority = makeTestPriceAuthority(brands, [20, 45], manualTimer);
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3n,
+    expiration: 2n,
     underlyingAmount: simoleans(2n),
     priceAuthority,
     strikePrice1: moola(60n),
@@ -469,11 +470,11 @@ test('fundedCallSpread, sell options', async t => {
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
   const carolBucksPayment = bucksMint.mintPayment(bucks(100n));
 
-  const manualTimer = buildManualTimer(t.log, 0n);
+  const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
   const priceAuthority = makeTestPriceAuthority(brands, [20, 45], manualTimer);
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3n,
+    expiration: 2n,
     underlyingAmount: simoleans(2n),
     priceAuthority,
     strikePrice1: moola(60n),
@@ -649,7 +650,7 @@ test('pricedCallSpread, mid-strike', async t => {
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
   const carolBucksPayment = bucksMint.mintPayment(bucks(75n));
 
-  const manualTimer = buildManualTimer(t.log, 0n);
+  const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
   const priceAuthority = await makeTestPriceAuthority(
     brands,
     [20, 45, 45, 45, 45, 45, 45],
@@ -657,7 +658,7 @@ test('pricedCallSpread, mid-strike', async t => {
   );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
-    expiration: 3n,
+    expiration: 2n,
     underlyingAmount: simoleans(2n),
     priceAuthority,
     strikePrice1: moola(60n),

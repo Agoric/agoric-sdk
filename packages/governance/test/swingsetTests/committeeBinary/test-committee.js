@@ -85,7 +85,6 @@ const expectedCommitteeBinaryStartLog = [
   '@@ tick:1 @@',
   '@@ tick:2 @@',
   '@@ tick:3 @@',
-  '&& running a task scheduled for 3. &&',
   'vote outcome: {"text":"Eeny"}',
 ];
 
@@ -119,9 +118,7 @@ const expectedCommitteeBinaryTwoQuestionsLog = [
   '@@ tick:1 @@',
   '@@ tick:2 @@',
   '@@ tick:3 @@',
-  '&& running a task scheduled for 3. &&',
   '@@ tick:4 @@',
-  '&& running a task scheduled for 4. &&',
   'vote outcome: {"text":"One Potato"}',
   'vote outcome: {"text":"1 foot"}',
 ];

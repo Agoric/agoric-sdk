@@ -7,6 +7,7 @@ import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE } from '@agoric/governance';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { E } from '@endo/eventual-send';
 import { startEconomicCommittee } from '../../../src/proposals/econ-behaviors.js';
 import { amountGT } from '../../../src/vpool-xyk-amm/constantProduct/calcFees.js';
@@ -43,7 +44,7 @@ test('start Economic Committee', async t => {
 test('amm change param via Governance', async t => {
   const centralR = makeIssuerKit('central');
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  const timer = buildManualTimer(t.log);
+  const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
 
   const { zoe, amm, committeeCreator, governor, installs, invitationAmount } =
     await setupAmmServices(t, electorateTerms, centralR, timer);
@@ -107,7 +108,7 @@ test('price check after Governance param change', async t => {
   const moola = value => AmountMath.make(moolaKit.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  const timer = buildManualTimer(t.log);
+  const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
 
   const { zoe, amm, committeeCreator, governor, installs, invitationAmount } =
     await setupAmmServices(t, electorateTerms, centralR, timer);

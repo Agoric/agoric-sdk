@@ -294,7 +294,7 @@ const makeWalletMaker = creatorFacet => {
 };
 
 test('wrap liened amount', async t => {
-  const timer = buildManualTimer(t.log, 0n, 1n);
+  const timer = buildManualTimer(t.log);
 
   const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume, instance } = space;
@@ -322,7 +322,7 @@ test('wrap liened amount', async t => {
 });
 
 test('unwrap liened amount', async t => {
-  const timer = buildManualTimer(t.log, 0n, 1n);
+  const timer = buildManualTimer(t.log);
 
   const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume, instance } = space;
@@ -355,7 +355,7 @@ test('unwrap liened amount', async t => {
 });
 
 test('stakeFactory API usage', async t => {
-  const timer = buildManualTimer(t.log, 0n, 1n);
+  const timer = buildManualTimer(t.log);
 
   const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume } = space;
@@ -404,7 +404,7 @@ test('stakeFactory API usage', async t => {
 });
 
 test('extra offer keywords are rejected', async t => {
-  const timer = buildManualTimer(t.log, 0n, SECONDS_PER_DAY);
+  const timer = buildManualTimer(t.log, 0n, { timeStep: SECONDS_PER_DAY });
 
   const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume } = space;
@@ -463,7 +463,7 @@ test('extra offer keywords are rejected', async t => {
  * @typedef { [bigint, bigint] } Rational
  */
 test('forged Attestation fails', async t => {
-  const timer = buildManualTimer(t.log, 0n, 1n);
+  const timer = buildManualTimer(t.log);
 
   const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume } = space;
@@ -514,7 +514,7 @@ const approxEqual = (t, actual, expected, epsilon) => {
 };
 
 const makeWorld = async t => {
-  const timer = buildManualTimer(t.log, 0n, SECONDS_PER_DAY);
+  const timer = buildManualTimer(t.log, 0n, { timeStep: SECONDS_PER_DAY });
   const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume } = space;
 

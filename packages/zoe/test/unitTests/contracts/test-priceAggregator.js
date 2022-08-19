@@ -18,6 +18,7 @@ import { makeChainStorageRoot } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
+import { eventLoopIteration } from '../../../tools/eventLoopIteration.js';
 
 import '../../../exported.js';
 import '../../../src/contracts/exported.js';
@@ -150,7 +151,7 @@ test.before('setup aggregator and oracles', async ot => {
    * @param {RelativeTime} POLL_INTERVAL
    */
   const makeMedianAggregator = async POLL_INTERVAL => {
-    const timer = buildManualTimer(() => {});
+    const timer = buildManualTimer(() => {}, 0n, { eventLoopIteration });
     const storageNode = E(storageRoot).makeChildNode('priceAggregator');
     const aggregator = await E(zoe).startInstance(
       aggregatorInstallation,
@@ -528,7 +529,7 @@ test('oracle invitation', async t => {
 test('quoteAtTime', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const userTimer = buildManualTimer(() => {});
+  const userTimer = buildManualTimer(() => {}, 0n, { eventLoopIteration });
 
   const aggregator = await t.context.makeMedianAggregator(1n);
   const {
