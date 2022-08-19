@@ -103,13 +103,16 @@ const makeTestContext = async () => {
     initialPoserInvitation,
   );
 
+  const mockChainStorage = makeMockChainStorageRoot();
+
   return {
     bundles: { psmBundle },
     zoe: await zoe,
+    mockChainStorage,
     privateArgs: harden({
       feeMintAccess: await feeMintAccess,
       initialPoserInvitation,
-      storageNode: makeMockChainStorageRoot().makeChildNode('psm'),
+      storageNode: mockChainStorage.makeChildNode('psm'),
       marshaller: makeBoard().getReadonlyMarshaller(),
     }),
     stable: { issuer: stableIssuer, brand: stableBrand },
@@ -142,6 +145,11 @@ test.before(async t => {
   t.context = await makeTestContext();
 });
 
+/**
+ *
+ * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
+ * @param {{}} [customTerms]
+ */
 async function makePsmDriver(t, customTerms) {
   const {
     zoe,
@@ -150,6 +158,7 @@ async function makePsmDriver(t, customTerms) {
     installs: { psmInstall },
     anchor,
   } = t.context;
+  /** @type {Awaited<ReturnType<import('../../src/psm/psm.js').start>>} */
   const { creatorFacet, publicFacet } = await E(zoe).startInstance(
     psmInstall,
     harden({ AUSD: anchor.issuer }),
@@ -167,6 +176,7 @@ async function makePsmDriver(t, customTerms) {
     },
 
     async getFeePayout() {
+      // @ts-expect-error XXX governance types
       const limitedCreatorFacet = E(creatorFacet).getLimitedCreatorFacet();
       const collectFeesSeat = await E(zoe).offer(
         E(limitedCreatorFacet).makeCollectFeesInvitation(),
@@ -183,6 +193,7 @@ async function makePsmDriver(t, customTerms) {
       const seat = E(zoe).offer(
         E(publicFacet).makeSwapInvitation(),
         harden({ give: { In: giveAnchor } }),
+        // @ts-expect-error known defined
         harden({ In: anchor.mint.mintPayment(giveAnchor) }),
       );
       return E(seat).getPayouts();
@@ -303,11 +314,21 @@ test('anchor is 2x stable', async t => {
   trace('get anchor', { runGive: giveRun, expectedRun, actualAnchor });
 });
 
-test('storage keys', async t => {
+test('psm.governance', async t => {
   const { publicFacet } = await makePsmDriver(t);
-
   t.is(
     await subscriptionKey(E(publicFacet).getSubscription()),
     'mockChainStorageRoot.psm.governance',
   );
+
+  const { mockChainStorage } = t.context;
+  t.like(mockChainStorage.getBody('mockChainStorageRoot.psm.governance'), {
+    current: {
+      Electorate: { type: 'invitation' },
+      GiveStableFee: { type: 'ratio' },
+      MintLimit: { type: 'amount' },
+      WantStableFee: { type: 'ratio' },
+    },
+  });
+});
 });
