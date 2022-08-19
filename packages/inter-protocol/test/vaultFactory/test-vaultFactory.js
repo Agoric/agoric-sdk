@@ -5,12 +5,13 @@ import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeParamManagerBuilder } from '@agoric/governance';
+import { objectMap } from '@agoric/internal';
 import {
   makeNotifierFromAsyncIterable,
   makeNotifierFromSubscriber,
   makeStoredPublisherKit,
 } from '@agoric/notifier';
-import { M, matches, objectMap } from '@agoric/store';
+import { M, matches } from '@agoric/store';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
   ceilMultiplyBy,

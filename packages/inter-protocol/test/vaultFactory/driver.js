@@ -5,7 +5,7 @@ import '@agoric/zoe/exported.js';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { objectMap } from '@agoric/store';
+import { objectMap } from '@agoric/internal';
 import {
   ceilMultiplyBy,
   makeRatioFromAmounts,

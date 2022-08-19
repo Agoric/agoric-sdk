@@ -20,6 +20,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/assert": "^0.4.0",
+    "@agoric/internal": "^0.1.0",
     "@agoric/store": "^0.7.2"
   },
   "devDependencies": {

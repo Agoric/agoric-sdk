@@ -8,6 +8,7 @@ import {
   passStyleOf,
   hasOwnPropertyOf,
 } from '@endo/marshal';
+import { applyLabelingError } from '@agoric/internal';
 import {
   compareRank,
   getPassStyleCover,
@@ -27,7 +28,6 @@ import {
   checkCopyMap,
   copyMapKeySet,
 } from '../keys/checkKey.js';
-import { applyLabelingError } from '../utils.js';
 
 /// <reference types="ses"/>
 

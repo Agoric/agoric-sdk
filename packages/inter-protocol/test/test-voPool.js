@@ -10,7 +10,7 @@ import {
 } from '@agoric/notifier';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
-import { objectMap } from '@agoric/store';
+import { objectMap } from '@agoric/internal';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 

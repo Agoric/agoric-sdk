@@ -13,12 +13,8 @@
 
 import { assert, details as X, q } from '@agoric/assert';
 import { makeScalarStoreCoordinator } from '@agoric/cache';
-import {
-  makeLegacyMap,
-  makeScalarMap,
-  makeScalarWeakMap,
-  objectMap,
-} from '@agoric/store';
+import { objectMap } from '@agoric/internal';
+import { makeLegacyMap, makeScalarMap, makeScalarWeakMap } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';

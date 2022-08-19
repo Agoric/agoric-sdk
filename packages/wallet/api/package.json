@@ -24,6 +24,7 @@
     "@agoric/assert": "^0.4.0",
     "@agoric/cache": "^0.1.0",
     "@agoric/ertp": "^0.14.2",
+    "@agoric/internal": "^0.1.0",
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.4.0",
     "@agoric/inter-protocol": "^0.11.0",
