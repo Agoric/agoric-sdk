@@ -1,6 +1,3 @@
-https://github.com/Agoric/agoric-sdk/tree/HEAD/packages/cosmic-swingset
-README-bridge.md
-
 ## ERTP Transfer between two virtual purses
 
 ```mermaid
