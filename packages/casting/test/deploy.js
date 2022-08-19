@@ -13,7 +13,9 @@ const getVaultManagerMetrics = async (homeP, { cache, lookup }) => {
   const manager = cache([`vault.manager`, brand], () =>
     E(publicFacet).getCollateralManager(brand),
   );
-  const subscription = cache([`subscription`, brand], E(manager).getMetrics);
+  const subscription = cache([`subscription`, brand], () =>
+    E(manager).getMetrics(),
+  );
   return cache([`subscription.key2`, brand], () =>
     E(subscription).getStoreKey(),
   );

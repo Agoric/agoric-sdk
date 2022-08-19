@@ -233,7 +233,7 @@ export const makeZCFZygote = async (
       }
     },
     getInstance: () => getInstanceRecord().instance,
-    setOfferFilter: E(zoeInstanceAdmin).setOfferFilter,
+    setOfferFilter: strings => E(zoeInstanceAdmin).setOfferFilter(strings),
   });
 
   // handleOfferObject gives Zoe the ability to notify ZCF when a new seat is
