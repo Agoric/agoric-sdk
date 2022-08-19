@@ -42,7 +42,7 @@ export const startPSM = async (
       produce: { psm: psmInstanceR, psmGovernor: psmGovernorR },
     },
     brand: {
-      consume: { [Stable.symbol]: runBrandP },
+      consume: { [Stable.symbol]: stableP },
     },
   },
   {
@@ -58,9 +58,9 @@ export const startPSM = async (
     'string',
     X`anchorOptions.denom must be a string, not ${denom}`,
   );
-  const [runBrand, [anchorBrand, anchorIssuer], feeMintAccess] =
+  const [stable, [anchorBrand, anchorIssuer], feeMintAccess] =
     await Promise.all([
-      runBrandP,
+      stableP,
       reserveThenGetNamePaths(agoricNamesAdmin, [
         ['brand', keyword],
         ['issuer', keyword],
@@ -81,7 +81,7 @@ export const startPSM = async (
   const terms = await deeplyFulfilled(
     harden({
       anchorBrand,
-      anchorPerStable: makeRatio(100n, anchorBrand, 100n, runBrand),
+      anchorPerStable: makeRatio(100n, anchorBrand, 100n, stable),
       governedParams: {
         [CONTRACT_ELECTORATE]: {
           type: ParamTypes.INVITATION,
@@ -89,11 +89,11 @@ export const startPSM = async (
         },
         WantStableFee: {
           type: ParamTypes.RATIO,
-          value: makeRatio(WantStableFeeBP, runBrand, BASIS_POINTS),
+          value: makeRatio(WantStableFeeBP, stable, BASIS_POINTS),
         },
         GiveStableFee: {
           type: ParamTypes.RATIO,
-          value: makeRatio(GiveStableFeeBP, runBrand, BASIS_POINTS),
+          value: makeRatio(GiveStableFeeBP, stable, BASIS_POINTS),
         },
         MintLimit: { type: ParamTypes.AMOUNT, value: mintLimit },
       },
@@ -104,7 +104,11 @@ export const startPSM = async (
     }),
   );
 
-  const storageNode = await makeStorageNodeChild(chainStorage, 'psm');
+  const psmStorageNode = await makeStorageNodeChild(chainStorage, 'psm');
+  const storageNode = psmStorageNode
+    .makeChildNode(Stable.symbol)
+    .makeChildNode(keyword);
+
   const marshaller = await E(board).getPublishingMarshaller();
 
   const governorTerms = await deeplyFulfilled(

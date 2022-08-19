@@ -104,6 +104,7 @@ const makeTestContext = async () => {
   );
 
   const mockChainStorage = makeMockChainStorageRoot();
+  const childkey = 'IST-aUSD';
 
   return {
     bundles: { psmBundle },
@@ -112,7 +113,9 @@ const makeTestContext = async () => {
     privateArgs: harden({
       feeMintAccess: await feeMintAccess,
       initialPoserInvitation,
-      storageNode: mockChainStorage.makeChildNode('psm'),
+      storageNode: mockChainStorage
+        .makeChildNode('psm')
+        .makeChildNode(childkey),
       marshaller: makeBoard().getReadonlyMarshaller(),
     }),
     stable: { issuer: stableIssuer, brand: stableBrand },
@@ -318,17 +321,20 @@ test('psm.governance', async t => {
   const { publicFacet } = await makePsmDriver(t);
   t.is(
     await subscriptionKey(E(publicFacet).getSubscription()),
-    'mockChainStorageRoot.psm.governance',
+    'mockChainStorageRoot.psm.IST-aUSD.governance',
   );
 
   const { mockChainStorage } = t.context;
-  t.like(mockChainStorage.getBody('mockChainStorageRoot.psm.governance'), {
-    current: {
-      Electorate: { type: 'invitation' },
-      GiveStableFee: { type: 'ratio' },
-      MintLimit: { type: 'amount' },
-      WantStableFee: { type: 'ratio' },
+  t.like(
+    mockChainStorage.getBody('mockChainStorageRoot.psm.IST-aUSD.governance'),
+    {
+      current: {
+        Electorate: { type: 'invitation' },
+        GiveStableFee: { type: 'ratio' },
+        MintLimit: { type: 'amount' },
+        WantStableFee: { type: 'ratio' },
+      },
     },
-  });
+  );
 });
 });
