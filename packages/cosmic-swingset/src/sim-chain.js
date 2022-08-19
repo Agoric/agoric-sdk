@@ -78,9 +78,10 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     ),
   ).pathname;
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
-  function flushChainSends(replay) {
-    assert(!replay, X`Replay not implemented`);
+  function replayChainSends() {
+    assert.fail(X`Replay not implemented`);
   }
+  function clearChainSends() {}
 
   const env = process.env;
   const { metricsProvider } = getTelemetryProviders({
@@ -111,6 +112,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     actionQueue,
     kernelStateDBDir: stateDBdir,
     mailboxStorage,
+    clearChainSends,
     vatconfig,
     argv,
     debugName: GCI,
@@ -120,8 +122,8 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     mapSize,
   });
 
-  const { savedHeight, savedBlockTime, savedChainSends } = s;
-  const blockingSend = makeBlockManager({ ...s, flushChainSends });
+  const { savedHeight, savedBlockTime } = s;
+  const blockingSend = makeBlockManager({ ...s, replayChainSends });
 
   let blockHeight = savedHeight;
   let blockTime = savedBlockTime || scaleBlockTime(Date.now());
@@ -148,7 +150,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
         blockTime,
         params,
       };
-      await blockingSend(beginAction, savedChainSends);
+      await blockingSend(beginAction);
       for (let i = 0; i < thisBlock.length; i += 1) {
         const [newMessages, acknum] = thisBlock[i];
         aqContents.push({
@@ -161,13 +163,10 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
         });
       }
       const endAction = { type: 'END_BLOCK', blockHeight, blockTime };
-      await blockingSend(endAction, savedChainSends);
+      await blockingSend(endAction);
 
       // Done processing, "commit the block".
-      await blockingSend(
-        { type: 'COMMIT_BLOCK', blockHeight, blockTime },
-        savedChainSends,
-      );
+      await blockingSend({ type: 'COMMIT_BLOCK', blockHeight, blockTime });
 
       // We now advance to the next block.
       thisBlock = [];
@@ -209,7 +208,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     // The before-first-block is special... do it now.
     // This emulates what x/swingset does to run a BOOTSTRAP_BLOCK
     // before continuing with the real initialHeight.
-    await blockingSend({ type: 'BOOTSTRAP_BLOCK', blockTime }, savedChainSends);
+    await blockingSend({ type: 'BOOTSTRAP_BLOCK', blockTime });
     blockHeight = initialHeight;
   };
 

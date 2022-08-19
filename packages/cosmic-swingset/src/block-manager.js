@@ -23,7 +23,7 @@ export default function makeBlockManager({
   bootstrapBlock,
   beginBlock,
   endBlock,
-  flushChainSends,
+  replayChainSends,
   saveChainState,
   saveOutsideState,
   savedHeight,
@@ -138,7 +138,7 @@ export default function makeBlockManager({
 
   let decohered;
 
-  async function blockingSend(action, savedChainSends) {
+  async function blockingSend(action) {
     if (decohered) {
       throw decohered;
     }
@@ -167,11 +167,7 @@ export default function makeBlockManager({
 
         // Save the kernel's computed state just before the chain commits.
         const start2 = Date.now();
-        await saveOutsideState(
-          computedHeight,
-          action.blockTime,
-          savedChainSends,
-        );
+        await saveOutsideState(computedHeight, action.blockTime);
 
         const saveTime = Date.now() - start2;
 
@@ -179,7 +175,6 @@ export default function makeBlockManager({
           `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
         );
 
-        flushChainSends(false);
         break;
       }
 
@@ -215,7 +210,7 @@ export default function makeBlockManager({
           // clear the queue.
           for (const _ of actionQueue.consumeAll());
           try {
-            flushChainSends(true);
+            replayChainSends();
           } catch (e) {
             // Very bad!
             decohered = e;
