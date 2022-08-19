@@ -30,7 +30,7 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * timeout: number,
  * minSubmissionValue: number,
  * maxSubmissionValue: number,
- * unitAmountIn: Amount,
+ * unitAmountIn?: Amount,
  * }>} zcf
  * @param {object} root0
  * @param {ERef<Mint>} [root0.quoteMint]

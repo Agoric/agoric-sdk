@@ -16,7 +16,6 @@
 import '@agoric/zoe/exported.js';
 
 import { AmountMath } from '@agoric/ertp';
-import { Nat } from '@agoric/nat';
 import { makeStoredPublishKit, observeNotifier } from '@agoric/notifier';
 import {
   defineDurableKindMulti,
@@ -35,6 +34,7 @@ import {
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
+import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import {
   checkDebtLimit,
   makeEphemeraProvider,
@@ -919,12 +919,8 @@ const selfBehavior = {
 
     const { debtBrand } = state;
     // get a quote for one unit of the collateral
-    const displayInfo = await E(state.collateralBrand).getDisplayInfo();
-    const decimalPlaces = displayInfo.decimalPlaces || 0n;
-    return E(priceAuthority).quoteGiven(
-      AmountMath.make(state.collateralBrand, 10n ** Nat(decimalPlaces)),
-      debtBrand,
-    );
+    const collateralUnit = await unitAmount(state.collateralBrand);
+    return E(priceAuthority).quoteGiven(collateralUnit, debtBrand);
   },
 
   /** @param {MethodContext} context */

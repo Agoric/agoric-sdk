@@ -6,6 +6,7 @@ import {
 } from '@agoric/vats/src/lib-chainStorage.js';
 import { deeplyFulfilled } from '@endo/marshal';
 
+import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import { reserveThenDeposit, reserveThenGetNames } from './utils.js';
 
 /** @type {(name: string) => void} */
@@ -115,6 +116,7 @@ export const createPriceFeed = async (
     ]),
   ]);
 
+  const unitAmountIn = await unitAmount(brandIn);
   /** @type {import('@agoric/zoe/src/contracts/priceAggregator.js').PriceAggregatorContract['terms']} */
   const terms = await deeplyFulfilled(
     harden({
@@ -123,6 +125,7 @@ export const createPriceFeed = async (
       brandIn,
       brandOut,
       timer,
+      unitAmountIn,
     }),
   );
 
