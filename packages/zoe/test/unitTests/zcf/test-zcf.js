@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -252,6 +252,7 @@ test(`zcf.saveIssuer - args reversed`, async t => {
 
 test(`zcf.makeInvitation - no offerHandler`, async t => {
   const { zcf, zoe } = await setupZCFTest();
+  // @ts-expect-error bad argument
   const invitationP = zcf.makeInvitation(undefined, 'myInvitation');
   const invitationIssuer = await E(zoe).getInvitationIssuer();
   const isLive = await E(invitationIssuer).isLive(invitationP);
@@ -799,12 +800,14 @@ test(`zcfSeat.getNotifier`, async t => {
   for (let remainingTries = 2; remainingTries >= 0; remainingTries -= 1) {
     // eslint-disable-next-line no-await-in-loop
     notifierResult = await E(notifier).getUpdateSince(
+      // @ts-expect-error misc
       notifierResult?.updateCount,
     );
     if (notifierResult.value?.A) {
       break;
     }
   }
+  assert(notifierResult);
   t.deepEqual(notifierResult.value, {
     A: {
       brand: brand1,
@@ -1055,12 +1058,14 @@ test(`userSeat.getAllocationNotifierJig`, async t => {
   const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3n);
   let notifierResult;
   for (let remainingTries = 2; remainingTries >= 0; remainingTries -= 1) {
+    // @ts-expect-error misc
     // eslint-disable-next-line no-await-in-loop
     notifierResult = await notifier.getUpdateSince(notifierResult?.updateCount);
     if (notifierResult.value?.A) {
       break;
     }
   }
+  assert(notifierResult);
   t.deepEqual(notifierResult.value, {
     A: {
       brand: brand1,
@@ -1403,6 +1408,7 @@ test(`zcf.stopAcceptingOffers`, async t => {
 
 test(`zcf.setOfferFilter - illegal lists`, async t => {
   const { zcf } = await setupZCFTest();
+  // @ts-expect-error invalid argument
   await t.throwsAsync(() => zcf.setOfferFilter('nonList'), {
     message: /"nonList" must be an Array/,
   });
