@@ -23,6 +23,7 @@ import {
   makeMockChainStorageRoot,
   setUpZoeForTest,
   subscriptionKey,
+  withAmountUtils,
 } from '../supports.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
@@ -80,14 +81,13 @@ const makeTestContext = async () => {
   const psmBundle = await bundleCache.load(psmRoot, 'psm');
   const { zoe, feeMintAccess } = setUpZoeForTest();
 
-  const runIssuer = await E(zoe).getFeeIssuer();
-  const runBrand = await E(runIssuer).getBrand();
-  const anchorKit = makeIssuerKit('aUSD');
+  const stableIssuer = await E(zoe).getFeeIssuer();
+  const stableBrand = await E(stableIssuer).getBrand();
+  const anchor = withAmountUtils(makeIssuerKit('aUSD'));
 
-  const { brand: anchorBrand } = anchorKit;
   const committeeInstall = await E(zoe).install(committeeBundle);
   const psmInstall = await E(zoe).install(psmBundle);
-  const mintLimit = AmountMath.make(anchorBrand, MINT_LIMIT);
+  const mintLimit = AmountMath.make(anchor.brand, MINT_LIMIT);
 
   const { creatorFacet: committeeCreator } = await E(zoe).startInstance(
     committeeInstall,
@@ -112,13 +112,13 @@ const makeTestContext = async () => {
       storageNode: makeMockChainStorageRoot().makeChildNode('psm'),
       marshaller: makeBoard().getReadonlyMarshaller(),
     }),
-    run: { issuer: runIssuer, brand: runBrand },
-    anchorKit,
+    stable: { issuer: stableIssuer, brand: stableBrand },
+    anchor,
     installs: { committeeInstall, psmInstall },
     mintLimit,
     terms: {
-      anchorBrand,
-      anchorPerStable: makeRatio(100n, anchorBrand, 100n, runBrand),
+      anchorBrand: anchor.brand,
+      anchorPerStable: makeRatio(100n, anchor.brand, 100n, stableBrand),
       governedParams: {
         [CONTRACT_ELECTORATE]: {
           type: ParamTypes.INVITATION,
@@ -126,12 +126,12 @@ const makeTestContext = async () => {
         },
         GiveStableFee: {
           type: ParamTypes.RATIO,
-          value: makeRatio(GiveStableFeeBP, runBrand, BASIS_POINTS),
+          value: makeRatio(GiveStableFeeBP, stableBrand, BASIS_POINTS),
         },
         MintLimit: { type: ParamTypes.AMOUNT, value: mintLimit },
         WantStableFee: {
           type: ParamTypes.RATIO,
-          value: makeRatio(WantStableFeeBP, runBrand, BASIS_POINTS),
+          value: makeRatio(WantStableFeeBP, stableBrand, BASIS_POINTS),
         },
       },
     },
@@ -148,11 +148,11 @@ async function makePsmDriver(t, customTerms) {
     privateArgs,
     terms,
     installs: { psmInstall },
-    anchorKit: { issuer: anchorIssuer, mint: anchorMint },
+    anchor,
   } = t.context;
   const { creatorFacet, publicFacet } = await E(zoe).startInstance(
     psmInstall,
-    harden({ AUSD: anchorIssuer }),
+    harden({ AUSD: anchor.issuer }),
     { ...terms, ...customTerms },
     privateArgs,
   );
@@ -183,7 +183,7 @@ async function makePsmDriver(t, customTerms) {
       const seat = E(zoe).offer(
         E(publicFacet).makeSwapInvitation(),
         harden({ give: { In: giveAnchor } }),
-        harden({ In: anchorMint.mintPayment(giveAnchor) }),
+        harden({ In: anchor.mint.mintPayment(giveAnchor) }),
       );
       return E(seat).getPayouts();
     },
@@ -204,31 +204,28 @@ async function makePsmDriver(t, customTerms) {
 }
 
 test('simple trades', async t => {
-  const {
-    terms,
-    run,
-    anchorKit: { brand: anchorBrand, issuer: anchorIssuer },
-  } = t.context;
+  const { terms, stable, anchor } = t.context;
   const driver = await makePsmDriver(t);
 
-  const giveAnchor = AmountMath.make(anchorBrand, 200n * 1_000_000n);
+  const giveAnchor = AmountMath.make(anchor.brand, 200n * 1_000_000n);
 
   const runPayouts = await driver.swapAnchorForRun(giveAnchor);
   const expectedRun = minusAnchorFee(giveAnchor, terms.anchorPerStable);
-  const actualRun = await E(run.issuer).getAmountOf(runPayouts.Out);
+  const actualRun = await E(stable.issuer).getAmountOf(runPayouts.Out);
   t.deepEqual(actualRun, expectedRun);
   await driver.assertPoolBalance(giveAnchor);
 
-  const giveRun = AmountMath.make(run.brand, 100n * 1_000_000n);
+  const giveRun = AmountMath.make(stable.brand, 100n * 1_000_000n);
   trace('get stable', { giveRun, expectedRun, actualRun });
-  const [runPayment, _moreRun] = await E(run.issuer).split(
+  const [runPayment, _moreRun] = await E(stable.issuer).split(
     runPayouts.Out,
     giveRun,
   );
   const anchorPayouts = await driver.swapRunForAnchor(giveRun, runPayment);
-  const actualAnchor = await E(anchorIssuer).getAmountOf(anchorPayouts.Out);
+  // @ts-expect-error known non-null
+  const actualAnchor = await E(anchor.issuer).getAmountOf(anchorPayouts.Out);
   const expectedAnchor = AmountMath.make(
-    anchorBrand,
+    anchor.brand,
     minusStableFee(giveRun).value,
   );
   t.deepEqual(actualAnchor, expectedAnchor);
@@ -240,20 +237,17 @@ test('simple trades', async t => {
   // Check the fees
   // 1BP per anchor = 30000n plus 3BP per stable = 20000n
   const feePayoutAmount = await driver.getFeePayout();
-  const expectedFee = AmountMath.make(run.brand, 50000n);
+  const expectedFee = AmountMath.make(stable.brand, 50000n);
   trace('Reward Fee', { feePayoutAmount, expectedFee });
   t.truthy(AmountMath.isEqual(feePayoutAmount, expectedFee));
 });
 
 test('limit', async t => {
-  const {
-    mintLimit,
-    anchorKit: { brand: anchorBrand, issuer: anchorIssuer },
-  } = t.context;
+  const { mintLimit, anchor } = t.context;
 
   const driver = await makePsmDriver(t);
 
-  const initialPool = AmountMath.make(anchorBrand, 1n);
+  const initialPool = AmountMath.make(anchor.brand, 1n);
   await driver.swapAnchorForRun(initialPool);
   await driver.assertPoolBalance(initialPool);
 
@@ -268,7 +262,8 @@ test('limit', async t => {
   // const actualRun = await E(runIssuer).getAmountOf(runPayout);
   // t.deepEqual(actualRun, AmountMath.makeEmpty(runBrand));
   const anchorReturn = await paymentPs.In;
-  const actualAnchor = await E(anchorIssuer).getAmountOf(anchorReturn);
+  // @ts-expect-error known non-null
+  const actualAnchor = await E(anchor.issuer).getAmountOf(anchorReturn);
   t.deepEqual(actualAnchor, give);
   // The pool should be unchanged
   driver.assertPoolBalance(initialPool);
@@ -277,30 +272,28 @@ test('limit', async t => {
 });
 
 test('anchor is 2x stable', async t => {
-  const {
-    run,
-    anchorKit: { brand: anchorBrand, issuer: anchorIssuer },
-  } = t.context;
-  const anchorPerStable = makeRatio(200n, anchorBrand, 100n, run.brand);
+  const { stable, anchor } = t.context;
+  const anchorPerStable = makeRatio(200n, anchor.brand, 100n, stable.brand);
   const driver = await makePsmDriver(t, { anchorPerStable });
 
-  const giveAnchor = AmountMath.make(anchorBrand, 400n * 1_000_000n);
+  const giveAnchor = AmountMath.make(anchor.brand, 400n * 1_000_000n);
   const runPayouts = await driver.swapAnchorForRun(giveAnchor);
 
   const expectedRun = minusAnchorFee(giveAnchor, anchorPerStable);
-  const actualRun = await E(run.issuer).getAmountOf(runPayouts.Out);
+  const actualRun = await E(stable.issuer).getAmountOf(runPayouts.Out);
   t.deepEqual(actualRun, expectedRun);
 
   driver.assertPoolBalance(giveAnchor);
 
-  const giveRun = AmountMath.make(run.brand, 100n * 1_000_000n);
+  const giveRun = AmountMath.make(stable.brand, 100n * 1_000_000n);
   trace('get stable ratio', { giveRun, expectedRun, actualRun });
-  const [runPayment, _moreRun] = await E(run.issuer).split(
+  const [runPayment, _moreRun] = await E(stable.issuer).split(
     runPayouts.Out,
     giveRun,
   );
   const anchorPayouts = await driver.swapRunForAnchor(giveRun, runPayment);
-  const actualAnchor = await E(anchorIssuer).getAmountOf(anchorPayouts.Out);
+  // @ts-expect-error known non-null
+  const actualAnchor = await E(anchor.issuer).getAmountOf(anchorPayouts.Out);
   const expectedAnchor = floorMultiplyBy(
     minusStableFee(giveRun),
     anchorPerStable,
