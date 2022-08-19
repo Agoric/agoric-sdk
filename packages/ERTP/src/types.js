@@ -115,6 +115,34 @@
  * @property {() => Pattern} getAmountSchema
  */
 
+// /////////////////////////// Issuer //////////////////////////////////////////
+
+/**
+ * @callback IssuerIsLive
+ *
+ * Return true if the payment continues to exist.
+ *
+ * If the payment is a promise, the operation will proceed upon
+ * resolution.
+ *
+ * @param {ERef<Payment>} payment
+ * @returns {Promise<boolean>}
+ */
+/**
+ * @template {AssetKind} [K=AssetKind]
+ * @callback IssuerGetAmountOf
+ *
+ * Get the amount of digital assets in the payment. Because the
+ * payment is not trusted, we cannot call a method on it directly, and
+ * must use the issuer instead.
+ *
+ * If the payment is a promise, the operation will proceed upon
+ * resolution.
+ *
+ * @param {ERef<Payment>} payment
+ * @returns {Promise<Amount<K>>}
+ */
+
 /**
  * @callback IssuerBurn
  *
@@ -147,33 +175,6 @@
  * @param {ERef<Payment>} payment
  * @param {Pattern=} optAmountShape
  * @returns {Promise<Payment>}
- */
-
-/**
- * @callback IssuerIsLive
- *
- * Return true if the payment continues to exist.
- *
- * If the payment is a promise, the operation will proceed upon
- * resolution.
- *
- * @param {ERef<Payment>} payment
- * @returns {Promise<boolean>}
- */
-
-/**
- * @template {AssetKind} [K=AssetKind]
- * @callback IssuerGetAmountOf
- *
- * Get the amount of digital assets in the payment. Because the
- * payment is not trusted, we cannot call a method on it directly, and
- * must use the issuer instead.
- *
- * If the payment is a promise, the operation will proceed upon
- * resolution.
- *
- * @param {ERef<Payment>} payment
- * @returns {Promise<Amount<K>>}
  */
 
 /**
