@@ -9,8 +9,8 @@ export const stakeCurrency = {
 };
 /** @type {import('@keplr-wallet/types').Currency} */
 export const stableCurrency = {
-  coinDenom: 'RUN',
-  coinMinimalDenom: 'urun',
+  coinDenom: 'IST',
+  coinMinimalDenom: 'uist',
   coinDecimals: 6,
   coinGeckoId: undefined,
 };
