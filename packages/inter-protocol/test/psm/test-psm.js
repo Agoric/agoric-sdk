@@ -18,6 +18,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import path from 'path';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeTracer } from '../../src/makeTracer.js';
 import {
   makeMockChainStorageRoot,
@@ -103,21 +104,11 @@ const makeTestContext = async () => {
     initialPoserInvitation,
   );
 
-  const mockChainStorage = makeMockChainStorageRoot();
-  const childkey = 'IST-aUSD';
-
   return {
     bundles: { psmBundle },
     zoe: await zoe,
-    mockChainStorage,
-    privateArgs: harden({
-      feeMintAccess: await feeMintAccess,
-      initialPoserInvitation,
-      storageNode: mockChainStorage
-        .makeChildNode('psm')
-        .makeChildNode(childkey),
-      marshaller: makeBoard().getReadonlyMarshaller(),
-    }),
+    feeMintAccess: await feeMintAccess,
+    initialPoserInvitation,
     stable: { issuer: stableIssuer, brand: stableBrand },
     anchor,
     installs: { committeeInstall, psmInstall },
@@ -156,26 +147,43 @@ test.before(async t => {
 async function makePsmDriver(t, customTerms) {
   const {
     zoe,
-    privateArgs,
+    feeMintAccess,
+    initialPoserInvitation,
     terms,
     installs: { psmInstall },
     anchor,
   } = t.context;
+
+  const mockChainStorage = makeMockChainStorageRoot();
+
   /** @type {Awaited<ReturnType<import('../../src/psm/psm.js').start>>} */
   const { creatorFacet, publicFacet } = await E(zoe).startInstance(
     psmInstall,
     harden({ AUSD: anchor.issuer }),
     { ...terms, ...customTerms },
-    privateArgs,
+    harden({
+      feeMintAccess,
+      initialPoserInvitation,
+      storageNode: mockChainStorage.makeChildNode('thisPsm'),
+      marshaller: makeBoard().getReadonlyMarshaller(),
+    }),
   );
 
   return {
+    mockChainStorage,
     publicFacet,
 
     /** @param {Amount<'nat'>} expected */
     async assertPoolBalance(expected) {
       const balance = await E(publicFacet).getPoolBalance();
       t.deepEqual(balance, expected);
+    },
+
+    /** @param {string} subpath */
+    getStorageChildBody(subpath) {
+      return mockChainStorage.getBody(
+        `mockChainStorageRoot.thisPsm.${subpath}`,
+      );
     },
 
     async getFeePayout() {
@@ -317,24 +325,20 @@ test('anchor is 2x stable', async t => {
   trace('get anchor', { runGive: giveRun, expectedRun, actualAnchor });
 });
 
-test('psm.governance', async t => {
-  const { publicFacet } = await makePsmDriver(t);
+test('governance', async t => {
+  const driver = await makePsmDriver(t);
   t.is(
-    await subscriptionKey(E(publicFacet).getSubscription()),
-    'mockChainStorageRoot.psm.IST-aUSD.governance',
+    await subscriptionKey(E(driver.publicFacet).getSubscription()),
+    'mockChainStorageRoot.thisPsm.governance',
   );
 
-  const { mockChainStorage } = t.context;
-  t.like(
-    mockChainStorage.getBody('mockChainStorageRoot.psm.IST-aUSD.governance'),
-    {
-      current: {
-        Electorate: { type: 'invitation' },
-        GiveStableFee: { type: 'ratio' },
-        MintLimit: { type: 'amount' },
-        WantStableFee: { type: 'ratio' },
-      },
+  t.like(driver.getStorageChildBody('governance'), {
+    current: {
+      Electorate: { type: 'invitation' },
+      GiveStableFee: { type: 'ratio' },
+      MintLimit: { type: 'amount' },
+      WantStableFee: { type: 'ratio' },
     },
-  );
+  });
 });
 });
