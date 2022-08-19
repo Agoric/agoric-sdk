@@ -33,19 +33,7 @@ jq --version | awk '
 '
 
 # Make the abci_query request.
-# cf. https://docs.tendermint.com/master/rpc/#/ABCI/abci_query
-#
-#   {
-#     "jsonrpc": "2.0",
-#     "id": <integer>,
-#     "result": {
-#       "response": {
-#         "value": "<base64-encoded JSON text>",
-#         "height": "<decimal digits>",
-#         ...
-#       }
-#     }
-#   }
+# cf. https://docs.tendermint.com/v0.34/rpc/
 resp="$(
   # Avoid the GET interface in case interpretation of `path` as JSON is ever fixed.
   # https://github.com/tendermint/tendermint/issues/9164
@@ -53,14 +41,27 @@ resp="$(
   curl -sS "$URL_PREFIX" --request POST --header 'Content-Type: application/json' --data "$(
     printf '{
       "jsonrpc": "2.0",
-      "id": -1,
+      "id": 1,
       "method": "abci_query",
       "params": { "path": "/custom/vstorage/data/%s" }
     }' "$STORAGE_KEY"
   )"
 )"
 
-# Decode the response
+# Decode the response.
+# cf. https://docs.tendermint.com/master/rpc/#/ABCI/abci_query
+#
+#   {
+#     "jsonrpc": "2.0",
+#     "id": <integer>,
+#     "result": {
+#       "response": {
+#         "height": "<decimal digits>",
+#         "value": "<base64-encoded JSON text>",
+#         ...
+#       }
+#     }
+#   }
 response_height_json="$(printf '%s' "$resp" | jq '.result.response.height?' | grep -E '^"[0-9]+"$')"
 if [ ":$response_height_json" = : ]; then
   printf 'Unable to read response block height:\n%s\n' "$resp" >&2
