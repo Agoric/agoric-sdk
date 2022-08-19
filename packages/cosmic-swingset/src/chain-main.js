@@ -302,9 +302,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   // While replaying each send, insist it has the same return result.
   function replayChainSends() {
     // Remove our queue.
-    // TODO: We should not clear now and let commit/saveOutsideChain do so
-    // in case we crash again after committing kvStore and before cosmos commit
-    const chainSends = clearChainSends();
+    const chainSends = [...savedChainSends];
 
     // Just send all the things we saved.
     while (chainSends.length > 0) {
