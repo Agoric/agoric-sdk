@@ -83,6 +83,7 @@ const makeTestContext = async () => {
   const { zoe, feeMintAccess } = setUpZoeForTest();
 
   const stableIssuer = await E(zoe).getFeeIssuer();
+  /** @type {Brand<'nat'>} */
   const stableBrand = await E(stableIssuer).getBrand();
   const anchor = withAmountUtils(makeIssuerKit('aUSD'));
 
@@ -179,7 +180,7 @@ async function makePsmDriver(t, customTerms) {
       t.deepEqual(balance, expected);
     },
 
-    /** @param {string} subpath */
+    /** @type {(subpath: string) => object} */
     getStorageChildBody(subpath) {
       return mockChainStorage.getBody(
         `mockChainStorageRoot.thisPsm.${subpath}`,
@@ -200,13 +201,14 @@ async function makePsmDriver(t, customTerms) {
     },
 
     /** @param {Amount<'nat'>} giveAnchor */
-    swapAnchorForRun(giveAnchor) {
+    async swapAnchorForStable(giveAnchor) {
       const seat = E(zoe).offer(
         E(publicFacet).makeSwapInvitation(),
         harden({ give: { In: giveAnchor } }),
         // @ts-expect-error known defined
         harden({ In: anchor.mint.mintPayment(giveAnchor) }),
       );
+      await eventLoopIteration();
       return E(seat).getPayouts();
     },
 
@@ -214,12 +216,13 @@ async function makePsmDriver(t, customTerms) {
      * @param {Amount<'nat'>} giveRun
      * @param {Payment<'nat'>} runPayment
      */
-    swapRunForAnchor(giveRun, runPayment) {
+    async swapStableForAnchor(giveRun, runPayment) {
       const seat = E(zoe).offer(
         E(publicFacet).makeSwapInvitation(),
         harden({ give: { In: giveRun } }),
         harden({ In: runPayment }),
       );
+      await eventLoopIteration();
       return E(seat).getPayouts();
     },
   };
@@ -231,7 +234,7 @@ test('simple trades', async t => {
 
   const giveAnchor = AmountMath.make(anchor.brand, 200n * 1_000_000n);
 
-  const runPayouts = await driver.swapAnchorForRun(giveAnchor);
+  const runPayouts = await driver.swapAnchorForStable(giveAnchor);
   const expectedRun = minusAnchorFee(giveAnchor, terms.anchorPerStable);
   const actualRun = await E(stable.issuer).getAmountOf(runPayouts.Out);
   t.deepEqual(actualRun, expectedRun);
@@ -243,7 +246,7 @@ test('simple trades', async t => {
     runPayouts.Out,
     giveRun,
   );
-  const anchorPayouts = await driver.swapRunForAnchor(giveRun, runPayment);
+  const anchorPayouts = await driver.swapStableForAnchor(giveRun, runPayment);
   // @ts-expect-error known non-null
   const actualAnchor = await E(anchor.issuer).getAmountOf(anchorPayouts.Out);
   const expectedAnchor = AmountMath.make(
@@ -270,12 +273,12 @@ test('limit', async t => {
   const driver = await makePsmDriver(t);
 
   const initialPool = AmountMath.make(anchor.brand, 1n);
-  await driver.swapAnchorForRun(initialPool);
+  await driver.swapAnchorForStable(initialPool);
   await driver.assertPoolBalance(initialPool);
 
   trace('test going over limit');
   const give = mintLimit;
-  const paymentPs = await driver.swapAnchorForRun(give);
+  const paymentPs = await driver.swapAnchorForStable(give);
   trace('gone over limit');
 
   // We should get 0 Stable  and all our anchor back
@@ -299,7 +302,7 @@ test('anchor is 2x stable', async t => {
   const driver = await makePsmDriver(t, { anchorPerStable });
 
   const giveAnchor = AmountMath.make(anchor.brand, 400n * 1_000_000n);
-  const runPayouts = await driver.swapAnchorForRun(giveAnchor);
+  const runPayouts = await driver.swapAnchorForStable(giveAnchor);
 
   const expectedRun = minusAnchorFee(giveAnchor, anchorPerStable);
   const actualRun = await E(stable.issuer).getAmountOf(runPayouts.Out);
@@ -313,7 +316,7 @@ test('anchor is 2x stable', async t => {
     runPayouts.Out,
     giveRun,
   );
-  const anchorPayouts = await driver.swapRunForAnchor(giveRun, runPayment);
+  const anchorPayouts = await driver.swapStableForAnchor(giveRun, runPayment);
   // @ts-expect-error known non-null
   const actualAnchor = await E(anchor.issuer).getAmountOf(anchorPayouts.Out);
   const expectedAnchor = floorMultiplyBy(
@@ -341,4 +344,85 @@ test('governance', async t => {
     },
   });
 });
+
+test('metrics', async t => {
+  const driver = await makePsmDriver(t);
+  t.is(
+    await subscriptionKey(E(driver.publicFacet).getMetrics()),
+    'mockChainStorageRoot.thisPsm.metrics',
+  );
+
+  const { anchor, stable } = t.context;
+  // Test keys and brands, then assume they don't change
+  t.deepEqual(Object.keys(driver.getStorageChildBody('metrics')), [
+    'anchorPoolBalance',
+    'feePoolBalance',
+
+    'totalAnchorProvided',
+    'totalStableProvided',
+  ]);
+  t.like(driver.getStorageChildBody('metrics'), {
+    anchorPoolBalance: { brand: { iface: 'Alleged: aUSD brand' }, value: 0n },
+    feePoolBalance: { brand: { iface: 'Alleged: IST brand' }, value: 0n },
+    totalAnchorProvided: {
+      brand: { iface: 'Alleged: aUSD brand' },
+      value: 0n,
+    },
+    totalStableProvided: {
+      brand: { iface: 'Alleged: IST brand' },
+      value: 0n,
+    },
+  });
+  const giveAnchor = anchor.make(200n * 1_000_000n);
+
+  // grow the pool
+  const stablePayouts = await driver.swapAnchorForStable(giveAnchor);
+  t.like(driver.getStorageChildBody('metrics'), {
+    anchorPoolBalance: {
+      value: giveAnchor.value,
+    },
+    feePoolBalance: { value: 20_000n },
+    totalAnchorProvided: {
+      value: 0n,
+    },
+    totalStableProvided: {
+      value: giveAnchor.value,
+    },
+  });
+
+  // no change
+  await driver.swapAnchorForStable(anchor.make(0n));
+  t.like(driver.getStorageChildBody('metrics'), {
+    anchorPoolBalance: {
+      value: giveAnchor.value,
+    },
+    feePoolBalance: { value: 20_000n },
+    totalAnchorProvided: {
+      value: 0n,
+    },
+    totalStableProvided: {
+      value: giveAnchor.value,
+    },
+  });
+
+  // get anchor
+  const giveStable = AmountMath.make(stable.brand, 100n * 1_000_000n);
+  const [runPayment, _moreRun] = await E(stable.issuer).split(
+    stablePayouts.Out,
+    giveStable,
+  );
+  const fee = 30_000n;
+  await driver.swapStableForAnchor(giveStable, runPayment);
+  t.like(driver.getStorageChildBody('metrics'), {
+    anchorPoolBalance: {
+      value: giveStable.value + fee,
+    },
+    feePoolBalance: { value: 50_000n },
+    totalAnchorProvided: {
+      value: giveStable.value - fee,
+    },
+    totalStableProvided: {
+      value: giveAnchor.value,
+    },
+  });
 });

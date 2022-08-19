@@ -15,6 +15,7 @@ import { AmountMath } from '@agoric/ertp';
 import { provide } from '@agoric/store';
 
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
+import { makeMetricsPublishKit } from '../contractSupport.js';
 
 const { details: X } = assert;
 
@@ -25,6 +26,17 @@ const { details: X } = assert;
  * economic policies, the fee percentage for trading into and out of the stable
  * token are specified separately.
  *
+ */
+
+/**
+ * @typedef {object} MetricsNotification
+ * Metrics naming scheme is that nouns are present values and past-participles are accumulative.
+ *
+ * @property {Amount<'nat'>} anchorPoolBalance  amount of Anchor token available to be swapped
+ * @property {Amount<'nat'>} feePoolBalance     amount of Stable token fees available to be collected
+ *
+ * @property {Amount<'nat'>} totalAnchorProvided  running sum of Anchor ever given by this contract
+ * @property {Amount<'nat'>} totalStableProvided  running sum of Stable ever given by this contract
  */
 
 /**
@@ -53,7 +65,7 @@ const stageTransfer = (from, to, txFrom, txTo = txFrom) => {
  *    anchorBrand: Brand,
  *    anchorPerStable: Ratio,
  * }>} zcf
- * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation, storageNode?: StorageNode, marshaller?: Marshaller}} privateArgs
+ * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation, storageNode: StorageNode, marshaller: Marshaller}} privateArgs
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
@@ -96,6 +108,29 @@ export const start = async (zcf, privateArgs, baggage) => {
   const anchorPool = provideEmptyZcfSeat('anchorPoolSeat');
   const feePool = provideEmptyZcfSeat('feePoolSeat');
   const stage = provideEmptyZcfSeat('stageSeat');
+  let totalAnchorProvided = provide(baggage, 'totalAnchorProvided', () =>
+    AmountMath.makeEmpty(anchorBrand),
+  );
+  let totalStableProvided = provide(baggage, 'totalStableProvided', () =>
+    AmountMath.makeEmpty(stableBrand),
+  );
+
+  /** @type {import('../contractSupport.js').MetricsPublishKit<MetricsNotification>} */
+  const { metricsPublisher, metricsSubscriber } = makeMetricsPublishKit(
+    privateArgs.storageNode,
+    privateArgs.marshaller,
+  );
+  const updateMetrics = () => {
+    metricsPublisher.publish(
+      harden({
+        anchorPoolBalance: anchorPool.getAmountAllocated('Anchor', anchorBrand),
+        feePoolBalance: feePool.getAmountAllocated('Stable', stableBrand),
+        totalAnchorProvided,
+        totalStableProvided,
+      }),
+    );
+  };
+  updateMetrics();
 
   /**
    * @param {Amount<'nat'>} given
@@ -130,6 +165,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     stageTransfer(anchorPool, seat, { Anchor: maxAnchor }, { Out: maxAnchor });
     zcf.reallocate(seat, anchorPool, stage, feePool);
     stableMint.burnLosses({ Stable: afterFee }, stage);
+    totalAnchorProvided = AmountMath.add(totalAnchorProvided, maxAnchor);
   };
 
   /**
@@ -157,6 +193,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       stableMint.burnLosses({ Stable: asStable }, stage);
       throw e;
     }
+    totalStableProvided = AmountMath.add(totalStableProvided, asStable);
   };
 
   /**
@@ -178,10 +215,12 @@ export const start = async (zcf, privateArgs, baggage) => {
       throw Error(`unexpected brand ${given.brand}`);
     }
     seat.exit();
+    updateMetrics();
   };
   const makeSwapInvitation = () => zcf.makeInvitation(swapHook, 'swap');
 
   const publicFacet = Far('Parity Stability Module', {
+    getMetrics: () => metricsSubscriber,
     getPoolBalance: () => anchorPool.getAmountAllocated('Anchor', anchorBrand),
     makeSwapInvitation,
   });
