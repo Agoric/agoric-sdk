@@ -336,7 +336,10 @@ export const makeCosmjsFollower = (
       lastBuf = buf;
       let streamCell = decode(buf);
       // Upgrade a naked value to a JSON stream cell if necessary.
-      if (!streamCell.blockHeight || !streamCell.values) {
+      if (
+        streamCell.blockHeight === undefined ||
+        streamCell.values === undefined
+      ) {
         streamCell = { values: [JSON.stringify(streamCell)] };
       }
       for (let i = 0; i < streamCell.values.length; i += 1) {
