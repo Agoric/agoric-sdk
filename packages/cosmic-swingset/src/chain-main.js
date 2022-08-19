@@ -279,17 +279,19 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     return ret;
   }
 
-  // Flush the chain send queue.
-  // If doReplay is truthy, replay each send and insist
-  // it hase the same return result.
-  function flushChainSends(doReplay) {
-    // Remove our queue.
+  const clearChainSends = () => {
     const chainSends = savedChainSends;
     savedChainSends = [];
+    return chainSends;
+  };
 
-    if (!doReplay) {
-      return;
-    }
+  // Replay and clear the chain send queue.
+  // While replaying each send, insist it has the same return result.
+  function replayChainSends() {
+    // Remove our queue.
+    // TODO: We should not clear now and let commit/saveOutsideChain do so
+    // in case we crash again after committing kvStore and before cosmos commit
+    const chainSends = clearChainSends();
 
     // Just send all the things we saved.
     while (chainSends.length > 0) {
@@ -485,6 +487,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       kernelStateDBDir: stateDBDir,
       makeInstallationPublisher,
       mailboxStorage,
+      clearChainSends,
       setActivityhash,
       bridgeOutbound: doOutboundBridge,
       vatconfig,
@@ -530,7 +533,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       savedChainSends = scs;
       blockingSend = makeBlockManager({
         ...fns,
-        flushChainSends,
+        replayChainSends,
         verboseBlocks: true,
       });
     }
@@ -540,6 +543,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       return true;
     }
 
-    return blockingSend(action, savedChainSends);
+    return blockingSend(action);
   }
 }

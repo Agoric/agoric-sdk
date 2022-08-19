@@ -176,6 +176,7 @@ export async function launch({
   actionQueue,
   kernelStateDBDir,
   mailboxStorage,
+  clearChainSends,
   setActivityhash,
   bridgeOutbound,
   makeInstallationPublisher = undefined,
@@ -281,19 +282,16 @@ export async function launch({
     await mailboxStorage.commit();
   }
 
-  async function saveOutsideState(
-    savedHeight,
-    savedBlockTime,
-    savedChainSends,
-  ) {
+  async function saveOutsideState(blockHeight, blockTime) {
     controller.writeSlogObject({
       type: 'cosmic-swingset-commit-block-start',
-      blockHeight: savedHeight,
-      blockTime: savedBlockTime,
+      blockHeight,
+      blockTime,
     });
-    kvStore.set(getHostKey('height'), `${savedHeight}`);
-    kvStore.set(getHostKey('blockTime'), `${savedBlockTime}`);
-    kvStore.set(getHostKey('chainSends'), JSON.stringify(savedChainSends));
+    const chainSends = clearChainSends();
+    kvStore.set(getHostKey('height'), `${blockHeight}`);
+    kvStore.set(getHostKey('blockTime'), `${blockTime}`);
+    kvStore.set(getHostKey('chainSends'), JSON.stringify(chainSends));
 
     await commit();
     void Promise.resolve()
@@ -301,16 +299,16 @@ export async function launch({
       .then((afterCommitStats = {}) => {
         controller.writeSlogObject({
           type: 'cosmic-swingset-after-commit-block',
-          blockHeight: savedHeight,
-          blockTime: savedBlockTime,
+          blockHeight,
+          blockTime,
           ...afterCommitStats,
         });
       });
 
     controller.writeSlogObject({
       type: 'cosmic-swingset-commit-block-finish',
-      blockHeight: savedHeight,
-      blockTime: savedBlockTime,
+      blockHeight,
+      blockTime,
     });
   }
 
