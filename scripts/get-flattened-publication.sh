@@ -127,7 +127,7 @@ printf '%s' "$unwrapped_value" | jq -c --arg responseHeightJson "$response_heigh
 
   # Add block height information.
   (.dataBlockHeight |= $dataHeight) |
-  (.blockHeight |= ($responseHeightJson | fromjson))
+  (.responseBlockHeight |= ($responseHeightJson | fromjson))
 ' || {
   status=$?
   printf 'Unable to process response value:\n%s\n' "$unwrapped_value" >&2
