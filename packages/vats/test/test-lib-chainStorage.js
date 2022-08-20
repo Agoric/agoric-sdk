@@ -171,3 +171,72 @@ test('makeChainStorageRoot', async t => {
     'child setValue message',
   );
 });
+
+test('makeChainStorageRoot sequence data', async t => {
+  const rootPath = 'root';
+  const { rootNode, messages } = makeFakeStorageKit(rootPath, {
+    sequence: true,
+  });
+
+  // @ts-expect-error
+  t.throws(() => rootNode.setValue([]), undefined, 'array value is rejected');
+
+  rootNode.setValue('foo');
+  t.deepEqual(
+    messages.slice(-1),
+    [{ key: rootPath, method: 'append', value: 'foo' }],
+    'root setValue message',
+  );
+  rootNode.setValue('bar');
+  t.deepEqual(
+    messages.slice(-1),
+    [{ key: rootPath, method: 'append', value: 'bar' }],
+    'second setValue message',
+  );
+
+  // Child nodes inherit configuration unless overridden.
+  let childNode = rootNode.makeChildNode('child');
+  const childPath = `${rootPath}.child`;
+  let deepNode = childNode.makeChildNode('grandchild');
+  const deepPath = `${childPath}.grandchild`;
+  childNode.setValue('foo');
+  t.deepEqual(
+    messages.slice(-1),
+    [{ key: childPath, method: 'append', value: 'foo' }],
+    'auto-sequence child setValue message',
+  );
+  deepNode.setValue('foo');
+  t.deepEqual(
+    messages.slice(-1),
+    [{ key: deepPath, method: 'append', value: 'foo' }],
+    'auto-sequence grandchild setValue message',
+  );
+  deepNode = childNode.makeChildNode('grandchild', { sequence: false });
+  deepNode.setValue('bar');
+  t.deepEqual(
+    messages.slice(-1),
+    [{ key: deepPath, method: 'set', value: 'bar' }],
+    'manual-single grandchild setValue message',
+  );
+  childNode = rootNode.makeChildNode('child', { sequence: false });
+  childNode.setValue('bar');
+  t.deepEqual(
+    messages.slice(-1),
+    [{ key: childPath, method: 'set', value: 'bar' }],
+    'manual-single child setValue message',
+  );
+  deepNode = childNode.makeChildNode('grandchild');
+  deepNode.setValue('baz');
+  t.deepEqual(
+    messages.slice(-1),
+    [{ key: deepPath, method: 'set', value: 'baz' }],
+    'auto-single grandchild setValue message',
+  );
+  deepNode = childNode.makeChildNode('grandchild', { sequence: true });
+  deepNode.setValue('qux');
+  t.deepEqual(
+    messages.slice(-1),
+    [{ key: deepPath, method: 'append', value: 'qux' }],
+    'manual-sequence grandchild setValue message',
+  );
+});

@@ -2,6 +2,8 @@ package keeper
 
 import (
 	"bytes"
+	"encoding/json"
+	"strconv"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -10,6 +12,16 @@ import (
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 )
+
+// StreamCell is an envelope representing a sequence of values written at a path in a single block.
+// It is persisted to storage as a { "blockHeight": "<digits>", "values": ["...", ...] } JSON text
+// that off-chain consumers rely upon.
+// Many of those consumers *also* rely upon the strings of "values" being valid JSON text
+// (cf. scripts/get-flattened-publication.sh), but we do not enforce that in this package.
+type StreamCell struct {
+	BlockHeight string   `json:"blockHeight"`
+	Values      []string `json:"values"`
+}
 
 // Keeper maintains the link to data storage and exposes getter/setter methods
 // for the various parts of the state machine
@@ -125,6 +137,30 @@ func (k Keeper) SetStorageAndNotify(ctx sdk.Context, path, value string) {
 			[]byte(value),
 		),
 	)
+}
+
+func (k Keeper) AppendStorageValueAndNotify(ctx sdk.Context, path, value string) error {
+	blockHeight := strconv.FormatInt(ctx.BlockHeight(), 10)
+
+	// Preserve correctly-formatted data within the current block,
+	// otherwise initialize a blank cell.
+	currentData := k.GetData(ctx, path)
+	var cell StreamCell
+	_ = json.Unmarshal([]byte(currentData), &cell)
+	if cell.BlockHeight != blockHeight {
+		cell = StreamCell{BlockHeight: blockHeight, Values: make([]string, 0, 1)}
+	}
+
+	// Append the new value.
+	cell.Values = append(cell.Values, value)
+
+	// Perform the write.
+	bz, err := json.Marshal(cell)
+	if err != nil {
+		return err
+	}
+	k.SetStorageAndNotify(ctx, path, string(bz))
+	return nil
 }
 
 func componentsToPath(components []string) string {

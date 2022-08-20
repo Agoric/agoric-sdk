@@ -305,7 +305,7 @@ export const makeCosmjsFollower = (
      * @param {import('./types').CastingChange} allegedChange
      */
     const tryQueryAndUpdate = async allegedChange => {
-      const committer = prepareUpdateInOrder();
+      let committer = prepareUpdateInOrder();
 
       // Make an unproven query if we have no alleged value.
       const { values: allegedValues, blockHeight: allegedBlockHeight } =
@@ -334,18 +334,32 @@ export const makeCosmjsFollower = (
         }
       }
       lastBuf = buf;
-      const data = decode(buf);
-      if (!unserializer) {
-        /** @type {T} */
-        const value = data;
-        committer.commit({ value });
-        return;
+      let streamCell = decode(buf);
+      // Upgrade a naked value to a JSON stream cell if necessary.
+      if (
+        streamCell.blockHeight === undefined ||
+        streamCell.values === undefined
+      ) {
+        streamCell = { values: [JSON.stringify(streamCell)] };
       }
-      const value = await E(unserializer).unserialize(data);
-      if (!committer.isValid()) {
-        return;
+      for (let i = 0; i < streamCell.values.length; i += 1) {
+        const data = JSON.parse(streamCell.values[i]);
+        const isLast = i + 1 === streamCell.values.length;
+        const value = /** @type {T} */ (
+          unserializer
+            ? // eslint-disable-next-line no-await-in-loop,@jessie.js/no-nested-await
+              await E(unserializer).unserialize(data)
+            : data
+        );
+        // QUESTION: How would reach a point where this `isValid()` fails,
+        // and what is the proper handling?
+        if (!unserializer || committer.isValid()) {
+          committer.commit({ value });
+          if (!isLast) {
+            committer = prepareUpdateInOrder();
+          }
+        }
       }
-      committer.commit({ value });
     };
 
     const changeFollower = E(leader).watchCasting(castingSpecP);
@@ -362,6 +376,7 @@ export const makeCosmjsFollower = (
           return;
         }
         harden(allegedChange);
+        // eslint-disable-next-line @jessie.js/no-nested-await
         await queryAndUpdateOnce(allegedChange);
       }
     };

@@ -22,7 +22,7 @@ harden(assertPathSegment);
 /**
  * Must match the switch in vstorage.go using `vstorageMessage` type
  *
- * @typedef {'get' | 'getStoreKey' | 'set' | 'has' |'entries' | 'values' |'size' } StorageMessageMethod
+ * @typedef {'get' | 'getStoreKey' | 'set' | 'append' | 'has' |'entries' | 'values' |'size' } StorageMessageMethod
  * @typedef {{key: string, method: StorageMessageMethod, value: string}} StorageMessage
  */
 
@@ -32,11 +32,14 @@ harden(assertPathSegment);
  * @param {(message: StorageMessage) => any} handleStorageMessage a function for sending a storageMessage object to the storage implementation (cf. golang/cosmos/x/vstorage/vstorage.go)
  * @param {'swingset'} storeName currently limited to "swingset"
  * @param {string} rootPath
+ * @param {object} [rootOptions]
+ * @param {boolean} [rootOptions.sequence] employ a wrapping structure that preserves each value set within a single block, and default child nodes to do the same
  */
 export function makeChainStorageRoot(
   handleStorageMessage,
   storeName,
   rootPath,
+  rootOptions = {},
 ) {
   assert.equal(
     storeName,
@@ -45,7 +48,8 @@ export function makeChainStorageRoot(
   );
   assert.typeof(rootPath, 'string');
 
-  function makeChainStorageNode(path) {
+  function makeChainStorageNode(path, options = {}) {
+    const { sequence = false } = options;
     const node = {
       /** @type {() => VStorageKey} */
       getStoreKey() {
@@ -55,16 +59,21 @@ export function makeChainStorageRoot(
           value: '',
         });
       },
-      /** @type {(name: string) => StorageNode} */
-      makeChildNode(name) {
+      /** @type {(name: string, childNodeOptions?: {sequence?: boolean}) => StorageNode} */
+      makeChildNode(name, childNodeOptions = {}) {
         assert.typeof(name, 'string');
         assertPathSegment(name);
-        return makeChainStorageNode(`${path}.${name}`);
+        const mergedOptions = { sequence, ...childNodeOptions };
+        return makeChainStorageNode(`${path}.${name}`, mergedOptions);
       },
       /** @type {(value: string) => void} */
       setValue(value) {
         assert.typeof(value, 'string');
-        handleStorageMessage({ key: path, method: 'set', value });
+        handleStorageMessage({
+          key: path,
+          method: sequence ? 'append' : 'set',
+          value,
+        });
       },
       // Possible extensions:
       // * getValue()
@@ -77,7 +86,7 @@ export function makeChainStorageRoot(
     return Far('chainStorageNode', node);
   }
 
-  const rootNode = makeChainStorageNode(rootPath);
+  const rootNode = makeChainStorageNode(rootPath, rootOptions);
   return rootNode;
 }
 
