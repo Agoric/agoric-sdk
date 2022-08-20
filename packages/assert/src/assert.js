@@ -58,6 +58,21 @@ export { quote as q };
 export { makeAssert };
 
 /**
+ * @template T
+ * @param {T | null | undefined} val
+ * @param {string} [optDetails]
+ * @returns {T}
+ */
+export const NonNullish = (val, optDetails = `unexpected ${quote(val)}`) => {
+  if (val != null) {
+    // This `!= null` idiom checks that `val` is neither `null` nor `undefined`.
+    return val;
+  }
+  assert.fail(optDetails);
+};
+harden(NonNullish);
+
+/**
  * Prepend the correct indefinite article onto a noun, typically a typeof result
  * e.g., "an Object" vs. "a Number"
  *
