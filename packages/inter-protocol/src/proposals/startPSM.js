@@ -105,9 +105,9 @@ export const startPSM = async (
   );
 
   const psmStorageNode = await makeStorageNodeChild(chainStorage, 'psm');
-  const storageNode = psmStorageNode
-    .makeChildNode(Stable.symbol)
-    .makeChildNode(keyword);
+  const storageNode = E(
+    E(psmStorageNode).makeChildNode(Stable.symbol),
+  ).makeChildNode(keyword);
 
   const marshaller = await E(board).getPublishingMarshaller();
 
