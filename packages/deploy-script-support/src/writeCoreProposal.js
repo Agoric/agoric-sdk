@@ -63,11 +63,15 @@ export const makeWriteCoreProposal = (
       let bundle;
       if (bundlePath) {
         const bundleCache = pathResolve(bundlePath);
-        await createBundles([[pathResolve(entrypoint), bundleCache]]);
-        const ns = await import(bundleCache);
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        await (async () =>
+          createBundles([[pathResolve(entrypoint), bundleCache]]))();
+        const ns = // eslint-disable-next-line @jessie.js/no-nested-await
+          await (async () => import(bundleCache))();
         bundle = ns.default;
       } else {
-        bundle = await bundleSource(pathResolve(entrypoint));
+        bundle = // eslint-disable-next-line @jessie.js/no-nested-await
+          await (async () => bundleSource(pathResolve(entrypoint)))();
       }
 
       // Serialise the installations.

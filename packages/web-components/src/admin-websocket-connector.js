@@ -10,8 +10,8 @@ export const waitForBootstrap = async getBootstrap => {
   let update = await getLoadingUpdate();
   while (update.value.includes('wallet')) {
     console.log('waiting for wallet');
-    // eslint-disable-next-line no-await-in-loop
-    update = await getLoadingUpdate(update.updateCount);
+    // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
+    update = await (async () => (getLoadingUpdate(update.updateCount)))();
   }
 
   return getBootstrap();

@@ -328,7 +328,8 @@ export function makeOnewayPriceAuthorityKit(opts) {
               // We don't wait for the quote to be authenticated; resolve
               // immediately.
               quotePK.resolve(quoteP);
-              await quotePK.promise;
+              // eslint-disable-next-line @jessie.js/no-nested-await
+              await (async () => quotePK.promise)();
             } catch (e) {
               quotePK.reject(e);
             }

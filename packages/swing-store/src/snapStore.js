@@ -94,10 +94,12 @@ export function makeSnapStore(
     });
     let result;
     try {
-      result = await thunk(name);
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      result = await (async () => thunk(name))();
     } finally {
       try {
-        await unlink(name);
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        await (async () => unlink(name))();
       } catch (ignore) {
         // ignore
       }
@@ -115,14 +117,18 @@ export function makeSnapStore(
     const tmp = await ptmpName({ tmpdir: root, template: 'atomic-XXXXXX' });
     let result;
     try {
-      await thunk(tmp);
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await (async () => thunk(tmp))();
       const target = resolve(root, dest);
-      await rename(tmp, target);
-      const stats = await stat(target);
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await (async () => rename(tmp, target))();
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      const stats = await (async () => stat(target))();
       result = { filename: target, size: stats.size };
     } finally {
       try {
-        await unlink(tmp);
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        await (async () => unlink(tmp))();
       } catch (ignore) {
         // ignore
       }
@@ -151,16 +157,21 @@ export function makeSnapStore(
       autoClose: false,
     });
     try {
-      await Promise.all([
-        fsStreamReady(sourceStream),
-        fsStreamReady(destinationStream),
-      ]);
-      await pipe(sourceStream, f, destinationStream);
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await (async () =>
+        Promise.all([
+          fsStreamReady(sourceStream),
+          fsStreamReady(destinationStream),
+        ]))();
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await (async () => pipe(sourceStream, f, destinationStream))();
       if (flush) {
-        await destination.sync();
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        await (async () => destination.sync())();
       }
     } finally {
-      await Promise.all([destination.close(), source.close()]);
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await (async () => Promise.all([destination.close(), source.close()]))();
     }
   }
 
@@ -265,7 +276,8 @@ export function makeSnapStore(
         const fullPath = hashPath(hash);
         try {
           if (keepSnapshots !== true) {
-            await unlink(fullPath);
+            // eslint-disable-next-line @jessie.js/no-nested-await
+            await (async () => unlink(fullPath))();
           }
           toDelete.delete(hash);
         } catch (error) {

@@ -101,10 +101,11 @@ const start = zcf => {
     const option = payoffHandler.makeOptionInvitation(position);
     const invitationIssuer = zcf.getInvitationIssuer();
     const payment = harden({ Option: option });
-    const spreadAmount = harden({
-      Option: await E(invitationIssuer).getAmountOf(option),
-    });
+    const Option = await E(invitationIssuer).getAmountOf(option);
     // AWAIT ////
+    const spreadAmount = harden({
+      Option,
+    });
 
     await depositToSeat(zcf, collateralSeat, spreadAmount, payment);
     // AWAIT ////

@@ -78,8 +78,8 @@ const applyCacheTransaction = async (
   // Loop until our updated state is fresh wrt our current state.
   basisState = stateStore.get(keyStr);
   while (updatedState && updatedState.generation <= basisState.generation) {
-    // eslint-disable-next-line no-await-in-loop
-    updatedState = await getUpdatedState(basisState);
+    // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
+    updatedState = await (async () => getUpdatedState(basisState))();
     // AWAIT INTERLEAVING
     basisState = stateStore.get(keyStr);
   }

@@ -67,7 +67,11 @@ const start = async zcf => {
       try {
         assert(!revoked, revokedMsg);
         const noFee = AmountMath.makeEmpty(feeBrand);
-        const { requiredFee, reply } = await E(handler).onQuery(query, noFee);
+        const {
+          requiredFee,
+          reply,
+        } = // eslint-disable-next-line @jessie.js/no-nested-await
+          await (async () => E(handler).onQuery(query, noFee))();
         assert(
           !requiredFee || AmountMath.isGTE(noFee, requiredFee),
           X`Oracle required a fee but the query had none`,
@@ -83,7 +87,11 @@ const start = async zcf => {
       const doQuery = async querySeat => {
         try {
           const fee = querySeat.getAmountAllocated('Fee', feeBrand);
-          const { requiredFee, reply } = await E(handler).onQuery(query, fee);
+          const {
+            requiredFee,
+            reply,
+          } = // eslint-disable-next-line @jessie.js/no-nested-await
+            await (async () => E(handler).onQuery(query, fee))();
           if (requiredFee) {
             feeSeat.incrementBy(
               querySeat.decrementBy(harden({ Fee: requiredFee })),

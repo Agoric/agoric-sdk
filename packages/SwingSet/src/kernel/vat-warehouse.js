@@ -168,15 +168,15 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     // instantiate all static vats
     for (const [name, vatID] of kernelKeeper.getStaticVats()) {
       logStartup(`provideVatKeeper for vat ${name} as vat ${vatID}`);
-      // eslint-disable-next-line no-await-in-loop
-      await ensureVatOnline(vatID, recreate);
+      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
+      await (async () => ensureVatOnline(vatID, recreate))();
     }
 
     // instantiate all dynamic vats
     for (const vatID of kernelKeeper.getDynamicVats()) {
       logStartup(`provideVatKeeper for dynamic vat ${vatID}`);
-      // eslint-disable-next-line no-await-in-loop
-      await ensureVatOnline(vatID, recreate);
+      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
+      await (async () => ensureVatOnline(vatID, recreate))();
     }
   }
 
@@ -379,7 +379,8 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     // worker may or may not be online
     if (ephemeral.vats.has(vatID)) {
       try {
-        await evict(vatID);
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        await (async () => evict(vatID))();
       } catch (err) {
         console.debug('vat termination was already reported; ignoring:', err);
       }

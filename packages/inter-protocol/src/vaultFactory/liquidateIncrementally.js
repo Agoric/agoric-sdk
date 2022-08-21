@@ -197,12 +197,13 @@ const start = async zcf => {
         trace('exiting processTranches loop');
         return;
       }
-      await oncePerBlock();
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await (async () => oncePerBlock())();
 
       // Determine the max allowed tranche size
-      const { Secondary: poolCollateral, Central: poolCentral } = await E(
-        amm,
-      ).getPoolAllocation(toSell.brand);
+      const { Secondary: poolCollateral, Central: poolCentral } =
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        await (async () => E(amm).getPoolAllocation(toSell.brand))();
       const maxAllowedTranche = maxTrancheWithFees(
         poolCollateral,
         MaxImpactBP,
@@ -224,10 +225,9 @@ const start = async zcf => {
 
       // this could use a unit rather than the tranche size to run concurrently
       /** @type PriceQuote */
-      const oracleQuote = await E(priceAuthority).quoteGiven(
-        tranche,
-        debtBrand,
-      );
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      const oracleQuote = await await (async () =>
+        E(priceAuthority).quoteGiven(tranche, debtBrand))();
       const oracleLimit = computeOracleLimit(oracleQuote, OracleTolerance);
 
       trace('Tranche', { debt, tranche, minAmmProceeds, oracleLimit });
@@ -303,7 +303,9 @@ const start = async zcf => {
       const collateralBefore = debtorSeat.getAmountAllocated('In');
       const proceedsBefore = debtorSeat.getAmountAllocated('Out');
 
-      await sellTranche(debtorSeat, collateral, debt, oracleLimit);
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await (async () =>
+        sellTranche(debtorSeat, collateral, debt, oracleLimit))();
 
       const proceedsAfter = debtorSeat.getAmountAllocated('Out');
       if (AmountMath.isEqual(proceedsBefore, proceedsAfter)) {

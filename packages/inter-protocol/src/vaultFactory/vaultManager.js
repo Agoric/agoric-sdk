@@ -467,7 +467,8 @@ const helperBehavior = {
         // The rest of this method will not happen until after a quote is received.
         // This may not happen until much later, when the market changes.
         // eslint-disable-next-line no-await-in-loop
-        const quote = await E(ephemera.outstandingQuote).getPromise();
+        const quote = // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
+          await (async () => E(ephemera.outstandingQuote).getPromise())();
         ephemera.outstandingQuote = null;
         // When we receive a quote, we check whether the vault with the highest
         // ratio of debt to collateral is below the liquidationMargin, and if so,
@@ -488,7 +489,8 @@ const helperBehavior = {
       }
     }
     for await (const next of eventualLiquidations()) {
-      await facets.helper.liquidateAndRemove(next);
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await (async () => facets.helper.liquidateAndRemove(next))();
       trace('price check liq', state.collateralBrand, next && next[0]);
     }
   },

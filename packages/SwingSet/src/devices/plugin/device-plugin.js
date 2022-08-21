@@ -55,7 +55,8 @@ export function buildRootDeviceNode(tools) {
    */
   async function createConnection(mod, index, epoch) {
     try {
-      const modNS = await endowments.import(mod);
+      const modNS = // eslint-disable-next-line @jessie.js/no-nested-await
+        await (async () => endowments.import(mod))();
       const receiver = obj => {
         // console.info('receiver', index, obj);
 

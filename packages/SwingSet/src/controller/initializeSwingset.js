@@ -25,8 +25,10 @@ const { keys, values, fromEntries } = Object;
  * @returns {Promise<Record<string, V>>}
  * @template V
  */
-const allValues = async obj =>
-  fromEntries(zip(keys(obj), await Promise.all(values(obj))));
+const allValues = async obj => {
+  const newLocal = await Promise.all(values(obj));
+  return fromEntries(zip(keys(obj), newLocal));
+};
 
 const bundleRelative = rel =>
   bundleSource(new URL(rel, import.meta.url).pathname);
@@ -171,7 +173,9 @@ export function loadBasedir(basedir, options = {}) {
  */
 async function resolveSpecFromConfig(referrer, specPath) {
   try {
-    return new URL(await resolveModuleSpecifier(specPath, referrer)).pathname;
+    const newLocal1 = // eslint-disable-next-line @jessie.js/no-nested-await
+      await (async () => resolveModuleSpecifier(specPath, referrer))();
+    return new URL(newLocal1).pathname;
   } catch (e) {
     if (e.code !== 'MODULE_NOT_FOUND' && e.code !== 'ERR_MODULE_NOT_FOUND') {
       throw e;
@@ -234,8 +238,12 @@ export async function loadSwingsetConfigFile(configPath) {
       configPath,
       `file:///${process.cwd()}/`,
     ).toString();
-    await normalizeConfigDescriptor(config.vats, referrer, true);
-    await normalizeConfigDescriptor(config.bundles, referrer, false);
+    // eslint-disable-next-line @jessie.js/no-nested-await
+    await (async () =>
+      normalizeConfigDescriptor(config.vats, referrer, true))();
+    // eslint-disable-next-line @jessie.js/no-nested-await
+    await (async () =>
+      normalizeConfigDescriptor(config.bundles, referrer, false))();
     // await normalizeConfigDescriptor(config.devices, referrer, true); // TODO: represent devices
     assert(config.bootstrap, X`no designated bootstrap vat in ${configPath}`);
     assert(
@@ -333,7 +341,8 @@ export async function initializeSwingset(
   }
 
   const {
-    kernelBundles = await buildVatAndDeviceBundles(),
+    // eslint-disable-next-line @jessie.js/no-nested-await
+    kernelBundles = await (async () => buildVatAndDeviceBundles())(),
     verbose,
     addVatAdmin = true,
     addComms = true,

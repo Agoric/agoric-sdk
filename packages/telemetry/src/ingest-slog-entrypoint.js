@@ -93,7 +93,8 @@ async function run() {
       lineCount % LINE_COUNT_TO_FLUSH === 0
     ) {
       lastTime = now;
-      await stats(update);
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await (async () => stats(update))();
     }
 
     if (!update) {
@@ -107,7 +108,8 @@ async function run() {
       const delayMS = PROCESSING_PERIOD - (now - startOfLastPeriod);
       maybeWait = new Promise(resolve => setTimeout(resolve, delayMS));
     }
-    await maybeWait;
+    // eslint-disable-next-line @jessie.js/no-nested-await
+    await (async () => maybeWait)();
     now = Date.now();
 
     if (now - startOfLastPeriod >= PROCESSING_PERIOD) {

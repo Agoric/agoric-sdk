@@ -163,7 +163,8 @@ export function xsnap(options) {
    */
   async function runToIdle() {
     for (;;) {
-      const iteration = await messagesFromXsnap.next(undefined);
+      const iteration = // eslint-disable-next-line @jessie.js/no-nested-await
+        await (async () => messagesFromXsnap.next(undefined))();
       if (iteration.done) {
         xsnapProcess.kill();
         return vatCancelled;
@@ -200,7 +201,10 @@ export function xsnap(options) {
           )}`,
         );
       } else if (message[0] === QUERY) {
-        await messagesToXsnap.next(await handleCommand(message.subarray(1)));
+        const newLocal = // eslint-disable-next-line @jessie.js/no-nested-await
+          await (async () => handleCommand(message.subarray(1)))();
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        await (async () => messagesToXsnap.next(newLocal))();
       }
     }
   }

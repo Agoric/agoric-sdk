@@ -239,11 +239,9 @@ export function makeNetworkProtocol(protocolHandler) {
     // Check if we are underspecified (ends in slash)
     if (localAddr.endsWith(ENDPOINT_SEPARATOR)) {
       for (;;) {
-        // eslint-disable-next-line no-await-in-loop
-        const portID = await E(protocolHandler).generatePortID(
-          localAddr,
-          protocolHandler,
-        );
+        // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
+        const portID = await (async () =>
+          E(protocolHandler).generatePortID(localAddr, protocolHandler))();
         const newAddr = `${localAddr}${portID}`;
         if (!boundPorts.has(newAddr)) {
           localAddr = newAddr;
@@ -386,10 +384,11 @@ export function makeNetworkProtocol(protocolHandler) {
         let localAddr;
         try {
           // See if our protocol is willing to receive this connection.
-          // eslint-disable-next-line no-await-in-loop
-          const localInstance = await E(protocolHandler)
-            .onInstantiate(port, listenPrefix, remoteAddr, protocolHandler)
-            .catch(rethrowUnlessMissing);
+          // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
+          const localInstance = await (async () =>
+            E(protocolHandler)
+              .onInstantiate(port, listenPrefix, remoteAddr, protocolHandler)
+              .catch(rethrowUnlessMissing))();
           localAddr = localInstance
             ? `${listenAddr}/${localInstance}`
             : listenAddr;
@@ -467,10 +466,9 @@ export function makeNetworkProtocol(protocolHandler) {
       let lastFailure;
       try {
         // Attempt the loopback connection.
-        const attempt = await protocolImpl.inbound(
-          remoteAddr,
-          initialLocalAddr,
-        );
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        const attempt = await (async () =>
+          protocolImpl.inbound(remoteAddr, initialLocalAddr))();
         return attempt.accept({ handler: lchandler });
       } catch (e) {
         lastFailure = e;

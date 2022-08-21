@@ -219,15 +219,15 @@ export async function replayXSnap(
       const seq = parseInt(digits, 10);
       console.log(folder, seq, kind);
       if (running && !['command', 'reply'].includes(kind)) {
-        // eslint-disable-next-line no-await-in-loop
+        // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
         await running;
         running = undefined;
       }
       const file = rd.file(step);
       switch (kind) {
         case 'isReady':
-          // eslint-disable-next-line no-await-in-loop
-          await it.isReady();
+          // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
+          await (async () => it.isReady())();
           break;
         case 'evaluate':
           running = it.evaluate(file.getText());
@@ -247,8 +247,8 @@ export async function replayXSnap(
             return;
           } else {
             try {
-              // eslint-disable-next-line no-await-in-loop
-              await it.snapshot(file.getText());
+              // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
+              await (async () => it.snapshot(file.getText()))();
             } catch (err) {
               console.warn(err, 'while taking snapshot:', err);
             }
@@ -270,7 +270,8 @@ export async function replayXSnap(
       const storedOpts = JSON.parse(rd.file(optionsFn).getText());
       console.log(folder, optionsFn, 'already spawned; ignoring:', storedOpts);
     }
-    await runSteps(rd, steps);
+    // eslint-disable-next-line @jessie.js/no-nested-await
+    await (async () => runSteps(rd, steps))();
   }
 
   await it.close();

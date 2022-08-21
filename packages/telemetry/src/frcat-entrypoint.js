@@ -14,10 +14,12 @@ const main = async () => {
   }
 
   for await (const file of files) {
-    const { readCircBuf } = await makeMemoryMappedCircularBuffer({
-      circularBufferFilename: file,
-      circularBufferSize: null,
-    });
+    // eslint-disable-next-line @jessie.js/no-nested-await
+    const { readCircBuf } = await (async () =>
+      makeMemoryMappedCircularBuffer({
+        circularBufferFilename: file,
+        circularBufferSize: null,
+      }))();
 
     let offset = 0;
     for (;;) {
@@ -50,8 +52,9 @@ const main = async () => {
       }
 
       // If the buffer is full, wait for stdout to drain.
-      // eslint-disable-next-line no-await-in-loop
-      await new Promise(resolve => process.stdout.once('drain', resolve));
+      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
+      await (async () =>
+        new Promise(resolve => process.stdout.once('drain', resolve)))();
     }
   }
 };

@@ -38,7 +38,8 @@ export const installInPieces = async (
       log(
         `waiting for ${inFlightAdditions.length} (~${approxBytesInFlight}B) additions...`,
       );
-      await Promise.all(inFlightAdditions);
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await (async () => Promise.all(inFlightAdditions))();
       approxBytesInFlight = 0;
       inFlightAdditions = [];
     }

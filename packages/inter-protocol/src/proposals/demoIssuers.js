@@ -288,10 +288,9 @@ export const connectFaucet = async ({
             case Stake.symbol:
               return bldIssuerKit;
             default: {
-              const { mint, issuer, brand } = await provideCoin(
-                name,
-                vats.mints,
-              );
+              // eslint-disable-next-line @jessie.js/no-nested-await
+              const { mint, issuer, brand } = await (async () =>
+                provideCoin(name, vats.mints))();
               return { issuer, brand, mint };
             }
           }
@@ -306,7 +305,8 @@ export const connectFaucet = async ({
         // Use the bank layer for BLD, IST.
         if (issuerName === Stake.symbol || issuerName === Stable.symbol) {
           const purse = E(bank).getPurse(brand);
-          await E(purse).deposit(payment);
+          // eslint-disable-next-line @jessie.js/no-nested-await
+          await (async () => E(purse).deposit(payment))();
         } else {
           toFaucet = [
             {
@@ -493,10 +493,9 @@ export const fundAMM = async ({
       async issuerName => {
         switch (issuerName) {
           case Stable.symbol: {
-            const [issuer, brand] = await Promise.all([
-              centralIssuer,
-              centralBrand,
-            ]);
+            // eslint-disable-next-line @jessie.js/no-nested-await
+            const [issuer, brand] = await (async () =>
+              Promise.all([centralIssuer, centralBrand]))();
             return { mint: undefined, issuer, brand };
           }
           case 'BLD':
@@ -625,12 +624,14 @@ export const fundAMM = async ({
       let fromCentral;
 
       if (brandsWithPriceAuthorities.includes(brand)) {
-        ({ toCentral, fromCentral } = await E(ammPublicFacet)
-          .getPriceAuthorities(brand)
-          .catch(_e => {
-            // console.warn('could not get AMM priceAuthorities', _e);
-            return { toCentral: undefined, fromCentral: undefined };
-          }));
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        ({ toCentral, fromCentral } = await (async () =>
+          E(ammPublicFacet)
+            .getPriceAuthorities(brand)
+            .catch(_e => {
+              // console.warn('could not get AMM priceAuthorities', _e);
+              return { toCentral: undefined, fromCentral: undefined };
+            })))();
       }
 
       if (!fromCentral && tradesGivenCentral) {
