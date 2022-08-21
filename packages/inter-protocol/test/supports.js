@@ -199,7 +199,7 @@ export const withAmountUtils = kit => {
 
 /**
  *
- * @param {Promise<StoredSubscription<unknown>> | StoredSubscriber<unknown>} subscription
+ * @param {ERef<StoredSubscription<unknown> | StoredSubscriber<unknown>>} subscription
  */
 export const subscriptionKey = subscription => {
   return E(subscription)
