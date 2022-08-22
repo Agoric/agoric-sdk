@@ -14,7 +14,7 @@ import { makeDriverContext, makeManagerDriver } from './driver.js';
 /** @type {import('ava').TestFn<Context>} */
 const test = unknownTest;
 
-const trace = makeTracer('TestLiq');
+const trace = makeTracer('TestLiq', false);
 
 test.before(async t => {
   t.context = await makeDriverContext();

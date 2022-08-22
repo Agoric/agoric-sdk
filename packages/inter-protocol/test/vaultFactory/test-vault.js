@@ -16,7 +16,7 @@ import { assert } from '@agoric/assert';
 import { makeTracer } from '../../src/makeTracer.js';
 
 const vaultRoot = './vault-contract-wrapper.js';
-const trace = makeTracer('TestVault');
+const trace = makeTracer('TestVault', false);
 
 /**
  * The properties will be asssigned by `setTestJig` in the contract.

@@ -75,7 +75,7 @@ const contractRoots = {
 
 /** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
 
-const trace = makeTracer('TestST');
+const trace = makeTracer('TestST', false);
 
 const BASIS_POINTS = 10000n;
 const SECONDS_PER_DAY = SECONDS_PER_YEAR / 365n;

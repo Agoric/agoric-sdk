@@ -22,10 +22,10 @@ const nonalphanumeric = /[^A-Za-z0-9]/g;
  * @typedef {object} MetricsNotification
  *
  * @property {AmountKeywordRecord} allocations
- * @property {Amount<'nat'>} shortfallBalance shortfall from liquiditation that
+ * @property {Amount<'nat'>} shortfallBalance shortfall from liquidation that
+ *   has not yet been compensated.
  * @property {Amount<'nat'>} totalFeeMinted total Fee tokens minted to date
  * @property {Amount<'nat'>} totalFeeBurned total Fee tokens burned to date
- *   has not yet been compensated.
  */
 
 /**

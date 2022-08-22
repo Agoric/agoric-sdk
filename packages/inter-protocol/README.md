@@ -56,7 +56,7 @@ The canonical keys (under `published`) are as follows. Non-terminal nodes could 
             - `metrics`
     - `psm`
         - `governance`
-        - ~~`metrics`~~ TODO
+        - `metrics`
     - `stakeFactory`
         - `governance`
 

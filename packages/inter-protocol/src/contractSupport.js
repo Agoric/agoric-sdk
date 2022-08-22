@@ -1,7 +1,8 @@
 // @ts-check
 import { AmountMath } from '@agoric/ertp';
-import { makeStoredPublisherKit } from '@agoric/notifier';
+import { makeStoredPublisherKit, makeStoredPublishKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
+import { E } from '@endo/eventual-send';
 
 const { details: X, quote: q } = assert;
 
@@ -84,6 +85,7 @@ export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
 };
 
 /**
+ * @deprecated use makeMetricsPublishKit
  * @template T
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
@@ -109,6 +111,34 @@ harden(makeMetricsPublisherKit);
  * @property {IterationObserver<T>} metricsPublication
  * @property {StoredSubscription<T>} metricsSubscription
  */
+
+/**
+ * @template T
+ * @typedef {object} MetricsPublishKit<T>
+ * @property {Publisher<T>} metricsPublisher
+ * @property {StoredSubscriber<T>} metricsSubscriber
+ */
+
+/**
+ * @template T
+ * @param {ERef<StorageNode>} storageNode
+ * @param {ERef<Marshaller>} marshaller
+ * @returns {MetricsPublishKit<T>}
+ */
+export const makeMetricsPublishKit = (storageNode, marshaller) => {
+  assert(
+    storageNode && marshaller,
+    'makeMetricsPublisherKit missing storageNode or marshaller',
+  );
+  const metricsNode = E(storageNode).makeChildNode('metrics');
+  /** @type {StoredPublishKit<T>} */
+  const kit = makeStoredPublishKit(metricsNode, marshaller);
+  return {
+    metricsPublisher: kit.publisher,
+    metricsSubscriber: kit.subscriber,
+  };
+};
+harden(makeMetricsPublishKit);
 
 /**
  * @template K Key

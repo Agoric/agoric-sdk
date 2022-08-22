@@ -18,11 +18,13 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import path from 'path';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeTracer } from '../../src/makeTracer.js';
 import {
   makeMockChainStorageRoot,
   setUpZoeForTest,
   subscriptionKey,
+  withAmountUtils,
 } from '../supports.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
@@ -75,24 +77,19 @@ const minusAnchorFee = (anchor, anchorPerStable) => {
   );
 };
 
-// let testJig;
-const setJig = _jig => {
-  // testJig = jig;
-};
-
 const makeTestContext = async () => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
   const psmBundle = await bundleCache.load(psmRoot, 'psm');
-  const { zoe, feeMintAccess } = setUpZoeForTest(setJig);
+  const { zoe, feeMintAccess } = setUpZoeForTest();
 
-  const runIssuer = await E(zoe).getFeeIssuer();
-  const runBrand = await E(runIssuer).getBrand();
-  const anchorKit = makeIssuerKit('aUSD');
+  const stableIssuer = await E(zoe).getFeeIssuer();
+  /** @type {Brand<'nat'>} */
+  const stableBrand = await E(stableIssuer).getBrand();
+  const anchor = withAmountUtils(makeIssuerKit('aUSD'));
 
-  const { brand: anchorBrand } = anchorKit;
   const committeeInstall = await E(zoe).install(committeeBundle);
   const psmInstall = await E(zoe).install(psmBundle);
-  const mintLimit = AmountMath.make(anchorBrand, MINT_LIMIT);
+  const mintLimit = AmountMath.make(anchor.brand, MINT_LIMIT);
 
   const { creatorFacet: committeeCreator } = await E(zoe).startInstance(
     committeeInstall,
@@ -111,19 +108,15 @@ const makeTestContext = async () => {
   return {
     bundles: { psmBundle },
     zoe: await zoe,
-    privateArgs: harden({
-      feeMintAccess: await feeMintAccess,
-      initialPoserInvitation,
-      storageNode: makeMockChainStorageRoot().makeChildNode('psm'),
-      marshaller: makeBoard().getReadonlyMarshaller(),
-    }),
-    run: { issuer: runIssuer, brand: runBrand },
-    anchorKit,
+    feeMintAccess: await feeMintAccess,
+    initialPoserInvitation,
+    stable: { issuer: stableIssuer, brand: stableBrand },
+    anchor,
     installs: { committeeInstall, psmInstall },
     mintLimit,
     terms: {
-      anchorBrand,
-      anchorPerStable: makeRatio(100n, anchorBrand, 100n, runBrand),
+      anchorBrand: anchor.brand,
+      anchorPerStable: makeRatio(100n, anchor.brand, 100n, stableBrand),
       governedParams: {
         [CONTRACT_ELECTORATE]: {
           type: ParamTypes.INVITATION,
@@ -131,12 +124,12 @@ const makeTestContext = async () => {
         },
         GiveStableFee: {
           type: ParamTypes.RATIO,
-          value: makeRatio(GiveStableFeeBP, runBrand, BASIS_POINTS),
+          value: makeRatio(GiveStableFeeBP, stableBrand, BASIS_POINTS),
         },
         MintLimit: { type: ParamTypes.AMOUNT, value: mintLimit },
         WantStableFee: {
           type: ParamTypes.RATIO,
-          value: makeRatio(WantStableFeeBP, runBrand, BASIS_POINTS),
+          value: makeRatio(WantStableFeeBP, stableBrand, BASIS_POINTS),
         },
       },
     },
@@ -147,186 +140,289 @@ test.before(async t => {
   t.context = await makeTestContext();
 });
 
-test('simple trades', async t => {
+/**
+ *
+ * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
+ * @param {{}} [customTerms]
+ */
+async function makePsmDriver(t, customTerms) {
   const {
     zoe,
-    privateArgs,
+    feeMintAccess,
+    initialPoserInvitation,
     terms,
     installs: { psmInstall },
-    run,
-    anchorKit: { brand: anchorBrand, issuer: anchorIssuer, mint: anchorMint },
+    anchor,
   } = t.context;
-  const { publicFacet, creatorFacet } = await E(zoe).startInstance(
+
+  const mockChainStorage = makeMockChainStorageRoot();
+
+  /** @type {Awaited<ReturnType<import('../../src/psm/psm.js').start>>} */
+  const { creatorFacet, publicFacet } = await E(zoe).startInstance(
     psmInstall,
-    harden({ AUSD: anchorIssuer }),
-    terms,
-    privateArgs,
+    harden({ AUSD: anchor.issuer }),
+    { ...terms, ...customTerms },
+    harden({
+      feeMintAccess,
+      initialPoserInvitation,
+      storageNode: mockChainStorage.makeChildNode('thisPsm'),
+      marshaller: makeBoard().getReadonlyMarshaller(),
+    }),
   );
-  const giveAnchor = AmountMath.make(anchorBrand, 200n * 1_000_000n);
-  const seat1 = await E(zoe).offer(
-    E(publicFacet).makeSwapInvitation(),
-    harden({ give: { In: giveAnchor } }),
-    harden({ In: anchorMint.mintPayment(giveAnchor) }),
-  );
-  const runPayout = await E(seat1).getPayout('Out');
+
+  return {
+    mockChainStorage,
+    publicFacet,
+
+    /** @param {Amount<'nat'>} expected */
+    async assertPoolBalance(expected) {
+      const balance = await E(publicFacet).getPoolBalance();
+      t.deepEqual(balance, expected);
+    },
+
+    /** @type {(subpath: string) => object} */
+    getStorageChildBody(subpath) {
+      return mockChainStorage.getBody(
+        `mockChainStorageRoot.thisPsm.${subpath}`,
+      );
+    },
+
+    async getFeePayout() {
+      // @ts-expect-error XXX governance types
+      const limitedCreatorFacet = E(creatorFacet).getLimitedCreatorFacet();
+      const collectFeesSeat = await E(zoe).offer(
+        E(limitedCreatorFacet).makeCollectFeesInvitation(),
+      );
+      await E(collectFeesSeat).getOfferResult();
+      const feePayoutAmount = await E.get(
+        E(collectFeesSeat).getCurrentAllocationJig(),
+      ).Fee;
+      return feePayoutAmount;
+    },
+
+    /** @param {Amount<'nat'>} giveAnchor */
+    async swapAnchorForStable(giveAnchor) {
+      const seat = E(zoe).offer(
+        E(publicFacet).makeSwapInvitation(),
+        harden({ give: { In: giveAnchor } }),
+        // @ts-expect-error known defined
+        harden({ In: anchor.mint.mintPayment(giveAnchor) }),
+      );
+      await eventLoopIteration();
+      return E(seat).getPayouts();
+    },
+
+    /**
+     * @param {Amount<'nat'>} giveRun
+     * @param {Payment<'nat'>} runPayment
+     */
+    async swapStableForAnchor(giveRun, runPayment) {
+      const seat = E(zoe).offer(
+        E(publicFacet).makeSwapInvitation(),
+        harden({ give: { In: giveRun } }),
+        harden({ In: runPayment }),
+      );
+      await eventLoopIteration();
+      return E(seat).getPayouts();
+    },
+  };
+}
+
+test('simple trades', async t => {
+  const { terms, stable, anchor } = t.context;
+  const driver = await makePsmDriver(t);
+
+  const giveAnchor = AmountMath.make(anchor.brand, 200n * 1_000_000n);
+
+  const runPayouts = await driver.swapAnchorForStable(giveAnchor);
   const expectedRun = minusAnchorFee(giveAnchor, terms.anchorPerStable);
-  const actualRun = await E(run.issuer).getAmountOf(runPayout);
+  const actualRun = await E(stable.issuer).getAmountOf(runPayouts.Out);
   t.deepEqual(actualRun, expectedRun);
-  const liq = await E(publicFacet).getPoolBalance();
-  t.true(AmountMath.isEqual(liq, giveAnchor));
-  const giveRun = AmountMath.make(run.brand, 100n * 1_000_000n);
-  trace('get stable', { giveRun, expectedRun, actualRun, liq });
-  const [runPayment, _moreRun] = await E(run.issuer).split(runPayout, giveRun);
-  const seat2 = await E(zoe).offer(
-    E(publicFacet).makeSwapInvitation(),
-    harden({ give: { In: giveRun } }),
-    harden({ In: runPayment }),
+  await driver.assertPoolBalance(giveAnchor);
+
+  const giveRun = AmountMath.make(stable.brand, 100n * 1_000_000n);
+  trace('get stable', { giveRun, expectedRun, actualRun });
+  const [runPayment, _moreRun] = await E(stable.issuer).split(
+    runPayouts.Out,
+    giveRun,
   );
-  const anchorPayout = await E(seat2).getPayout('Out');
-  const actualAnchor = await E(anchorIssuer).getAmountOf(anchorPayout);
+  const anchorPayouts = await driver.swapStableForAnchor(giveRun, runPayment);
+  // @ts-expect-error known non-null
+  const actualAnchor = await E(anchor.issuer).getAmountOf(anchorPayouts.Out);
   const expectedAnchor = AmountMath.make(
-    anchorBrand,
+    anchor.brand,
     minusStableFee(giveRun).value,
   );
   t.deepEqual(actualAnchor, expectedAnchor);
-  const liq2 = await E(publicFacet).getPoolBalance();
-  t.deepEqual(AmountMath.subtract(giveAnchor, expectedAnchor), liq2);
-  trace('get anchor', { runGive: giveRun, expectedRun, actualAnchor, liq2 });
+  await driver.assertPoolBalance(
+    AmountMath.subtract(giveAnchor, expectedAnchor),
+  );
+  trace('get anchor', { runGive: giveRun, expectedRun, actualAnchor });
 
   // Check the fees
   // 1BP per anchor = 30000n plus 3BP per stable = 20000n
-  const limitedCreatorFacet = E(creatorFacet).getLimitedCreatorFacet();
-  const collectFeesSeat = await E(zoe).offer(
-    E(limitedCreatorFacet).makeCollectFeesInvitation(),
-  );
-  await E(collectFeesSeat).getOfferResult();
-  const feePayoutAmount = await E.get(
-    E(collectFeesSeat).getCurrentAllocationJig(),
-  ).Fee;
-  const expectedFee = AmountMath.make(run.brand, 50000n);
+  const feePayoutAmount = await driver.getFeePayout();
+  const expectedFee = AmountMath.make(stable.brand, 50000n);
   trace('Reward Fee', { feePayoutAmount, expectedFee });
   t.truthy(AmountMath.isEqual(feePayoutAmount, expectedFee));
 });
 
 test('limit', async t => {
-  const {
-    zoe,
-    privateArgs,
-    terms,
-    mintLimit,
-    installs: { psmInstall },
-    anchorKit: { brand: anchorBrand, issuer: anchorIssuer, mint: anchorMint },
-  } = t.context;
+  const { mintLimit, anchor } = t.context;
 
-  const { publicFacet } = await E(zoe).startInstance(
-    psmInstall,
-    harden({ AUSD: anchorIssuer }),
-    terms,
-    privateArgs,
-  );
-  const initialPool = AmountMath.make(anchorBrand, 1n);
-  await E(zoe).offer(
-    E(publicFacet).makeSwapInvitation(),
-    harden({ give: { In: initialPool } }),
-    harden({ In: anchorMint.mintPayment(initialPool) }),
-  );
-  t.assert(
-    AmountMath.isEqual(await E(publicFacet).getPoolBalance(), initialPool),
-  );
+  const driver = await makePsmDriver(t);
+
+  const initialPool = AmountMath.make(anchor.brand, 1n);
+  await driver.swapAnchorForStable(initialPool);
+  await driver.assertPoolBalance(initialPool);
+
   trace('test going over limit');
   const give = mintLimit;
-  const seat1 = await E(zoe).offer(
-    E(publicFacet).makeSwapInvitation(),
-    harden({ give: { In: give } }),
-    harden({ In: anchorMint.mintPayment(give) }),
-  );
+  const paymentPs = await driver.swapAnchorForStable(give);
   trace('gone over limit');
 
-  const paymentPs = await E(seat1).getPayouts();
   // We should get 0 Stable  and all our anchor back
   // TODO should this be expecteed to be an empty Out?
   t.falsy(paymentPs.Out);
   // const actualRun = await E(runIssuer).getAmountOf(runPayout);
   // t.deepEqual(actualRun, AmountMath.makeEmpty(runBrand));
   const anchorReturn = await paymentPs.In;
-  const actualAnchor = await E(anchorIssuer).getAmountOf(anchorReturn);
+  // @ts-expect-error known non-null
+  const actualAnchor = await E(anchor.issuer).getAmountOf(anchorReturn);
   t.deepEqual(actualAnchor, give);
   // The pool should be unchanged
-  t.assert(
-    AmountMath.isEqual(await E(publicFacet).getPoolBalance(), initialPool),
-  );
+  driver.assertPoolBalance(initialPool);
   // TODO Offer result should be an error
   // t.throwsAsync(() => await E(seat1).getOfferResult());
 });
 
 test('anchor is 2x stable', async t => {
-  const {
-    zoe,
-    privateArgs,
-    terms,
-    installs: { psmInstall },
-    run,
-    anchorKit: { brand: anchorBrand, issuer: anchorIssuer, mint: anchorMint },
-  } = t.context;
-  const anchorPerStable = makeRatio(200n, anchorBrand, 100n, run.brand);
-  const { publicFacet } = await E(zoe).startInstance(
-    psmInstall,
-    harden({ AUSD: anchorIssuer }),
-    { ...terms, anchorPerStable },
-    privateArgs,
-  );
-  const giveAnchor = AmountMath.make(anchorBrand, 400n * 1_000_000n);
-  const seat1 = await E(zoe).offer(
-    E(publicFacet).makeSwapInvitation(),
-    harden({ give: { In: giveAnchor } }),
-    harden({ In: anchorMint.mintPayment(giveAnchor) }),
-  );
-  const runPayout = await E(seat1).getPayout('Out');
+  const { stable, anchor } = t.context;
+  const anchorPerStable = makeRatio(200n, anchor.brand, 100n, stable.brand);
+  const driver = await makePsmDriver(t, { anchorPerStable });
+
+  const giveAnchor = AmountMath.make(anchor.brand, 400n * 1_000_000n);
+  const runPayouts = await driver.swapAnchorForStable(giveAnchor);
+
   const expectedRun = minusAnchorFee(giveAnchor, anchorPerStable);
-  const actualRun = await E(run.issuer).getAmountOf(runPayout);
+  const actualRun = await E(stable.issuer).getAmountOf(runPayouts.Out);
   t.deepEqual(actualRun, expectedRun);
-  const liq = await E(publicFacet).getPoolBalance();
-  t.true(AmountMath.isEqual(liq, giveAnchor));
-  const giveRun = AmountMath.make(run.brand, 100n * 1_000_000n);
-  trace('get stable ratio', { giveRun, expectedRun, actualRun, liq });
-  const [runPayment, _moreRun] = await E(run.issuer).split(runPayout, giveRun);
-  const seat2 = await E(zoe).offer(
-    E(publicFacet).makeSwapInvitation(),
-    harden({ give: { In: giveRun } }),
-    harden({ In: runPayment }),
+
+  driver.assertPoolBalance(giveAnchor);
+
+  const giveRun = AmountMath.make(stable.brand, 100n * 1_000_000n);
+  trace('get stable ratio', { giveRun, expectedRun, actualRun });
+  const [runPayment, _moreRun] = await E(stable.issuer).split(
+    runPayouts.Out,
+    giveRun,
   );
-  const anchorPayout = await E(seat2).getPayout('Out');
-  const actualAnchor = await E(anchorIssuer).getAmountOf(anchorPayout);
+  const anchorPayouts = await driver.swapStableForAnchor(giveRun, runPayment);
+  // @ts-expect-error known non-null
+  const actualAnchor = await E(anchor.issuer).getAmountOf(anchorPayouts.Out);
   const expectedAnchor = floorMultiplyBy(
     minusStableFee(giveRun),
     anchorPerStable,
   );
   t.deepEqual(actualAnchor, expectedAnchor);
-  const liq2 = await E(publicFacet).getPoolBalance();
-  t.deepEqual(AmountMath.subtract(giveAnchor, expectedAnchor), liq2);
-  trace('get anchor', { runGive: giveRun, expectedRun, actualAnchor, liq2 });
+  driver.assertPoolBalance(AmountMath.subtract(giveAnchor, expectedAnchor));
+  trace('get anchor', { runGive: giveRun, expectedRun, actualAnchor });
 });
 
-// NB: most 'storage keys' tests integrate bootstrap config, but this uses startInstance directly
-// because there are as yet no startPSM tests.
-test('storage keys', async t => {
-  const {
-    zoe,
-    privateArgs,
-    terms,
-    installs: { psmInstall },
-    anchorKit: { issuer: anchorIssuer },
-  } = t.context;
-  /** @type {Awaited<ReturnType<typeof import('../../src/psm/psm.js').start>>} */
-  const { publicFacet } = await E(zoe).startInstance(
-    psmInstall,
-    harden({ AUSD: anchorIssuer }),
-    terms,
-    privateArgs,
+test('governance', async t => {
+  const driver = await makePsmDriver(t);
+  t.is(
+    await subscriptionKey(E(driver.publicFacet).getSubscription()),
+    'mockChainStorageRoot.thisPsm.governance',
   );
 
+  t.like(driver.getStorageChildBody('governance'), {
+    current: {
+      Electorate: { type: 'invitation' },
+      GiveStableFee: { type: 'ratio' },
+      MintLimit: { type: 'amount' },
+      WantStableFee: { type: 'ratio' },
+    },
+  });
+});
+
+test('metrics', async t => {
+  const driver = await makePsmDriver(t);
   t.is(
-    await subscriptionKey(E(publicFacet).getSubscription()),
-    'mockChainStorageRoot.psm.governance',
+    await subscriptionKey(E(driver.publicFacet).getMetrics()),
+    'mockChainStorageRoot.thisPsm.metrics',
   );
+
+  const { anchor, stable } = t.context;
+  // Test keys and brands, then assume they don't change
+  t.deepEqual(Object.keys(driver.getStorageChildBody('metrics')), [
+    'anchorPoolBalance',
+    'feePoolBalance',
+
+    'totalAnchorProvided',
+    'totalStableProvided',
+  ]);
+  t.like(driver.getStorageChildBody('metrics'), {
+    anchorPoolBalance: { brand: { iface: 'Alleged: aUSD brand' }, value: 0n },
+    feePoolBalance: { brand: { iface: 'Alleged: IST brand' }, value: 0n },
+    totalAnchorProvided: {
+      brand: { iface: 'Alleged: aUSD brand' },
+      value: 0n,
+    },
+    totalStableProvided: {
+      brand: { iface: 'Alleged: IST brand' },
+      value: 0n,
+    },
+  });
+  const giveAnchor = anchor.make(200n * 1_000_000n);
+
+  // grow the pool
+  const stablePayouts = await driver.swapAnchorForStable(giveAnchor);
+  t.like(driver.getStorageChildBody('metrics'), {
+    anchorPoolBalance: {
+      value: giveAnchor.value,
+    },
+    feePoolBalance: { value: 20_000n },
+    totalAnchorProvided: {
+      value: 0n,
+    },
+    totalStableProvided: {
+      value: giveAnchor.value,
+    },
+  });
+
+  // no change
+  await driver.swapAnchorForStable(anchor.make(0n));
+  t.like(driver.getStorageChildBody('metrics'), {
+    anchorPoolBalance: {
+      value: giveAnchor.value,
+    },
+    feePoolBalance: { value: 20_000n },
+    totalAnchorProvided: {
+      value: 0n,
+    },
+    totalStableProvided: {
+      value: giveAnchor.value,
+    },
+  });
+
+  // get anchor
+  const giveStable = AmountMath.make(stable.brand, 100n * 1_000_000n);
+  const [runPayment, _moreRun] = await E(stable.issuer).split(
+    stablePayouts.Out,
+    giveStable,
+  );
+  const fee = 30_000n;
+  await driver.swapStableForAnchor(giveStable, runPayment);
+  t.like(driver.getStorageChildBody('metrics'), {
+    anchorPoolBalance: {
+      value: giveStable.value + fee,
+    },
+    feePoolBalance: { value: 50_000n },
+    totalAnchorProvided: {
+      value: giveStable.value - fee,
+    },
+    totalStableProvided: {
+      value: giveAnchor.value,
+    },
+  });
 });
