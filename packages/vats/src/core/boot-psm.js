@@ -23,6 +23,7 @@ import * as utils from './utils.js';
 import {
   makeBridgeManager,
   makeChainStorage,
+  publishAgoricNames,
   setupClientManager,
   startTimerService,
 } from './chain-behaviors.js';
@@ -124,6 +125,11 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       makeBoard(powersFor('makeBoard')),
       makeBridgeManager(powersFor('makeBridgeManager')),
       makeChainStorage(powersFor('makeChainStorage')),
+      publishAgoricNames(powersFor('publishAgoricNames'), {
+        options: {
+          agoricNamesOptions: { topLevel: Object.keys(agoricNamesReserved) },
+        },
+      }),
       setupClientManager(powersFor('setupClientManager')),
       mintInitialSupply(powersFor('mintInitialSupply')),
       addBankAssets(powersFor('addBankAssets')),
