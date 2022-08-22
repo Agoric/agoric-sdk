@@ -203,7 +203,7 @@ async function makePsmDriver(t, customTerms) {
     /** @param {Amount<'nat'>} giveAnchor */
     async swapAnchorForStable(giveAnchor) {
       const seat = E(zoe).offer(
-        E(publicFacet).makeSwapInvitation(),
+        E(publicFacet).makeWantStableInvitation(),
         harden({ give: { In: giveAnchor } }),
         // @ts-expect-error known defined
         harden({ In: anchor.mint.mintPayment(giveAnchor) }),
@@ -218,7 +218,7 @@ async function makePsmDriver(t, customTerms) {
      */
     async swapStableForAnchor(giveRun, runPayment) {
       const seat = E(zoe).offer(
-        E(publicFacet).makeSwapInvitation(),
+        E(publicFacet).makeGiveStableInvitation(),
         harden({ give: { In: giveRun } }),
         harden({ In: runPayment }),
       );
@@ -425,4 +425,46 @@ test('metrics', async t => {
       value: giveAnchor.value,
     },
   });
+});
+
+test('wrong give giveStableInvitaion', async t => {
+  const {
+    zoe,
+    feeMintAccess,
+    initialPoserInvitation,
+    terms,
+    installs: { psmInstall },
+    anchor,
+  } = t.context;
+
+  const mockChainStorage = makeMockChainStorageRoot();
+
+  /** @type {Awaited<ReturnType<import('../../src/psm/psm.js').start>>} */
+  const { publicFacet } = await E(zoe).startInstance(
+    psmInstall,
+    harden({ AUSD: anchor.issuer }),
+    { ...terms },
+    harden({
+      feeMintAccess,
+      initialPoserInvitation,
+      storageNode: mockChainStorage.makeChildNode('thisPsm'),
+      marshaller: makeBoard().getReadonlyMarshaller(),
+    }),
+  );
+
+  const giveAnchor = AmountMath.make(anchor.brand, 200n * 1_000_000n);
+
+  await t.throwsAsync(
+    () =>
+      E(zoe).offer(
+        E(publicFacet).makeGiveStableInvitation(),
+        harden({ give: { In: giveAnchor } }),
+        // @ts-expect-error known defined
+        harden({ In: anchor.mint.mintPayment(giveAnchor) }),
+      ),
+    {
+      message:
+        'proposal: required-parts: give: In: brand: "[Alleged: aUSD brand]" - Must be: "[Alleged: IST brand]"',
+    },
+  );
 });
