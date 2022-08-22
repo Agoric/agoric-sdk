@@ -177,7 +177,6 @@ test('evaluateInstallation is available to core eval', async t => {
       },
     };
 
-    // @ts-expect-error mock lacks getBundleIDByName
     const { zoeService } = makeZoeKit(makeFakeVatAdmin(() => {}).admin);
 
     const theBoard = boardRoot().getBoard();
