@@ -241,13 +241,9 @@ const defaultMakePresence = iface => {
 /**
  * Make context for unserializing wallet or board data.
  *
- * @param {(log?: MessageLog[]) => Promise<void>} [flush]
  * @param {(iface: string) => any} [makePresence]
  */
-export const makeImportContext = (
-  flush = async () => {},
-  makePresence = defaultMakePresence,
-) => {
+export const makeImportContext = (makePresence = defaultMakePresence) => {
   const walletObjects = {
     /** @type {IdTable<number, unknown>} */
     purse: {
@@ -344,13 +340,8 @@ export const makeImportContext = (
   const wallet = makePresence('Alleged: Wallet');
   registerUnknown(wallet);
 
-  const all = async goals => {
-    return Promise.all(goals);
-  };
-
   return harden({
     getBootstrap: () => wallet,
-    all,
     registerUnknown,
     fromMyWallet: Far('wallet marshaller', { ...marshal.fromMyWallet }),
     fromBoard: Far('board marshaller', { ...marshal.fromBoard }),

@@ -1,4 +1,6 @@
 // @ts-check
+/* global setTimeout */
+
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { E, Far, passStyleOf } from '@endo/far';
@@ -184,8 +186,24 @@ test('makeExportContext.serialize handles unregistered identites', t => {
 
 const makeWalletUI = (board, backgroundSigner, follower) => {
   const msgs = [];
+  const flush = async () => {
+    if (!msgs.length) {
+      return;
+    }
+
+    const theseMsgs = msgs.map(({ msg }) => msg);
+    msgs.splice(0);
+
+    // eslint-disable-next-line no-use-before-define
+    const capData = ctx.fromMyWallet.serialize(harden(theseMsgs));
+
+    console.log('@@@bg send serialized', { capData });
+    await backgroundSigner.submitAction(JSON.stringify(capData));
+  };
+
   const seqToKit = new Map();
   let lastSeq = 0;
+  let flushLaterTimeout;
   const mkp = iface =>
     makeLoggingPresence(iface, (msg, resultP) => {
       msgs.push({ msg, resultP });
@@ -194,26 +212,17 @@ const makeWalletUI = (board, backgroundSigner, follower) => {
       lastSeq += 1;
       const seq = lastSeq;
       seqToKit.set(seq, kit);
+
+      // Automatically flush (Nagle) after a short delay.
+      if (!flushLaterTimeout) {
+        flushLaterTimeout = setTimeout(() => {
+          flushLaterTimeout = undefined;
+          flush();
+        }, 100);
+      }
       return kit.promise;
     });
-  const flush = async (addMsgs = []) => {
-    if (!addMsgs.length && !msgs.length) {
-      return;
-    }
-    await null; // wait for E() stuff?
-
-    const allMsgs = [...addMsgs, ...msgs];
-    msgs.splice(0);
-
-    // eslint-disable-next-line no-use-before-define
-    const capData = ctx.fromMyWallet.serialize(
-      harden(allMsgs.map(({ msg }) => msg)),
-    );
-
-    console.log('@@@bg send serialized', { capData });
-    await backgroundSigner.submitAction(JSON.stringify(capData));
-  };
-  const ctx = makeImportContext(flush, mkp);
+  const ctx = makeImportContext(mkp);
   const walletP = ctx.getBootstrap();
 
   const zoe = E(walletP).getZoeService();
@@ -241,8 +250,6 @@ const makeWalletUI = (board, backgroundSigner, follower) => {
   })();
 
   return harden({
-    all: ctx.all,
-    flush,
     getScopedBridge: async () =>
       harden({
         getZoeService: async () => zoe,
@@ -369,12 +376,8 @@ test('get IST brand via agoricNames', async t => {
     const wallet = makeWalletUI(board, bgSigner, follower);
     const bridge = E(wallet).getScopedBridge();
     const agoricNames = E(bridge).getAgoricNames();
-    const tp = wallet.all([E(agoricNames).lookup('brand', 'IST')]);
-    await Promise.race([tp, wallet.flush()]);
-    await Promise.race([tp, wallet.flush()]);
-    await Promise.race([tp, wallet.flush()]);
-    await Promise.race([tp, wallet.flush()]);
-    tp.then(([brand]) => t.is(passStyleOf(brand), 'remotable'));
+    const [brand] = await Promise.all([E(agoricNames).lookup('brand', 'IST')]);
+    t.is(passStyleOf(brand), 'remotable');
   };
 
   await Promise.all([onChain.run(), offChain()]);
