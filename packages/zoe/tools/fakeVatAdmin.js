@@ -50,7 +50,9 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   // This is explicitly intended to be mutable so that
   // test-only state can be provided from contracts
   // to their tests.
+  /** @type {VatAdminSvc} */
   const admin = Far('vatAdmin', {
+    getBundleIDByName: () => assert.fail('mock. not impl'),
     getBundleCap: bundleID => {
       if (!idToBundleCap.has(bundleID)) {
         idToBundleCap.init(bundleID, bogusBundleCap());
