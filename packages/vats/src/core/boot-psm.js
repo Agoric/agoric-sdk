@@ -4,8 +4,11 @@ import {
   installGovAndPSMContracts,
   makeAnchorAsset,
   startPSM,
+  PSM_MANIFEST,
 } from '@agoric/inter-protocol/src/proposals/startPSM.js';
+// TODO: factor startEconomicCommittee out of econ-behaviors.js
 import { startEconomicCommittee } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+import { ECON_COMMITTEE_MANIFEST } from '@agoric/inter-protocol/src/proposals/core-proposal.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
 import {
@@ -23,6 +26,7 @@ import {
   setupClientManager,
   startTimerService,
 } from './chain-behaviors.js';
+import { CHAIN_BOOTSTRAP_MANIFEST } from './manifest.js';
 
 /** @typedef {import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
 
@@ -65,10 +69,8 @@ export const agoricNamesReserved = harden(
  *   D: DProxy
  * }} vatPowers
  * @param {{
- *   argv: {
  *     economicCommitteeAddresses: string[],
- *     anchorDenom,
- *  },
+ *     anchorAssets: { denom: string }[],
  * }} vatParameters
  */
 export const buildRootObject = (vatPowers, vatParameters) => {
@@ -76,13 +78,11 @@ export const buildRootObject = (vatPowers, vatParameters) => {
   const log = vatPowers.logger || console.info;
 
   const {
-    argv: { anchorDenom, economicCommitteeAddresses },
+    anchorAssets: [{ denom: anchorDenom }], // TODO: handle >1?
+    economicCommitteeAddresses,
   } = vatParameters;
 
   const { produce, consume } = makePromiseSpace(log);
-  // ISSUE: the list of names to reserve in makeAgoricNamesAccess
-  // includes amm and VaultFactory, which shows excess coupling.
-  // These promises are not resolved, but the names _are_ visible at runtime.
   const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(
     log,
     agoricNamesReserved,
@@ -107,30 +107,41 @@ export const buildRootObject = (vatPowers, vatParameters) => {
         utils: { ...utils },
       },
     });
+    const manifest = {
+      ...CHAIN_BOOTSTRAP_MANIFEST,
+      ...ECON_COMMITTEE_MANIFEST,
+      ...PSM_MANIFEST,
+    };
+    const powersFor = name => {
+      const permit = manifest[name];
+      assert(permit, `missing permit for ${name}`);
+      return utils.extractPowers(permit, allPowers);
+    };
+
     await Promise.all([
-      makeVatsFromBundles(allPowers),
-      buildZoe(allPowers),
-      makeBoard(allPowers),
-      makeBridgeManager(allPowers),
-      makeChainStorage(allPowers),
-      setupClientManager(allPowers),
-      mintInitialSupply(allPowers),
-      addBankAssets(allPowers),
-      startTimerService(allPowers),
+      makeVatsFromBundles(powersFor('makeVatsFromBundles')),
+      buildZoe(powersFor('buildZoe')),
+      makeBoard(powersFor('makeBoard')),
+      makeBridgeManager(powersFor('makeBridgeManager')),
+      makeChainStorage(powersFor('makeChainStorage')),
+      setupClientManager(powersFor('setupClientManager')),
+      mintInitialSupply(powersFor('mintInitialSupply')),
+      addBankAssets(powersFor('addBankAssets')),
+      startTimerService(powersFor('startTimerService')),
       // centralSupply, mintHolder, walletFactory
-      installBootContracts(allPowers),
-      installGovAndPSMContracts(allPowers),
-      startEconomicCommittee(allPowers, {
+      installBootContracts(powersFor('installBootContracts')),
+      installGovAndPSMContracts(powersFor('installGovAndPSMContracts')),
+      startEconomicCommittee(powersFor('startEconomicCommittee'), {
         options: {
           econCommitteeOptions: {
             committeeSize: economicCommitteeAddresses.length,
           },
         },
       }),
-      makeAnchorAsset(allPowers, {
+      makeAnchorAsset(powersFor('makeAnchorAsset'), {
         options: { anchorOptions: { denom: anchorDenom } },
       }),
-      startPSM(allPowers, {
+      startPSM(powersFor('startPSM'), {
         options: { anchorOptions: { denom: anchorDenom } },
       }),
     ]);

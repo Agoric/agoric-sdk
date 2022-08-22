@@ -287,14 +287,18 @@ test('bootstrap provides a way to pass items to CORE_EVAL', async t => {
   t.deepEqual(await E(root).consumeItem('swissArmyKnife'), 4);
 });
 
-const psmArgs = { anchorDenom: 'ibc/toyusdc', economicCommitteeAddresses: [] };
+const psmParams = {
+  anchorAssets: [{ denom: 'ibc/toyusdc' }],
+  economicCommitteeAddresses: [],
+  argv: { bootMsg: {} },
+};
 
 test(`PSM-only bootstrap`, async t => {
   const mock = makeMock(t);
   const root = buildPSMRootObject(
     // @ts-expect-error Device<T> is a little goofy
     { D: d => d, logger: t.log },
-    { argv: psmArgs },
+    psmParams,
   );
 
   const vats = mockSwingsetVats(mock);
@@ -310,7 +314,7 @@ test('PSM-only bootstrap provides a way to pass items to CORE_EVAL', async t => 
   const root = buildPSMRootObject(
     // @ts-expect-error Device<T> is a little goofy
     { D: d => d, logger: t.log },
-    { argv: psmArgs },
+    psmParams,
   );
 
   await E(root).produceItem('swissArmyKnife', [1, 2, 3]);
