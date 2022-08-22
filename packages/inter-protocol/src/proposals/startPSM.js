@@ -217,10 +217,10 @@ export const makeAnchorAsset = async (
 harden(makeAnchorAsset);
 
 /** @param {BootstrapSpace & { devices: { vatAdmin: any }, vatPowers: { D: DProxy }, }} powers */
-export const installGovContracts = async ({
+export const installGovAndPSMContracts = async ({
   consume: { zoe, vatAdminSvc },
   installation: {
-    produce: { contractGovernor, committee, binaryVoteCounter },
+    produce: { contractGovernor, committee, binaryVoteCounter, psm },
   },
 }) => {
   return Promise.all(
@@ -228,6 +228,7 @@ export const installGovContracts = async ({
       contractGovernor,
       committee,
       binaryVoteCounter,
+      psm,
     }).map(async ([name, producer]) => {
       const bundleID = await E(vatAdminSvc).getBundleIDByName(name);
 
