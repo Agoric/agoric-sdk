@@ -7,6 +7,7 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
+import { assert } from '@agoric/assert';
 import { reserveThenGetNamePaths } from './utils.js';
 
 const BASIS_POINTS = 10000n;
@@ -214,6 +215,31 @@ export const makeAnchorAsset = async (
   ]);
 };
 harden(makeAnchorAsset);
+
+/** @param {BootstrapSpace & { devices: { vatAdmin: any }, vatPowers: { D: DProxy }, }} powers */
+export const installGovAndPSMContracts = async ({
+  vatPowers: { D },
+  devices: { vatAdmin },
+  consume: { zoe },
+  installation: {
+    produce: { contractGovernor, committee, binaryVoteCounter, psm },
+  },
+}) => {
+  return Promise.all(
+    Object.entries({
+      contractGovernor,
+      committee,
+      binaryVoteCounter,
+      psm,
+    }).map(async ([name, producer]) => {
+      const bundleCap = D(vatAdmin).getNamedBundleCap(name);
+      const bundle = D(bundleCap).getBundle();
+      const installation = E(zoe).install(bundle);
+
+      producer.resolve(installation);
+    }),
+  );
+};
 
 export const PSM_MANIFEST = harden({
   [makeAnchorAsset.name]: {
