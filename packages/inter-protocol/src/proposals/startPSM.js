@@ -218,27 +218,23 @@ harden(makeAnchorAsset);
 
 /** @param {BootstrapSpace & { devices: { vatAdmin: any }, vatPowers: { D: DProxy }, }} powers */
 export const installGovContracts = async ({
-  vatPowers: { D },
-  devices: { vatAdmin },
-  consume: { zoe },
+  consume: { zoe, vatAdminSvc },
   installation: {
     produce: { contractGovernor, committee, binaryVoteCounter },
   },
 }) => {
-  for (const [name, producer] of Object.entries({
-    contractGovernor,
-    committee,
-    binaryVoteCounter,
-  })) {
-    // This really wants to be E(vatAdminSvc).getBundleIDByName, but it's
-    // good enough to do D(vatAdmin).getBundleIDByName
-    const bundleCap = D(vatAdmin).getNamedBundleCap(name);
+  return Promise.all(
+    Object.entries({
+      contractGovernor,
+      committee,
+      binaryVoteCounter,
+    }).map(async ([name, producer]) => {
+      const bundleID = await E(vatAdminSvc).getBundleIDByName(name);
 
-    const bundle = D(bundleCap).getBundle();
-    // TODO (#4374) this should be E(zoe).installBundleID(bundleID);
-    const installation = E(zoe).install(bundle);
-    producer.resolve(installation);
-  }
+      const installation = E(zoe).installBundleID(bundleID);
+      producer.resolve(installation);
+    }),
+  );
 };
 
 export const PSM_MANIFEST = harden({
