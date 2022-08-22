@@ -283,23 +283,20 @@ async function avaConfig(args, options, { glob, readFile }) {
   if (typeof exclude === 'string') {
     exclude = [exclude];
   }
-  assert(
-    !exclude || Array.isArray(exclude),
-    X`ava-xs.exclude: expected array or string: ${q(exclude)}`,
-  );
+  if (!(!exclude || Array.isArray(exclude))) {
+    assert.fail(X`ava-xs.exclude: expected array or string: ${q(exclude)}`);
+  }
 
   if (!files.length) {
-    assert(
-      Array.isArray(filePatterns),
-      X`ava.files: expected Array: ${q(filePatterns)}`,
-    );
+    if (!Array.isArray(filePatterns)) {
+      assert.fail(X`ava.files: expected Array: ${q(filePatterns)}`);
+    }
     files = (await Promise.all(filePatterns.map(globFiles))).flat();
   }
 
-  assert(
-    Array.isArray(require),
-    X`ava.requires: expected Array: ${q(require)}`,
-  );
+  if (!Array.isArray(require)) {
+    assert.fail(X`ava.requires: expected Array: ${q(require)}`);
+  }
   const config = { files, require, exclude, debug, verbose, titleMatch };
   return config;
 }

@@ -77,10 +77,9 @@ export function deliverToController(
     const remoteID = state.getRemoteIDForName(remoteName);
     assert(remoteID, X`unknown remote name ${remoteName}`);
     const remoteRefID = args[1];
-    assert(
-      args[2]['@qclass'] === 'slot' && args[2].index === 0,
-      X`unexpected args for addEgress(): ${methargs.body}`,
-    );
+    if (!(args[2]['@qclass'] === 'slot' && args[2].index === 0)) {
+      assert.fail(X`unexpected args for addEgress(): ${methargs.body}`);
+    }
     const localRef = provideLocalForKernel(slots[args[2].index]);
     addEgress(remoteID, remoteRefID, localRef);
     syscall.resolve([[result, false, UNDEFINED]]);

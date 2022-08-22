@@ -513,10 +513,9 @@ const doInit =
       config.OFFSETS[PLACEMENT] = offset;
     }
 
-    assert(
-      Object.values(ROLE_INSTANCE).some(i => i > 0),
-      X`Aborting due to no nodes configured!`,
-    );
+    if (!Object.values(ROLE_INSTANCE).some(i => i > 0)) {
+      assert.fail(X`Aborting due to no nodes configured!`);
+    }
 
     await wr.createFile(
       `vars.tf`,

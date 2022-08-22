@@ -30,18 +30,16 @@ const TELEMETRY_SERVICE_NAME = 'agd-cosmos';
 
 const toNumber = specimen => {
   const number = parseInt(specimen, 10);
-  assert(
-    String(number) === String(specimen),
-    X`Could not parse ${JSON.stringify(specimen)} as a number`,
-  );
+  if (!(String(number) === String(specimen))) {
+    assert.fail(X`Could not parse ${JSON.stringify(specimen)} as a number`);
+  }
   return number;
 };
 
 const makeChainStorage = (call, prefix = '', options = {}) => {
-  assert(
-    prefix === '' || prefix.endsWith('.'),
-    X`prefix ${prefix} must end with a dot`,
-  );
+  if (!(prefix === '' || prefix.endsWith('.'))) {
+    assert.fail(X`prefix ${prefix} must end with a dot`);
+  }
 
   const { fromChainShape, toChainShape } = options;
 

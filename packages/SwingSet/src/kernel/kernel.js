@@ -998,10 +998,9 @@ export default function buildKernel(
   function routeSendEvent(message) {
     const { target, msg } = message;
     const { type } = parseKernelSlot(target);
-    assert(
-      ['object', 'promise'].includes(type),
-      X`unable to send() to slot.type ${type}`,
-    );
+    if (!['object', 'promise'].includes(type)) {
+      assert.fail(X`unable to send() to slot.type ${type}`);
+    }
 
     function splat(error) {
       if (msg.result) {

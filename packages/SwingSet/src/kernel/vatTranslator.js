@@ -523,10 +523,9 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   function translateSubscribe(vpid) {
     const kpid = mapVatSlotToKernelSlot(vpid);
     kdebug(`syscall[${vatID}].subscribe(${vpid}/${kpid})`);
-    assert(
-      kernelKeeper.hasKernelPromise(kpid),
-      X`unknown kernelPromise id '${kpid}'`,
-    );
+    if (!kernelKeeper.hasKernelPromise(kpid)) {
+      assert.fail(X`unknown kernelPromise id '${kpid}'`);
+    }
     /** @type { KernelSyscallSubscribe } */
     const ks = harden(['subscribe', vatID, kpid]);
     return ks;

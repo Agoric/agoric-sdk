@@ -36,10 +36,9 @@ export const makeInstanceRecordStorage = baggage => {
     );
 
   const addIssuerToInstanceRecord = (keyword, issuerRecord) => {
-    assert(
-      !(keyword in issuerRecord),
-      X`conflicting definition of ${q(keyword)}`,
-    );
+    if (keyword in issuerRecord) {
+      assert.fail(X`conflicting definition of ${q(keyword)}`);
+    }
 
     assertInstantiated();
     const instanceRecord = baggage.get('instanceRecord');
@@ -86,10 +85,11 @@ export const makeInstanceRecordStorage = baggage => {
   const assertUniqueKeyword = keyword => {
     assertInstantiated();
     assertKeywordName(keyword);
-    assert(
-      !ownKeys(baggage.get('instanceRecord').terms.issuers).includes(keyword),
-      X`keyword ${q(keyword)} must be unique`,
-    );
+    if (
+      ownKeys(baggage.get('instanceRecord').terms.issuers).includes(keyword)
+    ) {
+      assert.fail(X`keyword ${q(keyword)} must be unique`);
+    }
   };
 
   const instantiate = startingInstanceRecord => {

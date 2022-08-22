@@ -114,10 +114,11 @@ export const makeScalarWeakMapStore = (
     // See https://github.com/Agoric/agoric-sdk/issues/3606
     harden(key);
 
-    assert(
-      passStyleOf(key) === 'remotable',
-      X`Only remotables can be keys of scalar WeakMapStores: ${key}`,
-    );
+    if (!(passStyleOf(key) === 'remotable')) {
+      assert.fail(
+        X`Only remotables can be keys of scalar WeakMapStores: ${key}`,
+      );
+    }
     if (keySchema !== undefined) {
       fit(key, keySchema, 'weakMapStore key');
     }

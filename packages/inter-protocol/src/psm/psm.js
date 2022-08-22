@@ -105,10 +105,9 @@ export const start = async (zcf, privateArgs, baggage) => {
       anchorPool.getAmountAllocated('Anchor', anchorBrand),
       given,
     );
-    assert(
-      AmountMath.isGTE(params.getMintLimit(), anchorAfterTrade),
-      X`Request would exceed mint limit`,
-    );
+    if (!AmountMath.isGTE(params.getMintLimit(), anchorAfterTrade)) {
+      assert.fail(X`Request would exceed mint limit`);
+    }
   };
 
   /**
@@ -121,10 +120,9 @@ export const start = async (zcf, privateArgs, baggage) => {
     const afterFee = AmountMath.subtract(given, fee);
     const maxAnchor = floorMultiplyBy(afterFee, anchorPerStable);
     // TODO this prevents the reallocate from failing. Can this be tested otherwise?
-    assert(
-      AmountMath.isGTE(maxAnchor, wanted),
-      X`wanted ${wanted} is more then ${given} minus fees ${fee}`,
-    );
+    if (!AmountMath.isGTE(maxAnchor, wanted)) {
+      assert.fail(X`wanted ${wanted} is more then ${given} minus fees ${fee}`);
+    }
     stageTransfer(seat, stage, { In: afterFee }, { Stable: afterFee });
     stageTransfer(seat, feePool, { In: fee }, { Stable: fee });
     stageTransfer(anchorPool, seat, { Anchor: maxAnchor }, { Out: maxAnchor });
@@ -142,10 +140,9 @@ export const start = async (zcf, privateArgs, baggage) => {
     const asStable = floorDivideBy(given, anchorPerStable);
     const fee = ceilMultiplyBy(asStable, params.getWantStableFee());
     const afterFee = AmountMath.subtract(asStable, fee);
-    assert(
-      AmountMath.isGTE(afterFee, wanted),
-      X`wanted ${wanted} is more then ${given} minus fees ${fee}`,
-    );
+    if (!AmountMath.isGTE(afterFee, wanted)) {
+      assert.fail(X`wanted ${wanted} is more then ${given} minus fees ${fee}`);
+    }
     stableMint.mintGains({ Stable: asStable }, stage);
     stageTransfer(seat, anchorPool, { In: given }, { Anchor: given });
     stageTransfer(stage, seat, { Stable: afterFee }, { Out: afterFee });

@@ -52,10 +52,11 @@ const depositPayout = (seat, keyword, purse, expectedAmount) => {
       return E(purse).deposit(payout);
     })
     .then(depositAmount => {
-      assert(
-        AmountMath.isEqual(depositAmount, expectedAmount),
-        X`amounts don't match: ${q(depositAmount)}, ${q(expectedAmount)}`,
-      );
+      if (!AmountMath.isEqual(depositAmount, expectedAmount)) {
+        assert.fail(
+          X`amounts don't match: ${q(depositAmount)}, ${q(expectedAmount)}`,
+        );
+      }
     });
 };
 

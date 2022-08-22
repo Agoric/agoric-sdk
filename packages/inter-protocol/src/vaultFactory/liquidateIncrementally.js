@@ -284,10 +284,9 @@ const start = async zcf => {
     assertProposalShape(debtorSeat, {
       give: { In: null },
     });
-    assert(
-      originalDebt.brand === debtBrand,
-      X`Cannot liquidate to ${originalDebt.brand}`,
-    );
+    if (!(originalDebt.brand === debtBrand)) {
+      assert.fail(X`Cannot liquidate to ${originalDebt.brand}`);
+    }
     const penalty = ceilMultiplyBy(originalDebt, penaltyRate);
     const debtWithPenalty = AmountMath.add(originalDebt, penalty);
     trace('LIQ', { originalDebt, debtWithPenalty });

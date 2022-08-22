@@ -12,10 +12,9 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
 
   const [prog, configDir] = rawArgs.slice(1);
 
-  assert(
-    prog === 'ag-chain-cosmos',
-    X`<prog> must currently be 'ag-chain-cosmos'`,
-  );
+  if (!(prog === 'ag-chain-cosmos')) {
+    assert.fail(X`<prog> must currently be 'ag-chain-cosmos'`);
+  }
 
   const { exportMetrics, enableCors } = opts;
 

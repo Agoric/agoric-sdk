@@ -76,10 +76,9 @@ export function makeBridgeManager(E, D, bridgeDevice) {
       srcHandlers.init(srcID, handler);
     },
     unregister(srcID, handler) {
-      assert(
-        srcHandlers.get(srcID) === handler,
-        X`Handler was not registered for ${srcID}`,
-      );
+      if (!(srcHandlers.get(srcID) === handler)) {
+        assert.fail(X`Handler was not registered for ${srcID}`);
+      }
       srcHandlers.delete(srcID);
     },
   });

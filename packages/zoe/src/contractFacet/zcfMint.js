@@ -90,10 +90,11 @@ export const makeZCFMintFactory = async (
           // we are adding assets. However, we keep this check so that
           // all reallocations are covered by offer safety checks, and
           // that any bug within Zoe that may affect this is caught.
-          assert(
-            zcfSeat.isOfferSafe(allocationPlusGains),
-            X`The allocation after minting gains ${allocationPlusGains} for the zcfSeat was not offer safe`,
-          );
+          if (!zcfSeat.isOfferSafe(allocationPlusGains)) {
+            assert.fail(
+              X`The allocation after minting gains ${allocationPlusGains} for the zcfSeat was not offer safe`,
+            );
+          }
           // No effects above, apart from incrementBy. Note COMMIT POINT within
           // reallocateForZCFMint. The following two steps *should* be
           // committed atomically, but it is not a disaster if they are
@@ -116,10 +117,11 @@ export const makeZCFMintFactory = async (
           );
 
           // verifies offer safety
-          assert(
-            zcfSeat.isOfferSafe(allocationMinusLosses),
-            X`The allocation after burning losses ${allocationMinusLosses} for the zcfSeat was not offer safe`,
-          );
+          if (!zcfSeat.isOfferSafe(allocationMinusLosses)) {
+            assert.fail(
+              X`The allocation after burning losses ${allocationMinusLosses} for the zcfSeat was not offer safe`,
+            );
+          }
 
           // Decrement the stagedAllocation if it exists so that the
           // stagedAllocation is kept up to the currentAllocation

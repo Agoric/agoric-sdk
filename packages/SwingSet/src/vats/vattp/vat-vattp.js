@@ -185,10 +185,9 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
     () => 0n,
   );
   const initNetworkHostState = (allegedName, comms, console) => {
-    assert(
-      !networkHostNames.has(allegedName),
-      X`already have host for ${allegedName}`,
-    );
+    if (networkHostNames.has(allegedName)) {
+      assert.fail(X`already have host for ${allegedName}`);
+    }
     networkHostNames.add(allegedName);
     networkHostCounter += 1n;
     baggage.set(networkHostCounterBaggageKey, networkHostCounter);

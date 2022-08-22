@@ -56,10 +56,11 @@ export const start = (zcf, { bankManager }) => {
     const {
       give: { Central: centralAmt },
     } = seat.getProposal();
-    assert(
-      AmountMath.isGTE(centralAmt, minimumCentral),
-      X`at least ${q(minimumCentral)} required; only ${q(centralAmt)} given`,
-    );
+    if (!AmountMath.isGTE(centralAmt, minimumCentral)) {
+      assert.fail(
+        X`at least ${q(minimumCentral)} required; only ${q(centralAmt)} given`,
+      );
+    }
 
     const interAsset = makeIssuerKit(
       denom,

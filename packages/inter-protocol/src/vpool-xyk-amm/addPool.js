@@ -39,17 +39,15 @@ export const makeAddIssuer = (
     ]);
     // AWAIT ///////////////
 
-    assert(
-      secondaryAssetKind === AssetKind.NAT,
-      X`${keyword} asset not fungible (must use NAT math)`,
-    );
+    if (!(secondaryAssetKind === AssetKind.NAT)) {
+      assert.fail(X`${keyword} asset not fungible (must use NAT math)`);
+    }
 
     /** @type {(brand: Brand) => Promise<ZCFMint>} */
     const makeLiquidityMint = brand => {
-      assert(
-        !isInSecondaries(brand),
-        X`issuer ${secondaryIssuer} already has a pool`,
-      );
+      if (isInSecondaries(brand)) {
+        assert.fail(X`issuer ${secondaryIssuer} already has a pool`);
+      }
 
       const liquidityKeyword = `${keyword}Liquidity`;
       zcf.assertUniqueKeyword(liquidityKeyword);
@@ -152,16 +150,18 @@ export const makeAddPoolInvitation = (
         centralAboveMinimum,
       );
 
-      assert(
-        AmountMath.isGTE(funderLiquidityAmount, wantLiquidityAmount),
-        X`Requested too many liquidity tokens (${wantLiquidityAmount}, max: ${funderLiquidityAmount}`,
-      );
+      if (!AmountMath.isGTE(funderLiquidityAmount, wantLiquidityAmount)) {
+        assert.fail(
+          X`Requested too many liquidity tokens (${wantLiquidityAmount}, max: ${funderLiquidityAmount}`,
+        );
+      }
     }
 
-    assert(
-      AmountMath.isGTE(centralAmount, minPoolLiquidity),
-      X`The minimum initial liquidity is ${minPoolLiquidity}, rejecting ${centralAmount}`,
-    );
+    if (!AmountMath.isGTE(centralAmount, minPoolLiquidity)) {
+      assert.fail(
+        X`The minimum initial liquidity is ${minPoolLiquidity}, rejecting ${centralAmount}`,
+      );
+    }
     const minLiqAmount = AmountMath.make(
       liquidityBrand,
       minPoolLiquidity.value,

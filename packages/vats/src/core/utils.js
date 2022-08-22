@@ -233,10 +233,9 @@ export const extract = (template, specimen) => {
     return new Proxy(target, {
       get: (t, propName) => {
         if (typeof propName !== 'symbol') {
-          assert(
-            propName in t,
-            X`${propName} not permitted, only ${keys(template)}`,
-          );
+          if (!(propName in t)) {
+            assert.fail(X`${propName} not permitted, only ${keys(template)}`);
+          }
         }
         return t[propName];
       },

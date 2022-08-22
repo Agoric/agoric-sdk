@@ -65,10 +65,9 @@ test.before(
           let requiredFee;
           if (query.kind === 'Paid') {
             requiredFee = feeAmount;
-            assert(
-              AmountMath.isGTE(fee, requiredFee),
-              X`Minimum fee of ${feeAmount} not met; have ${fee}`,
-            );
+            if (!AmountMath.isGTE(fee, requiredFee)) {
+              assert.fail(X`Minimum fee of ${feeAmount} not met; have ${fee}`);
+            }
           }
           const reply = { pong: query };
           return harden({ reply, requiredFee });

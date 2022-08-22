@@ -30,10 +30,9 @@ const makeMakeAddLiquidityInvitation = (zcf, getPool) => {
     const pool = getPool(secondaryBrand);
     const liquidityIssuer = pool.getLiquidityIssuer();
     const liquidityBrand = zcf.getBrandForIssuer(liquidityIssuer);
-    assert(
-      seat.getProposal().want.Liquidity.brand === liquidityBrand,
-      X`liquidity brand must be ${q(liquidityBrand)}`,
-    );
+    if (!(seat.getProposal().want.Liquidity.brand === liquidityBrand)) {
+      assert.fail(X`liquidity brand must be ${q(liquidityBrand)}`);
+    }
 
     return pool.addLiquidity(seat);
   };

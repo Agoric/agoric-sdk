@@ -95,10 +95,9 @@ const isGreaterThanZero = amount => {
 };
 
 const assertGreaterThanZero = (amount, name) => {
-  assert(
-    amount && isGreaterThanZero(amount),
-    X`${name} must be greater than 0: ${amount}`,
-  );
+  if (!(amount && isGreaterThanZero(amount))) {
+    assert.fail(X`${name} must be greater than 0: ${amount}`);
+  }
 };
 
 const isWantedAvailable = (poolAllocation, amountWanted) => {

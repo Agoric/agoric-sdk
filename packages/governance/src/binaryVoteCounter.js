@@ -30,10 +30,11 @@ const validateBinaryQuestionSpec = questionSpec => {
   coerceQuestionSpec(questionSpec);
 
   const positions = questionSpec.positions;
-  assert(
-    positions.length === 2,
-    X`Binary questions must have exactly two positions. had ${positions.length}: ${positions}`,
-  );
+  if (!(positions.length === 2)) {
+    assert.fail(
+      X`Binary questions must have exactly two positions. had ${positions.length}: ${positions}`,
+    );
+  }
 
   assert(
     questionSpec.maxChoices === 1,
@@ -81,10 +82,11 @@ const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
   const submitVote = (voterHandle, chosenPositions, shares = 1n) => {
     assert(chosenPositions.length === 1, 'only 1 position allowed');
     const [position] = chosenPositions;
-    assert(
-      positionIncluded(positions, position),
-      X`The specified choice is not a legal position: ${position}.`,
-    );
+    if (!positionIncluded(positions, position)) {
+      assert.fail(
+        X`The specified choice is not a legal position: ${position}.`,
+      );
+    }
 
     // CRUCIAL: If the voter cast a valid ballot, we'll record it, but we need
     // to make sure that each voter's vote is recorded only once.

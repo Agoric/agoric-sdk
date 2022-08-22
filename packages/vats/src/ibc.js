@@ -473,10 +473,9 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
         case 'channelOpenConfirm': {
           const { portID, channelID } = obj;
           const channelKey = `${channelID}:${portID}`;
-          assert(
-            channelKeyToAttemptP.has(channelKey),
-            X`${channelKey}: did not expect channelOpenConfirm`,
-          );
+          if (!channelKeyToAttemptP.has(channelKey)) {
+            assert.fail(X`${channelKey}: did not expect channelOpenConfirm`);
+          }
           const attemptP = channelKeyToAttemptP.get(channelKey);
           channelKeyToAttemptP.delete(channelKey);
 

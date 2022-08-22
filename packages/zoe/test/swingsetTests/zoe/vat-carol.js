@@ -25,10 +25,9 @@ const build = async (log, zoe, issuers, payments, installations) => {
         invitation,
       );
 
-      assert(
-        installation === installations.secondPriceAuction,
-        X`wrong installation`,
-      );
+      if (!(installation === installations.secondPriceAuction)) {
+        assert.fail(X`wrong installation`);
+      }
       assert(
         keyEQ(
           harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),

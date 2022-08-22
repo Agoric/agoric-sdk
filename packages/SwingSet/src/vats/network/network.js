@@ -308,10 +308,9 @@ export function makeNetworkProtocol(protocolHandler) {
       },
       async removeListener(listenHandler) {
         assert(listening.has(localAddr), X`Port ${localAddr} is not listening`);
-        assert(
-          listening.get(localAddr)[1] === listenHandler,
-          X`Port ${localAddr} handler to remove is not listening`,
-        );
+        if (!(listening.get(localAddr)[1] === listenHandler)) {
+          assert.fail(X`Port ${localAddr} handler to remove is not listening`);
+        }
         listening.delete(localAddr);
         await E(protocolHandler).onListenRemove(
           port,
@@ -339,10 +338,9 @@ export function makeNetworkProtocol(protocolHandler) {
         return conn;
       },
       async revoke() {
-        assert(
-          revoked !== RevokeState.REVOKED,
-          X`Port ${localAddr} is already revoked`,
-        );
+        if (!(revoked !== RevokeState.REVOKED)) {
+          assert.fail(X`Port ${localAddr} is already revoked`);
+        }
         revoked = RevokeState.REVOKING;
         await E(protocolHandler).onRevoke(port, localAddr, protocolHandler);
         revoked = RevokeState.REVOKED;
@@ -605,10 +603,9 @@ export function makeLoopbackProtocolHandler(
     async onListenRemove(port, localAddr, listenHandler, _protocolHandler) {
       const [lport, lhandler] = listeners.get(localAddr);
       assert(lport === port, X`Port does not match listener on ${localAddr}`);
-      assert(
-        lhandler === listenHandler,
-        X`Listen handler does not match listener on ${localAddr}`,
-      );
+      if (!(lhandler === listenHandler)) {
+        assert.fail(X`Listen handler does not match listener on ${localAddr}`);
+      }
       listeners.delete(localAddr);
     },
     async onRevoke(_port, _localAddr, _protocolHandler) {

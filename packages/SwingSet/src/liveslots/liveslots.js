@@ -810,10 +810,9 @@ function build(
     meterControl.assertNotMetered();
     const { type } = parseVatSlot(slot);
     assert(type === 'promise', X`revivePromise called on non-promise ${slot}`);
-    assert(
-      !getValForSlot(slot),
-      X`revivePromise called on pre-existing ${slot}`,
-    );
+    if (getValForSlot(slot)) {
+      assert.fail(X`revivePromise called on pre-existing ${slot}`);
+    }
     const pRec = makePipelinablePromise(slot);
     importedVPIDs.set(slot, pRec);
     const p = pRec.promise;
@@ -985,10 +984,9 @@ function build(
 
   function forbidPromises(serArgs) {
     for (const slot of serArgs.slots) {
-      assert(
-        parseVatSlot(slot).type !== 'promise',
-        X`D() arguments cannot include a Promise`,
-      );
+      if (!(parseVatSlot(slot).type !== 'promise')) {
+        assert.fail(X`D() arguments cannot include a Promise`);
+      }
     }
   }
 
@@ -1425,10 +1423,11 @@ function build(
       'remotable',
       X`buildRootObject() for vat ${forVatID} returned ${rootObject}, which is not Far`,
     );
-    assert(
-      getInterfaceOf(rootObject) !== undefined,
-      X`buildRootObject() for vat ${forVatID} returned ${rootObject} with no interface`,
-    );
+    if (!(getInterfaceOf(rootObject) !== undefined)) {
+      assert.fail(
+        X`buildRootObject() for vat ${forVatID} returned ${rootObject} with no interface`,
+      );
+    }
     // Need to load watched promises *after* buildRootObject() so that handler kindIDs
     // have a chance to be reassociated with their handlers.
     watchedPromiseManager.loadWatchedPromiseTable();

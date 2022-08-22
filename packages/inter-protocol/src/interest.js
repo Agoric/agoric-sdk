@@ -134,10 +134,11 @@ export const calculateCompoundedInterest = (
 const validatedBrand = (mint, debt) => {
   const { brand: debtBrand } = debt;
   const { brand: issuerBrand } = mint.getIssuerRecord();
-  assert(
-    debtBrand === issuerBrand,
-    X`Debt and issuer brands differ: ${debtBrand} != ${issuerBrand}`,
-  );
+  if (!(debtBrand === issuerBrand)) {
+    assert.fail(
+      X`Debt and issuer brands differ: ${debtBrand} != ${issuerBrand}`,
+    );
+  }
   return issuerBrand;
 };
 

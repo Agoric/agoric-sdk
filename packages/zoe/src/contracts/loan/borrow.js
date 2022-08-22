@@ -55,10 +55,11 @@ export const makeBorrowInvitation = (zcf, config) => {
 
     // Assert the required collateral was escrowed.
     const requiredMargin = ceilMultiplyBy(loanWanted, mmr);
-    assert(
-      AmountMath.isGTE(collateralPriceInLoanBrand, requiredMargin),
-      X`The required margin is ${requiredMargin.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
-    );
+    if (!AmountMath.isGTE(collateralPriceInLoanBrand, requiredMargin)) {
+      assert.fail(
+        X`The required margin is ${requiredMargin.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
+      );
+    }
 
     const timestamp = getTimestamp(quote);
 
@@ -72,10 +73,11 @@ export const makeBorrowInvitation = (zcf, config) => {
     );
 
     // Assert that loanWanted <= maxLoan
-    assert(
-      AmountMath.isGTE(maxLoan, loanWanted),
-      X`The wanted loan ${loanWanted} must be below or equal to the maximum possible loan ${maxLoan}`,
-    );
+    if (!AmountMath.isGTE(maxLoan, loanWanted)) {
+      assert.fail(
+        X`The wanted loan ${loanWanted} must be below or equal to the maximum possible loan ${maxLoan}`,
+      );
+    }
 
     const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
 

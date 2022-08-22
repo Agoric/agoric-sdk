@@ -66,10 +66,11 @@ const start = async (zcf, _privateArgs, instanceBaggage) => {
       'exit afterDeadline',
     );
     const sellSeatExitRule = sellSeat.getProposal().exit;
-    assert(
-      isAfterDeadlineExitRule(sellSeatExitRule),
-      X`the seller must have an afterDeadline exitRule, but instead had ${sellSeatExitRule}`,
-    );
+    if (!isAfterDeadlineExitRule(sellSeatExitRule)) {
+      assert.fail(
+        X`the seller must have an afterDeadline exitRule, but instead had ${sellSeatExitRule}`,
+      );
+    }
 
     const exerciseOption = makeExerciser(sellSeat);
     const customProps = harden({

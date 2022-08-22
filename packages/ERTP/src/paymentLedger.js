@@ -21,10 +21,11 @@ const amountSchemaFromElementSchema = (brand, assetKind, elementSchema) => {
   switch (assetKind) {
     case 'nat': {
       valueSchema = M.nat();
-      assert(
-        elementSchema === undefined,
-        X`Fungible assets cannot have an elementSchema: ${q(elementSchema)}`,
-      );
+      if (!(elementSchema === undefined)) {
+        assert.fail(
+          X`Fungible assets cannot have an elementSchema: ${q(elementSchema)}`,
+        );
+      }
       break;
     }
     case 'set': {
@@ -199,10 +200,11 @@ export const vivifyPaymentLedger = (
    * @returns {void}
    */
   const assertLivePayment = payment => {
-    assert(
-      paymentLedger.has(payment),
-      X`${payment} was not a live payment for brand ${brand}. It could be a used-up payment, a payment for another brand, or it might not be a payment at all.`,
-    );
+    if (!paymentLedger.has(payment)) {
+      assert.fail(
+        X`${payment} was not a live payment for brand ${brand}. It could be a used-up payment, a payment for another brand, or it might not be a payment at all.`,
+      );
+    }
   };
 
   /**
@@ -233,10 +235,9 @@ export const vivifyPaymentLedger = (
     if (payments.length > 1) {
       const antiAliasingStore = new Set();
       payments.forEach(payment => {
-        assert(
-          !antiAliasingStore.has(payment),
-          X`same payment ${payment} seen twice`,
-        );
+        if (antiAliasingStore.has(payment)) {
+          assert.fail(X`same payment ${payment} seen twice`);
+        }
         antiAliasingStore.add(payment);
       });
     }
@@ -246,10 +247,9 @@ export const vivifyPaymentLedger = (
     const newTotal = newPaymentBalances.reduce(add, emptyAmount);
 
     // Invariant check
-    assert(
-      isEqual(total, newTotal),
-      X`rights were not conserved: ${total} vs ${newTotal}`,
-    );
+    if (!isEqual(total, newTotal)) {
+      assert.fail(X`rights were not conserved: ${total} vs ${newTotal}`);
+    }
 
     let newPayments;
     try {
@@ -435,10 +435,11 @@ export const vivifyPaymentLedger = (
     recoverySet,
   ) => {
     amount = coerce(amount);
-    assert(
-      AmountMath.isGTE(currentBalance, amount),
-      X`Withdrawal of ${amount} failed because the purse only contained ${currentBalance}`,
-    );
+    if (!AmountMath.isGTE(currentBalance, amount)) {
+      assert.fail(
+        X`Withdrawal of ${amount} failed because the purse only contained ${currentBalance}`,
+      );
+    }
     const newPurseBalance = subtract(currentBalance, amount);
 
     const payment = makePayment();

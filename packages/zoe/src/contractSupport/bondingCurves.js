@@ -43,10 +43,9 @@ export const getInputPrice = (
   outputReserve = Nat(outputReserve);
   assert(inputValue > 0n, X`inputValue ${inputValue} must be positive`);
   assert(inputReserve > 0n, X`inputReserve ${inputReserve} must be positive`);
-  assert(
-    outputReserve > 0n,
-    X`outputReserve ${outputReserve} must be positive`,
-  );
+  if (!(outputReserve > 0n)) {
+    assert.fail(X`outputReserve ${outputReserve} must be positive`);
+  }
 
   const oneMinusFeeScaled = subtract(BASIS_POINTS, feeBasisPoints);
   const inputWithFee = multiply(inputValue, oneMinusFeeScaled);

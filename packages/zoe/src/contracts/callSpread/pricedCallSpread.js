@@ -123,10 +123,9 @@ const start = zcf => {
       } = depositSeat.getProposal();
 
       // assert that the allocation includes the amount of collateral required
-      assert(
-        AmountMath.isEqual(newCollateral, deposit),
-        X`Collateral required: ${deposit.value}`,
-      );
+      if (!AmountMath.isEqual(newCollateral, deposit)) {
+        assert.fail(X`Collateral required: ${deposit.value}`);
+      }
 
       // assert that the requested option was the right one.
       assert(

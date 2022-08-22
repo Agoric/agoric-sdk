@@ -45,10 +45,11 @@ export const assertIsRatio = ratio => {
   const keys = Object.keys(ratio);
   assert(keys.length === 2, X`Ratio ${ratio} must be a record with 2 fields.`);
   for (const name of keys) {
-    assert(
-      ratioPropertyNames.includes(name),
-      X`Parameter must be a Ratio record, but ${ratio} has ${q(name)}`,
-    );
+    if (!ratioPropertyNames.includes(name)) {
+      assert.fail(
+        X`Parameter must be a Ratio record, but ${ratio} has ${q(name)}`,
+      );
+    }
   }
   const numeratorValue = ratio.numerator.value;
   const denominatorValue = ratio.denominator.value;
@@ -75,10 +76,11 @@ export const makeRatio = (
   denominator = PERCENT,
   denominatorBrand = numeratorBrand,
 ) => {
-  assert(
-    denominator > 0n,
-    X`No infinite ratios! Denominator was 0/${q(denominatorBrand)}`,
-  );
+  if (!(denominator > 0n)) {
+    assert.fail(
+      X`No infinite ratios! Denominator was 0/${q(denominatorBrand)}`,
+    );
+  }
 
   return harden({
     numerator: AmountMath.make(numeratorBrand, numerator),

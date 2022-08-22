@@ -61,10 +61,9 @@ export function makeDeliveryKit(
   function sendFromKernel(ktarget, kmethargs, kresult) {
     const target = getLocalForKernel(ktarget);
     const methargs = mapDataFromKernel(kmethargs, null);
-    assert(
-      state.getObject(target) || state.getPromiseStatus(target),
-      X`unknown message target ${target}/${ktarget}`,
-    );
+    if (!(state.getObject(target) || state.getPromiseStatus(target))) {
+      assert.fail(X`unknown message target ${target}/${ktarget}`);
+    }
     const result = provideLocalForKernelResult(kresult);
     const localDelivery = harden({ target, methargs, result });
     handleSend(localDelivery);
@@ -139,16 +138,14 @@ export function makeDeliveryKit(
     const seqNum = message.substring(0, delim1);
     const remote = state.getRemote(remoteID);
     const recvSeqNum = remote.advanceReceivedSeqNum();
-    assert(
-      seqNum === '' || seqNum === `${recvSeqNum}`,
-      X`unexpected recv seqNum ${seqNum}`,
-    );
+    if (!(seqNum === '' || seqNum === `${recvSeqNum}`)) {
+      assert.fail(X`unexpected recv seqNum ${seqNum}`);
+    }
 
     const delim2 = message.indexOf(':', delim1 + 1);
-    assert(
-      delim2 >= 0,
-      X`received message ${message} lacks ackSeqNum delimiter`,
-    );
+    if (!(delim2 >= 0)) {
+      assert.fail(X`received message ${message} lacks ackSeqNum delimiter`);
+    }
     const ackSeqNum = parseInt(message.substring(delim1 + 1, delim2), 10);
     handleAckFromRemote(remoteID, ackSeqNum);
 

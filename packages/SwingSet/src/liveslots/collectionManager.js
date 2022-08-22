@@ -331,10 +331,9 @@ export function makeCollectionManager(
     }
 
     function get(key) {
-      assert(
-        matches(key, keySchema),
-        X`invalid key type for collection ${q(label)}`,
-      );
+      if (!matches(key, keySchema)) {
+        assert.fail(X`invalid key type for collection ${q(label)}`);
+      }
       const result = syscall.vatstoreGet(keyToDBKey(key));
       if (result) {
         return unserialize(JSON.parse(result));
@@ -362,10 +361,9 @@ export function makeCollectionManager(
         X`key ${key} already registered in collection ${q(label)}`,
       );
       if (valueSchema) {
-        assert(
-          matches(value, valueSchema),
-          X`invalid value type for collection ${q(label)}`,
-        );
+        if (!matches(value, valueSchema)) {
+          assert.fail(X`invalid value type for collection ${q(label)}`);
+        }
       }
       currentGenerationNumber += 1;
       const serializedValue = serialize(value);
@@ -380,10 +378,9 @@ export function makeCollectionManager(
       if (passStyleOf(key) === 'remotable') {
         const vref = convertValToSlot(key);
         if (durable) {
-          assert(
-            vrm.isDurable(vref),
-            X`key (${key}) is not durable in ${value}`,
-          );
+          if (!vrm.isDurable(vref)) {
+            assert.fail(X`key (${key}) is not durable in ${value}`);
+          }
         }
         generateOrdinal(key);
         if (hasWeakKeys) {
@@ -398,15 +395,13 @@ export function makeCollectionManager(
     }
 
     function set(key, value) {
-      assert(
-        matches(key, keySchema),
-        X`invalid key type for collection ${q(label)}`,
-      );
+      if (!matches(key, keySchema)) {
+        assert.fail(X`invalid key type for collection ${q(label)}`);
+      }
       if (valueSchema) {
-        assert(
-          matches(value, valueSchema),
-          X`invalid value type for collection ${q(label)}`,
-        );
+        if (!matches(value, valueSchema)) {
+          assert.fail(X`invalid value type for collection ${q(label)}`);
+        }
       }
       const after = serialize(harden(value));
       assertAcceptableSyscallCapdataSize([after]);
@@ -426,10 +421,9 @@ export function makeCollectionManager(
     }
 
     function deleteInternal(key) {
-      assert(
-        matches(key, keySchema),
-        X`invalid key type for collection ${q(label)}`,
-      );
+      if (!matches(key, keySchema)) {
+        assert.fail(X`invalid key type for collection ${q(label)}`);
+      }
       const dbKey = keyToDBKey(key);
       const rawValue = syscall.vatstoreGet(dbKey);
       assert(rawValue, X`key ${key} not found in collection ${q(label)}`);
@@ -475,10 +469,9 @@ export function makeCollectionManager(
       function* iter() {
         const generationAtStart = currentGenerationNumber;
         while (priorDBKey !== undefined) {
-          assert(
-            generationAtStart === currentGenerationNumber,
-            X`keys in store cannot be added to during iteration`,
-          );
+          if (!(generationAtStart === currentGenerationNumber)) {
+            assert.fail(X`keys in store cannot be added to during iteration`);
+          }
           const [dbKey, dbValue] = syscall.vatstoreGetAfter(
             priorDBKey,
             start,

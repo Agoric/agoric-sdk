@@ -158,10 +158,9 @@ export async function renderGraph(spec, outputPath, type = 'png') {
   } else if (spec.marks.length === 0) {
     throw new Error('graph spec has no graphs defined');
   }
-  assert(
-    type === 'png' || type === 'pdf',
-    X`invalid output type ${type}, valid types are png or pdf`,
-  );
+  if (!(type === 'png' || type === 'pdf')) {
+    assert.fail(X`invalid output type ${type}, valid types are png or pdf`);
+  }
 
   let loadDir = '.';
   let out = process.stdout;

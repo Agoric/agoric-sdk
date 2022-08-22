@@ -50,10 +50,11 @@ const start = zcf => {
   } = zcf.getTerms();
 
   assert.typeof(bidDuration, 'bigint');
-  assert(
-    winnerPriceOption === FIRST_PRICE || winnerPriceOption === SECOND_PRICE,
-    X`Only first and second price auctions are supported`,
-  );
+  if (
+    !(winnerPriceOption === FIRST_PRICE || winnerPriceOption === SECOND_PRICE)
+  ) {
+    assert.fail(X`Only first and second price auctions are supported`);
+  }
 
   let sellSeat;
   let isTimerStarted = false;

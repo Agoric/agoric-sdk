@@ -230,10 +230,11 @@ const helperBehavior = {
   assignPhase: ({ state }, newPhase) => {
     const { phase } = state;
     const validNewPhases = validTransitions[phase];
-    assert(
-      validNewPhases.includes(newPhase),
-      X`Vault cannot transition from ${q(phase)} to ${q(newPhase)}`,
-    );
+    if (!validNewPhases.includes(newPhase)) {
+      assert.fail(
+        X`Vault cannot transition from ${q(phase)} to ${q(newPhase)}`,
+      );
+    }
     state.phase = newPhase;
   },
 
@@ -244,10 +245,11 @@ const helperBehavior = {
 
   assertCloseable: ({ state }) => {
     const { phase } = state;
-    assert(
-      phase === Phase.ACTIVE || phase === Phase.LIQUIDATED,
-      X`to be closed a vault must be active or liquidated, not ${phase}`,
-    );
+    if (!(phase === Phase.ACTIVE || phase === Phase.LIQUIDATED)) {
+      assert.fail(
+        X`to be closed a vault must be active or liquidated, not ${phase}`,
+      );
+    }
   },
   // #endregion
 
@@ -303,10 +305,9 @@ const helperBehavior = {
 
   assertVaultHoldsNoMinted: ({ state, facets }) => {
     const { vaultSeat } = state;
-    assert(
-      AmountMath.isEmpty(facets.helper.getMintedAllocated(vaultSeat)),
-      X`Vault should be empty of Minted`,
-    );
+    if (!AmountMath.isEmpty(facets.helper.getMintedAllocated(vaultSeat))) {
+      assert.fail(X`Vault should be empty of Minted`);
+    }
   },
 
   /**
@@ -404,10 +405,11 @@ const helperBehavior = {
 
       // you must pay off the entire remainder but if you offer too much, we won't
       // take more than you owe
-      assert(
-        AmountMath.isGTE(given, debt),
-        X`Offer ${given} is not sufficient to pay off debt ${debt}`,
-      );
+      if (!AmountMath.isGTE(given, debt)) {
+        assert.fail(
+          X`Offer ${given} is not sufficient to pay off debt ${debt}`,
+        );
+      }
 
       // Return any overpayment
       seat.incrementBy(vaultSeat.decrementBy(vaultSeat.getCurrentAllocation()));
@@ -492,10 +494,9 @@ const helperBehavior = {
     const newCollateralPre = addSubtract(collateralPre, giveColl, wantColl);
     // max debt supported by current Collateral as modified by proposal
     const maxDebtPre = await state.manager.maxDebtFor(newCollateralPre);
-    assert(
-      updaterPre === ephemera.outerUpdater,
-      X`Transfer during vault adjustment`,
-    );
+    if (!(updaterPre === ephemera.outerUpdater)) {
+      assert.fail(X`Transfer during vault adjustment`);
+    }
     helper.assertActive();
 
     // After the `await`, we retrieve the vault's allocations again,
@@ -626,10 +627,11 @@ const selfBehavior = {
       fee,
       toMint,
     } = helper.loanFee(actualDebtPre, helper.emptyDebt(), wantMinted);
-    assert(
-      !AmountMath.isEmpty(fee),
-      X`loan requested (${wantMinted}) is too small; cannot accrue interest`,
-    );
+    if (AmountMath.isEmpty(fee)) {
+      assert.fail(
+        X`loan requested (${wantMinted}) is too small; cannot accrue interest`,
+      );
+    }
     assert(AmountMath.isEqual(newDebtPre, toMint), X`fee mismatch for vault`);
     trace(
       'initVault',

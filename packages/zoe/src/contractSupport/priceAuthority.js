@@ -298,10 +298,11 @@ export function makeOnewayPriceAuthorityKit(opts) {
         const amountIn = calcAmountIn(amountOut);
         const actualAmountOut = calcAmountOut(amountIn);
 
-        assert(
-          AmountMath.isGTE(actualAmountOut, amountOut),
-          X`Calculation of ${actualAmountOut} didn't cover expected ${amountOut}`,
-        );
+        if (!AmountMath.isGTE(actualAmountOut, amountOut)) {
+          assert.fail(
+            X`Calculation of ${actualAmountOut} didn't cover expected ${amountOut}`,
+          );
+        }
         return { amountIn, amountOut };
       });
       assert(quote);

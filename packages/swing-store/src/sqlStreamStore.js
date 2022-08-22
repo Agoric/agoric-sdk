@@ -63,16 +63,18 @@ export function sqlStreamStore(dbDir, io) {
    */
   function readStream(streamName, startPosition, endPosition) {
     insistStreamName(streamName);
-    assert(
-      !streamStatus.get(streamName),
-      X`can't read stream ${q(streamName)} because it's already in use`,
-    );
+    if (streamStatus.get(streamName)) {
+      assert.fail(
+        X`can't read stream ${q(streamName)} because it's already in use`,
+      );
+    }
     insistStreamPosition(startPosition);
     insistStreamPosition(endPosition);
-    assert(
-      startPosition.itemCount <= endPosition.itemCount,
-      X`${q(startPosition.itemCount)} <= ${q(endPosition.itemCount)}}`,
-    );
+    if (!(startPosition.itemCount <= endPosition.itemCount)) {
+      assert.fail(
+        X`${q(startPosition.itemCount)} <= ${q(endPosition.itemCount)}}`,
+      );
+    }
 
     function* reader() {
       const query = db.prepare(`
@@ -86,19 +88,19 @@ export function sqlStreamStore(dbDir, io) {
         startPosition.itemCount,
         endPosition.itemCount,
       )) {
-        assert(
-          streamStatus.get(streamName) === 'reading',
-          X`can't read stream ${q(streamName)}, it's been closed`,
-        );
+        if (!(streamStatus.get(streamName) === 'reading')) {
+          assert.fail(X`can't read stream ${q(streamName)}, it's been closed`);
+        }
         yield item;
       }
       streamStatus.delete(streamName);
     }
 
-    assert(
-      !streamStatus.has(streamName),
-      X`can't read stream ${q(streamName)} because it's already in use`,
-    );
+    if (streamStatus.has(streamName)) {
+      assert.fail(
+        X`can't read stream ${q(streamName)} because it's already in use`,
+      );
+    }
 
     if (startPosition.itemCount === endPosition.itemCount) {
       return empty();
@@ -118,10 +120,11 @@ export function sqlStreamStore(dbDir, io) {
     insistStreamName(streamName);
     insistStreamPosition(position);
 
-    assert(
-      !streamStatus.get(streamName),
-      X`can't write stream ${q(streamName)} because it's already in use`,
-    );
+    if (streamStatus.get(streamName)) {
+      assert.fail(
+        X`can't write stream ${q(streamName)} because it's already in use`,
+      );
+    }
 
     db.prepare(
       `

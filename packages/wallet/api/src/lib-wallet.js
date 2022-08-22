@@ -633,10 +633,9 @@ export function makeWalletRoot({
     const keywordPaymentPs = Object.entries(proposal.give || harden({})).map(
       async ([keyword, { type, ...amount }]) => {
         const purse = purseKeywordRecord[keyword];
-        assert(
-          purse !== undefined,
-          X`purse was not found for keyword ${q(keyword)}`,
-        );
+        if (!(purse !== undefined)) {
+          assert.fail(X`purse was not found for keyword ${q(keyword)}`);
+        }
 
         if (type === 'Attestation') {
           const payment = await E(attMakerPK.promise).makeAttestation(amount);
@@ -1938,10 +1937,9 @@ export function makeWalletRoot({
       return E(agoricNames).lookup(...path);
     },
     getNamesByAddress(...path) {
-      assert(
-        namesByAddress,
-        X`namesByAddress was not supplied to the wallet maker`,
-      );
+      if (!namesByAddress) {
+        assert.fail(X`namesByAddress was not supplied to the wallet maker`);
+      }
       return E(namesByAddress).lookup(...path);
     },
   });

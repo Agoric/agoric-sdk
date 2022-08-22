@@ -208,10 +208,9 @@ const iterCompare = xyi => {
   } else if (loneY) {
     return -1;
   } else {
-    assert(
-      !loneX && !loneY,
-      X`Internal: Unexpected lone pair ${q([loneX, loneY])}`,
-    );
+    if (!(!loneX && !loneY)) {
+      assert.fail(X`Internal: Unexpected lone pair ${q([loneX, loneY])}`);
+    }
     return 0;
   }
 };

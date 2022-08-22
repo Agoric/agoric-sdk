@@ -9,10 +9,11 @@ import { getXY } from './getXY.js';
 const { details: X } = assert;
 
 const assertSingleBrand = ratio => {
-  assert(
-    ratio.numerator.brand === ratio.denominator.brand,
-    X`Ratio was expected to have same brand in numerator ${ratio.numerator.brand} and denominator ${ratio.denominator.brand}`,
-  );
+  if (!(ratio.numerator.brand === ratio.denominator.brand)) {
+    assert.fail(
+      X`Ratio was expected to have same brand in numerator ${ratio.numerator.brand} and denominator ${ratio.denominator.brand}`,
+    );
+  }
 };
 
 /**
@@ -108,10 +109,11 @@ const swapInReduced = ({ x, y, deltaX: offeredAmountIn }) => {
   const amountOut = calcDeltaYSellingX(x, y, offeredAmountIn);
   const reducedAmountIn = calcDeltaXSellingX(x, y, amountOut);
 
-  assert(
-    AmountMath.isGTE(offeredAmountIn, reducedAmountIn),
-    X`The trade would have required ${reducedAmountIn} more than was offered ${offeredAmountIn}`,
-  );
+  if (!AmountMath.isGTE(offeredAmountIn, reducedAmountIn)) {
+    assert.fail(
+      X`The trade would have required ${reducedAmountIn} more than was offered ${offeredAmountIn}`,
+    );
+  }
 
   return harden({
     amountIn: reducedAmountIn,
@@ -131,10 +133,11 @@ const swapOutImproved = ({ x, y, deltaY: wantedAmountOut }) => {
   const amountIn = calcDeltaXSellingX(x, y, wantedAmountOut);
   const improvedAmountOut = calcDeltaYSellingX(x, y, amountIn);
 
-  assert(
-    AmountMath.isGTE(improvedAmountOut, wantedAmountOut),
-    X`The trade would have returned ${improvedAmountOut} less than was wanted ${wantedAmountOut}`,
-  );
+  if (!AmountMath.isGTE(improvedAmountOut, wantedAmountOut)) {
+    assert.fail(
+      X`The trade would have returned ${improvedAmountOut} less than was wanted ${wantedAmountOut}`,
+    );
+  }
 
   return harden({
     amountIn,

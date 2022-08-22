@@ -17,10 +17,9 @@ import { assert, details as X } from '@agoric/assert';
  */
 
 export function buildLoopbox(deliverMode) {
-  assert(
-    deliverMode === 'immediate' || deliverMode === 'queued',
-    X`deliverMode=${deliverMode}, must be 'immediate' or 'queued'`,
-  );
+  if (!(deliverMode === 'immediate' || deliverMode === 'queued')) {
+    assert.fail(X`deliverMode=${deliverMode}, must be 'immediate' or 'queued'`);
+  }
   const loopboxSrcPath = new URL('device-loopbox.js', import.meta.url).pathname;
 
   let loopboxPassOneMessage;

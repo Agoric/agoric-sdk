@@ -42,10 +42,9 @@ export const makeOfferMethod = (
     // AWAIT ///
 
     const instanceAdmin = getInstanceAdmin(instance);
-    assert(
-      !instanceAdmin.isBlocked(description),
-      X`not accepting offer with description ${q(description)}`,
-    );
+    if (instanceAdmin.isBlocked(description)) {
+      assert.fail(X`not accepting offer with description ${q(description)}`);
+    }
     const { invitationHandle } = await burnInvitation(
       invitationIssuer,
       invitation,

@@ -56,10 +56,9 @@ const start = async zcf => {
       });
       assertProposalShape(bountySeat, feeProposal);
       const feeAmount = bountySeat.getCurrentAllocation().Fee;
-      assert(
-        AmountMath.isGTE(feeAmount, fee),
-        X`Fee was required to be at least ${fee}`,
-      );
+      if (!AmountMath.isGTE(feeAmount, fee)) {
+        assert.fail(X`Fee was required to be at least ${fee}`);
+      }
 
       // The funder gets the fee regardless of the outcome.
       funderSeat.incrementBy(

@@ -284,10 +284,9 @@ show-config      display the client connection parameters
           break;
 
         default:
-          assert(
-            versionKind.match(/^[1-9]/),
-            X`${versionKind} is not one of "epoch", or NNN`,
-          );
+          if (!versionKind.match(/^[1-9]/)) {
+            assert.fail(X`${versionKind} is not one of "epoch", or NNN`);
+          }
       }
 
       let vstr = `${epoch}`;
@@ -801,10 +800,9 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
         const ID = String(raw);
 
         assert(ID, X`${idPath} must contain a node ${ID}`);
-        assert(
-          ID.match(/^[a-f0-9]+/),
-          X`${idPath} contains an invalid ID ${ID}`,
-        );
+        if (!ID.match(/^[a-f0-9]+/)) {
+          assert.fail(X`${idPath} contains an invalid ID ${ID}`);
+        }
         if (cmd.endsWith('-ids')) {
           ret += `${sep}${ID}`;
         } else {
@@ -970,10 +968,9 @@ ${node}:${roleParams}
     case 'play': {
       const [pb, ...pbargs] = args.slice(1);
       assert(pb, X`Need: [playbook name]`);
-      assert(
-        pb.match(/^\w[-\w]*$/),
-        X`[playbook] ${JSON.stringify(pb)} must be a word`,
-      );
+      if (!pb.match(/^\w[-\w]*$/)) {
+        assert.fail(X`[playbook] ${JSON.stringify(pb)} must be a word`);
+      }
       await inited();
       return doRun(setup.playbook(pb, ...pbargs));
     }

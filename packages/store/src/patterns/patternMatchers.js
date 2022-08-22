@@ -112,10 +112,11 @@ const makePatternKit = () => {
             // are non-key patterns, general support is both hard and not
             // currently needed. Currently, we only need a copySet of a single
             // non-key pattern element.
-            assert(
-              patt.payload.length === 1,
-              X`Non-singleton copySets with matcher not yet implemented: ${patt}`,
-            );
+            if (!(patt.payload.length === 1)) {
+              assert.fail(
+                X`Non-singleton copySets with matcher not yet implemented: ${patt}`,
+              );
+            }
             return checkPattern(patt.payload[0], check);
           }
           case 'copyBag': {
@@ -367,10 +368,11 @@ const makePatternKit = () => {
             // Should already be validated by checkPattern. But because this
             // is a check that may loosen over time, we also assert everywhere
             // we still rely on the restriction.
-            assert(
-              patt.payload.length === 1,
-              X`Non-singleton copySets with matcher not yet implemented: ${patt}`,
-            );
+            if (!(patt.payload.length === 1)) {
+              assert.fail(
+                X`Non-singleton copySets with matcher not yet implemented: ${patt}`,
+              );
+            }
             return checkMatches(specPayload[0], pattPayload[0], check, 0);
           }
           case 'copyMap': {

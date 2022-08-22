@@ -17,10 +17,9 @@ export function insistCapData(capdata) {
     'string',
     X`capdata has non-string .body ${capdata.body}`,
   );
-  assert(
-    Array.isArray(capdata.slots),
-    X`capdata has non-Array slots ${capdata.slots}`,
-  );
+  if (!Array.isArray(capdata.slots)) {
+    assert.fail(X`capdata has non-Array slots ${capdata.slots}`);
+  }
   // TODO check that the .slots array elements are actually strings
 }
 

@@ -18,10 +18,9 @@ export const stringToNat = s => {
 export const parseParams = params => {
   const { beans_per_unit: rawBeansPerUnit, fee_unit_price: rawFeeUnitPrice } =
     params;
-  assert(
-    Array.isArray(rawBeansPerUnit),
-    X`beansPerUnit must be an array, not ${rawBeansPerUnit}`,
-  );
+  if (!Array.isArray(rawBeansPerUnit)) {
+    assert.fail(X`beansPerUnit must be an array, not ${rawBeansPerUnit}`);
+  }
   const beansPerUnit = Object.fromEntries(
     rawBeansPerUnit.map(({ key, beans }) => {
       assert.typeof(key, 'string', X`Key ${key} must be a string`);
@@ -29,10 +28,9 @@ export const parseParams = params => {
     }),
   );
 
-  assert(
-    Array.isArray(rawFeeUnitPrice),
-    X`feeUnitPrice ${rawFeeUnitPrice} must be an array`,
-  );
+  if (!Array.isArray(rawFeeUnitPrice)) {
+    assert.fail(X`feeUnitPrice ${rawFeeUnitPrice} must be an array`);
+  }
   const feeUnitPrice = rawFeeUnitPrice.map(({ denom, amount }) => {
     assert.typeof(denom, 'string', X`denom ${denom} must be a string`);
     assert(denom, X`denom ${denom} must be non-empty`);

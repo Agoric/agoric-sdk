@@ -185,10 +185,11 @@ export const createSeatManager = (
 
     // Ensure that offer safety holds.
     seats.forEach(seat => {
-      assert(
-        isOfferSafe(seat.getProposal(), seat.getStagedAllocation()),
-        X`Offer safety was violated by the proposed allocation: ${seat.getStagedAllocation()}. Proposal was ${seat.getProposal()}`,
-      );
+      if (!isOfferSafe(seat.getProposal(), seat.getStagedAllocation())) {
+        assert.fail(
+          X`Offer safety was violated by the proposed allocation: ${seat.getStagedAllocation()}. Proposal was ${seat.getProposal()}`,
+        );
+      }
     });
 
     // Keep track of seats used so far in this call, to prevent aliasing.

@@ -126,10 +126,9 @@ export function initEphemeralSwingStore() {
 
   function insistStreamName(streamName) {
     assert.typeof(streamName, 'string');
-    assert(
-      streamName.match(/^[-\w]+$/),
-      X`invalid stream name ${q(streamName)}`,
-    );
+    if (!streamName.match(/^[-\w]+$/)) {
+      assert.fail(X`invalid stream name ${q(streamName)}`);
+    }
   }
 
   function insistStreamPosition(position) {
@@ -159,10 +158,11 @@ export function initEphemeralSwingStore() {
   function readStream(streamName, startPosition, endPosition) {
     insistStreamName(streamName);
     const stream = streams.get(streamName) || [];
-    assert(
-      !streamStatus.get(streamName),
-      X`can't read stream ${q(streamName)} because it's already in use`,
-    );
+    if (streamStatus.get(streamName)) {
+      assert.fail(
+        X`can't read stream ${q(streamName)} because it's already in use`,
+      );
+    }
     insistStreamPosition(startPosition);
     insistStreamPosition(endPosition);
     assert(startPosition.itemCount <= endPosition.itemCount);
@@ -177,18 +177,18 @@ export function initEphemeralSwingStore() {
       let pos = startPosition.itemCount;
       function* reader() {
         while (pos < stream.length) {
-          assert(
-            streamStatus.get(streamName) === readStatus,
-            X`can't read stream ${q(streamName)}, it's been closed`,
-          );
+          if (!(streamStatus.get(streamName) === readStatus)) {
+            assert.fail(
+              X`can't read stream ${q(streamName)}, it's been closed`,
+            );
+          }
           const result = stream[pos];
           pos += 1;
           yield result;
         }
-        assert(
-          streamStatus.get(streamName) === readStatus,
-          X`can't read stream ${q(streamName)}, it's been closed`,
-        );
+        if (!(streamStatus.get(streamName) === readStatus)) {
+          assert.fail(X`can't read stream ${q(streamName)}, it's been closed`);
+        }
         streamStatus.delete(streamName);
       }
       return reader();
@@ -211,9 +211,8 @@ export function initEphemeralSwingStore() {
     if (!stream) {
       stream = [];
       streams.set(streamName, stream);
-    } else {
-      assert(
-        !streamStatus.get(streamName),
+    } else if (streamStatus.get(streamName)) {
+      assert.fail(
         X`can't write stream ${q(streamName)} because it's already in use`,
       );
     }

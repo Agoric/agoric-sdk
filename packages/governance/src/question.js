@@ -48,10 +48,9 @@ const QuorumRule = /** @type {const} */ ({
 
 const assertSimpleIssue = issue => {
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
-  assert(
-    issue && typeof issue.text === 'string',
-    X`Issue ("${issue}") must be a record with text: aString`,
-  );
+  if (!(issue && typeof issue.text === 'string')) {
+    assert.fail(X`Issue ("${issue}") must be a record with text: aString`);
+  }
 };
 
 /**
@@ -82,10 +81,11 @@ const assertParamChangeIssue = issue => {
 
 const assertApiInvocation = issue => {
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
-  assert(
-    issue && typeof issue.apiMethodName === 'string',
-    X`Issue ("${issue}") must be a record with apiMethodName: aString`,
-  );
+  if (!(issue && typeof issue.apiMethodName === 'string')) {
+    assert.fail(
+      X`Issue ("${issue}") must be a record with apiMethodName: aString`,
+    );
+  }
 };
 
 /**
@@ -95,10 +95,9 @@ const assertApiInvocation = issue => {
  */
 
 const assertIssueForType = (electionType, issue) => {
-  assert(
-    passStyleOf(issue) === 'copyRecord',
-    X`A question can only be a pass-by-copy record: ${issue}`,
-  );
+  if (!(passStyleOf(issue) === 'copyRecord')) {
+    assert.fail(X`A question can only be a pass-by-copy record: ${issue}`);
+  }
 
   switch (electionType) {
     case ElectionType.SURVEY:
@@ -168,10 +167,9 @@ const coerceQuestionSpec = ({
       'positions must be records',
     ),
   );
-  assert(
-    positionIncluded(positions, tieOutcome),
-    X`tieOutcome must be a legal position: ${q(tieOutcome)}`,
-  );
+  if (!positionIncluded(positions, tieOutcome)) {
+    assert.fail(X`tieOutcome must be a legal position: ${q(tieOutcome)}`);
+  }
   assertEnumIncludes(QuorumRule, quorumRule, 'QuorumRule');
   assertEnumIncludes(ElectionType, electionType, 'ElectionType');
   assertEnumIncludes(ChoiceMethod, method, 'ChoiceMethod');

@@ -234,10 +234,11 @@ const start = async (zcf, privateArgs, baggage) => {
   };
 
   const getKeywordForBrand = brand => {
-    assert(
-      keywordForBrand.has(brand),
-      X`Issuer not defined for brand ${q(brand)}; first call addIssuer()`,
-    );
+    if (!keywordForBrand.has(brand)) {
+      assert.fail(
+        X`Issuer not defined for brand ${q(brand)}; first call addIssuer()`,
+      );
+    }
     return keywordForBrand.get(brand);
   };
 

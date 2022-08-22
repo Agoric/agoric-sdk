@@ -55,18 +55,16 @@ export function decode(data, optMaxChunkSize) {
       assert.fail(X`unparsable size ${sizeString}, should be integer`);
     }
     if (optMaxChunkSize) {
-      assert(
-        size <= optMaxChunkSize,
-        X`size ${size} exceeds limit of ${optMaxChunkSize}`,
-      );
+      if (!(size <= optMaxChunkSize)) {
+        assert.fail(X`size ${size} exceeds limit of ${optMaxChunkSize}`);
+      }
     }
     if (data.length < colon + 1 + size + 1) {
       break; // still waiting for `${DATA}.`
     }
-    assert(
-      data[colon + 1 + size] === COMMA,
-      X`malformed netstring: not terminated by comma`,
-    );
+    if (!(data[colon + 1 + size] === COMMA)) {
+      assert.fail(X`malformed netstring: not terminated by comma`);
+    }
     payloads.push(data.subarray(colon + 1, colon + 1 + size));
     start = colon + 1 + size + 1;
   }

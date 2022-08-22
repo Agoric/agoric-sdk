@@ -26,10 +26,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
 
       // Bob ensures it's the contract he expects
-      assert(
-        installations.automaticRefund === installation,
-        X`should be the expected automaticRefund`,
-      );
+      if (!(installations.automaticRefund === installation)) {
+        assert.fail(X`should be the expected automaticRefund`);
+      }
 
       assert(
         issuerKeywordRecord.Contribution1 === moolaIssuer,
@@ -85,10 +84,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         exclInvitation,
       );
       assert(installation === installations.coveredCall, X`wrong installation`);
-      assert(
-        optionValue[0].description === 'exerciseOption',
-        X`wrong invitation`,
-      );
+      if (!(optionValue[0].description === 'exerciseOption')) {
+        assert.fail(X`wrong invitation`);
+      }
       assert(
         AmountMath.isEqual(
           optionValue[0].underlyingAssets.UnderlyingAsset,
@@ -151,10 +149,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const optionValue = optionAmounts.value;
 
       assert(installation === installations.coveredCall, X`wrong installation`);
-      assert(
-        optionValue[0].description === 'exerciseOption',
-        X`wrong invitation`,
-      );
+      if (!(optionValue[0].description === 'exerciseOption')) {
+        assert.fail(X`wrong invitation`);
+      }
       assert(
         AmountMath.isEqual(
           optionValue[0].underlyingAssets.UnderlyingAsset,
@@ -229,10 +226,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         exclInvitation,
       );
 
-      assert(
-        installation === installations.secondPriceAuction,
-        X`wrong installation`,
-      );
+      if (!(installation === installations.secondPriceAuction)) {
+        assert.fail(X`wrong installation`);
+      }
       assert(
         keyEQ(
           harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),

@@ -72,15 +72,17 @@ const assertBallotConcernsParam = (paramSpec, questionSpec) => {
   // XXX doesn't fully test this requirement
   assert(issue, 'must be a param change issue');
 
-  assert(
-    issue.spec.changes[parameterName],
-    X`Question (${issue.spec.changes}) does not concern ${parameterName}`,
-  );
+  if (!issue.spec.changes[parameterName]) {
+    assert.fail(
+      X`Question (${issue.spec.changes}) does not concern ${parameterName}`,
+    );
+  }
 
-  assert(
-    keyEQ(issue.spec.paramPath, paramPath),
-    X`Question path (${issue.spec.paramPath}) doesn't match request (${paramPath})`,
-  );
+  if (!keyEQ(issue.spec.paramPath, paramPath)) {
+    assert.fail(
+      X`Question path (${issue.spec.paramPath}) doesn't match request (${paramPath})`,
+    );
+  }
 };
 
 /** @type {SetupGovernance} */

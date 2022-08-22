@@ -66,10 +66,11 @@ const assertHttpConnectionSpec = connectionSpec => {
     'number',
     X`Expected "port" number on "http" type connectionSpec, ${connectionSpec}`,
   );
-  assert(
-    Number.isInteger(port),
-    X`Expected integer "port" on "http" type connectionSpec, ${connectionSpec}`,
-  );
+  if (!Number.isInteger(port)) {
+    assert.fail(
+      X`Expected integer "port" on "http" type connectionSpec, ${connectionSpec}`,
+    );
+  }
 };
 
 // eslint-disable-next-line jsdoc/require-returns-check

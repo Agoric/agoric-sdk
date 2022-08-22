@@ -27,20 +27,20 @@ const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
 // lookup a keyword-named property no matter what `i` is.
 export const assertKeywordName = keyword => {
   assert.typeof(keyword, 'string');
-  assert(
-    keyword.length <= MAX_KEYWORD_LENGTH,
-    X`keyword ${keyword} exceeded maximum length ${MAX_KEYWORD_LENGTH} characters; got ${keyword.length}`,
-  );
+  if (!(keyword.length <= MAX_KEYWORD_LENGTH)) {
+    assert.fail(
+      X`keyword ${keyword} exceeded maximum length ${MAX_KEYWORD_LENGTH} characters; got ${keyword.length}`,
+    );
+  }
   assert(
     firstCapASCII.test(keyword),
     X`keyword ${q(
       keyword,
     )} must be an ascii identifier starting with upper case.`,
   );
-  assert(
-    keyword !== 'NaN' && keyword !== 'Infinity',
-    X`keyword ${q(keyword)} must not be a number's name`,
-  );
+  if (!(keyword !== 'NaN' && keyword !== 'Infinity')) {
+    assert.fail(X`keyword ${q(keyword)} must not be a number's name`);
+  }
 };
 
 /**
@@ -74,10 +74,11 @@ export const coerceAmountPatternKeywordRecord = (
       const assetKind = getAssetKind(amount);
       // TODO: replace this assertion with a check of the assetKind
       // property on the brand, when that exists.
-      assert(
-        assetKind === brandAssetKind,
-        X`The amount ${amount} did not have the assetKind of the brand ${brandAssetKind}`,
-      );
+      if (!(assetKind === brandAssetKind)) {
+        assert.fail(
+          X`The amount ${amount} did not have the assetKind of the brand ${brandAssetKind}`,
+        );
+      }
       return AmountMath.coerce(amount.brand, amount);
     } else {
       assertPattern(amount);
@@ -122,10 +123,9 @@ const assertKeywordNotInBoth = (want, give) => {
   const giveKeywords = ownKeys(give);
 
   giveKeywords.forEach(keyword => {
-    assert(
-      !wantKeywordSet.has(keyword),
-      X`a keyword cannot be in both 'want' and 'give'`,
-    );
+    if (wantKeywordSet.has(keyword)) {
+      assert.fail(X`a keyword cannot be in both 'want' and 'give'`);
+    }
   });
 };
 
@@ -154,10 +154,11 @@ export const cleanProposal = (proposal, getAssetKindByBrand) => {
     exit = harden({ onDemand: null }),
     ...rest
   } = proposal;
-  assert(
-    ownKeys(rest).length === 0,
-    X`${proposal} - Must only have want:, give:, exit: properties: ${rest}`,
-  );
+  if (!(ownKeys(rest).length === 0)) {
+    assert.fail(
+      X`${proposal} - Must only have want:, give:, exit: properties: ${rest}`,
+    );
+  }
 
   const cleanedWant = coerceAmountPatternKeywordRecord(
     want,

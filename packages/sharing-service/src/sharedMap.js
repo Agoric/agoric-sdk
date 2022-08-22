@@ -16,10 +16,9 @@ function makeSharedMap(name) {
       return namedEntries.get(propertyName)[0];
     },
     addEntry(key, value) {
-      assert(
-        !namedEntries.has(key),
-        X`SharedMap ${name} already has an entry for ${key}.`,
-      );
+      if (namedEntries.has(key)) {
+        assert.fail(X`SharedMap ${name} already has an entry for ${key}.`);
+      }
       orderedEntries.push([key, value]);
       namedEntries.set(key, [value, orderedEntries.length]);
       return orderedEntries.length;

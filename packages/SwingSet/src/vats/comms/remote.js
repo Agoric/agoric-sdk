@@ -18,10 +18,9 @@ export function initializeRemoteState(
   name,
   transmitterID,
 ) {
-  assert(
-    !store.get(`${remoteID}.initialized`),
-    X`remote ${remoteID} already exists`,
-  );
+  if (store.get(`${remoteID}.initialized`)) {
+    assert.fail(X`remote ${remoteID} already exists`);
+  }
   store.set(`${remoteID}.sendSeq`, '1');
   store.set(`${remoteID}.recvSeq`, '0');
   store.set(`${remoteID}.o.nextID`, `${identifierBase + 20}`);

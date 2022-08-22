@@ -26,10 +26,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         exclInvitation,
       );
 
-      assert(
-        installation === installations.secondPriceAuction,
-        X`wrong installation`,
-      );
+      if (!(installation === installations.secondPriceAuction)) {
+        assert.fail(X`wrong installation`);
+      }
       assert(
         keyEQ(
           harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
@@ -93,16 +92,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
       // Dave expects that Bob has already made an offer in the swap
       // with the following rules:
-      assert(
-        keyEQ(invitationValue[0].asset, optionAmounts),
-        X`asset is the option`,
-      );
+      if (!keyEQ(invitationValue[0].asset, optionAmounts)) {
+        assert.fail(X`asset is the option`);
+      }
       assert(keyEQ(invitationValue[0].price, bucks(1n)), X`price is 1 buck`);
       const optionValue = optionAmounts.value;
-      assert(
-        optionValue[0].description === 'exerciseOption',
-        X`wrong invitation`,
-      );
+      if (!(optionValue[0].description === 'exerciseOption')) {
+        assert.fail(X`wrong invitation`);
+      }
       assert(
         AmountMath.isEqual(
           optionValue[0].underlyingAssets.UnderlyingAsset,

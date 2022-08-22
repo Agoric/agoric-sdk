@@ -30,10 +30,9 @@ export async function buildRootObject(powers, vatParameters, baggage) {
   // `zcfZygote.startContract` should exposed separately.
   const { testJigSetter } = powers;
   const { contractBundleCap } = vatParameters;
-  assert(
-    contractBundleCap,
-    X`expected vatParameters.contractBundleCap ${vatParameters}`,
-  );
+  if (!contractBundleCap) {
+    assert.fail(X`expected vatParameters.contractBundleCap ${vatParameters}`);
+  }
   let { zoeService, invitationIssuer } = vatParameters;
   const firstTime = !baggage.has('DidStart');
   if (firstTime) {

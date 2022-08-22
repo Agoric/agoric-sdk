@@ -8,10 +8,9 @@ const { details: X } = assert;
 const makeLooksLikeBrand = name => {
   /** @param {Brand} brand */
   return brand => {
-    assert(
-      isRemotable(brand),
-      X`value for ${name} must be a brand, was ${brand}`,
-    );
+    if (!isRemotable(brand)) {
+      assert.fail(X`value for ${name} must be a brand, was ${brand}`);
+    }
   };
 };
 harden(makeLooksLikeBrand);
@@ -19,10 +18,11 @@ harden(makeLooksLikeBrand);
 const makeAssertInstallation = name => {
   return installation => {
     // TODO(3344): add a better assertion once Zoe validates installations
-    assert(
-      typeof installation === 'object',
-      X`value for ${name} must be an Installation, was ${installation}`,
-    );
+    if (!(typeof installation === 'object')) {
+      assert.fail(
+        X`value for ${name} must be an Installation, was ${installation}`,
+      );
+    }
   };
 };
 harden(makeAssertInstallation);
@@ -30,10 +30,9 @@ harden(makeAssertInstallation);
 const makeAssertInstance = name => {
   return instance => {
     // TODO(3344): add a better assertion once Zoe validates instances
-    assert(
-      typeof instance === 'object',
-      X`value for ${name} must be an Instance, was ${instance}`,
-    );
+    if (!(typeof instance === 'object')) {
+      assert.fail(X`value for ${name} must be an Instance, was ${instance}`);
+    }
   };
 };
 harden(makeAssertInstance);

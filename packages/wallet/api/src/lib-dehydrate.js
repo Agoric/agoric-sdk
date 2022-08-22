@@ -48,10 +48,11 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
    * @returns {string | Path}
    */
   const explode = data => {
-    assert(
-      data.startsWith(IMPLODE_PREFIX),
-      X`exploded string ${data} must start with ${q(IMPLODE_PREFIX)}`,
-    );
+    if (!data.startsWith(IMPLODE_PREFIX)) {
+      assert.fail(
+        X`exploded string ${data} must start with ${q(IMPLODE_PREFIX)}`,
+      );
+    }
     const strongname = JSON.parse(data.slice(IMPLODE_PREFIX.length));
     if (!isPath(strongname)) {
       return strongname;
@@ -206,10 +207,9 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       if (petnameToVal.has(petname) && petnameToVal.get(petname) === val) {
         return;
       }
-      assert(
-        !petnameToVal.has(petname),
-        X`petname ${petname} is already in use`,
-      );
+      if (petnameToVal.has(petname)) {
+        assert.fail(X`petname ${petname} is already in use`);
+      }
       assert(!valToPetname.has(val), X`val ${val} already has a petname`);
       petnameToVal.init(petname, val);
       valToPetname.init(val, petname);

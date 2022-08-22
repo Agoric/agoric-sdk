@@ -241,10 +241,11 @@ export function buildRootDeviceNode(tools) {
   }
 
   function updateTime(time) {
-    assert(
-      time >= lastPolled,
-      X`Time is monotonic. ${time} cannot be less than ${lastPolled}`,
-    );
+    if (!(time >= lastPolled)) {
+      assert.fail(
+        X`Time is monotonic. ${time} cannot be less than ${lastPolled}`,
+      );
+    }
     lastPolled = time;
     saveState();
   }

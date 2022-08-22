@@ -222,10 +222,11 @@ const AmountMath = {
     assertRemotable(brand, 'brand');
     assertRecord(allegedAmount, 'amount');
     const { brand: allegedBrand, value: allegedValue } = allegedAmount;
-    assert(
-      brand === allegedBrand,
-      X`The brand in the allegedAmount ${allegedAmount} in 'coerce' didn't match the specified brand ${brand}.`,
-    );
+    if (!(brand === allegedBrand)) {
+      assert.fail(
+        X`The brand in the allegedAmount ${allegedAmount} in 'coerce' didn't match the specified brand ${brand}.`,
+      );
+    }
     // Will throw on inappropriate value
     return AmountMath.make(brand, allegedValue);
   },
