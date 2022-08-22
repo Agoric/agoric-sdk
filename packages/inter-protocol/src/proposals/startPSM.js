@@ -274,6 +274,17 @@ export const PSM_MANIFEST = harden({
       consume: { AUSD: 'bank' },
     },
   },
+  [installGovAndPSMContracts.name]: {
+    consume: { zoe: 'zoe', vatAdminSvc: true },
+    installation: {
+      produce: {
+        contractGovernor: 'zoe',
+        committee: 'zoe',
+        binaryVoteCounter: 'zoe',
+        psm: 'zoe',
+      },
+    },
+  },
 });
 
 export const getManifestForPsm = (
