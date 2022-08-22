@@ -215,6 +215,7 @@
  *   priceAuthority: PriceAuthority,
  *   priceAuthorityAdmin: PriceAuthorityRegistryAdmin,
  *   provisioning: Awaited<ProvisioningVat>,
+ *   walletFactoryStartResult: import('./startWalletFactory').WalletFactoryStartResult,
  *   zoe: ZoeService,
  * }>} ChainBootstrapSpace
  *
