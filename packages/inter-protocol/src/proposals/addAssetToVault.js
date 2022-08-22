@@ -101,7 +101,7 @@ export const publishInterchainAssetFromBank = async (
       consume: { [Stable.symbol]: runIssuer },
     },
     brand: {
-      consume: { [Stable.symbol]: runBrandP },
+      consume: { [Stable.symbol]: stableBrandP },
     },
   },
   { options: { interchainAssetOptions } },
@@ -116,7 +116,6 @@ export const publishInterchainAssetFromBank = async (
   assert.typeof(decimalPlaces, 'number');
   assert.typeof(proposedName, 'string');
 
-  /** @type {import('@agoric/vats/src/mintHolder.js').AssetTerms} */
   const terms = {
     keyword,
     assetKind: AssetKind.NAT,
@@ -125,16 +124,16 @@ export const publishInterchainAssetFromBank = async (
       assetKind: AssetKind.NAT,
     },
   };
-  const { creatorFacet: mint, publicFacet: issuerP } = E.get(
+  const { creatorFacet: mintP, publicFacet: issuerP } = E.get(
     E(zoe).startInstance(mintHolder, {}, terms),
   );
 
   const [issuer, brand, runBrand] = await Promise.all([
     issuerP,
     E(issuerP).getBrand(),
-    runBrandP,
+    stableBrandP,
   ]);
-  const kit = { mint, issuer, brand };
+  const kit = { mint: mintP, issuer, brand };
 
   await addPool(zoe, amm, issuer, keyword, brand, runBrand, runIssuer);
 
@@ -142,7 +141,8 @@ export const publishInterchainAssetFromBank = async (
   produceBankMints.resolve([]);
   await Promise.all([
     Promise.resolve(bankMints).then(
-      mints => mints.push(mint),
+      // @ts-expect-error pushing a promise to a presence array
+      mints => mints.push(mintP),
       () => {}, // If the bankMints list was rejected, ignore the error.
     ),
     E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(keyword, issuer),

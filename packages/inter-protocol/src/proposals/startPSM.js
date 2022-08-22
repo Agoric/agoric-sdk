@@ -185,7 +185,6 @@ export const makeAnchorAsset = async (
     X`anchorOptions.denom must be a string, not ${denom}`,
   );
 
-  /** @type {import('@agoric/vats/src/mintHolder.js').AssetTerms} */
   const terms = await deeplyFulfilledObject(
     harden({
       keyword,

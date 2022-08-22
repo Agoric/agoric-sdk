@@ -371,7 +371,6 @@ export const addBankAssets = async ({
   const runKit = { issuer: runIssuer, brand: runBrand, payment };
 
   /** @type {{ creatorFacet: ERef<Mint>, publicFacet: ERef<Issuer> }} */
-  // @ts-expect-error cast
   const { creatorFacet: bldMint, publicFacet: bldIssuer } = E.get(
     E(zoe).startInstance(
       mintHolder,
