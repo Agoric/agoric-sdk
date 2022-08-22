@@ -42,7 +42,7 @@
     "singleQuote": true
   },
   "scripts": {
-    "OFF-clean": "yarn workspaces run clean",
+    "clean": "yarn lerna run --no-bail clean",
     "check-dependencies": "node ./scripts/check-mismatched-dependencies.cjs",
     "lerna": "lerna",
     "link-cli": "yarn run create-agoric-cli",

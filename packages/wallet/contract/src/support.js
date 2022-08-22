@@ -1,6 +1,6 @@
 // @ts-check
 
-import { buildRootObject } from '@agoric/wallet-backend/src/wallet';
+import { buildRootObject } from '@agoric/wallet-backend/src/wallet.js';
 import { E } from '@endo/far';
 
 /**

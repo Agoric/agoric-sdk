@@ -150,6 +150,8 @@ jobs:
         run: cd packages/cache && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (casting)
         run: cd packages/casting && yarn ${{ steps.vars.outputs.test }}
+      - name: yarn test (internal)
+        run: cd packages/internal && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (inter-protocol)
         run: cd packages/inter-protocol && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (pegasus)

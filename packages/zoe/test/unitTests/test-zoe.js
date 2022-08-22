@@ -8,7 +8,7 @@ import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { passStyleOf, Far } from '@endo/marshal';
-import { getMethodNames } from '@agoric/store';
+import { getMethodNames } from '@agoric/internal';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@endo/bundle-source';

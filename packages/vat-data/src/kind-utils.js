@@ -1,4 +1,5 @@
-import { provide, objectMap } from '@agoric/store';
+import { objectMap } from '@agoric/internal';
+import { provide } from '@agoric/store';
 import {
   defineDurableKind,
   defineDurableKindMulti,

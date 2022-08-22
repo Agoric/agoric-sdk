@@ -2,12 +2,6 @@
 import { E } from '@endo/eventual-send';
 import { isPromise } from '@endo/promise-kit';
 
-// TODO https://github.com/Agoric/agoric-sdk/issues/5992
-// Many of the utilities accumulating in this module really have nothing
-// to do with the store package. Follow #5992 and migrate them, or perhaps
-// the entire utils.js module, to that independent sdk-internal package
-// that we will need to create.
-
 /** @typedef {import('@endo/marshal/src/types').Remotable} Remotable */
 
 const { getPrototypeOf, create, entries, fromEntries } = Object;
@@ -48,16 +42,16 @@ const { details: X } = assert;
  * if all the mapped values are Passable, then the returned object will be
  * a CopyRecord.
  *
- * @template T
- * @template U
- * @param {Record<string,T>} original
- * @param {(value: T, key?: string) => U} mapFn
- * @returns {Record<string,U>}
+ * @template {Record<string, any>} O
+ * @param {O} original
+ * @template R map result
+ * @param {(value: O[keyof O], key: keyof O) => R} mapFn
+ * @returns {{ [P in keyof O]: R}}
  */
 export const objectMap = (original, mapFn) => {
   const ents = entries(original);
   const mapEnts = ents.map(([k, v]) => [k, mapFn(v, k)]);
-  return /** @type {Record<string, U>} */ (harden(fromEntries(mapEnts)));
+  return harden(fromEntries(mapEnts));
 };
 harden(objectMap);
 

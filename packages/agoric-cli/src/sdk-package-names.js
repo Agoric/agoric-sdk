@@ -16,6 +16,7 @@ export default [
   "@agoric/governance",
   "@agoric/import-manager",
   "@agoric/inter-protocol",
+  "@agoric/internal",
   "@agoric/notifier",
   "@agoric/pegasus",
   "@agoric/same-structure",
