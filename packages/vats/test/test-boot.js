@@ -1,7 +1,7 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { E, Far } from '@endo/far';
+import { E, Far, passStyleOf } from '@endo/far';
 import bundleSource from '@endo/bundle-source';
 import {
   makeFakeVatAdmin,
@@ -300,6 +300,10 @@ test(`PSM-only bootstrap`, async t => {
   const vats = mockSwingsetVats(mock);
   const actual = await E(root).bootstrap(vats, mock.devices);
   t.deepEqual(actual, undefined);
+
+  const agoricNames = E(root).consumeItem('agoricNames');
+  const instance = await E(agoricNames).lookup('instance', 'psm');
+  t.is(passStyleOf(instance), 'remotable');
 });
 
 test('PSM-only bootstrap provides a way to pass items to CORE_EVAL', async t => {
