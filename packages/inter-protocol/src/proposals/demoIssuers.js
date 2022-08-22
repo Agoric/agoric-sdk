@@ -624,6 +624,9 @@ export const fundAMM = async ({
       let fromCentral;
 
       if (brandsWithPriceAuthorities.includes(brand)) {
+        // @ts-expect-error TS only started complaining about this
+        // after we wrapped the expression in an immediately-executed
+        // async function.
         // eslint-disable-next-line @jessie.js/no-nested-await
         ({ toCentral, fromCentral } = await (async () =>
           E(ammPublicFacet)
