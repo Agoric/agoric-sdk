@@ -121,6 +121,7 @@ export const makeStartInstance = (
         getTerms: zoeInstanceStorageManager.getTerms,
         getIssuers: zoeInstanceStorageManager.getIssuers,
         getBrands: zoeInstanceStorageManager.getBrands,
+        getOfferFilter: () => harden([...offerFilterStrings]),
         getInstallationForInstance:
           zoeInstanceStorageManager.getInstallationForInstance,
         getInstance: () => instance,
@@ -254,6 +255,7 @@ export const makeStartInstance = (
       },
       stopAcceptingOffers: () => instanceAdmin.stopAcceptingOffers(),
       setOfferFilter,
+      getOfferFilter: () => harden([...offerFilterStrings]),
     });
 
     // At this point, the contract will start executing. All must be

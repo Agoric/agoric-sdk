@@ -76,6 +76,7 @@
  * @property {() => IssuerKeywordRecord} getIssuers
  * @property {() => BrandKeywordRecord} getBrands
  * @property {() => object} getTerms
+ * @property {() => string[]} getOfferFilter
  * @property {() => Installation} getInstallationForInstance
  * @property {(completion: Completion) => void} exitAllSeats
  * @property {ShutdownWithFailure} failAllSeats

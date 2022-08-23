@@ -27,6 +27,12 @@ export const makeInstanceAdminStorage = () => {
   /** @type {GetTerms} */
   const getTerms = instance => instanceToInstanceAdmin.get(instance).getTerms();
 
+  /** @type {GetOfferFilter} */
+  const getOfferFilter = async instanceP =>
+    E.when(instanceP, instance =>
+      instanceToInstanceAdmin.get(instance).getOfferFilter(),
+    );
+
   /** @type {GetInstallationForInstance} */
   const getInstallationForInstance = async instance =>
     instanceToInstanceAdmin.get(instance).getInstallationForInstance();
@@ -36,6 +42,7 @@ export const makeInstanceAdminStorage = () => {
     getBrands,
     getIssuers,
     getTerms,
+    getOfferFilter,
     getInstallationForInstance,
     getInstanceAdmin: instanceToInstanceAdmin.get,
     initInstanceAdmin: instanceToInstanceAdmin.init,

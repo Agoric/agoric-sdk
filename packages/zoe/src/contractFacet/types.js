@@ -46,6 +46,7 @@
  * @property {() => Promise<void>} stopAcceptingOffers
  * @property {(strings: Array<string>) => void} setOfferFilter
  * @property {() => Instance} getInstance
+ * @property {(strings: Array<string>) => void} setOfferFilter
  */
 
 /**
