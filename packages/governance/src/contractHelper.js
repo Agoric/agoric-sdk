@@ -114,6 +114,7 @@ const facetHelpers = (zcf, paramManager) => {
       // methods it has. There's no clean way to have contracts specify the APIs
       // without also separately providing their names.
       getGovernedApiNames: () => Object.keys(governedApis),
+      setOfferFilter: strings => zcf.setOfferFilter(strings),
     });
 
     // exclusively for contractGovernor, which only reveals limitedCreatorFacet
@@ -142,6 +143,7 @@ const facetHelpers = (zcf, paramManager) => {
       // without also separately providing their names.
       getGovernedApiNames: ({ facets }) =>
         getMethodNames(facets.governedApis || {}),
+      setOfferFilter: strings => zcf.setOfferFilter(strings),
     });
 
     return { governorFacet, limitedCreatorFacet };

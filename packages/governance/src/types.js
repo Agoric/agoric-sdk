@@ -12,7 +12,8 @@
  */
 
 /**
- * @typedef { 'param_change' | 'election' | 'survey' | 'api_invocation' } ElectionType
+ * @typedef { 'param_change' | 'election' | 'survey' | 'api_invocation' |
+ *   'offer_filter' } ElectionType
  * param_change is very specific. Survey means multiple answers are possible,
  * Election means some candidates are going to "win". It's not clear these are
  * orthogonal. The important distinction is that param_change has a structured
@@ -66,7 +67,8 @@
  */
 
 /**
- * @typedef { SimpleIssue | ParamChangeIssue<unknown> | ApiInvocationIssue } Issue
+ * @typedef { SimpleIssue | ParamChangeIssue<unknown> | ApiInvocationIssue |
+ *   OfferFilterIssue } Issue
  */
 
 /**
@@ -84,7 +86,8 @@
  */
 
 /**
- * @typedef { TextPosition | ChangeParamsPosition | NoChangeParamsPosition | InvokeApiPosition | DontInvokeApiPosition } Position
+ * @typedef { TextPosition | ChangeParamsPosition | NoChangeParamsPosition | InvokeApiPosition | DontInvokeApiPosition |
+ *    OfferFilterPosition | NoChangeOfferFilterPosition | InvokeApiPosition } Position
  */
 
 /**
@@ -335,6 +338,11 @@
  */
 
 /**
+ * @typedef {object} OfferFilterIssue
+ * @property {string[]} strings
+ */
+
+/**
  * @typedef {object} ParamChangePositions
  * @property {ChangeParamsPosition} positive
  * @property {NoChangeParamsPosition} negative
@@ -424,6 +432,16 @@
  */
 
 /**
+ * @typedef {object} OfferFilterPosition
+ * @property {string[]} strings
+ */
+
+/**
+ * @typedef {object} NoChangeOfferFilterPosition
+ * @property {string[]} dontUpdate
+ */
+
+/**
  * @typedef {object} InvokeApiPosition
  * @property {string} apiMethodName
  * @property {unknown[]} methodArgs
@@ -443,6 +461,16 @@
 /**
  * @typedef {object} Governor
  * @property {CreateQuestion} createQuestion
+ */
+
+/**
+ * @typedef {object} GovernorFacet
+ * @property {() => ParamManagerRetriever} getParamManagerRetriever
+ * @property {() => Invitation} getInvitation
+ * @property {() => unknown} getLimitedCreatorFacet
+ * @property {() => unknown} getGovernedApis
+ * @property {() => string[]} getGovernedApiNames
+ * @property {(strings: string[]) => void} setOfferFilter
  */
 
 /**
@@ -587,6 +615,14 @@
  */
 
 /**
+ * @callback VoteOnOfferFilter
+ * @param {Installation} voteCounterInstallation
+ * @param {Timestamp} deadline
+ * @param {string[]} strings
+ * @returns {ContractGovernanceVoteResult}
+ */
+
+/**
  * @typedef {object} ParamGovernor
  * @property {VoteOnParamChanges} voteOnParamChanges
  * @property {CreatedQuestion} createdQuestion
@@ -595,6 +631,12 @@
 /**
  * @typedef {object} ApiGovernor
  * @property {VoteOnApiInvocation} voteOnApiInvocation
+ * @property {CreatedQuestion} createdQuestion
+ */
+
+/**
+ * @typedef {object} FilterGovernor
+ * @property {VoteOnOfferFilter} voteOnFilter
  * @property {CreatedQuestion} createdQuestion
  */
 

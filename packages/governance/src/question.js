@@ -1,9 +1,10 @@
 // @ts-check
 
 import { Far, passStyleOf } from '@endo/marshal';
-import { keyEQ } from '@agoric/store';
+import { keyEQ, fit } from '@agoric/store';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { Nat } from '@agoric/nat';
+import { M } from '@agoric/vat-data';
 
 import { makeAssertInstance } from './contractGovernance/assertions.js';
 
@@ -32,6 +33,7 @@ const ElectionType = /** @type {const} */ ({
   SURVEY: 'survey',
   // whether or not to invoke an API method
   API_INVOCATION: 'api_invocation',
+  OFFER_FILTER: 'offer_filter',
 });
 
 const QuorumRule = /** @type {const} */ ({
@@ -89,6 +91,16 @@ const assertApiInvocation = issue => {
 };
 
 /**
+ * @param {unknown} issue
+ * @returns {asserts issue is OfferFilterIssue}
+ */
+
+const assertOfferFilter = issue => {
+  assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
+  fit(issue?.strings, M.arrayOf(M.string()), 'strings');
+};
+
+/**
  * @param {ElectionType} electionType
  * @param {unknown} issue
  * @returns {asserts issue is Issue}
@@ -110,6 +122,9 @@ const assertIssueForType = (electionType, issue) => {
       break;
     case ElectionType.API_INVOCATION:
       assertApiInvocation(issue);
+      break;
+    case ElectionType.OFFER_FILTER:
+      assertOfferFilter(issue);
       break;
     default:
       throw Error(`Election type unrecognized`);

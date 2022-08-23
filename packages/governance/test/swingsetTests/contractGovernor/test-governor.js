@@ -196,8 +196,6 @@ test.serial('api Governance', async t => {
   t.deepEqual(dump.log, [
     '=> voter and electorate vats are set up',
     'Number before: 0',
-    'params update: ',
-    'current value of MalleableNumber is 602214090000000000000000',
     '@@ schedule task for:2, currently: 0 @@',
     'Voter Alice voted for {"dontInvoke":"governanceApi"}',
     'Voter Bob voted for {"apiMethodName":"governanceApi","methodArgs":[]}',
@@ -209,5 +207,23 @@ test.serial('api Governance', async t => {
     'vote outcome: {"apiMethodName":"governanceApi","methodArgs":[]}',
     'update value: {"apiMethodName":"governanceApi","methodArgs":[]}',
     'Number after: 1',
+  ]);
+});
+
+test.serial('offer filter', async t => {
+  const dump = await main(t, ['offerFilterGovernanceStart']);
+  t.deepEqual(dump.log, [
+    '=> voter and electorate vats are set up',
+    '@@ schedule task for:2, currently: 0 @@',
+    'Voter Alice voted for {"dontUpdate":["foo","bar:"]}',
+    'Voter Bob voted for {"strings":["foo","bar:"]}',
+    'Voter Carol voted for {"strings":["foo","bar:"]}',
+    'Voter Dave voted for {"strings":["foo","bar:"]}',
+    'Voter Emma voted for {"dontUpdate":["foo","bar:"]}',
+    '@@ tick:1 @@',
+    '@@ tick:2 @@',
+    'vote outcome: {"strings":["foo","bar:"]}',
+    'updated to ({"strings":["foo","bar:"]})',
+    'filters set: foo,bar:',
   ]);
 });
