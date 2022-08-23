@@ -44,6 +44,7 @@
  * @property {ZCFMakeEmptySeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig
  * @property {() => Promise<void>} stopAcceptingOffers
+ * @property {(strings: Array<string>) => void} setOfferFilter
  * @property {() => Instance} getInstance
  */
 
