@@ -121,7 +121,7 @@ printf '%s' "$unwrapped_value" | jq -c --arg responseHeightJson "$response_heigh
       # }.
       {
         id: $slotValues[.index],
-        allegedName: (try ((.iface // $slotNames[.index | tostring]) | sub("^Alleged: (?<name>.*) brand$"; "\(.name)"; "m")) catch null)
+        allegedName: (try ((.iface // $slotNames[.index | tostring]) | sub("^Alleged: (?<name>.*?)( brand)?$"; "\(.name)"; "m")) catch null)
       }
     else
       .
