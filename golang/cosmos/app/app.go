@@ -101,7 +101,7 @@ import (
 	routerkeeper "github.com/strangelove-ventures/packet-forward-middleware/router/keeper"
 	routertypes "github.com/strangelove-ventures/packet-forward-middleware/router/types"
 
-	appante "github.com/Agoric/agoric-sdk/golang/cosmos/app/ante"
+	appante "github.com/Agoric/agoric-sdk/golang/cosmos/ante"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
