@@ -9,7 +9,10 @@ import { E } from '@endo/eventual-send';
 import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@endo/bundle-source';
+import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 
 import {
   ChoiceMethod,
@@ -26,6 +29,8 @@ const counterRoot = `${dirname}/../../src/binaryVoteCounter.js`;
 
 const setupContract = async () => {
   const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+
+  const mockChainStorageRoot = makeMockChainStorageRoot();
 
   // pack the contract
   const [electorateBundle, counterBundle] = await Promise.all([
@@ -46,9 +51,13 @@ const setupContract = async () => {
     electorateInstallation,
     {},
     terms,
+    {
+      storageNode: mockChainStorageRoot.makeChildNode('thisElectorate'),
+      marshaller: makeBoard().getReadonlyMarshaller(),
+    },
   );
 
-  return { electorateStartResult, counterInstallation };
+  return { counterInstallation, electorateStartResult, mockChainStorageRoot };
 };
 
 test('committee-open no questions', async t => {
@@ -62,6 +71,7 @@ test('committee-open question:one', async t => {
   const {
     electorateStartResult: { creatorFacet, publicFacet },
     counterInstallation,
+    mockChainStorageRoot,
   } = await setupContract();
 
   const positions = [harden({ text: 'because' }), harden({ text: 'why not?' })];
@@ -82,14 +92,54 @@ test('committee-open question:one', async t => {
   const questions = await publicFacet.getOpenQuestions();
   const question = E(publicFacet).getQuestion(questions[0]);
   const questionDetails = await E(question).getDetails();
-  // @ts-expect-error FIXME missing prop
-  t.deepEqual(questionDetails.issue.text, 'why');
+  /** @type {SimpleIssue} */
+  // @ts-expect-error cast
+  const issue = questionDetails.issue;
+  t.deepEqual(issue.text, 'why');
+  t.deepEqual(
+    mockChainStorageRoot.getBody(
+      'mockChainStorageRoot.thisElectorate.latestQuestion',
+    ),
+    {
+      closingRule: {
+        deadline: 2n,
+        timer: {
+          iface: 'Alleged: ManualTimer',
+        },
+      },
+      counterInstance: {
+        iface: 'Alleged: InstanceHandle',
+      },
+      electionType: 'survey',
+      issue: {
+        text: 'why',
+      },
+      maxChoices: 1,
+      method: 'unranked',
+      positions: [
+        {
+          text: 'because',
+        },
+        {
+          text: 'why not?',
+        },
+      ],
+      questionHandle: {
+        iface: 'Alleged: QuestionHandle',
+      },
+      quorumRule: 'majority',
+      tieOutcome: {
+        text: 'why not?',
+      },
+    },
+  );
 });
 
 test('committee-open question:mixed', async t => {
   const {
     electorateStartResult: { creatorFacet, publicFacet },
     counterInstallation,
+    mockChainStorageRoot,
   } = await setupContract();
 
   const timer = buildManualTimer(t.log);
@@ -105,6 +155,18 @@ test('committee-open question:mixed', async t => {
     tieOutcome: positions[1],
   });
   await E(creatorFacet).addQuestion(counterInstallation, questionSpec);
+  // First question writes
+  await eventLoopIteration();
+  t.like(
+    mockChainStorageRoot.getBody(
+      'mockChainStorageRoot.thisElectorate.latestQuestion',
+    ),
+    {
+      issue: {
+        text: 'why',
+      },
+    },
+  );
 
   const questionSpec2 = {
     ...questionSpec,
@@ -113,6 +175,18 @@ test('committee-open question:mixed', async t => {
     quorumRule: QuorumRule.MAJORITY,
   };
   await E(creatorFacet).addQuestion(counterInstallation, questionSpec2);
+  // Second question overwrites chain storage. Subscribers responsible for tracking history.
+  await eventLoopIteration();
+  t.like(
+    mockChainStorageRoot.getBody(
+      'mockChainStorageRoot.thisElectorate.latestQuestion',
+    ),
+    {
+      issue: {
+        text: 'why2',
+      },
+    },
+  );
 
   const questionSpec3 = {
     ...questionSpec,
@@ -127,6 +201,19 @@ test('committee-open question:mixed', async t => {
     counterInstallation,
     questionSpec3,
   );
+  // Third question overwrites again.
+  await eventLoopIteration();
+  t.like(
+    mockChainStorageRoot.getBody(
+      'mockChainStorageRoot.thisElectorate.latestQuestion',
+    ),
+    {
+      issue: {
+        text: 'why3',
+      },
+    },
+  );
+
   // We didn't add any votes. getOutcome() will eventually return a broken
   // promise, but not until some time after tick(). Add a .catch() for it.
   E(counterPublic)

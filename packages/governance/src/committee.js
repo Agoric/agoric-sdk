@@ -1,19 +1,19 @@
 // @ts-check
 
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
-import { makePublishKit } from '@agoric/notifier';
+import { makeStoredPublishKit } from '@agoric/notifier';
 import { makeStore } from '@agoric/store';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
-import { QuorumRule } from './question.js';
 import {
-  startCounter,
   getOpenQuestions,
-  getQuestion,
   getPoserInvitation,
+  getQuestion,
+  startCounter,
 } from './electorateTools.js';
+import { QuorumRule } from './question.js';
 
 const { ceilDivide } = natSafeMath;
 
@@ -26,15 +26,26 @@ const { ceilDivide } = natSafeMath;
  * for elections where the set of voters needs to be known, unless the contract
  * is used in a way that makes the distribution of voter facets visible.
  *
- * @type ContractStartFn<CommitteeElectoratePublic, CommitteeElectorateCreatorFacet, {
+ * @param {ZCF<{
  *   committeeName: string,
  *   committeeSize: number,
- * }>
+ * }>} zcf
+ * @param {{ storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} privateArgs
+ * @returns {{creatorFacet: CommitteeElectorateCreatorFacet, publicFacet: CommitteeElectoratePublic}}
  */
-const start = zcf => {
+const start = (zcf, privateArgs) => {
   /** @type {Store<Handle<'Question'>, QuestionRecord>} */
   const allQuestions = makeStore('Question');
-  const { subscriber, publisher } = makePublishKit();
+  assert(privateArgs?.storageNode, 'Missing storageNode');
+  assert(privateArgs?.marshaller, 'Missing marshaller');
+  /** @type {StoredPublishKit<QuestionDetails>} */
+  const { subscriber: questionsSubscriber, publisher: questionsPublisher } =
+    makeStoredPublishKit(
+      E(privateArgs.storageNode).makeChildNode('latestQuestion'),
+      privateArgs.marshaller,
+    );
+  // @ts-expect-error at first, no latest question but every other call must provide QuestionDetails
+  questionsPublisher.publish(undefined);
 
   const makeCommitteeVoterInvitation = index => {
     /** @type {OfferHandler} */
@@ -88,13 +99,13 @@ const start = zcf => {
       quorumThreshold(questionSpec.quorumRule),
       voteCounter,
       allQuestions,
-      publisher,
+      questionsPublisher,
     );
   };
 
   /** @type {CommitteeElectoratePublic} */
   const publicFacet = Far('publicFacet', {
-    getQuestionSubscriber: () => subscriber,
+    getQuestionSubscriber: () => questionsSubscriber,
     getOpenQuestions: () => getOpenQuestions(allQuestions),
     getName: () => committeeName,
     getInstance: zcf.getInstance,
@@ -106,7 +117,7 @@ const start = zcf => {
     getPoserInvitation: () => getPoserInvitation(zcf, addQuestion),
     addQuestion,
     getVoterInvitations: () => invitations,
-    getQuestionSubscriber: () => subscriber,
+    getQuestionSubscriber: () => questionsSubscriber,
     getPublicFacet: () => publicFacet,
   });
 

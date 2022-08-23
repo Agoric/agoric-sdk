@@ -4,6 +4,8 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { observeIteration } from '@agoric/notifier';
+import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
 
 import { makeTerms, MALLEABLE_NUMBER } from './governedContract.js';
 import { CONTRACT_ELECTORATE, assertContractElectorate } from '../../../src';
@@ -74,7 +76,10 @@ const installContracts = async (zoe, cb) => {
  */
 const startElectorate = async (zoe, installations, electorateTerms) => {
   const { creatorFacet: electorateCreatorFacet, instance: electorateInstance } =
-    await E(zoe).startInstance(installations.committee, {}, electorateTerms);
+    await E(zoe).startInstance(installations.committee, {}, electorateTerms, {
+      storageNode: makeMockChainStorageRoot().makeChildNode('thisElectorate'),
+      marshaller: makeBoard().getReadonlyMarshaller(),
+    });
   return { electorateCreatorFacet, electorateInstance };
 };
 

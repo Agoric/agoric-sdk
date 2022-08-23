@@ -2,6 +2,8 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 import {
@@ -56,7 +58,10 @@ const committeeBinaryStart = async (
 ) => {
   const electorateTerms = { committeeName: 'TheCommittee', committeeSize: 5 };
   const { creatorFacet: electorateFacet, instance: electorateInstance } =
-    await E(zoe).startInstance(installations.committee, {}, electorateTerms);
+    await E(zoe).startInstance(installations.committee, {}, electorateTerms, {
+      storageNode: makeMockChainStorageRoot().makeChildNode('thisElectorate'),
+      marshaller: makeBoard().getReadonlyMarshaller(),
+    });
 
   const choose = { text: 'Choose' };
   const electionType = ElectionType.SURVEY;
@@ -116,7 +121,10 @@ const committeeBinaryTwoQuestions = async (
 
   const electorateTerms = { committeeName: 'TheCommittee', committeeSize: 5 };
   const { creatorFacet: electorateFacet, instance: electorateInstance } =
-    await E(zoe).startInstance(installations.committee, {}, electorateTerms);
+    await E(zoe).startInstance(installations.committee, {}, electorateTerms, {
+      storageNode: makeMockChainStorageRoot().makeChildNode('thisElectorate'),
+      marshaller: makeBoard().getReadonlyMarshaller(),
+    });
 
   const invitations = await E(electorateFacet).getVoterInvitations();
   const details2 = await E(zoe).getInvitationDetails(invitations[2]);
