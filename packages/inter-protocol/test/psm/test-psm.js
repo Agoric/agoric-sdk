@@ -17,6 +17,7 @@ import {
   natSafeMath as NatMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
+import { NonNullish } from '@agoric/assert';
 import path from 'path';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeTracer } from '../../src/makeTracer.js';
@@ -428,39 +429,15 @@ test('metrics', async t => {
 });
 
 test('wrong give giveStableInvitaion', async t => {
-  const {
-    zoe,
-    feeMintAccess,
-    initialPoserInvitation,
-    terms,
-    installs: { psmInstall },
-    anchor,
-  } = t.context;
-
-  const mockChainStorage = makeMockChainStorageRoot();
-
-  /** @type {Awaited<ReturnType<import('../../src/psm/psm.js').start>>} */
-  const { publicFacet } = await E(zoe).startInstance(
-    psmInstall,
-    harden({ AUSD: anchor.issuer }),
-    { ...terms },
-    harden({
-      feeMintAccess,
-      initialPoserInvitation,
-      storageNode: mockChainStorage.makeChildNode('thisPsm'),
-      marshaller: makeBoard().getReadonlyMarshaller(),
-    }),
-  );
-
+  const { zoe, anchor } = t.context;
+  const { publicFacet } = await makePsmDriver(t);
   const giveAnchor = AmountMath.make(anchor.brand, 200n * 1_000_000n);
-
   await t.throwsAsync(
     () =>
       E(zoe).offer(
         E(publicFacet).makeGiveStableInvitation(),
         harden({ give: { In: giveAnchor } }),
-        // @ts-expect-error known defined
-        harden({ In: anchor.mint.mintPayment(giveAnchor) }),
+        harden({ In: NonNullish(anchor.mint).mintPayment(giveAnchor) }),
       ),
     {
       message:
