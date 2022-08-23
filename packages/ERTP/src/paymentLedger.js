@@ -466,6 +466,12 @@ export const vivifyPaymentLedger = (
   );
 
   const issuer = vivifySingleton(issuerBaggage, `${name} issuer`, {
+    getBrand: () => brand,
+    getAllegedName: () => name,
+    getAssetKind: () => assetKind,
+    getDisplayInfo: () => displayInfo,
+    makeEmptyPurse,
+
     isLive,
     getAmountOf,
     burn,
@@ -473,11 +479,6 @@ export const vivifyPaymentLedger = (
     combine,
     split,
     splitMany,
-    getBrand: () => brand,
-    getAllegedName: () => name,
-    getAssetKind: () => assetKind,
-    getDisplayInfo: () => displayInfo,
-    makeEmptyPurse,
   });
 
   const mint = vivifySingleton(issuerBaggage, `${name} mint`, {
