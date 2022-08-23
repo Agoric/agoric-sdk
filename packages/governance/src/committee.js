@@ -44,8 +44,6 @@ const start = (zcf, privateArgs) => {
       E(privateArgs.storageNode).makeChildNode('latestQuestion'),
       privateArgs.marshaller,
     );
-  // @ts-expect-error at first, no latest question but every other call must provide QuestionDetails
-  questionsPublisher.publish(undefined);
 
   const makeCommitteeVoterInvitation = index => {
     /** @type {OfferHandler} */

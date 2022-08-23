@@ -324,3 +324,35 @@ changes to contract parameters. There should also be managers that
   passes.
 * manage a plebiscite among stake holders to allow participants to express
   opinions about the future of the chain.
+
+## Reading data off-chain
+
+Governed contracts publish along with the contract they're governing. See [../inter-protocol/README.md].
+
+Committee contracts also publish the questions posed. These can then be followed off-chain like so,
+```js
+  const key = `published.committee.questions`; // or whatever the stream of interest is
+  const leader = makeDefaultLeader();
+  const follower = makeFollower(storeKey, leader);
+  for await (const { value } of iterateLatest(follower)) {
+    console.log(`here's a value`, value);
+  }
+```
+
+### Demo
+
+Start the chain in one terminal:
+```sh
+cd packages/cosmic-swingset
+make scenario2-setup scenario2-run-chain-economy
+```
+Once you see a string like `block 17 commit` then the chain is available. In another terminal,
+```sh
+# shows keys of the committees node
+agd query vstorage keys 'published.committees'
+# shows keys of the initial economic committee node
+agd query vstorage keys 'published.committees.Initial_Economic_Committee'
+# follow questions
+agoric follow :published.committees.Initial_Economic_Committee.latestQuestion
+```
+Note that there won't be `'published.committees.Initial_Economic_Committee.latestQuestion` until some `.addQuestion()` call executes.
