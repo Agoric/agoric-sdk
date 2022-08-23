@@ -439,7 +439,6 @@ test('wrong give giveStableInvitaion', async t => {
   const { zoe, anchor } = t.context;
   const { publicFacet } = await makePsmDriver(t);
   const giveAnchor = AmountMath.make(anchor.brand, 200n * 1_000_000n);
-
   await t.throwsAsync(
     () =>
       E(zoe).offer(
