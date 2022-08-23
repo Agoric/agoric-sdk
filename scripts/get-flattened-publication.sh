@@ -1,18 +1,22 @@
 #!/bin/bash
 set -ueo pipefail
 
-USAGE="$0 HOST STORAGE_KEY
-Returns flat JSON corresponding with chain storage data returned by an RPC node.
+USAGE="$0 HOST STORAGE_KEY [BLOCK_HEIGHT]
+Returns flat JSON corresponding with chain storage data returned by an RPC node,
+optionally at a specified block height (defaulting to latest).
 
   HOST is a URL prefix against which an abci_query HTTP request may be issued,
        e.g. \"https://xnet.rpc.agoric.net/\".
   STORAGE_KEY is a chain storage key name, e.g. \"published.amm.pool0.metrics\".
+  BLOCK_HEIGHT is a decimal number, e.g. 31337. If not specified,
+       data will be returned from the latest available block.
 ";
 
-URL_PREFIX="${1:-}";
-STORAGE_KEY="${2:-}";
+URL_PREFIX="${1:-}"
+STORAGE_KEY="${2:-}"
+QUERY_HEIGHT="${3:-}"
 
-if [ ":${1:-}" = '--help' -o ":$URL_PREFIX" = : -o ":$STORAGE_KEY" = : -o $# -gt 2 ]; then
+if [ ":${1:-}" = '--help' -o ":$URL_PREFIX" = : -o ":$STORAGE_KEY" = : -o $# -gt 3 ]; then
   printf '%s' "$USAGE"
   exit 64
 fi
@@ -39,12 +43,14 @@ resp="$(
   # https://github.com/tendermint/tendermint/issues/9164
   # curl -sS "${URL_PREFIX%/}/abci_query?path=%22/custom/vstorage/data/$STORAGE_KEY%22" | \
   curl -sS "$URL_PREFIX" --request POST --header 'Content-Type: application/json' --data "$(
-    printf '{
-      "jsonrpc": "2.0",
-      "id": 1,
-      "method": "abci_query",
-      "params": { "path": "/custom/vstorage/data/%s" }
-    }' "$STORAGE_KEY"
+    jq -n --arg key "$STORAGE_KEY" --arg height "$QUERY_HEIGHT" '{
+      jsonrpc: "2.0",
+      id: 1,
+      method: "abci_query",
+      params: {
+        path: ("/custom/vstorage/data/" + $key)
+      } | (if $height != "" then (.height |= $height) else . end)
+    }'
   )"
 )"
 
