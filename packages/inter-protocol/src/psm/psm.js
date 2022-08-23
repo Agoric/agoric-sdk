@@ -2,15 +2,16 @@
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 import '@agoric/governance/src/exported.js';
+
+import { E } from '@endo/eventual-send';
 import {
-  assertProposalShape,
   ceilMultiplyBy,
   floorDivideBy,
   floorMultiplyBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
-import { vivifyKindMulti } from '@agoric/vat-data';
+import { vivifyKindMulti, M } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
 import { provide } from '@agoric/store';
 
@@ -196,33 +197,52 @@ export const start = async (zcf, privateArgs, baggage) => {
     totalStableProvided = AmountMath.add(totalStableProvided, asStable);
   };
 
-  /**
-   * @param {ZCFSeat} seat
-   */
-  const swapHook = seat => {
-    assertProposalShape(seat, {
-      give: { In: null },
-    });
+  /** @param {ZCFSeat} seat */
+  const giveStableHook = seat => {
     const {
       give: { In: given },
       want: { Out: wanted } = { Out: undefined },
     } = seat.getProposal();
-    if (given.brand === stableBrand) {
-      giveStable(seat, given, wanted);
-    } else if (given.brand === anchorBrand) {
-      wantStable(seat, given, wanted);
-    } else {
-      throw Error(`unexpected brand ${given.brand}`);
-    }
+    giveStable(seat, given, wanted);
     seat.exit();
     updateMetrics();
   };
-  const makeSwapInvitation = () => zcf.makeInvitation(swapHook, 'swap');
+
+  /** @param {ZCFSeat} seat */
+  const wantStableHook = seat => {
+    const {
+      give: { In: given },
+      want: { Out: wanted } = { Out: undefined },
+    } = seat.getProposal();
+    wantStable(seat, given, wanted);
+    seat.exit();
+    updateMetrics();
+  };
+
+  const [anchorAmountSchema, stableAmountSchema] = await Promise.all([
+    E(anchorBrand).getAmountSchema(),
+    E(stableBrand).getAmountSchema(),
+  ]);
+  const makeWantStableInvitation = () =>
+    zcf.makeInvitation(
+      wantStableHook,
+      'wantStable',
+      undefined,
+      M.split({ give: { In: anchorAmountSchema } }),
+    );
+  const makeGiveStableInvitation = () =>
+    zcf.makeInvitation(
+      giveStableHook,
+      'giveStable',
+      undefined,
+      M.split({ give: { In: stableAmountSchema } }),
+    );
 
   const publicFacet = Far('Parity Stability Module', {
     getMetrics: () => metricsSubscriber,
     getPoolBalance: () => anchorPool.getAmountAllocated('Anchor', anchorBrand),
-    makeSwapInvitation,
+    makeWantStableInvitation,
+    makeGiveStableInvitation,
   });
 
   const getRewardAllocation = () => feePool.getCurrentAllocation();
