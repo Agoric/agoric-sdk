@@ -137,6 +137,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
     },
     produce: {
       client: true, // dummy client in this configuration
+      smartWalletStartResult: true,
     },
     installation: {
       consume: { walletFactory: 'zoe' },

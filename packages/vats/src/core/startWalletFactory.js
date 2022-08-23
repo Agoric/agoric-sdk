@@ -25,7 +25,7 @@ export const startWalletFactory = async ({
     namesByAddressAdmin: namesByAddressAdminP,
     zoe,
   },
-  produce: { client },
+  produce: { client, smartWalletStartResult },
   installation: {
     consume: { walletFactory },
   },
@@ -45,12 +45,12 @@ export const startWalletFactory = async ({
       board,
     }),
   );
-  const { creatorFacet } = await E(zoe).startInstance(
-    walletFactory,
-    {},
-    terms,
-    { storageNode, bridgeManager },
-  );
+  const x = await E(zoe).startInstance(walletFactory, {}, terms, {
+    storageNode,
+    bridgeManager,
+  });
+  smartWalletStartResult.resolve(x);
+  const { creatorFacet } = x;
 
   /** @param {string} address */
   const tryLookup = async address =>
