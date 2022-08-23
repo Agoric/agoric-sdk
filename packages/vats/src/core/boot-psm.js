@@ -15,6 +15,7 @@ import {
   addBankAssets,
   buildZoe,
   installBootContracts,
+  makeAddressNameHubs,
   makeBoard,
   makeVatsFromBundles,
   mintInitialSupply,
@@ -24,10 +25,10 @@ import {
   makeBridgeManager,
   makeChainStorage,
   publishAgoricNames,
-  setupClientManager,
   startTimerService,
 } from './chain-behaviors.js';
 import { CHAIN_BOOTSTRAP_MANIFEST } from './manifest.js';
+import { startWalletFactory } from './startWalletFactory.js';
 
 /** @typedef {import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
 
@@ -125,12 +126,13 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       makeBoard(powersFor('makeBoard')),
       makeBridgeManager(powersFor('makeBridgeManager')),
       makeChainStorage(powersFor('makeChainStorage')),
+      makeAddressNameHubs(powersFor('makeAddressNameHubs')),
       publishAgoricNames(powersFor('publishAgoricNames'), {
         options: {
           agoricNamesOptions: { topLevel: Object.keys(agoricNamesReserved) },
         },
       }),
-      setupClientManager(powersFor('setupClientManager')),
+      startWalletFactory(powersFor('startWalletFactory')),
       mintInitialSupply(powersFor('mintInitialSupply')),
       addBankAssets(powersFor('addBankAssets')),
       startTimerService(powersFor('startTimerService')),
