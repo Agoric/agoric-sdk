@@ -1,12 +1,18 @@
 // @ts-check
 
+import { makeNotifierFromSubscriber, observeNotifier } from '@agoric/notifier';
+import { keyEQ } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { observeIteration } from '@agoric/notifier';
-import { keyEQ } from '@agoric/store';
 
 const { quote: q } = assert;
 
+/**
+ * @param {(msg: any)=> void} log
+ * @param {Issue} issue
+ * @param {ERef<ElectoratePublic>} electoratePublicFacet
+ * @param {Record<string, Instance>} instances
+ */
 const verify = async (log, issue, electoratePublicFacet, instances) => {
   const questionHandles = await E(electoratePublicFacet).getOpenQuestions();
   const detailsP = questionHandles.map(h => {
@@ -15,9 +21,11 @@ const verify = async (log, issue, electoratePublicFacet, instances) => {
   });
   const detailsPlural = await Promise.all(detailsP);
   const details = detailsPlural.find(d => keyEQ(d.issue, issue));
+  assert(details);
 
   const { positions, method, issue: iss, maxChoices } = details;
   log(`verify question from instance: ${q(issue)}, ${q(positions)}, ${method}`);
+  // @ts-expect-error not in type
   const c = await E(electoratePublicFacet).getName();
   log(`Verify: q: ${q(iss)}, max: ${maxChoices}, committee: ${c}`);
   const electorateInstance = await E(electoratePublicFacet).getInstance();
@@ -28,10 +36,15 @@ const verify = async (log, issue, electoratePublicFacet, instances) => {
   );
 };
 
+/**
+ * @param {(msg: any)=> void} log
+ * @param {ZoeService} zoe
+ */
 const build = async (log, zoe) => {
   return Far('voter', {
     createVoter: async (name, invitation, choice) => {
       const electorateInstance = await E(zoe).getInstance(invitation);
+      /** @type {Promise<ElectoratePublic>} electoratePublicFacet */
       const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);
       const seat = E(zoe).offer(invitation);
       const voteFacet = E(seat).getOfferResult();
@@ -47,8 +60,11 @@ const build = async (log, zoe) => {
           return E(voteFacet).castBallotFor(details.questionHandle, [choice]);
         },
       });
-      const subscription = E(electoratePublicFacet).getQuestionSubscription();
-      void observeIteration(subscription, votingObserver);
+      const subscriber = E(electoratePublicFacet).getQuestionSubscriber();
+      void observeNotifier(
+        makeNotifierFromSubscriber(subscriber),
+        votingObserver,
+      );
 
       return Far(`Voter ${name}`, {
         verifyBallot: (question, instances) =>
@@ -57,6 +73,7 @@ const build = async (log, zoe) => {
     },
     createMultiVoter: async (name, invitation, choices) => {
       const electorateInstance = await E(zoe).getInstance(invitation);
+      /** @type {Promise<ElectoratePublic>} electoratePublicFacet */
       const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);
       const seat = E(zoe).offer(invitation);
       const voteFacet = E(seat).getOfferResult();
@@ -73,8 +90,11 @@ const build = async (log, zoe) => {
           return E(voteFacet).castBallotFor(details.questionHandle, [choice]);
         },
       });
-      const subscription = E(electoratePublicFacet).getQuestionSubscription();
-      void observeIteration(subscription, votingObserver);
+      const subscriber = E(electoratePublicFacet).getQuestionSubscriber();
+      void observeNotifier(
+        makeNotifierFromSubscriber(subscriber),
+        votingObserver,
+      );
 
       return Far(`Voter ${name}`, {
         verifyBallot: (question, instances) =>
@@ -84,7 +104,9 @@ const build = async (log, zoe) => {
   });
 };
 
+/** @type {BuildRootObjectForTestVat} */
 export const buildRootObject = vatPowers =>
   Far('root', {
-    build: (...args) => build(vatPowers.testLog, ...args),
+    /** @param {ZoeService} zoe */
+    build: zoe => build(vatPowers.testLog, zoe),
   });

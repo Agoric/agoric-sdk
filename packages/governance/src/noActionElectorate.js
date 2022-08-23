@@ -1,7 +1,7 @@
 // @ts-check
 
+import { makePublishKit } from '@agoric/notifier';
 import { Far } from '@endo/marshal';
-import { makeSubscriptionKit } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
 
 /**
@@ -11,10 +11,10 @@ import { makePromiseKit } from '@endo/promise-kit';
  *  @type {ContractStartFn<ElectoratePublic, ElectorateCreatorFacet>}
  */
 const start = zcf => {
-  const { subscription } = makeSubscriptionKit();
+  const { subscriber } = makePublishKit();
 
   const publicFacet = Far('publicFacet', {
-    getQuestionSubscription: () => subscription,
+    getQuestionSubscriber: () => subscriber,
     getOpenQuestions: () => {
       /** @type {Handle<'Question'>[]} */
       const noQuestions = [];
@@ -40,7 +40,7 @@ const start = zcf => {
     getVoterInvitations: () => {
       throw Error(`No Action Electorate doesn't have invitations.`);
     },
-    getQuestionSubscription: () => subscription,
+    getQuestionSubscriber: () => subscriber,
     getPublicFacet: () => publicFacet,
   });
 

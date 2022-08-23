@@ -2,7 +2,7 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeSubscriptionKit } from '@agoric/notifier';
+import { makePublishKit } from '@agoric/notifier';
 import { makeStore } from '@agoric/store';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 
@@ -34,7 +34,7 @@ const { ceilDivide } = natSafeMath;
 const start = zcf => {
   /** @type {Store<Handle<'Question'>, QuestionRecord>} */
   const allQuestions = makeStore('Question');
-  const { subscription, publication } = makeSubscriptionKit();
+  const { subscriber, publisher } = makePublishKit();
 
   const makeCommitteeVoterInvitation = index => {
     /** @type {OfferHandler} */
@@ -88,13 +88,13 @@ const start = zcf => {
       quorumThreshold(questionSpec.quorumRule),
       voteCounter,
       allQuestions,
-      publication,
+      publisher,
     );
   };
 
   /** @type {CommitteeElectoratePublic} */
   const publicFacet = Far('publicFacet', {
-    getQuestionSubscription: () => subscription,
+    getQuestionSubscriber: () => subscriber,
     getOpenQuestions: () => getOpenQuestions(allQuestions),
     getName: () => committeeName,
     getInstance: zcf.getInstance,
@@ -106,7 +106,7 @@ const start = zcf => {
     getPoserInvitation: () => getPoserInvitation(zcf, addQuestion),
     addQuestion,
     getVoterInvitations: () => invitations,
-    getQuestionSubscription: () => subscription,
+    getQuestionSubscriber: () => subscriber,
     getPublicFacet: () => publicFacet,
   });
 

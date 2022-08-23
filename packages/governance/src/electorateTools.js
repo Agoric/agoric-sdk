@@ -14,7 +14,7 @@ const startCounter = async (
   quorumThreshold,
   voteCounter,
   questionStore,
-  publication,
+  publisher,
 ) => {
   const voteCounterTerms = {
     questionSpec,
@@ -29,7 +29,7 @@ const startCounter = async (
   ).startInstance(voteCounter, {}, voteCounterTerms);
   const details = await E(publicFacet).getDetails();
   const { deadline } = questionSpec.closingRule;
-  publication.updateState(details);
+  publisher.publish(details);
   const questionHandle = details.questionHandle;
 
   const voteCounterFacets = { voteCap: creatorFacet, publicFacet, deadline };
