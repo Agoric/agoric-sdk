@@ -5,7 +5,7 @@
 import { Nat } from '@agoric/nat';
 import { fit } from '@agoric/store';
 
-import { RelativeTimeShape, TimestampShape } from './typeGuards.js';
+import { RelativeTimeSchema, TimestampSchema } from './typeGuards.js';
 
 const { details: X, quote: q } = assert;
 
@@ -124,7 +124,7 @@ const toAbs = (ts, brand = undefined) => {
   } else {
     const { timerBrand } = ts;
     agreedTimerBrand(timerBrand, brand);
-    fit(ts, TimestampShape, 'timestamp');
+    fit(ts, TimestampSchema, 'timestamp');
     return ts;
   }
 };
@@ -145,7 +145,7 @@ const toRel = (rt, brand = undefined) => {
   } else {
     const { timerBrand } = rt;
     agreedTimerBrand(timerBrand, brand);
-    fit(rt, RelativeTimeShape, 'relativeTime');
+    fit(rt, RelativeTimeSchema, 'relativeTime');
     return rt;
   }
 };

@@ -1,11 +1,11 @@
 // @ts-check
 
-import { AmountShape } from '@agoric/ertp';
+import { AmountSchema } from '@agoric/ertp';
 import { M } from '@agoric/store';
-import { TimestampValueShape } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';
+import { TimestampValueSchema } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';
 
-export const AmountKeywordRecordShape = M.recordOf(M.string(), AmountShape);
-export const AmountPatternKeywordRecordShape = M.recordOf(
+export const AmountKeywordRecordSchema = M.recordOf(M.string(), AmountSchema);
+export const AmountPatternKeywordRecordSchema = M.recordOf(
   M.string(),
   M.pattern(),
 );
@@ -13,9 +13,9 @@ export const AmountPatternKeywordRecordShape = M.recordOf(
 /**
  * After defaults are filled in
  */
-export const ProposalShape = harden({
-  want: AmountPatternKeywordRecordShape,
-  give: AmountKeywordRecordShape,
+export const ProposalSchema = harden({
+  want: AmountPatternKeywordRecordSchema,
+  give: AmountKeywordRecordSchema,
   // To accept only one, we could use M.or rather than M.partial,
   // but the error messages would have been worse. Rather,
   // cleanProposal's assertExit checks that there's exactly one.
@@ -25,7 +25,7 @@ export const ProposalShape = harden({
       waived: null,
       afterDeadline: {
         timer: M.remotable(),
-        deadline: TimestampValueShape,
+        deadline: TimestampValueSchema,
       },
     },
     {},
@@ -55,7 +55,7 @@ export const isAfterDeadlineExitRule = exit => {
   return exitKey === 'afterDeadline';
 };
 
-export const InvitationElementShape = M.split({
+export const InvitationElementSchema = M.split({
   description: M.string(),
   handle: M.remotable(), // invitationHandle
   instance: M.remotable(),

@@ -54,32 +54,32 @@ function makeVirtualPurse(vpc, kit) {
    * depositing it directly in the `escrowPurse`).
    *
    * @param {ERef<Payment>} payment
-   * @param {Amount} [optAmountShape]
+   * @param {Amount} [optAmountSchema]
    */
-  const recoverableClaim = async (payment, optAmountShape) => {
+  const recoverableClaim = async (payment, optAmountSchema) => {
     const pmt = await payment;
-    const amt = await E(recoveryPurse).deposit(pmt, optAmountShape);
-    return E(recoveryPurse).withdraw(optAmountShape || amt);
+    const amt = await E(recoveryPurse).deposit(pmt, optAmountSchema);
+    return E(recoveryPurse).withdraw(optAmountSchema || amt);
   };
 
   /**
    * @returns {{
-   *   retain: (pmt: Payment, optAmountShape?: Pattern) => Promise<Amount>,
+   *   retain: (pmt: Payment, optAmountSchema?: Pattern) => Promise<Amount>,
    *   redeem: (amt: Amount) => Promise<Payment>,
    * }}
    */
   const makeRetainRedeem = () => {
     if (mint) {
-      const retain = (payment, optAmountShape = undefined) =>
-        E(issuer).burn(payment, optAmountShape);
+      const retain = (payment, optAmountSchema = undefined) =>
+        E(issuer).burn(payment, optAmountSchema);
       const redeem = amount => recoverableClaim(E(mint).mintPayment(amount));
       return { retain, redeem };
     }
 
     // If we can't mint, then we need to escrow.
     const myEscrowPurse = escrowPurse || E(issuer).makeEmptyPurse();
-    const retain = async (payment, optAmountShape = undefined) =>
-      E(myEscrowPurse).deposit(payment, optAmountShape);
+    const retain = async (payment, optAmountSchema = undefined) =>
+      E(myEscrowPurse).deposit(payment, optAmountSchema);
     const redeem = amount =>
       recoverableClaim(E(myEscrowPurse).withdraw(amount));
 
@@ -117,14 +117,14 @@ function makeVirtualPurse(vpc, kit) {
 
   /** @type {EOnly<DepositFacet>} */
   const depositFacet = Far('Virtual Deposit Facet', {
-    async receive(payment, optAmountShape = undefined) {
+    async receive(payment, optAmountSchema = undefined) {
       if (isPromise(payment)) {
         throw TypeError(
           `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
         );
       }
 
-      const amt = await retain(payment, optAmountShape);
+      const amt = await retain(payment, optAmountSchema);
 
       // The push must always succeed.
       //

@@ -53,7 +53,7 @@ export const vivifyPurseKind = (
         deposit: (
           { state, facets: { purse } },
           srcPayment,
-          optAmountShape = undefined,
+          optAmountSchema = undefined,
         ) => {
           // Note COMMIT POINT within deposit.
           return depositInternal(
@@ -61,7 +61,7 @@ export const vivifyPurseKind = (
             newPurseBalance =>
               updatePurseBalance(state, newPurseBalance, purse),
             srcPayment,
-            optAmountShape,
+            optAmountSchema,
             state.recoverySet,
           );
         },

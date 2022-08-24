@@ -178,19 +178,19 @@ export const vivifyPaymentLedger = (
 
   /**
    * Methods like deposit() have an optional second parameter
-   * `optAmountShape`
+   * `optAmountSchema`
    * which, if present, is supposed to match the balance of the
    * payment. This helper function does that check.
    *
-   * Note: `optAmountShape` is user-supplied with no previous validation.
+   * Note: `optAmountSchema` is user-supplied with no previous validation.
    *
    * @param {Amount} paymentBalance
-   * @param {Pattern=} optAmountShape
+   * @param {Pattern=} optAmountSchema
    * @returns {void}
    */
-  const assertAmountConsistent = (paymentBalance, optAmountShape) => {
-    if (optAmountShape !== undefined) {
-      fit(paymentBalance, optAmountShape, 'amount');
+  const assertAmountConsistent = (paymentBalance, optAmountSchema) => {
+    if (optAmountSchema !== undefined) {
+      fit(paymentBalance, optAmountSchema, 'amount');
     }
   };
 
@@ -284,11 +284,11 @@ export const vivifyPaymentLedger = (
   };
 
   /** @type {IssuerBurn} */
-  const burn = (paymentP, optAmountShape = undefined) => {
+  const burn = (paymentP, optAmountSchema = undefined) => {
     return E.when(paymentP, payment => {
       assertLivePayment(payment);
       const paymentBalance = paymentLedger.get(payment);
-      assertAmountConsistent(paymentBalance, optAmountShape);
+      assertAmountConsistent(paymentBalance, optAmountSchema);
       try {
         // COMMIT POINT.
         deletePayment(payment);
@@ -301,11 +301,11 @@ export const vivifyPaymentLedger = (
   };
 
   /** @type {IssuerClaim} */
-  const claim = (paymentP, optAmountShape = undefined) => {
+  const claim = (paymentP, optAmountSchema = undefined) => {
     return E.when(paymentP, srcPayment => {
       assertLivePayment(srcPayment);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
-      assertAmountConsistent(srcPaymentBalance, optAmountShape);
+      assertAmountConsistent(srcPaymentBalance, optAmountSchema);
       // Note COMMIT POINT within moveAssets.
       const [payment] = moveAssets(
         harden([srcPayment]),
@@ -386,14 +386,14 @@ export const vivifyPaymentLedger = (
    * @param {(newPurseBalance: Amount) => void} updatePurseBalance -
    * commit the purse balance
    * @param {Payment} srcPayment
-   * @param {Pattern=} optAmountShape
+   * @param {Pattern=} optAmountSchema
    * @returns {Amount}
    */
   const depositInternal = (
     currentBalance,
     updatePurseBalance,
     srcPayment,
-    optAmountShape = undefined,
+    optAmountSchema = undefined,
   ) => {
     assert(
       !isPromise(srcPayment),
@@ -402,7 +402,7 @@ export const vivifyPaymentLedger = (
     );
     assertLivePayment(srcPayment);
     const srcPaymentBalance = paymentLedger.get(srcPayment);
-    assertAmountConsistent(srcPaymentBalance, optAmountShape);
+    assertAmountConsistent(srcPaymentBalance, optAmountSchema);
     const newPurseBalance = add(srcPaymentBalance, currentBalance);
     try {
       // COMMIT POINT

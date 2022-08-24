@@ -1,7 +1,7 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath, makeDurableIssuerKit, AssetKind } from '@agoric/ertp';
-import { InvitationElementShape } from '../typeGuards.js';
+import { InvitationElementSchema } from '../typeGuards.js';
 
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
@@ -14,7 +14,7 @@ export const vivifyInvitationKit = (baggage, shutdownZoeVat = undefined) => {
     AssetKind.SET,
     undefined,
     shutdownZoeVat,
-    { elementSchema: InvitationElementShape },
+    { elementSchema: InvitationElementSchema },
   );
 
   /**

@@ -1,16 +1,16 @@
 import { M, matches } from '@agoric/store';
 
 /**
- * When the AmountValue of an Amount fits the NatValueShape, i.e., when it is
+ * When the AmountValue of an Amount fits the NatValueSchema, i.e., when it is
  * a non-negative bigint, then it represents that many units of the
  * fungible asset represented by that amount. The brand of that amount
  * should indeed represent a kind of asset consisting of a countable
  * set of fungible units.
  */
-const NatValueShape = M.nat();
+const NatValueSchema = M.nat();
 
 /**
- * When the AmountValue of an Amount fits the CopySetValueShape, i.e., when it
+ * When the AmountValue of an Amount fits the CopySetValueSchema, i.e., when it
  * is a CopySet, then it represents the set of those
  * keys, where each key represents some individual non-fungible
  * item, like a concert ticket, from the non-fungible asset class
@@ -27,19 +27,19 @@ const NatValueShape = M.nat();
  * will never be minted. That want will never be satisfied.
  * "You can't always get..."
  */
-const CopySetValueShape = M.set();
+const CopySetValueSchema = M.set();
 
 /**
- * When the AmountValue of an Amount fits the SetValueShape, i.e., when it
+ * When the AmountValue of an Amount fits the SetValueSchema, i.e., when it
  * is a CopyArray of passable Keys. This representation is deprecated.
  *
  * @deprecated Please change from using array-based SetValues to CopySet-based
  * CopySetValues.
  */
-const SetValueShape = M.arrayOf(M.key());
+const SetValueSchema = M.arrayOf(M.key());
 
 /**
- * When the AmountValue of an Amount fits the CopyBagValueShape, i.e., when it
+ * When the AmountValue of an Amount fits the CopyBagValueSchema, i.e., when it
  * is a CopyBag, then it represents the bag (multiset) of those
  * keys, where each key represents some individual semi-fungible
  * item, like a concert ticket, from the semi-fungible asset class
@@ -58,18 +58,18 @@ const SetValueShape = M.arrayOf(M.key());
  * will never be minted. That want will never be satisfied.
  * "You can't always get..."
  */
-const CopyBagValueShape = M.bag();
+const CopyBagValueSchema = M.bag();
 
-const AmountValueShape = M.or(
-  NatValueShape,
-  CopySetValueShape,
-  SetValueShape,
-  CopyBagValueShape,
+const AmountValueSchema = M.or(
+  NatValueSchema,
+  CopySetValueSchema,
+  SetValueSchema,
+  CopyBagValueSchema,
 );
 
-export const AmountShape = harden({
+export const AmountSchema = harden({
   brand: M.remotable(),
-  value: AmountValueShape,
+  value: AmountValueSchema,
 });
 
 /**
@@ -78,7 +78,7 @@ export const AmountShape = harden({
  * @param {AmountValue} value
  * @returns {value is NatValue}
  */
-export const isNatValue = value => matches(value, NatValueShape);
+export const isNatValue = value => matches(value, NatValueSchema);
 harden(isNatValue);
 
 /**
@@ -87,7 +87,7 @@ harden(isNatValue);
  * @param {AmountValue} value
  * @returns {value is CopySetValue}
  */
-export const isCopySetValue = value => matches(value, CopySetValueShape);
+export const isCopySetValue = value => matches(value, CopySetValueSchema);
 harden(isCopySetValue);
 
 /**
@@ -99,7 +99,7 @@ harden(isCopySetValue);
  * @param {AmountValue} value
  * @returns {value is SetValue}
  */
-export const isSetValue = value => matches(value, SetValueShape);
+export const isSetValue = value => matches(value, SetValueSchema);
 harden(isSetValue);
 
 /**
@@ -108,21 +108,21 @@ harden(isSetValue);
  * @param {AmountValue} value
  * @returns {value is CopyBagValue}
  */
-export const isCopyBagValue = value => matches(value, CopyBagValueShape);
+export const isCopyBagValue = value => matches(value, CopyBagValueSchema);
 harden(isCopyBagValue);
 
 // One GOOGOLth should be enough decimal places for anybody.
 export const MAX_ABSOLUTE_DECIMAL_PLACES = 100;
 
-export const AssetValueShape = M.or('nat', 'set', 'copySet', 'copyBag');
+export const AssetKindSchema = M.or('nat', 'set', 'copySet', 'copyBag');
 
-export const DisplayInfoShape = M.partial(
+export const DisplayInfoSchema = M.partial(
   harden({
     decimalPlaces: M.and(
       M.gte(-MAX_ABSOLUTE_DECIMAL_PLACES),
       M.lte(MAX_ABSOLUTE_DECIMAL_PLACES),
     ),
-    assetKind: AssetValueShape,
+    assetKind: AssetKindSchema,
   }),
   harden({
     // Including this empty `rest` ensures that there are no other

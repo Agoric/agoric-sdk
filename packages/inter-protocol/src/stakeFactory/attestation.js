@@ -166,7 +166,10 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
 
   /** @param {ZCFSeat} seat */
   const returnAttestation = async seat => {
-    assertProposalShape(seat, { give: { [KW.Attestation]: null }, want: {} });
+    assertProposalShape(seat, {
+      give: { [KW.Attestation]: null },
+      want: {},
+    });
 
     const {
       give: { [KW.Attestation]: attestationAmount },

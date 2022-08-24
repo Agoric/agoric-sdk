@@ -3,7 +3,7 @@
 import { assert, details as X } from '@agoric/assert';
 import { fit } from '@agoric/store';
 
-import { DisplayInfoShape } from './typeGuards.js';
+import { DisplayInfoSchema } from './typeGuards.js';
 
 /**
  * @param {AdditionalDisplayInfo} allegedDisplayInfo
@@ -11,7 +11,7 @@ import { DisplayInfoShape } from './typeGuards.js';
  * @returns {DisplayInfo}
  */
 export const coerceDisplayInfo = (allegedDisplayInfo, assetKind) => {
-  fit(allegedDisplayInfo, DisplayInfoShape, 'displayInfo');
+  fit(allegedDisplayInfo, DisplayInfoSchema, 'displayInfo');
 
   if (allegedDisplayInfo.assetKind !== undefined) {
     assert(
