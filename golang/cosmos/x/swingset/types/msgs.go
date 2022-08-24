@@ -21,6 +21,18 @@ var (
 	_ vm.ControllerAdmissionMsg = &MsgDeliverInbound{}
 )
 
+// Charge an account address for the beans associated with given messages.
+func chargeAdmission(ctx sdk.Context, keeper SwingSetKeeper, addr sdk.AccAddress, msgs []string) error {
+	beansPerUnit := keeper.GetBeansPerUnit(ctx)
+	beans := beansPerUnit[BeansPerInboundTx]
+	beans = beans.Add(beansPerUnit[BeansPerMessage].Mul(sdk.NewUint(uint64(len(msgs)))))
+	for _, msg := range msgs {
+		beans = beans.Add(beansPerUnit[BeansPerMessageByte].Mul(sdk.NewUint(uint64(len(msg)))))
+	}
+
+	return keeper.ChargeBeans(ctx, addr, beans)
+}
+
 func NewMsgDeliverInbound(msgs *Messages, submitter sdk.AccAddress) *MsgDeliverInbound {
 	return &MsgDeliverInbound{
 		Messages:  msgs.Messages,
@@ -43,15 +55,7 @@ func (msg MsgDeliverInbound) CheckAdmissibility(ctx sdk.Context, data interface{
 		}
 	*/
 
-	// Charge the submitter for the message parameters.
-	beansPerUnit := keeper.GetBeansPerUnit(ctx)
-	beans := beansPerUnit[BeansPerInboundTx]
-	beans = beans.Add(beansPerUnit[BeansPerMessage].Mul(sdk.NewUint(uint64(len(msg.Messages)))))
-	for _, m := range msg.Messages {
-		beans = beans.Add(beansPerUnit[BeansPerMessageByte].Mul(sdk.NewUint(uint64(len(m)))))
-	}
-
-	return keeper.ChargeBeans(ctx, msg.Submitter, beans)
+	return chargeAdmission(ctx, keeper, msg.Submitter, msg.Messages)
 }
 
 // Route should return the name of the module
@@ -100,6 +104,15 @@ func NewMsgWalletAction(owner sdk.AccAddress, action string) *MsgWalletAction {
 	}
 }
 
+func (msg MsgWalletAction) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
+	keeper, ok := data.(SwingSetKeeper)
+	if !ok {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+	}
+
+	return chargeAdmission(ctx, keeper, msg.Owner, []string{msg.Action})
+}
+
 func (msg MsgWalletAction) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Owner}
 }
@@ -145,6 +158,15 @@ func NewMsgWalletSpendAction(owner sdk.AccAddress, spendAction string) *MsgWalle
 		Owner:       owner,
 		SpendAction: spendAction,
 	}
+}
+
+func (msg MsgWalletSpendAction) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
+	keeper, ok := data.(SwingSetKeeper)
+	if !ok {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+	}
+
+	return chargeAdmission(ctx, keeper, msg.Owner, []string{msg.SpendAction})
 }
 
 func (msg MsgWalletSpendAction) GetSigners() []sdk.AccAddress {
