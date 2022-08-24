@@ -109,6 +109,7 @@ const build = async (log, zoe) => {
  * @typedef {ReturnType<Awaited<ReturnType<typeof build>>['createVoter']>} EVatVoter
  */
 
+/** @type {BuildRootObjectForTestVat} */
 export const buildRootObject = vatPowers =>
   Far('root', {
     build: (...args) => build(vatPowers.testLog, ...args),

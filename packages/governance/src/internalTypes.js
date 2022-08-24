@@ -12,6 +12,6 @@
  * @param {unknown} quorumThreshold
  * @param {ERef<Installation>} voteCounter
  * @param {Store<Handle<'Question'>, QuestionRecord>} questionStore
- * @param {IterationObserver<unknown>} publication
+ * @param {Publisher<unknown>} publisher
  * @returns {AddQuestionReturn}
  */

@@ -12,6 +12,8 @@ export * from './startPSM.js';
 const ECON_COMMITTEE_MANIFEST = harden({
   [econBehaviors.startEconomicCommittee.name]: {
     consume: {
+      board: true,
+      chainStorage: true,
       zoe: true,
     },
     produce: { economicCommitteeCreatorFacet: 'economicCommittee' },

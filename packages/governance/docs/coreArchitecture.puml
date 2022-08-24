@@ -25,7 +25,7 @@ package "Electorate Vat" <<Rectangle>>  {
         terms: committeeSize, committeeName
         --
         Questions[]
-        +getQuestionSubscription()
+        +getQuestionSubscriber()
         +getOpenQuestions()
         +getQuestion(questionHandle)
         #getVoterInvitation(): (via some mechanism)

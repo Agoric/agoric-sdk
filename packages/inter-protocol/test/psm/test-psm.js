@@ -92,12 +92,18 @@ const makeTestContext = async () => {
   const psmInstall = await E(zoe).install(psmBundle);
   const mintLimit = AmountMath.make(anchor.brand, MINT_LIMIT);
 
+  const marshaller = makeBoard().getReadonlyMarshaller();
+
   const { creatorFacet: committeeCreator } = await E(zoe).startInstance(
     committeeInstall,
     harden({}),
     {
       committeeName: 'Demos',
       committeeSize: 1,
+    },
+    {
+      storageNode: makeMockChainStorageRoot().makeChildNode('thisCommittee'),
+      marshaller,
     },
   );
 
@@ -115,6 +121,7 @@ const makeTestContext = async () => {
     anchor,
     installs: { committeeInstall, psmInstall },
     mintLimit,
+    marshaller,
     terms: {
       anchorBrand: anchor.brand,
       anchorPerStable: makeRatio(100n, anchor.brand, 100n, stableBrand),
@@ -156,6 +163,7 @@ async function makePsmDriver(t, customTerms) {
     anchor,
   } = t.context;
 
+  // Each driver needs its own to avoid state pollution between tests
   const mockChainStorage = makeMockChainStorageRoot();
 
   /** @type {Awaited<ReturnType<import('../../src/psm/psm.js').start>>} */

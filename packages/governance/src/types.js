@@ -233,7 +233,7 @@
 
 /**
  * @typedef {object} ElectoratePublic
- * @property {() => Subscription<QuestionDetails>} getQuestionSubscription
+ * @property {() => Subscriber<QuestionDetails>} getQuestionSubscriber
  * @property {GetOpenQuestions} getOpenQuestions,
  * @property {() => Instance} getInstance
  * @property {GetQuestion} getQuestion
@@ -255,7 +255,7 @@
  *  reassurance. When someone needs to connect addQuestion to the Electorate
  *  instance, getPoserInvitation() lets them get addQuestion with assurance.
  * @property {() => Promise<Invitation>} getPoserInvitation
- * @property {() => Subscription<QuestionDetails>} getQuestionSubscription
+ * @property {() => Subscriber<QuestionDetails>} getQuestionSubscriber
  * @property {() => ElectoratePublic} getPublicFacet
  */
 

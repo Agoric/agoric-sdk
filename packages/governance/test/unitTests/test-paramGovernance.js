@@ -9,6 +9,8 @@ import bundleSource from '@endo/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { E } from '@endo/eventual-send';
+import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
@@ -79,7 +81,10 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
   const installs = { governor, electorate, counter, governed };
 
   const { creatorFacet: committeeCreator, instance: electorateInstance } =
-    await E(zoe).startInstance(electorate, harden({}), electorateTerms);
+    await E(zoe).startInstance(electorate, harden({}), electorateTerms, {
+      storageNode: makeMockChainStorageRoot().makeChildNode('thisElectorate'),
+      marshaller: makeBoard().getReadonlyMarshaller(),
+    });
 
   const poserInvitation = await E(committeeCreator).getPoserInvitation();
   const invitationAmount = await E(E(zoe).getInvitationIssuer()).getAmountOf(
