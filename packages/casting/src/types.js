@@ -35,13 +35,15 @@ export {};
  * @template T
  * @typedef {object} Follower
  * @property {() => Promise<AsyncIterable<T>>} getLatestIterable
- * @property {() => Promise<AsyncIterable<T>>} getEachIterable
+ * @property {(options?: IterateEachOptions) => Promise<AsyncIterable<T>>} getEachIterable
  */
 
 /**
  * @template T
  * @typedef {object} FollowerElement
  * @property {T} value
+ * @property {number} blockHeight
+ * @property {number} currentBlockHeight
  */
 
 /**
@@ -57,7 +59,7 @@ export {};
 /**
  * @typedef {object} FollowerOptions
  * @property {null | import('@endo/far').FarRef<Unserializer>} [unserializer]
- * @property {(buf: Uint8Array) => any} [decode]
+ * @property {(text: string) => any} [decode]
  * @property {'strict'|'optimistic'|'none'} [proof]
  * @property {import('@endo/far').FarRef<Crasher>} [crasher]
  */
@@ -69,4 +71,16 @@ export {};
  * @property {Uint8Array} [dataPrefixBytes]
  * @property {ERef<Subscription<any>>} [subscription]
  * @property {ERef<Notifier<any>>} [notifier]
+ */
+
+/**
+ * @typedef {object} IterateEachOptions
+ * @property {number} [height]
+ */
+
+/**
+ * @template T
+ * @typedef {object} StreamCell
+ * @property {number} blockHeight
+ * @property {Array<T>} values
  */

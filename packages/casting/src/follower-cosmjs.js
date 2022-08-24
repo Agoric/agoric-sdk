@@ -1,24 +1,56 @@
 // @ts-check
+/// <reference types="ses"/>
+/* eslint-disable no-await-in-loop, no-continue, @jessie.js/no-nested-await */
+
 import { E, Far } from '@endo/far';
-import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
 import * as tendermintRpcStar from '@cosmjs/tendermint-rpc';
 import * as stargateStar from '@cosmjs/stargate';
 
-import {
-  iterateLatest,
-  makeSubscriptionIterable,
-  makeNotifierIterable,
-} from './iterable.js';
 import { MAKE_DEFAULT_DECODER, MAKE_DEFAULT_UNSERIALIZER } from './defaults.js';
 import { makeCastingSpec } from './casting-spec.js';
 import { makeLeader as defaultMakeLeader } from './leader-netconfig.js';
 
 const { QueryClient } = stargateStar;
 const { Tendermint34Client } = tendermintRpcStar;
-const { details: X } = assert;
+const { details: X, quote: q } = assert;
+const textDecoder = new TextDecoder();
 
+/** @template T @typedef {import('./types.js').StreamCell<T>} StreamCell */
 /** @template T @typedef {import('./types.js').FollowerElement<T>} FollowerElement */
 /** @template T @typedef {import('./types.js').Follower<T>} Follower */
+
+/**
+ * This is an imperfect heuristic to navigate the migration from value cells to
+ * stream cells.
+ * At time of writing, no legacy cells have the same shape as a stream cell,
+ * and we do not intend to create any more legacy value cells.
+ *
+ * @param {any} cell
+ */
+const isStreamCell = cell =>
+  cell &&
+  typeof cell === 'object' &&
+  Array.isArray(cell.values) &&
+  typeof cell.blockHeight === 'string' &&
+  /^0$|^[1-9][0-9]*$/.test(cell.blockHeight);
+
+/**
+ * @param {Uint8Array} a
+ * @param {Uint8Array} b
+ */
+const arrayEqual = (a, b) => {
+  if (a.length !== b.length) {
+    return false;
+  }
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const defaultDataPrefixBytes = new Uint8Array();
 
 /**
  * @template T
@@ -42,46 +74,8 @@ const collectSingle = values => {
   return head[0];
 };
 
-/**
- * @callback QueryVerifier
- * @param {() => Promise<Uint8Array>} getProvenValue
- * @param {(reason?: unknown) => void} crash
- * @param {() => Promise<Uint8Array>} getAllegedValue
- */
-
-/**
- * @type {Record<Required<import('./types').FollowerOptions>['proof'], QueryVerifier>}
- */
-export const proofToQueryVerifier = harden({
-  strict: async (getProvenValue, crash, _getAllegedValue) => {
-    // Just ignore the alleged value.
-    // Crash hard if we can't prove.
-    return getProvenValue().catch(crash);
-  },
-  none: async (_getProvenValue, _crash, getAllegedValue) => {
-    // Fast and loose.
-    return getAllegedValue();
-  },
-  optimistic: async (getProvenValue, crash, getAllegedValue) => {
-    const allegedValue = await getAllegedValue();
-    // Prove later, since it may take time we say we can't afford.
-    getProvenValue().then(provenValue => {
-      if (provenValue.length === allegedValue.length) {
-        if (provenValue.every((proven, i) => proven === allegedValue[i])) {
-          return;
-        }
-      }
-      crash(
-        assert.error(
-          X`Alleged value ${allegedValue} did not match proof ${provenValue}`,
-        ),
-      );
-    }, crash);
-
-    // Speculate that we got the right value.
-    return allegedValue;
-  },
-});
+// Coordinate with switch/case of tryGetDataAtHeight.
+const proofs = ['strict', 'none', 'optimistic'];
 
 /**
  * @template T
@@ -102,9 +96,19 @@ export const makeCosmjsFollower = (
     crasher = null,
   } = options;
 
-  /** @type {QueryVerifier} */
-  const queryVerifier = proofToQueryVerifier[proof];
-  assert(queryVerifier, X`unrecognized follower proof mode ${proof}`);
+  /**
+   * @param {any} err
+   */
+  const crash = err => {
+    if (crasher) {
+      E(crasher)
+        .crash(`PROOF VERIFICATION FAILURE; crashing follower`, err)
+        .catch(e => assert.fail(X`crashing follower failed: ${e}`));
+    }
+    throw err;
+  };
+
+  assert(proofs.includes(proof), X`unrecognized follower proof mode ${proof}`);
 
   const where = 'CosmJS follower';
   const castingSpecP = makeCastingSpec(sourceP);
@@ -112,13 +116,37 @@ export const makeCosmjsFollower = (
   const leader =
     typeof leaderOrMaker === 'function' ? leaderOrMaker() : leaderOrMaker;
 
+  const tendermintClientPs = new Map();
+  /**
+   * @param {string} endpoint
+   */
+  const provideTendermintClient = endpoint => {
+    let clientP = tendermintClientPs.get(endpoint);
+    if (!clientP) {
+      clientP = Tendermint34Client.connect(endpoint);
+      tendermintClientPs.set(endpoint, clientP);
+    }
+    return clientP;
+  };
+
+  const getBlockHeight = async () => {
+    const values = await E(leader).mapEndpoints(where, async endpoint => {
+      const client = await provideTendermintClient(endpoint);
+      const info = await client.abciInfo();
+      const { lastBlockHeight } = info;
+      assert.typeof(lastBlockHeight, 'number');
+      return lastBlockHeight;
+    });
+    return collectSingle(values);
+  };
+
   /** @type {Map<string, import('@cosmjs/stargate').QueryClient>} */
   const endpointToQueryClient = new Map();
 
   /**
    * @param {string} endpoint
    */
-  const getOrCreateQueryClient = async endpoint => {
+  const provideQueryClient = async endpoint => {
     if (endpointToQueryClient.has(endpoint)) {
       // Cache hit.
       const queryClient = endpointToQueryClient.get(endpoint);
@@ -126,276 +154,414 @@ export const makeCosmjsFollower = (
       return queryClient;
     }
     // Create a new client.  They retry automatically.
-    const rpcClient = await Tendermint34Client.connect(endpoint);
+    const rpcClient = await provideTendermintClient(endpoint);
     const queryClient = QueryClient.withExtensions(rpcClient);
     endpointToQueryClient.set(endpoint, queryClient);
     return queryClient;
   };
 
   /**
-   * @param {'queryVerified' | 'queryUnverified'} method
+   * @param {(endpoint: string, storeName: string, storeSubkey: Uint8Array) => Promise<Uint8Array>} tryGetPrefixedData
    */
-  const makeQuerier =
-    method =>
-    /**
-     * @param {number} [height]
-     * @returns {Promise<Uint8Array>}
-     */
-    async height => {
-      const {
-        storeName,
-        storeSubkey,
-        dataPrefixBytes = new Uint8Array(),
-      } = await castingSpecP;
-      assert.typeof(storeName, 'string');
-      assert(storeSubkey);
-      let queryPath;
-      switch (method) {
-        case 'queryVerified': {
-          queryPath = storeName;
-          break;
-        }
-        case 'queryUnverified': {
-          queryPath = `store/${storeName}/key`;
-          break;
-        }
-        default: {
-          assert.fail(X`unrecognized method ${method}`);
-        }
-      }
-      const values = await E(leader).mapEndpoints(where, async endpoint => {
-        const queryClient = await getOrCreateQueryClient(endpoint);
-        return E(queryClient)
-          [method](queryPath, storeSubkey, height)
-          .then(
-            result => {
-              return { result, error: null };
-            },
-            error => {
-              return { result: null, error };
-            },
-          );
-      });
-      const { result, error } = collectSingle(values);
-      if (error !== null) {
-        throw error;
-      }
-      assert(result);
+  const retryGetDataAndStripPrefix = async tryGetPrefixedData => {
+    const {
+      storeName,
+      storeSubkey,
+      dataPrefixBytes = defaultDataPrefixBytes,
+    } = await castingSpecP;
 
-      if (result.length === 0) {
-        // No data.
-        return result;
-      }
+    assert.typeof(
+      storeName,
+      'string',
+      X`storeName must be a string, got ${storeName}`,
+    );
+    assert(
+      storeSubkey,
+      X`storeSubkey must be a Uint8Array, got ${storeSubkey}`,
+    );
 
-      // Handle the data prefix if any.
-      assert(
-        result.length >= dataPrefixBytes.length,
-        X`result too short for data prefix ${dataPrefixBytes}`,
-      );
-      assert(
-        dataPrefixBytes.every((v, i) => v === result[i]),
-        X`${result} doesn't start with data prefix ${dataPrefixBytes}`,
-      );
-      return result.slice(dataPrefixBytes.length);
-    };
+    // mapEndpoints is our retry loop.
+    const values = await E(leader).mapEndpoints(where, async endpoint =>
+      tryGetPrefixedData(endpoint, storeName, storeSubkey).then(
+        result => {
+          return { result, error: null };
+        },
+        error => {
+          return { result: null, error };
+        },
+      ),
+    );
 
-  const getProvenValueAtHeight = makeQuerier('queryVerified');
-  const getUnprovenValueAtHeight = makeQuerier('queryUnverified');
+    const { result, error } = collectSingle(values);
+    if (error !== null) {
+      throw error;
+    }
+    assert(result);
+
+    if (result.length === 0) {
+      // No data.
+      return result;
+    }
+
+    // Handle the data prefix if any.
+    assert(
+      result.length >= dataPrefixBytes.length,
+      X`result too short for data prefix ${dataPrefixBytes}`,
+    );
+    assert(
+      arrayEqual(result.subarray(0, dataPrefixBytes.length), dataPrefixBytes),
+      X`${result} doesn't start with data prefix ${dataPrefixBytes}`,
+    );
+    return result.slice(dataPrefixBytes.length);
+  };
 
   /**
-   * @param {IterationObserver<FollowerElement<T>>} updater
-   * @param {AsyncIterable<FollowerElement<T>>} iterable
+   * @param {number} [height]
+   * @returns {Promise<Uint8Array>}
    */
-  const getIterable = async (updater, iterable) => {
-    let finished = false;
+  const getProvenDataAtHeight = async height => {
+    return retryGetDataAndStripPrefix(
+      async (endpoint, storeName, storeSubkey) => {
+        const queryClient = await provideQueryClient(endpoint);
+        return E(queryClient).queryVerified(storeName, storeSubkey, height);
+      },
+    );
+  };
 
-    const fail = err => {
-      finished = true;
-      updater.fail(err);
-      return false;
-    };
-
-    const crash = err => {
-      fail(err);
-      if (crasher) {
-        E(crasher)
-          .crash(`PROOF VERIFICATION FAILURE; crashing follower`, err)
-          .catch(e => assert(false, X`crashing follower failed: ${e}`));
-      } else {
-        console.error(`PROOF VERIFICATION FAILURE; crashing follower`, err);
-      }
-    };
-
-    let attempt = 0;
-    let retrying;
-
-    /**
-     * @param {import('./types.js').CastingChange} castingChange
-     * @returns {Promise<void>}
-     */
-    const queryAndUpdateOnce = castingChange =>
-      new Promise((resolve, reject) => {
-        const retry = async err => {
-          attempt += 1;
-          if (!retrying) {
-            retrying = E(leader)
-              .retry(where, err, attempt)
-              .then(() => (retrying = null));
-          }
-          await retrying;
-          await E(leader).jitter(where);
-
-          // eslint-disable-next-line no-use-before-define
-          tryQueryAndUpdate(castingChange).then(success, retryOrFail);
-        };
-
-        const success = fulfillment => {
-          attempt = 0;
-          resolve(fulfillment);
-        };
-
-        const retryOrFail = err => {
-          retry(err).catch(e => {
-            reject(e);
-            fail(e);
-          });
-        };
-
-        // eslint-disable-next-line no-use-before-define
-        tryQueryAndUpdate(castingChange).then(success, retryOrFail);
-      });
-
-    /**
-     * These semantics are to ensure that later queries are not committed
-     * ahead of earlier ones.
-     *
-     * @template T
-     * @param {(...args: T[]) => void} commitAction
-     */
-    const makePrepareInOrder = commitAction => {
-      let lastPrepareTicket = 0n;
-      let lastCommitTicket = 0n;
-
-      const prepareInOrder = () => {
-        lastPrepareTicket += 1n;
-        const ticket = lastPrepareTicket;
-        assert(ticket > lastCommitTicket);
-        const committer = Far('committer', {
-          isValid: () => ticket > lastCommitTicket,
-          /**
-           * @type {(...args: T[]) => void}
-           */
-          commit: (...args) => {
-            assert(committer.isValid());
-            lastCommitTicket = ticket;
-            commitAction(...args);
-          },
+  /**
+   * @param {number} height
+   */
+  const getUnprovenDataAtHeight = async height => {
+    return retryGetDataAndStripPrefix(
+      async (endpoint, storeName, storeSubkey) => {
+        const client = await provideTendermintClient(endpoint);
+        const response = await client.abciQuery({
+          path: `store/${storeName}/key`,
+          data: storeSubkey,
+          height,
+          prove: false,
         });
-        return committer;
-      };
-      return prepareInOrder;
-    };
-
-    const prepareUpdateInOrder = makePrepareInOrder(updater.updateState);
-
-    /** @type {Uint8Array} */
-    let lastBuf;
-
-    /**
-     * @param {import('./types').CastingChange} allegedChange
-     */
-    const tryQueryAndUpdate = async allegedChange => {
-      let committer = prepareUpdateInOrder();
-
-      // Make an unproven query if we have no alleged value.
-      const { values: allegedValues, blockHeight: allegedBlockHeight } =
-        allegedChange;
-      const getAllegedValue =
-        allegedValues.length > 0
-          ? () => Promise.resolve(allegedValues[allegedValues.length - 1])
-          : () => getUnprovenValueAtHeight(allegedBlockHeight);
-      const getProvenValue = () => getProvenValueAtHeight(allegedBlockHeight);
-
-      const buf = await queryVerifier(getProvenValue, crash, getAllegedValue);
-      if (buf.length === 0) {
-        fail(Error('No query results'));
-        return;
-      }
-      attempt = 0;
-      if (!committer.isValid()) {
-        return;
-      }
-      if (lastBuf) {
-        if (buf.length === lastBuf.length) {
-          if (buf.every((v, i) => v === lastBuf[i])) {
-            // Duplicate!
-            return;
-          }
+        if (response.code !== 0) {
+          throw new Error(`Tendermint ABCI query failed: ${response.log}`);
         }
-      }
-      lastBuf = buf;
-      let streamCell = decode(buf);
-      // Upgrade a naked value to a JSON stream cell if necessary.
-      if (
-        streamCell.blockHeight === undefined ||
-        streamCell.values === undefined
-      ) {
-        streamCell = { values: [JSON.stringify(streamCell)] };
-      }
-      for (let i = 0; i < streamCell.values.length; i += 1) {
-        const data = JSON.parse(streamCell.values[i]);
-        const isLast = i + 1 === streamCell.values.length;
-        const value = /** @type {T} */ (
-          unserializer
-            ? // eslint-disable-next-line no-await-in-loop,@jessie.js/no-nested-await
-              await E(unserializer).unserialize(data)
-            : data
-        );
-        // QUESTION: How would reach a point where this `isValid()` fails,
-        // and what is the proper handling?
-        if (!unserializer || committer.isValid()) {
-          committer.commit({ value });
-          if (!isLast) {
-            committer = prepareUpdateInOrder();
-          }
-        }
-      }
-    };
+        const { value } = response;
+        return value;
+      },
+    );
+  };
 
-    const changeFollower = E(leader).watchCasting(castingSpecP);
-    const queryWhenKeyChanges = async () => {
-      // Initial query to get the first value from the store.
-      await queryAndUpdateOnce(harden({ values: [] }));
-      if (finished) {
-        return;
-      }
+  /**
+   * @param {number} blockHeight
+   */
+  const tryGetDataAtHeight = async blockHeight => {
+    if (proof === 'strict') {
+      // Crash hard if we can't prove.
+      return getProvenDataAtHeight(blockHeight).catch(crash);
+    } else if (proof === 'none') {
+      // Fast and loose.
+      return getUnprovenDataAtHeight(blockHeight);
+    } else if (proof === 'optimistic') {
+      const allegedData = await getUnprovenDataAtHeight(blockHeight);
 
-      // Only query when there are changes reported.
-      for await (const allegedChange of iterateLatest(changeFollower)) {
-        if (finished) {
+      // Prove later, since it may take time we say we can't afford.
+      getProvenDataAtHeight(blockHeight).then(provenData => {
+        if (arrayEqual(provenData, allegedData)) {
           return;
         }
-        harden(allegedChange);
-        // eslint-disable-next-line @jessie.js/no-nested-await
-        await queryAndUpdateOnce(allegedChange);
-      }
-    };
+        crash(
+          assert.error(
+            X`Alleged value ${allegedData} did not match proof ${provenData}`,
+          ),
+        );
+      }, crash);
 
-    queryWhenKeyChanges().catch(fail);
+      // Speculate that we got the right value.
+      return allegedData;
+    }
 
-    return iterable;
+    assert.fail(
+      X`Unrecognized proof option ${q(
+        proof,
+      )}, must be one of strict, none, or optimistic`,
+    );
   };
+
+  /**
+   * @param {number} blockHeight
+   */
+  const getDataAtHeight = async blockHeight => {
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        // AWAIT
+        return await tryGetDataAtHeight(blockHeight);
+      } catch (error) {
+        // We expect occasionally to see an error here if the chain has not
+        // reached the requested blockHeight.
+        await E(leader).retry(where, error, attempt);
+        continue;
+      }
+    }
+  };
+
+  /**
+   * @param {number} blockHeight
+   * @param {Uint8Array} data
+   */
+  const streamCellForData = (blockHeight, data) => {
+    const text = textDecoder.decode(data);
+    try {
+      const cell = JSON.parse(text);
+      if (isStreamCell(cell)) {
+        return harden({
+          blockHeight: Number(cell.blockHeight),
+          values: cell.values.map(decode),
+        });
+      }
+
+      // This is JSON but not the shape of a stream cell.
+      // Fall through...
+    } catch {
+      // This is not even JSON, so it must be a legacy value cell.
+      // Fall through...
+    }
+
+    // Coerce legacy value cells to stream cells at their given height.
+    // Since this is either the first iteration or the data varies bytewise
+    // from the data on the previous block, we can assume the blockHeight is
+    // the current block.
+    return harden({
+      blockHeight,
+      values: [decode(text)],
+    });
+  };
+
+  /**
+   * @param {any} data
+   * @param {number} blockHeight
+   * @param {number} currentBlockHeight
+   * @returns {Promise<FollowerElement<T>>}
+   */
+  const followerElementFromStreamCellValue = async (
+    data,
+    blockHeight,
+    currentBlockHeight,
+  ) => {
+    // AWAIT
+    const value = await /** @type {T} */ (
+      unserializer ? E(unserializer).unserialize(data) : data
+    );
+    return { value, blockHeight, currentBlockHeight };
+  };
+
+  /**
+   * @param {StreamCell<T>} streamCell
+   * @param {number} currentBlockHeight
+   * @yields {FollowerElement<T>}
+   */
+  function* allValuesFromCell(streamCell, currentBlockHeight) {
+    for (const data of streamCell.values) {
+      yield followerElementFromStreamCellValue(
+        data,
+        streamCell.blockHeight,
+        currentBlockHeight,
+      );
+    }
+  }
+
+  /**
+   * @param {StreamCell<T>} streamCell
+   * @param {number} currentBlockHeight
+   * @yields {FollowerElement<T>}
+   */
+  function* lastValueFromCell(streamCell, currentBlockHeight) {
+    const { values } = streamCell;
+    if (values.length > 0) {
+      const last = values[values.length - 1];
+      yield followerElementFromStreamCellValue(
+        last,
+        streamCell.blockHeight,
+        currentBlockHeight,
+      );
+    }
+  }
+
+  /**
+   * @yields {FollowerElement<T>}
+   */
+  async function* getLatestIterable() {
+    let blockHeight;
+    let data;
+    for (;;) {
+      const currentBlockHeight = await getBlockHeight();
+      if (currentBlockHeight === blockHeight) {
+        // TODO Long-poll for next block
+        // https://github.com/Agoric/agoric-sdk/issues/6154
+        await E(leader).jitter(where);
+        continue;
+      }
+
+      const currentData = await getDataAtHeight(currentBlockHeight);
+      if (currentData.length === 0) {
+        // TODO Long-poll for block data change
+        // https://github.com/Agoric/agoric-sdk/issues/6154
+        await E(leader).jitter(where);
+        continue;
+      }
+      const currentStreamCell = streamCellForData(
+        currentBlockHeight,
+        currentData,
+      );
+
+      blockHeight = currentBlockHeight;
+
+      // Ignore adjacent duplicates.
+      // This can only occur for legacy cells.
+      // It is possible that the data changed from and back to the last
+      // sampled data, but ignoring intermediate changes is consistent with
+      // the semantics of getLatestIterable.
+      if (data !== undefined && arrayEqual(data, currentData)) {
+        continue;
+      }
+      // However, streamCells that vacillate will reemit, since each iteration
+      // at a unique block height is considered distinct.
+
+      yield* lastValueFromCell(currentStreamCell, currentBlockHeight);
+      data = currentData;
+    }
+  }
+
+  /**
+   * @param {number} cursorBlockHeight
+   * @yields {FollowerElement<T>}
+   */
+  async function* getEachIterableAtHeight(cursorBlockHeight) {
+    // Track the data for the last emitted cell (the cell at the
+    // cursorBlockHeight) so we know not to emit duplicates
+    // of that cell.
+    let cursorData;
+    // Initially yield *all* the values that were most recently stored in a
+    // block.
+    // If the block has no corresponding data, wait for the first block to
+    // contain data.
+    for (;;) {
+      cursorBlockHeight = await getBlockHeight();
+      cursorData = await getDataAtHeight(cursorBlockHeight);
+      if (cursorData.length !== 0) {
+        const cursorStreamCell = streamCellForData(
+          cursorBlockHeight,
+          cursorData,
+        );
+        yield* allValuesFromCell(cursorStreamCell, cursorBlockHeight);
+        break;
+      }
+      // TODO Long-poll for next block
+      // https://github.com/Agoric/agoric-sdk/issues/6154
+      await E(leader).jitter(where);
+    }
+
+    // For each subsequent iteration, yield every value that has been
+    // published since the last iteration and advance the cursor.
+    for (;;) {
+      const currentBlockHeight = await getBlockHeight();
+      // Wait until the chain has added at least one block.
+      if (currentBlockHeight <= cursorBlockHeight) {
+        // TODO Long-poll for next block
+        // https://github.com/Agoric/agoric-sdk/issues/6154
+        await E(leader).jitter(where);
+        continue;
+      }
+
+      // Scan backward for all changes since the last observed block and yield
+      // them in forward order.
+      // Stream cells allow us to skip blocks that did not change.
+      // We walk backward through all blocks with legacy cells, only yielding
+      // the value for cells that changed.
+      // This does imply accumulating a potentially large number of values if
+      // the eachIterable gets sampled infrequently.
+      let rightBlockHeight = currentBlockHeight;
+      let rightData = await getDataAtHeight(rightBlockHeight);
+      if (rightData.length === 0) {
+        // TODO Long-poll for next block
+        // https://github.com/Agoric/agoric-sdk/issues/6154
+        await E(leader).jitter(where);
+        continue;
+      }
+      let rightStreamCell = streamCellForData(rightBlockHeight, rightData);
+
+      // Compare block cell data pairwise (left, right) and accumulate
+      // a stack of each cell we encounter.
+      const currentData = rightData;
+      const cells = [];
+      while (rightBlockHeight > cursorBlockHeight) {
+        if (rightStreamCell.blockHeight > rightBlockHeight) {
+          const { storeName, storeSubkey } = await castingSpecP;
+          throw new Error(
+            `Corrupt storage cell for ${storeName} under key ${storeSubkey} at block-height ${rightBlockHeight} claims to being published at a later block height ${rightStreamCell.blockHeight}`,
+          );
+        }
+        const leftBlockHeight = rightStreamCell.blockHeight - 1;
+        // Do not scan behind the cusor.
+        if (leftBlockHeight <= cursorBlockHeight) {
+          break;
+        }
+        const leftData = await getDataAtHeight(leftBlockHeight);
+        // Do not scan behind a cell with no data.
+        // This should not happen but can be tolerated.
+        if (leftData.length === 0) {
+          break;
+        }
+        const leftStreamCell = streamCellForData(leftBlockHeight, leftData);
+
+        // Stream cells include a block height that is guaranteed to change
+        // between iterations even if the values are identical.
+        // We can rely on this difference to ensure that we yield
+        // every iteration, including duplicates.
+        // Legacy cells do not contain a block height to distingish versions,
+        // so we simply assume that the value must change between iterations
+        // for a cell to be worthy of notice.
+        if (!arrayEqual(leftData, rightData)) {
+          cells.push(rightStreamCell);
+        }
+
+        // Prepare for next iteration by moving left to right.
+        rightData = leftData;
+        rightStreamCell = leftStreamCell;
+        rightBlockHeight = leftBlockHeight;
+      }
+
+      // At the end of a sequence of identical value cells, we emit the value
+      // only if it differs from the last reported cell.
+      if (!arrayEqual(rightData, cursorData)) {
+        cells.push(rightStreamCell);
+      }
+
+      // Yield collected cells in forward order.
+      // They were collected by scanning blocks backward.
+      for (;;) {
+        const cell = cells.pop();
+        if (cell === undefined) {
+          break;
+        }
+        yield* allValuesFromCell(cell, currentBlockHeight);
+      }
+
+      // Advance the cursor.
+      cursorBlockHeight = currentBlockHeight;
+      cursorData = currentData;
+    }
+  }
 
   // Enable the periodic fetch.
   /** @type {Follower<FollowerElement<T>>} */
   return Far('chain follower', {
-    getLatestIterable: () => {
-      const { updater, notifier } = makeNotifierKit();
-      return getIterable(updater, makeNotifierIterable(notifier));
+    async getLatestIterable() {
+      return getLatestIterable();
     },
-    getEachIterable: () => {
-      const { subscription, publication } = makeSubscriptionKit();
-      return getIterable(publication, makeSubscriptionIterable(subscription));
+    async getEachIterable({ height = undefined } = {}) {
+      if (height === undefined) {
+        height = await getBlockHeight();
+      }
+      return getEachIterableAtHeight(height);
     },
   });
 };
