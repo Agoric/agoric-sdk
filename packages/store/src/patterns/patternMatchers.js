@@ -1,3 +1,4 @@
+/* eslint-disable no-use-before-define */
 // @ts-check
 
 import {
@@ -33,7 +34,6 @@ import {
 
 const { quote: q, details: X } = assert;
 const { entries, values } = Object;
-const { ownKeys } = Reflect;
 
 /** @type WeakSet<Pattern> */
 const patternMemo = new WeakSet();
@@ -568,7 +568,7 @@ const makePatternKit = () => {
   // /////////////////////// Match Helpers /////////////////////////////////////
 
   /** @type {MatchHelper} */
-  const matchAnyHelper = Far('M.any helper', {
+  const matchAnyHelper = Far('match:any helper', {
     checkMatches: (_specimen, _matcherPayload, _check = x => x) => true,
 
     checkIsMatcherPayload: (matcherPayload, check = x => x) =>
@@ -737,7 +737,7 @@ const makePatternKit = () => {
   });
 
   /** @type {MatchHelper} */
-  const matchRemotableHelper = Far('M.remotable helper', {
+  const matchRemotableHelper = Far('match:remotable helper', {
     checkMatches: (specimen, remotableDesc, check = x => x) => {
       const specimenKind = passStyleOf(specimen);
       if (specimenKind === 'remotable') {
@@ -753,17 +753,11 @@ const makePatternKit = () => {
     },
 
     checkIsMatcherPayload: (allegedRemotableDesc, check = x => x) =>
-      check(
-        passStyleOf(allegedRemotableDesc) === 'copyRecord',
-        X`A remotableDesc must be a copyRecord: ${allegedRemotableDesc}`,
-      ) &&
-      check(
-        typeof allegedRemotableDesc.label === 'string',
-        X`A remotableDesc must have a string label: ${allegedRemotableDesc}`,
-      ) &&
-      check(
-        ownKeys(allegedRemotableDesc).length === 1,
-        X`Additional properties on remotableDesc not yet recognized: ${allegedRemotableDesc}`,
+      checkMatches(
+        allegedRemotableDesc,
+        harden({ label: M.string() }),
+        check,
+        'match:remotable payload',
       ),
 
     getRankCover: (_remotableDesc, _encodePassable) =>
@@ -886,10 +880,12 @@ const makePatternKit = () => {
       ),
 
     checkIsMatcherPayload: (entryPatt, check = x => x) =>
-      check(
-        passStyleOf(entryPatt) === 'copyArray' && entryPatt.length === 2,
-        X`${entryPatt} - Must be an pair of patterns`,
-      ) && checkPattern(entryPatt, check),
+      checkMatches(
+        entryPatt,
+        harden([M.pattern(), M.pattern()]),
+        check,
+        'match:recordOf payload',
+      ),
 
     getRankCover: _entryPatt => getPassStyleCover('copyRecord'),
 
@@ -928,10 +924,12 @@ const makePatternKit = () => {
       ),
 
     checkIsMatcherPayload: (entryPatt, check = x => x) =>
-      check(
-        passStyleOf(entryPatt) === 'copyArray' && entryPatt.length === 2,
-        X`${entryPatt} - Must be an pair of patterns`,
-      ) && checkPattern(entryPatt, check),
+      checkMatches(
+        entryPatt,
+        harden([M.pattern(), M.pattern()]),
+        check,
+        'match:bagOf payload',
+      ),
 
     getRankCover: () => getPassStyleCover('tagged'),
 
@@ -954,10 +952,12 @@ const makePatternKit = () => {
       ),
 
     checkIsMatcherPayload: (entryPatt, check = x => x) =>
-      check(
-        passStyleOf(entryPatt) === 'copyArray' && entryPatt.length === 2,
-        X`${entryPatt} - Must be an pair of patterns`,
-      ) && checkPattern(entryPatt, check),
+      checkMatches(
+        entryPatt,
+        harden([M.pattern(), M.pattern()]),
+        check,
+        'match:mapOf payload',
+      ),
 
     getRankCover: _entryPatt => getPassStyleCover('tagged'),
 
@@ -1149,6 +1149,11 @@ const makePatternKit = () => {
   const PromiseShape = makeKindMatcher('promise');
   const UndefinedShape = makeKindMatcher('undefined');
 
+  const makeRemotableMatcher = (label = undefined) =>
+    label === undefined
+      ? RemotableShape
+      : makeMatcher('match:remotable', harden({ label }));
+
   /**
    * @param {'sync'|'async'} callKind
    * @param {ArgGuard[]} argGuards
@@ -1224,10 +1229,7 @@ const makePatternKit = () => {
     set: () => SetShape,
     bag: () => BagShape,
     map: () => MapShape,
-    remotable: (label = undefined) =>
-      label === undefined
-        ? RemotableShape
-        : makeMatcher('match:remotable', harden({ label })),
+    remotable: makeRemotableMatcher,
     error: () => ErrorShape,
     promise: () => PromiseShape,
     undefined: () => UndefinedShape,

@@ -2,6 +2,7 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { makeTagged } from '@endo/marshal';
 import { makeCopyBag, makeCopyMap, makeCopySet } from '../src/keys/checkKey.js';
 import { fit, matches, M } from '../src/patterns/patternMatchers.js';
 import '../src/types.js';
@@ -263,6 +264,71 @@ const matchTests = harden([
       ],
     ],
   },
+  {
+    specimen: makeTagged('mysteryTag', 88),
+    yesPatterns: [M.any(), M.not(M.pattern())],
+    noPatterns: [
+      [
+        M.pattern(),
+        'A passable tagged "mysteryTag" is not a pattern: "[mysteryTag]"',
+      ],
+    ],
+  },
+  {
+    specimen: makeTagged('match:any', undefined),
+    yesPatterns: [M.any(), M.pattern()],
+    noPatterns: [
+      [M.key(), 'A passable tagged "match:any" is not a key: "[match:any]"'],
+    ],
+  },
+  {
+    specimen: makeTagged('match:any', 88),
+    yesPatterns: [M.any(), M.not(M.pattern())],
+    noPatterns: [[M.pattern(), 'Payload must be undefined: 88']],
+  },
+  {
+    specimen: makeTagged('match:remotable', 88),
+    yesPatterns: [M.any(), M.not(M.pattern())],
+    noPatterns: [
+      [
+        M.pattern(),
+        'match:remotable payload: 88 - Must be a copyRecord to match a copyRecord pattern: {"label":"[match:kind]"}',
+      ],
+    ],
+  },
+  {
+    specimen: makeTagged('match:remotable', harden({ label: 88 })),
+    yesPatterns: [M.any(), M.not(M.pattern())],
+    noPatterns: [
+      [
+        M.pattern(),
+        'match:remotable payload: label: number 88 - Must be a string',
+      ],
+    ],
+  },
+  {
+    specimen: makeTagged('match:recordOf', harden([M.string(), M.nat()])),
+    yesPatterns: [M.pattern()],
+    noPatterns: [
+      [
+        M.key(),
+        'A passable tagged "match:recordOf" is not a key: "[match:recordOf]"',
+      ],
+    ],
+  },
+  {
+    specimen: makeTagged(
+      'match:recordOf',
+      harden([M.string(), Promise.resolve(null)]),
+    ),
+    yesPatterns: [M.any(), M.not(M.pattern())],
+    noPatterns: [
+      [
+        M.pattern(),
+        'match:recordOf payload: [1]: A "promise" cannot be a pattern',
+      ],
+    ],
+  },
 ]);
 
 test('test simple matches', t => {
@@ -280,4 +346,11 @@ test('test simple matches', t => {
       t.false(matches(specimen, noPattern), `${noPattern}`);
     }
   }
+});
+
+test('well formed patterns', t => {
+  // @ts-expect-error purposeful type violation for testing
+  t.throws(() => M.remotable(88), {
+    message: 'match:remotable payload: label: number 88 - Must be a string',
+  });
 });

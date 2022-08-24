@@ -500,8 +500,10 @@
  * @property {() => Matcher} set A CopySet
  * @property {() => Matcher} bag A CopyBag
  * @property {() => Matcher} map A CopyMap
- * @property {(interfaceName?: string) => Matcher} remotable
- * A far object or its remote presence
+ * @property {(label?: string) => Matcher} remotable
+ * A far object or its remote presence. The optional `label` is purely for
+ * diagnostic purpose. It does not enforce any constraint beyond the
+ * must-be-a-remotable constraint.
  * @property {() => Matcher} error
  * Error objects are passable, but are neither keys nor symbols.
  * They do not have a useful identity.
