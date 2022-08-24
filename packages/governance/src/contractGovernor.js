@@ -90,12 +90,12 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * only one) and the parameterName. The interpretation of ParamSpecification is
  * up to the contract.
  *
- * The contractGovernor creatorFacet includes voteOnParamChanges(),
- * voteOnFilter, and voteOnApiInvocation. voteOnParamChanges() is used to create
- * questions that will automatically update contract parameters if passed.
- * voteOnFilter can be used to crate questions that will prevent the exercise of
- * certain invitations. voteOnApiInvocation creates questions that will invoke
- * pre-defined APIs in the contract.
+ * The contractGovernor creatorFacet includes `voteOnParamChanges`,
+ * `voteOnFilter`, and `voteOnApiInvocation`. `voteOnParamChanges` is used to
+ * create questions that will automatically update contract parameters if
+ * passed. `voteOnFilter` can be used to create questions that will prevent the
+ * exercise of certain invitations if passed. `voteOnApiInvocation` creates
+ * questions that will invoke pre-defined APIs in the contract.
  *
  * This facet will usually be closely held. The creatorFacet can also be used to
  * retrieve the governed instance, publicFacet, and its creatorFacet with

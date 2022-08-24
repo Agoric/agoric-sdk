@@ -465,11 +465,11 @@
 
 /**
  * @typedef {object} GovernorFacet
- * @property {() => ParamManagerRetriever} getParamManagerRetriever
- * @property {() => Invitation} getInvitation
+ * @property {() => ParamManagerRetriever} getParamMgrRetriever
+ * @property {(name: string) => Promise<Invitation>} getInvitation
  * @property {() => unknown} getLimitedCreatorFacet
  * @property {() => unknown} getGovernedApis
- * @property {() => string[]} getGovernedApiNames
+ * @property {() => (string | symbol)[]} getGovernedApiNames
  * @property {(strings: string[]) => void} setOfferFilter
  */
 
