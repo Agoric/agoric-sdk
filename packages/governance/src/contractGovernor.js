@@ -91,12 +91,16 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * up to the contract.
  *
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> a866f983a (chore: type and documentation cleanups)
  * The contractGovernor creatorFacet includes `voteOnParamChanges`,
  * `voteOnFilter`, and `voteOnApiInvocation`. `voteOnParamChanges` is used to
  * create questions that will automatically update contract parameters if
  * passed. `voteOnFilter` can be used to create questions that will prevent the
  * exercise of certain invitations if passed. `voteOnApiInvocation` creates
  * questions that will invoke pre-defined APIs in the contract.
+<<<<<<< HEAD
 =======
  * The contractGovernor creatorFacet includes voteOnParamChanges(),
  * voteOnFilter, and voteOnApiInvocation. voteOnParamChanges() is used to create
@@ -105,6 +109,8 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * certain invitations. voteOnApiInvocation creates questions that will invoke
  * pre-defined APIs in the contract.
 >>>>>>> 1f11b3fb6 (feat(governance): govern offerFilters in Zoe contracts)
+=======
+>>>>>>> a866f983a (chore: type and documentation cleanups)
  *
  * This facet will usually be closely held. The creatorFacet can also be used to
  * retrieve the governed instance, publicFacet, and its creatorFacet with
