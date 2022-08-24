@@ -104,8 +104,7 @@ const facetHelpers = (zcf, paramManager) => {
     const governorFacet = Far('governorFacet', {
       getParamMgrRetriever: () =>
         Far('paramRetriever', { get: () => paramManager }),
-      getInvitation: (_context, name) =>
-        paramManager.getInternalParamValue(name),
+      getInvitation: name => paramManager.getInternalParamValue(name),
       getLimitedCreatorFacet: () => limitedCreatorFacet,
       // The contract provides a facet with the APIs that can be invoked by
       // governance
@@ -143,7 +142,7 @@ const facetHelpers = (zcf, paramManager) => {
       // without also separately providing their names.
       getGovernedApiNames: ({ facets }) =>
         getMethodNames(facets.governedApis || {}),
-      setOfferFilter: strings => zcf.setOfferFilter(strings),
+      setOfferFilter: (_context, strings) => zcf.setOfferFilter(strings),
     });
 
     return { governorFacet, limitedCreatorFacet };
