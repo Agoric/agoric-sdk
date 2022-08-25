@@ -12,8 +12,6 @@ import {
   coerceQuestionSpec,
 } from '../question.js';
 
-const { details: X, quote: q } = assert;
-
 /**
  * Make a pair of positions for a question about whether to update the offer
  * filter. If the vote passes, the list of blocked invitation strings will be
@@ -34,7 +32,7 @@ const makeOfferFilterPositions = strings => {
  * @param {Instance} governedInstance
  * @param {ERef<TimerService>} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
- * @param {GovernorFacet} governorFacet
+ * @param {GovernorFacet<{}>} governorFacet
  * @returns {Promise<FilterGovernor>}
  */
 const setupFilterGovernance = async (
@@ -81,21 +79,20 @@ const setupFilterGovernance = async (
     //   return a broken promise.
     const outcomeOfUpdate = E(counterPublicFacet)
       .getOutcome()
-      // @ts-expect-error return types don't appear to match
       .then(outcome => {
-        if (keyEQ(positive, outcome)) {
-          assert(
-            keyEQ(outcome, harden({ strings })),
-            X`The question (${q(strings)}) didn't match the outcome ${outcome}`,
+        if (keyEQ(outcome, positive)) {
+          return (
+            E(governorFacet)
+              // @ts-expect-error typescript doesn't see GovernorFacet.setOfferFilter
+              .setOfferFilter(strings)
+              .then(() => {
+                return positive;
+              })
           );
-
-          return E(governorFacet)
-            .setOfferFilter(strings)
-            .then(() => {
-              return positive;
-            });
-        } else {
+        } else if (keyEQ(outcome, negative)) {
           return negative;
+        } else {
+          assert.fail('unrecognized outcome');
         }
       });
 
@@ -108,7 +105,7 @@ const setupFilterGovernance = async (
 
   return Far('filterGovernor', {
     voteOnFilter,
-    createdQuestion: b => voteCounters.has(b),
+    createdFilterQuestion: b => voteCounters.has(b),
   });
 };
 

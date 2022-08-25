@@ -464,10 +464,11 @@
  */
 
 /**
- * @typedef {object} GovernorFacet
+ * @template {{}} CF
+ * @typedef {GovernedCreatorFacet<CF>} GovernorFacet
  * @property {() => ParamManagerRetriever} getParamMgrRetriever
  * @property {(name: string) => Promise<Invitation>} getInvitation
- * @property {() => unknown} getLimitedCreatorFacet
+ * @property {() => LimitedCreatorFacet<CF>} getLimitedCreatorFacet
  * @property {() => unknown} getGovernedApis
  * @property {() => (string | symbol)[]} getGovernedApiNames
  * @property {(strings: string[]) => void} setOfferFilter
@@ -637,7 +638,7 @@
 /**
  * @typedef {object} FilterGovernor
  * @property {VoteOnOfferFilter} voteOnFilter
- * @property {CreatedQuestion} createdQuestion
+ * @property {CreatedQuestion} createdFilterQuestion
  */
 
 /**

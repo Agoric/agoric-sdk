@@ -101,9 +101,10 @@ const facetHelpers = (zcf, paramManager) => {
    */
 
   /**
-   * @param {{}} originalCreatorFacet
-   * @param {{}} governedApis
-   * @returns {GovernorFacet}
+   * @template {{}} CF
+   * @param {CF} originalCreatorFacet
+   * @param {{}} [governedApis]
+   * @returns {GovernorFacet<CF>}
    */
   const makeGovernorFacet = (originalCreatorFacet, governedApis = {}) => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
@@ -134,7 +135,7 @@ const facetHelpers = (zcf, paramManager) => {
   const makeVirtualGovernorFacet = originalCreatorFacet => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
 
-    /** @type {import('@agoric/vat-data/src/types.js').FunctionsPlusContext<unknown, GovernorFacet>} */
+    /** @type {import('@agoric/vat-data/src/types.js').FunctionsPlusContext<unknown, GovernorFacet<originalCreatorFacet>>} */
     const governorFacet = Far('governorFacet', {
       getParamMgrRetriever: () =>
         Far('paramRetriever', { get: () => paramManager }),

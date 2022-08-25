@@ -191,14 +191,13 @@ const start = async (zcf, privateArgs) => {
       getUpdatedPoserFacet,
     );
 
-  const { voteOnFilter, createdQuestion: createdFilterQuestion } =
-    await setupFilterGovernance(
-      zoe,
-      governedInstance,
-      timer,
-      getUpdatedPoserFacet,
-      governedCF,
-    );
+  const { voteOnFilter, createdFilterQuestion } = await setupFilterGovernance(
+    zoe,
+    governedInstance,
+    timer,
+    getUpdatedPoserFacet,
+    governedCF,
+  );
 
   // this conditional was extracted so both sides are equally asynchronous
   /** @type {() => Promise<ApiGovernor>} */
