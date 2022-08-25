@@ -895,12 +895,12 @@ const makePatternKit = () => {
 
   /** @type {MatchHelper} */
   const matchSetOfHelper = Far('match:setOf helper', {
-    checkMatches: (specimen, keyPatt, check = x => x) =>
+    checkMatches: (specimen, keyPattern, check = x => x) =>
       check(
         passStyleOf(specimen) === 'tagged' && getTag(specimen) === 'copySet',
         X`${specimen} - Must be a a CopySet`,
       ) &&
-      specimen.payload.every((el, i) => checkMatches(el, keyPatt, check, i)),
+      specimen.payload.every((el, i) => checkMatches(el, keyPattern, check, i)),
 
     checkIsMatcherPayload: checkPattern,
 
@@ -912,14 +912,14 @@ const makePatternKit = () => {
 
   /** @type {MatchHelper} */
   const matchBagOfHelper = Far('match:bagOf helper', {
-    checkMatches: (specimen, [keyPatt, countPatt], check = x => x) =>
+    checkMatches: (specimen, [keyPattern, countPatt], check = x => x) =>
       check(
         passStyleOf(specimen) === 'tagged' && getTag(specimen) === 'copyBag',
         X`${specimen} - Must be a a CopyBag`,
       ) &&
       specimen.payload.every(
         ([key, count], i) =>
-          checkMatches(key, keyPatt, check, `keys[${i}]`) &&
+          checkMatches(key, keyPattern, check, `keys[${i}]`) &&
           checkMatches(count, countPatt, check, `counts[${i}]`),
       ),
 
@@ -939,16 +939,16 @@ const makePatternKit = () => {
 
   /** @type {MatchHelper} */
   const matchMapOfHelper = Far('match:mapOf helper', {
-    checkMatches: (specimen, [keyPatt, valuePatt], check = x => x) =>
+    checkMatches: (specimen, [keyPattern, valuePattern], check = x => x) =>
       check(
         passStyleOf(specimen) === 'tagged' && getTag(specimen) === 'copyMap',
         X`${specimen} - Must be a CopyMap`,
       ) &&
       specimen.payload.keys.every((k, i) =>
-        checkMatches(k, keyPatt, check, `keys[${i}]`),
+        checkMatches(k, keyPattern, check, `keys[${i}]`),
       ) &&
       specimen.payload.values.every((v, i) =>
-        checkMatches(v, valuePatt, check, `values[${i}]`),
+        checkMatches(v, valuePattern, check, `values[${i}]`),
       ),
 
     checkIsMatcherPayload: (entryPatt, check = x => x) =>
@@ -1135,24 +1135,12 @@ const makePatternKit = () => {
   const PatternShape = makeMatcher('match:pattern', undefined);
   const BooleanShape = makeKindMatcher('boolean');
   const NumberShape = makeKindMatcher('number');
-  const BigintShape = makeKindMatcher('bigint');
-  const NatShape = makeMatcher('match:gte', 0n);
-  const StringShape = makeKindMatcher('string');
-  const SymbolShape = makeKindMatcher('symbol');
-  const RecordShape = makeKindMatcher('copyRecord');
-  const ArrayShape = makeKindMatcher('copyArray');
-  const SetShape = makeKindMatcher('copySet');
-  const BagShape = makeKindMatcher('copyBag');
-  const MapShape = makeKindMatcher('copyMap');
-  const RemotableShape = makeKindMatcher('remotable');
   const ErrorShape = makeKindMatcher('error');
   const PromiseShape = makeKindMatcher('promise');
   const UndefinedShape = makeKindMatcher('undefined');
 
   const makeRemotableMatcher = (label = undefined) =>
-    label === undefined
-      ? RemotableShape
-      : makeMatcher('match:remotable', harden({ label }));
+    makeMatcher('match:remotable', harden({ label }));
 
   /**
    * @param {'sync'|'async'} callKind
@@ -1207,6 +1195,18 @@ const makePatternKit = () => {
 
   // //////////////////
 
+  const defaultLimits = harden({
+    decimalDigitsLimit: 100,
+    stringLengthLimit: 100_000,
+    symbolNameLengthLimit: 40,
+    numPropertiesLimit: 80,
+    propertyNameLengthLimit: 40,
+    arrayLengthLimit: 10_000,
+    numSetElementsLimit: 10_000,
+    numUniqueBagElementsLimit: 10_000,
+    numMapEntriesLimit: 5000,
+  });
+
   /** @type {MatcherNamespace} */
   const M = harden({
     any: () => AnyShape,
@@ -1220,15 +1220,30 @@ const makePatternKit = () => {
     kind: makeKindMatcher,
     boolean: () => BooleanShape,
     number: () => NumberShape,
-    bigint: () => BigintShape,
-    nat: () => NatShape,
-    string: () => StringShape,
-    symbol: () => SymbolShape,
-    record: () => RecordShape,
-    array: () => ArrayShape,
-    set: () => SetShape,
-    bag: () => BagShape,
-    map: () => MapShape,
+    bigint: (decimalDigitsLimit = defaultLimits.decimalDigitsLimit) =>
+      makeMatcher('match:bigint', harden({ decimalDigitsLimit })),
+    nat: (decimalDigitsLimit = defaultLimits.decimalDigitsLimit) =>
+      makeMatcher('match:nat', harden({ decimalDigitsLimit })),
+    string: (stringLengthLimit = defaultLimits.stringLengthLimit) =>
+      makeMatcher('match:string', harden({ stringLengthLimit })),
+    symbol: (symbolNameLengthLimit = defaultLimits.symbolNameLengthLimit) =>
+      makeMatcher('match:symbol', harden({ symbolNameLengthLimit })),
+    record: (
+      numPropertiesLimit = defaultLimits.numPropertiesLimit,
+      propertyNameLengthLimit = defaultLimits.propertyNameLengthLimit,
+    ) =>
+      M.recordOf(M.any(), M.any(), numPropertiesLimit, propertyNameLengthLimit),
+    array: (arrayLengthLimit = defaultLimits.arrayLengthLimit) =>
+      M.arrayOf(M.any(), arrayLengthLimit),
+    set: (numSetElementsLimit = defaultLimits.numSetElementsLimit) =>
+      M.setOf(M.any(), numSetElementsLimit),
+    bag: (
+      numUniqueBagElementsLimit = defaultLimits.numUniqueBagElementsLimit,
+      decimalDigitsLimit = defaultLimits.decimalDigitsLimit,
+    ) =>
+      M.bagOf(M.any(), M.any(), numUniqueBagElementsLimit, decimalDigitsLimit),
+    map: (numMapEntriesLimit = defaultLimits.numMapEntriesLimit) =>
+      M.mapOf(M.any(), M.any(), numMapEntriesLimit),
     remotable: makeRemotableMatcher,
     error: () => ErrorShape,
     promise: () => PromiseShape,
@@ -1245,18 +1260,88 @@ const makePatternKit = () => {
     gte: rightOperand => makeMatcher('match:gte', rightOperand),
     gt: rightOperand => makeMatcher('match:gt', rightOperand),
 
-    arrayOf: (subPatt = M.any()) => makeMatcher('match:arrayOf', subPatt),
-    recordOf: (keyPatt = M.any(), valuePatt = M.any()) =>
-      makeMatcher('match:recordOf', [keyPatt, valuePatt]),
-    setOf: (keyPatt = M.any()) => makeMatcher('match:setOf', keyPatt),
-    bagOf: (keyPatt = M.any(), countPatt = M.any()) =>
-      makeMatcher('match:bagOf', [keyPatt, countPatt]),
-    mapOf: (keyPatt = M.any(), valuePatt = M.any()) =>
-      makeMatcher('match:mapOf', [keyPatt, valuePatt]),
-    split: (base, rest = undefined) =>
-      makeMatcher('match:split', rest === undefined ? [base] : [base, rest]),
-    partial: (base, rest = undefined) =>
-      makeMatcher('match:partial', rest === undefined ? [base] : [base, rest]),
+    recordOf: (
+      keyPattern = M.any(),
+      valuePattern = M.any(),
+      numPropertiesLimit = defaultLimits.numPropertiesLimit,
+      propertyNameLengthLimit = defaultLimits.propertyNameLengthLimit,
+    ) =>
+      makeMatcher(
+        'match:recordOf',
+        harden({
+          keyPattern,
+          valuePattern,
+          numPropertiesLimit,
+          propertyNameLengthLimit,
+        }),
+      ),
+    arrayOf: (
+      elementPattern = M.any(),
+      arrayLengthLimit = defaultLimits.arrayLengthLimit,
+    ) =>
+      makeMatcher(
+        'match:arrayOf',
+        harden({ elementPattern, arrayLengthLimit }),
+      ),
+    setOf: (
+      keyPattern = M.any(),
+      numSetElementsLimit = defaultLimits.numSetElementsLimit,
+    ) =>
+      makeMatcher('match:setOf', harden({ keyPattern, numSetElementsLimit })),
+    bagOf: (
+      keyPattern = M.any(),
+      countPatt = M.any(),
+      numUniqueBagElementsLimit = defaultLimits.numUniqueBagElementsLimit,
+      decimalDigitsLimit = defaultLimits.decimalDigitsLimit,
+    ) =>
+      makeMatcher(
+        'match:bagOf',
+        harden({
+          keyPattern,
+          countPatt,
+          numUniqueBagElementsLimit,
+          decimalDigitsLimit,
+        }),
+      ),
+    mapOf: (
+      keyPattern = M.any(),
+      valuePattern = M.any(),
+      numMapEntriesLimit = defaultLimits.numMapEntriesLimit,
+    ) =>
+      makeMatcher(
+        'match:mapOf',
+        harden({ keyPattern, valuePattern, numMapEntriesLimit }),
+      ),
+    split: (
+      base,
+      rest = undefined,
+      numPropertiesLimit = defaultLimits.numPropertiesLimit,
+      propertyNameLengthLimit = defaultLimits.propertyNameLengthLimit,
+    ) =>
+      makeMatcher(
+        'match:split',
+        harden({
+          base,
+          rest,
+          numPropertiesLimit,
+          propertyNameLengthLimit,
+        }),
+      ),
+    partial: (
+      base,
+      rest = undefined,
+      numPropertiesLimit = defaultLimits.numPropertiesLimit,
+      propertyNameLengthLimit = defaultLimits.propertyNameLengthLimit,
+    ) =>
+      makeMatcher(
+        'match:partial',
+        harden({
+          base,
+          rest,
+          numPropertiesLimit,
+          propertyNameLengthLimit,
+        }),
+      ),
 
     eref: t => M.or(t, M.promise()),
     opt: t => M.or(t, M.undefined()),

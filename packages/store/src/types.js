@@ -490,20 +490,20 @@
  * @property {(kind: string) => Matcher} kind
  * @property {() => Matcher} boolean
  * @property {() => Matcher} number Only floating point numbers
- * @property {(decimalDigitsLimit?: bigint) => Matcher} bigint
- * @property {(decimalDigitsLimit?: bigint) => Matcher} nat
- * @property {(stringLengthLimit?: bigint) => Matcher} string
- * @property {(nameLengthLimit?: bigint) => Matcher} symbol
+ * @property {(decimalDigitsLimit?: number) => Matcher} bigint
+ * @property {(decimalDigitsLimit?: number) => Matcher} nat
+ * @property {(stringLengthLimit?: number) => Matcher} string
+ * @property {(symbolNameLengthLimit?: number) => Matcher} symbol
  * Only registered and well-known symbols are passable
- * @property {(numPropertiesLimit?: bigint,
- *             propertyNameLengthLimit?: bigint
+ * @property {(numPropertiesLimit?: number,
+ *             propertyNameLengthLimit?: number
  * ) => Matcher} record A CopyRecord
- * @property {(arrayLengthLimit?: bigint) => Matcher} array A CopyArray
- * @property {(numSetElementsLimit?: bigint) => Matcher} set A CopySet
- * @property {(numUniqueElementsLimit?: bigint,
- *             decimalDigitsLimit?: bigint
+ * @property {(arrayLengthLimit?: number) => Matcher} array A CopyArray
+ * @property {(numSetElementsLimit?: number) => Matcher} set A CopySet
+ * @property {(numUniqueBagElementsLimit?: number,
+ *             decimalDigitsLimit?: number
  * ) => Matcher} bag A CopyBag
- * @property {(numMapEntries?: bigint) => Matcher} map A CopyMap
+ * @property {(numMapEntriesLimit?: number) => Matcher} map A CopyMap
  * @property {(label?: string) => Matcher} remotable
  * A far object or its remote presence. The optional `label` is purely for
  * diagnostic purpose. It does not enforce any constraint beyond the
@@ -536,19 +536,19 @@
  * @property {(rightOperand :Key) => Matcher} gt
  * Matches if > the right operand by compareKeys
  *
- * @property {(subPatt?: Pattern,
- *             arrayLengthLimit?: bigint
- * ) => Matcher} arrayOf
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern,
- *             numPropertiesLimit?: bigint,
- *             propertyNameLengthLimit?: bigint
+ *             numPropertiesLimit?: number,
+ *             propertyNameLengthLimit?: number
  * ) => Matcher} recordOf
+ * @property {(elementPattern?: Pattern,
+ *             arrayLengthLimit?: number
+ * ) => Matcher} arrayOf
  * @property {(keyPatt?: Pattern,
- *             numSetElementsLimit?: bigint
+ *             numSetElementsLimit?: number
  * ) => Matcher} setOf
  * @property {(keyPatt?: Pattern, countPatt?: Pattern,
- *             numUniqueElementsLimit?: bigint,
- *             decimalDigitsLimit?: bigint
+ *             numUniqueBagElementsLimit?: number,
+ *             decimalDigitsLimit?: number
  * ) => Matcher} bagOf
  * Parameterized by a keyPatt that is matched against every element of the
  * abstract bag. In terms of the bag representation, it is matched against
@@ -556,13 +556,13 @@
  * it is matched against the cardinality of each element. The `countPatt`
  * is rarely expected to be useful, but is provided to minimize surprise.
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern,
- *             numMapEntries?: bigint
+ *             numMapEntriesLimit?: number
  * ) => Matcher} mapOf
  * @property {(
  *   base: CopyRecord<*> | CopyArray<*>,
  *   rest?: Pattern,
- *   numPropertiesLimit?: bigint,
- *   propertyNameLengthLimit?: bigint
+ *   numPropertiesLimit?: number,
+ *   propertyNameLengthLimit?: number
  * ) => Matcher} split
  * An array or record is split into the first part that matches the
  * base pattern, and the remainder, which matches against the optional
@@ -570,8 +570,8 @@
  * @property {(
  *   base: CopyRecord<*> | CopyArray<*>,
  *   rest?: Pattern,
- *   numPropertiesLimit?: bigint,
- *   propertyNameLengthLimit?: bigint
+ *   numPropertiesLimit?: number,
+ *   propertyNameLengthLimit?: number
  * ) => Matcher} partial
  * An array or record is split into the first part that matches the
  * base pattern, and the remainder, which matches against the optional
