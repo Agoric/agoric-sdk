@@ -74,10 +74,11 @@ export const setupPsmBootstrap = async (
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   installGovernance(zoe, spaces.installation.produce);
-  produce.chainStorage.resolve(makeMockChainStorageRoot());
+  const mockChainStorage = makeMockChainStorageRoot();
+  produce.chainStorage.resolve(mockChainStorage);
   produce.board.resolve(makeBoard());
 
-  return { produce, consume, ...spaces };
+  return { produce, consume, ...spaces, mockChainStorage };
 };
 
 /**
@@ -163,10 +164,6 @@ export const setupPsm = async (
     E(zoe).getInvitationIssuer(),
   ).getAmountOf(poserInvitationP);
 
-  /** @type {import('@agoric/vats/tools/storage-test-utils.js').MockChainStorageRoot} */
-  // @ts-expect-error cast
-  const mockChainStorage = await space.consume.chainStorage;
-
   return {
     zoe,
     installs,
@@ -176,7 +173,7 @@ export const setupPsm = async (
     governor: g,
     psm,
     invitationAmount: poserInvitationAmount,
-    mockChainStorage,
+    mockChainStorage: space.mockChainStorage,
     space,
     knutIssuer,
   };
