@@ -147,8 +147,7 @@ const MyWalletConnection = ({ connecting }) => {
 ```
 
 To use `ses` in React, it's best to load it in `index.html` as shown above. It
-requires `__allowUnsafeMonkeyPatching__`, and `consoleTaming` should be set to
-`unsafe` to make dev-mode work:
+requires `consoleTaming` should be set to `unsafe` to make dev-mode work:
 
 ```html
 <script src="lockdown.umd.js"></script>
@@ -158,7 +157,6 @@ requires `__allowUnsafeMonkeyPatching__`, and `consoleTaming` should be set to
   const consoleTaming = '%NODE_ENV%' === 'production' ? 'safe' : 'unsafe';
 
   lockdown({
-    __allowUnsafeMonkeyPatching__: 'unsafe',
     errorTaming: 'unsafe',
     overrideTaming: 'severe',
     consoleTaming: consoleTaming,
