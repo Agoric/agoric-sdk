@@ -73,11 +73,11 @@ async function slogSummary(entries) {
   /** @type {DeliverResult[]} */
   const deliverResults = [];
 
-  /** @type {number} */
+  /** @type {number|undefined} */
   let tBlock;
   /** @type {number} */
   let blockHeight;
-  /** @type { TimedEvent & DInfo } */
+  /** @type { TimedEvent & DInfo | undefined } */
   let dInfo;
 
   const seen = {
@@ -112,16 +112,30 @@ async function slogSummary(entries) {
             vatID: entry.vatID,
           });
         switch (kd[0]) {
+          case 'startVat': {
+            const [_tag, vatParams] = kd;
+            dInfo = {
+              type: entry.type,
+              time: entry.time,
+              elapsed: entry.time - tBlock,
+              crankNum: entry.crankNum,
+              deliveryNum: entry.deliveryNum,
+              vatID: entry.vatID,
+              method: '!startVat',
+            };
+            arrival.set({}, dInfo);
+            break;
+          }
           case 'message': {
             const [
               _tag,
               target,
               {
-                method,
-                args: { body },
+                methargs: { body },
                 result,
               },
             ] = kd;
+            const [method] = JSON.parse(body);
             dInfo = {
               type: entry.type,
               time: entry.time,

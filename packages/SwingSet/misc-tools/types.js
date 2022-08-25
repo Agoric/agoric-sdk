@@ -25,6 +25,7 @@
  *       desc: { fulfilled: boolean, refCount: number, data: CapData },
  *     ]>] |
  *   [tag: 'retireImports' | 'retireExports' | 'dropExports']
+ *   [tag: 'startVat', vatParameters: CapData]
  * } KernelDelivery
  * @typedef {{
  *   method: string,
@@ -55,18 +56,32 @@
  *   vatSourceBundle?: unknown,
  * }} SlogCreateVatEntry
  * @typedef { SlogTimedEntry & {
+ *   type: 'cosmic-swingset-end-block-start',
+ *   blockHeight: number,
+ *   blockTime: number,
+ * }} SlogEndBlockStartEntry
+ * @typedef { SlogTimedEntry & {
+ *   type: 'deliver-result',
+ *   vatID: string,
+ *   dr: [tag: unknown, x: unknown, meter: {}],
+ * }} SlogDeliverResultEntry
+ * @typedef { SlogTimedEntry & {
  *   type: 'import-kernel-start' | 'import-kernel-finish'
  *       | 'vat-startup-start' | 'vat-startup-finish'
  *       | 'start-replay' | 'finish-replay'
  *       | 'start-replay-delivery' | 'finish-replay-delivery'
  *       | 'cosmic-swingset-begin-block'
- *       | 'cosmic-swingset-end-block-start' | 'cosmic-swingset-end-block-finish'
+ *       | 'cosmic-swingset-end-block-finish'
  *       | 'cosmic-swingset-deliver-inbound'
- *       | 'deliver-result' | 'syscall-result'
+ *       | 'syscall-result'
  *       | 'clist'
  *       | 'crank-start' | 'crank-finish'
  *       | 'console'
  *       | '@@more TODO'
  * }} SlogToDoEntry
- * @typedef { SlogDeliveryEntry | SlogSyscallEntry | SlogCreateVatEntry| SlogToDoEntry } SlogEntry
+ * @typedef {|
+ *  SlogDeliveryEntry | SlogSyscallEntry | SlogCreateVatEntry |
+ *  SlogEndBlockStartEntry| SlogDeliverResultEntry |
+ *  SlogToDoEntry
+ * } SlogEntry
  */
