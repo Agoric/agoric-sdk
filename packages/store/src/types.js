@@ -490,16 +490,20 @@
  * @property {(kind: string) => Matcher} kind
  * @property {() => Matcher} boolean
  * @property {() => Matcher} number Only floating point numbers
- * @property {() => Matcher} bigint
- * @property {() => Matcher} nat
- * @property {() => Matcher} string
- * @property {() => Matcher} symbol
+ * @property {(decimalDigitsLimit?: bigint) => Matcher} bigint
+ * @property {(decimalDigitsLimit?: bigint) => Matcher} nat
+ * @property {(stringLengthLimit?: bigint) => Matcher} string
+ * @property {(nameLengthLimit?: bigint) => Matcher} symbol
  * Only registered and well-known symbols are passable
- * @property {() => Matcher} record A CopyRecord
- * @property {() => Matcher} array A CopyArray
- * @property {() => Matcher} set A CopySet
- * @property {() => Matcher} bag A CopyBag
- * @property {() => Matcher} map A CopyMap
+ * @property {(numPropertiesLimit?: bigint,
+ *             propertyNameLengthLimit?: bigint
+ * ) => Matcher} record A CopyRecord
+ * @property {(arrayLengthLimit?: bigint) => Matcher} array A CopyArray
+ * @property {(numSetElementsLimit?: bigint) => Matcher} set A CopySet
+ * @property {(numUniqueElementsLimit?: bigint,
+ *             decimalDigitsLimit?: bigint
+ * ) => Matcher} bag A CopyBag
+ * @property {(numMapEntries?: bigint) => Matcher} map A CopyMap
  * @property {(label?: string) => Matcher} remotable
  * A far object or its remote presence. The optional `label` is purely for
  * diagnostic purpose. It does not enforce any constraint beyond the
@@ -532,26 +536,42 @@
  * @property {(rightOperand :Key) => Matcher} gt
  * Matches if > the right operand by compareKeys
  *
- * @property {(subPatt?: Pattern) => Matcher} arrayOf
- * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Matcher} recordOf
- * @property {(keyPatt?: Pattern) => Matcher} setOf
- * @property {(keyPatt?: Pattern, countPatt?: Pattern) => Matcher} bagOf
+ * @property {(subPatt?: Pattern,
+ *             arrayLengthLimit?: bigint
+ * ) => Matcher} arrayOf
+ * @property {(keyPatt?: Pattern, valuePatt?: Pattern,
+ *             numPropertiesLimit?: bigint,
+ *             propertyNameLengthLimit?: bigint
+ * ) => Matcher} recordOf
+ * @property {(keyPatt?: Pattern,
+ *             numSetElementsLimit?: bigint
+ * ) => Matcher} setOf
+ * @property {(keyPatt?: Pattern, countPatt?: Pattern,
+ *             numUniqueElementsLimit?: bigint,
+ *             decimalDigitsLimit?: bigint
+ * ) => Matcher} bagOf
  * Parameterized by a keyPatt that is matched against every element of the
  * abstract bag. In terms of the bag representation, it is matched against
  * the first element of each pair. If the second `countPatt` is provided,
  * it is matched against the cardinality of each element. The `countPatt`
  * is rarely expected to be useful, but is provided to minimize surprise.
- * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Matcher} mapOf
+ * @property {(keyPatt?: Pattern, valuePatt?: Pattern,
+ *             numMapEntries?: bigint
+ * ) => Matcher} mapOf
  * @property {(
  *   base: CopyRecord<*> | CopyArray<*>,
- *   rest?: Pattern
+ *   rest?: Pattern,
+ *   numPropertiesLimit?: bigint,
+ *   propertyNameLengthLimit?: bigint
  * ) => Matcher} split
  * An array or record is split into the first part that matches the
  * base pattern, and the remainder, which matches against the optional
  * rest pattern if present.
  * @property {(
  *   base: CopyRecord<*> | CopyArray<*>,
- *   rest?: Pattern
+ *   rest?: Pattern,
+ *   numPropertiesLimit?: bigint,
+ *   propertyNameLengthLimit?: bigint
  * ) => Matcher} partial
  * An array or record is split into the first part that matches the
  * base pattern, and the remainder, which matches against the optional
