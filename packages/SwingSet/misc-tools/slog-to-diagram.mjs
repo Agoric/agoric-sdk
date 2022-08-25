@@ -323,6 +323,7 @@ async function* diagramLines(
       type,
       elapsed,
       vatID: dest,
+      crankNum,
       target,
       method,
       state,
@@ -344,10 +345,14 @@ async function* diagramLines(
     const t = Math.round(elapsed * 1000) / 1000;
 
     // add note to compute-intensive deliveries
-    const computeNote =
-      compute && compute > 50000
-        ? fmt.note(`right`, `${compute.toLocaleString()} compute`)
-        : undefined;
+    // const computeNote =
+    //   compute && compute > 50000
+    //     ? fmt.note(`right`, `${compute.toLocaleString()} compute`)
+    //     : undefined;
+
+    const computeNote = crankNum
+      ? fmt.note('right', `${crankNum}@${dest}`)
+      : undefined;
 
     // yield `autonumber ${blockHeight}.${t}\n`;
     if (t > 0) {
