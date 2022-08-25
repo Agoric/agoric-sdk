@@ -21,7 +21,7 @@ test.before(async t => {
   t.context.data = { kernelBundles };
 });
 
-test('snapshots', async t => {
+test.skip('snapshots', async t => {
   const swingStorePath = tmp.dirSync({ unsafeCleanup: true }).name;
   const { commit, ...hostStorage } = initSwingStore(swingStorePath);
   const { snapStore, kvStore } = hostStorage;
