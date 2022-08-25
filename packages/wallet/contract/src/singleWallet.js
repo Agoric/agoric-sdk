@@ -15,11 +15,11 @@ const { assign, entries, keys, fromEntries } = Object;
 
 /**
  * @typedef {{
- *   agoricNames: NameHub,
- *   bank: import('@agoric/vats/src/vat-bank').Bank,
- *   board: Board,
+ *   agoricNames: ERef<NameHub>,
+ *   bank: ERef<import('@agoric/vats/src/vat-bank').Bank>,
+ *   board: ERef<Board>,
  *   myAddressNameAdmin: ERef<MyAddressNameAdmin>,
- *   namesByAddress: NameHub,
+ *   namesByAddress: ERef<NameHub>,
  * }} SmartWalletContractTerms
  */
 

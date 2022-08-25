@@ -16,9 +16,9 @@ const { assign, entries, keys, fromEntries } = Object;
  * myAddressNameAdmin: ERef<MyAddressNameAdmin>,
  * }} unique
  * @param {{
- * agoricNames: NameHub,
- * board: Board
- * namesByAddress: NameHub,
+ * agoricNames: ERef<NameHub>,
+ * board: ERef<Board>,
+ * namesByAddress: ERef<NameHub>,
  * storageNode: ERef<StorageNode>,
  * zoe: ERef<ZoeService>,
  * }} shared

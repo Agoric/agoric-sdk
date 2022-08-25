@@ -289,8 +289,8 @@
  */
 
 /**
- * @template [C=unknown] contract
- * @typedef {import('./utils').Installation<C>} Installation
+ * @template [SF=any] contract start function
+ * @typedef {import('./utils').Installation<SF>} Installation
  */
 
 /**

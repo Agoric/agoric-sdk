@@ -5,8 +5,8 @@ import { Nat } from '@agoric/nat';
 import { makeScalarMapStore } from '@agoric/store';
 import { provide } from '@agoric/store/src/stores/store-utils.js';
 import { E, Far } from '@endo/far';
-import { deeplyFulfilled } from '@endo/marshal';
 
+import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeStorageNodeChild } from '../lib-chainStorage.js';
 import { makeNameHubKit } from '../nameHub.js';
 import { feeIssuerConfig } from './utils.js';
@@ -244,7 +244,7 @@ export const makeClientBanks = async ({
     bridgeManagerP,
   ]);
 
-  const terms = await deeplyFulfilled(
+  const terms = await deeplyFulfilledObject(
     harden({
       agoricNames,
       namesByAddress,
@@ -254,6 +254,7 @@ export const makeClientBanks = async ({
   const { creatorFacet } = await E(zoe).startInstance(
     walletFactory,
     {},
+    // @ts-expect-error FIXME 'board' types don't match
     terms,
     { storageNode, bridgeManager },
   );
@@ -370,7 +371,6 @@ export const addBankAssets = async ({
   const runKit = { issuer: runIssuer, brand: runBrand, payment };
 
   /** @type {{ creatorFacet: ERef<Mint>, publicFacet: ERef<Issuer> }} */
-  // @ts-expect-error cast
   const { creatorFacet: bldMint, publicFacet: bldIssuer } = E.get(
     E(zoe).startInstance(
       mintHolder,
