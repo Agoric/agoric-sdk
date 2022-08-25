@@ -11,6 +11,10 @@ RESULTSDIR=${RESULTSDIR-"$NETWORK_NAME/results"}
 
 [ $# -gt 0 ] && RESULTSDIR="$1"
 
+clean_slog() {
+  jq -cr 'del(.time, .monotime, .dr[2].timestamps, .memoryUsage, .heapStats, .statsTime)'
+}
+
 "$thisdir/process-integration-swingstore-traces.sh" "$RESULTSDIR"
 
 [ -f "$RESULTSDIR/divergent_snapshots" ] || exit 0
@@ -172,14 +176,14 @@ for trace in *-xsnap-trace; do
   done
 done
 
-diff <(cat validator0.slog | jq -cr 'del(.time)') <(cat validator1.slog | jq -cr 'del(.time)') > validator-slog.diff || true
+diff <(cat validator0.slog | clean_slog) <(cat validator1.slog | clean_slog) > validator-slog.diff || true
 to_backup="$to_backup validator-slog.diff"
 
 if [ -f chain-stage-0.slog.gz ]; then
-  gunzip -fk chain-stage-0.slog.gz
+  zcat chain-stage-0.slog.gz > chain-stage-0.slog || true
   to_delete="$to_delete chain-stage-0.slog"
   chain_slog_len=$(cat chain-stage-0.slog | wc -l)
-  diff <(head -n $chain_slog_len validator0.slog | jq -cr 'del(.time)') <(cat chain-stage-0.slog | jq -cr 'del(.time)') > monitor-stage-0-vs-validator-slog.diff || true
+  diff <(head -n $chain_slog_len validator0.slog | clean_slog) <(cat chain-stage-0.slog | clean_slog) > monitor-stage-0-vs-validator-slog.diff || true
   to_backup="$to_backup monitor-stage-0-vs-validator-slog.diff"
 fi
 
