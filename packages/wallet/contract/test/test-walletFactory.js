@@ -54,7 +54,6 @@ const makeTestContext = async t => {
     'walletFactory',
   );
   /** @type {Promise<Installation<import('../src/walletFactory.js').start>>} */
-  // @ts-expect-error case
   const installation = E(zoe).install(bundle);
   // #endregion
 
@@ -63,7 +62,6 @@ const makeTestContext = async t => {
     consume.chainStorage,
     'wallet',
   );
-  const marshaller = E(consume.board).getPublishingMarshaller();
 
   const walletFactory = E(zoe).startInstance(
     installation,
@@ -73,7 +71,7 @@ const makeTestContext = async t => {
       namesByAddress: consume.namesByAddress,
       board: consume.board,
     },
-    { storageNode, marshaller },
+    { storageNode },
   );
 
   return {

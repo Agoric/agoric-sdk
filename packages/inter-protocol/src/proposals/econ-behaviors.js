@@ -13,7 +13,7 @@ import {
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E, Far } from '@endo/far';
 import { Stable, Stake } from '@agoric/vats/src/tokens.js';
-import { deeplyFulfilled } from '@endo/marshal';
+import { deeplyFulfilledObject } from '@agoric/internal';
 import * as Collect from '../collect.js';
 import { makeTracer } from '../makeTracer.js';
 import { makeStakeReporter } from '../my-lien.js';
@@ -171,7 +171,7 @@ export const startInterchainPool = async (
     mgrP,
   ]);
 
-  const terms = await deeplyFulfilled(
+  const terms = await deeplyFulfilledObject(
     harden({
       minimumCentral: AmountMath.make(centralBrand, minimumCentral),
       amm,
@@ -182,6 +182,7 @@ export const startInterchainPool = async (
     { Central: centralIssuer },
     terms,
     {
+      // @ts-expect-error XXX remotable types
       bankManager,
     },
   );
@@ -248,7 +249,7 @@ export const setupAmm = async (
   );
   const marshaller = await E(board).getPublishingMarshaller();
 
-  const ammGovernorTerms = await deeplyFulfilled(
+  const ammGovernorTerms = await deeplyFulfilledObject(
     harden({
       timer: chainTimerService,
       electorateInstance,
@@ -344,7 +345,7 @@ export const setupReserve = async ({
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
-  const reserveGovernorTerms = await deeplyFulfilled(
+  const reserveGovernorTerms = await deeplyFulfilledObject(
     harden({
       timer: chainTimerService,
       electorateInstance,
@@ -487,7 +488,7 @@ export const startVaultFactory = async (
     },
   );
 
-  const governorTerms = await deeplyFulfilled(
+  const governorTerms = await deeplyFulfilledObject(
     harden({
       timer: chainTimerService,
       electorateInstance: economicCommitteeInstance,
@@ -688,7 +689,7 @@ export const startRewardDistributor = async ({
 }) => {
   trace('startRewardDistributor');
   const timerService = await chainTimerService;
-  const feeDistributorTerms = await deeplyFulfilled(
+  const feeDistributorTerms = await deeplyFulfilledObject(
     harden({
       timerService,
       collectionInterval: 60n * 60n, // 1 hour
@@ -879,7 +880,7 @@ export const startStakeFactory = async (
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
-  const stakeTerms = await deeplyFulfilled(
+  const stakeTerms = await deeplyFulfilledObject(
     harden({
       timer: chainTimerService,
       electorateInstance,

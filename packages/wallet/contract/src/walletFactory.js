@@ -16,9 +16,9 @@ import { makeSmartWallet } from './smartWallet.js';
 
 /**
  * @typedef {{
- *   agoricNames: NameHub,
- *   board: Board,
- *   namesByAddress: NameHub,
+ *   agoricNames: ERef<NameHub>,
+ *   board: ERef<Board>,
+ *   namesByAddress: ERef<NameHub>,
  * }} SmartWalletContractTerms
  *
  * @typedef {{
