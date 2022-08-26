@@ -15785,7 +15785,7 @@ rollup@^2.43.1, rollup@^2.58.0:
   optionalDependencies:
     fsevents "~2.3.2"
 
-"rollup@github:endojs/endo#rollup-2.7.1-patch-1":
+rollup@endojs/endo#rollup-2.7.1-patch-1:
   version "2.70.1-endo.1"
   resolved "https://codeload.github.com/endojs/endo/tar.gz/54060e784a4dbe77b6692f17344f4d84a198530d"
   optionalDependencies:
