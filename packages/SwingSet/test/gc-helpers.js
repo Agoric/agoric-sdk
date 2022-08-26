@@ -157,7 +157,7 @@ export const anySchema = JSON.stringify(
 );
 
 export const stringSchema = JSON.stringify(
-  capargs([{ '@qclass': 'tagged', tag: 'match:kind', payload: 'string' }]),
+  capargs([{ '@qclass': 'tagged', tag: 'match:string', payload: [] }]),
 );
 
 export const scalarSchema = JSON.stringify(

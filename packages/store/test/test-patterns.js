@@ -310,7 +310,7 @@ const matchTests = harden([
     noPatterns: [
       [
         M.pattern(),
-        'match:remotable payload: 88 - Must be a copyRecord to match a copyRecord pattern: {"label":"[match:kind]"}',
+        'match:remotable payload: 88 - Must be a copyRecord to match a copyRecord pattern: {"label":"[match:string]"}',
       ],
     ],
   },
@@ -374,13 +374,13 @@ test('masking match failure', t => {
     harden({ keys: [M.string()], values: ['x'] }),
   );
   t.throws(() => fit(nonSet, M.set()), {
-    message: 'A passable tagged "match:kind" is not a key: "[match:kind]"',
+    message: 'A passable tagged "match:string" is not a key: "[match:string]"',
   });
   t.throws(() => fit(nonBag, M.bag()), {
-    message: 'A passable tagged "match:kind" is not a key: "[match:kind]"',
+    message: 'A passable tagged "match:string" is not a key: "[match:string]"',
   });
   t.throws(() => fit(nonMap, M.map()), {
-    message: 'A passable tagged "match:kind" is not a key: "[match:kind]"',
+    message: 'A passable tagged "match:string" is not a key: "[match:string]"',
   });
 });
 

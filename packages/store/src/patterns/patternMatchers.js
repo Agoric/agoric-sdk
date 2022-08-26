@@ -8,6 +8,7 @@ import {
   makeTagged,
   passStyleOf,
   hasOwnPropertyOf,
+  nameForPassableSymbol,
 } from '@endo/marshal';
 import { identChecker } from '@agoric/assert';
 import { applyLabelingError, listDifference } from '@agoric/internal';
@@ -36,9 +37,79 @@ import {
 
 const { quote: q, details: X } = assert;
 const { entries, values } = Object;
+const { ownKeys } = Reflect;
 
 /** @type WeakSet<Pattern> */
 const patternMemo = new WeakSet();
+
+// /////////////////////// Match Helpers Helpers /////////////////////////////
+
+/**
+ * exported primarily for testing.
+ */
+export const defaultLimits = harden({
+  decimalDigitsLimit: 100,
+  stringLengthLimit: 100_000,
+  symbolNameLengthLimit: 40,
+  numPropertiesLimit: 80,
+  propertyNameLengthLimit: 100,
+  arrayLengthLimit: 10_000,
+  numSetElementsLimit: 10_000,
+  numUniqueBagElementsLimit: 10_000,
+  numMapEntriesLimit: 5000,
+});
+
+/**
+ * Use the result only to get the limits you need by destructuring.
+ * Thus, the result only needs to support destructuring. The current
+ * implementation uses inheritance as a cheap hack.
+ *
+ * @param {Limits} [limits]
+ * @returns {AllLimits}
+ */
+const limit = (limits = {}) =>
+  /** @type {AllLimits} */ (harden({ __proto__: defaultLimits, ...limits }));
+
+const checkIsLimitPayload = (payload, mainPayloadShape, check, label) => {
+  assert(Array.isArray(mainPayloadShape));
+  if (!Array.isArray(payload)) {
+    return check(false, X`${q(label)} payload must be an array: ${payload}`);
+  }
+
+  // Was the following, but its overuse of patterns caused an infinite regress
+  // const payloadLimitShape = harden(
+  //   M.split(
+  //     mainPayloadShape,
+  //     M.partial(harden([M.recordOf(M.string(), M.number())]), harden([])),
+  //   ),
+  // );
+  // return checkMatches(payload, payloadLimitShape, check, label);
+
+  const mainLength = mainPayloadShape.length;
+  if (payload.length < mainLength || payload.length > mainLength + 1) {
+    return check(false, X`${q(label)} payload unexpected size: ${payload}`);
+  }
+  const limits = payload[mainLength];
+  payload = harden(payload.slice(0, mainLength));
+  if (!checkMatches(payload, mainPayloadShape, check, label)) {
+    return false;
+  }
+  if (limits === undefined) {
+    return true;
+  }
+  return (
+    check(
+      passStyleOf(limits) === 'copyRecord',
+      X`Limits must be a record: ${q(limits)}`,
+    ) &&
+    entries(limits).every(([key, value]) =>
+      check(
+        passStyleOf(value) === 'number',
+        X`Value of limit ${q(key)} but be a number: ${q(value)}`,
+      ),
+    )
+  );
+};
 
 /**
  * @returns {PatternKit}
@@ -733,6 +804,105 @@ const makePatternKit = () => {
   });
 
   /** @type {MatchHelper} */
+  const matchBigintHelper = Far('match:bigint helper', {
+    checkMatches: (specimen, [limits = undefined], check) => {
+      const { decimalDigitsLimit } = limit(limits);
+      const absSpecimen = specimen < 0n ? -specimen : specimen;
+      return (
+        checkKind(specimen, 'bigint', check) &&
+        check(
+          `${absSpecimen}`.length <= decimalDigitsLimit,
+          X`bigint ${specimen} must not have more than ${decimalDigitsLimit} digits`,
+        )
+      );
+    },
+
+    checkIsMatcherPayload: (payload, check) =>
+      checkIsLimitPayload(payload, harden([]), check, 'match:bigint payload'),
+
+    getRankCover: (_matchPayload, _encodePassable) =>
+      getPassStyleCover('bigint'),
+
+    checkKeyPattern: (_matcherPayload, _check) => true,
+  });
+
+  /** @type {MatchHelper} */
+  const matchNatHelper = Far('match:nat helper', {
+    checkMatches: (specimen, [limits = undefined], check) => {
+      const { decimalDigitsLimit } = limit(limits);
+      return (
+        checkKind(specimen, 'bigint', check) &&
+        check(specimen >= 0n, X`${specimen} - Must be non-negative`) &&
+        check(
+          `${specimen}`.length <= decimalDigitsLimit,
+          X`bigint ${specimen} must not have more than ${decimalDigitsLimit} digits`,
+        )
+      );
+    },
+
+    checkIsMatcherPayload: (payload, check) =>
+      checkIsLimitPayload(payload, harden([]), check, 'match:nat payload'),
+
+    getRankCover: (_matchPayload, _encodePassable) =>
+      // TODO Could be more precise
+      getPassStyleCover('bigint'),
+
+    checkKeyPattern: (_matcherPayload, _check) => true,
+  });
+
+  /** @type {MatchHelper} */
+  const matchStringHelper = Far('match:string helper', {
+    checkMatches: (specimen, [limits = undefined], check) => {
+      const { stringLengthLimit } = limit(limits);
+      return (
+        checkKind(specimen, 'string', check) &&
+        check(
+          specimen.length <= stringLengthLimit,
+          X`string ${specimen} must not be bigger than ${stringLengthLimit}`,
+        )
+      );
+    },
+
+    checkIsMatcherPayload: (payload, check) =>
+      checkIsLimitPayload(payload, harden([]), check, 'match:string payload'),
+
+    getRankCover: (_matchPayload, _encodePassable) =>
+      getPassStyleCover('string'),
+
+    checkKeyPattern: (_matcherPayload, _check) => true,
+  });
+
+  /** @type {MatchHelper} */
+  const matchSymbolHelper = Far('match:symbol helper', {
+    checkMatches: (specimen, [limits = undefined], check) => {
+      const { symbolNameLengthLimit } = limit(limits);
+      if (!checkKind(specimen, 'symbol', check)) {
+        return false;
+      }
+      const symbolName = nameForPassableSymbol(specimen);
+      assert.typeof(
+        symbolName,
+        'string',
+        X`internal: Passable symbol ${specimen} must have a passable name`,
+      );
+      return check(
+        symbolName.length <= symbolNameLengthLimit,
+        X`Symbol name ${q(
+          symbolName,
+        )} must not be bigger than ${symbolNameLengthLimit}`,
+      );
+    },
+
+    checkIsMatcherPayload: (payload, check) =>
+      checkIsLimitPayload(payload, harden([]), check, 'match:bigint payload'),
+
+    getRankCover: (_matchPayload, _encodePassable) =>
+      getPassStyleCover('symbol'),
+
+    checkKeyPattern: (_matcherPayload, _check) => true,
+  });
+
+  /** @type {MatchHelper} */
   const matchRemotableHelper = Far('match:remotable helper', {
     checkMatches: (specimen, remotableDesc, check) => {
       // Unfortunate duplication of checkKind logic, but no better choices.
@@ -855,15 +1025,45 @@ const makePatternKit = () => {
 
   /** @type {MatchHelper} */
   const matchRecordOfHelper = Far('match:recordOf helper', {
-    checkMatches: (specimen, entryPatt, check) =>
-      checkKind(specimen, 'copyRecord', check) &&
-      entries(specimen).every(el =>
-        checkMatches(harden(el), entryPatt, check, el[0]),
-      ),
+    checkMatches: (
+      specimen,
+      [keyPatt, valuePatt, limits = undefined],
+      check,
+    ) => {
+      const { numPropertiesLimit, propertyNameLengthLimit } = limit(limits);
+      return (
+        checkKind(specimen, 'copyRecord', check) &&
+        check(
+          ownKeys(specimen).length <= numPropertiesLimit,
+          X`Must not have more than ${q(
+            numPropertiesLimit,
+          )} properties: ${specimen}`,
+        ) &&
+        entries(specimen).every(
+          ([key, value]) =>
+            applyLabelingError(
+              check,
+              [
+                key.length <= propertyNameLengthLimit,
+                X`Property name must not be longer than ${q(
+                  propertyNameLengthLimit,
+                )}`,
+              ],
+              key,
+            ) &&
+            checkMatches(
+              harden([key, value]),
+              harden([keyPatt, valuePatt]),
+              check,
+              key,
+            ),
+        )
+      );
+    },
 
-    checkIsMatcherPayload: (entryPatt, check) =>
-      checkMatches(
-        entryPatt,
+    checkIsMatcherPayload: (payload, check) =>
+      checkIsLimitPayload(
+        payload,
         harden([M.pattern(), M.pattern()]),
         check,
         'match:recordOf payload',
@@ -877,11 +1077,25 @@ const makePatternKit = () => {
 
   /** @type {MatchHelper} */
   const matchArrayOfHelper = Far('match:arrayOf helper', {
-    checkMatches: (specimen, subPatt, check) =>
-      checkKind(specimen, 'copyArray', check) &&
-      specimen.every((el, i) => checkMatches(el, subPatt, check, i)),
+    checkMatches: (specimen, [subPatt, limits = undefined], check) => {
+      const { arrayLengthLimit } = limit(limits);
+      return (
+        checkKind(specimen, 'copyArray', check) &&
+        check(
+          specimen.length <= arrayLengthLimit,
+          X`Array length ${specimen.length} must be <= limit ${arrayLengthLimit}`,
+        ) &&
+        specimen.every((el, i) => checkMatches(el, subPatt, check, i))
+      );
+    },
 
-    checkIsMatcherPayload: checkPattern,
+    checkIsMatcherPayload: (payload, check) =>
+      checkIsLimitPayload(
+        payload,
+        harden([M.pattern()]),
+        check,
+        'match:arrayOf payload',
+      ),
 
     getRankCover: () => getPassStyleCover('copyArray'),
 
@@ -891,11 +1105,27 @@ const makePatternKit = () => {
 
   /** @type {MatchHelper} */
   const matchSetOfHelper = Far('match:setOf helper', {
-    checkMatches: (specimen, keyPatt, check) =>
-      checkKind(specimen, 'copySet', check) &&
-      specimen.payload.every((el, i) => checkMatches(el, keyPatt, check, i)),
+    checkMatches: (specimen, [keyPatt, limits = undefined], check) => {
+      const { numSetElementsLimit } = limit(limits);
+      return (
+        checkKind(specimen, 'copySet', check) &&
+        check(
+          specimen.payload.length < numSetElementsLimit,
+          X`Set must not have more than ${q(numSetElementsLimit)} elements: ${
+            specimen.payload.length
+          }`,
+        ) &&
+        specimen.payload.every((el, i) => checkMatches(el, keyPatt, check, i))
+      );
+    },
 
-    checkIsMatcherPayload: checkPattern,
+    checkIsMatcherPayload: (payload, check) =>
+      checkIsLimitPayload(
+        payload,
+        harden([M.pattern()]),
+        check,
+        'match:setOf payload',
+      ),
 
     getRankCover: () => getPassStyleCover('tagged'),
 
@@ -905,17 +1135,41 @@ const makePatternKit = () => {
 
   /** @type {MatchHelper} */
   const matchBagOfHelper = Far('match:bagOf helper', {
-    checkMatches: (specimen, [keyPatt, countPatt], check) =>
-      checkKind(specimen, 'copyBag', check) &&
-      specimen.payload.every(
-        ([key, count], i) =>
-          checkMatches(key, keyPatt, check, `keys[${i}]`) &&
-          checkMatches(count, countPatt, check, `counts[${i}]`),
-      ),
+    checkMatches: (
+      specimen,
+      [keyPatt, countPatt, limits = undefined],
+      check,
+    ) => {
+      const { numUniqueBagElementsLimit, decimalDigitsLimit } = limit(limits);
+      return (
+        checkKind(specimen, 'copyBag', check) &&
+        check(
+          specimen.payload.length <= numUniqueBagElementsLimit,
+          X`Bag must not have more than ${q(
+            numUniqueBagElementsLimit,
+          )} unique elements: ${specimen}`,
+        ) &&
+        specimen.payload.every(
+          ([key, count], i) =>
+            checkMatches(key, keyPatt, check, `keys[${i}]`) &&
+            applyLabelingError(
+              check,
+              [
+                `${count}`.length <= decimalDigitsLimit,
+                X`Each bag element may be appear at most ${q(
+                  decimalDigitsLimit,
+                )} times: ${specimen}`,
+              ],
+              `counts[${i}]`,
+            ) &&
+            checkMatches(count, countPatt, check, `counts[${i}]`),
+        )
+      );
+    },
 
-    checkIsMatcherPayload: (entryPatt, check) =>
-      checkMatches(
-        entryPatt,
+    checkIsMatcherPayload: (payload, check) =>
+      checkIsLimitPayload(
+        payload,
         harden([M.pattern(), M.pattern()]),
         check,
         'match:bagOf payload',
@@ -929,18 +1183,32 @@ const makePatternKit = () => {
 
   /** @type {MatchHelper} */
   const matchMapOfHelper = Far('match:mapOf helper', {
-    checkMatches: (specimen, [keyPatt, valuePatt], check) =>
-      checkKind(specimen, 'copyMap', check) &&
-      specimen.payload.keys.every((k, i) =>
-        checkMatches(k, keyPatt, check, `keys[${i}]`),
-      ) &&
-      specimen.payload.values.every((v, i) =>
-        checkMatches(v, valuePatt, check, `values[${i}]`),
-      ),
+    checkMatches: (
+      specimen,
+      [keyPatt, valuePatt, limits = undefined],
+      check,
+    ) => {
+      const { numMapEntriesLimit } = limit(limits);
+      return (
+        checkKind(specimen, 'copyMap', check) &&
+        check(
+          specimen.payload.keys.length <= numMapEntriesLimit,
+          X`CopyMap must have no more than ${q(
+            numMapEntriesLimit,
+          )} entries: ${specimen}`,
+        ) &&
+        specimen.payload.keys.every((k, i) =>
+          checkMatches(k, keyPatt, check, `keys[${i}]`),
+        ) &&
+        specimen.payload.values.every((v, i) =>
+          checkMatches(v, valuePatt, check, `values[${i}]`),
+        )
+      );
+    },
 
-    checkIsMatcherPayload: (entryPatt, check) =>
-      checkMatches(
-        entryPatt,
+    checkIsMatcherPayload: (payload, check) =>
+      checkIsLimitPayload(
+        payload,
         harden([M.pattern(), M.pattern()]),
         check,
         'match:mapOf payload',
@@ -1092,6 +1360,10 @@ const makePatternKit = () => {
     'match:key': matchKeyHelper,
     'match:pattern': matchPatternHelper,
     'match:kind': matchKindHelper,
+    'match:bigint': matchBigintHelper,
+    'match:nat': matchNatHelper,
+    'match:string': matchStringHelper,
+    'match:symbol': matchSymbolHelper,
     'match:remotable': matchRemotableHelper,
 
     'match:lt': matchLTHelper,
@@ -1122,19 +1394,25 @@ const makePatternKit = () => {
   const PatternShape = makeMatcher('match:pattern', undefined);
   const BooleanShape = makeKindMatcher('boolean');
   const NumberShape = makeKindMatcher('number');
-  const BigintShape = makeKindMatcher('bigint');
-  const NatShape = makeMatcher('match:gte', 0n);
-  const StringShape = makeKindMatcher('string');
-  const SymbolShape = makeKindMatcher('symbol');
-  const RecordShape = makeKindMatcher('copyRecord');
-  const ArrayShape = makeKindMatcher('copyArray');
-  const SetShape = makeKindMatcher('copySet');
-  const BagShape = makeKindMatcher('copyBag');
-  const MapShape = makeKindMatcher('copyMap');
   const RemotableShape = makeKindMatcher('remotable');
   const ErrorShape = makeKindMatcher('error');
   const PromiseShape = makeKindMatcher('promise');
   const UndefinedShape = makeKindMatcher('undefined');
+
+  /**
+   * For when the last element of the payload is the optional limits,
+   * so that when it is `undefined` it is dropped from the end of the
+   * payloads array.
+   *
+   * @param {string} tag
+   * @param {Passable[]} payload
+   */
+  const makeLimitsMatcher = (tag, payload) => {
+    if (payload[payload.length - 1] === undefined) {
+      payload = harden(payload.slice(0, payload.length - 1));
+    }
+    return makeMatcher(tag, payload);
+  };
 
   const makeRemotableMatcher = (label = undefined) =>
     label === undefined
@@ -1207,15 +1485,15 @@ const makePatternKit = () => {
     kind: makeKindMatcher,
     boolean: () => BooleanShape,
     number: () => NumberShape,
-    bigint: () => BigintShape,
-    nat: () => NatShape,
-    string: () => StringShape,
-    symbol: () => SymbolShape,
-    record: () => RecordShape,
-    array: () => ArrayShape,
-    set: () => SetShape,
-    bag: () => BagShape,
-    map: () => MapShape,
+    bigint: (limits = undefined) => makeLimitsMatcher('match:bigint', [limits]),
+    nat: (limits = undefined) => makeLimitsMatcher('match:nat', [limits]),
+    string: (limits = undefined) => makeLimitsMatcher('match:string', [limits]),
+    symbol: (limits = undefined) => makeLimitsMatcher('match:symbol', [limits]),
+    record: (limits = undefined) => M.recordOf(M.any(), M.any(), limits),
+    array: (limits = undefined) => M.arrayOf(M.any(), limits),
+    set: (limits = undefined) => M.setOf(M.any(), limits),
+    bag: (limits = undefined) => M.bagOf(M.any(), M.any(), limits),
+    map: (limits = undefined) => M.mapOf(M.any(), M.any(), limits),
     remotable: makeRemotableMatcher,
     error: () => ErrorShape,
     promise: () => PromiseShape,
@@ -1232,14 +1510,16 @@ const makePatternKit = () => {
     gte: rightOperand => makeMatcher('match:gte', rightOperand),
     gt: rightOperand => makeMatcher('match:gt', rightOperand),
 
-    arrayOf: (subPatt = M.any()) => makeMatcher('match:arrayOf', subPatt),
-    recordOf: (keyPatt = M.any(), valuePatt = M.any()) =>
-      makeMatcher('match:recordOf', [keyPatt, valuePatt]),
-    setOf: (keyPatt = M.any()) => makeMatcher('match:setOf', keyPatt),
-    bagOf: (keyPatt = M.any(), countPatt = M.any()) =>
-      makeMatcher('match:bagOf', [keyPatt, countPatt]),
-    mapOf: (keyPatt = M.any(), valuePatt = M.any()) =>
-      makeMatcher('match:mapOf', [keyPatt, valuePatt]),
+    recordOf: (keyPatt = M.any(), valuePatt = M.any(), limits = undefined) =>
+      makeLimitsMatcher('match:recordOf', [keyPatt, valuePatt, limits]),
+    arrayOf: (subPatt = M.any(), limits = undefined) =>
+      makeLimitsMatcher('match:arrayOf', [subPatt, limits]),
+    setOf: (keyPatt = M.any(), limits = undefined) =>
+      makeLimitsMatcher('match:setOf', [keyPatt, limits]),
+    bagOf: (keyPatt = M.any(), countPatt = M.any(), limits = undefined) =>
+      makeLimitsMatcher('match:bagOf', [keyPatt, countPatt, limits]),
+    mapOf: (keyPatt = M.any(), valuePatt = M.any(), limits = undefined) =>
+      makeLimitsMatcher('match:mapOf', [keyPatt, valuePatt, limits]),
     split: (base, rest = undefined) =>
       makeMatcher('match:split', rest === undefined ? [base] : [base, rest]),
     partial: (base, rest = undefined) =>
@@ -1269,6 +1549,7 @@ const makePatternKit = () => {
   });
 
   return harden({
+    checkMatches,
     matches,
     fit,
     assertPattern,
@@ -1287,6 +1568,7 @@ const makePatternKit = () => {
 // uses of `getRankCover`, for clarity during development, `makePatternKit`
 // is not currently exported.
 export const {
+  checkMatches,
   matches,
   fit,
   assertPattern,
