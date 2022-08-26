@@ -79,22 +79,22 @@ const setupFilterGovernance = async (
     //   return a broken promise.
     const outcomeOfUpdate = E(counterPublicFacet)
       .getOutcome()
-      .then(outcome => {
-        if (keyEQ(outcome, positive)) {
-          return (
-            E(governorFacet)
-              // @ts-expect-error typescript doesn't see GovernorFacet.setOfferFilter
+      .then(
+        /** @type {(outcome: Position) => ERef<Position>} */
+        outcome => {
+          if (keyEQ(outcome, positive)) {
+            return E(governorFacet)
               .setOfferFilter(strings)
               .then(() => {
                 return positive;
-              })
-          );
-        } else if (keyEQ(outcome, negative)) {
-          return negative;
-        } else {
-          assert.fail('unrecognized outcome');
-        }
-      });
+              });
+          } else if (keyEQ(outcome, negative)) {
+            return negative;
+          } else {
+            assert.fail('unrecognized outcome');
+          }
+        },
+      );
 
     return {
       outcomeOfUpdate,

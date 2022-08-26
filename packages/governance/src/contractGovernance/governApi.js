@@ -95,26 +95,28 @@ const setupApiGovernance = async (
     //   return a broken promise.
     const outcomeOfUpdate = E(counterPublicFacet)
       .getOutcome()
-      // @ts-expect-error return types don't appear to match
-      .then(outcome => {
-        if (keyEQ(positive, outcome)) {
-          assert(
-            keyEQ(outcome, harden({ apiMethodName, methodArgs })),
-            X`The question's method name (${q(
-              apiMethodName,
-            )}) and args (${methodArgs}) didn't match the outcome ${outcome}`,
-          );
+      .then(
+        /** @type {(outcome: Position) => ERef<Position>} */
+        outcome => {
+          if (keyEQ(positive, outcome)) {
+            assert(
+              keyEQ(outcome, harden({ apiMethodName, methodArgs })),
+              X`The question's method name (${q(
+                apiMethodName,
+              )}) and args (${methodArgs}) didn't match the outcome ${outcome}`,
+            );
 
-          // E(remote)[name](args) invokes the method named 'name' on remote.
-          return E(governedApis)
-            [apiMethodName](...methodArgs)
-            .then(() => {
-              return positive;
-            });
-        } else {
-          return negative;
-        }
-      });
+            // E(remote)[name](args) invokes the method named 'name' on remote.
+            return E(governedApis)
+              [apiMethodName](...methodArgs)
+              .then(() => {
+                return positive;
+              });
+          } else {
+            return negative;
+          }
+        },
+      );
 
     return {
       outcomeOfUpdate,
