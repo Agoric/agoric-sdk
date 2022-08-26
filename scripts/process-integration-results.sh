@@ -17,7 +17,7 @@ clean_slog() {
 
 "$thisdir/process-integration-swingstore-traces.sh" "$RESULTSDIR"
 
-[ -f "$RESULTSDIR/divergent_snapshots" ] || exit 0
+# [ -f "$RESULTSDIR/divergent_snapshots" ] || exit 0
 
 cd "$RESULTSDIR"
 
@@ -99,7 +99,9 @@ for v in validator0-xsnap-trace/v*; do
   done
 done | grep -v "No newline at end of file" > monitor-vs-validator-xsnap-trace.diff || true
 [ "x${DEBUG-}" = "x1" ] && set -x
-to_backup="$to_backup monitor-vs-validator-xsnap-trace.diff"
+grep -e '^--- validator' <(cat validator-xsnap-trace.diff monitor-vs-validator-xsnap-trace.diff) | cut -d '/' -f 2 | uniq > divergent_xsnap_trace_vats || true
+
+to_backup="$to_backup monitor-vs-validator-xsnap-trace.diff divergent_xsnap_trace_vats"
 
 mkdir -p "xs-snapshots"
 cp -a validator0-xs-snapshots/* "xs-snapshots/" || true
@@ -118,7 +120,7 @@ for trace in chain-*-swingstore-trace validator*-swingstore-trace; do
   to_delete="$to_delete $snapshots_dir"
   for v in $({ grep -E 'set local\.v[0-9]+\.lastSnapshot' $trace || true; } | cut -d ' ' -f 2 | cut -d '.' -f 2 | sort | uniq ); do
     mkdir -p $snapshots_dir/$v
-    if grep -q -e "^$v\$" divergent_snapshot_vats; then
+    if grep -q -e "^$v\$" <(cat divergent_snapshot_vats divergent_xsnap_trace_vats); then
       to_backup="$to_backup $snapshots_dir/$v"
       v_divergent=1
     else
@@ -146,7 +148,7 @@ for trace in *-xsnap-trace; do
   for v in $trace/v*; do
     [ -h "$v" ] || continue
     v=${v#"$trace/"}
-    if grep -q -e "^$v\$" divergent_snapshot_vats; then
+    if grep -q -e "^$v\$" <(cat divergent_snapshot_vats divergent_xsnap_trace_vats); then
       v_divergent=1
       to_backup="$to_backup $trace/$v $trace/$(readlink $trace/$v)"
     else

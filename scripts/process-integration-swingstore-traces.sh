@@ -46,7 +46,7 @@ if [ -f $RESULTSDIR/chain-stage-0-swingstore-trace ] ; then
   diffs="$diffs $RESULTSDIR/monitor-vs-validator-swingstore-trace.diff"
 fi
 
-[ $val_diff_ret -eq 0 -a $chain_diff_ret -eq 0 ] && exit 0
+# [ $val_diff_ret -eq 0 -a $chain_diff_ret -eq 0 ] && exit 0
 
 get_snapshots_from_diff <(cat $diffs) > $RESULTSDIR/divergent_snapshots
 get_vats_from_diff <(cat $diffs) > $RESULTSDIR/divergent_snapshot_vats
