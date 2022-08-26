@@ -67,10 +67,8 @@ export function sqlStreamStore(dbDir, io) {
   // https://sqlite.org/lang_transaction.html , especially section 2.2
 
   function ensureTransaction() {
-    // @ts-expect-error Database really does have .inTransaction:boolean
     if (!db.inTransaction) {
       db.prepare('BEGIN IMMEDIATE TRANSACTION').run();
-      // @ts-expect-error Database really does have .inTransaction:boolean
       assert(db.inTransaction);
     }
   }
@@ -163,7 +161,6 @@ export function sqlStreamStore(dbDir, io) {
   };
 
   const commit = () => {
-    // @ts-expect-error Database really does have .inTransaction:boolean
     if (db.inTransaction) {
       db.prepare('COMMIT').run();
     }
