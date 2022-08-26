@@ -83,7 +83,7 @@ It's not clear that `disavow` is a good idea: it may be removed once the GC impl
 
 Each swingset is created by a call to `buildVatController`, which takes a `config` argument. The `config.vats` property is a Map of named vat definitions: each value is an object with `sourcepath` and `options`. The `sourcepath` is the filename of the vat definition file (the one that exports `buildRootObject`).
 
-The `options` bag currently only recognizes one property: `enablePipelining`. When a pipelining-enabled vat is the *decider* of some unresolved promise, and some other vat sends a message to that promise, the kernel will deliver the message to the vat, rather than holding the message in the kernel queue until the promise becomes resolved. Pipelining is enabled on the comms vat, where it is vital to reduce latency, but disabled on all other vats, where it wouldn't help very much.
+See "configuration.md" for details about the properties that `options` can contain.
 
 ## Built-in Vats
 

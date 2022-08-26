@@ -78,9 +78,40 @@ const control = await E(vatAdminService).createVat(bundlecap, options);
 * `virtualObjectCacheSize` (integer): performance tuning parameter
 * `useTranscript` (boolean, default `true`): only used for specialized vats like comms
 * `reapInterval` (integer): performance tuning parameter
+* `critical` (special object): mark the vat as "critical", if it terminates then panic the kernel
 
 Note that any vat which can reach `createVat()` can create a new unmetered vat, even if the caller was metered themselves. So do not share an unattenuated Vat Admin object with an unmetered vat if you wish them to remain confined to metered operation.
 
+#### Critical Dynamic Vats and the criticalVatKey
+
+The `critical` option can be used for certain vats which are so important that the system should halt rather than proceed without them. It causes the same behavior as the `critical: true` flag on static vats (e.g.`config.vats.NAME.creationOptions.critical = true`): if a critical vat is terminated for any reason (metering failure, illegal syscall), the kernel panics, which causes `controller.run()` to reject, which should prevent the host application from committing the state vector that includes the vat being terminated.
+
+However we cannot grant the ability to halt the entire kernel to just any user of `createVat()`. To prevent that, the dynamic `critical:` option requires a special object named `criticalVatKey`. This can only be obtained from the vat-admin *root object* (which is distinct from the `vatAdminService`).
+
+Bootstrap methods usually look like the following:
+
+```js
+function bootstrap(vats, devices) {
+  const vatAdminService = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+  // do rest of bootstrap
+  ..
+  // maybe create a dynamic vat
+  const options = { vatParameters };
+  const { root, adminNode } = await E(vatAdminService).createVat(bundlecap, options);
+```
+
+To use the critical vat flag, it should do this instead:
+
+```js
+function bootstrap(vats, devices) {
+  const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
+  const vatAdminService = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+  // do rest of bootstrap
+  ..
+  // maybe create a dynamic vat
+  const options = { vatParameters, critical: criticalVatKey };
+  const { root, adminNode } = await E(vatAdminService).createVat(bundlecap, options);
+```
 
 ## Root Object and Admin Node
 
