@@ -21,46 +21,10 @@ clean_slog() {
 
 cd "$RESULTSDIR"
 
-mkdir -p "xs-snapshots"
-cp -a validator0-xs-snapshots/* "xs-snapshots/" || true
-cp -a validator1-xs-snapshots/* "xs-snapshots/" || true
-for s in chain-*-storage.tar.xz; do
-  [ -f "$s" ] || continue
-  tar -C "xs-snapshots/" -xJf $s --wildcards '**/xs-snapshots/*.gz' --transform='s/.*\///'
-done
-
 to_backup="divergent_snapshots divergent_snapshot_vats validator-swingstore-trace.diff"
-to_delete="xs-snapshots"
+to_delete=""
 
-snapshots=""
-for trace in chain-*-swingstore-trace validator*-swingstore-trace; do
-  [ -f "$trace" ] || continue
-  snapshots_dir=${trace%"-swingstore-trace"}-snapshots
-  mkdir -p $snapshots_dir
-  to_delete="$to_delete $snapshots_dir"
-  for v in $({ grep -E 'set local\.v[0-9]+\.lastSnapshot' $trace || true; } | cut -d ' ' -f 2 | cut -d '.' -f 2 | sort | uniq ); do
-    mkdir -p $snapshots_dir/$v
-    if grep -q -e "^$v\$" divergent_snapshot_vats; then
-      to_backup="$to_backup $snapshots_dir/$v"
-      v_divergent=1
-    else
-      v_divergent=0
-    fi
-    while read -r parsed; do
-      set $parsed
-      [ $v_divergent -eq 1 ] && snapshots="$snapshots $1"
-      ln -sf -T ../../xs-snapshots/$1 $snapshots_dir/$v/$2
-    done < <({ grep "set local.$v.lastSnapshot" $trace || true; } | \
-      cut -d ' ' -f 3 | \
-      jq -src '[.[] | [.startPos.itemCount, .snapshotID] ] | to_entries[] | [.value[1], " ", (1 + .key | tostring | length | if . >= 3 then "" else "0" * (3 - .) end), (1 + .key | tostring), "-", (.value[0] | tostring)] | join("")' \
-    )
-  done
-done
-
-gunzip -f xs-snapshots/*.gz || true
-to_backup="$to_backup $(for h in $snapshots $(<divergent_snapshots); do
-  [ -f xs-snapshots/$h ] && echo xs-snapshots/$h || true
-done | sort | uniq)"
+[ -f monitor-vs-validator-swingstore-trace.diff ] && to_backup="$to_backup monitor-vs-validator-swingstore-trace.diff"
 
 # TODO: handle vat suspension (aka same vatID, multiple workers)
 (mkdir -p validator0-xsnap-trace && cd $_ && tar -xzf ../$_.tgz && for v in *; do [ -d $v -a ! -h $v ] && ln -sf -T $v $(jq -r '.name | split(":") | .[0]' $v/00000-options.json) ; done; true)
@@ -137,7 +101,44 @@ done | grep -v "No newline at end of file" > monitor-vs-validator-xsnap-trace.di
 [ "x${DEBUG-}" = "x1" ] && set -x
 to_backup="$to_backup monitor-vs-validator-xsnap-trace.diff"
 
-[ -f monitor-vs-validator-swingstore-trace.diff ] && to_backup="$to_backup monitor-vs-validator-swingstore-trace.diff"
+mkdir -p "xs-snapshots"
+cp -a validator0-xs-snapshots/* "xs-snapshots/" || true
+cp -a validator1-xs-snapshots/* "xs-snapshots/" || true
+for s in chain-*-storage.tar.xz; do
+  [ -f "$s" ] || continue
+  tar -C "xs-snapshots/" -xJf $s --wildcards '**/xs-snapshots/*.gz' --transform='s/.*\///'
+done
+to_delete="$to_delete xs-snapshots"
+
+snapshots=""
+for trace in chain-*-swingstore-trace validator*-swingstore-trace; do
+  [ -f "$trace" ] || continue
+  snapshots_dir=${trace%"-swingstore-trace"}-snapshots
+  mkdir -p $snapshots_dir
+  to_delete="$to_delete $snapshots_dir"
+  for v in $({ grep -E 'set local\.v[0-9]+\.lastSnapshot' $trace || true; } | cut -d ' ' -f 2 | cut -d '.' -f 2 | sort | uniq ); do
+    mkdir -p $snapshots_dir/$v
+    if grep -q -e "^$v\$" divergent_snapshot_vats; then
+      to_backup="$to_backup $snapshots_dir/$v"
+      v_divergent=1
+    else
+      v_divergent=0
+    fi
+    while read -r parsed; do
+      set $parsed
+      [ $v_divergent -eq 1 ] && snapshots="$snapshots $1"
+      ln -sf -T ../../xs-snapshots/$1 $snapshots_dir/$v/$2
+    done < <({ grep "set local.$v.lastSnapshot" $trace || true; } | \
+      cut -d ' ' -f 3 | \
+      jq -src '[.[] | [.startPos.itemCount, .snapshotID] ] | to_entries[] | [.value[1], " ", (1 + .key | tostring | length | if . >= 3 then "" else "0" * (3 - .) end), (1 + .key | tostring), "-", (.value[0] | tostring)] | join("")' \
+    )
+  done
+done
+
+gunzip -f xs-snapshots/*.gz || true
+to_backup="$to_backup $(for h in $snapshots $(<divergent_snapshots); do
+  [ -f xs-snapshots/$h ] && echo xs-snapshots/$h || true
+done | sort | uniq)"
 
 for trace in *-xsnap-trace; do
   [ -d "$trace" ] || continue
