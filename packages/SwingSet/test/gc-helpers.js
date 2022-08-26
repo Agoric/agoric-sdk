@@ -39,7 +39,7 @@ export function buildRootObject(vatPowers) {
 
   function makeMapStore() {
     const result = makeScalarBigMapStore(`store #${nextStoreNumber}`, {
-      keySchema: M.any(),
+      keyShape: M.any(),
     });
     nextStoreNumber += 1;
     return result;
@@ -47,7 +47,7 @@ export function buildRootObject(vatPowers) {
 
   function makeWeakMapStore() {
     const result = makeScalarBigWeakMapStore(`store #${nextStoreNumber}`, {
-      keySchema: M.any(),
+      keyShape: M.any(),
     });
     nextStoreNumber += 1;
     return result;
@@ -55,7 +55,7 @@ export function buildRootObject(vatPowers) {
 
   function makeWeakSetStore() {
     const result = makeScalarBigWeakSetStore(`store #${nextStoreNumber}`, {
-      keySchema: M.any(),
+      keyShape: M.any(),
     });
     nextStoreNumber += 1;
     return result;
@@ -146,7 +146,7 @@ export function buildRootObject(vatPowers) {
 
 export const NONE = undefined;
 export const DONE = [undefined, undefined];
-export const anySchema = JSON.stringify(
+export const anyShape = JSON.stringify(
   capargs([
     {
       '@qclass': 'tagged',
@@ -156,11 +156,11 @@ export const anySchema = JSON.stringify(
   ]),
 );
 
-export const stringSchema = JSON.stringify(
+export const stringShape = JSON.stringify(
   capargs([{ '@qclass': 'tagged', tag: 'match:kind', payload: 'string' }]),
 );
 
-export const anyScalarSchema = JSON.stringify(
+export const anyScalarShape = JSON.stringify(
   capargs([
     {
       '@qclass': 'tagged',
@@ -250,7 +250,7 @@ function validateCreatePromiseRegistrationTable(v, idx) {
   validateCreateBuiltInNonDurableTable(
     v,
     idx,
-    anyScalarSchema,
+    anyScalarShape,
     'promiseRegistrations',
   );
 }
@@ -271,7 +271,7 @@ export function validateCreatePromiseWatcherKindTable(v, idx) {
     v,
     idx,
     'watcherTableID',
-    anyScalarSchema,
+    anyScalarShape,
     'promiseWatcherByKind',
   );
 }
@@ -281,13 +281,13 @@ export function validateCreateWatchedPromiseTable(v, idx) {
     v,
     idx,
     'watchedPromiseTableID',
-    stringSchema,
+    stringShape,
     'watchedPromises',
   );
 }
 
 export function validateCreateBaggage(v, idx) {
-  validateCreateBuiltInTable(v, idx, 'baggageID', stringSchema, 'baggage');
+  validateCreateBuiltInTable(v, idx, 'baggageID', stringShape, 'baggage');
 }
 
 export function validateCreateBuiltInTables(v) {
@@ -302,7 +302,7 @@ export function validateCreate(v, idx, isWeak = false) {
   if (!isWeak) {
     validate(v, matchVatstoreSet(`vc.${idx}.|entryCount`, `0`));
   }
-  validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, anySchema));
+  validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, anyShape));
   validate(v, matchVatstoreSet(`vc.${idx}.|label`, `store #${idx}`));
 }
 
@@ -401,7 +401,7 @@ export function validateDeleteMetadataOnly(
     v,
     matchVatstoreGetAfter(`vc.${idx}.|nextOrdinal`, `vc.${idx}.|`, NONE, [
       `vc.${idx}.|schemata`,
-      anySchema,
+      anyShape,
     ]),
   );
   validate(v, matchVatstoreDelete(`vc.${idx}.|schemata`));
@@ -480,7 +480,7 @@ export function validateFetchAndHold(v, rp, idx) {
     v,
     matchVatstoreGet(`vc.${mainHolderIdx}.sfoo`, mapRefValString(idx)),
   );
-  validate(v, matchVatstoreGet(`vc.${idx}.|schemata`, anySchema));
+  validate(v, matchVatstoreGet(`vc.${idx}.|schemata`, anyShape));
   validate(v, matchVatstoreGet(`vc.${idx}.|label`, `store #${idx}`));
   validateReturned(v, rp);
   validateDone(v);
@@ -495,7 +495,7 @@ export function validateExportHeld(v, rp, idx) {
 
 export function validateImportAndHold(v, rp, idx) {
   if (idx !== NONE) {
-    validate(v, matchVatstoreGet(`vc.${idx}.|schemata`, anySchema));
+    validate(v, matchVatstoreGet(`vc.${idx}.|schemata`, anyShape));
     validate(v, matchVatstoreGet(`vc.${idx}.|label`, `store #${idx}`));
   }
   validateReturned(v, rp);

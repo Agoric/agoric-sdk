@@ -100,7 +100,7 @@
  * @param {InvitationHandle} invitationHandle
  * @param {string} description
  * @param {Record<string, any>=} customProperties
- * @param {Pattern} [proposalSchema]
+ * @param {Pattern} [proposalShape]
  * @returns {Payment}
  */
 
@@ -143,7 +143,7 @@
  * @param {Keyword} keyword
  * @param {AssetKind=} assetKind
  * @param {AdditionalDisplayInfo=} displayInfo
- * @param {Partial<{elementSchema: Pattern}>} [options]
+ * @param {Partial<{elementShape: Pattern}>} [options]
  * @returns {ZoeMint}
  */
 

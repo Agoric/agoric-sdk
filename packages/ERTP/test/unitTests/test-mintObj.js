@@ -31,7 +31,7 @@ test('mint.mintPayment set w strings AssetKind', async t => {
     AssetKind.SET,
     undefined,
     undefined,
-    { elementSchema: M.string() },
+    { elementShape: M.string() },
   );
   const items1and2and4 = AmountMath.make(brand, harden(['1', '2', '4']));
   const payment1 = mint.mintPayment(items1and2and4);

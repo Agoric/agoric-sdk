@@ -70,11 +70,11 @@ export const makeWeakSetStoreMethods = (
  */
 export const makeScalarWeakSetStore = (
   tag = 'key',
-  { longLived = true, keySchema = undefined } = {},
+  { longLived = true, keyShape = undefined } = {},
 ) => {
   const jsset = new (longLived ? WeakSet : Set)();
-  if (keySchema !== undefined) {
-    assertPattern(keySchema);
+  if (keyShape !== undefined) {
+    assertPattern(keyShape);
   }
 
   const assertKeyOkToAdd = key => {
@@ -86,8 +86,8 @@ export const makeScalarWeakSetStore = (
       passStyleOf(key) === 'remotable',
       X`Only remotables can be keys of scalar WeakStores: ${key}`,
     );
-    if (keySchema !== undefined) {
-      fit(key, keySchema, 'weakSetStore key');
+    if (keyShape !== undefined) {
+      fit(key, keyShape, 'weakSetStore key');
     }
   };
 

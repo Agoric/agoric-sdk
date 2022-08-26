@@ -12,7 +12,7 @@ import {
 
 import { vivifyInvitationKit } from '../../../src/zoeService/makeInvitation.js';
 
-const proposalSchemas = makeScalarBigWeakMapStore('proposal schemas');
+const proposalShapes = makeScalarBigWeakMapStore('proposal shapes');
 
 test('vivifyInvitationKit', async t => {
   const { setupMakeInvitation, invitationIssuer } = vivifyInvitationKit(
@@ -26,7 +26,7 @@ test('vivifyInvitationKit', async t => {
     // @ts-expect-error mockInstance is mocked
     mockInstance,
     mockInstallation,
-    proposalSchemas,
+    proposalShapes,
   );
 
   const mockInvitationHandle = Far('mockInvitationHandle', {});
@@ -74,7 +74,7 @@ test('description is omitted, wrongly', async t => {
     // @ts-expect-error mockInstance is mocked
     mockInstance,
     mockInstallation,
-    proposalSchemas,
+    proposalShapes,
   );
 
   const mockInvitationHandle = Far('mockInvitationHandle', {});
@@ -107,7 +107,7 @@ test('customProperties ok to omit', async t => {
     // @ts-expect-error mockInstance is mocked
     mockInstance,
     mockInstallation,
-    proposalSchemas,
+    proposalShapes,
   );
 
   const mockInvitationHandle = Far('mockInvitationHandle', {});

@@ -48,7 +48,7 @@
  * code breaks.
  * @property {GetConfiguration} getConfiguration
  * @property {GetBundleIDFromInstallation} getBundleIDFromInstallation
- * @property {GetProposalSchemaForInvitation} getProposalSchemaForInvitation
+ * @property {GetProposalShapeForInvitation} getProposalShapeForInvitation
  */
 
 /**

@@ -8,7 +8,7 @@ import { assert } from '@agoric/assert';
  * @param {ZCF} zcf
  * @param {Proposal=} proposal
  * @param {PaymentPKeywordRecord=} payments
- * @param {Pattern} [proposalSchema]
+ * @param {Pattern} [proposalShape]
  * @param {string} [description]
  * @returns {Promise<{zcfSeat: ZCFSeat, userSeat: UserSeat}>}
  */
@@ -17,7 +17,7 @@ export const makeOffer = async (
   zcf,
   proposal,
   payments,
-  proposalSchema = undefined,
+  proposalShape = undefined,
   description = 'seat',
 ) => {
   let zcfSeat;
@@ -28,7 +28,7 @@ export const makeOffer = async (
     getSeat,
     description,
     undefined,
-    proposalSchema,
+    proposalShape,
   );
   const userSeat = await E(zoe).offer(invitationP, proposal, payments);
   assert(zcfSeat);
