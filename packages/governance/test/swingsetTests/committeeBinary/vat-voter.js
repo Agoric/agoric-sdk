@@ -10,7 +10,7 @@ const { quote: q } = assert;
 /**
  * @param {(msg: any)=> void} log
  * @param {Issue} issue
- * @param {ERef<ElectoratePublic>} electoratePublicFacet
+ * @param {ERef<CommitteeElectoratePublic>} electoratePublicFacet
  * @param {Record<string, Instance>} instances
  */
 const verify = async (log, issue, electoratePublicFacet, instances) => {
@@ -25,7 +25,6 @@ const verify = async (log, issue, electoratePublicFacet, instances) => {
 
   const { positions, method, issue: iss, maxChoices } = details;
   log(`verify question from instance: ${q(issue)}, ${q(positions)}, ${method}`);
-  // @ts-expect-error not in type
   const c = await E(electoratePublicFacet).getName();
   log(`Verify: q: ${q(iss)}, max: ${maxChoices}, committee: ${c}`);
   const electorateInstance = await E(electoratePublicFacet).getInstance();
@@ -44,7 +43,7 @@ const build = async (log, zoe) => {
   return Far('voter', {
     createVoter: async (name, invitation, choice) => {
       const electorateInstance = await E(zoe).getInstance(invitation);
-      /** @type {Promise<ElectoratePublic>} electoratePublicFacet */
+      /** @type {Promise<CommitteeElectoratePublic>} electoratePublicFacet */
       const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);
       const seat = E(zoe).offer(invitation);
       const voteFacet = E(seat).getOfferResult();
@@ -73,7 +72,7 @@ const build = async (log, zoe) => {
     },
     createMultiVoter: async (name, invitation, choices) => {
       const electorateInstance = await E(zoe).getInstance(invitation);
-      /** @type {Promise<ElectoratePublic>} electoratePublicFacet */
+      /** @type {Promise<CommitteeElectoratePublic>} electoratePublicFacet */
       const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);
       const seat = E(zoe).offer(invitation);
       const voteFacet = E(seat).getOfferResult();
