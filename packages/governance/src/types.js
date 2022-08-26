@@ -463,15 +463,15 @@
  * @property {CreateQuestion} createQuestion
  */
 
+/** @typedef {{ [methodName: string]: (...args: any) => unknown }} GovernedApis */
+
 /**
  * @template {{}} CF
- * @typedef {GovernedCreatorFacet<CF>} GovernorFacet
- * @property {() => ParamManagerRetriever} getParamMgrRetriever
- * @property {(name: string) => Promise<Invitation>} getInvitation
- * @property {() => LimitedCreatorFacet<CF>} getLimitedCreatorFacet
- * @property {() => unknown} getGovernedApis
- * @property {() => (string | symbol)[]} getGovernedApiNames
- * @property {(strings: string[]) => void} setOfferFilter
+ * @typedef {GovernedCreatorFacet<CF> & {
+ * getGovernedApis: () => ERef<GovernedApis>;
+ * getGovernedApiNames: () => (string | symbol)[];
+ * setOfferFilter: (strings: string[]) => void;
+ * }} GovernorFacet
  */
 
 /**
@@ -516,16 +516,6 @@
  */
 
 /**
- * @typedef {object} ContractPowerfulCreatorFacet
- *
- *   A powerful facet that carries access to both the creatorFacet to be passed
- *   to the caller and the paramManager, which will be used exclusively by the
- *   ContractGovernor.
- * @property {() => Promise<LimitedCreatorFacet<any>>} getLimitedCreatorFacet
- * @property {() => ParamManagerRetriever} getParamMgrRetriever
- */
-
-/**
  * @template {{}} PF Public facet of governed contract
  * @template {{}} CF Creator facet of governed contract
  * @typedef {object} GovernedContractFacetAccess
@@ -563,7 +553,7 @@
 
 /**
  * @template {{}} CF creator facet
- * @typedef {{}} GovernedCreatorFacet
+ * @typedef GovernedCreatorFacet
  * @property {() => ParamManagerRetriever} getParamMgrRetriever - allows accessing
  *   and updating governed parameters. Should only be directly accessible to the
  *   contractGovernor

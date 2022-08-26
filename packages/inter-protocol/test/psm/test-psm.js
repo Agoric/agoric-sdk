@@ -197,7 +197,6 @@ async function makePsmDriver(t, customTerms) {
     },
 
     async getFeePayout() {
-      // @ts-expect-error getLimitedCreatorFacet got lost somewhere.
       const limitedCreatorFacet = E(creatorFacet).getLimitedCreatorFacet();
       const collectFeesSeat = await E(zoe).offer(
         E(limitedCreatorFacet).makeCollectFeesInvitation(),
