@@ -17,7 +17,7 @@ import { objectMap } from '@agoric/internal';
 import { makeLegacyMap, makeScalarMap, makeScalarWeakMap } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
+import { E, HandledPromise } from '@endo/eventual-send';
 
 import { makeMarshal, passStyleOf, Far, mapIterable } from '@endo/marshal';
 import { Nat } from '@agoric/nat';
@@ -42,6 +42,24 @@ import '@agoric/inter-protocol/exported.js';
 
 import './internal-types.js';
 import './types.js';
+
+/**
+ * @typedef {{
+ * 	 type: 'WALLET_ACTION',
+ *   owner: string, // address of signer of the action
+ *   action: string, // JSON-serialized SOMETHING {type: 'applyMethod' | 'suggestIssuer' }
+ *   blockHeight: unknown, // int64
+ *   blockTime: unknown, // int64
+ * }} WalletAction
+ * @typedef {{
+ * 	 type: 'WALLET_SPEND_ACTION',
+ *   owner: string,
+ *   spendAction: string, // JSON-serialized SOMETHING including acceptOffer (which can spend) {type: 'applyMethod' | 'acceptOffer' | 'suggestIssuer' }
+ *   blockHeight: unknown, // int64
+ *   blockTime: unknown, // int64
+ * }} WalletSpendAction
+ * @typedef {WalletAction | WalletSpendAction} WalletBridgeAction
+ */
 
 // does nothing
 const noActionStateChangeHandler = _newState => {};
@@ -1800,21 +1818,40 @@ export function makeWalletRoot({
     return acceptOffer(`${dappOrigin}#${rawId}`);
   };
 
+  // TODO throw if capData doesn't match a currently supported use case
+  /** @param {import('@endo/marshal').CapData<string>} capData */
+  const handleApplyMethodAction = async capData => {
+    // TODO validate shape before destructuring
+    // unserialize=fromCapData (consider a fromCapData abstraction that takes a pattern)
+    const [receiver, methodName, args] = marshaller.unserialize(capData);
+    // equivalent to: E(receiver)[methodName](...args);
+    HandledPromise.applyMethod(receiver, methodName, args);
+  };
+
   const handleSuggestIssuerAction = ({ petname, boardId }) =>
     suggestIssuer(petname, boardId);
 
-  /** @typedef {{spendAction: string}} Action */
   /**
-   * @param {Action} obj
-   * @returns {Promise<any>}
+   * @param {WalletBridgeAction} obj
+   * @returns {Promise<unknown>}
    */
   const performAction = obj => {
-    const { type, data } = JSON.parse(obj.spendAction);
+    const { type = null, canSpend, ...rest } =
+      // XXX branching on canSpend probably belongs somewhere else
+      'spendAction' in obj
+        ? { ...JSON.parse(obj.spendAction), canSpend: true }
+        : { ...JSON.parse(obj.action), canSpend: false };
+
     switch (type) {
       case 'acceptOffer':
-        return handleAcceptOfferAction(data);
+        assert(canSpend);
+        return handleAcceptOfferAction(rest.data);
+      /** @see ApplyMethodPayload */
+      case 'applyMethod':
+        assert(!canSpend);
+        return handleApplyMethodAction(rest);
       case 'suggestIssuer':
-        return handleSuggestIssuerAction(data);
+        return handleSuggestIssuerAction(rest.data);
       default:
         throw new Error(`Unknown wallet action ${type}`);
     }

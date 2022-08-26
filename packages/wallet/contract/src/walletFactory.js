@@ -20,21 +20,6 @@ import { makeSmartWallet } from './smartWallet.js';
  *   board: ERef<Board>,
  *   namesByAddress: ERef<NameHub>,
  * }} SmartWalletContractTerms
- *
- * @typedef {{
- * 	 type: 'WALLET_ACTION',
- *   owner: string, // address of signer of the action
- *   action: string, // JSON-serialized SOMETHING {type: 'applyMethod' | 'suggestIssuer' }
- *   blockHeight: unknown, // int64
- *   blockTime: unknown, // int64
- * }} WalletAction
- * @typedef {{
- * 	 type: 'WALLET_SPEND_ACTION',
- *   owner: string,
- *   spendAction: string, // JSON-serialized SOMETHING including acceptOffer (which can spend) {type: 'applyMethod' | 'acceptOffer' | 'suggestIssuer' }
- *   blockHeight: unknown, // int64
- *   blockTime: unknown, // int64
- * }} WalletSpendAction
  */
 
 /**
@@ -61,7 +46,7 @@ export const start = async (zcf, privateArgs) => {
     /**
      *
      * @param {BRIDGE_ID.WALLET} srcID
-     * @param {WalletAction|WalletSpendAction} obj
+     * @param {import('@agoric/wallet-backend/src/lib-wallet.js').WalletBridgeAction} obj
      */
     fromBridge: async (srcID, obj) => {
       console.log('walletFactory.fromBridge:', srcID, obj);

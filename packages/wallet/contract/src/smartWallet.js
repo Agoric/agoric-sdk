@@ -79,6 +79,9 @@ export const makeSmartWallet = async (
   return Far('SmartWallet', {
     ...wallet,
     getSubscriber: () => storedSubscriber,
+    /**
+     * @param {import('@agoric/wallet-backend/src/lib-wallet.js').WalletBridgeAction} obj
+     */
     performAction: obj => E(admin).performAction(obj),
   });
 };

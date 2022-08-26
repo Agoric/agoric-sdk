@@ -2,9 +2,9 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import bundleSource from '@endo/bundle-source';
 import { makeCache } from '@agoric/cache';
-import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import bundleSource from '@endo/bundle-source';
 
 import { M } from '@agoric/store';
 
@@ -1196,6 +1196,47 @@ test('lib-wallet addOffer for autoswap swap', async t => {
   );
 });
 
+function makeCounter() {
+  let count = 0;
+  return Far('counter', {
+    add(delta) {
+      count += delta;
+    },
+    read() {
+      return count;
+    },
+  });
+}
+
+test('lib-wallet performAction applyMethod', async t => {
+  const { wallet } = await setupTest(t);
+
+  const counter = makeCounter();
+
+  const capData = wallet
+    .getMarshaller()
+    .serialize(harden([counter, 'add', [3]]));
+
+  const action = JSON.stringify({
+    ...capData,
+    type: 'applyMethod',
+  });
+  // @ts-expect-error cast
+  await wallet.performAction({ action });
+
+  t.is(counter.read(), 3);
+
+  t.throws(
+    () =>
+      wallet.performAction(
+        // @ts-expect-error cast
+        { spendAction: action },
+      ),
+    undefined,
+    'applyMethod type should not allow spendAction',
+  );
+});
+
 test('lib-wallet performAction suggestIssuer', async t => {
   const { board, wallet } = await setupTest(t);
   const { issuer: bucksIssuer } = makeIssuerKit('bucks');
@@ -1205,6 +1246,7 @@ test('lib-wallet performAction suggestIssuer', async t => {
     type: 'suggestIssuer',
     data: { petname: 'bucksIssuer', boardId: bucksIssuerBoardId },
   });
+  // @ts-expect-error cast
   const done = await wallet.performAction({ spendAction: action });
 
   t.truthy(done);
@@ -1329,8 +1371,10 @@ test('lib-wallet performAction acceptOffer', async t => {
     type: 'acceptOffer',
     data: offer,
   });
+  // @ts-expect-error cast
   const accepted = await wallet.performAction({ spendAction: action });
   assert(accepted);
+  // @ts-expect-error cast
   const { depositedP } = accepted;
   await t.throwsAsync(
     () => wallet.getUINotifier(rawId, 'http://localhost:3001'),
