@@ -22,7 +22,6 @@ export const ignoreContext =
   fn =>
   (context, ...args) =>
     fn(...args);
-// @ts-expect-error TODO statically recognize harden
 harden(ignoreContext);
 
 /**
@@ -32,7 +31,6 @@ harden(ignoreContext);
  */
 export const provideKindHandle = (baggage, kindName) =>
   provide(baggage, `${kindName}_kindHandle`, () => makeKindHandle(kindName));
-// @ts-expect-error TODO statically recognize harden
 harden(provideKindHandle);
 
 /** @type {import('./types.js').VivifyKind} */
@@ -49,7 +47,6 @@ export const vivifyKind = (
     behavior,
     options,
   );
-// @ts-expect-error TODO statically recognize harden
 harden(vivifyKind);
 
 /** @type {import('./types.js').VivifyKindMulti} */
@@ -66,7 +63,6 @@ export const vivifyKindMulti = (
     behavior,
     options,
   );
-// @ts-expect-error TODO statically recognize harden
 harden(vivifyKindMulti);
 
 /**
@@ -94,5 +90,4 @@ export const vivifySingleton = (
 
   return provide(baggage, `the_${kindName}`, () => makeSingleton());
 };
-// @ts-expect-error TODO statically recognize harden
 harden(vivifySingleton);

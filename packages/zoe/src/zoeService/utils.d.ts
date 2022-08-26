@@ -1,5 +1,10 @@
 import { Callable } from '@agoric/eventual-send';
-import type { Instance, IssuerKeywordRecord, Payment } from './types.js';
+import type {
+  Instance,
+  IssuerKeywordRecord,
+  Payment,
+  StandardTerms,
+} from './types.js';
 
 // XXX https://github.com/Agoric/agoric-sdk/issues/4565
 type SourceBundle = Record<string, any>;
@@ -22,15 +27,22 @@ export type Installation<SF> = {
   [StartFunction]: SF;
 };
 
-// XXX contortions to not include the fn on the Installation object
 export type InstallationStart<I> = I extends Installation<infer SF>
   ? SF
   : never;
 
-type StartParams<S> = {
-  terms: ReturnType<Parameters<S>[0]['getTerms']>;
-  privateArgs: Parameters<S>[1];
-};
+type StartParams<SF> = SF extends (
+  zcf: { getTerms: () => {} },
+  privateArgs: {},
+  baggage?: unknown,
+) => unknown
+  ? {
+      terms: ReturnType<Parameters<SF>[0]['getTerms']>;
+      privateArgs: Parameters<SF>[1];
+    }
+  : SF extends (zcf: { getTerms: () => {} }) => unknown
+  ? { terms: any }
+  : {};
 
 type StartResult<S> = S extends (...args: any) => Promise<infer U>
   ? U
@@ -70,14 +82,15 @@ type StartContractInstance<C> = (
  * the creator facet, public facet, and creator invitation as defined
  * by the contract.
  */
-export type StartInstance = <I extends Installation>(
-  installation: I | PromiseLike<I>,
+export type StartInstance = <SF>(
+  installation: Installation<SF> | PromiseLike<Installation<SF>>,
   issuerKeywordRecord?: IssuerKeywordRecord,
-  terms?: object,
-  privateArgs?: object,
+  // 'brands' and 'issuers' need not be passed in; Zoe provides them as StandardTerms
+  terms?: Omit<StartParams<SF>['terms'], 'brands' | 'issuers'>,
+  privateArgs?: StartParams<SF>['privateArgs'],
 ) => Promise<
   {
     instance: Instance;
     adminFacet: AdminFacet;
-  } & ReturnType<InstallationStart<I>>
+  } & Awaited<ReturnType<SF>>
 >;

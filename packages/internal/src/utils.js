@@ -1,5 +1,6 @@
 // @ts-check
 import { E } from '@endo/eventual-send';
+import { deeplyFulfilled, isObject } from '@endo/marshal';
 import { isPromise } from '@endo/promise-kit';
 
 /** @typedef {import('@endo/marshal/src/types').Remotable} Remotable */
@@ -178,3 +179,28 @@ export const bindAllMethods = obj =>
     ),
   );
 harden(bindAllMethods);
+
+/**
+ * @template {{}} T
+ * @typedef {{ [K in keyof T]: DeeplyAwaited<T[K]> }} DeeplyAwaitedObject
+ */
+
+/**
+ * Caveats:
+ * - doesn't recur within Promise results
+ * - resulting type has wrapper in its name
+ *
+ * @template T
+ * @typedef {T extends PromiseLike ? Awaited<T> : T extends {} ? DeeplyAwaitedObject<T> : Awaited<T>} DeeplyAwaited
+ */
+
+/**
+ * A more constrained version of {deeplyFulfilled} for type safety until https://github.com/endojs/endo/issues/1257
+ * Useful in starting contracts that need all terms to be fulfilled in order to be durable.
+ *
+ * @type {<T extends {}>(unfulfilledTerms: T) => DeeplyAwaited<T>}
+ */
+export const deeplyFulfilledObject = obj => {
+  assert(isObject(obj), 'param must be an object');
+  return deeplyFulfilled(obj);
+};

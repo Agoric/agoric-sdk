@@ -1,4 +1,4 @@
-/* global globalThis performance */
+/* global performance */
 // @ts-check
 
 import '@endo/init/debug.js';
@@ -66,7 +66,11 @@ test('meter details', async t => {
   t.is(meterType, 'xs-meter-16');
 });
 
-(globalThis.performance ? test : test.skip)('meter timestamps', async t => {
+// test disabled until rewritten to tolerate fast CI hosts getting
+// multiple events within the same microsecond, #5951
+// (globalThis.performance ? test : test.skip)('meter timestamps', async t => {
+
+test.skip('meter timestamps', async t => {
   const kernelTimes = [];
   function addTimestamp(name) {
     // xsnap-worker.c uses `gettimeofday()`, so this isn't exactly the

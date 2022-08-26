@@ -40,7 +40,7 @@ const setUpZoeForTest = setJig => {
  *   feeMintAccess: FeeMintAccess,
  *   issuer: Record<'IST', Issuer>,
  *   brand: Record<'IST', Brand>,
- *   installation: Record<'centralSupply', Installation<import('../src/centralSupply.js').CentralSupplyContract>>,
+ *   installation: Record<'centralSupply', Installation<import('../src/centralSupply.js').start>>,
  * }>} CentralSupplyTestContext
  */
 

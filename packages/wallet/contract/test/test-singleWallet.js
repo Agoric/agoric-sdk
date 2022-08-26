@@ -53,7 +53,6 @@ const makeTestContext = async t => {
     'singleWallet',
   );
   /** @type {Promise<Installation<import('../src/singleWallet.js').start>>} */
-  // @ts-expect-error cast
   const installation = E(zoe).install(bundle);
   // #endregion
 

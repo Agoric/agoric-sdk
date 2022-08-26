@@ -41,7 +41,6 @@ const setupContract = async () => {
   /** @typedef {Installation<import('../../src/committee.js').start>} CommitteInstallation */
   /** @typedef {Installation<import('../../src/binaryVoteCounter.js').start>} CounterInstallation */
   /** @type {[CommitteInstallation, CounterInstallation] } */
-  // @ts-expect-error cast
   const [electorateInstallation, counterInstallation] = await Promise.all([
     E(zoe).install(electorateBundle),
     E(zoe).install(counterBundle),
