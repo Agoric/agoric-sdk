@@ -9,6 +9,7 @@ import {
   CONTRACT_ELECTORATE,
 } from './contractGovernance/governParam.js';
 import { setupApiGovernance } from './contractGovernance/governApi.js';
+import { setupFilterGovernance } from './contractGovernance/governFilter.js';
 
 const { details: X } = assert;
 
@@ -64,9 +65,9 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  */
 
 /**
- * ContractGovernor is an ElectionManager that starts up a contract and hands its
- * own creator a facet that allows them to call for votes on parameters that
- * were declared by the contract.
+ * ContractGovernor is an ElectionManager that starts up a contract and hands
+ * its own creator a facet that allows them to manage that contract's APIs,
+ * offer filters, and parameters.
  *
  * The terms for this contract include the Timer, Electorate and
  * the Installation to be started, as well as an issuerKeywordRecord or terms
@@ -89,19 +90,24 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * only one) and the parameterName. The interpretation of ParamSpecification is
  * up to the contract.
  *
- * The contractGovernor creatorFacet includes voteOnParamChanges(),
- * which is used to create questions that will automatically update
- * contract parameters if passed. This facet will usually be closely held. The
- * creatorFacet can also be used to retrieve the governed instance, publicFacet,
- * and its creatorFacet with voteOnParamChanges() omitted.
+ * The contractGovernor creatorFacet includes `voteOnParamChanges`,
+ * `voteOnFilter`, and `voteOnApiInvocation`. `voteOnParamChanges` is used to
+ * create questions that will automatically update contract parameters if
+ * passed. `voteOnFilter` can be used to create questions that will prevent the
+ * exercise of certain invitations if passed. `voteOnApiInvocation` creates
+ * questions that will invoke pre-defined APIs in the contract.
+ *
+ * This facet will usually be closely held. The creatorFacet can also be used to
+ * retrieve the governed instance, publicFacet, and its creatorFacet with
+ * the voteOn*() methods omitted.
  *
  * The governed contract's terms include the instance of this (governing)
  * contract (as electionManager) so clients will be able to look up the state
  * of the governed parameters.
  *
- * @template {{}} PF Public facet of governed
- * @template {ContractPowerfulCreatorFacet} CF Creator facet of governed
- * @type {ContractStartFn<
+ * template {{}} PF Public facet of governed
+ * template {ContractPowerfulCreatorFacet} CF Creator facet of governed
+ * type {ContractStartFn<
  * GovernorPublic,
  * GovernedContractFacetAccess<PF,CF>,
  * {
@@ -114,6 +120,23 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  *     privateArgs: Record<string, unknown>,
  *   }
  * }>}
+ */
+
+/**
+ * @template {() => {creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods} } SF Start function of governed contract
+ * @param {ZCF<{
+ *   timer: TimerService,
+ *   electorateInstance: Instance,
+ *   governedContractInstallation: Installation<SF>,
+ *   governed: {
+ *     issuerKeywordRecord: IssuerKeywordRecord,
+ *     terms: {governedParams: {[CONTRACT_ELECTORATE]: Amount<'set'>}},
+ *     privateArgs: Record<string, unknown>,
+ *   }
+ * }>} zcf
+ * @param {{
+ *   governed: Record<string, unknown>
+ * }} privateArgs
  */
 const start = async (zcf, privateArgs) => {
   const zoe = zcf.getZoeService();
@@ -186,6 +209,14 @@ const start = async (zcf, privateArgs) => {
       getUpdatedPoserFacet,
     );
 
+  const { voteOnFilter, createdFilterQuestion } = await setupFilterGovernance(
+    zoe,
+    governedInstance,
+    timer,
+    getUpdatedPoserFacet,
+    governedCF,
+  );
+
   // this conditional was extracted so both sides are equally asynchronous
   /** @type {() => Promise<ApiGovernor>} */
   const initApiGovernance = async () => {
@@ -219,8 +250,10 @@ const start = async (zcf, privateArgs) => {
   const validateVoteCounter = async voteCounter => {
     const createdParamQ = await E(createdParamQuestion)(voteCounter);
     const createdApiQ = await E(createdApiQuestion)(voteCounter);
+    const createdFilterQ = await E(createdFilterQuestion)(voteCounter);
+
     assert(
-      createdParamQ || createdApiQ,
+      createdParamQ || createdApiQ || createdFilterQ,
       'VoteCounter was not created by this contractGovernor',
     );
     return true;
@@ -246,6 +279,7 @@ const start = async (zcf, privateArgs) => {
   const creatorFacet = Far('governor creatorFacet', {
     voteOnParamChanges,
     voteOnApiInvocation,
+    voteOnOfferFilter: voteOnFilter,
     getCreatorFacet: () => limitedCreatorFacet,
     getInstance: () => governedInstance,
     getPublicFacet: () => governedPF,

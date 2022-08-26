@@ -99,21 +99,30 @@ const facetHelpers = (zcf, paramManager) => {
    * @param {Record<string, (...args: any[]) => any>} governedApis
    * @returns {GovernedCreatorFacet<CF>}
    */
+
+  /**
+   * @template {{}} CF
+   * @param {CF} originalCreatorFacet
+   * @param {{}} [governedApis]
+   * @returns {GovernorFacet<CF>}
+   */
   const makeGovernorFacet = (originalCreatorFacet, governedApis = {}) => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
     const governorFacet = Far('governorFacet', {
       getParamMgrRetriever: () =>
         Far('paramRetriever', { get: () => paramManager }),
-      getInvitation: (_context, name) =>
-        paramManager.getInternalParamValue(name),
+      getInvitation: name => paramManager.getInternalParamValue(name),
       getLimitedCreatorFacet: () => limitedCreatorFacet,
       // The contract provides a facet with the APIs that can be invoked by
       // governance
+      /** @type {() => GovernedApis} */
+      // @ts-expect-error cast
       getGovernedApis: () => Far('governedAPIs', governedApis),
       // The facet returned by getGovernedApis is Far, so we can't see what
       // methods it has. There's no clean way to have contracts specify the APIs
       // without also separately providing their names.
       getGovernedApiNames: () => Object.keys(governedApis),
+      setOfferFilter: strings => zcf.setOfferFilter(strings),
     });
 
     // exclusively for contractGovernor, which only reveals limitedCreatorFacet
@@ -128,6 +137,7 @@ const facetHelpers = (zcf, paramManager) => {
   const makeVirtualGovernorFacet = originalCreatorFacet => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
 
+    /** @type {import('@agoric/vat-data/src/types.js').FunctionsPlusContext<unknown, GovernorFacet<originalCreatorFacet>>} */
     const governorFacet = Far('governorFacet', {
       getParamMgrRetriever: () =>
         Far('paramRetriever', { get: () => paramManager }),
@@ -142,6 +152,7 @@ const facetHelpers = (zcf, paramManager) => {
       // without also separately providing their names.
       getGovernedApiNames: ({ facets }) =>
         getMethodNames(facets.governedApis || {}),
+      setOfferFilter: (_context, strings) => zcf.setOfferFilter(strings),
     });
 
     return { governorFacet, limitedCreatorFacet };

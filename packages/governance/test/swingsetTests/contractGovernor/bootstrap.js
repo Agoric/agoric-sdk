@@ -198,6 +198,31 @@ const setupParameterChanges = async (
   return { details, outcomeOfUpdate };
 };
 
+const setupOfferFilterChange = async (
+  zoe,
+  log,
+  governor,
+  installations,
+  invitation,
+  strings = ['foo', 'bar:'],
+) => {
+  const filterChangeSpec = harden(strings);
+  /** @type {ContractGovernanceVoteResult} */
+  const { details, instance, outcomeOfUpdate } = await E(
+    governor,
+  ).voteOnOfferFilter(installations.binaryVoteCounter, 2n, filterChangeSpec);
+
+  E(E(zoe).getPublicFacet(instance))
+    .getOutcome()
+    .then(outcome => log(`vote outcome: ${q(outcome)}`))
+    .catch(e => log(`vote failed ${e}`));
+
+  E.when(outcomeOfUpdate, outcome => log(`updated to (${q(outcome)})`)).catch(
+    e => log(`update failed: ${e}`),
+  );
+  return { details, outcomeOfUpdate };
+};
+
 const setupApiCall = async (zoe, log, governor, installations) => {
   const { details, instance, outcomeOfUpdate } = await E(
     governor,
@@ -288,11 +313,11 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   });
   const governedInstance = E(governor).getInstance();
   const governedPF = E(governor).getPublicFacet();
-  await watchParams(zoe, governedInstance, log);
 
   const [testName] = argv;
   switch (testName) {
     case 'contractGovernorStart': {
+      await watchParams(zoe, governedInstance, log);
       E(governedPF)
         .getNum()
         .then(num => log(`Number before: ${num}`));
@@ -322,6 +347,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
       break;
     }
     case 'changeElectorateStart': {
+      await watchParams(zoe, governedInstance, log);
       const voters1 = createVoters(firstElectorateCreatorFacet, voterCreator);
 
       const secondElectorateTerms = {
@@ -373,6 +399,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
       break;
     }
     case 'brokenUpdateStart': {
+      await watchParams(zoe, governedInstance, log);
       const voters1 = createVoters(firstElectorateCreatorFacet, voterCreator);
 
       const secondElectorateTerms = {
@@ -427,6 +454,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
       break;
     }
     case 'changeTwoParams': {
+      await watchParams(zoe, governedInstance, log);
       const voters1 = createVoters(firstElectorateCreatorFacet, voterCreator);
 
       const secondElectorateTerms = {
@@ -496,6 +524,21 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
       await E(governedPF)
         .getApiCalled()
         .then(called => log(`Number after: ${called}`));
+      break;
+    }
+    case 'offerFilterGovernanceStart': {
+      const voters = createVoters(firstElectorateCreatorFacet, voterCreator);
+      const { details: details1, outcomeOfUpdate: electorateOutcome } =
+        await setupOfferFilterChange(zoe, log, governor, installations);
+
+      await votersVote(details1, voters, [1, 0, 0, 0, 1]);
+      await E(timer).tick();
+      await E(timer).tick();
+      await electorateOutcome;
+
+      await E(zoe)
+        .getOfferFilter(governedInstance)
+        .then(strings => log(`filters set: ${strings}`));
       break;
     }
     default:

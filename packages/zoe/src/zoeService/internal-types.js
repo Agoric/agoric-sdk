@@ -134,6 +134,7 @@
  * @property {GetBrands} getBrands
  * @property {GetIssuers} getIssuers
  * @property {GetTerms} getTerms
+ * @property {GetOfferFilter} getOfferFilter
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstanceAdmin} getInstanceAdmin
  * @property {UnwrapInstallation} unwrapInstallation

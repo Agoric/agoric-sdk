@@ -12,7 +12,8 @@
  */
 
 /**
- * @typedef { 'param_change' | 'election' | 'survey' | 'api_invocation' } ElectionType
+ * @typedef { 'param_change' | 'election' | 'survey' | 'api_invocation' |
+ *   'offer_filter' } ElectionType
  * param_change is very specific. Survey means multiple answers are possible,
  * Election means some candidates are going to "win". It's not clear these are
  * orthogonal. The important distinction is that param_change has a structured
@@ -66,7 +67,8 @@
  */
 
 /**
- * @typedef { SimpleIssue | ParamChangeIssue<unknown> | ApiInvocationIssue } Issue
+ * @typedef { SimpleIssue | ParamChangeIssue<unknown> | ApiInvocationIssue |
+ *   OfferFilterIssue } Issue
  */
 
 /**
@@ -84,7 +86,8 @@
  */
 
 /**
- * @typedef { TextPosition | ChangeParamsPosition | NoChangeParamsPosition | InvokeApiPosition | DontInvokeApiPosition } Position
+ * @typedef { TextPosition | ChangeParamsPosition | NoChangeParamsPosition | InvokeApiPosition | DontInvokeApiPosition |
+ *    OfferFilterPosition | NoChangeOfferFilterPosition | InvokeApiPosition } Position
  */
 
 /**
@@ -335,6 +338,11 @@
  */
 
 /**
+ * @typedef {object} OfferFilterIssue
+ * @property {string[]} strings
+ */
+
+/**
  * @typedef {object} ParamChangePositions
  * @property {ChangeParamsPosition} positive
  * @property {NoChangeParamsPosition} negative
@@ -424,6 +432,16 @@
  */
 
 /**
+ * @typedef {object} OfferFilterPosition
+ * @property {string[]} strings
+ */
+
+/**
+ * @typedef {object} NoChangeOfferFilterPosition
+ * @property {string[]} dontUpdate
+ */
+
+/**
  * @typedef {object} InvokeApiPosition
  * @property {string} apiMethodName
  * @property {unknown[]} methodArgs
@@ -443,6 +461,17 @@
 /**
  * @typedef {object} Governor
  * @property {CreateQuestion} createQuestion
+ */
+
+/** @typedef {{ [methodName: string]: (...args: any) => unknown }} GovernedApis */
+
+/**
+ * @template {{}} CF
+ * @typedef {GovernedCreatorFacet<CF> & {
+ * getGovernedApis: () => ERef<GovernedApis>;
+ * getGovernedApiNames: () => (string | symbol)[];
+ * setOfferFilter: (strings: string[]) => void;
+ * }} GovernorFacet
  */
 
 /**
@@ -487,16 +516,6 @@
  */
 
 /**
- * @typedef {object} ContractPowerfulCreatorFacet
- *
- *   A powerful facet that carries access to both the creatorFacet to be passed
- *   to the caller and the paramManager, which will be used exclusively by the
- *   ContractGovernor.
- * @property {() => Promise<LimitedCreatorFacet<any>>} getLimitedCreatorFacet
- * @property {() => ParamManagerRetriever} getParamMgrRetriever
- */
-
-/**
  * @template {{}} PF Public facet of governed contract
  * @template {{}} CF Creator facet of governed contract
  * @typedef {object} GovernedContractFacetAccess
@@ -534,7 +553,7 @@
 
 /**
  * @template {{}} CF creator facet
- * @typedef {{}} GovernedCreatorFacet
+ * @typedef GovernedCreatorFacet
  * @property {() => ParamManagerRetriever} getParamMgrRetriever - allows accessing
  *   and updating governed parameters. Should only be directly accessible to the
  *   contractGovernor
@@ -587,6 +606,14 @@
  */
 
 /**
+ * @callback VoteOnOfferFilter
+ * @param {Installation} voteCounterInstallation
+ * @param {Timestamp} deadline
+ * @param {string[]} strings
+ * @returns {ContractGovernanceVoteResult}
+ */
+
+/**
  * @typedef {object} ParamGovernor
  * @property {VoteOnParamChanges} voteOnParamChanges
  * @property {CreatedQuestion} createdQuestion
@@ -596,6 +623,12 @@
  * @typedef {object} ApiGovernor
  * @property {VoteOnApiInvocation} voteOnApiInvocation
  * @property {CreatedQuestion} createdQuestion
+ */
+
+/**
+ * @typedef {object} FilterGovernor
+ * @property {VoteOnOfferFilter} voteOnFilter
+ * @property {CreatedQuestion} createdFilterQuestion
  */
 
 /**

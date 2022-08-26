@@ -33,7 +33,7 @@ const makeApiInvocationPositions = (apiMethodName, methodArgs) => {
  * @param {ERef<ZoeService>} zoe
  * @param {Instance} governedInstance
  * @param {ERef<{ [methodName: string]: (...args: any) => unknown }>} governedApis
- * @param {string[]} governedNames names of the governed API methods
+ * @param {Array<string | symbol>} governedNames names of the governed API methods
  * @param {ERef<TimerService>} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @returns {Promise<ApiGovernor>}
@@ -95,26 +95,28 @@ const setupApiGovernance = async (
     //   return a broken promise.
     const outcomeOfUpdate = E(counterPublicFacet)
       .getOutcome()
-      // @ts-expect-error return types don't appear to match
-      .then(outcome => {
-        if (keyEQ(positive, outcome)) {
-          assert(
-            keyEQ(outcome, harden({ apiMethodName, methodArgs })),
-            X`The question's method name (${q(
-              apiMethodName,
-            )}) and args (${methodArgs}) didn't match the outcome ${outcome}`,
-          );
+      .then(
+        /** @type {(outcome: Position) => ERef<Position>} */
+        outcome => {
+          if (keyEQ(positive, outcome)) {
+            assert(
+              keyEQ(outcome, harden({ apiMethodName, methodArgs })),
+              X`The question's method name (${q(
+                apiMethodName,
+              )}) and args (${methodArgs}) didn't match the outcome ${outcome}`,
+            );
 
-          // E(remote)[name](args) invokes the method named 'name' on remote.
-          return E(governedApis)
-            [apiMethodName](...methodArgs)
-            .then(() => {
-              return positive;
-            });
-        } else {
-          return negative;
-        }
-      });
+            // E(remote)[name](args) invokes the method named 'name' on remote.
+            return E(governedApis)
+              [apiMethodName](...methodArgs)
+              .then(() => {
+                return positive;
+              });
+          } else {
+            return negative;
+          }
+        },
+      );
 
     return {
       outcomeOfUpdate,

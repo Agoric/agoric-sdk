@@ -39,6 +39,11 @@ Single Transferable Vote or Instant Runoff Voting. ElectionType distinguishes
 PARAM_CHANGE, which has structured questions, from others where the issue is
 represented by a string.
 
+We recommend that each position should describe what will happen if it's the
+vote winner. When some of the options are just saying "don't do the thing", it's
+helpful to identify which thing they're not doing. See the ContractGovernor
+section below for examples.
+
 When posing a particular question to be voted on, the closingRule has to be
 specified. When voters are presented with a question to vote on, they have
 access to QuestionDetails, which includes information from the QuestionSpec, the
@@ -76,6 +81,7 @@ specifically:
 
 * changes to declared parameters
 * invocation of declared methods
+* blocking exercise of some invitations
 
 The governance package makes it possible for contracts to provide *legiblity*,
 meaning that observers (clients and voters) are able to see who has control, and
@@ -129,8 +135,18 @@ capabilities. ContractGovernor starts the governed contract, so it gets the
 powerful creatorFacet. ContractGovernor needs access to the paramManager, but
 shouldn't share it. So the contractGovernor's `creatorFacet` provides access to
 the governed contract's `publicFacet`, `creatorFacet`, `instance`,
-`voteOnApiInvocation`, and `voteOnParamChange`. The contract's owner should
-treat `voteOnApiInvocation` and `voteOnParamChange` as particularly powerful.
+`voteOnApiInvocation`, `voteOnOfferFilter` and `voteOnParamChange`. The
+contract's owner should treat `voteOnApiInvocation`, `voteOnOfferFilter` and
+`voteOnParamChange` as particularly powerful.
+
+The questions for parameter changes have **YES** positions that list the
+parameters to be changed and their proposed values. The **NO** positions list
+is `{ noChange: parameterNames }`. For API invocation questions, the
+**YES** position gives the API name and arguments, while the **NO** position is
+`{ dontInvoke: apiMethodName }`. When proposing to change filter settings, the
+**YES** position shows the new value (the list of all strings that will be
+blocked), while **NO** has the same strings under `dontUpdate`:
+`{ dontUpdate: strings }`.
 
 ### Governing Electorates
 
@@ -157,7 +173,7 @@ parameter values.
 
 `makeParamManager(zoe)` makes a ParamManager:
 
-``` javascript
+```javascript
   const paramManager = await makeParamManager(
     {
       'MyChangeableNumber': ['nat', startingValue],
@@ -173,7 +189,7 @@ parameter values.
 
 If you don't need any parameters that depend on the Zoe service, there's
 an alternative function that returns synchronously:
-``` javascript
+```javascript
   const paramManager = await makeParamManagerSync(
     {
       'Currency': ['brand', drachmaBrand],
@@ -219,7 +235,7 @@ control of the paramManager and made visible to the contract's clients.
 
 Governed methods and parameters must be included in terms.
 
-```
+```javascript
   terms: {
     governedParams: {
       [MALLEABLE_NUMBER]: { type: ParamTypes.NAT, value: number },
@@ -330,7 +346,7 @@ changes to contract parameters. There should also be managers that
 Governed contracts publish along with the contract they're governing. See [../inter-protocol/README.md].
 
 Committee contracts also publish the questions posed. These can then be followed off-chain like so,
-```js
+```javascript
   const key = `published.committee.questions`; // or whatever the stream of interest is
   const leader = makeDefaultLeader();
   const follower = makeFollower(storeKey, leader);

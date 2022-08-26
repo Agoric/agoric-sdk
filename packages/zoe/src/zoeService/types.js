@@ -32,6 +32,7 @@
  * @property {GetIssuers} getIssuers
  * @property {GetBrands} getBrands
  * @property {GetTerms} getTerms
+ * @property {GetOfferFilter} getOfferFilter
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstance} getInstance
  * @property {GetInstallation} getInstallation
@@ -89,6 +90,12 @@
  * @callback GetTerms
  * @param {Instance} instance
  * @returns {Promise<AnyTerms>}
+ */
+
+/**
+ * @callback GetOfferFilter
+ * @param {Instance} instance
+ * @returns {string[]}
  */
 
 /**
