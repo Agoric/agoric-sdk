@@ -290,16 +290,16 @@ export const makeBridgeManager = async ({
 harden(makeBridgeManager);
 
 /**
- * @param {BootstrapPowers & {
+ * @param {BootDevices<ChainDevices> & BootstrapSpace & {
  *   consume: { loadVat: ERef<VatLoader<ChainStorageVat>> }
  * }} powers
  */
 export const makeChainStorage = async ({
-  consume: { bridgeManager: bridgeManagerP, loadVat },
+  devices: { bridge },
+  consume: { loadVat },
   produce: { chainStorage: chainStorageP },
 }) => {
-  const bridgeManager = await bridgeManagerP;
-  if (!bridgeManager) {
+  if (!bridge) {
     console.warn('Cannot support chainStorage without an actual chain.');
     chainStorageP.resolve(null);
     return;
@@ -309,7 +309,7 @@ export const makeChainStorage = async ({
 
   const vat = E(loadVat)('chainStorage');
   const rootNodeP = E(vat).makeBridgedChainStorageRoot(
-    bridgeManager,
+    bridge,
     BRIDGE_ID.STORAGE,
     ROOT_PATH,
     { sequence: true },
