@@ -50,7 +50,7 @@ const makeOnChainWallet = board => {
   });
 };
 
-test('contract cannot forge references to purses', t => {
+test('makeImportContext preserves identity across AMM and wallet', t => {
   const context = makeImportContext();
 
   const board = makeBoard(0, { prefix: 'board' });
@@ -93,7 +93,7 @@ test('contract cannot forge references to purses', t => {
   t.throws(
     () => context.fromBoard.unserialize(walletCapData),
     { message: /bad board slot/ },
-    'AMM cannot refer to purses',
+    'AMM cannot forge references to purses',
   );
 
   t.throws(
@@ -162,7 +162,7 @@ test('makeExportContext.serialize handles unregistered identities', t => {
     }),
     slots: ['payment:1'],
   });
-  t.deepEqual(context.unserialize(cap2), myPayment);
+  t.is(context.unserialize(cap2), myPayment);
 
   {
     const val = Far('someOfferResult', {});
@@ -176,6 +176,6 @@ test('makeExportContext.serialize handles unregistered identities', t => {
       }),
       slots: ['offerResult:1'],
     });
-    t.deepEqual(context.unserialize(cap), val);
+    t.is(context.unserialize(cap), val);
   }
 });
