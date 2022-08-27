@@ -116,6 +116,11 @@ const initSlotVal = (table, slot, val) => {
  */
 export const makeExportContext = () => {
   const walletObjects = {
+    /** @type {IdTable<number, unknown>} */
+    offerResult: {
+      bySlot: makeScalarMap(),
+      byVal: makeScalarMap(),
+    },
     /** @type {IdTable<number, Purse>} */
     purse: {
       bySlot: makeScalarMap(),
@@ -187,6 +192,8 @@ export const makeExportContext = () => {
    * @param {IdTable<number, V>} table
    */
   const makeSaver = (kind, table) => {
+    // XXX table passed in to simplify type inference
+    assert.equal(table, walletObjects[kind]);
     let nonce = 0;
     /** @param {V} val */
     const saver = val => {
@@ -197,6 +204,7 @@ export const makeExportContext = () => {
   };
 
   return harden({
+    saveOfferResultActions: makeSaver('offerResult', walletObjects.offerResult),
     savePurseActions: makeSaver('purse', walletObjects.purse),
     savePaymentActions: makeSaver('payment', walletObjects.payment),
     /**

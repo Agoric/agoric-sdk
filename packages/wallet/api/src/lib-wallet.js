@@ -189,8 +189,15 @@ export function makeWalletRoot({
   /** @type {Store<Brand, Purse>} */
   const brandToAutoDepositPurse = makeScalarMap('brand');
 
-  // Offers that the wallet knows about (the inbox).
+  /**
+   * Offers that the wallet knows about (the inbox)
+   *
+   * @type {MapStore<string, Record<string, any>>}
+   */
   const idToOffer = makeScalarMap('offerId');
+  /**
+   * @type {MapStore<string, ERef<Notifier<unknown>>>}
+   */
   const idToNotifierP = makeScalarMap('offerId');
   /** @type {LegacyMap<string, PromiseRecord<any>>} */
   // Legacy because promise kits are not passables
@@ -1337,6 +1344,7 @@ export function makeWalletRoot({
 
       const offerResultP = E(seat).getOfferResult();
       idToOfferResultPromiseKit.get(id).resolve(offerResultP);
+      E.when(offerResultP, result => context.saveOfferResultActions(result));
 
       ret = {
         depositedP,
@@ -1667,10 +1675,17 @@ export function makeWalletRoot({
     return issuerManager;
   }
 
+  /**
+   * @param {Handle<'invitation'>} invitationHandle
+   * @param {unknown} offerResult
+   */
   async function saveOfferResult(invitationHandle, offerResult) {
     invitationHandleToOfferResult.init(invitationHandle, offerResult);
   }
 
+  /**
+   * @param {Handle<'invitation'>} invitationHandle
+   */
   async function getOfferResult(invitationHandle) {
     return invitationHandleToOfferResult.get(invitationHandle);
   }

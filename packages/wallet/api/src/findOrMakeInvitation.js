@@ -61,6 +61,12 @@ const findByKeyValuePairs = async (invitationPurseBalance, kvs) => {
   return harden([matchingValue]);
 };
 
+/**
+ *
+ * @param {ERef<Purse>} invitationPurse
+ * @param {Brand} invitationBrand
+ * @returns {Invitation}
+ */
 const makeFindInvitation = (invitationPurse, invitationBrand) => {
   const findInvitation = async (queryFn, queryParams) => {
     const purseBalance = await E(invitationPurse).getCurrentAmount();
@@ -72,6 +78,13 @@ const makeFindInvitation = (invitationPurse, invitationBrand) => {
   return findInvitation;
 };
 
+/**
+ *
+ * @param {LegacyMap<string, PromiseRecord<unknown>>} idToOfferResultPromiseKit
+ * @param {string} dappOrigin
+ * @param {{ description: string, priorOfferId: string }} opts
+ * @returns {Promise<Invitation>}
+ */
 const makeContinuingInvitation = async (
   idToOfferResultPromiseKit,
   dappOrigin,
@@ -115,6 +128,16 @@ const makeInvitation = async (
   return E(publicFacet)[method](...args);
 };
 
+/**
+ *
+ * @param {LegacyMap<string, PromiseRecord<unknown>>} idToOfferResultPromiseKit
+ * @param {ERef<Board>} board
+ * @param {ERef<ZoeService>} zoe
+ * @param {Purse} invitationPurse
+ * @param {Brand} invitationBrand
+ * @param {unknown} offer
+ * @returns {Invitation}
+ */
 export const findOrMakeInvitation = async (
   idToOfferResultPromiseKit,
   board,

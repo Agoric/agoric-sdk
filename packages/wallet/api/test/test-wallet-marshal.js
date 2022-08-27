@@ -50,7 +50,7 @@ const makeOnChainWallet = board => {
   });
 };
 
-test('makeImportContext preserves identity across AMM and wallet', t => {
+test('contract cannot forge references to purses', t => {
   const context = makeImportContext();
 
   const board = makeBoard(0, { prefix: 'board' });
@@ -118,7 +118,7 @@ test('ensureBoardId allows re-registration; initBoardId does not', t => {
   t.throws(() => context.initBoardId('board12', brandM));
 });
 
-test('makeExportContext.serialize handles unregistered identites', t => {
+test('makeExportContext.serialize handles unregistered identities', t => {
   const brand = Far('Zoe invitation brand', {});
   const instance = Far('amm instance', {});
   const invitationAmount = harden({ brand, value: [{ instance }] });
@@ -163,4 +163,19 @@ test('makeExportContext.serialize handles unregistered identites', t => {
     slots: ['payment:1'],
   });
   t.deepEqual(context.unserialize(cap2), myPayment);
+
+  {
+    const val = Far('someOfferResult', {});
+    context.saveOfferResultActions(val);
+    const cap = context.serialize(val);
+    t.deepEqual(cap, {
+      body: JSON.stringify({
+        '@qclass': 'slot',
+        iface: 'Alleged: someOfferResult',
+        index: 0,
+      }),
+      slots: ['offerResult:1'],
+    });
+    t.deepEqual(context.unserialize(cap), val);
+  }
 });

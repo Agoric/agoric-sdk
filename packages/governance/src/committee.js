@@ -18,6 +18,12 @@ import { QuorumRule } from './question.js';
 const { ceilDivide } = natSafeMath;
 
 /**
+ * @typedef {{
+ * castBallotFor: (questionHandle: Handle<'Question'>, positions: Position[]) => Promise<void>
+ * }} CommitteeVoter
+ */
+
+/**
  * Each Committee (an Electorate) represents a particular set of voters. The
  * number of voters is visible in the terms.
  *
@@ -46,7 +52,10 @@ const start = (zcf, privateArgs) => {
     );
 
   const makeCommitteeVoterInvitation = index => {
-    /** @type {OfferHandler} */
+    /**
+     * @param {ZCFSeat} seat
+     * @returns {CommitteeVoter}
+     */
     const offerHandler = seat => {
       const voterHandle = makeHandle('Voter');
       seat.exit();

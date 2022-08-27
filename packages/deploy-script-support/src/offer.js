@@ -4,6 +4,7 @@ import { E } from '@endo/far';
 import { assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
+// XXX this module has hidden dependency on the walletAdmin type
 /**
  * @param {ERef<any>} walletAdmin - an internal type of the
  * wallet, not defined here
