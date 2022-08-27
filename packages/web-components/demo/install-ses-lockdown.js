@@ -2,7 +2,7 @@
 import '@endo/init/pre-remoting.js';
 
 lockdown({
-  errorTaming: 'unsafe',
+  errorTaming: 'unsafe', // TODO Wen safe?
   stackFiltering: 'verbose',
   overrideTaming: 'severe',
 });
