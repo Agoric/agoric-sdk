@@ -1,5 +1,6 @@
 import { Far } from '@endo/marshal';
 import { makeScalarMapStore } from '@agoric/store';
+import { bindAllMethods } from '@agoric/internal';
 import { buildRootObject } from '../src/vats/timer/vat-timer.js';
 
 // adapted from 'setup()' in test-vat-timer.js
@@ -75,5 +76,5 @@ export const buildManualTimer = (options = {}) => {
     wake();
   };
 
-  return Far('ManualTimer', { ...timerService, advanceTo });
+  return Far('ManualTimer', { ...bindAllMethods(timerService), advanceTo });
 };

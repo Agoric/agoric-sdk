@@ -1,5 +1,6 @@
 // @ts-check
 import { Far } from '@endo/marshal';
+import { bindAllMethods } from '@agoric/internal';
 import { buildManualTimer as build } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
 
@@ -90,7 +91,12 @@ const buildManualTimer = (log = nolog, startValue = 0n, options = {}) => {
     return timerService.setWakeup(when, handler, cancelToken);
   };
 
-  return Far('ManualTimer', { ...timerService, tick, tickN, setWakeup });
+  return Far('ManualTimer', {
+    ...bindAllMethods(timerService),
+    tick,
+    tickN,
+    setWakeup,
+  });
 };
 harden(buildManualTimer);
 
