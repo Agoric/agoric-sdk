@@ -51,6 +51,7 @@ const start = (zcf, privateArgs) => {
       privateArgs.marshaller,
     );
 
+  /** @param {number} index */
   const makeCommitteeVoterInvitation = index => {
     /**
      * @param {ZCFSeat} seat

@@ -34,6 +34,7 @@
     "@agoric/pegasus": "^0.7.2",
     "@agoric/inter-protocol": "^0.11.0",
     "@agoric/sharing-service": "^0.2.2",
+    "@agoric/smart-wallet": "^0.1.1",
     "@agoric/store": "^0.7.2",
     "@agoric/swingset-vat": "^0.28.0",
     "@agoric/wallet-backend": "^0.12.1",
