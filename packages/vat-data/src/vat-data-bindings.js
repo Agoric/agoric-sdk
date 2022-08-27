@@ -119,10 +119,7 @@ harden(partialAssign);
  * @param {(key?: string) => any} makeValue
  * @returns {any}
  */
-export const provide = (baggage, key, makeValue) => {
-  return provideLazy(baggage, key, makeValue);
-};
-harden(provide);
+export const provide = provideLazy;
 
 export const provideDurableMapStore = (baggage, name) =>
   provide(baggage, name, () => makeScalarBigMapStore(name, { durable: true }));
