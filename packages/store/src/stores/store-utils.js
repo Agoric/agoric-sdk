@@ -88,7 +88,7 @@ export const makeCurrentKeysKit = (
 harden(makeCurrentKeysKit);
 
 /**
- * Call `provide` to get or make the value associated with the key.
+ * Call `provideLazy` to get or make the value associated with the key.
  * If there already is one, return that. Otherwise,
  * call `makeValue(key)`, remember it as the value for
  * that key, and return it.
@@ -99,16 +99,17 @@ harden(makeCurrentKeysKit);
  * @param {(key: K) => V} makeValue
  * @returns {V}
  */
-export const provide = (mapStore, key, makeValue) => {
+export const provideLazy = (mapStore, key, makeValue) => {
   if (!mapStore.has(key)) {
     mapStore.init(key, makeValue(key));
   }
   return mapStore.get(key);
 };
-harden(provide);
+harden(provideLazy);
 
 /**
- * Helper for use cases in which the maker function is async. For two provide
+ * Helper for use cases in which the maker function is async. For two
+ * provideLazy
  * calls with the same key, one may be making when the other call starts and it
  * would make again. (Then there'd be a collision when the second tries to store
  * the key.) This prevents that race condition by immediately storing a Promise

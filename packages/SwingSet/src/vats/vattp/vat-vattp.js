@@ -1,6 +1,6 @@
 import { assert, details as X } from '@agoric/assert';
-import { provide } from '@agoric/store';
 import {
+  provide,
   defineDurableKindMulti,
   makeScalarBigMapStore,
   provideDurableMapStore,

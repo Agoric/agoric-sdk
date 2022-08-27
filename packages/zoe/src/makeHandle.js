@@ -1,8 +1,7 @@
 // @ts-check
 
 import { assert } from '@agoric/assert';
-import { provide } from '@agoric/store';
-import { defineDurableKind, makeKindHandle } from '@agoric/vat-data';
+import { provide, defineDurableKind, makeKindHandle } from '@agoric/vat-data';
 import { Far } from '@endo/marshal';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */

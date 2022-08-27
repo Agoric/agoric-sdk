@@ -11,9 +11,8 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
-import { vivifyKindMulti, M } from '@agoric/vat-data';
+import { provide, vivifyKindMulti, M } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
-import { provide } from '@agoric/store';
 
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeMetricsPublishKit } from '../contractSupport.js';

@@ -68,7 +68,7 @@ export const reserveThenDeposit = async (
 };
 
 /** @type {<T>(store: ERef<MapStore>, key: string, make: () => T) => Promise<T>} */
-const provide = async (store, key, make) => {
+const provideWhen = async (store, key, make) => {
   const found = await E(store).get(key);
   if (found) {
     return found;
@@ -90,7 +90,7 @@ export const makeInstallCache = async (
   { installCacheKey = 'installCache', loadBundle },
 ) => {
   /** @type {CopyMap<string, {installation: Installation, boardId: string, path?: string}>} */
-  const initial = await provide(E.get(homeP).scratch, installCacheKey, () =>
+  const initial = await provideWhen(E.get(homeP).scratch, installCacheKey, () =>
     makeCopyMap([]),
   );
   // ISSUE: getCopyMapEntries of CopyMap<K, V> loses K, V.
@@ -111,7 +111,7 @@ export const makeInstallCache = async (
     const { endoZipBase64Sha512: sha512 } = await loadBundle(bPath).then(
       m => m.default,
     );
-    const detail = await provide(working, sha512, () =>
+    const detail = await provideWhen(working, sha512, () =>
       install(mPath, bPath, opts).then(installation => ({
         installation,
         sha512,

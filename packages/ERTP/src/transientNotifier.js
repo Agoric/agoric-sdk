@@ -1,7 +1,7 @@
 // @ts-check
 
 import { makeScalarBigWeakMapStore } from '@agoric/vat-data';
-import { provide } from '@agoric/store';
+import { provideLazy } from '@agoric/store';
 import { makeNotifierKit } from '@agoric/notifier';
 
 // Note: Virtual for high cardinality, but *not* durable, and so
@@ -13,7 +13,7 @@ export const makeTransientNotifierKit = () => {
   );
 
   const provideNotifierKit = key =>
-    provide(transientNotiferKits, key, () =>
+    provideLazy(transientNotiferKits, key, () =>
       makeNotifierKit(key.getCurrentAmount()),
     );
 

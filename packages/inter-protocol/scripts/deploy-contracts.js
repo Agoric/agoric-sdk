@@ -23,7 +23,7 @@ const contractRoots = contractRefs.map(ref =>
 );
 
 /** @type {<T>(store: any, key: string, make: () => T) => Promise<T>} */
-const provide = async (store, key, make) => {
+const provideWhen = async (store, key, make) => {
   const found = await E(store).get(key);
   if (found) {
     return found;
@@ -47,7 +47,9 @@ export default async (homeP, endowments) => {
 
   console.log('getting installCache...');
   /** @type {CopyMap<string, {installation: Installation, boardId: string, path?: string}>} */
-  const initial = await provide(scratch, 'installCache', () => makeCopyMap([]));
+  const initial = await provideWhen(scratch, 'installCache', () =>
+    makeCopyMap([]),
+  );
   console.log('initially:', initial.payload.keys.length, 'entries');
 
   // ISSUE: getCopyMapEntries of CopyMap<K, V> loses K, V.

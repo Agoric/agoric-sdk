@@ -7,7 +7,7 @@ import {
   makeScalarWeakMapStore,
   makeScalarSetStore,
   makeScalarWeakSetStore,
-  provide,
+  provideLazy,
 } from '@agoric/store';
 
 export {
@@ -88,6 +88,41 @@ export const partialAssign = (target, source) => {
   Object.assign(target, source);
 };
 harden(partialAssign);
+
+/**
+ * Unlike `provideLazy`, `provide` should be called at most once
+ * within any vat incarnation with a given `baggage`,`key` pair.
+ *
+ * `provide` should only to be used to populate baggage,
+ * where the total number of calls to `provide` must be
+ * low cardinality, since we keep the bookkeeping to detect collisions
+ * in normal language-heap memory. All the other baggage-oriented
+ * `provide*` and `vivify*` functions call `provide`,
+ * and so impose the same constraints. This is consistent with
+ * our expected durability patterns: What we store in baggage are
+ *    * kindHandles, which are per kind, which must be low cardinality
+ *    * data "variables" for reestablishing the lexical scope, especially
+ *      of singletons
+ *    * named non-baggage collections at the leaves of the baggage tree.
+ *
+ * What is expected to be high cardinality are the instances of the kinds,
+ * and the members of the non-bagggage collections.
+ *
+ * TODO https://github.com/Agoric/agoric-sdk/pull/5875 :
+ * Implement development-time instrumentation to detect when
+ * `provide` violates the above prescription, and is called more
+ * than one in the same vat incarnation with the same
+ * baggage,key pair.
+ *
+ * @param {import('./types.js').Baggage} baggage
+ * @param {string} key
+ * @param {(key?: string) => any} makeValue
+ * @returns {any}
+ */
+export const provide = (baggage, key, makeValue) => {
+  return provideLazy(baggage, key, makeValue);
+};
+harden(provide);
 
 export const provideDurableMapStore = (baggage, name) =>
   provide(baggage, name, () => makeScalarBigMapStore(name, { durable: true }));
