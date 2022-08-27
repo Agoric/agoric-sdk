@@ -108,10 +108,10 @@ export const provideLazy = (mapStore, key, makeValue) => {
 harden(provideLazy);
 
 /**
- * Helper for use cases in which the maker function is async. For two
- * provideLazy
- * calls with the same key, one may be making when the other call starts and it
- * would make again. (Then there'd be a collision when the second tries to store
+ * Helper for use cases in which the maker function is async.
+ * For two provideLazy calls with the same key, one may be making when the
+ * other call starts and it would make again.
+ * (Then there'd be a collision when the second tries to store
  * the key.) This prevents that race condition by immediately storing a Promise
  * for the maker in an ephemeral store.
  *
@@ -135,8 +135,10 @@ export const makeAtomicProvider = store => {
    * that key, and return it.
    *
    * @param {K} key
-   * @param {(key: K) => Promise<V>} makeValue make the value for the store if it hasn't been made yet or the last make failed
-   * @param {(key: K, value: V) => Promise<void>} [finishValue] runs exactly once after a new value is added to the store
+   * @param {(key: K) => Promise<V>} makeValue make the value for the store
+   * if it hasn't been made yet or the last make failed
+   * @param {(key: K, value: V) => Promise<void>} [finishValue] runs exactly
+   * once after a new value is added to the store
    * @returns {Promise<V>}
    */
   const provideAsync = (key, makeValue, finishValue) => {
