@@ -180,8 +180,8 @@ export const buildRootObject = (vatPowers, vatParameters) => {
           options: { anchorOptions: { denom, keyword } },
         }),
       ),
-      // Finally, allow bootstrap powers to be granted
-      // by governance to code to be executed after initial bootstrap.
+      // Allow bootstrap powers to be granted by governance
+      // to code to be evaluated after initial bootstrap.
       bridgeCoreEval(powersFor('bridgeCoreEval')),
     ]);
   };

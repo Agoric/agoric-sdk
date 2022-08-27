@@ -21,6 +21,8 @@ const RESERVE_ADDRESS = 'agoric1ae0lmtzlgrcnla9xjkpaarq5d5dfez63h3nucl';
 /**
  * non-exhaustive list of powerFlags
  * REMOTE_WALLET is currently a default.
+ *
+ * See also MsgProvision in golang/cosmos/proto/agoric/swingset/msgs.proto
  */
 export const PowerFlags = /** @type {const} */ ({
   SMART_WALLET: 'SMART_WALLET',
