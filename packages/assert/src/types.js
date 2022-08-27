@@ -73,36 +73,57 @@
  * @param {'bigint'} typename
  * @param {Details=} optDetails
  * @returns {asserts specimen is bigint}
+ */
+
+/**
  * @callback AssertTypeofBoolean
  * @param {any} specimen
  * @param {'boolean'} typename
  * @param {Details=} optDetails
  * @returns {asserts specimen is boolean}
+ */
+
+/**
  * @callback AssertTypeofFunction
  * @param {any} specimen
  * @param {'function'} typename
  * @param {Details=} optDetails
  * @returns {asserts specimen is Function}
+ */
+
+/**
  * @callback AssertTypeofNumber
  * @param {any} specimen
  * @param {'number'} typename
  * @param {Details=} optDetails
  * @returns {asserts specimen is number}
+ */
+
+/**
  * @callback AssertTypeofObject
  * @param {any} specimen
  * @param {'object'} typename
  * @param {Details=} optDetails
  * @returns {asserts specimen is Record<any, any> | null}
+ */
+
+/**
  * @callback AssertTypeofString
  * @param {any} specimen
  * @param {'string'} typename
  * @param {Details=} optDetails
  * @returns {asserts specimen is string}
+ */
+
+/**
  * @callback AssertTypeofSymbol
  * @param {any} specimen
  * @param {'symbol'} typename
  * @param {Details=} optDetails
  * @returns {asserts specimen is symbol}
+ */
+
+/**
  * @callback AssertTypeofUndefined
  * @param {any} specimen
  * @param {'undefined'} typename
