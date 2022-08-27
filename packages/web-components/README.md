@@ -45,7 +45,7 @@ environment that `agoric-wallet-connection` uses:
 
 ```js
 // Ensure this is imported before anything else in your project.
-import './install-ses-lockdown.js';
+import './install-demo-ses-lockdown.js';
 ```
 
 Or, in your `index.html`:
@@ -112,7 +112,7 @@ This is an example of how to use the wallet connection in plain HTML:
 <button>Connect to Wallet</button>
 
 <script type="module">
-  import './install-ses-lockdown.js';
+  import './install-demo-ses-lockdown.js';
   import '@agoric/wallet-connection/agoric-wallet-connection.js';
 
   // Set up event handlers.
