@@ -28,11 +28,11 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.4.0",
-    "@endo/marshal": "^0.6.9"
+    "@endo/marshal": "^0.7.3"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.28.0",
-    "@endo/eventual-send": "^0.15.5",
+    "@endo/eventual-send": "^0.16.3",
     "ava": "^4.3.1",
     "c8": "^7.7.2"
   },
