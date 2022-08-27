@@ -302,7 +302,12 @@ function makeSwingStore(dirPath, forceReset, options) {
     delete: del,
   };
 
-  const streamStore = sqlStreamStore(dirPath, { sqlite3 });
+  const {
+    commit: commitStreamStore,
+    close: closeStreamStore,
+    ...streamStore
+  } = sqlStreamStore(dirPath, { sqlite3 });
+
   const snapshotDir = path.resolve(dirPath, 'xs-snapshots');
   fs.mkdirSync(snapshotDir, { recursive: true });
   const snapStore = makeSnapStore(snapshotDir, makeSnapStoreIO(), {
@@ -330,6 +335,12 @@ function makeSwingStore(dirPath, forceReset, options) {
    */
   async function commit() {
     assert(db);
+    // Commit the stream-store first, before kvStore. We keep the
+    // streams' startPos/endPos in the kvStore, so if we crash after
+    // commitStreamStore() but before the kvstore doCommit(), we'll
+    // wake up with the old startPos/endPos and it's (mostly) as if
+    // the stream entry was never added.
+    commitStreamStore();
     await doCommit(false);
 
     // NOTE: The kvstore (which used to contain vatA -> snapshot1, and
@@ -346,6 +357,7 @@ function makeSwingStore(dirPath, forceReset, options) {
    */
   async function close() {
     assert(db);
+    closeStreamStore();
     await doCommit(true);
     await db.close();
     db = null;

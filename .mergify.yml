@@ -5,15 +5,11 @@ queue_rules:
       - base=master
       # Require integration tests before merging only
       - or:
-          - '#commits-behind>0'
-          - queue-position<0
           - label=bypass:integration
           - check-success=deployment-test
           - check-neutral=deployment-test
           - check-skipped=deployment-test
       - or:
-          - '#commits-behind>0'
-          - queue-position<0
           - label=bypass:integration
           - check-skipped=getting-started
           - and:

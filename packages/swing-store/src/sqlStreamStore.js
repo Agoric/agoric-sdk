@@ -54,6 +54,25 @@ export function sqlStreamStore(dbDir, io) {
     )
   `);
 
+  // We use explicit transactions to 1: not commit writes until the
+  // host application calls commit() and 2: avoid expensive fsyncs
+  // until the appropriate commit point. All API methods should call
+  // this first, otherwise sqlite will automatically start a
+  // transaction for us, but it will commit/fsync at the end of the DB
+  // run(). We use IMMEDIATE because the kernel is supposed to be the
+  // sole writer of the DB, and if some other process is holding a
+  // write lock, I'd like to find out earlier rather than later. We do
+  // not use EXCLUSIVE because we should allow external *readers*, and
+  // we might decide to use WAL mode some day. Read all of
+  // https://sqlite.org/lang_transaction.html , especially section 2.2
+
+  function ensureTransaction() {
+    if (!db.inTransaction) {
+      db.prepare('BEGIN IMMEDIATE TRANSACTION').run();
+      assert(db.inTransaction);
+    }
+  }
+
   const streamStatus = new Map();
 
   /**
@@ -75,6 +94,7 @@ export function sqlStreamStore(dbDir, io) {
     );
 
     function* reader() {
+      ensureTransaction();
       const query = db.prepare(`
         SELECT item
         FROM streamItem
@@ -123,6 +143,7 @@ export function sqlStreamStore(dbDir, io) {
       X`can't write stream ${q(streamName)} because it's already in use`,
     );
 
+    ensureTransaction();
     db.prepare(
       `
       INSERT INTO streamItem (streamName, item, position)
@@ -140,10 +161,14 @@ export function sqlStreamStore(dbDir, io) {
   };
 
   const commit = () => {
-    // We use the sqlite3 auto-commit API: every command automatically starts
-    // a new transaction if one is not already in effect, and every
-    // automatically-started transaction is committed when the last SQL
-    // statement finishes. https://sqlite.org/lang_transaction.html
+    if (db.inTransaction) {
+      db.prepare('COMMIT').run();
+    }
+  };
+
+  const close = () => {
+    // close without commit is abort
+    db.close();
   };
 
   return harden({
@@ -151,6 +176,7 @@ export function sqlStreamStore(dbDir, io) {
     readStream,
     closeStream,
     commit,
+    close,
     STREAM_START,
   });
 }

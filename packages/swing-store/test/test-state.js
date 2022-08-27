@@ -191,3 +191,23 @@ test('persistent streamStore mode interlock', async t => {
   t.is(isSwingStore(dbDir), false);
   await testStreamStoreModeInterlock(t, dbDir);
 });
+
+test('streamStore abort', async t => {
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
+  const { streamStore, commit, close } = initSwingStore(dbDir);
+  const start = streamStore.STREAM_START;
+
+  const s1pos = streamStore.writeStreamItem('st1', 'first', start);
+  streamStore.closeStream('st1');
+  await commit(); // really write 'first'
+
+  streamStore.writeStreamItem('st2', 'second', s1pos);
+  streamStore.closeStream('st1');
+  // abort is close without commit
+  await close();
+
+  const { streamStore: ss2 } = openSwingStore(dbDir);
+  const reader = ss2.readStream('st1', start, s1pos);
+  t.deepEqual(Array.from(reader), ['first']); // and not 'second'
+});
