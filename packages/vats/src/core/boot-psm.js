@@ -97,17 +97,14 @@ export const agoricNamesReserved = harden(
  * }} vatPowers
  * @param {{
  *     economicCommitteeAddresses: string[],
- *     anchorAssets: { denom: string }[],
+ *     anchorAssets: { denom: string, keyword?: string }[],
  * }} vatParameters
  */
 export const buildRootObject = (vatPowers, vatParameters) => {
   // @ts-expect-error no TS defs for rickety test scaffolding
   const log = vatPowers.logger || console.info;
 
-  const {
-    anchorAssets: [{ denom: anchorDenom }], // TODO: handle >1?
-    economicCommitteeAddresses,
-  } = vatParameters;
+  const { anchorAssets, economicCommitteeAddresses } = vatParameters;
 
   const { produce, consume } = makePromiseSpace(log);
   const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(
@@ -173,12 +170,16 @@ export const buildRootObject = (vatPowers, vatParameters) => {
           },
         },
       }),
-      makeAnchorAsset(powersFor('makeAnchorAsset'), {
-        options: { anchorOptions: { denom: anchorDenom } },
-      }),
-      startPSM(powersFor('startPSM'), {
-        options: { anchorOptions: { denom: anchorDenom } },
-      }),
+      ...anchorAssets.map(({ denom, keyword }) =>
+        makeAnchorAsset(powersFor('makeAnchorAsset'), {
+          options: { anchorOptions: { denom, keyword } },
+        }),
+      ),
+      ...anchorAssets.map(({ denom, keyword }) =>
+        startPSM(powersFor('startPSM'), {
+          options: { anchorOptions: { denom, keyword } },
+        }),
+      ),
       // Finally, allow bootstrap powers to be granted
       // by governance to code to be executed after initial bootstrap.
       bridgeCoreEval(powersFor('bridgeCoreEval')),
