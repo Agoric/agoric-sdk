@@ -7,6 +7,8 @@ import { start as factoryStart } from '@agoric/smart-wallet/src/walletFactory.js
 import { makeFakeWalletBridgeManager } from '@agoric/smart-wallet/test/supports.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { Far } from '@endo/marshal';
+import { E } from '@endo/far';
+import { makeImportContext } from '@agoric/wallet-backend/src/marshal-contexts.js';
 import { makeAgoricNamesAccess } from '../src/core/utils.js';
 import { makeBoard } from '../src/lib-board.js';
 import { makeNameHubKit } from '../src/nameHub.js';
@@ -18,20 +20,6 @@ test('voting by wallet scenario', async t => {
   const storageNode = makeMockChainStorageRoot();
   const marshaller = makeFakeMarshaller();
 
-  // set up a committee to flip a switch
-  const { zcf: committeeZcf } = await setupZCFTest(undefined, {
-    committeeName: 'sayHi',
-    committeeSize: 1,
-  });
-  const committeeFacets = committeeStart(committeeZcf, {
-    storageNode,
-    marshaller,
-  });
-  t.deepEqual(Object.keys(committeeFacets), ['publicFacet', 'creatorFacet']);
-  const [voterInvitation] = committeeFacets.creatorFacet.getVoterInvitations();
-  t.truthy(voterInvitation);
-
-  // set up a wallet from the factory
   const board = makeBoard();
   const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
     makeNameHubKit();
@@ -41,11 +29,34 @@ test('voting by wallet scenario', async t => {
     spaces: _spaces,
   } = makeAgoricNamesAccess();
   const bridgeManager = makeFakeWalletBridgeManager(t);
-  const { zcf: factoryZcf } = await setupZCFTest(undefined, {
-    agoricNames,
-    board,
-    namesByAddress,
+
+  // set up a committee to flip a switch
+  const {
+    zoe,
+    zcf: committeeZcf,
+    zcf2: factoryZcf,
+  } = await setupZCFTest(
+    undefined,
+    {
+      committeeName: 'sayHi',
+      committeeSize: 1,
+    },
+    {
+      agoricNames,
+      board,
+      namesByAddress,
+    },
+  );
+  const committeeFacets = committeeStart(committeeZcf, {
+    storageNode,
+    marshaller,
   });
+  t.deepEqual(Object.keys(committeeFacets), ['publicFacet', 'creatorFacet']);
+  const [voterInvitationP] = committeeFacets.creatorFacet.getVoterInvitations();
+  const voterInvitation = await voterInvitationP;
+  t.truthy(voterInvitation);
+
+  // set up a wallet from the factory
   const factoryFacets = await factoryStart(factoryZcf, {
     bridgeManager,
     storageNode,
@@ -59,7 +70,7 @@ test('voting by wallet scenario', async t => {
     ...namesByAddressAdmin,
     getMyAddress: () => 'agoric1foo',
   });
-  const smartWallet = await factoryFacets.creatorFacet.provideSmartWallet(
+  const smartWallet = await E(factoryFacets.creatorFacet).provideSmartWallet(
     'agoric1foo',
     emptyBank,
     myAddressNameAdmin,
@@ -68,8 +79,45 @@ test('voting by wallet scenario', async t => {
 
   // offer to the wallet a voting seat
 
+  const [[petname]] = await smartWallet.getAdminFacet().getPurses();
+  t.is(petname, 'Default Zoe invite purse');
+
+  //   get the instance before using up the payment
+  const invitationIssuer = await zoe.getInvitationIssuer();
+  const voterInvitationAmount = await E(invitationIssuer).getAmountOf(
+    voterInvitation,
+  );
+  // put it into the wallet's purse for invitations
+  await smartWallet.getAdminFacet().deposit(petname, voterInvitation);
+  //   await smartWallet.addPayment(voterInvitation);
+
+  const { description, handle, instance } = voterInvitationAmount.value[0];
+  console.log('DEBUG', { instance });
+  t.is(description, 'Voter0');
+  const clientContext = makeImportContext();
+  clientContext.initBoardId(board.getId(instance), instance);
+  const offer = {
+    // id: rawId,
+    invitationQuery: {
+      // in practice, you'll only know the instance (which is public) and not which voter you are
+      instance,
+    },
+    proposalTemplate: { want: {}, give: {} },
+  };
+  /** @type {import('@agoric/wallet-backend/src/lib-wallet.js').WalletBridgeAction} */
+  const action = {
+    type: 'WALLET_ACTION',
+    action: JSON.stringify({
+      type: 'acceptOffer',
+      data: clientContext.fromBoard.serialize(harden(offer)),
+    }),
+    owner: 'yay',
+    blockHeight: 123,
+    blockTime: 0,
+  };
+  await smartWallet.performAction(action);
+
   // use wallet to vote
 
   // verify the vote went through
-  t.pass();
 });

@@ -16,6 +16,7 @@ export const makePaymentActions = ({
 
   return Far('payment actions', {
     deposit: async (purseOrPetname = undefined) => {
+      console.log('DEBUG payment actions : deposit()');
       const oldPaymentRecord = getRecord();
       const { brand, payment } = oldPaymentRecord;
       assert(payment);
@@ -41,6 +42,7 @@ export const makePaymentActions = ({
       const brandRecord = getBrandRecord(brand);
       updateRecord({ ...oldPaymentRecord, status: 'pending' }, brandRecord);
       // Now try depositing.
+      console.log('DEBUG now try depositing');
       E(purse)
         .deposit(payment)
         .then(

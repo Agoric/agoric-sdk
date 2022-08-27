@@ -243,18 +243,19 @@ const defaultMakePresence = iface => {
 };
 
 /**
- * Make context for unserializing wallet or board data.
+ * Make context for marshalling wallet or board data.
+ * To be used by the client. TODO consider renaming to makeClientContext
  *
  * @param {(iface: string) => unknown} [makePresence]
  */
 export const makeImportContext = (makePresence = defaultMakePresence) => {
   const walletObjects = {
-    /** @type {IdTable<number, unknown>} */
+    /** @type {IdTable<number, Purse>} */
     purse: {
       bySlot: makeScalarMap(),
       byVal: makeScalarMap(),
     },
-    /** @type {IdTable<number, unknown>} */
+    /** @type {IdTable<number, Payment>} */
     payment: {
       bySlot: makeScalarMap(),
       byVal: makeScalarMap(),
@@ -333,6 +334,13 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
   return harden({
     fromMyWallet: Far('wallet marshaller', { ...marshal.fromMyWallet }),
     fromBoard: Far('board marshaller', { ...marshal.fromBoard }),
+    /**
+     * @param {BoardId} id
+     * @param {unknown} val
+     */
+    initBoardId: (id, val) => {
+      initSlotVal(boardObjects, id, val);
+    },
   });
 };
 

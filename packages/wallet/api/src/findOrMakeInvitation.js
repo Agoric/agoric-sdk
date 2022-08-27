@@ -26,7 +26,7 @@ const assertFirstCapASCII = str => {
  * @param {Board} query.board
  * @param {string} query.boardId
  * @returns {Array}
- * @deprecated
+ * @deprecated use findByKeyValuePairs
  */
 const findByBoardId = async (invitationPurseBalance, { board, boardId }) => {
   assert.typeof(boardId, 'string');
@@ -44,8 +44,9 @@ const findByBoardId = async (invitationPurseBalance, { board, boardId }) => {
 // An invitation matching the query parameters is already expected
 // to be deposited in the default Zoe invitation purse
 /**
- * @param {Amount} invitationPurseBalance
+ * @param {Amount<'set'>} invitationPurseBalance
  * @param {Record<string, any>} kvs
+ * @returns {Amount<'set'>}
  */
 const findByKeyValuePairs = async (invitationPurseBalance, kvs) => {
   // For every key and value in `query`, return an amount
@@ -57,6 +58,7 @@ const findByKeyValuePairs = async (invitationPurseBalance, kvs) => {
     );
 
   const matchingValue = invitationPurseBalance.value.find(matches);
+  console.log('DEBUG', { matchingValue, kvs });
   assert(matchingValue, X`Cannot find invitation corresponding to ${q(kvs)}`);
   return harden([matchingValue]);
 };
@@ -135,7 +137,7 @@ const makeInvitation = async (
  * @param {ERef<ZoeService>} zoe
  * @param {Purse} invitationPurse
  * @param {Brand} invitationBrand
- * @param {unknown} offer
+ * @param {{ invitationMaker?: unknown, invitationQuery?: Record<string, any> }} offer
  * @returns {Invitation}
  */
 export const findOrMakeInvitation = async (

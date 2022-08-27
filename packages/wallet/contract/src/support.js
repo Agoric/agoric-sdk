@@ -15,6 +15,8 @@ import { E } from '@endo/far';
  * }} terms
  */
 export async function makeWallet(bank, terms) {
+  // TODO drop this wallet-backend legacy and make a SmartWallet object within this package
+  // A dapp will be built for either agsolo/wallet-backend OR for smart-wallet
   const legacyRootObject = buildRootObject();
   await legacyRootObject.startup(terms);
   return E(legacyRootObject).getWallet(bank);

@@ -53,7 +53,7 @@
 
 /**
  * @callback GetInvitationIssuer
- * @returns {Promise<Issuer>}
+ * @returns {Promise<Issuer<'set'>>}
  */
 
 /**

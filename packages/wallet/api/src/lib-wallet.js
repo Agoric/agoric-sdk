@@ -1,5 +1,7 @@
 // @ts-check
 
+// TODO start fresh with a lib-smartwallet
+
 /**
  * This file defines the wallet internals without dependency on the ag-solo on
  * which it runs.  It could be better factored, as it evolved ex nihilo.
@@ -42,6 +44,8 @@ import '@agoric/inter-protocol/exported.js';
 
 import './internal-types.js';
 import './types.js';
+
+/** @typedef {{ dappOrigin?: string, origin?: string}} RequestContext */
 
 /**
  * @typedef {{
@@ -894,6 +898,7 @@ export function makeWalletRoot({
     return contact;
   };
 
+  /** @type {(petname: Petname, instanceHandle: Instance) => string} */
   const addInstance = (petname, instanceHandle) => {
     // We currently just add the petname mapped to the instanceHandle
     // value, but we could have a list of known instances for
@@ -1010,6 +1015,7 @@ export function makeWalletRoot({
   }
 
   const compileProposal = proposalTemplate => {
+    assert(proposalTemplate, 'Missing proposalTemplate');
     const {
       want = harden({}),
       give = harden({}),
@@ -1194,6 +1200,12 @@ export function makeWalletRoot({
     return dappOrigins.get(origin);
   }
 
+  /**
+   *
+   * @param {{id: string, proposalTemplate: {}, [key: string]: unknown}} rawOffer
+   * @param {RequestContext} requestContext
+   * @returns {Promise<string>} id in the rawOffer passed in (XXX caller already knows this)
+   */
   async function addOffer(rawOffer, requestContext = {}) {
     const dappOrigin =
       requestContext.dappOrigin || requestContext.origin || 'unknown';
@@ -1415,14 +1427,17 @@ export function makeWalletRoot({
 
   /**
    * @param {ERef<Payment>} paymentP
-   * @param {Purse | Petname=} depositTo
+   * @param {Purse | Petname} [depositTo]
    */
   const addPayment = async (paymentP, depositTo = undefined) => {
+    console.log('DEBUG addPayment');
+
     // We don't even create the record until we resolve the payment.
     const [payment, brand] = await Promise.all([
       paymentP,
       E(paymentP).getAllegedBrand(),
     ]);
+    console.log('DEBUG got', payment, brand);
 
     const basePaymentRecord = addMeta({
       payment,
@@ -1438,13 +1453,16 @@ export function makeWalletRoot({
     idToPaymentRecord.init(id, harden(paymentRecord));
 
     const refreshed = await paymentRecord.actions.refresh();
+    console.log('DEBUG refreshed');
     if (!refreshed) {
       // Only update if the refresh didn't.
       updatePaymentRecord(paymentRecord);
     }
 
+    console.log('DEBUG trying to deposit...');
     // Try an automatic deposit.
     await paymentRecord.actions.deposit(depositTo);
+    console.log('... DONE');
   };
 
   let selfContactP;
@@ -1857,10 +1875,13 @@ export function makeWalletRoot({
         ? { ...JSON.parse(obj.spendAction), canSpend: true }
         : { ...JSON.parse(obj.action), canSpend: false };
 
+    console.info('performAction on', { type, ...rest });
     switch (type) {
       case 'acceptOffer':
-        assert(canSpend);
         return handleAcceptOfferAction(rest.data);
+      // XXX maybe have specific cases instead like "vote"
+      // that can have more granular user security preferences (e.g. when to confirm with me)
+      // consider https://github.com/Agoric/agoric-sdk/issues/3901
       /** @see ApplyMethodPayload */
       case 'applyMethod':
         assert(!canSpend);
