@@ -2,12 +2,10 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 type msgServer struct {
@@ -124,13 +122,9 @@ type provisionAction struct {
 func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision) (*types.MsgProvisionResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	onePass := sdk.NewInt64Coin("provisionpass", 1)
-	balance := keeper.GetBalance(ctx, msg.Submitter, onePass.Denom)
-	if balance.IsLT(onePass) {
-		return nil, sdkerrors.Wrap(
-			sdkerrors.ErrInsufficientFee,
-			fmt.Sprintf("submitter %s needs at least %s", msg.Submitter, onePass.String()),
-		)
+	err := keeper.ChargeForProvisioning(ctx, msg.Submitter, msg.Address, msg.PowerFlags)
+	if err != nil {
+		return nil, err
 	}
 
 	action := &provisionAction{
@@ -142,7 +136,7 @@ func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision
 
 	// Create the account, if it doesn't already exist.
 	egress := types.NewEgress(msg.Nickname, msg.Address, msg.PowerFlags)
-	err := keeper.SetEgress(ctx, egress)
+	err = keeper.SetEgress(ctx, egress)
 	if err != nil {
 		return nil, err
 	}

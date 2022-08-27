@@ -32,16 +32,16 @@ var (
 	// observed: 0.385 sec
 	DefaultBeansPerVatCreation = sdk.NewUint(300000).Mul(DefaultBeansPerXsnapComputron)
 
-	// Fees are denominated in units of $1 RUN.
-	DefaultFeeUnitPrice = sdk.NewCoins(sdk.NewInt64Coin("uist", 1000000))
+	// Fees are denominated in this unit.
+	DefaultFeeUnitPrice = sdk.NewCoins(sdk.NewInt64Coin("uist", 1_000_000)) // $1
 
 	// TODO: create the cost model we want, and update these to be more principled.
 	// These defaults currently make deploying an ag-solo cost less than $1.00.
-	DefaultBeansPerFeeUnit     = sdk.NewUint(1000000000000)                     // $1
-	DefaultBeansPerInboundTx   = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(100))   // $0.01
-	DefaultBeansPerMessage     = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(1000))  // $0.001
-	DefaultBeansPerMessageByte = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(50000)) // $0.0002
-	DefaultBeansPerMinFeeDebit = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(5))     // $0.2
+	DefaultBeansPerFeeUnit     = sdk.NewUint(1_000_000_000_000)                  // $1
+	DefaultBeansPerInboundTx   = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(100))    // $0.01
+	DefaultBeansPerMessage     = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(1_000))  // $0.001
+	DefaultBeansPerMessageByte = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(50_000)) // $0.0002
+	DefaultBeansPerMinFeeDebit = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(5))      // $0.2
 
 	DefaultBeansPerUnit = []StringBeans{
 		NewStringBeans(BeansPerBlockComputeLimit, DefaultBeansPerBlockComputeLimit),
@@ -55,4 +55,8 @@ var (
 	}
 
 	DefaultBootstrapVatConfig = "@agoric/vats/decentral-core-config.json"
+
+	DefaultPowerFlagFees = []PowerFlagFee{
+		NewPowerFlagFee("SMART_WALLET", sdk.NewCoins(sdk.NewInt64Coin("ubld", 10_000_000))),
+	}
 )
