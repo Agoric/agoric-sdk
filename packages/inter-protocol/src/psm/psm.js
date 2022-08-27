@@ -89,7 +89,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const emptyStable = AmountMath.makeEmpty(stableBrand);
   const emptyAnchor = AmountMath.makeEmpty(anchorBrand);
 
-  const { augmentPublicFacet, makeGovernorFacet, params } =
+  const { augmentVirtualPublicFacet, makeVirtualGovernorFacet, params } =
     await handleParamGovernance(
       zcf,
       privateArgs.initialPoserInvitation,
@@ -257,9 +257,13 @@ export const start = async (zcf, privateArgs, baggage) => {
     makeCollectFeesInvitation,
   });
 
+  const { limitedCreatorFacet, governorFacet } =
+    // @ts-expect-error over-determined decl of creatorFacet
+    makeVirtualGovernorFacet(creatorFacet);
   const makePSM = vivifyKindMulti(baggage, 'PSM', () => ({}), {
-    creatorFacet: makeGovernorFacet(creatorFacet),
-    publicFacet: augmentPublicFacet(publicFacet),
+    creatorFacet: governorFacet,
+    limitedCreatorFacet,
+    publicFacet: augmentVirtualPublicFacet(publicFacet),
   });
   return makePSM();
 };
