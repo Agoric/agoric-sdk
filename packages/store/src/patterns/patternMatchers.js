@@ -54,7 +54,7 @@ const makePatternKit = () => {
   // /////////////////////// isPattern /////////////////////////////////////////
 
   /** @type {CheckPattern} */
-  const checkPattern = (patt, check = x => x) => {
+  const checkPattern = (patt, check) => {
     if (isKey(patt)) {
       // All keys are patterns. For these, the keyMemo will do.
       // All primitives that are patterns are also keys, which this
@@ -72,10 +72,10 @@ const makePatternKit = () => {
 
   /**
    * @param {Passable} patt
-   * @param {Checker=} check
+   * @param {Checker} check
    * @returns {boolean}
    */
-  const checkPatternInternal = (patt, check = x => x) => {
+  const checkPatternInternal = (patt, check) => {
     // Purposely parallels checkKey. TODO reuse more logic between them.
     // Most of the text of the switch below not dealing with matchers is
     // essentially identical.
@@ -170,7 +170,7 @@ const makePatternKit = () => {
    * @param {Passable} patt
    * @returns {boolean}
    */
-  const isPattern = patt => checkPattern(patt);
+  const isPattern = patt => checkPattern(patt, x => x);
 
   /**
    * @param {Pattern} patt
@@ -182,7 +182,7 @@ const makePatternKit = () => {
   // /////////////////////// isKeyPattern //////////////////////////////////////
 
   /** @type {CheckKeyPattern} */
-  const checkKeyPattern = (patt, check = x => x) => {
+  const checkKeyPattern = (patt, check) => {
     if (isKey(patt)) {
       // In principle, all keys are patterns, but only scalars are currently
       // supported as keys.
@@ -194,10 +194,10 @@ const makePatternKit = () => {
 
   /**
    * @param {Passable} patt
-   * @param {Checker=} check
+   * @param {Checker} check
    * @returns {boolean}
    */
-  const checkKeyPatternInternal = (patt, check = x => x) => {
+  const checkKeyPatternInternal = (patt, check) => {
     // Purposely parallels checkKey. TODO reuse more logic between them.
     // Most of the text of the switch below not dealing with matchers is
     // essentially identical.
@@ -244,7 +244,7 @@ const makePatternKit = () => {
    * @param {Passable} patt
    * @returns {boolean}
    */
-  const isKeyPattern = patt => checkKeyPattern(patt);
+  const isKeyPattern = patt => checkKeyPattern(patt, x => x);
 
   /**
    * @param {Pattern} patt
@@ -258,21 +258,21 @@ const makePatternKit = () => {
   /**
    * @param {Passable} specimen
    * @param {Pattern} pattern
-   * @param {Checker=} check
+   * @param {Checker} check
    * @param {string|number} [label]
    * @returns {boolean}
    */
-  const checkMatches = (specimen, pattern, check = x => x, label = undefined) =>
+  const checkMatches = (specimen, pattern, check, label = undefined) =>
     // eslint-disable-next-line no-use-before-define
     applyLabelingError(checkMatchesInternal, [specimen, pattern, check], label);
 
   /**
    * @param {Passable} specimen
    * @param {Pattern} patt
-   * @param {Checker=} check
+   * @param {Checker} check
    * @returns {boolean}
    */
-  const checkMatchesInternal = (specimen, patt, check = x => x) => {
+  const checkMatchesInternal = (specimen, patt, check) => {
     if (isKey(patt)) {
       // Takes care of all patterns which are keys, so the rest of this
       // logic can assume patterns that are not key.
@@ -404,15 +404,19 @@ const makePatternKit = () => {
    * @param {Pattern} patt
    * @returns {boolean}
    */
-  const matches = (specimen, patt) => checkMatches(specimen, patt);
+  const matches = (specimen, patt) => checkMatches(specimen, patt, x => x);
 
   /**
+   * Returning normally indicates success. Match failure is indicated by
+   * throwing.
+   *
    * @param {Passable} specimen
    * @param {Pattern} patt
    * @param {string|number} [label]
    */
-  const fit = (specimen, patt, label = undefined) =>
+  const fit = (specimen, patt, label = undefined) => {
     checkMatches(specimen, patt, assertChecker, label);
+  };
 
   // /////////////////////// getRankCover //////////////////////////////////////
 
@@ -539,27 +543,51 @@ const makePatternKit = () => {
    */
 
   /**
-   * @param {Passable} specimen
-   * @returns {Kind}
-   */
-  const kindOf = specimen => {
-    const style = passStyleOf(specimen);
-    if (style === 'tagged') {
-      return getTag(specimen);
-    } else {
-      return style;
-    }
-  };
-
-  /**
+   * Checks only recognized kinds, and only if the specimen
+   * passes the invariants associated with that recognition.
+   * If the kind is unrecognized, then we must conservatively assume
+   * that it does not satisfy invariants we cannot validate.
+   *
    * @param {Passable} specimen
    * @param {Kind} kind
-   * @param {Checker} [check]
+   * @param {Checker} check
    */
-  const checkKind = (specimen, kind, check = x => x) => {
-    const specimenKind = kindOf(specimen);
-    if (specimenKind === kind) {
-      return true;
+  const checkKind = (specimen, kind, check) => {
+    assert(
+      kind !== 'tagged',
+      X`"tagged" is used as a kind escape and cannot be used as a kind`,
+    );
+    /** @type {Kind} */
+    let specimenKind = passStyleOf(specimen);
+    if (specimenKind !== 'tagged') {
+      if (specimenKind === kind) {
+        // passStyleOf already did all the invariant checking.
+        return true;
+      }
+    } else {
+      specimenKind = getTag(specimen);
+      if (specimenKind === kind) {
+        const matchHelper = maybeMatchHelper(kind);
+        if (matchHelper) {
+          // Buried here is the important case, where we process
+          // the various patternNodes
+          return matchHelper.checkIsMatcherPayload(specimen.payload, check);
+        }
+        switch (kind) {
+          case 'copySet': {
+            return checkCopySet(specimen, check);
+          }
+          case 'copyBag': {
+            return checkCopyBag(specimen, check);
+          }
+          case 'copyMap': {
+            return checkCopyMap(specimen, check);
+          }
+          default: {
+            return check(false, X`cannot check unrecognized tag ${q(kind)}`);
+          }
+        }
+      }
     }
     const details = X(
       // quoting without quotes
@@ -573,9 +601,9 @@ const makePatternKit = () => {
 
   /** @type {MatchHelper} */
   const matchAnyHelper = Far('M.any helper', {
-    checkMatches: (_specimen, _matcherPayload, _check = x => x) => true,
+    checkMatches: (_specimen, _matcherPayload, _check) => true,
 
-    checkIsMatcherPayload: (matcherPayload, check = x => x) =>
+    checkIsMatcherPayload: (matcherPayload, check) =>
       check(
         matcherPayload === undefined,
         X`Payload must be undefined: ${matcherPayload}`,
@@ -583,16 +611,16 @@ const makePatternKit = () => {
 
     getRankCover: (_matchPayload, _encodePassable) => ['', '{'],
 
-    checkKeyPattern: (_matcherPayload, _check = x => x) => true,
+    checkKeyPattern: (_matcherPayload, _check) => true,
   });
 
   /** @type {MatchHelper} */
   const matchAndHelper = Far('match:and helper', {
-    checkMatches: (specimen, patts, check = x => x) => {
+    checkMatches: (specimen, patts, check) => {
       return patts.every(patt => checkMatches(specimen, patt, check));
     },
 
-    checkIsMatcherPayload: (allegedPatts, check = x => x) => {
+    checkIsMatcherPayload: (allegedPatts, check) => {
       const checkIt = patt => checkPattern(patt, check);
       return (
         check(
@@ -608,14 +636,14 @@ const makePatternKit = () => {
         patts.map(p => getRankCover(p, encodePassable)),
       ),
 
-    checkKeyPattern: (patts, check = x => x) => {
+    checkKeyPattern: (patts, check) => {
       return patts.every(patt => checkKeyPattern(patt, check));
     },
   });
 
   /** @type {MatchHelper} */
   const matchOrHelper = Far('match:or helper', {
-    checkMatches: (specimen, patts, check = x => x) => {
+    checkMatches: (specimen, patts, check) => {
       const { length } = patts;
       if (length === 0) {
         return check(
@@ -637,14 +665,14 @@ const makePatternKit = () => {
         patts.map(p => getRankCover(p, encodePassable)),
       ),
 
-    checkKeyPattern: (patts, check = x => x) => {
+    checkKeyPattern: (patts, check) => {
       return patts.every(patt => checkKeyPattern(patt, check));
     },
   });
 
   /** @type {MatchHelper} */
   const matchNotHelper = Far('match:not helper', {
-    checkMatches: (specimen, patt, check = x => x) => {
+    checkMatches: (specimen, patt, check) => {
       if (matches(specimen, patt)) {
         return check(
           false,
@@ -659,50 +687,50 @@ const makePatternKit = () => {
 
     getRankCover: (_patt, _encodePassable) => ['', '{'],
 
-    checkKeyPattern: (patt, check = x => x) => checkKeyPattern(patt, check),
+    checkKeyPattern,
   });
 
   /** @type {MatchHelper} */
   const matchScalarHelper = Far('M.scalar helper', {
-    checkMatches: (specimen, _matcherPayload, check = x => x) =>
+    checkMatches: (specimen, _matcherPayload, check) =>
       checkScalarKey(specimen, check),
 
     checkIsMatcherPayload: matchAnyHelper.checkIsMatcherPayload,
 
     getRankCover: (_matchPayload, _encodePassable) => ['a', 'z~'],
 
-    checkKeyPattern: (_matcherPayload, _check = x => x) => true,
+    checkKeyPattern: (_matcherPayload, _check) => true,
   });
 
   /** @type {MatchHelper} */
   const matchKeyHelper = Far('M.key helper', {
-    checkMatches: (specimen, _matcherPayload, check = x => x) =>
+    checkMatches: (specimen, _matcherPayload, check) =>
       checkKey(specimen, check),
 
     checkIsMatcherPayload: matchAnyHelper.checkIsMatcherPayload,
 
     getRankCover: (_matchPayload, _encodePassable) => ['a', 'z~'],
 
-    checkKeyPattern: (_matcherPayload, _check = x => x) => true,
+    checkKeyPattern: (_matcherPayload, _check) => true,
   });
 
   /** @type {MatchHelper} */
   const matchPatternHelper = Far('M.pattern helper', {
-    checkMatches: (specimen, _matcherPayload, check = x => x) =>
+    checkMatches: (specimen, _matcherPayload, check) =>
       checkPattern(specimen, check),
 
     checkIsMatcherPayload: matchAnyHelper.checkIsMatcherPayload,
 
     getRankCover: (_matchPayload, _encodePassable) => ['a', 'z~'],
 
-    checkKeyPattern: (_matcherPayload, _check = x => x) => true,
+    checkKeyPattern: (_matcherPayload, _check) => true,
   });
 
   /** @type {MatchHelper} */
   const matchKindHelper = Far('M.kind helper', {
     checkMatches: checkKind,
 
-    checkIsMatcherPayload: (allegedKeyKind, check = x => x) =>
+    checkIsMatcherPayload: (allegedKeyKind, check) =>
       check(
         typeof allegedKeyKind === 'string',
         X`A kind name must be a string: ${allegedKeyKind}`,
@@ -724,7 +752,7 @@ const makePatternKit = () => {
       return getPassStyleCover(style);
     },
 
-    checkKeyPattern: (kind, check = x => x) => {
+    checkKeyPattern: (kind, check) => {
       switch (kind) {
         case 'boolean':
         case 'number':
@@ -742,7 +770,7 @@ const makePatternKit = () => {
 
   /** @type {MatchHelper} */
   const matchLTEHelper = Far('match:lte helper', {
-    checkMatches: (specimen, rightOperand, check = x => x) =>
+    checkMatches: (specimen, rightOperand, check) =>
       check(
         keyLTE(specimen, rightOperand),
         X`${specimen} - Must be <= ${rightOperand}`,
@@ -763,13 +791,13 @@ const makePatternKit = () => {
       return [leftBound, rightBound];
     },
 
-    checkKeyPattern: (rightOperand, check = x => x) =>
+    checkKeyPattern: (rightOperand, check) =>
       checkKeyPattern(rightOperand, check),
   });
 
   /** @type {MatchHelper} */
   const matchLTHelper = Far('match:lt helper', {
-    checkMatches: (specimen, rightOperand, check = x => x) =>
+    checkMatches: (specimen, rightOperand, check) =>
       check(
         keyLT(specimen, rightOperand),
         X`${specimen} - Must be < ${rightOperand}`,
@@ -779,13 +807,13 @@ const makePatternKit = () => {
 
     getRankCover: matchLTEHelper.getRankCover,
 
-    checkKeyPattern: (rightOperand, check = x => x) =>
+    checkKeyPattern: (rightOperand, check) =>
       checkKeyPattern(rightOperand, check),
   });
 
   /** @type {MatchHelper} */
   const matchGTEHelper = Far('match:gte helper', {
-    checkMatches: (specimen, rightOperand, check = x => x) =>
+    checkMatches: (specimen, rightOperand, check) =>
       check(
         keyGTE(specimen, rightOperand),
         X`${specimen} - Must be >= ${rightOperand}`,
@@ -806,13 +834,13 @@ const makePatternKit = () => {
       return [leftBound, rightBound];
     },
 
-    checkKeyPattern: (rightOperand, check = x => x) =>
+    checkKeyPattern: (rightOperand, check) =>
       checkKeyPattern(rightOperand, check),
   });
 
   /** @type {MatchHelper} */
   const matchGTHelper = Far('match:gt helper', {
-    checkMatches: (specimen, rightOperand, check = x => x) =>
+    checkMatches: (specimen, rightOperand, check) =>
       check(
         keyGT(specimen, rightOperand),
         X`${specimen} - Must be > ${rightOperand}`,
@@ -822,13 +850,13 @@ const makePatternKit = () => {
 
     getRankCover: matchGTEHelper.getRankCover,
 
-    checkKeyPattern: (rightOperand, check = x => x) =>
+    checkKeyPattern: (rightOperand, check) =>
       checkKeyPattern(rightOperand, check),
   });
 
   /** @type {MatchHelper} */
   const matchArrayOfHelper = Far('match:arrayOf helper', {
-    checkMatches: (specimen, subPatt, check = x => x) =>
+    checkMatches: (specimen, subPatt, check) =>
       check(
         passStyleOf(specimen) === 'copyArray',
         X`${specimen} - Must be an array`,
@@ -838,13 +866,13 @@ const makePatternKit = () => {
 
     getRankCover: () => getPassStyleCover('copyArray'),
 
-    checkKeyPattern: (_, check = x => x) =>
+    checkKeyPattern: (_, check) =>
       check(false, X`Arrays not yet supported as keys`),
   });
 
   /** @type {MatchHelper} */
   const matchRecordOfHelper = Far('match:recordOf helper', {
-    checkMatches: (specimen, entryPatt, check = x => x) =>
+    checkMatches: (specimen, entryPatt, check) =>
       check(
         passStyleOf(specimen) === 'copyRecord',
         X`${specimen} - Must be a record`,
@@ -853,7 +881,7 @@ const makePatternKit = () => {
         checkMatches(harden(el), entryPatt, check, el[0]),
       ),
 
-    checkIsMatcherPayload: (entryPatt, check = x => x) =>
+    checkIsMatcherPayload: (entryPatt, check) =>
       check(
         passStyleOf(entryPatt) === 'copyArray' && entryPatt.length === 2,
         X`${entryPatt} - Must be an pair of patterns`,
@@ -861,13 +889,13 @@ const makePatternKit = () => {
 
     getRankCover: _entryPatt => getPassStyleCover('copyRecord'),
 
-    checkKeyPattern: (_entryPatt, check = x => x) =>
+    checkKeyPattern: (_entryPatt, check) =>
       check(false, X`Records not yet supported as keys`),
   });
 
   /** @type {MatchHelper} */
   const matchSetOfHelper = Far('match:setOf helper', {
-    checkMatches: (specimen, keyPatt, check = x => x) =>
+    checkMatches: (specimen, keyPatt, check) =>
       check(
         passStyleOf(specimen) === 'tagged' && getTag(specimen) === 'copySet',
         X`${specimen} - Must be a a CopySet`,
@@ -878,13 +906,13 @@ const makePatternKit = () => {
 
     getRankCover: () => getPassStyleCover('tagged'),
 
-    checkKeyPattern: (_, check = x => x) =>
+    checkKeyPattern: (_, check) =>
       check(false, X`CopySets not yet supported as keys`),
   });
 
   /** @type {MatchHelper} */
   const matchBagOfHelper = Far('match:bagOf helper', {
-    checkMatches: (specimen, [keyPatt, countPatt], check = x => x) =>
+    checkMatches: (specimen, [keyPatt, countPatt], check) =>
       check(
         passStyleOf(specimen) === 'tagged' && getTag(specimen) === 'copyBag',
         X`${specimen} - Must be a a CopyBag`,
@@ -895,7 +923,7 @@ const makePatternKit = () => {
           checkMatches(count, countPatt, check, `counts[${i}]`),
       ),
 
-    checkIsMatcherPayload: (entryPatt, check = x => x) =>
+    checkIsMatcherPayload: (entryPatt, check) =>
       check(
         passStyleOf(entryPatt) === 'copyArray' && entryPatt.length === 2,
         X`${entryPatt} - Must be an pair of patterns`,
@@ -903,13 +931,13 @@ const makePatternKit = () => {
 
     getRankCover: () => getPassStyleCover('tagged'),
 
-    checkKeyPattern: (_, check = x => x) =>
+    checkKeyPattern: (_, check) =>
       check(false, X`CopyBags not yet supported as keys`),
   });
 
   /** @type {MatchHelper} */
   const matchMapOfHelper = Far('match:mapOf helper', {
-    checkMatches: (specimen, [keyPatt, valuePatt], check = x => x) =>
+    checkMatches: (specimen, [keyPatt, valuePatt], check) =>
       check(
         passStyleOf(specimen) === 'tagged' && getTag(specimen) === 'copyMap',
         X`${specimen} - Must be a CopyMap`,
@@ -921,7 +949,7 @@ const makePatternKit = () => {
         checkMatches(v, valuePatt, check, `values[${i}]`),
       ),
 
-    checkIsMatcherPayload: (entryPatt, check = x => x) =>
+    checkIsMatcherPayload: (entryPatt, check) =>
       check(
         passStyleOf(entryPatt) === 'copyArray' && entryPatt.length === 2,
         X`${entryPatt} - Must be an pair of patterns`,
@@ -929,13 +957,13 @@ const makePatternKit = () => {
 
     getRankCover: _entryPatt => getPassStyleCover('tagged'),
 
-    checkKeyPattern: (_entryPatt, check = x => x) =>
+    checkKeyPattern: (_entryPatt, check) =>
       check(false, X`CopyMap not yet supported as keys`),
   });
 
   /** @type {MatchHelper} */
   const matchSplitHelper = Far('match:split helper', {
-    checkMatches: (specimen, [base, rest = undefined], check = x => x) => {
+    checkMatches: (specimen, [base, rest = undefined], check) => {
       const baseStyle = passStyleOf(base);
       if (!checkKind(specimen, baseStyle, check)) {
         return false;
@@ -968,7 +996,7 @@ const makePatternKit = () => {
       );
     },
 
-    checkIsMatcherPayload: (splitArgs, check = x => x) => {
+    checkIsMatcherPayload: (splitArgs, check) => {
       if (
         passStyleOf(splitArgs) === 'copyArray' &&
         (splitArgs.length === 1 || splitArgs.length === 2)
@@ -992,13 +1020,13 @@ const makePatternKit = () => {
     getRankCover: ([base, _rest = undefined]) =>
       getPassStyleCover(passStyleOf(base)),
 
-    checkKeyPattern: ([base, _rest = undefined], check = x => x) =>
+    checkKeyPattern: ([base, _rest = undefined], check) =>
       check(false, X`${q(passStyleOf(base))} not yet supported as keys`),
   });
 
   /** @type {MatchHelper} */
   const matchPartialHelper = Far('match:partial helper', {
-    checkMatches: (specimen, [base, rest = undefined], check = x => x) => {
+    checkMatches: (specimen, [base, rest = undefined], check) => {
       const baseStyle = passStyleOf(base);
       if (!checkKind(specimen, baseStyle, check)) {
         return false;

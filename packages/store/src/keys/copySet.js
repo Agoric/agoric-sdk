@@ -15,7 +15,7 @@ const { details: X } = assert;
 /**
  * @template T
  * @param {T[]} elements
- * @param {FullCompare=} fullCompare If provided and `elements` is already known
+ * @param {FullCompare | undefined} fullCompare If provided and `elements` is already known
  * to be sorted by this `fullCompare`, then we should get a memo hit rather
  * than a resorting. However, currently, we still enumerate the entire array
  * each time.
@@ -23,14 +23,10 @@ const { details: X } = assert;
  * TODO: If doing this reduntantly turns out to be expensive, we
  * could memoize this no-duplicate finding as well, independent
  * of the `fullOrder` use to reach this finding.
- * @param {Checker=} check
+ * @param {Checker} check
  * @returns {boolean}
  */
-const checkNoDuplicates = (
-  elements,
-  fullCompare = undefined,
-  check = x => x,
-) => {
+const checkNoDuplicates = (elements, fullCompare, check) => {
   // This fullOrder contains history dependent state. It is specific
   // to this one call and does not survive it.
   // TODO Once all our tooling is ready for `&&=`, the following
@@ -61,10 +57,10 @@ export const assertNoDuplicates = (elements, fullCompare = undefined) => {
 
 /**
  * @param {Passable[]} elements
- * @param {Checker=} check
+ * @param {Checker} check
  * @returns {boolean}
  */
-export const checkElements = (elements, check = x => x) => {
+export const checkElements = (elements, check) => {
   if (passStyleOf(elements) !== 'copyArray') {
     return check(
       false,
@@ -81,8 +77,9 @@ export const checkElements = (elements, check = x => x) => {
 };
 harden(checkElements);
 
-export const assertElements = elements =>
+export const assertElements = elements => {
   checkElements(elements, assertChecker);
+};
 harden(assertElements);
 
 export const coerceToElements = elementsList => {
