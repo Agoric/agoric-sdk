@@ -3,7 +3,7 @@
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { Nat } from '@agoric/nat';
 import { makeScalarMapStore } from '@agoric/store';
-import { provide } from '@agoric/store/src/stores/store-utils.js';
+import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
 import { E, Far } from '@endo/far';
 
 import { deeplyFulfilledObject } from '@agoric/internal';
@@ -77,7 +77,7 @@ export const makeVatsFromBundles = ({
   vatStore.resolve(store);
 
   loadVat.resolve(bundleName => {
-    return provide(store, bundleName, _k => {
+    return provideLazy(store, bundleName, _k => {
       console.info(`createVatByName(${bundleName})`);
       /** @type { Promise<VatInfo> } */
       const vatInfo = E(svc).createVatByName(bundleName, { name: bundleName });

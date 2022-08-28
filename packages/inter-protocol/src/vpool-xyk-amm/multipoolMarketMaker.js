@@ -4,10 +4,7 @@ import '@agoric/zoe/exported.js';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
-import {
-  makeAtomicProvider,
-  provide,
-} from '@agoric/store/src/stores/store-utils.js';
+import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import {
   assertIssuerKeywords,
   offerTo,
@@ -17,6 +14,7 @@ import { Far } from '@endo/marshal';
 import {
   provideDurableMapStore,
   provideDurableWeakMapStore,
+  provide,
   vivifyKindMulti,
 } from '@agoric/vat-data';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';

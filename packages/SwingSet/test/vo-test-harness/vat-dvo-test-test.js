@@ -1,7 +1,10 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { provide } from '@agoric/store';
-import { provideKindHandle, defineDurableKind } from '@agoric/vat-data';
+import {
+  provide,
+  provideKindHandle,
+  defineDurableKind,
+} from '@agoric/vat-data';
 
 export function buildRootObject(_vatPowers, vatParameters, baggage) {
   let other;
