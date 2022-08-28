@@ -1,23 +1,19 @@
 // @ts-check
-import { E, Far } from '@endo/far';
+import { Far } from '@endo/far';
 import { makeChainStorageRoot } from './lib-chainStorage.js';
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject(vatPowers) {
   /**
-   * @param {ERef<BridgeManager>} bridgeManager
+   * @param {BridgeDevice} bridge
    * @param {string} bridgeId
    * @param {string} rootPath must be unique (caller responsibility to ensure)
    * @param {object} [options]
    */
-  function makeBridgedChainStorageRoot(
-    bridgeManager,
-    bridgeId,
-    rootPath,
-    options,
-  ) {
+  function makeBridgedChainStorageRoot(bridge, bridgeId, rootPath, options) {
+    const { D } = vatPowers;
     // Note that the uniqueness of rootPath is not validated here,
     // and is instead the responsibility of callers.
-    const toStorage = message => E(bridgeManager).toBridge(bridgeId, message);
+    const toStorage = message => D(bridge).callOutbound(bridgeId, message);
     const rootNode = makeChainStorageRoot(
       toStorage,
       'swingset',
