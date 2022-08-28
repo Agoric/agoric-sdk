@@ -2,7 +2,7 @@
 import '@endo/init/pre-remoting.js';
 
 lockdown({
-  errorTaming: 'unsafe',
+  errorTaming: 'unsafe', // Only used for demo mode, so unsafe ok
   stackFiltering: 'verbose',
   overrideTaming: 'severe',
 });

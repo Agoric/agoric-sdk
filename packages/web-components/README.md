@@ -33,7 +33,7 @@ import '@endo/eventual-send/shim.js'; // adds support needed by E
 // can still access powerful globals, but this start compartment can use `new Compartment(...)`
 // to evaluate code with stricter confinement.
 lockdown({
-  errorTaming: 'unsafe',
+  errorTaming: 'unsafe', // Should use 'safe' in production mode.
   overrideTaming: 'severe',
 });
 
@@ -154,12 +154,13 @@ requires `consoleTaming` should be set to `unsafe` to make dev-mode work:
 <script>
   // Allow the React dev environment to extend the console for debugging
   // features.
-  const consoleTaming = '%NODE_ENV%' === 'production' ? 'safe' : 'unsafe';
+  const consoleTaming = '%NODE_ENV%' === 'development' ? 'unsafe' : 'safe';
+  const errorTaming = '%NODE_ENV%' === 'development' ? 'unsafe' : 'safe';
 
   lockdown({
-    errorTaming: 'unsafe',
+    consoleTaming,
+    errorTaming,
     overrideTaming: 'severe',
-    consoleTaming: consoleTaming,
   });
 </script>
 ```
