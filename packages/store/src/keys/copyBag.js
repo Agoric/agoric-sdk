@@ -15,7 +15,7 @@ const { details: X } = assert;
 /**
  * @template T
  * @param {[T,bigint][]} bagEntries
- * @param {FullCompare=} fullCompare If provided and `bagEntries` is already
+ * @param {FullCompare | undefined} fullCompare If provided and `bagEntries` is already
  * known to be sorted by this `fullCompare`, then we should get a memo hit
  * rather than a resorting. However, currently, we still enumerate the entire
  * array each time.
@@ -23,14 +23,10 @@ const { details: X } = assert;
  * TODO: If doing this reduntantly turns out to be expensive, we
  * could memoize this no-duplicate-keys finding as well, independent
  * of the `fullOrder` use to reach this finding.
- * @param {Checker=} check
+ * @param {Checker} check
  * @returns {boolean}
  */
-const checkNoDuplicateKeys = (
-  bagEntries,
-  fullCompare = undefined,
-  check = x => x,
-) => {
+const checkNoDuplicateKeys = (bagEntries, fullCompare, check) => {
   // This fullOrder contains history dependent state. It is specific
   // to this one call and does not survive it.
   // TODO Once all our tooling is ready for `&&=`, the following
@@ -64,10 +60,10 @@ export const assertNoDuplicateKeys = (bagEntries, fullCompare = undefined) => {
 
 /**
  * @param {[Passable,bigint][]} bagEntries
- * @param {Checker=} check
+ * @param {Checker} check
  * @returns {boolean}
  */
-export const checkBagEntries = (bagEntries, check = x => x) => {
+export const checkBagEntries = (bagEntries, check) => {
   if (passStyleOf(bagEntries) !== 'copyArray') {
     return check(
       false,

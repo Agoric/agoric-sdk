@@ -2,6 +2,7 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { makeTagged } from '@endo/marshal';
 import { makeCopyBag, makeCopyMap, makeCopySet } from '../src/keys/checkKey.js';
 import { fit, matches, M } from '../src/patterns/patternMatchers.js';
 import '../src/types.js';
@@ -280,4 +281,22 @@ test('test simple matches', t => {
       t.false(matches(specimen, noPattern), `${noPattern}`);
     }
   }
+});
+
+test('masking match failure', t => {
+  const nonSet = makeTagged('copySet', harden([M.string()]));
+  const nonBag = makeTagged('copyBag', harden([[M.string(), 8n]]));
+  const nonMap = makeTagged(
+    'copyMap',
+    harden({ keys: [M.string()], values: ['x'] }),
+  );
+  t.throws(() => fit(nonSet, M.set()), {
+    message: 'A passable tagged "match:kind" is not a key: "[match:kind]"',
+  });
+  t.throws(() => fit(nonBag, M.bag()), {
+    message: 'A passable tagged "match:kind" is not a key: "[match:kind]"',
+  });
+  t.throws(() => fit(nonMap, M.map()), {
+    message: 'A passable tagged "match:kind" is not a key: "[match:kind]"',
+  });
 });

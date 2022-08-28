@@ -438,14 +438,14 @@
 /**
  * @callback CheckPattern
  * @param {Passable} allegedPattern
- * @param {Checker=} check
+ * @param {Checker} check
  * @returns {boolean}
  */
 
 /**
  * @callback CheckKeyPattern
  * @param {Passable} allegedPattern
- * @param {Checker=} check
+ * @param {Checker} check
  * @returns {boolean}
  */
 
@@ -585,14 +585,14 @@
  * enforced by the common calling logic.
  *
  * @property {(allegedPayload: Passable,
- *             check?: Checker
+ *             check: Checker
  * ) => boolean} checkIsMatcherPayload
  * Assumes this is the payload of a CopyTagged with the corresponding
  * matchTag. Is this a valid payload for a Matcher with that tag?
  *
  * @property {(specimen: Passable,
  *             matcherPayload: Passable,
- *             check?: Checker,
+ *             check: Checker,
  * ) => boolean} checkMatches
  * Assuming a valid Matcher of this type with `matcherPayload` as its
  * payload, does this specimen match that Matcher?
@@ -609,7 +609,7 @@
  * rank as any possible matching specimen.
  *
  * @property {(allegedPattern: Passable,
- *             check?: Checker
+ *             check: Checker
  * ) => boolean} checkKeyPattern
  * Assumes this is the payload of a CopyTagged with the corresponding
  * matchTag. Is this a valid pattern for use as a query key or key schema?
