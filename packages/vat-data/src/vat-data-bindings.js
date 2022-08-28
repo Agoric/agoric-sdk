@@ -114,10 +114,11 @@ harden(partialAssign);
  * than one in the same vat incarnation with the same
  * baggage,key pair.
  *
+ * @template K,V
  * @param {import('./types.js').Baggage} baggage
- * @param {string} key
- * @param {(key?: string) => any} makeValue
- * @returns {any}
+ * @param {K} key
+ * @param {(key: K) => V} makeValue
+ * @returns {V}
  */
 export const provide = provideLazy;
 
