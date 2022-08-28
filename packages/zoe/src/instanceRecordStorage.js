@@ -1,6 +1,6 @@
 // @ts-check
 
-import { provide } from '@agoric/store';
+import { provide } from '@agoric/vat-data';
 import { assertKeywordName } from './cleanProposal.js';
 
 const { ownKeys } = Reflect;

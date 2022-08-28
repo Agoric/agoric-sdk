@@ -16,14 +16,14 @@
 //  * enforced by the common calling logic.
 //  *
 //  * @property {(allegedPayload: Passable,
-//  *             check?: Checker
+//  *             check: Checker
 //  * ) => boolean} checkIsMatcherPayload
 //  * Assumes this is the payload of a CopyTagged with the corresponding
 //  * matchTag. Is this a valid payload for a Matcher with that tag?
 //  *
 //  * @property {(specimen: Passable,
 //  *             matcherPayload: Passable,
-//  *             check?: Checker
+//  *             check: Checker
 //  * ) => boolean} checkMatches
 //  * Assuming a valid Matcher of this type with `matcherPayload` as its
 //  * payload, does this specimen match that Matcher?

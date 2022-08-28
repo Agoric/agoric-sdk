@@ -10,8 +10,8 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { Far, passStyleOf } from '@endo/marshal';
 import { E } from '@endo/eventual-send';
 import { Nat, isNat } from '@agoric/nat';
-import { provide } from '@agoric/store';
 import {
+  provide,
   makeScalarBigMapStore,
   makeScalarBigSetStore,
   vivifyKind,

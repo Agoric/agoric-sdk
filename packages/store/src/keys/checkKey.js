@@ -26,10 +26,10 @@ const { ownKeys } = Reflect;
 
 /**
  * @param {Passable} val
- * @param {Checker=} check
+ * @param {Checker} check
  * @returns {boolean}
  */
-const checkPrimitiveKey = (val, check = x => x) => {
+const checkPrimitiveKey = (val, check) => {
   if (isObject(val)) {
     return check(false, X`A ${q(typeof val)} cannot be a primitive: ${val}`);
   }
@@ -43,7 +43,7 @@ const checkPrimitiveKey = (val, check = x => x) => {
  * @param {Passable} val
  * @returns {boolean}
  */
-export const isPrimitiveKey = val => checkPrimitiveKey(val);
+export const isPrimitiveKey = val => checkPrimitiveKey(val, x => x);
 harden(isPrimitiveKey);
 
 /**
@@ -57,10 +57,10 @@ harden(assertPrimitiveKey);
 
 /**
  * @param {Passable} val
- * @param {Checker=} check
+ * @param {Checker} check
  * @returns {boolean}
  */
-export const checkScalarKey = (val, check = x => x) => {
+export const checkScalarKey = (val, check) => {
   if (isPrimitiveKey(val)) {
     return true;
   }
@@ -75,7 +75,7 @@ export const checkScalarKey = (val, check = x => x) => {
  * @param {Passable} val
  * @returns {boolean}
  */
-export const isScalarKey = val => checkScalarKey(val);
+export const isScalarKey = val => checkScalarKey(val, x => x);
 harden(isScalarKey);
 
 /**
@@ -94,10 +94,10 @@ const keyMemo = new WeakSet();
 
 /**
  * @param {Passable} val
- * @param {Checker=} check
+ * @param {Checker} check
  * @returns {boolean}
  */
-export const checkKey = (val, check = x => x) => {
+export const checkKey = (val, check) => {
   if (isPrimitiveKey(val)) {
     return true;
   }
@@ -127,7 +127,7 @@ harden(checkKey);
  * @param {Passable} val
  * @returns {boolean}
  */
-export const isKey = val => checkKey(val);
+export const isKey = val => checkKey(val, x => x);
 harden(isKey);
 
 /**
@@ -148,10 +148,10 @@ const copySetMemo = new WeakSet();
 
 /**
  * @param {Passable} s
- * @param {Checker=} check
+ * @param {Checker} check
  * @returns {boolean}
  */
-export const checkCopySet = (s, check = x => x) => {
+export const checkCopySet = (s, check) => {
   if (copySetMemo.has(s)) {
     return true;
   }
@@ -161,7 +161,7 @@ export const checkCopySet = (s, check = x => x) => {
       X`Not a copySet: ${s}`,
     ) &&
     checkElements(s.payload, check) &&
-    checkKey(s.payload);
+    checkKey(s.payload, check);
   if (result) {
     copySetMemo.add(s);
   }
@@ -176,7 +176,7 @@ harden(checkCopySet);
  */
 
 /** @type {IsCopySet} */
-export const isCopySet = s => checkCopySet(s);
+export const isCopySet = s => checkCopySet(s, x => x);
 harden(isCopySet);
 
 /**
@@ -234,10 +234,10 @@ const copyBagMemo = new WeakSet();
 
 /**
  * @param {Passable} b
- * @param {Checker=} check
+ * @param {Checker} check
  * @returns {boolean}
  */
-export const checkCopyBag = (b, check = x => x) => {
+export const checkCopyBag = (b, check) => {
   if (copyBagMemo.has(b)) {
     return true;
   }
@@ -247,7 +247,7 @@ export const checkCopyBag = (b, check = x => x) => {
       X`Not a copyBag: ${b}`,
     ) &&
     checkBagEntries(b.payload, check) &&
-    checkKey(b.payload);
+    checkKey(b.payload, check);
   if (result) {
     copyBagMemo.add(b);
   }
@@ -262,7 +262,7 @@ harden(checkCopyBag);
  */
 
 /** @type {IsCopyBag} */
-export const isCopyBag = b => checkCopyBag(b);
+export const isCopyBag = b => checkCopyBag(b, x => x);
 harden(isCopyBag);
 
 /**
@@ -345,10 +345,10 @@ const copyMapMemo = new WeakSet();
 
 /**
  * @param {Passable} m
- * @param {Checker=} check
+ * @param {Checker} check
  * @returns {boolean}
  */
-export const checkCopyMap = (m, check = x => x) => {
+export const checkCopyMap = (m, check) => {
   if (copyMapMemo.has(m)) {
     return true;
   }
@@ -366,6 +366,7 @@ export const checkCopyMap = (m, check = x => x) => {
       X`A copyMap's payload must only have .keys and .values: ${m}`,
     ) &&
     checkElements(keys, check) &&
+    checkKey(keys, check) &&
     check(
       passStyleOf(values) === 'copyArray',
       X`A copyMap's .values must be a copyArray: ${m}`,
@@ -388,7 +389,7 @@ harden(checkCopyMap);
  */
 
 /** @type {IsCopyMap} */
-export const isCopyMap = m => checkCopyMap(m);
+export const isCopyMap = m => checkCopyMap(m, x => x);
 harden(isCopyMap);
 
 /**
@@ -515,10 +516,10 @@ harden(makeCopyMap);
 
 /**
  * @param {Passable} val
- * @param {Checker=} check
+ * @param {Checker} check
  * @returns {boolean}
  */
-const checkKeyInternal = (val, check = x => x) => {
+const checkKeyInternal = (val, check) => {
   const checkIt = child => checkKey(child, check);
 
   const passStyle = passStyleOf(val);

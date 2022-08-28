@@ -9,7 +9,7 @@ import { makeLegacyWeakMap } from '../src/legacy/legacyWeakMap.js';
 import { makeScalarMapStore } from '../src/stores/scalarMapStore.js';
 import { makeScalarSetStore } from '../src/stores/scalarSetStore.js';
 import { makeScalarWeakMapStore } from '../src/stores/scalarWeakMapStore.js';
-import { provide } from '../src/stores/store-utils.js';
+import { provideLazy } from '../src/stores/store-utils.js';
 
 import '../src/types.js';
 
@@ -212,12 +212,12 @@ test('iteration succeeds with concurrent deletion', t => {
   t.deepEqual(seenValues, [0, 1, 2, 3, 5]);
 });
 
-test('provide for mapStores', t => {
+test('provideLazy for mapStores', t => {
   const m = makeScalarMapStore('provider');
   let i = 1;
   const makeValue = k => `${k} ${(i += 1)}`;
-  t.is(provide(m, 'a', makeValue), 'a 2');
-  t.is(provide(m, 'b', makeValue), 'b 3');
-  t.is(provide(m, 'a', makeValue), 'a 2');
-  t.is(provide(m, 'b', makeValue), 'b 3');
+  t.is(provideLazy(m, 'a', makeValue), 'a 2');
+  t.is(provideLazy(m, 'b', makeValue), 'b 3');
+  t.is(provideLazy(m, 'a', makeValue), 'a 2');
+  t.is(provideLazy(m, 'b', makeValue), 'b 3');
 });

@@ -76,7 +76,7 @@ export {
   makeScalarMapStore as makeStore, // Deprecated legacy
 } from './stores/scalarMapStore.js';
 
-export { provide } from './stores/store-utils.js';
+export { provideLazy } from './stores/store-utils.js';
 
 // /////////////////////// Deprecated Legacy ///////////////////////////////////
 

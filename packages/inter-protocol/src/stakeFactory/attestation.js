@@ -3,7 +3,7 @@
 
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
-import { fit, M, makeCopyBag, makeStore, provide } from '@agoric/store';
+import { fit, M, makeCopyBag, makeStore, provideLazy } from '@agoric/store';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { AttKW as KW } from './constants.js';
 import { makeAttestationTool } from './attestationTool.js';
@@ -254,7 +254,7 @@ export const makeAttestationFacets = async (zcf, stakeBrand, lienBridge) => {
        */
       provideAttestationTool: address => {
         assert.typeof(address, 'string');
-        return provide(attMakerByAddress, address, () =>
+        return provideLazy(attMakerByAddress, address, () =>
           makeAttestationTool(address, lienMint, stakeBrand, zcf),
         );
       },

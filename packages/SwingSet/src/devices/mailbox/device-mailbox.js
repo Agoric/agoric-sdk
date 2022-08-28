@@ -63,6 +63,10 @@ export function buildRootDeviceNode(tools) {
       setDeviceState(harden({ inboundHandler }));
     },
 
+    unregisterInboundHander() {
+      inboundHandler = undefined;
+    },
+
     add(peer, msgnum, body) {
       try {
         endowments.add(`${peer}`, Nat(msgnum), `${body}`);
