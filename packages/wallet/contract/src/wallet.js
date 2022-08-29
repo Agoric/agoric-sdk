@@ -12,7 +12,7 @@ import { E } from '@endo/eventual-send';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 import { Far } from '@endo/marshal';
 
-import { makeWalletRoot } from '@agoric/wallet-backend/src/lib-wallet.js';
+import { makeWalletRoot } from './lib-wallet.js';
 
 import '@agoric/wallet-backend/src/internal-types.js';
 
