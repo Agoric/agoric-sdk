@@ -22,6 +22,21 @@ export const makeTempKVDatabase = io => {
   return db;
 };
 
+export const makeKVDatabaseTransactionManager = db => {
+  return {
+    begin: () => {
+      assert(!db.inTransaction);
+      db.prepare('BEGIN IMMEDIATE TRANSACTION').run();
+      assert(db.inTransaction);
+    },
+    end: () => {
+      assert(db.inTransaction);
+      db.prepare('COMMIT').run();
+      assert(!db.inTransaction);
+    },
+  };
+};
+
 /**
  * @param {string} kind
  * @param {sqlite3ambient.Database} [db]

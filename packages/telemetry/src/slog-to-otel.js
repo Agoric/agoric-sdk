@@ -2,7 +2,11 @@
 import otel, { SpanStatusCode } from '@opentelemetry/api';
 
 import { makeLegacyMap } from '@agoric/store';
-import { makeKVStringStore } from './kv-string-store.js';
+import {
+  makeKVStringStore,
+  makeTempKVDatabase,
+  makeKVDatabaseTransactionManager,
+} from './kv-string-store.js';
 
 // import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
 
@@ -92,7 +96,9 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
   /** @type {LegacyMap<any, Cause>} */
   const crankNumToCause = makeLegacyMap('crankNum');
 
-  const kernelPromiseToSendingCause = makeKVStringStore('kernelPromise');
+  const db = makeTempKVDatabase();
+  const dbTransactionManager = makeKVDatabaseTransactionManager(db);
+  const kernelPromiseToSendingCause = makeKVStringStore('kernelPromise', db);
 
   const extractMethod = methargs => JSON.parse(methargs.body)[0];
 
@@ -566,6 +572,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'cosmic-swingset-bootstrap-block-start': {
+        dbTransactionManager.begin();
         spans.push(`bootstrap-block`);
         break;
       }
@@ -575,9 +582,11 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
           // Pop off all our context.
           spans.pop();
         }
+        dbTransactionManager.end();
         break;
       }
       case 'cosmic-swingset-begin-block': {
+        dbTransactionManager.begin();
         if (spans.topName() === `intra-block`) {
           spans.pop(`intra-block`);
         }
@@ -606,6 +615,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       case 'cosmic-swingset-after-commit-block': {
         // Add the event to whatever the current top span is (most likely intra-block)
         spans.top()?.addEvent('after-commit', cleanAttrs(slogAttrs), now);
+        dbTransactionManager.end();
         break;
       }
       case 'cosmic-swingset-deliver-inbound': {
