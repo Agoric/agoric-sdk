@@ -451,6 +451,42 @@ export function makeWalletRoot({
     return proposalForDisplay;
   };
 
+  /**
+   * Delete offer once inactive.
+   *
+   * Call this after each offer state change.
+   *
+   * @param {string} id - a key in `inboxState`
+   */
+  const pruneOfferWhenInactive = id => {
+    assert(inboxState.has(id));
+    const offer = inboxState.get(id);
+    const { status } = offer;
+
+    switch (status) {
+      case 'decline':
+      case 'cancel':
+      case 'rejected':
+        inboxState.delete(id);
+        return;
+      case 'accept':
+        assert(idToOfferResultPromiseKit.has(id));
+        void idToOfferResultPromiseKit.get(id).promise.then(result => {
+          const style = passStyleOf(result);
+          const active =
+            style === 'remotable' ||
+            (style === 'copyRecord' && 'invitationMakers' in result);
+          if (!active) {
+            inboxState.delete(id);
+          }
+        });
+        break;
+      case 'pending':
+      case 'complete':
+      default:
+    }
+  };
+
   async function updateInboxState(id, offer, doPush = true) {
     // Only sent the uncompiled offer to the client.
     const { proposalTemplate } = offer;
@@ -490,6 +526,7 @@ export function makeWalletRoot({
       offersUpdater.updateState([...inboxState.values()]);
       inboxStateChangeHandler(getInboxState());
     }
+    pruneOfferWhenInactive(id);
   }
 
   async function updateAllInboxState() {
