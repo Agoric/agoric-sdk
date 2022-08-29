@@ -12,7 +12,7 @@ import { E } from '@endo/eventual-send';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 import { Far } from '@endo/marshal';
 
-import { makeWalletRoot } from './lib-wallet.js';
+import { makeWalletRoot } from './lib-smartwallet.js';
 
 import '@agoric/wallet-backend/src/internal-types.js';
 
@@ -49,7 +49,7 @@ const pubsub = () => {
  */
 
 export function makeHelper() {
-  /** @type {import('./lib-wallet.js').WalletRoot} */
+  /** @type {import('./lib-smartwallet.js').WalletRoot} */
   let walletRoot;
   /** @type {WalletAdminFacet} */
   let walletAdmin;

@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeHelper } from './wallet.js';
+import { makeHelper } from './transition-wallet.js';
 
 /**
  * @param {ERef<import('@agoric/vats/src/vat-bank.js').Bank>} bank
