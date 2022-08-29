@@ -42,16 +42,6 @@ import '@agoric/wallet-backend/src/types.js';
 // does nothing
 const noActionStateChangeHandler = _newState => {};
 
-const cmp = (a, b) => {
-  if (a > b) {
-    return 1;
-  }
-  if (a === b) {
-    return 0;
-  }
-  return -1;
-};
-
 /**
  * @param {{
  * agoricNames?: ERef<NameHub>
@@ -193,7 +183,7 @@ export function makeWalletRoot({
     const entries = [...map.entries()];
     // Sort for determinism.
     const values = entries
-      .sort(([id1], [id2]) => cmp(id1, id2))
+      .sort(([id1], [id2]) => id1 - id2)
       .map(([_id, value]) => value);
 
     return bigintStringify(harden(values));
@@ -966,7 +956,7 @@ export function makeWalletRoot({
           origin === null ||
           (offer.requestContext && offer.requestContext.dappOrigin === origin),
       )
-      .sort(([id1], [id2]) => cmp(id1, id2))
+      .sort(([id1], [id2]) => id1 - id2)
       .map(([_id, offer]) => harden(offer));
   }
 
