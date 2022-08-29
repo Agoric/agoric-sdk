@@ -1,7 +1,6 @@
 // @ts-check
 
-import { E } from '@endo/far';
-import { buildRootObject } from './wallet.js';
+import { makeHelper } from './wallet.js';
 
 /**
  * @param {ERef<import('@agoric/vats/src/vat-bank.js').Bank>} bank
@@ -15,7 +14,7 @@ import { buildRootObject } from './wallet.js';
  * }} terms
  */
 export async function makeWallet(bank, terms) {
-  const legacyRootObject = buildRootObject();
-  await legacyRootObject.startup(terms);
-  return E(legacyRootObject).getWallet(bank);
+  const helper = makeHelper();
+  await helper.startup(terms);
+  return helper.getWallet(bank);
 }

@@ -14,11 +14,6 @@ import { Far } from '@endo/marshal';
 
 import { makeWalletRoot } from '@agoric/wallet-backend/src/lib-wallet.js';
 import pubsub from '@agoric/wallet-backend/src/pubsub.js';
-import { bigintStringify } from '@agoric/wallet-backend/src/bigintStringify.js';
-import {
-  makeTimerDeviceDateNow,
-  makeTimerServiceDateNow,
-} from '@agoric/wallet-backend/src/date-now.js';
 
 import '@agoric/wallet-backend/src/internal-types.js';
 
@@ -27,31 +22,21 @@ import '@agoric/wallet-backend/src/internal-types.js';
  * agoricNames: ERef<NameHub>,
  * board: ERef<Board>,
  * cacheStorageNode: ERef<StorageNode>,
- * localTimerPollInterval?: bigint,
- * localTimerService?: TimerService,
  * myAddressNameAdmin: ERef<MyAddressNameAdmin>,
  * namesByAddress: ERef<NameHub>,
- * timerDevice?: unknown,
- * timerDeviceScale?: number,
  * zoe: ERef<ZoeService>,
  * }} StartupTerms
  */
 
-export function buildRootObject(vatPowers) {
-  // See if we have the device vat power.
-  const { D } = vatPowers || {};
-
+export function makeHelper() {
   /** @type {import('@agoric/wallet-backend/src/lib-wallet.js').WalletRoot} */
   let walletRoot;
   /** @type {WalletAdminFacet} */
   let walletAdmin;
-  /** @type {Array<PursesJSONState>} */
-  let pursesState = [];
   /** @type {Array<OfferState>} */
   let inboxState = [];
   let http;
 
-  const bridgeHandles = new Set();
   const offerSubscriptions = new Map();
 
   const httpSend = (obj, channelHandles) =>
@@ -79,17 +64,7 @@ export function buildRootObject(vatPowers) {
     });
   };
 
-  const subscribeToOffers = (channelHandle, { origin, status = null }) => {
-    let subs = offerSubscriptions.get(channelHandle);
-    if (!subs) {
-      subs = [];
-      offerSubscriptions.set(channelHandle, subs);
-    }
-    subs.push({ origin, status });
-    pushOfferSubscriptions(channelHandle, inboxState);
-  };
-
-  const { publish: pursesPublish, subscribe: pursesSubscribe } = pubsub(E);
+  const { publish: pursesPublish } = pubsub(E);
   const { updater: inboxUpdater, notifier: offerNotifier } =
     makeNotifierKit(inboxState);
   const { publish: inboxPublish, subscribe: inboxSubscribe } = pubsub(E);
@@ -109,26 +84,9 @@ export function buildRootObject(vatPowers) {
     agoricNames,
     namesByAddress,
     myAddressNameAdmin,
-    timerDevice,
-    timerDeviceScale,
-    localTimerService,
-    localTimerPollInterval,
   }) {
     assert(myAddressNameAdmin, 'missing myAddressNameAdmin');
 
-    /** @type {ERef<() => number> | undefined} */
-    let dateNowP;
-    if (timerDevice) {
-      dateNowP = makeTimerDeviceDateNow(D, timerDevice, timerDeviceScale);
-    }
-    if (localTimerService) {
-      dateNowP = makeTimerServiceDateNow(
-        localTimerService,
-        localTimerPollInterval,
-      );
-    }
-
-    const dateNow = await dateNowP;
     const w = makeWalletRoot({
       agoricNames,
       namesByAddress,
@@ -137,7 +95,6 @@ export function buildRootObject(vatPowers) {
       board,
       pursesStateChangeHandler: pursesPublish,
       inboxStateChangeHandler: inboxPublish,
-      dateNow,
     });
     console.debug('waiting for wallet to initialize');
     await w.initialized;
@@ -370,21 +327,7 @@ export function buildRootObject(vatPowers) {
     return harden(wallet);
   }
 
-  function setHTTPObject(o) {
-    http = o;
-  }
-
   function startSubscriptions() {
-    // console.debug(`subscribing to walletPurseState`);
-    // This provokes an immediate update
-    pursesSubscribe(
-      harden({
-        notify(m) {
-          pursesState = JSON.parse(m);
-        },
-      }),
-    );
-
     // console.debug(`subscribing to walletInboxState`);
     // This provokes an immediate update
     inboxSubscribe(
@@ -403,267 +346,11 @@ export function buildRootObject(vatPowers) {
     );
   }
 
-  function getBridgeURLHandler() {
-    return Far('bridgeURLHandler', {
-      /**
-       * @typedef {object} WalletOtherSide
-       * The callbacks from a CapTP wallet client.
-       * @property {(dappOrigin: string,
-       *             suggestedDappPetname: Petname
-       * ) => void} needDappApproval
-       * Let the other side know that this dapp is still unapproved
-       * @property {(dappOrigin: string) => void} dappApproved
-       * Let the other side know that the dapp has been approved
-       */
-
-      /**
-       * Use CapTP over WebSocket for a dapp to interact with the wallet.
-       *
-       * @param {ERef<WalletOtherSide>} otherSide
-       * @param {Record<string, any>} meta
-       * @param {Record<string, any>} obj
-       */
-      async getBootstrap(otherSide, meta, obj) {
-        const { dappOrigin = meta.origin } = obj;
-        const suggestedDappPetname = String(
-          (meta.query && meta.query.suggestedDappPetname) ||
-            meta.dappOrigin ||
-            dappOrigin,
-        );
-
-        const approve = async () => {
-          let notYetEnabled = false;
-          await walletAdmin.waitForDappApproval(
-            suggestedDappPetname,
-            dappOrigin,
-            () => {
-              notYetEnabled = true;
-              E(otherSide)
-                .needDappApproval(dappOrigin, suggestedDappPetname)
-                .catch(_ => {});
-            },
-          );
-          if (notYetEnabled) {
-            E(otherSide).dappApproved(dappOrigin);
-          }
-        };
-
-        return makeBridge(approve, dappOrigin, meta);
-      },
-
-      /**
-       * This is the legacy WebSocket wrapper for an origin-specific
-       * WalletBridge.  This wrapper is accessible from a dapp UI via the
-       * wallet-bridge.html iframe.
-       *
-       * This custom RPC protocol must maintain compatibility with existing
-       * dapps.  It would be preferable not to add to it either, since that
-       * means more legacy code that must be supported.
-       *
-       * We hope to migrate dapps to use the ocap interfaces (such as
-       * getBootstrap() above) so that they can interact with the WalletBridge
-       * methods directly.  Then we would like to deprecate this handler.
-       */
-      getCommandHandler() {
-        return Far('commandHandler', {
-          onOpen(_obj, meta) {
-            bridgeHandles.add(meta.channelHandle);
-          },
-          onClose(_obj, meta) {
-            bridgeHandles.delete(meta.channelHandle);
-            offerSubscriptions.delete(meta.channelHandle);
-          },
-
-          async onMessage(obj, meta) {
-            const {
-              type,
-              dappOrigin = meta.origin,
-              suggestedDappPetname = (meta.query &&
-                meta.query.suggestedDappPetname) ||
-                obj.dappOrigin ||
-                meta.origin,
-            } = obj;
-
-            // When we haven't been enabled, tell our caller.
-            let needApproval = false;
-            await walletAdmin.waitForDappApproval(
-              suggestedDappPetname,
-              dappOrigin,
-              () => {
-                needApproval = true;
-                httpSend(
-                  {
-                    type: 'walletNeedDappApproval',
-                    data: {
-                      dappOrigin,
-                      suggestedDappPetname,
-                    },
-                  },
-                  [meta.channelHandle],
-                );
-              },
-            );
-            if (needApproval) {
-              httpSend(
-                {
-                  type: 'walletHaveDappApproval',
-                  data: {
-                    dappOrigin,
-                  },
-                },
-                [meta.channelHandle],
-              );
-            }
-
-            switch (type) {
-              case 'walletGetPurses': {
-                return {
-                  type: 'walletUpdatePurses',
-                  data: bigintStringify(pursesState),
-                };
-              }
-              case 'walletAddOffer': {
-                let handled = false;
-                const actions = Far('actions', {
-                  handled(offer) {
-                    if (handled) {
-                      return;
-                    }
-                    handled = true;
-                    httpSend(
-                      {
-                        type: 'walletOfferHandled',
-                        data: offer.id,
-                      },
-                      [meta.channelHandle],
-                    );
-                  },
-                });
-                return {
-                  type: 'walletOfferAdded',
-                  data: await walletAdmin.addOffer(
-                    { ...obj.data, actions },
-                    { ...meta, dappOrigin },
-                  ),
-                };
-              }
-
-              case 'walletSubscribeOffers': {
-                const { status = null } = obj;
-                const { channelHandle } = meta;
-
-                if (!channelHandle) {
-                  return {
-                    type: 'walletSubscribedOffers',
-                    data: false,
-                  };
-                }
-
-                // TODO: Maybe use the contract instanceId instead.
-                subscribeToOffers(channelHandle, {
-                  origin: dappOrigin,
-                  status,
-                });
-                return {
-                  type: 'walletSubscribedOffers',
-                  data: true,
-                };
-              }
-
-              case 'walletGetOffers': {
-                const { status = null } = obj;
-
-                // Override the origin since we got it from the bridge.
-                let result = await walletAdmin.getOffers({
-                  origin: dappOrigin,
-                });
-                if (status !== null) {
-                  // Filter by status.
-                  result = harden(
-                    result.filter(offer => offer.status === status),
-                  );
-                }
-
-                return {
-                  type: 'walletOfferDescriptions',
-                  data: result,
-                };
-              }
-
-              case 'walletGetDepositFacetId': {
-                const { brandBoardId } = obj;
-                const result = await walletAdmin.getDepositFacetId(
-                  brandBoardId,
-                );
-                return {
-                  type: 'walletDepositFacetIdResponse',
-                  data: result,
-                };
-              }
-
-              case 'walletSuggestIssuer': {
-                const { petname, boardId } = obj;
-                const result = await walletAdmin.suggestIssuer(
-                  petname,
-                  boardId,
-                  dappOrigin,
-                );
-                return {
-                  type: 'walletSuggestIssuerResponse',
-                  data: result,
-                };
-              }
-
-              case 'walletSuggestInstance': {
-                const { petname, boardId } = obj;
-                const result = await walletAdmin.suggestInstance(
-                  petname,
-                  boardId,
-                  dappOrigin,
-                );
-                return {
-                  type: 'walletSuggestInstanceResponse',
-                  data: result,
-                };
-              }
-
-              case 'walletSuggestInstallation': {
-                const { petname, boardId } = obj;
-                const result = await walletAdmin.suggestInstallation(
-                  petname,
-                  boardId,
-                  dappOrigin,
-                );
-                return {
-                  type: 'walletSuggestInstallationResponse',
-                  data: result,
-                };
-              }
-
-              default:
-                return Promise.resolve(false);
-            }
-          },
-        });
-      },
-    });
-  }
-
   startSubscriptions();
-
-  function getCommandHandler(...params) {
-    console.debug(
-      'getCommandHandler called in wallet, but does not exist',
-      params,
-    );
-  }
 
   return Far('root', {
     startup,
     getWallet,
-    setHTTPObject,
-    getBridgeURLHandler,
-    getCommandHandler,
   });
 }
 
@@ -675,6 +362,6 @@ export function buildRootObject(vatPowers) {
  * @param {*} _inviteMaker
  */
 export default function spawn(terms, _inviteMaker) {
-  const walletVat = buildRootObject();
+  const walletVat = makeHelper();
   return walletVat.startup(terms).then(_ => walletVat);
 }
