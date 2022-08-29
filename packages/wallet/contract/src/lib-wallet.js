@@ -56,7 +56,6 @@ const cmp = (a, b) => {
  * @param {{
  * agoricNames?: ERef<NameHub>
  * board: ERef<Board>
- * dateNow?: () => number,
  * inboxStateChangeHandler?: (state: any) => void,
  * myAddressNameAdmin: ERef<MyAddressNameAdmin>
  * namesByAddress?: ERef<NameHub>
@@ -72,7 +71,6 @@ export function makeWalletRoot({
   myAddressNameAdmin,
   pursesStateChangeHandler = noActionStateChangeHandler,
   inboxStateChangeHandler = noActionStateChangeHandler,
-  dateNow = undefined,
 }) {
   assert(myAddressNameAdmin, 'missing myAddressNameAdmin');
 
@@ -98,14 +96,6 @@ export function makeWalletRoot({
       // Add a unique id to the record.
       lastId += 1;
       meta.id = lastId;
-    }
-    if (dateNow) {
-      const nowStamp = dateNow();
-      if (!meta.creationStamp) {
-        // Set the creationStamp to be right now.
-        meta.creationStamp = nowStamp;
-      }
-      meta.updatedStamp = nowStamp;
     }
     return { ...record, meta };
   };

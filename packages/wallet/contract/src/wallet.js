@@ -49,7 +49,7 @@ const pubsub = () => {
  */
 
 export function makeHelper() {
-  /** @type {import('@agoric/wallet-backend/src/lib-wallet.js').WalletRoot} */
+  /** @type {import('./lib-wallet.js').WalletRoot} */
   let walletRoot;
   /** @type {WalletAdminFacet} */
   let walletAdmin;
@@ -109,12 +109,12 @@ export function makeHelper() {
 
     const w = makeWalletRoot({
       agoricNames,
-      namesByAddress,
-      myAddressNameAdmin,
-      zoe,
       board,
-      pursesStateChangeHandler: pursesPublish,
       inboxStateChangeHandler: inboxPublish,
+      myAddressNameAdmin,
+      namesByAddress,
+      pursesStateChangeHandler: pursesPublish,
+      zoe,
     });
     console.debug('waiting for wallet to initialize');
     await w.initialized;
