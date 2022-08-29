@@ -452,9 +452,11 @@ export function makeWalletRoot({
   };
 
   /**
-   * Delete inactive offers.
+   * Delete offer once inactive.
    *
-   * @param {string} id
+   * Call this after each offer state change.
+   *
+   * @param {string} id - a key in `inboxState`
    */
   const pruneOfferWhenInactive = id => {
     assert(inboxState.has(id));
