@@ -1,7 +1,7 @@
 // @ts-check
 
-import { buildRootObject } from '@agoric/wallet-backend/src/wallet.js';
 import { E } from '@endo/far';
+import { buildRootObject } from './wallet.js';
 
 /**
  * @param {ERef<import('@agoric/vats/src/vat-bank.js').Bank>} bank
