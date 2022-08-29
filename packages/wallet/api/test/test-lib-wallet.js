@@ -956,58 +956,6 @@ test('lib-wallet offer methods', async t => {
     lastInboxState,
     [
       {
-        id: 'unknown#123-arbitrary',
-        rawId: '123-arbitrary',
-        invitationDetails: {
-          description: 'getRefund',
-          handle: {
-            kind: 'unnamed',
-            petname: 'unnamed-1',
-          },
-          installation: {
-            kind: 'unnamed',
-            petname: 'unnamed-2',
-          },
-          instance: {
-            kind: 'unnamed',
-            petname: 'unnamed-3',
-          },
-        },
-        inviteHandleBoardId: 'board0566',
-        meta: {
-          id: 6,
-        },
-        proposalTemplate: {
-          give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
-          exit: { onDemand: null },
-          arguments: { foo: 'bar' },
-        },
-        requestContext: { dappOrigin: 'unknown' },
-        status: 'accept',
-        instancePetname: 'unnamed-3',
-        installationPetname: 'unnamed-2',
-        proposalForDisplay: {
-          give: {
-            Contribution: {
-              pursePetname: 'Fun budget',
-              purse: {}, // JSON doesn't keep the purse.
-              amount: {
-                brand: {
-                  kind: 'brand',
-                  petname: 'moola',
-                },
-                value: 1,
-                displayInfo: {
-                  assetKind: 'nat',
-                },
-              },
-            },
-          },
-          exit: { onDemand: null },
-          arguments: { foo: 'bar' },
-        },
-      },
-      {
         id: 'unknown#456-arbitrary',
         rawId: '456-arbitrary',
         invitationDetails: {
