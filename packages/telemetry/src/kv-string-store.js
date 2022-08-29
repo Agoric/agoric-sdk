@@ -32,7 +32,7 @@ export const makeKVDatabaseTransactionManager = db => {
     end: () => {
       assert(db.inTransaction);
       db.prepare('COMMIT').run();
-      assert(db.inTransaction);
+      assert(!db.inTransaction);
     },
   };
 };
