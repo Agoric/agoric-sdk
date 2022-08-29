@@ -13,9 +13,29 @@ import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 import { Far } from '@endo/marshal';
 
 import { makeWalletRoot } from '@agoric/wallet-backend/src/lib-wallet.js';
-import pubsub from '@agoric/wallet-backend/src/pubsub.js';
 
 import '@agoric/wallet-backend/src/internal-types.js';
+
+// inlined '@agoric/wallet-backend/src/pubsub.js'
+const pubsub = () => {
+  let lastPublished;
+  const subscribers = [];
+
+  return harden({
+    subscribe(s) {
+      subscribers.push(s);
+      if (lastPublished !== undefined) {
+        E(s).notify(lastPublished);
+      }
+    },
+    publish(m) {
+      lastPublished = m;
+      subscribers.forEach(s => {
+        E(s).notify(m);
+      });
+    },
+  });
+};
 
 /**
  * @typedef {{
@@ -64,10 +84,10 @@ export function makeHelper() {
     });
   };
 
-  const { publish: pursesPublish } = pubsub(E);
+  const { publish: pursesPublish } = pubsub();
   const { updater: inboxUpdater, notifier: offerNotifier } =
     makeNotifierKit(inboxState);
-  const { publish: inboxPublish, subscribe: inboxSubscribe } = pubsub(E);
+  const { publish: inboxPublish, subscribe: inboxSubscribe } = pubsub();
 
   const notifiers = harden({
     getInboxNotifier() {
