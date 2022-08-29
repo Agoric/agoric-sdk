@@ -211,14 +211,6 @@ export function makeHelper() {
         await approve();
         return walletAdmin.suggestInstance(petname, boardId, dappOrigin);
       },
-      async getUINotifier(rawId) {
-        await approve();
-        return walletAdmin.getUINotifier(rawId, dappOrigin);
-      },
-      async getPublicNotifiers(rawId) {
-        await approve();
-        return walletAdmin.getPublicNotifiers(rawId, dappOrigin);
-      },
       async getZoe() {
         await approve();
         return walletAdmin.getZoe();
@@ -335,8 +327,6 @@ export function makeHelper() {
           getScopedBridge: wallet.getScopedBridge,
         });
       },
-      getIssuer: walletAdmin.getIssuer,
-      getIssuers: walletAdmin.getIssuers,
       getPurse: walletAdmin.getPurse,
       getPurses: walletAdmin.getPurses,
 

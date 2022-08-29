@@ -6,35 +6,33 @@
 
 import { assert, details as X, q } from '@agoric/assert';
 import { makeScalarStoreCoordinator } from '@agoric/cache';
-import { objectMap } from '@agoric/internal';
+import { AmountMath } from '@agoric/ertp';
 import { makeLegacyMap, makeScalarMap, makeScalarWeakMap } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 
-import { makeMarshal, passStyleOf, Far, mapIterable } from '@endo/marshal';
 import { Nat } from '@agoric/nat';
 import {
-  makeNotifierFromSubscriber,
   makeNotifierKit,
   observeIteration,
   observeNotifier,
 } from '@agoric/notifier';
+import { Far, makeMarshal, mapIterable, passStyleOf } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
+import { makePaymentActions } from '@agoric/wallet-backend/src/actions.js';
+import { bigintStringify } from '@agoric/wallet-backend/src/bigintStringify.js';
+import {
+  findOrMakeInvitation,
+  makeId,
+} from '@agoric/wallet-backend/src/findOrMakeInvitation.js';
 import { makeIssuerTable } from '@agoric/wallet-backend/src/issuerTable.js';
 import { makeDehydrator } from '@agoric/wallet-backend/src/lib-dehydrate.js';
-import {
-  makeId,
-  findOrMakeInvitation,
-} from '@agoric/wallet-backend/src/findOrMakeInvitation.js';
-import { bigintStringify } from '@agoric/wallet-backend/src/bigintStringify.js';
-import { makePaymentActions } from '@agoric/wallet-backend/src/actions.js';
 import { makeExportContext } from '@agoric/wallet-backend/src/marshal-contexts.js';
 
+import '@agoric/inter-protocol/exported.js';
 import '@agoric/store/exported.js';
 import '@agoric/zoe/exported.js';
-import '@agoric/inter-protocol/exported.js';
 
 import '@agoric/wallet-backend/src/internal-types.js';
 import '@agoric/wallet-backend/src/types.js';
@@ -1634,24 +1632,6 @@ export function makeWalletRoot({
   }
 
   /**
-   * @deprecated use getPublicSubscribers instead
-   *
-   * @param {string} rawId - The offer's raw id.
-   * @param {string} dappOrigin - The origin of the dapp the offer came from.
-   * @throws if the offer result doesn't have a uiNotifier.
-   */
-  async function getUINotifier(rawId, dappOrigin = 'unknown') {
-    const id = makeId(dappOrigin, rawId);
-    const offerResult = await idToOfferResultPromiseKit.get(id).promise;
-    assert(
-      passStyleOf(offerResult) === 'copyRecord',
-      `offerResult must be a record to have a uiNotifier`,
-    );
-    assert(offerResult.uiNotifier, X`offerResult does not have a uiNotifier`);
-    return offerResult.uiNotifier;
-  }
-
-  /**
    * Gets the public subscribers from an offer's result.
    *
    * @param {string} rawId - The offer's raw id.
@@ -1679,19 +1659,6 @@ export function makeWalletRoot({
     );
 
     return publicSubscribers;
-  }
-
-  /**
-   * @deprecated use getPublicSubscribers instead
-   *
-   * @param {string} rawId - The offer's raw id.
-   * @param {string} dappOrigin - The origin of the dapp the offer came from.
-   * @throws if the offer result doesn't have notifiers.
-   * @returns {Promise<Record<string, Notifier<unknown>>>}
-   */
-  async function getPublicNotifiers(rawId, dappOrigin = 'unknown') {
-    const publicSubscribers = await getPublicSubscribers(rawId, dappOrigin);
-    return objectMap(publicSubscribers, makeNotifierFromSubscriber);
   }
 
   // Create a map from the first "wallet" path element, to the next naming hub
@@ -1835,37 +1802,15 @@ export function makeWalletRoot({
     getOffersNotifier() {
       return offersNotifier;
     },
-    /** @deprecated use issuerManager.add instead */
-    addIssuer: issuerManager.add,
     getBrand,
     getBrandPetnames,
     publishIssuer,
-    /** @deprecated use instanceManager.add instead */
-    addInstance: instanceManager.add,
-    /** @deprecated use installationManager.add instead */
-    addInstallation: installationManager.add,
     getInstallationManager,
     getInstanceManager,
     getIssuerManager,
-    /** @deprecated use issuerManager.rename instead */
-    renameIssuer: issuerManager.rename,
-    /** @deprecated use instanceManager.rename instead */
-    renameInstance: instanceManager.rename,
-    /** @deprecated use installationManager.rename instead */
-    renameInstallation: installationManager.rename,
     getSelfContact,
-    /** @deprecated use instanceManager.get instead */
-    getInstance: instanceManager.get,
-    /** @deprecated use installationManager.get instead */
-    getInstallation: installationManager.get,
-    /** @deprecated use installationManager.getAll instead */
-    getInstallations: installationManager.getAll,
     makeEmptyPurse,
     deposit,
-    /** @deprecated use issuerManager.get instead */
-    getIssuer: issuerManager.get,
-    /** @deprecated use issuerManager.getAll instead */
-    getIssuers: issuerManager.getAll,
     getPurses,
     getPurse,
     getPurseIssuer,
@@ -1894,10 +1839,6 @@ export function makeWalletRoot({
     getPaymentsNotifier() {
       return paymentsNotifier;
     },
-    /** @deprecated use `getPublicSubscribers` instead. */
-    getUINotifier,
-    /** @deprecated use `getPublicSubscribers` instead. */
-    getPublicNotifiers,
     getPublicSubscribers,
     getZoe() {
       return zoe;
