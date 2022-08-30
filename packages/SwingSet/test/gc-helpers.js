@@ -146,7 +146,7 @@ export function buildRootObject(vatPowers) {
 
 export const NONE = undefined;
 export const DONE = [undefined, undefined];
-export const anyShape = JSON.stringify(
+export const anySchema = JSON.stringify(
   capargs([
     {
       '@qclass': 'tagged',
@@ -156,11 +156,11 @@ export const anyShape = JSON.stringify(
   ]),
 );
 
-export const stringShape = JSON.stringify(
+export const stringSchema = JSON.stringify(
   capargs([{ '@qclass': 'tagged', tag: 'match:kind', payload: 'string' }]),
 );
 
-export const anyScalarShape = JSON.stringify(
+export const scalarSchema = JSON.stringify(
   capargs([
     {
       '@qclass': 'tagged',
@@ -250,7 +250,7 @@ function validateCreatePromiseRegistrationTable(v, idx) {
   validateCreateBuiltInNonDurableTable(
     v,
     idx,
-    anyScalarShape,
+    scalarSchema,
     'promiseRegistrations',
   );
 }
@@ -271,7 +271,7 @@ export function validateCreatePromiseWatcherKindTable(v, idx) {
     v,
     idx,
     'watcherTableID',
-    anyScalarShape,
+    scalarSchema,
     'promiseWatcherByKind',
   );
 }
@@ -281,13 +281,13 @@ export function validateCreateWatchedPromiseTable(v, idx) {
     v,
     idx,
     'watchedPromiseTableID',
-    stringShape,
+    stringSchema,
     'watchedPromises',
   );
 }
 
 export function validateCreateBaggage(v, idx) {
-  validateCreateBuiltInTable(v, idx, 'baggageID', stringShape, 'baggage');
+  validateCreateBuiltInTable(v, idx, 'baggageID', stringSchema, 'baggage');
 }
 
 export function validateCreateBuiltInTables(v) {
@@ -302,7 +302,7 @@ export function validateCreate(v, idx, isWeak = false) {
   if (!isWeak) {
     validate(v, matchVatstoreSet(`vc.${idx}.|entryCount`, `0`));
   }
-  validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, anyShape));
+  validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, anySchema));
   validate(v, matchVatstoreSet(`vc.${idx}.|label`, `store #${idx}`));
 }
 
@@ -401,7 +401,7 @@ export function validateDeleteMetadataOnly(
     v,
     matchVatstoreGetAfter(`vc.${idx}.|nextOrdinal`, `vc.${idx}.|`, NONE, [
       `vc.${idx}.|schemata`,
-      anyShape,
+      anySchema,
     ]),
   );
   validate(v, matchVatstoreDelete(`vc.${idx}.|schemata`));
@@ -480,7 +480,7 @@ export function validateFetchAndHold(v, rp, idx) {
     v,
     matchVatstoreGet(`vc.${mainHolderIdx}.sfoo`, mapRefValString(idx)),
   );
-  validate(v, matchVatstoreGet(`vc.${idx}.|schemata`, anyShape));
+  validate(v, matchVatstoreGet(`vc.${idx}.|schemata`, anySchema));
   validate(v, matchVatstoreGet(`vc.${idx}.|label`, `store #${idx}`));
   validateReturned(v, rp);
   validateDone(v);
@@ -495,7 +495,7 @@ export function validateExportHeld(v, rp, idx) {
 
 export function validateImportAndHold(v, rp, idx) {
   if (idx !== NONE) {
-    validate(v, matchVatstoreGet(`vc.${idx}.|schemata`, anyShape));
+    validate(v, matchVatstoreGet(`vc.${idx}.|schemata`, anySchema));
     validate(v, matchVatstoreGet(`vc.${idx}.|label`, `store #${idx}`));
   }
   validateReturned(v, rp);
