@@ -521,6 +521,7 @@
  * @typedef {object} GovernedContractFacetAccess
  * @property {VoteOnParamChanges} voteOnParamChanges
  * @property {VoteOnApiInvocation} voteOnApiInvocation
+ * @property {VoteOnOfferFilter} voteOnOfferFilter
  * @property {() => Promise<LimitedCreatorFacet<CF>>} getCreatorFacet - creator
  *   facet of the governed contract, without the tightly held ability to change
  *   param values.

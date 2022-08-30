@@ -24,7 +24,6 @@ test('psm block offers w/Governance', async t => {
   const invitations = await E(committeeCreator).getVoterInvitations();
   const { governorCreatorFacet } = governor;
 
-  // @ts-expect-error undeclared type?
   const { details } = await E(governorCreatorFacet).voteOnOfferFilter(
     installs.counter,
     2n,
