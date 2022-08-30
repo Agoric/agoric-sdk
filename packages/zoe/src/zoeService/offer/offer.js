@@ -18,7 +18,7 @@ const { details: X, quote: q } = assert;
  * @param {GetInstanceAdmin} getInstanceAdmin
  * @param {DepositPayments} depositPayments
  * @param {GetAssetKindByBrand} getAssetKindByBrand
- * @param {GetProposalSchemaForInvitation} getProposalSchemaForInvitation
+ * @param {GetProposalShapeForInvitation} getProposalShapeForInvitation
  * @returns {Offer}
  */
 export const makeOfferMethod = (
@@ -26,7 +26,7 @@ export const makeOfferMethod = (
   getInstanceAdmin,
   depositPayments,
   getAssetKindByBrand,
-  getProposalSchemaForInvitation,
+  getProposalShapeForInvitation,
 ) => {
   /** @type {Offer} */
   const offer = async (
@@ -55,9 +55,9 @@ export const makeOfferMethod = (
     instanceAdmin.assertAcceptingOffers();
 
     const proposal = cleanProposal(uncleanProposal, getAssetKindByBrand);
-    const proposalSchema = getProposalSchemaForInvitation(invitationHandle);
-    if (proposalSchema !== undefined) {
-      fit(proposal, proposalSchema, 'proposal');
+    const proposalShape = getProposalShapeForInvitation(invitationHandle);
+    if (proposalShape !== undefined) {
+      fit(proposal, proposalShape, 'proposal');
     }
 
     if (offerArgs !== undefined) {

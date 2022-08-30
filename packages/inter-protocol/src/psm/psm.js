@@ -218,23 +218,23 @@ export const start = async (zcf, privateArgs, baggage) => {
     updateMetrics();
   };
 
-  const [anchorAmountSchema, stableAmountSchema] = await Promise.all([
-    E(anchorBrand).getAmountSchema(),
-    E(stableBrand).getAmountSchema(),
+  const [anchorAmountShape, stableAmountShape] = await Promise.all([
+    E(anchorBrand).getAmountShape(),
+    E(stableBrand).getAmountShape(),
   ]);
   const makeWantStableInvitation = () =>
     zcf.makeInvitation(
       wantStableHook,
       'wantStable',
       undefined,
-      M.split({ give: { In: anchorAmountSchema } }),
+      M.split({ give: { In: anchorAmountShape } }),
     );
   const makeGiveStableInvitation = () =>
     zcf.makeInvitation(
       giveStableHook,
       'giveStable',
       undefined,
-      M.split({ give: { In: stableAmountSchema } }),
+      M.split({ give: { In: stableAmountShape } }),
     );
 
   const publicFacet = Far('Parity Stability Module', {

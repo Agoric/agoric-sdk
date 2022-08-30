@@ -32,7 +32,7 @@ export const vivifyIssuerKit = (
   const name = issuerBaggage.get('name');
   const assetKind = issuerBaggage.get('assetKind');
   const displayInfo = issuerBaggage.get('displayInfo');
-  const elementSchema = issuerBaggage.get('elementSchema');
+  const elementShape = issuerBaggage.get('elementShape');
   assert.typeof(name, 'string');
   assertAssetKind(assetKind);
 
@@ -42,8 +42,8 @@ export const vivifyIssuerKit = (
     assert.typeof(optShutdownWithFailure, 'function');
   }
 
-  if (elementSchema !== undefined) {
-    assertPattern(elementSchema);
+  if (elementShape !== undefined) {
+    assertPattern(elementShape);
   }
 
   // Attenuate the powerful authority to mint and change balances
@@ -52,7 +52,7 @@ export const vivifyIssuerKit = (
     name,
     assetKind,
     cleanDisplayInfo,
-    elementSchema,
+    elementShape,
     optShutdownWithFailure,
   );
 
@@ -91,7 +91,7 @@ harden(vivifyIssuerKit);
  * larger unit of computation, like the enclosing vat, can be shutdown
  * before anything else is corrupted by that corrupted state.
  * See https://github.com/Agoric/agoric-sdk/issues/3434
- * @param {Partial<{elementSchema: Pattern}>} [options]
+ * @param {Partial<{elementShape: Pattern}>} [options]
  * @returns {IssuerKit<K>}
  */
 export const makeDurableIssuerKit = (
@@ -101,12 +101,12 @@ export const makeDurableIssuerKit = (
   assetKind = AssetKind.NAT,
   displayInfo = harden({}),
   optShutdownWithFailure = undefined,
-  { elementSchema = undefined } = {},
+  { elementShape = undefined } = {},
 ) => {
   issuerBaggage.init('name', name);
   issuerBaggage.init('assetKind', assetKind);
   issuerBaggage.init('displayInfo', displayInfo);
-  issuerBaggage.init('elementSchema', elementSchema);
+  issuerBaggage.init('elementShape', elementShape);
   return vivifyIssuerKit(issuerBaggage, optShutdownWithFailure);
 };
 harden(makeDurableIssuerKit);
@@ -136,7 +136,7 @@ harden(makeDurableIssuerKit);
  * larger unit of computation, like the enclosing vat, can be shutdown
  * before anything else is corrupted by that corrupted state.
  * See https://github.com/Agoric/agoric-sdk/issues/3434
- * @param {Partial<{elementSchema: Pattern}>} [options]
+ * @param {Partial<{elementShape: Pattern}>} [options]
  * @returns {IssuerKit<K>}
  */
 export const makeIssuerKit = (
@@ -145,7 +145,7 @@ export const makeIssuerKit = (
   assetKind = AssetKind.NAT,
   displayInfo = harden({}),
   optShutdownWithFailure = undefined,
-  { elementSchema = undefined } = {},
+  { elementShape = undefined } = {},
 ) =>
   makeDurableIssuerKit(
     makeScalarBigMapStore('dropped issuer kit', { durable: true }),
@@ -153,6 +153,6 @@ export const makeIssuerKit = (
     assetKind,
     displayInfo,
     optShutdownWithFailure,
-    { elementSchema },
+    { elementShape },
   );
 harden(makeIssuerKit);

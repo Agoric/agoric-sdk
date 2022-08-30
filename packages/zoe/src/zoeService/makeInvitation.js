@@ -14,16 +14,16 @@ export const vivifyInvitationKit = (baggage, shutdownZoeVat = undefined) => {
     AssetKind.SET,
     undefined,
     shutdownZoeVat,
-    { elementSchema: InvitationElementShape },
+    { elementShape: InvitationElementShape },
   );
 
   /**
    * @param {Instance} instance
    * @param {Installation} installation
-   * @param {WeakMapStore<InvitationHandle, Pattern>} proposalSchemas
+   * @param {WeakMapStore<InvitationHandle, Pattern>} proposalShapes
    * @returns {ZoeInstanceAdminMakeInvitation}
    */
-  const setupMakeInvitation = (instance, installation, proposalSchemas) => {
+  const setupMakeInvitation = (instance, installation, proposalShapes) => {
     assert.typeof(instance, 'object');
     assert.typeof(installation, 'object');
 
@@ -32,7 +32,7 @@ export const vivifyInvitationKit = (baggage, shutdownZoeVat = undefined) => {
       invitationHandle,
       description,
       customProperties = undefined,
-      proposalSchema = undefined,
+      proposalShape = undefined,
     ) => {
       assert.typeof(invitationHandle, 'object');
       assert.typeof(
@@ -60,8 +60,8 @@ export const vivifyInvitationKit = (baggage, shutdownZoeVat = undefined) => {
           },
         ]),
       );
-      if (proposalSchema !== undefined) {
-        proposalSchemas.init(invitationHandle, proposalSchema);
+      if (proposalShape !== undefined) {
+        proposalShapes.init(invitationHandle, proposalShape);
       }
       return invitationKit.mint.mintPayment(invitationAmount);
     };

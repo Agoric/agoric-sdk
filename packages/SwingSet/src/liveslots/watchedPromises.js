@@ -65,7 +65,7 @@ export function makeWatchedPromiseManager(
       watchedPromiseTable = convertSlotToVal(watchedPromiseTableID);
     } else {
       watchedPromiseTable = makeScalarBigMapStore('watchedPromises', {
-        keySchema: M.string(), // key is always a vpid
+        keyShape: M.string(), // key is always a vpid
         durable: true,
       });
       watchedPromiseTableID = convertValToSlot(watchedPromiseTable);

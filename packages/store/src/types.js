@@ -119,8 +119,8 @@
  *   intended to eventually be durable has not yet been made durable.  A store
  *   marked as fakeDurable will appear to operate normally but any attempt to
  *   upgrade its containing vat will fail with an error.
- * @property {Pattern=} keySchema
- * @property {Pattern=} valueSchema
+ * @property {Pattern=} keyShape
+ * @property {Pattern=} valueShape
  */
 
 /**
@@ -612,5 +612,5 @@
  *             check: Checker
  * ) => boolean} checkKeyPattern
  * Assumes this is the payload of a CopyTagged with the corresponding
- * matchTag. Is this a valid pattern for use as a query key or key schema?
+ * matchTag. Is this a valid pattern for use as a query key or key shape?
  */

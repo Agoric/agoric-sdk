@@ -99,12 +99,12 @@ test(`offerTo - basic usage`, async t => {
 
   const successMsg = 'offer to contractB successful';
 
-  const proposalBSchema = harden({
+  const proposalBShape = harden({
     give: {
-      TokenM: bucksIssuer.getBrand().getAmountSchema(),
+      TokenM: bucksIssuer.getBrand().getAmountShape(),
     },
     want: {
-      TokenL: moolaIssuer.getBrand().getAmountSchema(),
+      TokenL: moolaIssuer.getBrand().getAmountShape(),
     },
     // multiples: 1n,
     exit: {
@@ -120,7 +120,7 @@ test(`offerTo - basic usage`, async t => {
     offerHandler,
     'contractB invitation',
     undefined,
-    proposalBSchema,
+    proposalBShape,
   );
 
   // Map the keywords in contract A to the keywords in contract B

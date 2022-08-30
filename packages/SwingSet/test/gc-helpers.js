@@ -39,7 +39,7 @@ export function buildRootObject(vatPowers) {
 
   function makeMapStore() {
     const result = makeScalarBigMapStore(`store #${nextStoreNumber}`, {
-      keySchema: M.any(),
+      keyShape: M.any(),
     });
     nextStoreNumber += 1;
     return result;
@@ -47,7 +47,7 @@ export function buildRootObject(vatPowers) {
 
   function makeWeakMapStore() {
     const result = makeScalarBigWeakMapStore(`store #${nextStoreNumber}`, {
-      keySchema: M.any(),
+      keyShape: M.any(),
     });
     nextStoreNumber += 1;
     return result;
@@ -55,7 +55,7 @@ export function buildRootObject(vatPowers) {
 
   function makeWeakSetStore() {
     const result = makeScalarBigWeakSetStore(`store #${nextStoreNumber}`, {
-      keySchema: M.any(),
+      keyShape: M.any(),
     });
     nextStoreNumber += 1;
     return result;
@@ -160,7 +160,7 @@ export const stringSchema = JSON.stringify(
   capargs([{ '@qclass': 'tagged', tag: 'match:kind', payload: 'string' }]),
 );
 
-export const anyScalarSchema = JSON.stringify(
+export const scalarSchema = JSON.stringify(
   capargs([
     {
       '@qclass': 'tagged',
@@ -250,7 +250,7 @@ function validateCreatePromiseRegistrationTable(v, idx) {
   validateCreateBuiltInNonDurableTable(
     v,
     idx,
-    anyScalarSchema,
+    scalarSchema,
     'promiseRegistrations',
   );
 }
@@ -271,7 +271,7 @@ export function validateCreatePromiseWatcherKindTable(v, idx) {
     v,
     idx,
     'watcherTableID',
-    anyScalarSchema,
+    scalarSchema,
     'promiseWatcherByKind',
   );
 }

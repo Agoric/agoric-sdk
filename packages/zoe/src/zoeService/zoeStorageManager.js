@@ -102,14 +102,14 @@ export const makeZoeStorageManager = (
     getBundleIDFromInstallation,
   } = makeInstallationStorage(getBundleCapForID, zoeBaggage);
 
-  const proposalSchemas = provideDurableWeakMapStore(
+  const proposalShapes = provideDurableWeakMapStore(
     zoeBaggage,
-    'proposal schemas',
+    'proposal shapes',
   );
 
-  const getProposalSchemaForInvitation = invitationHandle => {
-    if (proposalSchemas.has(invitationHandle)) {
-      return proposalSchemas.get(invitationHandle);
+  const getProposalShapeForInvitation = invitationHandle => {
+    if (proposalShapes.has(invitationHandle)) {
+      return proposalShapes.get(invitationHandle);
     }
     return undefined;
   };
@@ -215,7 +215,7 @@ export const makeZoeStorageManager = (
       keyword,
       assetKind = AssetKind.NAT,
       displayInfo,
-      { elementSchema = undefined } = {},
+      { elementShape = undefined } = {},
     ) => {
       // Local indicates one that zoe itself makes from vetted code,
       // and so can be assumed correct and fresh by zoe.
@@ -225,7 +225,7 @@ export const makeZoeStorageManager = (
         displayInfo,
         // eslint-disable-next-line no-use-before-define
         adminNode.terminateWithFailure,
-        { elementSchema },
+        { elementShape },
       );
       return wrapIssuerKitWithZoeMint(keyword, localIssuerKit);
     };
@@ -249,7 +249,7 @@ export const makeZoeStorageManager = (
     const makeInvitation = setupMakeInvitation(
       instance,
       installation,
-      proposalSchemas,
+      proposalShapes,
     );
 
     const { root, adminNode } = await createZCFVat(contractBundleCap);
@@ -291,6 +291,6 @@ export const makeZoeStorageManager = (
     getInstallationForInstance,
     getInstanceAdmin,
     unwrapInstallation,
-    getProposalSchemaForInvitation,
+    getProposalShapeForInvitation,
   };
 };

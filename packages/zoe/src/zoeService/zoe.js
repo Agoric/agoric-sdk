@@ -89,7 +89,7 @@ const makeZoeKit = (
     getInstallationForInstance,
     getInstanceAdmin,
     invitationIssuer,
-    getProposalSchemaForInvitation,
+    getProposalShapeForInvitation,
   } = makeZoeStorageManager(
     createZCFVat,
     getBundleCapForID,
@@ -114,7 +114,7 @@ const makeZoeKit = (
     getInstanceAdmin,
     depositPayments,
     getAssetKindByBrand,
-    getProposalSchemaForInvitation,
+    getProposalShapeForInvitation,
   );
 
   // Make the methods that allow users to easily and credibly get
@@ -161,7 +161,7 @@ const makeZoeKit = (
     getInvitationDetails,
     getConfiguration,
     getBundleIDFromInstallation,
-    getProposalSchemaForInvitation,
+    getProposalShapeForInvitation,
   });
 
   return harden({
