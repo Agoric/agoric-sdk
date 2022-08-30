@@ -58,7 +58,7 @@ const sanitizePathSegment = name => {
  *   feeDistributorPublicFacet: import('../feeDistributor.js').FeeDistributorPublicFacet,
  *   periodicFeeCollectors: import('../feeDistributor.js').PeriodicFeeCollector[],
  *   bankMints: Mint[],
- *   psmCreatorFacet: unknown,
+ *   psmCreatorFacet: Awaited<ReturnType<import('../psm/psm.js').start>>['creatorFacet'],
  *   psmGovernorCreatorFacet: GovernedContractFacetAccess<{},{}>,
  *   psmAdminFacet: AdminFacet,
  *   reservePublicFacet: import('../reserve/assetReserve.js').AssetReservePublicFacet,
