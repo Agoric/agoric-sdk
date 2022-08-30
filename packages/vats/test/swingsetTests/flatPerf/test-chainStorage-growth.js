@@ -73,7 +73,6 @@ const test1 = async ix => {
 
 test.beforeEach(t => {
   const start = new Date();
-  //   console.log({ start: start.toISOString() });
   t.context.start = start.getTime();
 });
 
@@ -81,14 +80,7 @@ test.afterEach(t => {
   const { start } = t.context;
   const end = new Date();
   const dur = end.getTime() - start;
-  //   console.log({
-  //     start: new Date(start).toISOString(),
-  //     end: end.toISOString(),
-  //     dur,
-  //   });
   t.context.times.push(dur);
-  const ix = t.context.times.length;
-  //   console.log(`${ix},${dur}`);
 });
 
 const logCSV = times => {
