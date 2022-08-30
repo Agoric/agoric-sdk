@@ -24,8 +24,9 @@ const log = label => x => {
 const bfile = name => log('url')(new URL(name, import.meta.url).pathname);
 
 test('run swingset', async t => {
-  const bd = buildBridge((bridgeId, message) => {
-    console.log('callOutbound', bridgeId);
+  const bd = buildBridge((bridgeId, { key, method, value }) => {
+    assert.typeof(value, 'string');
+    t.log('callOutbound', bridgeId, key, value.length);
   });
 
   const config = {
@@ -39,6 +40,7 @@ test('run swingset', async t => {
         sourceSpec: new URL(bd.srcPath, import.meta.url).pathname,
       },
     },
+    defaultManagerType: 'xs-worker',
   };
 
   const hostStorage = provideHostStorage();

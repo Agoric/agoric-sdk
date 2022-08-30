@@ -16,7 +16,15 @@ export const buildRootObject = () => {
         options,
       );
 
-      await E(storageRoot).setValue('key1', 'value1');
+      for (let size = 1; size < 128; size += 1) {
+        const capData = {
+          body: JSON.stringify(
+            Array(size * size).fill({ '@qclass': 'slot', index: 1 }),
+          ),
+          slots: Array(size * size).fill('slotX'),
+        };
+        await E(storageRoot).setValue(JSON.stringify(capData));
+      }
     },
   });
 };
