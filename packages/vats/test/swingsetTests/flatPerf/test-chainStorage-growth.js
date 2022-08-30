@@ -99,6 +99,6 @@ test.after(t => {
   logCSV(t.context.times);
 });
 
-for (let ix = 0; ix < 15; ix += 1) {
+for (let ix = 0; ix < 32; ix += 1) {
   test1(ix);
 }

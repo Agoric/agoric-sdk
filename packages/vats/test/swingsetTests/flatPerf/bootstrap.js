@@ -16,7 +16,7 @@ export const buildRootObject = () => {
         options,
       );
 
-      for (let size = 1; size < 100; size += 1) {
+      for (let size = 80; size < 120; size += 1) {
         const capData = {
           body: JSON.stringify(
             Array(size * size).fill({ '@qclass': 'slot', index: 1 }),
