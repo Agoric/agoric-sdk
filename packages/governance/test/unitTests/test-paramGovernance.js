@@ -15,6 +15,7 @@ import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '../../src/index.js';
+import { eventLoopIteration } from '../../../zoe/tools/eventLoopIteration.js';
 
 const voteCounterRoot = '../../src/binaryVoteCounter.js';
 const governedRoot = '../swingsetTests/contractGovernor/governedContract.js';
@@ -369,4 +370,70 @@ test('change multiple params used invitation', async t => {
   t.deepEqual(paramsAfter.Electorate.value, invitationAmount);
   // original value
   t.is(paramsAfter.MalleableNumber.value, 602214090000000000000000n);
+});
+
+test('change param continuing invitation', async t => {
+  const { zoe } = await setUpZoeForTest(() => {});
+  const timer = buildManualTimer(t.log);
+  const { governorFacets, installs, committeeCreator } =
+    await setUpGovernedContract(
+      zoe,
+      { committeeName: 'Demos', committeeSize: 1 },
+      timer,
+    );
+
+  /** @type {GovernedPublicFacet<unknown>} */
+  const publicFacet = E(governorFacets.creatorFacet).getPublicFacet();
+  const notifier = makeNotifierFromAsyncIterable(
+    await E(publicFacet).getSubscription(),
+  );
+  const update1 = await notifier.getUpdateSince();
+  t.like(update1, {
+    value: {
+      current: {
+        MalleableNumber: { type: 'nat', value: 602214090000000000000000n },
+      },
+    },
+  });
+
+  const paramChangesSpec = harden({
+    paramPath: { key: 'governedParams' },
+    changes: { [MALLEABLE_NUMBER]: 42n },
+  });
+
+  const { outcomeOfUpdate, details: detailsP } = await E(
+    governorFacets.creatorFacet,
+  ).voteOnParamChanges(installs.counter, 2n, paramChangesSpec);
+
+  outcomeOfUpdate
+    .then(o => t.deepEqual(o, { changes: { MalleableNumber: 42n } }))
+    .catch(e => t.fail(`Expected vote to succeed, but got ${e}`));
+
+  const details = await detailsP;
+  const positive = details.positions[0];
+  const invitations = await E(committeeCreator).getVoterInvitations();
+
+  const seat = E(zoe).offer(invitations[0]);
+  const voteFacet = E(seat).getOfferResult();
+  const continuingInvitation = E(voteFacet).getInvitationMaker();
+  const voteInvitation = E(continuingInvitation).makeVoteInvitation(
+    details.questionHandle,
+  );
+  await E(zoe).offer(voteInvitation, {}, {}, { positions: [positive] });
+
+  await E(timer).tick();
+  await E(timer).tick();
+  await eventLoopIteration();
+
+  const paramsAfter = await E(publicFacet).getGovernedParams();
+  t.is(paramsAfter.MalleableNumber.value, 42n);
+
+  const update2 = await notifier.getUpdateSince(update1.updateCount);
+  t.like(update2, {
+    value: {
+      current: {
+        MalleableNumber: { type: 'nat', value: 42n },
+      },
+    },
+  });
 });

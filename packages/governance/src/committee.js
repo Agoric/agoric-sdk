@@ -60,6 +60,18 @@ const start = (zcf, privateArgs) => {
           const { voteCap } = allQuestions.get(questionHandle);
           return E(voteCap).submitVote(voterHandle, positions, 1n);
         },
+        getInvitationMaker: () =>
+          Far('invitation maker', {
+            makeVoteInvitation: questionHandle => {
+              const continuingVoteHandler = (_seat, { positions }) => {
+                _seat.exit();
+                const { voteCap } = allQuestions.get(questionHandle);
+                return E(voteCap).submitVote(voterHandle, positions, 1n);
+              };
+
+              return zcf.makeInvitation(continuingVoteHandler, 'vote');
+            },
+          }),
       });
     };
 
