@@ -3,7 +3,7 @@ import { E, Far } from '@endo/far';
 export const buildRootObject = () => {
   return Far('root', {
     bootstrap: async (vats, { bridge }) => {
-      console.log(Object.keys(vats));
+      //   console.log(Object.keys(vats));
       const { chainStorage } = vats;
       const theBridgeId = 'swingset';
       const rootPath = 'published'; // ?
@@ -16,7 +16,7 @@ export const buildRootObject = () => {
         options,
       );
 
-      for (let size = 1; size < 128; size += 1) {
+      for (let size = 1; size < 100; size += 1) {
         const capData = {
           body: JSON.stringify(
             Array(size * size).fill({ '@qclass': 'slot', index: 1 }),
