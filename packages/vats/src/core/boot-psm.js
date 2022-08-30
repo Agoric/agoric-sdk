@@ -94,6 +94,7 @@ export const agoricNamesReserved = harden(
  *
  * @param {{
  *   D: DProxy
+ *   logger?: (msg: string) => void
  * }} vatPowers
  * @param {{
  *     economicCommitteeAddresses: string[],
@@ -101,7 +102,6 @@ export const agoricNamesReserved = harden(
  * }} vatParameters
  */
 export const buildRootObject = (vatPowers, vatParameters) => {
-  // @ts-expect-error no TS defs for rickety test scaffolding
   const log = vatPowers.logger || console.info;
 
   const { anchorAssets, economicCommitteeAddresses } = vatParameters;
@@ -218,6 +218,9 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       assert.typeof(name, 'string');
       return consume[name];
     },
+    // ??? any more dangerous than produceItem/consumeItem?
+    /** @type {() => PromiseSpace} */
+    getPromiseSpace: () => ({ consume, produce }),
   });
 };
 
