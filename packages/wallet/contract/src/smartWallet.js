@@ -50,9 +50,13 @@ export const makeSmartWallet = async (
   const notifierParts = {
     contacts: E(admin).getContactsNotifier(),
     dapps: E(admin).getDappsNotifier(),
+    /** all current issuers */
     issuers: E(admin).getIssuersNotifier(),
+    /** recently updated offers */
     offers: E(admin).getOffersNotifier(),
+    /** recently updated payments */
     payments: E(admin).getPaymentsNotifier(),
+    /** all current purses */
     purses: E(admin).getPursesNotifier(),
   };
   const mutableState = fromEntries(keys(notifierParts).map(key => [key, []]));
