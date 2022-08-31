@@ -1,3 +1,4 @@
+// @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 
@@ -11,6 +12,17 @@ function sanitize(data) {
   return JSON.parse(JSON.stringify(data));
 }
 
+/**
+ * @typedef {object} BridgeDevice
+ * @property {(dstID: string, obj: any) => any} callOutbound
+ * @property {(handler: { inbound: (srcID: string, obj: any) => void}) => void} registerInboundHandler
+ */
+
+/**
+ *
+ * @param {*} tools
+ * @returns {BridgeDevice}
+ */
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
   const { registerInboundCallback, callOutbound } = endowments;

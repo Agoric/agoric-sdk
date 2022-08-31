@@ -138,6 +138,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       ...ECON_COMMITTEE_MANIFEST,
       ...PSM_MANIFEST,
     };
+    /** @param {string} name */
     const powersFor = name => {
       const permit = manifest[name];
       assert(permit, `missing permit for ${name}`);
