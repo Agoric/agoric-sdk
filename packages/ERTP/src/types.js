@@ -331,6 +331,7 @@
  */
 
 /**
+ * @template {AssetKind} [K=AssetKind]
  * @typedef {object} Purse
  * Purses hold amount of digital assets of the same brand, but unlike Payments,
  * they are not meant to be sent to others. To transfer digital assets, a
@@ -341,12 +342,12 @@
  * digital assets, but they can also be used to represent other kinds of rights,
  * such as the right to participate in a particular contract.
  *
- * @property {() => Brand} getAllegedBrand Get the alleged Brand for this Purse
+ * @property {() => Brand<K>} getAllegedBrand Get the alleged Brand for this Purse
  *
- * @property {() => Amount} getCurrentAmount
+ * @property {() => Amount<K>} getCurrentAmount
  * Get the amount contained in this purse.
  *
- * @property {() => Notifier<Amount>} getCurrentAmountNotifier
+ * @property {() => Notifier<Amount<K>>} getCurrentAmountNotifier
  * Get a lossy notifier for changes to this purse's balance.
  *
  * @property {PurseDeposit} deposit
@@ -359,10 +360,10 @@
  * @property {() => DepositFacet} getDepositFacet
  * Return an object whose `receive` method deposits to the current Purse.
  *
- * @property {(amount: Amount) => Payment} withdraw
+ * @property {(amount: Amount<K>) => Payment} withdraw
  * Withdraw amount from this purse into a new Payment.
  *
- * @property {() => CopySet<Payment>} getRecoverySet
+ * @property {() => CopySet<Payment<K>>} getRecoverySet
  * The set of payments associated with this purse that are still live. These
  * are the payments that can still be recovered in emergencies by, for example,
  * depositing into this purse. Such a deposit action is like canceling an
@@ -371,7 +372,7 @@
  * things. Afterwards, if the recipient of the original check finally gets
  * around to depositing it, their deposit fails.
  *
- * @property {() => Amount} recoverAll
+ * @property {() => Amount<K>} recoverAll
  * For use in emergencies, such as coming back from a traumatic crash and
  * upgrade. This deposits all the payments in this purse's recovery set
  * into the purse itself, returning the total amount of assets recovered.
