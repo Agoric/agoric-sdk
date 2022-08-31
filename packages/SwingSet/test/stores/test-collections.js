@@ -138,7 +138,7 @@ test('basic map operations', t => {
   exerciseMapOperations(
     t,
     'map',
-    makeScalarBigMapStore('map', { keySchema: M.any() }),
+    makeScalarBigMapStore('map', { keyShape: M.any() }),
   );
 });
 
@@ -146,7 +146,7 @@ test('basic weak map operations', t => {
   exerciseMapOperations(
     t,
     'weak map',
-    makeScalarBigWeakMapStore('weak map', { keySchema: M.any() }),
+    makeScalarBigWeakMapStore('weak map', { keyShape: M.any() }),
   );
 });
 
@@ -154,7 +154,7 @@ test('basic set operations', t => {
   exerciseSetOperations(
     t,
     'set',
-    makeScalarBigSetStore('set', { keySchema: M.any() }),
+    makeScalarBigSetStore('set', { keyShape: M.any() }),
   );
 });
 
@@ -162,13 +162,13 @@ test('basic weak set operations', t => {
   exerciseSetOperations(
     t,
     'weak set',
-    makeScalarBigWeakSetStore('weak set', { keySchema: M.any() }),
+    makeScalarBigWeakSetStore('weak set', { keyShape: M.any() }),
   );
 });
 
-test('constrain map key schema', t => {
+test('constrain map key shape', t => {
   const stringsOnly = makeScalarBigMapStore('map key strings only', {
-    keySchema: M.string(),
+    keyShape: M.string(),
   });
   stringsOnly.init('skey', 'this should work');
   t.is(stringsOnly.get('skey'), 'this should work');
@@ -178,7 +178,7 @@ test('constrain map key schema', t => {
   );
 
   const noStrings = makeScalarBigMapStore('map key no strings', {
-    keySchema: M.not(M.string()),
+    keyShape: M.not(M.string()),
   });
   noStrings.init(47, 'number ok');
   noStrings.init(true, 'boolean ok');
@@ -194,7 +194,7 @@ test('constrain map key schema', t => {
     m('invalid key type for collection "map key no strings"'),
   );
 
-  const only47 = makeScalarBigMapStore('map key only 47', { keySchema: 47 });
+  const only47 = makeScalarBigMapStore('map key only 47', { keyShape: 47 });
   only47.init(47, 'this number ok');
   t.throws(
     () => only47.init(29, 'this number not ok?'),
@@ -208,7 +208,7 @@ test('constrain map key schema', t => {
   );
 
   const lt47 = makeScalarBigMapStore('map key less than 47', {
-    keySchema: M.lt(47),
+    keyShape: M.lt(47),
   });
   lt47.init(29, 'this number ok');
   t.throws(
@@ -227,9 +227,9 @@ test('constrain map key schema', t => {
   t.deepEqual(Array.from(lt47.keys(M.gt(20))), [29, 46]);
 });
 
-test('constrain map value schema', t => {
+test('constrain map value shape', t => {
   const stringsOnly = makeScalarBigMapStore('map value strings only', {
-    valueSchema: M.string(),
+    valueShape: M.string(),
   });
   stringsOnly.init('sval', 'string value');
   t.is(stringsOnly.get('sval'), 'string value');
@@ -239,7 +239,7 @@ test('constrain map value schema', t => {
   );
 
   const noStrings = makeScalarBigMapStore('map value no strings', {
-    valueSchema: M.not(M.string()),
+    valueShape: M.not(M.string()),
   });
   noStrings.init('nkey', 47);
   noStrings.init('bkey', true);
@@ -252,7 +252,7 @@ test('constrain map value schema', t => {
   t.falsy(noStrings.has('skey'));
 
   const only47 = makeScalarBigMapStore('map value only 47', {
-    valueSchema: 47,
+    valueShape: 47,
   });
   only47.init('47key', 47);
   t.throws(
@@ -263,7 +263,7 @@ test('constrain map value schema', t => {
   t.falsy(only47.has('29key'));
 
   const lt47 = makeScalarBigMapStore('map value less than 47', {
-    valueSchema: M.lt(47),
+    valueShape: M.lt(47),
   });
   lt47.init('29key', 29);
   t.throws(
@@ -279,9 +279,9 @@ test('constrain map value schema', t => {
   t.is(lt47.getSize(M.any(), M.gt(20)), 2);
 });
 
-test('constrain set key schema', t => {
+test('constrain set key shape', t => {
   const stringsOnly = makeScalarBigSetStore('strings only set', {
-    keySchema: M.string(),
+    keyShape: M.string(),
   });
   t.falsy(stringsOnly.has('skey'));
   stringsOnly.add('skey');
@@ -292,7 +292,7 @@ test('constrain set key schema', t => {
   );
 
   const noStrings = makeScalarBigSetStore('no strings set', {
-    keySchema: M.not(M.string()),
+    keyShape: M.not(M.string()),
   });
   noStrings.add(47);
   noStrings.add(true);
@@ -304,7 +304,7 @@ test('constrain set key schema', t => {
   t.truthy(noStrings.has(true));
   t.falsy(noStrings.has('foo'));
 
-  const only47 = makeScalarBigSetStore('only 47 set', { keySchema: 47 });
+  const only47 = makeScalarBigSetStore('only 47 set', { keyShape: 47 });
   t.falsy(only47.has(47));
   only47.add(47);
   t.truthy(only47.has(47));
@@ -315,7 +315,7 @@ test('constrain set key schema', t => {
   );
 
   const lt47 = makeScalarBigSetStore('less than 47 set', {
-    keySchema: M.lt(47),
+    keyShape: M.lt(47),
   });
   lt47.add(29);
   t.throws(
@@ -330,26 +330,26 @@ test('constrain set key schema', t => {
   t.deepEqual(Array.from(lt47.values(M.gt(20))), [29, 46]);
 });
 
-test('bogus key schema', t => {
+test('bogus key shape', t => {
   t.throws(
-    () => makeScalarBigMapStore('bogus1', { keySchema: M.promise() }),
+    () => makeScalarBigMapStore('bogus1', { keyShape: M.promise() }),
     m('"promise" keys are not supported'),
   );
   t.throws(
-    () => makeScalarBigMapStore('bogus2', { keySchema: M.error() }),
+    () => makeScalarBigMapStore('bogus2', { keyShape: M.error() }),
     m('"error" keys are not supported'),
   );
   t.throws(
     () =>
       makeScalarBigMapStore('bogus3', {
-        keySchema: M.or(M.string(), M.promise()),
+        keyShape: M.or(M.string(), M.promise()),
       }),
     m('"promise" keys are not supported'),
   );
 });
 
 test('map clear', t => {
-  const testStore = makeScalarBigMapStore('cmap', { keySchema: M.any() });
+  const testStore = makeScalarBigMapStore('cmap', { keyShape: M.any() });
   testStore.init('a', 'ax');
   testStore.init('b', 'bx');
   testStore.init('c', 'cx');
@@ -361,7 +361,7 @@ test('map clear', t => {
 });
 
 test('set clear', t => {
-  const testStore = makeScalarBigSetStore('cset', { keySchema: M.any() });
+  const testStore = makeScalarBigSetStore('cset', { keyShape: M.any() });
   testStore.add('a');
   testStore.add('b');
   testStore.add('c');
@@ -374,7 +374,7 @@ test('set clear', t => {
 
 test('map fail on concurrent modification', t => {
   const primeMap = makeScalarBigMapStore('fmap', {
-    keySchema: M.number(),
+    keyShape: M.number(),
   });
   primes.forEach((v, i) => primeMap.init(v, `${v} is prime #${i + 1}`));
 
@@ -402,7 +402,7 @@ test('map fail on concurrent modification', t => {
 
 test('set fail on concurrent modification', t => {
   const primeSet = makeScalarBigSetStore('fset', {
-    keySchema: M.number(),
+    keyShape: M.number(),
   });
   primes.forEach(v => primeSet.add(v));
 
@@ -430,7 +430,7 @@ test('set fail on concurrent modification', t => {
 
 test('map ok with concurrent deletion', t => {
   const primeMap = makeScalarBigMapStore('fmap', {
-    keySchema: M.number(),
+    keyShape: M.number(),
   });
   primes.forEach((v, i) => primeMap.init(v, `${v} is prime #${i + 1}`));
   const iter = primeMap.keys();
@@ -445,7 +445,7 @@ test('map ok with concurrent deletion', t => {
 
 test('set ok with concurrent deletion', t => {
   const primeSet = makeScalarBigSetStore('fset', {
-    keySchema: M.number(),
+    keyShape: M.number(),
   });
   primes.forEach(v => primeSet.add(v));
 
@@ -463,26 +463,26 @@ test('fail on oversized keys', t => {
   const bigString = `Elaine${'!'.repeat(220)}`;
   const ex = m('key too large');
 
-  const map = makeScalarBigMapStore('meh', { keySchema: M.any() });
+  const map = makeScalarBigMapStore('meh', { keyShape: M.any() });
   t.throws(() => map.has(bigString), ex);
   t.throws(() => map.get(bigString), ex);
   t.throws(() => map.init(bigString, 'Ben!'), ex);
   t.throws(() => map.set(bigString, 'Ben!'), ex);
   t.throws(() => map.delete(bigString), ex);
 
-  const set = makeScalarBigSetStore('sigh', { keySchema: M.any() });
+  const set = makeScalarBigSetStore('sigh', { keyShape: M.any() });
   t.throws(() => set.has(bigString), ex);
   t.throws(() => set.add(bigString), ex);
   t.throws(() => set.delete(bigString), ex);
 
-  const wmap = makeScalarBigWeakMapStore('wump', { keySchema: M.any() });
+  const wmap = makeScalarBigWeakMapStore('wump', { keyShape: M.any() });
   t.throws(() => wmap.has(bigString), ex);
   t.throws(() => wmap.get(bigString), ex);
   t.throws(() => wmap.init(bigString, 'Ben!'), ex);
   t.throws(() => wmap.set(bigString, 'Ben!'), ex);
   t.throws(() => wmap.delete(bigString), ex);
 
-  const wset = makeScalarBigWeakSetStore('whisk', { keySchema: M.any() });
+  const wset = makeScalarBigWeakSetStore('whisk', { keyShape: M.any() });
   t.throws(() => wset.has(bigString), ex);
   t.throws(() => wset.add(bigString), ex);
   t.throws(() => wset.delete(bigString), ex);
@@ -494,7 +494,7 @@ test('fail on oversized keys', t => {
 });
 
 test('map queries', t => {
-  const testStore = makeScalarBigMapStore('qmap', { keySchema: M.any() });
+  const testStore = makeScalarBigMapStore('qmap', { keyShape: M.any() });
   fillBasicMapStore(testStore);
 
   t.deepEqual(Array.from(testStore.keys(M.number())), [-29, 3, 47]);
@@ -682,7 +682,7 @@ test('map queries', t => {
 });
 
 test('set queries', t => {
-  const testStore = makeScalarBigSetStore('qset', { keySchema: M.any() });
+  const testStore = makeScalarBigSetStore('qset', { keyShape: M.any() });
   fillBasicSetStore(testStore);
 
   t.deepEqual(Array.from(testStore.values(M.number())), [-29, 3, 47]);
@@ -746,7 +746,7 @@ test('set queries', t => {
 });
 
 test('remotable sort order', t => {
-  const testStore = makeScalarBigMapStore('rmap', { keySchema: M.remotable() });
+  const testStore = makeScalarBigMapStore('rmap', { keyShape: M.remotable() });
   const a = makeGenericRemotable('a');
   const b = makeGenericRemotable('b');
   const c = makeGenericRemotable('c');
@@ -766,7 +766,7 @@ test('remotable sort order', t => {
 
 test('complex map queries', t => {
   const primeStore = makeScalarBigMapStore('prime map', {
-    keySchema: M.number(),
+    keyShape: M.number(),
   });
   primes.forEach((v, i) => primeStore.init(v, `${v} is prime #${i + 1}`));
 
@@ -941,7 +941,7 @@ test('complex map queries', t => {
 
 test('complex set queries', t => {
   const primeStore = makeScalarBigSetStore('prime set', {
-    keySchema: M.number(),
+    keyShape: M.number(),
   });
   primes.forEach(v => primeStore.add(v));
 

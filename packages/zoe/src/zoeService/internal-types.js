@@ -116,7 +116,7 @@
  */
 
 /**
- * @callback GetProposalSchemaForInvitation
+ * @callback GetProposalShapeForInvitation
  * @param {InvitationHandle} invitationHandle
  * @returns {Pattern | undefined}
  */
@@ -138,7 +138,7 @@
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstanceAdmin} getInstanceAdmin
  * @property {UnwrapInstallation} unwrapInstallation
- * @property {GetProposalSchemaForInvitation} getProposalSchemaForInvitation
+ * @property {GetProposalShapeForInvitation} getProposalShapeForInvitation
  */
 
 /**

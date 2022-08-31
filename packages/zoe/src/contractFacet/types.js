@@ -101,7 +101,7 @@
  * that handles the offer, such as saving it or performing a trade
  * @param {string} description
  * @param {object=} customProperties
- * @param {Pattern} [proposalSchema]
+ * @param {Pattern} [proposalShape]
  * @returns {Promise<Invitation<OR>>}
  */
 

@@ -16,38 +16,38 @@ import '@agoric/store/exported.js';
 
 const { details: X, quote: q } = assert;
 
-const amountSchemaFromElementSchema = (brand, assetKind, elementSchema) => {
-  let valueSchema;
+const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
+  let valueShape;
   switch (assetKind) {
     case 'nat': {
-      valueSchema = M.nat();
+      valueShape = M.nat();
       assert(
-        elementSchema === undefined,
-        X`Fungible assets cannot have an elementSchema: ${q(elementSchema)}`,
+        elementShape === undefined,
+        X`Fungible assets cannot have an elementShape: ${q(elementShape)}`,
       );
       break;
     }
     case 'set': {
-      if (elementSchema === undefined) {
-        valueSchema = M.arrayOf(M.key());
+      if (elementShape === undefined) {
+        valueShape = M.arrayOf(M.key());
       } else {
-        valueSchema = M.arrayOf(M.and(M.key(), elementSchema));
+        valueShape = M.arrayOf(M.and(M.key(), elementShape));
       }
       break;
     }
     case 'copySet': {
-      if (elementSchema === undefined) {
-        valueSchema = M.set();
+      if (elementShape === undefined) {
+        valueShape = M.set();
       } else {
-        valueSchema = M.setOf(elementSchema);
+        valueShape = M.setOf(elementShape);
       }
       break;
     }
     case 'copyBag': {
-      if (elementSchema === undefined) {
-        valueSchema = M.bag();
+      if (elementShape === undefined) {
+        valueShape = M.bag();
       } else {
-        valueSchema = M.bagOf(elementSchema);
+        valueShape = M.bagOf(elementShape);
       }
       break;
     }
@@ -56,11 +56,11 @@ const amountSchemaFromElementSchema = (brand, assetKind, elementSchema) => {
     }
   }
 
-  const amountSchema = harden({
+  const amountShape = harden({
     brand, // matches only this exact brand
-    value: valueSchema,
+    value: valueShape,
   });
-  return amountSchema;
+  return amountShape;
 };
 
 /**
@@ -72,7 +72,7 @@ const amountSchemaFromElementSchema = (brand, assetKind, elementSchema) => {
  * @param {string} name
  * @param {AssetKind} assetKind
  * @param {DisplayInfo} displayInfo
- * @param {Pattern} elementSchema
+ * @param {Pattern} elementShape
  * @param {ShutdownWithFailure=} optShutdownWithFailure
  * @returns {{ issuer: Issuer<K>, mint: Mint<K>, brand: Brand<K> }}
  */
@@ -81,7 +81,7 @@ export const vivifyPaymentLedger = (
   name,
   assetKind,
   displayInfo,
-  elementSchema,
+  elementShape,
   optShutdownWithFailure = undefined,
 ) => {
   const getBrand = () => brand;
@@ -372,7 +372,7 @@ export const vivifyPaymentLedger = (
    */
   const mintPayment = newAmount => {
     newAmount = coerce(newAmount);
-    fit(newAmount, amountSchema, 'minted amount');
+    fit(newAmount, amountShape, 'minted amount');
     const payment = makePayment();
     initPayment(payment, newAmount, undefined);
     return payment;
@@ -494,17 +494,17 @@ export const vivifyPaymentLedger = (
       getAllegedName: () => name,
       // Give information to UI on how to display the amount.
       getDisplayInfo: () => displayInfo,
-      getAmountSchema: () => amountSchema,
+      getAmountShape: () => amountShape,
     })
   );
 
   const issuerKit = harden({ issuer, mint, brand });
 
   const emptyAmount = AmountMath.makeEmpty(brand, assetKind);
-  const amountSchema = amountSchemaFromElementSchema(
+  const amountShape = amountShapeFromElementShape(
     brand,
     assetKind,
-    elementSchema,
+    elementShape,
   );
   return issuerKit;
 };

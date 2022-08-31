@@ -185,15 +185,15 @@ export const makeZCFZygote = async (
       offerHandler = Far('default offer handler', () => {}),
       description,
       customProperties = harden({}),
-      proposalSchema = undefined,
+      proposalShape = undefined,
     ) => {
       assert.typeof(
         description,
         'string',
         X`invitations must have a description string: ${description}`,
       );
-      if (proposalSchema !== undefined) {
-        assertPattern(proposalSchema);
+      if (proposalShape !== undefined) {
+        assertPattern(proposalShape);
       }
 
       const invitationHandle = storeOfferHandler(offerHandler);
@@ -202,7 +202,7 @@ export const makeZCFZygote = async (
         invitationHandle,
         description,
         customProperties,
-        proposalSchema,
+        proposalShape,
       );
       return invitationP;
     },

@@ -247,8 +247,8 @@ export function makeCollectionManager(
     label,
     collectionID,
     kindName,
-    keySchema = M.any(),
-    valueSchema,
+    keyShape = M.any(),
+    valueShape,
   ) {
     assert.typeof(kindName, 'string');
     const kindInfo = storeKindInfo[kindName];
@@ -320,7 +320,7 @@ export function makeCollectionManager(
     }
 
     function has(key) {
-      if (!matches(key, keySchema)) {
+      if (!matches(key, keyShape)) {
         return false;
       }
       if (passStyleOf(key) === 'remotable') {
@@ -332,7 +332,7 @@ export function makeCollectionManager(
 
     function get(key) {
       assert(
-        matches(key, keySchema),
+        matches(key, keyShape),
         X`invalid key type for collection ${q(label)}`,
       );
       const result = syscall.vatstoreGet(keyToDBKey(key));
@@ -354,16 +354,16 @@ export function makeCollectionManager(
 
     function init(key, value) {
       assert(
-        matches(key, keySchema),
+        matches(key, keyShape),
         X`invalid key type for collection ${q(label)}`,
       );
       assert(
         !has(key),
         X`key ${key} already registered in collection ${q(label)}`,
       );
-      if (valueSchema) {
+      if (valueShape) {
         assert(
-          matches(value, valueSchema),
+          matches(value, valueShape),
           X`invalid value type for collection ${q(label)}`,
         );
       }
@@ -399,12 +399,12 @@ export function makeCollectionManager(
 
     function set(key, value) {
       assert(
-        matches(key, keySchema),
+        matches(key, keyShape),
         X`invalid key type for collection ${q(label)}`,
       );
-      if (valueSchema) {
+      if (valueShape) {
         assert(
-          matches(value, valueSchema),
+          matches(value, valueShape),
           X`invalid value type for collection ${q(label)}`,
         );
       }
@@ -427,7 +427,7 @@ export function makeCollectionManager(
 
     function deleteInternal(key) {
       assert(
-        matches(key, keySchema),
+        matches(key, keyShape),
         X`invalid key type for collection ${q(label)}`,
       );
       const dbKey = keyToDBKey(key);
@@ -654,8 +654,8 @@ export function makeCollectionManager(
     label,
     collectionID,
     kindName,
-    keySchema,
-    valueSchema,
+    keyShape,
+    valueShape,
   ) {
     const hasWeakKeys = storeKindInfo[kindName].hasWeakKeys;
     const raw = summonCollectionInternal(
@@ -663,8 +663,8 @@ export function makeCollectionManager(
       label,
       collectionID,
       kindName,
-      keySchema,
-      valueSchema,
+      keyShape,
+      valueShape,
     );
 
     const { has, get, init, set, delete: del } = raw;
@@ -745,14 +745,14 @@ export function makeCollectionManager(
     }
   }
 
-  function makeCollection(label, kindName, keySchema, valueSchema) {
+  function makeCollection(label, kindName, keyShape, valueShape) {
     assert.typeof(label, 'string');
     assert(storeKindInfo[kindName]);
-    assertKeyPattern(keySchema);
-    const schemata = [keySchema];
-    if (valueSchema) {
-      assertPattern(valueSchema);
-      schemata.push(valueSchema);
+    assertKeyPattern(keyShape);
+    const schemata = [keyShape];
+    if (valueShape) {
+      assertPattern(valueShape);
+      schemata.push(valueShape);
     }
     const collectionID = allocateCollectionID();
     const kindID = obtainStoreKindID(kindName);
@@ -777,8 +777,8 @@ export function makeCollectionManager(
         label,
         collectionID,
         kindName,
-        keySchema,
-        valueSchema,
+        keyShape,
+        valueShape,
       ),
     ];
   }
@@ -856,14 +856,14 @@ export function makeCollectionManager(
    */
   function makeScalarBigMapStore(
     label = 'map',
-    { keySchema = M.scalar(), valueSchema = undefined, durable = false } = {},
+    { keyShape = M.scalar(), valueShape = undefined, durable = false } = {},
   ) {
     const kindName = durable ? 'scalarDurableMapStore' : 'scalarMapStore';
     const [vobjID, collection] = makeCollection(
       label,
       kindName,
-      keySchema,
-      valueSchema,
+      keyShape,
+      valueShape,
     );
     const store = collectionToMapStore(collection);
     registerValue(vobjID, store, false);
@@ -876,7 +876,7 @@ export function makeCollectionManager(
       return convertSlotToVal(baggageID);
     } else {
       const baggage = makeScalarBigMapStore('baggage', {
-        keySchema: M.string(),
+        keyShape: M.string(),
         durable: true,
       });
       baggageID = convertValToSlot(baggage);
@@ -898,7 +898,7 @@ export function makeCollectionManager(
    */
   function makeScalarBigWeakMapStore(
     label = 'weakMap',
-    { keySchema = M.scalar(), valueSchema = undefined, durable = false } = {},
+    { keyShape = M.scalar(), valueShape = undefined, durable = false } = {},
   ) {
     const kindName = durable
       ? 'scalarDurableWeakMapStore'
@@ -906,8 +906,8 @@ export function makeCollectionManager(
     const [vobjID, collection] = makeCollection(
       label,
       kindName,
-      keySchema,
-      valueSchema,
+      keyShape,
+      valueShape,
     );
     const store = collectionToWeakMapStore(collection);
     registerValue(vobjID, store, false);
@@ -925,14 +925,14 @@ export function makeCollectionManager(
    */
   function makeScalarBigSetStore(
     label = 'set',
-    { keySchema = M.scalar(), valueSchema = undefined, durable = false } = {},
+    { keyShape = M.scalar(), valueShape = undefined, durable = false } = {},
   ) {
     const kindName = durable ? 'scalarDurableSetStore' : 'scalarSetStore';
     const [vobjID, collection] = makeCollection(
       label,
       kindName,
-      keySchema,
-      valueSchema,
+      keyShape,
+      valueShape,
     );
     const store = collectionToSetStore(collection);
     registerValue(vobjID, store, false);
@@ -950,7 +950,7 @@ export function makeCollectionManager(
    */
   function makeScalarBigWeakSetStore(
     label = 'weakSet',
-    { keySchema = M.scalar(), valueSchema = undefined, durable = false } = {},
+    { keyShape = M.scalar(), valueShape = undefined, durable = false } = {},
   ) {
     const kindName = durable
       ? 'scalarDurableWeakSetStore'
@@ -958,8 +958,8 @@ export function makeCollectionManager(
     const [vobjID, collection] = makeCollection(
       label,
       kindName,
-      keySchema,
-      valueSchema,
+      keyShape,
+      valueShape,
     );
     const store = collectionToWeakSetStore(collection);
     registerValue(vobjID, store, false);
@@ -972,15 +972,15 @@ export function makeCollectionManager(
     const rawSchemata = JSON.parse(
       syscall.vatstoreGet(prefixc(subid, '|schemata')),
     );
-    const [keySchema, valueSchema] = unserialize(rawSchemata);
+    const [keyShape, valueShape] = unserialize(rawSchemata);
     const label = syscall.vatstoreGet(prefixc(subid, '|label'));
     return summonCollection(
       false,
       label,
       subid,
       kindName,
-      keySchema,
-      valueSchema,
+      keyShape,
+      valueShape,
     );
   }
 

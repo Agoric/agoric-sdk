@@ -112,7 +112,7 @@
  * @property {() => string} getAllegedName
  * @property {() => DisplayInfo} getDisplayInfo
  * Give information to UI on how to display the amount.
- * @property {() => Pattern} getAmountSchema
+ * @property {() => Pattern} getAmountShape
  */
 
 // /////////////////////////// Issuer //////////////////////////////////////////
