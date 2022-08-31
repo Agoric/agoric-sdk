@@ -259,7 +259,11 @@ export const PSM_MANIFEST = harden({
       economicCommitteeCreatorFacet: 'economicCommittee',
       chainTimerService: 'timer',
     },
-    produce: { psmCreatorFacet: 'psm', psmGovernorCreatorFacet: 'psmGovernor' },
+    produce: {
+      psmCreatorFacet: 'psm',
+      psmAdminFacet: 'psm',
+      psmGovernorCreatorFacet: 'psmGovernor',
+    },
     installation: {
       consume: { contractGovernor: 'zoe', psm: 'zoe' },
     },
