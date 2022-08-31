@@ -66,9 +66,15 @@ export const start = async (zcf, privateArgs) => {
     VoteOnPauseOffers: makeOfferFilterInvitation,
   });
 
-  const publicFacet = Far('votingAPI', {
-    invitationMakers,
+  const charterMemberHandler = seat => {
+    seat.exit();
+    return invitationMakers;
+  };
+
+  const creatorFacet = Far('psm charter creator', {
+    makeCharterMemberInvitation: () =>
+      zcf.makeInvitation(charterMemberHandler, 'PSM charter member invitation'),
   });
 
-  return harden({ publicFacet });
+  return harden({ creatorFacet });
 };
