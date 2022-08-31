@@ -133,7 +133,7 @@ const setUpVoterAndVote = async (committeeCreator, zoe, qHandle, choice) => {
   const invitations = await E(committeeCreator).getVoterInvitations();
 
   const seat = E(zoe).offer(invitations[0]);
-  const voteFacet = E(seat).getOfferResult();
+  const voteFacet = E.get(E(seat).getOfferResult()).voter;
   return E(voteFacet).castBallotFor(qHandle, [choice]);
 };
 
@@ -414,9 +414,8 @@ test('change param continuing invitation', async t => {
   const invitations = await E(committeeCreator).getVoterInvitations();
 
   const seat = E(zoe).offer(invitations[0]);
-  const voteFacet = E(seat).getOfferResult();
-  const continuingInvitation = E(voteFacet).getInvitationMaker();
-  const voteInvitation = E(continuingInvitation).makeVoteInvitation(
+  const { invitationMakers } = E.get(E(seat).getOfferResult());
+  const voteInvitation = E(invitationMakers).makeVoteInvitation(
     details.questionHandle,
   );
   await E(zoe).offer(voteInvitation, {}, {}, { positions: [positive] });

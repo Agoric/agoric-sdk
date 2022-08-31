@@ -50,28 +50,30 @@ const start = (zcf, privateArgs) => {
     const offerHandler = seat => {
       const voterHandle = makeHandle('Voter');
       seat.exit();
-      return Far(`voter${index}`, {
-        // CRUCIAL: voteCap carries the ability to cast votes for any voter at
-        // any weight. It's wrapped here and given to the voter.
-        //
-        // Ensure that the voter can't get access to the unwrapped voteCap, and
-        // has no control over the voteHandle or weight
-        castBallotFor: (questionHandle, positions) => {
-          const { voteCap } = allQuestions.get(questionHandle);
-          return E(voteCap).submitVote(voterHandle, positions, 1n);
-        },
-        getInvitationMaker: () =>
-          Far('invitation maker', {
-            makeVoteInvitation: questionHandle => {
-              const continuingVoteHandler = (_seat, { positions }) => {
-                _seat.exit();
-                const { voteCap } = allQuestions.get(questionHandle);
-                return E(voteCap).submitVote(voterHandle, positions, 1n);
-              };
 
-              return zcf.makeInvitation(continuingVoteHandler, 'vote');
-            },
-          }),
+      // CRUCIAL: voteCap carries the ability to cast votes for any voter at
+      // any weight. It's wrapped here and given to the voter.
+      //
+      // Ensure that the voter can't get access to the unwrapped voteCap, and
+      // has no control over the voteHandle or weight
+      return harden({
+        voter: Far(`voter${index}`, {
+          castBallotFor: (questionHandle, positions) => {
+            const { voteCap } = allQuestions.get(questionHandle);
+            return E(voteCap).submitVote(voterHandle, positions, 1n);
+          },
+        }),
+        invitationMakers: Far('invitation makers', {
+          makeVoteInvitation: questionHandle => {
+            const continuingVoteHandler = (_seat, { positions }) => {
+              _seat.exit();
+              const { voteCap } = allQuestions.get(questionHandle);
+              return E(voteCap).submitVote(voterHandle, positions, 1n);
+            };
+
+            return zcf.makeInvitation(continuingVoteHandler, 'vote');
+          },
+        }),
       });
     };
 
