@@ -46,7 +46,7 @@ const build = async (log, zoe) => {
       /** @type {Promise<CommitteeElectoratePublic>} electoratePublicFacet */
       const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);
       const seat = E(zoe).offer(invitation);
-      const { voter: voteFacet } = E.get(E(seat).getOfferResult());
+      const { voter } = E.get(E(seat).getOfferResult());
       void E.when(E(seat).getPayouts(), async () => {
         void E.when(E(seat).hasExited(), exited => {
           log(`Seat ${name} ${exited ? 'has exited' : 'is open'}`);
@@ -56,7 +56,7 @@ const build = async (log, zoe) => {
       const votingObserver = Far('voting observer', {
         updateState: details => {
           log(`${name} voted for ${q(choice)}`);
-          return E(voteFacet).castBallotFor(details.questionHandle, [choice]);
+          return E(voter).castBallotFor(details.questionHandle, [choice]);
         },
       });
       const subscriber = E(electoratePublicFacet).getQuestionSubscriber();
@@ -75,7 +75,7 @@ const build = async (log, zoe) => {
       /** @type {Promise<CommitteeElectoratePublic>} electoratePublicFacet */
       const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);
       const seat = E(zoe).offer(invitation);
-      const { voter: voteFacet } = E.get(E(seat).getOfferResult());
+      const { voter } = E.get(E(seat).getOfferResult());
 
       const voteMap = new Map();
       choices.forEach(entry => {
@@ -86,7 +86,7 @@ const build = async (log, zoe) => {
         updateState: details => {
           const choice = voteMap.get(details.issue.text);
           log(`${name} voted on ${q(details.issue)} for ${q(choice)}`);
-          return E(voteFacet).castBallotFor(details.questionHandle, [choice]);
+          return E(voter).castBallotFor(details.questionHandle, [choice]);
         },
       });
       const subscriber = E(electoratePublicFacet).getQuestionSubscriber();

@@ -572,9 +572,9 @@ test('Committee can raise debt limit', async t => {
       t.log({ inv });
       const seat = await E(zoe).offer(inv);
       t.log({ seat });
-      const voteFacet = await E(seat).getOfferResult();
-      t.log({ voteFacet });
-      return E(voteFacet).castBallotFor(questionHandle, [positions[0]]);
+      const { voter } = await E(seat).getOfferResult();
+      t.log({ voter });
+      return E(voter).castBallotFor(questionHandle, [positions[0]]);
     }),
   );
 

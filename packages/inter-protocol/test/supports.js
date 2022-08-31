@@ -122,7 +122,7 @@ export const makeVoterTool = async (
   const [invitation] = await E(electorateCreator).getVoterInvitations();
   await stakeFactoryGovernorCreatorFacet;
   const seat = E(zoe).offer(invitation);
-  const voteFacet = E(seat).getOfferResult();
+  const { voter } = E.get(E(seat).getOfferResult());
   return harden({
     changeParam: async (paramsSpec, deadline) => {
       /** @type { ContractGovernanceVoteResult } */
@@ -130,7 +130,7 @@ export const makeVoterTool = async (
         stakeFactoryGovernorCreatorFacet,
       ).voteOnParamChanges(counter, deadline, paramsSpec);
       const { questionHandle, positions } = await details;
-      const cast = E(voteFacet).castBallotFor(questionHandle, [positions[0]]);
+      const cast = E(voter).castBallotFor(questionHandle, [positions[0]]);
       const count = E(zoe).getPublicFacet(instance);
       const outcome = E(count).getOutcome();
       return { cast, outcome };

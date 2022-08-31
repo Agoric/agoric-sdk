@@ -133,8 +133,8 @@ const setUpVoterAndVote = async (committeeCreator, zoe, qHandle, choice) => {
   const invitations = await E(committeeCreator).getVoterInvitations();
 
   const seat = E(zoe).offer(invitations[0]);
-  const voteFacet = E.get(E(seat).getOfferResult()).voter;
-  return E(voteFacet).castBallotFor(qHandle, [choice]);
+  const { voter } = E.get(E(seat).getOfferResult());
+  return E(voter).castBallotFor(qHandle, [choice]);
 };
 
 test('governParam no votes', async t => {

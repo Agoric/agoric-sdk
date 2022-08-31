@@ -88,8 +88,8 @@ test('amm change param via Governance', async t => {
 
   const exerciseAndVote = invitation => {
     const seat = E(zoe).offer(invitation);
-    const voteFacet = E(seat).getOfferResult();
-    return E(voteFacet).castBallotFor(questionHandle, [positions[0]]);
+    const { voter } = E.get(E(seat).getOfferResult());
+    return E(voter).castBallotFor(questionHandle, [positions[0]]);
   };
   await Promise.all(invitations.map(exerciseAndVote));
 
@@ -194,8 +194,8 @@ test('price check after Governance param change', async t => {
 
   const exerciseAndVote = invitation => {
     const seat = E(zoe).offer(invitation);
-    const voteFacet = E(seat).getOfferResult();
-    return E(voteFacet).castBallotFor(questionHandle, [positions[0]]);
+    const { voter } = E.get(E(seat).getOfferResult());
+    return E(voter).castBallotFor(questionHandle, [positions[0]]);
   };
   await Promise.all(invitations.map(exerciseAndVote));
 
