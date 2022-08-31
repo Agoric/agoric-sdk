@@ -114,7 +114,7 @@ harden(isCopyBagValue);
 // One GOOGOLth should be enough decimal places for anybody.
 export const MAX_ABSOLUTE_DECIMAL_PLACES = 100;
 
-export const AssetValueShape = M.or('nat', 'set', 'copySet', 'copyBag');
+export const AssetKindShape = M.or('nat', 'set', 'copySet', 'copyBag');
 
 export const DisplayInfoShape = M.partial(
   harden({
@@ -122,7 +122,7 @@ export const DisplayInfoShape = M.partial(
       M.gte(-MAX_ABSOLUTE_DECIMAL_PLACES),
       M.lte(MAX_ABSOLUTE_DECIMAL_PLACES),
     ),
-    assetKind: AssetValueShape,
+    assetKind: AssetKindShape,
   }),
   harden({
     // Including this empty `rest` ensures that there are no other
@@ -148,19 +148,19 @@ export const BrandI = M.interface('Brand', {
 });
 
 /**
- * @param {Pattern} [brand]
- * @param {Pattern} [assetKind]
+ * @param {Pattern} [brandShape]
+ * @param {Pattern} [assetKindShape]
  * @param {Pattern} [amountShape]
  */
 export const makeIssuerInterfaces = (
-  brand = BrandShape,
-  assetKind = AssetValueShape,
+  brandShape = BrandShape,
+  assetKindShape = AssetKindShape,
   amountShape = AmountShape,
 ) => {
   const IssuerI = M.interface('Issuer', {
-    getBrand: M.call().returns(brand),
+    getBrand: M.call().returns(brandShape),
     getAllegedName: M.call().returns(M.string()),
-    getAssetKind: M.call().returns(assetKind),
+    getAssetKind: M.call().returns(assetKindShape),
     getDisplayInfo: M.call().returns(DisplayInfoShape),
     makeEmptyPurse: M.call().returns(PurseShape),
 
@@ -190,11 +190,11 @@ export const makeIssuerInterfaces = (
   });
 
   const PaymentI = M.interface('Payment', {
-    getAllegedBrand: M.call().returns(brand),
+    getAllegedBrand: M.call().returns(brandShape),
   });
 
   const PurseI = M.interface('Purse', {
-    getAllegedBrand: M.call().returns(brand),
+    getAllegedBrand: M.call().returns(brandShape),
     getCurrentAmount: M.call().returns(amountShape),
     getCurrentAmountNotifier: M.call().returns(NotifierShape),
     // PurseI does *not* delay `deposit` until `srcPayment` is fulfulled.

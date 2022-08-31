@@ -10,6 +10,7 @@ import {
   floorMultiplyBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
+import { initEmpty } from '@agoric/store';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { provide, vivifyKindMulti, M } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
@@ -30,13 +31,18 @@ const { details: X } = assert;
 
 /**
  * @typedef {object} MetricsNotification
- * Metrics naming scheme is that nouns are present values and past-participles are accumulative.
+ * Metrics naming scheme is that nouns are present values and past-participles
+ * are accumulative.
  *
- * @property {Amount<'nat'>} anchorPoolBalance  amount of Anchor token available to be swapped
- * @property {Amount<'nat'>} feePoolBalance     amount of Stable token fees available to be collected
+ * @property {Amount<'nat'>} anchorPoolBalance  amount of Anchor token
+ * available to be swapped
+ * @property {Amount<'nat'>} feePoolBalance     amount of Stable token
+ * fees available to be collected
  *
- * @property {Amount<'nat'>} totalAnchorProvided  running sum of Anchor ever given by this contract
- * @property {Amount<'nat'>} totalStableProvided  running sum of Stable ever given by this contract
+ * @property {Amount<'nat'>} totalAnchorProvided  running sum of Anchor
+ * ever given by this contract
+ * @property {Amount<'nat'>} totalStableProvided  running sum of Stable
+ * ever given by this contract
  */
 
 /**
@@ -274,7 +280,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const { limitedCreatorFacet, governorFacet } =
     // @ts-expect-error over-determined decl of creatorFacet
     makeVirtualGovernorFacet(creatorFacet);
-  const makePSM = vivifyKindMulti(baggage, 'PSM', () => ({}), {
+  const makePSM = vivifyKindMulti(baggage, 'PSM', initEmpty, {
     creatorFacet: governorFacet,
     limitedCreatorFacet,
     publicFacet: augmentVirtualPublicFacet(publicFacet),

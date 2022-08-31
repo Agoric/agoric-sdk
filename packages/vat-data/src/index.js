@@ -11,3 +11,5 @@ export {
   vivifyFarInstance,
   vivifySingleton,
 } from './far-class-utils.js';
+
+/** @template T @typedef {import('./types.js').DefineKindOptions<T>} DefineKindOptions */

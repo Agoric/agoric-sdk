@@ -4,7 +4,7 @@
 /* eslint-disable no-lonely-if */
 
 import { assert } from '@agoric/assert';
-import { M } from '@agoric/store';
+import { initEmpty, M } from '@agoric/store';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
 
 /**
@@ -148,7 +148,7 @@ export function makeWatchedPromiseManager(
     assert.typeof(fulfillHandler, 'function');
     assert.typeof(rejectHandler, 'function');
 
-    const makeWatcher = defineDurableKind(kindHandle, () => ({}), {
+    const makeWatcher = defineDurableKind(kindHandle, initEmpty, {
       // @ts-expect-error  TS is confused by the spread operator
       onFulfilled: (_context, res, ...args) => fulfillHandler(res, ...args),
       // @ts-expect-error

@@ -1,3 +1,5 @@
+import { initEmpty } from '@agoric/store';
+
 import { provideKindHandle } from './kind-utils.js';
 import {
   defineKind,
@@ -64,7 +66,7 @@ export const defineVirtualFarClassKit = (
     thisfulMethods: true,
     interfaceGuard: interfaceGuardKit,
   });
-harden(defineVirtualFarClass);
+harden(defineVirtualFarClassKit);
 
 /**
  * @template A,S,T
@@ -190,7 +192,7 @@ export const vivifyFarInstance = (
     baggage,
     kindName,
     interfaceGuard,
-    () => ({}),
+    initEmpty,
     methods,
     options,
   );

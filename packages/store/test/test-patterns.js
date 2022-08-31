@@ -36,8 +36,8 @@ const matchTests = harden([
     ],
     noPatterns: [
       [4, '3 - Must be: 4'],
-      [M.not(3), '3 - must fail negated pattern: 3'],
-      [M.not(M.any()), '3 - must fail negated pattern: "[match:any]"'],
+      [M.not(3), '3 - Must fail negated pattern: 3'],
+      [M.not(M.any()), '3 - Must fail negated pattern: "[match:any]"'],
       [M.string(), 'number 3 - Must be a string'],
       [[3, 4], '3 - Must be: [3,4]'],
       [M.gte(7), '3 - Must be >= 7'],
@@ -284,7 +284,7 @@ const matchTests = harden([
   {
     specimen: makeTagged('match:any', 88),
     yesPatterns: [M.any(), M.not(M.pattern())],
-    noPatterns: [[M.pattern(), 'Payload must be undefined: 88']],
+    noPatterns: [[M.pattern(), 'match:any payload: 88 - Must be undefined']],
   },
   {
     specimen: makeTagged('match:remotable', 88),

@@ -1,6 +1,7 @@
 import { Far } from '@endo/marshal';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
+import { initEmpty } from '@agoric/store';
 import {
   makeKindHandle,
   defineDurableKind,
@@ -183,14 +184,14 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
       switch (mode) {
         case 's2mFacetiousnessMismatch': {
           // upgrade should fail
-          defineDurableKind(mkh, () => ({}), {
+          defineDurableKind(mkh, initEmpty, {
             fooMethod: () => 1,
           });
           break;
         }
         case 'facetCountMismatch': {
           // upgrade should fail
-          defineDurableKindMulti(mkh, () => ({}), {
+          defineDurableKindMulti(mkh, initEmpty, {
             foo: {
               fooMethod: () => 1,
             },
@@ -202,7 +203,7 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
         }
         case 'facetNameMismatch': {
           // upgrade should fail
-          defineDurableKindMulti(mkh, () => ({}), {
+          defineDurableKindMulti(mkh, initEmpty, {
             foo: {
               fooMethod: () => 1,
             },
@@ -217,7 +218,7 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
         }
         case 'facetOrderMismatch': {
           // upgrade should succeed since facet names get sorted
-          defineDurableKindMulti(mkh, () => ({}), {
+          defineDurableKindMulti(mkh, initEmpty, {
             baz: {
               bazMethod: () => 1,
             },
@@ -232,7 +233,7 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
         }
         default: {
           // upgrade should succeed
-          defineDurableKindMulti(mkh, () => ({}), {
+          defineDurableKindMulti(mkh, initEmpty, {
             foo: {
               fooMethod: () => 1,
             },

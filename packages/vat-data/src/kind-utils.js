@@ -5,11 +5,7 @@ import {
   makeKindHandle,
 } from './vat-data-bindings.js';
 
-/** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>} RemotableBrand */
 /** @typedef {import('./types.js').Baggage} Baggage */
-/** @template T @typedef {import('./types.js').DefineKindOptions<T>} DefineKindOptions */
-/** @template T @typedef {import('./types.js').KindFacet<T>} KindFacet */
-/** @template T @typedef {import('./types.js').KindFacets<T>} KindFacets */
 /** @typedef {import('./types.js').DurableKindHandle} DurableKindHandle */
 
 /**

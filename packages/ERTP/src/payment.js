@@ -1,5 +1,6 @@
 // @ts-check
 
+import { initEmpty } from '@agoric/store';
 import { vivifyFarClass } from '@agoric/vat-data';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
@@ -17,7 +18,7 @@ export const vivifyPaymentKind = (issuerBaggage, name, brand, PaymentI) => {
     issuerBaggage,
     `${name} payment`,
     PaymentI,
-    () => ({}),
+    initEmpty,
     {
       getAllegedBrand() {
         return brand;

@@ -1,5 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { initEmpty } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';
 import {
   provideKindHandle,
@@ -27,7 +28,7 @@ export function buildRootObject(vatPowers, vatParameters, baggage) {
   );
 
   // prettier-ignore
-  const makeDK = defineDurableKindMulti(dkHandle, () => ({}), {
+  const makeDK = defineDurableKindMulti(dkHandle, initEmpty, {
     full: {
       onFulfilled: (_context, res, tag) =>
         log(`${tag} resolved ${res} version ${vatParameters.version} via VDO`),

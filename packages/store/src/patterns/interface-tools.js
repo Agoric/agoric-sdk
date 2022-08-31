@@ -63,6 +63,10 @@ const isAwaitArgGuard = argGuard =>
 
 const desync = methodGuard => {
   const { argGuards, optionalArgGuards = [], restArgGuard } = methodGuard;
+  assert(
+    !isAwaitArgGuard(restArgGuard),
+    X`Rest args may not be awaited: ${restArgGuard}`,
+  );
   const rawArgGuards = [...argGuards, ...optionalArgGuards];
 
   const awaitIndexes = [];
@@ -234,3 +238,16 @@ export const defendPrototype = (
   return Far(tag, prototype);
 };
 harden(defendPrototype);
+
+const emptyRecord = harden({});
+
+/**
+ * When calling `defineDurableKind` and
+ * its siblings, used as the `init` function argument to indicate that the
+ * state record of the (virtual/durable) instances of the kind/farClass
+ * should be empty, and that the returned maker function should have zero
+ * parameters.
+ *
+ * @returns {{}}
+ */
+export const initEmpty = () => emptyRecord;

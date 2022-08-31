@@ -4,7 +4,7 @@ import { E } from '@endo/eventual-send';
 import { Far, Remotable, passStyleOf } from '@endo/marshal';
 import { AssetKind } from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';
-import { assertPattern } from '@agoric/store';
+import { assertPattern, initEmpty } from '@agoric/store';
 import {
   makeScalarBigMapStore,
   provideDurableMapStore,
@@ -241,7 +241,7 @@ export const makeZCFZygote = async (
   const makeHandleOfferObj = vivifyKind(
     zcfBaggage,
     'handleOfferObj',
-    () => ({}),
+    initEmpty,
     {
       handleOffer: (_context, invitationHandle, seatData) => {
         const zcfSeat = makeZCFSeat(seatData);

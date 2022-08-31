@@ -20,6 +20,8 @@
 // but we need to import it here as well.
 import './types.js';
 
+/** @typedef {import('@endo/marshal').Checker} Checker */
+
 const { freeze } = Object;
 
 /** @type {Assert} */
@@ -89,3 +91,16 @@ function an(str) {
 }
 freeze(an);
 export { an };
+
+/**
+ * In the `assertFoo`/`isFoo`/`checkFoo` pattern, `checkFoo` has a `check`
+ * parameter of type `Checker`. `assertFoo` calls `checkFoo` passes
+ * `assertChecker` as the `check` argument. `isFoo` passes `identChecker`
+ * as the `check` argument. `identChecker` acts precisely like an
+ * identity function, but is typed as a `Checker` to indicate its
+ * intended use.
+ *
+ * @type {Checker}
+ */
+export const identChecker = (cond, _details) => cond;
+harden(identChecker);

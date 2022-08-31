@@ -11,6 +11,8 @@ import {
   makeTagged,
   passStyleOf,
 } from '@endo/marshal';
+import { identChecker } from '@agoric/assert';
+
 import { checkElements, makeSetOfElements } from './copySet.js';
 import { checkBagEntries, makeBagOfEntries } from './copyBag.js';
 import {
@@ -43,7 +45,7 @@ const checkPrimitiveKey = (val, check) => {
  * @param {Passable} val
  * @returns {boolean}
  */
-export const isPrimitiveKey = val => checkPrimitiveKey(val, x => x);
+export const isPrimitiveKey = val => checkPrimitiveKey(val, identChecker);
 harden(isPrimitiveKey);
 
 /**
@@ -75,7 +77,7 @@ export const checkScalarKey = (val, check) => {
  * @param {Passable} val
  * @returns {boolean}
  */
-export const isScalarKey = val => checkScalarKey(val, x => x);
+export const isScalarKey = val => checkScalarKey(val, identChecker);
 harden(isScalarKey);
 
 /**
@@ -127,7 +129,7 @@ harden(checkKey);
  * @param {Passable} val
  * @returns {boolean}
  */
-export const isKey = val => checkKey(val, x => x);
+export const isKey = val => checkKey(val, identChecker);
 harden(isKey);
 
 /**
@@ -176,7 +178,7 @@ harden(checkCopySet);
  */
 
 /** @type {IsCopySet} */
-export const isCopySet = s => checkCopySet(s, x => x);
+export const isCopySet = s => checkCopySet(s, identChecker);
 harden(isCopySet);
 
 /**
@@ -262,7 +264,7 @@ harden(checkCopyBag);
  */
 
 /** @type {IsCopyBag} */
-export const isCopyBag = b => checkCopyBag(b, x => x);
+export const isCopyBag = b => checkCopyBag(b, identChecker);
 harden(isCopyBag);
 
 /**
@@ -389,7 +391,7 @@ harden(checkCopyMap);
  */
 
 /** @type {IsCopyMap} */
-export const isCopyMap = m => checkCopyMap(m, x => x);
+export const isCopyMap = m => checkCopyMap(m, identChecker);
 harden(isCopyMap);
 
 /**

@@ -9,7 +9,9 @@ import {
   passStyleOf,
   hasOwnPropertyOf,
 } from '@endo/marshal';
+import { identChecker } from '@agoric/assert';
 import { applyLabelingError, listDifference } from '@agoric/internal';
+
 import {
   compareRank,
   getPassStyleCover,
@@ -112,7 +114,7 @@ const makePatternKit = () => {
             );
             return check(
               false,
-              X`A ${q(tag)} must be a Key but was not: ${patt}`,
+              X`A ${q(tag)} - Must be a Key but was not: ${patt}`,
             );
           }
           case 'copyMap': {
@@ -153,7 +155,7 @@ const makePatternKit = () => {
    * @param {Passable} patt
    * @returns {boolean}
    */
-  const isPattern = patt => checkPattern(patt, x => x);
+  const isPattern = patt => checkPattern(patt, identChecker);
 
   /**
    * @param {Pattern} patt
@@ -227,7 +229,7 @@ const makePatternKit = () => {
    * @param {Passable} patt
    * @returns {boolean}
    */
-  const isKeyPattern = patt => checkKeyPattern(patt, x => x);
+  const isKeyPattern = patt => checkKeyPattern(patt, identChecker);
 
   /**
    * @param {Pattern} patt
@@ -262,11 +264,11 @@ const makePatternKit = () => {
       return check(keyEQ(specimen, patt), X`${specimen} - Must be: ${patt}`);
     }
     assertPattern(patt);
-    const specStyle = passStyleOf(specimen);
+    const specimenStyle = passStyleOf(specimen);
     const pattStyle = passStyleOf(patt);
     switch (pattStyle) {
       case 'copyArray': {
-        if (specStyle !== 'copyArray') {
+        if (specimenStyle !== 'copyArray') {
           return check(
             false,
             X`${specimen} - Must be a copyArray to match a copyArray pattern: ${patt}`,
@@ -282,34 +284,32 @@ const makePatternKit = () => {
         return patt.every((p, i) => checkMatches(specimen[i], p, check, i));
       }
       case 'copyRecord': {
-        if (specStyle !== 'copyRecord') {
+        if (specimenStyle !== 'copyRecord') {
           return check(
             false,
             X`${specimen} - Must be a copyRecord to match a copyRecord pattern: ${patt}`,
           );
         }
-        const [specNames, specValues] = recordParts(specimen);
+        const [specimenNames, specimenValues] = recordParts(specimen);
         const [pattNames, pattValues] = recordParts(patt);
-        {
-          const missing = listDifference(pattNames, specNames);
-          if (missing.length >= 1) {
-            return check(
-              false,
-              X`${specimen} - Must have missing properties ${q(missing)}`,
-            );
-          }
-          const unexpected = listDifference(specNames, pattNames);
-          if (unexpected.length >= 1) {
-            return check(
-              false,
-              X`${specimen} - Must not have unexpected properties: ${q(
-                unexpected,
-              )}`,
-            );
-          }
+        const missing = listDifference(pattNames, specimenNames);
+        if (missing.length >= 1) {
+          return check(
+            false,
+            X`${specimen} - Must have missing properties ${q(missing)}`,
+          );
+        }
+        const unexpected = listDifference(specimenNames, pattNames);
+        if (unexpected.length >= 1) {
+          return check(
+            false,
+            X`${specimen} - Must not have unexpected properties: ${q(
+              unexpected,
+            )}`,
+          );
         }
         return pattNames.every((label, i) =>
-          checkMatches(specValues[i], pattValues[i], check, label),
+          checkMatches(specimenValues[i], pattValues[i], check, label),
         );
       }
       case 'tagged': {
@@ -318,16 +318,16 @@ const makePatternKit = () => {
         if (matchHelper) {
           return matchHelper.checkMatches(specimen, patt.payload, check);
         }
-        if (specStyle !== 'tagged' || getTag(specimen) !== pattTag) {
+        const specimenTag =
+          specimenStyle === 'tagged' ? getTag(specimen) : undefined;
+        if (specimenStyle !== 'tagged' || specimenTag !== pattTag) {
           return check(
             false,
-            X`${specimen} - Only a ${q(pattTag)} matches a ${q(
-              pattTag,
-            )} pattern: ${patt}`,
+            X`${specimen} - Must be tagged as a ${pattTag}: ${specimenTag}`,
           );
         }
         const { payload: pattPayload } = patt;
-        const { payload: specPayload } = specimen;
+        const { payload: specimenPayload } = specimen;
         switch (pattTag) {
           case 'copySet':
           case 'copyBag': {
@@ -344,15 +344,15 @@ const makePatternKit = () => {
               return false;
             }
             const pattKeySet = copyMapKeySet(pattPayload);
-            const specKeySet = copyMapKeySet(specPayload);
+            const specimenKeySet = copyMapKeySet(specimenPayload);
             // Compare keys as copySets
-            if (checkMatches(specKeySet, pattKeySet, check)) {
+            if (checkMatches(specimenKeySet, pattKeySet, check)) {
               return false;
             }
             const pattValues = pattPayload.values;
-            const specValues = specPayload.values;
+            const specimenValues = specimenPayload.values;
             // compare values as copyArrays
-            return checkMatches(specValues, pattValues, check);
+            return checkMatches(specimenValues, pattValues, check);
           }
           default: {
             assert.fail(X`Unexpected tag ${q(pattTag)}`);
@@ -370,7 +370,8 @@ const makePatternKit = () => {
    * @param {Pattern} patt
    * @returns {boolean}
    */
-  const matches = (specimen, patt) => checkMatches(specimen, patt, x => x);
+  const matches = (specimen, patt) =>
+    checkMatches(specimen, patt, identChecker);
 
   /**
    * Returning normally indicates success. Match failure is indicated by
@@ -563,13 +564,13 @@ const makePatternKit = () => {
   // /////////////////////// Match Helpers /////////////////////////////////////
 
   /** @type {MatchHelper} */
-  const matchAnyHelper = Far('match.any helper', {
+  const matchAnyHelper = Far('match:any helper', {
     checkMatches: (_specimen, _matcherPayload, _check) => true,
 
     checkIsMatcherPayload: (matcherPayload, check) =>
       check(
         matcherPayload === undefined,
-        X`Payload must be undefined: ${matcherPayload}`,
+        X`match:any payload: ${matcherPayload} - Must be undefined`,
       ),
 
     getRankCover: (_matchPayload, _encodePassable) => ['', '{'],
@@ -639,7 +640,7 @@ const makePatternKit = () => {
       if (matches(specimen, patt)) {
         return check(
           false,
-          X`${specimen} - must fail negated pattern: ${patt}`,
+          X`${specimen} - Must fail negated pattern: ${patt}`,
         );
       } else {
         return true;
@@ -654,7 +655,7 @@ const makePatternKit = () => {
   });
 
   /** @type {MatchHelper} */
-  const matchScalarHelper = Far('M.scalar helper', {
+  const matchScalarHelper = Far('match:scalar helper', {
     checkMatches: (specimen, _matcherPayload, check) =>
       checkScalarKey(specimen, check),
 
@@ -666,7 +667,7 @@ const makePatternKit = () => {
   });
 
   /** @type {MatchHelper} */
-  const matchKeyHelper = Far('M.key helper', {
+  const matchKeyHelper = Far('match:key helper', {
     checkMatches: (specimen, _matcherPayload, check) =>
       checkKey(specimen, check),
 
@@ -678,7 +679,7 @@ const makePatternKit = () => {
   });
 
   /** @type {MatchHelper} */
-  const matchPatternHelper = Far('M.pattern helper', {
+  const matchPatternHelper = Far('match:pattern helper', {
     checkMatches: (specimen, _matcherPayload, check) =>
       checkPattern(specimen, check),
 
@@ -690,13 +691,13 @@ const makePatternKit = () => {
   });
 
   /** @type {MatchHelper} */
-  const matchKindHelper = Far('M.kind helper', {
+  const matchKindHelper = Far('match:kind helper', {
     checkMatches: checkKind,
 
     checkIsMatcherPayload: (allegedKeyKind, check) =>
       check(
         typeof allegedKeyKind === 'string',
-        X`A kind name must be a string: ${allegedKeyKind}`,
+        X`match:kind: payload: ${allegedKeyKind} - A kind name must be a string`,
       ),
 
     getRankCover: (kind, _encodePassable) => {
@@ -735,7 +736,7 @@ const makePatternKit = () => {
   const matchRemotableHelper = Far('match:remotable helper', {
     checkMatches: (specimen, remotableDesc, check) => {
       // Unfortunate duplication of checkKind logic, but no better choices.
-      if (checkKind(specimen, 'remotable', x => x)) {
+      if (checkKind(specimen, 'remotable', identChecker)) {
         return true;
       }
       let specimenKind = passStyleOf(specimen);
@@ -763,7 +764,7 @@ const makePatternKit = () => {
     getRankCover: (_remotableDesc, _encodePassable) =>
       getPassStyleCover('remotable'),
 
-    checkKeyPattern: (_remotableDesc, _check = x => x) => true,
+    checkKeyPattern: (_remotableDesc, _check) => true,
   });
 
   /** @type {MatchHelper} */
@@ -1025,10 +1026,10 @@ const makePatternKit = () => {
       let specR;
       let newBase;
       if (baseStyle === 'copyArray') {
-        const { length: specLen } = specimen;
+        const { length: specimenLen } = specimen;
         const { length: baseLen } = base;
-        if (specLen < baseLen) {
-          newBase = harden(base.slice(0, specLen));
+        if (specimenLen < baseLen) {
+          newBase = harden(base.slice(0, specimenLen));
           specB = specimen;
           // eslint-disable-next-line no-use-before-define
           specR = [];
