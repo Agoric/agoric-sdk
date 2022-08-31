@@ -18,12 +18,12 @@ const build = async (log, zoe) => {
   return Far('voter', {
     createVoter: async (name, invitation) => {
       const seat = E(zoe).offer(invitation);
-      const voteFacet = E(seat).getOfferResult();
+      const { voter } = E.get(E(seat).getOfferResult());
 
       return Far(`Voter ${name}`, {
         castBallotFor: async (questionHandle, choice) => {
           log(`Voter ${name} voted for ${q(choice)}`);
-          return E(voteFacet).castBallotFor(questionHandle, [choice]);
+          return E(voter).castBallotFor(questionHandle, [choice]);
         },
         /**
          *
