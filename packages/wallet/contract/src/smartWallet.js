@@ -52,9 +52,9 @@ export const makeSmartWallet = async (
     dapps: E(admin).getDappsNotifier(),
     /** all current issuers */
     issuers: E(admin).getIssuersNotifier(),
-    /** recently updated offers */
+    /** the latest offer or, in case of petname change, all offers */
     offers: E(admin).getOffersNotifier(),
-    /** recently updated payments */
+    /** most recent payment */
     payments: E(admin).getPaymentsNotifier(),
     /** all current purses */
     purses: E(admin).getPursesNotifier(),
