@@ -1395,6 +1395,9 @@ export function makeWalletRoot({
    * @param {PaymentRecord} param0
    */
   const updatePaymentRecord = ({ actions, ...preDisplay }) => {
+    // in case we have been here before...
+    // @ts-expect-error
+    delete preDisplay.displayPayment;
     const displayPayment = fillInSlots(dehydrate(harden(preDisplay)));
     const paymentRecord = addMeta({
       ...preDisplay,
