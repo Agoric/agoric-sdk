@@ -41,15 +41,6 @@ const sanitizePathSegment = name => {
 };
 
 /**
- * There's an obsolete version in utils.d.ts
- *
- * @typedef {object} AdminFacet
- * @property {() => PromiseLike} getVatShutdownPromise
- * @property {(contractBundleId: string, newPrivateArgs: any) => void} upgradeContract
- * @property {(newPrivateArgs:any) => void} restartContract
- */
-
-/**
  * @typedef {GovernedCreatorFacet<import('../stakeFactory/stakeFactory.js').StakeFactoryCreator>} StakeFactoryCreator
  * @typedef {import('../stakeFactory/stakeFactory.js').StakeFactoryPublic} StakeFactoryPublic
  * @typedef {import('../reserve/assetReserve.js').GovernedAssetReserveFacetAccess} GovernedAssetReserveFacetAccess
