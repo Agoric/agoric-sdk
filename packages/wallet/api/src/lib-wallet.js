@@ -235,8 +235,9 @@ export function makeWalletRoot({
   });
 
   /** @type {NotifierRecord<OfferState[]>} */
-  const { notifier: offersNotifier, updater: offersUpdater } =
-    makeNotifierKit();
+  const { notifier: offersNotifier, updater: offersUpdater } = makeNotifierKit(
+    [],
+  );
 
   const { pursesNotifier, attenuatedPursesNotifier, pursesUpdater } = (() => {
     /** @type {NotifierRecord<PursesFullState[]>} */
@@ -523,7 +524,7 @@ export function makeWalletRoot({
     inboxState.set(id, offerForDisplay);
     if (doPush) {
       // Only trigger a state change if this was a single update.
-      offersUpdater.updateState([...inboxState.values()]);
+      offersUpdater.updateState([offerForDisplay]);
       inboxStateChangeHandler(getInboxState());
     }
     pruneOfferWhenInactive(id);
@@ -1395,6 +1396,9 @@ export function makeWalletRoot({
    * @param {PaymentRecord} param0
    */
   const updatePaymentRecord = ({ actions, ...preDisplay }) => {
+    // in case we have been here before...
+    // @ts-expect-error
+    delete preDisplay.displayPayment;
     const displayPayment = fillInSlots(dehydrate(harden(preDisplay)));
     const paymentRecord = addMeta({
       ...preDisplay,
@@ -1403,7 +1407,7 @@ export function makeWalletRoot({
     });
     const { id } = paymentRecord.meta;
     idToPaymentRecord.set(id, harden(paymentRecord));
-    paymentsUpdater.updateState([...idToPaymentRecord.values()]);
+    paymentsUpdater.updateState([paymentRecord]);
   };
 
   const makePaymentActionsForId = id =>

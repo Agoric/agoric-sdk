@@ -197,7 +197,7 @@ test('governance add Liquidity to the AMM', async t => {
     space.consume.economicCommitteeCreatorFacet,
   ).getVoterInvitations();
 
-  const voterFacet = await E(E(zoe).offer(voterInvitation)).getOfferResult();
+  const { voter } = await E(E(zoe).offer(voterInvitation)).getOfferResult();
 
   const params = harden([moola(90_000n), AmountMath.make(runBrand, 80_000n)]);
   const { details: detailsP } = await E(
@@ -210,9 +210,7 @@ test('governance add Liquidity to the AMM', async t => {
   );
   const details = await detailsP;
 
-  await E(voterFacet).castBallotFor(details.questionHandle, [
-    details.positions[0],
-  ]);
+  await E(voter).castBallotFor(details.questionHandle, [details.positions[0]]);
   await timer.tick();
   await timer.tick();
   await eventLoopIteration();
@@ -285,7 +283,7 @@ test('request more collateral than available', async t => {
     space.consume.economicCommitteeCreatorFacet,
   ).getVoterInvitations();
 
-  const voterFacet = await E(E(zoe).offer(voterInvitation)).getOfferResult();
+  const { voter } = await E(E(zoe).offer(voterInvitation)).getOfferResult();
 
   const params = harden([moola(90_000n), AmountMath.make(runBrand, 80_000n)]);
   const { details: detailsP, outcomeOfUpdate } = await E(
@@ -298,9 +296,7 @@ test('request more collateral than available', async t => {
   );
   const details = await detailsP;
 
-  await E(voterFacet).castBallotFor(details.questionHandle, [
-    details.positions[0],
-  ]);
+  await E(voter).castBallotFor(details.questionHandle, [details.positions[0]]);
   await timer.tick();
   await timer.tick();
 
@@ -438,7 +434,7 @@ test('reserve burn IST', async t => {
     space.consume.economicCommitteeCreatorFacet,
   ).getVoterInvitations();
 
-  const voterFacet = await E(E(zoe).offer(voterInvitation)).getOfferResult();
+  const { voter } = await E(E(zoe).offer(voterInvitation)).getOfferResult();
 
   const params = harden([oneKRun]);
   const { details: detailsP } = await E(
@@ -450,9 +446,7 @@ test('reserve burn IST', async t => {
     TimeMath.addAbsRel(timer.getCurrentTimestamp(), 2n),
   );
   const details = await detailsP;
-  await E(voterFacet).castBallotFor(details.questionHandle, [
-    details.positions[0],
-  ]);
+  await E(voter).castBallotFor(details.questionHandle, [details.positions[0]]);
   await timer.tick();
   await timer.tick();
 
