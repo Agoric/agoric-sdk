@@ -34,7 +34,7 @@ export const startPSM = async (
       chainStorage,
       chainTimerService,
     },
-    produce: { psmCreatorFacet, psmGovernorCreatorFacet },
+    produce: { psmCreatorFacet, psmGovernorCreatorFacet, psmAdminFacet },
     installation: {
       consume: { contractGovernor, psm: psmInstall },
     },
@@ -138,14 +138,11 @@ export const startPSM = async (
     }),
   );
 
-  const governedInstance = await E(governorFacets.creatorFacet).getInstance();
-  const creatorFacet = E(governorFacets.creatorFacet).getCreatorFacet();
-
-  psmInstanceR.resolve(governedInstance);
+  psmInstanceR.resolve(await E(governorFacets.creatorFacet).getInstance());
   psmGovernorR.resolve(governorFacets.instance);
-  psmCreatorFacet.resolve(creatorFacet);
+  psmCreatorFacet.resolve(E(governorFacets.creatorFacet).getCreatorFacet());
+  psmAdminFacet.resolve(E(governorFacets.creatorFacet).getAdminFacet());
   psmGovernorCreatorFacet.resolve(governorFacets.creatorFacet);
-  psmInstanceR.resolve(governedInstance);
 };
 harden(startPSM);
 
