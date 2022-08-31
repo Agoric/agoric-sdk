@@ -223,6 +223,18 @@ const main = async (progname, rawArgs, powers) => {
       },
       'justin',
     )
+    .option(
+      '-l, --lossy',
+      'show only the most recent value for each sample interval',
+    )
+    .option(
+      '-b, --block-height',
+      'show first block height when each value was stored',
+    )
+    .option(
+      '-c, --current-block-height',
+      'show current block height when each value is reported',
+    )
     .option('-B, --bootstrap <config>', 'network bootstrap configuration')
     .action(async (pathSpecs, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
