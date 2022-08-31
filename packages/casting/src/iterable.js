@@ -71,7 +71,7 @@ export const iterateLatest = follower =>
   Far('iterateLatest iterable', {
     /** @returns {AsyncIterator<T>} */
     [Symbol.asyncIterator]: () => {
-      const latestIterable = E(follower).getEachIterable();
+      const latestIterable = E(follower).getLatestIterable();
       const iterator = E(latestIterable)[Symbol.asyncIterator]();
       return Far('iterateLatest iterator', {
         next: () => E(iterator).next(),
