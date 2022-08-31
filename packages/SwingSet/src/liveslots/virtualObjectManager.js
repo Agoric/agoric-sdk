@@ -500,9 +500,8 @@ export function makeVirtualObjectManager(
    *
    * @param {DefineKindOptions<*>} options
    *    Additional options to configure the virtual object kind
-   *    being defined.  Currently the only supported option is `finish`, an
-   *    optional finisher function that can perform post-creation initialization
-   *    operations, such as inserting the new object in a cyclical object graph.
+   *    being defined. See the documentation of DefineKindOptions
+   *    for the meaning of each option.
    *
    * @param {boolean} isDurable  A flag indicating whether or not the newly defined
    *    kind should be a durable kind.

@@ -1,6 +1,7 @@
 // @ts-check
 
 import { makeDurableIssuerKit, AssetKind } from '@agoric/ertp';
+import { initEmpty } from '@agoric/store';
 import { vivifyKindMulti, provideDurableMapStore } from '@agoric/vat-data';
 
 const FEE_MINT_KIT = 'FeeMintKit';
@@ -46,7 +47,7 @@ const vivifyFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
     return mintBaggage.get(FEE_MINT_KIT);
   };
 
-  const makeFeeMintKit = vivifyKindMulti(mintBaggage, 'FeeMint', () => ({}), {
+  const makeFeeMintKit = vivifyKindMulti(mintBaggage, 'FeeMint', initEmpty, {
     feeMint: {
       getFeeIssuerKit,
       getFeeMintAccess: ({ facets }) => facets.feeMintAccess,

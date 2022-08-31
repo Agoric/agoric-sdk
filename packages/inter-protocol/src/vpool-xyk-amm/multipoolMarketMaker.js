@@ -11,6 +11,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { Far } from '@endo/marshal';
+import { initEmpty } from '@agoric/store';
 import {
   provideDurableMapStore,
   provideDurableWeakMapStore,
@@ -483,7 +484,7 @@ const start = async (zcf, privateArgs, baggage) => {
     }),
   );
 
-  const makeAMM = vivifyKindMulti(baggage, 'AMM', () => ({}), {
+  const makeAMM = vivifyKindMulti(baggage, 'AMM', initEmpty, {
     publicFacet,
     creatorFacet: governorFacet,
     limitedCreatorFacet,

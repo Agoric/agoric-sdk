@@ -1,6 +1,7 @@
 import { Far } from '@endo/marshal';
 import { E } from '@endo/eventual-send';
 import { assert } from '@agoric/assert';
+import { initEmpty } from '@agoric/store';
 import { defineDurableKind, defineDurableKindMulti } from '@agoric/vat-data';
 
 const initialize = (name, imp, value) => {
@@ -34,11 +35,11 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
   if (baggage.has('mkh')) {
     const mkh = baggage.get('mkh');
     if (vatParameters.mode === 'm2sFacetiousnessMismatch') {
-      defineDurableKind(mkh, () => ({}), {
+      defineDurableKind(mkh, initEmpty, {
         fooMethod: () => 2,
       });
     } else {
-      defineDurableKindMulti(mkh, () => ({}), {
+      defineDurableKindMulti(mkh, initEmpty, {
         bar: {
           barMethod: () => 2,
         },
