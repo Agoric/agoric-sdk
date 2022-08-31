@@ -2,6 +2,7 @@
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 import '@agoric/governance/src/exported.js';
+import { bindAllMethods } from '@agoric/internal';
 
 import { E } from '@endo/eventual-send';
 import {
@@ -12,8 +13,8 @@ import {
 import { Far } from '@endo/marshal';
 import { initEmpty } from '@agoric/store';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
-import { provide, vivifyKindMulti, M } from '@agoric/vat-data';
-import { AmountMath } from '@agoric/ertp';
+import { provide, M, vivifyFarInstance } from '@agoric/vat-data';
+import { AmountMath, PaymentShape } from '@agoric/ertp';
 
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeMetricsPublishKit } from '../contractSupport.js';
@@ -243,27 +244,43 @@ export const start = async (zcf, privateArgs, baggage) => {
     E(anchorBrand).getAmountShape(),
     E(stableBrand).getAmountShape(),
   ]);
-  const makeWantStableInvitation = () =>
-    zcf.makeInvitation(
-      wantStableHook,
-      'wantStable',
-      undefined,
-      M.split({ give: { In: anchorAmountShape } }),
-    );
-  const makeGiveStableInvitation = () =>
-    zcf.makeInvitation(
-      giveStableHook,
-      'giveStable',
-      undefined,
-      M.split({ give: { In: stableAmountShape } }),
-    );
 
-  const publicFacet = Far('Parity Stability Module', {
-    getMetrics: () => metricsSubscriber,
-    getPoolBalance: () => anchorPool.getAmountAllocated('Anchor', anchorBrand),
-    makeWantStableInvitation,
-    makeGiveStableInvitation,
+  const PSMI = M.interface('PSM', {
+    getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
+    getPoolBalance: M.call().returns(anchorAmountShape),
+    makeWantStableInvitation: M.call().returns(M.promise()),
+    makeGiveStableInvitation: M.call().returns(M.promise()),
   });
+
+  const publicFacet = vivifyFarInstance(
+    baggage,
+    'Parity Stability Module',
+    PSMI,
+    {
+      getMetrics() {
+        return metricsSubscriber;
+      },
+      getPoolBalance() {
+        return anchorPool.getAmountAllocated('Anchor', anchorBrand);
+      },
+      makeWantStableInvitation() {
+        return zcf.makeInvitation(
+          wantStableHook,
+          'wantStable',
+          undefined,
+          M.split({ give: { In: anchorAmountShape } }),
+        );
+      },
+      makeGiveStableInvitation() {
+        return zcf.makeInvitation(
+          giveStableHook,
+          'giveStable',
+          undefined,
+          M.split({ give: { In: stableAmountShape } }),
+        );
+      },
+    },
+  );
 
   const getRewardAllocation = () => feePool.getCurrentAllocation();
   const { makeCollectFeesInvitation } = makeMakeCollectFeesInvitation(
@@ -280,10 +297,9 @@ export const start = async (zcf, privateArgs, baggage) => {
   const { limitedCreatorFacet, governorFacet } =
     // @ts-expect-error over-determined decl of creatorFacet
     makeVirtualGovernorFacet(creatorFacet);
-  const makePSM = vivifyKindMulti(baggage, 'PSM', initEmpty, {
+  return harden({
     creatorFacet: governorFacet,
     limitedCreatorFacet,
-    publicFacet: augmentVirtualPublicFacet(publicFacet),
+    publicFacet: augmentVirtualPublicFacet(bindAllMethods(publicFacet)),
   });
-  return makePSM();
 };
