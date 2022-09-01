@@ -337,7 +337,7 @@ export const createSeatManager = (
         );
         return amountKeywordRecord;
       },
-      clear: ignoreContext(clear),
+      clear: ({ self }) => clear(self),
       hasStagedAllocation: ({ self }) => hasStagedAllocation(self),
     },
   );
