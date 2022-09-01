@@ -1,12 +1,12 @@
 import { Far } from '@endo/marshal';
 import { E } from '@endo/eventual-send';
-import { listDifference } from '@agoric/internal';
+import { listDifference, objectMap } from '@agoric/internal';
 
 import { fit } from './patternMatchers.js';
 
 const { details: X, quote: q } = assert;
 const { apply, ownKeys } = Reflect;
-const { defineProperties } = Object;
+const { defineProperties, seal, freeze } = Object;
 
 const defendSyncArgs = (args, methodGuard, label) => {
   const { argGuards, optionalArgGuards, restArgGuard } = methodGuard;
@@ -251,3 +251,145 @@ const emptyRecord = harden({});
  * @returns {{}}
  */
 export const initEmpty = () => emptyRecord;
+
+/**
+ * @template [S = any]
+ * @template [T = any]
+ * @typedef {object} Context
+ * @property {S} state
+ * @property {T} self
+ */
+
+/**
+ * @template A,S,T
+ * @param {string} tag
+ * @param {any} interfaceGuard
+ * @param {(...args: A[]) => S} init
+ * @param {T} methods
+ * @param {object} [options]
+ * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
+ */
+export const defineHeapFarClass = (
+  tag,
+  interfaceGuard,
+  init,
+  methods,
+  options = undefined,
+) => {
+  /** @type {WeakMap<T,Context<S,T>} */
+  const contextMap = new WeakMap();
+  const prototype = defendPrototype(
+    tag,
+    contextMap,
+    methods,
+    true,
+    interfaceGuard,
+  );
+  const makeInstance = (...args) => {
+    // Be careful not to freeze the state record
+    const state = seal(init(...args));
+    const self = harden({ __proto__: prototype });
+    // Be careful not to freeze the state record
+    /** @type {Context<S,T>} */
+    const context = freeze({ state, self });
+    contextMap.set(self, context);
+    if (options) {
+      const { finish = undefined } = options;
+      if (finish) {
+        finish(context);
+      }
+    }
+    return self;
+  };
+  return harden(makeInstance);
+};
+harden(defineHeapFarClass);
+
+/**
+ * @template A,S,F
+ * @param {string} tag
+ * @param {any} interfaceGuardKit
+ * @param {(...args: A[]) => S} init
+ * @param {F} methodsKit
+ * @param {object} [options]
+ * @returns {(...args: A[]) => F}
+ */
+export const defineHeapFarClassKit = (
+  tag,
+  interfaceGuardKit,
+  init,
+  methodsKit,
+  options = undefined,
+) => {
+  const facetNames = ownKeys(methodsKit);
+  const interfaceNames = ownKeys(interfaceGuardKit);
+  const extraInterfaceNames = listDifference(facetNames, interfaceNames);
+  assert(
+    extraInterfaceNames.length === 0,
+    X`Interfaces ${q(extraInterfaceNames)} not implemented by ${q(tag)}`,
+  );
+  const extraFacetNames = listDifference(interfaceNames, facetNames);
+  assert(
+    extraFacetNames.length === 0,
+    X`Facets ${q(extraFacetNames)} of ${q(tag)} not guarded by interfaces`,
+  );
+
+  const contextMapKit = objectMap(methodsKit, () => new WeakMap());
+  const prototypeKit = objectMap(methodsKit, (methods, facetName) =>
+    defendPrototype(
+      `${tag} ${facetName}`,
+      contextMapKit[facetName],
+      methods,
+      true,
+      interfaceGuardKit[facetName],
+    ),
+  );
+  const makeInstanceKit = (...args) => {
+    // Be careful not to freeze the state record
+    const state = seal(init(...args));
+    // Don't freeze context until we add facets
+    const context = { state };
+    const facets = objectMap(prototypeKit, (prototype, facetName) => {
+      const self = harden({ __proto__: prototype });
+      contextMapKit[facetName].set(self, context);
+      return self;
+    });
+    context.facets = facets;
+    // Be careful not to freeze the state record
+    freeze(context);
+    if (options) {
+      const { finish = undefined } = options;
+      if (finish) {
+        finish(context);
+      }
+    }
+    return facets;
+  };
+  return harden(makeInstanceKit);
+};
+harden(defineHeapFarClassKit);
+
+/**
+ * @template T,M
+ * @param {string} tag
+ * @param {InterfaceGuard|undefined} interfaceGuard
+ * @param {M} methods
+ * @param {object} [options]
+ * @returns {T & RemotableBrand<{}, T>}
+ */
+export const defineHeapFarInstance = (
+  tag,
+  interfaceGuard,
+  methods,
+  options = undefined,
+) => {
+  const makeInstance = defineHeapFarClass(
+    tag,
+    interfaceGuard,
+    initEmpty,
+    methods,
+    options,
+  );
+  return makeInstance();
+};
+harden(defineHeapFarInstance);
