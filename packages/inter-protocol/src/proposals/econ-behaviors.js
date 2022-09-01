@@ -60,6 +60,7 @@ const sanitizePathSegment = name => {
  *   bankMints: Mint[],
  *   psmCreatorFacet: unknown,
  *   psmGovernorCreatorFacet: GovernedContractFacetAccess<{},{}>,
+ *   psmAdminFacet: AdminFacet,
  *   reservePublicFacet: import('../reserve/assetReserve.js').AssetReservePublicFacet,
  *   reserveCreatorFacet: import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet,
  *   reserveGovernorCreatorFacet: GovernedAssetReserveFacetAccess,

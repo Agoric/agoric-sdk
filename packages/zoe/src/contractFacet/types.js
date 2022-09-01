@@ -243,3 +243,7 @@
  * @template S
  * @typedef {import('../zoeService/utils').ContractOf<S>} ContractOf
  */
+
+/**
+ * @typedef {import('../zoeService/utils').AdminFacet} AdminFacet
+ */
