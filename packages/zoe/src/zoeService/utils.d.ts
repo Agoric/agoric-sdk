@@ -13,8 +13,11 @@ type ContractFacet<T extends {} = {}> = {
   readonly [P in keyof T]: T[P] extends Callable ? T[P] : never;
 };
 
-type AdminFacet = {
-  getVatShutdownPromise: () => Promise<any>; // Completion, which is currently any
+export type AdminFacet = {
+  // Completion, which is currently any
+  getVatShutdownPromise: () => Promise<any>;
+  upgradeContract: (contractBundleId: string, newPrivateArgs: any) => void;
+  restartContract: (newPrivateArgs: any) => void;
 };
 
 /**

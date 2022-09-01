@@ -163,6 +163,7 @@ const start = async (zcf, privateArgs) => {
     creatorFacet: governedCF,
     instance: governedInstance,
     publicFacet: governedPF,
+    adminFacet,
   } = await E(zoe).startInstance(
     governedContractInstallation,
     governedIssuerKeywordRecord,
@@ -281,6 +282,7 @@ const start = async (zcf, privateArgs) => {
     voteOnApiInvocation,
     voteOnOfferFilter: voteOnFilter,
     getCreatorFacet: () => limitedCreatorFacet,
+    getAdminFacet: () => adminFacet,
     getInstance: () => governedInstance,
     getPublicFacet: () => governedPF,
   });
