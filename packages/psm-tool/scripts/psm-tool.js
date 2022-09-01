@@ -92,7 +92,7 @@ const observedSpendAction = {
 
 /**
  * @param {({ wantStable: string } | { giveStable: string })} opts
- * @param {number} [fee=1] multiplier
+ * @param {number} [fee=0]
  * @param {typeof vBankPetName} [pet]
  * @returns {typeof observedSpendAction.data.proposalTemplate}
  */
@@ -107,8 +107,8 @@ const makePSMProposalTemplate = (opts, fee = 1, pet = vBankPetName) => {
     Number('wantStable' in opts ? opts.wantStable : opts.giveStable) *
     Number(COSMOS_UNIT);
   const adjusted = {
-    in: Math.round('wantStable' in opts ? value * fee : value),
-    out: Math.round('giveStable' in opts ? value * fee : value),
+    in: Math.ceil('wantStable' in opts ? value / (1 - fee) : value),
+    out: Math.ceil('giveStable' in opts ? value * (1 - fee) : value),
   };
   return {
     give: {
@@ -134,7 +134,7 @@ const makePSMSpendAction = (opts, timeStamp) => {
       : 'makeGiveStableInvitation'; // ref psm.js
   const proposalTemplate = makePSMProposalTemplate(
     opts,
-    opts.feePct ? 1 + Number(opts.feePct) / 100 : undefined,
+    opts.feePct ? Number(opts.feePct) / 100 : undefined,
   );
 
   // cribbed from ScopedBridge.js#L49-L61
@@ -229,15 +229,10 @@ const storageNode = {
         ? specimen.values.map(s => JSON.parse(s))
         : [JSON.parse(specimen.value)];
     for (const capData of capDatas) {
-      try {
-        assert(typeof capData === 'object' && capData !== null, capData);
-        assert('body' in capData && 'slots' in capData, capData);
-        assert(typeof capData.body === 'string', capData);
-        assert(Array.isArray(capData.slots), capData);
-      } catch (err) {
-        console.error(JSON.stringify(['parseCapData', `${err}`, specimen]));
-        throw err;
-      }
+      assert(typeof capData === 'object' && capData !== null, capData);
+      assert('body' in capData && 'slots' in capData, capData);
+      assert(typeof capData.body === 'string', capData);
+      assert(Array.isArray(capData.slots), capData);
     }
     return capDatas;
   },
@@ -527,6 +522,18 @@ const parseArgs = (argv, flagNames = []) => {
 // };
 const log = label => x => x;
 
+const fmtRecordOfLines = record => {
+  const { stringify } = JSON;
+  const groups = Object.entries(record).map(([key, items]) => [
+    key,
+    items.map(item => `    ${stringify(item)}`),
+  ]);
+  const lineEntries = groups.map(
+    ([key, lines]) => `  ${stringify(key)}: [\n${lines.join(',\n')}\n  ]`,
+  );
+  return `{\n${lineEntries.join(',\n')}\n}`;
+};
+
 /**
  * @param {{wallet?: string, net?: string}} opts
  * @param {{contract?: boolean, verbose?: boolean}} flags
@@ -581,10 +588,11 @@ const online = async (opts, flags, { fetch }) => {
     const { purses } = state;
     // console.log(JSON.stringify(offers, null, 2));
     // console.log(JSON.stringify({ offers, purses }, bigIntReplacer, 2));
-    console.log({
-      balances: simplePurseBalances(purses).map(b => JSON.stringify(b)),
-      offers: simpleOffers(state, agoricNames).map(o => JSON.stringify(o)),
-    });
+    const summary = {
+      balances: simplePurseBalances(purses),
+      offers: simpleOffers(state, agoricNames),
+    };
+    console.log(fmtRecordOfLines(summary));
     return 0;
   }
 
