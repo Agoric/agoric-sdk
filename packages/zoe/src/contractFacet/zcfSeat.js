@@ -114,7 +114,9 @@ export const createSeatManager = (
   };
 
   const clear = zcfSeat => {
-    zcfSeatToStagedAllocations.delete(zcfSeat);
+    if (zcfSeatToStagedAllocations.has(zcfSeat)) {
+      zcfSeatToStagedAllocations.delete(zcfSeat);
+    }
   };
 
   const setStagedAllocation = (zcfSeat, newStagedAllocation) => {
