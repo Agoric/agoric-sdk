@@ -24,8 +24,13 @@ export {
 };
 
 const { getEnvironmentOption } = makeEnvironmentCaptor(globalThis);
+// TODO DANGER HAZARD DO NOT MERGE UNTIL FIXED
+// Since this is not on master yet or even ready-for-review, and we don't know
+// when it will be, by temporarily flipping the default here to `'true'`,
+// I can get CI to run our entire system under this constraint to see what
+// breaks.
 const DETECT_PROVIDE_COLLISIONS =
-  getEnvironmentOption('DETECT_PROVIDE_COLLISIONS', 'false') === 'true';
+  getEnvironmentOption('DETECT_PROVIDE_COLLISIONS', 'true') === 'true';
 
 const { details: X, quote: q } = assert;
 
