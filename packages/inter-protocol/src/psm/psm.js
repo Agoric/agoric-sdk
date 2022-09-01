@@ -199,7 +199,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     const afterFee = AmountMath.subtract(asStable, fee);
     assert(
       AmountMath.isGTE(afterFee, wanted),
-      X`wanted ${wanted} is more then ${given} minus fees ${fee}`,
+      X`wanted ${wanted} is more than ${given} minus fees ${fee}`,
     );
     stableMint.mintGains({ Stable: asStable }, stage);
     try {
