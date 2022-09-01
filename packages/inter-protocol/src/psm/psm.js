@@ -160,11 +160,24 @@ export const start = async (zcf, privateArgs, baggage) => {
       AmountMath.isGTE(maxAnchor, wanted),
       X`wanted ${wanted} is more then ${given} minus fees ${fee}`,
     );
-    stageTransfer(seat, stage, { In: afterFee }, { Stable: afterFee });
-    stageTransfer(seat, feePool, { In: fee }, { Stable: fee });
-    stageTransfer(anchorPool, seat, { Anchor: maxAnchor }, { Out: maxAnchor });
-    zcf.reallocate(seat, anchorPool, stage, feePool);
-    stableMint.burnLosses({ Stable: afterFee }, stage);
+    try {
+      stageTransfer(seat, stage, { In: afterFee }, { Stable: afterFee });
+      stageTransfer(seat, feePool, { In: fee }, { Stable: fee });
+      stageTransfer(
+        anchorPool,
+        seat,
+        { Anchor: maxAnchor },
+        { Out: maxAnchor },
+      );
+      zcf.reallocate(seat, anchorPool, stage, feePool);
+      stableMint.burnLosses({ Stable: afterFee }, stage);
+    } catch (e) {
+      stage.clear();
+      anchorPool.clear();
+      feePool.clear();
+      // NOTE someday, reallocate should guarantee that this case cannot happen
+      throw e;
+    }
     totalAnchorProvided = AmountMath.add(totalAnchorProvided, maxAnchor);
   };
 
@@ -183,12 +196,15 @@ export const start = async (zcf, privateArgs, baggage) => {
       X`wanted ${wanted} is more then ${given} minus fees ${fee}`,
     );
     stableMint.mintGains({ Stable: asStable }, stage);
-    stageTransfer(seat, anchorPool, { In: given }, { Anchor: given });
-    stageTransfer(stage, seat, { Stable: afterFee }, { Out: afterFee });
-    stageTransfer(stage, feePool, { Stable: fee });
     try {
+      stageTransfer(seat, anchorPool, { In: given }, { Anchor: given });
+      stageTransfer(stage, seat, { Stable: afterFee }, { Out: afterFee });
+      stageTransfer(stage, feePool, { Stable: fee });
       zcf.reallocate(seat, anchorPool, stage, feePool);
     } catch (e) {
+      stage.clear();
+      anchorPool.clear();
+      feePool.clear();
       // NOTE someday, reallocate should guarantee that this case cannot happen
       stableMint.burnLosses({ Stable: asStable }, stage);
       throw e;
