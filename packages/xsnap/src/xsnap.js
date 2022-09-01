@@ -179,7 +179,7 @@ export function xsnap(options) {
         const meterSeparator = message.indexOf(OK_SEPARATOR, 1);
         if (meterSeparator >= 0) {
           // The message is `.meterdata\1reply`.
-          const meterData = message.slice(1, meterSeparator);
+          const meterData = message.subarray(1, meterSeparator);
           // We parse the meter data as JSON
           meterInfo = JSON.parse(decoder.decode(meterData));
           // assert(typeof meterInfo === 'object');
