@@ -264,7 +264,7 @@ const emptyRecord = harden({});
 /**
  * When calling `defineDurableKind` and
  * its siblings, used as the `init` function argument to indicate that the
- * state record of the (virtual/durable) instances of the kind/farClass
+ * state record of the (virtual/durable) instances of the kind/exoClass
  * should be empty, and that the returned maker function should have zero
  * parameters.
  *
@@ -291,7 +291,7 @@ export const initEmpty = () => emptyRecord;
  * @param {object} [options]
  * @returns {(...args: A[]) => (T & import('@endo/eventual-send').RemotableBrand<{}, T>)}
  */
-export const defineHeapFarClass = (
+export const defineHeapExoClass = (
   tag,
   interfaceGuard,
   init,
@@ -328,7 +328,7 @@ export const defineHeapFarClass = (
   // @ts-expect-error could be instantiated with different subtype
   return harden(makeInstance);
 };
-harden(defineHeapFarClass);
+harden(defineHeapExoClass);
 
 /**
  * @template A
@@ -341,7 +341,7 @@ harden(defineHeapFarClass);
  * @param {object} [options]
  * @returns {(...args: A[]) => F}
  */
-export const defineHeapFarClassKit = (
+export const defineHeapExoClassKit = (
   tag,
   interfaceGuardKit,
   init,
@@ -398,7 +398,7 @@ export const defineHeapFarClassKit = (
   // @ts-ignore xxx
   return harden(makeInstanceKit);
 };
-harden(defineHeapFarClassKit);
+harden(defineHeapExoClassKit);
 
 /**
  * @template {Record<string, Method>} T
@@ -408,13 +408,13 @@ harden(defineHeapFarClassKit);
  * @param {object} [options]
  * @returns {T & import('@endo/eventual-send').RemotableBrand<{}, T>}
  */
-export const makeHeapFarInstance = (
+export const makeHeapExo = (
   tag,
   interfaceGuard,
   methods,
   options = undefined,
 ) => {
-  const makeInstance = defineHeapFarClass(
+  const makeInstance = defineHeapExoClass(
     tag,
     interfaceGuard,
     initEmpty,
@@ -423,4 +423,4 @@ export const makeHeapFarInstance = (
   );
   return makeInstance();
 };
-harden(makeHeapFarInstance);
+harden(makeHeapExo);

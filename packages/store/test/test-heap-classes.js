@@ -2,9 +2,9 @@
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import {
-  defineHeapFarClass,
-  defineHeapFarClassKit,
-  makeHeapFarInstance,
+  defineHeapExoClass,
+  defineHeapExoClassKit,
+  makeHeapExo,
 } from '../src/patterns/interface-tools.js';
 import { M } from '../src/patterns/patternMatchers.js';
 
@@ -22,8 +22,8 @@ const DownCounterI = M.interface('DownCounter', {
     .returns(M.number()),
 });
 
-test('test defineHeapFarClass', t => {
-  const makeUpCounter = defineHeapFarClass(
+test('test defineHeapExoClass', t => {
+  const makeUpCounter = defineHeapExoClass(
     'UpCounter',
     UpCounterI,
     (x = 0) => ({ x }),
@@ -49,8 +49,8 @@ test('test defineHeapFarClass', t => {
   });
 });
 
-test('test defineHeapFarClassKit', t => {
-  const makeCounterKit = defineHeapFarClassKit(
+test('test defineHeapExoClassKit', t => {
+  const makeCounterKit = defineHeapExoClassKit(
     'Counter',
     { up: UpCounterI, down: DownCounterI },
     (x = 0) => ({ x }),
@@ -91,9 +91,9 @@ test('test defineHeapFarClassKit', t => {
   });
 });
 
-test('test makeHeapFarInstance', t => {
+test('test makeHeapExo', t => {
   let x = 3;
-  const upCounter = makeHeapFarInstance('upCounter', UpCounterI, {
+  const upCounter = makeHeapExo('upCounter', UpCounterI, {
     incr(y = 1) {
       x += y;
       return x;
@@ -113,7 +113,7 @@ test('test makeHeapFarInstance', t => {
 // needn't run. we just don't have a better place to write these.
 test.skip('types', () => {
   // any methods can be defined if there's no interface
-  const unguarded = makeHeapFarInstance('upCounter', undefined, {
+  const unguarded = makeHeapExo('upCounter', undefined, {
     /** @param {number} val */
     incr(val) {
       return val;
@@ -129,7 +129,7 @@ test.skip('types', () => {
   unguarded.notInBehavior;
 
   // TODO when there is an interface, error if a method is missing from it
-  const guarded = makeHeapFarInstance('upCounter', UpCounterI, {
+  const guarded = makeHeapExo('upCounter', UpCounterI, {
     /** @param {number} val */
     incr(val) {
       return val;

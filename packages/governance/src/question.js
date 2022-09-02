@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeHeapFarInstance, fit, keyEQ, M } from '@agoric/store';
+import { makeHeapExo, fit, keyEQ, M } from '@agoric/store';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 
 import { QuestionI, QuestionSpecShape } from './typeGuards.js';
@@ -82,7 +82,7 @@ const buildUnrankedQuestion = (questionSpec, counterInstance) => {
   const questionHandle = makeHandle('Question');
 
   /** @type {Question} */
-  return makeHeapFarInstance('question details', QuestionI, {
+  return makeHeapExo('question details', QuestionI, {
     getVoteCounter() {
       return counterInstance;
     },

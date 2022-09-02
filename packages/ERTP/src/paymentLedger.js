@@ -2,10 +2,7 @@
 import { isPromise } from '@endo/promise-kit';
 import { assertCopyArray } from '@endo/marshal';
 import { fit, M } from '@agoric/store';
-import {
-  provideDurableWeakMapStore,
-  vivifyFarInstance,
-} from '@agoric/vat-data';
+import { provideDurableWeakMapStore, vivifyExo } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { vivifyPaymentKind } from './payment.js';
 import { vivifyPurseKind } from './purse.js';
@@ -86,7 +83,7 @@ export const vivifyPaymentLedger = (
   optShutdownWithFailure = undefined,
 ) => {
   /** @type {Brand} */
-  const brand = vivifyFarInstance(issuerBaggage, `${name} brand`, BrandI, {
+  const brand = vivifyExo(issuerBaggage, `${name} brand`, BrandI, {
     isMyIssuer(allegedIssuer) {
       // BrandI delays calling this method until `allegedIssuer` is a Remotable
       return allegedIssuer === issuer;
@@ -385,7 +382,7 @@ export const vivifyPaymentLedger = (
   );
 
   /** @type {Issuer} */
-  const issuer = vivifyFarInstance(issuerBaggage, `${name} issuer`, IssuerI, {
+  const issuer = vivifyExo(issuerBaggage, `${name} issuer`, IssuerI, {
     getBrand() {
       return brand;
     },
@@ -483,7 +480,7 @@ export const vivifyPaymentLedger = (
   });
 
   /** @type {Mint} */
-  const mint = vivifyFarInstance(issuerBaggage, `${name} mint`, MintI, {
+  const mint = vivifyExo(issuerBaggage, `${name} mint`, MintI, {
     getIssuer() {
       return issuer;
     },

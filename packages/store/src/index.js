@@ -59,9 +59,9 @@ export {
 export {
   defendPrototype,
   initEmpty,
-  defineHeapFarClass,
-  defineHeapFarClassKit,
-  makeHeapFarInstance,
+  defineHeapExoClass,
+  defineHeapExoClassKit,
+  makeHeapExo,
 } from './patterns/interface-tools.js';
 
 export { compareRank, isRankSorted, sortByRank } from './patterns/rankOrder.js';

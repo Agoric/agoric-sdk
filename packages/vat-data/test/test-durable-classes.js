@@ -3,9 +3,9 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { M } from '@agoric/store';
 import {
-  defineDurableFarClass,
-  defineDurableFarClassKit,
-} from '../src/far-class-utils.js';
+  defineDurableExoClass,
+  defineDurableExoClassKit,
+} from '../src/exo-utils.js';
 import { makeKindHandle } from '../src/vat-data-bindings.js';
 
 const UpCounterI = M.interface('UpCounter', {
@@ -22,10 +22,10 @@ const DownCounterI = M.interface('DownCounter', {
     .returns(M.number()),
 });
 
-test('test defineDurableFarClass', t => {
+test('test defineDurableExoClass', t => {
   const upCounterKind = makeKindHandle('UpCounter');
 
-  const makeUpCounter = defineDurableFarClass(
+  const makeUpCounter = defineDurableExoClass(
     upCounterKind,
     UpCounterI,
     (x = 0) => ({ x }),
@@ -51,10 +51,10 @@ test('test defineDurableFarClass', t => {
   });
 });
 
-test('test defineDurableFarClassKit', t => {
+test('test defineDurableExoClassKit', t => {
   const counterKindHandle = makeKindHandle('Counter');
 
-  const makeCounterKit = defineDurableFarClassKit(
+  const makeCounterKit = defineDurableExoClassKit(
     counterKindHandle,
     { up: UpCounterI, down: DownCounterI },
     (x = 0) => ({ x }),

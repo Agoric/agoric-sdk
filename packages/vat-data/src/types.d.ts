@@ -75,7 +75,7 @@ type DefineKindOptions<C> = {
    * argument or as their `this` binding? For `defineDurableKind` and its
    * siblings (including `vivifySingleton`), this defaults to off, meaning that
    * their behavior methods receive `context` as their first argument.
-   * `vivifyFarClass` and its siblings (including `vivifyFarInstance`) use
+   * `vivifyExoClass` and its siblings (including `vivifyExo`) use
    * this flag internally to indicate that their methods receive `context`
    * as their `this` binding.
    */
@@ -88,7 +88,7 @@ type DefineKindOptions<C> = {
    * pattern is satisfied before calling the raw method.
    *
    * In `defineDurableKind` and its siblings, this defaults to off.
-   * `vivifyFarClass` use this internally to protect their raw class methods
+   * `vivifyExoClass` use this internally to protect their raw class methods
    * using the provided interface.
    */
   interfaceGuard?: InterfaceGuard<unknown>;

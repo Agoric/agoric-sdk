@@ -2,7 +2,7 @@
 
 import { makePublishKit } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
-import { makeHeapFarInstance } from '@agoric/store';
+import { makeHeapExo } from '@agoric/store';
 
 import { ElectoratePublicI, ElectorateCreatorI } from './typeGuards.js';
 
@@ -15,7 +15,7 @@ import { ElectoratePublicI, ElectorateCreatorI } from './typeGuards.js';
 const start = zcf => {
   const { subscriber } = makePublishKit();
 
-  const publicFacet = makeHeapFarInstance('publicFacet', ElectoratePublicI, {
+  const publicFacet = makeHeapExo('publicFacet', ElectoratePublicI, {
     getQuestionSubscriber() {
       return subscriber;
     },
@@ -37,7 +37,7 @@ const start = zcf => {
     },
   });
 
-  const creatorFacet = makeHeapFarInstance('creatorFacet', ElectorateCreatorI, {
+  const creatorFacet = makeHeapExo('creatorFacet', ElectorateCreatorI, {
     getPoserInvitation() {
       return zcf.makeInvitation(() => {},
       `noActionElectorate doesn't allow posing questions`);

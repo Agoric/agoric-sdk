@@ -13,7 +13,7 @@ import {
 } from '@agoric/notifier';
 import { fit, M, makeScalarMapStore } from '@agoric/store';
 import {
-  defineVirtualFarClassKit,
+  defineVirtualExoClassKit,
   makeScalarBigMapStore,
   pickFacet,
 } from '@agoric/vat-data';
@@ -538,7 +538,7 @@ const finish = ({ state, facets }) => {
   });
 };
 
-const SmartWalletKit = defineVirtualFarClassKit(
+const SmartWalletKit = defineVirtualExoClassKit(
   'SmartWallet',
   behaviorGuards,
   initState,

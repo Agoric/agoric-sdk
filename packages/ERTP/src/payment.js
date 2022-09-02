@@ -1,5 +1,5 @@
 import { initEmpty } from '@agoric/store';
-import { vivifyFarClass } from '@agoric/vat-data';
+import { vivifyExoClass } from '@agoric/vat-data';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -12,7 +12,7 @@ import { vivifyFarClass } from '@agoric/vat-data';
  * @returns {() => Payment<K>}
  */
 export const vivifyPaymentKind = (issuerBaggage, name, brand, PaymentI) => {
-  const makePayment = vivifyFarClass(
+  const makePayment = vivifyExoClass(
     issuerBaggage,
     `${name} payment`,
     PaymentI,

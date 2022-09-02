@@ -2,14 +2,14 @@
 export * from './vat-data-bindings.js';
 export * from './kind-utils.js';
 export {
-  defineVirtualFarClass,
-  defineVirtualFarClassKit,
-  defineDurableFarClass,
-  defineDurableFarClassKit,
-  vivifyFarClass,
-  vivifyFarClassKit,
-  vivifyFarInstance,
+  defineVirtualExoClass,
+  defineVirtualExoClassKit,
+  defineDurableExoClass,
+  defineDurableExoClassKit,
+  vivifyExoClass,
+  vivifyExoClassKit,
+  vivifyExo,
   vivifySingleton,
-} from './far-class-utils.js';
+} from './exo-utils.js';
 
 /** @template T @typedef {import('./types.js').DefineKindOptions<T>} DefineKindOptions */

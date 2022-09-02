@@ -6,7 +6,7 @@
  */
 
 import { BridgeId, WalletName } from '@agoric/internal';
-import { fit, M, makeHeapFarInstance } from '@agoric/store';
+import { fit, M, makeHeapExo } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeMyAddressNameAdminKit } from '@agoric/vats/src/core/basic-behaviors.js';
@@ -75,7 +75,7 @@ export const start = async (zcf, privateArgs) => {
   const walletsByAddress = makeScalarBigMapStore('walletsByAddress');
   const provider = makeAtomicProvider(walletsByAddress);
 
-  const handleWalletAction = makeHeapFarInstance(
+  const handleWalletAction = makeHeapExo(
     'walletActionHandler',
     M.interface('walletActionHandlerI', {
       fromBridge: M.call(M.string(), shape.WalletBridgeMsg).returns(
@@ -131,7 +131,7 @@ export const start = async (zcf, privateArgs) => {
     zoe,
   });
 
-  const creatorFacet = makeHeapFarInstance(
+  const creatorFacet = makeHeapExo(
     'walletFactoryCreator',
     M.interface('walletFactoryCreatorI', {
       provideSmartWallet: M.callWhen(

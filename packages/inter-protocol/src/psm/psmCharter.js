@@ -1,7 +1,7 @@
 // @ts-check
 
 import '@agoric/governance/src/exported.js';
-import { makeScalarMapStore, M, makeHeapFarInstance, fit } from '@agoric/store';
+import { makeScalarMapStore, M, makeHeapExo, fit } from '@agoric/store';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
@@ -90,14 +90,10 @@ export const start = async zcf => {
       TimestampShape,
     ).returns(M.promise()),
   });
-  const invitationMakers = makeHeapFarInstance(
-    'PSM Invitation Makers',
-    MakerShape,
-    {
-      VoteOnParamChange: makeParamInvitation,
-      VoteOnPauseOffers: makeOfferFilterInvitation,
-    },
-  );
+  const invitationMakers = makeHeapExo('PSM Invitation Makers', MakerShape, {
+    VoteOnParamChange: makeParamInvitation,
+    VoteOnPauseOffers: makeOfferFilterInvitation,
+  });
 
   const charterMemberHandler = seat => {
     seat.exit();
@@ -111,7 +107,7 @@ export const start = async zcf => {
     makeCharterMemberInvitation: M.call().returns(M.promise()),
   });
 
-  const creatorFacet = makeHeapFarInstance(
+  const creatorFacet = makeHeapExo(
     'PSM Charter creatorFacet',
     psmCharterCreatorI,
     {

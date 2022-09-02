@@ -2,7 +2,7 @@
 
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { makeHeapFarInstance, keyEQ, makeStore } from '@agoric/store';
+import { makeHeapExo, keyEQ, makeStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 
 import {
@@ -149,7 +149,7 @@ const makeBinaryVoteCounter = (
     });
   };
 
-  const closeFacet = makeHeapFarInstance(
+  const closeFacet = makeHeapExo(
     'BinaryVoteCounter close',
     BinaryVoteCounterCloseI,
     {
@@ -160,7 +160,7 @@ const makeBinaryVoteCounter = (
     },
   );
 
-  const creatorFacet = makeHeapFarInstance(
+  const creatorFacet = makeHeapExo(
     'BinaryVoteCounter creator',
     BinaryVoteCounterAdminI,
     {
@@ -183,7 +183,7 @@ const makeBinaryVoteCounter = (
     },
   );
 
-  const publicFacet = makeHeapFarInstance(
+  const publicFacet = makeHeapExo(
     'BinaryVoteCounter public',
     BinaryVoteCounterPublicI,
     {
