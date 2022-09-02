@@ -155,7 +155,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     const fee = ceilMultiplyBy(given, params.getGiveStableFee());
     const afterFee = AmountMath.subtract(given, fee);
     const maxAnchor = floorMultiplyBy(afterFee, anchorPerStable);
-    // TODO this prevents the reallocate from failing. Can this be tested otherwise?
     assert(
       AmountMath.isGTE(maxAnchor, wanted),
       X`wanted ${wanted} is more then ${given} minus fees ${fee}`,
@@ -175,7 +174,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       stage.clear();
       anchorPool.clear();
       feePool.clear();
-      // NOTE someday, reallocate should guarantee that this case cannot happen
+      // TODO(#6116) someday, reallocate should guarantee that this case cannot happen
       throw e;
     }
     totalAnchorProvided = AmountMath.add(totalAnchorProvided, maxAnchor);
@@ -205,7 +204,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       stage.clear();
       anchorPool.clear();
       feePool.clear();
-      // NOTE someday, reallocate should guarantee that this case cannot happen
+      // TODO(#6116) someday, reallocate should guarantee that this case cannot happen
       stableMint.burnLosses({ Stable: asStable }, stage);
       throw e;
     }
