@@ -1,5 +1,6 @@
 import '@agoric/zoe/exported.js';
 import { E } from '@endo/far';
+import bundleSource from '@endo/bundle-source';
 
 import { makeInstall } from './install.js';
 import { makeOfferAndFindInvitationAmount } from './offer.js';
@@ -21,7 +22,7 @@ const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 export const makeHelpers = async (homePromise, endowments) => {
   const { zoe, wallet, scratch, board } = E.get(homePromise);
 
-  const { bundleSource, lookup } = endowments;
+  const { lookup } = endowments;
 
   const walletAdmin = E(wallet).getAdminFacet();
   const installationManager = E(walletAdmin).getInstallationManager();
