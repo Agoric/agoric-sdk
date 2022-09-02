@@ -45,14 +45,16 @@ const testContract = async () => {
 };
 
 const simpleWalletState = async (addr, origin) => {
-  const state = await getWalletState(addr, fromBoard, theWeb(origin));
+  const { getJSON } = theWeb(origin);
+  const state = await getWalletState(addr, fromBoard, { getJSON });
+  const agoricNames = await makeAgoricNames(fromBoard, getJSON);
   return [
     ...simplePurseBalances(state.purses).map(([val, brand]) => [
       'purse',
       val,
       brand,
     ]),
-    ...simpleOffers(state),
+    ...simpleOffers(state, agoricNames),
   ];
 };
 
@@ -77,10 +79,30 @@ const testFormatOffer = () => {
   console.log(offer);
 };
 
+const formatCommands = (action, fromAddr, node, chainId) => {
+  const script = `read -r -d '' psmTrade <<'EOF'
+${action}
+EOF
+agd tx swingset wallet-action --allow-spend "$psmTrade" --from ${fromAddr} --node=${node} --chain-id=${chainId}
+`;
+  return script;
+};
+
+function testFormatCommands() {
+  const actual = formatCommands('{give}', 'agoric123', 'https://rpc');
+  console.log(actual);
+}
+
 function votingPower() {
   const stuff = UrlFetchApp.fetch('https://ollinet.rpc.agoric.net/status?');
   const data = JSON.parse(stuff);
 
   console.log('is this thing on?', data);
   return data.result.validator_info.voting_power;
+}
+
+function updateClock(ref = 'A13') {
+  const sheet = SpreadsheetApp.getActiveSheet();
+  const t = new Date();
+  sheet.getRange(ref).setValue(t);
 }
