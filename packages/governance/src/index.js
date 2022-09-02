@@ -8,7 +8,6 @@ export {
   QuorumRule,
   coerceQuestionSpec,
   positionIncluded,
-  assertIssueForType,
   buildUnrankedQuestion,
 } from './question.js';
 
@@ -23,7 +22,6 @@ export {
   assertBallotConcernsParam,
   makeParamChangePositions,
   setupParamGovernance,
-  validateParamChangeQuestion,
   CONTRACT_ELECTORATE,
 } from './contractGovernance/governParam.js';
 
