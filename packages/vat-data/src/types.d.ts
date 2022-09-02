@@ -75,7 +75,7 @@ type DefineKindOptions<C> = {
    * argument or as their `this` binding? For `defineDurableKind` and its
    * siblings (including `prepareSingleton`), this defaults to off, meaning that
    * their behavior methods receive `context` as their first argument.
-   * `prepareFarClass` and its siblings (including `prepareFarInstance`) use
+   * `prepareExoClass` and its siblings (including `prepareExo`) use
    * this flag internally to indicate that their methods receive `context`
    * as their `this` binding.
    */
@@ -88,7 +88,7 @@ type DefineKindOptions<C> = {
    * pattern is satisfied before calling the raw method.
    *
    * In `defineDurableKind` and its siblings, this defaults to off.
-   * `prepareFarClass` use this internally to protect their raw class methods
+   * `prepareExoClass` use this internally to protect their raw class methods
    * using the provided interface.
    */
   interfaceGuard?: InterfaceGuard<unknown>;
@@ -96,7 +96,7 @@ type DefineKindOptions<C> = {
 
 export type VatData = {
   // virtual kinds
-  /** @deprecated Use defineVirtualFarClass instead */
+  /** @deprecated Use defineVirtualExoClass instead */
   defineKind: <P, S, F>(
     tag: string,
     init: (...args: P) => S,
@@ -104,7 +104,7 @@ export type VatData = {
     options?: DefineKindOptions<KindContext<S, F>>,
   ) => (...args: P) => KindFacet<F>;
 
-  /** @deprecated Use defineVirtualFarClassKit instead */
+  /** @deprecated Use defineVirtualExoClassKit instead */
   defineKindMulti: <P, S, B>(
     tag: string,
     init: (...args: P) => S,
@@ -115,7 +115,7 @@ export type VatData = {
   // durable kinds
   makeKindHandle: (descriptionTag: string) => DurableKindHandle;
 
-  /** @deprecated Use defineDurableFarClass instead */
+  /** @deprecated Use defineDurableExoClass instead */
   defineDurableKind: <P, S, F>(
     kindHandle: DurableKindHandle,
     init: (...args: P) => S,
@@ -123,7 +123,7 @@ export type VatData = {
     options?: DefineKindOptions<KindContext<S, F>>,
   ) => (...args: P) => KindFacet<F>;
 
-  /** @deprecated Use defineDurableFarClassKit instead */
+  /** @deprecated Use defineDurableExoClassKit instead */
   defineDurableKindMulti: <P, S, B>(
     kindHandle: DurableKindHandle,
     init: (...args: P) => S,
@@ -173,7 +173,7 @@ interface PickFacet {
   ): (...args: Parameters<M>) => ReturnType<M>[F];
 }
 
-/** @deprecated Use prepareFarClass instead */
+/** @deprecated Use prepareExoClass instead */
 type PrepareKind = <P, S, F>(
   baggage: Baggage,
   tag: string,
@@ -182,7 +182,7 @@ type PrepareKind = <P, S, F>(
   options?: DefineKindOptions<KindContext<S, F>>,
 ) => (...args: P) => KindFacet<F>;
 
-/** @deprecated Use prepareFarClassKit instead */
+/** @deprecated Use prepareExoClassKit instead */
 type PrepareKindMulti = <P, S, B>(
   baggage: Baggage,
   tag: string,

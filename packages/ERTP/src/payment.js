@@ -1,5 +1,5 @@
 import { initEmpty } from '@agoric/store';
-import { prepareFarClass } from '@agoric/vat-data';
+import { prepareExoClass } from '@agoric/vat-data';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -12,7 +12,7 @@ import { prepareFarClass } from '@agoric/vat-data';
  * @returns {() => Payment<K>}
  */
 export const preparePaymentKind = (issuerBaggage, name, brand, PaymentI) => {
-  const makePayment = prepareFarClass(
+  const makePayment = prepareExoClass(
     issuerBaggage,
     `${name} payment`,
     PaymentI,

@@ -7,7 +7,7 @@ import {
   SubscriberShape,
   prepareDurablePublishKit,
 } from '@agoric/notifier';
-import { M, prepareFarClassKit } from '@agoric/vat-data';
+import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { makeEphemeraProvider } from '../contractSupport.js';
 import { UnguardedHelperI } from '../typeGuards.js';
 
@@ -49,7 +49,7 @@ export const prepareVaultHolder = baggage => {
     'Vault Holder publish kit',
   );
 
-  const makeVaultHolderKit = prepareFarClassKit(
+  const makeVaultHolderKit = prepareExoClassKit(
     baggage,
     'Vault Holder',
     {

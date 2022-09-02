@@ -2,10 +2,7 @@
 import { isPromise } from '@endo/promise-kit';
 import { assertCopyArray } from '@endo/marshal';
 import { fit, M } from '@agoric/store';
-import {
-  provideDurableWeakMapStore,
-  prepareFarInstance,
-} from '@agoric/vat-data';
+import { provideDurableWeakMapStore, prepareExo } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { preparePaymentKind } from './payment.js';
 import { preparePurseKind } from './purse.js';
@@ -84,7 +81,7 @@ export const preparePaymentLedger = (
   optShutdownWithFailure = undefined,
 ) => {
   /** @type {Brand<K>} */
-  const brand = prepareFarInstance(issuerBaggage, `${name} brand`, BrandI, {
+  const brand = prepareExo(issuerBaggage, `${name} brand`, BrandI, {
     isMyIssuer(allegedIssuer) {
       // BrandI delays calling this method until `allegedIssuer` is a Remotable
       return allegedIssuer === issuer;
@@ -379,7 +376,7 @@ export const preparePaymentLedger = (
   );
 
   /** @type {Issuer<K>} */
-  const issuer = prepareFarInstance(issuerBaggage, `${name} issuer`, IssuerI, {
+  const issuer = prepareExo(issuerBaggage, `${name} issuer`, IssuerI, {
     getBrand() {
       return brand;
     },
@@ -477,7 +474,7 @@ export const preparePaymentLedger = (
   });
 
   /** @type {Mint<K>} */
-  const mint = prepareFarInstance(issuerBaggage, `${name} mint`, MintI, {
+  const mint = prepareExo(issuerBaggage, `${name} mint`, MintI, {
     getIssuer() {
       return issuer;
     },

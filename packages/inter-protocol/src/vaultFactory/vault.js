@@ -1,7 +1,7 @@
 import { AmountMath, AmountShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
-import { M, prepareFarClassKit } from '@agoric/vat-data';
+import { M, prepareExoClassKit } from '@agoric/vat-data';
 import {
   assertProposalShape,
   atomicTransfer,
@@ -218,8 +218,8 @@ export const prepareVault = baggage => {
   trace('prepareVault');
   const makeVaultKit = prepareVaultKit(baggage);
 
-  // TODO find a way to not have to indent a level deeper than defineDurableFarClassKit does
-  const maker = prepareFarClassKit(
+  // TODO find a way to not have to indent a level deeper than defineDurableExoClassKit does
+  const maker = prepareExoClassKit(
     baggage,
     'Vault',
     {

@@ -2,8 +2,8 @@ import { AssetKind, makeDurableIssuerKit, AmountMath } from '@agoric/ertp';
 import {
   makeScalarBigMapStore,
   provideDurableWeakMapStore,
-  prepareFarClassKit,
-  prepareFarClass,
+  prepareExoClassKit,
+  prepareExoClass,
   provideDurableSetStore,
 } from '@agoric/vat-data';
 
@@ -117,7 +117,7 @@ export const makeZoeStorageManager = (
     zoeMintBaggageSet(issuerBaggage);
   }
 
-  const makeZoeMint = prepareFarClass(
+  const makeZoeMint = prepareExoClass(
     zoeBaggage,
     'ZoeMint',
     ZoeMintI,
@@ -154,7 +154,7 @@ export const makeZoeStorageManager = (
     },
   );
 
-  const makeInstanceStorageManager = prepareFarClassKit(
+  const makeInstanceStorageManager = prepareExoClassKit(
     zoeBaggage,
     'InstanceStorageManager',
     InstanceStorageManagerIKit,
@@ -390,7 +390,7 @@ export const makeZoeStorageManager = (
 
   const getInvitationIssuer = () => invitationIssuer;
 
-  const makeStorageManager = prepareFarClassKit(
+  const makeStorageManager = prepareExoClassKit(
     zoeBaggage,
     'ZoeStorageManager',
     ZoeStorageManagerIKit,

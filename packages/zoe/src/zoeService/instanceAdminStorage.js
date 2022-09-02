@@ -1,11 +1,11 @@
 import {
   canBeDurable,
-  M,
   makeScalarBigSetStore,
-  provide,
   provideDurableWeakMapStore,
-  prepareFarClassKit,
   prepareKindMulti,
+  prepareExoClassKit,
+  M,
+  provide,
 } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 import { defineDurableHandle } from '../makeHandle.js';
@@ -50,7 +50,7 @@ const InstanceAdminStorageIKit = harden({
 
 /** @param {import('@agoric/vat-data').Baggage} baggage */
 export const makeInstanceAdminStorage = baggage => {
-  const makeIAS = prepareFarClassKit(
+  const makeIAS = prepareExoClassKit(
     baggage,
     'InstanceAdmin',
     InstanceAdminStorageIKit,

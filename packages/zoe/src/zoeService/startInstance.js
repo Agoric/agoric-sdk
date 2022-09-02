@@ -4,7 +4,7 @@ import {
   M,
   makeScalarBigMapStore,
   provideDurableWeakMapStore,
-  prepareFarClass,
+  prepareExoClass,
 } from '@agoric/vat-data';
 import { initEmpty } from '@agoric/store';
 
@@ -43,7 +43,7 @@ export const makeStartInstance = (
     seatHandleToZoeSeatAdmin,
   );
 
-  const makeZoeInstanceAdmin = prepareFarClass(
+  const makeZoeInstanceAdmin = prepareExoClass(
     zoeBaggage,
     'zoeInstanceAdmin',
     InstanceAdminI,
@@ -143,7 +143,7 @@ export const makeStartInstance = (
   );
 
   const prepareEmptyFacet = facetName =>
-    prepareFarClass(
+    prepareExoClass(
       zoeBaggage,
       facetName,
       M.interface(facetName, {}),
@@ -153,7 +153,7 @@ export const makeStartInstance = (
   const makeEmptyCreatorFacet = prepareEmptyFacet('emptyCreatorFacet');
   const makeEmptyPublicFacet = prepareEmptyFacet('emptyPublicFacet');
 
-  const makeAdminFacet = prepareFarClass(
+  const makeAdminFacet = prepareExoClass(
     zoeBaggage,
     'adminFacet',
     AdminFacetI,
