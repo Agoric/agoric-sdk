@@ -16,6 +16,7 @@ import {
   makeRatio,
   natSafeMath as NatMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
+import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 import { E } from '@endo/eventual-send';
 import { NonNullish } from '@agoric/assert';
 import path from 'path';
@@ -23,6 +24,7 @@ import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeTracer } from '../../src/makeTracer.js';
 import {
   makeMockChainStorageRoot,
+  mintRunPayment,
   setUpZoeForTest,
   subscriptionKey,
   withAmountUtils,
@@ -90,6 +92,8 @@ const makeTestContext = async () => {
 
   const committeeInstall = await E(zoe).install(committeeBundle);
   const psmInstall = await E(zoe).install(psmBundle);
+  const centralSupply = await E(zoe).install(centralSupplyBundle);
+
   const mintLimit = AmountMath.make(anchor.brand, MINT_LIMIT);
 
   const marshaller = makeBoard().getReadonlyMarshaller();
@@ -119,7 +123,7 @@ const makeTestContext = async () => {
     initialPoserInvitation,
     stable: { issuer: stableIssuer, brand: stableBrand },
     anchor,
-    installs: { committeeInstall, psmInstall },
+    installs: { committeeInstall, psmInstall, centralSupply },
     mintLimit,
     marshaller,
     terms: {
@@ -179,6 +183,42 @@ async function makePsmDriver(t, customTerms) {
     }),
   );
 
+  /**
+   * @param {Amount<'nat'>} giveAnchor
+   * @param {Amount<'nat'>} [wantStable]
+   */
+  const swapAnchorForStableSeat = async (giveAnchor, wantStable) => {
+    const seat = E(zoe).offer(
+      E(publicFacet).makeWantStableInvitation(),
+      harden({
+        give: { In: giveAnchor },
+        ...(wantStable ? { want: { Out: wantStable } } : {}),
+      }),
+      // @ts-expect-error known defined
+      harden({ In: anchor.mint.mintPayment(giveAnchor) }),
+    );
+    await eventLoopIteration();
+    return seat;
+  };
+
+  /**
+   * @param {Amount<'nat'>} giveRun
+   * @param {Payment<'nat'>} runPayment
+   * @param {Amount<'nat'>} [wantAnchor]
+   */
+  const swapStableForAnchorSeat = async (giveRun, runPayment, wantAnchor) => {
+    const seat = E(zoe).offer(
+      E(publicFacet).makeGiveStableInvitation(),
+      harden({
+        give: { In: giveRun },
+        ...(wantAnchor ? { want: { Out: wantAnchor } } : {}),
+      }),
+      harden({ In: runPayment }),
+    );
+    await eventLoopIteration();
+    return seat;
+  };
+
   return {
     mockChainStorage,
     publicFacet,
@@ -209,31 +249,26 @@ async function makePsmDriver(t, customTerms) {
       return feePayoutAmount;
     },
 
-    /** @param {Amount<'nat'>} giveAnchor */
-    async swapAnchorForStable(giveAnchor) {
-      const seat = E(zoe).offer(
-        E(publicFacet).makeWantStableInvitation(),
-        harden({ give: { In: giveAnchor } }),
-        // @ts-expect-error known defined
-        harden({ In: anchor.mint.mintPayment(giveAnchor) }),
-      );
-      await eventLoopIteration();
+    /**
+     * @param {Amount<'nat'>} giveAnchor
+     * @param {Amount<'nat'>} [wantStable]
+     */
+    async swapAnchorForStable(giveAnchor, wantStable) {
+      const seat = swapAnchorForStableSeat(giveAnchor, wantStable);
       return E(seat).getPayouts();
     },
+    swapAnchorForStableSeat,
 
     /**
      * @param {Amount<'nat'>} giveRun
      * @param {Payment<'nat'>} runPayment
+     * @param {Amount<'nat'>} [wantAnchor]
      */
-    async swapStableForAnchor(giveRun, runPayment) {
-      const seat = E(zoe).offer(
-        E(publicFacet).makeGiveStableInvitation(),
-        harden({ give: { In: giveRun } }),
-        harden({ In: runPayment }),
-      );
-      await eventLoopIteration();
+    async swapStableForAnchor(giveRun, runPayment, wantAnchor) {
+      const seat = swapStableForAnchorSeat(giveRun, runPayment, wantAnchor);
       return E(seat).getPayouts();
     },
+    swapStableForAnchorSeat,
   };
 }
 
@@ -303,6 +338,108 @@ test('limit', async t => {
   driver.assertPoolBalance(initialPool);
   // TODO Offer result should be an error
   // t.throwsAsync(() => await E(seat1).getOfferResult());
+});
+
+/** @type {[kind: 'want' | 'give', give: number, want: number, ok: boolean, wants?: number][]} */
+const trades = [
+  ['give', 200, 190, false],
+  ['want', 101, 100, true, 1],
+  ['give', 50, 50, false],
+  ['give', 51, 50, true, 1],
+];
+
+test('mix of trades: failures do not prevent later service', async t => {
+  const {
+    terms,
+    stable,
+    anchor,
+    feeMintAccess,
+    zoe,
+    installs: { centralSupply },
+  } = t.context;
+  const driver = await makePsmDriver(t);
+
+  const ist100 = await mintRunPayment(500n * 1_000_000n, {
+    centralSupply,
+    feeMintAccess,
+    zoe,
+  });
+
+  assert(anchor.issuer);
+  const anchorPurse = await E(anchor.issuer).makeEmptyPurse();
+  const stablePurse = await E(stable.issuer).makeEmptyPurse();
+  await E(stablePurse).deposit(ist100);
+
+  const scale6 = x => BigInt(Math.round(x * 1_000_000));
+
+  const wantStable = async (ix, give, want, ok, wants) => {
+    t.log('wantStable', ix, give, want, ok, wants);
+    const giveAnchor = AmountMath.make(anchor.brand, scale6(give));
+    const wantAmt = AmountMath.make(stable.brand, scale6(want));
+    const seat = await driver.swapAnchorForStableSeat(giveAnchor, wantAmt);
+    if (!ok) {
+      await t.throwsAsync(E(seat).getOfferResult());
+      return;
+    }
+    await E(seat).getOfferResult();
+    t.is(await E(seat).numWantsSatisfied(), wants);
+    if (wants === 0) {
+      return;
+    }
+    const runPayouts = await E(seat).getPayouts();
+    const expectedRun = minusAnchorFee(giveAnchor, terms.anchorPerStable);
+    const actualRun = await E(stablePurse).deposit(await runPayouts.Out);
+    t.deepEqual(actualRun, expectedRun);
+  };
+
+  const giveStable = async (ix, give, want, ok, wants) => {
+    t.log('giveStable', ix, give, want, ok, wants);
+    const giveRun = AmountMath.make(stable.brand, scale6(give));
+    const runPayment = await E(stablePurse).withdraw(giveRun);
+    const wantAmt = AmountMath.make(anchor.brand, scale6(want));
+    const seat = await driver.swapStableForAnchorSeat(
+      giveRun,
+      runPayment,
+      wantAmt,
+    );
+    const anchorPayouts = await E(seat).getPayouts();
+    if (!ok) {
+      await t.throwsAsync(E(seat).getOfferResult());
+      return;
+    }
+    await E(seat).getOfferResult();
+
+    t.is(await E(seat).numWantsSatisfied(), wants);
+    if (wants === 0) {
+      return;
+    }
+    const actualAnchor = await E(anchorPurse).deposit(await anchorPayouts.Out);
+    const expectedAnchor = AmountMath.make(
+      anchor.brand,
+      minusStableFee(giveRun).value,
+    );
+    t.deepEqual(actualAnchor, expectedAnchor);
+  };
+
+  let ix = 0;
+  for (const [kind, give, want, ok, wants] of trades) {
+    switch (kind) {
+      case 'give':
+        // eslint-disable-next-line no-await-in-loop
+        await giveStable(ix, give, want, ok, wants);
+        break;
+      case 'want':
+        // eslint-disable-next-line no-await-in-loop
+        await wantStable(ix, give, want, ok, wants);
+        break;
+      default:
+        assert.fail(kind);
+    }
+    if (kind === 'give') {
+      // eslint-disable-next-line no-await-in-loop
+    }
+    ix += 1;
+  }
 });
 
 test('anchor is 2x stable', async t => {
