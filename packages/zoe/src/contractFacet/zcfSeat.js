@@ -5,7 +5,6 @@ import {
   provideDurableMapStore,
   makeScalarBigMapStore,
   vivifyKind,
-  ignoreContext,
   makeScalarBigWeakMapStore,
 } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
@@ -111,12 +110,6 @@ export const createSeatManager = (
       hasStagedAllocation(zcfSeat),
       'Reallocate failed because a seat had no staged allocation. Please add or subtract from the seat and then reallocate.',
     );
-  };
-
-  const clear = zcfSeat => {
-    if (zcfSeatToStagedAllocations.has(zcfSeat)) {
-      zcfSeatToStagedAllocations.delete(zcfSeat);
-    }
   };
 
   const setStagedAllocation = (zcfSeat, newStagedAllocation) => {
@@ -337,7 +330,11 @@ export const createSeatManager = (
         );
         return amountKeywordRecord;
       },
-      clear: ({ self }) => clear(self),
+      clear: ({ self }) => {
+        if (zcfSeatToStagedAllocations.has(self)) {
+          zcfSeatToStagedAllocations.delete(self);
+        }
+      },
       hasStagedAllocation: ({ self }) => hasStagedAllocation(self),
     },
   );
