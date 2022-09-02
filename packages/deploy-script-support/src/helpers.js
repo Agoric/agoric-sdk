@@ -22,7 +22,7 @@ const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 export const makeHelpers = async (homePromise, endowments) => {
   const { zoe, wallet, scratch, board } = E.get(homePromise);
 
-  const { lookup } = endowments;
+  const { lookup, publishBundle, pathResolve } = endowments;
 
   const walletAdmin = E(wallet).getAdminFacet();
   const installationManager = E(walletAdmin).getInstallationManager();
@@ -35,7 +35,14 @@ export const makeHelpers = async (homePromise, endowments) => {
 
   // Create the methods
 
-  const install = makeInstall(bundleSource, zoe, installationManager, board);
+  const install = makeInstall(
+    bundleSource,
+    zoe,
+    installationManager,
+    board,
+    publishBundle,
+    pathResolve,
+  );
 
   const startInstance = makeStartInstance(
     issuerManager,
