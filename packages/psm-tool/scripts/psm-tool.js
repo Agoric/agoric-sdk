@@ -1,14 +1,17 @@
 #!/usr/bin/env node
+/* global process, fetch */
 // @ts-check
 import {
   assert,
   asPercent,
+  getContractState,
   getWalletState,
   makeAgoricNames,
   makeFromBoard,
   makePSMSpendAction,
   networks,
-  storageNode,
+  simpleOffers,
+  simplePurseBalances,
   vstorage,
 } from '../src/psm-lib.js';
 
@@ -75,7 +78,7 @@ const parseArgs = (argv, flagNames = []) => {
 //   console.error(label, x);
 //   return x;
 // };
-const log = label => x => x;
+const log = _label => x => x;
 
 const fmtRecordOfLines = record => {
   const { stringify } = JSON;
@@ -114,16 +117,13 @@ const online = async (opts, flags, { fetch }) => {
   const agoricNames = await makeAgoricNames(fromBoard, getJSON);
 
   if (flags.contract) {
-    const govContent = await vstorage.read(
-      'published.psm.IST.AUSD.governance',
-      getJSON,
+    const { instance, governance } = await getContractState(
+      fromBoard,
+      agoricNames,
+      {
+        getJSON,
+      },
     );
-    const { current: governance } = storageNode
-      .unserialize(govContent, fromBoard)
-      .at(-1);
-    const {
-      instance: { psm: instance },
-    } = agoricNames;
     flags.verbose && console.error('psm', instance, Object.keys(governance));
     flags.verbose &&
       console.error(
@@ -165,7 +165,7 @@ const main = async (argv, { fetch, clock }) => {
 
   if (flags.contract || opts.wallet) {
     assert(fetch, 'missing fetch API; try --experimental-fetch?');
-    // @ts-ignore what's up with typeof fetch???
+    // @ts-expect-error what's up with typeof fetch???
     return online(opts, flags, { fetch });
   }
 
