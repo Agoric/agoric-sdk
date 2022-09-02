@@ -34,6 +34,7 @@ const vBankPetName = {
 
 const COSMOS_UNIT = BigInt(1000000);
 
+// eslint-disable-next-line no-unused-vars
 const bigIntReplacer = (_key, val) =>
   typeof val === 'bigint' ? Number(val) : val;
 
@@ -149,7 +150,7 @@ const vstorage = {
   },
 };
 
-const miniMarshal = (slotToVal = (s, i) => s) => ({
+const miniMarshal = (slotToVal = (s, _i) => s) => ({
   unserialze: ({ body, slots }) => {
     const reviver = (_key, obj) => {
       const qclass = obj !== null && typeof obj === 'object' && obj['@qclass'];
@@ -456,7 +457,23 @@ const getWalletState = async (addr, ctx, { getJSON }) => {
   return { purses, offers: [...offerById.values()] };
 };
 
+const getContractState = async (fromBoard, agoricNames, { getJSON }) => {
+  const govContent = await vstorage.read(
+    'published.psm.IST.AUSD.governance',
+    getJSON,
+  );
+  const { current: governance } = last(
+    storageNode.unserialize(govContent, fromBoard),
+  );
+  const {
+    instance: { psm: instance },
+  } = agoricNames;
+
+  return { instance, governance };
+};
+
 // lines starting with 'export ' are stripped for use in Google Apps Scripts
-export { assert, asPercent, getWalletState };
+export { assert, asPercent };
+export { getContractState, getWalletState, simpleOffers, simplePurseBalances };
 export { makeAgoricNames, makeFromBoard, makePSMSpendAction };
-export { networks, storageNode, vstorage };
+export { networks, vstorage };
