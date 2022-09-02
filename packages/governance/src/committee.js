@@ -1,7 +1,7 @@
 // @ts-check
 
 import { makeStoredPublishKit } from '@agoric/notifier';
-import { makeStore } from '@agoric/store';
+import { defineHeapFarClassKit, initEmpty, makeStore } from '@agoric/store';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -14,6 +14,7 @@ import {
   startCounter,
 } from './electorateTools.js';
 import { QuorumRule } from './question.js';
+import { CommitteeIKit } from './typeGuards.js';
 
 const { ceilDivide } = natSafeMath;
 
@@ -92,50 +93,95 @@ const start = (zcf, privateArgs) => {
     [...Array(committeeSize).keys()].map(makeCommitteeVoterInvitation),
   );
 
-  /** @type {AddQuestion} */
-  const addQuestion = async (voteCounter, questionSpec) => {
-    const quorumThreshold = quorumRule => {
-      switch (quorumRule) {
-        case QuorumRule.MAJORITY:
-          return ceilDivide(committeeSize, 2);
-        case QuorumRule.ALL:
-          return committeeSize;
-        case QuorumRule.NO_QUORUM:
-          return 0;
-        default:
-          throw Error(`${quorumRule} is not a recognized quorum rule`);
-      }
-    };
+  const makeCommitteeFacets = defineHeapFarClassKit(
+    'Committee Facets',
+    CommitteeIKit,
+    initEmpty,
+    {
+      creatorFacet: {
+        getPoserInvitation() {
+          return getPoserInvitation(zcf, async (voteCounter, questionSpec) => {
+            const quorumThreshold = quorumRule => {
+              switch (quorumRule) {
+                case QuorumRule.MAJORITY:
+                  return ceilDivide(committeeSize, 2);
+                case QuorumRule.ALL:
+                  return committeeSize;
+                case QuorumRule.NO_QUORUM:
+                  return 0;
+                default:
+                  throw Error(`${quorumRule} is not a recognized quorum rule`);
+              }
+            };
 
-    return startCounter(
-      zcf,
-      questionSpec,
-      quorumThreshold(questionSpec.quorumRule),
-      voteCounter,
-      allQuestions,
-      questionsPublisher,
-    );
-  };
+            return startCounter(
+              zcf,
+              questionSpec,
+              quorumThreshold(questionSpec.quorumRule),
+              voteCounter,
+              allQuestions,
+              questionsPublisher,
+            );
+          });
+        },
+        /** @type {AddQuestion} */
+        async addQuestion(voteCounter, questionSpec) {
+          const quorumThreshold = quorumRule => {
+            switch (quorumRule) {
+              case QuorumRule.MAJORITY:
+                return ceilDivide(committeeSize, 2);
+              case QuorumRule.ALL:
+                return committeeSize;
+              case QuorumRule.NO_QUORUM:
+                return 0;
+              default:
+                throw Error(`${quorumRule} is not a recognized quorum rule`);
+            }
+          };
 
-  /** @type {CommitteeElectoratePublic} */
-  const publicFacet = Far('publicFacet', {
-    getQuestionSubscriber: () => questionsSubscriber,
-    getOpenQuestions: () => getOpenQuestions(allQuestions),
-    getName: () => committeeName,
-    getInstance: zcf.getInstance,
-    getQuestion: handleP => getQuestion(handleP, allQuestions),
-  });
+          return startCounter(
+            zcf,
+            questionSpec,
+            quorumThreshold(questionSpec.quorumRule),
+            voteCounter,
+            allQuestions,
+            questionsPublisher,
+          );
+        },
+        getVoterInvitations() {
+          return invitations;
+        },
+        getQuestionSubscriber() {
+          return questionsSubscriber;
+        },
 
-  /** @type {CommitteeElectorateCreatorFacet} */
-  const creatorFacet = Far('adminFacet', {
-    getPoserInvitation: () => getPoserInvitation(zcf, addQuestion),
-    addQuestion,
-    getVoterInvitations: () => invitations,
-    getQuestionSubscriber: () => questionsSubscriber,
-    getPublicFacet: () => publicFacet,
-  });
+        getPublicFacet() {
+          return this.facets.publicFacet;
+        },
+      },
 
-  return { publicFacet, creatorFacet };
+      publicFacet: {
+        getQuestionSubscriber() {
+          return questionsSubscriber;
+        },
+        getOpenQuestions() {
+          return getOpenQuestions(allQuestions);
+        },
+        getName() {
+          return committeeName;
+        },
+        getInstance() {
+          return zcf.getInstance();
+        },
+        getQuestion(handleP) {
+          return getQuestion(handleP, allQuestions);
+        },
+      },
+    },
+  );
+
+  // @ts-expect-error How to type farClasses?
+  return makeCommitteeFacets();
 };
 
 harden(start);

@@ -47,6 +47,18 @@ export const OfferFilterQuestionSpecShape = harden({
   quorumRule: QuorumRuleShape,
   tieOutcome: NoOfferFilterPositionShape,
 });
+export const OfferFilterQuestionDetailsShape = harden({
+  method: ChoiceMethodShape,
+  issue: OfferFilterIssueShape,
+  positions: OfferFilterPositionsShape,
+  electionType: 'offer_filter',
+  maxChoices: M.eq(1),
+  closingRule: ClosingRuleShape,
+  quorumRule: QuorumRuleShape,
+  tieOutcome: NoOfferFilterPositionShape,
+  questionHandle: makeHandleShape('Question'),
+  counterInstance: InstanceShape,
+});
 
 // keys are parameter names, values are proposed values
 export const ParamChangesSpecShape = M.recordOf(M.string(), M.any());
@@ -79,6 +91,19 @@ export const ParamChangesQuestionSpecShape = harden({
   tieOutcome: NoParamChangesPositionShape,
 });
 
+export const ParamChangesQuestionDetailsShape = harden({
+  method: 'unranked',
+  issue: ParamChangesIssueShape,
+  positions: ParamChangesPositionsShape,
+  electionType: 'param_change',
+  maxChoices: M.eq(1),
+  closingRule: ClosingRuleShape,
+  quorumRule: 'majority',
+  tieOutcome: NoParamChangesPositionShape,
+  questionHandle: makeHandleShape('Question'),
+  counterInstance: InstanceShape,
+});
+
 const ApiInvocationSpecShape = harden({
   apiMethodName: M.string(),
   methodArgs: M.arrayOf(M.any()),
@@ -101,6 +126,18 @@ export const ApiInvocationQuestionSpecShape = harden({
   quorumRule: QuorumRuleShape,
   tieOutcome: NoApiInvocationPositionShape,
 });
+export const ApiInvocationQuestionDetailsShape = harden({
+  method: 'unranked',
+  issue: ApiInvocationSpecShape,
+  positions: ApiInvocationPositionsShape,
+  electionType: 'api_invocation',
+  maxChoices: M.eq(1),
+  closingRule: ClosingRuleShape,
+  quorumRule: QuorumRuleShape,
+  tieOutcome: NoApiInvocationPositionShape,
+  questionHandle: makeHandleShape('Question'),
+  counterInstance: InstanceShape,
+});
 
 const SimpleSpecShape = harden({
   text: M.string(),
@@ -122,6 +159,18 @@ export const SimpleQuestionSpecShape = harden({
   quorumRule: QuorumRuleShape,
   tieOutcome: NoSimplePositionShape,
 });
+export const SimpleQuestionDetailsShape = harden({
+  method: ChoiceMethodShape,
+  issue: SimpleIssueShape,
+  positions: SimplePositionsShape,
+  electionType: M.or('election', 'survey'),
+  maxChoices: M.gte(1),
+  closingRule: ClosingRuleShape,
+  quorumRule: QuorumRuleShape,
+  tieOutcome: NoSimplePositionShape,
+  questionHandle: makeHandleShape('Question'),
+  counterInstance: InstanceShape,
+});
 
 export const SimplePositionsShapeA = [
   harden({ text: 'yes' }),
@@ -139,3 +188,91 @@ export const QuestionSpecShape = M.or(
   ParamChangesQuestionSpecShape,
   SimpleQuestionSpecShape,
 );
+
+export const PositionShape = M.or(
+  YesApiInvocationPositionShape,
+  NoApiInvocationPositionShape,
+  YesOfferFilterPositionShape,
+  NoOfferFilterPositionShape,
+  YesSimplePositionShape,
+  NoSimplePositionShape,
+  YesParamChangesPositionShape,
+  NoParamChangesPositionShape,
+);
+
+export const QuestionHandleShape = makeHandleShape('question');
+
+// TODO(hibbert): add details; move to a more appropriate location
+export const SubscriberShape = M.remotable('Subscriber');
+export const InvitationShape = M.remotable('Invitation');
+
+// XXX I want to add questionHandle and counterInstance to
+// ParamChangesQuestionSpecShape. I don't see any alternative to adding the
+// methods to each member separately
+export const QuestionDetailsShape = M.or(
+  ParamChangesQuestionDetailsShape,
+  ApiInvocationQuestionDetailsShape,
+  OfferFilterQuestionDetailsShape,
+  SimpleQuestionDetailsShape,
+);
+
+export const CommitteePublicI = M.interface('Committee PublicFacet', {
+  getQuestionSubscriber: M.call().returns(SubscriberShape),
+  getOpenQuestions: M.call().returns(M.promise()),
+  getName: M.call().returns(M.string()),
+  getInstance: M.call().returns(InstanceShape),
+  getQuestion: M.call(QuestionHandleShape).returns(M.promise()),
+});
+
+export const CommitteeAdminI = M.interface('Committee AdminFacet', {
+  getPoserInvitation: M.call().returns(M.promise()),
+  addQuestion: M.call(InstanceShape, QuestionSpecShape).returns(M.promise()),
+  getVoterInvitations: M.call().returns(M.arrayOf(M.promise())),
+  getQuestionSubscriber: M.call().returns(SubscriberShape),
+  getPublicFacet: M.call().returns(CommitteePublicI),
+});
+
+export const CommitteeIKit = harden({
+  publicFacet: CommitteePublicI,
+  creatorFacet: CommitteeAdminI,
+});
+
+export const QuestionStatsShape = harden({
+  spoiled: M.nat(),
+  votes: M.nat(),
+  results: M.arrayOf({ position: PositionShape, total: M.nat() }),
+});
+
+export const BinaryVoteCounterPublicI = M.interface(
+  'BinaryVoteCounter PublicFacet',
+  {
+    getQuestion: M.call().returns(QuestionSpecShape),
+    isOpen: M.call().returns(M.boolean()),
+    getOutcome: M.call().returns(M.eref(PositionShape)),
+    getStats: M.call().returns(QuestionStatsShape),
+    getDetails: M.call().returns(QuestionDetailsShape),
+  },
+);
+
+export const VoterHandle = M.remotable();
+export const BinaryVoteCounterAdminI = M.interface(
+  'BinaryVoteCounter AdminFacet',
+  {
+    submitVote: M.call(VoterHandle, M.arrayOf(PositionShape))
+      .optional(M.nat)
+      .returns(),
+  },
+);
+
+export const BinaryVoteCounterCloseI = M.interface(
+  'BinaryVoteCounter CloseFacet',
+  {
+    closeVoting: M.call().returns(),
+  },
+);
+
+export const BinaryVoteCounterIKit = harden({
+  BinaryVoteCounterPublicI,
+  BinaryVoteCounterAdminI,
+  BinaryVoteCounterCloseI,
+});

@@ -10,7 +10,7 @@ import {
   ElectionType,
   QuorumRule,
 } from '../question.js';
-import { ParamChangesQuestionSpecShape } from '../typeGuards.js';
+import { ParamChangesQuestionDetailsShape } from '../typeGuards.js';
 
 const { details: X } = assert;
 
@@ -43,7 +43,7 @@ const makeParamChangePositions = changes => {
  * @param {QuestionSpec<ParamChangeIssue<unknown>>} questionSpec
  */
 const assertBallotConcernsParam = (paramSpec, questionSpec) => {
-  fit(questionSpec, ParamChangesQuestionSpecShape);
+  fit(questionSpec, ParamChangesQuestionDetailsShape);
 
   const { parameterName, paramPath } = paramSpec;
   const { issue } = questionSpec;
