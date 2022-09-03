@@ -10,8 +10,12 @@ import {
   floorMultiplyBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
-import { handleParamGovernance, ParamTypes } from '@agoric/governance';
-import { provide, M, vivifyFarInstance } from '@agoric/vat-data';
+import {
+  handleParamGovernance,
+  ParamTypes,
+  publicMixinAPI,
+} from '@agoric/governance';
+import { M, provide, vivifyFarInstance } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
 
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
@@ -73,8 +77,9 @@ const stageTransfer = (from, to, txFrom, txTo = txFrom) => {
  * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation, storageNode: StorageNode, marshaller: Marshaller}} privateArgs
  * @param {Baggage} baggage
  */
-export const start = async (zcf, privateArgs, baggage) => {
+export const vivify = async (zcf, privateArgs, baggage) => {
   const { anchorBrand, anchorPerStable } = zcf.getTerms();
+  console.log('PSM Starting', anchorBrand, anchorPerStable);
 
   const stableMint = await zcf.registerFeeMint(
     'Stable',
@@ -93,23 +98,18 @@ export const start = async (zcf, privateArgs, baggage) => {
   const emptyStable = AmountMath.makeEmpty(stableBrand);
   const emptyAnchor = AmountMath.makeEmpty(anchorBrand);
 
-  const {
-    extendPublicAPI,
-    extendPublicFacet,
-    extendCreatorFacet,
-    makeFarGovernorFacet,
-    params,
-  } = await handleParamGovernance(
-    zcf,
-    privateArgs.initialPoserInvitation,
-    {
-      GiveStableFee: ParamTypes.RATIO,
-      MintLimit: ParamTypes.AMOUNT,
-      WantStableFee: ParamTypes.RATIO,
-    },
-    privateArgs.storageNode,
-    privateArgs.marshaller,
-  );
+  const { publicMixin, creatorMixin, makeFarGovernorFacet, params } =
+    await handleParamGovernance(
+      zcf,
+      privateArgs.initialPoserInvitation,
+      {
+        GiveStableFee: ParamTypes.RATIO,
+        MintLimit: ParamTypes.AMOUNT,
+        WantStableFee: ParamTypes.RATIO,
+      },
+      privateArgs.storageNode,
+      privateArgs.marshaller,
+    );
 
   const provideEmptyZcfSeat = name => {
     return provide(baggage, name, () => zcf.makeEmptySeatKit().zcfSeat);
@@ -253,7 +253,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     getPoolBalance: M.call().returns(anchorAmountShape),
     makeWantStableInvitation: M.call().returns(M.promise()),
     makeGiveStableInvitation: M.call().returns(M.promise()),
-    ...extendPublicAPI,
+    ...publicMixinAPI,
   });
 
   const publicFacet = vivifyFarInstance(
@@ -289,7 +289,7 @@ export const start = async (zcf, privateArgs, baggage) => {
           }),
         );
       },
-      ...extendPublicFacet,
+      ...publicMixin,
     },
   );
 
@@ -300,6 +300,8 @@ export const start = async (zcf, privateArgs, baggage) => {
     stableBrand,
     'Stable',
   );
+
+  // These are internal so they do not yet have defensive programming
   const limitedCreatorFacet = Far('Parity Stability Module', {
     getRewardAllocation() {
       return feePool.getCurrentAllocation();
@@ -307,7 +309,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     makeCollectFeesInvitation() {
       return makeCollectFeesInvitation();
     },
-    ...extendCreatorFacet,
+    ...creatorMixin,
   });
 
   const governorFacet = makeFarGovernorFacet(limitedCreatorFacet);
