@@ -22,8 +22,8 @@ import { Far } from '@endo/far';
  *
  * @typedef {object} BridgeManager The object to manage this bridge
  * @property {(dstID: string, obj: any) => any} toBridge
- * @property {(srcID: string, handler: BridgeHandler) => void} register
- * @property {(srcID: string, handler: BridgeHandler) => void} unregister
+ * @property {(srcID: string, handler: ERef<BridgeHandler>) => void} register
+ * @property {(srcID: string, handler: ERef<BridgeHandler>) => void} unregister
  */
 
 /**
@@ -36,7 +36,7 @@ import { Far } from '@endo/far';
  */
 export function makeBridgeManager(E, D, bridgeDevice) {
   /**
-   * @type {Store<string, BridgeHandler>}
+   * @type {Store<string, ERef<BridgeHandler>>}
    */
   const srcHandlers = makeStore('srcID');
 

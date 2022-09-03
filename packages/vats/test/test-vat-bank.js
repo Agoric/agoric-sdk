@@ -22,7 +22,7 @@ test('communication', async t => {
   t.plan(38);
   const bankVat = E(buildRootObject)();
 
-  /** @type {undefined | { fromBridge: (srcID: string, obj: any) => void }} */
+  /** @type {undefined | ERef<{ fromBridge: (srcID: string, obj: any) => void }>} */
   let bankHandler;
 
   /** @type {import('../src/bridge').BridgeManager} */
