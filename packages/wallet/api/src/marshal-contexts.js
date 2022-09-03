@@ -104,6 +104,7 @@ const initSlotVal = (table, slot, val) => {
 
 /**
  * Make context for exporting wallet data where brands etc. can be recognized by boardId.
+ * Export for use outside the smart wallet.
  *
  * When serializing wallet state for, there's a tension between
  *
@@ -235,7 +236,7 @@ const defaultMakePresence = iface => {
 };
 
 /**
- * Make context for unserializing wallet or board data.
+ * Make context for marshalling wallet or board data. To be imported into the client, which never makes objects.
  *
  * @param {(iface: string) => unknown} [makePresence]
  */

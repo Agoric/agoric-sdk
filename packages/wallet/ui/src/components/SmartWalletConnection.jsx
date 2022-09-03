@@ -83,6 +83,7 @@ const SmartWalletConnection = ({
         leader,
         { unserializer: context.fromMyWallet },
       );
+      // TODO try making a smart-wallet version of this
       const bridge = makeWalletBridgeFromFollower(
         follower,
         leader,
