@@ -239,7 +239,6 @@ async function makePsmDriver(t, customTerms) {
     async getFeePayout() {
       const limitedCreatorFacet = E(creatorFacet).getLimitedCreatorFacet();
       const collectFeesSeat = await E(zoe).offer(
-        // @ts-expect-error ts doesn't know what it knows about makeCollectFeesInvitation()
         E(limitedCreatorFacet).makeCollectFeesInvitation(),
       );
       await E(collectFeesSeat).getOfferResult();
