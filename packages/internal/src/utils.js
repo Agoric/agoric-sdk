@@ -199,7 +199,7 @@ harden(bindAllMethods);
  * A more constrained version of {deeplyFulfilled} for type safety until https://github.com/endojs/endo/issues/1257
  * Useful in starting contracts that need all terms to be fulfilled in order to be durable.
  *
- * @type {<T extends {}>(unfulfilledTerms: T) => DeeplyAwaited<T>}
+ * @type {<T extends {}>(unfulfilledTerms: T) => import('@endo/eventual-send').ERef<DeeplyAwaited<T>>}
  */
 export const deeplyFulfilledObject = obj => {
   assert(isObject(obj), 'param must be an object');

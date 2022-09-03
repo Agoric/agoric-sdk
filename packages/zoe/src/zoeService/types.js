@@ -181,14 +181,40 @@
  */
 
 /**
+ * Zoe uses seats to access or manipulate offers. They let contracts and users
+ * interact with them. Zoe has two kinds of seats. ZCFSeats are used within
+ * contracts and with zcf methods. UserSeats represent offers external to Zoe
+ * and the contract. The party who exercises an invitation and sends the offer()
+ * message to Zoe gets a UserSeat that can check payouts' status or retrieve the
+ * result of processing the offer in the contract. This varies, but examples are
+ * a string and an invitation for another seat.
+ *
+ * Also, a UserSeat can be handed to an agent outside Zoe and the contract,
+ * letting them query or monitor the current state, access the payouts and
+ * result, and, if it's allowed for this seat, call tryExit().
+ *
+ * Since anyone can attempt to exit the seat if they have a reference to it, you
+ * should only share a UserSeat with trusted parties.
+ *
+ * UserSeat includes queries for the associated offer's current state and an
+ * operation to request that the offer exit, as follows:
+ *
+ * @link {https://docs.agoric.com/zoe/api/zoe.html#userseat-object}
  * @template {object} [OR=unknown]
  * @typedef {object} UserSeat
  * @property {() => Promise<ProposalRecord>} getProposal
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
  * @property {(keyword: Keyword) => Promise<Payment>} getPayout
  * @property {() => Promise<OR>} getOfferResult
- * @property {() => void=} tryExit
+ * @property {() => void} [tryExit]
+ * Note: Only works if the seat's `proposal` has an `OnDemand` `exit` clause. Zoe's
+ * offer-safety guarantee applies no matter how a seat's interaction with a
+ * contract ends. Under normal circumstances, the participant might be able to
+ * call `tryExit()`, or the contract might do something explicitly. On exiting,
+ * the seat holder gets its current `allocation` and the `seat` can no longer
+ * interact with the contract.
  * @property {() => Promise<boolean>} hasExited
+ * Returns true if the seat has exited, false if it is still active.
  * @property {() => Promise<0|1>} numWantsSatisfied
  *
  * @property {() => Promise<Allocation>} getCurrentAllocationJig

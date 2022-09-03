@@ -149,7 +149,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   /**
    * @param {ZCFSeat} seat
    * @param {Amount<'nat'>} given
-   * @param {Amount<'nat'>} [wanted]
+   * @param {Amount<'nat'>} [wanted] defaults to maximum anchor (given exchange rate minus fees)
    */
   const giveStable = (seat, given, wanted = emptyAnchor) => {
     const fee = ceilMultiplyBy(given, params.getGiveStableFee());
@@ -157,7 +157,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     const maxAnchor = floorMultiplyBy(afterFee, anchorPerStable);
     assert(
       AmountMath.isGTE(maxAnchor, wanted),
-      X`wanted ${wanted} is more then ${given} minus fees ${fee}`,
+      X`wanted ${wanted} is more than ${given} minus fees ${fee}`,
     );
     try {
       stageTransfer(seat, stage, { In: afterFee }, { Stable: afterFee });

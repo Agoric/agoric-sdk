@@ -11,6 +11,7 @@ export function buildRootObject(vatPowers) {
    */
   function makeBridgedChainStorageRoot(bridge, bridgeId, rootPath, options) {
     const { D } = vatPowers;
+    assert(D, `D missing in vatPowers ${Object.keys(vatPowers)}`);
     // Note that the uniqueness of rootPath is not validated here,
     // and is instead the responsibility of callers.
     const toStorage = message => D(bridge).callOutbound(bridgeId, message);

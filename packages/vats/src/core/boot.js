@@ -35,7 +35,8 @@ const roleToBehaviors = harden({
  * Build root object of the bootstrap vat.
  *
  * @param {{
- *   D: DProxy
+ *   D: DProxy,
+ *   logger: (msg) => void,
  * }} vatPowers
  * @param {{
  *   argv: { ROLE: string },
@@ -44,7 +45,6 @@ const roleToBehaviors = harden({
  * }} vatParameters
  */
 const buildRootObject = (vatPowers, vatParameters) => {
-  // @ts-expect-error no TS defs for rickety test scaffolding
   const log = vatPowers.logger || console.info;
   const { produce, consume } = makePromiseSpace(log);
   const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(log);

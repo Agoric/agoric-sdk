@@ -10,6 +10,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava",
     "test:xs": "yarn test:xs-unit && yarn test:xs-worker",
     "test:xs-unit": "ava-xs",
     "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 'test/swingsetTests/**/test-*.js'",
