@@ -55,6 +55,7 @@ const makeTestContext = async () => {
 
   const marshaller = makeBoard().getReadonlyMarshaller();
 
+  const storageRoot = makeMockChainStorageRoot();
   const { creatorFacet: committeeCreator } = await E(zoe).startInstance(
     committeeInstall,
     harden({}),
@@ -63,7 +64,7 @@ const makeTestContext = async () => {
       committeeSize: 1,
     },
     {
-      storageNode: makeMockChainStorageRoot().makeChildNode('thisCommittee'),
+      storageNode: storageRoot.makeChildNode('thisCommittee'),
       marshaller,
     },
   );
@@ -75,8 +76,10 @@ const makeTestContext = async () => {
 
   return {
     bundles: { psmBundle },
+    storageRoot,
     zoe: await zoe,
     feeMintAccess: await feeMintAccess,
+    committeeCreator,
     initialPoserInvitation,
     minted: { issuer: mintedIssuer, brand: mintedBrand },
     anchor,
@@ -116,7 +119,7 @@ test.before(async t => {
 
 /** @param {Awaited<ReturnType<typeof makeTestContext>>} context */
 const tools = context => {
-  const { zoe, anchor, installs } = context;
+  const { zoe, anchor, installs, storageRoot } = context;
   // @ts-expect-error missing mint
   const minted = withAmountUtils(context.minted);
   const makeBank = () => {
@@ -143,7 +146,7 @@ const tools = context => {
   const { assetPublication, bank: poolBank } = makeBank();
 
   // Each driver needs its own to avoid state pollution between tests
-  const mockChainStorage = makeMockChainStorageRoot();
+  context.mockChainStorage = makeMockChainStorageRoot();
   const { feeMintAccess, initialPoserInvitation } = context;
   const startPSM = name => {
     return E(zoe).startInstance(
@@ -153,7 +156,7 @@ const tools = context => {
       {
         feeMintAccess,
         initialPoserInvitation,
-        storageNode: mockChainStorage.makeChildNode(name),
+        storageNode: storageRoot.makeChildNode(name),
         marshaller: makeBoard().getReadonlyMarshaller(),
       },
     );
@@ -172,7 +175,7 @@ const tools = context => {
 };
 
 test('provisionPool trades provided assets for IST', async t => {
-  const { zoe, anchor, installs } = t.context;
+  const { zoe, anchor, installs, storageRoot, committeeCreator } = t.context;
 
   const { minted, poolBank, startPSM, publishAnchorAsset } = tools(t.context);
 
@@ -183,18 +186,43 @@ test('provisionPool trades provided assets for IST', async t => {
     await E(anchor.mint).mintPayment(anchor.make(scale6(100))),
   );
 
+  const initialPoserInvitation = await E(committeeCreator).getPoserInvitation();
+  const invitationAmount = await E(E(zoe).getInvitationIssuer()).getAmountOf(
+    initialPoserInvitation,
+  );
+
+  const govTerms = {
+    initialPoserInvitation,
+    governedParams: {
+      [CONTRACT_ELECTORATE]: {
+        type: ParamTypes.INVITATION,
+        value: invitationAmount,
+      },
+      PerAccountInitialAmount: {
+        type: ParamTypes.AMOUNT,
+        value: minted.make(scale6(0.25)),
+      },
+    },
+  };
   t.log('startInstance(provisionPool)');
-  const perAccountInitialAmount = minted.make(scale6(0.25));
   const facets = await E(zoe).startInstance(
     installs.provisionPool,
     {},
-    { perAccountInitialAmount },
-    { poolBank },
+    govTerms,
+    {
+      poolBank,
+      initialPoserInvitation,
+      storageNode: storageRoot.makeChildNode('provisionPool'),
+      marshaller: makeBoard().getReadonlyMarshaller(),
+    },
   );
 
   t.log('introduce PSM instance to provisionPool');
   const psm = await startPSM('IST-AUSD');
-  await E(facets.creatorFacet).initPSM(anchor.brand, psm.instance);
+  await E(E(facets.creatorFacet).getLimitedCreatorFacet()).initPSM(
+    anchor.brand,
+    psm.instance,
+  );
 
   t.log('publish anchor asset to initiate trading');
   await publishAnchorAsset();
