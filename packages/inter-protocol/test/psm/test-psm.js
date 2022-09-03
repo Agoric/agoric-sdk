@@ -39,10 +39,12 @@ const dirname = path.dirname(pathname);
 const psmRoot = `${dirname}/../../src/psm/psm.js`;
 const trace = makeTracer('TestPSM', false);
 
+const scale6 = x => BigInt(Math.round(x * 1_000_000));
+
 const BASIS_POINTS = 10000n;
 const WantStableFeeBP = 1n;
 const GiveStableFeeBP = 3n;
-const MINT_LIMIT = 20_000_000n * 1_000_000n;
+const MINT_LIMIT = scale6(20_000_000);
 
 /**
  * Compute the fee for giving an Amount in stable.
@@ -170,7 +172,7 @@ async function makePsmDriver(t, customTerms) {
   // Each driver needs its own to avoid state pollution between tests
   const mockChainStorage = makeMockChainStorageRoot();
 
-  /** @type {Awaited<ReturnType<import('../../src/psm/psm.js').start>>} */
+  /** @type {Awaited<ReturnType<import('../../src/psm/psm.js').vivify>>} */
   const { creatorFacet, publicFacet } = await E(zoe).startInstance(
     psmInstall,
     harden({ AUSD: anchor.issuer }),
@@ -275,7 +277,7 @@ test('simple trades', async t => {
   const { terms, stable, anchor } = t.context;
   const driver = await makePsmDriver(t);
 
-  const giveAnchor = AmountMath.make(anchor.brand, 200n * 1_000_000n);
+  const giveAnchor = AmountMath.make(anchor.brand, scale6(200));
 
   const runPayouts = await driver.swapAnchorForStable(giveAnchor);
   const expectedRun = minusAnchorFee(giveAnchor, terms.anchorPerStable);
@@ -283,7 +285,7 @@ test('simple trades', async t => {
   t.deepEqual(actualRun, expectedRun);
   await driver.assertPoolBalance(giveAnchor);
 
-  const giveRun = AmountMath.make(stable.brand, 100n * 1_000_000n);
+  const giveRun = AmountMath.make(stable.brand, scale6(100));
   trace('get stable', { giveRun, expectedRun, actualRun });
   const [runPayment, _moreRun] = await E(stable.issuer).split(
     runPayouts.Out,
@@ -358,7 +360,7 @@ test('mix of trades: failures do not prevent later service', async t => {
   } = t.context;
   const driver = await makePsmDriver(t);
 
-  const ist100 = await mintRunPayment(500n * 1_000_000n, {
+  const ist100 = await mintRunPayment(scale6(500), {
     centralSupply,
     feeMintAccess,
     zoe,
@@ -368,8 +370,6 @@ test('mix of trades: failures do not prevent later service', async t => {
   const anchorPurse = await E(anchor.issuer).makeEmptyPurse();
   const stablePurse = await E(stable.issuer).makeEmptyPurse();
   await E(stablePurse).deposit(ist100);
-
-  const scale6 = x => BigInt(Math.round(x * 1_000_000));
 
   const wantStable = async (ix, give, want, ok, wants) => {
     t.log('wantStable', ix, give, want, ok, wants);
@@ -446,7 +446,7 @@ test('anchor is 2x stable', async t => {
   const anchorPerStable = makeRatio(200n, anchor.brand, 100n, stable.brand);
   const driver = await makePsmDriver(t, { anchorPerStable });
 
-  const giveAnchor = AmountMath.make(anchor.brand, 400n * 1_000_000n);
+  const giveAnchor = AmountMath.make(anchor.brand, scale6(400));
   const runPayouts = await driver.swapAnchorForStable(giveAnchor);
 
   const expectedRun = minusAnchorFee(giveAnchor, anchorPerStable);
@@ -455,7 +455,7 @@ test('anchor is 2x stable', async t => {
 
   driver.assertPoolBalance(giveAnchor);
 
-  const giveRun = AmountMath.make(stable.brand, 100n * 1_000_000n);
+  const giveRun = AmountMath.make(stable.brand, scale6(100));
   trace('get stable ratio', { giveRun, expectedRun, actualRun });
   const [runPayment, _moreRun] = await E(stable.issuer).split(
     runPayouts.Out,
@@ -518,7 +518,7 @@ test('metrics', async t => {
       value: 0n,
     },
   });
-  const giveAnchor = anchor.make(200n * 1_000_000n);
+  const giveAnchor = anchor.make(scale6(200));
 
   // grow the pool
   const stablePayouts = await driver.swapAnchorForStable(giveAnchor);
@@ -551,7 +551,7 @@ test('metrics', async t => {
   });
 
   // get anchor
-  const giveStable = AmountMath.make(stable.brand, 100n * 1_000_000n);
+  const giveStable = AmountMath.make(stable.brand, scale6(100));
   const [runPayment, _moreRun] = await E(stable.issuer).split(
     stablePayouts.Out,
     giveStable,
@@ -572,10 +572,10 @@ test('metrics', async t => {
   });
 });
 
-test('wrong give giveStableInvitaion', async t => {
+test('wrong give giveStableInvitation', async t => {
   const { zoe, anchor } = t.context;
   const { publicFacet } = await makePsmDriver(t);
-  const giveAnchor = AmountMath.make(anchor.brand, 200n * 1_000_000n);
+  const giveAnchor = AmountMath.make(anchor.brand, scale6(200));
   await t.throwsAsync(
     () =>
       E(zoe).offer(
@@ -586,6 +586,58 @@ test('wrong give giveStableInvitaion', async t => {
     {
       message:
         'proposal: required-parts: give: In: brand: "[Alleged: aUSD brand]" - Must be: "[Alleged: IST brand]"',
+    },
+  );
+});
+
+test('wrong give wantStableInvitation', async t => {
+  const {
+    stable,
+    feeMintAccess,
+    zoe,
+    installs: { centralSupply },
+  } = t.context;
+  const { publicFacet } = await makePsmDriver(t);
+  console.log('publicFacet', publicFacet);
+  const istValue = scale6(100);
+  const giveIST = AmountMath.make(stable.brand, istValue);
+  const istPayment = await mintRunPayment(istValue, {
+    centralSupply,
+    feeMintAccess,
+    zoe,
+  });
+  await t.throwsAsync(
+    () =>
+      E(zoe).offer(
+        E(publicFacet).makeWantStableInvitation(),
+        harden({ give: { In: giveIST } }),
+        harden({ In: istPayment }),
+      ),
+    {
+      message:
+        'proposal: required-parts: give: In: brand: "[Alleged: IST brand]" - Must be: "[Alleged: aUSD brand]"',
+    },
+  );
+});
+
+test('extra give wantStableInvitation', async t => {
+  const { zoe, anchor } = t.context;
+  const { publicFacet } = await makePsmDriver(t);
+  const giveAnchor = AmountMath.make(anchor.brand, scale6(200));
+  const mint = NonNullish(anchor.mint);
+  await t.throwsAsync(
+    () =>
+      E(zoe).offer(
+        E(publicFacet).makeWantStableInvitation(),
+        harden({ give: { In: giveAnchor, Extra: giveAnchor } }),
+        harden({
+          In: mint.mintPayment(giveAnchor),
+          Extra: mint.mintPayment(giveAnchor),
+        }),
+      ),
+    {
+      message:
+        'proposal: required-parts: give: {"Extra":{"brand":"[Alleged: aUSD brand]","value":"[200000000n]"},"In":{"brand":"[Seen]","value":"[200000000n]"}} - Must not have unexpected properties: ["Extra"]',
     },
   );
 });
