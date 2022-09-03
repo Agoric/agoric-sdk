@@ -88,11 +88,11 @@ const isAwaitArgGuard = argGuard =>
 
 /**
  * It takes a method guard and returns an object with two properties:
- * 
+ *
  * - `awaitIndexes`: an array of indexes of the arguments that are awaited
  * - `rawMethodGuard`: a method guard with the awaited arguments replaced with their non-awaited
  * versions
- * 
+ *
  * The first thing we do is assert that the rest argument is not awaited. This is because we don't
  * support awaiting rest arguments
  * @returns An object with two properties:
