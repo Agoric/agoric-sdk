@@ -55,12 +55,14 @@ export {
   matches,
   fit,
 } from './patterns/patternMatchers.js';
+
 export {
   defendPrototype,
   initEmpty,
   defineHeapFarClass,
   defineHeapFarClassKit,
 } from './patterns/interface-tools.js';
+
 export { compareRank, isRankSorted, sortByRank } from './patterns/rankOrder.js';
 export {
   makeDecodePassable,
