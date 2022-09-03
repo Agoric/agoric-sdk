@@ -4,7 +4,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import {
   defineHeapFarClass,
   defineHeapFarClassKit,
-  defineHeapFarInstance,
+  makeHeapFarInstance,
 } from '../src/patterns/interface-tools.js';
 import { M } from '../src/patterns/patternMatchers.js';
 
@@ -87,9 +87,9 @@ test('test defineHeapFarClassKit', t => {
   });
 });
 
-test('test defineHeapFarInstance', t => {
+test('test makeHeapFarInstance', t => {
   let x = 3;
-  const upCounter = defineHeapFarInstance('upCounter', UpCounterI, {
+  const upCounter = makeHeapFarInstance('upCounter', UpCounterI, {
     incr(y = 1) {
       x += y;
       return x;

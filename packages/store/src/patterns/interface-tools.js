@@ -377,7 +377,7 @@ harden(defineHeapFarClassKit);
  * @param {object} [options]
  * @returns {T & RemotableBrand<{}, T>}
  */
-export const defineHeapFarInstance = (
+export const makeHeapFarInstance = (
   tag,
   interfaceGuard,
   methods,
@@ -392,4 +392,4 @@ export const defineHeapFarInstance = (
   );
   return makeInstance();
 };
-harden(defineHeapFarInstance);
+harden(makeHeapFarInstance);

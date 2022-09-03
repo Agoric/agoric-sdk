@@ -117,3 +117,5 @@ test('test vivifyFarInstance', t => {
       'In "incr" method of (upCounter) arg 0: string "foo" - Must be a number',
   });
 });
+
+test.todo('Demonstrate that the baggage can be used to revive objects.');
