@@ -230,7 +230,7 @@ export const makeAddressNameHubs = async ({
   produce.namesByAddressAdmin.resolve(namesByAddressAdmin);
 
   const perAddress = address => {
-    const myAddressNameAdmin = makeMyAddressNameAdmin(address);
+    const { myAddressNameAdmin } = makeMyAddressNameAdmin(address);
     return { agoricNames, namesByAddress, myAddressNameAdmin };
   };
 
