@@ -14,6 +14,7 @@
   },
   "devDependencies": {
     "ava": "^4.3.1",
+    "@agoric/cosmic-swingset": "^0.37.0",
     "@agoric/inter-protocol": "^0.11.0",
     "@agoric/swingset-vat": "^0.28.0",
     "@agoric/zoe": "^0.24.0",
@@ -26,6 +27,7 @@
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.4.0",
     "@agoric/store": "^0.7.2",
+    "@agoric/wallet-backend": "^0.12.1",
     "@agoric/vat-data": "^0.3.1",
     "@agoric/vats": "^0.10.0",
     "@endo/far": "^0.2.9"

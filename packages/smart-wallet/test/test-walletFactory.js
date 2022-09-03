@@ -1,0 +1,112 @@
+/* eslint-disable no-await-in-loop */
+// @ts-check
+
+import * as BRIDGE_ID from '@agoric/vats/src/bridge-ids.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import '@agoric/vats/src/core/types.js';
+
+import { makeImportContext } from '@agoric/wallet-backend/src/marshal-contexts.js';
+import { E } from '@endo/far';
+import { parseActionStr, stringifyAction } from '../src/walletFactory.js';
+import { makeDefaultTestContext } from './contexts.js';
+import {
+  ActionType,
+  currentState,
+  makeMockTestSpace,
+  subscriptionKey,
+} from './supports.js';
+
+/** @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>>} */
+const test = anyTest;
+
+const mockAddress1 = 'mockAddress1';
+const mockAddress2 = 'mockAddress2';
+const mockAddress3 = 'mockAddress3';
+
+test.before(async t => {
+  t.context = await makeDefaultTestContext(t, makeMockTestSpace);
+});
+
+test('bridge', async t => {
+  const smartWallet = await t.context.simpleProvideWallet(mockAddress1);
+  const feeds = await E(smartWallet).getDataFeeds();
+  t.truthy(feeds.offers.subscriber);
+
+  const offersHead = () => currentState(feeds.offers.subscriber);
+
+  const ctx = makeImportContext();
+
+  // fund the wallet with anchor
+
+  /** @type {import('../src/offers.js').OfferSpec} */
+  const offerSpec = {
+    id: 1,
+    invitationSpec: {
+      source: 'purse',
+      description: 'bogus',
+      // @ts-expect-error invalid offer for error
+      instance: null,
+    },
+    proposal: {},
+  };
+
+  assert(t.context.sendToBridge);
+  const res = await t.context.sendToBridge(BRIDGE_ID.WALLET, {
+    type: ActionType.WALLET_ACTION,
+    owner: mockAddress1,
+    action: stringifyAction({
+      target: 'offers',
+      method: 'executeOffer',
+      arg: ctx.fromBoard.serialize(harden(offerSpec)),
+    }),
+  });
+  t.is(res, undefined);
+
+  t.deepEqual(await offersHead(), {
+    ...offerSpec,
+    state: 'error',
+  });
+});
+
+test('notifiers', async t => {
+  async function checkAddress(address) {
+    const smartWallet = await t.context.simpleProvideWallet(address);
+
+    const feeds = await E(smartWallet).getDataFeeds();
+
+    for (const [key, feed] of Object.entries(feeds)) {
+      t.is(
+        // @ts-expect-error faulty typedef
+        await subscriptionKey(feed.subscriber),
+        `mockChainStorageRoot.wallet.${address}.${key}`,
+      );
+    }
+  }
+
+  await Promise.all(
+    [mockAddress1, mockAddress2, mockAddress3].map(checkAddress),
+  );
+});
+
+test.todo(
+  'exit an active offer',
+  // scenario: committee decided the anchor is junk
+  // pause the PSM trading such that there is time to exit before offer resolves
+  // executeOffer to buy the junk (which can't resolve)
+  // exit the offer "oh I don't want to buy junk!"
+);
+
+test('wallet action encoding', t => {
+  const action = /** @type {const} */ ({
+    target: 'offers',
+    method: 'executeOffer',
+    arg: {
+      body: 'bogus',
+      slots: ['foo'],
+    },
+  });
+  // @ts-expect-error CapData type should be readonly slots
+  const str = stringifyAction(action);
+  t.deepEqual(parseActionStr(str), action);
+});
