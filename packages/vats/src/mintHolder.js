@@ -1,7 +1,7 @@
 // @ts-check
 // @jessie-check
 
-import { makeIssuerKit } from '@agoric/ertp';
+import { makeDurableIssuerKit } from '@agoric/ertp';
 
 /**
  * This contract holds one mint; it basically wraps
@@ -14,15 +14,22 @@ import { makeIssuerKit } from '@agoric/ertp';
  *   assetKind: K,
  *   displayInfo: DisplayInfo,
  * }>} zcf
+ * @param {unknown} _privateArgs
+ * @param {import('@agoric/vat-data').Baggage} instanceBaggage
  */
-export const start = zcf => {
+export const vivify = (zcf, _privateArgs, instanceBaggage) => {
   const { keyword, assetKind, displayInfo } = zcf.getTerms();
 
-  const { mint, issuer } = makeIssuerKit(keyword, assetKind, displayInfo);
+  const { mint, issuer } = makeDurableIssuerKit(
+    instanceBaggage,
+    keyword,
+    assetKind,
+    displayInfo,
+  );
 
   return {
     publicFacet: issuer,
     creatorFacet: mint,
   };
 };
-harden(start);
+harden(vivify);

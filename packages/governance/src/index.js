@@ -17,7 +17,7 @@ export {
   validateQuestionFromCounter,
 } from './contractGovernor.js';
 
-export { handleParamGovernance } from './contractHelper.js';
+export { handleParamGovernance, publicMixinAPI } from './contractHelper.js';
 
 export {
   assertBallotConcernsParam,
