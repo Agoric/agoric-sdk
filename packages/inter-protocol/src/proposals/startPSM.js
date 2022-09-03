@@ -167,6 +167,7 @@ export const makeAnchorAsset = async (
     installation: {
       consume: { mintHolder },
     },
+    produce: { testFirstAnchorKit },
   },
   { options: { anchorOptions = {} } = {} },
 ) => {
@@ -200,6 +201,9 @@ export const makeAnchorAsset = async (
 
   const brand = await E(issuer).getBrand();
   const kit = { mint, issuer, brand };
+
+  testFirstAnchorKit.resolve(kit);
+
   return Promise.all([
     E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(keyword, kit.issuer),
     E(E(agoricNamesAdmin).lookupAdmin('brand')).update(keyword, kit.brand),
@@ -248,6 +252,7 @@ export const PSM_MANIFEST = harden({
     brand: {
       produce: { AUSD: true },
     },
+    produce: { testFirstAnchorKit: true },
   },
   [startPSM.name]: {
     consume: {
