@@ -217,10 +217,17 @@
  */
 
 /**
+ * @typedef {object} CompletedBallet
+ * @property {Position} chosen
+ * @property {bigint} shares
+ */
+
+/**
  * @callback SubmitVote
  * @param {Handle<'Voter'>} voterHandle
  * @param {Position[]} chosenPositions
  * @param {bigint=} weight
+ * @returns {CompletedBallet}
  */
 
 /**

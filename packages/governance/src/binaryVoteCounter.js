@@ -92,6 +92,7 @@ const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
     allBallots.has(voterHandle)
       ? allBallots.set(voterHandle, completedBallot)
       : allBallots.init(voterHandle, completedBallot);
+    return completedBallot;
   };
 
   const countVotes = () => {
