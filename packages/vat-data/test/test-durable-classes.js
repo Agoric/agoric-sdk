@@ -65,8 +65,8 @@ interface. */
 test('test defineDurableFarClassKit', t => {
   const counterKindHandle = makeKindHandle('Counter');
 
-  /* Defining a function that will create an object that has the methods defined in the UpCounterI
-interface. */
+  /* Defining a function that will create an object that has the methods defined
+     in the UpCounterI interface. */
   const makeCounterKit = defineDurableFarClassKit(
     counterKindHandle,
     harden({ up: UpCounterI, down: DownCounterI }),
