@@ -10,7 +10,7 @@ const { details: X } = assert;
 
 /**
  * @param {ERef<ZoeService>} zoe
- * @param {Installation<import('@agoric/smart-wallet/src/walletFactory').start>} inst
+ * @param {Installation<import('@agoric/legacy-smart-wallet/src/walletFactory').start>} inst
  * @typedef {Awaited<ReturnType<typeof startFactoryInstance>>} WalletFactoryStartResult
  */
 // eslint-disable-next-line no-unused-vars

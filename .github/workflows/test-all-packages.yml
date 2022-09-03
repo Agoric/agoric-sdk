@@ -109,6 +109,8 @@ jobs:
         run: cd packages/same-structure && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (sharing-service)
         run: cd packages/sharing-service && yarn ${{ steps.vars.outputs.test }}
+      - name: yarn test (smart-wallet)
+        run: cd packages/smart-wallet && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (sparse-ints)
         run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (spawner)
