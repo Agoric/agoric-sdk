@@ -1,7 +1,8 @@
 {
-  "name": "@agoric/smart-wallet",
+  "name": "@agoric/legacy-smart-wallet",
   "version": "0.1.1",
-  "description": "Wallet contract",
+  "description": "Legacy private version of the wallet contract",
+  "private": true,
   "type": "module",
   "scripts": {
     "build": "exit 0",
@@ -46,8 +47,5 @@
       "test/**/test-*.js"
     ],
     "timeout": "2m"
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }
