@@ -55,6 +55,8 @@ export const startWalletFactory = async ({
   /** @type {WalletFactoryStartResult} */
   const x = await E(zoe).startInstance(walletFactory, {}, terms, {
     storageNode,
+    // POLA contract only needs to register for srcId='wallet'
+    // TODO consider a scoped attenuation of this bridge manager to just 'wallet'
     bridgeManager,
   });
   walletFactoryStartResult.resolve(x);
