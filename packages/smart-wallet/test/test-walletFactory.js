@@ -30,10 +30,10 @@ test.before(async t => {
 
 test('bridge', async t => {
   const smartWallet = await t.context.simpleProvideWallet(mockAddress1);
-  const feeds = await E(smartWallet).getDataFeeds();
-  t.truthy(feeds.offers.subscriber);
+  const updates = await E(smartWallet).getUpdatesSubscriber();
+  t.truthy(updates);
 
-  const offersHead = () => currentState(feeds.offers.subscriber);
+  const lastUpdate = () => currentState(updates);
 
   const ctx = makeImportContext();
 
@@ -63,9 +63,11 @@ test('bridge', async t => {
   });
   t.is(res, undefined);
 
-  t.deepEqual(await offersHead(), {
-    ...offerSpec,
-    state: 'error',
+  t.deepEqual(await lastUpdate(), {
+    latestOfferStatus: {
+      ...offerSpec,
+      state: 'error',
+    },
   });
 });
 
@@ -73,15 +75,13 @@ test('notifiers', async t => {
   async function checkAddress(address) {
     const smartWallet = await t.context.simpleProvideWallet(address);
 
-    const feeds = await E(smartWallet).getDataFeeds();
+    const updates = await E(smartWallet).getUpdatesSubscriber();
 
-    for (const [key, feed] of Object.entries(feeds)) {
-      t.is(
-        // @ts-expect-error faulty typedef
-        await subscriptionKey(feed.subscriber),
-        `mockChainStorageRoot.wallet.${address}.${key}`,
-      );
-    }
+    t.is(
+      // @ts-expect-error faulty typedef
+      await subscriptionKey(updates),
+      `mockChainStorageRoot.wallet.${address}`,
+    );
   }
 
   await Promise.all(

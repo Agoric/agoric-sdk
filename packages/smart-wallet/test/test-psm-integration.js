@@ -13,6 +13,7 @@ import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { E } from '@endo/far';
 import { makeDefaultTestContext } from './contexts.js';
 import { currentState } from './supports.js';
+import { coalesceUpdates } from '../src/utils.js';
 
 /**
  * @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>
@@ -48,16 +49,17 @@ test.before(async t => {
   t.context = await makeDefaultTestContext(t, makePsmTestSpace);
 });
 /**
- * @param {import('../src/smartWallet.js').BalancesRecord} balancesRecord
+ * @param {Awaited<ReturnType<typeof coalesceUpdates>>} state
  * @param {Brand<'nat'>} brand
  */
-const purseBalance = (balancesRecord, brand) => {
-  const match = balancesRecord.find(b => b.currentAmount.brand === brand);
+const purseBalance = (state, brand) => {
+  const balances = Array.from(state.balances.values());
+  const match = balances.find(b => b.brand === brand);
   if (!match) {
-    console.debug('pursesRecord', ...balancesRecord);
+    console.debug('balances', ...balances);
     assert.fail(`${brand} not found in record`);
   }
-  return match.currentAmount.value;
+  return match.value;
 };
 
 test('null swap', async t => {
@@ -67,8 +69,8 @@ test('null swap', async t => {
   const minted = await E(agoricNames).lookup('brand', 'IST');
 
   const wallet = await t.context.simpleProvideWallet('agoric1nullswap');
+  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
   const offersFacet = wallet.getOffersFacet();
-  const feeds = await E(wallet).getDataFeeds();
 
   const psmInstance = await E(agoricNames).lookup('instance', 'psm');
 
@@ -96,11 +98,10 @@ test('null swap', async t => {
   await eventLoopIteration();
 
   offersFacet.executeOffer(offerCapData);
-  {
-    const balancesRecord = await currentState(feeds.balances.subscriber);
-    t.is(purseBalance(balancesRecord, anchor.brand), 0n);
-    t.is(purseBalance(balancesRecord, minted), 0n);
-  }
+  await eventLoopIteration();
+
+  t.is(purseBalance(computedState, anchor.brand), 0n);
+  t.is(purseBalance(computedState, minted), 0n);
 
   // success if nothing threw
   t.pass();
@@ -119,12 +120,13 @@ test('want stable', async t => {
   const stableBrand = await E(agoricNames).lookup('brand', Stable.symbol);
 
   const wallet = await t.context.simpleProvideWallet('agoric1wantstable');
+  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+
   const offersFacet = wallet.getOffersFacet();
-  const feeds = await E(wallet).getDataFeeds();
-  {
-    const pursesRecord = await currentState(feeds.balances.subscriber);
-    t.is(purseBalance(pursesRecord, anchor.brand), 0n);
-  }
+  // let promises settle to notify brands and create purses
+  await eventLoopIteration();
+
+  t.is(purseBalance(computedState, anchor.brand), 0n);
 
   t.log('Fund the wallet');
   assert(anchor.mint);
@@ -155,11 +157,9 @@ test('want stable', async t => {
 
   t.log('Execute the swap');
   offersFacet.executeOffer(offerCapData);
-  {
-    const balancesRecord = await currentState(feeds.balances.subscriber);
-    t.is(purseBalance(balancesRecord, anchor.brand), 0n);
-    t.is(purseBalance(balancesRecord, stableBrand), swapSize - 1n);
-  }
+  await eventLoopIteration();
+  t.is(purseBalance(computedState, anchor.brand), 0n);
+  t.is(purseBalance(computedState, stableBrand), swapSize - 1n);
 });
 
 test('govern offerFilter', async t => {
@@ -172,8 +172,8 @@ test('govern offerFilter', async t => {
   } = await E.get(t.context.consume);
 
   const wallet = await t.context.simpleProvideWallet(committeeAddress);
+  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
   const offersFacet = wallet.getOffersFacet();
-  const offersSubscriber = wallet.getDataFeeds().offers.subscriber;
 
   const psmInstance = await E(agoricNames).lookup('instance', 'psm');
 
@@ -254,7 +254,9 @@ test('govern offerFilter', async t => {
   }
 
   t.log('Make sure vote happened');
-  t.like(await currentState(offersSubscriber), {
+  await eventLoopIteration();
+  const status = computedState.offerStatuses[44];
+  t.like(status, {
     id: 44,
     state: 'paid',
     result: { chosen: { strings: ['wantStable'] }, shares: 1n },

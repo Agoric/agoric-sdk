@@ -37,14 +37,20 @@ import {
  *   for each brand.
  */
 
-/** @typedef {Array<BrandDescriptor>} BrandsRecord */
-
 /**
- * @typedef {Array<{ currentAmount: Amount }>} BalancesRecord
+ * @typedef {{ latestOfferStatus: import('./offers.js').OfferStatus } |
+ * { latestBalance: { currentAmount: Amount } } |
+ * { latestBrand: BrandDescriptor }
+ * } UpdateRecord Record of an update to the state of this wallet.
  *
- * Array to support batching updates. The currentAmount key exists to allow disambiguation of what purse
- * the amount is for. We currently only support one purse per brand so the brand in the currentAmount
- * suffices, but this structure allows for forward-compatibility with multiple purses per brand.
+ * Client is responsible for coalescing updates into a current state. See `coalesceUpdates` utility.
+ *
+ * The reason for this burden on the client is that transferring the full state is untenable
+ * (because it would grow monotonically).
+ *
+ * `latestBalance` amount is nested for forward-compatibility with supporting
+ * more than one purse per brand. An additional key will be needed to
+ * disambiguate. For now the brand in the amount suffices.
  */
 
 // TODO remove petname? what will UI show then? look up in agoricNames?
@@ -116,33 +122,16 @@ export const makeSmartWallet = async (
 
   // #region publishing
   // NB: state size must not grow monotonically
-  // wallets subscribe to this node over RPC so provide whatever they need.
+  // This is the node that UIs subscribe to for everything they need.
   // e.g. agoric follow :published.wallet.agoric1nqxg4pye30n3trct0hf7dclcwfxz8au84hr3ht
-  // TODO publish "latest" style keys: `latestOfferStatus`, `latestIssuer`, `latestBalance`.
   const myWalletStorageNode = E(storageNode).makeChildNode(address);
 
-  /** @type {PublishKit<BrandsRecord>} */
-  const brandsPublishKit = makeStoredPublishKit(
-    E(myWalletStorageNode).makeChildNode('brands'),
+  /** @type {StoredPublishKit<UpdateRecord>} */
+  const updatePublishKit = makeStoredPublishKit(
+    myWalletStorageNode,
     marshaller,
   );
 
-  const publishBrands = async () => {
-    const brands = Array.from(brandDescriptors.values());
-    brandsPublishKit.publisher.publish(brands);
-  };
-
-  /** @type {PublishKit<import('./offers.js').OfferStatus>} */
-  const offerPublishKit = makeStoredPublishKit(
-    E(myWalletStorageNode).makeChildNode('offers'),
-    marshaller,
-  );
-
-  /** @type {StoredPublishKit<BalancesRecord>} */
-  const balancesPublishKit = makeStoredPublishKit(
-    E(myWalletStorageNode).makeChildNode('balances'),
-    marshaller,
-  );
   /**
    * @param {Purse} purse
    * @param {Amount} balance
@@ -154,11 +143,9 @@ export const makeSmartWallet = async (
     } else {
       purseBalances.set(purse, balance);
     }
-    balancesPublishKit.publisher.publish(
-      Array.from(purseBalances.values()).map(b => ({
-        currentAmount: b,
-      })),
-    );
+    updatePublishKit.publisher.publish({
+      latestBalance: { currentAmount: balance },
+    });
   };
 
   // #endregion
@@ -196,7 +183,8 @@ export const makeSmartWallet = async (
     // relevant purse. when it's time to make an offer, you know how to make
     // payments. REMEMBER when doing that, need to handle every exception to
     // put the money back in the purse if anything fails.
-    brandDescriptors.init(desc.brand, { ...desc, displayInfo });
+    const fullDesc = { ...desc, displayInfo };
+    brandDescriptors.init(desc.brand, fullDesc);
     brandPurses.init(desc.brand, purse);
 
     // publish purse's balance and changes
@@ -214,7 +202,8 @@ export const makeSmartWallet = async (
       },
     });
 
-    publishBrands();
+    console.log('DEBUG WALLET PUBLISHING BRAND', fullDesc);
+    updatePublishKit.publisher.publish({ latestBrand: fullDesc });
   };
 
   // Ensure a purse for each issuer
@@ -287,7 +276,8 @@ export const makeSmartWallet = async (
     E.get(marshaller).unserialize,
     invitationFromSpec,
     sufficientPayments,
-    offerPublishKit.publisher.publish,
+    offerStatus =>
+      updatePublishKit.publisher.publish({ latestOfferStatus: offerStatus }),
     payouts => depositPaymentsIntoPurses(payouts, brandPurses.get),
     (offerId, invitationMakers) =>
       offerToInvitationMakers.init(offerId, invitationMakers),
@@ -306,17 +296,7 @@ export const makeSmartWallet = async (
     getDepositFacet: () => depositFacet,
     getOffersFacet: () => offersFacet,
 
-    getDataFeeds: () => ({
-      balances: {
-        subscriber: balancesPublishKit.subscriber,
-      },
-      brands: {
-        subscriber: brandsPublishKit.subscriber,
-      },
-      offers: {
-        subscriber: offerPublishKit.subscriber,
-      },
-    }),
+    getUpdatesSubscriber: () => updatePublishKit.subscriber,
   });
 };
 harden(makeSmartWallet);
