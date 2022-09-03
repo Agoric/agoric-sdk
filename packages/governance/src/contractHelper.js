@@ -4,13 +4,29 @@ import { Far } from '@endo/marshal';
 import { makeStoredPublisherKit } from '@agoric/notifier';
 import { getMethodNames, objectMap } from '@agoric/internal';
 import { ignoreContext } from '@agoric/vat-data';
-import { keyEQ } from '@agoric/store';
+import { keyEQ, M } from '@agoric/store';
+import { AmountShape, BrandShape } from '@agoric/ertp';
 import { assertElectorateMatches } from './contractGovernance/paramManager.js';
 import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
 
 const { details: X, quote: q } = assert;
 
 export const GOVERNANCE_STORAGE_KEY = 'governance';
+
+const extendPublicAPI = {
+  getSubscription: M.call().returns(M.remotable('StoredSubscription')),
+  getContractGovernor: M.call().returns(M.remotable('Instance')),
+  getGovernedParams: M.call().returns(M.record()),
+  getAmount: M.call().returns(AmountShape),
+  getBrand: M.call().returns(BrandShape),
+  getInstance: M.call().returns(M.remotable('Instance')),
+  getInstallation: M.call().returns(M.remotable('Installation')),
+  getInvitationAmount: M.call().returns(M.promise()),
+  getNat: M.call().returns(M.bigint()),
+  getRatio: M.call().returns(M.record()),
+  getString: M.call().returns(M.string()),
+  getUnknown: M.call().returns(M.string()),
+};
 
 /**
  * Utility function for `makeParamGovernance`.
@@ -102,12 +118,12 @@ const facetHelpers = (zcf, paramManager) => {
 
   /**
    * @template {{}} CF
-   * @param {CF} originalCreatorFacet
+   * @param {CF} limitedCreatorFacet
+   * @param limitedCreatorFacet
    * @param {{}} [governedApis]
    * @returns {GovernorFacet<CF>}
    */
-  const makeGovernorFacet = (originalCreatorFacet, governedApis = {}) => {
-    const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
+  const makeFarGovernorFacet = (limitedCreatorFacet, governedApis = {}) => {
     const governorFacet = Far('governorFacet', {
       getParamMgrRetriever: () =>
         Far('paramRetriever', { get: () => paramManager }),
@@ -127,6 +143,17 @@ const facetHelpers = (zcf, paramManager) => {
 
     // exclusively for contractGovernor, which only reveals limitedCreatorFacet
     return governorFacet;
+  };
+
+  /**
+   * @template {{}} CF
+   * @param {CF} originalCreatorFacet
+   * @param {{}} [governedApis]
+   * @returns {GovernorFacet<CF>}
+   */
+  const makeGovernorFacet = (originalCreatorFacet, governedApis = {}) => {
+    const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
+    return makeFarGovernorFacet(limitedCreatorFacet, governedApis);
   };
 
   /**
@@ -159,10 +186,19 @@ const facetHelpers = (zcf, paramManager) => {
   };
 
   return harden({
+    extendPublicAPI,
+    extendPublicFacet: {
+      ...commonPublicMethods,
+      ...typedAccessors,
+    },
+    extendCreatorFacet: {
+      getContractGovernor: () => electionManager,
+    },
     augmentPublicFacet,
     augmentVirtualPublicFacet,
     makeGovernorFacet,
     makeVirtualGovernorFacet,
+    makeFarGovernorFacet,
     params: paramManager.readonly(),
   });
 };

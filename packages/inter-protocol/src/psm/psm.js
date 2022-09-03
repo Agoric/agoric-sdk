@@ -2,7 +2,6 @@
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 import '@agoric/governance/src/exported.js';
-import { bindAllMethods } from '@agoric/internal';
 
 import { E } from '@endo/eventual-send';
 import {
@@ -11,10 +10,9 @@ import {
   floorMultiplyBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
-import { initEmpty } from '@agoric/store';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { provide, M, vivifyFarInstance } from '@agoric/vat-data';
-import { AmountMath, PaymentShape } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeMetricsPublishKit } from '../contractSupport.js';
@@ -95,18 +93,23 @@ export const start = async (zcf, privateArgs, baggage) => {
   const emptyStable = AmountMath.makeEmpty(stableBrand);
   const emptyAnchor = AmountMath.makeEmpty(anchorBrand);
 
-  const { augmentVirtualPublicFacet, makeVirtualGovernorFacet, params } =
-    await handleParamGovernance(
-      zcf,
-      privateArgs.initialPoserInvitation,
-      {
-        GiveStableFee: ParamTypes.RATIO,
-        MintLimit: ParamTypes.AMOUNT,
-        WantStableFee: ParamTypes.RATIO,
-      },
-      privateArgs.storageNode,
-      privateArgs.marshaller,
-    );
+  const {
+    extendPublicAPI,
+    extendPublicFacet,
+    extendCreatorFacet,
+    makeFarGovernorFacet,
+    params,
+  } = await handleParamGovernance(
+    zcf,
+    privateArgs.initialPoserInvitation,
+    {
+      GiveStableFee: ParamTypes.RATIO,
+      MintLimit: ParamTypes.AMOUNT,
+      WantStableFee: ParamTypes.RATIO,
+    },
+    privateArgs.storageNode,
+    privateArgs.marshaller,
+  );
 
   const provideEmptyZcfSeat = name => {
     return provide(baggage, name, () => zcf.makeEmptySeatKit().zcfSeat);
@@ -250,6 +253,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     getPoolBalance: M.call().returns(anchorAmountShape),
     makeWantStableInvitation: M.call().returns(M.promise()),
     makeGiveStableInvitation: M.call().returns(M.promise()),
+    ...extendPublicAPI,
   });
 
   const publicFacet = vivifyFarInstance(
@@ -268,7 +272,10 @@ export const start = async (zcf, privateArgs, baggage) => {
           wantStableHook,
           'wantStable',
           undefined,
-          M.split({ give: { In: anchorAmountShape } }),
+          M.split({
+            give: { In: anchorAmountShape },
+            want: M.or({ Out: stableAmountShape }, {}),
+          }),
         );
       },
       makeGiveStableInvitation() {
@@ -276,30 +283,37 @@ export const start = async (zcf, privateArgs, baggage) => {
           giveStableHook,
           'giveStable',
           undefined,
-          M.split({ give: { In: stableAmountShape } }),
+          M.split({
+            give: { In: stableAmountShape },
+            want: M.or({ Out: anchorAmountShape }, {}),
+          }),
         );
       },
+      ...extendPublicFacet,
     },
   );
 
-  const getRewardAllocation = () => feePool.getCurrentAllocation();
+  // TODO why does this operation return an object with a single operation?
   const { makeCollectFeesInvitation } = makeMakeCollectFeesInvitation(
     zcf,
     feePool,
     stableBrand,
     'Stable',
   );
-  const creatorFacet = Far('Parity Stability Module', {
-    getRewardAllocation,
-    makeCollectFeesInvitation,
+  const limitedCreatorFacet = Far('Parity Stability Module', {
+    getRewardAllocation() {
+      return feePool.getCurrentAllocation();
+    },
+    makeCollectFeesInvitation() {
+      return makeCollectFeesInvitation();
+    },
+    ...extendCreatorFacet,
   });
 
-  const { limitedCreatorFacet, governorFacet } =
-    // @ts-expect-error over-determined decl of creatorFacet
-    makeVirtualGovernorFacet(creatorFacet);
+  const governorFacet = makeFarGovernorFacet(limitedCreatorFacet);
   return harden({
     creatorFacet: governorFacet,
     limitedCreatorFacet,
-    publicFacet: augmentVirtualPublicFacet(bindAllMethods(publicFacet)),
+    publicFacet,
   });
 };
