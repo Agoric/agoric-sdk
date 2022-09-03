@@ -337,27 +337,20 @@ export const initEmpty = () => emptyRecord;
  */
 
 /**
- * @template A,S,T
- * @param {string} tag
- * @param {any} interfaceGuard
- * @param {(...args: A[]) => S} init
- * @param {T} methods
- * @param {object} [options]
- * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
- */
-/**
  * It takes a bunch of
  * arguments and returns a function that creates an object with a prototype
  * that has methods that can access the object's state
- * @param tag - a string that will be used to identify the class in error messages
- * @param interfaceGuard - a predicate that takes an object and returns true if it is an instance of
- * the class.
- * @param init - a function that takes the arguments passed to the constructor and returns the initial
- * state record.
- * @param methods - a record of methods that will be added to the prototype of the class.
- * @param [options] - an optional object with a finish method that is called after the instance is
- * created.
- * @returns A function that takes a list of arguments and returns an object.
+ * @template A,S,T
+ * @param {string} tag - a string that will be used to identify the class in error messages
+ * @param {any} interfaceGuard - a predicate that takes an object and returns true if it
+ *    is an instance of the class.
+ * @param {(...args: A[]) => S} init - a function that takes the arguments passed to the
+ *     constructor and returns the initial state record.
+ * @param {T} methods - a record of methods that will be added to the prototype of the class.
+ * @param {object} [options] - an optional object with a finish method that is called after
+ *    the instance is created.
+ * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)} A function that takes a list of
+ *   arguments and returns an object.
  */
 export const defineHeapFarClass = (
   tag,
