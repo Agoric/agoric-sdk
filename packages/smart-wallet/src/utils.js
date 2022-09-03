@@ -61,16 +61,25 @@ export const coalesceUpdates = updates => {
   const balances = new Map();
   observeIteration(subscribeEach(updates), {
     updateState: updateRecord => {
-      // XXX use discriminated union
-      if ('latestBalance' in updateRecord) {
-        const { currentAmount } = updateRecord.latestBalance;
-        balances.set(currentAmount.brand, currentAmount);
-      } else if ('latestOfferStatus' in updateRecord) {
-        const status = updateRecord.latestOfferStatus;
-        offerStatuses[status.id] = status;
-      } else if ('latestBrand' in updateRecord) {
-        const descriptor = updateRecord.latestBrand;
-        brands.set(descriptor.brand, descriptor);
+      const { updated } = updateRecord;
+      switch (updateRecord.updated) {
+        case 'balance': {
+          const { currentAmount } = updateRecord;
+          balances.set(currentAmount.brand, currentAmount);
+          break;
+        }
+        case 'offerStatus': {
+          const { status } = updateRecord;
+          offerStatuses[status.id] = status;
+          break;
+        }
+        case 'brand': {
+          const { descriptor } = updateRecord;
+          brands.set(descriptor.brand, descriptor);
+          break;
+        }
+        default:
+          throw new Error(`unknown record updated ${updated}`);
       }
     },
   });

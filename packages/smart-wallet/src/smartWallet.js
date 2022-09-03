@@ -38,9 +38,9 @@ import {
  */
 
 /**
- * @typedef {{ latestOfferStatus: import('./offers.js').OfferStatus } |
- * { latestBalance: { currentAmount: Amount } } |
- * { latestBrand: BrandDescriptor }
+ * @typedef {{ updated: 'offerStatus', status: import('./offers.js').OfferStatus } |
+ * { updated: 'balance'; currentAmount: Amount } |
+ * { updated: 'brand', descriptor: BrandDescriptor }
  * } UpdateRecord Record of an update to the state of this wallet.
  *
  * Client is responsible for coalescing updates into a current state. See `coalesceUpdates` utility.
@@ -48,9 +48,9 @@ import {
  * The reason for this burden on the client is that transferring the full state is untenable
  * (because it would grow monotonically).
  *
- * `latestBalance` amount is nested for forward-compatibility with supporting
- * more than one purse per brand. An additional key will be needed to
- * disambiguate. For now the brand in the amount suffices.
+ * `balance` update supports forward-compatibility for more than one purse per
+ * brand. An additional key will be needed to disambiguate. For now the brand in
+ * the amount suffices.
  */
 
 // TODO remove petname? what will UI show then? look up in agoricNames?
@@ -144,7 +144,8 @@ export const makeSmartWallet = async (
       purseBalances.set(purse, balance);
     }
     updatePublishKit.publisher.publish({
-      latestBalance: { currentAmount: balance },
+      updated: 'balance',
+      currentAmount: balance,
     });
   };
 
@@ -183,8 +184,8 @@ export const makeSmartWallet = async (
     // relevant purse. when it's time to make an offer, you know how to make
     // payments. REMEMBER when doing that, need to handle every exception to
     // put the money back in the purse if anything fails.
-    const fullDesc = { ...desc, displayInfo };
-    brandDescriptors.init(desc.brand, fullDesc);
+    const descriptor = { ...desc, displayInfo };
+    brandDescriptors.init(desc.brand, descriptor);
     brandPurses.init(desc.brand, purse);
 
     // publish purse's balance and changes
@@ -202,8 +203,7 @@ export const makeSmartWallet = async (
       },
     });
 
-    console.log('DEBUG WALLET PUBLISHING BRAND', fullDesc);
-    updatePublishKit.publisher.publish({ latestBrand: fullDesc });
+    updatePublishKit.publisher.publish({ updated: 'brand', descriptor });
   };
 
   // Ensure a purse for each issuer
@@ -277,7 +277,10 @@ export const makeSmartWallet = async (
     invitationFromSpec,
     sufficientPayments,
     offerStatus =>
-      updatePublishKit.publisher.publish({ latestOfferStatus: offerStatus }),
+      updatePublishKit.publisher.publish({
+        updated: 'offerStatus',
+        status: offerStatus,
+      }),
     payouts => depositPaymentsIntoPurses(payouts, brandPurses.get),
     (offerId, invitationMakers) =>
       offerToInvitationMakers.init(offerId, invitationMakers),

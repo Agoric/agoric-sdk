@@ -12,7 +12,6 @@ import {
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { E } from '@endo/far';
 import { makeDefaultTestContext } from './contexts.js';
-import { currentState } from './supports.js';
 import { coalesceUpdates } from '../src/utils.js';
 
 /**

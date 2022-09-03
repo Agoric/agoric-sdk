@@ -64,7 +64,8 @@ test('bridge', async t => {
   t.is(res, undefined);
 
   t.deepEqual(await lastUpdate(), {
-    latestOfferStatus: {
+    updated: 'offerStatus',
+    status: {
       ...offerSpec,
       state: 'error',
     },
