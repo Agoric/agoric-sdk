@@ -3,13 +3,19 @@
 import { M, fit } from '@agoric/store';
 import '../../../exported.js';
 
-import { vivifyKind, vivifySingleton } from '@agoric/vat-data';
+import { vivifyFarClass, vivifyFarInstance } from '@agoric/vat-data';
 import { swapExact } from '../../../src/contractSupport/index.js';
 import { isAfterDeadlineExitRule } from '../../../src/typeGuards.js';
 
 const { details: X } = assert;
 
 const sellSeatExpiredMsg = 'The covered call option is expired.';
+
+const SeatShape = M.remotable('Seat');
+
+const OfferHandlerI = M.interface('OfferHandler', {
+  handle: M.call(SeatShape, M.any()).returns(M.string()),
+});
 
 /**
  * @see original version in .../zoe/src/contracts/coveredCall.js and upgradeable
@@ -32,15 +38,18 @@ const vivify = async (zcf, _privateArgs, instanceBaggage) => {
   // TODO the exerciseOption offer handler that this makes is an object rather
   // than a function for now only because we do not yet support durable
   // functions.
-  const makeExerciser = vivifyKind(
+  const makeExerciser = vivifyFarClass(
     instanceBaggage,
     'makeExerciserKindHandle',
+    OfferHandlerI,
     sellSeat => ({ sellSeat }),
     {
-      handle: ({ state: { sellSeat } }, buySeat) => {
-        assert(!sellSeat.hasExited(), sellSeatExpiredMsg);
+      handle(buySeat) {
+        // @ts-expect-error TS doesn't understand context
+        const { state } = this;
+        assert(!state.sellSeat.hasExited(), sellSeatExpiredMsg);
         try {
-          swapExact(zcf, sellSeat, buySeat);
+          swapExact(zcf, state.sellSeat, buySeat);
         } catch (err) {
           console.log(
             `Swap ${upgraded}failed. Please make sure your offer has the same underlyingAssets and strikePrice as specified in the invitation details. The keywords should not matter.`,
@@ -73,9 +82,22 @@ const vivify = async (zcf, _privateArgs, instanceBaggage) => {
     return zcf.makeInvitation(exerciseOption, 'exerciseOption', customProps);
   };
 
-  const creatorFacet = vivifySingleton(instanceBaggage, 'creatorFacet', {
-    makeInvitation: () => zcf.makeInvitation(makeOption, 'makeCallOption'),
+  const InvitationShape = M.remotable('Invitation');
+
+  const CCallCreatorI = M.interface('CCallCreator', {
+    makeInvitation: M.call().returns(M.eref(InvitationShape)),
   });
+
+  const creatorFacet = vivifyFarInstance(
+    instanceBaggage,
+    'creatorFacet',
+    CCallCreatorI,
+    {
+      makeInvitation() {
+        return zcf.makeInvitation(makeOption, 'makeCallOption');
+      },
+    },
+  );
   return harden({ creatorFacet });
 };
 
