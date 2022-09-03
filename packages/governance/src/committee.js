@@ -65,8 +65,10 @@ const start = (zcf, privateArgs) => {
         }),
         invitationMakers: Far('invitation makers', {
           makeVoteInvitation: questionHandle => {
-            const continuingVoteHandler = (_seat, { positions }) => {
-              _seat.exit();
+            const continuingVoteHandler = (cseat, offerArgs) => {
+              assert(offerArgs, 'continuingVoteHandler missing offerArgs');
+              const { positions } = offerArgs;
+              cseat.exit();
               const { voteCap } = allQuestions.get(questionHandle);
               return E(voteCap).submitVote(voterHandle, positions, 1n);
             };
