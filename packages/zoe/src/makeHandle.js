@@ -1,6 +1,7 @@
 // @ts-check
 
 import { assert } from '@agoric/assert';
+import { initEmpty } from '@agoric/store';
 import { provide, defineDurableKind, makeKindHandle } from '@agoric/vat-data';
 import { Far } from '@endo/marshal';
 
@@ -19,7 +20,7 @@ export const defineDurableHandle = (baggage, handleType) => {
     `${handleType}KindHandle`,
     () => makeKindHandle(`${handleType}Handle`),
   );
-  const makeHandle = defineDurableKind(durableHandleKindHandle, () => ({}), {});
+  const makeHandle = defineDurableKind(durableHandleKindHandle, initEmpty, {});
   return /** @type {() => Handle<H>} */ (makeHandle);
 };
 harden(defineDurableHandle);

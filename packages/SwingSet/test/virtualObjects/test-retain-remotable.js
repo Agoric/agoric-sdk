@@ -1,8 +1,9 @@
 /* global WeakRef */
+// eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { Far } from '@endo/marshal';
+import { initEmpty } from '@agoric/store';
 
 import engineGC from '../../src/lib-nodejs/engine-gc.js';
 import { makeGcAndFinalize } from '../../src/lib-nodejs/gc-and-finalize.js';
@@ -60,7 +61,7 @@ test('remotables retained by virtualized data', async t => {
   const { makeScalarBigWeakMapStore } = cm;
   const weakStore = makeScalarBigWeakMapStore('ws');
   // empty object, used as weak map store key
-  const makeKey = defineKind('key', () => ({}), {});
+  const makeKey = defineKind('key', initEmpty, {});
   const makeHolder = defineKind('holder', held => ({ held }), {
     setHeld: ({ state }, held) => {
       state.held = held;

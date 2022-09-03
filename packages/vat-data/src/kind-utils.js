@@ -1,4 +1,3 @@
-import { objectMap } from '@agoric/internal';
 import {
   provide,
   defineDurableKind,
@@ -6,21 +5,18 @@ import {
   makeKindHandle,
 } from './vat-data-bindings.js';
 
-/** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>} RemotableBrand */
 /** @typedef {import('./types.js').Baggage} Baggage */
-/** @template T @typedef {import('./types.js').DefineKindOptions<T>} DefineKindOptions */
-/** @template T @typedef {import('./types.js').KindFacet<T>} KindFacet */
-/** @template T @typedef {import('./types.js').KindFacets<T>} KindFacets */
 /** @typedef {import('./types.js').DurableKindHandle} DurableKindHandle */
 
 /**
- * Make a version of the argument function that takes a kind context but ignores it.
+ * Make a version of the argument function that takes a kind context but
+ * ignores it.
  *
  * @type {<T extends Function>(fn: T) => import('./types.js').PlusContext<never, T>}
  */
 export const ignoreContext =
   fn =>
-  (context, ...args) =>
+  (_context, ...args) =>
     fn(...args);
 harden(ignoreContext);
 
@@ -64,30 +60,3 @@ export const vivifyKindMulti = (
     options,
   );
 harden(vivifyKindMulti);
-
-/**
- * @template T
- * @param {Baggage} baggage
- * @param {string} kindName
- * @param {T} methods
- * @param {DefineKindOptions<unknown>} [options]
- * @returns {T & RemotableBrand<{}, T>}
- */
-export const vivifySingleton = (
-  baggage,
-  kindName,
-  methods,
-  options = undefined,
-) => {
-  const behavior = objectMap(methods, ignoreContext);
-  const makeSingleton = vivifyKind(
-    baggage,
-    kindName,
-    () => ({}),
-    behavior,
-    options,
-  );
-
-  return provide(baggage, `the_${kindName}`, () => makeSingleton());
-};
-harden(vivifySingleton);

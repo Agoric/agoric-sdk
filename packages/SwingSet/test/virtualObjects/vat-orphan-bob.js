@@ -1,4 +1,5 @@
 import { Far } from '@endo/marshal';
+import { initEmpty } from '@agoric/store';
 import { defineKindMulti } from '@agoric/vat-data';
 
 export function buildRootObject(vatPowers) {
@@ -6,7 +7,7 @@ export function buildRootObject(vatPowers) {
 
   let extracted;
 
-  const makeThing = defineKindMulti('thing', () => ({}), {
+  const makeThing = defineKindMulti('thing', initEmpty, {
     regularFacet: {
       statelessMethod: () => 0,
       extractState: ({ state }) => {

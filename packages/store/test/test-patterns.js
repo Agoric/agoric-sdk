@@ -36,8 +36,8 @@ const matchTests = harden([
     ],
     noPatterns: [
       [4, '3 - Must be: 4'],
-      [M.not(3), '3 - must fail negated pattern: 3'],
-      [M.not(M.any()), '3 - must fail negated pattern: "[match:any]"'],
+      [M.not(3), '3 - Must fail negated pattern: 3'],
+      [M.not(M.any()), '3 - Must fail negated pattern: "[match:any]"'],
       [M.string(), 'number 3 - Must be a string'],
       [[3, 4], '3 - Must be: [3,4]'],
       [M.gte(7), '3 - Must be >= 7'],
@@ -264,6 +264,71 @@ const matchTests = harden([
       ],
     ],
   },
+  {
+    specimen: makeTagged('mysteryTag', 88),
+    yesPatterns: [M.any(), M.not(M.pattern())],
+    noPatterns: [
+      [
+        M.pattern(),
+        'A passable tagged "mysteryTag" is not a pattern: "[mysteryTag]"',
+      ],
+    ],
+  },
+  {
+    specimen: makeTagged('match:any', undefined),
+    yesPatterns: [M.any(), M.pattern()],
+    noPatterns: [
+      [M.key(), 'A passable tagged "match:any" is not a key: "[match:any]"'],
+    ],
+  },
+  {
+    specimen: makeTagged('match:any', 88),
+    yesPatterns: [M.any(), M.not(M.pattern())],
+    noPatterns: [[M.pattern(), 'match:any payload: 88 - Must be undefined']],
+  },
+  {
+    specimen: makeTagged('match:remotable', 88),
+    yesPatterns: [M.any(), M.not(M.pattern())],
+    noPatterns: [
+      [
+        M.pattern(),
+        'match:remotable payload: 88 - Must be a copyRecord to match a copyRecord pattern: {"label":"[match:kind]"}',
+      ],
+    ],
+  },
+  {
+    specimen: makeTagged('match:remotable', harden({ label: 88 })),
+    yesPatterns: [M.any(), M.not(M.pattern())],
+    noPatterns: [
+      [
+        M.pattern(),
+        'match:remotable payload: label: number 88 - Must be a string',
+      ],
+    ],
+  },
+  {
+    specimen: makeTagged('match:recordOf', harden([M.string(), M.nat()])),
+    yesPatterns: [M.pattern()],
+    noPatterns: [
+      [
+        M.key(),
+        'A passable tagged "match:recordOf" is not a key: "[match:recordOf]"',
+      ],
+    ],
+  },
+  {
+    specimen: makeTagged(
+      'match:recordOf',
+      harden([M.string(), Promise.resolve(null)]),
+    ),
+    yesPatterns: [M.any(), M.not(M.pattern())],
+    noPatterns: [
+      [
+        M.pattern(),
+        'match:recordOf payload: [1]: A "promise" cannot be a pattern',
+      ],
+    ],
+  },
 ]);
 
 test('test simple matches', t => {
@@ -298,5 +363,12 @@ test('masking match failure', t => {
   });
   t.throws(() => fit(nonMap, M.map()), {
     message: 'A passable tagged "match:kind" is not a key: "[match:kind]"',
+  });
+});
+
+test('well formed patterns', t => {
+  // @ts-expect-error purposeful type violation for testing
+  t.throws(() => M.remotable(88), {
+    message: 'match:remotable payload: label: number 88 - Must be a string',
   });
 });

@@ -114,7 +114,7 @@ harden(isCopyBagValue);
 // One GOOGOLth should be enough decimal places for anybody.
 export const MAX_ABSOLUTE_DECIMAL_PLACES = 100;
 
-export const AssetValueShape = M.or('nat', 'set', 'copySet', 'copyBag');
+export const AssetKindShape = M.or('nat', 'set', 'copySet', 'copyBag');
 
 export const DisplayInfoShape = M.partial(
   harden({
@@ -122,10 +122,112 @@ export const DisplayInfoShape = M.partial(
       M.gte(-MAX_ABSOLUTE_DECIMAL_PLACES),
       M.lte(MAX_ABSOLUTE_DECIMAL_PLACES),
     ),
-    assetKind: AssetValueShape,
+    assetKind: AssetKindShape,
   }),
   harden({
     // Including this empty `rest` ensures that there are no other
     // properties beyond those in the `base` record.
   }),
 );
+
+// //////////////////////// Interfaces /////////////////////////////////////////
+
+export const BrandShape = M.remotable('Brand');
+export const IssuerShape = M.remotable('Issuer');
+export const PaymentShape = M.remotable('Payment');
+export const PurseShape = M.remotable('Purse');
+export const DepositFacetShape = M.remotable('DepositFacet');
+const NotifierShape = M.remotable('Notifier');
+export const MintShape = M.remotable('Mint');
+
+export const BrandI = M.interface('Brand', {
+  isMyIssuer: M.callWhen(M.await(IssuerShape)).returns(M.boolean()),
+  getAllegedName: M.call().returns(M.string()),
+  getDisplayInfo: M.call().returns(DisplayInfoShape),
+  getAmountShape: M.call().returns(M.pattern()),
+});
+
+/**
+ * @param {Pattern} [brandShape]
+ * @param {Pattern} [assetKindShape]
+ * @param {Pattern} [amountShape]
+ */
+export const makeIssuerInterfaces = (
+  brandShape = BrandShape,
+  assetKindShape = AssetKindShape,
+  amountShape = AmountShape,
+) => {
+  const IssuerI = M.interface('Issuer', {
+    getBrand: M.call().returns(brandShape),
+    getAllegedName: M.call().returns(M.string()),
+    getAssetKind: M.call().returns(assetKindShape),
+    getDisplayInfo: M.call().returns(DisplayInfoShape),
+    makeEmptyPurse: M.call().returns(PurseShape),
+
+    isLive: M.callWhen(M.await(PaymentShape)).returns(M.boolean()),
+    getAmountOf: M.callWhen(M.await(PaymentShape)).returns(amountShape),
+    burn: M.callWhen(M.await(PaymentShape))
+      .optional(M.pattern())
+      .returns(amountShape),
+    claim: M.callWhen(M.await(PaymentShape))
+      .optional(M.pattern())
+      .returns(PaymentShape),
+    combine: M.call(M.arrayOf(M.eref(PaymentShape)))
+      .optional(amountShape)
+      .returns(M.eref(PaymentShape)),
+    split: M.callWhen(M.await(PaymentShape), amountShape).returns(
+      M.arrayOf(PaymentShape),
+    ),
+    splitMany: M.callWhen(
+      M.await(PaymentShape),
+      M.arrayOf(amountShape),
+    ).returns(M.arrayOf(PaymentShape)),
+  });
+
+  const MintI = M.interface('Mint', {
+    getIssuer: M.call().returns(IssuerShape),
+    mintPayment: M.call(amountShape).returns(PaymentShape),
+  });
+
+  const PaymentI = M.interface('Payment', {
+    getAllegedBrand: M.call().returns(brandShape),
+  });
+
+  const PurseI = M.interface('Purse', {
+    getAllegedBrand: M.call().returns(brandShape),
+    getCurrentAmount: M.call().returns(amountShape),
+    getCurrentAmountNotifier: M.call().returns(NotifierShape),
+    // PurseI does *not* delay `deposit` until `srcPayment` is fulfulled.
+    // Rather, the semantics of `deposit` require it to provide its
+    // callers with a strong guarantee that `deposit` messages are
+    // processed without further delay in the order they arrive.
+    // PurseI therefore requires that the `srcPayment` argument already
+    // be a remotable, not a promise.
+    // PurseI only calls this raw method after validating that
+    // `srcPayment` is a remotable, leaving it
+    // to this raw method to validate that this remotable is actually
+    // a live payment of the correct brand with sufficient funds.
+    deposit: M.call(PaymentShape).optional(M.pattern()).returns(amountShape),
+    getDepositFacet: M.call().returns(DepositFacetShape),
+    withdraw: M.call(amountShape).returns(PaymentShape),
+    getRecoverySet: M.call().returns(M.setOf(PaymentShape)),
+    recoverAll: M.call().returns(amountShape),
+  });
+
+  const DepositFacetI = M.interface('DepositFacet', {
+    receive: PurseI.methodGuards.deposit,
+  });
+
+  const PurseIKit = harden({
+    purse: PurseI,
+    depositFacet: DepositFacetI,
+  });
+
+  return harden({
+    IssuerI,
+    MintI,
+    PaymentI,
+    PurseIKit,
+  });
+};
+harden(makeIssuerInterfaces);

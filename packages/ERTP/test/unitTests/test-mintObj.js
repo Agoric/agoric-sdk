@@ -1,7 +1,7 @@
 // @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { M } from '@agoric/store';
+import { initEmpty, M } from '@agoric/store';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { assert } from '@agoric/assert';
 
@@ -46,13 +46,13 @@ test('mint.mintPayment set w strings AssetKind', async t => {
   const badAmount = AmountMath.make(brand, harden([['badElement']]));
   t.throws(() => mint.mintPayment(badAmount), {
     message:
-      'minted amount: value: [0]: copyArray ["badElement"] - Must be a string',
+      'In "mintPayment" method of (items mint) arg 0: value: [0]: copyArray ["badElement"] - Must be a string',
   });
 });
 
 const makeDurableHandle = name => {
   const kindHandle = makeKindHandle(name);
-  const maker = defineDurableKind(kindHandle, () => ({}), {});
+  const maker = defineDurableKind(kindHandle, initEmpty, {});
   return maker();
 };
 

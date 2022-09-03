@@ -42,9 +42,55 @@ declare class DurableKindHandleClass {
 }
 export type DurableKindHandle = DurableKindHandleClass;
 
+/**
+ * Grab bag of options that can be provided to `defineDurableKind` and its
+ * siblings. Not all options are meaningful in all contexts. See the
+ * doc-comments on each option.
+ */
 type DefineKindOptions<C> = {
+  /**
+   * If provided, the `finish` function will be called after the instance is
+   * made and internally registered, but before it is returned. The finish
+   * function is to do any post-intantiation initialization that should be
+   * done before exposing the object to its clients.
+   */
   finish?: (context: C) => void;
+
+  /**
+   * Meaningful to `makeScalarBigMapStore` and its siblings. These maker
+   * fuctions will make either virtual or durable stores, depending on
+   * this flag. Defaults to off, making virtual but not durable collections.
+   *
+   * Generally, durable collections are provided with `provideDurableMapStore`
+   * and its sibling, which use this flag internally. If you do not make
+   * durable collections by other means, you can consider this as
+   * intended for internal use only.
+   */
   durable?: boolean;
+
+  /**
+   * Intended for internal use only.
+   * Should the raw methods receive their `context` argument as their first
+   * argument or as their `this` binding? For `defineDurableKind` and its
+   * siblings (including `vivifySingleton`), this defaults to off, meaning that
+   * their behavior methods receive `context` as their first argument.
+   * `vivifyFarClass` and its siblings (including `vivifyFarInstance`) use
+   * this flag internally to indicate that their methods receive `context`
+   * as their `this` binding.
+   */
+  thisfulMethods?: boolean;
+
+  /**
+   * Intended for internal use only.
+   * If an `interfaceGuard` is provided, then the raw methods passed alongside
+   * it wrapped by a function that first checks that this method's guard
+   * pattern is satisfied before calling the raw method.
+   *
+   * In `defineDurableKind` and its siblings, this defaults to off.
+   * `vivifyFarClass` use this internally to protect their raw class methods
+   * using the provided interface.
+   */
+  interfaceGuard?: object; // TODO type
 };
 
 export type VatData = {

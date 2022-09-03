@@ -215,7 +215,10 @@ test('multiple params bad change', async t => {
         2n,
         paramChangesSpec,
       ),
-    { message: /".13n." was not a live payment for brand/ },
+    {
+      message:
+        'In "getAmountOf" method of (Zoe Invitation issuer) arg 0: bigint "[13n]" - Must be a remotable (Payment)',
+    },
   );
 });
 

@@ -7,6 +7,7 @@ import {
   provideDurableWeakMapStore,
   vivifyKind,
 } from '@agoric/vat-data';
+import { initEmpty } from '@agoric/store';
 
 /** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
@@ -33,7 +34,7 @@ export const makeInstallationStorage = (
   const makeBundleIDInstallation = vivifyKind(
     zoeBaggage,
     'BundleIDInstallation',
-    () => ({}),
+    initEmpty,
     { getBundle: _context => assert.fail('bundleID-based Installation') },
   );
 
