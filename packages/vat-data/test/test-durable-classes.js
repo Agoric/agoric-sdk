@@ -108,3 +108,5 @@ interface. */
     message: 'upCounter.decr is not a function',
   });
 });
+
+test.todo('Add tests for durability');
