@@ -46,15 +46,11 @@ test('test defineHeapFarClass', t => {
     },
   );
   const upCounter = makeUpCounter(3);
-  // @ts-expect-error
   t.is(upCounter.incr(5), 8);
-  // @ts-expect-error
   t.is(upCounter.incr(1), 9);
-  // @ts-expect-error
   t.throws(() => upCounter.incr(-3), {
     message: 'In "incr" method of (UpCounter) arg 0: -3 - Must be >= 0',
   });
-  // @ts-expect-error
   t.throws(() => upCounter.incr('foo'), {
     message:
       'In "incr" method of (UpCounter) arg 0: string "foo" - Must be a number',
@@ -93,11 +89,8 @@ test('test defineHeapFarClassKit', t => {
 
   //destructure `makeCounterKit` function for upCounter and downCounter functions
   const { upCounter, downCounter } = makeCounterKit(3);
-  // @ts-expect-error 
   t.is(upCounter.incr(5), 8);
-  // @ts-expect-error 
   t.is(downCounter.decr(), 7);
-  // @ts-expect-error 
   t.is(upCounter.incr(3), 10);
   /* Testing that the `incr` method of the `UpCounter` class throws an error when the argument is less
     than zero. */
@@ -114,7 +107,6 @@ test('test defineHeapFarClassKit', t => {
   });
   /* Testing that the `decr` method of the `UpCounter` class throws an error when the argument is not a
     number. */
-  // @ts-expect-error 
   t.throws(() => upCounter.decr(3), {
     message: 'upCounter.decr is not a function',
   });
@@ -133,19 +125,16 @@ test('test defineHeapFarInstance', t => {
       return x;
     },
   });
-  // @ts-expect-error 
   t.is(upCounter.incr(5), 8);
-  // @ts-expect-error 
   t.is(upCounter.incr(1), 9);
   /* Testing that the `incr` method of the `UpCounter` class throws an error when the argument is less
   than zero. */
-  // @ts-expect-error
   t.throws(() => upCounter.incr(-3), {
     message: 'In "incr" method of (upCounter) arg 0: -3 - Must be >= 0',
   });
   /* Testing that the `incr` method of the `UpCounter` class throws an error when the argument is not a
   number. */
-  // @ts-expect-error 
+  // @ts-expect-error testing the type violation
   t.throws(() => upCounter.incr('foo'), {
     message:
       'In "incr" method of (upCounter) arg 0: string "foo" - Must be a number',
