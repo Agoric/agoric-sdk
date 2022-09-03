@@ -14,7 +14,7 @@ const sourceToBundle = [
   ],
   [
     `@agoric/wallet/contract/src/walletFactory.js`,
-    `../bundles/bundle-walletFactory.js`,
+    `../bundles/bundle-legacy-walletFactory.js`,
   ],
 ];
 
