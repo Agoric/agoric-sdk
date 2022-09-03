@@ -5,17 +5,15 @@ import '../../../exported.js';
 
 import { vivifyFarClass, vivifyFarInstance } from '@agoric/vat-data';
 import { swapExact } from '../../../src/contractSupport/index.js';
-import { isAfterDeadlineExitRule } from '../../../src/typeGuards.js';
+import {
+  InvitationShape,
+  isAfterDeadlineExitRule,
+  OfferHandlerI,
+} from '../../../src/typeGuards.js';
 
 const { details: X } = assert;
 
 const sellSeatExpiredMsg = 'The covered call option is expired.';
-
-const SeatShape = M.remotable('Seat');
-
-const OfferHandlerI = M.interface('OfferHandler', {
-  handle: M.call(SeatShape, M.any()).returns(M.string()),
-});
 
 /**
  * @see original version in .../zoe/src/contracts/coveredCall.js and upgradeable
@@ -81,8 +79,6 @@ const vivify = async (zcf, _privateArgs, instanceBaggage) => {
     });
     return zcf.makeInvitation(exerciseOption, 'exerciseOption', customProps);
   };
-
-  const InvitationShape = M.remotable('Invitation');
 
   const CCallCreatorI = M.interface('CCallCreator', {
     makeInvitation: M.call().returns(M.eref(InvitationShape)),
