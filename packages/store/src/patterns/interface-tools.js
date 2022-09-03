@@ -4,10 +4,23 @@ import { listDifference, objectMap } from '@agoric/internal';
 
 import { fit } from './patternMatchers.js';
 
+/* Destructuring the object assert into two variables, details and quote. */
 const { details: X, quote: q } = assert;
+/* Using the Reflect API to apply a function to an object. */
 const { apply, ownKeys } = Reflect;
+/* Using object destructuring to assign the properties of the object Object to the variables
+defineProperties, seal, and freeze. */
 const { defineProperties, seal, freeze } = Object;
 
+/**
+ * It takes a list of
+ * arguments, a method guard, and a label, and it checks that the arguments
+ * satisfy the method guard
+ * @param args - the arguments to the method
+ * @param methodGuard - The guard for the method being called.
+ * @param label - a string that will be used in error messages
+ * @returns The function defendSyncArgs is being returned.
+ */
 const defendSyncArgs = (args, methodGuard, label) => {
   const { argGuards, optionalArgGuards, restArgGuard } = methodGuard;
   if (args.length < argGuards.length) {
@@ -44,6 +57,14 @@ const defendSyncArgs = (args, methodGuard, label) => {
   }
 };
 
+/**
+ * It takes a method, a guard, and a label, and returns a new method that is guarded by the guard
+ * @param method - The method to be guarded.
+ * @param methodGuard - a guard object that describes the parameters and return value of the method
+ * @param label - A string that will be used in error messages.
+ * @returns A function that takes a method and a methodGuard and returns a function that takes a label
+ * and returns a function that takes args and returns a result.
+ */
 const defendSyncMethod = (method, methodGuard, label) => {
   const { returnGuard } = methodGuard;
   const { syncMethod } = {
@@ -58,9 +79,27 @@ const defendSyncMethod = (method, methodGuard, label) => {
   return syncMethod;
 };
 
+/**
+ * It returns true if the argument is an object with a property named `klass` whose value is the string
+ * `awaitArg`
+ */
 const isAwaitArgGuard = argGuard =>
   argGuard && typeof argGuard === 'object' && argGuard.klass === 'awaitArg';
 
+/**
+ * It takes a method guard and returns an object with two properties:
+ * 
+ * - `awaitIndexes`: an array of indexes of the arguments that are awaited
+ * - `rawMethodGuard`: a method guard with the awaited arguments replaced with their non-awaited
+ * versions
+ * 
+ * The first thing we do is assert that the rest argument is not awaited. This is because we don't
+ * support awaiting rest arguments
+ * @returns An object with two properties:
+ *   1. awaitIndexes: An array of indexes of the arguments that are awaited.
+ *   2. rawMethodGuard: A method guard with the awaited arguments replaced with their non-awaited
+ * versions.
+ */
 const desync = methodGuard => {
   const { argGuards, optionalArgGuards = [], restArgGuard } = methodGuard;
   assert(
@@ -87,6 +126,14 @@ const desync = methodGuard => {
   };
 };
 
+/**
+ * It takes an async method,
+ * a method guard, and a label, and returns a guarded async method
+ * @param method - The method to be defended.
+ * @param methodGuard - The guard for the method's arguments.
+ * @param label - A string that will be used in error messages.
+ * @returns An async method.
+ */
 const defendAsyncMethod = (method, methodGuard, label) => {
   const { returnGuard } = methodGuard;
   const { awaitIndexes, rawMethodGuard } = desync(methodGuard);
@@ -112,6 +159,14 @@ const defendAsyncMethod = (method, methodGuard, label) => {
   return asyncMethod;
 };
 
+/**
+ * It takes a method, a method guard, and a label, and returns a new method that is guarded by the
+ * method guard
+ * @param method - the method to be guarded
+ * @param methodGuard - the method guard object
+ * @param label - a string that will be used to identify the method in error messages
+ * @returns A function that takes in a method, methodGuard, and label.
+ */
 const defendMethod = (method, methodGuard, label) => {
   const { klass, callKind } = methodGuard;
   assert(klass === 'methodGuard');
@@ -123,6 +178,16 @@ const defendMethod = (method, methodGuard, label) => {
   }
 };
 
+/**
+ * It takes a method tag, a context map, a behavior method, and a method guard, and returns a method
+ * that calls the behavior method with the context from the context map.
+ * @param methodTag - a string that identifies the method.
+ * @param contextMap - a WeakMap that maps instances to their context objects
+ * @param behaviorMethod - The method to be bound.
+ * @param [thisfulMethods=false] - If true, the method will be bound to the instance.
+ * @param [methodGuard] - a function that takes the context and returns true if the method should be
+ * bound
+ */
 const bindMethod = (
   methodTag,
   contextMap,
@@ -184,6 +249,17 @@ const bindMethod = (
  * @param {boolean} [thisfulMethods]
  * @param {InterfaceGuard} [interfaceGuard]
  * @returns {T & RemotableBrand<{}, T>}
+ */
+/**
+ * It takes a map of
+ * methods, and returns a map of methods that are bound to the context
+ * map
+ * @param tag - a string that will be used in error messages
+ * @param contextMap - a map from context names to context values
+ * @param behaviorMethods - an object whose keys are method names and whose values are
+ * @param [thisfulMethods=false] - If true, the method is allowed to use `this`.
+ * @param [interfaceGuard] - interfaceGuard
+ * @returns A Far object.
  */
 export const defendPrototype = (
   tag,
@@ -269,6 +345,20 @@ export const initEmpty = () => emptyRecord;
  * @param {object} [options]
  * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
  */
+/**
+ * It takes a bunch of
+ * arguments and returns a function that creates an object with a prototype
+ * that has methods that can access the object's state
+ * @param tag - a string that will be used to identify the class in error messages
+ * @param interfaceGuard - a predicate that takes an object and returns true if it is an instance of
+ * the class.
+ * @param init - a function that takes the arguments passed to the constructor and returns the initial
+ * state record.
+ * @param methods - a record of methods that will be added to the prototype of the class.
+ * @param [options] - an optional object with a finish method that is called after the instance is
+ * created.
+ * @returns A function that takes a list of arguments and returns an object.
+ */
 export const defineHeapFarClass = (
   tag,
   interfaceGuard,
@@ -313,6 +403,19 @@ harden(defineHeapFarClass);
  * @param {F} methodsKit
  * @param {object} [options]
  * @returns {(...args: A[]) => F}
+ */
+/**
+ * It takes a tag, a set of
+ * interfaces, a constructor, a set of methods, and an optional set of options, and
+ * returns a constructor for a class that implements the interfaces and has the
+ * methods
+ * @param tag - a string that identifies the class
+ * @param interfaceGuardKit - A map from facet names to guard functions.
+ * @param init - a function that takes the arguments passed to the constructor and returns a state
+ * record.
+ * @param methodsKit - a map from facet names to maps from method names to method bodies.
+ * @param [options] - an optional object with a finish method that will be called with the
+ * @returns A function that takes a variable number of arguments and returns an object.
  */
 export const defineHeapFarClassKit = (
   tag,
@@ -376,6 +479,16 @@ harden(defineHeapFarClassKit);
  * @param {M} methods
  * @param {object} [options]
  * @returns {T & RemotableBrand<{}, T>}
+ */
+/**
+ * It takes a tag, an interface guard, a set of methods, and an optional set of options, and returns a
+ * function that creates a new heap-allocated instance of the class
+ * @param tag - A string that identifies the class.
+ * @param interfaceGuard - a function that takes an object and returns true if it is an instance of the
+ * class.
+ * @param methods - a map of method names to method implementations.
+ * @param [options] - optional object
+ * @returns A function that returns a new instance of the class.
  */
 export const defineHeapFarInstance = (
   tag,

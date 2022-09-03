@@ -9,6 +9,7 @@ import {
   defineVirtualFarClassKit,
 } from '../src/far-class-utils.js';
 
+/* Defining an interface for the UpCounter class. */
 const UpCounterI = M.interface('UpCounter', {
   incr: M.call()
     // TODO M.number() should not be needed to get a better error message
@@ -16,6 +17,7 @@ const UpCounterI = M.interface('UpCounter', {
     .returns(M.number()),
 });
 
+/* Defining an interface for the DownCounter class. */
 const DownCounterI = M.interface('DownCounter', {
   decr: M.call()
     // TODO M.number() should not be needed to get a better error message
@@ -23,6 +25,7 @@ const DownCounterI = M.interface('DownCounter', {
     .returns(M.number()),
 });
 
+/* Defining a class called UpCounter. */
 test('test defineVirtualFarClass', t => {
   const makeUpCounter = defineVirtualFarClass(
     'UpCounter',
@@ -40,9 +43,11 @@ test('test defineVirtualFarClass', t => {
   const upCounter = makeUpCounter(3);
   t.is(upCounter.incr(5), 8);
   t.is(upCounter.incr(1), 9);
+  /* Testing that the function throws an error when the argument is not a number. */
   t.throws(() => upCounter.incr(-3), {
     message: 'In "incr" method of (UpCounter) arg 0: -3 - Must be >= 0',
   });
+  /* Testing that the function throws an error when the argument is not a number. */
   // @ts-expect-error TS doesn't know that `this` is a `Context`
   t.throws(() => upCounter.incr('foo'), {
     message:
@@ -76,14 +81,17 @@ test('test defineVirtualFarClassKit', t => {
   t.is(upCounter.incr(5), 8);
   t.is(downCounter.decr(), 7);
   t.is(upCounter.incr(3), 10);
+  /* Testing that the function throws an error when the argument is not a number. */
   t.throws(() => upCounter.incr(-3), {
     message: 'In "incr" method of (Counter up) arg 0: -3 - Must be >= 0',
   });
+  /* Testing that the function throws an error when the argument is not a number. */
   // @ts-expect-error the type violation is what we're testing
   t.throws(() => downCounter.decr('foo'), {
     message:
       'In "decr" method of (Counter down) arg 0: string "foo" - Must be a number',
   });
+  /* Testing that the upCounter does not have a decr method. */
   t.throws(() => upCounter.decr(3), {
     message: 'upCounter.decr is not a function',
   });
