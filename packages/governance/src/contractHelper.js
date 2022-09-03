@@ -13,7 +13,7 @@ const { details: X, quote: q } = assert;
 
 export const GOVERNANCE_STORAGE_KEY = 'governance';
 
-const extendPublicAPI = {
+const publicMixinAPI = harden({
   getSubscription: M.call().returns(M.remotable('StoredSubscription')),
   getContractGovernor: M.call().returns(M.remotable('Instance')),
   getGovernedParams: M.call().returns(M.record()),
@@ -26,7 +26,7 @@ const extendPublicAPI = {
   getRatio: M.call().returns(M.record()),
   getString: M.call().returns(M.string()),
   getUnknown: M.call().returns(M.string()),
-};
+});
 
 /**
  * Utility function for `makeParamGovernance`.
@@ -119,7 +119,6 @@ const facetHelpers = (zcf, paramManager) => {
   /**
    * @template {{}} CF
    * @param {CF} limitedCreatorFacet
-   * @param limitedCreatorFacet
    * @param {{}} [governedApis]
    * @returns {GovernorFacet<CF>}
    */
@@ -186,12 +185,11 @@ const facetHelpers = (zcf, paramManager) => {
   };
 
   return harden({
-    extendPublicAPI,
-    extendPublicFacet: {
+    publicMixin: {
       ...commonPublicMethods,
       ...typedAccessors,
     },
-    extendCreatorFacet: {
+    creatorMixin: {
       getContractGovernor: () => electionManager,
     },
     augmentPublicFacet,
@@ -248,4 +246,4 @@ const handleParamGovernance = async (
 
 harden(handleParamGovernance);
 
-export { handleParamGovernance };
+export { handleParamGovernance, publicMixinAPI };
