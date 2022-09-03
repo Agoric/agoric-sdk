@@ -5,7 +5,9 @@ import { fit, M, makeScalarMapStore } from '@agoric/store';
 import { E, Far } from '@endo/far';
 // TODO: move to narrower package?
 import { observeIteration, observeNotifier } from '@agoric/notifier';
-import { AmountMath, AmountShape } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
+import { handleParamGovernance, ParamTypes } from '@agoric/governance';
+import { makeMetricsPublishKit } from '@agoric/inter-protocol/src/contractSupport.js';
 import {
   makeMyAddressNameAdminKit,
   PowerFlags,
@@ -15,16 +17,33 @@ const { details: X, quote: q } = assert;
 
 const privateArgsShape = harden({
   poolBank: M.eref(M.remotable('bank')),
+  initialPoserInvitation: M.remotable('Invitation'),
+  storageNode: M.eref(M.remotable('storageNode')),
+  marshaller: M.eref(M.remotable('marshaller')),
 });
+
+/**
+ * @typedef {object} MetricsNotification
+ * Metrics naming scheme is that nouns are present values and past-participles
+ * are accumulative.
+ *
+ * @property {bigint} provisionedCount  count of new wallets provisioned
+ * @property {Amount<'nat'>} totalMintedProvided  running sum of Minted provided to new wallets
+ * @property {Amount<'nat'>} totalMintedConverted  running sum of Minted
+ * ever received by the contract from PSM
+ */
 
 /**
  * Given attenuated access to the funding purse,
  * handle requests to provision smart wallets.
  *
  * @param {(address: string, depositBank: ERef<Bank>) => Promise<void>} sendInitialPayment
+ * @param {(count: bigint) => void} publishMetrics
  * @typedef {import('./vat-bank.js').Bank} Bank
  */
-const makeBridgeProvisionTool = sendInitialPayment => {
+const makeBridgeProvisionTool = (sendInitialPayment, publishMetrics) => {
+  let provisionedCount = 0n;
+
   /**
    * @param {{
    *   bankManager: ERef<BankManager>,
@@ -62,7 +81,8 @@ const makeBridgeProvisionTool = sendInitialPayment => {
             myAddressNameAdmin,
           ),
         ]);
-
+        provisionedCount += 1n;
+        publishMetrics(provisionedCount);
         console.info('provisioned', address, powerFlags);
       },
     });
@@ -70,26 +90,61 @@ const makeBridgeProvisionTool = sendInitialPayment => {
 };
 
 /**
- * @typedef {StandardTerms & {
+ * @typedef {StandardTerms & GovernanceTerms<{
+ *    PerAccountInitialAmount: 'amount',
+ *   }> &{
  *   perAccountInitialAmount: Amount<'nat'>,
  * }} ProvisionTerms
+ *
+ * TODO: ERef<GovernedCreatorFacet<ProvisionCreator>>
  *
  * @param {ZCF<ProvisionTerms>} zcf
  * @param {{
  *   poolBank: import('@endo/far').FarRef<Bank>,
+ *   initialPoserInvitation: Invitation,
+ *  storageNode: StorageNode,
+ *  marshaller: Marshaller
  * }} privateArgs
- * @returns
  */
-export const start = (zcf, privateArgs) => {
-  // TODO: make initial amount governed
-  const { perAccountInitialAmount } = zcf.getTerms();
+export const start = async (zcf, privateArgs) => {
   fit(privateArgs, privateArgsShape, 'provisionPool privateArgs');
   const { poolBank } = privateArgs;
-  fit(perAccountInitialAmount, AmountShape, 'perAccountInitialAmount');
-  const { brand: poolBrand } = perAccountInitialAmount;
+
+  // Governance
+  const { publicMixin, creatorMixin, makeFarGovernorFacet, params } =
+    await handleParamGovernance(
+      zcf,
+      privateArgs.initialPoserInvitation,
+      {
+        PerAccountInitialAmount: ParamTypes.AMOUNT,
+      },
+      privateArgs.storageNode,
+      privateArgs.marshaller,
+    );
+
+  const { brand: poolBrand } = params.getPerAccountInitialAmount();
   /** @type {ERef<Purse>} */
   // @ts-expect-error vbank purse is close enough for our use.
   const fundPurse = E(poolBank).getPurse(poolBrand);
+
+  // Metrics
+  let totalMintedProvided = AmountMath.makeEmpty(poolBrand);
+  let totalMintedConverted = AmountMath.makeEmpty(poolBrand);
+  /** @type {import('@agoric/inter-protocol/src/contractSupport.js').MetricsPublishKit<MetricsNotification>} */
+  const { metricsPublisher, metricsSubscriber } = makeMetricsPublishKit(
+    privateArgs.storageNode,
+    privateArgs.marshaller,
+  );
+  const updateMetrics = provisionedCount => {
+    metricsPublisher.publish(
+      harden({
+        provisionedCount,
+        totalMintedProvided,
+        totalMintedConverted,
+      }),
+    );
+  };
+  updateMetrics(0n);
 
   const zoe = zcf.getZoeService();
   const swap = async (payIn, amount, instance) => {
@@ -98,7 +153,9 @@ export const start = (zcf, privateArgs) => {
     const invitation = E(psmPub).makeWantMintedInvitation();
     const seat = E(zoe).offer(invitation, proposal, { In: payIn });
     const payout = await E(seat).getPayout('Out');
-    return E(fundPurse).deposit(payout);
+    const rxd = await E(fundPurse).deposit(payout);
+    totalMintedConverted = AmountMath.add(totalMintedConverted, rxd);
+    return rxd;
   };
 
   /** @type {MapStore<Brand, Instance>} */
@@ -141,12 +198,17 @@ export const start = (zcf, privateArgs) => {
    */
   const sendInitialPayment = async (address, destBank) => {
     console.log('sendInitialPayment', address);
+    const perAccountInitialAmount = params.getPerAccountInitialAmount();
     const initialPmt = await E(fundPurse).withdraw(perAccountInitialAmount);
 
     const destPurse = E(destBank).getPurse(poolBrand);
     return E(destPurse)
       .deposit(initialPmt)
       .then(amt => {
+        totalMintedProvided = AmountMath.add(
+          totalMintedProvided,
+          perAccountInitialAmount,
+        );
         console.log('provisionPool sent', amt, 'to', address);
       })
       .catch(reason => {
@@ -158,16 +220,32 @@ export const start = (zcf, privateArgs) => {
       });
   };
 
-  const creatorFacet = Far('Provisioning Pool creator', {
-    makeHandler: makeBridgeProvisionTool(sendInitialPayment),
+  // For documentation and/or future upgrade to Far
+  // const ProvisionI = M.interface('ProvisionPool', {
+  //   getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
+  //   ...publicMixinAPI,
+  // });
+  const publicFacet = Far('Provisioning Pool public', {
+    getMetrics() {
+      return metricsSubscriber;
+    },
+    ...publicMixin,
+  });
+
+  const limitedCreatorFacet = Far('Provisioning Pool creator', {
+    makeHandler: makeBridgeProvisionTool(sendInitialPayment, updateMetrics),
     initPSM: (brand, instance) => {
       fit(brand, M.remotable('brand'));
       fit(instance, M.remotable('instance'));
       brandToPSM.init(brand, instance);
     },
+    ...creatorMixin,
   });
 
-  return { creatorFacet };
+  return harden({
+    creatorFacet: makeFarGovernorFacet(limitedCreatorFacet),
+    publicFacet,
+  });
 };
 
 harden(start);
