@@ -72,6 +72,8 @@ test('bridge', async t => {
   });
 });
 
+test.todo('spend action over bridge');
+
 test('notifiers', async t => {
   async function checkAddress(address) {
     const smartWallet = await t.context.simpleProvideWallet(address);
@@ -107,7 +109,49 @@ test('wallet action encoding', t => {
       slots: ['foo'],
     },
   });
+  t.is(
+    // @ts-expect-error CapData type should be readonly slots
+    stringifyAction(action),
+    'offers.executeOffer {"body":"bogus","slots":["foo"]}',
+  );
+
+  t.throws(
+    // @ts-expect-error
+    () => stringifyAction({ target: 'foo' }),
+    {
+      message: 'unsupported target foo',
+    },
+  );
+  t.throws(
+    // @ts-expect-error
+    () => stringifyAction({ target: 'deposit', method: 'foo' }),
+    {
+      message: 'unsupported method foo',
+    },
+  );
+  t.throws(
+    // @ts-expect-error
+    () => stringifyAction({ target: 'deposit', method: 'receive', arg: {} }),
+    {
+      message: 'invalid arg',
+    },
+  );
+});
+
+test('wallet action decoding', t => {
+  const action = /** @type {const} */ ({
+    target: 'offers',
+    method: 'executeOffer',
+    arg: {
+      body: 'bogus',
+      slots: ['foo'],
+    },
+  });
   // @ts-expect-error CapData type should be readonly slots
   const str = stringifyAction(action);
   t.deepEqual(parseActionStr(str), action);
+
+  t.throws(() => parseActionStr(` ${str}`));
+  t.throws(() => parseActionStr(`,${str}`));
+  t.throws(() => parseActionStr(', '));
 });

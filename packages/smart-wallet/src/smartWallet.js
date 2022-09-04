@@ -161,7 +161,7 @@ export const makeSmartWallet = async (
 
   /** @type { (desc: Omit<BrandDescriptor, 'displayInfo'>) => Promise<void>} */
   const addBrand = async desc => {
-    console.log('DEBUG addBrand', desc);
+    console.log('addBrand', desc);
     // assert haven't received this issuer before.
     const descriptorsHas = brandDescriptors.has(desc.brand);
     const pursesHas = brandPurses.has(desc.brand);

@@ -81,7 +81,6 @@ export const makeOffersFacet = (
       // Any of these may throw.
 
       const offerSpec = await unmarshallOfferSpec(capData);
-      console.log('DEBUG', { offerSpec });
 
       const { id, invitationSpec, proposal, offerArgs } = offerSpec;
       assert(invitationSpec, 'offer missing invitationSpec');
@@ -126,7 +125,7 @@ export const makeOffersFacet = (
             seat.getOfferResult(),
             result => {
               const passStyle = passStyleOf(result);
-              console.log('DEBUG offerResult', passStyle, result);
+              console.log('offerResult', passStyle, result);
               // someday can we get TS to type narrow based on the passStyleOf result match?
               switch (passStyle) {
                 case 'copyRecord':

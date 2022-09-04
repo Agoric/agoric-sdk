@@ -21,24 +21,34 @@ import { makeSmartWallet } from './smartWallet.js';
 // Client message types. These are the shapes client must use to push messages over the bridge.
 /**
  * @typedef {{
- * target: 'offers', // e.g. `getOffersFacet`
+ * target: 'deposit' | 'offers',
  * method: string,
  * arg: import('@endo/captp').CapData<string>,
- * }} NormalAction
- * Can't receive payments.
+ * }} Action
+ * Description of action, to be encoded in a bridge messsage 'action' or 'spendAction' field.
+ * Only actions sent in 'spendAction' (in WalletSpendActionMsg) can spend.
  *
- * @typedef {{
- * target: 'deposit', 'offers', // e.g. `getDepositFacet`
- * }} SpendAction
- * Necessary for payments.
+ * The `target` field maps to a getter: 'foo' --> getFooFacet()
  */
 
-/** @type {(action: NormalAction) => string} */
+/** @type {(action: Action) => string} */
 export const stringifyAction = ({ target, method, arg }) => {
-  assert(target === 'offers', `unsupported target ${target}`);
+  switch (target) {
+    case 'deposit':
+      assert(method === 'receive', `unsupported method ${method}`);
+      break;
+    case 'offers':
+      assert(method === 'executeOffer', `unsupported method ${method}`);
+      break;
+    default:
+      assert.fail(`unsupported target ${target}`);
+  }
+  // xxx utility for validating CapData shape?
+  assert(arg.body && arg.slots, 'invalid arg');
+
   return `${target}.${method} ${JSON.stringify(arg)}`;
 };
-/** @type {(actionStr: string) => NormalAction} */
+/** @type {(actionStr: string) => Action} */
 export const parseActionStr = str => {
   const space = str.indexOf(' ');
   const left = str.substring(0, space);
@@ -104,16 +114,23 @@ export const start = async (zcf, privateArgs) => {
       assert(obj, 'missing wallet action');
       assert.typeof(obj, 'object');
       assert.typeof(obj.owner, 'string');
-      assert(!('spendAction' in obj), 'spend actions not yet supported');
-      assert('action' in obj, 'missing action property');
+      const canSpend = 'spendAction' in obj;
+      assert(
+        canSpend || 'action' in obj,
+        'missing action/spendAction property',
+      );
+      const action = parseActionStr(canSpend ? obj.spendAction : obj.action);
+
       const wallet = walletsByAddress.get(obj.owner); // or throw
-      const action = parseActionStr(obj.action);
       console.log('walletFactory:', { wallet, action });
       switch (action.target) {
+        case 'deposit':
+          assert(canSpend);
+          return E(E(wallet).getDepositFacet())[action.method](action.arg);
         case 'offers':
           return E(E(wallet).getOffersFacet())[action.method](action.arg);
         default:
-          throw new Error('unsupportedaction target');
+          throw new Error(`unsupported action target ${action.target}`);
       }
     },
   });

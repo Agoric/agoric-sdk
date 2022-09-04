@@ -89,20 +89,14 @@ const makeFakeBridgeManager = () => {
   /** @type {import('@agoric/vats/src/bridge').BridgeManager} */
   const manager = {
     register(srcID, handler) {
-      console.log('FakeBridgeManager register', srcID, handler);
-      console.log('handler keys', Object.keys(handler));
-      console.trace();
       handlers[srcID] = handler;
     },
     toBridge(dstID, obj) {
-      console.log('FakeBridgeManager toBridge', dstID, obj);
       const handler = handlers[dstID];
       assert(handler, `No handler for ${dstID}`);
       switch (obj.type) {
         case ActionType.WALLET_ACTION:
         case ActionType.WALLET_SPEND_ACTION: {
-          console.log('BRIDGE sending wallet obj');
-          console.log('handler keys', Object.keys(handler));
           return E(handler).fromBridge(dstID, obj);
         }
 
@@ -112,8 +106,6 @@ const makeFakeBridgeManager = () => {
       }
     },
     unregister(srcID) {
-      console.log('FakeBridgeManager register', srcID);
-      // t.is(srcID, 'bank');
       assert.fail('expected unregister');
     },
   };
