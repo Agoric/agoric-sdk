@@ -132,6 +132,9 @@ const Provider = ({ children }) => {
   const [schemaActions, setSchemaActions] = useState(null);
   const [connectionComponent, setConnectionComponent] = useState(null);
   const [backendErrorHandler, setBackendErrorHandler] = useState(null);
+  const [previewEnabled, setPreviewEnabled] = useState(false);
+  // expose for development
+  window.setPreviewEnabled = setPreviewEnabled;
 
   const RESTORED_CONNECTION_CONFIGS = [...DEFAULT_CONNECTION_CONFIGS];
   const userConnectionConfigs = maybeLoad('userConnectionConfigs');
@@ -435,6 +438,7 @@ const Provider = ({ children }) => {
     setBackendErrorHandler,
     keplrConnection,
     tryKeplrConnect,
+    previewEnabled,
   };
 
   useDebugLogging(state, [
@@ -451,6 +455,7 @@ const Provider = ({ children }) => {
     pendingOffers,
     declinedOffers,
     closedOffers,
+    previewEnabled,
   ]);
 
   return (

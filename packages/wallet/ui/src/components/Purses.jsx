@@ -12,7 +12,11 @@ import Loading from './Loading';
 import './Purses.scss';
 
 // Exported for testing only.
-export const PursesWithoutContext = ({ purses, pendingTransfers }) => {
+export const PursesWithoutContext = ({
+  purses,
+  pendingTransfers,
+  previewEnabled,
+}) => {
   const [openPurse, setOpenPurse] = useState(null);
 
   const handleClickOpen = purse => {
@@ -36,21 +40,23 @@ export const PursesWithoutContext = ({ purses, pendingTransfers }) => {
             />
           </ErrorBoundary>
         </div>
-        <div className="Right">
-          {pendingTransfers.has(purse.id) ? (
-            <div className="PurseProgressWrapper">
-              <CircularProgress size={30} />
-            </div>
-          ) : (
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => handleClickOpen(purse)}
-            >
-              Send
-            </Button>
-          )}
-        </div>
+        {previewEnabled && (
+          <div className="Right">
+            {pendingTransfers.has(purse.id) ? (
+              <div className="PurseProgressWrapper">
+                <CircularProgress size={30} />
+              </div>
+            ) : (
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => handleClickOpen(purse)}
+              >
+                Send
+              </Button>
+            )}
+          </div>
+        )}
       </CardItem>
     );
   };
@@ -69,4 +75,5 @@ export const PursesWithoutContext = ({ purses, pendingTransfers }) => {
 export default withApplicationContext(PursesWithoutContext, context => ({
   purses: context.purses,
   pendingTransfers: context.pendingTransfers,
+  previewEnabled: context.previewEnabled,
 }));

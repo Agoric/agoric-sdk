@@ -59,6 +59,8 @@ const pendingTransfers = new Set([0]);
 const withApplicationContext =
   (Component, _) =>
   ({ ...props }) => {
+    // Test the preview features
+    props.previewEnabled = true;
     return (
       <Component
         purses={purses}

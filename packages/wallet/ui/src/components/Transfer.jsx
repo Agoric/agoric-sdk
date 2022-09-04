@@ -182,6 +182,7 @@ export const TransferInternal = ({
             value={type}
             onChange={handleTypeChange}
           >
+            {/* TODO by default hide "within wallet" until https://github.com/Agoric/agoric-sdk/issues/6126 */}
             <FormControlLabel
               value={transferTypes.WITHIN_WALLET}
               control={<Radio color="primary" />}
