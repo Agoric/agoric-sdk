@@ -9,6 +9,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import Apps from '@mui/icons-material/Apps';
 import People from '@mui/icons-material/People';
 import AddCircle from '@mui/icons-material/AddCircle';
+import { withApplicationContext } from '../contexts/Application';
 
 const useStyles = makeStyles(theme => ({
   nav: {
@@ -69,7 +70,7 @@ const ListItemLink = ({ icon, primary, to, onClick }) => {
   );
 };
 
-const NavMenu = ({ setDrawerOpened }) => {
+const NavMenu = ({ setDrawerOpened, previewEnabled }) => {
   const styles = useStyles(useTheme());
   const onLinkClick = () => {
     if (setDrawerOpened) {
@@ -93,21 +94,27 @@ const NavMenu = ({ setDrawerOpened }) => {
           primary="Dapps"
           icon={<Apps />}
         />
-        <ListItemLink
-          onClick={onLinkClick}
-          to="/contacts"
-          primary="Contacts"
-          icon={<People />}
-        />
-        <ListItemLink
-          onClick={onLinkClick}
-          to="/issuers"
-          primary="Asset Issuers"
-          icon={<AddCircle />}
-        />
+        {previewEnabled && (
+          <ListItemLink
+            onClick={onLinkClick}
+            to="/contacts"
+            primary="Contacts"
+            icon={<People />}
+          />
+        )}
+        {previewEnabled && (
+          <ListItemLink
+            onClick={onLinkClick}
+            to="/issuers"
+            primary="Asset Issuers"
+            icon={<AddCircle />}
+          />
+        )}
       </List>
     </nav>
   );
 };
 
-export default NavMenu;
+export default withApplicationContext(NavMenu, context => ({
+  previewEnabled: context.previewEnabled,
+}));
