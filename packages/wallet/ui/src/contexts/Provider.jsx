@@ -1,14 +1,13 @@
+// @ts-check
 /* eslint-disable react/display-name */
 import { observeIterator } from '@agoric/notifier';
 import { E } from '@endo/far';
-import { useEffect, useState, useReducer } from 'react';
+import React, { useEffect, useState, useReducer } from 'react';
 import { SigningStargateClient } from '@cosmjs/stargate';
 import { Random } from '@cosmjs/crypto';
-
 import { ApplicationContext, ConnectionStatus } from './Application';
 
 import {
-  ConnectionConfigType,
   DEFAULT_CONNECTION_CONFIGS,
   SmartConnectionMethod,
 } from '../util/connections';
@@ -134,6 +133,7 @@ const Provider = ({ children }) => {
   const [backendErrorHandler, setBackendErrorHandler] = useState(null);
   const [previewEnabled, setPreviewEnabled] = useState(false);
   // expose for development
+  // @ts-expect-error window keys
   window.setPreviewEnabled = setPreviewEnabled;
 
   const RESTORED_CONNECTION_CONFIGS = [...DEFAULT_CONNECTION_CONFIGS];
@@ -162,6 +162,7 @@ const Provider = ({ children }) => {
    * NOTE: relies on ambient window.fetch, window.keplr, Random.getBytes
    */
   const tryKeplrConnect = async () => {
+    // @ts-expect-error window keys
     const { keplr, fetch } = window;
     assert(fetch, 'Missing window.fetch');
     assert(keplr, 'Missing window.keplr');
@@ -188,6 +189,7 @@ const Provider = ({ children }) => {
       }),
     ]);
     setKeplrConnection({
+      // @ts-expect-error state typed as null
       address: accounts[0]?.address,
       signers: { interactiveSigner, backgroundSigner },
     });
@@ -273,6 +275,7 @@ const Provider = ({ children }) => {
         throw e;
       }
     };
+    // @ts-expect-error backend may be null
     setSchemaActions(E.get(backend).actions);
     for (const [prop, setter] of backendSetters.entries()) {
       const iterator = E.get(backend)[prop];
@@ -287,6 +290,7 @@ const Provider = ({ children }) => {
       }).catch(rethrowIfNotCancelled);
     }
 
+    // @ts-expect-error backend may be null
     const issuerSuggestionsNotifier = E.get(backend).issuerSuggestions;
     observeIterator(issuerSuggestionsNotifier, {
       fail: rethrowIfNotCancelled,
@@ -350,14 +354,11 @@ const Provider = ({ children }) => {
         return;
       }
       const WalletConnection = mod.default;
+      // @ts-expect-error state typed as null
       setConnectionComponent(<WalletConnection />);
       attempts = 0;
     };
-    if (connectionConfig.type === ConnectionConfigType.SMART) {
-      importer = () => import('../components/SmartWalletConnection');
-    } else {
-      importer = () => import('../components/WalletConnection');
-    }
+    importer = () => import('../components/SmartWalletConnection');
     connect().catch(retry);
     return () => {
       outdated = true;
