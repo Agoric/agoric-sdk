@@ -13,8 +13,8 @@ const sourceToBundle = [
     `../bundles/bundle-singleWallet.js`,
   ],
   [
-    `@agoric/wallet/contract/src/walletFactory.js`,
-    `../bundles/bundle-legacy-walletFactory.js`,
+    `@agoric/smart-wallet/src/walletFactory.js`,
+    `../bundles/bundle-walletFactory.js`,
   ],
 ];
 

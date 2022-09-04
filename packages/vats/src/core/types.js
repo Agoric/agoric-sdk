@@ -175,7 +175,7 @@
  *       interchainPool: Promise<Installation<import('@agoric/inter-protocol/src/interchainPool.js').start>>,
  *       mintHolder: Promise<Installation<import('@agoric/vats/src/mintHolder.js').start>>,
  *       singleWallet: Promise<Installation<import('@agoric/legacy-smart-wallet/src/singleWallet.js').start>>,
- *       walletFactory: Promise<Installation<import('@agoric/legacy-smart-wallet/src/walletFactory.js').start>>,
+ *       walletFactory: Promise<Installation<import('@agoric/smart-wallet/src/walletFactory.js').start>>,
  *     },
  *   },
  *   instance:{
