@@ -43,7 +43,7 @@ test('test defineVirtualFarClass', t => {
   t.throws(() => upCounter.incr(-3), {
     message: 'In "incr" method of (UpCounter) arg 0: -3 - Must be >= 0',
   });
-  // @ts-expect-error TS doesn't know that `this` is a `Context`
+  // @ts-expect-error the type violation is what we're testing
   t.throws(() => upCounter.incr('foo'), {
     message:
       'In "incr" method of (UpCounter) arg 0: string "foo" - Must be a number',
@@ -53,7 +53,7 @@ test('test defineVirtualFarClass', t => {
 test('test defineVirtualFarClassKit', t => {
   const makeCounterKit = defineVirtualFarClassKit(
     'Counter',
-    harden({ up: UpCounterI, down: DownCounterI }),
+    { up: UpCounterI, down: DownCounterI },
     (x = 0) => ({ x }),
     {
       up: {

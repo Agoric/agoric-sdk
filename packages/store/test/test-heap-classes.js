@@ -51,7 +51,7 @@ test('test defineHeapFarClass', t => {
 test('test defineHeapFarClassKit', t => {
   const makeCounterKit = defineHeapFarClassKit(
     'Counter',
-    harden({ up: UpCounterI, down: DownCounterI }),
+    { up: UpCounterI, down: DownCounterI },
     (x = 0) => ({ x }),
     {
       up: {
