@@ -4,6 +4,12 @@ import { AmountShape } from '@agoric/ertp';
 import { M } from '@agoric/store';
 import { TimestampValueShape } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';
 
+export const InvitationHandleShape = M.remotable('InvitationHandle');
+export const InvitationShape = M.remotable('Invitation');
+export const InstanceHandleShape = M.remotable('InstanceHandle');
+export const InstallationShape = M.remotable('Installation');
+export const SeatShape = M.remotable('Seat');
+
 export const AmountKeywordRecordShape = M.recordOf(M.string(), AmountShape);
 export const AmountPatternKeywordRecordShape = M.recordOf(
   M.string(),
@@ -57,7 +63,11 @@ export const isAfterDeadlineExitRule = exit => {
 
 export const InvitationElementShape = M.split({
   description: M.string(),
-  handle: M.remotable(), // invitationHandle
-  instance: M.remotable(),
-  installation: M.remotable(),
+  handle: InvitationHandleShape,
+  instance: InstanceHandleShape,
+  installation: InstallationShape,
+});
+
+export const OfferHandlerI = M.interface('OfferHandler', {
+  handle: M.call(SeatShape).optional(M.any()).returns(M.string()),
 });
