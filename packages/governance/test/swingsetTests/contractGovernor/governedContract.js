@@ -37,8 +37,12 @@ const start = async (zcf, privateArgs) => {
   const governanceApi = () => (governanceAPICalled += 1);
   return {
     publicFacet: augmentPublicFacet({
-      getNum: () => params.getMalleableNumber(),
-      getApiCalled: () => governanceAPICalled,
+      getNum() {
+        return params.getMalleableNumber();
+      },
+      getApiCalled() {
+        return governanceAPICalled;
+      },
     }),
     creatorFacet: makeGovernorFacet({}, { governanceApi }),
   };

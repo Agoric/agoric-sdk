@@ -463,12 +463,12 @@
  * @property {CreateQuestion} createQuestion
  */
 
-/** @typedef {{ [methodName: string]: (...args: any) => unknown }} GovernedApis */
+/** @typedef {{ [methodName: string]: (...args: any) => unknown }} GovernedMethods */
 
 /**
  * @template {{}} CF
  * @typedef {GovernedCreatorFacet<CF> & {
- * getGovernedApis: () => ERef<GovernedApis>;
+ * getGovernedApis: () => ERef<GovernedMethods>;
  * getGovernedApiNames: () => (string | symbol)[];
  * setOfferFilter: (strings: string[]) => void;
  * }} GovernorFacet

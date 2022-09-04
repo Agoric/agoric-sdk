@@ -162,7 +162,7 @@ const start = async (zcf, privateArgs, baggage) => {
   assert(centralBrand !== undefined, 'centralBrand must be present');
 
   const [
-    { augmentVirtualPublicFacet, makeVirtualGovernorFacet, params },
+    { augmentVirtualPublicFacet, makeVirtualGovernorKindMethodsKit, params },
     centralDisplayInfo,
   ] = await Promise.all([
     handleParamGovernance(
@@ -465,29 +465,30 @@ const start = async (zcf, privateArgs, baggage) => {
     }),
   );
 
-  const { governorFacet, limitedCreatorFacet } = makeVirtualGovernorFacet(
-    // @ts-expect-error TS is confused.
-    Far('AMM Fee Collector facet', {
-      makeCollectFeesInvitation,
-      /**
-       * Must be called before adding pools. Not provided at contract start time
-       * due to cyclic dependency.
-       *
-       * @param {MethodContext} _context
-       * @param {AssetReservePublicFacet} facet
-       */
-      resolveReserveFacet: (_context, facet) => {
-        assert(!reserveFacet, 'reserveFacet already resolved');
-        reserveFacet = facet;
-        baggage.init('reserveFacet', facet);
-      },
-    }),
-  );
+  const { governorKindMethods, limitedCreatorKindMethods } =
+    makeVirtualGovernorKindMethodsKit(
+      // @-ts-expect-error TS is confused.
+      harden({
+        makeCollectFeesInvitation,
+        /**
+         * Must be called before adding pools. Not provided at contract start time
+         * due to cyclic dependency.
+         *
+         * @param {MethodContext} _context
+         * @param {AssetReservePublicFacet} facet
+         */
+        resolveReserveFacet: (_context, facet) => {
+          assert(!reserveFacet, 'reserveFacet already resolved');
+          reserveFacet = facet;
+          baggage.init('reserveFacet', facet);
+        },
+      }),
+    );
 
   const makeAMM = vivifyKindMulti(baggage, 'AMM', initEmpty, {
     publicFacet,
-    creatorFacet: governorFacet,
-    limitedCreatorFacet,
+    creatorFacet: governorKindMethods,
+    limitedCreatorFacet: limitedCreatorKindMethods,
   });
   const { creatorFacet, publicFacet: pFacet } = makeAMM();
   return { creatorFacet, publicFacet: pFacet };

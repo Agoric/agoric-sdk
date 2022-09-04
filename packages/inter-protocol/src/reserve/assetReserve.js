@@ -131,16 +131,19 @@ const start = async (zcf, privateArgs, baggage) => {
   saveBrandKeyword(feeKit.brand, 'Fee');
   // no need to saveIssuer() b/c registerFeeMint did it
 
-  const { augmentVirtualPublicFacet, makeVirtualGovernorFacet, params } =
-    await handleParamGovernance(
-      zcf,
-      privateArgs.initialPoserInvitation,
-      {
-        [AMM_INSTANCE]: ParamTypes.INSTANCE,
-      },
-      privateArgs.storageNode,
-      privateArgs.marshaller,
-    );
+  const {
+    augmentVirtualPublicFacet,
+    makeVirtualGovernorKindMethodsKit,
+    params,
+  } = await handleParamGovernance(
+    zcf,
+    privateArgs.initialPoserInvitation,
+    {
+      [AMM_INSTANCE]: ParamTypes.INSTANCE,
+    },
+    privateArgs.storageNode,
+    privateArgs.marshaller,
+  );
 
   /** @type {Promise<XYKAMMPublicFacet>} */
   const ammPublicFacet = E(zcf.getZoeService()).getPublicFacet(
@@ -418,14 +421,19 @@ const start = async (zcf, privateArgs, baggage) => {
     );
   };
 
-  const { governorFacet, limitedCreatorFacet } = makeVirtualGovernorFacet({
-    makeAddCollateralInvitation,
-    // add makeRedeemLiquidityTokensInvitation later. For now just store them
-    getAllocations,
-    addIssuer,
-    makeShortfallReportingInvitation,
-    getMetrics: () => metricsSubscription,
-  });
+  const { governorKindMethods, limitedCreatorKindMethods } =
+    makeVirtualGovernorKindMethodsKit(
+      harden({
+        makeAddCollateralInvitation,
+        // add makeRedeemLiquidityTokensInvitation later. For now just store them
+        getAllocations,
+        addIssuer,
+        makeShortfallReportingInvitation,
+        getMetrics() {
+          return metricsSubscription;
+        },
+      }),
+    );
 
   const governedApis = { addLiquidityToAmmPool, burnFeesToReduceShortfall };
 
@@ -439,9 +447,9 @@ const start = async (zcf, privateArgs, baggage) => {
 
   const makeAssetReserve = vivifyKindMulti(baggage, 'assetReserve', init, {
     publicFacet,
-    creatorFacet: governorFacet,
+    creatorFacet: governorKindMethods,
     shortfallReportingFacet,
-    limitedCreatorFacet,
+    limitedCreatorFacet: limitedCreatorKindMethods,
     governedApis,
   });
 

@@ -23,7 +23,7 @@ export const makeMakeCollectFeesInvitation = (
     return `paid out ${amount.value}`;
   };
 
-  const makeCollectFeesInvitation = () =>
+  const makeCollectFeesInvitation = _context =>
     zcf.makeInvitation(collectFees, 'collect fees');
 
   return { makeCollectFeesInvitation };

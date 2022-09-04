@@ -211,7 +211,7 @@ export const start = async (
   };
 
   const publicFacet = augmentPublicFacet(
-    Far('stakeFactory public', {
+    harden({
       makeLoanInvitation: () =>
         zcf.makeInvitation(offerHandler, 'make stakeFactory'),
       makeReturnAttInvitation: att.publicFacet.makeReturnAttInvitation,
