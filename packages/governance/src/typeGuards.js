@@ -243,14 +243,21 @@ export const QuestionStatsShape = harden({
   results: M.arrayOf({ position: PositionShape, total: M.nat() }),
 });
 
+export const QuestionDetailI = M.interface('Question details', {
+  getVoteCounter: M.call().returns(InstanceShape),
+  getDetails: M.call().returns(QuestionDetailsShape),
+});
+
 export const BinaryVoteCounterPublicI = M.interface(
   'BinaryVoteCounter PublicFacet',
   {
-    getQuestion: M.call().returns(QuestionSpecShape),
+    // XXX I expected M.call().returns(QuestionDetailI)
+    getQuestion: M.call().returns(M.remotable()),
     isOpen: M.call().returns(M.boolean()),
     getOutcome: M.call().returns(M.eref(PositionShape)),
     getStats: M.call().returns(QuestionStatsShape),
     getDetails: M.call().returns(QuestionDetailsShape),
+    getInstance: M.call().returns(InstanceShape),
   },
 );
 
@@ -259,7 +266,7 @@ export const BinaryVoteCounterAdminI = M.interface(
   'BinaryVoteCounter AdminFacet',
   {
     submitVote: M.call(VoterHandle, M.arrayOf(PositionShape))
-      .optional(M.nat)
+      .optional(M.nat())
       .returns(),
   },
 );
@@ -272,7 +279,7 @@ export const BinaryVoteCounterCloseI = M.interface(
 );
 
 export const BinaryVoteCounterIKit = harden({
-  BinaryVoteCounterPublicI,
-  BinaryVoteCounterAdminI,
-  BinaryVoteCounterCloseI,
+  publicFacet: BinaryVoteCounterPublicI,
+  creatorFacet: BinaryVoteCounterAdminI,
+  closeFacet: BinaryVoteCounterCloseI,
 });

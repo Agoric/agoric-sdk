@@ -93,7 +93,7 @@ const start = (zcf, privateArgs) => {
     [...Array(committeeSize).keys()].map(makeCommitteeVoterInvitation),
   );
 
-  const makeCommitteeFacets = defineHeapFarClassKit(
+  const makeCommitteeKit = defineHeapFarClassKit(
     'Committee Facets',
     CommitteeIKit,
     initEmpty,
@@ -180,8 +180,7 @@ const start = (zcf, privateArgs) => {
     },
   );
 
-  // @ts-expect-error How to type farClasses?
-  return makeCommitteeFacets();
+  return makeCommitteeKit();
 };
 
 harden(start);
