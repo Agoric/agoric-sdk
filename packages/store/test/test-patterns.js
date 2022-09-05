@@ -108,6 +108,16 @@ const matchTests = harden([
       M.gte({ foo: 3, bar: 3 }),
       M.lte({ foo: 4, bar: 4 }),
 
+      M.split(
+        { foo: M.number() },
+        M.and(M.partial({ bar: M.number() }), M.partial({ baz: M.number() })),
+      ),
+
+      M.split(
+        { foo: M.number() },
+        M.partial({ bar: M.number(), baz: M.number() }),
+      ),
+
       M.split({ foo: 3 }, { bar: 4 }),
       M.split({ bar: 4 }, { foo: 3 }),
       M.split({ foo: 3 }),
@@ -149,6 +159,14 @@ const matchTests = harden([
       ],
       [M.lte({ baz: 3 }), '{"foo":3,"bar":4} - Must be <= {"baz":3}'],
       [M.gte({ baz: 3 }), '{"foo":3,"bar":4} - Must be >= {"baz":3}'],
+
+      [
+        M.split(
+          { foo: M.number() },
+          M.and(M.partial({ bar: M.string() }), M.partial({ baz: M.number() })),
+        ),
+        'rest-parts: optional-parts: bar: number 4 - Must be a string',
+      ],
 
       [M.split([]), 'copyRecord {"foo":3,"bar":4} - Must be a copyArray'],
       [
