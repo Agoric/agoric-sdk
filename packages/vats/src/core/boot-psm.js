@@ -9,9 +9,11 @@ import {
 import * as startPSMmod from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import * as ERTPmod from '@agoric/ertp';
 // TODO: factor startEconomicCommittee out of econ-behaviors.js
-import { startEconomicCommittee } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
-import { ECON_COMMITTEE_MANIFEST } from '@agoric/inter-protocol/src/proposals/core-proposal.js';
 import { fit, M } from '@agoric/store';
+import {
+  ECON_COMMITTEE_MANIFEST,
+  startEconomicCommittee,
+} from '@agoric/inter-protocol/src/proposals/startEconCommittee.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
 import {
