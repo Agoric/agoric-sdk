@@ -1,0 +1,46 @@
+{
+  "consume": {
+    "agoricNamesAdmin": true,
+    "bankManager": true,
+    "board": true,
+    "chainStorage": true,
+    "zoe": "zoe",
+    "feeMintAccess": "zoe",
+    "economicCommitteeCreatorFacet": "economicCommittee",
+    "psmCharterCreatorFacet": "psmCharter",
+    "psmFacets": true,
+    "chainTimerService": "timer"
+  },
+  "produce": {
+    "testFirstAnchorKit": true
+  },
+  "installation": {
+    "consume": {
+      "contractGovernor": true,
+      "psm": true,
+      "mintHolder": true
+    }
+  },
+  "instance": {
+    "consume": {
+      "economicCommittee": true
+    }
+  },
+  "issuer": {
+    "produce": {
+      "DAI": true
+    },
+    "consume": {
+      "DAI": true
+    }
+  },
+  "brand": {
+    "consume": {
+      "DAI": true,
+      "IST": true
+    },
+    "produce": {
+      "DAI": true
+    }
+  }
+}
