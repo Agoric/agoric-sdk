@@ -1,8 +1,10 @@
 // @ts-check
 
 import { makePublishKit } from '@agoric/notifier';
-import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
+import { makeHeapFarInstance } from '@agoric/store';
+
+import { ElectoratePublicI, ElectorateCreatorI } from './typeGuards.js';
 
 /**
  * This Electorate visibly has no members, takes no votes, and approves no
@@ -13,35 +15,45 @@ import { makePromiseKit } from '@endo/promise-kit';
 const start = zcf => {
   const { subscriber } = makePublishKit();
 
-  const publicFacet = Far('publicFacet', {
-    getQuestionSubscriber: () => subscriber,
-    getOpenQuestions: () => {
+  const publicFacet = makeHeapFarInstance('publicFacet', ElectoratePublicI, {
+    getQuestionSubscriber() {
+      return subscriber;
+    },
+    getOpenQuestions() {
       /** @type {Handle<'Question'>[]} */
       const noQuestions = [];
       const questionsPromise = makePromiseKit();
       questionsPromise.resolve(noQuestions);
       return questionsPromise.promise;
     },
-    getName: () => 'no Action electorate',
-    getInstance: zcf.getInstance,
-    getQuestion: () => {
+    getName() {
+      return 'no Action electorate';
+    },
+    getInstance() {
+      return zcf.getInstance();
+    },
+    getQuestion() {
       throw Error(`noActionElectorate doesn't have questions.`);
     },
   });
 
-  const creatorFacet = Far('creatorFacet', {
-    getPoserInvitation: () => {
+  const creatorFacet = makeHeapFarInstance('creatorFacet', ElectorateCreatorI, {
+    getPoserInvitation() {
       return zcf.makeInvitation(() => {},
       `noActionElectorate doesn't allow posing questions`);
     },
     addQuestion() {
       throw Error(`noActionElectorate doesn't add questions.`);
     },
-    getVoterInvitations: () => {
+    getVoterInvitations() {
       throw Error(`No Action Electorate doesn't have invitations.`);
     },
-    getQuestionSubscriber: () => subscriber,
-    getPublicFacet: () => publicFacet,
+    getQuestionSubscriber() {
+      return subscriber;
+    },
+    getPublicFacet() {
+      return publicFacet;
+    },
   });
 
   return { publicFacet, creatorFacet };

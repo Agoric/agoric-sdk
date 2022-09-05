@@ -216,7 +216,7 @@ export const QuestionDetailsShape = M.or(
   SimpleQuestionDetailsShape,
 );
 
-export const CommitteePublicI = M.interface('Committee PublicFacet', {
+export const ElectoratePublicI = M.interface('Committee PublicFacet', {
   getQuestionSubscriber: M.call().returns(SubscriberShape),
   getOpenQuestions: M.call().returns(M.promise()),
   getName: M.call().returns(M.string()),
@@ -224,17 +224,17 @@ export const CommitteePublicI = M.interface('Committee PublicFacet', {
   getQuestion: M.call(QuestionHandleShape).returns(M.promise()),
 });
 
-export const CommitteeAdminI = M.interface('Committee AdminFacet', {
+export const ElectorateCreatorI = M.interface('Committee AdminFacet', {
   getPoserInvitation: M.call().returns(M.promise()),
   addQuestion: M.call(InstanceShape, QuestionSpecShape).returns(M.promise()),
   getVoterInvitations: M.call().returns(M.arrayOf(M.promise())),
   getQuestionSubscriber: M.call().returns(SubscriberShape),
-  getPublicFacet: M.call().returns(CommitteePublicI),
+  getPublicFacet: M.call().returns(ElectoratePublicI),
 });
 
 export const CommitteeIKit = harden({
-  publicFacet: CommitteePublicI,
-  creatorFacet: CommitteeAdminI,
+  publicFacet: ElectoratePublicI,
+  creatorFacet: ElectorateCreatorI,
 });
 
 export const QuestionStatsShape = harden({

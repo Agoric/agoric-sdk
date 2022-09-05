@@ -1,10 +1,15 @@
 // @ts-check
 
 import { makeStoredPublishKit } from '@agoric/notifier';
-import { defineHeapFarClassKit, initEmpty, makeStore } from '@agoric/store';
+import {
+  defineHeapFarClassKit,
+  initEmpty,
+  makeStore,
+  makeHeapFarInstance,
+  M,
+} from '@agoric/store';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import {
@@ -14,7 +19,11 @@ import {
   startCounter,
 } from './electorateTools.js';
 import { QuorumRule } from './question.js';
-import { CommitteeIKit } from './typeGuards.js';
+import {
+  CommitteeIKit,
+  QuestionHandleShape,
+  PositionShape,
+} from './typeGuards.js';
 
 const { ceilDivide } = natSafeMath;
 
@@ -52,31 +61,43 @@ const start = (zcf, privateArgs) => {
       const voterHandle = makeHandle('Voter');
       seat.exit();
 
+      const VoterI = M.interface('voter', {
+        castBallotFor: M.call(
+          QuestionHandleShape,
+          M.arrayOf(PositionShape),
+        ).returns(M.promise()),
+      });
+      const InvitationMakerI = M.interface('invitationMaker', {
+        makeVoteInvitation: M.call(QuestionHandleShape).returns(M.promise()),
+      });
+
       // CRUCIAL: voteCap carries the ability to cast votes for any voter at
       // any weight. It's wrapped here and given to the voter.
       //
       // Ensure that the voter can't get access to the unwrapped voteCap, and
       // has no control over the voteHandle or weight
       return harden({
-        voter: Far(`voter${index}`, {
-          castBallotFor: (questionHandle, positions) => {
+        voter: makeHeapFarInstance(`voter${index}`, VoterI, {
+          castBallotFor(questionHandle, positions) {
             const { voteCap } = allQuestions.get(questionHandle);
             return E(voteCap).submitVote(voterHandle, positions, 1n);
           },
         }),
-        invitationMakers: Far('invitation makers', {
-          makeVoteInvitation: questionHandle => {
-            const continuingVoteHandler = (cSeat, offerArgs) => {
-              assert(offerArgs, 'continuingVoteHandler missing offerArgs');
-              const { positions } = offerArgs;
-              cSeat.exit();
-              const { voteCap } = allQuestions.get(questionHandle);
-              return E(voteCap).submitVote(voterHandle, positions, 1n);
-            };
+        invitationMakers: makeHeapFarInstance(
+          'invitation makers',
+          InvitationMakerI,
+          {
+            makeVoteInvitation(questionHandle) {
+              const continuingVoteHandler = (cSeat, { positions }) => {
+                cSeat.exit();
+                const { voteCap } = allQuestions.get(questionHandle);
+                return E(voteCap).submitVote(voterHandle, positions, 1n);
+              };
 
-            return zcf.makeInvitation(continuingVoteHandler, 'vote');
+              return zcf.makeInvitation(continuingVoteHandler, 'vote');
+            },
           },
-        }),
+        ),
       });
     };
 
