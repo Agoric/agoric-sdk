@@ -587,9 +587,9 @@ function build(
     // See https://github.com/Agoric/agoric-sdk/issues/2780
     errorIdNum: 70000,
     marshalSaveError: err =>
-      // By sending this to `console.info`, under cosmic-swingset this is
+      // By sending this to `console.warn`, under cosmic-swingset this is
       // controlled by the `console` option given to makeLiveSlots.
-      console.info('Logging sent error stack', err),
+      console.warn('Logging sent error stack', err),
   });
   const unmeteredUnserialize = meterControl.unmetered(m.unserialize);
   // eslint-disable-next-line no-use-before-define
@@ -1353,12 +1353,12 @@ function build(
         if (isNat(value)) {
           vom.setCacheSize(value);
         } else {
-          console.log(`WARNING: invalid virtualObjectCacheSize value`, value);
+          console.warn(`WARNING: invalid virtualObjectCacheSize value`, value);
         }
         break;
       }
       default:
-        console.log(`WARNING setVatOption unknown option ${option}`);
+        console.warn(`WARNING setVatOption unknown option ${option}`);
     }
   }
 
@@ -1555,8 +1555,7 @@ function build(
         vreffedObjectRegistry,
       });
     } catch (e) {
-      console.log(`-- error during stopVat()`);
-      console.log(e);
+      console.warn(`-- error during stopVat()`, e);
       throw e;
     }
   }
