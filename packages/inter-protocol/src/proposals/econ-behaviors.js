@@ -6,10 +6,7 @@ import { AmountMath } from '@agoric/ertp';
 import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
-import {
-  assertPathSegment,
-  makeStorageNodeChild,
-} from '@agoric/vats/src/lib-chainStorage.js';
+import { makeStorageNodeChild } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E, Far } from '@endo/far';
 import { Stable, Stake } from '@agoric/vats/src/tokens.js';
@@ -32,13 +29,6 @@ const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
 
 const BASIS_POINTS = 10_000n;
 const MILLI = 1_000_000n;
-
-/** @type {(name: string) => string} */
-const sanitizePathSegment = name => {
-  const candidate = name.replace(/[ ,]/g, '_');
-  assertPathSegment(candidate);
-  return candidate;
-};
 
 /**
  * @typedef {GovernedCreatorFacet<import('../stakeFactory/stakeFactory.js').StakeFactoryCreator>} StakeFactoryCreator
@@ -87,63 +77,6 @@ const sanitizePathSegment = name => {
  *
  * In production called by @agoric/vats to bootstrap.
  */
-
-/**
- * @typedef {object} EconCommitteeOptions
- * @property {string} [committeeName]
- * @property {number} [committeeSize]
- */
-
-/**
- * @param {EconomyBootstrapPowers} powers
- * @param {object} [config]
- * @param {object} [config.options]
- * @param {EconCommitteeOptions} [config.options.econCommitteeOptions]
- */
-export const startEconomicCommittee = async (
-  {
-    consume: { board, chainStorage, zoe },
-    produce: { economicCommitteeCreatorFacet },
-    installation: {
-      consume: { committee },
-    },
-    instance: {
-      produce: { economicCommittee },
-    },
-  },
-  { options: { econCommitteeOptions = {} } = {} },
-) => {
-  const COMMITTEES_ROOT = 'committees';
-  trace('startEconomicCommittee');
-  const {
-    committeeName = 'Initial Economic Committee',
-    committeeSize = 3,
-    ...rest
-  } = econCommitteeOptions;
-
-  const committeesNode = await makeStorageNodeChild(
-    chainStorage,
-    COMMITTEES_ROOT,
-  );
-  const storageNode = await E(committeesNode).makeChildNode(
-    sanitizePathSegment(committeeName),
-  );
-  const marshaller = await E(board).getReadonlyMarshaller();
-
-  const { creatorFacet, instance } = await E(zoe).startInstance(
-    committee,
-    {},
-    { committeeName, committeeSize, ...rest },
-    {
-      storageNode,
-      marshaller,
-    },
-  );
-
-  economicCommitteeCreatorFacet.resolve(creatorFacet);
-  economicCommittee.resolve(instance);
-};
-harden(startEconomicCommittee);
 
 /**
  * @param {EconomyBootstrapPowers} powers
