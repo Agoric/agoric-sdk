@@ -101,7 +101,7 @@ const facetHelpers = (zcf, paramManager) => {
    * @returns {LimitedCreatorFacet<CF>}
    */
   const makeLimitedCreatorFacet = originalCreatorFacet => {
-    return Far('governedContract creator facet', {
+    return harden({
       ...originalCreatorFacet,
       getContractGovernor: () => electionManager,
     });
@@ -164,7 +164,7 @@ const facetHelpers = (zcf, paramManager) => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
 
     /** @type {import('@agoric/vat-data/src/types.js').FunctionsPlusContext<unknown, GovernorFacet<originalCreatorFacet>>} */
-    const governorFacet = Far('governorFacet', {
+    const governorFacet = harden({
       getParamMgrRetriever: () =>
         Far('paramRetriever', { get: () => paramManager }),
       getInvitation: (_context, name) =>

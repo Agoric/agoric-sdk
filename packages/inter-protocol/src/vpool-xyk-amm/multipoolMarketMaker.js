@@ -466,8 +466,7 @@ const start = async (zcf, privateArgs, baggage) => {
   );
 
   const { governorFacet, limitedCreatorFacet } = makeVirtualGovernorFacet(
-    // @ts-expect-error TS is confused.
-    Far('AMM Fee Collector facet', {
+    harden({
       makeCollectFeesInvitation,
       /**
        * Must be called before adding pools. Not provided at contract start time
