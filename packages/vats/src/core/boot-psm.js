@@ -6,9 +6,12 @@ import {
   startPSM,
   PSM_MANIFEST,
 } from '@agoric/inter-protocol/src/proposals/startPSM.js';
+import * as startPSMmod from '@agoric/inter-protocol/src/proposals/startPSM.js';
+import * as ERTPmod from '@agoric/ertp';
 // TODO: factor startEconomicCommittee out of econ-behaviors.js
 import { startEconomicCommittee } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { ECON_COMMITTEE_MANIFEST } from '@agoric/inter-protocol/src/proposals/core-proposal.js';
+import { fit, M } from '@agoric/store';
 import { makeAgoricNamesAccess, makePromiseSpace } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
 import {
@@ -90,6 +93,23 @@ export const agoricNamesReserved = harden(
 );
 
 /**
+ * @typedef {{
+ *   denom: string,
+ *   keyword?: string,
+ *   proposedName?: string,
+ *   decimalPlaces?: number
+ * }} AnchorOptions
+ */
+const AnchorOptionsShape = M.split(
+  { denom: M.string() },
+  M.partial({
+    keyword: M.string(),
+    proposedName: M.string(),
+    decimalPlaces: M.number(),
+  }),
+);
+
+/**
  * Build root object of the PSM-only bootstrap vat.
  *
  * @param {{
@@ -98,13 +118,15 @@ export const agoricNamesReserved = harden(
  * }} vatPowers
  * @param {{
  *     economicCommitteeAddresses: string[],
- *     anchorAssets: { denom: string, keyword?: string }[],
+ *     anchorAssets: AnchorOptions[],
  * }} vatParameters
  */
 export const buildRootObject = (vatPowers, vatParameters) => {
   const log = vatPowers.logger || console.info;
 
   const { anchorAssets, economicCommitteeAddresses } = vatParameters;
+  fit(harden(anchorAssets), M.arrayOf(AnchorOptionsShape));
+  fit(harden(economicCommitteeAddresses), M.arrayOf(M.string()));
 
   const { produce, consume } = makePromiseSpace(log);
   const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(
@@ -129,6 +151,8 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       // These module namespaces might be useful for core eval governance.
       modules: {
         utils: { ...utils },
+        startPSM: { ...startPSMmod },
+        ERTP: { ...ERTPmod },
       },
     });
     const manifest = {
@@ -171,14 +195,14 @@ export const buildRootObject = (vatPowers, vatParameters) => {
           },
         },
       }),
-      ...anchorAssets.map(({ denom, keyword }) =>
+      ...anchorAssets.map(anchorOptions =>
         makeAnchorAsset(powersFor('makeAnchorAsset'), {
-          options: { anchorOptions: { denom, keyword } },
+          options: { anchorOptions },
         }),
       ),
-      ...anchorAssets.map(({ denom, keyword }) =>
+      ...anchorAssets.map(anchorOptions =>
         startPSM(powersFor('startPSM'), {
-          options: { anchorOptions: { denom, keyword } },
+          options: { anchorOptions },
         }),
       ),
       // Allow bootstrap powers to be granted by governance
