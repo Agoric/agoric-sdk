@@ -77,7 +77,7 @@ const stageTransfer = (from, to, txFrom, txTo = txFrom) => {
  * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation, storageNode: StorageNode, marshaller: Marshaller}} privateArgs
  * @param {Baggage} baggage
  */
-export const vivify = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, baggage) => {
   const { anchorBrand, anchorPerStable } = zcf.getTerms();
   console.log('PSM Starting', anchorBrand, anchorPerStable);
 

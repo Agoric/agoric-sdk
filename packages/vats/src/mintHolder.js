@@ -17,7 +17,7 @@ import { makeDurableIssuerKit } from '@agoric/ertp';
  * @param {unknown} _privateArgs
  * @param {import('@agoric/vat-data').Baggage} instanceBaggage
  */
-export const vivify = (zcf, _privateArgs, instanceBaggage) => {
+export const start = (zcf, _privateArgs, instanceBaggage) => {
   const { keyword, assetKind, displayInfo } = zcf.getTerms();
 
   const { mint, issuer } = makeDurableIssuerKit(
@@ -32,4 +32,4 @@ export const vivify = (zcf, _privateArgs, instanceBaggage) => {
     creatorFacet: mint,
   };
 };
-harden(vivify);
+harden(start);

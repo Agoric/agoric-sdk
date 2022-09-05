@@ -172,7 +172,7 @@ async function makePsmDriver(t, customTerms) {
   // Each driver needs its own to avoid state pollution between tests
   const mockChainStorage = makeMockChainStorageRoot();
 
-  /** @type {Awaited<ReturnType<import('../../src/psm/psm.js').vivify>>} */
+  /** @type {Awaited<ReturnType<import('../../src/psm/psm.js').start>>} */
   const { creatorFacet, publicFacet } = await E(zoe).startInstance(
     psmInstall,
     harden({ AUSD: anchor.issuer }),
