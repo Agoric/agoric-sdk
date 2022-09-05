@@ -101,7 +101,7 @@ const facetHelpers = (zcf, paramManager) => {
    * @returns {LimitedCreatorFacet<CF>}
    */
   const makeLimitedCreatorFacet = originalCreatorFacet => {
-    return harden({
+    return Far('governedContract creator facet', {
       ...originalCreatorFacet,
       getContractGovernor: () => electionManager,
     });
