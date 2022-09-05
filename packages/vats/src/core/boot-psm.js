@@ -7,8 +7,10 @@ import {
   PSM_MANIFEST,
 } from '@agoric/inter-protocol/src/proposals/startPSM.js';
 // TODO: factor startEconomicCommittee out of econ-behaviors.js
-import { startEconomicCommittee } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
-import { ECON_COMMITTEE_MANIFEST } from '@agoric/inter-protocol/src/proposals/core-proposal.js';
+import {
+  ECON_COMMITTEE_MANIFEST,
+  startEconomicCommittee,
+} from '@agoric/inter-protocol/src/proposals/startEconCommittee.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
 import {
