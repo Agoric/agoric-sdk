@@ -10,9 +10,12 @@ import {
   floorMultiplyBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
-import { initEmpty } from '@agoric/store';
-import { handleParamGovernance, ParamTypes } from '@agoric/governance';
-import { provide, vivifyKindMulti, M } from '@agoric/vat-data';
+import {
+  handleParamGovernance,
+  ParamTypes,
+  publicMixinAPI,
+} from '@agoric/governance';
+import { M, provide, vivifyFarInstance } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
 
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
@@ -76,6 +79,7 @@ const stageTransfer = (from, to, txFrom, txTo = txFrom) => {
  */
 export const start = async (zcf, privateArgs, baggage) => {
   const { anchorBrand, anchorPerStable } = zcf.getTerms();
+  console.log('PSM Starting', anchorBrand, anchorPerStable);
 
   const stableMint = await zcf.registerFeeMint(
     'Stable',
@@ -94,7 +98,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const emptyStable = AmountMath.makeEmpty(stableBrand);
   const emptyAnchor = AmountMath.makeEmpty(anchorBrand);
 
-  const { augmentVirtualPublicFacet, makeVirtualGovernorFacet, params } =
+  const { publicMixin, creatorMixin, makeFarGovernorFacet, params } =
     await handleParamGovernance(
       zcf,
       privateArgs.initialPoserInvitation,
@@ -198,7 +202,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     const afterFee = AmountMath.subtract(asStable, fee);
     assert(
       AmountMath.isGTE(afterFee, wanted),
-      X`wanted ${wanted} is more then ${given} minus fees ${fee}`,
+      X`wanted ${wanted} is more than ${given} minus fees ${fee}`,
     );
     stableMint.mintGains({ Stable: asStable }, stage);
     try {
@@ -243,47 +247,78 @@ export const start = async (zcf, privateArgs, baggage) => {
     E(anchorBrand).getAmountShape(),
     E(stableBrand).getAmountShape(),
   ]);
-  const makeWantStableInvitation = () =>
-    zcf.makeInvitation(
-      wantStableHook,
-      'wantStable',
-      undefined,
-      M.split({ give: { In: anchorAmountShape } }),
-    );
-  const makeGiveStableInvitation = () =>
-    zcf.makeInvitation(
-      giveStableHook,
-      'giveStable',
-      undefined,
-      M.split({ give: { In: stableAmountShape } }),
-    );
 
-  const publicFacet = Far('Parity Stability Module', {
-    getMetrics: () => metricsSubscriber,
-    getPoolBalance: () => anchorPool.getAmountAllocated('Anchor', anchorBrand),
-    makeWantStableInvitation,
-    makeGiveStableInvitation,
+  const PSMI = M.interface('PSM', {
+    getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
+    getPoolBalance: M.call().returns(anchorAmountShape),
+    makeWantStableInvitation: M.call().returns(M.promise()),
+    makeGiveStableInvitation: M.call().returns(M.promise()),
+    ...publicMixinAPI,
   });
 
-  const getRewardAllocation = () => feePool.getCurrentAllocation();
+  const methods = {
+    getMetrics() {
+      return metricsSubscriber;
+    },
+    getPoolBalance() {
+      return anchorPool.getAmountAllocated('Anchor', anchorBrand);
+    },
+    makeWantStableInvitation() {
+      return zcf.makeInvitation(
+        wantStableHook,
+        'wantStable',
+        undefined,
+        M.split({
+          give: { In: anchorAmountShape },
+          want: M.or({ Out: stableAmountShape }, {}),
+        }),
+      );
+    },
+    makeGiveStableInvitation() {
+      return zcf.makeInvitation(
+        giveStableHook,
+        'giveStable',
+        undefined,
+        M.split({
+          give: { In: stableAmountShape },
+          want: M.or({ Out: anchorAmountShape }, {}),
+        }),
+      );
+    },
+    ...publicMixin,
+  };
+  const publicFacet = vivifyFarInstance(
+    baggage,
+    'Parity Stability Module',
+    PSMI,
+    methods,
+  );
+
+  // TODO why does this operation return an object with a single operation?
   const { makeCollectFeesInvitation } = makeMakeCollectFeesInvitation(
     zcf,
     feePool,
     stableBrand,
     'Stable',
   );
-  const creatorFacet = Far('Parity Stability Module', {
-    getRewardAllocation,
-    makeCollectFeesInvitation,
+
+  // The creator facets are only accessibly to governance and bootstrap,
+  // and so do not need interface protection at this time. Additionally,
+  // all the operations take no arguments and so are largely defensive as is.
+  const limitedCreatorFacet = Far('Parity Stability Module', {
+    getRewardAllocation() {
+      return feePool.getCurrentAllocation();
+    },
+    makeCollectFeesInvitation() {
+      return makeCollectFeesInvitation();
+    },
+    ...creatorMixin,
   });
 
-  const { limitedCreatorFacet, governorFacet } =
-    // @ts-expect-error over-determined decl of creatorFacet
-    makeVirtualGovernorFacet(creatorFacet);
-  const makePSM = vivifyKindMulti(baggage, 'PSM', initEmpty, {
+  const governorFacet = makeFarGovernorFacet(limitedCreatorFacet);
+  return harden({
     creatorFacet: governorFacet,
     limitedCreatorFacet,
-    publicFacet: augmentVirtualPublicFacet(publicFacet),
+    publicFacet,
   });
-  return makePSM();
 };
