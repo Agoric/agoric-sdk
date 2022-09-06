@@ -42,8 +42,8 @@ const trace = makeTracer('TestPSM', false);
 const scale6 = x => BigInt(Math.round(x * 1_000_000));
 
 const BASIS_POINTS = 10000n;
-const WantStableFeeBP = 1n;
-const GiveStableFeeBP = 3n;
+const WantMintedFeeBP = 1n;
+const GiveMintedFeeBP = 3n;
 const MINT_LIMIT = scale6(20_000_000);
 
 /**
@@ -53,7 +53,7 @@ const MINT_LIMIT = scale6(20_000_000);
  * @returns {Amount<'nat'>}
  */
 const minusStableFee = stable => {
-  const feeBP = GiveStableFeeBP;
+  const feeBP = GiveMintedFeeBP;
   return AmountMath.make(
     stable.brand,
     NatMath.floorDivide(
@@ -72,7 +72,7 @@ const minusStableFee = stable => {
  */
 const minusAnchorFee = (anchor, anchorPerMinted) => {
   const stable = floorDivideBy(anchor, anchorPerMinted);
-  const feeBP = WantStableFeeBP;
+  const feeBP = WantMintedFeeBP;
   return AmountMath.make(
     stable.brand,
     NatMath.floorDivide(
@@ -138,12 +138,12 @@ const makeTestContext = async () => {
         },
         GiveMintedFee: {
           type: ParamTypes.RATIO,
-          value: makeRatio(GiveStableFeeBP, stableBrand, BASIS_POINTS),
+          value: makeRatio(GiveMintedFeeBP, stableBrand, BASIS_POINTS),
         },
         MintLimit: { type: ParamTypes.AMOUNT, value: mintLimit },
         WantMintedFee: {
           type: ParamTypes.RATIO,
-          value: makeRatio(WantStableFeeBP, stableBrand, BASIS_POINTS),
+          value: makeRatio(WantMintedFeeBP, stableBrand, BASIS_POINTS),
         },
       },
     },
