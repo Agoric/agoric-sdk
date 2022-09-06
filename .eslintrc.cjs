@@ -93,6 +93,13 @@ module.exports = {
       },
     },
     {
+      files: ['*.ts'],
+      rules: {
+        // TS has this covered and eslint gets it wrong
+        'no-undef': 'off',
+      },
+    },
+    {
       // disable type-aware linting in HTML
       files: ['*.html'],
       parserOptions: {
