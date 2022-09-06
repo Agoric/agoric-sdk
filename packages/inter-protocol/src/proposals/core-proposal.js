@@ -1,7 +1,7 @@
 // @ts-check
 import { Stable } from '@agoric/vats/src/tokens.js';
 import * as econBehaviors from './econ-behaviors.js';
-import { ECON_COMMITTEE_MANIFEST } from './startEconCommittee';
+import { ECON_COMMITTEE_MANIFEST } from './startEconCommittee.js';
 import * as simBehaviors from './sim-behaviors.js';
 
 export * from './econ-behaviors.js';
