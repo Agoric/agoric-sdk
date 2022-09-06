@@ -6,11 +6,11 @@ import * as BRIDGE_ID from '../bridge-ids.js';
 import { makeStorageNodeChild } from '../lib-chainStorage.js';
 import { makeMyAddressNameAdmin, PowerFlags } from './basic-behaviors.js';
 
-const { details: X } = assert;
+const { details: X, quote: q } = assert;
 
 /**
  * @param {ERef<ZoeService>} zoe
- * @param {Installation<import('@agoric/legacy-smart-wallet/src/walletFactory').start>} inst
+ * @param {Installation<import('@agoric/smart-wallet/src/walletFactory').start>} inst
  * @typedef {Awaited<ReturnType<typeof startFactoryInstance>>} WalletFactoryStartResult
  */
 // eslint-disable-next-line no-unused-vars
@@ -49,7 +49,6 @@ export const startWalletFactory = async ({
   const terms = await deeplyFulfilled(
     harden({
       agoricNames,
-      namesByAddress,
       board,
     }),
   );
@@ -61,12 +60,6 @@ export const startWalletFactory = async ({
   walletFactoryStartResult.resolve(x);
   const { creatorFacet } = x;
 
-  /** @param {string} address */
-  const tryLookup = async address =>
-    E(namesByAddress)
-      .lookup(address)
-      .catch(_notFound => undefined);
-
   const handler = Far('provisioningHandler', {
     fromBridge: async (_srcID, obj) => {
       assert.equal(
@@ -77,10 +70,8 @@ export const startWalletFactory = async ({
       const { address, powerFlags } = obj;
       console.info('PLEASE_PROVISION', address, powerFlags);
 
-      const hubBefore = await tryLookup(address);
-      assert(!hubBefore, 'already provisioned');
-
       if (!powerFlags.includes(PowerFlags.SMART_WALLET)) {
+        console.warn(X`no SMART_WALLET in ${q(powerFlags)}`);
         return;
       }
       const myAddressNameAdmin = makeMyAddressNameAdmin(
