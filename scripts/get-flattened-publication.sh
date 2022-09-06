@@ -41,7 +41,7 @@ jq --version | awk '
 resp="$(
   # Avoid the GET interface in case interpretation of `path` as JSON is ever fixed.
   # https://github.com/tendermint/tendermint/issues/9164
-  # curl -sS "${URL_PREFIX%/}/abci_query?path=%22/custom/vstorage/data/$STORAGE_KEY%22" | \
+  # curl -sS "${URL_PREFIX%/}/abci_query?path=%22/custom/vstorage/data/$STORAGE_KEY%22"
   curl -sS "$URL_PREFIX" --request POST --header 'Content-Type: application/json' --data "$(
     jq -n --arg key "$STORAGE_KEY" --arg height "$QUERY_HEIGHT" '{
       jsonrpc: "2.0",
