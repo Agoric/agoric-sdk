@@ -45,12 +45,19 @@ const patternMemo = new WeakSet();
 // /////////////////////// Match Helpers Helpers /////////////////////////////
 
 /**
- * exported primarily for testing.
+ * The actual default values here are, at the present time, fairly
+ * arbitrary choices and may change before they settle down. Of course
+ * at some point we'll need to stop changing them. But we should first
+ * see how our system holds up with these choices. The main criteria
+ * is that they be big enough that "normal" innocent programs rarely
+ * encounter these limits.
+ *
+ * Exported primarily for testing.
  */
 export const defaultLimits = harden({
   decimalDigitsLimit: 100,
   stringLengthLimit: 100_000,
-  symbolNameLengthLimit: 40,
+  symbolNameLengthLimit: 100,
   numPropertiesLimit: 80,
   propertyNameLengthLimit: 100,
   arrayLengthLimit: 10_000,
@@ -86,7 +93,7 @@ const checkIsLimitPayload = (payload, mainPayloadShape, check, label) => {
   // return checkMatches(payload, payloadLimitShape, check, label);
 
   const mainLength = mainPayloadShape.length;
-  if (payload.length < mainLength || payload.length > mainLength + 1) {
+  if (!(payload.length === mainLength || payload.length === mainLength + 1)) {
     return check(false, X`${q(label)} payload unexpected size: ${payload}`);
   }
   const limits = payload[mainLength];
@@ -108,6 +115,19 @@ const checkIsLimitPayload = (payload, mainPayloadShape, check, label) => {
         X`Value of limit ${q(key)} but be a number: ${q(value)}`,
       ),
     )
+  );
+};
+
+const checkDecimalDigitsLimit = (specimen, decimalDigitsLimit, check) => {
+  if (
+    Math.floor(Math.log10(Math.abs(Number(specimen)))) + 1 <=
+    decimalDigitsLimit
+  ) {
+    return true;
+  }
+  return check(
+    false,
+    X`bigint ${specimen} must not have more than ${decimalDigitsLimit} digits`,
   );
 };
 
@@ -807,13 +827,9 @@ const makePatternKit = () => {
   const matchBigintHelper = Far('match:bigint helper', {
     checkMatches: (specimen, [limits = undefined], check) => {
       const { decimalDigitsLimit } = limit(limits);
-      const absSpecimen = specimen < 0n ? -specimen : specimen;
       return (
         checkKind(specimen, 'bigint', check) &&
-        check(
-          `${absSpecimen}`.length <= decimalDigitsLimit,
-          X`bigint ${specimen} must not have more than ${decimalDigitsLimit} digits`,
-        )
+        checkDecimalDigitsLimit(specimen, decimalDigitsLimit, check)
       );
     },
 
@@ -833,10 +849,7 @@ const makePatternKit = () => {
       return (
         checkKind(specimen, 'bigint', check) &&
         check(specimen >= 0n, X`${specimen} - Must be non-negative`) &&
-        check(
-          `${specimen}`.length <= decimalDigitsLimit,
-          X`bigint ${specimen} must not have more than ${decimalDigitsLimit} digits`,
-        )
+        checkDecimalDigitsLimit(specimen, decimalDigitsLimit, check)
       );
     },
 
@@ -1151,18 +1164,13 @@ const makePatternKit = () => {
         ) &&
         specimen.payload.every(
           ([key, count], i) =>
-            checkMatches(key, keyPatt, check, `keys[${i}]`) &&
+            checkMatches(key, keyPatt, check, `bag keys[${i}]`) &&
             applyLabelingError(
-              check,
-              [
-                `${count}`.length <= decimalDigitsLimit,
-                X`Each bag element may be appear at most ${q(
-                  decimalDigitsLimit,
-                )} times: ${specimen}`,
-              ],
-              `counts[${i}]`,
+              checkDecimalDigitsLimit,
+              [count, decimalDigitsLimit, check],
+              `bag counts[${i}]`,
             ) &&
-            checkMatches(count, countPatt, check, `counts[${i}]`),
+            checkMatches(count, countPatt, check, `bag counts[${i}]`),
         )
       );
     },

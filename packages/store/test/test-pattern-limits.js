@@ -75,11 +75,11 @@ const limitTests = harden([
     noPatterns: [
       [
         M.bag(harden({ decimalDigitsLimit: 2 })),
-        'counts[1]: Each bag element may be appear at most 2 times: "[copyBag]"',
+        'bag counts[1]: bigint "[379n]" must not have more than 2 digits',
       ],
       [
         M.bagOf(M.string(), undefined, harden({ decimalDigitsLimit: 2 })),
-        'counts[1]: Each bag element may be appear at most 2 times: "[copyBag]"',
+        'bag counts[1]: bigint "[379n]" must not have more than 2 digits',
       ],
     ],
   },
@@ -116,10 +116,7 @@ const limitTests = harden([
     specimen: Symbol.for('x'.repeat(defaultLimits.symbolNameLengthLimit + 1)),
     yesPatterns: [M.symbol(harden({ symbolNameLengthLimit: Infinity }))],
     noPatterns: [
-      [
-        M.symbol(),
-        'Symbol name "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" must not be bigger than 40',
-      ],
+      [M.symbol(), /^Symbol name "(x+)" must not be bigger than 100$/],
     ],
   },
   // numPropertiesLimit, propertyNameLengthLimit
