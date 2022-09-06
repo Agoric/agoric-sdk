@@ -4,6 +4,7 @@ import {
   installGovAndPSMContracts,
   makeAnchorAsset,
   startPSM,
+  invitePSMCommitteeMembers,
   PSM_MANIFEST,
 } from '@agoric/inter-protocol/src/proposals/startPSM.js';
 // TODO: factor startEconomicCommittee out of econ-behaviors.js
@@ -52,6 +53,7 @@ const PSM_GOV_INSTALL_MANIFEST = {
         committee: 'zoe',
         binaryVoteCounter: 'zoe',
         psm: 'zoe',
+        psmCharter: 'zoe',
       },
     },
   },
@@ -97,7 +99,7 @@ export const agoricNamesReserved = harden(
  *   logger?: (msg: string) => void
  * }} vatPowers
  * @param {{
- *     economicCommitteeAddresses: string[],
+ *     economicCommitteeAddresses: Record<string, string>,
  *     anchorAssets: { denom: string, keyword?: string }[],
  * }} vatParameters
  */
@@ -167,9 +169,12 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       startEconomicCommittee(powersFor('startEconomicCommittee'), {
         options: {
           econCommitteeOptions: {
-            committeeSize: economicCommitteeAddresses.length,
+            committeeSize: Object.values(economicCommitteeAddresses).length,
           },
         },
+      }),
+      invitePSMCommitteeMembers(powersFor('invitePSMCommitteeMembers'), {
+        options: { voterAddresses: economicCommitteeAddresses },
       }),
       ...anchorAssets.map(({ denom, keyword }) =>
         makeAnchorAsset(powersFor('makeAnchorAsset'), {
