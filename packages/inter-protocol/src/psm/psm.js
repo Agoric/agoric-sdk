@@ -118,12 +118,23 @@ export const start = async (zcf, privateArgs, baggage) => {
   const anchorPool = provideEmptyZcfSeat('anchorPoolSeat');
   const feePool = provideEmptyZcfSeat('feePoolSeat');
   const stage = provideEmptyZcfSeat('stageSeat');
+
   let totalAnchorProvided = provide(baggage, 'totalAnchorProvided', () =>
     AmountMath.makeEmpty(anchorBrand),
   );
   let totalStableProvided = provide(baggage, 'totalStableProvided', () =>
     AmountMath.makeEmpty(stableBrand),
   );
+
+  /**
+   * Ensure that any leftovers from previous failed transactions are cleared out.
+   */
+  const ensureClearTxn = () => {
+    stage.clear();
+    anchorPool.clear();
+    feePool.clear();
+    // This could also burn anything sitting on stage pool, but that seems too aggresive
+  };
 
   /** @type {import('../contractSupport.js').MetricsPublishKit<MetricsNotification>} */
   const { metricsPublisher, metricsSubscriber } = makeMetricsPublishKit(
@@ -169,24 +180,12 @@ export const start = async (zcf, privateArgs, baggage) => {
       AmountMath.isGTE(maxAnchor, wanted),
       X`wanted ${wanted} is more than ${given} minus fees ${fee}`,
     );
-    try {
-      stageTransfer(seat, stage, { In: afterFee }, { Stable: afterFee });
-      stageTransfer(seat, feePool, { In: fee }, { Stable: fee });
-      stageTransfer(
-        anchorPool,
-        seat,
-        { Anchor: maxAnchor },
-        { Out: maxAnchor },
-      );
-      zcf.reallocate(seat, anchorPool, stage, feePool);
-      stableMint.burnLosses({ Stable: afterFee }, stage);
-    } catch (e) {
-      stage.clear();
-      anchorPool.clear();
-      feePool.clear();
-      // TODO(#6116) someday, reallocate should guarantee that this case cannot happen
-      throw e;
-    }
+    ensureClearTxn();
+    stageTransfer(seat, stage, { In: afterFee }, { Stable: afterFee });
+    stageTransfer(seat, feePool, { In: fee }, { Stable: fee });
+    stageTransfer(anchorPool, seat, { Anchor: maxAnchor }, { Out: maxAnchor });
+    zcf.reallocate(seat, anchorPool, stage, feePool);
+    stableMint.burnLosses({ Stable: afterFee }, stage);
     totalAnchorProvided = AmountMath.add(totalAnchorProvided, maxAnchor);
   };
 
@@ -204,6 +203,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       AmountMath.isGTE(afterFee, wanted),
       X`wanted ${wanted} is more than ${given} minus fees ${fee}`,
     );
+    ensureClearTxn();
     stableMint.mintGains({ Stable: asStable }, stage);
     try {
       stageTransfer(seat, anchorPool, { In: given }, { Anchor: given });
@@ -211,9 +211,6 @@ export const start = async (zcf, privateArgs, baggage) => {
       stageTransfer(stage, feePool, { Stable: fee });
       zcf.reallocate(seat, anchorPool, stage, feePool);
     } catch (e) {
-      stage.clear();
-      anchorPool.clear();
-      feePool.clear();
       // TODO(#6116) someday, reallocate should guarantee that this case cannot happen
       stableMint.burnLosses({ Stable: asStable }, stage);
       throw e;
@@ -294,7 +291,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     methods,
   );
 
-  // TODO why does this operation return an object with a single operation?
   const { makeCollectFeesInvitation } = makeMakeCollectFeesInvitation(
     zcf,
     feePool,
