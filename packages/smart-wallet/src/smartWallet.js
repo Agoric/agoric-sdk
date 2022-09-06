@@ -159,8 +159,8 @@ export const makeSmartWallet = async (
    */
   const brandPurses = makeScalarBigMapStore('brand purses', { durable: true });
 
-  /** @type { (desc: Omit<BrandDescriptor, 'displayInfo'>) => Promise<void>} */
-  const addBrand = async desc => {
+  /** @type { (desc: Omit<BrandDescriptor, 'displayInfo'>, bankPurse?: ERef<Purse>) => Promise<void>} */
+  const addBrand = async (desc, bankPurse) => {
     console.log('addBrand', desc);
     // assert haven't received this issuer before.
     const descriptorsHas = brandDescriptors.has(desc.brand);
@@ -175,7 +175,7 @@ export const makeSmartWallet = async (
     );
 
     const [purse, displayInfo] = await Promise.all([
-      E(desc.issuer).makeEmptyPurse(),
+      bankPurse || E(desc.issuer).makeEmptyPurse(),
       E(desc.brand).getDisplayInfo(),
     ]);
 
@@ -190,12 +190,13 @@ export const makeSmartWallet = async (
 
     // publish purse's balance and changes
     E.when(
-      purse.getCurrentAmount(),
+      E(purse).getCurrentAmount(),
       balance => updateBalance(purse, balance, 'init'),
       err => console.error('initial purse balance publish failed', err),
     );
     observeNotifier(E(purse).getCurrentAmountNotifier(), {
       updateState(balance) {
+        console.log('@@getCurrentAmountNotifier update', balance);
         updateBalance(purse, balance);
       },
       fail(reason) {
@@ -215,11 +216,16 @@ export const makeSmartWallet = async (
   // watch the bank for new issuers to make purses out of
   observeIteration(E(bank).getAssetSubscription(), {
     async updateState(desc) {
-      await addBrand({
-        brand: desc.brand,
-        issuer: desc.issuer,
-        petname: desc.proposedName,
-      });
+      console.log('@@@getAssetSubscription update', desc);
+      const purse = await E(bank).getPurse(desc.brand);
+      await addBrand(
+        {
+          brand: desc.brand,
+          issuer: desc.issuer,
+          petname: desc.proposedName,
+        },
+        purse,
+      );
     },
   });
   // #endregion
@@ -232,13 +238,14 @@ export const makeSmartWallet = async (
      * Put the assets from the payment into the appropriate purse
      *
      * @param {ERef<Payment>} paymentE
-     * @param {Brand} paymentBrand must match the payment's brand. passed in to save lookup.
+     * @param {Brand} [paymentBrand] must match the payment's brand. passed in to save lookup.
      * @returns {Promise<Amount>}
      * @throws if the purse doesn't exist
      * ??? PRODUCT: should it instead wait for an issuer/purse to put it in?
      */
-    receive: (paymentE, paymentBrand) => {
-      const purse = brandPurses.get(paymentBrand);
+    receive: async (paymentE, paymentBrand) => {
+      const brand = await (paymentBrand || E(paymentE).getAllegedBrand());
+      const purse = brandPurses.get(brand);
 
       return E.when(paymentE, payment => E(purse).deposit(payment));
     },
