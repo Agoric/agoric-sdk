@@ -59,6 +59,8 @@ export const parseActionStr = str => {
   return { target, method, arg };
 };
 
+const DEPOSIT_FACET = 'depositFacet';
+
 // Cosmos bridge types
 /**
  * @typedef {{
@@ -165,7 +167,8 @@ export const start = async (zcf, privateArgs) => {
     /** @type {() => Promise<import('./smartWallet').SmartWallet>} */
     const maker = () =>
       makeSmartWallet({ address, bank }, shared).then(wallet => {
-        E(myAddressNameAdmin).update('depositeFacet', wallet.getDepositFacet());
+        E(myAddressNameAdmin).update(DEPOSIT_FACET, wallet.getDepositFacet());
+        console.log('@@@registering deposit facet for', address);
         return wallet;
       });
 
