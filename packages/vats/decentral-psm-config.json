@@ -10,13 +10,15 @@
             "denom": "ibc/usdc1234"
           }
         ],
-        "economicCommitteeAddresses": []
+        "economicCommitteeAddresses": {
+          "dc": "agoric14fn5d94twwweutanu5dgcts2zqzu0nc36xhgey"
+        }
       }
     }
   },
   "bundles": {
     "walletFactory": {
-      "sourceSpec": "@agoric/wallet/contract/src/walletFactory.js"
+      "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"
     },
     "committee": {
       "sourceSpec": "@agoric/governance/src/committee.js"
@@ -26,6 +28,9 @@
     },
     "binaryVoteCounter": {
       "sourceSpec": "@agoric/governance/src/binaryVoteCounter.js"
+    },
+    "psmCharter": {
+      "sourceSpec": "@agoric/inter-protocol/src/psm/psmCharter.js"
     },
     "psm": {
       "sourceSpec": "@agoric/inter-protocol/src/psm/psm.js"
