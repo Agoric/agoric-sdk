@@ -2,6 +2,11 @@
 
 import { M } from '@agoric/store';
 import { TimestampShape } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';
+import {
+  InstanceHandleShape,
+  TimerShape,
+  makeHandleShape,
+} from '@agoric/zoe/src/typeGuards.js';
 
 export const ChoiceMethodShape = M.or('unranked', 'order');
 export const QuorumRuleShape = M.or('majority', 'no_quorum', 'all');
@@ -12,11 +17,6 @@ export const ElectionTypeShape = M.or(
   'api_invocation',
   'offer_filter',
 );
-
-const makeHandleShape = name => M.remotable(`${name}Handle`);
-
-export const TimerShape = makeHandleShape('timer');
-export const InstanceShape = makeHandleShape('instance');
 
 export const ClosingRuleShape = harden({
   timer: M.eref(TimerShape),
@@ -30,10 +30,10 @@ export const YesOfferFilterPositionShape = harden({
 export const NoOfferFilterPositionShape = harden({
   dontUpdate: M.arrayOf(M.string()),
 });
-export const OfferFilterPositionsShape = [
+export const OfferFilterPositionsShape = harden([
   YesOfferFilterPositionShape,
   NoOfferFilterPositionShape,
-];
+]);
 export const OfferFilterIssueShape = harden({
   strings: M.arrayOf(M.string()),
 });
@@ -42,7 +42,7 @@ export const OfferFilterQuestionSpecShape = harden({
   issue: OfferFilterIssueShape,
   positions: OfferFilterPositionsShape,
   electionType: 'offer_filter',
-  maxChoices: M.eq(1),
+  maxChoices: 1,
   closingRule: ClosingRuleShape,
   quorumRule: QuorumRuleShape,
   tieOutcome: NoOfferFilterPositionShape,
@@ -52,12 +52,12 @@ export const OfferFilterQuestionDetailsShape = harden({
   issue: OfferFilterIssueShape,
   positions: OfferFilterPositionsShape,
   electionType: 'offer_filter',
-  maxChoices: M.eq(1),
+  maxChoices: 1,
   closingRule: ClosingRuleShape,
   quorumRule: QuorumRuleShape,
   tieOutcome: NoOfferFilterPositionShape,
   questionHandle: makeHandleShape('Question'),
-  counterInstance: InstanceShape,
+  counterInstance: InstanceHandleShape,
 });
 
 // keys are parameter names, values are proposed values
@@ -66,10 +66,10 @@ export const YesParamChangesPositionShape = ParamChangesSpecShape;
 export const NoParamChangesPositionShape = harden({
   noChange: M.arrayOf(M.string()),
 });
-export const ParamChangesPositionsShape = [
+export const ParamChangesPositionsShape = harden([
   YesParamChangesPositionShape,
   NoParamChangesPositionShape,
-];
+]);
 export const ParamPathShape = harden({
   key: M.any(),
 });
@@ -78,14 +78,14 @@ export const ParamChangesIssueShape = harden({
     paramPath: ParamPathShape,
     changes: ParamChangesSpecShape,
   },
-  contract: InstanceShape,
+  contract: InstanceHandleShape,
 });
 export const ParamChangesQuestionSpecShape = harden({
   method: 'unranked',
   issue: ParamChangesIssueShape,
   positions: ParamChangesPositionsShape,
   electionType: 'param_change',
-  maxChoices: M.eq(1),
+  maxChoices: 1,
   closingRule: ClosingRuleShape,
   quorumRule: 'majority',
   tieOutcome: NoParamChangesPositionShape,
@@ -96,12 +96,12 @@ export const ParamChangesQuestionDetailsShape = harden({
   issue: ParamChangesIssueShape,
   positions: ParamChangesPositionsShape,
   electionType: 'param_change',
-  maxChoices: M.eq(1),
+  maxChoices: 1,
   closingRule: ClosingRuleShape,
   quorumRule: 'majority',
   tieOutcome: NoParamChangesPositionShape,
   questionHandle: makeHandleShape('Question'),
-  counterInstance: InstanceShape,
+  counterInstance: InstanceHandleShape,
 });
 
 const ApiInvocationSpecShape = harden({
@@ -112,16 +112,16 @@ export const YesApiInvocationPositionShape = ApiInvocationSpecShape;
 export const NoApiInvocationPositionShape = harden({
   dontInvoke: M.string(),
 });
-export const ApiInvocationPositionsShape = [
+export const ApiInvocationPositionsShape = harden([
   YesApiInvocationPositionShape,
   NoApiInvocationPositionShape,
-];
+]);
 export const ApiInvocationQuestionSpecShape = harden({
   method: 'unranked',
   issue: ApiInvocationSpecShape,
   positions: ApiInvocationPositionsShape,
   electionType: 'api_invocation',
-  maxChoices: M.eq(1),
+  maxChoices: 1,
   closingRule: ClosingRuleShape,
   quorumRule: QuorumRuleShape,
   tieOutcome: NoApiInvocationPositionShape,
@@ -131,12 +131,12 @@ export const ApiInvocationQuestionDetailsShape = harden({
   issue: ApiInvocationSpecShape,
   positions: ApiInvocationPositionsShape,
   electionType: 'api_invocation',
-  maxChoices: M.eq(1),
+  maxChoices: 1,
   closingRule: ClosingRuleShape,
   quorumRule: QuorumRuleShape,
   tieOutcome: NoApiInvocationPositionShape,
   questionHandle: makeHandleShape('Question'),
-  counterInstance: InstanceShape,
+  counterInstance: InstanceHandleShape,
 });
 
 const SimpleSpecShape = harden({
@@ -144,10 +144,10 @@ const SimpleSpecShape = harden({
 });
 export const YesSimplePositionShape = harden({ text: M.string() });
 export const NoSimplePositionShape = harden({ text: M.string() });
-export const SimplePositionsShape = [
+export const SimplePositionsShape = harden([
   YesSimplePositionShape,
   NoSimplePositionShape,
-];
+]);
 export const SimpleIssueShape = SimpleSpecShape;
 export const SimpleQuestionSpecShape = harden({
   method: ChoiceMethodShape,
@@ -169,17 +169,7 @@ export const SimpleQuestionDetailsShape = harden({
   quorumRule: QuorumRuleShape,
   tieOutcome: NoSimplePositionShape,
   questionHandle: makeHandleShape('Question'),
-  counterInstance: InstanceShape,
-});
-
-export const SimplePositionsShapeA = [
-  harden({ text: 'yes' }),
-  harden({ text: 'no' }),
-];
-
-export const SimpleQuestionSpecShapeA = harden({
-  positions: SimplePositionsShape,
-  tieOutcome: NoSimplePositionShape,
+  counterInstance: InstanceHandleShape,
 });
 
 export const QuestionSpecShape = M.or(
@@ -220,16 +210,19 @@ export const ElectoratePublicI = M.interface('Committee PublicFacet', {
   getQuestionSubscriber: M.call().returns(SubscriberShape),
   getOpenQuestions: M.call().returns(M.promise()),
   getName: M.call().returns(M.string()),
-  getInstance: M.call().returns(InstanceShape),
+  getInstance: M.call().returns(InstanceHandleShape),
   getQuestion: M.call(QuestionHandleShape).returns(M.promise()),
 });
+const ElectoratePublicShape = M.remotable('ElectoratePublic');
 
 export const ElectorateCreatorI = M.interface('Committee AdminFacet', {
   getPoserInvitation: M.call().returns(M.promise()),
-  addQuestion: M.call(InstanceShape, QuestionSpecShape).returns(M.promise()),
+  addQuestion: M.call(InstanceHandleShape, QuestionSpecShape).returns(
+    M.promise(),
+  ),
   getVoterInvitations: M.call().returns(M.arrayOf(M.promise())),
   getQuestionSubscriber: M.call().returns(SubscriberShape),
-  getPublicFacet: M.call().returns(ElectoratePublicI),
+  getPublicFacet: M.call().returns(ElectoratePublicShape),
 });
 
 export const CommitteeIKit = harden({
@@ -243,21 +236,21 @@ export const QuestionStatsShape = harden({
   results: M.arrayOf({ position: PositionShape, total: M.nat() }),
 });
 
-export const QuestionDetailI = M.interface('Question details', {
-  getVoteCounter: M.call().returns(InstanceShape),
+export const QuestionI = M.interface('Question', {
+  getVoteCounter: M.call().returns(InstanceHandleShape),
   getDetails: M.call().returns(QuestionDetailsShape),
 });
+const QuestionShape = M.remotable('Question');
 
 export const BinaryVoteCounterPublicI = M.interface(
   'BinaryVoteCounter PublicFacet',
   {
-    // XXX I expected M.call().returns(QuestionDetailI)
-    getQuestion: M.call().returns(M.remotable()),
+    getQuestion: M.call().returns(QuestionShape),
     isOpen: M.call().returns(M.boolean()),
-    getOutcome: M.call().returns(M.eref(PositionShape)),
-    getStats: M.call().returns(QuestionStatsShape),
+    getOutcome: M.call().returns(M.eref(M.promise())),
+    getStats: M.call().returns(M.promise()),
     getDetails: M.call().returns(QuestionDetailsShape),
-    getInstance: M.call().returns(InstanceShape),
+    getInstance: M.call().returns(InstanceHandleShape),
   },
 );
 
@@ -277,9 +270,3 @@ export const BinaryVoteCounterCloseI = M.interface(
     closeVoting: M.call().returns(),
   },
 );
-
-export const BinaryVoteCounterIKit = harden({
-  publicFacet: BinaryVoteCounterPublicI,
-  creatorFacet: BinaryVoteCounterAdminI,
-  closeFacet: BinaryVoteCounterCloseI,
-});

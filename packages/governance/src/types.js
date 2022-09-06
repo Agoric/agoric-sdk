@@ -688,12 +688,3 @@
  * @param {Instance} allegedGovernor
  * @param {Instance} allegedElectorate
  */
-
-/**
- * @callback ValidateParamChangeQuestion
- *
- * Validate that the details are appropriate for an election concerning a
- * parameter change for a governed contract.
- *
- * @param {ParamChangeIssueDetails} details
- */

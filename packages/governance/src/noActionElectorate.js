@@ -32,7 +32,7 @@ const start = zcf => {
     getInstance() {
       return zcf.getInstance();
     },
-    getQuestion() {
+    getQuestion(_instance, _question) {
       throw Error(`noActionElectorate doesn't have questions.`);
     },
   });
@@ -42,7 +42,7 @@ const start = zcf => {
       return zcf.makeInvitation(() => {},
       `noActionElectorate doesn't allow posing questions`);
     },
-    addQuestion() {
+    addQuestion(_instance, _question) {
       throw Error(`noActionElectorate doesn't add questions.`);
     },
     getVoterInvitations() {

@@ -3,7 +3,7 @@
 import { makeHeapFarInstance, fit, keyEQ, M } from '@agoric/store';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 
-import { QuestionDetailI, QuestionSpecShape } from './typeGuards.js';
+import { QuestionI, QuestionSpecShape } from './typeGuards.js';
 
 // Topics being voted on are 'Questions'. Before a Question is known to a
 // electorate, the parameters can be described with a QuestionSpec. Once the
@@ -82,7 +82,7 @@ const buildUnrankedQuestion = (questionSpec, counterInstance) => {
   const questionHandle = makeHandle('Question');
 
   /** @type {Question} */
-  return makeHeapFarInstance('question details', QuestionDetailI, {
+  return makeHeapFarInstance('question details', QuestionI, {
     getVoteCounter() {
       return counterInstance;
     },
