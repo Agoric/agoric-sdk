@@ -46,6 +46,7 @@ const PSM_GOV_INSTALL_MANIFEST = {
     vatPowers: { D: true },
     devices: { vatAdmin: true },
     consume: { zoe: 'zoe' },
+    produce: { psmFacets: 'psm' },
     installation: {
       produce: {
         contractGovernor: 'zoe',
