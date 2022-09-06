@@ -39,12 +39,12 @@ const { details: X } = assert;
  *
  * @property {Amount<'nat'>} anchorPoolBalance  amount of Anchor token
  * available to be swapped
- * @property {Amount<'nat'>} feePoolBalance     amount of Stable token
+ * @property {Amount<'nat'>} feePoolBalance     amount of Minted token
  * fees available to be collected
  *
  * @property {Amount<'nat'>} totalAnchorProvided  running sum of Anchor
  * ever given by this contract
- * @property {Amount<'nat'>} totalStableProvided  running sum of Stable
+ * @property {Amount<'nat'>} totalMintedProvided  running sum of Minted
  * ever given by this contract
  */
 
@@ -67,29 +67,29 @@ const stageTransfer = (from, to, txFrom, txTo = txFrom) => {
 
 /**
  * @param {ZCF<GovernanceTerms<{
- *    GiveStableFee: 'ratio',
- *    WantStableFee: 'ratio',
+ *    GiveMintedFee: 'ratio',
+ *    WantMintedFee: 'ratio',
  *    MintLimit: 'amount',
  *   }> & {
  *    anchorBrand: Brand,
- *    anchorPerStable: Ratio,
+ *    anchorPerMinted: Ratio,
  * }>} zcf
  * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation, storageNode: StorageNode, marshaller: Marshaller}} privateArgs
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
-  const { anchorBrand, anchorPerStable } = zcf.getTerms();
-  console.log('PSM Starting', anchorBrand, anchorPerStable);
+  const { anchorBrand, anchorPerMinted } = zcf.getTerms();
+  console.log('PSM Starting', anchorBrand, anchorPerMinted);
 
   const stableMint = await zcf.registerFeeMint(
-    'Stable',
+    'Minted',
     privateArgs.feeMintAccess,
   );
   const { brand: stableBrand } = stableMint.getIssuerRecord();
   assert(
-    anchorPerStable.numerator.brand === anchorBrand &&
-      anchorPerStable.denominator.brand === stableBrand,
-    X`Ratio ${anchorPerStable} is not consistent with brands ${anchorBrand} and ${stableBrand}`,
+    anchorPerMinted.numerator.brand === anchorBrand &&
+      anchorPerMinted.denominator.brand === stableBrand,
+    X`Ratio ${anchorPerMinted} is not consistent with brands ${anchorBrand} and ${stableBrand}`,
   );
 
   zcf.setTestJig(() => ({
@@ -103,9 +103,9 @@ export const start = async (zcf, privateArgs, baggage) => {
       zcf,
       privateArgs.initialPoserInvitation,
       {
-        GiveStableFee: ParamTypes.RATIO,
+        GiveMintedFee: ParamTypes.RATIO,
         MintLimit: ParamTypes.AMOUNT,
-        WantStableFee: ParamTypes.RATIO,
+        WantMintedFee: ParamTypes.RATIO,
       },
       privateArgs.storageNode,
       privateArgs.marshaller,
@@ -121,7 +121,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   let totalAnchorProvided = provide(baggage, 'totalAnchorProvided', () =>
     AmountMath.makeEmpty(anchorBrand),
   );
-  let totalStableProvided = provide(baggage, 'totalStableProvided', () =>
+  let totalMintedProvided = provide(baggage, 'totalMintedProvided', () =>
     AmountMath.makeEmpty(stableBrand),
   );
 
@@ -134,9 +134,9 @@ export const start = async (zcf, privateArgs, baggage) => {
     metricsPublisher.publish(
       harden({
         anchorPoolBalance: anchorPool.getAmountAllocated('Anchor', anchorBrand),
-        feePoolBalance: feePool.getAmountAllocated('Stable', stableBrand),
+        feePoolBalance: feePool.getAmountAllocated('Minted', stableBrand),
         totalAnchorProvided,
-        totalStableProvided,
+        totalMintedProvided,
       }),
     );
   };
@@ -161,17 +161,17 @@ export const start = async (zcf, privateArgs, baggage) => {
    * @param {Amount<'nat'>} given
    * @param {Amount<'nat'>} [wanted] defaults to maximum anchor (given exchange rate minus fees)
    */
-  const giveStable = (seat, given, wanted = emptyAnchor) => {
-    const fee = ceilMultiplyBy(given, params.getGiveStableFee());
+  const giveMinted = (seat, given, wanted = emptyAnchor) => {
+    const fee = ceilMultiplyBy(given, params.getGiveMintedFee());
     const afterFee = AmountMath.subtract(given, fee);
-    const maxAnchor = floorMultiplyBy(afterFee, anchorPerStable);
+    const maxAnchor = floorMultiplyBy(afterFee, anchorPerMinted);
     assert(
       AmountMath.isGTE(maxAnchor, wanted),
       X`wanted ${wanted} is more than ${given} minus fees ${fee}`,
     );
     try {
-      stageTransfer(seat, stage, { In: afterFee }, { Stable: afterFee });
-      stageTransfer(seat, feePool, { In: fee }, { Stable: fee });
+      stageTransfer(seat, stage, { In: afterFee }, { Minted: afterFee });
+      stageTransfer(seat, feePool, { In: fee }, { Minted: fee });
       stageTransfer(
         anchorPool,
         seat,
@@ -179,7 +179,7 @@ export const start = async (zcf, privateArgs, baggage) => {
         { Out: maxAnchor },
       );
       zcf.reallocate(seat, anchorPool, stage, feePool);
-      stableMint.burnLosses({ Stable: afterFee }, stage);
+      stableMint.burnLosses({ Minted: afterFee }, stage);
     } catch (e) {
       stage.clear();
       anchorPool.clear();
@@ -195,50 +195,50 @@ export const start = async (zcf, privateArgs, baggage) => {
    * @param {Amount<'nat'>} given
    * @param {Amount<'nat'>} [wanted]
    */
-  const wantStable = (seat, given, wanted = emptyStable) => {
+  const wantMinted = (seat, given, wanted = emptyStable) => {
     assertUnderLimit(given);
-    const asStable = floorDivideBy(given, anchorPerStable);
-    const fee = ceilMultiplyBy(asStable, params.getWantStableFee());
+    const asStable = floorDivideBy(given, anchorPerMinted);
+    const fee = ceilMultiplyBy(asStable, params.getWantMintedFee());
     const afterFee = AmountMath.subtract(asStable, fee);
     assert(
       AmountMath.isGTE(afterFee, wanted),
       X`wanted ${wanted} is more than ${given} minus fees ${fee}`,
     );
-    stableMint.mintGains({ Stable: asStable }, stage);
+    stableMint.mintGains({ Minted: asStable }, stage);
     try {
       stageTransfer(seat, anchorPool, { In: given }, { Anchor: given });
-      stageTransfer(stage, seat, { Stable: afterFee }, { Out: afterFee });
-      stageTransfer(stage, feePool, { Stable: fee });
+      stageTransfer(stage, seat, { Minted: afterFee }, { Out: afterFee });
+      stageTransfer(stage, feePool, { Minted: fee });
       zcf.reallocate(seat, anchorPool, stage, feePool);
     } catch (e) {
       stage.clear();
       anchorPool.clear();
       feePool.clear();
       // TODO(#6116) someday, reallocate should guarantee that this case cannot happen
-      stableMint.burnLosses({ Stable: asStable }, stage);
+      stableMint.burnLosses({ Minted: asStable }, stage);
       throw e;
     }
-    totalStableProvided = AmountMath.add(totalStableProvided, asStable);
+    totalMintedProvided = AmountMath.add(totalMintedProvided, asStable);
   };
 
   /** @param {ZCFSeat} seat */
-  const giveStableHook = seat => {
+  const giveMintedHook = seat => {
     const {
       give: { In: given },
       want: { Out: wanted } = { Out: undefined },
     } = seat.getProposal();
-    giveStable(seat, given, wanted);
+    giveMinted(seat, given, wanted);
     seat.exit();
     updateMetrics();
   };
 
   /** @param {ZCFSeat} seat */
-  const wantStableHook = seat => {
+  const wantmintedHook = seat => {
     const {
       give: { In: given },
       want: { Out: wanted } = { Out: undefined },
     } = seat.getProposal();
-    wantStable(seat, given, wanted);
+    wantMinted(seat, given, wanted);
     seat.exit();
     updateMetrics();
   };
@@ -251,8 +251,8 @@ export const start = async (zcf, privateArgs, baggage) => {
   const PSMI = M.interface('PSM', {
     getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
     getPoolBalance: M.call().returns(anchorAmountShape),
-    makeWantStableInvitation: M.call().returns(M.promise()),
-    makeGiveStableInvitation: M.call().returns(M.promise()),
+    makeWantMintedInvitation: M.call().returns(M.promise()),
+    makeGiveMintedInvitation: M.call().returns(M.promise()),
     ...publicMixinAPI,
   });
 
@@ -263,9 +263,9 @@ export const start = async (zcf, privateArgs, baggage) => {
     getPoolBalance() {
       return anchorPool.getAmountAllocated('Anchor', anchorBrand);
     },
-    makeWantStableInvitation() {
+    makeWantMintedInvitation() {
       return zcf.makeInvitation(
-        wantStableHook,
+        wantmintedHook,
         'wantStable',
         undefined,
         M.split({
@@ -274,9 +274,9 @@ export const start = async (zcf, privateArgs, baggage) => {
         }),
       );
     },
-    makeGiveStableInvitation() {
+    makeGiveMintedInvitation() {
       return zcf.makeInvitation(
-        giveStableHook,
+        giveMintedHook,
         'giveStable',
         undefined,
         M.split({
@@ -299,7 +299,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     zcf,
     feePool,
     stableBrand,
-    'Stable',
+    'Minted',
   );
 
   // The creator facets are only accessibly to governance and bootstrap,

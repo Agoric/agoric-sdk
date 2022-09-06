@@ -49,7 +49,7 @@ test('psm block offers w/Governance', async t => {
   await t.throwsAsync(
     () =>
       E(zoe).offer(
-        E(psm.psmPublicFacet).makeWantStableInvitation(),
+        E(psm.psmPublicFacet).makeWantMintedInvitation(),
         harden({ give: { In: giveCentral } }),
         harden({ In: knutIssuer.mint.mintPayment(giveCentral) }),
       ),

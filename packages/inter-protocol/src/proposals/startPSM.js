@@ -82,17 +82,17 @@ export const startPSM = async (
   const terms = await deeplyFulfilledObject(
     harden({
       anchorBrand,
-      anchorPerStable: makeRatio(100n, anchorBrand, 100n, stable),
+      anchorPerMinted: makeRatio(100n, anchorBrand, 100n, stable),
       governedParams: {
         [CONTRACT_ELECTORATE]: {
           type: ParamTypes.INVITATION,
           value: electorateInvitationAmount,
         },
-        WantStableFee: {
+        WantMintedFee: {
           type: ParamTypes.RATIO,
           value: makeRatio(WantStableFeeBP, stable, BASIS_POINTS),
         },
-        GiveStableFee: {
+        GiveMintedFee: {
           type: ParamTypes.RATIO,
           value: makeRatio(GiveStableFeeBP, stable, BASIS_POINTS),
         },
