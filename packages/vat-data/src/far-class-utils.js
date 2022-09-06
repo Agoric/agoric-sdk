@@ -197,6 +197,8 @@ export const vivifyFarInstance = (
     options,
   );
 
+  // @ts-expect-error TS won't unify T and M, I think. But fixing
+  // this by merging T and M leads to type errors in ERTP.
   return provide(baggage, `the_${kindName}`, () => makeSingleton());
 };
 harden(vivifyFarInstance);
