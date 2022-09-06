@@ -27,7 +27,7 @@ test('psm block offers w/Governance', async t => {
   const { details } = await E(governorCreatorFacet).voteOnOfferFilter(
     installs.counter,
     2n,
-    harden(['wantStable']),
+    harden(['wantMinted']),
   );
   const { positions, questionHandle } = await details;
 
@@ -42,7 +42,7 @@ test('psm block offers w/Governance', async t => {
   await timer.tick();
   await timer.tick();
 
-  t.deepEqual(['wantStable'], await E(zoe).getOfferFilter(psm.instance));
+  t.deepEqual(['wantMinted'], await E(zoe).getOfferFilter(psm.instance));
 
   const giveCentral = AmountMath.make(knutIssuer.brand, 1_000_000n);
 
@@ -53,6 +53,6 @@ test('psm block offers w/Governance', async t => {
         harden({ give: { In: giveCentral } }),
         harden({ In: knutIssuer.mint.mintPayment(giveCentral) }),
       ),
-    { message: 'not accepting offer with description "wantStable"' },
+    { message: 'not accepting offer with description "wantMinted"' },
   );
 });

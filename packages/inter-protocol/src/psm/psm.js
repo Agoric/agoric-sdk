@@ -266,7 +266,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     makeWantMintedInvitation() {
       return zcf.makeInvitation(
         wantmintedHook,
-        'wantStable',
+        'wantMinted',
         undefined,
         M.split({
           give: { In: anchorAmountShape },
@@ -277,7 +277,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     makeGiveMintedInvitation() {
       return zcf.makeInvitation(
         giveMintedHook,
-        'giveStable',
+        'giveMinted',
         undefined,
         M.split({
           give: { In: stableAmountShape },
