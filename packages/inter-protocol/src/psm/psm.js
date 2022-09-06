@@ -256,41 +256,42 @@ export const start = async (zcf, privateArgs, baggage) => {
     ...publicMixinAPI,
   });
 
+  const methods = {
+    getMetrics() {
+      return metricsSubscriber;
+    },
+    getPoolBalance() {
+      return anchorPool.getAmountAllocated('Anchor', anchorBrand);
+    },
+    makeWantStableInvitation() {
+      return zcf.makeInvitation(
+        wantStableHook,
+        'wantStable',
+        undefined,
+        M.split({
+          give: { In: anchorAmountShape },
+          want: M.or({ Out: stableAmountShape }, {}),
+        }),
+      );
+    },
+    makeGiveStableInvitation() {
+      return zcf.makeInvitation(
+        giveStableHook,
+        'giveStable',
+        undefined,
+        M.split({
+          give: { In: stableAmountShape },
+          want: M.or({ Out: anchorAmountShape }, {}),
+        }),
+      );
+    },
+    ...publicMixin,
+  };
   const publicFacet = vivifyFarInstance(
     baggage,
     'Parity Stability Module',
     PSMI,
-    {
-      getMetrics() {
-        return metricsSubscriber;
-      },
-      getPoolBalance() {
-        return anchorPool.getAmountAllocated('Anchor', anchorBrand);
-      },
-      makeWantStableInvitation() {
-        return zcf.makeInvitation(
-          wantStableHook,
-          'wantStable',
-          undefined,
-          M.split({
-            give: { In: anchorAmountShape },
-            want: M.or({ Out: stableAmountShape }, {}),
-          }),
-        );
-      },
-      makeGiveStableInvitation() {
-        return zcf.makeInvitation(
-          giveStableHook,
-          'giveStable',
-          undefined,
-          M.split({
-            give: { In: stableAmountShape },
-            want: M.or({ Out: anchorAmountShape }, {}),
-          }),
-        );
-      },
-      ...publicMixin,
-    },
+    methods,
   );
 
   // TODO why does this operation return an object with a single operation?
@@ -301,7 +302,9 @@ export const start = async (zcf, privateArgs, baggage) => {
     'Stable',
   );
 
-  // These are internal so they do not yet have defensive programming
+  // The creator facets are only accessibly to governance and bootstrap,
+  // and so do not need interface protection at this time. Additionally,
+  // all the operations take no arguments and so are largely defensive as is.
   const limitedCreatorFacet = Far('Parity Stability Module', {
     getRewardAllocation() {
       return feePool.getCurrentAllocation();

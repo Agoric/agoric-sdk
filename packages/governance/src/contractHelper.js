@@ -25,7 +25,7 @@ const publicMixinAPI = harden({
   getNat: M.call().returns(M.bigint()),
   getRatio: M.call().returns(M.record()),
   getString: M.call().returns(M.string()),
-  getUnknown: M.call().returns(M.string()),
+  getUnknown: M.call().returns(M.any()),
 });
 
 /**
