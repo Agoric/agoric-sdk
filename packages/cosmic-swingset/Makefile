@@ -182,7 +182,7 @@ t1/$(BASE_PORT)/owner-address:
 scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo
 
 # Provision the ag-solo from an provisionpass-holding address (idempotent).
-AGORIC_POWERS = agoric.ALL_THE_POWERS
+AGORIC_POWERS = SMART_WALLET
 SOLO_COINS = 13000000ubld,12345000000uist,1122000000ibc/usdc1234,3344000000ibc/atom1234
 COSMOS_RPC_HOST = localhost
 COSMOS_RPC_PORT = 26657
