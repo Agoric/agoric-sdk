@@ -215,6 +215,7 @@
  *   priceAuthority: PriceAuthority,
  *   priceAuthorityAdmin: PriceAuthorityRegistryAdmin,
  *   provisioning: Awaited<ProvisioningVat>,
+ *   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit,
  *   walletFactoryStartResult: import('./startWalletFactory').WalletFactoryStartResult,
  *   zoe: ZoeService,
  * }>} ChainBootstrapSpace

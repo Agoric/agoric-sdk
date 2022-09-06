@@ -6,7 +6,7 @@ import bundlePSM from '@agoric/inter-protocol/bundles/bundle-psm.js';
 import bundleCentralSupply from '../bundles/bundle-centralSupply.js';
 import bundleMintHolder from '../bundles/bundle-mintHolder.js';
 import bundleSingleWallet from '../bundles/bundle-singleWallet.js';
-import bundleWalletFactory from '../bundles/bundle-walletFactory.js';
+import bundleWalletFactory from '../bundles/bundle-legacy-walletFactory.js';
 
 const bundles = {
   centralSupply: bundleCentralSupply,
