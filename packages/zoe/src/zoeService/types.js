@@ -199,7 +199,7 @@
  * UserSeat includes queries for the associated offer's current state and an
  * operation to request that the offer exit, as follows:
  *
- * @link {https://docs.agoric.com/zoe/api/zoe.html#userseat-object}
+ * @see {@link https://docs.agoric.com/zoe/api/zoe.html#userseat-object}}
  * @template {object} [OR=unknown]
  * @typedef {object} UserSeat
  * @property {() => Promise<ProposalRecord>} getProposal
