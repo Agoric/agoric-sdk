@@ -69,7 +69,7 @@ export const agoricNamesReserved = harden(
     },
     instance: {
       economicCommittee: 'Economic Committee',
-      'psm.IST.AUSD': 'Parity Stability Module: IST:AUSD',
+      'psm-IST-AUSD': 'Parity Stability Module: IST:AUSD',
     },
   }),
 );
