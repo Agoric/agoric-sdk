@@ -9,6 +9,7 @@ import {
   makeAgoricNames,
   makeFromBoard,
   makePSMSpendAction,
+  miniMarshal,
   networks,
   simpleOffers,
   simplePurseBalances,
@@ -169,13 +170,25 @@ const main = async (argv, { fetch, clock }) => {
     return online(opts, flags, { fetch });
   }
 
-  if (!((opts.wantStable || opts.giveStable) && opts.boardId)) {
+  if (!(opts.wantStable || opts.giveStable)) {
     console.error(USAGE);
     return 1;
   }
-  // @ts-expect-error opts.boardId was tested above
-  const spendAction = makePSMSpendAction(opts, clock().valueOf());
-  console.log(JSON.stringify(spendAction, null, 2));
+
+  const fromBoard = makeFromBoard();
+  const net = networks[opts.net || 'local'];
+  assert(net, opts.net);
+  const getJSON = async url => (await fetch(log('url')(net.rpc + url))).json();
+  const agoricNames = await makeAgoricNames(fromBoard, getJSON);
+  const instance = agoricNames.instance.psm;
+  const spendAction = makePSMSpendAction(
+    instance,
+    agoricNames.brand,
+    // @ts-expect-error
+    opts,
+    clock().valueOf(),
+  );
+  console.log(miniMarshal().serialize(spendAction));
   return 0;
 };
 

@@ -22,109 +22,95 @@ const assert = (cond, msg = undefined) => {
 
 const { freeze } = Object; // IOU harden
 
-/**
- * Petnames depend on names issued by VBANK.
- */
-const vBankPetName = {
-  purse: {
-    anchor: 'AUSD',
-    ist: 'Agoric stable local currency',
-  },
-};
-
 const COSMOS_UNIT = BigInt(1000000);
 
 // eslint-disable-next-line no-unused-vars
 const bigIntReplacer = (_key, val) =>
   typeof val === 'bigint' ? Number(val) : val;
 
-// eslint-disable-next-line no-unused-vars
-const observedSpendAction = {
-  type: 'acceptOffer',
-  data: {
-    id: '1661031322225',
-    instancePetname: 'instance@board03040',
-    requestContext: {
-      dappOrigin: 'https://amm.agoric.app',
-      origin: 'https://amm.agoric.app',
-    },
-    meta: { id: '1661031322225', creationStamp: 1661031322225 },
-    status: 'proposed',
-    instanceHandleBoardId: 'board03040',
-    invitationMaker: { method: 'makeSwapInInvitation' },
-    proposalTemplate: {
-      give: {
-        In: { pursePetname: 'Agoric stable local currency', value: 5000000 },
-      },
-      want: { Out: { pursePetname: 'ATOM', value: 2478 } },
-    },
-  },
-};
+/**
+ * zoe/ERTP types
+ *
+ * @typedef {Record<Keyword,Amount>} AmountKeywordRecord
+ * @typedef {string} Keyword
+ * @typedef {Partial<ProposalRecord>} Proposal
+ *
+ * @typedef {{give: AmountKeywordRecord,
+ *            want: AmountKeywordRecord,
+ *            exit: ExitRule
+ *           }} ProposalRecord
+ *
+ * @typedef {unknown} ExitRule
+ */
+
+/** @typedef {import('@agoric/smart-wallet/src/offers.js').OfferSpec} OfferSpec */
+/** @typedef {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} BridgeAction */
+/** @template T @typedef {import('@agoric/smart-wallet/src/types.js').WalletCapData<T>} WalletCapData<T> */
 
 /**
+ * @param {Record<string, Brand>} brands
  * @param {({ wantStable: string } | { giveStable: string })} opts
  * @param {number} [fee=0]
- * @param {typeof vBankPetName} [pet]
- * @returns {typeof observedSpendAction.data.proposalTemplate}
+ * @param {string} [anchor]
+ * @returns {ProposalRecord}
  */
-const makePSMProposalTemplate = (opts, fee = 1, pet = vBankPetName) => {
+const makePSMProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
   const brand =
     'wantStable' in opts
-      ? { in: pet.purse.anchor, out: pet.purse.ist }
-      : { in: pet.purse.ist, out: pet.purse.anchor };
-  // NOTE: proposalTemplate uses Number rather than bigint
-  // presumably to avoid JSON problems
+      ? { in: brands[anchor], out: brands.IST }
+      : { in: brands.IST, out: brands[anchor] };
   const value =
     Number('wantStable' in opts ? opts.wantStable : opts.giveStable) *
     Number(COSMOS_UNIT);
   const adjusted = {
-    in: Math.ceil('wantStable' in opts ? value / (1 - fee) : value),
-    out: Math.ceil('giveStable' in opts ? value * (1 - fee) : value),
+    in: BigInt(Math.ceil('wantStable' in opts ? value / (1 - fee) : value)),
+    out: BigInt(Math.ceil('giveStable' in opts ? value * (1 - fee) : value)),
   };
   return {
     give: {
-      In: { pursePetname: brand.in, value: adjusted.in },
+      In: { brand: brand.in, value: adjusted.in },
     },
     want: {
-      Out: { pursePetname: brand.out, value: adjusted.out },
+      Out: { brand: brand.out, value: adjusted.out },
     },
+    exit: {},
   };
 };
 
 /**
- * @param {{ boardId: string, feePct?: string } &
+ * @param {Record<string, Brand>} brands
+ * @param {unknown} instance
+ * @param {{ feePct?: string } &
  *         ({ wantStable: string } | { giveStable: string })} opts
  * @param {number} timeStamp
- * @returns {typeof observedSpendAction}
+ * @returns {BridgeAction}
  */
-const makePSMSpendAction = (opts, timeStamp) => {
-  const origin = 'unknown'; // we're not in a web origin
+const makePSMSpendAction = (instance, brands, opts, timeStamp) => {
   const method =
     'wantStable' in opts
       ? 'makeWantStableInvitation'
       : 'makeGiveStableInvitation'; // ref psm.js
-  const proposalTemplate = makePSMProposalTemplate(
+  const proposal = makePSMProposal(
+    brands,
     opts,
     opts.feePct ? Number(opts.feePct) / 100 : undefined,
   );
 
-  // cribbed from ScopedBridge.js#L49-L61
-  // https://github.com/Agoric/agoric-sdk/blob/master/packages/wallet/ui/src/service/ScopedBridge.js#L49-L61
-  const id = `${timeStamp}`;
+  /** @type {OfferSpec} */
   const offer = {
-    id,
-    instancePetname: `instance@${opts.boardId}`,
-    requestContext: { dappOrigin: origin, origin },
-    meta: { id, creationStamp: timeStamp },
-    status: 'proposed',
-    invitationMaker: { method },
-    instanceHandleBoardId: opts.boardId,
-    proposalTemplate,
+    id: timeStamp,
+    invitationSpec: {
+      source: 'contract',
+      instance,
+      publicInvitationMaker: method,
+    },
+    proposal,
   };
 
+  /** @type {BridgeAction} */
   const spendAction = {
-    type: 'acceptOffer',
-    data: offer,
+    method: 'executeOffer',
+    offer,
   };
   return spendAction;
 };
@@ -150,7 +136,7 @@ const vstorage = {
   },
 };
 
-const miniMarshal = (slotToVal = (s, _i) => s) => ({
+export const miniMarshal = (slotToVal = (s, _i) => s) => ({
   unserialze: ({ body, slots }) => {
     const reviver = (_key, obj) => {
       const qclass = obj !== null && typeof obj === 'object' && obj['@qclass'];
@@ -169,6 +155,37 @@ const miniMarshal = (slotToVal = (s, _i) => s) => ({
       }
     };
     return JSON.parse(body, reviver);
+  },
+  serialize: whole => {
+    const seen = new Map();
+    const slotIndex = v => {
+      if (seen.has(v)) {
+        return seen.get(v);
+      }
+      const index = seen.size;
+      seen.set(v, index);
+      return { index, iface: v.iface };
+    };
+    const recur = part => {
+      if (part === null) return null;
+      if (typeof part === 'bigint') {
+        return { '@qclass': 'bigint', digits: `${part}` };
+      }
+      if (Array.isArray(part)) {
+        return part.map(recur);
+      }
+      if (typeof part === 'object') {
+        if ('boardId' in part) {
+          return { '@qclass': 'slot', ...slotIndex(part.boardId) };
+        }
+        return Object.fromEntries(
+          Object.entries(part).map(([k, v]) => [k, recur(v)]),
+        );
+      }
+      return part;
+    };
+    const after = recur(whole);
+    return { body: JSON.stringify(after), slots: [...seen.keys()] };
   },
 });
 
@@ -294,102 +311,6 @@ const simplePurseBalances = purses => {
   const fmt = makeAmountFormatter(purses);
   return purses.map(p => fmt(p.currentAmount));
 };
-
-// eslint-disable-next-line no-unused-vars
-const exampleOffer = {
-  id: 'unknown#1661035705180',
-  installationPetname: 'unnamed-2',
-  instanceHandleBoardId: 'board00530',
-  instancePetname: 'unnamed-1',
-  invitationDetails: {
-    description: 'swap',
-    handle: {
-      kind: 'unnamed',
-      petname: 'unnamed-5',
-    },
-    installation: {
-      kind: 'unnamed',
-      petname: 'unnamed-2',
-    },
-    instance: {
-      kind: 'unnamed',
-      petname: 'unnamed-1',
-    },
-  },
-  invitationMaker: {
-    method: 'makeSwapInvitation',
-  },
-  meta: {
-    creationStamp: 1661035705180,
-    id: '1661035705180',
-  },
-  proposalForDisplay: {
-    exit: {
-      onDemand: null,
-    },
-    give: {
-      In: {
-        amount: {
-          brand: {
-            kind: 'brand',
-            petname: 'AUSD',
-          },
-          displayInfo: {
-            assetKind: 'nat',
-            decimalPlaces: 6,
-          },
-          value: 101000000,
-        },
-        purse: {
-          boardId: 'unknown:10',
-          iface: 'Alleged: Virtual Purse',
-        },
-        pursePetname: 'AUSD',
-      },
-    },
-    want: {
-      Out: {
-        amount: {
-          brand: {
-            kind: 'brand',
-            petname: 'IST',
-          },
-          displayInfo: {
-            assetKind: 'nat',
-            decimalPlaces: 6,
-          },
-          value: 100000000,
-        },
-        purse: {
-          boardId: 'unknown:8',
-          iface: 'Alleged: Virtual Purse',
-        },
-        pursePetname: 'Agoric stable local currency',
-      },
-    },
-  },
-  proposalTemplate: {
-    give: {
-      In: {
-        pursePetname: 'AUSD',
-        value: 101000000,
-      },
-    },
-    want: {
-      Out: {
-        pursePetname: 'Agoric stable local currency',
-        value: 100000000,
-      },
-    },
-  },
-  rawId: '1661035705180',
-  requestContext: {
-    dappOrigin: 'unknown',
-    origin: 'unknown',
-  },
-  status: 'accept',
-};
-/** @typedef {typeof exampleOffer} OfferDetail */
 
 /**
  * @param {{ purses: PurseState[], offers: OfferDetail[]}} state
