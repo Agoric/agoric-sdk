@@ -240,7 +240,7 @@ test('cleanProposal - other wrong stuff', t => {
     t,
     { exit: { afterDeadline: { timer: 'foo', deadline: 3n } } },
     'nat',
-    'proposal: exit: optional-parts: afterDeadline: timer: string "foo" - Must be a remotable',
+    'proposal: exit: optional-parts: afterDeadline: timer: "foo" - Must match one of ["[match:remotable]","[match:kind]"]',
   );
   proposeBad(
     t,

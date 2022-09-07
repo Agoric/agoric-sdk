@@ -227,7 +227,7 @@ export const BinaryVoteCounterAdminI = M.interface(
   {
     submitVote: M.call(VoterHandle, M.arrayOf(PositionShape))
       .optional(M.nat())
-      .returns(),
+      .returns({ chosen: PositionShape, shares: M.nat() }),
   },
 );
 
