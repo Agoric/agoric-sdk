@@ -652,6 +652,16 @@ const makePatternKit = () => {
     return check(false, details);
   };
 
+  const arrayEveryMatchPattern = (array, patt, check, labelPrefix = '') => {
+    if (checkKind(patt, 'match:any', identChecker)) {
+      // if the pattern is M.any(), we know its true
+      return true;
+    }
+    return array.every((el, i) =>
+      checkMatches(el, patt, check, `${labelPrefix}[${i}]`),
+    );
+  };
+
   // /////////////////////// Match Helpers /////////////////////////////////////
 
   /** @type {MatchHelper} */
@@ -1098,7 +1108,7 @@ const makePatternKit = () => {
           specimen.length <= arrayLengthLimit,
           X`Array length ${specimen.length} must be <= limit ${arrayLengthLimit}`,
         ) &&
-        specimen.every((el, i) => checkMatches(el, subPatt, check, i))
+        arrayEveryMatchPattern(specimen, subPatt, check)
       );
     },
 
@@ -1128,7 +1138,7 @@ const makePatternKit = () => {
             specimen.payload.length
           }`,
         ) &&
-        specimen.payload.every((el, i) => checkMatches(el, keyPatt, check, i))
+        arrayEveryMatchPattern(specimen.payload, keyPatt, check, 'set elements')
       );
     },
 
@@ -1205,11 +1215,17 @@ const makePatternKit = () => {
             numMapEntriesLimit,
           )} entries: ${specimen}`,
         ) &&
-        specimen.payload.keys.every((k, i) =>
-          checkMatches(k, keyPatt, check, `keys[${i}]`),
+        arrayEveryMatchPattern(
+          specimen.payload.keys,
+          keyPatt,
+          check,
+          'map keys',
         ) &&
-        specimen.payload.values.every((v, i) =>
-          checkMatches(v, valuePatt, check, `values[${i}]`),
+        arrayEveryMatchPattern(
+          specimen.payload.values,
+          valuePatt,
+          check,
+          'map values',
         )
       );
     },

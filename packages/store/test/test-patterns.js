@@ -277,7 +277,11 @@ const runTests = (successCase, failCase) => {
       '"[copySet]" - Must be >= "[copySet]"',
     );
     failCase(specimen, M.bag(), 'copySet "[copySet]" - Must be a copyBag');
-    failCase(specimen, M.setOf(M.string()), '[0]: number 4 - Must be a string');
+    failCase(
+      specimen,
+      M.setOf(M.string()),
+      'set elements[0]: number 4 - Must be a string',
+    );
   }
   {
     const specimen = makeCopyBag([
@@ -350,12 +354,12 @@ const runTests = (successCase, failCase) => {
     failCase(
       specimen,
       M.mapOf(M.string(), M.string()),
-      'keys[0]: copyRecord {"foo":3} - Must be a string',
+      'map keys[0]: copyRecord {"foo":3} - Must be a string',
     );
     failCase(
       specimen,
       M.mapOf(M.record(), M.number()),
-      'values[0]: string "b" - Must be a number',
+      'map values[0]: string "b" - Must be a number',
     );
   }
   {
