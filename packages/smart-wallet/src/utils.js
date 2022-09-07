@@ -9,7 +9,7 @@ import { observeIteration, subscribeEach } from '@agoric/notifier';
  * If this proves to be a problem we can add an option to this or a related
  * utility to reset state from RPC.
  *
- * @param {ERef<StoredSubscriber<import('./smartWallet').UpdateRecord>>} updates
+ * @param {ERef<Subscriber<import('./smartWallet').UpdateRecord>>} updates
  */
 export const coalesceUpdates = updates => {
   /** @type {Map<Brand, import('./smartWallet').BrandDescriptor>} */
