@@ -5,8 +5,7 @@ import { Nat } from '@agoric/nat';
 import { makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
 import { E, Far } from '@endo/far';
-
-import { deeplyFulfilledObject } from '@agoric/internal';
+import { deeplyFulfilledObject, WalletName } from '@agoric/internal';
 import { makeStorageNodeChild } from '../lib-chainStorage.js';
 import { makeNameHubKit } from '../nameHub.js';
 import { feeIssuerConfig } from './utils.js';
@@ -190,7 +189,7 @@ export const makeMyAddressNameAdmin = (namesByAddressAdmin, address) => {
     getMyAddress: () => address,
   });
   // reserve space for deposit facet
-  myAddressNameAdmin.reserve('depositFacet');
+  myAddressNameAdmin.reserve(WalletName.depositFacet);
   // Register it with the namesByAddress hub.
   namesByAddressAdmin.update(address, myAddressNameHub, myAddressNameAdmin);
 

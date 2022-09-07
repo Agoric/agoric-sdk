@@ -243,7 +243,7 @@
  * MathHelpers used by this Issuer.
  * @property {() => DisplayInfo} getDisplayInfo Give information to UI
  *  on how to display amounts for this issuer.
- * @property {() => Purse} makeEmptyPurse Make an empty purse of this
+ * @property {() => Purse<K>} makeEmptyPurse Make an empty purse of this
  * brand.
  * @property {IssuerIsLive} isLive
  * @property {IssuerGetAmountOf<K>} getAmountOf

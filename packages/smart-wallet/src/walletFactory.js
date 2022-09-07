@@ -4,13 +4,10 @@
  *
  * Contract to make smart wallets.
  */
-import '@agoric/deploy-script-support/exported.js';
-import '@agoric/wallet-backend/src/types.js'; // TODO avoid ambient types
-import '@agoric/zoe/exported.js';
 
+import { BridgeId } from '@agoric/internal';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { BridgeId } from '@agoric/internal';
 import { E, Far } from '@endo/far';
 import { makeSmartWallet } from './smartWallet.js';
 
@@ -18,59 +15,59 @@ import { makeSmartWallet } from './smartWallet.js';
  * @typedef {{
  *   agoricNames: ERef<NameHub>,
  *   board: ERef<Board>,
- *   namesByAddress: ERef<NameHub>,
  * }} SmartWalletContractTerms
- *
- * @typedef {{
- * 	 type: 'WALLET_ACTION',
- *   owner: string,
- *   action: string,
- *   blockHeight: unknown, // int64
- *   blockTime: unknown, // int64
- * }} WalletAction
- * @typedef {{
- * 	 type: 'WALLET_SPEND_ACTION',
- *   owner: string,
- *   spendAction: string,
- *   blockHeight: unknown, // int64
- *   blockTime: unknown, // int64
- * }} WalletSpendAction
  */
 
+// NB: even though all the wallets share this contract, they
+// 1. they should rely on that; they may be partitioned later
+// 2. they should never be able to detect behaviors from another wallet
 /**
  *
  * @param {ZCF<SmartWalletContractTerms>} zcf
  * @param {{
  *   storageNode: ERef<StorageNode>,
- *   bridgeManager?: BridgeManager,
+ *   bridgeManager?: ERef<BridgeManager>,
  * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
-  const { agoricNames, namesByAddress, board } = zcf.getTerms();
+  const { agoricNames, board } = zcf.getTerms();
   assert(board, 'missing board');
-  assert(namesByAddress, 'missing namesByAddress');
   assert(agoricNames, 'missing agoricNames');
   const zoe = zcf.getZoeService();
   const { storageNode, bridgeManager } = privateArgs;
+  assert(storageNode, 'missing storageNode');
 
   /** @type {MapStore<string, import('./smartWallet').SmartWallet>} */
   const walletsByAddress = makeScalarBigMapStore('walletsByAddress');
   const provider = makeAtomicProvider(walletsByAddress);
 
+  // TODO(6062) refactor to a Far Class with type guards
   const handleWalletAction = Far('walletActionHandler', {
     /**
      *
      * @param {string} srcID
-     * @param {WalletAction|WalletSpendAction} obj
+     * @param {import('./types.js').WalletBridgeMsg} obj
      */
     fromBridge: async (srcID, obj) => {
       console.log('walletFactory.fromBridge:', srcID, obj);
       assert(obj, 'missing wallet action');
       assert.typeof(obj, 'object');
       assert.typeof(obj.owner, 'string');
+      const canSpend = 'spendAction' in obj;
+      assert(
+        canSpend || 'action' in obj,
+        'missing action/spendAction property',
+      );
+      const actionCapDataStr = canSpend ? obj.spendAction : obj.action;
+      // xxx capData body is also a JSON string so this is double-encoded
+      // revisit after https://github.com/Agoric/agoric-sdk/issues/2589
+      const actionCapData = JSON.parse(actionCapDataStr);
+      // TODO(6062) validate shape before sending to wallet
+
       const wallet = walletsByAddress.get(obj.owner); // or throw
-      console.log('walletFactory:', { wallet });
-      return E(wallet).performAction(obj);
+
+      console.log('walletFactory:', { wallet, actionCapData });
+      return E(wallet).handleBridgeAction(actionCapData, canSpend);
     },
   });
 
@@ -79,10 +76,15 @@ export const start = async (zcf, privateArgs) => {
   await (bridgeManager &&
     E(bridgeManager).register(BridgeId.WALLET, handleWalletAction));
 
+  // Each wallet has `zoe` it can use to look them up, but pass these in to save that work.
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
+  const invitationBrand = await invitationIssuer.getBrand();
+
   const shared = {
     agoricNames,
     board,
-    namesByAddress,
+    invitationBrand,
+    invitationIssuer,
     storageNode,
     zoe,
   };
@@ -101,7 +103,10 @@ export const start = async (zcf, privateArgs) => {
 
     /** @type {() => Promise<import('./smartWallet').SmartWallet>} */
     const maker = () =>
-      makeSmartWallet({ address, bank, myAddressNameAdmin }, shared);
+      makeSmartWallet({ address, bank }, shared).then(wallet => {
+        E(myAddressNameAdmin).update('depositeFacet', wallet.getDepositFacet());
+        return wallet;
+      });
 
     return provider.provideAsync(address, maker);
   };
