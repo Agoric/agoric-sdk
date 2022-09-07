@@ -20,10 +20,8 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
-import {
-  startEconomicCommittee,
-  startStakeFactory,
-} from '../../src/proposals/econ-behaviors.js';
+import { startStakeFactory } from '../../src/proposals/econ-behaviors.js';
+import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 import { ManagerKW as KW } from '../../src/stakeFactory/constants.js';
 import {
   makeVoterTool,

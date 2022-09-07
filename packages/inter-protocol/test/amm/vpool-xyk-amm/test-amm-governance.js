@@ -9,7 +9,7 @@ import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js'
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { E } from '@endo/eventual-send';
-import { startEconomicCommittee } from '../../../src/proposals/econ-behaviors.js';
+import { startEconomicCommittee } from '../../../src/proposals/startEconCommittee.js';
 import { amountGT } from '../../../src/vpool-xyk-amm/constantProduct/calcFees.js';
 import {
   MIN_INITIAL_POOL_LIQUIDITY_KEY,

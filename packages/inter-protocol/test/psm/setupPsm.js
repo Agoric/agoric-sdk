@@ -17,7 +17,7 @@ import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.
 import { makeIssuerKit } from '@agoric/ertp';
 
 import { installGovernance, provideBundle } from '../supports.js';
-import { startEconomicCommittee } from '../../src/proposals/econ-behaviors.js';
+import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 import { startPSM } from '../../src/proposals/startPSM.js';
 import { allValues } from '../../src/collect.js';
 
