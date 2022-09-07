@@ -18,8 +18,8 @@ const { details: X } = assert;
 /**
  * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
  * @param {object} [config]
- * @param {bigint} [config.WantStableFeeBP]
- * @param {bigint} [config.GiveStableFeeBP]
+ * @param {bigint} [config.WantMintedFeeBP]
+ * @param {bigint} [config.GiveMintedFeeBP]
  * @param {bigint} [config.MINT_LIMIT]
  * @param {{ anchorOptions?: AnchorOptions } } [config.options]
  *
@@ -49,8 +49,8 @@ export const startPSM = async (
   },
   {
     options: { anchorOptions = {} } = {},
-    WantStableFeeBP = 1n,
-    GiveStableFeeBP = 3n,
+    WantMintedFeeBP = 1n,
+    GiveMintedFeeBP = 3n,
     MINT_LIMIT = 20_000_000n * 1_000_000n,
   } = {},
 ) => {
@@ -83,19 +83,19 @@ export const startPSM = async (
   const terms = await deeplyFulfilledObject(
     harden({
       anchorBrand,
-      anchorPerStable: makeRatio(100n, anchorBrand, 100n, stable),
+      anchorPerMinted: makeRatio(100n, anchorBrand, 100n, stable),
       governedParams: {
         [CONTRACT_ELECTORATE]: {
           type: ParamTypes.INVITATION,
           value: electorateInvitationAmount,
         },
-        WantStableFee: {
+        WantMintedFee: {
           type: ParamTypes.RATIO,
-          value: makeRatio(WantStableFeeBP, stable, BASIS_POINTS),
+          value: makeRatio(WantMintedFeeBP, stable, BASIS_POINTS),
         },
-        GiveStableFee: {
+        GiveMintedFee: {
           type: ParamTypes.RATIO,
-          value: makeRatio(GiveStableFeeBP, stable, BASIS_POINTS),
+          value: makeRatio(GiveMintedFeeBP, stable, BASIS_POINTS),
         },
         MintLimit: { type: ParamTypes.AMOUNT, value: mintLimit },
       },

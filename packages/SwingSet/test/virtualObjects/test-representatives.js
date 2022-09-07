@@ -396,7 +396,7 @@ test('virtual object gc', async t => {
     [`${v}.vs.vc.1.|label`]: 'baggage',
     [`${v}.vs.vc.1.|nextOrdinal`]: '1',
     [`${v}.vs.vc.1.|schemata`]:
-      '{"body":"[{\\"@qclass\\":\\"tagged\\",\\"tag\\":\\"match:kind\\",\\"payload\\":\\"string\\"}]","slots":[]}',
+      '{"body":"[{\\"@qclass\\":\\"tagged\\",\\"tag\\":\\"match:string\\",\\"payload\\":[]}]","slots":[]}',
     [`${v}.vs.vc.2.|entryCount`]: '0',
     [`${v}.vs.vc.2.|label`]: 'promiseRegistrations',
     [`${v}.vs.vc.2.|nextOrdinal`]: '1',
@@ -411,7 +411,7 @@ test('virtual object gc', async t => {
     [`${v}.vs.vc.4.|label`]: 'watchedPromises',
     [`${v}.vs.vc.4.|nextOrdinal`]: '1',
     [`${v}.vs.vc.4.|schemata`]:
-      '{"body":"[{\\"@qclass\\":\\"tagged\\",\\"tag\\":\\"match:kind\\",\\"payload\\":\\"string\\"}]","slots":[]}',
+      '{"body":"[{\\"@qclass\\":\\"tagged\\",\\"tag\\":\\"match:string\\",\\"payload\\":[]}]","slots":[]}',
     [`${v}.vs.vom.es.o+10/3`]: 'r',
     [`${v}.vs.vom.o+10/2`]: '{"label":{"body":"\\"thing #2\\"","slots":[]}}',
     [`${v}.vs.vom.o+10/3`]: '{"label":{"body":"\\"thing #3\\"","slots":[]}}',
