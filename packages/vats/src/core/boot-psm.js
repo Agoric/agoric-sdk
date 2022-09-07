@@ -42,28 +42,6 @@ import {
 /** @typedef {import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
 
 /**
- * PSM and gov contracts are available as
- * named swingset bundles only in
- * decentral-psm-config.json
- */
-const PSM_GOV_INSTALL_MANIFEST = {
-  [installGovAndPSMContracts.name]: {
-    vatPowers: { D: true },
-    devices: { vatAdmin: true },
-    consume: { zoe: 'zoe' },
-    produce: { psmFacets: 'psm' },
-    installation: {
-      produce: {
-        contractGovernor: 'zoe',
-        committee: 'zoe',
-        binaryVoteCounter: 'zoe',
-        psm: 'zoe',
-      },
-    },
-  },
-};
-
-/**
  * We reserve these keys in name hubs.
  */
 export const agoricNamesReserved = harden(
