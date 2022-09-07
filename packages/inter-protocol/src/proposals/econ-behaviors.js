@@ -58,6 +58,8 @@ const MILLI = 1_000_000n;
  *   periodicFeeCollectors: import('../feeDistributor.js').PeriodicFeeCollector[],
  *   bankMints: Mint[],
  *   psmFacets: MapStore<Brand, PSMFacets>,
+ *   psmCharterCreatorFacet: Awaited<ReturnType<import('../psm/psmCharter.js').start>>['creatorFacet'],
+ *   psmCharterAdminFacet: AdminFacet,
  *   reservePublicFacet: import('../reserve/assetReserve.js').AssetReservePublicFacet,
  *   reserveCreatorFacet: import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet,
  *   reserveGovernorCreatorFacet: GovernedAssetReserveFacetAccess,

@@ -33,6 +33,7 @@ export const startPSM = async (
       zoe,
       feeMintAccess: feeMintAccessP,
       economicCommitteeCreatorFacet,
+      psmCharterCreatorFacet,
       chainStorage,
       chainTimerService,
       psmFacets,
@@ -159,9 +160,15 @@ export const startPSM = async (
   const psmFacetsMap = await psmFacets;
 
   psmFacetsMap.init(anchorBrand, newPsmFacets);
-  const instanceKey = `psm.${Stable.symbol}.${keyword}`;
+  const instanceKey = `psm-${Stable.symbol}-${keyword}`;
   const instanceAdmin = E(agoricNamesAdmin).lookupAdmin('instance');
   await E(instanceAdmin).update(instanceKey, newPsmFacets.psm);
+  await E(psmCharterCreatorFacet).addInstance(
+    psm,
+    psmCreatorFacet,
+    anchorBrand,
+    stable,
+  );
 };
 harden(startPSM);
 
@@ -245,7 +252,13 @@ export const installGovAndPSMContracts = async ({
   consume: { zoe },
   produce: { psmFacets },
   installation: {
-    produce: { contractGovernor, committee, binaryVoteCounter, psm },
+    produce: {
+      contractGovernor,
+      committee,
+      binaryVoteCounter,
+      psm,
+      psmCharter,
+    },
   },
 }) => {
   // In order to support multiple instances of the PSM, we store all the facets
@@ -260,6 +273,7 @@ export const installGovAndPSMContracts = async ({
       committee,
       binaryVoteCounter,
       psm,
+      psmCharter,
     }).map(async ([name, producer]) => {
       const bundleCap = D(vatAdmin).getNamedBundleCap(name);
       const bundle = D(bundleCap).getBundle();
@@ -268,6 +282,61 @@ export const installGovAndPSMContracts = async ({
       producer.resolve(installation);
     }),
   );
+};
+
+/** @param {EconomyBootstrapPowers} powers */
+export const startPSMCharter = async ({
+  consume: { zoe },
+  produce: { psmCharterCreatorFacet, psmCharterAdminFacet },
+  installation: {
+    consume: { binaryVoteCounter, psmCharter: installP },
+  },
+  instance: {
+    produce: { psmCharter: instanceP },
+  },
+}) => {
+  const [charterR, counterR] = await Promise.all([installP, binaryVoteCounter]);
+  const terms = { binaryVoteCounterInstallation: counterR };
+  const facets = await E.get(E(zoe).startInstance(charterR, {}, terms));
+  instanceP.resolve(facets.instance);
+  psmCharterCreatorFacet.resolve(facets.creatorFacet);
+  psmCharterAdminFacet.resolve(facets.adminFacet);
+};
+
+/**
+ * PSM and gov contracts are available as
+ * named swingset bundles only in
+ * decentral-psm-config.json
+ */
+export const PSM_GOV_MANIFEST = {
+  [installGovAndPSMContracts.name]: {
+    vatPowers: { D: true },
+    devices: { vatAdmin: true },
+    consume: { zoe: 'zoe' },
+    produce: { psmFacets: 'true' },
+    installation: {
+      produce: {
+        contractGovernor: 'zoe',
+        committee: 'zoe',
+        binaryVoteCounter: 'zoe',
+        psm: 'zoe',
+        psmCharter: 'zoe',
+      },
+    },
+  },
+  [startPSMCharter.name]: {
+    consume: { zoe: 'zoe' },
+    produce: {
+      psmCharterCreatorFacet: 'psmCharter',
+      psmCharterAdminFacet: 'psmCharter',
+    },
+    installation: {
+      consume: { binaryVoteCounter: 'zoe', psmCharter: 'zoe' },
+    },
+    instance: {
+      produce: { psmCharter: 'psmCharter' },
+    },
+  },
 };
 
 export const PSM_MANIFEST = harden({
@@ -290,8 +359,9 @@ export const PSM_MANIFEST = harden({
       zoe: 'zoe',
       feeMintAccess: 'zoe',
       economicCommitteeCreatorFacet: 'economicCommittee',
+      psmCharterCreatorFacet: 'psmCharter',
       chainTimerService: 'timer',
-      psmFacets: 'psm',
+      psmFacets: true,
     },
     installation: {
       consume: { contractGovernor: 'zoe', psm: 'zoe' },
