@@ -466,6 +466,23 @@
  */
 
 /**
+ * @typedef {object} AllLimits
+ * @property {number} decimalDigitsLimit
+ * @property {number} stringLengthLimit
+ * @property {number} symbolNameLengthLimit
+ * @property {number} numPropertiesLimit
+ * @property {number} propertyNameLengthLimit
+ * @property {number} arrayLengthLimit
+ * @property {number} numSetElementsLimit
+ * @property {number} numUniqueBagElementsLimit
+ * @property {number} numMapEntriesLimit
+ */
+
+/**
+ * @typedef {Partial<AllLimits>} Limits
+ */
+
+/**
  * @typedef {object} MatcherNamespace
  * @property {() => Matcher} any
  * Matches any passable
@@ -490,16 +507,16 @@
  * @property {(kind: string) => Matcher} kind
  * @property {() => Matcher} boolean
  * @property {() => Matcher} number Only floating point numbers
- * @property {() => Matcher} bigint
- * @property {() => Matcher} nat
- * @property {() => Matcher} string
- * @property {() => Matcher} symbol
+ * @property {(limits?: Limits) => Matcher} bigint
+ * @property {(limits?: Limits) => Matcher} nat
+ * @property {(limits?: Limits) => Matcher} string
+ * @property {(limits?: Limits) => Matcher} symbol
  * Only registered and well-known symbols are passable
- * @property {() => Matcher} record A CopyRecord
- * @property {() => Matcher} array A CopyArray
- * @property {() => Matcher} set A CopySet
- * @property {() => Matcher} bag A CopyBag
- * @property {() => Matcher} map A CopyMap
+ * @property {(limits?: Limits) => Matcher} record A CopyRecord
+ * @property {(limits?: Limits) => Matcher} array A CopyArray
+ * @property {(limits?: Limits) => Matcher} set A CopySet
+ * @property {(limits?: Limits) => Matcher} bag A CopyBag
+ * @property {(limits?: Limits) => Matcher} map A CopyMap
  * @property {(label?: string) => Matcher} remotable
  * A far object or its remote presence. The optional `label` is purely for
  * diagnostic purpose. It does not enforce any constraint beyond the
@@ -532,26 +549,33 @@
  * @property {(rightOperand :Key) => Matcher} gt
  * Matches if > the right operand by compareKeys
  *
- * @property {(subPatt?: Pattern) => Matcher} arrayOf
- * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Matcher} recordOf
- * @property {(keyPatt?: Pattern) => Matcher} setOf
- * @property {(keyPatt?: Pattern, countPatt?: Pattern) => Matcher} bagOf
+ * @property {(subPatt?: Pattern, limits?: Limits) => Matcher} arrayOf
+ * @property {(keyPatt?: Pattern,
+ *             valuePatt?: Pattern,
+ *             limits?: Limits
+ * ) => Matcher} recordOf
+ * @property {(keyPatt?: Pattern, limits?: Limits) => Matcher} setOf
+ * @property {(keyPatt?: Pattern,
+ *             countPatt?: Pattern,
+ *             limits?: Limits
+ * ) => Matcher} bagOf
  * Parameterized by a keyPatt that is matched against every element of the
  * abstract bag. In terms of the bag representation, it is matched against
  * the first element of each pair. If the second `countPatt` is provided,
  * it is matched against the cardinality of each element. The `countPatt`
  * is rarely expected to be useful, but is provided to minimize surprise.
- * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Matcher} mapOf
- * @property {(
- *   base: CopyRecord<*> | CopyArray<*>,
- *   rest?: Pattern
+ * @property {(keyPatt?: Pattern,
+ *             valuePatt?: Pattern,
+ *             limits?: Limits
+ * ) => Matcher} mapOf
+ * @property {(base: CopyRecord<*> | CopyArray<*>,
+ *             rest?: Pattern,
  * ) => Matcher} split
  * An array or record is split into the first part that matches the
  * base pattern, and the remainder, which matches against the optional
  * rest pattern if present.
- * @property {(
- *   base: CopyRecord<*> | CopyArray<*>,
- *   rest?: Pattern
+ * @property {(base: CopyRecord<*> | CopyArray<*>,
+ *             rest?: Pattern,
  * ) => Matcher} partial
  * An array or record is split into the first part that matches the
  * base pattern, and the remainder, which matches against the optional
@@ -579,6 +603,11 @@
 
 /**
  * @typedef {object} PatternKit
+ * @property {(specimen: Passable,
+ *             patt: Passable,
+ *             check: Checker,
+ *             label?: string|number
+ * ) => boolean} checkMatches
  * @property {(specimen: Passable, patt: Pattern) => boolean} matches
  * @property {(specimen: Passable, patt: Pattern, label?: string|number) => void} fit
  * @property {(patt: Pattern) => void} assertPattern
@@ -606,7 +635,7 @@
  *
  * @property {(allegedPayload: Passable,
  *             check: Checker
- * ) => boolean} checkIsMatcherPayload
+ * ) => boolean} checkIsWellFormed
  * Assumes this is the payload of a CopyTagged with the corresponding
  * matchTag. Is this a valid payload for a Matcher with that tag?
  *
