@@ -9,6 +9,7 @@ export * from './sim-behaviors.js';
 // @ts-expect-error Module './econ-behaviors.js' has already exported a member
 // named 'EconomyBootstrapPowers'.
 export * from './startPSM.js';
+export * from './startEconCommittee.js';
 
 const SHARED_MAIN_MANIFEST = harden({
   [econBehaviors.setupAmm.name]: {
