@@ -4,7 +4,7 @@ import {
   makeAsyncIterableFromNotifier,
   makeNotifierKit,
 } from '@agoric/notifier';
-import { iterateLatest } from '@agoric/casting';
+import { iterateEach } from '@agoric/casting';
 import { getScopedBridge } from '../service/ScopedBridge.js';
 import { getDappService } from '../service/Dapps.js';
 import { getOfferService } from '../service/Offers.js';
@@ -113,7 +113,7 @@ export const makeWalletBridgeFromFollower = (
     // Make an unhandled rejection.
     throw e;
   },
-  firstCallback,
+  firstCallback = () => {},
 ) => {
   const notifiers = {
     getPursesNotifier: 'purses',
@@ -130,15 +130,71 @@ export const makeWalletBridgeFromFollower = (
     ]),
   );
 
+  // We assume just one cosmos purse per brand.
+  const offers = {};
+  const brandToPurse = new Map();
+
+  const updatePurses = () => {
+    const purses = [];
+    for (const purse of brandToPurse.values()) {
+      if (purse.currentAmount && purse.brandPetname) {
+        console.log(purse.currentAmount);
+        purses.push(purse);
+      }
+    }
+    // console.log(purses);
+    notifierKits.purses.updater.updateState(harden(purses));
+  };
+
   const followLatest = async () => {
-    for await (const { value: state } of iterateLatest(follower)) {
+    for await (const { value } of iterateEach(follower)) {
+      console.log('have value', value);
+      /** @type {import('@agoric/smart-wallet/src/smartWallet').UpdateRecord} */
+      const updateRecord = value;
       if (firstCallback) {
         firstCallback();
+        Object.values(notifierKits).forEach(({ updater }) =>
+          updater.updateState([]),
+        );
         firstCallback = undefined;
       }
-      Object.entries(notifierKits).forEach(([stateName, { updater }]) => {
-        updater.updateState(state[stateName]);
-      });
+      switch (updateRecord.updated) {
+        case 'brand': {
+          const { descriptor } = updateRecord;
+          const purseObj = {
+            ...brandToPurse.get(descriptor.brand),
+            brand: descriptor.brand,
+            brandPetname: descriptor.petname,
+            issuerPetname: descriptor.petname,
+            displayInfo: descriptor.displayInfo,
+          };
+          brandToPurse.set(descriptor.brand, purseObj);
+          updatePurses();
+          break;
+        }
+        case 'balance': {
+          // FIXME: We assume just one purse per brand.
+          const { currentAmount } = updateRecord;
+          const purseObj = {
+            ...brandToPurse.get(currentAmount.brand),
+            currentAmount,
+          };
+          brandToPurse.set(currentAmount.brand, purseObj);
+          updatePurses();
+          break;
+        }
+        case 'offerStatus': {
+          const { status } = updateRecord;
+          offers[status.id] = status;
+          notifierKits.offers.updater.updateState(
+            harden(Object.values(offers)),
+          );
+          break;
+        }
+        default: {
+          throw Error(`Unknown updateRecord ${updateRecord.updated}`);
+        }
+      }
     }
   };
 
