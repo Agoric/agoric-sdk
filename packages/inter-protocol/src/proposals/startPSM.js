@@ -139,13 +139,19 @@ export const startPSM = async (
     }),
   );
 
+  const [psm, psmCreatorFacet, psmAdminFacet] = await Promise.all([
+    E(governorFacets.creatorFacet).getInstance(),
+    E(governorFacets.creatorFacet).getCreatorFacet(),
+    E(governorFacets.creatorFacet).getAdminFacet(),
+  ]);
+
   /** @typedef {import('./econ-behaviors.js').PSMFacets} PSMFacets */
   /** @type {PSMFacets} */
   const newPsmFacets = {
-    psm: E(governorFacets.creatorFacet).getInstance(),
+    psm,
     psmGovernor: governorFacets.instance,
-    psmCreatorFacet: E(governorFacets.creatorFacet).getCreatorFacet(),
-    psmAdminFacet: E(governorFacets.creatorFacet).getAdminFacet(),
+    psmCreatorFacet,
+    psmAdminFacet,
     psmGovernorCreatorFacet: governorFacets.creatorFacet,
   };
 
@@ -233,7 +239,6 @@ harden(makeAnchorAsset);
 /** @typedef {import('./econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
 
 /** @param {BootstrapSpace & EconomyBootstrapSpace & { devices: { vatAdmin: any }, vatPowers: { D: DProxy }, }} powers */
-// /** @param {BootstrapSpace & { devices: { vatAdmin: any }, vatPowers: { D: DProxy }, }} powers */
 export const installGovAndPSMContracts = async ({
   vatPowers: { D },
   devices: { vatAdmin },
@@ -243,6 +248,10 @@ export const installGovAndPSMContracts = async ({
     produce: { contractGovernor, committee, binaryVoteCounter, psm },
   },
 }) => {
+  // In order to support multiple instances of the PSM, we store all the facets
+  // indexed by the brand. Since each name in the BootstrapSpace can only be
+  // produced  once, we produce an empty store here, and each time a PSM is
+  // started up, the details are added to the store.
   psmFacets.resolve(makeScalarMapStore());
 
   return Promise.all(
