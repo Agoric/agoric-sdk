@@ -1,14 +1,16 @@
 // @ts-check
 
+import { fit } from '@agoric/store';
 import { E, Far, passStyleOf } from '@endo/far';
 import { makePaymentsHelper } from './payments.js';
+import { shape } from './typeGuards.js';
 
 /**
  * @typedef {{
  *   id: number,
  *   invitationSpec: import('./invitations').InvitationSpec,
  *   proposal: Proposal,
- *   offerArgs?: Record<string, any>
+ *   offerArgs?: unknown
  * }} OfferSpec
  */
 
@@ -52,7 +54,8 @@ export const makeOffersFacet = ({
      * @throws if any parts of the offer can be determined synchronously to be invalid
      */
     executeOffer: async offerSpec => {
-      console.log('executeOffer', { offerSpec });
+      fit(harden(offerSpec), shape.OfferSpec);
+
       const paymentsManager = makePaymentsHelper(purseForBrand);
 
       /** @type {OfferStatus} */
@@ -85,9 +88,6 @@ export const makeOffersFacet = ({
         // consume id immediately so that all errors can pertain to a particular offer id.
         // This also serves to validate the new id.
         lastOfferId.set(id);
-
-        assert(invitationSpec, 'offer missing invitationSpec');
-        assert(proposal, 'offer missing proposal');
 
         const invitation = invitationFromSpec(invitationSpec);
 
