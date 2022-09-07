@@ -10,7 +10,7 @@ import '@agoric/zoe/exported.js';
 
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import * as BRIDGE_ID from '@agoric/vats/src/bridge-ids.js';
+import { BridgeId } from '@agoric/internal';
 import { E, Far } from '@endo/far';
 import { makeSmartWallet } from './smartWallet.js';
 
@@ -77,7 +77,7 @@ export const start = async (zcf, privateArgs) => {
   // NOTE: both `MsgWalletAction` and `MsgWalletSpendAction` arrive as BRIDGE_ID.WALLET
   // by way of makeBlockManager() in cosmic-swingset/src/block-manager.js
   await (bridgeManager &&
-    E(bridgeManager).register(BRIDGE_ID.WALLET, handleWalletAction));
+    E(bridgeManager).register(BridgeId.WALLET, handleWalletAction));
 
   const shared = {
     agoricNames,

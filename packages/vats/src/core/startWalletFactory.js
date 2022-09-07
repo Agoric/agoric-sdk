@@ -1,8 +1,7 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
-
-import * as BRIDGE_ID from '../bridge-ids.js';
+import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { makeStorageNodeChild } from '../lib-chainStorage.js';
 import { makeMyAddressNameAdmin, PowerFlags } from './basic-behaviors.js';
 

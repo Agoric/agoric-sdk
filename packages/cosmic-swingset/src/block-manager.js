@@ -3,8 +3,7 @@
 import anylogger from 'anylogger';
 
 import { assert, details as X } from '@agoric/assert';
-
-import * as BRIDGE_ID from '@agoric/vats/src/bridge-ids.js';
+import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 
 import * as ActionType from './action-types.js';
 import { parseParams } from './params.js';

@@ -4,9 +4,8 @@ import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
 import { makeStore, makeWeakStore } from '@agoric/store';
-
+import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { makeVirtualPurse } from './virtual-purse.js';
-import * as BRIDGE_ID from './bridge-ids.js';
 
 import '@agoric/notifier/exported.js';
 

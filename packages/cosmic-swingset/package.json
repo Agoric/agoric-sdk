@@ -25,6 +25,7 @@
     "@agoric/assert": "^0.4.0",
     "@agoric/cosmos": "^0.30.0",
     "@agoric/deploy-script-support": "^0.9.0",
+    "@agoric/internal": "^0.1.0",
     "@agoric/nat": "^4.1.0",
     "@agoric/store": "^0.7.2",
     "@agoric/swing-store": "^0.7.0",
