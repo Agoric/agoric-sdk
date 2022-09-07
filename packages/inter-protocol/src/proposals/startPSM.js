@@ -153,6 +153,9 @@ export const startPSM = async (
   const psmFacetsMap = await psmFacets;
 
   psmFacetsMap.init(anchorBrand, newPsmFacets);
+  const instanceKey = `psm.${Stable.symbol}.${keyword}`;
+  const instanceAdmin = E(agoricNamesAdmin).lookupAdmin('instance');
+  await E(instanceAdmin).update(instanceKey, newPsmFacets.psm);
 };
 harden(startPSM);
 

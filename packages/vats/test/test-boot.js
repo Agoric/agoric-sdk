@@ -195,7 +195,7 @@ test(`PSM-only bootstrap`, async t => {
   const agoricNames = /** @type {Promise<NameHub>} */ (
     E(root).consumeItem('agoricNames')
   );
-  const instance = await E(agoricNames).lookup('instance', 'psm');
+  const instance = await E(agoricNames).lookup('instance', 'psm.IST.AUSD');
   t.is(passStyleOf(instance), 'remotable');
 });
 

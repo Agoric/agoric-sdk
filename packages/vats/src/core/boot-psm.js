@@ -84,8 +84,7 @@ export const agoricNamesReserved = harden(
     },
     instance: {
       economicCommittee: 'Economic Committee',
-      psm: 'Parity Stability Module',
-      psmGovernor: 'PSM Governor',
+      'psm.IST.AUSD': 'Parity Stability Module: IST:AUSD',
     },
   }),
 );
