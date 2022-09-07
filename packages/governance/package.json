@@ -35,6 +35,7 @@
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.4.0",
     "@agoric/store": "^0.7.2",
+    "@agoric/swingset-vat": "^0.28.0",
     "@agoric/vat-data": "^0.3.1",
     "@agoric/vats": "^0.10.0",
     "@agoric/zoe": "^0.24.0",

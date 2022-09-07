@@ -5,6 +5,7 @@ import '@agoric/zoe/exported.js';
 import { E } from '@endo/eventual-send';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
+import { Far } from '@endo/marshal';
 
 import {
   makeBinaryVoteCounter,
@@ -15,10 +16,17 @@ import {
   makeParamChangePositions,
 } from '../../src/index.js';
 
-const ISSUE = harden({ text: 'Fish or cut bait?' });
+const SIMPLE_ISSUE = harden({ text: 'Fish or cut bait?' });
 const FISH = harden({ text: 'Fish' });
 const BAIT = harden({ text: 'Cut Bait' });
 
+const PARAM_ISSUE = harden({
+  spec: {
+    paramPath: { key: 'something' },
+    changes: { arbitrary: 37 },
+  },
+  contract: Far('contract', {}),
+});
 const { positive, negative } = makeParamChangePositions({ Arbitrary: 37 });
 const PARAM_CHANGE_ISSUE = harden({
   spec: { paramPath: { key: 'governedParam' }, changes: { Whatever: 37 } },
@@ -35,7 +43,7 @@ const FAKE_COUNTER_INSTANCE = makeHandle('Instance');
 test('binary question', async t => {
   const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
-    issue: ISSUE,
+    issue: SIMPLE_ISSUE,
     positions: [FISH, BAIT],
     electionType: ElectionType.SURVEY,
     maxChoices: 1,
@@ -63,7 +71,7 @@ test('binary question', async t => {
 test('binary spoiled', async t => {
   const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
-    issue: ISSUE,
+    issue: SIMPLE_ISSUE,
     positions: [FISH, BAIT],
     electionType: ElectionType.ELECTION,
     maxChoices: 1,
@@ -99,7 +107,7 @@ test('binary tied', async t => {
     electionType: ElectionType.PARAM_CHANGE,
     maxChoices: 1,
     closingRule: FAKE_CLOSING_RULE,
-    quorumRule: QuorumRule.NO_QUORUM,
+    quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
   });
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
@@ -127,7 +135,7 @@ test('binary bad vote', async t => {
     electionType: ElectionType.PARAM_CHANGE,
     maxChoices: 1,
     closingRule: FAKE_CLOSING_RULE,
-    quorumRule: QuorumRule.NO_QUORUM,
+    quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
   });
   const { creatorFacet } = makeBinaryVoteCounter(
@@ -150,7 +158,7 @@ test('binary no votes', async t => {
     electionType: ElectionType.PARAM_CHANGE,
     maxChoices: 1,
     closingRule: FAKE_CLOSING_RULE,
-    quorumRule: QuorumRule.NO_QUORUM,
+    quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
   });
   const { publicFacet, closeFacet } = makeBinaryVoteCounter(
@@ -167,13 +175,13 @@ test('binary no votes', async t => {
 test('binary varying share weights', async t => {
   const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
-    issue: ISSUE,
-    positions: [positive, negative],
+    issue: SIMPLE_ISSUE,
+    positions: [FISH, BAIT],
     electionType: ElectionType.SURVEY,
     maxChoices: 1,
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.NO_QUORUM,
-    tieOutcome: negative,
+    tieOutcome: BAIT,
   });
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
     questionSpec,
@@ -185,25 +193,26 @@ test('binary varying share weights', async t => {
   const saraSeat = makeHandle('Voter');
 
   await Promise.all([
-    E(creatorFacet).submitVote(aceSeat, [positive], 37n),
-    E(creatorFacet).submitVote(austinSeat, [negative], 24n),
-    E(creatorFacet).submitVote(saraSeat, [negative], 11n),
+    E(creatorFacet).submitVote(aceSeat, [FISH], 37n),
+    E(creatorFacet).submitVote(austinSeat, [BAIT], 24n),
+    E(creatorFacet).submitVote(saraSeat, [BAIT], 11n),
   ]);
 
   closeFacet.closeVoting();
   const outcome = await E(publicFacet).getOutcome();
-  t.deepEqual(outcome, positive);
+  t.deepEqual(outcome, FISH);
 });
 
 test('binary contested', async t => {
   const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
-    issue: ISSUE,
+    // @ts-expect-error I dunno what's confusing it.
+    issue: PARAM_ISSUE,
     positions: [positive, negative],
-    electionType: ElectionType.ELECTION,
+    electionType: ElectionType.PARAM_CHANGE,
     maxChoices: 1,
     closingRule: FAKE_CLOSING_RULE,
-    quorumRule: QuorumRule.NO_QUORUM,
+    quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
   });
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
@@ -234,7 +243,7 @@ test('binary revote', async t => {
     electionType: ElectionType.PARAM_CHANGE,
     maxChoices: 1,
     closingRule: FAKE_CLOSING_RULE,
-    quorumRule: QuorumRule.NO_QUORUM,
+    quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
   });
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
@@ -261,7 +270,7 @@ test('binary revote', async t => {
 test('binary question too many', async t => {
   const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
-    issue: ISSUE,
+    issue: SIMPLE_ISSUE,
     positions: [FISH, BAIT],
     electionType: ElectionType.SURVEY,
     maxChoices: 1,
@@ -289,7 +298,7 @@ test('binary question too many', async t => {
 test('binary no quorum', async t => {
   const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
-    issue: ISSUE,
+    issue: SIMPLE_ISSUE,
     positions: [FISH, BAIT],
     electionType: ElectionType.ELECTION,
     maxChoices: 1,
@@ -315,21 +324,20 @@ test('binary no quorum', async t => {
 });
 
 test('binary too many positions', async t => {
-  const questionSpec = coerceQuestionSpec({
-    method: ChoiceMethod.UNRANKED,
-    issue: ISSUE,
-    positions: [FISH, BAIT, harden({ text: 'sleep' })],
-    electionType: ElectionType.SURVEY,
-    maxChoices: 1,
-    closingRule: FAKE_CLOSING_RULE,
-    quorumRule: QuorumRule.NO_QUORUM,
-    tieOutcome: BAIT,
-  });
   t.throws(
-    () => makeBinaryVoteCounter(questionSpec, 0n, FAKE_COUNTER_INSTANCE),
+    () =>
+      coerceQuestionSpec({
+        method: ChoiceMethod.UNRANKED,
+        issue: SIMPLE_ISSUE,
+        positions: [FISH, BAIT, harden({ text: 'sleep' })],
+        electionType: ElectionType.SURVEY,
+        maxChoices: 1,
+        closingRule: FAKE_CLOSING_RULE,
+        quorumRule: QuorumRule.NO_QUORUM,
+        tieOutcome: BAIT,
+      }),
     {
-      message:
-        'Binary questions must have exactly two positions. had 3: [{"text":"Fish"},{"text":"Cut Bait"},{"text":"sleep"}]',
+      message: / - Must match one of /,
     },
   );
 });

@@ -1,14 +1,9 @@
 // @ts-check
 
-import { Far, passStyleOf } from '@endo/marshal';
-import { keyEQ, fit } from '@agoric/store';
+import { makeHeapFarInstance, fit, keyEQ, M } from '@agoric/store';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
-import { Nat } from '@agoric/nat';
-import { M } from '@agoric/vat-data';
 
-import { makeAssertInstance } from './contractGovernance/assertions.js';
-
-const { details: X, quote: q } = assert;
+import { QuestionI, QuestionSpecShape } from './typeGuards.js';
 
 // Topics being voted on are 'Questions'. Before a Question is known to a
 // electorate, the parameters can be described with a QuestionSpec. Once the
@@ -43,123 +38,8 @@ const QuorumRule = /** @type {const} */ ({
   ALL: 'all',
 });
 
-/**
- * @param {unknown} issue
- * @returns {asserts issue is SimpleIssue}
- */
-
-const assertSimpleIssue = issue => {
-  assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
-  assert(
-    issue && typeof issue.text === 'string',
-    X`Issue ("${issue}") must be a record with text: aString`,
-  );
-};
-
-/**
- * @param {unknown} issue
- * @returns {asserts issue is ParamChangeIssue<unknown>}
- */
-
-const assertParamChangeIssue = issue => {
-  assert(issue, 'argument to assertParamChangeIssue cannot be null');
-  assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
-  assert(issue?.spec?.paramPath, X`Issue ("${issue}") must have a paramPath`);
-  assert(issue?.spec?.changes, X`Issue ("${issue}") must have changes`);
-
-  assert.typeof(
-    issue.spec.changes,
-    'object',
-    X`changes ("${issue.changes}") must be a record`,
-  );
-
-  const assertInstance = makeAssertInstance('contract');
-  assertInstance(issue.contract);
-};
-
-/**
- * @param {unknown} issue
- * @returns {asserts issue is ApiInvocationIssue}
- */
-
-const assertApiInvocation = issue => {
-  assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
-  assert(
-    issue && typeof issue.apiMethodName === 'string',
-    X`Issue ("${issue}") must be a record with apiMethodName: aString`,
-  );
-};
-
-/**
- * @param {unknown} issue
- * @returns {asserts issue is OfferFilterIssue}
- */
-
-const assertOfferFilter = issue => {
-  assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
-  fit(issue?.strings, M.arrayOf(M.string()), 'strings');
-};
-
-/**
- * @param {ElectionType} electionType
- * @param {unknown} issue
- * @returns {asserts issue is Issue}
- */
-
-const assertIssueForType = (electionType, issue) => {
-  assert(
-    passStyleOf(issue) === 'copyRecord',
-    X`A question can only be a pass-by-copy record: ${issue}`,
-  );
-
-  switch (electionType) {
-    case ElectionType.SURVEY:
-    case ElectionType.ELECTION:
-      assertSimpleIssue(issue);
-      break;
-    case ElectionType.PARAM_CHANGE:
-      assertParamChangeIssue(issue);
-      break;
-    case ElectionType.API_INVOCATION:
-      assertApiInvocation(issue);
-      break;
-    case ElectionType.OFFER_FILTER:
-      assertOfferFilter(issue);
-      break;
-    default:
-      throw Error(`Election type unrecognized`);
-  }
-};
-
 /** @type {PositionIncluded} */
 const positionIncluded = (positions, p) => positions.some(e => keyEQ(e, p));
-
-// QuestionSpec contains the subset of QuestionDetails that can be specified before
-/**
- * @param {unknown} closingRule
- * @returns {asserts closingRule is ClosingRule}
- */
-
-function assertClosingRule(closingRule) {
-  assert(closingRule, 'argument to assertClosingRule cannot be null');
-  assert.typeof(
-    closingRule,
-    'object',
-    X`ClosingRule ("${closingRule}") must be a record`,
-  );
-  Nat(closingRule?.deadline);
-  const timer = closingRule?.timer;
-  assert(passStyleOf(timer) === 'remotable', X`Timer must be a timer ${timer}`);
-}
-
-const assertEnumIncludes = (enumeration, value, name) => {
-  assert(
-    Object.keys(enumeration)
-      .map(k => enumeration[k])
-      .includes(value),
-    X`Illegal ${name}: ${value}`,
-  );
-};
 
 /**
  * @param {QuestionSpec} allegedQuestionSpec
@@ -175,27 +55,7 @@ const coerceQuestionSpec = ({
   quorumRule,
   tieOutcome,
 }) => {
-  assertIssueForType(electionType, issue);
-
-  assert(
-    positions.every(
-      p => passStyleOf(p) === 'copyRecord',
-      'positions must be records',
-    ),
-  );
-  assert(
-    positionIncluded(positions, tieOutcome),
-    X`tieOutcome must be a legal position: ${q(tieOutcome)}`,
-  );
-  assertEnumIncludes(QuorumRule, quorumRule, 'QuorumRule');
-  assertEnumIncludes(ElectionType, electionType, 'ElectionType');
-  assertEnumIncludes(ChoiceMethod, method, 'ChoiceMethod');
-  assert(maxChoices > 0, X`maxChoices must be positive: ${maxChoices}`);
-  assert(maxChoices <= positions.length, 'Choices must not exceed length');
-
-  assertClosingRule(closingRule);
-
-  return harden({
+  const question = harden({
     method,
     issue,
     positions,
@@ -205,30 +65,40 @@ const coerceQuestionSpec = ({
     quorumRule,
     tieOutcome,
   });
+
+  fit(question, QuestionSpecShape);
+
+  // XXX It would be nice to enforce this using parameterized types, but that
+  // seems to only enforce type constraints, (i.e. the tieOutcome will be the
+  // same type as any of the positions) unless you can provide the concrete
+  // value at pattern creation time.
+  fit(question.tieOutcome, M.or(...question.positions));
+
+  return question;
 };
 
 /** @type {BuildUnrankedQuestion} */
 const buildUnrankedQuestion = (questionSpec, counterInstance) => {
   const questionHandle = makeHandle('Question');
 
-  const getDetails = () =>
-    harden({
-      ...questionSpec,
-      questionHandle,
-      counterInstance,
-    });
-
   /** @type {Question} */
-  return Far('question details', {
-    getVoteCounter: () => counterInstance,
-    getDetails,
+  return makeHeapFarInstance('question details', QuestionI, {
+    getVoteCounter() {
+      return counterInstance;
+    },
+    getDetails() {
+      return harden({
+        ...questionSpec,
+        questionHandle,
+        counterInstance,
+      });
+    },
   });
 };
 
 harden(buildUnrankedQuestion);
 harden(ChoiceMethod);
 harden(ElectionType);
-harden(assertIssueForType);
 harden(coerceQuestionSpec);
 harden(positionIncluded);
 harden(QuorumRule);
@@ -237,7 +107,6 @@ export {
   buildUnrankedQuestion,
   ChoiceMethod,
   ElectionType,
-  assertIssueForType,
   coerceQuestionSpec,
   positionIncluded,
   QuorumRule,

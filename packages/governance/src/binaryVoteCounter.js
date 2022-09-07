@@ -2,15 +2,20 @@
 
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { keyEQ, makeStore } from '@agoric/store';
+import { makeHeapFarInstance, keyEQ, makeStore } from '@agoric/store';
 
 import {
-  ChoiceMethod,
   buildUnrankedQuestion,
-  positionIncluded,
+  ChoiceMethod,
   coerceQuestionSpec,
+  positionIncluded,
 } from './question.js';
 import { scheduleClose } from './closingRule.js';
+import {
+  BinaryVoteCounterAdminI,
+  BinaryVoteCounterCloseI,
+  BinaryVoteCounterPublicI,
+} from './typeGuards.js';
 
 const { details: X } = assert;
 
@@ -77,24 +82,6 @@ const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
   /** @type {Store<Handle<'Voter'>,RecordedBallot> } */
   const allBallots = makeStore('voterHandle');
 
-  /** @type {SubmitVote} */
-  const submitVote = (voterHandle, chosenPositions, shares = 1n) => {
-    assert(chosenPositions.length === 1, 'only 1 position allowed');
-    const [position] = chosenPositions;
-    assert(
-      positionIncluded(positions, position),
-      X`The specified choice is not a legal position: ${position}.`,
-    );
-
-    // CRUCIAL: If the voter cast a valid ballot, we'll record it, but we need
-    // to make sure that each voter's vote is recorded only once.
-    const completedBallot = harden({ chosen: position, shares });
-    allBallots.has(voterHandle)
-      ? allBallots.set(voterHandle, completedBallot)
-      : allBallots.init(voterHandle, completedBallot);
-    return completedBallot;
-  };
-
   const countVotes = () => {
     assert(!isOpen, X`can't count votes while the election is open`);
 
@@ -143,29 +130,70 @@ const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
     }
   };
 
-  const closeVoting = () => {
-    isOpen = false;
-    countVotes();
-  };
+  const closeFacet = makeHeapFarInstance(
+    'BinaryVoteCounter close',
+    BinaryVoteCounterCloseI,
+    {
+      closeVoting() {
+        isOpen = false;
+        countVotes();
+      },
+    },
+  );
 
-  // exposed for testing. In contracts, shouldn't be released.
-  /** @type {VoteCounterCloseFacet} */
-  const closeFacet = Far('closeFacet', { closeVoting });
+  const creatorFacet = makeHeapFarInstance(
+    'BinaryVoteCounter creator',
+    BinaryVoteCounterAdminI,
+    {
+      submitVote(voterHandle, chosenPositions, shares = 1n) {
+        assert(chosenPositions.length === 1, 'only 1 position allowed');
+        const [position] = chosenPositions;
+        assert(
+          positionIncluded(positions, position),
+          X`The specified choice is not a legal position: ${position}.`,
+        );
 
-  /** @type {VoteCounterCreatorFacet} */
-  const creatorFacet = Far('VoteCounter vote Cap', {
-    submitVote,
+        // CRUCIAL: If the voter cast a valid ballot, we'll record it, but we need
+        // to make sure that each voter's vote is recorded only once.
+        const completedBallot = harden({ chosen: position, shares });
+        allBallots.has(voterHandle)
+          ? allBallots.set(voterHandle, completedBallot)
+          : allBallots.init(voterHandle, completedBallot);
+        return completedBallot;
+      },
+    },
+  );
+
+  const publicFacet = makeHeapFarInstance(
+    'BinaryVoteCounter public',
+    BinaryVoteCounterPublicI,
+    {
+      getQuestion() {
+        return question;
+      },
+      isOpen() {
+        return isOpen;
+      },
+      getOutcome() {
+        return outcomePromise.promise;
+      },
+      getStats() {
+        return tallyPromise.promise;
+      },
+      getDetails() {
+        return details;
+      },
+      getInstance() {
+        return instance;
+      },
+    },
+  );
+
+  return harden({
+    creatorFacet,
+    publicFacet,
+    closeFacet,
   });
-
-  /** @type {VoteCounterPublicFacet} */
-  const publicFacet = Far('preliminaryPublicFacet', {
-    getQuestion: () => question,
-    isOpen: () => isOpen,
-    getOutcome: () => outcomePromise.promise,
-    getStats: () => tallyPromise.promise,
-    getDetails: () => details,
-  });
-  return { publicFacet, creatorFacet, closeFacet };
 };
 
 // The contract wrapper extracts the terms and runs makeBinaryVoteCounter().
@@ -189,13 +217,9 @@ const start = zcf => {
     zcf.getInstance(),
   );
 
-  scheduleClose(questionSpec.closingRule, closeFacet.closeVoting);
+  scheduleClose(questionSpec.closingRule, () => closeFacet.closeVoting());
 
-  const publicFacetWithGetInstance = Far('publicFacet', {
-    ...publicFacet,
-    getInstance: zcf.getInstance,
-  });
-  return { publicFacet: publicFacetWithGetInstance, creatorFacet };
+  return { publicFacet, creatorFacet };
 };
 
 harden(start);

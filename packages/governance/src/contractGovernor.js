@@ -2,14 +2,15 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { fit } from '@agoric/store';
 
 import {
-  setupParamGovernance,
-  validateParamChangeQuestion,
   CONTRACT_ELECTORATE,
+  setupParamGovernance,
 } from './contractGovernance/governParam.js';
 import { setupApiGovernance } from './contractGovernance/governApi.js';
 import { setupFilterGovernance } from './contractGovernance/governFilter.js';
+import { ParamChangesQuestionDetailsShape } from './typeGuards.js';
 
 const { details: X } = assert;
 
@@ -27,7 +28,7 @@ const validateQuestionDetails = async (zoe, electorate, details) => {
     counterInstance,
     issue: { contract: governedInstance },
   } = details;
-  validateParamChangeQuestion(details);
+  fit(details, ParamChangesQuestionDetailsShape);
 
   const governorInstance = await E.get(E(zoe).getTerms(governedInstance))
     .electionManager;
