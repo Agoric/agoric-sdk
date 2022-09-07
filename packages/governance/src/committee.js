@@ -1,13 +1,7 @@
 // @ts-check
 
 import { makeStoredPublishKit } from '@agoric/notifier';
-import {
-  defineHeapFarClassKit,
-  initEmpty,
-  makeStore,
-  makeHeapFarInstance,
-  M,
-} from '@agoric/store';
+import { makeStore, makeHeapFarInstance, M } from '@agoric/store';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 
@@ -20,9 +14,10 @@ import {
 } from './electorateTools.js';
 import { QuorumRule } from './question.js';
 import {
-  CommitteeIKit,
   QuestionHandleShape,
   PositionShape,
+  ElectorateCreatorI,
+  ElectoratePublicI,
 } from './typeGuards.js';
 
 const { ceilDivide } = natSafeMath;
@@ -114,94 +109,75 @@ const start = (zcf, privateArgs) => {
     [...Array(committeeSize).keys()].map(makeCommitteeVoterInvitation),
   );
 
-  const makeCommitteeKit = defineHeapFarClassKit(
-    'Committee Facets',
-    CommitteeIKit,
-    initEmpty,
+  const publicFacet = makeHeapFarInstance(
+    'Committee publicFacet',
+    ElectoratePublicI,
     {
-      creatorFacet: {
-        getPoserInvitation() {
-          return getPoserInvitation(zcf, async (voteCounter, questionSpec) => {
-            const quorumThreshold = quorumRule => {
-              switch (quorumRule) {
-                case QuorumRule.MAJORITY:
-                  return ceilDivide(committeeSize, 2);
-                case QuorumRule.ALL:
-                  return committeeSize;
-                case QuorumRule.NO_QUORUM:
-                  return 0;
-                default:
-                  throw Error(`${quorumRule} is not a recognized quorum rule`);
-              }
-            };
-
-            return startCounter(
-              zcf,
-              questionSpec,
-              quorumThreshold(questionSpec.quorumRule),
-              voteCounter,
-              allQuestions,
-              questionsPublisher,
-            );
-          });
-        },
-        /** @type {AddQuestion} */
-        async addQuestion(voteCounter, questionSpec) {
-          const quorumThreshold = quorumRule => {
-            switch (quorumRule) {
-              case QuorumRule.MAJORITY:
-                return ceilDivide(committeeSize, 2);
-              case QuorumRule.ALL:
-                return committeeSize;
-              case QuorumRule.NO_QUORUM:
-                return 0;
-              default:
-                throw Error(`${quorumRule} is not a recognized quorum rule`);
-            }
-          };
-
-          return startCounter(
-            zcf,
-            questionSpec,
-            quorumThreshold(questionSpec.quorumRule),
-            voteCounter,
-            allQuestions,
-            questionsPublisher,
-          );
-        },
-        getVoterInvitations() {
-          return invitations;
-        },
-        getQuestionSubscriber() {
-          return questionsSubscriber;
-        },
-
-        getPublicFacet() {
-          return this.facets.publicFacet;
-        },
+      getQuestionSubscriber() {
+        return questionsSubscriber;
       },
-
-      publicFacet: {
-        getQuestionSubscriber() {
-          return questionsSubscriber;
-        },
-        getOpenQuestions() {
-          return getOpenQuestions(allQuestions);
-        },
-        getName() {
-          return committeeName;
-        },
-        getInstance() {
-          return zcf.getInstance();
-        },
-        getQuestion(handleP) {
-          return getQuestion(handleP, allQuestions);
-        },
+      getOpenQuestions() {
+        return getOpenQuestions(allQuestions);
+      },
+      getName() {
+        return committeeName;
+      },
+      getInstance() {
+        return zcf.getInstance();
+      },
+      getQuestion(handleP) {
+        return getQuestion(handleP, allQuestions);
       },
     },
   );
 
-  return makeCommitteeKit();
+  const creatorFacet = makeHeapFarInstance(
+    'Committee creatorFacet',
+    ElectorateCreatorI,
+    {
+      getPoserInvitation() {
+        return getPoserInvitation(zcf, async (voteCounter, questionSpec) =>
+          creatorFacet.addQuestion(voteCounter, questionSpec),
+        );
+      },
+      /** @type {AddQuestion} */
+      async addQuestion(voteCounter, questionSpec) {
+        const quorumThreshold = quorumRule => {
+          switch (quorumRule) {
+            case QuorumRule.MAJORITY:
+              return ceilDivide(committeeSize, 2);
+            case QuorumRule.ALL:
+              return committeeSize;
+            case QuorumRule.NO_QUORUM:
+              return 0;
+            default:
+              throw Error(`${quorumRule} is not a recognized quorum rule`);
+          }
+        };
+
+        return startCounter(
+          zcf,
+          questionSpec,
+          quorumThreshold(questionSpec.quorumRule),
+          voteCounter,
+          allQuestions,
+          questionsPublisher,
+        );
+      },
+      getVoterInvitations() {
+        return invitations;
+      },
+      getQuestionSubscriber() {
+        return questionsSubscriber;
+      },
+
+      getPublicFacet() {
+        return publicFacet;
+      },
+    },
+  );
+
+  return { publicFacet, creatorFacet };
 };
 
 harden(start);

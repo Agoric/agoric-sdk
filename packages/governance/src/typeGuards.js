@@ -48,14 +48,7 @@ export const OfferFilterQuestionSpecShape = harden({
   tieOutcome: NoOfferFilterPositionShape,
 });
 export const OfferFilterQuestionDetailsShape = harden({
-  method: ChoiceMethodShape,
-  issue: OfferFilterIssueShape,
-  positions: OfferFilterPositionsShape,
-  electionType: 'offer_filter',
-  maxChoices: 1,
-  closingRule: ClosingRuleShape,
-  quorumRule: QuorumRuleShape,
-  tieOutcome: NoOfferFilterPositionShape,
+  ...OfferFilterQuestionSpecShape,
   questionHandle: makeHandleShape('Question'),
   counterInstance: InstanceHandleShape,
 });
@@ -92,14 +85,7 @@ export const ParamChangesQuestionSpecShape = harden({
 });
 
 export const ParamChangesQuestionDetailsShape = harden({
-  method: 'unranked',
-  issue: ParamChangesIssueShape,
-  positions: ParamChangesPositionsShape,
-  electionType: 'param_change',
-  maxChoices: 1,
-  closingRule: ClosingRuleShape,
-  quorumRule: 'majority',
-  tieOutcome: NoParamChangesPositionShape,
+  ...ParamChangesQuestionSpecShape,
   questionHandle: makeHandleShape('Question'),
   counterInstance: InstanceHandleShape,
 });
@@ -127,14 +113,7 @@ export const ApiInvocationQuestionSpecShape = harden({
   tieOutcome: NoApiInvocationPositionShape,
 });
 export const ApiInvocationQuestionDetailsShape = harden({
-  method: 'unranked',
-  issue: ApiInvocationSpecShape,
-  positions: ApiInvocationPositionsShape,
-  electionType: 'api_invocation',
-  maxChoices: 1,
-  closingRule: ClosingRuleShape,
-  quorumRule: QuorumRuleShape,
-  tieOutcome: NoApiInvocationPositionShape,
+  ...ApiInvocationQuestionSpecShape,
   questionHandle: makeHandleShape('Question'),
   counterInstance: InstanceHandleShape,
 });
@@ -160,14 +139,7 @@ export const SimpleQuestionSpecShape = harden({
   tieOutcome: NoSimplePositionShape,
 });
 export const SimpleQuestionDetailsShape = harden({
-  method: ChoiceMethodShape,
-  issue: SimpleIssueShape,
-  positions: SimplePositionsShape,
-  electionType: M.or('election', 'survey'),
-  maxChoices: M.gte(1),
-  closingRule: ClosingRuleShape,
-  quorumRule: QuorumRuleShape,
-  tieOutcome: NoSimplePositionShape,
+  ...SimpleQuestionSpecShape,
   questionHandle: makeHandleShape('Question'),
   counterInstance: InstanceHandleShape,
 });
@@ -223,11 +195,6 @@ export const ElectorateCreatorI = M.interface('Committee AdminFacet', {
   getVoterInvitations: M.call().returns(M.arrayOf(M.promise())),
   getQuestionSubscriber: M.call().returns(SubscriberShape),
   getPublicFacet: M.call().returns(ElectoratePublicShape),
-});
-
-export const CommitteeIKit = harden({
-  publicFacet: ElectoratePublicI,
-  creatorFacet: ElectorateCreatorI,
 });
 
 export const QuestionStatsShape = harden({
