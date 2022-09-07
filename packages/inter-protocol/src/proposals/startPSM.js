@@ -8,6 +8,8 @@ import { E } from '@endo/far';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { assert } from '@agoric/assert';
+import { makeScalarMapStore } from '@agoric/vat-data';
+
 import { reserveThenGetNamePaths } from './utils.js';
 
 const BASIS_POINTS = 10000n;
@@ -33,14 +35,13 @@ export const startPSM = async (
       economicCommitteeCreatorFacet,
       chainStorage,
       chainTimerService,
+      psmFacets,
     },
-    produce: { psmCreatorFacet, psmGovernorCreatorFacet, psmAdminFacet },
     installation: {
       consume: { contractGovernor, psm: psmInstall },
     },
     instance: {
       consume: { economicCommittee },
-      produce: { psm: psmInstanceR, psmGovernor: psmGovernorR },
     },
     brand: {
       consume: { [Stable.symbol]: stableP },
@@ -138,11 +139,29 @@ export const startPSM = async (
     }),
   );
 
-  psmInstanceR.resolve(await E(governorFacets.creatorFacet).getInstance());
-  psmGovernorR.resolve(governorFacets.instance);
-  psmCreatorFacet.resolve(E(governorFacets.creatorFacet).getCreatorFacet());
-  psmAdminFacet.resolve(E(governorFacets.creatorFacet).getAdminFacet());
-  psmGovernorCreatorFacet.resolve(governorFacets.creatorFacet);
+  const [psm, psmCreatorFacet, psmAdminFacet] = await Promise.all([
+    E(governorFacets.creatorFacet).getInstance(),
+    E(governorFacets.creatorFacet).getCreatorFacet(),
+    E(governorFacets.creatorFacet).getAdminFacet(),
+  ]);
+
+  /** @typedef {import('./econ-behaviors.js').PSMFacets} PSMFacets */
+  /** @type {PSMFacets} */
+  const newPsmFacets = {
+    psm,
+    psmGovernor: governorFacets.instance,
+    psmCreatorFacet,
+    psmAdminFacet,
+    psmGovernorCreatorFacet: governorFacets.creatorFacet,
+  };
+
+  /** @type {MapStore<Brand,PSMFacets>} */
+  const psmFacetsMap = await psmFacets;
+
+  psmFacetsMap.init(anchorBrand, newPsmFacets);
+  const instanceKey = `psm.${Stable.symbol}.${keyword}`;
+  const instanceAdmin = E(agoricNamesAdmin).lookupAdmin('instance');
+  await E(instanceAdmin).update(instanceKey, newPsmFacets.psm);
 };
 harden(startPSM);
 
@@ -217,15 +236,24 @@ export const makeAnchorAsset = async (
 };
 harden(makeAnchorAsset);
 
-/** @param {BootstrapSpace & { devices: { vatAdmin: any }, vatPowers: { D: DProxy }, }} powers */
+/** @typedef {import('./econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
+
+/** @param {BootstrapSpace & EconomyBootstrapSpace & { devices: { vatAdmin: any }, vatPowers: { D: DProxy }, }} powers */
 export const installGovAndPSMContracts = async ({
   vatPowers: { D },
   devices: { vatAdmin },
   consume: { zoe },
+  produce: { psmFacets },
   installation: {
     produce: { contractGovernor, committee, binaryVoteCounter, psm },
   },
 }) => {
+  // In order to support multiple instances of the PSM, we store all the facets
+  // indexed by the brand. Since each name in the BootstrapSpace can only be
+  // produced  once, we produce an empty store here, and each time a PSM is
+  // started up, the details are added to the store.
+  psmFacets.resolve(makeScalarMapStore());
+
   return Promise.all(
     Object.entries({
       contractGovernor,
@@ -263,18 +291,13 @@ export const PSM_MANIFEST = harden({
       feeMintAccess: 'zoe',
       economicCommitteeCreatorFacet: 'economicCommittee',
       chainTimerService: 'timer',
-    },
-    produce: {
-      psmCreatorFacet: 'psm',
-      psmAdminFacet: 'psm',
-      psmGovernorCreatorFacet: 'psmGovernor',
+      psmFacets: 'psm',
     },
     installation: {
       consume: { contractGovernor: 'zoe', psm: 'zoe' },
     },
     instance: {
       consume: { economicCommittee: 'economicCommittee' },
-      produce: { psm: 'psm', psmGovernor: 'psm' },
     },
     brand: {
       consume: { AUSD: 'bank', IST: 'zoe' },

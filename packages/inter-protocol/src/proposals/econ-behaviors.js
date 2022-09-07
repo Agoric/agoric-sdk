@@ -47,6 +47,15 @@ const sanitizePathSegment = name => {
  */
 
 /**
+ * @typedef {object} PSMFacets
+ * @property {Instance} psm
+ * @property {Instance} psmGovernor
+ * @property {Awaited<ReturnType<import('../psm/psm.js').start>>['creatorFacet']} psmCreatorFacet
+ * @property {GovernedContractFacetAccess<{},{}>} psmGovernorCreatorFacet
+ * @property {AdminFacet} psmAdminFacet
+ */
+
+/**
  * @typedef { WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace
  * } EconomyBootstrapPowers
  * @typedef {PromiseSpaceOf<{
@@ -58,9 +67,7 @@ const sanitizePathSegment = name => {
  *   feeDistributorPublicFacet: import('../feeDistributor.js').FeeDistributorPublicFacet,
  *   periodicFeeCollectors: import('../feeDistributor.js').PeriodicFeeCollector[],
  *   bankMints: Mint[],
- *   psmCreatorFacet: Awaited<ReturnType<import('../psm/psm.js').start>>['creatorFacet'],
- *   psmGovernorCreatorFacet: GovernedContractFacetAccess<{},{}>,
- *   psmAdminFacet: AdminFacet,
+ *   psmFacets: MapStore<Brand, PSMFacets>,
  *   reservePublicFacet: import('../reserve/assetReserve.js').AssetReservePublicFacet,
  *   reserveCreatorFacet: import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet,
  *   reserveGovernorCreatorFacet: GovernedAssetReserveFacetAccess,

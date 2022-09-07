@@ -9,6 +9,7 @@ import {
 } from '@agoric/vats/src/core/utils.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
+import { makeScalarMapStore } from '@agoric/vat-data';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
@@ -109,6 +110,7 @@ export const setupPsm = async (
   brand.produce.AUSD.resolve(knutIssuer.brand);
   issuer.produce.AUSD.resolve(knutIssuer.issuer);
 
+  space.produce.psmFacets.resolve(makeScalarMapStore());
   const istIssuer = await E(zoe).getFeeIssuer();
   const istBrand = await E(istIssuer).getBrand();
 
@@ -138,8 +140,10 @@ export const setupPsm = async (
     counter: installation.consume.binaryVoteCounter,
   });
 
-  const governorCreatorFacet = consume.psmGovernorCreatorFacet;
-  const governorInstance = await instance.consume.psmGovernor;
+  const allPsms = await consume.psmFacets;
+  const psmFacets = allPsms.get(knutIssuer.brand);
+  const governorCreatorFacet = psmFacets.psmGovernorCreatorFacet;
+  const governorInstance = psmFacets.psmGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
   const g = {
     governorInstance,
@@ -151,7 +155,7 @@ export const setupPsm = async (
   /** @type { GovernedPublicFacet<PSM> } */
   const psmPublicFacet = await E(governorCreatorFacet).getPublicFacet();
   const psm = {
-    psmCreatorFacet: await consume.psmCreatorFacet,
+    psmCreatorFacet: psmFacets.psmCreatorFacet,
     psmPublicFacet,
     instance: governedInstance,
   };

@@ -46,6 +46,7 @@ const PSM_GOV_INSTALL_MANIFEST = {
     vatPowers: { D: true },
     devices: { vatAdmin: true },
     consume: { zoe: 'zoe' },
+    produce: { psmFacets: 'psm' },
     installation: {
       produce: {
         contractGovernor: 'zoe',
@@ -83,8 +84,7 @@ export const agoricNamesReserved = harden(
     },
     instance: {
       economicCommittee: 'Economic Committee',
-      psm: 'Parity Stability Module',
-      psmGovernor: 'PSM Governor',
+      'psm.IST.AUSD': 'Parity Stability Module: IST:AUSD',
     },
   }),
 );
