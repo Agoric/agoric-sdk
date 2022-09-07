@@ -48,6 +48,7 @@ export const agoricNamesReserved = harden({
     Pegasus: 'pegasus',
     reserve: 'collateral reserve',
     psm: 'Parity Stability Module',
+    psmCharter: 'Charter for PSM Governance questions',
     interchainPool: 'interchainPool',
   },
   instance: {
@@ -63,8 +64,7 @@ export const agoricNamesReserved = harden({
     Pegasus: 'remote peg',
     reserve: 'collateal reserve',
     reserveGovernor: 'ReserveGovernor',
-    psm: 'Parity Stability Module',
-    psmGovernor: 'PSM Governor',
+    psmCharter: 'Charter for PSM Governance questions',
     interchainPool: 'interchainPool',
   },
   oracleBrand: {

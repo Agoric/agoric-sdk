@@ -5,6 +5,8 @@ import {
   makeAnchorAsset,
   startPSM,
   PSM_MANIFEST,
+  PSM_GOV_MANIFEST,
+  startPSMCharter,
 } from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import * as startPSMmod from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import * as ERTPmod from '@agoric/ertp';
@@ -138,7 +140,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
     const manifest = {
       ...CHAIN_BOOTSTRAP_MANIFEST,
       ...WALLET_FACTORY_MANIFEST,
-      ...PSM_GOV_INSTALL_MANIFEST,
+      ...PSM_GOV_MANIFEST,
       ...ECON_COMMITTEE_MANIFEST,
       ...PSM_MANIFEST,
     };
@@ -185,6 +187,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
           options: { anchorOptions },
         }),
       ),
+      startPSMCharter(powersFor('startPSMCharter')),
       // Allow bootstrap powers to be granted by governance
       // to code to be evaluated after initial bootstrap.
       bridgeCoreEval(powersFor('bridgeCoreEval')),
