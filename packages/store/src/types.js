@@ -635,7 +635,7 @@
  *
  * @property {(allegedPayload: Passable,
  *             check: Checker
- * ) => boolean} checkIsMatcherPayload
+ * ) => boolean} checkIsWellFormed
  * Assumes this is the payload of a CopyTagged with the corresponding
  * matchTag. Is this a valid payload for a Matcher with that tag?
  *

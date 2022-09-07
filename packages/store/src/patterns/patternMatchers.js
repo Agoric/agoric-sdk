@@ -77,7 +77,12 @@ export const defaultLimits = harden({
 const limit = (limits = {}) =>
   /** @type {AllLimits} */ (harden({ __proto__: defaultLimits, ...limits }));
 
-const checkIsLimitPayload = (payload, mainPayloadShape, check, label) => {
+const checkIsWellFormedWithLimit = (
+  payload,
+  mainPayloadShape,
+  check,
+  label,
+) => {
   assert(Array.isArray(mainPayloadShape));
   if (!Array.isArray(payload)) {
     return check(false, X`${q(label)} payload must be an array: ${payload}`);
@@ -194,7 +199,7 @@ const makePatternKit = () => {
         if (matchHelper !== undefined) {
           // This check guarantees the payload invariants assumed by the other
           // matchHelper methods.
-          return matchHelper.checkIsMatcherPayload(patt.payload, check);
+          return matchHelper.checkIsWellFormed(patt.payload, check);
         }
         switch (tag) {
           case 'copySet':
@@ -629,7 +634,7 @@ const makePatternKit = () => {
         if (matchHelper) {
           // Buried here is the important case, where we process
           // the various patternNodes
-          return matchHelper.checkIsMatcherPayload(specimen.payload, check);
+          return matchHelper.checkIsWellFormed(specimen.payload, check);
         }
         switch (kind) {
           case 'copySet': {
@@ -668,7 +673,7 @@ const makePatternKit = () => {
   const matchAnyHelper = Far('match:any helper', {
     checkMatches: (_specimen, _matcherPayload, _check) => true,
 
-    checkIsMatcherPayload: (matcherPayload, check) =>
+    checkIsWellFormed: (matcherPayload, check) =>
       check(
         matcherPayload === undefined,
         X`match:any payload: ${matcherPayload} - Must be undefined`,
@@ -685,7 +690,7 @@ const makePatternKit = () => {
       return patts.every(patt => checkMatches(specimen, patt, check));
     },
 
-    checkIsMatcherPayload: (allegedPatts, check) => {
+    checkIsWellFormed: (allegedPatts, check) => {
       const checkIt = patt => checkPattern(patt, check);
       return (
         check(
@@ -722,7 +727,7 @@ const makePatternKit = () => {
       return check(false, X`${specimen} - Must match one of ${patts}`);
     },
 
-    checkIsMatcherPayload: matchAndHelper.checkIsMatcherPayload,
+    checkIsWellFormed: matchAndHelper.checkIsWellFormed,
 
     getRankCover: (patts, encodePassable) =>
       unionRankCovers(
@@ -748,7 +753,7 @@ const makePatternKit = () => {
       }
     },
 
-    checkIsMatcherPayload: checkPattern,
+    checkIsWellFormed: checkPattern,
 
     getRankCover: (_patt, _encodePassable) => ['', '{'],
 
@@ -760,7 +765,7 @@ const makePatternKit = () => {
     checkMatches: (specimen, _matcherPayload, check) =>
       checkScalarKey(specimen, check),
 
-    checkIsMatcherPayload: matchAnyHelper.checkIsMatcherPayload,
+    checkIsWellFormed: matchAnyHelper.checkIsWellFormed,
 
     getRankCover: (_matchPayload, _encodePassable) => ['a', 'z~'],
 
@@ -772,7 +777,7 @@ const makePatternKit = () => {
     checkMatches: (specimen, _matcherPayload, check) =>
       checkKey(specimen, check),
 
-    checkIsMatcherPayload: matchAnyHelper.checkIsMatcherPayload,
+    checkIsWellFormed: matchAnyHelper.checkIsWellFormed,
 
     getRankCover: (_matchPayload, _encodePassable) => ['a', 'z~'],
 
@@ -784,7 +789,7 @@ const makePatternKit = () => {
     checkMatches: (specimen, _matcherPayload, check) =>
       checkPattern(specimen, check),
 
-    checkIsMatcherPayload: matchAnyHelper.checkIsMatcherPayload,
+    checkIsWellFormed: matchAnyHelper.checkIsWellFormed,
 
     getRankCover: (_matchPayload, _encodePassable) => ['a', 'z~'],
 
@@ -795,7 +800,7 @@ const makePatternKit = () => {
   const matchKindHelper = Far('match:kind helper', {
     checkMatches: checkKind,
 
-    checkIsMatcherPayload: (allegedKeyKind, check) =>
+    checkIsWellFormed: (allegedKeyKind, check) =>
       check(
         typeof allegedKeyKind === 'string',
         X`match:kind: payload: ${allegedKeyKind} - A kind name must be a string`,
@@ -843,8 +848,13 @@ const makePatternKit = () => {
       );
     },
 
-    checkIsMatcherPayload: (payload, check) =>
-      checkIsLimitPayload(payload, harden([]), check, 'match:bigint payload'),
+    checkIsWellFormed: (payload, check) =>
+      checkIsWellFormedWithLimit(
+        payload,
+        harden([]),
+        check,
+        'match:bigint payload',
+      ),
 
     getRankCover: (_matchPayload, _encodePassable) =>
       getPassStyleCover('bigint'),
@@ -863,8 +873,13 @@ const makePatternKit = () => {
       );
     },
 
-    checkIsMatcherPayload: (payload, check) =>
-      checkIsLimitPayload(payload, harden([]), check, 'match:nat payload'),
+    checkIsWellFormed: (payload, check) =>
+      checkIsWellFormedWithLimit(
+        payload,
+        harden([]),
+        check,
+        'match:nat payload',
+      ),
 
     getRankCover: (_matchPayload, _encodePassable) =>
       // TODO Could be more precise
@@ -886,8 +901,13 @@ const makePatternKit = () => {
       );
     },
 
-    checkIsMatcherPayload: (payload, check) =>
-      checkIsLimitPayload(payload, harden([]), check, 'match:string payload'),
+    checkIsWellFormed: (payload, check) =>
+      checkIsWellFormedWithLimit(
+        payload,
+        harden([]),
+        check,
+        'match:string payload',
+      ),
 
     getRankCover: (_matchPayload, _encodePassable) =>
       getPassStyleCover('string'),
@@ -916,8 +936,13 @@ const makePatternKit = () => {
       );
     },
 
-    checkIsMatcherPayload: (payload, check) =>
-      checkIsLimitPayload(payload, harden([]), check, 'match:bigint payload'),
+    checkIsWellFormed: (payload, check) =>
+      checkIsWellFormedWithLimit(
+        payload,
+        harden([]),
+        check,
+        'match:bigint payload',
+      ),
 
     getRankCover: (_matchPayload, _encodePassable) =>
       getPassStyleCover('symbol'),
@@ -946,7 +971,7 @@ const makePatternKit = () => {
       return check(false, details);
     },
 
-    checkIsMatcherPayload: (allegedRemotableDesc, check) =>
+    checkIsWellFormed: (allegedRemotableDesc, check) =>
       checkMatches(
         allegedRemotableDesc,
         harden({ label: M.string() }),
@@ -968,7 +993,7 @@ const makePatternKit = () => {
         X`${specimen} - Must be <= ${rightOperand}`,
       ),
 
-    checkIsMatcherPayload: checkKey,
+    checkIsWellFormed: checkKey,
 
     getRankCover: (rightOperand, encodePassable) => {
       const passStyle = passStyleOf(rightOperand);
@@ -995,7 +1020,7 @@ const makePatternKit = () => {
         X`${specimen} - Must be < ${rightOperand}`,
       ),
 
-    checkIsMatcherPayload: checkKey,
+    checkIsWellFormed: checkKey,
 
     getRankCover: matchLTEHelper.getRankCover,
 
@@ -1011,7 +1036,7 @@ const makePatternKit = () => {
         X`${specimen} - Must be >= ${rightOperand}`,
       ),
 
-    checkIsMatcherPayload: checkKey,
+    checkIsWellFormed: checkKey,
 
     getRankCover: (rightOperand, encodePassable) => {
       const passStyle = passStyleOf(rightOperand);
@@ -1038,7 +1063,7 @@ const makePatternKit = () => {
         X`${specimen} - Must be > ${rightOperand}`,
       ),
 
-    checkIsMatcherPayload: checkKey,
+    checkIsWellFormed: checkKey,
 
     getRankCover: matchGTEHelper.getRankCover,
 
@@ -1084,8 +1109,8 @@ const makePatternKit = () => {
       );
     },
 
-    checkIsMatcherPayload: (payload, check) =>
-      checkIsLimitPayload(
+    checkIsWellFormed: (payload, check) =>
+      checkIsWellFormedWithLimit(
         payload,
         harden([M.pattern(), M.pattern()]),
         check,
@@ -1112,8 +1137,8 @@ const makePatternKit = () => {
       );
     },
 
-    checkIsMatcherPayload: (payload, check) =>
-      checkIsLimitPayload(
+    checkIsWellFormed: (payload, check) =>
+      checkIsWellFormedWithLimit(
         payload,
         harden([M.pattern()]),
         check,
@@ -1142,8 +1167,8 @@ const makePatternKit = () => {
       );
     },
 
-    checkIsMatcherPayload: (payload, check) =>
-      checkIsLimitPayload(
+    checkIsWellFormed: (payload, check) =>
+      checkIsWellFormedWithLimit(
         payload,
         harden([M.pattern()]),
         check,
@@ -1185,8 +1210,8 @@ const makePatternKit = () => {
       );
     },
 
-    checkIsMatcherPayload: (payload, check) =>
-      checkIsLimitPayload(
+    checkIsWellFormed: (payload, check) =>
+      checkIsWellFormedWithLimit(
         payload,
         harden([M.pattern(), M.pattern()]),
         check,
@@ -1230,8 +1255,8 @@ const makePatternKit = () => {
       );
     },
 
-    checkIsMatcherPayload: (payload, check) =>
-      checkIsLimitPayload(
+    checkIsWellFormed: (payload, check) =>
+      checkIsWellFormedWithLimit(
         payload,
         harden([M.pattern(), M.pattern()]),
         check,
@@ -1279,7 +1304,7 @@ const makePatternKit = () => {
       );
     },
 
-    checkIsMatcherPayload: (splitArgs, check) => {
+    checkIsWellFormed: (splitArgs, check) => {
       if (
         passStyleOf(splitArgs) === 'copyArray' &&
         (splitArgs.length === 1 || splitArgs.length === 2)
@@ -1366,7 +1391,7 @@ const makePatternKit = () => {
       );
     },
 
-    checkIsMatcherPayload: matchSplitHelper.checkIsMatcherPayload,
+    checkIsWellFormed: matchSplitHelper.checkIsWellFormed,
 
     getRankCover: matchSplitHelper.getRankCover,
 
