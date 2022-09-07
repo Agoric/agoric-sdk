@@ -195,6 +195,8 @@ func (k Keeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint
 	return nil
 }
 
+// Create a map from power flag to its fee.  In the case of duplicates, the
+// first one wins.
 func makeFeeMenu(powerFlagFees []types.PowerFlagFee) map[string]sdk.Coins {
 	feeMenu := make(map[string]sdk.Coins, len(powerFlagFees))
 	for _, pff := range powerFlagFees {
@@ -208,12 +210,12 @@ func makeFeeMenu(powerFlagFees []types.PowerFlagFee) map[string]sdk.Coins {
 var privilegedProvisioningCoins sdk.Coins = sdk.NewCoins(sdk.NewInt64Coin("provisionpass", 1))
 
 func calculateFees(balances sdk.Coins, submitter, addr sdk.AccAddress, powerFlags []string, powerFlagFees []types.PowerFlagFee) (sdk.Coins, error) {
-	menuPrice := sdk.NewCoins()
+	fees := sdk.NewCoins()
 
 	// See if we have the balance needed for privileged provisioning.
 	if balances.IsAllGTE(privilegedProvisioningCoins) {
 		// We do, and notably we don't deduct anything from the submitter.
-		return menuPrice, nil
+		return fees, nil
 	}
 
 	if !submitter.Equals(addr) {
@@ -230,27 +232,27 @@ func calculateFees(balances sdk.Coins, submitter, addr sdk.AccAddress, powerFlag
 	// Calculate the total fee according to that map.
 	for _, powerFlag := range powerFlags {
 		if fee, ok := feeMenu[powerFlag]; ok {
-			menuPrice = menuPrice.Add(fee...)
+			fees = fees.Add(fee...)
 		} else {
 			return nil, fmt.Errorf("unrecognized powerFlag: %s", powerFlag)
 		}
 	}
 
-	return menuPrice, nil
+	return fees, nil
 }
 
 func (k Keeper) ChargeForProvisioning(ctx sdk.Context, submitter, addr sdk.AccAddress, powerFlags []string) error {
 	balances := k.bankKeeper.GetAllBalances(ctx, submitter)
-	menuPrice, err := calculateFees(balances, submitter, addr, powerFlags, k.GetParams(ctx).PowerFlagFees)
+	fees, err := calculateFees(balances, submitter, addr, powerFlags, k.GetParams(ctx).PowerFlagFees)
 	if err != nil {
 		return err
 	}
 
 	// Deduct the fee from the submitter.
-	if menuPrice.IsZero() {
+	if fees.IsZero() {
 		return nil
 	}
-	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, submitter, k.feeCollectorName, menuPrice)
+	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, submitter, k.feeCollectorName, fees)
 }
 
 // GetEgress gets the entire egress struct for a peer
