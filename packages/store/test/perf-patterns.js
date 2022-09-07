@@ -1,7 +1,7 @@
 // @ts-check
+import '@agoric/swingset-vat/tools/prepare-test-env.js';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { Far, makeTagged } from '@endo/marshal';
 import { makeCopyBag, makeCopyMap, makeCopySet } from '../src/keys/checkKey.js';
 import { fit, matches, M } from '../src/patterns/patternMatchers.js';
@@ -23,7 +23,6 @@ const measurements = [];
  * @typedef MatchTest
  * @property {Passable} specimen
  * @property {Pattern[]} yesPatterns
- * @property {[Pattern, RegExp|string][]} noPatterns
  */
 
 /** @type {MatchTest[]} */
@@ -45,21 +44,6 @@ const matchTests = harden([
       M.scalar(),
       M.key(),
       M.pattern(),
-    ],
-    noPatterns: [
-      [4, '3 - Must be: 4'],
-      [M.not(3), '3 - Must fail negated pattern: 3'],
-      [M.not(M.any()), '3 - Must fail negated pattern: "[match:any]"'],
-      [M.string(), 'number 3 - Must be a string'],
-      [[3, 4], '3 - Must be: [3,4]'],
-      [M.gte(7), '3 - Must be >= 7'],
-      [M.lte(2), '3 - Must be <= 2'],
-      // incommensurate comparisons are neither <= nor >=
-      [M.lte('x'), '3 - Must be <= "x"'],
-      [M.gte('x'), '3 - Must be >= "x"'],
-      [M.and(3, 4), '3 - Must be: 4'],
-      [M.or(4, 4), '3 - Must match one of [4,4]'],
-      [M.or(), '3 - no pattern disjuncts to match: []'],
     ],
   },
   {
@@ -88,26 +72,6 @@ const matchTests = harden([
       M.key(),
       M.pattern(),
       M.arrayOf(M.number()),
-    ],
-    noPatterns: [
-      [[4, 3], '[3,4] - Must be: [4,3]'],
-      [[3], '[3,4] - Must be: [3]'],
-      [[M.string(), M.any()], '[0]: number 3 - Must be a string'],
-      [M.lte([3, 3]), '[3,4] - Must be <= [3,3]'],
-      [M.gte([4, 4]), '[3,4] - Must be >= [4,4]'],
-      [M.lte([3]), '[3,4] - Must be <= [3]'],
-      [M.gte([3, 4, 1]), '[3,4] - Must be >= [3,4,1]'],
-
-      [M.split([3, 4, 5, 6]), 'required-parts: [3,4] - Must be: [3,4,5,6]'],
-      [M.split([5]), 'required-parts: [3] - Must be: [5]'],
-      [M.split({}), 'copyArray [3,4] - Must be a copyRecord'],
-      [M.split([3], 'x'), 'rest-parts: [4] - Must be: "x"'],
-
-      [M.partial([5]), 'optional-parts: [3] - Must be: [5]'],
-
-      [M.scalar(), 'A "copyArray" cannot be a scalar key: [3,4]'],
-      [M.set(), 'copyArray [3,4] - Must be a copySet'],
-      [M.arrayOf(M.string()), '[0]: number 3 - Must be a string'],
     ],
   },
   {
@@ -146,69 +110,6 @@ const matchTests = harden([
       M.pattern(),
       M.recordOf(M.string(), M.number()),
     ],
-    noPatterns: [
-      [{ foo: 4, bar: 3 }, '{"foo":3,"bar":4} - Must be: {"foo":4,"bar":3}'],
-      [{ foo: M.string(), bar: M.any() }, 'foo: number 3 - Must be a string'],
-      [
-        M.lte({ foo: 3, bar: 3 }),
-        '{"foo":3,"bar":4} - Must be <= {"foo":3,"bar":3}',
-      ],
-      [
-        M.gte({ foo: 4, bar: 4 }),
-        '{"foo":3,"bar":4} - Must be >= {"foo":4,"bar":4}',
-      ],
-
-      // Incommensurates are neither greater nor less
-      [M.gte({ foo: 3 }), '{"foo":3,"bar":4} - Must be >= {"foo":3}'],
-      [M.lte({ foo: 3 }), '{"foo":3,"bar":4} - Must be <= {"foo":3}'],
-      [
-        M.gte({ foo: 3, bar: 4, baz: 5 }),
-        '{"foo":3,"bar":4} - Must be >= {"foo":3,"bar":4,"baz":5}',
-      ],
-      [
-        M.lte({ foo: 3, bar: 4, baz: 5 }),
-        '{"foo":3,"bar":4} - Must be <= {"foo":3,"bar":4,"baz":5}',
-      ],
-      [M.lte({ baz: 3 }), '{"foo":3,"bar":4} - Must be <= {"baz":3}'],
-      [M.gte({ baz: 3 }), '{"foo":3,"bar":4} - Must be >= {"baz":3}'],
-
-      [
-        M.split(
-          { foo: M.number() },
-          M.and(M.partial({ bar: M.string() }), M.partial({ baz: M.number() })),
-        ),
-        'rest-parts: optional-parts: bar: number 4 - Must be a string',
-      ],
-
-      [M.split([]), 'copyRecord {"foo":3,"bar":4} - Must be a copyArray'],
-      [
-        M.split({ foo: 3, z: 4 }),
-        'required-parts: {"foo":3} - Must be: {"foo":3,"z":4}',
-      ],
-      [
-        M.split({ foo: 3 }, { foo: 3, bar: 4 }),
-        'rest-parts: {"bar":4} - Must be: {"foo":3,"bar":4}',
-      ],
-      [
-        M.split({ foo: 3 }, { foo: M.any(), bar: 4 }),
-        'rest-parts: {"bar":4} - Must have missing properties ["foo"]',
-      ],
-      [
-        M.partial({ foo: 7, zip: 5 }, { bar: 4 }),
-        'optional-parts: {"foo":3} - Must be: {"foo":7}',
-      ],
-
-      [M.scalar(), 'A "copyRecord" cannot be a scalar key: {"foo":3,"bar":4}'],
-      [M.map(), 'copyRecord {"foo":3,"bar":4} - Must be a copyMap'],
-      [
-        M.recordOf(M.number(), M.number()),
-        'foo: [0]: string "foo" - Must be a number',
-      ],
-      [
-        M.recordOf(M.string(), M.string()),
-        'foo: [1]: number 3 - Must be a string',
-      ],
-    ],
   },
   {
     specimen: makeCopySet([3, 4]),
@@ -218,14 +119,6 @@ const matchTests = harden([
       M.lte(makeCopySet([3, 4, 5])),
       M.set(),
       M.setOf(M.number()),
-    ],
-    noPatterns: [
-      [makeCopySet([]), '"[copySet]" - Must be: "[copySet]"'],
-      [makeCopySet([3, 4, 5]), '"[copySet]" - Must be: "[copySet]"'],
-      [M.lte(makeCopySet([])), '"[copySet]" - Must be <= "[copySet]"'],
-      [M.gte(makeCopySet([3, 4, 5])), '"[copySet]" - Must be >= "[copySet]"'],
-      [M.bag(), 'copySet "[copySet]" - Must be a copyBag'],
-      [M.setOf(M.string()), '[0]: number 4 - Must be a string'],
     ],
   },
   {
@@ -246,30 +139,6 @@ const matchTests = harden([
       M.bagOf(M.string()),
       M.bagOf(M.string(), M.lt(5n)),
     ],
-    noPatterns: [
-      [
-        M.gte(
-          makeCopyBag([
-            ['b', 2n],
-            ['c', 1n],
-          ]),
-        ),
-        '"[copyBag]" - Must be >= "[copyBag]"',
-      ],
-      [
-        M.lte(
-          makeCopyBag([
-            ['b', 2n],
-            ['c', 1n],
-          ]),
-        ),
-        '"[copyBag]" - Must be <= "[copyBag]"',
-      ],
-      [M.bagOf(M.boolean()), 'keys[0]: string "b" - Must be a boolean'],
-      [M.bagOf('b'), 'keys[1]: "a" - Must be: "b"'],
-      [M.bagOf(M.any(), M.gt(5n)), 'counts[0]: "[3n]" - Must be > "[5n]"'],
-      [M.bagOf(M.any(), M.gt(2n)), 'counts[1]: "[2n]" - Must be > "[2n]"'],
-    ],
   },
   {
     specimen: makeCopyMap([
@@ -281,35 +150,14 @@ const matchTests = harden([
       M.map(),
       M.mapOf(M.record(), M.string()),
     ],
-    noPatterns: [
-      [M.bag(), 'copyMap "[copyMap]" - Must be a copyBag'],
-      [M.set(), 'copyMap "[copyMap]" - Must be a copySet'],
-      [
-        M.mapOf(M.string(), M.string()),
-        'keys[0]: copyRecord {"foo":3} - Must be a string',
-      ],
-      [
-        M.mapOf(M.record(), M.number()),
-        'values[0]: string "b" - Must be a number',
-      ],
-    ],
   },
   {
     specimen: makeTagged('mysteryTag', 88),
     yesPatterns: [M.any(), M.not(M.pattern())],
-    noPatterns: [
-      [
-        M.pattern(),
-        'A passable tagged "mysteryTag" is not a pattern: "[mysteryTag]"',
-      ],
-    ],
   },
   {
     specimen: makeTagged('match:any', undefined),
     yesPatterns: [M.any(), M.pattern()],
-    noPatterns: [
-      [M.key(), 'A passable tagged "match:any" is not a key: "[match:any]"'],
-    ],
   },
   {
     specimen: makeTagged('match:any', 88),
@@ -319,32 +167,14 @@ const matchTests = harden([
   {
     specimen: makeTagged('match:remotable', 88),
     yesPatterns: [M.any(), M.not(M.pattern())],
-    noPatterns: [
-      [
-        M.pattern(),
-        'match:remotable payload: 88 - Must be a copyRecord to match a copyRecord pattern: {"label":"[match:kind]"}',
-      ],
-    ],
   },
   {
     specimen: makeTagged('match:remotable', harden({ label: 88 })),
     yesPatterns: [M.any(), M.not(M.pattern())],
-    noPatterns: [
-      [
-        M.pattern(),
-        'match:remotable payload: label: number 88 - Must be a string',
-      ],
-    ],
   },
   {
     specimen: makeTagged('match:recordOf', harden([M.string(), M.nat()])),
     yesPatterns: [M.pattern()],
-    noPatterns: [
-      [
-        M.key(),
-        'A passable tagged "match:recordOf" is not a key: "[match:recordOf]"',
-      ],
-    ],
   },
   {
     specimen: makeTagged(
@@ -352,85 +182,43 @@ const matchTests = harden([
       harden([M.string(), Promise.resolve(null)]),
     ),
     yesPatterns: [M.any(), M.not(M.pattern())],
-    noPatterns: [
-      [
-        M.pattern(),
-        'match:recordOf payload: [1]: A "promise" cannot be a pattern',
-      ],
-    ],
   },
 ]);
 
-const repetitions = 100;
-
-test.serial('empty loop', t => {
-  const startAt = Date.now();
-  for (let i = 0; i < repetitions; i += 1) {
-    for (const { yesPatterns } of matchTests) {
-      for (const _ of yesPatterns) {
-        t.assert(true);
-      }
+const makeBatch = testCases => {
+  const specimens = [];
+  const patterns = [];
+  for (const { specimen, yesPatterns } of testCases) {
+    for (const yesPattern of yesPatterns) {
+      specimens.push(specimen);
+      patterns.push(yesPattern);
     }
   }
-  const endAt = Date.now();
-  t.log(
-    `test 'empty loop' ${repetitions} repetitions took ${endAt - startAt}ms`,
-  );
-});
+  return harden({ specimens, patterns });
+};
 
-test.serial('many patterns', t => {
-  const startAt = Date.now();
-  for (let i = 0; i < repetitions; i += 1) {
-    for (const { specimen, yesPatterns } of matchTests) {
-      for (const yesPattern of yesPatterns) {
-        t.assert(matches(specimen, yesPattern), `${yesPattern}`);
-      }
-    }
-  }
-  const endAt = Date.now();
-  t.log(
-    `test 'many patterns' ${repetitions} repetitions took ${endAt - startAt}ms`,
-  );
-});
-
-test.serial('many pattern again', t => {
-  const startAt = Date.now();
-  for (let i = 0; i < repetitions; i += 1) {
-    for (const { specimen, yesPatterns } of matchTests) {
-      for (const yesPattern of yesPatterns) {
-        t.assert(matches(specimen, yesPattern), `${yesPattern}`);
-      }
-    }
-  }
-  const endAt = Date.now();
-  t.log(
-    `test 'many pattern again' ${repetitions} repetitions took ${
-      endAt - startAt
-    }ms`,
-  );
-});
-
-// r => global.gc() : () => {};
+const repetitions = 10;
 
 // export NODE_OPTIONS="--jitless --cpu-prof --heap-prof --expose-gc"
+// NODE_OPTIONS="--jitless" node --cpu-prof --prof test/perf-patterns.js
+// node --prof-process isolate-0x140008000-36726-v8.log > processed.txt
+// node --prof test/perf-patterns.js
+// node --prof-process isolate-0x130008000-37133-v8.log > processed.txt
 
-const measure = (title, specimen, yesPattern, factor = 1) => {
+const measure = async (title, specimen, yesPattern, factor = 1) => {
   const times = factor * repetitions;
-  const name = `${yesPattern}`;
-  test.serial(title, async t => {
-    await gcAndFinalize();
-    const startAt = Date.now();
-    for (let j = 0; j < times; j += 1) {
-      // fit(specimen, yesPattern);
-      t.assert(matches(specimen, yesPattern), name);
-    }
-    const totalTime = Date.now() - startAt;
-    const perStep = totalTime / times;
-    measurements.push([title, perStep, Math.round(1000 / perStep)]);
-    t.log(
-      `test '${t.title}': ${times} repetitions took ${totalTime}ms;  each: ${perStep}ms`,
-    );
-  });
+  await gcAndFinalize();
+  const startAt = Date.now();
+  for (let j = 0; j < times; j += 1) {
+    // fit(specimen, yesPattern);
+    assert(matches(specimen, yesPattern), title);
+  }
+  const totalTime = Date.now() - startAt;
+  const perStep = totalTime / times;
+  measurements.push([title, perStep, Math.round(1000 / perStep)]);
+  console.log(
+    `test '${title}': ${times} repetitions took ${totalTime}ms;  each: ${perStep}ms`,
+  );
 };
 
 const issuerKit = makeIssuerKit('fungible');
@@ -445,16 +233,21 @@ const proposal = harden({
 const smallArray = harden([1, 2, 3]);
 const bigArray = harden([...Array(10000).keys()]);
 
-measure('brand', brand, BrandShape, 100);
-measure('amount', amount1000, AmountShape, 100);
-measure('payment', payment1000, PaymentShape, 100);
-measure('proposal', proposal, ProposalShape, 20);
-measure('array small', smallArray, M.array(), 50);
-measure('array big', bigArray, M.array(), 2);
-measure('array big ANY', bigArray, M.any(), 2);
+const allMeasures = async () => {
+  await measure('empty', true, true, 100);
+  await measure('brand', brand, BrandShape, 100);
+  await measure('amount', amount1000, AmountShape, 100);
+  await measure('payment', payment1000, PaymentShape, 100);
+  await measure('proposal', proposal, ProposalShape, 20);
+  await measure('array small', smallArray, M.array(), 50);
+  await measure('array big', bigArray, M.array(), 2);
+  await measure('array big ANY', bigArray, M.any(), 2);
+  const { specimens, patterns } = makeBatch(matchTests);
+  await measure('z base patterns', specimens, patterns, 1);
 
-test.after.always('log', _ => {
   const results = measurements.sort((a, b) => (a[0] <= b[0] ? -1 : 1));
   results.unshift(['name', 'ms', 'ops/s']);
   console.log('RESULTS', results);
-});
+};
+
+await allMeasures();
