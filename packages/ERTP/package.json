@@ -71,7 +71,7 @@
     "files": [
       "test/**/test-*.js"
     ],
-    "timeout": "2m"
+    "timeout": "5m"
   },
   "publishConfig": {
     "access": "public"
