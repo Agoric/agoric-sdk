@@ -197,7 +197,7 @@ const makeBatch = testCases => {
   return harden({ specimens, patterns });
 };
 
-const repetitions = 10;
+const repetitions = 50;
 
 // export NODE_OPTIONS="--jitless --cpu-prof --heap-prof --expose-gc"
 // NODE_OPTIONS="--jitless" node --cpu-prof --prof test/perf-patterns.js
