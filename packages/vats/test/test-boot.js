@@ -83,9 +83,11 @@ const testRole = (ROLE, governanceActions) => {
       return createVat(bundleCap);
     };
 
+    const criticalVatKey = harden({});
     const vats = {
       ...mock.vats,
       vatAdmin: /** @type { any } */ ({
+        getCriticalVatKey: () => criticalVatKey,
         createVatAdminService: () =>
           Far('vatAdminSvc', { getNamedBundleCap, createVat, createVatByName }),
       }),

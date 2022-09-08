@@ -120,7 +120,7 @@ const makeFakeBridgeManager = () => {
 export const makeMockTestSpace = async log => {
   const space = /** @type {any} */ (makePromiseSpace(log));
   const { consume, produce } =
-    /** @type { BootstrapPowers & { consume: { loadVat: (n: 'mints') => MintsVat }} } */ (
+    /** @type { BootstrapPowers & { consume: { loadVat: (n: 'mints') => MintsVat, loadCriticalVat: (n: 'mints') => MintsVat }} } */ (
       space
     );
   const { agoricNames, spaces } = makeAgoricNamesAccess();
@@ -130,7 +130,7 @@ export const makeMockTestSpace = async log => {
   produce.zoe.resolve(zoe);
   produce.feeMintAccess.resolve(feeMintAccess);
 
-  produce.loadVat.resolve(name => {
+  const vatLoader = name => {
     switch (name) {
       case 'mints':
         return mintsRoot();
@@ -139,7 +139,9 @@ export const makeMockTestSpace = async log => {
       default:
         throw Error('unknown loadVat name');
     }
-  });
+  };
+  produce.loadVat.resolve(vatLoader);
+  produce.loadCriticalVat.resolve(vatLoader);
 
   const bldKit = makeIssuerKit('BLD');
   produce.bldIssuerKit.resolve(bldKit);

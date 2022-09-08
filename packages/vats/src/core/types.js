@@ -243,6 +243,7 @@
  *     vatAdminSvc: VatAdminSvc,
  *   }> & { produce: {
  *     loadVat: Producer<VatLoader<unknown>>,
+ *     loadCriticalVat: Producer<VatLoader<unknown>>,
  *   }}
  * } BootstrapSpace
  * @typedef {{ mint: ERef<Mint>, issuer: ERef<Issuer>, brand: Brand }} RemoteIssuerKit
