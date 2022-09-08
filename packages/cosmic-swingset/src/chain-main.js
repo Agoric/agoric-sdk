@@ -15,7 +15,10 @@ import { makeBufferedStorage } from '@agoric/swingset-vat/src/lib/storageAPI.js'
 import { assert, details as X } from '@agoric/assert';
 import { makeSlogSenderFromModule } from '@agoric/telemetry';
 
+import { makeChainStorageRoot } from '@agoric/vats/src/lib-chainStorage.js';
+
 import * as STORAGE_PATH from '@agoric/vats/src/chain-storage-paths.js';
+import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import makeBlockManager from './block-manager.js';
@@ -502,14 +505,27 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       portNums.lien = action.lienPort;
     }
 
+    // Ensure that initialization has completed.
     if (!blockingSend) {
       const { savedChainSends: scs, ...fns } =
         await launchAndInitializeSwingSet(action);
+
+      const toStorage = message => {
+        return fns.bridgeOutbound(BRIDGE_ID.STORAGE, message);
+      };
+      const installationStorageNode = makeChainStorageRoot(
+        toStorage,
+        'swingset',
+        STORAGE_PATH.BUNDLES,
+        { sequence: true },
+      );
+
       savedChainSends = scs;
       blockingSend = makeBlockManager({
         ...fns,
         flushChainSends,
         verboseBlocks: true,
+        installationStorageNode,
       });
     }
 
