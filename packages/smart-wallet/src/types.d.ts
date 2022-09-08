@@ -11,8 +11,6 @@ import type { MsgWalletSpendAction } from '@agoric/cosmic-proto/swingset/msgs';
 
 declare const CapDataShape: unique symbol;
 
-export type WalletCapData<T> = CapData<string> & { [CapDataShape]: T };
-
 /**
  * A petname can either be a plain string or a path for which the first element
  * is a petname for the origin, and the rest of the elements are a snapshot of

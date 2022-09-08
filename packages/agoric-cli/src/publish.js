@@ -175,7 +175,7 @@ export const makeHttpBundlePublisher = ({ jsonHttpCall, getAccessToken }) => {
 };
 
 /**
- * @param {string} address - a host or URL
+ * @param {string} address - a domain name, IPv4 address, or URL
  */
 const urlForRpcAddress = address => {
   if (address.includes('://')) {
@@ -192,7 +192,7 @@ const urlForRpcAddress = address => {
  * @param {typeof import('path').resolve} args.pathResolve
  * @param {typeof import('fs').promises.writeFile} args.writeFile
  * @param {typeof import('tmp').dirSync} args.tmpDirSync
- * @param {() => number} args.random
+ * @param {() => number} args.random - a random number in the interval [0, 1)
  */
 export const makeCosmosBundlePublisher = ({
   pspawn,
@@ -227,7 +227,7 @@ export const makeCosmosBundlePublisher = ({
         '--gas-adjustment',
         '1.2',
         '--home',
-        homeDirectory,
+        pathResolve(homeDirectory, 'ag-cosmos-helper-statedir'),
         '--node',
         urlForRpcAddress(rpcAddress),
         '--keyring-backend',

@@ -2,11 +2,14 @@
 /* global process */
 import anylogger from 'anylogger';
 
+import { makeMarshal } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
-
+import { makeStoredSubscriber, makePublishKit } from '@agoric/notifier';
 import * as ActionType from './action-types.js';
 import { parseParams } from './params.js';
+
+import '@agoric/notifier/exported.js';
 
 const console = anylogger('block-manager');
 
@@ -14,6 +17,8 @@ const console = anylogger('block-manager');
 const END_BLOCK_SPIN_MS = process.env.END_BLOCK_SPIN_MS
   ? parseInt(process.env.END_BLOCK_SPIN_MS, 10)
   : 0;
+
+/** @typedef {Record<string, unknown>} InstallationNotification */
 
 export default function makeBlockManager({
   actionQueue,
@@ -27,6 +32,7 @@ export default function makeBlockManager({
   saveOutsideState,
   savedHeight,
   validateAndInstallBundle,
+  installationStorageNode = undefined,
   verboseBlocks = false,
 }) {
   let computedHeight = savedHeight;
@@ -35,6 +41,9 @@ export default function makeBlockManager({
   let latestParams;
   let beginBlockAction;
 
+  /** @type {PublishKit<unknown>['publisher'] | undefined} */
+  let installationPublisher;
+
   async function processAction(action) {
     const start = Date.now();
     const finish = res => {
@@ -42,6 +51,16 @@ export default function makeBlockManager({
       runTime += Date.now() - start;
       return res;
     };
+
+    if (
+      installationPublisher === undefined &&
+      installationStorageNode !== undefined
+    ) {
+      const marshaller = makeMarshal();
+      const { publisher, subscriber } = makePublishKit();
+      makeStoredSubscriber(subscriber, installationStorageNode, marshaller);
+      installationPublisher = publisher;
+    }
 
     // console.error('Performing action', action);
     let p;
@@ -83,10 +102,24 @@ export default function makeBlockManager({
         p = (async () => {
           const bundle = JSON.parse(action.bundle);
           harden(bundle);
-          return validateAndInstallBundle(bundle);
-        })().catch(error => {
-          console.error(error);
-        });
+
+          const error = await validateAndInstallBundle(bundle).then(
+            () => null,
+            (/** @type {unknown} */ errorValue) => errorValue,
+          );
+
+          const { endoZipBase64Sha512 } = bundle;
+
+          if (installationPublisher !== undefined) {
+            installationPublisher.publish(
+              harden({
+                endoZipBase64Sha512,
+                installed: error === null,
+                error,
+              }),
+            );
+          }
+        })();
         break;
       }
 

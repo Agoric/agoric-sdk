@@ -109,6 +109,7 @@ const manifest2graph = manifest => {
         if (
           [
             'loadVat',
+            'loadCriticalVat',
             'client',
             'agoricNames',
             'nameHubs',

@@ -117,15 +117,15 @@ harden(bridgeCoreEval);
 
 /**
  * @param {BootstrapPowers & {
- *   consume: { loadVat: ERef<VatLoader<ProvisioningVat>> }
+ *   consume: { loadCriticalVat: ERef<VatLoader<ProvisioningVat>> }
  * }} powers
  */
 export const makeProvisioner = async ({
-  consume: { clientCreator, loadVat },
+  consume: { clientCreator, loadCriticalVat },
   vats: { comms, vattp },
   produce: { provisioning },
 }) => {
-  const provisionerVat = await E(loadVat)('provisioning');
+  const provisionerVat = await E(loadCriticalVat)('provisioning');
   await E(provisionerVat).register(clientCreator, comms, vattp);
   provisioning.resolve(provisionerVat);
 };
@@ -290,12 +290,12 @@ harden(makeBridgeManager);
 
 /**
  * @param {BootDevices<ChainDevices> & BootstrapSpace & {
- *   consume: { loadVat: ERef<VatLoader<ChainStorageVat>> }
+ *   consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> }
  * }} powers
  */
 export const makeChainStorage = async ({
   devices: { bridge },
-  consume: { loadVat },
+  consume: { loadCriticalVat },
   produce: { chainStorage: chainStorageP },
 }) => {
   if (!bridge) {
@@ -306,7 +306,7 @@ export const makeChainStorage = async ({
 
   const ROOT_PATH = STORAGE_PATH.CUSTOM;
 
-  const vat = E(loadVat)('chainStorage');
+  const vat = E(loadCriticalVat)('chainStorage');
   const rootNodeP = E(vat).makeBridgedChainStorageRoot(
     bridge,
     BRIDGE_ID.STORAGE,
@@ -418,7 +418,7 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
 
 /**
  * @param { BootstrapPowers & {
- *   consume: { loadVat: VatLoader<any> }
+ *   consume: { loadCriticalVat: VatLoader<any> }
  *   produce: { networkVat: Producer<any> }
  * }} powers
  *
@@ -429,16 +429,16 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
  * @typedef {{ network: NetworkVat, ibc: IBCVat, provisioning: ProvisioningVat}} NetVats
  */
 export const setupNetworkProtocols = async ({
-  consume: { client, loadVat, bridgeManager, provisioning },
+  consume: { client, loadCriticalVat, bridgeManager, provisioning },
   produce: { networkVat },
 }) => {
   /** @type { NetVats } */
   const vats = {
-    network: E(loadVat)('network'),
-    ibc: E(loadVat)('ibc'),
+    network: E(loadCriticalVat)('network'),
+    ibc: E(loadCriticalVat)('ibc'),
     provisioning,
   };
-  // don't proceed if loadVat fails
+  // don't proceed if loadCriticalVat fails
   await Promise.all(Object.values(vats));
 
   networkVat.reset();

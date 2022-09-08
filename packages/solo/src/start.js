@@ -427,10 +427,7 @@ const start = async (basedir, argv) => {
     Array.isArray(rawConnections),
     `Invalid connections.json: must be a JSON array, at ${rawConnectionsPath}`,
   );
-  const homeDirectory = path.resolve(
-    process.cwd(),
-    'ag-cosmos-helper-statedir',
-  );
+  const homeDirectory = process.cwd();
   const connections = rawConnections.map(connection => {
     if (['chain-cosmos-sdk', 'fake-chain'].includes(connection.type)) {
       return { ...connection, homeDirectory };

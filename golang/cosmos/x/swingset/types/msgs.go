@@ -19,6 +19,10 @@ var (
 	_ sdk.Msg = &MsgWalletSpendAction{}
 
 	_ vm.ControllerAdmissionMsg = &MsgDeliverInbound{}
+	_ vm.ControllerAdmissionMsg = &MsgInstallBundle{}
+	_ vm.ControllerAdmissionMsg = &MsgWalletAction{}
+	_ vm.ControllerAdmissionMsg = &MsgWalletSpendAction{}
+	// MsgProvision has its own fee mechanism and is intentionally omitted.
 )
 
 // Charge an account address for the beans associated with given messages.
@@ -42,6 +46,7 @@ func NewMsgDeliverInbound(msgs *Messages, submitter sdk.AccAddress) *MsgDeliverI
 	}
 }
 
+// CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
 func (msg MsgDeliverInbound) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
 	keeper, ok := data.(SwingSetKeeper)
 	if !ok {
@@ -104,6 +109,7 @@ func NewMsgWalletAction(owner sdk.AccAddress, action string) *MsgWalletAction {
 	}
 }
 
+// CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
 func (msg MsgWalletAction) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
 	keeper, ok := data.(SwingSetKeeper)
 	if !ok {
@@ -160,6 +166,7 @@ func NewMsgWalletSpendAction(owner sdk.AccAddress, spendAction string) *MsgWalle
 	}
 }
 
+// CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
 func (msg MsgWalletSpendAction) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
 	keeper, ok := data.(SwingSetKeeper)
 	if !ok {
@@ -234,6 +241,16 @@ func NewMsgInstallBundle(bundleJson string, submitter sdk.AccAddress) *MsgInstal
 		Bundle:    bundleJson,
 		Submitter: submitter,
 	}
+}
+
+// CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
+func (msg MsgInstallBundle) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
+	keeper, ok := data.(SwingSetKeeper)
+	if !ok {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+	}
+
+	return chargeAdmission(ctx, keeper, msg.Submitter, []string{msg.Bundle})
 }
 
 // Route should return the name of the module

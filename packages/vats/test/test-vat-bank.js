@@ -201,7 +201,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   // Supply bootstrap prerequisites.
   const space = /** @type { any } */ (makePromiseSpace(t.log));
   const { produce, consume } =
-    /** @type { BootstrapPowers & { consume: { loadVat: VatLoader<any> }}} */ (
+    /** @type { BootstrapPowers & { consume: { loadCriticalVat: VatLoader<any> }}} */ (
       space
     );
   const { agoricNames, spaces } = makeAgoricNamesAccess();
@@ -265,11 +265,11 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
     'initialSupply of 50 RUN',
   );
 
-  const loadVat = async name => {
+  const loadCriticalVat = async name => {
     assert.equal(name, 'bank');
     return E(buildRootObject)();
   };
-  produce.loadVat.resolve(loadVat);
+  produce.loadCriticalVat.resolve(loadCriticalVat);
   produce.bridgeManager.resolve(undefined);
 
   await addBankAssets({ consume, produce, ...spaces });

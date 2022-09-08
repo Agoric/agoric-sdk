@@ -1,15 +1,17 @@
 // @ts-check
+import { PaymentShape } from '@agoric/ertp';
 import { isNat } from '@agoric/nat';
 import {
   makeStoredPublishKit,
   observeIteration,
   observeNotifier,
 } from '@agoric/notifier';
-import { makeScalarMapStore } from '@agoric/store';
+import { fit, M, makeScalarMapStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { E, Far } from '@endo/far';
 import { makeInvitationsHelper } from './invitations.js';
 import { makeOffersFacet } from './offers.js';
+import { shape } from './typeGuards.js';
 
 const { details: X, quote: q } = assert;
 
@@ -255,6 +257,8 @@ export const makeSmartWallet = async (
      * This version does not: 1) for expedience, 2: to avoid resource exhaustion vulnerability.
      */
     receive: async (paymentE, paymentBrand) => {
+      fit(harden(paymentE), M.eref(PaymentShape));
+
       const brand = await (paymentBrand || E(paymentE).getAllegedBrand());
       const purse = brandPurses.get(brand);
 
@@ -295,12 +299,14 @@ export const makeSmartWallet = async (
 
   /**
    *
-   * @param {import('./types').WalletCapData<BridgeAction>} actionCapData
+   * @param {import('@endo/captp').CapData<string>} actionCapData of type BridgeAction
    * @param {boolean} [canSpend=false]
    */
   const handleBridgeAction = (actionCapData, canSpend = false) => {
-    assert(actionCapData.body && actionCapData.slots, 'invalid capdata');
+    fit(actionCapData, shape.StringCapData);
+
     assert(!canSpend, 'spending not yet supported');
+
     return E.when(
       E(marshaller).unserialize(actionCapData),
       /** @param {BridgeAction} action */
