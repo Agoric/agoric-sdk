@@ -4,6 +4,7 @@ import {
   installGovAndPSMContracts,
   makeAnchorAsset,
   startPSM,
+  invitePSMCommitteeMembers,
   PSM_MANIFEST,
   PSM_GOV_MANIFEST,
   startPSMCharter,
@@ -66,6 +67,7 @@ export const agoricNamesReserved = harden(
       committee: 'committee electorate',
       binaryVoteCounter: 'binary vote counter',
       psm: 'Parity Stability Module',
+      psmCharter: 'Governance Charter for PSM',
     },
     instance: {
       economicCommittee: 'Economic Committee',
@@ -99,8 +101,8 @@ const AnchorOptionsShape = M.split(
  *   logger?: (msg: string) => void
  * }} vatPowers
  * @param {{
- *     economicCommitteeAddresses: string[],
- *     anchorAssets: AnchorOptions[],
+ *     economicCommitteeAddresses: Record<string, string>,
+ *     anchorAssets: { denom: string, keyword?: string }[],
  * }} vatParameters
  */
 export const buildRootObject = (vatPowers, vatParameters) => {
@@ -173,9 +175,12 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       startEconomicCommittee(powersFor('startEconomicCommittee'), {
         options: {
           econCommitteeOptions: {
-            committeeSize: economicCommitteeAddresses.length,
+            committeeSize: Object.values(economicCommitteeAddresses).length,
           },
         },
+      }),
+      invitePSMCommitteeMembers(powersFor('invitePSMCommitteeMembers'), {
+        options: { voterAddresses: economicCommitteeAddresses },
       }),
       ...anchorAssets.map(anchorOptions =>
         makeAnchorAsset(powersFor('makeAnchorAsset'), {

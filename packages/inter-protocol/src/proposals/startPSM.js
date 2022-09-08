@@ -7,13 +7,14 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
-import { assert } from '@agoric/assert';
 import { makeScalarMapStore } from '@agoric/vat-data';
 
-import { reserveThenGetNamePaths } from './utils.js';
+import { reserveThenDeposit, reserveThenGetNamePaths } from './utils.js';
 
 const BASIS_POINTS = 10000n;
 const { details: X } = assert;
+
+const { values } = Object;
 
 /**
  * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
@@ -339,6 +340,68 @@ export const PSM_GOV_MANIFEST = {
   },
 };
 
+/** @type { <X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
+const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
+
+/**
+ * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
+ * @param {{ options: { voterAddresses: Record<string, string> }}} param1
+ */
+export const invitePSMCommitteeMembers = async (
+  {
+    consume: { zoe, namesByAddressAdmin, economicCommitteeCreatorFacet },
+    installation: {
+      consume: { binaryVoteCounter: counterP, psmCharter: psmCharterP },
+    },
+  },
+  { options: { voterAddresses } },
+) => {
+  /** @type {[Installation, Installation]} */
+  const [charterInstall, counterInstall] = await Promise.all([
+    psmCharterP,
+    counterP,
+  ]);
+  const terms = await deeplyFulfilledObject(
+    harden({
+      binaryVoteCounterInstallation: counterInstall,
+    }),
+  );
+
+  const { creatorFacet } = E.get(
+    E(zoe).startInstance(charterInstall, undefined, terms),
+  );
+
+  const invitations = await E(
+    economicCommitteeCreatorFacet,
+  ).getVoterInvitations();
+  assert.equal(invitations.length, values(voterAddresses).length);
+
+  /**
+   * @param {[string, Promise<Invitation>][]} addrInvitations
+   */
+  const distributeInvitations = async addrInvitations => {
+    await Promise.all(
+      addrInvitations.map(async ([addr, invitationP]) => {
+        const [voterInvitation, charterMemberInvitation] = await Promise.all([
+          invitationP,
+          E(creatorFacet).makeCharterMemberInvitation(),
+        ]);
+        console.log('@@@sending charter, voting invitations to', addr);
+        await reserveThenDeposit(
+          `econ committee member ${addr}`,
+          namesByAddressAdmin,
+          addr,
+          [voterInvitation, charterMemberInvitation],
+        );
+        console.log('@@@sent charter, voting invitations to', addr);
+      }),
+    );
+  };
+
+  await distributeInvitations(zip(values(voterAddresses), invitations));
+};
+harden(invitePSMCommitteeMembers);
+
 export const PSM_MANIFEST = harden({
   [makeAnchorAsset.name]: {
     consume: { agoricNamesAdmin: true, bankManager: 'bank', zoe: 'zoe' },
@@ -374,6 +437,17 @@ export const PSM_MANIFEST = harden({
     },
     issuer: {
       consume: { AUSD: 'bank' },
+    },
+  },
+  [invitePSMCommitteeMembers.name]: {
+    consume: {
+      zoe: true,
+      namesByAddressAdmin: true,
+      economicCommitteeCreatorFacet: true,
+      psmFacets: true,
+    },
+    installation: {
+      consume: { binaryVoteCounter: true },
     },
   },
 });
