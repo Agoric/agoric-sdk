@@ -3,6 +3,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { Far } from '@endo/far';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import {
   makeExportContext,
   makeImportContext,
@@ -163,4 +164,21 @@ test('makeExportContext.serialize handles unregistered identites', t => {
     slots: ['payment:1'],
   });
   t.deepEqual(context.unserialize(cap2), myPayment);
+});
+
+test('fromBoard.serialize requires board ids', t => {
+  const context = makeImportContext();
+
+  const unpassable = harden({
+    instance: makeHandle('Instance'),
+  });
+  t.throws(() => context.fromBoard.serialize(unpassable), {
+    message: '"key" not found: "[Alleged: InstanceHandle]"',
+  });
+
+  context.ensureBoardId('board123', unpassable.instance);
+  t.deepEqual(context.fromBoard.serialize(unpassable), {
+    body: '{"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":0}}',
+    slots: ['board123'],
+  });
 });
