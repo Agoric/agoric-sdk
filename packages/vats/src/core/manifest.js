@@ -39,6 +39,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
     produce: {
       vatAdminSvc: 'vatAdmin',
       loadVat: true,
+      loadCriticalVat: true,
       vatStore: true,
     },
   },
@@ -227,6 +228,7 @@ export const CLIENT_BOOTSTRAP_MANIFEST = harden({
     produce: {
       vatAdminSvc: 'vatAdmin',
       loadVat: true,
+      loadCriticalVat: true,
       vatStore: true,
     },
   },

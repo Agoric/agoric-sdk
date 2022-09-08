@@ -65,10 +65,10 @@ const bootMsgEx = {
  * @typedef {{adminNode: any, root: unknown}} VatInfo as from createVatByName
  * @typedef {MapStore<string, Promise<VatInfo>>} VatStore
  */
-export const makeVatsFromBundles = ({
+export const makeVatsFromBundles = async ({
   vats,
   devices,
-  produce: { vatAdminSvc, loadVat, vatStore },
+  produce: { vatAdminSvc, loadVat, loadCriticalVat, vatStore },
 }) => {
   const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
   vatAdminSvc.resolve(svc);
@@ -77,14 +77,25 @@ export const makeVatsFromBundles = ({
   const store = makeScalarMapStore();
   vatStore.resolve(store);
 
-  loadVat.resolve(bundleName => {
-    return provideLazy(store, bundleName, _k => {
-      console.info(`createVatByName(${bundleName})`);
-      /** @type { Promise<VatInfo> } */
-      const vatInfo = E(svc).createVatByName(bundleName, { name: bundleName });
-      return vatInfo;
-    }).then(r => r.root);
-  });
+  const makeLazyVatLoader = (defaultVatCreationOptions = {}) => {
+    return bundleName => {
+      const vatInfoP = provideLazy(store, bundleName, _k => {
+        console.info(`createVatByName(${bundleName})`);
+        /** @type { Promise<VatInfo> } */
+        const vatInfo = E(svc).createVatByName(bundleName, {
+          ...defaultVatCreationOptions,
+          name: bundleName,
+        });
+        return vatInfo;
+      });
+      return vatInfoP.then(vatInfo => vatInfo.root);
+    };
+  };
+
+  loadVat.resolve(makeLazyVatLoader());
+
+  const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
+  loadCriticalVat.resolve(makeLazyVatLoader({ critical: criticalVatKey }));
 };
 harden(makeVatsFromBundles);
 
