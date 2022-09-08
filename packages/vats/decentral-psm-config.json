@@ -11,6 +11,9 @@
           }
         ],
         "economicCommitteeAddresses": []
+      },
+      "creationOptions": {
+        "critical": true
       }
     }
   },
