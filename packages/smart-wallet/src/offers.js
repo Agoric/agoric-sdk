@@ -1,9 +1,7 @@
 // @ts-check
 
-import { M, makeHeapFarInstance } from '@agoric/store';
 import { E, passStyleOf } from '@endo/far';
 import { makePaymentsHelper } from './payments.js';
-import { shape } from './typeGuards.js';
 
 /**
  * @typedef {{
@@ -37,7 +35,7 @@ export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
  * @param {(status: OfferStatus) => void} opts.onStatusChange
  * @param {(offerId: number, continuation: import('./types').RemoteInvitationMakers) => void} opts.onNewContinuingOffer
  */
-export const makeOffersFacet = ({
+export const makeOfferExecutor = ({
   zoe,
   powers,
   onStatusChange,
@@ -45,129 +43,116 @@ export const makeOffersFacet = ({
 }) => {
   const { invitationFromSpec, lastOfferId, purseForBrand } = powers;
 
-  return makeHeapFarInstance(
-    'offers facet',
-    M.interface('offers facet', {
-      executeOffer: M.call(shape.OfferSpec).returns(M.promise()),
-      getLastOfferId: M.call().returns(M.number()),
-    }),
-    {
+  return {
+    /**
+     * Take an offer description provided in capData, augment it with payments and call zoe.offer()
+     *
+     * @param {OfferSpec} offerSpec
+     * @returns {Promise<void>} when the offer has been sent to Zoe; payouts go into this wallet's purses
+     * @throws if any parts of the offer can be determined synchronously to be invalid
+     */
+    async executeOffer(offerSpec) {
+      const paymentsManager = makePaymentsHelper(purseForBrand);
+
+      /** @type {OfferStatus} */
+      let status = {
+        ...offerSpec,
+      };
+      /** @param {Partial<OfferStatus>} changes */
+      const updateStatus = changes => {
+        status = { ...status, ...changes };
+        onStatusChange(status);
+      };
       /**
-       * Take an offer description provided in capData, augment it with payments and call zoe.offer()
+       * Notify user and attempt to recover
        *
-       * @param {OfferSpec} offerSpec
-       * @returns {Promise<void>} when the offer has been sent to Zoe; payouts go into this wallet's purses
-       * @throws if any parts of the offer can be determined synchronously to be invalid
+       * @param {Error} err
        */
-      executeOffer: async offerSpec => {
-        const paymentsManager = makePaymentsHelper(purseForBrand);
+      const handleError = err => {
+        console.error('OFFER ERROR:', err);
+        updateStatus({ error: err.toString() });
+        paymentsManager.tryReclaimingWithdrawnPayments().then(result => {
+          if (result) {
+            updateStatus({ result });
+          }
+        });
+      };
 
-        /** @type {OfferStatus} */
-        let status = {
-          ...offerSpec,
-        };
-        /** @param {Partial<OfferStatus>} changes */
-        const updateStatus = changes => {
-          status = { ...status, ...changes };
-          onStatusChange(status);
-        };
-        /**
-         * Notify user and attempt to recover
-         *
-         * @param {Error} err
-         */
-        const handleError = err => {
-          console.error('OFFER ERROR:', err);
-          updateStatus({ error: err.toString() });
-          paymentsManager.tryReclaimingWithdrawnPayments().then(result => {
-            if (result) {
-              updateStatus({ result });
+      try {
+        // 1. Prepare values and validate synchronously.
+        const { id, invitationSpec, proposal, offerArgs } = offerSpec;
+        // consume id immediately so that all errors can pertain to a particular offer id.
+        // This also serves to validate the new id.
+        lastOfferId.set(id);
+
+        const invitation = invitationFromSpec(invitationSpec);
+
+        const paymentKeywordRecord = proposal?.give
+          ? paymentsManager.withdrawGive(proposal.give)
+          : undefined;
+
+        // 2. Begin executing offer
+        // No explicit signal to user that we reached here but if anything above
+        // failed they'd get an 'error' status update.
+
+        // eslint-disable-next-line @jessie.js/no-nested-await -- unconditional
+        const seatRef = await E(zoe).offer(
+          invitation,
+          proposal,
+          paymentKeywordRecord,
+          offerArgs,
+        );
+        // ??? should we notify of being seated?
+
+        // publish 'result'
+        E.when(
+          E(seatRef).getOfferResult(),
+          result => {
+            const passStyle = passStyleOf(result);
+            console.log('offerResult', passStyle, result);
+            // someday can we get TS to type narrow based on the passStyleOf result match?
+            switch (passStyle) {
+              case 'copyRecord':
+                if ('invitationMakers' in result) {
+                  // save for continuing invitation offer
+                  onNewContinuingOffer(id, result.invitationMakers);
+                }
+                // ??? are all copyRecord types valid to publish?
+                updateStatus({ result });
+                break;
+              default:
+                // drop the result
+                updateStatus({ result: UNPUBLISHED_RESULT });
             }
+          },
+          handleError,
+        );
+
+        // publish 'numWantsSatisfied'
+        E.when(E(seatRef).numWantsSatisfied(), numSatisfied => {
+          if (numSatisfied === 0) {
+            updateStatus({ numWantsSatisfied: 0 });
+          }
+          updateStatus({
+            numWantsSatisfied: numSatisfied,
           });
-        };
+        });
 
-        try {
-          // 1. Prepare values and validate synchronously.
-          const { id, invitationSpec, proposal, offerArgs } = offerSpec;
-          // consume id immediately so that all errors can pertain to a particular offer id.
-          // This also serves to validate the new id.
-          lastOfferId.set(id);
-
-          const invitation = invitationFromSpec(invitationSpec);
-
-          const paymentKeywordRecord = proposal?.give
-            ? paymentsManager.withdrawGive(proposal.give)
-            : undefined;
-
-          // 2. Begin executing offer
-          // No explicit signal to user that we reached here but if anything above
-          // failed they'd get an 'error' status update.
-
-          // eslint-disable-next-line @jessie.js/no-nested-await -- unconditional
-          const seatRef = await E(zoe).offer(
-            invitation,
-            proposal,
-            paymentKeywordRecord,
-            offerArgs,
-          );
-          // ??? should we notify of being seated?
-
-          // publish 'result'
-          E.when(
-            E(seatRef).getOfferResult(),
-            result => {
-              const passStyle = passStyleOf(result);
-              console.log('offerResult', passStyle, result);
-              // someday can we get TS to type narrow based on the passStyleOf result match?
-              switch (passStyle) {
-                case 'copyRecord':
-                  if ('invitationMakers' in result) {
-                    // save for continuing invitation offer
-                    onNewContinuingOffer(id, result.invitationMakers);
-                  }
-                  // ??? are all copyRecord types valid to publish?
-                  updateStatus({ result });
-                  break;
-                default:
-                  // drop the result
-                  updateStatus({ result: UNPUBLISHED_RESULT });
-              }
-            },
-            handleError,
-          );
-
-          // publish 'numWantsSatisfied'
-          E.when(E(seatRef).numWantsSatisfied(), numSatisfied => {
-            if (numSatisfied === 0) {
-              updateStatus({ numWantsSatisfied: 0 });
-            }
-            updateStatus({
-              numWantsSatisfied: numSatisfied,
-            });
-          });
-
-          // publish 'payouts'
-          // This will block until all payouts succeed, but user will be updated
-          // as each payout will trigger its corresponding purse notifier.
-          E.when(
-            E(seatRef).getPayouts(),
-            payouts =>
-              paymentsManager.depositPayouts(payouts).then(amounts => {
-                updateStatus({ payouts: amounts });
-              }),
-            handleError,
-          );
-        } catch (err) {
-          handleError(err);
-        }
-      },
-
-      /**
-       * Contracts can use this to generate a valid (monotonic) offer ID by incrementing.
-       * In most cases it will be faster to get this from RPC query.
-       */
-      getLastOfferId: lastOfferId.get,
+        // publish 'payouts'
+        // This will block until all payouts succeed, but user will be updated
+        // as each payout will trigger its corresponding purse notifier.
+        E.when(
+          E(seatRef).getPayouts(),
+          payouts =>
+            paymentsManager.depositPayouts(payouts).then(amounts => {
+              updateStatus({ payouts: amounts });
+            }),
+          handleError,
+        );
+      } catch (err) {
+        handleError(err);
+      }
     },
-  );
+  };
 };
-harden(makeOffersFacet);
+harden(makeOfferExecutor);

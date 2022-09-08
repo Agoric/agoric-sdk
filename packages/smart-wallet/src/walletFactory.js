@@ -89,18 +89,23 @@ export const start = async (zcf, privateArgs) => {
   await (bridgeManager &&
     E(bridgeManager).register(BridgeId.WALLET, handleWalletAction));
 
-  // Each wallet has `zoe` it can use to look them up, but pass these in to save that work.
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const invitationBrand = await E(invitationIssuer).getBrand();
+  // Resolve these first because the wallet maker must be synchronous
+  const getInvitationIssuer = E(zoe).getInvitationIssuer();
+  const [invitationIssuer, invitationBrand, publicMarshaller] =
+    await Promise.all([
+      getInvitationIssuer,
+      E(getInvitationIssuer).getBrand(),
+      E(board).getReadonlyMarshaller(),
+    ]);
 
-  const shared = {
+  const shared = harden({
     agoricNames,
-    board,
     invitationBrand,
     invitationIssuer,
+    publicMarshaller,
     storageNode,
     zoe,
-  };
+  });
 
   const creatorFacet = makeHeapFarInstance(
     'walletFactoryCreator',
@@ -118,16 +123,20 @@ export const start = async (zcf, privateArgs) => {
        * @param {ERef<MyAddressNameAdmin>} myAddressNameAdmin
        * @returns {Promise<import('./smartWallet').SmartWallet>}
        */
-      provideSmartWallet: (address, bank, myAddressNameAdmin) => {
+      provideSmartWallet(address, bank, myAddressNameAdmin) {
         /** @type {() => Promise<import('./smartWallet').SmartWallet>} */
-        const maker = () =>
-          makeSmartWallet({ address, bank }, shared).then(wallet => {
-            E(myAddressNameAdmin).update(
-              WalletName.depositFacet,
-              wallet.getDepositFacet(),
-            );
-            return wallet;
-          });
+        const maker = async () => {
+          const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
+          const wallet = makeSmartWallet(
+            harden({ address, bank, invitationPurse }),
+            shared,
+          );
+          void E(myAddressNameAdmin).update(
+            WalletName.depositFacet,
+            wallet.getDepositFacet(),
+          );
+          return wallet;
+        };
 
         return provider.provideAsync(address, maker);
       },

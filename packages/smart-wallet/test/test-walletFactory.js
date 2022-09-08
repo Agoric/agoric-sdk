@@ -94,10 +94,10 @@ test('notifiers', async t => {
   async function checkAddress(address) {
     const smartWallet = await t.context.simpleProvideWallet(address);
 
+    // xxx no type of getUpdatesSubscriber()
     const updates = await E(smartWallet).getUpdatesSubscriber();
 
     t.is(
-      // @ts-expect-error faulty typedef
       await subscriptionKey(updates),
       `mockChainStorageRoot.wallet.${address}`,
     );
