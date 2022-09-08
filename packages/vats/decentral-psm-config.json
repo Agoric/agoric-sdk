@@ -19,7 +19,7 @@
   },
   "bundles": {
     "walletFactory": {
-      "sourceSpec": "@agoric/wallet/contract/src/walletFactory.js"
+      "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"
     },
     "committee": {
       "sourceSpec": "@agoric/governance/src/committee.js"
