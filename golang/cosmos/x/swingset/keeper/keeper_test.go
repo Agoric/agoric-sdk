@@ -7,6 +7,20 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+func mkcoin(denom string) func(amt int64) sdk.Coin {
+	return func(amt int64) sdk.Coin {
+		return sdk.NewInt64Coin(denom, amt)
+	}
+}
+
+var (
+	a          = mkcoin("coina")
+	b          = mkcoin("coinb")
+	cns        = sdk.NewCoins
+	submitAddr = sdk.AccAddress([]byte("submitter"))
+	utilAddr   = sdk.AccAddress([]byte("addr"))
+)
+
 func Test_calculateFees(t *testing.T) {
 	type args struct {
 		balances        sdk.Coins
@@ -24,38 +38,44 @@ func Test_calculateFees(t *testing.T) {
 			name: "provision pass",
 			args: args{
 				balances:   privilegedProvisioningCoins,
-				submitter:  sdk.AccAddress([]byte("submitter")),
-				addr:       sdk.AccAddress([]byte("addr")),
+				submitter:  submitAddr,
+				addr:       utilAddr,
 				powerFlags: []string{"powerflag1", "powerflag2"},
 			},
-			want: sdk.NewCoins(),
+			want: cns(),
 		},
 		{
 			name: "provision pass and more",
 			args: args{
-				balances:   privilegedProvisioningCoins.Add(privilegedProvisioningCoins...).Add(sdk.NewCoin("coina", sdk.NewInt(1000))),
-				submitter:  sdk.AccAddress([]byte("submitter")),
-				addr:       sdk.AccAddress([]byte("addr")),
+				balances:   privilegedProvisioningCoins.Add(privilegedProvisioningCoins...).Add(a(1000)),
+				submitter:  submitAddr,
+				addr:       utilAddr,
 				powerFlags: []string{"powerflag1", "powerflag2"},
 			},
-			want: sdk.NewCoins(),
+			want: cns(),
 		},
 		{
 			name: "cannot pay fee to provision third party",
 			args: args{
-				submitter: sdk.AccAddress([]byte("submitter")),
-				addr:      sdk.AccAddress([]byte("addr")),
+				submitter:  submitAddr,
+				addr:       utilAddr,
+				powerFlags: []string{"powerflag1"},
 			},
 			errMsg: "submitter is not the same as target address for fee-based provisioning",
 		},
 		{
-			name:   "need powerflags for fee provisioning",
-			args:   args{},
+			name: "need powerflags for fee provisioning",
+			args: args{
+				submitter: utilAddr,
+				addr:      utilAddr,
+			},
 			errMsg: "must specify powerFlags for fee-based provisioning",
 		},
 		{
 			name: "unrecognized powerFlag",
 			args: args{
+				submitter:  utilAddr,
+				addr:       utilAddr,
 				powerFlags: []string{"power1"},
 			},
 			errMsg: "unrecognized powerFlag: power1",
@@ -63,80 +83,85 @@ func Test_calculateFees(t *testing.T) {
 		{
 			name: "get fee for power1",
 			args: args{
+				submitter:  utilAddr,
+				addr:       utilAddr,
 				powerFlags: []string{"power1"},
 				powerFlagFees: []types.PowerFlagFee{
 					{
 						PowerFlag: "power2",
-						Fee:       sdk.NewCoins(sdk.NewCoin("coina", sdk.NewInt(1000))),
+						Fee:       cns(a(1000)),
 					},
 					{
 						PowerFlag: "power1",
-						Fee:       sdk.NewCoins(sdk.NewCoin("coina", sdk.NewInt(1300))),
+						Fee:       cns(a(1300)),
 					},
 				},
 			},
-			want: sdk.NewCoins(sdk.NewCoin("coina", sdk.NewInt(1300))),
+			want: cns(a(1300)),
 		},
 		{
 			name: "later menu entries do not override",
 			args: args{
+				submitter:  utilAddr,
+				addr:       utilAddr,
 				powerFlags: []string{"power1"},
 				powerFlagFees: []types.PowerFlagFee{
 					{
 						PowerFlag: "power2",
-						Fee:       sdk.NewCoins(sdk.NewCoin("coina", sdk.NewInt(1000))),
+						Fee:       cns(a(1000)),
 					},
 					{
 						PowerFlag: "power1",
-						Fee:       sdk.NewCoins(sdk.NewCoin("coina", sdk.NewInt(1300))),
+						Fee:       cns(a(1300)),
 					},
 					{
 						PowerFlag: "power1",
-						Fee:       sdk.NewCoins(sdk.NewCoin("coina", sdk.NewInt(800))),
+						Fee:       cns(a(800)),
 					},
 				},
 			},
-			want: sdk.NewCoins(sdk.NewCoin("coina", sdk.NewInt(1300))),
+			want: cns(a(1300)),
 		},
 		{
 			name: "fees add up",
 			args: args{
+				submitter:  utilAddr,
+				addr:       utilAddr,
 				powerFlags: []string{"power1", "power2", "freepower"},
 				powerFlagFees: []types.PowerFlagFee{
 					{
 						PowerFlag: "power2",
-						Fee: sdk.NewCoins(
-							sdk.NewCoin("coina", sdk.NewInt(1000)),
-							sdk.NewCoin("coinb", sdk.NewInt(15)),
-						),
+						Fee:       cns(a(1000), b(15)),
 					},
 					{
 						PowerFlag: "power1",
-						Fee:       sdk.NewCoins(sdk.NewCoin("coina", sdk.NewInt(1300))),
+						Fee:       cns(a(1300)),
 					},
 					{
 						PowerFlag: "freepower",
 					},
 				},
 			},
-			want: sdk.NewCoins(sdk.NewCoin("coina", sdk.NewInt(2300)), sdk.NewCoin("coinb", sdk.NewInt(15))),
+			want: cns(a(2300), b(15)),
 		},
 		{
 			name: "multiple occurrences of same powerflag",
 			args: args{
+				submitter:  utilAddr,
+				addr:       utilAddr,
 				powerFlags: []string{"power1", "power1"},
 				powerFlagFees: []types.PowerFlagFee{
 					{
 						PowerFlag: "power2",
-						Fee:       sdk.NewCoins(sdk.NewCoin("coina", sdk.NewInt(1000))),
+						Fee:       cns(a(1000)),
 					},
 					{
 						PowerFlag: "power1",
-						Fee:       sdk.NewCoins(sdk.NewCoin("coina", sdk.NewInt(1300))),
+						Fee:       cns(a(1300)),
 					},
 				},
 			},
-			want: sdk.NewCoins(sdk.NewCoin("coina", sdk.NewInt(2600))),
+			want: cns(a(2600)),
 		},
 	}
 	for _, tt := range tests {

@@ -195,7 +195,7 @@ func (k Keeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint
 	return nil
 }
 
-// Create a map from power flag to its fee.  In the case of duplicates, the
+// makeFeeMenu returns a map from power flag to its fee.  In the case of duplicates, the
 // first one wins.
 func makeFeeMenu(powerFlagFees []types.PowerFlagFee) map[string]sdk.Coins {
 	feeMenu := make(map[string]sdk.Coins, len(powerFlagFees))

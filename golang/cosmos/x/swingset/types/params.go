@@ -135,13 +135,8 @@ func validatePowerFlagFees(i interface{}) error {
 		if pff.PowerFlag == "" {
 			return fmt.Errorf("power flag must not be empty")
 		}
-		for _, coin := range pff.Fee {
-			if err := sdk.ValidateDenom(coin.Denom); err != nil {
-				return fmt.Errorf("power flag %s fee denom %s must be valid: %e", pff.PowerFlag, coin.Denom, err)
-			}
-			if coin.Amount.IsNegative() {
-				return fmt.Errorf("power flag %s fee %s must not be negative: %s", pff.PowerFlag, coin.Denom, coin.Amount)
-			}
+		if err := pff.Fee.Validate(); err != nil {
+			return fmt.Errorf("poer flag %s fee must be valid: %e", pff.PowerFlag, err)
 		}
 	}
 
