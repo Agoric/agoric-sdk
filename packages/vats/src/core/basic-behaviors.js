@@ -308,13 +308,14 @@ export const installBootContracts = async ({
   devices: { vatAdmin },
   consume: { zoe },
   installation: {
-    produce: { centralSupply, mintHolder, walletFactory },
+    produce: { centralSupply, mintHolder, walletFactory, provisionPool },
   },
 }) => {
   for (const [name, producer] of Object.entries({
     centralSupply,
     mintHolder,
     walletFactory,
+    provisionPool,
   })) {
     // This really wants to be E(vatAdminSvc).getBundleIDByName, but it's
     // good enough to do D(vatAdmin).getBundleIDByName

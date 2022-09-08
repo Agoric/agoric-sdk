@@ -31,6 +31,7 @@ const makeBridgeProvisionTool = sendInitialPayment => {
   const makeHandler = ({ bankManager, namesByAddressAdmin, walletFactory }) =>
     Far('provisioningHandler', {
       fromBridge: async (_srcID, obj) => {
+        assert(namesByAddressAdmin, 'no namesByAddressAdmin');
         assert.equal(
           obj.type,
           'PLEASE_PROVISION',
@@ -44,6 +45,7 @@ const makeBridgeProvisionTool = sendInitialPayment => {
         }
 
         const { nameHub, myAddressNameAdmin } = makeMyAddressNameAdmin(address);
+        assert(myAddressNameAdmin);
         await E(namesByAddressAdmin).update(address, nameHub);
         const depositFacet = nameHub.lookup('depositFacet');
 
@@ -68,13 +70,11 @@ const makeBridgeProvisionTool = sendInitialPayment => {
  *   perAccountInitialAmount: Amount<'nat'>,
  * }} ProvisionTerms
  *
- * @typedef {{
+ * @param {ZCF<ProvisionTerms>} zcf
+ * @param {{
  *   poolBank: import('@endo/far').FarRef<import('./vat-bank.js').Bank>,
- * }} ProvisionPrivate
- * TODO: ERef<GovernedCreatorFacet<ProvisionCreator>>
- *
- * @type {ContractStartFn<unknown, unknown,
- *                        ProvisionTerms, ProvisionPrivate>}
+ * }} privateArgs
+ * @returns
  */
 export const start = (zcf, privateArgs) => {
   // TODO: make initial amount governed
@@ -82,7 +82,8 @@ export const start = (zcf, privateArgs) => {
   fit(privateArgs, privateShape, 'provisionPool privateArgs');
   const { poolBank } = privateArgs;
   fit(perAccountInitialAmount, AmountShape, 'perAccountInitialAmount');
-  const fundPurse = E(poolBank).getPurse(perAccountInitialAmount.brand);
+  const { brand: poolBrand } = perAccountInitialAmount;
+  const fundPurse = E(poolBank).getPurse(poolBrand);
 
   const zoe = zcf.getZoeService();
   const swap = async (payIn, amount, instance) => {
@@ -105,7 +106,7 @@ export const start = (zcf, privateArgs) => {
       observeNotifier(E(exchangePurse).getCurrentAmountNotifier(), {
         updateState: async amount => {
           console.log('provisionPool balance update', amount);
-          if (AmountMath.isEmpty(amount)) {
+          if (AmountMath.isEmpty(amount) || amount.brand === poolBrand) {
             return;
           }
           if (!brandToPSM.has(desc.brand)) {

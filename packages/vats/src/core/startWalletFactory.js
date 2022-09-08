@@ -2,10 +2,9 @@
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { AmountMath } from '@agoric/ertp';
 import { makeStorageNodeChild } from '../lib-chainStorage.js';
-import { makeMyAddressNameAdmin, PowerFlags } from './basic-behaviors.js';
-
-const { details: X } = assert;
+import { Stable } from '../tokens.js';
 
 /**
  * @param {ERef<ZoeService>} zoe
@@ -15,35 +14,51 @@ const { details: X } = assert;
 // eslint-disable-next-line no-unused-vars
 const startFactoryInstance = (zoe, inst) => E(zoe).startInstance(inst);
 
+const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
+
+const PROVISION_ACCT_TEST = 'agoric1muveuvn0nka9g6mx9fs0uxls5pvnmd23376dwq';
+
 /**
  * Register for PLEASE_PROVISION bridge messages and handle
  * them by providing a smart wallet from the wallet factory.
  *
  * @param {BootstrapPowers} param0
+ * @param {{
+ *   options?: {
+ *     perAccountInitialValue?: bigint
+ *   },
+ * }} [config]
  */
-export const startWalletFactory = async ({
-  consume: {
-    agoricNames,
-    bankManager,
-    board,
-    bridgeManager: bridgeManagerP,
-    chainStorage,
-    namesByAddress,
-    namesByAddressAdmin: namesByAddressAdminP,
-    zoe,
+export const startWalletFactory = async (
+  {
+    consume: {
+      agoricNames,
+      bankManager,
+      board,
+      bridgeManager: bridgeManagerP,
+      chainStorage,
+      namesByAddress,
+      namesByAddressAdmin: namesByAddressAdminP,
+      zoe,
+    },
+    produce: { client, walletFactoryStartResult, provisionPoolStartResult },
+    installation: {
+      consume: { walletFactory, provisionPool },
+    },
+    brand,
   },
-  produce: { client, walletFactoryStartResult },
-  installation: {
-    consume: { walletFactory },
-  },
-}) => {
+  { options: { perAccountInitialValue = (StableUnit * 25n) / 100n } = {} } = {},
+) => {
   const STORAGE_PATH = 'wallet';
 
-  const [storageNode, bridgeManager, namesByAddressAdmin] = await Promise.all([
-    makeStorageNodeChild(chainStorage, STORAGE_PATH),
-    bridgeManagerP,
-    namesByAddressAdminP,
-  ]);
+  const [storageNode, bridgeManager, namesByAddressAdmin, feeBrand] =
+    await Promise.all([
+      makeStorageNodeChild(chainStorage, STORAGE_PATH),
+      bridgeManagerP,
+      namesByAddressAdminP,
+      brand.consume[Stable.symbol],
+    ]);
+  assert(namesByAddressAdmin, 'no namesByAddressAdmin???');
 
   const terms = await deeplyFulfilled(
     harden({
@@ -53,49 +68,39 @@ export const startWalletFactory = async ({
     }),
   );
   /** @type {WalletFactoryStartResult} */
-  const x = await E(zoe).startInstance(walletFactory, {}, terms, {
+  const wfFacets = await E(zoe).startInstance(walletFactory, {}, terms, {
     storageNode,
     // POLA contract only needs to register for srcId='wallet'
     // TODO consider a scoped attenuation of this bridge manager to just 'wallet'
     bridgeManager,
   });
-  walletFactoryStartResult.resolve(x);
-  const { creatorFacet } = x;
+  walletFactoryStartResult.resolve(wfFacets);
 
-  /** @param {string} address */
-  const tryLookup = async address =>
-    E(namesByAddress)
-      .lookup(address)
-      .catch(_notFound => undefined);
-
-  const handler = Far('provisioningHandler', {
-    fromBridge: async (_srcID, obj) => {
-      assert.equal(
-        obj.type,
-        'PLEASE_PROVISION',
-        X`Unrecognized request ${obj.type}`,
-      );
-      const { address, powerFlags } = obj;
-      console.info('PLEASE_PROVISION', address, powerFlags);
-
-      const hubBefore = await tryLookup(address);
-      assert(!hubBefore, 'already provisioned');
-
-      if (!powerFlags.includes(PowerFlags.SMART_WALLET)) {
-        return;
-      }
-      const { nameHub, myAddressNameAdmin } = makeMyAddressNameAdmin(address);
-      namesByAddressAdmin.update(address, nameHub, myAddressNameAdmin);
-
-      const bank = E(bankManager).getBankForAddress(address);
-      await E(creatorFacet).provideSmartWallet(
-        address,
-        bank,
-        myAddressNameAdmin,
-      );
-      console.info('provisioned', address, powerFlags);
-    },
+  // const addr = PROVISION_ACCT_TEST;
+  const addr = await E(bankManager).getModuleAccountAddress('vbank/provision');
+  console.log('provision pool', { addr });
+  const poolBank = E(bankManager).getBankForAddress(
+    addr || PROVISION_ACCT_TEST,
+  );
+  const ppTerms = harden({
+    perAccountInitialAmount: AmountMath.make(feeBrand, perAccountInitialValue),
   });
+
+  /** @type {Awaited<ReturnType<typeof import('../provisionPool').start>>} */
+  const ppFacets = await E(zoe).startInstance(
+    provisionPool,
+    undefined,
+    ppTerms,
+    harden({ poolBank }),
+  );
+  provisionPoolStartResult.resolve(ppFacets);
+
+  const handler = await E(ppFacets.creatorFacet).makeHandler({
+    bankManager,
+    namesByAddressAdmin,
+    walletFactory: wfFacets.creatorFacet,
+  });
+
   if (!bridgeManager) {
     console.warn('missing bridgeManager in startWalletFactory');
   }
@@ -126,9 +131,13 @@ export const WALLET_FACTORY_MANIFEST = {
     produce: {
       client: true, // dummy client in this configuration
       walletFactoryStartResult: true,
+      provisionPoolStartResult: true,
     },
     installation: {
-      consume: { walletFactory: 'zoe' },
+      consume: { walletFactory: 'zoe', provisionPool: 'zoe' },
+    },
+    brand: {
+      consume: { [Stable.symbol]: 'zoe' },
     },
   },
 };

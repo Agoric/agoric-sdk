@@ -138,7 +138,8 @@
  *   issuer: |
  *     TokenKeyword | 'Attestation' | 'AUSD',
  *   installation: |
- *     'centralSupply' | 'mintHolder' | 'singleWallet' | 'walletFactory' |
+ *     'centralSupply' | 'mintHolder' |
+ *     'singleWallet' | 'walletFactory' | 'provisionPool' |
  *     'feeDistributor' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'amm' | 'VaultFactory' | 'liquidate' | 'stakeFactory' |
@@ -217,6 +218,7 @@
  *   provisioning: Awaited<ProvisioningVat>,
  *   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit,
  *   walletFactoryStartResult: import('./startWalletFactory').WalletFactoryStartResult,
+ *   provisionPoolStartResult: unknown,
  *   zoe: ZoeService,
  * }>} ChainBootstrapSpace
  *
