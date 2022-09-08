@@ -6,7 +6,7 @@
 - name: 'Reset {{ service }}'
   become: yes
   become_user: '{{ service }}'
-  shell: '{{ service }} unsafe-reset-all'
+  shell: '{{ service }} tendermint unsafe-reset-all'
   when:
     - valkey.stat.exists
 

@@ -16,14 +16,11 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
-
-	porttypes "github.com/cosmos/ibc-go/v2/modules/core/05-port/types"
 )
 
 // type check to ensure the interface is properly implemented
 var (
 	_ module.AppModule      = AppModule{}
-	_ porttypes.IBCModule   = AppModule{}
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
