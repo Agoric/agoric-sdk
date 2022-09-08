@@ -125,6 +125,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
   const loadVat = name =>
     import(`@agoric/vats/src/vat-${name}.js`).then(ns => ns.buildRootObject());
   space.produce.loadVat.resolve(loadVat);
+  space.produce.loadCriticalVat.resolve(loadVat);
 
   const emptyRunPayment = async () => {
     const {
