@@ -265,11 +265,11 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
     'initialSupply of 50 RUN',
   );
 
-  const loadVat = async name => {
+  const loadCriticalVat = async name => {
     assert.equal(name, 'bank');
     return E(buildRootObject)();
   };
-  produce.loadVat.resolve(loadVat);
+  produce.loadCriticalVat.resolve(loadCriticalVat);
   produce.bridgeManager.resolve(undefined);
 
   await addBankAssets({ consume, produce, ...spaces });
