@@ -1,12 +1,12 @@
 // @ts-check
-import { PaymentShape } from '@agoric/ertp';
+import { AmountShape, PaymentShape } from '@agoric/ertp';
 import { isNat } from '@agoric/nat';
 import {
   makeStoredPublishKit,
   observeIteration,
   observeNotifier,
 } from '@agoric/notifier';
-import { fit, M, makeScalarMapStore } from '@agoric/store';
+import { fit, M, makeHeapFarInstance, makeScalarMapStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { E, Far } from '@endo/far';
 import { makeInvitationsHelper } from './invitations.js';
@@ -244,27 +244,30 @@ export const makeSmartWallet = async (
   /**
    * Similar to {DepositFacet} but async because it has to look up the purse.
    */
-  const depositFacet = Far('smart wallet deposit facet', {
-    // TODO(PS0) decide whether to match canonical `DepositFacet'. it would have to take a local Payment.
-    /**
-     * Put the assets from the payment into the appropriate purse
-     *
-     * @param {ERef<Payment>} paymentE
-     * @param {Brand} [paymentBrand] when provided saves remote lookup. Must match the payment's brand.
-     * @returns {Promise<Amount>}
-     * @throws if the purse doesn't exist
-     * NB: the previous smart wallet contract would try again each time there's a new issuer.
-     * This version does not: 1) for expedience, 2: to avoid resource exhaustion vulnerability.
-     */
-    receive: async (paymentE, paymentBrand) => {
-      fit(harden(paymentE), M.eref(PaymentShape));
+  // TODO(PS0) decide whether to match canonical `DepositFacet'. it would have to take a local Payment.
+  const depositFacet = makeHeapFarInstance(
+    'smart wallet deposit facet',
+    M.interface('depositFacetI', {
+      receive: M.callWhen(M.await(M.eref(PaymentShape))).returns(AmountShape),
+    }),
+    {
+      /**
+       * Put the assets from the payment into the appropriate purse
+       *
+       * @param {Payment} payment
+       * @returns {Promise<Amount>}
+       * @throws if the purse doesn't exist
+       * NB: the previous smart wallet contract would try again each time there's a new issuer.
+       * This version does not: 1) for expedience, 2: to avoid resource exhaustion vulnerability.
+       */
+      receive: async payment => {
+        const brand = payment.getAllegedBrand();
+        const purse = brandPurses.get(brand);
 
-      const brand = await (paymentBrand || E(paymentE).getAllegedBrand());
-      const purse = brandPurses.get(brand);
-
-      return E.when(paymentE, payment => E(purse).deposit(payment));
+        return E(purse).deposit(payment);
+      },
     },
-  });
+  );
 
   const offersFacet = makeOffersFacet({
     zoe,

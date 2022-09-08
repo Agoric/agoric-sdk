@@ -126,7 +126,7 @@ test('want stable', async t => {
   t.log('Fund the wallet');
   assert(anchor.mint);
   const payment = anchor.mint.mintPayment(anchor.make(swapSize));
-  await wallet.getDepositFacet().receive(payment, anchor.brand);
+  await wallet.getDepositFacet().receive(payment);
 
   t.log('Prepare the swap');
 
@@ -176,9 +176,7 @@ test('govern offerFilter', async t => {
       await E(E(zoe).getInvitationIssuer()).isLive(voterInvitation),
       'invalid invitation',
     );
-    wallet
-      .getDepositFacet()
-      .receive(voterInvitation, voterInvitation.getAllegedBrand());
+    wallet.getDepositFacet().receive(voterInvitation);
   }
 
   t.log('Set up question');
