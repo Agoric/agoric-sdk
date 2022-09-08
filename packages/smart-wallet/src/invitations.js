@@ -50,7 +50,6 @@ export const makeInvitationsHelper = (
   invitationsPurse,
   getInvitationContinuation,
 ) => {
-  // TODO(6062) validate params with patterns
   const invitationGetters = /** @type {const} */ ({
     /** @type {(spec: ContractInvitationSpec) => Promise<Invitation>} */
     contract(spec) {

@@ -6,7 +6,7 @@
  */
 
 import { BridgeId } from '@agoric/internal';
-import { fit, M } from '@agoric/store';
+import { fit, M, makeHeapFarInstance } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { E, Far } from '@endo/far';
@@ -51,29 +51,38 @@ export const start = async (zcf, privateArgs) => {
   const walletsByAddress = makeScalarBigMapStore('walletsByAddress');
   const provider = makeAtomicProvider(walletsByAddress);
 
-  // TODO(6062) refactor to a Far Class with type guards
-  const handleWalletAction = Far('walletActionHandler', {
-    /**
-     *
-     * @param {string} srcID
-     * @param {import('./types.js').WalletBridgeMsg} obj
-     */
-    fromBridge: async (srcID, obj) => {
-      console.log('walletFactory.fromBridge:', srcID, obj);
-      fit(harden(obj), shape.WalletBridgeMsg);
-      const canSpend = 'spendAction' in obj;
+  const handleWalletAction = makeHeapFarInstance(
+    'walletActionHandler',
+    M.interface('walletActionHandlerI', {
+      fromBridge: M.call(M.string(), shape.WalletBridgeMsg).returns(
+        M.promise(),
+      ),
+    }),
+    {
+      /**
+       *
+       * @param {string} srcID
+       * @param {import('./types.js').WalletBridgeMsg} obj
+       */
+      fromBridge: async (srcID, obj) => {
+        console.log('walletFactory.fromBridge:', srcID, obj);
 
-      // xxx capData body is also a JSON string so this is double-encoded
-      // revisit after https://github.com/Agoric/agoric-sdk/issues/2589
-      const actionCapData = JSON.parse(canSpend ? obj.spendAction : obj.action);
-      fit(harden(actionCapData), shape.StringCapData);
+        const canSpend = 'spendAction' in obj;
 
-      const wallet = walletsByAddress.get(obj.owner); // or throw
+        // xxx capData body is also a JSON string so this is double-encoded
+        // revisit after https://github.com/Agoric/agoric-sdk/issues/2589
+        const actionCapData = JSON.parse(
+          canSpend ? obj.spendAction : obj.action,
+        );
+        fit(harden(actionCapData), shape.StringCapData);
 
-      console.log('walletFactory:', { wallet, actionCapData });
-      return E(wallet).handleBridgeAction(actionCapData, canSpend);
+        const wallet = walletsByAddress.get(obj.owner); // or throw
+
+        console.log('walletFactory:', { wallet, actionCapData });
+        return E(wallet).handleBridgeAction(actionCapData, canSpend);
+      },
     },
-  });
+  );
 
   // NOTE: both `MsgWalletAction` and `MsgWalletSpendAction` arrive as BRIDGE_ID.WALLET
   // by way of makeBlockManager() in cosmic-swingset/src/block-manager.js
