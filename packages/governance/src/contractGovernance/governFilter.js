@@ -96,11 +96,11 @@ const setupFilterGovernance = async (
         },
       );
 
-    return {
+    return harden({
       outcomeOfUpdate,
       instance: voteCounter,
       details: E(counterPublicFacet).getDetails(),
-    };
+    });
   };
 
   return Far('filterGovernor', {

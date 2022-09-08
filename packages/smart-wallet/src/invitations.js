@@ -74,7 +74,7 @@ export const makeInvitationsHelper = (
         details =>
           details.description === description && details.instance === instance,
       );
-      assert(match, `invitation not found: ${description}`);
+      assert(match, `no matching invitation for ${description}`);
       const toWithDraw = AmountMath.make(invitationBrand, harden([match]));
       console.log('.... ', { toWithDraw });
 

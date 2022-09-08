@@ -169,7 +169,7 @@ export const startPSM = async (
     E(instanceAdmin).update(instanceKey, newPsmFacets.psm),
     E(psmCharterCreatorFacet).addInstance(
       psm,
-      psmCreatorFacet,
+      governorFacets.creatorFacet,
       anchorBrand,
       stable,
     ),
@@ -306,8 +306,10 @@ export const startPSMCharter = async ({
   },
 }) => {
   const [charterR, counterR] = await Promise.all([installP, binaryVoteCounter]);
+
   const terms = { binaryVoteCounterInstallation: counterR };
-  const facets = await E.get(E(zoe).startInstance(charterR, {}, terms));
+  const facets = await E(zoe).startInstance(charterR, {}, terms);
+
   instanceP.resolve(facets.instance);
   psmCharterCreatorFacet.resolve(facets.creatorFacet);
   psmCharterAdminFacet.resolve(facets.adminFacet);
@@ -358,28 +360,14 @@ const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
  */
 export const invitePSMCommitteeMembers = async (
   {
-    consume: { zoe, namesByAddressAdmin, economicCommitteeCreatorFacet },
-    installation: {
-      consume: { binaryVoteCounter: counterP, psmCharter: psmCharterP },
+    consume: {
+      namesByAddressAdmin,
+      economicCommitteeCreatorFacet,
+      psmCharterCreatorFacet,
     },
   },
   { options: { voterAddresses } },
 ) => {
-  /** @type {[Installation, Installation]} */
-  const [charterInstall, counterInstall] = await Promise.all([
-    psmCharterP,
-    counterP,
-  ]);
-  const terms = await deeplyFulfilledObject(
-    harden({
-      binaryVoteCounterInstallation: counterInstall,
-    }),
-  );
-
-  const { creatorFacet } = E.get(
-    E(zoe).startInstance(charterInstall, undefined, terms),
-  );
-
   const invitations = await E(
     economicCommitteeCreatorFacet,
   ).getVoterInvitations();
@@ -393,7 +381,7 @@ export const invitePSMCommitteeMembers = async (
       addrInvitations.map(async ([addr, invitationP]) => {
         const [voterInvitation, charterMemberInvitation] = await Promise.all([
           invitationP,
-          E(creatorFacet).makeCharterMemberInvitation(),
+          E(psmCharterCreatorFacet).makeCharterMemberInvitation(),
         ]);
         console.log('sending charter, voting invitations to', addr);
         await reserveThenDeposit(
@@ -455,9 +443,10 @@ export const PSM_MANIFEST = harden({
       namesByAddressAdmin: true,
       economicCommitteeCreatorFacet: true,
       psmFacets: true,
+      psmCharterCreatorFacet: true,
     },
     installation: {
-      consume: { binaryVoteCounter: true, psmCharter: true },
+      consume: { binaryVoteCounter: true },
     },
   },
 });

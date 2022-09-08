@@ -99,7 +99,7 @@ export const setupPsm = async (
     farZoeKit = await setUpZoeForTest();
   }
 
-  const knutIssuer = makeIssuerKit('KNUT');
+  const knutIssuerKit = makeIssuerKit('KNUT');
   const { feeMintAccess, zoe } = farZoeKit;
   const space = await setupPsmBootstrap(timer, farZoeKit);
   space.produce.zoe.resolve(farZoeKit.zoe);
@@ -110,8 +110,8 @@ export const setupPsm = async (
   const psmCharterBundle = await provideBundle(t, psmCharterRoot, 'psmCharter');
   installation.produce.psmCharter.resolve(E(zoe).install(psmCharterBundle));
 
-  brand.produce.AUSD.resolve(knutIssuer.brand);
-  issuer.produce.AUSD.resolve(knutIssuer.issuer);
+  brand.produce.AUSD.resolve(knutIssuerKit.brand);
+  issuer.produce.AUSD.resolve(knutIssuerKit.issuer);
 
   space.produce.psmFacets.resolve(makeScalarMapStore());
   const istIssuer = await E(zoe).getFeeIssuer();
@@ -154,7 +154,7 @@ export const setupPsm = async (
   });
 
   const allPsms = await consume.psmFacets;
-  const psmFacets = allPsms.get(knutIssuer.brand);
+  const psmFacets = allPsms.get(knutIssuerKit.brand);
   const governorCreatorFacet = psmFacets.psmGovernorCreatorFacet;
   const governorInstance = psmFacets.psmGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
@@ -175,6 +175,7 @@ export const setupPsm = async (
 
   const committeeCreator = await consume.economicCommitteeCreatorFacet;
   const electorateInstance = await instance.consume.economicCommittee;
+  const psmCharterCreatorFacet = await consume.psmCharterCreatorFacet;
 
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
   const poserInvitationAmount = await E(
@@ -189,10 +190,11 @@ export const setupPsm = async (
     electorateInstance,
     governor: g,
     psm,
+    psmCharterCreatorFacet,
     invitationAmount: poserInvitationAmount,
     mockChainStorage: space.mockChainStorage,
     space,
-    knutIssuer,
+    knutIssuerKit,
   };
 };
 harden(setupPsm);

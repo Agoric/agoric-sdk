@@ -1,11 +1,13 @@
 // @ts-check
 
 import '@agoric/governance/src/exported.js';
-import { makeScalarMapStore } from '@agoric/store';
+import { makeScalarMapStore, M, makeHeapFarInstance, fit } from '@agoric/store';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
-
-import { E, Far } from '@endo/far';
+import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
+import { BrandShape } from '@agoric/ertp';
+import { TimestampShape } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';
+import { E } from '@endo/far';
 
 /**
  * @file
@@ -16,80 +18,114 @@ import { E, Far } from '@endo/far';
  * separate capabilities for finer grain encapsulation.
  */
 
+const paramChangesOfferArgsShape = harden({
+  instance: InstanceHandleShape,
+  deadline: TimestampShape,
+  params: M.recordOf(M.string(), M.any()),
+  path: { key: M.string() },
+});
+
 /**
  * @param {ZCF<{binaryVoteCounterInstallation:Installation}>} zcf
  */
 export const start = async zcf => {
   const { binaryVoteCounterInstallation: counter } = zcf.getTerms();
   /** @type {MapStore<Instance,GovernedContractFacetAccess<{},{}>>} */
-  const instanceToCreator = makeScalarMapStore();
+  const instanceToGovernor = makeScalarMapStore();
 
-  /** @param {Instance} instance */
-  const makeParamInvitaion = instance => {
-    const psm = instanceToCreator.get(instance);
+  const makeParamInvitation = () => {
     /**
-     * @param {Record<string, unknown>} params
-     * @param {bigint} deadline
-     * @param {{paramPath: { key: string }}} [path]
+     * @param {ZCFSeat} seat
+     * @param {object} args
+     * @param {Instance} args.instance
+     * @param {Record<string, unknown>} args.params
+     * @param {{paramPath: { key: string }}} [args.path]
+     * @param {bigint} args.deadline
      */
-    const voteOnParamChanges = (
-      params,
-      deadline,
-      path = { paramPath: { key: 'governedApi' } },
-    ) => {
-      return E(psm).voteOnParamChanges(counter, deadline, {
+    const voteOnParamChanges = (seat, args) => {
+      fit(args, paramChangesOfferArgsShape);
+      seat.exit();
+
+      const {
+        params,
+        instance,
+        deadline,
+        path = { paramPath: { key: 'governedApi' } },
+      } = args;
+      const psmGovernor = instanceToGovernor.get(instance);
+      return E(psmGovernor).voteOnParamChanges(counter, deadline, {
         ...path,
         changes: params,
       });
     };
 
-    return zcf.makeInvitation(
-      () => Far('param change hook', { voteOnParamChanges }),
-      'vote on param changes',
-    );
+    return zcf.makeInvitation(voteOnParamChanges, 'vote on param changes');
   };
 
-  /** @param {Instance} instance */
-  const makeOfferFilterInvitation = instance => {
-    const psm = instanceToCreator.get(instance);
-    /**
-     * @param {string[]} strings
-     * @param {bigint} deadline
-     */
-    const voteOnOfferFilter = (strings, deadline) => {
-      return E(psm).voteOnOfferFilter(counter, deadline, strings);
+  const makeOfferFilterInvitation = (instance, strings, deadline) => {
+    const voteOnOfferFilterHandler = seat => {
+      seat.exit();
+
+      const psmGovernor = instanceToGovernor.get(instance);
+      return E(psmGovernor).voteOnOfferFilter(counter, deadline, strings);
     };
 
-    return zcf.makeInvitation(
-      () => Far('offer filter hook', { voteOnOfferFilter }),
-      'vote on offer filter',
-    );
+    return zcf.makeInvitation(voteOnOfferFilterHandler, 'vote on offer filter');
   };
 
-  const invitationMakers = Far('PSM Invitation Makers', {
-    VoteOnParamChange: makeParamInvitaion,
-    VoteOnPauseOffers: makeOfferFilterInvitation,
+  const makerShape = M.interface('PSM Charter InvitationMakers', {
+    VoteOnParamChange: M.call().returns(M.promise()),
+    VoteOnPauseOffers: M.call(
+      InstanceHandleShape,
+      M.arrayOf(M.string()),
+      TimestampShape,
+    ).returns(M.promise()),
   });
+  const invitationMakers = makeHeapFarInstance(
+    'PSM Invitation Makers',
+    makerShape,
+    {
+      VoteOnParamChange: makeParamInvitation,
+      VoteOnPauseOffers: makeOfferFilterInvitation,
+    },
+  );
 
   const charterMemberHandler = seat => {
     seat.exit();
-    return invitationMakers;
+    return harden({ invitationMakers });
   };
 
-  const creatorFacet = Far('psm charter creator', {
-    /**
-     * @param {Instance} psmInstance
-     * @param {GovernedContractFacetAccess<{},{}>} psmCreatorFacet
-     * @param {Brand} [anchor] for diagnostic use only
-     * @param {Brand} [minted] for diagnostic use only
-     */
-    addInstance: (psmInstance, psmCreatorFacet, anchor, minted) => {
-      console.log('psmCharter: adding instance', { minted, anchor });
-      instanceToCreator.init(psmInstance, psmCreatorFacet);
-    },
-    makeCharterMemberInvitation: () =>
-      zcf.makeInvitation(charterMemberHandler, 'PSM charter member invitation'),
+  const psmCharterCreatorI = M.interface('PSM Charter creatorFacet', {
+    addInstance: M.call(
+      InstanceHandleShape,
+      M.any(),
+      BrandShape,
+      BrandShape,
+    ).returns(),
+    makeCharterMemberInvitation: M.call().returns(M.promise()),
   });
+
+  const creatorFacet = makeHeapFarInstance(
+    'PSM Charter creatorFacet',
+    psmCharterCreatorI,
+    {
+      /**
+       * @param {Instance} psmInstance
+       * @param {GovernedContractFacetAccess<{},{}>} psmGovernorFacet
+       * @param {Brand} [anchor] for diagnostic use only
+       * @param {Brand} [minted] for diagnostic use only
+       */
+      addInstance: (psmInstance, psmGovernorFacet, anchor, minted) => {
+        console.log('psmCharter: adding instance', { minted, anchor });
+        instanceToGovernor.init(psmInstance, psmGovernorFacet);
+      },
+      makeCharterMemberInvitation: () =>
+        zcf.makeInvitation(
+          charterMemberHandler,
+          'PSM charter member invitation',
+        ),
+    },
+  );
 
   return harden({ creatorFacet });
 };

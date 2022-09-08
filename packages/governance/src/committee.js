@@ -63,7 +63,10 @@ const start = (zcf, privateArgs) => {
         ).returns(M.promise()),
       });
       const InvitationMakerI = M.interface('invitationMaker', {
-        makeVoteInvitation: M.call(QuestionHandleShape).returns(M.promise()),
+        makeVoteInvitation: M.call(
+          M.arrayOf(PositionShape),
+          QuestionHandleShape,
+        ).returns(M.promise()),
       });
 
       // CRUCIAL: voteCap carries the ability to cast votes for any voter at
@@ -82,8 +85,8 @@ const start = (zcf, privateArgs) => {
           'invitation makers',
           InvitationMakerI,
           {
-            makeVoteInvitation(questionHandle) {
-              const continuingVoteHandler = (cSeat, { positions }) => {
+            makeVoteInvitation(positions, questionHandle) {
+              const continuingVoteHandler = cSeat => {
                 cSeat.exit();
                 const { voteCap } = allQuestions.get(questionHandle);
                 return E(voteCap).submitVote(voterHandle, positions, 1n);

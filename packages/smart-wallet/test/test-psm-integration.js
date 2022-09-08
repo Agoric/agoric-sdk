@@ -49,6 +49,7 @@ test.before(async t => {
   // @ts-expect-error cast
   t.context = await makeDefaultTestContext(t, makePsmTestSpace);
 });
+
 /**
  * @param {Awaited<ReturnType<typeof coalesceUpdates>>} state
  * @param {Brand<'nat'>} brand
@@ -155,108 +156,148 @@ test('want stable', async t => {
   t.is(purseBalance(computedState, stableBrand), swapSize - 1n);
 });
 
-// TODO will be be fixed in #6110
-test.skip('govern offerFilter', async t => {
+const INVITATION_MAKERS_TEXT = 'PSM charter member invitation';
+
+test('govern offerFilter', async t => {
   const { anchor } = t.context;
-  const { agoricNames, economicCommitteeCreatorFacet, psmFacets, zoe } =
+  const { agoricNames, /* economicCommitteeCreatorFacet, */ psmFacets, zoe } =
     await E.get(t.context.consume);
 
-  const anchorPsm = await E.get(E(psmFacets).get(anchor.brand));
-
-  const { psmGovernorCreatorFacet } = anchorPsm;
+  const { psm: psmInstance } = await E(psmFacets).get(anchor.brand);
 
   const wallet = await t.context.simpleProvideWallet(committeeAddress);
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
   const offersFacet = wallet.getOffersFacet();
 
-  t.log('Deposit voter invitation into wallet');
-  {
-    const invitations = await E(
-      economicCommitteeCreatorFacet,
-    ).getVoterInvitations();
-    const voterInvitation = await invitations[0];
-    t.assert(
-      await E(E(zoe).getInvitationIssuer()).isLive(voterInvitation),
-      'invalid invitation',
-    );
-    wallet.getDepositFacet().receive(voterInvitation);
-  }
-
-  t.log('Set up question');
-  const binaryVoteCounterInstallation = await E(agoricNames).lookup(
-    'installation',
-    'binaryVoteCounter',
+  const psmCharter = await E(agoricNames).lookup('instance', 'psmCharter');
+  const economicCommittee = await E(agoricNames).lookup(
+    'instance',
+    'economicCommittee',
   );
-  const { details } = await E(psmGovernorCreatorFacet).voteOnOfferFilter(
-    binaryVoteCounterInstallation,
-    2n,
-    harden(['wantStable']),
-  );
-  const { positions, questionHandle } = await details;
-  const yesFilterOffers = positions[0];
+  await eventLoopIteration();
 
-  t.log('Prepare offer to voting invitation in purse');
-  {
-    // get invitation details the way a user would
-    const invitationDetails = await E(E(zoe).getInvitationIssuer())
+  // get invitation details the way a user would
+  const getInvitationFor = async (desc, len, balances) =>
+    E(E(zoe).getInvitationIssuer())
       .getBrand()
       .then(brand => {
         /** @type {Amount<'set'>} */
-        const invitationsAmount = NonNullish(computedState.balances.get(brand));
-        t.is(invitationsAmount?.value.length, 1);
-        return invitationsAmount.value[0];
+        const invitationsAmount = NonNullish(balances.get(brand));
+        t.is(invitationsAmount?.value.length, len);
+        return invitationsAmount.value.filter(i => i.description === desc);
       });
 
-    /** @type {import('../src/invitations.js').PurseInvitationSpec} */
-    const invitationSpec = {
-      source: 'purse',
-      instance: await E(agoricNames).lookup('instance', 'economicCommittee'),
-      description: invitationDetails.description,
-    };
-    /** @type {import('../src/offers').OfferSpec} */
-    const offerSpec = {
-      id: 33,
-      invitationSpec,
-      proposal: {},
-    };
-    t.log('Execute offer for the invitation');
-    await offersFacet.executeOffer(offerSpec);
-  }
-  await eventLoopIteration();
-  t.like(computedState.offerStatuses[33], {
-    id: 33,
-    numWantsSatisfied: 1,
-    // result has invitationMakers, but as a far object it can't be tested with .like()
-  });
+  /** @type {{description: string, instance: Instance}} */
+  // @ts-expect-error whatever
+  const proposeInvitationDetails = await getInvitationFor(
+    INVITATION_MAKERS_TEXT,
+    2,
+    computedState.balances,
+  );
 
-  t.log('Prepare offer to continue invitation');
-  {
-    /** @type {import('../src/invitations.js').ContinuingInvitationSpec} */
-    const invitationSpec = {
-      source: 'continuing',
-      previousOffer: 33,
-      invitationMakerName: 'makeVoteInvitation',
-      invitationArgs: [questionHandle],
-    };
-    /** @type {import('../src/offers').OfferSpec} */
-    const offerSpec = {
-      id: 44,
-      invitationSpec,
-      offerArgs: { positions: [yesFilterOffers] },
-      proposal: {},
-    };
+  t.is(proposeInvitationDetails[0].description, INVITATION_MAKERS_TEXT);
+  t.is(proposeInvitationDetails[0].instance, psmCharter, 'psmCharter');
 
-    // wait for the previousOffer result to get into the purse
-    await eventLoopIteration();
-    await offersFacet.executeOffer(offerSpec);
-  }
+  // The purse has the invitation to get the makers ///////////
 
-  t.log('Make sure vote happened');
-  await eventLoopIteration();
-  t.like(computedState.offerStatuses[44], {
+  /** @type {import('../src/invitations.js').PurseInvitationSpec} */
+  const getInvMakersSpec = {
+    source: 'purse',
+    instance: psmCharter,
+    description: INVITATION_MAKERS_TEXT,
+  };
+
+  /** @type {import('../src/offers').OfferSpec} */
+  const invMakersOffer = {
     id: 44,
-    result: { chosen: { strings: ['wantStable'] }, shares: 1n },
-  });
+    invitationSpec: getInvMakersSpec,
+    proposal: {},
+  };
+
+  await offersFacet.executeOffer(invMakersOffer);
+  await eventLoopIteration();
+
+  // Call for a vote ////////////////////////////////
+
+  /** @type {import('../src/invitations.js').ContinuingInvitationSpec} */
+  const proposeInvitationSpec = {
+    source: 'continuing',
+    previousOffer: 44,
+    invitationMakerName: 'VoteOnPauseOffers',
+    invitationArgs: harden([psmInstance, ['wantStable'], 2n]),
+  };
+
+  /** @type {import('../src/offers').OfferSpec} */
+  const proposalOfferSpec = {
+    id: 45,
+    invitationSpec: proposeInvitationSpec,
+    proposal: {},
+  };
+
+  await offersFacet.executeOffer(proposalOfferSpec);
+  await eventLoopIteration();
+
+  // vote /////////////////////////
+
+  const committeePublic = E(zoe).getPublicFacet(economicCommittee);
+  const questions = await E(committeePublic).getOpenQuestions();
+  const question = E(committeePublic).getQuestion(questions[0]);
+  const { positions, issue, electionType, questionHandle } = await E(
+    question,
+  ).getDetails();
+  t.is(electionType, 'offer_filter');
+  const yesPosition = harden([positions[0]]);
+  t.deepEqual(issue.strings, ['wantStable']);
+  t.deepEqual(yesPosition, [{ strings: ['wantStable'] }]);
+
+  const voteInvitationDetails = await getInvitationFor(
+    'Voter0',
+    1,
+    computedState.balances,
+  );
+  t.is(voteInvitationDetails.length, 1);
+  const voteInvitationDetail = voteInvitationDetails[0];
+  t.is(voteInvitationDetail.description, 'Voter0');
+  t.is(voteInvitationDetail.instance, economicCommittee);
+
+  /** @type {import('../src/invitations.js').PurseInvitationSpec} */
+  const getCommitteeInvMakersSpec = {
+    source: 'purse',
+    instance: economicCommittee,
+    description: 'Voter0',
+  };
+
+  /** @type {import('../src/offers').OfferSpec} */
+  const committeeInvMakersOffer = {
+    id: 46,
+    invitationSpec: getCommitteeInvMakersSpec,
+    proposal: {},
+  };
+
+  await offersFacet.executeOffer(committeeInvMakersOffer);
+  await eventLoopIteration();
+
+  /** @type {import('../src/invitations.js').ContinuingInvitationSpec} */
+  const getVoteSpec = {
+    source: 'continuing',
+    previousOffer: 46,
+    invitationMakerName: 'makeVoteInvitation',
+    invitationArgs: harden([yesPosition, questionHandle]),
+  };
+
+  /** @type {import('../src/offers').OfferSpec} */
+  const voteOffer = {
+    id: 47,
+    invitationSpec: getVoteSpec,
+    proposal: {},
+  };
+
+  await offersFacet.executeOffer(voteOffer);
+  await eventLoopIteration();
+
+  t.is(offersFacet.getLastOfferId(), 47);
+  // can't advance the clock, so the vote won't close. Call it enuf that the
+  // vote didn't raise an error.
 });
 
 test('deposit unknown brand', async t => {
