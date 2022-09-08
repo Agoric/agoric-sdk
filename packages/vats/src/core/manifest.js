@@ -22,7 +22,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
     },
   },
   startPriceAuthority: {
-    consume: { loadVat: true, client: true },
+    consume: { loadCriticalVat: true, client: true },
     produce: {
       priceAuthorityVat: 'priceAuthority',
       priceAuthority: 'priceAuthority',
@@ -46,7 +46,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
   buildZoe: {
     consume: {
       vatAdminSvc: true,
-      loadVat: true,
+      loadCriticalVat: true,
       client: true,
     },
     produce: {
@@ -56,7 +56,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
   },
   makeBoard: {
     consume: {
-      loadVat: true,
+      loadCriticalVat: true,
       client: true,
     },
     produce: {
@@ -96,7 +96,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
   },
   makeChainStorage: {
     devices: { bridge: 'kernel' },
-    consume: { loadVat: true },
+    consume: { loadCriticalVat: true },
     produce: {
       chainStorage: 'chainStorage',
     },
@@ -154,8 +154,8 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
     consume: {
       initialSupply: true,
       bridgeManager: true,
-      // TODO: re-org loadVat to be subject to permits
-      loadVat: true,
+      // TODO: re-org loadCriticalVat to be subject to permits
+      loadCriticalVat: true,
       zoe: true,
     },
     produce: {
@@ -170,7 +170,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
   },
   makeProvisioner: {
     consume: {
-      loadVat: true,
+      loadCriticalVat: true,
       clientCreator: true,
     },
     produce: {
@@ -196,7 +196,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
   setupNetworkProtocols: {
     consume: {
       client: true,
-      loadVat: true,
+      loadCriticalVat: true,
       bridgeManager: true,
       zoe: true,
       provisioning: true,
