@@ -30,6 +30,9 @@
     "psm": {
       "sourceSpec": "@agoric/inter-protocol/src/psm/psm.js"
     },
+    "psmCharter": {
+      "sourceSpec": "@agoric/inter-protocol/src/psm/psmCharter.js"
+    },
     "bank": {
       "sourceSpec": "@agoric/vats/src/vat-bank.js"
     },

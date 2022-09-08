@@ -20,9 +20,9 @@ import { makeTracer } from '../../src/makeTracer.js';
 import {
   setupAmm,
   setupReserve,
-  startEconomicCommittee,
   startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
+import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 import '../../src/vaultFactory/types.js';
 import {
   installGovernance,

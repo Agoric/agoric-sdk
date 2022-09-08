@@ -71,7 +71,7 @@ test('null swap', async t => {
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
   const offersFacet = wallet.getOffersFacet();
 
-  const psmInstance = await E(agoricNames).lookup('instance', 'psm.IST.AUSD');
+  const psmInstance = await E(agoricNames).lookup('instance', 'psm-IST-AUSD');
 
   /** @type {import('../src/invitations.js').ContractInvitationSpec} */
   const invitationSpec = {
@@ -112,7 +112,7 @@ test('want stable', async t => {
   const swapSize = 10_000n;
 
   t.log('Start the PSM to ensure brands are registered');
-  const psmInstance = await E(agoricNames).lookup('instance', 'psm.IST.AUSD');
+  const psmInstance = await E(agoricNames).lookup('instance', 'psm-IST-AUSD');
   const stableBrand = await E(agoricNames).lookup('brand', Stable.symbol);
 
   const wallet = await t.context.simpleProvideWallet('agoric1wantstable');

@@ -5,10 +5,17 @@ import {
   makeAnchorAsset,
   startPSM,
   PSM_MANIFEST,
+  PSM_GOV_MANIFEST,
+  startPSMCharter,
 } from '@agoric/inter-protocol/src/proposals/startPSM.js';
+import * as startPSMmod from '@agoric/inter-protocol/src/proposals/startPSM.js';
+import * as ERTPmod from '@agoric/ertp';
 // TODO: factor startEconomicCommittee out of econ-behaviors.js
-import { startEconomicCommittee } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
-import { ECON_COMMITTEE_MANIFEST } from '@agoric/inter-protocol/src/proposals/core-proposal.js';
+import { fit, M } from '@agoric/store';
+import {
+  ECON_COMMITTEE_MANIFEST,
+  startEconomicCommittee,
+} from '@agoric/inter-protocol/src/proposals/startEconCommittee.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
 import {
@@ -37,28 +44,6 @@ import {
 /** @typedef {import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
 
 /**
- * PSM and gov contracts are available as
- * named swingset bundles only in
- * decentral-psm-config.json
- */
-const PSM_GOV_INSTALL_MANIFEST = {
-  [installGovAndPSMContracts.name]: {
-    vatPowers: { D: true },
-    devices: { vatAdmin: true },
-    consume: { zoe: 'zoe' },
-    produce: { psmFacets: 'psm' },
-    installation: {
-      produce: {
-        contractGovernor: 'zoe',
-        committee: 'zoe',
-        binaryVoteCounter: 'zoe',
-        psm: 'zoe',
-      },
-    },
-  },
-};
-
-/**
  * We reserve these keys in name hubs.
  */
 export const agoricNamesReserved = harden(
@@ -84,8 +69,25 @@ export const agoricNamesReserved = harden(
     },
     instance: {
       economicCommittee: 'Economic Committee',
-      'psm.IST.AUSD': 'Parity Stability Module: IST:AUSD',
+      'psm-IST-AUSD': 'Parity Stability Module: IST:AUSD',
     },
+  }),
+);
+
+/**
+ * @typedef {{
+ *   denom: string,
+ *   keyword?: string,
+ *   proposedName?: string,
+ *   decimalPlaces?: number
+ * }} AnchorOptions
+ */
+const AnchorOptionsShape = M.split(
+  { denom: M.string() },
+  M.partial({
+    keyword: M.string(),
+    proposedName: M.string(),
+    decimalPlaces: M.number(),
   }),
 );
 
@@ -98,13 +100,15 @@ export const agoricNamesReserved = harden(
  * }} vatPowers
  * @param {{
  *     economicCommitteeAddresses: string[],
- *     anchorAssets: { denom: string, keyword?: string }[],
+ *     anchorAssets: AnchorOptions[],
  * }} vatParameters
  */
 export const buildRootObject = (vatPowers, vatParameters) => {
   const log = vatPowers.logger || console.info;
 
   const { anchorAssets, economicCommitteeAddresses } = vatParameters;
+  fit(harden(anchorAssets), M.arrayOf(AnchorOptionsShape));
+  fit(harden(economicCommitteeAddresses), M.arrayOf(M.string()));
 
   const { produce, consume } = makePromiseSpace(log);
   const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(
@@ -129,12 +133,14 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       // These module namespaces might be useful for core eval governance.
       modules: {
         utils: { ...utils },
+        startPSM: { ...startPSMmod },
+        ERTP: { ...ERTPmod },
       },
     });
     const manifest = {
       ...CHAIN_BOOTSTRAP_MANIFEST,
       ...WALLET_FACTORY_MANIFEST,
-      ...PSM_GOV_INSTALL_MANIFEST,
+      ...PSM_GOV_MANIFEST,
       ...ECON_COMMITTEE_MANIFEST,
       ...PSM_MANIFEST,
     };
@@ -171,16 +177,17 @@ export const buildRootObject = (vatPowers, vatParameters) => {
           },
         },
       }),
-      ...anchorAssets.map(({ denom, keyword }) =>
+      ...anchorAssets.map(anchorOptions =>
         makeAnchorAsset(powersFor('makeAnchorAsset'), {
-          options: { anchorOptions: { denom, keyword } },
+          options: { anchorOptions },
         }),
       ),
-      ...anchorAssets.map(({ denom, keyword }) =>
+      ...anchorAssets.map(anchorOptions =>
         startPSM(powersFor('startPSM'), {
-          options: { anchorOptions: { denom, keyword } },
+          options: { anchorOptions },
         }),
       ),
+      startPSMCharter(powersFor('startPSMCharter')),
       // Allow bootstrap powers to be granted by governance
       // to code to be evaluated after initial bootstrap.
       bridgeCoreEval(powersFor('bridgeCoreEval')),
