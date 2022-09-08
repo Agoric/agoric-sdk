@@ -27,7 +27,7 @@ const committeeAddress = 'psmTestAddress';
 const makePsmTestSpace = async log => {
   const psmParams = {
     anchorAssets: [{ denom: 'ibc/usdc1234', keyword: 'AUSD' }],
-    economicCommitteeAddresses: [committeeAddress],
+    economicCommitteeAddresses: { aMember: committeeAddress },
     argv: { bootMsg: {} },
   };
 
@@ -89,7 +89,6 @@ test('null swap', async t => {
       want: { Out: anchor.makeEmpty() },
     },
   };
-  /** @type {import('../src/types').WalletCapData<import('../src/offers').OfferSpec>} */
 
   // let promises settle to notify brands and create purses
   await eventLoopIteration();
@@ -219,7 +218,6 @@ test('govern offerFilter', async t => {
       invitationSpec,
       proposal: {},
     };
-    /** @type {import('../src/types').WalletCapData<import('../src/offers').OfferSpec>} */
     t.log('Execute offer for the invitation');
     await offersFacet.executeOffer(offerSpec);
   }
@@ -246,7 +244,6 @@ test('govern offerFilter', async t => {
       offerArgs: { positions: [yesFilterOffers] },
       proposal: {},
     };
-    /** @type {import('../src/types').WalletCapData<import('../src/offers').OfferSpec>} */
 
     // wait for the previousOffer result to get into the purse
     await eventLoopIteration();

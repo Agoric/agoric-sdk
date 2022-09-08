@@ -56,7 +56,9 @@ harden(setUpZoeForTest);
 test('connectFaucet produces payments', async t => {
   const space = /** @type {any} */ (makePromiseSpace(t.log));
   const { consume, produce } =
-    /** @type { BootstrapPowers & { consume: { loadVat: LoadVat }} } */ (space);
+    /** @type { BootstrapPowers & { consume: { loadVat: LoadVat, loadCriticalVat: LoadVat }} } */ (
+      space
+    );
   const { agoricNames, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
@@ -65,7 +67,7 @@ test('connectFaucet produces payments', async t => {
   produce.feeMintAccess.resolve(feeMintAccess);
   produce.bridgeManager.resolve(undefined);
 
-  produce.loadVat.resolve(name => {
+  const vatLoader = name => {
     switch (name) {
       case 'mints':
         return mintsRoot();
@@ -74,7 +76,9 @@ test('connectFaucet produces payments', async t => {
       default:
         throw Error('unknown loadVat name');
     }
-  });
+  };
+  produce.loadVat.resolve(vatLoader);
+  produce.loadCriticalVat.resolve(vatLoader);
 
   t.plan(4); // be sure bank.deposit() gets called
 

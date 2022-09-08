@@ -9,4 +9,5 @@ export const ACTIVITYHASH = 'activityhash';
 export const BEANSOWING = 'beansOwing';
 export const EGRESS = 'egress';
 export const MAILBOX = 'mailbox';
+export const BUNDLES = 'bundles';
 export const CUSTOM = 'published';

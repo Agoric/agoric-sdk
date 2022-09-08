@@ -10,6 +10,9 @@
       "sourceSpec": "@agoric/vats/src/core/boot.js",
       "parameters": {
         "governanceActions": true
+      },
+      "creationOptions": {
+        "critical": true
       }
     }
   },

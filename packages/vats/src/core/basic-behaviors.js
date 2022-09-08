@@ -65,10 +65,10 @@ const bootMsgEx = {
  * @typedef {{adminNode: any, root: unknown}} VatInfo as from createVatByName
  * @typedef {MapStore<string, Promise<VatInfo>>} VatStore
  */
-export const makeVatsFromBundles = ({
+export const makeVatsFromBundles = async ({
   vats,
   devices,
-  produce: { vatAdminSvc, loadVat, vatStore },
+  produce: { vatAdminSvc, loadVat, loadCriticalVat, vatStore },
 }) => {
   const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
   vatAdminSvc.resolve(svc);
@@ -77,31 +77,42 @@ export const makeVatsFromBundles = ({
   const store = makeScalarMapStore();
   vatStore.resolve(store);
 
-  loadVat.resolve(bundleName => {
-    return provideLazy(store, bundleName, _k => {
-      console.info(`createVatByName(${bundleName})`);
-      /** @type { Promise<VatInfo> } */
-      const vatInfo = E(svc).createVatByName(bundleName, { name: bundleName });
-      return vatInfo;
-    }).then(r => r.root);
-  });
+  const makeLazyVatLoader = (defaultVatCreationOptions = {}) => {
+    return bundleName => {
+      const vatInfoP = provideLazy(store, bundleName, _k => {
+        console.info(`createVatByName(${bundleName})`);
+        /** @type { Promise<VatInfo> } */
+        const vatInfo = E(svc).createVatByName(bundleName, {
+          ...defaultVatCreationOptions,
+          name: bundleName,
+        });
+        return vatInfo;
+      });
+      return vatInfoP.then(vatInfo => vatInfo.root);
+    };
+  };
+
+  loadVat.resolve(makeLazyVatLoader());
+
+  const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
+  loadCriticalVat.resolve(makeLazyVatLoader({ critical: criticalVatKey }));
 };
 harden(makeVatsFromBundles);
 
 /**
  * @param { BootstrapPowers & {
- *   consume: { loadVat: ERef<VatLoader<ZoeVat>> }
+ *   consume: { loadCriticalVat: ERef<VatLoader<ZoeVat>> }
  * }} powers
  *
  * @typedef {ERef<ReturnType<import('../vat-zoe.js').buildRootObject>>} ZoeVat
  */
 export const buildZoe = async ({
-  consume: { vatAdminSvc, loadVat, client },
+  consume: { vatAdminSvc, loadCriticalVat, client },
   produce: { zoe, feeMintAccess },
 }) => {
   const zcfBundleName = 'zcf'; // should match config.bundles.zcf=
   const { zoeService, feeMintAccess: fma } = await E(
-    E(loadVat)('zoe'),
+    E(loadCriticalVat)('zoe'),
   ).buildZoe(vatAdminSvc, feeIssuerConfig, zcfBundleName);
 
   zoe.resolve(zoeService);
@@ -115,16 +126,16 @@ harden(buildZoe);
 
 /**
  * @param {BootstrapPowers & {
- *   consume: { loadVat: ERef<VatLoader<PriceAuthorityVat>>},
+ *   consume: { loadCriticalVat: ERef<VatLoader<PriceAuthorityVat>>},
  * }} powers
  *
  * @typedef {ERef<ReturnType<import('../vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat
  */
 export const startPriceAuthority = async ({
-  consume: { loadVat, client },
+  consume: { loadCriticalVat, client },
   produce,
 }) => {
-  const vats = { priceAuthority: E(loadVat)('priceAuthority') };
+  const vats = { priceAuthority: E(loadCriticalVat)('priceAuthority') };
   const { priceAuthority, adminFacet } = await E(
     vats.priceAuthority,
   ).makePriceAuthorityRegistry();
@@ -158,17 +169,17 @@ harden(makeOracleBrands);
  * TODO: rename this to getBoard?
  *
  * @param {BootstrapPowers & {
- *   consume: { loadVat: ERef<VatLoader<BoardVat>>
+ *   consume: { loadCriticalVat: ERef<VatLoader<BoardVat>>
  * }}} powers
  * @typedef {ERef<ReturnType<import('../vat-board.js').buildRootObject>>} BoardVat
  */
 export const makeBoard = async ({
-  consume: { loadVat, client },
+  consume: { loadCriticalVat, client },
   produce: {
     board: { resolve: resolveBoard },
   },
 }) => {
-  const board = await E(E(loadVat)('board')).getBoard();
+  const board = await E(E(loadCriticalVat)('board')).getBoard();
   resolveBoard(board);
   return E(client).assignBundle([_addr => ({ board })]);
 };
@@ -365,11 +376,11 @@ harden(mintInitialSupply);
  * Add IST (with initialSupply payment), BLD (with mint) to BankManager.
  *
  * @param { BootstrapSpace & {
- *   consume: { loadVat: ERef<VatLoader<BankVat>> },
+ *   consume: { loadCriticalVat: ERef<VatLoader<BankVat>> },
  * }} powers
  */
 export const addBankAssets = async ({
-  consume: { initialSupply, bridgeManager, loadVat, zoe },
+  consume: { initialSupply, bridgeManager, loadCriticalVat, zoe },
   produce: { bankManager, bldIssuerKit },
   installation: {
     consume: { mintHolder },
@@ -400,7 +411,9 @@ export const addBankAssets = async ({
   const bldKit = { mint: bldMint, issuer: bldIssuer, brand: bldBrand };
   bldIssuerKit.resolve(bldKit);
 
-  const bankMgr = await E(E(loadVat)('bank')).makeBankManager(bridgeManager);
+  const bankMgr = await E(E(loadCriticalVat)('bank')).makeBankManager(
+    bridgeManager,
+  );
   bankManager.resolve(bankMgr);
 
   // Sanity check: the bank manager should have a reserve module account.

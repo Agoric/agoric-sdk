@@ -9,10 +9,10 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	channeltypes "github.com/cosmos/ibc-go/v2/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v2/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v2/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v2/modules/core/exported"
+	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
@@ -115,6 +115,20 @@ func (k Keeper) SendPacket(ctx sdk.Context, packet ibcexported.PacketI) error {
 	return k.channelKeeper.SendPacket(ctx, chanCap, packet)
 }
 
+var _ ibcexported.Acknowledgement = (*rawAcknowledgement)(nil)
+
+type rawAcknowledgement struct {
+	data []byte
+}
+
+func (r rawAcknowledgement) Acknowledgement() []byte {
+	return r.data
+}
+
+func (r rawAcknowledgement) Success() bool {
+	return true
+}
+
 // WriteAcknowledgement defines a wrapper function for the channel Keeper's function
 // in order to expose it to the vibc IBC handler.
 func (k Keeper) WriteAcknowledgement(ctx sdk.Context, packet ibcexported.PacketI, acknowledgement []byte) error {
@@ -125,7 +139,10 @@ func (k Keeper) WriteAcknowledgement(ctx sdk.Context, packet ibcexported.PacketI
 	if !ok {
 		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
-	return k.channelKeeper.WriteAcknowledgement(ctx, chanCap, packet, acknowledgement)
+	ack := rawAcknowledgement{
+		data: acknowledgement,
+	}
+	return k.channelKeeper.WriteAcknowledgement(ctx, chanCap, packet, ack)
 }
 
 // ChanCloseInit defines a wrapper function for the channel Keeper's function

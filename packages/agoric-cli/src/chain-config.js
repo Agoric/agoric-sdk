@@ -4,6 +4,13 @@ import TOML from '@iarna/toml';
 export const STAKING_MAX_VALIDATORS = 150;
 // Required for IBC connections not to time out.
 export const STAKING_MIN_HISTORICAL_ENTRIES = 10000;
+export const ICA_HOST_ALLOW_MESSAGES = [
+  '/agoric.*',
+  '/ibc.*',
+  // Everything except for cosmos.st*
+  '/cosmos.[a-rt-z]*',
+  '/cosmos.s[a-su-z]*',
+];
 
 const Stake = /** @type {const} */ ({
   name: 'Agoric Staking Token',
@@ -183,6 +190,8 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
   genesis.app_state.capability = initState.capability;
 
   genesis.app_state.bank.denom_metadata = DENOM_METADATA;
+  genesis.app_state.interchainaccounts.host_genesis_state.params.allow_messages =
+    ICA_HOST_ALLOW_MESSAGES;
 
   genesis.app_state.staking.params.bond_denom = STAKING_DENOM;
   genesis.app_state.staking.params.max_validators = STAKING_MAX_VALIDATORS;
