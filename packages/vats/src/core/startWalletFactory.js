@@ -1,8 +1,7 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
-
-import * as BRIDGE_ID from '../bridge-ids.js';
+import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { makeStorageNodeChild } from '../lib-chainStorage.js';
 import { makeMyAddressNameAdmin, PowerFlags } from './basic-behaviors.js';
 
@@ -56,6 +55,8 @@ export const startWalletFactory = async ({
   /** @type {WalletFactoryStartResult} */
   const x = await E(zoe).startInstance(walletFactory, {}, terms, {
     storageNode,
+    // POLA contract only needs to register for srcId='wallet'
+    // TODO consider a scoped attenuation of this bridge manager to just 'wallet'
     bridgeManager,
   });
   walletFactoryStartResult.resolve(x);

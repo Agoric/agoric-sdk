@@ -68,8 +68,8 @@ In `packages/inter-protocol/src/psm/psm.js`:
 
 | Governance Key     | Type                | WP? |
 | ------------------ | :------------------ | --- |
-| WantStableFeeBP    | NatValue            | N/A |
-| GiveStableFeeBP    | NatValue            | N/A |
+| WantMintedFee      | Ratio               | N/A |
+| GiveMintedFee      | Ratio               | N/A |
 | MintLimit          | Amount              | N/A |
 
 The Inter Protocol Whitepaper v0.8 does not describe the governance parameters

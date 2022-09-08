@@ -8,6 +8,8 @@ import { E } from '@endo/far';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { assert } from '@agoric/assert';
+import { makeScalarMapStore } from '@agoric/vat-data';
+
 import { reserveThenGetNamePaths } from './utils.js';
 
 const BASIS_POINTS = 10000n;
@@ -16,8 +18,8 @@ const { details: X } = assert;
 /**
  * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
  * @param {object} [config]
- * @param {bigint} [config.WantStableFeeBP]
- * @param {bigint} [config.GiveStableFeeBP]
+ * @param {bigint} [config.WantMintedFeeBP]
+ * @param {bigint} [config.GiveMintedFeeBP]
  * @param {bigint} [config.MINT_LIMIT]
  * @param {{ anchorOptions?: AnchorOptions } } [config.options]
  *
@@ -31,16 +33,16 @@ export const startPSM = async (
       zoe,
       feeMintAccess: feeMintAccessP,
       economicCommitteeCreatorFacet,
+      psmCharterCreatorFacet,
       chainStorage,
       chainTimerService,
+      psmFacets,
     },
-    produce: { psmCreatorFacet, psmGovernorCreatorFacet, psmAdminFacet },
     installation: {
       consume: { contractGovernor, psm: psmInstall },
     },
     instance: {
       consume: { economicCommittee },
-      produce: { psm: psmInstanceR, psmGovernor: psmGovernorR },
     },
     brand: {
       consume: { [Stable.symbol]: stableP },
@@ -48,8 +50,8 @@ export const startPSM = async (
   },
   {
     options: { anchorOptions = {} } = {},
-    WantStableFeeBP = 1n,
-    GiveStableFeeBP = 3n,
+    WantMintedFeeBP = 1n,
+    GiveMintedFeeBP = 3n,
     MINT_LIMIT = 20_000_000n * 1_000_000n,
   } = {},
 ) => {
@@ -82,19 +84,19 @@ export const startPSM = async (
   const terms = await deeplyFulfilledObject(
     harden({
       anchorBrand,
-      anchorPerStable: makeRatio(100n, anchorBrand, 100n, stable),
+      anchorPerMinted: makeRatio(100n, anchorBrand, 100n, stable),
       governedParams: {
         [CONTRACT_ELECTORATE]: {
           type: ParamTypes.INVITATION,
           value: electorateInvitationAmount,
         },
-        WantStableFee: {
+        WantMintedFee: {
           type: ParamTypes.RATIO,
-          value: makeRatio(WantStableFeeBP, stable, BASIS_POINTS),
+          value: makeRatio(WantMintedFeeBP, stable, BASIS_POINTS),
         },
-        GiveStableFee: {
+        GiveMintedFee: {
           type: ParamTypes.RATIO,
-          value: makeRatio(GiveStableFeeBP, stable, BASIS_POINTS),
+          value: makeRatio(GiveMintedFeeBP, stable, BASIS_POINTS),
         },
         MintLimit: { type: ParamTypes.AMOUNT, value: mintLimit },
       },
@@ -138,11 +140,35 @@ export const startPSM = async (
     }),
   );
 
-  psmInstanceR.resolve(await E(governorFacets.creatorFacet).getInstance());
-  psmGovernorR.resolve(governorFacets.instance);
-  psmCreatorFacet.resolve(E(governorFacets.creatorFacet).getCreatorFacet());
-  psmAdminFacet.resolve(E(governorFacets.creatorFacet).getAdminFacet());
-  psmGovernorCreatorFacet.resolve(governorFacets.creatorFacet);
+  const [psm, psmCreatorFacet, psmAdminFacet] = await Promise.all([
+    E(governorFacets.creatorFacet).getInstance(),
+    E(governorFacets.creatorFacet).getCreatorFacet(),
+    E(governorFacets.creatorFacet).getAdminFacet(),
+  ]);
+
+  /** @typedef {import('./econ-behaviors.js').PSMFacets} PSMFacets */
+  /** @type {PSMFacets} */
+  const newPsmFacets = {
+    psm,
+    psmGovernor: governorFacets.instance,
+    psmCreatorFacet,
+    psmAdminFacet,
+    psmGovernorCreatorFacet: governorFacets.creatorFacet,
+  };
+
+  /** @type {MapStore<Brand,PSMFacets>} */
+  const psmFacetsMap = await psmFacets;
+
+  psmFacetsMap.init(anchorBrand, newPsmFacets);
+  const instanceKey = `psm-${Stable.symbol}-${keyword}`;
+  const instanceAdmin = E(agoricNamesAdmin).lookupAdmin('instance');
+  await E(instanceAdmin).update(instanceKey, newPsmFacets.psm);
+  await E(psmCharterCreatorFacet).addInstance(
+    psm,
+    psmCreatorFacet,
+    anchorBrand,
+    stable,
+  );
 };
 harden(startPSM);
 
@@ -167,6 +193,7 @@ export const makeAnchorAsset = async (
     installation: {
       consume: { mintHolder },
     },
+    produce: { testFirstAnchorKit },
   },
   { options: { anchorOptions = {} } = {} },
 ) => {
@@ -200,6 +227,9 @@ export const makeAnchorAsset = async (
 
   const brand = await E(issuer).getBrand();
   const kit = { mint, issuer, brand };
+
+  testFirstAnchorKit.resolve(kit);
+
   return Promise.all([
     E(E(agoricNamesAdmin).lookupAdmin('issuer')).update(keyword, kit.issuer),
     E(E(agoricNamesAdmin).lookupAdmin('brand')).update(keyword, kit.brand),
@@ -213,21 +243,37 @@ export const makeAnchorAsset = async (
 };
 harden(makeAnchorAsset);
 
-/** @param {BootstrapSpace & { devices: { vatAdmin: any }, vatPowers: { D: DProxy }, }} powers */
+/** @typedef {import('./econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
+
+/** @param {BootstrapSpace & EconomyBootstrapSpace & { devices: { vatAdmin: any }, vatPowers: { D: DProxy }, }} powers */
 export const installGovAndPSMContracts = async ({
   vatPowers: { D },
   devices: { vatAdmin },
   consume: { zoe },
+  produce: { psmFacets },
   installation: {
-    produce: { contractGovernor, committee, binaryVoteCounter, psm },
+    produce: {
+      contractGovernor,
+      committee,
+      binaryVoteCounter,
+      psm,
+      psmCharter,
+    },
   },
 }) => {
+  // In order to support multiple instances of the PSM, we store all the facets
+  // indexed by the brand. Since each name in the BootstrapSpace can only be
+  // produced  once, we produce an empty store here, and each time a PSM is
+  // started up, the details are added to the store.
+  psmFacets.resolve(makeScalarMapStore());
+
   return Promise.all(
     Object.entries({
       contractGovernor,
       committee,
       binaryVoteCounter,
       psm,
+      psmCharter,
     }).map(async ([name, producer]) => {
       const bundleCap = D(vatAdmin).getNamedBundleCap(name);
       const bundle = D(bundleCap).getBundle();
@@ -236,6 +282,61 @@ export const installGovAndPSMContracts = async ({
       producer.resolve(installation);
     }),
   );
+};
+
+/** @param {EconomyBootstrapPowers} powers */
+export const startPSMCharter = async ({
+  consume: { zoe },
+  produce: { psmCharterCreatorFacet, psmCharterAdminFacet },
+  installation: {
+    consume: { binaryVoteCounter, psmCharter: installP },
+  },
+  instance: {
+    produce: { psmCharter: instanceP },
+  },
+}) => {
+  const [charterR, counterR] = await Promise.all([installP, binaryVoteCounter]);
+  const terms = { binaryVoteCounterInstallation: counterR };
+  const facets = await E.get(E(zoe).startInstance(charterR, {}, terms));
+  instanceP.resolve(facets.instance);
+  psmCharterCreatorFacet.resolve(facets.creatorFacet);
+  psmCharterAdminFacet.resolve(facets.adminFacet);
+};
+
+/**
+ * PSM and gov contracts are available as
+ * named swingset bundles only in
+ * decentral-psm-config.json
+ */
+export const PSM_GOV_MANIFEST = {
+  [installGovAndPSMContracts.name]: {
+    vatPowers: { D: true },
+    devices: { vatAdmin: true },
+    consume: { zoe: 'zoe' },
+    produce: { psmFacets: 'true' },
+    installation: {
+      produce: {
+        contractGovernor: 'zoe',
+        committee: 'zoe',
+        binaryVoteCounter: 'zoe',
+        psm: 'zoe',
+        psmCharter: 'zoe',
+      },
+    },
+  },
+  [startPSMCharter.name]: {
+    consume: { zoe: 'zoe' },
+    produce: {
+      psmCharterCreatorFacet: 'psmCharter',
+      psmCharterAdminFacet: 'psmCharter',
+    },
+    installation: {
+      consume: { binaryVoteCounter: 'zoe', psmCharter: 'zoe' },
+    },
+    instance: {
+      produce: { psmCharter: 'psmCharter' },
+    },
+  },
 };
 
 export const PSM_MANIFEST = harden({
@@ -248,6 +349,7 @@ export const PSM_MANIFEST = harden({
     brand: {
       produce: { AUSD: true },
     },
+    produce: { testFirstAnchorKit: true },
   },
   [startPSM.name]: {
     consume: {
@@ -257,19 +359,15 @@ export const PSM_MANIFEST = harden({
       zoe: 'zoe',
       feeMintAccess: 'zoe',
       economicCommitteeCreatorFacet: 'economicCommittee',
+      psmCharterCreatorFacet: 'psmCharter',
       chainTimerService: 'timer',
-    },
-    produce: {
-      psmCreatorFacet: 'psm',
-      psmAdminFacet: 'psm',
-      psmGovernorCreatorFacet: 'psmGovernor',
+      psmFacets: true,
     },
     installation: {
       consume: { contractGovernor: 'zoe', psm: 'zoe' },
     },
     instance: {
       consume: { economicCommittee: 'economicCommittee' },
-      produce: { psm: 'psm', psmGovernor: 'psm' },
     },
     brand: {
       consume: { AUSD: 'bank', IST: 'zoe' },

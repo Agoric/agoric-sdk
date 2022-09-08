@@ -1,10 +1,9 @@
 // @ts-check
 
 import { makeStoredPublishKit } from '@agoric/notifier';
-import { makeStore } from '@agoric/store';
+import { makeStore, makeHeapFarInstance, M } from '@agoric/store';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import {
@@ -14,6 +13,12 @@ import {
   startCounter,
 } from './electorateTools.js';
 import { QuorumRule } from './question.js';
+import {
+  QuestionHandleShape,
+  PositionShape,
+  ElectorateCreatorI,
+  ElectoratePublicI,
+} from './typeGuards.js';
 
 const { ceilDivide } = natSafeMath;
 
@@ -51,29 +56,43 @@ const start = (zcf, privateArgs) => {
       const voterHandle = makeHandle('Voter');
       seat.exit();
 
+      const VoterI = M.interface('voter', {
+        castBallotFor: M.call(
+          QuestionHandleShape,
+          M.arrayOf(PositionShape),
+        ).returns(M.promise()),
+      });
+      const InvitationMakerI = M.interface('invitationMaker', {
+        makeVoteInvitation: M.call(QuestionHandleShape).returns(M.promise()),
+      });
+
       // CRUCIAL: voteCap carries the ability to cast votes for any voter at
       // any weight. It's wrapped here and given to the voter.
       //
       // Ensure that the voter can't get access to the unwrapped voteCap, and
       // has no control over the voteHandle or weight
       return harden({
-        voter: Far(`voter${index}`, {
-          castBallotFor: (questionHandle, positions) => {
+        voter: makeHeapFarInstance(`voter${index}`, VoterI, {
+          castBallotFor(questionHandle, positions) {
             const { voteCap } = allQuestions.get(questionHandle);
             return E(voteCap).submitVote(voterHandle, positions, 1n);
           },
         }),
-        invitationMakers: Far('invitation makers', {
-          makeVoteInvitation: questionHandle => {
-            const continuingVoteHandler = (_seat, { positions }) => {
-              _seat.exit();
-              const { voteCap } = allQuestions.get(questionHandle);
-              return E(voteCap).submitVote(voterHandle, positions, 1n);
-            };
+        invitationMakers: makeHeapFarInstance(
+          'invitation makers',
+          InvitationMakerI,
+          {
+            makeVoteInvitation(questionHandle) {
+              const continuingVoteHandler = (cSeat, { positions }) => {
+                cSeat.exit();
+                const { voteCap } = allQuestions.get(questionHandle);
+                return E(voteCap).submitVote(voterHandle, positions, 1n);
+              };
 
-            return zcf.makeInvitation(continuingVoteHandler, 'vote');
+              return zcf.makeInvitation(continuingVoteHandler, 'vote');
+            },
           },
-        }),
+        ),
       });
     };
 
@@ -90,48 +109,73 @@ const start = (zcf, privateArgs) => {
     [...Array(committeeSize).keys()].map(makeCommitteeVoterInvitation),
   );
 
-  /** @type {AddQuestion} */
-  const addQuestion = async (voteCounter, questionSpec) => {
-    const quorumThreshold = quorumRule => {
-      switch (quorumRule) {
-        case QuorumRule.MAJORITY:
-          return ceilDivide(committeeSize, 2);
-        case QuorumRule.ALL:
-          return committeeSize;
-        case QuorumRule.NO_QUORUM:
-          return 0;
-        default:
-          throw Error(`${quorumRule} is not a recognized quorum rule`);
-      }
-    };
+  const publicFacet = makeHeapFarInstance(
+    'Committee publicFacet',
+    ElectoratePublicI,
+    {
+      getQuestionSubscriber() {
+        return questionsSubscriber;
+      },
+      getOpenQuestions() {
+        return getOpenQuestions(allQuestions);
+      },
+      getName() {
+        return committeeName;
+      },
+      getInstance() {
+        return zcf.getInstance();
+      },
+      getQuestion(handleP) {
+        return getQuestion(handleP, allQuestions);
+      },
+    },
+  );
 
-    return startCounter(
-      zcf,
-      questionSpec,
-      quorumThreshold(questionSpec.quorumRule),
-      voteCounter,
-      allQuestions,
-      questionsPublisher,
-    );
-  };
+  const creatorFacet = makeHeapFarInstance(
+    'Committee creatorFacet',
+    ElectorateCreatorI,
+    {
+      getPoserInvitation() {
+        return getPoserInvitation(zcf, async (voteCounter, questionSpec) =>
+          creatorFacet.addQuestion(voteCounter, questionSpec),
+        );
+      },
+      /** @type {AddQuestion} */
+      async addQuestion(voteCounter, questionSpec) {
+        const quorumThreshold = quorumRule => {
+          switch (quorumRule) {
+            case QuorumRule.MAJORITY:
+              return ceilDivide(committeeSize, 2);
+            case QuorumRule.ALL:
+              return committeeSize;
+            case QuorumRule.NO_QUORUM:
+              return 0;
+            default:
+              throw Error(`${quorumRule} is not a recognized quorum rule`);
+          }
+        };
 
-  /** @type {CommitteeElectoratePublic} */
-  const publicFacet = Far('publicFacet', {
-    getQuestionSubscriber: () => questionsSubscriber,
-    getOpenQuestions: () => getOpenQuestions(allQuestions),
-    getName: () => committeeName,
-    getInstance: zcf.getInstance,
-    getQuestion: handleP => getQuestion(handleP, allQuestions),
-  });
+        return startCounter(
+          zcf,
+          questionSpec,
+          quorumThreshold(questionSpec.quorumRule),
+          voteCounter,
+          allQuestions,
+          questionsPublisher,
+        );
+      },
+      getVoterInvitations() {
+        return invitations;
+      },
+      getQuestionSubscriber() {
+        return questionsSubscriber;
+      },
 
-  /** @type {CommitteeElectorateCreatorFacet} */
-  const creatorFacet = Far('adminFacet', {
-    getPoserInvitation: () => getPoserInvitation(zcf, addQuestion),
-    addQuestion,
-    getVoterInvitations: () => invitations,
-    getQuestionSubscriber: () => questionsSubscriber,
-    getPublicFacet: () => publicFacet,
-  });
+      getPublicFacet() {
+        return publicFacet;
+      },
+    },
+  );
 
   return { publicFacet, creatorFacet };
 };

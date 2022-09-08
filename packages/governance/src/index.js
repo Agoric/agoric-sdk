@@ -8,7 +8,6 @@ export {
   QuorumRule,
   coerceQuestionSpec,
   positionIncluded,
-  assertIssueForType,
   buildUnrankedQuestion,
 } from './question.js';
 
@@ -17,13 +16,12 @@ export {
   validateQuestionFromCounter,
 } from './contractGovernor.js';
 
-export { handleParamGovernance } from './contractHelper.js';
+export { handleParamGovernance, publicMixinAPI } from './contractHelper.js';
 
 export {
   assertBallotConcernsParam,
   makeParamChangePositions,
   setupParamGovernance,
-  validateParamChangeQuestion,
   CONTRACT_ELECTORATE,
 } from './contractGovernance/governParam.js';
 

@@ -37,36 +37,36 @@ from pprint import pprint
 # syscall/console.log calls spent a measured total of 294.582ms
 # sending messages across the kernel/worker netstring pipe. This
 # includes time for the following steps:
-# * the host OS delivers the request netstring through the pipe
-# * the kernel reads and parses the incoming netstring
+# * The worker writes the request as a netstring to the OS pipe
+# * Node.js reads the netstring request from the OS pipe (overlapping above)
+# * the kernel parses the incoming netstring
 # * the kernel does insistVatSyscallObject() to check the vso
 # * the kernel uses vatSyscallToKernelSyscall() to translate the vso
 # * (it does not include the time to invoke kernelSyscallHandler())
 # * (it does not include translation of the results)
 # * the kernel adds the syscall+results to the transcript
 # * the kernel JSON.stringifies and netstring-wraps the syscall result
-# * the kernel writes the response netstring
-# * the host OS delivers the response netstring through the pipe
-# * the worker reads the response netstring
+# * the kernel writes the response netstring into the OS pipe
+# * the worker reads the response netstring from the OS pipe (overlapping above)
 
 # the worker-side time includes:
-# * xsnap renders the timestamp buffer into a string
-# * xsnap builds the request netstring to write, then writes it
+# * xsnap copies netstring command or syscall-result into JS ArrayBuffer or string
+# * vat JavaScript execution including supervisor and liveslots
 
 # the kernel syscall time includes:
 # * invocation of kernelSyscallHandler()
+# * processing of the syscall including device execution if applicable
 # * translation of the results
 
 # the "delivery pipe" time includes:
 # * (not translation of kernelDeliveryToVatDelivery)
 # * transcript management
-# * manager JSON-stringifies VDO, netstring-wraps, writes
-# * host OS delivers netstring over pipe
-# * worker reads, decodes netstring
+# * manager JSON-stringifies VDO, netstring-wraps
+# * worker and Node.js read and write of netstring over OS pipe
+# * xsnap renders the timestamp buffer and delivery metadata into a string
+# * (not worker copy of netstring payload into JS ArrayBuffer or string)
 # * (not worker-side JSON parsing, execution, syscalls)
-# * worker encodes delivery-results netstring, writes to pipe
-# * host OS delivers delivery-results over pipe
-# * kernel reads netstring, decodes, JSON parses
+# * kernel decodes netstring, JSON parses
 # * insistVatDeliveryResult() (manager-helper.js/deliver())
 # * insistVatDeliveryResult() (vat-warehouse.js/deliverToVat())
 

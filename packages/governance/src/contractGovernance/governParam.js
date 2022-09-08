@@ -1,8 +1,8 @@
 // @ts-check
 
 import { E } from '@endo/eventual-send';
-import { Far, deeplyFulfilled } from '@endo/marshal';
-import { keyEQ } from '@agoric/store';
+import { deeplyFulfilled, Far } from '@endo/marshal';
+import { fit, keyEQ } from '@agoric/store';
 
 import {
   ChoiceMethod,
@@ -10,6 +10,7 @@ import {
   ElectionType,
   QuorumRule,
 } from '../question.js';
+import { ParamChangesQuestionDetailsShape } from '../typeGuards.js';
 
 const { details: X } = assert;
 
@@ -34,30 +35,6 @@ const makeParamChangePositions = changes => {
   return harden({ positive, negative });
 };
 
-/** @type {ValidateParamChangeQuestion} */
-const validateParamChangeQuestion = details => {
-  assert(
-    details.method === ChoiceMethod.UNRANKED,
-    X`ChoiceMethod must be UNRANKED, not ${details.method}`,
-  );
-  assert(
-    details.electionType === ElectionType.PARAM_CHANGE,
-    X`ElectionType must be PARAM_CHANGE, not ${details.electionType}`,
-  );
-  assert(
-    details.maxChoices === 1,
-    X`maxChoices must be 1, not ${details.maxChoices}`,
-  );
-  assert(
-    details.quorumRule === QuorumRule.MAJORITY,
-    X`QuorumRule must be MAJORITY, not ${details.quorumRule}`,
-  );
-  assert(
-    details.tieOutcome.noChange,
-    X`tieOutcome must be noChange, not ${details.tieOutcome}`,
-  );
-};
-
 /**
  * assert that the parameter described by paramSpec is proposed to be changed in
  * the question described by questionSpec.
@@ -66,11 +43,10 @@ const validateParamChangeQuestion = details => {
  * @param {QuestionSpec<ParamChangeIssue<unknown>>} questionSpec
  */
 const assertBallotConcernsParam = (paramSpec, questionSpec) => {
+  fit(questionSpec, ParamChangesQuestionDetailsShape);
+
   const { parameterName, paramPath } = paramSpec;
   const { issue } = questionSpec;
-
-  // XXX doesn't fully test this requirement
-  assert(issue, 'must be a param change issue');
 
   assert(
     issue.spec.changes[parameterName],
@@ -174,12 +150,10 @@ const setupParamGovernance = async (
 
 harden(setupParamGovernance);
 harden(makeParamChangePositions);
-harden(validateParamChangeQuestion);
 harden(assertBallotConcernsParam);
 export {
   setupParamGovernance,
   makeParamChangePositions,
-  validateParamChangeQuestion,
   assertBallotConcernsParam,
   CONTRACT_ELECTORATE,
 };

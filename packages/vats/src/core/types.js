@@ -142,12 +142,12 @@
  *     'feeDistributor' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'amm' | 'VaultFactory' | 'liquidate' | 'stakeFactory' |
- *     'Pegasus' | 'reserve' | 'psm' | 'interchainPool',
+ *     'Pegasus' | 'reserve' | 'psm' | 'psmCharter' | 'interchainPool',
  *   instance: |
  *     'economicCommittee' | 'feeDistributor' |
  *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' |
  *     'stakeFactory' | 'stakeFactoryGovernor' |
- *     'psm' | 'psmGovernor' | 'interchainPool' |
+ *     'psmCharter' | 'interchainPool' |
  *     'Treasury' | 'reserve' | 'reserveGovernor' | 'Pegasus',
  *   oracleBrand:
  *     'USD',
@@ -215,6 +215,7 @@
  *   priceAuthority: PriceAuthority,
  *   priceAuthorityAdmin: PriceAuthorityRegistryAdmin,
  *   provisioning: Awaited<ProvisioningVat>,
+ *   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit,
  *   walletFactoryStartResult: import('./startWalletFactory').WalletFactoryStartResult,
  *   zoe: ZoeService,
  * }>} ChainBootstrapSpace

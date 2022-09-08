@@ -36,7 +36,7 @@ function makeSupervisorDispatch(dispatch) {
         () => harden(['ok', null, null]),
         err => {
           // TODO react more thoughtfully, maybe terminate the vat
-          console.log(`error during vat dispatch() of ${delivery}`, err);
+          console.warn(`error during vat dispatch() of ${delivery}`, err);
           return harden(['error', `${err}`, null]);
         },
       );
@@ -70,7 +70,7 @@ function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
     try {
       r = syscallToManager(vso);
     } catch (err) {
-      console.log(`worker got error during syscall:`, err);
+      console.warn(`worker got error during syscall:`, err);
       throw err;
     }
     if (!workerCanBlock) {

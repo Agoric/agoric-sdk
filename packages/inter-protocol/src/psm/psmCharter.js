@@ -1,6 +1,7 @@
 // @ts-check
 
 import '@agoric/governance/src/exported.js';
+import { makeScalarMapStore } from '@agoric/store';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 
@@ -17,13 +18,15 @@ import { E, Far } from '@endo/far';
 
 /**
  * @param {ZCF<{binaryVoteCounterInstallation:Installation}>} zcf
- * @param {{psm:GovernedContractFacetAccess<{},{}>}} privateArgs
  */
-export const start = async (zcf, privateArgs) => {
+export const start = async zcf => {
   const { binaryVoteCounterInstallation: counter } = zcf.getTerms();
-  const { psm } = privateArgs;
+  /** @type {MapStore<Instance,GovernedContractFacetAccess<{},{}>>} */
+  const instanceToCreator = makeScalarMapStore();
 
-  const makeParamInvitaion = () => {
+  /** @param {Instance} instance */
+  const makeParamInvitaion = instance => {
+    const psm = instanceToCreator.get(instance);
     /**
      * @param {Record<string, unknown>} params
      * @param {bigint} deadline
@@ -46,7 +49,9 @@ export const start = async (zcf, privateArgs) => {
     );
   };
 
-  const makeOfferFilterInvitation = () => {
+  /** @param {Instance} instance */
+  const makeOfferFilterInvitation = instance => {
+    const psm = instanceToCreator.get(instance);
     /**
      * @param {string[]} strings
      * @param {bigint} deadline
@@ -72,6 +77,16 @@ export const start = async (zcf, privateArgs) => {
   };
 
   const creatorFacet = Far('psm charter creator', {
+    /**
+     * @param {Instance} psmInstance
+     * @param {GovernedContractFacetAccess<{},{}>} psmCreatorFacet
+     * @param {Brand} [anchor] for diagnostic use only
+     * @param {Brand} [minted] for diagnostic use only
+     */
+    addInstance: (psmInstance, psmCreatorFacet, anchor, minted) => {
+      console.log('psmCharter: adding instance', { minted, anchor });
+      instanceToCreator.init(psmInstance, psmCreatorFacet);
+    },
     makeCharterMemberInvitation: () =>
       zcf.makeInvitation(charterMemberHandler, 'PSM charter member invitation'),
   });

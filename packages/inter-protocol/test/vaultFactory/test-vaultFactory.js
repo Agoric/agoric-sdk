@@ -31,7 +31,6 @@ import { makeTracer } from '../../src/makeTracer.js';
 import {
   setupAmm,
   setupReserve,
-  startEconomicCommittee,
   startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
 import {
@@ -52,6 +51,7 @@ import {
   setUpZoeForTest,
   withAmountUtils,
 } from '../supports.js';
+import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 
 /** @typedef {Record<string, any> & {
  * aeth: IssuerKit & import('../supports.js').AmountUtils,

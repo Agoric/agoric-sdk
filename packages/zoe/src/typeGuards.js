@@ -16,9 +16,10 @@ export const AmountPatternKeywordRecordShape = M.recordOf(
   M.pattern(),
 );
 
-/**
- * After defaults are filled in
- */
+export const makeHandleShape = name => M.remotable(`${name}Handle`);
+export const TimerShape = makeHandleShape('timer');
+
+/** After defaults are filled in */
 export const ProposalShape = harden({
   want: AmountPatternKeywordRecordShape,
   give: AmountKeywordRecordShape,
@@ -30,7 +31,7 @@ export const ProposalShape = harden({
       onDemand: null,
       waived: null,
       afterDeadline: {
-        timer: M.remotable(),
+        timer: M.eref(TimerShape),
         deadline: TimestampValueShape,
       },
     },

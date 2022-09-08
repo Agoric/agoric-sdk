@@ -217,10 +217,17 @@
  */
 
 /**
+ * @typedef {object} CompletedBallet
+ * @property {Position} chosen
+ * @property {bigint} shares
+ */
+
+/**
  * @callback SubmitVote
  * @param {Handle<'Voter'>} voterHandle
  * @param {Position[]} chosenPositions
  * @param {bigint=} weight
+ * @returns {CompletedBallet}
  */
 
 /**
@@ -680,13 +687,4 @@
  * @param {ERef<ZoeService>} zoe
  * @param {Instance} allegedGovernor
  * @param {Instance} allegedElectorate
- */
-
-/**
- * @callback ValidateParamChangeQuestion
- *
- * Validate that the details are appropriate for an election concerning a
- * parameter change for a governed contract.
- *
- * @param {ParamChangeIssueDetails} details
  */

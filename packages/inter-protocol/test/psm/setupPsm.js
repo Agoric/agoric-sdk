@@ -9,6 +9,7 @@ import {
 } from '@agoric/vats/src/core/utils.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
+import { makeScalarMapStore } from '@agoric/vat-data';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
@@ -16,11 +17,12 @@ import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.
 import { makeIssuerKit } from '@agoric/ertp';
 
 import { installGovernance, provideBundle } from '../supports.js';
-import { startEconomicCommittee } from '../../src/proposals/econ-behaviors.js';
-import { startPSM } from '../../src/proposals/startPSM.js';
+import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
+import { startPSM, startPSMCharter } from '../../src/proposals/startPSM.js';
 import { allValues } from '../../src/collect.js';
 
 const psmRoot = './src/psm/psm.js'; // package relative
+const psmCharterRoot = './src/psm/psmCharter.js'; // package relative
 
 export const setUpZoeForTest = () => {
   const { makeFar } = makeLoopback('zoeTest');
@@ -105,10 +107,13 @@ export const setupPsm = async (
   const { consume, brand, issuer, installation, instance } = space;
   const psmBundle = await provideBundle(t, psmRoot, 'psm');
   installation.produce.psm.resolve(E(zoe).install(psmBundle));
+  const psmCharterBundle = await provideBundle(t, psmCharterRoot, 'psmCharter');
+  installation.produce.psmCharter.resolve(E(zoe).install(psmCharterBundle));
 
   brand.produce.AUSD.resolve(knutIssuer.brand);
   issuer.produce.AUSD.resolve(knutIssuer.issuer);
 
+  space.produce.psmFacets.resolve(makeScalarMapStore());
   const istIssuer = await E(zoe).getFeeIssuer();
   const istBrand = await E(istIssuer).getBrand();
 
@@ -119,6 +124,7 @@ export const setupPsm = async (
     startEconomicCommittee(space, {
       options: { econCommitteeOptions: electorateTerms },
     }),
+    startPSMCharter(space),
     startPSM(space, {
       options: {
         anchorOptions: {
@@ -133,13 +139,16 @@ export const setupPsm = async (
 
   const installs = await allValues({
     psm: installation.consume.psm,
+    psmCharter: installation.consume.psmCharter,
     governor: installation.consume.contractGovernor,
     electorate: installation.consume.committee,
     counter: installation.consume.binaryVoteCounter,
   });
 
-  const governorCreatorFacet = consume.psmGovernorCreatorFacet;
-  const governorInstance = await instance.consume.psmGovernor;
+  const allPsms = await consume.psmFacets;
+  const psmFacets = allPsms.get(knutIssuer.brand);
+  const governorCreatorFacet = psmFacets.psmGovernorCreatorFacet;
+  const governorInstance = psmFacets.psmGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
   const g = {
     governorInstance,
@@ -151,7 +160,7 @@ export const setupPsm = async (
   /** @type { GovernedPublicFacet<PSM> } */
   const psmPublicFacet = await E(governorCreatorFacet).getPublicFacet();
   const psm = {
-    psmCreatorFacet: await consume.psmCreatorFacet,
+    psmCreatorFacet: psmFacets.psmCreatorFacet,
     psmPublicFacet,
     instance: governedInstance,
   };

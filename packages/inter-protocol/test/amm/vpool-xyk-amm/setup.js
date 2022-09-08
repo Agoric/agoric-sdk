@@ -17,8 +17,8 @@ import { makeTracer } from '../../../src/makeTracer.js';
 import {
   setupAmm,
   setupReserve,
-  startEconomicCommittee,
 } from '../../../src/proposals/econ-behaviors.js';
+import { startEconomicCommittee } from '../../../src/proposals/startEconCommittee.js';
 import {
   installGovernance,
   makeMockChainStorageRoot,

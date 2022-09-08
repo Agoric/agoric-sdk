@@ -1,6 +1,7 @@
 // @ts-check
 import { Stable } from '@agoric/vats/src/tokens.js';
 import * as econBehaviors from './econ-behaviors.js';
+import { ECON_COMMITTEE_MANIFEST } from './startEconCommittee.js';
 import * as simBehaviors from './sim-behaviors.js';
 
 export * from './econ-behaviors.js';
@@ -8,23 +9,7 @@ export * from './sim-behaviors.js';
 // @ts-expect-error Module './econ-behaviors.js' has already exported a member
 // named 'EconomyBootstrapPowers'.
 export * from './startPSM.js';
-
-export const ECON_COMMITTEE_MANIFEST = harden({
-  [econBehaviors.startEconomicCommittee.name]: {
-    consume: {
-      board: true,
-      chainStorage: true,
-      zoe: true,
-    },
-    produce: { economicCommitteeCreatorFacet: 'economicCommittee' },
-    installation: {
-      consume: { committee: 'zoe' },
-    },
-    instance: {
-      produce: { economicCommittee: 'economicCommittee' },
-    },
-  },
-});
+export * from './startEconCommittee.js';
 
 const SHARED_MAIN_MANIFEST = harden({
   [econBehaviors.setupAmm.name]: {

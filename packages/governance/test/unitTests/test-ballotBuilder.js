@@ -23,7 +23,7 @@ test('good QuestionSpec', t => {
         issue,
         positions,
         electionType: ElectionType.SURVEY,
-        maxChoices: 2,
+        maxChoices: 1,
         closingRule,
         quorumRule: QuorumRule.MAJORITY,
         tieOutcome: positions[1],
@@ -32,7 +32,7 @@ test('good QuestionSpec', t => {
   );
 });
 
-test('bad Question', t => {
+test('bad Issue', t => {
   t.throws(
     () =>
       coerceQuestionSpec(
@@ -49,7 +49,7 @@ test('bad Question', t => {
         }),
       ),
     {
-      message: 'A question can only be a pass-by-copy record: "will it blend?"',
+      message: / - Must match one of /,
     },
   );
 });
@@ -70,7 +70,7 @@ test('bad timer', t => {
           tieOutcome: positions[1],
         }),
       ),
-    { message: 'Timer must be a timer 37' },
+    { message: / - Must match one of / },
   );
 });
 
@@ -90,7 +90,7 @@ test('bad method', t => {
           tieOutcome: positions[1],
         }),
       ),
-    { message: 'Illegal "ChoiceMethod": "choose"' },
+    { message: / - Must match one of / },
   );
 });
 
@@ -104,13 +104,13 @@ test('bad Quorum', t => {
           issue,
           positions,
           electionType: ElectionType.SURVEY,
-          maxChoices: 2,
+          maxChoices: 1,
           closingRule,
           quorumRule: 0.5,
           tieOutcome: positions[1],
         }),
       ),
-    { message: 'Illegal "QuorumRule": 0.5' },
+    { message: / - Must match one of / },
   );
 });
 
@@ -118,19 +118,21 @@ test('bad tieOutcome', t => {
   t.throws(
     () =>
       coerceQuestionSpec(
-        // @ts-expect-error Illegal tieOutcome
         harden({
           method: ChoiceMethod.ORDER,
           issue,
           positions,
           electionType: ElectionType.SURVEY,
-          maxChoices: 2,
+          maxChoices: 1,
           closingRule,
           quorumRule: QuorumRule.NO_QUORUM,
-          tieOutcome: 'try again',
+          tieOutcome: { text: 'try again' },
         }),
       ),
-    { message: 'tieOutcome must be a legal position: "try again"' },
+    {
+      message:
+        '{"text":"try again"} - Must match one of [{"text":"yes"},{"text":"no"}]',
+    },
   );
 });
 
@@ -139,7 +141,7 @@ test('bad maxChoices', t => {
     () =>
       coerceQuestionSpec(
         harden({
-          method: ChoiceMethod.ORDER,
+          method: ChoiceMethod.UNRANKED,
           issue,
           positions,
           electionType: ElectionType.SURVEY,
@@ -149,7 +151,7 @@ test('bad maxChoices', t => {
           tieOutcome: positions[1],
         }),
       ),
-    { message: 'maxChoices must be positive: 0' },
+    { message: / - Must match one of / },
   );
 });
 
@@ -159,7 +161,8 @@ test('bad positions', t => {
       coerceQuestionSpec({
         method: ChoiceMethod.ORDER,
         issue,
-        positions: [{ text: 'yes' }, { text: 'no' }],
+        // @ts-expect-error intentionally erroneous
+        positions: [{ text: 'yes' }, { verbiage: 'no' }],
         electionType: ElectionType.SURVEY,
         maxChoices: 1,
         closingRule,
@@ -167,8 +170,7 @@ test('bad positions', t => {
         tieOutcome: positions[1],
       }),
     {
-      message:
-        'Cannot pass non-frozen objects like {"text":"yes"}. Use harden()',
+      message: / - Must match one of /,
     },
   );
 });
