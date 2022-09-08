@@ -78,7 +78,7 @@ export const start = async (zcf, privateArgs) => {
 
   // Each wallet has `zoe` it can use to look them up, but pass these in to save that work.
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const invitationBrand = await invitationIssuer.getBrand();
+  const invitationBrand = await E(invitationIssuer).getBrand();
 
   const shared = {
     agoricNames,
