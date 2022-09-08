@@ -5,11 +5,11 @@
  * Contract to make smart wallets.
  */
 
-import { BridgeId } from '@agoric/internal';
+import { BridgeId, WalletName } from '@agoric/internal';
 import { fit, M, makeHeapFarInstance } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
 import { makeSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
 
@@ -102,31 +102,39 @@ export const start = async (zcf, privateArgs) => {
     zoe,
   };
 
-  /**
-   *
-   * @param {string} address
-   * @param {ERef<import('@agoric/vats/src/vat-bank').Bank>} bank
-   * @param {ERef<MyAddressNameAdmin>} myAddressNameAdmin
-   * @returns {Promise<import('./smartWallet').SmartWallet>}
-   */
-  const provideSmartWallet = async (address, bank, myAddressNameAdmin) => {
-    assert.typeof(address, 'string', 'invalid address');
-    assert(bank, 'missing bank');
-    assert(myAddressNameAdmin, 'missing myAddressNameAdmin');
+  const creatorFacet = makeHeapFarInstance(
+    'walletFactoryCreator',
+    M.interface('walletFactoryCreatorI', {
+      provideSmartWallet: M.call(
+        M.string(),
+        M.eref(M.any()),
+        M.eref(M.any()),
+      ).returns(M.promise()),
+    }),
+    {
+      /**
+       * @param {string} address
+       * @param {ERef<import('@agoric/vats/src/vat-bank').Bank>} bank
+       * @param {ERef<MyAddressNameAdmin>} myAddressNameAdmin
+       * @returns {Promise<import('./smartWallet').SmartWallet>}
+       */
+      provideSmartWallet: (address, bank, myAddressNameAdmin) => {
+        /** @type {() => Promise<import('./smartWallet').SmartWallet>} */
+        const maker = () =>
+          makeSmartWallet({ address, bank }, shared).then(wallet => {
+            E(myAddressNameAdmin).update(
+              WalletName.depositFacet,
+              wallet.getDepositFacet(),
+            );
+            return wallet;
+          });
 
-    /** @type {() => Promise<import('./smartWallet').SmartWallet>} */
-    const maker = () =>
-      makeSmartWallet({ address, bank }, shared).then(wallet => {
-        E(myAddressNameAdmin).update('depositeFacet', wallet.getDepositFacet());
-        return wallet;
-      });
-
-    return provider.provideAsync(address, maker);
-  };
+        return provider.provideAsync(address, maker);
+      },
+    },
+  );
 
   return {
-    creatorFacet: Far('walletFactoryCreator', {
-      provideSmartWallet,
-    }),
+    creatorFacet,
   };
 };
