@@ -45,6 +45,8 @@ test('offer', async t => {
   );
   const bundlePath = new URL(bundleUrl).pathname;
   const bundle = await bundleSource(bundlePath);
+  /** @type {Installation<import('@agoric/zoe/src/contracts/automaticRefund.js').start>} */
+  // @ts-expect-error cast
   const installation = E(zoe).install(bundle);
 
   const issuerKeywordRecord = harden({

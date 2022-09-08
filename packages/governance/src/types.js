@@ -310,7 +310,7 @@
 
 /**
  * @callback AddQuestion
- * @param {ERef<Installation>} voteCounter
+ * @param {ERef<Installation<import('./binaryVoteCounter').start>>} voteCounter
  * @param {QuestionSpec} questionSpec
  * @returns {Promise<AddQuestionReturn>}
  */

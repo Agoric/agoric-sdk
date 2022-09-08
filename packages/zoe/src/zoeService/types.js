@@ -284,7 +284,8 @@
  */
 
 /**
- * @typedef {Handle<'Instance'>} Instance
+ * @template [SF=any] contract start function
+ * @typedef {import('./utils').Instance<SF>} Instance
  */
 
 /**

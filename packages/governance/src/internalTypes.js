@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @typedef {object} QuestionRecord
  * @property {ERef<VoteCounterCreatorFacet>} voteCap
@@ -10,7 +11,7 @@
  * @param {ZCF} zcf
  * @param {QuestionSpec} questionSpec
  * @param {unknown} quorumThreshold
- * @param {ERef<Installation>} voteCounter
+ * @param {ERef<Installation<import('./binaryVoteCounter').start>>} voteCounter
  * @param {Store<Handle<'Question'>, QuestionRecord>} questionStore
  * @param {Publisher<unknown>} publisher
  * @returns {AddQuestionReturn}
