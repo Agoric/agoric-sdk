@@ -6,10 +6,19 @@
  */
 
 import { BridgeId } from '@agoric/internal';
+import { fit, M } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { E, Far } from '@endo/far';
 import { makeSmartWallet } from './smartWallet.js';
+import { shape } from './typeGuards.js';
+
+const PrivateArgsShape = harden(
+  M.split(
+    { storageNode: M.eref(M.any()) },
+    M.partial({ bridgeManager: M.eref(M.any()) }),
+  ),
+);
 
 /**
  * @typedef {{
@@ -30,12 +39,13 @@ import { makeSmartWallet } from './smartWallet.js';
  * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
+  fit(harden(privateArgs), PrivateArgsShape);
   const { agoricNames, board } = zcf.getTerms();
   assert(board, 'missing board');
   assert(agoricNames, 'missing agoricNames');
+
   const zoe = zcf.getZoeService();
   const { storageNode, bridgeManager } = privateArgs;
-  assert(storageNode, 'missing storageNode');
 
   /** @type {MapStore<string, import('./smartWallet').SmartWallet>} */
   const walletsByAddress = makeScalarBigMapStore('walletsByAddress');
@@ -50,19 +60,13 @@ export const start = async (zcf, privateArgs) => {
      */
     fromBridge: async (srcID, obj) => {
       console.log('walletFactory.fromBridge:', srcID, obj);
-      assert(obj, 'missing wallet action');
-      assert.typeof(obj, 'object');
-      assert.typeof(obj.owner, 'string');
+      fit(harden(obj), shape.WalletBridgeMsg);
       const canSpend = 'spendAction' in obj;
-      assert(
-        canSpend || 'action' in obj,
-        'missing action/spendAction property',
-      );
-      const actionCapDataStr = canSpend ? obj.spendAction : obj.action;
+
       // xxx capData body is also a JSON string so this is double-encoded
       // revisit after https://github.com/Agoric/agoric-sdk/issues/2589
-      const actionCapData = JSON.parse(actionCapDataStr);
-      // TODO(6062) validate shape before sending to wallet
+      const actionCapData = JSON.parse(canSpend ? obj.spendAction : obj.action);
+      fit(harden(actionCapData), shape.StringCapData);
 
       const wallet = walletsByAddress.get(obj.owner); // or throw
 

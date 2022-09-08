@@ -5,6 +5,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { BridgeId } from '@agoric/internal';
 import { makeImportContext } from '@agoric/wallet-backend/src/marshal-contexts.js';
+import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { E } from '@endo/far';
 import { makeDefaultTestContext } from './contexts.js';
@@ -37,6 +38,10 @@ test('bridge handler', async t => {
 
   const ctx = makeImportContext();
 
+  const board = await t.context.consume.board;
+  const someInstance = makeHandle('Instance');
+  ctx.ensureBoardId(board.getId(someInstance), someInstance);
+
   // fund the wallet with anchor
 
   /** @type {import('../src/offers.js').OfferSpec} */
@@ -45,8 +50,7 @@ test('bridge handler', async t => {
     invitationSpec: {
       source: 'purse',
       description: 'bogus',
-      // @ts-expect-error invalid offer for error
-      instance: null,
+      instance: someInstance,
     },
     proposal: {},
   };
@@ -68,6 +72,8 @@ test('bridge handler', async t => {
         harden({ method: 'executeOffer', offer: offerSpec }),
       ),
     ),
+    blockTime: 0,
+    blockHeight: 0,
   });
   t.is(res, undefined);
 

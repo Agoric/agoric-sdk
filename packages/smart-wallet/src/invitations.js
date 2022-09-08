@@ -1,6 +1,8 @@
 // @ts-check
 import { AmountMath } from '@agoric/ertp';
+import { fit } from '@agoric/store';
 import { E } from '@endo/far';
+import { shape } from './typeGuards.js';
 
 /**
  * Supports three cases
@@ -52,12 +54,16 @@ export const makeInvitationsHelper = (
   const invitationGetters = /** @type {const} */ ({
     /** @type {(spec: ContractInvitationSpec) => Promise<Invitation>} */
     contract(spec) {
+      fit(spec, shape.ContractInvitationSpec);
+
       const { instance, publicInvitationMaker, invitationArgs = [] } = spec;
       const pf = E(zoe).getPublicFacet(instance);
       return E(pf)[publicInvitationMaker](...invitationArgs);
     },
     /** @type {(spec: PurseInvitationSpec) => Promise<Invitation>} */
     async purse(spec) {
+      fit(spec, shape.PurseInvitationSpec);
+
       const { instance, description } = spec;
       assert(instance && description, 'missing instance or description');
       /** @type {Amount<'set'>} */
@@ -74,7 +80,8 @@ export const makeInvitationsHelper = (
     },
     /** @type {(spec: ContinuingInvitationSpec) => Promise<Invitation>} */
     continuing(spec) {
-      console.log('making continuing invitation', spec);
+      fit(spec, shape.ContinuingInvitationSpec);
+
       const { previousOffer, invitationArgs = [], invitationMakerName } = spec;
       const makers = getInvitationContinuation(previousOffer);
       assert(

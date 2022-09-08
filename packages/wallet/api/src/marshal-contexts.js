@@ -303,19 +303,19 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
   };
 
   const valToSlot = {
+    fromBoard: val => boardObjects.byVal.get(val),
     /** @param {unknown} val */
     fromMyWallet: val => {
       const kind = findKey(walletObjects, k => walletObjects[k].byVal.has(val));
-      if (kind) {
-        const id = walletObjects[kind].byVal.get(val);
-        return makeWalletSlot(walletObjects, kind, id);
-      }
-      assert.fail(X`cannot serialize unregistered ${val}`);
+      assert(kind, X`cannot serialize unregistered ${val}`);
+
+      const id = walletObjects[kind].byVal.get(val);
+      return makeWalletSlot(walletObjects, kind, id);
     },
   };
 
   const marshal = {
-    fromBoard: makeMarshal(undefined, slotToVal.fromBoard, {
+    fromBoard: makeMarshal(valToSlot.fromBoard, slotToVal.fromBoard, {
       marshalName: 'fromBoard',
     }),
     fromMyWallet: makeMarshal(valToSlot.fromMyWallet, slotToVal.fromMyWallet, {
@@ -324,6 +324,24 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
   };
 
   return harden({
+    /**
+     * @param {BoardId} id
+     * @param {unknown} val
+     */
+    initBoardId: (id, val) => {
+      initSlotVal(boardObjects, id, val);
+    },
+    /**
+     * @param {BoardId} id
+     * @param {unknown} val
+     */
+    ensureBoardId: (id, val) => {
+      if (boardObjects.byVal.has(val)) {
+        assert.equal(boardObjects.byVal.get(val), id);
+        return;
+      }
+      initSlotVal(boardObjects, id, val);
+    },
     fromMyWallet: Far('wallet marshaller', { ...marshal.fromMyWallet }),
     fromBoard: Far('board marshaller', { ...marshal.fromBoard }),
   });

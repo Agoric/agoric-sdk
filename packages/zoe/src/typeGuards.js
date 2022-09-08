@@ -19,8 +19,12 @@ export const AmountPatternKeywordRecordShape = M.recordOf(
 export const makeHandleShape = name => M.remotable(`${name}Handle`);
 export const TimerShape = makeHandleShape('timer');
 
-/** After defaults are filled in */
-export const ProposalShape = harden({
+/**
+ * After defaults are filled in
+ *
+ * @see {ProposalRecord} type
+ */
+export const FullProposalShape = harden({
   want: AmountPatternKeywordRecordShape,
   give: AmountKeywordRecordShape,
   // To accept only one, we could use M.or rather than M.partial,
@@ -38,6 +42,8 @@ export const ProposalShape = harden({
     {},
   ),
 });
+/** @see {Proposal} type */
+export const ProposalShape = M.partial(FullProposalShape);
 
 export const isOnDemandExitRule = exit => {
   const [exitKey] = Object.getOwnPropertyNames(exit);
