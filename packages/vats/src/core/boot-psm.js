@@ -110,7 +110,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
 
   const { anchorAssets, economicCommitteeAddresses } = vatParameters;
   fit(harden(anchorAssets), M.arrayOf(AnchorOptionsShape));
-  fit(harden(economicCommitteeAddresses), M.arrayOf(M.string()));
+  fit(harden(economicCommitteeAddresses), M.recordOf(M.string(), M.string()));
 
   const { produce, consume } = makePromiseSpace(log);
   const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(

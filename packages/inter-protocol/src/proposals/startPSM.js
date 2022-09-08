@@ -386,14 +386,14 @@ export const invitePSMCommitteeMembers = async (
           invitationP,
           E(creatorFacet).makeCharterMemberInvitation(),
         ]);
-        console.log('@@@sending charter, voting invitations to', addr);
+        console.log('sending charter, voting invitations to', addr);
         await reserveThenDeposit(
           `econ committee member ${addr}`,
           namesByAddressAdmin,
           addr,
           [voterInvitation, charterMemberInvitation],
         );
-        console.log('@@@sent charter, voting invitations to', addr);
+        console.log('sent charter, voting invitations to', addr);
       }),
     );
   };
@@ -447,7 +447,7 @@ export const PSM_MANIFEST = harden({
       psmFacets: true,
     },
     installation: {
-      consume: { binaryVoteCounter: true },
+      consume: { binaryVoteCounter: true, psmCharter: true },
     },
   },
 });

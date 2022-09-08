@@ -182,7 +182,7 @@ test('bootstrap provides a way to pass items to CORE_EVAL', async t => {
 
 const psmParams = {
   anchorAssets: [{ denom: 'ibc/toyusdc' }],
-  economicCommitteeAddresses: [],
+  economicCommitteeAddresses: {},
   argv: { bootMsg: {} },
 };
 
