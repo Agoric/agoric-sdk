@@ -84,10 +84,8 @@ export const startWalletFactory = async ({
       if (!powerFlags.includes(PowerFlags.SMART_WALLET)) {
         return;
       }
-      const myAddressNameAdmin = makeMyAddressNameAdmin(
-        namesByAddressAdmin,
-        address,
-      );
+      const { nameHub, myAddressNameAdmin } = makeMyAddressNameAdmin(address);
+      namesByAddressAdmin.update(address, nameHub, myAddressNameAdmin);
 
       const bank = E(bankManager).getBankForAddress(address);
       await E(creatorFacet).provideSmartWallet(

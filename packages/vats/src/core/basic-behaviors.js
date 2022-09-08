@@ -186,13 +186,11 @@ export const makeBoard = async ({
 harden(makeBoard);
 
 /**
- * @param {NameAdmin} namesByAddressAdmin
  * @param {string} address
  */
-export const makeMyAddressNameAdmin = (namesByAddressAdmin, address) => {
+export const makeMyAddressNameAdmin = address => {
   // Create a name hub for this address.
-  const { nameHub: myAddressNameHub, nameAdmin: rawMyAddressNameAdmin } =
-    makeNameHubKit();
+  const { nameHub, nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
 
   /** @type {MyAddressNameAdmin} */
   const myAddressNameAdmin = Far('myAddressNameAdmin', {
@@ -200,11 +198,9 @@ export const makeMyAddressNameAdmin = (namesByAddressAdmin, address) => {
     getMyAddress: () => address,
   });
   // reserve space for deposit facet
-  myAddressNameAdmin.reserve(WalletName.depositFacet);
-  // Register it with the namesByAddress hub.
-  namesByAddressAdmin.update(address, myAddressNameHub, myAddressNameAdmin);
+  myAddressNameAdmin.reserve('depositFacet');
 
-  return myAddressNameAdmin;
+  return { nameHub, myAddressNameAdmin };
 };
 
 /**
@@ -234,10 +230,7 @@ export const makeAddressNameHubs = async ({
   produce.namesByAddressAdmin.resolve(namesByAddressAdmin);
 
   const perAddress = address => {
-    const myAddressNameAdmin = makeMyAddressNameAdmin(
-      namesByAddressAdmin,
-      address,
-    );
+    const myAddressNameAdmin = makeMyAddressNameAdmin(address);
     return { agoricNames, namesByAddress, myAddressNameAdmin };
   };
 
