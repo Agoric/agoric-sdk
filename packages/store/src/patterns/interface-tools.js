@@ -1,3 +1,4 @@
+// @ts-check
 import { Far } from '@endo/marshal';
 import { E } from '@endo/eventual-send';
 import { listDifference, objectMap } from '@agoric/internal';
@@ -44,6 +45,12 @@ const defendSyncArgs = (args, methodGuard, label) => {
   }
 };
 
+/**
+ * @param {Method} method
+ * @param {MethodGuard} methodGuard
+ * @param {string} label
+ * @returns {Method}
+ */
 const defendSyncMethod = (method, methodGuard, label) => {
   const { returnGuard } = methodGuard;
   const { syncMethod } = {
@@ -112,6 +119,12 @@ const defendAsyncMethod = (method, methodGuard, label) => {
   return asyncMethod;
 };
 
+/**
+ *
+ * @param {Method} method
+ * @param {MethodGuard} methodGuard
+ * @param {string} label
+ */
 const defendMethod = (method, methodGuard, label) => {
   const { klass, callKind } = methodGuard;
   assert(klass === 'methodGuard');
@@ -123,6 +136,14 @@ const defendMethod = (method, methodGuard, label) => {
   }
 };
 
+/**
+ *
+ * @param {string} methodTag
+ * @param {WeakMap} contextMap
+ * @param {Method} behaviorMethod
+ * @param {boolean} [thisfulMethods]
+ * @param {MethodGuard} [methodGuard]
+ */
 const bindMethod = (
   methodTag,
   contextMap,
@@ -177,13 +198,13 @@ const bindMethod = (
 };
 
 /**
- * @template T
+ * @template {Record<string | symbol, Method>} T
  * @param {string} tag
- * @param {ContextMap} contextMap
- * @param {any} behaviorMethods
+ * @param {WeakMap} contextMap
+ * @param {T} behaviorMethods
  * @param {boolean} [thisfulMethods]
  * @param {InterfaceGuard} [interfaceGuard]
- * @returns {T & RemotableBrand<{}, T>}
+ * @returns {T & import('@endo/eventual-send').RemotableBrand<{}, T>}
  */
 export const defendPrototype = (
   tag,
@@ -235,6 +256,7 @@ export const defendPrototype = (
       methodGuards && methodGuards[prop],
     );
   }
+  // @ts-expect-error xxx
   return Far(tag, prototype);
 };
 harden(defendPrototype);
@@ -261,13 +283,15 @@ export const initEmpty = () => emptyRecord;
  */
 
 /**
- * @template A,S,T
+ * @template A
+ * @template S
+ * @template {{}} T
  * @param {string} tag
  * @param {any} interfaceGuard
  * @param {(...args: A[]) => S} init
  * @param {T} methods
  * @param {object} [options]
- * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
+ * @returns {(...args: A[]) => (T & import('@endo/eventual-send').RemotableBrand<{}, T>)}
  */
 export const defineHeapFarClass = (
   tag,
@@ -276,7 +300,7 @@ export const defineHeapFarClass = (
   methods,
   options = undefined,
 ) => {
-  /** @type {WeakMap<T,Context<S,T>} */
+  /** @type {WeakMap<T,Context<S, T>>} */
   const contextMap = new WeakMap();
   const prototype = defendPrototype(
     tag,
@@ -288,6 +312,8 @@ export const defineHeapFarClass = (
   const makeInstance = (...args) => {
     // Be careful not to freeze the state record
     const state = seal(init(...args));
+    /** @type {T} */
+    // @ts-expect-error xxx
     const self = harden({ __proto__: prototype });
     // Be careful not to freeze the state record
     /** @type {Context<S,T>} */
@@ -301,12 +327,15 @@ export const defineHeapFarClass = (
     }
     return self;
   };
+  // @ts-expect-error xxx
   return harden(makeInstance);
 };
 harden(defineHeapFarClass);
 
 /**
- * @template A,S,F
+ * @template A
+ * @template S
+ * @template {Record<string, any>} F
  * @param {string} tag
  * @param {any} interfaceGuardKit
  * @param {(...args: A[]) => S} init
@@ -337,6 +366,8 @@ export const defineHeapFarClassKit = (
   const contextMapKit = objectMap(methodsKit, () => new WeakMap());
   const prototypeKit = objectMap(methodsKit, (methods, facetName) =>
     defendPrototype(
+      // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- different per package #4620
+      // @ts-ignore could be symbol
       `${tag} ${facetName}`,
       contextMapKit[facetName],
       methods,
@@ -365,17 +396,19 @@ export const defineHeapFarClassKit = (
     }
     return facets;
   };
+  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- different per package #4620
+  // @ts-ignore xxx
   return harden(makeInstanceKit);
 };
 harden(defineHeapFarClassKit);
 
 /**
- * @template T,M
+ * @template {Record<string, Method>} T
  * @param {string} tag
- * @param {InterfaceGuard|undefined} interfaceGuard
- * @param {M} methods
+ * @param {InterfaceGuard | undefined} interfaceGuard CAVEAT: static typing does not yet support `callWhen` transformation
+ * @param {T} methods
  * @param {object} [options]
- * @returns {T & RemotableBrand<{}, T>}
+ * @returns {T & import('@endo/eventual-send').RemotableBrand<{}, T>}
  */
 export const makeHeapFarInstance = (
   tag,

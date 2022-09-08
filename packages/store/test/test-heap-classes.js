@@ -42,6 +42,7 @@ test('test defineHeapFarClass', t => {
   t.throws(() => upCounter.incr(-3), {
     message: 'In "incr" method of (UpCounter) arg 0: -3 - Must be >= 0',
   });
+  // @ts-expect-error bad arg
   t.throws(() => upCounter.incr('foo'), {
     message:
       'In "incr" method of (UpCounter) arg 0: string "foo" - Must be a number',
@@ -56,6 +57,7 @@ test('test defineHeapFarClassKit', t => {
     {
       up: {
         incr(y = 1) {
+          // @ts-expect-error xxx this.state
           const { state } = this;
           state.x += y;
           return state.x;
@@ -63,6 +65,7 @@ test('test defineHeapFarClassKit', t => {
       },
       down: {
         decr(y = 1) {
+          // @ts-expect-error xxx this.state
           const { state } = this;
           state.x -= y;
           return state.x;
@@ -82,6 +85,7 @@ test('test defineHeapFarClassKit', t => {
     message:
       'In "decr" method of (Counter down) arg 0: string "foo" - Must be a number',
   });
+  // @ts-expect-error bad arg
   t.throws(() => upCounter.decr(3), {
     message: 'upCounter.decr is not a function',
   });
@@ -104,4 +108,39 @@ test('test makeHeapFarInstance', t => {
     message:
       'In "incr" method of (upCounter) arg 0: string "foo" - Must be a number',
   });
+});
+
+// needn't run. we just don't have a better place to write these.
+test.skip('types', () => {
+  // any methods can be defined if there's no interface
+  const unguarded = makeHeapFarInstance('upCounter', undefined, {
+    /** @param {number} val */
+    incr(val) {
+      return val;
+    },
+    notInInterface() {
+      return 0;
+    },
+  });
+  // @ts-expect-error invalid args
+  unguarded.incr();
+  unguarded.notInInterface();
+  // @ts-expect-error not defined
+  unguarded.notInBehavior;
+
+  // TODO when there is an interface, error if a method is missing from it
+  const guarded = makeHeapFarInstance('upCounter', UpCounterI, {
+    /** @param {number} val */
+    incr(val) {
+      return val;
+    },
+    notInInterface() {
+      return 0;
+    },
+  });
+  // @ts-expect-error invalid args
+  guarded.incr();
+  guarded.notInInterface();
+  // @ts-expect-error not defined
+  guarded.notInBehavior;
 });
