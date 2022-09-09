@@ -304,15 +304,13 @@ export const makeSmartWallet = async (
    */
   const handleBridgeAction = (actionCapData, canSpend = false) => {
     fit(actionCapData, shape.StringCapData);
-
-    assert(!canSpend, 'spending not yet supported');
-
     return E.when(
       E(marshaller).unserialize(actionCapData),
       /** @param {BridgeAction} action */
       action => {
         switch (action.method) {
           case 'executeOffer':
+            assert(canSpend, 'access to offersFacet requires spend authority');
             return E(offersFacet).executeOffer(action.offer);
           default:
             assert.fail(X`invalid handle bridge action ${q(action)}`);

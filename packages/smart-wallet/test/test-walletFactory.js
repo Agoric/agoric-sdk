@@ -64,10 +64,10 @@ test('bridge handler', async t => {
 
   assert(t.context.sendToBridge);
   const res = await t.context.sendToBridge(BridgeId.WALLET, {
-    type: ActionType.WALLET_ACTION,
+    type: ActionType.WALLET_SPEND_ACTION,
     owner: mockAddress1,
     // consider a helper for each action type
-    action: JSON.stringify(
+    spendAction: JSON.stringify(
       ctx.fromBoard.serialize(
         harden({ method: 'executeOffer', offer: offerSpec }),
       ),
