@@ -35,6 +35,7 @@ export const startPSM = async (
       feeMintAccess: feeMintAccessP,
       economicCommitteeCreatorFacet,
       psmCharterCreatorFacet,
+      provisionPoolStartResult,
       chainStorage,
       chainTimerService,
       psmFacets,
@@ -163,13 +164,20 @@ export const startPSM = async (
   psmFacetsMap.init(anchorBrand, newPsmFacets);
   const instanceKey = `psm-${Stable.symbol}-${keyword}`;
   const instanceAdmin = E(agoricNamesAdmin).lookupAdmin('instance');
-  await E(instanceAdmin).update(instanceKey, newPsmFacets.psm);
-  await E(psmCharterCreatorFacet).addInstance(
-    psm,
-    psmCreatorFacet,
-    anchorBrand,
-    stable,
-  );
+
+  await Promise.all([
+    E(instanceAdmin).update(instanceKey, newPsmFacets.psm),
+    E(psmCharterCreatorFacet).addInstance(
+      psm,
+      psmCreatorFacet,
+      anchorBrand,
+      stable,
+    ),
+    E(E.get(provisionPoolStartResult).creatorFacet).initPSM(
+      anchorBrand,
+      newPsmFacets.psm,
+    ),
+  ]);
 };
 harden(startPSM);
 
@@ -422,6 +430,7 @@ export const PSM_MANIFEST = harden({
       zoe: 'zoe',
       feeMintAccess: 'zoe',
       economicCommitteeCreatorFacet: 'economicCommittee',
+      provisionPoolStartResult: true,
       psmCharterCreatorFacet: 'psmCharter',
       chainTimerService: 'timer',
       psmFacets: true,
