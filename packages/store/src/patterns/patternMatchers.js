@@ -157,16 +157,18 @@ const makePatternKit = () => {
   /**
    * @typedef {string} Kind
    * It is either a PassStyle other than 'tagged', or, if the underlying
-   * PassStyle is 'tagged', then the `getTag` value.
-   *
-   * We cannot further restrict this to only possible passStyles
-   * or known tags, because we wish to allow matching of tags that we
-   * don't know ahead of time. Do we need to separate the namespaces?
-   * TODO are we asking for trouble by lumping passStyles and tags
-   * together into kinds?
+   * PassStyle is 'tagged', then the `getTag` value for tags that are
+   * recognized at the store level of abstraction. For each of those
+   * tags, a tagged record only has that kind if it satisfies the invariants
+   * that the store level associates with that kind.
    */
 
-  const kindMemo = new WeakMap();
+  /**
+   * @type {WeakMap<CopyTagged, Kind>}
+   * Only for tagged records of recognized kinds whose store-level invariants
+   * have already been checked.
+   */
+  const tagMemo = new WeakMap();
 
   /**
    * Checks only recognized tags, and only if the tagged
@@ -217,13 +219,15 @@ const makePatternKit = () => {
     if (passStyle !== 'tagged') {
       return passStyle;
     }
-    // At this point we know that specimen is a well formed tagged record
-    if (kindMemo.has(specimen)) {
-      return kindMemo.get(specimen);
+    // At this point we know that specimen is a well formed
+    // as a tagged record, which is defined at the marshal level of abstraction,
+    // since `passStyleOf` checks those invariants.
+    if (tagMemo.has(specimen)) {
+      return tagMemo.get(specimen);
     }
     const tag = getTag(specimen);
     if (checkTagged(specimen, tag, check)) {
-      kindMemo.set(specimen, tag);
+      tagMemo.set(specimen, tag);
       return tag;
     }
     if (check !== identChecker) {
@@ -253,6 +257,22 @@ const makePatternKit = () => {
       check(false, details);
     }
     return false;
+  };
+
+  /**
+   * @param {Passable} specimen
+   * @param {Key} keyAsPattern
+   * @param {Checker} check
+   * @return {boolean}
+   */
+  const checkAsKeyPatt = (specimen, keyAsPattern, check) => {
+    if (keyEQ(specimen, keyAsPattern)) {
+      return true;
+    }
+    return (
+      check !== identChecker &&
+      check(false, X`${specimen} - Must be: ${keyAsPattern}`)
+    );
   };
 
   // /////////////////////// isPattern /////////////////////////////////////////
@@ -457,16 +477,13 @@ const makePatternKit = () => {
       case 'copyBag':
       case 'remotable': {
         // These kinds are necessarily keys
-        return check(keyEQ(specimen, patt), X`${specimen} - Must be: ${patt}`);
+        return checkAsKeyPatt(specimen, patt, check);
       }
       case 'copyArray': {
         if (isKey(patt)) {
           // Takes care of patterns which are keys, so the rest of this
           // logic can assume patterns that are not keys.
-          return check(
-            keyEQ(specimen, patt),
-            X`${specimen} - Must be: ${patt}`,
-          );
+          return checkAsKeyPatt(specimen, patt, check);
         }
         if (specimenKind !== 'copyArray') {
           return check(
@@ -487,10 +504,7 @@ const makePatternKit = () => {
         if (isKey(patt)) {
           // Takes care of patterns which are keys, so the rest of this
           // logic can assume patterns that are not keys.
-          return check(
-            keyEQ(specimen, patt),
-            X`${specimen} - Must be: ${patt}`,
-          );
+          return checkAsKeyPatt(specimen, patt, check);
         }
         if (specimenKind !== 'copyRecord') {
           return check(
@@ -524,10 +538,7 @@ const makePatternKit = () => {
         if (isKey(patt)) {
           // Takes care of patterns which are keys, so the rest of this
           // logic can assume patterns that are not keys.
-          return check(
-            keyEQ(specimen, patt),
-            X`${specimen} - Must be: ${patt}`,
-          );
+          return checkAsKeyPatt(specimen, patt, check);
         }
         if (specimenKind !== 'copyMap') {
           return check(
