@@ -75,6 +75,7 @@ const { details: X, quote: q } = assert;
  * @typedef {Parameters<initState>[0] & Parameters<initState>[1]} HeldParams
  *
  * @typedef {Readonly<HeldParams & {
+ * paymentQueues: MapStore<Brand, Array<import('@endo/far').FarRef<Payment>>>,
  * offerToInvitationMakers: MapStore<number, import('./types').RemoteInvitationMakers>,
  * brandDescriptors: MapStore<Brand, BrandDescriptor>,
  * brandPurses: MapStore<Brand, RemotePurse>,
@@ -120,14 +121,19 @@ export const initState = (unique, shared) => {
   );
 
   const preciousState = {
+    // Private purses. This assumes one purse per brand, which will be valid in MN-1 but not always.
+    brandPurses: makeScalarBigMapStore('brand purses', { durable: true }),
+    // Payments that couldn't be deposited when received.
+    // NB: vulnerable to uncapped growth by unpermissioned deposits.
+    paymentQueues: makeScalarBigMapStore('payments queues', {
+      durable: true,
+    }),
     // Invitation makers yielded by offer results
     offerToInvitationMakers: makeScalarBigMapStore('invitation makers', {
       durable: true,
     }),
     // What purses have reported on construction and by getCurrentAmountNotifier updates.
     purseBalances: makeScalarMapStore(),
-    // Private purses. This assumes one purse per brand, which will be valid in MN-1 but not always.
-    brandPurses: makeScalarBigMapStore('brand purses', { durable: true }),
   };
 
   const nonpreciousState = {
@@ -202,8 +208,13 @@ const behavior = {
     /** @type {(desc: Omit<BrandDescriptor, 'displayInfo'>, purse: RemotePurse) => Promise<void>} */
     async addBrand(desc, purseRef) {
       /** @type {State} */
-      const { address, brandDescriptors, brandPurses, updatePublishKit } =
-        this.state;
+      const {
+        address,
+        brandDescriptors,
+        brandPurses,
+        paymentQueues,
+        updatePublishKit,
+      } = this.state;
       // assert haven't received this issuer before.
       const descriptorsHas = brandDescriptors.has(desc.brand);
       const pursesHas = brandPurses.has(desc.brand);
@@ -248,27 +259,46 @@ const behavior = {
       });
 
       updatePublishKit.publisher.publish({ updated: 'brand', descriptor });
+
+      // deposit queued payments
+      const payments = paymentQueues.has(desc.brand)
+        ? paymentQueues.get(desc.brand)
+        : [];
+      const deposits = payments.map(p =>
+        // @ts-expect-error deposit does take a FarRef<Payment>
+        E(purse).deposit(p),
+      );
+      Promise.all(deposits).catch(err =>
+        console.error('ERROR depositing queued payments', err),
+      );
     },
   },
   /**
    * Similar to {DepositFacet} but async because it has to look up the purse.
    */
-  // TODO(PS0) decide whether to match canonical `DepositFacet'. it would have to take a local Payment.
+  // TODO(PS0) decide whether to match canonical `DepositFacet'. it would have to take a local Payment
   deposit: {
     /**
-     * Put the assets from the payment into the appropriate purse
+     * Put the assets from the payment into the appropriate purse.
+     *
+     * If the purse doesn't exist, we hold the payment until it does.
      *
      * @param {import('@endo/far').FarRef<Payment>} payment
-     * @returns {Promise<Amount>}
-     * @throws if the purse doesn't exist
-     * NB: the previous smart wallet contract would try again each time there's a new issuer.
-     * This version does not: 1) for expedience, 2: to avoid resource exhaustion vulnerability.
+     * @returns {Promise<Amount | 'deferred'>}
      */
     async receive(payment) {
       /** @type {State} */
-      const { brandPurses } = this.state;
+      const { brandPurses, paymentQueues: queues } = this.state;
       const brand = await E(payment).getAllegedBrand();
       const purse = brandPurses.get(brand);
+      if (!purse) {
+        if (queues.has(brand)) {
+          queues.get(brand).push(payment);
+        } else {
+          queues.init(brand, [payment]);
+        }
+        return 'deferred';
+      }
 
       // @ts-expect-error deposit does take a FarRef<Payment>
       return E(purse).deposit(payment);
@@ -388,7 +418,7 @@ const finish = ({ state, facets }) => {
     /** @type {RemotePurse} */ (invitationPurse),
   );
   // watch the bank for new issuers to make purses out of
-  observeIteration(E(bank).getAssetSubscription(), {
+  void observeIteration(E(bank).getAssetSubscription(), {
     async updateState(desc) {
       /** @type {RemotePurse} */
       // @ts-expect-error cast to RemotePurse
