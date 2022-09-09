@@ -33,7 +33,10 @@ const { ownKeys } = Reflect;
  */
 const checkPrimitiveKey = (val, check) => {
   if (isObject(val)) {
-    return check(false, X`A ${q(typeof val)} cannot be a primitive: ${val}`);
+    return (
+      check !== identChecker &&
+      check(false, X`A ${q(typeof val)} cannot be a primitive: ${val}`)
+    );
   }
   // TODO There is not yet a checkPassable, but perhaps there should be.
   // If that happens, we should call it here instead.
@@ -67,10 +70,10 @@ export const checkScalarKey = (val, check) => {
     return true;
   }
   const passStyle = passStyleOf(val);
-  return check(
-    passStyle === 'remotable',
-    X`A ${q(passStyle)} cannot be a scalar key: ${val}`,
-  );
+  if (passStyle === 'remotable') {
+    return true;
+  }
+  return check(false, X`A ${q(passStyle)} cannot be a scalar key: ${val}`);
 };
 
 /**
@@ -100,9 +103,6 @@ const keyMemo = new WeakSet();
  * @returns {boolean}
  */
 export const checkKey = (val, check) => {
-  if (isPrimitiveKey(val)) {
-    return true;
-  }
   if (!isObject(val)) {
     // TODO There is not yet a checkPassable, but perhaps there should be.
     // If that happens, we should call it here instead.
@@ -553,9 +553,9 @@ const checkKeyInternal = (val, check) => {
           );
         }
         default: {
-          return check(
-            false,
-            X`A passable tagged ${q(tag)} is not a key: ${val}`,
+          return (
+            check !== identChecker &&
+            check(false, X`A passable tagged ${q(tag)} is not a key: ${val}`)
           );
         }
       }

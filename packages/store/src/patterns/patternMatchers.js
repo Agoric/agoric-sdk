@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 // @ts-check
 
 import {
@@ -43,6 +42,9 @@ const { ownKeys } = Reflect;
 const patternMemo = new WeakSet();
 
 // /////////////////////// Match Helpers Helpers /////////////////////////////
+
+/** For forward references to `M` */
+let MM;
 
 /**
  * The actual default values here are, at the present time, fairly
@@ -103,6 +105,7 @@ const checkIsWellFormedWithLimit = (
   }
   const limits = payload[mainLength];
   payload = harden(payload.slice(0, mainLength));
+  // eslint-disable-next-line no-use-before-define
   if (!checkMatches(payload, mainPayloadShape, check, label)) {
     return false;
   }
@@ -151,6 +154,127 @@ const makePatternKit = () => {
     // eslint-disable-next-line no-use-before-define
     HelpersByMatchTag[tag];
 
+  /**
+   * @typedef {string} Kind
+   * It is either a PassStyle other than 'tagged', or, if the underlying
+   * PassStyle is 'tagged', then the `getTag` value for tags that are
+   * recognized at the store level of abstraction. For each of those
+   * tags, a tagged record only has that kind if it satisfies the invariants
+   * that the store level associates with that kind.
+   */
+
+  /**
+   * @type {WeakMap<CopyTagged, Kind>}
+   * Only for tagged records of recognized kinds whose store-level invariants
+   * have already been checked.
+   */
+  const tagMemo = new WeakMap();
+
+  /**
+   * Checks only recognized tags, and only if the tagged
+   * passes the invariants associated with that recognition.
+   *
+   * @param {Passable} tagged
+   * @param {Kind} tag
+   * @param {Checker} check
+   * @returns {boolean}
+   */
+  const checkTagged = (tagged, tag, check) => {
+    const matchHelper = maybeMatchHelper(tag);
+    if (matchHelper) {
+      // Buried here is the important case, where we process
+      // the various patternNodes
+      return matchHelper.checkIsWellFormed(tagged.payload, check);
+    }
+    switch (tag) {
+      case 'copySet': {
+        return checkCopySet(tagged, check);
+      }
+      case 'copyBag': {
+        return checkCopyBag(tagged, check);
+      }
+      case 'copyMap': {
+        return checkCopyMap(tagged, check);
+      }
+      default: {
+        return check(
+          false,
+          X`cannot check unrecognized tag ${q(tag)}: ${tagged}`,
+        );
+      }
+    }
+  };
+
+  /**
+   * Returns only a recognized kind, and only if the specimen passes the
+   * invariants associated with that recognition.
+   * Otherwise, `check(false, ...)` and returns undefined
+   *
+   * @param {Passable} specimen
+   * @param {Checker} [check]
+   * @returns {Kind | undefined}
+   */
+  const kindOf = (specimen, check = identChecker) => {
+    const passStyle = passStyleOf(specimen);
+    if (passStyle !== 'tagged') {
+      return passStyle;
+    }
+    // At this point we know that specimen is a well formed
+    // as a tagged record, which is defined at the marshal level of abstraction,
+    // since `passStyleOf` checks those invariants.
+    if (tagMemo.has(specimen)) {
+      return tagMemo.get(specimen);
+    }
+    const tag = getTag(specimen);
+    if (checkTagged(specimen, tag, check)) {
+      tagMemo.set(specimen, tag);
+      return tag;
+    }
+    if (check !== identChecker) {
+      check(false, X`cannot check unrecognized tag ${q(tag)}`);
+    }
+    return undefined;
+  };
+  harden(kindOf);
+
+  /**
+   * Checks only recognized kinds, and only if the specimen
+   * passes the invariants associated with that recognition.
+   *
+   * @param {Passable} specimen
+   * @param {Kind} kind
+   * @param {Checker} check
+   * @returns {boolean}
+   */
+  const checkKind = (specimen, kind, check) => {
+    const realKind = kindOf(specimen, check);
+    if (kind === realKind) {
+      return true;
+    }
+    if (check !== identChecker) {
+      // quoting without quotes
+      const details = X([`${realKind} `, ` - Must be a ${kind}`], specimen);
+      check(false, details);
+    }
+    return false;
+  };
+
+  /**
+   * @param {Passable} specimen
+   * @param {Key} keyAsPattern
+   * @param {Checker} check
+   * @return {boolean}
+   */
+  const checkAsKeyPatt = (specimen, keyAsPattern, check) => {
+    if (keyEQ(specimen, keyAsPattern)) {
+      return true;
+    }
+    return (
+      check !== identChecker &&
+      check(false, X`${specimen} - Must be: ${keyAsPattern}`)
+    );
+  };
+
   // /////////////////////// isPattern /////////////////////////////////////////
 
   /** @type {CheckPattern} */
@@ -162,6 +286,9 @@ const makePatternKit = () => {
       // is only concerned with non-key patterns.
       return true;
     }
+    if (patternMemo.has(patt)) {
+      return true;
+    }
     // eslint-disable-next-line no-use-before-define
     const result = checkPatternInternal(patt, check);
     if (result) {
@@ -171,7 +298,8 @@ const makePatternKit = () => {
   };
 
   /**
-   * @param {Passable} patt
+   * @param {Passable} patt - known not to be a key, and therefore known
+   * not to be primitive.
    * @param {Checker} check
    * @returns {boolean}
    */
@@ -181,8 +309,11 @@ const makePatternKit = () => {
     // essentially identical.
     const checkIt = child => checkPattern(child, check);
 
-    const passStyle = passStyleOf(patt);
-    switch (passStyle) {
+    const kind = kindOf(patt, check);
+    switch (kind) {
+      case undefined: {
+        return false;
+      }
       case 'copyRecord': {
         // A copyRecord is a pattern iff all its children are
         // patterns
@@ -193,56 +324,24 @@ const makePatternKit = () => {
         // patterns
         return patt.every(checkIt);
       }
-      case 'tagged': {
-        const tag = getTag(patt);
-        const matchHelper = maybeMatchHelper(tag);
-        if (matchHelper !== undefined) {
-          // This check guarantees the payload invariants assumed by the other
-          // matchHelper methods.
-          return matchHelper.checkIsWellFormed(patt.payload, check);
-        }
-        switch (tag) {
-          case 'copySet':
-          case 'copyBag': {
-            assert(
-              !isKey(patt),
-              X`internal: The key case should have been dealt with earlier: ${patt}`,
-            );
-            return check(
-              false,
-              X`A ${q(tag)} - Must be a Key but was not: ${patt}`,
-            );
-          }
-          case 'copyMap': {
-            return (
-              checkCopyMap(patt, check) &&
-              // For a copyMap to be a pattern, all its keys and values must
-              // be patterns. For value patterns, we support full pattern
-              // matching. For key patterns, only support
-              // the same limited matching as with copySet elements.
-
-              // Check keys as a copySet
-              checkPattern(copyMapKeySet(patt), check) &&
-              // Check values as a copyMap
-              checkPattern(patt.values, check)
-            );
-          }
-          default: {
-            return check(
-              false,
-              X`A passable tagged ${q(tag)} is not a pattern: ${patt}`,
-            );
-          }
-        }
+      case 'copyMap': {
+        // A copyMap's keys are keys and therefore already known to be
+        // patterns.
+        // A copyMap is a pattern if its values are patterns.
+        return checkPattern(patt.values, check);
       }
       case 'error':
       case 'promise': {
-        return check(false, X`A ${q(passStyle)} cannot be a pattern`);
+        return check(false, X`A ${q(kind)} cannot be a pattern`);
       }
       default: {
-        // Unexpected tags are just non-patterns, but an unexpected passStyle
-        // is always an error.
-        assert.fail(X`unexpected passStyle ${q(passStyle)}: ${patt}`);
+        if (maybeMatchHelper(kind) !== undefined) {
+          return true;
+        }
+        return check(
+          false,
+          X`A passable of kind ${q(kind)} is not a pattern: ${patt}`,
+        );
       }
     }
   };
@@ -354,17 +453,39 @@ const makePatternKit = () => {
    * @returns {boolean}
    */
   const checkMatchesInternal = (specimen, patt, check) => {
-    if (isKey(patt)) {
-      // Takes care of all patterns which are keys, so the rest of this
-      // logic can assume patterns that are not key.
-      return check(keyEQ(specimen, patt), X`${specimen} - Must be: ${patt}`);
-    }
-    assertPattern(patt);
-    const specimenStyle = passStyleOf(specimen);
-    const pattStyle = passStyleOf(patt);
-    switch (pattStyle) {
+    // Worth being a bit verbose and repetitive in order to optimize
+    const patternKind = kindOf(patt, check);
+    const specimenKind = kindOf(specimen); // may be undefined
+    switch (patternKind) {
+      case undefined: {
+        return assert.fail(X`pattern expected: ${patt}`);
+      }
+      case 'promise': {
+        return assert.fail(X`promises cannot be patterns: ${patt}`);
+      }
+      case 'error': {
+        return assert.fail(X`errors cannot be patterns: ${patt}`);
+      }
+      case 'undefined':
+      case 'null':
+      case 'boolean':
+      case 'number':
+      case 'bigint':
+      case 'string':
+      case 'symbol':
+      case 'copySet':
+      case 'copyBag':
+      case 'remotable': {
+        // These kinds are necessarily keys
+        return checkAsKeyPatt(specimen, patt, check);
+      }
       case 'copyArray': {
-        if (specimenStyle !== 'copyArray') {
+        if (isKey(patt)) {
+          // Takes care of patterns which are keys, so the rest of this
+          // logic can assume patterns that are not keys.
+          return checkAsKeyPatt(specimen, patt, check);
+        }
+        if (specimenKind !== 'copyArray') {
           return check(
             false,
             X`${specimen} - Must be a copyArray to match a copyArray pattern: ${patt}`,
@@ -380,7 +501,12 @@ const makePatternKit = () => {
         return patt.every((p, i) => checkMatches(specimen[i], p, check, i));
       }
       case 'copyRecord': {
-        if (specimenStyle !== 'copyRecord') {
+        if (isKey(patt)) {
+          // Takes care of patterns which are keys, so the rest of this
+          // logic can assume patterns that are not keys.
+          return checkAsKeyPatt(specimen, patt, check);
+        }
+        if (specimenKind !== 'copyRecord') {
           return check(
             false,
             X`${specimen} - Must be a copyRecord to match a copyRecord pattern: ${patt}`,
@@ -408,55 +534,37 @@ const makePatternKit = () => {
           checkMatches(specimenValues[i], pattValues[i], check, label),
         );
       }
-      case 'tagged': {
-        const pattTag = getTag(patt);
-        const matchHelper = maybeMatchHelper(pattTag);
-        if (matchHelper) {
-          return matchHelper.checkMatches(specimen, patt.payload, check);
+      case 'copyMap': {
+        if (isKey(patt)) {
+          // Takes care of patterns which are keys, so the rest of this
+          // logic can assume patterns that are not keys.
+          return checkAsKeyPatt(specimen, patt, check);
         }
-        const specimenTag =
-          specimenStyle === 'tagged' ? getTag(specimen) : undefined;
-        if (specimenStyle !== 'tagged' || specimenTag !== pattTag) {
+        if (specimenKind !== 'copyMap') {
           return check(
             false,
-            X`${specimen} - Must be tagged as a ${pattTag}: ${specimenTag}`,
+            X`${specimen} - Must be a copyMap to match a copyMap pattern: ${patt}`,
           );
         }
         const { payload: pattPayload } = patt;
         const { payload: specimenPayload } = specimen;
-        switch (pattTag) {
-          case 'copySet':
-          case 'copyBag': {
-            assert(
-              !isKey(patt),
-              X`internal: The key case should have been dealt with earlier: ${patt}`,
-            );
-            assert.fail(
-              X`internal: A ${q(pattTag)} must be a Key but was not: ${patt}`,
-            );
-          }
-          case 'copyMap': {
-            if (!checkCopySet(specimen, check)) {
-              return false;
-            }
-            const pattKeySet = copyMapKeySet(pattPayload);
-            const specimenKeySet = copyMapKeySet(specimenPayload);
-            // Compare keys as copySets
-            if (checkMatches(specimenKeySet, pattKeySet, check)) {
-              return false;
-            }
-            const pattValues = pattPayload.values;
-            const specimenValues = specimenPayload.values;
-            // compare values as copyArrays
-            return checkMatches(specimenValues, pattValues, check);
-          }
-          default: {
-            assert.fail(X`Unexpected tag ${q(pattTag)}`);
-          }
+        const pattKeySet = copyMapKeySet(pattPayload);
+        const specimenKeySet = copyMapKeySet(specimenPayload);
+        // Compare keys as copySets
+        if (!checkMatches(specimenKeySet, pattKeySet, check)) {
+          return false;
         }
+        const pattValues = pattPayload.values;
+        const specimenValues = specimenPayload.values;
+        // compare values as copyArrays
+        return checkMatches(specimenValues, pattValues, check);
       }
       default: {
-        assert.fail(X`unexpected passStyle ${q(pattStyle)}: ${patt}`);
+        const matchHelper = maybeMatchHelper(patternKind);
+        if (matchHelper) {
+          return matchHelper.checkMatches(specimen, patt.payload, check);
+        }
+        assert.fail(X`internal: should have recognized ${q(patternKind)} `);
       }
     }
   };
@@ -478,7 +586,12 @@ const makePatternKit = () => {
    * @param {string|number} [label]
    */
   const fit = (specimen, patt, label = undefined) => {
+    if (checkMatches(specimen, patt, identChecker, label)) {
+      return;
+    }
+    // should only throw
     checkMatches(specimen, patt, assertChecker, label);
+    assert.fail(X`internal: ${label}: inconsistent pattern match: ${q(patt)}`);
   };
 
   // /////////////////////// getRankCover //////////////////////////////////////
@@ -591,70 +704,6 @@ const makePatternKit = () => {
       }
     }
     return getPassStyleCover(passStyle);
-  };
-
-  /**
-   * @typedef {string} Kind
-   * It is either a PassStyle other than 'tagged', or, if the underlying
-   * PassStyle is 'tagged', then the `getTag` value.
-   *
-   * We cannot further restrict this to only possible passStyles
-   * or known tags, because we wish to allow matching of tags that we
-   * don't know ahead of time. Do we need to separate the namespaces?
-   * TODO are we asking for trouble by lumping passStyles and tags
-   * together into kinds?
-   */
-
-  /**
-   * Checks only recognized kinds, and only if the specimen
-   * passes the invariants associated with that recognition.
-   * If the kind is unrecognized, then we must conservatively assume
-   * that it does not satisfy invariants we cannot validate.
-   *
-   * @param {Passable} specimen
-   * @param {Kind} kind
-   * @param {Checker} check
-   */
-  const checkKind = (specimen, kind, check) => {
-    assert(
-      kind !== 'tagged',
-      X`"tagged" is used as a kind escape and cannot be used as a kind`,
-    );
-    /** @type {Kind} */
-    let specimenKind = passStyleOf(specimen);
-    if (specimenKind !== 'tagged') {
-      if (specimenKind === kind) {
-        // passStyleOf already did all the invariant checking.
-        return true;
-      }
-    } else {
-      specimenKind = getTag(specimen);
-      if (specimenKind === kind) {
-        const matchHelper = maybeMatchHelper(kind);
-        if (matchHelper) {
-          // Buried here is the important case, where we process
-          // the various patternNodes
-          return matchHelper.checkIsWellFormed(specimen.payload, check);
-        }
-        switch (kind) {
-          case 'copySet': {
-            return checkCopySet(specimen, check);
-          }
-          case 'copyBag': {
-            return checkCopyBag(specimen, check);
-          }
-          case 'copyMap': {
-            return checkCopyMap(specimen, check);
-          }
-          default: {
-            return check(false, X`cannot check unrecognized tag ${q(kind)}`);
-          }
-        }
-      }
-    }
-    // quoting without quotes
-    const details = X([`${specimenKind} `, ` - Must be a ${kind}`], specimen);
-    return check(false, details);
   };
 
   const arrayEveryMatchPattern = (array, patt, check, labelPrefix = '') => {
@@ -830,10 +879,12 @@ const makePatternKit = () => {
         case 'string':
         case 'symbol':
         case 'remotable':
-        case 'undefined':
+        case 'undefined': {
           return true;
-        default:
+        }
+        default: {
           return check(false, X`${kind} keys are not supported`);
+        }
       }
     },
   });
@@ -957,6 +1008,9 @@ const makePatternKit = () => {
       if (checkKind(specimen, 'remotable', identChecker)) {
         return true;
       }
+      if (check === identChecker) {
+        return false;
+      }
       let specimenKind = passStyleOf(specimen);
       if (specimenKind === 'tagged') {
         specimenKind = getTag(specimen);
@@ -974,7 +1028,7 @@ const makePatternKit = () => {
     checkIsWellFormed: (allegedRemotableDesc, check) =>
       checkMatches(
         allegedRemotableDesc,
-        harden({ label: M.string() }),
+        harden({ label: MM.string() }),
         check,
         'match:remotable payload',
       ),
@@ -1112,7 +1166,7 @@ const makePatternKit = () => {
     checkIsWellFormed: (payload, check) =>
       checkIsWellFormedWithLimit(
         payload,
-        harden([M.pattern(), M.pattern()]),
+        harden([MM.pattern(), MM.pattern()]),
         check,
         'match:recordOf payload',
       ),
@@ -1140,7 +1194,7 @@ const makePatternKit = () => {
     checkIsWellFormed: (payload, check) =>
       checkIsWellFormedWithLimit(
         payload,
-        harden([M.pattern()]),
+        harden([MM.pattern()]),
         check,
         'match:arrayOf payload',
       ),
@@ -1170,7 +1224,7 @@ const makePatternKit = () => {
     checkIsWellFormed: (payload, check) =>
       checkIsWellFormedWithLimit(
         payload,
-        harden([M.pattern()]),
+        harden([MM.pattern()]),
         check,
         'match:setOf payload',
       ),
@@ -1213,7 +1267,7 @@ const makePatternKit = () => {
     checkIsWellFormed: (payload, check) =>
       checkIsWellFormedWithLimit(
         payload,
-        harden([M.pattern(), M.pattern()]),
+        harden([MM.pattern(), MM.pattern()]),
         check,
         'match:bagOf payload',
       ),
@@ -1258,7 +1312,7 @@ const makePatternKit = () => {
     checkIsWellFormed: (payload, check) =>
       checkIsWellFormedWithLimit(
         payload,
-        harden([M.pattern(), M.pattern()]),
+        harden([MM.pattern(), MM.pattern()]),
         check,
         'match:mapOf payload',
       ),
@@ -1443,6 +1497,15 @@ const makePatternKit = () => {
   const PatternShape = makeMatcher('match:pattern', undefined);
   const BooleanShape = makeKindMatcher('boolean');
   const NumberShape = makeKindMatcher('number');
+  const BigIntShape = makeTagged('match:bigint', []);
+  const NatShape = makeTagged('match:nat', []);
+  const StringShape = makeTagged('match:string', []);
+  const SymbolShape = makeTagged('match:symbol', []);
+  const RecordShape = makeTagged('match:recordOf', [AnyShape, AnyShape]);
+  const ArrayShape = makeTagged('match:arrayOf', [AnyShape]);
+  const SetShape = makeTagged('match:setOf', [AnyShape]);
+  const BagShape = makeTagged('match:bagOf', [AnyShape, AnyShape]);
+  const MapShape = makeTagged('match:mapOf', [AnyShape, AnyShape]);
   const RemotableShape = makeKindMatcher('remotable');
   const ErrorShape = makeKindMatcher('error');
   const PromiseShape = makeKindMatcher('promise');
@@ -1534,15 +1597,23 @@ const makePatternKit = () => {
     kind: makeKindMatcher,
     boolean: () => BooleanShape,
     number: () => NumberShape,
-    bigint: (limits = undefined) => makeLimitsMatcher('match:bigint', [limits]),
-    nat: (limits = undefined) => makeLimitsMatcher('match:nat', [limits]),
-    string: (limits = undefined) => makeLimitsMatcher('match:string', [limits]),
-    symbol: (limits = undefined) => makeLimitsMatcher('match:symbol', [limits]),
-    record: (limits = undefined) => M.recordOf(M.any(), M.any(), limits),
-    array: (limits = undefined) => M.arrayOf(M.any(), limits),
-    set: (limits = undefined) => M.setOf(M.any(), limits),
-    bag: (limits = undefined) => M.bagOf(M.any(), M.any(), limits),
-    map: (limits = undefined) => M.mapOf(M.any(), M.any(), limits),
+    bigint: (limits = undefined) =>
+      limits ? makeLimitsMatcher('match:bigint', [limits]) : BigIntShape,
+    nat: (limits = undefined) =>
+      limits ? makeLimitsMatcher('match:nat', [limits]) : NatShape,
+    string: (limits = undefined) =>
+      limits ? makeLimitsMatcher('match:string', [limits]) : StringShape,
+    symbol: (limits = undefined) =>
+      limits ? makeLimitsMatcher('match:symbol', [limits]) : SymbolShape,
+    record: (limits = undefined) =>
+      limits ? M.recordOf(M.any(), M.any(), limits) : RecordShape,
+    array: (limits = undefined) =>
+      limits ? M.arrayOf(M.any(), limits) : ArrayShape,
+    set: (limits = undefined) => (limits ? M.setOf(M.any(), limits) : SetShape),
+    bag: (limits = undefined) =>
+      limits ? M.bagOf(M.any(), M.any(), limits) : BagShape,
+    map: (limits = undefined) =>
+      limits ? M.mapOf(M.any(), M.any(), limits) : MapShape,
     remotable: makeRemotableMatcher,
     error: () => ErrorShape,
     promise: () => PromiseShape,
@@ -1627,3 +1698,5 @@ export const {
   getRankCover,
   M,
 } = makePatternKit();
+
+MM = M;

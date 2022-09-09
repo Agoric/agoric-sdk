@@ -157,7 +157,7 @@ const bindMethod = (
     const context = contextMap.get(self);
     assert(
       context,
-      X`${q(methodTag)} may only be applied to a valid instance: ${this}`,
+      X`${q(methodTag)} may only be applied to a valid instance: ${self}`,
     );
     return context;
   };
