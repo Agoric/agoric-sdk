@@ -63,14 +63,14 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
     }
     case 'hex': {
       // Dump as hex strings.
-      followerOptions.decode = buf => buf;
+      followerOptions.decode = str => new TextEncoder().encode(str);
       followerOptions.unserializer = null;
       formatOutput = buf =>
         buf.reduce((acc, b) => acc + b.toString(16).padStart(2, '0'), '');
       break;
     }
     case 'text': {
-      followerOptions.decode = buf => new TextDecoder().decode(buf);
+      followerOptions.decode = str => str;
       followerOptions.unserializer = null;
       formatOutput = buf => buf;
       break;
