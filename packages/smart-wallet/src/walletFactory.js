@@ -5,11 +5,11 @@
  * Contract to make smart wallets.
  */
 
-import { BridgeId } from '@agoric/internal';
-import { fit, M } from '@agoric/store';
+import { BridgeId, WalletName } from '@agoric/internal';
+import { fit, M, makeHeapFarInstance } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
 import { makeSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
 
@@ -51,73 +51,99 @@ export const start = async (zcf, privateArgs) => {
   const walletsByAddress = makeScalarBigMapStore('walletsByAddress');
   const provider = makeAtomicProvider(walletsByAddress);
 
-  // TODO(6062) refactor to a Far Class with type guards
-  const handleWalletAction = Far('walletActionHandler', {
-    /**
-     *
-     * @param {string} srcID
-     * @param {import('./types.js').WalletBridgeMsg} obj
-     */
-    fromBridge: async (srcID, obj) => {
-      console.log('walletFactory.fromBridge:', srcID, obj);
-      fit(harden(obj), shape.WalletBridgeMsg);
-      const canSpend = 'spendAction' in obj;
+  const handleWalletAction = makeHeapFarInstance(
+    'walletActionHandler',
+    M.interface('walletActionHandlerI', {
+      fromBridge: M.call(M.string(), shape.WalletBridgeMsg).returns(
+        M.promise(),
+      ),
+    }),
+    {
+      /**
+       *
+       * @param {string} srcID
+       * @param {import('./types.js').WalletBridgeMsg} obj
+       */
+      fromBridge: async (srcID, obj) => {
+        console.log('walletFactory.fromBridge:', srcID, obj);
 
-      // xxx capData body is also a JSON string so this is double-encoded
-      // revisit after https://github.com/Agoric/agoric-sdk/issues/2589
-      const actionCapData = JSON.parse(canSpend ? obj.spendAction : obj.action);
-      fit(harden(actionCapData), shape.StringCapData);
+        const canSpend = 'spendAction' in obj;
 
-      const wallet = walletsByAddress.get(obj.owner); // or throw
+        // xxx capData body is also a JSON string so this is double-encoded
+        // revisit after https://github.com/Agoric/agoric-sdk/issues/2589
+        const actionCapData = JSON.parse(
+          canSpend ? obj.spendAction : obj.action,
+        );
+        fit(harden(actionCapData), shape.StringCapData);
 
-      console.log('walletFactory:', { wallet, actionCapData });
-      return E(wallet).handleBridgeAction(actionCapData, canSpend);
+        const wallet = walletsByAddress.get(obj.owner); // or throw
+
+        console.log('walletFactory:', { wallet, actionCapData });
+        return E(wallet).handleBridgeAction(actionCapData, canSpend);
+      },
     },
-  });
+  );
 
   // NOTE: both `MsgWalletAction` and `MsgWalletSpendAction` arrive as BRIDGE_ID.WALLET
   // by way of makeBlockManager() in cosmic-swingset/src/block-manager.js
   await (bridgeManager &&
     E(bridgeManager).register(BridgeId.WALLET, handleWalletAction));
 
-  // Each wallet has `zoe` it can use to look them up, but pass these in to save that work.
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const invitationBrand = await E(invitationIssuer).getBrand();
+  // Resolve these first because the wallet maker must be synchronous
+  const getInvitationIssuer = E(zoe).getInvitationIssuer();
+  const [invitationIssuer, invitationBrand, publicMarshaller] =
+    await Promise.all([
+      getInvitationIssuer,
+      E(getInvitationIssuer).getBrand(),
+      E(board).getReadonlyMarshaller(),
+    ]);
 
-  const shared = {
+  const shared = harden({
     agoricNames,
-    board,
     invitationBrand,
     invitationIssuer,
+    publicMarshaller,
     storageNode,
     zoe,
-  };
+  });
 
-  /**
-   *
-   * @param {string} address
-   * @param {ERef<import('@agoric/vats/src/vat-bank').Bank>} bank
-   * @param {ERef<MyAddressNameAdmin>} myAddressNameAdmin
-   * @returns {Promise<import('./smartWallet').SmartWallet>}
-   */
-  const provideSmartWallet = async (address, bank, myAddressNameAdmin) => {
-    assert.typeof(address, 'string', 'invalid address');
-    assert(bank, 'missing bank');
-    assert(myAddressNameAdmin, 'missing myAddressNameAdmin');
+  const creatorFacet = makeHeapFarInstance(
+    'walletFactoryCreator',
+    M.interface('walletFactoryCreatorI', {
+      provideSmartWallet: M.call(
+        M.string(),
+        M.eref(M.any()),
+        M.eref(M.any()),
+      ).returns(M.promise()),
+    }),
+    {
+      /**
+       * @param {string} address
+       * @param {ERef<import('@agoric/vats/src/vat-bank').Bank>} bank
+       * @param {ERef<MyAddressNameAdmin>} myAddressNameAdmin
+       * @returns {Promise<import('./smartWallet').SmartWallet>}
+       */
+      provideSmartWallet(address, bank, myAddressNameAdmin) {
+        /** @type {() => Promise<import('./smartWallet').SmartWallet>} */
+        const maker = async () => {
+          const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
+          const wallet = makeSmartWallet(
+            harden({ address, bank, invitationPurse }),
+            shared,
+          );
+          void E(myAddressNameAdmin).update(
+            WalletName.depositFacet,
+            wallet.getDepositFacet(),
+          );
+          return wallet;
+        };
 
-    /** @type {() => Promise<import('./smartWallet').SmartWallet>} */
-    const maker = () =>
-      makeSmartWallet({ address, bank }, shared).then(wallet => {
-        E(myAddressNameAdmin).update('depositeFacet', wallet.getDepositFacet());
-        return wallet;
-      });
-
-    return provider.provideAsync(address, maker);
-  };
+        return provider.provideAsync(address, maker);
+      },
+    },
+  );
 
   return {
-    creatorFacet: Far('walletFactoryCreator', {
-      provideSmartWallet,
-    }),
+    creatorFacet,
   };
 };

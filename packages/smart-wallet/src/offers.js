@@ -1,9 +1,7 @@
 // @ts-check
 
-import { fit } from '@agoric/store';
-import { E, Far, passStyleOf } from '@endo/far';
+import { E, passStyleOf } from '@endo/far';
 import { makePaymentsHelper } from './payments.js';
-import { shape } from './typeGuards.js';
 
 /**
  * @typedef {{
@@ -37,7 +35,7 @@ export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
  * @param {(status: OfferStatus) => void} opts.onStatusChange
  * @param {(offerId: number, continuation: import('./types').RemoteInvitationMakers) => void} opts.onNewContinuingOffer
  */
-export const makeOffersFacet = ({
+export const makeOfferExecutor = ({
   zoe,
   powers,
   onStatusChange,
@@ -45,7 +43,7 @@ export const makeOffersFacet = ({
 }) => {
   const { invitationFromSpec, lastOfferId, purseForBrand } = powers;
 
-  return Far('offers facet', {
+  return {
     /**
      * Take an offer description provided in capData, augment it with payments and call zoe.offer()
      *
@@ -53,9 +51,7 @@ export const makeOffersFacet = ({
      * @returns {Promise<void>} when the offer has been sent to Zoe; payouts go into this wallet's purses
      * @throws if any parts of the offer can be determined synchronously to be invalid
      */
-    executeOffer: async offerSpec => {
-      fit(harden(offerSpec), shape.OfferSpec);
-
+    async executeOffer(offerSpec) {
       const paymentsManager = makePaymentsHelper(purseForBrand);
 
       /** @type {OfferStatus} */
@@ -157,12 +153,6 @@ export const makeOffersFacet = ({
         handleError(err);
       }
     },
-
-    /**
-     * Contracts can use this to generate a valid (monotonic) offer ID by incrementing.
-     * In most cases it will be faster to get this from RPC query.
-     */
-    getLastOfferId: lastOfferId.get,
-  });
+  };
 };
-harden(makeOffersFacet);
+harden(makeOfferExecutor);

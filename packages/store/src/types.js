@@ -586,8 +586,8 @@
  * @property {(t: Pattern) => Pattern} eref
  * @property {(t: Pattern) => Pattern} opt
  *
- * @property {(interfaceName: string,
- *             methodGuards: Record<string|symbol,MethodGuard>,
+ * @property {<M extends Record<any, any>>(interfaceName: string,
+ *             methodGuards: M,
  *             options?: {sloppy?: boolean}
  * ) => InterfaceGuard} interface
  * @property {(...argGuards: ArgGuard[]) => MethodGuardMaker} call
@@ -596,9 +596,20 @@
  * @property {(argGuard: ArgGuard) => ArgGuard} await
  */
 
-/** @typedef {any} InterfaceGuard */
+/** @typedef {(...args: any[]) => any} Method */
+
+// TODO parameterize this to match the behavior object it guards
+/**
+ * @typedef {{
+ * klass: 'Interface',
+ * interfaceName: string,
+ * methodGuards: Record<string | symbol, MethodGuard>
+ * sloppy?: boolean
+ * }} InterfaceGuard
+ */
+
 /** @typedef {any} MethodGuardMaker */
-/** @typedef {any} MethodGuard */
+/** @typedef {{ klass: 'methodGuard', callKind: 'sync' | 'async', returnGuard: unknown }} MethodGuard */
 /** @typedef {any} ArgGuard */
 
 /**

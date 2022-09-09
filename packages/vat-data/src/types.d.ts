@@ -6,6 +6,7 @@
  * For the non-multi defineKind, there is just one facet so it doesn't have a key.
  */
 import type {
+  InterfaceGuard,
   MapStore,
   SetStore,
   StoreOptions,
@@ -90,7 +91,7 @@ type DefineKindOptions<C> = {
    * `vivifyFarClass` use this internally to protect their raw class methods
    * using the provided interface.
    */
-  interfaceGuard?: object; // TODO type
+  interfaceGuard?: InterfaceGuard<unknown>;
 };
 
 export type VatData = {

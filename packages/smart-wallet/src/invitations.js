@@ -50,7 +50,6 @@ export const makeInvitationsHelper = (
   invitationsPurse,
   getInvitationContinuation,
 ) => {
-  // TODO(6062) validate params with patterns
   const invitationGetters = /** @type {const} */ ({
     /** @type {(spec: ContractInvitationSpec) => Promise<Invitation>} */
     contract(spec) {
@@ -72,7 +71,7 @@ export const makeInvitationsHelper = (
         details =>
           details.description === description && details.instance === instance,
       );
-      assert(match, `no matching purse for ${{ instance, description }}`);
+      assert(match, `invitation not found: ${description}`);
       const toWithDraw = AmountMath.make(invitationBrand, harden([match]));
       console.log('.... ', { toWithDraw });
 

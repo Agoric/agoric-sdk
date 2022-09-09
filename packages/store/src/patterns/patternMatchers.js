@@ -1473,7 +1473,7 @@ const makePatternKit = () => {
    * @param {ArgGuard[]} argGuards
    * @param {ArgGuard[]} [optionalArgGuards]
    * @param {ArgGuard} [restArgGuard]
-   * @returns {MethodGuard}
+   * @returns {MethodGuardMaker}
    */
   const makeMethodGuardMaker = (
     callKind,
