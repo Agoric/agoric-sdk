@@ -6,6 +6,7 @@ import { E, Far } from '@endo/far';
 // TODO: move to narrower package?
 import { observeIteration, observeNotifier } from '@agoric/notifier';
 import { AmountMath, AmountShape } from '@agoric/ertp';
+import { WalletName } from '@agoric/internal';
 import { makeMyAddressNameAdmin, PowerFlags } from './core/basic-behaviors.js';
 
 const { details: X, quote: q } = assert;
@@ -45,20 +46,18 @@ const makeBridgeProvisionTool = sendInitialPayment => {
         }
 
         const { nameHub, myAddressNameAdmin } = makeMyAddressNameAdmin(address);
-        assert(myAddressNameAdmin);
-        await E(namesByAddressAdmin).update(address, nameHub);
-        const depositFacet = nameHub.lookup('depositFacet');
-
-        // don't wait for this here, since their deposit facet
-        // might not be there yet
-        void sendInitialPayment(address, depositFacet);
 
         const bank = E(bankManager).getBankForAddress(address);
-        await E(walletFactory).provideSmartWallet(
-          address,
-          bank,
-          myAddressNameAdmin,
-        );
+        await Promise.all([
+          E(namesByAddressAdmin).update(address, nameHub, myAddressNameAdmin),
+          E(walletFactory).provideSmartWallet(
+            address,
+            bank,
+            myAddressNameAdmin,
+          ),
+          sendInitialPayment(address, nameHub.lookup(WalletName.depositFacet)),
+        ]);
+
         console.info('provisioned', address, powerFlags);
       },
     });
@@ -127,10 +126,14 @@ export const start = (zcf, privateArgs) => {
   });
 
   const sendInitialPayment = async (address, depositFacet) => {
+    console.log('sendInitialPayment', address);
     const initialPmt = await E(fundPurse).withdraw(perAccountInitialAmount);
 
     return E(depositFacet)
       .receive(initialPmt)
+      .then(amt => {
+        console.log('provisionPool sent', amt, 'to', address);
+      })
       .catch(e => {
         console.error(X`initial deposit for ${q(address)} failed: ${q(e)}`);
         E(fundPurse).deposit(initialPmt);
