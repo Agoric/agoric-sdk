@@ -55,7 +55,9 @@ export const startEconomicCommittee = async (
   const storageNode = await E(committeesNode).makeChildNode(
     sanitizePathSegment(committeeName),
   );
-  const marshaller = await E(board).getReadonlyMarshaller();
+
+  // NB: committee must only publish what it intended to be public
+  const marshaller = await E(board).getPublishingMarshaller();
 
   const { creatorFacet, instance } = await E(zoe).startInstance(
     committee,

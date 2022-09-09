@@ -154,15 +154,15 @@ test('want stable', async t => {
   t.is(purseBalance(computedState, stableBrand), swapSize - 1n);
 });
 
-// TODO will be be fixed in #6110
-test.skip('govern offerFilter', async t => {
+test('govern offerFilter', async t => {
   const { anchor } = t.context;
   const { agoricNames, economicCommitteeCreatorFacet, psmFacets, zoe } =
     await E.get(t.context.consume);
 
-  const anchorPsm = await E.get(E(psmFacets).get(anchor.brand));
-
-  const { psmGovernorCreatorFacet } = anchorPsm;
+  // FIXME real use will never access to this
+  const { psmGovernorCreatorFacet } = await E.get(
+    E(psmFacets).get(anchor.brand),
+  );
 
   const wallet = await t.context.simpleProvideWallet(committeeAddress);
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
@@ -181,6 +181,7 @@ test.skip('govern offerFilter', async t => {
     wallet.getDepositFacet().receive(voterInvitation);
   }
 
+  // FIXME we need to propose the question using the PSM charter
   t.log('Set up question');
   const binaryVoteCounterInstallation = await E(agoricNames).lookup(
     'installation',
@@ -191,8 +192,32 @@ test.skip('govern offerFilter', async t => {
     2n,
     harden(['wantStable']),
   );
+  // FIXME need to look up questionHandle from chain storage to get its board ID
+  // then look up that value in the board, and make sure it resolves
   const { positions, questionHandle } = await details;
   const yesFilterOffers = positions[0];
+
+  // SHOULD INSTEAD BE LIKE THIS:
+  // {
+  //   /** @type {import('../src/invitations.js').ContinuingInvitationSpec} */
+  //   const invitationSpec = {
+  //     source: 'continuing',
+  //     previousOffer: 33,
+  //     invitationMakerName: 'makeVoteInvitation',
+  //     invitationArgs: [questionHandle],
+  //   };
+  //   /** @type {import('../src/offers').OfferSpec} */
+  //   const offerSpec = {
+  //     id: 44,
+  //     invitationSpec,
+  //     offerArgs: { positions: [yesFilterOffers] },
+  //     proposal: {},
+  //   };
+
+  //   // wait for the previousOffer result to get into the purse
+  //   await eventLoopIteration();
+  //   await offersFacet.executeOffer(offerSpec);
+  // }
 
   t.log('Prepare offer to voting invitation in purse');
   {
@@ -202,14 +227,17 @@ test.skip('govern offerFilter', async t => {
       .then(brand => {
         /** @type {Amount<'set'>} */
         const invitationsAmount = NonNullish(computedState.balances.get(brand));
-        t.is(invitationsAmount?.value.length, 1);
+        t.is(invitationsAmount?.value.length, 2);
         return invitationsAmount.value[0];
       });
+
+    t.is(invitationDetails.description, 'vote on offer filter');
 
     /** @type {import('../src/invitations.js').PurseInvitationSpec} */
     const invitationSpec = {
       source: 'purse',
-      instance: await E(agoricNames).lookup('instance', 'economicCommittee'),
+      // FIXME we need the instance of the PSM charter but this name doesn't exist
+      instance: await E(agoricNames).lookup('instance', 'psmCharter'),
       description: invitationDetails.description,
     };
     /** @type {import('../src/offers').OfferSpec} */
