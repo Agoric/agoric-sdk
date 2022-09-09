@@ -198,7 +198,7 @@ export const makeMyAddressNameAdmin = address => {
     getMyAddress: () => address,
   });
   // reserve space for deposit facet
-  myAddressNameAdmin.reserve('depositFacet');
+  myAddressNameAdmin.reserve(WalletName.depositFacet);
 
   return { nameHub, myAddressNameAdmin };
 };
