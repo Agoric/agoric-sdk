@@ -1,5 +1,5 @@
 // @ts-check
-import { AmountShape, PaymentShape } from '@agoric/ertp';
+import { AmountMath, AmountShape, PaymentShape } from '@agoric/ertp';
 import { isNat } from '@agoric/nat';
 import {
   makeStoredPublishKit,
@@ -284,7 +284,7 @@ const behavior = {
      * If the purse doesn't exist, we hold the payment until it does.
      *
      * @param {import('@endo/far').FarRef<Payment>} payment
-     * @returns {Promise<Amount | 'deferred'>}
+     * @returns {Promise<Amount>} amounts for deferred deposits will be empty
      */
     async receive(payment) {
       /** @type {State} */
@@ -297,7 +297,7 @@ const behavior = {
         } else {
           queues.init(brand, [payment]);
         }
-        return 'deferred';
+        return AmountMath.makeEmpty(brand);
       }
 
       // @ts-expect-error deposit does take a FarRef<Payment>
@@ -322,7 +322,7 @@ const behavior = {
      * @throws if any parts of the offer can be determined synchronously to be invalid
      */
     async executeOffer(offerSpec) {
-      const { state } = this;
+      const { facets, state } = this;
       const {
         zoe,
         brandPurses,
@@ -335,6 +335,7 @@ const behavior = {
 
       const executor = makeOfferExecutor({
         zoe,
+        depositFacet: facets.deposit,
         powers: {
           invitationFromSpec: makeInvitationsHelper(
             zoe,
