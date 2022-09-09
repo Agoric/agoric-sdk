@@ -5,6 +5,7 @@ import {
   makeNotifierKit,
 } from '@agoric/notifier';
 import { iterateEach } from '@agoric/casting';
+import { makeExportContext } from '@agoric/wallet/api/src/marshal-contexts.js';
 import { getScopedBridge } from '../service/ScopedBridge.js';
 import { getDappService } from '../service/Dapps.js';
 import { getOfferService } from '../service/Offers.js';
@@ -115,6 +116,8 @@ export const makeWalletBridgeFromFollower = (
   },
   firstCallback = () => {},
 ) => {
+  const context = makeExportContext();
+
   const notifiers = {
     getPursesNotifier: 'purses',
     getContactsNotifier: 'contacts',
@@ -133,12 +136,14 @@ export const makeWalletBridgeFromFollower = (
   // We assume just one cosmos purse per brand.
   const offers = {};
   const brandToPurse = new Map();
+  const pursePetnameToBrand = new Map();
 
   const updatePurses = () => {
     const purses = [];
-    for (const purse of brandToPurse.values()) {
+    for (const [brand, purse] of brandToPurse.entries()) {
       if (purse.currentAmount && purse.brandPetname) {
         console.log(purse.currentAmount);
+        pursePetnameToBrand.set(purse.pursePetname, brand);
         purses.push(purse);
       }
     }
@@ -148,7 +153,7 @@ export const makeWalletBridgeFromFollower = (
 
   const followLatest = async () => {
     for await (const { value } of iterateEach(follower)) {
-      console.log('have value', value);
+      console.log(value);
       /** @type {import('@agoric/smart-wallet/src/smartWallet').UpdateRecord} */
       const updateRecord = value;
       if (firstCallback) {
@@ -165,7 +170,7 @@ export const makeWalletBridgeFromFollower = (
             ...brandToPurse.get(descriptor.brand),
             brand: descriptor.brand,
             brandPetname: descriptor.petname,
-            issuerPetname: descriptor.petname,
+            pursePetname: descriptor.petname,
             displayInfo: descriptor.displayInfo,
           };
           brandToPurse.set(descriptor.brand, purseObj);
@@ -178,6 +183,7 @@ export const makeWalletBridgeFromFollower = (
           const purseObj = {
             ...brandToPurse.get(currentAmount.brand),
             currentAmount,
+            value: currentAmount.value,
           };
           brandToPurse.set(currentAmount.brand, purseObj);
           updatePurses();
@@ -239,6 +245,43 @@ export const makeWalletBridgeFromFollower = (
     getNotifierMethods.getOffersNotifier(),
   );
   const { acceptOffer, declineOffer, cancelOffer } = offerService;
+  const addOffer = details => {
+    const {
+      instanceHandleBoardId,
+      invitationMaker: { method },
+      proposalTemplate: { give, want },
+    } = details;
+
+    const instance = Far('instance');
+    context.ensureBoardId(instanceHandleBoardId, instance);
+
+    const mapPurses = obj =>
+      Object.fromEntries(
+        Object.entries(obj).map(([kw, { brand, pursePetname, value }]) => [
+          kw,
+          { brand: brand || pursePetnameToBrand.get(pursePetname), value },
+        ]),
+      );
+    const spendAction = context.serialize(
+      harden({
+        id: new Date().getTime(),
+        invitationSpec: {
+          source: 'contract',
+          instance,
+          publicInvitationMaker: method,
+        },
+        proposal: {
+          give: mapPurses(give),
+          want: mapPurses(want),
+        },
+      }),
+    );
+
+    return offerService.addOffer({
+      ...details,
+      spendAction: JSON.stringify(spendAction),
+    });
+  };
 
   const walletBridge = Far('follower wallet bridge', {
     ...getNotifierMethods,
@@ -254,7 +297,7 @@ export const makeWalletBridgeFromFollower = (
     getScopedBridge: (origin, suggestedDappPetname) =>
       getScopedBridge(origin, suggestedDappPetname, {
         dappService,
-        offerService,
+        offerService: { ...offerService, addOffer },
         leader,
         unserializer,
         publicAddress,
