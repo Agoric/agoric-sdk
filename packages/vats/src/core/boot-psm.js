@@ -109,8 +109,12 @@ export const buildRootObject = (vatPowers, vatParameters) => {
   const log = vatPowers.logger || console.info;
 
   const { anchorAssets, economicCommitteeAddresses } = vatParameters;
-  fit(harden(anchorAssets), M.arrayOf(AnchorOptionsShape));
-  fit(harden(economicCommitteeAddresses), M.recordOf(M.string(), M.string()));
+  fit(harden(anchorAssets), M.arrayOf(AnchorOptionsShape), 'anchorAssets');
+  fit(
+    harden(economicCommitteeAddresses),
+    M.recordOf(M.string(), M.string()),
+    'economicCommitteeAddresses',
+  );
 
   const { produce, consume } = makePromiseSpace(log);
   const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(
