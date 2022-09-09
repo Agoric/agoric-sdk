@@ -290,18 +290,21 @@ const behavior = {
       /** @type {State} */
       const { brandPurses, paymentQueues: queues } = this.state;
       const brand = await E(payment).getAllegedBrand();
-      const purse = brandPurses.get(brand);
-      if (!purse) {
-        if (queues.has(brand)) {
-          queues.get(brand).push(payment);
-        } else {
-          queues.init(brand, [payment]);
-        }
-        return AmountMath.makeEmpty(brand);
+
+      // When there is a purse deposit into it
+      if (brandPurses.has(brand)) {
+        const purse = brandPurses.get(brand);
+        // @ts-expect-error deposit does take a FarRef<Payment>
+        return E(purse).deposit(payment);
       }
 
-      // @ts-expect-error deposit does take a FarRef<Payment>
-      return E(purse).deposit(payment);
+      // When there is no purse, queue the payment
+      if (queues.has(brand)) {
+        queues.get(brand).push(payment);
+      } else {
+        queues.init(brand, harden([payment]));
+      }
+      return AmountMath.makeEmpty(brand);
     },
   },
   offers: {
