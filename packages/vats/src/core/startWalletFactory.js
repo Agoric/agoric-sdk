@@ -45,18 +45,24 @@ export const startWalletFactory = async (
     installation: {
       consume: { walletFactory, provisionPool },
     },
-    brand,
+    brand: {
+      consume: { [Stable.symbol]: feeBrandP },
+    },
+    issuer: {
+      consume: { [Stable.symbol]: feeIssuerP },
+    },
   },
   { options: { perAccountInitialValue = (StableUnit * 25n) / 100n } = {} } = {},
 ) => {
   const STORAGE_PATH = 'wallet';
 
-  const [storageNode, bridgeManager, namesByAddressAdmin, feeBrand] =
+  const [storageNode, bridgeManager, namesByAddressAdmin, feeBrand, feeIssuer] =
     await Promise.all([
       makeStorageNodeChild(chainStorage, STORAGE_PATH),
       bridgeManagerP,
       namesByAddressAdminP,
-      brand.consume[Stable.symbol],
+      feeBrandP,
+      feeIssuerP,
     ]);
   assert(namesByAddressAdmin, 'no namesByAddressAdmin???');
 
@@ -68,12 +74,17 @@ export const startWalletFactory = async (
     }),
   );
   /** @type {WalletFactoryStartResult} */
-  const wfFacets = await E(zoe).startInstance(walletFactory, {}, terms, {
-    storageNode,
-    // POLA contract only needs to register for srcId='wallet'
-    // TODO consider a scoped attenuation of this bridge manager to just 'wallet'
-    bridgeManager,
-  });
+  const wfFacets = await E(zoe).startInstance(
+    walletFactory,
+    { Fee: feeIssuer },
+    terms,
+    {
+      storageNode,
+      // POLA contract only needs to register for srcId='wallet'
+      // TODO consider a scoped attenuation of this bridge manager to just 'wallet'
+      bridgeManager,
+    },
+  );
   walletFactoryStartResult.resolve(wfFacets);
 
   // const addr = PROVISION_ACCT_TEST;
@@ -137,6 +148,9 @@ export const WALLET_FACTORY_MANIFEST = {
       consume: { walletFactory: 'zoe', provisionPool: 'zoe' },
     },
     brand: {
+      consume: { [Stable.symbol]: 'zoe' },
+    },
+    issuer: {
       consume: { [Stable.symbol]: 'zoe' },
     },
   },
