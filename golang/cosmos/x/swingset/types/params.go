@@ -14,12 +14,20 @@ var (
 	ParamStoreKeyBeansPerUnit       = []byte("beans_per_unit")
 	ParamStoreKeyBootstrapVatConfig = []byte("bootstrap_vat_config")
 	ParamStoreKeyFeeUnitPrice       = []byte("fee_unit_price")
+	ParamStoreKeyPowerFlagFees      = []byte("power_flag_fees")
 )
 
 func NewStringBeans(key string, beans sdk.Uint) StringBeans {
 	return StringBeans{
 		Key:   key,
 		Beans: beans,
+	}
+}
+
+func NewPowerFlagFee(powerFlag string, fee sdk.Coins) PowerFlagFee {
+	return PowerFlagFee{
+		PowerFlag: powerFlag,
+		Fee:       fee,
 	}
 }
 
@@ -34,6 +42,7 @@ func DefaultParams() Params {
 		BeansPerUnit:       DefaultBeansPerUnit,
 		BootstrapVatConfig: DefaultBootstrapVatConfig,
 		FeeUnitPrice:       DefaultFeeUnitPrice,
+		PowerFlagFees:      DefaultPowerFlagFees,
 	}
 }
 
@@ -48,6 +57,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(ParamStoreKeyBeansPerUnit, &p.BeansPerUnit, validateBeansPerUnit),
 		paramtypes.NewParamSetPair(ParamStoreKeyFeeUnitPrice, &p.FeeUnitPrice, validateFeeUnitPrice),
 		paramtypes.NewParamSetPair(ParamStoreKeyBootstrapVatConfig, &p.BootstrapVatConfig, validateBootstrapVatConfig),
+		paramtypes.NewParamSetPair(ParamStoreKeyPowerFlagFees, &p.PowerFlagFees, validatePowerFlagFees),
 	}
 }
 
@@ -60,6 +70,9 @@ func (p Params) ValidateBasic() error {
 		return err
 	}
 	if err := validateBootstrapVatConfig(p.BootstrapVatConfig); err != nil {
+		return err
+	}
+	if err := validatePowerFlagFees(p.PowerFlagFees); err != nil {
 		return err
 	}
 
@@ -107,6 +120,24 @@ func validateBootstrapVatConfig(i interface{}) error {
 
 	if v == "" {
 		return fmt.Errorf("bootstrap vat config must not be empty")
+	}
+
+	return nil
+}
+
+func validatePowerFlagFees(i interface{}) error {
+	v, ok := i.([]PowerFlagFee)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	for _, pff := range v {
+		if pff.PowerFlag == "" {
+			return fmt.Errorf("power flag must not be empty")
+		}
+		if err := pff.Fee.Validate(); err != nil {
+			return fmt.Errorf("poer flag %s fee must be valid: %e", pff.PowerFlag, err)
+		}
 	}
 
 	return nil

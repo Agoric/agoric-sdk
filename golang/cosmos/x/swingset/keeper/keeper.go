@@ -195,9 +195,64 @@ func (k Keeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint
 	return nil
 }
 
-// GetBalance returns the amount of denom coins in the addr's account balance.
-func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
-	return k.bankKeeper.GetBalance(ctx, addr, denom)
+// makeFeeMenu returns a map from power flag to its fee.  In the case of duplicates, the
+// first one wins.
+func makeFeeMenu(powerFlagFees []types.PowerFlagFee) map[string]sdk.Coins {
+	feeMenu := make(map[string]sdk.Coins, len(powerFlagFees))
+	for _, pff := range powerFlagFees {
+		if _, ok := feeMenu[pff.PowerFlag]; !ok {
+			feeMenu[pff.PowerFlag] = pff.Fee
+		}
+	}
+	return feeMenu
+}
+
+var privilegedProvisioningCoins sdk.Coins = sdk.NewCoins(sdk.NewInt64Coin("provisionpass", 1))
+
+func calculateFees(balances sdk.Coins, submitter, addr sdk.AccAddress, powerFlags []string, powerFlagFees []types.PowerFlagFee) (sdk.Coins, error) {
+	fees := sdk.NewCoins()
+
+	// See if we have the balance needed for privileged provisioning.
+	if balances.IsAllGTE(privilegedProvisioningCoins) {
+		// We do, and notably we don't deduct anything from the submitter.
+		return fees, nil
+	}
+
+	if !submitter.Equals(addr) {
+		return nil, fmt.Errorf("submitter is not the same as target address for fee-based provisioning")
+	}
+
+	if len(powerFlags) == 0 {
+		return nil, fmt.Errorf("must specify powerFlags for fee-based provisioning")
+	}
+
+	// Collate the power flags into a map of power flags to the fee coins.
+	feeMenu := makeFeeMenu(powerFlagFees)
+
+	// Calculate the total fee according to that map.
+	for _, powerFlag := range powerFlags {
+		if fee, ok := feeMenu[powerFlag]; ok {
+			fees = fees.Add(fee...)
+		} else {
+			return nil, fmt.Errorf("unrecognized powerFlag: %s", powerFlag)
+		}
+	}
+
+	return fees, nil
+}
+
+func (k Keeper) ChargeForProvisioning(ctx sdk.Context, submitter, addr sdk.AccAddress, powerFlags []string) error {
+	balances := k.bankKeeper.GetAllBalances(ctx, submitter)
+	fees, err := calculateFees(balances, submitter, addr, powerFlags, k.GetParams(ctx).PowerFlagFees)
+	if err != nil {
+		return err
+	}
+
+	// Deduct the fee from the submitter.
+	if fees.IsZero() {
+		return nil
+	}
+	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, submitter, k.feeCollectorName, fees)
 }
 
 // GetEgress gets the entire egress struct for a peer

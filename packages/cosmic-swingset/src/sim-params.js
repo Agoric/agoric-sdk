@@ -1,6 +1,8 @@
 import { Nat } from '@agoric/nat';
 
 const makeStringBeans = (key, beans) => ({ key, beans: `${Nat(beans)}` });
+const makePowerFlagFee = (powerFlag, fee) => ({ powerFlag, fee });
+const makeCoin = (denom, amount) => ({ denom, amount: `${Nat(amount)}` });
 
 // This should roughly match the values in
 // `agoric-sdk/golang/cosmos/x/swingset/types/default-params.go`.
@@ -29,11 +31,12 @@ export const defaultBeansPerBlockComputeLimit =
 export const defaultBeansPerVatCreation =
   300_000n * defaultBeansPerXsnapComputron;
 
-// Fees are denominated in units of $1 RUN.
-export const defaultBeansPerFeeUnit = 1_000_000_000_000n; // $1
+// Fees are denominated in this unit.
+export const defaultFeeUnitPrice = [makeCoin('uist', 1_000_000n)]; // $1
 
 // TODO: create the cost model we want, and update these to be more principled.
 // These defaults currently make deploying an ag-solo cost less than $1.00.
+export const defaultBeansPerFeeUnit = 1_000_000_000_000n; // $1
 export const defaultBeansPerInboundTx = defaultBeansPerFeeUnit / 100n; // $0.01
 export const defaultBeansPerMessage = defaultBeansPerFeeUnit / 1_000n; // $0.001
 export const defaultBeansPerMessageByte = defaultBeansPerFeeUnit / 50_000n; // $0.0002
@@ -50,18 +53,16 @@ export const defaultBeansPerUnit = [
   makeStringBeans(BeansPerXsnapComputron, defaultBeansPerXsnapComputron),
 ];
 
-export const defaultFeeUnitPrice = [
-  {
-    denom: 'uist',
-    amount: '1000000',
-  },
-];
-
 export const defaultBootstrapVatConfig =
   '@agoric/vats/decentral-demo-config.json';
+
+export const defaultPowerFlagFees = [
+  makePowerFlagFee('SMART_WALLET', [makeCoin('ubld', 10_000_000n)]),
+];
 
 export const DEFAULT_SIM_SWINGSET_PARAMS = {
   beans_per_unit: defaultBeansPerUnit,
   fee_unit_price: defaultFeeUnitPrice,
   bootstrap_vat_config: defaultBootstrapVatConfig,
+  power_flag_fees: defaultPowerFlagFees,
 };

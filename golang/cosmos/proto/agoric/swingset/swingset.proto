@@ -63,6 +63,14 @@ message Params {
     // via governance as it is only referenced by the chain's initial
     // construction.
     string bootstrap_vat_config = 3;
+
+    // If the provision submitter doesn't hold a provisionpass, their requested
+    // power flags are looked up in this fee menu (first match wins) and the sum
+    // is charged.  If any power flag is not found in this menu, the request is
+    // rejected.
+    repeated PowerFlagFee power_flag_fees = 4 [
+      (gogoproto.nullable) = false
+    ];
 }
 
 // Map element of a string key to a Nat bean count.
@@ -75,6 +83,17 @@ message StringBeans {
   // The actual bean value.
   string beans = 2 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Uint",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// Map a provisioning power flag to its corresponding fee.
+message PowerFlagFee {
+  option (gogoproto.equal) = true;
+
+  string power_flag = 1;
+  repeated cosmos.base.v1beta1.Coin fee = 2 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
     (gogoproto.nullable) = false
   ];
 }
