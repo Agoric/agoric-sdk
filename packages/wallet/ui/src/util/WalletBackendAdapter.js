@@ -5,7 +5,6 @@ import {
   makeNotifierKit,
 } from '@agoric/notifier';
 import { iterateEach } from '@agoric/casting';
-import { makeExportContext } from '@agoric/wallet/api/src/marshal-contexts.js';
 import { getScopedBridge } from '../service/ScopedBridge.js';
 import { getDappService } from '../service/Dapps.js';
 import { getOfferService } from '../service/Offers.js';
@@ -96,7 +95,7 @@ export const makeBackendFromWalletBridge = walletBridge => {
 /**
  * @param {import('@agoric/casting').Follower} follower
  * @param {import('@agoric/casting').Leader} leader
- * @param {import('@agoric/casting').Unserializer} unserializer
+ * @param {ReturnType<import('@endo/marshal').makeMarshal>} marshaller
  * @param {string} publicAddress
  * @param {object} keplrConnection
  * @param {string} networkConfig
@@ -106,7 +105,7 @@ export const makeBackendFromWalletBridge = walletBridge => {
 export const makeWalletBridgeFromFollower = (
   follower,
   leader,
-  unserializer,
+  marshaller,
   publicAddress,
   keplrConnection,
   networkConfig,
@@ -116,8 +115,6 @@ export const makeWalletBridgeFromFollower = (
   },
   firstCallback = () => {},
 ) => {
-  const context = makeExportContext();
-
   const notifiers = {
     getPursesNotifier: 'purses',
     getContactsNotifier: 'contacts',
@@ -245,40 +242,53 @@ export const makeWalletBridgeFromFollower = (
     getNotifierMethods.getOffersNotifier(),
   );
   const { acceptOffer, declineOffer, cancelOffer } = offerService;
-  const addOffer = details => {
+
+  // We override addOffer to adapt the old proposalTemplate format to the new
+  // smart-wallet format.
+  const addOfferPSMHack = async details => {
     const {
-      instanceHandleBoardId,
+      instanceHandleBoardId: instance, // This actually is the instance handle, not an ID.
       invitationMaker: { method },
       proposalTemplate: { give, want },
     } = details;
-
-    const instance = Far('instance');
-    context.ensureBoardId(instanceHandleBoardId, instance);
 
     const mapPurses = obj =>
       Object.fromEntries(
         Object.entries(obj).map(([kw, { brand, pursePetname, value }]) => [
           kw,
-          { brand: brand || pursePetnameToBrand.get(pursePetname), value },
+          {
+            brand: brand || pursePetnameToBrand.get(pursePetname),
+            value: BigInt(value),
+          },
         ]),
       );
-    const spendAction = context.serialize(
+    const offer = {
+      id: new Date().getTime(),
+      invitationSpec: {
+        source: 'contract',
+        instance,
+        publicInvitationMaker: method,
+      },
+      proposal: {
+        give: mapPurses(give),
+        want: mapPurses(want),
+      },
+    };
+    const spendAction = await E(marshaller).serialize(
       harden({
-        id: new Date().getTime(),
-        invitationSpec: {
-          source: 'contract',
-          instance,
-          publicInvitationMaker: method,
-        },
-        proposal: {
-          give: mapPurses(give),
-          want: mapPurses(want),
-        },
+        method: 'executeOffer',
+        offer,
       }),
     );
 
+    // Recover the instance's boardId.
+    const {
+      slots: [instanceBoardId],
+    } = await E(marshaller).serialize(instance);
+
     return offerService.addOffer({
       ...details,
+      instancePetname: `instance@${instanceBoardId}`,
       spendAction: JSON.stringify(spendAction),
     });
   };
@@ -297,9 +307,9 @@ export const makeWalletBridgeFromFollower = (
     getScopedBridge: (origin, suggestedDappPetname) =>
       getScopedBridge(origin, suggestedDappPetname, {
         dappService,
-        offerService: { ...offerService, addOffer },
+        offerService: { ...offerService, addOffer: addOfferPSMHack },
         leader,
-        unserializer,
+        unserializer: marshaller,
         publicAddress,
         issuerService,
         networkConfig,
