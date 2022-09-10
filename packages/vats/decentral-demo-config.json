@@ -50,6 +50,9 @@
     "provisioning": {
       "sourceSpec": "@agoric/vats/src/vat-provisioning.js"
     },
+    "provisionPool": {
+      "sourceSpec": "@agoric/vats/src/provisionPool.js"
+    },
     "sharing": {
       "sourceSpec": "@agoric/vats/src/vat-sharing.js"
     },
