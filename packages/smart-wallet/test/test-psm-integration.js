@@ -1,7 +1,7 @@
 // @ts-check
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { buildRootObject as buildPSMRootObject } from '@agoric/vats/src/core/boot-psm.js';
 import '@agoric/vats/src/core/types.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
@@ -14,6 +14,7 @@ import { E } from '@endo/far';
 import { NonNullish } from '@agoric/assert';
 import { coalesceUpdates } from '../src/utils.js';
 import { makeDefaultTestContext } from './contexts.js';
+import { withAmountUtils } from './supports.js';
 
 /**
  * @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>
@@ -256,6 +257,18 @@ test.skip('govern offerFilter', async t => {
     id: 44,
     result: { chosen: { strings: ['wantStable'] }, shares: 1n },
   });
+});
+
+test('deposit unknown brand', async t => {
+  const rial = withAmountUtils(makeIssuerKit('rial'));
+  assert(rial.mint);
+
+  const wallet = await t.context.simpleProvideWallet('agoric1queue');
+
+  const payment = rial.mint.mintPayment(rial.make(1_000n));
+  const result = await wallet.getDepositFacet().receive(harden(payment));
+  // successful request but not deposited
+  t.deepEqual(result, { brand: rial.brand, value: 0n });
 });
 
 test.todo('bad offer schema');

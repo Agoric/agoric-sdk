@@ -28,6 +28,7 @@ export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
 /**
  * @param {object} opts
  * @param {ERef<ZoeService>} opts.zoe
+ * @param {{ receive: (payment: *) => Promise<Amount> }} opts.depositFacet
  * @param {object} opts.powers
  * @param {import('./types').Cell<number>} opts.powers.lastOfferId
  * @param {(spec: import('./invitations').InvitationSpec) => ERef<Invitation>} opts.powers.invitationFromSpec
@@ -37,6 +38,7 @@ export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
  */
 export const makeOfferExecutor = ({
   zoe,
+  depositFacet,
   powers,
   onStatusChange,
   onNewContinuingOffer,
@@ -52,7 +54,7 @@ export const makeOfferExecutor = ({
      * @throws if any parts of the offer can be determined synchronously to be invalid
      */
     async executeOffer(offerSpec) {
-      const paymentsManager = makePaymentsHelper(purseForBrand);
+      const paymentsManager = makePaymentsHelper(purseForBrand, depositFacet);
 
       /** @type {OfferStatus} */
       let status = {
@@ -144,8 +146,8 @@ export const makeOfferExecutor = ({
         E.when(
           E(seatRef).getPayouts(),
           payouts =>
-            paymentsManager.depositPayouts(payouts).then(amounts => {
-              updateStatus({ payouts: amounts });
+            paymentsManager.depositPayouts(payouts).then(amountsOrDeferred => {
+              updateStatus({ payouts: amountsOrDeferred });
             }),
           handleError,
         );

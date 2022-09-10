@@ -7,8 +7,9 @@ import { E } from '@endo/far';
  * Used in an offer execution to manage payments state safely.
  *
  * @param {(brand: Brand) => import('./types').RemotePurse} purseForBrand
+ * @param {{ receive: (payment: *) => Promise<Amount> }} depositFacet
  */
-export const makePaymentsHelper = purseForBrand => {
+export const makePaymentsHelper = (purseForBrand, depositFacet) => {
   /** @type {PaymentPKeywordRecord | null} */
   let keywordPaymentPromises = null;
 
@@ -74,20 +75,14 @@ export const makePaymentsHelper = purseForBrand => {
       );
     },
 
-    // TODO(PS0?) when there's not a purse for a brand, hold the payout and wait for a purse to deposit it into
-    // Cheaper alternative: before offer validate we have issuers for all the 'wants' so the results can be put into purses.
     /**
-     *
      * @param {PaymentPKeywordRecord} payouts
-     * @returns {Promise<AmountKeywordRecord>}
+     * @returns {Promise<AmountKeywordRecord>} amounts for deferred deposits will be empty
      */
     async depositPayouts(payouts) {
-      /** @type {PaymentKeywordRecord} */
-      // @ts-expect-error ???
-      const paymentKeywordRecord = await deeplyFulfilledObject(payouts);
       /** Record<string, Promise<Amount>> */
-      const amountPKeywordRecord = objectMap(paymentKeywordRecord, payment =>
-        E(purseForBrand(payment.getAllegedBrand())).deposit(payment),
+      const amountPKeywordRecord = objectMap(payouts, paymentRef =>
+        E.when(paymentRef, payment => depositFacet.receive(payment)),
       );
       return deeplyFulfilledObject(amountPKeywordRecord);
     },
