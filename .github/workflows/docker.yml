@@ -24,7 +24,7 @@ jobs:
             | jq '(.commit.committer.date | fromdate)')
           TIMESTAMP=`date +%Y%m%d%H%M%S --date="@${COMMIT_TIME}"`
           SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-6)
-          SNAPSHOT_TAG="${TIMESTAMP}${SHORT_SHA}"
+          SNAPSHOT_TAG="${TIMESTAMP}-${SHORT_SHA}"
           echo "::set-output name=tag::$SNAPSHOT_TAG"
 
   docker-sdk:
