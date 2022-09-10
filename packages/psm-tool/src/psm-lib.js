@@ -117,8 +117,8 @@ const makePSMSpendAction = (instance, brands, opts, timeStamp) => {
 };
 
 const vstorage = {
-  url: (path = 'published', { kind = 'children' } = {}) =>
-    `/abci_query?path=%22/custom/vstorage/${kind}/${path}%22&height=0`,
+  url: (path = 'published', { kind = 'children', height = 0 } = {}) =>
+    `/abci_query?path=%22/custom/vstorage/${kind}/${path}%22&height=${height}`,
   decode: ({ result: { response } }) => {
     const { code } = response;
     if (code !== 0) {
@@ -134,6 +134,41 @@ const vstorage = {
   read: async (path = 'published', getJSON) => {
     const raw = await getJSON(vstorage.url(path, { kind: 'data' }));
     return vstorage.decode(raw);
+  },
+  /**
+   * @param {string} path
+   * @param {*} getJSON
+   * @param {number} [height]
+   * @returns {Promise<{blockHeight: number, values: string[]}>}
+   */
+  readAt: async (path, getJSON, height = undefined) => {
+    const raw = await getJSON(vstorage.url(path, { kind: 'data', height }));
+    const txt = vstorage.decode(raw);
+    /** @type {{ value: string }} */
+    const { value } = JSON.parse(txt);
+    return JSON.parse(value);
+  },
+  readAll: async (path, getJSON) => {
+    const parts = [];
+    let blockHeight;
+    do {
+      let values;
+      try {
+        ({ blockHeight, values } = await vstorage.readAt(
+          path,
+          getJSON,
+          blockHeight && blockHeight - 1,
+        ));
+      } catch (err) {
+        if ('log' in err && err.log.match(/unknown request/)) {
+          break;
+        }
+        throw err;
+      }
+      // console.debug(blockHeight, values.length);
+      parts.push(values);
+    } while (blockHeight > 0);
+    return parts.flat();
   },
 };
 
@@ -211,12 +246,19 @@ const storageNode = {
     /** @type {{ value: string }} */
     const { value } = JSON.parse(txt);
     const specimen = JSON.parse(value);
-    // without blockHeight, it's the pre-vstreams style
+    const { blockHeight } = specimen;
+    const capDatas = storageNode.parseMany(specimen.values);
+    return { blockHeight, capDatas };
+  },
+  unserialize: (txt, ctx) => {
+    const { capDatas } = storageNode.parseCapData(txt);
+    return capDatas.map(capData =>
+      miniMarshal(ctx.convertSlotToVal).unserialze(capData),
+    );
+  },
+  parseMany: values => {
     /** @type {{ body: string, slots: string[] }[]} */
-    const capDatas =
-      'blockHeight' in specimen
-        ? specimen.values.map(s => JSON.parse(s))
-        : [JSON.parse(specimen.value)];
+    const capDatas = values.map(s => JSON.parse(s));
     for (const capData of capDatas) {
       assert(typeof capData === 'object' && capData !== null, capData);
       assert('body' in capData && 'slots' in capData, capData);
@@ -224,12 +266,6 @@ const storageNode = {
       assert(Array.isArray(capData.slots), capData);
     }
     return capDatas;
-  },
-  unserialize: (txt, ctx) => {
-    const capDatas = storageNode.parseCapData(txt);
-    return capDatas.map(capData =>
-      miniMarshal(ctx.convertSlotToVal).unserialze(capData),
-    );
   },
 };
 
@@ -263,41 +299,28 @@ const makeAgoricNames = async (ctx, getJSON, kinds = ['brand', 'instance']) => {
 };
 
 // eslint-disable-next-line no-unused-vars
-const examplePurseState = {
-  brand: {
-    boardId: 'board0074',
-    iface: 'Alleged: IST brand',
-  },
-  brandPetname: 'IST',
-  currentAmount: {
-    brand: {
-      kind: 'brand',
-      petname: 'IST',
-    },
-    value: 125989900,
-  },
-  displayInfo: {
-    assetKind: 'nat',
-    decimalPlaces: 6,
-  },
-  pursePetname: 'Agoric stable local currency',
+const exampleAsset = {
+  brand: { boardId: 'board0425', iface: 'Alleged: BLD brand' },
+  displayInfo: { assetKind: 'nat', decimalPlaces: 6 },
+  issuer: { boardId: null, iface: undefined },
+  petname: 'Agoric staking token',
 };
-/** @typedef {typeof examplePurseState} PurseState */
+/** @typedef {typeof exampleAsset} AssetDescriptor */
 
-/** @param {PurseState[]} purses */
-const makeAmountFormatter = purses => amt => {
+/** @param {AssetDescriptor[]} assets */
+const makeAmountFormatter = assets => amt => {
   const {
-    brand: { petname },
+    brand: { boardId },
     value,
   } = amt;
-  const purse = purses.find(p => p.brandPetname === petname);
-  if (!purse) return [NaN, petname];
+  const asset = assets.find(a => a.brand.boardId === boardId);
+  if (!asset) return [NaN, boardId];
   const {
-    brandPetname,
+    petname,
     displayInfo: { decimalPlaces },
-  } = purse;
+  } = asset;
   /** @type {[qty: number, petname: string]} */
-  const scaled = [Number(value) / 10 ** decimalPlaces, brandPetname];
+  const scaled = [Number(value) / 10 ** decimalPlaces, petname];
   return scaled;
 };
 
@@ -307,48 +330,49 @@ const asPercent = ratio => {
   return (100 * Number(numerator.value)) / Number(denominator.value);
 };
 
-/** @param {PurseState[]} purses */
-const simplePurseBalances = purses => {
-  const fmt = makeAmountFormatter(purses);
-  return purses.map(p => fmt(p.currentAmount));
+/**
+ * @param {Amount[]} balances
+ * @param {AssetDescriptor[]} assets
+ */
+const simplePurseBalances = (balances, assets) => {
+  const fmt = makeAmountFormatter(assets);
+  return balances.map(b => fmt(b));
 };
 
 /**
- * @param {{ purses: PurseState[], offers: OfferDetail[]}} state
+ * @param {{ assets: AssetDescriptor[], offers: Map<number,OfferSpec>}} state
  * @param {Awaited<ReturnType<typeof makeAgoricNames>>} agoricNames
  */
 const simpleOffers = (state, agoricNames) => {
-  const { purses, offers } = state;
-  const fmt = makeAmountFormatter(purses);
+  const { assets, offers } = state;
+  const fmt = makeAmountFormatter(assets);
   const fmtRecord = r =>
     Object.fromEntries(
-      Object.entries(r).map(([kw, { amount }]) => [kw, fmt(amount)]),
+      Object.entries(r).map(([kw, amount]) => [kw, fmt(amount)]),
     );
-  return offers.map(o => {
+  return [...offers.values()].map(o => {
+    assert(o.invitationSpec.source === 'contract');
     const {
-      //   id,
-      meta,
-      instanceHandleBoardId,
-      invitationDetails: { description: invitationDescription },
-      proposalForDisplay: { give, want },
-      status,
+      id,
+      invitationSpec: { instance, publicInvitationMaker },
+      proposal: { give, want },
+      payouts,
     } = o;
-    // console.log({ give: JSON.stringify(give), want: JSON.stringify(want) });
-    const instanceEntry = Object.entries(agoricNames.instance).find(
-      ([_name, { boardId }]) => boardId === instanceHandleBoardId,
+    const entry = Object.entries(agoricNames.instance).find(
+      ([_name, candidate]) => candidate === instance,
     );
-    const instanceName = instanceEntry
-      ? instanceEntry[0]
-      : instanceHandleBoardId;
+    const instanceName = entry ? entry[0] : '???';
+    // console.log({ give: JSON.stringify(give), want: JSON.stringify(want) });
     return [
-      //   id,
-      meta?.creationStamp ? new Date(meta.creationStamp).toISOString() : null,
-      status,
       instanceName,
-      invitationDescription,
+      new Date(id).toISOString(),
+      id,
+      publicInvitationMaker,
+      o.numWantsSatisfied,
       {
         give: fmtRecord(give),
         want: fmtRecord(want),
+        payouts: fmtRecord(payouts),
       },
     ];
   });
@@ -364,19 +388,38 @@ const dieTrying = msg => {
  * @param {(url: string) => Promise<any>} io.getJSON
  */
 const getWalletState = async (addr, ctx, { getJSON }) => {
-  const txt = await vstorage.read(`published.wallet.${addr}`, getJSON);
-  /** @type {{ purses: PurseState[], offers: OfferDetail[] }[]} */
-  const states = storageNode.unserialize(txt, ctx);
-  const offerById = new Map();
-  states.forEach(state => {
-    const { offers } = state;
-    offers.forEach(offer => {
-      const { id } = offer;
-      offerById.set(id, offer);
-    });
+  const values = await vstorage.readAll(`published.wallet.${addr}`, getJSON);
+  const capDatas = storageNode.parseMany(values);
+
+  /** @type {Map<number, OfferSpec>} */
+  const offers = new Map();
+  /** @type {Map<Brand, Amount>} */
+  const balances = new Map();
+  /** @type {AssetDescriptor[]} */
+  const assets = [];
+  const mm = miniMarshal(ctx.convertSlotToVal);
+  capDatas.forEach(capData => {
+    const update = mm.unserialze(capData);
+    switch (update.updated) {
+      case 'offerStatus': {
+        const { status } = update;
+        offers.set(status.id, status);
+        break;
+      }
+      case 'balance': {
+        const { currentAmount } = update;
+        balances.set(currentAmount.brand, currentAmount);
+        break;
+      }
+      case 'brand': {
+        assets.push(update.descriptor);
+        break;
+      }
+      default:
+        throw Error(update.updated);
+    }
   });
-  const { purses } = last(states) || dieTrying();
-  return { purses, offers: [...offerById.values()] };
+  return { balances, assets, offers };
 };
 
 const getContractState = async (fromBoard, agoricNames, { getJSON }) => {
@@ -392,8 +435,104 @@ const getContractState = async (fromBoard, agoricNames, { getJSON }) => {
   return { instance, governance };
 };
 
+// const log = label => x => {
+//   console.error(label, x);
+//   return x;
+// };
+const log = _label => x => x;
+
+const fmtRecordOfLines = record => {
+  const { stringify } = JSON;
+  const groups = Object.entries(record).map(([key, items]) => [
+    key,
+    items.map(item => `    ${stringify(item)}`),
+  ]);
+  const lineEntries = groups.map(
+    ([key, lines]) => `  ${stringify(key)}: [\n${lines.join(',\n')}\n  ]`,
+  );
+  return `{\n${lineEntries.join(',\n')}\n}`;
+};
+
+/**
+ * @param {{net?: string}} opts
+ * @param {object} io
+ * @param {typeof fetch} io.fetch
+ */
+const makeTool = async (opts, { fetch }) => {
+  const net = networks[opts.net || 'local'];
+  assert(net, opts.net);
+  const getJSON = async url => (await fetch(log('url')(net.rpc + url))).json();
+
+  const showPublishedChildren = async () => {
+    // const status = await getJSON(`${RPC_BASE}/status?`);
+    // console.log({ status });
+    const raw = await getJSON(vstorage.url());
+    const top = vstorage.decode(raw);
+    console.error(
+      JSON.stringify(['vstorage published.*', JSON.parse(top).children]),
+    );
+  };
+
+  const fromBoard = makeFromBoard();
+  const agoricNames = await makeAgoricNames(fromBoard, getJSON);
+
+  const showContractId = async showFees => {
+    const { instance, governance } = await getContractState(
+      fromBoard,
+      agoricNames,
+      {
+        getJSON,
+      },
+    );
+    showFees && console.error('psm', instance, Object.keys(governance));
+    showFees &&
+      console.error(
+        'WantMintedFee',
+        asPercent(governance.WantMintedFee.value),
+        '%',
+        'GiveMintedFee',
+        asPercent(governance.GiveMintedFee.value),
+        '%',
+      );
+    console.info(instance.boardId);
+  };
+
+  const showWallet = async addr => {
+    const state = await getWalletState(addr, fromBoard, {
+      getJSON,
+    });
+    const { assets, balances } = state;
+    // console.log(JSON.stringify(offers, null, 2));
+    // console.log(JSON.stringify({ offers, purses }, bigIntReplacer, 2));
+    const summary = {
+      balances: simplePurseBalances([...balances.values()], assets),
+      offers: simpleOffers(state, agoricNames),
+    };
+    console.log(fmtRecordOfLines(summary));
+    return 0;
+  };
+
+  const showOffer = id => {
+    assert(net, opts.net);
+    const instance = agoricNames.instance['psm-IST-AUSD'];
+    const spendAction = makePSMSpendAction(
+      instance,
+      agoricNames.brand,
+      // @ts-expect-error
+      opts,
+      id,
+    );
+    console.log(JSON.stringify(miniMarshal().serialize(spendAction)));
+  };
+
+  return {
+    publishedChildren: showPublishedChildren,
+    showContractId,
+    showOffer,
+    showWallet,
+  };
+};
+
 // lines starting with 'export ' are stripped for use in Google Apps Scripts
-export { assert, asPercent };
-export { getContractState, getWalletState, simpleOffers, simplePurseBalances };
-export { makeAgoricNames, makeFromBoard, makePSMSpendAction };
-export { networks, vstorage };
+export { assert };
+export { networks, makeTool };

@@ -1,20 +1,7 @@
 #!/usr/bin/env node
 /* global process, fetch */
 // @ts-check
-import {
-  assert,
-  asPercent,
-  getContractState,
-  getWalletState,
-  makeAgoricNames,
-  makeFromBoard,
-  makePSMSpendAction,
-  miniMarshal,
-  networks,
-  simpleOffers,
-  simplePurseBalances,
-  vstorage,
-} from '../src/psm-lib.js';
+import { assert, makeTool, networks } from '../src/psm-lib.js';
 
 const USAGE = `
 Usage:
@@ -73,104 +60,6 @@ const parseArgs = (argv, flagNames = []) => {
     ix += 1;
   }
   return { args, opts, flags };
-};
-
-// const log = label => x => {
-//   console.error(label, x);
-//   return x;
-// };
-const log = _label => x => x;
-
-const fmtRecordOfLines = record => {
-  const { stringify } = JSON;
-  const groups = Object.entries(record).map(([key, items]) => [
-    key,
-    items.map(item => `    ${stringify(item)}`),
-  ]);
-  const lineEntries = groups.map(
-    ([key, lines]) => `  ${stringify(key)}: [\n${lines.join(',\n')}\n  ]`,
-  );
-  return `{XXX\n${lineEntries.join(',\n')}\n}`;
-};
-
-/**
- * @param {{net?: string}} opts
- * @param {object} io
- * @param {typeof fetch} io.fetch
- */
-const makeTool = async (opts, { fetch }) => {
-  const net = networks[opts.net || 'local'];
-  assert(net, opts.net);
-  const getJSON = async url => (await fetch(log('url')(net.rpc + url))).json();
-
-  const showPublishedChildren = async () => {
-    // const status = await getJSON(`${RPC_BASE}/status?`);
-    // console.log({ status });
-    const raw = await getJSON(vstorage.url());
-    const top = vstorage.decode(raw);
-    console.error(
-      JSON.stringify(['vstorage published.*', JSON.parse(top).children]),
-    );
-  };
-
-  const fromBoard = makeFromBoard();
-  const agoricNames = await makeAgoricNames(fromBoard, getJSON);
-
-  const showContractId = async showFees => {
-    const { instance, governance } = await getContractState(
-      fromBoard,
-      agoricNames,
-      {
-        getJSON,
-      },
-    );
-    showFees && console.error('psm', instance, Object.keys(governance));
-    showFees &&
-      console.error(
-        'WantMintedFee',
-        asPercent(governance.WantMintedFee.value),
-        '%',
-        'GiveMintedFee',
-        asPercent(governance.GiveMintedFee.value),
-        '%',
-      );
-    console.info(instance.boardId);
-  };
-
-  const showWallet = async addr => {
-    const state = await getWalletState(addr, fromBoard, {
-      getJSON,
-    });
-    const { purses } = state;
-    // console.log(JSON.stringify(offers, null, 2));
-    // console.log(JSON.stringify({ offers, purses }, bigIntReplacer, 2));
-    const summary = {
-      balances: simplePurseBalances(purses),
-      offers: simpleOffers(state, agoricNames),
-    };
-    console.log(fmtRecordOfLines(summary));
-    return 0;
-  };
-
-  const showOffer = id => {
-    assert(net, opts.net);
-    const instance = agoricNames.instance['psm-IST-AUSD'];
-    const spendAction = makePSMSpendAction(
-      instance,
-      agoricNames.brand,
-      // @ts-expect-error
-      opts,
-      id,
-    );
-    console.log(JSON.stringify(miniMarshal().serialize(spendAction)));
-  };
-
-  return {
-    publishedChildren: showPublishedChildren,
-    showContractId,
-    showOffer,
-    showWallet,
-  };
 };
 
 /**
