@@ -223,20 +223,22 @@ async function main(args, { env, stdout, spawn, fs, os }) {
   }
 
   const make = makeCLI(platform.make || 'make', { spawn });
-  for (const goal of ModdableSDK.buildGoals) {
-    // eslint-disable-next-line no-await-in-loop
-    await make.run(
-      [
-        `MODDABLE=${ModdableSDK.MODDABLE}`,
-        `GOAL=${goal}`,
-        `XSNAP_VERSION=${pkg.version}`,
-        '-f',
-        'xsnap-worker.mk',
-      ],
-      {
-        cwd: `xsnap-native/xsnap/makefiles/${platform.path}`,
-      },
-    );
+  for (const bin of ['xsnap', 'xsnap-worker']) {
+    for (const goal of ModdableSDK.buildGoals) {
+      // eslint-disable-next-line no-await-in-loop
+      await make.run(
+        [
+          `MODDABLE=${ModdableSDK.MODDABLE}`,
+          `GOAL=${goal}`,
+          `XSNAP_VERSION=${pkg.version}`,
+          '-f',
+          `${bin}.mk`,
+        ],
+        {
+          cwd: `xsnap-native/xsnap/makefiles/${platform.path}`,
+        },
+      );
+    }
   }
 }
 

@@ -6,7 +6,14 @@ import zlib from 'zlib';
 import readline from 'readline';
 import process from 'process';
 import { spawn } from 'child_process';
+import path from 'path';
+import { promisify } from 'util';
+import { createHash } from 'crypto';
+import { pipeline } from 'stream';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { tmpName } from 'tmp';
 import bundleSource from '@endo/bundle-source';
+import { makeSnapStore } from '@agoric/swing-store';
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 import { makeStartXSnap } from '../src/controller/controller.js';
 import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
@@ -18,14 +25,65 @@ import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
 import engineGC from '../src/lib-nodejs/engine-gc.js';
 
+// Set the absolute path of the SDK to use for bundling
+// This can help if there are symlinks in the path that should be respected
+// to match the path of the SDK that produced the initial transcript
+// For e.g. set to '/src' if replaying a docker based loadgen transcript
+const ABSOLUTE_SDK_PATH = null;
+
+// Rebuild the bundles when starting the replay.
+// Disable if bundles were previously extracted form a Kernel DB, or
+// to save a few seconds and rely upon previously built versions instead
+const REBUILD_BUNDLES = false;
+
+// Enable to continue if snapshot hash doesn't match transcript
+const IGNORE_SNAPSHOT_HASH_DIFFERENCES = false;
+
+// Use a simplified snapstore which derives the snapshot filename from the
+// transcript and doesn't compress the snapshot
+const USE_CUSTOM_SNAP_STORE = true;
+
+// Enable to output xsnap debug traces corresponding to the transcript replay
+const RECORD_XSNAP_TRACE = false;
+
+const pipe = promisify(pipeline);
+
+/** @type {(filename: string) => Promise<string>} */
+async function fileHash(filename) {
+  const hash = createHash('sha256');
+  const input = fs.createReadStream(filename);
+  await pipe(input, hash);
+  return hash.digest('hex');
+}
+
+function makeSnapStoreIO() {
+  return {
+    tmpName,
+    createReadStream: fs.createReadStream,
+    createWriteStream: fs.createWriteStream,
+    open: fs.promises.open,
+    rename: fs.promises.rename,
+    stat: fs.promises.stat,
+    unlink: fs.promises.unlink,
+    resolve: path.resolve,
+  };
+}
+
 async function makeBundles() {
+  const controllerUrl = new URL(
+    `${
+      ABSOLUTE_SDK_PATH ? `${ABSOLUTE_SDK_PATH}/packages/SwingSet` : '..'
+    }/src/controller/initializeSwingset.js`,
+    import.meta.url,
+  );
+
   const srcGE = rel =>
-    bundleSource(new URL(rel, import.meta.url).pathname, 'getExport');
+    bundleSource(new URL(rel, controllerUrl).pathname, 'getExport');
   const lockdown = await srcGE(
-    '../src/supervisors/subprocess-xsnap/lockdown-subprocess-xsnap.js',
+    '../supervisors/subprocess-xsnap/lockdown-subprocess-xsnap.js',
   );
   const supervisor = await srcGE(
-    '../src/supervisors/subprocess-xsnap/supervisor-subprocess-xsnap.js',
+    '../supervisors/subprocess-xsnap/supervisor-subprocess-xsnap.js',
   );
   fs.writeFileSync('lockdown-bundle', JSON.stringify(lockdown));
   fs.writeFileSync('supervisor-bundle', JSON.stringify(supervisor));
@@ -52,10 +110,14 @@ async function replay(transcriptFile) {
   let vatID; // we learn this from the first line of the transcript
   let factory;
 
+  let loadSnapshotID = null;
+  let saveSnapshotID = null;
+  const snapshotOverrideMap = new Map();
+
   const fakeKernelKeeper = {
     provideVatKeeper: _vatID => ({
       addToTranscript: () => undefined,
-      getLastSnapshot: () => undefined,
+      getLastSnapshot: () => loadSnapshotID && { snapshotID: loadSnapshotID },
     }),
     getRelaxDurabilityRules: () => false,
   };
@@ -64,6 +126,21 @@ async function replay(transcriptFile) {
     delivery: () => () => undefined,
     syscall: () => () => undefined,
   };
+  const snapStore = USE_CUSTOM_SNAP_STORE
+    ? {
+        async save(saveRaw) {
+          const snapFile = `${saveSnapshotID || 'unknown'}.xss`;
+          await saveRaw(snapFile);
+          const h = await fileHash(snapFile);
+          await fs.promises.rename(snapFile, `${h}.xss`);
+          return h;
+        },
+        async load(hash, loadRaw) {
+          const snapFile = `${hash}.xss`;
+          return loadRaw(snapFile);
+        },
+      }
+    : makeSnapStore(process.cwd(), makeSnapStoreIO());
   const testLog = undefined;
   const meterControl = makeDummyMeterControl();
   const gcTools = harden({
@@ -76,9 +153,8 @@ async function replay(transcriptFile) {
   const allVatPowers = { testLog };
 
   if (worker === 'xs-worker') {
-    // disable to save a few seconds and rely upon the saved versions instead
     // eslint-disable-next-line no-constant-condition
-    if (1) {
+    if (REBUILD_BUNDLES) {
       console.log(`creating xsnap helper bundles`);
       await makeBundles();
       console.log(`xsnap helper bundles created`);
@@ -87,9 +163,11 @@ async function replay(transcriptFile) {
       JSON.parse(fs.readFileSync('lockdown-bundle')),
       JSON.parse(fs.readFileSync('supervisor-bundle')),
     ];
-    const snapstorePath = undefined;
     const env = {};
-    const startXSnap = makeStartXSnap(bundles, { snapstorePath, env, spawn });
+    if (RECORD_XSNAP_TRACE) {
+      env.XSNAP_TEST_RECORD = process.cwd();
+    }
+    const startXSnap = makeStartXSnap(bundles, { snapStore, env, spawn });
     factory = makeXsSubprocessFactory({
       kernelKeeper: fakeKernelKeeper,
       kernelSlog,
@@ -124,7 +202,26 @@ async function replay(transcriptFile) {
     throw Error(`unhandled worker type ${worker}`);
   }
 
+  let vatParameters;
+  let vatSourceBundle;
   let manager;
+
+  const createManager = async () => {
+    const managerOptions = {
+      sourcedConsole: console,
+      vatParameters,
+      compareSyscalls,
+      useTranscript: true,
+    };
+    const vatSyscallHandler = undefined;
+    manager = await factory.createFromBundle(
+      vatID,
+      vatSourceBundle,
+      managerOptions,
+      {},
+      vatSyscallHandler,
+    );
+  };
 
   let transcriptF = fs.createReadStream(transcriptFile);
   if (transcriptFile.endsWith('.gz')) {
@@ -139,27 +236,44 @@ async function replay(transcriptFile) {
     }
     lineNumber += 1;
     const data = JSON.parse(line);
-    if (!manager) {
-      if (data.type !== 'create-vat') {
-        throw Error(`first line of transcript was not a create-vat`);
+    if (data.type === 'heap-snapshot-load') {
+      if (manager) {
+        await manager.shutdown();
+        manager = null;
       }
-      const { vatParameters, vatSourceBundle } = data;
+      loadSnapshotID = data.snapshotID;
+      if (snapshotOverrideMap.has(loadSnapshotID)) {
+        loadSnapshotID = snapshotOverrideMap.get(loadSnapshotID);
+      }
       vatID = data.vatID;
-      const managerOptions = {
-        sourcedConsole: console,
-        vatParameters,
-        compareSyscalls,
-        useTranscript: true,
-      };
-      const vatSyscallHandler = undefined;
-      manager = await factory.createFromBundle(
-        vatID,
-        vatSourceBundle,
-        managerOptions,
-        {},
-        vatSyscallHandler,
-      );
-      console.log(`manager created`);
+      await createManager();
+      console.log(`created manager from snapshot ${loadSnapshotID}`);
+      loadSnapshotID = null;
+    } else if (!manager) {
+      if (data.type !== 'create-vat') {
+        throw Error(
+          `first line of transcript was not a create-vat or heap-snapshot-load`,
+        );
+      }
+      ({ vatParameters, vatSourceBundle } = data);
+      vatID = data.vatID;
+      await createManager();
+      console.log(`manager created from bundle source`);
+    } else if (data.type === 'heap-snapshot-save') {
+      saveSnapshotID = data.snapshotID;
+      const h = await manager.makeSnapshot(snapStore);
+      snapshotOverrideMap.set(saveSnapshotID, h);
+      if (h !== saveSnapshotID) {
+        const errorMessage = `Snapshot hash does not match. ${h} !== ${saveSnapshotID}`;
+        if (IGNORE_SNAPSHOT_HASH_DIFFERENCES) {
+          console.warn(errorMessage);
+        } else {
+          throw new Error(errorMessage);
+        }
+      } else {
+        console.log(`made snapshot ${h}`);
+      }
+      saveSnapshotID = null;
     } else {
       const { d: delivery, syscalls } = data;
       // syscalls = [{ d, response }, ..]
@@ -169,8 +283,13 @@ async function replay(transcriptFile) {
         JSON.stringify(delivery).slice(0, 200),
       );
       // for (const s of syscalls) {
-      //   s.response = 'nope';
-      //   console.log(` syscall:`, s.d, s.response);
+      //   // s.response = 'nope';
+      //   console.log(
+      //     ` syscall:`,
+      //     s.response[0],
+      //     JSON.stringify(s.d).slice(0, 200),
+      //     JSON.stringify(s.response[1]).slice(0, 200),
+      //   );
       // }
       await manager.replayOneDelivery(delivery, syscalls, deliveryNum);
       deliveryNum += 1;
