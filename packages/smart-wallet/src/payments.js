@@ -87,7 +87,11 @@ export const makePaymentsHelper = purseForBrand => {
       const paymentKeywordRecord = await deeplyFulfilledObject(payouts);
       /** Record<string, Promise<Amount>> */
       const amountPKeywordRecord = objectMap(paymentKeywordRecord, payment =>
-        E(purseForBrand(payment.getAllegedBrand())).deposit(payment),
+        E(
+          E(payment)
+            .getAllegedBrand()
+            .then(b => purseForBrand(b)),
+        ).deposit(payment),
       );
       return deeplyFulfilledObject(amountPKeywordRecord);
     },
