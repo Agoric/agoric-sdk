@@ -13,11 +13,13 @@ const networks = {
 /**
  * @param {unknown} cond
  * @param {unknown} [msg]
+ * @returns {asserts cond}
  */
 const assert = (cond, msg = undefined) => {
   if (!cond) {
     throw typeof msg === 'string' ? Error(msg || 'check failed') : msg;
   }
+  return undefined;
 };
 
 const { freeze } = Object; // IOU harden
