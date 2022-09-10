@@ -107,6 +107,7 @@ export const startWalletFactory = async (
   provisionPoolStartResult.resolve(ppFacets);
 
   const handler = await E(ppFacets.creatorFacet).makeHandler({
+    // @ts-expect-error XXX what is going on here???
     bankManager,
     namesByAddressAdmin,
     walletFactory: wfFacets.creatorFacet,

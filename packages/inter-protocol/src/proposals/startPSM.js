@@ -173,6 +173,7 @@ export const startPSM = async (
       anchorBrand,
       stable,
     ),
+    // @ts-expect-error TODO type for provisionPoolStartResult
     E(E.get(provisionPoolStartResult).creatorFacet).initPSM(
       anchorBrand,
       newPsmFacets.psm,

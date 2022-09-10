@@ -82,6 +82,8 @@ export const start = (zcf, privateArgs) => {
   const { poolBank } = privateArgs;
   fit(perAccountInitialAmount, AmountShape, 'perAccountInitialAmount');
   const { brand: poolBrand } = perAccountInitialAmount;
+  /** @type {ERef<Purse>} */
+  // @ts-expect-error vbank purse is close enough for our use.
   const fundPurse = E(poolBank).getPurse(poolBrand);
 
   const zoe = zcf.getZoeService();
@@ -101,6 +103,8 @@ export const start = (zcf, privateArgs) => {
     updateState: async desc => {
       console.log('provisionPool notified of new asset', desc.brand);
       await zcf.saveIssuer(desc.issuer, desc.issuerName);
+      /** @type {ERef<Purse>} */
+      // @ts-expect-error vbank purse is close enough for our use.
       const exchangePurse = E(poolBank).getPurse(desc.brand);
       observeNotifier(E(exchangePurse).getCurrentAmountNotifier(), {
         updateState: async amount => {
