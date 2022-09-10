@@ -80,8 +80,11 @@ const main = async (argv, { fetch, clock }) => {
   }
 
   if (opts.wallet) {
-    await tool.showWallet(opts.wallet);
-    return 0;
+    if (opts.offer) {
+      return tool.findOffer(opts.wallet, Number(opts.offer));
+    } else {
+      return tool.showWallet(opts.wallet);
+    }
   }
 
   if (!(opts.wantMinted || opts.giveMinted)) {
@@ -89,7 +92,8 @@ const main = async (argv, { fetch, clock }) => {
     return 1;
   }
 
-  await tool.showOffer(clock().getTime());
+  const id = 'id' in opts ? Number(opts.id) : clock().getTime();
+  await tool.showOffer(id);
   return 0;
 };
 

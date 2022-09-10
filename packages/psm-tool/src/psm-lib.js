@@ -317,8 +317,9 @@ const makeAmountFormatter = assets => amt => {
   if (!asset) return [NaN, boardId];
   const {
     petname,
-    displayInfo: { decimalPlaces },
+    displayInfo: { assetKind, decimalPlaces },
   } = asset;
+  if (assetKind !== 'nat') return [['?'], petname];
   /** @type {[qty: number, petname: string]} */
   const scaled = [Number(value) / 10 ** decimalPlaces, petname];
   return scaled;
@@ -350,10 +351,11 @@ const simpleOffers = (state, agoricNames) => {
     Object.fromEntries(
       Object.entries(r).map(([kw, amount]) => [kw, fmt(amount)]),
     );
-  return [...offers.values()].map(o => {
+  return [...offers.keys()].sort().map(id => {
+    const o = offers.get(id);
+    assert(o);
     assert(o.invitationSpec.source === 'contract');
     const {
-      id,
       invitationSpec: { instance, publicInvitationMaker },
       proposal: { give, want },
       payouts,
@@ -372,7 +374,7 @@ const simpleOffers = (state, agoricNames) => {
       {
         give: fmtRecord(give),
         want: fmtRecord(want),
-        payouts: fmtRecord(payouts),
+        ...(payouts ? { payouts: fmtRecord(payouts) } : {}),
       },
     ];
   });
@@ -403,12 +405,16 @@ const getWalletState = async (addr, ctx, { getJSON }) => {
     switch (update.updated) {
       case 'offerStatus': {
         const { status } = update;
-        offers.set(status.id, status);
+        if (!offers.has(status.id)) {
+          offers.set(status.id, status);
+        }
         break;
       }
       case 'balance': {
         const { currentAmount } = update;
-        balances.set(currentAmount.brand, currentAmount);
+        if (!balances.has(currentAmount.brand)) {
+          balances.set(currentAmount.brand, currentAmount);
+        }
         break;
       }
       case 'brand': {
@@ -512,6 +518,27 @@ const makeTool = async (opts, { fetch }) => {
     return 0;
   };
 
+  const findOffer = async (addr, id) => {
+    const { assets, offers } = await getWalletState(addr, fromBoard, {
+      getJSON,
+    });
+    const offer = offers.get(id);
+    if (!offer) {
+      return 1;
+    }
+    const { numWantsSatisfied, payouts } = offer;
+    const fmt = makeAmountFormatter(assets);
+    const fmtRecord = r =>
+      Object.fromEntries(
+        Object.entries(r).map(([kw, amount]) => [kw, fmt(amount)]),
+      );
+    console.error({
+      numWantsSatisfied,
+      ...(payouts ? { payouts: fmtRecord(payouts) } : {}),
+    });
+    return typeof numWantsSatisfied === 'number' ? 0 : 1;
+  };
+
   const showOffer = id => {
     assert(net, opts.net);
     const instance = agoricNames.instance['psm-IST-AUSD'];
@@ -530,6 +557,7 @@ const makeTool = async (opts, { fetch }) => {
     showContractId,
     showOffer,
     showWallet,
+    findOffer,
   };
 };
 
