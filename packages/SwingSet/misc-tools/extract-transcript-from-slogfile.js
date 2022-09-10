@@ -78,6 +78,15 @@ async function run() {
         fs.writeSync(fd, '\n');
         break;
       }
+      case 'heap-snapshot-save': {
+        console.log(' -- heap-snapshot-save');
+        const { type, snapshotID } = e;
+        const t = { transcriptNum, type, vatID, snapshotID };
+        transcriptNum += 1;
+        fs.writeSync(fd, JSON.stringify(t));
+        fs.writeSync(fd, '\n');
+        break;
+      }
       default:
         break;
     }
