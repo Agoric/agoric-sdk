@@ -37,7 +37,7 @@ const bigIntReplacer = (_key, val) =>
  *
  * @typedef {{give: AmountKeywordRecord,
  *            want: AmountKeywordRecord,
- *            exit: ExitRule
+ *            exit?: ExitRule
  *           }} ProposalRecord
  *
  * @typedef {unknown} ExitRule
@@ -49,22 +49,22 @@ const bigIntReplacer = (_key, val) =>
 
 /**
  * @param {Record<string, Brand>} brands
- * @param {({ wantStable: string } | { giveStable: string })} opts
+ * @param {({ wantMinted: string } | { giveMinted: string })} opts
  * @param {number} [fee=0]
  * @param {string} [anchor]
  * @returns {ProposalRecord}
  */
 const makePSMProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
   const brand =
-    'wantStable' in opts
+    'wantMinted' in opts
       ? { in: brands[anchor], out: brands.IST }
       : { in: brands.IST, out: brands[anchor] };
   const value =
-    Number('wantStable' in opts ? opts.wantStable : opts.giveStable) *
+    Number('wantMinted' in opts ? opts.wantMinted : opts.giveMinted) *
     Number(COSMOS_UNIT);
   const adjusted = {
-    in: BigInt(Math.ceil('wantStable' in opts ? value / (1 - fee) : value)),
-    out: BigInt(Math.ceil('giveStable' in opts ? value * (1 - fee) : value)),
+    in: BigInt(Math.ceil('wantMinted' in opts ? value / (1 - fee) : value)),
+    out: BigInt(Math.ceil('giveMinted' in opts ? value * (1 - fee) : value)),
   };
   return {
     give: {
@@ -73,7 +73,6 @@ const makePSMProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
     want: {
       Out: { brand: brand.out, value: adjusted.out },
     },
-    exit: {},
   };
 };
 
@@ -81,15 +80,15 @@ const makePSMProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
  * @param {Record<string, Brand>} brands
  * @param {unknown} instance
  * @param {{ feePct?: string } &
- *         ({ wantStable: string } | { giveStable: string })} opts
+ *         ({ wantMinted: string } | { giveMinted: string })} opts
  * @param {number} timeStamp
  * @returns {BridgeAction}
  */
 const makePSMSpendAction = (instance, brands, opts, timeStamp) => {
   const method =
-    'wantStable' in opts
-      ? 'makeWantStableInvitation'
-      : 'makeGiveStableInvitation'; // ref psm.js
+    'wantMinted' in opts
+      ? 'makeWantMintedInvitation'
+      : 'makeGiveMintedInvitation'; // ref psm.js
   const proposal = makePSMProposal(
     brands,
     opts,
@@ -386,9 +385,7 @@ const getContractState = async (fromBoard, agoricNames, { getJSON }) => {
   const { current: governance } = last(
     storageNode.unserialize(govContent, fromBoard),
   );
-  const {
-    instance: { psm: instance },
-  } = agoricNames;
+  const { 'psm.IST.AUSD': instance } = agoricNames.instance;
 
   return { instance, governance };
 };

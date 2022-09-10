@@ -21,8 +21,8 @@ Usage:
 to get contract instance boardId and, optionally, fees
   psm-tool --contract [--verbose]
 to write an offer to stdout
-  psm-tool --wantStable ANCHOR_TOKENS --boardId BOARD_ID [--feePct PCT]
-  psm-tool --giveStable IST_TOKENS --boardId BOARD_ID [--feePct PCT]
+  psm-tool --wantMinted ANCHOR_TOKENS --boardId BOARD_ID [--feePct PCT]
+  psm-tool --giveMinted IST_TOKENS --boardId BOARD_ID [--feePct PCT]
 to get succinct offer status and purse balances
   psm-tool --wallet AGORIC_ADDRESS
 
@@ -32,7 +32,7 @@ For example:
 
 psmInstance=$(psm-tool --contract)
 psm-tool --contract --verbose # to get fees
-psm-tool --wantStable 100 --boardId $psmInstance --feePct 0.01 >,psm-offer-action.json
+psm-tool --wantMinted 100 --boardId $psmInstance --feePct 0.01 >,psm-offer-action.json
 
 # sign and send
 agd --node=${networks.xnet.rpc} --chain-id=agoricxnet-13 \
@@ -90,7 +90,7 @@ const fmtRecordOfLines = record => {
   const lineEntries = groups.map(
     ([key, lines]) => `  ${stringify(key)}: [\n${lines.join(',\n')}\n  ]`,
   );
-  return `{\n${lineEntries.join(',\n')}\n}`;
+  return `{XXX\n${lineEntries.join(',\n')}\n}`;
 };
 
 /**
@@ -128,11 +128,11 @@ const online = async (opts, flags, { fetch }) => {
     flags.verbose && console.error('psm', instance, Object.keys(governance));
     flags.verbose &&
       console.error(
-        'WantStableFee',
-        asPercent(governance.WantStableFee.value),
+        'WantMintedFee',
+        asPercent(governance.WantMintedFee.value),
         '%',
-        'GiveStableFee',
-        asPercent(governance.GiveStableFee.value),
+        'GiveMintedFee',
+        asPercent(governance.GiveMintedFee.value),
         '%',
       );
     console.info(instance.boardId);
@@ -170,7 +170,7 @@ const main = async (argv, { fetch, clock }) => {
     return online(opts, flags, { fetch });
   }
 
-  if (!(opts.wantStable || opts.giveStable)) {
+  if (!(opts.wantMinted || opts.giveMinted)) {
     console.error(USAGE);
     return 1;
   }
@@ -180,7 +180,7 @@ const main = async (argv, { fetch, clock }) => {
   assert(net, opts.net);
   const getJSON = async url => (await fetch(log('url')(net.rpc + url))).json();
   const agoricNames = await makeAgoricNames(fromBoard, getJSON);
-  const instance = agoricNames.instance.psm;
+  const instance = agoricNames.instance['psm-IST-AUSD'];
   const spendAction = makePSMSpendAction(
     instance,
     agoricNames.brand,
@@ -188,7 +188,7 @@ const main = async (argv, { fetch, clock }) => {
     opts,
     clock().valueOf(),
   );
-  console.log(miniMarshal().serialize(spendAction));
+  console.log(JSON.stringify(miniMarshal().serialize(spendAction)));
   return 0;
 };
 
