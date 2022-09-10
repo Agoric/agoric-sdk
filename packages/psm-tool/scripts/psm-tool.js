@@ -191,7 +191,7 @@ const main = async (argv, { fetch, clock }) => {
   }
 
   if (opts.wallet) {
-    await tool.showWallet(flags.wallet);
+    await tool.showWallet(opts.wallet);
     return 0;
   }
 
