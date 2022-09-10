@@ -94,17 +94,16 @@ const fmtRecordOfLines = record => {
 };
 
 /**
- * @param {{wallet?: string, net?: string}} opts
- * @param {{contract?: boolean, verbose?: boolean}} flags
+ * @param {{net?: string}} opts
  * @param {object} io
  * @param {typeof fetch} io.fetch
  */
-const online = async (opts, flags, { fetch }) => {
+const makeTool = async (opts, { fetch }) => {
   const net = networks[opts.net || 'local'];
   assert(net, opts.net);
   const getJSON = async url => (await fetch(log('url')(net.rpc + url))).json();
 
-  if (flags.verbose) {
+  const showPublishedChildren = async () => {
     // const status = await getJSON(`${RPC_BASE}/status?`);
     // console.log({ status });
     const raw = await getJSON(vstorage.url());
@@ -112,12 +111,12 @@ const online = async (opts, flags, { fetch }) => {
     console.error(
       JSON.stringify(['vstorage published.*', JSON.parse(top).children]),
     );
-  }
+  };
 
   const fromBoard = makeFromBoard();
   const agoricNames = await makeAgoricNames(fromBoard, getJSON);
 
-  if (flags.contract) {
+  const showContractId = async showFees => {
     const { instance, governance } = await getContractState(
       fromBoard,
       agoricNames,
@@ -125,8 +124,8 @@ const online = async (opts, flags, { fetch }) => {
         getJSON,
       },
     );
-    flags.verbose && console.error('psm', instance, Object.keys(governance));
-    flags.verbose &&
+    showFees && console.error('psm', instance, Object.keys(governance));
+    showFees &&
       console.error(
         'WantMintedFee',
         asPercent(governance.WantMintedFee.value),
@@ -136,9 +135,10 @@ const online = async (opts, flags, { fetch }) => {
         '%',
       );
     console.info(instance.boardId);
-    return 0;
-  } else if (opts.wallet) {
-    const state = await getWalletState(opts.wallet, fromBoard, {
+  };
+
+  const showWallet = async addr => {
+    const state = await getWalletState(addr, fromBoard, {
       getJSON,
     });
     const { purses } = state;
@@ -150,9 +150,27 @@ const online = async (opts, flags, { fetch }) => {
     };
     console.log(fmtRecordOfLines(summary));
     return 0;
-  }
+  };
 
-  return 1;
+  const showOffer = id => {
+    assert(net, opts.net);
+    const instance = agoricNames.instance['psm-IST-AUSD'];
+    const spendAction = makePSMSpendAction(
+      instance,
+      agoricNames.brand,
+      // @ts-expect-error
+      opts,
+      id,
+    );
+    console.log(JSON.stringify(miniMarshal().serialize(spendAction)));
+  };
+
+  return {
+    publishedChildren: showPublishedChildren,
+    showContractId,
+    showOffer,
+    showWallet,
+  };
 };
 
 /**
@@ -162,12 +180,19 @@ const online = async (opts, flags, { fetch }) => {
  * @param {() => Date} io.clock
  */
 const main = async (argv, { fetch, clock }) => {
+  assert(fetch, 'missing fetch API; try --experimental-fetch?');
   const { opts, flags } = parseArgs(argv, ['--contract', '--verbose']);
 
-  if (flags.contract || opts.wallet) {
-    assert(fetch, 'missing fetch API; try --experimental-fetch?');
-    // @ts-expect-error what's up with typeof fetch???
-    return online(opts, flags, { fetch });
+  const tool = await makeTool(opts, { fetch });
+
+  if (flags.contract) {
+    await tool.showContractId(flags.verbose);
+    return 0;
+  }
+
+  if (opts.wallet) {
+    await tool.showWallet(flags.wallet);
+    return 0;
   }
 
   if (!(opts.wantMinted || opts.giveMinted)) {
@@ -175,20 +200,7 @@ const main = async (argv, { fetch, clock }) => {
     return 1;
   }
 
-  const fromBoard = makeFromBoard();
-  const net = networks[opts.net || 'local'];
-  assert(net, opts.net);
-  const getJSON = async url => (await fetch(log('url')(net.rpc + url))).json();
-  const agoricNames = await makeAgoricNames(fromBoard, getJSON);
-  const instance = agoricNames.instance['psm-IST-AUSD'];
-  const spendAction = makePSMSpendAction(
-    instance,
-    agoricNames.brand,
-    // @ts-expect-error
-    opts,
-    clock().valueOf(),
-  );
-  console.log(JSON.stringify(miniMarshal().serialize(spendAction)));
+  await tool.showOffer(clock().getTime());
   return 0;
 };
 
