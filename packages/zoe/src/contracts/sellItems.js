@@ -101,10 +101,8 @@ const start = zcf => {
     );
 
     // Check that the money provided to pay for the items is greater than the totalCost.
-    assert(
-      AmountMath.isGTE(providedMoney, totalCost),
-      X`More money (${totalCost}) is required to buy these items`,
-    );
+    AmountMath.isGTE(providedMoney, totalCost) ||
+      assert.fail(X`More money (${totalCost}) is required to buy these items`);
 
     // Reallocate.
     sellerSeat.incrementBy(

@@ -44,14 +44,10 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     if (msg.result) {
       insistKernelType('promise', msg.result);
       const p = kernelKeeper.getKernelPromise(msg.result);
-      assert(
-        p.state === 'unresolved',
-        X`result ${msg.result} already resolved`,
-      );
-      assert(
-        !p.decider,
-        X`result ${msg.result} already has decider ${p.decider}`,
-      );
+      p.state === 'unresolved' ||
+        assert.fail(X`result ${msg.result} already resolved`);
+      !p.decider ||
+        assert.fail(X`result ${msg.result} already has decider ${p.decider}`);
       resultSlot = vatKeeper.mapKernelSlotToVatSlot(msg.result);
       insistVatType('promise', resultSlot);
       kernelKeeper.setDecider(msg.result, vatID);
@@ -301,14 +297,12 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       // In the case of non-pipelining vats these checks are redundant since
       // we're guaranteed to have a promise newly allocated by the vat.
       const p = kernelKeeper.getKernelPromise(result);
-      assert(
-        p.state === 'unresolved',
-        X`send() result ${result} is already resolved`,
-      );
-      assert(
-        p.decider === vatID,
-        X`send() result ${result} is decided by ${p.decider} not ${vatID}`,
-      );
+      p.state === 'unresolved' ||
+        assert.fail(X`send() result ${result} is already resolved`);
+      p.decider === vatID ||
+        assert.fail(
+          X`send() result ${result} is decided by ${p.decider} not ${vatID}`,
+        );
       kernelKeeper.clearDecider(result);
       // resolution authority now held by run-queue
     }
@@ -523,10 +517,8 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   function translateSubscribe(vpid) {
     const kpid = mapVatSlotToKernelSlot(vpid);
     kdebug(`syscall[${vatID}].subscribe(${vpid}/${kpid})`);
-    assert(
-      kernelKeeper.hasKernelPromise(kpid),
-      X`unknown kernelPromise id '${kpid}'`,
-    );
+    kernelKeeper.hasKernelPromise(kpid) ||
+      assert.fail(X`unknown kernelPromise id '${kpid}'`);
     /** @type { KernelSyscallSubscribe } */
     const ks = harden(['subscribe', vatID, kpid]);
     return ks;

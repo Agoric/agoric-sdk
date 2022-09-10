@@ -50,10 +50,8 @@ export function buildSerializationTools(syscall, deviceName) {
       assert(!allocatedByVat, X`devices cannot yet allocate objects ${slot}`);
       return presenceForSlot(slot);
     } else if (type === 'device') {
-      assert(
-        allocatedByVat,
-        X`devices should yet not be given other devices '${slot}'`,
-      );
+      allocatedByVat ||
+        assert.fail(X`devices should yet not be given other devices '${slot}'`);
       return deviceNodeForSlot(slot);
     } else if (type === 'promise') {
       assert.fail(X`devices should not yet be given promises '${slot}'`);

@@ -130,10 +130,8 @@ const buildSwingset = async (
   const importPlugin = async mod => {
     // Ensure they can't traverse out of the plugins prefix.
     const pluginFile = path.resolve(pluginsPrefix, mod);
-    assert(
-      pluginFile.startsWith(pluginsPrefix),
-      X`Cannot load ${pluginFile} plugin; outside of ${pluginDir}`,
-    );
+    pluginFile.startsWith(pluginsPrefix) ||
+      assert.fail(X`Cannot load ${pluginFile} plugin; outside of ${pluginDir}`);
 
     // TODO: Detect the module type and use the appropriate loader, just like
     // `agoric deploy`.

@@ -35,10 +35,8 @@ export function buildRootDeviceNode(tools) {
 
   // console.debug(`device-mailbox build: inboundHandler is`, inboundHandler);
   deliverInboundMessages = (peer, newMessages) => {
-    assert(
-      inboundHandler,
-      X`deliverInboundMessages before registerInboundHandler`,
-    );
+    inboundHandler ||
+      assert.fail(X`deliverInboundMessages before registerInboundHandler`);
     try {
       SO(inboundHandler).deliverInboundMessages(peer, newMessages);
     } catch (e) {

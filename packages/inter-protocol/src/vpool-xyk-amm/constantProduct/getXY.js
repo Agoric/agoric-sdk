@@ -21,10 +21,11 @@ export const getXY = ({ amountGiven, poolAllocation, amountWanted }) => {
   const yBrand = amountWanted && amountWanted.brand;
   const secondaryBrand = poolAllocation.Secondary.brand;
   const centralBrand = poolAllocation.Central.brand;
-  assert(
-    amountGiven || amountWanted,
-    X`At least one of ${amountGiven} and ${amountWanted} must be specified`,
-  );
+  amountGiven ||
+    amountWanted ||
+    assert.fail(
+      X`At least one of ${amountGiven} and ${amountWanted} must be specified`,
+    );
 
   const deltas = {
     deltaX: amountGiven,

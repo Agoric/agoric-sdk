@@ -128,10 +128,9 @@ const encodeBigInt = n => {
 const decodeBigInt = encoded => {
   const typePrefix = encoded[0];
   let rem = encoded.slice(1);
-  assert(
-    typePrefix === 'p' || typePrefix === 'n',
-    X`Encoded bigint expected: ${encoded}`,
-  );
+  typePrefix === 'p' ||
+    typePrefix === 'n' ||
+    assert.fail(X`Encoded bigint expected: ${encoded}`);
 
   const lDigits = rem.search(/[0-9]/) + 1;
   assert(lDigits >= 1, X`Digit count expected: ${encoded}`);
@@ -140,11 +139,8 @@ const decodeBigInt = encoded => {
   assert(rem.length >= lDigits, X`Complete digit count expected: ${encoded}`);
   const snDigits = rem.slice(0, lDigits);
   rem = rem.slice(lDigits);
-
-  assert(
-    /^[0-9]+$/.test(snDigits),
-    X`Decimal digit count expected: ${encoded}`,
-  );
+  /^[0-9]+$/.test(snDigits) ||
+    assert.fail(X`Decimal digit count expected: ${encoded}`);
   let nDigits = parseInt(snDigits, 10);
   if (typePrefix === 'n') {
     // TODO Assert to reject forbidden encodings
@@ -154,11 +150,8 @@ const decodeBigInt = encoded => {
 
   assert(rem.startsWith(':'), X`Separator expected: ${encoded}`);
   rem = rem.slice(1);
-
-  assert(
-    rem.length === nDigits,
-    X`Fixed-length digit sequence expected: ${encoded}`,
-  );
+  rem.length === nDigits ||
+    assert.fail(X`Fixed-length digit sequence expected: ${encoded}`);
   let n = BigInt(rem);
   if (typePrefix === 'n') {
     // TODO Assert to reject forbidden encodings
@@ -203,10 +196,9 @@ const decodeArray = (encoded, decodePassable) => {
       i += 1;
       assert(i < encoded.length, X`unexpected end of encoding ${encoded}`);
       const c2 = encoded[i];
-      assert(
-        c2 === '\u0000' || c2 === '\u0001',
-        X`Unexpected character after u0001 escape: ${c2}`,
-      );
+      c2 === '\u0000' ||
+        c2 === '\u0001' ||
+        assert.fail(X`Unexpected character after u0001 escape: ${c2}`);
       elemChars.push(c2);
     } else {
       elemChars.push(c);
@@ -247,10 +239,8 @@ const decodeTagged = (encoded, decodePassable) => {
   const tagpayload = decodeArray(encoded.substring(1), decodePassable);
   assert(tagpayload.length === 2, X`expected tag,payload pair: ${encoded}`);
   const [tag, payload] = tagpayload;
-  assert(
-    passStyleOf(tag) === 'string',
-    X`not a valid tagged encoding: ${encoded}`,
-  );
+  passStyleOf(tag) === 'string' ||
+    assert.fail(X`not a valid tagged encoding: ${encoded}`);
   return makeTagged(tag, payload);
 };
 
@@ -297,26 +287,26 @@ export const makeEncodePassable = ({
       }
       case 'remotable': {
         const result = encodeRemotable(passable);
-        assert(
-          result.startsWith('r'),
-          X`internal: Remotable encoding must start with "r": ${result}`,
-        );
+        result.startsWith('r') ||
+          assert.fail(
+            X`internal: Remotable encoding must start with "r": ${result}`,
+          );
         return result;
       }
       case 'error': {
         const result = encodeError(passable);
-        assert(
-          result.startsWith('!'),
-          X`internal: Error encoding must start with "!": ${result}`,
-        );
+        result.startsWith('!') ||
+          assert.fail(
+            X`internal: Error encoding must start with "!": ${result}`,
+          );
         return result;
       }
       case 'promise': {
         const result = encodePromise(passable);
-        assert(
-          result.startsWith('?'),
-          X`internal: Promise encoding must start with "p": ${result}`,
-        );
+        result.startsWith('?') ||
+          assert.fail(
+            X`internal: Promise encoding must start with "p": ${result}`,
+          );
         return result;
       }
       case 'symbol': {

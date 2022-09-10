@@ -238,10 +238,10 @@ export async function loadSwingsetConfigFile(configPath) {
     await normalizeConfigDescriptor(config.bundles, referrer, false);
     // await normalizeConfigDescriptor(config.devices, referrer, true); // TODO: represent devices
     assert(config.bootstrap, X`no designated bootstrap vat in ${configPath}`);
-    assert(
-      config.vats && config.vats[config.bootstrap],
-      X`bootstrap vat ${config.bootstrap} not found in ${configPath}`,
-    );
+    (config.vats && config.vats[config.bootstrap]) ||
+      assert.fail(
+        X`bootstrap vat ${config.bootstrap} not found in ${configPath}`,
+      );
     return config;
   } catch (e) {
     if (e.code === 'ENOENT') {
@@ -294,11 +294,8 @@ export async function initializeSwingset(
 ) {
   const kvStore = hostStorage.kvStore;
   insistStorageAPI(kvStore);
-
-  assert(
-    !swingsetIsInitialized(hostStorage),
-    X`kernel store already initialized`,
-  );
+  !swingsetIsInitialized(hostStorage) ||
+    assert.fail(X`kernel store already initialized`);
 
   // copy config so we can safely mess with it even if it's shared or hardened
   config = JSON.parse(JSON.stringify(config));

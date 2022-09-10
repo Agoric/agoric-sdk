@@ -8,10 +8,8 @@ const { details: X } = assert;
 const makeLooksLikeBrand = name => {
   /** @param {Brand} brand */
   return brand => {
-    assert(
-      isRemotable(brand),
-      X`value for ${name} must be a brand, was ${brand}`,
-    );
+    isRemotable(brand) ||
+      assert.fail(X`value for ${name} must be a brand, was ${brand}`);
   };
 };
 harden(makeLooksLikeBrand);
@@ -19,10 +17,10 @@ harden(makeLooksLikeBrand);
 const makeAssertInstallation = name => {
   return installation => {
     // TODO(3344): add a better assertion once Zoe validates installations
-    assert(
-      typeof installation === 'object',
-      X`value for ${name} must be an Installation, was ${installation}`,
-    );
+    typeof installation === 'object' ||
+      assert.fail(
+        X`value for ${name} must be an Installation, was ${installation}`,
+      );
   };
 };
 harden(makeAssertInstallation);
@@ -30,10 +28,8 @@ harden(makeAssertInstallation);
 const makeAssertInstance = name => {
   return instance => {
     // TODO(3344): add a better assertion once Zoe validates instances
-    assert(
-      typeof instance === 'object',
-      X`value for ${name} must be an Instance, was ${instance}`,
-    );
+    typeof instance === 'object' ||
+      assert.fail(X`value for ${name} must be an Instance, was ${instance}`);
   };
 };
 harden(makeAssertInstance);
@@ -41,14 +37,14 @@ harden(makeAssertInstance);
 const makeAssertBrandedRatio = (name, modelRatio) => {
   return ratio => {
     assertIsRatio(ratio);
-    assert(
-      ratio.numerator.brand === modelRatio.numerator.brand,
-      X`Numerator brand for ${name} must be ${modelRatio.numerator.brand}`,
-    );
-    assert(
-      ratio.denominator.brand === modelRatio.denominator.brand,
-      X`Denominator brand for ${name} must be ${modelRatio.denominator.brand}`,
-    );
+    ratio.numerator.brand === modelRatio.numerator.brand ||
+      assert.fail(
+        X`Numerator brand for ${name} must be ${modelRatio.numerator.brand}`,
+      );
+    ratio.denominator.brand === modelRatio.denominator.brand ||
+      assert.fail(
+        X`Denominator brand for ${name} must be ${modelRatio.denominator.brand}`,
+      );
     return true;
   };
 };

@@ -158,10 +158,8 @@ export const checkCopySet = (s, check) => {
     return true;
   }
   const result =
-    check(
-      passStyleOf(s) === 'tagged' && getTag(s) === 'copySet',
-      X`Not a copySet: ${s}`,
-    ) &&
+    ((passStyleOf(s) === 'tagged' && getTag(s) === 'copySet') ||
+      check(false, X`Not a copySet: ${s}`)) &&
     checkElements(s.payload, check) &&
     checkKey(s.payload, check);
   if (result) {
@@ -244,10 +242,8 @@ export const checkCopyBag = (b, check) => {
     return true;
   }
   const result =
-    check(
-      passStyleOf(b) === 'tagged' && getTag(b) === 'copyBag',
-      X`Not a copyBag: ${b}`,
-    ) &&
+    ((passStyleOf(b) === 'tagged' && getTag(b) === 'copyBag') ||
+      check(false, X`Not a copyBag: ${b}`)) &&
     checkBagEntries(b.payload, check) &&
     checkKey(b.payload, check);
   if (result) {
@@ -363,20 +359,20 @@ export const checkCopyMap = (m, check) => {
   }
   const { keys, values, ...rest } = payload;
   const result =
-    check(
-      ownKeys(rest).length === 0,
-      X`A copyMap's payload must only have .keys and .values: ${m}`,
-    ) &&
+    (ownKeys(rest).length === 0 ||
+      check(
+        false,
+        X`A copyMap's payload must only have .keys and .values: ${m}`,
+      )) &&
     checkElements(keys, check) &&
     checkKey(keys, check) &&
-    check(
-      passStyleOf(values) === 'copyArray',
-      X`A copyMap's .values must be a copyArray: ${m}`,
-    ) &&
-    check(
-      keys.length === values.length,
-      X`A copyMap must have the same number of keys and values: ${m}`,
-    );
+    (passStyleOf(values) === 'copyArray' ||
+      check(false, X`A copyMap's .values must be a copyArray: ${m}`)) &&
+    (keys.length === values.length ||
+      check(
+        false,
+        X`A copyMap must have the same number of keys and values: ${m}`,
+      ));
   if (result) {
     copyMapMemo.add(m);
   }

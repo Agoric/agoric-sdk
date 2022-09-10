@@ -47,16 +47,14 @@ const assertBallotConcernsParam = (paramSpec, questionSpec) => {
 
   const { parameterName, paramPath } = paramSpec;
   const { issue } = questionSpec;
-
-  assert(
-    issue.spec.changes[parameterName],
-    X`Question (${issue.spec.changes}) does not concern ${parameterName}`,
-  );
-
-  assert(
-    keyEQ(issue.spec.paramPath, paramPath),
-    X`Question path (${issue.spec.paramPath}) doesn't match request (${paramPath})`,
-  );
+  issue.spec.changes[parameterName] ||
+    assert.fail(
+      X`Question (${issue.spec.changes}) does not concern ${parameterName}`,
+    );
+  keyEQ(issue.spec.paramPath, paramPath) ||
+    assert.fail(
+      X`Question path (${issue.spec.paramPath}) doesn't match request (${paramPath})`,
+    );
 };
 
 /** @type {SetupGovernance} */

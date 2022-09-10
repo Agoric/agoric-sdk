@@ -25,11 +25,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
         exclInvitation,
       );
-
-      assert(
-        installation === installations.secondPriceAuction,
-        X`wrong installation`,
-      );
+      installation === installations.secondPriceAuction ||
+        assert.fail(X`wrong installation`);
       assert(
         keyEQ(
           harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
@@ -77,18 +74,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       );
       const { source } = await E(installation).getBundle();
       // pick some arbitrary code points as a signature.
-      assert(
-        source.includes('asset: give.Asset,'),
-        X`source bundle didn't match at "asset: give.Asset,"`,
-      );
-      assert(
-        source.includes('swap(zcf, firstSeat, matchingSeat)'),
-        X`source bundle didn't match at "swap(zcf, firstSeat, matchingSeat)"`,
-      );
-      assert(
-        source.includes('makeMatchingInvitation'),
-        X`source bundle didn't match at "makeMatchingInvitation"`,
-      );
+      source.includes('asset: give.Asset,') ||
+        assert.fail(X`source bundle didn't match at "asset: give.Asset,"`);
+      source.includes('swap(zcf, firstSeat, matchingSeat)') ||
+        assert.fail(
+          X`source bundle didn't match at "swap(zcf, firstSeat, matchingSeat)"`,
+        );
+      source.includes('makeMatchingInvitation') ||
+        assert.fail(X`source bundle didn't match at "makeMatchingInvitation"`);
       assert(installation === installations.atomicSwap, X`wrong installation`);
       assert(
         keyEQ(
@@ -100,16 +93,12 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
       // Dave expects that Bob has already made an offer in the swap
       // with the following rules:
-      assert(
-        keyEQ(invitationValue[0].asset, optionAmounts),
-        X`asset is the option`,
-      );
+      keyEQ(invitationValue[0].asset, optionAmounts) ||
+        assert.fail(X`asset is the option`);
       assert(keyEQ(invitationValue[0].price, bucks(1n)), X`price is 1 buck`);
       const optionValue = optionAmounts.value;
-      assert(
-        optionValue[0].description === 'exerciseOption',
-        X`wrong invitation`,
-      );
+      optionValue[0].description === 'exerciseOption' ||
+        assert.fail(X`wrong invitation`);
       assert(
         AmountMath.isEqual(
           optionValue[0].underlyingAssets.UnderlyingAsset,

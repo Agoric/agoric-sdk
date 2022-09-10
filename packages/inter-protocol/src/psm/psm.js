@@ -150,10 +150,8 @@ export const start = async (zcf, privateArgs, baggage) => {
       anchorPool.getAmountAllocated('Anchor', anchorBrand),
       given,
     );
-    assert(
-      AmountMath.isGTE(params.getMintLimit(), anchorAfterTrade),
-      X`Request would exceed mint limit`,
-    );
+    AmountMath.isGTE(params.getMintLimit(), anchorAfterTrade) ||
+      assert.fail(X`Request would exceed mint limit`);
   };
 
   /**
@@ -165,10 +163,8 @@ export const start = async (zcf, privateArgs, baggage) => {
     const fee = ceilMultiplyBy(given, params.getGiveMintedFee());
     const afterFee = AmountMath.subtract(given, fee);
     const maxAnchor = floorMultiplyBy(afterFee, anchorPerMinted);
-    assert(
-      AmountMath.isGTE(maxAnchor, wanted),
-      X`wanted ${wanted} is more than ${given} minus fees ${fee}`,
-    );
+    AmountMath.isGTE(maxAnchor, wanted) ||
+      assert.fail(X`wanted ${wanted} is more than ${given} minus fees ${fee}`);
     try {
       stageTransfer(seat, stage, { In: afterFee }, { Minted: afterFee });
       stageTransfer(seat, feePool, { In: fee }, { Minted: fee });
@@ -200,10 +196,8 @@ export const start = async (zcf, privateArgs, baggage) => {
     const asStable = floorDivideBy(given, anchorPerMinted);
     const fee = ceilMultiplyBy(asStable, params.getWantMintedFee());
     const afterFee = AmountMath.subtract(asStable, fee);
-    assert(
-      AmountMath.isGTE(afterFee, wanted),
-      X`wanted ${wanted} is more than ${given} minus fees ${fee}`,
-    );
+    AmountMath.isGTE(afterFee, wanted) ||
+      assert.fail(X`wanted ${wanted} is more than ${given} minus fees ${fee}`);
     stableMint.mintGains({ Minted: asStable }, stage);
     try {
       stageTransfer(seat, anchorPool, { In: given }, { Anchor: given });

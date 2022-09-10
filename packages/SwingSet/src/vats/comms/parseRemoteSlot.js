@@ -57,10 +57,8 @@ export function makeRemoteSlot(type, allocatedByRecipient, id) {
 }
 
 export function insistRemoteType(type, remoteSlot) {
-  assert(
-    type === parseRemoteSlot(remoteSlot).type,
-    X`remoteSlot ${remoteSlot} is not of type ${type}`,
-  );
+  type === parseRemoteSlot(remoteSlot).type ||
+    assert.fail(X`remoteSlot ${remoteSlot} is not of type ${type}`);
 }
 
 // The clist for each remote-machine has two sides: fromRemote (used to

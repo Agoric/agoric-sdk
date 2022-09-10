@@ -78,8 +78,6 @@ export function makeKernelSlot(type, id) {
  * @returns {void}
  */
 export function insistKernelType(type, kernelSlot) {
-  assert(
-    type === parseKernelSlot(kernelSlot).type,
-    X`kernelSlot ${kernelSlot} is not of type ${type}`,
-  );
+  type === parseKernelSlot(kernelSlot).type ||
+    assert.fail(X`kernelSlot ${kernelSlot} is not of type ${type}`);
 }

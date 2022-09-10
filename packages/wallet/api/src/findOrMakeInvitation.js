@@ -14,10 +14,8 @@ const assertFirstCapASCII = str => {
       str,
     )} must be an ascii identifier starting with upper case.`,
   );
-  assert(
-    str !== 'NaN' && str !== 'Infinity',
-    X`keyword ${q(str)} must not be a number's name`,
-  );
+  (str !== 'NaN' && str !== 'Infinity') ||
+    assert.fail(X`keyword ${q(str)} must not be a number's name`);
 };
 
 /**
@@ -33,10 +31,8 @@ const findByBoardId = async (invitationPurseBalance, { board, boardId }) => {
   const invitationHandle = await E(board).getValue(boardId);
   const match = element => element.handle === invitationHandle;
   const matchingValue = invitationPurseBalance.value.find(match);
-  assert(
-    matchingValue,
-    X`Cannot find invitation corresponding to ${q(boardId)}`,
-  );
+  matchingValue ||
+    assert.fail(X`Cannot find invitation corresponding to ${q(boardId)}`);
 
   return harden([matchingValue]);
 };

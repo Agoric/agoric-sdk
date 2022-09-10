@@ -686,10 +686,10 @@ export default function makeKernelKeeper(
     const p = getKernelPromise(kpid);
     assert(p.state === 'unresolved', X`${kpid} was already resolved`);
     if (expectedDecider) {
-      assert(
-        p.decider === expectedDecider,
-        X`${kpid} is decided by ${p.decider}, not ${expectedDecider}`,
-      );
+      p.decider === expectedDecider ||
+        assert.fail(
+          X`${kpid} is decided by ${p.decider}, not ${expectedDecider}`,
+        );
     } else {
       assert(!p.decider, X`${kpid} is decided by ${p.decider}, not the kernel`);
     }
@@ -913,10 +913,8 @@ export default function makeKernelKeeper(
     // there is some kernel queue holding the message and its content.
 
     const p = getKernelPromise(kernelSlot);
-    assert(
-      p.state === 'unresolved',
-      X`${kernelSlot} is '${p.state}', not 'unresolved'`,
-    );
+    p.state === 'unresolved' ||
+      assert.fail(X`${kernelSlot} is '${p.state}', not 'unresolved'`);
     const nkey = `${kernelSlot}.queue.nextID`;
     const nextID = Nat(BigInt(getRequired(nkey)));
     kvStore.set(nkey, `${nextID + 1n}`);

@@ -61,14 +61,17 @@ const subtract = (amount, amountToSubtract, keyword) => {
     // amount is undefined, it is filtered out in doOperation.
     return /** @type {Amount} */ (amount);
   } else {
-    assert(
-      amount !== undefined,
-      X`The amount could not be subtracted from the allocation because the allocation did not have an amount under the keyword ${keyword}.`,
-    );
-    assert(
-      AmountMath.isGTE(amount, amountToSubtract),
-      X`The amount to be subtracted ${amountToSubtract} was greater than the allocation's amount ${amount} for the keyword ${keyword}`,
-    );
+    if (amount === undefined) {
+      // TypeScript confused about `||` control flow so use `if` instead
+      // https://github.com/microsoft/TypeScript/issues/50739
+      assert.fail(
+        X`The amount could not be subtracted from the allocation because the allocation did not have an amount under the keyword ${keyword}.`,
+      );
+    }
+    AmountMath.isGTE(amount, amountToSubtract) ||
+      assert.fail(
+        X`The amount to be subtracted ${amountToSubtract} was greater than the allocation's amount ${amount} for the keyword ${keyword}`,
+      );
     return AmountMath.subtract(amount, amountToSubtract);
   }
 };

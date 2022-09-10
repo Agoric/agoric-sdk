@@ -24,10 +24,10 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
   switch (assetKind) {
     case 'nat': {
       valueShape = M.nat();
-      assert(
-        elementShape === undefined,
-        X`Fungible assets cannot have an elementShape: ${q(elementShape)}`,
-      );
+      elementShape === undefined ||
+        assert.fail(
+          X`Fungible assets cannot have an elementShape: ${q(elementShape)}`,
+        );
       break;
     }
     case 'set': {
@@ -231,10 +231,10 @@ export const vivifyPaymentLedger = (
    * @returns {void}
    */
   const assertLivePayment = payment => {
-    assert(
-      paymentLedger.has(payment),
-      X`${payment} was not a live payment for brand ${brand}. It could be a used-up payment, a payment for another brand, or it might not be a payment at all.`,
-    );
+    paymentLedger.has(payment) ||
+      assert.fail(
+        X`${payment} was not a live payment for brand ${brand}. It could be a used-up payment, a payment for another brand, or it might not be a payment at all.`,
+      );
   };
 
   /**
@@ -265,10 +265,8 @@ export const vivifyPaymentLedger = (
     if (payments.length > 1) {
       const antiAliasingStore = new Set();
       payments.forEach(payment => {
-        assert(
-          !antiAliasingStore.has(payment),
-          X`same payment ${payment} seen twice`,
-        );
+        !antiAliasingStore.has(payment) ||
+          assert.fail(X`same payment ${payment} seen twice`);
         antiAliasingStore.add(payment);
       });
     }
@@ -278,10 +276,8 @@ export const vivifyPaymentLedger = (
     const newTotal = newPaymentBalances.reduce(add, emptyAmount);
 
     // Invariant check
-    assert(
-      isEqual(total, newTotal),
-      X`rights were not conserved: ${total} vs ${newTotal}`,
-    );
+    isEqual(total, newTotal) ||
+      assert.fail(X`rights were not conserved: ${total} vs ${newTotal}`);
 
     let newPayments;
     try {
@@ -357,10 +353,10 @@ export const vivifyPaymentLedger = (
     recoverySet,
   ) => {
     amount = coerce(amount);
-    assert(
-      AmountMath.isGTE(currentBalance, amount),
-      X`Withdrawal of ${amount} failed because the purse only contained ${currentBalance}`,
-    );
+    AmountMath.isGTE(currentBalance, amount) ||
+      assert.fail(
+        X`Withdrawal of ${amount} failed because the purse only contained ${currentBalance}`,
+      );
     const newPurseBalance = subtract(currentBalance, amount);
 
     const payment = makePayment();

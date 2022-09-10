@@ -59,11 +59,10 @@ const assertContractElectorate = async (
 ) => {
   const allegedGovernorPF = E(zoe).getPublicFacet(allegedGovernor);
   const electorate = await E(allegedGovernorPF).getElectorate();
-
-  assert(
-    electorate === allegedElectorate,
-    X`The allegedElectorate didn't match the actual ${q(electorate)}`,
-  );
+  electorate === allegedElectorate ||
+    assert.fail(
+      X`The allegedElectorate didn't match the actual ${q(electorate)}`,
+    );
 
   return true;
 };
