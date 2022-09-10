@@ -370,7 +370,7 @@ const runTests = (successCase, failCase) => {
     failCase(
       specimen,
       M.pattern(),
-      'A passable tagged "mysteryTag" is not a pattern: "[mysteryTag]"',
+      'cannot check unrecognized tag "mysteryTag": "[mysteryTag]"',
     );
   }
   {

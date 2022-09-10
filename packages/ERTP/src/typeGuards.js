@@ -1,5 +1,13 @@
 import { M, matches } from '@agoric/store';
 
+export const BrandShape = M.remotable('Brand');
+export const IssuerShape = M.remotable('Issuer');
+export const PaymentShape = M.remotable('Payment');
+export const PurseShape = M.remotable('Purse');
+export const DepositFacetShape = M.remotable('DepositFacet');
+const NotifierShape = M.remotable('Notifier');
+export const MintShape = M.remotable('Mint');
+
 /**
  * When the AmountValue of an Amount fits the NatValueShape, i.e., when it is
  * a non-negative bigint, then it represents that many units of the
@@ -68,7 +76,7 @@ const AmountValueShape = M.or(
 );
 
 export const AmountShape = harden({
-  brand: M.remotable(),
+  brand: BrandShape,
   value: AmountValueShape,
 });
 
@@ -131,14 +139,6 @@ export const DisplayInfoShape = M.partial(
 );
 
 // //////////////////////// Interfaces /////////////////////////////////////////
-
-export const BrandShape = M.remotable('Brand');
-export const IssuerShape = M.remotable('Issuer');
-export const PaymentShape = M.remotable('Payment');
-export const PurseShape = M.remotable('Purse');
-export const DepositFacetShape = M.remotable('DepositFacet');
-const NotifierShape = M.remotable('Notifier');
-export const MintShape = M.remotable('Mint');
 
 export const BrandI = M.interface('Brand', {
   isMyIssuer: M.callWhen(M.await(IssuerShape)).returns(M.boolean()),
