@@ -1,12 +1,17 @@
 // @ts-check
-import { AmountMath, AmountShape, PaymentShape } from '@agoric/ertp';
+import {
+  AmountMath,
+  AmountShape,
+  BrandShape,
+  PaymentShape,
+} from '@agoric/ertp';
 import { isNat } from '@agoric/nat';
 import {
   makeStoredPublishKit,
   observeIteration,
   observeNotifier,
 } from '@agoric/notifier';
-import { M, makeScalarMapStore } from '@agoric/store';
+import { fit, M, makeScalarMapStore } from '@agoric/store';
 import {
   defineDurableFarClassKit,
   makeKindHandle,
@@ -106,13 +111,26 @@ const { details: X, quote: q } = assert;
  * }} shared
  */
 export const initState = (unique, shared) => {
-  // TODO move to guard
-  // assert.typeof(address, 'string', 'invalid address');
-  // assert(bank, 'missing bank');
-  // assert(invitationIssuer, 'missing invitationIssuer');
-  // assert(invitationBrand, 'missing invitationBrand');
-  // assert(invitationPurse, 'missing invitationPurse');
-  // assert(storageNode, 'missing storageNode');
+  // Some validation of inputs. "any" erefs because this synchronous call can't check more than that.
+  fit(
+    unique,
+    harden({
+      address: M.string(),
+      bank: M.eref(M.any()),
+      invitationPurse: M.eref(M.any()),
+    }),
+  );
+  fit(
+    shared,
+    harden({
+      agoricNames: M.eref(M.any()),
+      invitationIssuer: M.eref(M.any()),
+      invitationBrand: BrandShape,
+      publicMarshaller: M.any(),
+      storageNode: M.eref(M.any()),
+      zoe: M.eref(M.any()),
+    }),
+  );
 
   // NB: state size must not grow monotonically
   // This is the node that UIs subscribe to for everything they need.
