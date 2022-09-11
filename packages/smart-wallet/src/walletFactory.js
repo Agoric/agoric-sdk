@@ -48,7 +48,9 @@ export const start = async (zcf, privateArgs) => {
   const { storageNode, bridgeManager } = privateArgs;
 
   /** @type {MapStore<string, import('./smartWallet').SmartWallet>} */
-  const walletsByAddress = makeScalarBigMapStore('walletsByAddress');
+  const walletsByAddress = makeScalarBigMapStore('walletsByAddress', {
+    durable: true,
+  });
   const provider = makeAtomicProvider(walletsByAddress);
 
   const handleWalletAction = makeHeapFarInstance(

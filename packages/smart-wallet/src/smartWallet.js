@@ -1,14 +1,20 @@
 // @ts-check
-import { AmountMath, AmountShape, PaymentShape } from '@agoric/ertp';
+import {
+  AmountMath,
+  AmountShape,
+  BrandShape,
+  PaymentShape,
+} from '@agoric/ertp';
 import { isNat } from '@agoric/nat';
 import {
   makeStoredPublishKit,
   observeIteration,
   observeNotifier,
 } from '@agoric/notifier';
-import { M, makeScalarMapStore } from '@agoric/store';
+import { fit, M, makeScalarMapStore } from '@agoric/store';
 import {
-  defineVirtualFarClassKit,
+  defineDurableFarClassKit,
+  makeKindHandle,
   makeScalarBigMapStore,
   pickFacet,
 } from '@agoric/vat-data';
@@ -105,13 +111,26 @@ const { details: X, quote: q } = assert;
  * }} shared
  */
 export const initState = (unique, shared) => {
-  // TODO move to guard
-  // assert.typeof(address, 'string', 'invalid address');
-  // assert(bank, 'missing bank');
-  // assert(invitationIssuer, 'missing invitationIssuer');
-  // assert(invitationBrand, 'missing invitationBrand');
-  // assert(invitationPurse, 'missing invitationPurse');
-  // assert(storageNode, 'missing storageNode');
+  // Some validation of inputs. "any" erefs because this synchronous call can't check more than that.
+  fit(
+    unique,
+    harden({
+      address: M.string(),
+      bank: M.eref(M.any()),
+      invitationPurse: M.eref(M.any()),
+    }),
+  );
+  fit(
+    shared,
+    harden({
+      agoricNames: M.eref(M.any()),
+      invitationIssuer: M.eref(M.any()),
+      invitationBrand: BrandShape,
+      publicMarshaller: M.any(),
+      storageNode: M.eref(M.any()),
+      zoe: M.eref(M.any()),
+    }),
+  );
 
   // NB: state size must not grow monotonically
   // This is the node that UIs subscribe to for everything they need.
@@ -132,8 +151,6 @@ export const initState = (unique, shared) => {
     offerToInvitationMakers: makeScalarBigMapStore('invitation makers', {
       durable: true,
     }),
-    // What purses have reported on construction and by getCurrentAmountNotifier updates.
-    purseBalances: makeScalarMapStore(),
   };
 
   const nonpreciousState = {
@@ -141,6 +158,8 @@ export const initState = (unique, shared) => {
     // To ensure every offer ID is unique we require that each is a number greater
     // than has ever been used. This high water mark is sufficient to track that.
     lastOfferId: 0,
+    // What purses have reported on construction and by getCurrentAmountNotifier updates.
+    purseBalances: makeScalarMapStore(),
     updatePublishKit: harden(
       makeStoredPublishKit(myWalletStorageNode, shared.publicMarshaller),
     ),
@@ -276,7 +295,6 @@ const behavior = {
   /**
    * Similar to {DepositFacet} but async because it has to look up the purse.
    */
-  // TODO(PS0) decide whether to match canonical `DepositFacet'. it would have to take a local Payment
   deposit: {
     /**
      * Put the assets from the payment into the appropriate purse.
@@ -439,8 +457,8 @@ const finish = ({ state, facets }) => {
   });
 };
 
-const SmartWalletKit = defineVirtualFarClassKit(
-  'SmartWallet',
+const SmartWalletKit = defineDurableFarClassKit(
+  makeKindHandle('SmartWallet'),
   behaviorGuards,
   initState,
   behavior,
