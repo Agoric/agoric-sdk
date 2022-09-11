@@ -295,7 +295,6 @@ const behavior = {
   /**
    * Similar to {DepositFacet} but async because it has to look up the purse.
    */
-  // TODO(PS0) decide whether to match canonical `DepositFacet'. it would have to take a local Payment
   deposit: {
     /**
      * Put the assets from the payment into the appropriate purse.
