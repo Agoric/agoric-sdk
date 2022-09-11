@@ -14,7 +14,7 @@ import {
 
 const { details: X, quote: q } = assert;
 
-const privateShape = harden({
+const privateArgsShape = harden({
   poolBank: M.eref(M.remotable('bank')),
 });
 
@@ -82,7 +82,7 @@ const makeBridgeProvisionTool = sendInitialPayment => {
 export const start = (zcf, privateArgs) => {
   // TODO: make initial amount governed
   const { perAccountInitialAmount } = zcf.getTerms();
-  fit(privateArgs, privateShape, 'provisionPool privateArgs');
+  fit(privateArgs, privateArgsShape, 'provisionPool privateArgs');
   const { poolBank } = privateArgs;
   fit(perAccountInitialAmount, AmountShape, 'perAccountInitialAmount');
   const { brand: poolBrand } = perAccountInitialAmount;
