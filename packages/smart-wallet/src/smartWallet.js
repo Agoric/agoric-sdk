@@ -8,7 +8,8 @@ import {
 } from '@agoric/notifier';
 import { M, makeScalarMapStore } from '@agoric/store';
 import {
-  defineVirtualFarClassKit,
+  defineDurableFarClassKit,
+  makeKindHandle,
   makeScalarBigMapStore,
   pickFacet,
 } from '@agoric/vat-data';
@@ -132,8 +133,6 @@ export const initState = (unique, shared) => {
     offerToInvitationMakers: makeScalarBigMapStore('invitation makers', {
       durable: true,
     }),
-    // What purses have reported on construction and by getCurrentAmountNotifier updates.
-    purseBalances: makeScalarMapStore(),
   };
 
   const nonpreciousState = {
@@ -141,6 +140,8 @@ export const initState = (unique, shared) => {
     // To ensure every offer ID is unique we require that each is a number greater
     // than has ever been used. This high water mark is sufficient to track that.
     lastOfferId: 0,
+    // What purses have reported on construction and by getCurrentAmountNotifier updates.
+    purseBalances: makeScalarMapStore(),
     updatePublishKit: harden(
       makeStoredPublishKit(myWalletStorageNode, shared.publicMarshaller),
     ),
@@ -439,8 +440,8 @@ const finish = ({ state, facets }) => {
   });
 };
 
-const SmartWalletKit = defineVirtualFarClassKit(
-  'SmartWallet',
+const SmartWalletKit = defineDurableFarClassKit(
+  makeKindHandle('SmartWallet'),
   behaviorGuards,
   initState,
   behavior,
