@@ -1,9 +1,10 @@
+/* global globalThis */
 // @ts-check
+import { setupGC } from './perf-setup.js';
 import '@agoric/swingset-vat/tools/prepare-test-env.js';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { Far, makeTagged } from '@endo/marshal';
-import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
 import { makeGcAndFinalize } from '@agoric/swingset-vat/src/lib-nodejs/gc-and-finalize.js';
 
 import { makeCopyBag, makeCopyMap, makeCopySet } from '../src/keys/checkKey.js';
@@ -17,7 +18,18 @@ import {
 } from './borrow-guards.js';
 import '../src/types.js';
 
-const gcAndFinalize = makeGcAndFinalize(engineGC);
+/**
+ * Measure the perf of the pattern matching libaries by running a spectrum of pattern tests.
+ * The goal is to have a measure that loosely corresponds to the guards that would be
+ * executed for a reasonable workload. The `node` version is run in jitless mode so that
+ * it's perfortmance profile best matches XS. That allows use of typical profiling tools
+ * to measure hot spots. The `xs` version is then used for actaully measuring impact.
+ *
+ * yarn perf:build - use rollup to build a single script for execution
+ * yarn perf:node - execute the built script in `--jitless` mode
+ * yarn perf:xs - execute the built script in XS
+ *
+ */
 
 const measurements = [];
 /**
@@ -200,11 +212,7 @@ const makeBatch = testCases => {
 
 const repetitions = 200;
 
-// export NODE_OPTIONS="--jitless --cpu-prof --heap-prof --expose-gc"
-// NODE_OPTIONS="--jitless" node --cpu-prof --prof test/perf-patterns.js
-// node --prof-process isolate-0x140008000-36726-v8.log > processed.txt
-// node --prof test/perf-patterns.js
-// node --prof-process isolate-0x130008000-37133-v8.log > processed.txt
+let gcAndFinalize;
 
 const measure = async (title, specimen, yesPattern, factor = 1) => {
   const times = factor * repetitions;
@@ -238,6 +246,8 @@ const smallArray = harden([1, 2, 3]);
 const bigArray = harden([...Array(10000).keys()]);
 
 const allMeasures = async () => {
+  await setupGC();
+  gcAndFinalize = makeGcAndFinalize(globalThis.gc);
   await measure('amount', amount1000, AmountShape, 100);
   await measure('array big', bigArray, M.array(), 400);
   await measure('array big ANY', bigArray, M.any(), 2000);

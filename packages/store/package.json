@@ -14,7 +14,10 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json",
-    "lint:eslint": "eslint ."
+    "lint:eslint": "eslint .",
+    "perf:build": "rollup --config test/rollup.config.js",
+    "perf:node": "NODE_OPTIONS='--jitless' node dist/bundle-perf-patterns.mjs",
+    "perf:xs": "../xsnap/moddable/build/bin/mac/release/xst -m dist/bundle-perf-patterns.mjs"
   },
   "repository": {
     "type": "git",
@@ -39,6 +42,7 @@
   "devDependencies": {
     "@agoric/swingset-vat": "^0.28.0",
     "@fast-check/ava": "^1.0.1",
+    "@rollup/plugin-node-resolve": "^6.1.0",
     "ava": "^4.3.1"
   },
   "files": [
