@@ -7,7 +7,10 @@ import { E, Far } from '@endo/far';
 import { observeIteration, observeNotifier } from '@agoric/notifier';
 import { AmountMath, AmountShape } from '@agoric/ertp';
 import { WalletName } from '@agoric/internal';
-import { makeMyAddressNameAdmin, PowerFlags } from './core/basic-behaviors.js';
+import {
+  makeMyAddressNameAdminKit,
+  PowerFlags,
+} from './core/basic-behaviors.js';
 
 const { details: X, quote: q } = assert;
 
@@ -45,7 +48,8 @@ const makeBridgeProvisionTool = sendInitialPayment => {
           return;
         }
 
-        const { nameHub, myAddressNameAdmin } = makeMyAddressNameAdmin(address);
+        const { nameHub, myAddressNameAdmin } =
+          makeMyAddressNameAdminKit(address);
 
         const bank = E(bankManager).getBankForAddress(address);
         await Promise.all([

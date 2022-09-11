@@ -188,7 +188,7 @@ harden(makeBoard);
 /**
  * @param {string} address
  */
-export const makeMyAddressNameAdmin = address => {
+export const makeMyAddressNameAdminKit = address => {
   // Create a name hub for this address.
   const { nameHub, nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
 
@@ -230,7 +230,7 @@ export const makeAddressNameHubs = async ({
   produce.namesByAddressAdmin.resolve(namesByAddressAdmin);
 
   const perAddress = address => {
-    const { myAddressNameAdmin } = makeMyAddressNameAdmin(address);
+    const { myAddressNameAdmin } = makeMyAddressNameAdminKit(address);
     return { agoricNames, namesByAddress, myAddressNameAdmin };
   };
 
