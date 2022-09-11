@@ -6,7 +6,6 @@ import { E, Far } from '@endo/far';
 // TODO: move to narrower package?
 import { observeIteration, observeNotifier } from '@agoric/notifier';
 import { AmountMath, AmountShape } from '@agoric/ertp';
-import { WalletName } from '@agoric/internal';
 import {
   makeMyAddressNameAdminKit,
   PowerFlags,
@@ -22,7 +21,8 @@ const privateArgsShape = harden({
  * Given attenuated access to the funding purse,
  * handle requests to provision smart wallets.
  *
- * @param {(address: string, depositFacet: ERef<DepositFacet>) => Promise<void>} sendInitialPayment
+ * @param {(address: string, depositBank: ERef<Bank>) => Promise<void>} sendInitialPayment
+ * @typedef {import('./vat-bank.js').Bank} Bank
  */
 const makeBridgeProvisionTool = sendInitialPayment => {
   /**
@@ -35,23 +35,25 @@ const makeBridgeProvisionTool = sendInitialPayment => {
   const makeHandler = ({ bankManager, namesByAddressAdmin, walletFactory }) =>
     Far('provisioningHandler', {
       fromBridge: async (_srcID, obj) => {
-        assert(namesByAddressAdmin, 'no namesByAddressAdmin');
         assert.equal(
           obj.type,
           'PLEASE_PROVISION',
           X`Unrecognized request ${obj.type}`,
         );
+        console.info('PLEASE_PROVISION', obj);
         const { address, powerFlags } = obj;
-        console.info('PLEASE_PROVISION', address, powerFlags);
+        assert(
+          powerFlags.includes(PowerFlags.SMART_WALLET),
+          'missing SMART_WALLET in powerFlags',
+        );
 
-        if (!powerFlags.includes(PowerFlags.SMART_WALLET)) {
-          return;
-        }
+        const bank = E(bankManager).getBankForAddress(address);
+        await sendInitialPayment(address, bank);
+        // only proceed  if we can provide funds
 
         const { nameHub, myAddressNameAdmin } =
           makeMyAddressNameAdminKit(address);
 
-        const bank = E(bankManager).getBankForAddress(address);
         await Promise.all([
           E(namesByAddressAdmin).update(address, nameHub, myAddressNameAdmin),
           E(walletFactory).provideSmartWallet(
@@ -59,7 +61,6 @@ const makeBridgeProvisionTool = sendInitialPayment => {
             bank,
             myAddressNameAdmin,
           ),
-          sendInitialPayment(address, nameHub.lookup(WalletName.depositFacet)),
         ]);
 
         console.info('provisioned', address, powerFlags);
@@ -75,7 +76,7 @@ const makeBridgeProvisionTool = sendInitialPayment => {
  *
  * @param {ZCF<ProvisionTerms>} zcf
  * @param {{
- *   poolBank: import('@endo/far').FarRef<import('./vat-bank.js').Bank>,
+ *   poolBank: import('@endo/far').FarRef<Bank>,
  * }} privateArgs
  * @returns
  */
@@ -133,18 +134,27 @@ export const start = (zcf, privateArgs) => {
     },
   });
 
-  const sendInitialPayment = async (address, depositFacet) => {
+  /**
+   *
+   * @param {string} address
+   * @param {ERef<Bank>} destBank
+   */
+  const sendInitialPayment = async (address, destBank) => {
     console.log('sendInitialPayment', address);
     const initialPmt = await E(fundPurse).withdraw(perAccountInitialAmount);
 
-    return E(depositFacet)
-      .receive(initialPmt)
+    const destPurse = E(destBank).getPurse(poolBrand);
+    return E(destPurse)
+      .deposit(initialPmt)
       .then(amt => {
         console.log('provisionPool sent', amt, 'to', address);
       })
-      .catch(e => {
-        console.error(X`initial deposit for ${q(address)} failed: ${q(e)}`);
-        E(fundPurse).deposit(initialPmt);
+      .catch(reason => {
+        console.error(
+          X`initial deposit for ${q(address)} failed: ${q(reason)}`,
+        );
+        void E(fundPurse).deposit(initialPmt);
+        throw reason;
       });
   };
 
