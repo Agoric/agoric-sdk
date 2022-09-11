@@ -14,7 +14,7 @@ import { E, Far } from '@endo/far';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeScalarMap } from '@agoric/store';
-import { makeSubscriptionKit, observeNotifier } from '@agoric/notifier';
+import { makeSubscriptionKit } from '@agoric/notifier';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeBoard } from '../src/lib-board.js';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
