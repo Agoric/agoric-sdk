@@ -195,7 +195,7 @@
  *   agoricNames: NameHub,
  *   agoricNamesAdmin: NameAdmin,
  *   aggregators: Map<unknown, { aggregator: PriceAuthority, deleter: import('@agoric/zoe/tools/priceAuthorityRegistry').Deleter }>,
- *   bankManager: Awaited<BankManager>,
+ *   bankManager: BankManager,
  *   bldIssuerKit: RemoteIssuerKit,
  *   board: Board,
  *   bridgeManager: OptionalBridgeManager,
@@ -249,7 +249,7 @@
  *   }}
  * } BootstrapSpace
  * @typedef {{ mint: ERef<Mint>, issuer: ERef<Issuer>, brand: Brand }} RemoteIssuerKit
- * @typedef {ReturnType<Awaited<BankVat>['makeBankManager']>} BankManager
+ * @typedef {Awaited<ReturnType<Awaited<BankVat>['makeBankManager']>>} BankManager
  * @typedef {ERef<ReturnType<import('../vat-bank.js').buildRootObject>>} BankVat
  * @typedef {ERef<ReturnType<import('../vat-chainStorage.js').buildRootObject>>} ChainStorageVat
  * @typedef {ERef<ReturnType<import('../vat-provisioning.js').buildRootObject>>} ProvisioningVat

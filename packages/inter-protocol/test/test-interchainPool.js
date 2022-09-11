@@ -63,7 +63,7 @@ test('make interchain pool', async t => {
     /** @type {PromiseKit<{ mint: ERef<Mint>, issuer: ERef<Issuer>, brand: Brand}>} */
     const ibcKitP = makePromiseKit();
 
-    /** @type {Awaited<BankManager>} */
+    /** @type {BankManager} */
     const bankManager = Far('mock BankManager', {
       getAssetSubscription: () => assert.fail('not impl'),
       getModuleAccountAddress: () => assert.fail('not impl'),
