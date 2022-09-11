@@ -16,8 +16,6 @@ const startFactoryInstance = (zoe, inst) => E(zoe).startInstance(inst);
 
 const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
 
-const PROVISION_ACCT_TEST = 'agoric1muveuvn0nka9g6mx9fs0uxls5pvnmd23376dwq';
-
 /**
  * Register for PLEASE_PROVISION bridge messages and handle
  * them by providing a smart wallet from the wallet factory.
@@ -55,16 +53,28 @@ export const startWalletFactory = async (
   { options: { perAccountInitialValue = (StableUnit * 25n) / 100n } = {} } = {},
 ) => {
   const STORAGE_PATH = 'wallet';
-
-  const [storageNode, bridgeManager, namesByAddressAdmin, feeBrand, feeIssuer] =
+  const [bridgeManager, poolAddr] = await Promise.all([
+    bridgeManagerP,
+    E(bankManager).getModuleAccountAddress('vbank/provision'),
+  ]);
+  if (!bridgeManager) {
+    console.warn('startWalletFactory needs bridgeManager (not sim chain)');
+    return;
+  }
+  console.log('provision pool', { poolAddr });
+  if (!poolAddr) {
+    console.warn(
+      'startWalletFactory needs vbank/provision module addres (not sim chain)',
+    );
+    return;
+  }
+  const [storageNode, namesByAddressAdmin, feeBrand, feeIssuer] =
     await Promise.all([
       makeStorageNodeChild(chainStorage, STORAGE_PATH),
-      bridgeManagerP,
       namesByAddressAdminP,
       feeBrandP,
       feeIssuerP,
     ]);
-  assert(namesByAddressAdmin, 'no namesByAddressAdmin???');
 
   const terms = await deeplyFulfilled(
     harden({
@@ -86,13 +96,7 @@ export const startWalletFactory = async (
     },
   );
   walletFactoryStartResult.resolve(wfFacets);
-
-  // const addr = PROVISION_ACCT_TEST;
-  const addr = await E(bankManager).getModuleAccountAddress('vbank/provision');
-  console.log('provision pool', { addr });
-  const poolBank = E(bankManager).getBankForAddress(
-    addr || PROVISION_ACCT_TEST,
-  );
+  const poolBank = E(bankManager).getBankForAddress(poolAddr);
   const ppTerms = harden({
     perAccountInitialAmount: AmountMath.make(feeBrand, perAccountInitialValue),
   });
@@ -112,11 +116,7 @@ export const startWalletFactory = async (
     walletFactory: wfFacets.creatorFacet,
   });
 
-  if (!bridgeManager) {
-    console.warn('missing bridgeManager in startWalletFactory');
-  }
-  await (bridgeManager &&
-    E(bridgeManager).register(BRIDGE_ID.PROVISION, handler));
+  await E(bridgeManager).register(BRIDGE_ID.PROVISION, handler);
 
   client.resolve(
     Far('dummy client', {
