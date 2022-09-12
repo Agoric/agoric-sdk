@@ -370,7 +370,7 @@ const behavior = {
               assert(isNat(id), 'offer id must be a positive number');
               assert(
                 id > lastOfferId,
-                'offer id must be greater than all previous',
+                `offer id must be greater than previous (${lastOfferId})`,
               );
               state.lastOfferId = id;
             },
