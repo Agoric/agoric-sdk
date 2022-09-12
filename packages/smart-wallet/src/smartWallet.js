@@ -13,8 +13,7 @@ import {
 } from '@agoric/notifier';
 import { fit, M, makeScalarMapStore } from '@agoric/store';
 import {
-  defineDurableFarClassKit,
-  makeKindHandle,
+  defineVirtualFarClassKit,
   makeScalarBigMapStore,
   pickFacet,
 } from '@agoric/vat-data';
@@ -457,8 +456,8 @@ const finish = ({ state, facets }) => {
   });
 };
 
-const SmartWalletKit = defineDurableFarClassKit(
-  makeKindHandle('SmartWallet'),
+const SmartWalletKit = defineVirtualFarClassKit(
+  'SmartWallet',
   behaviorGuards,
   initState,
   behavior,
