@@ -11,10 +11,9 @@ import url from 'url';
 import path from 'path';
 import http from 'http';
 import inquirer from 'inquirer';
-import chalk from 'chalk';
-import tmp from 'tmp';
 import createEsmRequire from 'esm';
 import { createRequire } from 'module';
+import { SigningStargateClient } from '@cosmjs/stargate';
 
 import { getAccessToken } from '@agoric/access-token';
 
@@ -24,7 +23,6 @@ import {
   makeHttpBundlePublisher,
 } from './publish.js';
 import { makeJsonHttpClient } from './json-http-client-node.js';
-import { makePspawn, getSDKBinaries } from './helpers.js';
 
 const { details: X } = assert;
 
@@ -48,7 +46,7 @@ const RETRY_DELAY_MS = 1000;
 const PATH_SEP_RE = new RegExp(`${path.sep.replace(/\\/g, '\\\\')}`, 'g');
 
 export default async function deployMain(progname, rawArgs, powers, opts) {
-  const { anylogger, fs, spawn, makeWebSocket, now } = powers;
+  const { anylogger, fs, makeWebSocket, now } = powers;
   const console = anylogger('agoric:deploy');
 
   const allowUnsafePlugins = opts.allowUnsafePlugins;
@@ -190,15 +188,11 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
     return connection;
   };
 
-  const pspawnEnv = { ...process.env, DEBUG: 'agoric,deploy,deploy:publish' };
-  const pspawn = makePspawn({ env: pspawnEnv, spawn, log: console, chalk });
-  const { cosmosHelper } = getSDKBinaries(sdkPrefixes);
   const publishBundleCosmos = makeCosmosBundlePublisher({
-    pspawn,
-    cosmosHelper,
+    connectWithSigner: SigningStargateClient.connectWithSigner,
     pathResolve: path.resolve,
     writeFile: fs.writeFile,
-    tmpDirSync: tmp.dirSync,
+    readFile: fs.readFile,
     random: Math.random,
   });
   const publishBundleHttp = makeHttpBundlePublisher({
