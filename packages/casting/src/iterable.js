@@ -71,7 +71,7 @@ export const iterateLatest = follower =>
   Far('iterateLatest iterable', {
     /** @returns {AsyncIterator<T>} */
     [Symbol.asyncIterator]: () => {
-      const latestIterable = E(follower).getEachIterable();
+      const latestIterable = E(follower).getLatestIterable();
       const iterator = E(latestIterable)[Symbol.asyncIterator]();
       return Far('iterateLatest iterator', {
         next: () => E(iterator).next(),
@@ -83,14 +83,15 @@ export const iterateLatest = follower =>
  * TODO: Remove this function when we have `makePublisherKit`.
  *
  * @template T
- * @param {ERef<import('./types').Follower<T>>} follower
+ * @param {ERef<import('./types.js').Follower<T>>} follower
+ * @param {import('./types.js').IterateEachOptions} [options]
  */
-export const iterateEach = follower =>
+export const iterateEach = (follower, options) =>
   // For now, just pass through the iterable.
   Far('iterateEach iterable', {
     /** @returns {AsyncIterator<T>} */
     [Symbol.asyncIterator]: () => {
-      const eachIterable = E(follower).getEachIterable();
+      const eachIterable = E(follower).getEachIterable(options);
       const iterator = E(eachIterable)[Symbol.asyncIterator]();
       return Far('iterateEach iterator', {
         next: () => E(iterator).next(),

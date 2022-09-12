@@ -77,15 +77,17 @@ export const DEFAULT_KEEP_POLLING = () =>
   delay(randomBackoff(DEFAULT_KEEP_POLLING_SECONDS * 1_000)).then(() => true);
 
 export const MAKE_DEFAULT_DECODER = () => {
-  const td = new TextDecoder();
   /**
-   * Decode utf-8 bytes, then parse the resulting JSON.
+   * Parse JSON.
    *
-   * @param {Uint8Array} buf
+   * @param {string} str
    */
-  return harden(buf => {
-    const str = td.decode(buf);
-    return harden(JSON.parse(str));
+  return harden(str => {
+    try {
+      return harden(JSON.parse(str));
+    } catch (error) {
+      throw new Error(`Cannot decode alleged JSON (${error.message}): ${str}`);
+    }
   });
 };
 

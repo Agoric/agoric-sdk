@@ -11,6 +11,13 @@ import { toAscii, toBase64 } from '@cosmjs/encoding';
 
 let lastPort = 8989;
 
+/**
+ * @param {number} min
+ * @param {number} max
+ * @param {number} n
+ */
+const clamp = (min, max, n) => Math.max(min, Math.min(max, n));
+
 const fakeStatusResult = {
   node_info: {
     protocol_version: {
@@ -106,8 +113,8 @@ export const startFakeServer = (t, fakeValues, options = {}) => {
       buf.set(ascii, dataPrefix.length);
       return toBase64(buf);
     };
-    let blockHeight = 74863;
-    let responseValueBase64;
+    const fakeBlocksStartHeight = 74863;
+    let blockHeight = fakeBlocksStartHeight;
     app.post('/tendermint-rpc', (req, res) => {
       log('received', req.path, req.body, req.params);
       const reply = result => {
@@ -124,24 +131,48 @@ export const startFakeServer = (t, fakeValues, options = {}) => {
           reply(fakeStatusResult);
           break;
         }
+        case 'abci_info': {
+          const result = {
+            response: {
+              data: 'agoric',
+              version: '0.32.1',
+              last_block_height: blockHeight,
+              last_block_app_hash: '',
+            },
+          };
+          reply(result);
+          break;
+        }
         case 'abci_query': {
-          blockHeight += 2;
-          const values = fakeValues.splice(0, Math.max(1, batchSize));
-          if (values.length > 0) {
-            if (batchSize > 0) {
-              // Return a JSON stream cell.
-              const serializedValues = values.map(val =>
-                JSON.stringify(marshaller.serialize(val)),
-              );
-              responseValueBase64 = encode({
-                blockHeight: String(blockHeight - 1),
-                values: serializedValues,
-              });
-            } else {
-              // Return a single naked value.
-              responseValueBase64 = encode(marshaller.serialize(values[0]));
-            }
+          const desiredHeight = req.body.height ?? blockHeight;
+          const values = [];
+          for (
+            let batchIndex = 0;
+            batchIndex < Math.max(1, batchSize);
+            batchIndex += 1
+          ) {
+            const fakeIndex = clamp(
+              0,
+              fakeValues.length - 1,
+              desiredHeight - fakeBlocksStartHeight + batchIndex,
+            );
+            values.push(fakeValues[fakeIndex]);
           }
+          let responseValue;
+          if (batchSize > 0) {
+            // Return a JSON stream cell.
+            const serializedValues = values.map(val =>
+              JSON.stringify(marshaller.serialize(val)),
+            );
+            responseValue = {
+              blockHeight: String(desiredHeight - 1),
+              values: serializedValues,
+            };
+          } else {
+            // Return a single naked value.
+            responseValue = marshaller.serialize(values[0]);
+          }
+          const responseValueBase64 = encode(responseValue);
           const result = {
             response: {
               code: 0,
@@ -165,6 +196,11 @@ export const startFakeServer = (t, fakeValues, options = {}) => {
         }
       }
     });
+    const controller = {
+      advance(offset) {
+        blockHeight += offset;
+      },
+    };
     const listener = app.listen(PORT, () => {
       log('started http server on', PORT);
       const cleanup = () => {
@@ -172,7 +208,7 @@ export const startFakeServer = (t, fakeValues, options = {}) => {
         listener.close();
       };
       t.context.cleanups.push(cleanup);
-      resolve(PORT);
+      resolve({ controller, PORT });
     });
   });
 };
@@ -256,7 +292,7 @@ export const develop = async () => {
       context: { cleanups: [] },
     })
   );
-  const PORT = await startFakeServer(mockT, [...fakeValues]);
+  const { PORT } = await startFakeServer(mockT, [...fakeValues]);
   console.log(
     `Try this in another terminal:
     agoric follow :fake.path --bootstrap=http://localhost:${PORT}/network-config --sleep=0.5 --proof=none`,
