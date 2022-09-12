@@ -121,7 +121,11 @@ export const startWalletFactory = async (
   client.resolve(
     Far('dummy client', {
       assignBundle: (propertyMakers = []) => {
-        console.warn('ignoring', propertyMakers.length, 'propertyMakers');
+        console.warn(
+          'dummy mailbox client home: ignoring',
+          propertyMakers.length,
+          'propertyMakers',
+        );
       },
     }),
   );
