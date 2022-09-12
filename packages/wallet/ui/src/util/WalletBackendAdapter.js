@@ -4,7 +4,7 @@ import {
   makeAsyncIterableFromNotifier,
   makeNotifierKit,
 } from '@agoric/notifier';
-import { iterateEach } from '@agoric/casting';
+import { iterateEach, iterateReverse } from '@agoric/casting';
 import { getScopedBridge } from '../service/ScopedBridge.js';
 import { getDappService } from '../service/Dapps.js';
 import { getOfferService } from '../service/Offers.js';
@@ -93,7 +93,7 @@ export const makeBackendFromWalletBridge = walletBridge => {
 };
 
 /**
- * @param {import('@agoric/casting').Follower} follower
+ * @param {import('@agoric/casting').Follower<any>} follower
  * @param {import('@agoric/casting').Leader} leader
  * @param {ReturnType<import('@endo/marshal').makeMarshal>} marshaller
  * @param {string} publicAddress
@@ -149,7 +149,15 @@ export const makeWalletBridgeFromFollower = (
   };
 
   const followLatest = async () => {
-    for await (const { value } of iterateEach(follower)) {
+    /** @type {number} */
+    let firstHeight;
+    for await (const { blockHeight } of iterateReverse(follower)) {
+      // TODO: Only set firstHeight and break if the value contains all our state.
+      firstHeight = blockHeight;
+    }
+    for await (const { value } of iterateEach(follower, {
+      height: firstHeight,
+    })) {
       console.log(value);
       /** @type {import('@agoric/smart-wallet/src/smartWallet').UpdateRecord} */
       const updateRecord = value;
@@ -286,11 +294,12 @@ export const makeWalletBridgeFromFollower = (
       slots: [instanceBoardId],
     } = await E(marshaller).serialize(instance);
 
-    return offerService.addOffer({
+    const fullOffer = {
       ...details,
       instancePetname: `instance@${instanceBoardId}`,
       spendAction: JSON.stringify(spendAction),
-    });
+    };
+    return offerService.addOffer(fullOffer);
   };
 
   const walletBridge = Far('follower wallet bridge', {
