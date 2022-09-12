@@ -98,3 +98,23 @@ export const iterateEach = (follower, options) =>
       });
     },
   });
+
+/**
+ * TODO: Remove this function when we have `makePublisherKit`.
+ *
+ * @template T
+ * @param {ERef<import('./types.js').Follower<T>>} follower
+ * @param {import('./types.js').IterateEachOptions} [options]
+ */
+export const iterateReverse = (follower, options) =>
+  // For now, just pass through the iterable.
+  Far('iterateReverse iterable', {
+    /** @returns {AsyncIterator<T>} */
+    [Symbol.asyncIterator]: () => {
+      const eachIterable = E(follower).getReverseIterable(options);
+      const iterator = E(eachIterable)[Symbol.asyncIterator]();
+      return Far('iterateEach iterator', {
+        next: () => E(iterator).next(),
+      });
+    },
+  });
