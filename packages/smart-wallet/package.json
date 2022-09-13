@@ -4,7 +4,8 @@
   "description": "Wallet contract",
   "type": "module",
   "scripts": {
-    "build": "exit 0",
+    "build": "yarn build:bundles",
+    "build:bundles": "node ./scripts/build-bundles.js",
     "test": "ava",
     "test:xs": "exit 0",
     "lint": "run-s --continue-on-error lint:*",
@@ -15,12 +16,14 @@
   "devDependencies": {
     "ava": "^4.3.1",
     "@agoric/cosmic-swingset": "^0.37.0",
+    "@agoric/deploy-script-support": "^0.9.0",
     "@agoric/cosmic-proto": "^0.1.0",
     "@agoric/inter-protocol": "^0.11.0",
     "@agoric/swingset-vat": "^0.28.0",
     "@agoric/wallet-backend": "^0.12.1",
     "@agoric/vats": "^0.10.0",
-    "@endo/captp": "^2.0.13"
+    "@endo/captp": "^2.0.13",
+    "@endo/init": "^0.5.47"
   },
   "dependencies": {
     "@agoric/assert": "^0.4.0",
