@@ -147,7 +147,11 @@ test('XS + SES snapshots are long-term deterministic', async t => {
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
   t.teardown(() => vat.close());
 
-  const { filePath: _path1, ...info1 } = await store.save(vat.snapshot);
+  const {
+    filePath: _path1,
+    compressedByteCount: _csize1,
+    ...info1
+  } = await store.save(vat.snapshot);
   t.snapshot(info1, 'initial snapshot');
 
   const bootScript = await ld.asset(
@@ -155,14 +159,22 @@ test('XS + SES snapshots are long-term deterministic', async t => {
   );
   await vat.evaluate(bootScript);
 
-  const { filePath: _path2, ...info2 } = await store.save(vat.snapshot);
+  const {
+    filePath: _path2,
+    compressedByteCount: _csize2,
+    ...info2
+  } = await store.save(vat.snapshot);
   t.snapshot(
     info2,
     'after SES boot - sensitive to SES-shim, XS, and supervisor',
   );
 
   await vat.evaluate('globalThis.x = harden({a: 1})');
-  const { filePath: _path3, ...info3 } = await store.save(vat.snapshot);
+  const {
+    filePath: _path3,
+    compressedByteCount: _csize3,
+    ...info3
+  } = await store.save(vat.snapshot);
   t.snapshot(
     info3,
     'after use of harden() - sensitive to SES-shim, XS, and supervisor',

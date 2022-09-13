@@ -211,18 +211,17 @@ export function makeSnapStore(
    * @returns {Promise<SnapshotInfo>}
    */
   async function save(saveRaw) {
-    return withTempName(async snapFile => {
+    return withTempName(async tmpFilePath => {
       const t0 = /** @type {number} */ (now());
-      await saveRaw(snapFile);
+      await saveRaw(tmpFilePath);
       const rawSaveMillisec = /** @type {number} */ (now()) - t0;
-      const { size: rawsize } = await stat(snapFile);
-      const h = await fileHash(snapFile);
-      if (toDelete.has(h)) {
-        toDelete.delete(h);
+      const { size: rawByteCount } = await stat(tmpFilePath);
+      const hash = await fileHash(tmpFilePath);
+      if (toDelete.has(hash)) {
+        toDelete.delete(hash);
       }
-      // console.log('save', { snapFile, h });
-      const filePath = hashPath(h);
-      const info = { filePath, hash: h, rawByteCount: rawsize, rawSaveMillisec };
+      const filePath = hashPath(hash);
+      const info = { filePath, hash, rawByteCount, rawSaveMillisec };
       const fileStat = await stat(filePath).catch(e => {
         if (e.code === 'ENOENT') {
           return undefined;
@@ -234,7 +233,7 @@ export function makeSnapStore(
       }
       const t1 = /** @type {number} */ (now());
       const { size: compressedByteCount } = await atomicWrite(filePath, gztmp =>
-        filter(snapFile, createGzip(), gztmp, { flush: true }),
+        filter(tmpFilePath, createGzip(), gztmp, { flush: true }),
       );
       const compressMillisec = /** @type {number} */ (now()) - t1;
       return freeze({ ...info, compressMillisec, compressedByteCount });
@@ -262,13 +261,11 @@ export function makeSnapStore(
    * @template T
    */
   async function load(hash, loadRaw) {
-    return withTempName(async raw => {
-      await filter(hashPath(hash), createGunzip(), raw);
-      const actual = await fileHash(raw);
-      // console.log('load', { raw, hash });
+    return withTempName(async tmpFilePath => {
+      await filter(hashPath(hash), createGunzip(), tmpFilePath);
+      const actual = await fileHash(tmpFilePath);
       assert(actual === hash, d`actual hash ${actual} !== expected ${hash}`);
-      // be sure to await loadRaw before exiting withTempName
-      const result = await loadRaw(raw);
+      const result = await loadRaw(tmpFilePath);
       return result;
     }, `${hash}-load`);
   }
