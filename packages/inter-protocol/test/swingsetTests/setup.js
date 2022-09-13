@@ -234,7 +234,6 @@ const buildOwner = async (
     harden({}),
     harden({
       timer,
-      electorateInstance,
       governedContractInstallation: installations.vaultFactory,
       governed: {
         terms,
