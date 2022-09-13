@@ -26,7 +26,7 @@ const exampleAsset = {
   issuer: { boardId: null, iface: undefined },
   petname: 'Agoric staking token',
 };
-/** @typedef {import('@agoric/smart-wallet/src/smartWallet').BrandDescriptor & {brand: {boardId: string, iface: string}}} AssetDescriptor */
+/** @typedef {import('@agoric/smart-wallet/src/smartWallet').BrandDescriptor & {brand: import('./rpc').RpcRemote}} AssetDescriptor */
 
 /** @param {AssetDescriptor[]} assets */
 export const makeAmountFormatter = assets => amt => {
