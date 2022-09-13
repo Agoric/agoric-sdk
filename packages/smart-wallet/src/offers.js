@@ -117,13 +117,22 @@ export const makeOfferExecutor = ({
             logger.info(id, 'offerResult', passStyle, result);
             // someday can we get TS to type narrow based on the passStyleOf result match?
             switch (passStyle) {
+              case 'bigint':
+              case 'boolean':
+              case 'null':
+              case 'number':
+              case 'string':
+              case 'symbol':
+              case 'undefined':
+                updateStatus({ result });
+                break;
               case 'copyRecord':
                 if ('invitationMakers' in result) {
                   // save for continuing invitation offer
                   onNewContinuingOffer(id, result.invitationMakers);
                 }
-                // ??? are all copyRecord types valid to publish?
-                updateStatus({ result });
+                // copyRecord is valid to publish but not safe as it may have private info
+                updateStatus({ result: UNPUBLISHED_RESULT });
                 break;
               default:
                 // drop the result
@@ -134,15 +143,19 @@ export const makeOfferExecutor = ({
         );
 
         // publish 'numWantsSatisfied'
-        E.when(E(seatRef).numWantsSatisfied(), numSatisfied => {
-          logger.info('numSatisfied', numSatisfied);
-          if (numSatisfied === 0) {
-            updateStatus({ numWantsSatisfied: 0 });
-          }
-          updateStatus({
-            numWantsSatisfied: numSatisfied,
-          });
-        });
+        E.when(
+          E(seatRef).numWantsSatisfied(),
+          numSatisfied => {
+            logger.info(id, 'numSatisfied', numSatisfied);
+            if (numSatisfied === 0) {
+              updateStatus({ numWantsSatisfied: 0 });
+            }
+            updateStatus({
+              numWantsSatisfied: numSatisfied,
+            });
+          },
+          handleError,
+        );
 
         // publish 'payouts'
         // This will block until all payouts succeed, but user will be updated
