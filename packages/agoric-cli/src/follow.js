@@ -6,6 +6,7 @@ import { decodeToJustin } from '@endo/marshal/src/marshal-justin.js';
 import {
   iterateLatest,
   makeCastingSpec,
+  iterateEach,
   makeFollower,
   makeLeader,
 } from '@agoric/casting';
@@ -102,13 +103,24 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
 
   verbose && console.warn('Creating leader for', bootstrap);
   const leader = makeLeader(bootstrap, leaderOptions);
+  const iterate = opts.lossy ? iterateLatest : iterateEach;
   await Promise.all(
     specs.map(async spec => {
       verbose && console.warn('Following', spec);
       const castingSpec = makeCastingSpec(spec);
       const follower = makeFollower(castingSpec, leader, followerOptions);
-      for await (const { value } of iterateLatest(follower)) {
-        process.stdout.write(`${formatOutput(value)}\n`);
+      for await (const { value, blockHeight, currentBlockHeight } of iterate(
+        follower,
+      )) {
+        const blockHeightPrefix = opts.blockHeight ? `${blockHeight}:` : '';
+        const currentBlockHeightPrefix = opts.currentBlockHeight
+          ? `${currentBlockHeight}:`
+          : '';
+        process.stdout.write(
+          `${blockHeightPrefix}${currentBlockHeightPrefix}${formatOutput(
+            value,
+          )}\n`,
+        );
       }
     }),
   );
