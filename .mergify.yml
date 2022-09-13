@@ -12,15 +12,16 @@ queue_rules:
       - or:
           - label=bypass:integration
           - check-skipped=getting-started
-          - and:
-              - or:
-                  - check-success=getting-started (link-cli)
-                  - check-neutral=getting-started (link-cli)
-                  - check-skipped=getting-started (link-cli)
-              - or:
-                  - check-success=getting-started (local-npm)
-                  - check-neutral=getting-started (local-npm)
-                  - check-skipped=getting-started (local-npm)
+          - check-success=getting-started (link-cli)
+          - check-neutral=getting-started (link-cli)
+          - check-skipped=getting-started (link-cli)
+      # FIXME: Enable this section to validate NPM deploys...
+      #- or:
+      #    - label=bypass:integration
+      #    - check-skipped=getting-started
+      #    - check-success=getting-started (local-npm)
+      #    - check-neutral=getting-started (local-npm)
+      #    - check-skipped=getting-started (local-npm)
 
 pull_request_rules:
   - name: merge to master
