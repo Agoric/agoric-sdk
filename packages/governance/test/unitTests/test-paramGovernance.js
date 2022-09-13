@@ -81,11 +81,15 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
   ]);
   const installs = { governor, electorate, counter, governed };
 
-  const { creatorFacet: committeeCreator, instance: electorateInstance } =
-    await E(zoe).startInstance(electorate, harden({}), electorateTerms, {
+  const { creatorFacet: committeeCreator } = await E(zoe).startInstance(
+    electorate,
+    harden({}),
+    electorateTerms,
+    {
       storageNode: makeMockChainStorageRoot().makeChildNode('thisElectorate'),
       marshaller: makeBoard().getReadonlyMarshaller(),
-    });
+    },
+  );
 
   const poserInvitation = await E(committeeCreator).getPoserInvitation();
   const invitationAmount = await E(E(zoe).getInvitationIssuer()).getAmountOf(
@@ -107,7 +111,6 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
   };
   const governorTerms = {
     timer,
-    electorateInstance,
     governedContractInstallation: governed,
     governed: {
       terms: governedTerms,
