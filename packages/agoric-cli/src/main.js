@@ -1,3 +1,4 @@
+/* eslint-disable @jessie.js/no-nested-await */
 /* global process */
 import { Command } from 'commander';
 import path from 'path';
@@ -14,6 +15,7 @@ import setDefaultsMain from './set-defaults.js';
 import startMain from './start.js';
 import followMain from './follow.js';
 import walletMain from './open.js';
+import { makeWalletCommand } from './commands/wallet.js';
 
 const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
 const DEFAULT_DAPP_URL_BASE = 'https://github.com/Agoric/';
@@ -276,6 +278,8 @@ const main = async (progname, rawArgs, powers) => {
     const opts = { ...program.opts(), ...cmd.opts() };
     return subMain(deployMain, ['deploy', ...scripts], opts);
   });
+
+  program.addCommand(await makeWalletCommand());
 
   program
     .command('start [profile] [args...]')
