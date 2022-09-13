@@ -14,11 +14,6 @@ export const networkConfigUrl = agoricNetSubdomain =>
 export const rpcUrl = agoricNetSubdomain =>
   `https://${agoricNetSubdomain}.rpc.agoric.net:443`;
 
-// Env option instead of CLI option so that CLI args can be validated against it
-// XXX lacking ocaps discipline
-// look into https://github.com/tj/commander.js/blob/master/examples/options-env.js
-export const networkId = process.env.AGORIC_NET || 'local';
-
 /**
  * @typedef {{ rpcAddrs: string[], chainName: string }} MinimalNetworkConfig
  */
@@ -37,7 +32,7 @@ const fromAgoricNet = str => {
 
 /** @type {MinimalNetworkConfig} */
 export const networkConfig =
-  'AGORIC_NET' in process.env
+  'AGORIC_NET' in process.env && process.env.AGORIC_NET !== 'local'
     ? await fromAgoricNet(NonNullish(process.env.AGORIC_NET))
     : { rpcAddrs: ['http://0.0.0.0:26657'], chainName: 'agoric' };
 // console.warn('networkConfig', networkConfig);

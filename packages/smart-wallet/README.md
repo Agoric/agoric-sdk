@@ -48,7 +48,11 @@ There are no automated tests yet verifying the smart wallet running on chain. He
 
 ## Notifiers
 
-```
+```sh
+# freshen sdk
+cd agoric-sdk
+yarn install && yarn build
+
 # tab 1 (chain)
 cd packages/cosmic-swingset/
 make scenario2-setup scenario2-run-chain

@@ -9,7 +9,7 @@ import { boardSlottingMarshaller, storageHelper } from './rpc.js';
  */
 export const getWalletState = async (addr, ctx, { vstorage }) => {
   const capDataStrings = await vstorage.readAll(`published.wallet.${addr}`);
-  assert(capDataStrings);
+  assert(capDataStrings?.length, 'readAll returned empty');
   const capDatas = storageHelper.parseMany(capDataStrings);
 
   // XXX very similar to `coalesceUpdates` util
