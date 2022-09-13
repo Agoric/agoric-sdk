@@ -675,10 +675,8 @@ export function makeVirtualObjectManager(
     harden(prototypeTemplate);
 
     function makeRepresentative(innerSelf, initializing) {
-      assert(
-        innerSelf.repCount === 0,
-        X`${innerSelf.baseRef} already has a representative`,
-      );
+      innerSelf.repCount === 0 ||
+        assert.fail(X`${innerSelf.baseRef} already has a representative`);
       innerSelf.repCount += 1;
 
       function ensureState() {

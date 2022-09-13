@@ -90,10 +90,8 @@ export function makeKernel(state, syscall) {
     assert(lpid, X`unknown kernel promise ${kfpid}`);
     assert(state.mapToKernel(lpid), X`unmapped local promise ${lpid}`);
     const { kernelIsSubscribed } = state.getPromiseSubscribers(lpid);
-    assert(
-      !kernelIsSubscribed,
-      X`attempt to retire subscribed promise ${kfpid}`,
-    );
+    !kernelIsSubscribed ||
+      assert.fail(X`attempt to retire subscribed promise ${kfpid}`);
     state.deleteKernelMapping(lpid);
     cdebug(`comms delete mapping l<->k ${kfpid}<=>${lpid}`);
   }
@@ -105,10 +103,8 @@ export function makeKernel(state, syscall) {
     assert(lref, X`${kfref} must already be mapped to a local ID`);
     if (parseVatSlot(kfref).type === 'object') {
       // comms export, kernel import, it must be reachable
-      assert(
-        isReachable(lref),
-        X`kernel sending to unreachable import ${lref}`,
-      );
+      isReachable(lref) ||
+        assert.fail(X`kernel sending to unreachable import ${lref}`);
     }
     return lref;
   }

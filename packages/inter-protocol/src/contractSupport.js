@@ -37,14 +37,10 @@ export const assertOnlyKeys = (proposal, keys) => {
   /** @param {AmountKeywordRecord} clause */
   const onlyKeys = clause =>
     Object.getOwnPropertyNames(clause).every(c => keys.includes(c));
-  assert(
-    onlyKeys(proposal.give),
-    X`extraneous terms in give: ${proposal.give}`,
-  );
-  assert(
-    onlyKeys(proposal.want),
-    X`extraneous terms in want: ${proposal.want}`,
-  );
+  onlyKeys(proposal.give) ||
+    assert.fail(X`extraneous terms in give: ${proposal.give}`);
+  onlyKeys(proposal.want) ||
+    assert.fail(X`extraneous terms in want: ${proposal.want}`);
 };
 
 /**

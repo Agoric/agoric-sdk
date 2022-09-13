@@ -50,10 +50,10 @@ export const makeDoublePool = (
 
   const centralBrand = inCentral.brand;
   const emptyCentralAmount = AmountMath.makeEmpty(centralBrand);
-  assert(
-    centralBrand === outCentral.brand,
-    X`The central brands on the two pools must match: ${centralBrand}, ${outCentral.brand}`,
-  );
+  centralBrand === outCentral.brand ||
+    assert.fail(
+      X`The central brands on the two pools must match: ${centralBrand}, ${outCentral.brand}`,
+    );
 
   const allocateGainsAndLosses = (seat, prices) => {
     const inPoolSeat = collateralInPool.getPoolSeat();

@@ -92,10 +92,8 @@ const makeTestContext = async () => {
 
   const registerBundleHandles = bundleHandleMap => {
     for (const [{ bundleID }, paths] of bundleHandleMap.entries()) {
-      assert(
-        !bundleIDToAbsolutePaths.has(bundleID),
-        X`bundleID ${bundleID} already registered`,
-      );
+      !bundleIDToAbsolutePaths.has(bundleID) ||
+        assert.fail(X`bundleID ${bundleID} already registered`);
       bundleIDToAbsolutePaths.set(bundleID, paths);
     }
   };

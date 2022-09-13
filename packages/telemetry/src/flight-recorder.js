@@ -117,10 +117,8 @@ export const makeMemoryMappedCircularBuffer = async ({
    * @returns {IteratorResult<Uint8Array, void>}
    */
   const readCircBuf = (outbuf, offset = 0) => {
-    assert(
-      offset + outbuf.byteLength <= arenaSize,
-      X`Reading past end of circular buffer`,
-    );
+    offset + outbuf.byteLength <= arenaSize ||
+      assert.fail(X`Reading past end of circular buffer`);
 
     // Read the data to the end of the arena.
     let firstReadLength = outbuf.byteLength;

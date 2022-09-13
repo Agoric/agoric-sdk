@@ -19,10 +19,8 @@ export const assertIssuerKeywords = (zcf, expected) => {
   const actual = getKeysSorted(issuers);
   expected = [...expected]; // in case hardened
   expected.sort();
-  assert(
-    keyEQ(actual, harden(expected)),
-    X`keywords: ${actual} were not as expected: ${expected}`,
-  );
+  keyEQ(actual, harden(expected)) ||
+    assert.fail(X`keywords: ${actual} were not as expected: ${expected}`);
 };
 
 /**
@@ -157,10 +155,8 @@ export const assertProposalShape = (seat, expected) => {
   const actual = seat.getProposal();
   const assertKeys = (a, e) => {
     if (e !== undefined) {
-      assert(
-        keyEQ(getKeysSorted(a), getKeysSorted(e)),
-        X`actual ${a} did not match expected ${e}`,
-      );
+      keyEQ(getKeysSorted(a), getKeysSorted(e)) ||
+        assert.fail(X`actual ${a} did not match expected ${e}`);
     }
   };
   assertKeys(actual.give, expected.give);

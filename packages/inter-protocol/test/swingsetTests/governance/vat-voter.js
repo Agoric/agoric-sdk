@@ -83,22 +83,14 @@ const build = async (log, zoe) => {
             E(zoe).getInstallationForInstance(electorateInstance),
             E(zoe).getInstallationForInstance(governedInstance),
           ]);
-          assert(
-            counterInstallation === installations.counter,
-            X`counterInstallation should match`,
-          );
-          assert(
-            governorInstallation === installations.governor,
-            X`governor Installation should match`,
-          );
-          assert(
-            electorateInstallation === installations.electorate,
-            X`electorate Installation should match`,
-          );
-          assert(
-            governedInstallation === installations.vaultFactory,
-            X`vaultFactory Installation should match`,
-          );
+          counterInstallation === installations.counter ||
+            assert.fail(X`counterInstallation should match`);
+          governorInstallation === installations.governor ||
+            assert.fail(X`governor Installation should match`);
+          electorateInstallation === installations.electorate ||
+            assert.fail(X`electorate Installation should match`);
+          governedInstallation === installations.vaultFactory ||
+            assert.fail(X`vaultFactory Installation should match`);
         },
       });
     },

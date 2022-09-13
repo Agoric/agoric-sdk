@@ -217,10 +217,8 @@ const makeVaultInvitation = ({ state }) => {
       want: { Minted: requestedAmount },
     } = seat.getProposal();
     const { brand: brandIn } = collateralAmount;
-    assert(
-      collateralTypes.has(brandIn),
-      X`Not a supported collateral type ${brandIn}`,
-    );
+    collateralTypes.has(brandIn) ||
+      assert.fail(X`Not a supported collateral type ${brandIn}`);
 
     assert(
       AmountMath.isGTE(
@@ -326,10 +324,10 @@ const machineBehavior = {
     await zcf.saveIssuer(collateralIssuer, collateralKeyword);
     const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
     // We create only one vault per collateralType.
-    assert(
-      !collateralTypes.has(collateralBrand),
-      X`Collateral brand ${q(collateralBrand)} has already been added`,
-    );
+    !collateralTypes.has(collateralBrand) ||
+      assert.fail(
+        X`Collateral brand ${q(collateralBrand)} has already been added`,
+      );
 
     const managerStorageNode =
       storageNode &&
@@ -489,10 +487,8 @@ const publicBehavior = {
    */
   getCollateralManager: ({ state }, brandIn) => {
     const { collateralTypes } = state;
-    assert(
-      collateralTypes.has(brandIn),
-      X`Not a supported collateral type ${brandIn}`,
-    );
+    collateralTypes.has(brandIn) ||
+      assert.fail(X`Not a supported collateral type ${brandIn}`);
     /** @type {VaultManager} */
     return collateralTypes.get(brandIn).getPublicFacet();
   },

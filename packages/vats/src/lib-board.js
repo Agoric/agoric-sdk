@@ -107,10 +107,10 @@ function makeBoard(
       assert.typeof(id, 'string', X`id must be string: ${id}`);
       assert(id.startsWith(prefix), X`id must start with ${prefix}: ${id}`);
       const digits = id.slice(prefix.length);
-      assert(
-        digits.match(DIGITS_REGEXP),
-        X`id must end in at least ${q(crcDigits + 1)} digits: ${id}`,
-      );
+      digits.match(DIGITS_REGEXP) ||
+        assert.fail(
+          X`id must end in at least ${q(crcDigits + 1)} digits: ${id}`,
+        );
       const seq = digits.slice(crcDigits);
       const allegedCrc = digits.slice(0, crcDigits);
       const crcInput = `${prefix}${seq}`;

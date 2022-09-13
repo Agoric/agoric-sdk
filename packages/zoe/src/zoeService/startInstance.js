@@ -78,10 +78,12 @@ export const makeStartInstance = (
     const setOfferFilter = strings => {
       assert(Array.isArray(strings), X`${q(strings)} must be an Array`);
       const proposedStrings = harden([...strings]);
-      assert(
-        proposedStrings.every(s => typeof s === 'string'),
-        X`Blocked strings (${q(proposedStrings)}) must be an Array of strings.`,
-      );
+      proposedStrings.every(s => typeof s === 'string') ||
+        assert.fail(
+          X`Blocked strings (${q(
+            proposedStrings,
+          )}) must be an Array of strings.`,
+        );
 
       offerFilterStrings = proposedStrings;
     };

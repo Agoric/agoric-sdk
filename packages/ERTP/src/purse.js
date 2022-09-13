@@ -98,10 +98,10 @@ export const vivifyPurseKind = (
             const delta = facets.purse.deposit(payment);
             amount = AmountMath.add(amount, delta, brand);
           }
-          assert(
-            state.recoverySet.getSize() === 0,
-            X`internal: Remaining unrecovered payments: ${facets.purse.getRecoverySet()}`,
-          );
+          state.recoverySet.getSize() === 0 ||
+            assert.fail(
+              X`internal: Remaining unrecovered payments: ${facets.purse.getRecoverySet()}`,
+            );
           return amount;
         },
       },

@@ -139,10 +139,8 @@ export function makeDeviceSlots(
 
     assert(!outstandingProxies.has(x), X`SO(SO(x)) is invalid`);
     const slot = valToSlot.get(x);
-    assert(
-      slot && parseVatSlot(slot).type === 'object',
-      X`SO(x) must be called on a Presence, not ${x}`,
-    );
+    (slot && parseVatSlot(slot).type === 'object') ||
+      assert.fail(X`SO(x) must be called on a Presence, not ${x}`);
     const handler = PresenceHandler(slot);
     const p = harden(new Proxy({}, handler));
     outstandingProxies.add(p);

@@ -40,10 +40,9 @@ const start = zcf => {
 
   // We assume the only valid responses are 'YES' and 'NO'
   const assertResponse = response => {
-    assert(
-      response === 'NO' || response === 'YES',
-      X`the answer ${q(response)} was not 'YES' or 'NO'`,
-    );
+    response === 'NO' ||
+      response === 'YES' ||
+      assert.fail(X`the answer ${q(response)} was not 'YES' or 'NO'`);
     // Throw an error if the response is not valid, but do not
     // exit the seat. We should allow the voter to recast their vote.
   };

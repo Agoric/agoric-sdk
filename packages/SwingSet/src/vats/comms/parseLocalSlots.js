@@ -68,8 +68,6 @@ export function makeLocalSlot(type, id) {
  * @returns {void}
  */
 export function insistLocalType(type, localSlot) {
-  assert(
-    type === parseLocalSlot(localSlot).type,
-    X`localSlot ${localSlot} is not of type ${type}`,
-  );
+  type === parseLocalSlot(localSlot).type ||
+    assert.fail(X`localSlot ${localSlot} is not of type ${type}`);
 }

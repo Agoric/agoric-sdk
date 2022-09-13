@@ -45,21 +45,21 @@ export const assertIsRatio = ratio => {
   const keys = Object.keys(ratio);
   assert(keys.length === 2, X`Ratio ${ratio} must be a record with 2 fields.`);
   for (const name of keys) {
-    assert(
-      ratioPropertyNames.includes(name),
-      X`Parameter must be a Ratio record, but ${ratio} has ${q(name)}`,
-    );
+    ratioPropertyNames.includes(name) ||
+      assert.fail(
+        X`Parameter must be a Ratio record, but ${ratio} has ${q(name)}`,
+      );
   }
   const numeratorValue = ratio.numerator.value;
   const denominatorValue = ratio.denominator.value;
-  assert(
-    isNat(numeratorValue),
-    X`The numerator value must be a NatValue, not ${numeratorValue}`,
-  );
-  assert(
-    isNat(denominatorValue),
-    X`The denominator value must be a NatValue, not ${denominatorValue}`,
-  );
+  isNat(numeratorValue) ||
+    assert.fail(
+      X`The numerator value must be a NatValue, not ${numeratorValue}`,
+    );
+  isNat(denominatorValue) ||
+    assert.fail(
+      X`The denominator value must be a NatValue, not ${denominatorValue}`,
+    );
 };
 
 /**
@@ -75,10 +75,10 @@ export const makeRatio = (
   denominator = PERCENT,
   denominatorBrand = numeratorBrand,
 ) => {
-  assert(
-    denominator > 0n,
-    X`No infinite ratios! Denominator was 0/${q(denominatorBrand)}`,
-  );
+  denominator > 0n ||
+    assert.fail(
+      X`No infinite ratios! Denominator was 0/${q(denominatorBrand)}`,
+    );
 
   return harden({
     numerator: AmountMath.make(numeratorBrand, numerator),
@@ -295,14 +295,14 @@ export const multiplyRatios = (left, right) => {
  */
 export const oneMinus = ratio => {
   assertIsRatio(ratio);
-  assert(
-    ratio.numerator.brand === ratio.denominator.brand,
-    X`oneMinus only supports ratios with a single brand, but ${ratio.numerator.brand} doesn't match ${ratio.denominator.brand}`,
-  );
-  assert(
-    ratio.numerator.value <= ratio.denominator.value,
-    X`Parameter must be less than or equal to 1: ${ratio.numerator.value}/${ratio.denominator.value}`,
-  );
+  ratio.numerator.brand === ratio.denominator.brand ||
+    assert.fail(
+      X`oneMinus only supports ratios with a single brand, but ${ratio.numerator.brand} doesn't match ${ratio.denominator.brand}`,
+    );
+  ratio.numerator.value <= ratio.denominator.value ||
+    assert.fail(
+      X`Parameter must be less than or equal to 1: ${ratio.numerator.value}/${ratio.denominator.value}`,
+    );
   return makeRatio(
     subtract(ratio.denominator.value, ratio.numerator.value),
     ratio.numerator.brand,

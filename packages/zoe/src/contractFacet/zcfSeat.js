@@ -180,24 +180,20 @@ export const createSeatManager = (
 
     // Ensure that offer safety holds.
     seats.forEach(seat => {
-      assert(
-        isOfferSafe(seat.getProposal(), seat.getStagedAllocation()),
-        X`Offer safety was violated by the proposed allocation: ${seat.getStagedAllocation()}. Proposal was ${seat.getProposal()}`,
-      );
+      isOfferSafe(seat.getProposal(), seat.getStagedAllocation()) ||
+        assert.fail(
+          X`Offer safety was violated by the proposed allocation: ${seat.getStagedAllocation()}. Proposal was ${seat.getProposal()}`,
+        );
     });
 
     // Keep track of seats used so far in this call, to prevent aliasing.
     const zcfSeatsSoFar = new Set();
 
     seats.forEach(seat => {
-      assert(
-        zcfSeatToSeatHandle.has(seat),
-        X`The seat ${seat} was not recognized`,
-      );
-      assert(
-        !zcfSeatsSoFar.has(seat),
-        X`Seat (${seat}) was already an argument to reallocate`,
-      );
+      zcfSeatToSeatHandle.has(seat) ||
+        assert.fail(X`The seat ${seat} was not recognized`);
+      !zcfSeatsSoFar.has(seat) ||
+        assert.fail(X`Seat (${seat}) was already an argument to reallocate`);
       zcfSeatsSoFar.add(seat);
     });
 

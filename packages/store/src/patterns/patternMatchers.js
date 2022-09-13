@@ -113,15 +113,12 @@ const checkIsWellFormedWithLimit = (
     return true;
   }
   return (
-    check(
-      passStyleOf(limits) === 'copyRecord',
-      X`Limits must be a record: ${q(limits)}`,
-    ) &&
-    entries(limits).every(([key, value]) =>
-      check(
-        passStyleOf(value) === 'number',
-        X`Value of limit ${q(key)} but be a number: ${q(value)}`,
-      ),
+    (passStyleOf(limits) === 'copyRecord' ||
+      check(false, X`Limits must be a record: ${q(limits)}`)) &&
+    entries(limits).every(
+      ([key, value]) =>
+        passStyleOf(value) === 'number' ||
+        check(false, X`Value of limit ${q(key)} but be a number: ${q(value)}`),
     )
   );
 };
@@ -263,7 +260,7 @@ const makePatternKit = () => {
    * @param {Passable} specimen
    * @param {Key} keyAsPattern
    * @param {Checker} check
-   * @return {boolean}
+   * @returns {boolean}
    */
   const checkAsKeyPatt = (specimen, keyAsPattern, check) => {
     if (keyEQ(specimen, keyAsPattern)) {
@@ -723,10 +720,8 @@ const makePatternKit = () => {
     checkMatches: (_specimen, _matcherPayload, _check) => true,
 
     checkIsWellFormed: (matcherPayload, check) =>
-      check(
-        matcherPayload === undefined,
-        X`match:any payload: ${matcherPayload} - Must be undefined`,
-      ),
+      matcherPayload === undefined ||
+      check(false, X`match:any payload: ${matcherPayload} - Must be undefined`),
 
     getRankCover: (_matchPayload, _encodePassable) => ['', '{'],
 
@@ -742,10 +737,9 @@ const makePatternKit = () => {
     checkIsWellFormed: (allegedPatts, check) => {
       const checkIt = patt => checkPattern(patt, check);
       return (
-        check(
-          passStyleOf(allegedPatts) === 'copyArray',
-          X`Needs array of sub-patterns: ${allegedPatts}`,
-        ) && allegedPatts.every(checkIt)
+        (passStyleOf(allegedPatts) === 'copyArray' ||
+          check(false, X`Needs array of sub-patterns: ${allegedPatts}`)) &&
+        allegedPatts.every(checkIt)
       );
     },
 
@@ -850,8 +844,9 @@ const makePatternKit = () => {
     checkMatches: checkKind,
 
     checkIsWellFormed: (allegedKeyKind, check) =>
+      typeof allegedKeyKind === 'string' ||
       check(
-        typeof allegedKeyKind === 'string',
+        false,
         X`match:kind: payload: ${allegedKeyKind} - A kind name must be a string`,
       ),
 
@@ -945,10 +940,11 @@ const makePatternKit = () => {
       const { stringLengthLimit } = limit(limits);
       return (
         checkKind(specimen, 'string', check) &&
-        check(
-          specimen.length <= stringLengthLimit,
-          X`string ${specimen} must not be bigger than ${stringLengthLimit}`,
-        )
+        (specimen.length <= stringLengthLimit ||
+          check(
+            false,
+            X`string ${specimen} must not be bigger than ${stringLengthLimit}`,
+          ))
       );
     },
 
@@ -1042,10 +1038,8 @@ const makePatternKit = () => {
   /** @type {MatchHelper} */
   const matchLTEHelper = Far('match:lte helper', {
     checkMatches: (specimen, rightOperand, check) =>
-      check(
-        keyLTE(specimen, rightOperand),
-        X`${specimen} - Must be <= ${rightOperand}`,
-      ),
+      keyLTE(specimen, rightOperand) ||
+      check(false, X`${specimen} - Must be <= ${rightOperand}`),
 
     checkIsWellFormed: checkKey,
 
@@ -1069,10 +1063,8 @@ const makePatternKit = () => {
   /** @type {MatchHelper} */
   const matchLTHelper = Far('match:lt helper', {
     checkMatches: (specimen, rightOperand, check) =>
-      check(
-        keyLT(specimen, rightOperand),
-        X`${specimen} - Must be < ${rightOperand}`,
-      ),
+      keyLT(specimen, rightOperand) ||
+      check(false, X`${specimen} - Must be < ${rightOperand}`),
 
     checkIsWellFormed: checkKey,
 
@@ -1085,10 +1077,8 @@ const makePatternKit = () => {
   /** @type {MatchHelper} */
   const matchGTEHelper = Far('match:gte helper', {
     checkMatches: (specimen, rightOperand, check) =>
-      check(
-        keyGTE(specimen, rightOperand),
-        X`${specimen} - Must be >= ${rightOperand}`,
-      ),
+      keyGTE(specimen, rightOperand) ||
+      check(false, X`${specimen} - Must be >= ${rightOperand}`),
 
     checkIsWellFormed: checkKey,
 
@@ -1112,10 +1102,8 @@ const makePatternKit = () => {
   /** @type {MatchHelper} */
   const matchGTHelper = Far('match:gt helper', {
     checkMatches: (specimen, rightOperand, check) =>
-      check(
-        keyGT(specimen, rightOperand),
-        X`${specimen} - Must be > ${rightOperand}`,
-      ),
+      keyGT(specimen, rightOperand) ||
+      check(false, X`${specimen} - Must be > ${rightOperand}`),
 
     checkIsWellFormed: checkKey,
 
@@ -1183,10 +1171,11 @@ const makePatternKit = () => {
       const { arrayLengthLimit } = limit(limits);
       return (
         checkKind(specimen, 'copyArray', check) &&
-        check(
-          specimen.length <= arrayLengthLimit,
-          X`Array length ${specimen.length} must be <= limit ${arrayLengthLimit}`,
-        ) &&
+        (specimen.length <= arrayLengthLimit ||
+          check(
+            false,
+            X`Array length ${specimen.length} must be <= limit ${arrayLengthLimit}`,
+          )) &&
         arrayEveryMatchPattern(specimen, subPatt, check)
       );
     },
@@ -1546,14 +1535,10 @@ const makePatternKit = () => {
   ) =>
     harden({
       optional: (...optArgGuards) => {
-        assert(
-          optionalArgGuards === undefined,
-          X`Can only have one set of optional guards`,
-        );
-        assert(
-          restArgGuard === undefined,
-          X`optional arg guards must come before rest arg`,
-        );
+        optionalArgGuards === undefined ||
+          assert.fail(X`Can only have one set of optional guards`);
+        restArgGuard === undefined ||
+          assert.fail(X`optional arg guards must come before rest arg`);
         return makeMethodGuardMaker(callKind, argGuards, optArgGuards);
       },
       rest: rArgGuard => {
@@ -1650,10 +1635,8 @@ const makePatternKit = () => {
 
     interface: (interfaceName, methodGuards, { sloppy = false } = {}) => {
       for (const [_, methodGuard] of entries(methodGuards)) {
-        assert(
-          methodGuard.klass === 'methodGuard',
-          X`unrecognize method guard ${methodGuard}`,
-        );
+        methodGuard.klass === 'methodGuard' ||
+          assert.fail(X`unrecognize method guard ${methodGuard}`);
       }
       return harden({
         klass: 'Interface',

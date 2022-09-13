@@ -56,10 +56,8 @@ const setupApiGovernance = async (
     voteCounterInstallation,
     deadline,
   ) => {
-    assert(
-      governedNames.includes(apiMethodName),
-      X`${apiMethodName} is not a governed API.`,
-    );
+    governedNames.includes(apiMethodName) ||
+      assert.fail(X`${apiMethodName} is not a governed API.`);
 
     const { positive, negative } = makeApiInvocationPositions(
       apiMethodName,
