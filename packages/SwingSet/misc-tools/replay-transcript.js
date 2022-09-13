@@ -37,14 +37,14 @@ const ABSOLUTE_SDK_PATH = null;
 const REBUILD_BUNDLES = false;
 
 // Enable to continue if snapshot hash doesn't match transcript
-const IGNORE_SNAPSHOT_HASH_DIFFERENCES = false;
+const IGNORE_SNAPSHOT_HASH_DIFFERENCES = true;
 
 // Use a simplified snapstore which derives the snapshot filename from the
 // transcript and doesn't compress the snapshot
 const USE_CUSTOM_SNAP_STORE = true;
 
 // Enable to output xsnap debug traces corresponding to the transcript replay
-const RECORD_XSNAP_TRACE = false;
+const RECORD_XSNAP_TRACE = true;
 
 const pipe = promisify(pipeline);
 
