@@ -40,11 +40,16 @@ export const makeAmountFormatter = assets => amt => {
     petname,
     displayInfo: { assetKind, decimalPlaces = 0 },
   } = asset;
-  const petnameStr = Array.isArray(petname) ? petname.join('.') : petname;
-  if (assetKind !== 'nat') return [['?'], petnameStr];
-  /** @type {[qty: number, petname: string]} */
-  const scaled = [Number(value) / 10 ** decimalPlaces, petnameStr];
-  return scaled;
+  const name = Array.isArray(petname) ? petname.join('.') : petname;
+  switch (assetKind) {
+    case 'nat':
+      /** @type {[petname: string, qty: number]} */
+      return [name, Number(value) / 10 ** decimalPlaces];
+    case 'set':
+      return [name, value];
+    default:
+      return [name, ['?']];
+  }
 };
 
 export const asPercent = ratio => {
