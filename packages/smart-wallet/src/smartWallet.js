@@ -343,7 +343,9 @@ const behavior = {
      */
     async executeOffer(offerSpec) {
       const { facets, state } = this;
+      /** @type {State} */
       const {
+        address,
         zoe,
         brandPurses,
         invitationBrand,
@@ -352,6 +354,11 @@ const behavior = {
         offerToInvitationMakers,
         updatePublishKit,
       } = this.state;
+
+      const logger = {
+        info: (...args) => console.info('wallet', address, ...args),
+        error: (...args) => console.log('wallet', address, ...args),
+      };
 
       const executor = makeOfferExecutor({
         zoe,
@@ -375,12 +382,15 @@ const behavior = {
               state.lastOfferId = id;
             },
           },
+          logger,
         },
-        onStatusChange: offerStatus =>
+        onStatusChange: offerStatus => {
+          logger.info('offerStatus', offerStatus);
           updatePublishKit.publisher.publish({
             updated: 'offerStatus',
             status: offerStatus,
-          }),
+          });
+        },
         onNewContinuingOffer: (offerId, invitationMakers) =>
           offerToInvitationMakers.init(offerId, invitationMakers),
       });

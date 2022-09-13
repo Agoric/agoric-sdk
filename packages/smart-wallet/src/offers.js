@@ -31,6 +31,7 @@ export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
  * @param {{ receive: (payment: *) => Promise<Amount> }} opts.depositFacet
  * @param {object} opts.powers
  * @param {import('./types').Cell<number>} opts.powers.lastOfferId
+ * @param {Pick<Console, 'info'| 'error'>} opts.powers.logger
  * @param {(spec: import('./invitations').InvitationSpec) => ERef<Invitation>} opts.powers.invitationFromSpec
  * @param {(brand: Brand) => import('./types').RemotePurse} opts.powers.purseForBrand
  * @param {(status: OfferStatus) => void} opts.onStatusChange
@@ -43,7 +44,7 @@ export const makeOfferExecutor = ({
   onStatusChange,
   onNewContinuingOffer,
 }) => {
-  const { invitationFromSpec, lastOfferId, purseForBrand } = powers;
+  const { invitationFromSpec, lastOfferId, logger, purseForBrand } = powers;
 
   return {
     /**
@@ -54,6 +55,8 @@ export const makeOfferExecutor = ({
      * @throws if any parts of the offer can be determined synchronously to be invalid
      */
     async executeOffer(offerSpec) {
+      logger.info('starting executeOffer', offerSpec.id);
+
       const paymentsManager = makePaymentsHelper(purseForBrand, depositFacet);
 
       /** @type {OfferStatus} */
@@ -71,7 +74,7 @@ export const makeOfferExecutor = ({
        * @param {Error} err
        */
       const handleError = err => {
-        console.error('OFFER ERROR:', err);
+        logger.error('OFFER ERROR:', err);
         updateStatus({ error: err.toString() });
         paymentsManager.tryReclaimingWithdrawnPayments().then(result => {
           if (result) {
@@ -104,14 +107,14 @@ export const makeOfferExecutor = ({
           paymentKeywordRecord,
           offerArgs,
         );
-        // ??? should we notify of being seated?
+        logger.info(id, 'seated');
 
         // publish 'result'
         E.when(
           E(seatRef).getOfferResult(),
           result => {
             const passStyle = passStyleOf(result);
-            console.log('offerResult', passStyle, result);
+            logger.info(id, 'offerResult', passStyle, result);
             // someday can we get TS to type narrow based on the passStyleOf result match?
             switch (passStyle) {
               case 'copyRecord':
@@ -132,6 +135,7 @@ export const makeOfferExecutor = ({
 
         // publish 'numWantsSatisfied'
         E.when(E(seatRef).numWantsSatisfied(), numSatisfied => {
+          logger.info('numSatisfied', numSatisfied);
           if (numSatisfied === 0) {
             updateStatus({ numWantsSatisfied: 0 });
           }
