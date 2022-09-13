@@ -4,7 +4,7 @@
 /* eslint-disable func-names */
 /* global process */
 import {
-  iterateLatest,
+  iterateEach,
   makeCastingSpec,
   makeFollower,
   makeLeaderFromRpcAddresses,
@@ -72,7 +72,7 @@ export const makePerfCommand = async logger => {
       const follower = makeFollower(castingSpec, leader);
 
       const watchForSatisfied = async () => {
-        for await (const { value } of iterateLatest(follower)) {
+        for await (const { value } of iterateEach(follower)) {
           console.warn('wallet update', value);
           if (value.updated === 'offerStatus' && value.status.id === offerId) {
             const { status } = value;

@@ -88,10 +88,9 @@ export const makePSMProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
  * @returns {BridgeAction}
  */
 export const makePSMSpendAction = (instance, brands, opts) => {
-  const method =
-    'wantMinted' in opts
-      ? 'makeWantMintedInvitation'
-      : 'makeGiveMintedInvitation'; // ref psm.js
+  const method = opts.wantMinted
+    ? 'makeWantMintedInvitation'
+    : 'makeGiveMintedInvitation'; // ref psm.js
   const proposal = makePSMProposal(
     brands,
     opts,
