@@ -186,13 +186,11 @@ export const makeBoard = async ({
 harden(makeBoard);
 
 /**
- * @param {NameAdmin} namesByAddressAdmin
  * @param {string} address
  */
-export const makeMyAddressNameAdmin = (namesByAddressAdmin, address) => {
+export const makeMyAddressNameAdminKit = address => {
   // Create a name hub for this address.
-  const { nameHub: myAddressNameHub, nameAdmin: rawMyAddressNameAdmin } =
-    makeNameHubKit();
+  const { nameHub, nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
 
   /** @type {MyAddressNameAdmin} */
   const myAddressNameAdmin = Far('myAddressNameAdmin', {
@@ -201,10 +199,8 @@ export const makeMyAddressNameAdmin = (namesByAddressAdmin, address) => {
   });
   // reserve space for deposit facet
   myAddressNameAdmin.reserve(WalletName.depositFacet);
-  // Register it with the namesByAddress hub.
-  namesByAddressAdmin.update(address, myAddressNameHub, myAddressNameAdmin);
 
-  return myAddressNameAdmin;
+  return { nameHub, myAddressNameAdmin };
 };
 
 /**
@@ -234,10 +230,7 @@ export const makeAddressNameHubs = async ({
   produce.namesByAddressAdmin.resolve(namesByAddressAdmin);
 
   const perAddress = address => {
-    const myAddressNameAdmin = makeMyAddressNameAdmin(
-      namesByAddressAdmin,
-      address,
-    );
+    const { myAddressNameAdmin } = makeMyAddressNameAdminKit(address);
     return { agoricNames, namesByAddress, myAddressNameAdmin };
   };
 
@@ -315,13 +308,14 @@ export const installBootContracts = async ({
   devices: { vatAdmin },
   consume: { zoe },
   installation: {
-    produce: { centralSupply, mintHolder, walletFactory },
+    produce: { centralSupply, mintHolder, walletFactory, provisionPool },
   },
 }) => {
   for (const [name, producer] of Object.entries({
     centralSupply,
     mintHolder,
     walletFactory,
+    provisionPool,
   })) {
     // This really wants to be E(vatAdminSvc).getBundleIDByName, but it's
     // good enough to do D(vatAdmin).getBundleIDByName

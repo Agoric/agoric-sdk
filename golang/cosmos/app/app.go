@@ -174,6 +174,7 @@ var (
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		vbank.ModuleName:               {authtypes.Minter, authtypes.Burner},
 		vbanktypes.ReservePoolName:     nil,
+		vbanktypes.ProvisionPoolName:   nil,
 		vbanktypes.GiveawayPoolName:    nil,
 	}
 )
@@ -348,7 +349,7 @@ func NewAgoricApp(
 		keys[banktypes.StoreKey],
 		app.AccountKeeper,
 		app.GetSubspace(banktypes.ModuleName),
-		app.ModuleAccountAddrs(),
+		app.BlockedAddrs(),
 	)
 	app.AuthzKeeper = authzkeeper.NewKeeper(
 		keys[authzkeeper.StoreKey],
@@ -829,6 +830,21 @@ func (app *GaiaApp) LoadHeight(height int64) error {
 func (app *GaiaApp) ModuleAccountAddrs() map[string]bool {
 	modAccAddrs := make(map[string]bool)
 	for acc := range maccPerms {
+		modAccAddrs[authtypes.NewModuleAddress(acc).String()] = true
+	}
+
+	return modAccAddrs
+}
+
+// BlockedAddrs returns the app's module account addresses that
+// are blocked from receiving funds.
+func (app *GaiaApp) BlockedAddrs() map[string]bool {
+	modAccAddrs := make(map[string]bool)
+	for acc := range maccPerms {
+		// The provision pool is not blocked from receiving funds.
+		if acc == vbanktypes.ProvisionPoolName {
+			continue
+		}
 		modAccAddrs[authtypes.NewModuleAddress(acc).String()] = true
 	}
 

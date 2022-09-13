@@ -21,6 +21,9 @@
     "walletFactory": {
       "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"
     },
+    "provisionPool": {
+      "sourceSpec": "@agoric/vats/src/provisionPool.js"
+    },
     "committee": {
       "sourceSpec": "@agoric/governance/src/committee.js"
     },

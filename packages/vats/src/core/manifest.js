@@ -132,6 +132,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
         centralSupply: 'zoe',
         mintHolder: 'zoe',
         walletFactory: 'zoe',
+        provisionPool: 'zoe',
       },
     },
   },

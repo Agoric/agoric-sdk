@@ -138,7 +138,8 @@
  *   issuer: |
  *     TokenKeyword | 'Attestation' | 'AUSD',
  *   installation: |
- *     'centralSupply' | 'mintHolder' | 'singleWallet' | 'walletFactory' |
+ *     'centralSupply' | 'mintHolder' |
+ *     'singleWallet' | 'walletFactory' | 'provisionPool' |
  *     'feeDistributor' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'amm' | 'VaultFactory' | 'liquidate' | 'stakeFactory' |
@@ -194,7 +195,7 @@
  *   agoricNames: NameHub,
  *   agoricNamesAdmin: NameAdmin,
  *   aggregators: Map<unknown, { aggregator: PriceAuthority, deleter: import('@agoric/zoe/tools/priceAuthorityRegistry').Deleter }>,
- *   bankManager: Awaited<BankManager>,
+ *   bankManager: BankManager,
  *   bldIssuerKit: RemoteIssuerKit,
  *   board: Board,
  *   bridgeManager: OptionalBridgeManager,
@@ -217,6 +218,7 @@
  *   provisioning: Awaited<ProvisioningVat>,
  *   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit,
  *   walletFactoryStartResult: import('./startWalletFactory').WalletFactoryStartResult,
+ *   provisionPoolStartResult: unknown,
  *   zoe: ZoeService,
  * }>} ChainBootstrapSpace
  *
@@ -247,7 +249,7 @@
  *   }}
  * } BootstrapSpace
  * @typedef {{ mint: ERef<Mint>, issuer: ERef<Issuer>, brand: Brand }} RemoteIssuerKit
- * @typedef {ReturnType<Awaited<BankVat>['makeBankManager']>} BankManager
+ * @typedef {Awaited<ReturnType<Awaited<BankVat>['makeBankManager']>>} BankManager
  * @typedef {ERef<ReturnType<import('../vat-bank.js').buildRootObject>>} BankVat
  * @typedef {ERef<ReturnType<import('../vat-chainStorage.js').buildRootObject>>} ChainStorageVat
  * @typedef {ERef<ReturnType<import('../vat-provisioning.js').buildRootObject>>} ProvisioningVat

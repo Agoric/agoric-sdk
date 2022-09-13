@@ -149,7 +149,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
     space.produce.bridgeManager.resolve(undefined);
     space.produce.lienBridge.resolve(undefined);
 
-    /** @type {Awaited<BankManager>} */
+    /** @type {BankManager} */
     const bankManager = Far('mock BankManager', {
       getAssetSubscription: () => assert.fail('not impl'),
       getModuleAccountAddress: () => assert.fail('not impl'),
