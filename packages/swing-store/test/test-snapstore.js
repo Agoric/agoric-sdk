@@ -36,8 +36,8 @@ test('build temp file; compress to cache file', async t => {
     hash: expectedHash,
     filePath: path.resolve(pool.name, `${expectedHash}.gz`),
     rawByteCount: 3,
-    rawSaveDuration: 0,
-    compressDuration: 0,
+    rawSaveMillisec: 0,
+    compressMillisec: 0,
   });
   t.is(await store.has(hash), true);
   const zero =

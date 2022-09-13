@@ -10,9 +10,9 @@ import { promisify } from 'util';
  * @property {string} filePath absolute path of (compressed) snapshot
  * @property {string} hash sha256 hash of (uncompressed) snapshot
  * @property {number | bigint} rawByteCount size of (uncompressed) snapshot
- * @property {number | bigint} rawSaveDuration time to save (uncompressed) snapshot according to a provided "now" function
+ * @property {number | bigint} rawSaveMillisec time to save (uncompressed) snapshot according to a provided "now" function
  * @property {number | bigint} [compressedByteCount] size of (compressed) snapshot
- * @property {number | bigint} [compressDuration] time to compress and save snapshot according to a provided "now" function
+ * @property {number | bigint} [compressMillisec] time to compress and save snapshot according to a provided "now" function
  */
 
 /**
@@ -214,7 +214,7 @@ export function makeSnapStore(
     return withTempName(async snapFile => {
       const t0 = /** @type {number} */ (now());
       await saveRaw(snapFile);
-      const rawSaveDuration = /** @type {number} */ (now()) - t0;
+      const rawSaveMillisec = /** @type {number} */ (now()) - t0;
       const { size: rawsize } = await stat(snapFile);
       const h = await fileHash(snapFile);
       if (toDelete.has(h)) {
@@ -222,7 +222,7 @@ export function makeSnapStore(
       }
       // console.log('save', { snapFile, h });
       const filePath = hashPath(h);
-      const info = { filePath, hash: h, rawByteCount: rawsize, rawSaveDuration };
+      const info = { filePath, hash: h, rawByteCount: rawsize, rawSaveMillisec };
       const fileStat = await stat(filePath).catch(e => {
         if (e.code === 'ENOENT') {
           return undefined;
@@ -236,12 +236,8 @@ export function makeSnapStore(
       const { size: compressedByteCount } = await atomicWrite(filePath, gztmp =>
         filter(snapFile, createGzip(), gztmp, { flush: true }),
       );
-      const compressDuration = /** @type {number} */ (now()) - t1;
-      // TODO: remove once #5419 is resolved
-      console.log(
-        `XS snapshot written to ${filePath} : ${compressedByteCount} bytes compressed, ${rawsize} raw`,
-      );
-      return freeze({ ...info, compressDuration, compressedByteCount });
+      const compressMillisec = /** @type {number} */ (now()) - t1;
+      return freeze({ ...info, compressMillisec, compressedByteCount });
     }, 'save-raw');
   }
 
