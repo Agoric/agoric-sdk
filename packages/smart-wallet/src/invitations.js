@@ -4,6 +4,9 @@ import { fit } from '@agoric/store';
 import { E } from '@endo/far';
 import { shape } from './typeGuards.js';
 
+// Ambient types. Needed only for dev but this does a runtime import.
+import '@agoric/zoe/src/types.js';
+
 /**
  * Supports three cases
  * 1. source is a contract (in which case this takes an Instance to look up in zoe)
