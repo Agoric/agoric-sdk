@@ -588,7 +588,8 @@ export function makeVatKeeper(
       return false;
     }
 
-    const snapshotID = await manager.makeSnapshot(snapStore);
+    const info = await manager.makeSnapshot(snapStore);
+    const { hash: snapshotID } = info;
     const old = getLastSnapshot();
     if (old && old.snapshotID !== snapshotID) {
       if (removeFromSnapshot(old.snapshotID) === 0) {

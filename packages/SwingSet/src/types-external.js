@@ -223,7 +223,7 @@ export {};
  *            } } VatManagerFactory
  * @typedef { { deliver: (delivery: VatDeliveryObject) => Promise<VatDeliveryResult>,
  *              replayTranscript: (startPos: StreamPosition | undefined) => Promise<number?>,
- *              makeSnapshot?: (ss: SnapStore) => Promise<string>,
+ *              makeSnapshot?: (ss: SnapStore) => Promise<SnapshotInfo>,
  *              shutdown: () => Promise<void>,
  *            } } VatManager
  *
@@ -293,6 +293,7 @@ export {};
 /**
  * @typedef { import('@agoric/swing-store').KVStore } KVStore
  * @typedef { import('@agoric/swing-store').SnapStore } SnapStore
+ * @typedef { import('@agoric/swing-store').SnapshotInfo } SnapshotInfo
  * @typedef { import('@agoric/swing-store').StreamStore } StreamStore
  * @typedef { import('@agoric/swing-store').StreamPosition } StreamPosition
  * @typedef { import('@agoric/swing-store').SwingStore } SwingStore

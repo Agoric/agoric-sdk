@@ -21,6 +21,7 @@ export function makeSnapStoreIO() {
     tmpName,
     createReadStream: fs.createReadStream,
     createWriteStream: fs.createWriteStream,
+    now: Date.now,
     open: fs.promises.open,
     rename: fs.promises.rename,
     stat: fs.promises.stat,
@@ -39,6 +40,8 @@ export function makeSnapStoreIO() {
  * }} KVStore
  *
  * @typedef { import('./snapStore').SnapStore<*> } SnapStore
+ *
+ * @typedef { import('./snapStore').SnapshotInfo } SnapshotInfo
  *
  * @typedef {{ itemCount: number }} StreamPosition
  *

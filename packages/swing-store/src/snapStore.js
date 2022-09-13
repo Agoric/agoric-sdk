@@ -6,11 +6,21 @@ import { assert, details as d } from '@agoric/assert';
 import { promisify } from 'util';
 
 /**
+ * @typedef {object} SnapshotInfo
+ * @property {string} filePath absolute path of (compressed) snapshot
+ * @property {string} hash sha256 hash of (uncompressed) snapshot
+ * @property {number | bigint} rawByteCount size of (uncompressed) snapshot
+ * @property {number | bigint} rawSaveDuration time to save (uncompressed) snapshot according to a provided "now" function
+ * @property {number | bigint} [compressedByteCount] size of (compressed) snapshot
+ * @property {number | bigint} [compressDuration] time to compress and save snapshot according to a provided "now" function
+ */
+
+/**
  * @template T
  * @typedef {{
  *   has: (hash: string) => Promise<boolean>,
  *   load: (hash: string, loadRaw: (filePath: string) => Promise<T>) => Promise<T>,
- *   save: (saveRaw: (filePath: string) => Promise<void>) => Promise<string>,
+ *   save: (saveRaw: (filePath: string) => Promise<void>) => Promise<SnapshotInfo>,
  *   prepareToDelete: (hash: string) => void,
  *   commitDeletes: (ignoreErrors?: boolean) => Promise<void>,
  * }} SnapStore
@@ -68,6 +78,7 @@ export const fsStreamReady = stream =>
  *   tmpName: typeof import('tmp').tmpName,
  *   createReadStream: typeof import('fs').createReadStream,
  *   createWriteStream: typeof import('fs').createWriteStream,
+ *   now: (() => number) | (() => bigint),
  *   open: typeof import('fs').promises.open,
  *   resolve: typeof import('path').resolve,
  *   rename: typeof import('fs').promises.rename,
@@ -84,6 +95,7 @@ export function makeSnapStore(
     tmpName,
     createReadStream,
     createWriteStream,
+    now,
     open,
     resolve,
     rename,
@@ -119,20 +131,18 @@ export function makeSnapStore(
   }
 
   /**
-   * @param {string} dest basename, relative to root
+   * @param {string} dest absolute path of which root is a prefix
    * @param { (name: string) => Promise<void> } thunk
-   * @returns { Promise<{ filename: string, size: number }> }
+   * @returns { Promise<{ size: (number | bigint) }> }
    */
   async function atomicWrite(dest, thunk) {
-    assert(!dest.includes('/'));
     const tmp = await ptmpName({ tmpdir: root, template: 'atomic-XXXXXX' });
     let result;
     try {
       await thunk(tmp);
-      const target = resolve(root, dest);
-      await rename(tmp, target);
-      const stats = await stat(target);
-      result = { filename: target, size: stats.size };
+      await rename(tmp, dest);
+      const { size } = await stat(dest);
+      result = { size };
     } finally {
       try {
         await unlink(tmp);
@@ -198,35 +208,40 @@ export function makeSnapStore(
 
   /**
    * @param {(filePath: string) => Promise<void>} saveRaw
-   * @returns {Promise<string>} sha256 hash of (uncompressed) snapshot
+   * @returns {Promise<SnapshotInfo>}
    */
   async function save(saveRaw) {
     return withTempName(async snapFile => {
+      const t0 = /** @type {number} */ (now());
       await saveRaw(snapFile);
-      const stats = await stat(snapFile);
-      const rawsize = stats.size;
+      const rawSaveDuration = /** @type {number} */ (now()) - t0;
+      const { size: rawsize } = await stat(snapFile);
       const h = await fileHash(snapFile);
       if (toDelete.has(h)) {
         toDelete.delete(h);
       }
       // console.log('save', { snapFile, h });
-      const fileStat = await stat(hashPath(h)).catch(e => {
+      const filePath = hashPath(h);
+      const info = { filePath, hash: h, rawByteCount: rawsize, rawSaveDuration };
+      const fileStat = await stat(filePath).catch(e => {
         if (e.code === 'ENOENT') {
           return undefined;
         }
         throw e;
       });
       if (fileStat) {
-        return h;
+        return freeze(info);
       }
-      const res = await atomicWrite(`${h}.gz`, gztmp =>
+      const t1 = /** @type {number} */ (now());
+      const { size: compressedByteCount } = await atomicWrite(filePath, gztmp =>
         filter(snapFile, createGzip(), gztmp, { flush: true }),
       );
+      const compressDuration = /** @type {number} */ (now()) - t1;
       // TODO: remove once #5419 is resolved
       console.log(
-        `XS snapshot written to ${res.filename} : ${res.size} bytes compressed, ${rawsize} raw`,
+        `XS snapshot written to ${filePath} : ${compressedByteCount} bytes compressed, ${rawsize} raw`,
       );
-      return h;
+      return freeze({ ...info, compressDuration, compressedByteCount });
     }, 'save-raw');
   }
 

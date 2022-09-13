@@ -21,17 +21,24 @@ test('build temp file; compress to cache file', async t => {
     ...path,
     ...fs,
     ...fs.promises,
+    now: () => 0,
   });
   let keepTmp = '';
-  const hash = await store.save(async fn => {
-    t.falsy(fs.existsSync(fn));
-    fs.writeFileSync(fn, 'abc');
-    keepTmp = fn;
+  const result = await store.save(async filePath => {
+    t.falsy(fs.existsSync(filePath));
+    fs.writeFileSync(filePath, 'abc');
+    keepTmp = filePath;
   });
-  t.is(
-    'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
-    hash,
-  );
+  const { hash } = result;
+  const expectedHash =
+    'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad';
+  t.like(result, {
+    hash: expectedHash,
+    filePath: path.resolve(pool.name, `${expectedHash}.gz`),
+    rawByteCount: 3,
+    rawSaveDuration: 0,
+    compressDuration: 0,
+  });
   t.is(await store.has(hash), true);
   const zero =
     '0000000000000000000000000000000000000000000000000000000000000000';
@@ -51,16 +58,16 @@ test('snapStore prepare / commit delete is robust', async t => {
   const pool = tmp.dirSync({ unsafeCleanup: true });
   t.teardown(() => pool.removeCallback());
 
-  const io = { ...tmp, ...path, ...fs, ...fs.promises };
+  const io = { ...tmp, ...path, ...fs, ...fs.promises, now: () => 0 };
   const store = makeSnapStore(pool.name, io);
 
   const hashes = [];
   for (let i = 0; i < 5; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    const h = await store.save(async fn =>
+    const { hash } = await store.save(async fn =>
       fs.promises.writeFile(fn, `file ${i}`),
     );
-    hashes.push(h);
+    hashes.push(hash);
   }
   t.is(fs.readdirSync(pool.name).length, 5);
 
