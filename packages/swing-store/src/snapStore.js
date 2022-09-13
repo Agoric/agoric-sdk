@@ -5,6 +5,17 @@ import { createGzip, createGunzip } from 'zlib';
 import { assert, details as d } from '@agoric/assert';
 import { promisify } from 'util';
 
+/**
+ * @template T
+ * @typedef {{
+ *   has: (hash: string) => Promise<boolean>,
+ *   load: (hash: string, loadRaw: (filePath: string) => Promise<T>) => Promise<T>,
+ *   save: (saveRaw: (filePath: string) => Promise<void>) => Promise<string>,
+ *   prepareToDelete: (hash: string) => void,
+ *   commitDeletes: (ignoreErrors?: boolean) => Promise<void>,
+ * }} SnapStore
+ */
+
 const pipe = promisify(pipeline);
 
 const { freeze } = Object;
@@ -51,6 +62,7 @@ export const fsStreamReady = stream =>
   });
 
 /**
+ * @template T
  * @param {string} root
  * @param {{
  *   tmpName: typeof import('tmp').tmpName,
@@ -64,6 +76,7 @@ export const fsStreamReady = stream =>
  * }} io
  * @param {object} [options]
  * @param {boolean | undefined} [options.keepSnapshots]
+ * @returns {SnapStore<T>}
  */
 export function makeSnapStore(
   root,
@@ -184,7 +197,7 @@ export function makeSnapStore(
   const toDelete = new Set();
 
   /**
-   * @param {(fn: string) => Promise<void>} saveRaw
+   * @param {(filePath: string) => Promise<void>} saveRaw
    * @returns {Promise<string>} sha256 hash of (uncompressed) snapshot
    */
   async function save(saveRaw) {
@@ -234,7 +247,7 @@ export function makeSnapStore(
 
   /**
    * @param {string} hash
-   * @param {(fn: string) => Promise<T>} loadRaw
+   * @param {(filePath: string) => Promise<T>} loadRaw
    * @template T
    */
   async function load(hash, loadRaw) {

@@ -38,6 +38,8 @@ export function makeSnapStoreIO() {
  *   delete: (key: string) => void,
  * }} KVStore
  *
+ * @typedef { import('./snapStore').SnapStore<*> } SnapStore
+ *
  * @typedef {{ itemCount: number }} StreamPosition
  *
  * @typedef {{

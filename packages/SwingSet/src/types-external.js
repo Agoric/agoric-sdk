@@ -226,7 +226,7 @@ export {};
  *              makeSnapshot?: (ss: SnapStore) => Promise<string>,
  *              shutdown: () => Promise<void>,
  *            } } VatManager
- * @typedef { ReturnType<typeof import('@agoric/swing-store').makeSnapStore> } SnapStore
+ *
  * @typedef { () => Promise<void> } WaitUntilQuiescent
  */
 
@@ -292,6 +292,7 @@ export {};
  */
 /**
  * @typedef { import('@agoric/swing-store').KVStore } KVStore
+ * @typedef { import('@agoric/swing-store').SnapStore } SnapStore
  * @typedef { import('@agoric/swing-store').StreamStore } StreamStore
  * @typedef { import('@agoric/swing-store').StreamPosition } StreamPosition
  * @typedef { import('@agoric/swing-store').SwingStore } SwingStore
