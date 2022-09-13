@@ -17,6 +17,8 @@ export const DEFAULT_KEEP_POLLING_SECONDS = 5;
 /**
  * Resolve a Promise after a given number of milliseconds.
  *
+ * SECURITY: closes over setTimeout global
+ *
  * @param {number} ms
  * @returns {Promise<void>}
  */

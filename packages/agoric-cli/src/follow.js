@@ -4,14 +4,12 @@ import { Far, getInterfaceOf } from '@endo/marshal';
 import { decodeToJustin } from '@endo/marshal/src/marshal-justin.js';
 
 import {
-  delay,
   iterateLatest,
+  makeCastingSpec,
   makeFollower,
   makeLeader,
-  makeCastingSpec,
-  exponentialBackoff,
-  randomBackoff,
 } from '@agoric/casting';
+import { makeLeaderOptions } from './lib/casting.js';
 
 export default async function followerMain(progname, rawArgs, powers, opts) {
   const { anylogger } = powers;
@@ -94,37 +92,11 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
     });
   }
 
-  // TODO: https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
-  /** @type {import('@agoric/casting').LeaderOptions} */
-  const leaderOptions = {
-    retryCallback: (where, e, attempt) => {
-      const backoff = Math.ceil(exponentialBackoff(attempt));
-      verbose &&
-        console.warn(
-          `Retrying ${where} in ${backoff}ms due to:`,
-          e,
-          Error(`attempt #${attempt}`),
-        );
-      return delay(backoff);
-    },
-    keepPolling: async where => {
-      if (!sleep) {
-        return true;
-      }
-      const backoff = Math.ceil(sleep * 1_000);
-      verbose && console.warn(`Repeating ${where} after ${backoff}ms`);
-      await delay(backoff);
-      return true;
-    },
-    jitter: async where => {
-      if (!jitter) {
-        return undefined;
-      }
-      const backoff = Math.ceil(randomBackoff(jitter * 1_000));
-      verbose && console.warn(`Jittering ${where} for ${backoff}ms`);
-      return delay(backoff);
-    },
-  };
+  const leaderOptions = makeLeaderOptions({
+    sleep,
+    jitter,
+    log: verbose ? console.warn : () => undefined,
+  });
 
   const [_cmd, ...specs] = rawArgs;
 
