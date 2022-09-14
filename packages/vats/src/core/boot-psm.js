@@ -74,6 +74,8 @@ export const agoricNamesReserved = harden(
       economicCommittee: 'Economic Committee',
       'psm-IST-AUSD': 'Parity Stability Module: IST:AUSD',
       psmCharter: 'Charter for the PSM',
+      walletFactory: 'Smart Wallet Factory',
+      provisionPool: 'Provision Pool',
     },
   }),
 );
