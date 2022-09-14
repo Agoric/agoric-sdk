@@ -213,6 +213,7 @@
  * @param {bigint} threshold - questionSpec includes quorumRule; the electorate
  *    converts that to a number that the counter can enforce.
  * @param {Instance} instance
+ * @param {ERef<Publisher<{question: Handle<'Question'>,outcome: Position}>>} publisher
  * @returns {VoteCounterFacets}
  */
 

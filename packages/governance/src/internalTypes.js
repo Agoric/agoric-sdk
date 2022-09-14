@@ -13,5 +13,6 @@
  * @param {ERef<Installation>} voteCounter
  * @param {Store<Handle<'Question'>, QuestionRecord>} questionStore
  * @param {Publisher<unknown>} publisher
+ * @param {Publisher<{question: Handle<'Question'>,outcome: Position}>} storageNode`
  * @returns {AddQuestionReturn}
  */

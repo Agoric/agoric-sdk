@@ -6,6 +6,8 @@ import { E } from '@endo/eventual-send';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { Far } from '@endo/marshal';
+import { makeStoredPublishKit } from '@agoric/notifier';
+import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
 
 import {
   makeBinaryVoteCounter,
@@ -15,6 +17,7 @@ import {
   coerceQuestionSpec,
   makeParamChangePositions,
 } from '../../src/index.js';
+import { makeMockChainStorageRoot } from '../../../vats/tools/storage-test-utils.js';
 
 const SIMPLE_ISSUE = harden({ text: 'Fish or cut bait?' });
 const FISH = harden({ text: 'Fish' });
@@ -40,6 +43,11 @@ const FAKE_CLOSING_RULE = {
 
 const FAKE_COUNTER_INSTANCE = makeHandle('Instance');
 
+function makePublisherFromFakes() {
+  return makeStoredPublishKit(makeMockChainStorageRoot(), makeFakeMarshaller())
+    .publisher;
+}
+
 test('binary question', async t => {
   const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
@@ -55,6 +63,7 @@ test('binary question', async t => {
     questionSpec,
     0n,
     FAKE_COUNTER_INSTANCE,
+    makePublisherFromFakes(),
   );
   const aliceTemplate = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
@@ -83,6 +92,7 @@ test('binary spoiled', async t => {
     questionSpec,
     0n,
     FAKE_COUNTER_INSTANCE,
+    makePublisherFromFakes(),
   );
   const aliceTemplate = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
@@ -114,6 +124,7 @@ test('binary tied', async t => {
     questionSpec,
     2n,
     FAKE_COUNTER_INSTANCE,
+    makePublisherFromFakes(),
   );
   const aliceTemplate = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
@@ -142,6 +153,7 @@ test('binary bad vote', async t => {
     questionSpec,
     0n,
     FAKE_COUNTER_INSTANCE,
+    makePublisherFromFakes(),
   );
   const aliceSeat = makeHandle('Voter');
 
@@ -165,6 +177,7 @@ test('binary no votes', async t => {
     questionSpec,
     0n,
     FAKE_COUNTER_INSTANCE,
+    makePublisherFromFakes(),
   );
 
   closeFacet.closeVoting();
@@ -187,6 +200,7 @@ test('binary varying share weights', async t => {
     questionSpec,
     1n,
     FAKE_COUNTER_INSTANCE,
+    makePublisherFromFakes(),
   );
   const aceSeat = makeHandle('Voter');
   const austinSeat = makeHandle('Voter');
@@ -219,6 +233,7 @@ test('binary contested', async t => {
     questionSpec,
     3n,
     FAKE_COUNTER_INSTANCE,
+    makePublisherFromFakes(),
   );
   const template = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
@@ -250,6 +265,7 @@ test('binary revote', async t => {
     questionSpec,
     5n,
     FAKE_COUNTER_INSTANCE,
+    makePublisherFromFakes(),
   );
   const template = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
@@ -282,6 +298,7 @@ test('binary question too many', async t => {
     questionSpec,
     1n,
     FAKE_COUNTER_INSTANCE,
+    makePublisherFromFakes(),
   );
   const aliceTemplate = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
@@ -310,6 +327,7 @@ test('binary no quorum', async t => {
     questionSpec,
     2n,
     FAKE_COUNTER_INSTANCE,
+    makePublisherFromFakes(),
   );
   const aliceTemplate = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');

@@ -43,12 +43,12 @@ const start = (zcf, privateArgs) => {
   const allQuestions = makeStore('Question');
   assert(privateArgs?.storageNode, 'Missing storageNode');
   assert(privateArgs?.marshaller, 'Missing marshaller');
+  const questionNode = E(privateArgs.storageNode).makeChildNode(
+    'latestQuestion',
+  );
   /** @type {StoredPublishKit<QuestionDetails>} */
   const { subscriber: questionsSubscriber, publisher: questionsPublisher } =
-    makeStoredPublishKit(
-      E(privateArgs.storageNode).makeChildNode('latestQuestion'),
-      privateArgs.marshaller,
-    );
+    makeStoredPublishKit(questionNode, privateArgs.marshaller);
 
   const makeCommitteeVoterInvitation = index => {
     /** @type {OfferHandler} */
@@ -158,6 +158,16 @@ const start = (zcf, privateArgs) => {
           }
         };
 
+        const outcomeNode = E(privateArgs.storageNode).makeChildNode(
+          'latestOutcome',
+        );
+
+        /** @type {StoredPublishKit<{question: Handle<'Question'>,outcome: Position}>} */
+        const { publisher: outcomesPublisher } = makeStoredPublishKit(
+          outcomeNode,
+          privateArgs.marshaller,
+        );
+
         return startCounter(
           zcf,
           questionSpec,
@@ -165,6 +175,7 @@ const start = (zcf, privateArgs) => {
           voteCounter,
           allQuestions,
           questionsPublisher,
+          outcomesPublisher,
         );
       },
       getVoterInvitations() {

@@ -3,6 +3,7 @@
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeHeapFarInstance, keyEQ, makeStore } from '@agoric/store';
+import { E } from '@endo/eventual-send';
 
 import {
   buildUnrankedQuestion,
@@ -53,7 +54,12 @@ const validateBinaryQuestionSpec = questionSpec => {
 // independently. The standard Zoe start function is at the bottom of this file.
 
 /** @type {BuildVoteCounter} */
-const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
+const makeBinaryVoteCounter = (
+  questionSpec,
+  threshold,
+  instance,
+  publisher,
+) => {
   validateBinaryQuestionSpec(questionSpec);
 
   const question = buildUnrankedQuestion(questionSpec, instance);
@@ -123,6 +129,12 @@ const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
     } else {
       outcomePromise.resolve(questionSpec.tieOutcome);
     }
+
+    // XXX if we should distinguish ties, publish should be called in if above
+    E.when(outcomePromise.promise, outcome => {
+      const voteOutcome = { question: details.questionHandle, outcome };
+      return E(publisher).publish(voteOutcome);
+    });
   };
 
   const closeFacet = makeHeapFarInstance(
@@ -198,7 +210,7 @@ const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
 /**
  * @type {ContractStartFn<VoteCounterPublicFacet, VoteCounterCreatorFacet, {questionSpec: QuestionSpec, quorumThreshold: bigint}>}
  */
-const start = zcf => {
+const start = (zcf, { outcomesPublisher }) => {
   // There are a variety of ways of counting quorums. The parameters must be
   // visible in the terms. We're doing a simple threshold here. If we wanted to
   // discount abstentions, we could refactor to provide the quorumCounter as a
@@ -210,6 +222,7 @@ const start = zcf => {
     questionSpec,
     quorumThreshold,
     zcf.getInstance(),
+    outcomesPublisher,
   );
 
   scheduleClose(questionSpec.closingRule, () => closeFacet.closeVoting());

@@ -14,7 +14,8 @@ const startCounter = async (
   quorumThreshold,
   voteCounter,
   questionStore,
-  publisher,
+  questionsPublisher,
+  outcomesPublisher,
 ) => {
   const voteCounterTerms = {
     questionSpec,
@@ -26,10 +27,10 @@ const startCounter = async (
   /** @type {{ creatorFacet: VoteCounterCreatorFacet, publicFacet: VoteCounterPublicFacet, instance: Instance }} */
   const { creatorFacet, publicFacet, instance } = await E(
     zcf.getZoeService(),
-  ).startInstance(voteCounter, {}, voteCounterTerms);
+  ).startInstance(voteCounter, {}, voteCounterTerms, { outcomesPublisher });
   const details = await E(publicFacet).getDetails();
   const { deadline } = questionSpec.closingRule;
-  publisher.publish(details);
+  questionsPublisher.publish(details);
   const questionHandle = details.questionHandle;
 
   const voteCounterFacets = { voteCap: creatorFacet, publicFacet, deadline };
