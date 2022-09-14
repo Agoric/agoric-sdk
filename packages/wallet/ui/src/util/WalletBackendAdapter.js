@@ -139,12 +139,10 @@ export const makeWalletBridgeFromFollower = (
     const purses = [];
     for (const [brand, purse] of brandToPurse.entries()) {
       if (purse.currentAmount && purse.brandPetname) {
-        console.log(purse.currentAmount);
         pursePetnameToBrand.set(purse.pursePetname, brand);
         purses.push(purse);
       }
     }
-    // console.log(purses);
     notifierKits.purses.updater.updateState(harden(purses));
   };
 
@@ -158,7 +156,6 @@ export const makeWalletBridgeFromFollower = (
     for await (const { value } of iterateEach(follower, {
       height: firstHeight,
     })) {
-      console.log(value);
       /** @type {import('@agoric/smart-wallet/src/smartWallet').UpdateRecord} */
       const updateRecord = value;
       if (firstCallback) {
@@ -183,7 +180,8 @@ export const makeWalletBridgeFromFollower = (
           break;
         }
         case 'balance': {
-          // FIXME: We assume just one purse per brand.
+          // TODO: Don't assume just one purse per brand.
+          // https://github.com/Agoric/agoric-sdk/issues/6126
           const { currentAmount } = updateRecord;
           const purseObj = {
             ...brandToPurse.get(currentAmount.brand),

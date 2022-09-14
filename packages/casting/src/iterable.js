@@ -100,8 +100,6 @@ export const iterateEach = (follower, options) =>
   });
 
 /**
- * TODO: Remove this function when we have `makePublisherKit`.
- *
  * @template T
  * @param {ERef<import('./types.js').Follower<T>>} follower
  * @param {import('./types.js').IterateEachOptions} [options]

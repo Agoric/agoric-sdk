@@ -100,7 +100,6 @@ const sortedEntries = entries =>
   Object.entries(entries).sort(([kwa], [kwb]) => cmp(kwa, kwb));
 
 const Proposal = ({ offer, purses }) => {
-  console.log('offer', offer);
   const {
     proposalForDisplay,
     proposalTemplate,
