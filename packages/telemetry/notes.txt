@@ -1,0 +1,59 @@
+Span tree:
+block | b-$blockNum
+  // The following would be sent to slog based on when the action is received
+  // by cosmic-swingset, not processed through the block-manager buffering as
+  // currently. We may want them as spans, or as events on the block span.
+- cosmic-swingset-begin-block-action | b-$blockNum-begin
+- cosmic-swingset-end-block-action | b-$blockNum-end
+- cosmic-swingset-commit-block-action | b-$blockNum-commit
+  // The following would be a synthetic "span" to highlight the time spent idling between blocks
+  // It would appear after all other spans in a `block` span
+- cosmic-swingset-commit-block-action | b-$blockNum-after
+
+// While these could be event, it would make more sense to show them as 0 duration spans
+// The represent the delivery of cosmic-swingset actions into swingset
+- deliver-inbound | deliver-$blockNum-$sender
+- bridge-inbound | bridge-$blockNum-$source
+// This definitely makes sense as a span as it has a time attached to it.
+- install-bundle | install-$blockNum-$bundleHash?
+
+// This could be repeated if we have multiple runs per block, interspersed with inbound
+// The equivalent span as the current "end-block"
+- swingset-run | run-$blockNum-$n
+  - routing | c-$crankNum // TBD include routing details
+  - deliver-message | d-$vatId-$deliveryNum: kp42 = E(ko123).foo
+    deliver-notify | d-$vatId-$deliveryNum: reject(kp44); resolve(kp42, kp43)
+  - deliver-dropExports | d-$vatId-$deliveryNum: dropExports(ko123, ...)
+    deliver-retireExports | d-$vatId-$deliveryNum: retireExports(ko123, ...)
+    deliver-retireImports | d-$vatId-$deliveryNum: retireImports(ko123, ...)
+    deliver-$type | d-$vatId-$deliveryNum: $type
+    - syscall-send | s-$vatId-$deliveryNum-$n: kp45 = E(ko555).bar
+    - syscall-invoke | s-$vatId-$deliveryNum-$n: D(ko2).baz
+    - syscall-resolve | s-$vatId-$deliveryNum-$n: reject(kp44); resolve(kp42, kp43)
+    - syscall-subscribe | s-$vatId-$deliveryNum-$n: subscribe(kp45)
+
+Each span would have the following attributes
+ - kind: e.g. `cosmic-swingset`, `swingset-inbound`, `delivery`, `syscall`
+ - name: the left-hand side of the | above
+ - detail: the right-hand side of the | above
+
+Replay
+replay deliveries should contain all syscalls, but be marked with a `replay=true` attribute
+replay deliveries should be nested inside a "replay" span, sibling of the
+actual non-replay crank spans, whose sole purpose is visual nesting
+
+FYI, I believe replay may happen inside an init span or inside a "crank" span
+some note I cannot make sense of anymore: (
+  init -> replay -> deliver -> syscall -> syscall-result
+
+  end-block -> crank -> replay
+  end-block -> crank -> deliver(ignored/collapsed) -> syscall -> syscall-result
+)
+
+
+all deliveries should have a "slots" attribute, of the format: `slots.join(',')`
+
+We may want to include hostname as span attribute to correlate better than the service.instanceid?
+
+All spans / events should include blockNum as an attribute to help with queries,
+in particular delivery / syscall spans.
