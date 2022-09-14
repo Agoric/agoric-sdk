@@ -63,8 +63,9 @@ export const start = async (zcf, privateArgs) => {
        *
        * @param {string} srcID
        * @param {import('./types.js').WalletBridgeMsg} obj
+       * @returns {void}
        */
-      fromBridge: async (srcID, obj) => {
+      fromBridge: (srcID, obj) => {
         console.log('walletFactory.fromBridge:', srcID, obj);
 
         const canSpend = 'spendAction' in obj;
@@ -79,7 +80,11 @@ export const start = async (zcf, privateArgs) => {
         const wallet = walletsByAddress.get(obj.owner); // or throw
 
         console.log('walletFactory:', { wallet, actionCapData });
-        return E(wallet).handleBridgeAction(actionCapData, canSpend);
+        E(wallet)
+          .handleBridgeAction(actionCapData, canSpend)
+          .catch(err =>
+            console.error(`handleBridgeAction(${srcID}, ${obj}) failed:`, err),
+          );
       },
     },
   );
