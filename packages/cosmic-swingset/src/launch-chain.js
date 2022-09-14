@@ -33,6 +33,7 @@ import * as ActionType from './action-types.js';
 import { parseParams } from './params.js';
 
 const console = anylogger('launch-chain');
+const blockManagerConsole = anylogger('block-manager');
 
 /**
  * Return the key in the reserved "host.*" section of the swing-store
@@ -389,7 +390,7 @@ export async function launch({
   let decohered;
 
   async function performAction(action) {
-    // console.error('Performing action', action);
+    // blockManagerConsole.error('Performing action', action);
     let p;
     switch (action.type) {
       case ActionType.BOOTSTRAP_BLOCK: {
@@ -465,7 +466,12 @@ export async function launch({
   async function processAction(action) {
     const start = Date.now();
     const finish = res => {
-      // console.error('Action', action.type, action.blockHeight, 'is done!');
+      // blockManagerConsole.error(
+      //   'Action',
+      //   action.type,
+      //   action.blockHeight,
+      //   'is done!',
+      // );
       runTime += Date.now() - start;
       return res;
     };
@@ -476,7 +482,7 @@ export async function launch({
     p.then(finish, e => {
       // None of these must fail, and if they do, log them verbosely before
       // returning to the chain.
-      console.error(action.type, 'error:', e);
+      blockManagerConsole.error(action.type, 'error:', e);
       finish();
     });
     // Return the original promise so that the caller gets the original
@@ -489,11 +495,16 @@ export async function launch({
       throw decohered;
     }
 
-    // console.warn('FIGME: blockHeight', action.blockHeight, 'received', action.type)
+    // blockManagerConsole.warn(
+    //   'FIGME: blockHeight',
+    //   action.blockHeight,
+    //   'received',
+    //   action.type,
+    // );
     switch (action.type) {
       case ActionType.BOOTSTRAP_BLOCK: {
         // This only runs for the very first block on the chain.
-        verboseBlocks && console.info('block bootstrap');
+        verboseBlocks && blockManagerConsole.info('block bootstrap');
         if (computedHeight !== 0) {
           throw Error(
             `Cannot run a bootstrap block at height ${action.blockHeight}`,
@@ -504,7 +515,8 @@ export async function launch({
       }
 
       case ActionType.COMMIT_BLOCK: {
-        verboseBlocks && console.info('block', action.blockHeight, 'commit');
+        verboseBlocks &&
+          blockManagerConsole.info('block', action.blockHeight, 'commit');
         if (action.blockHeight !== computedHeight) {
           throw Error(
             `Committed height ${action.blockHeight} does not match computed height ${computedHeight}`,
@@ -517,7 +529,7 @@ export async function launch({
 
         const saveTime = Date.now() - start2;
 
-        console.debug(
+        blockManagerConsole.debug(
           `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
         );
 
@@ -525,7 +537,8 @@ export async function launch({
       }
 
       case ActionType.BEGIN_BLOCK: {
-        verboseBlocks && console.info('block', action.blockHeight, 'begin');
+        verboseBlocks &&
+          blockManagerConsole.info('block', action.blockHeight, 'begin');
         runTime = 0;
         beginBlockAction = action;
         break;
