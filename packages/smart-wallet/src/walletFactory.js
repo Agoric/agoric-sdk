@@ -25,6 +25,8 @@ const PrivateArgsShape = harden(
  *   agoricNames: ERef<NameHub>,
  *   board: ERef<Board>,
  * }} SmartWalletContractTerms
+ *
+ * @typedef {import('@agoric/vats/src/nameHub').NameHub} NameHub
  */
 
 // NB: even though all the wallets share this contract, they

@@ -37,7 +37,6 @@
     "@agoric/ertp": "^0.14.2",
     "@agoric/nat": "^4.1.0",
     "@agoric/smart-wallet": "^0.2.0",
-    "@agoric/vats": "^0.10.0",
     "@agoric/zoe": "^0.24.0",
     "@endo/bundle-source": "^2.2.6",
     "@endo/captp": "^2.0.13",

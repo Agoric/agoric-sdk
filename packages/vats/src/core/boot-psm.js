@@ -74,6 +74,8 @@ export const agoricNamesReserved = harden(
       economicCommittee: 'Economic Committee',
       'psm-IST-AUSD': 'Parity Stability Module: IST:AUSD',
       psmCharter: 'Charter for the PSM',
+      walletFactory: 'Smart Wallet Factory',
+      provisionPool: 'Provision Pool',
     },
   }),
 );
@@ -213,7 +215,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
         Far('dummyInboundHandler', { deliverInboundMessages: () => {} }),
       );
 
-      runBootstrapParts(vats, devices).catch(e => {
+      return runBootstrapParts(vats, devices).catch(e => {
         console.error('BOOTSTRAP FAILED:', e);
         throw e;
       });

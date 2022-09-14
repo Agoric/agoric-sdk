@@ -149,6 +149,7 @@
  *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' |
  *     'stakeFactory' | 'stakeFactoryGovernor' |
  *     'psmCharter' | 'interchainPool' |
+ *     'walletFactory' | 'provisionPool' |
  *     'Treasury' | 'reserve' | 'reserveGovernor' | 'Pegasus',
  *   oracleBrand:
  *     'USD',
@@ -222,6 +223,7 @@
  *   zoe: ZoeService,
  * }>} ChainBootstrapSpace
  *
+ * @typedef {import('../nameHub').NameHub} NameHub
  * IDEA/TODO: make types of demo stuff invisible in production behaviors
  * @typedef {{
  *   argv: {

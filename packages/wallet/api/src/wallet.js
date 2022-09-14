@@ -32,6 +32,8 @@ import './internal-types.js';
  * timerDeviceScale?: number,
  * zoe: ERef<ZoeService>,
  * }} StartupTerms
+ *
+ * @typedef {import('@agoric/vats/src/nameHub').NameHub} NameHub
  */
 
 export function buildRootObject(vatPowers) {

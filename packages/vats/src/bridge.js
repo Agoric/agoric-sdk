@@ -30,7 +30,7 @@ import { Far } from '@endo/far';
  * Create a handler that demuxes/muxes the bridge device by its first argument.
  *
  * @param {typeof import('@endo/far').E} E The eventual sender
- * @param {DProxy} D The device sender
+ * @param {<T>(target: Device<T>) => T} D The device sender
  * @param {Device<BridgeDevice>} bridgeDevice The bridge to manage
  * @returns {BridgeManager} admin facet for this handler
  */

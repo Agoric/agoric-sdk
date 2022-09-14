@@ -21,6 +21,8 @@ import { makeSmartWallet } from './smartWallet.js';
  *   namesByAddress: ERef<NameHub>,
  * }} SmartWalletContractTerms
  *
+ * @typedef {import('@agoric/vats/src/nameHub').NameHub} NameHub
+ *
  * @typedef {{
  * 	 type: 'WALLET_ACTION',
  *   owner: string,

@@ -67,6 +67,8 @@ export const agoricNamesReserved = harden({
     reserveGovernor: 'ReserveGovernor',
     psmCharter: 'Charter for PSM Governance questions',
     interchainPool: 'interchainPool',
+    provisionPool: 'Account Provision Pool',
+    walletFactory: 'Smart Wallet Factory',
   },
   oracleBrand: {
     USD: 'US Dollar',

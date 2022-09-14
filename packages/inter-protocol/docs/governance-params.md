@@ -74,3 +74,11 @@ In `packages/inter-protocol/src/psm/psm.js`:
 
 The Inter Protocol Whitepaper v0.8 does not describe the governance parameters
 for this contract.
+
+### Provision Pool
+
+In `packages/vats/src/provisionPool.js`:
+
+| Governance Key          | Type    | WP? |
+| ----------------------- | :------ | --- |
+| PerAccountInitialAmount | Amount  | N/A |
