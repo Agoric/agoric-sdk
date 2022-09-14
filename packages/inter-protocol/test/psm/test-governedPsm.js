@@ -1,8 +1,6 @@
 // @ts-check
 
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
-import { AmountMath } from '@agoric/ertp';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
@@ -18,7 +16,7 @@ test('psm block offers w/Governance', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
 
-  const { knutIssuerKit, zoe, psm, committeeCreator, governor, installs } =
+  const { knut, zoe, psm, committeeCreator, governor, installs } =
     await setupPsm(t, electorateTerms, timer);
 
   const invitations = await E(committeeCreator).getVoterInvitations();
@@ -44,14 +42,14 @@ test('psm block offers w/Governance', async t => {
 
   t.deepEqual(['wantMinted'], await E(zoe).getOfferFilter(psm.instance));
 
-  const giveCentral = AmountMath.make(knutIssuerKit.brand, 1_000_000n);
+  const giveCentral = knut.make(1_000_000n);
 
   await t.throwsAsync(
     () =>
       E(zoe).offer(
         E(psm.psmPublicFacet).makeWantMintedInvitation(),
         harden({ give: { In: giveCentral } }),
-        harden({ In: knutIssuerKit.mint.mintPayment(giveCentral) }),
+        harden({ In: knut.mint.mintPayment(giveCentral) }),
       ),
     { message: 'not accepting offer with description "wantMinted"' },
   );
@@ -61,10 +59,8 @@ test('psm block offers w/charter', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
 
-  const { knutIssuerKit, zoe, psm, committeeCreator, psmCharterCreatorFacet } =
+  const { knut, zoe, psm, committeeCreator, psmCharterCreatorFacet } =
     await setupPsm(t, electorateTerms, timer);
-
-  const knutBrand = knutIssuerKit.brand;
 
   // onchain, the invitations get sent to the committee member via their
   // registered deposit facets. We'll skip that here.
@@ -102,14 +98,13 @@ test('psm block offers w/charter', async t => {
 
   t.deepEqual(['wantMinted'], await E(zoe).getOfferFilter(psm.instance));
 
-  const giveCentral = AmountMath.make(knutBrand, 1_000_000n);
-
+  const giveCentral = knut.make(1_000_000n);
   await t.throwsAsync(
     () =>
       E(zoe).offer(
         E(psm.psmPublicFacet).makeWantMintedInvitation(),
         harden({ give: { In: giveCentral } }),
-        harden({ In: knutIssuerKit.mint.mintPayment(giveCentral) }),
+        harden({ In: knut.mint.mintPayment(giveCentral) }),
       ),
     { message: 'not accepting offer with description "wantMinted"' },
   );
@@ -119,10 +114,8 @@ test('psm block offers w/charter via invitationMakers', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
 
-  const { knutIssuerKit, zoe, psm, committeeCreator, psmCharterCreatorFacet } =
+  const { knut, zoe, psm, committeeCreator, psmCharterCreatorFacet } =
     await setupPsm(t, electorateTerms, timer);
-
-  const knutBrand = knutIssuerKit.brand;
 
   // onchain, the invitations get sent to the committee member via their
   // registered deposit facets. We'll skip that here.
@@ -159,14 +152,13 @@ test('psm block offers w/charter via invitationMakers', async t => {
 
   t.deepEqual(['wantMinted'], await E(zoe).getOfferFilter(psm.instance));
 
-  const giveCentral = AmountMath.make(knutBrand, 1_000_000n);
-
+  const giveCentral = knut.make(1_000_000n);
   await t.throwsAsync(
     () =>
       E(zoe).offer(
         E(psm.psmPublicFacet).makeWantMintedInvitation(),
         harden({ give: { In: giveCentral } }),
-        harden({ In: knutIssuerKit.mint.mintPayment(giveCentral) }),
+        harden({ In: knut.mint.mintPayment(giveCentral) }),
       ),
     { message: 'not accepting offer with description "wantMinted"' },
   );

@@ -159,7 +159,7 @@ export const defaultProposalBuilder = async (
       anchorProposedName = anchorKeyword,
     } = {},
     econCommitteeOptions: {
-      committeeSize: econCommitteeSize = env.ECON_COMMITTEE_SIZE || '3',
+      committeeSize: econCommitteeSize = env.ECON_COMMITTEE_SIZE || '1',
     } = {},
   } = options;
 

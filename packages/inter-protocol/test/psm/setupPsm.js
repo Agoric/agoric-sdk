@@ -16,7 +16,11 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
 import { makeIssuerKit } from '@agoric/ertp';
 
-import { installGovernance, provideBundle } from '../supports.js';
+import {
+  installGovernance,
+  provideBundle,
+  withAmountUtils,
+} from '../supports.js';
 import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 import { startPSM, startPSMCharter } from '../../src/proposals/startPSM.js';
 import { allValues } from '../../src/collect.js';
@@ -99,7 +103,8 @@ export const setupPsm = async (
     farZoeKit = await setUpZoeForTest();
   }
 
-  const knutIssuerKit = makeIssuerKit('KNUT');
+  const knut = withAmountUtils(makeIssuerKit('KNUT'));
+
   const { feeMintAccess, zoe } = farZoeKit;
   const space = await setupPsmBootstrap(timer, farZoeKit);
   space.produce.zoe.resolve(farZoeKit.zoe);
@@ -110,8 +115,8 @@ export const setupPsm = async (
   const psmCharterBundle = await provideBundle(t, psmCharterRoot, 'psmCharter');
   installation.produce.psmCharter.resolve(E(zoe).install(psmCharterBundle));
 
-  brand.produce.AUSD.resolve(knutIssuerKit.brand);
-  issuer.produce.AUSD.resolve(knutIssuerKit.issuer);
+  brand.produce.AUSD.resolve(knut.brand);
+  issuer.produce.AUSD.resolve(knut.issuer);
 
   space.produce.psmFacets.resolve(makeScalarMapStore());
   const istIssuer = await E(zoe).getFeeIssuer();
@@ -154,7 +159,7 @@ export const setupPsm = async (
   });
 
   const allPsms = await consume.psmFacets;
-  const psmFacets = allPsms.get(knutIssuerKit.brand);
+  const psmFacets = allPsms.get(knut.brand);
   const governorCreatorFacet = psmFacets.psmGovernorCreatorFacet;
   const governorInstance = psmFacets.psmGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
@@ -194,7 +199,7 @@ export const setupPsm = async (
     invitationAmount: poserInvitationAmount,
     mockChainStorage: space.mockChainStorage,
     space,
-    knutIssuerKit,
+    knut,
   };
 };
 harden(setupPsm);

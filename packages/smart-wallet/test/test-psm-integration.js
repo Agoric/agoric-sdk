@@ -11,7 +11,9 @@ import {
 } from '@agoric/vats/tools/boot-test-utils.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { E } from '@endo/far';
+import { INVITATION_MAKERS_DESC } from '@agoric/inter-protocol/src/psm/psmCharter.js';
 import { NonNullish } from '@agoric/assert';
+
 import { coalesceUpdates } from '../src/utils.js';
 import { makeDefaultTestContext } from './contexts.js';
 import { withAmountUtils } from './supports.js';
@@ -156,12 +158,9 @@ test('want stable', async t => {
   t.is(purseBalance(computedState, stableBrand), swapSize - 1n);
 });
 
-const INVITATION_MAKERS_TEXT = 'PSM charter member invitation';
-
 test('govern offerFilter', async t => {
   const { anchor } = t.context;
-  const { agoricNames, /* economicCommitteeCreatorFacet, */ psmFacets, zoe } =
-    await E.get(t.context.consume);
+  const { agoricNames, psmFacets, zoe } = await E.get(t.context.consume);
 
   const { psm: psmInstance } = await E(psmFacets).get(anchor.brand);
 
@@ -176,8 +175,16 @@ test('govern offerFilter', async t => {
   );
   await eventLoopIteration();
 
-  // get invitation details the way a user would
+  /**
+   * get invitation details the way a user would
+   *
+   * @param {string} desc
+   * @param {number} len
+   * @param {any} balances XXX please improve this
+   * @returns {Promise<{description: string, instance: Instance}>}
+   */
   const getInvitationFor = async (desc, len, balances) =>
+    // @ts-expect-error TS can't tell that it's going to satisfy the @returns.
     E(E(zoe).getInvitationIssuer())
       .getBrand()
       .then(brand => {
@@ -187,15 +194,13 @@ test('govern offerFilter', async t => {
         return invitationsAmount.value.filter(i => i.description === desc);
       });
 
-  /** @type {{description: string, instance: Instance}} */
-  // @ts-expect-error whatever
   const proposeInvitationDetails = await getInvitationFor(
-    INVITATION_MAKERS_TEXT,
+    INVITATION_MAKERS_DESC,
     2,
     computedState.balances,
   );
 
-  t.is(proposeInvitationDetails[0].description, INVITATION_MAKERS_TEXT);
+  t.is(proposeInvitationDetails[0].description, INVITATION_MAKERS_DESC);
   t.is(proposeInvitationDetails[0].instance, psmCharter, 'psmCharter');
 
   // The purse has the invitation to get the makers ///////////
@@ -204,7 +209,7 @@ test('govern offerFilter', async t => {
   const getInvMakersSpec = {
     source: 'purse',
     instance: psmCharter,
-    description: INVITATION_MAKERS_TEXT,
+    description: INVITATION_MAKERS_DESC,
   };
 
   /** @type {import('../src/offers').OfferSpec} */

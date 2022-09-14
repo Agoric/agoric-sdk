@@ -8,6 +8,7 @@ import {
   PSM_MANIFEST,
   PSM_GOV_MANIFEST,
   startPSMCharter,
+  INVITE_PSM_COMMITTEE_MANIFEST,
 } from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import * as startPSMmod from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import * as ERTPmod from '@agoric/ertp';
@@ -150,6 +151,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       ...PSM_GOV_MANIFEST,
       ...ECON_COMMITTEE_MANIFEST,
       ...PSM_MANIFEST,
+      ...INVITE_PSM_COMMITTEE_MANIFEST,
     };
     /** @param {string} name */
     const powersFor = name => {

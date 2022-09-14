@@ -18,7 +18,7 @@ import { E } from '@endo/far';
  * separate capabilities for finer grain encapsulation.
  */
 
-const paramChangesOfferArgsShape = harden({
+const ParamChangesOfferArgsShape = harden({
   instance: InstanceHandleShape,
   deadline: TimestampShape,
   params: M.recordOf(M.string(), M.any()),
@@ -43,7 +43,7 @@ export const start = async zcf => {
      * @param {bigint} args.deadline
      */
     const voteOnParamChanges = (seat, args) => {
-      fit(args, paramChangesOfferArgsShape);
+      fit(args, ParamChangesOfferArgsShape);
       seat.exit();
 
       const {
@@ -73,7 +73,7 @@ export const start = async zcf => {
     return zcf.makeInvitation(voteOnOfferFilterHandler, 'vote on offer filter');
   };
 
-  const makerShape = M.interface('PSM Charter InvitationMakers', {
+  const MakerShape = M.interface('PSM Charter InvitationMakers', {
     VoteOnParamChange: M.call().returns(M.promise()),
     VoteOnPauseOffers: M.call(
       InstanceHandleShape,
@@ -83,7 +83,7 @@ export const start = async zcf => {
   });
   const invitationMakers = makeHeapFarInstance(
     'PSM Invitation Makers',
-    makerShape,
+    MakerShape,
     {
       VoteOnParamChange: makeParamInvitation,
       VoteOnPauseOffers: makeOfferFilterInvitation,
@@ -129,3 +129,5 @@ export const start = async zcf => {
 
   return harden({ creatorFacet });
 };
+
+export const INVITATION_MAKERS_DESC = 'PSM charter member invitation';

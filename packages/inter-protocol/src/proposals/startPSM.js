@@ -366,7 +366,7 @@ export const invitePSMCommitteeMembers = async (
       psmCharterCreatorFacet,
     },
   },
-  { options: { voterAddresses } },
+  { options: { voterAddresses = {} } },
 ) => {
   const invitations = await E(
     economicCommitteeCreatorFacet,
@@ -398,6 +398,16 @@ export const invitePSMCommitteeMembers = async (
   await distributeInvitations(zip(values(voterAddresses), invitations));
 };
 harden(invitePSMCommitteeMembers);
+
+export const INVITE_PSM_COMMITTEE_MANIFEST = harden({
+  [invitePSMCommitteeMembers.name]: {
+    consume: {
+      namesByAddressAdmin: true,
+      economicCommitteeCreatorFacet: true,
+      psmCharterCreatorFacet: true,
+    },
+  },
+});
 
 export const PSM_MANIFEST = harden({
   [makeAnchorAsset.name]: {
@@ -435,18 +445,6 @@ export const PSM_MANIFEST = harden({
     },
     issuer: {
       consume: { AUSD: 'bank' },
-    },
-  },
-  [invitePSMCommitteeMembers.name]: {
-    consume: {
-      zoe: true,
-      namesByAddressAdmin: true,
-      economicCommitteeCreatorFacet: true,
-      psmFacets: true,
-      psmCharterCreatorFacet: true,
-    },
-    installation: {
-      consume: { binaryVoteCounter: true },
     },
   },
 });
