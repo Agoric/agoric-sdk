@@ -14,6 +14,7 @@ import {
 } from '@agoric/swingset-vat';
 import { assert, details as X } from '@agoric/assert';
 import { openSwingStore, DEFAULT_LMDB_MAP_SIZE } from '@agoric/swing-store';
+import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 
@@ -28,6 +29,8 @@ import {
   BeansPerVatCreation,
   BeansPerXsnapComputron,
 } from './sim-params.js';
+import * as ActionType from './action-types.js';
+import { parseParams } from './params.js';
 
 const console = anylogger('launch-chain');
 
@@ -225,6 +228,11 @@ export async function launch({
   /** @type {PublishKit<unknown>['publisher'] | undefined} */
   let installationPublisher;
 
+  // Artificially create load if set.
+  const END_BLOCK_SPIN_MS = env.END_BLOCK_SPIN_MS
+    ? parseInt(env.END_BLOCK_SPIN_MS, 10)
+    : 0;
+
   const { crankScheduler } = exportKernelStats({
     controller,
     metricMeter,
@@ -372,6 +380,82 @@ export async function launch({
     );
   }
 
+  let latestParams;
+
+  async function performAction(action) {
+    // console.error('Performing action', action);
+    let p;
+    switch (action.type) {
+      case ActionType.BOOTSTRAP_BLOCK: {
+        p = bootstrapBlock(action.blockTime);
+        break;
+      }
+      case ActionType.BEGIN_BLOCK: {
+        latestParams = parseParams(action.params);
+        p = beginBlock(action.blockHeight, action.blockTime, latestParams);
+        break;
+      }
+
+      case ActionType.DELIVER_INBOUND: {
+        p = deliverInbound(action.peer, action.messages, action.ack);
+        break;
+      }
+
+      case ActionType.VBANK_BALANCE_UPDATE: {
+        p = doBridgeInbound(BRIDGE_ID.BANK, action);
+        break;
+      }
+
+      case ActionType.IBC_EVENT: {
+        p = doBridgeInbound(BRIDGE_ID.DIBC, action);
+        break;
+      }
+
+      case ActionType.PLEASE_PROVISION: {
+        p = doBridgeInbound(BRIDGE_ID.PROVISION, action);
+        break;
+      }
+
+      case ActionType.INSTALL_BUNDLE: {
+        p = installBundle(action.bundle);
+        break;
+      }
+
+      case ActionType.CORE_EVAL: {
+        p = doBridgeInbound(BRIDGE_ID.CORE, action);
+        break;
+      }
+
+      case ActionType.WALLET_ACTION: {
+        p = doBridgeInbound(BRIDGE_ID.WALLET, action);
+        break;
+      }
+
+      case ActionType.WALLET_SPEND_ACTION: {
+        p = doBridgeInbound(BRIDGE_ID.WALLET, action);
+        break;
+      }
+
+      case ActionType.END_BLOCK: {
+        p = endBlock(action.blockHeight, action.blockTime, latestParams);
+        if (END_BLOCK_SPIN_MS) {
+          // Introduce a busy-wait to artificially put load on the chain.
+          p = p.then(res => {
+            const startTime = Date.now();
+            while (Date.now() - startTime < END_BLOCK_SPIN_MS);
+            return res;
+          });
+        }
+        break;
+      }
+
+      default: {
+        assert.fail(X`${action.type} not recognized`);
+      }
+    }
+    return p;
+  }
+
   const savedHeight = Number(kvStore.get(getHostKey('height')) || 0);
   const savedBlockTime = Number(kvStore.get(getHostKey('blockTime')) || 0);
   const savedChainSends = JSON.parse(
@@ -380,13 +464,8 @@ export async function launch({
 
   return {
     actionQueue,
-    deliverInbound,
-    doBridgeInbound,
+    performAction,
     bridgeOutbound,
-    installBundle,
-    bootstrapBlock,
-    beginBlock,
-    endBlock,
     saveChainState,
     saveOutsideState,
     savedHeight,

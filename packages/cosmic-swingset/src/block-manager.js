@@ -1,31 +1,18 @@
 // @ts-check
-/* global process */
 import anylogger from 'anylogger';
 
 import { assert, details as X } from '@agoric/assert';
-import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import * as ActionType from './action-types.js';
-import { parseParams } from './params.js';
 
 import '@agoric/notifier/exported.js';
 
 const console = anylogger('block-manager');
 
-// Artificially create load if set.
-const END_BLOCK_SPIN_MS = process.env.END_BLOCK_SPIN_MS
-  ? parseInt(process.env.END_BLOCK_SPIN_MS, 10)
-  : 0;
-
 /** @typedef {Record<string, unknown>} InstallationNotification */
 
 export default function makeBlockManager({
   actionQueue,
-  deliverInbound,
-  doBridgeInbound,
-  installBundle,
-  bootstrapBlock,
-  beginBlock,
-  endBlock,
+  performAction,
   flushChainSends,
   saveChainState,
   saveOutsideState,
@@ -35,7 +22,6 @@ export default function makeBlockManager({
   let computedHeight = savedHeight;
   let runTime = 0;
   let chainTime;
-  let latestParams;
   let beginBlockAction;
 
   async function processAction(action) {
@@ -46,79 +32,7 @@ export default function makeBlockManager({
       return res;
     };
 
-    // console.error('Performing action', action);
-    let p;
-    switch (action.type) {
-      case ActionType.BEGIN_BLOCK: {
-        latestParams = parseParams(action.params);
-        p = beginBlock(action.blockHeight, action.blockTime, latestParams);
-        break;
-      }
-
-      case ActionType.DELIVER_INBOUND: {
-        p = deliverInbound(
-          action.peer,
-          action.messages,
-          action.ack,
-          action.blockHeight,
-          action.blockTime,
-          latestParams,
-        );
-        break;
-      }
-
-      case ActionType.VBANK_BALANCE_UPDATE: {
-        p = doBridgeInbound(BRIDGE_ID.BANK, action);
-        break;
-      }
-
-      case ActionType.IBC_EVENT: {
-        p = doBridgeInbound(BRIDGE_ID.DIBC, action);
-        break;
-      }
-
-      case ActionType.PLEASE_PROVISION: {
-        p = doBridgeInbound(BRIDGE_ID.PROVISION, action);
-        break;
-      }
-
-      case ActionType.INSTALL_BUNDLE: {
-        p = installBundle(action.bundle);
-        break;
-      }
-
-      case ActionType.CORE_EVAL: {
-        p = doBridgeInbound(BRIDGE_ID.CORE, action);
-        break;
-      }
-
-      case ActionType.WALLET_ACTION: {
-        p = doBridgeInbound(BRIDGE_ID.WALLET, action);
-        break;
-      }
-
-      case ActionType.WALLET_SPEND_ACTION: {
-        p = doBridgeInbound(BRIDGE_ID.WALLET, action);
-        break;
-      }
-
-      case ActionType.END_BLOCK: {
-        p = endBlock(action.blockHeight, action.blockTime, latestParams);
-        if (END_BLOCK_SPIN_MS) {
-          // Introduce a busy-wait to artificially put load on the chain.
-          p = p.then(res => {
-            const startTime = Date.now();
-            while (Date.now() - startTime < END_BLOCK_SPIN_MS);
-            return finish(res);
-          });
-        }
-        break;
-      }
-
-      default: {
-        assert.fail(X`${action.type} not recognized`);
-      }
-    }
+    const p = performAction(action);
     // Just attach some callbacks, but don't use the resulting neutered result
     // promise.
     p.then(finish, e => {
@@ -149,7 +63,7 @@ export default function makeBlockManager({
             `Cannot run a bootstrap block at height ${action.blockHeight}`,
           );
         }
-        await bootstrapBlock(action.blockTime);
+        await processAction(action);
         break;
       }
 
