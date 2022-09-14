@@ -213,7 +213,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
         Far('dummyInboundHandler', { deliverInboundMessages: () => {} }),
       );
 
-      runBootstrapParts(vats, devices).catch(e => {
+      return runBootstrapParts(vats, devices).catch(e => {
         console.error('BOOTSTRAP FAILED:', e);
         throw e;
       });
