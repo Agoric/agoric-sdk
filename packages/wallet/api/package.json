@@ -16,8 +16,8 @@
   "devDependencies": {
     "@agoric/deploy-script-support": "^0.9.0",
     "@agoric/vats": "^0.10.0",
-    "@endo/bundle-source": "^2.2.6",
-    "@endo/init": "^0.5.47",
+    "@endo/bundle-source": "^2.3.0",
+    "@endo/init": "^0.5.48",
     "ava": "^4.3.1"
   },
   "dependencies": {
@@ -31,9 +31,9 @@
     "@agoric/store": "^0.7.2",
     "@agoric/vat-data": "^0.3.1",
     "@agoric/zoe": "^0.24.0",
-    "@endo/eventual-send": "^0.16.3",
-    "@endo/marshal": "^0.7.3",
-    "@endo/promise-kit": "^0.2.47",
+    "@endo/eventual-send": "^0.16.4",
+    "@endo/marshal": "^0.7.4",
+    "@endo/promise-kit": "^0.2.48",
     "import-meta-resolve": "^1.1.1"
   },
   "keywords": [],
