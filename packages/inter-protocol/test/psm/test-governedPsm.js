@@ -71,9 +71,9 @@ test('psm block offers w/charter', async t => {
   ).makeCharterMemberInvitation();
 
   const cmSeat = E(zoe).offer(cmInvitation);
-  const result = await E(cmSeat).getOfferResult();
+  const { invitationMakers } = await E(cmSeat).getOfferResult();
 
-  const proposeInvitation = await E(result.invitationMakers).VoteOnPauseOffers(
+  const proposeInvitation = await E(invitationMakers).VoteOnPauseOffers(
     await psm.instance,
     ['wantMinted'],
     2n,
@@ -141,8 +141,8 @@ test('psm block offers w/charter via invitationMakers', async t => {
 
   const exerciseAndVote = async invitation => {
     const seat = E(zoe).offer(invitation);
-    const voteFacet = await E.get(E(seat).getOfferResult());
-    E(voteFacet.voter).castBallotFor(questionHandle, [positions[0]]);
+    const { voter } = await E.get(E(seat).getOfferResult());
+    E(voter).castBallotFor(questionHandle, [positions[0]]);
   };
   await Promise.all(invitations.map(exerciseAndVote));
 
