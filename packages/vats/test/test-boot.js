@@ -194,9 +194,10 @@ test(`PSM-only bootstrap`, async t => {
   const returnVal = await E(root).bootstrap(...mockPsmBootstrapArgs(t.log));
   t.is(returnVal, undefined);
 
-  const agoricNames = /** @type {Promise<NameHub>} */ (
-    E(root).consumeItem('agoricNames')
-  );
+  const agoricNames =
+    /** @type {Promise<import('../src/nameHub.js').NameHub>} */ (
+      E(root).consumeItem('agoricNames')
+    );
   const instance = await E(agoricNames).lookup('instance', 'psm-IST-AUSD');
   t.is(passStyleOf(instance), 'remotable');
 });

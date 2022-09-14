@@ -223,6 +223,7 @@
  *   zoe: ZoeService,
  * }>} ChainBootstrapSpace
  *
+ * @typedef {import('../nameHub').NameHub} NameHub
  * IDEA/TODO: make types of demo stuff invisible in production behaviors
  * @typedef {{
  *   argv: {
