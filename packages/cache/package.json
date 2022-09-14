@@ -23,8 +23,8 @@
     "@agoric/store": "^0.7.2",
     "@agoric/vat-data": "^0.3.1",
     "@agoric/vats": "^0.10.0",
-    "@endo/far": "^0.2.9",
-    "@endo/marshal": "^0.7.3"
+    "@endo/far": "^0.2.10",
+    "@endo/marshal": "^0.7.4"
   },
   "devDependencies": {
     "ava": "^4.3.1",
