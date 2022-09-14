@@ -35,7 +35,6 @@ const noPath = /** @type {import('fs').PathLike} */ (
 );
 
 /**
- *
  * @param {import("fs").ReadStream | import("fs").WriteStream} stream
  * @returns {Promise<void>}
  */
@@ -105,20 +104,25 @@ export function makeSnapStore(
 ) {
   /** @type {(opts: unknown) => Promise<string>} */
   const ptmpName = promisify(tmpName);
+
   /**
-   * @param {(name: string) => Promise<T>} thunk
+   * Returns the result of calling a function with the name
+   * of a temp file that exists only for the duration of
+   * its invocation.
+   *
+   * @param {(name: string) => Promise<T>} fn
    * @param {string=} prefix
    * @returns {Promise<T>}
    * @template T
    */
-  async function withTempName(thunk, prefix = 'tmp') {
+  async function withTempName(fn, prefix = 'tmp') {
     const name = await ptmpName({
       tmpdir: root,
       template: `${prefix}-XXXXXX.xss`,
     });
     let result;
     try {
-      result = await thunk(name);
+      result = await fn(name);
     } finally {
       try {
         await unlink(name);
@@ -133,21 +137,24 @@ export function makeSnapStore(
    * Creates a file atomically by moving in place a temp file
    * populated by a callback.
    *
-   * @param {string} dest absolute path of which root is a prefix
-   * @param { (name: string) => Promise<void> } thunk
+   * @param {string} destFilePath absolute path of file to be written
+   * @param { (name: string) => Promise<void> } writeContents
    * @returns {Promise<void>}
    */
-  async function atomicWrite(dest, thunk) {
+  async function atomicWrite(destFilePath, writeContents) {
     // Atomicity requires remaining on the same filesystem,
     // so we perform all operations in the destination directory.
-    const dir = resolve(dest, '..');
-    const tmp = await ptmpName({ tmpdir: dir, template: 'atomic-XXXXXX' });
+    const dir = resolve(destFilePath, '..');
+    const tmpFilePath = await ptmpName({
+      tmpdir: dir,
+      template: 'atomic-XXXXXX',
+    });
     try {
-      await thunk(tmp);
-      await rename(tmp, dest);
+      await writeContents(tmpFilePath);
+      await rename(tmpFilePath, destFilePath);
     } finally {
       try {
-        await unlink(tmp);
+        await unlink(tmpFilePath);
       } catch (ignore) {
         // ignore
       }
@@ -155,16 +162,18 @@ export function makeSnapStore(
   }
 
   /**
-   * @param {string} input
-   * @param {NodeJS.ReadWriteStream} f
-   * @param {string} output
+   * Populates destPath by streaming the contents of srcPath through a transform.
+   *
+   * @param {string} srcPath
+   * @param {NodeJS.ReadWriteStream} transform
+   * @param {string} destPath
    * @param {object} [options]
    * @param {boolean} [options.flush]
    */
-  async function filter(input, f, output, { flush = false } = {}) {
+  async function filter(srcPath, transform, destPath, { flush = false } = {}) {
     const [source, destination] = await Promise.all([
-      open(input, 'r'),
-      open(output, 'wx'),
+      open(srcPath, 'r'),
+      open(destPath, 'wx'),
     ]);
     const sourceStream = createReadStream(noPath, {
       fd: source.fd,
@@ -179,7 +188,7 @@ export function makeSnapStore(
         fsStreamReady(sourceStream),
         fsStreamReady(destinationStream),
       ]);
-      await pipe(sourceStream, f, destinationStream);
+      await pipe(sourceStream, transform, destinationStream);
       if (flush) {
         await destination.sync();
       }
@@ -212,13 +221,13 @@ export function makeSnapStore(
    * @returns {Promise<SnapshotInfo>}
    */
   async function save(saveRaw) {
-    return withTempName(async tmpFilePath => {
+    return withTempName(async tmpSnapPath => {
       const { duration: rawSaveSeconds } = await measureSeconds(() =>
-        saveRaw(tmpFilePath),
+        saveRaw(tmpSnapPath),
       );
-      const { size: rawByteCount } = await stat(tmpFilePath);
+      const { size: rawByteCount } = await stat(tmpSnapPath);
       const { result: hash, duration: hashSeconds } = await measureSeconds(() =>
-        fileHash(tmpFilePath),
+        fileHash(tmpSnapPath),
       );
       toDelete.delete(hash);
       const filePath = hashPath(hash);
@@ -239,8 +248,8 @@ export function makeSnapStore(
         return freeze(info);
       }
       const { duration: compressSeconds } = await measureSeconds(() =>
-        atomicWrite(filePath, gztmp =>
-          filter(tmpFilePath, createGzip(), gztmp, { flush: true }),
+        atomicWrite(filePath, tmpGzPath =>
+          filter(tmpSnapPath, createGzip(), tmpGzPath, { flush: true }),
         ),
       );
       const { size: compressedByteCount } = await stat(filePath);
