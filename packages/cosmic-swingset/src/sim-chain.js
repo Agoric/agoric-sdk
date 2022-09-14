@@ -17,7 +17,6 @@ import { makeWithQueue } from '@agoric/vats/src/queue.js';
 import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver.js';
 import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
-import makeBlockManager from './block-manager.js';
 import { getTelemetryProviders } from './kernel-stats.js';
 import { DEFAULT_SIM_SWINGSET_PARAMS } from './sim-params.js';
 
@@ -115,6 +114,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     kernelStateDBDir: stateDBdir,
     mailboxStorage,
     clearChainSends,
+    replayChainSends,
     vatconfig,
     argv,
     debugName: GCI,
@@ -124,8 +124,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     mapSize,
   });
 
-  const { savedHeight, savedBlockTime } = s;
-  const blockingSend = makeBlockManager({ ...s, replayChainSends });
+  const { blockingSend, savedHeight, savedBlockTime } = s;
 
   let blockHeight = savedHeight;
   let blockTime = savedBlockTime || scaleBlockTime(Date.now());

@@ -23,7 +23,6 @@ import * as STORAGE_PATH from '@agoric/vats/src/chain-storage-paths.js';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
-import makeBlockManager from './block-manager.js';
 import { getTelemetryProviders } from './kernel-stats.js';
 
 // eslint-disable-next-line no-unused-vars
@@ -486,11 +485,13 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       makeInstallationPublisher,
       mailboxStorage,
       clearChainSends,
+      replayChainSends,
       setActivityhash,
       bridgeOutbound: doOutboundBridge,
       vatconfig,
       argv,
       env,
+      verboseBlocks: true,
       metricsProvider,
       slogFile: SLOGFILE,
       slogSender,
@@ -499,7 +500,10 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       keepSnapshots,
       afterCommitCallback,
     });
-    return s;
+
+    savedChainSends = s.savedChainSends;
+
+    return s.blockingSend;
   }
 
   let blockingSend;
@@ -525,15 +529,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
     // Ensure that initialization has completed.
     if (!blockingSend) {
-      const { savedChainSends: scs, ...fns } =
-        await launchAndInitializeSwingSet(action);
-
-      savedChainSends = scs;
-      blockingSend = makeBlockManager({
-        ...fns,
-        replayChainSends,
-        verboseBlocks: true,
-      });
+      blockingSend = await launchAndInitializeSwingSet(action);
     }
 
     if (action.type === AG_COSMOS_INIT) {
