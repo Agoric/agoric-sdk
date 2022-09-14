@@ -70,10 +70,7 @@
     "entrypoint": "defaultProposalBuilder",
     "args": [
       {
-        "voterAddresses": [
-          "@FIRST_SOLO_ADDRESS@"
-        ]
-      }
+        "voterAddresses": { "someone": "@FIRST_SOLO_ADDRESS@" }      }
     ]
   }
 ]

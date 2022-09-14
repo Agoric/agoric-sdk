@@ -312,7 +312,6 @@ export const start = async (zcf, privateArgs, baggage) => {
   const governorFacet = makeFarGovernorFacet(limitedCreatorFacet);
   return harden({
     creatorFacet: governorFacet,
-    limitedCreatorFacet,
     publicFacet,
   });
 };

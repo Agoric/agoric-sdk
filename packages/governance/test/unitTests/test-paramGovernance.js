@@ -419,9 +419,10 @@ test('change param continuing invitation', async t => {
   const seat = E(zoe).offer(invitations[0]);
   const { invitationMakers } = E.get(E(seat).getOfferResult());
   const voteInvitation = E(invitationMakers).makeVoteInvitation(
+    [positive],
     details.questionHandle,
   );
-  await E(zoe).offer(voteInvitation, {}, {}, { positions: [positive] });
+  await E(zoe).offer(voteInvitation);
 
   await E(timer).tick();
   await E(timer).tick();

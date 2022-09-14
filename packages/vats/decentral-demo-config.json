@@ -9,7 +9,8 @@
     "bootstrap": {
       "sourceSpec": "@agoric/vats/src/core/boot.js",
       "parameters": {
-        "governanceActions": true
+        "governanceActions": true,
+        "economicCommitteeAddresses": { "voter":  "agoric1Ersatz" }
       },
       "creationOptions": {
         "critical": true
