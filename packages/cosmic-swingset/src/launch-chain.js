@@ -175,6 +175,7 @@ export async function launch({
   mailboxStorage,
   setActivityhash,
   bridgeOutbound,
+  makeInstallationPublisher = undefined,
   vatconfig,
   argv,
   env = process.env,
@@ -220,6 +221,9 @@ export async function launch({
       slogSender,
     },
   );
+
+  /** @type {PublishKit<unknown>['publisher'] | undefined} */
+  let installationPublisher;
 
   const { crankScheduler } = exportKernelStats({
     controller,
@@ -326,7 +330,36 @@ export async function launch({
     bridgeInbound(source, body);
   }
 
+  async function installBundle(bundleSource) {
+    const bundle = JSON.parse(bundleSource);
+    harden(bundle);
+
+    const error = await controller.validateAndInstallBundle(bundle).then(
+      () => null,
+      (/** @type {unknown} */ errorValue) => errorValue,
+    );
+
+    const { endoZipBase64Sha512 } = bundle;
+
+    if (installationPublisher !== undefined) {
+      installationPublisher.publish(
+        harden({
+          endoZipBase64Sha512,
+          installed: error === null,
+          error,
+        }),
+      );
+    }
+  }
+
   async function beginBlock(blockHeight, blockTime, _params) {
+    if (
+      installationPublisher === undefined &&
+      makeInstallationPublisher !== undefined
+    ) {
+      installationPublisher = makeInstallationPublisher();
+    }
+
     controller.writeSlogObject({
       type: 'cosmic-swingset-begin-block',
       blockHeight,
@@ -345,13 +378,12 @@ export async function launch({
     kvStore.get(getHostKey('chainSends')) || '[]',
   );
 
-  const { validateAndInstallBundle } = controller;
-
   return {
     actionQueue,
     deliverInbound,
     doBridgeInbound,
     bridgeOutbound,
+    installBundle,
     bootstrapBlock,
     beginBlock,
     endBlock,
@@ -360,6 +392,5 @@ export async function launch({
     savedHeight,
     savedBlockTime,
     savedChainSends,
-    validateAndInstallBundle,
   };
 }

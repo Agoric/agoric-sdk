@@ -16,6 +16,8 @@ import { assert, details as X } from '@agoric/assert';
 import { makeSlogSenderFromModule } from '@agoric/telemetry';
 
 import { makeChainStorageRoot } from '@agoric/vats/src/lib-chainStorage.js';
+import { makeMarshal } from '@endo/marshal';
+import { makeStoredSubscriber, makePublishKit } from '@agoric/notifier';
 
 import * as STORAGE_PATH from '@agoric/vats/src/chain-storage-paths.js';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
@@ -353,6 +355,23 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       }
     }
 
+    const toStorage = message => {
+      return doOutboundBridge(BRIDGE_ID.STORAGE, message);
+    };
+
+    const makeInstallationPublisher = () => {
+      const installationStorageNode = makeChainStorageRoot(
+        toStorage,
+        'swingset',
+        STORAGE_PATH.BUNDLES,
+        { sequence: true },
+      );
+      const marshaller = makeMarshal();
+      const { publisher, subscriber } = makePublishKit();
+      makeStoredSubscriber(subscriber, installationStorageNode, marshaller);
+      return publisher;
+    };
+
     const argv = {
       ROLE: 'chain',
       bootMsg,
@@ -464,6 +483,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const s = await launch({
       actionQueue,
       kernelStateDBDir: stateDBDir,
+      makeInstallationPublisher,
       mailboxStorage,
       setActivityhash,
       bridgeOutbound: doOutboundBridge,
@@ -507,22 +527,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       const { savedChainSends: scs, ...fns } =
         await launchAndInitializeSwingSet(action);
 
-      const toStorage = message => {
-        return fns.bridgeOutbound(BRIDGE_ID.STORAGE, message);
-      };
-      const installationStorageNode = makeChainStorageRoot(
-        toStorage,
-        'swingset',
-        STORAGE_PATH.BUNDLES,
-        { sequence: true },
-      );
-
       savedChainSends = scs;
       blockingSend = makeBlockManager({
         ...fns,
         flushChainSends,
         verboseBlocks: true,
-        installationStorageNode,
       });
     }
 
