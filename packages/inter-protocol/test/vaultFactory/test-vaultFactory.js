@@ -113,6 +113,7 @@ test.before(async t => {
   const { zoe, feeMintAccess } = setUpZoeForTest();
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
+  // @ts-expect-error missing mint
   const run = withAmountUtils({ issuer: runIssuer, brand: runBrand });
   const aeth = withAmountUtils(makeIssuerKit('aEth'));
 
