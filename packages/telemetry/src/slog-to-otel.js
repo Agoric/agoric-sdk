@@ -9,6 +9,7 @@ import { makeKVStringStore } from './kv-string-store.js';
 // diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.VERBOSE);
 
 /** @typedef {import('@opentelemetry/api').Span} Span */
+/** @typedef {import('@opentelemetry/api').Link} SpanLink */
 /** @typedef {import('@opentelemetry/api').SpanContext} SpanContext */
 /** @typedef {import('@opentelemetry/api').SpanOptions} SpanOptions */
 
@@ -75,6 +76,11 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
   let nowFloat;
   /** @type {Record<string, any>} */
   let currentAttrs = {};
+
+  /** @type {Span | undefined} */
+  let activeDeliverySpan;
+
+  let isReplaying = false;
 
   const cleanAttrs = attrs => ({
     ...serializeInto(attrs, 'agoric'),
@@ -161,20 +167,28 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
   };
 
   const makeSpans = () => {
-    /** @type {LegacyMap<string, Span>} */
+    /**
+     * @typedef {object} SpanRecord
+     * @property {Span} span
+     * @property {string} name
+     * @property {string} kind
+     * @property {string} key
+     */
+
+    /** @type {LegacyMap<string, SpanRecord>} */
     // Legacy because spans are not passable
     const keyToSpan = makeLegacyMap('spanKey');
 
-    let lastNamedPopTime;
+    let lastAssertedKindPopTime;
 
-    /** @type {{ span: Span, name: string }[]} */
+    /** @type {SpanRecord[]} */
     const spanStack = [];
 
     const makeSpanKey = keyArray => JSON.stringify(keyArray, replacer);
 
     const sp = harden({
       endAll: endTime => {
-        for (const [_keyName, span] of keyToSpan.entries()) {
+        for (const { span } of keyToSpan.values()) {
           span.end(endTime);
         }
         keyToSpan.clear();
@@ -232,7 +246,8 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         const span = sp.create(name, parent, attrs, options);
         if (keyArray.length) {
           const spanKey = makeSpanKey(keyArray);
-          keyToSpan.init(spanKey, span);
+          const record = { span, name, kind: keyArray[0], key: spanKey };
+          keyToSpan.init(spanKey, record);
         }
         return span;
       },
@@ -263,7 +278,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       end: (key, attrs = {}, errorMessage = undefined) => {
         const keyArray = Array.isArray(key) ? key : [key];
         const spanKey = makeSpanKey(keyArray);
-        const span = keyToSpan.get(spanKey);
+        const { span } = keyToSpan.get(spanKey);
         if (errorMessage) {
           span.setStatus({ code: SpanStatusCode.ERROR, message: errorMessage });
         }
@@ -281,26 +296,73 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       get: key => {
         const keyArray = Array.isArray(key) ? key : [key];
         const spanKey = makeSpanKey(keyArray);
-        return keyToSpan.get(spanKey);
+        return keyToSpan.get(spanKey).span;
       },
 
-      push: (name, attrs = currentAttrs) => {
-        const span = sp.startNamed(name, [], sp.top(), attrs);
-        spanStack.push({ span, name });
+      /**
+       * @param {string | [string, ...any]} key
+       * @param {object} [options]
+       * @param {string} [options.kind]
+       * @param {string} [options.name]
+       * @param {Record<string, any>} [options.attributes]
+       * @param {SpanLink[]} [options.links]
+       */
+      push: (
+        key,
+        {
+          kind = undefined,
+          name = undefined,
+          attributes = currentAttrs,
+          ...opts
+        } = {},
+      ) => {
+        const keyArray = Array.isArray(key) ? key : [key];
+        kind ??= keyArray[0];
+        name ??= kind;
+        const spanKey = makeSpanKey(keyArray);
+        const span = sp.create(name, sp.top(), attributes, opts);
+        const record = { span, name, kind, key: spanKey };
+        keyToSpan.init(spanKey, record);
+        spanStack.push(record);
+        return span;
       },
 
-      /** @param {string} [assertName] */
-      pop: (assertName = undefined) => {
-        const popped = spanStack.pop();
-        if (assertName !== undefined) {
-          assert.equal(popped?.name, assertName);
-          lastNamedPopTime = now;
+      /**
+       * @param {string | [string, ...any]} [assertKindOrKey]
+       * @param {object} [options]
+       * @param {Record<string, any>} [options.attributes]
+       * @param {string} [options.errorMessage]
+       */
+      pop: (
+        assertKindOrKey = undefined,
+        { attributes = {}, errorMessage = undefined } = {},
+      ) => {
+        const top = spanStack[spanStack.length - 1];
+        if (assertKindOrKey !== undefined) {
+          assert(
+            (typeof assertKindOrKey === 'string' &&
+              top?.kind === assertKindOrKey) ||
+              top?.key === makeSpanKey(assertKindOrKey),
+          );
+          lastAssertedKindPopTime = now;
         }
-        popped?.span.end(lastNamedPopTime);
+        if (top) {
+          if (errorMessage !== undefined) {
+            top.span.setStatus({
+              code: SpanStatusCode.ERROR,
+              message: errorMessage,
+            });
+          }
+          top.span.setAttributes(cleanAttrs(attributes));
+          top.span.end(lastAssertedKindPopTime);
+          spanStack.pop();
+          keyToSpan.delete(top.key);
+        }
       },
-
+      /** @returns {Span | undefined} */
       top: () => spanStack[spanStack.length - 1]?.span,
-      topName: () => spanStack[spanStack.length - 1]?.name,
+      /** @returns {string | undefined} */
+      topKind: () => spanStack[spanStack.length - 1]?.kind,
     });
     return sp;
   };
@@ -319,11 +381,8 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
     }
   };
 
-  let initing = true;
-  let replayKey;
-
   const getCrankKey = create => {
-    let key = ['crank', currentAttrs.vatID];
+    let key = ['crank', currentAttrs.crankNum];
     if (!create && !spans.has(key)) {
       const genericKey = ['crank', undefined];
       if (spans.has(genericKey)) {
@@ -341,60 +400,74 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
     now = floatSecondsToHiRes(nowFloat);
     currentAttrs = slogAttrs;
 
-    if (initing) {
-      // Initialize the top-level span with the first timestamped slog entry.
-      spans.push('init');
-      initing = false;
-    }
-
     if (finished) {
       return;
     }
 
     // console.log('slogging', obj);
     switch (slogType) {
+      case 'kernel-init-start': {
+        spans.push('init');
+        break;
+      }
+      case 'kernel-init-finish': {
+        spans.pop('init');
+        break;
+      }
+      case 'bundle-kernel-start': {
+        assert.equal(spans.topKind(), 'init');
+        spans.push('bundle-kernel');
+        break;
+      }
+      case 'bundle-kernel-finish': {
+        spans.pop('bundle-kernel');
+        break;
+      }
       case 'import-kernel-start': {
-        spans.start('import-kernel', spans.top());
+        assert.equal(spans.topKind(), 'init');
+        spans.push('import-kernel');
         break;
       }
       case 'import-kernel-finish': {
-        spans.end('import-kernel');
-        spans.pop('init');
+        spans.pop('import-kernel');
         break;
       }
       case 'create-vat': {
         const { vatSourceBundle: _2, name, ...attrs } = slogAttrs;
-        spans.start(['create-vat', slogAttrs.vatID], spans.top(), {
-          'vat.name': name,
-          ...attrs,
+        spans.push(['create-vat', slogAttrs.vatID], {
+          attributes: {
+            'vat.name': name,
+            ...attrs,
+          },
         });
-        spans.end(['create-vat', slogAttrs.vatID]);
         vatIdToAttrs.init(slogAttrs.vatID, { name, ...attrs });
         break;
       }
       case 'vat-startup-start': {
-        spans.start(['vat-startup', slogAttrs.vatID], spans.top());
+        spans.push(['vat-startup', slogAttrs.vatID]);
         break;
       }
       case 'vat-startup-finish': {
-        spans.end(['vat-startup', slogAttrs.vatID]);
+        spans.pop(['vat-startup', slogAttrs.vatID]);
+        spans.pop(['create-vat', slogAttrs.vatID]);
         break;
       }
       case 'start-replay': {
-        const ckey = getCrankKey(true);
-        // Replay may not happen in the context of a crank.
-        replayKey = spans.has(ckey) && ['start-replay', slogAttrs.vatID];
-        spans.startNamed(
-          `replay ${slogAttrs.vatID}`,
-          replayKey || ckey,
-          spans.top(),
-          slogAttrs,
-        );
+        // start-replay can happen at init or during a crank
+        const parentKind = spans.topKind();
+        assert(parentKind === 'init' || parentKind === 'crank');
+        assert(!isReplaying);
+        spans.push(['vat-replay', slogAttrs.vatID]);
+        isReplaying = true;
         break;
       }
       case 'finish-replay': {
-        spans.end(replayKey || getCrankKey());
-        replayKey = undefined;
+        spans.pop(['vat-replay', slogAttrs.vatID]);
+        assert(isReplaying);
+        isReplaying = false;
+        // finish-replay can happen at init or during a crank
+        const parentKind = spans.topKind();
+        assert(parentKind === 'init' || parentKind === 'crank');
         break;
       }
       case 'deliver': {
@@ -406,17 +479,26 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         if (!kd) {
           break;
         }
-        const crankSpan = spans.get(getCrankKey());
-        crankSpan.setAttributes(cleanAttrs({ delivery, ...attrs }));
+        if (!activeDeliverySpan) {
+          assert(isReplaying);
+          // Create a span to hold the related syscalls
+          activeDeliverySpan = spans.push(
+            ['deliver', attrs.vatID, attrs.deliveryNum],
+            { attributes: {} },
+          );
+        }
+        activeDeliverySpan.setAttributes(cleanAttrs({ delivery, ...attrs }));
         if (kd[0] === 'notify') {
           // Track call graph.
           const [_type, [notification]] = kd;
           // TODO: We only track the first notified kernel promise. Perhaps we should do more?
           const [kpId, { state }] = notification;
           const error = state === 'rejected' ? 'rejected' : undefined;
-          if (kernelPromiseToSendingCause.has(kpId)) {
+          // TODO: figure out if this is correct?
+          if (!isReplaying && kernelPromiseToSendingCause.has(kpId)) {
             // Track this notification as the cause for the current crank.
             const cause = JSON.parse(kernelPromiseToSendingCause.get(kpId));
+            // crankNum doesn't exist on replay
             crankNumToCause.init(slogAttrs.crankNum, {
               ...cause,
               attrs: { ...cause.attrs, state },
@@ -566,41 +648,37 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'cosmic-swingset-bootstrap-block-start': {
-        spans.push(`bootstrap-block`);
+        assert(!spans.top());
+        spans.push(['block', 0]);
+        spans.push(['end-block', 0]);
         break;
       }
       case 'cosmic-swingset-bootstrap-block-finish': {
-        spans.pop(`bootstrap-block`);
-        while (spans.top()) {
-          // Pop off all our context.
-          spans.pop();
-        }
+        spans.pop(['end-block', 0]);
+        spans.pop(['block', 0]);
         break;
       }
       case 'cosmic-swingset-begin-block': {
-        if (spans.topName() === `intra-block`) {
-          spans.pop(`intra-block`);
+        if (spans.topKind() === 'intra-block') {
+          spans.pop('intra-block');
+          spans.pop('block');
         }
-
-        while (spans.top()) {
-          // Reset the stack
-          spans.pop();
-        }
+        assert(!spans.top());
 
         // TODO: Move the encompassing `block` root span to cosmos
-        spans.push(`block ${slogAttrs.blockHeight}`);
-        spans.start(`begin-block`, spans.top());
-        spans.end(`begin-block`);
+        spans.push(['block', slogAttrs.blockHeight]);
+        spans.push(['begin-block', slogAttrs.blockHeight]);
+        spans.pop('begin-block');
         break;
       }
       case 'cosmic-swingset-commit-block-start': {
-        spans.start(['commit-block', slogAttrs.blockHeight], spans.top());
+        spans.push(['commit-block', slogAttrs.blockHeight]);
         break;
       }
       case 'cosmic-swingset-commit-block-finish': {
-        spans.end(['commit-block', slogAttrs.blockHeight]);
+        spans.pop(['commit-block', slogAttrs.blockHeight]);
         // Push a span to capture the time between blocks from cosmic-swingset POV
-        spans.push(`intra-block`);
+        spans.push(['intra-block', slogAttrs.blockHeight]);
         break;
       }
       case 'cosmic-swingset-after-commit-block': {
@@ -609,46 +687,21 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'cosmic-swingset-deliver-inbound': {
-        spans.start('deliver-inbound', spans.top());
-        spans.end(`deliver-inbound`);
+        spans.push(['deliver-inbound', slogAttrs.sender]);
+        spans.pop(`deliver-inbound`);
         break;
       }
       case 'cosmic-swingset-bridge-inbound': {
-        spans.start('bridge-inbound', spans.top());
-        spans.end(`bridge-inbound`);
+        spans.push(['bridge-inbound', slogAttrs.source]);
+        spans.pop(`bridge-inbound`);
         break;
       }
       case 'cosmic-swingset-end-block-start': {
-        spans.push(`end-block`);
+        spans.push(['end-block', slogAttrs.blockHeight]);
         break;
       }
       case 'cosmic-swingset-end-block-finish': {
-        spans.pop('end-block');
-        break;
-      }
-      case 'cosmic-swingset-save-chain-start': {
-        spans.push(`save-chain`);
-        break;
-      }
-      case 'cosmic-swingset-save-chain-finish': {
-        spans.pop('save-chain');
-        break;
-      }
-      case 'cosmic-swingset-save-external-start': {
-        spans.push(`save-external`);
-        break;
-      }
-      case 'cosmic-swingset-save-external-finish': {
-        spans.pop('save-external');
-        spans.pop(); // 'block ...'
-        break;
-      }
-      case 'solo-process-kernel-start': {
-        spans.push(`solo-process-kernel`);
-        break;
-      }
-      case 'solo-process-kernel-finish': {
-        spans.pop(`solo-process-kernel`);
+        spans.pop(['end-block', slogAttrs.blockHeight]);
         break;
       }
       case 'crank-start': {
@@ -687,8 +740,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'terminate': {
-        spans.start('terminate', spans.top());
-        spans.end(`terminate`);
+        spans.top()?.addEvent('terminate', cleanAttrs(slogAttrs), now);
         break;
       }
       default: {
