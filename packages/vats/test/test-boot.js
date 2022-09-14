@@ -9,6 +9,7 @@ import bundleSource from '@endo/bundle-source';
 import { E, Far, passStyleOf } from '@endo/far';
 
 import { makeZoeKit } from '@agoric/zoe';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { buildRootObject as buildPSMRootObject } from '../src/core/boot-psm.js';
 import { buildRootObject } from '../src/core/boot.js';
 import { bridgeCoreEval } from '../src/core/chain-behaviors.js';
@@ -191,8 +192,8 @@ const psmParams = {
 test(`PSM-only bootstrap`, async t => {
   const root = buildPSMRootObject({ D: mockDProxy, logger: t.log }, psmParams);
 
-  const returnVal = await E(root).bootstrap(...mockPsmBootstrapArgs(t.log));
-  t.is(returnVal, undefined);
+  void E(root).bootstrap(...mockPsmBootstrapArgs(t.log));
+  await eventLoopIteration();
 
   const agoricNames =
     /** @type {Promise<import('../src/nameHub.js').NameHub>} */ (
