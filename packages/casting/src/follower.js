@@ -41,6 +41,12 @@ const makeSubscriptionFollower = spec => {
       }
       return mapAsyncIterable(ai, transform);
     },
+
+    getReverseIterable: async () => {
+      throw Error(
+        'reverse iteration not implemented for subscription follower',
+      );
+    },
   });
   return follower;
 };
