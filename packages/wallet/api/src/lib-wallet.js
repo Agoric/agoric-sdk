@@ -67,6 +67,8 @@ const cmp = (a, b) => {
  * pursesStateChangeHandler?: (state: any) => void,
  * zoe: ERef<ZoeService>,
  * }} opt
+ *
+ * @typedef {import('@agoric/vats/src/nameHub').NameHub} NameHub
  */
 export function makeWalletRoot({
   zoe,
