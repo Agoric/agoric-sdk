@@ -11,7 +11,11 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 const { freeze } = Object;
 
-const makeMockSnapStoreIO = () => ({ ...makeSnapStoreIO(), now: () => 0 });
+const measureSeconds = async fn => {
+  const result = await fn();
+  return { result, duration: 0 };
+};
+const makeMockSnapStoreIO = () => ({ ...makeSnapStoreIO(), measureSeconds });
 
 const ld = (() => {
   /** @param {string} ref */

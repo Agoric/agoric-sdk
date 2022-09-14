@@ -592,9 +592,10 @@ export function makeVatKeeper(
     const {
       hash: snapshotID,
       rawByteCount,
-      rawSaveMillisec,
+      rawSaveSeconds,
+      hashSeconds,
       compressedByteCount,
-      compressMillisec,
+      compressSeconds,
     } = info;
     const old = getLastSnapshot();
     if (old && old.snapshotID !== snapshotID) {
@@ -613,9 +614,10 @@ export function makeVatKeeper(
       vatID,
       snapshotID,
       rawByteCount,
-      rawSaveMillisec,
+      rawSaveSeconds,
+      hashSeconds,
       compressedByteCount,
-      compressMillisec,
+      compressSeconds,
       endPosition,
     });
     return true;

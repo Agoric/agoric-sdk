@@ -16,12 +16,16 @@ test('build temp file; compress to cache file', async t => {
   t.teardown(() => pool.removeCallback());
   t.log({ pool: pool.name });
   await fs.promises.mkdir(pool.name, { recursive: true });
+  const measureSeconds = async fn => {
+    const result = await fn();
+    return { result, duration: 0 };
+  };
   const store = makeSnapStore(pool.name, {
     ...tmp,
     ...path,
     ...fs,
     ...fs.promises,
-    now: () => 0,
+    measureSeconds,
   });
   let keepTmp = '';
   const result = await store.save(async filePath => {
@@ -36,8 +40,9 @@ test('build temp file; compress to cache file', async t => {
     hash: expectedHash,
     filePath: path.resolve(pool.name, `${expectedHash}.gz`),
     rawByteCount: 3,
-    rawSaveMillisec: 0,
-    compressMillisec: 0,
+    rawSaveSeconds: 0,
+    hashSeconds: 0,
+    compressSeconds: 0,
   });
   t.is(await store.has(hash), true);
   const zero =
@@ -58,7 +63,11 @@ test('snapStore prepare / commit delete is robust', async t => {
   const pool = tmp.dirSync({ unsafeCleanup: true });
   t.teardown(() => pool.removeCallback());
 
-  const io = { ...tmp, ...path, ...fs, ...fs.promises, now: () => 0 };
+  const measureSeconds = async fn => {
+    const result = await fn();
+    return { result, duration: 0 };
+  };
+  const io = { ...tmp, ...path, ...fs, ...fs.promises, measureSeconds };
   const store = makeSnapStore(pool.name, io);
 
   const hashes = [];

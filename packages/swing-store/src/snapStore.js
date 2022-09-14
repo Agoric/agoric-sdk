@@ -9,10 +9,11 @@ import { promisify } from 'util';
  * @typedef {object} SnapshotInfo
  * @property {string} filePath absolute path of (compressed) snapshot
  * @property {string} hash sha256 hash of (uncompressed) snapshot
- * @property {number | bigint} rawByteCount size of (uncompressed) snapshot
- * @property {number | bigint} rawSaveMillisec time to save (uncompressed) snapshot according to a provided "now" function
- * @property {number | bigint} [compressedByteCount] size of (compressed) snapshot
- * @property {number | bigint} [compressMillisec] time to compress and save snapshot according to a provided "now" function
+ * @property {number} rawByteCount size of (uncompressed) snapshot
+ * @property {number} rawSaveSeconds time to save (uncompressed) snapshot
+ * @property {number} hashSeconds time to calculate snapshot hash
+ * @property {number} [compressedByteCount] size of (compressed) snapshot
+ * @property {number} [compressSeconds] time to compress and save snapshot
  */
 
 /**
@@ -78,7 +79,7 @@ export const fsStreamReady = stream =>
  *   tmpName: typeof import('tmp').tmpName,
  *   createReadStream: typeof import('fs').createReadStream,
  *   createWriteStream: typeof import('fs').createWriteStream,
- *   now: (() => number) | (() => bigint),
+ *   measureSeconds: <T>(fn: () => T | PromiseLike<T>) => Promise<{ result: T, duration: number }>,
  *   open: typeof import('fs').promises.open,
  *   resolve: typeof import('path').resolve,
  *   rename: typeof import('fs').promises.rename,
@@ -95,7 +96,7 @@ export function makeSnapStore(
     tmpName,
     createReadStream,
     createWriteStream,
-    now,
+    measureSeconds,
     open,
     resolve,
     rename,
@@ -131,18 +132,18 @@ export function makeSnapStore(
   }
 
   /**
+   * Creates a file atomically by moving in place a temp file
+   * populated by a callback.
+   *
    * @param {string} dest absolute path of which root is a prefix
    * @param { (name: string) => Promise<void> } thunk
-   * @returns { Promise<{ size: (number | bigint) }> }
+   * @returns {Promise<void>}
    */
   async function atomicWrite(dest, thunk) {
     const tmp = await ptmpName({ tmpdir: root, template: 'atomic-XXXXXX' });
-    let result;
     try {
       await thunk(tmp);
       await rename(tmp, dest);
-      const { size } = await stat(dest);
-      result = { size };
     } finally {
       try {
         await unlink(tmp);
@@ -150,7 +151,6 @@ export function makeSnapStore(
         // ignore
       }
     }
-    return result;
   }
 
   /**
@@ -212,16 +212,22 @@ export function makeSnapStore(
    */
   async function save(saveRaw) {
     return withTempName(async tmpFilePath => {
-      const t0 = /** @type {number} */ (now());
-      await saveRaw(tmpFilePath);
-      const rawSaveMillisec = /** @type {number} */ (now()) - t0;
+      const { duration: rawSaveSeconds } = await measureSeconds(() =>
+        saveRaw(tmpFilePath),
+      );
       const { size: rawByteCount } = await stat(tmpFilePath);
-      const hash = await fileHash(tmpFilePath);
-      if (toDelete.has(hash)) {
-        toDelete.delete(hash);
-      }
+      const { result: hash, duration: hashSeconds } = await measureSeconds(() =>
+        fileHash(tmpFilePath),
+      );
+      toDelete.delete(hash);
       const filePath = hashPath(hash);
-      const info = { filePath, hash, rawByteCount, rawSaveMillisec };
+      const info = {
+        filePath,
+        hash,
+        rawByteCount,
+        rawSaveSeconds,
+        hashSeconds,
+      };
       const fileStat = await stat(filePath).catch(e => {
         if (e.code === 'ENOENT') {
           return undefined;
@@ -231,12 +237,13 @@ export function makeSnapStore(
       if (fileStat) {
         return freeze(info);
       }
-      const t1 = /** @type {number} */ (now());
-      const { size: compressedByteCount } = await atomicWrite(filePath, gztmp =>
-        filter(tmpFilePath, createGzip(), gztmp, { flush: true }),
+      const { duration: compressSeconds } = await measureSeconds(() =>
+        atomicWrite(filePath, gztmp =>
+          filter(tmpFilePath, createGzip(), gztmp, { flush: true }),
+        ),
       );
-      const compressMillisec = /** @type {number} */ (now()) - t1;
-      return freeze({ ...info, compressMillisec, compressedByteCount });
+      const { size: compressedByteCount } = await stat(filePath);
+      return freeze({ ...info, compressSeconds, compressedByteCount });
     }, 'save-raw');
   }
 
