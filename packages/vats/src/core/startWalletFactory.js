@@ -1,8 +1,9 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
-import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { BridgeId as BRIDGE_ID, deeplyFulfilledObject } from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
+import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '../lib-chainStorage.js';
 import { Stable } from '../tokens.js';
 
@@ -17,10 +18,93 @@ const startFactoryInstance = (zoe, inst) => E(zoe).startInstance(inst);
 const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
 
 /**
+ *
+ * @param {{
+ *   zoe: ERef<ZoeService>,
+ *   governedContractInstallation: ERef<Installation>,
+ *   issuerKeywordRecord?: IssuerKeywordRecord,
+ *   terms: Record<string, unknown>,
+ *   privateArgs: any, // TODO: connect with Installation type
+ * }} zoeArgs
+ * @param {{
+ *   governedParams: Record<string, unknown>,
+ *   timer: ERef<TimerService>,
+ *   contractGovernor: ERef<Installation>,
+ *   economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet']
+ * }} govArgs
+ */
+const startGovernedInstance = async (
+  {
+    zoe,
+    governedContractInstallation,
+    issuerKeywordRecord,
+    terms,
+    privateArgs,
+  },
+  { governedParams, timer, contractGovernor, economicCommitteeCreatorFacet },
+) => {
+  const poserInvitationP = E(
+    economicCommitteeCreatorFacet,
+  ).getPoserInvitation();
+  const [initialPoserInvitation, electorateInvitationAmount] =
+    await Promise.all([
+      poserInvitationP,
+      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+    ]);
+
+  const governorTerms = await deeplyFulfilledObject(
+    harden({
+      timer,
+      governedContractInstallation,
+      governed: {
+        terms: {
+          ...terms,
+          governedParams: {
+            [CONTRACT_ELECTORATE]: {
+              type: ParamTypes.INVITATION,
+              value: electorateInvitationAmount,
+            },
+            ...governedParams,
+          },
+        },
+        issuerKeywordRecord,
+      },
+    }),
+  );
+  const governorFacets = await E(zoe).startInstance(
+    contractGovernor,
+    {},
+    governorTerms,
+    harden({
+      economicCommitteeCreatorFacet,
+      governed: {
+        ...privateArgs,
+        initialPoserInvitation,
+      },
+    }),
+  );
+  const [instance, creatorFacet, adminFacet] = await Promise.all([
+    E(governorFacets.creatorFacet).getInstance(),
+    E(governorFacets.creatorFacet).getCreatorFacet(),
+    E(governorFacets.creatorFacet).getAdminFacet(),
+  ]);
+  const facets = {
+    instance,
+    governor: governorFacets.instance,
+    creatorFacet,
+    adminFacet,
+    governorCreatorFacet: governorFacets.creatorFacet,
+  };
+  return facets;
+};
+
+/**
  * Register for PLEASE_PROVISION bridge messages and handle
  * them by providing a smart wallet from the wallet factory.
  *
- * @param {BootstrapPowers} param0
+ * @param {BootstrapPowers & PromiseSpaceOf<{
+ *   economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet
+ * }>} powers
  * @param {{
  *   options?: {
  *     perAccountInitialValue?: bigint
@@ -38,10 +122,12 @@ export const startWalletFactory = async (
       namesByAddress,
       namesByAddressAdmin: namesByAddressAdminP,
       zoe,
+      chainTimerService,
+      economicCommitteeCreatorFacet,
     },
     produce: { client, walletFactoryStartResult, provisionPoolStartResult },
     installation: {
-      consume: { walletFactory, provisionPool },
+      consume: { walletFactory, provisionPool, contractGovernor },
     },
     brand: {
       consume: { [Stable.symbol]: feeBrandP },
@@ -52,7 +138,8 @@ export const startWalletFactory = async (
   },
   { options: { perAccountInitialValue = (StableUnit * 25n) / 100n } = {} } = {},
 ) => {
-  const STORAGE_PATH = 'wallet';
+  const WALLET_STORAGE_PATH = 'wallet';
+  const POOL_STORAGE_PATH = 'provisionPool';
   const [bridgeManager, poolAddr] = await Promise.all([
     bridgeManagerP,
     E(bankManager).getModuleAccountAddress('vbank/provision'),
@@ -68,13 +155,19 @@ export const startWalletFactory = async (
     );
     return;
   }
-  const [storageNode, namesByAddressAdmin, feeBrand, feeIssuer] =
-    await Promise.all([
-      makeStorageNodeChild(chainStorage, STORAGE_PATH),
-      namesByAddressAdminP,
-      feeBrandP,
-      feeIssuerP,
-    ]);
+  const [
+    walletStorageNode,
+    poolStorageNode,
+    namesByAddressAdmin,
+    feeBrand,
+    feeIssuer,
+  ] = await Promise.all([
+    makeStorageNodeChild(chainStorage, WALLET_STORAGE_PATH),
+    makeStorageNodeChild(chainStorage, POOL_STORAGE_PATH),
+    namesByAddressAdminP,
+    feeBrandP,
+    feeIssuerP,
+  ]);
 
   const terms = await deeplyFulfilled(
     harden({
@@ -89,7 +182,7 @@ export const startWalletFactory = async (
     { Fee: feeIssuer },
     terms,
     {
-      storageNode,
+      storageNode: walletStorageNode,
       // POLA contract only needs to register for srcId='wallet'
       // TODO consider a scoped attenuation of this bridge manager to just 'wallet'
       bridgeManager,
@@ -97,17 +190,32 @@ export const startWalletFactory = async (
   );
   walletFactoryStartResult.resolve(wfFacets);
   const poolBank = E(bankManager).getBankForAddress(poolAddr);
-  const ppTerms = harden({
-    perAccountInitialAmount: AmountMath.make(feeBrand, perAccountInitialValue),
-  });
 
-  /** @type {Awaited<ReturnType<typeof import('../provisionPool').start>>} */
-  const ppFacets = await E(zoe).startInstance(
-    provisionPool,
-    undefined,
-    ppTerms,
-    harden({ poolBank }),
+  const ppFacets = await startGovernedInstance(
+    // zoe.startInstance() args
+    {
+      zoe,
+      governedContractInstallation: provisionPool,
+      terms: {},
+      privateArgs: harden({
+        poolBank,
+        storageNode: poolStorageNode,
+        marshaller: E(board).getPublishingMarshaller(),
+      }),
+    },
+    {
+      governedParams: {
+        PerAccountInitialAmount: {
+          type: ParamTypes.AMOUNT,
+          value: AmountMath.make(feeBrand, perAccountInitialValue),
+        },
+      },
+      timer: chainTimerService,
+      contractGovernor,
+      economicCommitteeCreatorFacet,
+    },
   );
+
   provisionPoolStartResult.resolve(ppFacets);
 
   const handler = await E(ppFacets.creatorFacet).makeHandler({
@@ -142,6 +250,8 @@ export const WALLET_FACTORY_MANIFEST = {
       namesByAddress: true,
       namesByAddressAdmin: true,
       zoe: 'zoe',
+      chainTimerService: 'timer',
+      economicCommitteeCreatorFacet: 'economicCommittee',
     },
     produce: {
       client: true, // dummy client in this configuration
@@ -149,7 +259,11 @@ export const WALLET_FACTORY_MANIFEST = {
       provisionPoolStartResult: true,
     },
     installation: {
-      consume: { walletFactory: 'zoe', provisionPool: 'zoe' },
+      consume: {
+        walletFactory: 'zoe',
+        provisionPool: 'zoe',
+        contractGovernor: 'zoe',
+      },
     },
     brand: {
       consume: { [Stable.symbol]: 'zoe' },
