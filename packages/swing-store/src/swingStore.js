@@ -49,7 +49,7 @@ export function makeSnapStoreIO() {
  *   delete: (key: string) => void,
  * }} KVStore
  *
- * @typedef { import('./snapStore').SnapStore<*> } SnapStore
+ * @typedef { import('./snapStore').SnapStore } SnapStore
  *
  * @typedef { import('./snapStore').SnapshotInfo } SnapshotInfo
  *

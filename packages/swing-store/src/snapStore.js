@@ -17,10 +17,9 @@ import { promisify } from 'util';
  */
 
 /**
- * @template T
  * @typedef {{
  *   has: (hash: string) => Promise<boolean>,
- *   load: (hash: string, loadRaw: (filePath: string) => Promise<T>) => Promise<T>,
+ *   load: <T>(hash: string, loadRaw: (filePath: string) => Promise<T>) => Promise<T>,
  *   save: (saveRaw: (filePath: string) => Promise<void>) => Promise<SnapshotInfo>,
  *   prepareToDelete: (hash: string) => void,
  *   commitDeletes: (ignoreErrors?: boolean) => Promise<void>,
@@ -73,7 +72,6 @@ export const fsStreamReady = stream =>
   });
 
 /**
- * @template T
  * @param {string} root
  * @param {{
  *   tmpName: typeof import('tmp').tmpName,
@@ -88,7 +86,7 @@ export const fsStreamReady = stream =>
  * }} io
  * @param {object} [options]
  * @param {boolean | undefined} [options.keepSnapshots]
- * @returns {SnapStore<T>}
+ * @returns {SnapStore}
  */
 export function makeSnapStore(
   root,
