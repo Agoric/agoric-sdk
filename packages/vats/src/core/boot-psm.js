@@ -72,6 +72,8 @@ export const agoricNamesReserved = harden(
     instance: {
       economicCommittee: 'Economic Committee',
       'psm-IST-AUSD': 'Parity Stability Module: IST:AUSD',
+      walletFactory: 'Smart Wallet Factory',
+      provisionPool: 'Provision Pool',
     },
   }),
 );

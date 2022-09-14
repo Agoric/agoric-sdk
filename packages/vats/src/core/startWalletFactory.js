@@ -129,6 +129,7 @@ export const startWalletFactory = async (
     installation: {
       consume: { walletFactory, provisionPool, contractGovernor },
     },
+    instance: { produce: instanceProduce },
     brand: {
       consume: { [Stable.symbol]: feeBrandP },
     },
@@ -189,6 +190,7 @@ export const startWalletFactory = async (
     },
   );
   walletFactoryStartResult.resolve(wfFacets);
+  instanceProduce.walletFactory.resolve(wfFacets.instance);
   const poolBank = E(bankManager).getBankForAddress(poolAddr);
 
   const ppFacets = await startGovernedInstance(
@@ -215,6 +217,7 @@ export const startWalletFactory = async (
       economicCommitteeCreatorFacet,
     },
   );
+  instanceProduce.provisionPool.resolve(ppFacets.instance);
 
   provisionPoolStartResult.resolve(ppFacets);
 
@@ -270,6 +273,12 @@ export const WALLET_FACTORY_MANIFEST = {
     },
     issuer: {
       consume: { [Stable.symbol]: 'zoe' },
+    },
+    instance: {
+      produce: {
+        provisionPool: 'provisionPool',
+        walletFactory: 'walletFactory',
+      },
     },
   },
 };
