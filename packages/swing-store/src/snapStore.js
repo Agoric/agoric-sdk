@@ -76,7 +76,7 @@ export const fsStreamReady = stream =>
  *   tmpName: typeof import('tmp').tmpName,
  *   createReadStream: typeof import('fs').createReadStream,
  *   createWriteStream: typeof import('fs').createWriteStream,
- *   measureSeconds: <T>(fn: () => T | PromiseLike<T>) => Promise<{ result: T, duration: number }>,
+ *   measureSeconds: <T>(fn: () => Promise<T>) => Promise<{ result: T, duration: number }>,
  *   open: typeof import('fs').promises.open,
  *   resolve: typeof import('path').resolve,
  *   rename: typeof import('fs').promises.rename,
