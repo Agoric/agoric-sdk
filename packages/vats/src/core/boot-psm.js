@@ -97,6 +97,11 @@ const AnchorOptionsShape = M.split(
   }),
 );
 
+export const ParametersShape = harden({
+  anchorAssets: M.arrayOf(AnchorOptionsShape),
+  economicCommitteeAddresses: M.recordOf(M.string(), M.string()),
+});
+
 /**
  * Build root object of the PSM-only bootstrap vat.
  *
@@ -112,13 +117,8 @@ const AnchorOptionsShape = M.split(
 export const buildRootObject = (vatPowers, vatParameters) => {
   const log = vatPowers.logger || console.info;
 
+  fit(harden(vatParameters), ParametersShape, 'boot-psm params');
   const { anchorAssets, economicCommitteeAddresses } = vatParameters;
-  fit(harden(anchorAssets), M.arrayOf(AnchorOptionsShape), 'anchorAssets');
-  fit(
-    harden(economicCommitteeAddresses),
-    M.recordOf(M.string(), M.string()),
-    'economicCommitteeAddresses',
-  );
 
   const { produce, consume } = makePromiseSpace(log);
   const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(
