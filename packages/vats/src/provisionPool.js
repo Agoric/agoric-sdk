@@ -27,7 +27,7 @@ const privateArgsShape = harden({
  * Metrics naming scheme is that nouns are present values and past-participles
  * are accumulative.
  *
- * @property {bigint} provisionedCount  count of new wallets provisioned
+ * @property {bigint} walletsProvisioned  count of new wallets provisioned
  * @property {Amount<'nat'>} totalMintedProvided  running sum of Minted provided to new wallets
  * @property {Amount<'nat'>} totalMintedConverted  running sum of Minted
  * ever received by the contract from PSM
@@ -135,10 +135,10 @@ export const start = async (zcf, privateArgs) => {
     privateArgs.storageNode,
     privateArgs.marshaller,
   );
-  const updateMetrics = provisionedCount => {
+  const updateMetrics = walletsProvisioned => {
     metricsPublisher.publish(
       harden({
-        provisionedCount,
+        walletsProvisioned,
         totalMintedProvided,
         totalMintedConverted,
       }),
