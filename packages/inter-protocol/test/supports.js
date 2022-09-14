@@ -175,10 +175,7 @@ export const produceInstallations = (space, installations) => {
 };
 
 /**
- * @param {object} kit
- * @param {Brand<'nat'>} kit.brand
- * @param {Issuer<'nat'>} [kit.issuer]
- * @param {Mint<'nat'>} [kit.mint]
+ * @param {Pick<IssuerKit<'nat'>, 'brand' | 'issuer' | 'mint'>} kit
  */
 export const withAmountUtils = kit => {
   return {

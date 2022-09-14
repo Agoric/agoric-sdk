@@ -117,6 +117,7 @@ test.before(async t => {
 /** @param {Awaited<ReturnType<typeof makeTestContext>>} context */
 const tools = context => {
   const { zoe, anchor, installs } = context;
+  // @ts-expect-error missing mint
   const minted = withAmountUtils(context.minted);
   const makeBank = () => {
     const issuers = makeScalarMap();
