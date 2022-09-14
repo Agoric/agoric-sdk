@@ -13,9 +13,6 @@ import { simpleOffers } from '../lib/psm.js';
 import { makeRpcUtils, networkConfig } from '../lib/rpc.js';
 import { getWalletState } from '../lib/wallet.js';
 
-// Ambient types. Needed only for dev but this does a runtime import.
-import '@agoric/vats/src/core/types.js';
-import '@agoric/vats/src/types.js';
 import { makeLeaderOptions } from '../lib/casting.js';
 import { normalizeAddress } from '../lib/keys.js';
 
