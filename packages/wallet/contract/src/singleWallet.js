@@ -21,6 +21,8 @@ const { assign, entries, keys, fromEntries } = Object;
  *   myAddressNameAdmin: ERef<MyAddressNameAdmin>,
  *   namesByAddress: ERef<NameHub>,
  * }} SmartWalletContractTerms
+ *
+ * @typedef {import('@agoric/vats/src/nameHub').NameHub} NameHub
  */
 
 /**
