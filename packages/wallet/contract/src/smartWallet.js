@@ -22,6 +22,8 @@ const { assign, entries, keys, fromEntries } = Object;
  * storageNode: ERef<StorageNode>,
  * zoe: ERef<ZoeService>,
  * }} shared
+ *
+ * @typedef {import('@agoric/vats/src/nameHub').NameHub} NameHub
  */
 export const makeSmartWallet = async (
   { address, bank, myAddressNameAdmin },

@@ -13,6 +13,7 @@ import { E } from '@endo/far';
  * namesByAddress: ERef<NameHub>,
  * zoe: ERef<ZoeService>,
  * }} terms
+ * @typedef {import('@agoric/vats/src/nameHub').NameHub} NameHub
  */
 export async function makeWallet(bank, terms) {
   const legacyRootObject = buildRootObject();
