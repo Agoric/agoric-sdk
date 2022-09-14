@@ -70,11 +70,30 @@ export const makeInvitationsHelper = (
       assert(instance && description, 'missing instance or description');
       /** @type {Amount<'set'>} */
       const purseAmount = await E(invitationsPurse).getCurrentAmount();
-      const match = AmountMath.getValue(invitationBrand, purseAmount).find(
+      const invitations = AmountMath.getValue(invitationBrand, purseAmount);
+
+      const matches = invitations.filter(
         details =>
-          details.description === description && details.instance === instance,
+          description === details.description && instance === details.instance,
       );
-      assert(match, `no matching invitation for ${description}`);
+      if (matches.length === 0) {
+        // look up diagnostic info
+        const dCount = invitations.filter(
+          details => description === details.description,
+        ).length;
+        const iCount = invitations.filter(
+          details => instance === details.instance,
+        ).length;
+        assert.fail(
+          `no invitation match (${dCount} description and ${iCount} instance)`,
+        );
+      } else if (matches.length > 1) {
+        // TODO? allow further disambiguation
+        console.warn('multiple invitation matches, picking the first');
+      }
+
+      const match = matches[0];
+
       const toWithDraw = AmountMath.make(invitationBrand, harden([match]));
       console.log('.... ', { toWithDraw });
 
