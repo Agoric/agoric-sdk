@@ -138,7 +138,10 @@ export function makeSnapStore(
    * @returns {Promise<void>}
    */
   async function atomicWrite(dest, thunk) {
-    const tmp = await ptmpName({ tmpdir: root, template: 'atomic-XXXXXX' });
+    // Atomicity requires remaining on the same filesystem,
+    // so we perform all operations in the destination directory.
+    const dir = resolve(dest, '..');
+    const tmp = await ptmpName({ tmpdir: dir, template: 'atomic-XXXXXX' });
     try {
       await thunk(tmp);
       await rename(tmp, dest);
