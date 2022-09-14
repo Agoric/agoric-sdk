@@ -125,7 +125,6 @@ export const startInterchainPool = async (
     { Central: centralIssuer },
     terms,
     {
-      // @ts-expect-error XXX remotable types
       bankManager,
     },
   );

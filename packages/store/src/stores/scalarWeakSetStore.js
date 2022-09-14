@@ -81,11 +81,8 @@ export const makeScalarWeakSetStore = (
     // TODO: Just a transition kludge. Remove when possible.
     // See https://github.com/Agoric/agoric-sdk/issues/3606
     harden(key);
-
-    assert(
-      passStyleOf(key) === 'remotable',
-      X`Only remotables can be keys of scalar WeakStores: ${key}`,
-    );
+    passStyleOf(key) === 'remotable' ||
+      assert.fail(X`Only remotables can be keys of scalar WeakStores: ${key}`);
     if (keyShape !== undefined) {
       fit(key, keyShape, 'weakSetStore key');
     }

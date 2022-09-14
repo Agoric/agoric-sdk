@@ -24,11 +24,8 @@ const build = async (log, zoe, issuers, payments, installations) => {
       const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
         invitation,
       );
-
-      assert(
-        installation === installations.secondPriceAuction,
-        X`wrong installation`,
-      );
+      installation === installations.secondPriceAuction ||
+        assert.fail(X`wrong installation`);
       assert(
         keyEQ(
           harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),

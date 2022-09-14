@@ -221,7 +221,7 @@ fund-acct: wait-for-cosmos
 provision-acct: wait-for-cosmos
 	$(AGCH) --chain-id=$(CHAIN_ID) \
 	  --home=t1/bootstrap --keyring-backend=test --from=bootstrap \
-	  tx swingset provision-one t1/$(BASE_PORT) $(ACCT_ADDR) $(AGORIC_POWERS) \
+	  tx swingset provision-one t1/$(BASE_PORT) $(ACCT_ADDR) SMART_WALLET \
 	  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes
 
 FROM_KEY=bootstrap

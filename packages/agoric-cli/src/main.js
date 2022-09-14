@@ -1,3 +1,4 @@
+/* eslint-disable @jessie.js/no-nested-await */
 /* global process */
 import { Command } from 'commander';
 import path from 'path';
@@ -8,12 +9,14 @@ import {
 } from '@agoric/casting';
 import cosmosMain from './cosmos.js';
 import deployMain from './deploy.js';
+import publishMain from './main-publish.js';
 import initMain from './init.js';
 import installMain from './install.js';
 import setDefaultsMain from './set-defaults.js';
 import startMain from './start.js';
 import followMain from './follow.js';
 import walletMain from './open.js';
+import { makeWalletCommand } from './commands/wallet.js';
 
 const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
 const DEFAULT_DAPP_URL_BASE = 'https://github.com/Agoric/';
@@ -221,6 +224,18 @@ const main = async (progname, rawArgs, powers) => {
       },
       'justin',
     )
+    .option(
+      '-l, --lossy',
+      'show only the most recent value for each sample interval',
+    )
+    .option(
+      '-b, --block-height',
+      'show first block height when each value was stored',
+    )
+    .option(
+      '-c, --current-block-height',
+      'show current block height when each value is reported',
+    )
     .option('-B, --bootstrap <config>', 'network bootstrap configuration')
     .action(async (pathSpecs, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
@@ -276,6 +291,29 @@ const main = async (progname, rawArgs, powers) => {
     const opts = { ...program.opts(), ...cmd.opts() };
     return subMain(deployMain, ['deploy', ...scripts], opts);
   });
+
+  addRunOptions(
+    program
+      .command('publish [bundle...]')
+      .option(
+        '-n, --node <rpcAddress>',
+        '[required] A bare IPv4 address or fully qualified URL of an RPC node',
+      )
+      .option(
+        '-h, --home <directory>',
+        "[required] Path to the directory containing ag-solo-mnemonic, for the publisher's wallet mnemonic",
+      )
+      .option(
+        '-c, --chain-id <chainID>',
+        'The ID of the destination chain, if not simply "agoric"',
+      )
+      .description('publish a bundle to a Cosmos chain'),
+  ).action(async (bundles, cmd) => {
+    const opts = { ...program.opts(), ...cmd.opts() };
+    return subMain(publishMain, ['publish', ...bundles], opts);
+  });
+
+  program.addCommand(await makeWalletCommand());
 
   program
     .command('start [profile] [args...]')

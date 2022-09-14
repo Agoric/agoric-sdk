@@ -297,11 +297,10 @@ export function makeOnewayPriceAuthorityKit(opts) {
         // We need to determine an amountIn that guarantees at least the amountOut.
         const amountIn = calcAmountIn(amountOut);
         const actualAmountOut = calcAmountOut(amountIn);
-
-        assert(
-          AmountMath.isGTE(actualAmountOut, amountOut),
-          X`Calculation of ${actualAmountOut} didn't cover expected ${amountOut}`,
-        );
+        AmountMath.isGTE(actualAmountOut, amountOut) ||
+          assert.fail(
+            X`Calculation of ${actualAmountOut} didn't cover expected ${amountOut}`,
+          );
         return { amountIn, amountOut };
       });
       assert(quote);

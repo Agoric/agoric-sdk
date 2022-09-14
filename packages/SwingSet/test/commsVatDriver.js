@@ -185,10 +185,8 @@ function loggingSyscall(log) {
  * @returns {string} the ref embedded within `scriptRef`
  */
 function refOf(scriptRef) {
-  assert(
-    scriptRef[0] === '@',
-    X`expected reference ${scriptRef} to start with '@'`,
-  );
+  scriptRef[0] === '@' ||
+    assert.fail(X`expected reference ${scriptRef} to start with '@'`);
   const delim = scriptRef.indexOf(':');
   let ref;
   if (delim < 0) {

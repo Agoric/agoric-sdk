@@ -143,10 +143,8 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
     const worker = doXSnap({ handleCommand, name, ...meterOpts, ...xsnapOpts });
 
     for (const bundle of bundles) {
-      assert(
-        bundle.moduleFormat === 'getExport',
-        X`unexpected: ${bundle.moduleFormat}`,
-      );
+      bundle.moduleFormat === 'getExport' ||
+        assert.fail(X`unexpected: ${bundle.moduleFormat}`);
       // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       await worker.evaluate(`(${bundle.source}\n)()`.trim());
     }

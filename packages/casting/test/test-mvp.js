@@ -4,6 +4,7 @@ import { test } from './prepare-test-env-ava.js';
 
 import {
   iterateLatest,
+  iterateEach,
   makeFollower,
   makeLeader,
   makeCastingSpec,
@@ -17,15 +18,20 @@ const testHappyPath = (label, ...input) => {
   // eslint-disable-next-line no-shadow
   const title = label => `happy path ${label}`;
   const makeExec =
-    ({ fakeValues, options }) =>
+    ({ fakeValues, iterate, start = 0, stride = 1, expectedValues, options }) =>
     async t => {
-      const expected = fakeValues;
+      const expected = expectedValues ?? [...fakeValues];
       t.plan(expected.length);
-      const PORT = await t.context.startFakeServer(t, [...expected], options);
+      const { controller, PORT } = await t.context.startFakeServer(
+        t,
+        fakeValues,
+        options,
+      );
+      controller.advance(start);
       /** @type {import('../src/types.js').LeaderOptions} */
       const lo = {
         retryCallback: null, // fail fast, no retries
-        keepPolling: () => delay(200).then(() => true), // poll really quickly
+        keepPolling: () => delay(1000).then(() => true), // poll really quickly
         jitter: null, // no jitter
       };
       /** @type {import('../src/types.js').FollowerOptions} */
@@ -38,7 +44,7 @@ const testHappyPath = (label, ...input) => {
       const leader = makeLeader(`http://localhost:${PORT}/network-config`, lo);
       const castingSpec = makeCastingSpec(':mailbox.agoric1foobarbaz');
       const follower = await makeFollower(castingSpec, leader, so);
-      for await (const { value } of iterateLatest(follower)) {
+      for await (const { value } of iterate(follower)) {
         t.log(`here's a mailbox value`, value);
 
         // The rest here is to drive the test.
@@ -46,26 +52,85 @@ const testHappyPath = (label, ...input) => {
         if (expected.length === 0) {
           break;
         }
+        controller.advance(stride);
       }
     };
   test(title(label), makeExec(...input));
 };
 
-testHappyPath('naked values', {
+testHappyPath('each legacy cells', {
   fakeValues: ['latest', 'later', 'done'],
+  iterate: iterateEach,
   options: {},
 });
-testHappyPath('batchSize=1', {
+
+testHappyPath('each stream cells batchSize=1', {
   fakeValues: ['latest', 'later', 'done'],
+  iterate: iterateEach,
   options: { batchSize: 1 },
 });
-testHappyPath('batchSize=2', {
+
+testHappyPath('each stream cells batchSize=2', {
   fakeValues: ['latest', 'later', 'done'],
+  iterate: iterateEach,
   options: { batchSize: 2 },
 });
 
+testHappyPath('latest legacy cells', {
+  fakeValues: ['latest', 'later', 'done'],
+  iterate: iterateLatest,
+  options: {},
+});
+
+testHappyPath('latest stream cells batchSize=1', {
+  fakeValues: ['latest', 'later', 'done'],
+  iterate: iterateLatest,
+  options: { batchSize: 1 },
+});
+
+testHappyPath('latest stream cells batchSize=2', {
+  fakeValues: ['latest', 'later', 'done'],
+  expectedValues: [
+    /* latest skipped because not final in batch */ 'later',
+    'done',
+  ],
+  iterate: iterateLatest,
+  options: { batchSize: 2 },
+});
+
+testHappyPath('latest stream cells batchSize=2 stride=1', {
+  fakeValues: ['a1', 'a2', 'b1', 'b2', 'c'],
+  expectedValues: ['a2', 'b1', 'b2', 'c'],
+  iterate: iterateLatest,
+  options: { batchSize: 2 },
+});
+
+testHappyPath('latest stream cells batchSize=2 stride=2', {
+  fakeValues: ['a1', 'a2', 'b1', 'b2', 'c'],
+  expectedValues: ['a2', 'b2', 'c'],
+  iterate: iterateLatest,
+  stride: 2,
+  options: { batchSize: 2 },
+});
+
+testHappyPath('latest legacy cells, start at 1', {
+  fakeValues: ['latest', 'later', 'done'],
+  expectedValues: ['later', 'done'],
+  iterate: iterateLatest,
+  start: 1,
+  options: {},
+});
+
+testHappyPath('latest legacy cells, stride by 2', {
+  fakeValues: ['latest', 'later', 'done'],
+  expectedValues: ['latest', /* skip later */ 'done'],
+  iterate: iterateLatest,
+  stride: 2,
+  options: {},
+});
+
 test('bad network config', async t => {
-  const PORT = await t.context.startFakeServer(t, []);
+  const { PORT } = await t.context.startFakeServer(t, []);
   await t.throwsAsync(
     () =>
       makeLeader(`http://localhost:${PORT}/bad-network-config`, {
@@ -79,7 +144,7 @@ test('bad network config', async t => {
 });
 
 test('missing rpc server', async t => {
-  const PORT = await t.context.startFakeServer(t, []);
+  const { PORT } = await t.context.startFakeServer(t, []);
   await t.throwsAsync(
     () =>
       makeLeader(`http://localhost:${PORT}/missing-network-config`, {

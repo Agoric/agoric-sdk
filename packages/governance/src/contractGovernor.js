@@ -149,11 +149,10 @@ const start = async (zcf, privateArgs) => {
       terms: contractTerms,
     },
   } = zcf.getTerms();
-
-  assert(
-    contractTerms.governedParams[CONTRACT_ELECTORATE],
-    X`Contract must declare ${CONTRACT_ELECTORATE} as a governed parameter`,
-  );
+  contractTerms.governedParams[CONTRACT_ELECTORATE] ||
+    assert.fail(
+      X`Contract must declare ${CONTRACT_ELECTORATE} as a governed parameter`,
+    );
 
   const augmentedTerms = harden({
     ...contractTerms,

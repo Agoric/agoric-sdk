@@ -57,10 +57,10 @@ export const makeStakeReporter = (bridgeManager, brand, denom = 'ubld') => {
       return changeLiened(address, delta);
     },
     getAccountState: async (address, wantedBrand) => {
-      assert(
-        wantedBrand === brand,
-        X`Cannot getAccountState for ${wantedBrand}. Expected ${brand}.`,
-      );
+      wantedBrand === brand ||
+        assert.fail(
+          X`Cannot getAccountState for ${wantedBrand}. Expected ${brand}.`,
+        );
       /** @type { AccountState<string> } */
       const { currentTime, bonded, liened, locked, total, unbonding } = await E(
         bridgeManager,

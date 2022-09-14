@@ -129,10 +129,8 @@ export const extractCoreProposalBundles = async (
       };
       const publishRef = async handleP => {
         const handle = await handleP;
-        assert(
-          bundleHandleToAbsolutePaths.has(handle),
-          X`${handle} not in installed bundles`,
-        );
+        bundleHandleToAbsolutePaths.has(handle) ||
+          assert.fail(X`${handle} not in installed bundles`);
         return handle;
       };
       const proposal = await ns[entrypoint]({ publishRef, install }, ...args);

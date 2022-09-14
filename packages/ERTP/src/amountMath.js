@@ -25,11 +25,12 @@ const AssetKind = harden({
 const assetKindNames = harden(Object.values(AssetKind).sort());
 
 /** @type {AssertAssetKind} */
-const assertAssetKind = allegedAK =>
-  assert(
-    assetKindNames.includes(allegedAK),
-    X`The assetKind ${allegedAK} must be one of ${q(assetKindNames)}`,
-  );
+const assertAssetKind = allegedAK => {
+  assetKindNames.includes(allegedAK) ||
+    assert.fail(
+      X`The assetKind ${allegedAK} must be one of ${q(assetKindNames)}`,
+    );
+};
 harden(assertAssetKind);
 
 /**
@@ -222,10 +223,10 @@ const AmountMath = {
     assertRemotable(brand, 'brand');
     assertRecord(allegedAmount, 'amount');
     const { brand: allegedBrand, value: allegedValue } = allegedAmount;
-    assert(
-      brand === allegedBrand,
-      X`The brand in the allegedAmount ${allegedAmount} in 'coerce' didn't match the specified brand ${brand}.`,
-    );
+    brand === allegedBrand ||
+      assert.fail(
+        X`The brand in the allegedAmount ${allegedAmount} in 'coerce' didn't match the specified brand ${brand}.`,
+      );
     // Will throw on inappropriate value
     return AmountMath.make(brand, allegedValue);
   },

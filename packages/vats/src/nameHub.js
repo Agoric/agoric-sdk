@@ -111,10 +111,8 @@ export const makeNameHubKit = () => {
       if (keyToRecord.has(key)) {
         record = keyToRecord.get(key);
       }
-      assert(
-        record && !record.promise,
-        X`key ${key} is not already initialized`,
-      );
+      (record && !record.promise) ||
+        assert.fail(X`key ${key} is not already initialized`);
       nameAdmin.update(key, newValue, adminValue);
     },
     onUpdate: fn => {

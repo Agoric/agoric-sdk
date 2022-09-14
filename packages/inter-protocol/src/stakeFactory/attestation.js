@@ -70,10 +70,10 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
 
   /** @param {Amount<'copyBag'>} attestationAmount */
   const unwrapLienedAmount = attestationAmount => {
-    assert(
-      attestationAmount.brand === attBrand,
-      X`The escrowed attestation ${attestationAmount} was not of the attestation brand ${attBrand}`,
-    );
+    attestationAmount.brand === attBrand ||
+      assert.fail(
+        X`The escrowed attestation ${attestationAmount} was not of the attestation brand ${attBrand}`,
+      );
     fit(
       attestationAmount.value.payload,
       harden([[M.string(), M.bigint()]]),

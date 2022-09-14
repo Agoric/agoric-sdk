@@ -196,7 +196,6 @@ async function makePsmDriver(t, customTerms) {
         give: { In: giveAnchor },
         ...(wantMinted ? { want: { Out: wantMinted } } : {}),
       }),
-      // @ts-expect-error known defined
       harden({ In: anchor.mint.mintPayment(giveAnchor) }),
     );
     await eventLoopIteration();
@@ -292,7 +291,6 @@ test('simple trades', async t => {
     giveRun,
   );
   const anchorPayouts = await driver.swapMintedForAnchor(giveRun, runPayment);
-  // @ts-expect-error known non-null
   const actualAnchor = await E(anchor.issuer).getAmountOf(anchorPayouts.Out);
   const expectedAnchor = AmountMath.make(
     anchor.brand,
@@ -332,7 +330,6 @@ test('limit', async t => {
   // const actualRun = await E(runIssuer).getAmountOf(runPayout);
   // t.deepEqual(actualRun, AmountMath.makeEmpty(runBrand));
   const anchorReturn = await paymentPs.In;
-  // @ts-expect-error known non-null
   const actualAnchor = await E(anchor.issuer).getAmountOf(anchorReturn);
   t.deepEqual(actualAnchor, give);
   // The pool should be unchanged
@@ -462,7 +459,6 @@ test('anchor is 2x minted', async t => {
     giveRun,
   );
   const anchorPayouts = await driver.swapMintedForAnchor(giveRun, runPayment);
-  // @ts-expect-error known non-null
   const actualAnchor = await E(anchor.issuer).getAmountOf(anchorPayouts.Out);
   const expectedAnchor = floorMultiplyBy(
     minusMintedFee(giveRun),

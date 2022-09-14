@@ -50,10 +50,10 @@ export const running = (process, { exec, spawn }) => {
 
     needBacktick: async cmd => {
       const ret = await it.getStdout(cmd);
-      assert(
-        ret.code === 0,
-        X`Unexpected ${JSON.stringify(cmd)} exit code: ${ret.code}`,
-      );
+      ret.code === 0 ||
+        assert.fail(
+          X`Unexpected ${JSON.stringify(cmd)} exit code: ${ret.code}`,
+        );
       return ret.stdout;
     },
     cwd: () => process.cwd(),

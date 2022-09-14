@@ -8,6 +8,7 @@ import bundleCentralSupply from '../bundles/bundle-centralSupply.js';
 import bundleMintHolder from '../bundles/bundle-mintHolder.js';
 import bundleSingleWallet from '../bundles/bundle-singleWallet.js';
 import bundleWalletFactory from '../bundles/bundle-legacy-walletFactory.js';
+import bundleProvisionPool from '../bundles/bundle-provisionPool.js';
 
 const bundles = {
   centralSupply: bundleCentralSupply,
@@ -19,6 +20,7 @@ const bundles = {
   binaryVoteCounter: bundleBinaryVoteCounter,
   psm: bundlePSM,
   psmCharter: bundlePSMCharter,
+  provisionPool: bundleProvisionPool,
 };
 
 export const devices = {

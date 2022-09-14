@@ -14,18 +14,18 @@ export const coerceDisplayInfo = (allegedDisplayInfo, assetKind) => {
   fit(allegedDisplayInfo, DisplayInfoShape, 'displayInfo');
 
   if (allegedDisplayInfo.assetKind !== undefined) {
-    assert(
-      allegedDisplayInfo.assetKind === assetKind,
-      X`displayInfo.assetKind was present (${allegedDisplayInfo.assetKind}) and did not match the assetKind argument (${assetKind})`,
-    );
+    allegedDisplayInfo.assetKind === assetKind ||
+      assert.fail(
+        X`displayInfo.assetKind was present (${allegedDisplayInfo.assetKind}) and did not match the assetKind argument (${assetKind})`,
+      );
   }
   const displayInfo = harden({ ...allegedDisplayInfo, assetKind });
 
   if (displayInfo.decimalPlaces !== undefined) {
-    assert(
-      Number.isSafeInteger(displayInfo.decimalPlaces),
-      X`decimalPlaces ${displayInfo.decimalPlaces} is not a safe integer`,
-    );
+    Number.isSafeInteger(displayInfo.decimalPlaces) ||
+      assert.fail(
+        X`decimalPlaces ${displayInfo.decimalPlaces} is not a safe integer`,
+      );
   }
 
   return displayInfo;

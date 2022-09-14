@@ -14,10 +14,8 @@ import { assert, details as X, q } from '@agoric/assert';
  * @param {U[]} keys
  */
 export const arrayToObj = (array, keys) => {
-  assert(
-    array.length === keys.length,
-    X`array and keys must be of equal length`,
-  );
+  array.length === keys.length ||
+    assert.fail(X`array and keys must be of equal length`);
   const obj =
     /** @type {Record<U, T>} */
     ({});
@@ -34,9 +32,9 @@ export const arrayToObj = (array, keys) => {
 export const assertSubset = (whole, part) => {
   part.forEach(key => {
     assert.typeof(key, 'string');
-    assert(
-      whole.includes(key),
-      X`key ${q(key)} was not one of the expected keys ${q(whole)}`,
-    );
+    whole.includes(key) ||
+      assert.fail(
+        X`key ${q(key)} was not one of the expected keys ${q(whole)}`,
+      );
   });
 };

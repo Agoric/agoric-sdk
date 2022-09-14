@@ -23,10 +23,10 @@ export function makeInbound(state) {
     const lpid = remote.mapFromRemote(rpid);
     assert(lpid, X`unknown remote ${remoteID} promise ${rpid}`);
     const { subscribers } = state.getPromiseSubscribers(lpid);
-    assert(
-      subscribers.indexOf(remoteID) === -1,
-      X`attempt to retire remote ${remoteID} subscribed promise ${rpid}`,
-    );
+    subscribers.indexOf(remoteID) === -1 ||
+      assert.fail(
+        X`attempt to retire remote ${remoteID} subscribed promise ${rpid}`,
+      );
     remote.deleteRemoteMapping(lpid);
     cdebug(`comms delete mapping r<->k ${remoteID} ${rpid}<=>${lpid}`);
   }

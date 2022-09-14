@@ -4,14 +4,13 @@ import { Far, getInterfaceOf } from '@endo/marshal';
 import { decodeToJustin } from '@endo/marshal/src/marshal-justin.js';
 
 import {
-  delay,
   iterateLatest,
+  makeCastingSpec,
+  iterateEach,
   makeFollower,
   makeLeader,
-  makeCastingSpec,
-  exponentialBackoff,
-  randomBackoff,
 } from '@agoric/casting';
+import { makeLeaderOptions } from './lib/casting.js';
 
 export default async function followerMain(progname, rawArgs, powers, opts) {
   const { anylogger } = powers;
@@ -63,14 +62,14 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
     }
     case 'hex': {
       // Dump as hex strings.
-      followerOptions.decode = buf => buf;
+      followerOptions.decode = str => new TextEncoder().encode(str);
       followerOptions.unserializer = null;
       formatOutput = buf =>
         buf.reduce((acc, b) => acc + b.toString(16).padStart(2, '0'), '');
       break;
     }
     case 'text': {
-      followerOptions.decode = buf => new TextDecoder().decode(buf);
+      followerOptions.decode = str => str;
       followerOptions.unserializer = null;
       formatOutput = buf => buf;
       break;
@@ -94,49 +93,34 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
     });
   }
 
-  // TODO: https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
-  /** @type {import('@agoric/casting').LeaderOptions} */
-  const leaderOptions = {
-    retryCallback: (where, e, attempt) => {
-      const backoff = Math.ceil(exponentialBackoff(attempt));
-      verbose &&
-        console.warn(
-          `Retrying ${where} in ${backoff}ms due to:`,
-          e,
-          Error(`attempt #${attempt}`),
-        );
-      return delay(backoff);
-    },
-    keepPolling: async where => {
-      if (!sleep) {
-        return true;
-      }
-      const backoff = Math.ceil(sleep * 1_000);
-      verbose && console.warn(`Repeating ${where} after ${backoff}ms`);
-      await delay(backoff);
-      return true;
-    },
-    jitter: async where => {
-      if (!jitter) {
-        return undefined;
-      }
-      const backoff = Math.ceil(randomBackoff(jitter * 1_000));
-      verbose && console.warn(`Jittering ${where} for ${backoff}ms`);
-      return delay(backoff);
-    },
-  };
+  const leaderOptions = makeLeaderOptions({
+    sleep,
+    jitter,
+    log: verbose ? console.warn : () => undefined,
+  });
 
   const [_cmd, ...specs] = rawArgs;
 
   verbose && console.warn('Creating leader for', bootstrap);
   const leader = makeLeader(bootstrap, leaderOptions);
+  const iterate = opts.lossy ? iterateLatest : iterateEach;
   await Promise.all(
     specs.map(async spec => {
       verbose && console.warn('Following', spec);
       const castingSpec = makeCastingSpec(spec);
       const follower = makeFollower(castingSpec, leader, followerOptions);
-      for await (const { value } of iterateLatest(follower)) {
-        process.stdout.write(`${formatOutput(value)}\n`);
+      for await (const { value, blockHeight, currentBlockHeight } of iterate(
+        follower,
+      )) {
+        const blockHeightPrefix = opts.blockHeight ? `${blockHeight}:` : '';
+        const currentBlockHeightPrefix = opts.currentBlockHeight
+          ? `${currentBlockHeight}:`
+          : '';
+        process.stdout.write(
+          `${blockHeightPrefix}${currentBlockHeightPrefix}${formatOutput(
+            value,
+          )}\n`,
+        );
       }
     }),
   );

@@ -33,10 +33,10 @@ export const makeCloseLoanInvitation = (zcf, config) => {
     const debt = getDebt();
 
     // All debt must be repaid.
-    assert(
-      AmountMath.isGTE(repaid, debt),
-      X`Not enough Loan assets have been repaid.  ${debt} is required, but only ${repaid} was repaid.`,
-    );
+    AmountMath.isGTE(repaid, debt) ||
+      assert.fail(
+        X`Not enough Loan assets have been repaid.  ${debt} is required, but only ${repaid} was repaid.`,
+      );
 
     // Transfer the collateral to the repaySeat and remove the
     // required Loan amount. Any excess Loan amount is kept by the repaySeat.

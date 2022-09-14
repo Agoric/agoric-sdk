@@ -9,4 +9,5 @@ const (
 
 	ReservePoolName  = "vbank/reserve"
 	GiveawayPoolName = "vbank/giveaway"
+	ProvisionPoolName  = "vbank/provision"
 )

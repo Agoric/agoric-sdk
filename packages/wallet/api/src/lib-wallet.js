@@ -667,10 +667,8 @@ export function makeWalletRoot({
     const keywordPaymentPs = Object.entries(proposal.give || harden({})).map(
       async ([keyword, { type, ...amount }]) => {
         const purse = purseKeywordRecord[keyword];
-        assert(
-          purse !== undefined,
-          X`purse was not found for keyword ${q(keyword)}`,
-        );
+        purse !== undefined ||
+          assert.fail(X`purse was not found for keyword ${q(keyword)}`);
 
         if (type === 'Attestation') {
           const payment = await E(attMakerPK.promise).makeAttestation(amount);
@@ -1734,14 +1732,12 @@ export function makeWalletRoot({
     );
 
     const { publicSubscribers } = offerResult;
-    assert(
-      publicSubscribers,
-      X`offerResult ${offerResult} does not have publicSubscribers`,
-    );
-    assert(
-      passStyleOf(publicSubscribers) === 'copyRecord',
-      X`publicSubscribers ${publicSubscribers} must be a record`,
-    );
+    publicSubscribers ||
+      assert.fail(
+        X`offerResult ${offerResult} does not have publicSubscribers`,
+      );
+    passStyleOf(publicSubscribers) === 'copyRecord' ||
+      assert.fail(X`publicSubscribers ${publicSubscribers} must be a record`);
 
     return publicSubscribers;
   }
@@ -1975,10 +1971,11 @@ export function makeWalletRoot({
       return E(agoricNames).lookup(...path);
     },
     getNamesByAddress(...path) {
-      assert(
-        namesByAddress,
-        X`namesByAddress was not supplied to the wallet maker`,
-      );
+      if (namesByAddress === undefined) {
+        // TypeScript confused about `||` control flow so use `if` instead
+        // https://github.com/microsoft/TypeScript/issues/50739
+        assert.fail(X`namesByAddress was not supplied to the wallet maker`);
+      }
       return E(namesByAddress).lookup(...path);
     },
   });

@@ -4,7 +4,10 @@
   "description": "Manage the Agoric Javascript smart contract platform",
   "type": "module",
   "main": "src/main.js",
-  "bin": "src/entrypoint.js",
+  "bin": {
+    "agoric": "src/entrypoint.js",
+    "agops": "src/bin-agops.js"
+  },
   "files": [
     "src",
     "exported.js"
@@ -23,21 +26,32 @@
   "devDependencies": {
     "@agoric/swingset-vat": "^0.28.0",
     "ava": "^4.3.1",
-    "c8": "^7.11.0",
-    "tmp": "^0.2.1"
+    "c8": "^7.11.0"
   },
   "dependencies": {
     "@agoric/access-token": "^0.4.18",
     "@agoric/assert": "^0.4.0",
     "@agoric/cache": "^0.1.0",
     "@agoric/casting": "^0.1.0",
+    "@agoric/cosmic-proto": "^0.1.0",
+    "@agoric/ertp": "^0.14.2",
     "@agoric/nat": "^4.1.0",
+    "@agoric/smart-wallet": "^0.2.0",
+    "@agoric/vats": "^0.10.0",
+    "@agoric/zoe": "^0.24.0",
     "@endo/bundle-source": "^2.2.6",
     "@endo/captp": "^2.0.13",
     "@endo/compartment-mapper": "^0.7.11",
     "@endo/init": "^0.5.47",
     "@endo/marshal": "^0.7.3",
     "@endo/promise-kit": "^0.2.47",
+    "@cosmjs/encoding": "0.28.13",
+    "@cosmjs/crypto": "0.28.13",
+    "@cosmjs/math": "0.28.13",
+    "@cosmjs/proto-signing": "0.28.13",
+    "@cosmjs/stargate": "0.28.13",
+    "@cosmjs/tendermint-rpc": "0.28.13",
+    "@endo/far": "^0.2.9",
     "@iarna/toml": "^2.2.3",
     "anylogger": "^0.21.0",
     "chalk": "^2.4.2",

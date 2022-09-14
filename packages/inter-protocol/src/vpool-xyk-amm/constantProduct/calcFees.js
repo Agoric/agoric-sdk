@@ -41,10 +41,10 @@ const amountGT = (left, right) =>
  * @returns {Amount}
  */
 const calcFee = ({ amountIn, amountOut }, feeRatio) => {
-  assert(
-    feeRatio.numerator.brand === feeRatio.denominator.brand,
-    X`feeRatio numerator and denominator must use the same brand ${feeRatio}`,
-  );
+  feeRatio.numerator.brand === feeRatio.denominator.brand ||
+    assert.fail(
+      X`feeRatio numerator and denominator must use the same brand ${feeRatio}`,
+    );
 
   let sameBrandAmount;
   if (amountIn.brand === feeRatio.numerator.brand) {
@@ -52,8 +52,7 @@ const calcFee = ({ amountIn, amountOut }, feeRatio) => {
   } else if (amountOut.brand === feeRatio.numerator.brand) {
     sameBrandAmount = amountOut;
   } else {
-    assert(
-      false,
+    assert.fail(
       X`feeRatio's brand (${feeRatio.numerator.brand}) must match one of the amounts [${amountIn}, ${amountOut}].`,
     );
   }
@@ -62,10 +61,8 @@ const calcFee = ({ amountIn, amountOut }, feeRatio) => {
   const fee = ceilMultiplyBy(sameBrandAmount, feeRatio);
 
   // Fee cannot exceed the amount on which it is levied
-  assert(
-    AmountMath.isGTE(sameBrandAmount, fee),
-    X`The feeRatio can't be greater than 1 ${feeRatio}`,
-  );
+  AmountMath.isGTE(sameBrandAmount, fee) ||
+    assert.fail(X`The feeRatio can't be greater than 1 ${feeRatio}`);
 
   return fee;
 };

@@ -28,14 +28,14 @@ const assertElectorateMatches = (paramManager, governedParams) => {
   const {
     [CONTRACT_ELECTORATE]: { value: paramElectorate },
   } = governedParams;
-  assert(
-    paramElectorate,
-    X`Missing ${q(CONTRACT_ELECTORATE)} term in ${q(governedParams)}`,
-  );
-  assert(
-    keyEQ(managerElectorate, paramElectorate),
-    X`Electorate in manager (${managerElectorate})} incompatible with terms (${paramElectorate}`,
-  );
+  paramElectorate ||
+    assert.fail(
+      X`Missing ${q(CONTRACT_ELECTORATE)} term in ${q(governedParams)}`,
+    );
+  keyEQ(managerElectorate, paramElectorate) ||
+    assert.fail(
+      X`Electorate in manager (${managerElectorate})} incompatible with terms (${paramElectorate}`,
+    );
 };
 
 /**

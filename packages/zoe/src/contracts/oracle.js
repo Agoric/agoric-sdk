@@ -68,10 +68,9 @@ const start = async zcf => {
         assert(!revoked, revokedMsg);
         const noFee = AmountMath.makeEmpty(feeBrand);
         const { requiredFee, reply } = await E(handler).onQuery(query, noFee);
-        assert(
-          !requiredFee || AmountMath.isGTE(noFee, requiredFee),
-          X`Oracle required a fee but the query had none`,
-        );
+        !requiredFee ||
+          AmountMath.isGTE(noFee, requiredFee) ||
+          assert.fail(X`Oracle required a fee but the query had none`);
         return reply;
       } catch (e) {
         E(handler).onError(query, e);

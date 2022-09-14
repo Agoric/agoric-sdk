@@ -36,6 +36,7 @@ export const agoricNamesReserved = harden({
     mintHolder: 'mint holder',
     singleWallet: 'single smart wallet',
     walletFactory: 'multitenant smart wallet',
+    provisionPool: 'provision accounts with initial IST',
     contractGovernor: 'contract governor',
     committee: 'committee electorate',
     noActionElectorate: 'no action electorate',
@@ -233,10 +234,8 @@ export const extract = (template, specimen) => {
     return new Proxy(target, {
       get: (t, propName) => {
         if (typeof propName !== 'symbol') {
-          assert(
-            propName in t,
-            X`${propName} not permitted, only ${keys(template)}`,
-          );
+          propName in t ||
+            assert.fail(X`${propName} not permitted, only ${keys(template)}`);
         }
         return t[propName];
       },
