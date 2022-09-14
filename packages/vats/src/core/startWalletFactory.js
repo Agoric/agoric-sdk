@@ -104,6 +104,7 @@ const startGovernedInstance = async (
  *
  * @param {BootstrapPowers & PromiseSpaceOf<{
  *   economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet
+ *   psmCharterCreatorFacet: Awaited<ReturnType<import('@agoric/inter-protocol/src/psm/psmCharter.js').start>>['creatorFacet'],
  * }>} powers
  * @param {{
  *   options?: {
@@ -124,6 +125,7 @@ export const startWalletFactory = async (
       zoe,
       chainTimerService,
       economicCommitteeCreatorFacet,
+      psmCharterCreatorFacet,
     },
     produce: { client, walletFactoryStartResult, provisionPoolStartResult },
     installation: {
@@ -194,7 +196,6 @@ export const startWalletFactory = async (
   const poolBank = E(bankManager).getBankForAddress(poolAddr);
 
   const ppFacets = await startGovernedInstance(
-    // zoe.startInstance() args
     {
       zoe,
       governedContractInstallation: provisionPool,
@@ -227,7 +228,16 @@ export const startWalletFactory = async (
     walletFactory: wfFacets.creatorFacet,
   });
 
-  await E(bridgeManager).register(BRIDGE_ID.PROVISION, handler);
+  await Promise.all([
+    E(bridgeManager).register(BRIDGE_ID.PROVISION, handler),
+    // psmCharter was designed to govern PSM contracts,
+    // but voteOnParamChanges should work just as well
+    // for provisionPool perAccountInitialValue
+    E(psmCharterCreatorFacet).addInstance(
+      ppFacets.instance,
+      ppFacets.creatorFacet,
+    ),
+  ]);
 
   client.resolve(
     Far('dummy client', {
@@ -255,6 +265,7 @@ export const WALLET_FACTORY_MANIFEST = {
       zoe: 'zoe',
       chainTimerService: 'timer',
       economicCommitteeCreatorFacet: 'economicCommittee',
+      psmCharterCreatorFacet: 'psmCharter',
     },
     produce: {
       client: true, // dummy client in this configuration
