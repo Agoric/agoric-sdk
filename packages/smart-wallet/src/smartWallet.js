@@ -101,7 +101,7 @@ const { details: X, quote: q } = assert;
  * invitationPurse: Purse<'set'>,
  * }} unique
  * @param {{
- * agoricNames: ERef<NameHub>,
+ * agoricNames: ERef<import('@agoric/vats/src/nameHub.js').NameHub>,
  * invitationIssuer: ERef<Issuer<'set'>>,
  * invitationBrand: Brand<'set'>,
  * publicMarshaller: Marshaller,
