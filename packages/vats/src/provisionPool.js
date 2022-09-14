@@ -92,9 +92,8 @@ const makeBridgeProvisionTool = (sendInitialPayment, publishMetrics) => {
 /**
  * @typedef {StandardTerms & GovernanceTerms<{
  *    PerAccountInitialAmount: 'amount',
- *   }> &{
- *   perAccountInitialAmount: Amount<'nat'>,
- * }} ProvisionTerms
+ *   }>
+ * } ProvisionTerms
  *
  * TODO: ERef<GovernedCreatorFacet<ProvisionCreator>>
  *
