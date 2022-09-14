@@ -1,12 +1,16 @@
 // @jessie-check
 // @ts-check
 
-import { fit, M, makeScalarMapStore } from '@agoric/store';
+import { fit, M, makeHeapFarInstance, makeScalarMapStore } from '@agoric/store';
 import { E, Far } from '@endo/far';
 // TODO: move to narrower package?
 import { observeIteration, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
-import { handleParamGovernance, ParamTypes } from '@agoric/governance';
+import {
+  handleParamGovernance,
+  ParamTypes,
+  publicMixinAPI,
+} from '@agoric/governance';
 import { makeMetricsPublishKit } from '@agoric/inter-protocol/src/contractSupport.js';
 import {
   makeMyAddressNameAdminKit,
@@ -225,12 +229,19 @@ export const start = async (zcf, privateArgs) => {
   //   getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
   //   ...publicMixinAPI,
   // });
-  const publicFacet = Far('Provisioning Pool public', {
-    getMetrics() {
-      return metricsSubscriber;
+  const publicFacet = makeHeapFarInstance(
+    'Provisioning Pool public',
+    M.interface('ProvisionPool', {
+      getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
+      ...publicMixinAPI,
+    }),
+    {
+      getMetrics() {
+        return metricsSubscriber;
+      },
+      ...publicMixin,
     },
-    ...publicMixin,
-  });
+  );
 
   const limitedCreatorFacet = Far('Provisioning Pool creator', {
     makeHandler: makeBridgeProvisionTool(sendInitialPayment, updateMetrics),
