@@ -30,7 +30,7 @@ const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
  *   governedParams: Record<string, unknown>,
  *   timer: ERef<TimerService>,
  *   contractGovernor: ERef<Installation>,
- *   economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet']
+ *   poserInvitation: ERef<Invitation>,
  * }} govArgs
  */
 const startGovernedInstance = async (
@@ -41,15 +41,12 @@ const startGovernedInstance = async (
     terms,
     privateArgs,
   },
-  { governedParams, timer, contractGovernor, economicCommitteeCreatorFacet },
+  { governedParams, timer, contractGovernor, poserInvitation },
 ) => {
-  const poserInvitationP = E(
-    economicCommitteeCreatorFacet,
-  ).getPoserInvitation();
   const [initialPoserInvitation, electorateInvitationAmount] =
     await Promise.all([
-      poserInvitationP,
-      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+      poserInvitation,
+      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitation),
     ]);
 
   const governorTerms = await deeplyFulfilledObject(
@@ -76,7 +73,6 @@ const startGovernedInstance = async (
     {},
     governorTerms,
     harden({
-      economicCommitteeCreatorFacet,
       governed: {
         ...privateArgs,
         initialPoserInvitation,
@@ -215,7 +211,7 @@ export const startWalletFactory = async (
       },
       timer: chainTimerService,
       contractGovernor,
-      economicCommitteeCreatorFacet,
+      poserInvitation: E(economicCommitteeCreatorFacet).getPoserInvitation(),
     },
   );
   instanceProduce.provisionPool.resolve(ppFacets.instance);
