@@ -45,6 +45,7 @@ const shape = (() => {
     M.partial({ defaultManagerType: ManagerType }),
     M.partial({ includeDevDependencies: M.boolean() }),
     M.partial({ defaultReapInterval: M.number() }), // not in swingset decl
+    M.partial({ snapshotInterval: M.number() }),
     M.partial({ vats: SwingSetConfigDescriptor }),
     M.partial({ bootstrap: M.string() }),
     M.partial({ bundles: SwingSetConfigDescriptor }),

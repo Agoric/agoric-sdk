@@ -1,6 +1,7 @@
 {
   "bootstrap": "bootstrap",
   "defaultReapInterval": 1000,
+  "snapshotInterval": 1000,
   "vats": {
     "bootstrap": {
       "sourceSpec": "@agoric/vats/src/core/boot-psm.js",
