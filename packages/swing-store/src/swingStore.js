@@ -8,6 +8,7 @@ import { open as lmdbOpen, ABORT as lmdbAbort } from 'lmdb';
 import sqlite3 from 'better-sqlite3';
 
 import { assert } from '@agoric/assert';
+import { makeMeasureSeconds } from '@agoric/internal';
 
 import { sqlStreamStore } from './sqlStreamStore.js';
 import { makeSnapStore } from './snapStore.js';
@@ -18,20 +19,11 @@ export const DEFAULT_LMDB_MAP_SIZE = 2 * 1024 * 1024 * 1024;
 export { makeSnapStore };
 
 export function makeSnapStoreIO() {
-  const { now } = performance;
-  // TODO: find a home for `export const makeMeasureSeconds = now => {...}`.
-  const measureSeconds = async fn => {
-    const t0 = now();
-    const result = await fn();
-    const durationMillisec = now() - t0;
-    return { result, duration: durationMillisec / 1000 };
-  };
-
   return {
     tmpName,
     createReadStream: fs.createReadStream,
     createWriteStream: fs.createWriteStream,
-    measureSeconds,
+    measureSeconds: makeMeasureSeconds(performance.now),
     open: fs.promises.open,
     rename: fs.promises.rename,
     stat: fs.promises.stat,

@@ -5,17 +5,17 @@ import { spawn } from 'child_process';
 import { type as osType } from 'os';
 import tmp from 'tmp';
 import test from 'ava';
+import { makeMeasureSeconds } from '@agoric/internal';
 import { xsnap } from '@agoric/xsnap';
 import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 const { freeze } = Object;
 
-const measureSeconds = async fn => {
-  const result = await fn();
-  return { result, duration: 0 };
-};
-const makeMockSnapStoreIO = () => ({ ...makeSnapStoreIO(), measureSeconds });
+const makeMockSnapStoreIO = () => ({
+  ...makeSnapStoreIO(),
+  measureSeconds: makeMeasureSeconds(() => 0),
+});
 
 const ld = (() => {
   /** @param {string} ref */

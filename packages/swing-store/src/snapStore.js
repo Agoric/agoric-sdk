@@ -77,7 +77,7 @@ export const fsStreamReady = stream =>
  *   tmpName: typeof import('tmp').tmpName,
  *   createReadStream: typeof import('fs').createReadStream,
  *   createWriteStream: typeof import('fs').createWriteStream,
- *   measureSeconds: <T>(fn: () => Promise<T>) => Promise<{ result: T, duration: number }>,
+ *   measureSeconds: ReturnType<typeof import('@agoric/internal').makeMeasureSeconds>,
  *   open: typeof import('fs').promises.open,
  *   resolve: typeof import('path').resolve,
  *   rename: typeof import('fs').promises.rename,
