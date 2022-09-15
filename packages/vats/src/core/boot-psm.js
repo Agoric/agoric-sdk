@@ -97,7 +97,7 @@ const AnchorOptionsShape = M.split(
   }),
 );
 
-export const ParametersShape = harden({
+export const ParametersShape = M.partial({
   anchorAssets: M.arrayOf(AnchorOptionsShape),
   economicCommitteeAddresses: M.recordOf(M.string(), M.string()),
 });
