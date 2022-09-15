@@ -1,7 +1,6 @@
 // @ts-check
 /* eslint-disable func-names */
 /* global fetch, process */
-import { execSync } from 'child_process';
 import {
   iterateLatest,
   makeCastingSpec,
@@ -15,12 +14,49 @@ import { makeRpcUtils, networkConfig } from '../lib/rpc.js';
 import { getWalletState } from '../lib/wallet.js';
 
 import { makeLeaderOptions } from '../lib/casting.js';
-import { normalizeAddress } from '../lib/keys.js';
+import {
+  execSwingsetTransaction,
+  fetchSwingsetParams,
+  normalizeAddress,
+} from '../lib/chain.js';
 
 const SLEEP_SECONDS = 3;
 
 export const makeWalletCommand = async () => {
   const wallet = new Command('wallet').description('wallet commands');
+
+  wallet
+    .command('provision')
+    .description('provision a Smart Wallet')
+    .requiredOption(
+      '--account [address]',
+      'address literal or name',
+      normalizeAddress,
+    )
+    .option('--spend', 'confirm you want to spend')
+    .option('--nickname [string]', 'nickname to use', 'my-wallet')
+    .action(function () {
+      const { account, nickname, spend } = this.opts();
+      if (spend) {
+        const tx = `provision-one ${nickname} ${account} SMART_WALLET`;
+        execSwingsetTransaction(tx, networkConfig, account);
+      } else {
+        const params = fetchSwingsetParams(networkConfig);
+        assert(
+          params.power_flag_fees.length === 1,
+          'multiple power_flag_fees not supported',
+        );
+        const { fee: fees } = params.power_flag_fees[0];
+        const nf = new Intl.NumberFormat('en-US');
+        const costs = fees
+          .map(f => `${nf.format(Number(f.amount))} ${f.denom}`)
+          .join(' + ');
+        process.stdout.write(`Provisioning a wallet costs ${costs}\n`);
+        process.stdout.write(
+          `To really provision, repeat this command with --spend\n`,
+        );
+      }
+    });
 
   wallet
     .command('send')
@@ -34,19 +70,13 @@ export const makeWalletCommand = async () => {
     .option('--dry-run', 'spit out the command instead of running it')
     .action(function () {
       const { dryRun, from, offer } = this.opts();
-      const { chainName, rpcAddrs } = networkConfig;
 
-      const cmd = `agd --node=${rpcAddrs[0]} --chain-id=${chainName} --from=${from} tx swingset wallet-action --allow-spend "$(cat ${offer})"`;
-
-      if (dryRun) {
-        process.stdout.write('Run this interactive command in shell:\n\n');
-        process.stdout.write(cmd);
-        process.stdout.write('\n');
-      } else {
-        const yesCmd = `${cmd} --yes`;
-        console.log('Executing ', yesCmd);
-        execSync(yesCmd);
-      }
+      execSwingsetTransaction(
+        `wallet-action --allow-spend "$(cat ${offer})"`,
+        networkConfig,
+        from,
+        dryRun,
+      );
     });
 
   wallet

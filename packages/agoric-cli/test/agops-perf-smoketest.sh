@@ -16,16 +16,14 @@ cd packages/cosmic-swingset
 make scenario2-setup scenario2-run-chain-psm
 
 # (new tab)
-# Fund the pool (addr is a magic string)
-make SOLO_COINS=1234000000ibc/usdc1234 ACCT_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 fund-acct
-# Provision your wallet
 cd packages/cosmic-swingset
-# Copy the agoric address from your keplr wallet or 'agd keys list', starts with 'agoric1'
-WALLET_ADDR=<yours>
-make ACCT_ADDR=$WALLET_ADDR AGORIC_POWERS=SMART_WALLET fund-acct provision-acct
+# Fund the pool
+make fund-provision-pool
+# Provision your wallet
+agoric wallet provision --account <key-name>
 # verify
 agoric wallet list
-agoric wallet show --from $WALLET_ADDR
+agoric wallet show --from <key-name>
 "
   exit 1
 fi
