@@ -119,11 +119,12 @@ const makeBinaryVoteCounter = (
 
     if (!makeQuorumCounter(threshold).check(stats)) {
       outcomePromise.reject('No quorum');
+      /** @type {OutcomeRecord} */
       const voteOutcome = {
         question: details.questionHandle,
-        outcome: 'No quorum',
+        outcome: 'fail',
+        reason: 'No quorum',
       };
-      // @ts-expect-error Expand type to allow non-position?
       E(publisher).publish(voteOutcome);
       return;
     }
@@ -137,8 +138,13 @@ const makeBinaryVoteCounter = (
     }
 
     // XXX if we should distinguish ties, publish should be called in if above
-    E.when(outcomePromise.promise, outcome => {
-      const voteOutcome = { question: details.questionHandle, outcome };
+    E.when(outcomePromise.promise, position => {
+      /** @type {OutcomeRecord} */
+      const voteOutcome = {
+        question: details.questionHandle,
+        position,
+        outcome: 'win',
+      };
       return E(publisher).publish(voteOutcome);
     });
   };
@@ -214,9 +220,10 @@ const makeBinaryVoteCounter = (
 // instance in the publicFacet before returning public and creator facets.
 
 /**
- * @type {ContractStartFn<VoteCounterPublicFacet, VoteCounterCreatorFacet, {questionSpec: QuestionSpec, quorumThreshold: bigint}>}
+ * @param {ZCF<{questionSpec: QuestionSpec, quorumThreshold: bigint}>} zcf
+ * @param {{outcomePublisher: Publisher<OutcomeRecord>}} outcomePublisher
  */
-const start = (zcf, { outcomesPublisher }) => {
+const start = (zcf, { outcomePublisher }) => {
   // There are a variety of ways of counting quorums. The parameters must be
   // visible in the terms. We're doing a simple threshold here. If we wanted to
   // discount abstentions, we could refactor to provide the quorumCounter as a
@@ -228,7 +235,7 @@ const start = (zcf, { outcomesPublisher }) => {
     questionSpec,
     quorumThreshold,
     zcf.getInstance(),
-    outcomesPublisher,
+    outcomePublisher,
   );
 
   scheduleClose(questionSpec.closingRule, () => closeFacet.closeVoting());

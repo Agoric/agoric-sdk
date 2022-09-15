@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @typedef {object} QuestionRecord
  * @property {ERef<VoteCounterCreatorFacet>} voteCap
@@ -12,7 +13,7 @@
  * @param {unknown} quorumThreshold
  * @param {ERef<Installation>} voteCounter
  * @param {Store<Handle<'Question'>, QuestionRecord>} questionStore
- * @param {Publisher<unknown>} publisher
- * @param {Publisher<{question: Handle<'Question'>,outcome: Position}>} storageNode`
+ * @param {Publisher<unknown>} questionPublisher
+ * @param {Publisher<OutcomeRecord>} outcomePublisher
  * @returns {AddQuestionReturn}
  */

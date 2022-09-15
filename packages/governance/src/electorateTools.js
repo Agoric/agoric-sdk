@@ -15,7 +15,7 @@ const startCounter = async (
   voteCounter,
   questionStore,
   questionsPublisher,
-  outcomesPublisher,
+  outcomePublisher,
 ) => {
   const voteCounterTerms = {
     questionSpec,
@@ -27,7 +27,7 @@ const startCounter = async (
   /** @type {{ creatorFacet: VoteCounterCreatorFacet, publicFacet: VoteCounterPublicFacet, instance: Instance }} */
   const { creatorFacet, publicFacet, instance } = await E(
     zcf.getZoeService(),
-  ).startInstance(voteCounter, {}, voteCounterTerms, { outcomesPublisher });
+  ).startInstance(voteCounter, {}, voteCounterTerms, { outcomePublisher });
   const details = await E(publicFacet).getDetails();
   const { deadline } = questionSpec.closingRule;
   questionsPublisher.publish(details);

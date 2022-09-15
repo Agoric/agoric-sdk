@@ -83,7 +83,8 @@ test('binary question', async t => {
 
   await eventLoopIteration();
   t.like(storageRoot.getBody('mockChainStorageRoot'), {
-    outcome: FISH,
+    outcome: 'win',
+    position: FISH,
   });
 });
 
@@ -153,7 +154,8 @@ test('binary tied', async t => {
 
   await eventLoopIteration();
   t.like(storageRoot.getBody('mockChainStorageRoot'), {
-    outcome: negative,
+    outcome: 'win',
+    position: negative,
   });
 });
 
@@ -189,7 +191,8 @@ test('binary bad vote', async t => {
 
   await eventLoopIteration();
   t.like(storageRoot.getBody('mockChainStorageRoot'), {
-    outcome: negative,
+    outcome: 'win',
+    position: negative,
   });
 });
 
@@ -218,7 +221,8 @@ test('binary no votes', async t => {
 
   await eventLoopIteration();
   t.like(storageRoot.getBody('mockChainStorageRoot'), {
-    outcome: negative,
+    outcome: 'win',
+    position: negative,
   });
 });
 
@@ -256,7 +260,8 @@ test('binary varying share weights', async t => {
 
   await eventLoopIteration();
   t.like(storageRoot.getBody('mockChainStorageRoot'), {
-    outcome: FISH,
+    outcome: 'win',
+    position: FISH,
   });
 });
 
@@ -295,7 +300,8 @@ test('binary contested', async t => {
 
   await eventLoopIteration();
   t.like(storageRoot.getBody('mockChainStorageRoot'), {
-    outcome: negative,
+    outcome: 'win',
+    position: negative,
   });
 });
 
@@ -334,7 +340,8 @@ test('binary revote', async t => {
 
   await eventLoopIteration();
   t.like(storageRoot.getBody('mockChainStorageRoot'), {
-    outcome: positive,
+    outcome: 'win',
+    position: positive,
   });
 });
 
@@ -375,7 +382,8 @@ test('binary question too many', async t => {
 
   await eventLoopIteration();
   t.like(storageRoot.getBody('mockChainStorageRoot'), {
-    outcome: 'No quorum',
+    outcome: 'fail',
+    reason: 'No quorum',
   });
 });
 
@@ -410,7 +418,8 @@ test('binary no quorum', async t => {
 
   await eventLoopIteration();
   t.like(storageRoot.getBody('mockChainStorageRoot'), {
-    outcome: 'No quorum',
+    outcome: 'fail',
+    reason: 'No quorum',
   });
 });
 

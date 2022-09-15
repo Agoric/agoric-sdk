@@ -91,6 +91,13 @@
  */
 
 /**
+ * @typedef {{ question: Handle<'Question'> } & (
+ *   { outcome: 'win', position: Position } |
+ *   { outcome: 'fail', reason: 'No quorum' }
+ * )} OutcomeRecord
+ */
+
+/**
  * Specification when requesting creation of a Question
  *
  * @template {Issue} [I=Issue]
@@ -213,7 +220,7 @@
  * @param {bigint} threshold - questionSpec includes quorumRule; the electorate
  *    converts that to a number that the counter can enforce.
  * @param {Instance} instance
- * @param {ERef<Publisher<{question: Handle<'Question'>,outcome: Position}>>} publisher
+ * @param {ERef<Publisher<OutcomeRecord>>} publisher
  * @returns {VoteCounterFacets}
  */
 

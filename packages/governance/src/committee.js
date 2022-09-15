@@ -23,6 +23,10 @@ import {
 const { ceilDivide } = natSafeMath;
 
 /**
+ * @typedef {{ question: Handle<'Question'>, outcome: Position }} OutcomeRecord
+ */
+
+/**
  * Each Committee (an Electorate) represents a particular set of voters. The
  * number of voters is visible in the terms.
  *
@@ -162,8 +166,8 @@ const start = (zcf, privateArgs) => {
           'latestOutcome',
         );
 
-        /** @type {StoredPublishKit<{question: Handle<'Question'>,outcome: Position}>} */
-        const { publisher: outcomesPublisher } = makeStoredPublishKit(
+        /** @type {StoredPublishKit<OutcomeRecord>} */
+        const { publisher: outcomePublisher } = makeStoredPublishKit(
           outcomeNode,
           privateArgs.marshaller,
         );
@@ -175,7 +179,7 @@ const start = (zcf, privateArgs) => {
           voteCounter,
           allQuestions,
           questionsPublisher,
-          outcomesPublisher,
+          outcomePublisher,
         );
       },
       getVoterInvitations() {
