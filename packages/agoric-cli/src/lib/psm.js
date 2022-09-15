@@ -32,6 +32,7 @@ export const simpleOffers = (state, agoricNames) => {
       payouts,
     } = o;
     const entry = Object.entries(agoricNames.instance).find(
+      // @ts-expect-error xxx RpcRemote
       ([_name, candidate]) => candidate === instance,
     );
     const instanceName = entry ? entry[0] : '???';

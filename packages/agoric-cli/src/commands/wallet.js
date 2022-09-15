@@ -1,6 +1,7 @@
 // @ts-check
 /* eslint-disable func-names */
 /* global fetch, process */
+import { execSync } from 'child_process';
 import {
   iterateLatest,
   makeCastingSpec,
@@ -30,15 +31,22 @@ export const makeWalletCommand = async () => {
       normalizeAddress,
     )
     .requiredOption('--offer [filename]', 'path to file with prepared offer')
+    .option('--dry-run', 'spit out the command instead of running it')
     .action(function () {
-      const { from, offer } = this.opts();
+      const { dryRun, from, offer } = this.opts();
       const { chainName, rpcAddrs } = networkConfig;
 
       const cmd = `agd --node=${rpcAddrs[0]} --chain-id=${chainName} --from=${from} tx swingset wallet-action --allow-spend "$(cat ${offer})"`;
 
-      process.stdout.write('Run this interactive command in shell:\n\n');
-      process.stdout.write(cmd);
-      process.stdout.write('\n');
+      if (dryRun) {
+        process.stdout.write('Run this interactive command in shell:\n\n');
+        process.stdout.write(cmd);
+        process.stdout.write('\n');
+      } else {
+        const yesCmd = `${cmd} --yes`;
+        console.log('Executing ', yesCmd);
+        execSync(yesCmd);
+      }
     });
 
   wallet
