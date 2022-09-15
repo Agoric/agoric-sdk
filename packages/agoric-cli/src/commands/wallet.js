@@ -1,7 +1,6 @@
 // @ts-check
 /* eslint-disable func-names */
 /* global fetch, process */
-import { execSync } from 'child_process';
 import {
   iterateLatest,
   makeCastingSpec,
@@ -15,7 +14,7 @@ import { makeRpcUtils, networkConfig } from '../lib/rpc.js';
 import { getWalletState } from '../lib/wallet.js';
 
 import { makeLeaderOptions } from '../lib/casting.js';
-import { normalizeAddress } from '../lib/keys.js';
+import { execSwingsetTransaction, normalizeAddress } from '../lib/chain.js';
 
 const SLEEP_SECONDS = 3;
 
@@ -34,19 +33,13 @@ export const makeWalletCommand = async () => {
     .option('--dry-run', 'spit out the command instead of running it')
     .action(function () {
       const { dryRun, from, offer } = this.opts();
-      const { chainName, rpcAddrs } = networkConfig;
 
-      const cmd = `agd --node=${rpcAddrs[0]} --chain-id=${chainName} --from=${from} tx swingset wallet-action --allow-spend "$(cat ${offer})"`;
-
-      if (dryRun) {
-        process.stdout.write('Run this interactive command in shell:\n\n');
-        process.stdout.write(cmd);
-        process.stdout.write('\n');
-      } else {
-        const yesCmd = `${cmd} --yes`;
-        console.log('Executing ', yesCmd);
-        execSync(yesCmd);
-      }
+      execSwingsetTransaction(
+        `wallet-action --allow-spend "$(cat ${offer})"`,
+        networkConfig,
+        from,
+        dryRun,
+      );
     });
 
   wallet

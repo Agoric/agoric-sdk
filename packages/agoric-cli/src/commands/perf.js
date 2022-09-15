@@ -9,12 +9,11 @@ import {
   makeFollower,
   makeLeaderFromRpcAddresses,
 } from '@agoric/casting';
-import { execSync } from 'child_process';
 import { Command } from 'commander';
 import fs from 'fs';
 import { exit } from 'process';
 import { makeLeaderOptions } from '../lib/casting.js';
-import { normalizeAddress } from '../lib/keys.js';
+import { execSwingsetTransaction, normalizeAddress } from '../lib/chain.js';
 import { networkConfig } from '../lib/rpc.js';
 
 // tight for perf testing but less than this tends to hang.
@@ -52,8 +51,6 @@ export const makePerfCommand = async logger => {
       const { offer } = JSON.parse(JSON.parse(payloadStr).body);
       const { id: offerId } = offer;
 
-      const { chainName, rpcAddrs } = networkConfig;
-
       const spec = `:published.wallet.${opts.from}`;
 
       const leaderOptions = makeLeaderOptions({
@@ -88,15 +85,14 @@ export const makePerfCommand = async logger => {
       void watchForSatisfied();
 
       // now execute
-      let cmd = `agd --node=${rpcAddrs[0]} --chain-id=${chainName} --from=${opts.from} tx swingset wallet-action --allow-spend "$(cat ${opts.executeOffer})" --yes`;
+      let cmd = `wallet-action --allow-spend "$(cat ${opts.executeOffer})"`;
       if (opts.keyringBackend) {
         cmd = cmd.concat(' --keyring-backend ', opts.keyringBackend);
       }
       if (opts.home) {
         cmd = cmd.concat(' --home ', opts.home);
       }
-      console.warn('Executing in shell:', cmd);
-      execSync(cmd);
+      execSwingsetTransaction(cmd, networkConfig, opts.from);
     });
 
   return perf;
