@@ -10,7 +10,9 @@
       "sourceSpec": "@agoric/vats/src/core/boot.js",
       "parameters": {
         "governanceActions": true,
-        "economicCommitteeAddresses": { "voter":  "agoric1Ersatz" }
+        "economicCommitteeAddresses": {
+          "voter": "agoric1Ersatz"
+        }
       },
       "creationOptions": {
         "critical": true

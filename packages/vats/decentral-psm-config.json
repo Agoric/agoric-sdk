@@ -11,7 +11,9 @@
             "denom": "ibc/usdc1234"
           }
         ],
-        "economicCommitteeAddresses": { "voter":  "agoric1ersatz"}
+        "economicCommitteeAddresses": {
+          "voter": "agoric1ersatz"
+        }
       },
       "creationOptions": {
         "critical": true
