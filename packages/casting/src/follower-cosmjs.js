@@ -373,6 +373,21 @@ export const makeCosmjsFollower = (
    * @param {number} currentBlockHeight
    * @yields {FollowerElement<T>}
    */
+  function* reverseValuesFromCell(streamCell, currentBlockHeight) {
+    for (let i = streamCell.values.length - 1; i >= 0; i -= 1) {
+      yield followerElementFromStreamCellValue(
+        streamCell.values[i],
+        streamCell.blockHeight,
+        currentBlockHeight,
+      );
+    }
+  }
+
+  /**
+   * @param {StreamCell<T>} streamCell
+   * @param {number} currentBlockHeight
+   * @yields {FollowerElement<T>}
+   */
   function* lastValueFromCell(streamCell, currentBlockHeight) {
     const { values } = streamCell;
     if (values.length > 0) {
@@ -444,7 +459,6 @@ export const makeCosmjsFollower = (
     // If the block has no corresponding data, wait for the first block to
     // contain data.
     for (;;) {
-      cursorBlockHeight = await getBlockHeight();
       cursorData = await getDataAtHeight(cursorBlockHeight);
       if (cursorData.length !== 0) {
         const cursorStreamCell = streamCellForData(
@@ -457,6 +471,7 @@ export const makeCosmjsFollower = (
       // TODO Long-poll for next block
       // https://github.com/Agoric/agoric-sdk/issues/6154
       await E(leader).jitter(where);
+      cursorBlockHeight = await getBlockHeight();
     }
 
     // For each subsequent iteration, yield every value that has been
@@ -551,7 +566,27 @@ export const makeCosmjsFollower = (
     }
   }
 
-  // Enable the periodic fetch.
+  /**
+   * @param {number} cursorBlockHeight
+   * @yields {FollowerElement<T>}
+   */
+  async function* getReverseIterableAtHeight(cursorBlockHeight) {
+    // Track the data for the last emitted cell (the cell at the
+    // cursorBlockHeight) so we know not to emit duplicates
+    // of that cell.
+    let cursorData;
+    while (cursorBlockHeight > 0) {
+      cursorData = await getDataAtHeight(cursorBlockHeight);
+      if (cursorData.length === 0) {
+        // No data at the cursor height, so signal beginning of stream.
+        return;
+      }
+      const cursorStreamCell = streamCellForData(cursorBlockHeight, cursorData);
+      yield* reverseValuesFromCell(cursorStreamCell, cursorBlockHeight);
+      cursorBlockHeight = cursorStreamCell.blockHeight - 1;
+    }
+  }
+
   /** @type {Follower<FollowerElement<T>>} */
   return Far('chain follower', {
     async getLatestIterable() {
@@ -562,6 +597,12 @@ export const makeCosmjsFollower = (
         height = await getBlockHeight();
       }
       return getEachIterableAtHeight(height);
+    },
+    async getReverseIterable({ height = undefined } = {}) {
+      if (height === undefined) {
+        height = await getBlockHeight();
+      }
+      return getReverseIterableAtHeight(height);
     },
   });
 };

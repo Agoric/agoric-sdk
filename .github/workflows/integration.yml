@@ -27,7 +27,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        cli: [link-cli, local-npm]
+        # FIXME: Use this to enable NPM deploys...
+        # cli: [link-cli, local-npm]
+        cli: [link-cli]
     steps:
       - uses: actions/checkout@v2
 

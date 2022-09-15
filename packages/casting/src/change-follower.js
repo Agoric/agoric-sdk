@@ -47,5 +47,8 @@ export const makePollingChangeFollower = async leader => {
   return Far('polling change follower', {
     getLatestIterable: async () => iterable,
     getEachIterable: async () => iterable,
+    getReverseIterable: async () => {
+      throw Error('not implemented for polling change follower');
+    },
   });
 };

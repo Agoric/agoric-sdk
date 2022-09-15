@@ -40,7 +40,7 @@ export const getOfferService = (
   const acceptOffer = async id => {
     const offer = offers.get(id);
     assert(offer, `Tried to accept undefined offer ${id}`);
-    const action = JSON.stringify({ type: 'acceptOffer', data: offer });
+    const action = offer.spendAction;
     return signSpendAction(action);
   };
 

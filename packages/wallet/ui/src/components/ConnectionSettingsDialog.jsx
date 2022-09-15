@@ -62,7 +62,7 @@ const ConnectionSettingsDialog = ({
   const classes = useStyles();
   const smartConnectionHrefs = allConnectionConfigs.map(({ href }) => href);
 
-  const [config, setConfig] = useState(connectionConfig);
+  const [config, setConfig] = useState(connectionConfig || {});
 
   const [selectInputId] = useState(uuid());
 

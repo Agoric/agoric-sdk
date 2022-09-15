@@ -458,7 +458,7 @@ const finish = ({ state, facets }) => {
         {
           brand: desc.brand,
           issuer: desc.issuer,
-          petname: desc.proposedName,
+          petname: desc.issuerName,
         },
         purse,
       );
