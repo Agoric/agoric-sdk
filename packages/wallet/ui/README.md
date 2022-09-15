@@ -14,6 +14,20 @@ yarn && yarn build
 cd packages/cosmic-swingset
 make scenario2-setup scenario2-run-chain-psm
 
+# (new tab) chain setup
+cd packages/cosmic-swingset
+# Fund the pool
+make fund-provision-pool
+# Fund your wallet
+export ACCT_ADDR=<key-bech32>
+# with 100 BLD for provisioning wallet and 100 USDC for psm trading
+make ACCT_ADDR=$ACCT_ADDR SOLO_COINS=10000000ubld,10000000ibc/usdc1234 fund-acct
+agd query bank balances $ACCT_ADDR
+
+# Provision your smart wallet
+agoric wallet provision --account <key-name>
+# now refresh the wallet UI and purses should load
+
 # Start a wallet UI, new shell
 cd packages/wallet/ui && yarn start
 # NB: trailing slash
@@ -24,9 +38,22 @@ open http://localhost:3000/wallet/
 # Should get a Keplr connection prompt when you confirm.
 # Should get "query not found" error, wallet not initialized yet
 
-# Fund keplr
-cd packages/cosmic-swingset
-# Copy the agoric address from your keplr wallet here, starts with "agoric1"
-KEPLR_ADDRESS=<yours>
-make ACCT_ADDR=$KEPLR_ADDRESS AGORIC_POWERS=SMART_WALLET fund-acct provision-acct
-# now refresh the wallet UI and purses should load
+https://psm.inter.trade/
+
+## Testing
+
+export AGORIC_NET=ollinet
+
+# make sure your wallet is provisioned on the net.
+agoric wallet list | grep KEPLR_WALLET_ADDR
+# if it's not in the list, provision it
+https://ollinet.faucet.agoric.net/
+
+# Start a wallet UI, new shell
+cd packages/wallet/ui && yarn start
+# NB: trailing slash
+open http://localhost:3000/wallet/ 
+# ACTION: choose settings and point Network config to https://ollinet.agoric.net/network-config (you have to click on the list item)
+
+# Make sure it has some BLD for gas.
+# ACTION: If it's zero, faucet again with "delegate" option
