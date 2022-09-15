@@ -21,3 +21,5 @@ export { buildPlugin } from './devices/plugin/plugin.js';
 
 // eslint-disable-next-line import/export
 export * from './types-external.js';
+
+export * as shape from './typeGuards.js';
