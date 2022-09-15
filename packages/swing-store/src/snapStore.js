@@ -9,11 +9,12 @@ import { promisify } from 'util';
  * @typedef {object} SnapshotInfo
  * @property {string} filePath absolute path of (compressed) snapshot
  * @property {string} hash sha256 hash of (uncompressed) snapshot
+ * @property {boolean} newFile true if the compressed snapshot is new, false otherwise
  * @property {number} rawByteCount size of (uncompressed) snapshot
  * @property {number} rawSaveSeconds time to save (uncompressed) snapshot
  * @property {number} hashSeconds time to calculate snapshot hash
- * @property {number} [compressedByteCount] size of (compressed) snapshot
- * @property {number} [compressSeconds] time to compress and save snapshot
+ * @property {number} compressedByteCount size of (compressed) snapshot
+ * @property {number} compressSeconds time to compress and save snapshot (0 if the file is not new)
  */
 
 /**
@@ -231,7 +232,7 @@ export function makeSnapStore(
       );
       toDelete.delete(hash);
       const filePath = hashPath(hash);
-      const info = {
+      const infoBase = {
         filePath,
         hash,
         rawByteCount,
@@ -245,7 +246,13 @@ export function makeSnapStore(
         throw e;
       });
       if (fileStat) {
-        return freeze(info);
+        const { size: compressedByteCount } = fileStat;
+        return freeze({
+          ...infoBase,
+          newFile: false,
+          compressSeconds: 0,
+          compressedByteCount,
+        });
       }
       const { duration: compressSeconds } = await measureSeconds(() =>
         atomicWrite(filePath, tmpGzPath =>
@@ -253,7 +260,12 @@ export function makeSnapStore(
         ),
       );
       const { size: compressedByteCount } = await stat(filePath);
-      return freeze({ ...info, compressSeconds, compressedByteCount });
+      return freeze({
+        ...infoBase,
+        newFile: true,
+        compressSeconds,
+        compressedByteCount,
+      });
     }, 'save-raw');
   }
 

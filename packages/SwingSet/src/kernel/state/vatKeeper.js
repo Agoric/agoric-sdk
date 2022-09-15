@@ -591,6 +591,7 @@ export function makeVatKeeper(
     const info = await manager.makeSnapshot(snapStore);
     const {
       hash: snapshotID,
+      newFile,
       rawByteCount,
       rawSaveSeconds,
       hashSeconds,
@@ -613,6 +614,7 @@ export function makeVatKeeper(
       type: 'heap-snapshot-save',
       vatID,
       snapshotID,
+      newFile,
       rawByteCount,
       rawSaveSeconds,
       hashSeconds,
