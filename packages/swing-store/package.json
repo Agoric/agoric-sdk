@@ -14,11 +14,12 @@
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc -p jsconfig.json",
+    "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json",
     "lint:eslint": "eslint ."
   },
   "dependencies": {
     "@agoric/assert": "^0.4.0",
+    "@agoric/internal": "^0.1.0",
     "better-sqlite3": "^7.5.0",
     "lmdb": "^2.4.5",
     "tmp": "^0.2.1"
