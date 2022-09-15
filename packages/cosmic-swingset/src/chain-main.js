@@ -16,12 +16,13 @@ import { assert, details as X } from '@agoric/assert';
 import { makeSlogSenderFromModule } from '@agoric/telemetry';
 
 import { makeChainStorageRoot } from '@agoric/vats/src/lib-chainStorage.js';
+import { makeMarshal } from '@endo/marshal';
+import { makeStoredSubscriber, makePublishKit } from '@agoric/notifier';
 
 import * as STORAGE_PATH from '@agoric/vats/src/chain-storage-paths.js';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
-import makeBlockManager from './block-manager.js';
 import { getTelemetryProviders } from './kernel-stats.js';
 
 // eslint-disable-next-line no-unused-vars
@@ -277,17 +278,17 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     return ret;
   }
 
-  // Flush the chain send queue.
-  // If doReplay is truthy, replay each send and insist
-  // it hase the same return result.
-  function flushChainSends(doReplay) {
-    // Remove our queue.
+  const clearChainSends = () => {
     const chainSends = savedChainSends;
     savedChainSends = [];
+    return chainSends;
+  };
 
-    if (!doReplay) {
-      return;
-    }
+  // Replay and clear the chain send queue.
+  // While replaying each send, insist it has the same return result.
+  function replayChainSends() {
+    // Remove our queue.
+    const chainSends = [...savedChainSends];
 
     // Just send all the things we saved.
     while (chainSends.length > 0) {
@@ -352,6 +353,23 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         assert.fail(X`cannot JSON.parse(${JSON.stringify(respStr)}): ${e}`);
       }
     }
+
+    const toStorage = message => {
+      return doOutboundBridge(BRIDGE_ID.STORAGE, message);
+    };
+
+    const makeInstallationPublisher = () => {
+      const installationStorageNode = makeChainStorageRoot(
+        toStorage,
+        'swingset',
+        STORAGE_PATH.BUNDLES,
+        { sequence: true },
+      );
+      const marshaller = makeMarshal();
+      const { publisher, subscriber } = makePublishKit();
+      makeStoredSubscriber(subscriber, installationStorageNode, marshaller);
+      return publisher;
+    };
 
     const argv = {
       ROLE: 'chain',
@@ -464,12 +482,16 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const s = await launch({
       actionQueue,
       kernelStateDBDir: stateDBDir,
+      makeInstallationPublisher,
       mailboxStorage,
+      clearChainSends,
+      replayChainSends,
       setActivityhash,
       bridgeOutbound: doOutboundBridge,
       vatconfig,
       argv,
       env,
+      verboseBlocks: true,
       metricsProvider,
       slogFile: SLOGFILE,
       slogSender,
@@ -478,7 +500,10 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       keepSnapshots,
       afterCommitCallback,
     });
-    return s;
+
+    savedChainSends = s.savedChainSends;
+
+    return s.blockingSend;
   }
 
   let blockingSend;
@@ -504,26 +529,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
     // Ensure that initialization has completed.
     if (!blockingSend) {
-      const { savedChainSends: scs, ...fns } =
-        await launchAndInitializeSwingSet(action);
-
-      const toStorage = message => {
-        return fns.bridgeOutbound(BRIDGE_ID.STORAGE, message);
-      };
-      const installationStorageNode = makeChainStorageRoot(
-        toStorage,
-        'swingset',
-        STORAGE_PATH.BUNDLES,
-        { sequence: true },
-      );
-
-      savedChainSends = scs;
-      blockingSend = makeBlockManager({
-        ...fns,
-        flushChainSends,
-        verboseBlocks: true,
-        installationStorageNode,
-      });
+      blockingSend = await launchAndInitializeSwingSet(action);
     }
 
     if (action.type === AG_COSMOS_INIT) {
@@ -531,6 +537,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       return true;
     }
 
-    return blockingSend(action, savedChainSends);
+    return blockingSend(action);
   }
 }
