@@ -122,7 +122,6 @@ scenario2-setup-nobuild:
 	$(AGCH) --home=t1/bootstrap keys add bootstrap --keyring-backend=test
 	$(AGCH) --home=t1/bootstrap keys show -a bootstrap --keyring-backend=test > t1/bootstrap-address
 	$(AGCH) --home=t1/n0 add-genesis-account `cat t1/bootstrap-address` $(BOOT_COINS)
-	# Create
 	# Create the (singleton) chain node.
 	$(AGCH) --home=t1/n0 --keyring-dir=t1/bootstrap gentx --keyring-backend=test bootstrap 73000000ubld --chain-id=$(CHAIN_ID)
 	$(AGCH) --home=t1/n0 collect-gentxs
