@@ -1,12 +1,11 @@
-/* eslint-disable @jessie.js/no-nested-await */
 // @ts-check
+/* eslint-disable @jessie.js/no-nested-await */
 /* global Buffer, fetch, process */
 
 import { NonNullish } from '@agoric/assert';
 
 /**
- * @template K, V
- * @typedef {[key: K, val: V]} Entry<K,V>
+ * @typedef {{boardId: string, iface: string}} RpcRemote
  */
 
 export const networkConfigUrl = agoricNetSubdomain =>
@@ -225,21 +224,15 @@ harden(storageHelper);
 /**
  * @param {IdMap} ctx
  * @param {VStorage} vstorage
- * @param {string[]} [kinds]
+ * @returns {Promise<{brand: Record<string, RpcRemote>, instance: Record<string, RpcRemote>}>}
  */
-export const makeAgoricNames = async (
-  ctx,
-  vstorage,
-  kinds = ['brand', 'instance'],
-) => {
+export const makeAgoricNames = async (ctx, vstorage) => {
   const entries = await Promise.all(
-    kinds.map(async kind => {
+    ['brand', 'instance'].map(async kind => {
       const content = await vstorage.read(`published.agoricNames.${kind}`);
       const parts = storageHelper.unserialize(content, ctx).at(-1);
 
-      /** @type {Entry<string, Record<string, any>>} */
-      const entry = [kind, Object.fromEntries(parts)];
-      return entry;
+      return [kind, Object.fromEntries(parts)];
     }),
   );
   return Object.fromEntries(entries);
