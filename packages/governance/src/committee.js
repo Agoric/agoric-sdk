@@ -23,10 +23,6 @@ import {
 const { ceilDivide } = natSafeMath;
 
 /**
- * @typedef {{ question: Handle<'Question'>, outcome: Position }} OutcomeRecord
- */
-
-/**
  * Each Committee (an Electorate) represents a particular set of voters. The
  * number of voters is visible in the terms.
  *
