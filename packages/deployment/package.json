@@ -20,8 +20,8 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/assert": "^0.4.0",
-    "@endo/init": "^0.5.47",
-    "@endo/marshal": "^0.7.3",
+    "@endo/init": "^0.5.48",
+    "@endo/marshal": "^0.7.4",
     "chalk": "^2.4.2",
     "deterministic-json": "^1.0.5",
     "inquirer": "^8.2.2",

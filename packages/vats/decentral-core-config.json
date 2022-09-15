@@ -49,11 +49,8 @@
     "sharing": {
       "sourceSpec": "@agoric/vats/src/vat-sharing.js"
     },
-    "singleWallet": {
-      "sourceSpec": "@agoric/wallet/contract/src/singleWallet.js"
-    },
     "walletFactory": {
-      "sourceSpec": "@agoric/wallet/contract/src/walletFactory.js"
+      "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"
     },
     "zoe": {
       "sourceSpec": "@agoric/vats/src/vat-zoe.js"

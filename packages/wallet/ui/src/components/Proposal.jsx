@@ -15,6 +15,9 @@ const OfferEntryFromTemplate = (
 ) => {
   const value = BigInt(stringifiedValue);
   const purse = purses.find(p => p.pursePetname === pursePetname);
+  if (!purse) {
+    return null;
+  }
   return (
     <div className="OfferEntry" key={purse.brandPetname}>
       <h6>

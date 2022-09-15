@@ -4,7 +4,7 @@ import {
   makeAsyncIterableFromNotifier,
   makeNotifierKit,
 } from '@agoric/notifier';
-import { iterateLatest } from '@agoric/casting';
+import { iterateEach, iterateReverse } from '@agoric/casting';
 import { getScopedBridge } from '../service/ScopedBridge.js';
 import { getDappService } from '../service/Dapps.js';
 import { getOfferService } from '../service/Offers.js';
@@ -93,9 +93,9 @@ export const makeBackendFromWalletBridge = walletBridge => {
 };
 
 /**
- * @param {import('@agoric/casting').Follower} follower
+ * @param {import('@agoric/casting').Follower<any>} follower
  * @param {import('@agoric/casting').Leader} leader
- * @param {import('@agoric/casting').Unserializer} unserializer
+ * @param {ReturnType<import('@endo/marshal').makeMarshal>} marshaller
  * @param {string} publicAddress
  * @param {object} keplrConnection
  * @param {string} networkConfig
@@ -105,7 +105,7 @@ export const makeBackendFromWalletBridge = walletBridge => {
 export const makeWalletBridgeFromFollower = (
   follower,
   leader,
-  unserializer,
+  marshaller,
   publicAddress,
   keplrConnection,
   networkConfig,
@@ -113,7 +113,7 @@ export const makeWalletBridgeFromFollower = (
     // Make an unhandled rejection.
     throw e;
   },
-  firstCallback,
+  firstCallback = () => {},
 ) => {
   const notifiers = {
     getPursesNotifier: 'purses',
@@ -130,15 +130,80 @@ export const makeWalletBridgeFromFollower = (
     ]),
   );
 
+  // We assume just one cosmos purse per brand.
+  const offers = {};
+  const brandToPurse = new Map();
+  const pursePetnameToBrand = new Map();
+
+  const updatePurses = () => {
+    const purses = [];
+    for (const [brand, purse] of brandToPurse.entries()) {
+      if (purse.currentAmount && purse.brandPetname) {
+        pursePetnameToBrand.set(purse.pursePetname, brand);
+        purses.push(purse);
+      }
+    }
+    notifierKits.purses.updater.updateState(harden(purses));
+  };
+
   const followLatest = async () => {
-    for await (const { value: state } of iterateLatest(follower)) {
+    /** @type {number} */
+    let firstHeight;
+    for await (const { blockHeight } of iterateReverse(follower)) {
+      // TODO: Only set firstHeight and break if the value contains all our state.
+      firstHeight = blockHeight;
+    }
+    for await (const { value } of iterateEach(follower, {
+      height: firstHeight,
+    })) {
+      /** @type {import('@agoric/smart-wallet/src/smartWallet').UpdateRecord} */
+      const updateRecord = value;
       if (firstCallback) {
         firstCallback();
+        Object.values(notifierKits).forEach(({ updater }) =>
+          updater.updateState([]),
+        );
         firstCallback = undefined;
       }
-      Object.entries(notifierKits).forEach(([stateName, { updater }]) => {
-        updater.updateState(state[stateName]);
-      });
+      switch (updateRecord.updated) {
+        case 'brand': {
+          const { descriptor } = updateRecord;
+          const purseObj = {
+            ...brandToPurse.get(descriptor.brand),
+            brand: descriptor.brand,
+            brandPetname: descriptor.petname,
+            pursePetname: descriptor.petname,
+            displayInfo: descriptor.displayInfo,
+          };
+          brandToPurse.set(descriptor.brand, purseObj);
+          updatePurses();
+          break;
+        }
+        case 'balance': {
+          // TODO: Don't assume just one purse per brand.
+          // https://github.com/Agoric/agoric-sdk/issues/6126
+          const { currentAmount } = updateRecord;
+          const purseObj = {
+            ...brandToPurse.get(currentAmount.brand),
+            currentAmount,
+            value: currentAmount.value,
+          };
+          brandToPurse.set(currentAmount.brand, purseObj);
+          updatePurses();
+          break;
+        }
+        case 'offerStatus': {
+          const { status } = updateRecord;
+          offers[status.id] = status;
+          notifierKits.offers.updater.updateState(
+            harden(Object.values(offers)),
+          );
+          break;
+        }
+        default: {
+          throw Error(`Unknown updateRecord ${updateRecord.updated}`);
+        }
+      }
     }
   };
 
@@ -184,6 +249,57 @@ export const makeWalletBridgeFromFollower = (
   );
   const { acceptOffer, declineOffer, cancelOffer } = offerService;
 
+  // We override addOffer to adapt the old proposalTemplate format to the new
+  // smart-wallet format.
+  const addOfferPSMHack = async details => {
+    const {
+      instanceHandleBoardId: instance, // This actually is the instance handle, not an ID.
+      invitationMaker: { method },
+      proposalTemplate: { give, want },
+    } = details;
+
+    const mapPurses = obj =>
+      Object.fromEntries(
+        Object.entries(obj).map(([kw, { brand, pursePetname, value }]) => [
+          kw,
+          {
+            brand: brand || pursePetnameToBrand.get(pursePetname),
+            value: BigInt(value),
+          },
+        ]),
+      );
+    const offer = {
+      id: new Date().getTime(),
+      invitationSpec: {
+        source: 'contract',
+        instance,
+        publicInvitationMaker: method,
+      },
+      proposal: {
+        give: mapPurses(give),
+        want: mapPurses(want),
+      },
+    };
+    const spendAction = await E(marshaller).serialize(
+      harden({
+        method: 'executeOffer',
+        offer,
+      }),
+    );
+
+    // Recover the instance's boardId.
+    const {
+      slots: [instanceBoardId],
+    } = await E(marshaller).serialize(instance);
+
+    const fullOffer = {
+      ...details,
+      instancePetname: `instance@${instanceBoardId}`,
+      spendAction: JSON.stringify(spendAction),
+    };
+    return offerService.addOffer(fullOffer);
+  };
+
   const walletBridge = Far('follower wallet bridge', {
     ...getNotifierMethods,
     getDappsNotifier: () => dappService.notifier,
@@ -198,9 +314,9 @@ export const makeWalletBridgeFromFollower = (
     getScopedBridge: (origin, suggestedDappPetname) =>
       getScopedBridge(origin, suggestedDappPetname, {
         dappService,
-        offerService,
+        offerService: { ...offerService, addOffer: addOfferPSMHack },
         leader,
-        unserializer,
+        unserializer: marshaller,
         publicAddress,
         issuerService,
         networkConfig,

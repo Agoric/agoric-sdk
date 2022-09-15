@@ -109,7 +109,7 @@ export const zeroFee = () => {
   const { coinMinimalDenom: denom } = stableCurrency;
   const fee = {
     amount: [{ amount: '0', denom }],
-    gas: '100000', // TODO: estimate gas?
+    gas: '300000', // TODO: estimate gas?
   };
   return fee;
 };

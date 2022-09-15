@@ -36,6 +36,7 @@ export {};
  * @typedef {object} Follower
  * @property {() => Promise<AsyncIterable<T>>} getLatestIterable
  * @property {(options?: IterateEachOptions) => Promise<AsyncIterable<T>>} getEachIterable
+ * @property {(options?: IterateEachOptions) => Promise<AsyncIterable<T>>} getReverseIterable
  */
 
 /**
