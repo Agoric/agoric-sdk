@@ -243,38 +243,19 @@ export async function launch({
     log: console,
   });
 
-  async function bootstrapBlock(blockTime) {
-    controller.writeSlogObject({
-      type: 'cosmic-swingset-bootstrap-block-start',
-      blockTime,
-    });
+  async function bootstrapBlock() {
     // This is before the initial block, we need to finish processing the
     // entire bootstrap before opening for business.
     const policy = neverStop();
     await crankScheduler(policy);
-    controller.writeSlogObject({
-      type: 'cosmic-swingset-bootstrap-block-finish',
-      blockTime,
-    });
     if (setActivityhash) {
       setActivityhash(controller.getActivityhash());
     }
   }
 
-  async function endBlock(blockHeight, blockTime, params) {
-    controller.writeSlogObject({
-      type: 'cosmic-swingset-end-block-start',
-      blockHeight,
-      blockTime,
-    });
-
+  async function endBlock(params) {
     const policy = computronCounter(params.beansPerUnit);
     await crankScheduler(policy);
-    controller.writeSlogObject({
-      type: 'cosmic-swingset-end-block-finish',
-      blockHeight,
-      blockTime,
-    });
     if (setActivityhash) {
       setActivityhash(controller.getActivityhash());
     }
@@ -286,11 +267,6 @@ export async function launch({
   }
 
   async function saveOutsideState(blockHeight, blockTime) {
-    controller.writeSlogObject({
-      type: 'cosmic-swingset-commit-block-start',
-      blockHeight,
-      blockTime,
-    });
     const chainSends = clearChainSends();
     kvStore.set(getHostKey('height'), `${blockHeight}`);
     kvStore.set(getHostKey('blockTime'), `${blockTime}`);
@@ -307,12 +283,6 @@ export async function launch({
           ...afterCommitStats,
         });
       });
-
-    controller.writeSlogObject({
-      type: 'cosmic-swingset-commit-block-finish',
-      blockHeight,
-      blockTime,
-    });
   }
 
   async function deliverInbound(sender, messages, ack) {
@@ -375,11 +345,6 @@ export async function launch({
       installationPublisher = makeInstallationPublisher();
     }
 
-    controller.writeSlogObject({
-      type: 'cosmic-swingset-begin-block',
-      blockHeight,
-      blockTime,
-    });
     const addedToQueue = timer.poll(blockTime);
     console.debug(
       `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
@@ -400,7 +365,7 @@ export async function launch({
     let p;
     switch (action.type) {
       case ActionType.BOOTSTRAP_BLOCK: {
-        p = bootstrapBlock(action.blockTime);
+        p = bootstrapBlock();
         break;
       }
       case ActionType.BEGIN_BLOCK: {
@@ -450,7 +415,7 @@ export async function launch({
       }
 
       case ActionType.END_BLOCK: {
-        p = endBlock(action.blockHeight, action.blockTime, latestParams);
+        p = endBlock(latestParams);
         if (END_BLOCK_SPIN_MS) {
           // Introduce a busy-wait to artificially put load on the chain.
           p = p.then(res => {
@@ -510,30 +475,50 @@ export async function launch({
     switch (action.type) {
       case ActionType.BOOTSTRAP_BLOCK: {
         // This only runs for the very first block on the chain.
+        const { blockTime } = action;
         verboseBlocks && blockManagerConsole.info('block bootstrap');
         if (computedHeight !== 0) {
           throw Error(
             `Cannot run a bootstrap block at height ${computedHeight}`,
           );
         }
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-bootstrap-block-start',
+          blockTime,
+        });
         await processAction(action);
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-bootstrap-block-finish',
+          blockTime,
+        });
         break;
       }
 
       case ActionType.COMMIT_BLOCK: {
+        const { blockHeight, blockTime } = action;
         verboseBlocks &&
-          blockManagerConsole.info('block', action.blockHeight, 'commit');
-        if (action.blockHeight !== computedHeight) {
+          blockManagerConsole.info('block', blockHeight, 'commit');
+        if (blockHeight !== computedHeight) {
           throw Error(
-            `Committed height ${action.blockHeight} does not match computed height ${computedHeight}`,
+            `Committed height ${blockHeight} does not match computed height ${computedHeight}`,
           );
         }
 
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-commit-block-start',
+          blockHeight,
+          blockTime,
+        });
+
         // Save the kernel's computed state just before the chain commits.
         const start2 = Date.now();
-        await saveOutsideState(computedHeight, action.blockTime);
-
+        await saveOutsideState(computedHeight, blockTime);
         const saveTime = Date.now() - start2;
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-commit-block-finish',
+          blockHeight,
+          blockTime,
+        });
 
         blockManagerConsole.debug(
           `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
@@ -543,18 +528,30 @@ export async function launch({
       }
 
       case ActionType.BEGIN_BLOCK: {
+        const { blockHeight, blockTime } = action;
         verboseBlocks &&
-          blockManagerConsole.info('block', action.blockHeight, 'begin');
+          blockManagerConsole.info('block', blockHeight, 'begin');
         runTime = 0;
         beginBlockAction = action;
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-begin-block',
+          blockHeight,
+          blockTime,
+        });
         break;
       }
 
       case ActionType.END_BLOCK: {
+        const { blockHeight, blockTime } = action;
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-end-block-start',
+          blockHeight,
+          blockTime,
+        });
         // eslint-disable-next-line no-use-before-define
-        if (computedHeight > 0 && computedHeight !== action.blockHeight) {
+        if (computedHeight > 0 && computedHeight !== blockHeight) {
           // We only tolerate the trivial case.
-          const restoreHeight = action.blockHeight - 1;
+          const restoreHeight = blockHeight - 1;
           if (restoreHeight !== computedHeight) {
             // Keep throwing forever.
             decohered = Error(
@@ -565,7 +562,7 @@ export async function launch({
           }
         }
 
-        if (computedHeight === action.blockHeight) {
+        if (computedHeight === blockHeight) {
           // We are reevaluating, so send exactly the same downcalls to the chain.
           //
           // This is necessary only after a restart when Tendermint is reevaluating the
@@ -600,9 +597,14 @@ export async function launch({
 
           // Advance our saved state variables.
           beginBlockAction = undefined;
-          computedHeight = action.blockHeight;
-          savedBlockTime = action.blockTime;
+          computedHeight = blockHeight;
+          savedBlockTime = blockTime;
         }
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-end-block-finish',
+          blockHeight,
+          blockTime,
+        });
 
         break;
       }
