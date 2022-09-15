@@ -214,7 +214,7 @@ t1-provision-one-with-powers: wait-for-cosmos
 		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) -ojson | tee /dev/stderr | grep -q '"code":0'; }
 
 # Send some USDC to the vbank/provision module account where it can be traded for IST.
-fund-provision-pool: wait-for-cosmos
+fund-provision-pool:
 	$(MAKE) ACCT_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 SOLO_COINS=1234000000ibc/usdc1234 fund-acct
 
 fund-acct: wait-for-cosmos

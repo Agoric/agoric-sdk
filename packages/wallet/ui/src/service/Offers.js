@@ -40,8 +40,7 @@ export const getOfferService = (
   const acceptOffer = async id => {
     const offer = offers.get(id);
     assert(offer, `Tried to accept undefined offer ${id}`);
-    const action = offer.spendAction;
-    return signSpendAction(action);
+    return signSpendAction(offer.spendAction);
   };
 
   const cancelOffer = _id => {
@@ -64,6 +63,7 @@ export const getOfferService = (
       chainOffersNotifier,
     )) {
       state?.forEach(offer => {
+        console.log('chain offer', offer);
         const splitId = offer.id.split('#');
         const rawId = splitId[splitId.length - 1];
         if (offers.has(rawId)) {

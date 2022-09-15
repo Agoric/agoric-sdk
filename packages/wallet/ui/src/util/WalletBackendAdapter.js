@@ -194,10 +194,22 @@ export const makeWalletBridgeFromFollower = (
         }
         case 'offerStatus': {
           const { status } = updateRecord;
-          offers[status.id] = status;
-          notifierKits.offers.updater.updateState(
-            harden(Object.values(offers)),
-          );
+          console.log('offerStatus', { status, offers });
+          const oldOffer = offers[status.id];
+          if (
+            oldOffer &&
+            oldOffer.status !== 'accept' &&
+            'numWantsSatisfied' in status
+          ) {
+            offers[status.id] = {
+              ...oldOffer,
+              id: `${status.id}`,
+              status: 'accept',
+            };
+            notifierKits.offers.updater.updateState(
+              harden(Object.values(offers)),
+            );
+          }
           break;
         }
         default: {
@@ -253,6 +265,7 @@ export const makeWalletBridgeFromFollower = (
   // smart-wallet format.
   const addOfferPSMHack = async details => {
     const {
+      id,
       instanceHandleBoardId: instance, // This actually is the instance handle, not an ID.
       invitationMaker: { method },
       proposalTemplate: { give, want },
@@ -297,7 +310,9 @@ export const makeWalletBridgeFromFollower = (
       instancePetname: `instance@${instanceBoardId}`,
       spendAction: JSON.stringify(spendAction),
     };
-    return offerService.addOffer(fullOffer);
+    offerService.addOffer(fullOffer);
+    offers[id] = fullOffer;
+    return id;
   };
 
   const walletBridge = Far('follower wallet bridge', {
