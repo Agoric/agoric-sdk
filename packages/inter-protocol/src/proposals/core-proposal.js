@@ -31,7 +31,6 @@ const SHARED_MAIN_MANIFEST = harden({
       consume: { contractGovernor: 'zoe', amm: 'zoe' },
     },
     instance: {
-      consume: { economicCommittee: 'economicCommittee' },
       produce: { ammGovernor: 'ammGovernor' },
     },
   },
@@ -79,7 +78,6 @@ const SHARED_MAIN_MANIFEST = harden({
     instance: {
       consume: {
         amm: 'amm',
-        economicCommittee: 'economicCommittee',
         reserve: 'reserve',
       },
       produce: {
@@ -119,7 +117,7 @@ const SHARED_MAIN_MANIFEST = harden({
       consume: { contractGovernor: 'zoe', reserve: 'zoe' },
     },
     instance: {
-      consume: { amm: 'amm', economicCommittee: 'economicCommittee' },
+      consume: { amm: 'amm' },
       produce: {
         amm: 'amm',
         reserve: 'reserve',
@@ -198,7 +196,6 @@ const STAKE_FACTORY_MANIFEST = harden({
       consume: { contractGovernor: 'zoe', stakeFactory: 'zoe' },
     },
     instance: {
-      consume: { economicCommittee: 'economicCommittee' },
       produce: { stakeFactory: 'stakeFactory' },
     },
     brand: {

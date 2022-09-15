@@ -43,9 +43,6 @@ export const startPSM = async (
     installation: {
       consume: { contractGovernor, psm: psmInstall },
     },
-    instance: {
-      consume: { economicCommittee },
-    },
     brand: {
       consume: { [Stable.symbol]: stableP },
     },
@@ -119,7 +116,6 @@ export const startPSM = async (
   const governorTerms = await deeplyFulfilledObject(
     harden({
       timer: chainTimerService,
-      economicCommittee,
       governedContractInstallation: psmInstall,
       governed: {
         terms,

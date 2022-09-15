@@ -161,7 +161,6 @@ export const setupAmm = async (
       consume: { [Stable.symbol]: centralIssuer },
     },
     instance: {
-      consume: { economicCommittee: electorateInstance },
       produce: { ammGovernor },
     },
     installation: {
@@ -194,7 +193,6 @@ export const setupAmm = async (
   const ammGovernorTerms = await deeplyFulfilledObject(
     harden({
       timer: chainTimerService,
-      electorateInstance,
       governedContractInstallation: ammInstallation,
       governed: {
         terms: ammTerms,
@@ -255,7 +253,6 @@ export const setupReserve = async ({
     consume: { [Stable.symbol]: centralIssuer },
   },
   instance: {
-    consume: { economicCommittee: electorateInstance },
     produce: {
       amm: ammInstanceProducer,
       reserve: reserveInstanceProducer,
@@ -290,7 +287,6 @@ export const setupReserve = async ({
   const reserveGovernorTerms = await deeplyFulfilledObject(
     harden({
       timer: chainTimerService,
-      electorateInstance,
       governedContractInstallation: reserveInstallation,
       governed: {
         terms: reserveTerms,
@@ -362,11 +358,7 @@ export const startVaultFactory = async (
     },
     instance: {
       produce: instanceProduce,
-      consume: {
-        amm: ammInstance,
-        economicCommittee: economicCommitteeInstance,
-        reserve: reserveInstance,
-      },
+      consume: { amm: ammInstance, reserve: reserveInstance },
     },
     installation: {
       consume: {
@@ -433,7 +425,6 @@ export const startVaultFactory = async (
   const governorTerms = await deeplyFulfilledObject(
     harden({
       timer: chainTimerService,
-      electorateInstance: economicCommitteeInstance,
       governedContractInstallation: vaultFactoryInstallation,
       governed: {
         terms: vaultFactoryTerms,
@@ -764,7 +755,6 @@ export const startStakeFactory = async (
       },
     },
     instance: {
-      consume: { economicCommittee: electorateInstance },
       produce: { stakeFactory: stakeFactoryinstanceR },
     },
     brand: {
@@ -825,7 +815,6 @@ export const startStakeFactory = async (
   const stakeTerms = await deeplyFulfilledObject(
     harden({
       timer: chainTimerService,
-      electorateInstance,
       governedContractInstallation: stakeFactoryInstallation,
       governed: {
         terms: stakeFactoryTerms,
