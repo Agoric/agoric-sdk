@@ -61,7 +61,6 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
 /**
  * @typedef {StandardTerms} ContractGovernorTerms
  * @property {TimerService} timer
- * @property {Instance} electorateInstance
  * @property {Installation} governedContractInstallation
  */
 
@@ -70,19 +69,22 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * its own creator a facet that allows them to manage that contract's APIs,
  * offer filters, and parameters.
  *
- * The terms for this contract include the Timer, Electorate and
- * the Installation to be started, as well as an issuerKeywordRecord or terms
- * needed by the governed contract. Those details for the governed contract are
- * included in this contract's terms as a "governed" record. If the contract
- * expects privateArgs, those will be provided in this contract's `privateArgs`
- * under 'governed:'.
+ * The terms for this contract include the Timer, and the Installation to be
+ * started, as well as an issuerKeywordRecord or terms needed by the governed
+ * contract. Those details for the governed contract are included in this
+ * contract's terms as a "governed" record. If the contract expects privateArgs,
+ * those will be provided in this contract's `privateArgs` under 'governed:'.
  *
  * terms = {
  *    timer,
- *    electorateInstance,
  *    governedContractInstallation,
  *    governed: { issuerKeywordRecord, terms },
  * };
+ *
+ * The electorate that will vote on governance questions is itself a governed
+ * parameter. Its value is available from the publicFacet using
+ * getElectorateInstance(). When creating new questions, we use
+ * getUpdatedPoserFacet() to inform the electorate about the new question.
  *
  * The governedContract is responsible for supplying getParamMgrRetriever() in
  * its creatorFacet. getParamMgrRetriever() takes a ParamSpecification, which
@@ -113,7 +115,6 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * GovernedContractFacetAccess<PF,CF>,
  * {
  *   timer: TimerService,
- *   electorateInstance: Instance,
  *   governedContractInstallation: Installation<CF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,
@@ -127,7 +128,6 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * @template {() => {creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods} } SF Start function of governed contract
  * @param {ZCF<{
  *   timer: TimerService,
- *   electorateInstance: Instance,
  *   governedContractInstallation: Installation<SF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,

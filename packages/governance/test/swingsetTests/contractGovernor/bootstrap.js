@@ -296,7 +296,6 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   const terms = makeTerms(602214090000000000000000n, invitationValue);
   const governedContractTerms = {
     timer,
-    electorateInstance: firstElectorateInstance,
     governedContractInstallation: installations.governedContract,
     governed: {
       issuerKeywordRecord: {},
