@@ -1,12 +1,14 @@
 // @ts-check
 import fs from 'fs';
 import path from 'path';
+import { performance } from 'perf_hooks';
 import { tmpName } from 'tmp';
 
 import { open as lmdbOpen, ABORT as lmdbAbort } from 'lmdb';
 import sqlite3 from 'better-sqlite3';
 
 import { assert } from '@agoric/assert';
+import { makeMeasureSeconds } from '@agoric/internal';
 
 import { sqlStreamStore } from './sqlStreamStore.js';
 import { makeSnapStore } from './snapStore.js';
@@ -21,6 +23,7 @@ export function makeSnapStoreIO() {
     tmpName,
     createReadStream: fs.createReadStream,
     createWriteStream: fs.createWriteStream,
+    measureSeconds: makeMeasureSeconds(performance.now),
     open: fs.promises.open,
     rename: fs.promises.rename,
     stat: fs.promises.stat,
@@ -37,6 +40,10 @@ export function makeSnapStoreIO() {
  *   set: (key: string, value: string) => void,
  *   delete: (key: string) => void,
  * }} KVStore
+ *
+ * @typedef { import('./snapStore').SnapStore } SnapStore
+ *
+ * @typedef { import('./snapStore').SnapshotInfo } SnapshotInfo
  *
  * @typedef {{ itemCount: number }} StreamPosition
  *

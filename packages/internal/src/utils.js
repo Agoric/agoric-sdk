@@ -205,3 +205,21 @@ export const deeplyFulfilledObject = obj => {
   assert(isObject(obj), 'param must be an object');
   return deeplyFulfilled(obj);
 };
+
+/**
+ * Returns a function that uses a millisecond-based time-since-epoch capability
+ * (such as `performance.now`) to measure execution time of an async function
+ * and report the result in seconds to match our telemetry standard.
+ *
+ * @param {typeof import('perf_hooks').performance.now} currentTimeMillisec
+ * @returns {<T>(fn: () => Promise<T>) => Promise<{ result: T, duration: number }>}
+ */
+export const makeMeasureSeconds = currentTimeMillisec => {
+  const measureSeconds = async fn => {
+    const t0 = currentTimeMillisec();
+    const result = await fn();
+    const durationMillisec = currentTimeMillisec() - t0;
+    return { result, duration: durationMillisec / 1000 };
+  };
+  return measureSeconds;
+};

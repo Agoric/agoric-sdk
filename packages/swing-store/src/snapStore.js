@@ -5,6 +5,28 @@ import { createGzip, createGunzip } from 'zlib';
 import { assert, details as d } from '@agoric/assert';
 import { promisify } from 'util';
 
+/**
+ * @typedef {object} SnapshotInfo
+ * @property {string} filePath absolute path of (compressed) snapshot
+ * @property {string} hash sha256 hash of (uncompressed) snapshot
+ * @property {boolean} newFile true if the compressed snapshot is new, false otherwise
+ * @property {number} rawByteCount size of (uncompressed) snapshot
+ * @property {number} rawSaveSeconds time to save (uncompressed) snapshot
+ * @property {number} hashSeconds time to calculate snapshot hash
+ * @property {number} compressedByteCount size of (compressed) snapshot
+ * @property {number} compressSeconds time to compress and save snapshot (0 if the file is not new)
+ */
+
+/**
+ * @typedef {{
+ *   has: (hash: string) => Promise<boolean>,
+ *   load: <T>(hash: string, loadRaw: (filePath: string) => Promise<T>) => Promise<T>,
+ *   save: (saveRaw: (filePath: string) => Promise<void>) => Promise<SnapshotInfo>,
+ *   prepareToDelete: (hash: string) => void,
+ *   commitDeletes: (ignoreErrors?: boolean) => Promise<void>,
+ * }} SnapStore
+ */
+
 const pipe = promisify(pipeline);
 
 const { freeze } = Object;
@@ -14,7 +36,6 @@ const noPath = /** @type {import('fs').PathLike} */ (
 );
 
 /**
- *
  * @param {import("fs").ReadStream | import("fs").WriteStream} stream
  * @returns {Promise<void>}
  */
@@ -56,6 +77,7 @@ export const fsStreamReady = stream =>
  *   tmpName: typeof import('tmp').tmpName,
  *   createReadStream: typeof import('fs').createReadStream,
  *   createWriteStream: typeof import('fs').createWriteStream,
+ *   measureSeconds: ReturnType<typeof import('@agoric/internal').makeMeasureSeconds>,
  *   open: typeof import('fs').promises.open,
  *   resolve: typeof import('path').resolve,
  *   rename: typeof import('fs').promises.rename,
@@ -64,6 +86,7 @@ export const fsStreamReady = stream =>
  * }} io
  * @param {object} [options]
  * @param {boolean | undefined} [options.keepSnapshots]
+ * @returns {SnapStore}
  */
 export function makeSnapStore(
   root,
@@ -71,6 +94,7 @@ export function makeSnapStore(
     tmpName,
     createReadStream,
     createWriteStream,
+    measureSeconds,
     open,
     resolve,
     rename,
@@ -81,20 +105,25 @@ export function makeSnapStore(
 ) {
   /** @type {(opts: unknown) => Promise<string>} */
   const ptmpName = promisify(tmpName);
+
   /**
-   * @param {(name: string) => Promise<T>} thunk
+   * Returns the result of calling a function with the name
+   * of a temp file that exists only for the duration of
+   * its invocation.
+   *
+   * @param {(name: string) => Promise<T>} fn
    * @param {string=} prefix
    * @returns {Promise<T>}
    * @template T
    */
-  async function withTempName(thunk, prefix = 'tmp') {
+  async function withTempName(fn, prefix = 'tmp') {
     const name = await ptmpName({
       tmpdir: root,
       template: `${prefix}-XXXXXX.xss`,
     });
     let result;
     try {
-      result = await thunk(name);
+      result = await fn(name);
     } finally {
       try {
         await unlink(name);
@@ -106,41 +135,47 @@ export function makeSnapStore(
   }
 
   /**
-   * @param {string} dest basename, relative to root
-   * @param { (name: string) => Promise<void> } thunk
-   * @returns { Promise<{ filename: string, size: number }> }
+   * Creates a file atomically by moving in place a temp file
+   * populated by a callback.
+   *
+   * @param {string} baseName relative-to-root name of file to be written
+   * @param { (name: string) => Promise<void> } writeContents
+   * @returns {Promise<void>}
    */
-  async function atomicWrite(dest, thunk) {
-    assert(!dest.includes('/'));
-    const tmp = await ptmpName({ tmpdir: root, template: 'atomic-XXXXXX' });
-    let result;
+  async function atomicWriteInRoot(baseName, writeContents) {
+    // Atomicity requires remaining on the same filesystem,
+    // so we perform all operations in the root directory.
+    assert(!baseName.includes('/'));
+    const tmpFilePath = await ptmpName({
+      tmpdir: root,
+      template: 'atomic-XXXXXX',
+    });
     try {
-      await thunk(tmp);
-      const target = resolve(root, dest);
-      await rename(tmp, target);
-      const stats = await stat(target);
-      result = { filename: target, size: stats.size };
+      await writeContents(tmpFilePath);
+      const target = resolve(root, baseName);
+      await rename(tmpFilePath, target);
     } finally {
       try {
-        await unlink(tmp);
+        await unlink(tmpFilePath);
       } catch (ignore) {
         // ignore
       }
     }
-    return result;
   }
 
   /**
-   * @param {string} input
-   * @param {NodeJS.ReadWriteStream} f
-   * @param {string} output
+   * Populates destPath by streaming the contents of srcPath through a transform.
+   *
+   * @param {string} srcPath
+   * @param {NodeJS.ReadWriteStream} transform
+   * @param {string} destPath
    * @param {object} [options]
    * @param {boolean} [options.flush]
    */
-  async function filter(input, f, output, { flush = false } = {}) {
+  async function filter(srcPath, transform, destPath, { flush = false } = {}) {
     const [source, destination] = await Promise.all([
-      open(input, 'r'),
-      open(output, 'wx'),
+      open(srcPath, 'r'),
+      open(destPath, 'wx'),
     ]);
     const sourceStream = createReadStream(noPath, {
       fd: source.fd,
@@ -155,7 +190,7 @@ export function makeSnapStore(
         fsStreamReady(sourceStream),
         fsStreamReady(destinationStream),
       ]);
-      await pipe(sourceStream, f, destinationStream);
+      await pipe(sourceStream, transform, destinationStream);
       if (flush) {
         await destination.sync();
       }
@@ -173,47 +208,71 @@ export function makeSnapStore(
     return hash.digest('hex');
   }
 
-  /** @param {unknown} hash */
-  function hashPath(hash) {
+  /** @param {string} hash */
+  function baseNameFromHash(hash) {
     assert.typeof(hash, 'string');
     assert(!hash.includes('/'));
-    return resolve(root, `${hash}.gz`);
+    return `${hash}.gz`;
+  }
+
+  /** @param {string} hash */
+  function fullPathFromHash(hash) {
+    return resolve(root, baseNameFromHash(hash));
   }
 
   /** @type { Set<string> } */
   const toDelete = new Set();
 
   /**
-   * @param {(fn: string) => Promise<void>} saveRaw
-   * @returns {Promise<string>} sha256 hash of (uncompressed) snapshot
+   * @param {(filePath: string) => Promise<void>} saveRaw
+   * @returns {Promise<SnapshotInfo>}
    */
   async function save(saveRaw) {
-    return withTempName(async snapFile => {
-      await saveRaw(snapFile);
-      const stats = await stat(snapFile);
-      const rawsize = stats.size;
-      const h = await fileHash(snapFile);
-      if (toDelete.has(h)) {
-        toDelete.delete(h);
-      }
-      // console.log('save', { snapFile, h });
-      const fileStat = await stat(hashPath(h)).catch(e => {
+    return withTempName(async tmpSnapPath => {
+      const { duration: rawSaveSeconds } = await measureSeconds(() =>
+        saveRaw(tmpSnapPath),
+      );
+      const { size: rawByteCount } = await stat(tmpSnapPath);
+      const { result: hash, duration: hashSeconds } = await measureSeconds(() =>
+        fileHash(tmpSnapPath),
+      );
+      toDelete.delete(hash);
+      const baseName = baseNameFromHash(hash);
+      const filePath = resolve(root, baseName);
+      const infoBase = {
+        filePath,
+        hash,
+        rawByteCount,
+        rawSaveSeconds,
+        hashSeconds,
+      };
+      const fileStat = await stat(filePath).catch(e => {
         if (e.code === 'ENOENT') {
           return undefined;
         }
         throw e;
       });
       if (fileStat) {
-        return h;
+        const { size: compressedByteCount } = fileStat;
+        return freeze({
+          ...infoBase,
+          newFile: false,
+          compressSeconds: 0,
+          compressedByteCount,
+        });
       }
-      const res = await atomicWrite(`${h}.gz`, gztmp =>
-        filter(snapFile, createGzip(), gztmp, { flush: true }),
+      const { duration: compressSeconds } = await measureSeconds(() =>
+        atomicWriteInRoot(baseName, tmpGzPath =>
+          filter(tmpSnapPath, createGzip(), tmpGzPath, { flush: true }),
+        ),
       );
-      // TODO: remove once #5419 is resolved
-      console.log(
-        `XS snapshot written to ${res.filename} : ${res.size} bytes compressed, ${rawsize} raw`,
-      );
-      return h;
+      const { size: compressedByteCount } = await stat(filePath);
+      return freeze({
+        ...infoBase,
+        newFile: true,
+        compressSeconds,
+        compressedByteCount,
+      });
     }, 'save-raw');
   }
 
@@ -222,7 +281,7 @@ export function makeSnapStore(
    * @returns {Promise<boolean>}
    */
   function has(hash) {
-    return stat(hashPath(hash))
+    return stat(fullPathFromHash(hash))
       .then(_stats => true)
       .catch(err => {
         if (err.code === 'ENOENT') {
@@ -234,17 +293,15 @@ export function makeSnapStore(
 
   /**
    * @param {string} hash
-   * @param {(fn: string) => Promise<T>} loadRaw
+   * @param {(filePath: string) => Promise<T>} loadRaw
    * @template T
    */
   async function load(hash, loadRaw) {
-    return withTempName(async raw => {
-      await filter(hashPath(hash), createGunzip(), raw);
-      const actual = await fileHash(raw);
-      // console.log('load', { raw, hash });
+    return withTempName(async tmpFilePath => {
+      await filter(fullPathFromHash(hash), createGunzip(), tmpFilePath);
+      const actual = await fileHash(tmpFilePath);
       assert(actual === hash, d`actual hash ${actual} !== expected ${hash}`);
-      // be sure to await loadRaw before exiting withTempName
-      const result = await loadRaw(raw);
+      const result = await loadRaw(tmpFilePath);
       return result;
     }, `${hash}-load`);
   }
@@ -253,7 +310,7 @@ export function makeSnapStore(
    * @param {string} hash
    */
   function prepareToDelete(hash) {
-    hashPath(hash); // check constraints early
+    fullPathFromHash(hash); // check constraints early
     toDelete.add(hash);
   }
 
@@ -262,7 +319,7 @@ export function makeSnapStore(
 
     await Promise.all(
       [...toDelete].map(async hash => {
-        const fullPath = hashPath(hash);
+        const fullPath = fullPathFromHash(hash);
         try {
           if (keepSnapshots !== true) {
             await unlink(fullPath);

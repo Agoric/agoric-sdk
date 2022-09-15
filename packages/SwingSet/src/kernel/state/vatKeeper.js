@@ -588,7 +588,16 @@ export function makeVatKeeper(
       return false;
     }
 
-    const snapshotID = await manager.makeSnapshot(snapStore);
+    const info = await manager.makeSnapshot(snapStore);
+    const {
+      hash: snapshotID,
+      newFile,
+      rawByteCount,
+      rawSaveSeconds,
+      hashSeconds,
+      compressedByteCount,
+      compressSeconds,
+    } = info;
     const old = getLastSnapshot();
     if (old && old.snapshotID !== snapshotID) {
       if (removeFromSnapshot(old.snapshotID) === 0) {
@@ -605,6 +614,12 @@ export function makeVatKeeper(
       type: 'heap-snapshot-save',
       vatID,
       snapshotID,
+      newFile,
+      rawByteCount,
+      rawSaveSeconds,
+      hashSeconds,
+      compressedByteCount,
+      compressSeconds,
       endPosition,
     });
     return true;
