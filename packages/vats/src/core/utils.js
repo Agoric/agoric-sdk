@@ -34,7 +34,6 @@ export const agoricNamesReserved = harden({
   installation: {
     centralSupply: 'central supply',
     mintHolder: 'mint holder',
-    singleWallet: 'single smart wallet',
     walletFactory: 'multitenant smart wallet',
     provisionPool: 'provision accounts with initial IST',
     contractGovernor: 'contract governor',

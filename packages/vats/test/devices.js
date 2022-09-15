@@ -6,14 +6,12 @@ import bundlePSMCharter from '@agoric/inter-protocol/bundles/bundle-psmCharter.j
 
 import bundleCentralSupply from '../bundles/bundle-centralSupply.js';
 import bundleMintHolder from '../bundles/bundle-mintHolder.js';
-import bundleSingleWallet from '../bundles/bundle-singleWallet.js';
 import bundleWalletFactory from '../bundles/bundle-walletFactory.js';
 import bundleProvisionPool from '../bundles/bundle-provisionPool.js';
 
 const bundles = {
   centralSupply: bundleCentralSupply,
   mintHolder: bundleMintHolder,
-  singleWallet: bundleSingleWallet,
   walletFactory: bundleWalletFactory,
   committee: bundleCommittee,
   contractGovernor: bundleContractGovernor,

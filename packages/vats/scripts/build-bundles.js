@@ -10,10 +10,6 @@ const sourceToBundle = [
   [`../src/mintHolder.js`, `../bundles/bundle-mintHolder.js`],
   [`../src/provisionPool.js`, `../bundles/bundle-provisionPool.js`],
   [
-    `@agoric/wallet/contract/src/singleWallet.js`,
-    `../bundles/bundle-singleWallet.js`,
-  ],
-  [
     `@agoric/smart-wallet/src/walletFactory.js`,
     `../bundles/bundle-walletFactory.js`,
   ],
