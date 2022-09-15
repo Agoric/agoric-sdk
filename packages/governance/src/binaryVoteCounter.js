@@ -3,6 +3,7 @@
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeHeapFarInstance, keyEQ, makeStore } from '@agoric/store';
+import { E } from '@endo/eventual-send';
 
 import {
   buildUnrankedQuestion,
@@ -53,7 +54,12 @@ const validateBinaryQuestionSpec = questionSpec => {
 // independently. The standard Zoe start function is at the bottom of this file.
 
 /** @type {BuildVoteCounter} */
-const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
+const makeBinaryVoteCounter = (
+  questionSpec,
+  threshold,
+  instance,
+  publisher,
+) => {
   validateBinaryQuestionSpec(questionSpec);
 
   const question = buildUnrankedQuestion(questionSpec, instance);
@@ -113,6 +119,13 @@ const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
 
     if (!makeQuorumCounter(threshold).check(stats)) {
       outcomePromise.reject('No quorum');
+      /** @type {OutcomeRecord} */
+      const voteOutcome = {
+        question: details.questionHandle,
+        outcome: 'fail',
+        reason: 'No quorum',
+      };
+      E(publisher).publish(voteOutcome);
       return;
     }
 
@@ -123,6 +136,17 @@ const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
     } else {
       outcomePromise.resolve(questionSpec.tieOutcome);
     }
+
+    // XXX if we should distinguish ties, publish should be called in if above
+    E.when(outcomePromise.promise, position => {
+      /** @type {OutcomeRecord} */
+      const voteOutcome = {
+        question: details.questionHandle,
+        position,
+        outcome: 'win',
+      };
+      return E(publisher).publish(voteOutcome);
+    });
   };
 
   const closeFacet = makeHeapFarInstance(
@@ -196,9 +220,10 @@ const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
 // instance in the publicFacet before returning public and creator facets.
 
 /**
- * @type {ContractStartFn<VoteCounterPublicFacet, VoteCounterCreatorFacet, {questionSpec: QuestionSpec, quorumThreshold: bigint}>}
+ * @param {ZCF<{questionSpec: QuestionSpec, quorumThreshold: bigint}>} zcf
+ * @param {{outcomePublisher: Publisher<OutcomeRecord>}} outcomePublisher
  */
-const start = zcf => {
+const start = (zcf, { outcomePublisher }) => {
   // There are a variety of ways of counting quorums. The parameters must be
   // visible in the terms. We're doing a simple threshold here. If we wanted to
   // discount abstentions, we could refactor to provide the quorumCounter as a
@@ -210,6 +235,7 @@ const start = zcf => {
     questionSpec,
     quorumThreshold,
     zcf.getInstance(),
+    outcomePublisher,
   );
 
   scheduleClose(questionSpec.closingRule, () => closeFacet.closeVoting());
