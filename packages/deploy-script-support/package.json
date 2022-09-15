@@ -43,10 +43,10 @@
     "@agoric/vats": "^0.10.0",
     "@agoric/zoe": "^0.24.0",
     "@endo/base64": "^0.2.27",
-    "@endo/bundle-source": "^2.2.6",
-    "@endo/far": "^0.2.9",
-    "@endo/marshal": "^0.7.3",
-    "@endo/promise-kit": "^0.2.47",
+    "@endo/bundle-source": "^2.3.0",
+    "@endo/far": "^0.2.10",
+    "@endo/marshal": "^0.7.4",
+    "@endo/promise-kit": "^0.2.48",
     "@endo/zip": "^0.2.27"
   },
   "devDependencies": {

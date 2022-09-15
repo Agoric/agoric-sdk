@@ -96,12 +96,9 @@ export const start = async zcf => {
   };
 
   const psmCharterCreatorI = M.interface('PSM Charter creatorFacet', {
-    addInstance: M.call(
-      InstanceHandleShape,
-      M.any(),
-      BrandShape,
-      BrandShape,
-    ).returns(),
+    addInstance: M.call(InstanceHandleShape, M.any())
+      .optional(BrandShape, BrandShape)
+      .returns(),
     makeCharterMemberInvitation: M.call().returns(M.promise()),
   });
 

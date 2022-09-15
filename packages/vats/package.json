@@ -38,17 +38,17 @@
     "@agoric/swingset-vat": "^0.28.0",
     "@agoric/wallet-backend": "^0.12.1",
     "@agoric/zoe": "^0.24.0",
-    "@endo/far": "^0.2.9",
-    "@endo/import-bundle": "^0.2.51",
-    "@endo/init": "^0.5.47",
-    "@endo/marshal": "^0.7.3",
-    "@endo/promise-kit": "^0.2.47"
+    "@endo/far": "^0.2.10",
+    "@endo/import-bundle": "^0.2.52",
+    "@endo/init": "^0.5.48",
+    "@endo/marshal": "^0.7.4",
+    "@endo/promise-kit": "^0.2.48"
   },
   "devDependencies": {
     "@agoric/deploy-script-support": "^0.9.0",
     "@agoric/smart-wallet": "^0.2.0",
-    "@endo/bundle-source": "^2.2.6",
-    "@endo/captp": "^2.0.13",
+    "@endo/bundle-source": "^2.3.0",
+    "@endo/captp": "^2.0.14",
     "ava": "^4.3.1",
     "c8": "^7.7.2",
     "import-meta-resolve": "^1.1.1"
