@@ -19,13 +19,11 @@ make scenario2-setup scenario2-run-chain-psm
 cd packages/cosmic-swingset
 # Fund the pool
 make fund-provision-pool
-# Copy the agoric address from your keplr wallet or 'agd keys list', starts with 'agoric1'
-KEY=<yoursBech32>
 # Provision your wallet
-make ACCT_ADDR=$KEY AGORIC_POWERS=SMART_WALLET fund-acct provision-acct
+agoric wallet provision --account <key-name>
 # verify
 agoric wallet list
-agoric wallet show --from \$KEY
+agoric wallet show --from <key-name>
 "
     exit 1
 fi

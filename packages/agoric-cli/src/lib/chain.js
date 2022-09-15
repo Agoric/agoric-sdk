@@ -14,7 +14,20 @@ export const normalizeAddress = literalOrName => {
 };
 harden(normalizeAddress);
 
-export const execSwingsetTransaction = (swingsetArgs, net, from, dryRun) => {
+/**
+ * SECURITY: closes over process and child_process
+ *
+ * @param {string} swingsetArgs
+ * @param {import('./rpc').MinimalNetworkConfig} net
+ * @param {string} from
+ * @param {boolean} [dryRun]
+ */
+export const execSwingsetTransaction = (
+  swingsetArgs,
+  net,
+  from,
+  dryRun = false,
+) => {
   const { chainName, rpcAddrs } = net;
 
   const cmd = `agd --node=${rpcAddrs[0]} --chain-id=${chainName} --from=${from} tx swingset ${swingsetArgs}`;
@@ -30,3 +43,12 @@ export const execSwingsetTransaction = (swingsetArgs, net, from, dryRun) => {
   }
 };
 harden(execSwingsetTransaction);
+
+// xxx rpc should be able to query this by HTTP without shelling out
+export const fetchSwingsetParams = net => {
+  const { chainName, rpcAddrs } = net;
+  const cmd = `agd --node=${rpcAddrs[0]} --chain-id=${chainName} query swingset params --output --json`;
+  const buffer = execSync(cmd);
+  return JSON.parse(buffer.toString());
+};
+harden(fetchSwingsetParams);

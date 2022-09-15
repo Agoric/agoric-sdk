@@ -14,12 +14,49 @@ import { makeRpcUtils, networkConfig } from '../lib/rpc.js';
 import { getWalletState } from '../lib/wallet.js';
 
 import { makeLeaderOptions } from '../lib/casting.js';
-import { execSwingsetTransaction, normalizeAddress } from '../lib/chain.js';
+import {
+  execSwingsetTransaction,
+  fetchSwingsetParams,
+  normalizeAddress,
+} from '../lib/chain.js';
 
 const SLEEP_SECONDS = 3;
 
 export const makeWalletCommand = async () => {
   const wallet = new Command('wallet').description('wallet commands');
+
+  wallet
+    .command('provision')
+    .description('provision a Smart Wallet')
+    .requiredOption(
+      '--account [address]',
+      'address literal or name',
+      normalizeAddress,
+    )
+    .option('--spend', 'confirm you want to spend')
+    .option('--nickname [string]', 'nickname to use', 'my-wallet')
+    .action(function () {
+      const { account, nickname, spend } = this.opts();
+      if (spend) {
+        const tx = `provision-one ${nickname} ${account} SMART_WALLET`;
+        execSwingsetTransaction(tx, networkConfig, account);
+      } else {
+        const params = fetchSwingsetParams(networkConfig);
+        assert(
+          params.power_flag_fees.length === 1,
+          'multiple power_flag_fees not supported',
+        );
+        const { fee: fees } = params.power_flag_fees[0];
+        const nf = new Intl.NumberFormat('en-US');
+        const costs = fees
+          .map(f => `${nf.format(Number(f.amount))} ${f.denom}`)
+          .join(' + ');
+        process.stdout.write(`Provisioning a wallet costs ${costs}\n`);
+        process.stdout.write(
+          `To really provision, repeat this command with --spend\n`,
+        );
+      }
+    });
 
   wallet
     .command('send')
