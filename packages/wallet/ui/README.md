@@ -16,19 +16,21 @@ make scenario2-setup scenario2-run-chain-psm
 
 # (new tab) chain setup
 cd packages/cosmic-swingset
-# Fund the pool
-make fund-provision-pool
-# Fund your wallet
+# Confirm you have the key material for signing
 export ACCT_ADDR=<key-bech32>
-# with 100 BLD for provisioning wallet and 100 USDC for psm trading
-make ACCT_ADDR=$ACCT_ADDR SOLO_COINS=10000000ubld,10000000ibc/usdc1234 fund-acct
+agd keys show $ACCT_ADDR
+
+# Fund the pool and your wallet
+make fund-provision-pool fund-wallet
 agd query bank balances $ACCT_ADDR
 
 # Provision your smart wallet
-agoric wallet provision --account <key-name>
-# now refresh the wallet UI and purses should load
+agoric wallet provision --spend --account <key-name>
+# verify
+agoric wallet list
+agoric wallet show --from <key-name>
 
-# Start a wallet UI, new shell
+# Start a wallet UI
 cd packages/wallet/ui && yarn start
 # NB: trailing slash
 open http://localhost:3000/wallet/ 

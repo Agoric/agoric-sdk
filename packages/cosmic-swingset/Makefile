@@ -212,38 +212,23 @@ t1-provision-one-with-powers: wait-for-cosmos
 		  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
 		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) -ojson | tee /dev/stderr | grep -q '"code":0'; }
 
-# Send some USDC to the vbank/provision module account where it can be traded
-# for IST. The mint limit is 1000 IST, each wallet gets 0.25 IST when
-# provisioned, so make room for 400 accounts with 100 USDC which mints 100 IST.
-fund-provision-pool:
-	$(MAKE) ACCT_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 SOLO_COINS=100000000ibc/usdc1234 fund-acct
-
-# After `fund-provision-pool` there is 900 IST remaining for account funding.
 fund-acct: wait-for-cosmos
 	$(AGCH) \
 	  --home=t1/bootstrap --keyring-backend=test --from=bootstrap \
-	  tx bank send bootstrap $(ACCT_ADDR) $(SOLO_COINS) \
+	  tx bank send bootstrap $(ACCT_ADDR) $(FUNDS) \
 	  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID)
 
-provision-acct: wait-for-cosmos
-	$(AGCH) --chain-id=$(CHAIN_ID) \
-	  --home=t1/bootstrap --keyring-backend=test --from=bootstrap \
-	  tx swingset provision-one t1/$(BASE_PORT) $(ACCT_ADDR) SMART_WALLET \
-	  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes
+# Send some USDC to the vbank/provision module account where it can be traded
+# for IST. The mint limit is 1000 IST, each wallet gets 0.25 IST when
+# provisioned, so make room for 400 accounts with 100 USDC which mints 100 IST.
+# The agoric1megzy… address is the account of the provisioning pool.
+fund-provision-pool:
+	$(MAKE) ACCT_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 FUNDS=100000000ibc/usdc1234 fund-acct
 
-FROM_KEY=bootstrap
-SIGN_MODE=
-wallet-action: wait-for-cosmos
-	$(AGCH) \
-	  --home=t1/bootstrap --keyring-backend=test --from=$(FROM_KEY) $(SIGN_MODE)\
-	  tx swingset wallet-action '{"give": 10, "want": 1}' \
-	  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID)
-
-wallet-action-gen:
-	$(AGCH) --chain-id=$(CHAIN_ID) \
-	  --home=t1/bootstrap --keyring-backend=test --from=$$(cat t1/bootstrap-address) $(SIGN_MODE)\
-	  tx swingset wallet-action '{"action":1}' \
-	  --generate-only --offline
+# After `fund-provision-pool` there is 900 IST remaining for other account funding.
+# A wallet can be tested with 20 BLD for provisioning wallet and 20 USDC for psm trading
+fund-wallet:
+	$(MAKE) ACCT_ADDR=$(ACCT_ADDR) FUNDS=20000000ubld,20000000ibc/usdc1234 fund-acct
 
 t1-provision-one: wait-for-cosmos
 	@addrfile=t1/$(BASE_PORT)/cosmos-client-account; \

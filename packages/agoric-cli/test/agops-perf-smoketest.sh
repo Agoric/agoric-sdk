@@ -17,12 +17,11 @@ make scenario2-setup scenario2-run-chain-psm
 
 # (new tab)
 cd packages/cosmic-swingset
-# Fund the pool
-make fund-provision-pool
-# Fund your wallet
+# Confirm you have the key material for signing
 export ACCT_ADDR=<key-bech32>
-# with 100 BLD for provisioning wallet and 100 USDC for psm trading
-make ACCT_ADDR=$ACCT_ADDR SOLO_COINS=100000000ubld,100000000ibc/usdc1234 fund-acct
+agd keys show $ACCT_ADDR
+# Fund the pool and your wallet
+make fund-provision-pool fund-wallet
 agd query bank balances $ACCT_ADDR
 
 # Provision your wallet
