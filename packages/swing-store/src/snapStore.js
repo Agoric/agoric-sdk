@@ -138,21 +138,22 @@ export function makeSnapStore(
    * Creates a file atomically by moving in place a temp file
    * populated by a callback.
    *
-   * @param {string} destFilePath absolute path of file to be written
+   * @param {string} baseName relative-to-root name of file to be written
    * @param { (name: string) => Promise<void> } writeContents
    * @returns {Promise<void>}
    */
-  async function atomicWrite(destFilePath, writeContents) {
+  async function atomicWriteInRoot(baseName, writeContents) {
     // Atomicity requires remaining on the same filesystem,
-    // so we perform all operations in the destination directory.
-    const dir = resolve(destFilePath, '..');
+    // so we perform all operations in the root directory.
+    assert(!baseName.includes('/'));
     const tmpFilePath = await ptmpName({
-      tmpdir: dir,
+      tmpdir: root,
       template: 'atomic-XXXXXX',
     });
     try {
       await writeContents(tmpFilePath);
-      await rename(tmpFilePath, destFilePath);
+      const target = resolve(root, baseName);
+      await rename(tmpFilePath, target);
     } finally {
       try {
         await unlink(tmpFilePath);
@@ -207,11 +208,16 @@ export function makeSnapStore(
     return hash.digest('hex');
   }
 
-  /** @param {unknown} hash */
-  function hashPath(hash) {
+  /** @param {string} hash */
+  function baseNameFromHash(hash) {
     assert.typeof(hash, 'string');
     assert(!hash.includes('/'));
-    return resolve(root, `${hash}.gz`);
+    return `${hash}.gz`;
+  }
+
+  /** @param {string} hash */
+  function fullPathFromHash(hash) {
+    return resolve(root, baseNameFromHash(hash));
   }
 
   /** @type { Set<string> } */
@@ -231,7 +237,8 @@ export function makeSnapStore(
         fileHash(tmpSnapPath),
       );
       toDelete.delete(hash);
-      const filePath = hashPath(hash);
+      const baseName = baseNameFromHash(hash);
+      const filePath = resolve(root, baseName);
       const infoBase = {
         filePath,
         hash,
@@ -255,7 +262,7 @@ export function makeSnapStore(
         });
       }
       const { duration: compressSeconds } = await measureSeconds(() =>
-        atomicWrite(filePath, tmpGzPath =>
+        atomicWriteInRoot(baseName, tmpGzPath =>
           filter(tmpSnapPath, createGzip(), tmpGzPath, { flush: true }),
         ),
       );
@@ -274,7 +281,7 @@ export function makeSnapStore(
    * @returns {Promise<boolean>}
    */
   function has(hash) {
-    return stat(hashPath(hash))
+    return stat(fullPathFromHash(hash))
       .then(_stats => true)
       .catch(err => {
         if (err.code === 'ENOENT') {
@@ -291,7 +298,7 @@ export function makeSnapStore(
    */
   async function load(hash, loadRaw) {
     return withTempName(async tmpFilePath => {
-      await filter(hashPath(hash), createGunzip(), tmpFilePath);
+      await filter(fullPathFromHash(hash), createGunzip(), tmpFilePath);
       const actual = await fileHash(tmpFilePath);
       assert(actual === hash, d`actual hash ${actual} !== expected ${hash}`);
       const result = await loadRaw(tmpFilePath);
@@ -303,7 +310,7 @@ export function makeSnapStore(
    * @param {string} hash
    */
   function prepareToDelete(hash) {
-    hashPath(hash); // check constraints early
+    fullPathFromHash(hash); // check constraints early
     toDelete.add(hash);
   }
 
@@ -312,7 +319,7 @@ export function makeSnapStore(
 
     await Promise.all(
       [...toDelete].map(async hash => {
-        const fullPath = hashPath(hash);
+        const fullPath = fullPathFromHash(hash);
         try {
           if (keepSnapshots !== true) {
             await unlink(fullPath);
