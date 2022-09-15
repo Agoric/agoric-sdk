@@ -3,17 +3,15 @@ import bundleContractGovernor from '@agoric/governance/bundles/bundle-contractGo
 import bundleBinaryVoteCounter from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
 import bundlePSM from '@agoric/inter-protocol/bundles/bundle-psm.js';
 import bundlePSMCharter from '@agoric/inter-protocol/bundles/bundle-psmCharter.js';
+import bundleWalletFactory from '@agoric/smart-wallet/bundles/bundle-walletFactory.js';
 
 import bundleCentralSupply from '../bundles/bundle-centralSupply.js';
 import bundleMintHolder from '../bundles/bundle-mintHolder.js';
-import bundleSingleWallet from '../bundles/bundle-singleWallet.js';
-import bundleWalletFactory from '../bundles/bundle-walletFactory.js';
 import bundleProvisionPool from '../bundles/bundle-provisionPool.js';
 
 const bundles = {
   centralSupply: bundleCentralSupply,
   mintHolder: bundleMintHolder,
-  singleWallet: bundleSingleWallet,
   walletFactory: bundleWalletFactory,
   committee: bundleCommittee,
   contractGovernor: bundleContractGovernor,
