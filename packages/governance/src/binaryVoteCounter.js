@@ -119,6 +119,12 @@ const makeBinaryVoteCounter = (
 
     if (!makeQuorumCounter(threshold).check(stats)) {
       outcomePromise.reject('No quorum');
+      const voteOutcome = {
+        question: details.questionHandle,
+        outcome: 'No quorum',
+      };
+      // @ts-expect-error Expand type to allow non-position?
+      E(publisher).publish(voteOutcome);
       return;
     }
 

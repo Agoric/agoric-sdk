@@ -7,7 +7,10 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { Far } from '@endo/marshal';
 import { makeStoredPublishKit } from '@agoric/notifier';
-import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
+import {
+  eventLoopIteration,
+  makeFakeMarshaller,
+} from '@agoric/notifier/tools/testSupports.js';
 
 import {
   makeBinaryVoteCounter,
@@ -44,8 +47,9 @@ const FAKE_CLOSING_RULE = {
 const FAKE_COUNTER_INSTANCE = makeHandle('Instance');
 
 function makePublisherFromFakes() {
-  return makeStoredPublishKit(makeMockChainStorageRoot(), makeFakeMarshaller())
-    .publisher;
+  const storageRoot = makeMockChainStorageRoot();
+  const publishKit = makeStoredPublishKit(storageRoot, makeFakeMarshaller());
+  return { publisher: publishKit.publisher, storageRoot };
 }
 
 test('binary question', async t => {
@@ -59,11 +63,12 @@ test('binary question', async t => {
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BAIT,
   });
+  const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
     questionSpec,
     0n,
     FAKE_COUNTER_INSTANCE,
-    makePublisherFromFakes(),
+    publisher,
   );
   const aliceTemplate = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
@@ -75,6 +80,11 @@ test('binary question', async t => {
   closeFacet.closeVoting();
   const outcome = await E(publicFacet).getOutcome();
   t.deepEqual(outcome, FISH);
+
+  await eventLoopIteration();
+  t.like(storageRoot.getBody('mockChainStorageRoot'), {
+    outcome: FISH,
+  });
 });
 
 test('binary spoiled', async t => {
@@ -88,11 +98,13 @@ test('binary spoiled', async t => {
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BAIT,
   });
+
+  const { publisher } = makePublisherFromFakes();
   const { publicFacet, creatorFacet } = makeBinaryVoteCounter(
     questionSpec,
     0n,
     FAKE_COUNTER_INSTANCE,
-    makePublisherFromFakes(),
+    publisher,
   );
   const aliceTemplate = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
@@ -120,11 +132,13 @@ test('binary tied', async t => {
     quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
   });
+
+  const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
     questionSpec,
     2n,
     FAKE_COUNTER_INSTANCE,
-    makePublisherFromFakes(),
+    publisher,
   );
   const aliceTemplate = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
@@ -136,6 +150,11 @@ test('binary tied', async t => {
   closeFacet.closeVoting();
   const outcome = await E(publicFacet).getOutcome();
   t.deepEqual(outcome, negative);
+
+  await eventLoopIteration();
+  t.like(storageRoot.getBody('mockChainStorageRoot'), {
+    outcome: negative,
+  });
 });
 
 test('binary bad vote', async t => {
@@ -149,16 +168,28 @@ test('binary bad vote', async t => {
     quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
   });
-  const { creatorFacet } = makeBinaryVoteCounter(
+  const { publisher, storageRoot } = makePublisherFromFakes();
+  const { creatorFacet, publicFacet, closeFacet } = makeBinaryVoteCounter(
     questionSpec,
     0n,
     FAKE_COUNTER_INSTANCE,
-    makePublisherFromFakes(),
+    publisher,
   );
   const aliceSeat = makeHandle('Voter');
 
   await t.throwsAsync(() => E(creatorFacet).submitVote(aliceSeat, [BAIT]), {
     message: `The specified choice is not a legal position: {"text":"Cut Bait"}.`,
+  });
+
+  closeFacet.closeVoting();
+  const outcome = await E(publicFacet)
+    .getOutcome()
+    .catch(e => t.is(e, 'No quorum'));
+  t.deepEqual(outcome, negative);
+
+  await eventLoopIteration();
+  t.like(storageRoot.getBody('mockChainStorageRoot'), {
+    outcome: negative,
   });
 });
 
@@ -173,16 +204,22 @@ test('binary no votes', async t => {
     quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
   });
+  const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, closeFacet } = makeBinaryVoteCounter(
     questionSpec,
     0n,
     FAKE_COUNTER_INSTANCE,
-    makePublisherFromFakes(),
+    publisher,
   );
 
   closeFacet.closeVoting();
   const outcome = await E(publicFacet).getOutcome();
   t.deepEqual(outcome, negative);
+
+  await eventLoopIteration();
+  t.like(storageRoot.getBody('mockChainStorageRoot'), {
+    outcome: negative,
+  });
 });
 
 test('binary varying share weights', async t => {
@@ -196,11 +233,12 @@ test('binary varying share weights', async t => {
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BAIT,
   });
+  const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
     questionSpec,
     1n,
     FAKE_COUNTER_INSTANCE,
-    makePublisherFromFakes(),
+    publisher,
   );
   const aceSeat = makeHandle('Voter');
   const austinSeat = makeHandle('Voter');
@@ -215,6 +253,11 @@ test('binary varying share weights', async t => {
   closeFacet.closeVoting();
   const outcome = await E(publicFacet).getOutcome();
   t.deepEqual(outcome, FISH);
+
+  await eventLoopIteration();
+  t.like(storageRoot.getBody('mockChainStorageRoot'), {
+    outcome: FISH,
+  });
 });
 
 test('binary contested', async t => {
@@ -229,11 +272,12 @@ test('binary contested', async t => {
     quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
   });
+  const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
     questionSpec,
     3n,
     FAKE_COUNTER_INSTANCE,
-    makePublisherFromFakes(),
+    publisher,
   );
   const template = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
@@ -248,6 +292,11 @@ test('binary contested', async t => {
 
   const outcome = await E(publicFacet).getOutcome();
   t.deepEqual(outcome, negative);
+
+  await eventLoopIteration();
+  t.like(storageRoot.getBody('mockChainStorageRoot'), {
+    outcome: negative,
+  });
 });
 
 test('binary revote', async t => {
@@ -261,11 +310,12 @@ test('binary revote', async t => {
     quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
   });
+  const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
     questionSpec,
     5n,
     FAKE_COUNTER_INSTANCE,
-    makePublisherFromFakes(),
+    publisher,
   );
   const template = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
@@ -281,6 +331,11 @@ test('binary revote', async t => {
 
   const outcome = await E(publicFacet).getOutcome();
   t.deepEqual(outcome, positive);
+
+  await eventLoopIteration();
+  t.like(storageRoot.getBody('mockChainStorageRoot'), {
+    outcome: positive,
+  });
 });
 
 test('binary question too many', async t => {
@@ -294,11 +349,12 @@ test('binary question too many', async t => {
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BAIT,
   });
-  const { publicFacet, creatorFacet } = makeBinaryVoteCounter(
+  const { publisher, storageRoot } = makePublisherFromFakes();
+  const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
     questionSpec,
     1n,
     FAKE_COUNTER_INSTANCE,
-    makePublisherFromFakes(),
+    publisher,
   );
   const aliceTemplate = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
@@ -310,6 +366,17 @@ test('binary question too many', async t => {
       message: 'only 1 position allowed',
     },
   );
+
+  closeFacet.closeVoting();
+  const outcome = await E(publicFacet)
+    .getOutcome()
+    .catch(e => t.is(e, 'No quorum'));
+  t.deepEqual(outcome, true);
+
+  await eventLoopIteration();
+  t.like(storageRoot.getBody('mockChainStorageRoot'), {
+    outcome: 'No quorum',
+  });
 });
 
 test('binary no quorum', async t => {
@@ -323,11 +390,12 @@ test('binary no quorum', async t => {
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BAIT,
   });
+  const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
     questionSpec,
     2n,
     FAKE_COUNTER_INSTANCE,
-    makePublisherFromFakes(),
+    publisher,
   );
   const aliceTemplate = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
@@ -339,6 +407,11 @@ test('binary no quorum', async t => {
     .getOutcome()
     .then(o => t.fail(`expected to reject, not ${o}`))
     .catch(e => t.deepEqual(e, 'No quorum'));
+
+  await eventLoopIteration();
+  t.like(storageRoot.getBody('mockChainStorageRoot'), {
+    outcome: 'No quorum',
+  });
 });
 
 test('binary too many positions', async t => {
