@@ -43,7 +43,9 @@ const makePurseController = (
       let updateRecord = await balanceNotifier.getUpdateSince();
       while (updateRecord.updateCount) {
         yield updateRecord.value;
-        // eslint-disable-next-line no-await-in-loop
+        // This nested await is safe because "terminal-control-flow".
+        //
+        // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
         updateRecord = await balanceNotifier.getUpdateSince(
           updateRecord.updateCount,
         );

@@ -325,6 +325,15 @@ export function makeOnewayPriceAuthorityKit(opts) {
               // We don't wait for the quote to be authenticated; resolve
               // immediately.
               quotePK.resolve(quoteP);
+              // This nested await is safe because
+              // "synchronous-throw-impossible" + "terminal-control-flow".
+              //
+              // The expression `quotePK.promise` might be a rejected promise,
+              // but (we assume) this expression cannot throw. Thus, if we
+              // reach here, we would only proceed to the stateful catch
+              // body after a turn boundary. The try-catch statement is
+              // top-level and terminal within the wake method.
+              // eslint-disable-next-line @jessie.js/no-nested-await
               await quotePK.promise;
             } catch (e) {
               quotePK.reject(e);

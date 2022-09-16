@@ -1,3 +1,9 @@
+// IIUC the purpose of the deploy-script-support package,
+// we do not need to worry
+// about await safety for any of the code in this package.
+// TODO someone who understands this package better should verify this.
+/* eslint-disable @jessie.js/no-nested-await */
+
 import fs from 'fs';
 import { E } from '@endo/far';
 

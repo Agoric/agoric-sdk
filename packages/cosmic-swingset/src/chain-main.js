@@ -156,6 +156,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const port = lastPort;
     portHandlers[port] = async (...phArgs) => {
       try {
+        // Nested await is safe because "terminal-control-flow"
+        //
+        // For these purposes, `console.error` is not considered significantly
+        // stateful.
+        // eslint-disable-next-line @jessie.js/no-nested-await
         return await portHandler(...phArgs);
       } catch (e) {
         console.error('portHandler threw', e);
@@ -303,13 +308,12 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       ROLE: 'chain',
       bootMsg,
     };
-    const vatconfig = new URL(
-      await importMetaResolve(
-        env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
-          argv.bootMsg.params.bootstrap_vat_config,
-        import.meta.url,
-      ),
-    ).pathname;
+    const url = await importMetaResolve(
+      env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
+        argv.bootMsg.params.bootstrap_vat_config,
+      import.meta.url,
+    );
+    const vatconfig = new URL(url).pathname;
 
     const { metricsProvider } = getTelemetryProviders({
       console,
@@ -458,6 +462,13 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
     // Ensure that initialization has completed.
     if (!blockingSend) {
+      // TODO FIXME This code should be refactored to make this
+      // await checkably safe, or to remove it, or to record here
+      // why it is actually safe.
+      //
+      // Likely `blockingSend` is not sensitive to whether it is called
+      // in the same or a subsequent turn. If that were verified, then
+      // this await would be safe because "terminal-control-flow".
       blockingSend = await launchAndInitializeSwingSet(action);
     }
 

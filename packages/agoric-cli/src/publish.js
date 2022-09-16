@@ -1,3 +1,8 @@
+// IIUC the purpose of the agoric-cli package, we do not need to worry
+// about await safety for any of the code in this package.
+// TODO someone who understands this package better should verify this.
+/* eslint-disable @jessie.js/no-nested-await */
+
 // @ts-check
 /// <reference types="ses"/>
 

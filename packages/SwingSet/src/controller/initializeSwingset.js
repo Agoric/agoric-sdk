@@ -24,8 +24,10 @@ const { keys, values, fromEntries } = Object;
  * @returns {Promise<Record<string, V>>}
  * @template V
  */
-const allValues = async obj =>
-  fromEntries(zip(keys(obj), await Promise.all(values(obj))));
+const allValues = async obj => {
+  const vals = await Promise.all(values(obj));
+  return fromEntries(zip(keys(obj), vals));
+};
 
 const bundleRelative = rel =>
   bundleSource(new URL(rel, import.meta.url).pathname);
@@ -172,7 +174,14 @@ export function loadBasedir(basedir, options = {}) {
  */
 async function resolveSpecFromConfig(referrer, specPath) {
   try {
-    return new URL(await resolveModuleSpecifier(specPath, referrer)).pathname;
+    // This nested await is safe because "terminal-control-flow".
+    //
+    // Some code does execute after this one, synchronously or asynchronously.
+    // That would normally be unsafe, but all that code is clearly not stateful.
+    // Its correctness is independent on timing.
+    // eslint-disable-next-line @jessie.js/no-nested-await
+    const base = await resolveModuleSpecifier(specPath, referrer);
+    return new URL(base).pathname;
   } catch (e) {
     if (e.code !== 'MODULE_NOT_FOUND' && e.code !== 'ERR_MODULE_NOT_FOUND') {
       throw e;
@@ -235,7 +244,21 @@ export async function loadSwingsetConfigFile(configPath) {
       configPath,
       `file:///${process.cwd()}/`,
     ).toString();
+    // This nested await is safe because "not-my-problem".
+    //
+    // It does occur nested with a control flow branch. But it is at top
+    // level within that branch, followed by another await also at
+    // top level within that branch. Therefore, this await introduces
+    // no unsafety beyond that potentially caused by the next await.
+    // eslint-disable-next-line @jessie.js/no-nested-await
     await normalizeConfigDescriptor(config.vats, referrer, true);
+    // This nested await is safe because "synchonous-throw-impossible".
+    //
+    // normalizeConfigDescriptor is an async function. The only argument
+    // expression that might in theory throw is `config.bundles`, which we
+    // are confident could not actually throw. Even if it could, we'd still
+    // be safe because "terminal-control-flow". The catch body is not stateful.
+    // eslint-disable-next-line @jessie.js/no-nested-await
     await normalizeConfigDescriptor(config.bundles, referrer, false);
     // await normalizeConfigDescriptor(config.devices, referrer, true); // TODO: represent devices
     assert(config.bootstrap, X`no designated bootstrap vat in ${configPath}`);

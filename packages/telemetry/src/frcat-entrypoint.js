@@ -14,6 +14,7 @@ const main = async () => {
   }
 
   for await (const file of files) {
+    // This nested await is safe because "top-level-of-for-await".
     // eslint-disable-next-line @jessie.js/no-nested-await
     const { readCircBuf } = await makeMemoryMappedCircularBuffer({
       circularBufferFilename: file,
@@ -51,7 +52,9 @@ const main = async () => {
       }
 
       // If the buffer is full, wait for stdout to drain.
-      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
+      //
+      // This nested await is safe because "synchronous-throw-impossible".
+      // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
       await new Promise(resolve => process.stdout.once('drain', resolve));
     }
   }

@@ -10,7 +10,16 @@ export const waitForBootstrap = async getBootstrap => {
   let update = await getLoadingUpdate();
   while (update.value.includes('wallet')) {
     console.log('waiting for wallet');
-    // eslint-disable-next-line no-await-in-loop
+    // This await is safe because "terminal-combined-control-flow".
+    //
+    // It occurs at the top level of the loop body of a non-terminal top
+    // level loop, so we need to consider the zero-vs-non-zero iteration
+    // cases wrt the potentially stateful `getBootstrap()`. However, there is
+    // a turn boundary immediately prior to the loop, with no
+    // potentially stateful execution between that turn boundary and the loop.
+    // So, considering the loop and that previous await together,
+    // `getBootstrap()` in always called in a new turn.
+    // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
     update = await getLoadingUpdate(update.updateCount);
   }
 

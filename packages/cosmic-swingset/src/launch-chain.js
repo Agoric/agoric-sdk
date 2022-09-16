@@ -98,6 +98,14 @@ async function buildSwingset(
 
     // Find the entrypoints for all the core proposals.
     if (config.coreProposals) {
+      // TODO FIXME This code should be refactored to make this
+      // await checkably safe, or to remove it, or to record here
+      // why it is actually safe.
+      //
+      // `initializeSwingset` is stateful and is called synchronously
+      // or asynchronously, depending on which branch of the conditional
+      // is taken. If it were verified to be insensitive to this,
+      // then this await would be safe because "terminal-control-flow"
       const { bundles, code } = await extractCoreProposalBundles(
         config.coreProposals,
         vatconfig,
@@ -654,6 +662,11 @@ export async function launch({
           blockHeight,
           runNum,
         });
+        // This nested await is safe because "terminal-control-flow".
+        //
+        // It occurs at the top level of a case of an unbalanced,
+        // but top level terminal switch. Nothing happens after the switch.
+        // eslint-disable-next-line @jessie.js/no-nested-await
         await processAction(action.type, bootstrapBlock);
         controller.writeSlogObject({
           type: 'cosmic-swingset-run-finish',
@@ -685,6 +698,9 @@ export async function launch({
 
         // Save the kernel's computed state just before the chain commits.
         const start2 = Date.now();
+        // This nested await is safe because "terminal-control-flow".
+        //
+        // eslint-disable-next-line @jessie.js/no-nested-await
         await saveOutsideState(savedHeight, blockTime);
         const saveTime = Date.now() - start2;
         controller.writeSlogObject({
@@ -756,6 +772,14 @@ export async function launch({
 
           provideInstallationPublisher();
 
+          // This nested await is safe because "terminal-control-flow".
+          //
+          // It occurs at the top level of a branch of an unbalanced
+          // but terminal if, that is top level and terminal within a case
+          // of a top level unbalanced but terminal and top level switch.
+          // Thus, nothing happens after completion of the immeiately
+          // enclosing if.
+          // eslint-disable-next-line @jessie.js/no-nested-await
           await processAction(action.type, async () =>
             runKernel(
               blockHeight,
@@ -767,6 +791,9 @@ export async function launch({
 
           // We write out our on-chain state as a number of chainSends.
           const start = Date.now();
+          // This nested await is safe because "terminal-control-flow".
+          //
+          // eslint-disable-next-line @jessie.js/no-nested-await
           await saveChainState();
           chainTime = Date.now() - start;
 

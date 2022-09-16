@@ -97,6 +97,12 @@ export const makeStartInstance = (
         `creatorInvitation must be defined to be deposited`,
       );
       console.log(`-- Adding Invitation for: ${instancePetname}`);
+      // This nested await is safe bacause "terminal-control-flow".
+      //
+      // Nothing potentially stateful happens in this function after the
+      // await. For these purposes, `console.log` is not considered
+      // significantly stateful.
+      // eslint-disable-next-line @jessie.js/no-nested-await
       const invitationAmount = await E(zoeInvitationPurse).deposit(
         creatorInvitation,
       );

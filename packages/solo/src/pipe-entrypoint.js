@@ -37,6 +37,9 @@ const main = async () => {
   switch (method) {
     case 'connectToFakeChain': {
       const [basedir, GCI, delay] = margs;
+      // This nested await is safe because "terminal-control-flow".
+      //
+      // eslint-disable-next-line @jessie.js/no-nested-await
       deliverator = await connectToFakeChain(
         basedir,
         GCI,

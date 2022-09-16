@@ -465,7 +465,16 @@ const helperBehavior = {
 
         // The rest of this method will not happen until after a quote is received.
         // This may not happen until much later, when the market changes.
-        // eslint-disable-next-line no-await-in-loop
+        //
+        // This nested await is safe because "terminal-control-flow"
+        //
+        // It occurs at top level of the body of a top level terminal
+        // while. But do note that the enclosing function is an asynchronous
+        // generator function and that there is a `yield` within the loop.
+        // I don't think that causes any additional worries, but I have not
+        // thought about it enough.
+        //
+        // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
         const quote = await E(ephemera.outstandingQuote).getPromise();
         ephemera.outstandingQuote = null;
         // When we receive a quote, we check whether the vault with the highest
@@ -486,7 +495,10 @@ const helperBehavior = {
         }
       }
     }
+
     for await (const next of eventualLiquidations()) {
+      // This nested await is safe because "top-of-for-await"
+      // eslint-disable-next-line @jessie.js/no-nested-await
       await facets.helper.liquidateAndRemove(next);
       trace('price check liq', state.collateralBrand, next && next[0]);
     }

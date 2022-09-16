@@ -196,9 +196,22 @@ const start = async zcf => {
         trace('exiting processTranches loop');
         return;
       }
+      // This await almost certainly does not do what was intended.
+      // `oncePerBlock()` returns an async generator, not a promise,
+      // and does nothing observably effectful to anyone not pulling on
+      // the generator, which this code drops. AFAICT, this code is
+      // equivalent to `await null;`. It imposes a non-delayed turn boundary
+      // and does nothing else.
+      // See https://github.com/Agoric/agoric-sdk/issues/6220
       await oncePerBlock();
 
       // Determine the max allowed tranche size
+      //
+      // This nested await is safe because "terminal-control-flow".
+      //
+      // It occurs at the top level of the body of a terminal top level
+      // while.
+      // eslint-disable-next-line @jessie.js/no-nested-await
       const { Secondary: poolCollateral, Central: poolCentral } = await E(
         amm,
       ).getPoolAllocation(toSell.brand);
@@ -223,6 +236,11 @@ const start = async zcf => {
 
       // this could use a unit rather than the tranche size to run concurrently
       /** @type PriceQuote */
+      // This nested await is safe because "terminal-control-flow".
+      //
+      // It occurs at the top level of the body of a terminal top level
+      // while.
+      // eslint-disable-next-line @jessie.js/no-nested-await
       const oracleQuote = await E(priceAuthority).quoteGiven(
         tranche,
         debtBrand,
@@ -300,6 +318,8 @@ const start = async zcf => {
       const collateralBefore = debtorSeat.getAmountAllocated('In');
       const proceedsBefore = debtorSeat.getAmountAllocated('Out');
 
+      // This nested await is safe because "top-of-for-await"
+      // eslint-disable-next-line @jessie.js/no-nested-await
       await sellTranche(debtorSeat, collateral, debt, oracleLimit);
 
       const proceedsAfter = debtorSeat.getAmountAllocated('Out');

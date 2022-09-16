@@ -208,7 +208,11 @@ export async function replayXSnap(
    */
   async function runSteps(rd, steps) {
     const folder = rd.path;
-    for (const step of steps) {
+    // Changed from `for of` to `for await of` to make awaits within
+    // loop body safer. A `for await of` will correctly process a synchronous
+    // iterator, but it still unconditionally separates the iterations
+    // with turn boundaries.
+    for await (const step of steps) {
       const parts = step.match(/(\d+)-([a-zA-Z]+)\.(dat|json)$/);
       if (!parts) {
         throw Error(`expected 0001-abc.dat; got: ${step}`);
@@ -217,45 +221,86 @@ export async function replayXSnap(
       const seq = parseInt(digits, 10);
       console.log(folder, seq, kind);
       if (running && !['command', 'reply'].includes(kind)) {
-        // eslint-disable-next-line no-await-in-loop
+        // This nested await is safe because "all-branches-balanced".
+        //
+        // This nested synchronous-throw-impossible await at the top level of
+        // the then branch is safe because it is balanced by a
+        // synchronous-throw-impossible await at the top level of the else
+        // branch. In fact the await in the else branch was introduced for
+        // that balance, in order to make this one safe.
+        // eslint-disable-next-line @jessie.js/no-nested-await
         await running;
         running = undefined;
+      } else {
+        // This nested await is safe because "all-branches-balanced".
+        //
+        // This nested synchronous-throw-impossible await at the top level of
+        // the else branch is safe because it is balanced by a
+        // synchronous-throw-impossible await at the top level of the then
+        // branch. In fact it was introduced for that balance, in order to
+        // make the `await` in the then branch safe.
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        await null;
       }
       const file = rd.file(step);
       switch (kind) {
-        case 'isReady':
-          // eslint-disable-next-line no-await-in-loop
+        case 'isReady': {
+          // This nested await is safe because "terminal-control-flow".
+          //
+          // The awaits within the switch are unbalanced. The occur on some
+          // branches and not others. This would be ok if the switch
+          // were terminal control flow, i.e., if no stateful synchronous code
+          // happens after the switch. This is now true, because of the
+          // extra `await null` turn boundary before the remaining stateful
+          // code. Now that code will always happen after a turn boundary.
+          //
+          // eslint-disable-next-line @jessie.js/no-nested-await
           await it.isReady();
           break;
-        case 'evaluate':
+        }
+        case 'evaluate': {
           running = it.evaluate(file.getText());
           break;
-        case 'issueCommand':
+        }
+        case 'issueCommand': {
           running = it.issueCommand(file.getData());
           break;
-        case 'command':
+        }
+        case 'command': {
           // ignore; we already know how to reply
           break;
-        case 'reply':
+        }
+        case 'reply': {
           replies.put(file.getData());
           break;
-        case 'snapshot':
+        }
+        case 'snapshot': {
           if (folders.length > 1 && folder !== folders.slice(-1)[0]) {
             console.log(folder, step, 'ignoring remaining steps from', folder);
             return;
           } else {
             try {
-              // eslint-disable-next-line no-await-in-loop
+              // This nested await is safe because "terminal-control-flow",
+              // given that we do not consider the timing of a `console.log`
+              // to be a practical hazard.
+              // eslint-disable-next-line @jessie.js/no-nested-await
               await it.snapshot(file.getText());
             } catch (err) {
               console.warn(err, 'while taking snapshot:', err);
             }
           }
           break;
-        default:
+        }
+        default: {
           console.log(`bad kind: ${kind}`);
           throw RangeError(`bad kind: ${kind}`);
+        }
       }
+      // This nested await is safe because "top-level-of-for-await".
+      // We introduced it to make the unbalanced awaits in the above switch
+      // statement safe.
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await null;
       done.push([folder, seq, kind]);
     }
   }
@@ -268,6 +313,11 @@ export async function replayXSnap(
       const storedOpts = JSON.parse(rd.file(optionsFn).getText());
       console.log(folder, optionsFn, 'already spawned; ignoring:', storedOpts);
     }
+    // This nested await is safe because "top-level-of-for-await".
+    // It occurs at the top level of a for-await body, and so everything
+    // afterwards happens after a turn boundary, whether the awaited expression
+    // throws or not.
+    // eslint-disable-next-line @jessie.js/no-nested-await
     await runSteps(rd, steps);
   }
 

@@ -1,3 +1,8 @@
+// IIUC the purpose of the solo package, we do not need to worry
+// about await safety for any of the code in this package.
+// TODO someone who understands this package better should verify this.
+/* eslint-disable @jessie.js/no-nested-await */
+
 /* global setTimeout clearTimeout setInterval clearInterval process */
 // Start a network service
 import path from 'path';

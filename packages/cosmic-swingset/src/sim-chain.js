@@ -40,6 +40,12 @@ async function makeMapStorage(file) {
 
   let obj = {};
   try {
+    // This await is safe because "terminal-throw-control-flow".
+    //
+    // It occurs at the top level of a top level try block, and so executes
+    // unconditionally. If it throws, it exits the function without further
+    // stateful execution.
+    // eslint-disable-next-line @jessie.js/no-nested-await
     content = await fs.promises.readFile(file);
     obj = JSON.parse(content);
   } catch (e) {
@@ -70,13 +76,12 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     },
   };
 
-  const vatconfig = new URL(
-    await importMetaResolve(
-      process.env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
-        argv.bootMsg.params.bootstrap_vat_config,
-      import.meta.url,
-    ),
-  ).pathname;
+  const url = await importMetaResolve(
+    process.env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
+      argv.bootMsg.params.bootstrap_vat_config,
+    import.meta.url,
+  );
+  const vatconfig = new URL(url).pathname;
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
   function replayChainSends() {
     assert.fail(X`Replay not implemented`);
@@ -196,6 +201,8 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     // Only actually simulate a block if we're not in bootstrap.
     if (blockHeight && !delay) {
       clearTimeout(nextBlockTimeout);
+      // This await is safe because "terminal-control-flow"
+      // eslint-disable-next-line @jessie.js/no-nested-await
       await simulateBlock();
     }
   }

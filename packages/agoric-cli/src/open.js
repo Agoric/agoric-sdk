@@ -55,6 +55,9 @@ export default async function walletMain(progname, rawArgs, powers, opts) {
   process.stdout.write(`${walletUrl}\n`);
   if (opts.browser) {
     const browser = opener(walletUrl);
+    // This await is safe because terminal-control-flow.
+    //
+    // eslint-disable-next-line @jessie.js/no-nested-await
     await new Promise(resolve => browser.on('exit', resolve));
   }
 }

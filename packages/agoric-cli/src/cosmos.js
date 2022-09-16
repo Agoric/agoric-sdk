@@ -85,6 +85,8 @@ export default async function cosmosMain(progname, rawArgs, powers, opts) {
   }
 
   if (popts.pull) {
+    // This await is safe because "terminal-control-flow"
+    // eslint-disable-next-line @jessie.js/no-nested-await
     const exitStatus = await pspawn('docker', ['pull', IMAGE]);
     if (exitStatus) {
       return exitStatus;
