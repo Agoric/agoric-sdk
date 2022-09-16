@@ -96,7 +96,7 @@ const makeTestContext = async () => {
   const psmInstall = await E(zoe).install(psmBundle);
   const centralSupply = await E(zoe).install(centralSupplyBundle);
 
-  const mintLimit = AmountMath.make(anchor.brand, MINT_LIMIT);
+  const mintLimit = AmountMath.make(mintedBrand, MINT_LIMIT);
 
   const marshaller = makeBoard().getReadonlyMarshaller();
 
@@ -311,7 +311,7 @@ test('simple trades', async t => {
 });
 
 test('limit', async t => {
-  const { mintLimit, anchor } = t.context;
+  const { anchor } = t.context;
 
   const driver = await makePsmDriver(t);
 
@@ -320,7 +320,7 @@ test('limit', async t => {
   await driver.assertPoolBalance(initialPool);
 
   trace('test going over limit');
-  const give = mintLimit;
+  const give = anchor.make(MINT_LIMIT);
   const paymentPs = await driver.swapAnchorForMinted(give);
   trace('gone over limit');
 
@@ -336,6 +336,27 @@ test('limit', async t => {
   driver.assertPoolBalance(initialPool);
   // TODO Offer result should be an error
   // t.throwsAsync(() => await E(seat1).getOfferResult());
+});
+
+test('limit is for minted', async t => {
+  const { minted, anchor } = t.context;
+  // only 50 minted allowed per anchor
+  const anchorPerMinted = makeRatio(50n, anchor.brand, 100n, minted.brand);
+  const driver = await makePsmDriver(t, { anchorPerMinted });
+
+  trace('test going over limit');
+  const giveTooMuch = anchor.make(MINT_LIMIT);
+  const seat1 = await driver.swapAnchorForMintedSeat(giveTooMuch);
+  t.throwsAsync(() => E(seat1).getOfferResult(), {
+    message: 'Request would exceed mint limit',
+  });
+  trace('limit is enforced on the Minted rather than Anchor');
+
+  trace('test right at limit');
+  const give = anchor.make(MINT_LIMIT / 2n);
+  const paymentPs = await driver.swapAnchorForMinted(give);
+  await paymentPs;
+  trace('test at minted limit works');
 });
 
 /** @type {[kind: 'want' | 'give', give: number, want: number, ok: boolean, wants?: number][]} */

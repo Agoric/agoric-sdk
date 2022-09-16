@@ -51,7 +51,7 @@ export const startPSM = async (
     options: { anchorOptions = {} } = {},
     WantMintedFeeBP = 1n,
     GiveMintedFeeBP = 3n,
-    MINT_LIMIT = 20_000_000n * 1_000_000n,
+    MINT_LIMIT = 1_000n * 1_000_000n,
   } = {},
 ) => {
   const { denom, keyword = 'AUSD' } = anchorOptions;
@@ -79,7 +79,7 @@ export const startPSM = async (
       E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
     ]);
 
-  const mintLimit = AmountMath.make(anchorBrand, MINT_LIMIT);
+  const mintLimit = AmountMath.make(stable, MINT_LIMIT);
   const terms = await deeplyFulfilledObject(
     harden({
       anchorBrand,
