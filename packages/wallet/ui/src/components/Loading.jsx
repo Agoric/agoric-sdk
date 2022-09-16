@@ -11,11 +11,11 @@ import {
 const statusMessage = (status, config, defaultMessage) => {
   switch (status) {
     case ConnectionStatus.Connecting:
-      return `Connecting to ${config.type} wallet at ${config.href}`;
+      return `Connecting to wallet at ${config.href}`;
     case ConnectionStatus.Disconnected:
       return `Disconnected from ${config.href}`;
     case ConnectionStatus.Error:
-      return `Error connecting to ${config.type} wallet at ${config.href}`;
+      return `Error connecting to wallet at ${config.href}`;
     default:
       return defaultMessage;
   }

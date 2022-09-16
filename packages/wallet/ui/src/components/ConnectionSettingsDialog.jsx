@@ -14,7 +14,6 @@ import { makeStyles } from '@mui/styles';
 import { useMemo, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 import { deepEquals } from '../util/DeepEquals';
-
 import { withApplicationContext } from '../contexts/Application';
 import { SmartConnectionMethod } from '../util/connections';
 import { maybeSave } from '../util/storage';

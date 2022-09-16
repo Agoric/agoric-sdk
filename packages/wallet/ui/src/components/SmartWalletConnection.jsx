@@ -9,9 +9,11 @@ import { withApplicationContext } from '../contexts/Application';
 import {
   makeBackendFromWalletBridge,
   makeWalletBridgeFromFollower,
+  NO_SMART_WALLET_ERROR,
 } from '../util/WalletBackendAdapter';
 import { SmartConnectionMethod } from '../util/connections';
 import { bridgeStorageMessages } from '../util/BridgeStorage';
+import ProvisionDialog from './ProvisionDialog';
 
 const Alert = React.forwardRef(function Alert({ children, ...props }, ref) {
   return (
@@ -29,6 +31,7 @@ const SmartWalletConnection = ({
   keplrConnection,
 }) => {
   const [snackbarMessages, setSnackbarMessages] = useState([]);
+  const [provisionDialogOpen, setProvisionDialogOpen] = useState(false);
   setConnectionState('connecting');
 
   const handleSnackbarClose = (_, reason) => {
@@ -50,6 +53,17 @@ const SmartWalletConnection = ({
     setSnackbarMessages(sm => [...sm, { severity, message }]);
   };
 
+  const { href, smartConnectionMethod } = connectionConfig;
+  let publicAddress;
+  if (
+    smartConnectionMethod === SmartConnectionMethod.KEPLR &&
+    keplrConnection
+  ) {
+    publicAddress = keplrConnection.address;
+  } else if (smartConnectionMethod === SmartConnectionMethod.READ_ONLY) {
+    publicAddress = connectionConfig.publicAddress;
+  }
+
   useEffect(() => {
     if (
       !connectionConfig ||
@@ -61,19 +75,16 @@ const SmartWalletConnection = ({
 
     let cancelIterator;
     let cleanupStorageBridge;
-    const follow = async () => {
-      const { href, smartConnectionMethod } = connectionConfig;
-      let publicAddress;
-      if (smartConnectionMethod === SmartConnectionMethod.KEPLR) {
-        publicAddress = keplrConnection.address;
-      } else {
-        publicAddress = connectionConfig.publicAddress;
-      }
 
+    const follow = async () => {
       const backendError = e => {
-        showError('Error in wallet backend', e);
         setBackend(null);
         setConnectionState('error');
+        if (e.message === NO_SMART_WALLET_ERROR) {
+          setProvisionDialogOpen(true);
+        } else {
+          showError('Error in wallet backend', e);
+        }
       };
 
       const context = makeImportContext();
@@ -132,6 +143,11 @@ const SmartWalletConnection = ({
           {snackbarMessages[0]?.message}
         </Alert>
       </Snackbar>
+      <ProvisionDialog
+        open={provisionDialogOpen}
+        address={publicAddress}
+        href={href}
+      />
     </div>
   );
 };

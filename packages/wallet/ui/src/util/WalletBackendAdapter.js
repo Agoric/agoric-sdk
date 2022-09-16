@@ -11,6 +11,7 @@ import { getOfferService } from '../service/Offers.js';
 import { getIssuerService } from '../service/Issuers.js';
 
 const newId = kind => `${kind}${Math.random()}`;
+export const NO_SMART_WALLET_ERROR = 'no smart wallet';
 
 export const makeBackendFromWalletBridge = walletBridge => {
   /**
@@ -153,7 +154,7 @@ export const makeWalletBridgeFromFollower = (
       // TODO: Only set firstHeight and break if the value contains all our state.
       firstHeight = blockHeight;
     }
-    assert(firstHeight, 'no smart wallet');
+    assert(firstHeight, NO_SMART_WALLET_ERROR);
     for await (const { value } of iterateEach(follower, {
       height: firstHeight,
     })) {
