@@ -13,7 +13,7 @@ import { createHash } from 'crypto';
 import { pipeline } from 'stream';
 import { performance } from 'perf_hooks';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { tmpName } from 'tmp';
+import { file as tmpFile, tmpName } from 'tmp';
 import bundleSource from '@endo/bundle-source';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { makeSnapStore } from '@agoric/swing-store';
@@ -63,11 +63,13 @@ function makeSnapStoreIO() {
   return {
     createReadStream: fs.createReadStream,
     createWriteStream: fs.createWriteStream,
+    fsync: fs.fsync,
     measureSeconds: makeMeasureSeconds(performance.now),
     open: fs.promises.open,
     rename: fs.promises.rename,
     resolve: path.resolve,
     stat: fs.promises.stat,
+    tmpFile,
     tmpName,
     unlink: fs.promises.unlink,
   };

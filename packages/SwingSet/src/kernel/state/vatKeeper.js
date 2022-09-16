@@ -594,7 +594,6 @@ export function makeVatKeeper(
       newFile,
       rawByteCount,
       rawSaveSeconds,
-      hashSeconds,
       compressedByteCount,
       compressSeconds,
     } = info;
@@ -617,7 +616,6 @@ export function makeVatKeeper(
       newFile,
       rawByteCount,
       rawSaveSeconds,
-      hashSeconds,
       compressedByteCount,
       compressSeconds,
       endPosition,

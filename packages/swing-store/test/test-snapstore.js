@@ -19,6 +19,7 @@ test('build temp file; compress to cache file', async t => {
   await fs.promises.mkdir(pool.name, { recursive: true });
   const store = makeSnapStore(pool.name, {
     ...tmp,
+    tmpFile: tmp.file,
     ...path,
     ...fs,
     ...fs.promises,
@@ -38,7 +39,6 @@ test('build temp file; compress to cache file', async t => {
     filePath: path.resolve(pool.name, `${expectedHash}.gz`),
     rawByteCount: 3,
     rawSaveSeconds: 0,
-    hashSeconds: 0,
     compressSeconds: 0,
   });
   t.is(await store.has(hash), true);
@@ -62,6 +62,7 @@ test('snapStore prepare / commit delete is robust', async t => {
 
   const io = {
     ...tmp,
+    tmpFile: tmp.file,
     ...path,
     ...fs,
     ...fs.promises,

@@ -2,7 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import { performance } from 'perf_hooks';
-import { tmpName } from 'tmp';
+import { file as tmpFile, tmpName } from 'tmp';
 
 import { open as lmdbOpen, ABORT as lmdbAbort } from 'lmdb';
 import sqlite3 from 'better-sqlite3';
@@ -22,11 +22,13 @@ export function makeSnapStoreIO() {
   return {
     createReadStream: fs.createReadStream,
     createWriteStream: fs.createWriteStream,
+    fsync: fs.fsync,
     measureSeconds: makeMeasureSeconds(performance.now),
     open: fs.promises.open,
     rename: fs.promises.rename,
     resolve: path.resolve,
     stat: fs.promises.stat,
+    tmpFile,
     tmpName,
     unlink: fs.promises.unlink,
   };
