@@ -50,6 +50,7 @@ function echoCommand(arg) {
  * @property {(request:Uint8Array) => Promise<Uint8Array>} [handleCommand]
  * @property {string=} [name]
  * @property {boolean=} [debug]
+ * @property {number} [netstringMaxChunkSize] in bytes (must be an integer)
  * @property {number=} [parserBufferSize] in kB (must be an integer)
  * @property {string=} [snapshot]
  * @property {'ignore' | 'inherit'} [stdout]
@@ -64,6 +65,7 @@ export function xsnap(options) {
     name = '<unnamed xsnap worker>',
     handleCommand = echoCommand,
     debug = false,
+    netstringMaxChunkSize = undefined,
     parserBufferSize = undefined,
     snapshot = undefined,
     stdout = 'ignore',
@@ -146,6 +148,7 @@ export function xsnap(options) {
   );
   const messagesFromXsnap = makeNetstringReader(
     makeNodeReader(/** @type {import('stream').Readable} */ (reader)),
+    { maxMessageLength: netstringMaxChunkSize },
   );
 
   /** @type {Promise<void>} */

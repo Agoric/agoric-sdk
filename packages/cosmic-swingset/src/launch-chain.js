@@ -340,7 +340,13 @@ export async function launch({
   }
 
   async function installBundle(bundleSource) {
-    const bundle = JSON.parse(bundleSource);
+    let bundle;
+    try {
+      bundle = JSON.parse(bundleSource);
+    } catch (e) {
+      blockManagerConsole.warn('INSTALL_BUNDLE warn:', e);
+      return;
+    }
     harden(bundle);
 
     const error = await controller.validateAndInstallBundle(bundle).then(
