@@ -49,7 +49,7 @@ export const exponentialBackoff = (attempt = 0, base = 1_000, cap = 30_000) => {
  */
 export const DEFAULT_JITTER = where => {
   const jitter = randomBackoff(DEFAULT_JITTER_SECONDS * 1_000);
-  console.warn(`jittering ${where} by ${Math.ceil(jitter)}ms`);
+  console.debug(`jittering ${where} by ${Math.ceil(jitter)}ms`);
   return delay(jitter);
 };
 
@@ -63,7 +63,7 @@ export const DEFAULT_JITTER = where => {
  */
 export const DEFAULT_RETRY_CALLBACK = (where, err, attempt = 0) => {
   const backoff = exponentialBackoff(attempt);
-  console.warn(
+  console.log(
     `retrying ${where} in ${Math.ceil(backoff)}ms after attempt #${attempt}`,
     err,
   );

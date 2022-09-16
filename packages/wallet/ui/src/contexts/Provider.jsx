@@ -19,7 +19,7 @@ import {
 } from '../util/keyManagement';
 
 const useDebugLogging = (state, watch) => {
-  useEffect(() => console.log(state), watch);
+  useEffect(() => console.debug({ state }), watch);
 };
 
 const cmp = (a, b) => {
@@ -335,7 +335,7 @@ const Provider = ({ children }) => {
       const backoff = Math.ceil(
         Math.min(Math.random() * 2 ** attempts * 1_000, 10_000),
       );
-      console.log('Retrying connection after', backoff, 'ms...');
+      console.debug('Retrying connection after', backoff, 'ms...');
       await new Promise(
         resolve => (retryTimeout = setTimeout(resolve, backoff)),
       );
