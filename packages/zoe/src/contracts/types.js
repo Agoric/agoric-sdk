@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @typedef {object} SellItemsPublicFacet
  * @property {() => Issuer} getItemsIssuer

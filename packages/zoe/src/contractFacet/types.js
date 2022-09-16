@@ -1,3 +1,4 @@
+// @ts-check
 /// <reference types="ses"/>
 
 // XXX can be tighter than 'any'
