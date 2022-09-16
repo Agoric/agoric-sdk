@@ -254,14 +254,6 @@ export async function launch({
     }
   }
 
-  async function endBlock(params) {
-    const policy = computronCounter(params.beansPerUnit);
-    await crankScheduler(policy);
-    if (setActivityhash) {
-      setActivityhash(controller.getActivityhash());
-    }
-  }
-
   async function saveChainState() {
     // Save the mailbox state.
     await mailboxStorage.commit();
@@ -403,6 +395,41 @@ export async function launch({
       }
     }
     return p;
+  }
+
+  async function runKernel(blockHeight, blockTime, params, newActions) {
+    // This is called once per block, during the END_BLOCK event, and
+    // only when we know that cosmos is in sync (else we'd skip kernel
+    // execution). 'newActions' are the bridge/mailbox/etc events that
+    // cosmos stored up for delivery to swingset in this block.
+
+    const runPolicy = computronCounter(params.beansPerUnit);
+
+    // First we allow the timer to poll, which might push work onto the
+    // kernel run-queue, and gets the first cycle.
+    const addedToQueue = timer.poll(blockTime);
+    console.debug(
+      `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
+      addedToQueue,
+    );
+
+    // Then process queued actions.
+    for (const a of newActions) {
+      // eslint-disable-next-line no-await-in-loop
+      await performAction(a);
+    }
+
+    await crankScheduler(runPolicy);
+
+    if (setActivityhash) {
+      setActivityhash(controller.getActivityhash());
+    }
+
+    if (END_BLOCK_SPIN_MS) {
+      // Introduce a busy-wait to artificially put load on the chain.
+      const startTime = Date.now();
+      while (Date.now() - startTime < END_BLOCK_SPIN_MS);
+    }
   }
 
   /**
@@ -560,30 +587,14 @@ export async function launch({
 
           provideInstallationPublisher();
 
-          // First we allow the timer to poll, which might push work onto the
-          // kernel run-queue, and gets the first cycle.
-          const addedToQueue = timer.poll(blockTime);
-          console.debug(
-            `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
-            addedToQueue,
+          await processAction(action.type, async () =>
+            runKernel(
+              blockHeight,
+              blockTime,
+              blockParams,
+              actionQueue.consumeAll(),
+            ),
           );
-
-          // Process queued actions.
-          for (const a of actionQueue.consumeAll()) {
-            // eslint-disable-next-line no-await-in-loop
-            await processAction(a.type, async () => performAction(a));
-          }
-
-          // Run the kernel
-          await processAction(action.type, async () => {
-            await endBlock(blockParams);
-
-            if (END_BLOCK_SPIN_MS) {
-              // Introduce a busy-wait to artificially put load on the chain.
-              const startTime = Date.now();
-              while (Date.now() - startTime < END_BLOCK_SPIN_MS);
-            }
-          });
 
           // We write out our on-chain state as a number of chainSends.
           const start = Date.now();
