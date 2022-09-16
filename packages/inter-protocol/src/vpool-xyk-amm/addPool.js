@@ -157,6 +157,7 @@ export const makeAddPoolInvitation = (
       );
     const minLiqAmount = AmountMath.make(
       liquidityBrand,
+      // @ts-expect-error known nat
       minPoolLiquidity.value,
     );
 

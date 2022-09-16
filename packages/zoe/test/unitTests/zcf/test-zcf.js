@@ -769,7 +769,7 @@ test(`zcfSeat.isOfferSafe from zcf.makeEmptySeatKit`, async t => {
  * @param {Keyword} zcfMintKeyword
  * @param {ZCFSeat} zcfSeat
  * @param {Keyword} gainsKeyword
- * @param {AmountValue} gainsValue
+ * @param {bigint} gainsValue
  * @returns {Promise<IssuerRecord>}
  */
 const allocateEasy = async (

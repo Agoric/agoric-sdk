@@ -13,7 +13,7 @@ const DEFAULT_PROTOCOL_FEE_BP = 6n;
  * @param {Invitation} electorateInvitation - invitation for the question poser
  * @param {bigint} protocolFeeBP
  * @param {bigint} poolFeeBP
- * @param {Amount} minInitialLiquidity
+ * @param {Amount<'nat'>} minInitialLiquidity
  */
 const makeAmmParams = (
   electorateInvitation,

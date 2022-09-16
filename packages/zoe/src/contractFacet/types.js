@@ -39,7 +39,7 @@
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {(brand: Brand) => Issuer} getIssuerForBrand
  * @property {GetAssetKindByBrand} getAssetKind
- * @property {<K extends AssetKind>(keyword: Keyword, assetKind?: K, displayInfo?: AdditionalDisplayInfo) => Promise<ZCFMint<K>>} makeZCFMint
+ * @property {<K extends AssetKind = 'nat'>(keyword: Keyword, assetKind?: K, displayInfo?: AdditionalDisplayInfo) => Promise<ZCFMint<K>>} makeZCFMint
  * @property {ZCFRegisterFeeMint} registerFeeMint
  * @property {ZCFMakeEmptySeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig
@@ -102,7 +102,7 @@
  * @param {string} description
  * @param {object=} customProperties
  * @param {Pattern} [proposalShape]
- * @returns {Promise<Invitation<OR>>}
+ * @returns {Promise<Invitation>}
  */
 
 /**
@@ -110,7 +110,7 @@
  * @param {Keyword} keyword
  * @param {FeeMintAccess} allegedFeeMintAccess - an object that
  * purports to be the object that grants access to the fee mint
- * @returns {Promise<ZCFMint>
+ * @returns {Promise<ZCFMint<'nat'>>}
  */
 
 /**
@@ -218,12 +218,15 @@
 
 /**
  * API for a contract start function.
- * FIXME before merge: assumes synchronous
  *
- * @template {object} [PF] Public facet
- * @template {object} [CF] Creator facet
- * @template {object} [CT] Custom terms
- * @template {object} [PA] Private args
+ * CAVEAT: assumes synchronous
+ *
+ * @deprecated define function signature directly
+ *
+ * @template {object} [PF=any] Public facet
+ * @template {object} [CF=any] Creator facet
+ * @template {object} [CT=any] Custom terms
+ * @template {object} [PA=any] Private args
  * @callback ContractStartFn
  * @param {ZCF<CT>} zcf
  * @param {PA} privateArgs

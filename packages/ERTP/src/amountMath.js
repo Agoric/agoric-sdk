@@ -176,12 +176,13 @@ const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
 
 /**
  * @template {AssetKind} K
- * @param {MathHelpers<AssetKind>} h
+ * @param {MathHelpers<AssetValueForKind<K>>} h
  * @param {Amount<K>} leftAmount
  * @param {Amount<K>} rightAmount
  * @returns {[K, K]}
  */
 const coerceLR = (h, leftAmount, rightAmount) => {
+  // @ts-expect-error could be arbitrary subtype
   return [h.doCoerce(leftAmount.value), h.doCoerce(rightAmount.value)];
 };
 
@@ -243,17 +244,18 @@ const AmountMath = {
    * Return the amount representing an empty amount. This is the
    * identity element for MathHelpers.add and MatHelpers.subtract.
    *
-   * @template {AssetKind} K
+   * @template {AssetKind} [K='nat']
    * @param {Brand<K>} brand
    * @param {K} [assetKind]
    * @returns {Amount<K>}
    */
-  // @ts-expect-error TS/jsdoc things 'nat' can't be assigned to K subclassing AssetKind
+  // @ts-expect-error TS/jsdoc thinks 'nat' can't be assigned to K subclassing AssetKind
   // If we were using TypeScript we'd simply overload the function definition for each case.
   makeEmpty: (brand, assetKind = 'nat') => {
     assertRemotable(brand, 'brand');
     assertAssetKind(assetKind);
     const value = helpers[assetKind].doMakeEmpty();
+    // @ts-expect-error TS/jsdoc thinks 'nat' can't be assigned to K subclassing AssetKind
     return harden({ brand, value });
   },
   /**

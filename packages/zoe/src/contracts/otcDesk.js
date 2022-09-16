@@ -66,7 +66,7 @@ const start = zcf => {
    * @returns {Promise<Payment>}
    */
   const makeQuote = async (price, assets, timeAuthority, deadline) => {
-    /** @type {{ creatorInvitation: Invitation<unknown, Payment>} } */
+    /** @type {{ creatorInvitation: Invitation<{}, Payment>} } */
     const { creatorInvitation } = await E(zoe).startInstance(
       coveredCallInstallation,
       zcf.getTerms().issuers,
@@ -84,6 +84,7 @@ const start = zcf => {
       },
     });
 
+    /** @type {{ userSeatPromise: Promise<UserSeat<Payment>>}} */
     const { userSeatPromise: coveredCallUserSeat } = await offerTo(
       zcf,
       creatorInvitation,

@@ -151,12 +151,13 @@
  * Verify that an alleged Invitation is real, and return the Bundle ID it
  * will use for contract code.
  *
- * @param {ERef<Installation>}
+ * @param {ERef<Installation>} allegedInstallation
  * @returns {Promise<BundleID>}
  */
 
 /**
- * @template {object} [OR=any]
+ * @template {object} [OA=any] offer args
+ * @template {object} [OR=any] offer result
  * @callback Offer
  *
  * To redeem an invitation, the user normally provides a proposal (their
@@ -173,10 +174,10 @@
  * values are the actual payments to be escrowed. A payment is
  * expected for every rule under `give`.
  *
- * @param {ERef<Invitation<OR>>} invitation
+ * @param {ERef<Invitation<OA, OR>>} invitation
  * @param {Proposal=} proposal
  * @param {PaymentPKeywordRecord=} paymentKeywordRecord
- * @param {object=} offerArgs
+ * @param {OA=} offerArgs
  * @returns {Promise<UserSeat<OR>>} seat
  */
 

@@ -55,7 +55,7 @@ const trace = makeTracer('XykAmm', false);
  * @typedef {Readonly<{
  * zcf: ZCF<AmmTerms>,
  * secondaryBrandToPool: WeakMapStore<Brand,PoolFacets>,
- * secondaryBrandToLiquidityMint: WeakMapStore<Brand,ZCFMint>,
+ * secondaryBrandToLiquidityMint: WeakMapStore<Brand,ZCFMint<'nat'>>,
  * centralBrand: Brand,
  * timer: TimerService,
  * quoteIssuerKit: IssuerKit,
