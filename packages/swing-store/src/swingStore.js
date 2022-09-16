@@ -20,15 +20,15 @@ export { makeSnapStore };
 
 export function makeSnapStoreIO() {
   return {
-    tmpName,
     createReadStream: fs.createReadStream,
     createWriteStream: fs.createWriteStream,
     measureSeconds: makeMeasureSeconds(performance.now),
     open: fs.promises.open,
     rename: fs.promises.rename,
-    stat: fs.promises.stat,
-    unlink: fs.promises.unlink,
     resolve: path.resolve,
+    stat: fs.promises.stat,
+    tmpName,
+    unlink: fs.promises.unlink,
   };
 }
 

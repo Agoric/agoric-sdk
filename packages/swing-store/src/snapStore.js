@@ -1,9 +1,9 @@
 // @ts-check
 import { createHash } from 'crypto';
 import { pipeline } from 'stream';
+import { promisify } from 'util';
 import { createGzip, createGunzip } from 'zlib';
 import { assert, details as d } from '@agoric/assert';
-import { promisify } from 'util';
 
 /**
  * @typedef {object} SnapshotInfo
@@ -74,14 +74,14 @@ export const fsStreamReady = stream =>
 /**
  * @param {string} root
  * @param {{
- *   tmpName: typeof import('tmp').tmpName,
  *   createReadStream: typeof import('fs').createReadStream,
  *   createWriteStream: typeof import('fs').createWriteStream,
  *   measureSeconds: ReturnType<typeof import('@agoric/internal').makeMeasureSeconds>,
  *   open: typeof import('fs').promises.open,
- *   resolve: typeof import('path').resolve,
  *   rename: typeof import('fs').promises.rename,
+ *   resolve: typeof import('path').resolve,
  *   stat: typeof import('fs').promises.stat,
+ *   tmpName: typeof import('tmp').tmpName,
  *   unlink: typeof import('fs').promises.unlink,
  * }} io
  * @param {object} [options]
@@ -91,14 +91,14 @@ export const fsStreamReady = stream =>
 export function makeSnapStore(
   root,
   {
-    tmpName,
     createReadStream,
     createWriteStream,
     measureSeconds,
     open,
-    resolve,
     rename,
+    resolve: pathResolve,
     stat,
+    tmpName,
     unlink,
   },
   { keepSnapshots = false } = {},
@@ -217,13 +217,17 @@ export function makeSnapStore(
 
   /** @param {string} hash */
   function fullPathFromHash(hash) {
-    return resolve(root, baseNameFromHash(hash));
+    return pathResolve(root, baseNameFromHash(hash));
   }
 
   /** @type { Set<string> } */
   const toDelete = new Set();
 
   /**
+   * Creates a new gzipped snapshot file in the `root` directory
+   * and reports information about the process,
+   * including file size and timing metrics.
+   *
    * @param {(filePath: string) => Promise<void>} saveRaw
    * @returns {Promise<SnapshotInfo>}
    */
@@ -238,7 +242,7 @@ export function makeSnapStore(
       );
       toDelete.delete(hash);
       const baseName = baseNameFromHash(hash);
-      const filePath = resolve(root, baseName);
+      const filePath = pathResolve(root, baseName);
       const infoBase = {
         filePath,
         hash,
@@ -246,11 +250,10 @@ export function makeSnapStore(
         rawSaveSeconds,
         hashSeconds,
       };
-      const fileStat = await stat(filePath).catch(e => {
-        if (e.code === 'ENOENT') {
-          return undefined;
+      const fileStat = await stat(filePath).catch(err => {
+        if (err.code !== 'ENOENT') {
+          throw err;
         }
-        throw e;
       });
       if (fileStat) {
         const { size: compressedByteCount } = fileStat;
