@@ -475,6 +475,10 @@ export async function launch({
       await crankScheduler(runPolicy);
       const remainingBeans = runPolicy.remainingBeans();
       controller.writeSlogObject({
+        type: 'kernel-stats',
+        stats: controller.getStats(),
+      });
+      controller.writeSlogObject({
         type: 'cosmic-swingset-run-finish',
         blockHeight,
         runNum,

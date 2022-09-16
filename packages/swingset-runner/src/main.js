@@ -610,6 +610,11 @@ export async function main() {
     if (verbose) {
       log('==> running block');
     }
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-end-block-start',
+      blockHeight: blockNumber,
+      blockTime: blockStartTime,
+    });
     while (requestedSteps > 0) {
       requestedSteps -= 1;
       try {
@@ -642,6 +647,15 @@ export async function main() {
       await swingStore.commit();
     }
     const blockEndTime = readClock();
+    controller.writeSlogObject({
+      type: 'kernel-stats',
+      stats: controller.getStats(),
+    });
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-end-block-finish',
+      blockHeight: blockNumber,
+      blockTime: blockEndTime,
+    });
     if (forceGC) {
       engineGC();
     }
