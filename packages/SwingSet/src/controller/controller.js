@@ -225,6 +225,8 @@ export async function makeSwingsetController(
   // see https://github.com/Agoric/SES-shim/issues/292 for details
   harden(console);
 
+  writeSlogObject({ type: 'kernel-init-start' });
+
   writeSlogObject({ type: 'bundle-kernel-start' });
   // eslint-disable-next-line @jessie.js/no-nested-await
   const { kernelBundle = await buildKernelBundle() } = runtimeOptions;
@@ -507,6 +509,8 @@ export async function makeSwingsetController(
       );
     },
   });
+
+  writeSlogObject({ type: 'kernel-init-finish' });
 
   return controller;
 }

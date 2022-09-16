@@ -82,7 +82,9 @@ export const makeSlogSender = async (opts = {}) => {
       console.warn(`Unknown SLOGSENDER_AGENT=${SLOGSENDER_AGENT}`);
   }
 
-  console.warn('Loading slog sender modules:', ...slogSenderModules);
+  if (SLOGSENDER) {
+    console.warn('Loading slog sender modules:', ...slogSenderModules);
+  }
 
   const makersInfo = await Promise.all(
     slogSenderModules.map(async moduleIdentifier =>
