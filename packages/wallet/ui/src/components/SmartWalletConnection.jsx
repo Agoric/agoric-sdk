@@ -34,6 +34,10 @@ const SmartWalletConnection = ({
   const [provisionDialogOpen, setProvisionDialogOpen] = useState(false);
   setConnectionState('connecting');
 
+  const onProvisionDialogClose = () => {
+    setProvisionDialogOpen(false);
+  };
+
   const handleSnackbarClose = (_, reason) => {
     if (reason === 'clickaway') {
       return;
@@ -145,6 +149,7 @@ const SmartWalletConnection = ({
       </Snackbar>
       <ProvisionDialog
         open={provisionDialogOpen}
+        onClose={onProvisionDialogClose}
         address={publicAddress}
         href={href}
       />

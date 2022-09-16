@@ -53,7 +53,7 @@ const ProvisionDialog = ({ onClose, open, address, href }) => {
   );
 
   return (
-    <Dialog onClose={onClose} open={open}>
+    <Dialog open={open}>
       <DialogTitle>
         {inProgress ? 'Creating' : 'Create a'} Smart Wallet
       </DialogTitle>
