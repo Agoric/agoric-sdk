@@ -119,7 +119,9 @@ export const start = async (zcf, privateArgs, baggage) => {
   const feePool = provideEmptyZcfSeat('feePoolSeat');
   const stage = provideEmptyZcfSeat('stageSeat');
 
-  let mintedOutstanding = AmountMath.makeEmpty(stableBrand);
+  let mintedPoolBalance = provide(baggage, 'mintedPoolBalance', () =>
+    AmountMath.makeEmpty(stableBrand),
+  );
 
   let totalAnchorProvided = provide(baggage, 'totalAnchorProvided', () =>
     AmountMath.makeEmpty(anchorBrand),
@@ -138,6 +140,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       harden({
         anchorPoolBalance: anchorPool.getAmountAllocated('Anchor', anchorBrand),
         feePoolBalance: feePool.getAmountAllocated('Minted', stableBrand),
+        mintedPoolBalance,
         totalAnchorProvided,
         totalMintedProvided,
       }),
@@ -149,19 +152,19 @@ export const start = async (zcf, privateArgs, baggage) => {
    * @param {Amount<'nat'>} toMint
    */
   const assertUnderLimit = toMint => {
-    const mintedAfter = AmountMath.add(mintedOutstanding, toMint);
+    const mintedAfter = AmountMath.add(mintedPoolBalance, toMint);
     AmountMath.isGTE(params.getMintLimit(), mintedAfter) ||
       assert.fail(X`Request would exceed mint limit`);
   };
 
   const burnMinted = toBurn => {
     stableMint.burnLosses({ Minted: toBurn }, stage);
-    mintedOutstanding = AmountMath.subtract(mintedOutstanding, toBurn);
+    mintedPoolBalance = AmountMath.subtract(mintedPoolBalance, toBurn);
   };
 
   const mintMinted = toMint => {
     stableMint.mintGains({ Minted: toMint }, stage);
-    mintedOutstanding = AmountMath.add(mintedOutstanding, toMint);
+    mintedPoolBalance = AmountMath.add(mintedPoolBalance, toMint);
   };
 
   /**

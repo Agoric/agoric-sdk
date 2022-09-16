@@ -525,13 +525,17 @@ test('metrics', async t => {
   t.deepEqual(Object.keys(driver.getStorageChildBody('metrics')), [
     'anchorPoolBalance',
     'feePoolBalance',
-
+    'mintedPoolBalance',
     'totalAnchorProvided',
     'totalMintedProvided',
   ]);
   t.like(driver.getStorageChildBody('metrics'), {
     anchorPoolBalance: { brand: { iface: 'Alleged: aUSD brand' }, value: 0n },
     feePoolBalance: { brand: { iface: 'Alleged: IST brand' }, value: 0n },
+    mintedPoolBalance: {
+      brand: { iface: 'Alleged: IST brand' },
+      value: 0n,
+    },
     totalAnchorProvided: {
       brand: { iface: 'Alleged: aUSD brand' },
       value: 0n,
@@ -550,6 +554,10 @@ test('metrics', async t => {
       value: giveAnchor.value,
     },
     feePoolBalance: { value: 20_000n },
+    mintedPoolBalance: {
+      brand: { iface: 'Alleged: IST brand' },
+      value: giveAnchor.value,
+    },
     totalAnchorProvided: {
       value: 0n,
     },
@@ -565,6 +573,10 @@ test('metrics', async t => {
       value: giveAnchor.value,
     },
     feePoolBalance: { value: 20_000n },
+    mintedPoolBalance: {
+      brand: { iface: 'Alleged: IST brand' },
+      value: giveAnchor.value,
+    },
     totalAnchorProvided: {
       value: 0n,
     },
@@ -586,6 +598,10 @@ test('metrics', async t => {
       value: giveMinted.value + fee,
     },
     feePoolBalance: { value: 50_000n },
+    mintedPoolBalance: {
+      brand: { iface: 'Alleged: IST brand' },
+      value: giveAnchor.value - giveMinted.value + fee,
+    },
     totalAnchorProvided: {
       value: giveMinted.value - fee,
     },
