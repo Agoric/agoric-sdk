@@ -3,7 +3,7 @@
 
 /**
  * @typedef {import('@endo/marshal').InterfaceSpec} InterfaceSpec
- * @typedef {import('@endo/marshal').GetInterfaceOf} GetInterfaceOf
+ * @typedef {import('@endo/marshal').MarshalGetInterfaceOf} GetInterfaceOf
  */
 
 /**
@@ -410,8 +410,8 @@
  */
 
 /**
- * @template {AssetKind} K
- * @typedef {object} MathHelpers<K>
+ * @template {AmountValue} V
+ * @typedef {object} MathHelpers
  * All of the difference in how digital asset amount are manipulated can be
  * reduced to the behavior of the math on values. We extract this
  * custom logic into mathHelpers. MathHelpers are about value

@@ -328,3 +328,5 @@ export const start = async (zcf, privateArgs, baggage) => {
     publicFacet,
   });
 };
+
+/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} PsmPublicFacet */
