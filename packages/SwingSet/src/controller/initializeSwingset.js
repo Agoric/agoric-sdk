@@ -4,30 +4,13 @@ import path from 'path';
 
 import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
 import { assert, details as X } from '@agoric/assert';
+import { allValues } from '@agoric/internal';
 import bundleSource from '@endo/bundle-source';
 
 import '../types-ambient.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import { initializeKernel } from './initializeKernel.js';
 import { kdebugEnable } from '../lib/kdebug.js';
-
-/**
- * @param {X[]} xs
- * @param {Y[]} ys
- * @returns {[X, Y][]}
- * @template X, Y
- */
-const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
-const { keys, values, fromEntries } = Object;
-/**
- * @param {Record<string, Promise<V>>} obj
- * @returns {Promise<Record<string, V>>}
- * @template V
- */
-const allValues = async obj => {
-  const vals = await Promise.all(values(obj));
-  return fromEntries(zip(keys(obj), vals));
-};
 
 const bundleRelative = rel =>
   bundleSource(new URL(rel, import.meta.url).pathname);
