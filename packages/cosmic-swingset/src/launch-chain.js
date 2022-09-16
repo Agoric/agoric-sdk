@@ -32,6 +32,7 @@ import {
 } from './sim-params.js';
 import * as ActionType from './action-types.js';
 import { parseParams } from './params.js';
+import { makeQueue } from './make-queue.js';
 
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
@@ -207,6 +208,28 @@ export async function launch({
     streamStore,
     snapStore,
   };
+
+  // makeQueue() thinks it should commit/abort, but the kvStore doesn't provide
+  // those ('commit' is reserved for flushing the block buffer). Furthermore
+  // the kvStore only deals with string values.
+  // We create a storage wrapper that adds a prefix to keys, serializes values,
+  // and disables commit/abort.
+
+  const inboundQueuePrefix = getHostKey('inboundQueue.');
+  const inboundStorage = harden({
+    get: key => {
+      const val = kvStore.get(inboundQueuePrefix + key);
+      return val && JSON.parse(val);
+    },
+    set: (key, value) =>
+      value === undefined
+        ? inboundStorage.delete(key)
+        : kvStore.set(inboundQueuePrefix + key, JSON.stringify(value)),
+    delete: key => kvStore.delete(inboundQueuePrefix + key),
+    commit: () => {}, // disable
+    abort: () => {}, // disable
+  });
+  const inboundQueue = makeQueue(inboundStorage);
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = metricsProvider.getMeter('ag-chain-cosmos');
@@ -403,9 +426,15 @@ export async function launch({
     // execution). 'newActions' are the bridge/mailbox/etc events that
     // cosmos stored up for delivery to swingset in this block.
 
+    // First, push all newActions onto the inboundQueue. In the future,
+    // inboundQueue might still have work from the previous block.
+    for (const a of newActions) {
+      inboundQueue.push(a);
+    }
+
     const runPolicy = computronCounter(params.beansPerUnit);
 
-    // First we allow the timer to poll, which might push work onto the
+    // Then we allow the timer to poll, which might push work onto the
     // kernel run-queue, and gets the first cycle.
     const addedToQueue = timer.poll(blockTime);
     console.debug(
@@ -414,7 +443,7 @@ export async function launch({
     );
 
     // Then process queued actions.
-    for (const a of newActions) {
+    for (const a of inboundQueue.consumeAll()) {
       // eslint-disable-next-line no-await-in-loop
       await performAction(a);
     }
