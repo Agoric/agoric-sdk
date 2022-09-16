@@ -46,7 +46,7 @@ const inboxReducer = (_, newInbox) =>
       offerId: tx.id,
       id: tx.meta.id,
     }))
-    .sort((a, b) => cmp(b.id, a.id)) || null;
+    .sort((a, b) => a.id - b.id) || null;
 
 const pursesReducer = (_, newPurses) =>
   newPurses
@@ -60,24 +60,23 @@ const pursesReducer = (_, newPurses) =>
 const dappsReducer = (_, newDapps) =>
   newDapps
     ?.map(dapp => ({ ...dapp, id: dapp.meta.id }))
-    .sort((a, b) => cmp(a.petname, b.petname) || cmp(a.id, b.id)) || null;
+    .sort((a, b) => cmp(a.petname, b.petname) || a.id - b.id) || null;
 
 const contactsReducer = (_, newContacts) =>
   newContacts
     ?.map(([contactPetname, contact]) => kv({ contactPetname }, contact))
-    .sort(
-      (a, b) => cmp(a.contactPetname, b.contactPetname) || cmp(a.id, b.id),
-    ) || null;
+    .sort((a, b) => cmp(a.contactPetname, b.contactPetname) || a.id - b.id) ||
+  null;
 
 const issuersReducer = (_, newIssuers) =>
   newIssuers
     ?.map(([issuerPetname, issuer]) => kv({ issuerPetname }, issuer))
-    .sort((a, b) => cmp(a.id, b.id)) || null;
+    .sort((a, b) => a.id - b.id) || null;
 
 const paymentsReducer = (_, newPayments) =>
   newPayments
     ?.map(payment => ({ ...payment, id: payment.meta.id }))
-    .sort((a, b) => cmp(a.id, b.id)) || null;
+    .sort((a, b) => a.id - b.id) || null;
 
 const pendingPurseCreationsReducer = (
   pendingPurseCreations,
