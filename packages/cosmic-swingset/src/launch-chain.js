@@ -1,4 +1,5 @@
 /* global process */
+/* eslint-disable @jessie.js/no-nested-await */
 import anylogger from 'anylogger';
 
 import {
@@ -337,43 +338,26 @@ export async function launch({
     }
   }
 
-  async function beginBlock(blockHeight, blockTime, _params) {
+  function provideInstallationPublisher() {
     if (
       installationPublisher === undefined &&
       makeInstallationPublisher !== undefined
     ) {
       installationPublisher = makeInstallationPublisher();
     }
-
-    const addedToQueue = timer.poll(blockTime);
-    console.debug(
-      `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
-      addedToQueue,
-    );
   }
 
-  let latestParams;
   let computedHeight = Number(kvStore.get(getHostKey('height')) || 0);
   let savedBlockTime = Number(kvStore.get(getHostKey('blockTime')) || 0);
   let runTime = 0;
   let chainTime;
-  let beginBlockAction;
+  let blockParams;
   let decohered;
 
   async function performAction(action) {
     // blockManagerConsole.error('Performing action', action);
     let p;
     switch (action.type) {
-      case ActionType.BOOTSTRAP_BLOCK: {
-        p = bootstrapBlock();
-        break;
-      }
-      case ActionType.BEGIN_BLOCK: {
-        latestParams = parseParams(action.params);
-        p = beginBlock(action.blockHeight, action.blockTime, latestParams);
-        break;
-      }
-
       case ActionType.DELIVER_INBOUND: {
         p = deliverInbound(action.peer, action.messages, action.ack);
         break;
@@ -414,19 +398,6 @@ export async function launch({
         break;
       }
 
-      case ActionType.END_BLOCK: {
-        p = endBlock(latestParams);
-        if (END_BLOCK_SPIN_MS) {
-          // Introduce a busy-wait to artificially put load on the chain.
-          p = p.then(res => {
-            const startTime = Date.now();
-            while (Date.now() - startTime < END_BLOCK_SPIN_MS);
-            return res;
-          });
-        }
-        break;
-      }
-
       default: {
         assert.fail(X`${action.type} not recognized`);
       }
@@ -434,7 +405,12 @@ export async function launch({
     return p;
   }
 
-  async function processAction(action) {
+  /**
+   * @template T
+   * @param {string} type
+   * @param {() => Promise<T>} fn
+   */
+  async function processAction(type, fn) {
     const start = Date.now();
     const finish = res => {
       // blockManagerConsole.error(
@@ -447,13 +423,13 @@ export async function launch({
       return res;
     };
 
-    const p = performAction(action);
+    const p = fn();
     // Just attach some callbacks, but don't use the resulting neutered result
     // promise.
     p.then(finish, e => {
       // None of these must fail, and if they do, log them verbosely before
       // returning to the chain.
-      blockManagerConsole.error(action.type, 'error:', e);
+      blockManagerConsole.error(type, 'error:', e);
       finish();
     });
     // Return the original promise so that the caller gets the original
@@ -486,7 +462,7 @@ export async function launch({
           type: 'cosmic-swingset-bootstrap-block-start',
           blockTime,
         });
-        await processAction(action);
+        await processAction(action.type, bootstrapBlock);
         controller.writeSlogObject({
           type: 'cosmic-swingset-bootstrap-block-finish',
           blockTime,
@@ -528,11 +504,11 @@ export async function launch({
       }
 
       case ActionType.BEGIN_BLOCK: {
-        const { blockHeight, blockTime } = action;
+        const { blockHeight, blockTime, params } = action;
+        blockParams = parseParams(params);
         verboseBlocks &&
           blockManagerConsole.info('block', blockHeight, 'begin');
         runTime = 0;
-        beginBlockAction = action;
         controller.writeSlogObject({
           type: 'cosmic-swingset-begin-block',
           blockHeight,
@@ -580,15 +556,34 @@ export async function launch({
           }
         } else {
           // And now we actually process the queued actions down here, during
-          // END_BLOCK, but still reentrancy-protected
+          // END_BLOCK, but still reentrancy-protected.
 
-          // Process our begin, queued actions, and end.
-          await processAction(beginBlockAction); // BEGIN_BLOCK
+          provideInstallationPublisher();
+
+          // First we allow the timer to poll, which might push work onto the
+          // kernel run-queue, and gets the first cycle.
+          const addedToQueue = timer.poll(blockTime);
+          console.debug(
+            `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
+            addedToQueue,
+          );
+
+          // Process queued actions.
           for (const a of actionQueue.consumeAll()) {
             // eslint-disable-next-line no-await-in-loop
-            await processAction(a);
+            await processAction(a.type, async () => performAction(a));
           }
-          await processAction(action); // END_BLOCK
+
+          // Run the kernel
+          await processAction(action.type, async () => {
+            await endBlock(blockParams);
+
+            if (END_BLOCK_SPIN_MS) {
+              // Introduce a busy-wait to artificially put load on the chain.
+              const startTime = Date.now();
+              while (Date.now() - startTime < END_BLOCK_SPIN_MS);
+            }
+          });
 
           // We write out our on-chain state as a number of chainSends.
           const start = Date.now();
@@ -596,7 +591,6 @@ export async function launch({
           chainTime = Date.now() - start;
 
           // Advance our saved state variables.
-          beginBlockAction = undefined;
           computedHeight = blockHeight;
           savedBlockTime = blockTime;
         }
