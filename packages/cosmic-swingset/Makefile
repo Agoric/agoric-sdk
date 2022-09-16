@@ -212,10 +212,13 @@ t1-provision-one-with-powers: wait-for-cosmos
 		  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
 		  t1/$(BASE_PORT) $$addr $(AGORIC_POWERS) -ojson | tee /dev/stderr | grep -q '"code":0'; }
 
-# Send some USDC to the vbank/provision module account where it can be traded for IST.
+# Send some USDC to the vbank/provision module account where it can be traded
+# for IST. The mint limit is 1000 IST, each wallet gets 0.25 IST when
+# provisioned, so make room for 400 accounts with 100 USDC which mints 100 IST.
 fund-provision-pool:
-	$(MAKE) ACCT_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 SOLO_COINS=1234000000ibc/usdc1234 fund-acct
+	$(MAKE) ACCT_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 SOLO_COINS=100000000ibc/usdc1234 fund-acct
 
+# After `fund-provision-pool` there is 900 IST remaining for account funding.
 fund-acct: wait-for-cosmos
 	$(AGCH) \
 	  --home=t1/bootstrap --keyring-backend=test --from=bootstrap \
