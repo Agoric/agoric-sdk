@@ -88,15 +88,18 @@ const makeTestContext = async () => {
   const { zoe, feeMintAccess } = setUpZoeForTest();
 
   const mintedIssuer = await E(zoe).getFeeIssuer();
-  /** @type {Brand<'nat'>} */
-  const mintedBrand = await E(mintedIssuer).getBrand();
+  /** @type {IssuerKit} */
+  // @ts-expect-error missing mint but it's not needed in the test
+  const mintedKit = {
+    issuer: mintedIssuer,
+    brand: await E(mintedIssuer).getBrand(),
+  };
+  const minted = withAmountUtils(mintedKit);
   const anchor = withAmountUtils(makeIssuerKit('aUSD'));
 
   const committeeInstall = await E(zoe).install(committeeBundle);
   const psmInstall = await E(zoe).install(psmBundle);
   const centralSupply = await E(zoe).install(centralSupplyBundle);
-
-  const mintLimit = AmountMath.make(mintedBrand, MINT_LIMIT);
 
   const marshaller = makeBoard().getReadonlyMarshaller();
 
@@ -123,14 +126,13 @@ const makeTestContext = async () => {
     zoe: await zoe,
     feeMintAccess: await feeMintAccess,
     initialPoserInvitation,
-    minted: { issuer: mintedIssuer, brand: mintedBrand },
+    minted,
     anchor,
     installs: { committeeInstall, psmInstall, centralSupply },
-    mintLimit,
     marshaller,
     terms: {
       anchorBrand: anchor.brand,
-      anchorPerMinted: makeRatio(100n, anchor.brand, 100n, mintedBrand),
+      anchorPerMinted: makeRatio(100n, anchor.brand, 100n, minted.brand),
       governedParams: {
         [CONTRACT_ELECTORATE]: {
           type: ParamTypes.INVITATION,
@@ -138,12 +140,12 @@ const makeTestContext = async () => {
         },
         GiveMintedFee: {
           type: ParamTypes.RATIO,
-          value: makeRatio(GiveMintedFeeBP, mintedBrand, BASIS_POINTS),
+          value: makeRatio(GiveMintedFeeBP, minted.brand, BASIS_POINTS),
         },
-        MintLimit: { type: ParamTypes.AMOUNT, value: mintLimit },
+        MintLimit: { type: ParamTypes.AMOUNT, value: minted.make(MINT_LIMIT) },
         WantMintedFee: {
           type: ParamTypes.RATIO,
-          value: makeRatio(WantMintedFeeBP, mintedBrand, BASIS_POINTS),
+          value: makeRatio(WantMintedFeeBP, minted.brand, BASIS_POINTS),
         },
       },
     },
@@ -347,16 +349,20 @@ test('limit is for minted', async t => {
   trace('test going over limit');
   const giveTooMuch = anchor.make(MINT_LIMIT);
   const seat1 = await driver.swapAnchorForMintedSeat(giveTooMuch);
-  t.throwsAsync(() => E(seat1).getOfferResult(), {
-    message: 'Request would exceed mint limit',
-  });
-  trace('limit is enforced on the Minted rather than Anchor');
+  t.throwsAsync(
+    () => E(seat1).getOfferResult(),
+    {
+      message: 'Request would exceed mint limit',
+    },
+    'limit is enforced on the Minted rather than Anchor',
+  );
 
   trace('test right at limit');
   const give = anchor.make(MINT_LIMIT / 2n);
-  const paymentPs = await driver.swapAnchorForMinted(give);
-  await paymentPs;
-  trace('test at minted limit works');
+  await t.notThrowsAsync(
+    driver.swapAnchorForMinted(give),
+    'swap at minted limit',
+  );
 });
 
 /** @type {[kind: 'want' | 'give', give: number, want: number, ok: boolean, wants?: number][]} */
