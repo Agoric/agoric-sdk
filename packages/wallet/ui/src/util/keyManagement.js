@@ -360,9 +360,11 @@ export const makeInteractiveSigner = async (
       // TODO: parameterize allowance?
       const allowance = '250000'; // 0.25 IST
 
+      // TODO: support for fee-account in MsgExec
       console.warn(
-        'TODO: support for fee-account in MsgExec',
+        'cannot yet makeFeeGrantMessage',
         makeFeeGrantMessage(address, grantee, allowance, expiration),
+        '(using feeGrantWorkAround)',
       );
 
       const feeGrantWorkAround = {

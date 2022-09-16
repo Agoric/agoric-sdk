@@ -153,6 +153,7 @@ export const makeWalletBridgeFromFollower = (
       // TODO: Only set firstHeight and break if the value contains all our state.
       firstHeight = blockHeight;
     }
+    assert(firstHeight, 'no smart wallet');
     for await (const { value } of iterateEach(follower, {
       height: firstHeight,
     })) {

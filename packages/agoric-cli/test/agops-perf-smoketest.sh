@@ -19,8 +19,14 @@ make scenario2-setup scenario2-run-chain-psm
 cd packages/cosmic-swingset
 # Fund the pool
 make fund-provision-pool
+# Fund your wallet
+export ACCT_ADDR=<key-bech32>
+# with 100 BLD for provisioning wallet and 100 USDC for psm trading
+make ACCT_ADDR=$ACCT_ADDR SOLO_COINS=100000000ubld,100000000ibc/usdc1234 fund-acct
+agd query bank balances $ACCT_ADDR
+
 # Provision your wallet
-agoric wallet provision --account <key-name>
+agoric wallet provision --spend --account <key-name>
 # verify
 agoric wallet list
 agoric wallet show --from <key-name>

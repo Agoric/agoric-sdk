@@ -178,7 +178,7 @@ t1/$(BASE_PORT)/owner-address:
 	$(AGCH) --home=t1/$(BASE_PORT)/owner keys --keyring-backend=test add owner | jq -r .address > $@.tmp
 	mv $@.tmp $@
 
-# Provision and start a client.
+# Provision and start a client of ag-solo
 scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo
 
 # Provision the ag-solo from an provisionpass-holding address (idempotent).
