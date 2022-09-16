@@ -88,15 +88,18 @@ const makeTestContext = async () => {
   const { zoe, feeMintAccess } = setUpZoeForTest();
 
   const mintedIssuer = await E(zoe).getFeeIssuer();
-  /** @type {Brand<'nat'>} */
-  const mintedBrand = await E(mintedIssuer).getBrand();
+  /** @type {IssuerKit} */
+  // @ts-expect-error missing mint but it's not needed in the test
+  const mintedKit = {
+    issuer: mintedIssuer,
+    brand: await E(mintedIssuer).getBrand(),
+  };
+  const minted = withAmountUtils(mintedKit);
   const anchor = withAmountUtils(makeIssuerKit('aUSD'));
 
   const committeeInstall = await E(zoe).install(committeeBundle);
   const psmInstall = await E(zoe).install(psmBundle);
   const centralSupply = await E(zoe).install(centralSupplyBundle);
-
-  const mintLimit = AmountMath.make(anchor.brand, MINT_LIMIT);
 
   const marshaller = makeBoard().getReadonlyMarshaller();
 
@@ -123,14 +126,13 @@ const makeTestContext = async () => {
     zoe: await zoe,
     feeMintAccess: await feeMintAccess,
     initialPoserInvitation,
-    minted: { issuer: mintedIssuer, brand: mintedBrand },
+    minted,
     anchor,
     installs: { committeeInstall, psmInstall, centralSupply },
-    mintLimit,
     marshaller,
     terms: {
       anchorBrand: anchor.brand,
-      anchorPerMinted: makeRatio(100n, anchor.brand, 100n, mintedBrand),
+      anchorPerMinted: makeRatio(100n, anchor.brand, 100n, minted.brand),
       governedParams: {
         [CONTRACT_ELECTORATE]: {
           type: ParamTypes.INVITATION,
@@ -138,12 +140,12 @@ const makeTestContext = async () => {
         },
         GiveMintedFee: {
           type: ParamTypes.RATIO,
-          value: makeRatio(GiveMintedFeeBP, mintedBrand, BASIS_POINTS),
+          value: makeRatio(GiveMintedFeeBP, minted.brand, BASIS_POINTS),
         },
-        MintLimit: { type: ParamTypes.AMOUNT, value: mintLimit },
+        MintLimit: { type: ParamTypes.AMOUNT, value: minted.make(MINT_LIMIT) },
         WantMintedFee: {
           type: ParamTypes.RATIO,
-          value: makeRatio(WantMintedFeeBP, mintedBrand, BASIS_POINTS),
+          value: makeRatio(WantMintedFeeBP, minted.brand, BASIS_POINTS),
         },
       },
     },
@@ -311,7 +313,7 @@ test('simple trades', async t => {
 });
 
 test('limit', async t => {
-  const { mintLimit, anchor } = t.context;
+  const { anchor } = t.context;
 
   const driver = await makePsmDriver(t);
 
@@ -320,7 +322,7 @@ test('limit', async t => {
   await driver.assertPoolBalance(initialPool);
 
   trace('test going over limit');
-  const give = mintLimit;
+  const give = anchor.make(MINT_LIMIT);
   const paymentPs = await driver.swapAnchorForMinted(give);
   trace('gone over limit');
 
@@ -336,6 +338,31 @@ test('limit', async t => {
   driver.assertPoolBalance(initialPool);
   // TODO Offer result should be an error
   // t.throwsAsync(() => await E(seat1).getOfferResult());
+});
+
+test('limit is for minted', async t => {
+  const { minted, anchor } = t.context;
+  // only 50 minted allowed per anchor
+  const anchorPerMinted = makeRatio(50n, anchor.brand, 100n, minted.brand);
+  const driver = await makePsmDriver(t, { anchorPerMinted });
+
+  trace('test going over limit');
+  const giveTooMuch = anchor.make(MINT_LIMIT);
+  const seat1 = await driver.swapAnchorForMintedSeat(giveTooMuch);
+  t.throwsAsync(
+    () => E(seat1).getOfferResult(),
+    {
+      message: 'Request would exceed mint limit',
+    },
+    'limit is enforced on the Minted rather than Anchor',
+  );
+
+  trace('test right at limit');
+  const give = anchor.make(MINT_LIMIT / 2n);
+  await t.notThrowsAsync(
+    driver.swapAnchorForMinted(give),
+    'swap at minted limit',
+  );
 });
 
 /** @type {[kind: 'want' | 'give', give: number, want: number, ok: boolean, wants?: number][]} */
@@ -498,13 +525,17 @@ test('metrics', async t => {
   t.deepEqual(Object.keys(driver.getStorageChildBody('metrics')), [
     'anchorPoolBalance',
     'feePoolBalance',
-
+    'mintedPoolBalance',
     'totalAnchorProvided',
     'totalMintedProvided',
   ]);
   t.like(driver.getStorageChildBody('metrics'), {
     anchorPoolBalance: { brand: { iface: 'Alleged: aUSD brand' }, value: 0n },
     feePoolBalance: { brand: { iface: 'Alleged: IST brand' }, value: 0n },
+    mintedPoolBalance: {
+      brand: { iface: 'Alleged: IST brand' },
+      value: 0n,
+    },
     totalAnchorProvided: {
       brand: { iface: 'Alleged: aUSD brand' },
       value: 0n,
@@ -523,6 +554,10 @@ test('metrics', async t => {
       value: giveAnchor.value,
     },
     feePoolBalance: { value: 20_000n },
+    mintedPoolBalance: {
+      brand: { iface: 'Alleged: IST brand' },
+      value: giveAnchor.value,
+    },
     totalAnchorProvided: {
       value: 0n,
     },
@@ -538,6 +573,10 @@ test('metrics', async t => {
       value: giveAnchor.value,
     },
     feePoolBalance: { value: 20_000n },
+    mintedPoolBalance: {
+      brand: { iface: 'Alleged: IST brand' },
+      value: giveAnchor.value,
+    },
     totalAnchorProvided: {
       value: 0n,
     },
@@ -559,6 +598,10 @@ test('metrics', async t => {
       value: giveMinted.value + fee,
     },
     feePoolBalance: { value: 50_000n },
+    mintedPoolBalance: {
+      brand: { iface: 'Alleged: IST brand' },
+      value: giveAnchor.value - giveMinted.value + fee,
+    },
     totalAnchorProvided: {
       value: giveMinted.value - fee,
     },

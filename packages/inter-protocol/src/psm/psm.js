@@ -118,6 +118,11 @@ export const start = async (zcf, privateArgs, baggage) => {
   const anchorPool = provideEmptyZcfSeat('anchorPoolSeat');
   const feePool = provideEmptyZcfSeat('feePoolSeat');
   const stage = provideEmptyZcfSeat('stageSeat');
+
+  let mintedPoolBalance = provide(baggage, 'mintedPoolBalance', () =>
+    AmountMath.makeEmpty(stableBrand),
+  );
+
   let totalAnchorProvided = provide(baggage, 'totalAnchorProvided', () =>
     AmountMath.makeEmpty(anchorBrand),
   );
@@ -135,6 +140,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       harden({
         anchorPoolBalance: anchorPool.getAmountAllocated('Anchor', anchorBrand),
         feePoolBalance: feePool.getAmountAllocated('Minted', stableBrand),
+        mintedPoolBalance,
         totalAnchorProvided,
         totalMintedProvided,
       }),
@@ -143,15 +149,22 @@ export const start = async (zcf, privateArgs, baggage) => {
   updateMetrics();
 
   /**
-   * @param {Amount<'nat'>} given
+   * @param {Amount<'nat'>} toMint
    */
-  const assertUnderLimit = given => {
-    const anchorAfterTrade = AmountMath.add(
-      anchorPool.getAmountAllocated('Anchor', anchorBrand),
-      given,
-    );
-    AmountMath.isGTE(params.getMintLimit(), anchorAfterTrade) ||
+  const assertUnderLimit = toMint => {
+    const mintedAfter = AmountMath.add(mintedPoolBalance, toMint);
+    AmountMath.isGTE(params.getMintLimit(), mintedAfter) ||
       assert.fail(X`Request would exceed mint limit`);
+  };
+
+  const burnMinted = toBurn => {
+    stableMint.burnLosses({ Minted: toBurn }, stage);
+    mintedPoolBalance = AmountMath.subtract(mintedPoolBalance, toBurn);
+  };
+
+  const mintMinted = toMint => {
+    stableMint.mintGains({ Minted: toMint }, stage);
+    mintedPoolBalance = AmountMath.add(mintedPoolBalance, toMint);
   };
 
   /**
@@ -175,7 +188,7 @@ export const start = async (zcf, privateArgs, baggage) => {
         { Out: maxAnchor },
       );
       zcf.reallocate(seat, anchorPool, stage, feePool);
-      stableMint.burnLosses({ Minted: afterFee }, stage);
+      burnMinted(afterFee);
     } catch (e) {
       stage.clear();
       anchorPool.clear();
@@ -192,13 +205,13 @@ export const start = async (zcf, privateArgs, baggage) => {
    * @param {Amount<'nat'>} [wanted]
    */
   const wantMinted = (seat, given, wanted = emptyStable) => {
-    assertUnderLimit(given);
     const asStable = floorDivideBy(given, anchorPerMinted);
+    assertUnderLimit(asStable);
     const fee = ceilMultiplyBy(asStable, params.getWantMintedFee());
     const afterFee = AmountMath.subtract(asStable, fee);
     AmountMath.isGTE(afterFee, wanted) ||
       assert.fail(X`wanted ${wanted} is more than ${given} minus fees ${fee}`);
-    stableMint.mintGains({ Minted: asStable }, stage);
+    mintMinted(asStable);
     try {
       stageTransfer(seat, anchorPool, { In: given }, { Anchor: given });
       stageTransfer(stage, seat, { Minted: afterFee }, { Out: afterFee });
@@ -209,7 +222,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       anchorPool.clear();
       feePool.clear();
       // TODO(#6116) someday, reallocate should guarantee that this case cannot happen
-      stableMint.burnLosses({ Minted: asStable }, stage);
+      burnMinted(asStable);
       throw e;
     }
     totalMintedProvided = AmountMath.add(totalMintedProvided, asStable);

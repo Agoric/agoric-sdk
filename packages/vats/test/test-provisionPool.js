@@ -51,7 +51,7 @@ const makeTestContext = async () => {
   const centralSupply = await E(zoe).install(centralSupplyBundle);
   const policyInstall = await E(zoe).install(policyBundle);
 
-  const mintLimit = AmountMath.make(anchor.brand, MINT_LIMIT);
+  const mintLimit = AmountMath.make(mintedBrand, MINT_LIMIT);
 
   const marshaller = makeBoard().getReadonlyMarshaller();
 
