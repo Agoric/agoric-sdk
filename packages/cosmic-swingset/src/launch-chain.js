@@ -513,7 +513,7 @@ export async function launch({
         verboseBlocks && blockManagerConsole.info('block bootstrap');
         if (computedHeight !== 0) {
           throw Error(
-            `Cannot run a bootstrap block at height ${action.blockHeight}`,
+            `Cannot run a bootstrap block at height ${computedHeight}`,
           );
         }
         await processAction(action);
