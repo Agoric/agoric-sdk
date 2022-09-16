@@ -27,6 +27,7 @@ import { aggregateTryFinally, PromiseAllOrErrors } from '@agoric/internal';
  * }} SnapStore
  */
 
+// TODO: Eliminate this promisify via e.g. `import { pipeline } from 'stream/promises'`.
 const pipe = promisify(pipeline);
 const finished = promisify(finishedCallback);
 
@@ -231,6 +232,7 @@ export function makeSnapStore(
     const cleanup = [];
     return aggregateTryFinally(
       async () => {
+        // TODO: Refactor to use tmpFile rather than tmpName.
         const tmpSnapPath = await ptmpName({ template: 'save-raw-XXXXXX.xss' });
         cleanup.push(() => unlink(tmpSnapPath));
         const { duration: rawSaveSeconds } = await measureSeconds(async () =>
