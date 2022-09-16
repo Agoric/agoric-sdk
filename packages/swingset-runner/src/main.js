@@ -15,6 +15,7 @@ import { buildLoopbox } from '@agoric/swingset-vat/src/devices/loopbox/loopbox.j
 import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
 
 import { initSwingStore, openSwingStore } from '@agoric/swing-store';
+import { makeSlogSender } from '@agoric/telemetry';
 
 import { dumpStore } from './dumpstore.js';
 import { auditRefCounts } from './auditstore.js';
@@ -57,7 +58,8 @@ FLAGS may be:
   --logstats       - log kernel stats after each block
   --logall         - log kernel stats, block times, memory use, and disk space
   --logtag STR     - tag for stats log file (default "runner")
-  --slog FILE      - write swingset log to FILE
+  --slog FILE      - write swingset slog to FILE
+  --teleslog       - transmit a slog feed to the local otel collector
   --forcegc        - run garbage collector after each block
   --batchsize N    - set BATCHSIZE to N cranks (default 200)
   --verbose        - output verbose debugging messages as it runs
@@ -162,6 +164,7 @@ export async function main() {
   let logStats = false;
   let logTag = 'runner';
   let slogFile = null;
+  let teleslog = false;
   let forceGC = false;
   let verbose = false;
   let doDumps = false;
@@ -219,6 +222,9 @@ export async function main() {
         break;
       case '--slog':
         slogFile = argv.shift();
+        break;
+      case '--teleslog':
+        teleslog = true;
         break;
       case '--config':
         configPath = argv.shift();
@@ -396,6 +402,37 @@ export async function main() {
       }
     }
   }
+  let slogSender;
+  if (teleslog || slogFile) {
+    const slogEnv = {
+      ...process.env,
+      SLOGFILE: slogFile,
+    };
+    const slogOpts = {
+      stateDir: dbDir,
+      env: slogEnv,
+    };
+    if (slogFile) {
+      slogEnv.SLOGSENDER = '';
+    }
+    if (teleslog) {
+      const {
+        SLOGSENDER: envSlogSender,
+        TELEMETRY_SERVICE_NAME = 'agd-cosmos',
+        OTEL_EXPORTER_OTLP_ENDPOINT = 'http://localhost:4318',
+      } = process.env;
+      const SLOGSENDER = [
+        ...(envSlogSender ? envSlogSender.split(',') : []),
+        '@agoric/telemetry/src/otel-trace.js',
+      ].join(',');
+      slogEnv.SLOGSENDER = SLOGSENDER;
+      slogEnv.OTEL_EXPORTER_OTLP_ENDPOINT = OTEL_EXPORTER_OTLP_ENDPOINT;
+      slogOpts.serviceName = TELEMETRY_SERVICE_NAME;
+    }
+    // eslint-disable-next-line @jessie.js/no-nested-await
+    slogSender = await makeSlogSender(slogOpts);
+    runtimeOptions.slogSender = slogSender;
+  }
   let bootstrapResult;
   const hostStorage = {
     kvStore: swingStore.kvStore,
@@ -556,6 +593,10 @@ export async function main() {
   if (statLogger) {
     statLogger.close();
   }
+  if (slogSender) {
+    // eslint-disable-next-line @jessie.js/no-nested-await
+    await slogSender.forceFlush();
+  }
   controller.shutdown();
 
   function getCrankNumber() {
@@ -611,7 +652,7 @@ export async function main() {
       log('==> running block');
     }
     controller.writeSlogObject({
-      type: 'cosmic-swingset-end-block-start',
+      type: 'cosmic-swingset-run-start',
       blockHeight: blockNumber,
       blockTime: blockStartTime,
     });
@@ -652,7 +693,7 @@ export async function main() {
       stats: controller.getStats(),
     });
     controller.writeSlogObject({
-      type: 'cosmic-swingset-end-block-finish',
+      type: 'cosmic-swingset-run-finish',
       blockHeight: blockNumber,
       blockTime: blockEndTime,
     });
