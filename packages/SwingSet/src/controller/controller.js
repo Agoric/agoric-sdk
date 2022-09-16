@@ -31,6 +31,8 @@ import {
   initializeSwingset,
 } from './initializeSwingset.js';
 
+const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
+
 /** @param {Uint8Array} bytes */
 export function computeSha512(bytes) {
   const hash = crypto.createHash('sha512');
@@ -94,6 +96,7 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
     stdout: 'inherit',
     stderr: 'inherit',
     debug: !!env.XSNAP_DEBUG,
+    netstringMaxChunkSize: NETSTRING_MAX_CHUNK_SIZE,
   };
 
   let doXSnap = xsnap;
@@ -293,7 +296,9 @@ export async function makeSwingsetController(
       import.meta.url,
     ).pathname;
     const args = [supercode];
-    return startSubprocessWorker(process.execPath, args);
+    return startSubprocessWorker(process.execPath, args, {
+      netsringMaxChunkSize: NETSTRING_MAX_CHUNK_SIZE,
+    });
   }
 
   const bundles = [
