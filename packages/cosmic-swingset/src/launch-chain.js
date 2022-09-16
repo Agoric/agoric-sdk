@@ -128,6 +128,24 @@ async function buildSwingset(
   return { controller, mb, bridgeInbound, timer };
 }
 
+/**
+ * @typedef {import('@agoric/swingset-vat').RunPolicy & {
+ *   shouldRun(): boolean;
+ *   remainingBeans(): number;
+ * }} ChainRunPolicy
+ */
+
+/**
+ * @typedef {object} BeansPerUnit
+ * @property {bigint} blockComputeLimit
+ * @property {bigint} vatCreation
+ * @property {bigint} xsnapComputron
+ */
+
+/**
+ * @param {BeansPerUnit} beansPerUnit
+ * @returns {ChainRunPolicy}
+ */
 function computronCounter({
   [BeansPerBlockComputeLimit]: blockComputeLimit,
   [BeansPerVatCreation]: vatCreation,
@@ -137,11 +155,13 @@ function computronCounter({
   assert.typeof(vatCreation, 'bigint');
   assert.typeof(xsnapComputron, 'bigint');
   let totalBeans = 0n;
-  /** @type { RunPolicy } */
+  const shouldRun = () => totalBeans < blockComputeLimit;
+  const remainingBeans = () => blockComputeLimit - totalBeans;
+
   const policy = harden({
     vatCreated() {
       totalBeans += vatCreation;
-      return totalBeans < blockComputeLimit;
+      return shouldRun();
     },
     crankComplete(details = {}) {
       assert.typeof(details, 'object');
@@ -152,16 +172,18 @@ function computronCounter({
         // Instead, SwingSet should describe the computron model it uses.
         totalBeans += details.computrons * xsnapComputron;
       }
-      return totalBeans < blockComputeLimit;
+      return shouldRun();
     },
     crankFailed() {
       const failedComputrons = 1000000n; // who knows, 1M is as good as anything
       totalBeans += failedComputrons * xsnapComputron;
-      return totalBeans < blockComputeLimit;
+      return shouldRun();
     },
     emptyCrank() {
       return true;
     },
+    shouldRun,
+    remainingBeans,
   });
   return policy;
 }
@@ -426,13 +448,40 @@ export async function launch({
     // execution). 'newActions' are the bridge/mailbox/etc events that
     // cosmos stored up for delivery to swingset in this block.
 
-    // First, push all newActions onto the inboundQueue. In the future,
-    // inboundQueue might still have work from the previous block.
+    // First, push all newActions onto the end of the inboundQueue,
+    // remembering that inboundQueue might still have work from the
+    // previous block
     for (const a of newActions) {
       inboundQueue.push(a);
     }
 
+    // make a runPolicy that will be shared across all cycles
     const runPolicy = computronCounter(params.beansPerUnit);
+
+    let runNum = 0;
+    async function runSwingset() {
+      const initialBeans = runPolicy.remainingBeans();
+      controller.writeSlogObject({
+        type: 'cosmic-swingset-run-start',
+        blockHeight,
+        runNum,
+        initialBeans,
+      });
+      // TODO: crankScheduler does a schedulerBlockTimeHistogram thing
+      // that needs to be revisited, it used to be called once per
+      // block, now it's once per processed inboundQueue item
+      await crankScheduler(runPolicy);
+      const remainingBeans = runPolicy.remainingBeans();
+      controller.writeSlogObject({
+        type: 'cosmic-swingset-run-finish',
+        blockHeight,
+        runNum,
+        remainingBeans,
+        usedBeans: initialBeans - remainingBeans,
+      });
+      runNum += 1;
+      return runPolicy.shouldRun();
+    }
 
     // Then we allow the timer to poll, which might push work onto the
     // kernel run-queue, and gets the first cycle.
@@ -441,14 +490,24 @@ export async function launch({
       `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
       addedToQueue,
     );
+    let keepGoing = await runSwingset();
 
-    // Then process queued actions.
-    for (const a of inboundQueue.consumeAll()) {
-      // eslint-disable-next-line no-await-in-loop
-      await performAction(a);
+    // Then process as much as we can from the inboundQueue, which contains
+    // first the old actions followed by the newActions, running the
+    // kernel to completion after each.
+    if (keepGoing) {
+      for (const a of inboundQueue.consumeAll()) {
+        // eslint-disable-next-line no-await-in-loop
+        await performAction(a);
+        // eslint-disable-next-line no-await-in-loop
+        keepGoing = await runSwingset();
+        if (!keepGoing) {
+          // any leftover actions will remain on the inboundQueue for possible
+          // processing in the next block
+          break;
+        }
+      }
     }
-
-    await crankScheduler(runPolicy);
 
     if (setActivityhash) {
       setActivityhash(controller.getActivityhash());
@@ -514,11 +573,23 @@ export async function launch({
             `Cannot run a bootstrap block at height ${computedHeight}`,
           );
         }
+        const blockHeight = 0;
+        const runNum = 0;
         controller.writeSlogObject({
           type: 'cosmic-swingset-bootstrap-block-start',
           blockTime,
         });
-        await processAction(action.type, bootstrapBlock);
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-run-start',
+          blockHeight,
+          runNum,
+        });
+        await bootstrapBlock();
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-run-finish',
+          blockHeight,
+          runNum,
+        });
         controller.writeSlogObject({
           type: 'cosmic-swingset-bootstrap-block-finish',
           blockTime,

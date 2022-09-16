@@ -606,8 +606,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
 
         // TODO: Move the encompassing `block` root span to cosmos
         spans.push(`block ${slogAttrs.blockHeight}`);
-        spans.start(`begin-block`, spans.top());
-        spans.end(`begin-block`);
+        spans.top().addEvent(`begin-block-action`, cleanAttrs(slogAttrs), now);
         break;
       }
       case 'cosmic-swingset-commit-block-start': {
@@ -637,11 +636,20 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'cosmic-swingset-end-block-start': {
-        spans.push(`end-block`);
+        // Add `end-block` as an event onto the emcompassing `block` span
+        spans.top().addEvent('end-block-action', cleanAttrs(slogAttrs), now);
         break;
       }
       case 'cosmic-swingset-end-block-finish': {
-        spans.pop('end-block');
+        // Don't record finish
+        break;
+      }
+      case 'cosmic-swingset-run-start': {
+        spans.push(`swingset-run`);
+        break;
+      }
+      case 'cosmic-swingset-run-finish': {
+        spans.pop(`swingset-run`);
         break;
       }
       case 'heap-snapshot-save': {
