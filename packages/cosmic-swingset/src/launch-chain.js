@@ -21,6 +21,7 @@ import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/ex
 
 import {
   DEFAULT_METER_PROVIDER,
+  makeInboundQueueMetrics,
   exportKernelStats,
   makeSlogCallbacks,
 } from './kernel-stats.js';
@@ -284,10 +285,12 @@ export async function launch({
     ? parseInt(env.END_BLOCK_SPIN_MS, 10)
     : 0;
 
+  const inboundQueueMetrics = makeInboundQueueMetrics(inboundQueue.size());
   const { crankScheduler } = exportKernelStats({
     controller,
     metricMeter,
     log: console,
+    inboundQueueMetrics,
   });
 
   async function bootstrapBlock() {
@@ -454,6 +457,7 @@ export async function launch({
     // previous block
     for (const a of newActions) {
       inboundQueue.push(a);
+      inboundQueueMetrics.incStat();
     }
 
     // make a runPolicy that will be shared across all cycles
@@ -502,6 +506,7 @@ export async function launch({
     // kernel to completion after each.
     if (keepGoing) {
       for (const a of inboundQueue.consumeAll()) {
+        inboundQueueMetrics.decStat();
         // eslint-disable-next-line no-await-in-loop
         await performAction(a);
         // eslint-disable-next-line no-await-in-loop

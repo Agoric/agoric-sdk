@@ -27,6 +27,11 @@
  */
 export const makeQueue = storage => {
   const queue = {
+    size: () => {
+      const tail = storage.get('tail') || 0;
+      const head = storage.get('head') || 0;
+      return tail - head;
+    },
     push: obj => {
       const tail = storage.get('tail') || 0;
       storage.set('tail', tail + 1);
