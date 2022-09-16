@@ -571,6 +571,14 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         }
         break;
       }
+      case 'bundle-kernel-start': {
+        spans.push(`bundle-kernel`);
+        break;
+      }
+      case 'bundle-kernel-finish': {
+        spans.pop('bundle-kernel');
+        break;
+      }
       case 'cosmic-swingset-bootstrap-block-start': {
         dbTransactionManager.begin();
         spans.push(`bootstrap-block`);
@@ -636,29 +644,13 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         spans.pop('end-block');
         break;
       }
-      case 'cosmic-swingset-save-chain-start': {
-        spans.push(`save-chain`);
+      case 'heap-snapshot-save': {
+        // Add an event to whatever the top span is for now (likely crank)
+        spans.top()?.addEvent('snapshot-save', cleanAttrs(slogAttrs), now);
         break;
       }
-      case 'cosmic-swingset-save-chain-finish': {
-        spans.pop('save-chain');
-        break;
-      }
-      case 'cosmic-swingset-save-external-start': {
-        spans.push(`save-external`);
-        break;
-      }
-      case 'cosmic-swingset-save-external-finish': {
-        spans.pop('save-external');
-        spans.pop(); // 'block ...'
-        break;
-      }
-      case 'solo-process-kernel-start': {
-        spans.push(`solo-process-kernel`);
-        break;
-      }
-      case 'solo-process-kernel-finish': {
-        spans.pop(`solo-process-kernel`);
+      case 'heap-snapshot-load': {
+        // Ignore
         break;
       }
       case 'crank-start': {
