@@ -199,17 +199,56 @@ export function makeSlogCallbacks({ metricMeter, attributes = {} }) {
 }
 
 /**
+ * Create a metrics manager for the 'inboundQueue' structure, which
+ * can be scaped to report current length, and the number of
+ * increments and decrements. This must be created with the initial
+ * length as extracted from durable storage, but after that we assume
+ * that we're told about every up and down, so our RAM-backed shadow
+ * 'length' will remain accurate.
+ *
+ * Note that the add/remove counts will get reset at restart, but
+ * Prometheus/etc tools can tolerate that just fine.
+ *
+ * @param {number} initialLength
+ */
+export function makeInboundQueueMetrics(initialLength) {
+  let length = initialLength;
+  let add = 0;
+  let remove = 0;
+
+  return harden({
+    incStat: (delta = 1) => {
+      length += delta;
+      add += delta;
+    },
+
+    decStat: (delta = 1) => {
+      length -= delta;
+      remove += delta;
+    },
+
+    getStats: () => ({
+      cosmic_swingset_inbound_queue_length: length,
+      cosmic_swingset_inbound_queue_add: add,
+      cosmic_swingset_inbound_queue_remove: remove,
+    }),
+  });
+}
+
+/**
  * @param {object} param0
  * @param {any} param0.controller
  * @param {import('@opentelemetry/sdk-metrics-base').Meter} param0.metricMeter
  * @param {Console} param0.log
  * @param {Attributes} [param0.attributes]
+ * @param {any} [param0.inboundQueueMetrics]
  */
 export function exportKernelStats({
   controller,
   metricMeter,
   log = console,
   attributes = {},
+  inboundQueueMetrics,
 }) {
   const kernelStatsMetrics = new Map();
   const expectedKernelStats = new Set();
@@ -262,6 +301,25 @@ export function exportKernelStats({
       ),
     );
   });
+
+  if (inboundQueueMetrics) {
+    for (const name of ['length', 'add', 'remove']) {
+      const key = `cosmic_swingset_inbound_queue_${name}`;
+      kernelStatsMetrics.set(
+        key,
+        metricMeter.createObservableCounter(
+          key,
+          { description: `inbound queue ${name}` },
+          observableResult => {
+            observableResult.observe(
+              inboundQueueMetrics.getStats()[key],
+              attributes,
+            );
+          },
+        ),
+      );
+    }
+  }
 
   function checkKernelStats(stats) {
     const notYetFoundKernelStats = new Set(kernelStatsMetrics.keys());
