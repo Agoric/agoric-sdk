@@ -329,8 +329,10 @@ export async function initializeSwingset(
       assert.fail(X`unknown manager type ${defaultManagerType}`);
   }
 
+  const obtainKernelBundles = async () =>
+    initializationOptions.kernelBundles || buildVatAndDeviceBundles();
+  const kernelBundles = await obtainKernelBundles();
   const {
-    kernelBundles = await buildVatAndDeviceBundles(),
     verbose,
     addVatAdmin = true,
     addComms = true,
