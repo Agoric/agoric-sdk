@@ -44,7 +44,7 @@
  */
 
 /**
- * @template {object} [A=any] Offer args
  * @template {object} [R=unknown] Offer result
+ * @template {object} [A=any] Offer args
  * @typedef {Payment<'set'>} Invitation
  */

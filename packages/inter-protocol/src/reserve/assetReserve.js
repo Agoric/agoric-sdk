@@ -465,7 +465,7 @@ export { start };
  * @property {() => Invitation} makeAddCollateralInvitation
  * @property {() => Allocation} getAllocations
  * @property {(issuer: Issuer) => void} addIssuer
- * @property {() => Invitation<any, ShortfallReporter>} makeShortfallReportingInvitation
+ * @property {() => Invitation<ShortfallReporter>} makeShortfallReportingInvitation
  * @property {() => MetricsNotification} getMetrics
  */
 

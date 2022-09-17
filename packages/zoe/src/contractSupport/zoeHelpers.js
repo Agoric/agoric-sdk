@@ -293,7 +293,7 @@ const reverse = (keywordRecord = {}) => {
  * @param {ZCF} zcf
  *   Zoe Contract Facet for contractA
  *
- * @param {ERef<Invitation<A, R>>} invitation
+ * @param {ERef<Invitation<R, A>>} invitation
  *   Invitation to contractB
  *
  * @param {KeywordKeywordRecord=} keywordMapping

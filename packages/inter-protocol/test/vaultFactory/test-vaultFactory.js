@@ -1498,7 +1498,7 @@ test('transfer vault', async t => {
     return amount.value[0];
   };
 
-  /** @type {Promise<Invitation<{}, VaultKit>>} */
+  /** @type {Promise<Invitation<VaultKit>>} */
   const transferInvite = E(aliceVault).makeTransferInvitation();
   const inviteProps = await getInvitationProperties(transferInvite);
   trace(t, 'TRANSFER INVITE', transferInvite, inviteProps);
@@ -1561,7 +1561,7 @@ test('transfer vault', async t => {
     }),
     harden({ Minted: paybackPayment }),
   );
-  /** @type {Invitation<{}, VaultKit>} */
+  /** @type {Invitation<VaultKit>} */
   const t2Invite = await E(transferVault).makeTransferInvitation();
   const t2Seat = await E(zoe).offer(t2Invite);
   const {
