@@ -97,7 +97,6 @@ export function makeSnapStore(
     createWriteStream,
     measureSeconds,
     fsync,
-    open: _open,
     rename,
     resolve: pathResolve,
     stat,
@@ -288,15 +287,14 @@ export function makeSnapStore(
         });
         cleanup.push(() => snapWriter.close());
 
-        await Promise.all([gzReader, snapWriter].map(s => fsStreamReady(s)));
+        await Promise.all([fsStreamReady(gzReader), fsStreamReady(snapWriter)]);
         const hashStream = createHash('sha256');
         snapReader.pipe(hashStream);
         snapReader.pipe(snapWriter);
 
-        await Promise.all([gzReader, snapWriter].map(s => finished(s)));
+        await Promise.all([finished(gzReader), finished(snapWriter)]);
         const h = hashStream.digest('hex');
         h === hash || assert.fail(d`actual hash ${h} !== expected ${hash}`);
-        await pfsync(fd);
         const snapWriterClose = cleanup.pop();
         snapWriterClose();
 
