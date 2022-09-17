@@ -14,7 +14,7 @@ import { aggregateTryFinally, PromiseAllOrErrors } from '@agoric/internal';
  * @property {number} rawByteCount size of (uncompressed) snapshot
  * @property {number} rawSaveSeconds time to save (uncompressed) snapshot
  * @property {number} compressedByteCount size of (compressed) snapshot
- * @property {number} compressSeconds time to compress and save snapshot (0 if the file is not new)
+ * @property {number} compressSeconds time to compress and save snapshot
  */
 
 /**
@@ -188,10 +188,7 @@ export function makeSnapStore(
     return hash.digest('hex');
   }
 
-  // Create a file for the compressed snapshot in-place
-  // to be atomically renamed once we know its name
-  // from the hash of raw snapshot contents.
-  // TODO: hoist.
+  // Manually promisify `tmpFile` to preserve its post-`error` callback arguments.
   const ptmpFile = (options = {}) => {
     return new Promise((resolve, reject) => {
       tmpFile(options, (err, path, fd, cleanupCallback) => {
@@ -249,22 +246,22 @@ export function makeSnapStore(
           snapReader.destroy();
         });
 
+        // Create a file for the compressed snapshot in-place
+        // to be atomically renamed once we know its name
+        // from the hash of raw snapshot contents.
         const {
           path: tmpGzPath,
           fd: tmpGzFd,
           cleanup: tmpGzCleanup,
         } = await ptmpFile({ tmpdir: root });
+        cleanup.push(tmpGzCleanup);
         const gzWriter = createWriteStream(noPath, {
           fd: tmpGzFd,
           autoClose: false,
         });
-        cleanup.push(tmpGzCleanup);
         cleanup.push(() => gzWriter.close());
 
-        await Promise.all([
-          fsStreamReady(snapReader),
-          fsStreamReady(tmpGzCleanup),
-        ]);
+        await Promise.all([fsStreamReady(snapReader), fsStreamReady(gzWriter)]);
 
         const hashStream = createHash('sha256');
         const gzip = createGzip();
