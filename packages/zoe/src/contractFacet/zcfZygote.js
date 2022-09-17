@@ -184,6 +184,7 @@ export const makeZCFZygote = async (
       return record;
     },
     makeInvitation: (
+      // @ts-expect-error xxx arbitrary subtype
       offerHandler = Far('default offer handler', () => {}),
       description,
       customProperties = harden({}),

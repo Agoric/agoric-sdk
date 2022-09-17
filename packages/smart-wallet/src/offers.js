@@ -127,7 +127,9 @@ export const makeOfferExecutor = ({
                 updateStatus({ result });
                 break;
               case 'copyRecord':
+                // @ts-expect-error result narrowed by passStyle
                 if ('invitationMakers' in result) {
+                  // @ts-expect-error result narrowed by passStyle
                   // save for continuing invitation offer
                   onNewContinuingOffer(id, result.invitationMakers);
                 }

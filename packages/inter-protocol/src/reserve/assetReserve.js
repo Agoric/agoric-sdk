@@ -407,6 +407,7 @@ const start = async (zcf, privateArgs, baggage) => {
     reduceLiquidationShortfall,
   };
 
+  /** @param {MethodContext} context */
   const makeShortfallReportingInvitation = ({ facets }) => {
     const handleShortfallReportingOffer = () => {
       return facets.shortfallReportingFacet;
@@ -464,7 +465,7 @@ export { start };
  * @property {() => Invitation} makeAddCollateralInvitation
  * @property {() => Allocation} getAllocations
  * @property {(issuer: Issuer) => void} addIssuer
- * @property {() => Invitation} makeShortfallReportingInvitation
+ * @property {() => Invitation<any, ShortfallReporter>} makeShortfallReportingInvitation
  * @property {() => MetricsNotification} getMetrics
  */
 
