@@ -21,7 +21,7 @@ cd packages/cosmic-swingset
 export ACCT_ADDR=<key-bech32>
 agd keys show $ACCT_ADDR
 # Fund the pool and your wallet
-make fund-provision-pool fund-wallet
+make wait-for-cosmos fund-provision-pool fund-wallet
 agd query bank balances $ACCT_ADDR
 
 # Provision your wallet
