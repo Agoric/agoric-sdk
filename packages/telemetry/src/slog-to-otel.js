@@ -571,6 +571,14 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         }
         break;
       }
+      case 'bundle-kernel-start': {
+        spans.push(`bundle-kernel`);
+        break;
+      }
+      case 'bundle-kernel-finish': {
+        spans.pop('bundle-kernel');
+        break;
+      }
       case 'cosmic-swingset-bootstrap-block-start': {
         dbTransactionManager.begin();
         spans.push(`bootstrap-block`);
@@ -598,8 +606,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
 
         // TODO: Move the encompassing `block` root span to cosmos
         spans.push(`block ${slogAttrs.blockHeight}`);
-        spans.start(`begin-block`, spans.top());
-        spans.end(`begin-block`);
+        spans.top().addEvent(`begin-block-action`, cleanAttrs(slogAttrs), now);
         break;
       }
       case 'cosmic-swingset-commit-block-start': {
@@ -629,36 +636,29 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'cosmic-swingset-end-block-start': {
-        spans.push(`end-block`);
+        // Add `end-block` as an event onto the emcompassing `block` span
+        spans.top().addEvent('end-block-action', cleanAttrs(slogAttrs), now);
         break;
       }
       case 'cosmic-swingset-end-block-finish': {
-        spans.pop('end-block');
+        // Don't record finish
         break;
       }
-      case 'cosmic-swingset-save-chain-start': {
-        spans.push(`save-chain`);
+      case 'cosmic-swingset-run-start': {
+        spans.push(`swingset-run`);
         break;
       }
-      case 'cosmic-swingset-save-chain-finish': {
-        spans.pop('save-chain');
+      case 'cosmic-swingset-run-finish': {
+        spans.pop(`swingset-run`);
         break;
       }
-      case 'cosmic-swingset-save-external-start': {
-        spans.push(`save-external`);
+      case 'heap-snapshot-save': {
+        // Add an event to whatever the top span is for now (likely crank)
+        spans.top()?.addEvent('snapshot-save', cleanAttrs(slogAttrs), now);
         break;
       }
-      case 'cosmic-swingset-save-external-finish': {
-        spans.pop('save-external');
-        spans.pop(); // 'block ...'
-        break;
-      }
-      case 'solo-process-kernel-start': {
-        spans.push(`solo-process-kernel`);
-        break;
-      }
-      case 'solo-process-kernel-finish': {
-        spans.pop(`solo-process-kernel`);
+      case 'heap-snapshot-load': {
+        // Ignore
         break;
       }
       case 'crank-start': {
