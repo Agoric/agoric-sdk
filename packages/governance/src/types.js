@@ -279,7 +279,7 @@
 
 /**
  * @typedef { ElectorateCreatorFacet & {
- *   getVoterInvitations: () => Promise<Invitation<{}, {voter: import('../test/swingsetTests/contractGovernor/vat-voter.js').EVatVoter}>>[]
+ *   getVoterInvitations: () => Promise<Invitation<{voter: import('../test/swingsetTests/contractGovernor/vat-voter.js').EVatVoter}>>[]
  * }} CommitteeElectorateCreatorFacet
  */
 

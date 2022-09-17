@@ -157,7 +157,7 @@
 
 /**
  * @typedef {<A, R>(
- *   invitation: ERef<Invitation<A, R>>,
+ *   invitation: ERef<Invitation<R, A>>,
  *   proposal?: Proposal,
  *   paymentKeywordRecord?: PaymentPKeywordRecord,
  *   offerArgs?: A,

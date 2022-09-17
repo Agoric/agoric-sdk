@@ -90,7 +90,7 @@
  *   description: string,
  *   customProperties?: object,
  *   proposalShape?: Pattern,
- * ) => Promise<Invitation<any, Awaited<R>>>
+ * ) => Promise<Invitation<Awaited<R>>>
  * } MakeInvitation
  *
  * Make a credible Zoe invitation for a particular smart contract
