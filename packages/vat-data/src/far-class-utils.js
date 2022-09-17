@@ -11,7 +11,8 @@ import {
 
 /** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>} RemotableBrand */
 /** @template T @typedef {import('@endo/eventual-send').ERef<T>} ERef */
-/** @typedef {import('@agoric/store').InterfaceGuard} InterfaceGuard */
+// FIXME import InterfaceGuard from @agoric/store
+/** @typedef {*} InterfaceGuard */
 /** @typedef {import('./types.js').Baggage} Baggage */
 /** @template T @typedef {import('./types.js').DefineKindOptions<T>} DefineKindOptions */
 /** @template T @typedef {import('./types.js').KindFacet<T>} KindFacet */
@@ -197,6 +198,8 @@ export const vivifyFarInstance = (
     options,
   );
 
+  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620
+  // @ts-ignore could be instantiated with an arbitrary type
   return provide(baggage, `the_${kindName}`, () => makeSingleton());
 };
 harden(vivifyFarInstance);

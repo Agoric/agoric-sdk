@@ -14,7 +14,7 @@ const log = anylogger('outbound');
  * @property {(newMessages: Array<[number, string]>, acknum: number) => void} deliverator
  * @property {number} highestSent
  * @property {number} highestAck
- * @property {number} trips
+ * @property {number} [trips]
  */
 
 /**

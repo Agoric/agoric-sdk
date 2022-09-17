@@ -19,11 +19,11 @@ const assertFirstCapASCII = str => {
 };
 
 /**
- * @param {Amount} invitationPurseBalance
+ * @param {Amount<'set'>} invitationPurseBalance
  * @param {object} query
  * @param {Board} query.board
  * @param {string} query.boardId
- * @returns {Array}
+ * @returns {Promise<Array>}
  * @deprecated
  */
 const findByBoardId = async (invitationPurseBalance, { board, boardId }) => {
@@ -40,7 +40,7 @@ const findByBoardId = async (invitationPurseBalance, { board, boardId }) => {
 // An invitation matching the query parameters is already expected
 // to be deposited in the default Zoe invitation purse
 /**
- * @param {Amount} invitationPurseBalance
+ * @param {Amount<'set'>} invitationPurseBalance
  * @param {Record<string, any>} kvs
  */
 const findByKeyValuePairs = async (invitationPurseBalance, kvs) => {

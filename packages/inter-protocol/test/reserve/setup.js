@@ -10,10 +10,14 @@ const reserveRoot = './src/reserve/assetReserve.js'; // package relative
 const faucetRoot = './test/vaultFactory/faucet.js';
 
 /**
+ * @typedef {ReturnType<typeof setUpZoeForTest>} FarZoeKit
+ */
+
+/**
  * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
  *
  * @param {*} t
- * @param {ManualTimer | undefined=} timer
+ * @param {ManualTimer | undefined} timer
  * @param {FarZoeKit} farZoeKit
  * @param {Issuer} runIssuer
  * @param {{ committeeName: string, committeeSize: number}} electorateTerms
@@ -35,9 +39,13 @@ const setupReserveBootstrap = async (
     timer,
     farZoeKit,
   );
-  const { produce } = /** @type { EconomyBootstrapPowers } */ (ammSpaces.space);
+  const { produce } =
+    /** @type { import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers } */ (
+      ammSpaces.space
+    );
   const zoe = await farZoeKit.zoe;
 
+  // @ts-expect-error could be undefined
   produce.chainTimerService.resolve(timer);
   produce.zoe.resolve(zoe);
 
