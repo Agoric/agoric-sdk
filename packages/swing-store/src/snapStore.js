@@ -1,6 +1,6 @@
 // @ts-check
 import { createHash } from 'crypto';
-import { finished as finishedCallback, pipeline } from 'stream';
+import { finished as finishedCallback } from 'stream';
 import { promisify } from 'util';
 import { createGzip, createGunzip } from 'zlib';
 import { assert, details as d } from '@agoric/assert';
@@ -27,8 +27,6 @@ import { aggregateTryFinally, PromiseAllOrErrors } from '@agoric/internal';
  * }} SnapStore
  */
 
-// TODO: Eliminate this promisify via e.g. `import { pipeline } from 'stream/promises'`.
-const pipe = promisify(pipeline);
 const finished = promisify(finishedCallback);
 
 const { freeze } = Object;
@@ -99,7 +97,7 @@ export function makeSnapStore(
     createWriteStream,
     measureSeconds,
     fsync,
-    open,
+    open: _open,
     rename,
     resolve: pathResolve,
     stat,
@@ -114,79 +112,6 @@ export function makeSnapStore(
 
   /** @type {(fd: number) => Promise<void>} */
   const pfsync = promisify(fsync);
-
-  /**
-   * Returns the result of calling a function with the name
-   * of a temp file that exists only for the duration of
-   * its invocation.
-   *
-   * @param {(name: string) => Promise<T>} fn
-   * @param {string=} prefix
-   * @returns {Promise<T>}
-   * @template T
-   */
-  async function withTempName(fn, prefix = 'tmp') {
-    const name = await ptmpName({
-      tmpdir: root,
-      template: `${prefix}-XXXXXX.xss`,
-    });
-    let result;
-    try {
-      result = await fn(name);
-    } finally {
-      try {
-        await unlink(name);
-      } catch (ignore) {
-        // ignore
-      }
-    }
-    return result;
-  }
-
-  /**
-   * Populates destPath by streaming the contents of srcPath through a transform.
-   *
-   * @param {string} srcPath
-   * @param {NodeJS.ReadWriteStream} transform
-   * @param {string} destPath
-   * @param {object} [options]
-   * @param {boolean} [options.flush]
-   */
-  async function filter(srcPath, transform, destPath, { flush = false } = {}) {
-    const [source, destination] = await Promise.all([
-      open(srcPath, 'r'),
-      open(destPath, 'wx'),
-    ]);
-    const sourceStream = createReadStream(noPath, {
-      fd: source.fd,
-      autoClose: false,
-    });
-    const destinationStream = createWriteStream(noPath, {
-      fd: destination.fd,
-      autoClose: false,
-    });
-    try {
-      await Promise.all([
-        fsStreamReady(sourceStream),
-        fsStreamReady(destinationStream),
-      ]);
-      await pipe(sourceStream, transform, destinationStream);
-      if (flush) {
-        await destination.sync();
-      }
-    } finally {
-      await Promise.all([destination.close(), source.close()]);
-    }
-  }
-
-  /** @type {(filename: string) => Promise<string>} */
-  async function fileHash(filename) {
-    const hash = createHash('sha256');
-    const input = createReadStream(filename);
-    await fsStreamReady(input);
-    await pipe(input, hash);
-    return hash.digest('hex');
-  }
 
   // Manually promisify `tmpFile` to preserve its post-`error` callback arguments.
   const ptmpFile = (options = {}) => {
@@ -344,13 +269,46 @@ export function makeSnapStore(
    * @template T
    */
   async function load(hash, loadRaw) {
-    return withTempName(async tmpFilePath => {
-      await filter(fullPathFromHash(hash), createGunzip(), tmpFilePath);
-      const actual = await fileHash(tmpFilePath);
-      assert(actual === hash, d`actual hash ${actual} !== expected ${hash}`);
-      const result = await loadRaw(tmpFilePath);
-      return result;
-    }, `${hash}-load`);
+    const cleanup = [];
+    return aggregateTryFinally(
+      async () => {
+        const gzReader = createReadStream(fullPathFromHash(hash));
+        cleanup.push(() => gzReader.destroy());
+        const snapReader = gzReader.pipe(createGunzip());
+
+        const {
+          path,
+          fd,
+          cleanup: tmpCleanup,
+        } = await ptmpFile({ template: `load-${hash}-XXXXXX.xss` });
+        cleanup.push(tmpCleanup);
+        const snapWriter = createWriteStream(noPath, {
+          fd,
+          autoClose: false,
+        });
+        cleanup.push(() => snapWriter.close());
+
+        await Promise.all([gzReader, snapWriter].map(s => fsStreamReady(s)));
+        const hashStream = createHash('sha256');
+        snapReader.pipe(hashStream);
+        snapReader.pipe(snapWriter);
+
+        await Promise.all([gzReader, snapWriter].map(s => finished(s)));
+        const h = hashStream.digest('hex');
+        h === hash || assert.fail(d`actual hash ${h} !== expected ${hash}`);
+        await pfsync(fd);
+        const snapWriterClose = cleanup.pop();
+        snapWriterClose();
+
+        const result = await loadRaw(path);
+        return result;
+      },
+      async () => {
+        await PromiseAllOrErrors(
+          cleanup.reverse().map(fn => Promise.resolve().then(() => fn())),
+        );
+      },
+    );
   }
 
   /**
