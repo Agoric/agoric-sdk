@@ -5,6 +5,8 @@ import { COSMOS_UNIT, makeAmountFormatter } from './format.js';
 import { makeAgoricNames } from './rpc.js';
 
 // Ambient types. Needed only for dev but this does a runtime import.
+// eslint-disable-next-line import/no-extraneous-dependencies
+import '@agoric/swingset-vat/src/types-ambient.js';
 import '@agoric/zoe/src/zoeService/types.js';
 
 /** @typedef {import('@agoric/smart-wallet/src/offers').OfferSpec} OfferSpec */

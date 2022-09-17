@@ -49,7 +49,7 @@
  * code breaks.
  * @property {GetConfiguration} getConfiguration
  * @property {GetBundleIDFromInstallation} getBundleIDFromInstallation
- * @property {GetProposalShapeForInvitation} getProposalShapeForInvitation
+ * @property {(invitationHandle: InvitationHandle) => Pattern | undefined} getProposalShapeForInvitation
  */
 
 /**

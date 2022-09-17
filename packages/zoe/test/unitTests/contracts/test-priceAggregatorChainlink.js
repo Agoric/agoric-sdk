@@ -1,6 +1,6 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
@@ -16,6 +16,9 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 
 import '../../../exported.js';
 import '../../../src/contracts/exported.js';
+
+/** @type {import('ava').TestFn<any>} */
+const test = unknownTest;
 
 /**
  * @callback MakeFakePriceOracle
@@ -42,8 +45,9 @@ const oraclePath = `${dirname}/../../../src/contracts/oracle.js`;
 const aggregatorPath = `${dirname}/../../../src/contracts/priceAggregatorChainlink.js`;
 
 test.before(
+  // comment to maintain formatting for git blame
   'setup aggregator and oracles',
-  /** @param {ExecutionContext} ot */ async ot => {
+  async ot => {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
     const { admin, vatAdminState } = makeFakeVatAdmin();
@@ -73,6 +77,7 @@ test.before(
       /** @type {OracleHandler} */
       const oracleHandler = Far('OracleHandler', {
         async onQuery({ increment }, _fee) {
+          // @ts-expect-error xxx
           valueOut += increment;
           return harden({
             reply: `${valueOut}`,
@@ -134,7 +139,7 @@ test.before(
   },
 );
 
-test('basic', /** @param {ExecutionContext} t */ async t => {
+test('basic', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
   const maxSubmissionCount = 1000;
@@ -211,7 +216,7 @@ test('basic', /** @param {ExecutionContext} t */ async t => {
   t.deepEqual(round3Attempt1.answer, 5000n);
 });
 
-test('timeout', /** @param {ExecutionContext} t */ async t => {
+test('timeout', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
   const maxSubmissionCount = 1000;
@@ -281,7 +286,7 @@ test('timeout', /** @param {ExecutionContext} t */ async t => {
   t.deepEqual(round3Attempt1.answer, 2000n);
 });
 
-test('issue check', /** @param {ExecutionContext} t */ async t => {
+test('issue check', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
   const maxSubmissionCount = 1000;
@@ -339,7 +344,7 @@ test('issue check', /** @param {ExecutionContext} t */ async t => {
   t.deepEqual(round2Attempt1.answer, 2000n);
 });
 
-test('supersede', /** @param {ExecutionContext} t */ async t => {
+test('supersede', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
   const maxSubmissionCount = 1000;
@@ -405,7 +410,7 @@ test('supersede', /** @param {ExecutionContext} t */ async t => {
   }
 });
 
-test('interleaved', /** @param {ExecutionContext} t */ async t => {
+test('interleaved', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
   const maxSubmissionCount = 3;
@@ -543,7 +548,7 @@ test('interleaved', /** @param {ExecutionContext} t */ async t => {
   t.deepEqual(round6Attempt1.answer, 5000n);
 });
 
-test('larger', /** @param {ExecutionContext} t */ async t => {
+test('larger', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
   const maxSubmissionCount = 1000;
@@ -626,7 +631,7 @@ test('larger', /** @param {ExecutionContext} t */ async t => {
   t.deepEqual(round2Attempt1.answer, 600n);
 });
 
-test('suggest', /** @param {ExecutionContext} t */ async t => {
+test('suggest', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
   const maxSubmissionCount = 1000;

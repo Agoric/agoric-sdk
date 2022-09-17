@@ -316,8 +316,7 @@ export const makePsmCommand = async logger => {
 
       const psmInstance = lookupPsmInstance(opts.pair);
 
-      /** @type {Brand} */
-      // @ts-expect-error yes, it is a brand
+      /** @type {import('../types.js').Brand} */
       const istBrand = agoricNames.brand.IST;
       const scaledAmount = harden({
         brand: istBrand,

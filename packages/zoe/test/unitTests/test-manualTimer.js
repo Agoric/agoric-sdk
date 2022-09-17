@@ -23,6 +23,7 @@ test('manualTimer makeNotifier', async t => {
   await Promise.resolve();
   await manualTimer.tick();
   const update2 = await p2;
+  // @ts-expect-error could be TimestampRecord
   t.truthy(BigInt(update2.updateCount) > BigInt(update1.updateCount));
   t.truthy(update2.value > update1.value);
 });
