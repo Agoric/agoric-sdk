@@ -63,7 +63,7 @@ test('meter details', async t => {
     },
     'evaluate returns meter details',
   );
-  t.is(meterType, 'xs-meter-16');
+  t.is(meterType, 'xs-meter-17');
 });
 
 // test disabled until rewritten to tolerate fast CI hosts getting
