@@ -11,9 +11,11 @@ import path from 'path';
 import { promisify } from 'util';
 import { createHash } from 'crypto';
 import { pipeline } from 'stream';
+import { performance } from 'perf_hooks';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { tmpName } from 'tmp';
+import { file as tmpFile, tmpName } from 'tmp';
 import bundleSource from '@endo/bundle-source';
+import { makeMeasureSeconds } from '@agoric/internal';
 import { makeSnapStore } from '@agoric/swing-store';
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 import { makeStartXSnap } from '../src/controller/controller.js';
@@ -59,14 +61,17 @@ async function fileHash(filename) {
 
 function makeSnapStoreIO() {
   return {
-    tmpName,
     createReadStream: fs.createReadStream,
     createWriteStream: fs.createWriteStream,
+    fsync: fs.fsync,
+    measureSeconds: makeMeasureSeconds(performance.now),
     open: fs.promises.open,
     rename: fs.promises.rename,
-    stat: fs.promises.stat,
-    unlink: fs.promises.unlink,
     resolve: path.resolve,
+    stat: fs.promises.stat,
+    tmpFile,
+    tmpName,
+    unlink: fs.promises.unlink,
   };
 }
 

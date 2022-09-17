@@ -9,6 +9,7 @@ import zlib from 'zlib';
 import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import tmp from 'tmp';
+import { makeMeasureSeconds } from '@agoric/internal';
 import { makeSnapStore } from '../src/snapStore.js';
 
 test('build temp file; compress to cache file', async t => {
@@ -16,16 +17,13 @@ test('build temp file; compress to cache file', async t => {
   t.teardown(() => pool.removeCallback());
   t.log({ pool: pool.name });
   await fs.promises.mkdir(pool.name, { recursive: true });
-  const measureSeconds = async fn => {
-    const result = await fn();
-    return { result, duration: 0 };
-  };
   const store = makeSnapStore(pool.name, {
     ...tmp,
+    tmpFile: tmp.file,
     ...path,
     ...fs,
     ...fs.promises,
-    measureSeconds,
+    measureSeconds: makeMeasureSeconds(() => 0),
   });
   let keepTmp = '';
   const result = await store.save(async filePath => {
@@ -41,7 +39,6 @@ test('build temp file; compress to cache file', async t => {
     filePath: path.resolve(pool.name, `${expectedHash}.gz`),
     rawByteCount: 3,
     rawSaveSeconds: 0,
-    hashSeconds: 0,
     compressSeconds: 0,
   });
   t.is(await store.has(hash), true);
@@ -63,11 +60,14 @@ test('snapStore prepare / commit delete is robust', async t => {
   const pool = tmp.dirSync({ unsafeCleanup: true });
   t.teardown(() => pool.removeCallback());
 
-  const measureSeconds = async fn => {
-    const result = await fn();
-    return { result, duration: 0 };
+  const io = {
+    ...tmp,
+    tmpFile: tmp.file,
+    ...path,
+    ...fs,
+    ...fs.promises,
+    measureSeconds: makeMeasureSeconds(() => 0),
   };
-  const io = { ...tmp, ...path, ...fs, ...fs.promises, measureSeconds };
   const store = makeSnapStore(pool.name, io);
 
   const hashes = [];
