@@ -157,9 +157,13 @@
  */
 
 /**
- * @template {object} [OA=any] offer args
- * @template {object} [OR=any] offer result
- * @callback Offer
+ * @typedef {<A, R>(
+ *   invitation: ERef<Invitation<A, R>>,
+ *   proposal?: Proposal,
+ *   paymentKeywordRecord?: PaymentPKeywordRecord,
+ *   offerArgs?: A,
+ *   ) => Promise<UserSeat<R>>
+ * } Offer
  *
  * To redeem an invitation, the user normally provides a proposal (their
  * rules for the offer) as well as payments to be escrowed by Zoe.  If
@@ -174,12 +178,6 @@
  * `paymentKeywordRecord` is a record with keywords as keys, and the
  * values are the actual payments to be escrowed. A payment is
  * expected for every rule under `give`.
- *
- * @param {ERef<Invitation<OA, OR>>} invitation
- * @param {Proposal=} proposal
- * @param {PaymentPKeywordRecord=} paymentKeywordRecord
- * @param {OA=} offerArgs
- * @returns {Promise<UserSeat<OR>>} seat
  */
 
 /**
