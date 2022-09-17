@@ -238,20 +238,21 @@ export async function launch({
   // and disables commit/abort.
 
   const inboundQueuePrefix = getHostKey('inboundQueue.');
-  const inboundStorage = harden({
+  const inboundQueueStorage = harden({
     get: key => {
       const val = kvStore.get(inboundQueuePrefix + key);
-      return val && JSON.parse(val);
+      return val ? JSON.parse(val) : undefined;
     },
-    set: (key, value) =>
-      value === undefined
-        ? inboundStorage.delete(key)
-        : kvStore.set(inboundQueuePrefix + key, JSON.stringify(value)),
+    set: (key, value) => {
+      value !== undefined ||
+        assert.fail(`value in inboundQueue must be defined`);
+      kvStore.set(inboundQueuePrefix + key, JSON.stringify(value));
+    },
     delete: key => kvStore.delete(inboundQueuePrefix + key),
     commit: () => {}, // disable
     abort: () => {}, // disable
   });
-  const inboundQueue = makeQueue(inboundStorage);
+  const inboundQueue = makeQueue(inboundQueueStorage);
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = metricsProvider.getMeter('ag-chain-cosmos');
@@ -483,8 +484,12 @@ export async function launch({
       return runPolicy.shouldRun();
     }
 
-    // Then we allow the timer to poll, which might push work onto the
-    // kernel run-queue, and gets the first cycle.
+    // We update the timer device at the start of each block, which might push
+    // work onto the end of the kernel run-queue (if any timers were ready to
+    // wake), where it will be followed by actions triggered by the block's
+    // swingset transactions.
+    // If the queue was empty, the timer work gets the first "cycle", and might
+    // run to completion before the block actions get their own cycles.
     const addedToQueue = timer.poll(blockTime);
     console.debug(
       `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
@@ -584,7 +589,7 @@ export async function launch({
           blockHeight,
           runNum,
         });
-        await bootstrapBlock();
+        await processAction(action.type, bootstrapBlock);
         controller.writeSlogObject({
           type: 'cosmic-swingset-run-finish',
           blockHeight,
