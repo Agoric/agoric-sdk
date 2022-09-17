@@ -82,6 +82,7 @@ export const makeOfferMethod = (
       offerArgs,
     );
     // AWAIT ///
+    // @ts-expect-error cast
     return userSeat;
   };
   return offer;

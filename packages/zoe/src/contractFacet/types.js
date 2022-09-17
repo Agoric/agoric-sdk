@@ -86,8 +86,13 @@
  */
 
 /**
- * @template {object} [OR=unknown] OR is OfferResult
- * @callback MakeInvitation
+ * @typedef {<R>(
+ *   offerHandler: OfferHandler<R>,
+ *   description: string,
+ *   customProperties?: object,
+ *   proposalShape?: Pattern,
+ * ) => Promise<Invitation<any, Awaited<R>>>
+ * } MakeInvitation
  *
  * Make a credible Zoe invitation for a particular smart contract
  * indicated by the `instance` in the details of the invitation. Zoe
@@ -98,12 +103,11 @@
  * getting in the `customProperties`. `customProperties` will be
  * placed in the details of the invitation.
  *
- * @param {OfferHandler<OR>} offerHandler - a contract specific function
+ * @param offerHandler - a contract specific function
  * that handles the offer, such as saving it or performing a trade
- * @param {string} description
- * @param {object=} customProperties
- * @param {Pattern} [proposalShape]
- * @returns {Promise<Invitation>}
+ * @param description
+ * @param [customProperties]
+ * @param [proposalShape]
  */
 
 /**

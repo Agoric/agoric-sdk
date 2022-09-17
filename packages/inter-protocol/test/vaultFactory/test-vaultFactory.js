@@ -1498,10 +1498,10 @@ test('transfer vault', async t => {
     return amount.value[0];
   };
 
+  /** @type {Promise<Invitation<{}, VaultKit>>} */
   const transferInvite = E(aliceVault).makeTransferInvitation();
   const inviteProps = await getInvitationProperties(transferInvite);
   trace(t, 'TRANSFER INVITE', transferInvite, inviteProps);
-  /** @type {UserSeat<VaultKit>} */
   const transferSeat = await E(zoe).offer(transferInvite);
   const {
     vault: transferVault,
@@ -1561,8 +1561,8 @@ test('transfer vault', async t => {
     }),
     harden({ Minted: paybackPayment }),
   );
+  /** @type {Invitation<{}, VaultKit>} */
   const t2Invite = await E(transferVault).makeTransferInvitation();
-  /** @type {UserSeat<VaultKit>} */
   const t2Seat = await E(zoe).offer(t2Invite);
   const {
     vault: t2Vault,
@@ -2269,7 +2269,6 @@ test('excessive debt on collateral type', async t => {
   const { lender } = services.vaultFactory;
   const collateralAmount = aeth.make(1_000_000n);
   const centralAmount = run.make(1_000_000n);
-  /** @type {UserSeat<VaultKit>} */
   const loanSeat = await E(zoe).offer(
     E(lender).makeVaultInvitation(),
     harden({
@@ -2859,7 +2858,7 @@ test('manager notifiers', async t => {
   // can't use 0n because of https://github.com/Agoric/agoric-sdk/issues/5548
   // but since this test is of metrics, we take the opportunity to check totalCollateral changing
   const given = aeth.make(2n);
-  vaultSeat = await E(services.zoe).offer(
+  let vaultOpSeat = await E(services.zoe).offer(
     await E(vault).makeAdjustBalancesInvitation(),
     harden({
       // nominal collateral
@@ -2870,14 +2869,14 @@ test('manager notifiers', async t => {
       Collateral: t.context.aeth.mint.mintPayment(given),
     }),
   );
-  await E(vaultSeat).getOfferResult();
+  await E(vaultOpSeat).getOfferResult();
   await m.assertChange({
     totalDebt: { value: DEBT1_EXTRA },
     totalCollateral: { value: AMPLE + given.value },
   });
 
   trace('13. Close loan');
-  vaultSeat = await E(services.zoe).offer(
+  vaultOpSeat = await E(services.zoe).offer(
     await E(vault).makeCloseInvitation(),
     harden({
       give: { Minted: run.make(DEBT1_EXTRA) },
@@ -2887,7 +2886,7 @@ test('manager notifiers', async t => {
       Minted: await getRunFromFaucet(t, DEBT1_EXTRA),
     }),
   );
-  await E(vaultSeat).getOfferResult();
+  await E(vaultOpSeat).getOfferResult();
   await m.assertChange({
     numActiveVaults: 0,
     totalCollateral: { value: 0n },
