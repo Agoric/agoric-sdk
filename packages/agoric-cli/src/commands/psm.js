@@ -4,6 +4,7 @@
 /* eslint-disable func-names */
 /* global fetch, process */
 import { Command } from 'commander';
+import { networkConfigP } from '../lib/chain.js';
 import { asPercent } from '../lib/format.js';
 import { makePSMSpendAction } from '../lib/psm.js';
 import {
@@ -33,13 +34,12 @@ function collectValues(val, memo) {
   return memo;
 }
 
-const { vstorage, fromBoard, agoricNames } = await makeRpcUtils({ fetch });
-
 /**
- *
  * @param {[Minted: string, Anchor: string]} pair
+ * @param {*} rpcUtils
  */
-const getGovernanceState = async ([Minted, Anchor]) => {
+const getGovernanceState = async ([Minted, Anchor], rpcUtils) => {
+  const { vstorage, fromBoard, agoricNames } = rpcUtils;
   const govContent = await vstorage.read(
     `published.psm.${Minted}.${Anchor}.governance`,
   );
@@ -86,7 +86,7 @@ export const makePsmCommand = async logger => {
 
   const marshaller = boardSlottingMarshaller();
 
-  const lookupPsmInstance = ([minted, anchor]) => {
+  const lookupPsmInstance = (agoricNames, [minted, anchor]) => {
     const name = `psm-${minted}-${anchor}`;
     const instance = agoricNames.instance[name];
     if (!instance) {
@@ -106,6 +106,9 @@ export const makePsmCommand = async logger => {
     .command('list')
     .description('list all PSMs in network')
     .action(async function () {
+      const { vstorage } = await makeRpcUtils(await networkConfigP, {
+        fetch,
+      });
       const mints = await vstorage.keys('published.psm');
       for (const minted of mints) {
         const anchors = await vstorage.keys(`published.psm.${minted}`);
@@ -127,7 +130,12 @@ export const makePsmCommand = async logger => {
     )
     .action(async function () {
       const { pair } = this.opts();
-      const { governance } = await getGovernanceState(pair);
+      const { governance } = await getGovernanceState(
+        pair,
+        await makeRpcUtils(await networkConfigP, {
+          fetch,
+        }),
+      );
       console.log('psm governance params', Object.keys(governance));
       console.log('MintLimit', governance.MintLimit.value);
       console.log(
@@ -161,7 +169,10 @@ export const makePsmCommand = async logger => {
     .action(async function () {
       const opts = this.opts();
       console.warn('running with options', opts);
-      const instance = await lookupPsmInstance(opts.pair);
+      const { agoricNames } = await makeRpcUtils(await networkConfigP, {
+        fetch,
+      });
+      const instance = await lookupPsmInstance(agoricNames, opts.pair);
       const spendAction = makePSMSpendAction(instance, agoricNames.brand, opts);
       outputAction(spendAction);
     });
@@ -172,6 +183,9 @@ export const makePsmCommand = async logger => {
     .option('--offerId [number]', 'Offer id', Number, Date.now())
     .action(async function () {
       const opts = this.opts();
+      const { agoricNames } = await makeRpcUtils(await networkConfigP, {
+        fetch,
+      });
 
       const { economicCommittee } = agoricNames.instance;
       assert(economicCommittee, 'missing economicCommittee');
@@ -181,6 +195,7 @@ export const makePsmCommand = async logger => {
         id: Number(opts.offerId),
         invitationSpec: {
           source: 'purse',
+          // @ts-expect-error xxx RpcRemote
           instance: economicCommittee,
           description: 'Voter0', // XXX it may not always be
         },
@@ -201,6 +216,9 @@ export const makePsmCommand = async logger => {
     .option('--offerId [number]', 'Offer id', Number, Date.now())
     .action(async function () {
       const opts = this.opts();
+      const { agoricNames } = await makeRpcUtils(await networkConfigP, {
+        fetch,
+      });
 
       const { psmCharter } = agoricNames.instance;
       assert(psmCharter, 'missing psmCharter');
@@ -210,6 +228,7 @@ export const makePsmCommand = async logger => {
         id: Number(opts.offerId),
         invitationSpec: {
           source: 'purse',
+          // @ts-expect-error xxx RpcRemote
           instance: psmCharter,
           description: 'PSM charter member invitation',
         },
@@ -311,7 +330,11 @@ export const makePsmCommand = async logger => {
     .action(async function () {
       const opts = this.opts();
 
-      const psmInstance = lookupPsmInstance(opts.pair);
+      const { agoricNames } = await makeRpcUtils(await networkConfigP, {
+        fetch,
+      });
+
+      const psmInstance = lookupPsmInstance(agoricNames, opts.pair);
 
       /** @type {import('../types.js').Brand} */
       const istBrand = agoricNames.brand.IST;
@@ -365,6 +388,10 @@ export const makePsmCommand = async logger => {
     )
     .action(async function () {
       const opts = this.opts();
+
+      const { vstorage, fromBoard } = await makeRpcUtils(await networkConfigP, {
+        fetch,
+      });
 
       const questionHandleCapDataStr = await vstorage.read(
         'published.committees.Initial_Economic_Committee.latestQuestion',

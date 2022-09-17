@@ -1,47 +1,17 @@
 // @ts-check
 /* eslint-disable @jessie.js/no-nested-await */
-/* global Buffer, fetch, process */
-
-import { NonNullish } from '@agoric/assert';
+/* global Buffer */
 
 /**
  * @typedef {{boardId: string, iface: string}} RpcRemote
  */
 
-export const networkConfigUrl = agoricNetSubdomain =>
-  `https://${agoricNetSubdomain}.agoric.net/network-config`;
-export const rpcUrl = agoricNetSubdomain =>
-  `https://${agoricNetSubdomain}.rpc.agoric.net:443`;
-
 /**
- * @typedef {{ rpcAddrs: string[], chainName: string }} MinimalNetworkConfig
- */
-
-/**
- *  @param {string} str
- * @returns {Promise<MinimalNetworkConfig>}
- */
-const fromAgoricNet = str => {
-  const [netName, chainName] = str.split(',');
-  if (chainName) {
-    return Promise.resolve({ chainName, rpcAddrs: [rpcUrl(netName)] });
-  }
-  return fetch(networkConfigUrl(netName)).then(res => res.json());
-};
-
-/** @type {MinimalNetworkConfig} */
-export const networkConfig =
-  'AGORIC_NET' in process.env && process.env.AGORIC_NET !== 'local'
-    ? await fromAgoricNet(NonNullish(process.env.AGORIC_NET))
-    : { rpcAddrs: ['http://0.0.0.0:26657'], chainName: 'agoric' };
-// console.warn('networkConfig', networkConfig);
-
-/**
- *
+ * @param {import("./chain").MinimalNetworkConfig} networkConfig
  * @param {object} powers
  * @param {(url: RequestInfo) => Promise<Response>} powers.fetch
  */
-export const makeVStorage = powers => {
+export const makeVStorage = (networkConfig, powers) => {
   const getJSON = path => {
     const url = networkConfig.rpcAddrs[0] + path;
     // console.warn('fetching', url);
@@ -238,8 +208,8 @@ export const makeAgoricNames = async (ctx, vstorage) => {
   return Object.fromEntries(entries);
 };
 
-export const makeRpcUtils = async ({ fetch }) => {
-  const vstorage = makeVStorage({ fetch });
+export const makeRpcUtils = async (networkConfig, { fetch }) => {
+  const vstorage = makeVStorage(networkConfig, { fetch });
   const fromBoard = makeFromBoard();
   const agoricNames = await makeAgoricNames(fromBoard, vstorage);
 

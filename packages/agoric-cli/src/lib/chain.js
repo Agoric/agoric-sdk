@@ -1,7 +1,43 @@
 // @ts-check
-/* global process */
+/* global fetch, process */
 import { normalizeBech32 } from '@cosmjs/encoding';
 import { execSync } from 'child_process';
+
+import { NonNullish } from '@agoric/assert';
+
+/**
+ * @typedef {{boardId: string, iface: string}} RpcRemote
+ */
+
+export const networkConfigUrl = agoricNetSubdomain =>
+  `https://${agoricNetSubdomain}.agoric.net/network-config`;
+export const rpcUrl = agoricNetSubdomain =>
+  `https://${agoricNetSubdomain}.rpc.agoric.net:443`;
+
+/**
+ * @typedef {{ rpcAddrs: string[], chainName: string }} MinimalNetworkConfig
+ */
+
+/**
+ *  @param {string} str
+ * @returns {Promise<MinimalNetworkConfig>}
+ */
+const fromAgoricNet = str => {
+  const [netName, chainName] = str.split(',');
+  if (chainName) {
+    return Promise.resolve({ chainName, rpcAddrs: [rpcUrl(netName)] });
+  }
+  return fetch(networkConfigUrl(netName)).then(res => res.json());
+};
+
+/** @type {Promise<MinimalNetworkConfig>} */
+export const networkConfigP =
+  'AGORIC_NET' in process.env && process.env.AGORIC_NET !== 'local'
+    ? fromAgoricNet(NonNullish(process.env.AGORIC_NET))
+    : Promise.resolve({
+        rpcAddrs: ['http://0.0.0.0:26657'],
+        chainName: 'agoric',
+      });
 
 export const normalizeAddress = literalOrName => {
   try {
@@ -18,7 +54,7 @@ harden(normalizeAddress);
  * SECURITY: closes over process and child_process
  *
  * @param {string} swingsetArgs
- * @param {import('./rpc').MinimalNetworkConfig} net
+ * @param {import('./chain').MinimalNetworkConfig} net
  * @param {string} from
  * @param {boolean} [dryRun]
  */
