@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @typedef {object} OracleAdmin
  * @property {() => Promise<void>} delete

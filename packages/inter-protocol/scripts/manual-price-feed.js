@@ -1,3 +1,4 @@
+// @ts-check
 import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';

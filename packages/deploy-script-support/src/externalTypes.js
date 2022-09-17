@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @callback InstallSaveAndPublish
  * @param {string} resolvedPath

@@ -1,3 +1,4 @@
+// @ts-check
 /* global setTimeout Buffer */
 import path from 'path';
 import fs from 'fs';

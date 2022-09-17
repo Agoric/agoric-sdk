@@ -1,3 +1,4 @@
+// @ts-check
 import { initEmpty } from '@agoric/store';
 
 import { provideKindHandle } from './kind-utils.js';

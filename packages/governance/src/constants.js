@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Enum of parameter types
  *

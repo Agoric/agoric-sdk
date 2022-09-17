@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * A Timer device that provides a capability that can be used to schedule wake()
  * calls at particular times. The simpler form is a handler object with a wake()

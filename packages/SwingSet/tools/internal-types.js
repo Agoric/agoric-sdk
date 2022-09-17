@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @typedef {object} ManualTimerAdmin
  * @property { (when: Timestamp) => void } advanceTo

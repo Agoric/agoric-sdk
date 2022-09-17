@@ -1,3 +1,4 @@
+// @ts-check
 import { assert, details as X, q } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import { passStyleOf } from '@endo/marshal';

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @typedef {object} ManualTimerAdmin
  * @property {(msg?: string) => Promise<void>} tick

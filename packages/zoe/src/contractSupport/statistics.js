@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @template T
  * @typedef {object} TypedMath
