@@ -20,14 +20,17 @@ import { defer } from './defer.js';
 // This will need adjustment, but seems to be fine for a start.
 export const DEFAULT_CRANK_METERING_LIMIT = 1e8;
 
-const OK = '.'.charCodeAt(0);
-const ERROR = '!'.charCodeAt(0);
-const QUERY = '?'.charCodeAt(0);
-
-const OK_SEPARATOR = 1;
-
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
+
+const QUERY = '?'.charCodeAt(0);
+const QUERY_BUF = encoder.encode('?');
+const UNKNOWN_RESPONSE_BUF = encoder.encode('/');
+
+const OK = '.'.charCodeAt(0);
+const ERROR = '!'.charCodeAt(0);
+
+const OK_SEPARATOR = 1;
 
 const { freeze } = Object;
 
@@ -203,7 +206,8 @@ export function xsnap(options) {
           )}`,
         );
       } else if (message[0] === QUERY) {
-        await messagesToXsnap.next(await handleCommand(message.subarray(1)));
+        const commandResult = await handleCommand(message.subarray(1));
+        await messagesToXsnap.next([UNKNOWN_RESPONSE_BUF, commandResult]);
       }
     }
   }
@@ -265,10 +269,7 @@ export function xsnap(options) {
    */
   async function issueCommand(message) {
     const result = baton.then(async () => {
-      const request = new Uint8Array(message.length + 1);
-      request[0] = QUERY;
-      request.set(message, 1);
-      await messagesToXsnap.next(request);
+      await messagesToXsnap.next([QUERY_BUF, message]);
       return runToIdle();
     });
     baton = result.then(noop, noop);
