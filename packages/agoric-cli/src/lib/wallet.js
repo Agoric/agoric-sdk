@@ -21,7 +21,7 @@ export const getWalletState = async (addr, ctx, { vstorage }) => {
   /** @type {import('./format').AssetDescriptor[]} */
   const brands = [];
   const mm = boardSlottingMarshaller(ctx.convertSlotToVal);
-  capDatas.forEach(capData => {
+  for (const capData of capDatas) {
     /** @type import('@agoric/smart-wallet/src/smartWallet').UpdateRecord */
     const update = mm.unserialize(capData);
     console.warn('wallet update', update);
@@ -29,16 +29,15 @@ export const getWalletState = async (addr, ctx, { vstorage }) => {
     switch (update.updated) {
       case 'offerStatus': {
         const { status } = update;
-        if (!offers.has(status.id)) {
-          offers.set(status.id, status);
-        }
+        const lastStatus = offers.get(status.id);
+        // merge records
+        offers.set(status.id, { ...lastStatus, ...status });
         break;
       }
       case 'balance': {
         const { currentAmount } = update;
-        if (!balances.has(currentAmount.brand)) {
-          balances.set(currentAmount.brand, currentAmount);
-        }
+        // last record wins
+        balances.set(currentAmount.brand, currentAmount);
         break;
       }
       case 'brand': {
@@ -50,6 +49,6 @@ export const getWalletState = async (addr, ctx, { vstorage }) => {
         // @ts-expect-error
         throw Error(`unsupported update ${update.updated}`);
     }
-  });
+  }
   return { balances, brands, offers };
 };
