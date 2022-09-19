@@ -9,11 +9,22 @@ import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import { useState } from 'react';
 
-const ProvisionDialog = ({ onClose, open, address, href }) => {
+import { withApplicationContext } from '../contexts/Application';
+
+const ProvisionDialog = ({ onClose, open, address, href, keplrConnection }) => {
   const [inProgress, setInProgress] = useState(false);
-  const provisionWallet = () => {
-    // TODO: Sign message with cosmjs.
+  const provisionWallet = async () => {
+    const {
+      signers: { interactiveSigner },
+    } = keplrConnection;
+    if (!interactiveSigner) {
+      throw new Error(
+        'Cannot sign a transaction in read only mode, connect to keplr.',
+      );
+    }
     setInProgress(true);
+    await interactiveSigner.submitProvision();
+    setInProgress(false);
   };
 
   const prompt = (
@@ -70,4 +81,6 @@ const ProvisionDialog = ({ onClose, open, address, href }) => {
   );
 };
 
-export default ProvisionDialog;
+export default withApplicationContext(ProvisionDialog, context => ({
+  keplrConnection: context.keplrConnection,
+}));
