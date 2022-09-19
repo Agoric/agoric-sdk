@@ -256,7 +256,7 @@ test('multiMap initialize with state', t => {
   ]);
 });
 
-test.failing('multiMap remove edge cases', t => {
+test('multiMap remove edge cases', t => {
   const mm = makeTimerMap();
   const handlerA = makeHandler();
   const handlerB = makeHandler();

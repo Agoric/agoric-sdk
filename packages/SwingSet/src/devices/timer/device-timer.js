@@ -106,14 +106,14 @@ function makeTimerMap(state = undefined) {
    *
    * @param {bigint} time
    * @param {Waker} handler
-   * @param {number} [repeater]
+   * @param {number} [index]
    * @returns {bigint}
    */
-  function add(time, handler, repeater = undefined) {
+  function add(time, handler, index = undefined) {
     assert.typeof(time, 'bigint');
     /** @type {IndexedHandler} */
     const handlerRecord =
-      typeof repeater === 'number' ? { handler, index: repeater } : { handler };
+      typeof index === 'number' ? { handler, index } : { handler };
     const { handlers: records } = eventsFor(time);
     records.push(handlerRecord);
     schedule.sort((a, b) => Number(a.time - b.time));
@@ -147,7 +147,7 @@ function makeTimerMap(state = undefined) {
   // We don't expect this to be called often, so we don't optimize for it.
   /**
    *
-   * @param {Waker} targetHandler
+   * @param {Waker} target
    * @returns {bigint[]}
    */
   function remove(targetHandler) {
@@ -156,28 +156,17 @@ function makeTimerMap(state = undefined) {
     let i = 0;
     while (i < schedule.length) {
       const { time, handlers } = schedule[i];
-      if (handlers.length === 1) {
-        if (handlers[0].handler === targetHandler) {
-          schedule.splice(i, 1);
+      // Nothing prevents a particular handler from appearing more than once
+      for (let j = handlers.length - 1; j >= 0; j -= 1) {
+        if (handlers[j].handler === targetHandler) {
+          handlers.splice(j, 1);
           droppedTimes.push(time);
-        } else {
-          i += 1;
         }
+      }
+      if (handlers.length === 0) {
+        schedule.splice(i, 1);
       } else {
-        // Nothing prevents a particular handler from appearing more than once
-        for (const { handler } of handlers) {
-          // @ts-expect-error xxx Waker vs IndexedHandler
-          if (handler === targetHandler && handlers.indexOf(handler) !== -1) {
-            // @ts-expect-error xxx Waker vs IndexedHandler
-            handlers.splice(handlers.indexOf(handler), 1);
-            droppedTimes.push(time);
-          }
-        }
-        if (handlers.length === 0) {
-          schedule.splice(i, 1);
-        } else {
-          i += 1;
-        }
+        i += 1;
       }
     }
     return droppedTimes;
