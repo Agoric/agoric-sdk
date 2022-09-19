@@ -1,7 +1,12 @@
 // @ts-check
 
+// eslint-disable-next-line no-unused-vars -- typeof below
+import { makeAgoricNames } from './rpc.js';
+
 // ambient types
 import '@agoric/ertp/src/types.js';
+
+/** @typedef {import('@agoric/smart-wallet/src/offers').OfferStatus} OfferStatus */
 
 export const COSMOS_UNIT = 1_000_000n;
 
@@ -59,10 +64,12 @@ export const asPercent = ratio => {
 };
 
 /**
+ * Summarize the balances array as user-facing informative tuples
+ 
  * @param {Amount[]} balances
  * @param {AssetDescriptor[]} assets
  */
-export const simplePurseBalances = (balances, assets) => {
+export const purseBalanceTuples = (balances, assets) => {
   const fmt = makeAmountFormatter(assets);
   return balances.map(b => fmt(b));
 };
@@ -77,4 +84,46 @@ export const fmtRecordOfLines = record => {
     ([key, lines]) => `  ${stringify(key)}: [\n${lines.join(',\n')}\n  ]`,
   );
   return `{\n${lineEntries.join(',\n')}\n}`;
+};
+
+/**
+ * Summarize the offerStatuses of the state as user-facing informative tuples
+ *
+ * @param {{ brands: import('./format').AssetDescriptor[], offers: Map<number, OfferStatus>}} state
+ * @param {Awaited<ReturnType<typeof makeAgoricNames>>} agoricNames
+ */
+export const offerStatusTuples = (state, agoricNames) => {
+  const { brands, offers } = state;
+  const fmt = makeAmountFormatter(brands);
+  const fmtRecord = r =>
+    Object.fromEntries(
+      Object.entries(r).map(([kw, amount]) => [kw, fmt(amount)]),
+    );
+  return [...offers.keys()].sort().map(id => {
+    const o = offers.get(id);
+    assert(o);
+    assert(o.invitationSpec.source === 'contract');
+    const {
+      invitationSpec: { instance, publicInvitationMaker },
+      proposal: { give, want },
+      payouts,
+    } = o;
+    const entry = Object.entries(agoricNames.instance).find(
+      // @ts-expect-error xxx RpcRemote
+      ([_name, candidate]) => candidate === instance,
+    );
+    const instanceName = entry ? entry[0] : '???';
+    return [
+      instanceName,
+      new Date(id).toISOString(),
+      id,
+      publicInvitationMaker,
+      o.numWantsSatisfied,
+      {
+        give: fmtRecord(give),
+        want: fmtRecord(want),
+        ...(payouts ? { payouts: fmtRecord(payouts) } : {}),
+      },
+    ];
+  });
 };

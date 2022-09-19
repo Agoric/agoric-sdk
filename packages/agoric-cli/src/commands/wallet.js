@@ -8,8 +8,11 @@ import {
   makeLeaderFromRpcAddresses,
 } from '@agoric/casting';
 import { Command } from 'commander';
-import { fmtRecordOfLines, simplePurseBalances } from '../lib/format.js';
-import { simpleOffers } from '../lib/psm.js';
+import {
+  fmtRecordOfLines,
+  offerStatusTuples,
+  purseBalanceTuples,
+} from '../lib/format.js';
 import { makeRpcUtils, networkConfig } from '../lib/rpc.js';
 import { getWalletState } from '../lib/wallet.js';
 
@@ -107,8 +110,8 @@ export const makeWalletCommand = async () => {
       console.warn('got state', state);
       const { brands, balances } = state;
       const summary = {
-        balances: simplePurseBalances([...balances.values()], brands),
-        offers: simpleOffers(state, agoricNames),
+        balances: purseBalanceTuples([...balances.values()], brands),
+        offers: offerStatusTuples(state, agoricNames),
       };
       process.stdout.write(fmtRecordOfLines(summary));
     });

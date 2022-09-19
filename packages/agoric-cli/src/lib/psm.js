@@ -1,8 +1,6 @@
 // @ts-check
 
-import { COSMOS_UNIT, makeAmountFormatter } from './format.js';
-// eslint-disable-next-line no-unused-vars -- typeof below
-import { makeAgoricNames } from './rpc.js';
+import { COSMOS_UNIT } from './format.js';
 
 // Ambient types. Needed only for dev but this does a runtime import.
 import '@agoric/zoe/src/zoeService/types.js';
@@ -10,46 +8,6 @@ import '@agoric/zoe/src/zoeService/types.js';
 /** @typedef {import('@agoric/smart-wallet/src/offers').OfferSpec} OfferSpec */
 /** @typedef {import('@agoric/smart-wallet/src/offers').OfferStatus} OfferStatus */
 /** @typedef {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} BridgeAction */
-
-/**
- * @param {{ brands: import('./format').AssetDescriptor[], offers: Map<number, OfferStatus>}} state
- * @param {Awaited<ReturnType<typeof makeAgoricNames>>} agoricNames
- */
-export const simpleOffers = (state, agoricNames) => {
-  const { brands, offers } = state;
-  const fmt = makeAmountFormatter(brands);
-  const fmtRecord = r =>
-    Object.fromEntries(
-      Object.entries(r).map(([kw, amount]) => [kw, fmt(amount)]),
-    );
-  return [...offers.keys()].sort().map(id => {
-    const o = offers.get(id);
-    assert(o);
-    assert(o.invitationSpec.source === 'contract');
-    const {
-      invitationSpec: { instance, publicInvitationMaker },
-      proposal: { give, want },
-      payouts,
-    } = o;
-    const entry = Object.entries(agoricNames.instance).find(
-      // @ts-expect-error xxx RpcRemote
-      ([_name, candidate]) => candidate === instance,
-    );
-    const instanceName = entry ? entry[0] : '???';
-    return [
-      instanceName,
-      new Date(id).toISOString(),
-      id,
-      publicInvitationMaker,
-      o.numWantsSatisfied,
-      {
-        give: fmtRecord(give),
-        want: fmtRecord(want),
-        ...(payouts ? { payouts: fmtRecord(payouts) } : {}),
-      },
-    ];
-  });
-};
 
 /**
  * @param {Record<string, Brand>} brands
