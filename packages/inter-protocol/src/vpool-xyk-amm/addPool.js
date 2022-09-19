@@ -6,7 +6,7 @@ import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { definePoolKind } from './pool.js';
 
-const { details: X } = assert;
+const { details: X, quote: q } = assert;
 
 const DISPLAY_INFO = harden({ decimalPlaces: 6 });
 
@@ -39,7 +39,7 @@ export const makeAddIssuer = (
     ]);
     // AWAIT ///////////////
     secondaryAssetKind === AssetKind.NAT ||
-      assert.fail(X`${keyword} asset not fungible (must use NAT math)`);
+      assert.fail(X`${q(keyword)} asset not fungible (must use NAT math)`);
 
     /** @type {(brand: Brand) => Promise<ZCFMint>} */
     const makeLiquidityMint = brand => {

@@ -29,7 +29,11 @@ export const assertKeywordName = keyword => {
   assert.typeof(keyword, 'string');
   keyword.length <= MAX_KEYWORD_LENGTH ||
     assert.fail(
-      X`keyword ${keyword} exceeded maximum length ${MAX_KEYWORD_LENGTH} characters; got ${keyword.length}`,
+      X`keyword ${q(
+        keyword,
+      )} exceeded maximum length ${MAX_KEYWORD_LENGTH} characters; got ${
+        keyword.length
+      }`,
     );
   assert(
     firstCapASCII.test(keyword),
