@@ -3,6 +3,7 @@
 // @ts-check
 /* eslint-disable func-names */
 /* global fetch, process */
+import { AmountMath } from '@agoric/ertp';
 import { Command } from 'commander';
 import { asPercent } from '../lib/format.js';
 import { makePSMSpendAction } from '../lib/psm.js';
@@ -274,6 +275,69 @@ export const makePsmCommand = async logger => {
           ]),
         },
         proposal: {},
+      };
+
+      outputAction({
+        method: 'executeOffer',
+        offer,
+      });
+
+      console.warn('Now execute the prepared offer');
+    });
+
+  psm
+    .command('proposeChangeMintLimit')
+    .description('propose to change the MintLimit parameter')
+    .option(
+      '--offerId [number]',
+      'id of this offer (optional)',
+      Number,
+      Date.now(),
+    )
+    .requiredOption(
+      '--pair [Minted.Anchor]',
+      'token pair (Minted.Anchor)',
+      s => s.split('.'),
+      ['IST', 'AUSD'],
+    )
+    .requiredOption(
+      '--previousOfferId [number]',
+      'offer using psm charter invitation',
+      Number,
+    )
+    .requiredOption('--limit [number]', 'new mint limit (in IST)', Number)
+    .option(
+      '--deadline [minutes]',
+      'minutes from now to close the vote',
+      Number,
+      1,
+    )
+    .action(async function () {
+      const opts = this.opts();
+
+      const psmInstance = lookupPsmInstance(opts.pair);
+
+      /** @type {Brand} */
+      // @ts-expect-error yes, it is a brand
+      const istBrand = agoricNames.brand.IST;
+      const scaledAmount = harden({
+        brand: istBrand,
+        value: BigInt(opts.limit * 1_000_000),
+      });
+      /** @type {import('../lib/psm.js').OfferSpec} */
+      const offer = {
+        id: Number(opts.offerId),
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: opts.previousOfferId,
+          invitationMakerName: 'VoteOnParamChange',
+        },
+        proposal: {},
+        offerArgs: {
+          instance: psmInstance,
+          params: { MintLimit: scaledAmount },
+          deadline: BigInt(opts.deadline * 60 + Math.round(Date.now() / 1000)),
+        },
       };
 
       outputAction({
