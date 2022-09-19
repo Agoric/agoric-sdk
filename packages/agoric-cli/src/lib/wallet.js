@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 import { boardSlottingMarshaller, storageHelper } from './rpc.js';
 
 /**
@@ -16,7 +17,7 @@ export const getWalletState = async (addr, ctx, { vstorage }) => {
 
   /** @type {Map<number, import('./psm').OfferSpec>} */
   const offers = new Map();
-  /** @type {Map<Brand, Amount>} */
+  /** @type {Map<import('../types').Brand, import('../types').Amount>} */
   const balances = new Map();
   /** @type {import('./format').AssetDescriptor[]} */
   const brands = [];
@@ -37,17 +38,18 @@ export const getWalletState = async (addr, ctx, { vstorage }) => {
       case 'balance': {
         const { currentAmount } = update;
         if (!balances.has(currentAmount.brand)) {
+          // @ts-ignore https://github.com/agoric/agoric-sdk/issues/4560
           balances.set(currentAmount.brand, currentAmount);
         }
         break;
       }
       case 'brand': {
-        // @ts-expect-error cast for unserialization hack
+        // @ts-ignore https://github.com/agoric/agoric-sdk/issues/4560
         brands.push(update.descriptor);
         break;
       }
       default:
-        // @ts-expect-error
+        // @ts-ignore https://github.com/agoric/agoric-sdk/issues/4560
         throw Error(`unsupported update ${update.updated}`);
     }
   });

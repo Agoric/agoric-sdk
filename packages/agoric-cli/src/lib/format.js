@@ -59,7 +59,7 @@ export const asPercent = ratio => {
 };
 
 /**
- * @param {Amount[]} balances
+ * @param {Array<import('../types').Amount>} balances
  * @param {AssetDescriptor[]} assets
  */
 export const simplePurseBalances = (balances, assets) => {
