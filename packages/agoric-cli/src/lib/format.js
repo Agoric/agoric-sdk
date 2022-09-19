@@ -89,18 +89,20 @@ export const fmtRecordOfLines = record => {
 /**
  * Summarize the offerStatuses of the state as user-facing informative tuples
  *
- * @param {{ brands: import('./format').AssetDescriptor[], offers: Map<number, OfferStatus>}} state
+ * @param {import('@agoric/smart-wallet/src/utils.js').CoalescedWalletState} state
  * @param {Awaited<ReturnType<typeof makeAgoricNames>>} agoricNames
  */
 export const offerStatusTuples = (state, agoricNames) => {
-  const { brands, offers } = state;
-  const fmt = makeAmountFormatter(brands);
+  const { brands, offerStatuses } = state;
+  const fmt = makeAmountFormatter(
+    // @ts-expect-error xxx RpcRemote
+    [...brands.values()],
+  );
   const fmtRecord = r =>
     Object.fromEntries(
       Object.entries(r).map(([kw, amount]) => [kw, fmt(amount)]),
     );
-  return [...offers.keys()].sort().map(id => {
-    const o = offers.get(id);
+  return Array.from(offerStatuses.values()).map(o => {
     assert(o);
     assert(o.invitationSpec.source === 'contract');
     const {
@@ -113,10 +115,16 @@ export const offerStatusTuples = (state, agoricNames) => {
       ([_name, candidate]) => candidate === instance,
     );
     const instanceName = entry ? entry[0] : '???';
+    let when = '??';
+    try {
+      when = new Date(o.id).toISOString();
+    } catch {
+      console.debug('offer id', o.id, 'not a timestamp');
+    }
     return [
       instanceName,
-      new Date(id).toISOString(),
-      id,
+      o.id,
+      when,
       publicInvitationMaker,
       o.numWantsSatisfied,
       {

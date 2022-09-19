@@ -110,7 +110,11 @@ export const makeWalletCommand = async () => {
       console.warn('got state', state);
       const { brands, balances } = state;
       const summary = {
-        balances: purseBalanceTuples([...balances.values()], brands),
+        balances: purseBalanceTuples(
+          [...balances.values()],
+          // @ts-expect-error xxx RpcRemote
+          [...brands.values()],
+        ),
         offers: offerStatusTuples(state, agoricNames),
       };
       process.stdout.write(fmtRecordOfLines(summary));
