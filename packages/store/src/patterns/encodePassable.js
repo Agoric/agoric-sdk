@@ -1,5 +1,5 @@
+/* eslint-disable no-bitwise */
 // @ts-check
-import { assert, details as X, q } from '@agoric/assert';
 import {
   passStyleOf,
   nameForPassableSymbol,
@@ -8,8 +8,12 @@ import {
   getTag,
   makeTagged,
 } from '@endo/marshal';
+import { ErrorHelper } from '@endo/marshal/src/helpers/error.js';
 import { recordParts } from './rankOrder.js';
 
+/** @typedef {import('@agoric/internal').Remotable} Remotable */
+
+const { details: X, quote: q } = assert;
 const { is, fromEntries } = Object;
 
 export const zeroPad = (n, size) => {
@@ -56,11 +60,8 @@ const encodeBinary64 = n => {
   asNumber[0] = n;
   let bits = asBits[0];
   if (n < 0) {
-    // XXX Why is the no-bitwise lint rule even a thing??
-    // eslint-disable-next-line no-bitwise
     bits ^= 0xffffffffffffffffn;
   } else {
-    // eslint-disable-next-line no-bitwise
     bits ^= 0x8000000000000000n;
   }
   return `f${zeroPad(bits.toString(16), 16)}`;
@@ -70,10 +71,8 @@ const decodeBinary64 = encoded => {
   assert(encoded.startsWith('f'), X`Encoded number expected: ${encoded}`);
   let bits = BigInt(`0x${encoded.substring(1)}`);
   if (encoded[1] < '8') {
-    // eslint-disable-next-line no-bitwise
     bits ^= 0xffffffffffffffffn;
   } else {
-    // eslint-disable-next-line no-bitwise
     bits ^= 0x8000000000000000n;
   }
   asBits[0] = bits;
@@ -246,9 +245,18 @@ const decodeTagged = (encoded, decodePassable) => {
 
 /**
  * @typedef {object} EncodeOptionsRecord
- * @property {(remotable: object) => string} encodeRemotable
- * @property {(promise: object) => string} encodePromise
- * @property {(error: object) => string} encodeError
+ * @property {(
+ *   remotable: Remotable,
+ *   encodeRecur: (p: Passable) => string,
+ * ) => string} encodeRemotable
+ * @property {(
+ *   promise: Promise,
+ *   encodeRecur: (p: Passable) => string,
+ * ) => string} encodePromise
+ * @property {(
+ *   error: Error,
+ *   encodeRecur: (p: Passable) => string,
+ * ) => string} encodeError
  */
 
 /**
@@ -265,6 +273,9 @@ export const makeEncodePassable = ({
   encodeError = err => assert.fail(X`error unexpected: ${err}`),
 } = {}) => {
   const encodePassable = passable => {
+    if (ErrorHelper.canBeValid(passable, x => x)) {
+      return encodeError(passable, encodePassable);
+    }
     const passStyle = passStyleOf(passable);
     switch (passStyle) {
       case 'null': {
@@ -286,7 +297,7 @@ export const makeEncodePassable = ({
         return encodeBigInt(passable);
       }
       case 'remotable': {
-        const result = encodeRemotable(passable);
+        const result = encodeRemotable(passable, encodePassable);
         result.startsWith('r') ||
           assert.fail(
             X`internal: Remotable encoding must start with "r": ${result}`,
@@ -294,7 +305,7 @@ export const makeEncodePassable = ({
         return result;
       }
       case 'error': {
-        const result = encodeError(passable);
+        const result = encodeError(passable, encodePassable);
         result.startsWith('!') ||
           assert.fail(
             X`internal: Error encoding must start with "!": ${result}`,
@@ -302,7 +313,7 @@ export const makeEncodePassable = ({
         return result;
       }
       case 'promise': {
-        const result = encodePromise(passable);
+        const result = encodePromise(passable, encodePassable);
         result.startsWith('?') ||
           assert.fail(
             X`internal: Promise encoding must start with "?": ${result}`,
@@ -334,9 +345,18 @@ harden(makeEncodePassable);
 
 /**
  * @typedef {object} DecodeOptionsRecord
- * @property {(encodedRemotable: string) => object} decodeRemotable
- * @property {(encodedPromise: string) => Promise} decodePromise
- * @property {(encodedError: string) => Error} decodeError
+ * @property {(
+ *   encodedRemotable: string,
+ *   decodeRecur: (e: string) => Passable
+ * ) => Remotable} decodeRemotable
+ * @property {(
+ *   encodedPromise: string,
+ *   decodeRecur: (e: string) => Passable
+ * ) => Promise} decodePromise
+ * @property {(
+ *   encodedError: string,
+ *   decodeRecur: (e: string) => Passable
+ * ) => Error} decodeError
  */
 
 /**
@@ -374,13 +394,13 @@ export const makeDecodePassable = ({
         return decodeBigInt(encoded);
       }
       case 'r': {
-        return decodeRemotable(encoded);
+        return decodeRemotable(encoded, decodePassable);
       }
       case '?': {
-        return decodePromise(encoded);
+        return decodePromise(encoded, decodePassable);
       }
       case '!': {
-        return decodeError(encoded);
+        return decodeError(encoded, decodePassable);
       }
       case 'y': {
         return passableSymbolForName(encoded.substring(1));
