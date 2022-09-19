@@ -207,6 +207,11 @@ export function xsnap(options) {
       } else if (message[0] === QUERY) {
         const commandResult = await handleCommand(message.subarray(1));
         await messagesToXsnap.next([QUERY_RESPONSE_BUF, commandResult]);
+      } else {
+        // unrecognized responses also kill the process
+        xsnapProcess.kill();
+        const m = decoder.decode(message);
+        throw new Error(`xsnap protocol error: received unknown message <<${m}>>`);
       }
     }
   }
