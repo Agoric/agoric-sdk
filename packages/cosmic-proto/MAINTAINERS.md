@@ -1,5 +1,5 @@
 We check-in and publish the `gen` generated artifacts to npm.
-To rebuild the generated artifacts, install `protoc` and run `yarn rebuild` in
+To rebuild the generated artifacts, install `protoc` [1] and run `yarn rebuild` in
 this package.
 
 Generating artifacts requires a `protoc` system dependency that we
@@ -44,3 +44,5 @@ To surface additional stubs:
    Although these engines allow for aliasing, others do not, so we use the same
    paths for the keys and values of `exports`, and use the aforementioned
    symbolic links for aliasing when necessary.
+
+[1] http://google.github.io/proto-lens/installing-protoc.html
