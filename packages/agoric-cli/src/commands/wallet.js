@@ -111,8 +111,9 @@ export const makeWalletCommand = async () => {
       const { brands, balances } = state;
       const summary = {
         balances: purseBalanceTuples(
+          // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
+          // @ts-ignore xxx RpcRemote
           [...balances.values()],
-          // @ts-expect-error xxx RpcRemote
           [...brands.values()],
         ),
         offers: offerStatusTuples(state, agoricNames),

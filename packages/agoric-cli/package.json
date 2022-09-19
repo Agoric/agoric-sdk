@@ -20,7 +20,7 @@
     "integration-test": "ava --config .ava-integration-test.config.js",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json",
+    "lint:types": "tsc --maxNodeModuleJsDepth 0 -p jsconfig.json",
     "lint:eslint": "eslint ."
   },
   "devDependencies": {

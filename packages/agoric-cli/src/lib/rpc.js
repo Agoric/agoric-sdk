@@ -117,7 +117,7 @@ export const makeVStorage = powers => {
  * - if a part being serialized has a boardId property, it passes through as a slot value whereas the normal marshaller would treat it as a copyRecord
  *
  * @param {(slot: string, iface: string) => any} slotToVal
- * @returns {Marshaller}
+ * @returns {import('@endo/marshal').Marshal<string>}
  */
 export const boardSlottingMarshaller = (slotToVal = (s, _i) => s) => ({
   /** @param {{body: string, slots: string[]}} capData */

@@ -1,5 +1,5 @@
 // @ts-check
-
+/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 // eslint-disable-next-line no-unused-vars -- typeof below
 import { makeAgoricNames } from './rpc.js';
 
@@ -66,7 +66,7 @@ export const asPercent = ratio => {
 /**
  * Summarize the balances array as user-facing informative tuples
  
- * @param {Amount[]} balances
+ * @param {Array<import('../types').Amount>} balances
  * @param {AssetDescriptor[]} assets
  */
 export const purseBalanceTuples = (balances, assets) => {
@@ -95,7 +95,8 @@ export const fmtRecordOfLines = record => {
 export const offerStatusTuples = (state, agoricNames) => {
   const { brands, offerStatuses } = state;
   const fmt = makeAmountFormatter(
-    // @ts-expect-error xxx RpcRemote
+    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
+    // @ts-ignore xxx RpcRemote
     [...brands.values()],
   );
   const fmtRecord = r =>
@@ -111,7 +112,6 @@ export const offerStatusTuples = (state, agoricNames) => {
       payouts,
     } = o;
     const entry = Object.entries(agoricNames.instance).find(
-      // @ts-expect-error xxx RpcRemote
       ([_name, candidate]) => candidate === instance,
     );
     const instanceName = entry ? entry[0] : '???';
