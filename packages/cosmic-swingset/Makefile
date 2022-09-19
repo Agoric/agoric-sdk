@@ -214,12 +214,15 @@ t1-provision-one-with-powers: wait-for-cosmos
 
 # Send some USDC to the vbank/provision module account where it can be traded for IST.
 fund-provision-pool:
-	$(MAKE) ACCT_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 SOLO_COINS=1234000000ibc/usdc1234 fund-acct
+# The agoric1megzy… address is the account of the provisioning pool.
+# The mint limit is 1000 IST and each wallet gets 0.25 IST when
+# provisioned, so make room for 400 accounts with 100 USDC which mints 100 IST.
+	$(MAKE) ACCT_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 FUNDS=1000000000ibc/usdc1234 fund-acct
 
 fund-acct: wait-for-cosmos
 	$(AGCH) \
 	  --home=t1/bootstrap --keyring-backend=test --from=bootstrap \
-	  tx bank send bootstrap $(ACCT_ADDR) $(SOLO_COINS) \
+	  tx bank send bootstrap $(ACCT_ADDR) $(FUNDS) \
 	  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID)
 
 provision-acct: wait-for-cosmos
