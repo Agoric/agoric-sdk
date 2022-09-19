@@ -211,7 +211,9 @@ export function xsnap(options) {
         // unrecognized responses also kill the process
         xsnapProcess.kill();
         const m = decoder.decode(message);
-        throw new Error(`xsnap protocol error: received unknown message <<${m}>>`);
+        throw new Error(
+          `xsnap protocol error: received unknown message <<${m}>>`,
+        );
       }
     }
   }
