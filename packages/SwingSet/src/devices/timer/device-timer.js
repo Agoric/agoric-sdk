@@ -86,6 +86,7 @@ function makeTimerMap(state = undefined) {
     return copyState(schedule);
   }
 
+  /** @param {bigint} time */
   function eventsFor(time) {
     assert.typeof(time, 'bigint');
     for (let i = 0; i < schedule.length && schedule[i].time <= time; i += 1) {
@@ -101,8 +102,16 @@ function makeTimerMap(state = undefined) {
   // There's some question as to whether it's important to invoke the handlers
   // in the order of their deadlines. If so, we should probably ensure that the
   // recorded deadlines don't have finer granularity than the turns.
+  /**
+   *
+   * @param {bigint} time
+   * @param {Waker} handler
+   * @param {number} [repeater]
+   * @returns {bigint}
+   */
   function add(time, handler, repeater = undefined) {
     assert.typeof(time, 'bigint');
+    /** @type {IndexedHandler} */
     const handlerRecord =
       typeof repeater === 'number' ? { handler, index: repeater } : { handler };
     const { handlers: records } = eventsFor(time);
@@ -111,7 +120,11 @@ function makeTimerMap(state = undefined) {
     return time;
   }
 
-  // Remove and return all pairs indexed by numbers up to target
+  /**
+   * Remove and return all pairs indexed by numbers up to target
+   *
+   * @param {bigint} target
+   */
   function removeEventsThrough(target) {
     assert.typeof(target, 'bigint');
     const returnValues = [];
@@ -132,7 +145,13 @@ function makeTimerMap(state = undefined) {
   }
 
   // We don't expect this to be called often, so we don't optimize for it.
+  /**
+   *
+   * @param {Waker} targetHandler
+   * @returns {bigint[]}
+   */
   function remove(targetHandler) {
+    /** @type {bigint[]} */
     const droppedTimes = [];
     let i = 0;
     while (i < schedule.length) {
@@ -277,6 +296,7 @@ export function buildRootDeviceNode(tools) {
       saveState();
       return baseTime;
     },
+    /** @param {Waker} handler */
     removeWakeup(handler) {
       const times = deadlines.remove(handler);
       saveState();
@@ -304,6 +324,10 @@ export function buildRootDeviceNode(tools) {
       saveState();
       return index;
     },
+    /**
+     * @param {number} index
+     * @param {Waker} handler
+     */
     schedule(index, handler) {
       const nextTime = nextScheduleTime(index, repeaters, lastPolled);
       deadlines.add(nextTime, handler, index);
