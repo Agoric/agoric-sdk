@@ -23,10 +23,9 @@ export const DEFAULT_CRANK_METERING_LIMIT = 1e8;
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
+const COMMAND_BUF = encoder.encode('?');
 const QUERY = '?'.charCodeAt(0);
-const QUERY_BUF = encoder.encode('?');
-const UNKNOWN_RESPONSE_BUF = encoder.encode('/');
-
+const QUERY_RESPONSE_BUF = encoder.encode('/');
 const OK = '.'.charCodeAt(0);
 const ERROR = '!'.charCodeAt(0);
 
@@ -207,7 +206,7 @@ export function xsnap(options) {
         );
       } else if (message[0] === QUERY) {
         const commandResult = await handleCommand(message.subarray(1));
-        await messagesToXsnap.next([UNKNOWN_RESPONSE_BUF, commandResult]);
+        await messagesToXsnap.next([QUERY_RESPONSE_BUF, commandResult]);
       }
     }
   }
@@ -269,7 +268,7 @@ export function xsnap(options) {
    */
   async function issueCommand(message) {
     const result = baton.then(async () => {
-      await messagesToXsnap.next([QUERY_BUF, message]);
+      await messagesToXsnap.next([COMMAND_BUF, message]);
       return runToIdle();
     });
     baton = result.then(noop, noop);
