@@ -3,7 +3,6 @@
 // @ts-check
 /* eslint-disable func-names */
 /* global fetch, process */
-import { AmountMath } from '@agoric/ertp';
 import { Command } from 'commander';
 import { asPercent } from '../lib/format.js';
 import { makePSMSpendAction } from '../lib/psm.js';
