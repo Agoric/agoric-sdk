@@ -1,6 +1,6 @@
 {
   "name": "agoric",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "description": "Manage the Agoric Javascript smart contract platform",
   "type": "module",
   "main": "src/main.js",
@@ -24,20 +24,20 @@
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.28.0",
+    "@agoric/swingset-vat": "^0.29.0",
     "ava": "^4.3.1",
     "c8": "^7.11.0"
   },
   "dependencies": {
-    "@agoric/access-token": "^0.4.18",
-    "@agoric/assert": "^0.4.0",
-    "@agoric/cache": "^0.1.0",
-    "@agoric/casting": "^0.1.0",
-    "@agoric/cosmic-proto": "^0.1.0",
-    "@agoric/ertp": "^0.14.2",
+    "@agoric/access-token": "^0.4.19",
+    "@agoric/assert": "^0.5.0",
+    "@agoric/cache": "^0.2.0",
+    "@agoric/casting": "^0.2.0",
+    "@agoric/cosmic-proto": "^0.2.0",
+    "@agoric/ertp": "^0.15.0",
     "@agoric/nat": "^4.1.0",
-    "@agoric/smart-wallet": "^0.2.0",
-    "@agoric/zoe": "^0.24.0",
+    "@agoric/smart-wallet": "^0.3.0",
+    "@agoric/zoe": "^0.25.0",
     "@cosmjs/crypto": "0.28.13",
     "@cosmjs/encoding": "0.28.13",
     "@cosmjs/math": "0.28.13",

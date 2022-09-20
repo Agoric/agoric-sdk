@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.3.1...@agoric/vat-data@0.4.0) (2022-09-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **store:** split `provide` into collision vs no-collision variants (#6080)
+* **store:** move some util where they are more reusable (#5990)
+
+### Bug Fixes
+
+* far classes with interface guards, used by ERTP ([#5960](https://github.com/Agoric/agoric-sdk/issues/5960)) ([a8882a1](https://github.com/Agoric/agoric-sdk/commit/a8882a1cef97c9177bf76d04d1a1253d02c7921b))
+* heap far classes ([#6107](https://github.com/Agoric/agoric-sdk/issues/6107)) ([c10c36d](https://github.com/Agoric/agoric-sdk/commit/c10c36d7ccf6c85239c1dbcec9534d43b20ad00a))
+* **store:** move some util where they are more reusable ([#5990](https://github.com/Agoric/agoric-sdk/issues/5990)) ([0eb83cd](https://github.com/Agoric/agoric-sdk/commit/0eb83cdf3650f75c70be02e863f341214e0e9a8d))
+* **vat-data:** utility type FunctionsPlusContext ([#5607](https://github.com/Agoric/agoric-sdk/issues/5607)) ([7dbe6c0](https://github.com/Agoric/agoric-sdk/commit/7dbe6c0e948f0686ed77ef3439c69f6af1dc29d2))
+
+
+### Code Refactoring
+
+* **store:** split `provide` into collision vs no-collision variants ([#6080](https://github.com/Agoric/agoric-sdk/issues/6080)) ([939e25e](https://github.com/Agoric/agoric-sdk/commit/939e25e615ea1fcefff15a032996613031151c0d)), closes [#5875](https://github.com/Agoric/agoric-sdk/issues/5875)
+
+
+
 ### [0.3.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.3.0...@agoric/vat-data@0.3.1) (2022-05-28)
 
 **Note:** Version bump only for package @agoric/vat-data

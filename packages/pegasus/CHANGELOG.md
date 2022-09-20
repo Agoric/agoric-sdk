@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.7.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.7.2...@agoric/pegasus@0.7.3) (2022-09-20)
+
+
+### Bug Fixes
+
+* show more stacks ([#5980](https://github.com/Agoric/agoric-sdk/issues/5980)) ([7e22057](https://github.com/Agoric/agoric-sdk/commit/7e220575af0e5b0607d821675c57a3714f48fd65))
+
+
+
 ### [0.7.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.7.1...@agoric/pegasus@0.7.2) (2022-05-28)
 
 **Note:** Version bump only for package @agoric/pegasus

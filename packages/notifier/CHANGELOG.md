@@ -3,6 +3,38 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/notifier@0.4.0...@agoric/notifier@0.5.0) (2022-09-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **notifier:** no initial state for makePublishKit (#5742)
+
+### Features
+
+* **notifier:** `makeStoredSubscription` ([8206291](https://github.com/Agoric/agoric-sdk/commit/82062910b9d8c57f76851e3f6bd5f405a47e04eb))
+* **notifier:** Add makeNotifierFromSubscriber ([#5737](https://github.com/Agoric/agoric-sdk/issues/5737)) ([077718a](https://github.com/Agoric/agoric-sdk/commit/077718a1748616bb8b72a75e1e1b54f5cf590125)), closes [#5413](https://github.com/Agoric/agoric-sdk/issues/5413)
+* **notifier:** allow `makeSubscriptionKit(initialState)` ([affccab](https://github.com/Agoric/agoric-sdk/commit/affccabfb3d4534792f1e9234a50d9f97db2c11c))
+* **notifier:** makeStoredPublisherKit ([b652109](https://github.com/Agoric/agoric-sdk/commit/b6521097d83d6deabfcc600130cd31ed2352d234))
+* **notifier:** makeStoredPublishKit ([6cf9ced](https://github.com/Agoric/agoric-sdk/commit/6cf9cedf9e79d4e3ff09c54d54702604b9567aa9))
+* **notifier:** return self for `getStoreKey` ([385e7bb](https://github.com/Agoric/agoric-sdk/commit/385e7bbbbca5bfdc7ff0a99db6e14f1a70b5891e))
+* **ses-ava:** support full API of Ava ([3b5fd6c](https://github.com/Agoric/agoric-sdk/commit/3b5fd6c103a4a9207eaf2e761b3a096ce78c3d16))
+
+
+### Bug Fixes
+
+* avoid relying on bound `E` proxy methods ([#5998](https://github.com/Agoric/agoric-sdk/issues/5998)) ([497d157](https://github.com/Agoric/agoric-sdk/commit/497d157d29cc8dda58eca9e07c24b57731647074))
+* **notifier:** Sink the E wrapper for end-of-publication ([7298092](https://github.com/Agoric/agoric-sdk/commit/7298092a2ebff5577c78956eaad77f4518211f63))
+* makePublishKit ([#5435](https://github.com/Agoric/agoric-sdk/issues/5435)) ([d8228d2](https://github.com/Agoric/agoric-sdk/commit/d8228d272cfe18aa2fba713fb5acc4e84eaa1e39))
+* **notifier:** reject iteration if an observer throws ([d76f42b](https://github.com/Agoric/agoric-sdk/commit/d76f42b1deb2a4fc280faef4ce74046b4b7cded0))
+
+
+### Code Refactoring
+
+* **notifier:** no initial state for makePublishKit ([#5742](https://github.com/Agoric/agoric-sdk/issues/5742)) ([4888cac](https://github.com/Agoric/agoric-sdk/commit/4888cac19268ecae9066743566e25190fc0af772))
+
+
+
 ## [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/notifier@0.3.35...@agoric/notifier@0.4.0) (2022-04-18)
 
 

@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.31.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.30.0...@agoric/cosmos@0.31.0) (2022-09-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **vstorage:** separate `x/vstorage` from `x/swingset` module
+
+### Features
+
+* **cosmic-swingset:** Add chainStorage interface ([#5385](https://github.com/Agoric/agoric-sdk/issues/5385)) ([109ff65](https://github.com/Agoric/agoric-sdk/commit/109ff65845caaa503b03e2663437f62e7cdc686e)), closes [#4558](https://github.com/Agoric/agoric-sdk/issues/4558)
+* **cosmos:** enable fees for MsgWalletAction, MsgWalletSpendAction ([406e13a](https://github.com/Agoric/agoric-sdk/commit/406e13a4baf4999fb500b484e8db7a9720ff6f62))
+* **cosmos:** pay per provisioning power flag ([b22417e](https://github.com/Agoric/agoric-sdk/commit/b22417ec638158945fb35cdfa2c14f56136b90df))
+* **golang:** add module account for provisioning ([6f4e845](https://github.com/Agoric/agoric-sdk/commit/6f4e84577ff0a58e7a59a2db31f2d95c650bbdf2))
+* charge fee based on bundle size ([2ebdfea](https://github.com/Agoric/agoric-sdk/commit/2ebdfea4cd95912cffb6830869e6e4eb4d2cafc8))
+* **cosmos:** report `state_change` events ([203b10d](https://github.com/Agoric/agoric-sdk/commit/203b10d09acace40939843e798d8ea4e1c5e94cd))
+* **keeper:** storage path key encoding ([9a27e24](https://github.com/Agoric/agoric-sdk/commit/9a27e2400c7d325f4d9f95d549101216277ae07d))
+* **vats:** Add support for configuring chainStorage nodes as sequences ([461204a](https://github.com/Agoric/agoric-sdk/commit/461204af30c5437a072d17a1703f3ec02395721b))
+* **vstorage:** backport `SetStorageAndNotify` ([3ad5774](https://github.com/Agoric/agoric-sdk/commit/3ad5774d03794d0d544c2ac93005c4aa0107a318))
+* **vstorage:** just one store for paths and data ([f17623c](https://github.com/Agoric/agoric-sdk/commit/f17623c6cad0204ca696735dc67424e5f37ae23f))
+* **vstorage:** provide the data prefix for the storeKey ([f08b2ac](https://github.com/Agoric/agoric-sdk/commit/f08b2ac85830ab16ce1f1688cede98a6a64c8062))
+* **vstorage:** separate `x/vstorage` from `x/swingset` module ([cf7b993](https://github.com/Agoric/agoric-sdk/commit/cf7b99334f7152694a98aec4a1e221794792287c))
+
+
+### Bug Fixes
+
+* move auth module earlier in genesis order ([d689d2e](https://github.com/Agoric/agoric-sdk/commit/d689d2e153917486f26a213cfd09c076eb3fa776))
+* **cosmic-swingset:** Publish installation success and failure topic ([6a9f533](https://github.com/Agoric/agoric-sdk/commit/6a9f533b5b9095768f25b5642e001fd6e9aa8b47))
+* **golang:** complete ledger support for MsgWallet{Spend}Action ([#5779](https://github.com/Agoric/agoric-sdk/issues/5779)) ([6cbf3c2](https://github.com/Agoric/agoric-sdk/commit/6cbf3c2b6c26174330cb692f2ae96044a531863f)), closes [#3628](https://github.com/Agoric/agoric-sdk/issues/3628)
+* **golang:** swingset wallet-action was not quite wired up ([36f8bcd](https://github.com/Agoric/agoric-sdk/commit/36f8bcda3fe5e08202cdc3a27200b25f35eee589)), closes [#5144](https://github.com/Agoric/agoric-sdk/issues/5144)
+* avoid race by requesting lien change as a delta ([a20afe7](https://github.com/Agoric/agoric-sdk/commit/a20afe7b2977ac1ef5763c1306776bd368139c48))
+* remove unused message definition ([06a73c0](https://github.com/Agoric/agoric-sdk/commit/06a73c0f1081f518a171768361b632dace17af15))
+* **chain-storage:** ensure state is exportable ([7f0b452](https://github.com/Agoric/agoric-sdk/commit/7f0b45226a8fc59d187024ed35389afcfacc227b))
+* **cosmos:** exit 99 if `start` ever stops ([5f3ba46](https://github.com/Agoric/agoric-sdk/commit/5f3ba462fe6962bfa031dc4b2852ded7fc1cb1dc))
+* **vats:** update `chainStorage` to use new `vstorage` API ([094044c](https://github.com/Agoric/agoric-sdk/commit/094044c6e75203a47d069242cfa225b2c15d80d5))
+* **vstorage:** efficient ancestry ([68df8ed](https://github.com/Agoric/agoric-sdk/commit/68df8ede30eddfb2559654994dd8517cec4427b3))
+
+
+
 ## [0.30.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.29.0...@agoric/cosmos@0.30.0) (2022-05-28)
 
 

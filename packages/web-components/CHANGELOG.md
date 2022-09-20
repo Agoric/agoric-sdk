@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/web-components@0.2.0...@agoric/web-components@0.3.0) (2022-09-20)
+
+
+### Features
+
+* **wallet-connection:** Connect dapp directly to wallet UI ([#5750](https://github.com/Agoric/agoric-sdk/issues/5750)) ([1dd584b](https://github.com/Agoric/agoric-sdk/commit/1dd584b195212705b1f74a8c89b7f3f121640e41))
+* **web-components:** provide `makeDefaultLeader` for Casting ([9cd8d40](https://github.com/Agoric/agoric-sdk/commit/9cd8d405cb35f6baea83b0d8a8128e0bd87a0e2e))
+* **web-components:** send a cache function in the events ([26a561a](https://github.com/Agoric/agoric-sdk/commit/26a561a33a72bdb0826c29cc8afeca041c7183a0))
+
+
+### Bug Fixes
+
+* ALWAYS default to safe ([#6079](https://github.com/Agoric/agoric-sdk/issues/6079)) ([963b652](https://github.com/Agoric/agoric-sdk/commit/963b652c696e006fb2c4960fe6e36ca49530dd29))
+* Remove lockdown unsafe monkey-patching hack ([8c3126d](https://github.com/Agoric/agoric-sdk/commit/8c3126d8301bc2c8f7bb0a2145469f6d9d96b669))
+* **wallet/ui:** style connection component better ([#5984](https://github.com/Agoric/agoric-sdk/issues/5984)) ([94791c9](https://github.com/Agoric/agoric-sdk/commit/94791c933c678a1f5c8dd43721523db8468d0dd7))
+* less unsafe. what breaks? ([#5922](https://github.com/Agoric/agoric-sdk/issues/5922)) ([ace75b8](https://github.com/Agoric/agoric-sdk/commit/ace75b864f93d922477094c464da973125dabf3b))
+* makePublishKit ([#5435](https://github.com/Agoric/agoric-sdk/issues/5435)) ([d8228d2](https://github.com/Agoric/agoric-sdk/commit/d8228d272cfe18aa2fba713fb5acc4e84eaa1e39))
+* **wallet-connection:** retry on websocket not bridge ([#5485](https://github.com/Agoric/agoric-sdk/issues/5485)) ([9a805a0](https://github.com/Agoric/agoric-sdk/commit/9a805a0cc52737004420bc1774270e7fc0e35224))
+
+
+
 ## [0.2.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/web-components@0.1.5...@agoric/web-components@0.2.0) (2022-05-28)
 
 

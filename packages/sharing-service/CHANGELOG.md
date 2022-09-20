@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.2.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.2.2...@agoric/sharing-service@0.2.3) (2022-09-20)
+
+
+### Bug Fixes
+
+* shutdown controller after tests ([93191e3](https://github.com/Agoric/agoric-sdk/commit/93191e33783f6a3286b55e3496fa0d7024690dd1))
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+
+
+
 ### [0.2.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/sharing-service@0.2.1...@agoric/sharing-service@0.2.2) (2022-05-28)
 
 **Note:** Version bump only for package @agoric/sharing-service

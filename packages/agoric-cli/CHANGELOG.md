@@ -3,6 +3,59 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.16.0...agoric@0.17.0) (2022-09-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **legacy-smart-wallet:** remove dead package
+* **run-protocol:** rename to inter-protocol
+
+### Features
+
+* add dd-trace to dependencies ([5a79dfb](https://github.com/Agoric/agoric-sdk/commit/5a79dfbbd02fa97b3f750832e2304be914814c27))
+* **agoric:** new `stream` command ([a89d537](https://github.com/Agoric/agoric-sdk/commit/a89d537b0ac3a7e3f2cbc60a6bb075031261d826))
+* **agoric-cli:** `cache` deploy script endowment ([4aa0221](https://github.com/Agoric/agoric-sdk/commit/4aa02218b802be4c49886e9492244d35777585c0))
+* **agoric-cli:** Add agoric publish subcommand ([b4a8c7d](https://github.com/Agoric/agoric-sdk/commit/b4a8c7da7c5a1aebc4c651266d4082a5d5251a81))
+* **agoric-cli:** agops tool ([d3d114b](https://github.com/Agoric/agoric-sdk/commit/d3d114b52e20fbed1a76031e383eb268d7a72e4e))
+* **agoric-cli:** Reveal block heights to agoric follow, opt-in for lossy ([a19787b](https://github.com/Agoric/agoric-sdk/commit/a19787bf4f0e22fe781eb60868a57f7759f88c21))
+* **agoric-cli:** wallet command ([a41644f](https://github.com/Agoric/agoric-sdk/commit/a41644f27d6ab886434a542adde01d203124c966))
+* **chain-streams:** plumb through retry attempt counter ([345adc4](https://github.com/Agoric/agoric-sdk/commit/345adc43a9d5d478b631c8d9715ed90f647f54dd))
+* **cli:** balance display set ([1ef4970](https://github.com/Agoric/agoric-sdk/commit/1ef49706ecef468f25723f34f4ec4d177df00e58))
+* **cli:** psm governance ([19cf0fb](https://github.com/Agoric/agoric-sdk/commit/19cf0fbed58d7b93d949ffa2a97d2d386ecd1d32))
+* **cli:** wallet provision ([cda3377](https://github.com/Agoric/agoric-sdk/commit/cda33775de869a72cb5c6ab5c97c326312171a3f))
+* **cli:** wallet send non-interactive ([72b351e](https://github.com/Agoric/agoric-sdk/commit/72b351e09704e12c4bd511e6eb8444f99dd43952))
+* contract for single on-chain wallet ([0184a89](https://github.com/Agoric/agoric-sdk/commit/0184a89403a3719f21dc61de37865512cdc819ae))
+
+
+### Bug Fixes
+
+* **agoric-cli:** Compensate in agoric follow for decoder signature change ([46e5291](https://github.com/Agoric/agoric-sdk/commit/46e529102af230a337ef27822dcf3aa17f47602e))
+* **agoric-cli:** Follow-up: conditionally coerce RPC addresses ([9fa440e](https://github.com/Agoric/agoric-sdk/commit/9fa440eaf4c99951e1936855ed3c51e0f8c0962b))
+* **agoric-cli:** Follow-up: heuristic for distinguishing bare hostnames from URLs ([908f723](https://github.com/Agoric/agoric-sdk/commit/908f72396273207a568425060390f262b9060b78))
+* **agoric-cli:** Follow-up: thread random as power ([39e67c4](https://github.com/Agoric/agoric-sdk/commit/39e67c4f2cc9ef9f79cc88a5f69008003c98f4d4))
+* **agoric-cli:** perf watch ([c14aca6](https://github.com/Agoric/agoric-sdk/commit/c14aca60a05f5dec74d3e2152c580578a5ed962c))
+* **agoric-cli:** psm giveMinted ([c6ef58c](https://github.com/Agoric/agoric-sdk/commit/c6ef58ca59cb5a419cf809ef74c9cc92eb084908))
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+* **agoric-cli:** publishBundle types ([#5459](https://github.com/Agoric/agoric-sdk/issues/5459)) ([5aafc8c](https://github.com/Agoric/agoric-sdk/commit/5aafc8ce1f1babd76c2389c836bd952888a80a65))
+* **agoric-cli:** Thread rpcAddresses for Cosmos publishBundle ([06344c6](https://github.com/Agoric/agoric-sdk/commit/06344c648afefbfaad108210daa8b81cb1214bd7))
+* **agoric-cli:** use the new casting API ([99060de](https://github.com/Agoric/agoric-sdk/commit/99060defdcead99b7d2f153383537e752256c219))
+* **casting:** correct backoff timer logic ([1b41ef5](https://github.com/Agoric/agoric-sdk/commit/1b41ef56bec54f89296376a0677c421f66baabba))
+* missed one ([#5573](https://github.com/Agoric/agoric-sdk/issues/5573)) ([24506ab](https://github.com/Agoric/agoric-sdk/commit/24506abb7ab9f59b14b7489c15efdeae7fbd1a63))
+* tests use debug settings ([#5567](https://github.com/Agoric/agoric-sdk/issues/5567)) ([83d751f](https://github.com/Agoric/agoric-sdk/commit/83d751fb3dd8d47942fc69cfde863e6b21f1b04e))
+
+
+### Code Refactoring
+
+* **run-protocol:** rename to inter-protocol ([f49b342](https://github.com/Agoric/agoric-sdk/commit/f49b342aa468e0cac08bb6cfd313918674e924d7))
+
+
+### Miscellaneous Chores
+
+* **legacy-smart-wallet:** remove dead package ([bb56ce8](https://github.com/Agoric/agoric-sdk/commit/bb56ce8ed0556949c5e434734cedf113ae649fdb))
+
+
+
 ## [0.16.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.15.1...agoric@0.16.0) (2022-05-28)
 
 

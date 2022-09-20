@@ -1,6 +1,6 @@
 {
   "name": "@agoric/xsnap",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "Description forthcoming.",
   "author": "Agoric",
   "license": "Apache-2.0",
@@ -27,7 +27,7 @@
     "test:xs": "exit 0"
   },
   "dependencies": {
-    "@agoric/assert": "^0.4.0",
+    "@agoric/assert": "^0.5.0",
     "@endo/bundle-source": "^2.3.0",
     "@endo/eventual-send": "^0.16.4",
     "@endo/init": "^0.5.48",

@@ -3,6 +3,48 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.7.0...@agoric/governance@0.8.0) (2022-09-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **store:** move some util where they are more reusable (#5990)
+* **governance:** require publisherKit to make paramManager
+
+### Features
+
+* ensure voting via PSMCharter works with a unit test ([#6167](https://github.com/Agoric/agoric-sdk/issues/6167)) ([ff9471b](https://github.com/Agoric/agoric-sdk/commit/ff9471bf3a90ffab050e8b659d64d4cbd7c2d764))
+* publish vote results from the voteCounter ([#6204](https://github.com/Agoric/agoric-sdk/issues/6204)) ([7645df0](https://github.com/Agoric/agoric-sdk/commit/7645df0e3c4b8ae901ea78e82b34a224ffaf1c2a))
+* **governance:** questions to off-chain storage ([5bf276b](https://github.com/Agoric/agoric-sdk/commit/5bf276b79d062c05a43666f4fc8622c177b53d2f))
+* **governance:** return completedBallet ([22166fa](https://github.com/Agoric/agoric-sdk/commit/22166faa9a5453c2d7a1ffda277806bb27a324b6))
+* **governance:** subscriptions use off-chain storage ([67ebf6d](https://github.com/Agoric/agoric-sdk/commit/67ebf6dfe24a13d8ea299cdffa431d5ac0e2af52))
+* **inter-protocol:** support committee question publishing ([91dec79](https://github.com/Agoric/agoric-sdk/commit/91dec791d7c77c6a92263951ffbb0aaa7c7ebfbe))
+* **psm:** far class and guard patterns ([#6119](https://github.com/Agoric/agoric-sdk/issues/6119)) ([11a17d3](https://github.com/Agoric/agoric-sdk/commit/11a17d3cf006cb097d80061234398021109dbd94)), closes [#6129](https://github.com/Agoric/agoric-sdk/issues/6129) [#6135](https://github.com/Agoric/agoric-sdk/issues/6135)
+* add a continuing invitation to the voter facet ([#6092](https://github.com/Agoric/agoric-sdk/issues/6092)) ([f53470e](https://github.com/Agoric/agoric-sdk/commit/f53470ede1e58e6aebc1c4db7da4c8ecefa8b46f))
+* charter for the PSM, enabling governance ([#6090](https://github.com/Agoric/agoric-sdk/issues/6090)) ([e80b763](https://github.com/Agoric/agoric-sdk/commit/e80b7639e45647d54873c5d24ab9e98bd47b9679))
+* save PSM adminFacet in bootstrap ([#6101](https://github.com/Agoric/agoric-sdk/issues/6101)) ([14b20e6](https://github.com/Agoric/agoric-sdk/commit/14b20e6054703240754695ba3ba385d0e954d41c))
+
+
+### Bug Fixes
+
+* **governance:** no electorateInstance term ([abd9ed7](https://github.com/Agoric/agoric-sdk/commit/abd9ed7887d74ada1657106841c28ff673be34fb))
+* avoid relying on bound `E` proxy methods ([#5998](https://github.com/Agoric/agoric-sdk/issues/5998)) ([497d157](https://github.com/Agoric/agoric-sdk/commit/497d157d29cc8dda58eca9e07c24b57731647074))
+* committee exit the seat when giving voter invitation ([a8f3650](https://github.com/Agoric/agoric-sdk/commit/a8f3650052802833227de8d1bcf30d8bc7a46ac6)), closes [#5483](https://github.com/Agoric/agoric-sdk/issues/5483)
+* far classes with interface guards, used by ERTP ([#5960](https://github.com/Agoric/agoric-sdk/issues/5960)) ([a8882a1](https://github.com/Agoric/agoric-sdk/commit/a8882a1cef97c9177bf76d04d1a1253d02c7921b))
+* prepare for inherited method representation ([#5989](https://github.com/Agoric/agoric-sdk/issues/5989)) ([348b860](https://github.com/Agoric/agoric-sdk/commit/348b860c62d9479962df268cfb1795b6c369c2b8))
+* rewrite zoe/tools/manualTimer.js, update tests ([0b5df16](https://github.com/Agoric/agoric-sdk/commit/0b5df16f83629efb7cb48d54250139e082ed109c))
+* shutdown controller after tests ([93191e3](https://github.com/Agoric/agoric-sdk/commit/93191e33783f6a3286b55e3496fa0d7024690dd1))
+* tests use debug settings ([#5567](https://github.com/Agoric/agoric-sdk/issues/5567)) ([83d751f](https://github.com/Agoric/agoric-sdk/commit/83d751fb3dd8d47942fc69cfde863e6b21f1b04e))
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+* **store:** move some util where they are more reusable ([#5990](https://github.com/Agoric/agoric-sdk/issues/5990)) ([0eb83cd](https://github.com/Agoric/agoric-sdk/commit/0eb83cdf3650f75c70be02e863f341214e0e9a8d))
+
+
+### Code Refactoring
+
+* **governance:** require publisherKit to make paramManager ([29f728a](https://github.com/Agoric/agoric-sdk/commit/29f728aaad711facbbd03b768d6aac083f43e21c))
+
+
+
 ## [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.6.0...@agoric/governance@0.7.0) (2022-05-28)
 
 

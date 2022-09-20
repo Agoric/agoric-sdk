@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.3.1...@agoric/deployment@2.4.0) (2022-09-20)
+
+
+### Features
+
+* **cosmic-swingset:** Add heap snapshots ([42e43bc](https://github.com/Agoric/agoric-sdk/commit/42e43bce417a7538aa7bc6ed59320dfef45c1adb))
+* add env to keep old snapshots on disk ([96e1077](https://github.com/Agoric/agoric-sdk/commit/96e1077683c64ff0c66fdfaa3993043006c8f368))
+* use random snapshot memory init in integration test ([5c99976](https://github.com/Agoric/agoric-sdk/commit/5c999761e5cd0061f7eee483fcade290f98732c9))
+* **telemetry:** `otel-and-flight-recorder.js` for the best of both ([a191b34](https://github.com/Agoric/agoric-sdk/commit/a191b34bd6a4b14f7280b0886fcfd44b5a42b6b5))
+
+
+### Bug Fixes
+
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+* **deployment:** `unsafe-reset-all` is a subcommand of `tendermint` ([deeb345](https://github.com/Agoric/agoric-sdk/commit/deeb3458ef3b19d771b574e0821dc1eec425b217))
+* **deployment:** drive-by upgrade to Node.js 16 ([68ff922](https://github.com/Agoric/agoric-sdk/commit/68ff92257800022749494e169d62cffeaf1b53a7))
+
+
+
 ### [2.3.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.3.0...@agoric/deployment@2.3.1) (2022-05-28)
 
 

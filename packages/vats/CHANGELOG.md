@@ -3,6 +3,92 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.10.0...@agoric/vats@0.11.0) (2022-09-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **legacy-smart-wallet:** remove dead package
+* **store:** split `provide` into collision vs no-collision variants (#6080)
+* **vats:** Switch the "published" chain storage subtree to stream cells
+* **chainStorage:** assertPathSegment (replacing sanitizePathSegment)
+* **run-protocol:** rename to inter-protocol
+
+### Features
+
+* **board:** `getPublishingMarshaller` and `getReadonlyMarshaller` ([980ac06](https://github.com/Agoric/agoric-sdk/commit/980ac06a4cb31e2b226ffc060828ce6e69109676))
+* **bootstrap:** produce testFirstAnchorKit ([219f6fd](https://github.com/Agoric/agoric-sdk/commit/219f6fd3f8fd0fe89372115ad13f4b5e531fba61))
+* **cache:** makeChainStorageCoordinator ([a9b8f3e](https://github.com/Agoric/agoric-sdk/commit/a9b8f3ebe4ff3e25c857426781ae5c403198f234))
+* **chainStorage:** assertPathSegment (replacing sanitizePathSegment) ([cc4ca9a](https://github.com/Agoric/agoric-sdk/commit/cc4ca9a51665e2d4980ade3f3803655c43ac7001))
+* **cosmic-swingset:** Add chainStorage interface ([#5385](https://github.com/Agoric/agoric-sdk/issues/5385)) ([109ff65](https://github.com/Agoric/agoric-sdk/commit/109ff65845caaa503b03e2663437f62e7cdc686e)), closes [#4558](https://github.com/Agoric/agoric-sdk/issues/4558)
+* **nameHub:** listen for changes with admin.onUpdate() ([8b4a8af](https://github.com/Agoric/agoric-sdk/commit/8b4a8af7d81fa479017eb3fb78ce04cf841a8930))
+* **priceAggregator:** publish quotes ([d4054d9](https://github.com/Agoric/agoric-sdk/commit/d4054d98bd5a094b45ed2e3e70bb1ff997f4b2c5))
+* **provision:** govern initial amount; metrics ([f16352d](https://github.com/Agoric/agoric-sdk/commit/f16352d6f3e0935dc035d5c4c1f92e948ade8a10))
+* **psm:** far class and guard patterns ([#6119](https://github.com/Agoric/agoric-sdk/issues/6119)) ([11a17d3](https://github.com/Agoric/agoric-sdk/commit/11a17d3cf006cb097d80061234398021109dbd94)), closes [#6129](https://github.com/Agoric/agoric-sdk/issues/6129) [#6135](https://github.com/Agoric/agoric-sdk/issues/6135)
+* **smart-wallet:** contract for wallet factory ([57eac62](https://github.com/Agoric/agoric-sdk/commit/57eac62e204dac3001e8e1643fcf04e1cf191071))
+* **vats:** Add loadCriticalVat ([d9f1414](https://github.com/Agoric/agoric-sdk/commit/d9f14146d52eef76407dc23f29c79fd22b1c4000))
+* **vats:** add provisionPool to agoricNames ([7709e76](https://github.com/Agoric/agoric-sdk/commit/7709e76ab62426d20e15e1e313cff7442d98cf41))
+* **vats:** Add support for configuring chainStorage nodes as sequences ([461204a](https://github.com/Agoric/agoric-sdk/commit/461204af30c5437a072d17a1703f3ec02395721b))
+* **vats:** better bootstrap errors ([682151a](https://github.com/Agoric/agoric-sdk/commit/682151a13f7d09467c613248880da482cdb91b63))
+* **vats:** bootstrap.produceItem(), consumeItem, resetItem ([e2d6ced](https://github.com/Agoric/agoric-sdk/commit/e2d6cede0d087eb059c23506c9dca24c9f47eee5))
+* **vats:** facilitate launching additional PSMs ([6bf3164](https://github.com/Agoric/agoric-sdk/commit/6bf3164453f3f4616dfa90d84df14294689b11b8))
+* **vats:** handle >1 anchorAssets in boot-psm ([b394bef](https://github.com/Agoric/agoric-sdk/commit/b394bef98efd022205f12f6c991aaf0f0bd17d31))
+* **vats:** include startPSMCharter in PSM bootstrap ([7bb593c](https://github.com/Agoric/agoric-sdk/commit/7bb593c5321a27b00cd93bd196c0f822a51411e6))
+* **vats:** introduce psmCharter to provisionPool ([3e96944](https://github.com/Agoric/agoric-sdk/commit/3e9694446fbaa90a4aa819df13a3d7772ebdf99d))
+* **vats:** makeMockChainStorageRoot test util ([7e48be3](https://github.com/Agoric/agoric-sdk/commit/7e48be3ae25b1dcc77b729e890d5792d8ff36c01))
+* **vats:** provisionPool trades provided assets for IST ([e3f9621](https://github.com/Agoric/agoric-sdk/commit/e3f9621f668422490dfce403cbc5d95ec43f0ea7))
+* **vats:** start governed provisionPool ([1d100e8](https://github.com/Agoric/agoric-sdk/commit/1d100e8367dcbd553a225b9d9d7b974d46ac0ad2))
+* ensure voting via PSMCharter works with a unit test ([#6167](https://github.com/Agoric/agoric-sdk/issues/6167)) ([ff9471b](https://github.com/Agoric/agoric-sdk/commit/ff9471bf3a90ffab050e8b659d64d4cbd7c2d764))
+* **vats:** provide essential issuers to smartWallet ([e3774d5](https://github.com/Agoric/agoric-sdk/commit/e3774d5560b75d0036925965564a0011c2c21049))
+* **vats:** provide initial IST to new accounts ([aa535f5](https://github.com/Agoric/agoric-sdk/commit/aa535f59633860db0e71491657b7f98eb42f862c))
+* **vats:** publishAgoricNames to chainStorage as part of bootstrap ([b41b87d](https://github.com/Agoric/agoric-sdk/commit/b41b87d3367fd97ab2ad386eb632ca9da2e33687))
+* **vats:** Switch the "published" chain storage subtree to stream cells ([a427c59](https://github.com/Agoric/agoric-sdk/commit/a427c591e8693b3e33e84462f5af5b7e8d623892)), closes [#5508](https://github.com/Agoric/agoric-sdk/issues/5508)
+* **vats:** upgrade to psm-first smart-wallet ([3762fff](https://github.com/Agoric/agoric-sdk/commit/3762fffc987cc1beec2a4417071528d856470de7))
+* contract for single on-chain wallet ([0184a89](https://github.com/Agoric/agoric-sdk/commit/0184a89403a3719f21dc61de37865512cdc819ae))
+* distribute PSM Charter Invitatitons ([#6166](https://github.com/Agoric/agoric-sdk/issues/6166)) ([50cd3e2](https://github.com/Agoric/agoric-sdk/commit/50cd3e240fb33079948fa03b32bda86276879b4a))
+* make PSM bootstrap support multiple brands ([#6146](https://github.com/Agoric/agoric-sdk/issues/6146)) ([d9583f8](https://github.com/Agoric/agoric-sdk/commit/d9583f88fe98eaa16b5d5147f33a99f0722453e1)), closes [#6142](https://github.com/Agoric/agoric-sdk/issues/6142) [#6139](https://github.com/Agoric/agoric-sdk/issues/6139)
+* new Smart Wallet ([708972f](https://github.com/Agoric/agoric-sdk/commit/708972f1f531c9ea5e346f833c6d253efe80f837))
+* **vats:** PSM-first bootstrap ([2f4110a](https://github.com/Agoric/agoric-sdk/commit/2f4110a3068eeec8fa72e6eea9e42074e860eade))
+* **vats:** tag dynamically loaded vats with bundle name ([f016ab8](https://github.com/Agoric/agoric-sdk/commit/f016ab8e04f7e66a900c4c532929b602bc1c4be7))
+
+
+### Bug Fixes
+
+* **board:** use `SEVERED` instead of `INACCESSIBLE` ([1e6636c](https://github.com/Agoric/agoric-sdk/commit/1e6636cf618f0f05193eb2ef27614df5fe64371b))
+* **cosmic-swingset:** Publish installation success and failure topic ([6a9f533](https://github.com/Agoric/agoric-sdk/commit/6a9f533b5b9095768f25b5642e001fd6e9aa8b47))
+* **provisionPool:** only provision an account if pool has funds ([52c17e3](https://github.com/Agoric/agoric-sdk/commit/52c17e334d2b4081853515ae7fec7409f2ec87d4))
+* **vats:** avoid importing sim-behaviors into boot-psm.js ([356d522](https://github.com/Agoric/agoric-sdk/commit/356d522486947b9d6bcf0430180af0b290afd3eb))
+* **vats:** chainStorage vat writes directly to device ([bfacc92](https://github.com/Agoric/agoric-sdk/commit/bfacc92cbc7095b3c286876f71a46a0f64418ad1))
+* **vats:** economicCommitteeAddresses {} update ([3964caa](https://github.com/Agoric/agoric-sdk/commit/3964caa9c892f16624a858a10ff95e748b5730ee)), closes [#6168](https://github.com/Agoric/agoric-sdk/issues/6168)
+* **vats:** ensure rejections from loadVat are caught ([bb9eb9c](https://github.com/Agoric/agoric-sdk/commit/bb9eb9c99378a2c5b59109b73a2772c5f089e605))
+* **vats:** Fix test failures ([26b2a60](https://github.com/Agoric/agoric-sdk/commit/26b2a60044a968f5317078dd24ac00bc1465eca2))
+* **vats:** Mark bootstrap vats as critical ([55ca7a0](https://github.com/Agoric/agoric-sdk/commit/55ca7a0602f417fd811106a03d05ecb08b412e92))
+* **vats:** point to @agoric/smart-wallet/src/walletFactory.js ([50ff847](https://github.com/Agoric/agoric-sdk/commit/50ff847acc46c6c729de699f04daea8fff05ad6c))
+* **vats:** propagate error from PSM bootstrap ([0c8ab04](https://github.com/Agoric/agoric-sdk/commit/0c8ab043a6f1231809203a59bbcf57f1cee37c8e))
+* **vats:** snapshot 5x less often ([723cf42](https://github.com/Agoric/agoric-sdk/commit/723cf422892e8e847c312e148d58c85c41f18b6b))
+* add a defaultReapInterval setting to active swingset configurations ([4f4ab5b](https://github.com/Agoric/agoric-sdk/commit/4f4ab5b436dd763a73c6a47250ed6a7831471e33)), closes [#4160](https://github.com/Agoric/agoric-sdk/issues/4160)
+* Fix test failures in packages other than "vats" ([364815b](https://github.com/Agoric/agoric-sdk/commit/364815b88429e3443734681b5b0771b7d824ebe8))
+* tests use debug settings ([#5567](https://github.com/Agoric/agoric-sdk/issues/5567)) ([83d751f](https://github.com/Agoric/agoric-sdk/commit/83d751fb3dd8d47942fc69cfde863e6b21f1b04e))
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+* **vats:** Replace loadVat calls with loadCriticalVat ([2ec0b83](https://github.com/Agoric/agoric-sdk/commit/2ec0b83470e8ab74adf0c6476dbc20a6160cbac0)), closes [#6051](https://github.com/Agoric/agoric-sdk/issues/6051)
+* patch to suppress turn tracking diagnostics ([#5892](https://github.com/Agoric/agoric-sdk/issues/5892)) ([18cfe7a](https://github.com/Agoric/agoric-sdk/commit/18cfe7a5e2d80434dfc37ea3175d23b32b34fbc7))
+* SMART_WALLET account flag for smart wallet vs. ag-solo client ([#5806](https://github.com/Agoric/agoric-sdk/issues/5806)) ([8ed0d70](https://github.com/Agoric/agoric-sdk/commit/8ed0d701b9073ff039618c0a2e3c6b04acd60177))
+* **vats:** update `chainStorage` to use new `vstorage` API ([094044c](https://github.com/Agoric/agoric-sdk/commit/094044c6e75203a47d069242cfa225b2c15d80d5))
+* **walletFactory:** marshal using petnames ([#5743](https://github.com/Agoric/agoric-sdk/issues/5743)) ([5d49ad7](https://github.com/Agoric/agoric-sdk/commit/5d49ad79947f44a7cbe98d232ecde105223763d5))
+
+
+### Code Refactoring
+
+* **run-protocol:** rename to inter-protocol ([f49b342](https://github.com/Agoric/agoric-sdk/commit/f49b342aa468e0cac08bb6cfd313918674e924d7))
+* **store:** split `provide` into collision vs no-collision variants ([#6080](https://github.com/Agoric/agoric-sdk/issues/6080)) ([939e25e](https://github.com/Agoric/agoric-sdk/commit/939e25e615ea1fcefff15a032996613031151c0d)), closes [#5875](https://github.com/Agoric/agoric-sdk/issues/5875)
+
+
+### Miscellaneous Chores
+
+* **legacy-smart-wallet:** remove dead package ([bb56ce8](https://github.com/Agoric/agoric-sdk/commit/bb56ce8ed0556949c5e434734cedf113ae649fdb))
+
+
+
 ## [0.10.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.9.0...@agoric/vats@0.10.0) (2022-05-28)
 
 

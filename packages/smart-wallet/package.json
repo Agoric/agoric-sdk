@@ -1,6 +1,6 @@
 {
   "name": "@agoric/smart-wallet",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Wallet contract",
   "type": "module",
   "scripts": {
@@ -14,26 +14,26 @@
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
-    "ava": "^4.3.1",
-    "@agoric/cosmic-swingset": "^0.37.0",
-    "@agoric/deploy-script-support": "^0.9.0",
-    "@agoric/cosmic-proto": "^0.1.0",
-    "@agoric/inter-protocol": "^0.11.0",
-    "@agoric/swingset-vat": "^0.28.0",
-    "@agoric/wallet-backend": "^0.12.1",
-    "@agoric/vats": "^0.10.0",
+    "@agoric/cosmic-proto": "^0.2.0",
+    "@agoric/cosmic-swingset": "^0.38.0",
+    "@agoric/deploy-script-support": "^0.9.1",
+    "@agoric/inter-protocol": "^0.12.0",
+    "@agoric/swingset-vat": "^0.29.0",
+    "@agoric/vats": "^0.11.0",
+    "@agoric/wallet-backend": "^0.13.0",
     "@endo/captp": "^2.0.14",
-    "@endo/init": "^0.5.48"
+    "@endo/init": "^0.5.48",
+    "ava": "^4.3.1"
   },
   "dependencies": {
-    "@agoric/assert": "^0.4.0",
-    "@agoric/ertp": "^0.14.2",
-    "@agoric/internal": "^0.1.0",
+    "@agoric/assert": "^0.5.0",
+    "@agoric/ertp": "^0.15.0",
+    "@agoric/internal": "^0.2.0",
     "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.4.0",
-    "@agoric/store": "^0.7.2",
-    "@agoric/vat-data": "^0.3.1",
-    "@agoric/zoe": "^0.24.0",
+    "@agoric/notifier": "^0.5.0",
+    "@agoric/store": "^0.8.0",
+    "@agoric/vat-data": "^0.4.0",
+    "@agoric/zoe": "^0.25.0",
     "@endo/far": "^0.2.10"
   },
   "keywords": [],
