@@ -88,8 +88,8 @@ export const fsStreamReady = stream =>
  *   tmpName: typeof import('tmp').tmpName,
  *   unlink: typeof import('fs').promises.unlink,
  * }} io
- * @param {object} [options]
- * @param {boolean | undefined} [options.keepSnapshots]
+ * @param {object} options
+ * @param {boolean} [options.keepSnapshots]
  * @returns {SnapStore}
  */
 export function makeSnapStore(
@@ -149,7 +149,7 @@ export function makeSnapStore(
    * @param {string} srcPath
    * @param {NodeJS.ReadWriteStream} transform
    * @param {string} destPath
-   * @param {object} [options]
+   * @param {object} options
    * @param {boolean} [options.flush]
    */
   async function filter(srcPath, transform, destPath, { flush = false } = {}) {
