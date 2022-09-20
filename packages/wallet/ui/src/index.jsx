@@ -1,5 +1,8 @@
 import '@endo/eventual-send/shim';
 
+// Ambient types. Needed only for dev but this does a runtime import.
+import '@agoric/zoe/exported.js';
+
 import ReactDOM from 'react-dom';
 import { BrowserRouter as Router } from 'react-router-dom';
 import {
