@@ -84,3 +84,24 @@ agoric wallet send --from "$KEY" --offer "$SWAP_OFFER"
 #  ls: v6: Logging sent error stack (Error#1)
 #  ls: v6: Error#1: not accepting offer with description wantMinted
 #  ls: v6: Error: not accepting offer with description "wantMinted"
+
+# Propose a vote to raise the mint limit
+PROPOSAL_OFFER=$(mktemp -t agops.XXX)
+bin/agops psm proposeChangeMintLimit --limit 10000 --previousOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
+jq ".body | fromjson" <"$PROPOSAL_OFFER"
+agoric wallet send --from "$KEY" --offer "$PROPOSAL_OFFER"
+
+# to verify that the question was proposed, you can use
+# agoric follow published.committees.Initial_Economic_Committee.latestQuestion
+# for a local net or
+# agoric -B $networkConfig follow published.committees.Initial_Economic_Committee.latestQuestion
+
+# vote on the question that was made
+VOTE_OFFER=$(mktemp -t agops.XXX)
+bin/agops psm vote --forPosition 0 --previousOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
+jq ".body | fromjson" <"$VOTE_OFFER"
+agoric wallet send --from "$KEY" --offer "$VOTE_OFFER"
+## wait for the election to be resolved (1m default in commands/psm.js)
+
+# to see the new MintLimit
+bin/agops psm info
