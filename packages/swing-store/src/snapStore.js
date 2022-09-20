@@ -320,21 +320,15 @@ export function makeSnapStore(
   }
 
   async function commitDeletes(ignoreErrors = false) {
-    const deleteHash = ignoreErrors
-      ? async hash => {
-          // Always update toDelete; sink errors from unlink.
-          toDelete.delete(hash);
-          const fullPath = fullPathFromHash(hash);
-          await (keepSnapshots !== true
-            ? unlink(fullPath).catch(sink)
-            : undefined);
-        }
-      : async hash => {
-          // Update toDelete iff there is no error from unlink.
-          const fullPath = fullPathFromHash(hash);
-          await (keepSnapshots !== true ? unlink(fullPath) : undefined);
-          toDelete.delete(hash);
-        };
+    const handleError = ignoreErrors ? p => p.catch(sink) : p => p;
+    const deleteHash = async hash => {
+      const fullPath = fullPathFromHash(hash);
+      await (keepSnapshots !== true
+        ? handleError(unlink(fullPath))
+        : undefined);
+      // Update toDelete iff the preceding await did not throw an error.
+      toDelete.delete(hash);
+    };
 
     const results = await Promise.allSettled([...toDelete].map(deleteHash));
     const errors = results.flatMap(({ status, reason }) =>
