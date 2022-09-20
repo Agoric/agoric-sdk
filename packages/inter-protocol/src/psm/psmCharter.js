@@ -18,12 +18,25 @@ import { E } from '@endo/far';
  * separate capabilities for finer grain encapsulation.
  */
 
-const ParamChangesOfferArgsShape = harden({
-  instance: InstanceHandleShape,
-  deadline: TimestampShape,
-  params: M.recordOf(M.string(), M.any()),
-  path: { key: M.string() },
-});
+/**
+ * @typedef {object} ParamChangesOfferArgs
+ * @property {bigint} deadline
+ * @property {Instance} instance
+ * @property {Record<string, unknown>} params
+ * @property {{paramPath: { key: string }}} [path]
+ */
+const ParamChangesOfferArgsShape = harden(
+  M.split(
+    {
+      deadline: TimestampShape,
+      instance: InstanceHandleShape,
+      params: M.recordOf(M.string(), M.any()),
+    },
+    M.partial({
+      path: { paramPath: { key: M.string() } },
+    }),
+  ),
+);
 
 /**
  * @param {ZCF<{binaryVoteCounterInstallation:Installation}>} zcf
@@ -36,11 +49,7 @@ export const start = async zcf => {
   const makeParamInvitation = () => {
     /**
      * @param {ZCFSeat} seat
-     * @param {object} args
-     * @param {Instance} args.instance
-     * @param {Record<string, unknown>} args.params
-     * @param {{paramPath: { key: string }}} [args.path]
-     * @param {bigint} args.deadline
+     * @param {ParamChangesOfferArgs} args
      */
     const voteOnParamChanges = (seat, args) => {
       fit(args, ParamChangesOfferArgsShape);
