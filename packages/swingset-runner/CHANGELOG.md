@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.19.2...@agoric/swingset-runner@0.20.0) (2022-09-20)
+
+
+### Features
+
+* **swing-store:** Switch to lmdb-js ([89adc87](https://github.com/Agoric/agoric-sdk/commit/89adc87848494e78213d68194357c876b9ae4cf0))
+* allow vats to be marked critical and panic the kernel if a critical vat fails ([9ef4941](https://github.com/Agoric/agoric-sdk/commit/9ef49412b27fc73e3d63bba7bda7a0ee2a387f41)), closes [#4279](https://github.com/Agoric/agoric-sdk/issues/4279)
+
+
+### Bug Fixes
+
+* lint warning cleanup ([2184da3](https://github.com/Agoric/agoric-sdk/commit/2184da353b0ee213ec3cb435271397c3d63d682a)), closes [#5734](https://github.com/Agoric/agoric-sdk/issues/5734)
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+
+
+
 ### [0.19.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.19.1...@agoric/swingset-runner@0.19.2) (2022-05-28)
 
 **Note:** Version bump only for package @agoric/swingset-runner

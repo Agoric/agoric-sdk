@@ -1,6 +1,6 @@
 {
   "name": "@agoric/casting",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Agoric's OCap broadcasting system",
   "type": "module",
   "main": "src/main.js",
@@ -20,8 +20,8 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/notifier": "^0.4.0",
-    "@agoric/spawner": "^0.5.1",
+    "@agoric/notifier": "^0.5.0",
+    "@agoric/spawner": "^0.6.0",
     "@cosmjs/encoding": "0.28.13",
     "@cosmjs/proto-signing": "0.28.13",
     "@cosmjs/stargate": "0.28.13",
@@ -34,11 +34,11 @@
     "node-fetch": "^2.6.0"
   },
   "devDependencies": {
+    "@endo/ses-ava": "^0.2.32",
     "ava": "^4.3.1",
     "c8": "^7.7.2",
     "express": "^4.17.1",
-    "ws": "^7.2.0",
-    "@endo/ses-ava": "^0.2.32"
+    "ws": "^7.2.0"
   },
   "publishConfig": {
     "access": "public"

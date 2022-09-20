@@ -3,6 +3,48 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.7.2...@agoric/store@0.8.0) (2022-09-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **store:** move from Schema to Shape terminology (#6072)
+* **store:** split `provide` into collision vs no-collision variants (#6080)
+* **store:** move some util where they are more reusable (#5990)
+
+### Features
+
+* enable collection deletion without swapping in key objects ([8ed6493](https://github.com/Agoric/agoric-sdk/commit/8ed64935fc922881b31c87e451fb2c12b38c0138)), closes [#5053](https://github.com/Agoric/agoric-sdk/issues/5053)
+* **store:** helper for atomic store provider ([6001a6d](https://github.com/Agoric/agoric-sdk/commit/6001a6d5449a2af7095ab56c82b5b86ec8885b70))
+* add fakeDurable option to assist durability conversion ([7c02404](https://github.com/Agoric/agoric-sdk/commit/7c0240402a52ca82c948d9a0b9730824a84b4951)), closes [#5454](https://github.com/Agoric/agoric-sdk/issues/5454)
+
+
+### Bug Fixes
+
+* bad check defaults ([#6076](https://github.com/Agoric/agoric-sdk/issues/6076)) ([400bccb](https://github.com/Agoric/agoric-sdk/commit/400bccb10c798530d565f29ee677bf6313fd5237))
+* better mismatch errors ([#5947](https://github.com/Agoric/agoric-sdk/issues/5947)) ([46e34f6](https://github.com/Agoric/agoric-sdk/commit/46e34f6deb7e5d8210a227bdea32fe3e2296e9ef))
+* Better pattern mismatch diagnostics ([#5906](https://github.com/Agoric/agoric-sdk/issues/5906)) ([cf97ba3](https://github.com/Agoric/agoric-sdk/commit/cf97ba310fb5eb5f1ff5946d7104fdf27bcccfd4))
+* bug in M.setOf and M.bagOf ([#5952](https://github.com/Agoric/agoric-sdk/issues/5952)) ([c940736](https://github.com/Agoric/agoric-sdk/commit/c940736dae49a1d3095194839dae355d4db2a67f))
+* comment wording ([2cb76b7](https://github.com/Agoric/agoric-sdk/commit/2cb76b728571f0155c1ca152688b0bb43a39c348))
+* correct input validation of displayInfo ([#5876](https://github.com/Agoric/agoric-sdk/issues/5876)) ([7488530](https://github.com/Agoric/agoric-sdk/commit/74885306b09df45783dee8e63e97daa817cb0d9b)), closes [#5898](https://github.com/Agoric/agoric-sdk/issues/5898)
+* far classes with interface guards, used by ERTP ([#5960](https://github.com/Agoric/agoric-sdk/issues/5960)) ([a8882a1](https://github.com/Agoric/agoric-sdk/commit/a8882a1cef97c9177bf76d04d1a1253d02c7921b))
+* harden the right thing ([#5941](https://github.com/Agoric/agoric-sdk/issues/5941)) ([004aa59](https://github.com/Agoric/agoric-sdk/commit/004aa59414b08f7272344667ba66183326967fee))
+* heap far classes ([#6107](https://github.com/Agoric/agoric-sdk/issues/6107)) ([c10c36d](https://github.com/Agoric/agoric-sdk/commit/c10c36d7ccf6c85239c1dbcec9534d43b20ad00a))
+* Make pattern matching faster ([#6158](https://github.com/Agoric/agoric-sdk/issues/6158)) ([9a2b427](https://github.com/Agoric/agoric-sdk/commit/9a2b427416e5e17a63cfa7c90dfa674741365d24))
+* patterns impose resource limits ([#6057](https://github.com/Agoric/agoric-sdk/issues/6057)) ([548c053](https://github.com/Agoric/agoric-sdk/commit/548c053dbe779fe8cede2ca5651c146c9fee2a8e))
+* prepare for inherited method representation ([#5989](https://github.com/Agoric/agoric-sdk/issues/5989)) ([348b860](https://github.com/Agoric/agoric-sdk/commit/348b860c62d9479962df268cfb1795b6c369c2b8))
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+* **store:** move some util where they are more reusable ([#5990](https://github.com/Agoric/agoric-sdk/issues/5990)) ([0eb83cd](https://github.com/Agoric/agoric-sdk/commit/0eb83cdf3650f75c70be02e863f341214e0e9a8d))
+* time as branded value ([#5821](https://github.com/Agoric/agoric-sdk/issues/5821)) ([34078ff](https://github.com/Agoric/agoric-sdk/commit/34078ff4b34a498f96f3cb83df3a0b930b98bbec))
+
+
+### Code Refactoring
+
+* **store:** move from Schema to Shape terminology ([#6072](https://github.com/Agoric/agoric-sdk/issues/6072)) ([757b887](https://github.com/Agoric/agoric-sdk/commit/757b887edd2d41960fadc86d4900ebde55729867))
+* **store:** split `provide` into collision vs no-collision variants ([#6080](https://github.com/Agoric/agoric-sdk/issues/6080)) ([939e25e](https://github.com/Agoric/agoric-sdk/commit/939e25e615ea1fcefff15a032996613031151c0d)), closes [#5875](https://github.com/Agoric/agoric-sdk/issues/5875)
+
+
+
 ### [0.7.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.7.1...@agoric/store@0.7.2) (2022-05-28)
 
 **Note:** Version bump only for package @agoric/store

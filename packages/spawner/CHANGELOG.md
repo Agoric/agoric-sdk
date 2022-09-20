@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.5.2...@agoric/spawner@0.6.0) (2022-09-20)
+
+
+### Features
+
+* **spawner:** tag spawned vats with `spawn` ([1d27b38](https://github.com/Agoric/agoric-sdk/commit/1d27b382d6ec714f724163c90803e06dd4e856bd))
+
+
+### Bug Fixes
+
+* shutdown controller after tests ([93191e3](https://github.com/Agoric/agoric-sdk/commit/93191e33783f6a3286b55e3496fa0d7024690dd1))
+
+
+
 ### [0.5.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.5.1...@agoric/spawner@0.5.2) (2022-05-28)
 
 **Note:** Version bump only for package @agoric/spawner

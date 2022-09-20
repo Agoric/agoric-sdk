@@ -3,6 +3,55 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet-ui@0.1.2...@agoric/wallet-ui@0.2.0) (2022-09-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **wallet-ui:** remove Solo wallet support
+
+### Features
+
+* **wallet:** some feedback when no smart wallet ([8057c35](https://github.com/Agoric/agoric-sdk/commit/8057c35d2a89b9d80d31c1da10279c248b3c6e68))
+* **wallet-connection:** Connect dapp directly to wallet UI ([#5750](https://github.com/Agoric/agoric-sdk/issues/5750)) ([1dd584b](https://github.com/Agoric/agoric-sdk/commit/1dd584b195212705b1f74a8c89b7f3f121640e41))
+* **wallet-ui:** adapt smart wallet proposals ([cef7f34](https://github.com/Agoric/agoric-sdk/commit/cef7f34d6f418bc18155d02b9448a0f378ddc3f9))
+* **wallet-ui:** connect to keplr with smart wallet ([#5744](https://github.com/Agoric/agoric-sdk/issues/5744)) ([3482e0d](https://github.com/Agoric/agoric-sdk/commit/3482e0d98748c9b7995c93cbef9a06b0ec0fbea8))
+* **wallet-ui:** display set amounts ([#5654](https://github.com/Agoric/agoric-sdk/issues/5654)) ([1945069](https://github.com/Agoric/agoric-sdk/commit/1945069e3e838ecf4cb91a48027bcdcea310d848))
+* **wallet-ui:** future-proof for `@agoric/casting`-enabled notifiers ([5eba88a](https://github.com/Agoric/agoric-sdk/commit/5eba88a195d3cd8bbb299d6100f5fbb98a9e4754))
+* **wallet-ui:** more robust connection config ui ([#5685](https://github.com/Agoric/agoric-sdk/issues/5685)) ([b1a4c4b](https://github.com/Agoric/agoric-sdk/commit/b1a4c4b9258a8af3a98d6fc281c891229b9a79a4))
+* **wallet-ui:** preview mode ([fedf049](https://github.com/Agoric/agoric-sdk/commit/fedf049435d7307311219fbab1b2b342ec6acce8))
+* **wallet-ui:** reworking of wallet connections ([f8506f3](https://github.com/Agoric/agoric-sdk/commit/f8506f3c218bd321f35206eab143514bca8f268b))
+* **wallet-ui:** start displaying balances ([0f36da9](https://github.com/Agoric/agoric-sdk/commit/0f36da99daef86f24670d606ae5fd1adb32b419b))
+* **wallet-ui:** translate proposalTemplate to proposal ([bd91fed](https://github.com/Agoric/agoric-sdk/commit/bd91fede39bf5b430e1b8584e99070fb6ab56254))
+* **wallet/ui:** expose netconfig url to dapp bridge ([#5988](https://github.com/Agoric/agoric-sdk/issues/5988)) ([5098751](https://github.com/Agoric/agoric-sdk/commit/5098751d513ec86a912a545f6864deed86eacd20))
+* **wallet/ui:** interactive, background signing ([#5877](https://github.com/Agoric/agoric-sdk/issues/5877)) ([e7e6529](https://github.com/Agoric/agoric-sdk/commit/e7e652986cb5410bc09152b8974d6c60cfbb0b28))
+* read only smart wallet ([#5741](https://github.com/Agoric/agoric-sdk/issues/5741)) ([9f3745d](https://github.com/Agoric/agoric-sdk/commit/9f3745da424424ff9a2e4c8f7b26bb0de89dd3eb))
+* store dapps in localstorage not contract ([#5804](https://github.com/Agoric/agoric-sdk/issues/5804)) ([2fc72d5](https://github.com/Agoric/agoric-sdk/commit/2fc72d5439a7d8e103b15a8afaad2a86c3d455c5))
+
+
+### Bug Fixes
+
+* **casting:** Align cosmjs deps ([0ba7a1f](https://github.com/Agoric/agoric-sdk/commit/0ba7a1f7a18d4f83afa04b3637f432fdd72f3cd8))
+* **wallet-ui:** don't crash if purse not found ([f0b591b](https://github.com/Agoric/agoric-sdk/commit/f0b591bdd2beda96d134bcbee5b3323a7ed40714))
+* **wallet-ui:** get offer completion working again ([2e838a0](https://github.com/Agoric/agoric-sdk/commit/2e838a091b77b6f0adb77810c02a5b3f844a9307))
+* **wallet-ui:** increase gas allowance ([53eff35](https://github.com/Agoric/agoric-sdk/commit/53eff35ddf01048add0ef7a74f16e45c57406bd6))
+* **wallet-ui:** reverse iterate to process all update deltas ([65e681d](https://github.com/Agoric/agoric-sdk/commit/65e681d448a0a65b95837be59322f7298fdfef91))
+* ALWAYS default to safe ([#6079](https://github.com/Agoric/agoric-sdk/issues/6079)) ([963b652](https://github.com/Agoric/agoric-sdk/commit/963b652c696e006fb2c4960fe6e36ca49530dd29))
+* Remove lockdown unsafe monkey-patching hack ([8c3126d](https://github.com/Agoric/agoric-sdk/commit/8c3126d8301bc2c8f7bb0a2145469f6d9d96b669))
+* **wallet:** upgrade for new store coordinator ([51cfc04](https://github.com/Agoric/agoric-sdk/commit/51cfc0462187f7f459016b76a7583e87e0986f14))
+* **wallet-ui:** safely render invalid amount values ([#5617](https://github.com/Agoric/agoric-sdk/issues/5617)) ([23f0de1](https://github.com/Agoric/agoric-sdk/commit/23f0de16e2fb858df2f2fb93a8247029c1ab002d))
+* **wallet/ui:** change makeFollower to getUnserializer ([#5964](https://github.com/Agoric/agoric-sdk/issues/5964)) ([15179fb](https://github.com/Agoric/agoric-sdk/commit/15179fbabffb9db4588b5301d95014bdf6b9e0fd))
+* **wallet/ui:** fix gas price in suggest chain ([21351bd](https://github.com/Agoric/agoric-sdk/commit/21351bd198536624d56235abb34032aca6c7e09e))
+* **wallet/ui:** style connection component better ([#5984](https://github.com/Agoric/agoric-sdk/issues/5984)) ([94791c9](https://github.com/Agoric/agoric-sdk/commit/94791c933c678a1f5c8dd43721523db8468d0dd7))
+* less unsafe. what breaks? ([#5922](https://github.com/Agoric/agoric-sdk/issues/5922)) ([ace75b8](https://github.com/Agoric/agoric-sdk/commit/ace75b864f93d922477094c464da973125dabf3b))
+
+
+### Code Refactoring
+
+* **wallet-ui:** remove Solo wallet support ([d952e56](https://github.com/Agoric/agoric-sdk/commit/d952e561e7a6d7396af088a7977d20d8d8ef42f0))
+
+
+
 ### [0.1.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet-ui@0.1.1...@agoric/wallet-ui@0.1.2) (2022-05-28)
 
 

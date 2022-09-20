@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.9.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.9.0...@agoric/deploy-script-support@0.9.1) (2022-09-20)
+
+
+### Bug Fixes
+
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+* **deploy-script-helpers:** Update core proposal behavior test ([abeb52e](https://github.com/Agoric/agoric-sdk/commit/abeb52e6bd121d508b72662135926a1b405fc9c3))
+
+
+
 ## [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.8.0...@agoric/deploy-script-support@0.9.0) (2022-05-28)
 
 

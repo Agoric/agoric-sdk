@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/import-manager@0.3.2...@agoric/import-manager@0.3.3) (2022-09-20)
+
+**Note:** Version bump only for package @agoric/import-manager
+
+
+
+
+
 ### [0.3.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/import-manager@0.3.1...@agoric/import-manager@0.3.2) (2022-05-28)
 
 **Note:** Version bump only for package @agoric/import-manager

@@ -233,7 +233,9 @@ export const vivifyPaymentLedger = (
   const assertLivePayment = payment => {
     paymentLedger.has(payment) ||
       assert.fail(
-        X`${payment} was not a live payment for brand ${brand}. It could be a used-up payment, a payment for another brand, or it might not be a payment at all.`,
+        X`${payment} was not a live payment for brand ${q(
+          brand,
+        )}. It could be a used-up payment, a payment for another brand, or it might not be a payment at all.`,
       );
   };
 

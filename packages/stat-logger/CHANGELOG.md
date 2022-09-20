@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.27](https://github.com/Agoric/agoric-sdk/compare/@agoric/stat-logger@0.4.26...@agoric/stat-logger@0.4.27) (2022-09-20)
+
+
+### Bug Fixes
+
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+
+
+
 ### [0.4.26](https://github.com/Agoric/agoric-sdk/compare/@agoric/stat-logger@0.4.25...@agoric/stat-logger@0.4.26) (2022-04-18)
 
 **Note:** Version bump only for package @agoric/stat-logger

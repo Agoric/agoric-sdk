@@ -3,6 +3,82 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 0.12.0 (2022-09-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **store:** move from Schema to Shape terminology (#6072)
+* **store:** split `provide` into collision vs no-collision variants (#6080)
+* **psm:** split PSM invitations to enable pausing separately (#6030)
+* **store:** move some util where they are more reusable (#5990)
+* **chainStorage:** assertPathSegment (replacing sanitizePathSegment)
+* **vaultFactory:** split numVaults to numActiveVaults and numLiquidatingVaults (#5917)
+* **startPSM:** IST → RUN
+* **run-protocol:** rename to inter-protocol
+
+### Features
+
+* **zoe:** expose keywords in error messages ([3c9c497](https://github.com/Agoric/agoric-sdk/commit/3c9c497b0c22bf9729cc65af26a0d6a32450a4fd))
+* ensure voting via PSMCharter works with a unit test ([#6167](https://github.com/Agoric/agoric-sdk/issues/6167)) ([ff9471b](https://github.com/Agoric/agoric-sdk/commit/ff9471bf3a90ffab050e8b659d64d4cbd7c2d764))
+* **inter-protocol:** introduce each PSM to the provisionPool ([3b53b9b](https://github.com/Agoric/agoric-sdk/commit/3b53b9b406ea33136fda9a5292def20f7143c7c5))
+* add a continuing invitation to the voter facet ([#6092](https://github.com/Agoric/agoric-sdk/issues/6092)) ([f53470e](https://github.com/Agoric/agoric-sdk/commit/f53470ede1e58e6aebc1c4db7da4c8ecefa8b46f))
+* distribute PSM Charter Invitatitons ([#6166](https://github.com/Agoric/agoric-sdk/issues/6166)) ([50cd3e2](https://github.com/Agoric/agoric-sdk/commit/50cd3e240fb33079948fa03b32bda86276879b4a))
+* make PSM bootstrap support multiple brands ([#6146](https://github.com/Agoric/agoric-sdk/issues/6146)) ([d9583f8](https://github.com/Agoric/agoric-sdk/commit/d9583f88fe98eaa16b5d5147f33a99f0722453e1)), closes [#6142](https://github.com/Agoric/agoric-sdk/issues/6142) [#6139](https://github.com/Agoric/agoric-sdk/issues/6139)
+* **amm:** new storageNode 'init' for immutables ([a482f82](https://github.com/Agoric/agoric-sdk/commit/a482f82f7cbe93f0ce4125c6e03eeda577322d23))
+* **bootstrap:** produce testFirstAnchorKit ([219f6fd](https://github.com/Agoric/agoric-sdk/commit/219f6fd3f8fd0fe89372115ad13f4b5e531fba61))
+* **chainStorage:** assertPathSegment (replacing sanitizePathSegment) ([cc4ca9a](https://github.com/Agoric/agoric-sdk/commit/cc4ca9a51665e2d4980ade3f3803655c43ac7001))
+* **inter:** board ids for STABLE ([5160b3c](https://github.com/Agoric/agoric-sdk/commit/5160b3c80c7998441edc5e90a7a1f9b65160a147))
+* **liquidation:** If liquidation results in a shortfall, don't refund excess ([#5919](https://github.com/Agoric/agoric-sdk/issues/5919)) ([2e91d96](https://github.com/Agoric/agoric-sdk/commit/2e91d967ef66ea73786ddd0c181a842303f892bd))
+* **psm:** far class and guard patterns ([#6119](https://github.com/Agoric/agoric-sdk/issues/6119)) ([11a17d3](https://github.com/Agoric/agoric-sdk/commit/11a17d3cf006cb097d80061234398021109dbd94)), closes [#6129](https://github.com/Agoric/agoric-sdk/issues/6129) [#6135](https://github.com/Agoric/agoric-sdk/issues/6135)
+* charter for the PSM, enabling governance ([#6090](https://github.com/Agoric/agoric-sdk/issues/6090)) ([e80b763](https://github.com/Agoric/agoric-sdk/commit/e80b7639e45647d54873c5d24ab9e98bd47b9679))
+* save PSM adminFacet in bootstrap ([#6101](https://github.com/Agoric/agoric-sdk/issues/6101)) ([14b20e6](https://github.com/Agoric/agoric-sdk/commit/14b20e6054703240754695ba3ba385d0e954d41c))
+* **governance:** questions to off-chain storage ([5bf276b](https://github.com/Agoric/agoric-sdk/commit/5bf276b79d062c05a43666f4fc8622c177b53d2f))
+* **inter-protocol:** add amm liquidity script ([#5938](https://github.com/Agoric/agoric-sdk/issues/5938)) ([d0f0f7a](https://github.com/Agoric/agoric-sdk/commit/d0f0f7a76b55291f6bd1cec4f95bfae72496dbc4))
+* **inter-protocol:** support committee question publishing ([91dec79](https://github.com/Agoric/agoric-sdk/commit/91dec791d7c77c6a92263951ffbb0aaa7c7ebfbe))
+* **priceAggregator:** publish quotes ([d4054d9](https://github.com/Agoric/agoric-sdk/commit/d4054d98bd5a094b45ed2e3e70bb1ff997f4b2c5))
+* **psm:** metrics to off-chain storage ([6a5d862](https://github.com/Agoric/agoric-sdk/commit/6a5d862a91daed8f626d8c594c1dff7b8c306062))
+* **run-protocol:** calculateCurrentDebt util ([ce2c5e8](https://github.com/Agoric/agoric-sdk/commit/ce2c5e89301775df2b9e3d26e662a80f96ba424f))
+* **vats:** makeMockChainStorageRoot test util ([7e48be3](https://github.com/Agoric/agoric-sdk/commit/7e48be3ae25b1dcc77b729e890d5792d8ff36c01))
+* **vaultFactory:** split numVaults to numActiveVaults and numLiquidatingVaults ([#5917](https://github.com/Agoric/agoric-sdk/issues/5917)) ([9b20d03](https://github.com/Agoric/agoric-sdk/commit/9b20d0328dc73a9541492f4f87221b3fe8b6a395))
+* **zoe:** unitAmount helper ([9007f4c](https://github.com/Agoric/agoric-sdk/commit/9007f4c5710f65566842559680f7a0557f57398d))
+
+
+### Bug Fixes
+
+* **psm:** "mint" limits for IST rather than anchor ([413c104](https://github.com/Agoric/agoric-sdk/commit/413c104436d7a9d725c99463ed7c2fe385c8d2fc))
+* **psm:** fully integrate mintedPoolBalance ([9d6d724](https://github.com/Agoric/agoric-sdk/commit/9d6d7243d185fec0a9d6467ac0500f86e8bb9547))
+* **psmCharter:** ParamChangesOfferArgsShape path ([c113ff0](https://github.com/Agoric/agoric-sdk/commit/c113ff09d6008d93f72840c1fad525cba97b32a7))
+* avoid relying on bound `E` proxy methods ([#5998](https://github.com/Agoric/agoric-sdk/issues/5998)) ([497d157](https://github.com/Agoric/agoric-sdk/commit/497d157d29cc8dda58eca9e07c24b57731647074))
+* better mismatch errors ([#5947](https://github.com/Agoric/agoric-sdk/issues/5947)) ([46e34f6](https://github.com/Agoric/agoric-sdk/commit/46e34f6deb7e5d8210a227bdea32fe3e2296e9ef))
+* Better pattern mismatch diagnostics ([#5906](https://github.com/Agoric/agoric-sdk/issues/5906)) ([cf97ba3](https://github.com/Agoric/agoric-sdk/commit/cf97ba310fb5eb5f1ff5946d7104fdf27bcccfd4))
+* bug in M.setOf and M.bagOf ([#5952](https://github.com/Agoric/agoric-sdk/issues/5952)) ([c940736](https://github.com/Agoric/agoric-sdk/commit/c940736dae49a1d3095194839dae355d4db2a67f))
+* far classes with interface guards, used by ERTP ([#5960](https://github.com/Agoric/agoric-sdk/issues/5960)) ([a8882a1](https://github.com/Agoric/agoric-sdk/commit/a8882a1cef97c9177bf76d04d1a1253d02c7921b))
+* Fix test failures in packages other than "vats" ([364815b](https://github.com/Agoric/agoric-sdk/commit/364815b88429e3443734681b5b0771b7d824ebe8))
+* prepare for inherited method representation ([#5989](https://github.com/Agoric/agoric-sdk/issues/5989)) ([348b860](https://github.com/Agoric/agoric-sdk/commit/348b860c62d9479962df268cfb1795b6c369c2b8))
+* psmCharter.addInstance interface shape correction ([00e631d](https://github.com/Agoric/agoric-sdk/commit/00e631de2b54f84343024aa78b06a5f27f9689ac))
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+* **inter-protocol:** ensure PSM availability after failure ([7f0f8fd](https://github.com/Agoric/agoric-sdk/commit/7f0f8fdfebe8c843ee0b40f2b88717ab680c2354))
+* **inter-protocol:** introduce each PSM to the psmCharter ([48be0f8](https://github.com/Agoric/agoric-sdk/commit/48be0f8ce62edc6c14164e8dfb67cf955e7366cd))
+* rewrite zoe/tools/manualTimer.js, update tests ([0b5df16](https://github.com/Agoric/agoric-sdk/commit/0b5df16f83629efb7cb48d54250139e082ed109c))
+* **inter-protocol:** settle issuers before adding to agoricNames ([2d21478](https://github.com/Agoric/agoric-sdk/commit/2d21478c02d551227c887d69621f2205ef6f3f48))
+* **startPSM:** IST → RUN ([20fb445](https://github.com/Agoric/agoric-sdk/commit/20fb445b5e6ef56b781531f1ae050fbd7ca16e36))
+* **store:** move some util where they are more reusable ([#5990](https://github.com/Agoric/agoric-sdk/issues/5990)) ([0eb83cd](https://github.com/Agoric/agoric-sdk/commit/0eb83cdf3650f75c70be02e863f341214e0e9a8d))
+* time as branded value ([#5821](https://github.com/Agoric/agoric-sdk/issues/5821)) ([34078ff](https://github.com/Agoric/agoric-sdk/commit/34078ff4b34a498f96f3cb83df3a0b930b98bbec))
+* userSeat allocation only for testing ([#5826](https://github.com/Agoric/agoric-sdk/issues/5826)) ([9cb561b](https://github.com/Agoric/agoric-sdk/commit/9cb561b39d56cc54e87258980d333d912e837f38))
+* **vault:** move outerUpdater out of durable state ([3fa2e58](https://github.com/Agoric/agoric-sdk/commit/3fa2e588911c877d9e463cf860215c6f91a32d2f))
+* **vault:** zcf non-durable ([b74cdc6](https://github.com/Agoric/agoric-sdk/commit/b74cdc6220ceaf5f16289898bcde74637eabe8d0))
+
+
+### Code Refactoring
+
+* **psm:** split PSM invitations to enable pausing separately ([#6030](https://github.com/Agoric/agoric-sdk/issues/6030)) ([45bc8a1](https://github.com/Agoric/agoric-sdk/commit/45bc8a1896c5f51b6fb41863b50fd16c18cfcdff))
+* **run-protocol:** rename to inter-protocol ([f49b342](https://github.com/Agoric/agoric-sdk/commit/f49b342aa468e0cac08bb6cfd313918674e924d7))
+* **store:** move from Schema to Shape terminology ([#6072](https://github.com/Agoric/agoric-sdk/issues/6072)) ([757b887](https://github.com/Agoric/agoric-sdk/commit/757b887edd2d41960fadc86d4900ebde55729867))
+* **store:** split `provide` into collision vs no-collision variants ([#6080](https://github.com/Agoric/agoric-sdk/issues/6080)) ([939e25e](https://github.com/Agoric/agoric-sdk/commit/939e25e615ea1fcefff15a032996613031151c0d)), closes [#5875](https://github.com/Agoric/agoric-sdk/issues/5875)
+
+
+
 ## [0.11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/run-protocol@0.10.0...@agoric/run-protocol@0.11.0) (2022-05-28)
 
 
