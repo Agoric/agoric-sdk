@@ -1,3 +1,6 @@
+// @ts-check
+/// <reference types="ses"/>
+
 /* eslint-disable import/no-unresolved */
 export { default as makeNatAmountInput } from './components/NatAmountInput.js';
 // eslint-disable-next-line import/no-unresolved

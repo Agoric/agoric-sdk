@@ -1,21 +1,20 @@
 // @ts-check
-import { assert, details } from '@agoric/assert';
 import { AssetKind } from '@agoric/ertp';
-import '@agoric/ertp/exported.js';
-
+import { parseAsCopyBag } from './copyBagValue/parseAsCopyBag.js';
+import { stringifyCopyBag } from './copyBagValue/stringifyCopyBag.js';
 import { parseAsNat } from './natValue/parseAsNat.js';
 import { stringifyNat } from './natValue/stringifyNat.js';
 import { parseAsSet } from './setValue/parseAsSet.js';
 import { stringifySet } from './setValue/stringifySet.js';
-import { parseAsCopyBag } from './copyBagValue/parseAsCopyBag.js';
-import { stringifyCopyBag } from './copyBagValue/stringifyCopyBag.js';
+
+const { details } = assert;
 
 /**
  *
  * @param {string} str - string to parse as a value
- * @param {AssetKind} [assetKind] - assetKind of the value
+ * @param {import('@agoric/ertp/src/types.js').AssetKind} [assetKind] - assetKind of the value
  * @param {number} [decimalPlaces] - places to move the decimal to the left
- * @returns {AmountValue}
+ * @returns {import('@agoric/ertp/src/types.js').AmountValue}
  */
 export const parseAsValue = (
   str,
@@ -36,10 +35,10 @@ export const parseAsValue = (
 
 /**
  * @param {string} str - string to parse as a value
- * @param {Brand} brand - brand to use in the amount
- * @param {AssetKind} [assetKind] - assetKind of the value
+ * @param {import('@agoric/ertp/src/types.js').Brand} brand - brand to use in the amount
+ * @param {import('@agoric/ertp/src/types.js').AssetKind} [assetKind] - assetKind of the value
  * @param {number} [decimalPlaces] - places to move the decimal to the left
- * @returns {Amount}
+ * @returns {import('@agoric/ertp/src/types.js').Amount}
  */
 export const parseAsAmount = (
   str,
@@ -52,8 +51,8 @@ export const parseAsAmount = (
 
 /**
  *
- * @param {AmountValue} value - value to stringify
- * @param {AssetKind} [assetKind] - assetKind of the value
+ * @param {import('@agoric/ertp/src/types.js').AmountValue} value - value to stringify
+ * @param {import('@agoric/ertp/src/types.js').AssetKind} [assetKind] - assetKind of the value
  * @param {number} [decimalPlaces] - places to move the decimal to the
  * right in the string
  * @param {number} [placesToShow] - places after the decimal to show
@@ -66,7 +65,6 @@ export const stringifyValue = (
   placesToShow = 2,
 ) => {
   if (assetKind === AssetKind.NAT) {
-    // @ts-expect-error AmountValue is a Nat
     return stringifyNat(value, decimalPlaces, placesToShow);
   }
   if (assetKind === AssetKind.SET) {
@@ -98,8 +96,8 @@ export const stringifyPurseValue = purse => {
 /**
  * Stringify the value in an amount
  *
- * @param {Amount} amount
- * @param {AssetKind} [assetKind] - assetKind of the value
+ * @param {import('@agoric/ertp/src/types.js').Amount} amount
+ * @param {import('@agoric/ertp/src/types.js').AssetKind} [assetKind] - assetKind of the value
  * @param {number} [decimalPlaces] - places to move the decimal to the
  * right in the string
  * @param {number} [placesToShow] - places after the decimal to show
