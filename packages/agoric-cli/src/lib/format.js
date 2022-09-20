@@ -1,7 +1,12 @@
 // @ts-check
 
+// eslint-disable-next-line no-unused-vars -- typeof below
+import { makeAgoricNames } from './rpc.js';
+
 // ambient types
 import '@agoric/ertp/src/types.js';
+
+/** @typedef {import('@agoric/smart-wallet/src/offers').OfferStatus} OfferStatus */
 
 export const COSMOS_UNIT = 1_000_000n;
 
@@ -59,10 +64,12 @@ export const asPercent = ratio => {
 };
 
 /**
+ * Summarize the balances array as user-facing informative tuples
+ 
  * @param {Amount[]} balances
  * @param {AssetDescriptor[]} assets
  */
-export const simplePurseBalances = (balances, assets) => {
+export const purseBalanceTuples = (balances, assets) => {
   const fmt = makeAmountFormatter(assets);
   return balances.map(b => fmt(b));
 };
@@ -77,4 +84,54 @@ export const fmtRecordOfLines = record => {
     ([key, lines]) => `  ${stringify(key)}: [\n${lines.join(',\n')}\n  ]`,
   );
   return `{\n${lineEntries.join(',\n')}\n}`;
+};
+
+/**
+ * Summarize the offerStatuses of the state as user-facing informative tuples
+ *
+ * @param {import('@agoric/smart-wallet/src/utils.js').CoalescedWalletState} state
+ * @param {Awaited<ReturnType<typeof makeAgoricNames>>} agoricNames
+ */
+export const offerStatusTuples = (state, agoricNames) => {
+  const { brands, offerStatuses } = state;
+  const fmt = makeAmountFormatter(
+    // @ts-expect-error xxx RpcRemote
+    [...brands.values()],
+  );
+  const fmtRecord = r =>
+    Object.fromEntries(
+      Object.entries(r).map(([kw, amount]) => [kw, fmt(amount)]),
+    );
+  return Array.from(offerStatuses.values()).map(o => {
+    assert(o);
+    assert(o.invitationSpec.source === 'contract');
+    const {
+      invitationSpec: { instance, publicInvitationMaker },
+      proposal: { give, want },
+      payouts,
+    } = o;
+    const entry = Object.entries(agoricNames.instance).find(
+      // @ts-expect-error xxx RpcRemote
+      ([_name, candidate]) => candidate === instance,
+    );
+    const instanceName = entry ? entry[0] : '???';
+    let when = '??';
+    try {
+      when = new Date(o.id).toISOString();
+    } catch {
+      console.debug('offer id', o.id, 'not a timestamp');
+    }
+    return [
+      instanceName,
+      o.id,
+      when,
+      publicInvitationMaker,
+      o.numWantsSatisfied,
+      {
+        give: fmtRecord(give),
+        want: fmtRecord(want),
+        ...(payouts ? { payouts: fmtRecord(payouts) } : {}),
+      },
+    ];
+  });
 };
