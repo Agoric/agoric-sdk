@@ -33,6 +33,7 @@ export function deliver(mbs) {
       continue;
     }
     const t = knownTargets.get(target);
+    assert(t, `missing target ${target}`);
     const newMessages = [];
     data[target].outbox.forEach(m => {
       const [msgnum, body] = m;

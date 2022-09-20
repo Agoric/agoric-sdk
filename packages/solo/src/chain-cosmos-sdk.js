@@ -81,7 +81,7 @@ const makeTempFile = async (prefix, contents) => {
         if (err) {
           return reject(err);
         }
-        return resolve();
+        return resolve(undefined);
       });
     });
   } finally {
@@ -90,7 +90,7 @@ const makeTempFile = async (prefix, contents) => {
         if (e) {
           return reject(e);
         }
-        return resolve();
+        return resolve(undefined);
       });
     });
   }
@@ -215,6 +215,7 @@ export async function connectToChain(
         },
       );
       if (stdin) {
+        assert(proc.stdin, 'no stdin');
         proc.stdin.write(stdin);
         proc.stdin.end();
       }
