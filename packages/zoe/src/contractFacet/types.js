@@ -85,12 +85,12 @@
  */
 
 /**
- * @typedef {<R>(
- *   offerHandler: OfferHandler<R>,
+ * @typedef {<Result>(
+ *   offerHandler: OfferHandler<Result>,
  *   description: string,
  *   customProperties?: object,
  *   proposalShape?: Pattern,
- * ) => Promise<Invitation<Awaited<R>>>
+ * ) => Promise<Invitation<Awaited<Result>>>
  * } MakeInvitation
  *
  * Make a credible Zoe invitation for a particular smart contract

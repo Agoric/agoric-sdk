@@ -156,12 +156,12 @@
  */
 
 /**
- * @typedef {<A, R>(
- *   invitation: ERef<Invitation<R, A>>,
+ * @typedef {<Args, Result>(
+ *   invitation: ERef<Invitation<Result, Args>>,
  *   proposal?: Proposal,
  *   paymentKeywordRecord?: PaymentPKeywordRecord,
- *   offerArgs?: A,
- *   ) => Promise<UserSeat<R>>
+ *   offerArgs?: Args,
+ *   ) => Promise<UserSeat<Result>>
  * } Offer
  *
  * To redeem an invitation, the user normally provides a proposal (their
