@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ui-components@0.2.33...@agoric/ui-components@0.3.0) (2022-09-20)
+
+
+### Features
+
+* **ses-ava:** support full API of Ava ([3b5fd6c](https://github.com/Agoric/agoric-sdk/commit/3b5fd6c103a4a9207eaf2e761b3a096ce78c3d16))
+* **wallet-ui:** display set amounts ([#5654](https://github.com/Agoric/agoric-sdk/issues/5654)) ([1945069](https://github.com/Agoric/agoric-sdk/commit/1945069e3e838ecf4cb91a48027bcdcea310d848))
+
+
+### Bug Fixes
+
+* tests use debug settings ([#5567](https://github.com/Agoric/agoric-sdk/issues/5567)) ([83d751f](https://github.com/Agoric/agoric-sdk/commit/83d751fb3dd8d47942fc69cfde863e6b21f1b04e))
+
+
+
 ### [0.2.33](https://github.com/Agoric/agoric-sdk/compare/@agoric/ui-components@0.2.32...@agoric/ui-components@0.2.33) (2022-05-28)
 
 **Note:** Version bump only for package @agoric/ui-components

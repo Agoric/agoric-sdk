@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.15.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.14.2...@agoric/ertp@0.15.0) (2022-09-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **store:** move from Schema to Shape terminology (#6072)
+* **store:** split `provide` into collision vs no-collision variants (#6080)
+* **store:** move some util where they are more reusable (#5990)
+
+### Features
+
+* make PSM bootstrap support multiple brands ([#6146](https://github.com/Agoric/agoric-sdk/issues/6146)) ([d9583f8](https://github.com/Agoric/agoric-sdk/commit/d9583f88fe98eaa16b5d5147f33a99f0722453e1)), closes [#6142](https://github.com/Agoric/agoric-sdk/issues/6142) [#6139](https://github.com/Agoric/agoric-sdk/issues/6139)
+
+
+### Bug Fixes
+
+* align issuer declaration order ([#6012](https://github.com/Agoric/agoric-sdk/issues/6012)) ([84f0198](https://github.com/Agoric/agoric-sdk/commit/84f0198aa596591d574a7b218b84b73889574cc7))
+* better mismatch errors ([#5947](https://github.com/Agoric/agoric-sdk/issues/5947)) ([46e34f6](https://github.com/Agoric/agoric-sdk/commit/46e34f6deb7e5d8210a227bdea32fe3e2296e9ef))
+* Better pattern mismatch diagnostics ([#5906](https://github.com/Agoric/agoric-sdk/issues/5906)) ([cf97ba3](https://github.com/Agoric/agoric-sdk/commit/cf97ba310fb5eb5f1ff5946d7104fdf27bcccfd4))
+* bug in M.setOf and M.bagOf ([#5952](https://github.com/Agoric/agoric-sdk/issues/5952)) ([c940736](https://github.com/Agoric/agoric-sdk/commit/c940736dae49a1d3095194839dae355d4db2a67f))
+* correct input validation of displayInfo ([#5876](https://github.com/Agoric/agoric-sdk/issues/5876)) ([7488530](https://github.com/Agoric/agoric-sdk/commit/74885306b09df45783dee8e63e97daa817cb0d9b)), closes [#5898](https://github.com/Agoric/agoric-sdk/issues/5898)
+* far classes with interface guards, used by ERTP ([#5960](https://github.com/Agoric/agoric-sdk/issues/5960)) ([a8882a1](https://github.com/Agoric/agoric-sdk/commit/a8882a1cef97c9177bf76d04d1a1253d02c7921b))
+* Make pattern matching faster ([#6158](https://github.com/Agoric/agoric-sdk/issues/6158)) ([9a2b427](https://github.com/Agoric/agoric-sdk/commit/9a2b427416e5e17a63cfa7c90dfa674741365d24))
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+* **store:** move some util where they are more reusable ([#5990](https://github.com/Agoric/agoric-sdk/issues/5990)) ([0eb83cd](https://github.com/Agoric/agoric-sdk/commit/0eb83cdf3650f75c70be02e863f341214e0e9a8d))
+* prepare for inherited method representation ([#5989](https://github.com/Agoric/agoric-sdk/issues/5989)) ([348b860](https://github.com/Agoric/agoric-sdk/commit/348b860c62d9479962df268cfb1795b6c369c2b8))
+* schema limit minting and offers ([#5461](https://github.com/Agoric/agoric-sdk/issues/5461)) ([dc7baa1](https://github.com/Agoric/agoric-sdk/commit/dc7baa195281f6442cfc28d0984adf0cf0d2341b))
+* shutdown controller after tests ([93191e3](https://github.com/Agoric/agoric-sdk/commit/93191e33783f6a3286b55e3496fa0d7024690dd1))
+* **ERTP:** limit decimal places to shift by (-100,100) ([8a154b8](https://github.com/Agoric/agoric-sdk/commit/8a154b8ebbc4c1abb2ca867daf139464765f80d3))
+
+
+### Code Refactoring
+
+* **store:** move from Schema to Shape terminology ([#6072](https://github.com/Agoric/agoric-sdk/issues/6072)) ([757b887](https://github.com/Agoric/agoric-sdk/commit/757b887edd2d41960fadc86d4900ebde55729867))
+* **store:** split `provide` into collision vs no-collision variants ([#6080](https://github.com/Agoric/agoric-sdk/issues/6080)) ([939e25e](https://github.com/Agoric/agoric-sdk/commit/939e25e615ea1fcefff15a032996613031151c0d)), closes [#5875](https://github.com/Agoric/agoric-sdk/issues/5875)
+
+
+
 ### [0.14.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.14.1...@agoric/ertp@0.14.2) (2022-05-28)
 
 **Note:** Version bump only for package @agoric/ertp

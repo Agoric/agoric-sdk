@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.8.0...@agoric/solo@0.9.0) (2022-09-20)
+
+
+### Features
+
+* **ses-ava:** support full API of Ava ([3b5fd6c](https://github.com/Agoric/agoric-sdk/commit/3b5fd6c103a4a9207eaf2e761b3a096ce78c3d16))
+* **wallet-connection:** Connect dapp directly to wallet UI ([#5750](https://github.com/Agoric/agoric-sdk/issues/5750)) ([1dd584b](https://github.com/Agoric/agoric-sdk/commit/1dd584b195212705b1f74a8c89b7f3f121640e41))
+* add env to keep old snapshots on disk ([96e1077](https://github.com/Agoric/agoric-sdk/commit/96e1077683c64ff0c66fdfaa3993043006c8f368))
+* **solo:** add `cache` function to REPL ([c5e66d6](https://github.com/Agoric/agoric-sdk/commit/c5e66d6e13d7e2b82b719d3346da04a9bca88fea))
+* **swing-store:** Switch to lmdb-js ([89adc87](https://github.com/Agoric/agoric-sdk/commit/89adc87848494e78213d68194357c876b9ae4cf0))
+
+
+### Bug Fixes
+
+* add a defaultReapInterval setting to active swingset configurations ([4f4ab5b](https://github.com/Agoric/agoric-sdk/commit/4f4ab5b436dd763a73c6a47250ed6a7831471e33)), closes [#4160](https://github.com/Agoric/agoric-sdk/issues/4160)
+* makePublishKit ([#5435](https://github.com/Agoric/agoric-sdk/issues/5435)) ([d8228d2](https://github.com/Agoric/agoric-sdk/commit/d8228d272cfe18aa2fba713fb5acc4e84eaa1e39))
+* rewrite zoe/tools/manualTimer.js, update tests ([0b5df16](https://github.com/Agoric/agoric-sdk/commit/0b5df16f83629efb7cb48d54250139e082ed109c))
+* time as branded value ([#5821](https://github.com/Agoric/agoric-sdk/issues/5821)) ([34078ff](https://github.com/Agoric/agoric-sdk/commit/34078ff4b34a498f96f3cb83df3a0b930b98bbec))
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+* **wallet-connection:** retry on websocket not bridge ([#5485](https://github.com/Agoric/agoric-sdk/issues/5485)) ([9a805a0](https://github.com/Agoric/agoric-sdk/commit/9a805a0cc52737004420bc1774270e7fc0e35224))
+
+
+
 ## [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.7.0...@agoric/solo@0.8.0) (2022-05-28)
 
 

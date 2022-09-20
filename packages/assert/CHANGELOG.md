@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.4.0...@agoric/assert@0.5.0) (2022-09-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **store:** split `provide` into collision vs no-collision variants (#6080)
+
+### Features
+
+* NonNullish checked cast ([fb81983](https://github.com/Agoric/agoric-sdk/commit/fb81983bde4b9a2d5408a0040522c923f653b6f8))
+
+
+### Bug Fixes
+
+* far classes with interface guards, used by ERTP ([#5960](https://github.com/Agoric/agoric-sdk/issues/5960)) ([a8882a1](https://github.com/Agoric/agoric-sdk/commit/a8882a1cef97c9177bf76d04d1a1253d02c7921b))
+
+
+### Code Refactoring
+
+* **store:** split `provide` into collision vs no-collision variants ([#6080](https://github.com/Agoric/agoric-sdk/issues/6080)) ([939e25e](https://github.com/Agoric/agoric-sdk/commit/939e25e615ea1fcefff15a032996613031151c0d)), closes [#5875](https://github.com/Agoric/agoric-sdk/issues/5875)
+
+
+
 ## [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/assert@0.3.16...@agoric/assert@0.4.0) (2022-04-18)
 
 

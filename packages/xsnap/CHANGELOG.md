@@ -3,6 +3,33 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.13.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.13.0...@agoric/xsnap@0.13.1) (2022-09-20)
+
+
+### Bug Fixes
+
+* lints ([23d64ea](https://github.com/Agoric/agoric-sdk/commit/23d64eaa65feb858e3f49d483a94950eaa64e834))
+* xsnap parent kills worker upon receipt of unrecognized response ([5489221](https://github.com/Agoric/agoric-sdk/commit/548922158de572f2eb651eb2a08313559b9bfe35)), closes [#6257](https://github.com/Agoric/agoric-sdk/issues/6257)
+* **SwingSet:** Apply netstring limit to xsnap workers ([f8365b2](https://github.com/Agoric/agoric-sdk/commit/f8365b26dd79967895a4d88966521d067b982206))
+* **xsnap:** bump METER_TYPE to match recent XS udpate ([32e9509](https://github.com/Agoric/agoric-sdk/commit/32e950944420de4900c5f671e054524f3a0ae377)), closes [#5338](https://github.com/Agoric/agoric-sdk/issues/5338)
+* **xsnap:** do not leak through vat termination race ([#5643](https://github.com/Agoric/agoric-sdk/issues/5643)) ([8201050](https://github.com/Agoric/agoric-sdk/commit/8201050103b1b2c76736b80ac4db9ec7f78dfdc7))
+* **xsnap:** fix test which reused a mutable ArrayBuffer ([5606b52](https://github.com/Agoric/agoric-sdk/commit/5606b529b2c143cdb4e8d0f0cf28dd043fa4bdb1))
+* **xsnap:** Handle endo init vetted shims in ava-xs ([cd7b880](https://github.com/Agoric/agoric-sdk/commit/cd7b880592578502b71c0297cad37be2672e0680))
+* **xsnap:** prevent out of command execution ([84cf363](https://github.com/Agoric/agoric-sdk/commit/84cf363fb83c7d96046e5540b4857cc5f584ba89))
+* **xsnap:** prohibit leading hyphen in options.name ([a3db601](https://github.com/Agoric/agoric-sdk/commit/a3db60172ae21ec57f3456bac9243aa732cfeba5))
+* **xsnap:** upgrade to latest xsnap, now with timestamps ([c857cc8](https://github.com/Agoric/agoric-sdk/commit/c857cc83b744213cfa962ac5e250c977e18df48e)), closes [#5152](https://github.com/Agoric/agoric-sdk/issues/5152)
+* **xsnap:** upgrade to xsnap-native with exit on unknown command ([37a01a4](https://github.com/Agoric/agoric-sdk/commit/37a01a41c60338d4d7614d68b5913126956e4630))
+* **xsnap:** Use Moddable SDK and xsnap with WeakRef and snapshot patch ([374e7d5](https://github.com/Agoric/agoric-sdk/commit/374e7d5bcea922734ab347af5e4e98bd682e8099))
+* **xsnap:** use patched XS to fix heap-snapshot-writing memory leak ([#5987](https://github.com/Agoric/agoric-sdk/issues/5987)) ([9e2c1da](https://github.com/Agoric/agoric-sdk/commit/9e2c1da92d865ce02dc766b1072c8c3209b0cfe9)), closes [#5975](https://github.com/Agoric/agoric-sdk/issues/5975)
+* **xsnap:** Use xsnap with fixed timestamps ([#6151](https://github.com/Agoric/agoric-sdk/issues/6151)) ([9ba7842](https://github.com/Agoric/agoric-sdk/commit/9ba78424a4bd587d0009a6816b7ffcedd5d7f972))
+* **xsnap:** workaround unexpected worker exit ([267f83c](https://github.com/Agoric/agoric-sdk/commit/267f83c06bcd87ad02d45502a4e3a5c744a3c533))
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+* **xsnap:** XS error stack behavior change ([444d6cb](https://github.com/Agoric/agoric-sdk/commit/444d6cbd4cd276a9cd9af48ceb9513c81d83b475))
+* **xsnap:** xsnap process drops context after exit ([26766f6](https://github.com/Agoric/agoric-sdk/commit/26766f6623cc5d07aa1c52257cf54310543e13ea))
+* tests use debug settings ([#5567](https://github.com/Agoric/agoric-sdk/issues/5567)) ([83d751f](https://github.com/Agoric/agoric-sdk/commit/83d751fb3dd8d47942fc69cfde863e6b21f1b04e))
+
+
+
 ## [0.13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.12.0...@agoric/xsnap@0.13.0) (2022-05-28)
 
 

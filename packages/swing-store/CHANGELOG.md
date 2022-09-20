@@ -3,6 +3,43 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.7.0...@agoric/swing-store@0.8.0) (2022-09-20)
+
+
+### Features
+
+* **swing-store:** Update snapshot telemetry to differentiate new-file vs. existing-file ([73550f3](https://github.com/Agoric/agoric-sdk/commit/73550f3b8d052fcbf79c4cb9725153e31d270726))
+* add env to keep old snapshots on disk ([96e1077](https://github.com/Agoric/agoric-sdk/commit/96e1077683c64ff0c66fdfaa3993043006c8f368))
+* Report size and timing data of SnapStore save operations ([f0a6026](https://github.com/Agoric/agoric-sdk/commit/f0a602667b0a5599368170fadc4f95678bfcf711))
+* Write makeSnapshot telemetry to slog ([4cdd2f8](https://github.com/Agoric/agoric-sdk/commit/4cdd2f8a07764046c9310218d45ffa16c4aa9e6b)), closes [#6164](https://github.com/Agoric/agoric-sdk/issues/6164)
+* **swing-store:** Switch to lmdb-js ([89adc87](https://github.com/Agoric/agoric-sdk/commit/89adc87848494e78213d68194357c876b9ae4cf0))
+* **swingstore:** switch to async fs for snapstore ([13d443c](https://github.com/Agoric/agoric-sdk/commit/13d443c0c9df84e2e7a150af034a01b7670e36c8))
+
+
+### Bug Fixes
+
+* **swing-store:** Depend on better-sqlite3 types ([ef8a90f](https://github.com/Agoric/agoric-sdk/commit/ef8a90fb0f3de58d7655451e3125d70460b559ad))
+* **swing-store:** Infer directory to guarantee file rename atomicity ([40bc322](https://github.com/Agoric/agoric-sdk/commit/40bc322878f03b21e12455d6e5fe7d31fdaa3233))
+* **swing-store:** Narrow JSDoc templating ([4ee3e32](https://github.com/Agoric/agoric-sdk/commit/4ee3e3210ce1c14f8f015f70311734a229081e90))
+* **swing-store:** Narrow the signature of measureSeconds to require an async argument ([eaf0a68](https://github.com/Agoric/agoric-sdk/commit/eaf0a68a83fdde0e612bd1d74ea8c8a878abb2a8))
+* record XS snapshots and file sizes to slog and console ([5116ebb](https://github.com/Agoric/agoric-sdk/commit/5116ebb4bae4acfc62475bfee1f4277fc2135d6f)), closes [#5419](https://github.com/Agoric/agoric-sdk/issues/5419)
+* Report new metrics in seconds, and do so accurately ([c22309f](https://github.com/Agoric/agoric-sdk/commit/c22309f27aa6d0c327907c08588436972fe0c164))
+* Use new `||` assert style, but when TS confused use `if` instead ([#6174](https://github.com/Agoric/agoric-sdk/issues/6174)) ([94625d3](https://github.com/Agoric/agoric-sdk/commit/94625d38c3bb5333b00a69dd3086b1ac13490f62))
+* **swing-store:** disable useWritemap ([691a4bd](https://github.com/Agoric/agoric-sdk/commit/691a4bd867020218258aae766402de646e82669c))
+* **swing-store:** fix tests to use proper temp dbs ([e899f5c](https://github.com/Agoric/agoric-sdk/commit/e899f5c831d1177a3c26534d9c340e10f2b77073))
+* **swing-store:** IterableIterator types ([48836dd](https://github.com/Agoric/agoric-sdk/commit/48836dded1385f94a694b2999dfd263eacb24070))
+* **swing-store:** use sqlite transactions for streamStore operations ([33ebe2c](https://github.com/Agoric/agoric-sdk/commit/33ebe2cd2088520e06f68a1320b2e4a2a4f51ba9)), closes [#6056](https://github.com/Agoric/agoric-sdk/issues/6056)
+* **swingset:** don't delete heap snapshot if it didn't change ([2cbe3a8](https://github.com/Agoric/agoric-sdk/commit/2cbe3a86d0936d60cd07f6d9eee7efd354986cb4)), closes [#5901](https://github.com/Agoric/agoric-sdk/issues/5901)
+* **swingstore:** avoid conditional await on commit ([67d846d](https://github.com/Agoric/agoric-sdk/commit/67d846d244bf8cea5536611a54a5b9cccdaf2e84))
+* tests use debug settings ([#5567](https://github.com/Agoric/agoric-sdk/issues/5567)) ([83d751f](https://github.com/Agoric/agoric-sdk/commit/83d751fb3dd8d47942fc69cfde863e6b21f1b04e))
+
+
+### Performance Improvements
+
+* **swing-store:** Improve the efficiency of writing snapshots ([ef78e7d](https://github.com/Agoric/agoric-sdk/commit/ef78e7dfb3edc7c74f4fa86804c9204e977d5680)), closes [#6225](https://github.com/Agoric/agoric-sdk/issues/6225)
+
+
+
 ## [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.6.6...@agoric/swing-store@0.7.0) (2022-05-28)
 
 
