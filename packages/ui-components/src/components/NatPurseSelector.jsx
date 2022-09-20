@@ -9,9 +9,9 @@ import { stringifyValue } from '../display/index.js';
  * components represent initial state as null/undefined.
  *
  * @param {Array<PursesJSONState> | null} purses Unfiltered purses. This may be null to simplify use in UIs.
- * @param {Brand} [optBrand] - optional brand to filter for
+ * @param {import('@agoric/ertp/src/types-module').Brand} [optBrand] - optional brand to filter for
  * @returns {PursesJSONState[] | null}
- * @typedef {{ brand: Brand, displayInfo: any }} PursesJSONState
+ * @typedef {{ brand: import('@agoric/ertp/src/types-module').Brand, displayInfo: any }} PursesJSONState
  * see wallet/api/src/types.js
  * @deprecated
  */
@@ -26,7 +26,7 @@ export const filterPurses = (purses, optBrand) => {
 };
 
 /**
- * @typedef {{ pursePetname: string, brandPetname: string, value: AmountValue, displayInfo: DisplayInfo }} Purse
+ * @typedef {{ pursePetname: string, brandPetname: string, value: import('@agoric/ertp/src/types-module').AmountValue, displayInfo: import('@agoric/ertp/src/types-module').DisplayInfo }} Purse
  */
 
 const isNatPurse = ({ displayInfo: { assetKind } }) =>
