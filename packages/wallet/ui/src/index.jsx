@@ -1,5 +1,8 @@
+// @ts-check
+/// <reference types="ses"/>
 import '@endo/eventual-send/shim';
 
+import React from 'react';
 import ReactDOM from 'react-dom';
 import { BrowserRouter as Router } from 'react-router-dom';
 import {
@@ -24,6 +27,7 @@ const appTheme = createTheme({
     success: {
       main: 'rgb(76, 175, 80)',
     },
+    // @ts-expect-error unknown property
     cancel: {
       main: '#595959',
     },

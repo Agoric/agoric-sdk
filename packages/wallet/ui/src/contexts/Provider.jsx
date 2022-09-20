@@ -126,6 +126,7 @@ const Provider = ({ children }) => {
   const [issuers, setIssuers] = useReducer(issuersReducer, null);
   const [issuerSuggestions, setIssuerSuggestions] = useState(null);
   const [services, setServices] = useState(null);
+  /** @type {any} */
   const [backend, setBackend] = useState(null);
   const [schemaActions, setSchemaActions] = useState(null);
   const [connectionComponent, setConnectionComponent] = useState(null);
@@ -274,7 +275,6 @@ const Provider = ({ children }) => {
         throw e;
       }
     };
-    // @ts-expect-error backend may be null
     setSchemaActions(E.get(backend).actions);
     for (const [prop, setter] of backendSetters.entries()) {
       const iterator = E.get(backend)[prop];
@@ -289,7 +289,6 @@ const Provider = ({ children }) => {
       }).catch(rethrowIfNotCancelled);
     }
 
-    // @ts-expect-error backend may be null
     const issuerSuggestionsNotifier = E.get(backend).issuerSuggestions;
     observeIterator(issuerSuggestionsNotifier, {
       fail: rethrowIfNotCancelled,
