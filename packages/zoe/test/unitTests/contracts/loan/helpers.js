@@ -8,9 +8,8 @@ import '../../../../exported.js';
 
 import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
-import { AmountMath } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
-import { setup } from '../../setupBasicMints.js';
 import { setupZCFTest } from '../../zcf/setupZcfTest.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
 import { assertAmountsEqual } from '../../../zoeTestHelpers.js';
@@ -78,12 +77,15 @@ export const checkPayouts = async (
   expectedKeywordRecord,
   message = '',
 ) => {
+  console.log(`TH   chedk`);
   const payouts = await E(seat).getPayouts();
+  console.log(`TH   checked`);
   await Promise.all(
     Object.entries(payouts).map(async ([keyword, paymentP]) => {
       const kit = kitKeywordRecord[keyword];
       const amount = await kit.issuer.getAmountOf(paymentP);
       const expected = expectedKeywordRecord[keyword];
+      console.log(`TH   kwd ${keyword}`);
       assertAmountsEqual(t, amount, expected);
       t.truthy(
         AmountMath.isEqual(amount, expected),
@@ -95,7 +97,8 @@ export const checkPayouts = async (
 };
 
 export const setupLoanUnitTest = async terms => {
-  const { moolaKit: collateralKit, simoleanKit: loanKit } = setup();
+  const collateralKit = makeIssuerKit('moola');
+  const loanKit = makeIssuerKit('simoleans');
 
   if (!terms) {
     terms = harden({

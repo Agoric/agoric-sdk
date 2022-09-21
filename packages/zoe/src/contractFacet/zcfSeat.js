@@ -158,6 +158,8 @@ export const createSeatManager = (
   const reallocate = (/** @type {ZCFSeat[]} */ ...seats) => {
     // We may want to handle this with static checking instead.
     // Discussion at: https://github.com/Agoric/agoric-sdk/issues/1017
+
+    console.log(`ZcfSeat   REALLOCATE  `, seats);
     assert(
       seats.length >= 2,
       'reallocating must be done over two or more seats',
@@ -197,6 +199,7 @@ export const createSeatManager = (
       zcfSeatsSoFar.add(seat);
     });
 
+    console.log(`ZcfSeat   REALL  trying`);
     try {
       // No side effects above. All conditions checked which could have
       // caused us to reject this reallocation.
@@ -218,8 +221,12 @@ export const createSeatManager = (
         return { seatHandle, allocation: seat.getCurrentAllocation() };
       });
 
+      console.log(`ZcfSeat   replace Allocations`, zoeInstanceAdmin);
+
       E(zoeInstanceAdmin).replaceAllocations(seatHandleAllocations);
+      console.log(`ZcfSeat  FINISHED reallocate`);
     } catch (err) {
+      console.log(`ZCFSeat   shutting down`, err);
       shutdownWithFailure(err);
       throw err;
     }
@@ -248,6 +255,7 @@ export const createSeatManager = (
         assertActive(self);
         assertNoStagedAllocation(self);
         doExitSeat(self);
+        console.log(`ZcfSeat EXIT `, zcfSeatToSeatHandle.get(self));
         E(zoeInstanceAdmin).exitSeat(zcfSeatToSeatHandle.get(self), completion);
       },
       fail: (
@@ -349,6 +357,7 @@ export const createSeatManager = (
 
   /** @type {DropAllReferences} */
   const dropAllReferences = () => {
+    console.log(`ZCFSeat  dropAllReferences`);
     activeZCFSeats = replaceDurableWeakMapStore(zcfBaggage, 'activeZCFSeats');
     zcfSeatToSeatHandle = replaceDurableWeakMapStore(
       zcfBaggage,

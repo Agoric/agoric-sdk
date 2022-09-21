@@ -90,7 +90,7 @@ export const makeZoeStorageManager = (
     getInstanceAdmin,
     initInstanceAdmin,
     deleteInstanceAdmin,
-  } = makeInstanceAdminStorage();
+  } = makeInstanceAdminStorage(zoeBaggage);
 
   // Zoe stores "installations" - identifiable bundles of contract
   // code that can be reused again and again to create new contract
@@ -254,7 +254,7 @@ export const makeZoeStorageManager = (
 
     const { root, adminNode } = await createZCFVat(contractBundleCap);
 
-    return harden({
+    return Far('ZoeStorageManager', {
       getTerms: instanceRecordManager.getTerms,
       getIssuers: instanceRecordManager.getIssuers,
       getBrands: instanceRecordManager.getBrands,
@@ -269,9 +269,9 @@ export const makeZoeStorageManager = (
       initInstanceAdmin,
       deleteInstanceAdmin,
       makeInvitation,
-      invitationIssuer,
-      root,
-      adminNode,
+      getInvitationIssuer: () => invitationIssuer,
+      getRoot: () => root,
+      getAdminNode: () => adminNode,
     });
   };
 

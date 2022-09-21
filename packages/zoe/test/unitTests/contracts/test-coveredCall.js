@@ -348,7 +348,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
 // Bob. Bob tries to sell the invitation to Dave through a swap. Can Bob
 // trick Dave? Can Dave describe what it is that he wants in the swap
 // offer description?
-test('zoe - coveredCall with swap for invitation', async t => {
+test.only('zoe - coveredCall with swap for invitation', async t => {
   t.plan(24);
   // Setup the environment
   const timer = buildManualTimer(t.log);
@@ -423,6 +423,8 @@ test('zoe - coveredCall with swap for invitation', async t => {
   });
   const alicePayments = { UnderlyingAsset: aliceMoolaPayment };
   // Alice makes an option.
+
+  console.log(`TEST Alice`);
   const aliceSeat = await E(zoe).offer(
     aliceInvitation,
     aliceProposal,
@@ -471,6 +473,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
 
   const bobPayments = harden({ Asset: bobExclOption });
 
+  console.log(`TEST  BOB`);
   // Bob escrows his option in the swap
   // Bob makes an offer to the swap with his "higher order" invitation
   const bobSwapSeat = await E(zoe).offer(
@@ -485,6 +488,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
   // optionAmounts (basically, the description of the option)
 
   const {
+    // @ts-expect-error getAmountOf will return a set
     value: [{ instance: swapInstance, installation: daveSwapInstallId }],
   } = await E(invitationIssuer).getAmountOf(daveSwapInvitationP);
 
@@ -521,12 +525,15 @@ test('zoe - coveredCall with swap for invitation', async t => {
   });
 
   const daveSwapPayments = harden({ Price: daveBucksPayment });
+
+  console.log(`TEST DAVE`);
   const daveSwapSeat = await E(zoe).offer(
     daveSwapInvitationP,
     daveSwapProposal,
     daveSwapPayments,
   );
 
+  console.log(`TEST Dave result`);
   t.is(
     await daveSwapSeat.getOfferResult(),
     'The offer has been accepted. Once the contract has been completed, please check your payout',
@@ -545,17 +552,21 @@ test('zoe - coveredCall with swap for invitation', async t => {
   const daveCoveredCallPayments = harden({
     StrikePrice: daveSimoleanPayment,
   });
+
+  console.log(`TEST Dave offer`);
   const daveCoveredCallSeat = await E(zoe).offer(
     daveOption,
     daveCoveredCallProposal,
     daveCoveredCallPayments,
   );
 
+  console.log(`TEST Dave getOfferResult`);
   t.is(
     await E(daveCoveredCallSeat).getOfferResult(),
     `The option was exercised. Please collect the assets in your payout.`,
   );
 
+  console.log(`TEST Dave payout`);
   // Dave should get 3 moola, Bob should get 1 buck, and Alice
   // get 7 simoleans
   const daveMoolaPayout = await daveCoveredCallSeat.getPayout(
@@ -604,6 +615,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
   t.is(bobSimoleanPurse.getCurrentAmount().value, 0n);
   t.is(bobBucksPurse.getCurrentAmount().value, 1n);
 
+  console.log(`TEST  verify Dave`);
   t.is(daveMoolaPurse.getCurrentAmount().value, 3n);
   t.is(daveSimoleanPurse.getCurrentAmount().value, 0n);
   t.is(daveBucksPurse.getCurrentAmount().value, 0n);

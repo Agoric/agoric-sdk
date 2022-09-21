@@ -18,6 +18,9 @@ import { parseVatSlot } from '../lib/parseVatSlots.js';
 // later regenerated.
 const unweakable = new WeakSet();
 
+// label representatives to simplify identification during debugging
+const LABEL_REPRESENTATIVES = true;
+
 /**
  * Make a simple LRU cache of virtual object inner selves.
  *
@@ -732,7 +735,10 @@ export function makeVirtualObjectManager(
         // `context` does not need a linkToCohort because it holds the
         // facets (which hold the cohort)
         unweakable.add(context);
-        const self = harden({ __proto__: prototypeTemplate });
+        const self = harden({
+          __proto__: prototypeTemplate,
+          ...(LABEL_REPRESENTATIVES ? { [innerSelf.baseRef]: () => {} } : {}),
+        });
         context.self = self;
         contextMapTemplate.set(self, context);
         toHold = self;

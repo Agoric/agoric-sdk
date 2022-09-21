@@ -4,6 +4,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Far } from '@endo/marshal';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { makeInstanceAdminStorage } from '../../../src/zoeService/instanceAdminStorage.js';
 
@@ -17,7 +18,9 @@ test('makeInstanceAdminStorage', async t => {
     getInstanceAdmin,
     initInstanceAdmin,
     deleteInstanceAdmin,
-  } = makeInstanceAdminStorage();
+  } = makeInstanceAdminStorage(
+    makeScalarBigMapStore('zoe baggage', { durable: true }),
+  );
 
   const mockInstance1 = Far('mockInstance1', {});
   const mockInstance2 = Far('mockInstance2', {});
@@ -36,10 +39,8 @@ test('makeInstanceAdminStorage', async t => {
     getInstallationForInstance: () => 'installation2',
   });
 
-  // @ts-expect-error instance is mocked
   initInstanceAdmin(mockInstance1, mockInstanceAdmin1);
 
-  // @ts-expect-error instance is mocked
   initInstanceAdmin(mockInstance2, mockInstanceAdmin2);
 
   // @ts-expect-error instance is mocked
@@ -65,27 +66,28 @@ test('makeInstanceAdminStorage', async t => {
 
   // @ts-expect-error instance is mocked
   t.throws(() => getInstanceAdmin(mockInstance2), {
-    message: '"instance" not found: "[Alleged: mockInstance2]"',
+    message: 'no ordinal for "[Alleged: mockInstance2]"',
   });
 
   // @ts-expect-error instance is mocked
   await t.throwsAsync(() => getPublicFacet(mockInstance2), {
-    message: '"instance" not found: "[Alleged: mockInstance2]"',
+    message: 'no ordinal for "[Alleged: mockInstance2]"',
   });
 });
 
 test('add another instance admin for same instance', async t => {
-  const { initInstanceAdmin } = makeInstanceAdminStorage();
+  const { initInstanceAdmin } = makeInstanceAdminStorage(
+    makeScalarBigMapStore('zoe baggage', { durable: true }),
+  );
 
   const mockInstance1 = Far('mockInstance1', {});
   const mockInstanceAdmin1 = Far('mockInstanceAdmin1', {});
   const mockInstanceAdmin2 = Far('mockInstanceAdmin2', {});
 
-  // @ts-expect-error instance is mocked
   initInstanceAdmin(mockInstance1, mockInstanceAdmin1);
 
-  // @ts-expect-error instance is mocked
-  t.throws(() => initInstanceAdmin(mockInstance1, mockInstanceAdmin2), {
-    message: '"instance" already registered: "[Alleged: mockInstance1]"',
-  });
+  await t.throwsAsync(
+    () => initInstanceAdmin(mockInstance1, mockInstanceAdmin2),
+    { message: /"\[Alleged: mockInstance1\]" already registered/ },
+  );
 });

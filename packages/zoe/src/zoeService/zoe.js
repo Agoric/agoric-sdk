@@ -106,6 +106,7 @@ const makeZoeKit = (
     unwrapInstallation,
     zcfBundleCap,
     getBundleCapByIdNow,
+    zoeBaggage,
   );
 
   // Pass the capabilities necessary to create E(zoe).offer

@@ -6,7 +6,6 @@ import path from 'path';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
-import { makePromiseKit } from '@endo/promise-kit';
 import { passStyleOf, Far } from '@endo/marshal';
 import { getMethodNames } from '@agoric/internal';
 
@@ -98,10 +97,9 @@ function facetHasMethods(t, facet, names) {
 }
 
 test(`E(zoe).startInstance no issuerKeywordRecord, no terms`, async t => {
-  const { zoe, installation } = await setupZCFTest();
-  const result = await E(zoe).startInstance(installation);
+  const result = await setupZCFTest();
   // Note that deepEqual treats all empty objects (handles) as interchangeable.
-  t.deepEqual(Object.getOwnPropertyNames(result).sort(), [
+  t.deepEqual(Object.getOwnPropertyNames(result.startInstanceResult).sort(), [
     'adminFacet',
     'creatorFacet',
     'creatorInvitation',
@@ -110,23 +108,19 @@ test(`E(zoe).startInstance no issuerKeywordRecord, no terms`, async t => {
   ]);
   isEmptyFacet(t, result.creatorFacet);
   t.deepEqual(result.creatorInvitation, undefined);
-  facetHasMethods(t, result.publicFacet, ['makeInvitation']);
-  t.deepEqual(getMethodNames(result.adminFacet), [
-    'getVatShutdownPromise',
-    'restartContract',
-    'upgradeContract',
+  facetHasMethods(t, result.startInstanceResult.publicFacet, [
+    'makeInvitation',
   ]);
+  t.deepEqual(
+    Object.getOwnPropertyNames(result.startInstanceResult.adminFacet).sort(),
+    ['getVatShutdownPromise', 'restartContract', 'upgradeContract'],
+  );
 });
 
 test(`E(zoe).startInstance promise for installation`, async t => {
-  const { zoe, installation } = await setupZCFTest();
-  const { promise: installationP, resolve: installationPResolve } =
-    makePromiseKit();
+  const { startInstanceResult } = await setupZCFTest();
 
-  const resultP = E(zoe).startInstance(installationP);
-  installationPResolve(installation);
-
-  const result = await resultP;
+  const result = await startInstanceResult;
   // Note that deepEqual treats all empty objects (handles) as interchangeable.
   t.deepEqual(Object.getOwnPropertyNames(result).sort(), [
     'adminFacet',
@@ -146,7 +140,8 @@ test(`E(zoe).startInstance promise for installation`, async t => {
 });
 
 test(`E(zoe).startInstance - terms, issuerKeywordRecord switched`, async t => {
-  const { zoe, installation } = await setupZCFTest();
+  const { zoe } = setup();
+  const installation = await E(zoe).installBundleID('b1-contract');
   const { moolaKit } = setup();
   await t.throwsAsync(
     () =>
@@ -168,7 +163,8 @@ test(`E(zoe).startInstance - terms, issuerKeywordRecord switched`, async t => {
 });
 
 test(`E(zoe).startInstance - bad issuer, makeEmptyPurse throws`, async t => {
-  const { zoe, installation } = await setupZCFTest();
+  const { zoe } = setup();
+  const installation = await E(zoe).installBundleID('b1-contract');
   const brand = Far('brand', {
     // eslint-disable-next-line no-use-before-define
     isMyIssuer: i => i === badIssuer,
@@ -262,7 +258,7 @@ test(`E(zoe).getPublicFacet - no instance`, async t => {
       // https://github.com/endojs/endo/pull/640
       //
       // /"instance" not found: "\[undefined\]"/,
-      /.* not found: "\[undefined\]"/,
+      /.* "\[undefined\]" not found/,
   });
 });
 
@@ -298,7 +294,7 @@ test(`zoe.getIssuers - no instance`, async t => {
       // https://github.com/endojs/endo/pull/640
       //
       // /"instance" not found: "\[undefined\]"/,
-      /.* not found: "\[undefined\]"/,
+      /.* "\[undefined\]" not found/,
   });
 });
 
@@ -334,7 +330,7 @@ test(`zoe.getBrands - no instance`, async t => {
       // https://github.com/endojs/endo/pull/640
       //
       // /"instance" not found: "\[undefined\]"/,
-      /.* not found: "\[undefined\]"/,
+      /.* "\[undefined\]" not found/,
   });
 });
 
@@ -392,7 +388,7 @@ test(`zoe.getTerms - no instance`, async t => {
       // https://github.com/endojs/endo/pull/640
       //
       // /"instance" not found: "\[undefined\]"/,
-      /.* not found: "\[undefined\]"/,
+      /.* "\[undefined\]" not found/,
   });
 });
 
@@ -471,26 +467,7 @@ test(`zoe.getInvitationDetails - no invitation`, async t => {
   });
 });
 
-test(`zcf.registerFeeMint twice`, async t => {
-  const { zoe, zcf: zcf1, zcf2, feeMintAccess } = await setupZCFTest();
-  const feeIssuer = E(zoe).getFeeIssuer();
-  const feeBrand = await E(feeIssuer).getBrand();
-
-  const fee1000 = AmountMath.make(feeBrand, 1000n);
-
-  const zcfMint1 = await zcf1.registerFeeMint('RUN', feeMintAccess);
-  const zcfMint2 = await zcf2.registerFeeMint('RUN', feeMintAccess);
-
-  const zcfSeat1 = zcfMint1.mintGains(harden({ Fee: fee1000 }));
-  const zcfSeat2 = zcfMint2.mintGains(harden({ Fee: fee1000 }));
-
-  t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    Fee: fee1000,
-  });
-  t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    Fee: fee1000,
-  });
-});
+test.todo(`zcf.registerFeeMint twice in different contracts`);
 
 test(`zoe.getConfiguration`, async t => {
   const { zoe } = await setupZCFTest();

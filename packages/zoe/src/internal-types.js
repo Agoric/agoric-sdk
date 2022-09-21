@@ -16,6 +16,13 @@
  */
 
 /**
+ * @typedef {object} InstanceAdminHelper
+ * @param {(zoeSeatAdmin: ZoeSeatAdmin) => void} exitZoeSeatAdmin
+ * @param {(zoeSeatAdmin: ZoeSeatAdmin) => boolean} hasExited
+ * @property
+ */
+
+/**
  * @typedef {object} ZoeSeatAdminKit
  * @property {UserSeat} userSeat
  * @property {ZoeSeatAdmin} zoeSeatAdmin
@@ -24,8 +31,7 @@
  * @callback MakeZoeSeatAdminKit
  * Make the Zoe seat admin, user seat and a notifier
  * @param {Allocation} initialAllocation
- * @param {(zoeSeatAdmin: ZoeSeatAdmin) => void} exitZoeSeatAdmin
- * @param {(zoeSeatAdmin: ZoeSeatAdmin) => boolean} hasExited
+ * @param {InstanceAdminHelper} instanceAdminHelper
  * @param {ProposalRecord} proposal
  * @param {WithdrawPayments} withdrawPayments
  * @param {ERef<ExitObj>} exitObj
@@ -82,6 +88,8 @@
  * @property {ShutdownWithFailure} failAllSeats
  * @property {() => void} stopAcceptingOffers
  * @property {(string: string) => boolean} isBlocked
+ * @property {(handleOfferObj: HandleOfferObj) => void} initHandlerObj
+ * @property {(strings: string[]) => void} setOfferFilter
  */
 
 /**

@@ -513,7 +513,12 @@ const start = async (zcf, privateArgs) => {
        */
       record.querier = async timestamp => {
         // Submit the query.
+
+        console.log(`pAgg  initOracle    --query--`);
+        debugger;
+
         const result = await E(oracle).query(query);
+        console.log(`pAgg  initOracle    RESULT`);
         // Now that we've received the result, check if we're out of date.
         if (timestamp < lastWakeTimestamp || !records.has(record)) {
           return;

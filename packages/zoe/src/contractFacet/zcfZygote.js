@@ -1,14 +1,16 @@
 // @ts-check
 
 import { E } from '@endo/eventual-send';
-import { Far, Remotable, passStyleOf } from '@endo/marshal';
+import { Far, passStyleOf, Remotable } from '@endo/marshal';
 import { AssetKind } from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';
-import { assertPattern, initEmpty } from '@agoric/store';
+import { assertPattern } from '@agoric/store';
 import {
+  canBeDurable,
+  M,
   makeScalarBigMapStore,
   provideDurableMapStore,
-  canBeDurable,
+  vivifyFarInstance,
   vivifyKind,
 } from '@agoric/vat-data';
 
@@ -28,6 +30,12 @@ import '../internal-types.js';
 import './internal-types.js';
 
 import '@agoric/swingset-vat/src/types-ambient.js';
+import {
+  AmountKeywordRecordShape,
+  InvitationHandleShape,
+  ProposalShape,
+  SeatShape,
+} from '../typeGuards.js';
 
 const { details: X, makeAssert } = assert;
 
@@ -197,6 +205,7 @@ export const makeZCFZygote = async (
       }
 
       const invitationHandle = storeOfferHandler(offerHandler);
+
       /** @type {Promise<Payment>} */
       const invitationP = E(zoeInstanceAdmin).makeInvitation(
         invitationHandle,
@@ -208,6 +217,7 @@ export const makeZCFZygote = async (
     },
     // Shutdown the entire vat and give payouts
     shutdown: completion => {
+      console.log(`ZZ    Shutdown`);
       E(zoeInstanceAdmin).exitAllSeats(completion);
       dropAllReferences();
       powers.exitVat(completion);
@@ -236,18 +246,37 @@ export const makeZCFZygote = async (
     setOfferFilter: strings => E(zoeInstanceAdmin).setOfferFilter(strings),
   });
 
+  const SeatDataShape = harden({
+    proposal: ProposalShape,
+    initialAllocation: AmountKeywordRecordShape,
+    seatHandle: SeatShape,
+  });
+
+  const ExitObjectShape = M.interface('Exit Object', {
+    exit: M.call().returns(),
+  });
+  const HandleOfferObjShape = M.interface('HandleOffer object', {
+    handleOffer: M.call(InvitationHandleShape, SeatDataShape).returns({
+      offerResultPromise: M.promise(),
+      exitObj: ExitObjectShape,
+    }),
+  });
+
   // handleOfferObject gives Zoe the ability to notify ZCF when a new seat is
   // added in offer(). ZCF responds with the exitObj and offerResult.
   const makeHandleOfferObj = vivifyKind(
     zcfBaggage,
     'handleOfferObj',
-    initEmpty,
+    offerHandlerTaker => ({ offerHandlerTaker }),
     {
-      handleOffer: (_context, invitationHandle, seatData) => {
+      handleOffer: ({ state }, invitationHandle, seatData) => {
         const zcfSeat = makeZCFSeat(seatData);
         // TODO: provide a details that's a better diagnostic for the
         // ephemeral offerHandler that did not survive upgrade.
-        const offerHandler = takeOfferHandler(invitationHandle);
+
+        /// /   Replaced offerHandlerTaker.   Does OHS need to know?
+
+        const offerHandler = state.offerHandlerTaker.take(invitationHandle);
         const offerResultP =
           typeof offerHandler === 'function'
             ? E(offerHandler)(zcfSeat, seatData.offerArgs)
@@ -268,7 +297,27 @@ export const makeZCFZygote = async (
       },
     },
   );
-  const handleOfferObj = makeHandleOfferObj();
+
+  // TODO(cth)   define ZCFSeatShape
+  const ZCFSeatShape = M.any();
+  // TODO(cth)   define HandleOfferFunctionShape
+  const HandleOfferFunctionShape = M.any();
+  // const HandleOfferFunctionShape = M.call(ZCFSeatShape, M.any()).returns(
+  //   M.any(),
+  // );
+  const OfferHandlerShape = M.or(HandleOfferObjShape, HandleOfferFunctionShape);
+  const TakerGuard = M.interface('offer handler taker', {
+    take: M.call(InvitationHandleShape)
+      .optional(M.string())
+      .returns(OfferHandlerShape),
+  });
+  const taker = vivifyFarInstance(
+    zcfBaggage,
+    'offer handler taker',
+    TakerGuard,
+    { take: takeOfferHandler },
+  );
+  const handleOfferObj = makeHandleOfferObj(taker);
 
   const evaluateContract = () => {
     let bundle;
@@ -322,7 +371,7 @@ export const makeZCFZygote = async (
       privateArgs = undefined,
     ) => {
       zoeInstanceAdminPromiseKit.resolve(instanceAdminFromZoe);
-      zcfBaggage.init('instanceAdmin', instanceAdminFromZoe);
+      zcfBaggage.init('zcfInstanceAdmin', instanceAdminFromZoe);
       instantiateInstanceRecordStorage(instanceRecordFromZoe);
       instantiateIssuerStorage(issuerStorageFromZoe);
 

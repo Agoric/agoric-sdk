@@ -125,11 +125,17 @@ test.before('setup aggregator and oracles', async t => {
       onReply(_query, _reply) {},
     });
 
+    console.log(`TEST PA   calling start`);
     /** @type {OracleStartFnResult} */
     const startResult = await E(zoe).startInstance(
       oracleInstallation,
       { Fee: link.issuer },
       { oracleDescription: 'myOracle' },
+    );
+    console.log(
+      `TEST PA   pf.mqI: ${await E(
+        startResult.publicFacet,
+      ).makeQueryInvitation()}`,
     );
     const creatorFacet = await E(startResult.creatorFacet).initialize({
       oracleHandler,
@@ -152,6 +158,7 @@ test.before('setup aggregator and oracles', async t => {
     const timer = buildManualTimer(() => {}, 0n, { eventLoopIteration });
     const POLL_INTERVAL = 1n;
     const storageNode = E(storageRoot).makeChildNode('priceAggregator');
+    console.log(`TEST PA  startInst aggregator`);
     const aggregator = await E(zoe).startInstance(
       aggregatorInstallation,
       undefined,
@@ -772,9 +779,9 @@ test('quoteWhen', async t => {
   t.is(belowOut.value / 29n, 960n);
 });
 
-test('mutableQuoteWhen no replacement', async t => {
+test.only('mutableQuoteWhen no replacement', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
-
+  debugger;
   const aggregator = await t.context.makeMedianAggregator();
 
   const {
@@ -789,7 +796,16 @@ test('mutableQuoteWhen no replacement', async t => {
   const price1000 = await makeFakePriceOracle(1000n);
   const price1300 = await makeFakePriceOracle(1300n);
   const price800 = await makeFakePriceOracle(800n);
+
+  console.log(
+    `TEST PA   ${price1300.instance === price1000.instance}; ${
+      price800.instance === price1000.instance
+    }`,
+  );
   const pa = E(aggregator.publicFacet).getPriceAuthority();
+  const paReal = await pa;
+  const aggregatorPublicFacet = await aggregator.publicFacet;
+  console.log(`TESTPA   ${paReal},   ${aggregatorPublicFacet}`);
 
   const mutableQuoteWhenGTE = E(pa).mutableQuoteWhenGTE(
     AmountMath.make(brandIn, 37n),
@@ -825,6 +841,7 @@ test('mutableQuoteWhen no replacement', async t => {
         }),
     );
 
+  console.log(`TEST PA  init a`);
   await E(aggregator.creatorFacet).initOracle(price1000.instance, {
     increment: 10n,
   });
@@ -832,6 +849,7 @@ test('mutableQuoteWhen no replacement', async t => {
   await E(oracleTimer).tick();
   await E(oracleTimer).tick();
 
+  console.log(`TEST PA  init b`);
   const price1300Admin = await E(aggregator.creatorFacet).initOracle(
     price1300.instance,
     {
@@ -866,9 +884,11 @@ test('mutableQuoteWhen no replacement', async t => {
   t.is(aboveIn.value, 37n);
   t.is(aboveOut.value / 37n, 1183n);
 
+  console.log(`TEST PA  init c`);
   await E(aggregator.creatorFacet).initOracle(price800.instance, {
     increment: 17n,
   });
+  console.log(`TEST PA  init d`);
 
   await E(oracleTimer).tick();
   await E(oracleTimer).tick();

@@ -26,12 +26,12 @@ import '../internal-types.js';
 /** @type {MakeZoeSeatAdminKit} */
 export const makeZoeSeatAdminKit = (
   initialAllocation,
-  exitZoeSeatAdmin,
-  hasExited,
+  instanceAdminHelper,
   proposal,
   withdrawPayments,
   exitObj,
   offerResult,
+  id,
 ) => {
   const payoutPromiseKit = makePromiseKit();
   handlePKitWarning(payoutPromiseKit);
@@ -43,8 +43,12 @@ export const makeZoeSeatAdminKit = (
   let currentAllocation = initialAllocation;
 
   const doExit = zoeSeatAdmin => {
-    exitZoeSeatAdmin(zoeSeatAdmin);
+    instanceAdminHelper.exitZoeSeatAdmin(zoeSeatAdmin);
 
+    console.log(
+      `ZoeSeat  Exit  ${id}`,
+      // , Error('doExit')
+    );
     /** @type {PaymentPKeywordRecord} */
     const payout = withdrawPayments(currentAllocation);
     payoutPromiseKit.resolve(payout);
@@ -53,8 +57,12 @@ export const makeZoeSeatAdminKit = (
   /** @type {ZoeSeatAdmin} */
   const zoeSeatAdmin = Far('zoeSeatAdmin', {
     replaceAllocation: replacementAllocation => {
+      console.log(
+        `ZoeSeat replaceAlloc ${id}`,
+        instanceAdminHelper.hasExited(zoeSeatAdmin),
+      );
       assert(
-        !hasExited(zoeSeatAdmin),
+        !instanceAdminHelper.hasExited(zoeSeatAdmin),
         'Cannot replace allocation. Seat has already exited',
       );
       harden(replacementAllocation);
@@ -62,24 +70,28 @@ export const makeZoeSeatAdminKit = (
       // replace the old allocation entirely.
       updater.updateState(replacementAllocation);
       currentAllocation = replacementAllocation;
+      console.log(`ZoeSeat replaced ${id}`);
     },
     exit: reason => {
+      console.log(`ZoeSeat exit ${reason}`);
       assert(
-        !hasExited(zoeSeatAdmin),
+        !instanceAdminHelper.hasExited(zoeSeatAdmin),
         'Cannot exit seat. Seat has already exited',
       );
       updater.finish(reason);
       doExit(zoeSeatAdmin);
     },
     fail: reason => {
+      console.log(`ZoeSeat fail ${reason}`);
       assert(
-        !hasExited(zoeSeatAdmin),
+        !instanceAdminHelper.hasExited(zoeSeatAdmin),
         'Cannot fail seat. Seat has already exited',
       );
       updater.fail(reason);
       doExit(zoeSeatAdmin);
     },
     getNotifier: () => Promise.resolve(notifier),
+    getSeatId: () => id,
   });
 
   /** @type {UserSeat} */
@@ -91,7 +103,7 @@ export const makeZoeSeatAdminKit = (
       return E.get(payoutPromiseKit.promise)[keyword];
     },
     getOfferResult: async () => offerResult,
-    hasExited: async () => hasExited(zoeSeatAdmin),
+    hasExited: async () => instanceAdminHelper.hasExited(zoeSeatAdmin),
     tryExit: async () => E(exitObj).exit(),
 
     getCurrentAllocationJig: async () => currentAllocation,
@@ -102,6 +114,7 @@ export const makeZoeSeatAdminKit = (
         satisfiesWant(proposal, currentAllocation),
       );
     },
+    getSeatId: () => id,
   });
 
   return { userSeat, zoeSeatAdmin, notifier };

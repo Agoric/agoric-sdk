@@ -88,8 +88,10 @@ const start = zcf => {
     );
 
     const exerciseOption = buySeat => {
+      console.log(`  CC  hasExited?`, sellSeat.hasExited(), sellSeat);
       assert(!sellSeat.hasExited(), sellSeatExpiredMsg);
       try {
+        console.log(`CC swapping`);
         swapExact(zcf, sellSeat, buySeat);
       } catch (err) {
         console.log(
@@ -97,7 +99,8 @@ const start = zcf => {
         );
         throw err;
       }
-      zcf.shutdown('Swap completed.');
+      console.log(`CC   shutdown`);
+      zcf.shutdown('Swap completed. (CC)');
       return `The option was exercised. Please collect the assets in your payout.`;
     };
 

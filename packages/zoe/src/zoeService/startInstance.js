@@ -6,9 +6,9 @@ import { Far, passStyleOf } from '@endo/marshal';
 import { makeWeakStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
-import { makeZoeSeatAdminKit } from './zoeSeat.js';
 import { defineDurableHandle } from '../makeHandle.js';
 import { handlePKitWarning } from '../handleWarning.js';
+import { makeInstanceAdminMaker } from './instanceAdminStorage.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -20,7 +20,7 @@ const { details: X, quote: q } = assert;
  * @param {ERef<BundleCap>} zcfBundleCapP
  * @param {(id: string) => BundleCap} getBundleCapByIdNow
  * @param {Baggage} [zoeBaggage]
- * @returns {import('./utils.js').StartInstance}
+ * @returns {import('./utils').StartInstance}
  */
 export const makeStartInstance = (
   makeZoeInstanceStorageManager,
@@ -30,7 +30,14 @@ export const makeStartInstance = (
   zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
 ) => {
   const makeInstanceHandle = defineDurableHandle(zoeBaggage, 'Instance');
-  const makeSeatHandle = defineDurableHandle(zoeBaggage, 'Seat');
+
+  /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
+  const seatHandleToZoeSeatAdmin = makeWeakStore('seatHandle');
+
+  const instanceAdminMaker = makeInstanceAdminMaker(
+    zoeBaggage,
+    seatHandleToZoeSeatAdmin,
+  );
 
   const startInstance = async (
     installationP,
@@ -38,12 +45,6 @@ export const makeStartInstance = (
     customTerms = harden({}),
     privateArgs = undefined,
   ) => {
-    /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
-    const seatHandleToZoeSeatAdmin = makeWeakStore('seatHandle');
-    const instanceBaggage = makeScalarBigMapStore('instanceBaggage', {
-      durable: true,
-    });
-
     const { installation, bundle, bundleCap } = await unwrapInstallation(
       installationP,
     );
@@ -62,45 +63,25 @@ export const makeStartInstance = (
       );
     }
 
-    const instance = makeInstanceHandle();
+    const instanceHandle = makeInstanceHandle();
 
-    // Invitations whose descriptions match any of the strings will be blocked
-    /** @type {Readonly<string[]>} */
-    let offerFilterStrings = [];
-    // if any string in the list matches, don't process the invitation. Strings
-    // that end in ':' may be prefix matches, others must match exactly.
-    const isBlocked = string => {
-      return offerFilterStrings.some(s => {
-        return string === s || (s.slice(-1) === ':' && string.startsWith(s));
-      });
-    };
-
-    const setOfferFilter = strings => {
-      assert(Array.isArray(strings), X`${q(strings)} must be an Array`);
-      const proposedStrings = harden([...strings]);
-      proposedStrings.every(s => typeof s === 'string') ||
-        assert.fail(
-          X`Blocked strings (${q(
-            proposedStrings,
-          )}) must be an Array of strings.`,
-        );
-
-      offerFilterStrings = proposedStrings;
-    };
+    const instanceBaggage = makeScalarBigMapStore('instanceBaggage', {
+      durable: true,
+    });
 
     const zoeInstanceStorageManager = await makeZoeInstanceStorageManager(
       instanceBaggage,
       installation,
       customTerms,
       uncleanIssuerKeywordRecord,
-      instance,
+      instanceHandle,
       contractBundleCap,
     );
     // AWAIT ///
 
-    const { adminNode, root } = zoeInstanceStorageManager;
+    const adminNode = zoeInstanceStorageManager.getAdminNode();
     /** @type {ZCFRoot} */
-    const zcfRoot = root;
+    const zcfRoot = zoeInstanceStorageManager.getRoot();
 
     /** @type {PromiseRecord<HandleOfferObj>} */
     const handleOfferObjPromiseKit = makePromiseKit();
@@ -108,120 +89,25 @@ export const makeStartInstance = (
     const publicFacetPromiseKit = makePromiseKit();
     handlePKitWarning(publicFacetPromiseKit);
 
-    const makeInstanceAdmin = () => {
-      /** @type {Set<ZoeSeatAdmin>} */
-      const zoeSeatAdmins = new Set();
-      let acceptingOffers = true;
-
-      const exitZoeSeatAdmin = zoeSeatAdmin =>
-        zoeSeatAdmins.delete(zoeSeatAdmin);
-      const hasExited = zoeSeatAdmin => !zoeSeatAdmins.has(zoeSeatAdmin);
-
-      /** @type {InstanceAdmin} */
-      const instanceAdmin = Far('instanceAdmin', {
-        getPublicFacet: () => publicFacetPromiseKit.promise,
-        getTerms: zoeInstanceStorageManager.getTerms,
-        getIssuers: zoeInstanceStorageManager.getIssuers,
-        getBrands: zoeInstanceStorageManager.getBrands,
-        getOfferFilter: () => harden([...offerFilterStrings]),
-        getInstallationForInstance:
-          zoeInstanceStorageManager.getInstallationForInstance,
-        getInstance: () => instance,
-        assertAcceptingOffers: () => {
-          assert(acceptingOffers, `No further offers are accepted`);
-        },
-        exitAllSeats: completion => {
-          acceptingOffers = false;
-          zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.exit(completion));
-        },
-        failAllSeats: reason => {
-          acceptingOffers = false;
-          zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.fail(reason));
-        },
-        stopAcceptingOffers: () => {
-          acceptingOffers = false;
-        },
-        makeUserSeat: (
-          invitationHandle,
-          initialAllocation,
-          proposal,
-          offerArgs = undefined,
-        ) => {
-          const offerResultPromiseKit = makePromiseKit();
-          handlePKitWarning(offerResultPromiseKit);
-          const exitObjPromiseKit = makePromiseKit();
-          handlePKitWarning(exitObjPromiseKit);
-          const seatHandle = makeSeatHandle();
-
-          const { userSeat, zoeSeatAdmin } = makeZoeSeatAdminKit(
-            initialAllocation,
-            exitZoeSeatAdmin,
-            hasExited,
-            proposal,
-            zoeInstanceStorageManager.withdrawPayments,
-            exitObjPromiseKit.promise,
-            offerResultPromiseKit.promise,
-          );
-
-          seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
-
-          const seatData = harden({
-            proposal,
-            initialAllocation,
-            seatHandle,
-            offerArgs,
-          });
-
-          zoeSeatAdmins.add(zoeSeatAdmin);
-
-          E.when(
-            E(handleOfferObjPromiseKit.promise).handleOffer(
-              invitationHandle,
-              seatData,
-            ),
-            ({ offerResultPromise, exitObj }) => {
-              offerResultPromiseKit.resolve(offerResultPromise);
-              exitObjPromiseKit.resolve(exitObj);
-            },
-            err => {
-              adminNode.terminateWithFailure(err);
-              throw err;
-            },
-          );
-
-          // return the userSeat before the offerHandler is called
-          return userSeat;
-        },
-        makeNoEscrowSeatKit: (
-          initialAllocation,
-          proposal,
-          exitObj,
-          seatHandle,
-        ) => {
-          const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
-            initialAllocation,
-            exitZoeSeatAdmin,
-            hasExited,
-            proposal,
-            zoeInstanceStorageManager.withdrawPayments,
-            exitObj,
-          );
-          zoeSeatAdmins.add(zoeSeatAdmin);
-          seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
-          return { userSeat, notifier };
-        },
-        isBlocked,
-      });
-      return instanceAdmin;
-    };
-
-    const instanceAdmin = makeInstanceAdmin();
-    zoeInstanceStorageManager.initInstanceAdmin(instance, instanceAdmin);
+    /** @type {InstanceAdmin} */
+    const instanceAdmin = instanceAdminMaker(
+      instanceHandle,
+      zoeInstanceStorageManager,
+      adminNode,
+      publicFacetPromiseKit.promise,
+    );
+    console.log(`StIn`, instanceAdmin.getInstanceId(), instanceHandle);
+    zoeInstanceStorageManager.initInstanceAdmin(instanceHandle, instanceAdmin);
 
     E(adminNode)
       .done()
       .then(
-        completion => instanceAdmin.exitAllSeats(completion),
+        completion => {
+          console.log(
+            `SI  DONE ${completion} ${instanceAdmin.getInstanceId()}`,
+          );
+          instanceAdmin.exitAllSeats(completion);
+        },
         reason => instanceAdmin.failAllSeats(reason),
       );
 
@@ -231,8 +117,15 @@ export const makeStartInstance = (
       // checks of keyword done on zcf side
       saveIssuer: zoeInstanceStorageManager.saveIssuer,
       // A Seat requested by the contract without any payments to escrow
-      makeNoEscrowSeatKit: instanceAdmin.makeNoEscrowSeatKit,
-      exitAllSeats: completion => instanceAdmin.exitAllSeats(completion),
+      makeNoEscrowSeatKit: (...args) =>
+        instanceAdmin.makeNoEscrowSeatKit(...args),
+      exitAllSeats: completion => {
+        console.log(
+          `SI   ExAll  (${completion})`,
+          instanceAdmin.getInstanceId(),
+        );
+        instanceAdmin.exitAllSeats(completion);
+      },
       failAllSeats: reason => instanceAdmin.failAllSeats(reason),
       exitSeat: (seatHandle, completion) => {
         seatHandleToZoeSeatAdmin.get(seatHandle).exit(completion);
@@ -245,9 +138,17 @@ export const makeStartInstance = (
       makeZoeMint: zoeInstanceStorageManager.makeZoeMint,
       registerFeeMint: zoeInstanceStorageManager.registerFeeMint,
       replaceAllocations: seatHandleAllocations => {
+        console.log(
+          `SI  replaceAllocs()  seats`,
+          seatHandleAllocations.map(({ seatHandle }) =>
+            seatHandleToZoeSeatAdmin.has(seatHandle),
+          ),
+        );
+
         try {
           seatHandleAllocations.forEach(({ seatHandle, allocation }) => {
             const zoeSeatAdmin = seatHandleToZoeSeatAdmin.get(seatHandle);
+            console.log(`SI  replacing ${zoeSeatAdmin.getSeatId()}`);
             zoeSeatAdmin.replaceAllocation(allocation);
           });
         } catch (err) {
@@ -256,12 +157,11 @@ export const makeStartInstance = (
         }
       },
       stopAcceptingOffers: () => instanceAdmin.stopAcceptingOffers(),
-      setOfferFilter,
-      getOfferFilter: () => harden([...offerFilterStrings]),
+      setOfferFilter: strings => instanceAdmin.setOfferFilter(strings),
+      getOfferFilter: () => instanceAdmin.getOfferFilter(),
     });
 
-    // At this point, the contract will start executing. All must be
-    // ready
+    // At this point, the contract will start executing. All must be ready
 
     const {
       creatorFacet = Far('emptyCreatorFacet', {}),
@@ -275,14 +175,16 @@ export const makeStartInstance = (
       privateArgs,
     );
 
-    handleOfferObjPromiseKit.resolve(handleOfferObj);
+    instanceAdmin.initHandlerObj(handleOfferObj);
     publicFacetPromiseKit.resolve(publicFacet);
 
     // creatorInvitation can be undefined, but if it is defined,
     // let's make sure it is an invitation.
     return Promise.allSettled([
       creatorInvitationP,
-      zoeInstanceStorageManager.invitationIssuer.isLive(creatorInvitationP),
+      zoeInstanceStorageManager
+        .getInvitationIssuer()
+        .isLive(creatorInvitationP),
       zcfBundleCapP,
     ]).then(([invitationResult, isLiveResult, zcfBundleCapResult]) => {
       let creatorInvitation;
@@ -329,12 +231,13 @@ export const makeStartInstance = (
 
         // TODO (#5775) deprecate this return value from contracts.
         creatorInvitation,
-        instance,
+        instance: instanceHandle,
         publicFacet,
         adminFacet,
       };
     });
   };
-  // @ts-expect-error cast
+
+  // @ts-expect-error TODO   cth
   return startInstance;
 };

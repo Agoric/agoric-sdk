@@ -35,15 +35,17 @@ const setupBorrow = async (
   timer = buildManualTimer(console.log, 0n, { eventLoopIteration }),
 ) => {
   const setup = await setupLoanUnitTest();
-  const { zcf, loanKit, collateralKit, zoe, vatAdminState } = setup;
+  const { zcf: loanZcf, loanKit, collateralKit, zoe, vatAdminState } = setup;
   // Set up the lender seat
   const maxLoan = AmountMath.make(loanKit.brand, maxLoanValue);
+
   const { zcfSeat: lenderSeat, userSeat: lenderUserSeat } = await makeSeatKit(
-    zcf,
+    loanZcf,
     { give: { Loan: maxLoan } },
     { Loan: loanKit.mint.mintPayment(maxLoan) },
   );
 
+  debugger; // is lenderUserSeat broken?
   const mmr = makeRatio(150n, loanKit.brand);
   const priceList = [2, 1, 1, 1];
 
@@ -88,7 +90,7 @@ const setupBorrow = async (
     loanBrand: loanKit.brand,
     collateralBrand: collateralKit.brand,
   };
-  const borrowInvitation = makeBorrowInvitation(zcf, config);
+  const borrowInvitation = makeBorrowInvitation(loanZcf, config);
   return {
     ...setup,
     borrowInvitation,
@@ -228,7 +230,7 @@ test('borrow getLiquidationPromise', async t => {
 
 // Liquidation should not happen at the old assetAmount, but should
 // happen at the new assetAmount
-test('borrow, then addCollateral, then getLiquidationPromise', async t => {
+test.only('borrow, then addCollateral, then getLiquidationPromise', async t => {
   const {
     borrowFacet,
     lenderUserSeat,
@@ -258,6 +260,7 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
 
   const collateralGiven = AmountMath.make(collateralKit.brand, 103n);
 
+  console.log(`TB   A`);
   const quoteIssuer = await E(priceAuthority).getQuoteIssuer(
     collateralKit.brand,
     loanKit.brand,
@@ -271,6 +274,7 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
   const quoteAmount2 = await E(quoteIssuer).getAmountOf(quotePayment);
 
   const quoteBrand = await E(quoteIssuer).getBrand();
+  console.log(`TB   C`);
 
   assertAmountsEqual(t, quoteAmount, quoteAmount2);
   assertAmountsEqual(
@@ -289,6 +293,8 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
     ),
   );
 
+  console.log(`TB   E`);
+
   await checkPayouts(
     t,
     lenderUserSeat,
@@ -301,8 +307,10 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
       Loan: AmountMath.make(loanKit.brand, 101n),
     },
   );
+  console.log(`TB   F`);
 
   await checkNoNewOffers(t, zcf);
+  console.log(`TB   G`);
 });
 
 test('getDebtNotifier with interest', async t => {

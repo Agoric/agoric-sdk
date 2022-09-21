@@ -13,6 +13,7 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 
 import { setupZCFTest } from './setupZcfTest.js';
 import { assertAmountsEqual } from '../../zoeTestHelpers.js';
+import { eventLoopIteration } from '../../../tools/eventLoopIteration.js';
 
 test(`zcf.getZoeService`, async t => {
   const { zoe, zcf } = await setupZCFTest();
@@ -1339,6 +1340,7 @@ test(`zcf.shutdown - zcfSeat exits`, async t => {
   t.falsy(zcfSeat.hasExited());
   await t.falsy(await E(userSeat).hasExited());
   zcf.shutdown('done');
+  await eventLoopIteration();
   t.truthy(zcfSeat.hasExited());
   t.truthy(await E(userSeat).hasExited());
 });

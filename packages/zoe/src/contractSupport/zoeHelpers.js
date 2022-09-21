@@ -81,6 +81,7 @@ export const swapExact = (zcf, leftSeat, rightSeat) => {
     leftSeat.decrementBy(harden(leftSeat.getProposal().give));
     rightSeat.incrementBy(harden(rightSeat.getProposal().want));
 
+    console.log(`ZH   reallocating`, leftSeat, rightSeat);
     zcf.reallocate(leftSeat, rightSeat);
   } catch (err) {
     leftSeat.fail(err);
@@ -88,8 +89,11 @@ export const swapExact = (zcf, leftSeat, rightSeat) => {
     throw err;
   }
 
-  leftSeat.exit();
-  rightSeat.exit();
+  console.log(`ZH exit left`, leftSeat);
+  leftSeat.exit('swap L');
+  console.log(`ZH exit right`, rightSeat);
+  rightSeat.exit('swap R');
+  console.log(` ZH exited`);
   return defaultAcceptanceMsg;
 };
 
