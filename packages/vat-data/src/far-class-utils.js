@@ -11,14 +11,13 @@ import {
 
 /** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>} RemotableBrand */
 /** @template T @typedef {import('@endo/eventual-send').ERef<T>} ERef */
-// FIXME import InterfaceGuard from @agoric/store
-/** @typedef {*} InterfaceGuard */
 /** @typedef {import('./types.js').Baggage} Baggage */
 /** @template T @typedef {import('./types.js').DefineKindOptions<T>} DefineKindOptions */
 /** @template T @typedef {import('./types.js').KindFacet<T>} KindFacet */
 /** @template T @typedef {import('./types.js').KindFacets<T>} KindFacets */
 /** @typedef {import('./types.js').DurableKindHandle} DurableKindHandle */
 
+// TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
  * @template A,S,T
  * @param {string} tag
@@ -44,6 +43,7 @@ export const defineVirtualFarClass = (
   });
 harden(defineVirtualFarClass);
 
+// TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
  * @template A,S,T
  * @param {string} tag
@@ -69,6 +69,7 @@ export const defineVirtualFarClassKit = (
   });
 harden(defineVirtualFarClassKit);
 
+// TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
  * @template A,S,T
  * @param {DurableKindHandle} kindHandle
@@ -94,6 +95,7 @@ export const defineDurableFarClass = (
   });
 harden(defineDurableFarClass);
 
+// TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
  * @template A,S,T
  * @param {DurableKindHandle} kindHandle
@@ -119,6 +121,7 @@ export const defineDurableFarClassKit = (
   });
 harden(defineDurableFarClassKit);
 
+// TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
  * @template A,S,T
  * @param {Baggage} baggage
@@ -146,6 +149,7 @@ export const vivifyFarClass = (
   );
 harden(vivifyFarClass);
 
+// TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
  * @template A,S,T
  * @param {Baggage} baggage
@@ -173,11 +177,12 @@ export const vivifyFarClassKit = (
   );
 harden(vivifyFarClassKit);
 
+// TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
  * @template T,M
  * @param {Baggage} baggage
  * @param {string} kindName
- * @param {InterfaceGuard|undefined} interfaceGuard
+ * @param {any} interfaceGuard
  * @param {M} methods
  * @param {DefineKindOptions<unknown>} [options]
  * @returns {T & RemotableBrand<{}, T>}
