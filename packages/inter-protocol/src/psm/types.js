@@ -1,1 +1,1 @@
-/** @typedef {import('./psm').PSM} PSM */
+/** @typedef {import('./psm').PsmPublicFacet} PsmPublicFacet */

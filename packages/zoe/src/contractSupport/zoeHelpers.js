@@ -293,7 +293,7 @@ const reverse = (keywordRecord = {}) => {
  * @param {ZCF} zcf
  *   Zoe Contract Facet for contractA
  *
- * @param {ERef<Invitation<A, R>>} invitation
+ * @param {ERef<Invitation<Result, Args>>} invitation
  *   Invitation to contractB
  *
  * @param {KeywordKeywordRecord=} keywordMapping
@@ -311,17 +311,17 @@ const reverse = (keywordRecord = {}) => {
  *   The seat in contractA to deposit the payout of the offer to.
  *   If `toSeat` is not provided, this defaults to the `fromSeat`.
  *
- * @param {A} [offerArgs]
+ * @param {Args} [offerArgs]
  *   Aditional contract-specific optional arguments in a record.
  *
- * @returns {Promise<{userSeatPromise: Promise<UserSeat<R>>, deposited: Promise<AmountKeywordRecord>}>}
+ * @returns {Promise<{userSeatPromise: Promise<UserSeat<Result>>, deposited: Promise<AmountKeywordRecord>}>}
  *   A promise for the userSeat for the offer to the other contract, and a
  *   promise (`deposited`) which resolves when the payout for the offer has been
  *   deposited to the `toSeat`.
  *   Any failures of the invitation will be returned by `userSeatPromise.getOfferResult()`.
  *
- * @template {object=} A Offer args
- * @template {object=} R Offer result
+ * @template {object=} Args Offer args
+ * @template {object=} Result Offer result
  */
 export const offerTo = async (
   zcf,

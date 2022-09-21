@@ -254,7 +254,7 @@ export const defendPrototype = (
       methodGuards && methodGuards[prop],
     );
   }
-  // @ts-expect-error xxx
+  // @ts-expect-error could be instantiated with different subtype
   return Far(tag, prototype);
 };
 harden(defendPrototype);
@@ -311,7 +311,7 @@ export const defineHeapFarClass = (
     // Be careful not to freeze the state record
     const state = seal(init(...args));
     /** @type {T} */
-    // @ts-expect-error xxx
+    // @ts-expect-error could be instantiated with different subtype
     const self = harden({ __proto__: prototype });
     // Be careful not to freeze the state record
     /** @type {Context<S,T>} */
@@ -325,7 +325,7 @@ export const defineHeapFarClass = (
     }
     return self;
   };
-  // @ts-expect-error xxx
+  // @ts-expect-error could be instantiated with different subtype
   return harden(makeInstance);
 };
 harden(defineHeapFarClass);

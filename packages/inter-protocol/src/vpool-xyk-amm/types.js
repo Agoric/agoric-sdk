@@ -36,18 +36,18 @@
  */
 
 /**
- * @typedef {A extends 'single' ? SinglePoolSwapResult
- * : A extends 'double' ? DoublePoolSwapResult
+ * @typedef {Arity extends 'single' ? SinglePoolSwapResult
+ * : Arity extends 'double' ? DoublePoolSwapResult
  * : SinglePoolSwapResult | DoublePoolSwapResult} SwapResult
- * @template {'single' | 'double' | unknown} A arity
+ * @template {'single' | 'double' | unknown} Arity
  */
 
 /**
  * @typedef {object} VirtualPool - virtual pool for price quotes and trading
- * @property {(seat: ZCFSeat, prices: SwapResult<A>) => string} allocateGainsAndLosses
- * @property {(amountIn: Amount, amountOut: Amount) => SwapResult<A>} getPriceForInput
- * @property {(amountIn: Amount, amountOut: Amount) => SwapResult<A>} getPriceForOutput
- * @template {'single' | 'double' | unknown} [A=unknown] arity
+ * @property {(seat: ZCFSeat, prices: SwapResult<Arity>) => string} allocateGainsAndLosses
+ * @property {(amountIn: Amount, amountOut: Amount) => SwapResult<Arity>} getPriceForInput
+ * @property {(amountIn: Amount, amountOut: Amount) => SwapResult<Arity>} getPriceForOutput
+ * @template {'single' | 'double' | unknown} [Arity=unknown]
  */
 
 /**

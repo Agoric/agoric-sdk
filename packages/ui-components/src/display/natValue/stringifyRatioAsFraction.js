@@ -3,15 +3,12 @@
 import { assert } from '@agoric/assert';
 import { isNatValue } from '@agoric/ertp';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/zoe/exported.js';
-
 import { stringifyNat } from './stringifyNat.js';
 
 const PLACES_TO_SHOW = 2;
 
 /**
- * @param {Ratio} ratio
+ * @param {import('../../ratio.js').Ratio} ratio
  * @param {(brand: Brand) => number | undefined } getDecimalPlaces
  * @param {number} [numPlacesToShow]
  * @param {number} [denomPlacesToShow]

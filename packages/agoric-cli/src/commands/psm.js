@@ -162,7 +162,6 @@ export const makePsmCommand = async logger => {
       const opts = this.opts();
       console.warn('running with options', opts);
       const instance = await lookupPsmInstance(opts.pair);
-      // @ts-expect-error RpcRemote types not real instances
       const spendAction = makePSMSpendAction(instance, agoricNames.brand, opts);
       outputAction(spendAction);
     });
@@ -182,7 +181,6 @@ export const makePsmCommand = async logger => {
         id: Number(opts.offerId),
         invitationSpec: {
           source: 'purse',
-          // @ts-expect-error rpc
           instance: economicCommittee,
           description: 'Voter0', // XXX it may not always be
         },
@@ -212,7 +210,6 @@ export const makePsmCommand = async logger => {
         id: Number(opts.offerId),
         invitationSpec: {
           source: 'purse',
-          // @ts-expect-error rpc
           instance: psmCharter,
           description: 'PSM charter member invitation',
         },
@@ -316,8 +313,7 @@ export const makePsmCommand = async logger => {
 
       const psmInstance = lookupPsmInstance(opts.pair);
 
-      /** @type {Brand} */
-      // @ts-expect-error yes, it is a brand
+      /** @type {import('../types.js').Brand} */
       const istBrand = agoricNames.brand.IST;
       const scaledAmount = harden({
         brand: istBrand,

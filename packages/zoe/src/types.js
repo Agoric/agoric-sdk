@@ -29,8 +29,9 @@
  * @property {Installation} installation
  * @property {Instance} instance
  * @property {AnyTerms} terms - contract parameters
- 
- *
+ */
+
+/**
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} IssuerRecord
  * @property {Brand<K>} brand
@@ -39,11 +40,10 @@
  * @property {any} [displayInfo]
  *
  * @typedef {AmountKeywordRecord} Allocation
- * @typedef {Record<Keyword,AmountMath>} AmountMathKeywordRecord
  */
 
 /**
- * @template [OfferArgs]
- * @template [OfferResult]
+ * @template {object} [R=unknown] Offer result
+ * @template {object} [A=never] Offer args
  * @typedef {Payment<'set'>} Invitation
  */

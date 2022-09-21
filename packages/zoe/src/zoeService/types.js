@@ -48,7 +48,7 @@
  * code breaks.
  * @property {GetConfiguration} getConfiguration
  * @property {GetBundleIDFromInstallation} getBundleIDFromInstallation
- * @property {GetProposalShapeForInvitation} getProposalShapeForInvitation
+ * @property {(invitationHandle: InvitationHandle) => Pattern | undefined} getProposalShapeForInvitation
  */
 
 /**
@@ -151,13 +151,18 @@
  * Verify that an alleged Invitation is real, and return the Bundle ID it
  * will use for contract code.
  *
- * @param {ERef<Installation>}
+ * @param {ERef<Installation>} allegedInstallation
  * @returns {Promise<BundleID>}
  */
 
 /**
- * @template {object} [OR=any]
- * @callback Offer
+ * @typedef {<Args, Result>(
+ *   invitation: ERef<Invitation<Result, Args>>,
+ *   proposal?: Proposal,
+ *   paymentKeywordRecord?: PaymentPKeywordRecord,
+ *   offerArgs?: Args,
+ *   ) => Promise<UserSeat<Result>>
+ * } Offer
  *
  * To redeem an invitation, the user normally provides a proposal (their
  * rules for the offer) as well as payments to be escrowed by Zoe.  If
@@ -172,12 +177,6 @@
  * `paymentKeywordRecord` is a record with keywords as keys, and the
  * values are the actual payments to be escrowed. A payment is
  * expected for every rule under `give`.
- *
- * @param {ERef<Invitation<OR>>} invitation
- * @param {Proposal=} proposal
- * @param {PaymentPKeywordRecord=} paymentKeywordRecord
- * @param {object=} offerArgs
- * @returns {Promise<UserSeat<OR>>} seat
  */
 
 /**

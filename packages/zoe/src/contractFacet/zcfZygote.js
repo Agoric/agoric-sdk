@@ -150,6 +150,7 @@ export const makeZCFZygote = async (
       assetKind,
       displayInfo,
     );
+    // @ts-expect-error could be instantiated with a different subtype
     return zcfMintFactory.makeZCFMintInternal(keyword, zoeMint);
   };
 
@@ -161,6 +162,7 @@ export const makeZCFZygote = async (
       keyword,
       feeMintAccess,
     );
+    // @ts-expect-error could be instantiated with a different subtype
     return zcfMintFactory.makeZCFMintInternal(keyword, zoeMint);
   };
 
@@ -182,6 +184,7 @@ export const makeZCFZygote = async (
       return record;
     },
     makeInvitation: (
+      // @ts-expect-error xxx arbitrary subtype
       offerHandler = Far('default offer handler', () => {}),
       description,
       customProperties = harden({}),

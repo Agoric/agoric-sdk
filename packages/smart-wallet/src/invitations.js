@@ -5,7 +5,7 @@ import { E } from '@endo/far';
 import { shape } from './typeGuards.js';
 
 // Ambient types. Needed only for dev but this does a runtime import.
-import '@agoric/zoe/src/types.js';
+import '@agoric/zoe/exported.js';
 
 /**
  * Supports three cases

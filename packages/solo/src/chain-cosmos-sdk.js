@@ -583,6 +583,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
     const bigPool = messagePool.concat(newMessages);
 
     // Sort the big pool by sequence number.
+    // @ts-expect-error FIXME bigint as sort value
     const sortedPool = bigPool.sort((a, b) => a[0] - b[0]);
 
     // Only keep messages that have a unique sequence number.
@@ -727,7 +728,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
    *
    * It then delivers the mailbox to inbound.  There are no optimisations.
    *
-   * @param {number=} lastMailboxUpdate
+   * @param {UpdateCount} [lastMailboxUpdate]
    */
   const recurseEachMailboxUpdate = async (lastMailboxUpdate = undefined) => {
     const { updateCount, value: mailbox } = await mbNotifier.getUpdateSince(
@@ -758,6 +759,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
     // Reset the backoff period.
     retryBackoff = randomizeDelay(INITIAL_SEND_RETRY_DELAY_MS);
   };
+  /** @param {Error} [e]  */
   const failedSend = (e = undefined) => {
     if (e) {
       console.error(`Error sending`, e);
@@ -778,6 +780,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
   };
 
   // This function ensures we only have one outgoing send operation at a time.
+  /** @type {(lastSendUpdate?: UpdateCount) => Promise<void>} */
   const recurseEachSend = async (lastSendUpdate = undefined) => {
     // See when there is another requested send since our last time.
     const { updateCount } = await sendNotifier.getUpdateSince(lastSendUpdate);

@@ -84,7 +84,7 @@ export const definePoolKind = (baggage, ammPowers, storageNode, marshaller) => {
   );
 
   /**
-   * @param {ZCFMint} liquidityZcfMint
+   * @param {ZCFMint<'nat'>} liquidityZcfMint
    * @param {ZCFSeat} poolSeat
    * @param {Brand} secondaryBrand
    * @returns {ImmutableState & MutableState}

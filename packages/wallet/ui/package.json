@@ -15,6 +15,7 @@
     "@agoric/notifier": "^0.5.0",
     "@agoric/ui-components": "^0.3.0",
     "@agoric/wallet-backend": "^0.13.0",
+    "@agoric/zoe": "^0.25.0",
     "@cosmjs/crypto": "0.28.13",
     "@cosmjs/encoding": "0.28.13",
     "@cosmjs/proto-signing": "0.28.13",

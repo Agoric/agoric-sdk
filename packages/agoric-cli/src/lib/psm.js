@@ -2,19 +2,16 @@
 
 import { COSMOS_UNIT } from './format.js';
 
-// Ambient types. Needed only for dev but this does a runtime import.
-import '@agoric/zoe/src/zoeService/types.js';
-
 /** @typedef {import('@agoric/smart-wallet/src/offers').OfferSpec} OfferSpec */
 /** @typedef {import('@agoric/smart-wallet/src/offers').OfferStatus} OfferStatus */
 /** @typedef {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} BridgeAction */
 
 /**
- * @param {Record<string, Brand>} brands
+ * @param {Record<string, import('../types').Brand>} brands
  * @param {({ wantMinted: number | undefined, giveMinted: number | undefined })} opts
  * @param {number} [fee=0]
  * @param {string} [anchor]
- * @returns {Proposal}
+ * @returns {import('../types').Proposal}
  */
 export const makePSMProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
   const giving = opts.giveMinted ? 'minted' : 'anchor';
@@ -40,8 +37,8 @@ export const makePSMProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
 };
 
 /**
- * @param {Instance} instance
- * @param {Record<string, Brand>} brands
+ * @param {import('../types').Instance} instance
+ * @param {Record<string, import('../types').Brand>} brands
  * @param {{ offerId: number, feePct?: number } &
  *         ({ wantMinted: number | undefined, giveMinted: number | undefined })} opts
  * @returns {BridgeAction}
