@@ -34,7 +34,8 @@
     "@agoric/internal": "^0.2.1",
     "@endo/eventual-send": "^0.16.5",
     "@endo/marshal": "^0.7.5",
-    "@endo/promise-kit": "^0.2.49"
+    "@endo/promise-kit": "^0.2.49",
+    "@fast-check/ava": "^1.0.1"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.30.2",
