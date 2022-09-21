@@ -53,7 +53,6 @@ const withApplicationContext =
     return (
       <Component
         setConnectionState={setConnectionState}
-        connectionState={connectionStatus}
         connectionStatus={connectionStatus}
         setBackend={setBackend}
         connectionConfig={connectionConfig}

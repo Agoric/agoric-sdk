@@ -221,7 +221,22 @@ export const makeWalletBridgeFromFollower = (
     }
   };
 
-  followLatest().catch(errorHandler);
+  const retry = () => {
+    followLatest().catch(e => {
+      if (e.message === NO_SMART_WALLET_ERROR) {
+        setTimeout(retry, 5000);
+      } else {
+        errorHandler(e);
+      }
+    });
+  };
+
+  followLatest().catch(e => {
+    errorHandler(e);
+    if (e.message === NO_SMART_WALLET_ERROR) {
+      setTimeout(retry, 5000);
+    }
+  });
 
   const getNotifierMethods = Object.fromEntries(
     Object.entries(notifiers).map(([method, stateName]) => {

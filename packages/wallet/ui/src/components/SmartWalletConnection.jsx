@@ -5,7 +5,10 @@ import MuiAlert from '@mui/material/Alert';
 import { observeIterator } from '@agoric/notifier';
 import { makeImportContext } from '@agoric/wallet/api/src/marshal-contexts';
 
-import { withApplicationContext } from '../contexts/Application';
+import {
+  withApplicationContext,
+  ConnectionStatus,
+} from '../contexts/Application';
 import {
   makeBackendFromWalletBridge,
   makeWalletBridgeFromFollower,
@@ -25,14 +28,13 @@ const Alert = React.forwardRef(function Alert({ children, ...props }, ref) {
 
 const SmartWalletConnection = ({
   connectionConfig,
-  setConnectionState,
+  setConnectionStatus,
   setBackend,
   setBackendErrorHandler,
   keplrConnection,
 }) => {
   const [snackbarMessages, setSnackbarMessages] = useState([]);
   const [provisionDialogOpen, setProvisionDialogOpen] = useState(false);
-  setConnectionState('connecting');
 
   const onProvisionDialogClose = () => {
     setProvisionDialogOpen(false);
@@ -52,7 +54,7 @@ const SmartWalletConnection = ({
       message += `: ${e.message}`;
     }
     if (severity === 'error') {
-      setConnectionState('error');
+      setConnectionStatus(ConnectionStatus.Error);
     }
     setSnackbarMessages(sm => [...sm, { severity, message }]);
   };
@@ -68,6 +70,16 @@ const SmartWalletConnection = ({
     publicAddress = connectionConfig.publicAddress;
   }
 
+  const backendError = e => {
+    if (e.message === NO_SMART_WALLET_ERROR) {
+      setProvisionDialogOpen(true);
+      setConnectionStatus(ConnectionStatus.Error);
+    } else {
+      setBackend(null);
+      showError('Error in wallet backend', e);
+    }
+  };
+
   useEffect(() => {
     if (
       !connectionConfig ||
@@ -81,16 +93,6 @@ const SmartWalletConnection = ({
     let cleanupStorageBridge;
 
     const follow = async () => {
-      const backendError = e => {
-        setBackend(null);
-        setConnectionState('error');
-        if (e.message === NO_SMART_WALLET_ERROR) {
-          setProvisionDialogOpen(true);
-        } else {
-          showError('Error in wallet backend', e);
-        }
-      };
-
       const context = makeImportContext();
       const leader = makeLeader(href);
       const follower = makeFollower(
@@ -107,9 +109,12 @@ const SmartWalletConnection = ({
         keplrConnection,
         href,
         backendError,
-        () => setConnectionState('bridged'),
+        () => {
+          setConnectionStatus(ConnectionStatus.Connected);
+          setProvisionDialogOpen(false);
+        },
       );
-      const { backendIt, cancel } = await makeBackendFromWalletBridge(bridge);
+      const { backendIt, cancel } = makeBackendFromWalletBridge(bridge);
       cleanupStorageBridge = bridgeStorageMessages(bridge);
       cancelIterator = cancel;
       // Need to thunk the error handler, or it gets called immediately.
@@ -159,7 +164,7 @@ const SmartWalletConnection = ({
 
 export default withApplicationContext(SmartWalletConnection, context => ({
   connectionConfig: context.connectionConfig,
-  setConnectionState: context.setConnectionState,
+  setConnectionStatus: context.setConnectionStatus,
   setBackend: context.setBackend,
   setBackendErrorHandler: context.setBackendErrorHandler,
   keplrConnection: context.keplrConnection,

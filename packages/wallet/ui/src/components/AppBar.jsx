@@ -68,7 +68,6 @@ export const AppBarWithoutContext = ({
   connectionComponent,
   wantConnection,
   setWantConnection,
-  connectionState,
   connectionStatus,
   connectionConfig,
 }) => {
@@ -114,7 +113,7 @@ export const AppBarWithoutContext = ({
                 }
                 fontSize="inherit"
               >
-                {connectionState}
+                {connectionStatus}
               </Public>
             </IconButton>
           </Tooltip>
@@ -154,7 +153,6 @@ export const AppBarWithoutContext = ({
 
 export default withApplicationContext(AppBarWithoutContext, context => ({
   connectionComponent: context.connectionComponent,
-  connectionState: context.connectionState,
   wantConnection: context.wantConnection,
   setWantConnection: context.setWantConnection,
   connectionStatus: context.connectionStatus,

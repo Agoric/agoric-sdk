@@ -117,7 +117,6 @@ const closedOffersReducer = (closedOffers, { offerId, isClosed }) => {
 };
 
 const Provider = ({ children }) => {
-  const [connectionState, setConnectionState] = useState('disconnected');
   const [inbox, setInbox] = useReducer(inboxReducer, null);
   const [purses, setPurses] = useReducer(pursesReducer, null);
   const [dapps, setDapps] = useReducer(dappsReducer, null);
@@ -153,7 +152,9 @@ const Provider = ({ children }) => {
     restoredConnectionConfig !== null,
   );
   const [connectionStatus, setConnectionStatus] = useState(
-    wantConnection ? 'connecting' : 'disconnected',
+    wantConnection
+      ? ConnectionStatus.Connecting
+      : ConnectionStatus.Disconnected,
   );
   const [keplrConnection, setKeplrConnection] = useState(null);
 
@@ -195,32 +196,6 @@ const Provider = ({ children }) => {
   };
 
   useEffect(() => {
-    if (!connectionComponent) {
-      if (connectionState === 'error') {
-        setConnectionStatus(ConnectionStatus.Error);
-      } else {
-        setConnectionStatus(ConnectionStatus.Disconnected);
-      }
-      return;
-    }
-    switch (connectionState) {
-      case 'bridged': {
-        setConnectionStatus(ConnectionStatus.Connected);
-        break;
-      }
-      case 'disconnected': {
-        setConnectionStatus(ConnectionStatus.Disconnected);
-        break;
-      }
-      case 'connecting': {
-        setConnectionStatus(ConnectionStatus.Connecting);
-        break;
-      }
-      default:
-    }
-  }, [connectionState, connectionComponent]);
-
-  useEffect(() => {
     maybeSave('connectionConfig', connectionConfig);
 
     const updatedConnectionConfigs = [];
@@ -240,10 +215,10 @@ const Provider = ({ children }) => {
     if (
       connectionConfig?.smartConnectionMethod === SmartConnectionMethod.KEPLR
     ) {
-      // TODO: error toast
-      tryKeplrConnect().catch(reason =>
-        console.error('tryKeplrConnect failed', reason),
-      );
+      tryKeplrConnect().catch(reason => {
+        console.error('tryKeplrConnect failed', reason);
+        setConnectionStatus(ConnectionStatus.Error);
+      });
     }
   }, [connectionConfig]);
 
@@ -309,7 +284,7 @@ const Provider = ({ children }) => {
   const disconnect = wantReconnect => {
     setBackend(null);
     setConnectionComponent(null);
-    setConnectionState('disconnected');
+    setConnectionStatus(ConnectionStatus.Disconnected);
     if (typeof wantReconnect === 'boolean') {
       setWantConnection(wantReconnect);
     }
@@ -396,8 +371,6 @@ const Provider = ({ children }) => {
   );
 
   const state = {
-    connectionState,
-    setConnectionState,
     schemaActions,
     setBackend,
     services,
@@ -434,6 +407,7 @@ const Provider = ({ children }) => {
     connectionComponent,
     disconnect,
     connectionStatus,
+    setConnectionStatus,
     backendErrorHandler,
     setBackendErrorHandler,
     keplrConnection,
