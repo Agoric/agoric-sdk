@@ -331,9 +331,9 @@ export function makeSnapStore(
     };
 
     const results = await Promise.allSettled([...toDelete].map(deleteHash));
-    const errors = results.flatMap(({ status, reason }) =>
-      status === 'rejected' ? [reason] : [],
-    );
+    const errors = /** @type {PromiseRejectedResult[]} */ (
+      results.filter(({ status }) => status === 'rejected')
+    ).map(({ reason }) => reason);
     if (errors.length) {
       throw Error(JSON.stringify(errors));
     }
