@@ -26,9 +26,22 @@ const CREATION_FEE = '10 BLD';
 
 const ProvisionDialog = ({ onClose, open, address, href, keplrConnection }) => {
   const [currentStep, setCurrentStep] = useState(steps.INITIAL);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
 
-  const provisionWallet = async () => {
+  const provisionWallet = async signer => {
+    setError(null);
+    setCurrentStep(steps.AWAITING_APPROVAL);
+    try {
+      await signer.submitProvision();
+    } catch (e) {
+      setCurrentStep(steps.INITIAL);
+      setError(e.message);
+      return;
+    }
+    setCurrentStep(steps.IN_PROGRESS);
+  };
+
+  const handleCreateButtonClicked = () => {
     const {
       signers: { interactiveSigner },
     } = keplrConnection;
@@ -37,18 +50,7 @@ const ProvisionDialog = ({ onClose, open, address, href, keplrConnection }) => {
       return;
     }
 
-    setError('');
-    setCurrentStep(steps.AWAITING_APPROVAL);
-
-    try {
-      await interactiveSigner.submitProvision();
-    } catch (e) {
-      setCurrentStep(steps.INITIAL);
-      setError(e.message);
-      return;
-    }
-
-    setCurrentStep(steps.IN_PROGRESS);
+    provisionWallet(interactiveSigner);
   };
 
   const progressIndicator = text => (
@@ -114,7 +116,7 @@ const ProvisionDialog = ({ onClose, open, address, href, keplrConnection }) => {
           <Button color="cancel" onClick={onClose}>
             Change Connection
           </Button>
-          <Button onClick={provisionWallet}>Create</Button>
+          <Button onClick={handleCreateButtonClicked}>Create</Button>
         </DialogActions>
       )}
     </Dialog>

@@ -1,4 +1,5 @@
 // @ts-check
+import { PowerFlags } from '@agoric/vats/src/core/basic-behaviors.js';
 import { fromBech32, toBech32, fromBase64, toBase64 } from '@cosmjs/encoding';
 import { DirectSecp256k1Wallet, Registry } from '@cosmjs/proto-signing';
 import {
@@ -433,8 +434,7 @@ export const makeInteractiveSigner = async (
         value: {
           address: b64address,
           nickname: 'my wallet',
-          // XXX dry with PowerFlags const
-          powerFlags: ['SMART_WALLET'],
+          powerFlags: [PowerFlags.SMART_WALLET],
           submitter: b64address,
         },
       };

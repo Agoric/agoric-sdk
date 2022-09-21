@@ -14,6 +14,7 @@
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.5.0",
     "@agoric/ui-components": "^0.3.0",
+    "@agoric/vats": "0.11.0",
     "@agoric/wallet-backend": "^0.13.0",
     "@agoric/zoe": "^0.25.0",
     "@cosmjs/crypto": "0.28.13",
