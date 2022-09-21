@@ -60,15 +60,18 @@ const SmartWalletConnection = ({
   };
 
   const { href, smartConnectionMethod } = connectionConfig;
-  let publicAddress;
-  if (
-    smartConnectionMethod === SmartConnectionMethod.KEPLR &&
-    keplrConnection
-  ) {
-    publicAddress = keplrConnection.address;
-  } else if (smartConnectionMethod === SmartConnectionMethod.READ_ONLY) {
-    publicAddress = connectionConfig.publicAddress;
-  }
+
+  const publicAddress = (() => {
+    if (
+      smartConnectionMethod === SmartConnectionMethod.KEPLR &&
+      keplrConnection
+    ) {
+      return keplrConnection.address;
+    } else if (smartConnectionMethod === SmartConnectionMethod.READ_ONLY) {
+      return connectionConfig.publicAddress;
+    }
+    return undefined;
+  })();
 
   const backendError = e => {
     if (e.message === NO_SMART_WALLET_ERROR) {

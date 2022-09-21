@@ -21,6 +21,9 @@ const errors = {
   NO_SIGNER: 'Cannot sign a transaction in read only mode, connect to keplr.',
 };
 
+// TODO: Read this from the chain via rpc.
+const CREATION_FEE = '10 BLD';
+
 const ProvisionDialog = ({ onClose, open, address, href, keplrConnection }) => {
   const [currentStep, setCurrentStep] = useState(steps.INITIAL);
   const [error, setError] = useState('');
@@ -80,7 +83,7 @@ const ProvisionDialog = ({ onClose, open, address, href, keplrConnection }) => {
             </DialogContentText>
             <DialogContentText sx={{ pt: 2 }}>
               There is no smart wallet provisioned for this address yet. A fee
-              of <b>10 BLD</b> is required to create one.
+              of <b>{CREATION_FEE}</b> is required to create one.
             </DialogContentText>
           </div>
         );
