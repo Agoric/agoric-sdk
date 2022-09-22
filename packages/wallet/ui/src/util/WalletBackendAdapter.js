@@ -11,6 +11,9 @@ import { getOfferService } from '../service/Offers.js';
 import { getIssuerService } from '../service/Issuers.js';
 
 const newId = kind => `${kind}${Math.random()}`;
+export const NO_SMART_WALLET_ERROR = 'no smart wallet';
+
+/** @typedef {{actions: object, issuerSuggestions: Promise<AsyncIterator>}} BackendSchema */
 
 export const makeBackendFromWalletBridge = walletBridge => {
   /**
@@ -55,6 +58,7 @@ export const makeBackendFromWalletBridge = walletBridge => {
       throw: offersMembers.throw,
     });
 
+  /** @type {BackendSchema} */
   const firstSchema = harden({
     actions: Far('schemaActions', {
       createPurse: (issuer, id = newId('Purse')) =>
@@ -80,6 +84,7 @@ export const makeBackendFromWalletBridge = walletBridge => {
 
   // Just produce a single update for the initial backend.
   // TODO: allow further updates.
+  /** @type {NotifierKit<BackendSchema>} */
   const { notifier: backendNotifier, updater: backendUpdater } =
     makeNotifierKit(firstSchema);
 
@@ -153,7 +158,7 @@ export const makeWalletBridgeFromFollower = (
       // TODO: Only set firstHeight and break if the value contains all our state.
       firstHeight = blockHeight;
     }
-    assert(firstHeight, 'no smart wallet');
+    assert(firstHeight, NO_SMART_WALLET_ERROR);
     for await (const { value } of iterateEach(follower, {
       height: firstHeight,
     })) {
@@ -220,7 +225,22 @@ export const makeWalletBridgeFromFollower = (
     }
   };
 
-  followLatest().catch(errorHandler);
+  const retry = () => {
+    followLatest().catch(e => {
+      if (e.message === NO_SMART_WALLET_ERROR) {
+        setTimeout(retry, 5000);
+      } else {
+        errorHandler(e);
+      }
+    });
+  };
+
+  followLatest().catch(e => {
+    errorHandler(e);
+    if (e.message === NO_SMART_WALLET_ERROR) {
+      setTimeout(retry, 5000);
+    }
+  });
 
   const getNotifierMethods = Object.fromEntries(
     Object.entries(notifiers).map(([method, stateName]) => {

@@ -117,7 +117,6 @@ const closedOffersReducer = (closedOffers, { offerId, isClosed }) => {
 };
 
 const Provider = ({ children }) => {
-  const [connectionState, setConnectionState] = useState('disconnected');
   const [inbox, setInbox] = useReducer(inboxReducer, null);
   const [purses, setPurses] = useReducer(pursesReducer, null);
   const [dapps, setDapps] = useReducer(dappsReducer, null);
@@ -126,9 +125,13 @@ const Provider = ({ children }) => {
   const [issuers, setIssuers] = useReducer(issuersReducer, null);
   const [issuerSuggestions, setIssuerSuggestions] = useState(null);
   const [services, setServices] = useState(null);
-  const [backend, setBackend] = useState(null);
+  const [backend, setBackend] = useState(
+    /** @type {import('../util/WalletBackendAdapter').BackendSchema?} */ (null),
+  );
   const [schemaActions, setSchemaActions] = useState(null);
-  const [connectionComponent, setConnectionComponent] = useState(null);
+  const [connectionComponent, setConnectionComponent] = useState(
+    /** @type {import('react').ReactElement | null} */ (null),
+  );
   const [backendErrorHandler, setBackendErrorHandler] = useState(null);
   const [previewEnabled, setPreviewEnabled] = useState(false);
   // expose for development
@@ -153,7 +156,9 @@ const Provider = ({ children }) => {
     restoredConnectionConfig !== null,
   );
   const [connectionStatus, setConnectionStatus] = useState(
-    wantConnection ? 'connecting' : 'disconnected',
+    wantConnection
+      ? ConnectionStatus.Connecting
+      : ConnectionStatus.Disconnected,
   );
   const [keplrConnection, setKeplrConnection] = useState(null);
 
@@ -195,32 +200,6 @@ const Provider = ({ children }) => {
   };
 
   useEffect(() => {
-    if (!connectionComponent) {
-      if (connectionState === 'error') {
-        setConnectionStatus(ConnectionStatus.Error);
-      } else {
-        setConnectionStatus(ConnectionStatus.Disconnected);
-      }
-      return;
-    }
-    switch (connectionState) {
-      case 'bridged': {
-        setConnectionStatus(ConnectionStatus.Connected);
-        break;
-      }
-      case 'disconnected': {
-        setConnectionStatus(ConnectionStatus.Disconnected);
-        break;
-      }
-      case 'connecting': {
-        setConnectionStatus(ConnectionStatus.Connecting);
-        break;
-      }
-      default:
-    }
-  }, [connectionState, connectionComponent]);
-
-  useEffect(() => {
     maybeSave('connectionConfig', connectionConfig);
 
     const updatedConnectionConfigs = [];
@@ -240,10 +219,10 @@ const Provider = ({ children }) => {
     if (
       connectionConfig?.smartConnectionMethod === SmartConnectionMethod.KEPLR
     ) {
-      // TODO: error toast
-      tryKeplrConnect().catch(reason =>
-        console.error('tryKeplrConnect failed', reason),
-      );
+      tryKeplrConnect().catch(reason => {
+        console.error('tryKeplrConnect failed', reason);
+        setConnectionStatus(ConnectionStatus.Error);
+      });
     }
   }, [connectionConfig]);
 
@@ -274,7 +253,6 @@ const Provider = ({ children }) => {
         throw e;
       }
     };
-    // @ts-expect-error backend may be null
     setSchemaActions(E.get(backend).actions);
     for (const [prop, setter] of backendSetters.entries()) {
       const iterator = E.get(backend)[prop];
@@ -289,7 +267,6 @@ const Provider = ({ children }) => {
       }).catch(rethrowIfNotCancelled);
     }
 
-    // @ts-expect-error backend may be null
     const issuerSuggestionsNotifier = E.get(backend).issuerSuggestions;
     observeIterator(issuerSuggestionsNotifier, {
       fail: rethrowIfNotCancelled,
@@ -309,7 +286,7 @@ const Provider = ({ children }) => {
   const disconnect = wantReconnect => {
     setBackend(null);
     setConnectionComponent(null);
-    setConnectionState('disconnected');
+    setConnectionStatus(ConnectionStatus.Disconnected);
     if (typeof wantReconnect === 'boolean') {
       setWantConnection(wantReconnect);
     }
@@ -353,7 +330,6 @@ const Provider = ({ children }) => {
         return;
       }
       const WalletConnection = mod.default;
-      // @ts-expect-error state typed as null
       setConnectionComponent(<WalletConnection />);
       attempts = 0;
     };
@@ -396,8 +372,6 @@ const Provider = ({ children }) => {
   );
 
   const state = {
-    connectionState,
-    setConnectionState,
     schemaActions,
     setBackend,
     services,
@@ -434,6 +408,7 @@ const Provider = ({ children }) => {
     connectionComponent,
     disconnect,
     connectionStatus,
+    setConnectionStatus,
     backendErrorHandler,
     setBackendErrorHandler,
     keplrConnection,

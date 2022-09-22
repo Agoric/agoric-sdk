@@ -13,7 +13,6 @@ const withApplicationContext =
           'http://unit-test-net.agoric.com/network-config',
         ]}
         connectionStatus="Connecting"
-        connectionState="connecting"
         {...props}
       />
     );

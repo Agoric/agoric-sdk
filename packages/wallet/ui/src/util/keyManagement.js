@@ -1,4 +1,5 @@
 // @ts-check
+import { PowerFlags } from '@agoric/vats/src/core/basic-behaviors.js';
 import { fromBech32, toBech32, fromBase64, toBase64 } from '@cosmjs/encoding';
 import { DirectSecp256k1Wallet, Registry } from '@cosmjs/proto-signing';
 import {
@@ -15,6 +16,7 @@ import { GenericAuthorization } from 'cosmjs-types/cosmos/authz/v1beta1/authz.js
 import { QueryClientImpl } from 'cosmjs-types/cosmos/authz/v1beta1/query.js';
 
 import {
+  MsgProvision,
   MsgWalletAction,
   MsgWalletSpendAction,
 } from '@agoric/cosmic-proto/swingset/msgs.js';
@@ -71,6 +73,10 @@ const CosmosMessages = /** @type {const} */ ({
  * `/agoric.swingset.XXX` matches package agoric.swingset in swingset/msgs.go
  */
 export const SwingsetMsgs = /** @type {const} */ ({
+  MsgProvision: {
+    typeUrl: '/agoric.swingset.MsgProvision',
+    aminoType: 'swingset/MsgProvision',
+  },
   MsgWalletAction: {
     typeUrl: '/agoric.swingset.MsgWalletAction',
     aminoType: 'swingset/WalletAction',
@@ -81,7 +87,15 @@ export const SwingsetMsgs = /** @type {const} */ ({
   },
 });
 
+// XXX repeating the TS definitions made by protoc
+// TODO define these automatically from those
 /**
+ * @typedef {{
+ *   nickname: string,
+ *   address: string, // base64 of raw bech32 data
+ *   powerFlags: string[],
+ *   submitter: string, // base64 of raw bech32 data
+ * }} Provision
  * @typedef {{
  *   owner: string, // base64 of raw bech32 data
  *   action: string,
@@ -95,6 +109,7 @@ export const SwingsetMsgs = /** @type {const} */ ({
 export const SwingsetRegistry = new Registry([
   ...defaultRegistryTypes,
   // XXX should this list be "upstreamed" to @agoric/cosmic-proto?
+  [SwingsetMsgs.MsgProvision.typeUrl, MsgProvision],
   [SwingsetMsgs.MsgWalletAction.typeUrl, MsgWalletAction],
   [SwingsetMsgs.MsgWalletSpendAction.typeUrl, MsgWalletSpendAction],
 ]);
@@ -116,10 +131,17 @@ export const zeroFee = () => {
 
 /** @type {import('@cosmjs/stargate').AminoConverters} */
 const SwingsetConverters = {
-  // TODO: #3628, #4654
-  // '/agoric.swingset.MsgProvision': {
-  //   /* ... */
-  // },
+  [SwingsetMsgs.MsgProvision.typeUrl]: {
+    aminoType: SwingsetMsgs.MsgProvision.aminoType,
+    toAmino: ({ action, owner }) => ({
+      action,
+      owner: toBech32(bech32Config.bech32PrefixAccAddr, fromBase64(owner)),
+    }),
+    fromAmino: ({ action, owner }) => ({
+      action,
+      owner: toBase64(toAccAddress(owner)),
+    }),
+  },
   [SwingsetMsgs.MsgWalletAction.typeUrl]: {
     aminoType: SwingsetMsgs.MsgWalletAction.aminoType,
     toAmino: ({ action, owner }) => ({
@@ -386,6 +408,42 @@ export const makeInteractiveSigner = async (
       console.log('sign Grant', { address, msgs, fee });
       const tx = await signingClient.signAndBroadcast(address, msgs, fee);
       console.log('Grant sign result tx', tx);
+      assertIsDeliverTxSuccess(tx);
+
+      return tx;
+    },
+
+    /**
+     * Sign and broadcast Provision for a new smart wallet
+     *
+     * @throws if account does not exist on chain, user cancels,
+     *         RPC connection fails, RPC service fails to broadcast (
+     *         for example, if signature verification fails)
+     */
+    submitProvision: async () => {
+      const { accountNumber, sequence } = await signingClient.getSequence(
+        address,
+      );
+      console.log({ accountNumber, sequence });
+
+      const b64address = toBase64(toAccAddress(address));
+
+      const act1 = {
+        typeUrl: SwingsetMsgs.MsgProvision.typeUrl,
+        /** @type {Provision} */
+        value: {
+          address: b64address,
+          nickname: 'my wallet',
+          powerFlags: [PowerFlags.SMART_WALLET],
+          submitter: b64address,
+        },
+      };
+
+      const msgs = [act1];
+      console.log('sign provision', { address, msgs, fee });
+
+      const tx = await signingClient.signAndBroadcast(address, msgs, fee);
+      console.log('spend action result tx', tx);
       assertIsDeliverTxSuccess(tx);
 
       return tx;

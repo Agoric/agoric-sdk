@@ -60,6 +60,7 @@ export const PursesWithoutContext = ({
       </CardItem>
     );
   };
+
   const purseItems = (purses && purses.map(Purse)) ?? (
     <Loading defaultMessage="Fetching purses..." />
   );

@@ -28,7 +28,6 @@ const withApplicationContext =
         allWalletConnections={[
           'http://unit-test-net.agoric.com/network-config',
         ]}
-        connectionState="Connecting"
         connectionStatus="connecting"
         {...props}
       />

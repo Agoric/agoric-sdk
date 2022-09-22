@@ -5,13 +5,18 @@ import MuiAlert from '@mui/material/Alert';
 import { observeIterator } from '@agoric/notifier';
 import { makeImportContext } from '@agoric/wallet/api/src/marshal-contexts';
 
-import { withApplicationContext } from '../contexts/Application';
+import {
+  withApplicationContext,
+  ConnectionStatus,
+} from '../contexts/Application';
 import {
   makeBackendFromWalletBridge,
   makeWalletBridgeFromFollower,
+  NO_SMART_WALLET_ERROR,
 } from '../util/WalletBackendAdapter';
 import { SmartConnectionMethod } from '../util/connections';
 import { bridgeStorageMessages } from '../util/BridgeStorage';
+import ProvisionDialog from './ProvisionDialog';
 
 const Alert = React.forwardRef(function Alert({ children, ...props }, ref) {
   return (
@@ -23,13 +28,17 @@ const Alert = React.forwardRef(function Alert({ children, ...props }, ref) {
 
 const SmartWalletConnection = ({
   connectionConfig,
-  setConnectionState,
+  setConnectionStatus,
   setBackend,
   setBackendErrorHandler,
   keplrConnection,
 }) => {
   const [snackbarMessages, setSnackbarMessages] = useState([]);
-  setConnectionState('connecting');
+  const [provisionDialogOpen, setProvisionDialogOpen] = useState(false);
+
+  const onProvisionDialogClose = () => {
+    setProvisionDialogOpen(false);
+  };
 
   const handleSnackbarClose = (_, reason) => {
     if (reason === 'clickaway') {
@@ -45,9 +54,33 @@ const SmartWalletConnection = ({
       message += `: ${e.message}`;
     }
     if (severity === 'error') {
-      setConnectionState('error');
+      setConnectionStatus(ConnectionStatus.Error);
     }
     setSnackbarMessages(sm => [...sm, { severity, message }]);
+  };
+
+  const { href, smartConnectionMethod } = connectionConfig;
+
+  const publicAddress = (() => {
+    if (
+      smartConnectionMethod === SmartConnectionMethod.KEPLR &&
+      keplrConnection
+    ) {
+      return keplrConnection.address;
+    } else if (smartConnectionMethod === SmartConnectionMethod.READ_ONLY) {
+      return connectionConfig.publicAddress;
+    }
+    return undefined;
+  })();
+
+  const backendError = e => {
+    if (e.message === NO_SMART_WALLET_ERROR) {
+      setProvisionDialogOpen(true);
+      setConnectionStatus(ConnectionStatus.Error);
+    } else {
+      setBackend(null);
+      showError('Error in wallet backend', e);
+    }
   };
 
   useEffect(() => {
@@ -61,21 +94,8 @@ const SmartWalletConnection = ({
 
     let cancelIterator;
     let cleanupStorageBridge;
+
     const follow = async () => {
-      const { href, smartConnectionMethod } = connectionConfig;
-      let publicAddress;
-      if (smartConnectionMethod === SmartConnectionMethod.KEPLR) {
-        publicAddress = keplrConnection.address;
-      } else {
-        publicAddress = connectionConfig.publicAddress;
-      }
-
-      const backendError = e => {
-        showError('Error in wallet backend', e);
-        setBackend(null);
-        setConnectionState('error');
-      };
-
       const context = makeImportContext();
       const leader = makeLeader(href);
       const follower = makeFollower(
@@ -92,9 +112,12 @@ const SmartWalletConnection = ({
         keplrConnection,
         href,
         backendError,
-        () => setConnectionState('bridged'),
+        () => {
+          setConnectionStatus(ConnectionStatus.Connected);
+          setProvisionDialogOpen(false);
+        },
       );
-      const { backendIt, cancel } = await makeBackendFromWalletBridge(bridge);
+      const { backendIt, cancel } = makeBackendFromWalletBridge(bridge);
       cleanupStorageBridge = bridgeStorageMessages(bridge);
       cancelIterator = cancel;
       // Need to thunk the error handler, or it gets called immediately.
@@ -132,13 +155,19 @@ const SmartWalletConnection = ({
           {snackbarMessages[0]?.message}
         </Alert>
       </Snackbar>
+      <ProvisionDialog
+        open={provisionDialogOpen}
+        onClose={onProvisionDialogClose}
+        address={publicAddress}
+        href={href}
+      />
     </div>
   );
 };
 
 export default withApplicationContext(SmartWalletConnection, context => ({
   connectionConfig: context.connectionConfig,
-  setConnectionState: context.setConnectionState,
+  setConnectionStatus: context.setConnectionStatus,
   setBackend: context.setBackend,
   setBackendErrorHandler: context.setBackendErrorHandler,
   keplrConnection: context.keplrConnection,
