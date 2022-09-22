@@ -125,9 +125,13 @@ const Provider = ({ children }) => {
   const [issuers, setIssuers] = useReducer(issuersReducer, null);
   const [issuerSuggestions, setIssuerSuggestions] = useState(null);
   const [services, setServices] = useState(null);
-  const [backend, setBackend] = useState(null);
+  const [backend, setBackend] = useState(
+    /** @type {import('../util/WalletBackendAdapter').BackendSchema?} */ (null),
+  );
   const [schemaActions, setSchemaActions] = useState(null);
-  const [connectionComponent, setConnectionComponent] = useState(null);
+  const [connectionComponent, setConnectionComponent] = useState(
+    /** @type {import('react').ReactElement | null} */ (null),
+  );
   const [backendErrorHandler, setBackendErrorHandler] = useState(null);
   const [previewEnabled, setPreviewEnabled] = useState(false);
   // expose for development
@@ -249,7 +253,6 @@ const Provider = ({ children }) => {
         throw e;
       }
     };
-    // @ts-expect-error backend may be null
     setSchemaActions(E.get(backend).actions);
     for (const [prop, setter] of backendSetters.entries()) {
       const iterator = E.get(backend)[prop];
@@ -264,7 +267,6 @@ const Provider = ({ children }) => {
       }).catch(rethrowIfNotCancelled);
     }
 
-    // @ts-expect-error backend may be null
     const issuerSuggestionsNotifier = E.get(backend).issuerSuggestions;
     observeIterator(issuerSuggestionsNotifier, {
       fail: rethrowIfNotCancelled,
@@ -328,7 +330,6 @@ const Provider = ({ children }) => {
         return;
       }
       const WalletConnection = mod.default;
-      // @ts-expect-error state typed as null
       setConnectionComponent(<WalletConnection />);
       attempts = 0;
     };

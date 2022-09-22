@@ -13,6 +13,8 @@ import { getIssuerService } from '../service/Issuers.js';
 const newId = kind => `${kind}${Math.random()}`;
 export const NO_SMART_WALLET_ERROR = 'no smart wallet';
 
+/** @typedef {{actions: object, issuerSuggestions: Promise<AsyncIterator>}} BackendSchema */
+
 export const makeBackendFromWalletBridge = walletBridge => {
   /**
    * @template T
@@ -56,6 +58,7 @@ export const makeBackendFromWalletBridge = walletBridge => {
       throw: offersMembers.throw,
     });
 
+  /** @type {BackendSchema} */
   const firstSchema = harden({
     actions: Far('schemaActions', {
       createPurse: (issuer, id = newId('Purse')) =>
@@ -81,6 +84,7 @@ export const makeBackendFromWalletBridge = walletBridge => {
 
   // Just produce a single update for the initial backend.
   // TODO: allow further updates.
+  /** @type {NotifierKit<BackendSchema>} */
   const { notifier: backendNotifier, updater: backendUpdater } =
     makeNotifierKit(firstSchema);
 
