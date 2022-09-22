@@ -2,6 +2,7 @@
 
 import { E } from '@endo/eventual-send';
 import {
+  makeScalarBigSetStore,
   provideDurableSetStore,
   provideDurableWeakMapStore,
   // provideDurableMapStore,
@@ -255,7 +256,9 @@ export const makeInstanceAdminMaker = (
         seatHandleToZoeSeatAdmin,
         instanceHandle,
         acceptingOffers: true,
-        zoeSeatAdmins: provideDurableSetStore(zoeBaggage, 'zoeSeatAdmins'),
+        zoeSeatAdmins: makeScalarBigSetStore('zoeSeatAdmins', {
+          durable: true,
+        }),
         adminNode,
         // debuggery
         instanceID: ID,
