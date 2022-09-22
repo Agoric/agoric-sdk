@@ -30,6 +30,7 @@ echo "Starting the chain..."
 cd "$SDK"/packages/cosmic-swingset || exit 1
 make scenario2-setup scenario2-run-chain-psm >>$CHAIN_LOG 2>&1 &
 echo "Logs written to $CHAIN_LOG"
+make wait-for-cosmos
 
 echo "Funding the pool..."
 make fund-provision-pool

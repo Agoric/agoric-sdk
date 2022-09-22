@@ -219,13 +219,13 @@ fund-provision-pool:
 # provisioned, so make room for 400 accounts with 100 USDC which mints 100 IST.
 	$(MAKE) ACCT_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 FUNDS=1000000000ibc/usdc1234 fund-acct
 
-fund-acct: wait-for-cosmos
+fund-acct:
 	$(AGCH) \
 	  --home=t1/bootstrap --keyring-backend=test --from=bootstrap \
 	  tx bank send bootstrap $(ACCT_ADDR) $(FUNDS) \
 	  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID)
 
-provision-acct: wait-for-cosmos
+provision-acct:
 	$(AGCH) --chain-id=$(CHAIN_ID) \
 	  --home=t1/bootstrap --keyring-backend=test --from=bootstrap \
 	  tx swingset provision-one t1/$(BASE_PORT) $(ACCT_ADDR) SMART_WALLET \
