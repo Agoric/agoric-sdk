@@ -10,20 +10,8 @@ if [ -z "$AGORIC_NET" ]; then
 cd agoric-sdk
 yarn install && yarn build
 
-# (new tab)
-# Start the chain
-cd packages/cosmic-swingset
-make scenario2-setup scenario2-run-chain-psm
-
-# (new tab)
-cd packages/cosmic-swingset
-# Fund the pool
-make fund-provision-pool
-# Provision your wallet
-agoric wallet provision --account <key-name>
-# verify
-agoric wallet list
-agoric wallet show --from <key-name>
+# local chain running with wallet provisioned
+packages/smart-wallet/scripts/start-local-chain.sh YOUR_ACCOUNT_KEY
 "
     exit 1
 fi

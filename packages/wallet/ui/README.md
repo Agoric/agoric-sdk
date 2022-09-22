@@ -7,28 +7,14 @@ The UI deps and scripts were bootstrapped with [Create React App](https://github
 To run it,
 
 ```sh
+# freshen sdk
 cd agoric-sdk
-yarn && yarn build
+yarn install && yarn build
 
-# Start the chain
-cd packages/cosmic-swingset
-make scenario2-setup scenario2-run-chain-psm
+# local chain running with wallet provisioned
+packages/smart-wallet/scripts/start-local-chain.sh YOUR_ACCOUNT_KEY
 
-# (new tab) chain setup
-cd packages/cosmic-swingset
-# Fund the pool
-make fund-provision-pool
-# Fund your wallet
-export ACCT_ADDR=<key-bech32>
-# with 100 BLD for provisioning wallet and 100 USDC for psm trading
-make ACCT_ADDR=$ACCT_ADDR SOLO_COINS=10000000ubld,10000000ibc/usdc1234 fund-acct
-agd query bank balances $ACCT_ADDR
-
-# Provision your smart wallet
-agoric wallet provision --account <key-name>
-# now refresh the wallet UI and purses should load
-
-# Start a wallet UI, new shell
+# Start a wallet UI
 cd packages/wallet/ui && yarn start
 # NB: trailing slash
 open http://localhost:3000/wallet/ 
