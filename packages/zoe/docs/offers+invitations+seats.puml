@@ -46,7 +46,7 @@ ZCF -> ZCF : promise = makePromiseKit
 ZCF -> ZCF : seatHandle = makeSeatHandle()
 ZCF -> ZCF : makeZcfSeat({}, {}, seatHandle)
 ZCF -> ZCF : exitObj = makeExitObj({}, handle)
-ZCF -> ZoeInstance : makeNoEscrowSeatKit({}, {}, exitObj, seatHandle)
+ZCF -> ZoeInstance : makeNoEscrowSeat({}, {}, exitObj, seatHandle)
 ZCF -> contract : <font color=gray><size:12>{ zcfSeat, userSeat: promise }
 ZoeInstance -> ZoeInstance : { userSeat, notifier, zoeSeatAdmin } =\n  makeSeatAdminKit(alloc, proposal,\n  promises, ...)
 ZoeInstance -> ZoeInstance : store zoeSeatAdmin

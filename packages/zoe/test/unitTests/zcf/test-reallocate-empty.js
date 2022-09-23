@@ -44,10 +44,7 @@ test(`zcf.reallocate undefined`, async t => {
 
   // @ts-expect-error Deliberate wrong type for testing
   t.throws(() => zcf.reallocate(zcfSeat1, zcfSeat2, undefined), {
-    message:
-      // TODO: Improve error message if something other than a seat is
-      // passed.
-      'seat has been exited',
+    message: / - Must be a remotable/,
   });
 });
 

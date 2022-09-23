@@ -15,15 +15,19 @@ import '@agoric/vats/exported.js';
 import '../internal-types.js';
 
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
+import {
+  makeScalarBigMapStore,
+  vivifyFarClassKit,
+  provide,
+} from '@agoric/vat-data';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
 import { makeOfferMethod } from './offer/offer.js';
 import { makeInvitationQueryFns } from './invitationQueries.js';
 import { getZcfBundleCap, setupCreateZCFVat } from './createZCFVat.js';
-import { vivifyFeeMint, defaultFeeIssuerConfig } from './feeMint.js';
+import { defaultFeeIssuerConfig, vivifyFeeMint } from './feeMint.js';
+import { ZoeServiceIKit } from '../typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -38,10 +42,6 @@ import { vivifyFeeMint, defaultFeeIssuerConfig } from './feeMint.js';
  * @param {FeeIssuerConfig} feeIssuerConfig
  * @param {ZCFSpec} [zcfSpec] - Pointer to the contract facet bundle.
  * @param {Baggage} [zoeBaggage]
- * @returns {{
- *   zoeService: ZoeService,
- *   feeMintAccess: FeeMintAccess,
- * }}
  */
 const makeZoeKit = (
   vatAdminSvc,
@@ -50,7 +50,9 @@ const makeZoeKit = (
   zcfSpec = { name: 'zcf' },
   zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
 ) => {
-  const feeMint = vivifyFeeMint(zoeBaggage, feeIssuerConfig, shutdownZoeVat);
+  let zoeService;
+
+  const feeMintKit = vivifyFeeMint(zoeBaggage, feeIssuerConfig, shutdownZoeVat);
 
   /** @type {GetBundleCapForID} */
   const getBundleCapForID = bundleID =>
@@ -64,8 +66,7 @@ const makeZoeKit = (
     vatAdminSvc,
     zcfBundleCap,
     // eslint-disable-next-line no-use-before-define
-    () => invitationIssuer,
-    // eslint-disable-next-line no-use-before-define
+    () => invitationIssuerAccess.getInvitationIssuer(),
     () => zoeService,
   );
   const getBundleCapByIdNow = id => E(vatAdminSvc).getBundleCap(id);
@@ -73,51 +74,33 @@ const makeZoeKit = (
   // The ZoeStorageManager composes and consolidates capabilities
   // needed by Zoe according to POLA.
   const {
-    depositPayments,
-    getAssetKindByBrand,
-    makeZoeInstanceStorageManager,
-    installBundle,
-    installBundleID,
-    unwrapInstallation,
-    getBundleIDFromInstallation,
-    getPublicFacet,
-    getBrands,
-    getIssuers,
-    getTerms,
-    getOfferFilter,
-    getInstallationForInstance,
-    getInstanceAdmin,
-    invitationIssuer,
-    getProposalShapeForInvitation,
+    zoeServiceDataAccess,
+    makeOfferAccess,
+    startInstanceAccess,
+    invitationIssuerAccess,
   } = makeZoeStorageManager(
     createZCFVat,
     getBundleCapForID,
-    feeMintAccess => feeMint.getFeeIssuerKit(feeMintAccess),
     shutdownZoeVat,
-    feeMint.getFeeIssuer(),
-    feeMint.getFeeBrand(),
+    feeMintKit.feeMint,
     zoeBaggage,
   );
 
   // Pass the capabilities necessary to create E(zoe).startInstance
   const startInstance = makeStartInstance(
-    makeZoeInstanceStorageManager,
-    unwrapInstallation,
+    startInstanceAccess,
     zcfBundleCap,
     getBundleCapByIdNow,
+    zoeBaggage,
   );
 
   // Pass the capabilities necessary to create E(zoe).offer
-  const offer = makeOfferMethod(
-    invitationIssuer,
-    getInstanceAdmin,
-    depositPayments,
-    getAssetKindByBrand,
-    getProposalShapeForInvitation,
-  );
+  const offer = makeOfferMethod(makeOfferAccess);
 
   // Make the methods that allow users to easily and credibly get
   // information about their invitations.
+
+  const invitationIssuer = invitationIssuerAccess.getInvitationIssuer();
   const { getInstance, getInstallation, getInvitationDetails } =
     makeInvitationQueryFns(invitationIssuer);
 
@@ -127,46 +110,93 @@ const makeZoeKit = (
     });
   };
 
-  /** @type {ZoeService} */
-  const zoeService = Far('zoeService', {
-    install: installBundle,
-    installBundleID,
-    startInstance,
-    offer,
-    /**
-     * @deprecated Useless but provided during transition to keep old
-     * code from breaking.
-     */
-    makeFeePurse: async () => feeMint.getFeeIssuer().makeEmptyPurse(),
-    /**
-     * @deprecated Useless but provided during transition to keep old
-     * code from breaking.
-     * @param {ERef<Purse>} _defaultFeePurse
-     */
-    bindDefaultFeePurse: _defaultFeePurse => zoeService,
-    getPublicFacet,
+  const makeZoeService = vivifyFarClassKit(
+    zoeBaggage,
+    'ZoeService',
+    ZoeServiceIKit,
+    dataAccess => ({ dataAccess }),
+    {
+      zoeService: {
+        install(bundleId) {
+          const { state } = this;
+          return state.dataAccess.installBundle(bundleId);
+        },
+        installBundleID(bundleId) {
+          const { state } = this;
+          return state.dataAccess.installBundleID(bundleId);
+        },
+        startInstance,
+        offer,
+        getPublicFacet(instance) {
+          const { state } = this;
+          return state.dataAccess.getPublicFacet(instance);
+        },
 
-    // The functions below are getters only and have no impact on
-    // state within Zoe
-    getInvitationIssuer: async () => invitationIssuer,
-    getFeeIssuer: async () => feeMint.getFeeIssuer(),
-    getBrands,
-    getIssuers,
-    getTerms,
-    getOfferFilter,
-    getInstallationForInstance,
-    getInstance,
-    getInstallation,
-    getInvitationDetails,
-    getConfiguration,
-    getBundleIDFromInstallation,
-    getProposalShapeForInvitation,
-  });
+        // The functions below are getters only and have no impact on
+        // state within Zoe
+        async getInvitationIssuer() {
+          const { state } = this;
+          return state.dataAccess.getInvitationIssuer();
+        },
+        async getFeeIssuer() {
+          return feeMintKit.feeMint.getFeeIssuer();
+        },
 
-  return harden({
-    zoeService,
-    feeMintAccess: feeMint.getFeeMintAccess(),
-  });
+        getBrands(instance) {
+          const { state } = this;
+          return state.dataAccess.getBrands(instance);
+        },
+        getIssuers(instance) {
+          const { state } = this;
+          return state.dataAccess.getIssuers(instance);
+        },
+        getTerms(instance) {
+          const { state } = this;
+          return state.dataAccess.getTerms(instance);
+        },
+        getOfferFilter(instance) {
+          const { state } = this;
+          return state.dataAccess.getOfferFilter(instance);
+        },
+        setOfferFilter(instance, filters) {
+          const { state } = this;
+          state.dataAccess.setOfferFilter(instance, filters);
+        },
+        getInstallationForInstance(instance) {
+          const { state } = this;
+          return state.dataAccess.getInstallationForInstance(instance);
+        },
+
+        getInstance(invitation) {
+          return getInstance(invitation);
+        },
+        getInstallation,
+        getInvitationDetails,
+        getConfiguration,
+        getBundleIDFromInstallation(installation) {
+          const { state } = this;
+          return state.dataAccess.getBundleIDFromInstallation(installation);
+        },
+        getProposalShapeForInvitation(invitation) {
+          const { state } = this;
+          return state.dataAccess.getProposalShapeForInvitation(invitation);
+        },
+      },
+      feeMintAccessRetriever: {
+        /** @type {() => FeeMintAccess} */
+        get() {
+          // @ts-expect-error type cast
+          return feeMintKit.feeMintAccess;
+        },
+      },
+    },
+  );
+
+  const zoeServices = provide(zoeBaggage, 'zoe', () =>
+    makeZoeService(zoeServiceDataAccess),
+  );
+  zoeService = zoeServices.zoeService;
+  return zoeServices;
 };
 
 export { makeZoeKit };

@@ -4,15 +4,17 @@ import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 
 import { E } from '@endo/eventual-send';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { makeEscrowStorage } from '../../../src/zoeService/escrowStorage.js';
+import { provideEscrowStorage } from '../../../src/zoeService/escrowStorage.js';
 import {
   assertAmountsEqual,
   assertPayoutAmount,
 } from '../../zoeTestHelpers.js';
 
-test('makeEscrowStorage', async t => {
-  const { createPurse, makeLocalPurse, withdrawPayments, depositPayments } =
-    makeEscrowStorage(makeScalarBigMapStore('zoe baggage', { durable: true }));
+test('provideEscrowStorage', async t => {
+  const { createPurse, provideLocalPurse, withdrawPayments, depositPayments } =
+    provideEscrowStorage(
+      makeScalarBigMapStore('zoe baggage', { durable: true }),
+    );
 
   const currencyKit = makeIssuerKit(
     'currency',
@@ -25,7 +27,7 @@ test('makeEscrowStorage', async t => {
   await createPurse(currencyKit.issuer, currencyKit.brand);
 
   // Normally only used for ZCFMint issuers
-  makeLocalPurse(ticketKit.issuer, ticketKit.brand);
+  provideLocalPurse(ticketKit.issuer, ticketKit.brand);
 
   const gameTicketAmount = AmountMath.make(
     ticketKit.brand,
@@ -131,7 +133,7 @@ const setupPurses = async createPurse => {
 };
 
 test('payments without matching give keywords', async t => {
-  const { createPurse, depositPayments } = makeEscrowStorage(
+  const { createPurse, depositPayments } = provideEscrowStorage(
     makeScalarBigMapStore('zoe baggage', { durable: true }),
   );
 
@@ -168,7 +170,7 @@ test('payments without matching give keywords', async t => {
 });
 
 test(`give keywords without matching payments`, async t => {
-  const { createPurse, depositPayments } = makeEscrowStorage(
+  const { createPurse, depositPayments } = provideEscrowStorage(
     makeScalarBigMapStore('zoe baggage', { durable: true }),
   );
 
