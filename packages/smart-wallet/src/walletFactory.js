@@ -140,7 +140,7 @@ export const start = async (zcf, privateArgs) => {
        *   and creating a new one.
        */
       provideSmartWallet(address, bank, namesByAddressAdmin) {
-        let created = false;
+        let makerCalled = false;
         /** @type {() => Promise<import('./smartWallet').SmartWallet>} */
         const maker = async () => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
@@ -151,11 +151,13 @@ export const start = async (zcf, privateArgs) => {
 
           await publishDepositFacet(address, wallet, namesByAddressAdmin);
 
-          created = true;
+          makerCalled = true;
           return wallet;
         };
 
-        return provider.provideAsync(address, maker).then(w => [w, created]);
+        return provider
+          .provideAsync(address, maker)
+          .then(w => [w, makerCalled]);
       },
     },
   );
