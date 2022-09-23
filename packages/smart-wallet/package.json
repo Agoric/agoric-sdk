@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@agoric/assert": "^0.5.0",
+    "@agoric/casting": "^0.2.0",
     "@agoric/ertp": "^0.15.0",
     "@agoric/internal": "^0.2.0",
     "@agoric/nat": "^4.1.0",

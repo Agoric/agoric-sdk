@@ -1,6 +1,10 @@
+/* eslint-disable no-undef-init */
 // @ts-check
 
+import { iterateReverse } from '@agoric/casting';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
+
+export const NO_SMART_WALLET_ERROR = 'no smart wallet';
 
 export const makeWalletStateCoalescer = () => {
   /** @type {Map<Brand, import('./smartWallet').BrandDescriptor>} */
@@ -61,4 +65,21 @@ export const coalesceUpdates = updates => {
     },
   });
   return coalescer.state;
+};
+
+/**
+ *
+ * @param {import('@agoric/casting').Follower<any>} follower
+ * @returns {Promise<number>}
+ * @throws if there is no first height
+ */
+export const getFirstHeight = async follower => {
+  /** @type {number=} */
+  let firstHeight = undefined;
+  for await (const { blockHeight } of iterateReverse(follower)) {
+    // TODO: Only set firstHeight and break if the value contains all our state.
+    firstHeight = blockHeight;
+  }
+  assert(firstHeight, NO_SMART_WALLET_ERROR);
+  return firstHeight;
 };
