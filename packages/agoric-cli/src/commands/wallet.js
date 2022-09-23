@@ -37,12 +37,26 @@ export const makeWalletCommand = async () => {
       normalizeAddress,
     )
     .option('--spend', 'confirm you want to spend')
+    .option('--home [dir]', 'agd application home directory')
+    .option(
+      '--keyring-backend [os|file|test]',
+      'keyring\'s backend (os|file|test) (default "os")',
+    )
     .option('--nickname [string]', 'nickname to use', 'my-wallet')
     .action(function () {
-      const { account, nickname, spend } = this.opts();
+      const {
+        account,
+        nickname,
+        spend,
+        home,
+        keyringBackend: backend,
+      } = this.opts();
+      const tx = `provision-one ${nickname} ${account} SMART_WALLET`;
       if (spend) {
-        const tx = `provision-one ${nickname} ${account} SMART_WALLET`;
-        execSwingsetTransaction(tx, networkConfig, account);
+        execSwingsetTransaction(tx, networkConfig, account, false, {
+          home,
+          backend,
+        });
       } else {
         const params = fetchSwingsetParams(networkConfig);
         assert(
@@ -55,9 +69,11 @@ export const makeWalletCommand = async () => {
           .map(f => `${nf.format(Number(f.amount))} ${f.denom}`)
           .join(' + ');
         process.stdout.write(`Provisioning a wallet costs ${costs}\n`);
-        process.stdout.write(
-          `To really provision, repeat this command with --spend\n`,
-        );
+        process.stdout.write(`To really provision, rerun with --spend or...\n`);
+        execSwingsetTransaction(tx, networkConfig, account, true, {
+          home,
+          backend,
+        });
       }
     });
 
@@ -70,15 +86,27 @@ export const makeWalletCommand = async () => {
       normalizeAddress,
     )
     .requiredOption('--offer [filename]', 'path to file with prepared offer')
+    .option('--home [dir]', 'agd application home directory')
+    .option(
+      '--keyring-backend [os|file|test]',
+      'keyring\'s backend (os|file|test) (default "os")',
+    )
     .option('--dry-run', 'spit out the command instead of running it')
     .action(function () {
-      const { dryRun, from, offer } = this.opts();
+      const {
+        dryRun,
+        from,
+        offer,
+        home,
+        keyringBackend: backend,
+      } = this.opts();
 
       execSwingsetTransaction(
         `wallet-action --allow-spend "$(cat ${offer})"`,
         networkConfig,
         from,
         dryRun,
+        { home, backend },
       );
     });
 
