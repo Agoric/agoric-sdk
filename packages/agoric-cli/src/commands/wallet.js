@@ -37,12 +37,28 @@ export const makeWalletCommand = async () => {
       normalizeAddress,
     )
     .option('--spend', 'confirm you want to spend')
+    .option('--home [dir]', 'agd application home directory')
+    .option(
+      '--keyring-backend [os|file|test]',
+      'keyring\'s backend (os|file|test) (default "os")',
+    )
+    .option('--dry-run', 'spit out the command instead of running it')
     .option('--nickname [string]', 'nickname to use', 'my-wallet')
     .action(function () {
-      const { account, nickname, spend } = this.opts();
+      const {
+        account,
+        nickname,
+        spend,
+        home,
+        dryRun,
+        keyringBackend: backend,
+      } = this.opts();
       if (spend) {
         const tx = `provision-one ${nickname} ${account} SMART_WALLET`;
-        execSwingsetTransaction(tx, networkConfig, account);
+        execSwingsetTransaction(tx, networkConfig, account, dryRun, {
+          home,
+          backend,
+        });
       } else {
         const params = fetchSwingsetParams(networkConfig);
         assert(
@@ -70,15 +86,27 @@ export const makeWalletCommand = async () => {
       normalizeAddress,
     )
     .requiredOption('--offer [filename]', 'path to file with prepared offer')
+    .option('--home [dir]', 'agd application home directory')
+    .option(
+      '--keyring-backend [os|file|test]',
+      'keyring\'s backend (os|file|test) (default "os")',
+    )
     .option('--dry-run', 'spit out the command instead of running it')
     .action(function () {
-      const { dryRun, from, offer } = this.opts();
+      const {
+        dryRun,
+        from,
+        offer,
+        home,
+        keyringBackend: backend,
+      } = this.opts();
 
       execSwingsetTransaction(
         `wallet-action --allow-spend "$(cat ${offer})"`,
         networkConfig,
         from,
         dryRun,
+        { home, backend },
       );
     });
 

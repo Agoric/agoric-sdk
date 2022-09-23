@@ -21,16 +21,22 @@ harden(normalizeAddress);
  * @param {import('./rpc').MinimalNetworkConfig} net
  * @param {string} from
  * @param {boolean} [dryRun]
+ * @param {{home: string, backend: string}} [keyring]
  */
 export const execSwingsetTransaction = (
   swingsetArgs,
   net,
   from,
   dryRun = false,
+  keyring = undefined,
 ) => {
   const { chainName, rpcAddrs } = net;
 
-  const cmd = `agd --node=${rpcAddrs[0]} --chain-id=${chainName} --from=${from} tx swingset ${swingsetArgs}`;
+  const homeOpt = keyring?.home ? `--home=${keyring.home}` : '';
+  const backendOpt = keyring?.backend
+    ? `--keyring-backend=${keyring.backend}`
+    : '';
+  const cmd = `agd --node=${rpcAddrs[0]} --chain-id=${chainName} ${homeOpt} ${backendOpt} --from=${from} tx swingset ${swingsetArgs}`;
 
   if (dryRun) {
     process.stdout.write('Run this interactive command in shell:\n\n');
