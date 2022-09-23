@@ -176,8 +176,9 @@ export const makeWalletCommand = async () => {
       const castingSpec = makeCastingSpec(spec);
       const follower = makeFollower(castingSpec, leader);
       for await (const { value } of iterateLatest(follower)) {
-        process.stdout.write(value);
-        process.stdout.write('\n');
+        // xxx relying on console for app output
+        // worth it to get the nice formatting
+        console.log(value);
       }
     });
 
