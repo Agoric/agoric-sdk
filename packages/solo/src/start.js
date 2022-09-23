@@ -17,10 +17,7 @@ import anylogger from 'anylogger';
 // import djson from 'deterministic-json';
 
 import { assert, details as X } from '@agoric/assert';
-import {
-  makeSlogSenderFromModule,
-  getTelemetryProviders,
-} from '@agoric/telemetry';
+import { makeSlogSender, getTelemetryProviders } from '@agoric/telemetry';
 import {
   loadSwingsetConfigFile,
   buildCommand,
@@ -177,16 +174,10 @@ const buildSwingset = async (
   const { metricsProvider = DEFAULT_METER_PROVIDER } = getTelemetryProviders({
     console,
     env,
-    serviceName: 'solo',
+    serviceName: TELEMETRY_SERVICE_NAME,
   });
 
-  const {
-    SLOGFILE: slogFile,
-    SLOGSENDER,
-    LMDB_MAP_SIZE,
-    SWING_STORE_TRACE,
-    XSNAP_KEEP_SNAPSHOTS,
-  } = env;
+  const { LMDB_MAP_SIZE, SWING_STORE_TRACE, XSNAP_KEEP_SNAPSHOTS } = env;
   const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
 
   const defaultTraceFile = path.resolve(kernelStateDBDir, 'store-trace.log');
@@ -230,7 +221,7 @@ const buildSwingset = async (
     }
     await initializeSwingset(config, argv, hostStorage);
   }
-  const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
+  const slogSender = await makeSlogSender({
     stateDir: kernelStateDBDir,
     serviceName: TELEMETRY_SERVICE_NAME,
     env,
@@ -238,7 +229,7 @@ const buildSwingset = async (
   const controller = await makeSwingsetController(
     hostStorage,
     deviceEndowments,
-    { env, slogCallbacks, slogFile, slogSender },
+    { env, slogCallbacks, slogSender },
   );
 
   const { crankScheduler } = exportKernelStats({

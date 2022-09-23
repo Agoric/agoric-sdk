@@ -7,6 +7,20 @@ import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions'
 
 export * from './make-slog-sender.js';
 
+/**
+ * @typedef {((obj: {}, jsonObj?: string | undefined) => void) & {
+ *  usesJsonObject?: boolean;
+ *  forceFlush?: () => Promise<void>;
+ * }} SlogSender
+ */
+/**
+ * @typedef {MakeSlogSenderCommonOptions & Record<string, unknown>} MakeSlogSenderOptions
+ * @typedef {object} MakeSlogSenderCommonOptions
+ * @property {Record<string, string | undefined>} [env]
+ * @property {string} [stateDir]
+ * @property {string} [serviceName]
+ */
+
 export const getResourceAttributes = ({
   env = process.env,
   serviceName = '',

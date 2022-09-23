@@ -16,6 +16,7 @@
 import BufferFromFile from 'bufferfromfile';
 import { promises as fsPromises } from 'fs';
 import path from 'path';
+import { serializeSlogObj } from './serialize-slog-obj.js';
 
 const { details: X } = assert;
 
@@ -223,13 +224,7 @@ export const makeMemoryMappedCircularBuffer = async ({
     );
   };
 
-  const writeJSON = (obj, jsonObj) => {
-    if (jsonObj === undefined) {
-      // We need to create a JSON object, since we weren't given one.
-      jsonObj = JSON.stringify(obj, (_, arg) =>
-        typeof arg === 'bigint' ? Number(arg) : arg,
-      );
-    }
+  const writeJSON = (obj, jsonObj = serializeSlogObj(obj)) => {
     // Prepend a newline so that the file can be more easily manipulated.
     const data = new TextEncoder().encode(`\n${jsonObj}`);
     // console.log('have obj', obj, data);
@@ -241,5 +236,8 @@ export const makeMemoryMappedCircularBuffer = async ({
 
 export const makeSlogSender = async opts => {
   const { writeJSON } = await makeMemoryMappedCircularBuffer(opts);
-  return Object.assign(writeJSON, { forceFlush: () => {} });
+  return Object.assign(writeJSON, {
+    forceFlush: () => {},
+    usesJsonObject: true,
+  });
 };
