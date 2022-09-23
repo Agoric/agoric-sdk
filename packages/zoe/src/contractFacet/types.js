@@ -32,7 +32,6 @@
  * @property {MakeInvitation} makeInvitation
  * @property {(completion: Completion) => void} shutdown
  * @property {ShutdownWithFailure} shutdownWithFailure
- * @property {Assert} assert
  * @property {() => ERef<ZoeService>} getZoeService
  * @property {() => Issuer<'set'>} getInvitationIssuer
  * @property {() => StandardTerms & CT} getTerms
@@ -45,6 +44,7 @@
  * @property {SetTestJig} setTestJig
  * @property {() => Promise<void>} stopAcceptingOffers
  * @property {(strings: Array<string>) => void} setOfferFilter
+ * @property {() => Promise<Array<string>>} getOfferFilter
  * @property {() => Instance} getInstance
  */
 
@@ -187,7 +187,7 @@
  * @typedef {object} ZCFSeat
  * @property {() => void} exit
  * @property {ZCFSeatFail} fail
- * @property {() => Promise<Notifier<Allocation>>} getNotifier
+ * @property {() => Promise<Subscriber<Allocation>>} getSubscriber
  * @property {() => boolean} hasExited
  * @property {() => ProposalRecord} getProposal
  * @property {ZCFGetAmountAllocated} getAmountAllocated

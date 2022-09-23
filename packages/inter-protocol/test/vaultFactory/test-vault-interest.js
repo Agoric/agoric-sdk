@@ -34,13 +34,11 @@ const setJig = jig => {
 
 const { makeFar, makeNear: makeRemote } = makeLoopback('zoeTest');
 
-const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
-  makeFakeVatAdmin(setJig, makeRemote).admin,
+const { zoeService, feeMintAccessRetriever } = await makeFar(
+  makeZoeKit(makeFakeVatAdmin(setJig, makeRemote).admin),
 );
-/** @type {ERef<ZoeService>} */
-const zoe = makeFar(zoeService);
-trace('makeZoe');
-const feeMintAccessP = makeFar(nonFarFeeMintAccess);
+
+const feeMintAccessP = E(feeMintAccessRetriever).get();
 
 /**
  * @param {ERef<ZoeService>} zoeP
@@ -83,7 +81,7 @@ async function launch(zoeP, sourceRoot) {
 }
 
 test('charges', async t => {
-  const { creatorSeat, creatorFacet } = await launch(zoe, vaultRoot);
+  const { creatorSeat, creatorFacet } = await launch(zoeService, vaultRoot);
 
   // Our wrapper gives us a Vault which holds 50 Collateral, has lent out 70
   // Minted (charging 3 Minted fee), which uses an automatic market maker that
@@ -126,7 +124,7 @@ test('charges', async t => {
   const collateralWanted = AmountMath.make(cBrand, 1n);
   const paybackAmount = AmountMath.make(runBrand, paybackValue);
   const payback = await E(creatorFacet).mintRun(paybackAmount);
-  const paybackSeat = E(zoe).offer(
+  const paybackSeat = E(zoeService).offer(
     vault.makeAdjustBalancesInvitation(),
     harden({
       give: { Minted: paybackAmount },

@@ -195,6 +195,5 @@ test('replace electorate of Economic Committee', async t => {
   const pf = await E(governorCreatorFacet).getPublicFacet();
   const { Electorate: newElectorate } = await E(pf).getGovernedParams();
   t.is(newElectorate.type, 'invitation');
-  // @ts-expect-error unknonwn
   t.is(newElectorate.value.value[0].instance, secondElectorateInstance);
 });

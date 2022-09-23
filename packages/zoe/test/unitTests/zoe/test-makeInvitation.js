@@ -21,8 +21,8 @@ test('vivifyInvitationKit', async t => {
   const mockInstallation = Far('mockInstallation', {});
 
   const makeInvitation = setupMakeInvitation(
-    // @ts-expect-error mockInstance is mocked
     mockInstance,
+    // @ts-expect-error mockInstallation is mocked
     mockInstallation,
     proposalShapes,
   );
@@ -34,7 +34,6 @@ test('vivifyInvitationKit', async t => {
   });
 
   const invitation = makeInvitation(
-    // @ts-expect-error mockInvitationHandle is mocked
     mockInvitationHandle,
     description,
     customProperties,
@@ -69,8 +68,8 @@ test('description is omitted, wrongly', async t => {
   const mockInstallation = Far('mockInstallation', {});
 
   const makeInvitation = setupMakeInvitation(
-    // @ts-expect-error mockInstance is mocked
     mockInstance,
+    // @ts-expect-error mockInstallation is mocked
     mockInstallation,
     proposalShapes,
   );
@@ -84,8 +83,8 @@ test('description is omitted, wrongly', async t => {
   await t.throwsAsync(
     async () =>
       makeInvitation(
-        // @ts-expect-error mockInvitationHandle is mocked
         mockInvitationHandle,
+        // @ts-expect-error intentional incorrect argument
         description,
         customProperties,
       ),
@@ -102,8 +101,8 @@ test('customProperties ok to omit', async t => {
   const mockInstallation = Far('mockInstallation', {});
 
   const makeInvitation = setupMakeInvitation(
-    // @ts-expect-error mockInstance is mocked
     mockInstance,
+    // @ts-expect-error mockInstallation is mocked
     mockInstallation,
     proposalShapes,
   );
@@ -111,11 +110,7 @@ test('customProperties ok to omit', async t => {
   const mockInvitationHandle = Far('mockInvitationHandle', {});
   const description = 'myInvitation';
 
-  const invitation = makeInvitation(
-    // @ts-expect-error mockInvitationHandle is mocked
-    mockInvitationHandle,
-    description,
-  );
+  const invitation = makeInvitation(mockInvitationHandle, description);
 
   const amount = await E(invitationIssuer).getAmountOf(invitation);
   const invitationBrand = await E(invitationIssuer).getBrand();

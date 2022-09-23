@@ -26,24 +26,23 @@ import { allValues } from '../../src/collect.js';
 const psmRoot = './src/psm/psm.js'; // package relative
 const charterRoot = './src/econCommitteeCharter.js'; // package relative
 
-export const setUpZoeForTest = () => {
-  const { makeFar } = makeLoopback('zoeTest');
+export const setUpZoeForTest = async defaultKit => {
+  if (defaultKit) {
+    return defaultKit;
+  }
 
-  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
-    makeFakeVatAdmin(() => {}).admin,
-    undefined,
-    {
+  const { makeFar } = makeLoopback('zoeTest');
+  const { zoeService, feeMintAccessRetriever } = await makeFar(
+    makeZoeKit(makeFakeVatAdmin(() => {}).admin, undefined, {
       name: Stable.symbol,
       assetKind: Stable.assetKind,
       displayInfo: Stable.displayInfo,
-    },
+    }),
   );
-  /** @type {ERef<ZoeService>} */
-  const zoe = makeFar(zoeService);
-  const feeMintAccess = makeFar(nonFarFeeMintAccess);
+
   return {
-    zoe,
-    feeMintAccess,
+    zoe: zoeService,
+    feeMintAccessP: E(feeMintAccessRetriever).get(),
   };
 };
 harden(setUpZoeForTest);
@@ -59,10 +58,7 @@ export const setupPsmBootstrap = async (
   timer = buildManualTimer(console.log),
   farZoeKit,
 ) => {
-  if (!farZoeKit) {
-    farZoeKit = await setUpZoeForTest();
-  }
-  const { zoe } = farZoeKit;
+  const { zoe } = await setUpZoeForTest(farZoeKit);
 
   const space = /** @type {any} */ (makePromiseSpace());
   const { produce, consume } =
@@ -103,9 +99,10 @@ export const setupPsm = async (
 
   const knut = withAmountUtils(makeIssuerKit('KNUT'));
 
-  const { feeMintAccess, zoe } = farZoeKit;
+  const { feeMintAccessP, zoe } = await farZoeKit;
   const space = await setupPsmBootstrap(timer, farZoeKit);
-  space.produce.zoe.resolve(farZoeKit.zoe);
+  space.produce.zoe.resolve(zoe);
+  const feeMintAccess = await feeMintAccessP;
   space.produce.feeMintAccess.resolve(feeMintAccess);
   const { consume, brand, issuer, installation, instance } = space;
   const psmBundle = await provideBundle(t, psmRoot, 'psm');

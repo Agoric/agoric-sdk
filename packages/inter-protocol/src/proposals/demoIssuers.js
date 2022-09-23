@@ -323,7 +323,7 @@ export const connectFaucet = async ({
 
     const faucetPaymentInfo = userPaymentRecords.flat();
 
-    const userFeePurse = await E(zoe).makeFeePurse();
+    const userFeePurse = await E(E(zoe).getFeeIssuer()).makeEmptyPurse();
 
     const faucet = Far('faucet', {
       /**

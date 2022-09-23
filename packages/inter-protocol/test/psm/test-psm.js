@@ -83,7 +83,8 @@ const minusAnchorFee = (anchor, anchorPerMinted) => {
 const makeTestContext = async () => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
   const psmBundle = await bundleCache.load(psmRoot, 'psm');
-  const { zoe, feeMintAccess } = setUpZoeForTest();
+  const { zoe, feeMintAccessP } = await setUpZoeForTest();
+  const feeMintAccess = await feeMintAccessP;
 
   const mintedIssuer = await E(zoe).getFeeIssuer();
   /** @type {IssuerKit<'nat'>} */
@@ -122,7 +123,7 @@ const makeTestContext = async () => {
   return {
     bundles: { psmBundle },
     zoe: await zoe,
-    feeMintAccess: await feeMintAccess,
+    feeMintAccess,
     initialPoserInvitation,
     minted,
     anchor,
@@ -244,7 +245,7 @@ async function makePsmDriver(t, customTerms) {
       );
       await E(collectFeesSeat).getOfferResult();
       const feePayoutAmount = await E.get(
-        E(collectFeesSeat).getCurrentAllocationJig(),
+        E(collectFeesSeat).getFinalAllocation(),
       ).Fee;
       return feePayoutAmount;
     },
@@ -258,6 +259,15 @@ async function makePsmDriver(t, customTerms) {
       return E(seat).getPayouts();
     },
     swapAnchorForMintedSeat,
+
+    /**
+     * @param {Amount<'nat'>} giveAnchor
+     * @param {Amount<'nat'>} [wantMinted]
+     */
+    async swapAnchorForMintedErrors(giveAnchor, wantMinted) {
+      const seat = swapAnchorForMintedSeat(giveAnchor, wantMinted);
+      return seat;
+    },
 
     /**
      * @param {Amount<'nat'>} giveRun
@@ -321,21 +331,18 @@ test('limit', async t => {
 
   trace('test going over limit');
   const give = anchor.make(MINT_LIMIT);
-  const paymentPs = await driver.swapAnchorForMinted(give);
-  trace('gone over limit');
+  const seat = await driver.swapAnchorForMintedErrors(give);
+  await t.throwsAsync(async () => E(seat).getOfferResult());
 
+  const paymentPs = await E(seat).getPayouts();
+  trace('gone over limit');
   // We should get 0 Minted  and all our anchor back
-  // TODO should this be expecteed to be an empty Out?
   t.falsy(paymentPs.Out);
-  // const actualRun = await E(runIssuer).getAmountOf(runPayout);
-  // t.deepEqual(actualRun, AmountMath.makeEmpty(runBrand));
   const anchorReturn = await paymentPs.In;
   const actualAnchor = await E(anchor.issuer).getAmountOf(anchorReturn);
   t.deepEqual(actualAnchor, give);
   // The pool should be unchanged
   driver.assertPoolBalance(initialPool);
-  // TODO Offer result should be an error
-  // t.throwsAsync(() => await E(seat1).getOfferResult());
 });
 
 test('limit is for minted', async t => {
@@ -674,7 +681,7 @@ test('extra give wantMintedInvitation', async t => {
       ),
     {
       message:
-        '"wantMinted" proposal: give: {"Extra":{"brand":"[Alleged: aUSD brand]","value":"[200000000n]"},"In":{"brand":"[Seen]","value":"[200000000n]"}} - Must not have unexpected properties: ["Extra"]',
+        /"wantMinted" proposal: required-parts: give: {.*} - Must not have unexpected properties: \["Extra"\]/,
     },
   );
 });

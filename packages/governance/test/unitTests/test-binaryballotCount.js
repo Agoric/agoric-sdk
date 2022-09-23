@@ -272,7 +272,6 @@ test('binary varying share weights', async t => {
 test('binary contested', async t => {
   const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
-    // @ts-expect-error I dunno what's confusing it.
     issue: PARAM_ISSUE,
     positions: [positive, negative],
     electionType: ElectionType.PARAM_CHANGE,
