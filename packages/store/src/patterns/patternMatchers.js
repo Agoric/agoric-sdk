@@ -1636,7 +1636,7 @@ const makePatternKit = () => {
     interface: (interfaceName, methodGuards, { sloppy = false } = {}) => {
       for (const [_, methodGuard] of entries(methodGuards)) {
         methodGuard.klass === 'methodGuard' ||
-          assert.fail(X`unrecognize method guard ${methodGuard}`);
+          assert.fail(X`unrecognized method guard ${methodGuard}`);
       }
       return harden({
         klass: 'Interface',

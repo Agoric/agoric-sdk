@@ -21,14 +21,12 @@ import '@agoric/swingset-vat/src/types-ambient.js';
 
 const { details: X } = assert;
 
-// helpers for the code shared between MakeZCFMint and RegisterZCFMint
-
 export const makeZCFMintFactory = async (
   zcfBaggage,
   recordIssuer,
   getAssetKindByBrand,
   makeEmptySeatKit,
-  reallocateForZCFMint,
+  reallocator,
 ) => {
   // The set of baggages for zcfMints
   const zcfMintBaggageSet = provideDurableSetStore(zcfBaggage, 'baggageSet');
@@ -132,7 +130,7 @@ export const makeZCFMintFactory = async (
           // committed atomically, but it is not a disaster if they are
           // not. If we only commit the allocationMinusLosses no one would
           // ever get the unburned assets.
-          reallocateForZCFMint(zcfSeat, allocationMinusLosses);
+          reallocator.reallocate(zcfSeat, allocationMinusLosses);
           E(zoeMint).withdrawAndBurn(totalToBurn);
         },
       },

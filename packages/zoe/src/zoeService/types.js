@@ -33,6 +33,7 @@
  * @property {GetBrands} getBrands
  * @property {GetTerms} getTerms
  * @property {GetOfferFilter} getOfferFilter
+ * @property {SetOfferFilter} setOfferFilter
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstance} getInstance
  * @property {GetInstallation} getInstallation
@@ -40,12 +41,6 @@
  * Return an object with the instance, installation, description, invitation
  * handle, and any custom properties specific to the contract.
  * @property {GetFeeIssuer} getFeeIssuer
- * @property {() => Promise<Purse>} makeFeePurse
- * Deprecated. Does nothing useful but provided during transition so less old
- * code breaks.
- * @property {(defaultFeePurse: ERef<Purse>) => ZoeService} bindDefaultFeePurse
- * Deprecated. Does nothing useful but provided during transition so less old
- * code breaks.
  * @property {GetConfiguration} getConfiguration
  * @property {GetBundleIDFromInstallation} getBundleIDFromInstallation
  * @property {(invitationHandle: InvitationHandle) => Pattern | undefined} getProposalShapeForInvitation

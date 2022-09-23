@@ -16,20 +16,31 @@
  */
 
 /**
+ * @typedef WithdrawFacet
+ * @property {(allocation:Allocation) => PaymentPKeywordRecord} withdrawPayments
+ */
+
+/**
+ * @typedef {object} InstanceAdminHelper
+ * @property {(zoeSeatAdmin: ZoeSeatAdmin) => void} exitZoeSeatAdmin
+ * @property {(zoeSeatAdmin: ZoeSeatAdmin) => boolean} hasExited
+ */
+
+/**
  * @typedef {object} ZoeSeatAdminKit
  * @property {UserSeat} userSeat
  * @property {ZoeSeatAdmin} zoeSeatAdmin
- * @property {Notifier<Allocation>} notifier
- *
- * @callback MakeZoeSeatAdminKit
+ */
+
+/** @callback MakeZoeSeatAdminKit
  * Make the Zoe seat admin, user seat and a notifier
  * @param {Allocation} initialAllocation
- * @param {(zoeSeatAdmin: ZoeSeatAdmin) => void} exitZoeSeatAdmin
- * @param {(zoeSeatAdmin: ZoeSeatAdmin) => boolean} hasExited
+ * @param {InstanceAdminHelper} instanceAdminHelper
  * @param {ProposalRecord} proposal
- * @param {WithdrawPayments} withdrawPayments
+ * @param {WithdrawFacet} withdrawFacet
  * @param {ERef<ExitObj>} exitObj
  * @param {ERef<unknown>} [offerResult]
+ * @param {import('@agoric/vat-data').Baggage} baggage
  * @returns {ZoeSeatAdminKit}
  */
 
@@ -82,6 +93,8 @@
  * @property {ShutdownWithFailure} failAllSeats
  * @property {() => void} stopAcceptingOffers
  * @property {(string: string) => boolean} isBlocked
+ * @property {(handleOfferObj: HandleOfferObj, publicFacet: unknown) => void} initDelayedState
+ * @property {(strings: string[]) => void} setOfferFilter
  */
 
 /**
@@ -153,7 +166,7 @@
  * @param {ProposalRecord} proposal
  * @param {ExitObj} exitObj
  * @param {SeatHandle} seatHandle
- * @returns {{userSeat: UserSeat, notifier: Notifier<Allocation>}}
+ * @returns {{userSeat: UserSeat}}
  */
 
 /**
@@ -273,14 +286,18 @@
  */
 
 /**
- * @callback ReallocateForZCFMint
- * @param {ZCFSeat} zcfSeat
- * @param {Allocation} newAllocation
- * @returns {void}
+ * @typedef {object} ZcfSeatManager
+ * @property {MakeZCFSeat} makeZCFSeat
+ * @property {Reallocate} reallocate
+ * @property {DropAllReferences} dropAllReferences
  */
 
 /**
- *
+ * @typedef {object} ZcfMintReallocator
+ * @property {(zcfSeat: ZCFSeat, newAllocation: Allocation) => void} reallocate
+ */
+
+/**
  * @callback CreateSeatManager
  *
  * The SeatManager holds the active zcfSeats and can reallocate and
@@ -290,10 +307,7 @@
  * @param {GetAssetKindByBrand} getAssetKindByBrand
  * @param {ShutdownWithFailure} shutdownWithFailure
  * @param {import('@agoric/vat-data').Baggage} zcfBaggage
- * @returns {{ makeZCFSeat: MakeZCFSeat,
-    reallocate: Reallocate,
-    reallocateForZCFMint: ReallocateForZCFMint,
-    dropAllReferences: DropAllReferences }}
+ * @returns {{ seatManager: ZcfSeatManager, zcfMintReallocator: ZcfMintReallocator }}
  */
 
 /**

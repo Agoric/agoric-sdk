@@ -5,7 +5,9 @@ import { Far } from '@endo/marshal';
 import {
   makeScalarBigMapStore,
   provideDurableWeakMapStore,
+  vivifyFarClassKit,
 } from '@agoric/vat-data';
+import { initEmpty } from '@agoric/store';
 
 import { provideIssuerStorage } from '../issuerStorage.js';
 import { makeAndStoreInstanceRecord } from '../instanceRecordStorage.js';
@@ -17,6 +19,10 @@ import { makeInstallationStorage } from './installationStorage.js';
 
 import './types.js';
 import './internal-types.js';
+import {
+  InstanceStorageManagerGuard,
+  ZoeStorageMangerInterface,
+} from '../typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -33,20 +39,20 @@ import './internal-types.js';
  * @param {CreateZCFVat} createZCFVat - the ability to create a new
  * ZCF Vat
  * @param {GetBundleCapForID} getBundleCapForID
- * @param {GetFeeIssuerKit} getFeeIssuerKit
  * @param {ShutdownWithFailure} shutdownZoeVat
- * @param {Issuer} feeIssuer
- * @param {Brand} feeBrand
+ * @param {{
+ *    getFeeMintAccessToken: () => FeeMintAccess,
+ *    getFeeIssuerKit: GetFeeIssuerKit,
+ *    getFeeIssuer: () => Issuer,
+ *    getFeeBrand: () => Brand,
+ * }} feeMint
  * @param {Baggage} [zoeBaggage]
- * @returns {ZoeStorageManager}
  */
 export const makeZoeStorageManager = (
   createZCFVat,
   getBundleCapForID,
-  getFeeIssuerKit,
   shutdownZoeVat,
-  feeIssuer,
-  feeBrand,
+  feeMint,
   zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
 ) => {
   // issuerStorage contains the issuers that the ZoeService knows
@@ -66,7 +72,7 @@ export const makeZoeStorageManager = (
   // would treat the feeIssuer as if it is remote, creating a promise
   // for a purse with E(issuer).makeEmptyPurse(). We need a local
   // purse, so we cannot allow that to happen.
-  escrowStorage.makeLocalPurse(feeIssuer, feeBrand);
+  escrowStorage.makeLocalPurse(feeMint.getFeeIssuer(), feeMint.getFeeBrand());
 
   // In order to participate in a contract, users must have
   // invitations, which are ERTP payments made by Zoe. This code
@@ -80,27 +86,14 @@ export const makeZoeStorageManager = (
   // "zoeInstanceAdmin" - an admin facet within the Zoe Service for
   // that particular instance. This code manages the storage of those
   // instanceAdmins
-  const {
-    getPublicFacet,
-    getBrands,
-    getIssuers,
-    getTerms,
-    getOfferFilter,
-    getInstallationForInstance,
-    getInstanceAdmin,
-    initInstanceAdmin,
-    deleteInstanceAdmin,
-  } = makeInstanceAdminStorage();
+  const instanceAdminManager = makeInstanceAdminStorage(zoeBaggage);
 
   // Zoe stores "installations" - identifiable bundles of contract
-  // code that can be reused again and again to create new contract
-  // instances
-  const {
-    installBundle,
-    installBundleID,
-    unwrapInstallation,
-    getBundleIDFromInstallation,
-  } = makeInstallationStorage(getBundleCapForID, zoeBaggage);
+  // code that can be reused to create new contract instances
+  const installationStorage = makeInstallationStorage(
+    getBundleCapForID,
+    zoeBaggage,
+  );
 
   const proposalShapes = provideDurableWeakMapStore(
     zoeBaggage,
@@ -114,7 +107,6 @@ export const makeZoeStorageManager = (
     return undefined;
   };
 
-  /** @type {MakeZoeInstanceStorageManager} */
   const makeZoeInstanceStorageManager = async (
     instanceBaggage,
     installation,
@@ -151,14 +143,6 @@ export const makeZoeStorageManager = (
       issuers,
       brands,
     );
-
-    /** @type {SaveIssuer} */
-    const saveIssuer = async (issuerP, keyword) => {
-      const issuerRecord = await issuerStorage.storeIssuer(issuerP);
-      await escrowStorage.createPurse(issuerRecord.issuer, issuerRecord.brand);
-      instanceRecordManager.addIssuerToInstanceRecord(keyword, issuerRecord);
-      return issuerRecord;
-    };
 
     /** @type {WrapIssuerKitWithZoeMint} */
     const wrapIssuerKitWithZoeMint = (keyword, localIssuerKit) => {
@@ -210,43 +194,7 @@ export const makeZoeStorageManager = (
       return zoeMint;
     };
 
-    /** @type {MakeZoeMint} */
-    const makeZoeMint = (
-      keyword,
-      assetKind = AssetKind.NAT,
-      displayInfo,
-      { elementShape = undefined } = {},
-    ) => {
-      // Local indicates one that zoe itself makes from vetted code,
-      // and so can be assumed correct and fresh by zoe.
-      const localIssuerKit = makeIssuerKit(
-        keyword,
-        assetKind,
-        displayInfo,
-        // eslint-disable-next-line no-use-before-define
-        adminNode.terminateWithFailure,
-        { elementShape },
-      );
-      return wrapIssuerKitWithZoeMint(keyword, localIssuerKit);
-    };
-
-    /** @type {RegisterFeeMint} */
-    const registerFeeMint = (keyword, allegedFeeMintAccess) => {
-      const feeIssuerKit = getFeeIssuerKit(allegedFeeMintAccess);
-      return wrapIssuerKitWithZoeMint(keyword, feeIssuerKit);
-    };
-
-    /** @type {GetIssuerRecords} */
-    const getIssuerRecords = () =>
-      issuerStorage.getIssuerRecords(
-        // the issuerStorage is a weakStore, so we cannot iterate over
-        // it directly. Additionally, we only want to export the
-        // issuers used in this contract instance specifically, not
-        // all issuers.
-        Object.values(instanceRecordManager.getInstanceRecord().terms.issuers),
-      );
-
-    const makeInvitation = setupMakeInvitation(
+    const makeInvitationImpl = setupMakeInvitation(
       instance,
       installation,
       proposalShapes,
@@ -254,43 +202,187 @@ export const makeZoeStorageManager = (
 
     const { root, adminNode } = await createZCFVat(contractBundleCap);
 
-    return harden({
-      getTerms: instanceRecordManager.getTerms,
-      getIssuers: instanceRecordManager.getIssuers,
-      getBrands: instanceRecordManager.getBrands,
-      getInstallationForInstance:
-        instanceRecordManager.getInstallationForInstance,
-      saveIssuer,
-      makeZoeMint,
-      registerFeeMint,
-      getInstanceRecord: instanceRecordManager.getInstanceRecord,
-      getIssuerRecords,
-      withdrawPayments: escrowStorage.withdrawPayments,
-      initInstanceAdmin,
-      deleteInstanceAdmin,
-      makeInvitation,
-      invitationIssuer,
-      root,
-      adminNode,
-    });
+    const makeISM = vivifyFarClassKit(
+      instanceBaggage,
+      'InstanceStorageManager',
+      InstanceStorageManagerGuard,
+      initEmpty,
+      {
+        instanceStorageManager: {
+          getTerms() {
+            return instanceRecordManager.getTerms();
+          },
+          getIssuers() {
+            return instanceRecordManager.getIssuers();
+          },
+          getBrands() {
+            return instanceRecordManager.getBrands();
+          },
+          getInstallationForInstance() {
+            return instanceRecordManager.getInstallationForInstance();
+          },
+          async saveIssuer(issuerP, keyword) {
+            const issuerRecord = await issuerStorage.storeIssuer(issuerP);
+            await escrowStorage.createPurse(
+              issuerRecord.issuer,
+              issuerRecord.brand,
+            );
+            instanceRecordManager.addIssuerToInstanceRecord(
+              keyword,
+              issuerRecord,
+            );
+            return issuerRecord;
+          },
+          makeZoeMint(
+            keyword,
+            assetKind = AssetKind.NAT,
+            displayInfo,
+            { elementShape = undefined } = {},
+          ) {
+            // Local indicates one that zoe itself makes from vetted code,
+            // and so can be assumed correct and fresh by zoe.
+            const localIssuerKit = makeIssuerKit(
+              keyword,
+              assetKind,
+              displayInfo,
+              // eslint-disable-next-line no-use-before-define
+              adminNode.terminateWithFailure,
+              { elementShape },
+            );
+            return wrapIssuerKitWithZoeMint(keyword, localIssuerKit);
+          },
+          registerFeeMint(keyword, allegedFeeMintAccess) {
+            const feeIssuerKit = feeMint.getFeeIssuerKit(allegedFeeMintAccess);
+            return wrapIssuerKitWithZoeMint(keyword, feeIssuerKit);
+          },
+          getInstanceRecord() {
+            return instanceRecordManager.getInstanceRecord();
+          },
+          getIssuerRecords() {
+            return issuerStorage.getIssuerRecords(
+              // the issuerStorage is a weakStore, so we cannot iterate over
+              // it directly. Additionally, we only want to export the
+              // issuers used in this contract instance specifically, not
+              // all issuers.
+              Object.values(
+                instanceRecordManager.getInstanceRecord().terms.issuers,
+              ),
+            );
+          },
+          initInstanceAdmin(i, instanceAdmin) {
+            return instanceAdminManager.updater.initInstanceAdmin(
+              i,
+              instanceAdmin,
+            );
+          },
+          deleteInstanceAdmin(i) {
+            instanceAdminManager.updater.deleteInstanceAdmin(i);
+          },
+          makeInvitation(handle, desc, customProps, proposalShape) {
+            return makeInvitationImpl(handle, desc, customProps, proposalShape);
+          },
+          getInvitationIssuer() {
+            return invitationIssuer;
+          },
+          getRoot() {
+            return root;
+          },
+          getWithdrawFacet() {
+            const { facets } = this;
+            return facets.withdrawFacet;
+          },
+          getAdminNode() {
+            return adminNode;
+          },
+        },
+        // Goes to the Zoe seat, which isn't restricted in how much to withdraw
+        withdrawFacet: {
+          withdrawPayments(amounts) {
+            return escrowStorage.withdrawPayments(amounts);
+          },
+        },
+      },
+    );
+    return makeISM().instanceStorageManager;
   };
 
-  return {
-    makeZoeInstanceStorageManager,
-    getAssetKindByBrand: issuerStorage.getAssetKindByBrand,
-    depositPayments: escrowStorage.depositPayments,
-    invitationIssuer,
-    installBundle,
-    installBundleID,
-    getBundleIDFromInstallation,
-    getPublicFacet,
-    getBrands,
-    getIssuers,
-    getOfferFilter,
-    getTerms,
-    getInstallationForInstance,
-    getInstanceAdmin,
-    unwrapInstallation,
-    getProposalShapeForInvitation,
+  const installBundle = bundleID => {
+    return installationStorage.installBundle(bundleID);
   };
+
+  const getInvitationIssuer = () => invitationIssuer;
+
+  const makeStorageManager = vivifyFarClassKit(
+    zoeBaggage,
+    'ZoeStorageManager',
+    ZoeStorageMangerInterface,
+    instanceAdmins => ({ instanceAdmins }),
+    {
+      zoeServiceDataAccess: {
+        getInvitationIssuer,
+        getBundleIDFromInstallation(allegedInstallation) {
+          return installationStorage.getBundleIDFromInstallation(
+            allegedInstallation,
+          );
+        },
+        getPublicFacet(instance) {
+          const { state } = this;
+          return state.instanceAdmins.getPublicFacet(instance);
+        },
+        getBrands(instance) {
+          const { state } = this;
+          return state.instanceAdmins.getBrands(instance);
+        },
+        getIssuers(instance) {
+          const { state } = this;
+          return state.instanceAdmins.getIssuers(instance);
+        },
+        getOfferFilter(instance) {
+          const { state } = this;
+          return state.instanceAdmins.getOfferFilter(instance);
+        },
+        setOfferFilter(instance, filters) {
+          const { state } = this;
+          state.instanceAdmins.setOfferFilter(instance, filters);
+        },
+        getTerms(instance) {
+          const { state } = this;
+          return state.instanceAdmins.getTerms(instance);
+        },
+        getInstallationForInstance(instance) {
+          const { state } = this;
+          return state.instanceAdmins.getInstallationForInstance(instance);
+        },
+        getProposalShapeForInvitation,
+        installBundle,
+        installBundleID(bundleID) {
+          return installationStorage.installBundleID(bundleID);
+        },
+      },
+      makeOfferAccess: {
+        getAssetKindByBrand: issuerStorage.getAssetKindByBrand /* o */,
+        installBundle,
+        getInstanceAdmin(instance) {
+          const { state } = this;
+          return state.instanceAdmins.getInstanceAdmin(instance);
+        },
+        getProposalShapeForInvitation,
+        getInvitationIssuer,
+        depositPayments(proposal, payments) {
+          return escrowStorage.depositPayments(proposal, payments);
+        },
+      },
+      startInstanceAccess: {
+        makeZoeInstanceStorageManager,
+        unwrapInstallation(installation) {
+          return installationStorage.unwrapInstallation(installation);
+        },
+      },
+      invitationIssuerAccess: {
+        getInvitationIssuer,
+      },
+    },
+  );
+
+  return makeStorageManager(instanceAdminManager.accessor);
 };

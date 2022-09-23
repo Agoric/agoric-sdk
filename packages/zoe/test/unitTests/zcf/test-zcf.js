@@ -13,6 +13,7 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 
 import { setupZCFTest } from './setupZcfTest.js';
 import { assertAmountsEqual } from '../../zoeTestHelpers.js';
+import { eventLoopIteration } from '../../../tools/eventLoopIteration.js';
 
 test(`zcf.getZoeService`, async t => {
   const { zoe, zcf } = await setupZCFTest();
@@ -393,7 +394,7 @@ test(`zcf.makeZCFMint - not a math kind`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint('A', 'whatever'), {
     message:
-      'The assetKind "whatever" must be one of ["copyBag","copySet","nat","set"]',
+      / arg 1: "whatever" - Must match one of \["nat","set","copySet","copyBag"\]/,
   });
 });
 
@@ -927,26 +928,29 @@ test(`zcfSeat.incrementBy, decrementBy, zcf.reallocate from zcf.makeEmptySeatKit
   });
 });
 
-test(`userSeat from zcf.makeEmptySeatKit - only these properties exist`, async t => {
-  const expectedMethods = [
-    'getProposal',
-    'getPayouts',
-    'getPayout',
-    'getOfferResult',
-    'hasExited',
-    'tryExit',
-    'getCurrentAllocationJig',
-    'getAllocationNotifierJig',
-    'getFinalAllocation',
-    'numWantsSatisfied',
-  ];
-  const { zcf } = await setupZCFTest();
-  const { userSeat: userSeatP } = zcf.makeEmptySeatKit();
-  const userSeat = await userSeatP;
-  // Note: these tests will fail if Zoe is actually in a different
-  // vat, since userSeat would be a presence.
-  t.deepEqual(Object.keys(userSeat), expectedMethods);
-});
+// this test fails because the userSeat is now a far instance
+test.failing(
+  `userSeat from zcf.makeEmptySeatKit - only these properties exist`,
+  async t => {
+    const expectedMethods = [
+      'getProposal',
+      'getPayouts',
+      'getPayout',
+      'getOfferResult',
+      'hasExited',
+      'tryExit',
+      'getCurrentAllocationJig',
+      'getAllocationNotifierJig',
+      'getFinalAllocation',
+      'numWantsSatisfied',
+    ];
+    const { zcf } = await setupZCFTest();
+    const { userSeat: userSeatP } = zcf.makeEmptySeatKit();
+    const userSeat = await userSeatP;
+
+    t.deepEqual(Object.keys(userSeat), expectedMethods);
+  },
+);
 
 test(`userSeat.getProposal from zcf.makeEmptySeatKit`, async t => {
   const { zcf } = await setupZCFTest();
@@ -1153,7 +1157,8 @@ test(`userSeat.getPayout() should throw from zcf.makeEmptySeatKit`, async t => {
   const { userSeat } = zcf.makeEmptySeatKit();
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(userSeat).getPayout(), {
-    message: 'A keyword must be provided',
+    message:
+      '"In \\"getPayout\\" method of (ZoeSeatKit userSeat)" args: [] - expected 1 arguments',
   });
 });
 
@@ -1161,7 +1166,8 @@ test(`zcf.reallocate < 2 seats`, async t => {
   const { zcf } = await setupZCFTest();
   // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcf.reallocate(), {
-    message: 'reallocating must be done over two or more seats',
+    message:
+      /.*reallocate.* method of \(ZcfSeatManager seatManager\)" args: \[\] - expected 2 arguments/,
   });
 });
 
@@ -1340,6 +1346,7 @@ test(`zcf.shutdown - zcfSeat exits`, async t => {
   t.falsy(zcfSeat.hasExited());
   await t.falsy(await E(userSeat).hasExited());
   zcf.shutdown('done');
+  await eventLoopIteration();
   t.truthy(zcfSeat.hasExited());
   t.truthy(await E(userSeat).hasExited());
 });
@@ -1411,7 +1418,7 @@ test(`zcf.setOfferFilter - illegal lists`, async t => {
   const { zcf } = await setupZCFTest();
   // @ts-expect-error invalid argument
   await t.throwsAsync(() => zcf.setOfferFilter('nonList'), {
-    message: /"nonList" must be an Array/,
+    message: / arg 0: string "nonList" - Must be a copyArray/,
   });
 });
 

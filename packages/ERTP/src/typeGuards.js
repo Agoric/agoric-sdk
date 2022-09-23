@@ -138,6 +138,13 @@ export const DisplayInfoShape = M.partial(
   }),
 );
 
+export const IssuerKitShape = harden({
+  brand: BrandShape,
+  mint: MintShape,
+  issuer: IssuerShape,
+  displayInfo: DisplayInfoShape,
+});
+
 // //////////////////////// Interfaces /////////////////////////////////////////
 
 export const BrandI = M.interface('Brand', {

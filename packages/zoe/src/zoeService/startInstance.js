@@ -2,35 +2,195 @@
 
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Far, passStyleOf } from '@endo/marshal';
-import { makeWeakStore } from '@agoric/store';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { passStyleOf } from '@endo/marshal';
+import {
+  M,
+  makeScalarBigMapStore,
+  provideDurableWeakMapStore,
+  vivifyFarClass,
+} from '@agoric/vat-data';
+import { initEmpty } from '@agoric/store';
 
-import { makeZoeSeatAdminKit } from './zoeSeat.js';
 import { defineDurableHandle } from '../makeHandle.js';
 import { handlePKitWarning } from '../handleWarning.js';
+import { makeInstanceAdminMaker } from './instanceAdminStorage.js';
+import { InstanceAdminShape, AdminFacetGuard } from '../typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 const { details: X, quote: q } = assert;
 
+const instanceAdminBehavior = {
+  makeInvitation(handle, desc, customProps, proposalShape) {
+    const { state } = this;
+    return state.instanceStorage.makeInvitation(
+      handle,
+      desc,
+      customProps,
+      proposalShape,
+    );
+  },
+  // checks of keyword done on zcf side
+  saveIssuer(issuer, keyword) {
+    const { state } = this;
+    return state.instanceStorage.saveIssuer(issuer, keyword);
+  },
+  // A Seat requested by the contract without any payments to escrow
+  makeNoEscrowSeatKit(initialAllocations, proposal, exitObj, seatHandle) {
+    const { state } = this;
+    return state.instanceAdmin.makeNoEscrowSeatKit(
+      initialAllocations,
+      proposal,
+      exitObj,
+      seatHandle,
+    );
+  },
+  exitAllSeats(completion) {
+    const { state } = this;
+    state.instanceAdmin.exitAllSeats(completion);
+  },
+  failAllSeats(reason) {
+    const { state } = this;
+    return state.instanceAdmin.failAllSeats(reason);
+  },
+  exitSeat(seatHandle, completion) {
+    const { state } = this;
+    state.seatHandleToAdmin.get(seatHandle).exit(completion);
+  },
+  failSeat(seatHandle, reason) {
+    const { state } = this;
+    state.seatHandleToAdmin.get(seatHandle).fail(reason);
+  },
+  makeZoeMint(keyword, assetKind, displayInfo, pattern) {
+    const { state } = this;
+    return state.instanceStorage.makeZoeMint(
+      keyword,
+      assetKind,
+      displayInfo,
+      pattern,
+    );
+  },
+  registerFeeMint(keyword, feeMintAccess) {
+    const { state } = this;
+    return state.instanceStorage.registerFeeMint(keyword, feeMintAccess);
+  },
+  replaceAllocations(seatHandleAllocations) {
+    const { state } = this;
+    try {
+      seatHandleAllocations.forEach(({ seatHandle, allocation }) => {
+        const zoeSeatAdmin = state.seatHandleToAdmin.get(seatHandle);
+        zoeSeatAdmin.replaceAllocation(allocation);
+      });
+    } catch (err) {
+      state.adminNode.terminateWithFailure(err);
+      throw err;
+    }
+  },
+  stopAcceptingOffers() {
+    const { state } = this;
+    return state.instanceAdmin.stopAcceptingOffers();
+  },
+  setOfferFilter(strings) {
+    const { state } = this;
+    state.instanceAdmin.setOfferFilter(strings);
+  },
+  getOfferFilter() {
+    const { state } = this;
+    return state.instanceAdmin.getOfferFilter();
+  },
+};
+
 /**
- * @param {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
- * @param {UnwrapInstallation} unwrapInstallation
+ * @param {any} startInstanceAccess
  * @param {ERef<BundleCap>} zcfBundleCapP
  * @param {(id: string) => BundleCap} getBundleCapByIdNow
  * @param {Baggage} [zoeBaggage]
- * @returns {import('./utils.js').StartInstance}
+ * @returns {import('./utils').StartInstance}
  */
 export const makeStartInstance = (
-  makeZoeInstanceStorageManager,
-  unwrapInstallation,
+  startInstanceAccess,
   zcfBundleCapP,
   getBundleCapByIdNow,
   zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
 ) => {
   const makeInstanceHandle = defineDurableHandle(zoeBaggage, 'Instance');
-  const makeSeatHandle = defineDurableHandle(zoeBaggage, 'Seat');
+
+  /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
+  const seatHandleToZoeSeatAdmin = provideDurableWeakMapStore(
+    zoeBaggage,
+    'seatHandleToZoeSeatAdmin',
+  );
+
+  const instanceAdminMaker = makeInstanceAdminMaker(
+    zoeBaggage,
+    seatHandleToZoeSeatAdmin,
+  );
+
+  const makeZoeInstanceAdmin = vivifyFarClass(
+    zoeBaggage,
+    'zoeInstanceAdmin',
+    InstanceAdminShape,
+    (instanceStorage, instanceAdmin, seatHandleToAdmin, adminNode) => ({
+      instanceStorage,
+      instanceAdmin,
+      seatHandleToAdmin,
+      adminNode,
+    }),
+    instanceAdminBehavior,
+  );
+
+  const vivifyEmptyFacet = facetName =>
+    vivifyFarClass(
+      zoeBaggage,
+      facetName,
+      M.interface(facetName, {}),
+      initEmpty,
+      {},
+    );
+  const makeEmptyCreatorFacet = vivifyEmptyFacet('emptyCreatorFacet');
+  const makeEmptyPublicFacet = vivifyEmptyFacet('emptyPublicFacet');
+
+  const makeAdminFacet = vivifyFarClass(
+    zoeBaggage,
+    'adminFacet',
+    AdminFacetGuard,
+    (adminNode, zcfBundleCap, contractBundleCap) => ({
+      adminNode,
+      zcfBundleCap,
+      contractBundleCap,
+    }),
+    {
+      getVatShutdownPromise() {
+        // @ts-expect-error TS doesn't understand context
+        const { state } = this;
+
+        return E(state.adminNode).done();
+      },
+      restartContract(_newPrivateArgs) {
+        // @ts-expect-error TS doesn't understand context
+        const { state } = this;
+
+        const vatParameters = { contractBundleCap: state.contractBundleCap };
+        return E(state.adminNode).upgrade(state.zcfBundleCap.value, {
+          vatParameters,
+        });
+      },
+      async upgradeContract(contractBundleId, newPrivateArgs) {
+        // @ts-expect-error TS doesn't understand context
+        const { state } = this;
+        const newContractBundleCap = await getBundleCapByIdNow(
+          contractBundleId,
+        );
+        const vatParameters = {
+          contractBundleCap: newContractBundleCap,
+          privateArgs: newPrivateArgs,
+        };
+        return E(state.adminNode).upgrade(state.zcfBundleCap.value, {
+          vatParameters,
+        });
+      },
+    },
+  );
 
   const startInstance = async (
     installationP,
@@ -38,15 +198,9 @@ export const makeStartInstance = (
     customTerms = harden({}),
     privateArgs = undefined,
   ) => {
-    /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
-    const seatHandleToZoeSeatAdmin = makeWeakStore('seatHandle');
-    const instanceBaggage = makeScalarBigMapStore('instanceBaggage', {
-      durable: true,
-    });
-
-    const { installation, bundle, bundleCap } = await unwrapInstallation(
-      installationP,
-    );
+    const { installation, bundle, bundleCap } = await E(
+      startInstanceAccess,
+    ).unwrapInstallation(installationP);
     // AWAIT ///
 
     const contractBundleCap = bundle || bundleCap;
@@ -62,210 +216,63 @@ export const makeStartInstance = (
       );
     }
 
-    const instance = makeInstanceHandle();
+    const instanceHandle = makeInstanceHandle();
 
-    // Invitations whose descriptions match any of the strings will be blocked
-    /** @type {Readonly<string[]>} */
-    let offerFilterStrings = [];
-    // if any string in the list matches, don't process the invitation. Strings
-    // that end in ':' may be prefix matches, others must match exactly.
-    const isBlocked = string => {
-      return offerFilterStrings.some(s => {
-        return string === s || (s.slice(-1) === ':' && string.startsWith(s));
-      });
-    };
+    const instanceBaggage = makeScalarBigMapStore('instanceBaggage', {
+      durable: true,
+    });
 
-    const setOfferFilter = strings => {
-      assert(Array.isArray(strings), X`${q(strings)} must be an Array`);
-      const proposedStrings = harden([...strings]);
-      proposedStrings.every(s => typeof s === 'string') ||
-        assert.fail(
-          X`Blocked strings (${q(
-            proposedStrings,
-          )}) must be an Array of strings.`,
-        );
-
-      offerFilterStrings = proposedStrings;
-    };
-
-    const zoeInstanceStorageManager = await makeZoeInstanceStorageManager(
+    const zoeInstanceStorageManager = await E(
+      startInstanceAccess,
+    ).makeZoeInstanceStorageManager(
       instanceBaggage,
       installation,
       customTerms,
       uncleanIssuerKeywordRecord,
-      instance,
+      instanceHandle,
       contractBundleCap,
     );
     // AWAIT ///
 
-    const { adminNode, root } = zoeInstanceStorageManager;
+    const adminNode = zoeInstanceStorageManager.getAdminNode();
     /** @type {ZCFRoot} */
-    const zcfRoot = root;
+    const zcfRoot = zoeInstanceStorageManager.getRoot();
 
     /** @type {PromiseRecord<HandleOfferObj>} */
     const handleOfferObjPromiseKit = makePromiseKit();
     handlePKitWarning(handleOfferObjPromiseKit);
-    const publicFacetPromiseKit = makePromiseKit();
-    handlePKitWarning(publicFacetPromiseKit);
 
-    const makeInstanceAdmin = () => {
-      /** @type {Set<ZoeSeatAdmin>} */
-      const zoeSeatAdmins = new Set();
-      let acceptingOffers = true;
-
-      const exitZoeSeatAdmin = zoeSeatAdmin =>
-        zoeSeatAdmins.delete(zoeSeatAdmin);
-      const hasExited = zoeSeatAdmin => !zoeSeatAdmins.has(zoeSeatAdmin);
-
-      /** @type {InstanceAdmin} */
-      const instanceAdmin = Far('instanceAdmin', {
-        getPublicFacet: () => publicFacetPromiseKit.promise,
-        getTerms: zoeInstanceStorageManager.getTerms,
-        getIssuers: zoeInstanceStorageManager.getIssuers,
-        getBrands: zoeInstanceStorageManager.getBrands,
-        getOfferFilter: () => harden([...offerFilterStrings]),
-        getInstallationForInstance:
-          zoeInstanceStorageManager.getInstallationForInstance,
-        getInstance: () => instance,
-        assertAcceptingOffers: () => {
-          assert(acceptingOffers, `No further offers are accepted`);
-        },
-        exitAllSeats: completion => {
-          acceptingOffers = false;
-          zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.exit(completion));
-        },
-        failAllSeats: reason => {
-          acceptingOffers = false;
-          zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.fail(reason));
-        },
-        stopAcceptingOffers: () => {
-          acceptingOffers = false;
-        },
-        makeUserSeat: (
-          invitationHandle,
-          initialAllocation,
-          proposal,
-          offerArgs = undefined,
-        ) => {
-          const offerResultPromiseKit = makePromiseKit();
-          handlePKitWarning(offerResultPromiseKit);
-          const exitObjPromiseKit = makePromiseKit();
-          handlePKitWarning(exitObjPromiseKit);
-          const seatHandle = makeSeatHandle();
-
-          const { userSeat, zoeSeatAdmin } = makeZoeSeatAdminKit(
-            initialAllocation,
-            exitZoeSeatAdmin,
-            hasExited,
-            proposal,
-            zoeInstanceStorageManager.withdrawPayments,
-            exitObjPromiseKit.promise,
-            offerResultPromiseKit.promise,
-          );
-
-          seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
-
-          const seatData = harden({
-            proposal,
-            initialAllocation,
-            seatHandle,
-            offerArgs,
-          });
-
-          zoeSeatAdmins.add(zoeSeatAdmin);
-
-          E.when(
-            E(handleOfferObjPromiseKit.promise).handleOffer(
-              invitationHandle,
-              seatData,
-            ),
-            ({ offerResultPromise, exitObj }) => {
-              offerResultPromiseKit.resolve(offerResultPromise);
-              exitObjPromiseKit.resolve(exitObj);
-            },
-            err => {
-              adminNode.terminateWithFailure(err);
-              throw err;
-            },
-          );
-
-          // return the userSeat before the offerHandler is called
-          return userSeat;
-        },
-        makeNoEscrowSeatKit: (
-          initialAllocation,
-          proposal,
-          exitObj,
-          seatHandle,
-        ) => {
-          const { userSeat, notifier, zoeSeatAdmin } = makeZoeSeatAdminKit(
-            initialAllocation,
-            exitZoeSeatAdmin,
-            hasExited,
-            proposal,
-            zoeInstanceStorageManager.withdrawPayments,
-            exitObj,
-          );
-          zoeSeatAdmins.add(zoeSeatAdmin);
-          seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
-          return { userSeat, notifier };
-        },
-        isBlocked,
-      });
-      return instanceAdmin;
-    };
-
-    const instanceAdmin = makeInstanceAdmin();
-    zoeInstanceStorageManager.initInstanceAdmin(instance, instanceAdmin);
+    /** @type {InstanceAdmin} */
+    const instanceAdmin = instanceAdminMaker(
+      instanceHandle,
+      zoeInstanceStorageManager,
+      adminNode,
+    );
+    zoeInstanceStorageManager.initInstanceAdmin(instanceHandle, instanceAdmin);
 
     E(adminNode)
       .done()
       .then(
-        completion => instanceAdmin.exitAllSeats(completion),
+        completion => {
+          instanceAdmin.exitAllSeats(completion);
+        },
         reason => instanceAdmin.failAllSeats(reason),
       );
 
     /** @type {ZoeInstanceAdmin} */
-    const zoeInstanceAdminForZcf = Far('zoeInstanceAdminForZcf', {
-      makeInvitation: zoeInstanceStorageManager.makeInvitation,
-      // checks of keyword done on zcf side
-      saveIssuer: zoeInstanceStorageManager.saveIssuer,
-      // A Seat requested by the contract without any payments to escrow
-      makeNoEscrowSeatKit: instanceAdmin.makeNoEscrowSeatKit,
-      exitAllSeats: completion => instanceAdmin.exitAllSeats(completion),
-      failAllSeats: reason => instanceAdmin.failAllSeats(reason),
-      exitSeat: (seatHandle, completion) => {
-        seatHandleToZoeSeatAdmin.get(seatHandle).exit(completion);
-      },
-      failSeat: (seatHandle, reason) => {
-        seatHandleToZoeSeatAdmin.get(seatHandle).fail(reason);
-      },
-      getSeatNotifier: seatHandle =>
-        seatHandleToZoeSeatAdmin.get(seatHandle).getNotifier(),
-      makeZoeMint: zoeInstanceStorageManager.makeZoeMint,
-      registerFeeMint: zoeInstanceStorageManager.registerFeeMint,
-      replaceAllocations: seatHandleAllocations => {
-        try {
-          seatHandleAllocations.forEach(({ seatHandle, allocation }) => {
-            const zoeSeatAdmin = seatHandleToZoeSeatAdmin.get(seatHandle);
-            zoeSeatAdmin.replaceAllocation(allocation);
-          });
-        } catch (err) {
-          adminNode.terminateWithFailure(err);
-          throw err;
-        }
-      },
-      stopAcceptingOffers: () => instanceAdmin.stopAcceptingOffers(),
-      setOfferFilter,
-      getOfferFilter: () => harden([...offerFilterStrings]),
-    });
+    // @ts-expect-error CTH Temp for notifiers
+    const zoeInstanceAdminForZcf = makeZoeInstanceAdmin(
+      zoeInstanceStorageManager,
+      instanceAdmin,
+      seatHandleToZoeSeatAdmin,
+      adminNode,
+    );
 
-    // At this point, the contract will start executing. All must be
-    // ready
+    // At this point, the contract will start executing. All must be ready
 
     const {
-      creatorFacet = Far('emptyCreatorFacet', {}),
-      publicFacet = Far('emptyPublicFacet', {}),
+      creatorFacet = makeEmptyCreatorFacet(),
+      publicFacet = makeEmptyPublicFacet(),
       creatorInvitation: creatorInvitationP,
       handleOfferObj,
     } = await E(zcfRoot).startZcf(
@@ -275,14 +282,15 @@ export const makeStartInstance = (
       privateArgs,
     );
 
-    handleOfferObjPromiseKit.resolve(handleOfferObj);
-    publicFacetPromiseKit.resolve(publicFacet);
+    instanceAdmin.initDelayedState(handleOfferObj, publicFacet);
 
     // creatorInvitation can be undefined, but if it is defined,
     // let's make sure it is an invitation.
     return Promise.allSettled([
       creatorInvitationP,
-      zoeInstanceStorageManager.invitationIssuer.isLive(creatorInvitationP),
+      zoeInstanceStorageManager
+        .getInvitationIssuer()
+        .isLive(creatorInvitationP),
       zcfBundleCapP,
     ]).then(([invitationResult, isLiveResult, zcfBundleCapResult]) => {
       let creatorInvitation;
@@ -301,27 +309,11 @@ export const makeStartInstance = (
           'the budnle cap was broken',
         );
       }
-      const adminFacet = Far('adminFacet', {
-        getVatShutdownPromise: () => E(adminNode).done(),
-        restartContract: _newPrivateArgs => {
-          const vatParameters = { contractBundleCap };
-          return E(adminNode).upgrade(zcfBundleCapResult.value, {
-            vatParameters,
-          });
-        },
-        upgradeContract: async (contractBundleId, newPrivateArgs) => {
-          const newContractBundleCap = await getBundleCapByIdNow(
-            contractBundleId,
-          );
-          const vatParameters = {
-            contractBundleCap: newContractBundleCap,
-            privateArgs: newPrivateArgs,
-          };
-          return E(adminNode).upgrade(zcfBundleCapResult.value, {
-            vatParameters,
-          });
-        },
-      });
+      const adminFacet = makeAdminFacet(
+        adminNode,
+        harden(zcfBundleCapResult),
+        contractBundleCap,
+      );
 
       // Actually returned to the user.
       return {
@@ -329,7 +321,7 @@ export const makeStartInstance = (
 
         // TODO (#5775) deprecate this return value from contracts.
         creatorInvitation,
-        instance,
+        instance: instanceHandle,
         publicFacet,
         adminFacet,
       };

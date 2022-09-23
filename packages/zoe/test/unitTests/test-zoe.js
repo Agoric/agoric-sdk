@@ -6,7 +6,6 @@ import path from 'path';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
-import { makePromiseKit } from '@endo/promise-kit';
 import { passStyleOf, Far } from '@endo/marshal';
 import { getMethodNames } from '@agoric/internal';
 
@@ -39,7 +38,7 @@ test(`E(zoe).install bad bundle`, async t => {
   const { zoe } = setup();
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).install(), {
-    message: 'a bundle must be provided',
+    message: /expected 1 arguments/,
   });
 });
 
@@ -55,7 +54,7 @@ test(`E(zoe).installBundleID bad id`, async t => {
   const { zoe } = setup();
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).installBundleID(), {
-    message: 'a bundle ID must be provided',
+    message: /expected 1 arguments/,
   });
 });
 
@@ -77,13 +76,7 @@ test(`E(zoe).startInstance bad installation`, async t => {
   const { zoe } = setup();
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).startInstance(), {
-    message:
-      // Should be able to use more informative error once SES double
-      // disclosure bug is fixed. See
-      // https://github.com/endojs/endo/pull/640
-      //
-      // /"\[undefined\]" was not a valid installation/,
-      /.* was not a valid installation/,
+    message: /expected 1 arguments/,
   });
 });
 
@@ -98,10 +91,9 @@ function facetHasMethods(t, facet, names) {
 }
 
 test(`E(zoe).startInstance no issuerKeywordRecord, no terms`, async t => {
-  const { zoe, installation } = await setupZCFTest();
-  const result = await E(zoe).startInstance(installation);
+  const result = await setupZCFTest();
   // Note that deepEqual treats all empty objects (handles) as interchangeable.
-  t.deepEqual(Object.getOwnPropertyNames(result).sort(), [
+  t.deepEqual(Object.getOwnPropertyNames(result.startInstanceResult).sort(), [
     'adminFacet',
     'creatorFacet',
     'creatorInvitation',
@@ -110,23 +102,19 @@ test(`E(zoe).startInstance no issuerKeywordRecord, no terms`, async t => {
   ]);
   isEmptyFacet(t, result.creatorFacet);
   t.deepEqual(result.creatorInvitation, undefined);
-  facetHasMethods(t, result.publicFacet, ['makeInvitation']);
-  t.deepEqual(getMethodNames(result.adminFacet), [
-    'getVatShutdownPromise',
-    'restartContract',
-    'upgradeContract',
+  facetHasMethods(t, result.startInstanceResult.publicFacet, [
+    'makeInvitation',
   ]);
+  t.deepEqual(
+    Object.getOwnPropertyNames(result.startInstanceResult.adminFacet).sort(),
+    ['getVatShutdownPromise', 'restartContract', 'upgradeContract'],
+  );
 });
 
 test(`E(zoe).startInstance promise for installation`, async t => {
-  const { zoe, installation } = await setupZCFTest();
-  const { promise: installationP, resolve: installationPResolve } =
-    makePromiseKit();
+  const { startInstanceResult } = await setupZCFTest();
 
-  const resultP = E(zoe).startInstance(installationP);
-  installationPResolve(installation);
-
-  const result = await resultP;
+  const result = await startInstanceResult;
   // Note that deepEqual treats all empty objects (handles) as interchangeable.
   t.deepEqual(Object.getOwnPropertyNames(result).sort(), [
     'adminFacet',
@@ -146,7 +134,8 @@ test(`E(zoe).startInstance promise for installation`, async t => {
 });
 
 test(`E(zoe).startInstance - terms, issuerKeywordRecord switched`, async t => {
-  const { zoe, installation } = await setupZCFTest();
+  const { zoe } = setup();
+  const installation = await E(zoe).installBundleID('b1-contract');
   const { moolaKit } = setup();
   await t.throwsAsync(
     () =>
@@ -157,18 +146,14 @@ test(`E(zoe).startInstance - terms, issuerKeywordRecord switched`, async t => {
       ),
     {
       message:
-        // Should be able to use more informative error once SES double
-        // disclosure bug is fixed. See
-        // https://github.com/endojs/endo/pull/640
-        //
-        // /keyword "something" must be an ascii identifier starting with upper case./
-        /keyword .* must be an ascii identifier starting with upper case./,
+        /In "startInstance" method of \(ZoeService zoeService\) arg 1: something: \[1\]: number 2/,
     },
   );
 });
 
 test(`E(zoe).startInstance - bad issuer, makeEmptyPurse throws`, async t => {
-  const { zoe, installation } = await setupZCFTest();
+  const { zoe } = setup();
+  const installation = await E(zoe).installBundleID('b1-contract');
   const brand = Far('brand', {
     // eslint-disable-next-line no-use-before-define
     isMyIssuer: i => i === badIssuer,
@@ -196,14 +181,6 @@ test(`E(zoe).offer`, async t => {
   t.is(await E(userSeat).getOfferResult(), 'result');
 });
 
-test(`E(zoe).offer - no invitation`, async t => {
-  const { zoe } = await setupZCFTest();
-  // @ts-expect-error deliberate invalid arguments for testing
-  await t.throwsAsync(() => E(zoe).offer(), {
-    message: /A Zoe invitation is required, not "\[undefined\]"/,
-  });
-});
-
 test(`E(zoe).offer - payment instead of paymentKeywordRecord`, async t => {
   const { zoe, zcf } = await setupZCFTest();
   const { mint, brand, issuer } = makeIssuerKit('Token');
@@ -215,7 +192,7 @@ test(`E(zoe).offer - payment instead of paymentKeywordRecord`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).offer(invitation, proposal, payment), {
     message:
-      '"keywordRecord" "[Alleged: Token payment]" must be a pass-by-copy record, not "remotable"',
+      'In "offer" method of (ZoeService zoeService) arg 2: remotable "[Alleged: Token payment]" - Must be a copyRecord',
   });
 });
 
@@ -256,13 +233,7 @@ test(`E(zoe).getPublicFacet - no instance`, async t => {
   const { zoe } = setup();
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getPublicFacet(), {
-    message:
-      // Should be able to use more informative error once SES double
-      // disclosure bug is fixed. See
-      // https://github.com/endojs/endo/pull/640
-      //
-      // /"instance" not found: "\[undefined\]"/,
-      /.* not found: "\[undefined\]"/,
+    message: /expected 1 arguments/,
   });
 });
 
@@ -292,13 +263,7 @@ test(`zoe.getIssuers - no instance`, async t => {
   const { zoe } = setup();
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getIssuers(), {
-    message:
-      // Should be able to use more informative error once SES double
-      // disclosure bug is fixed. See
-      // https://github.com/endojs/endo/pull/640
-      //
-      // /"instance" not found: "\[undefined\]"/,
-      /.* not found: "\[undefined\]"/,
+    message: /expected 1 arguments/,
   });
 });
 
@@ -328,13 +293,7 @@ test(`zoe.getBrands - no instance`, async t => {
   const { zoe } = setup();
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getBrands(), {
-    message:
-      // Should be able to use more informative error once SES double
-      // disclosure bug is fixed. See
-      // https://github.com/endojs/endo/pull/640
-      //
-      // /"instance" not found: "\[undefined\]"/,
-      /.* not found: "\[undefined\]"/,
+    message: /expected 1 arguments/,
   });
 });
 
@@ -386,13 +345,7 @@ test(`zoe.getTerms - no instance`, async t => {
   const { zoe } = setup();
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getTerms(), {
-    message:
-      // Should be able to use more informative error once SES double
-      // disclosure bug is fixed. See
-      // https://github.com/endojs/endo/pull/640
-      //
-      // /"instance" not found: "\[undefined\]"/,
-      /.* not found: "\[undefined\]"/,
+    message: /expected 1 arguments/,
   });
 });
 
@@ -428,9 +381,8 @@ test(`zoe.getInstance`, async t => {
 
 test(`zoe.getInstance - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
-  // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInstance(), {
-    message: 'A Zoe invitation is required, not "[undefined]"',
+    message: /expected 1 arguments/,
   });
 });
 
@@ -446,7 +398,7 @@ test(`zoe.getInstallation - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInstallation(), {
-    message: 'A Zoe invitation is required, not "[undefined]"',
+    message: /expected 1 arguments/,
   });
 });
 
@@ -467,30 +419,11 @@ test(`zoe.getInvitationDetails - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInvitationDetails(), {
-    message: 'A Zoe invitation is required, not "[undefined]"',
+    message: /expected 1 arguments/,
   });
 });
 
-test(`zcf.registerFeeMint twice`, async t => {
-  const { zoe, zcf: zcf1, zcf2, feeMintAccess } = await setupZCFTest();
-  const feeIssuer = E(zoe).getFeeIssuer();
-  const feeBrand = await E(feeIssuer).getBrand();
-
-  const fee1000 = AmountMath.make(feeBrand, 1000n);
-
-  const zcfMint1 = await zcf1.registerFeeMint('RUN', feeMintAccess);
-  const zcfMint2 = await zcf2.registerFeeMint('RUN', feeMintAccess);
-
-  const zcfSeat1 = zcfMint1.mintGains(harden({ Fee: fee1000 }));
-  const zcfSeat2 = zcfMint2.mintGains(harden({ Fee: fee1000 }));
-
-  t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    Fee: fee1000,
-  });
-  t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    Fee: fee1000,
-  });
-});
+test.todo(`zcf.registerFeeMint twice in different contracts`);
 
 test(`zoe.getConfiguration`, async t => {
   const { zoe } = await setupZCFTest();

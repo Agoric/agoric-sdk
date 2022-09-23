@@ -33,7 +33,7 @@ const trace = makeTracer('AmmTS', false);
 export const setUpZoeForTest = () => {
   const { makeFar } = makeLoopback('zoeTest');
 
-  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
+  const { zoeService, feeMintAccessRetriever } = makeZoeKit(
     makeFakeVatAdmin(() => {}).admin,
     undefined,
     {
@@ -42,12 +42,12 @@ export const setUpZoeForTest = () => {
       displayInfo: Stable.displayInfo,
     },
   );
+
   /** @type {ERef<ZoeService>} */
   const zoe = makeFar(zoeService);
-  const feeMintAccess = makeFar(nonFarFeeMintAccess);
   return {
     zoe,
-    feeMintAccess,
+    feeMintAccessP: feeMintAccessRetriever.get(),
   };
 };
 harden(setUpZoeForTest);
@@ -110,10 +110,11 @@ export const setupAmmServices = async (
   if (!farZoeKit) {
     farZoeKit = await setUpZoeForTest();
   }
-  const { feeMintAccess, zoe } = farZoeKit;
+  const { feeMintAccessP, zoe } = farZoeKit;
   trace('setupAMMBootstrap');
   const space = await setupAMMBootstrap(timer, farZoeKit);
   space.produce.zoe.resolve(farZoeKit.zoe);
+  const feeMintAccess = await feeMintAccessP;
   space.produce.feeMintAccess.resolve(feeMintAccess);
   const { consume, brand, issuer, installation, instance } = space;
   const ammBundle = await provideBundle(t, ammRoot, 'amm');

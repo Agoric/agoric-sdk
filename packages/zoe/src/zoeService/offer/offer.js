@@ -13,21 +13,7 @@ import '../internal-types.js';
 
 const { details: X, quote: q } = assert;
 
-/**
- * @param {Issuer} invitationIssuer
- * @param {GetInstanceAdmin} getInstanceAdmin
- * @param {DepositPayments} depositPayments
- * @param {GetAssetKindByBrand} getAssetKindByBrand
- * @param {GetProposalShapeForInvitation} getProposalShapeForInvitation
- * @returns {Offer}
- */
-export const makeOfferMethod = (
-  invitationIssuer,
-  getInstanceAdmin,
-  depositPayments,
-  getAssetKindByBrand,
-  getProposalShapeForInvitation,
-) => {
+export const makeOfferMethod = offerDataAccess => {
   /** @type {Offer} */
   const offer = async (
     invitation,
@@ -35,13 +21,14 @@ export const makeOfferMethod = (
     paymentKeywordRecord = harden({}),
     offerArgs = undefined,
   ) => {
+    const invitationIssuer = offerDataAccess.getInvitationIssuer();
     const query = makeInvitationQueryFns(invitationIssuer);
     const { instance, description } = await query.getInvitationDetails(
       invitation,
     );
     // AWAIT ///
 
-    const instanceAdmin = getInstanceAdmin(instance);
+    const instanceAdmin = offerDataAccess.getInstanceAdmin(instance);
     !instanceAdmin.isBlocked(description) ||
       assert.fail(X`not accepting offer with description ${q(description)}`);
     const { invitationHandle } = await burnInvitation(
@@ -52,8 +39,13 @@ export const makeOfferMethod = (
 
     instanceAdmin.assertAcceptingOffers();
 
+    const getAssetKindByBrand = brand => {
+      return offerDataAccess.getAssetKindByBrand(brand);
+    };
+
     const proposal = cleanProposal(uncleanProposal, getAssetKindByBrand);
-    const proposalShape = getProposalShapeForInvitation(invitationHandle);
+    const proposalShape =
+      offerDataAccess.getProposalShapeForInvitation(invitationHandle);
     if (proposalShape !== undefined) {
       fit(proposal, proposalShape, `${q(description)} proposal`);
     }
@@ -68,7 +60,7 @@ export const makeOfferMethod = (
       );
     }
 
-    const initialAllocation = await depositPayments(
+    const initialAllocation = await offerDataAccess.depositPayments(
       proposal,
       paymentKeywordRecord,
     );
@@ -82,7 +74,7 @@ export const makeOfferMethod = (
       offerArgs,
     );
     // AWAIT ///
-    // @ts-expect-error cast
+
     return userSeat;
   };
   return offer;

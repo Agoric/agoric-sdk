@@ -36,13 +36,13 @@ const setJig = jig => {
 
 const { makeFar, makeNear: makeRemote } = makeLoopback('zoeTest');
 
-const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
+const { zoeService, feeMintAccessRetriever } = makeZoeKit(
   makeFakeVatAdmin(setJig, makeRemote).admin,
 );
 /** @type {ERef<ZoeService>} */
 const zoe = makeFar(zoeService);
 trace('makeZoe');
-const feeMintAccessP = makeFar(nonFarFeeMintAccess);
+const feeMintAccessP = feeMintAccessRetriever.get();
 
 /**
  * @param {ERef<ZoeService>} zoeP

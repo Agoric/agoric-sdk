@@ -85,7 +85,7 @@ const minusAnchorFee = (anchor, anchorPerMinted) => {
 const makeTestContext = async () => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
   const psmBundle = await bundleCache.load(psmRoot, 'psm');
-  const { zoe, feeMintAccess } = setUpZoeForTest();
+  const { zoe, feeMintAccessP } = setUpZoeForTest();
 
   const mintedIssuer = await E(zoe).getFeeIssuer();
   /** @type {IssuerKit} */
@@ -124,7 +124,7 @@ const makeTestContext = async () => {
   return {
     bundles: { psmBundle },
     zoe: await zoe,
-    feeMintAccess: await feeMintAccess,
+    feeMintAccess: await feeMintAccessP,
     initialPoserInvitation,
     minted,
     anchor,

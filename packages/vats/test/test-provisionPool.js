@@ -45,7 +45,7 @@ const makeTestContext = async () => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
   const psmBundle = await bundleCache.load(psmRoot, 'psm');
   const policyBundle = await bundleCache.load(policyRoot, 'provisionPool');
-  const { zoe, feeMintAccess } = setUpZoeForTest();
+  const { zoe, feeMintAccessP } = setUpZoeForTest();
 
   const mintedIssuer = await E(zoe).getFeeIssuer();
   /** @type {Brand<'nat'>} */
@@ -85,7 +85,7 @@ const makeTestContext = async () => {
     bundles: { psmBundle },
     storageRoot,
     zoe: await zoe,
-    feeMintAccess: await feeMintAccess,
+    feeMintAccess: await feeMintAccessP,
     committeeCreator,
     initialPoserInvitation,
     minted: { issuer: mintedIssuer, brand: mintedBrand },

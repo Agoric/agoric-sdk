@@ -15,7 +15,7 @@ import { Stable } from '../src/tokens.js';
 
 const setUpZoeForTest = setJig => {
   const { makeFar } = makeLoopback('zoeTest');
-  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
+  const { zoeService, feeMintAccessRetriever } = makeZoeKit(
     makeFakeVatAdmin(setJig).admin,
     undefined,
     {
@@ -26,10 +26,9 @@ const setUpZoeForTest = setJig => {
   );
   /** @type {ERef<ZoeService>} */
   const zoe = makeFar(zoeService);
-  const feeMintAccess = makeFar(nonFarFeeMintAccess);
   return {
     zoe,
-    feeMintAccess,
+    feeMintAccessRetriever,
   };
 };
 
@@ -45,7 +44,7 @@ const setUpZoeForTest = setJig => {
  */
 
 test.before(async (/** @type {CentralSupplyTestContext} */ t) => {
-  const { zoe, feeMintAccess } = await setUpZoeForTest(() => {});
+  const { zoe, feeMintAccessRetriever } = await setUpZoeForTest(() => {});
   const issuer = {
     IST: E(zoe).getFeeIssuer(),
   };
@@ -60,7 +59,7 @@ test.before(async (/** @type {CentralSupplyTestContext} */ t) => {
   t.context = await deeplyFulfilled(
     harden({
       zoe,
-      feeMintAccess,
+      feeMintAccess: E(feeMintAccessRetriever).get(),
       issuer,
       brand,
       installation,

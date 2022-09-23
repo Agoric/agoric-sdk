@@ -28,7 +28,7 @@ import { devices } from './devices.js';
 
 const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
-  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
+  const { zoeService, feeMintAccessRetriever } = makeZoeKit(
     makeFakeVatAdmin(() => {}).admin,
     undefined,
     {
@@ -39,10 +39,9 @@ const setUpZoeForTest = async () => {
   );
   /** @type {ERef<ZoeService>} */
   const zoe = makeFar(zoeService);
-  const feeMintAccess = await makeFar(nonFarFeeMintAccess);
   return {
     zoe,
-    feeMintAccess,
+    feeMintAccessRetriever,
   };
 };
 harden(setUpZoeForTest);
@@ -62,8 +61,9 @@ test('connectFaucet produces payments', async t => {
   const { agoricNames, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
-  const { zoe, feeMintAccess } = await setUpZoeForTest();
+  const { zoe, feeMintAccessRetriever } = await setUpZoeForTest();
   produce.zoe.resolve(zoe);
+  const feeMintAccess = await feeMintAccessRetriever.get();
   produce.feeMintAccess.resolve(feeMintAccess);
   produce.bridgeManager.resolve(undefined);
 

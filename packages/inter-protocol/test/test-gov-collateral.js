@@ -57,7 +57,7 @@ let lastProposalSequence = 0;
 
 const makeTestContext = async () => {
   const bundleCache = await makeNodeBundleCache('bundles/', s => import(s));
-  const { zoe, feeMintAccess } = await setUpZoeForTest();
+  const { zoe, feeMintAccessP } = await setUpZoeForTest();
 
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
@@ -103,7 +103,7 @@ const makeTestContext = async () => {
     restoreBundleID,
     cleanups: [],
     zoe: await zoe,
-    feeMintAccess: await feeMintAccess,
+    feeMintAccess: await feeMintAccessP,
     run: { issuer: runIssuer, brand: runBrand },
     installation,
   };

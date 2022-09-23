@@ -47,7 +47,7 @@ harden(provideBundle);
 export const setUpZoeForTest = (setJig = () => {}) => {
   const { makeFar } = makeLoopback('zoeTest');
 
-  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
+  const { zoeService, feeMintAccessRetriever } = makeZoeKit(
     makeFakeVatAdmin(setJig).admin,
     undefined,
     {
@@ -58,10 +58,9 @@ export const setUpZoeForTest = (setJig = () => {}) => {
   );
   /** @type {ERef<ZoeService>} */
   const zoe = makeFar(zoeService);
-  const feeMintAccess = makeFar(nonFarFeeMintAccess);
   return {
     zoe,
-    feeMintAccess,
+    feeMintAccessP: feeMintAccessRetriever.get(),
   };
 };
 harden(setUpZoeForTest);

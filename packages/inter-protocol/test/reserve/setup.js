@@ -82,7 +82,7 @@ export const setupReserveServices = async (
   timer = buildManualTimer(t.log),
 ) => {
   const farZoeKit = await setUpZoeForTest();
-  const { feeMintAccess, zoe } = farZoeKit;
+  const { feeMintAccessP, zoe } = farZoeKit;
 
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
@@ -102,6 +102,7 @@ export const setupReserveServices = async (
   const faucetInstallation = E(zoe).install(faucetBundle);
   brand.produce.IST.resolve(runBrand);
   issuer.produce.IST.resolve(runIssuer);
+  const feeMintAccess = await feeMintAccessP;
   produce.feeMintAccess.resolve(await feeMintAccess);
 
   const governorCreatorFacet = consume.reserveGovernorCreatorFacet;

@@ -545,6 +545,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
   const daveCoveredCallPayments = harden({
     StrikePrice: daveSimoleanPayment,
   });
+
   const daveCoveredCallSeat = await E(zoe).offer(
     daveOption,
     daveCoveredCallProposal,

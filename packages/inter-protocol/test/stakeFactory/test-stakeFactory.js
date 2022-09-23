@@ -88,7 +88,7 @@ test.before(async t => {
   );
   console.timeEnd('bundling');
 
-  const { zoe, feeMintAccess } = await setUpZoeForTest(() => {});
+  const { zoe, feeMintAccessP } = await setUpZoeForTest(() => {});
   const bld = makeIssuerKit('BLD', AssetKind.NAT, micro.displayInfo);
   const issuer = {
     [Stable.symbol]: await E(zoe).getFeeIssuer(),
@@ -114,7 +114,7 @@ test.before(async t => {
   t.context = await deeplyFulfilled(
     harden({
       zoe,
-      feeMintAccess,
+      feeMintAccess: feeMintAccessP,
       issuer,
       brand,
       installation,

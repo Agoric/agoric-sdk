@@ -19,7 +19,7 @@ export const defaultFeeIssuerConfig = harden(
  * @param {FeeIssuerConfig} feeIssuerConfig
  * @param {ShutdownWithFailure} shutdownZoeVat
  * @returns {{
- *    getFeeMintAccess: () => FeeMintAccess,
+ *    getFeeMintAccessToken: () => FeeMintAccess,
  *    getFeeIssuerKit: GetFeeIssuerKit,
  *    getFeeIssuer: () => Issuer,
  *    getFeeBrand: () => Brand,
@@ -50,7 +50,7 @@ const vivifyFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
   const makeFeeMintKit = vivifyKindMulti(mintBaggage, 'FeeMint', initEmpty, {
     feeMint: {
       getFeeIssuerKit,
-      getFeeMintAccess: ({ facets }) => facets.feeMintAccess,
+      getFeeMintAccessToken: ({ facets }) => facets.feeMintAccess,
       getFeeIssuer: () => mintBaggage.get(FEE_MINT_KIT).issuer,
       getFeeBrand: () => mintBaggage.get(FEE_MINT_KIT).brand,
     },

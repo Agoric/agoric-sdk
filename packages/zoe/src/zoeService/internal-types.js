@@ -88,9 +88,9 @@
  * @property {InitInstanceAdmin} initInstanceAdmin
  * @property {DeleteInstanceAdmin} deleteInstanceAdmin
  * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
- * @property {Issuer} invitationIssuer
- * @property {object} root of a RootAndAdminNode
- * @property {AdminNode} adminNode of a RootAndAdminNode
+ * @property {() => Issuer} getInvitationIssuer
+ * @property {() => object} getRoot of a RootAndAdminNode
+ * @property {() => AdminNode} getAdminNode of a RootAndAdminNode
  */
 
 /**
@@ -135,6 +135,7 @@
  * @property {GetIssuers} getIssuers
  * @property {GetTerms} getTerms
  * @property {GetOfferFilter} getOfferFilter
+ * @property {SetOfferFilter} setOfferFilter
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstanceAdmin} getInstanceAdmin
  * @property {UnwrapInstallation} unwrapInstallation

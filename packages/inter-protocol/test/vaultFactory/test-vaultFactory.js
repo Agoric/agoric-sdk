@@ -110,7 +110,7 @@ const defaultParamValues = debtBrand =>
   });
 
 test.before(async t => {
-  const { zoe, feeMintAccess } = setUpZoeForTest();
+  const { zoe, feeMintAccessRetriever } = setUpZoeForTest();
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
   // @ts-expect-error missing mint
@@ -128,6 +128,7 @@ test.before(async t => {
   });
   const installation = objectMap(bundles, bundle => E(zoe).install(bundle));
 
+  const feeMintAccess = await E(feeMintAccessRetriever).get();
   const contextPs = {
     zoe,
     feeMintAccess,
