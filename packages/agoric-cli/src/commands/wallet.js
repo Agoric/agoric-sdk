@@ -42,7 +42,6 @@ export const makeWalletCommand = async () => {
       '--keyring-backend [os|file|test]',
       'keyring\'s backend (os|file|test) (default "os")',
     )
-    .option('--dry-run', 'spit out the command instead of running it')
     .option('--nickname [string]', 'nickname to use', 'my-wallet')
     .action(function () {
       const {
@@ -50,12 +49,11 @@ export const makeWalletCommand = async () => {
         nickname,
         spend,
         home,
-        dryRun,
         keyringBackend: backend,
       } = this.opts();
+      const tx = `provision-one ${nickname} ${account} SMART_WALLET`;
       if (spend) {
-        const tx = `provision-one ${nickname} ${account} SMART_WALLET`;
-        execSwingsetTransaction(tx, networkConfig, account, dryRun, {
+        execSwingsetTransaction(tx, networkConfig, account, false, {
           home,
           backend,
         });
@@ -71,9 +69,11 @@ export const makeWalletCommand = async () => {
           .map(f => `${nf.format(Number(f.amount))} ${f.denom}`)
           .join(' + ');
         process.stdout.write(`Provisioning a wallet costs ${costs}\n`);
-        process.stdout.write(
-          `To really provision, repeat this command with --spend\n`,
-        );
+        process.stdout.write(`To really provision, rerun with --spend or...\n`);
+        execSwingsetTransaction(tx, networkConfig, account, true, {
+          home,
+          backend,
+        });
       }
     });
 
