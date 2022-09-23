@@ -210,10 +210,11 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   const { agoricNames, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
-  const { zoeService, feeMintAccess } = makeZoeKit(
+  const { zoeService, feeMintAccessRetriever } = makeZoeKit(
     makeFakeVatAdmin(() => {}).admin,
   );
   produce.zoe.resolve(zoeService);
+  const feeMintAccess = await feeMintAccessRetriever.get();
   produce.feeMintAccess.resolve(feeMintAccess);
   const vatPowers = {
     D: x => x,

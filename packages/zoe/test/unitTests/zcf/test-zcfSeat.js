@@ -76,7 +76,7 @@ test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
     message: 'second seat failed',
   });
   await t.throwsAsync(() => E(userSeat1).tryExit(), {
-    message: 'seat has been exited',
+    message: 'Cannot exit; seat has already exited',
   });
   t.falsy(vatAdminState.getHasExited());
 });

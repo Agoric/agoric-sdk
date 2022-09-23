@@ -3,6 +3,7 @@ export {
   subscribeEach,
   subscribeLatest,
   vivifyDurablePublishKit,
+  SubscriberShape,
 } from './publish-kit.js';
 export {
   makeNotifier,

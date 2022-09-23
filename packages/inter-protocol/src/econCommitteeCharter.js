@@ -81,7 +81,7 @@ export const start = async zcf => {
     return zcf.makeInvitation(voteOnOfferFilterHandler, 'vote on offer filter');
   };
 
-  const MakerShape = M.interface('Charter InvitationMakers', {
+  const MakerI = M.interface('Charter InvitationMakers', {
     VoteOnParamChange: M.call().returns(M.promise()),
     VoteOnPauseOffers: M.call(
       InstanceHandleShape,
@@ -91,7 +91,7 @@ export const start = async zcf => {
   });
   const invitationMakers = makeHeapFarInstance(
     'Charter Invitation Makers',
-    MakerShape,
+    MakerI,
     {
       VoteOnParamChange: makeParamInvitation,
       VoteOnPauseOffers: makeOfferFilterInvitation,

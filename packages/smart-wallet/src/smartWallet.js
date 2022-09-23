@@ -206,7 +206,7 @@ export const initState = (unique, shared) => {
   };
 };
 
-const behaviorGuards = {
+const behaviorIKit = harden({
   helper: M.interface('helperFacetI', {
     updateBalance: M.call(PurseShape, AmountShape).optional('init').returns(),
     publishCurrentState: M.call().returns(),
@@ -235,11 +235,11 @@ const behaviorGuards = {
     getCurrentSubscriber: M.call().returns(M.eref(M.any())),
     getUpdatesSubscriber: M.call().returns(M.eref(M.any())),
   }),
-};
+});
 
 const SmartWalletKit = defineVirtualFarClassKit(
   'SmartWallet',
-  behaviorGuards,
+  behaviorIKit,
   initState,
   {
     helper: {

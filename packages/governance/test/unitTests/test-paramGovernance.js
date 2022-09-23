@@ -44,15 +44,14 @@ const setUpZoeForTest = async setJig => {
    * @property {IssuerRecord} mintedIssuerRecord
    * @property {IssuerRecord} govIssuerRecord
    */
-  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
+  const { zoeService, feeMintAccessRetriever } = makeZoeKit(
     makeFakeVatAdmin(setJig, o => makeFar(o)).admin,
   );
   /** @type {ERef<ZoeService>} */
   const zoe = makeFar(zoeService);
-  const feeMintAccess = await makeFar(nonFarFeeMintAccess);
   return {
     zoe,
-    feeMintAccess,
+    feeMintAccessP: feeMintAccessRetriever.get(),
   };
 };
 
@@ -241,7 +240,7 @@ test('change multiple params', async t => {
   const update1 = await notifier.getUpdateSince();
   // constructing the fixture to deepEqual would complicate this with insufficient benefit
   t.is(
-    // @ts-expect-error reaching into unknown values
+    // @ts-expect-error unknown
     update1.value.current.Electorate.value.value[0].description,
     'questionPoser',
   );

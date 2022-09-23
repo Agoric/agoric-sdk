@@ -24,6 +24,8 @@ const SIMPLE_ISSUE = harden({ text: 'Fish or cut bait?' });
 const FISH = harden({ text: 'Fish' });
 const BAIT = harden({ text: 'Cut Bait' });
 
+/** @type {PARAM_CHANGE_ISSUE} */
+// @ts-expect-error cast
 const PARAM_ISSUE = harden({
   spec: {
     paramPath: { key: 'something' },
@@ -272,7 +274,6 @@ test('binary varying share weights', async t => {
 test('binary contested', async t => {
   const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
-    // @ts-expect-error I dunno what's confusing it.
     issue: PARAM_ISSUE,
     positions: [positive, negative],
     electionType: ElectionType.PARAM_CHANGE,

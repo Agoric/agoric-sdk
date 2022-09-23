@@ -29,45 +29,39 @@ const reserveRoot = './src/reserve/assetReserve.js'; // package relative
 
 const trace = makeTracer('AmmTS', false);
 
-export const setUpZoeForTest = () => {
+export const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
 
-  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
-    makeFakeVatAdmin(() => {}).admin,
-    undefined,
-    {
+  const { zoeService, feeMintAccessRetriever } = await makeFar(
+    makeZoeKit(makeFakeVatAdmin(() => {}).admin, undefined, {
       name: Stable.symbol,
       assetKind: Stable.assetKind,
       displayInfo: Stable.displayInfo,
-    },
+    }),
   );
-  /** @type {ERef<ZoeService>} */
-  const zoe = makeFar(zoeService);
-  const feeMintAccess = makeFar(nonFarFeeMintAccess);
+
   return {
-    zoe,
-    feeMintAccess,
+    zoe: zoeService,
+    feeMintAccessP: E(feeMintAccessRetriever).get(),
   };
 };
 harden(setUpZoeForTest);
-/**
- * @typedef {ReturnType<typeof setUpZoeForTest>} FarZoeKit
- */
+/** @typedef {Awaited<ReturnType<typeof setUpZoeForTest>>} FarZoeKit */
 
 /**
  *
  * @param {TimerService} timer
- * @param {FarZoeKit} [farZoeKit]
+ * @param {ERef<FarZoeKit>} [farZoeKit]
  */
 export const setupAMMBootstrap = async (
   timer = buildManualTimer(console.log),
   farZoeKit,
 ) => {
   if (!farZoeKit) {
-    farZoeKit = await setUpZoeForTest();
+    farZoeKit = setUpZoeForTest();
   }
   trace('setupAMMBootstrap');
-  const { zoe } = farZoeKit;
+  const { zoe } = await farZoeKit;
 
   const space = /** @type {any} */ (makePromiseSpace());
   const { produce, consume } =
@@ -96,7 +90,7 @@ export const setupAMMBootstrap = async (
  * @param {{ committeeName: string, committeeSize: number}} electorateTerms
  * @param {{ brand: Brand, issuer: Issuer }} centralR
  * @param {ManualTimer | undefined=} timer
- * @param {FarZoeKit} [farZoeKit]
+ * @param {ERef<FarZoeKit>} [farZoeKit]
  */
 export const setupAmmServices = async (
   t,
@@ -109,10 +103,11 @@ export const setupAmmServices = async (
   if (!farZoeKit) {
     farZoeKit = await setUpZoeForTest();
   }
-  const { feeMintAccess, zoe } = farZoeKit;
+  const { feeMintAccessP, zoe } = await farZoeKit;
+  const feeMintAccess = await feeMintAccessP;
   trace('setupAMMBootstrap');
   const space = await setupAMMBootstrap(timer, farZoeKit);
-  space.produce.zoe.resolve(farZoeKit.zoe);
+  space.produce.zoe.resolve(zoe);
   space.produce.feeMintAccess.resolve(feeMintAccess);
   const { consume, brand, issuer, installation, instance } = space;
   const ammBundle = await provideBundle(t, ammRoot, 'amm');

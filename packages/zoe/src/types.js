@@ -2,7 +2,7 @@
 
 /**
  * @template {string} H - the name of the handle
- * @typedef {H & {}} Handle A type constructor for an opaque type
+ * @typedef {H & import("@endo/marshal").Remotable} Handle A type constructor for an opaque type
  * identified by the H string. This uses an intersection type
  * ('MyHandle' & {}) to tag the handle's type even though the actual
  * value is just an empty object.

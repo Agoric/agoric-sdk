@@ -16,14 +16,12 @@ import './types.js';
 
 const { details: X } = assert;
 
-// helpers for the code shared between MakeZCFMint and RegisterZCFMint
-
 export const makeZCFMintFactory = async (
   zcfBaggage,
   recordIssuer,
   getAssetKindByBrand,
   makeEmptySeatKit,
-  reallocateForZCFMint,
+  reallocator,
 ) => {
   // The set of baggages for zcfMints
   const zcfMintBaggageSet = provideDurableSetStore(zcfBaggage, 'baggageSet');
@@ -90,12 +88,12 @@ export const makeZCFMintFactory = async (
               X`The allocation after minting gains ${allocationPlusGains} for the zcfSeat was not offer safe`,
             );
           // No effects above, apart from incrementBy. Note COMMIT POINT within
-          // reallocateForZCFMint. The following two steps *should* be
+          // reallocator.reallocate(). The following two steps *should* be
           // committed atomically, but it is not a disaster if they are
           // not. If we minted only, no one would ever get those
           // invisibly-minted assets.
           E(zoeMint).mintAndEscrow(totalToMint);
-          reallocateForZCFMint(zcfSeat, allocationPlusGains);
+          reallocator.reallocate(zcfSeat, allocationPlusGains);
           return zcfSeat;
         },
         burnLosses: (losses, zcfSeat) => {
@@ -123,11 +121,11 @@ export const makeZCFMintFactory = async (
           }
 
           // No effects above, apart from decrementBy. Note COMMIT POINT within
-          // reallocateForZCFMint. The following two steps *should* be
+          // reallocator.reallocate(). The following two steps *should* be
           // committed atomically, but it is not a disaster if they are
           // not. If we only commit the allocationMinusLosses no one would
           // ever get the unburned assets.
-          reallocateForZCFMint(zcfSeat, allocationMinusLosses);
+          reallocator.reallocate(zcfSeat, allocationMinusLosses);
           E(zoeMint).withdrawAndBurn(totalToBurn);
         },
       },

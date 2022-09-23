@@ -175,7 +175,6 @@ export function makeWalletRoot({
 
   // Offers that the wallet knows about (the inbox).
   const idToOffer = makeScalarMap('offerId');
-  const idToNotifierP = makeScalarMap('offerId');
   /** @type {LegacyMap<string, PromiseRecord<any>>} */
   // Legacy because promise kits are not passables
   const idToOfferResultPromiseKit = makeLegacyMap('id');
@@ -572,27 +571,20 @@ export function makeWalletRoot({
     await updateAllInboxState();
   }
 
-  // handle the update, which has already resolved to a record. If the offer is
-  // 'done', mark the offer 'complete', otherwise resubscribe to the notifier.
+  // handle the update, which has already resolved to a record. The update means
+  // the offer is 'done'.
   function updateOrResubscribe(id, seat, update) {
     const { updateCount } = update;
-    if (updateCount === undefined) {
-      // TODO do we still need these?
-      idToSeat.delete(id);
+    assert(updateCount === undefined);
+    idToSeat.delete(id);
 
-      const offer = idToOffer.get(id);
-      const completedOffer = addMeta({
-        ...offer,
-        status: 'complete',
-      });
-      idToOffer.set(id, completedOffer);
-      updateInboxState(id, completedOffer);
-      idToNotifierP.delete(id);
-    } else {
-      E(idToNotifierP.get(id))
-        .getUpdateSince(updateCount)
-        .then(nextUpdate => updateOrResubscribe(id, seat, nextUpdate));
-    }
+    const offer = idToOffer.get(id);
+    const completedOffer = addMeta({
+      ...offer,
+      status: 'complete',
+    });
+    idToOffer.set(id, completedOffer);
+    updateInboxState(id, completedOffer);
   }
 
   /**
@@ -602,19 +594,9 @@ export function makeWalletRoot({
    * @param {ERef<UserSeat>} seat
    */
   async function subscribeToNotifier(id, seat) {
-    E(seat)
-      // TODO This uses getAllocationNotifierJig for production, and so
-      // is likely wrong
-      // See https://github.com/Agoric/agoric-sdk/issues/5834
-      .getAllocationNotifierJig()
-      .then(offerNotifierP => {
-        if (!idToNotifierP.has(id)) {
-          idToNotifierP.init(id, offerNotifierP);
-        }
-        E(offerNotifierP)
-          .getUpdateSince()
-          .then(update => updateOrResubscribe(id, seat, update));
-      });
+    E(E(seat).getExitSubscriber())
+      .subscribeAfter()
+      .then(update => updateOrResubscribe(id, seat, update));
   }
 
   /**
