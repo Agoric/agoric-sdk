@@ -5,16 +5,22 @@ import {
   iterateLatest,
   makeCastingSpec,
   makeFollower,
+  makeLeader,
   makeLeaderFromRpcAddresses,
 } from '@agoric/casting';
+import { coalesceWalletState } from '@agoric/smart-wallet/src/utils.js';
 import { Command } from 'commander';
+import util from 'util';
 import {
   fmtRecordOfLines,
   offerStatusTuples,
   purseBalanceTuples,
 } from '../lib/format.js';
-import { makeRpcUtils, networkConfig } from '../lib/rpc.js';
-import { getWalletState } from '../lib/wallet.js';
+import {
+  boardSlottingMarshaller,
+  makeRpcUtils,
+  networkConfig,
+} from '../lib/rpc.js';
 
 import { makeLeaderOptions } from '../lib/casting.js';
 import {
@@ -124,20 +130,40 @@ export const makeWalletCommand = async () => {
     .description('show current state')
     .requiredOption(
       '--from <address>',
-      'address literal or name',
+      'wallet address literal or name',
       normalizeAddress,
     )
     .action(async function () {
       const opts = this.opts();
-      const { agoricNames, fromBoard, vstorage } = await makeRpcUtils({
+
+      const { agoricNames, fromBoard } = await makeRpcUtils({
         fetch,
       });
-      const state = await getWalletState(opts.from, fromBoard, {
-        vstorage,
-      });
-      console.warn('got state', state);
+
+      const unserializer = boardSlottingMarshaller(fromBoard.convertSlotToVal);
+
+      const leader = makeLeader(networkConfig.rpcAddrs[0]);
+      const follower = await makeFollower(
+        `:published.wallet.${opts.from}`,
+        leader,
+        {
+          // @ts-expect-error xxx
+          unserializer,
+        },
+      );
+
+      const state = await coalesceWalletState(follower);
+
+      console.warn(
+        'got state',
+        util.inspect(state, { depth: 10, colors: true }),
+      );
       const { brands, balances } = state;
       const summary = {
+        invitations: [
+          ['psmCharter', 'when added to purse', 'offer ID accepting'],
+          ['economicCommittee', 'when added to purse', 'offer ID accepting'],
+        ],
         balances: purseBalanceTuples(
           // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
           // @ts-ignore xxx RpcRemote

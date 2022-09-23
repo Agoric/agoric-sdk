@@ -13,15 +13,25 @@ export const makeWalletStateCoalescer = () => {
   const offerStatuses = new Map();
   /** @type {Map<Brand, Amount>} */
   const balances = new Map();
+  /** @type {Set<Amount>} */
+  const invitationsReceived = new Set();
 
-  /** @param {import('./smartWallet').UpdateRecord} updateRecord */
-  const include = updateRecord => {
+  /** @param {import('./smartWallet').UpdateRecord} updateRecord newer than previous */
+  const update = updateRecord => {
+    console.log('updating', { updateRecord });
     const { updated } = updateRecord;
     switch (updateRecord.updated) {
       case 'balance': {
         const { currentAmount } = updateRecord;
         // last record wins
         balances.set(currentAmount.brand, currentAmount);
+        // @ts-expect-error  FIXME read invitation brand
+        if (currentAmount.brand.boardId === 'board02810') {
+          // @ts-expect-error narrow to SetValue
+          for (const invitation of currentAmount.value) {
+            invitationsReceived.add(invitation);
+          }
+        }
         break;
       }
       case 'offerStatus': {
@@ -43,7 +53,10 @@ export const makeWalletStateCoalescer = () => {
     }
   };
 
-  return { state: { brands, offerStatuses, balances }, include };
+  return {
+    state: { brands, invitationsReceived, offerStatuses, balances },
+    update,
+  };
 };
 /** @typedef {ReturnType<typeof makeWalletStateCoalescer>['state']} CoalescedWalletState */
 
@@ -61,7 +74,7 @@ export const coalesceUpdates = updates => {
 
   observeIteration(subscribeEach(updates), {
     updateState: updateRecord => {
-      coalescer.include(updateRecord);
+      coalescer.update(updateRecord);
     },
   });
   return coalescer.state;
@@ -82,4 +95,24 @@ export const getFirstHeight = async follower => {
   }
   assert(firstHeight, NO_SMART_WALLET_ERROR);
   return firstHeight;
+};
+
+/**
+ *
+ * @param {import('@agoric/casting').Follower<import('@agoric/casting').ValueFollowerElement<import('./smartWallet').UpdateRecord>>} follower
+ */
+export const coalesceWalletState = async follower => {
+  // values with oldest last
+  const history = [];
+  for await (const followerElement of iterateReverse(follower)) {
+    history.push(followerElement.value);
+  }
+
+  const coalescer = makeWalletStateCoalescer();
+  // update with oldest first
+  for (const record of history.reverse()) {
+    coalescer.update(record);
+  }
+
+  return coalescer.state;
 };

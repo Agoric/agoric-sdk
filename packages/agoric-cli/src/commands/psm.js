@@ -40,12 +40,12 @@ const { vstorage, fromBoard, agoricNames } = await makeRpcUtils({ fetch });
  * @param {[Minted: string, Anchor: string]} pair
  */
 const getGovernanceState = async ([Minted, Anchor]) => {
-  const govContent = await vstorage.read(
+  const govContent = await vstorage.readLatest(
     `published.psm.${Minted}.${Anchor}.governance`,
   );
   assert(govContent, 'no gov content');
   const { current: governance } = last(
-    storageHelper.unserialize(govContent, fromBoard),
+    storageHelper.unserializeTxt(govContent, fromBoard),
   );
   const { [`psm.${Minted}.${Anchor}`]: instance } = agoricNames.instance;
 
@@ -117,7 +117,7 @@ export const makePsmCommand = async logger => {
 
   psm
     .command('info')
-    .description('show governance info about the PSM (BROKEN)')
+    .description('show governance parameters of the PSM')
     // TODO DRY with https://github.com/Agoric/agoric-sdk/issues/6181
     .requiredOption(
       '--pair [Minted.Anchor]',
@@ -366,10 +366,10 @@ export const makePsmCommand = async logger => {
     .action(async function () {
       const opts = this.opts();
 
-      const questionHandleCapDataStr = await vstorage.read(
+      const questionHandleCapDataStr = await vstorage.readLatest(
         'published.committees.Initial_Economic_Committee.latestQuestion',
       );
-      const questionDescriptions = storageHelper.unserialize(
+      const questionDescriptions = storageHelper.unserializeTxt(
         questionHandleCapDataStr,
         fromBoard,
       );
