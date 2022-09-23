@@ -4,7 +4,11 @@ import { finished as finishedCallback } from 'stream';
 import { promisify } from 'util';
 import { createGzip, createGunzip } from 'zlib';
 import { assert, details as d } from '@agoric/assert';
-import { aggregateTryFinally, PromiseAllOrErrors } from '@agoric/internal';
+import {
+  aggregateTryFinally,
+  fsStreamReady,
+  PromiseAllOrErrors,
+} from '@agoric/internal';
 
 /**
  * @typedef {object} SnapshotInfo
@@ -36,42 +40,6 @@ const noPath = /** @type {import('fs').PathLike} */ (
 );
 
 const sink = () => {};
-
-/**
- * @param {import("fs").ReadStream | import("fs").WriteStream} stream
- * @returns {Promise<void>}
- */
-export const fsStreamReady = stream =>
-  new Promise((resolve, reject) => {
-    if (stream.destroyed) {
-      reject(new Error('Stream already destroyed'));
-      return;
-    }
-
-    if (!stream.pending) {
-      resolve();
-      return;
-    }
-
-    const onReady = () => {
-      cleanup(); // eslint-disable-line no-use-before-define
-      resolve();
-    };
-
-    /** @param {Error} err */
-    const onError = err => {
-      cleanup(); // eslint-disable-line no-use-before-define
-      reject(err);
-    };
-
-    const cleanup = () => {
-      stream.off('ready', onReady);
-      stream.off('error', onError);
-    };
-
-    stream.on('ready', onReady);
-    stream.on('error', onError);
-  });
 
 /**
  * @param {string} root
