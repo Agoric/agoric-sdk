@@ -65,5 +65,6 @@ export const makeSlogSender = async opts => {
 
   return Object.assign(slogSender, {
     forceFlush: () => tracingProvider.forceFlush(),
+    usesJsonObject: false,
   });
 };

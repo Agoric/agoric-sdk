@@ -194,10 +194,11 @@ Affects: cosmic-swingset
 
 Purpose: intercept the SwingSet LOG file in realtime
 
-Description: when nonempty, use the value as a module specifier.  The module
-will be loaded by `@agoric/telemetry/src/make-slog-sender.js`, via
-`import(moduleSpec)`, and then the exported `makeSlogSender` function creates a
-`slogSender`.  Then, every time a SLOG object is written by SwingSet,
+Description: when nonempty, use the value as a list of module specifiers
+separated by commas `,`.  The modules will be loaded by
+`@agoric/telemetry/src/make-slog-sender.js`, via `import(moduleSpec)`, and
+their exported `makeSlogSender` function called to create an aggregate
+`slogSender`. Every time a SLOG object is written by SwingSet, each module's
 `slogSender(slogObject)` will be called.
 
 The default is `'@agoric/telemetry/src/flight-recorder.js'`, which writes to an
