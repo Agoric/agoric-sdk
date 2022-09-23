@@ -1,15 +1,18 @@
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { iterateEach } from '@agoric/casting';
 import {
   makeAsyncIterableFromNotifier,
   makeNotifierKit,
 } from '@agoric/notifier';
-import { iterateEach, iterateReverse } from '@agoric/casting';
-import { getFirstHeight } from '@agoric/smart-wallet/src/utils.js';
-import { getScopedBridge } from '../service/ScopedBridge.js';
+import {
+  getFirstHeight,
+  NO_SMART_WALLET_ERROR,
+} from '@agoric/smart-wallet/src/utils.js';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { getDappService } from '../service/Dapps.js';
-import { getOfferService } from '../service/Offers.js';
 import { getIssuerService } from '../service/Issuers.js';
+import { getOfferService } from '../service/Offers.js';
+import { getScopedBridge } from '../service/ScopedBridge.js';
 
 const newId = kind => `${kind}${Math.random()}`;
 
@@ -152,7 +155,7 @@ export const makeWalletBridgeFromFollower = (
   };
 
   const followLatest = async () => {
-    const firstHeight = getFirstHeight(follower);
+    const firstHeight = await getFirstHeight(follower);
 
     for await (const { value } of iterateEach(follower, {
       height: firstHeight,

@@ -116,7 +116,6 @@ export const makeVStorage = powers => {
         console.debug('PUSHED', values);
         console.debug('NEW', { blockHeight });
       } while (blockHeight > 0);
-      console.log('DEBUG readFully done', parts);
       return parts.flat();
     },
   };
@@ -236,20 +235,23 @@ harden(storageHelper);
 /**
  * @param {IdMap} ctx
  * @param {VStorage} vstorage
- * @returns {Promise<{brand: Record<string, RpcRemote>, instance: Record<string, RpcRemote>}>}
+ * @returns {Promise<{ brand: Record<string, RpcRemote>, instance: Record<string, RpcRemote>, reverse: Record<string, string> }>}
  */
 export const makeAgoricNames = async (ctx, vstorage) => {
+  const reverse = {};
   const entries = await Promise.all(
     ['brand', 'instance'].map(async kind => {
       const content = await vstorage.readLatest(
         `published.agoricNames.${kind}`,
       );
       const parts = storageHelper.unserializeTxt(content, ctx).at(-1);
-
+      for (const [name, remote] of parts) {
+        reverse[remote.boardId] = name;
+      }
       return [kind, Object.fromEntries(parts)];
     }),
   );
-  return Object.fromEntries(entries);
+  return { ...Object.fromEntries(entries), reverse };
 };
 
 export const makeRpcUtils = async ({ fetch }) => {

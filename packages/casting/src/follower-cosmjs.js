@@ -291,6 +291,7 @@ export const makeCosmjsFollower = (
    * @param {number} blockHeight
    */
   const getDataAtHeight = async blockHeight => {
+    assert.typeof(blockHeight, 'number');
     for (let attempt = 0; ; attempt += 1) {
       try {
         // AWAIT
@@ -451,6 +452,7 @@ export const makeCosmjsFollower = (
    * @yields {ValueFollowerElement<T>}
    */
   async function* getEachIterableAtHeight(cursorBlockHeight) {
+    assert.typeof(cursorBlockHeight, 'number');
     // Track the data for the last emitted cell (the cell at the
     // cursorBlockHeight) so we know not to emit duplicates
     // of that cell.

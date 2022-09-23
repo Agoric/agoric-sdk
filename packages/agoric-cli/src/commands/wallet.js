@@ -11,11 +11,7 @@ import {
 import { coalesceWalletState } from '@agoric/smart-wallet/src/utils.js';
 import { Command } from 'commander';
 import util from 'util';
-import {
-  fmtRecordOfLines,
-  offerStatusTuples,
-  purseBalanceTuples,
-} from '../lib/format.js';
+import { fmtRecordOfLines, summarize } from '../lib/format.js';
 import {
   boardSlottingMarshaller,
   makeRpcUtils,
@@ -158,20 +154,7 @@ export const makeWalletCommand = async () => {
         'got state',
         util.inspect(state, { depth: 10, colors: true }),
       );
-      const { brands, balances } = state;
-      const summary = {
-        invitations: [
-          ['psmCharter', 'when added to purse', 'offer ID accepting'],
-          ['economicCommittee', 'when added to purse', 'offer ID accepting'],
-        ],
-        balances: purseBalanceTuples(
-          // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
-          // @ts-ignore xxx RpcRemote
-          [...balances.values()],
-          [...brands.values()],
-        ),
-        offers: offerStatusTuples(state, agoricNames),
-      };
+      const summary = summarize(state, agoricNames);
       process.stdout.write(fmtRecordOfLines(summary));
     });
 

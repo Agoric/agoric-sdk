@@ -37,6 +37,9 @@
     "@agoric/zoe": "^0.25.0",
     "@endo/far": "^0.2.11"
   },
+  "files": [
+    "src/"
+  ],
   "keywords": [],
   "repository": {
     "type": "git",

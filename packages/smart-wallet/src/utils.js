@@ -1,6 +1,5 @@
 /* eslint-disable no-undef-init */
 // @ts-check
-
 import { iterateReverse } from '@agoric/casting';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 
@@ -13,23 +12,34 @@ export const makeWalletStateCoalescer = () => {
   const offerStatuses = new Map();
   /** @type {Map<Brand, Amount>} */
   const balances = new Map();
-  /** @type {Set<Amount>} */
-  const invitationsReceived = new Set();
+
+  /** @type {Brand=} */
+  let allegedInvitationBrand = undefined;
+
+  /**
+   * keyed by description; xxx assumes unique
+   *
+   * @type {Map<string, { acceptedIn: number, description: string, instance: { boardId: string } }>}
+   */
+  const invitationsReceived = new Map();
 
   /** @param {import('./smartWallet').UpdateRecord} updateRecord newer than previous */
   const update = updateRecord => {
-    console.log('updating', { updateRecord });
     const { updated } = updateRecord;
     switch (updateRecord.updated) {
       case 'balance': {
         const { currentAmount } = updateRecord;
         // last record wins
         balances.set(currentAmount.brand, currentAmount);
-        // @ts-expect-error  FIXME read invitation brand
-        if (currentAmount.brand.boardId === 'board02810') {
+        if (allegedInvitationBrand) {
+          console.warn(
+            'balance update before invitationBrand known may be an invitation',
+          );
+        }
+        if (currentAmount.brand === allegedInvitationBrand) {
           // @ts-expect-error narrow to SetValue
           for (const invitation of currentAmount.value) {
-            invitationsReceived.add(invitation);
+            invitationsReceived.set(invitation.description, invitation);
           }
         }
         break;
@@ -39,6 +49,23 @@ export const makeWalletStateCoalescer = () => {
         const lastStatus = offerStatuses.get(status.id);
         // merge records
         offerStatuses.set(status.id, { ...lastStatus, ...status });
+        if (
+          status.invitationSpec.source === 'purse' &&
+          status.numWantsSatisfied === 1
+        ) {
+          // record acceptance of invitation
+          // xxx matching only by description
+          const { description } = status.invitationSpec;
+          const receptionRecord = invitationsReceived.get(description);
+          if (receptionRecord) {
+            invitationsReceived.set(description, {
+              ...receptionRecord,
+              acceptedIn: status.id,
+            });
+          } else {
+            console.error('no record of invitation in offerStatus', status);
+          }
+        }
         break;
       }
       case 'brand': {
@@ -46,6 +73,9 @@ export const makeWalletStateCoalescer = () => {
         // never mutate
         assert(!brands.has(descriptor.brand));
         brands.set(descriptor.brand, descriptor);
+        if (descriptor.petname === 'invitations') {
+          allegedInvitationBrand = descriptor.brand;
+        }
         break;
       }
       default:

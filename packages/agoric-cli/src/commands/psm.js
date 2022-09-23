@@ -182,6 +182,7 @@ export const makePsmCommand = async logger => {
         id: Number(opts.offerId),
         invitationSpec: {
           source: 'purse',
+          // @ts-expect-error xxx RpcRemote
           instance: economicCommittee,
           description: 'Voter0', // XXX it may not always be
         },
@@ -211,6 +212,7 @@ export const makePsmCommand = async logger => {
         id: Number(opts.offerId),
         invitationSpec: {
           source: 'purse',
+          // @ts-expect-error xxx RpcRemote
           instance: psmCharter,
           description: 'PSM charter member invitation',
         },
