@@ -196,6 +196,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
       throw Fail`zoe must be provided for governed Invitations ${zoe}`;
     }
     const { instance, installation } = await E(zoe).getInvitationDetails(i);
+    // @ts-expect-error typescript thinks they're guaranteed True. I'm not sure.
     assert(instance && installation, 'must be an invitation');
   };
 

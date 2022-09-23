@@ -431,3 +431,5 @@ export const vivifyDurablePublishKit = (baggage, kindName) => {
   );
 };
 harden(vivifyDurablePublishKit);
+
+export const SubscriberShape = M.remotable('Subscriber');

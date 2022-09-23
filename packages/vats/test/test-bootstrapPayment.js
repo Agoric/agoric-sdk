@@ -13,23 +13,18 @@ import { AmountMath } from '@agoric/ertp';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
 import { Stable } from '../src/tokens.js';
 
-const setUpZoeForTest = setJig => {
+const setUpZoeForTest = async setJig => {
   const { makeFar } = makeLoopback('zoeTest');
-  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
-    makeFakeVatAdmin(setJig).admin,
-    undefined,
-    {
+  const { zoeService, feeMintAccessRetriever } = await makeFar(
+    makeZoeKit(makeFakeVatAdmin(setJig).admin, undefined, {
       name: Stable.symbol,
       assetKind: Stable.assetKind,
       displayInfo: Stable.displayInfo,
-    },
+    }),
   );
-  /** @type {ERef<ZoeService>} */
-  const zoe = makeFar(zoeService);
-  const feeMintAccess = makeFar(nonFarFeeMintAccess);
   return {
-    zoe,
-    feeMintAccess,
+    zoe: zoeService,
+    feeMintAccessP: E(feeMintAccessRetriever).get(),
   };
 };
 
@@ -45,7 +40,7 @@ const setUpZoeForTest = setJig => {
  */
 
 test.before(async (/** @type {CentralSupplyTestContext} */ t) => {
-  const { zoe, feeMintAccess } = await setUpZoeForTest(() => {});
+  const { zoe, feeMintAccessP } = await setUpZoeForTest(() => {});
   const issuer = {
     IST: E(zoe).getFeeIssuer(),
   };
@@ -60,7 +55,7 @@ test.before(async (/** @type {CentralSupplyTestContext} */ t) => {
   t.context = await deeplyFulfilled(
     harden({
       zoe,
-      feeMintAccess,
+      feeMintAccess: feeMintAccessP,
       issuer,
       brand,
       installation,

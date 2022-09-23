@@ -250,15 +250,11 @@ test(`zcf.saveIssuer - args reversed`, async t => {
 });
 
 test(`zcf.makeInvitation - no offerHandler`, async t => {
-  const { zcf, zoe } = await setupZCFTest();
+  const { zcf } = await setupZCFTest();
   // @ts-expect-error bad argument
-  const invitationP = zcf.makeInvitation(undefined, 'myInvitation');
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const isLive = await E(invitationIssuer).isLive(invitationP);
-  t.truthy(isLive);
-  const seat = E(zoe).offer(invitationP);
-  const offerResult = await E(seat).getOfferResult();
-  t.is(offerResult, undefined);
+  t.throws(() => zcf.makeInvitation(undefined, 'myInvitation'), {
+    message: / must be provided/,
+  });
 });
 
 test(`zcf.makeInvitation - no-op offerHandler`, async t => {
@@ -392,7 +388,7 @@ test(`zcf.makeZCFMint - not a math kind`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint('A', 'whatever'), {
     message:
-      'The assetKind "whatever" must be one of ["copyBag","copySet","nat","set"]',
+      'In "makeZoeMint" method of (zoeInstanceAdmin): arg 1?: "whatever" - Must match one of ["nat","set","copySet","copyBag"]',
   });
 });
 
@@ -669,10 +665,6 @@ const similarToNormalUserSeat = async (t, emptySeat, normalSeat) => {
   // Note: not exhaustive
   t.deepEqual(Object.keys(emptySeat), Object.keys(normalSeat));
   t.deepEqual(await emptySeat.getProposal(), await normalSeat.getProposal());
-  t.deepEqual(
-    await emptySeat.getCurrentAllocationJig(),
-    await normalSeat.getCurrentAllocationJig(),
-  );
   t.is(await emptySeat.hasExited(), await normalSeat.hasExited());
   t.is(await emptySeat.getOfferResult(), await normalSeat.getOfferResult());
 };
@@ -687,11 +679,6 @@ test(`zcf.makeEmptySeatKit`, async t => {
   await similarToNormalZCFSeat(t, zcfSeatActual, zcfSeatExpected);
   const userSeatActual = await userSeatActualP;
   await similarToNormalUserSeat(t, userSeatActual, userSeatExpected);
-  // Currently seats made with the "makeEmptySeatKit" method cannot
-  // have any give or want because we cannot yet escrow or reallocate
-  // assets as part of the offer.
-  // TODO: add `give` and `want` to seats made on the contract/ZCF side
-  // https://github.com/Agoric/agoric-sdk/issues/1724
 });
 
 test(`zcfSeat from zcf.makeEmptySeatKit - only these properties exist`, async t => {
@@ -701,7 +688,7 @@ test(`zcfSeat from zcf.makeEmptySeatKit - only these properties exist`, async t 
     'getAmountAllocated',
     'getCurrentAllocation',
     'getStagedAllocation',
-    'getNotifier',
+    'getSubscriber',
     'getProposal',
     'hasExited',
     'isOfferSafe',
@@ -788,62 +775,28 @@ const allocateEasy = async (
   return zcfMint.getIssuerRecord();
 };
 
-test(`zcfSeat.getNotifier`, async t => {
+test(`zcfSeat.getSubscriber`, async t => {
   const { zcf } = await setupZCFTest();
   const { zcfSeat } = zcf.makeEmptySeatKit();
-  const notifier = zcfSeat.getNotifier();
+  const subscriber = zcfSeat.getSubscriber();
 
-  // Mint some gains to change the allocation.
-  const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3n);
-  let notifierResult;
-  for (let remainingTries = 2; remainingTries >= 0; remainingTries -= 1) {
-    // eslint-disable-next-line no-await-in-loop
-    notifierResult = await E(notifier).getUpdateSince(
-      // @ts-expect-error misc
-      notifierResult?.updateCount,
-    );
-    if (notifierResult.value?.A) {
-      break;
-    }
-  }
-  assert(notifierResult);
-  t.deepEqual(notifierResult.value, {
-    A: {
-      brand: brand1,
-      value: 3n,
-    },
-  });
-
-  const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6n);
-  notifierResult = await E(notifier).getUpdateSince(notifierResult.updateCount);
-  t.deepEqual(notifierResult.value, {
-    A: {
-      brand: brand1,
-      value: 3n,
-    },
-    B: {
-      brand: brand2,
-      value: 6n,
-    },
-  });
+  // Mint some gains to change the allocation. This will not cause an update.
+  await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3n);
 
   zcfSeat.exit();
 
-  notifierResult = await E(notifier).getUpdateSince(notifierResult.updateCount);
-  t.deepEqual(notifierResult, {
-    updateCount: undefined,
-    value: undefined,
+  const subscriptionResult = await E(subscriber).subscribeAfter();
+  t.deepEqual(subscriptionResult.publishCount, 1n);
+  await t.throwsAsync(async () => subscriptionResult.tail, {
+    message: 'Cannot read past end of iteration.',
   });
 });
 
 test(`zcfSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
   const { zcf } = await setupZCFTest();
-  const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
+  const { zcfSeat } = zcf.makeEmptySeatKit();
 
-  t.deepEqual(
-    zcfSeat.getCurrentAllocation(),
-    await E(userSeat).getCurrentAllocationJig(),
-  );
+  t.deepEqual(zcfSeat.getCurrentAllocation(), {});
   t.deepEqual(zcfSeat.getCurrentAllocation(), {});
 
   // Mint some gains to change the allocation.
@@ -869,11 +822,6 @@ test(`zcfSeat.getCurrentAllocation from zcf.makeEmptySeatKit`, async t => {
       value: 6n,
     },
   });
-
-  t.deepEqual(
-    zcfSeat.getCurrentAllocation(),
-    await E(userSeat).getCurrentAllocationJig(),
-  );
 });
 
 test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
@@ -924,27 +872,6 @@ test(`zcfSeat.incrementBy, decrementBy, zcf.reallocate from zcf.makeEmptySeatKit
   t.deepEqual(zcfSeat2.getCurrentAllocation(), {
     B: AmountMath.make(issuerRecord1.brand, 6n),
   });
-});
-
-test(`userSeat from zcf.makeEmptySeatKit - only these properties exist`, async t => {
-  const expectedMethods = [
-    'getProposal',
-    'getPayouts',
-    'getPayout',
-    'getOfferResult',
-    'hasExited',
-    'tryExit',
-    'getCurrentAllocationJig',
-    'getAllocationNotifierJig',
-    'getFinalAllocation',
-    'numWantsSatisfied',
-  ];
-  const { zcf } = await setupZCFTest();
-  const { userSeat: userSeatP } = zcf.makeEmptySeatKit();
-  const userSeat = await userSeatP;
-  // Note: these tests will fail if Zoe is actually in a different
-  // vat, since userSeat would be a presence.
-  t.deepEqual(Object.keys(userSeat), expectedMethods);
 });
 
 test(`userSeat.getProposal from zcf.makeEmptySeatKit`, async t => {
@@ -1002,97 +929,11 @@ test(`userSeat.tryExit from zcf.makeEmptySeatKit - afterDeadline`, async t => {
   t.deepEqual(payouts, {});
 });
 
-test(`userSeat.getCurrentAllocationJig from zcf.makeEmptySeatKit`, async t => {
-  const { zcf } = await setupZCFTest();
-  const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
-
-  t.deepEqual(
-    zcfSeat.getCurrentAllocation(),
-    await E(userSeat).getCurrentAllocationJig(),
-  );
-  t.deepEqual(await E(userSeat).getCurrentAllocationJig(), {});
-
-  // Mint some gains to change the allocation.
-  const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3n);
-
-  t.deepEqual(await E(userSeat).getCurrentAllocationJig(), {
-    A: {
-      brand: brand1,
-      value: 3n,
-    },
-  });
-
-  // Again, mint some gains to change the allocation.
-  const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6n);
-
-  t.deepEqual(await E(userSeat).getCurrentAllocationJig(), {
-    A: {
-      brand: brand1,
-      value: 3n,
-    },
-    B: {
-      brand: brand2,
-      value: 6n,
-    },
-  });
-
-  t.deepEqual(
-    zcfSeat.getCurrentAllocation(),
-    await E(userSeat).getCurrentAllocationJig(),
-  );
-});
-
 test(`userSeat.getOfferResult from zcf.makeEmptySeatKit`, async t => {
   const { zcf } = await setupZCFTest();
   const { userSeat } = zcf.makeEmptySeatKit();
   const result = await E(userSeat).getOfferResult();
   t.is(result, undefined);
-});
-
-test(`userSeat.getAllocationNotifierJig`, async t => {
-  const { zcf } = await setupZCFTest();
-  const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
-  const notifier = await E(userSeat).getAllocationNotifierJig();
-
-  // Mint some gains to change the allocation.
-  const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3n);
-  let notifierResult;
-  for (let remainingTries = 2; remainingTries >= 0; remainingTries -= 1) {
-    // @ts-expect-error misc
-    // eslint-disable-next-line no-await-in-loop
-    notifierResult = await notifier.getUpdateSince(notifierResult?.updateCount);
-    if (notifierResult.value?.A) {
-      break;
-    }
-  }
-  assert(notifierResult);
-  t.deepEqual(notifierResult.value, {
-    A: {
-      brand: brand1,
-      value: 3n,
-    },
-  });
-
-  const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6n);
-  notifierResult = await notifier.getUpdateSince(notifierResult.updateCount);
-  t.deepEqual(notifierResult.value, {
-    A: {
-      brand: brand1,
-      value: 3n,
-    },
-    B: {
-      brand: brand2,
-      value: 6n,
-    },
-  });
-
-  zcfSeat.exit();
-
-  notifierResult = await notifier.getUpdateSince(notifierResult.updateCount);
-  t.deepEqual(notifierResult, {
-    updateCount: undefined,
-    value: undefined,
-  });
 });
 
 test(`userSeat.getPayouts, getPayout from zcf.makeEmptySeatKit`, async t => {
@@ -1116,17 +957,6 @@ test(`userSeat.getPayouts, getPayout from zcf.makeEmptySeatKit`, async t => {
     'B',
     6n,
   );
-
-  t.deepEqual(await E(userSeat).getCurrentAllocationJig(), {
-    A: {
-      brand: brand1,
-      value: 3n,
-    },
-    B: {
-      brand: brand2,
-      value: 6n,
-    },
-  });
 
   zcfSeat.exit();
 
@@ -1152,7 +982,8 @@ test(`userSeat.getPayout() should throw from zcf.makeEmptySeatKit`, async t => {
   const { userSeat } = zcf.makeEmptySeatKit();
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(userSeat).getPayout(), {
-    message: 'A keyword must be provided',
+    message:
+      'In "getPayout" method of (ZoeSeatKit userSeat): Expected at least 1 arguments: []',
   });
 });
 
@@ -1160,7 +991,8 @@ test(`zcf.reallocate < 2 seats`, async t => {
   const { zcf } = await setupZCFTest();
   // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcf.reallocate(), {
-    message: 'reallocating must be done over two or more seats',
+    message:
+      'In "reallocate" method of (ZcfSeatManager seatManager): Expected at least 2 arguments: []',
   });
 });
 
@@ -1365,19 +1197,6 @@ test(`zcf.shutdownWithFailure - no further offers accepted`, async t => {
   t.truthy(vatAdminState.getExitWithFailure());
 });
 
-test(`zcf.assert - no further offers accepted`, async t => {
-  const { zoe, zcf, vatAdminState } = await setupZCFTest();
-  const invitation = await zcf.makeInvitation(() => {}, 'seat');
-  t.throws(() => zcf.assert(false, 'And do not come back'), {
-    message: /And do not come back/,
-  });
-  await t.throwsAsync(() => E(zoe).offer(invitation), {
-    message: 'No further offers are accepted',
-  });
-  t.deepEqual(vatAdminState.getExitMessage(), Error(`And do not come back`));
-  t.truthy(vatAdminState.getExitWithFailure());
-});
-
 test(`zcf.stopAcceptingOffers`, async t => {
   const { zoe, zcf } = await setupZCFTest();
   const invitation1 = await zcf.makeInvitation(() => {}, 'seat');
@@ -1399,18 +1218,14 @@ test(`zcf.stopAcceptingOffers`, async t => {
     `can't make further offers`,
   );
 
-  t.deepEqual(
-    await E(seat).getCurrentAllocationJig(),
-    {},
-    'can still query live seat',
-  );
+  t.deepEqual(await E(seat).hasExited(), false, 'can still query live seat');
 });
 
 test(`zcf.setOfferFilter - illegal lists`, async t => {
   const { zcf } = await setupZCFTest();
   // @ts-expect-error invalid argument
   await t.throwsAsync(() => zcf.setOfferFilter('nonList'), {
-    message: /"nonList" must be an Array/,
+    message: / arg 0: string "nonList" - Must be a copyArray/,
   });
 });
 

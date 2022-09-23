@@ -62,8 +62,6 @@ import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.j
 /** @type {import('ava').TestFn<Context>} */
 const test = unknownTest;
 
-// #region Support
-
 const contractRoots = {
   faucet: './test/vaultFactory/faucet.js',
   liquidate: './src/vaultFactory/liquidateMinimum.js',
@@ -108,7 +106,7 @@ const defaultParamValues = debtBrand =>
   });
 
 test.before(async t => {
-  const { zoe, feeMintAccess } = setUpZoeForTest();
+  const { zoe, feeMintAccessP } = await setUpZoeForTest();
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
   // @ts-expect-error missing mint
@@ -126,6 +124,7 @@ test.before(async t => {
   });
   const installation = objectMap(bundles, bundle => E(zoe).install(bundle));
 
+  const feeMintAccess = await feeMintAccessP;
   const contextPs = {
     zoe,
     feeMintAccess,
@@ -421,7 +420,6 @@ const setupServices = async (
         .then(liqIssuer => E(liqIssuer).getBrand()),
   };
 };
-// #endregion
 
 test('first', async t => {
   const { aeth, run, zoe, rates } = t.context;
@@ -469,7 +467,7 @@ test('first', async t => {
   );
   trace(t, 'correct debt', debtAmount);
 
-  const { Minted: lentAmount } = await E(vaultSeat).getCurrentAllocationJig();
+  const { Minted: lentAmount } = await E(vaultSeat).getFinalAllocation();
   const loanProceeds = await E(vaultSeat).getPayouts();
   const runLent = await loanProceeds.Minted;
   t.deepEqual(lentAmount, loanAmount, 'received 47 Minted');
@@ -604,7 +602,7 @@ test('price drop', async t => {
     debt: AmountMath.add(loanAmount, fee),
     interest: makeRatio(100n, run.brand),
   });
-  const { Minted: lentAmount } = await E(vaultSeat).getCurrentAllocationJig();
+  const { Minted: lentAmount } = await E(vaultSeat).getFinalAllocation();
   t.truthy(AmountMath.isEqual(lentAmount, loanAmount), 'received 470 Minted');
   t.deepEqual(
     await E(vault).getCollateralAmount(),
@@ -746,7 +744,7 @@ test('price falls precipitously', async t => {
   );
   trace(t, 'correct debt', debtAmount);
 
-  const { Minted: lentAmount } = await E(userSeat).getCurrentAllocationJig();
+  const { Minted: lentAmount } = await E(userSeat).getFinalAllocation();
   t.deepEqual(lentAmount, loanAmount, 'received 470 Minted');
   t.deepEqual(
     await E(vault).getCollateralAmount(),
@@ -918,9 +916,7 @@ test('interest on multiple vaults', async t => {
     'vault lent 4700 Minted + fees',
   );
 
-  const { Minted: lentAmount } = await E(
-    aliceLoanSeat,
-  ).getCurrentAllocationJig();
+  const { Minted: lentAmount } = await E(aliceLoanSeat).getFinalAllocation();
   const loanProceeds = await E(aliceLoanSeat).getPayouts();
   t.deepEqual(lentAmount, aliceLoanAmount, 'received 4700 Minted');
 
@@ -959,9 +955,7 @@ test('interest on multiple vaults', async t => {
     'vault lent 3200 Minted + fees',
   );
 
-  const { Minted: bobLentAmount } = await E(
-    bobLoanSeat,
-  ).getCurrentAllocationJig();
+  const { Minted: bobLentAmount } = await E(bobLoanSeat).getFinalAllocation();
   const bobLoanProceeds = await E(bobLoanSeat).getPayouts();
   t.deepEqual(bobLentAmount, bobLoanAmount, 'received 4700 Minted');
 
@@ -1107,9 +1101,7 @@ test('adjust balances', async t => {
   let collateralLevel = aeth.make(1000n);
 
   t.deepEqual(debtAmount, runDebtLevel, 'vault lent 5000 Minted + fees');
-  const { Minted: lentAmount } = await E(
-    aliceLoanSeat,
-  ).getCurrentAllocationJig();
+  const { Minted: lentAmount } = await E(aliceLoanSeat).getFinalAllocation();
   const loanProceeds = await E(aliceLoanSeat).getPayouts();
   t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 Minted');
 
@@ -1158,7 +1150,7 @@ test('adjust balances', async t => {
 
   const { Minted: lentAmount2 } = await E(
     aliceAddCollateralSeat1,
-  ).getCurrentAllocationJig();
+  ).getFinalAllocation();
   const loanProceeds2 = await E(aliceAddCollateralSeat1).getPayouts();
   t.deepEqual(lentAmount2, run.makeEmpty(), 'no payout');
 
@@ -1202,7 +1194,7 @@ test('adjust balances', async t => {
   await E(aliceAddCollateralSeat2).getOfferResult();
   const { Minted: lentAmount3 } = await E(
     aliceAddCollateralSeat2,
-  ).getCurrentAllocationJig();
+  ).getFinalAllocation();
   const loanProceeds3 = await E(aliceAddCollateralSeat2).getPayouts();
   t.deepEqual(lentAmount3, run.make(50n));
 
@@ -1251,7 +1243,7 @@ test('adjust balances', async t => {
 
   const { Minted: lentAmount4 } = await E(
     aliceReduceCollateralSeat,
-  ).getCurrentAllocationJig();
+  ).getFinalAllocation();
   const loanProceeds4 = await E(aliceReduceCollateralSeat).getPayouts();
   t.deepEqual(lentAmount4, run.make(50n));
 
@@ -1378,7 +1370,7 @@ test('adjust balances - withdraw RUN', async t => {
 
   const { Minted: lentAmount2 } = await E(
     aliceWithdrawRunSeat,
-  ).getCurrentAllocationJig();
+  ).getFinalAllocation();
   const loanProceeds2 = await E(aliceWithdrawRunSeat).getPayouts();
   t.deepEqual(lentAmount2, additionalRUN, '100 RUN');
 
@@ -1537,9 +1529,7 @@ test('transfer vault', async t => {
   // make the invitation first so that we can arrange the interleaving
   // of adjust and tranfer
   const adjustInvitation = E(transferVault).makeAdjustBalancesInvitation();
-  const { Minted: lentAmount } = await E(
-    aliceLoanSeat,
-  ).getCurrentAllocationJig();
+  const { Minted: lentAmount } = await E(aliceLoanSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceLoanSeat).getPayouts();
   t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 Minted');
   const borrowedRun = await aliceProceeds.Minted;
@@ -1634,9 +1624,7 @@ test('overdeposit', async t => {
   const runDebt = AmountMath.add(aliceLoanAmount, fee);
 
   t.deepEqual(debtAmount, runDebt, 'vault lent 5000 Minted + fees');
-  const { Minted: lentAmount } = await E(
-    aliceLoanSeat,
-  ).getCurrentAllocationJig();
+  const { Minted: lentAmount } = await E(aliceLoanSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceLoanSeat).getPayouts();
   t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 Minted');
 
@@ -1699,7 +1687,7 @@ test('overdeposit', async t => {
 
   const { Minted: lentAmount5 } = await E(
     aliceOverpaySeat,
-  ).getCurrentAllocationJig();
+  ).getFinalAllocation();
   const loanProceeds5 = await E(aliceOverpaySeat).getPayouts();
   t.deepEqual(lentAmount5, run.make(750n));
 
@@ -1715,7 +1703,7 @@ test('overdeposit', async t => {
   await E(collectFeesSeat).getOfferResult();
   assertAmountsEqual(
     t,
-    await E.get(E(collectFeesSeat).getCurrentAllocationJig()).Fee,
+    await E.get(E(collectFeesSeat).getFinalAllocation()).Fee,
     run.make(300n),
   );
 });
@@ -1804,7 +1792,7 @@ test('mutable liquidity triggers and interest', async t => {
   );
   const { Minted: aliceLentAmount } = await E(
     aliceLoanSeat,
-  ).getCurrentAllocationJig();
+  ).getFinalAllocation();
   const aliceLoanProceeds = await E(aliceLoanSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceLoanAmount, 'received 5000 Minted');
   trace(t, 'alice vault');
@@ -1846,9 +1834,7 @@ test('mutable liquidity triggers and interest', async t => {
   const bobRunDebtLevel = AmountMath.add(bobLoanAmount, bobFee);
 
   t.deepEqual(bobDebtAmount, bobRunDebtLevel, 'vault lent 5000 Minted + fees');
-  const { Minted: bobLentAmount } = await E(
-    bobLoanSeat,
-  ).getCurrentAllocationJig();
+  const { Minted: bobLentAmount } = await E(bobLoanSeat).getFinalAllocation();
   const bobLoanProceeds = await E(bobLoanSeat).getPayouts();
   t.deepEqual(bobLentAmount, bobLoanAmount, 'received 5000 Minted');
   trace(t, 'bob vault');
@@ -1879,7 +1865,7 @@ test('mutable liquidity triggers and interest', async t => {
 
   const { Collateral: aliceWithdrawnAeth } = await E(
     aliceReduceCollateralSeat,
-  ).getCurrentAllocationJig();
+  ).getFinalAllocation();
   const loanProceeds4 = await E(aliceReduceCollateralSeat).getPayouts();
   t.deepEqual(aliceWithdrawnAeth, aeth.make(300n));
 
@@ -2020,7 +2006,7 @@ test('collect fees from loan and AMM', async t => {
   );
   trace(t, 'correct debt', debtAmount);
 
-  const { Minted: lentAmount } = await E(vaultSeat).getCurrentAllocationJig();
+  const { Minted: lentAmount } = await E(vaultSeat).getFinalAllocation();
   const loanProceeds = await E(vaultSeat).getPayouts();
   await loanProceeds.Minted;
   t.deepEqual(lentAmount, loanAmount, 'received 47 Minted');
@@ -2058,9 +2044,8 @@ test('collect fees from loan and AMM', async t => {
     E(vaultFactory).makeCollectFeesInvitation(),
   );
   await E(collectFeesSeat).getOfferResult();
-  const feePayoutAmount = await E.get(
-    E(collectFeesSeat).getCurrentAllocationJig(),
-  ).Fee;
+  const feePayoutAmount = await E.get(E(collectFeesSeat).getFinalAllocation())
+    .Fee;
   trace(t, 'Fee', feePoolBalance, feePayoutAmount);
   t.truthy(AmountMath.isGTE(feePayoutAmount, feePoolBalance.Fee));
 });
@@ -2105,9 +2090,7 @@ test('close loan', async t => {
   const runDebtLevel = AmountMath.add(aliceLoanAmount, fee);
 
   t.deepEqual(debtAmount, runDebtLevel, 'vault lent 5000 Minted + fees');
-  const { Minted: lentAmount } = await E(
-    aliceLoanSeat,
-  ).getCurrentAllocationJig();
+  const { Minted: lentAmount } = await E(aliceLoanSeat).getFinalAllocation();
   const loanProceeds = await E(aliceLoanSeat).getPayouts();
   t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 Minted');
 
@@ -2164,7 +2147,7 @@ test('close loan', async t => {
   const closeOfferResult = await E(aliceCloseSeat).getOfferResult();
   t.is(closeOfferResult, 'your loan is closed, thank you for your business');
 
-  const closeAlloc = await E(aliceCloseSeat).getCurrentAllocationJig();
+  const closeAlloc = await E(aliceCloseSeat).getFinalAllocation();
   t.deepEqual(closeAlloc, {
     Minted: run.make(750n),
     Collateral: aeth.make(1000n),
@@ -2351,7 +2334,7 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   );
   const { Minted: aliceLentAmount } = await E(
     aliceLoanSeat,
-  ).getCurrentAllocationJig();
+  ).getFinalAllocation();
   const aliceLoanProceeds = await E(aliceLoanSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceLoanAmount, 'received 5000 Minted');
 
@@ -2390,9 +2373,7 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   const bobRunDebtLevel = AmountMath.add(bobLoanAmount, bobFee);
 
   t.deepEqual(bobDebtAmount, bobRunDebtLevel, 'vault lent 5000 Minted + fees');
-  const { Minted: bobLentAmount } = await E(
-    bobLoanSeat,
-  ).getCurrentAllocationJig();
+  const { Minted: bobLentAmount } = await E(bobLoanSeat).getFinalAllocation();
   const bobLoanProceeds = await E(bobLoanSeat).getPayouts();
   t.deepEqual(bobLentAmount, bobLoanAmount, 'received 5000 Minted');
 
@@ -2421,7 +2402,7 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
 
   await E(aliceReduceCollateralSeat).getOfferResult();
 
-  await E(aliceReduceCollateralSeat).getCurrentAllocationJig();
+  await E(aliceReduceCollateralSeat).getFinalAllocation();
   const loanProceeds4 = await E(aliceReduceCollateralSeat).getPayouts();
   // t.deepEqual(aliceWithdrawnAeth, aeth.make(210n));
 

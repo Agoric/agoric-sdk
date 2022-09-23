@@ -1,7 +1,11 @@
 import { Far } from '@endo/marshal';
 import { Nat } from '@agoric/nat';
 import { AmountMath } from '@agoric/ertp';
-import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
+import {
+  makeNotifierKit,
+  observeIteration,
+  subscribeLatest,
+} from '@agoric/notifier';
 import {
   assertIssuerKeywords,
   defaultAcceptanceMsg,
@@ -48,8 +52,8 @@ const start = zcf => {
   const sell = seat => {
     sellerSeat = seat;
 
-    observeNotifier(
-      sellerSeat.getNotifier(),
+    observeIteration(
+      subscribeLatest(sellerSeat.getSubscriber()),
       harden({
         updateState: sellerSeatAllocation =>
           availableItemsUpdater.updateState(
@@ -63,6 +67,7 @@ const start = zcf => {
         fail: reason => availableItemsUpdater.fail(reason),
       }),
     );
+    availableItemsUpdater.updateState(sellerSeat.getCurrentAllocation().Items);
     return defaultAcceptanceMsg;
   };
 
@@ -115,7 +120,12 @@ const start = zcf => {
 
     if (AmountMath.isEmpty(getAvailableItems())) {
       zcf.shutdown('All items sold.');
+    } else {
+      availableItemsUpdater.updateState(
+        sellerSeat.getCurrentAllocation().Items,
+      );
     }
+
     return defaultAcceptanceMsg;
   };
 

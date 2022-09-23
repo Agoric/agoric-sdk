@@ -12,7 +12,7 @@ end box
 bootstrap -> Zoe: makeZoeKit(...)
 Zoe -> ZoeStorageManager : makeZoeStorageManager()
 ZoeStorageManager -> ZoeStorageManager : provideIssuerStorage()
-ZoeStorageManager -> ZoeStorageManager : makeEscrowStorage()
+ZoeStorageManager -> ZoeStorageManager : provideEscrowStorage()
 ZoeStorageManager -> ZoeStorageManager : vivifyInvitationKit()
 ZoeStorageManager -> InstanceAdminStorage : makeInstanceAdminStorage()
 InstanceAdminStorage -> InstanceAdminStorage : instanceToInstanceAdmin
