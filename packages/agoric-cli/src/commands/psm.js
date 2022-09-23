@@ -236,7 +236,7 @@ export const makePsmCommand = async logger => {
       ['IST', 'AUSD'],
     )
     .requiredOption(
-      '--previousOfferId [number]',
+      '--psmCharterAcceptOfferId [number]',
       'offer that had continuing invitation result',
       Number,
     )
@@ -262,7 +262,7 @@ export const makePsmCommand = async logger => {
         id: Number(opts.offerId),
         invitationSpec: {
           source: 'continuing',
-          previousOffer: opts.previousOfferId,
+          previousOffer: opts.psmCharterAcceptOfferId,
           invitationMakerName: 'VoteOnPauseOffers',
           // ( instance, strings list, timer deadline seconds )
           invitationArgs: harden([
@@ -348,7 +348,7 @@ export const makePsmCommand = async logger => {
     .description('vote on a question (hard-coded for now))')
     .option('--offerId [number]', 'Offer id', Number, Date.now())
     .requiredOption(
-      '--previousOfferId [number]',
+      '--econCommAcceptOfferId [number]',
       'offer that had continuing invitation result',
       Number,
     )

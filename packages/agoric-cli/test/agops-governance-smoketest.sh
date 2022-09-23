@@ -48,13 +48,13 @@ CHARTER_OFFER_ID=$(jq ".body | fromjson | .offer.id" <"$CHARTER_OFFER")
 
 # Use invitation result, with continuing invitationMakers to propose a vote
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops psm proposePauseOffers --substring wantMinted --previousOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
+bin/agops psm proposePauseOffers --substring wantMinted --psmCharterAcceptOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
 jq ".body | fromjson" <"$PROPOSAL_OFFER"
 agoric wallet send --from "$KEY" --offer "$PROPOSAL_OFFER"
 
 # vote on the question that was made
 VOTE_OFFER=$(mktemp -t agops.XXX)
-bin/agops psm vote --forPosition 0 --previousOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
+bin/agops psm vote --forPosition 0 --econCommAcceptOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
 jq ".body | fromjson" <"$VOTE_OFFER"
 agoric wallet send --from "$KEY" --offer "$VOTE_OFFER"
 ## wait for the election to be resolved (1m in commands/psm.js)
@@ -75,7 +75,7 @@ agoric wallet send --from "$KEY" --offer "$SWAP_OFFER"
 
 # Propose a vote to raise the mint limit
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops psm proposeChangeMintLimit --limit 10000 --previousOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
+bin/agops psm proposeChangeMintLimit --limit 10000 --psmCharterAcceptOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
 jq ".body | fromjson" <"$PROPOSAL_OFFER"
 agoric wallet send --from "$KEY" --offer "$PROPOSAL_OFFER"
 
@@ -86,7 +86,7 @@ agoric wallet send --from "$KEY" --offer "$PROPOSAL_OFFER"
 
 # vote on the question that was made
 VOTE_OFFER=$(mktemp -t agops.XXX)
-bin/agops psm vote --forPosition 0 --previousOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
+bin/agops psm vote --forPosition 0 --econCommAcceptOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
 jq ".body | fromjson" <"$VOTE_OFFER"
 agoric wallet send --from "$KEY" --offer "$VOTE_OFFER"
 ## wait for the election to be resolved (1m default in commands/psm.js)
