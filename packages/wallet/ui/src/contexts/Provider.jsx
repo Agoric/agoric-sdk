@@ -17,6 +17,7 @@ import {
   makeBackgroundSigner,
   makeInteractiveSigner,
 } from '../util/keyManagement';
+import { onLoadP } from '../util/onLoad';
 
 const useDebugLogging = (state, watch) => {
   useEffect(() => console.debug({ state }), watch);
@@ -166,6 +167,7 @@ const Provider = ({ children }) => {
    * NOTE: relies on ambient window.fetch, window.keplr, Random.getBytes
    */
   const tryKeplrConnect = async () => {
+    await onLoadP;
     // @ts-expect-error window keys
     const { keplr, fetch } = window;
     assert(fetch, 'Missing window.fetch');
