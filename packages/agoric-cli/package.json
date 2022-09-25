@@ -20,11 +20,10 @@
     "integration-test": "ava --config .ava-integration-test.config.js",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc --maxNodeModuleJsDepth 0 -p jsconfig.json",
+    "lint:types": "tsc -p jsconfig.json",
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.29.0",
     "ava": "^4.3.1",
     "c8": "^7.11.0"
   },
@@ -37,6 +36,7 @@
     "@agoric/ertp": "^0.15.0",
     "@agoric/nat": "^4.1.0",
     "@agoric/smart-wallet": "^0.3.0",
+    "@agoric/swingset-vat": "^0.29.0",
     "@agoric/zoe": "^0.25.0",
     "@cosmjs/crypto": "0.28.13",
     "@cosmjs/encoding": "0.28.13",

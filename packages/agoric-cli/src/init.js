@@ -1,6 +1,10 @@
 import chalk from 'chalk';
 import { makePspawn } from './helpers.js';
 
+// Ambient types. Needed only for dev but this does a runtime import.
+import '@endo/captp/src/types.js';
+import '@agoric/swingset-vat/exported.js';
+
 // Use either an absolute template URL, or find it relative to DAPP_URL_BASE.
 const gitURL = (relativeOrAbsoluteURL, base) => {
   const url = new URL(relativeOrAbsoluteURL, base);

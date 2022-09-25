@@ -162,6 +162,7 @@ export const makePsmCommand = async logger => {
       const opts = this.opts();
       console.warn('running with options', opts);
       const instance = await lookupPsmInstance(opts.pair);
+      // @ts-expect-error xxx RpcRemote
       const spendAction = makePSMSpendAction(instance, agoricNames.brand, opts);
       outputAction(spendAction);
     });
@@ -313,7 +314,6 @@ export const makePsmCommand = async logger => {
 
       const psmInstance = lookupPsmInstance(opts.pair);
 
-      /** @type {import('../types.js').Brand} */
       const istBrand = agoricNames.brand.IST;
       const scaledAmount = harden({
         brand: istBrand,

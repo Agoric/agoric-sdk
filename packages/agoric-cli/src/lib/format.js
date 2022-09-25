@@ -66,7 +66,7 @@ export const asPercent = ratio => {
 /**
  * Summarize the balances array as user-facing informative tuples
  
- * @param {Array<import('../types').Amount>} balances
+ * @param {Array<Amount>} balances
  * @param {AssetDescriptor[]} assets
  */
 export const purseBalanceTuples = (balances, assets) => {
