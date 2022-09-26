@@ -202,8 +202,17 @@ export const makeWalletBridgeFromFollower = (
           const { status } = updateRecord;
           console.log('offerStatus', { status, offers });
           const oldOffer = offers[status.id];
-          if (
-            oldOffer &&
+          if (!oldOffer) {
+            break;
+          }
+          if ('error' in status) {
+            offers[status.id] = {
+              ...oldOffer,
+              id: `${status.id}`,
+              status: 'rejected',
+              error: `${status.error}`,
+            };
+          } else if (
             oldOffer.status !== 'accept' &&
             'numWantsSatisfied' in status
           ) {
@@ -212,10 +221,10 @@ export const makeWalletBridgeFromFollower = (
               id: `${status.id}`,
               status: 'accept',
             };
-            notifierKits.offers.updater.updateState(
-              harden(Object.values(offers)),
-            );
           }
+          notifierKits.offers.updater.updateState(
+            harden(Object.values(offers)),
+          );
           break;
         }
         default: {
