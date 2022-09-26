@@ -203,6 +203,7 @@ export const makeWalletBridgeFromFollower = (
           console.log('offerStatus', { status, offers });
           const oldOffer = offers[status.id];
           if (!oldOffer) {
+            console.warn('Update for unknown offer, doing nothing.');
             break;
           }
           if ('error' in status) {

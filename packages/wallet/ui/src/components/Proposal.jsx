@@ -181,7 +181,7 @@ const Proposal = ({ offer, purses }) => {
           <pre>{JSON.stringify(args, null, 2)}</pre>
         </div>
       )}
-      {error !== undefined && (
+      {error && (
         <div className="OfferEntry">
           <h6>Error</h6>
           <details style={{ whiteSpace: 'pre-wrap' }}>{error}</details>
