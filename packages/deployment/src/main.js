@@ -468,6 +468,7 @@ show-config      display the client connection parameters
         'VAULT_FACTORY_CONTROLLER_ADDR',
         'CHAIN_BOOTSTRAP_VAT_CONFIG',
         'SLOGSENDER',
+        'SLOGSENDER_AGENT',
         'XSNAP_TEST_RECORD',
         'SWING_STORE_TRACE',
         'XSNAP_KEEP_SNAPSHOTS',

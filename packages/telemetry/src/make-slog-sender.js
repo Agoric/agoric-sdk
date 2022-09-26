@@ -8,6 +8,8 @@ export const DEFAULT_SLOGSENDER_MODULE =
   '@agoric/telemetry/src/flight-recorder.js';
 export const SLOGFILE_SENDER_MODULE = '@agoric/telemetry/src/slog-file.js';
 
+export const DEFAULT_SLOGSENDER_AGENT = 'self';
+
 /** @typedef {import('./index.js').SlogSender} SlogSender */
 
 /**
@@ -16,7 +18,11 @@ export const SLOGFILE_SENDER_MODULE = '@agoric/telemetry/src/slog-file.js';
  */
 export const makeSlogSender = async (opts = {}) => {
   const { env = {}, stateDir: stateDirOption, ...otherOpts } = opts;
-  const { SLOGSENDER = DEFAULT_SLOGSENDER_MODULE, ...otherEnv } = env;
+  const {
+    SLOGSENDER = DEFAULT_SLOGSENDER_MODULE,
+    SLOGSENDER_AGENT = DEFAULT_SLOGSENDER_AGENT,
+    ...otherEnv
+  } = env;
 
   const slogSenderModules = SLOGSENDER.split(',').map(modulePath =>
     modulePath.startsWith('.')
@@ -33,6 +39,30 @@ export const makeSlogSender = async (opts = {}) => {
 
   if (!slogSenderModules.length) {
     return undefined;
+  }
+
+  switch (SLOGSENDER_AGENT) {
+    case '':
+    case 'self':
+      break;
+    case 'process': {
+      console.warn('Loading slog sender in subprocess');
+      return import('./slog-sender-pipe.js').then(
+        async ({ makeSlogSender: makeSogSenderPipe }) =>
+          makeSogSenderPipe({
+            env: {
+              SLOGSENDER,
+              SLOGSENDER_AGENT: 'self',
+              ...otherEnv,
+            },
+            stateDir: stateDirOption,
+            ...otherOpts,
+          }),
+      );
+    }
+    case 'worker':
+    default:
+      console.warn(`Unknown SLOGSENDER_AGENT=${SLOGSENDER_AGENT}`);
   }
 
   console.warn('Loading slog sender modules:', ...slogSenderModules);

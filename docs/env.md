@@ -204,6 +204,18 @@ their exported `makeSlogSender` function called to create an aggregate
 The default is `'@agoric/telemetry/src/flight-recorder.js'`, which writes to an
 mmap'ed circular buffer.
 
+## SLOGSENDER_AGENT
+
+Affects: cosmic-swingset
+
+Purpose: selects the agent type used to handle the SwingSet LOG
+
+Description: if empty or `'self'` slog senders are loaded in the same process
+and thread as the SwingSet kernel. If `'process'`, slog senders are loaded in a
+sub-process which receives all SLOG events over an IPC connection.
+
+The default is `'self'`.
+
 ## SWINGSET_WORKER_TYPE
 
 Affects: solo
