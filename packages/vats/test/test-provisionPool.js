@@ -268,6 +268,8 @@ const makeWalletFactoryKitFor1 = async address => {
   const b1 = bankManager.getBankForAddress(address);
   const p1 = b1.getPurse(fees.brand);
 
+  /** @type {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} */
+  // @ts-expect-error mock
   const smartWallet = harden({
     getDepositFacet: () => {
       pmt => E(p1).deposit(pmt);
@@ -276,8 +278,8 @@ const makeWalletFactoryKitFor1 = async address => {
 
   const done = new Set();
   /** @type {import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']} */
+  // @ts-expect-error mock
   const walletFactory = {
-    // @ts-expect-error mock
     provideSmartWallet: async (a, _b, nameAdmin) => {
       assert.equal(a, address);
 
