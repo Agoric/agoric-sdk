@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -28,6 +29,8 @@ const (
 	StoragePathCustom       = "published"
 	StoragePathBundles      = "bundles"
 )
+
+const MaxUint53 = 9007199254740991 // Number.MAX_SAFE_INTEGER = 2**53 - 1
 
 // Keeper maintains the link to data vstorage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
@@ -78,7 +81,7 @@ func NewKeeper(
 // intermediate transaction state.
 //
 // The actionQueue's format is documented by `makeChainQueue` in
-// `packages/cosmic-swingset/src/chain-main.js`.
+// `packages/cosmic-swingset/src/make-queue.js`.
 func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
 	bz, err := json.Marshal(action)
 	if err != nil {
@@ -86,14 +89,14 @@ func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
 	}
 
 	// Get the current queue tail, defaulting to zero if its vstorage doesn't exist.
-	tail := uint64(0)
-	tailStr := k.vstorageKeeper.GetData(ctx, "actionQueue.tail")
-	if len(tailStr) > 0 {
-		// Found, so parse it.
-		tail, err = strconv.ParseUint(tailStr, 10, 64)
-		if err != nil {
-			return err
-		}
+	tail, err := k.actionQueueIndex(ctx, "tail")
+	if err != nil {
+		return err
+	}
+
+	// JS uses IEEE 754 floats so avoid overflowing integers
+	if tail == MaxUint53 {
+		return errors.New("actionQueue overflow")
 	}
 
 	// Set the vstorage corresponding to the queue entry for the current tail.
@@ -102,6 +105,16 @@ func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
 	// Update the tail to point to the next available entry.
 	k.vstorageKeeper.SetStorage(ctx, "actionQueue.tail", fmt.Sprintf("%d", tail+1))
 	return nil
+}
+
+func (k Keeper) actionQueueIndex(ctx sdk.Context, name string) (uint64, error) {
+	index := uint64(0)
+	var err error
+	indexStr := k.vstorageKeeper.GetData(ctx, "actionQueue."+name)
+	if indexStr != "" {
+		index, err = strconv.ParseUint(indexStr, 10, 64)
+	}
+	return index, err
 }
 
 // BlockingSend sends a message to the controller and blocks the Golang process
