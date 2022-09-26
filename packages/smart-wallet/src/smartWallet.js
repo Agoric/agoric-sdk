@@ -421,18 +421,24 @@ const behavior = {
         },
       );
     },
+    /** @returns {SmartWalletBehavior['deposit']} */
     getDepositFacet() {
       return this.facets.deposit;
     },
+    /** @returns {SmartWalletBehavior['offers']} */
     getOffersFacet() {
       return this.facets.offers;
     },
 
     getUpdatesSubscriber() {
-      return this.state.updatePublishKit.subscriber;
+      /** @type {{state: State}} */
+      // @ts-expect-error
+      const { state } = this;
+      return state.updatePublishKit.subscriber;
     },
   },
 };
+/** @typedef {typeof behavior} SmartWalletBehavior */
 
 const finish = ({ state, facets }) => {
   /** @type {State} */
@@ -482,4 +488,4 @@ const SmartWalletKit = defineVirtualFarClassKit(
 export const makeSmartWallet = pickFacet(SmartWalletKit, 'self');
 harden(makeSmartWallet);
 
-/** @typedef {Awaited<ReturnType<typeof makeSmartWallet>>} SmartWallet */
+/** @typedef {ReturnType<typeof makeSmartWallet>} SmartWallet */

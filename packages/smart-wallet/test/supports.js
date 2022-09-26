@@ -53,7 +53,7 @@ export const withAmountUtils = kit => {
 
 /**
  *
- * @param {Promise<StoredFacet>} subscription
+ * @param {ERef<StoredFacet>} subscription
  */
 export const subscriptionKey = subscription => {
   return E(subscription)
