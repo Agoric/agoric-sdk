@@ -126,9 +126,9 @@ export const start = async (zcf, privateArgs) => {
     M.interface('walletFactoryCreatorI', {
       provideSmartWallet: M.callWhen(
         M.string(),
-        M.remotable(),
-        M.remotable(),
-      ).returns(M.number()),
+        M.await(M.remotable()),
+        M.await(M.remotable()),
+      ).returns([M.remotable(), M.boolean()]),
     }),
     {
       /**
