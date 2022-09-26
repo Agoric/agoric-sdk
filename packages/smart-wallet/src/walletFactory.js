@@ -21,6 +21,13 @@ const PrivateArgsShape = harden(
   ),
 );
 
+/**
+ * Make NameHub for this address and insert depositFacet
+ *
+ * @param {string} address
+ * @param {import('./smartWallet.js').SmartWallet} wallet
+ * @param {ERef<NameAdmin>} namesByAddressAdmin
+ */
 export const publishDepositFacet = async (
   address,
   wallet,
@@ -149,7 +156,8 @@ export const start = async (zcf, privateArgs) => {
             shared,
           );
 
-          await publishDepositFacet(address, wallet, namesByAddressAdmin);
+          // An await here would deadlock with invitePSMCommitteeMembers
+          void publishDepositFacet(address, wallet, namesByAddressAdmin);
 
           makerCalled = true;
           return wallet;
