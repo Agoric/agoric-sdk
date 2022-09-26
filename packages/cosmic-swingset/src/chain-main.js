@@ -392,6 +392,10 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       }
       lastCommitTime = t0;
 
+      await slogSender.forceFlush?.().catch(err => {
+        console.warn('Failed to flush slog sender', err);
+      });
+
       return {
         memoryUsage,
         heapStats,
