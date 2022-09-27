@@ -131,6 +131,7 @@ test('want stable', async t => {
   t.log('Fund the wallet');
   assert(anchor.mint);
   const payment = anchor.mint.mintPayment(anchor.make(swapSize));
+  // @ts-expect-error deposit does take a FarRef<Payment>
   await wallet.getDepositFacet().receive(payment);
 
   t.log('Prepare the swap');
@@ -312,6 +313,7 @@ test('deposit unknown brand', async t => {
   const wallet = await t.context.simpleProvideWallet('agoric1queue');
 
   const payment = rial.mint.mintPayment(rial.make(1_000n));
+  // @ts-expect-error deposit does take a FarRef<Payment>
   const result = await wallet.getDepositFacet().receive(harden(payment));
   // successful request but not deposited
   t.deepEqual(result, { brand: rial.brand, value: 0n });

@@ -9,6 +9,7 @@ import { BridgeId, WalletName } from '@agoric/internal';
 import { fit, M, makeHeapFarInstance } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeMyAddressNameAdminKit } from '@agoric/vats/src/core/basic-behaviors.js';
 import { E } from '@endo/far';
 import { makeSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
@@ -19,6 +20,24 @@ const PrivateArgsShape = harden(
     M.partial({ bridgeManager: M.eref(M.any()) }),
   ),
 );
+
+/**
+ * Make NameHub for this address and insert depositFacet
+ *
+ * @param {string} address
+ * @param {import('./smartWallet.js').SmartWallet} wallet
+ * @param {ERef<NameAdmin>} namesByAddressAdmin
+ */
+export const publishDepositFacet = async (
+  address,
+  wallet,
+  namesByAddressAdmin,
+) => {
+  const { nameHub, myAddressNameAdmin } = makeMyAddressNameAdminKit(address);
+  myAddressNameAdmin.update(WalletName.depositFacet, wallet.getDepositFacet());
+
+  return E(namesByAddressAdmin).update(address, nameHub, myAddressNameAdmin);
+};
 
 /**
  * @typedef {{
@@ -112,20 +131,23 @@ export const start = async (zcf, privateArgs) => {
   const creatorFacet = makeHeapFarInstance(
     'walletFactoryCreator',
     M.interface('walletFactoryCreatorI', {
-      provideSmartWallet: M.call(
+      provideSmartWallet: M.callWhen(
         M.string(),
-        M.eref(M.any()),
-        M.eref(M.any()),
-      ).returns(M.promise()),
+        M.await(M.remotable()),
+        M.await(M.remotable()),
+      ).returns([M.remotable(), M.boolean()]),
     }),
     {
       /**
        * @param {string} address
        * @param {ERef<import('@agoric/vats/src/vat-bank').Bank>} bank
-       * @param {ERef<MyAddressNameAdmin>} myAddressNameAdmin
-       * @returns {Promise<import('./smartWallet').SmartWallet>}
+       * @param {ERef<NameAdmin>} namesByAddressAdmin
+       * @returns {Promise<[import('./smartWallet').SmartWallet, boolean]>} wallet
+       *   along with a flag to distinguish between looking up an existing wallet
+       *   and creating a new one.
        */
-      provideSmartWallet(address, bank, myAddressNameAdmin) {
+      provideSmartWallet(address, bank, namesByAddressAdmin) {
+        let makerCalled = false;
         /** @type {() => Promise<import('./smartWallet').SmartWallet>} */
         const maker = async () => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
@@ -133,14 +155,17 @@ export const start = async (zcf, privateArgs) => {
             harden({ address, bank, invitationPurse }),
             shared,
           );
-          void E(myAddressNameAdmin).update(
-            WalletName.depositFacet,
-            wallet.getDepositFacet(),
-          );
+
+          // An await here would deadlock with invitePSMCommitteeMembers
+          void publishDepositFacet(address, wallet, namesByAddressAdmin);
+
+          makerCalled = true;
           return wallet;
         };
 
-        return provider.provideAsync(address, maker);
+        return provider
+          .provideAsync(address, maker)
+          .then(w => [w, makerCalled]);
       },
     },
   );
