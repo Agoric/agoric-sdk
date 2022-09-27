@@ -31,15 +31,15 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.5.0",
-    "@endo/eventual-send": "^0.16.4",
-    "@endo/import-bundle": "^0.2.52",
-    "@endo/marshal": "^0.7.4"
+    "@endo/eventual-send": "^0.16.5",
+    "@endo/import-bundle": "^0.2.53",
+    "@endo/marshal": "^0.7.5"
   },
   "devDependencies": {
     "@agoric/deploy-script-support": "^0.9.1",
     "@agoric/swingset-vat": "^0.29.0",
-    "@endo/bundle-source": "^2.3.0",
-    "@endo/init": "^0.5.48",
+    "@endo/bundle-source": "^2.3.1",
+    "@endo/init": "^0.5.49",
     "ava": "^4.3.1",
     "c8": "^7.7.2"
   },
