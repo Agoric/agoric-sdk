@@ -104,6 +104,7 @@ const Proposal = ({ offer, purses }) => {
     proposalForDisplay,
     proposalTemplate,
     invitationDetails: { fee, feePursePetname, expiry } = {},
+    error,
   } = offer;
 
   let give = {};
@@ -178,6 +179,12 @@ const Proposal = ({ offer, purses }) => {
         <div className="OfferEntry">
           <h6>Arguments</h6>
           <pre>{JSON.stringify(args, null, 2)}</pre>
+        </div>
+      )}
+      {error && (
+        <div className="OfferEntry">
+          <h6>Error</h6>
+          <details style={{ whiteSpace: 'pre-wrap' }}>{error}</details>
         </div>
       )}
     </>
