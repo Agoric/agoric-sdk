@@ -2,7 +2,7 @@
 import '@endo/eventual-send/shim';
 import './lockdown.js';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import AgoricLogo from './AgoricLogo';
 
@@ -130,6 +130,21 @@ const signalBridge = () => {
 };
 
 const Bridge = () => {
+  useEffect(() => {
+    // Try to signal the wallet connection without the user having to click the
+    // button if possible.
+    const trySignal = async () => {
+      if ('requestStorageAccess' in document) {
+        if (await document.hasStorageAccess()) {
+          signalBridge();
+        }
+      } else {
+        signalBridge();
+      }
+    };
+    trySignal();
+  }, []);
+
   return (
     <button className="signal-wallet-button" onClick={signalBridge}>
       <div style={{ width: 64, height: 42 }}>
