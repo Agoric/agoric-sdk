@@ -79,3 +79,87 @@ Useful testing commands are:
 ```sh
 yarn lerna version --conventional-prerelease --no-git-tag-version
 ```
+
+## Syncing Endo dependency versions
+
+Assuming that the most recent release of the Endo repository has been checked
+out in your home directory:
+
+```sh
+ENDO=~/endo
+```
+
+From `origin/master`, begin a branch for syncing Endo.
+
+```sh
+NOW=`date -u +%Y-%m-%d-%H-%M-%S`
+git checkout -b "$USER-sync-endo-$NOW" origin/master
+```
+
+Use a helper script from the Endo repository to update the dependency versions
+in all packages in Agoric SDK.
+
+```sh
+"$ENDO/scripts/sync-versions.sh" "$ENDO"
+git add -u
+git commit -m 'chore: Sync Endo versions'
+```
+
+In `patches`, there may be patch files for the previous versions of `@endo/*`
+or `ses` packages.
+Each of these patches will need to either be deleted or renamed to reflect the
+new version number or deleted, depending on whether the patch was incorporated
+in the latest release.
+Create a commit for each of these changes like `chore: Updated patch version
+for ses-ava 0.2.33` or `chore: Remove patch version for ses 0.15.22`
+
+This command will tell you the version number for every package published from
+Endo:
+
+```sh
+"$ENDO/scripts/get-versions.sh" "$ENDO"
+```
+
+Update `yarn.lock`.
+
+```sh
+yarn
+git add yarn.lock
+git commit -m 'chore: Update yarn.lock'
+```
+
+It is safe to assume that any change to Endo will invalidate assumptions about
+guest application meters.
+Increment the meter type in `packages/xsnap/api.js`.
+
+```js
+export const METER_TYPE = 'xs-meter-0';
+```
+
+Be sure to also update `test/test-xs-perf.js` with the new meter version.
+
+Changing anything in Endo usually frustrates the SwingSet kernel hashes, and if
+Endo changes nothing, bumping the meter version certainly will, and so
+predictably frustrates the kernel hash golden test.
+Update the test snapshots.
+
+```sh
+cd packages/SwingSet
+yarn test test/test-xsnap-store.js --update-snapshots
+git add test/snapshots/test-xsnap-store.*
+git commit -m 'chore(swingset-vat): Update xsnap store test snapshots'
+cd ../..
+```
+
+```sh
+cd packages/xsnap
+git add api.js
+git commit -am 'chore: Bump xsnap meter type'
+cd ../..
+```
+
+Push this branch and create a pull request.
+
+```sh
+git push origin "$USER-sync-endo-$NOW"
+```
