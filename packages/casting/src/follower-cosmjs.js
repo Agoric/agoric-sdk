@@ -16,8 +16,8 @@ const { details: X, quote: q } = assert;
 const textDecoder = new TextDecoder();
 
 /** @template T @typedef {import('./types.js').StreamCell<T>} StreamCell */
-/** @template T @typedef {import('./types.js').FollowerElement<T>} FollowerElement */
-/** @template T @typedef {import('./types.js').Follower<T>} Follower */
+/** @template T @typedef {import('./types.js').ValueFollowerElement<T>} ValueFollowerElement */
+/** @template T @typedef {import('./types.js').Follower<ValueFollowerElement<T>>} ValueFollower */
 
 /**
  * This is an imperfect heuristic to navigate the migration from value cells to
@@ -82,7 +82,7 @@ const proofs = ['strict', 'none', 'optimistic'];
  * @param {any} sourceP
  * @param {import('./types').LeaderOrMaker} [leaderOrMaker]
  * @param {import('./types').FollowerOptions} [options]
- * @returns {Follower<FollowerElement<T>>}
+ * @returns {ValueFollower<T>}
  */
 export const makeCosmjsFollower = (
   sourceP,
@@ -340,7 +340,7 @@ export const makeCosmjsFollower = (
    * @param {any} data
    * @param {number} blockHeight
    * @param {number} currentBlockHeight
-   * @returns {Promise<FollowerElement<T>>}
+   * @returns {Promise<ValueFollowerElement<T>>}
    */
   const followerElementFromStreamCellValue = async (
     data,
@@ -357,7 +357,7 @@ export const makeCosmjsFollower = (
   /**
    * @param {StreamCell<T>} streamCell
    * @param {number} currentBlockHeight
-   * @yields {FollowerElement<T>}
+   * @yields {ValueFollowerElement<T>}
    */
   function* allValuesFromCell(streamCell, currentBlockHeight) {
     for (const data of streamCell.values) {
@@ -372,7 +372,7 @@ export const makeCosmjsFollower = (
   /**
    * @param {StreamCell<T>} streamCell
    * @param {number} currentBlockHeight
-   * @yields {FollowerElement<T>}
+   * @yields {ValueFollowerElement<T>}
    */
   function* reverseValuesFromCell(streamCell, currentBlockHeight) {
     for (let i = streamCell.values.length - 1; i >= 0; i -= 1) {
@@ -387,7 +387,7 @@ export const makeCosmjsFollower = (
   /**
    * @param {StreamCell<T>} streamCell
    * @param {number} currentBlockHeight
-   * @yields {FollowerElement<T>}
+   * @yields {ValueFollowerElement<T>}
    */
   function* lastValueFromCell(streamCell, currentBlockHeight) {
     const { values } = streamCell;
@@ -402,7 +402,7 @@ export const makeCosmjsFollower = (
   }
 
   /**
-   * @yields {FollowerElement<T>}
+   * @yields {ValueFollowerElement<T>}
    */
   async function* getLatestIterable() {
     let blockHeight;
@@ -448,7 +448,7 @@ export const makeCosmjsFollower = (
 
   /**
    * @param {number} cursorBlockHeight
-   * @yields {FollowerElement<T>}
+   * @yields {ValueFollowerElement<T>}
    */
   async function* getEachIterableAtHeight(cursorBlockHeight) {
     // Track the data for the last emitted cell (the cell at the
@@ -569,7 +569,7 @@ export const makeCosmjsFollower = (
 
   /**
    * @param {number} cursorBlockHeight
-   * @yields {FollowerElement<T>}
+   * @yields {ValueFollowerElement<T>}
    */
   async function* getReverseIterableAtHeight(cursorBlockHeight) {
     // Track the data for the last emitted cell (the cell at the
@@ -588,7 +588,7 @@ export const makeCosmjsFollower = (
     }
   }
 
-  /** @type {Follower<FollowerElement<T>>} */
+  /** @type {ValueFollower<T>} */
   return Far('chain follower', {
     async getLatestIterable() {
       return getLatestIterable();
