@@ -52,7 +52,7 @@ async function buildSwingset(
   vatconfig,
   argv,
   env,
-  { debugName = undefined, slogCallbacks, slogFile, slogSender },
+  { debugName = undefined, slogCallbacks, slogSender },
 ) {
   // FIXME: Find a better way to propagate the role.
   process.env.ROLE = argv.ROLE;
@@ -118,7 +118,6 @@ async function buildSwingset(
     {
       env,
       slogCallbacks,
-      slogFile,
       slogSender,
     },
   );
@@ -213,7 +212,6 @@ export async function launch({
   debugName = undefined,
   verboseBlocks = false,
   metricsProvider = DEFAULT_METER_PROVIDER,
-  slogFile = undefined,
   slogSender,
   mapSize = DEFAULT_LMDB_MAP_SIZE,
   swingStoreTraceFile,
@@ -272,7 +270,6 @@ export async function launch({
     {
       debugName,
       slogCallbacks,
-      slogFile,
       slogSender,
     },
   );

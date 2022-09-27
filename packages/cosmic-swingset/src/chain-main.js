@@ -13,7 +13,7 @@ import {
 import { makeBufferedStorage } from '@agoric/swingset-vat/src/lib/storageAPI.js';
 
 import { assert, details as X } from '@agoric/assert';
-import { makeSlogSenderFromModule } from '@agoric/telemetry';
+import { makeSlogSender } from '@agoric/telemetry';
 
 import { makeChainStorageRoot } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeMarshal } from '@endo/marshal';
@@ -318,14 +318,12 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     });
 
     const {
-      SLOGFILE,
-      SLOGSENDER,
       LMDB_MAP_SIZE,
       SWING_STORE_TRACE,
       XSNAP_KEEP_SNAPSHOTS,
       NODE_HEAP_SNAPSHOTS = -1,
     } = env;
-    const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
+    const slogSender = await makeSlogSender({
       stateDir: stateDBDir,
       env,
       serviceName: TELEMETRY_SERVICE_NAME,
@@ -394,6 +392,10 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       }
       lastCommitTime = t0;
 
+      await slogSender.forceFlush?.().catch(err => {
+        console.warn('Failed to flush slog sender', err);
+      });
+
       return {
         memoryUsage,
         heapStats,
@@ -421,7 +423,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       env,
       verboseBlocks: true,
       metricsProvider,
-      slogFile: SLOGFILE,
       slogSender,
       mapSize,
       swingStoreTraceFile,

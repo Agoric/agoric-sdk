@@ -164,8 +164,7 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
  *   verbose?: boolean,
  *   debugPrefix?: string,
  *   slogCallbacks?: unknown,
- *   slogFile?: string,
- *   slogSender?: (obj: any, jsonObj: string) => void,
+ *   slogSender?: import('@agoric/telemetry').SlogSender,
  *   testTrackDecref?: unknown,
  *   warehousePolicy?: { maxVatsOnline?: number },
  *   overrideVatManagerOptions?: unknown,
@@ -190,7 +189,6 @@ export async function makeSwingsetController(
     verbose,
     debugPrefix = '',
     slogCallbacks,
-    slogFile,
     slogSender,
     spawn = ambientSpawn,
     warehousePolicy = {},
@@ -200,12 +198,8 @@ export async function makeSwingsetController(
     throw Error('SES must be installed before calling makeSwingsetController');
   }
 
-  const slogF =
-    // eslint-disable-next-line @jessie.js/no-nested-await
-    slogFile && (await fs.createWriteStream(slogFile, { flags: 'a' })); // append
-
   function writeSlogObject(obj) {
-    if (!slogSender && !slogF) {
+    if (!slogSender) {
       // Fast path; nothing to do.
       return;
     }
@@ -218,20 +212,8 @@ export async function makeSwingsetController(
     // rearrange the fields a bit to make it more legible to humans
     const timedObj = { type: undefined, ...obj, time, monotime };
 
-    // Serialise just once.
-    const jsonObj = JSON.stringify(timedObj, (_, arg) =>
-      typeof arg === 'bigint' ? Number(arg) : arg,
-    );
-
-    if (slogSender) {
-      // Allow the SwingSet host to do anything they want with slog messages.
-      slogSender(timedObj, jsonObj);
-    }
-    if (slogF) {
-      // Record the pristine JSON object.
-      slogF.write(jsonObj);
-      slogF.write('\n');
-    }
+    // Allow the SwingSet host to do anything they want with slog messages.
+    slogSender(timedObj);
   }
 
   // eslint-disable-next-line no-shadow
@@ -543,10 +525,17 @@ export async function makeSwingsetController(
  *
  * @param {SwingSetConfig} config
  * @param {string[]} argv
- * @param {{ hostStorage?: HostStore, env?: Record<string, string>, verbose?:
- *   boolean, kernelBundles?: Record<string, Bundle>, debugPrefix?: string,
- *   slogCallbacks?: unknown, testTrackDecref?: unknown, warehousePolicy?: {
- *   maxVatsOnline?: number }, slogFile?: string }} runtimeOptions
+ * @param {{
+ *   hostStorage?: HostStore;
+ *   env?: Record<string, string>;
+ *   verbose?: boolean;
+ *   kernelBundles?: Record<string, Bundle>;
+ *   debugPrefix?: string;
+ *   slogCallbacks?: unknown;
+ *   slogSender?: import('@agoric/telemetry').SlogSender;
+ *   testTrackDecref?: unknown;
+ *    warehousePolicy?: { maxVatsOnline?: number };
+ * }} runtimeOptions
  * @typedef { import('@agoric/swing-store').KVStore } KVStore
  */
 export async function buildVatController(
@@ -562,7 +551,7 @@ export async function buildVatController(
     debugPrefix,
     slogCallbacks,
     warehousePolicy,
-    slogFile,
+    slogSender,
   } = runtimeOptions;
   const { kernel: kernelBundle, ...otherBundles } = kernelAndOtherBundles;
   const kernelBundles = runtimeOptions.kernelBundles ? otherBundles : undefined;
@@ -573,7 +562,7 @@ export async function buildVatController(
     debugPrefix,
     slogCallbacks,
     warehousePolicy,
-    slogFile,
+    slogSender,
     kernelBundle,
   };
   const initializationOptions = { verbose, kernelBundles };

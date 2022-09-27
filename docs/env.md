@@ -194,14 +194,27 @@ Affects: cosmic-swingset
 
 Purpose: intercept the SwingSet LOG file in realtime
 
-Description: when nonempty, use the value as a module specifier.  The module
-will be loaded by `@agoric/telemetry/src/make-slog-sender.js`, via
-`import(moduleSpec)`, and then the exported `makeSlogSender` function creates a
-`slogSender`.  Then, every time a SLOG object is written by SwingSet,
+Description: when nonempty, use the value as a list of module specifiers
+separated by commas `,`.  The modules will be loaded by
+`@agoric/telemetry/src/make-slog-sender.js`, via `import(moduleSpec)`, and
+their exported `makeSlogSender` function called to create an aggregate
+`slogSender`. Every time a SLOG object is written by SwingSet, each module's
 `slogSender(slogObject)` will be called.
 
 The default is `'@agoric/telemetry/src/flight-recorder.js'`, which writes to an
 mmap'ed circular buffer.
+
+## SLOGSENDER_AGENT
+
+Affects: cosmic-swingset
+
+Purpose: selects the agent type used to handle the SwingSet LOG
+
+Description: if empty or `'self'` slog senders are loaded in the same process
+and thread as the SwingSet kernel. If `'process'`, slog senders are loaded in a
+sub-process which receives all SLOG events over an IPC connection.
+
+The default is `'self'`.
 
 ## SWINGSET_WORKER_TYPE
 
