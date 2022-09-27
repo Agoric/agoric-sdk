@@ -9,7 +9,7 @@ import {
 
 import anylogger from 'anylogger';
 
-import { makeSlogSenderFromModule } from '@agoric/telemetry';
+import { makeSlogSender } from '@agoric/telemetry';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { assert, details as X } from '@agoric/assert';
@@ -91,9 +91,9 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     serviceName: TELEMETRY_SERVICE_NAME,
   });
 
-  const { SLOGFILE, SLOGSENDER, LMDB_MAP_SIZE } = process.env;
+  const { LMDB_MAP_SIZE } = env;
   const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
-  const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
+  const slogSender = await makeSlogSender({
     stateDir: stateDBdir,
     serviceName: TELEMETRY_SERVICE_NAME,
     env,
@@ -119,7 +119,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     argv,
     debugName: GCI,
     metricsProvider,
-    slogFile: SLOGFILE,
     slogSender,
     mapSize,
   });

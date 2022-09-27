@@ -7,7 +7,7 @@ import zlib from 'zlib';
 import readline from 'readline';
 import process from 'process';
 
-import { makeSlogSenderFromModule } from './make-slog-sender.js';
+import { makeSlogSender } from './make-slog-sender.js';
 
 const LINE_COUNT_TO_FLUSH = 10000;
 const ELAPSED_MS_TO_FLUSH = 3000;
@@ -22,7 +22,7 @@ async function run() {
 
   if (!SLOGSENDER) {
     console.log(
-      `SLOGSENDER=@agoric/telemetry/src/all.js ingest-slog [SLOGFILE[.gz]]`,
+      `SLOGSENDER=@agoric/telemetry/src/otel-trace.js ingest-slog [SLOGFILE[.gz]]`,
     );
     console.log(` - sends slogfile via telemetry`);
     process.exitCode = 1;
@@ -30,9 +30,10 @@ async function run() {
   }
 
   const [slogFile] = args;
-  const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
+  const slogSender = await makeSlogSender({
     serviceName,
     stateDir: '.',
+    env: process.env,
   });
 
   if (!slogSender) {
@@ -123,10 +124,10 @@ async function run() {
         time: virtualTime,
         actualTime: obj.time,
       };
-      slogSender(virtualTimeObj, JSON.stringify(virtualTimeObj));
+      slogSender(virtualTimeObj);
     } else {
       // Use the original.
-      slogSender(obj, line);
+      slogSender(obj);
     }
   }
 

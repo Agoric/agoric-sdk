@@ -61,13 +61,15 @@ async function doTestSetup(t, doVatAdminRestart = false, enableSlog = false) {
     brokenHang: { bundle: bundles.brokenHangVatBundle },
   };
   let doSlog = false;
-  function slogSender(_, s) {
+  function slogSender(slogObj) {
     if (!doSlog) return;
-    const o = JSON.parse(s);
-    delete o.time;
-    delete o.replay;
-    delete o.crankNum;
-    delete o.deliveryNum;
+    const {
+      time: _1,
+      replay: _2,
+      crankNum: _3,
+      deliveryNum: _4,
+      ...o
+    } = slogObj;
     if (['crank-start', 'deliver', 'syscall'].includes(o.type)) {
       console.log(JSON.stringify(o));
     }
