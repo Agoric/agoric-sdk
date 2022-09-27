@@ -79,3 +79,51 @@ Useful testing commands are:
 ```sh
 yarn lerna version --conventional-prerelease --no-git-tag-version
 ```
+
+## Syncing Endo dependency versions
+
+Assuming that the most recent release of the Endo repository has been checked
+out in your home directory:
+
+```sh
+ENDO=~/endo
+```
+
+Use a helper script from the Endo repository to update the dependency versions
+in all packages in Agoric SDK.
+
+```sh
+"$ENDO/scripts/sync-versions.sh" "$ENDO"
+git add -u
+git commit -m 'chore: Sync Endo versions'
+```
+
+Changing anything in Endo usually frustrates the SwingSet kernel hashes,
+so predictably frustrates the kernel hash golden test.
+Update the test snapshots.
+
+```sh
+cd packages/SwingSet
+yarn test test/test-xsnap-store.js --update-snapshots
+git add test/snapshots/test-xsnap-store.*
+git commit -m 'chore(swingset-vat): Update xsnap store test snapshots'
+cd ../..
+```
+
+It is safe to assume that any change to Endo will invalidate assumptions about
+guest application meters.
+Increment the meter type in `packages/xsnap/api.js`.
+
+```js
+export const METER_TYPE = 'xs-meter-0';
+```
+
+```sh
+cd packages/xsnap
+git add api.js
+git commit -am 'chore: Bump xsnap meter type'
+cd ../..
+```
+
+
+
