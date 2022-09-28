@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - release-pismo
       - beta
   pull_request:
     types:

@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-The current `master` branch is supported with security updates.
+The current `master` and `release-pismo` branches are supported with security updates.
 
 ## Coordinated Vulnerability Disclosure
 
