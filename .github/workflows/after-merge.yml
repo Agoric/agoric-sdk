@@ -52,10 +52,17 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: check credentials
         run: npm whoami
-      - name: publish to NPM dev tag
+      - name: publish to NPM tag
         run: |
+          if [ "${{ github.ref_name }}" = "release-pismo" ]; then
+            # A pismo dev release.
+            TAG=pismo-dev
+          else
+            # Just a dev release.
+            TAG=dev
+          fi
           yarn lerna publish --conventional-prerelease --canary --exact \
-            --dist-tag=dev --preid=dev-$(git rev-parse --short=7 HEAD) \
+            --dist-tag=$TAG --preid=$TAG-$(git rev-parse --short=7 HEAD) \
             --no-push --no-verify-access --yes
       - name: notify on failure
         if: failure()
