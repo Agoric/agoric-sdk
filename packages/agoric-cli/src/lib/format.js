@@ -128,7 +128,7 @@ export const offerStatusTuples = (state, agoricNames) => {
           invitationSpec: { instance, publicInvitationMaker },
         } = o;
         const entry = Object.entries(agoricNames.instance).find(
-          // @ts-expect-error minimarshal types are off by a bit
+          // @ts-ignore minimarshal types are off by a bit
           ([_name, candidate]) => candidate === instance,
         );
         const instanceName = entry ? entry[0] : '???';
