@@ -2,7 +2,10 @@ name: Build release Docker Images
 
 on:
   push:
-    branches: [master] # $default-branch
+    branches:
+      # $default-branch
+      - master
+      - release-pismo
     tags:
       - '@agoric/sdk@*'
   workflow_dispatch:
@@ -58,11 +61,17 @@ jobs:
           SDK_TAG=$(echo "${{ github.ref_name }}" | sed -ne 's!^@agoric/sdk@!!p')
           case $SDK_TAG in
             "")
-              # Just a dev release.
-              DOCKER_TAGS=dev
+              if [ "${{ github.ref_name }}" = "release-pismo" ]; then
+                # A pismo dev release.
+                DOCKER_TAGS=pismo-dev
+              else
+                # Just a dev release.
+                DOCKER_TAGS=dev
+              fi
               ;;
             *)
               # A tagged SDK release.
+              # The commit may or may not be a descendant of the current master branch
               DOCKER_TAGS="latest $SDK_TAG"
               ;;
           esac

@@ -3,7 +3,10 @@ on:
   push:
     tags:
       - v*
-    branches: [master] # $default-branch
+    branches:
+      # $default-branch
+      - master
+      - release-pismo
   pull_request:
 permissions:
   contents: read
