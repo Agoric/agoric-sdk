@@ -100,38 +100,49 @@ export const offerStatusTuples = (state, agoricNames) => {
     [...brands.values()],
   );
   const fmtRecord = r =>
-    Object.fromEntries(
-      Object.entries(r).map(([kw, amount]) => [kw, fmt(amount)]),
-    );
+    r
+      ? Object.fromEntries(
+          Object.entries(r).map(([kw, amount]) => [kw, fmt(amount)]),
+        )
+      : undefined;
   return Array.from(offerStatuses.values()).map(o => {
     assert(o);
-    assert(o.invitationSpec.source === 'contract');
-    const {
-      invitationSpec: { instance, publicInvitationMaker },
-      proposal: { give, want },
-      payouts,
-    } = o;
-    const entry = Object.entries(agoricNames.instance).find(
-      ([_name, candidate]) => candidate === instance,
-    );
-    const instanceName = entry ? entry[0] : '???';
     let when = '??';
     try {
       when = new Date(o.id).toISOString();
     } catch {
       console.debug('offer id', o.id, 'not a timestamp');
     }
-    return [
-      instanceName,
-      o.id,
-      when,
-      publicInvitationMaker,
-      o.numWantsSatisfied,
-      {
-        give: fmtRecord(give),
-        want: fmtRecord(want),
-        ...(payouts ? { payouts: fmtRecord(payouts) } : {}),
-      },
-    ];
+    const {
+      proposal: { give, want },
+      payouts,
+    } = o;
+    const amounts = {
+      give: fmtRecord(give),
+      want: fmtRecord(want),
+      payouts: fmtRecord(payouts),
+    };
+    switch (o.invitationSpec.source) {
+      case 'contract': {
+        const {
+          invitationSpec: { instance, publicInvitationMaker },
+        } = o;
+        const entry = Object.entries(agoricNames.instance).find(
+          // @ts-ignore minimarshal types are off by a bit
+          ([_name, candidate]) => candidate === instance,
+        );
+        const instanceName = entry ? entry[0] : '???';
+        return [
+          instanceName,
+          o.id,
+          when,
+          publicInvitationMaker,
+          o.numWantsSatisfied,
+          amounts,
+        ];
+      }
+      default:
+        return ['?', o.id, when, '?', o.numWantsSatisfied, amounts];
+    }
   });
 };
