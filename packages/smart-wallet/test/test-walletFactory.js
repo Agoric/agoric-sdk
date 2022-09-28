@@ -83,7 +83,7 @@ test('bridge handler', async t => {
     updated: 'offerStatus',
     status: {
       ...offerSpec,
-      error: 'Error: A Zoe invitation is required, not "[Promise]"',
+      error: 'Error: no invitation match (0 description and 0 instance)',
     },
   });
 });
@@ -100,6 +100,13 @@ test('notifiers', async t => {
     t.is(
       await subscriptionKey(updates),
       `mockChainStorageRoot.wallet.${address}`,
+    );
+
+    const current = await E(smartWallet).getCurrentSubscriber();
+
+    t.is(
+      await subscriptionKey(current),
+      `mockChainStorageRoot.wallet.${address}.current`,
     );
   }
 
