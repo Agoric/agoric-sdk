@@ -51,6 +51,7 @@ export const makePSMSpendAction = (instance, brands, opts) => {
     brands,
     opts,
     opts.feePct ? opts.feePct / 100 : undefined,
+    opts.pair[1],
   );
 
   console.warn('psm spend give', proposal.give);
