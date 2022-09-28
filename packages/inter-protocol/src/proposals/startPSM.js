@@ -60,6 +60,8 @@ export const startPSM = async (
     'string',
     X`anchorOptions.denom must be a string, not ${denom}`,
   );
+  /** @type {[Brand<'nat'>, [Brand<'nat'>, Issuer<'nat'>], FeeMintAccess]} */
+  // @ts-expect-error cast
   const [stable, [anchorBrand, anchorIssuer], feeMintAccess] =
     await Promise.all([
       stableP,
@@ -82,14 +84,16 @@ export const startPSM = async (
   const [anchorInfo, stableInfo] = await Promise.all(
     [anchorBrand, stable].map(b => E(b).getDisplayInfo()),
   );
+
+  assert(anchorInfo.decimalPlaces && stableInfo.decimalPlaces);
   const mintLimit = AmountMath.make(stable, MINT_LIMIT);
   const terms = await deeplyFulfilledObject(
     harden({
       anchorBrand,
       anchorPerMinted: makeRatio(
-        BigInt(10 ** anchorInfo.decimalPlaces),
+        10n ** BigInt(anchorInfo.decimalPlaces),
         anchorBrand,
-        BigInt(10 ** stableInfo.decimalPlaces),
+        10n ** BigInt(stableInfo.decimalPlaces),
         stable,
       ),
       governedParams: {
