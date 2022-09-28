@@ -85,15 +85,16 @@ export const startPSM = async (
     [anchorBrand, stable].map(b => E(b).getDisplayInfo()),
   );
 
-  assert(anchorInfo.decimalPlaces && stableInfo.decimalPlaces);
   const mintLimit = AmountMath.make(stable, MINT_LIMIT);
+  const anchorDecimalPlaces = anchorInfo.decimalPlaces || 1n;
+  const stableDecimalPlaces = stableInfo.decimalPlaces || 1n;
   const terms = await deeplyFulfilledObject(
     harden({
       anchorBrand,
       anchorPerMinted: makeRatio(
-        10n ** BigInt(anchorInfo.decimalPlaces),
+        10n ** BigInt(anchorDecimalPlaces),
         anchorBrand,
-        10n ** BigInt(stableInfo.decimalPlaces),
+        10n ** BigInt(stableDecimalPlaces),
         stable,
       ),
       governedParams: {
