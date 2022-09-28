@@ -3,6 +3,7 @@ package vbank
 import (
 	"encoding/json"
 	"fmt"
+	stdlog "log"
 	"sort"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
@@ -70,6 +71,9 @@ type vbankBalanceUpdate struct {
 	Updated vbankManyBalanceUpdates `json:"updated"`
 }
 
+// getBalanceUpdate returns a bridge message containing the current bank balance
+// for the given addresses each for the specified denominations. Coins are used
+// only to track the set of denoms, not for the particular nonzero amounts.
 func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToBalance map[string]sdk.Coins) vm.Jsonable {
 	nentries := len(addressToBalance)
 	if nentries == 0 {
@@ -86,11 +90,18 @@ func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToBalance map[strin
 	// Note that Golang randomises the order of iteration, so we have to sort
 	// below to be deterministic.
 	for address, coins := range addressToBalance {
+		account, err := sdk.AccAddressFromBech32(address)
+		if err != nil {
+			stdlog.Println("Cannot parse address for vbank update", address)
+			continue
+		}
 		for _, coin := range coins {
+			// generate an update even when the current balance is zero
+			balance := keeper.GetBalance(ctx, account, coin.Denom)
 			update := vbankSingleBalanceUpdate{
 				Address: address,
 				Denom:   coin.Denom,
-				Amount:  coin.Amount.String(),
+				Amount:  balance.Amount.String(),
 			}
 			event.Updated = append(event.Updated, update)
 		}
@@ -153,7 +164,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 			return "", fmt.Errorf("cannot grab %s coins: %w", coins.Sort().String(), err)
 		}
 		addressToBalances := make(map[string]sdk.Coins, 1)
-		addressToBalances[msg.Sender] = sdk.NewCoins(keeper.GetBalance(ctx.Context, addr, msg.Denom))
+		addressToBalances[msg.Sender] = sdk.NewCoins(sdk.NewInt64Coin(msg.Denom, 1))
 		bz, err := marshal(getBalanceUpdate(ctx.Context, keeper, addressToBalances))
 		if err != nil {
 			return "", err
@@ -181,7 +192,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 			return "", fmt.Errorf("cannot give %s coins: %w", coins.Sort().String(), err)
 		}
 		addressToBalances := make(map[string]sdk.Coins, 1)
-		addressToBalances[msg.Recipient] = sdk.NewCoins(keeper.GetBalance(ctx.Context, addr, msg.Denom))
+		addressToBalances[msg.Recipient] = sdk.NewCoins(sdk.NewInt64Coin(msg.Denom, 1))
 		bz, err := marshal(getBalanceUpdate(ctx.Context, keeper, addressToBalances))
 		if err != nil {
 			return "", err

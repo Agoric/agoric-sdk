@@ -19,6 +19,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -106,17 +107,18 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	events := ctx.EventManager().GetABCIEventHistory()
 	addressToBalance := make(map[string]sdk.Coins, len(events)*2)
 
-	ensureBalanceIsPresent := func(address string) error {
-		if _, ok := addressToBalance[address]; ok {
-			return nil
+	// records that we want to emit an balance update for the address
+	// for the given denoms. We use the Coins only to track the set of
+	// denoms, not for the amounts.
+	ensureBalanceIsPresent := func(address string, denoms sdk.Coins) {
+		if denoms.IsZero() {
+			return
 		}
-		account, err := sdk.AccAddressFromBech32(address)
-		if err != nil {
-			return err
+		currentDenoms := sdk.NewCoins()
+		if coins, ok := addressToBalance[address]; ok {
+			currentDenoms = coins
 		}
-		coins := am.keeper.GetAllBalances(ctx, account)
-		addressToBalance[address] = coins
-		return nil
+		addressToBalance[address] = currentDenoms.Add(denoms...)
 	}
 
 	/* Scan for all the events matching (taken from cosmos-sdk/x/bank/spec/04_events.md):
@@ -146,13 +148,23 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	for _, event := range events {
 		switch event.Type {
 		case "transfer":
+			addrs := []string{}
+			denoms := sdk.NewCoins()
 			for _, attr := range event.GetAttributes() {
 				switch string(attr.GetKey()) {
-				case "recipient", "sender":
-					address := string(attr.GetValue())
-					if err := ensureBalanceIsPresent(address); err != nil {
-						stdlog.Println("Cannot ensure vbank balance for", address, err)
+				case banktypes.AttributeKeyRecipient, banktypes.AttributeKeySender:
+					addrs = append(addrs, string(attr.GetValue()))
+				case sdk.AttributeKeyAmount:
+					coins, err := sdk.ParseCoinsNormalized(string(attr.GetValue()))
+					if err != nil {
+						stdlog.Println("Cannot ensure vbank balance for", addrs, err)
 					}
+					denoms = coins
+				}
+			}
+			if !denoms.IsZero() {
+				for _, addr := range addrs {
+					ensureBalanceIsPresent(addr, denoms)
 				}
 			}
 		}
