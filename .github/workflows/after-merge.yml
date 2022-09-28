@@ -3,7 +3,10 @@
 #  Require branches to be up to date before merging
 on:
   push:
-    branches: [master] # $default-branch
+    branches:
+      # $default-branch
+      - master
+      - release-pismo
 
 jobs:
   build:

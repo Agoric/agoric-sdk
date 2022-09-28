@@ -2,7 +2,10 @@ name: Build release Docker Images
 
 on:
   push:
-    branches: [master] # $default-branch
+    branches:
+      # $default-branch
+      - master
+      - release-pismo
     tags:
       - '@agoric/sdk@*'
   workflow_dispatch:

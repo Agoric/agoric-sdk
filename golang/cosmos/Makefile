@@ -4,6 +4,7 @@ NAME := $(shell sed -ne 's/.*"name": "\([^"]*\)".*/\1/p' package.json)
 VERSION := $(shell sed -ne 's/.*"version": "\([^"]*\)".*/\1/p' package.json)
 GIT_COMMIT = $(shell hash=`git rev-parse --short HEAD 2>/dev/null`; if test -n "$$hash"; then echo $$hash`git diff --quiet || echo -dirty`; else cat git-revision.txt; fi)
 PR_TARGET_REPO = ../../.git
+# TODO: figure out how to handle other branches like pismo-release
 PR_TARGET_BRANCH = master
 
 default: all

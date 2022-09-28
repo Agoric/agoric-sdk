@@ -5,7 +5,10 @@ name: ag-solo on xs
 
 on:
   push:
-    branches: [master] # $default-branch
+    branches:
+      # $default-branch
+      - master
+      - release-pismo
 
 jobs:
   xs-build:
