@@ -529,18 +529,26 @@ func Test_EndBlock_Events(t *testing.T) {
 
 	events := []abci.Event{
 		{
-			Type: "transfer",
+			Type: "coin_received",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("recipient"), Value: []byte(addr1)},
-				{Key: []byte("sender"), Value: []byte(addr2)},
+				{Key: []byte("receiver"), Value: []byte(addr1)},
+				{Key: []byte("amount"), Value: []byte("500ubld,600urun,700ushmoo")},
+			},
+		},
+		{
+			Type: "coin_spent",
+			Attributes: []abci.EventAttribute{
+				{Key: []byte("spender"), Value: []byte(addr2)},
 				{Key: []byte("amount"), Value: []byte("500ubld,600urun,700ushmoo")},
 				{Key: []byte("other"), Value: []byte(addr3)},
 			},
 		},
 		{
-			Type: "not a transfer",
+			Type: "something_else",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("sender"), Value: []byte(addr4)},
+				{Key: []byte("receiver"), Value: []byte(addr4)},
+				{Key: []byte("spender"), Value: []byte(addr4)},
+				{Key: []byte("amount"), Value: []byte("500ubld,600urun,700ushmoo")},
 			},
 		},
 	}
@@ -552,15 +560,22 @@ func Test_EndBlock_Events(t *testing.T) {
 		t.Errorf("EndBlock() got %+v, want empty", updates)
 	}
 
-	wantCalls := []string{
+	wantCalls1 := []string{
 		"GetBalance " + addr1 + " ubld",
 		"GetBalance " + addr1 + " urun",
 		"GetBalance " + addr1 + " ushmoo",
+	}
+	wantCalls2 := []string{
 		"GetBalance " + addr2 + " ubld",
 		"GetBalance " + addr2 + " urun",
 		"GetBalance " + addr2 + " ushmoo",
 	}
-	// TODO: make comparison order-insensitive
+	var wantCalls []string
+	if addr1 < addr2 {
+		wantCalls = append(wantCalls1, wantCalls2...)
+	} else {
+		wantCalls = append(wantCalls2, wantCalls1...)
+	}
 	if !reflect.DeepEqual(bank.calls, wantCalls) {
 		t.Errorf("got calls %v, want {%s}", bank.calls, wantCalls)
 	}

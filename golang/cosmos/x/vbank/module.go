@@ -123,49 +123,34 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 
 	/* Scan for all the events matching (taken from cosmos-sdk/x/bank/spec/04_events.md):
 
-	### MsgSend
-
-	| Type     | Attribute Key | Attribute Value    |
-	| -------- | ------------- | ------------------ |
-	| transfer | recipient     | {recipientAddress} |
-	| transfer | sender        | {senderAddress}    |
-	| transfer | amount        | {amount}           |
-	| message  | module        | bank               |
-	| message  | action        | send               |
-	| message  | sender        | {senderAddress}    |
-
-	### MsgMultiSend
-
-	| Type     | Attribute Key | Attribute Value    |
-	| -------- | ------------- | ------------------ |
-	| transfer | recipient     | {recipientAddress} |
-	| transfer | sender        | {senderAddress}    |
-	| transfer | amount        | {amount}           |
-	| message  | module        | bank               |
-	| message  | action        | multisend          |
-	| message  | sender        | {senderAddress}    |
+	type: "coin_received"
+	  "receiver": {recipient address}
+	  "amount": {Coins string}
+	type: "coin_spent"
+	  "spender": {spender address}
+	  "amount": {Coins string}
 	*/
+NextEvent:
 	for _, event := range events {
 		switch event.Type {
-		case "transfer":
-			addrs := []string{}
+		case banktypes.EventTypeCoinReceived, banktypes.EventTypeCoinSpent:
+			var addr string
 			denoms := sdk.NewCoins()
 			for _, attr := range event.GetAttributes() {
 				switch string(attr.GetKey()) {
-				case banktypes.AttributeKeyRecipient, banktypes.AttributeKeySender:
-					addrs = append(addrs, string(attr.GetValue()))
+				case banktypes.AttributeKeyReceiver, banktypes.AttributeKeySpender:
+					addr = string(attr.GetValue())
 				case sdk.AttributeKeyAmount:
 					coins, err := sdk.ParseCoinsNormalized(string(attr.GetValue()))
 					if err != nil {
-						stdlog.Println("Cannot ensure vbank balance for", addrs, err)
+						stdlog.Println("Cannot ensure vbank balance for", addr, err)
+						break NextEvent
 					}
 					denoms = coins
 				}
 			}
-			if !denoms.IsZero() {
-				for _, addr := range addrs {
-					ensureBalanceIsPresent(addr, denoms)
-				}
+			if addr != "" && !denoms.IsZero() {
+				ensureBalanceIsPresent(addr, denoms)
 			}
 		}
 	}
