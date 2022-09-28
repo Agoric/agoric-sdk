@@ -83,7 +83,7 @@ test('bridge handler', async t => {
     updated: 'offerStatus',
     status: {
       ...offerSpec,
-      error: 'Error: A Zoe invitation is required, not "[Promise]"',
+      error: 'Error: no invitation match (0 description and 0 instance)',
     },
   });
 });

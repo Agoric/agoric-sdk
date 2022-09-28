@@ -41,6 +41,15 @@ const { details: X, quote: q } = assert;
  */
 
 /**
+ * @typedef {{
+ *   brands: BrandDescriptor[],
+ *   purseBalances: Amount[],
+ *   offerToInvitation: Record<number, Amount>,
+ *   lastOfferId: number,
+ * }} CurrentWalletState
+ */
+
+/**
  * @typedef {{ updated: 'offerStatus', status: import('./offers.js').OfferStatus } |
  * { updated: 'balance'; currentAmount: Amount } |
  * { updated: 'brand', descriptor: BrandDescriptor }
@@ -82,10 +91,12 @@ const { details: X, quote: q } = assert;
  * @typedef {Readonly<HeldParams & {
  * paymentQueues: MapStore<Brand, Array<import('@endo/far').FarRef<Payment>>>,
  * offerToInvitationMakers: MapStore<number, import('./types').RemoteInvitationMakers>,
+ * offerToInvitationAmount: MapStore<number, Amount>,
  * brandDescriptors: MapStore<Brand, BrandDescriptor>,
  * brandPurses: MapStore<Brand, RemotePurse>,
  * purseBalances: MapStore<RemotePurse, Amount>,
  * updatePublishKit: StoredPublishKit<UpdateRecord>,
+ * currentPublishKit: StoredPublishKit<CurrentWalletState>,
  * }>} ImmutableState
  *
  * @typedef {{
@@ -138,6 +149,9 @@ export const initState = (unique, shared) => {
     unique.address,
   );
 
+  const myCurrentStateStorageNode =
+    E(myWalletStorageNode).makeChildNode('current');
+
   const preciousState = {
     // Private purses. This assumes one purse per brand, which will be valid in MN-1 but not always.
     brandPurses: makeScalarBigMapStore('brand purses', { durable: true }),
@@ -147,7 +161,10 @@ export const initState = (unique, shared) => {
       durable: true,
     }),
     // Invitation makers yielded by offer results
-    offerToInvitationMakers: makeScalarBigMapStore('invitation makers', {
+    offerToInvitationMakers: makeScalarBigMapStore('offerId', {
+      durable: true,
+    }),
+    offerToInvitationAmount: makeScalarBigMapStore('offerId', {
       durable: true,
     }),
   };
@@ -161,6 +178,9 @@ export const initState = (unique, shared) => {
     purseBalances: makeScalarMapStore(),
     updatePublishKit: harden(
       makeStoredPublishKit(myWalletStorageNode, shared.publicMarshaller),
+    ),
+    currentPublishKit: harden(
+      makeStoredPublishKit(myCurrentStateStorageNode, shared.publicMarshaller),
     ),
   };
 
@@ -206,12 +226,14 @@ const behaviorGuards = {
 const behavior = {
   helper: {
     /**
+     * @this {{ state: State, facets: typeof behavior }}
      * @param {RemotePurse} purse
      * @param {Amount} balance
      * @param {'init'} [init]
      */
     updateBalance(purse, balance, init) {
       const { purseBalances, updatePublishKit } = this.state;
+      const { helper } = this.facets;
       if (init) {
         purseBalances.init(purse, balance);
       } else {
@@ -220,6 +242,27 @@ const behavior = {
       updatePublishKit.publisher.publish({
         updated: 'balance',
         currentAmount: balance,
+      });
+      helper.publishCurrentState();
+    },
+
+    /**
+     * @this {{ state: State, facets: typeof behavior }}
+     */
+    publishCurrentState() {
+      const {
+        brandDescriptors,
+        currentPublishKit,
+        offerToInvitationAmount,
+        purseBalances,
+      } = this.state;
+      currentPublishKit.publisher.publish({
+        brands: [...brandDescriptors.values()],
+        purseBalances: [...purseBalances.values()],
+        offerToInvitation: Object.fromEntries(
+          offerToInvitationAmount.entries(),
+        ),
+        lastOfferId: this.state.lastOfferId,
       });
     },
 
@@ -350,8 +393,10 @@ const behavior = {
         brandPurses,
         invitationBrand,
         invitationPurse,
+        invitationIssuer,
         lastOfferId,
         offerToInvitationMakers,
+        offerToInvitationAmount,
         updatePublishKit,
       } = this.state;
 
@@ -363,6 +408,7 @@ const behavior = {
       const executor = makeOfferExecutor({
         zoe,
         depositFacet: facets.deposit,
+        invitationIssuer,
         powers: {
           invitationFromSpec: makeInvitationsHelper(
             zoe,
@@ -391,8 +437,11 @@ const behavior = {
             status: offerStatus,
           });
         },
-        onNewContinuingOffer: (offerId, invitationMakers) =>
-          offerToInvitationMakers.init(offerId, invitationMakers),
+        onNewContinuingOffer: (offerId, invitationMakers, invitationAmount) => {
+          offerToInvitationMakers.init(offerId, invitationMakers);
+          offerToInvitationAmount.init(offerId, invitationAmount);
+          facets.helper.publishCurrentState();
+        },
       });
       executor.executeOffer(offerSpec);
     },

@@ -29,6 +29,7 @@ export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
  * @param {object} opts
  * @param {ERef<ZoeService>} opts.zoe
  * @param {{ receive: (payment: *) => Promise<Amount> }} opts.depositFacet
+ * @param {ERef<Issuer<'set'>>} opts.invitationIssuer
  * @param {object} opts.powers
  * @param {import('./types').Cell<number>} opts.powers.lastOfferId
  * @param {Pick<Console, 'info'| 'error'>} opts.powers.logger
@@ -40,6 +41,7 @@ export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
 export const makeOfferExecutor = ({
   zoe,
   depositFacet,
+  invitationIssuer,
   powers,
   onStatusChange,
   onNewContinuingOffer,
@@ -91,6 +93,9 @@ export const makeOfferExecutor = ({
         lastOfferId.set(id);
 
         const invitation = invitationFromSpec(invitationSpec);
+        const invitationAmount = await E(invitationIssuer).getAmountOf(
+          invitation,
+        );
 
         const paymentKeywordRecord = proposal?.give
           ? paymentsManager.withdrawGive(proposal.give)
@@ -131,7 +136,11 @@ export const makeOfferExecutor = ({
                 if ('invitationMakers' in result) {
                   // @ts-expect-error result narrowed by passStyle
                   // save for continuing invitation offer
-                  onNewContinuingOffer(id, result.invitationMakers);
+                  onNewContinuingOffer(
+                    id,
+                    result.invitationMakers,
+                    invitationAmount,
+                  );
                 }
                 // copyRecord is valid to publish but not safe as it may have private info
                 updateStatus({ result: UNPUBLISHED_RESULT });
