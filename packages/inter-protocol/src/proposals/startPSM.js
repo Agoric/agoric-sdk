@@ -87,9 +87,9 @@ export const startPSM = async (
     harden({
       anchorBrand,
       anchorPerMinted: makeRatio(
-        10n ** anchorInfo.decimalPlaces,
+        BigInt(10 ** anchorInfo.decimalPlaces),
         anchorBrand,
-        10n ** stableInfo.decimalPlaces,
+        BigInt(10 ** stableInfo.decimalPlaces),
         stable,
       ),
       governedParams: {
