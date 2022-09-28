@@ -7,11 +7,11 @@ import { COSMOS_UNIT } from './format.js';
 /** @typedef {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} BridgeAction */
 
 /**
- * @param {Record<string, import('../types').Brand>} brands
+ * @param {Record<string, Brand>} brands
  * @param {({ wantMinted: number | undefined, giveMinted: number | undefined })} opts
  * @param {number} [fee=0]
  * @param {string} [anchor]
- * @returns {import('../types').Proposal}
+ * @returns {Proposal}
  */
 export const makePSMProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
   const giving = opts.giveMinted ? 'minted' : 'anchor';
@@ -37,8 +37,8 @@ export const makePSMProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
 };
 
 /**
- * @param {import('../types').Instance} instance
- * @param {Record<string, import('../types').Brand>} brands
+ * @param {Instance} instance
+ * @param {Record<string, Brand>} brands
  * @param {{ offerId: number, feePct?: number } &
  *         ({ wantMinted: number | undefined, giveMinted: number | undefined })} opts
  * @returns {BridgeAction}

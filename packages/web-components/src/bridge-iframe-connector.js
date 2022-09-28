@@ -4,7 +4,7 @@ import { assert, details as X } from '@agoric/assert';
 
 export const makeBridgeIframeConnector = component => {
   const connectedOnMessage = ev => {
-    console.log(component.state, 'bridge received', ev);
+    console.debug(component.state, 'bridge received', ev);
     const { data } = ev.detail;
     if (data && typeof data.type === 'string') {
       if (data.type === 'walletBridgeClosed') {
@@ -18,7 +18,7 @@ export const makeBridgeIframeConnector = component => {
   };
 
   let onMessage = event => {
-    console.log(component.state, 'connect received', event);
+    console.debug(component.state, 'connect received', event);
     const { data, send } = event.detail;
     assert.equal(
       data.type,

@@ -1,21 +1,21 @@
 import { makeFollower, makeLeader } from '@agoric/casting';
-import React, { useEffect, useState } from 'react';
-import Snackbar from '@mui/material/Snackbar';
-import MuiAlert from '@mui/material/Alert';
 import { observeIterator } from '@agoric/notifier';
+import { NO_SMART_WALLET_ERROR } from '@agoric/smart-wallet/src/utils';
 import { makeImportContext } from '@agoric/wallet/api/src/marshal-contexts';
+import MuiAlert from '@mui/material/Alert';
+import Snackbar from '@mui/material/Snackbar';
+import React, { useEffect, useState } from 'react';
 
 import {
-  withApplicationContext,
   ConnectionStatus,
+  withApplicationContext,
 } from '../contexts/Application';
+import { bridgeStorageMessages } from '../util/BridgeStorage';
+import { SmartConnectionMethod } from '../util/connections';
 import {
   makeBackendFromWalletBridge,
   makeWalletBridgeFromFollower,
-  NO_SMART_WALLET_ERROR,
 } from '../util/WalletBackendAdapter';
-import { SmartConnectionMethod } from '../util/connections';
-import { bridgeStorageMessages } from '../util/BridgeStorage';
 import ProvisionDialog from './ProvisionDialog';
 
 const Alert = React.forwardRef(function Alert({ children, ...props }, ref) {

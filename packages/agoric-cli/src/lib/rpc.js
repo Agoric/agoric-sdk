@@ -39,13 +39,13 @@ export const networkConfig =
 /**
  *
  * @param {object} powers
- * @param {(url: RequestInfo) => Promise<Response>} powers.fetch
+ * @param {typeof window.fetch} powers.fetch
  */
 export const makeVStorage = powers => {
   const getJSON = path => {
     const url = networkConfig.rpcAddrs[0] + path;
     // console.warn('fetching', url);
-    return powers.fetch(url).then(res => res.json());
+    return powers.fetch(url, { keepalive: true }).then(res => res.json());
   };
 
   return {
@@ -65,7 +65,7 @@ export const makeVStorage = powers => {
      * @param {string} path
      * @returns {Promise<unknown>} latest vstorage value at path
      */
-    async read(path = 'published') {
+    async readLatest(path = 'published') {
       const raw = await getJSON(this.url(path, { kind: 'data' }));
       return this.decode(raw);
     },
@@ -85,11 +85,18 @@ export const makeVStorage = powers => {
       const { value } = JSON.parse(txt);
       return JSON.parse(value);
     },
-    async readAll(path) {
+    /**
+     * Read values going back as far as available
+     *
+     * @param {string} path
+     * @returns {Promise<string[]>}
+     */
+    async readFully(path) {
       const parts = [];
       // undefined the first iteration, to query at the highest
       let blockHeight;
       do {
+        console.debug('READING', { blockHeight });
         let values;
         try {
           // eslint-disable-next-line no-await-in-loop
@@ -97,13 +104,17 @@ export const makeVStorage = powers => {
             path,
             blockHeight && blockHeight - 1,
           ));
+          console.debug('readAt returned', { blockHeight });
         } catch (err) {
           if ('log' in err && err.log.match(/unknown request/)) {
+            console.error(err);
             break;
           }
           throw err;
         }
         parts.push(values);
+        console.debug('PUSHED', values);
+        console.debug('NEW', { blockHeight });
       } while (blockHeight > 0);
       return parts.flat();
     },
@@ -199,7 +210,7 @@ export const storageHelper = {
     const capDatas = storageHelper.parseMany(values);
     return { blockHeight, capDatas };
   },
-  unserialize: (txt, ctx) => {
+  unserializeTxt: (txt, ctx) => {
     const { capDatas } = storageHelper.parseCapData(txt);
     return capDatas.map(capData =>
       boardSlottingMarshaller(ctx.convertSlotToVal).unserialize(capData),
@@ -224,18 +235,23 @@ harden(storageHelper);
 /**
  * @param {IdMap} ctx
  * @param {VStorage} vstorage
- * @returns {Promise<{brand: Record<string, RpcRemote>, instance: Record<string, RpcRemote>}>}
+ * @returns {Promise<{ brand: Record<string, RpcRemote>, instance: Record<string, RpcRemote>, reverse: Record<string, string> }>}
  */
 export const makeAgoricNames = async (ctx, vstorage) => {
+  const reverse = {};
   const entries = await Promise.all(
     ['brand', 'instance'].map(async kind => {
-      const content = await vstorage.read(`published.agoricNames.${kind}`);
-      const parts = storageHelper.unserialize(content, ctx).at(-1);
-
+      const content = await vstorage.readLatest(
+        `published.agoricNames.${kind}`,
+      );
+      const parts = storageHelper.unserializeTxt(content, ctx).at(-1);
+      for (const [name, remote] of parts) {
+        reverse[remote.boardId] = name;
+      }
       return [kind, Object.fromEntries(parts)];
     }),
   );
-  return Object.fromEntries(entries);
+  return { ...Object.fromEntries(entries), reverse };
 };
 
 export const makeRpcUtils = async ({ fetch }) => {

@@ -19,6 +19,9 @@ fi
 
 WALLET_BECH32=$(agd keys show "$WALLET" --output json | jq -r .address)
 
+# grant econ governance
+sed -i '' "s/\"voter\":.*/\"voter\": \"$WALLET_BECH32\"/" "$SDK"/packages/vats/decentral-psm-config.json
+
 echo CHAIN_LOG $CHAIN_LOG
 echo SDK "$SDK"
 echo WALLET "$WALLET"

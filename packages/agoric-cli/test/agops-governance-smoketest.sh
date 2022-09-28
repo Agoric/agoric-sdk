@@ -6,9 +6,8 @@ if [ -z "$AGORIC_NET" ]; then
     echo "e.g. AGORIC_NET=ollinet (or export to save typing it each time)"
     echo
     echo "To test locally, AGORIC_NET=local and have the following running:
-# freshen sdk
-cd agoric-sdk
-yarn install && yarn build
+# your key in governance
+sed -i '' s/agoric1ersatz/\"$KEY\" packages/vats/decentral-psm-config.json
 
 # local chain running with wallet provisioned
 packages/smart-wallet/scripts/start-local-chain.sh YOUR_ACCOUNT_KEY
@@ -35,6 +34,8 @@ COMMITTEE_OFFER=$(mktemp -t agops.XXX)
 bin/agops psm committee >|"$COMMITTEE_OFFER"
 jq ".body | fromjson" <"$COMMITTEE_OFFER"
 agoric wallet send --from "$KEY" --offer "$COMMITTEE_OFFER"
+# verify the offerId is readable from chain history
+agoric wallet show --from "$KEY"
 COMMITTEE_OFFER_ID=$(jq ".body | fromjson | .offer.id" <"$COMMITTEE_OFFER")
 
 # Accept invitation to be a charter member
@@ -42,25 +43,27 @@ CHARTER_OFFER=$(mktemp -t agops.XXX)
 bin/agops psm charter >|"$CHARTER_OFFER"
 jq ".body | fromjson" <"$CHARTER_OFFER"
 agoric wallet send --from "$KEY" --offer "$CHARTER_OFFER"
+# verify the offerId is readable from chain history
+agoric wallet show --from "$KEY"
 CHARTER_OFFER_ID=$(jq ".body | fromjson | .offer.id" <"$CHARTER_OFFER")
 
 ### Now we have the continuing invitationMakers saved in the wallet
 
 # Use invitation result, with continuing invitationMakers to propose a vote
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops psm proposePauseOffers --substring wantMinted --previousOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
+bin/agops psm proposePauseOffers --substring wantMinted --psmCharterAcceptOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
 jq ".body | fromjson" <"$PROPOSAL_OFFER"
 agoric wallet send --from "$KEY" --offer "$PROPOSAL_OFFER"
 
 # vote on the question that was made
 VOTE_OFFER=$(mktemp -t agops.XXX)
-bin/agops psm vote --forPosition 0 --previousOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
+bin/agops psm vote --forPosition 0 --econCommAcceptOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
 jq ".body | fromjson" <"$VOTE_OFFER"
 agoric wallet send --from "$KEY" --offer "$VOTE_OFFER"
 ## wait for the election to be resolved (1m in commands/psm.js)
 
 # check that the dictatorial vote was executed
-# TODO use vote outcome data https://github.com/Agoric/agoric-sdk/issues/6198
+# TODO use vote outcome data https://github.com/Agoric/agoric-sdk/pull/6204/
 SWAP_OFFER=$(mktemp -t agops.XXX)
 bin/agops psm swap --wantMinted 0.01 --feePct 0.01 >|"$SWAP_OFFER"
 agoric wallet send --from "$KEY" --offer "$SWAP_OFFER"
@@ -75,7 +78,7 @@ agoric wallet send --from "$KEY" --offer "$SWAP_OFFER"
 
 # Propose a vote to raise the mint limit
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops psm proposeChangeMintLimit --limit 10000 --previousOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
+bin/agops psm proposeChangeMintLimit --limit 10000 --psmCharterAcceptOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
 jq ".body | fromjson" <"$PROPOSAL_OFFER"
 agoric wallet send --from "$KEY" --offer "$PROPOSAL_OFFER"
 
@@ -86,7 +89,7 @@ agoric wallet send --from "$KEY" --offer "$PROPOSAL_OFFER"
 
 # vote on the question that was made
 VOTE_OFFER=$(mktemp -t agops.XXX)
-bin/agops psm vote --forPosition 0 --previousOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
+bin/agops psm vote --forPosition 0 --econCommAcceptOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
 jq ".body | fromjson" <"$VOTE_OFFER"
 agoric wallet send --from "$KEY" --offer "$VOTE_OFFER"
 ## wait for the election to be resolved (1m default in commands/psm.js)

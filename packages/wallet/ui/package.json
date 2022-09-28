@@ -13,6 +13,7 @@
     "@agoric/ertp": "^0.15.0",
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.5.0",
+    "@agoric/smart-wallet": "^0.3.0",
     "@agoric/ui-components": "^0.3.0",
     "@agoric/vats": "0.11.0",
     "@agoric/wallet-backend": "^0.13.0",
