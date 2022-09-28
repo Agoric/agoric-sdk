@@ -79,11 +79,19 @@ export const startPSM = async (
       E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
     ]);
 
+  const [anchorInfo, stableInfo] = await Promise.all(
+    [anchorBrand, stable].map(b => E(b).getDisplayInfo()),
+  );
   const mintLimit = AmountMath.make(stable, MINT_LIMIT);
   const terms = await deeplyFulfilledObject(
     harden({
       anchorBrand,
-      anchorPerMinted: makeRatio(100n, anchorBrand, 100n, stable),
+      anchorPerMinted: makeRatio(
+        10n ** anchorInfo.decimalPlaces,
+        anchorBrand,
+        10n ** stableInfo.decimalPlaces,
+        stable,
+      ),
       governedParams: {
         [CONTRACT_ELECTORATE]: {
           type: ParamTypes.INVITATION,

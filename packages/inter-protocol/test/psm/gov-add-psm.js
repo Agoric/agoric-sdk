@@ -20,8 +20,8 @@ const DAI = {
 
 const config = {
   options: { anchorOptions: DAI },
-  WantStableFeeBP: 1n,
-  GiveStableFeeBP: 3n,
+  WantMintedFeeBP: 1n,
+  GiveMintedFeeBP: 3n,
   MINT_LIMIT: 0n,
 };
 
