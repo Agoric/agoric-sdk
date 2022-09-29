@@ -5,8 +5,9 @@ import { Far } from '@endo/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { getMethodNames } from '@agoric/internal';
-import { makeOffer } from '../makeOffer.js';
+import { M } from '@agoric/store';
 
+import { makeOffer } from '../makeOffer.js';
 import { setup } from '../setupBasicMints.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 
@@ -204,6 +205,13 @@ test(`zcf.saveIssuer - bad issuer, makeEmptyPurse throws`, async t => {
     // eslint-disable-next-line no-use-before-define
     isMyIssuer: i => i === badIssuer,
     getDisplayInfo: () => ({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
+    aux: () =>
+      harden({
+        name: 'bogusBrand',
+        assetKind: AssetKind.NAT,
+        displayInfo: { decimalPlaces: 6, assetKind: AssetKind.NAT },
+        amountShape: M.any(),
+      }),
   });
   const badIssuer = Far('issuer', {
     makeEmptyPurse: async () => {

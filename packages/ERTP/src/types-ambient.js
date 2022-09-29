@@ -86,6 +86,14 @@
  */
 
 /**
+ * @typedef {object} BrandAuxData
+ * @property {string} name
+ * @property {AssetKind} assetKind
+ * @property {DisplayInfo} displayInfo
+ * @property {Pattern} amountShape
+ */
+
+/**
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} Brand
  * The brand identifies the kind of issuer, and has a function to get the
@@ -104,6 +112,7 @@
  * @property {() => DisplayInfo<K>} getDisplayInfo
  * Give information to UI on how to display the amount.
  * @property {() => Pattern} getAmountShape
+ * @property {() => BrandAuxData} aux
  */
 
 // /////////////////////////// Issuer //////////////////////////////////////////

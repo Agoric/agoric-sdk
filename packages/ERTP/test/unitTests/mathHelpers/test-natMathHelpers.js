@@ -10,6 +10,21 @@ import { mockBrand } from './mockBrand.js';
 // AmountMath so that we can test that any duplication is handled
 // correctly.
 
+const otherAuxData = harden({
+  name: 'somename',
+  assetKind: AssetKind.NAT,
+  displayInfo: { assetKind: AssetKind.NAT },
+  amountShape: M.any(),
+});
+
+const otherBrand = Far('otherBrand', {
+  getAllegedName: () => otherAuxData.name,
+  isMyIssuer: async _allegedIssuer => false,
+  getDisplayInfo: () => otherAuxData.displayInfo,
+  getAmountShape: () => otherAuxData.amountShape,
+  aux: () => otherAuxData,
+});
+
 test('natMathHelpers make', t => {
   t.deepEqual(m.make(mockBrand, 4n), { brand: mockBrand, value: 4n });
   // @ts-expect-error deliberate invalid arguments for testing
@@ -62,12 +77,7 @@ test('natMathHelpers coerce', t => {
       m.coerce(
         mockBrand,
         harden({
-          brand: Far('otherBrand', {
-            getAllegedName: () => 'somename',
-            isMyIssuer: async () => false,
-            getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
-            getAmountShape: () => M.any(),
-          }),
+          brand: otherBrand,
           value: 4n,
         }),
       ),
@@ -186,39 +196,14 @@ test('natMathHelpers isGTE', t => {
 });
 
 test('natMathHelpers isGTE mixed brands', t => {
-  t.throws(
-    () =>
-      m.isGTE(
-        m.make(
-          Far('otherBrand', {
-            getAllegedName: () => 'somename',
-            isMyIssuer: async () => false,
-            getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
-            getAmountShape: () => M.any(),
-          }),
-          5n,
-        ),
-        m.make(mockBrand, 3n),
-      ),
-    {
-      message: /Brands in left .* and right .* should match but do not/,
-    },
-  );
+  t.throws(() => m.isGTE(m.make(otherBrand, 5n), m.make(mockBrand, 3n)), {
+    message: /Brands in left .* and right .* should match but do not/,
+  });
 });
 
 test(`natMathHelpers isGTE - brands don't match objective brand`, t => {
   t.throws(
-    () =>
-      m.isGTE(
-        m.make(mockBrand, 5n),
-        m.make(mockBrand, 3n),
-        Far('otherBrand', {
-          getAllegedName: () => 'somename',
-          isMyIssuer: async () => false,
-          getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
-          getAmountShape: () => M.any(),
-        }),
-      ),
+    () => m.isGTE(m.make(mockBrand, 5n), m.make(mockBrand, 3n), otherBrand),
     {
       message: /amount's brand .* did not match expected brand .*/,
     },
@@ -237,39 +222,14 @@ test('natMathHelpers isEqual', t => {
 });
 
 test('natMathHelpers isEqual mixed brands', t => {
-  t.throws(
-    () =>
-      m.isEqual(
-        m.make(
-          Far('otherBrand', {
-            getAllegedName: () => 'somename',
-            isMyIssuer: async () => false,
-            getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
-            getAmountShape: () => M.any(),
-          }),
-          4n,
-        ),
-        m.make(mockBrand, 4n),
-      ),
-    {
-      message: /Brands in left .* and right .* should match but do not/,
-    },
-  );
+  t.throws(() => m.isEqual(m.make(otherBrand, 4n), m.make(mockBrand, 4n)), {
+    message: /Brands in left .* and right .* should match but do not/,
+  });
 });
 
 test(`natMathHelpers isEqual - brands don't match objective brand`, t => {
   t.throws(
-    () =>
-      m.isEqual(
-        m.make(mockBrand, 4n),
-        m.make(mockBrand, 4n),
-        Far('otherBrand', {
-          getAllegedName: () => 'somename',
-          isMyIssuer: async () => false,
-          getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
-          getAmountShape: () => M.any(),
-        }),
-      ),
+    () => m.isEqual(m.make(mockBrand, 4n), m.make(mockBrand, 4n), otherBrand),
     {
       message: /amount's brand .* did not match expected brand .*/,
     },
@@ -285,39 +245,14 @@ test('natMathHelpers add', t => {
 });
 
 test('natMathHelpers add mixed brands', t => {
-  t.throws(
-    () =>
-      m.add(
-        m.make(
-          Far('otherBrand', {
-            getAllegedName: () => 'somename',
-            isMyIssuer: async () => false,
-            getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
-            getAmountShape: () => M.any(),
-          }),
-          5n,
-        ),
-        m.make(mockBrand, 9n),
-      ),
-    {
-      message: /Brands in left .* and right .* should match but do not/,
-    },
-  );
+  t.throws(() => m.add(m.make(otherBrand, 5n), m.make(mockBrand, 9n)), {
+    message: /Brands in left .* and right .* should match but do not/,
+  });
 });
 
 test(`natMathHelpers add - brands don't match objective brand`, t => {
   t.throws(
-    () =>
-      m.add(
-        m.make(mockBrand, 5n),
-        m.make(mockBrand, 9n),
-        Far('otherBrand', {
-          getAllegedName: () => 'somename',
-          isMyIssuer: async () => false,
-          getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
-          getAmountShape: () => M.any(),
-        }),
-      ),
+    () => m.add(m.make(mockBrand, 5n), m.make(mockBrand, 9n), otherBrand),
     {
       message: /amount's brand .* did not match expected brand .*/,
     },
@@ -333,39 +268,14 @@ test('natMathHelpers subtract', t => {
 });
 
 test('natMathHelpers subtract mixed brands', t => {
-  t.throws(
-    () =>
-      m.subtract(
-        m.make(
-          Far('otherBrand', {
-            getAllegedName: () => 'somename',
-            isMyIssuer: async () => false,
-            getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
-            getAmountShape: () => M.any(),
-          }),
-          6n,
-        ),
-        m.make(mockBrand, 1n),
-      ),
-    {
-      message: /Brands in left .* and right .* should match but do not/,
-    },
-  );
+  t.throws(() => m.subtract(m.make(otherBrand, 6n), m.make(mockBrand, 1n)), {
+    message: /Brands in left .* and right .* should match but do not/,
+  });
 });
 
 test(`natMathHelpers subtract brands don't match brand`, t => {
   t.throws(
-    () =>
-      m.subtract(
-        m.make(mockBrand, 6n),
-        m.make(mockBrand, 1n),
-        Far('otherBrand', {
-          getAllegedName: () => 'somename',
-          isMyIssuer: async () => false,
-          getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
-          getAmountShape: () => M.any(),
-        }),
-      ),
+    () => m.subtract(m.make(mockBrand, 6n), m.make(mockBrand, 1n), otherBrand),
     {
       message: /amount's brand .* did not match expected brand .*/,
     },
