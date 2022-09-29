@@ -40,8 +40,9 @@ export {};
  */
 
 /**
+ * @see {ChangeFollower}
  * @template T
- * @typedef {object} FollowerElement
+ * @typedef {object} ValueFollowerElement
  * @property {T} value
  * @property {number} blockHeight
  * @property {number} currentBlockHeight

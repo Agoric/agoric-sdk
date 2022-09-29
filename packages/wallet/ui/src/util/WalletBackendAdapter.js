@@ -1,17 +1,20 @@
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { iterateEach } from '@agoric/casting';
 import {
   makeAsyncIterableFromNotifier,
   makeNotifierKit,
 } from '@agoric/notifier';
-import { iterateEach, iterateReverse } from '@agoric/casting';
-import { getScopedBridge } from '../service/ScopedBridge.js';
+import {
+  getFirstHeight,
+  NO_SMART_WALLET_ERROR,
+} from '@agoric/smart-wallet/src/utils.js';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { getDappService } from '../service/Dapps.js';
-import { getOfferService } from '../service/Offers.js';
 import { getIssuerService } from '../service/Issuers.js';
+import { getOfferService } from '../service/Offers.js';
+import { getScopedBridge } from '../service/ScopedBridge.js';
 
 const newId = kind => `${kind}${Math.random()}`;
-export const NO_SMART_WALLET_ERROR = 'no smart wallet';
 
 /** @typedef {{actions: object, issuerSuggestions: Promise<AsyncIterator>}} BackendSchema */
 
@@ -152,13 +155,8 @@ export const makeWalletBridgeFromFollower = (
   };
 
   const followLatest = async () => {
-    /** @type {number} */
-    let firstHeight;
-    for await (const { blockHeight } of iterateReverse(follower)) {
-      // TODO: Only set firstHeight and break if the value contains all our state.
-      firstHeight = blockHeight;
-    }
-    assert(firstHeight, NO_SMART_WALLET_ERROR);
+    const firstHeight = await getFirstHeight(follower);
+
     for await (const { value } of iterateEach(follower, {
       height: firstHeight,
     })) {

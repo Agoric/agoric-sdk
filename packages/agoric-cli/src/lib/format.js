@@ -66,7 +66,7 @@ export const asPercent = ratio => {
 /**
  * Summarize the balances array as user-facing informative tuples
  
- * @param {Array<import('../types').Amount>} balances
+ * @param {Array<Amount>} balances
  * @param {AssetDescriptor[]} assets
  */
 export const purseBalanceTuples = (balances, assets) => {
@@ -74,6 +74,9 @@ export const purseBalanceTuples = (balances, assets) => {
   return balances.map(b => fmt(b));
 };
 
+/**
+ * @param {Record<string, Array<unknown>>} record
+ */
 export const fmtRecordOfLines = record => {
   const { stringify } = JSON;
   const groups = Object.entries(record).map(([key, items]) => [
@@ -81,6 +84,7 @@ export const fmtRecordOfLines = record => {
     items.map(item => `    ${stringify(item)}`),
   ]);
   const lineEntries = groups.map(
+    // @ts-expect-error ???
     ([key, lines]) => `  ${stringify(key)}: [\n${lines.join(',\n')}\n  ]`,
   );
   return `{\n${lineEntries.join(',\n')}\n}`;
@@ -118,8 +122,8 @@ export const offerStatusTuples = (state, agoricNames) => {
       payouts,
     } = o;
     const amounts = {
-      give: fmtRecord(give),
-      want: fmtRecord(want),
+      give: give ? fmtRecord(give) : undefined,
+      want: want ? fmtRecord(want) : undefined,
       payouts: fmtRecord(payouts),
     };
     switch (o.invitationSpec.source) {
@@ -127,6 +131,7 @@ export const offerStatusTuples = (state, agoricNames) => {
         const {
           invitationSpec: { instance, publicInvitationMaker },
         } = o;
+        // xxx could be O(1)
         const entry = Object.entries(agoricNames.instance).find(
           // @ts-ignore minimarshal types are off by a bit
           ([_name, candidate]) => candidate === instance,
@@ -145,4 +150,29 @@ export const offerStatusTuples = (state, agoricNames) => {
         return ['?', o.id, when, '?', o.numWantsSatisfied, amounts];
     }
   });
+};
+
+/**
+ *
+ * @param {ReturnType<import('@agoric/smart-wallet/src/utils.js').makeWalletStateCoalescer>['state']} state
+ * @param {Awaited<ReturnType<typeof makeAgoricNames>>} agoricNames
+ */
+export const summarize = (state, agoricNames) => {
+  const { balances, brands, invitationsReceived } = state;
+  const invitations = Array.from(invitationsReceived.values()).map(v => [
+    agoricNames.reverse[v.instance.boardId],
+    v.description,
+    v.acceptedIn || 'not yet accepted',
+  ]);
+  return {
+    invitations,
+    balances: purseBalanceTuples(
+      // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
+      // @ts-ignore xxx RpcRemote
+      [...balances.values()],
+      // @ts-expect-error xxx RpcRemote
+      [...brands.values()],
+    ),
+    offers: offerStatusTuples(state, agoricNames),
+  };
 };

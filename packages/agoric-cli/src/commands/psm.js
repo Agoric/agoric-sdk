@@ -40,12 +40,12 @@ const { vstorage, fromBoard, agoricNames } = await makeRpcUtils({ fetch });
  * @param {[Minted: string, Anchor: string]} pair
  */
 const getGovernanceState = async ([Minted, Anchor]) => {
-  const govContent = await vstorage.read(
+  const govContent = await vstorage.readLatest(
     `published.psm.${Minted}.${Anchor}.governance`,
   );
   assert(govContent, 'no gov content');
   const { current: governance } = last(
-    storageHelper.unserialize(govContent, fromBoard),
+    storageHelper.unserializeTxt(govContent, fromBoard),
   );
   const { [`psm.${Minted}.${Anchor}`]: instance } = agoricNames.instance;
 
@@ -117,7 +117,7 @@ export const makePsmCommand = async logger => {
 
   psm
     .command('info')
-    .description('show governance info about the PSM (BROKEN)')
+    .description('show governance parameters of the PSM')
     // TODO DRY with https://github.com/Agoric/agoric-sdk/issues/6181
     .requiredOption(
       '--pair [Minted.Anchor]',
@@ -162,6 +162,7 @@ export const makePsmCommand = async logger => {
       const opts = this.opts();
       console.warn('running with options', opts);
       const instance = await lookupPsmInstance(opts.pair);
+      // @ts-expect-error xxx RpcRemote
       const spendAction = makePSMSpendAction(instance, agoricNames.brand, opts);
       outputAction(spendAction);
     });
@@ -181,6 +182,7 @@ export const makePsmCommand = async logger => {
         id: Number(opts.offerId),
         invitationSpec: {
           source: 'purse',
+          // @ts-expect-error xxx RpcRemote
           instance: economicCommittee,
           description: 'Voter0', // XXX it may not always be
         },
@@ -210,6 +212,7 @@ export const makePsmCommand = async logger => {
         id: Number(opts.offerId),
         invitationSpec: {
           source: 'purse',
+          // @ts-expect-error xxx RpcRemote
           instance: psmCharter,
           description: 'PSM charter member invitation',
         },
@@ -235,7 +238,7 @@ export const makePsmCommand = async logger => {
       ['IST', 'AUSD'],
     )
     .requiredOption(
-      '--previousOfferId [number]',
+      '--psmCharterAcceptOfferId [number]',
       'offer that had continuing invitation result',
       Number,
     )
@@ -261,7 +264,7 @@ export const makePsmCommand = async logger => {
         id: Number(opts.offerId),
         invitationSpec: {
           source: 'continuing',
-          previousOffer: opts.previousOfferId,
+          previousOffer: opts.psmCharterAcceptOfferId,
           invitationMakerName: 'VoteOnPauseOffers',
           // ( instance, strings list, timer deadline seconds )
           invitationArgs: harden([
@@ -313,7 +316,6 @@ export const makePsmCommand = async logger => {
 
       const psmInstance = lookupPsmInstance(opts.pair);
 
-      /** @type {import('../types.js').Brand} */
       const istBrand = agoricNames.brand.IST;
       const scaledAmount = harden({
         brand: istBrand,
@@ -348,7 +350,7 @@ export const makePsmCommand = async logger => {
     .description('vote on a question (hard-coded for now))')
     .option('--offerId [number]', 'Offer id', Number, Date.now())
     .requiredOption(
-      '--previousOfferId [number]',
+      '--econCommAcceptOfferId [number]',
       'offer that had continuing invitation result',
       Number,
     )
@@ -366,10 +368,10 @@ export const makePsmCommand = async logger => {
     .action(async function () {
       const opts = this.opts();
 
-      const questionHandleCapDataStr = await vstorage.read(
+      const questionHandleCapDataStr = await vstorage.readLatest(
         'published.committees.Initial_Economic_Committee.latestQuestion',
       );
-      const questionDescriptions = storageHelper.unserialize(
+      const questionDescriptions = storageHelper.unserializeTxt(
         questionHandleCapDataStr,
         fromBoard,
       );

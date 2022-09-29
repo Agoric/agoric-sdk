@@ -1,6 +1,9 @@
+/* eslint-disable no-undef-init */
 // @ts-check
-
+import { iterateReverse } from '@agoric/casting';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
+
+export const NO_SMART_WALLET_ERROR = 'no smart wallet';
 
 export const makeWalletStateCoalescer = () => {
   /** @type {Map<Brand, import('./smartWallet').BrandDescriptor>} */
@@ -10,14 +13,35 @@ export const makeWalletStateCoalescer = () => {
   /** @type {Map<Brand, Amount>} */
   const balances = new Map();
 
-  /** @param {import('./smartWallet').UpdateRecord} updateRecord */
-  const include = updateRecord => {
+  /** @type {Brand=} */
+  let allegedInvitationBrand = undefined;
+
+  /**
+   * keyed by description; xxx assumes unique
+   *
+   * @type {Map<string, { acceptedIn: number, description: string, instance: { boardId: string } }>}
+   */
+  const invitationsReceived = new Map();
+
+  /** @param {import('./smartWallet').UpdateRecord} updateRecord newer than previous */
+  const update = updateRecord => {
     const { updated } = updateRecord;
     switch (updateRecord.updated) {
       case 'balance': {
         const { currentAmount } = updateRecord;
         // last record wins
         balances.set(currentAmount.brand, currentAmount);
+        if (allegedInvitationBrand) {
+          console.warn(
+            'balance update before invitationBrand known may be an invitation',
+          );
+        }
+        if (currentAmount.brand === allegedInvitationBrand) {
+          // @ts-expect-error narrow to SetValue
+          for (const invitation of currentAmount.value) {
+            invitationsReceived.set(invitation.description, invitation);
+          }
+        }
         break;
       }
       case 'offerStatus': {
@@ -25,6 +49,23 @@ export const makeWalletStateCoalescer = () => {
         const lastStatus = offerStatuses.get(status.id);
         // merge records
         offerStatuses.set(status.id, { ...lastStatus, ...status });
+        if (
+          status.invitationSpec.source === 'purse' &&
+          status.numWantsSatisfied === 1
+        ) {
+          // record acceptance of invitation
+          // xxx matching only by description
+          const { description } = status.invitationSpec;
+          const receptionRecord = invitationsReceived.get(description);
+          if (receptionRecord) {
+            invitationsReceived.set(description, {
+              ...receptionRecord,
+              acceptedIn: status.id,
+            });
+          } else {
+            console.error('no record of invitation in offerStatus', status);
+          }
+        }
         break;
       }
       case 'brand': {
@@ -32,6 +73,9 @@ export const makeWalletStateCoalescer = () => {
         // never mutate
         assert(!brands.has(descriptor.brand));
         brands.set(descriptor.brand, descriptor);
+        if (descriptor.petname === 'invitations') {
+          allegedInvitationBrand = descriptor.brand;
+        }
         break;
       }
       default:
@@ -39,7 +83,10 @@ export const makeWalletStateCoalescer = () => {
     }
   };
 
-  return { state: { brands, offerStatuses, balances }, include };
+  return {
+    state: { brands, invitationsReceived, offerStatuses, balances },
+    update,
+  };
 };
 /** @typedef {ReturnType<typeof makeWalletStateCoalescer>['state']} CoalescedWalletState */
 
@@ -57,8 +104,45 @@ export const coalesceUpdates = updates => {
 
   observeIteration(subscribeEach(updates), {
     updateState: updateRecord => {
-      coalescer.include(updateRecord);
+      coalescer.update(updateRecord);
     },
   });
+  return coalescer.state;
+};
+
+/**
+ *
+ * @param {import('@agoric/casting').Follower<any>} follower
+ * @returns {Promise<number>}
+ * @throws if there is no first height
+ */
+export const getFirstHeight = async follower => {
+  /** @type {number=} */
+  let firstHeight = undefined;
+  for await (const { blockHeight } of iterateReverse(follower)) {
+    // TODO: Only set firstHeight and break if the value contains all our state.
+    firstHeight = blockHeight;
+  }
+  assert(firstHeight, NO_SMART_WALLET_ERROR);
+  return firstHeight;
+};
+
+/**
+ *
+ * @param {import('@agoric/casting').Follower<import('@agoric/casting').ValueFollowerElement<import('./smartWallet').UpdateRecord>>} follower
+ */
+export const coalesceWalletState = async follower => {
+  // values with oldest last
+  const history = [];
+  for await (const followerElement of iterateReverse(follower)) {
+    history.push(followerElement.value);
+  }
+
+  const coalescer = makeWalletStateCoalescer();
+  // update with oldest first
+  for (const record of history.reverse()) {
+    coalescer.update(record);
+  }
+
   return coalescer.state;
 };
