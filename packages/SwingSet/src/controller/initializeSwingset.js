@@ -30,8 +30,10 @@ const allValues = async obj =>
 
 const bundleRelative = rel =>
   bundleSource(new URL(rel, import.meta.url).pathname);
-const bundleRelativeGE = rel =>
-  bundleSource(new URL(rel, import.meta.url).pathname, { format: 'getExport' });
+const bundleRelativeCallable = rel =>
+  bundleSource(new URL(rel, import.meta.url).pathname, {
+    format: 'nestedEvaluate',
+  });
 
 /**
  * Build the source bundles for the kernel. makeSwingsetController()
@@ -56,10 +58,10 @@ export async function buildVatAndDeviceBundles() {
     vattp: bundleRelative('../vats/vattp/vat-vattp.js'),
     timer: bundleRelative('../vats/timer/vat-timer.js'),
 
-    lockdown: bundleRelativeGE(
+    lockdown: bundleRelativeCallable(
       '../supervisors/subprocess-xsnap/lockdown-subprocess-xsnap.js',
     ),
-    supervisor: bundleRelativeGE(
+    supervisor: bundleRelativeCallable(
       '../supervisors/subprocess-xsnap/supervisor-subprocess-xsnap.js',
     ),
   });

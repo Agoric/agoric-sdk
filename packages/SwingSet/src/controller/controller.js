@@ -147,6 +147,7 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
 
     for (const bundle of bundles) {
       bundle.moduleFormat === 'getExport' ||
+        bundle.moduleFormat === 'nestedEvaluate' ||
         assert.fail(X`unexpected: ${bundle.moduleFormat}`);
       // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       await worker.evaluate(`(${bundle.source}\n)()`.trim());
