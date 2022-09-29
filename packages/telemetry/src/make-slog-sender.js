@@ -120,16 +120,6 @@ export const makeSlogSender = async (opts = {}) => {
 
   if (!senders.length) {
     return undefined;
-  } else if (senders.length === 1) {
-    const sender = senders[0];
-    const { usesJsonObject = true } = sender;
-    return !usesJsonObject
-      ? sender
-      : Object.assign(
-          (slogObj, jsonObj = serializeSlogObj(slogObj)) =>
-            sender(slogObj, jsonObj),
-          sender,
-        );
   } else {
     // Optimize creating a JSON serialization only if needed
     // by any of the sender modules
