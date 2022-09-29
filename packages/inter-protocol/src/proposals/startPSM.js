@@ -44,7 +44,7 @@ export const startPSM = async (
       consume: { contractGovernor, psm: psmInstall },
     },
     brand: {
-      consume: { [Stable.symbol]: stableP },
+      consume: { [Stable.symbol]: mintedP },
     },
   },
   {
@@ -60,9 +60,11 @@ export const startPSM = async (
     'string',
     X`anchorOptions.denom must be a string, not ${denom}`,
   );
-  const [stable, [anchorBrand, anchorIssuer], feeMintAccess] =
+  /** @type {[Brand<'nat'>, [Brand<'nat'>, Issuer<'nat'>], FeeMintAccess]} */
+  // @ts-expect-error cast
+  const [minted, [anchorBrand, anchorIssuer], feeMintAccess] =
     await Promise.all([
-      stableP,
+      mintedP,
       reserveThenGetNamePaths(agoricNamesAdmin, [
         ['brand', keyword],
         ['issuer', keyword],
@@ -79,11 +81,22 @@ export const startPSM = async (
       E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
     ]);
 
-  const mintLimit = AmountMath.make(stable, MINT_LIMIT);
+  const [anchorInfo, mintedInfo] = await Promise.all(
+    [anchorBrand, minted].map(b => E(b).getDisplayInfo()),
+  );
+
+  const mintLimit = AmountMath.make(minted, MINT_LIMIT);
+  const anchorDecimalPlaces = anchorInfo.decimalPlaces || 1n;
+  const mintedDecimalPlaces = mintedInfo.decimalPlaces || 1n;
   const terms = await deeplyFulfilledObject(
     harden({
       anchorBrand,
-      anchorPerMinted: makeRatio(100n, anchorBrand, 100n, stable),
+      anchorPerMinted: makeRatio(
+        10n ** BigInt(anchorDecimalPlaces),
+        anchorBrand,
+        10n ** BigInt(mintedDecimalPlaces),
+        minted,
+      ),
       governedParams: {
         [CONTRACT_ELECTORATE]: {
           type: ParamTypes.INVITATION,
@@ -91,11 +104,11 @@ export const startPSM = async (
         },
         WantMintedFee: {
           type: ParamTypes.RATIO,
-          value: makeRatio(WantMintedFeeBP, stable, BASIS_POINTS),
+          value: makeRatio(WantMintedFeeBP, minted, BASIS_POINTS),
         },
         GiveMintedFee: {
           type: ParamTypes.RATIO,
-          value: makeRatio(GiveMintedFeeBP, stable, BASIS_POINTS),
+          value: makeRatio(GiveMintedFeeBP, minted, BASIS_POINTS),
         },
         MintLimit: { type: ParamTypes.AMOUNT, value: mintLimit },
       },
@@ -167,7 +180,7 @@ export const startPSM = async (
       psm,
       governorFacets.creatorFacet,
       anchorBrand,
-      stable,
+      minted,
     ),
     // @ts-expect-error TODO type for provisionPoolStartResult
     E(E.get(provisionPoolStartResult).creatorFacet).initPSM(
