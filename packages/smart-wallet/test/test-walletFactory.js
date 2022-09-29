@@ -6,12 +6,11 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { BridgeId } from '@agoric/internal';
 import { makeImportContext } from '@agoric/wallet-backend/src/marshal-contexts.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { E } from '@endo/far';
 import { makeDefaultTestContext } from './contexts.js';
 import {
   ActionType,
-  currentState,
+  headValue,
   makeMockTestSpace,
   subscriptionKey,
 } from './supports.js';
@@ -32,9 +31,7 @@ test.before(async t => {
 test('bridge handler', async t => {
   const smartWallet = await t.context.simpleProvideWallet(mockAddress1);
   const updates = await E(smartWallet).getUpdatesSubscriber();
-  t.truthy(updates);
-
-  const lastUpdate = () => currentState(updates);
+  const current = await E(smartWallet).getCurrentSubscriber();
 
   const ctx = makeImportContext();
 
@@ -55,11 +52,14 @@ test('bridge handler', async t => {
     proposal: {},
   };
 
-  t.like(await lastUpdate(), {
+  t.like(await headValue(updates), {
     updated: 'balance',
     currentAmount: {
       value: [],
     },
+  });
+  t.like(await headValue(current), {
+    lastOfferId: 0,
   });
 
   assert(t.context.sendToBridge);
@@ -77,15 +77,20 @@ test('bridge handler', async t => {
   });
   t.is(res, undefined);
 
-  await eventLoopIteration();
-
-  t.deepEqual(await lastUpdate(), {
+  t.deepEqual(await headValue(updates), {
     updated: 'offerStatus',
     status: {
       ...offerSpec,
       error: 'Error: no invitation match (0 description and 0 instance)',
     },
   });
+  t.like(
+    await headValue(current),
+    {
+      lastOfferId: 0,
+    },
+    'offer ID didn’t update',
+  );
 });
 
 test.todo('spend action over bridge');

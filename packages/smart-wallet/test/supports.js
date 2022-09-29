@@ -213,7 +213,7 @@ export const mintCentralPayment = async (
 };
 
 /** @type {<T>(subscriber: ERef<Subscriber<T>>) => Promise<T>} */
-export const currentState = async subscriber => {
+export const headValue = async subscriber => {
   await eventLoopIteration();
   const record = await E(subscriber).subscribeAfter();
   return record.head.value;
