@@ -75,15 +75,15 @@ const CosmosMessages = /** @type {const} */ ({
 export const SwingsetMsgs = /** @type {const} */ ({
   MsgProvision: {
     typeUrl: '/agoric.swingset.MsgProvision',
-    aminoType: 'swingset/MsgProvision',
+    aminoType: 'swingset/provision',
   },
   MsgWalletAction: {
     typeUrl: '/agoric.swingset.MsgWalletAction',
-    aminoType: 'swingset/WalletAction',
+    aminoType: 'swingset/wallet_action',
   },
   MsgWalletSpendAction: {
     typeUrl: '/agoric.swingset.MsgWalletSpendAction',
-    aminoType: 'swingset/WalletAction',
+    aminoType: 'swingset/wallet_spend_action',
   },
 });
 
@@ -133,13 +133,20 @@ export const zeroFee = () => {
 const SwingsetConverters = {
   [SwingsetMsgs.MsgProvision.typeUrl]: {
     aminoType: SwingsetMsgs.MsgProvision.aminoType,
-    toAmino: ({ action, owner }) => ({
-      action,
-      owner: toBech32(bech32Config.bech32PrefixAccAddr, fromBase64(owner)),
+    toAmino: ({ nickname, address, powerFlags, submitter }) => ({
+      nickname,
+      powerFlags,
+      address: toBech32(bech32Config.bech32PrefixAccAddr, fromBase64(address)),
+      submitter: toBech32(
+        bech32Config.bech32PrefixAccAddr,
+        fromBase64(submitter),
+      ),
     }),
-    fromAmino: ({ action, owner }) => ({
-      action,
-      owner: toBase64(toAccAddress(owner)),
+    fromAmino: ({ nickname, address, powerFlags, submitter }) => ({
+      nickname,
+      powerFlags,
+      address: toBase64(toAccAddress(address)),
+      submitter: toBase64(toAccAddress(submitter)),
     }),
   },
   [SwingsetMsgs.MsgWalletAction.typeUrl]: {
