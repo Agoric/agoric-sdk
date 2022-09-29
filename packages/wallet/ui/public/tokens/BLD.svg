@@ -1,5 +1,23 @@
-<svg width="851" height="851" viewBox="0 0 851 851" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M425.2 834.2C651.139 834.2 834.3 651.04 834.3 425.1C834.3 199.16 651.139 16 425.2 16C199.26 16 16.0996 199.16 16.0996 425.1C16.0996 651.04 199.26 834.2 425.2 834.2Z" fill="#86E6E9"/>
-<path d="M505.696 661C583.181 661 645.901 593.182 643.807 510.355C641.818 430.307 577.945 367.492 502.554 367.492H299.418C299.314 367.492 299.209 367.603 299.209 367.715V660.666C299.209 660.778 299.314 660.889 299.418 660.889H505.696V661Z" fill="black"/>
-<path d="M446.629 487.008C528.9 487.008 595.496 419.19 593.272 336.363C591.16 256.315 523.342 193.5 443.294 193.5H298.986C298.875 193.5 298.764 193.611 298.764 193.722V486.674C298.764 486.785 298.875 486.897 298.986 486.897H446.629V487.008Z" fill="black" fill-opacity="0.7"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100px" height="116px" viewBox="0 0 100 116" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Build-logo-symbol</title>
+    <g id="MAIN" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="BRANDING-PAGE" transform="translate(-359.000000, -2172.000000)" fill-rule="nonzero">
+            <g id="LOGO-SYMBOL-Copy" transform="translate(209.000000, 1995.000000)">
+                <g id="Group" transform="translate(0.000000, 102.000000)">
+                    <g id="Build-logo-symbol" transform="translate(150.000000, 75.000000)">
+                        <polygon id="Path" fill="#EE2F51" points="0 28.868472 50 57.7369439 100 28.868472 50 -4.29486663e-15"></polygon>
+                        <polygon id="Path" fill="#C32942" points="0 28.868472 50 57.7369439 50 115.473888 0 86.6054159"></polygon>
+                        <polygon id="Path" fill="#7D1729" points="100 28.868472 50 57.7369439 50 115.473888 100 86.6054159"></polygon>
+                        <polygon id="Path" fill="#EE2F51" points="16.6767408 76.9825919 33.3413926 67.3597679 33.3413926 86.6054159"></polygon>
+                        <polygon id="Path" fill="#7D1729" points="33.3353482 67.3597679 16.6646518 57.7369439 16.6646518 76.9825919"></polygon>
+                        <polygon id="Path" fill="#EE2F51" points="83.3232592 76.9825919 66.6586074 67.3597679 66.6586074 86.6054159"></polygon>
+                        <polygon id="Path" fill="#C32942" points="66.6646518 67.3597679 83.3353482 57.7369439 83.3353482 76.9825919"></polygon>
+                        <polygon id="Path" fill="#7D1729" points="33.3353482 28.868472 50 19.245648 50 38.4912959"></polygon>
+                        <polygon id="Path" fill="#C32942" points="66.6646518 28.868472 50 19.245648 50 38.4912959"></polygon>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
 </svg>

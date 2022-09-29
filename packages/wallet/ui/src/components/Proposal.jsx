@@ -1,10 +1,10 @@
 import { Nat } from '@agoric/nat';
 import { stringifyPurseValue } from '@agoric/ui-components';
-import { icons, defaultIcon } from '../util/Icons.js';
 import Petname from './Petname';
 import PurseValue from './PurseValue';
 import { formatDateNow } from '../util/Date';
 import { withApplicationContext } from '../contexts/Application.jsx';
+import BrandIcon from './BrandIcon';
 
 import './Offer.scss';
 
@@ -24,12 +24,7 @@ const OfferEntryFromTemplate = (
         {type.header} {role}
       </h6>
       <div className="Token">
-        <img
-          alt="icon"
-          src={icons[purse.brand.petname] ?? defaultIcon}
-          height="32px"
-          width="32px"
-        />
+        <BrandIcon brandPetname={purse.brandPetname} />
         <div>
           <PurseValue
             value={value}
@@ -52,12 +47,7 @@ const OfferEntryFromDisplayInfo = (type, [role, { amount, pursePetname }]) => {
         {type.header} {role}
       </h6>
       <div className="Token">
-        <img
-          alt="icon"
-          src={icons[amount.brand.petname] ?? defaultIcon}
-          height="32px"
-          width="32px"
-        />
+        <BrandIcon brandPetname={amount.brand.petname} />
         <div>
           <PurseValue
             value={value}
@@ -133,14 +123,7 @@ const Proposal = ({ offer, purses }) => {
     <div className="OfferEntry">
       <h6>Pay Fee</h6>
       <div className="Token">
-        {feePursePetname && (
-          <img
-            alt="icon"
-            src={icons[fee.brand.petname] ?? defaultIcon}
-            height="32px"
-            width="32px"
-          />
-        )}
+        {feePursePetname && <BrandIcon brandPetname={fee.brand.petname} />}
         <div>
           <div className="Value">
             {stringifyPurseValue({
