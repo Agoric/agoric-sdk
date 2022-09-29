@@ -1,14 +1,17 @@
+// @ts-check
 import { assert } from '@agoric/assert';
 import { roundToDecimalPlaces } from './helpers/roundToDecimalPlaces.js';
 
 const CONVENTIONAL_DECIMAL_PLACES = 2;
 const MAX_DECIMAL_PLACES = 100;
 
+/**
+ * @param {NatValue} value
+ * @returns {number}
+ */
 const calcTrailingZeros = value => {
-  if (!value) return 0;
-
   let zeroes = 0;
-  while (value > 0 && value % 10n === 0n) {
+  while (value > 0n && value % 10n === 0n) {
     zeroes += 1;
     value /= 10n;
   }
