@@ -96,6 +96,8 @@ export const makePSMSpendAction = (instance, brands, opts) => {
     brands,
     opts,
     opts.feePct ? opts.feePct / 100 : undefined,
+    // @ts-expect-error please update types. Not sure where pair goees.
+    opts.pair[1],
   );
 
   console.warn('psm spend give', proposal.give);
