@@ -16,7 +16,7 @@ const calcTrailingZeros = value => {
 };
 
 /**
- * @param {NatValue} natValue
+ * @param {NatValue?} [natValue]
  * @param {number} [decimalPlaces]
  * @param {number} [placesToShow]
  * @returns {string}
