@@ -39,3 +39,14 @@ test('stringifyNat limit decimal places to 100', t => {
 
   t.is(stringifyNat(tinyCoin, 105, 120), `0.${'1234'.padStart(100, '0')}`);
 });
+
+test('stringifyNat shows correct number of decimal places by default', t => {
+  t.is(stringifyNat(123n), '123');
+  t.is(stringifyNat(1230000n, 4), '123.00');
+  t.is(stringifyNat(123456700n, 6), '123.4567');
+});
+
+test('stringifyNat empty value', t => {
+  t.is(stringifyNat(undefined), '');
+  t.is(stringifyNat(null), '');
+});
