@@ -41,8 +41,13 @@ test('stringifyNat limit decimal places to 100', t => {
 });
 
 test('stringifyNat shows correct number of decimal places by default', t => {
+  // If number has no decimal places, don't show any.
   t.is(stringifyNat(123n), '123');
+
+  // Show two decimal places by default.
   t.is(stringifyNat(1230000n, 4), '123.00');
+
+  // Show all significant decimal places if greater than 2 by default.
   t.is(stringifyNat(123456700n, 6), '123.4567');
 });
 
