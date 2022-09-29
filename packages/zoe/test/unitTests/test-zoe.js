@@ -7,6 +7,7 @@ import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { passStyleOf, Far } from '@endo/marshal';
 import { getMethodNames } from '@agoric/internal';
+import { M } from '@agoric/store';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@endo/bundle-source';
@@ -156,6 +157,13 @@ test(`E(zoe).startInstance - bad issuer, makeEmptyPurse throws`, async t => {
     // eslint-disable-next-line no-use-before-define
     isMyIssuer: i => i === badIssuer,
     getDisplayInfo: () => ({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
+    aux: () =>
+      harden({
+        name: 'bogusBrand',
+        assetKind: AssetKind.NAT,
+        displayInfo: { decimalPlaces: 6, assetKind: AssetKind.NAT },
+        amountShape: M.any(),
+      }),
   });
   const badIssuer = Far('issuer', {
     makeEmptyPurse: async () => {

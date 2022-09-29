@@ -87,15 +87,16 @@ export const provideIssuerStorage = zcfBaggage => {
     assertInstantiated();
     const brandP = E(issuerP).getBrand();
     const brandIssuerMatchP = E(brandP).isMyIssuer(issuerP);
-    const displayInfoP = E(brandP).getDisplayInfo();
-    /** @type {[Issuer,Brand,boolean,DisplayInfo]} */
-    const [issuer, brand, brandIssuerMatch, displayInfo] = await Promise.all([
+    const brandAuxDataP = E(brandP).aux();
+    /** @type {[Issuer,Brand,boolean,BrandAuxData]} */
+    const [issuer, brand, brandIssuerMatch, brandAuxData] = await Promise.all([
       issuerP,
       brandP,
       brandIssuerMatchP,
-      displayInfoP,
+      brandAuxDataP,
     ]);
     // AWAIT /////
+    const { displayInfo } = brandAuxData;
 
     if (issuerToIssuerRecord.has(issuer)) {
       return issuerToIssuerRecord.get(issuer);

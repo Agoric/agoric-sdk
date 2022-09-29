@@ -153,11 +153,19 @@ export const IssuerKitShape = harden({
 
 // //////////////////////// Interfaces /////////////////////////////////////////
 
+export const BrandAuxDataShape = harden({
+  name: M.string(),
+  assetKind: AssetKindShape,
+  displayInfo: DisplayInfoShape,
+  amountShape: M.pattern(),
+});
+
 export const BrandI = M.interface('Brand', {
   isMyIssuer: M.callWhen(M.await(IssuerShape)).returns(M.boolean()),
   getAllegedName: M.call().returns(M.string()),
   getDisplayInfo: M.call().returns(DisplayInfoShape),
   getAmountShape: M.call().returns(M.pattern()),
+  aux: M.call().returns(BrandAuxDataShape),
 });
 
 /**

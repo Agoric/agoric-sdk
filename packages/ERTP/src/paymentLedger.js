@@ -96,6 +96,9 @@ export const preparePaymentLedger = (
     getAmountShape() {
       return amountShape;
     },
+    aux() {
+      return brandAuxData;
+    },
   });
 
   const emptyAmount = AmountMath.makeEmpty(brand, assetKind);
@@ -104,6 +107,13 @@ export const preparePaymentLedger = (
     assetKind,
     elementShape,
   );
+
+  const brandAuxData = harden({
+    name,
+    assetKind,
+    displayInfo,
+    amountShape,
+  });
 
   const { IssuerI, MintI, PaymentI, PurseIKit } = makeIssuerInterfaces(
     brand,

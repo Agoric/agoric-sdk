@@ -18,10 +18,63 @@ import { makeCollectionManager } from './collectionManager.js';
 import { makeWatchedPromiseManager } from './watchedPromises.js';
 import { releaseOldState } from './stop-vat.js';
 
+/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
+
+const { defineProperty } = Object;
+
 const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
 
 const SYSCALL_CAPDATA_BODY_SIZE_LIMIT = 10_000_000;
 const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
+
+// TODO Move someplace more reusable; perhaps even @endo/marshal
+const makeRemotePresence = (iface, fulfilledHandler) => {
+  let remotePresence;
+  const p = new HandledPromise((_res, _rej, resolveWithPresence) => {
+    remotePresence = resolveWithPresence(fulfilledHandler);
+    let auxData;
+    let hasAuxData = false;
+
+    /**
+     * A remote presence has an `aux()` method that either returns a promise
+     * or a non-promise. The first time it is called, it does an eventual-send
+     * of an `aux()` message to the far object it designates, remembers that
+     * promise as its auxdata, and returns that. It also watches that promise
+     * to react to its fulfillment. Until that reaction, every time its
+     * `aux()` is called, it will return that same promise. Once it reacts
+     * to the promise being fulfilled, if that ever happens, then the
+     * fulfillment becomes its new auxdata which gets returned from then on.
+     *
+     * @template T
+     * @returns {ERef<T>}
+     */
+    const aux = () => {
+      if (hasAuxData) {
+        return auxData;
+      }
+      auxData = E(remotePresence).aux();
+      hasAuxData = true;
+      // TODO Also watch for a rejection. If rejected with the special
+      // value indicating the promise was broken by upgrade, then ask again.
+      // To keep the return promise valid across that upgrade-polling
+      // requires more bookkeeping, to keep the returned promise distinct
+      // from the promise for the result of the send.
+      E.when(auxData, value => (auxData = value));
+      return auxData;
+    };
+    defineProperty(remotePresence, 'aux', {
+      value: aux,
+      writable: false,
+      enumerable: false,
+      configurable: false,
+    });
+    // Use Remotable rather than Far to make a remote from a presence
+    Remotable(iface, undefined, remotePresence);
+  });
+
+  harden(p);
+  return remotePresence;
+};
 
 // 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
 // of local objects which have been exported. These cannot be persisted
@@ -375,22 +428,17 @@ function build(
       },
     };
 
-    let remotePresence;
-    const p = new HandledPromise((_res, _rej, resolveWithPresence) => {
-      // Use Remotable rather than Far to make a remote from a presence
-      remotePresence = Remotable(
-        iface,
-        undefined,
-        resolveWithPresence(fulfilledHandler),
-      );
-      // remote === presence, actually
+    const remotePresence = makeRemotePresence(iface, fulfilledHandler);
 
-      // todo: mfig says resolveWithPresence
-      // gives us a Presence, Remotable gives us a Remote. I think that
-      // implies we have a lot of renaming to do, 'makeRemote' instead of
-      // 'makeImportedPresence', etc. I'd like to defer that for a later
-      // cleanup/renaming pass.
-    }); // no unfulfilledHandler
+    // remote === presence, actually
+
+    // todo: mfig says resolveWithPresence
+    // gives us a Presence, Remotable gives us a Remote. I think that
+    // implies we have a lot of renaming to do, 'makeRemote' instead of
+    // 'makeImportedPresence', etc. I'd like to defer that for a later
+    // cleanup/renaming pass.
+
+    // no unfulfilledHandler
 
     // The call to resolveWithPresence performs the forwarding logic
     // immediately, so by the time we reach here, E(presence).foo() will use
@@ -402,8 +450,6 @@ function build(
     // `HandledPromise.resolve(presence)`. So we must harden it now, for
     // safety, to prevent it from being used as a communication channel
     // between isolated objects that share a reference to the Presence.
-    harden(p);
-
     // Up at the application level, presence~.foo(args) starts by doing
     // HandledPromise.resolve(presence), which retrieves it, and then does
     // p.eventualSend('foo', [args]), which uses the fulfilledHandler.

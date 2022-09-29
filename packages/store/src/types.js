@@ -708,22 +708,40 @@
 // TODO parameterize this to match the behavior object it guards
 /**
  * @typedef {{
- * klass: 'Interface',
- * interfaceName: string,
- * methodGuards: Record<string | symbol, MethodGuard>
- * sloppy?: boolean
+ *   klass: 'Interface',
+ *   interfaceName: string,
+ *   methodGuards: Record<string | symbol, MethodGuard>
+ *   sloppy?: boolean
  * }} InterfaceGuard
  */
 
-/** @typedef {any} MethodGuardMaker
+/**
+ * @typedef {any} MethodGuardMaker
  * a parameter list like foo(a, b, c = d, …e) => f should be guarded by
  * something like
  * foo: M.call(AShape, BShape).optional(CShape).rest(EShape).returns(FShape)
  * optional is for optional (=) params. rest is for … (varargs) params
  */
 
-/** @typedef {{ klass: 'methodGuard', callKind: 'sync' | 'async', returnGuard: unknown }} MethodGuard */
-/** @typedef {any} ArgGuard */
+/**
+ * @typedef {{
+ *   klass: 'methodGuard',
+ *   callKind: 'sync' | 'async',
+ *   argGuards: ArgGuard[],
+ *   optionalArgGuards: ArgGuard[],
+ *   restArgGuard: Pattern,
+ *   returnGuard: Pattern
+ * }} MethodGuard
+ */
+
+/**
+ * @typedef {{
+ *   klass: 'awaitArg',
+ *   argGuard: ArgGuard,
+ * }} AwaitArgGuard
+ */
+
+/** @typedef {Pattern | AwaitArgGuard } ArgGuard */
 
 /**
  * @typedef {object} PatternKit
