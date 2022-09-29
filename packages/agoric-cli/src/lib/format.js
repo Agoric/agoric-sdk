@@ -51,6 +51,9 @@ export const makeAmountFormatter = assets => amt => {
       /** @type {[petname: string, qty: number]} */
       return [name, Number(value) / 10 ** decimalPlaces];
     case 'set':
+      if (value[0]?.handle?.iface?.includes('InvitationHandle')) {
+        return [name, value.map(v => v.description)];
+      }
       return [name, value];
     default:
       return [name, ['?']];
@@ -66,12 +69,12 @@ export const asPercent = ratio => {
 /**
  * Summarize the balances array as user-facing informative tuples
  
- * @param {Array<Amount>} balances
+ * @param {import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord['purses']} purses
  * @param {AssetDescriptor[]} assets
  */
-export const purseBalanceTuples = (balances, assets) => {
+export const purseBalanceTuples = (purses, assets) => {
   const fmt = makeAmountFormatter(assets);
-  return balances.map(b => fmt(b));
+  return purses.map(b => fmt(b.balance));
 };
 
 /**
@@ -154,25 +157,28 @@ export const offerStatusTuples = (state, agoricNames) => {
 
 /**
  *
- * @param {ReturnType<import('@agoric/smart-wallet/src/utils.js').makeWalletStateCoalescer>['state']} state
+ * @param {import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord} current
+ * @param {ReturnType<import('@agoric/smart-wallet/src/utils.js').makeWalletStateCoalescer>['state']} coalesced
  * @param {Awaited<ReturnType<typeof makeAgoricNames>>} agoricNames
  */
-export const summarize = (state, agoricNames) => {
-  const { balances, brands, invitationsReceived } = state;
-  const invitations = Array.from(invitationsReceived.values()).map(v => [
-    agoricNames.reverse[v.instance.boardId],
-    v.description,
-    v.acceptedIn || 'not yet accepted',
-  ]);
+export const summarize = (current, coalesced, agoricNames) => {
   return {
-    invitations,
-    balances: purseBalanceTuples(
+    lastOfferId: [current.lastOfferId],
+    purses: purseBalanceTuples(
       // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
       // @ts-ignore xxx RpcRemote
-      [...balances.values()],
-      // @ts-expect-error xxx RpcRemote
-      [...brands.values()],
+      [...current.purses.values()],
+      // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
+      // @ts-ignore xxx RpcRemote
+      [...current.brands.values()],
     ),
-    offers: offerStatusTuples(state, agoricNames),
+    usedInvitations: Object.entries(current.offerToUsedInvitation).map(
+      ([offerId, invitationAmt]) => [
+        agoricNames.reverse[invitationAmt.value[0].instance.boardId],
+        invitationAmt.value[0].description,
+        Number(offerId),
+      ],
+    ),
+    offers: offerStatusTuples(coalesced, agoricNames),
   };
 };
