@@ -296,15 +296,21 @@ export function xsnap(options) {
 
   /**
    * @param {{filePath: string}} snapshotConfig
-   * @returns {Promise<void>}
+   * @returns {Promise<number | undefined>}
    */
   async function writeSnapshot({ filePath }) {
     const result = baton.then(async () => {
       await messagesToXsnap.next(encoder.encode(`w${filePath}`));
-      await runToIdle();
+      return runToIdle();
     });
     baton = result.then(noop, noop);
-    return racePromises([vatExit.promise, baton]);
+    return racePromises([
+      vatCancelled,
+      result.then(({ reply }) => {
+        const lengthStr = decoder.decode(reply);
+        return lengthStr.length ? Number(lengthStr) : undefined;
+      }),
+    ]);
   }
 
   /**

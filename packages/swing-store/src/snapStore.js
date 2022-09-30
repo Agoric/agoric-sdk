@@ -25,7 +25,7 @@ import {
  * @typedef {{
  *   has: (hash: string) => Promise<boolean>,
  *   load: <T>(snapshotInfo: {hash: string, size?: number | undefined}, loadRaw: (snapshotConfig: {filePath: string}) => Promise<T>) => Promise<T>,
- *   save: (saveRaw: (snapshotConfig: {filePath: string}) => Promise<void>) => Promise<SnapshotInfo>,
+ *   save: (saveRaw: (snapshotConfig: {filePath: string}) => Promise<number | undefined>) => Promise<SnapshotInfo>,
  *   prepareToDelete: (hash: string) => void,
  *   commitDeletes: (ignoreErrors?: boolean) => Promise<void>,
  * }} SnapStore
@@ -116,7 +116,7 @@ export function makeSnapStore(
    * including file size and timing metrics.
    * Note that timing metrics exclude file open.
    *
-   * @param {(snapshotConfig: {filePath: string}) => Promise<void>} saveRaw
+   * @param {(snapshotConfig: {filePath: string}) => Promise<number | undefined>} saveRaw
    * @returns {Promise<SnapshotInfo>}
    */
   async function save(saveRaw) {
@@ -126,10 +126,15 @@ export function makeSnapStore(
         // TODO: Refactor to use tmpFile rather than tmpName.
         const tmpSnapPath = await ptmpName({ template: 'save-raw-XXXXXX.xss' });
         cleanup.push(() => unlink(tmpSnapPath));
-        const { duration: rawSaveSeconds } = await measureSeconds(async () =>
-          saveRaw({ filePath: tmpSnapPath }),
-        );
+        const { duration: rawSaveSeconds, result: writtenSize } =
+          await measureSeconds(async () => saveRaw({ filePath: tmpSnapPath }));
         const { size: rawByteCount } = await stat(tmpSnapPath);
+
+        if (writtenSize !== undefined && rawByteCount !== writtenSize) {
+          assert.fail(
+            `Snapshot size does not match. wrote=${writtenSize}, file=${rawByteCount}`,
+          );
+        }
 
         // Perform operations that read snapshot data in parallel.
         // We still serialize the stat and opening of tmpSnapPath
