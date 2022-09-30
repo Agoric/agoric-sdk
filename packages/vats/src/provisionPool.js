@@ -8,10 +8,7 @@ import { observeIteration, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { makeMetricsPublishKit } from '@agoric/inter-protocol/src/contractSupport.js';
-import {
-  makeMyAddressNameAdminKit,
-  PowerFlags,
-} from './core/basic-behaviors.js';
+import { PowerFlags } from './core/basic-behaviors.js';
 
 const { details: X, quote: q } = assert;
 
@@ -41,7 +38,7 @@ const privateArgsShape = harden({
  * @param {(count: bigint) => void} publishMetrics
  * @typedef {import('./vat-bank.js').Bank} Bank
  */
-const makeBridgeProvisionTool = (sendInitialPayment, publishMetrics) => {
+export const makeBridgeProvisionTool = (sendInitialPayment, publishMetrics) => {
   let provisionedCount = 0n;
 
   /**
@@ -70,20 +67,16 @@ const makeBridgeProvisionTool = (sendInitialPayment, publishMetrics) => {
         await sendInitialPayment(address, bank);
         // only proceed  if we can provide funds
 
-        const { nameHub, myAddressNameAdmin } =
-          makeMyAddressNameAdminKit(address);
-
-        await Promise.all([
-          E(namesByAddressAdmin).update(address, nameHub, myAddressNameAdmin),
-          E(walletFactory).provideSmartWallet(
-            address,
-            bank,
-            myAddressNameAdmin,
-          ),
-        ]);
-        provisionedCount += 1n;
+        const [_, created] = await E(walletFactory).provideSmartWallet(
+          address,
+          bank,
+          namesByAddressAdmin,
+        );
+        if (created) {
+          provisionedCount += 1n;
+        }
         publishMetrics(provisionedCount);
-        console.info('provisioned', address, powerFlags);
+        console.info(created ? 'provisioned' : 're-provisioned', address);
       },
     });
   return makeHandler;

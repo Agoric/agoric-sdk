@@ -727,7 +727,12 @@ func NewAgoricApp(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
-	// Upgrade handlers will go here
+	app.UpgradeKeeper.SetUpgradeHandler(
+		upgradeName,
+		func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
+			return vm, nil
+		},
+	)
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
