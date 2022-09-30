@@ -1,18 +1,19 @@
+// @ts-check
 import { iterateEach } from '@agoric/casting';
+import { AmountMath } from '@agoric/ertp';
 import {
   makeAsyncIterableFromNotifier,
   makeNotifierKit,
 } from '@agoric/notifier';
-import {
-  getFirstHeight,
-  NO_SMART_WALLET_ERROR,
-} from '@agoric/smart-wallet/src/utils.js';
+import { NO_SMART_WALLET_ERROR } from '@agoric/smart-wallet/src/utils.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { getDappService } from '../service/Dapps.js';
 import { getIssuerService } from '../service/Issuers.js';
 import { getOfferService } from '../service/Offers.js';
 import { getScopedBridge } from '../service/ScopedBridge.js';
+
+/** @typedef {import('@agoric/smart-wallet/src/types.js').Petname} Petname */
 
 const newId = kind => `${kind}${Math.random()}`;
 
@@ -76,6 +77,7 @@ export const makeBackendFromWalletBridge = walletBridge => {
     dapps: iterateNotifier(E(walletBridge).getDappsNotifier()),
     issuers: iterateNotifier(E(walletBridge).getIssuersNotifier()),
     offers: wrapOffersIterator(
+      // @ts-expect-error xxx
       iterateNotifier(E(walletBridge).getOffersNotifier()),
     ),
     payments: iterateNotifier(E(walletBridge).getPaymentsNotifier()),
@@ -87,7 +89,7 @@ export const makeBackendFromWalletBridge = walletBridge => {
 
   // Just produce a single update for the initial backend.
   // TODO: allow further updates.
-  /** @type {NotifierKit<BackendSchema>} */
+  /** @type {NotifierRecord<BackendSchema>} */
   const { notifier: backendNotifier, updater: backendUpdater } =
     makeNotifierKit(firstSchema);
 
@@ -101,7 +103,8 @@ export const makeBackendFromWalletBridge = walletBridge => {
 };
 
 /**
- * @param {import('@agoric/casting').Follower<any>} follower
+ * @param {import('@agoric/casting').ValueFollower<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord>} currentFollower
+ * @param {import('@agoric/casting').ValueFollower<import('@agoric/smart-wallet/src/smartWallet').UpdateRecord>} updateFollower
  * @param {import('@agoric/casting').Leader} leader
  * @param {ReturnType<import('@endo/marshal').makeMarshal>} marshaller
  * @param {string} publicAddress
@@ -110,8 +113,9 @@ export const makeBackendFromWalletBridge = walletBridge => {
  * @param {(e: unknown) => void} [errorHandler]
  * @param {() => void} [firstCallback]
  */
-export const makeWalletBridgeFromFollower = (
-  follower,
+export const makeWalletBridgeFromFollowers = (
+  currentFollower,
+  updateFollower,
   leader,
   marshaller,
   publicAddress,
@@ -131,6 +135,7 @@ export const makeWalletBridgeFromFollower = (
     getPaymentsNotifier: 'payments',
   };
 
+  /** @type {Record<string, NotifierRecord<unknown>>} */
   const notifierKits = Object.fromEntries(
     Object.entries(notifiers).map(([_method, stateName]) => [
       stateName,
@@ -139,14 +144,35 @@ export const makeWalletBridgeFromFollower = (
   );
 
   // We assume just one cosmos purse per brand.
+  /** @type {Record<number, import('@agoric/smart-wallet/src/offers.js').OfferStatus & {status: 'accept' | 'rejected'}>} */
   const offers = {};
+  /**
+   * @typedef {{
+   *  brand?: Brand,
+   *  brandPetname?: Petname,
+   *  currentAmount: Amount,
+   *  pursePetname?: Petname,
+   *  displayInfo?: DisplayInfo,
+   * }} PurseInfo
+   * @type {Map<Brand, PurseInfo>}
+   */
   const brandToPurse = new Map();
+  /** @type {Map<Petname, Brand>} */
   const pursePetnameToBrand = new Map();
+
+  if (firstCallback) {
+    firstCallback();
+    Object.values(notifierKits).forEach(({ updater }) =>
+      updater.updateState([]),
+    );
+    firstCallback = undefined;
+  }
 
   const updatePurses = () => {
     const purses = [];
     for (const [brand, purse] of brandToPurse.entries()) {
       if (purse.currentAmount && purse.brandPetname) {
+        assert(purse.pursePetname, 'missing purse.pursePetname');
         pursePetnameToBrand.set(purse.pursePetname, brand);
         purses.push(purse);
       }
@@ -154,32 +180,53 @@ export const makeWalletBridgeFromFollower = (
     notifierKits.purses.updater.updateState(harden(purses));
   };
 
-  const followLatest = async () => {
-    const firstHeight = await getFirstHeight(follower);
+  const fetchCurrent = async () => {
+    const latestIterable = await E(currentFollower).getLatestIterable();
+    const iterator = latestIterable[Symbol.asyncIterator]();
+    const latest = await iterator.next();
+    /** @type {import('@agoric/casting').ValueFollowerElement<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord>} */
+    const currentEl = latest.value;
+    const wallet = currentEl.value;
+    for (const purse of wallet.purses) {
+      console.debug('registering purse', purse);
+      const brandDescriptor = wallet.brands.find(
+        bd => purse.brand === bd.brand,
+      );
+      assert(brandDescriptor, `missing descriptor for brand ${purse.brand}`);
+      /** @type {PurseInfo} */
+      const purseInfo = {
+        currentAmount: purse.balance,
+        brandPetname: brandDescriptor.petname,
+        pursePetname: brandDescriptor.petname,
+        displayInfo: brandDescriptor.displayInfo,
+      };
+      brandToPurse.set(purse.brand, purseInfo);
+    }
+    console.debug('brandToPurse map', brandToPurse);
+    updatePurses();
+    return currentEl.blockHeight;
+  };
 
-    for await (const { value } of iterateEach(follower, {
-      height: firstHeight,
+  const followLatest = async startingHeight => {
+    for await (const { value } of iterateEach(updateFollower, {
+      height: startingHeight,
     })) {
       /** @type {import('@agoric/smart-wallet/src/smartWallet').UpdateRecord} */
       const updateRecord = value;
-      if (firstCallback) {
-        firstCallback();
-        Object.values(notifierKits).forEach(({ updater }) =>
-          updater.updateState([]),
-        );
-        firstCallback = undefined;
-      }
       switch (updateRecord.updated) {
         case 'brand': {
-          const { descriptor } = updateRecord;
+          const {
+            descriptor: { brand, petname, displayInfo },
+          } = updateRecord;
+          const prior = brandToPurse.get(brand);
           const purseObj = {
-            ...brandToPurse.get(descriptor.brand),
-            brand: descriptor.brand,
-            brandPetname: descriptor.petname,
-            pursePetname: descriptor.petname,
-            displayInfo: descriptor.displayInfo,
+            brand,
+            brandPetname: petname,
+            pursePetname: petname,
+            displayInfo,
+            currentAmount: prior?.currentAmount || AmountMath.makeEmpty(brand),
           };
-          brandToPurse.set(descriptor.brand, purseObj);
+          brandToPurse.set(brand, purseObj);
           updatePurses();
           break;
         }
@@ -207,7 +254,7 @@ export const makeWalletBridgeFromFollower = (
           if ('error' in status) {
             offers[status.id] = {
               ...oldOffer,
-              id: `${status.id}`,
+              id: status.id,
               status: 'rejected',
               error: `${status.error}`,
             };
@@ -217,7 +264,7 @@ export const makeWalletBridgeFromFollower = (
           ) {
             offers[status.id] = {
               ...oldOffer,
-              id: `${status.id}`,
+              id: status.id,
               status: 'accept',
             };
           }
@@ -227,14 +274,17 @@ export const makeWalletBridgeFromFollower = (
           break;
         }
         default: {
+          // @ts-expect-error exhaustive switch
           throw Error(`Unknown updateRecord ${updateRecord.updated}`);
         }
       }
     }
   };
 
+  const loadData = () => fetchCurrent().then(followLatest);
+
   const retry = () => {
-    followLatest().catch(e => {
+    loadData().catch(e => {
       if (e.message === NO_SMART_WALLET_ERROR) {
         setTimeout(retry, 5000);
       } else {
@@ -243,7 +293,7 @@ export const makeWalletBridgeFromFollower = (
     });
   };
 
-  followLatest().catch(e => {
+  loadData().catch(e => {
     errorHandler(e);
     if (e.message === NO_SMART_WALLET_ERROR) {
       setTimeout(retry, 5000);

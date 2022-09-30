@@ -25,6 +25,13 @@ import { shape } from './typeGuards.js';
 const { details: X, quote: q } = assert;
 
 /**
+ * @template K, V
+ * @param {MapStore<K, V> } map
+ * @returns {Record<K, V>}
+ */
+const mapToRecord = map => Object.fromEntries(map.entries());
+
+/**
  * @file Smart wallet module
  *
  * @see {@link ../README.md}}
@@ -38,6 +45,17 @@ const { details: X, quote: q } = assert;
  *   method: 'executeOffer'
  *   offer: import('./offers.js').OfferSpec,
  * }} BridgeAction
+ */
+
+/**
+ * Purses is an array to support a future requirement of multiple purses per brand.
+ *
+ * @typedef {{
+ *   brands: BrandDescriptor[],
+ *   purses: Array<{brand: Brand, balance: Amount}>,
+ *   offerToUsedInvitation: Record<number, Amount>,
+ *   lastOfferId: number,
+ * }} CurrentWalletRecord
  */
 
 /**
@@ -82,10 +100,12 @@ const { details: X, quote: q } = assert;
  * @typedef {Readonly<HeldParams & {
  * paymentQueues: MapStore<Brand, Array<import('@endo/far').FarRef<Payment>>>,
  * offerToInvitationMakers: MapStore<number, import('./types').RemoteInvitationMakers>,
+ * offerToUsedInvitation: MapStore<number, Amount>,
  * brandDescriptors: MapStore<Brand, BrandDescriptor>,
  * brandPurses: MapStore<Brand, RemotePurse>,
  * purseBalances: MapStore<RemotePurse, Amount>,
  * updatePublishKit: StoredPublishKit<UpdateRecord>,
+ * currentPublishKit: StoredPublishKit<CurrentWalletRecord>,
  * }>} ImmutableState
  *
  * @typedef {{
@@ -138,12 +158,19 @@ export const initState = (unique, shared) => {
     unique.address,
   );
 
+  const myCurrentStateStorageNode =
+    E(myWalletStorageNode).makeChildNode('current');
+
   const preciousState = {
     // Private purses. This assumes one purse per brand, which will be valid in MN-1 but not always.
     brandPurses: makeScalarBigMapStore('brand purses', { durable: true }),
     // Payments that couldn't be deposited when received.
     // NB: vulnerable to uncapped growth by unpermissioned deposits.
     paymentQueues: makeScalarBigMapStore('payments queues', {
+      durable: true,
+    }),
+    // Invitation amounts to save for persistent lookup
+    offerToUsedInvitation: makeScalarBigMapStore('invitation amounts', {
       durable: true,
     }),
     // Invitation makers yielded by offer results
@@ -161,6 +188,9 @@ export const initState = (unique, shared) => {
     purseBalances: makeScalarMapStore(),
     updatePublishKit: harden(
       makeStoredPublishKit(myWalletStorageNode, shared.publicMarshaller),
+    ),
+    currentPublishKit: harden(
+      makeStoredPublishKit(myCurrentStateStorageNode, shared.publicMarshaller),
     ),
   };
 
@@ -198,6 +228,7 @@ const behaviorGuards = {
     ),
     getDepositFacet: M.call().returns(M.eref(M.any())),
     getOffersFacet: M.call().returns(M.eref(M.any())),
+    getCurrentSubscriber: M.call().returns(M.eref(M.any())),
     getUpdatesSubscriber: M.call().returns(M.eref(M.any())),
   }),
 };
@@ -206,6 +237,7 @@ const behaviorGuards = {
 const behavior = {
   helper: {
     /**
+     * @this {{ state: State, facets: typeof behavior }}
      * @param {RemotePurse} purse
      * @param {Amount} balance
      * @param {'init'} [init]
@@ -220,6 +252,29 @@ const behavior = {
       updatePublishKit.publisher.publish({
         updated: 'balance',
         currentAmount: balance,
+      });
+      const { helper } = this.facets;
+      helper.publishCurrentState();
+    },
+
+    /**
+     * @this {{ state: State, facets: typeof behavior }}
+     */
+    publishCurrentState() {
+      const {
+        brandDescriptors,
+        currentPublishKit,
+        offerToUsedInvitation,
+        purseBalances,
+      } = this.state;
+      currentPublishKit.publisher.publish({
+        brands: [...brandDescriptors.values()],
+        purses: [...purseBalances.values()].map(a => ({
+          brand: a.brand,
+          balance: a,
+        })),
+        offerToUsedInvitation: mapToRecord(offerToUsedInvitation),
+        lastOfferId: this.state.lastOfferId,
       });
     },
 
@@ -350,8 +405,10 @@ const behavior = {
         brandPurses,
         invitationBrand,
         invitationPurse,
+        invitationIssuer,
         lastOfferId,
         offerToInvitationMakers,
+        offerToUsedInvitation,
         updatePublishKit,
       } = this.state;
 
@@ -363,6 +420,7 @@ const behavior = {
       const executor = makeOfferExecutor({
         zoe,
         depositFacet: facets.deposit,
+        invitationIssuer,
         powers: {
           invitationFromSpec: makeInvitationsHelper(
             zoe,
@@ -391,8 +449,12 @@ const behavior = {
             status: offerStatus,
           });
         },
-        onNewContinuingOffer: (offerId, invitationMakers) =>
-          offerToInvitationMakers.init(offerId, invitationMakers),
+        /** @type {(offerId: number, invitationAmount: Amount<'set'>, invitationMakers: object) => void} */
+        onNewContinuingOffer: (offerId, invitationAmount, invitationMakers) => {
+          offerToUsedInvitation.init(offerId, invitationAmount);
+          offerToInvitationMakers.init(offerId, invitationMakers);
+          facets.helper.publishCurrentState();
+        },
       });
       executor.executeOffer(offerSpec);
     },
@@ -426,6 +488,10 @@ const behavior = {
     },
     getOffersFacet() {
       return this.facets.offers;
+    },
+
+    getCurrentSubscriber() {
+      return this.state.currentPublishKit.subscriber;
     },
 
     getUpdatesSubscriber() {

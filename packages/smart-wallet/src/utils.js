@@ -128,7 +128,7 @@ export const getFirstHeight = async follower => {
 };
 
 /**
- *
+ * @deprecated use `.current` node for current state
  * @param {import('@agoric/casting').Follower<import('@agoric/casting').ValueFollowerElement<import('./smartWallet').UpdateRecord>>} follower
  */
 export const coalesceWalletState = async follower => {

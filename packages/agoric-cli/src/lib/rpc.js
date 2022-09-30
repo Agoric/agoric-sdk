@@ -63,7 +63,7 @@ export const makeVStorage = powers => {
     /**
      *
      * @param {string} path
-     * @returns {Promise<unknown>} latest vstorage value at path
+     * @returns {Promise<string>} latest vstorage value at path
      */
     async readLatest(path = 'published') {
       const raw = await getJSON(this.url(path, { kind: 'data' }));
@@ -210,6 +210,10 @@ export const storageHelper = {
     const capDatas = storageHelper.parseMany(values);
     return { blockHeight, capDatas };
   },
+  /**
+   * @param {string} txt
+   * @param {IdMap} ctx
+   */
   unserializeTxt: (txt, ctx) => {
     const { capDatas } = storageHelper.parseCapData(txt);
     return capDatas.map(capData =>

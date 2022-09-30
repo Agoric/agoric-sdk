@@ -16,7 +16,7 @@ import { NonNullish } from '@agoric/assert';
 
 import { coalesceUpdates } from '../src/utils.js';
 import { makeDefaultTestContext } from './contexts.js';
-import { withAmountUtils } from './supports.js';
+import { headValue, withAmountUtils } from './supports.js';
 
 /**
  * @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>
@@ -64,6 +64,19 @@ const purseBalance = (state, brand) => {
     assert.fail(`${brand} not found in record`);
   }
   return match.value;
+};
+/**
+ * @param {import('../src/smartWallet.js').CurrentWalletRecord} record
+ * @param {Brand<'nat'>} brand
+ */
+const currentPurseBalance = (record, brand) => {
+  const purses = Array.from(record.purses.values());
+  const match = purses.find(b => b.brand === brand);
+  if (!match) {
+    console.debug('purses', ...purses);
+    assert.fail(`${brand} not found in record`);
+  }
+  return match.balance.value;
 };
 
 test('null swap', async t => {
@@ -120,6 +133,7 @@ test('want stable', async t => {
 
   const wallet = await t.context.simpleProvideWallet('agoric1wantstable');
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+  const currentSub = E(wallet).getCurrentSubscriber();
 
   const offersFacet = wallet.getOffersFacet();
   t.assert(offersFacet, 'undefined offersFacet');
@@ -127,6 +141,7 @@ test('want stable', async t => {
   await eventLoopIteration();
 
   t.is(purseBalance(computedState, anchor.brand), 0n);
+  t.like(await headValue(currentSub), { lastOfferId: 0 });
 
   t.log('Fund the wallet');
   assert(anchor.mint);
@@ -156,16 +171,21 @@ test('want stable', async t => {
   await eventLoopIteration();
   t.is(purseBalance(computedState, anchor.brand), 0n);
   t.is(purseBalance(computedState, stableBrand), swapSize - 1n);
+
+  const currentState = await headValue(currentSub);
+  t.like(currentState, { lastOfferId: 1 });
 });
 
 test('govern offerFilter', async t => {
-  const { anchor } = t.context;
+  const { anchor, invitationBrand } = t.context;
   const { agoricNames, psmFacets, zoe } = await E.get(t.context.consume);
 
   const { psm: psmInstance } = await E(psmFacets).get(anchor.brand);
 
   const wallet = await t.context.simpleProvideWallet(committeeAddress);
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+  const currentSub = E(wallet).getCurrentSubscriber();
+
   const offersFacet = wallet.getOffersFacet();
 
   const psmCharter = await E(agoricNames).lookup('instance', 'psmCharter');
@@ -202,6 +222,12 @@ test('govern offerFilter', async t => {
 
   t.is(proposeInvitationDetails[0].description, INVITATION_MAKERS_DESC);
   t.is(proposeInvitationDetails[0].instance, psmCharter, 'psmCharter');
+  t.is(
+    // @ts-expect-error cast amount kind
+    currentPurseBalance(await headValue(currentSub), invitationBrand).length,
+    2,
+    'two invitations deposited',
+  );
 
   // The purse has the invitation to get the makers ///////////
 
@@ -220,7 +246,20 @@ test('govern offerFilter', async t => {
   };
 
   await offersFacet.executeOffer(invMakersOffer);
-  await eventLoopIteration();
+
+  /** @type {import('../src/smartWallet.js').CurrentWalletRecord} */
+  let currentState = await headValue(currentSub);
+  t.is(
+    // @ts-expect-error cast amount kind
+    currentPurseBalance(currentState, invitationBrand).length,
+    1,
+    'one invitation consumed, one left',
+  );
+  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), ['44']);
+  t.is(
+    currentState.offerToUsedInvitation[44].value[0].description,
+    'PSM charter member invitation',
+  );
 
   // Call for a vote ////////////////////////////////
 
@@ -280,7 +319,16 @@ test('govern offerFilter', async t => {
   };
 
   await offersFacet.executeOffer(committeeInvMakersOffer);
-  await eventLoopIteration();
+  currentState = await headValue(currentSub);
+  t.is(
+    // @ts-expect-error cast amount kind
+    currentPurseBalance(currentState, invitationBrand).length,
+    0,
+    'last invitation consumed, none left',
+  );
+  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), ['44', '46']);
+  // 44 tested above
+  t.is(currentState.offerToUsedInvitation[46].value[0].description, 'Voter0');
 
   /** @type {import('../src/invitations.js').ContinuingInvitationSpec} */
   const getVoteSpec = {

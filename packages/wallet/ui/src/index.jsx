@@ -1,9 +1,11 @@
 // @ts-check
+/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 /// <reference types="ses"/>
 import '@endo/eventual-send/shim';
 
 // Ambient types. Needed only for dev but this does a runtime import.
 import '@agoric/zoe/exported.js';
+import '@endo/captp/src/types.js';
 
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -59,6 +61,7 @@ const appTheme = createTheme({
 
 ReactDOM.render(
   <ApplicationContextProvider>
+    {/* @ts-ignore bad type */}
     <Router basename="/wallet">
       <StyledEngineProvider injectFirst>
         <ThemeProvider theme={appTheme}>

@@ -29,17 +29,19 @@ export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
  * @param {object} opts
  * @param {ERef<ZoeService>} opts.zoe
  * @param {{ receive: (payment: *) => Promise<Amount> }} opts.depositFacet
+ * @param {ERef<Issuer<'set'>>} opts.invitationIssuer
  * @param {object} opts.powers
  * @param {import('./types').Cell<number>} opts.powers.lastOfferId
  * @param {Pick<Console, 'info'| 'error'>} opts.powers.logger
  * @param {(spec: import('./invitations').InvitationSpec) => ERef<Invitation>} opts.powers.invitationFromSpec
  * @param {(brand: Brand) => import('./types').RemotePurse} opts.powers.purseForBrand
  * @param {(status: OfferStatus) => void} opts.onStatusChange
- * @param {(offerId: number, continuation: import('./types').RemoteInvitationMakers) => void} opts.onNewContinuingOffer
+ * @param {(offerId: number, invitationAmount: Amount<'set'>, continuation: import('./types').RemoteInvitationMakers) => void} opts.onNewContinuingOffer
  */
 export const makeOfferExecutor = ({
   zoe,
   depositFacet,
+  invitationIssuer,
   powers,
   onStatusChange,
   onNewContinuingOffer,
@@ -91,6 +93,9 @@ export const makeOfferExecutor = ({
         lastOfferId.set(id);
 
         const invitation = invitationFromSpec(invitationSpec);
+        const invitationAmount = await E(invitationIssuer).getAmountOf(
+          invitation,
+        );
 
         const paymentKeywordRecord = proposal?.give
           ? paymentsManager.withdrawGive(proposal.give)
@@ -129,9 +134,13 @@ export const makeOfferExecutor = ({
               case 'copyRecord':
                 // @ts-expect-error result narrowed by passStyle
                 if ('invitationMakers' in result) {
-                  // @ts-expect-error result narrowed by passStyle
                   // save for continuing invitation offer
-                  onNewContinuingOffer(id, result.invitationMakers);
+                  onNewContinuingOffer(
+                    id,
+                    invitationAmount,
+                    // @ts-expect-error result narrowed by passStyle
+                    result.invitationMakers,
+                  );
                 }
                 // copyRecord is valid to publish but not safe as it may have private info
                 updateStatus({ result: UNPUBLISHED_RESULT });

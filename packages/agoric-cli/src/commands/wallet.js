@@ -24,6 +24,7 @@ import {
   fetchSwingsetParams,
   normalizeAddress,
 } from '../lib/chain.js';
+import { getCurrent } from '../lib/wallet.js';
 
 const SLEEP_SECONDS = 3;
 
@@ -132,7 +133,7 @@ export const makeWalletCommand = async () => {
     .action(async function () {
       const opts = this.opts();
 
-      const { agoricNames, fromBoard } = await makeRpcUtils({
+      const { agoricNames, fromBoard, vstorage } = await makeRpcUtils({
         fetch,
       });
 
@@ -148,14 +149,22 @@ export const makeWalletCommand = async () => {
         },
       );
 
-      const state = await coalesceWalletState(follower);
+      const coalesced = await coalesceWalletState(follower);
+
+      const current = await getCurrent(opts.from, fromBoard, {
+        vstorage,
+      });
 
       console.warn(
-        'got state',
-        util.inspect(state, { depth: 10, colors: true }),
+        'got coalesced',
+        util.inspect(coalesced, { depth: 10, colors: true }),
       );
-      const summary = summarize(state, agoricNames);
-      process.stdout.write(fmtRecordOfLines(summary));
+      try {
+        const summary = summarize(current, coalesced, agoricNames);
+        process.stdout.write(fmtRecordOfLines(summary));
+      } catch (e) {
+        console.error('CAUGHT HERE', e);
+      }
     });
 
   wallet
