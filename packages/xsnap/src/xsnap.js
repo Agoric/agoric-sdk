@@ -3,6 +3,8 @@
 
 /**
  * @typedef {typeof import('child_process').spawn} Spawn
+ * @typedef {import('stream').Readable} Readable
+ * @typedef {import('stream').Writable} Writable
  */
 
 /**
@@ -183,14 +185,18 @@ export async function xsnap(options) {
     });
   }
 
-  const writer = xsnapProcess.stdio[3];
-  const reader = xsnapProcess.stdio[4];
+  const xsnapProcessStdio =
+    /** @type {[undefined, Readable, Readable, Writable, Readable]} */ (
+      /** @type {(Readable | Writable | undefined | null)[]} */ (
+        xsnapProcess.stdio
+      )
+    );
 
   const messagesToXsnap = makeNetstringWriter(
-    makeNodeWriter(/** @type {import('stream').Writable} */ (writer)),
+    makeNodeWriter(xsnapProcessStdio[3]),
   );
   const messagesFromXsnap = makeNetstringReader(
-    makeNodeReader(/** @type {import('stream').Readable} */ (reader)),
+    makeNodeReader(xsnapProcessStdio[4]),
     { maxMessageLength: netstringMaxChunkSize },
   );
 
