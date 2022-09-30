@@ -15,6 +15,7 @@ var (
 	ParamStoreKeyBootstrapVatConfig = []byte("bootstrap_vat_config")
 	ParamStoreKeyFeeUnitPrice       = []byte("fee_unit_price")
 	ParamStoreKeyPowerFlagFees      = []byte("power_flag_fees")
+	ParamStoreKeyQueueMax           = []byte("queue_max")
 )
 
 func NewStringBeans(key string, beans sdk.Uint) StringBeans {
@@ -31,6 +32,13 @@ func NewPowerFlagFee(powerFlag string, fee sdk.Coins) PowerFlagFee {
 	}
 }
 
+func NewQueueSize(key string, sz int32) QueueSize {
+	return QueueSize{
+		Key:   key,
+		Size_: sz,
+	}
+}
+
 // ParamKeyTable returns the parameter key table.
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
@@ -43,6 +51,7 @@ func DefaultParams() Params {
 		BootstrapVatConfig: DefaultBootstrapVatConfig,
 		FeeUnitPrice:       DefaultFeeUnitPrice,
 		PowerFlagFees:      DefaultPowerFlagFees,
+		QueueMax:           DefaultQueueMax,
 	}
 }
 
@@ -58,6 +67,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(ParamStoreKeyFeeUnitPrice, &p.FeeUnitPrice, validateFeeUnitPrice),
 		paramtypes.NewParamSetPair(ParamStoreKeyBootstrapVatConfig, &p.BootstrapVatConfig, validateBootstrapVatConfig),
 		paramtypes.NewParamSetPair(ParamStoreKeyPowerFlagFees, &p.PowerFlagFees, validatePowerFlagFees),
+		paramtypes.NewParamSetPair(ParamStoreKeyQueueMax, &p.QueueMax, validateQueueMax),
 	}
 }
 
@@ -73,6 +83,9 @@ func (p Params) ValidateBasic() error {
 		return err
 	}
 	if err := validatePowerFlagFees(p.PowerFlagFees); err != nil {
+		return err
+	}
+	if err := validateQueueMax(p.QueueMax); err != nil {
 		return err
 	}
 
@@ -140,5 +153,13 @@ func validatePowerFlagFees(i interface{}) error {
 		}
 	}
 
+	return nil
+}
+
+func validateQueueMax(i interface{}) error {
+	_, ok := i.([]QueueSize)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
 	return nil
 }

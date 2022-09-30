@@ -18,7 +18,8 @@ import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver.js';
 import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
-import { DEFAULT_SIM_SWINGSET_PARAMS } from './sim-params.js';
+import { DEFAULT_SIM_SWINGSET_PARAMS, QueueInbound } from './sim-params.js';
+import { parseQueueSizes } from './params.js';
 
 const console = anylogger('fake-chain');
 
@@ -127,8 +128,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
 
   let blockHeight = savedHeight;
   let blockTime = savedBlockTime || scaleBlockTime(Date.now());
-  let intoChain = [];
-  let thisBlock = [];
+  const intoChain = [];
   let nextBlockTimeout = 0;
 
   const maximumDelay = (delay || PRETEND_BLOCK_DELAY) * 1000;
@@ -136,10 +136,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   const withBlockQueue = makeWithQueue();
   const unhandledSimulateBlock = withBlockQueue(
     async function unqueuedSimulateBlock() {
-      // Gather up the new messages into the latest block.
-      thisBlock.push(...intoChain);
-      intoChain = [];
-
       blockTime = scaleBlockTime(Date.now());
       blockHeight += 1;
 
@@ -150,9 +146,15 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
         blockTime,
         params,
       };
-      await blockingSend(beginAction);
-      for (let i = 0; i < thisBlock.length; i += 1) {
-        const [newMessages, acknum] = thisBlock[i];
+      const beginBlockResult = await blockingSend(beginAction);
+      assert(beginBlockResult);
+      const queueAllowed = parseQueueSizes(beginBlockResult.queue_allowed);
+      assert(QueueInbound in queueAllowed);
+
+      // Gather up the new messages into the latest block.
+      const thisBlock = intoChain.splice(0, queueAllowed[QueueInbound]);
+
+      for (const [newMessages, acknum] of thisBlock) {
         aqContents.push({
           type: 'DELIVER_INBOUND',
           peer: bootAddress,
@@ -167,9 +169,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
 
       // Done processing, "commit the block".
       await blockingSend({ type: 'COMMIT_BLOCK', blockHeight, blockTime });
-
-      // We now advance to the next block.
-      thisBlock = [];
 
       clearTimeout(nextBlockTimeout);
       // eslint-disable-next-line no-use-before-define

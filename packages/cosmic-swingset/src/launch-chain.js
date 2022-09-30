@@ -30,9 +30,10 @@ import {
   BeansPerBlockComputeLimit,
   BeansPerVatCreation,
   BeansPerXsnapComputron,
+  QueueInbound,
 } from './sim-params.js';
 import * as ActionType from './action-types.js';
-import { parseParams } from './params.js';
+import { parseParams, serializeQueueSizes } from './params.js';
 import { makeQueue } from './make-queue.js';
 
 const console = anylogger('launch-chain');
@@ -300,6 +301,23 @@ export async function launch({
     }
   }
 
+  let savedQueueAllowed = JSON.parse(
+    kvStore.get(getHostKey('queueAllowed')) || '{}',
+  );
+
+  function updateQueueAllowed(_blockHeight, _blockTime, params) {
+    assert(params.queueMax);
+
+    assert(QueueInbound in params.queueMax);
+    const inboundQueueMax = params.queueMax[QueueInbound];
+
+    const inboundQueueSize = inboundQueue.size();
+
+    const inboundQueueAllowed = Math.max(0, inboundQueueMax - inboundQueueSize);
+
+    savedQueueAllowed = { [QueueInbound]: inboundQueueAllowed };
+  }
+
   async function saveChainState() {
     // Save the mailbox state.
     await mailboxStorage.commit();
@@ -310,6 +328,7 @@ export async function launch({
     kvStore.set(getHostKey('height'), `${blockHeight}`);
     kvStore.set(getHostKey('blockTime'), `${blockTime}`);
     kvStore.set(getHostKey('chainSends'), JSON.stringify(chainSends));
+    kvStore.set(getHostKey('queueAllowed'), JSON.stringify(savedQueueAllowed));
 
     await commit();
     void Promise.resolve()
@@ -635,7 +654,7 @@ export async function launch({
           type: 'cosmic-swingset-bootstrap-block-finish',
           blockTime,
         });
-        break;
+        return undefined;
       }
 
       case ActionType.COMMIT_BLOCK: {
@@ -670,7 +689,7 @@ export async function launch({
           `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
         );
 
-        break;
+        return undefined;
       }
 
       case ActionType.BEGIN_BLOCK: {
@@ -679,12 +698,20 @@ export async function launch({
         verboseBlocks &&
           blockManagerConsole.info('block', blockHeight, 'begin');
         runTime = 0;
+
+        if (blockNeedsExecution(blockHeight)) {
+          // We are not reevaluating, so compute a new queueAllowed
+          updateQueueAllowed(blockHeight, blockTime, blockParams);
+        }
+
         controller.writeSlogObject({
           type: 'cosmic-swingset-begin-block',
           blockHeight,
           blockTime,
+          queueAllowed: savedQueueAllowed,
         });
-        break;
+
+        return { queue_allowed: serializeQueueSizes(savedQueueAllowed) };
       }
 
       case ActionType.END_BLOCK: {
@@ -743,7 +770,7 @@ export async function launch({
           blockTime,
         });
 
-        break;
+        return undefined;
       }
 
       default: {

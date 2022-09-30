@@ -19,6 +19,8 @@ const (
 	BeansPerMinFeeDebit       = "minFeeDebit"
 	BeansPerVatCreation       = "vatCreation"
 	BeansPerXsnapComputron    = "xsnapComputron"
+
+	QueueInbound = "inbound"
 )
 
 var (
@@ -58,5 +60,11 @@ var (
 
 	DefaultPowerFlagFees = []PowerFlagFee{
 		NewPowerFlagFee("SMART_WALLET", sdk.NewCoins(sdk.NewInt64Coin("ubld", 10_000_000))),
+	}
+
+	DefaultInboundQueueMax = int32(1_000)
+
+	DefaultQueueMax = []QueueSize{
+		NewQueueSize(QueueInbound, DefaultInboundQueueMax),
 	}
 )
