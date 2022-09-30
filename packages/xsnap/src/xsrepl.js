@@ -74,12 +74,12 @@ async function main() {
     if (answer === 'exit' || answer === 'quit') {
       break;
     } else if (answer === 'load') {
-      const file = await ask('file> ');
+      const filePath = await ask('file> ');
       await vat.close();
-      vat = xsnap({ ...xsnapOptions, handleCommand, snapshot: file });
+      vat = xsnap({ ...xsnapOptions, handleCommand, snapshot: filePath });
     } else if (answer === 'save') {
-      const file = await ask('file> ');
-      await vat.snapshot(file);
+      const filePath = await ask('file> ');
+      await vat.snapshot({ filePath });
     } else {
       await vat.issueStringCommand(answer);
     }

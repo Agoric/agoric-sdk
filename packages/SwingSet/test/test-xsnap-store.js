@@ -82,9 +82,9 @@ test(`create XS Machine, snapshot (${snapSize.raw} Kb), compress to smaller`, as
 
   const store = makeSnapStore(pool.name, makeMockSnapStoreIO());
 
-  const { filePath: zfile } = await store.save(async snapFile => {
-    await vat.snapshot(snapFile);
-  });
+  const { filePath: zfile } = await store.save(async snapshotConfig =>
+    vat.snapshot(snapshotConfig),
+  );
 
   t.true(
     relativeSize(zfile, snapSize.raw) < 0.5,
@@ -103,9 +103,9 @@ test('SES bootstrap, save, compress', async t => {
 
   await vat.evaluate('globalThis.x = harden({a: 1})');
 
-  const { filePath: zfile } = await store.save(async snapFile => {
-    await vat.snapshot(snapFile);
-  });
+  const { filePath: zfile } = await store.save(async snapshotConfig =>
+    vat.snapshot(snapshotConfig),
+  );
 
   t.true(
     relativeSize(zfile, snapSize.SESboot) < 0.5,

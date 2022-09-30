@@ -136,7 +136,7 @@ async function replay(transcriptFile) {
     ? {
         async save(saveRaw) {
           const snapFile = `${saveSnapshotID || 'unknown'}.xss`;
-          await saveRaw(snapFile);
+          await saveRaw({ filePath: snapFile });
           const h = await fileHash(snapFile);
           await fs.promises.rename(snapFile, `${h}.xss`);
           return h;

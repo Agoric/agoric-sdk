@@ -14,7 +14,7 @@ await worker.evaluate(`
     return new TextEncoder().encode(`${number + 1}`).buffer;
   }
 `);
-await worker.snapshot('bootstrap.xss');
+await worker.snapshot({filePath: 'bootstrap.xss'});
 await worker.close();
 ```
 

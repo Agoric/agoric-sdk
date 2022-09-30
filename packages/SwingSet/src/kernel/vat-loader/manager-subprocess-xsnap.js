@@ -212,7 +212,7 @@ export function makeXsSubprocessFactory({
      * @returns {Promise<SnapshotInfo>}
      */
     function makeSnapshot(snapStore) {
-      return snapStore.save(fn => worker.snapshot(fn));
+      return snapStore.save(config => worker.snapshot(config));
     }
 
     return mk.getManager(shutdown, makeSnapshot);

@@ -25,7 +25,7 @@ import {
  * @typedef {{
  *   has: (hash: string) => Promise<boolean>,
  *   load: <T>(hash: string, loadRaw: (filePath: string) => Promise<T>) => Promise<T>,
- *   save: (saveRaw: (filePath: string) => Promise<void>) => Promise<SnapshotInfo>,
+ *   save: (saveRaw: (snapshotConfig: {filePath: string}) => Promise<void>) => Promise<SnapshotInfo>,
  *   prepareToDelete: (hash: string) => void,
  *   commitDeletes: (ignoreErrors?: boolean) => Promise<void>,
  * }} SnapStore
@@ -116,7 +116,7 @@ export function makeSnapStore(
    * including file size and timing metrics.
    * Note that timing metrics exclude file open.
    *
-   * @param {(filePath: string) => Promise<void>} saveRaw
+   * @param {(snapshotConfig: {filePath: string}) => Promise<void>} saveRaw
    * @returns {Promise<SnapshotInfo>}
    */
   async function save(saveRaw) {
@@ -127,7 +127,7 @@ export function makeSnapStore(
         const tmpSnapPath = await ptmpName({ template: 'save-raw-XXXXXX.xss' });
         cleanup.push(() => unlink(tmpSnapPath));
         const { duration: rawSaveSeconds } = await measureSeconds(async () =>
-          saveRaw(tmpSnapPath),
+          saveRaw({ filePath: tmpSnapPath }),
         );
         const { size: rawByteCount } = await stat(tmpSnapPath);
 

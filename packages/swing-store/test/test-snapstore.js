@@ -26,7 +26,7 @@ test('build temp file; compress to cache file', async t => {
     measureSeconds: makeMeasureSeconds(() => 0),
   });
   let keepTmp = '';
-  const result = await store.save(async filePath => {
+  const result = await store.save(async ({ filePath }) => {
     t.falsy(fs.existsSync(filePath));
     fs.writeFileSync(filePath, 'abc');
     keepTmp = filePath;
@@ -73,9 +73,9 @@ test('snapStore prepare / commit delete is robust', async t => {
   const hashes = [];
   for (let i = 0; i < 5; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    const { hash } = await store.save(async fn =>
-      fs.promises.writeFile(fn, `file ${i}`),
-    );
+    const { hash } = await store.save(async ({ filePath }) => {
+      fs.promises.writeFile(filePath, `file ${i}`);
+    });
     hashes.push(hash);
   }
   t.is(fs.readdirSync(pool.name).length, 5);
@@ -93,7 +93,9 @@ test('snapStore prepare / commit delete is robust', async t => {
 
   // Restore (re-save) between prepare and commit.
   store.prepareToDelete(hashes[3]);
-  await store.save(async fn => fs.promises.writeFile(fn, `file 3`));
+  await store.save(async ({ filePath }) => {
+    fs.promises.writeFile(filePath, `file 3`);
+  });
   await store.commitDeletes();
   t.true(fs.readdirSync(pool.name).includes(`${hashes[3]}.gz`));
 

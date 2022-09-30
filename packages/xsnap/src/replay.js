@@ -161,9 +161,10 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
     import: async _fileName => {
       throw Error('recording: import not supported');
     },
-    snapshot: async file => {
-      nextFile('snapshot').putText(file);
-      return it.snapshot(file);
+    snapshot: async config => {
+      const { filePath } = config;
+      nextFile('snapshot').putText(filePath);
+      return it.snapshot(config);
     },
   });
 }
@@ -248,7 +249,7 @@ export async function replayXSnap(
           } else {
             try {
               // eslint-disable-next-line no-await-in-loop
-              await it.snapshot(file.getText());
+              await it.snapshot({ filePath: file.getText() });
             } catch (err) {
               console.warn(err, 'while taking snapshot:', err);
             }

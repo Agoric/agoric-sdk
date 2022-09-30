@@ -274,7 +274,7 @@ test('write and read snapshot', async t => {
   await vat0.evaluate(`
     globalThis.hello = "Hello, World!";
   `);
-  await vat0.snapshot(snapshot);
+  await vat0.snapshot({ filePath: snapshot });
   await vat0.close();
 
   const vat1 = xsnap({ ...options(io), handleCommand, snapshot });
@@ -405,7 +405,7 @@ test('GC after snapshot vs restore', async t => {
   const beforeClone = await nextGC(worker, opts);
 
   const snapshot = './bloated.xss';
-  await worker.snapshot(snapshot);
+  await worker.snapshot({ filePath: snapshot });
   t.teardown(() => unlinkSync(snapshot));
 
   const optClone = { ...options(io), name: 'clone', snapshot };

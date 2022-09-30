@@ -295,12 +295,12 @@ export function xsnap(options) {
   }
 
   /**
-   * @param {string} file
+   * @param {{filePath: string}} snapshotConfig
    * @returns {Promise<void>}
    */
-  async function writeSnapshot(file) {
+  async function writeSnapshot({ filePath }) {
     const result = baton.then(async () => {
-      await messagesToXsnap.next(encoder.encode(`w${file}`));
+      await messagesToXsnap.next(encoder.encode(`w${filePath}`));
       await runToIdle();
     });
     baton = result.then(noop, noop);
