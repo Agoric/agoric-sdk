@@ -4,6 +4,8 @@
 
 /**
  * @typedef {typeof import('child_process').spawn} Spawn
+ * @typedef {import('stream').Readable} Readable
+ * @typedef {import('stream').Writable} Writable
  */
 
 /**
@@ -142,16 +144,17 @@ export function xsnap(options) {
     throw Error(`${name} exited`);
   });
 
-  const writer = xsnapProcess.stdio[3];
-  const reader = xsnapProcess.stdio[4];
+  const [, , , writer, reader] =
+    /** @type {[undefined, Readable, Readable, Writable, Readable]} */ (
+      /** @type {(Readable | Writable | undefined | null)[]} */ (
+        xsnapProcess.stdio
+      )
+    );
 
-  const messagesToXsnap = makeNetstringWriter(
-    makeNodeWriter(/** @type {import('stream').Writable} */ (writer)),
-  );
-  const messagesFromXsnap = makeNetstringReader(
-    makeNodeReader(/** @type {import('stream').Readable} */ (reader)),
-    { maxMessageLength: netstringMaxChunkSize },
-  );
+  const messagesToXsnap = makeNetstringWriter(makeNodeWriter(writer));
+  const messagesFromXsnap = makeNetstringReader(makeNodeReader(reader), {
+    maxMessageLength: netstringMaxChunkSize,
+  });
 
   /** @type {Promise<void>} */
   let baton = Promise.resolve();
