@@ -5,7 +5,10 @@ import {
   makeAsyncIterableFromNotifier,
   makeNotifierKit,
 } from '@agoric/notifier';
-import { NO_SMART_WALLET_ERROR } from '@agoric/smart-wallet/src/utils.js';
+import {
+  assertHasData,
+  NO_SMART_WALLET_ERROR,
+} from '@agoric/smart-wallet/src/utils.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { getDappService } from '../service/Dapps.js';
@@ -181,6 +184,7 @@ export const makeWalletBridgeFromFollowers = (
   };
 
   const fetchCurrent = async () => {
+    await assertHasData(currentFollower);
     const latestIterable = await E(currentFollower).getLatestIterable();
     const iterator = latestIterable[Symbol.asyncIterator]();
     const latest = await iterator.next();

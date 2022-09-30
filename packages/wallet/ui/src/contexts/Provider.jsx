@@ -20,7 +20,7 @@ import {
 import { onLoadP } from '../util/onLoad';
 
 const useDebugLogging = (state, watch) => {
-  useEffect(() => console.debug({ state }), watch);
+  useEffect(() => console.debug('useDebugLogging', { state }), watch);
 };
 
 const cmp = (a, b) => {
