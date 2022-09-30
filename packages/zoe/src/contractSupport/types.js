@@ -74,8 +74,7 @@
  * from keywords used in contractA to keywords used in contractB and
  * vice versa in `offerTo`
  *
- * @param {AmountKeywordRecord | PaymentPKeywordRecord | undefined }
- * keywordRecord
+ * @param {AmountKeywordRecord | PaymentPKeywordRecord | IssuerKeywordRecord | undefined } keywordRecord
  * @param {KeywordKeywordRecord} keywordMapping
  */
 

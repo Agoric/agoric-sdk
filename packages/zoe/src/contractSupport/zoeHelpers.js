@@ -1,10 +1,11 @@
 // @ts-check
 import '../../exported.js';
 
-import { keyEQ, fit } from '@agoric/store';
+import { fit, keyEQ } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AssetKind } from '@agoric/ertp';
+import { deeplyFulfilled } from '@endo/marshal';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
@@ -359,17 +360,31 @@ export const offerTo = async (
 
   const depositedPromiseKit = makePromiseKit();
 
-  const doDeposit = async payoutPayments => {
-    // TODO This uses getCurrentAllocationJig for production, and so
-    // is likely wrong
-    // https://github.com/Agoric/agoric-sdk/issues/5833
-    const amounts = await E(userSeatPromise).getCurrentAllocationJig();
+  // contractB can include payout payments at arbitrary keywords
+  const getIssuerForPayment = (keyword, payoutPayments) => {
+    return E.when(E(payoutPayments[keyword]).getAllegedBrand(), allegedBrand =>
+      zcf.getIssuerForBrand(allegedBrand),
+    );
+  };
 
+  const getAmountsFromPayments = async payoutPayments => {
+    const amountMapP = Object.keys(payoutPayments).map(keyword =>
+      E.when(getIssuerForPayment(keyword, payoutPayments), issuer =>
+        harden([keyword, E(issuer).getAmountOf(payoutPayments[keyword])]),
+      ),
+    );
+    const amountMap = await deeplyFulfilled(harden(amountMapP));
+    return Object.fromEntries(amountMap);
+  };
+
+  const doDeposit = async payoutPayments => {
     // Map back to the original contract's keywords
-    const mappedAmounts = mapKeywords(amounts, mappingReversed);
     const mappedPayments = mapKeywords(payoutPayments, mappingReversed);
-    await depositToSeat(zcf, definedToSeat, mappedAmounts, mappedPayments);
-    depositedPromiseKit.resolve(mappedAmounts);
+    const actualAmounts = await getAmountsFromPayments(payoutPayments);
+    const unmappedAmounts = mapKeywords(actualAmounts, mappingReversed);
+
+    await depositToSeat(zcf, definedToSeat, unmappedAmounts, mappedPayments);
+    depositedPromiseKit.resolve(unmappedAmounts);
   };
 
   E(userSeatPromise).getPayouts().then(doDeposit);
