@@ -513,7 +513,7 @@ export function makeVatKeeper(
   }
 
   /**
-   * @returns {{ snapshotID: string, startPos: StreamPosition } | undefined}
+   * @returns {{ snapshotID: string, snapshotSize: number | undefined, startPos: StreamPosition } | undefined}
    */
   function getLastSnapshot() {
     const notation = kvStore.get(`local.${vatID}.lastSnapshot`);
@@ -523,7 +523,10 @@ export function makeVatKeeper(
     const { snapshotID, startPos } = JSON.parse(notation);
     assert.typeof(snapshotID, 'string');
     assert(startPos);
-    return { snapshotID, startPos };
+    const snapshotSizeRaw = kvStore.get(`local.snapshot.${snapshotID}.size`);
+    const snapshotSize =
+      snapshotSizeRaw !== undefined ? Number(snapshotSizeRaw) : undefined;
+    return { snapshotID, snapshotSize, startPos };
   }
 
   function transcriptSnapshotStats() {
@@ -539,10 +542,11 @@ export function makeVatKeeper(
    * Add vatID to consumers of a snapshot.
    *
    * @param {string} snapshotID
+   * @param {number} [snapshotSize]
    */
-  function addToSnapshot(snapshotID) {
-    const key = `local.snapshot.${snapshotID}`;
-    const consumers = JSON.parse(kvStore.get(key) || '[]');
+  function addToSnapshot(snapshotID, snapshotSize) {
+    const consumersKey = `local.snapshot.${snapshotID}`;
+    const consumers = JSON.parse(kvStore.get(consumersKey) || '[]');
     assert(Array.isArray(consumers));
 
     // We can't completely rule out the possibility that
@@ -553,8 +557,13 @@ export function makeVatKeeper(
     // than keeping the list sorted.
     if (!consumers.includes(vatID)) {
       consumers.push(vatID);
-      kvStore.set(key, JSON.stringify(consumers));
+      kvStore.set(consumersKey, JSON.stringify(consumers));
       // console.log('addToSnapshot result:', { vatID, snapshotID, consumers });
+    }
+
+    if (snapshotSize !== undefined) {
+      const sizeKey = `local.snapshot.${snapshotID}.size`;
+      kvStore.set(sizeKey, String(snapshotSize));
     }
   }
 
@@ -574,6 +583,9 @@ export function makeVatKeeper(
     consumers.splice(ix, 1);
     // console.log('removeFromSnapshot done:', { vatID, snapshotID, consumers });
     kvStore.set(key, JSON.stringify(consumers));
+    if (!consumers.length) {
+      kvStore.delete(`local.snapshot.${snapshotID}.size`);
+    }
     return consumers.length;
   }
 
@@ -608,7 +620,7 @@ export function makeVatKeeper(
       `local.${vatID}.lastSnapshot`,
       JSON.stringify({ snapshotID, startPos: endPosition }),
     );
-    addToSnapshot(snapshotID);
+    addToSnapshot(snapshotID, rawByteCount);
     kernelSlog.write({
       type: 'heap-snapshot-save',
       vatID,

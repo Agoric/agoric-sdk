@@ -80,6 +80,7 @@ const enableKernelGC = true;
 // exclude from consensus
 // local.v$NN.lastSnapshot = JSON({ snapshotID, startPos })
 // local.snapshot.$id = [vatID, ...]
+// local.snapshot.$id.size = number
 
 // m$NN.remaining = $NN // remaining capacity (in computrons) or 'unlimited'
 // m$NN.threshold = $NN // notify when .remaining first drops below this

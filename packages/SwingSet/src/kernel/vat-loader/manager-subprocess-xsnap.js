@@ -23,7 +23,7 @@ const decoder = new TextDecoder();
  *   allVatPowers: VatPowers,
  *   kernelKeeper: KernelKeeper,
  *   kernelSlog: KernelSlog,
- *   startXSnap: (name: string, handleCommand: AsyncHandler, metered?: boolean, snapshotInfo?: {hash: string}) => Promise<XSnap>,
+ *   startXSnap: (name: string, handleCommand: AsyncHandler, metered?: boolean, snapshotInfo?: {hash: string, size?: number | undefined}) => Promise<XSnap>,
  *   testLog: (...args: unknown[]) => void,
  * }} tools
  * @returns {VatManagerFactory}
@@ -112,9 +112,14 @@ export function makeXsSubprocessFactory({
 
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const lastSnapshot = vatKeeper.getLastSnapshot();
+    const { snapshotID, snapshotSize } = lastSnapshot || {};
     if (lastSnapshot) {
-      const { snapshotID } = lastSnapshot;
-      kernelSlog.write({ type: 'heap-snapshot-load', vatID, snapshotID });
+      kernelSlog.write({
+        type: 'heap-snapshot-load',
+        vatID,
+        snapshotID,
+        snapshotSize,
+      });
     }
 
     // `startXSnap` adds `argName` as a dummy argument so that 'ps'
@@ -127,7 +132,7 @@ export function makeXsSubprocessFactory({
       argName,
       handleCommand,
       metered,
-      lastSnapshot ? { hash: lastSnapshot.snapshotID } : undefined,
+      snapshotID ? { hash: snapshotID, size: snapshotSize } : undefined,
     );
 
     /** @type { (item: Tagged) => Promise<CrankResults> } */

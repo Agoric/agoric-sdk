@@ -61,7 +61,7 @@ async function doTest(t, metered) {
   // now extract a snapshot
   snapshotInfo = await store
     .save(worker1.snapshot)
-    .then(({ hash }) => ({ hash }));
+    .then(({ hash, rawByteCount: size }) => ({ hash, size }));
 
   // and load it into a new worker
   const { p: p2, startXSnap: start2 } = make(store);
