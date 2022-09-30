@@ -1,3 +1,4 @@
+// @ts-check
 import { assert } from '@agoric/assert';
 import { roundToDecimalPlaces } from './helpers/roundToDecimalPlaces.js';
 
@@ -5,7 +6,20 @@ const CONVENTIONAL_DECIMAL_PLACES = 2;
 const MAX_DECIMAL_PLACES = 100;
 
 /**
- * @param {NatValue} natValue
+ * @param {NatValue} value
+ * @returns {number}
+ */
+const calcTrailingZeros = value => {
+  let zeroes = 0;
+  while (value > 0n && value % 10n === 0n) {
+    zeroes += 1;
+    value /= 10n;
+  }
+  return zeroes;
+};
+
+/**
+ * @param {NatValue?} [natValue]
  * @param {number} [decimalPlaces]
  * @param {number} [placesToShow]
  * @returns {string}
@@ -13,10 +27,17 @@ const MAX_DECIMAL_PLACES = 100;
 export const stringifyNat = (
   natValue = null,
   decimalPlaces = 0,
-  placesToShow = CONVENTIONAL_DECIMAL_PLACES,
+  placesToShow,
 ) => {
   if (natValue === null) {
     return '';
+  }
+
+  if (placesToShow === undefined) {
+    placesToShow = Math.max(
+      Math.min(decimalPlaces, CONVENTIONAL_DECIMAL_PLACES),
+      decimalPlaces - calcTrailingZeros(natValue),
+    );
   }
 
   if (placesToShow > MAX_DECIMAL_PLACES) {

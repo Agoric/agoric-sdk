@@ -2,7 +2,6 @@
 import { assert, details } from '@agoric/assert';
 import { AssetKind } from '@agoric/ertp';
 import '@agoric/ertp/exported.js';
-
 import { parseAsNat } from './natValue/parseAsNat.js';
 import { stringifyNat } from './natValue/stringifyNat.js';
 import { parseAsSet } from './setValue/parseAsSet.js';
@@ -63,7 +62,7 @@ export const stringifyValue = (
   value,
   assetKind = AssetKind.NAT,
   decimalPlaces = 0,
-  placesToShow = 2,
+  placesToShow,
 ) => {
   if (assetKind === AssetKind.NAT) {
     // @ts-expect-error AmountValue is a Nat
