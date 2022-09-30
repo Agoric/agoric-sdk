@@ -111,10 +111,54 @@ export function makeSnapStore(
   const toDelete = new Set();
 
   /**
-   * Creates a new gzipped snapshot file in the `root` directory
-   * and reports information about the process,
-   * including file size and timing metrics.
-   * Note that timing metrics exclude file open.
+   * @param {(snapshotConfig: {filePath: string}) => Promise<number | undefined>} saveRaw
+   */
+  async function saveSnapshotWithFile(saveRaw) {
+    /** @type {(() => Promise<void>) | undefined} */
+    let cleanup;
+
+    return aggregateTryFinally(
+      async () => {
+        // TODO: Refactor to use tmpFile rather than tmpName.
+        const tmpSnapPath = await ptmpName({
+          template: 'save-raw-XXXXXX.xss',
+        });
+        const deleteTmp = async () => unlink(tmpSnapPath);
+        cleanup = deleteTmp;
+        const writtenSize = await saveRaw({ filePath: tmpSnapPath });
+        const { size } = await stat(tmpSnapPath);
+
+        if (writtenSize !== undefined && size !== writtenSize) {
+          assert.fail(
+            `Snapshot size does not match. wrote=${writtenSize}, file=${size}`,
+          );
+        }
+
+        const readStream = createReadStream(tmpSnapPath);
+        await fsStreamReady(readStream);
+
+        cleanup = undefined;
+
+        return {
+          stream: /** @type {import('stream').Readable} */ (readStream),
+          finished: async () => {
+            await finished(readStream);
+            return size;
+          },
+          dispose: async () => {
+            readStream.destroy();
+            await deleteTmp();
+          },
+        };
+      },
+      async () => cleanup && cleanup(),
+    );
+  }
+
+  /**
+   * Creates a new gzipped snapshot file in the `root` directory and reports
+   * information about the process, including file size and timing metrics.
+   * Note that timing metrics exclude target file creation and open.
    *
    * @param {(snapshotConfig: {filePath: string}) => Promise<number | undefined>} saveRaw
    * @returns {Promise<SnapshotInfo>}
@@ -123,26 +167,14 @@ export function makeSnapStore(
     const cleanup = [];
     return aggregateTryFinally(
       async () => {
-        // TODO: Refactor to use tmpFile rather than tmpName.
-        const tmpSnapPath = await ptmpName({ template: 'save-raw-XXXXXX.xss' });
-        cleanup.push(() => unlink(tmpSnapPath));
-        const { duration: rawSaveSeconds, result: writtenSize } =
-          await measureSeconds(async () => saveRaw({ filePath: tmpSnapPath }));
-        const { size: rawByteCount } = await stat(tmpSnapPath);
-
-        if (writtenSize !== undefined && rawByteCount !== writtenSize) {
-          assert.fail(
-            `Snapshot size does not match. wrote=${writtenSize}, file=${rawByteCount}`,
-          );
-        }
-
         // Perform operations that read snapshot data in parallel.
-        // We still serialize the stat and opening of tmpSnapPath
+        // We still serialize the request for the snapshot stream
         // and creation of tmpGzPath for readability, but we could
         // parallelize those as well if the cost is significant.
-        const snapReader = createReadStream(tmpSnapPath);
-        cleanup.push(() => {
-          snapReader.destroy();
+        const { duration: rawSaveSeconds, result: savedSnapshot } =
+          await measureSeconds(async () => saveSnapshotWithFile(saveRaw));
+        cleanup.push(async () => {
+          savedSnapshot.dispose();
         });
 
         // Create a file for the compressed snapshot in-place
@@ -160,26 +192,31 @@ export function makeSnapStore(
         });
         cleanup.push(() => gzWriter.close());
 
-        await Promise.all([fsStreamReady(snapReader), fsStreamReady(gzWriter)]);
+        await fsStreamReady(gzWriter);
 
         const hashStream = createHash('sha256');
         const gzip = createGzip();
 
-        const { result: hash, duration: compressSeconds } =
-          await measureSeconds(async () => {
-            snapReader.pipe(hashStream);
-            snapReader.pipe(gzip).pipe(gzWriter);
+        const {
+          result: { hash, size: rawByteCount },
+          duration: compressSeconds,
+        } = await measureSeconds(async () => {
+          savedSnapshot.stream.pipe(hashStream);
+          savedSnapshot.stream.pipe(gzip).pipe(gzWriter);
 
-            await Promise.all([finished(snapReader), finished(gzWriter)]);
+          const [size] = await Promise.all([
+            savedSnapshot.finished(),
+            finished(gzWriter),
+          ]);
 
-            const h = hashStream.digest('hex');
-            await pfsync(tmpGzFd);
+          const h = hashStream.digest('hex');
+          await pfsync(tmpGzFd);
 
-            const tmpGzClose = cleanup.pop();
-            tmpGzClose();
+          const tmpGzClose = cleanup.pop();
+          tmpGzClose();
 
-            return h;
-          });
+          return { hash: h, size };
+        });
 
         toDelete.delete(hash);
         const baseName = baseNameFromHash(hash);
