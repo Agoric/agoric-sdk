@@ -141,7 +141,7 @@ async function replay(transcriptFile) {
           await fs.promises.rename(snapFile, `${h}.xss`);
           return h;
         },
-        async load(hash, loadRaw) {
+        async load({ hash }, loadRaw) {
           const snapFile = `${hash}.xss`;
           return loadRaw({ filePath: snapFile });
         },

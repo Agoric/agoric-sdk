@@ -23,7 +23,7 @@ const decoder = new TextDecoder();
  *   allVatPowers: VatPowers,
  *   kernelKeeper: KernelKeeper,
  *   kernelSlog: KernelSlog,
- *   startXSnap: (name: string, handleCommand: AsyncHandler, metered?: boolean, snapshotHash?: string) => Promise<XSnap>,
+ *   startXSnap: (name: string, handleCommand: AsyncHandler, metered?: boolean, snapshotInfo?: {hash: string}) => Promise<XSnap>,
  *   testLog: (...args: unknown[]) => void,
  * }} tools
  * @returns {VatManagerFactory}
@@ -127,7 +127,7 @@ export function makeXsSubprocessFactory({
       argName,
       handleCommand,
       metered,
-      lastSnapshot ? lastSnapshot.snapshotID : undefined,
+      lastSnapshot ? { hash: lastSnapshot.snapshotID } : undefined,
     );
 
     /** @type { (item: Tagged) => Promise<CrankResults> } */

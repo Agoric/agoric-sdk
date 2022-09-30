@@ -24,7 +24,7 @@ import {
 /**
  * @typedef {{
  *   has: (hash: string) => Promise<boolean>,
- *   load: <T>(hash: string, loadRaw: (snapshotConfig: {filePath: string}) => Promise<T>) => Promise<T>,
+ *   load: <T>(snapshotInfo: {hash: string}, loadRaw: (snapshotConfig: {filePath: string}) => Promise<T>) => Promise<T>,
  *   save: (saveRaw: (snapshotConfig: {filePath: string}) => Promise<void>) => Promise<SnapshotInfo>,
  *   prepareToDelete: (hash: string) => void,
  *   commitDeletes: (ignoreErrors?: boolean) => Promise<void>,
@@ -233,11 +233,12 @@ export function makeSnapStore(
   }
 
   /**
-   * @param {string} hash
+   * @param {object} snapshotInfo
+   * @param {string} snapshotInfo.hash
    * @param {(snapshotConfig: {filePath: string}) => Promise<T>} loadRaw
    * @template T
    */
-  async function load(hash, loadRaw) {
+  async function load({ hash }, loadRaw) {
     const cleanup = [];
     return aggregateTryFinally(
       async () => {

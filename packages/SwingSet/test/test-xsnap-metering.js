@@ -51,19 +51,21 @@ async function doTest(t, metered) {
   const store = makeSnapStore(pool.name, makeSnapStoreIO());
 
   const { p: p1, startXSnap: start1 } = make(store);
-  let snapshotHash;
-  const worker1 = await start1('name', handleCommand, metered, snapshotHash);
+  let snapshotInfo;
+  const worker1 = await start1('name', handleCommand, metered, snapshotInfo);
   const spawnArgs1 = await p1;
   checkMetered(t, spawnArgs1, metered);
   await worker1.evaluate('1+2');
   t.teardown(() => worker1.close());
 
   // now extract a snapshot
-  ({ hash: snapshotHash } = await store.save(worker1.snapshot));
+  snapshotInfo = await store
+    .save(worker1.snapshot)
+    .then(({ hash }) => ({ hash }));
 
   // and load it into a new worker
   const { p: p2, startXSnap: start2 } = make(store);
-  const worker2 = await start2('name', handleCommand, metered, snapshotHash);
+  const worker2 = await start2('name', handleCommand, metered, snapshotInfo);
   const spawnArgs2 = await p2;
   checkMetered(t, spawnArgs2, metered);
   await worker2.evaluate('1+2');
