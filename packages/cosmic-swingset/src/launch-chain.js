@@ -30,9 +30,10 @@ import {
   BeansPerBlockComputeLimit,
   BeansPerVatCreation,
   BeansPerXsnapComputron,
+  QueueInbound,
 } from './sim-params.js';
 import * as ActionType from './action-types.js';
-import { parseParams } from './params.js';
+import { parseParams, serializeQueueSizes } from './params.js';
 import { makeQueue } from './make-queue.js';
 
 const console = anylogger('launch-chain');
@@ -300,6 +301,23 @@ export async function launch({
     }
   }
 
+  let savedQueueAllowed = JSON.parse(
+    kvStore.get(getHostKey('queueAllowed')) || '{}',
+  );
+
+  function computeQueueAllowed(_blockHeight, _blockTime, params) {
+    assert(params.queueMax);
+
+    assert(QueueInbound in params.queueMax);
+    const inboundQueueMax = params.queueMax[QueueInbound];
+
+    const inboundQueueSize = inboundQueue.size();
+
+    const inboundQueueAllowed = Math.max(0, inboundQueueMax - inboundQueueSize);
+
+    savedQueueAllowed = { [QueueInbound]: inboundQueueAllowed };
+  }
+
   async function saveChainState() {
     // Save the mailbox state.
     await mailboxStorage.commit();
@@ -310,6 +328,7 @@ export async function launch({
     kvStore.set(getHostKey('height'), `${blockHeight}`);
     kvStore.set(getHostKey('blockTime'), `${blockTime}`);
     kvStore.set(getHostKey('chainSends'), JSON.stringify(chainSends));
+    kvStore.set(getHostKey('queueAllowed'), JSON.stringify(savedQueueAllowed));
 
     await commit();
     void Promise.resolve()
@@ -559,6 +578,23 @@ export async function launch({
     return p;
   }
 
+  function checkExpectedBlockHeight(blockHeight) {
+    if (computedHeight > 0 && computedHeight !== blockHeight) {
+      // We only tolerate the trivial case.
+      const restoreHeight = blockHeight - 1;
+      if (restoreHeight !== computedHeight) {
+        // Keep throwing forever.
+        decohered = Error(
+          // TODO unimplemented
+          `Unimplemented reset state from ${computedHeight} to ${restoreHeight}`,
+        );
+        throw decohered;
+      }
+    }
+
+    return computedHeight !== blockHeight;
+  }
+
   async function blockingSend(action) {
     if (decohered) {
       throw decohered;
@@ -601,7 +637,7 @@ export async function launch({
           type: 'cosmic-swingset-bootstrap-block-finish',
           blockTime,
         });
-        break;
+        return undefined;
       }
 
       case ActionType.COMMIT_BLOCK: {
@@ -636,7 +672,7 @@ export async function launch({
           `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
         );
 
-        break;
+        return undefined;
       }
 
       case ActionType.BEGIN_BLOCK: {
@@ -645,12 +681,20 @@ export async function launch({
         verboseBlocks &&
           blockManagerConsole.info('block', blockHeight, 'begin');
         runTime = 0;
+
+        if (checkExpectedBlockHeight(blockHeight)) {
+          // We are not reevaluating, so compute a new queueAllowed
+          computeQueueAllowed(blockHeight, blockTime, blockParams);
+        }
+
         controller.writeSlogObject({
           type: 'cosmic-swingset-begin-block',
           blockHeight,
           blockTime,
+          queueAllowed: savedQueueAllowed,
         });
-        break;
+
+        return { queue_allowed: serializeQueueSizes(savedQueueAllowed) };
       }
 
       case ActionType.END_BLOCK: {
@@ -663,21 +707,7 @@ export async function launch({
 
         blockParams || assert.fail(X`blockParams missing`);
 
-        // eslint-disable-next-line no-use-before-define
-        if (computedHeight > 0 && computedHeight !== blockHeight) {
-          // We only tolerate the trivial case.
-          const restoreHeight = blockHeight - 1;
-          if (restoreHeight !== computedHeight) {
-            // Keep throwing forever.
-            decohered = Error(
-              // TODO unimplemented
-              `Unimplemented reset state from ${computedHeight} to ${restoreHeight}`,
-            );
-            throw decohered;
-          }
-        }
-
-        if (computedHeight === blockHeight) {
+        if (!checkExpectedBlockHeight(blockHeight)) {
           // We are reevaluating, so send exactly the same downcalls to the chain.
           //
           // This is necessary only after a restart when Tendermint is reevaluating the
@@ -723,7 +753,7 @@ export async function launch({
           blockTime,
         });
 
-        break;
+        return undefined;
       }
 
       default: {

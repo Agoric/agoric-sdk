@@ -94,3 +94,12 @@ func UnmarshalMessagesJSON(jsonString string) (*Messages, error) {
 
 	return ret, nil
 }
+
+func QueueSizeEntry(qs []QueueSize, key string) (int32, bool) {
+	for _, q := range qs {
+		if q.Key == key {
+			return q.Size_, true
+		}
+	}
+	return 0, false
+}

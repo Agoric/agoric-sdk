@@ -3,6 +3,11 @@ import { Nat } from '@agoric/nat';
 const makeStringBeans = (key, beans) => ({ key, beans: `${Nat(beans)}` });
 const makePowerFlagFee = (powerFlag, fee) => ({ powerFlag, fee });
 const makeCoin = (denom, amount) => ({ denom, amount: `${Nat(amount)}` });
+/**
+ * @param {string} key
+ * @param {number} size
+ */
+const makeQueueSize = (key, size) => ({ key, size });
 
 // This should roughly match the values in
 // `agoric-sdk/golang/cosmos/x/swingset/types/default-params.go`.
@@ -60,9 +65,18 @@ export const defaultPowerFlagFees = [
   makePowerFlagFee('SMART_WALLET', [makeCoin('ubld', 10_000_000n)]),
 ];
 
+export const QueueInbound = 'inbound';
+
+export const defaultInboundQueueMax = 1_000;
+
+export const defaultQueueMax = [
+  makeQueueSize(QueueInbound, defaultInboundQueueMax),
+];
+
 export const DEFAULT_SIM_SWINGSET_PARAMS = {
   beans_per_unit: defaultBeansPerUnit,
   fee_unit_price: defaultFeeUnitPrice,
   bootstrap_vat_config: defaultBootstrapVatConfig,
   power_flag_fees: defaultPowerFlagFees,
+  queue_max: defaultQueueMax,
 };
