@@ -20,12 +20,11 @@ import { makeBridgeIframeConnector } from './bridge-iframe-connector.js';
 // Delay after a reset.
 const RESET_DELAY_MS = 3000;
 
-// TODO: Use something on agoric.app instead.
 const DEFAULT_LOCATOR_URL =
-  'https://local.agoric.com/?append=/wallet-bridge.html';
+  'https://wallet.agoric.app/locator/?append=/wallet/bridge.html';
 
 const LOCAL_STORAGE_LOCATOR_URL =
-  'https://local.agoric.com/?append=/wallet/bridge.html';
+  'https://wallet.agoric.app/locator/?append=/wallet/bridge.html';
 
 const delay = (ms, resolution) =>
   new Promise(resolve => setTimeout(resolve, ms, resolution));
@@ -41,13 +40,6 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
         }
         .connection {
           background-color: #fff;
-        }
-        .connection-message {
-          text-align: center;
-        }
-        .connection-message > a {
-          text-decoration: none;
-          color: #1976d2;
         }
       `;
     }
@@ -274,17 +266,7 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
         default:
       }
 
-      const locatorUrl = new URL(locatorHref);
-
-      return html`
-        <div class="connection">
-          ${backend}
-          <div class="connection-message">
-            Wallet URL configured in
-            <a href=${locatorUrl.origin} target="_blank">${locatorUrl.host}</a>
-          </div>
-        </div>
-      `;
+      return html`<div class="connection">${backend}</div>`;
     }
   };
 
