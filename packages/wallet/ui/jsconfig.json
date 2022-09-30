@@ -10,6 +10,7 @@
   },
   "include": [
     "*.js",
+    "*.d.ts",
     "scripts/**/*.js",
     "src/**/*.js",
     "src/**/*.jsx",

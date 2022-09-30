@@ -1,5 +1,4 @@
 // @ts-check
-import { PowerFlags } from '@agoric/vats/src/core/basic-behaviors.js';
 import { fromBech32, toBech32, fromBase64, toBase64 } from '@cosmjs/encoding';
 import { DirectSecp256k1Wallet, Registry } from '@cosmjs/proto-signing';
 import {
@@ -29,6 +28,16 @@ export function toAccAddress(address) {
 }
 
 const KEY_SIZE = 32; // as in bech32
+
+// XXX domain of @agoric/cosmic-proto
+/**
+ * non-exhaustive list of powerFlags
+ *
+ * See also MsgProvision in golang/cosmos/proto/agoric/swingset/msgs.proto
+ */
+export const PowerFlags = /** @type {const} */ ({
+  SMART_WALLET: 'SMART_WALLET',
+});
 
 /**
  * The typeUrl of a message pairs a package name with a message name.
