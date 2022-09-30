@@ -21,6 +21,8 @@ import { fsStreamReady } from '@agoric/internal/src/node/fs-stream.js';
 import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api.js';
 import { defer } from './defer.js';
 
+const { Fail, quote: q } = assert;
+
 // This will need adjustment, but seems to be fine for a start.
 export const DEFAULT_CRANK_METERING_LIMIT = 1e8;
 
@@ -358,21 +360,37 @@ export async function xsnap(options) {
       )}-XXXXXX.xss`,
     });
 
+    let snapshotReadSize = 0;
+    let snapshotSize;
     try {
       const result = batonKit.promise.then(async () => {
         await messagesToXsnap.next(encoder.encode(`w${tmpSnapPath}`));
-        await runToIdle();
+        return runToIdle();
       });
       batonKit.resolve(result);
       // eslint-disable-next-line @jessie.js/no-nested-await
-      await racePromises([vatExit.promise, baton]);
+      snapshotSize = await racePromises([
+        vatCancelled,
+        result.then(({ reply }) => {
+          const lengthStr = decoder.decode(reply);
+          return lengthStr.length ? Number(lengthStr) : undefined;
+        }),
+      ]);
       const snapReader = fs.createReadStream(tmpSnapPath);
       // eslint-disable-next-line @jessie.js/no-nested-await
       await fsStreamReady(snapReader);
+      snapReader.on('data', chunk => {
+        snapshotReadSize += chunk.length;
+      });
       yield* snapReader;
     } finally {
       // eslint-disable-next-line @jessie.js/no-nested-await
       await fs.unlink(tmpSnapPath);
+      snapshotSize === undefined ||
+        snapshotReadSize === snapshotSize ||
+        Fail`Snapshot size does not match. saved=${q(snapshotSize)}, read=${q(
+          snapshotReadSize,
+        )}`;
     }
   }
 
