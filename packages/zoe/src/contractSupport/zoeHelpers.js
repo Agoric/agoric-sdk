@@ -12,8 +12,7 @@ export const defaultAcceptanceMsg = `The offer has been accepted. Once the contr
 
 const { details: X } = assert;
 
-const getKeysSorted = obj =>
-  harden(Object.getOwnPropertyNames(obj || {}).sort());
+const getKeysSorted = obj => harden(Reflect.ownKeys(obj || {}).sort());
 
 export const assertIssuerKeywords = (zcf, expected) => {
   const { issuers } = zcf.getTerms();
@@ -186,13 +185,12 @@ export const depositToSeatSuccessMsg = `Deposit and reallocation successful.`;
  * @param {PaymentPKeywordRecord} payments
  * @returns {Promise<string>} `Deposit and reallocation successful.`
  */
-
-export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
+export const depositToSeat = async (zcf, recipientSeat, amounts, payments) => {
   assert(!recipientSeat.hasExited(), 'The recipientSeat cannot have exited.');
 
   // We will create a temporary offer to be able to escrow our payments
   // with Zoe.
-  function reallocateAfterDeposit(tempSeat) {
+  const reallocateAfterDeposit = tempSeat => {
     // After the assets are deposited, reallocate them onto the recipient seat and
     // exit the temporary seat. Note that the offerResult is the return value of this
     // function, so this synchronous trade must happen before the
@@ -202,7 +200,7 @@ export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
     zcf.reallocate(tempSeat, recipientSeat);
     tempSeat.exit();
     return depositToSeatSuccessMsg;
-  }
+  };
   const invitation = zcf.makeInvitation(
     reallocateAfterDeposit,
     'temporary seat for deposit',
@@ -217,7 +215,7 @@ export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
   // successful.` It will only fulfill after the assets have been
   // successfully reallocated to the recipient seat.
   return E(tempUserSeat).getOfferResult();
-}
+};
 
 /**
  * Withdraw payments from a seat. Note that withdrawing the amounts of
@@ -229,7 +227,7 @@ export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
  * @param {AmountKeywordRecord} amounts
  * @returns {Promise<PaymentPKeywordRecord>}
  */
-export async function withdrawFromSeat(zcf, seat, amounts) {
+export const withdrawFromSeat = async (zcf, seat, amounts) => {
   assert(!seat.hasExited(), 'The seat cannot have exited.');
   const { zcfSeat: tempSeat, userSeat: tempUserSeatP } = zcf.makeEmptySeatKit();
   seat.decrementBy(harden(amounts));
@@ -237,7 +235,7 @@ export async function withdrawFromSeat(zcf, seat, amounts) {
   zcf.reallocate(tempSeat, seat);
   tempSeat.exit();
   return E(tempUserSeatP).getPayouts();
-}
+};
 
 /**
  * Save all of the issuers in an issuersKeywordRecord to ZCF, using
@@ -248,7 +246,7 @@ export async function withdrawFromSeat(zcf, seat, amounts) {
  * @param {IssuerKeywordRecord} issuerKeywordRecord Issuers to save to
  * ZCF
  */
-export async function saveAllIssuers(zcf, issuerKeywordRecord = harden({})) {
+export const saveAllIssuers = async (zcf, issuerKeywordRecord = harden({})) => {
   const { issuers } = zcf.getTerms();
   const issuersPSaved = Object.entries(issuerKeywordRecord).map(
     ([keyword, issuer]) => {
@@ -261,7 +259,7 @@ export async function saveAllIssuers(zcf, issuerKeywordRecord = harden({})) {
     },
   );
   return Promise.all(issuersPSaved);
-}
+};
 
 /** @type {MapKeywords} */
 export const mapKeywords = (keywordRecord = {}, keywordMapping) => {
@@ -297,12 +295,12 @@ const reverse = (keywordRecord = {}) => {
  * @param {ERef<Invitation<Result, Args>>} invitation
  *   Invitation to contractB
  *
- * @param {KeywordKeywordRecord=} keywordMapping
+ * @param {KeywordKeywordRecord} keywordMapping
  *   Mapping of keywords used in contractA to keywords to be used in
  *   contractB. Note that the pathway to deposit the payout back to
  *   contractA reverses this mapping.
  *
- * @param {Proposal=} proposal
+ * @param {Proposal} proposal
  *   The proposal for the offer to be made to contractB
  *
  * @param {ZCFSeat} fromSeat
@@ -313,7 +311,7 @@ const reverse = (keywordRecord = {}) => {
  *   If `toSeat` is not provided, this defaults to the `fromSeat`.
  *
  * @param {Args} [offerArgs]
- *   Aditional contract-specific optional arguments in a record.
+ *   Additional contract-specific optional arguments in a record.
  *
  * @returns {Promise<{userSeatPromise: Promise<UserSeat<Result>>, deposited: Promise<AmountKeywordRecord>}>}
  *   A promise for the userSeat for the offer to the other contract, and a
@@ -329,7 +327,6 @@ export const offerTo = async (
   invitation,
   keywordMapping = {},
   proposal,
-  // @ts-expect-error A required parameter cannot follow an optional parameter.
   fromSeat,
   toSeat,
   offerArgs,
