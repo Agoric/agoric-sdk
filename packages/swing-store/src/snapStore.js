@@ -1,6 +1,6 @@
 // @ts-check
 import { createHash } from 'crypto';
-import { finished as finishedCallback } from 'stream';
+import { finished as finishedCallback, PassThrough } from 'stream';
 import { promisify } from 'util';
 import { createGzip, createGunzip } from 'zlib';
 import { assert, details as d } from '@agoric/assert';
@@ -9,13 +9,14 @@ import {
   fsStreamReady,
   PromiseAllOrErrors,
 } from '@agoric/internal';
+import { makeNodeWriter } from '@endo/stream-node';
 
 /**
  * @typedef {object} SnapshotInfo
  * @property {string} filePath absolute path of (compressed) snapshot
  * @property {string} hash sha256 hash of (uncompressed) snapshot
  * @property {boolean} newFile true if the compressed snapshot is new, false otherwise
- * @property {number} rawByteCount size of (uncompressed) snapshot
+ * @property {number | undefined} rawByteCount size of (uncompressed) snapshot
  * @property {number} rawSaveSeconds time to save (uncompressed) snapshot
  * @property {number} compressedByteCount size of (compressed) snapshot
  * @property {number} compressSeconds time to compress and save snapshot
@@ -58,6 +59,7 @@ const sink = () => {};
  * }} io
  * @param {object} [options]
  * @param {boolean | undefined} [options.keepSnapshots]
+ * @param {boolean | undefined} [options.streamSnapshots]
  * @returns {SnapStore}
  */
 export function makeSnapStore(
@@ -74,7 +76,7 @@ export function makeSnapStore(
     tmpName,
     unlink,
   },
-  { keepSnapshots = false } = {},
+  { keepSnapshots = false, streamSnapshots = false } = {},
 ) {
   /** @type {(opts: unknown) => Promise<string>} */
   const ptmpName = promisify(tmpName);
@@ -156,6 +158,30 @@ export function makeSnapStore(
   }
 
   /**
+   * @param {(snapshotConfig: {stream: import('@endo/stream').Writer<Uint8Array>}) => Promise<number | undefined>} saveRaw
+   */
+  async function saveSnapshotWithStream(saveRaw) {
+    // This stream is effectively a buffer between the xsnap pipe and the
+    // hashing + compression transforms. It should be able to absorb multiple
+    // chunks of data from xsnap, which are likely themselves buffered in 64 KB
+    // chunks (see https://github.com/nodejs/node/issues/41611).
+    // This value should be a balance between memory allocation and processing speed
+    const buffer = new PassThrough({ highWaterMark: 16 * 64 * 1024 });
+    const writer = makeNodeWriter(buffer);
+
+    const result = saveRaw({ stream: writer });
+    return {
+      stream: /** @type {import('stream').Readable} */ (buffer),
+      finished: async () => {
+        return result;
+      },
+      dispose: async () => {
+        buffer.destroy();
+      },
+    };
+  }
+
+  /**
    * Creates a new gzipped snapshot file in the `root` directory and reports
    * information about the process, including file size and timing metrics.
    * Note that timing metrics exclude target file creation and open.
@@ -167,12 +193,16 @@ export function makeSnapStore(
     const cleanup = [];
     return aggregateTryFinally(
       async () => {
+        const saveSnapshot = streamSnapshots
+          ? saveSnapshotWithStream
+          : saveSnapshotWithFile;
+
         // Perform operations that read snapshot data in parallel.
         // We still serialize the request for the snapshot stream
         // and creation of tmpGzPath for readability, but we could
         // parallelize those as well if the cost is significant.
         const { duration: rawSaveSeconds, result: savedSnapshot } =
-          await measureSeconds(async () => saveSnapshotWithFile(saveRaw));
+          await measureSeconds(async () => saveSnapshot(saveRaw));
         cleanup.push(async () => {
           savedSnapshot.dispose();
         });
