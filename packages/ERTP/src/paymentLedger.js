@@ -34,6 +34,7 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
       if (elementShape === undefined) {
         valueShape = M.arrayOf(M.key());
       } else {
+        // M.and compresses only according to its last conjunct
         valueShape = M.arrayOf(M.and(M.key(), elementShape));
       }
       break;
@@ -139,6 +140,7 @@ export const vivifyPaymentLedger = (
   const paymentLedger = provideDurableWeakMapStore(
     issuerBaggage,
     'paymentLedger',
+    { valueShape: amountShape },
   );
 
   /**

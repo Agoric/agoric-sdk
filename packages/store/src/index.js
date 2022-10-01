@@ -56,6 +56,8 @@ export {
   fit,
 } from './patterns/patternMatchers.js';
 
+export { compress, mustCompress, decompress } from './patterns/compress.js';
+
 export {
   defendPrototype,
   initEmpty,

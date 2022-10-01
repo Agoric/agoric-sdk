@@ -30,6 +30,8 @@ import {
   checkCopyMap,
   copyMapKeySet,
   checkCopyBag,
+  makeCopySet,
+  makeCopyBag,
 } from '../keys/checkKey.js';
 
 /// <reference types="ses"/>
@@ -137,6 +139,15 @@ const checkDecimalDigitsLimit = (specimen, decimalDigitsLimit, check) => {
 };
 
 /**
+ * @typedef {string} Kind
+ * It is either a PassStyle other than 'tagged', or, if the underlying
+ * PassStyle is 'tagged', then the `getTag` value for tags that are
+ * recognized at the store level of abstraction. For each of those
+ * tags, a tagged record only has that kind if it satisfies the invariants
+ * that the store level associates with that kind.
+ */
+
+/**
  * @returns {PatternKit}
  */
 const makePatternKit = () => {
@@ -150,15 +161,6 @@ const makePatternKit = () => {
   const maybeMatchHelper = tag =>
     // eslint-disable-next-line no-use-before-define
     HelpersByMatchTag[tag];
-
-  /**
-   * @typedef {string} Kind
-   * It is either a PassStyle other than 'tagged', or, if the underlying
-   * PassStyle is 'tagged', then the `getTag` value for tags that are
-   * recognized at the store level of abstraction. For each of those
-   * tags, a tagged record only has that kind if it satisfies the invariants
-   * that the store level associates with that kind.
-   */
 
   /**
    * @type {WeakMap<CopyTagged, Kind>}
@@ -255,6 +257,16 @@ const makePatternKit = () => {
     }
     return false;
   };
+
+  /**
+   * Checks only recognized kinds, and only if the specimen
+   * passes the invariants associated with that recognition.
+   *
+   * @param {Passable} specimen
+   * @param {Kind} kind
+   * @returns {boolean}
+   */
+  const isKind = (specimen, kind) => checkKind(specimen, kind, identChecker);
 
   /**
    * @param {Passable} specimen
@@ -554,6 +566,11 @@ const makePatternKit = () => {
         const pattValues = pattPayload.values;
         const specimenValues = specimenPayload.values;
         // compare values as copyArrays
+        // TODO BUG: this assumes that the keys appear in the
+        // same order, so we can compare values in that order.
+        // However, we're only guaranteed that they appear in
+        // the same rankOrder. Thus we must search one of these
+        // in the other's rankOrder.
         return checkMatches(specimenValues, pattValues, check);
       }
       default: {
@@ -703,14 +720,57 @@ const makePatternKit = () => {
     return getPassStyleCover(passStyle);
   };
 
+  /**
+   * @param {Passable[]} array
+   * @param {Pattern} patt
+   * @param {Checker} check
+   * @param {string} [labelPrefix]
+   * @returns {boolean}
+   */
   const arrayEveryMatchPattern = (array, patt, check, labelPrefix = '') => {
-    if (checkKind(patt, 'match:any', identChecker)) {
+    if (isKind(patt, 'match:any')) {
       // if the pattern is M.any(), we know its true
       return true;
     }
     return array.every((el, i) =>
       checkMatches(el, patt, check, `${labelPrefix}[${i}]`),
     );
+  };
+
+  /**
+   * @param { Passable[] } array
+   * @param { Pattern } patt
+   * @param {Compress} compress
+   * @returns {Passable[] | undefined}
+   */
+  const arrayCompressMatchPattern = (array, patt, compress) => {
+    if (isKind(patt, 'match:any')) {
+      return array;
+    }
+    const bindings = [];
+    for (const el of array) {
+      const subBindings = compress(el, patt);
+      if (subBindings) {
+        // Note: not flattened
+        bindings.push(subBindings);
+      } else {
+        return undefined;
+      }
+    }
+    return harden(bindings);
+  };
+
+  /**
+   * @param {Passable[]} bindings
+   * @param {Pattern} patt
+   * @param {Decompress} decompress
+   * @returns {Passable[]}
+   */
+  const arrayDecompressMatchPattern = (bindings, patt, decompress) => {
+    if (isKind(patt, 'match:any')) {
+      return bindings;
+    }
+    return harden(bindings.map(subBindings => decompress(subBindings, patt)));
   };
 
   // /////////////////////// Match Helpers /////////////////////////////////////
@@ -734,11 +794,32 @@ const makePatternKit = () => {
       return patts.every(patt => checkMatches(specimen, patt, check));
     },
 
+    // Compress only according to the last conjunct
+    compress: (specimen, patts, compress) => {
+      const { length } = patts;
+      // We know there are at least two patts
+      const lastPatt = patts[length - 1];
+      const allButLast = patts.slice(0, length - 1);
+      if (
+        !allButLast.every(patt => checkMatches(specimen, patt, identChecker))
+      ) {
+        return undefined;
+      }
+      return compress(specimen, lastPatt);
+    },
+
+    decompress: (bindings, patts, decompress) => {
+      const lastPatt = patts[patts.length - 1];
+      return decompress(bindings, lastPatt);
+    },
+
     checkIsWellFormed: (allegedPatts, check) => {
       const checkIt = patt => checkPattern(patt, check);
       return (
         (passStyleOf(allegedPatts) === 'copyArray' ||
           check(false, X`Needs array of sub-patterns: ${allegedPatts}`)) &&
+        (allegedPatts.length >= 2 ||
+          check(false, X`Must have at least two sub-patterns`)) &&
         allegedPatts.every(checkIt)
       );
     },
@@ -757,18 +838,31 @@ const makePatternKit = () => {
   /** @type {MatchHelper} */
   const matchOrHelper = Far('match:or helper', {
     checkMatches: (specimen, patts, check) => {
-      const { length } = patts;
-      if (length === 0) {
-        return check(
-          false,
-          X`${specimen} - no pattern disjuncts to match: ${patts}`,
-        );
-      }
       if (patts.some(patt => matches(specimen, patt))) {
         return true;
       }
       return check(false, X`${specimen} - Must match one of ${patts}`);
     },
+
+    // Compress to a bindings array that starts with the index of the
+    // first disjunct that succeeded, followed by the bindings according to
+    // that disjunct.
+    compress: (specimen, patts, compress) => {
+      const { length } = patts;
+      if (length === 0) {
+        return undefined;
+      }
+      for (let i = 0; i < length; i += 1) {
+        const subBindings = compress(specimen, patts[i]);
+        if (subBindings !== undefined) {
+          return harden([i, ...subBindings]);
+        }
+      }
+      return undefined;
+    },
+
+    decompress: ([i, ...subBindings], patts, decompress) =>
+      decompress(harden(subBindings), patts[i]),
 
     checkIsWellFormed: matchAndHelper.checkIsWellFormed,
 
@@ -1001,7 +1095,7 @@ const makePatternKit = () => {
   const matchRemotableHelper = Far('match:remotable helper', {
     checkMatches: (specimen, remotableDesc, check) => {
       // Unfortunate duplication of checkKind logic, but no better choices.
-      if (checkKind(specimen, 'remotable', identChecker)) {
+      if (isKind(specimen, 'remotable')) {
         return true;
       }
       if (check === identChecker) {
@@ -1180,6 +1274,21 @@ const makePatternKit = () => {
       );
     },
 
+    // Compress to an array of corresponding bindings arrays
+    compress: (specimen, [subPatt, limits = undefined], compress) => {
+      const { arrayLengthLimit } = limit(limits);
+      if (
+        isKind(specimen, 'copyArray') &&
+        specimen.length <= arrayLengthLimit
+      ) {
+        return arrayCompressMatchPattern(specimen, subPatt, compress);
+      }
+      return undefined;
+    },
+
+    decompress: (bindings, [subPatt, _limits = undefined], decompress) =>
+      arrayDecompressMatchPattern(bindings, subPatt, decompress),
+
     checkIsWellFormed: (payload, check) =>
       checkIsWellFormedWithLimit(
         payload,
@@ -1209,6 +1318,21 @@ const makePatternKit = () => {
         arrayEveryMatchPattern(specimen.payload, keyPatt, check, 'set elements')
       );
     },
+
+    // Compress to an array of corresponding bindings arrays
+    compress: (specimen, [keyPatt, limits = undefined], compress) => {
+      const { numSetElementsLimit } = limit(limits);
+      if (
+        isKind(specimen, 'copySet') &&
+        specimen.payload.length <= numSetElementsLimit
+      ) {
+        return arrayCompressMatchPattern(specimen.payload, keyPatt, compress);
+      }
+      return undefined;
+    },
+
+    decompress: (bindings, [keyPatt, _limits = undefined], decompress) =>
+      makeCopySet(arrayDecompressMatchPattern(bindings, keyPatt, decompress)),
 
     checkIsWellFormed: (payload, check) =>
       checkIsWellFormedWithLimit(
@@ -1253,6 +1377,42 @@ const makePatternKit = () => {
       );
     },
 
+    // Compress to an array of corresponding bindings arrays
+    compress: (
+      specimen,
+      [keyPatt, countPatt, limits = undefined],
+      compress,
+    ) => {
+      const { numUniqueBagElementsLimit, decimalDigitsLimit } = limit(limits);
+      if (
+        isKind(specimen, 'copyBag') &&
+        specimen.payload.length <= numUniqueBagElementsLimit &&
+        specimen.payload.every(([_key, count]) =>
+          checkDecimalDigitsLimit(count, decimalDigitsLimit, identChecker),
+        )
+      ) {
+        return arrayCompressMatchPattern(
+          specimen.payload,
+          harden([keyPatt, countPatt]),
+          compress,
+        );
+      }
+      return undefined;
+    },
+
+    decompress: (
+      bindings,
+      [keyPatt, countPatt, _limits = undefined],
+      decompress,
+    ) =>
+      makeCopyBag(
+        arrayDecompressMatchPattern(
+          bindings,
+          harden([keyPatt, countPatt]),
+          decompress,
+        ),
+      ),
+
     checkIsWellFormed: (payload, check) =>
       checkIsWellFormedWithLimit(
         payload,
@@ -1295,6 +1455,48 @@ const makePatternKit = () => {
           check,
           'map values',
         )
+      );
+    },
+
+    // Compress to a pair of bindings arrays, one for the keys
+    // and a matching one for the values.
+    compress: (
+      specimen,
+      [keyPatt, valuePatt, limits = undefined],
+      compress,
+    ) => {
+      const { numMapEntriesLimit } = limit(limits);
+      if (
+        isKind(specimen, 'copyMap') &&
+        specimen.payload.keys.length <= numMapEntriesLimit
+      ) {
+        return harden([
+          arrayCompressMatchPattern(specimen.payload.keys, keyPatt, compress),
+          arrayCompressMatchPattern(
+            specimen.payload.values,
+            valuePatt,
+            compress,
+          ),
+        ]);
+      }
+      return undefined;
+    },
+
+    decompress: (
+      [keyBindings, valueBindings],
+      [keyPatt, valuePatt, _limits = undefined],
+      decompress,
+    ) => {
+      return makeTagged(
+        'copyMap',
+        harden({
+          keys: arrayDecompressMatchPattern(keyBindings, keyPatt, decompress),
+          values: arrayDecompressMatchPattern(
+            valueBindings,
+            valuePatt,
+            decompress,
+          ),
+        }),
       );
     },
 
@@ -1572,8 +1774,20 @@ const makePatternKit = () => {
   /** @type {MatcherNamespace} */
   const M = harden({
     any: () => AnyShape,
-    and: (...patts) => makeMatcher('match:and', patts),
-    or: (...patts) => makeMatcher('match:or', patts),
+    and: (...patts) =>
+      // eslint-disable-next-line no-nested-ternary
+      patts.length === 0
+        ? M.any()
+        : patts.length === 1
+        ? patts[0]
+        : makeMatcher('match:and', patts),
+    or: (...patts) =>
+      // eslint-disable-next-line no-nested-ternary
+      patts.length === 0
+        ? M.not(M.any())
+        : patts.length === 1
+        ? patts[0]
+        : makeMatcher('match:or', patts),
     not: subPatt => makeMatcher('match:not', subPatt),
 
     scalar: () => ScalarShape,
@@ -1660,6 +1874,8 @@ const makePatternKit = () => {
     assertKeyPattern,
     isKeyPattern,
     getRankCover,
+    kindOf,
+    maybeMatchHelper,
     M,
   });
 };
@@ -1679,6 +1895,8 @@ export const {
   assertKeyPattern,
   isKeyPattern,
   getRankCover,
+  kindOf,
+  maybeMatchHelper,
   M,
 } = makePatternKit();
 

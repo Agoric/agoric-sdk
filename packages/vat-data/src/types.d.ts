@@ -70,6 +70,12 @@ type DefineKindOptions<C> = {
   durable?: boolean;
 
   /**
+   * If provided, it describes the shape of all state records of instances
+   * of this kind.
+   */
+  stateShape?: { [name: string]: Pattern };
+
+  /**
    * Intended for internal use only.
    * Should the raw methods receive their `context` argument as their first
    * argument or as their `this` binding? For `defineDurableKind` and its

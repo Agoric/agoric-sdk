@@ -281,6 +281,27 @@ export const initEmpty = () => emptyRecord;
  */
 
 /**
+ * @template [S = any]
+ * @template [F = any]
+ * @typedef {object} KitContext
+ * @property {S} state
+ * @property {F} facets
+ */
+
+/**
+ * @typedef {{[name: string]: Pattern}} StateShape
+ * It looks like a copyRecord pattern, but the interpretation is different.
+ * Each property is distinct, is checked and changed separately.
+ */
+
+/**
+ * @template C
+ * @typedef {object} FarClassOptions
+ * @property {(context: C) => void} [finish]
+ * @property {StateShape} [stateShape]
+ */
+
+/**
  * @template A
  * @template S
  * @template {{}} T
@@ -288,7 +309,7 @@ export const initEmpty = () => emptyRecord;
  * @param {any} interfaceGuard
  * @param {(...args: A[]) => S} init
  * @param {T} methods
- * @param {object} [options]
+ * @param {FarClassOptions<Context<S,T>>} [options]
  * @returns {(...args: A[]) => (T & import('@endo/eventual-send').RemotableBrand<{}, T>)}
  */
 export const defineHeapFarClass = (
@@ -296,7 +317,7 @@ export const defineHeapFarClass = (
   interfaceGuard,
   init,
   methods,
-  options = undefined,
+  { finish = undefined } = {},
 ) => {
   /** @type {WeakMap<T,Context<S, T>>} */
   const contextMap = new WeakMap();
@@ -317,11 +338,8 @@ export const defineHeapFarClass = (
     /** @type {Context<S,T>} */
     const context = freeze({ state, self });
     contextMap.set(self, context);
-    if (options) {
-      const { finish = undefined } = options;
-      if (finish) {
-        finish(context);
-      }
+    if (finish) {
+      finish(context);
     }
     return self;
   };
@@ -338,7 +356,7 @@ harden(defineHeapFarClass);
  * @param {any} interfaceGuardKit
  * @param {(...args: A[]) => S} init
  * @param {F} methodsKit
- * @param {object} [options]
+ * @param {FarClassOptions<KitContext<S,F>>} [options]
  * @returns {(...args: A[]) => F}
  */
 export const defineHeapFarClassKit = (
@@ -346,7 +364,7 @@ export const defineHeapFarClassKit = (
   interfaceGuardKit,
   init,
   methodsKit,
-  options = undefined,
+  { finish = undefined } = {},
 ) => {
   const facetNames = ownKeys(methodsKit);
   const interfaceNames = ownKeys(interfaceGuardKit);
@@ -386,11 +404,9 @@ export const defineHeapFarClassKit = (
     context.facets = facets;
     // Be careful not to freeze the state record
     freeze(context);
-    if (options) {
-      const { finish = undefined } = options;
-      if (finish) {
-        finish(context);
-      }
+    if (finish) {
+      // @ts-expect-error `facets` was added
+      finish(context);
     }
     return facets;
   };
@@ -405,7 +421,7 @@ harden(defineHeapFarClassKit);
  * @param {string} tag
  * @param {InterfaceGuard | undefined} interfaceGuard CAVEAT: static typing does not yet support `callWhen` transformation
  * @param {T} methods
- * @param {object} [options]
+ * @param {FarClassOptions<Context<{},T>>} [options]
  * @returns {T & import('@endo/eventual-send').RemotableBrand<{}, T>}
  */
 export const makeHeapFarInstance = (
