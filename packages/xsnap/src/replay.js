@@ -118,7 +118,7 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
     name = '_replay_',
     debug = false,
     parserBufferSize = undefined,
-    snapshot = undefined,
+    snapshotConfig = undefined,
     meteringLimit = DEFAULT_CRANK_METERING_LIMIT,
   } = options;
   nextFile('options', 'json').putText(
@@ -127,7 +127,7 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
       name,
       debug,
       parserBufferSize,
-      snapshot,
+      snapshot: snapshotConfig && snapshotConfig.filePath,
       meteringLimit,
     }),
   );

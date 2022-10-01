@@ -56,7 +56,7 @@ function echoCommand(arg) {
  * @property {boolean=} [debug]
  * @property {number} [netstringMaxChunkSize] in bytes (must be an integer)
  * @property {number=} [parserBufferSize] in kB (must be an integer)
- * @property {string=} [snapshot]
+ * @property {{filePath: string}} [snapshotConfig]
  * @property {'ignore' | 'inherit'} [stdout]
  * @property {'ignore' | 'inherit'} [stderr]
  * @property {number} [meteringLimit]
@@ -71,7 +71,7 @@ export function xsnap(options) {
     debug = false,
     netstringMaxChunkSize = undefined,
     parserBufferSize = undefined,
-    snapshot = undefined,
+    snapshotConfig = undefined,
     stdout = 'ignore',
     stderr = 'ignore',
     meteringLimit = DEFAULT_CRANK_METERING_LIMIT,
@@ -101,8 +101,8 @@ export function xsnap(options) {
   assert(!/^-/.test(name), `name '${name}' cannot start with hyphen`);
 
   let args = [name];
-  if (snapshot) {
-    args.push('-r', snapshot);
+  if (snapshotConfig) {
+    args.push('-r', snapshotConfig.filePath);
   }
   if (meteringLimit) {
     args.push('-l', `${meteringLimit}`);

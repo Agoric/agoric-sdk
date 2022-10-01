@@ -130,9 +130,9 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
     const meterOpts = metered ? {} : { meteringLimit: 0 };
     if (snapStore && snapshotHash) {
       // console.log('startXSnap from', { snapshotHash });
-      return snapStore.load(snapshotHash, async snapshot => {
+      return snapStore.load(snapshotHash, async snapshotConfig => {
         const xs = doXSnap({
-          snapshot,
+          snapshotConfig,
           name,
           handleCommand,
           ...meterOpts,

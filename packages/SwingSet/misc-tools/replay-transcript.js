@@ -143,7 +143,7 @@ async function replay(transcriptFile) {
         },
         async load(hash, loadRaw) {
           const snapFile = `${hash}.xss`;
-          return loadRaw(snapFile);
+          return loadRaw({ filePath: snapFile });
         },
       }
     : makeSnapStore(process.cwd(), makeSnapStoreIO());

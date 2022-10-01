@@ -22,7 +22,7 @@ Some time later, possibly on a different computer…
 
 ```js
 const decoder = new TextDecoder();
-const worker = xsnap({ snapshot: 'bootstrap.xss' });
+const worker = xsnap({ snapshotConfig: { filePath: 'bootstrap.xss' } });
 const response = await worker.issueCommand('1');
 console.log(decoder.decode(response)); // 2
 await worker.close();

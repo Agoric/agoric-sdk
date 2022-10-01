@@ -267,17 +267,17 @@ test('write and read snapshot', async t => {
     return new Uint8Array();
   }
 
-  const snapshot = work.name;
-  t.log({ snapshot });
+  const snapshotConfig = { filePath: work.name };
+  t.log({ snapshotConfig });
 
   const vat0 = xsnap({ ...options(io), handleCommand });
   await vat0.evaluate(`
     globalThis.hello = "Hello, World!";
   `);
-  await vat0.snapshot({ filePath: snapshot });
+  await vat0.snapshot(snapshotConfig);
   await vat0.close();
 
-  const vat1 = xsnap({ ...options(io), handleCommand, snapshot });
+  const vat1 = xsnap({ ...options(io), handleCommand, snapshotConfig });
   await vat1.evaluate(`
     issueCommand(new TextEncoder().encode(hello).buffer);
   `);
@@ -404,13 +404,13 @@ test('GC after snapshot vs restore', async t => {
 
   const beforeClone = await nextGC(worker, opts);
 
-  const snapshot = './bloated.xss';
-  await worker.snapshot({ filePath: snapshot });
-  t.teardown(() => unlinkSync(snapshot));
+  const snapshotConfig = { filePath: './bloated.xss' };
+  await worker.snapshot(snapshotConfig);
+  t.teardown(() => unlinkSync(snapshotConfig.filePath));
 
-  const optClone = { ...options(io), name: 'clone', snapshot };
+  const optClone = { ...options(io), name: 'clone', snapshotConfig };
   const clone = xsnapr(optClone);
-  t.log('cloned', { snapshot });
+  t.log('cloned', { snapshotConfig });
   t.teardown(clone.terminate);
 
   let workerGC = beforeClone;

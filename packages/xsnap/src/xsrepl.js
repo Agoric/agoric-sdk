@@ -76,7 +76,11 @@ async function main() {
     } else if (answer === 'load') {
       const filePath = await ask('file> ');
       await vat.close();
-      vat = xsnap({ ...xsnapOptions, handleCommand, snapshot: filePath });
+      vat = xsnap({
+        ...xsnapOptions,
+        handleCommand,
+        snapshotConfig: { filePath },
+      });
     } else if (answer === 'save') {
       const filePath = await ask('file> ');
       await vat.snapshot({ filePath });

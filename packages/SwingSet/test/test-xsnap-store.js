@@ -124,8 +124,13 @@ test('create SES worker, save, restore, resume', async t => {
   await vat0.evaluate('globalThis.x = harden({a: 1})');
   const { hash } = await store.save(vat0.snapshot);
 
-  const worker = await store.load(hash, async snapshot => {
-    const xs = xsnap({ name: 'ses-resume', snapshot, os: osType(), spawn });
+  const worker = await store.load(hash, async snapshotConfig => {
+    const xs = xsnap({
+      name: 'ses-resume',
+      snapshotConfig,
+      os: osType(),
+      spawn,
+    });
     await xs.isReady();
     return xs;
   });
