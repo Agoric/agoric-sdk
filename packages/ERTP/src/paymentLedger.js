@@ -139,6 +139,7 @@ export const vivifyPaymentLedger = (
   const paymentLedger = provideDurableWeakMapStore(
     issuerBaggage,
     'paymentLedger',
+    { valueShape: amountShape },
   );
 
   /**

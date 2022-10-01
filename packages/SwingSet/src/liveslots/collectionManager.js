@@ -5,6 +5,7 @@ import {
   assertKeyPattern,
   assertPattern,
   matches,
+  fit,
   compareRank,
   M,
   zeroPad,
@@ -13,6 +14,8 @@ import {
   isEncodedRemotable,
   makeCopySet,
   makeCopyMap,
+  mustCompress,
+  decompress,
 } from '@agoric/store';
 import { Far, passStyleOf } from '@endo/marshal';
 import { decodeToJustin } from '@endo/marshal/src/marshal-justin.js';
@@ -213,7 +216,7 @@ export function makeCollectionManager(
     return storeKindInfo[kindName].kindID;
   }
 
-  // Not that it's only used for this purpose, what should it be called?
+  // Now that it's only used for this purpose, what should it be called?
   // TODO Should we be using the new encodeBigInt scheme instead, anyway?
   const BIGINT_TAG_LEN = 10;
 
@@ -256,6 +259,23 @@ export function makeCollectionManager(
     const { hasWeakKeys, durable } = kindInfo;
     const dbKeyPrefix = `vc.${collectionID}.`;
     let currentGenerationNumber = 0;
+
+    const keyLabel = `invalid key type for collection ${q(label)}`;
+    const valueLabel = `invalid value type for collection ${q(label)}`;
+
+    const serializeValue = value => {
+      if (valueShape === undefined) {
+        return serialize(value);
+      }
+      return serialize(mustCompress(value, valueShape, valueLabel));
+    };
+
+    const unserializeValue = data => {
+      if (valueShape === undefined) {
+        return unserialize(data);
+      }
+      return decompress(unserialize(data), valueShape);
+    };
 
     function prefix(dbEntryKey) {
       return `${dbKeyPrefix}${dbEntryKey}`;
@@ -331,11 +351,10 @@ export function makeCollectionManager(
     }
 
     function get(key) {
-      matches(key, keyShape) ||
-        assert.fail(X`invalid key type for collection ${q(label)}`);
+      fit(key, keyShape, keyLabel);
       const result = syscall.vatstoreGet(keyToDBKey(key));
       if (result) {
-        return unserialize(JSON.parse(result));
+        return unserializeValue(JSON.parse(result));
       }
       assert.fail(X`key ${key} not found in collection ${q(label)}`);
     }
@@ -351,16 +370,11 @@ export function makeCollectionManager(
     }
 
     function init(key, value) {
-      matches(key, keyShape) ||
-        assert.fail(X`invalid key type for collection ${q(label)}`);
+      fit(key, keyShape, keyLabel);
       !has(key) ||
         assert.fail(X`key ${key} already registered in collection ${q(label)}`);
-      if (valueShape) {
-        matches(value, valueShape) ||
-          assert.fail(X`invalid value type for collection ${q(label)}`);
-      }
+      const serializedValue = serializeValue(value);
       currentGenerationNumber += 1;
-      const serializedValue = serialize(value);
       assertAcceptableSyscallCapdataSize([serializedValue]);
       if (durable) {
         serializedValue.slots.forEach((vref, slotIndex) => {
@@ -388,13 +402,8 @@ export function makeCollectionManager(
     }
 
     function set(key, value) {
-      matches(key, keyShape) ||
-        assert.fail(X`invalid key type for collection ${q(label)}`);
-      if (valueShape) {
-        matches(value, valueShape) ||
-          assert.fail(X`invalid value type for collection ${q(label)}`);
-      }
-      const after = serialize(harden(value));
+      fit(key, keyShape, keyLabel);
+      const after = serializeValue(harden(value));
       assertAcceptableSyscallCapdataSize([after]);
       if (durable) {
         after.slots.forEach((vref, i) => {
@@ -412,8 +421,7 @@ export function makeCollectionManager(
     }
 
     function deleteInternal(key) {
-      matches(key, keyShape) ||
-        assert.fail(X`invalid key type for collection ${q(label)}`);
+      fit(key, keyShape, keyLabel);
       const dbKey = keyToDBKey(key);
       const rawValue = syscall.vatstoreGet(dbKey);
       assert(rawValue, X`key ${key} not found in collection ${q(label)}`);
@@ -472,7 +480,7 @@ export function makeCollectionManager(
           if (dbKey < end) {
             priorDBKey = dbKey;
             if (ignoreKeys) {
-              const value = unserialize(JSON.parse(dbValue));
+              const value = unserializeValue(JSON.parse(dbValue));
               if (matches(value, valuePatt)) {
                 yield [undefined, value];
               }
@@ -484,7 +492,7 @@ export function makeCollectionManager(
             } else {
               const key = dbKeyToKey(dbKey);
               if (matches(key, keyPatt)) {
-                const value = unserialize(JSON.parse(dbValue));
+                const value = unserializeValue(JSON.parse(dbValue));
                 if (matches(value, valuePatt)) {
                   yield [key, value];
                 }
