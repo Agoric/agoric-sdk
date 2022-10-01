@@ -2,7 +2,7 @@
 
 import { assert, Fail, q } from '@agoric/assert';
 import { objectMap } from '@agoric/internal';
-import { assertPattern, mustMatch } from '@agoric/store';
+import { assertPattern, decompress, mustCompress } from '@agoric/store';
 import { defendPrototype, defendPrototypeKit } from '@agoric/store/tools.js';
 import { Far, passStyleOf } from '@endo/marshal';
 import { parseVatSlot, makeBaseRef } from './parseVatSlots.js';
@@ -151,22 +151,26 @@ export function makeCache(size, fetch, store) {
 /**
  * Create a new virtual object manager.  There is one of these for each vat.
  *
- * @param {*} syscall  Vat's syscall object, used to access the vatstore operations.
- * @param {*} vrm  Virtual reference manager, to handle reference counting and GC
- *   of virtual references.
- * @param {() => number} allocateExportID  Function to allocate the next object
- *   export ID for the enclosing vat.
- * @param {(val: object) => string} _getSlotForVal  A function that returns the
- *   object ID (vref) for a given object, if any.  their corresponding export
- *   IDs
- * @param {*} registerValue  Function to register a new slot+value in liveSlot's
- *   various tables
- * @param {import('@endo/marshal').Serialize<unknown>} serialize  Serializer for this vat
- * @param {import('@endo/marshal').Unserialize<unknown>} unserialize  Unserializer for this vat
- * @param {number} cacheSize  How many virtual objects this manager should cache
- *   in memory.
- * @param {*} assertAcceptableSyscallCapdataSize  Function to check for oversized
- *   syscall params
+ * @param {*} syscall
+ * Vat's syscall object, used to access the vatstore operations.
+ * @param {*} vrm
+ * Virtual reference manager, to handle reference counting and GC
+ * of virtual references.
+ * @param {() => number} allocateExportID
+ * Function to allocate the next object export ID for the enclosing vat.
+ * @param {(val: object) => string} _getSlotForVal
+ * A function that returns the object ID (vref) for a given object, if any.
+ * their corresponding export IDs
+ * @param {*} registerValue
+ * Function to register a new slot+value in liveSlot's various tables
+ * @param {import('@endo/marshal').Serialize<unknown>} serialize
+ * Serializer for this vat
+ * @param {import('@endo/marshal').Unserialize<unknown>} unserialize
+ * Unserializer for this vat
+ * @param {number} cacheSize
+ * How many virtual objects this manager should cache in memory.
+ * @param {*} assertAcceptableSyscallCapdataSize
+ * Function to check for oversized syscall params
  *
  * @returns {object} a new virtual object manager.
  *
@@ -608,26 +612,25 @@ export function makeVirtualObjectManager(
     assertPattern(stateShape);
 
     const serializeSlot = (slotState, prop) => {
-      if (stateShape !== undefined) {
-        hasOwn(stateShape, prop) ||
-          Fail`State must only have fields described by stateShape: ${q(
-            ownKeys(stateShape),
-          )}`;
-        mustMatch(slotState, stateShape[prop], prop);
+      if (stateShape === undefined) {
+        return serialize(slotState);
       }
-      return serialize(slotState);
+      hasOwn(stateShape, prop) ||
+        Fail`State must only have fields described by stateShape: ${q(
+          ownKeys(stateShape),
+        )}`;
+      return serialize(mustCompress(slotState, stateShape[prop], prop));
     };
 
     const unserializeSlot = (slotData, prop) => {
-      const slotValue = unserialize(slotData);
-      if (stateShape !== undefined) {
-        hasOwn(stateShape, prop) ||
-          Fail`State only has fields described by stateShape: ${q(
-            ownKeys(stateShape),
-          )}`;
-        mustMatch(slotValue, stateShape[prop]);
+      if (stateShape === undefined) {
+        return unserialize(slotData);
       }
-      return slotValue;
+      hasOwn(stateShape, prop) ||
+        Fail`State only has fields described by stateShape: ${q(
+          ownKeys(stateShape),
+        )}`;
+      return decompress(unserialize(slotData), stateShape[prop]);
     };
 
     const getInnerSelf = state => {

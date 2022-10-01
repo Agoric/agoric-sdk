@@ -6,6 +6,7 @@
 /** @template T @typedef {import('@endo/marshal').CopyRecord<T>} CopyRecord */
 /** @template T @typedef {import('@endo/marshal').CopyArray<T>} CopyArray */
 /** @typedef {import('@endo/marshal').Checker} Checker */
+/** @typedef {import('./patterns/patternMatchers').Kind} Kind */
 
 /**
  * @typedef {Passable} Key
@@ -781,10 +782,34 @@
  * @property {(patt: Pattern) => void} assertPattern
  * @property {(patt: Passable) => boolean} isPattern
  * @property {GetRankCover} getRankCover
+ * @property {(passable: Passable, check?: Checker) => (Kind | undefined)} kindOf
+ * @property {(tag: string) => (MatchHelper | undefined)} maybeMatchHelper
  * @property {MatcherNamespace} M
  */
 
 // /////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @callback Compress
+ * @param {Passable} specimen
+ * @param {Pattern} pattern
+ * @returns {Passable[] | undefined}
+ */
+
+/**
+ * @callback MustCompress
+ * @param {Passable} specimen
+ * @param {Pattern} pattern
+ * @param {string|number} [label]
+ * @returns {Passable[]}
+ */
+
+/**
+ * @callback Decompress
+ * @param {Passable[]} bindings
+ * @param {Pattern} pattern
+ * @returns {Passable}
+ */
 
 // TODO
 // The following type should be in internal-types.js, since the
@@ -811,6 +836,27 @@
  * ) => boolean} checkMatches
  * Assuming validity of `matcherPayload` as the payload of a Matcher corresponding
  * with this MatchHelper, reports whether `specimen` is matched by that Matcher.
+ *
+ * @property {(specimen: Passable,
+ *             matcherPayload: Passable,
+ *             compress: Compress
+ * ) => (Passable[] | undefined)} [compress]
+ * Assuming a valid Matcher of this type with `matcherPayload` as its
+ * payload, if this specimen matches this matcher, then return a
+ * "bindings" array of passables that represents this specimen,
+ * perhaps more compactly, given the knowledge that it matches this matcher.
+ * If the specimen does not match the matcher, return undefined.
+ * If this matcher has a `compress` method, then it must have a matching
+ * `decompress` method.
+ *
+ * @property {(bindings: Passable[],
+ *             matcherPayload: Passable,
+ *             decompress: Decompress
+ * ) => Passable} [decompress]
+ * If `bindings` is the result of a successful `compress` with this matcher,
+ * then `decompress` must return a Passable equivalent to the original specimen.
+ * If this matcher has an `decompress` method, then it must have a matching
+ * `compress` method.
  *
  * @property {(
  *   payload: Passable,

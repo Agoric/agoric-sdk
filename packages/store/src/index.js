@@ -54,6 +54,8 @@ export {
   mustMatch,
 } from './patterns/patternMatchers.js';
 
+export { compress, mustCompress, decompress } from './patterns/compress.js';
+
 export {
   initEmpty,
   defineExoClass,
