@@ -15,6 +15,16 @@ import './types.js';
 
 /**
  * @template {AssetKind} K
+ * @typedef {object} IssuerRecord
+ * @property {string} name
+ * @property {K} assetKind
+ * @property {AdditionalDisplayInfo} displayInfo
+ * @property {Pattern} elementShape
+ */
+
+/**
+ * @template {AssetKind} K
+ * @param {IssuerRecord<K>} issuerRecord
  * @param {Baggage} issuerBaggage
  * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
  * in the middle of an atomic action (which btw should never happen), it
@@ -25,14 +35,11 @@ import './types.js';
  * See https://github.com/Agoric/agoric-sdk/issues/3434
  * @returns {IssuerKit<K>}
  */
-export const vivifyIssuerKit = (
+const setupIssuerKit = (
+  { name, assetKind, displayInfo, elementShape },
   issuerBaggage,
-  optShutdownWithFailure = undefined,
+  optShutdownWithFailure,
 ) => {
-  const name = issuerBaggage.get('name');
-  const assetKind = issuerBaggage.get('assetKind');
-  const displayInfo = issuerBaggage.get('displayInfo');
-  const elementShape = issuerBaggage.get('elementShape');
   assert.typeof(name, 'string');
   assertAssetKind(assetKind);
 
@@ -62,6 +69,30 @@ export const vivifyIssuerKit = (
     mint,
     displayInfo: cleanDisplayInfo,
   });
+};
+harden(setupIssuerKit);
+
+/** The key at which the issuer record is stored. */
+const INSTANCE_KEY = 'issuer';
+
+/**
+ * @template {AssetKind} K
+ * @param {Baggage} issuerBaggage
+ * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
+ * in the middle of an atomic action (which btw should never happen), it
+ * potentially leaves its ledger in a corrupted state. If this function was
+ * provided, then the failed atomic action will call it, so that some
+ * larger unit of computation, like the enclosing vat, can be shutdown
+ * before anything else is corrupted by that corrupted state.
+ * See https://github.com/Agoric/agoric-sdk/issues/3434
+ * @returns {IssuerKit<K>}
+ */
+export const vivifyIssuerKit = (
+  issuerBaggage,
+  optShutdownWithFailure = undefined,
+) => {
+  const issuerRecord = issuerBaggage.get(INSTANCE_KEY);
+  return setupIssuerKit(issuerRecord, issuerBaggage, optShutdownWithFailure);
 };
 harden(vivifyIssuerKit);
 
@@ -103,11 +134,9 @@ export const makeDurableIssuerKit = (
   optShutdownWithFailure = undefined,
   { elementShape = undefined } = {},
 ) => {
-  issuerBaggage.init('name', name);
-  issuerBaggage.init('assetKind', assetKind);
-  issuerBaggage.init('displayInfo', displayInfo);
-  issuerBaggage.init('elementShape', elementShape);
-  return vivifyIssuerKit(issuerBaggage, optShutdownWithFailure);
+  const issuerData = harden({ name, assetKind, displayInfo, elementShape });
+  issuerBaggage.init(INSTANCE_KEY, issuerData);
+  return setupIssuerKit(issuerData, issuerBaggage, optShutdownWithFailure);
 };
 harden(makeDurableIssuerKit);
 
