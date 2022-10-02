@@ -32,7 +32,7 @@ export const vivifyErtpService = (baggage, exitVatWithFailure) => {
   });
 
   for (const issuerBaggage of issuerBaggageSet.values()) {
-    vivifyIssuerKit(issuerBaggage);
+    vivifyIssuerKit(issuerBaggage, exitVatWithFailure);
   }
 
   return ertpService;
