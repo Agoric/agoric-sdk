@@ -26,6 +26,8 @@ const DEFAULT_LOCATOR_URL =
 const LOCAL_STORAGE_LOCATOR_URL =
   'https://wallet.agoric.app/locator/?append=/wallet/bridge.html';
 
+const DEFAULT_WALLET_UI_HREF = 'https://wallet.agoric.app/wallet/';
+
 const delay = (ms, resolution) =>
   new Promise(resolve => setTimeout(resolve, ms, resolution));
 
@@ -40,6 +42,13 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
         }
         .connection {
           background-color: #fff;
+        }
+        .connection-message {
+          text-align: center;
+        }
+        .connection-message > a {
+          text-decoration: none;
+          color: #1976d2;
         }
       `;
     }
@@ -266,7 +275,18 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
         default:
       }
 
-      return html`<div class="connection">${backend}</div>`;
+      // Link to the default wallet ui for regular users.
+      const walletUiUrl = new URL(DEFAULT_WALLET_UI_HREF);
+
+      return html` <div class="connection">
+        ${backend}
+        <div class="connection-message">
+          Open wallet:
+          <a href=${walletUiUrl} target="_blank"
+            >${walletUiUrl.host}${walletUiUrl.pathname}</a
+          >
+        </div>
+      </div>`;
     }
   };
 

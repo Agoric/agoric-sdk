@@ -20,7 +20,7 @@ export const makeAgoricIframeMessenger = (registerThis = _that => {}) =>
         iframe {
           border: none;
           overflow: auto;
-          height: 56px;
+          height: 64px;
         }
       `;
     }
