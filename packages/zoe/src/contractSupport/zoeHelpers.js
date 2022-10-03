@@ -361,31 +361,15 @@ export const offerTo = async (
 
   const depositedPromiseKit = makePromiseKit();
 
-  // contractB can include payout payments at arbitrary keywords
-  const getIssuerForPayment = (keyword, payoutPayments) => {
-    return E.when(E(payoutPayments[keyword]).getAllegedBrand(), allegedBrand =>
-      zcf.getIssuerForBrand(allegedBrand),
-    );
-  };
-
-  const getAmountsFromPayments = async payoutPayments => {
-    const amountMapP = Object.keys(payoutPayments).map(keyword =>
-      E.when(getIssuerForPayment(keyword, payoutPayments), issuer =>
-        harden([keyword, E(issuer).getAmountOf(payoutPayments[keyword])]),
-      ),
-    );
-    const amountMap = await deeplyFulfilled(harden(amountMapP));
-    return Object.fromEntries(amountMap);
-  };
-
   const doDeposit = async payoutPayments => {
-    // Map back to the original contract's keywords
-    const mappedPayments = mapKeywords(payoutPayments, mappingReversed);
-    const actualAmounts = await getAmountsFromPayments(payoutPayments);
-    const unmappedAmounts = mapKeywords(actualAmounts, mappingReversed);
+    // after getPayouts(), getFinalAllocation() resolves promptly.
+    const amounts = await E(userSeatPromise).getFinalAllocation();
 
-    await depositToSeat(zcf, definedToSeat, unmappedAmounts, mappedPayments);
-    depositedPromiseKit.resolve(unmappedAmounts);
+    // Map back to the original contract's keywords
+    const mappedAmounts = mapKeywords(amounts, mappingReversed);
+    const mappedPayments = mapKeywords(payoutPayments, mappingReversed);
+    await depositToSeat(zcf, definedToSeat, mappedAmounts, mappedPayments);
+    depositedPromiseKit.resolve(mappedAmounts);
   };
 
   E(userSeatPromise).getPayouts().then(doDeposit);
