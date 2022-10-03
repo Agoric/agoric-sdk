@@ -17,6 +17,7 @@ const { details: X } = assert;
 const RESERVE_MODULE_ACCOUNT = 'vbank/reserve';
 const RESERVE_ADDRESS = 'agoric1ae0lmtzlgrcnla9xjkpaarq5d5dfez63h3nucl';
 
+// XXX domain of @agoric/cosmic-proto
 /**
  * non-exhaustive list of powerFlags
  * REMOTE_WALLET is currently a default.

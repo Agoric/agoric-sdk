@@ -16,8 +16,14 @@ import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeScalarMap } from '@agoric/store';
 import { makeSubscriptionKit } from '@agoric/notifier';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { publishDepositFacet } from '@agoric/smart-wallet/src/walletFactory.js';
+import { WalletName } from '@agoric/internal';
 import { makeBoard } from '../src/lib-board.js';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
+import { makeBridgeProvisionTool } from '../src/provisionPool.js';
+import { makeNameHubKit } from '../src/nameHub.js';
+import { PowerFlags } from '../src/core/basic-behaviors.js';
+import { buildRootObject as buildBankRoot } from '../src/vat-bank.js';
 
 const pathname = new URL(import.meta.url).pathname;
 const dirname = path.dirname(pathname);
@@ -238,4 +244,108 @@ test('provisionPool trades provided assets for IST', async t => {
   const anchorBalanceAfter = await E(anchorPurse).getCurrentAmount();
   t.log('post-trade anchor balance:', anchorBalanceAfter);
   t.deepEqual(anchorBalanceAfter, anchor.makeEmpty());
+});
+
+/**
+ * This is a bit of a short-cut; rather than scaffold
+ * everything needed to make a walletFactory, we factored
+ * out the part that had a bug as `publishDepositFacet`
+ * and we make a mock walletFactory that uses it.
+ *
+ * @param {string} address
+ */
+const makeWalletFactoryKitFor1 = async address => {
+  const bankManager = await buildBankRoot().makeBankManager();
+
+  const fees = withAmountUtils(makeIssuerKit('FEE'));
+  await bankManager.addAsset('ufee', 'FEE', 'FEE', fees);
+
+  const sendInitialPayment = async (_addr, dest) => {
+    const pmt = fees.mint.mintPayment(fees.make(250n));
+    return E(E(dest).getPurse(fees.brand)).deposit(pmt);
+  };
+
+  const b1 = bankManager.getBankForAddress(address);
+  const p1 = b1.getPurse(fees.brand);
+
+  /** @type {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} */
+  // @ts-expect-error mock
+  const smartWallet = harden({
+    getDepositFacet: () => {
+      pmt => E(p1).deposit(pmt);
+    },
+  });
+
+  const done = new Set();
+  /** @type {import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']} */
+  // @ts-expect-error mock
+  const walletFactory = {
+    provideSmartWallet: async (a, _b, nameAdmin) => {
+      assert.equal(a, address);
+
+      const created = !done.has(a);
+      if (created) {
+        await publishDepositFacet(address, smartWallet, nameAdmin);
+        done.add(a);
+      }
+      return [smartWallet, created];
+    },
+  };
+
+  return { fees, sendInitialPayment, bankManager, walletFactory, p1 };
+};
+
+test('makeBridgeProvisionTool handles duplicate requests', async t => {
+  const address = 'addr123';
+  t.log('make a wallet factory just for', address);
+  const { walletFactory, p1, fees, sendInitialPayment, bankManager } =
+    await makeWalletFactoryKitFor1(address);
+
+  t.log('use makeBridgeProvisionTool to make a bridge handler');
+  const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
+    makeNameHubKit();
+  const publishMetrics = () => {};
+  const makeHandler = makeBridgeProvisionTool(
+    sendInitialPayment,
+    publishMetrics,
+  );
+  const handler = makeHandler({
+    bankManager,
+    namesByAddressAdmin,
+    walletFactory,
+  });
+
+  t.log('1st request to provision a SMART_WALLET for', address);
+  await handler.fromBridge('wallet', {
+    type: 'PLEASE_PROVISION',
+    address,
+    powerFlags: PowerFlags.SMART_WALLET,
+  });
+
+  t.deepEqual(
+    await E(p1).getCurrentAmount(),
+    fees.make(250n),
+    'received starter funds',
+  );
+  const myDepositFacet = await namesByAddress.lookup(
+    address,
+    WalletName.depositFacet,
+  );
+
+  t.log('2nd request to provision a SMART_WALLET for', address);
+  await handler.fromBridge('wallet', {
+    type: 'PLEASE_PROVISION',
+    address,
+    powerFlags: PowerFlags.SMART_WALLET,
+  });
+  t.is(
+    myDepositFacet,
+    await namesByAddress.lookup(address, WalletName.depositFacet),
+    'depositFacet lookup finds the same object',
+  );
+  t.deepEqual(
+    await E(p1).getCurrentAmount(),
+    fees.make(500n),
+    'received more starter funds',
+  );
 });

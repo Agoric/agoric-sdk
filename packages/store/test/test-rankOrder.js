@@ -115,39 +115,44 @@ test('compareRank is transitive', async t => {
         assertRankSorted(sorted, compareRank);
         const [a, b, c] = sorted;
         const failures = [];
-        let result;
-        let resultOk;
 
-        result = compareRank(a, b);
-        resultOk = t.true(result <= 0, 'a <= b');
-        if (!resultOk) {
-          failures.push(`Expected <= 0: ${result} from ${q(a)} vs. ${q(b)}`);
-        }
-        result = compareRank(a, c);
-        resultOk = t.true(result <= 0, 'a <= c');
-        if (!resultOk) {
-          failures.push(`Expected <= 0: ${result} from ${q(a)} vs. ${q(c)}`);
-        }
-        result = compareRank(b, c);
-        resultOk = t.true(result <= 0, 'b <= c');
-        if (!resultOk) {
-          failures.push(`Expected <= 0: ${result} from ${q(b)} vs. ${q(c)}`);
-        }
-        result = compareRank(c, b);
-        resultOk = t.true(result >= 0, 'c >= b');
-        if (!resultOk) {
-          failures.push(`Expected >= 0: ${result} from ${q(c)} vs. ${q(b)}`);
-        }
-        result = compareRank(c, a);
-        resultOk = t.true(result >= 0, 'c >= a');
-        if (!resultOk) {
-          failures.push(`Expected >= 0: ${result} from ${q(c)} vs. ${q(a)}`);
-        }
-        result = compareRank(b, a);
-        resultOk = t.true(result >= 0, 'b >= a');
-        if (!resultOk) {
-          failures.push(`Expected >= 0: ${result} from ${q(b)} vs. ${q(a)}`);
-        }
+        const testCompare = (outcome, message, failure) => {
+          t.true(outcome, message);
+          if (!outcome) {
+            failures.push(failure);
+          }
+        };
+
+        testCompare(
+          compareRank(a, b) <= 0,
+          'a <= b',
+          `Expected <= 0: ${q(a)} vs. ${q(b)}`,
+        );
+        testCompare(
+          compareRank(a, c) <= 0,
+          'a <= c',
+          `Expected <= 0: ${q(a)} vs. ${q(c)}`,
+        );
+        testCompare(
+          compareRank(b, c) <= 0,
+          'b <= c',
+          `Expected <= 0: ${q(b)} vs. ${q(c)}`,
+        );
+        testCompare(
+          compareRank(c, b) >= 0,
+          'c >= b',
+          `Expected >= 0: ${q(c)} vs. ${q(b)}`,
+        );
+        testCompare(
+          compareRank(c, a) >= 0,
+          'c >= a',
+          `Expected >= 0: ${q(c)} vs. ${q(a)}`,
+        );
+        testCompare(
+          compareRank(b, a) >= 0,
+          'b >= a',
+          `Expected >= 0: ${q(b)} vs. ${q(a)}`,
+        );
 
         return t.deepEqual(failures, []);
       },

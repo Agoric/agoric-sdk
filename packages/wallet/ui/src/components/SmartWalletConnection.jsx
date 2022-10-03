@@ -14,7 +14,7 @@ import { bridgeStorageMessages } from '../util/BridgeStorage';
 import { SmartConnectionMethod } from '../util/connections';
 import {
   makeBackendFromWalletBridge,
-  makeWalletBridgeFromFollower,
+  makeWalletBridgeFromFollowers,
 } from '../util/WalletBackendAdapter';
 import ProvisionDialog from './ProvisionDialog';
 
@@ -98,14 +98,13 @@ const SmartWalletConnection = ({
     const follow = async () => {
       const context = makeImportContext();
       const leader = makeLeader(href);
-      const follower = makeFollower(
-        `:published.wallet.${publicAddress}`,
-        leader,
-        { unserializer: context.fromMyWallet },
-      );
-      // TODO try making a smart-wallet version of this
-      const bridge = makeWalletBridgeFromFollower(
-        follower,
+      const followPublished = path =>
+        makeFollower(`:published.${path}`, leader, {
+          unserializer: context.fromMyWallet,
+        });
+      const bridge = makeWalletBridgeFromFollowers(
+        followPublished(`wallet.${publicAddress}.current`),
+        followPublished(`wallet.${publicAddress}`),
         leader,
         context.fromBoard,
         publicAddress,

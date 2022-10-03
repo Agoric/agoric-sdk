@@ -47,7 +47,7 @@ agd query bank balances "$WALLET_BECH32" | grep ubld || exit 1
 echo "Provisioning your smart wallet..."
 agoric wallet provision --spend --account "$WALLET"
 echo "waiting for blocks"
-sleep 5
+sleep 10
 # verify
 agoric wallet list
 agoric wallet show --from "$WALLET"

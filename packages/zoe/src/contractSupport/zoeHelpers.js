@@ -5,6 +5,7 @@ import { fit, keyEQ } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AssetKind } from '@agoric/ertp';
+import { fromUniqueEntries } from '@agoric/internal';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
@@ -263,7 +264,7 @@ export const saveAllIssuers = async (zcf, issuerKeywordRecord = harden({})) => {
 /** @type {MapKeywords} */
 export const mapKeywords = (keywordRecord = {}, keywordMapping) => {
   return harden(
-    Object.fromEntries(
+    fromUniqueEntries(
       Object.entries(keywordRecord).map(([keyword, value]) => {
         if (keywordMapping[keyword] === undefined) {
           return [keyword, value];
@@ -276,7 +277,7 @@ export const mapKeywords = (keywordRecord = {}, keywordMapping) => {
 /** @type {Reverse} */
 const reverse = (keywordRecord = {}) => {
   return harden(
-    Object.fromEntries(
+    fromUniqueEntries(
       Object.entries(keywordRecord).map(([key, value]) => [value, key]),
     ),
   );

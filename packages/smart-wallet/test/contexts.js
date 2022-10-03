@@ -1,8 +1,7 @@
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeStorageNodeChild } from '@agoric/vats/src/lib-chainStorage.js';
-import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
 import path from 'path';
 import { withAmountUtils } from './supports.js';
 
@@ -15,27 +14,6 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   const log = () => null;
   const { consume } = await makeSpace(log);
   const { agoricNames, zoe } = consume;
-
-  // Adapted from perAddress in makeAddressNameHubs()
-  const reserveAddress = address => {
-    // Create a name hub for this address.
-    const { nameHub: myAddressNameHub, nameAdmin: rawMyAddressNameAdmin } =
-      makeNameHubKit();
-
-    /** @type {MyAddressNameAdmin} */
-    const myAddressNameAdmin = Far('myAddressNameAdmin', {
-      ...rawMyAddressNameAdmin,
-      getMyAddress: () => address,
-    });
-    // reserve space for deposit facet
-    myAddressNameAdmin.reserve('depositFacet');
-    // Register it with the namesByAddress hub.
-    return E(consume.namesByAddressAdmin).update(
-      address,
-      myAddressNameHub,
-      myAddressNameAdmin,
-    );
-  };
 
   // #region Installs
   const pathname = new URL(import.meta.url).pathname;
@@ -68,19 +46,13 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   );
 
   const simpleProvideWallet = async address => {
-    await reserveAddress(address);
-
     // copied from makeClientBanks()
     const bank = E(consume.bankManager).getBankForAddress(address);
-    const myAddressNameAdmin = E(consume.namesByAddressAdmin).lookupAdmin(
-      address,
-    );
 
-    return E(walletFactory.creatorFacet).provideSmartWallet(
-      address,
-      bank,
-      myAddressNameAdmin,
-    );
+    const [wallet, _isNew] = await E(
+      walletFactory.creatorFacet,
+    ).provideSmartWallet(address, bank, consume.namesByAddressAdmin);
+    return wallet;
   };
 
   const anchor = withAmountUtils(
@@ -89,6 +61,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
 
   return {
     anchor,
+    invitationBrand: await E(E(zoe).getInvitationIssuer()).getBrand(),
     sendToBridge: bridgeManager && bridgeManager.toBridge,
     consume,
     simpleProvideWallet,
