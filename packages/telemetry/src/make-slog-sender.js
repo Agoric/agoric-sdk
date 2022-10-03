@@ -13,6 +13,13 @@ export const DEFAULT_SLOGSENDER_AGENT = 'self';
 /** @typedef {import('./index.js').SlogSender} SlogSender */
 
 /**
+ * @template T
+ * @param {readonly T[]} arr
+ * @returns {(T extends null | undefined | '' | false | 0 ? never : T)[]}
+ */
+const filterTruthy = arr => /** @type {any[]} */ (arr.filter(Boolean));
+
+/**
  *
  * @param {import('./index.js').MakeSlogSenderOptions} opts
  */
@@ -24,18 +31,28 @@ export const makeSlogSender = async (opts = {}) => {
     ...otherEnv
   } = env;
 
-  const slogSenderModules = SLOGSENDER.split(',').map(modulePath =>
-    modulePath.startsWith('.')
-      ? // Resolve relative to the current working directory.
-        path.resolve(modulePath)
-      : modulePath,
-  );
-  if (
-    otherEnv.SLOGFILE &&
-    !slogSenderModules.includes(SLOGFILE_SENDER_MODULE)
-  ) {
-    slogSenderModules.push(SLOGFILE_SENDER_MODULE);
-  }
+  const agentEnv = {
+    ...otherEnv,
+    ...Object.fromEntries(
+      Object.entries(otherEnv)
+        .filter(([k]) => k.match(/^(?:SLOGSENDER_AGENT_)+/)) // narrow to SLOGSENDER_AGENT_ prefixes.
+        .map(([k, v]) => [k.replace(/^(?:SLOGSENDER_AGENT_)+/, ''), v]), // Rewrite SLOGSENDER_AGENT_ to un-prefixed version.
+    ),
+  };
+
+  const slogSenderModules = [
+    ...new Set([
+      ...(agentEnv.SLOGFILE ? [SLOGFILE_SENDER_MODULE] : []),
+      ...SLOGSENDER.split(',')
+        .filter(Boolean)
+        .map(modulePath =>
+          modulePath.startsWith('.')
+            ? // Resolve relative to the current working directory.
+              path.resolve(modulePath)
+            : modulePath,
+        ),
+    ]),
+  ];
 
   if (!slogSenderModules.length) {
     return undefined;
@@ -51,9 +68,9 @@ export const makeSlogSender = async (opts = {}) => {
         async ({ makeSlogSender: makeSogSenderPipe }) =>
           makeSogSenderPipe({
             env: {
+              ...agentEnv,
               SLOGSENDER,
               SLOGSENDER_AGENT: 'self',
-              ...otherEnv,
             },
             stateDir: stateDirOption,
             ...otherOpts,
@@ -73,12 +90,21 @@ export const makeSlogSender = async (opts = {}) => {
         .then(
           /** @param {{makeSlogSender: (opts: {}) => Promise<SlogSender | undefined>}} module */ ({
             makeSlogSender: maker,
-          }) =>
-            typeof maker === 'function'
-              ? { maker, moduleIdentifier }
-              : Promise.reject(
-                  new Error(`No 'makeSlogSender' function exported by module`),
+          }) => {
+            if (typeof maker !== 'function') {
+              return Promise.reject(
+                new Error(`No 'makeSlogSender' function exported by module`),
+              );
+            } else if (maker === makeSlogSender) {
+              return Promise.reject(
+                new Error(
+                  `Cannot recursively load 'makeSlogSender' aggregator`,
                 ),
+              );
+            }
+
+            return /** @type {const} */ ([maker, moduleIdentifier]);
+          },
         )
         .catch(err => {
           console.warn(
@@ -88,9 +114,9 @@ export const makeSlogSender = async (opts = {}) => {
           return undefined;
         }),
     ),
-  );
+  ).then(makerEntries => [...new Map(filterTruthy(makerEntries)).entries()]);
 
-  if (!makersInfo.filter(Boolean).length) {
+  if (!makersInfo.length) {
     return undefined;
   }
 
@@ -102,21 +128,14 @@ export const makeSlogSender = async (opts = {}) => {
   }
 
   const senders = await Promise.all(
-    makersInfo.map(async makerInfo => {
-      if (!makerInfo || makerInfo.maker === makeSlogSender) {
-        return undefined;
-      }
-      const { maker, moduleIdentifier } = makerInfo;
-      return maker({
+    makersInfo.map(async ([maker, moduleIdentifier]) =>
+      maker({
         ...otherOpts,
         stateDir,
-        env: { SLOGSENDER: moduleIdentifier, ...otherEnv },
-      });
-    }),
-  ).then(
-    potentialSenders =>
-      /** @type {SlogSender[]} */ (potentialSenders.filter(Boolean)),
-  );
+        env: { ...agentEnv, SLOGSENDER: moduleIdentifier },
+      }),
+    ),
+  ).then(filterTruthy);
 
   if (!senders.length) {
     return undefined;
