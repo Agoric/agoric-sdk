@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
@@ -105,8 +106,15 @@ func decodeBalances(encoded []byte) (balances, uint64, error) {
 }
 
 func Test_marshalBalanceUpdate(t *testing.T) {
-	bank := &mockBank{balance: map[string]sdk.Coin{
-		addr1: sdk.NewInt64Coin("moola", 392),
+	bank := &mockBank{balances: map[string]sdk.Coins{
+		addr1: sdk.NewCoins(
+			sdk.NewInt64Coin("foocoin", 123),
+			sdk.NewInt64Coin("barcoin", 456),
+			sdk.NewInt64Coin("moola", 789),
+		),
+		addr2: sdk.NewCoins(
+			sdk.NewInt64Coin("foocoin", 456),
+		),
 	}}
 	keeper, ctx := makeTestKit(nil, bank)
 
@@ -124,17 +132,17 @@ func Test_marshalBalanceUpdate(t *testing.T) {
 		{
 			name: "simple",
 			addressToBalance: map[string]sdk.Coins{
-				addr1: {sdk.NewInt64Coin("foocoin", 123)},
+				addr1: sdk.NewCoins(sdk.NewInt64Coin("foocoin", 1)),
 			},
 			want: newBalances(account(addr1, coin("foocoin", "123"))),
 		},
 		{
 			name: "multi-denom",
 			addressToBalance: map[string]sdk.Coins{
-				addr1: {
-					sdk.NewInt64Coin("foocoin", 123),
-					sdk.NewInt64Coin("barcoin", 456),
-				},
+				addr1: sdk.NewCoins(
+					sdk.NewInt64Coin("foocoin", 1),
+					sdk.NewInt64Coin("barcoin", 2),
+				),
 			},
 			want: newBalances(
 				account(addr1,
@@ -144,12 +152,18 @@ func Test_marshalBalanceUpdate(t *testing.T) {
 		{
 			name: "multi-acct",
 			addressToBalance: map[string]sdk.Coins{
-				addr1: {sdk.NewInt64Coin("foocoin", 123)},
-				addr2: {sdk.NewInt64Coin("barcoin", 456)},
+				addr1: sdk.NewCoins(
+					sdk.NewInt64Coin("foocoin", 4),
+					sdk.NewInt64Coin("moola", 45),
+				),
+				addr2: sdk.NewCoins(
+					sdk.NewInt64Coin("foocoin", 17),
+					sdk.NewInt64Coin("moola", 45),
+				),
 			},
 			want: newBalances(
-				account(addr1, coin("foocoin", "123")),
-				account(addr2, coin("barcoin", "456")),
+				account(addr1, coin("foocoin", "123"), coin("moola", "789")),
+				account(addr2, coin("foocoin", "456"), coin("moola", "0")),
 			),
 		},
 	}
@@ -178,10 +192,8 @@ func Test_marshalBalanceUpdate(t *testing.T) {
 type mockBank struct {
 	// Record of all calls to the bank.
 	calls []string
-	// Value to return from GetAllBalances().
-	allBalances map[string]sdk.Coins
-	// Value to return from GetBalance().
-	balance map[string]sdk.Coin
+	// balances for each address
+	balances map[string]sdk.Coins
 }
 
 var _ types.BankKeeper = (*mockBank)(nil)
@@ -197,12 +209,20 @@ func (b *mockBank) BurnCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) 
 
 func (b *mockBank) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	b.record(fmt.Sprintf("GetAllBalances %s", addr))
-	return b.allBalances[addr.String()]
+	balances, ok := b.balances[addr.String()]
+	if !ok {
+		return sdk.NewCoins()
+	}
+	return balances
 }
 
 func (b *mockBank) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
 	b.record(fmt.Sprintf("GetBalance %s %s", addr, denom))
-	return b.balance[addr.String()]
+	amount := sdk.ZeroInt()
+	if balances, ok := b.balances[addr.String()]; ok {
+		amount = balances.AmountOf(denom)
+	}
+	return sdk.NewCoin(denom, amount)
 }
 
 func (b *mockBank) MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
@@ -258,8 +278,8 @@ func makeTestKit(account types.AccountKeeper, bank types.BankKeeper) (Keeper, sd
 }
 
 func Test_Receive_GetBalance(t *testing.T) {
-	bank := &mockBank{balance: map[string]sdk.Coin{
-		addr1: sdk.NewInt64Coin("quatloos", 123),
+	bank := &mockBank{balances: map[string]sdk.Coins{
+		addr1: sdk.NewCoins(sdk.NewInt64Coin("quatloos", 123)),
 	}}
 	keeper, ctx := makeTestKit(nil, bank)
 	ch := NewPortHandler(AppModule{}, keeper)
@@ -286,8 +306,8 @@ func Test_Receive_GetBalance(t *testing.T) {
 }
 
 func Test_Receive_Give(t *testing.T) {
-	bank := &mockBank{balance: map[string]sdk.Coin{
-		addr1: sdk.NewInt64Coin("urun", 1000),
+	bank := &mockBank{balances: map[string]sdk.Coins{
+		addr1: sdk.NewCoins(sdk.NewInt64Coin("urun", 1000)),
 	}}
 	keeper, ctx := makeTestKit(nil, bank)
 	ch := NewPortHandler(AppModule{}, keeper)
@@ -448,8 +468,8 @@ func Test_Receive_GiveToRewardDistributor(t *testing.T) {
 }
 
 func Test_Receive_Grab(t *testing.T) {
-	bank := &mockBank{balance: map[string]sdk.Coin{
-		addr1: sdk.NewInt64Coin("ubld", 1000),
+	bank := &mockBank{balances: map[string]sdk.Coins{
+		addr1: sdk.NewCoins(sdk.NewInt64Coin("ubld", 1000)),
 	}}
 	keeper, ctx := makeTestKit(nil, bank)
 	ch := NewPortHandler(AppModule{}, keeper)
@@ -487,12 +507,12 @@ func Test_Receive_Grab(t *testing.T) {
 }
 
 func Test_EndBlock_Events(t *testing.T) {
-	bank := &mockBank{allBalances: map[string]sdk.Coins{
-		addr1: {sdk.NewInt64Coin("ubld", 1000)},
-		addr2: {
+	bank := &mockBank{balances: map[string]sdk.Coins{
+		addr1: sdk.NewCoins(sdk.NewInt64Coin("ubld", 1000)),
+		addr2: sdk.NewCoins(
 			sdk.NewInt64Coin("urun", 4000),
 			sdk.NewInt64Coin("arcadeTokens", 7),
-		},
+		),
 	}}
 	keeper, ctx := makeTestKit(nil, bank)
 	// Turn off rewards.
@@ -510,18 +530,26 @@ func Test_EndBlock_Events(t *testing.T) {
 
 	events := []abci.Event{
 		{
-			Type: "transfer",
+			Type: "coin_received",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("recipient"), Value: []byte(addr1)},
-				{Key: []byte("sender"), Value: []byte(addr2)},
-				{Key: []byte("amount"), Value: []byte("quite a lot")},
+				{Key: []byte("receiver"), Value: []byte(addr1)},
+				{Key: []byte("amount"), Value: []byte("500ubld,600urun,700ushmoo")},
+			},
+		},
+		{
+			Type: "coin_spent",
+			Attributes: []abci.EventAttribute{
+				{Key: []byte("spender"), Value: []byte(addr2)},
+				{Key: []byte("amount"), Value: []byte("500ubld,600urun,700ushmoo")},
 				{Key: []byte("other"), Value: []byte(addr3)},
 			},
 		},
 		{
-			Type: "not a transfer",
+			Type: "something_else",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("sender"), Value: []byte(addr4)},
+				{Key: []byte("receiver"), Value: []byte(addr4)},
+				{Key: []byte("spender"), Value: []byte(addr4)},
+				{Key: []byte("amount"), Value: []byte("500ubld,600urun,700ushmoo")},
 			},
 		},
 	}
@@ -534,17 +562,27 @@ func Test_EndBlock_Events(t *testing.T) {
 	}
 
 	wantCalls := []string{
-		"GetAllBalances " + addr1,
-		"GetAllBalances " + addr2,
+		"GetBalance " + addr1 + " ubld",
+		"GetBalance " + addr1 + " urun",
+		"GetBalance " + addr1 + " ushmoo",
+		"GetBalance " + addr2 + " ubld",
+		"GetBalance " + addr2 + " urun",
+		"GetBalance " + addr2 + " ushmoo",
 	}
-	// TODO: make comparison order-insensitive
+	sort.Strings(wantCalls)
+	sort.Strings(bank.calls)
+
 	if !reflect.DeepEqual(bank.calls, wantCalls) {
 		t.Errorf("got calls %v, want {%s}", bank.calls, wantCalls)
 	}
 
 	wantMsg := newBalances(
 		account(addr1, coin("ubld", "1000")),
-		account(addr2, coin("urun", "4000"), coin("arcadeTokens", "7")),
+		account(addr1, coin("urun", "0")),
+		account(addr1, coin("ushmoo", "0")),
+		account(addr2, coin("ubld", "0")),
+		account(addr2, coin("urun", "4000")),
+		account(addr2, coin("ushmoo", "0")),
 	)
 	if len(msgsSent) != 1 {
 		t.Errorf("got msgs = %v, want one message", msgsSent)
@@ -566,12 +604,12 @@ func Test_EndBlock_Events(t *testing.T) {
 
 func Test_EndBlock_Rewards(t *testing.T) {
 	bank := &mockBank{
-		allBalances: map[string]sdk.Coins{
-			ModuleName: {
+		balances: map[string]sdk.Coins{
+			ModuleName: sdk.NewCoins(
 				sdk.NewInt64Coin("urun", 1000),
 				sdk.NewInt64Coin("stickers", 10),
 				sdk.NewInt64Coin("puppies", 0),
-			},
+			),
 		},
 	}
 	keeper, ctx := makeTestKit(nil, bank)
