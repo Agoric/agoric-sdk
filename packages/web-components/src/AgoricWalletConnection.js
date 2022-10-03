@@ -20,12 +20,13 @@ import { makeBridgeIframeConnector } from './bridge-iframe-connector.js';
 // Delay after a reset.
 const RESET_DELAY_MS = 3000;
 
-// TODO: Use something on agoric.app instead.
 const DEFAULT_LOCATOR_URL =
-  'https://local.agoric.com/?append=/wallet-bridge.html';
+  'https://wallet.agoric.app/locator/?append=/wallet/bridge.html';
 
 const LOCAL_STORAGE_LOCATOR_URL =
-  'https://local.agoric.com/?append=/wallet/bridge.html';
+  'https://wallet.agoric.app/locator/?append=/wallet/bridge.html';
+
+const DEFAULT_WALLET_UI_HREF = 'https://wallet.agoric.app/wallet/';
 
 const delay = (ms, resolution) =>
   new Promise(resolve => setTimeout(resolve, ms, resolution));
@@ -274,17 +275,18 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
         default:
       }
 
-      const locatorUrl = new URL(locatorHref);
+      // Link to the default wallet ui for regular users.
+      const walletUiUrl = new URL(DEFAULT_WALLET_UI_HREF);
 
-      return html`
-        <div class="connection">
-          ${backend}
-          <div class="connection-message">
-            Wallet URL configured in
-            <a href=${locatorUrl.origin} target="_blank">${locatorUrl.host}</a>
-          </div>
+      return html` <div class="connection">
+        ${backend}
+        <div class="connection-message">
+          Open wallet:
+          <a href=${walletUiUrl} target="_blank"
+            >${walletUiUrl.host}${walletUiUrl.pathname}</a
+          >
         </div>
-      `;
+      </div>`;
     }
   };
 
