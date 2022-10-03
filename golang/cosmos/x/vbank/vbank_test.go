@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
@@ -560,22 +561,17 @@ func Test_EndBlock_Events(t *testing.T) {
 		t.Errorf("EndBlock() got %+v, want empty", updates)
 	}
 
-	wantCalls1 := []string{
+	wantCalls := []string{
 		"GetBalance " + addr1 + " ubld",
 		"GetBalance " + addr1 + " urun",
 		"GetBalance " + addr1 + " ushmoo",
-	}
-	wantCalls2 := []string{
 		"GetBalance " + addr2 + " ubld",
 		"GetBalance " + addr2 + " urun",
 		"GetBalance " + addr2 + " ushmoo",
 	}
-	var wantCalls []string
-	if addr1 < addr2 {
-		wantCalls = append(wantCalls1, wantCalls2...)
-	} else {
-		wantCalls = append(wantCalls2, wantCalls1...)
-	}
+	sort.Strings(wantCalls)
+	sort.Strings(bank.calls)
+
 	if !reflect.DeepEqual(bank.calls, wantCalls) {
 		t.Errorf("got calls %v, want {%s}", bank.calls, wantCalls)
 	}
