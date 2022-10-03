@@ -69,13 +69,12 @@
 /**
  * @callback MapKeywords
  *
- * Remap the keywords of an amountKeywordRecord or a
+ * Remap the keywords of an amountKeywordRecord, issuerKeywordRecord, or a
  * PaymentPKeywordRecord according to a mapping. This is used to remap
  * from keywords used in contractA to keywords used in contractB and
  * vice versa in `offerTo`
  *
- * @param {AmountKeywordRecord | PaymentPKeywordRecord | undefined }
- * keywordRecord
+ * @param {AmountKeywordRecord | PaymentPKeywordRecord | IssuerKeywordRecord | undefined } keywordRecord
  * @param {KeywordKeywordRecord} keywordMapping
  */
 

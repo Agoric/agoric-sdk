@@ -96,6 +96,8 @@ export const makeZoeSeatAdminKit = (
 
     getCurrentAllocationJig: async () => currentAllocation,
     getAllocationNotifierJig: async () => notifier,
+    getFinalAllocation: () =>
+      E.when(payoutPromiseKit.promise, () => currentAllocation),
 
     numWantsSatisfied: async () => {
       return E.when(payoutPromiseKit.promise, () =>
