@@ -31,9 +31,18 @@ export const makeSlogSender = async (opts = {}) => {
     ...otherEnv
   } = env;
 
+  const agentEnv = {
+    ...otherEnv,
+    ...Object.fromEntries(
+      Object.entries(otherEnv)
+        .filter(([k]) => k.match(/^(?:SLOGSENDER_AGENT_)+/)) // narrow to SLOGSENDER_AGENT_ prefixes.
+        .map(([k, v]) => [k.replace(/^(?:SLOGSENDER_AGENT_)+/, ''), v]), // Rewrite SLOGSENDER_AGENT_ to un-prefixed version.
+    ),
+  };
+
   const slogSenderModules = [
     ...new Set([
-      ...(otherEnv.SLOGFILE ? [SLOGFILE_SENDER_MODULE] : []),
+      ...(agentEnv.SLOGFILE ? [SLOGFILE_SENDER_MODULE] : []),
       ...SLOGSENDER.split(',')
         .filter(Boolean)
         .map(modulePath =>
@@ -59,9 +68,9 @@ export const makeSlogSender = async (opts = {}) => {
         async ({ makeSlogSender: makeSogSenderPipe }) =>
           makeSogSenderPipe({
             env: {
+              ...agentEnv,
               SLOGSENDER,
               SLOGSENDER_AGENT: 'self',
-              ...otherEnv,
             },
             stateDir: stateDirOption,
             ...otherOpts,
@@ -123,7 +132,7 @@ export const makeSlogSender = async (opts = {}) => {
       maker({
         ...otherOpts,
         stateDir,
-        env: { SLOGSENDER: moduleIdentifier, ...otherEnv },
+        env: { ...agentEnv, SLOGSENDER: moduleIdentifier },
       }),
     ),
   ).then(filterTruthy);
