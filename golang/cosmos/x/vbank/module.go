@@ -105,20 +105,20 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 // EndBlock implements the AppModule interface
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
 	events := ctx.EventManager().GetABCIEventHistory()
-	addressToBalance := make(map[string]sdk.Coins, len(events)*2)
+	addressToUpdate := make(map[string]sdk.Coins, len(events)*2)
 
 	// records that we want to emit an balance update for the address
 	// for the given denoms. We use the Coins only to track the set of
 	// denoms, not for the amounts.
-	ensureBalanceIsPresent := func(address string, denoms sdk.Coins) {
+	ensureAddressUpdate := func(address string, denoms sdk.Coins) {
 		if denoms.IsZero() {
 			return
 		}
 		currentDenoms := sdk.NewCoins()
-		if coins, ok := addressToBalance[address]; ok {
+		if coins, ok := addressToUpdate[address]; ok {
 			currentDenoms = coins
 		}
-		addressToBalance[address] = currentDenoms.Add(denoms...)
+		addressToUpdate[address] = currentDenoms.Add(denoms...)
 	}
 
 	/* Scan for all the events matching (taken from cosmos-sdk/x/bank/spec/04_events.md):
@@ -150,13 +150,13 @@ NextEvent:
 				}
 			}
 			if addr != "" && !denoms.IsZero() {
-				ensureBalanceIsPresent(addr, denoms)
+				ensureAddressUpdate(addr, denoms)
 			}
 		}
 	}
 
 	// Dump all the addressToBalances entries to SwingSet.
-	action := getBalanceUpdate(ctx, am.keeper, addressToBalance)
+	action := getBalanceUpdate(ctx, am.keeper, addressToUpdate)
 	if action != nil {
 		err := am.PushAction(ctx, action)
 		if err != nil {

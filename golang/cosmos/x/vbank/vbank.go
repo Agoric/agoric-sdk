@@ -74,8 +74,8 @@ type vbankBalanceUpdate struct {
 // getBalanceUpdate returns a bridge message containing the current bank balance
 // for the given addresses each for the specified denominations. Coins are used
 // only to track the set of denoms, not for the particular nonzero amounts.
-func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToBalance map[string]sdk.Coins) vm.Jsonable {
-	nentries := len(addressToBalance)
+func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToUpdate map[string]sdk.Coins) vm.Jsonable {
+	nentries := len(addressToUpdate)
 	if nentries == 0 {
 		return nil
 	}
@@ -89,7 +89,7 @@ func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToBalance map[strin
 
 	// Note that Golang randomises the order of iteration, so we have to sort
 	// below to be deterministic.
-	for address, coins := range addressToBalance {
+	for address, coins := range addressToUpdate {
 		account, err := sdk.AccAddressFromBech32(address)
 		if err != nil {
 			stdlog.Println("Cannot parse address for vbank update", address)
