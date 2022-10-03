@@ -295,7 +295,7 @@ const reverse = (keywordRecord = {}) => {
  * @param {ERef<Invitation<Result, Args>>} invitation
  *   Invitation to contractB
  *
- * @param {KeywordKeywordRecord} keywordMapping
+ * @param {KeywordKeywordRecord | undefined} keywordMapping
  *   Mapping of keywords used in contractA to keywords to be used in
  *   contractB. Note that the pathway to deposit the payout back to
  *   contractA reverses this mapping.
@@ -325,12 +325,16 @@ const reverse = (keywordRecord = {}) => {
 export const offerTo = async (
   zcf,
   invitation,
-  keywordMapping = {},
+  keywordMapping,
   proposal,
   fromSeat,
   toSeat,
   offerArgs,
 ) => {
+  if (keywordMapping === undefined) {
+    keywordMapping = harden({});
+  }
+
   const definedToSeat = toSeat !== undefined ? toSeat : fromSeat;
 
   const zoe = zcf.getZoeService();
