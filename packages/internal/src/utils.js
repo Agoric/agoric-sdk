@@ -8,7 +8,33 @@ import { isPromise } from '@endo/promise-kit';
 const { getPrototypeOf, create, entries, fromEntries } = Object;
 const { ownKeys, apply } = Reflect;
 
-const { details: X } = assert;
+const { details: X, quote: q } = assert;
+
+/**
+ * Throws if multiple entries use the same property name. Otherwise acts
+ * like `Object.fromEntries`. Use it to protect from property names
+ * computed from user-provided data.
+ *
+ * @template K,V
+ * @param {Iterable<[K,V]>} allEntries
+ * @returns {{[k: K]: V}}
+ */
+export const fromUniqueEntries = allEntries => {
+  const entriesArray = [...allEntries];
+  const result = fromEntries(entriesArray);
+  if (ownKeys(result).length === entriesArray.length) {
+    return result;
+  }
+  const names = new Set();
+  for (const [name, _] of entriesArray) {
+    if (names.has(name)) {
+      assert.fail(X`collision on property name ${q(name)}: ${entriesArray}`);
+    }
+    names.add(name);
+  }
+  assert.fail(X`internal: failed to create object from unique entries`);
+};
+harden(fromUniqueEntries);
 
 /**
  * By analogy with how `Array.prototype.map` will map the elements of
