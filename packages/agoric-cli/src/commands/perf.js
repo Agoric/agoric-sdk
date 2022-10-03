@@ -74,9 +74,10 @@ export const makePerfCommand = async logger => {
             if (status.error) {
               console.error(status.error);
               exit(1);
-            } else if (status.numWantsSatisfied)
+            } else if (status.numWantsSatisfied) {
               process.stdout.write(`satisfied: ${status.numWantsSatisfied}\n`);
-            exit(0);
+              exit(0);
+            }
           }
         }
       };
