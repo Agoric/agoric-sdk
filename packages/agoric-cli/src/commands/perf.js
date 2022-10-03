@@ -53,15 +53,13 @@ export const makePerfCommand = async logger => {
 
       const spec = `:published.wallet.${opts.from}`;
 
-      const leaderOptions = makeLeaderOptions({
-        sleep: SLEEP_SECONDS,
-        jitter: 0,
-        log: () => undefined,
-      });
-
       const leader = makeLeaderFromRpcAddresses(
         networkConfig.rpcAddrs,
-        leaderOptions,
+        makeLeaderOptions({
+          sleep: SLEEP_SECONDS,
+          jitter: 0,
+          log: console.warn,
+        }),
       );
 
       logger.warn('Following', spec);
