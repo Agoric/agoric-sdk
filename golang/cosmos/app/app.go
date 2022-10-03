@@ -717,6 +717,7 @@ func NewAgoricApp(
 			IBCKeeper:        app.IBCKeeper,
 			AdmissionData:    app.SwingSetKeeper,
 			FeeCollectorName: vbanktypes.ReservePoolName,
+			SwingsetKeeper:   app.SwingSetKeeper,
 		},
 	)
 	if err != nil {

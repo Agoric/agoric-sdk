@@ -16,6 +16,7 @@ type HandlerOptions struct {
 	IBCKeeper        *ibckeeper.Keeper
 	FeeCollectorName string
 	AdmissionData    interface{}
+	SwingsetKeeper   SwingsetKeeper
 }
 
 func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
@@ -30,6 +31,9 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 	}
 	if opts.AdmissionData == nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "admission data is required for AnteHandler")
+	}
+	if opts.SwingsetKeeper == nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "swingset keeper is required for AnteHandler")
 	}
 
 	var sigGasConsumer = opts.SigGasConsumer
@@ -52,6 +56,7 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewSigGasConsumeDecorator(opts.AccountKeeper, sigGasConsumer),
 		ante.NewSigVerificationDecorator(opts.AccountKeeper, opts.SignModeHandler),
 		NewAdmissionDecorator(opts.AdmissionData),
+		NewInboundDecorator(opts.SwingsetKeeper),
 		ante.NewIncrementSequenceDecorator(opts.AccountKeeper),
 		ibcante.NewAnteDecorator(opts.IBCKeeper),
 	}

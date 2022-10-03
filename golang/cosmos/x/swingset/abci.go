@@ -59,6 +59,9 @@ func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) erro
 		if err != nil {
 			panic(err)
 		}
+		state := keeper.GetState(ctx)
+		state.QueueAllowed = result.QueueAllowed
+		keeper.SetState(ctx, state)
 	}
 
 	return err

@@ -84,6 +84,15 @@ message Params {
     ];
 }
 
+// The current state of the module.
+message State {
+  // The allowed number of items to add to queues, as determined by SwingSet.
+  // Transactions which attempt to enqueue more should be rejected.
+  repeated QueueSize queue_allowed = 1 [
+    (gogoproto.nullable) = false
+  ];
+}
+
 // Map element of a string key to a Nat bean count.
 message StringBeans {
   option (gogoproto.equal) = true;
