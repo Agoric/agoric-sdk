@@ -14,6 +14,11 @@ export const DEFAULT_POLL_WITH_EVENTS_SECONDS = 600;
 export const DEFAULT_KEEP_POLLING_SECONDS = 5;
 
 /**
+ * Default backoff is the block interval.
+ */
+export const DEFAULT_MAX_BACKOFF = 6_000;
+
+/**
  * Resolve a Promise after a given number of milliseconds.
  *
  * SECURITY: closes over setTimeout global
@@ -34,9 +39,13 @@ export const randomBackoff = (range, cap = range) => {
 /**
  * @param {number} [attempt]
  * @param {number} [base]
- * @param {number} [cap]
+ * @param {number} [cap=DEFAULT_MAX_BACKOFF]
  */
-export const exponentialBackoff = (attempt = 0, base = 1_000, cap = 30_000) => {
+export const exponentialBackoff = (
+  attempt = 0,
+  base = 1_000,
+  cap = DEFAULT_MAX_BACKOFF,
+) => {
   return randomBackoff(2 ** attempt * base, cap);
 };
 
