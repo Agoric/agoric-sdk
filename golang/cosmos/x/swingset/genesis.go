@@ -39,6 +39,7 @@ type bootstrapBlockAction struct {
 
 func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abci.ValidatorUpdate {
 	keeper.SetParams(ctx, data.GetParams())
+	keeper.SetState(ctx, data.GetState())
 
 	// Just run the SwingSet kernel to finish bootstrap and get ready to open for
 	// business.
@@ -64,5 +65,6 @@ func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abc
 func ExportGenesis(ctx sdk.Context, k Keeper) *types.GenesisState {
 	gs := NewGenesisState()
 	gs.Params = k.GetParams(ctx)
+	gs.State = k.GetState(ctx)
 	return gs
 }
