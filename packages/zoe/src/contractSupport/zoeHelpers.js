@@ -5,7 +5,6 @@ import { fit, keyEQ } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AssetKind } from '@agoric/ertp';
-import { deeplyFulfilled } from '@endo/marshal';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
