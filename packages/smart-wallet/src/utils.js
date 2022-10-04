@@ -2,6 +2,7 @@
 // @ts-check
 import { iterateReverse } from '@agoric/casting';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
+import { E } from '@endo/far';
 
 export const NO_SMART_WALLET_ERROR = 'no smart wallet';
 
@@ -113,18 +114,17 @@ export const coalesceUpdates = updates => {
 /**
  *
  * @param {import('@agoric/casting').Follower<any>} follower
- * @returns {Promise<number>}
  * @throws if there is no first height
  */
-export const getFirstHeight = async follower => {
-  /** @type {number=} */
-  let firstHeight = undefined;
-  for await (const { blockHeight } of iterateReverse(follower)) {
-    // TODO: Only set firstHeight and break if the value contains all our state.
-    firstHeight = blockHeight;
+export const assertHasData = async follower => {
+  const eachIterable = E(follower).getReverseIterable();
+  const iterator = await E(eachIterable)[Symbol.asyncIterator]();
+  const el = await iterator.next();
+
+  // done before we started
+  if (el.done && !el.value) {
+    assert.fail(NO_SMART_WALLET_ERROR);
   }
-  assert(firstHeight, NO_SMART_WALLET_ERROR);
-  return firstHeight;
 };
 
 /**

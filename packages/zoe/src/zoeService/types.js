@@ -222,6 +222,9 @@
  * @property {() => Promise<Notifier<Allocation>>} getAllocationNotifierJig
  * Labelled "Jig" because it *should* only be used for tests, though
  * nothing prevents it from being used otherwise.
+ * @property {() => Promise<Allocation>} getFinalAllocation
+ * return a promise for the final allocation. If called after the seat has
+ * exited, it will promptly resolve to an Allocation.
  */
 
 /**

@@ -17,10 +17,10 @@
     "@agoric/ui-components": "^0.3.0",
     "@agoric/wallet-backend": "^0.13.0",
     "@agoric/zoe": "^0.25.0",
-    "@cosmjs/crypto": "0.28.13",
-    "@cosmjs/encoding": "0.28.13",
-    "@cosmjs/proto-signing": "0.28.13",
-    "@cosmjs/stargate": "0.28.13",
+    "@cosmjs/crypto": "0.29.0",
+    "@cosmjs/encoding": "0.29.0",
+    "@cosmjs/proto-signing": "0.29.0",
+    "@cosmjs/stargate": "0.29.0",
     "@emotion/react": "^11.5.0",
     "@emotion/styled": "^11.3.0",
     "@endo/captp": "^2.0.15",
@@ -41,7 +41,7 @@
     "uuid": "^8.3.2"
   },
   "devDependencies": {
-    "@keplr-wallet/types": "^0.10.16",
+    "@keplr-wallet/types": "^0.11.7",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",

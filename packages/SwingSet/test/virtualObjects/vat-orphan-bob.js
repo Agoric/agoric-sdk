@@ -2,6 +2,8 @@ import { Far } from '@endo/marshal';
 import { initEmpty } from '@agoric/store';
 import { defineKindMulti } from '@agoric/vat-data';
 
+const { getPrototypeOf } = Object;
+
 export function buildRootObject(vatPowers) {
   const { testLog } = vatPowers;
 
@@ -46,11 +48,11 @@ export function buildRootObject(vatPowers) {
           break;
         case 'proto':
           // eslint-disable-next-line no-proto
-          strongRetainer = originalFacet.__proto__;
+          strongRetainer = getPrototypeOf(originalFacet);
           break;
         case 'wproto':
           // eslint-disable-next-line no-proto
-          weakRetainer.add(originalFacet.__proto__);
+          weakRetainer.add(getPrototypeOf(originalFacet));
           break;
         case 'cohort':
           originalFacet.extractCohort();
@@ -98,11 +100,11 @@ export function buildRootObject(vatPowers) {
           break;
         case 'proto':
           // eslint-disable-next-line no-proto
-          compare = strongRetainer === facet.__proto__;
+          compare = strongRetainer === getPrototypeOf(facet);
           break;
         case 'wproto':
           // eslint-disable-next-line no-proto
-          compare = weakRetainer.has(facet.__proto__);
+          compare = weakRetainer.has(getPrototypeOf(facet));
           break;
         case 'cohort':
           facet.extractCohort();
