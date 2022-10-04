@@ -37,6 +37,7 @@
     "protobufjs": "^7.0.0",
     "react": "^16.8.0",
     "react-dom": "^16.8.0",
+    "react-git-info": "^2.0.1",
     "react-router-dom": "^5.3.0",
     "uuid": "^8.3.2"
   },
