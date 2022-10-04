@@ -9,7 +9,6 @@ import '@endo/captp/src/types.js';
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import GitInfo from 'react-git-info/macro';
 import { BrowserRouter as Router } from 'react-router-dom';
 import {
   CssBaseline,
@@ -21,9 +20,6 @@ import App from './App';
 import ApplicationContextProvider from './contexts/Provider';
 
 Error.stackTraceLimit = Infinity;
-
-const gitInfo = GitInfo();
-console.info('BUILD SOURCE', gitInfo.commit);
 
 const appTheme = createTheme({
   palette: {
