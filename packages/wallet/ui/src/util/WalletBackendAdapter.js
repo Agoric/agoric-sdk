@@ -199,6 +199,7 @@ export const makeWalletBridgeFromFollowers = (
       assert(brandDescriptor, `missing descriptor for brand ${purse.brand}`);
       /** @type {PurseInfo} */
       const purseInfo = {
+        brand: purse.brand,
         currentAmount: purse.balance,
         brandPetname: brandDescriptor.petname,
         pursePetname: brandDescriptor.petname,
