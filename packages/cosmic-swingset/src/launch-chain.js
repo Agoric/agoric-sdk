@@ -634,6 +634,8 @@ export async function launch({
           blockTime,
         });
 
+        blockParams = undefined;
+
         blockManagerConsole.debug(
           `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
         );
@@ -662,6 +664,9 @@ export async function launch({
           blockHeight,
           blockTime,
         });
+
+        blockParams || assert.fail(X`blockParams missing`);
+
         // eslint-disable-next-line no-use-before-define
         if (computedHeight > 0 && computedHeight !== blockHeight) {
           // We only tolerate the trivial case.
