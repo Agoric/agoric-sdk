@@ -412,7 +412,7 @@ export async function launch({
     }
   }
 
-  let computedHeight = Number(kvStore.get(getHostKey('height')) || 0);
+  let savedHeight = Number(kvStore.get(getHostKey('height')) || 0);
   let savedBlockTime = Number(kvStore.get(getHostKey('blockTime')) || 0);
   let runTime = 0;
   let chainTime;
@@ -586,21 +586,26 @@ export async function launch({
     return p;
   }
 
-  function checkExpectedBlockHeight(blockHeight) {
-    if (computedHeight > 0 && computedHeight !== blockHeight) {
-      // We only tolerate the trivial case.
-      const restoreHeight = blockHeight - 1;
-      if (restoreHeight !== computedHeight) {
-        // Keep throwing forever.
-        decohered = Error(
-          // TODO unimplemented
-          `Unimplemented reset state from ${computedHeight} to ${restoreHeight}`,
-        );
-        throw decohered;
-      }
+  function blockNeedsExecution(blockHeight) {
+    if (blockHeight > 0 && savedHeight === blockHeight) {
+      // We have already committed this block, replay
+      return false;
     }
 
-    return computedHeight !== blockHeight;
+    // If we are not replaying the block, we're executing the next block without gap
+    // However the first block's height can be arbitrary (it may not be block 1)
+    const expectedSavedHeight = savedHeight > 0 ? blockHeight - 1 : savedHeight;
+
+    if (savedHeight !== expectedSavedHeight) {
+      // Keep throwing forever.
+      decohered = Error(
+        // TODO unimplemented
+        `Unimplemented reset state from ${savedHeight} to ${expectedSavedHeight}`,
+      );
+      throw decohered;
+    }
+
+    return true;
   }
 
   async function blockingSend(action) {
@@ -619,10 +624,8 @@ export async function launch({
         // This only runs for the very first block on the chain.
         const { blockTime } = action;
         verboseBlocks && blockManagerConsole.info('block bootstrap');
-        if (computedHeight !== 0) {
-          throw Error(
-            `Cannot run a bootstrap block at height ${computedHeight}`,
-          );
+        if (savedHeight !== 0) {
+          throw Error(`Cannot run a bootstrap block at height ${savedHeight}`);
         }
         const blockHeight = 0;
         const runNum = 0;
@@ -652,9 +655,9 @@ export async function launch({
         const { blockHeight, blockTime } = action;
         verboseBlocks &&
           blockManagerConsole.info('block', blockHeight, 'commit');
-        if (blockHeight !== computedHeight) {
+        if (blockHeight !== savedHeight) {
           throw Error(
-            `Committed height ${blockHeight} does not match computed height ${computedHeight}`,
+            `Committed height ${blockHeight} does not match saved height ${savedHeight}`,
           );
         }
 
@@ -666,7 +669,7 @@ export async function launch({
 
         // Save the kernel's computed state just before the chain commits.
         const start2 = Date.now();
-        await saveOutsideState(computedHeight, blockTime);
+        await saveOutsideState(savedHeight, blockTime);
         const saveTime = Date.now() - start2;
         controller.writeSlogObject({
           type: 'cosmic-swingset-commit-block-finish',
@@ -690,7 +693,7 @@ export async function launch({
           blockManagerConsole.info('block', blockHeight, 'begin');
         runTime = 0;
 
-        if (checkExpectedBlockHeight(blockHeight)) {
+        if (blockNeedsExecution(blockHeight)) {
           // We are not reevaluating, so compute a new queueAllowed
           computeQueueAllowed(blockHeight, blockTime, blockParams);
         }
@@ -715,7 +718,7 @@ export async function launch({
 
         blockParams || assert.fail(X`blockParams missing`);
 
-        if (!checkExpectedBlockHeight(blockHeight)) {
+        if (!blockNeedsExecution(blockHeight)) {
           // We are reevaluating, so send exactly the same downcalls to the chain.
           //
           // This is necessary only after a restart when Tendermint is reevaluating the
@@ -752,7 +755,7 @@ export async function launch({
           chainTime = Date.now() - start;
 
           // Advance our saved state variables.
-          computedHeight = blockHeight;
+          savedHeight = blockHeight;
           savedBlockTime = blockTime;
         }
         controller.writeSlogObject({
@@ -774,7 +777,7 @@ export async function launch({
 
   return {
     blockingSend,
-    savedHeight: computedHeight,
+    savedHeight,
     savedBlockTime,
     savedChainSends: JSON.parse(kvStore.get(getHostKey('chainSends')) || '[]'),
   };
