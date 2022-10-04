@@ -305,7 +305,7 @@ export async function launch({
     kvStore.get(getHostKey('queueAllowed')) || '{}',
   );
 
-  function computeQueueAllowed(_blockHeight, _blockTime, params) {
+  function updateQueueAllowed(_blockHeight, _blockTime, params) {
     assert(params.queueMax);
     assert(QueueInbound in params.queueMax);
 
@@ -695,7 +695,7 @@ export async function launch({
 
         if (blockNeedsExecution(blockHeight)) {
           // We are not reevaluating, so compute a new queueAllowed
-          computeQueueAllowed(blockHeight, blockTime, blockParams);
+          updateQueueAllowed(blockHeight, blockTime, blockParams);
         }
 
         controller.writeSlogObject({
