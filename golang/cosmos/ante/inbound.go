@@ -52,7 +52,11 @@ func (ia inboundAnte) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next
 			// was lower (e.g. 50%).
 			if inboundsAllowed == -1 {
 				state := ia.sk.GetState(ctx)
-				allowed, found := swingtypes.QueueSizeEntry(state.QueueAllowed, "inbound")
+				entry := swingtypes.QueueInbound
+				if simulate {
+					entry = swingtypes.QueueInboundMempool
+				}
+				allowed, found := swingtypes.QueueSizeEntry(state.QueueAllowed, entry)
 				if found {
 					actions, err := ia.sk.ActionQueueLength(ctx)
 					if err != nil {
@@ -64,7 +68,7 @@ func (ia inboundAnte) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next
 						inboundsAllowed = 0
 					}
 				} else {
-					// no inbound allowed size from swingset
+					// if number of allowed entries not given, fail closed
 					inboundsAllowed = 0
 				}
 			}

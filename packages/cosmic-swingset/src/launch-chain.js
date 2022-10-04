@@ -307,15 +307,25 @@ export async function launch({
 
   function updateQueueAllowed(_blockHeight, _blockTime, params) {
     assert(params.queueMax);
-
     assert(QueueInbound in params.queueMax);
+
     const inboundQueueMax = params.queueMax[QueueInbound];
+    const inboundMempoolQueueMax = Math.floor(inboundQueueMax / 2);
 
     const inboundQueueSize = inboundQueue.size();
 
     const inboundQueueAllowed = Math.max(0, inboundQueueMax - inboundQueueSize);
+    const inboundMempoolQueueAllowed = Math.max(
+      0,
+      inboundMempoolQueueMax - inboundQueueSize,
+    );
 
-    savedQueueAllowed = { [QueueInbound]: inboundQueueAllowed };
+    savedQueueAllowed = {
+      // Keep up-to-date with queue size keys defined in
+      // golang/cosmos/x/swingset/types/default-params.go
+      inbound: inboundQueueAllowed,
+      inbound_mempool: inboundMempoolQueueAllowed,
+    };
   }
 
   async function saveChainState() {

@@ -20,7 +20,10 @@ const (
 	BeansPerVatCreation       = "vatCreation"
 	BeansPerXsnapComputron    = "xsnapComputron"
 
-	QueueInbound = "inbound"
+	// QueueSize keys.
+	// Keep up-to-date with updateQueueAllowed() in packanges/cosmic-swingset/src/launch-chain.js
+	QueueInbound        = "inbound"
+	QueueInboundMempool = "inbound_mempool"
 )
 
 var (
