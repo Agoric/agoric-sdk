@@ -447,7 +447,8 @@ export const makeCosmjsFollower = (
     let blockHeight;
     let data;
     for (;;) {
-      const { blockHeight: currentBlockHeight } = await getBlockHeight();
+      const { blockHeight: currentBlockHeight, endpoint } =
+        await getBlockHeight();
       if (currentBlockHeight === blockHeight) {
         // TODO Long-poll for next block
         // https://github.com/Agoric/agoric-sdk/issues/6154
@@ -455,8 +456,12 @@ export const makeCosmjsFollower = (
         continue;
       }
 
+      // Carry endpoint that responded with the current block height forward to
+      // getData so we are sure that the endpoint has data for that height.
+
       const { data: currentData } = await getData({
         blockHeight: currentBlockHeight,
+        endpoint,
       });
       if (currentData.length === 0) {
         // TODO Long-poll for block data change
@@ -497,13 +502,17 @@ export const makeCosmjsFollower = (
     // cursorBlockHeight) so we know not to emit duplicates
     // of that cell.
     let cursorData;
+    let cursorEndpoint;
     // Initially yield *all* the values that were most recently stored in a
     // block.
     // If the block has no corresponding data, wait for the first block to
     // contain data.
     for (;;) {
+      // Endpoint is selected at end of previous iteration, and unspecified for
+      // the first iteration.
       ({ data: cursorData } = await getData({
         blockHeight: cursorBlockHeight,
+        endpoint: cursorEndpoint,
       }));
       if (cursorData.length !== 0) {
         const cursorStreamCell = streamCellForData(
@@ -516,13 +525,14 @@ export const makeCosmjsFollower = (
       // TODO Long-poll for next block
       // https://github.com/Agoric/agoric-sdk/issues/6154
       await E(leader).jitter(where);
-      ({ blockHeight: cursorBlockHeight } = await getBlockHeight());
+      ({ blockHeight: cursorBlockHeight, endpoint: cursorEndpoint } =
+        await getBlockHeight());
     }
 
     // For each subsequent iteration, yield every value that has been
     // published since the last iteration and advance the cursor.
     for (;;) {
-      const { blockHeight: currentBlockHeight } = await getBlockHeight();
+      const { blockHeight: currentBlockHeight, endpoint } = await getBlockHeight();
       // Wait until the chain has added at least one block.
       if (currentBlockHeight <= cursorBlockHeight) {
         // TODO Long-poll for next block
@@ -530,6 +540,9 @@ export const makeCosmjsFollower = (
         await E(leader).jitter(where);
         continue;
       }
+
+      // Carry endpoint that responded with the current block height forward to
+      // getData so we are sure that the endpoint has data for that height.
 
       // Scan backward for all changes since the last observed block and yield
       // them in forward order.
@@ -541,6 +554,7 @@ export const makeCosmjsFollower = (
       let rightBlockHeight = currentBlockHeight;
       let { data: rightData } = await getData({
         blockHeight: rightBlockHeight,
+        endpoint,
       });
       if (rightData.length === 0) {
         // TODO Long-poll for next block
@@ -568,6 +582,7 @@ export const makeCosmjsFollower = (
         }
         const { data: leftData } = await getData({
           blockHeight: leftBlockHeight,
+          endpoint,
         });
         // Do not scan behind a cell with no data.
         // This should not happen but can be tolerated.
