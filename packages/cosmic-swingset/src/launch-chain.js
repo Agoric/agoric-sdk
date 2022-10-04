@@ -587,25 +587,35 @@ export async function launch({
   }
 
   function blockNeedsExecution(blockHeight) {
-    if (blockHeight > 0 && savedHeight === blockHeight) {
-      // We have already committed this block, replay
+    if (savedHeight === 0) {
+      // 0 is the default we use when the DB is empty, so we've only executed
+      // the bootstrap block but no others. The first non-bootstrap block can
+      // have an arbitrary height (the chain may not start at 1), but since the
+      // bootstrap block doesn't commit (and doesn't have a begin/end) there is
+      // no risk of hangover inconsistency for the first block, and it can
+      // always be executed.
+      return true;
+    }
+
+    if (blockHeight === savedHeight + 1) {
+      // execute the next block
+      return true;
+    }
+
+    if (blockHeight === savedHeight) {
+      // we have already committed this block, so "replay" by not executing
+      // (but returning all the results from the last time)
       return false;
     }
 
-    // If we are not replaying the block, we're executing the next block without gap
-    // However the first block's height can be arbitrary (it may not be block 1)
-    const expectedSavedHeight = savedHeight > 0 ? blockHeight - 1 : savedHeight;
-
-    if (savedHeight !== expectedSavedHeight) {
-      // Keep throwing forever.
-      decohered = Error(
-        // TODO unimplemented
-        `Unimplemented reset state from ${savedHeight} to ${expectedSavedHeight}`,
-      );
-      throw decohered;
-    }
-
-    return true;
+    // we're being asked to rewind by more than one block, or execute something
+    // more than one block in the future, neither of which we can accommodate.
+    // Keep throwing forever.
+    decohered = Error(
+      // TODO unimplemented
+      `Unimplemented reset state from ${savedHeight} to ${blockHeight}`,
+    );
+    throw decohered;
   }
 
   async function blockingSend(action) {
