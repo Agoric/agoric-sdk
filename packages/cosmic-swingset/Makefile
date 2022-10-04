@@ -4,7 +4,7 @@
 # don't want.
 
 REPOSITORY = agoric/cosmic-swingset
-CHAIN_ID = agoric
+CHAIN_ID = agoriclocal
 INITIAL_HEIGHT = 17
 GENESIS_TIME = $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)
 VOTING_PERIOD = 45s
