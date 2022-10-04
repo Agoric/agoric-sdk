@@ -10,6 +10,11 @@ import (
 	swingtypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 )
 
+const (
+	QueueInbound        = "inbound"
+	QueueInboundMempool = "inbound_mempool"
+)
+
 // TODO: We don't have a more appropriate error type for this.
 var ErrInboundQueueFull = sdkerrors.ErrMempoolIsFull
 
@@ -37,7 +42,16 @@ func (ia inboundAnte) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next
 			*swingtypes.MsgWalletSpendAction:
 			if inboundsAllowed == -1 {
 				state := ia.sk.GetState(ctx)
-				allowed, found := swingtypes.QueueSizeEntry(state.QueueAllowed, "inbound")
+				entry := QueueInbound
+				if simulate {
+					entry = QueueInboundMempool
+				}
+				allowed, found := swingtypes.QueueSizeEntry(state.QueueAllowed, entry)
+				if !found && simulate {
+					entry = QueueInbound
+					allowed, found = swingtypes.QueueSizeEntry(state.QueueAllowed, entry)
+					allowed /= 2
+				}
 				if found {
 					actions, err := ia.sk.ActionQueueLength(ctx)
 					if err != nil {
