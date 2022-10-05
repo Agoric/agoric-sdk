@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/ui-components@0.3.0...@agoric/ui-components@0.3.1) (2022-10-05)
+
+
+### Bug Fixes
+
+* **wallet-ui:** show all significant digits in nat amounts ([80b56e1](https://github.com/Agoric/agoric-sdk/commit/80b56e10b61fc334e8ac505579b11fb56b6c91ff))
+
+
+
 ## [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ui-components@0.2.33...@agoric/ui-components@0.3.0) (2022-09-20)
 
 

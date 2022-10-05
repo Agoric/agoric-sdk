@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.30.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.29.0...@agoric/swingset-vat@0.30.0) (2022-10-05)
+
+
+### Features
+
+* **SwingSet:** upgrade to superior nestedEvaluate ([fd579c5](https://github.com/Agoric/agoric-sdk/commit/fd579c5644970a7fdf764c0b7befeafb3fb267c1))
+
+
+### Bug Fixes
+
+* add kernel stats as a slog entry at completion of each block ([8a38c52](https://github.com/Agoric/agoric-sdk/commit/8a38c52a0a4eb665e03fdba7c96e944221ab8bc9)), closes [#4585](https://github.com/Agoric/agoric-sdk/issues/4585)
+* avoid __proto__ accessor ([#6349](https://github.com/Agoric/agoric-sdk/issues/6349)) ([eac70a5](https://github.com/Agoric/agoric-sdk/commit/eac70a53c0a9fdc138c7bcce5ba8f61f802dfdee))
+* cleanup, update, and refactor slog-to-otel converter ([225f1dd](https://github.com/Agoric/agoric-sdk/commit/225f1dda46ec99dbc47ba39b3a99e278a4c1adbb)), closes [#4585](https://github.com/Agoric/agoric-sdk/issues/4585)
+
+
+
 ## [0.29.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.28.0...@agoric/swingset-vat@0.29.0) (2022-09-20)
 
 

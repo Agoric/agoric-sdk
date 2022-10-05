@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.39.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.38.0...@agoric/cosmic-swingset@0.39.0) (2022-10-05)
+
+
+### Features
+
+* compute separate mempool limit for allowed inbound ([ebfc852](https://github.com/Agoric/agoric-sdk/commit/ebfc85272ab9c589d6a0ecb6dac5b59f931f3001))
+* **cosmic-swingset:** flush slog senders after commit ([b57c1d2](https://github.com/Agoric/agoric-sdk/commit/b57c1d202367833a7de09af1ef1822b4b6481a78))
+* **cosmic-swingset:** inboundQueue limit ([1b2d08f](https://github.com/Agoric/agoric-sdk/commit/1b2d08fcb4dd3de42f92358646d2c88e3b3687f5))
+* **cosmic-swingset:** parse go->node send results as JSON ([2839223](https://github.com/Agoric/agoric-sdk/commit/2839223f4447deed7c32e73ca37ff142f7c563ef))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** check block params state ([525ad88](https://github.com/Agoric/agoric-sdk/commit/525ad88ec0aac91ebaa3d344f25ca11e9a6f3f39))
+* add kernel stats as a slog entry at completion of each block ([8a38c52](https://github.com/Agoric/agoric-sdk/commit/8a38c52a0a4eb665e03fdba7c96e944221ab8bc9)), closes [#4585](https://github.com/Agoric/agoric-sdk/issues/4585)
+* avoid colliding with 'agoric' chain, e.g. in Keplr ([692084c](https://github.com/Agoric/agoric-sdk/commit/692084ce9328b11e23ab8b46025f83eb8d1b5b3d))
+* **cosmic-swingset:** correctly handle missing slogSender ([808d8f8](https://github.com/Agoric/agoric-sdk/commit/808d8f8a944e946b7150883be7f66538048428b0))
+* **telemetry:** forceFlush is async ([5cf56b9](https://github.com/Agoric/agoric-sdk/commit/5cf56b9d22a4e9436f1ce1b5020ea68071ef7f55))
+
+
+
 ## [0.38.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.37.0...@agoric/cosmic-swingset@0.38.0) (2022-09-20)
 
 
