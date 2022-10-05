@@ -1,4 +1,4 @@
-import { makeFollower, iterateEach } from '@agoric/casting';
+import { makeFollower, iterateLatest } from '@agoric/casting';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -27,9 +27,17 @@ const errors = {
 const CREATION_FEE = '10 BLD';
 
 // 100 IST
-const MINIMUM_PROVISION_POOL_BALANCE = 100_000_000n;
+const MINIMUM_PROVISION_POOL_BALANCE = 100n * 1_000_000n;
 
-/** @typedef {import('@agoric/vats/src/provisionPool.js').MetricsNotification} ProvisionPoolMetrics */
+// XXX import from the contract
+
+/**
+ * @typedef {object} ProvisionPoolMetrics
+ * @property {bigint} walletsProvisioned  count of new wallets provisioned
+ * @property {Amount<'nat'>} totalMintedProvided  running sum of Minted provided to new wallets
+ * @property {Amount<'nat'>} totalMintedConverted  running sum of Minted
+ * ever received by the contract from PSM
+ */
 
 export const useProvisionPoolMetrics = (unserializer, leader) => {
   const [data, setData] = useState(/** @type {ProvisionPoolMetrics?} */ (null));
@@ -44,14 +52,17 @@ export const useProvisionPoolMetrics = (unserializer, leader) => {
           unserializer,
         },
       );
-      for await (const { value } of iterateEach(follower)) {
+      for await (const { value } of iterateLatest(follower)) {
         if (cancelled) {
           break;
         }
+        console.log('provisionPoolData', value);
         setData(value);
       }
     };
-    fetchData().catch(e => console.error('useEffect error', e));
+    fetchData().catch(e =>
+      console.error('useProvisionPoolMetrics fetchData error', e),
+    );
     return () => {
       cancelled = true;
     };
@@ -59,6 +70,18 @@ export const useProvisionPoolMetrics = (unserializer, leader) => {
 
   return data;
 };
+
+/**
+ *
+ * @param {ProvisionPoolMetrics} provisionPoolData
+ * @returns {boolean}
+ */
+const isProvisionPoolLow = provisionPoolData =>
+  provisionPoolData &&
+  AmountMath.subtract(
+    provisionPoolData.totalMintedConverted,
+    provisionPoolData.totalMintedProvided,
+  ).value < MINIMUM_PROVISION_POOL_BALANCE;
 
 const ProvisionDialog = ({
   onClose,
@@ -143,16 +166,7 @@ const ProvisionDialog = ({
     }
   }, [currentStep, href, address]);
 
-  console.log('provisionPoolData', provisionPoolData);
-  const provisionPoolLow = useMemo(
-    () =>
-      provisionPoolData &&
-      AmountMath.subtract(
-        provisionPoolData.totalMintedConverted,
-        provisionPoolData.totalMintedProvided,
-      ).value < MINIMUM_PROVISION_POOL_BALANCE,
-    [provisionPoolData],
-  );
+  const provisionPoolLow = isProvisionPoolLow(provisionPoolData);
 
   return (
     <Dialog open={open}>
@@ -163,8 +177,8 @@ const ProvisionDialog = ({
         {content}
         {provisionPoolLow && (
           <DialogContentText sx={{ pt: 2 }} color="error">
-            Unable to create a Smart Wallet because the provision pool balance
-            is too low.
+            The pool of funds to provision smart wallets is too small at this
+            time.
           </DialogContentText>
         )}
         {error && (
