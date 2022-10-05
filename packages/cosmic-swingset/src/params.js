@@ -1,6 +1,6 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
-import { Nat } from '@agoric/nat';
+import { Nat, isNat } from '@agoric/nat';
 
 export const stringToNat = s => {
   assert.typeof(s, 'string', X`${s} must be a string`);
@@ -14,10 +14,27 @@ export const stringToNat = s => {
   return nat;
 };
 
+/** @param {{key: string, size: number}[]} queueSizeEntries */
+export const parseQueueSizes = queueSizeEntries =>
+  Object.fromEntries(
+    queueSizeEntries.map(({ key, size }) => {
+      assert.typeof(key, 'string', X`Key ${key} must be a string`);
+      assert(isNat(size), X`Size ${size} is not a positive integer`);
+      return [key, size];
+    }),
+  );
+
+/** @param {Record<string, number>} queueSizes */
+export const serializeQueueSizes = queueSizes =>
+  Object.entries(queueSizes).map(([key, size]) => ({ key, size }));
+
 // Map the SwingSet parameters to a deterministic data structure.
 export const parseParams = params => {
-  const { beans_per_unit: rawBeansPerUnit, fee_unit_price: rawFeeUnitPrice } =
-    params;
+  const {
+    beans_per_unit: rawBeansPerUnit,
+    fee_unit_price: rawFeeUnitPrice,
+    queue_max: rawQueueMax,
+  } = params;
   Array.isArray(rawBeansPerUnit) ||
     assert.fail(X`beansPerUnit must be an array, not ${rawBeansPerUnit}`);
   const beansPerUnit = Object.fromEntries(
@@ -33,6 +50,11 @@ export const parseParams = params => {
     assert(denom, X`denom ${denom} must be non-empty`);
     return { denom, amount: stringToNat(amount) };
   });
+  assert(
+    Array.isArray(rawQueueMax),
+    X`queueMax must be an array, not ${rawQueueMax}`,
+  );
+  const queueMax = parseQueueSizes(rawQueueMax);
 
-  return { beansPerUnit, feeUnitPrice };
+  return { beansPerUnit, feeUnitPrice, queueMax };
 };
