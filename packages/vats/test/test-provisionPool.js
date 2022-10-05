@@ -228,6 +228,17 @@ test('provisionPool trades provided assets for IST', async t => {
     },
   );
 
+  const metrics = E(facets.publicFacet).getMetrics();
+
+  const {
+    head: { value: initialMetrics },
+  } = await E(metrics).subscribeAfter();
+  t.deepEqual(initialMetrics, {
+    totalMintedConverted: minted.make(0n),
+    totalMintedProvided: minted.make(0n),
+    walletsProvisioned: 0n,
+  });
+
   t.log('introduce PSM instance to provisionPool');
   const psm = await startPSM('IST-AUSD');
   await E(E(facets.creatorFacet).getLimitedCreatorFacet()).initPSM(
@@ -242,10 +253,20 @@ test('provisionPool trades provided assets for IST', async t => {
   const mintedPurse = E(poolBank).getPurse(minted.brand);
   const poolBalanceAfter = await E(mintedPurse).getCurrentAmount();
   t.log('post-trade pool balance:', poolBalanceAfter);
-  t.deepEqual(
-    poolBalanceAfter,
-    minted.make(scale6(100) - WantMintedFeeBP * BASIS_POINTS),
+  const hundredLessFees = minted.make(
+    scale6(100) - WantMintedFeeBP * BASIS_POINTS,
   );
+  t.deepEqual(poolBalanceAfter, hundredLessFees);
+
+  const {
+    head: { value: postTradeMetrics },
+  } = await E(metrics).subscribeAfter();
+  t.deepEqual(postTradeMetrics, {
+    totalMintedConverted: hundredLessFees,
+    totalMintedProvided: minted.make(0n),
+    walletsProvisioned: 0n,
+  });
+
   const anchorBalanceAfter = await E(anchorPurse).getCurrentAmount();
   t.log('post-trade anchor balance:', anchorBalanceAfter);
   t.deepEqual(anchorBalanceAfter, anchor.makeEmpty());
