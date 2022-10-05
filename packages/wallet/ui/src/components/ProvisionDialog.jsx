@@ -1,3 +1,4 @@
+// @ts-check
 import { makeFollower, iterateLatest } from '@agoric/casting';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
@@ -8,7 +9,7 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 import { AmountMath } from '@agoric/ertp';
 import { withApplicationContext } from '../contexts/Application';
@@ -93,7 +94,7 @@ const ProvisionDialog = ({
   leader,
 }) => {
   const [currentStep, setCurrentStep] = useState(steps.INITIAL);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(/** @type {string?} */ (null));
   const provisionPoolData = useProvisionPoolMetrics(unserializer, leader);
 
   const provisionWallet = async signer => {
@@ -166,7 +167,8 @@ const ProvisionDialog = ({
     }
   }, [currentStep, href, address]);
 
-  const provisionPoolLow = isProvisionPoolLow(provisionPoolData);
+  const provisionPoolLow =
+    provisionPoolData !== null && isProvisionPoolLow(provisionPoolData);
 
   return (
     <Dialog open={open}>
@@ -189,7 +191,7 @@ const ProvisionDialog = ({
       </DialogContent>
       {currentStep === steps.INITIAL && (
         <DialogActions>
-          <Button color="cancel" onClick={onClose}>
+          <Button color="inherit" onClick={onClose}>
             Change Connection
           </Button>
           <Button
