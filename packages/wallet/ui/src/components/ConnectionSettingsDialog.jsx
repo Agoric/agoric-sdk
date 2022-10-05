@@ -18,6 +18,21 @@ const useStyles = makeStyles(_ => ({
   },
 }));
 
+// XXX transformers for backwards compatibility with connection config storage
+const networkConfigUrl = {
+  fromHost(host) {
+    if (host.startsWith('localhost')) {
+      // for localhost skip https and assume it's subpathed to /wallet
+      return `http://${host}/wallet/network-config`;
+    }
+    return `https://${host}/network-config`;
+  },
+  toHost(href) {
+    const url = new URL(href);
+    return url.host;
+  },
+};
+
 const Errors = {
   INVALID_URL: 'invalid url',
   INVALID_ACCESS_TOKEN: 'invalid access token',
@@ -52,7 +67,10 @@ const ConnectionSettingsDialog = ({
   tryKeplrConnect,
 }) => {
   const classes = useStyles();
-  const smartConnectionHrefs = allConnectionConfigs.map(({ href }) => href);
+  /** @type {string[]} */
+  const smartConnectionHosts = allConnectionConfigs.map(
+    c => new URL(c.href).host,
+  );
 
   const [config, setConfig] = useState(connectionConfig || {});
 
@@ -99,14 +117,14 @@ const ConnectionSettingsDialog = ({
   const smartWalletConfigForm = (
     <>
       <Autocomplete
-        value={config?.href}
+        value={config ? networkConfigUrl.toHost(config.href) : null}
         id="connection"
-        options={smartConnectionHrefs}
+        options={smartConnectionHosts}
         sx={{ width: 360, mt: 2 }}
         onChange={(_, newValue) =>
           setConfig(swConfig => ({
             ...swConfig,
-            href: newValue,
+            href: networkConfigUrl.fromHost(newValue),
           }))
         }
         filterOptions={(options, params) => {
@@ -122,9 +140,7 @@ const ConnectionSettingsDialog = ({
         clearOnBlur
         handleHomeEndKeys
         freeSolo
-        renderInput={params => (
-          <TextField {...params} label="Chain Config URL" />
-        )}
+        renderInput={params => <TextField {...params} label="Network" />}
       />
       <ErrorLabel>
         {errors.has(Errors.INVALID_URL) ? 'Enter a valid URL' : ''}
