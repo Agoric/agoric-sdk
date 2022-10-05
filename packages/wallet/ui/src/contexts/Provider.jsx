@@ -124,11 +124,11 @@ const Provider = ({ children }) => {
   const [issuerSuggestions, setIssuerSuggestions] = useState(null);
   const [services, setServices] = useState(null);
   const [backend, setBackend] = useState(
-    /** @type {import('../util/WalletBackendAdapter').BackendSchema?} */(null),
+    /** @type {import('../util/WalletBackendAdapter').BackendSchema?} */ (null),
   );
   const [schemaActions, setSchemaActions] = useState(null);
   const [connectionComponent, setConnectionComponent] = useState(
-    /** @type {import('react').ReactElement | null} */(null),
+    /** @type {import('react').ReactElement | null} */ (null),
   );
   const [backendErrorHandler, setBackendErrorHandler] = useState(null);
   const [previewEnabled, setPreviewEnabled] = useState(false);
@@ -205,9 +205,7 @@ const Provider = ({ children }) => {
 
     for (const config of allConnectionConfigs) {
       const found = DEFAULT_CONNECTION_CONFIGS.find(
-        defaultConfig =>
-          defaultConfig.href === config.href &&
-          defaultConfig.type === config.type,
+        defaultConfig => defaultConfig.href === config.href,
       );
       if (!found) {
         updatedConnectionConfigs.push(config);
@@ -241,7 +239,7 @@ const Provider = ({ children }) => {
     }
 
     if (!backend) {
-      return () => { };
+      return () => {};
     }
 
     let cancelIteration = null;
@@ -293,10 +291,10 @@ const Provider = ({ children }) => {
   useEffect(() => {
     if (!connectionConfig || !wantConnection) {
       disconnect();
-      return () => { };
+      return () => {};
     }
     if (connectionComponent) {
-      return () => { };
+      return () => {};
     }
 
     let outdated = false;

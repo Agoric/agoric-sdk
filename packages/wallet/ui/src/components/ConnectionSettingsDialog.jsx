@@ -1,3 +1,4 @@
+import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -9,6 +10,7 @@ import TextField from '@mui/material/TextField';
 import { makeStyles } from '@mui/styles';
 import { useMemo, useState } from 'react';
 import { withApplicationContext } from '../contexts/Application';
+import { KnownNetworkConfigUrls } from '../util/connections.js';
 import { deepEquals } from '../util/DeepEquals';
 import { maybeSave } from '../util/storage';
 
@@ -20,16 +22,17 @@ const useStyles = makeStyles(_ => ({
 
 // XXX transformers for backwards compatibility with connection config storage
 const networkConfigUrl = {
-  fromHost(host) {
-    if (host.startsWith('localhost')) {
-      // for localhost skip https and assume it's subpathed to /wallet
-      return `http://${host}/wallet/network-config`;
-    }
-    return `https://${host}/network-config`;
+  fromSource(source) {
+    return KnownNetworkConfigUrls[source];
   },
-  toHost(href) {
-    const url = new URL(href);
-    return url.host;
+  toSource(href) {
+    const matchingEntry = Object.entries(KnownNetworkConfigUrls).find(
+      ([_, url]) => url === href,
+    );
+    if (matchingEntry) {
+      return matchingEntry[0];
+    }
+    return 'custom';
   },
 };
 
@@ -68,11 +71,19 @@ const ConnectionSettingsDialog = ({
 }) => {
   const classes = useStyles();
   /** @type {string[]} */
-  const smartConnectionHosts = allConnectionConfigs.map(
-    c => new URL(c.href).host,
+  const smartConnectionHrefs = allConnectionConfigs.map(c => c.href);
+
+  const [configSource, setConfigSource] = useState(
+    /** @type {keyof KnownNetworkConfigUrls | 'custom'} */ (
+      connectionConfig
+        ? networkConfigUrl.toSource(connectionConfig.href)
+        : 'main'
+    ),
   );
 
-  const [config, setConfig] = useState(connectionConfig || {});
+  const [config, setConfig] = useState(
+    connectionConfig || { href: networkConfigUrl.fromSource(configSource) },
+  );
 
   const errors = new Set();
 
@@ -103,12 +114,10 @@ const ConnectionSettingsDialog = ({
       }
       setConnectionConfig(config);
       disconnect(true);
-      const { href, type } = config;
-      const isKnown = allConnectionConfigs.some(
-        c => c.href === href && c.type === type,
-      );
+      const { href } = config;
+      const isKnown = allConnectionConfigs.some(c => c.href === href);
       if (!isKnown) {
-        setAllConnectionConfigs(conns => [{ href, type }, ...conns]);
+        setAllConnectionConfigs(conns => [{ href }, ...conns]);
       }
     }
     onClose();
@@ -116,16 +125,54 @@ const ConnectionSettingsDialog = ({
 
   const smartWalletConfigForm = (
     <>
+      <FormControl fullWidth sx={{ width: 360, mt: 2 }}>
+        <InputLabel id="demo-simple-select-label">Network name</InputLabel>
+        <Select
+          labelId="demo-simple-select-label"
+          id="demo-simple-select"
+          value={configSource}
+          label="Network name"
+          onChange={e => {
+            const { value } = e.target;
+            setConfigSource(value);
+            switch (value) {
+              case 'mainnet':
+              case 'testnet':
+              case 'devnet':
+                setConfig({
+                  href: `https://${value}.agoric.net/network-config`,
+                });
+                break;
+              case 'localhost':
+                setConfig({
+                  href: `http://localhost:8000/wallet/network-config`,
+                });
+                break;
+              case 'custom':
+              default:
+              // do nothing
+            }
+          }}
+        >
+          <MenuItem value="main">Main</MenuItem>
+          <MenuItem value="testnet">Testnet</MenuItem>
+          <MenuItem value="devnet">Devnet</MenuItem>
+          <MenuItem value="localhost">localhost</MenuItem>
+          <MenuItem value="custom">
+            <i>Custom url</i>
+          </MenuItem>
+        </Select>
+      </FormControl>
       <Autocomplete
-        value={config ? networkConfigUrl.toHost(config.href) : null}
+        value={config.href}
         id="connection"
-        options={smartConnectionHosts}
+        disabled={configSource !== 'custom'}
+        options={smartConnectionHrefs}
         sx={{ width: 360, mt: 2 }}
         onChange={(_, newValue) =>
-          setConfig(swConfig => ({
-            ...swConfig,
-            href: networkConfigUrl.fromHost(newValue),
-          }))
+          setConfig({
+            href: newValue,
+          })
         }
         filterOptions={(options, params) => {
           const { inputValue } = params;
@@ -140,7 +187,7 @@ const ConnectionSettingsDialog = ({
         clearOnBlur
         handleHomeEndKeys
         freeSolo
-        renderInput={params => <TextField {...params} label="Network" />}
+        renderInput={params => <TextField {...params} label="Network URL" />}
       />
       <ErrorLabel>
         {errors.has(Errors.INVALID_URL) ? 'Enter a valid URL' : ''}
