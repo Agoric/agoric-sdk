@@ -94,7 +94,7 @@ func (msg MsgDeliverInbound) GetSignBytes() []byte {
 	if msg.Nums == nil {
 		msg.Nums = []uint64{}
 	}
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
+	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
 }
 
 // GetSigners defines whose signature is required
@@ -125,7 +125,7 @@ func (msg MsgWalletAction) GetSigners() []sdk.AccAddress {
 
 // GetSignBytes encodes the message for signing
 func (msg MsgWalletAction) GetSignBytes() []byte {
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
+	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
 }
 
 // Route should return the name of the module
@@ -142,7 +142,7 @@ func (msg MsgWalletSpendAction) Type() string { return "wallet_spend_action" }
 
 // GetSignBytes encodes the message for signing
 func (msg MsgWalletSpendAction) GetSignBytes() []byte {
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
+	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
 }
 
 // ValidateBasic runs stateless checks on the message
@@ -228,7 +228,7 @@ func (msg MsgProvision) GetSignBytes() []byte {
 	if msg.PowerFlags == nil {
 		msg.PowerFlags = []string{}
 	}
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
+	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
 }
 
 // GetSigners defines whose signature is required
