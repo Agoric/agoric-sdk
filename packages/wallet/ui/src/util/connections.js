@@ -1,11 +1,6 @@
 // @ts-check
 /* global process */
 
-export const SmartConnectionMethod = {
-  READ_ONLY: 'readOnly',
-  KEPLR: 'keplr',
-};
-
 const DEFAULT_CONNECTION_CONFIGS = [
   {
     href: 'http://localhost:8000/wallet/network-config',

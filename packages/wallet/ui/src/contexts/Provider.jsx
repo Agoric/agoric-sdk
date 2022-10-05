@@ -7,10 +7,7 @@ import { SigningStargateClient } from '@cosmjs/stargate';
 import { Random } from '@cosmjs/crypto';
 import { ApplicationContext, ConnectionStatus } from './Application';
 
-import {
-  DEFAULT_CONNECTION_CONFIGS,
-  SmartConnectionMethod,
-} from '../util/connections';
+import { DEFAULT_CONNECTION_CONFIGS } from '../util/connections';
 import { maybeLoad, maybeSave } from '../util/storage';
 import { suggestChain } from '../util/SuggestChain';
 import {
@@ -127,11 +124,11 @@ const Provider = ({ children }) => {
   const [issuerSuggestions, setIssuerSuggestions] = useState(null);
   const [services, setServices] = useState(null);
   const [backend, setBackend] = useState(
-    /** @type {import('../util/WalletBackendAdapter').BackendSchema?} */ (null),
+    /** @type {import('../util/WalletBackendAdapter').BackendSchema?} */(null),
   );
   const [schemaActions, setSchemaActions] = useState(null);
   const [connectionComponent, setConnectionComponent] = useState(
-    /** @type {import('react').ReactElement | null} */ (null),
+    /** @type {import('react').ReactElement | null} */(null),
   );
   const [backendErrorHandler, setBackendErrorHandler] = useState(null);
   const [previewEnabled, setPreviewEnabled] = useState(false);
@@ -218,9 +215,7 @@ const Provider = ({ children }) => {
     }
     maybeSave('userConnectionConfigs', updatedConnectionConfigs);
 
-    if (
-      connectionConfig?.smartConnectionMethod === SmartConnectionMethod.KEPLR
-    ) {
+    if (connectionConfig) {
       tryKeplrConnect().catch(reason => {
         console.error('tryKeplrConnect failed', reason);
         setConnectionStatus(ConnectionStatus.Error);
@@ -246,7 +241,7 @@ const Provider = ({ children }) => {
     }
 
     if (!backend) {
-      return () => {};
+      return () => { };
     }
 
     let cancelIteration = null;
@@ -298,10 +293,10 @@ const Provider = ({ children }) => {
   useEffect(() => {
     if (!connectionConfig || !wantConnection) {
       disconnect();
-      return () => {};
+      return () => { };
     }
     if (connectionComponent) {
-      return () => {};
+      return () => { };
     }
 
     let outdated = false;

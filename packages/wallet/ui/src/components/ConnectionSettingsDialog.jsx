@@ -5,17 +5,11 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import { makeStyles } from '@mui/styles';
 import { useMemo, useState } from 'react';
-import { v4 as uuid } from 'uuid';
-import { deepEquals } from '../util/DeepEquals';
 import { withApplicationContext } from '../contexts/Application';
-import { SmartConnectionMethod } from '../util/connections';
+import { deepEquals } from '../util/DeepEquals';
 import { maybeSave } from '../util/storage';
 
 const useStyles = makeStyles(_ => ({
@@ -28,7 +22,6 @@ const Errors = {
   INVALID_URL: 'invalid url',
   INVALID_ACCESS_TOKEN: 'invalid access token',
   INVALID_ADDRESS: 'invalid address',
-  SMART_CONNECTION_METHOD_UNSPECIFIED: 'smart wallet connection unspecified',
 };
 
 const ErrorLabel = ({ children }) => {
@@ -63,8 +56,6 @@ const ConnectionSettingsDialog = ({
 
   const [config, setConfig] = useState(connectionConfig || {});
 
-  const [selectInputId] = useState(uuid());
-
   const errors = new Set();
 
   try {
@@ -74,26 +65,13 @@ const ConnectionSettingsDialog = ({
     errors.add(Errors.INVALID_URL);
   }
 
-  if (
-    config.smartConnectionMethod === SmartConnectionMethod.READ_ONLY &&
-    !config.publicAddress
-  ) {
-    errors.add(Errors.INVALID_ADDRESS);
-  }
-  if (config.smartConnectionMethod === undefined) {
-    errors.add(Errors.SMART_CONNECTION_METHOD_UNSPECIFIED);
-  }
-
   const hasChanges = useMemo(
     () => !deepEquals(config, connectionConfig),
     [config, connectionConfig],
   );
 
   const saveAndClose = () => {
-    if (
-      !hasChanges &&
-      config.smartConnectionMethod === SmartConnectionMethod.KEPLR
-    ) {
+    if (!hasChanges) {
       // Allow the user to force another retry to connect to Keplr without
       // reloading the page.
       tryKeplrConnect();
@@ -151,57 +129,6 @@ const ConnectionSettingsDialog = ({
       <ErrorLabel>
         {errors.has(Errors.INVALID_URL) ? 'Enter a valid URL' : ''}
       </ErrorLabel>
-      <FormControl sx={{ mt: 2 }}>
-        <InputLabel id={selectInputId}>Connection Method</InputLabel>
-        <Select
-          value={config.smartConnectionMethod}
-          labelId={selectInputId}
-          label="Connection Method"
-          onChange={e => {
-            const smartConnectionMethod = e.target.value;
-            setConfig(swConfig => ({
-              ...swConfig,
-              smartConnectionMethod,
-              publicAddress: undefined,
-            }));
-          }}
-          error={errors.has(Errors.SMART_CONNECTION_METHOD_UNSPECIFIED)}
-          sx={{ width: 360 }}
-        >
-          <MenuItem value={SmartConnectionMethod.KEPLR}>Keplr</MenuItem>
-          <MenuItem value={SmartConnectionMethod.READ_ONLY}>
-            Read-only Address
-          </MenuItem>
-        </Select>
-        <ErrorLabel>
-          {errors.has(Errors.SMART_CONNECTION_METHOD_UNSPECIFIED)
-            ? 'Select a connection method'
-            : ''}
-        </ErrorLabel>
-        {config.smartConnectionMethod === SmartConnectionMethod.READ_ONLY && (
-          <>
-            <TextField
-              sx={{ width: 360, mt: 2 }}
-              label="Public Address"
-              error={errors.has(Errors.INVALID_ADDRESS)}
-              autoComplete="off"
-              value={config.publicAddress ?? ''}
-              onChange={e => {
-                const publicAddress = e.target.value;
-                setConfig(swConfig => ({
-                  ...swConfig,
-                  publicAddress,
-                }));
-              }}
-            ></TextField>
-            <ErrorLabel>
-              {errors.has(Errors.INVALID_ADDRESS)
-                ? 'Enter a wallet address'
-                : ''}
-            </ErrorLabel>
-          </>
-        )}
-      </FormControl>
     </>
   );
 
@@ -215,14 +142,7 @@ const ConnectionSettingsDialog = ({
         <Button color="cancel" onClick={onClose}>
           Cancel
         </Button>
-        <Button
-          onClick={saveAndClose}
-          disabled={
-            errors.size > 0 ||
-            (!hasChanges &&
-              config.smartConnectionMethod !== SmartConnectionMethod.KEPLR)
-          }
-        >
+        <Button onClick={saveAndClose} disabled={errors.size > 0}>
           Connect
         </Button>
       </DialogActions>
