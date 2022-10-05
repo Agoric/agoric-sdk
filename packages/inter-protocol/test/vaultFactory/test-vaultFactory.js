@@ -180,7 +180,7 @@ const setupAmmAndElectorateAndReserve = async (
   // AMM needs the reserve in order to function
   await setupReserve(space);
 
-  const governorCreatorFacet = consume.ammGovernorCreatorFacet;
+  const governorCreatorFacet = E.get(consume.ammFacets).governorCreatorFacet;
   const governorInstance = await instance.consume.ammGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
   const governedInstance = E(governorPublicFacet).getGovernedContract();
@@ -214,7 +214,7 @@ const setupAmmAndElectorateAndReserve = async (
 
   // TODO get the creator directly
   const newAmm = {
-    ammCreatorFacet: await consume.ammCreatorFacet,
+    ammCreatorFacet: await E.get(consume.ammFacets).creatorFacet,
     ammPublicFacet,
     instance: governedInstance,
     ammLiquidity: E(ammLiquiditySeat).getPayout('Liquidity'),
@@ -357,11 +357,14 @@ const setupServices = async (
   iProduce.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
 
-  const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
+  const governorCreatorFacet = E.get(
+    consume.vaultFactoryFacets,
+  ).governorCreatorFacet;
   /** @type {Promise<VaultFactoryCreatorFacet & LimitedCreatorFacet<VaultFactoryCreatorFacet>>} */
-  // @ts-expect-error TypeScript is confused
-  const vaultFactoryCreatorFacetP = E(governorCreatorFacet).getCreatorFacet();
-  const reserveCreatorFacet = consume.reserveCreatorFacet;
+  const vaultFactoryCreatorFacetP = E.get(
+    consume.vaultFactoryFacets,
+  ).creatorFacet;
+  const reserveCreatorFacet = E.get(consume.reserveFacets).creatorFacet;
   const reserveFacets = { reserveCreatorFacet };
 
   // Add a vault that will lend on aeth collateral
@@ -372,7 +375,6 @@ const setupServices = async (
     rates,
   );
   /** @type {[any, VaultFactoryCreatorFacet, VFC['publicFacet'], VaultManager, PriceAuthority]} */
-  // @ts-expect-error cast
   const [
     governorInstance,
     vaultFactory, // creator
@@ -382,7 +384,7 @@ const setupServices = async (
   ] = await Promise.all([
     E(consume.agoricNames).lookup('instance', 'VaultFactoryGovernor'),
     vaultFactoryCreatorFacetP,
-    E(governorCreatorFacet).getPublicFacet(),
+    E.get(consume.vaultFactoryFacets).publicFacet,
     aethVaultManagerP,
     pa,
   ]);

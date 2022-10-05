@@ -184,8 +184,9 @@ export const setupPsm = async (
 
   const committeeCreator = await consume.economicCommitteeCreatorFacet;
   const electorateInstance = await instance.consume.economicCommittee;
-  const { creatorFacet: econCharterCreatorFacet } =
-    await consume.econCharterStartResult;
+  const { creatorFacet: econCharterCreatorFacet } = await E.get(
+    consume.econCharterFacets,
+  );
 
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
   const poserInvitationAmount = await E(

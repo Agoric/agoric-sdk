@@ -38,7 +38,7 @@ export const startPSM = async (
       zoe,
       feeMintAccess: feeMintAccessP,
       economicCommitteeCreatorFacet,
-      econCharterStartResult,
+      econCharterFacets,
       provisionPoolStartResult,
       chainStorage,
       chainTimerService,
@@ -184,7 +184,7 @@ export const startPSM = async (
 
   await Promise.all([
     E(instanceAdmin).update(instanceKey, newPsmFacets.psm),
-    E(E.get(econCharterStartResult).creatorFacet).addInstance(
+    E(E.get(econCharterFacets).creatorFacet).addInstance(
       psm,
       governorFacets.creatorFacet,
       instanceKey,
@@ -313,6 +313,35 @@ export const installGovAndPSMContracts = async ({
 };
 
 /**
+ * @deprecated the PSM charter has been merged with the econ charter
+ * @param {EconomyBootstrapPowers} powers
+ */
+export const startPSMCharter = async ({
+  consume: { zoe },
+  produce: { econCharterFacets },
+  installation: {
+    consume: { binaryVoteCounter, econCommitteeCharter: installP },
+  },
+  instance: {
+    produce: { econCommitteeCharter: instanceP },
+  },
+}) => {
+  const [charterR, counterR] = await Promise.all([installP, binaryVoteCounter]);
+
+  const terms = { binaryVoteCounterInstallation: counterR };
+  const facets = await E(zoe).startInstance(charterR, {}, terms);
+
+  instanceP.resolve(facets.instance);
+  econCharterFacets.resolve(
+    harden({
+      creatorFacet: facets.creatorFacet,
+      adminFacet: facets.adminFacet,
+      instance: facets.instance,
+    }),
+  );
+};
+
+/**
  * PSM and gov contracts are available as
  * named swingset bundles only in
  * decentral-psm-config.json
@@ -338,7 +367,7 @@ export const PSM_GOV_MANIFEST = {
   [startEconCharter.name]: {
     consume: { zoe: 'zoe', agoricNames: true },
     produce: {
-      econCharterStartResult: 'econCommitteeCharter',
+      econCharterFacets: 'econCommitteeCharter',
     },
     installation: {
       consume: { binaryVoteCounter: 'zoe', econCommitteeCharter: 'zoe' },
@@ -356,6 +385,7 @@ export const INVITE_PSM_COMMITTEE_MANIFEST = harden(
       consume: {
         namesByAddressAdmin: true,
         economicCommitteeCreatorFacet: true,
+        econCharterFacets: true,
       },
     },
     [inviteToEconCharter.name]: {
@@ -384,7 +414,7 @@ export const PSM_MANIFEST = harden({
       feeMintAccess: 'zoe',
       economicCommitteeCreatorFacet: 'economicCommittee',
       provisionPoolStartResult: true,
-      econCharterStartResult: 'econCommitteeCharter',
+      econCharterFacets: 'econCommitteeCharter',
       chainTimerService: 'timer',
       psmFacets: true,
     },

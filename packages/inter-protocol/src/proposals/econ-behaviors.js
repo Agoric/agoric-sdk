@@ -6,7 +6,7 @@ import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
 import { makeStorageNodeChild } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
 import { Stable, Stake } from '@agoric/vats/src/tokens.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import * as Collect from '../collect.js';
@@ -32,6 +32,7 @@ const MILLI = 1_000_000n;
  * @typedef {GovernedCreatorFacet<import('../stakeFactory/stakeFactory.js').StakeFactoryCreator>} StakeFactoryCreator
  * @typedef {import('../stakeFactory/stakeFactory.js').StakeFactoryPublic} StakeFactoryPublic
  * @typedef {import('../reserve/assetReserve.js').GovernedAssetReserveFacetAccess} GovernedAssetReserveFacetAccess
+ * @typedef {import('../vaultFactory/vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
  */
 
 /**
@@ -47,23 +48,44 @@ const MILLI = 1_000_000n;
  * @typedef { WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace
  * } EconomyBootstrapPowers
  * @typedef {PromiseSpaceOf<{
- *   ammInstanceWithoutReserve: Instance,
- *   ammCreatorFacet: XYKAMMCreatorFacet,
- *   ammGovernorCreatorFacet: GovernedContractFacetAccess<XYKAMMPublicFacet,XYKAMMCreatorFacet>,
+ *   ammFacets: {
+ *     instanceWithoutReserve: Instance,
+ *     creatorFacet: XYKAMMCreatorFacet,
+ *     governorCreatorFacet: GovernedContractFacetAccess<XYKAMMPublicFacet,XYKAMMCreatorFacet>,
+ *     adminFacet: AdminFacet,
+ *     publicFacet: XYKAMMPublicFacet,
+ *   },
  *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet,
- *   feeDistributorCreatorFacet: import('../feeDistributor.js').FeeDistributorCreatorFacet,
- *   feeDistributorPublicFacet: import('../feeDistributor.js').FeeDistributorPublicFacet,
+ *   feeDistributorFacets: {
+ *     creatorFacet: import('../feeDistributor.js').FeeDistributorCreatorFacet,
+ *     publicFacet: import('../feeDistributor.js').FeeDistributorPublicFacet,
+ *     adminFacet: AdminFacet,
+ *   },
  *   periodicFeeCollectors: import('../feeDistributor.js').PeriodicFeeCollector[],
  *   bankMints: Mint[],
  *   psmFacets: MapStore<Brand, PSMFacets>,
- *   econCharterStartResult: EconCharterStartResult,
- *   reservePublicFacet: import('../reserve/assetReserve.js').AssetReservePublicFacet,
- *   reserveCreatorFacet: import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet,
- *   reserveGovernorCreatorFacet: GovernedAssetReserveFacetAccess,
- *   stakeFactoryCreatorFacet: StakeFactoryCreator,
- *   vaultFactoryCreator: VaultFactoryCreatorFacet,
- *   vaultFactoryGovernorCreator: GovernedContractFacetAccess<{},{}>,
- *   vaultFactoryVoteCreator: unknown,
+ *   econCharterFacets: {
+ *     creatorFacet: EconCharterStartResult,
+ *     adminFacet: AdminFacet,
+ *   },
+ *   reserveFacets: {
+ *     publicFacet: import('../reserve/assetReserve.js').AssetReservePublicFacet,
+ *     creatorFacet: import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet,
+ *     governorCreatorFacet: GovernedAssetReserveFacetAccess,
+ *     adminFacet: AdminFacet,
+ *   },
+ *   stakeFactoryFacets: {
+ *     creatorFacet: StakeFactoryCreator,
+ *     governorCreatorFacet: GovernedContractFacetAccess<{}, {}>,
+ *     adminFacet: AdminFacet,
+ *     publicFacet: StakeFactoryPublic,
+ *   },
+ *   vaultFactoryFacets: {
+ *     publicFacet: VaultFactoryPublicFacet,
+ *     creatorFacet: VaultFactoryCreatorFacet,
+ *     governorCreatorFacet: GovernedContractFacetAccess<{},{}>,
+ *     adminFacet: AdminFacet,
+ *   },
  *   minInitialDebt: NatValue,
  * }>} EconomyBootstrapSpace
  */
@@ -148,11 +170,7 @@ export const setupAmm = async (
       economicCommitteeCreatorFacet: committeeCreator,
       chainStorage,
     },
-    produce: {
-      ammCreatorFacet,
-      ammInstanceWithoutReserve,
-      ammGovernorCreatorFacet,
-    },
+    produce: { ammFacets },
     brand: {
       consume: { [Stable.symbol]: runBrandP },
     },
@@ -200,7 +218,7 @@ export const setupAmm = async (
     }),
   );
 
-  /** @type {{ creatorFacet: GovernedContractFacetAccess<XYKAMMPublicFacet,XYKAMMCreatorFacet>, publicFacet: GovernorPublic, instance: Instance }} */
+  /** @type {{ creatorFacet: GovernedContractFacetAccess<XYKAMMPublicFacet,XYKAMMCreatorFacet>, publicFacet: GovernorPublic, instance: Instance, adminFacet: AdminFacet }} */
   const g = await E(zoe).startInstance(
     governorInstallation,
     {},
@@ -220,13 +238,19 @@ export const setupAmm = async (
     E(g.creatorFacet).getPublicFacet(),
     E(g.publicFacet).getGovernedContract(),
   ]);
-  ammGovernorCreatorFacet.resolve(g.creatorFacet);
-  ammCreatorFacet.resolve(creatorFacet);
+  ammFacets.resolve(
+    harden({
+      creatorFacet,
+      instanceWithoutReserve: instance,
+      governorCreatorFacet: g.creatorFacet,
+      adminFacet: g.adminFacet,
+      publicFacet: ammPublicFacet,
+    }),
+  );
 
   // Confirm that the amm was indeed setup
   ammPublicFacet || Fail`ammPublicFacet broken  ${ammPublicFacet}`;
 
-  ammInstanceWithoutReserve.resolve(instance);
   ammGovernor.resolve(g.instance);
   return ammInstallation;
 };
@@ -234,8 +258,7 @@ export const setupAmm = async (
 /** @param {EconomyBootstrapPowers} powers */
 export const setupReserve = async ({
   consume: {
-    ammCreatorFacet,
-    ammInstanceWithoutReserve,
+    ammFacets: ammFacetsP,
     board,
     feeMintAccess: feeMintAccessP,
     chainStorage,
@@ -243,11 +266,7 @@ export const setupReserve = async ({
     zoe,
     economicCommitteeCreatorFacet: committeeCreator,
   },
-  produce: {
-    reserveCreatorFacet,
-    reserveGovernorCreatorFacet,
-    reservePublicFacet,
-  },
+  produce: { reserveFacets },
   issuer: {
     consume: { [Stable.symbol]: centralIssuer },
   },
@@ -268,16 +287,17 @@ export const setupReserve = async ({
   const STORAGE_PATH = 'reserve';
   trace('setupReserve');
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
-  const [poserInvitation, poserInvitationAmount, feeMintAccess] =
+  const [poserInvitation, poserInvitationAmount, feeMintAccess, ammFacets] =
     await Promise.all([
       poserInvitationP,
       E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
       feeMintAccessP,
+      ammFacetsP,
     ]);
 
   const reserveTerms = makeReserveTerms(
     poserInvitationAmount,
-    ammInstanceWithoutReserve,
+    ammFacets.instanceWithoutReserve,
   );
 
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
@@ -293,7 +313,7 @@ export const setupReserve = async ({
       },
     }),
   );
-  /** @type {{ creatorFacet: GovernedAssetReserveFacetAccess, publicFacet: GovernorPublic, instance: Instance }} */
+  /** @type {{ creatorFacet: GovernedAssetReserveFacetAccess, publicFacet: GovernorPublic, instance: Instance, adminFacet: AdminFacet }} */
   const g = await E(zoe).startInstance(
     governorInstallation,
     {},
@@ -315,9 +335,14 @@ export const setupReserve = async ({
     E(g.publicFacet).getGovernedContract(),
   ]);
 
-  reserveGovernorCreatorFacet.resolve(g.creatorFacet);
-  reserveCreatorFacet.resolve(creatorFacet);
-  reservePublicFacet.resolve(publicFacet);
+  reserveFacets.resolve(
+    harden({
+      publicFacet,
+      creatorFacet,
+      governorCreatorFacet: g.creatorFacet,
+      adminFacet: g.adminFacet,
+    }),
+  );
 
   reserveInstanceProducer.resolve(instance);
   reserveGovernor.resolve(g.instance);
@@ -326,9 +351,9 @@ export const setupReserve = async ({
   // time because Reserve requires AMM itself in order to be started.
   // Now that we have the reserve, provide it to the AMM.
   trace('Resolving the reserve public facet on the AMM');
-  await E(ammCreatorFacet).resolveReserveFacet(publicFacet);
+  await E(ammFacets.creatorFacet).resolveReserveFacet(publicFacet);
   // it now has the reserve
-  ammInstanceProducer.resolve(ammInstanceWithoutReserve);
+  ammInstanceProducer.resolve(ammFacets.instanceWithoutReserve);
 
   return reserveInstallation;
 };
@@ -349,9 +374,9 @@ export const startVaultFactory = async (
       zoe,
       feeMintAccess: feeMintAccessP,
       economicCommitteeCreatorFacet: electorateCreatorFacet,
-      reserveCreatorFacet,
+      reserveFacets,
     },
-    produce, // {  vaultFactoryCreator }
+    produce: { vaultFactoryFacets },
     brand: {
       consume: { [Stable.symbol]: centralBrandP },
     },
@@ -379,8 +404,9 @@ export const startVaultFactory = async (
   trace('startVaultFactory');
 
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
-  const shortfallInvitationP =
-    E(reserveCreatorFacet).makeShortfallReportingInvitation();
+  const shortfallInvitationP = E(
+    E.get(reserveFacets).creatorFacet,
+  ).makeShortfallReportingInvitation();
   const [
     initialPoserInvitation,
     poserInvitationAmount,
@@ -432,37 +458,41 @@ export const startVaultFactory = async (
     }),
   );
 
-  const { creatorFacet: governorCreatorFacet, instance: governorInstance } =
-    await E(zoe).startInstance(
-      contractGovernorInstallation,
-      undefined,
-      governorTerms,
-      harden({
-        electorateCreatorFacet,
-        governed: {
-          feeMintAccess,
-          initialPoserInvitation,
-          initialShortfallInvitation,
-          marshaller,
-          storageNode,
-        },
-      }),
-    );
+  const {
+    creatorFacet: governorCreatorFacet,
+    instance: governorInstance,
+    adminFacet,
+  } = await E(zoe).startInstance(
+    contractGovernorInstallation,
+    undefined,
+    governorTerms,
+    harden({
+      electorateCreatorFacet,
+      governed: {
+        feeMintAccess,
+        initialPoserInvitation,
+        initialShortfallInvitation,
+        marshaller,
+        storageNode,
+      },
+    }),
+  );
 
-  const [vaultFactoryInstance, vaultFactoryCreator] = await Promise.all([
-    E(governorCreatorFacet).getInstance(),
-    E(governorCreatorFacet).getCreatorFacet(),
-  ]);
+  const [vaultFactoryInstance, vaultFactoryCreator, publicFacet] =
+    await Promise.all([
+      E(governorCreatorFacet).getInstance(),
+      E(governorCreatorFacet).getCreatorFacet(),
+      E(governorCreatorFacet).getPublicFacet(),
+    ]);
 
-  const voteCreator = Far('vaultFactory vote creator', {
-    /** @type {VoteOnParamChanges} */
-    voteOnParamChanges: (...args) =>
-      E(governorCreatorFacet).voteOnParamChanges(...args),
-  });
-
-  produce.vaultFactoryCreator.resolve(vaultFactoryCreator);
-  produce.vaultFactoryGovernorCreator.resolve(governorCreatorFacet);
-  produce.vaultFactoryVoteCreator.resolve(voteCreator);
+  vaultFactoryFacets.resolve(
+    harden({
+      creatorFacet: vaultFactoryCreator,
+      governorCreatorFacet,
+      adminFacet,
+      publicFacet,
+    }),
+  );
 
   // Advertise the installations, instances in agoricNames.
   instanceProduce.VaultFactory.resolve(vaultFactoryInstance);
@@ -480,7 +510,7 @@ export const startVaultFactory = async (
  * @param {string} [root0.options.vaultFactoryControllerAddress]
  */
 export const grantVaultFactoryControl = async (
-  { consume: { client, priceAuthorityAdmin, vaultFactoryCreator } },
+  { consume: { client, priceAuthorityAdmin, vaultFactoryFacets } },
   { options: { vaultFactoryControllerAddress } = {} } = {},
 ) => {
   await E(client).assignBundle([
@@ -488,7 +518,7 @@ export const grantVaultFactoryControl = async (
       vaultFactoryCreatorFacet:
         typeof vaultFactoryControllerAddress === 'string' &&
         addr === vaultFactoryControllerAddress
-          ? vaultFactoryCreator
+          ? E.get(vaultFactoryFacets).creatorFacet
           : undefined,
       priceAuthorityAdminFacet:
         typeof vaultFactoryControllerAddress === 'string' &&
@@ -595,15 +625,15 @@ export const startRewardDistributor = async ({
   consume: {
     chainTimerService,
     bankManager,
-    vaultFactoryCreator,
+    vaultFactoryFacets,
     periodicFeeCollectors,
-    ammCreatorFacet,
-    stakeFactoryCreatorFacet,
-    reservePublicFacet,
+    ammFacets,
+    stakeFactoryFacets,
+    reserveFacets,
     zoe,
   },
   produce: {
-    feeDistributorCreatorFacet: feeDistributorCreatorFacetP,
+    feeDistributorFacets,
     periodicFeeCollectors: periodicFeeCollectorsP,
   },
   instance: {
@@ -647,43 +677,50 @@ export const startRewardDistributor = async ({
       return undefined;
     });
 
-  const feeDistributorFacets = await E(zoe).startInstance(
+  const facets = await E(zoe).startInstance(
     feeDistributor,
     { Fee: centralIssuer },
     feeDistributorTerms,
   );
-  await E(feeDistributorFacets.creatorFacet).setDestinations({
+  await E(facets.creatorFacet).setDestinations({
     RewardDistributor:
       rewardDistributorDepositFacet &&
-      E(feeDistributorFacets.creatorFacet).makeDepositFacetDestination(
+      E(facets.creatorFacet).makeDepositFacetDestination(
         rewardDistributorDepositFacet,
       ),
-    Reserve: E(feeDistributorFacets.creatorFacet).makeOfferDestination(
+    Reserve: E(facets.creatorFacet).makeOfferDestination(
       'Collateral',
-      reservePublicFacet,
+      E.get(reserveFacets).publicFacet,
       'makeAddCollateralInvitation',
     ),
   });
 
-  feeDistributorCreatorFacetP.resolve(feeDistributorFacets.creatorFacet);
-  feeDistributorP.resolve(feeDistributorFacets.instance);
+  feeDistributorFacets.resolve(
+    harden({
+      creatorFacet: facets.creatorFacet,
+      publicFacet: facets.publicFacet,
+      adminFacet: facets.adminFacet,
+    }),
+  );
+  feeDistributorP.resolve(facets.instance);
 
   // Initialize the periodic collectors list if we don't have one.
   periodicFeeCollectorsP.resolve([]);
   const periodicCollectors = await periodicFeeCollectors;
 
   const collectorFacets = {
-    vaultFactory: vaultFactoryCreator,
-    amm: ammCreatorFacet,
-    runStake: stakeFactoryCreatorFacet,
+    vaultFactory: E.get(vaultFactoryFacets).creatorFacet,
+    amm: E.get(ammFacets).creatorFacet,
+    runStake: E.get(stakeFactoryFacets).creatorFacet,
   };
   await Promise.all(
     Object.entries(collectorFacets).map(async ([debugName, collectorFacet]) => {
-      const collector = E(
-        feeDistributorFacets.creatorFacet,
-      ).makeContractFeeCollector(zoe, collectorFacet);
+      const collector = E(facets.creatorFacet).makeContractFeeCollector(
+        zoe,
+        collectorFacet,
+      );
       const periodicCollector = await E(
-        feeDistributorFacets.creatorFacet,
+        facets.creatorFacet,
       ).startPeriodicCollection(debugName, collector);
       periodicCollectors.push(periodicCollector);
     }),
@@ -745,8 +782,7 @@ export const startStakeFactory = async (
       chainStorage,
       economicCommitteeCreatorFacet,
     },
-    // @ts-expect-error TODO: add to BootstrapPowers
-    produce: { stakeFactoryCreatorFacet, stakeFactoryGovernorCreatorFacet },
+    produce: { stakeFactoryFacets },
     installation: {
       consume: {
         contractGovernor: contractGovernorInstallation,
@@ -822,7 +858,7 @@ export const startStakeFactory = async (
     }),
   );
 
-  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<StakeFactoryPublic,StakeFactoryCreator>}} */
+  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<StakeFactoryPublic,StakeFactoryCreator>, adminFacet: AdminFacet}} */
   const governorFacets = await E(zoe).startInstance(
     contractGovernorInstallation,
     {},
@@ -837,16 +873,28 @@ export const startStakeFactory = async (
       },
     },
   );
-  const governedInstance = await E(governorFacets.creatorFacet).getInstance();
-  const creatorFacet = E(governorFacets.creatorFacet).getCreatorFacet();
+
+  const [governedInstance, governedCreatorFacet, governedPublicFacet] =
+    await Promise.all([
+      E(governorFacets.creatorFacet).getInstance(),
+      E(governorFacets.creatorFacet).getCreatorFacet(),
+      E(governorFacets.creatorFacet).getPublicFacet(),
+    ]);
 
   const {
     issuers: { Attestation: attIssuer },
     brands: { Attestation: attBrand },
   } = await E(zoe).getTerms(governedInstance);
 
-  stakeFactoryCreatorFacet.resolve(creatorFacet);
-  stakeFactoryGovernorCreatorFacet.resolve(governorFacets.creatorFacet);
+  stakeFactoryFacets.resolve(
+    harden({
+      creatorFacet: governedCreatorFacet,
+      governorCreatorFacet: governorFacets.creatorFacet,
+      adminFacet: governorFacets.adminFacet,
+      publicFacet: governedPublicFacet,
+    }),
+  );
+
   stakeFactoryinstanceR.resolve(governedInstance);
   attestationBrandR.resolve(attBrand);
   attestationIssuerR.resolve(attIssuer);
@@ -854,7 +902,7 @@ export const startStakeFactory = async (
     E(client).assignBundle([
       address => ({
         // @ts-expect-error ??? creatorFacet is a StakeFactoryCreator; it has the method
-        attMaker: E(creatorFacet).provideAttestationMaker(address),
+        attMaker: E(governedCreatorFacet).provideAttestationMaker(address),
       }),
     ]),
   ]);

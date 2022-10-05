@@ -76,9 +76,9 @@ harden(startEconCharter);
  */
 export const addGovernorsToEconCharter = async ({
   consume: {
-    reserveGovernorCreatorFacet,
-    ammGovernorCreatorFacet,
-    vaultFactoryGovernorCreator,
+    reserveFacets,
+    ammFacets,
+    vaultFactoryFacets,
     econCharterStartResult,
   },
   instance: {
@@ -90,11 +90,11 @@ export const addGovernorsToEconCharter = async ({
   // Introduce charter to governed creator facets.
   await Promise.all(
     [
-      { instanceP: amm, facetP: ammGovernorCreatorFacet },
-      { instanceP: reserve, facetP: reserveGovernorCreatorFacet },
+      { instanceP: amm, facetP: E.get(ammFacets).governorCreatorFacet },
+      { instanceP: reserve, facetP: E.get(reserveFacets).governorCreatorFacet },
       {
         instanceP: VaultFactory,
-        facetP: vaultFactoryGovernorCreator,
+        facetP: E.get(vaultFactoryFacets).governorCreatorFacet,
       },
     ].map(async ({ instanceP, facetP }) => {
       const [instance, govFacet] = await Promise.all([instanceP, facetP]);
@@ -156,6 +156,16 @@ export const getManifestForInviteCommittee = async (
           ammGovernorCreatorFacet: t,
           vaultFactoryGovernorCreator: t,
           econCharterStartResult: t,
+          zoe: t,
+          agoricNames: t,
+          namesByAddressAdmin: t,
+          economicCommitteeCreatorFacet: t,
+          reserveFacets: t,
+          ammFacets: t,
+          vaultFactoryFacets: t,
+        },
+        installation: {
+          consume: { binaryVoteCounter: t },
         },
         instance: {
           consume: { amm: t, reserve: t, VaultFactory: t },

@@ -52,7 +52,7 @@ const setupReserveBootstrap = async (
   const newAmm = {
     ammCreatorFacet: ammSpaces.amm.ammCreatorFacet,
     ammPublicFacet: ammSpaces.amm.ammPublicFacet,
-    instance: ammSpaces.amm.governedInstance,
+    instance: ammSpaces.amm.instance,
   };
 
   return {
@@ -104,7 +104,9 @@ export const setupReserveServices = async (
   issuer.produce.IST.resolve(runIssuer);
   produce.feeMintAccess.resolve(await feeMintAccess);
 
-  const governorCreatorFacet = consume.reserveGovernorCreatorFacet;
+  const governorCreatorFacet = E.get(
+    consume.reserveFacets,
+  ).governorCreatorFacet;
   const governorInstance = await instance.consume.reserveGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
   const g = {
@@ -119,7 +121,7 @@ export const setupReserveServices = async (
 
   /** @type {ReserveKit} */
   const reserve = {
-    reserveCreatorFacet: await consume.reserveCreatorFacet,
+    reserveCreatorFacet: await E.get(consume.reserveFacets).creatorFacet,
     reservePublicFacet,
     instance: governedInstance,
   };

@@ -162,7 +162,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   });
   await setupReserve(space);
 
-  const governorCreatorFacet = consume.ammGovernorCreatorFacet;
+  const governorCreatorFacet = E.get(consume.ammFacets).governorCreatorFacet;
   const governorInstance = await instance.consume.ammGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
   const governedInstance = E(governorPublicFacet).getGovernedContract();
@@ -171,7 +171,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   t.context.committee = makeVoterTool(
     zoe,
     space.consume.economicCommitteeCreatorFacet,
-    space.consume.vaultFactoryGovernorCreator,
+    E.get(space.consume.vaultFactoryFacets).governorCreatorFacet,
     counter,
   );
 
@@ -204,7 +204,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
 
   // TODO get the creator directly
   const newAmm = {
-    ammCreatorFacet: await consume.ammCreatorFacet,
+    ammCreatorFacet: await E.get(consume.ammFacets).creatorFacet,
     ammPublicFacet,
     instance: governedInstance,
     ammLiquidity: E(ammLiquiditySeat).getPayout('Liquidity'),
@@ -302,12 +302,16 @@ const setupServices = async (
   const {
     installation: { produce: iProduce },
   } = space;
-  t.context.reserveCreatorFacet = space.consume.reserveCreatorFacet;
+  t.context.reserveCreatorFacet = E.get(
+    space.consume.reserveFacets,
+  ).creatorFacet;
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
   iProduce.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
 
-  const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
+  const governorCreatorFacet = E.get(
+    consume.vaultFactoryFacets,
+  ).governorCreatorFacet;
   /** @type {Promise<VaultFactoryCreatorFacet & LimitedCreatorFacet<any>>} */
   const vaultFactoryCreatorFacet = /** @type { any } */ (
     E(governorCreatorFacet).getCreatorFacet()
