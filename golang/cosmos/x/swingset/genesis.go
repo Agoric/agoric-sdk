@@ -1,8 +1,7 @@
 package swingset
 
 import (
-	// "fmt"
-
+	// "os"
 	"fmt"
 	stdlog "log"
 
@@ -40,6 +39,7 @@ type bootstrapBlockAction struct {
 
 func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abci.ValidatorUpdate {
 	keeper.SetParams(ctx, data.GetParams())
+	keeper.SetState(ctx, data.GetState())
 
 	// Just run the SwingSet kernel to finish bootstrap and get ready to open for
 	// business.
@@ -52,6 +52,7 @@ func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abc
 
 	_, err := keeper.BlockingSend(ctx, action)
 
+	// fmt.Fprintf(os.Stderr, "BOOTSTRAP_BLOCK Returned from swingset: %s, %v\n", out, err)
 	if err != nil {
 		// NOTE: A failed BOOTSTRAP_BLOCK means that the SwingSet state is inconsistent.
 		// Panic here, in the hopes that a replay from scratch will fix the problem.
@@ -64,5 +65,6 @@ func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abc
 func ExportGenesis(ctx sdk.Context, k Keeper) *types.GenesisState {
 	gs := NewGenesisState()
 	gs.Params = k.GetParams(ctx)
+	gs.State = k.GetState(ctx)
 	return gs
 }

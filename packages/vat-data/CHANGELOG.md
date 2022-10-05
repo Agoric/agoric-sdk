@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.4.0...@agoric/vat-data@0.4.1) (2022-10-05)
+
+**Note:** Version bump only for package @agoric/vat-data
+
+
+
+
+
 ## [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.3.1...@agoric/vat-data@0.4.0) (2022-09-20)
 
 

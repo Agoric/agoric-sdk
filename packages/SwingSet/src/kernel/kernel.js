@@ -1300,6 +1300,10 @@ export default function buildKernel(
     const crankNum = kernelKeeper.getCrankNumber();
     kernelKeeper.incrementCrankNumber();
     const { crankhash, activityhash } = kernelKeeper.commitCrank();
+    // kernelSlog.write({
+    //   type: 'kernel-stats',
+    //   stats: kernelKeeper.getStats(),
+    // });
     kernelSlog.write({
       type: 'crank-finish',
       crankNum,

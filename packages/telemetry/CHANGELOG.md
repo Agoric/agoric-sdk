@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.3.0...@agoric/telemetry@0.4.0) (2022-10-05)
+
+
+### Features
+
+* **telemetry:** Support slog sender in subprocess ([9fa268f](https://github.com/Agoric/agoric-sdk/commit/9fa268fc9b59d9fb26d829300d7a9d5a768e47bc))
+* **telemetry:** Support SLOGSENDER_AGENT_ env prefix ([e504005](https://github.com/Agoric/agoric-sdk/commit/e50400527a03d32fdf34a30fd29229f98e9baf5c))
+
+
+### Bug Fixes
+
+* cleanup, update, and refactor slog-to-otel converter ([225f1dd](https://github.com/Agoric/agoric-sdk/commit/225f1dda46ec99dbc47ba39b3a99e278a4c1adbb)), closes [#4585](https://github.com/Agoric/agoric-sdk/issues/4585)
+* **telemetry:** forceFlush is async ([5cf56b9](https://github.com/Agoric/agoric-sdk/commit/5cf56b9d22a4e9436f1ce1b5020ea68071ef7f55))
+* **telemetry:** further prevent duplication of slog senders ([c7a3fc4](https://github.com/Agoric/agoric-sdk/commit/c7a3fc46526b3ecf05b0f3b2b86983b788467423))
+* **telemetry:** slog sender errors should never propagate ([593aaae](https://github.com/Agoric/agoric-sdk/commit/593aaae57489bb8bfd1217dc995d7d6e4d395ab4))
+
+
+
 ## [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.2.1...@agoric/telemetry@0.3.0) (2022-09-20)
 
 

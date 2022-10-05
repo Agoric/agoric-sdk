@@ -19,6 +19,11 @@ const (
 	BeansPerMinFeeDebit       = "minFeeDebit"
 	BeansPerVatCreation       = "vatCreation"
 	BeansPerXsnapComputron    = "xsnapComputron"
+
+	// QueueSize keys.
+	// Keep up-to-date with updateQueueAllowed() in packanges/cosmic-swingset/src/launch-chain.js
+	QueueInbound        = "inbound"
+	QueueInboundMempool = "inbound_mempool"
 )
 
 var (
@@ -58,5 +63,11 @@ var (
 
 	DefaultPowerFlagFees = []PowerFlagFee{
 		NewPowerFlagFee("SMART_WALLET", sdk.NewCoins(sdk.NewInt64Coin("ubld", 10_000_000))),
+	}
+
+	DefaultInboundQueueMax = int32(1_000)
+
+	DefaultQueueMax = []QueueSize{
+		NewQueueSize(QueueInbound, DefaultInboundQueueMax),
 	}
 )

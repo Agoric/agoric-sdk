@@ -17,7 +17,6 @@ var (
 	NewMsgDeliverInbound = types.NewMsgDeliverInbound
 	NewMsgProvision      = types.NewMsgProvision
 	NewMailbox           = types.NewMailbox
-	ModuleCdc            = types.ModuleCdc
 	RegisterCodec        = types.RegisterCodec
 )
 
