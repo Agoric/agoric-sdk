@@ -4,7 +4,7 @@ import { NO_SMART_WALLET_ERROR } from '@agoric/smart-wallet/src/utils';
 import { makeImportContext } from '@agoric/wallet/api/src/marshal-contexts';
 import MuiAlert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 
 import {
   ConnectionStatus,
@@ -83,6 +83,11 @@ const SmartWalletConnection = ({
     }
   };
 
+  const [context, leader] = useMemo(
+    () => [makeImportContext(), makeLeader(href)],
+    [connectionConfig, keplrConnection],
+  );
+
   useEffect(() => {
     if (
       !connectionConfig ||
@@ -96,8 +101,6 @@ const SmartWalletConnection = ({
     let cleanupStorageBridge;
 
     const follow = async () => {
-      const context = makeImportContext();
-      const leader = makeLeader(href);
       const followPublished = path =>
         makeFollower(`:published.${path}`, leader, {
           unserializer: context.fromMyWallet,
@@ -159,6 +162,8 @@ const SmartWalletConnection = ({
         onClose={onProvisionDialogClose}
         address={publicAddress}
         href={href}
+        unserializer={context.fromBoard}
+        leader={leader}
       />
     </div>
   );
