@@ -10,11 +10,6 @@ import (
 	swingtypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 )
 
-const (
-	QueueInbound        = "inbound"
-	QueueInboundMempool = "inbound_mempool"
-)
-
 // TODO: We don't have a more appropriate error type for this.
 var ErrInboundQueueFull = sdkerrors.ErrMempoolIsFull
 
@@ -47,26 +42,21 @@ func (ia inboundAnte) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next
 			// transactions included in the block.
 			// We store the number of allowed messages locally since messages are
 			// added to the actionQueue after going through the ante handler (in
-			// non-simulate mode) and before the next transaction is processed.
-			// However in simulate mode (mempool admission check), no state is
+			// CheckTx) and before the next transaction is processed.
+			// However in CheckTx (mempool admission check), no state is
 			// changed so it's possible for a set of transactions to exist which
 			// if all included in a block would push the actionQueue over, and thus
 			// end up in rejections instead of simply not admitting them in the
 			// mempool. To mitigate this, Swingset should compute the number of
 			// messages allowed for mempool admission as if its max queue length
-			// was lower (e.g. 50%).
+			// was lower (e.g. 50%). This is the QueueInboundMempool entry.
 			if inboundsAllowed == -1 {
 				state := ia.sk.GetState(ctx)
-				entry := QueueInbound
-				if simulate {
-					entry = QueueInboundMempool
+				entry := swingtypes.QueueInbound
+				if ctx.IsCheckTx() {
+					entry = swingtypes.QueueInboundMempool
 				}
 				allowed, found := swingtypes.QueueSizeEntry(state.QueueAllowed, entry)
-				if !found && simulate {
-					entry = QueueInbound
-					allowed, found = swingtypes.QueueSizeEntry(state.QueueAllowed, entry)
-					allowed /= 2
-				}
 				if found {
 					actions, err := ia.sk.ActionQueueLength(ctx)
 					if err != nil {
@@ -78,7 +68,7 @@ func (ia inboundAnte) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next
 						inboundsAllowed = 0
 					}
 				} else {
-					// no inbound allowed size from swingset
+					// if number of allowed entries not given, fail closed
 					inboundsAllowed = 0
 				}
 			}

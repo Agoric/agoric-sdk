@@ -321,6 +321,8 @@ export async function launch({
     );
 
     savedQueueAllowed = {
+      // Keep up-to-date with queue size keys defined in
+      // golang/cosmos/x/swingset/types/default-params.go
       inbound: inboundQueueAllowed,
       inbound_mempool: inboundMempoolQueueAllowed,
     };
