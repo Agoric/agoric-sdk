@@ -49,6 +49,7 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewTxTimeoutHeightDecorator(),
 		ante.NewValidateMemoDecorator(opts.AccountKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(opts.AccountKeeper),
+		NewInboundDecorator(opts.SwingsetKeeper),
 		NewDeductFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper, opts.FeeCollectorName),
 		// SetPubKeyDecorator must be called before all signature verification decorators
 		ante.NewSetPubKeyDecorator(opts.AccountKeeper),
@@ -56,7 +57,6 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewSigGasConsumeDecorator(opts.AccountKeeper, sigGasConsumer),
 		ante.NewSigVerificationDecorator(opts.AccountKeeper, opts.SignModeHandler),
 		NewAdmissionDecorator(opts.AdmissionData),
-		NewInboundDecorator(opts.SwingsetKeeper),
 		ante.NewIncrementSequenceDecorator(opts.AccountKeeper),
 		ibcante.NewAnteDecorator(opts.IBCKeeper),
 	}
