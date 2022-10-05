@@ -10,7 +10,7 @@ import TextField from '@mui/material/TextField';
 import { makeStyles } from '@mui/styles';
 import { useMemo, useState } from 'react';
 import { withApplicationContext } from '../contexts/Application';
-import { KnownNetworkConfigUrls } from '../util/connections.js';
+import { networkConfigUrl } from '../util/connections.js';
 import { deepEquals } from '../util/DeepEquals';
 import { maybeSave } from '../util/storage';
 
@@ -19,22 +19,6 @@ const useStyles = makeStyles(_ => ({
     textAlign: 'center',
   },
 }));
-
-// XXX transformers for backwards compatibility with connection config storage
-const networkConfigUrl = {
-  fromSource(source) {
-    return KnownNetworkConfigUrls[source];
-  },
-  toSource(href) {
-    const matchingEntry = Object.entries(KnownNetworkConfigUrls).find(
-      ([_, url]) => url === href,
-    );
-    if (matchingEntry) {
-      return matchingEntry[0];
-    }
-    return 'custom';
-  },
-};
 
 const Errors = {
   INVALID_URL: 'invalid url',
@@ -75,9 +59,7 @@ const ConnectionSettingsDialog = ({
 
   const [configSource, setConfigSource] = useState(
     /** @type {keyof KnownNetworkConfigUrls | 'custom'} */ (
-      connectionConfig
-        ? networkConfigUrl.toSource(connectionConfig.href)
-        : 'main'
+      networkConfigUrl.toSource(connectionConfig.href)
     ),
   );
 

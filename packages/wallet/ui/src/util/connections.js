@@ -11,3 +11,18 @@ export const KnownNetworkConfigUrls = {
 export const DEFAULT_CONNECTION_CONFIGS = Object.values(
   KnownNetworkConfigUrls,
 ).map(href => ({ href }));
+
+export const networkConfigUrl = {
+  fromSource(source) {
+    return KnownNetworkConfigUrls[source];
+  },
+  toSource(href) {
+    const matchingEntry = Object.entries(KnownNetworkConfigUrls).find(
+      ([_, url]) => url === href,
+    );
+    if (matchingEntry) {
+      return matchingEntry[0];
+    }
+    return 'custom';
+  },
+};

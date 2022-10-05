@@ -7,7 +7,10 @@ import { SigningStargateClient } from '@cosmjs/stargate';
 import { Random } from '@cosmjs/crypto';
 import { ApplicationContext, ConnectionStatus } from './Application';
 
-import { DEFAULT_CONNECTION_CONFIGS } from '../util/connections';
+import {
+  DEFAULT_CONNECTION_CONFIGS,
+  KnownNetworkConfigUrls,
+} from '../util/connections';
 import { maybeLoad, maybeSave } from '../util/storage';
 import { suggestChain } from '../util/SuggestChain';
 import {
@@ -144,7 +147,7 @@ const Provider = ({ children }) => {
   const restoredConnectionConfig = maybeLoad('connectionConfig') || null;
 
   const [connectionConfig, setConnectionConfig] = useState(
-    restoredConnectionConfig,
+    restoredConnectionConfig || { href: KnownNetworkConfigUrls.main },
   );
   const [allConnectionConfigs, setAllConnectionConfigs] = useState([
     ...RESTORED_CONNECTION_CONFIGS,
