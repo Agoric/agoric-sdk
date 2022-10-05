@@ -3,7 +3,7 @@
   "description": "Webcomponent agoric-wallet-connection following open-wc recommendations",
   "license": "MIT",
   "author": "Agoric",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "main": "index.js",
   "module": "index.js",
   "scripts": {
@@ -17,7 +17,7 @@
     "lint:eslint": "exit 0"
   },
   "dependencies": {
-    "@agoric/web-components": "^0.3.0"
+    "@agoric/web-components": "^0.4.0"
   },
   "publishConfig": {
     "access": "public"

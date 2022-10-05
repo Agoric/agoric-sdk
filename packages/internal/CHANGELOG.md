@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.2.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/internal@0.2.0...@agoric/internal@0.2.1) (2022-10-05)
+
+
+### Bug Fixes
+
+* protect zoe from keyword collision ([#6370](https://github.com/Agoric/agoric-sdk/issues/6370)) ([02af4a0](https://github.com/Agoric/agoric-sdk/commit/02af4a07ad1f99b545d0bf525bd1ea97d74639d1))
+
+
+
 ## 0.2.0 (2022-09-20)
 
 

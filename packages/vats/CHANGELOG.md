@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.11.0...@agoric/vats@0.12.0) (2022-10-05)
+
+
+### Features
+
+* **vats:** devnet config with anchorAssets, econ cttee addrs ([#6282](https://github.com/Agoric/agoric-sdk/issues/6282)) ([bc883b5](https://github.com/Agoric/agoric-sdk/commit/bc883b5649aa47fff6c6895536d172cf1e9f0e25))
+
+
+### Bug Fixes
+
+* **provisionPool:** update metrics on trades ([02733eb](https://github.com/Agoric/agoric-sdk/commit/02733eb2e8172ccd2edecab986def027d58601eb))
+* **vats:** handle duplicate provision requests ([#6307](https://github.com/Agoric/agoric-sdk/issues/6307)) ([05d405d](https://github.com/Agoric/agoric-sdk/commit/05d405d5409e1f80612bb002234f5a9c3910a7df))
+
+
+
 ## [0.11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.10.0...@agoric/vats@0.11.0) (2022-09-20)
 
 

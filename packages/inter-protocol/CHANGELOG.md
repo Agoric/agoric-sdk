@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.12.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.12.0...@agoric/inter-protocol@0.12.1) (2022-10-05)
+
+
+### Bug Fixes
+
+* make it possible to set decimalPlaces when calling startPSM ([#6348](https://github.com/Agoric/agoric-sdk/issues/6348)) ([46aa80e](https://github.com/Agoric/agoric-sdk/commit/46aa80e1f8d8a73a8a7853ebcd937f5c2df64a42))
+
+
+
 ## 0.12.0 (2022-09-20)
 
 
