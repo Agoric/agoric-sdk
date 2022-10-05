@@ -126,7 +126,7 @@ export const start = async (zcf, privateArgs) => {
     let totalMintedProvided = AmountMath.makeEmpty(poolBrand);
     let totalMintedConverted = AmountMath.makeEmpty(poolBrand);
 
-    const updateMetrics = () => {
+    const publishMetrics = () => {
       metricsPublisher.publish(
         harden({
           walletsProvisioned,
@@ -135,22 +135,22 @@ export const start = async (zcf, privateArgs) => {
         }),
       );
     };
-    updateMetrics();
+    publishMetrics();
 
     const metrics = harden({
       /** @param {Amount} converted */
       onTrade: converted => {
         totalMintedConverted = AmountMath.add(totalMintedConverted, converted);
-        updateMetrics();
+        publishMetrics();
       },
       /** @param {Amount} provided */
       onSendFunds: provided => {
         totalMintedProvided = AmountMath.add(totalMintedProvided, provided);
-        updateMetrics();
+        publishMetrics();
       },
       onProvisioned: () => {
         walletsProvisioned += 1n;
-        updateMetrics();
+        publishMetrics();
       },
     });
     return { metrics, metricsSubscriber };
