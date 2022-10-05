@@ -199,10 +199,8 @@ test('provisionPool trades provided assets for IST', async t => {
   );
 
   // mock gov terms
-  /** @type {Instance} */
-  const electionManager = /** @type {any} */ (null);
   const govTerms = {
-    electionManager,
+    electionManager: /** @type {any} */ (null),
     initialPoserInvitation,
     governedParams: {
       [CONTRACT_ELECTORATE]: {
