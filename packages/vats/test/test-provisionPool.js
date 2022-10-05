@@ -55,6 +55,7 @@ const makeTestContext = async () => {
   const committeeInstall = await E(zoe).install(committeeBundle);
   const psmInstall = await E(zoe).install(psmBundle);
   const centralSupply = await E(zoe).install(centralSupplyBundle);
+  /** @type {Installation<import('../src/provisionPool').start>} */
   const policyInstall = await E(zoe).install(policyBundle);
 
   const mintLimit = AmountMath.make(mintedBrand, MINT_LIMIT);
@@ -197,7 +198,11 @@ test('provisionPool trades provided assets for IST', async t => {
     initialPoserInvitation,
   );
 
+  // mock gov terms
+  /** @type {Instance} */
+  const electionManager = /** @type {any} */ (null);
   const govTerms = {
+    electionManager,
     initialPoserInvitation,
     governedParams: {
       [CONTRACT_ELECTORATE]: {

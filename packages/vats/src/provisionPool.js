@@ -85,15 +85,13 @@ export const makeBridgeProvisionTool = (sendInitialPayment, publishMetrics) => {
 /**
  * @typedef {StandardTerms & GovernanceTerms<{
  *    PerAccountInitialAmount: 'amount',
- *   }> &{
- *   perAccountInitialAmount: Amount<'nat'>,
- * }} ProvisionTerms
+ *   }>} ProvisionTerms
  *
  * TODO: ERef<GovernedCreatorFacet<ProvisionCreator>>
  *
  * @param {ZCF<ProvisionTerms>} zcf
  * @param {{
- *   poolBank: import('@endo/far').FarRef<Bank>,
+ *   poolBank: import('@endo/far').ERef<Bank>,
  *   initialPoserInvitation: Invitation,
  *  storageNode: StorageNode,
  *  marshaller: Marshaller
