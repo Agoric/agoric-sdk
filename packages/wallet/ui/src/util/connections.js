@@ -5,7 +5,7 @@ export const KnownNetworkConfigUrls = {
   devnet: 'https://devnet.agoric.net/network-config',
   testnet: 'https://testnet.agoric.net/network-config',
   // for localhost skip https and assume it's subpathed to /wallet
-  localhost: 'http://localhost:8000/wallet/network-config',
+  localhost: 'http://localhost:3000/wallet/network-config',
 };
 
 export const DEFAULT_CONNECTION_CONFIGS = Object.values(
