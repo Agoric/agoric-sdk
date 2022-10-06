@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.0](https://github.com/Agoric/agoric/compare/@agoric/smart-wallet@0.3.0...@agoric/smart-wallet@0.4.0) (2022-10-05)
+
+
+### Features
+
+* **cli:** use new wallet.current node ([71effe7](https://github.com/Agoric/agoric/commit/71effe758c28181b8709ae4ccf025fcec7bb8a38))
+* track consumed invitation amounts ([e9e3c35](https://github.com/Agoric/agoric/commit/e9e3c35cebdc85e80fb2eaa117ff0be00d26c9bb))
+* **cli:** show status of invitations ([8506e6d](https://github.com/Agoric/agoric/commit/8506e6d87ef331e781c9d2e2251fdcf48e784e04))
+
+
+### Bug Fixes
+
+* **vats:** handle duplicate provision requests ([#6307](https://github.com/Agoric/agoric/issues/6307)) ([05d405d](https://github.com/Agoric/agoric/commit/05d405d5409e1f80612bb002234f5a9c3910a7df))
+* **wallet-ui:** detect unprovisioned wallet ([1747d57](https://github.com/Agoric/agoric/commit/1747d5781f4ee594eca1ded76af4944c405e7000))
+
+
+
 ## 0.3.0 (2022-09-20)
 
 

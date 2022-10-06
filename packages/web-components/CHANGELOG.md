@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/web-components@0.3.0...@agoric/web-components@0.4.0) (2022-10-05)
+
+
+### Features
+
+* show default wallet url in connection component ([e4d96db](https://github.com/Agoric/agoric-sdk/commit/e4d96dbde4a2148aeff1fe1b680e1360d6ea27ba))
+
+
+
 ## [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/web-components@0.2.0...@agoric/web-components@0.3.0) (2022-09-20)
 
 
