@@ -11,7 +11,6 @@ import {
   withApplicationContext,
 } from '../contexts/Application';
 import { bridgeStorageMessages } from '../util/BridgeStorage';
-import { SmartConnectionMethod } from '../util/connections';
 import {
   makeBackendFromWalletBridge,
   makeWalletBridgeFromFollowers,
@@ -59,16 +58,11 @@ const SmartWalletConnection = ({
     setSnackbarMessages(sm => [...sm, { severity, message }]);
   };
 
-  const { href, smartConnectionMethod } = connectionConfig;
+  const { href } = connectionConfig;
 
   const publicAddress = (() => {
-    if (
-      smartConnectionMethod === SmartConnectionMethod.KEPLR &&
-      keplrConnection
-    ) {
+    if (keplrConnection) {
       return keplrConnection.address;
-    } else if (smartConnectionMethod === SmartConnectionMethod.READ_ONLY) {
-      return connectionConfig.publicAddress;
     }
     return undefined;
   })();
@@ -89,11 +83,7 @@ const SmartWalletConnection = ({
   );
 
   useEffect(() => {
-    if (
-      !connectionConfig ||
-      (connectionConfig.smartConnectionMethod === SmartConnectionMethod.KEPLR &&
-        !keplrConnection)
-    ) {
+    if (!connectionConfig || !keplrConnection) {
       return undefined;
     }
 
