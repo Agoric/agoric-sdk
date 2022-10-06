@@ -118,7 +118,7 @@ const ConnectionSettingsDialog = ({
             const { value } = e.target;
             setConfigSource(value);
             switch (value) {
-              case 'mainnet':
+              case 'main':
               case 'testnet':
               case 'devnet':
                 setConfig({
@@ -127,7 +127,7 @@ const ConnectionSettingsDialog = ({
                 break;
               case 'localhost':
                 setConfig({
-                  href: `http://localhost:8000/wallet/network-config`,
+                  href: `http://localhost:3000/wallet/network-config`,
                 });
                 break;
               case 'custom':
@@ -136,12 +136,12 @@ const ConnectionSettingsDialog = ({
             }
           }}
         >
-          <MenuItem value="main">Main</MenuItem>
+          <MenuItem value="main">Mainnet</MenuItem>
           <MenuItem value="testnet">Testnet</MenuItem>
           <MenuItem value="devnet">Devnet</MenuItem>
-          <MenuItem value="localhost">localhost</MenuItem>
+          <MenuItem value="localhost">Localhost</MenuItem>
           <MenuItem value="custom">
-            <i>Custom url</i>
+            <i>Custom URL</i>
           </MenuItem>
         </Select>
       </FormControl>
@@ -165,9 +165,6 @@ const ConnectionSettingsDialog = ({
           return options;
         }}
         renderOption={(props, option) => <li {...props}>{option}</li>}
-        selectOnFocus
-        clearOnBlur
-        handleHomeEndKeys
         freeSolo
         renderInput={params => <TextField {...params} label="Network URL" />}
       />

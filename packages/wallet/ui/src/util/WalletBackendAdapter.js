@@ -163,14 +163,6 @@ export const makeWalletBridgeFromFollowers = (
   /** @type {Map<Petname, Brand>} */
   const pursePetnameToBrand = new Map();
 
-  if (firstCallback) {
-    firstCallback();
-    Object.values(notifierKits).forEach(({ updater }) =>
-      updater.updateState([]),
-    );
-    firstCallback = undefined;
-  }
-
   const updatePurses = () => {
     const purses = [];
     for (const [brand, purse] of brandToPurse.entries()) {
@@ -188,6 +180,13 @@ export const makeWalletBridgeFromFollowers = (
     const latestIterable = await E(currentFollower).getLatestIterable();
     const iterator = latestIterable[Symbol.asyncIterator]();
     const latest = await iterator.next();
+    if (firstCallback) {
+      firstCallback();
+      Object.values(notifierKits).forEach(({ updater }) =>
+        updater.updateState([]),
+      );
+      firstCallback = undefined;
+    }
     /** @type {import('@agoric/casting').ValueFollowerElement<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord>} */
     const currentEl = latest.value;
     const wallet = currentEl.value;

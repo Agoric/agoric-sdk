@@ -62,13 +62,10 @@ export const getOfferService = (
     for await (const state of makeAsyncIterableFromNotifier(
       chainOffersNotifier,
     )) {
-      state?.forEach(offer => {
-        console.log('chain offer', offer);
-        const splitId = offer.id.split('#');
-        const rawId = splitId[splitId.length - 1];
-        if (offers.has(rawId)) {
-          offers.delete(rawId);
-          remove(publicAddress, rawId);
+      state?.forEach(({ id }) => {
+        if (offers.has(id)) {
+          offers.delete(id);
+          remove(publicAddress, id);
         }
         chainOffers = state;
         broadcastUpdates();
