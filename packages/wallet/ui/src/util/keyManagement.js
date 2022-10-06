@@ -145,7 +145,7 @@ const dbg = label => x => {
 };
 
 /** @type {import('@cosmjs/stargate').AminoConverters} */
-const SwingsetConverters = {
+export const SwingsetConverters = {
   [SwingsetMsgs.MsgProvision.typeUrl]: {
     aminoType: SwingsetMsgs.MsgProvision.aminoType,
     toAmino: protoVal => {
@@ -191,10 +191,10 @@ const SwingsetConverters = {
   [SwingsetMsgs.MsgWalletSpendAction.typeUrl]: {
     aminoType: SwingsetMsgs.MsgWalletSpendAction.aminoType,
     toAmino: ({ spendAction, owner }) => ({
-      spendAction,
+      spend_action: spendAction,
       owner: toBech32(bech32Config.bech32PrefixAccAddr, fromBase64(owner)),
     }),
-    fromAmino: ({ spendAction, owner }) => ({
+    fromAmino: ({ spend_action: spendAction, owner }) => ({
       spendAction,
       owner: toBase64(toAccAddress(owner)),
     }),
