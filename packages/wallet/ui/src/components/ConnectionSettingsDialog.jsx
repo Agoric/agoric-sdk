@@ -118,7 +118,7 @@ const ConnectionSettingsDialog = ({
             const { value } = e.target;
             setConfigSource(value);
             switch (value) {
-              case 'mainnet':
+              case 'main':
               case 'testnet':
               case 'devnet':
                 setConfig({
