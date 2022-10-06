@@ -11,7 +11,7 @@ on:
 jobs:
   build:
     if: ${{ github.repository_owner == 'agoric' }}
-    runs-on: ubuntu-latest
+    runs-on: NewAutoScaled
     strategy:
       matrix:
         node-version: ['14.x', '16.x']
@@ -33,7 +33,7 @@ jobs:
 
   dev-canary:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: NewAutoScaled
     strategy:
       matrix:
         # note: only use one node-version
@@ -74,7 +74,7 @@ jobs:
 
   coverage:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: NewAutoScaled
     strategy:
       matrix:
         # note: only use one node-version
@@ -118,7 +118,7 @@ jobs:
 
   benchmark:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: NewAutoScaled
     strategy:
       matrix:
         # note: only use one node-version

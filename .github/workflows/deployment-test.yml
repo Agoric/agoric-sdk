@@ -27,7 +27,7 @@ jobs:
   deployment-test:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
-    runs-on: ubuntu-18.04 # trusty
+    runs-on: NewAutoScaled
     steps:
       - uses: actions/checkout@v2
         with:

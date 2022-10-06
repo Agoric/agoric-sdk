@@ -13,7 +13,7 @@ on:
 jobs:
   snapshot:
     if: ${{ github.repository_owner == 'agoric' }}
-    runs-on: ubuntu-latest
+    runs-on: NewAutoScaled
     outputs:
       tag: '${{ steps.snapshot-tag.outputs.tag }}'
     steps:
@@ -32,7 +32,7 @@ jobs:
 
   docker-sdk:
     needs: snapshot
-    runs-on: ubuntu-latest
+    runs-on: NewAutoScaled
     strategy:
       matrix:
         platform:
@@ -163,7 +163,7 @@ jobs:
   # It just runs agoric/agoric-sdk with a "single-node" argument.
   docker-ibc-alpha:
     needs: [docker-sdk, snapshot]
-    runs-on: ubuntu-latest
+    runs-on: NewAutoScaled
     if: ${{ needs.docker-sdk.outputs.tag }} != dev
     steps:
       - uses: actions/checkout@v2
@@ -208,7 +208,7 @@ jobs:
 
   docker-solo:
     needs: [docker-sdk, snapshot]
-    runs-on: ubuntu-latest
+    runs-on: NewAutoScaled
     steps:
       - uses: actions/checkout@v2
       - name: Save SDK_TAG
