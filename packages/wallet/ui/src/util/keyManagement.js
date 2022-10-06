@@ -145,7 +145,7 @@ const dbg = label => x => {
 };
 
 /** @type {import('@cosmjs/stargate').AminoConverters} */
-const SwingsetConverters = {
+export const SwingsetConverters = {
   [SwingsetMsgs.MsgProvision.typeUrl]: {
     aminoType: SwingsetMsgs.MsgProvision.aminoType,
     toAmino: protoVal => {
