@@ -1,8 +1,5 @@
 # SwingSet Vat
 
-[![Build Status][circleci-svg]][circleci-url]
-[![dependency status][deps-svg]][deps-url]
-[![dev dependency status][dev-deps-svg]][dev-deps-url]
 [![License][license-image]][license-url]
 
 This repository contains another proof-of-concept Vat host, like
@@ -274,11 +271,5 @@ Presences preserve identity as they move from one Vat to another:
 Promises are *not* intended to preserve identity. Vat code should not compare
 objects for identity until they pass out of a `.then()` resolution handler.
 
-[circleci-svg]: https://circleci.com/gh/Agoric/SwingSet.svg?style=svg
-[circleci-url]: https://circleci.com/gh/Agoric/SwingSet
-[deps-svg]: https://david-dm.org/Agoric/SwingSet.svg
-[deps-url]: https://david-dm.org/Agoric/SwingSet
-[dev-deps-svg]: https://david-dm.org/Agoric/SwingSet/dev-status.svg
-[dev-deps-url]: https://david-dm.org/Agoric/SwingSet?type=dev
 [license-image]: https://img.shields.io/badge/License-Apache%202.0-blue.svg
 [license-url]: LICENSE
