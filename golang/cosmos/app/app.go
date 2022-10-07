@@ -740,21 +740,21 @@ func NewAgoricApp(
 			}
 
 			// Set bean count
-			currentSwingset := app.SwingSetKeeper.GetParams(ctx)
-			ctx.Logger().Info("pre-swingset upgrade", "subspace", swingset.ModuleName, "params", currentSwingset)
+			currentSwingsetParams := app.SwingSetKeeper.GetParams(ctx)
+			ctx.Logger().Info("pre-swingset upgrade", "subspace", swingset.ModuleName, "params", currentSwingsetParams)
 
-			for i := 0; i < len(currentSwingset.BeansPerUnit); i++ {
-				if currentSwingset.BeansPerUnit[i].Key == swingsettypes.BeansPerBlockComputeLimit {
-					currentSwingset.BeansPerUnit[i] = swingsettypes.NewStringBeans(swingsettypes.BeansPerBlockComputeLimit, sdk.NewUint(6500000000))
+			for i := 0; i < len(currentSwingsetParams.BeansPerUnit); i++ {
+				if currentSwingsetParams.BeansPerUnit[i].Key == swingsettypes.BeansPerBlockComputeLimit {
+					currentSwingsetParams.BeansPerUnit[i].Beans = sdk.NewUint(6500000000)
 				}
 			}
 
 			// Set bootstrap
 
-			currentSwingset.BootstrapVatConfig = "@agoric/vats/decentral-prod-config.json"
-			ctx.Logger().Info("post-swingset upgrade", "subspace", swingset.ModuleName, "params", currentSwingset)
+			currentSwingsetParams.BootstrapVatConfig = "@agoric/vats/decentral-prod-config.json"
+			ctx.Logger().Info("post-swingset upgrade", "subspace", swingset.ModuleName, "params", currentSwingsetParams)
 
-			app.SwingSetKeeper.SetParams(ctx, currentSwingset)
+			app.SwingSetKeeper.SetParams(ctx, currentSwingsetParams)
 
 			return vm, err
 		},
