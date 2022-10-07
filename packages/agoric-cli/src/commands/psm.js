@@ -369,7 +369,7 @@ export const makePsmCommand = async logger => {
       const opts = this.opts();
 
       const questionHandleCapDataStr = await vstorage.readLatest(
-        'published.committees.Initial_Economic_Committee.latestQuestion',
+        'published.committees.Economic_Committee.latestQuestion',
       );
       const questionDescriptions = storageHelper.unserializeTxt(
         questionHandleCapDataStr,

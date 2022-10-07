@@ -62,7 +62,7 @@ The canonical keys (under `published`) are as follows. Non-terminal nodes could 
     - `stakeFactory`
         - `governance`
     - `committees`
-        - `Initial_Economic_Committee`
+        - `Economic_Committee`
           - `latestQuestion`
 
 ### Demo
