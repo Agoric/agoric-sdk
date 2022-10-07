@@ -33,7 +33,7 @@ const fromAgoricNet = str => {
 export const networkConfig =
   'AGORIC_NET' in process.env && process.env.AGORIC_NET !== 'local'
     ? await fromAgoricNet(NonNullish(process.env.AGORIC_NET))
-    : { rpcAddrs: ['http://0.0.0.0:26657'], chainName: 'agoric' };
+    : { rpcAddrs: ['http://0.0.0.0:26657'], chainName: 'agoriclocal' };
 // console.warn('networkConfig', networkConfig);
 
 /**
