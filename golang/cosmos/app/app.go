@@ -20,6 +20,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/simapp"
+	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -732,9 +733,46 @@ func NewAgoricApp(
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
 		func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
-			return vm, nil
+			//Run migrations first so InitGenesis is called for swingset, vibc, vbank, vstorage, lien
+			vm, err := app.mm.RunMigrations(ctx, app.configurator, vm)
+			if err != nil {
+				return vm, err
+			}
+
+			// Set bean count
+			currentSwingset := app.SwingSetKeeper.GetParams(ctx)
+			ctx.Logger().Info("pre-swingset upgrade", "subspace", swingset.ModuleName, "params", currentSwingset)
+
+			for i := 0; i < len(currentSwingset.BeansPerUnit); i++ {
+				if currentSwingset.BeansPerUnit[i].Key == swingsettypes.BeansPerBlockComputeLimit {
+					currentSwingset.BeansPerUnit[i] = swingsettypes.NewStringBeans(swingsettypes.BeansPerBlockComputeLimit, sdk.NewUint(6500000000))
+				}
+			}
+
+			// Set bootstrap
+
+			currentSwingset.BootstrapVatConfig = "@agoric/vats/decentral-prod-config.json"
+			ctx.Logger().Info("post-swingset upgrade", "subspace", swingset.ModuleName, "params", currentSwingset)
+
+			app.SwingSetKeeper.SetParams(ctx, currentSwingset)
+
+			return vm, err
 		},
 	)
+
+	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	if err != nil {
+		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
+	}
+
+	if upgradeInfo.Name == upgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		storeUpgrades := store.StoreUpgrades{
+			Added: []string{swingsettypes.StoreKey, vbanktypes.StoreKey, vibc.StoreKey, vstorage.StoreKey},
+		}
+
+		// configure store loader that checks if version == upgradeHeight and applies store upgrades
+		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
+	}
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
