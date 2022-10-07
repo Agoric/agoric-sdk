@@ -45,7 +45,7 @@
  * T extends 'brand' ? Brand :
  * T extends 'installation' ? Installation:
  * T extends 'instance' ? Instance :
- * T extends 'invitation' ? Amount :
+ * T extends 'invitation' ? Amount : // XXX this is the getter value but not the setter
  * T extends 'nat' ? bigint :
  * T extends 'ratio' ? Ratio :
  * T extends 'string' ? string :
@@ -392,7 +392,7 @@
  * @property {(name: string) => Brand} getBrand
  * @property {(name: string) => Instance} getInstance
  * @property {(name: string) => Installation} getInstallation
- * @property {(name: string) => Amount} getInvitationAmount
+ * @property {(name: string) => Amount<'set'>} getInvitationAmount
  * @property {(name: string) => bigint} getNat
  * @property {(name: string) => Ratio} getRatio
  * @property {(name: string) => string} getString
@@ -540,6 +540,8 @@
  * @property {() => Promise<LimitedCreatorFacet<CF>>} getCreatorFacet - creator
  *   facet of the governed contract, without the tightly held ability to change
  *   param values.
+ * @property {(poserInvitation: Invitation) => Promise<void>} replaceElectorate
+ * @property {() => Promise<AdminFacet>} getAdminFacet
  * @property {() => GovernedPublicFacet<PF>} getPublicFacet - public facet of the governed contract
  * @property {() => Instance} getInstance - instance of the governed
  *   contract
