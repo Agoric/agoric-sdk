@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.18.1](https://github.com/Agoric/agoric-sdk/compare/agoric@0.18.0...agoric@0.18.1) (2022-10-08)
+
+
+### Bug Fixes
+
+* **cli:** wallet against localhost ([3214477](https://github.com/Agoric/agoric-sdk/commit/32144772ce336718eb487cdbc2b971f6042fac2f))
+* strike "Initial" from Economic Committee ([0f3ce16](https://github.com/Agoric/agoric-sdk/commit/0f3ce1695635551b800f04e0e232d25e16c8f562))
+
+
+
 ## [0.18.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.17.0...agoric@0.18.0) (2022-10-05)
 
 
