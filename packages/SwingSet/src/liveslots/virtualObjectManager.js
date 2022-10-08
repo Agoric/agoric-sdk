@@ -1,12 +1,19 @@
 // @ts-check
-/* eslint-disable no-use-before-define, jsdoc/require-returns-type */
+/* eslint-disable no-use-before-define */
 
-import { assert, details as X, q } from '@agoric/assert';
-import { defendPrototype } from '@agoric/store';
-import { Far } from '@endo/marshal';
+import {
+  assertPattern,
+  decompress,
+  defendPrototype,
+  mustCompress,
+} from '@agoric/store';
+import { Far, hasOwnPropertyOf, passStyleOf } from '@endo/marshal';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
 
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
+
+const { ownKeys } = Reflect;
+const { details: X, quote: q } = assert;
 
 // import { kdebug } from './kdebug.js';
 
@@ -28,7 +35,7 @@ const unweakable = new WeakSet();
  * @param {(baseRef: string, rawState: object) => void} store  Function to
  *   store raw object state by its baseRef
  *
- * @returns An LRU cache of (up to) the given size
+ * @returns {object} An LRU cache of (up to) the given size
  *
  * This cache is part of the virtual object manager and is not intended to be
  * used independently; it is exported only for the benefit of test code.
@@ -146,24 +153,28 @@ export function makeCache(size, fetch, store) {
 /**
  * Create a new virtual object manager.  There is one of these for each vat.
  *
- * @param {*} syscall  Vat's syscall object, used to access the vatstore operations.
- * @param {*} vrm  Virtual reference manager, to handle reference counting and GC
- *   of virtual references.
- * @param {() => number} allocateExportID  Function to allocate the next object
- *   export ID for the enclosing vat.
- * @param {(val: object) => string} _getSlotForVal  A function that returns the
- *   object ID (vref) for a given object, if any.  their corresponding export
- *   IDs
- * @param {*} registerValue  Function to register a new slot+value in liveSlot's
- *   various tables
- * @param {import('@endo/marshal').Serialize<unknown>} serialize  Serializer for this vat
- * @param {import('@endo/marshal').Unserialize<unknown>} unserialize  Unserializer for this vat
- * @param {number} cacheSize  How many virtual objects this manager should cache
- *   in memory.
- * @param {*} assertAcceptableSyscallCapdataSize  Function to check for oversized
- *   syscall params
+ * @param {*} syscall
+ * Vat's syscall object, used to access the vatstore operations.
+ * @param {*} vrm
+ * Virtual reference manager, to handle reference counting and GC
+ * of virtual references.
+ * @param {() => number} allocateExportID
+ * Function to allocate the next object export ID for the enclosing vat.
+ * @param {(val: object) => string} _getSlotForVal
+ * A function that returns the object ID (vref) for a given object, if any.
+ * their corresponding export IDs
+ * @param {*} registerValue
+ * Function to register a new slot+value in liveSlot's various tables
+ * @param {import('@endo/marshal').Serialize<unknown>} serialize
+ * Serializer for this vat
+ * @param {import('@endo/marshal').Unserialize<unknown>} unserialize
+ * Unserializer for this vat
+ * @param {number} cacheSize
+ * How many virtual objects this manager should cache in memory.
+ * @param {*} assertAcceptableSyscallCapdataSize
+ * Function to check for oversized syscall params
  *
- * @returns a new virtual object manager.
+ * @returns {object} a new virtual object manager.
  *
  * The virtual object manager allows the creation of persistent objects that do
  * not need to occupy memory when they are not in use.  It provides five
@@ -585,12 +596,44 @@ export function makeVirtualObjectManager(
   ) {
     const {
       finish,
+      stateShape = undefined,
       thisfulMethods = false,
       interfaceGuard = undefined,
     } = options;
     let facetNames;
     let contextMapTemplate;
     let prototypeTemplate;
+
+    stateShape === undefined ||
+      passStyleOf(stateShape) === 'copyRecord' ||
+      assert.fail(X`A stateShape must be a copyRecord: ${q(stateShape)}`);
+    assertPattern(stateShape);
+
+    const serializeSlot = (slotState, prop) => {
+      if (stateShape === undefined) {
+        return serialize(slotState);
+      }
+      hasOwnPropertyOf(stateShape, prop) ||
+        assert.fail(
+          X`State must only have fields described by stateShape: ${q(
+            ownKeys(stateShape),
+          )}`,
+        );
+      return serialize(mustCompress(slotState, stateShape[prop], prop));
+    };
+
+    const unserializeSlot = (slotData, prop) => {
+      if (stateShape === undefined) {
+        return unserialize(slotData);
+      }
+      hasOwnPropertyOf(stateShape, prop) ||
+        assert.fail(
+          X`State only has fields described by stateShape: ${q(
+            ownKeys(stateShape),
+          )}`,
+        );
+      return decompress(unserialize(slotData), stateShape[prop]);
+    };
 
     const facetiousness = assessFacetiousness(behavior);
     switch (facetiousness) {
@@ -695,12 +738,12 @@ export function makeVirtualObjectManager(
         Object.defineProperty(state, prop, {
           get: () => {
             ensureState();
-            return unserialize(innerSelf.rawState[prop]);
+            return unserializeSlot(innerSelf.rawState[prop], prop);
           },
           set: value => {
             ensureState();
             const before = innerSelf.rawState[prop];
-            const after = serialize(value);
+            const after = serializeSlot(value, prop);
             assertAcceptableSyscallCapdataSize([after]);
             if (isDurable) {
               after.slots.forEach((vref, index) => {
@@ -793,11 +836,12 @@ export function makeVirtualObjectManager(
       const initialData = init ? init(...args) : {};
       const rawState = {};
       for (const prop of Object.getOwnPropertyNames(initialData)) {
-        const data = serialize(initialData[prop]);
+        const data = serializeSlot(initialData[prop], prop);
         assertAcceptableSyscallCapdataSize([data]);
         if (isDurable) {
           data.slots.forEach(vref => {
-            assert(vrm.isDurable(vref), X`value for ${q(prop)} is not durable`);
+            vrm.isDurable(vref) ||
+              assert.fail(X`value for ${q(prop)} is not durable`);
           });
         }
         data.slots.forEach(vrm.addReachableVref);
