@@ -366,9 +366,9 @@ Once you see a string like `block 17 commit` then the chain is available. In ano
 ```sh
 # shows keys of the committees node
 agd query vstorage keys 'published.committees'
-# shows keys of the initial economic committee node
-agd query vstorage keys 'published.committees.Initial_Economic_Committee'
+# shows keys of the economic committee node
+agd query vstorage keys 'published.committees.Economic_Committee'
 # follow questions
-agoric follow :published.committees.Initial_Economic_Committee.latestQuestion
+agoric follow :published.committees.Economic_Committee.latestQuestion
 ```
-Note that there won't be `'published.committees.Initial_Economic_Committee.latestQuestion` until some `.addQuestion()` call executes.
+Note that there won't be `'published.committees.Economic_Committee.latestQuestion` until some `.addQuestion()` call executes.
