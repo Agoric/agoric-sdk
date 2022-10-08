@@ -380,7 +380,9 @@ export const makeInteractiveSigner = async (
 
   const key = await keplr.getKey(chainId);
 
-  const offlineSigner = await keplr.getOfflineSignerAuto(chainId);
+  // Until we have SIGN_MODE_TEXTUAL,
+  // Use Amino because Direct results in ugly protobuf in the keplr UI.
+  const offlineSigner = await keplr.getOfflineSignerOnlyAmino(chainId);
   console.log('InteractiveSigner', { offlineSigner });
 
   // Currently, Keplr extension manages only one address/public key pair.
