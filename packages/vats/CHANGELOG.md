@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.12.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.12.0...@agoric/vats@0.12.1) (2022-10-08)
+
+
+### Bug Fixes
+
+* implement upgrade handler ([0f64bf1](https://github.com/Agoric/agoric-sdk/commit/0f64bf15e78e27e7e3127a62740025ab823a4a96))
+
+
+
 ## [0.12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.11.0...@agoric/vats@0.12.0) (2022-10-05)
 
 

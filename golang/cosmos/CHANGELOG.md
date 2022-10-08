@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.32.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.32.0...@agoric/cosmos@0.32.1) (2022-10-08)
+
+
+### Bug Fixes
+
+* implement upgrade handler ([0f64bf1](https://github.com/Agoric/agoric-sdk/commit/0f64bf15e78e27e7e3127a62740025ab823a4a96))
+* review comments ([c67dc3c](https://github.com/Agoric/agoric-sdk/commit/c67dc3c17b1158c6a56ecd94856b55ec5f873983))
+
+
+
 ## [0.32.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.31.0...@agoric/cosmos@0.32.0) (2022-10-05)
 
 
