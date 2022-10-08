@@ -47,7 +47,6 @@
   },
   "devDependencies": {
     "@agoric/deploy-script-support": "^0.9.2",
-    "@agoric/swingset-vat": "^0.28.0",
     "@endo/bundle-source": "^2.3.1",
     "@endo/init": "^0.5.49",
     "ava": "^4.3.1",
