@@ -25,3 +25,17 @@ export const WalletName = {
   depositFacet: 'depositFacet',
 };
 harden(WalletName);
+
+/**
+ * Tendermint RPC's default rpc listen address is tcp://0.0.0.0:26657.
+ */
+export const defaultRpcAddress = '0.0.0.0:26657';
+
+/**
+ * For clients of local Tendermint RPC server
+ */
+export const localNetworkConfig = {
+  rpcAddrs: [defaultRpcAddress],
+  chainName: 'agoriclocal',
+};
+harden(localNetworkConfig);

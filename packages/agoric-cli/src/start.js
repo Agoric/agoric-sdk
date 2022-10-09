@@ -4,6 +4,7 @@ import { createHash } from 'crypto';
 import path from 'path';
 
 import { Nat, isNat } from '@agoric/nat';
+import { localNetworkConfig } from '@agoric/internal';
 
 import {
   CENTRAL_DENOM,
@@ -34,7 +35,7 @@ const PROVISION_COINS = [
 ].join(',');
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
 const SOLO_COINS = `13000000${STAKING_DENOM},500000000${CENTRAL_DENOM}`;
-const CHAIN_ID = 'agoriclocal';
+const CHAIN_ID = localNetworkConfig.chainName;
 
 const FAKE_CHAIN_DELAY =
   process.env.FAKE_CHAIN_DELAY === undefined

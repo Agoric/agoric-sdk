@@ -34,6 +34,7 @@
     "@agoric/casting": "^0.3.1",
     "@agoric/cosmic-proto": "^0.2.1",
     "@agoric/ertp": "^0.15.2",
+    "@agoric/internal": "^0.2.1",
     "@agoric/nat": "^4.1.0",
     "@agoric/smart-wallet": "^0.4.1",
     "@agoric/swingset-vat": "^0.30.1",
