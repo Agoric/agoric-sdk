@@ -1,6 +1,6 @@
 {
   "name": "@agoric/casting",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Agoric's OCap broadcasting system",
   "type": "module",
   "main": "src/main.js",
@@ -21,7 +21,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/notifier": "^0.5.1",
-    "@agoric/spawner": "^0.6.1",
+    "@agoric/spawner": "^0.6.2",
     "@cosmjs/encoding": "0.29.0",
     "@cosmjs/proto-signing": "0.29.0",
     "@cosmjs/stargate": "0.29.0",
