@@ -1,3 +1,4 @@
+import { M } from '@agoric/store';
 import { vivifyFarClassKit, makeScalarBigSetStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';
@@ -12,6 +13,8 @@ export const vivifyPurseKind = (
   PurseIKit,
   purseMethods,
 ) => {
+  const amountShape = brand.getAmountShape();
+
   // Note: Virtual for high cardinality, but *not* durable, and so
   // broken across an upgrade.
   const { provideNotifier, update: updateBalance } = makeTransientNotifierKit();
@@ -109,6 +112,12 @@ export const vivifyPurseKind = (
         receive(...args) {
           return this.facets.purse.deposit(...args);
         },
+      },
+    },
+    {
+      stateShape: {
+        currentBalance: amountShape,
+        recoverySet: M.remotable('recoverySet'),
       },
     },
   );

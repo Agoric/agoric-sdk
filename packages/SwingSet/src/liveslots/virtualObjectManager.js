@@ -604,6 +604,7 @@ export function makeVirtualObjectManager(
     let contextMapTemplate;
     let prototypeTemplate;
 
+    harden(stateShape);
     stateShape === undefined ||
       passStyleOf(stateShape) === 'copyRecord' ||
       assert.fail(X`A stateShape must be a copyRecord: ${q(stateShape)}`);
