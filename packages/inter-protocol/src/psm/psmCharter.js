@@ -23,17 +23,15 @@ import { E } from '@endo/far';
  * @property {Record<string, unknown>} params
  * @property {{paramPath: { key: string }}} [path]
  */
-const ParamChangesOfferArgsShape = harden(
-  M.split(
-    {
-      deadline: TimestampShape,
-      instance: InstanceHandleShape,
-      params: M.recordOf(M.string(), M.any()),
-    },
-    M.partial({
-      path: { paramPath: { key: M.string() } },
-    }),
-  ),
+const ParamChangesOfferArgsShape = M.splitRecord(
+  {
+    deadline: TimestampShape,
+    instance: InstanceHandleShape,
+    params: M.recordOf(M.string(), M.any()),
+  },
+  {
+    path: { paramPath: { key: M.string() } },
+  },
 );
 
 /**
