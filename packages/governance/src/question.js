@@ -16,6 +16,7 @@ import { QuestionI, QuestionSpecShape } from './typeGuards.js';
 const ChoiceMethod = /** @type {const} */ ({
   UNRANKED: 'unranked',
   ORDER: 'order',
+  PLURALITY: 'plurality',
 });
 
 const ElectionType = /** @type {const} */ ({

@@ -6,7 +6,7 @@ import {
   makeHandleShape,
 } from '@agoric/zoe/src/typeGuards.js';
 
-export const ChoiceMethodShape = M.or('unranked', 'order');
+export const ChoiceMethodShape = M.or('unranked', 'order', 'plurality');
 export const QuorumRuleShape = M.or('majority', 'no_quorum', 'all');
 export const ElectionTypeShape = M.or(
   'param_change',
@@ -129,7 +129,7 @@ export const SimpleIssueShape = SimpleSpecShape;
 export const SimpleQuestionSpecShape = harden({
   method: ChoiceMethodShape,
   issue: SimpleIssueShape,
-  positions: SimplePositionsShape,
+  positions: M.arrayOf(harden({ text: M.string() })),
   electionType: M.or('election', 'survey'),
   maxChoices: M.gte(1),
   closingRule: ClosingRuleShape,
@@ -231,6 +231,34 @@ export const BinaryVoteCounterAdminI = M.interface(
 
 export const BinaryVoteCounterCloseI = M.interface(
   'BinaryVoteCounter CloseFacet',
+  {
+    closeVoting: M.call().returns(),
+  },
+);
+
+export const MultiVoteCounterPublicI = M.interface(
+  'MultiVoteCounter PublicFacet',
+  {
+    getQuestion: M.call().returns(QuestionShape),
+    isOpen: M.call().returns(M.boolean()),
+    getOutcome: M.call().returns(M.eref(M.promise())),
+    getStats: M.call().returns(M.promise()),
+    getDetails: M.call().returns(QuestionDetailsShape),
+    getInstance: M.call().returns(InstanceHandleShape),
+  },
+);
+
+export const MultiVoteCounterAdminI = M.interface(
+  'MultiVoteCounter AdminFacet',
+  {
+    submitVote: M.call(VoterHandle, M.arrayOf(PositionShape))
+      .optional(M.nat())
+      .returns({ chosen: PositionShape, shares: M.nat() }),
+  },
+);
+
+export const MultiVoteCounterCloseI = M.interface(
+  'MultiVoteCounter CloseFacet',
   {
     closeVoting: M.call().returns(),
   },

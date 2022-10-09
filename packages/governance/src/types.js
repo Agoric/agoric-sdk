@@ -90,7 +90,7 @@
 
 /**
  * @typedef {{ question: Handle<'Question'> } & (
- *   { outcome: 'win', position: Position } |
+ *   { outcome: 'win', position: Position | Position[] } |
  *   { outcome: 'fail', reason: 'No quorum' }
  * )} OutcomeRecord
  */
@@ -194,7 +194,7 @@
  * @typedef {object} VoteCounterPublicFacet
  * @property {() => boolean} isOpen
  * @property {() => Question} getQuestion
- * @property {() => Promise<Position>} getOutcome
+ * @property {() => Promise<Position | Position[]>} getOutcome
  * @property {() => QuestionDetails} getDetails
  * @property {() => Promise<VoteStatistics>} getStats
  */
