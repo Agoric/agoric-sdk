@@ -732,32 +732,11 @@ func NewAgoricApp(
 
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
-		func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
-			//Run migrations first so InitGenesis is called for swingset, vibc, vbank, vstorage, lien
-			vm, err := app.mm.RunMigrations(ctx, app.configurator, vm)
-			if err != nil {
-				return vm, err
-			}
-
-			// Set bean count
-			currentSwingsetParams := app.SwingSetKeeper.GetParams(ctx)
-			ctx.Logger().Info("pre-swingset upgrade", "subspace", swingset.ModuleName, "params", currentSwingsetParams)
-
-			for i := 0; i < len(currentSwingsetParams.BeansPerUnit); i++ {
-				if currentSwingsetParams.BeansPerUnit[i].Key == swingsettypes.BeansPerBlockComputeLimit {
-					currentSwingsetParams.BeansPerUnit[i].Beans = sdk.NewUint(6500000000)
-				}
-			}
-
-			// Set bootstrap
-
-			currentSwingsetParams.BootstrapVatConfig = "@agoric/vats/decentral-prod-config.json"
-			ctx.Logger().Info("post-swingset upgrade", "subspace", swingset.ModuleName, "params", currentSwingsetParams)
-
-			app.SwingSetKeeper.SetParams(ctx, currentSwingsetParams)
-
-			return vm, err
-		},
+		upgrade8Handler(app, upgradeName),
+	)
+	app.UpgradeKeeper.SetUpgradeHandler(
+		upgradeNameTest,
+		upgrade8Handler(app, upgradeNameTest),
 	)
 
 	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
@@ -786,6 +765,41 @@ func NewAgoricApp(
 	app.ScopedICAHostKeeper = scopedICAHostKeeper
 
 	return app
+}
+
+func upgrade8Handler(app *GaiaApp, targetUpgrade string) func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
+	return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
+		//Run migrations first so InitGenesis is called for swingset, vibc, vbank, vstorage, lien
+		vm, err := app.mm.RunMigrations(ctx, app.configurator, vm)
+		if err != nil {
+			return vm, err
+		}
+
+		// Set bean count
+		currentSwingsetParams := app.SwingSetKeeper.GetParams(ctx)
+		ctx.Logger().Info("pre-swingset upgrade", "subspace", swingset.ModuleName, "params", currentSwingsetParams)
+
+		for i := 0; i < len(currentSwingsetParams.BeansPerUnit); i++ {
+			if currentSwingsetParams.BeansPerUnit[i].Key == swingsettypes.BeansPerBlockComputeLimit {
+				currentSwingsetParams.BeansPerUnit[i].Beans = sdk.NewUint(6_500_000_000)
+			}
+		}
+
+		// Set bootstrap
+		switch targetUpgrade {
+		case upgradeName:
+			currentSwingsetParams.BootstrapVatConfig = "@agoric/vats/decentral-main-psm-config.json"
+		case upgradeNameTest:
+			currentSwingsetParams.BootstrapVatConfig = "@agoric/vats/decentral-test-psm-config.json"
+		default:
+			return vm, fmt.Errorf("invalid upgrade name")
+		}
+		ctx.Logger().Info("post-swingset upgrade", "subspace", swingset.ModuleName, "params", currentSwingsetParams)
+
+		app.SwingSetKeeper.SetParams(ctx, currentSwingsetParams)
+
+		return vm, err
+	}
 }
 
 type cosmosInitAction struct {
