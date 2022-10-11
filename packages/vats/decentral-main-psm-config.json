@@ -8,7 +8,28 @@
       "parameters": {
         "anchorAssets": [
           {
-            "denom": "ibc/usdc1234"
+            "keyword": "USDC_axl",
+            "proposedName": "USD Coin",
+            "decimalPlaces": 6,
+            "denom": "ibc/295548A78785A1007F232DE286149A6FF512F180AF5657780FC89C009E2C348F"
+          },
+          {
+            "keyword": "USDC_grv",
+            "proposedName": "USD Coin",
+            "decimalPlaces": 6,
+            "denom": "ibc/6831292903487E58BF9A195FDDC8A2E626B3DF39B88F4E7F41C935CADBAF54AC"
+          },
+          {
+            "keyword": "USDT_axl",
+            "proposedName": "Tether USD",
+            "decimalPlaces": 6,
+            "denom": "ibc/F2331645B9683116188EF36FC04A809C28BD36B54555E8705A37146D0182F045"
+          },
+          {
+            "keyword": "USDT_grv",
+            "proposedName": "Tether USD",
+            "decimalPlaces": 6,
+            "denom": "ibc/386D09AE31DA7C0C93091BB45D08CB7A0730B1F697CD813F06A5446DCF02EEB2"
           }
         ],
         "economicCommitteeAddresses": {
