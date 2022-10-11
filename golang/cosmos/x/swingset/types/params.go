@@ -47,7 +47,7 @@ func ParamKeyTable() paramtypes.KeyTable {
 // DefaultParams returns default swingset parameters
 func DefaultParams() Params {
 	return Params{
-		BeansPerUnit:       DefaultBeansPerUnit,
+		BeansPerUnit:       DefaultBeansPerUnit(),
 		BootstrapVatConfig: DefaultBootstrapVatConfig,
 		FeeUnitPrice:       DefaultFeeUnitPrice,
 		PowerFlagFees:      DefaultPowerFlagFees,

@@ -48,17 +48,6 @@ var (
 	DefaultBeansPerMessageByte = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(50_000)) // $0.0002
 	DefaultBeansPerMinFeeDebit = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(5))      // $0.2
 
-	DefaultBeansPerUnit = []StringBeans{
-		NewStringBeans(BeansPerBlockComputeLimit, DefaultBeansPerBlockComputeLimit),
-		NewStringBeans(BeansPerFeeUnit, DefaultBeansPerFeeUnit),
-		NewStringBeans(BeansPerInboundTx, DefaultBeansPerInboundTx),
-		NewStringBeans(BeansPerMessage, DefaultBeansPerMessage),
-		NewStringBeans(BeansPerMessageByte, DefaultBeansPerMessageByte),
-		NewStringBeans(BeansPerMinFeeDebit, DefaultBeansPerMinFeeDebit),
-		NewStringBeans(BeansPerVatCreation, DefaultBeansPerVatCreation),
-		NewStringBeans(BeansPerXsnapComputron, DefaultBeansPerXsnapComputron),
-	}
-
 	DefaultBootstrapVatConfig = "@agoric/vats/decentral-core-config.json"
 
 	DefaultPowerFlagFees = []PowerFlagFee{
@@ -71,3 +60,17 @@ var (
 		NewQueueSize(QueueInbound, DefaultInboundQueueMax),
 	}
 )
+
+// move DefaultBeansPerUnit to a function to allow for boot overriding of the Default params
+func DefaultBeansPerUnit() []StringBeans {
+	return []StringBeans{
+		NewStringBeans(BeansPerBlockComputeLimit, DefaultBeansPerBlockComputeLimit),
+		NewStringBeans(BeansPerFeeUnit, DefaultBeansPerFeeUnit),
+		NewStringBeans(BeansPerInboundTx, DefaultBeansPerInboundTx),
+		NewStringBeans(BeansPerMessage, DefaultBeansPerMessage),
+		NewStringBeans(BeansPerMessageByte, DefaultBeansPerMessageByte),
+		NewStringBeans(BeansPerMinFeeDebit, DefaultBeansPerMinFeeDebit),
+		NewStringBeans(BeansPerVatCreation, DefaultBeansPerVatCreation),
+		NewStringBeans(BeansPerXsnapComputron, DefaultBeansPerXsnapComputron),
+	}
+}
