@@ -2,19 +2,12 @@
  * @typedef {object} OracleAdmin
  * @property {() => Promise<void>} delete
  * Remove the oracle from the aggregator
- * @property {(result: any) => Promise<void>} pushResult
+ * @property {(result: ParsableNumber | Ratio) => Promise<void>} pushResult
  * Rather than waiting for the polling query, push a result directly from this oracle
  */
 
 /**
  * @typedef {{} | string} OracleKey
- */
-
-/**
- * @callback PriceAggregatorCreatorFacetInitOracle
- * @param {Instance | string} [oracleInstance]
- * @param {unknown} [query]
- * @returns {Promise<OracleAdmin>}
  */
 
 /**
