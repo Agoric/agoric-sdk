@@ -464,7 +464,7 @@ show-config      display the client connection parameters
           `Environment="OTEL_EXPORTER_PROMETHEUS_PORT=${SWINGSET_PROMETHEUS_PORT}"`,
         );
       }
-      for (const envName of [
+      const passthroughEnvNames = [
         'VAULT_FACTORY_CONTROLLER_ADDR',
         'CHAIN_BOOTSTRAP_VAT_CONFIG',
         'SLOGSENDER',
@@ -473,8 +473,13 @@ show-config      display the client connection parameters
         'SWING_STORE_TRACE',
         'XSNAP_KEEP_SNAPSHOTS',
         'NODE_HEAP_SNAPSHOTS',
-      ]) {
-        if (env[envName]) {
+      ];
+      // Use a for..in loop as env objects in node have historically allowed prototype keys
+      for (const envName in env) {
+        if (
+          passthroughEnvNames.includes(envName) ||
+          /^SLOGSENDER_AGENT_/.test(envName)
+        ) {
           serviceLines.push(`Environment="${envName}=${env[envName]}"`);
         }
       }
