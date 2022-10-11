@@ -645,7 +645,8 @@ func NewAgoricApp(
 	// NOTE: Capability module must occur first so that it can initialize any capabilities
 	// so that other modules that want to create or claim capabilities afterwards in InitChain
 	// can do so safely.
-	app.mm.SetOrderInitGenesis(
+
+	moduleOrderForGenesisAndUpgrade := []string{
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -670,7 +671,10 @@ func NewAgoricApp(
 		vibc.ModuleName,
 		swingset.ModuleName,
 		lien.ModuleName,
-	)
+	}
+
+	app.mm.SetOrderInitGenesis(moduleOrderForGenesisAndUpgrade...)
+	app.mm.SetOrderMigrations(moduleOrderForGenesisAndUpgrade...)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
@@ -769,34 +773,22 @@ func NewAgoricApp(
 
 func upgrade8Handler(app *GaiaApp, targetUpgrade string) func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
-		//Run migrations first so InitGenesis is called for swingset, vibc, vbank, vstorage, lien
+		swingsettypes.DefaultBeansPerBlockComputeLimit = sdk.NewUint(6_500_000_000)
+		// Set bootstrap
+		switch targetUpgrade {
+		case upgradeName:
+			swingsettypes.DefaultBootstrapVatConfig = "@agoric/vats/decentral-main-psm-config.json"
+		case upgradeNameTest:
+			swingsettypes.DefaultBootstrapVatConfig = "@agoric/vats/decentral-test-psm-config.json"
+		default:
+			return vm, fmt.Errorf("invalid upgrade name")
+		}
+
+		//Run migrations so InitGenesis is called for lien, swingset, vibc, vbank, vstorage
 		vm, err := app.mm.RunMigrations(ctx, app.configurator, vm)
 		if err != nil {
 			return vm, err
 		}
-
-		// Set bean count
-		currentSwingsetParams := app.SwingSetKeeper.GetParams(ctx)
-		ctx.Logger().Info("pre-swingset upgrade", "subspace", swingset.ModuleName, "params", currentSwingsetParams)
-
-		for i := 0; i < len(currentSwingsetParams.BeansPerUnit); i++ {
-			if currentSwingsetParams.BeansPerUnit[i].Key == swingsettypes.BeansPerBlockComputeLimit {
-				currentSwingsetParams.BeansPerUnit[i].Beans = sdk.NewUint(6_500_000_000)
-			}
-		}
-
-		// Set bootstrap
-		switch targetUpgrade {
-		case upgradeName:
-			currentSwingsetParams.BootstrapVatConfig = "@agoric/vats/decentral-main-psm-config.json"
-		case upgradeNameTest:
-			currentSwingsetParams.BootstrapVatConfig = "@agoric/vats/decentral-test-psm-config.json"
-		default:
-			return vm, fmt.Errorf("invalid upgrade name")
-		}
-		ctx.Logger().Info("post-swingset upgrade", "subspace", swingset.ModuleName, "params", currentSwingsetParams)
-
-		app.SwingSetKeeper.SetParams(ctx, currentSwingsetParams)
 
 		return vm, err
 	}
@@ -821,7 +813,6 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		return
 	}
 	app.controllerInited = true
-
 	// Begin initializing the controller here.
 	action := &cosmosInitAction{
 		Type:        "AG_COSMOS_INIT",
