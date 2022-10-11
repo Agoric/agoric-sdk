@@ -150,7 +150,7 @@ const Bridge = () => {
       <div style={{ width: 64, height: 42 }}>
         <AgoricLogo />
       </div>
-      <div style={{ margin: 4 }}>Signal Wallet</div>
+      <div style={{ margin: 4 }}>Connect Agoric Wallet</div>
     </button>
   );
 };
