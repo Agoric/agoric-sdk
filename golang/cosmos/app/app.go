@@ -748,9 +748,9 @@ func NewAgoricApp(
 		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
 	}
 
-	if upgradeInfo.Name == upgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+	if (upgradeInfo.Name == upgradeName || upgradeInfo.Name == upgradeNameTest) && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := store.StoreUpgrades{
-			Added: []string{swingsettypes.StoreKey, vbanktypes.StoreKey, vibc.StoreKey, vstorage.StoreKey},
+			Added: []string{swingsettypes.StoreKey, vbanktypes.StoreKey, vibc.StoreKey, vstorage.StoreKey, lien.StoreKey},
 		}
 
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
