@@ -36,7 +36,7 @@ export const stringifyNat = (
   if (placesToShow === undefined) {
     placesToShow = Math.max(
       Math.min(decimalPlaces, CONVENTIONAL_DECIMAL_PLACES),
-      decimalPlaces - calcTrailingZeros(natValue),
+      natValue > 0n ? decimalPlaces - calcTrailingZeros(natValue) : 0,
     );
   }
 

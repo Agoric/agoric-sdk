@@ -54,4 +54,7 @@ test('stringifyNat shows correct number of decimal places by default', t => {
 test('stringifyNat empty value', t => {
   t.is(stringifyNat(undefined), '');
   t.is(stringifyNat(null), '');
+  t.is(stringifyNat(0n), '0');
+  t.is(stringifyNat(0n, 1), '0.0');
+  t.is(stringifyNat(0n, 4), '0.00');
 });
