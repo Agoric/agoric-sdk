@@ -10,17 +10,14 @@ import {
   makeSwingsetController,
 } from '../../../src/index.js';
 
+import { kunser } from '../../../src/lib/kmarshal.js';
+
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
 }
 
 function getImportSensorKref(impcapdata, i) {
-  const body = JSON.parse(impcapdata.body);
-  const value = body[i];
-  if (typeof value === 'object' && value['@qclass'] === 'slot') {
-    return ['slot', impcapdata.slots[value.index]];
-  }
-  return value;
+  return ['slot', `${kunser(impcapdata)[i]}`];
 }
 
 test('collection entry slots trigger doMoreGC', async t => {
@@ -55,8 +52,8 @@ test('collection entry slots trigger doMoreGC', async t => {
     const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
-    const capdata = c.kpResolution(kpid);
-    return [status, capdata];
+    const result = c.kpResolution(kpid);
+    return [status, result];
   }
 
   function has(kref) {
@@ -68,9 +65,9 @@ test('collection entry slots trigger doMoreGC', async t => {
   // fetch the "importSensor": exported by bootstrap, imported by the
   // other vat. We'll determine its kref and later query the other vat
   // to see if it's still importing one or not
-  const [impstatus, impcapdata] = await run('getImportSensors', []);
+  const [impstatus, impresult] = await run('getImportSensors', []);
   t.is(impstatus, 'fulfilled');
-  const imp1kref = getImportSensorKref(impcapdata, 0)[1];
+  const imp1kref = getImportSensorKref(impresult, 0)[1];
 
   // at this point, vat-target has not yet seen the sensors
   t.is(has(imp1kref), undefined);

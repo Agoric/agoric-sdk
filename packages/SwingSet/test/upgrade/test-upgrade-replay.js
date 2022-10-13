@@ -9,7 +9,8 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '../../src/index.js';
-import { capargs, bundleOpts } from '../util.js';
+import { bundleOpts } from '../util.js';
+import { kser } from '../../src/lib/kmarshal.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
@@ -24,8 +25,8 @@ async function run(c, method, args = []) {
   const kpid = c.queueToVatRoot('bootstrap', method, args);
   await c.run();
   const status = c.kpStatus(kpid);
-  const capdata = c.kpResolution(kpid);
-  return [status, capdata];
+  const result = c.kpResolution(kpid);
+  return [status, result];
 }
 
 test.before(async t => {
@@ -56,13 +57,13 @@ test('replay after upgrade', async t => {
     // create initial version
     const [v1status, v1data] = await run(c1, 'buildV1');
     t.is(v1status, 'fulfilled');
-    t.deepEqual(v1data, capargs(1));
+    t.deepEqual(v1data, kser(1));
 
     // now perform the upgrade
     const [v2status, v2data] = await run(c1, 'upgradeV2');
     t.is(v2status, 'fulfilled');
     // upgrade restart loses RAM state, hence adding 20 yields 20 rather than 21
-    t.deepEqual(v2data, capargs(20));
+    t.deepEqual(v2data, kser(20));
   }
 
   // copy the store just to be sure
@@ -80,6 +81,6 @@ test('replay after upgrade', async t => {
     t.is(rstatus, 'fulfilled');
 
     // replay retains RAM state of post-upgrade vat, hence adding 300 yields 320
-    t.deepEqual(rdata, capargs(320));
+    t.deepEqual(rdata, kser(320));
   }
 });

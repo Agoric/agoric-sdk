@@ -1,16 +1,11 @@
 /* eslint-disable import/order */
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { parse } from '@endo/marshal';
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
 import { extractMethod } from '../src/lib/kdebug.js';
-import {
-  makeKernelEndowments,
-  buildDispatch,
-  capargs,
-  methargsOneSlot,
-} from './util.js';
+import { makeKernelEndowments, buildDispatch } from './util.js';
+import { kser, kunser, kslot } from '../src/lib/kmarshal.js';
 
 function makeKernel() {
   const endowments = makeKernelEndowments();
@@ -56,7 +51,7 @@ async function doAbandon(t, reachable) {
     // make a dummy delivery to vatA, so the kernel will call
     // processRefcounts(), this isn't normally needed but we're
     // calling the syscall object directly here
-    kernel.queueToKref(aliceKref, capargs(['flush', []]));
+    kernel.queueToKref(aliceKref, 'flush', []);
     await kernel.run();
     t.truthy(logA.length >= 1);
     const f = logA.shift();
@@ -65,7 +60,7 @@ async function doAbandon(t, reachable) {
   }
 
   // introduce B to A, so it can send 'holdThis' later
-  kernel.queueToKref(bobKref, methargsOneSlot('exportToA', aliceKref), 'none');
+  kernel.queueToKref(bobKref, 'exportToA', [kslot(aliceKref)], 'none');
   await kernel.run();
   t.is(logB.length, 1);
   t.is(logB[0].type, 'deliver');
@@ -75,7 +70,7 @@ async function doAbandon(t, reachable) {
 
   // tell B to export 'target' to A, so it gets a c-list and refcounts
   const targetForBob = 'o+100';
-  syscallB.send(aliceForBob, methargsOneSlot('holdThis', targetForBob));
+  syscallB.send(aliceForBob, kser(['holdThis', [kslot(targetForBob)]]));
   await kernel.run();
 
   t.is(logA.length, 1);
@@ -94,7 +89,7 @@ async function doAbandon(t, reachable) {
 
   // vatA can send a message to the target
   const p1ForAlice = 'p+1'; // left unresolved because vatB is lazy
-  syscallA.send(targetForAlice, capargs(['ping', []]), p1ForAlice);
+  syscallA.send(targetForAlice, kser(['ping', []]), p1ForAlice);
   await flushDeliveries();
   t.is(logB.length, 1);
   t.is(logB[0].type, 'deliver');
@@ -134,7 +129,7 @@ async function doAbandon(t, reachable) {
   if (reachable) {
     // vatA can send a message, but it will reject
     const p2ForAlice = 'p+2'; // rejected by kernel
-    syscallA.send(targetForAlice, capargs(['ping2', []]), p2ForAlice);
+    syscallA.send(targetForAlice, kser(['ping2', []]), p2ForAlice);
     syscallA.subscribe(p2ForAlice);
     await flushDeliveries();
 
@@ -149,7 +144,7 @@ async function doAbandon(t, reachable) {
     // TODO: the kernel knows !owner but doesn't remember whether it was
     // an upgrade or a termination that revoked the object, so the error
     // message is a bit misleading
-    t.deepEqual(parse(data.body), Error('vat terminated'));
+    t.deepEqual(kunser(data), Error('vat terminated'));
     logA.length = 0;
   }
 

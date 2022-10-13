@@ -3,8 +3,8 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import bundleSource from '@endo/bundle-source';
-import { parse } from '@endo/marshal';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import { kunser } from '../../src/lib/kmarshal.js';
 
 import {
   initializeSwingset,
@@ -59,7 +59,7 @@ test('d1', async t => {
   // first, exercise plain arguments and return values
   const r1 = c.queueToVatRoot('bootstrap', 'step1', []);
   await c.run();
-  t.deepEqual(JSON.parse(c.kpResolution(r1).body), { a: 4, b: [5, 6] });
+  t.deepEqual(kunser(c.kpResolution(r1)), { a: 4, b: [5, 6] });
   t.deepEqual(sharedArray, ['pushed']);
   sharedArray.length = 0;
 
@@ -68,7 +68,7 @@ test('d1', async t => {
   const r2 = c.queueToVatRoot('bootstrap', 'step2', []);
   await c.run();
   const expected2 = ['got', true, 'hi ping1', true, 'hi ping2', true];
-  t.deepEqual(JSON.parse(c.kpResolution(r2).body), expected2);
+  t.deepEqual(kunser(c.kpResolution(r2)), expected2);
 
   // create and pass around new device nodes
   const r3 = c.queueToVatRoot('bootstrap', 'step3', []);
@@ -77,7 +77,7 @@ test('d1', async t => {
     ['dn1', 21, true, true],
     ['dn2', 22, true, true],
   ];
-  t.deepEqual(JSON.parse(c.kpResolution(r3).body), expected3);
+  t.deepEqual(kunser(c.kpResolution(r3)), expected3);
 
   // check that devices can manage state through vatstore
   const r4 = c.queueToVatRoot('bootstrap', 'step4', []);
@@ -87,23 +87,21 @@ test('d1', async t => {
     ['value1', undefined],
     [undefined, undefined],
   ];
-  t.deepEqual(parse(c.kpResolution(r4).body), expected4);
+  t.deepEqual(kunser(c.kpResolution(r4)), expected4);
 
   // check that device exceptions do not kill the device, calling vat, or kernel
   const r5 = c.queueToVatRoot('bootstrap', 'step5', []);
   await c.run();
-  // body: '{"@qclass":"error","errorId":"error:liveSlots:v1#70001","message":"syscall.callNow failed: device.invoke failed, see logs for details","name":"Error"}',
   const expected5 = Error(
     'syscall.callNow failed: device.invoke failed, see logs for details',
   );
-  t.deepEqual(parse(c.kpResolution(r5).body), expected5);
+  t.deepEqual(kunser(c.kpResolution(r5)), expected5);
 
   // and raw devices can return an error result
   const r6 = c.queueToVatRoot('bootstrap', 'step6', []);
   await c.run();
-  // body: '{"@qclass":"error","errorId":"error:liveSlots:v1#70001","message":"syscall.callNow failed: device.invoke failed, see logs for details","name":"Error"}',
   const expected6 = Error(
     'syscall.callNow failed: deliberate raw-device result error',
   );
-  t.deepEqual(parse(c.kpResolution(r6).body), expected6);
+  t.deepEqual(kunser(c.kpResolution(r6)), expected6);
 });

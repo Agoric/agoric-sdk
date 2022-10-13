@@ -9,7 +9,8 @@ import {
   loadSwingsetConfigFile,
   buildKernelBundles,
 } from '../../../src/index.js';
-import { capargs, restartVatAdminVat } from '../../util.js';
+import { kser, kunser } from '../../../src/lib/kmarshal.js';
+import { restartVatAdminVat } from '../../util.js';
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
@@ -68,7 +69,7 @@ async function doTerminateNonCritical(
   const kpid = controller.queueToVatRoot('bootstrap', 'performTest', [mode]);
   await controller.run();
   t.is(controller.kpStatus(kpid), 'fulfilled');
-  t.deepEqual(controller.kpResolution(kpid), capargs('test done'));
+  t.deepEqual(controller.kpResolution(kpid), kser('test done'));
 
   const staticDone = dynamic ? [] : ['done'];
   const dynamicDone = dynamic ? [...reference, 'done'] : [];
@@ -139,12 +140,11 @@ async function doTerminateCritical(
 
   const kpid = controller.queueToVatRoot('bootstrap', 'performTest', [mode]);
   const err = await t.throwsAsync(() => controller.run());
-  const body = JSON.parse(err.message);
-  if (typeof body === 'string') {
-    t.is(body, mode);
+  const thrown = kunser({ body: err.message, slots: [] });
+  if (typeof thrown === 'string') {
+    t.is(thrown, mode);
   } else {
-    t.is(body['@qclass'], 'error');
-    t.is(body.message, mode);
+    t.is(thrown.message, mode);
   }
   t.is(controller.kpStatus(kpid), dynamic ? 'unresolved' : 'fulfilled');
   const postProbe = hostStorage.kvStore.get(`${deadVatID}.options`);
@@ -399,7 +399,7 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
     t.teardown(c1.shutdown);
     c1.pinVatRoot('bootstrap');
     await c1.run();
-    t.deepEqual(c1.kpResolution(c1.bootstrapResult), capargs('bootstrap done'));
+    t.deepEqual(c1.kpResolution(c1.bootstrapResult), kser('bootstrap done'));
     t.deepEqual(c1.dump().log, [
       'w: p1 = before',
       `w: I ate'nt dead`,
@@ -456,7 +456,7 @@ test.serial('dead vat state removed', async t => {
   await controller.run();
   t.deepEqual(
     controller.kpResolution(controller.bootstrapResult),
-    capargs('bootstrap done'),
+    kser('bootstrap done'),
   );
   const kvStore = hostStorage.kvStore;
   t.is(kvStore.get('vat.dynamicIDs'), '["v6"]');

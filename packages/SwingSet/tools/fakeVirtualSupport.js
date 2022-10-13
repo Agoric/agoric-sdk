@@ -203,7 +203,9 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     return val;
   }
 
-  const marshal = makeMarshal(convertValToSlot, convertSlotToVal);
+  const marshal = makeMarshal(convertValToSlot, convertSlotToVal, {
+    serializeBodyFormat: 'smallcaps',
+  });
 
   function registerEntry(baseRef, val, valIsCohort) {
     setValForSlot(baseRef, val);

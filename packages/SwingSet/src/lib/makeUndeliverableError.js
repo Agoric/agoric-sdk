@@ -11,14 +11,9 @@
 // "data is not callable" error is kind of unique to the way swingset handles
 // references, so we create a distinct error message.
 
-const QCLASS = '@';
+import { kunser, kser } from './kmarshal.js';
 
 export function makeUndeliverableError(methargs) {
-  const method = JSON.parse(methargs.body)[0];
-  const s = {
-    [QCLASS]: 'error',
-    name: 'TypeError',
-    message: `data is not callable, has no method ${method}`,
-  };
-  return harden({ body: JSON.stringify(s), slots: [] });
+  const method = kunser(methargs)[0];
+  return kser(TypeError(`data is not callable, has no method ${method}`));
 }

@@ -2,6 +2,7 @@ import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
 import { insistCapData } from '../lib/capdata.js';
 import { insistMessage } from '../lib/message.js';
 import { insistVatID } from '../lib/id.js';
+import { kser } from '../lib/kmarshal.js';
 
 /**
  * @param {object} tools
@@ -85,7 +86,8 @@ export function makeKernelQueueHandler(tools) {
    * by some other vat. This requires a kref as a target.
    *
    * @param {string} kref  Target of the message
-   * @param {*} methargs  The method and arguments
+   * @param {string} method  The method name
+   * @param {any[]} args  The arguments array
    * @param {ResolutionPolicy=} policy How the kernel should handle an eventual
    *    resolution or rejection of the message's result promise. Should be
    *    one of 'none' (don't even create a result promise), 'ignore' (do
@@ -94,10 +96,10 @@ export function makeKernelQueueHandler(tools) {
    *    rejection).
    * @returns {string | undefined} the kpid of the sent message's result promise, if any
    */
-  function queueToKref(kref, methargs, policy = 'ignore') {
+  function queueToKref(kref, method, args, policy = 'ignore') {
     // queue a message on the end of the queue, with 'absolute' krefs.
     // Use 'step' or 'run' to execute it
-    insistCapData(methargs);
+    const methargs = kser([method, args]);
     methargs.slots.forEach(s => parseKernelSlot(s));
     let resultKPID;
     if (policy !== 'none') {

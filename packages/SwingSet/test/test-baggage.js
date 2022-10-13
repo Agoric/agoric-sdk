@@ -12,6 +12,7 @@ import {
   validateReturned,
 } from './liveslots-helpers.js';
 import { validateCreateBuiltInTables } from './gc-helpers.js';
+import { vstr } from './util.js';
 
 function buildRootObject(vatPowers, vatParameters, baggage) {
   baggage.has('outside');
@@ -25,13 +26,6 @@ function buildRootObject(vatPowers, vatParameters, baggage) {
 }
 
 const NONE = undefined; // mostly just shorter, to maintain legibility while making prettier shut up
-
-function stringVal(str) {
-  return JSON.stringify({
-    body: JSON.stringify(str),
-    slots: [],
-  });
-}
 
 function validateSetup(v) {
   validate(v, matchVatstoreGet('idCounters', NONE));
@@ -58,7 +52,7 @@ test.serial('exercise baggage', async t => {
   validateSetup(v);
   validate(v, matchVatstoreGet('vc.1.soutside', NONE));
   validate(v, matchVatstoreGet('vc.1.soutside', NONE));
-  validate(v, matchVatstoreSet('vc.1.soutside', stringVal('outer val')));
+  validate(v, matchVatstoreSet('vc.1.soutside', vstr('outer val')));
   validate(v, matchVatstoreGet('vc.1.|entryCount', '0'));
   validate(v, matchVatstoreSet('vc.1.|entryCount', '1'));
   validate(v, matchVatstoreGet('deadPromises', NONE));
@@ -66,9 +60,9 @@ test.serial('exercise baggage', async t => {
   validateDone(v);
 
   const rp = await dispatchMessage('doSomething', []);
-  validate(v, matchVatstoreGet('vc.1.soutside', stringVal('outer val')));
+  validate(v, matchVatstoreGet('vc.1.soutside', vstr('outer val')));
   validate(v, matchVatstoreGet('vc.1.sinside', NONE));
-  validate(v, matchVatstoreSet('vc.1.sinside', stringVal('inner val')));
+  validate(v, matchVatstoreSet('vc.1.sinside', vstr('inner val')));
   validate(v, matchVatstoreGet('vc.1.|entryCount', '1'));
   validate(v, matchVatstoreSet('vc.1.|entryCount', '2'));
   validateReturned(v, rp);

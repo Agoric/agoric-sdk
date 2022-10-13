@@ -2,7 +2,8 @@ import { assert, details as X } from '@agoric/assert';
 import buildCommsDispatch from '../src/vats/comms/index.js';
 import { debugState } from '../src/vats/comms/dispatch.js';
 import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot.js';
-import { capargs, makeMessage, makeResolutions } from './util.js';
+import { makeMessage, makeResolutions } from './util.js';
+import { kslot, kser } from '../src/lib/kmarshal.js';
 
 // This module provides a power tool for testing the comms vat implementation.
 // It provides support for injecting events into the comms vat and observing
@@ -137,8 +138,6 @@ import { capargs, makeMessage, makeResolutions } from './util.js';
 // otherwise, the script may not be provoking comms vat activity as it would be
 // provoked in an actual swingset in the case being simulated.
 
-const QCLASS = '@qclass';
-
 const oCommsRoot = '@o+0'; // Always the root of the comms vat
 
 /**
@@ -230,8 +229,6 @@ function ifaceOf(scriptRef) {
  * @returns {unknown} a capdata object kinda sorta representing `from`
  */
 function encodeCapdata(from) {
-  const slots = [];
-
   function encodeValue(value) {
     const typestr = typeof value;
     switch (typestr) {
@@ -245,19 +242,11 @@ function encodeCapdata(from) {
         }
       case 'string':
         if (value[0] === '@') {
-          const ref = refOf(value);
-          let index = slots.findIndex(x => x === ref);
-          if (index < 0) {
-            index = slots.length;
-            slots.push(ref);
-          }
-          const iface = ifaceOf(value);
-          return { [QCLASS]: 'slot', iface, index };
+          return kslot(refOf(value), ifaceOf(value));
         } else {
           return value;
         }
       case 'undefined':
-        return { [QCLASS]: 'undefined' };
       case 'boolean':
       case 'number':
         return value;
@@ -266,8 +255,7 @@ function encodeCapdata(from) {
     }
   }
 
-  const bodyObj = encodeValue(from);
-  return { body: JSON.stringify(bodyObj), slots };
+  return kser(encodeValue(from));
 }
 
 /**
@@ -347,7 +335,7 @@ export function commsVatDriver(t, verbose = false) {
   const log = [];
   const syscall = loggingSyscall(log);
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
-  dispatch(['startVat', capargs()]);
+  dispatch(['startVat', kser()]);
   const { state } = debugState.get(dispatch);
 
   const remotes = new Map();
@@ -448,11 +436,7 @@ export function commsVatDriver(t, verbose = false) {
         remote,
         remoteMessage(true, target, methargs, result),
       );
-      t.deepEqual(log.shift(), [
-        remote.transmitter,
-        { body: JSON.stringify(msg), slots: [] },
-        undefined,
-      ]);
+      t.deepEqual(log.shift(), [remote.transmitter, kser(msg), undefined]);
     }
   }
 
@@ -490,11 +474,7 @@ export function commsVatDriver(t, verbose = false) {
     } else {
       const remote = remotes.get(who);
       const msg = prepareTransmit(remote, remoteResolutions(true, resolutions));
-      t.deepEqual(log.shift(), [
-        remote.transmitter,
-        { body: JSON.stringify(msg), slots: [] },
-        undefined,
-      ]);
+      t.deepEqual(log.shift(), [remote.transmitter, kser(msg), undefined]);
     }
   }
 

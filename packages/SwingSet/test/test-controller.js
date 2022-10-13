@@ -10,9 +10,10 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '../src/index.js';
-import { checkKT, capargs } from './util.js';
+import { checkKT } from './util.js';
+import { kser, kunser, kslot } from '../src/lib/kmarshal.js';
 
-const emptyVP = capargs({});
+const emptyVP = kser({});
 
 function removeTriple(arr, a, b, c) {
   for (let i = 0; i < arr.length; i += 1) {
@@ -76,7 +77,7 @@ async function simpleCall(t) {
     { type: 'startVat', vatID: 'v5', vatParameters: emptyVP },
     {
       msg: {
-        methargs: capargs(['foo', ['args']]),
+        methargs: kser(['foo', ['args']]),
         result: 'kp40',
       },
       target: 'ko21',
@@ -84,10 +85,11 @@ async function simpleCall(t) {
     },
   ]);
   await controller.run();
-  t.deepEqual(JSON.parse(controller.dump().log[0]), {
+  const le = controller.dump().log[0];
+  t.deepEqual(JSON.parse(le), {
     target: 'o+0',
     method: 'foo',
-    args: capargs(['args']),
+    args: kser(['args']),
   });
 
   controller.log('2');
@@ -148,7 +150,7 @@ async function doTestBootstrap(t, doPin) {
   const kpid = c.queueToVatRoot('bootstrap', 'doMore');
   await c.run();
   const status = c.kpStatus(kpid);
-  const capdata = c.kpResolution(kpid);
+  const result = c.kpResolution(kpid);
 
   if (doPin) {
     // if pinned, second message will have been handled
@@ -175,10 +177,7 @@ async function doTestBootstrap(t, doPin) {
     // the root object vref, 'o+0', hardcoded into it as a string, it manages to
     // violate the invariant; this kills the receiving vat, meaning that the GC
     // symptom we see from the here is a "vat terminated" rejection
-    t.deepEqual(capdata, {
-      body: '{"@qclass":"error","name":"Error","message":"vat terminated"}',
-      slots: [],
-    });
+    t.deepEqual(kunser(result), Error('vat terminated'));
   }
 }
 
@@ -295,7 +294,7 @@ test.serial('bootstrap export', async t => {
 
   t.deepEqual(c.dump().runQueue, []);
   t.deepEqual(c.dump().acceptanceQueue, [
-    { type: 'startVat', vatID: 'v1', vatParameters: capargs({ argv: [] }) },
+    { type: 'startVat', vatID: 'v1', vatParameters: kser({ argv: [] }) },
     { type: 'startVat', vatID: 'v2', vatParameters: emptyVP },
     { type: 'startVat', vatID: 'v3', vatParameters: emptyVP },
     { type: 'startVat', vatID: 'v4', vatParameters: emptyVP },
@@ -305,19 +304,23 @@ test.serial('bootstrap export', async t => {
     {
       msg: {
         result: 'kp40',
-        methargs: {
-          body: '["bootstrap",[{"bootstrap":{"@qclass":"slot","iface":"Alleged: root","index":0},"comms":{"@qclass":"slot","iface":"Alleged: root","index":1},"left":{"@qclass":"slot","iface":"Alleged: root","index":2},"right":{"@qclass":"slot","iface":"Alleged: root","index":3},"timer":{"@qclass":"slot","iface":"Alleged: root","index":4},"vatAdmin":{"@qclass":"slot","iface":"Alleged: root","index":5},"vattp":{"@qclass":"slot","iface":"Alleged: root","index":6}},{"vatAdmin":{"@qclass":"slot","iface":"Alleged: device","index":7}}]]',
-          slots: [
-            boot0,
-            comms0,
-            left0,
-            right0,
-            timer0,
-            vatAdminSvc,
-            vattp0,
-            adminDev,
+        methargs: kser([
+          'bootstrap',
+          [
+            {
+              bootstrap: kslot(boot0, 'root'),
+              comms: kslot(comms0, 'root'),
+              left: kslot(left0, 'root'),
+              right: kslot(right0, 'root'),
+              timer: kslot(timer0, 'root'),
+              vatAdmin: kslot(vatAdminSvc, 'root'),
+              vattp: kslot(vattp0, 'root'),
+            },
+            {
+              vatAdmin: kslot(adminDev, 'device'),
+            },
           ],
-        },
+        ]),
       },
       target: boot0,
       type: 'send',
@@ -369,10 +372,7 @@ test.serial('bootstrap export', async t => {
       type: 'send',
       target: left0,
       msg: {
-        methargs: {
-          body: '["foo",[1,{"@qclass":"slot","iface":"Alleged: root","index":0}]]',
-          slots: [right0],
-        },
+        methargs: kser(['foo', [1, kslot(right0, 'root')]]),
         result: fooP,
       },
     },
@@ -392,10 +392,7 @@ test.serial('bootstrap export', async t => {
       type: 'send',
       target: right0,
       msg: {
-        methargs: {
-          body: '["bar",[2,{"@qclass":"slot","iface":"Alleged: root","index":0}]]',
-          slots: [right0],
-        },
+        methargs: kser(['bar', [2, kslot(right0, 'root')]]),
         result: barP,
       },
     },

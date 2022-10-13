@@ -36,8 +36,8 @@ test('zcf-ish upgrade', async t => {
     const kpid = c.queueToVatRoot('bootstrap', name, args);
     await c.run();
     const status = c.kpStatus(kpid);
-    const capdata = c.kpResolution(kpid);
-    return [status, capdata];
+    const result = c.kpResolution(kpid);
+    return [status, result];
   };
 
   // create initial version

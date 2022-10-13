@@ -14,7 +14,6 @@ import {
   makeCopyMap,
 } from '@agoric/store';
 import { Far, passStyleOf } from '@endo/marshal';
-import { decodeToJustin } from '@endo/marshal/src/marshal-justin.js';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
 
 // The maximum length of an LMDB key used to be 511 bytes which corresponded to
@@ -71,32 +70,9 @@ function matchAny(patt) {
 }
 
 function throwNotDurable(value, slotIndex, serializedValue) {
-  const body = JSON.parse(serializedValue.body);
-  let encodedValue;
-  try {
-    encodedValue = decodeToJustin(
-      {
-        body,
-        slots: serializedValue.slots,
-      },
-      true,
-    );
-  } catch (justinError) {
-    const err = assert.error(
-      X`value is not durable: ${value} at slot ${q(
-        slotIndex,
-      )} of ${serializedValue}`,
-    );
-    assert.note(
-      err,
-      X`decodeToJustin(${serializedValue}) threw ${justinError} `,
-    );
-    throw err;
-  }
   assert.fail(
-    X`value is not durable: ${value} at slot ${q(
-      slotIndex,
-    )} of ${encodedValue}`,
+    // prettier-ignore
+    X`value is not durable: ${value} at slot ${q(slotIndex)} of ${serializedValue.body}`,
   );
 }
 

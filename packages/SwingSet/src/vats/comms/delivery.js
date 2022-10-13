@@ -6,11 +6,7 @@ import { makeUndeliverableError } from '../../lib/makeUndeliverableError.js';
 import { extractSingleSlot, insistCapData } from '../../lib/capdata.js';
 import { insistRemoteType } from './parseRemoteSlot.js';
 import { insistRemoteID } from './remote.js';
-
-const UNDEFINED = harden({
-  body: JSON.stringify({ '@qclass': 'undefined' }),
-  slots: [],
-});
+import { kser } from '../../lib/kmarshal.js';
 
 export function makeDeliveryKit(
   state,
@@ -126,7 +122,7 @@ export function makeDeliveryKit(
       // TODO: eventually, the vattp vat will be changed to send the 'receive'
       // message as a one-way message.  When that happens, this code should be
       // changed to assert here that the result parameter is null or undefined.
-      syscall.resolve([[result, false, UNDEFINED]]);
+      syscall.resolve([[result, false, kser(undefined)]]);
     }
     // The message is preceded by an optional sequence number followed by the
     // sequence number that the remote end had most recently received from us as

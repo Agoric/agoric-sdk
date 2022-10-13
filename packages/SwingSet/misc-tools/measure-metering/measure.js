@@ -9,6 +9,7 @@ import { xsnap } from '@agoric/xsnap';
 import * as proc from 'child_process';
 import * as os from 'os';
 import { buildVatController } from '../../src/index.js';
+import { kunser } from '../../src/lib/kmarshal.js';
 
 function countingPolicy() {
   let computrons = 0n;
@@ -81,7 +82,7 @@ async function run() {
     const kp = c.queueToVatRoot('bootstrap', 'measure', [mode]);
     await c.run();
     const cd = c.kpResolution(kp);
-    const used = JSON.parse(cd.body);
+    const used = kunser(cd);
     assert.typeof(used, 'number');
     return used;
   }

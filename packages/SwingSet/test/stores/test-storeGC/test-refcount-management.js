@@ -18,9 +18,7 @@ import {
   mapRef,
   mapRefValString,
   NONE,
-  nullValString,
   refValString,
-  thingArg,
   thingRefValString,
   validateCreate,
   validateDeleteMetadata,
@@ -33,6 +31,8 @@ import {
   validateUpdate,
   validateWeakCheckEmpty,
 } from '../../gc-helpers.js';
+import { kslot } from '../../../src/lib/kmarshal.js';
+import { vstr } from '../../util.js';
 
 // These tests follow the model described in
 // ../virtualObjects/test-virtualObjectGC.js
@@ -108,15 +108,15 @@ test.serial('store refcount management 1', async t => {
   rp = await dispatchMessage('finishClearHolders');
   validate(v, matchVatstoreGet(`vc.${base}.sfoo`, mapRefValString(mainHeldIdx)));
   validateUpdate(v, `vom.rc.${mapRef(mainHeldIdx)}`, '3', '2');
-  validate(v, matchVatstoreSet(`vc.${base}.sfoo`, nullValString));
+  validate(v, matchVatstoreSet(`vc.${base}.sfoo`, vstr(null)));
 
   validate(v, matchVatstoreGet(`vc.${base + 1}.sfoo`, mapRefValString(mainHeldIdx)));
   validateUpdate(v, `vom.rc.${mapRef(mainHeldIdx)}`, '2', '1');
-  validate(v, matchVatstoreSet(`vc.${base + 1}.sfoo`, nullValString));
+  validate(v, matchVatstoreSet(`vc.${base + 1}.sfoo`, vstr(null)));
 
   validate(v, matchVatstoreGet(`vc.${base + 2}.sfoo`, mapRefValString(mainHeldIdx)));
   validateUpdate(v, `vom.rc.${mapRef(mainHeldIdx)}`, '1', '0');
-  validate(v, matchVatstoreSet(`vc.${base + 2}.sfoo`, nullValString));
+  validate(v, matchVatstoreSet(`vc.${base + 2}.sfoo`, vstr(null)));
 
   validateReturned(v, rp);
   validateRefCountCheck(v, mapRef(mainHeldIdx), '0');
@@ -223,27 +223,28 @@ test.serial('presence refcount management 1', async t => {
   const base = mainHeldIdx;
   const presenceRef = 'o-5';
 
-  const [targ, tslot] = thingArg(presenceRef);
-  let rp = await dispatchMessage('importAndHold', [targ], [tslot]);
+  const presence = kslot(presenceRef, 'thing');
+  let rp = await dispatchMessage('importAndHold', presence);
+
   validateInit(v);
   validateImportAndHold(v, rp);
 
   rp = await dispatchMessage('prepareStore3');
-  validatePrepareStore3(v, rp, base, presenceRef, thingRefValString(presenceRef), false);
+  validatePrepareStore3(v, rp, base, presenceRef, vstr(presence), false);
 
   rp = await dispatchMessage('finishClearHolders');
-  validate(v, matchVatstoreGet(`vc.${base}.sfoo`, thingRefValString(presenceRef)));
+  validate(v, matchVatstoreGet(`vc.${base}.sfoo`, vstr(presence)));
   validateUpdate(v, `vom.rc.${presenceRef}`, '3', '2');
-  validate(v, matchVatstoreSet(`vc.${base}.sfoo`, nullValString));
+  validate(v, matchVatstoreSet(`vc.${base}.sfoo`, vstr(null)));
 
-  validate(v, matchVatstoreGet(`vc.${base + 1}.sfoo`, thingRefValString(presenceRef)));
+  validate(v, matchVatstoreGet(`vc.${base + 1}.sfoo`, vstr(presence)));
   validateUpdate(v, `vom.rc.${presenceRef}`, '2', '1');
-  validate(v, matchVatstoreSet(`vc.${base + 1}.sfoo`, nullValString));
+  validate(v, matchVatstoreSet(`vc.${base + 1}.sfoo`, vstr(null)));
 
-  validate(v, matchVatstoreGet(`vc.${base + 2}.sfoo`, thingRefValString(presenceRef)));
+  validate(v, matchVatstoreGet(`vc.${base + 2}.sfoo`, vstr(presence)));
   validateUpdate(v, `vom.rc.${presenceRef}`, '1', '0');
   validate(v, matchVatstoreDelete(`vom.rc.${presenceRef}`));
-  validate(v, matchVatstoreSet(`vc.${base + 2}.sfoo`, nullValString));
+  validate(v, matchVatstoreSet(`vc.${base + 2}.sfoo`, vstr(null)));
 
   validateReturned(v, rp);
   validateRefCountCheck(v, presenceRef, NONE);
@@ -264,14 +265,14 @@ test.serial('presence refcount management 2', async t => {
 
   const base = mainHeldIdx;
   const presenceRef = 'o-5';
+  const presence = kslot(presenceRef, 'thing');
 
-  const [targ, tslot] = thingArg(presenceRef);
-  let rp = await dispatchMessage('importAndHold', [targ], [tslot]);
+  let rp = await dispatchMessage('importAndHold', presence);
   validateInit(v);
   validateImportAndHold(v, rp);
 
   rp = await dispatchMessage('prepareStore3');
-  validatePrepareStore3(v, rp, mainHeldIdx, presenceRef, thingRefValString(presenceRef), false);
+  validatePrepareStore3(v, rp, mainHeldIdx, presenceRef, vstr(presence), false);
 
   rp = await dispatchMessage('finishDropHolders');
   validateReturned(v, rp);
@@ -312,11 +313,11 @@ test.serial('remotable refcount management 1', async t => {
 
   rp = await dispatchMessage('finishClearHolders');
   validate(v, matchVatstoreGet(`vc.${base}.sfoo`, refValString(remotableRef, 'thing')));
-  validate(v, matchVatstoreSet(`vc.${base}.sfoo`, nullValString));
+  validate(v, matchVatstoreSet(`vc.${base}.sfoo`, vstr(null)));
   validate(v, matchVatstoreGet(`vc.${base + 1}.sfoo`, refValString(remotableRef, 'thing')));
-  validate(v, matchVatstoreSet(`vc.${base + 1}.sfoo`, nullValString));
+  validate(v, matchVatstoreSet(`vc.${base + 1}.sfoo`, vstr(null)));
   validate(v, matchVatstoreGet(`vc.${base + 2}.sfoo`, refValString(remotableRef, 'thing')));
-  validate(v, matchVatstoreSet(`vc.${base + 2}.sfoo`, nullValString));
+  validate(v, matchVatstoreSet(`vc.${base + 2}.sfoo`, vstr(null)));
   validateReturned(v, rp);
   validateDone(v);
 });

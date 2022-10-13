@@ -3,12 +3,12 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
-import { capSlot, capargs } from '../util.js';
 import {
   crankCounter,
   computronCounter,
   wallClockWaiter,
 } from '../../src/lib/runPolicies.js';
+import { kslot, kser } from '../../src/lib/kmarshal.js';
 
 async function testCranks(t, mode) {
   const config = {
@@ -37,21 +37,20 @@ async function testCranks(t, mode) {
     // doMessage() to right, which makes right send doMessage() to left, etc.
     // This uses four cranks per cycle, since each doMessage() also has a
     // return promise that must be resolved.
-    c.queueToVatRoot('left', 'doMessage', [capSlot(0), 'disabled'], 'ignore', [
-      rightKref,
-    ]);
+    c.queueToVatRoot(
+      'left',
+      'doMessage',
+      [kslot(rightKref), 'disabled'],
+      'ignore',
+    );
   } else if (mode === 'resolutions') {
     // This triggers a back-and-forth cycle of promise resolution, which uses
     // two cranks per cycle. The setup takes three cranks.
-    c.queueToVatRoot('left', 'startPromise', [capSlot(0)], 'ignore', [
-      rightKref,
-    ]);
+    c.queueToVatRoot('left', 'startPromise', [kslot(rightKref)], 'ignore');
   } else if (mode === 'computrons') {
     // Use doMessage() like above, but once every 10 cycles, do enough extra
     // CPU to trigger a computron-limiting policy.
-    c.queueToVatRoot('left', 'doMessage', [capSlot(0), 0], 'ignore', [
-      rightKref,
-    ]);
+    c.queueToVatRoot('left', 'doMessage', [kslot(rightKref), 0], 'ignore');
   } else {
     throw Error(`unknown mode ${mode}`);
   }
@@ -94,7 +93,7 @@ async function testCranks(t, mode) {
     t.is(elapsedCranks(), 35);
     const ckey = `${rightID}.vs.vc.1.sseqnum`;
     const seqnum = JSON.parse(hostStorage.kvStore.get(ckey));
-    t.deepEqual(seqnum, capargs(5));
+    t.deepEqual(seqnum, kser(5));
   } else if (mode === 'wallclock') {
     const startMS = Date.now();
     // On an idle system, this does about 120 cranks per second when run

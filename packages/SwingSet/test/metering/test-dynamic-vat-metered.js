@@ -4,10 +4,10 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import bundleSource from '@endo/bundle-source';
-import { parse } from '@endo/marshal';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { buildKernelBundles, buildVatController } from '../../src/index.js';
-import { capargs, restartVatAdminVat } from '../util.js';
+import { restartVatAdminVat } from '../util.js';
+import { kunser, krefOf } from '../../src/lib/kmarshal.js';
 
 async function prepare() {
   const kernelBundles = await buildKernelBundles();
@@ -25,13 +25,6 @@ async function prepare() {
 test.before(async t => {
   t.context.data = await prepare();
 });
-
-function extractSlot(t, data) {
-  const marg = JSON.parse(data.body);
-  t.is(marg['@qclass'], 'slot');
-  t.is(marg.index, 0);
-  return { marg, meterKref: data.slots[0] };
-}
 
 async function meterObjectsTest(t, doVatAdminRestarts) {
   const { kernelBundles, bootstrapBundle } = t.context.data;
@@ -65,21 +58,15 @@ async function meterObjectsTest(t, doVatAdminRestarts) {
   const cmargs = [10n, 5n]; // remaining, notify threshold
   const kp1 = c.queueToVatRoot('bootstrap', 'createMeter', cmargs);
   await c.run();
-  const { marg, meterKref } = extractSlot(t, c.kpResolution(kp1));
+  const marg = kunser(c.kpResolution(kp1));
   async function doMeter(method, ...args) {
-    const kp = c.queueToVatRoot(
-      'bootstrap',
-      method,
-      [marg, ...args],
-      'ignore',
-      [meterKref],
-    );
+    const kp = c.queueToVatRoot('bootstrap', method, [marg, ...args], 'ignore');
     await c.run();
     return c.kpResolution(kp);
   }
   async function getMeter() {
     const res = await doMeter('getMeter');
-    return parse(res.body);
+    return kunser(res);
   }
 
   await vaRestart();
@@ -105,13 +92,11 @@ test('meter objects with VA restarts', async t => {
 function kpidRejected(t, c, kpid, message) {
   t.is(c.kpStatus(kpid), 'rejected');
   const resCapdata = c.kpResolution(kpid);
-  t.deepEqual(resCapdata.slots, []);
-  const body = JSON.parse(resCapdata.body);
-  if (typeof message === 'string') {
-    delete body.errorId;
-    t.deepEqual(body, { '@qclass': 'error', name: 'Error', message });
+  const res = kunser(resCapdata);
+  if (res instanceof Error && typeof message === 'string') {
+    t.is(res.message, message);
   } else {
-    t.deepEqual(body, message);
+    t.deepEqual(res, message);
   }
 }
 
@@ -122,38 +107,33 @@ async function createMeteredVat(c, t, dynamicVatBundle, capacity, threshold) {
   const cmargs = [capacity, threshold];
   const kp1 = c.queueToVatRoot('bootstrap', 'createMeter', cmargs);
   await c.run();
-  const { marg, meterKref } = extractSlot(t, c.kpResolution(kp1));
+  const marg = kunser(c.kpResolution(kp1));
   // and watch for its notifyThreshold to fire
   const notifyKPID = c.queueToVatRoot(
     'bootstrap',
     'whenMeterNotifiesNext',
     [marg],
     'ignore',
-    [meterKref],
   );
 
   // 'createVat' will import the bundle
   const cvargs = ['dynamic', { managerType: 'xs-worker', meter: marg }];
-  const kp2 = c.queueToVatRoot('bootstrap', 'createVat', cvargs, 'ignore', [
-    meterKref,
-  ]);
+  const kp2 = c.queueToVatRoot('bootstrap', 'createVat', cvargs, 'ignore');
   await c.run();
   if (c.kpStatus(kp2) === 'rejected') {
     console.log(c.kpResolution(kp2));
     throw Error('dynamic vat not created, test cannot continue');
   }
   t.is(c.kpStatus(kp2), 'fulfilled');
-  const res2 = c.kpResolution(kp2);
-  t.is(JSON.parse(res2.body)[0], 'created', res2.body);
-  const doneKPID = res2.slots[0];
+  const res2 = kunser(c.kpResolution(kp2));
+  t.is(res2[0], 'created');
+  const doneKPID = krefOf(res2[1]);
 
   async function getMeter() {
-    const kp = c.queueToVatRoot('bootstrap', 'getMeter', [marg], 'ignore', [
-      meterKref,
-    ]);
+    const kp = c.queueToVatRoot('bootstrap', 'getMeter', [marg], 'ignore');
     await c.run();
     const res = c.kpResolution(kp);
-    const { remaining } = parse(res.body);
+    const { remaining } = kunser(res);
     return remaining;
   }
 
@@ -162,7 +142,7 @@ async function createMeteredVat(c, t, dynamicVatBundle, capacity, threshold) {
     await c.run();
     if (shouldComplete) {
       t.is(c.kpStatus(kp), 'fulfilled');
-      t.deepEqual(c.kpResolution(kp), capargs(42));
+      t.is(kunser(c.kpResolution(kp)), 42);
     } else {
       t.is(c.kpStatus(kp), 'rejected');
       kpidRejected(t, c, kp, 'vat terminated');
@@ -204,18 +184,15 @@ async function overflowCrank(t, explosion) {
   const cmargs = [10_000_000n, 5_000_000n]; // remaining, notifyThreshold
   const kp1 = c.queueToVatRoot('bootstrap', 'createMeter', cmargs);
   await c.run();
-  const { marg, meterKref } = extractSlot(t, c.kpResolution(kp1));
+  const marg = kunser(c.kpResolution(kp1));
 
   // 'createVat' will import the bundle
-  const cvopts = { managerType, meter: marg };
-  const cvargs = ['dynamic', cvopts];
-  const kp2 = c.queueToVatRoot('bootstrap', 'createVat', cvargs, 'ignore', [
-    meterKref,
-  ]);
+  const cvargs = ['dynamic', { managerType, meter: marg }];
+  const kp2 = c.queueToVatRoot('bootstrap', 'createVat', cvargs, 'ignore');
   await c.run();
-  const res2 = c.kpResolution(kp2);
-  t.is(JSON.parse(res2.body)[0], 'created', res2.body);
-  const doneKPID = res2.slots[0];
+  const res2 = kunser(c.kpResolution(kp2));
+  t.is(res2[0], 'created');
+  const doneKPID = krefOf(res2[1]);
 
   // extract the vatID for the newly-created dynamic vat
   const dynamicVatIDs = JSON.parse(kvStore.get('vat.dynamicIDs'));
@@ -239,7 +216,7 @@ async function overflowCrank(t, explosion) {
   // neverP and doneP should still be unresolved
   t.is(c.kpStatus(neverKPID), 'unresolved');
   t.is(c.kpStatus(doneKPID), 'unresolved');
-  t.deepEqual(c.kpResolution(kp3), capargs(42));
+  t.deepEqual(kunser(c.kpResolution(kp3)), 42);
 
   // Now send a message that makes the dynamic vat exhaust its per-crank
   // meter. The message result promise should be rejected, and the control
@@ -354,7 +331,7 @@ test('meter decrements', async t => {
   // console.log(remaining);
   t.is(c.kpStatus(t1.notifyKPID), 'fulfilled');
   const notification = c.kpResolution(t1.notifyKPID);
-  t.is(parse(notification.body).value, remaining);
+  t.is(kunser(notification).value, remaining);
   t.is(c.kpStatus(t1.doneKPID), 'unresolved');
 
   // message three should underflow
@@ -378,7 +355,7 @@ test('meter decrements', async t => {
   t.is(remaining, 0n); // this checks postAbortActions.deductMeter
   t.is(c.kpStatus(t2.notifyKPID), 'fulfilled'); // and pAA.meterNotifications
   const notify2 = c.kpResolution(t2.notifyKPID);
-  t.is(parse(notify2.body).value, 0n);
+  t.is(kunser(notify2).value, 0n);
   kpidRejected(t, c, t2.doneKPID, 'meter underflow, vat terminated');
 });
 
@@ -419,25 +396,21 @@ async function unlimitedMeterTest(t, doVatAdminRestarts) {
   // create an unlimited meter
   const kp1 = c.queueToVatRoot('bootstrap', 'createUnlimitedMeter', []);
   await c.run();
-  const { marg, meterKref } = extractSlot(t, c.kpResolution(kp1));
+  const marg = kunser(c.kpResolution(kp1));
 
   // 'createVat' will import the bundle
   const cvargs = ['dynamic', { managerType, meter: marg }];
-  const kp2 = c.queueToVatRoot('bootstrap', 'createVat', cvargs, 'ignore', [
-    meterKref,
-  ]);
+  const kp2 = c.queueToVatRoot('bootstrap', 'createVat', cvargs, 'ignore');
   await c.run();
-  const res2 = c.kpResolution(kp2);
-  t.is(JSON.parse(res2.body)[0], 'created', res2.body);
-  const doneKPID = res2.slots[0];
+  const res2 = kunser(c.kpResolution(kp2));
+  t.is(res2[0], 'created');
+  const doneKPID = krefOf(res2[1]);
 
   async function getMeter() {
-    const kp = c.queueToVatRoot('bootstrap', 'getMeter', [marg], 'ignore', [
-      meterKref,
-    ]);
+    const kp = c.queueToVatRoot('bootstrap', 'getMeter', [marg], 'ignore');
     await c.run();
     const res = c.kpResolution(kp);
-    const { remaining } = parse(res.body);
+    const { remaining } = kunser(res);
     return remaining;
   }
 
@@ -446,7 +419,7 @@ async function unlimitedMeterTest(t, doVatAdminRestarts) {
     await c.run();
     if (shouldComplete) {
       t.is(c.kpStatus(kp), 'fulfilled');
-      t.deepEqual(c.kpResolution(kp), capargs(42));
+      t.is(kunser(c.kpResolution(kp)), 42);
     } else {
       t.is(c.kpStatus(kp), 'rejected');
       kpidRejected(t, c, kp, 'vat terminated');

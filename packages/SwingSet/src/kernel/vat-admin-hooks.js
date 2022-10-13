@@ -1,24 +1,18 @@
 import { assert } from '@agoric/assert';
-import { stringify, parse } from '@endo/marshal';
 import { insistVatID } from '../lib/id.js';
+import { kser, kunser } from '../lib/kmarshal.js';
 
 export function makeVatAdminHooks(tools) {
   const { kernelKeeper, terminateVat } = tools;
   return {
     createByBundle(argsCapData) {
       // first, split off vatParameters
-      const argsJSON = JSON.parse(argsCapData.body);
-      const [bundle, { vatParameters: vpJSON, ...dynamicOptionsJSON }] =
-        argsJSON;
+      const args = kunser(argsCapData);
+      const [bundle, { vatParameters, ...dynamicOptions }] = args;
       // assemble the vatParameters capdata
-      const vatParameters = {
-        body: JSON.stringify(vpJSON),
-        slots: argsCapData.slots,
-      };
-      // then re-parse the rest with marshal
-      const dynamicOptions = parse(JSON.stringify(dynamicOptionsJSON));
+      const marshalledVatParameters = kser(vatParameters);
       // incref slots while create-vat is on run-queue
-      for (const kref of vatParameters.slots) {
+      for (const kref of marshalledVatParameters.slots) {
         kernelKeeper.incrementRefCount(kref, 'create-vat-event');
       }
       const source = { bundle };
@@ -27,38 +21,30 @@ export function makeVatAdminHooks(tools) {
         type: 'create-vat',
         vatID,
         source,
-        vatParameters,
+        vatParameters: marshalledVatParameters,
         dynamicOptions,
       };
       kernelKeeper.addToAcceptanceQueue(harden(event));
       // the device gets the new vatID immediately, and will be notified
       // later when it is created and a root object is available
-      const vatIDCapData = { body: JSON.stringify(vatID), slots: [] };
-      return harden(vatIDCapData);
+      return harden(kser(vatID));
     },
 
     createByID(argsCapData) {
       // argsCapData is marshal([bundleID, options]), and options is {
-      // vatParameters, ...rest }, and 'rest' is JSON-serializable (no
-      // slots or bigints or undefined). We get the intermediate marshal
-      // representation (with @qclass nodes), carve off vatParameters,
-      // then reassemble the rest. All slots will be associated with
-      // vatParameters.
+      // vatParameters, ...rest }, and 'rest' is JSON-serializable (no slots or
+      // bigints or undefined). We get the intermediate marshal representation,
+      // carve off vatParameters, then reassemble the rest. All slots will be
+      // associated with vatParameters.
 
       // first, split off vatParameters
-      const argsJSON = JSON.parse(argsCapData.body);
-      const [bundleID, { vatParameters: vpJSON, ...dynamicOptionsJSON }] =
-        argsJSON;
+      const args = kunser(argsCapData);
+      const [bundleID, { vatParameters, ...dynamicOptions }] = args;
       assert(kernelKeeper.hasBundle(bundleID), bundleID);
-      // assemble the vatParameters capdata
-      const vatParameters = {
-        body: JSON.stringify(vpJSON),
-        slots: argsCapData.slots,
-      };
-      // then re-parse the rest with marshal
-      const dynamicOptions = parse(JSON.stringify(dynamicOptionsJSON));
+      // assemble the marshalled vatParameters
+      const marshalledVatParameters = kser(vatParameters);
       // incref slots while create-vat is on run-queue
-      for (const kref of vatParameters.slots) {
+      for (const kref of marshalledVatParameters.slots) {
         kernelKeeper.incrementRefCount(kref, 'create-vat-event');
       }
       const source = { bundleID };
@@ -67,25 +53,24 @@ export function makeVatAdminHooks(tools) {
         type: 'create-vat',
         vatID,
         source,
-        vatParameters,
+        vatParameters: marshalledVatParameters,
         dynamicOptions,
       };
       kernelKeeper.addToAcceptanceQueue(harden(event));
       // the device gets the new vatID immediately, and will be notified
       // later when it is created and a root object is available
-      const vatIDCapData = { body: JSON.stringify(vatID), slots: [] };
-      return harden(vatIDCapData);
+      return harden(kser(vatID));
     },
 
     upgrade(argsCapData) {
       // marshal([vatID, bundleID, vatParameters]) -> upgradeID
-      const argsJSON = JSON.parse(argsCapData.body);
-      const [vatID, bundleID, vpJSON, upgradeMessage] = argsJSON;
+      const args = kunser(argsCapData);
+      const [vatID, bundleID, vatParameters, upgradeMessage] = args;
       insistVatID(vatID);
       assert.typeof(bundleID, 'string');
       assert.typeof(upgradeMessage, 'string');
-      const vpCD = { body: JSON.stringify(vpJSON), slots: argsCapData.slots };
-      for (const kref of vpCD.slots) {
+      const marshalledVatParameters = kser(vatParameters);
+      for (const kref of marshalledVatParameters.slots) {
         kernelKeeper.incrementRefCount(kref, 'upgrade-vat-event');
       }
       const upgradeID = kernelKeeper.allocateUpgradeID();
@@ -94,34 +79,33 @@ export function makeVatAdminHooks(tools) {
         vatID,
         upgradeID,
         bundleID,
-        vatParameters: vpCD,
+        vatParameters: marshalledVatParameters,
         upgradeMessage,
       };
       kernelKeeper.addToAcceptanceQueue(harden(ev));
-      const upgradeIDCD = { body: JSON.stringify(upgradeID), slots: [] };
-      return harden(upgradeIDCD);
+      return harden(kser(upgradeID));
     },
 
-    terminate(argsCD) {
+    terminate(argsCapData) {
       // marshal([vatID, reason]) -> null
-      const argsJSON = JSON.parse(argsCD.body);
-      const [vatID, reasonJSON] = argsJSON;
+      const args = kunser(argsCapData);
+      const [vatID, reason] = args;
       insistVatID(vatID);
-      const reasonCD = { ...argsCD, body: JSON.stringify(reasonJSON) };
+      const marshalledReason = kser(reason);
       // we don't need to incrementRefCount because if terminateVat sends
       // 'reason' to vat-admin, it uses notifyTermination / queueToKref /
       // doSend, and doSend() does its own incref
-      void terminateVat(vatID, true, reasonCD);
+      void terminateVat(vatID, true, marshalledReason);
       // TODO: terminateVat is async, result doesn't fire until worker
       // is dead. To fix this we'll probably need to move termination
       // to a run-queue ['terminate-vat', vatID] event, like createVat
-      return harden({ body: stringify(undefined), slots: [] });
+      return harden(kser(undefined));
     },
 
     changeOptions(argsCapData) {
       // marshal([vatID, options]) -> null
       assert(argsCapData.slots.length === 0);
-      const args = JSON.parse(argsCapData.body);
+      const args = kunser(argsCapData);
       const [vatID, options] = args;
       insistVatID(vatID);
       const ev = {
@@ -130,7 +114,7 @@ export function makeVatAdminHooks(tools) {
         options,
       };
       kernelKeeper.addToAcceptanceQueue(harden(ev));
-      return harden({ body: stringify(undefined), slots: [] });
+      return harden(kser(undefined));
     },
   };
 }

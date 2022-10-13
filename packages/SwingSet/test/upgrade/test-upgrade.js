@@ -3,58 +3,26 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
-import { parse } from '@endo/marshal';
 import bundleSource from '@endo/bundle-source';
 import { getAllState } from '@agoric/swing-store';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { parseReachableAndVatSlot } from '../../src/kernel/state/reachable.js';
 import { parseVatSlot } from '../../src/lib/parseVatSlots.js';
+import { kunser, krefOf } from '../../src/lib/kmarshal.js';
 import {
   buildKernelBundles,
   initializeSwingset,
   makeSwingsetController,
 } from '../../src/index.js';
-import {
-  bundleOpts,
-  capargs,
-  capdataOneSlot,
-  restartVatAdminVat,
-} from '../util.js';
+import { bundleOpts, restartVatAdminVat } from '../util.js';
 
-import { NUM_SENSORS } from './num-sensors.js';
+// import { NUM_SENSORS } from './num-sensors.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
   t.context.data = { kernelBundles };
 });
-
-const get = (capdata, propname) => {
-  const body = JSON.parse(capdata.body);
-  const value = body[propname];
-  if (typeof value === 'object' && value['@qclass'] === 'slot') {
-    return ['slot', capdata.slots[value.index]];
-  }
-  return value;
-};
-
-const getRetained = (capdata, propname) => {
-  const body = JSON.parse(capdata.body);
-  const value = body.retain[propname];
-  if (typeof value === 'object' && value['@qclass'] === 'slot') {
-    return ['slot', capdata.slots[value.index]];
-  }
-  return value;
-};
-
-const getImportSensorKref = (impcapdata, i) => {
-  const body = JSON.parse(impcapdata.body);
-  const value = body[i];
-  if (typeof value === 'object' && value['@qclass'] === 'slot') {
-    return ['slot', impcapdata.slots[value.index]];
-  }
-  return value;
-};
 
 // eslint-disable-next-line no-unused-vars
 const dumpState = (hostStorage, vatID) => {
@@ -101,49 +69,44 @@ const testUpgrade = async (
     const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
-    const capdata = c.kpResolution(kpid);
-    return [status, capdata];
+    const result = c.kpResolution(kpid);
+    return [status, result];
   };
 
   const mcd = await run('getMarker');
   t.is(mcd[0], 'fulfilled');
-  const markerKref = mcd[1].slots[0]; // probably ko26
-  t.deepEqual(mcd[1], capdataOneSlot(markerKref, 'marker'));
+  const marker = kunser(mcd[1]); // probably ko26
+  t.is(marker.iface(), 'marker');
 
   // fetch all the "importSensors": exported by bootstrap, imported by
   // the upgraded vat. We'll determine their krefs and later query the
   // upgraded vat to see if it's still importing them or not
-  const [impstatus, impcapdata] = await run('getImportSensors', []);
+  const [impstatus /* , impresult */] = await run('getImportSensors', []);
   t.is(impstatus, 'fulfilled');
-  const impKrefs = ['skip0'];
-  for (let i = 1; i < NUM_SENSORS + 1; i += 1) {
-    impKrefs.push(getImportSensorKref(impcapdata, i)[1]);
-  }
+  // const impKrefs = kunser(impresult);
 
   if (doVatAdminRestart) {
     await restartVatAdminVat(c);
   }
 
   // create initial version
-  const [v1status, v1capdata] = await run('buildV1', []);
+  const [v1status, v1resultEnc] = await run('buildV1', []);
+  const v1result = kunser(v1resultEnc);
   t.is(v1status, 'fulfilled');
-  t.deepEqual(get(v1capdata, 'version'), 'v1');
-  t.deepEqual(get(v1capdata, 'youAre'), 'v1');
-  t.deepEqual(get(v1capdata, 'marker'), ['slot', markerKref]);
-  t.deepEqual(get(v1capdata, 'data'), ['some', 'data']);
+  t.is(v1result.version, 'v1');
+  t.is(v1result.youAre, 'v1');
+  t.is(`${v1result.marker}`, `${marker}`);
+  t.is(v1result.marker.iface(), 'marker');
+  t.deepEqual(v1result.data, ['some', 'data']);
   // grab the promises that should be rejected
-  t.is(get(v1capdata, 'p1')[0], 'slot');
-  const v1p1Kref = get(v1capdata, 'p1')[1];
-  t.is(get(v1capdata, 'p2')[0], 'slot');
-  const v1p2Kref = get(v1capdata, 'p2')[1];
+  const v1p1Kref = krefOf(v1result.p1);
+  const v1p2Kref = krefOf(v1result.p2);
 
   // grab exports to deduce durable/virtual vrefs
-  t.is(getRetained(v1capdata, 'dur1')[0], 'slot');
-  const dur1Kref = getRetained(v1capdata, 'dur1')[1];
-  t.is(getRetained(v1capdata, 'vir2')[0], 'slot');
-  const vir2Kref = getRetained(v1capdata, 'vir2')[1];
-  const vir5Kref = getRetained(v1capdata, 'vir5')[1];
-  const vir7Kref = getRetained(v1capdata, 'vir7')[1];
+  const dur1Kref = krefOf(v1result.retain.dur1);
+  const vir2Kref = krefOf(v1result.retain.vir2);
+  const vir5Kref = krefOf(v1result.retain.vir5);
+  const vir7Kref = krefOf(v1result.retain.vir7);
 
   const vatID = kvStore.get(`${dur1Kref}.owner`); // probably v6
   const getVref = kref => {
@@ -188,9 +151,7 @@ const testUpgrade = async (
   const retainedNames = 'dur1 vir2 vir5 vir7 vc1 vc3 dc4 rem1 rem2 rem3';
   const retainedKrefs = {};
   for (const name of retainedNames.split(' ')) {
-    const d = getRetained(v1capdata, name);
-    t.is(d[0], 'slot');
-    retainedKrefs[name] = d[1];
+    retainedKrefs[name] = `${v1result.retain[name]}`;
   }
 
   if (doVatAdminRestart) {
@@ -200,15 +161,15 @@ const testUpgrade = async (
   // now perform the upgrade
   // console.log(`-- starting upgradeV2`);
 
-  const [v2status, v2capdata] = await run('upgradeV2', []);
+  const [v2status, v2resultEnc] = await run('upgradeV2', []);
+  const v2result = kunser(v2resultEnc);
   t.is(v2status, 'fulfilled');
-  t.deepEqual(get(v2capdata, 'version'), 'v2');
-  t.deepEqual(get(v2capdata, 'youAre'), 'v2');
-  t.deepEqual(get(v2capdata, 'marker'), ['slot', markerKref]);
-  t.deepEqual(get(v2capdata, 'data'), ['some', 'data']);
-  t.deepEqual(get(v2capdata, 'upgradeResult'), { incarnationNumber: 2 });
-  const remoerr = parse(JSON.stringify(get(v2capdata, 'remoerr')));
-  t.deepEqual(remoerr, Error('vat terminated'));
+  t.deepEqual(v2result.version, 'v2');
+  t.deepEqual(v2result.youAre, 'v2');
+  t.deepEqual(`${v2result.marker}`, `${marker}`);
+  t.deepEqual(v2result.data, ['some', 'data']);
+  t.deepEqual(v2result.upgradeResult, { incarnationNumber: 2 });
+  t.deepEqual(v2result.remoerr, Error('vat terminated'));
 
   // newDur() (the first Durandal instance created in vat-ulrik-2)
   // should get a new vref, because the per-Kind instance counter
@@ -217,20 +178,19 @@ const testUpgrade = async (
   // instance created in vat-ulrik-1). And since it's durable, the
   // c-list entry will still exist, so we'll see the same kref as
   // before.
-  t.is(get(v2capdata, 'newDur')[0], 'slot');
-  const newDurKref = get(v2capdata, 'newDur')[1];
+  const newDurKref = `${v2result.newDur}`;
   t.not(newDurKref, dur1Kref);
 
   // the old version's non-durable promises should be rejected
   t.is(c.kpStatus(v1p1Kref), 'rejected');
-  const vatUpgradedError = capargs({
+  const vatUpgradedError = {
     name: 'vatUpgraded',
     upgradeMessage: 'test upgrade',
     incarnationNumber: 1,
-  });
-  t.deepEqual(c.kpResolution(v1p1Kref), vatUpgradedError);
+  };
+  t.deepEqual(kunser(c.kpResolution(v1p1Kref)), vatUpgradedError);
   t.is(c.kpStatus(v1p2Kref), 'rejected');
-  t.deepEqual(c.kpResolution(v1p2Kref), vatUpgradedError);
+  t.deepEqual(kunser(c.kpResolution(v1p2Kref)), vatUpgradedError);
 
   // dumpState(hostStorage, vatID);
 
@@ -343,17 +303,14 @@ test('vat upgrade - omit vatParameters', async t => {
     const kpid = c.queueToVatRoot('bootstrap', name, args);
     await c.run();
     const status = c.kpStatus(kpid);
-    const capdata = c.kpResolution(kpid);
-    return [status, capdata];
+    const result = c.kpResolution(kpid);
+    return [status, result];
   };
 
   // create initial version
-  const [status, capdata] = await run('doUpgradeWithoutVatParameters', []);
+  const [status, result] = await run('doUpgradeWithoutVatParameters', []);
   t.is(status, 'fulfilled');
-  t.deepEqual(JSON.parse(capdata.body), [
-    { '@qclass': 'undefined' },
-    { '@qclass': 'undefined' },
-  ]);
+  t.deepEqual(kunser(result), [undefined, undefined]);
 });
 
 test('failed upgrade - relaxed durable rules', async t => {
@@ -383,8 +340,8 @@ test('failed upgrade - relaxed durable rules', async t => {
     const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
-    const capdata = c.kpResolution(kpid);
-    return [status, capdata];
+    const result = c.kpResolution(kpid);
+    return [status, result];
   };
 
   // create initial version
@@ -392,9 +349,9 @@ test('failed upgrade - relaxed durable rules', async t => {
   t.is(v1status, 'fulfilled');
 
   // upgrade should fail
-  const [v2status, v2capdata] = await run('upgradeV2', []);
+  const [v2status, v2result] = await run('upgradeV2', []);
   t.is(v2status, 'rejected');
-  const e = parse(v2capdata.body);
+  const e = kunser(kunser(v2result));
   t.truthy(e instanceof Error);
   t.regex(e.message, /vat-upgrade failure/);
 });
@@ -427,20 +384,20 @@ test('failed upgrade - lost kind', async t => {
     const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
-    const capdata = c.kpResolution(kpid);
-    return [status, capdata];
+    const result = c.kpResolution(kpid);
+    return [status, result];
   };
 
   // create initial version
-  const [v1status, v1capdata] = await run('buildV1WithLostKind', []);
+  const [v1status, v1result] = await run('buildV1WithLostKind', []);
   t.is(v1status, 'fulfilled');
-  t.deepEqual(parse(v1capdata.body), ['ping 1']);
+  t.deepEqual(kunser(v1result), ['ping 1']);
 
   // upgrade should fail, get rewound
   console.log(`note: expect a 'defineDurableKind not called' error below`);
-  const [v2status, v2capdata] = await run('upgradeV2WhichLosesKind', []);
+  const [v2status, v2result] = await run('upgradeV2WhichLosesKind', []);
   t.is(v2status, 'fulfilled');
-  const events = parse(v2capdata.body);
+  const events = kunser(v2result);
   t.is(events[0], 'ping 2');
 
   // The v2 vat starts with a 'ping from v2' (which will be unwound).
@@ -448,7 +405,7 @@ test('failed upgrade - lost kind', async t => {
   // unwound.  Then the `E(ulrikAdmin).upgrade()` promise rejects,
   // pushing the error onto 'events'
 
-  const e = events[1];
+  const e = kunser(events[1]);
   t.truthy(e instanceof Error);
   t.regex(e.message, /vat-upgrade failure/);
 
@@ -495,20 +452,20 @@ test('failed upgrade - explode', async t => {
     const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
-    const capdata = c.kpResolution(kpid);
-    return [status, capdata];
+    const result = c.kpResolution(kpid);
+    return [status, result];
   };
 
   // create initial version
-  const [v1status, v1capdata] = await run('buildV1WithPing', []);
+  const [v1status, v1result] = await run('buildV1WithPing', []);
   t.is(v1status, 'fulfilled');
-  t.deepEqual(parse(v1capdata.body), ['hello from v1', 'ping 1']);
+  t.deepEqual(kunser(v1result), ['hello from v1', 'ping 1']);
 
   // upgrade should fail, error returned in array
-  const [v2status, v2capdata] = await run('upgradeV2WhichExplodes', []);
+  const [v2status, v2result] = await run('upgradeV2WhichExplodes', []);
   t.is(v2status, 'fulfilled');
-  const events = parse(v2capdata.body);
-  const e = events[0];
+  const events = kunser(v2result);
+  const e = kunser(events[0]);
   t.truthy(e instanceof Error);
   t.regex(e.message, /vat-upgrade failure/);
   // bootstrap sends pingback() to the vat post-upgrade, which sends
@@ -550,8 +507,8 @@ async function testMultiKindUpgradeChecks(t, mode, complaint) {
     const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
-    const capdata = c.kpResolution(kpid);
-    return [status, capdata];
+    const result = c.kpResolution(kpid);
+    return [status, result];
   };
 
   // create initial version
@@ -562,10 +519,10 @@ async function testMultiKindUpgradeChecks(t, mode, complaint) {
   if (complaint) {
     console.log(`note: expect a '${complaint}' error below`);
   }
-  const [v2status, v2capdata] = await run('upgradeV2Simple', [mode]);
+  const [v2status, v2result] = await run('upgradeV2Simple', [mode]);
   if (complaint) {
     t.is(v2status, 'rejected');
-    const e = parse(v2capdata.body);
+    const e = kunser(kunser(v2result));
     t.truthy(e instanceof Error);
     t.regex(e.message, /vat-upgrade failure/);
     // TODO: who should see the details of what v2 did wrong? calling
@@ -643,13 +600,13 @@ test('failed upgrade - unknown options', async t => {
     const kpid = c.queueToVatRoot('bootstrap', name, args);
     await c.run();
     const status = c.kpStatus(kpid);
-    const capdata = c.kpResolution(kpid);
-    return [status, capdata];
+    const result = c.kpResolution(kpid);
+    return [status, result];
   };
 
-  const [status, capdata] = await run('doUpgradeWithBadOption', []);
+  const [status, result] = await run('doUpgradeWithBadOption', []);
   t.is(status, 'rejected');
-  const e = parse(capdata.body);
+  const e = kunser(result);
   t.truthy(e instanceof Error);
   // TODO Since we should be running with `errorTaming: unsafe`, the
   // following should have worked.
@@ -681,8 +638,8 @@ test('failed vatAdmin upgrade - bad replacement code', async t => {
     const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
-    const capdata = c.kpResolution(kpid);
-    return [status, capdata];
+    const result = c.kpResolution(kpid);
+    return [status, result];
   };
 
   const badVABundle = await bundleSource(
@@ -692,16 +649,15 @@ test('failed vatAdmin upgrade - bad replacement code', async t => {
   const kpid = c.upgradeStaticVat('vatAdmin', true, bundleID, {});
   await c.run();
   const vaUpgradeStatus = c.kpStatus(kpid);
-  const vaUpgradeCapdata = c.kpResolution(kpid);
+  const vaUpgradeResult = kunser(kunser(c.kpResolution(kpid)));
 
   t.is(vaUpgradeStatus, 'rejected');
-  const e = parse(vaUpgradeCapdata.body);
-  t.truthy(e instanceof Error);
-  t.regex(e.message, /vat-upgrade failure/);
+  t.truthy(vaUpgradeResult instanceof Error);
+  t.regex(vaUpgradeResult.message, /vat-upgrade failure/);
 
   // Now try doing something that uses vatAdmin to verify that original vatAdmin is intact.
-  const [v1status, v1capdata] = await run('buildV1', []);
+  const [v1status, v1result] = await run('buildV1', []);
   t.is(v1status, 'fulfilled');
   // Just a taste to verify that the create went right; other tests check the rest
-  t.deepEqual(get(v1capdata, 'data'), ['some', 'data']);
+  t.deepEqual(kunser(v1result).data, ['some', 'data']);
 });

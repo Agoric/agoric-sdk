@@ -3,14 +3,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { buildVatController } from '../../src/index.js';
-
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
-
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
+import { kunser } from '../../src/lib/kmarshal.js';
 
 // Dynamic vats are created without metering by default
 
@@ -39,15 +32,15 @@ test('unmetered dynamic vat', async t => {
   // 'createVat' will import the bundle
   const kp1 = c.queueToVatRoot('bootstrap', 'createVat', ['dynamic'], 'panic');
   await c.run();
-  const res1 = c.kpResolution(kp1);
-  t.is(JSON.parse(res1.body)[0], 'created', res1.body);
+  const res1 = kunser(c.kpResolution(kp1));
+  t.is(res1[0], 'created');
   // const doneKPID = res1.slots[0];
 
   // Now send a message to the dynamic vat that runs normally
   const kp2 = c.queueToVatRoot('bootstrap', 'run', [], 'panic');
   await c.run();
   t.is(c.kpStatus(kp2), 'fulfilled');
-  t.deepEqual(c.kpResolution(kp2), capargs(42));
+  t.deepEqual(kunser(c.kpResolution(kp2)), 42);
 
   // TODO: find a way to prove that the xsnap child process does not have a
   // per-crank meter imposed upon it. Previously, this test only exercised

@@ -5,9 +5,9 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 import fs from 'fs';
 import bundleSource from '@endo/bundle-source';
 import { assert } from '@agoric/assert';
-import { parse } from '@endo/marshal';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
+import { kunser } from '../../src/lib/kmarshal.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
@@ -95,19 +95,17 @@ test('bundles', async t => {
     const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
-    const capdata = c.kpResolution(kpid);
-    return [status, capdata];
+    const result = c.kpResolution(kpid);
+    return [status, kunser(result)];
   }
 
   async function check(name, args, expectedResult) {
-    const [status, capdata] = await run(name, args);
-    const result = parse(capdata.body);
+    const [status, result] = await run(name, args);
     t.deepEqual([status, result], ['fulfilled', expectedResult]);
   }
 
   async function checkRejects(name, args, expectedResult) {
-    const [status, capdata] = await run(name, args);
-    const result = parse(capdata.body);
+    const [status, result] = await run(name, args);
     t.deepEqual([status, result], ['rejected', expectedResult]);
   }
 
@@ -172,13 +170,9 @@ test('bundles', async t => {
 
   // check the shape of the waitForBundleCap bundlecap
   const d1 = c.kpResolution(waitKPID);
-  const res1 = JSON.parse(d1.body);
-  const dev1 = { '@qclass': 'slot', iface: 'Alleged: device node', index: 0 };
-  t.deepEqual(res1, dev1);
-  const slots1 = d1.slots;
-  const dev1slot = slots1[0];
+  const res1 = kunser(d1);
+  const dev1slot = `${res1}`;
   t.regex(dev1slot, /^kd\d+$/);
-  t.is(slots1[0], dev1slot);
 
   // and make sure we can load it by ID
   await check('vatFromID', [bid1, 'runtime'], ['installed']);
@@ -193,13 +187,8 @@ test('bundles', async t => {
   // check the shape of the getBundleCap bundlecap
   const [s2, d2] = await run('getBundleCap', [bid2]);
   t.is(s2, 'fulfilled');
-  const res2 = JSON.parse(d2.body);
-  const dev2 = { '@qclass': 'slot', iface: 'Alleged: device node', index: 0 };
-  t.deepEqual(res2, dev2);
-  const slots2 = d2.slots;
-  const dev2slot = slots2[0];
+  const dev2slot = `${d2}`;
   t.regex(dev2slot, /^kd\d+$/);
-  t.is(slots2[0], dev2slot);
 
   // and the shape of the bundle
   const [s3, d3] = await run('getBundle', [bid2]);
@@ -207,7 +196,6 @@ test('bundles', async t => {
   // but importBundle() requires an object, with moduleFormat: and
   // endoZipBase64:
   t.is(s3, 'fulfilled');
-  const res3 = parse(d3.body);
-  t.is(res3.moduleFormat, 'endoZipBase64');
-  t.is(typeof res3.endoZipBase64, 'string');
+  t.is(d3.moduleFormat, 'endoZipBase64');
+  t.is(typeof d3.endoZipBase64, 'string');
 });
