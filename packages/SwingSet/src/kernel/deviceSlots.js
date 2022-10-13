@@ -103,6 +103,7 @@ export function makeDeviceSlots(
 
   const m = makeMarshal(convertValToSlot, convertSlotToVal, {
     marshalName: `device:${forDeviceName}`,
+    serializeBodyFormat: 'smallcaps',
     // TODO Temporary hack.
     // See https://github.com/Agoric/agoric-sdk/issues/2780
     errorIdNum: 50000,

@@ -1,6 +1,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
+import { M } from '@agoric/store';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import {
   buildVatController,
@@ -9,20 +10,8 @@ import {
 } from '../../src/index.js';
 import makeNextLog from '../make-nextlog.js';
 
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
-
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
-
-function slot0(iface, kid) {
-  return {
-    body: `{"@qclass":"slot","iface":"Alleged: ${iface}","index":0}`,
-    slots: [kid],
-  };
-}
+import { kser, kslot } from '../../src/lib/kmarshal.js';
+import { vstr } from '../util.js';
 
 test.serial('exercise cache', async t => {
   const config = {
@@ -91,17 +80,10 @@ test.serial('exercise cache', async t => {
 
   async function doSimple(method, what, ...args) {
     let sendArgs = args;
-    let slots = [];
     if (what) {
-      const whatArg = {
-        '@qclass': 'slot',
-        iface: 'Alleged: thing',
-        index: 0,
-      };
-      sendArgs = [whatArg, ...args];
-      slots = [what];
+      sendArgs = [kslot(what, 'thing'), ...args];
     }
-    const r = c.queueToVatRoot('bootstrap', method, sendArgs, 'ignore', slots);
+    const r = c.queueToVatRoot('bootstrap', method, sendArgs, 'ignore');
     await c.run();
     t.is(c.kpStatus(r), 'fulfilled');
     t.deepEqual(nextLog(), []);
@@ -111,16 +93,16 @@ test.serial('exercise cache', async t => {
   async function make(name, holdIt, expect) {
     const r = await doSimple('makeThing', null, name, holdIt);
     const result = c.kpResolution(r);
-    t.deepEqual(result, slot0('thing', expect));
+    t.deepEqual(result, kser(kslot(expect, 'thing')));
     return result.slots[0];
   }
   async function read(what, expect) {
     const r = await doSimple('readThing', what);
-    t.deepEqual(c.kpResolution(r), capargs(expect));
+    t.deepEqual(c.kpResolution(r), kser(expect));
   }
   async function readHeld(expect) {
     const r = await doSimple('readHeldThing', null);
-    t.deepEqual(c.kpResolution(r), capargs(expect));
+    t.deepEqual(c.kpResolution(r), kser(expect));
   }
   async function write(what, newName) {
     await doSimple('writeThing', what, newName);
@@ -145,7 +127,7 @@ test.serial('exercise cache', async t => {
   }
   function thingVal(name) {
     return JSON.stringify({
-      name: capdata(JSON.stringify(name)),
+      name: kser(name),
     });
   }
 
@@ -172,7 +154,7 @@ test.serial('exercise cache', async t => {
   t.is(c.vatNameToID('bootstrap'), expectedVatID);
 
   await c.run();
-  t.deepEqual(c.kpResolution(bootstrapResult), capargs('bootstrap done'));
+  t.deepEqual(c.kpResolution(bootstrapResult), kser('bootstrap done'));
   log.length = 0; // assume all the irrelevant setup stuff worked correctly
 
   // init cache - []
@@ -376,10 +358,7 @@ test('virtual object gc', async t => {
   c.pinVatRoot('bootstrap');
 
   await c.run();
-  t.deepEqual(
-    c.kpResolution(c.bootstrapResult),
-    capargs({ '@qclass': 'undefined' }),
-  );
+  t.deepEqual(c.kpResolution(c.bootstrapResult), kser(undefined));
   const v = 'v6';
   const remainingVOs = {};
   for (const key of hostStorage.kvStore.getKeys(`${v}.vs.`, `${v}.vs/`)) {
@@ -395,28 +374,24 @@ test('virtual object gc', async t => {
     [`${v}.vs.vc.1.|entryCount`]: '0',
     [`${v}.vs.vc.1.|label`]: 'baggage',
     [`${v}.vs.vc.1.|nextOrdinal`]: '1',
-    [`${v}.vs.vc.1.|schemata`]:
-      '{"body":"[{\\"@qclass\\":\\"tagged\\",\\"tag\\":\\"match:string\\",\\"payload\\":[]}]","slots":[]}',
+    [`${v}.vs.vc.1.|schemata`]: vstr([M.string()]),
     [`${v}.vs.vc.2.|entryCount`]: '0',
     [`${v}.vs.vc.2.|label`]: 'promiseRegistrations',
     [`${v}.vs.vc.2.|nextOrdinal`]: '1',
-    [`${v}.vs.vc.2.|schemata`]:
-      '{"body":"[{\\"@qclass\\":\\"tagged\\",\\"tag\\":\\"match:scalar\\",\\"payload\\":{\\"@qclass\\":\\"undefined\\"}}]","slots":[]}',
+    [`${v}.vs.vc.2.|schemata`]: vstr([M.scalar()]),
     [`${v}.vs.vc.3.|entryCount`]: '0',
     [`${v}.vs.vc.3.|label`]: 'promiseWatcherByKind',
     [`${v}.vs.vc.3.|nextOrdinal`]: '1',
-    [`${v}.vs.vc.3.|schemata`]:
-      '{"body":"[{\\"@qclass\\":\\"tagged\\",\\"tag\\":\\"match:scalar\\",\\"payload\\":{\\"@qclass\\":\\"undefined\\"}}]","slots":[]}',
+    [`${v}.vs.vc.3.|schemata`]: vstr([M.scalar()]),
     [`${v}.vs.vc.4.|entryCount`]: '0',
     [`${v}.vs.vc.4.|label`]: 'watchedPromises',
     [`${v}.vs.vc.4.|nextOrdinal`]: '1',
-    [`${v}.vs.vc.4.|schemata`]:
-      '{"body":"[{\\"@qclass\\":\\"tagged\\",\\"tag\\":\\"match:string\\",\\"payload\\":[]}]","slots":[]}',
+    [`${v}.vs.vc.4.|schemata`]: vstr([M.string()]),
     [`${v}.vs.vom.es.o+10/3`]: 'r',
-    [`${v}.vs.vom.o+10/2`]: '{"label":{"body":"\\"thing #2\\"","slots":[]}}',
-    [`${v}.vs.vom.o+10/3`]: '{"label":{"body":"\\"thing #3\\"","slots":[]}}',
-    [`${v}.vs.vom.o+10/8`]: '{"label":{"body":"\\"thing #8\\"","slots":[]}}',
-    [`${v}.vs.vom.o+10/9`]: '{"label":{"body":"\\"thing #9\\"","slots":[]}}',
+    [`${v}.vs.vom.o+10/2`]: `{"label":${vstr('thing #2')}}`,
+    [`${v}.vs.vom.o+10/3`]: `{"label":${vstr('thing #3')}}`,
+    [`${v}.vs.vom.o+10/8`]: `{"label":${vstr('thing #8')}}`,
+    [`${v}.vs.vom.o+10/9`]: `{"label":${vstr('thing #9')}}`,
     [`${v}.vs.vom.rc.o+6/1`]: '1',
     [`${v}.vs.vom.rc.o+6/3`]: '1',
     [`${v}.vs.vom.rc.o+6/4`]: '1',
@@ -452,10 +427,7 @@ async function orphanTest(t, mode) {
   c.pinVatRoot('bootstrap');
 
   await c.run();
-  t.deepEqual(
-    c.kpResolution(c.bootstrapResult),
-    capargs({ '@qclass': 'undefined' }),
-  );
+  t.deepEqual(c.kpResolution(c.bootstrapResult), kser(undefined));
   t.deepEqual(c.dump().log, ['compare old === new : true']);
 }
 

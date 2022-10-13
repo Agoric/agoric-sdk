@@ -212,7 +212,11 @@ export const buildRootObject = () => {
       const vatParameters = { youAre: 'v2', marker, handler, explode };
       // vp.handler causes v2 to handler~.ping(), but that gets unwound
       const p = E(ulrikAdmin).upgrade(bcap, { vatParameters }); // throws
-      await p.catch(e => events.push(e));
+      await p.catch(e => {
+        events.push(e);
+        events.push(e instanceof Error);
+        events.push(/vat-upgrade failure/.test(e.message));
+      });
       await E(ulrikRoot).pingback(handler); // goes to post-rewind v1
       return events;
     },

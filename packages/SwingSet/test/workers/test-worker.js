@@ -1,6 +1,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { loadBasedir, buildVatController } from '../../src/index.js';
+import { kunser } from '../../src/lib/kmarshal.js';
 
 function canBlock(managerType) {
   // nodeworker cannot block: the thread-to-thread port it uses provides a
@@ -41,7 +42,7 @@ test('local vat manager', async t => {
   await c.run();
   t.is(c.kpStatus(c.bootstrapResult), 'fulfilled');
   t.deepEqual(c.dump().log, ['testLog works']);
-  t.deepEqual(JSON.parse(c.kpResolution(c.bootstrapResult).body), expected);
+  t.deepEqual(kunser(c.kpResolution(c.bootstrapResult)), expected);
 });
 
 test('xs vat manager', async t => {
@@ -51,7 +52,7 @@ test('xs vat manager', async t => {
   await c.run();
   t.is(c.kpStatus(c.bootstrapResult), 'fulfilled');
   t.deepEqual(c.dump().log, ['testLog works']);
-  t.deepEqual(JSON.parse(c.kpResolution(c.bootstrapResult).body), expected);
+  t.deepEqual(kunser(c.kpResolution(c.bootstrapResult)), expected);
 });
 
 test.skip('nodeWorker vat manager', async t => {
@@ -61,7 +62,7 @@ test.skip('nodeWorker vat manager', async t => {
   await c.run();
   t.is(c.kpStatus(c.bootstrapResult), 'fulfilled');
   t.deepEqual(c.dump().log, ['testLog works']);
-  t.deepEqual(JSON.parse(c.kpResolution(c.bootstrapResult).body), expected);
+  t.deepEqual(kunser(c.kpResolution(c.bootstrapResult)), expected);
 });
 
 test.skip('node-subprocess vat manager', async t => {
@@ -71,5 +72,5 @@ test.skip('node-subprocess vat manager', async t => {
   await c.run();
   t.is(c.kpStatus(c.bootstrapResult), 'fulfilled');
   t.deepEqual(c.dump().log, ['testLog works']);
-  t.deepEqual(JSON.parse(c.kpResolution(c.bootstrapResult).body), expected);
+  t.deepEqual(kunser(c.kpResolution(c.bootstrapResult)), expected);
 });

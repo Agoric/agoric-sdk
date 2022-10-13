@@ -1,9 +1,9 @@
 import { assert, details as X } from '@agoric/assert';
 import { isNat } from '@agoric/nat';
 import { importBundle } from '@endo/import-bundle';
-import { stringify } from '@endo/marshal';
 import { assertKnownOptions } from '../lib/assertOptions.js';
 import { foreverPolicy } from '../lib/runPolicies.js';
+import { kser, kslot, makeError } from '../lib/kmarshal.js';
 import { makeVatManagerFactory } from './vat-loader/manager-factory.js';
 import { makeVatWarehouse } from './vat-warehouse.js';
 import makeDeviceManager from './deviceManager.js';
@@ -40,14 +40,6 @@ function abbreviateReplacer(_, arg) {
   }
   return arg;
 }
-
-function makeError(message, name = 'Error') {
-  assert.typeof(message, 'string');
-  const err = { '@qclass': 'error', name, message };
-  return harden({ body: JSON.stringify(err), slots: [] });
-}
-
-const VAT_TERMINATION_ERROR = makeError('vat terminated');
 
 /**
  * Provide the kref of a vat's root object, as if it had been exported.
@@ -266,7 +258,7 @@ export default function buildKernel(
     if (kernelKeeper.vatIsAlive(vatID)) {
       const promisesToReject = kernelKeeper.cleanupAfterTerminatedVat(vatID);
       for (const kpid of promisesToReject) {
-        resolveToError(kpid, VAT_TERMINATION_ERROR, vatID);
+        resolveToError(kpid, makeError('vat terminated'), vatID);
       }
     }
     if (critical) {
@@ -303,12 +295,13 @@ export default function buildKernel(
   function notifyMeterThreshold(meterID) {
     // tell vatAdmin that a meter has dropped below its notifyThreshold
     const { remaining } = kernelKeeper.getMeter(meterID);
-    const methargs = {
-      body: stringify(harden(['meterCrossedThreshold', [meterID, remaining]])),
-      slots: [],
-    };
     assert.typeof(vatAdminRootKref, 'string', 'vatAdminRootKref missing');
-    queueToKref(vatAdminRootKref, methargs, 'logFailure');
+    queueToKref(
+      vatAdminRootKref,
+      'meterCrossedThreshold',
+      [meterID, remaining],
+      'logFailure',
+    );
   }
 
   // TODO: instead of using a kernel-wide flag here, consider making each
@@ -358,6 +351,7 @@ export default function buildKernel(
    *  to make vat delivery) emits one of these status events if a delivery
    *  actually happened.
    *
+   * @typedef { [string, any[]] } RawMethargs
    * @typedef { {
    *    metering?: MeterConsumption | null, // delivery metering results
    *    deliveryError?: string, // delivery failed
@@ -372,7 +366,7 @@ export default function buildKernel(
    *    meterID?: string, // deduct those computrons from a meter
    *    decrementReapCount?: { vatID: VatID }, // the reap counter should decrement
    *    terminate?: { vatID: VatID, reject: boolean, info: SwingSetCapData }, // terminate vat, notify vat-admin
-   *    vatAdminMethargs?: SwingSetCapData, // methargs to notify vat-admin about create/upgrade results
+   *    vatAdminMethargs?: RawMethargs, // methargs to notify vat-admin about create/upgrade results
    * } } CrankResults
    */
 
@@ -693,13 +687,6 @@ export default function buildKernel(
     vatKeeper.setSourceAndOptions(source, options);
     vatKeeper.initializeReapCountdown(options.reapInterval);
 
-    function makeVatAdminMessage(arg, slots) {
-      return {
-        body: JSON.stringify(['newVatCallback', [vatID, arg]]),
-        slots,
-      };
-    }
-
     // createDynamicVat makes the worker, installs lockdown and
     // supervisor, but does not load the vat bundle yet. It can fail
     // if the options are bad, worker cannot be launched, lockdown or
@@ -739,9 +726,9 @@ export default function buildKernel(
     // the new vat's root object
 
     const kernelRootObjSlot = exportRootObject(kernelKeeper, vatID);
-    const arg = { rootObject: { '@qclass': 'slot', index: 0 } };
-    const slots = [kernelRootObjSlot];
-    const vatAdminMethargs = makeVatAdminMessage(arg, slots);
+    const arg = { rootObject: kslot(kernelRootObjSlot) };
+    /** @type { RawMethargs } */
+    const vatAdminMethargs = ['newVatCallback', [vatID, arg]];
     return harden({ ...startResults, vatAdminMethargs });
   }
 
@@ -831,30 +818,22 @@ export default function buildKernel(
       upgradeMessage,
       incarnationNumber: vatKeeper.getIncarnationNumber(),
     };
-    const disconnectObjectCapData = {
-      body: JSON.stringify(disconnectObject),
-      slots: [],
-    };
     /** @type { import('../types-external.js').KernelDeliveryStopVat } */
-    const kd1 = harden(['stopVat', disconnectObjectCapData]);
+    const kd1 = harden(['stopVat', kser(disconnectObject)]);
     const vd1 = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd1);
     const status1 = await deliverAndLogToVat(vatID, kd1, vd1);
 
     // make arguments for vat-vat-admin.js vatUpgradeCallback()
+    /**
+     * @param {SwingSetCapData} _errorCD
+     * @returns {RawMethargs}
+     */
     function makeFailure(_errorCD) {
-      insistCapData(_errorCD); // capdata(Error)
-      // const args = [upgradeID, false, JSON.parse(errorCD.body)];
+      insistCapData(_errorCD); // kser(Error)
+      // const error = kunser(_errorCD)
       // actually we shouldn't reveal the details, so instead we do:
-      const error = {
-        '@qclass': 'error',
-        name: 'Error',
-        message: 'vat-upgrade failure',
-      };
-      const args = [upgradeID, false, error];
-      return {
-        body: JSON.stringify(['vatUpgradeCallback', args]),
-        slots: [],
-      };
+      const error = Error('vat-upgrade failure');
+      return ['vatUpgradeCallback', [upgradeID, false, error]];
     }
 
     // We use deliveryCrankResults to parse the stopVat status.
@@ -936,10 +915,8 @@ export default function buildKernel(
     }
 
     const args = [upgradeID, true, undefined, incarnationNumber];
-    const vatAdminMethargs = {
-      body: JSON.stringify(['vatUpgradeCallback', args]),
-      slots: [],
-    };
+    /** @type {RawMethargs} */
+    const vatAdminMethargs = ['vatUpgradeCallback', args];
     const results = harden({
       computrons,
       meterID, // for the startVat
@@ -1010,7 +987,7 @@ export default function buildKernel(
     function send(targetObject) {
       const vatID = kernelKeeper.ownerOfKernelObject(targetObject);
       if (!vatID) {
-        return splat(VAT_TERMINATION_ERROR);
+        return splat(makeError('vat terminated'));
       }
       return { vatID, target: targetObject };
     }
@@ -1048,7 +1025,7 @@ export default function buildKernel(
           const deciderVat = vatWarehouse.lookup(kp.decider);
           if (!deciderVat) {
             // decider is dead
-            return splat(VAT_TERMINATION_ERROR);
+            return splat(makeError('vat terminated'));
           }
           if (deciderVat.enablePipelining) {
             return { vatID: kp.decider, target };
@@ -1291,8 +1268,8 @@ export default function buildKernel(
       // we use terminateVat() to notify vat-admin about failed vat
       // creation, but vatAdminMethargs for successful vat creation,
       // and failed/successful vat upgrades.
-      const methargs = crankResults.vatAdminMethargs;
-      queueToKref(vatAdminRootKref, methargs, 'logFailure');
+      const [method, args] = crankResults.vatAdminMethargs;
+      queueToKref(vatAdminRootKref, method, args, 'logFailure');
     }
 
     kernelKeeper.processRefcounts();
@@ -1564,7 +1541,7 @@ export default function buildKernel(
 
     await vatWarehouse.loadTestVat(vatID, setup, actualCreationOptions);
 
-    const vpCapData = { body: stringify(harden(vatParameters)), slots: [] };
+    const vpCapData = kser(vatParameters);
     /** @type { RunQueueEventStartVat } */
     const startVatMessage = {
       type: 'startVat',
@@ -1822,12 +1799,13 @@ export default function buildKernel(
     if (!kernelKeeper.hasBundle(bundleID)) {
       kernelKeeper.addBundle(bundleID, bundle);
       if (vatAdminRootKref) {
-        const methargs = harden({
-          body: JSON.stringify(['bundleInstalled', [bundleID]]),
-          slots: [],
-        });
         // TODO: consider 'panic' instead of 'logFailure'
-        queueToKref(vatAdminRootKref, methargs, 'logFailure');
+        queueToKref(
+          vatAdminRootKref,
+          'bundleInstalled',
+          [bundleID],
+          'logFailure',
+        );
       } else {
         // this should only happen during unit tests that are too lazy to
         // build a complete kernel: test/bundles/test-bundles-kernel.js

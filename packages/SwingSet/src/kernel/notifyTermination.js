@@ -1,11 +1,12 @@
 import { insistCapData } from '../lib/capdata.js';
+import { kunser } from '../lib/kmarshal.js';
 
 /**
  * @param {string} vatID
  * @param {string} vatAdminRootKref
  * @param {boolean} shouldReject
  * @param {import('@endo/marshal').CapData<unknown>} info
- * @param {(kref: string, methargs: unknown, policy?: string) => void} queueToKref
+ * @param {(kref: string, method: string, args: unknown[], policy?: string) => void} queueToKref
  */
 export function notifyTermination(
   vatID,
@@ -16,16 +17,11 @@ export function notifyTermination(
 ) {
   insistCapData(info);
 
-  // Embedding the info capdata into the arguments list, taking advantage of
-  // the fact that neither vatID (which is a string) nor shouldReject (which
-  // is a boolean) can contain any slots.
-  const methargs = {
-    body: JSON.stringify([
-      'vatTerminated',
-      [vatID, shouldReject, JSON.parse(info.body)],
-    ]),
-    slots: info.slots,
-  };
-
-  queueToKref(vatAdminRootKref, methargs, 'logFailure');
+  // Embed the info capdata into the arguments list
+  queueToKref(
+    vatAdminRootKref,
+    'vatTerminated',
+    [vatID, shouldReject, kunser(info)],
+    'logFailure',
+  );
 }

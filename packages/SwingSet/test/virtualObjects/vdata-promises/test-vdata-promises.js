@@ -8,7 +8,7 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '../../../src/index.js';
-import { capargs } from '../../util.js';
+import { kunser } from '../../../src/lib/kmarshal.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
@@ -46,12 +46,9 @@ test('imported promises in vdata', async t => {
   t.is(c.kpStatus(kpid1), 'fulfilled');
   const res1 = c.kpResolution(kpid1);
   // console.log(res1); // [p1, p2, p3]
-  t.deepEqual(JSON.parse(res1.body), [
-    { '@qclass': 'slot', index: 0 },
-    { '@qclass': 'slot', index: 1 },
-    { '@qclass': 'slot', index: 2 },
-  ]);
-  const [p1kref, p2kref, p3kref] = res1.slots;
+  const res1Val = kunser(res1);
+  t.is(res1Val.length, 3);
+  const [p1kref, p2kref, p3kref] = res1Val;
 
   c.queueToVatRoot('bootstrap', 'doImportTest2', [], 'panic');
   await c.run();
@@ -60,7 +57,8 @@ test('imported promises in vdata', async t => {
   await c.run();
   t.is(c.kpStatus(kpid2), 'fulfilled');
   const res2 = c.kpResolution(kpid2);
-  t.deepEqual(res2, capargs([1, 2, 2, 3, 3]));
+  const res2Val = kunser(res2);
+  t.deepEqual(res2Val, [1, 2, 2, 3, 3]);
 
   // check clist for promise retirement
 
@@ -69,9 +67,9 @@ test('imported promises in vdata', async t => {
     // returns undefined, or { vatSlot, isReachable }
     return s && parseReachableAndVatSlot(s);
   }
-  t.falsy(has(p1kref));
-  t.falsy(has(p2kref));
-  t.falsy(has(p3kref));
+  t.falsy(has(`${p1kref}`));
+  t.falsy(has(`${p2kref}`));
+  t.falsy(has(`${p3kref}`));
 });
 
 test('result promises in vdata', async t => {
@@ -90,12 +88,9 @@ test('result promises in vdata', async t => {
   t.is(c.kpStatus(kpid1), 'fulfilled');
   const res1 = c.kpResolution(kpid1);
   // console.log(res1); // [p4, p5, p6]
-  t.deepEqual(JSON.parse(res1.body), [
-    { '@qclass': 'slot', index: 0 },
-    { '@qclass': 'slot', index: 1 },
-    { '@qclass': 'slot', index: 2 },
-  ]);
-  const [p4kref, p5kref, p6kref] = res1.slots;
+  const res1Val = kunser(res1);
+  t.is(res1Val.length, 3);
+  const [p4kref, p5kref, p6kref] = res1Val;
 
   c.queueToVatRoot('bootstrap', 'doResultTest2', [], 'panic');
   await c.run();
@@ -104,7 +99,8 @@ test('result promises in vdata', async t => {
   await c.run();
   t.is(c.kpStatus(kpid2), 'fulfilled');
   const res2 = c.kpResolution(kpid2);
-  t.deepEqual(res2, capargs([4, 5, 5, 6, 6]));
+  const res2Val = kunser(res2);
+  t.deepEqual(res2Val, [4, 5, 5, 6, 6]);
 
   // check clist for promise retirement
 
@@ -113,9 +109,9 @@ test('result promises in vdata', async t => {
     // returns undefined, or { vatSlot, isReachable }
     return s && parseReachableAndVatSlot(s);
   }
-  t.falsy(has(p4kref));
-  t.falsy(has(p5kref));
-  t.falsy(has(p6kref));
+  t.falsy(has(`${p4kref}`));
+  t.falsy(has(`${p5kref}`));
+  t.falsy(has(`${p6kref}`));
 });
 
 test('exported promises in vdata', async t => {
@@ -134,14 +130,15 @@ test('exported promises in vdata', async t => {
   t.is(c.kpStatus(kpid1), 'fulfilled');
   const res1 = c.kpResolution(kpid1);
   // console.log(res1); // { data, resolutions }
-  t.deepEqual(JSON.parse(res1.body).data.is, {
+  const res1Val = kunser(res1);
+  t.deepEqual(res1Val.data.is, {
     p7is: true,
     p8is: true,
     p9is: true,
     p10is: true,
     p14is: true,
   });
-  t.deepEqual(JSON.parse(res1.body).resolutions, {
+  t.deepEqual(res1Val.resolutions, {
     p9: 9,
     p10: 10,
     p11: 11,
@@ -158,12 +155,8 @@ test('exported promises in vdata', async t => {
 
   // all these promises should be resolved by now, and retired from
   // the clist
-  const promises = JSON.parse(res1.body).data.ret;
+  const promises = res1Val.data.ret;
   for (const pname of Object.keys(promises)) {
-    const obj = promises[pname];
-    t.is(obj['@qclass'], 'slot');
-    const slot = obj.index;
-    const kref = res1.slots[slot];
-    t.falsy(has(kref));
+    t.falsy(has(`${promises[pname]}`));
   }
 });

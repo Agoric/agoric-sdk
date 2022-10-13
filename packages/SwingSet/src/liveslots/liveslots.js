@@ -584,6 +584,7 @@ function build(
   // eslint-disable-next-line no-use-before-define
   const m = makeMarshal(convertValToSlot, convertSlotToVal, {
     marshalName: `liveSlots:${forVatID}`,
+    serializeBodyFormat: 'smallcaps',
     // TODO Temporary hack.
     // See https://github.com/Agoric/agoric-sdk/issues/2780
     errorIdNum: 70000,

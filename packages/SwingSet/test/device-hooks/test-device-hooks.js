@@ -4,7 +4,6 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import bundleSource from '@endo/bundle-source';
-import { parse } from '@endo/marshal';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 
 import {
@@ -12,7 +11,7 @@ import {
   makeSwingsetController,
   buildKernelBundles,
 } from '../../src/index.js';
-import { capargs, capSlot, capdataOneSlot } from '../util.js';
+import { kunser, kser, kslot } from '../../src/lib/kmarshal.js';
 
 function dfile(name) {
   return new URL(`./${name}`, import.meta.url).pathname;
@@ -67,7 +66,7 @@ test('add hook', async t => {
 
   let hookreturn;
   function setHookReturn(args, slots = []) {
-    hookreturn = capargs(args, slots);
+    hookreturn = kser(args, slots);
   }
   const hooklog = [];
 
@@ -90,9 +89,9 @@ test('add hook', async t => {
   // When we queueToVatRoot() to doCapdata(), the 'hookinput' we provide will
   // appear as the first argument do doCapdata(), which passes it into
   // D(hookdev).returnCapdata(hookinput). The raw device therefore receives a
-  // dispatch.invoke where `argsCapdata` is capdata([hookinput]) with drefs.
+  // dispatch.invoke where `argsCapdata` is kser([hookinput]) with drefs.
   // It passes that to `syscall.callKernelHook`, which translate it, and our
-  // hook receives capdata([hookinput]) with krefs. We record this in hooklog
+  // hook receives kser([hookinput]) with krefs. We record this in hooklog
   // for comparison.
   //
   // Our hook returns 'hookreturn' (capdata with krefs). The syscall
@@ -101,10 +100,10 @@ test('add hook', async t => {
   // as `{ hookResultCapdata }` so we can see the details without the
   // D(hookdev) modifying it further. The vat's doCapdata() call receives
   // this wrapped data and uses it to resolve the result promise, so our
-  // `kpResolution` gets back `capdata({hookResultCapdata})`.
+  // `kpResolution` gets back `kser({hookResultCapdata})`.
 
   function expCD(hret) {
-    return capargs({ hookResultCapdata: capargs(hret) });
+    return kser({ hookResultCapdata: kser(hret) });
   }
 
   // Doing a queueToVatRoot() to doActual() does the same thing with
@@ -113,12 +112,12 @@ test('add hook', async t => {
   // dref to vref to kref, and `kpResolution` gets back the translated form
   // of `hookreturn`.
 
-  // basic test: callKernelHook() with static data, returns capdata(static)
+  // basic test: callKernelHook() with static data, returns kser(static)
   {
     setHookReturn({ y: 2 });
     const kp = c.queueToVatRoot('bootstrap', 'doCapdata', [{ x: 1 }]);
     await c.run();
-    t.deepEqual(hooklog.shift(), capargs([{ x: 1 }]));
+    t.deepEqual(hooklog.shift(), kser([{ x: 1 }]));
     t.deepEqual(hooklog, []);
     t.deepEqual(c.kpResolution(kp), expCD({ y: 2 }));
   }
@@ -129,9 +128,9 @@ test('add hook', async t => {
     setHookReturn({ y: 4 });
     const kp = c.queueToVatRoot('bootstrap', 'doActual', [{ x: 3 }]);
     await c.run();
-    t.deepEqual(hooklog.shift(), capargs([{ x: 3 }]));
+    t.deepEqual(hooklog.shift(), kser([{ x: 3 }]));
     t.deepEqual(hooklog, []);
-    t.deepEqual(c.kpResolution(kp), capargs({ y: 4 }));
+    t.deepEqual(c.kpResolution(kp), kser({ y: 4 }));
   }
 
   // tell the vat to share several objects with us, so we can learn their krefs
@@ -156,11 +155,12 @@ test('add hook', async t => {
     setHookReturn(0); // 'undefined' isn't handled by our lazy JSON marshaller
     const kp = c.queueToVatRoot('bootstrap', 'doObjects', []);
     await c.run();
-    const exp = [capSlot(0, 'root'), capSlot(1, 'obj'), capSlot(2, 'obj')];
-    t.deepEqual(hooklog.shift(), {
-      body: JSON.stringify(exp),
-      slots: [bootkref, o1kref, o2kref], // note: krefs
-    });
+    const exp = kser([
+      kslot(bootkref, 'root'),
+      kslot(o1kref, 'obj'),
+      kslot(o2kref, 'obj'),
+    ]);
+    t.deepEqual(hooklog.shift(), exp);
     t.deepEqual(hooklog, []);
     t.deepEqual(c.kpResolution(kp), expCD(0));
   }
@@ -169,11 +169,12 @@ test('add hook', async t => {
   {
     const kp = c.queueToVatRoot('bootstrap', 'doObjects', []);
     await c.run();
-    const exp = [capSlot(0, 'root'), capSlot(1, 'obj'), capSlot(2, 'obj')];
-    t.deepEqual(hooklog.shift(), {
-      body: JSON.stringify(exp),
-      slots: [bootkref, o1kref, o2kref], // note: krefs
-    });
+    const exp = kser([
+      kslot(bootkref, 'root'),
+      kslot(o1kref, 'obj'),
+      kslot(o2kref, 'obj'),
+    ]);
+    t.deepEqual(hooklog.shift(), exp);
     t.deepEqual(hooklog, []);
     t.deepEqual(c.kpResolution(kp), expCD(0));
   }
@@ -182,16 +183,23 @@ test('add hook', async t => {
   // vat-extra1 root object) to test the kref->dref return pathway
   {
     // return [root, o1, extra1]
-    const cargs = [capSlot(0, 'root'), capSlot(1, 'obj'), capSlot(2, 'root')];
-    const kslots = [bootkref, o1kref, extra1kref];
-    setHookReturn(cargs, kslots);
+    setHookReturn([
+      kslot(bootkref, 'root'),
+      kslot(o1kref, 'obj'),
+      kslot(extra1kref, 'root'),
+    ]);
     const kp = c.queueToVatRoot('bootstrap', 'doCapdata', [0]);
     await c.run();
-    t.deepEqual(hooklog.shift(), capargs([0]));
+    t.deepEqual(hooklog.shift(), kser([0]));
     t.deepEqual(hooklog, []);
     // the device sees these drefs
-    const dslots = ['o-10', 'o-11', 'o-13'];
-    const exp = capargs({ hookResultCapdata: capargs(cargs, dslots) });
+    const exp = kser({
+      hookResultCapdata: kser([
+        kslot('o-10', 'root'),
+        kslot('o-11', 'obj'),
+        kslot('o-13', 'root'),
+      ]),
+    });
     t.deepEqual(c.kpResolution(kp), exp);
   }
 
@@ -203,38 +211,38 @@ test('add hook', async t => {
 
   {
     // return root
-    setHookReturn(capSlot(0, 'root'), [bootkref]);
+    setHookReturn(kslot(bootkref, 'root'));
     const kp = c.queueToVatRoot('bootstrap', 'checkObjects1', [0]);
     await c.run();
-    t.deepEqual(hooklog.shift(), capargs([0]));
+    t.deepEqual(hooklog.shift(), kser([0]));
     t.deepEqual(hooklog, []);
-    const exp = capargs({ match: true, rroot: capSlot(0, 'root') }, [bootkref]);
+    const exp = kser({ match: true, rroot: kslot(bootkref, 'root') });
     t.deepEqual(c.kpResolution(kp), exp);
   }
 
   {
     // return r2
-    setHookReturn(capSlot(0, 'obj'), [o2kref]);
+    setHookReturn(kslot(o2kref, 'obj'));
     const kp = c.queueToVatRoot('bootstrap', 'checkObjects2', [0]);
     await c.run();
-    t.deepEqual(hooklog.shift(), capargs([0]));
+    t.deepEqual(hooklog.shift(), kser([0]));
     t.deepEqual(hooklog, []);
-    const exp = capargs({ match: true, r2: capSlot(0, 'obj') }, [o2kref]);
+    const exp = kser({ match: true, r2: kslot(o2kref, 'obj') });
     t.deepEqual(c.kpResolution(kp), exp);
   }
 
   {
     // return extra2
-    setHookReturn(capSlot(0, 'root'), [extra2kref]);
+    setHookReturn(kslot(extra2kref, 'root'));
     const kp = c.queueToVatRoot('bootstrap', 'checkObjects3', [0]);
     await c.run();
-    t.deepEqual(hooklog.shift(), capargs([0]));
+    t.deepEqual(hooklog.shift(), kser([0]));
     t.deepEqual(hooklog, []);
-    const exp = capargs({ rextra2: capSlot(0, 'root') }, [extra2kref]);
+    const exp = kser({ rextra2: kslot(extra2kref, 'root') });
     t.deepEqual(c.kpResolution(kp), exp);
   }
 
-  let deviceKref;
+  const deviceKref = 'kd32';
   {
     // exercise passing device nodes into the hook
     setHookReturn(0);
@@ -242,25 +250,21 @@ test('add hook', async t => {
     await c.run();
     // hooklog should get kref for devnode d+1
     const got = hooklog.shift();
-    t.deepEqual(JSON.parse(got.body), [capSlot(0, 'device node')]);
-    deviceKref = got.slots[0];
-    t.is(deviceKref, 'kd32'); // current value
+    t.deepEqual(got, kser([kslot(deviceKref, 'device node')]));
     t.deepEqual(hooklog, []);
     // same as what the vat returned
-    const exp = capdataOneSlot(deviceKref, 'device node');
+    const exp = kser(kslot(deviceKref, 'device node'));
     t.deepEqual(c.kpResolution(kp), exp);
   }
 
   {
     // exercise returning device nodes from the hook
-    setHookReturn(capSlot(0, 'device node'), [deviceKref]);
+    setHookReturn(kslot(deviceKref, 'device node'));
     const kp = c.queueToVatRoot('bootstrap', 'checkDevNodeOut', [0]);
     await c.run();
-    t.deepEqual(hooklog.shift(), capargs([0]));
+    t.deepEqual(hooklog.shift(), kser([0]));
     t.deepEqual(hooklog, []);
-    const exp = capargs({ d2: capSlot(0, 'device node'), match: true }, [
-      deviceKref,
-    ]);
+    const exp = kser({ d2: kslot(deviceKref, 'device node'), match: true });
     t.deepEqual(c.kpResolution(kp), exp);
   }
 
@@ -276,7 +280,7 @@ test('add hook', async t => {
     const kp = c.queueToVatRoot('bootstrap', 'throwError', [0]);
     await c.run();
     const exp = { worked: false, err };
-    t.deepEqual(parse(c.kpResolution(kp).body), exp);
+    t.deepEqual(kunser(c.kpResolution(kp)), exp);
   }
 
   {
@@ -287,6 +291,6 @@ test('add hook', async t => {
     const kp = c.queueToVatRoot('bootstrap', 'missingHook', [0]);
     await c.run();
     const exp = { worked: false, err };
-    t.deepEqual(parse(c.kpResolution(kp).body), exp);
+    t.deepEqual(kunser(c.kpResolution(kp)), exp);
   }
 });

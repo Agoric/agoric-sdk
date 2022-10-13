@@ -12,15 +12,8 @@ import {
   buildKernelBundles,
 } from '../../src/index.js';
 import buildCommand from '../../src/devices/command/command.js';
-import { bundleOpts } from '../util.js';
-
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
-
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
+import { bundleOpts, vstr } from '../util.js';
+import { kser, kslot } from '../../src/lib/kmarshal.js';
 
 function dfile(name) {
   return new URL(`./${name}`, import.meta.url).pathname;
@@ -70,28 +63,22 @@ test.serial('d0', async t => {
   await c.run();
 
   // console.log(util.inspect(c.dump(), { depth: null }));
-  t.deepEqual(JSON.parse(c.dump().log[0]), [
-    {
-      bootstrap: { '@qclass': 'slot', iface: 'Alleged: root', index: 0 },
-      comms: { '@qclass': 'slot', iface: 'Alleged: root', index: 1 },
-      timer: { '@qclass': 'slot', iface: 'Alleged: root', index: 2 },
-      vatAdmin: { '@qclass': 'slot', iface: 'Alleged: root', index: 3 },
-      vattp: { '@qclass': 'slot', iface: 'Alleged: root', index: 4 },
-    },
-    {
-      d0: { '@qclass': 'slot', iface: 'Alleged: device', index: 5 },
-      vatAdmin: { '@qclass': 'slot', iface: 'Alleged: device', index: 6 },
-    },
-  ]);
-  t.deepEqual(JSON.parse(c.dump().log[1]), [
-    'o+0',
-    'o-50',
-    'o-51',
-    'o-52',
-    'o-53',
-    'd-70',
-    'd-71',
-  ]);
+  t.is(
+    c.dump().log[0],
+    vstr([
+      {
+        bootstrap: kslot('o+0', 'root'),
+        comms: kslot('o-50', 'root'),
+        timer: kslot('o-51', 'root'),
+        vatAdmin: kslot('o-52', 'root'),
+        vattp: kslot('o-53', 'root'),
+      },
+      {
+        d0: kslot('d-70', 'device'),
+        vatAdmin: kslot('d-71', 'device'),
+      },
+    ]),
+  );
 });
 
 test.serial('d1', async t => {
@@ -127,11 +114,7 @@ test.serial('d1', async t => {
 
   c.queueToVatRoot('bootstrap', 'step1', []);
   await c.run();
-  t.deepEqual(c.dump().log, [
-    'callNow',
-    'invoke 1 2',
-    JSON.stringify(capargs({ ret: 3 })),
-  ]);
+  t.deepEqual(c.dump().log, ['callNow', 'invoke 1 2', vstr({ ret: 3 })]);
   t.deepEqual(sharedArray, ['pushed']);
 });
 
@@ -255,7 +238,7 @@ test.serial('device state', async t => {
   await c1.run();
   t.deepEqual(c1.dump().log, ['undefined', 'w+r', 'called', 'got {"s":"new"}']);
   const s = getAllState(hostStorage).kvStuff;
-  t.deepEqual(JSON.parse(s[`${d3}.deviceState`]), capargs({ s: 'new' }));
+  t.deepEqual(JSON.parse(s[`${d3}.deviceState`]), kser({ s: 'new' }));
   t.deepEqual(JSON.parse(s[`${d3}.o.nextID`]), 10);
 });
 

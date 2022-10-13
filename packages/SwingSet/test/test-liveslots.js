@@ -11,10 +11,9 @@ import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeLiveSlots, makeMarshaller } from '../src/liveslots/liveslots.js';
+import { kslot, kser, kunser } from '../src/lib/kmarshal.js';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
 import {
-  capargs,
-  capdataOneSlot,
   makeMessage,
   makeBringOutYourDead,
   makeResolve,
@@ -28,20 +27,10 @@ function matchIDCounterSet(t, log) {
   t.like(log.shift(), { type: 'vatstoreSet', key: 'idCounters' });
 }
 
-function slotArg(index, iface) {
-  if (iface) {
-    return { '@qclass': 'slot', iface: `Alleged: ${iface}`, index };
-  } else {
-    return { '@qclass': 'slot', index };
-  }
-}
-const slot0arg = slotArg(0);
-
 function expectError(t, expectedError, messagePattern) {
-  const ebody = JSON.parse(expectedError.body);
-  t.is(ebody['@qclass'], 'error');
-  t.is(ebody.name, 'Error');
-  t.regex(ebody.message, messagePattern);
+  const err = kunser(expectedError);
+  t.is(err.name, 'Error');
+  t.regex(err.message, messagePattern);
 }
 
 test('calls', async t => {
@@ -72,23 +61,23 @@ test('calls', async t => {
   // pr = makePromise()
   // root!two(pr.promise)
   // pr.resolve('result')
-  await dispatch(makeMessage(rootA, 'two', [slot0arg], ['p-1']));
+  await dispatch(makeMessage(rootA, 'two', [kslot('p-1')]));
   matchIDCounterSet(t, log);
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p-1' });
   t.deepEqual(log.shift(), 'two true');
 
-  await dispatch(makeResolve('p-1', capargs('result')));
+  await dispatch(makeResolve('p-1', kser('result')));
   t.deepEqual(log.shift(), ['res', 'result']);
 
   // pr = makePromise()
   // root!two(pr.promise)
   // pr.reject('rejection')
 
-  await dispatch(makeMessage(rootA, 'two', [slot0arg], ['p-2']));
+  await dispatch(makeMessage(rootA, 'two', [kslot('p-2')]));
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p-2' });
   t.deepEqual(log.shift(), 'two true');
 
-  await dispatch(makeReject('p-2', capargs('rejection')));
+  await dispatch(makeReject('p-2', kser('rejection')));
   t.deepEqual(log.shift(), ['rej', 'rejection']);
 
   // TODO: more calls, more slot types
@@ -116,7 +105,7 @@ test('liveslots pipelines to syscall.send', async t => {
   const p3 = 'p+7';
 
   // root!one(x) // sendOnly
-  await dispatch(makeMessage(rootA, 'one', [slot0arg], [x]));
+  await dispatch(makeMessage(rootA, 'one', [kslot(x)]));
 
   // calling one() should cause three syscall.send() calls to be made: one
   // for x!pipe1(), a second pipelined to the result promise of it, and a
@@ -126,21 +115,21 @@ test('liveslots pipelines to syscall.send', async t => {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: x,
-    methargs: capargs(['pipe1', []], []),
+    methargs: kser(['pipe1', []]),
     resultSlot: p1,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: p1,
-    methargs: capargs(['pipe2', []], []),
+    methargs: kser(['pipe2', []]),
     resultSlot: p2,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: p2 });
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: p2,
-    methargs: capargs(['pipe3', []], []),
+    methargs: kser(['pipe3', []]),
     resultSlot: p3,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: p3 });
@@ -170,14 +159,14 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   const o2 = 'o-2';
 
   // function deliver(target, method, argsdata, result) {
-  await dispatch(makeMessage(rootA, 'one', [slot0arg], [p1]));
+  await dispatch(makeMessage(rootA, 'one', [kslot(p1)]));
   // the vat should subscribe to the inbound p1 during deserialization
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
   // then it pipeline-sends `pipe1` to p1, with a new result promise
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: p1,
-    methargs: capargs(['pipe1', []], []),
+    methargs: kser(['pipe1', []]),
     resultSlot: 'p+5',
   });
   // then it subscribes to the result promise too
@@ -186,12 +175,12 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   t.deepEqual(log, []);
 
   // now we tell it the promise has resolved, to object 'o2'
-  await dispatch(makeResolve(p1, capargs(slot0arg, [o2])));
+  await dispatch(makeResolve(p1, kser(kslot(o2))));
   // this allows E(o2).nonpipe2() to go out, which was not pipelined
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: o2,
-    methargs: capargs(['nonpipe2', []], []),
+    methargs: kser(['nonpipe2', []]),
     resultSlot: 'p+6',
   });
   // and nonpipe2() wants a result
@@ -205,7 +194,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: o2,
-    methargs: capargs(['nonpipe3', []], []),
+    methargs: kser(['nonpipe3', []]),
     resultSlot: 'p+7',
   });
   // and nonpipe3() wants a result
@@ -253,36 +242,31 @@ async function doOutboundPromise(t, mode) {
     resolutions: [[expectedP1, false]],
   };
   if (mode === 'to presence') {
-    // n.b.: because the `body` object gets stringified and THEN compared to the
-    // `body` string generated by liveslots, the order of the properties here is
-    // significant.
-    const body = {
-      '@qclass': 'slot',
-      iface: `Alleged: presence ${target}`,
-      index: 0,
-    };
-    resolution = slot0arg;
-    resolveSyscall.resolutions[0][2] = capargs(body, [target]);
+    resolution = kslot(target, `presence ${target}`);
   } else if (mode === 'to data') {
     resolution = 4;
-    resolveSyscall.resolutions[0][2] = capargs(4, []);
   } else if (mode === 'reject') {
     resolution = 'reject';
     resolveSyscall.resolutions[0][1] = true;
-    resolveSyscall.resolutions[0][2] = capargs('reject', []);
   } else {
     assert.fail(X`unknown mode ${mode}`);
   }
+  resolveSyscall.resolutions[0][2] = kser(resolution);
 
   // function deliver(target, method, argsdata, result) {
-  await dispatch(makeMessage(rootA, 'run', [slot0arg, resolution], [target]));
+  await dispatch(
+    makeMessage(rootA, 'run', [
+      kslot(target, `presence ${target}`),
+      resolution,
+    ]),
+  );
 
   // The vat should send 'one' and mention the promise for the first time. It
   // does not subscribe to its own promise.
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target,
-    methargs: capargs(['one', [slot0arg]], [expectedP1]),
+    methargs: kser(['one', [kslot(expectedP1)]]),
     resultSlot: expectedResultP1,
   });
   // then it subscribes to the result promise
@@ -296,7 +280,7 @@ async function doOutboundPromise(t, mode) {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target,
-    methargs: capargs(['two', [slot0arg]], [expectedP2]),
+    methargs: kser(['two', [kslot(expectedP2)]]),
     resultSlot: expectedResultP2,
   });
   resolveSyscall.resolutions[0][0] = expectedP2;
@@ -349,14 +333,14 @@ test('liveslots retains pending exported promise', async t => {
   log.length = 0; // assume pre-build vatstore operations are correct
   const rootA = 'o+0';
   const resultP = 'p-1';
-  await dispatch(makeMessage(rootA, 'make', [], [], resultP));
+  await dispatch(makeMessage(rootA, 'make', [], resultP));
   await gcAndFinalize();
   t.truthy(watch.deref(), 'Promise not retained');
   t.is(log[0].type, 'resolve');
   const res0 = log[0].resolutions[0];
   t.is(res0[0], resultP);
   const exportedVPID = res0[2].slots[0]; // currently p+5
-  await dispatch(makeMessage(rootA, 'check', [slot0arg], [exportedVPID]));
+  await dispatch(makeMessage(rootA, 'check', [kslot(exportedVPID)]));
   t.deepEqual(success, ['yes']);
 });
 
@@ -401,13 +385,13 @@ async function doResultPromise(t, mode) {
   const target2 = 'o-2';
   // if it returns data or a rejection, two() results in an error
 
-  await dispatch(makeMessage(rootA, 'run', [slot0arg], [target1]));
+  await dispatch(makeMessage(rootA, 'run', [kslot(target1)]));
 
   // The vat should send 'getTarget2' and subscribe to the result promise
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
-    methargs: capargs(['getTarget2', []], []),
+    methargs: kser(['getTarget2', []]),
     resultSlot: expectedP1,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP1 });
@@ -416,7 +400,7 @@ async function doResultPromise(t, mode) {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: expectedP1,
-    methargs: capargs(['one', []], []),
+    methargs: kser(['one', []]),
     resultSlot: expectedP2,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP2 });
@@ -428,18 +412,18 @@ async function doResultPromise(t, mode) {
   // resolve p1 first. The one() call was already pipelined, so this
   // should not trigger any new syscalls.
   if (mode === 'to presence') {
-    await dispatch(makeResolve(expectedP1, capargs(slot0arg, [target2])));
+    await dispatch(makeResolve(expectedP1, kser(kslot(target2))));
   } else if (mode === 'to data') {
-    await dispatch(makeResolve(expectedP1, capargs(4, [])));
+    await dispatch(makeResolve(expectedP1, kser(4)));
   } else if (mode === 'reject') {
-    await dispatch(makeReject(expectedP1, capargs('error', [])));
+    await dispatch(makeReject(expectedP1, kser('error')));
   } else {
     assert.fail(X`unknown mode ${mode}`);
   }
   t.deepEqual(log, []);
 
   // Now we resolve p2, allowing the second two() to proceed
-  await dispatch(makeResolve(expectedP2, capargs(4, [])));
+  await dispatch(makeResolve(expectedP2, kser(4)));
 
   if (mode === 'to presence') {
     // If we resolved it to a target, we should see two() sent through to the
@@ -447,7 +431,7 @@ async function doResultPromise(t, mode) {
     t.deepEqual(log.shift(), {
       type: 'send',
       targetSlot: target2, // #823 fails here: expect o-2, get p+5
-      methargs: capargs(['two', []], []),
+      methargs: kser(['two', []]),
       resultSlot: expectedP3,
     });
     t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP3 });
@@ -502,48 +486,29 @@ test('liveslots vs symbols', async t => {
 
   // E(root)[Symbol.asyncIterator]('one')
   const rp1 = 'p-1';
-  await dispatch(
-    makeMessage(
-      rootA,
-      { '@qclass': 'symbol', name: '@@asyncIterator' },
-      ['one'],
-      [],
-      rp1,
-    ),
-  );
+  await dispatch(makeMessage(rootA, Symbol.asyncIterator, ['one'], rp1));
   t.deepEqual(log.shift(), {
     type: 'resolve',
-    resolutions: [[rp1, false, capargs(['ok', 'asyncIterator', 'one'])]],
+    resolutions: [[rp1, false, kser(['ok', 'asyncIterator', 'one'])]],
   });
   matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   // E(root)[arbitrarySymbol]('two')
   const rp2 = 'p-2';
-  await dispatch(
-    makeMessage(
-      rootA,
-      { '@qclass': 'symbol', name: 'arbitrary' },
-      ['two'],
-      [],
-      rp2,
-    ),
-  );
+  await dispatch(makeMessage(rootA, Symbol.for('arbitrary'), ['two'], rp2));
   t.deepEqual(log.shift(), {
     type: 'resolve',
-    resolutions: [[rp2, false, capargs(['ok', 'arbitrary', 'two'])]],
+    resolutions: [[rp2, false, kser(['ok', 'arbitrary', 'two'])]],
   });
   t.deepEqual(log, []);
 
   // root~.sendAsyncIterator(target) -> send(methodname=Symbol.asyncIterator)
-  await dispatch(makeMessage(rootA, 'sendAsyncIterator', [slot0arg], [target]));
+  await dispatch(makeMessage(rootA, 'sendAsyncIterator', [kslot(target)]));
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target,
-    methargs: capargs([
-      { '@qclass': 'symbol', name: '@@asyncIterator' },
-      ['arg'],
-    ]),
+    methargs: kser([Symbol.asyncIterator, ['arg']]),
     resultSlot: 'p+5',
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+5' });
@@ -551,11 +516,11 @@ test('liveslots vs symbols', async t => {
   t.deepEqual(log, []);
 
   // root~.sendArbitrary(target) -> send(methodname=Symbol.for('arbitrary')
-  await dispatch(makeMessage(rootA, 'sendArbitrary', [slot0arg], [target]));
+  await dispatch(makeMessage(rootA, 'sendArbitrary', [kslot(target)]));
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target,
-    methargs: capargs([{ '@qclass': 'symbol', name: 'arbitrary' }, ['arg']]),
+    methargs: kser([Symbol.for('arbitrary'), ['arg']]),
     resultSlot: 'p+6',
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+6' });
@@ -580,36 +545,25 @@ test('remote function call', async t => {
   const rootA = 'o+0';
 
   const rp1 = 'p-1';
-  await dispatch(makeMessage(rootA, 'getFun', [], [], rp1));
+  await dispatch(makeMessage(rootA, 'getFun', [], rp1));
   t.deepEqual(log.shift(), {
     type: 'resolve',
-    resolutions: [
-      [
-        rp1,
-        false,
-        capargs({ '@qclass': 'slot', iface: 'Alleged: fun', index: 0 }, [
-          'o+10',
-        ]),
-      ],
-    ],
+    resolutions: [[rp1, false, kser(kslot('o+10', 'fun'))]],
   });
   matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   const rp2 = 'p-2';
-  await dispatch(
-    makeMessage('o+10', { '@qclass': 'undefined' }, ['arg!'], [], rp2),
-  );
+  await dispatch(makeMessage('o+10', undefined, ['arg!'], rp2));
   t.deepEqual(log.shift(), {
     type: 'resolve',
-    resolutions: [[rp2, false, capargs(['ok', 'funcall', 'arg!'])]],
+    resolutions: [[rp2, false, kser(['ok', 'funcall', 'arg!'])]],
   });
   t.deepEqual(log, []);
 });
 
 const longString =
   'This is a really really long string, longer even than you would normally use, long enough, in fact, to overflow our minimal max length';
-const undefinedArg = capargs({ '@qclass': 'undefined' });
 
 test('capdata size limit on syscalls', async t => {
   const { log, syscall } = buildSyscall();
@@ -754,13 +708,13 @@ test('capdata size limit on syscalls', async t => {
     return `p+${epCounter}`;
   };
 
-  const send = op => dispatch(makeMessage(rootA, op, [slot0arg], [target], rp));
+  const send = op => dispatch(makeMessage(rootA, op, [kslot(target)], rp));
   const expectFail = () =>
     t.deepEqual(log.shift(), 'fail: syscall capdata too large');
   const expectVoidReturn = () =>
     t.deepEqual(log.shift(), {
       type: 'resolve',
-      resolutions: [[rp, false, undefinedArg]],
+      resolutions: [[rp, false, kser(undefined)]],
     });
   const expectKindDef = kid =>
     t.deepEqual(log.shift(), {
@@ -848,17 +802,13 @@ test('capdata size limit on syscalls', async t => {
   t.deepEqual(log, []);
 
   rp = nextRP();
-  await dispatch(
-    makeMessage(rootA, 'callTooManySlots', [slot0arg], [device], rp),
-  );
+  await dispatch(makeMessage(rootA, 'callTooManySlots', [kslot(device)], rp));
   expectFail();
   expectVoidReturn();
   t.deepEqual(log, []);
 
   rp = nextRP();
-  await dispatch(
-    makeMessage(rootA, 'callBodyTooBig', [slot0arg], [device], rp),
-  );
+  await dispatch(makeMessage(rootA, 'callBodyTooBig', [kslot(device)], rp));
   expectFail();
   expectVoidReturn();
   t.deepEqual(log, []);
@@ -870,12 +820,12 @@ test('capdata size limit on syscalls', async t => {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target,
-    methargs: capargs(['takeThis', [slotArg(0)]], [parg]),
+    methargs: kser(['takeThis', [kslot(parg)]]),
     resultSlot: resultp,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: resultp });
   matchIDCounterSet(t, log);
-  await dispatch(makeResolve(resultp, undefinedArg));
+  await dispatch(makeResolve(resultp, kser(undefined)));
   let failure = log.shift();
   t.like(failure, {
     type: 'exit',
@@ -892,12 +842,12 @@ test('capdata size limit on syscalls', async t => {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target,
-    methargs: capargs(['takeThis', [slotArg(0)]], [parg]),
+    methargs: kser(['takeThis', [kslot(parg)]]),
     resultSlot: resultp,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: resultp });
   matchIDCounterSet(t, log);
-  await dispatch(makeResolve(resultp, undefinedArg));
+  await dispatch(makeResolve(resultp, kser(undefined)));
   failure = log.shift();
   t.like(failure, {
     type: 'exit',
@@ -1048,7 +998,7 @@ test('disavow', async t => {
   const import1 = 'o-1';
 
   // root~.one(import1) // sendOnly
-  await dispatch(makeMessage(rootA, 'one', [slot0arg], [import1]));
+  await dispatch(makeMessage(rootA, 'one', [kslot(import1)]));
   t.deepEqual(log.shift(), { type: 'dropImports', slots: [import1] });
   t.deepEqual(log.shift(), 'disavowed pres1');
 
@@ -1063,19 +1013,12 @@ test('disavow', async t => {
   t.deepEqual(log.shift(), 'tried to disavow Promise');
   loggedError(/attempt to disavow an export/);
   t.deepEqual(log.shift(), 'tried to disavow export');
-  t.deepEqual(log.shift(), {
+  const msg = log.shift();
+  t.like(msg, {
     type: 'exit',
     isFailure: true,
-    info: {
-      body: JSON.stringify({
-        '@qclass': 'error',
-        errorId: 'error:liveSlots:vatA#70001',
-        message: 'this Presence has been disavowed',
-        name: 'Error',
-      }),
-      slots: [],
-    },
   });
+  expectError(t, msg.info, /this Presence has been disavowed/);
   t.deepEqual(log.shift(), Error('this Presence has been disavowed'));
   t.deepEqual(log.shift(), 'tried to send to disavowed');
   matchIDCounterSet(t, log);
@@ -1104,10 +1047,10 @@ test('liveslots retains device nodes', async t => {
   const dispatch = await makeDispatch(syscall, build);
   const rootA = 'o+0';
   const device = 'd-1';
-  await dispatch(makeMessage(rootA, 'first', [slot0arg], [device]));
+  await dispatch(makeMessage(rootA, 'first', [kslot(device)]));
   await gcAndFinalize();
   t.truthy(watch.deref(), 'Device node not retained');
-  await dispatch(makeMessage(rootA, 'second', [slot0arg], [device]));
+  await dispatch(makeMessage(rootA, 'second', [kslot(device)]));
   t.deepEqual(success, [true]);
 });
 
@@ -1138,7 +1081,7 @@ test('GC syscall.dropImports', async t => {
 
   // tell the vat make a Presence and hold it for a moment
   // rp1 = root~.one(arg)
-  await dispatch(makeMessage(rootA, 'one', [slot0arg], [arg]));
+  await dispatch(makeMessage(rootA, 'one', [kslot(arg)]));
   await dispatch(makeBringOutYourDead());
   t.truthy(wr.deref());
 
@@ -1215,7 +1158,7 @@ test('GC dispatch.retireImports', async t => {
 
   // tell the vat make a Presence and hold it
   // rp1 = root~.one(arg)
-  await dispatch(makeMessage(rootA, 'one', [slot0arg], [arg]));
+  await dispatch(makeMessage(rootA, 'one', [kslot(arg)]));
 
   // when the upstream export goes away, the kernel will send a
   // dispatch.retireImport into the vat
@@ -1248,12 +1191,12 @@ test('GC dispatch.retireExports', async t => {
   // rp1 = root~.one()
   // ex1 = await rp1
   const rp1 = 'p-1';
-  await dispatch(makeMessage(rootA, 'one', [], [], rp1));
+  await dispatch(makeMessage(rootA, 'one', [], rp1));
   const l1 = log.shift();
   const ex1 = l1.resolutions[0][2].slots[0];
   t.deepEqual(l1, {
     type: 'resolve',
-    resolutions: [[rp1, false, capdataOneSlot(ex1)]],
+    resolutions: [[rp1, false, kser(kslot(ex1, 'export'))]],
   });
   matchIDCounterSet(t, log);
   t.deepEqual(log, []);
@@ -1388,7 +1331,7 @@ test('dropImports', async t => {
     buildRootObject: build,
   }));
   const { dispatch, startVat, possiblyDeadSet } = ls;
-  await startVat(capargs());
+  await startVat(kser());
   const allFRs = gcTools.getAllFRs();
   t.is(allFRs.length, 2);
   const FR = allFRs[0];
@@ -1396,7 +1339,7 @@ test('dropImports', async t => {
   const rootA = 'o+0';
 
   // immediate drop should push import to possiblyDeadSet after finalizer runs
-  await dispatch(makeMessage(rootA, 'ignore', [slot0arg], ['o-1']));
+  await dispatch(makeMessage(rootA, 'ignore', [kslot('o-1')]));
   // the immediate gcTools.kill() means that the import should now be in the
   // "COLLECTED" state
   t.deepEqual(possiblyDeadSet, new Set());
@@ -1406,7 +1349,7 @@ test('dropImports', async t => {
   possiblyDeadSet.delete('o-1'); // pretend liveslots did syscall.dropImport
 
   // separate hold and free should do the same
-  await dispatch(makeMessage(rootA, 'hold', [slot0arg], ['o-2']));
+  await dispatch(makeMessage(rootA, 'hold', [kslot('o-2')]));
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 0);
   await dispatch(makeMessage(rootA, 'free', []));
@@ -1418,12 +1361,12 @@ test('dropImports', async t => {
 
   // re-introduction during COLLECTED should return to REACHABLE
 
-  await dispatch(makeMessage(rootA, 'ignore', [slot0arg], ['o-3']));
+  await dispatch(makeMessage(rootA, 'ignore', [kslot('o-3')]));
   // now COLLECTED
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
 
-  await dispatch(makeMessage(rootA, 'hold', [slot0arg], ['o-3']));
+  await dispatch(makeMessage(rootA, 'hold', [kslot('o-3')]));
   // back to REACHABLE
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
@@ -1442,17 +1385,17 @@ test('dropImports', async t => {
 
   // multiple queued finalizers are idempotent, remains REACHABLE
 
-  await dispatch(makeMessage(rootA, 'ignore', [slot0arg], ['o-4']));
+  await dispatch(makeMessage(rootA, 'ignore', [kslot('o-4')]));
   // now COLLECTED
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
 
-  await dispatch(makeMessage(rootA, 'ignore', [slot0arg], ['o-4']));
+  await dispatch(makeMessage(rootA, 'ignore', [kslot('o-4')]));
   // moves to REACHABLE and then back to COLLECTED
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 2);
 
-  await dispatch(makeMessage(rootA, 'hold', [slot0arg], ['o-4']));
+  await dispatch(makeMessage(rootA, 'hold', [kslot('o-4')]));
   // back to REACHABLE
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 2);
@@ -1467,12 +1410,12 @@ test('dropImports', async t => {
 
   // multiple queued finalizers are idempotent, remains FINALIZED
 
-  await dispatch(makeMessage(rootA, 'ignore', [slot0arg], ['o-5']));
+  await dispatch(makeMessage(rootA, 'ignore', [kslot('o-5')]));
   // now COLLECTED
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
 
-  await dispatch(makeMessage(rootA, 'ignore', [slot0arg], ['o-5']));
+  await dispatch(makeMessage(rootA, 'ignore', [kslot('o-5')]));
   // moves to REACHABLE and then back to COLLECTED
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 2);
@@ -1488,7 +1431,7 @@ test('dropImports', async t => {
 
   // re-introduction during FINALIZED moves back to REACHABLE
 
-  await dispatch(makeMessage(rootA, 'ignore', [slot0arg], ['o-6']));
+  await dispatch(makeMessage(rootA, 'ignore', [kslot('o-6')]));
   // moves to REACHABLE and then back to COLLECTED
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
@@ -1497,7 +1440,7 @@ test('dropImports', async t => {
   t.deepEqual(possiblyDeadSet, new Set(['o-6']));
   t.is(FR.countCallbacks(), 0);
 
-  await dispatch(makeMessage(rootA, 'hold', [slot0arg], ['o-6']));
+  await dispatch(makeMessage(rootA, 'hold', [kslot('o-6')]));
   await dispatch(makeBringOutYourDead());
   // back to REACHABLE, removed from possiblyDeadSet
   t.deepEqual(possiblyDeadSet, new Set());
@@ -1518,7 +1461,7 @@ test('buildVatNamespace not called until after startVat', async t => {
     buildRootObject,
   }));
   t.falsy(buildCalled);
-  await ls.startVat(capargs());
+  await ls.startVat(kser());
   t.truthy(buildCalled);
 });
 
@@ -1546,13 +1489,13 @@ test('GC dispatch.dropExports', async t => {
   // rp1 = root~.one()
   // ex1 = await rp1
   const rp1 = 'p-1';
-  await dispatch(makeMessage(rootA, 'one', [], [], rp1));
+  await dispatch(makeMessage(rootA, 'one', [], rp1));
   await dispatch(makeBringOutYourDead());
   const l1 = log.shift();
   const ex1 = l1.resolutions[0][2].slots[0];
   t.deepEqual(l1, {
     type: 'resolve',
-    resolutions: [[rp1, false, capdataOneSlot(ex1)]],
+    resolutions: [[rp1, false, kser(kslot(ex1, 'export'))]],
   });
   t.deepEqual(log.shift(), {
     type: 'vatstoreSet',
@@ -1615,13 +1558,13 @@ test('GC dispatch.retireExports inhibits syscall.retireExports', async t => {
   // rp1 = root~.hold()
   // ex1 = await rp1
   const rp1 = 'p-1';
-  await dispatch(makeMessage(rootA, 'hold', [], [], rp1));
+  await dispatch(makeMessage(rootA, 'hold', [], rp1));
   await dispatch(makeBringOutYourDead());
   const l1 = log.shift();
   const ex1 = l1.resolutions[0][2].slots[0];
   t.deepEqual(l1, {
     type: 'resolve',
-    resolutions: [[rp1, false, capdataOneSlot(ex1)]],
+    resolutions: [[rp1, false, kser(kslot(ex1, 'export'))]],
   });
   t.deepEqual(log.shift(), {
     type: 'vatstoreSet',
@@ -1666,8 +1609,6 @@ test('GC dispatch.retireExports inhibits syscall.retireExports', async t => {
   t.deepEqual(log, []);
 });
 
-const oneSlot = { '@qclass': 'slot', index: 0 };
-
 // todo: test that ancillary promises cause syscall.resolve, also test
 // unserializable resolutions
 test('simple promise resolution', async t => {
@@ -1691,14 +1632,14 @@ test('simple promise resolution', async t => {
   const rootA = 'o+0';
 
   const rp1 = 'p-1';
-  await dispatch(makeMessage(rootA, 'export', [], [], rp1));
+  await dispatch(makeMessage(rootA, 'export', [], rp1));
   const l1 = log.shift();
   t.is(l1.type, 'resolve');
   const expectedPA = 'p+5';
-  const expectedResult1 = { p: oneSlot };
+  const expectedResult1 = { p: kslot(expectedPA) };
   t.deepEqual(l1, {
     type: 'resolve',
-    resolutions: [[rp1, false, capargs(expectedResult1, [expectedPA])]],
+    resolutions: [[rp1, false, kser(expectedResult1)]],
   });
   matchIDCounterSet(t, log);
   t.deepEqual(log, []);
@@ -1708,7 +1649,7 @@ test('simple promise resolution', async t => {
   const l2 = log.shift();
   t.is(l2.type, 'resolve');
   t.is(l2.resolutions[0][0], expectedPA);
-  t.deepEqual(l2.resolutions[0][2], capargs('data'));
+  t.deepEqual(l2.resolutions[0][2], kser('data'));
 });
 
 test('promise cycle', async t => {
@@ -1735,13 +1676,13 @@ test('promise cycle', async t => {
   const rootA = 'o+0';
 
   const rp1 = 'p-1';
-  await dispatch(makeMessage(rootA, 'export', [], [], rp1));
+  await dispatch(makeMessage(rootA, 'export', [], rp1));
   const l1 = log.shift();
   t.is(l1.type, 'resolve');
   const expectedPA1 = 'p+5'; // pkA.promise first export
   t.deepEqual(l1, {
     type: 'resolve',
-    resolutions: [[rp1, false, capargs({ p: oneSlot }, [expectedPA1])]],
+    resolutions: [[rp1, false, kser({ p: kslot(expectedPA1) })]],
   });
   // liveslots will see pkA.promise resolve on the second-ish turn of the
   // first delivery (of root~.export), to an array. When it serializes that
@@ -1752,7 +1693,7 @@ test('promise cycle', async t => {
   const l2 = log.shift();
   t.deepEqual(l2, {
     type: 'resolve',
-    resolutions: [[expectedPA1, false, capargs([oneSlot], [expectedPB])]],
+    resolutions: [[expectedPA1, false, kser([kslot(expectedPB)])]],
   });
 
   // When liveslots sees pkB resolve, the resolution will be to an array that
@@ -1766,8 +1707,8 @@ test('promise cycle', async t => {
   t.deepEqual(l3, {
     type: 'resolve',
     resolutions: [
-      [expectedPB, false, capargs([oneSlot], [expectedPA2])],
-      [expectedPA2, false, capargs([oneSlot], [expectedPB])],
+      [expectedPB, false, kser([kslot(expectedPA2)])],
+      [expectedPA2, false, kser([kslot(expectedPB)])],
     ],
   });
   matchIDCounterSet(t, log);
@@ -1798,14 +1739,14 @@ test('unserializable promise resolution', async t => {
   const rootA = 'o+0';
 
   const rp1 = 'p-1';
-  await dispatch(makeMessage(rootA, 'export', [], [], rp1));
+  await dispatch(makeMessage(rootA, 'export', [], rp1));
   const l1 = log.shift();
   t.is(l1.type, 'resolve');
   const expectedPA = 'p+5';
-  const expectedResult1 = { p: oneSlot };
+  const expectedResult1 = { p: kslot(expectedPA) };
   t.deepEqual(l1, {
     type: 'resolve',
-    resolutions: [[rp1, false, capargs(expectedResult1, [expectedPA])]],
+    resolutions: [[rp1, false, kser(expectedResult1)]],
   });
   matchIDCounterSet(t, log);
   t.deepEqual(log, []);
@@ -1858,14 +1799,14 @@ test('unserializable promise rejection', async t => {
   const rootA = 'o+0';
 
   const rp1 = 'p-1';
-  await dispatch(makeMessage(rootA, 'export', [], [], rp1));
+  await dispatch(makeMessage(rootA, 'export', [], rp1));
   const l1 = log.shift();
   t.is(l1.type, 'resolve');
   const expectedPA = 'p+5';
-  const expectedResult1 = { p: oneSlot };
+  const expectedResult1 = { p: kslot(expectedPA) };
   t.deepEqual(l1, {
     type: 'resolve',
-    resolutions: [[rp1, false, capargs(expectedResult1, [expectedPA])]],
+    resolutions: [[rp1, false, kser(expectedResult1)]],
   });
   matchIDCounterSet(t, log);
   t.deepEqual(log, []);
@@ -1968,30 +1909,27 @@ test('result promise in args', async t => {
   const target = 'o-1';
   const resP = 'p-1';
 
-  const args = [
-    { '@qclass': 'slot', index: 0 },
-    { '@qclass': 'slot', index: 1 },
-  ];
-  await dispatch(makeMessage(rootA, 'one', args, [resP, target], resP));
+  await dispatch(
+    makeMessage(
+      rootA,
+      'one',
+      [kslot(resP), kslot(target, `presence ${target}`)],
+      resP,
+    ),
+  );
 
   t.deepEqual(log.shift(), { type: 'subscribe', target: resP });
   const s2 = log.shift();
   t.is(s2.type, 'send');
   t.is(s2.targetSlot, target);
-  t.deepEqual(s2.methargs, {
-    body: '["two",[{"@qclass":"slot","index":0}]]',
-    slots: [resP],
-  });
+  t.deepEqual(s2.methargs, kser(['two', [kslot(resP)]]));
   t.is(log.shift().type, 'subscribe'); // result of two()
 
   // `three()` makes it out first
   const s3 = log.shift();
   t.is(s3.type, 'send');
   t.is(s3.targetSlot, target);
-  t.deepEqual(s3.methargs, {
-    body: '["three",[]]',
-    slots: [],
-  });
+  t.deepEqual(s3.methargs, kser(['three', []]));
   const s4 = log.shift();
   t.is(s4.type, 'subscribe');
   t.is(s4.target, s3.resultSlot);
@@ -1999,7 +1937,7 @@ test('result promise in args', async t => {
   const s5 = log.shift();
   t.is(s5.type, 'resolve');
   t.is(s5.resolutions.length, 1);
-  const resdata = capdataOneSlot(target, `presence ${target}`);
+  const resdata = kser(kslot(target, `presence ${target}`));
   t.deepEqual(s5.resolutions[0], [resP, false, resdata]);
 
   // there is one more syscall.vatstoreSet(idCounters) that we ignore

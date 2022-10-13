@@ -12,6 +12,7 @@ import {
 } from '../src/kernel/state/storageWrapper.js';
 import { makeKernelStats } from '../src/kernel/state/stats.js';
 import { KERNEL_STATS_METRICS } from '../src/kernel/metrics.js';
+import { kser, kslot } from '../src/lib/kmarshal.js';
 
 const ignoredStateKeys = ['activityhash', 'kernelStats', 'local.kernelStats'];
 
@@ -508,13 +509,13 @@ test('kernelKeeper promises', async t => {
   t.deepEqual(k.getKernelPromise(p1).subscribers, ['v3', 'v5']);
 
   const expectedAcceptanceQueue = [];
-  const m1 = { methargs: { body: '["m1", []]', slots: [] } };
+  const m1 = { methargs: kser(['m1', []]) };
   k.addMessageToPromiseQueue(p1, m1);
   k.incrementRefCount(p1);
   t.deepEqual(k.getKernelPromise(p1).refCount, 1);
   expectedAcceptanceQueue.push({ type: 'send', target: 'kp40', msg: m1 });
 
-  const m2 = { methargs: { body: '["m2", []]', slots: [] } };
+  const m2 = { methargs: kser(['m2', []]) };
   k.addMessageToPromiseQueue(p1, m2);
   k.incrementRefCount(p1);
   t.deepEqual(k.getKernelPromise(p1).queue, [m1, m2]);
@@ -529,15 +530,12 @@ test('kernelKeeper promises', async t => {
   t.is(k.getStats().kernelObjects, 1);
   // when we resolve the promise, all its queued messages are moved to the
   // run-queue, and its refcount remains the same
-  const capdata = harden({
-    body: '{"@qclass":"slot","index":0}',
-    slots: [ko],
-  });
-  k.resolveKernelPromise(p1, false, capdata);
+  const resolution = kser(kslot(ko));
+  k.resolveKernelPromise(p1, false, resolution);
   t.deepEqual(k.getKernelPromise(p1), {
     state: 'fulfilled',
     refCount: 2,
-    data: capdata,
+    data: resolution,
   });
   t.truthy(k.hasKernelPromise(p1));
   // all the subscriber/queue stuff should be gone
@@ -560,7 +558,7 @@ test('kernelKeeper promises', async t => {
     ['kd.nextID', '30'],
     ['ko.nextID', '21'],
     ['kp.nextID', '41'],
-    ['kp40.data.body', '{"@qclass":"slot","index":0}'],
+    ['kp40.data.body', '#"$0.Alleged: undefined"'],
     ['kp40.data.slots', ko],
     ['kp40.state', 'fulfilled'],
     ['kp40.refCount', '2'],
@@ -584,18 +582,12 @@ test('kernelKeeper promise resolveToData', async t => {
 
   const p1 = k.addKernelPromiseForVat('v4');
   const o1 = k.addKernelObject('v1');
-  const capdata = harden({
-    body: '"bodyjson"',
-    slots: [o1],
-  });
-  k.resolveKernelPromise(p1, false, capdata);
+  const resolution = kser(kslot(o1));
+  k.resolveKernelPromise(p1, false, resolution);
   t.deepEqual(k.getKernelPromise(p1), {
     state: 'fulfilled',
     refCount: 0,
-    data: {
-      body: '"bodyjson"',
-      slots: [o1],
-    },
+    data: kser(kslot(o1)),
   });
 });
 
@@ -606,18 +598,12 @@ test('kernelKeeper promise reject', async t => {
 
   const p1 = k.addKernelPromiseForVat('v4');
   const o1 = k.addKernelObject('v1');
-  const capdata = harden({
-    body: '"bodyjson"',
-    slots: [o1],
-  });
-  k.resolveKernelPromise(p1, true, capdata);
+  const resolution = kser(kslot(o1));
+  k.resolveKernelPromise(p1, true, resolution);
   t.deepEqual(k.getKernelPromise(p1), {
     state: 'rejected',
     refCount: 0,
-    data: {
-      body: '"bodyjson"',
-      slots: [o1],
-    },
+    data: kser(kslot(o1)),
   });
 });
 

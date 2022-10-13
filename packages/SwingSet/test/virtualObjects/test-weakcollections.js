@@ -6,14 +6,7 @@ import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
 import makeNextLog from '../make-nextlog.js';
-
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
-
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
+import { kser } from '../../src/lib/kmarshal.js';
 
 test('weakMap in vat', async t => {
   const config = {
@@ -40,7 +33,7 @@ test('weakMap in vat', async t => {
   const nextLog = makeNextLog(c);
 
   await c.run();
-  t.deepEqual(c.kpResolution(bootstrapResult), capargs('bootstrap done'));
+  t.deepEqual(c.kpResolution(bootstrapResult), kser('bootstrap done'));
 
   async function doSimple(method) {
     const r = c.queueToVatRoot('bootstrap', method, []);
@@ -50,7 +43,7 @@ test('weakMap in vat', async t => {
   }
 
   const preGCResult = await doSimple('runProbes');
-  t.deepEqual(preGCResult, capargs('probes done'));
+  t.deepEqual(preGCResult, kser('probes done'));
   t.deepEqual(nextLog(), [
     'probe of sample-object returns imported item #0',
     'probe of [object Promise] returns imported item #1',
@@ -64,7 +57,7 @@ test('weakMap in vat', async t => {
   await doSimple('betweenProbes');
   engineGC();
   const postGCResult = await doSimple('runProbes');
-  t.deepEqual(postGCResult, capargs('probes done'));
+  t.deepEqual(postGCResult, kser('probes done'));
   t.deepEqual(nextLog(), [
     'probe of sample-object returns imported item #0',
     'probe of [object Promise] returns undefined',

@@ -6,7 +6,6 @@ import {
   buildRootObject,
   mainHeldIdx,
   mapRef,
-  mapRefArg,
   NONE,
   validateDropExports,
   validateDropExportsWithGCAndRetire,
@@ -23,6 +22,7 @@ import {
   validateRetireExports,
   validateStoreHeld,
 } from '../../gc-helpers.js';
+import { kslot } from '../../../src/lib/kmarshal.js';
 
 // These tests follow the model described in
 // ../virtualObjects/test-virtualObjectGC.js
@@ -98,8 +98,7 @@ test.serial('store lifecycle 2', async t => {
   validateDropHeld(v, rp, '1', 'r');
 
   // lERV -> LERV  Reintroduce the in-memory reference via message
-  const [marg, mslot] = mapRefArg(mainHeldIdx);
-  rp = await dispatchMessage('importAndHold', [marg], [mslot]);
+  rp = await dispatchMessage('importAndHold', kslot(mapRef(mainHeldIdx)));
   validateImportAndHold(v, rp, mainHeldIdx);
 
   // LERV -> lERV  Drop in-memory reference
@@ -282,8 +281,7 @@ test.serial('store lifecycle 7', async t => {
   validateDropHeld(v, rp, NONE, 'r');
 
   // lERv -> LERv  Reintroduce the in-memory reference via message
-  const [marg, mslot] = mapRefArg(mainHeldIdx);
-  rp = await dispatchMessage('importAndHold', [marg], [mslot]);
+  rp = await dispatchMessage('importAndHold', kslot(mapRef(mainHeldIdx)));
   validateImportAndHold(v, rp, mainHeldIdx);
 
   // LERv -> lERv  Drop in-memory reference again, still no GC because exported

@@ -3,10 +3,10 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import bundleSource from '@endo/bundle-source';
-import { parse } from '@endo/marshal';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { buildTimer } from '../../src/devices/timer/timer.js';
+import { kunser } from '../../src/lib/kmarshal.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 
@@ -45,14 +45,14 @@ test('vat-timer upgrade', async t => {
     const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
-    const capdata = c.kpResolution(kpid);
-    t.is(status, 'fulfilled', JSON.stringify([status, capdata]));
-    return capdata;
+    const result = c.kpResolution(kpid);
+    t.is(status, 'fulfilled', JSON.stringify([status, result]));
+    return result;
   };
 
   async function checkEvents(expected) {
     const cd = await run('getEvents');
-    t.deepEqual(parse(cd.body), expected);
+    t.deepEqual(kunser(cd), expected);
   }
 
   // handler-based APIs can survive upgrade
@@ -73,9 +73,9 @@ test('vat-timer upgrade', async t => {
     timer.poll(5n);
     await c.run();
     t.is(c.kpStatus(kpid1), 'fulfilled');
-    t.deepEqual(parse(c.kpResolution(kpid1).body), { value: 5n, done: false });
+    t.deepEqual(kunser(c.kpResolution(kpid1)), { value: 5n, done: false });
     t.is(c.kpStatus(kpid2), 'fulfilled');
-    t.is(parse(c.kpResolution(kpid2).body).value, 5n);
+    t.is(kunser(c.kpResolution(kpid2)).value, 5n);
     // leave them in the inactive state (the iterator's internal
     // updateCount is set), so the next firing should be at 15n
   }
@@ -89,17 +89,17 @@ test('vat-timer upgrade', async t => {
   // check that the Clock and Brand identities are maintained
   {
     const cd = await run('checkClock');
-    t.is(parse(cd.body), true); // identity maintained
+    t.is(kunser(cd), true); // identity maintained
   }
 
   {
     const cd = await run('checkBrand');
-    t.is(parse(cd.body), true);
+    t.is(kunser(cd), true);
   }
 
   {
     const cd = await run('readClock');
-    t.is(parse(cd.body), 5n); // old Clock still functional
+    t.is(kunser(cd), 5n); // old Clock still functional
   }
 
   // check the iterator+notifier before we allow any more time to
@@ -131,12 +131,12 @@ test('vat-timer upgrade', async t => {
   // wakeup-51 (repeaters automatically retrigger, but the iterator
   // and notifier do not)
   t.is(c.kpStatus(iterKPID), 'fulfilled');
-  t.deepEqual(parse(c.kpResolution(iterKPID).body), {
+  t.deepEqual(kunser(c.kpResolution(iterKPID)), {
     value: 15n,
     done: false,
   });
   t.is(c.kpStatus(notifierKPID), 'fulfilled');
-  t.deepEqual(parse(c.kpResolution(notifierKPID).body).value, 15n);
+  t.deepEqual(kunser(c.kpResolution(notifierKPID)).value, 15n);
   await checkEvents([]);
 
   // we advance time to each expected trigger one-at-a-time, rather
@@ -164,7 +164,7 @@ test('vat-timer upgrade', async t => {
     const kpid = c.queueToVatRoot('bootstrap', 'readNotifier', ['a']);
     await c.run();
     t.is(c.kpStatus(kpid), 'fulfilled');
-    const finished = parse(c.kpResolution(kpid).body);
+    const finished = kunser(c.kpResolution(kpid));
     t.deepEqual(finished, { value: 16n, updateCount: undefined });
   }
 
@@ -173,7 +173,7 @@ test('vat-timer upgrade', async t => {
     const kpid = c.queueToVatRoot('bootstrap', 'readIterator', ['a']);
     await c.run();
     t.is(c.kpStatus(kpid), 'fulfilled');
-    const finished = parse(c.kpResolution(kpid).body);
+    const finished = kunser(c.kpResolution(kpid));
     t.deepEqual(finished, { value: 16n, done: true });
   }
 
@@ -187,14 +187,14 @@ test('vat-timer upgrade', async t => {
     const kpid = c.queueToVatRoot('bootstrap', 'readNotifier', ['b']);
     await c.run();
     t.is(c.kpStatus(kpid), 'fulfilled');
-    const finished = parse(c.kpResolution(kpid).body);
+    const finished = kunser(c.kpResolution(kpid));
     t.deepEqual(finished, { value: 51n, updateCount: undefined });
   }
   {
     const kpid = c.queueToVatRoot('bootstrap', 'readIterator', ['b']);
     await c.run();
     t.is(c.kpStatus(kpid), 'fulfilled');
-    const finished = parse(c.kpResolution(kpid).body);
+    const finished = kunser(c.kpResolution(kpid));
     t.deepEqual(finished, { value: 51n, done: true });
   }
 });

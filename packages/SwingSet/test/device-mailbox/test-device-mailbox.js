@@ -14,6 +14,7 @@ import {
   buildMailbox,
 } from '../../src/devices/mailbox/mailbox.js';
 import { bundleOpts } from '../util.js';
+import { kunser } from '../../src/lib/kmarshal.js';
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
@@ -187,14 +188,14 @@ test('mailbox determinism', async t => {
   t.deepEqual(c1a.dump().log, ['comms receive msg1']);
   const kp1 = c1a.queueToVatRoot('bootstrap', 'getNumReceived', []);
   await c1a.run();
-  t.deepEqual(JSON.parse(c1a.kpResolution(kp1).body), 1);
+  t.is(kunser(c1a.kpResolution(kp1)), 1);
 
   t.true(mb2.deliverInbound('peer1', msg1, 0));
   await c2.run();
   t.deepEqual(c2.dump().log, ['comms receive msg1']);
   const kp2 = c2.queueToVatRoot('bootstrap', 'getNumReceived', []);
   await c2.run();
-  t.deepEqual(JSON.parse(c2.kpResolution(kp2).body), 1);
+  t.is(kunser(c2.kpResolution(kp2)), 1);
 
   // both should have the same number of cranks
   t.is(
@@ -219,7 +220,7 @@ test('mailbox determinism', async t => {
   // but vattp dedups, so only one message should be delivered to comms
   const kp3 = c1b.queueToVatRoot('bootstrap', 'getNumReceived', []);
   await c1b.run();
-  t.deepEqual(JSON.parse(c1b.kpResolution(kp3).body), 1);
+  t.is(kunser(c1b.kpResolution(kp3)), 1);
 
   t.true(mb2.deliverInbound('peer1', msg1, 0));
   await c2.run();
@@ -228,7 +229,7 @@ test('mailbox determinism', async t => {
   t.deepEqual(c2.dump().log, ['comms receive msg1']);
   const kp4 = c2.queueToVatRoot('bootstrap', 'getNumReceived', []);
   await c2.run();
-  t.deepEqual(JSON.parse(c2.kpResolution(kp4).body), 1);
+  t.is(kunser(c2.kpResolution(kp4)), 1);
 
   // Both should *still* have the same number of cranks. This is what bug
   // #3471 exposed.
