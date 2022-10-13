@@ -8,12 +8,6 @@
       "parameters": {
         "anchorAssets": [
           {
-            "keyword": "AUSD",
-            "proposedName": "Anchor USD",
-            "decimalPlaces": 6,
-            "denom": "ibc/toyellie"
-          },
-          {
             "keyword": "USDC_axl",
             "proposedName": "USD Coin",
             "decimalPlaces": 6,
@@ -36,6 +30,12 @@
             "proposedName": "Tether USD",
             "decimalPlaces": 6,
             "denom": "ibc/usdt5678"
+          },
+          {
+            "keyword": "AUSD",
+            "proposedName": "Anchor USD",
+            "decimalPlaces": 6,
+            "denom": "ibc/toyellie"
           }
         ],
         "economicCommitteeAddresses": {
