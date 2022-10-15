@@ -5,6 +5,8 @@ import { getKeplrAddress } from './getKeplrAddress';
 import { getChainId } from './getChainId';
 import { watchWallet } from './watchWallet';
 
+// TODO: We need a way to detect the appropriate network-config, and default it
+// to mainnet.
 const DEFAULT_NETWORK_CONFIG = 'https://ollinet.agoric.net/network-config';
 
 export const makeAgoricKeplrConnection = async (

@@ -2,7 +2,13 @@
 import { iterateEach } from '@agoric/casting';
 import { AmountMath } from '@agoric/ertp';
 
-export const followLatest = async ({startingHeight, latestFollower, updatePurses, brandToPurse}) => {
+// TODO: Provide a way for the caller to terminate the follower loop.
+export const followLatest = async ({
+  startingHeight,
+  latestFollower,
+  updatePurses,
+  brandToPurse,
+}) => {
   for await (const { value } of iterateEach(latestFollower, {
     height: startingHeight,
   })) {
