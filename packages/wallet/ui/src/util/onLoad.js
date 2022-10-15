@@ -1,3 +1,7 @@
-export const onLoadP = new Promise(res =>
-  window.addEventListener('load', () => res()),
-);
+export const onLoadP = new Promise(res => {
+  if (document.readyState === 'complete') {
+    res();
+  } else {
+    window.addEventListener('load', () => res());
+  }
+});
