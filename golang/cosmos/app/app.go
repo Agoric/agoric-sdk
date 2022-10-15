@@ -645,7 +645,8 @@ func NewAgoricApp(
 	// NOTE: Capability module must occur first so that it can initialize any capabilities
 	// so that other modules that want to create or claim capabilities afterwards in InitChain
 	// can do so safely.
-	app.mm.SetOrderInitGenesis(
+
+	moduleOrderForGenesisAndUpgrade := []string{
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -670,7 +671,10 @@ func NewAgoricApp(
 		vibc.ModuleName,
 		swingset.ModuleName,
 		lien.ModuleName,
-	)
+	}
+
+	app.mm.SetOrderInitGenesis(moduleOrderForGenesisAndUpgrade...)
+	app.mm.SetOrderMigrations(moduleOrderForGenesisAndUpgrade...)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
@@ -744,9 +748,9 @@ func NewAgoricApp(
 		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
 	}
 
-	if upgradeInfo.Name == upgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+	if (upgradeInfo.Name == upgradeName || upgradeInfo.Name == upgradeNameTest) && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := store.StoreUpgrades{
-			Added: []string{swingsettypes.StoreKey, vbanktypes.StoreKey, vibc.StoreKey, vstorage.StoreKey},
+			Added: []string{swingsettypes.StoreKey, vbanktypes.StoreKey, vibc.StoreKey, vstorage.StoreKey, lien.StoreKey},
 		}
 
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
@@ -767,38 +771,26 @@ func NewAgoricApp(
 	return app
 }
 
-func upgrade8Handler(app *GaiaApp, targetUpgrade string) func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
-	return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
-		//Run migrations first so InitGenesis is called for swingset, vibc, vbank, vstorage, lien
-		vm, err := app.mm.RunMigrations(ctx, app.configurator, vm)
-		if err != nil {
-			return vm, err
-		}
-
-		// Set bean count
-		currentSwingsetParams := app.SwingSetKeeper.GetParams(ctx)
-		ctx.Logger().Info("pre-swingset upgrade", "subspace", swingset.ModuleName, "params", currentSwingsetParams)
-
-		for i := 0; i < len(currentSwingsetParams.BeansPerUnit); i++ {
-			if currentSwingsetParams.BeansPerUnit[i].Key == swingsettypes.BeansPerBlockComputeLimit {
-				currentSwingsetParams.BeansPerUnit[i].Beans = sdk.NewUint(6_500_000_000)
-			}
-		}
-
+func upgrade8Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
+		swingsettypes.DefaultBeansPerBlockComputeLimit = sdk.NewUint(6_500_000_000)
 		// Set bootstrap
 		switch targetUpgrade {
 		case upgradeName:
-			currentSwingsetParams.BootstrapVatConfig = "@agoric/vats/decentral-main-psm-config.json"
+			swingsettypes.DefaultBootstrapVatConfig = "@agoric/vats/decentral-main-psm-config.json"
 		case upgradeNameTest:
-			currentSwingsetParams.BootstrapVatConfig = "@agoric/vats/decentral-test-psm-config.json"
+			swingsettypes.DefaultBootstrapVatConfig = "@agoric/vats/decentral-test-psm-config.json"
 		default:
-			return vm, fmt.Errorf("invalid upgrade name")
+			return fromVm, fmt.Errorf("invalid upgrade name")
 		}
-		ctx.Logger().Info("post-swingset upgrade", "subspace", swingset.ModuleName, "params", currentSwingsetParams)
 
-		app.SwingSetKeeper.SetParams(ctx, currentSwingsetParams)
+		//Run migrations so InitGenesis is called for lien, swingset, vibc, vbank, vstorage
+		fromVm, err := app.mm.RunMigrations(ctx, app.configurator, fromVm)
+		if err != nil {
+			return fromVm, err
+		}
 
-		return vm, err
+		return fromVm, err
 	}
 }
 
@@ -821,7 +813,6 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		return
 	}
 	app.controllerInited = true
-
 	// Begin initializing the controller here.
 	action := &cosmosInitAction{
 		Type:        "AG_COSMOS_INIT",
