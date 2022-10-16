@@ -1,3 +1,5 @@
+export const DAPPS_STORAGE_KEY = 'DAPPS';
+
 /**
  * @param {string} key
  * @param {unknown} value

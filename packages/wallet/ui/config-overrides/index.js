@@ -16,7 +16,7 @@ const multipleEntry = multiEntry([
   },
   {
     template: 'public/bridge.html',
-    entry: 'src/bridge.jsx',
+    entry: 'src/bridge-dapp.jsx',
   },
 ]);
 
