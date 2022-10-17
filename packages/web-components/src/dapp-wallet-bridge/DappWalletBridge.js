@@ -13,11 +13,17 @@ const DEFAULT_LOCATOR_URL =
  * for sending offers to a trusted wallet UI to be inspected and signed.
  */
 export class DappWalletBridge extends LitElement {
+  static get properties() {
+    return { address: { type: String }, chainId: { type: String } };
+  }
+
   constructor() {
     super();
     this.bridgeHref = null;
     this.isBridgeReady = false;
     this.sendMessageToBridge = null;
+    this.chainId = null;
+    this.address = null;
   }
 
   /**
@@ -59,8 +65,11 @@ export class DappWalletBridge extends LitElement {
       detail: {
         addOffer: offerConfig =>
           this.sendMessageToBridge({ type: 'agoric_addOffer', offerConfig }),
-        requestDappConnection: () =>
-          this.sendMessageToBridge({ type: 'agoric_requestDappConnection' }),
+        requestDappConnection: petname =>
+          this.sendMessageToBridge({
+            type: 'agoric_requestDappConnection',
+            petname,
+          }),
         isDappApproved: data.isDappApproved,
       },
     });
@@ -81,7 +90,19 @@ export class DappWalletBridge extends LitElement {
       'agoric_walletBridgeLoaded',
       X`Unexpected bridge message type ${data.type}, expected 'agoric_walletBridgeLoaded'`,
     );
-    send({ type: 'agoric_checkIfDappApproved' });
+    assert.string(
+      this.address,
+      X`Bridge requires an address to connect to the agoric wallet.`,
+    );
+    assert.string(
+      this.chainId,
+      X`Bridge requires a chainId to connect to the agoric wallet.`,
+    );
+    send({
+      type: 'agoric_checkIfDappApproved',
+      address: this.address,
+      chainId: this.chainId,
+    });
     this.sendMessageToBridge = send;
   }
 

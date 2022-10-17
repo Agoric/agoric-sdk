@@ -1,70 +1,58 @@
 import { makeNotifierKit } from '@agoric/notifier';
 import {
-  loadDapps as load,
+  loadDapp as load,
+  loadDapps as loadAll,
   removeDapp as remove,
   upsertDapp as upsert,
+  watchDapps as watch,
 } from '../store/Dapps.js';
 
-/**
- * @param {string} publicAddress
- */
-export const getDappService = publicAddress => {
-  const dapps = new Map();
+export const getDappService = (chainId, address) => {
   const { notifier, updater } = makeNotifierKit();
-  const broadcastUpdates = () => updater.updateState([...dapps.values()]);
+  const broadcastUpdates = dapps => updater.updateState([...dapps.values()]);
 
-  const upsertDapp = dapp => {
-    dapps.set(dapp.origin, dapp);
-    upsert(publicAddress, dapp);
-    broadcastUpdates();
+  const upsertDapp = dapp => upsert(chainId, address, dapp);
+
+  const deleteDapp = (origin, updateDapps) => {
+    remove(chainId, address, origin);
+    updateDapps();
   };
 
-  const deleteDapp = origin => {
-    dapps.delete(origin);
-    remove(publicAddress, origin);
-    broadcastUpdates();
-  };
-
-  const setDappPetname = (origin, petname) => {
-    const dapp = dapps.get(origin);
+  const setDappPetname = (origin, petname, updateDapps) => {
+    const dapp = load(chainId, address, origin);
     assert(dapp, `Tried to set petname on undefined dapp ${origin}`);
     upsertDapp({ ...dapp, petname });
+    updateDapps();
   };
 
-  const enableDapp = origin => {
-    const dapp = dapps.get(origin);
+  const enableDapp = (origin, updateDapps) => {
+    const dapp = load(chainId, address, origin);
     assert(dapp, `Tried to enable undefined dapp ${origin}`);
-    upsertDapp({ ...dapp, enable: true });
+    upsertDapp({ ...dapp, isEnabled: true });
+    updateDapps();
   };
 
-  const storedDapps = load(publicAddress);
-  storedDapps.forEach(d => {
-    let enableAction;
-    const approvedP = new Promise(res => {
-      enableAction = () => {
-        enableDapp(d.origin);
-        res();
-      };
+  const updateDapps = () => {
+    console.log('update dapps');
+    const dapps = new Map();
+    const storedDapps = loadAll(chainId, address);
+    storedDapps.forEach(d => {
+      dapps.set(d.origin, {
+        ...d,
+        actions: {
+          enable: () => enableDapp(d.origin, updateDapps),
+          setPetname: petname => setDappPetname(d.origin, petname, updateDapps),
+          delete: () => deleteDapp(d.origin, updateDapps),
+        },
+      });
     });
+    broadcastUpdates(dapps);
+  };
 
-    dapps.set(d.origin, {
-      ...d,
-      approvedP,
-      actions: {
-        enable: enableAction,
-        setPetname: petname => setDappPetname(d.origin, petname),
-        delete: () => deleteDapp(d.origin),
-      },
-    });
-
-    if (d.enable) {
-      enableAction();
-    }
-  });
-  broadcastUpdates();
+  watch(chainId, address, updateDapps);
+  updateDapps();
 
   return {
-    dapps,
     notifier,
     addDapp: upsertDapp,
     setDappPetname,

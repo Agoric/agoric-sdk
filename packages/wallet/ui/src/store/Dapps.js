@@ -1,27 +1,36 @@
-import { maybeLoad, maybeSave } from '../util/storage.js';
+import {
+  maybeLoad,
+  maybeSave,
+  watchKey,
+  DAPPS_STORAGE_KEY,
+} from '../util/storage.js';
 
-const DAPPS_KEY_PREFIX = 'DAPPS';
+export const loadDapps = (chainId, address) =>
+  maybeLoad(JSON.stringify([DAPPS_STORAGE_KEY, chainId, address])) ?? [];
 
-export const loadDapps = publicAddress =>
-  maybeLoad([DAPPS_KEY_PREFIX, publicAddress]) ?? [];
+export const loadDapp = (chainId, address, origin) =>
+  loadDapps(chainId, address).find(d => d.origin === origin) ?? [];
 
-export const upsertDapp = (publicAddress, dapp) => {
-  const { origin, enable, petname } = dapp;
+export const upsertDapp = (chainId, address, dapp) => {
+  const { origin, isEnabled, petname } = dapp;
 
-  const dapps = loadDapps(publicAddress) ?? [];
+  const dapps = loadDapps(chainId, address);
+  maybeSave(JSON.stringify([DAPPS_STORAGE_KEY, chainId, address]), [
+    ...dapps.filter(d => d.origin !== origin),
+    { origin, isEnabled, petname },
+  ]);
+};
+
+export const removeDapp = (chainId, address, origin) => {
+  const dapps = loadDapps();
   maybeSave(
-    [DAPPS_KEY_PREFIX, publicAddress],
-    [
-      ...dapps.filter(d => d.origin !== origin),
-      { origin, enable, petname, id: origin, meta: { id: origin } },
-    ],
+    JSON.stringify([DAPPS_STORAGE_KEY, chainId, address]),
+    dapps.filter(d => d.origin !== origin),
   );
 };
 
-export const removeDapp = (publicAddress, origin) => {
-  const dapps = loadDapps(publicAddress) ?? [];
-  maybeSave(
-    [DAPPS_KEY_PREFIX, publicAddress],
-    dapps.filter(d => d.origin !== origin),
+export const watchDapps = (chainId, address, onChange) => {
+  watchKey(JSON.stringify([DAPPS_STORAGE_KEY, chainId, address]), newDapps =>
+    onChange(newDapps ?? []),
   );
 };

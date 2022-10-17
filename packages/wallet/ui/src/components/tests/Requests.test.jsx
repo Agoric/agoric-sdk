@@ -44,8 +44,8 @@ const offers = [
 ];
 
 const dapps = [
-  { enable: false, id: 2 },
-  { enable: true, id: 5 },
+  { isEnabled: false, id: 2 },
+  { isEnabled: true, id: 5 },
 ];
 
 const payments = [

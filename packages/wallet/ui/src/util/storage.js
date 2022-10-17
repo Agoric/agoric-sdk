@@ -1,3 +1,4 @@
+// @ts-check
 export const DAPPS_STORAGE_KEY = 'DAPPS';
 
 /**
@@ -10,6 +11,9 @@ export const maybeSave = (key, value) => {
   }
 };
 
+/**
+ * @param {string} key
+ */
 export const maybeLoad = key => {
   if (window?.localStorage) {
     try {
@@ -23,4 +27,20 @@ export const maybeLoad = key => {
     }
   }
   return undefined;
+};
+
+export const watchKey = (key, onValueChange) => {
+  window.addEventListener('storage', ev => {
+    console.log('storage event happened!');
+    if (!ev.key === key) return;
+
+    try {
+      const json = ev.newValue;
+      if (json) {
+        onValueChange(JSON.parse(json));
+      }
+    } catch (e) {
+      console.error('Error parsing storage event', ev);
+    }
+  });
 };

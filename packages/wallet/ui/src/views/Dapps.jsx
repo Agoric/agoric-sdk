@@ -14,7 +14,7 @@ import './Dapps.scss';
 
 // Exported for testing only.
 export const DappsWithoutContext = ({ dapps }) => {
-  dapps = dapps?.filter(({ enable }) => enable);
+  dapps = dapps?.filter(({ isEnabled }) => isEnabled);
 
   const remove = ({ actions }) => E(actions).delete();
 

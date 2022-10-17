@@ -4,7 +4,7 @@ import { E } from '@endo/eventual-send';
 import { withApplicationContext } from '../contexts/Application';
 
 const DappWithoutContext = ({ dapp, dapps }) => {
-  const { petname, origin, dappOrigin, enable, actions } = dapp;
+  const { petname, origin, dappOrigin, isEnabled, actions } = dapp;
   const [dappPetname, setDappPetname] = useState(petname);
   const [isValid, setIsValid] = useState(true);
 
@@ -35,7 +35,7 @@ const DappWithoutContext = ({ dapp, dapps }) => {
         <span>{petname}</span>{' '}
       </div>
       <div className="text-gray">
-        {enable ? 'User' : 'Alleged user'} interface:{' '}
+        {isEnabled ? 'User' : 'Alleged user'} interface:{' '}
         <span className="Blue">{dappOrigin || origin}</span>
       </div>
       <div style={{ height: '64px' }}>

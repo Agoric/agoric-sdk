@@ -96,6 +96,7 @@ const SmartWalletConnection = ({
           unserializer: context.fromMyWallet,
         });
       const bridge = makeWalletBridgeFromFollowers(
+        keplrConnection.chainId,
         followPublished(`wallet.${publicAddress}.current`),
         followPublished(`wallet.${publicAddress}`),
         leader,

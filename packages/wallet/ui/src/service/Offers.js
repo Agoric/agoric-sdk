@@ -9,11 +9,13 @@ import {
 } from '../store/Offers.js';
 
 /**
+ * @param {string} chainId
  * @param {string} publicAddress
  * @param {(data: string) => Promise<any>} signSpendAction
  * @param {Notifier<any>} chainOffersNotifier
  */
 export const getOfferService = (
+  chainId,
   publicAddress,
   signSpendAction,
   chainOffersNotifier,

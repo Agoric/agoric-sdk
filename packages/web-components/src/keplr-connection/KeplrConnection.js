@@ -20,7 +20,8 @@ export const makeAgoricKeplrConnection = async (
   const walletNotifiers = await watchWallet(leader, address, context);
 
   return {
-    getAddress: () => address,
+    address,
+    chainId,
     unserializer: context.fromBoard,
     leader,
     ...walletNotifiers,

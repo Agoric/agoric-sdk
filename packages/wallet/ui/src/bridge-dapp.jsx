@@ -40,24 +40,37 @@ const checkParentWindow = () => {
  * offers if accepted.
  *
  * @param {string} origin
+ * @param {string} chainId
+ * @param {string} address
+ * @param {string} proposedPetname
  */
-const requestDappConnection = origin => {
+const requestDappConnection = (origin, chainId, address, proposedPetname) => {
   /** @type {any[]} */
-  const dapps = maybeLoad(DAPPS_STORAGE_KEY) ?? [];
+  const dapps =
+    maybeLoad(JSON.stringify([DAPPS_STORAGE_KEY, chainId, address])) ?? [];
   const dapp = dapps.find(d => d.origin === origin);
   if (dapp) {
     return;
   }
-  dapps.push({ origin });
-  maybeSave(DAPPS_STORAGE_KEY, dapps);
+  dapps.push({ origin, petname: proposedPetname });
+  maybeSave(JSON.stringify([DAPPS_STORAGE_KEY, chainId, address]), dapps);
 };
 
-const watchDappApproval = (origin, latestValue) => {
+/**
+ * Watches for changes in local storage to the dapp's approval status and
+ * notifies the dapp.
+ *
+ * @param {string} origin
+ * @param {string} chainId
+ * @param {string} address
+ * @param {boolean} latestValue
+ */
+const watchDappApproval = (origin, chainId, address, latestValue) => {
   window.addEventListener('storage', ev => {
-    if (ev.key === DAPPS_STORAGE_KEY) {
+    if (ev.key === JSON.stringify([DAPPS_STORAGE_KEY, chainId, address])) {
       const dapps = JSON.parse(ev.newValue ?? '') ?? [];
       const dapp = dapps.find(d => d.origin === origin);
-      const isDappApproved = dapp && dapp.isApproved;
+      const isDappApproved = dapp && dapp.isEnabled;
       if (isDappApproved !== latestValue) {
         sendMessage({
           type: BridgeProtocol.dappApprovalChanged,
@@ -69,20 +82,33 @@ const watchDappApproval = (origin, latestValue) => {
   });
 };
 
-const checkIfDappApproved = origin => {
-  const dapps = maybeLoad(DAPPS_STORAGE_KEY) ?? [];
+/**
+ * Notifies the dapp about whether it's approved or not and watches for changes
+ * to its approval status.
+ *
+ * @param {string} origin
+ * @param {string} chainId
+ * @param {string} address
+ */
+const checkIfDappApproved = (origin, chainId, address) => {
+  const dapps =
+    maybeLoad(JSON.stringify([DAPPS_STORAGE_KEY, chainId, address])) ?? [];
   const dapp = dapps.find(d => d.origin === origin);
-  const isDappApproved = dapp && dapp.isApproved;
+  const isDappApproved = dapp && dapp.isEnabled;
   sendMessage({
     type: BridgeProtocol.checkIfDappApproved,
     isDappApproved,
   });
-  watchDappApproval(origin, isDappApproved);
+  watchDappApproval(origin, chainId, address, isDappApproved);
 };
 
 const handleIncomingMessages = () => {
   /** @type { string } */
   let origin;
+  /** @type { string } */
+  let address;
+  /** @type { string } */
+  let chainId;
 
   window.addEventListener('message', ev => {
     const type = ev.data?.type;
@@ -91,15 +117,25 @@ const handleIncomingMessages = () => {
     }
     if (origin === undefined) {
       origin = ev.origin;
-      console.log('bridge connected with dapp origin', origin);
+      address = ev.data?.address;
+      chainId = ev.data?.chainId;
+      assert.string(
+        address,
+        'First message from dapp should include an address',
+      );
+      assert.string(
+        chainId,
+        'First message from dapp should include a chainId',
+      );
+      console.debug('bridge connected with dapp origin', origin);
     }
 
     switch (type) {
       case BridgeProtocol.requestDappConnection:
-        requestDappConnection(ev.origin);
+        requestDappConnection(origin, chainId, address, ev.data?.petname);
         break;
       case BridgeProtocol.checkIfDappApproved:
-        checkIfDappApproved(ev.origin);
+        checkIfDappApproved(origin, chainId, address);
         break;
       default:
         break;

@@ -23,7 +23,7 @@ const RequestsInternal = ({
       p => p.brand === payment.brand && (p.depositBoardId || '').length,
     ).length;
 
-  const isDisabled = dapp => !dapp.enable;
+  const isDisabled = dapp => !dapp.isEnabled;
 
   payments = ((purses && payments) || [])
     .filter(hasNoAutodeposit)
