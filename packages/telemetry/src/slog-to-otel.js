@@ -82,6 +82,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
   let currentAttrs = {};
 
   let isReplaying = false;
+  let currentBlockHeight = -1;
 
   const cleanAttrs = attrs => ({
     ...serializeInto(attrs, 'agoric'),
@@ -378,13 +379,13 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
   let finished = false;
   const finish = () => {
     finished = true;
-    spans.endAll(now);
     let top = spans.top();
     while (top) {
       top.end(now);
       spans.pop();
       top = spans.top();
     }
+    spans.endAll(now);
   };
 
   const getCrankKey = create => {
@@ -413,11 +414,14 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
     // console.log('slogging', obj);
     switch (slogType) {
       case 'kernel-init-start': {
+        assert(!spans.top());
+        dbTransactionManager.begin();
         spans.push('init');
         break;
       }
       case 'kernel-init-finish': {
         spans.pop('init');
+        dbTransactionManager.end();
         break;
       }
       case 'bundle-kernel-start': {
@@ -812,12 +816,16 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'cosmic-swingset-begin-block': {
-        dbTransactionManager.begin();
         if (spans.topKind() === 'intra-block') {
           spans.pop('intra-block');
           spans.pop('block');
         }
+        if (currentBlockHeight > 0) {
+          dbTransactionManager.end();
+        }
         assert(!spans.top());
+        dbTransactionManager.begin();
+        currentBlockHeight = slogAttrs.blockHeight;
 
         // TODO: Move the encompassing `block` root span to cosmos
         spans.push(['block', slogAttrs.blockHeight]);
@@ -836,8 +844,12 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       }
       case 'cosmic-swingset-after-commit-block': {
         // Add the event to whatever the current top span is (most likely intra-block)
+        // TODO: add as a span of the block
         spans.top()?.addEvent('after-commit', cleanAttrs(slogAttrs), now);
-        dbTransactionManager.end();
+        if (currentBlockHeight === slogAttrs.blockHeight) {
+          dbTransactionManager.end();
+          currentBlockHeight = -1;
+        }
         break;
       }
       case 'cosmic-swingset-deliver-inbound': {
