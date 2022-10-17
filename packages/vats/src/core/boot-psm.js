@@ -1,4 +1,5 @@
 // @ts-check
+/** @file Boot script for PSM-only (aka Pismo) chain */
 import { Far } from '@endo/far';
 import {
   installGovAndPSMContracts,
@@ -59,6 +60,9 @@ export const agoricNamesReserved = harden(
       [Stake.symbol]: Stake.proposedName,
       [Stable.symbol]: Stable.proposedName,
       AUSD: 'Agoric bridged USDC',
+    },
+    oracleBrand: {
+      USD: 'US Dollar',
     },
     installation: {
       centralSupply: 'central supply',
