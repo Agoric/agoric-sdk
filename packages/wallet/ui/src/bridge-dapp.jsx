@@ -57,7 +57,6 @@ const requestDappConnection = (origin, chainId, address, proposedPetname) => {
  */
 const watchDappApproval = (origin, chainId, address, latestValue) => {
   watchDapps(chainId, address, dapps => {
-    console.log('something happened!!!', dapps);
     const dapp = dapps.find(d => d.origin === origin);
     const isDappApproved = dapp && dapp.isEnabled;
     if (isDappApproved !== latestValue) {
@@ -71,6 +70,10 @@ const watchDappApproval = (origin, chainId, address, latestValue) => {
 };
 
 const createAndAddOffer = (origin, chainId, address, config) => {
+  const dapp = loadDapp(chainId, address, origin);
+  const isDappApproved = dapp && dapp.isEnabled;
+  if (!isDappApproved) return;
+
   const currentTime = new Date().getTime();
   const id = currentTime;
 
