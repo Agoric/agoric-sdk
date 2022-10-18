@@ -4,17 +4,11 @@ import './lockdown.js';
 
 import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { maybeLoad, maybeSave, DAPPS_STORAGE_KEY } from './util/storage.js';
+import { BridgeProtocol } from '@agoric/web-components';
+import { addOffer } from './store/Offers.js';
+import { loadDapp, upsertDapp, watchDapps } from './store/Dapps.js';
 
 Error.stackTraceLimit = Infinity;
-
-const BridgeProtocol = /** @type {const} */ ({
-  loaded: 'agoric_walletBridgeLoaded',
-  requestDappConnection: 'agoric_requestDappConnection',
-  checkIfDappApproved: 'agoric_checkIfDappApproved',
-  dappApprovalChanged: 'agoric_dappApprovalChanged',
-  addOffer: 'agoric_addOffer',
-});
 
 /**
  * Sends a message to the dapp in the parent window.
@@ -45,15 +39,11 @@ const checkParentWindow = () => {
  * @param {string} proposedPetname
  */
 const requestDappConnection = (origin, chainId, address, proposedPetname) => {
-  /** @type {any[]} */
-  const dapps =
-    maybeLoad(JSON.stringify([DAPPS_STORAGE_KEY, chainId, address])) ?? [];
-  const dapp = dapps.find(d => d.origin === origin);
+  const dapp = loadDapp(chainId, address, origin);
   if (dapp) {
     return;
   }
-  dapps.push({ origin, petname: proposedPetname });
-  maybeSave(JSON.stringify([DAPPS_STORAGE_KEY, chainId, address]), dapps);
+  upsertDapp(chainId, address, { origin, petname: proposedPetname });
 };
 
 /**
@@ -66,20 +56,36 @@ const requestDappConnection = (origin, chainId, address, proposedPetname) => {
  * @param {boolean} latestValue
  */
 const watchDappApproval = (origin, chainId, address, latestValue) => {
-  window.addEventListener('storage', ev => {
-    if (ev.key === JSON.stringify([DAPPS_STORAGE_KEY, chainId, address])) {
-      const dapps = JSON.parse(ev.newValue ?? '') ?? [];
-      const dapp = dapps.find(d => d.origin === origin);
-      const isDappApproved = dapp && dapp.isEnabled;
-      if (isDappApproved !== latestValue) {
-        sendMessage({
-          type: BridgeProtocol.dappApprovalChanged,
-          isDappApproved,
-        });
-        latestValue = isDappApproved;
-      }
+  watchDapps(chainId, address, dapps => {
+    console.log('something happened!!!', dapps);
+    const dapp = dapps.find(d => d.origin === origin);
+    const isDappApproved = dapp && dapp.isEnabled;
+    if (isDappApproved !== latestValue) {
+      sendMessage({
+        type: BridgeProtocol.dappApprovalChanged,
+        isDappApproved,
+      });
+      latestValue = isDappApproved;
     }
   });
+};
+
+const createAndAddOffer = (origin, chainId, address, config) => {
+  const currentTime = new Date().getTime();
+  const id = currentTime;
+
+  const offer = {
+    id,
+    instancePetname: `instance@${config.instanceHandleBoardId}`,
+    requestContext: { origin },
+    meta: {
+      id,
+      creationStamp: currentTime,
+    },
+    status: 'proposed',
+    ...config,
+  };
+  addOffer(chainId, address, offer);
 };
 
 /**
@@ -91,9 +97,7 @@ const watchDappApproval = (origin, chainId, address, latestValue) => {
  * @param {string} address
  */
 const checkIfDappApproved = (origin, chainId, address) => {
-  const dapps =
-    maybeLoad(JSON.stringify([DAPPS_STORAGE_KEY, chainId, address])) ?? [];
-  const dapp = dapps.find(d => d.origin === origin);
+  const dapp = loadDapp(chainId, address, origin);
   const isDappApproved = dapp && dapp.isEnabled;
   sendMessage({
     type: BridgeProtocol.checkIfDappApproved,
@@ -136,6 +140,9 @@ const handleIncomingMessages = () => {
         break;
       case BridgeProtocol.checkIfDappApproved:
         checkIfDappApproved(origin, chainId, address);
+        break;
+      case BridgeProtocol.addOffer:
+        createAndAddOffer(origin, chainId, address, ev.data?.offerConfig);
         break;
       default:
         break;

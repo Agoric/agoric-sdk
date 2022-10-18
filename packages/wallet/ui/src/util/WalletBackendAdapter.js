@@ -50,12 +50,12 @@ export const makeBackendFromWalletBridge = walletBridge => {
               harden({
                 id,
                 ...rest,
-                actions: Far('offerActions', {
+                actions: {
                   // Provide these synthetic actions since offers don't have any yet.
                   accept: () => E(walletBridge).acceptOffer(id),
                   decline: () => E(walletBridge).declineOffer(id),
                   cancel: () => E(walletBridge).cancelOffer(id),
-                }),
+                },
               }),
             ),
         });
@@ -106,25 +106,21 @@ export const makeBackendFromWalletBridge = walletBridge => {
 
 /**
  * @param {string} chainId
+ * @param {ReturnType<import('@endo/marshal').makeMarshal>} marshaller
  * @param {import('@agoric/casting').ValueFollower<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord>} currentFollower
  * @param {import('@agoric/casting').ValueFollower<import('@agoric/smart-wallet/src/smartWallet').UpdateRecord>} updateFollower
- * @param {import('@agoric/casting').Leader} leader
- * @param {ReturnType<import('@endo/marshal').makeMarshal>} marshaller
  * @param {string} publicAddress
  * @param {object} keplrConnection
- * @param {string} networkConfig
  * @param {(e: unknown) => void} [errorHandler]
  * @param {() => void} [firstCallback]
  */
 export const makeWalletBridgeFromFollowers = (
   chainId,
+  marshaller,
   currentFollower,
   updateFollower,
-  leader,
-  marshaller,
   publicAddress,
   keplrConnection,
-  networkConfig,
   errorHandler = e => {
     // Make an unhandled rejection.
     throw e;
@@ -147,9 +143,6 @@ export const makeWalletBridgeFromFollowers = (
     ]),
   );
 
-  // We assume just one cosmos purse per brand.
-  /** @type {Record<number, import('@agoric/smart-wallet/src/offers.js').OfferStatus & {status: 'accept' | 'rejected'}>} */
-  const offers = {};
   /**
    * @typedef {{
    *  brand?: Brand,
@@ -176,6 +169,33 @@ export const makeWalletBridgeFromFollowers = (
     notifierKits.purses.updater.updateState(harden(purses));
   };
 
+  const signSpendAction = async data => {
+    const {
+      signers: { interactiveSigner },
+    } = keplrConnection;
+    if (!interactiveSigner) {
+      throw new Error(
+        'Cannot sign a transaction in read only mode, connect to keplr.',
+      );
+    }
+    return interactiveSigner.submitSpendAction(data);
+  };
+
+  const getNotifierMethods = Object.fromEntries(
+    Object.entries(notifiers).map(([method, stateName]) => {
+      const { notifier } = notifierKits[stateName];
+      return [method, () => notifier];
+    }),
+  );
+
+  const offerService = getOfferService(
+    chainId,
+    publicAddress,
+    signSpendAction,
+    getNotifierMethods.getOffersNotifier(),
+    marshaller,
+  );
+
   const fetchCurrent = async () => {
     await assertHasData(currentFollower);
     const latestIterable = await E(currentFollower).getLatestIterable();
@@ -191,6 +211,7 @@ export const makeWalletBridgeFromFollowers = (
     /** @type {import('@agoric/casting').ValueFollowerElement<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord>} */
     const currentEl = latest.value;
     const wallet = currentEl.value;
+    console.log('wallet current', wallet);
     for (const purse of wallet.purses) {
       console.debug('registering purse', purse);
       const brandDescriptor = wallet.brands.find(
@@ -209,6 +230,7 @@ export const makeWalletBridgeFromFollowers = (
     }
     console.debug('brandToPurse map', brandToPurse);
     updatePurses();
+    offerService.start(pursePetnameToBrand);
     return currentEl.blockHeight;
   };
 
@@ -250,32 +272,7 @@ export const makeWalletBridgeFromFollowers = (
         }
         case 'offerStatus': {
           const { status } = updateRecord;
-          console.log('offerStatus', { status, offers });
-          const oldOffer = offers[status.id];
-          if (!oldOffer) {
-            console.warn('Update for unknown offer, doing nothing.');
-            break;
-          }
-          if ('error' in status) {
-            offers[status.id] = {
-              ...oldOffer,
-              id: status.id,
-              status: 'rejected',
-              error: `${status.error}`,
-            };
-          } else if (
-            oldOffer.status !== 'accept' &&
-            'numWantsSatisfied' in status
-          ) {
-            offers[status.id] = {
-              ...oldOffer,
-              id: status.id,
-              status: 'accept',
-            };
-          }
-          notifierKits.offers.updater.updateState(
-            harden(Object.values(offers)),
-          );
+          notifierKits.offers.updater.updateState(status);
           break;
         }
         default: {
@@ -305,13 +302,6 @@ export const makeWalletBridgeFromFollowers = (
     }
   });
 
-  const getNotifierMethods = Object.fromEntries(
-    Object.entries(notifiers).map(([method, stateName]) => {
-      const { notifier } = notifierKits[stateName];
-      return [method, () => notifier];
-    }),
-  );
-
   const makeEmptyPurse = () => {
     console.log('make empty purse');
   };
@@ -324,26 +314,8 @@ export const makeWalletBridgeFromFollowers = (
     console.log('add issuer');
   };
 
-  const signSpendAction = data => {
-    const {
-      signers: { interactiveSigner },
-    } = keplrConnection;
-    if (!interactiveSigner) {
-      throw new Error(
-        'Cannot sign a transaction in read only mode, connect to keplr.',
-      );
-    }
-    return interactiveSigner.submitSpendAction(data);
-  };
-
   const issuerService = getIssuerService(signSpendAction);
   const dappService = getDappService(chainId, publicAddress);
-  const offerService = getOfferService(
-    chainId,
-    publicAddress,
-    signSpendAction,
-    getNotifierMethods.getOffersNotifier(),
-  );
   const { acceptOffer, declineOffer, cancelOffer } = offerService;
 
   const walletBridge = Far('follower wallet bridge', {

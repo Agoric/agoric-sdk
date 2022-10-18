@@ -8,6 +8,14 @@ import { assert, details as X } from '@agoric/assert';
 const DEFAULT_LOCATOR_URL =
   'https://wallet.agoric.app/locator/?append=/wallet/bridge.html';
 
+export const BridgeProtocol = /** @type {const} */ ({
+  loaded: 'agoric_walletBridgeLoaded',
+  requestDappConnection: 'agoric_requestDappConnection',
+  checkIfDappApproved: 'agoric_checkIfDappApproved',
+  dappApprovalChanged: 'agoric_dappApprovalChanged',
+  addOffer: 'agoric_addOffer',
+});
+
 /**
  * Web component for connecting to the Agoric Smart Wallet bridge. Mainly used
  * for sending offers to a trusted wallet UI to be inspected and signed.
@@ -64,10 +72,13 @@ export class DappWalletBridge extends LitElement {
     const ev = new CustomEvent('bridgeReady', {
       detail: {
         addOffer: offerConfig =>
-          this.sendMessageToBridge({ type: 'agoric_addOffer', offerConfig }),
+          this.sendMessageToBridge({
+            type: BridgeProtocol.addOffer,
+            offerConfig,
+          }),
         requestDappConnection: petname =>
           this.sendMessageToBridge({
-            type: 'agoric_requestDappConnection',
+            type: BridgeProtocol.requestDappConnection,
             petname,
           }),
         isDappApproved: data.isDappApproved,
@@ -87,8 +98,8 @@ export class DappWalletBridge extends LitElement {
     const { data, send } = ev.detail;
     assert.equal(
       data.type,
-      'agoric_walletBridgeLoaded',
-      X`Unexpected bridge message type ${data.type}, expected 'agoric_walletBridgeLoaded'`,
+      BridgeProtocol.loaded,
+      X`Unexpected bridge message type ${data.type}, expected ${BridgeProtocol.loaded}`,
     );
     assert.string(
       this.address,
@@ -99,7 +110,7 @@ export class DappWalletBridge extends LitElement {
       X`Bridge requires a chainId to connect to the agoric wallet.`,
     );
     send({
-      type: 'agoric_checkIfDappApproved',
+      type: BridgeProtocol.checkIfDappApproved,
       address: this.address,
       chainId: this.chainId,
     });
@@ -138,7 +149,7 @@ export class DappWalletBridge extends LitElement {
     }
 
     switch (ev.detail.data.type) {
-      case 'agoric_checkIfDappApproved':
+      case BridgeProtocol.checkIfDappApproved:
         this.onCheckIfDappApprovedMessage(ev);
         break;
       default:
@@ -167,7 +178,6 @@ export class DappWalletBridge extends LitElement {
         @error=${this.onError}
       ></agoric-iframe-messenger>`;
     }
-    console.log('backend', backend);
 
     return html`<div>${backend}</div>`;
   }

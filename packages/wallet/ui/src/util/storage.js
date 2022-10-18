@@ -1,5 +1,8 @@
 // @ts-check
+
 export const DAPPS_STORAGE_KEY = 'DAPPS';
+
+export const OFFERS_STORAGE_KEY = 'OFFERS';
 
 /**
  * @param {string} key
@@ -7,7 +10,7 @@ export const DAPPS_STORAGE_KEY = 'DAPPS';
  */
 export const maybeSave = (key, value) => {
   if (window?.localStorage) {
-    window.localStorage.setItem(key, JSON.stringify(value));
+    window.localStorage.setItem(JSON.stringify(key), JSON.stringify(value));
   }
 };
 
@@ -17,7 +20,7 @@ export const maybeSave = (key, value) => {
 export const maybeLoad = key => {
   if (window?.localStorage) {
     try {
-      const json = window.localStorage.getItem(key);
+      const json = window.localStorage.getItem(JSON.stringify(key));
       if (json) {
         return JSON.parse(json);
       }
@@ -31,8 +34,7 @@ export const maybeLoad = key => {
 
 export const watchKey = (key, onValueChange) => {
   window.addEventListener('storage', ev => {
-    console.log('storage event happened!');
-    if (!ev.key === key) return;
+    if (ev.key !== JSON.stringify(key)) return;
 
     try {
       const json = ev.newValue;

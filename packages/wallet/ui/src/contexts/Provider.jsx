@@ -40,14 +40,18 @@ const kv = (keyObj, val) => {
   return { ...val, ...keyObj, id: id ?? text, text, value: val };
 };
 
-const inboxReducer = (_, newInbox) =>
-  newInbox
-    ?.map(tx => ({
-      ...tx,
-      offerId: tx.id,
-      id: tx.meta.id,
-    }))
-    .sort((a, b) => a.id - b.id) || null;
+const inboxReducer = (_, newInbox) => {
+  console.log('got inbox', newInbox);
+  return (
+    newInbox
+      ?.map(tx => ({
+        ...tx,
+        offerId: tx.id,
+        id: tx.meta.id,
+      }))
+      .sort((a, b) => a.id - b.id) || null
+  );
+};
 
 const pursesReducer = (_, newPurses) =>
   newPurses

@@ -8,7 +8,7 @@ import { watchWallet } from './watchWallet';
 // TODO: We need a way to detect the appropriate network-config, and default it
 // to mainnet.
 const DEFAULT_NETWORK_CONFIG = 'https://ollinet.agoric.net/network-config';
-
+const LOCALHOST_NETWORK_CONFIG = 'http://localhost:3000/wallet/network-config';
 export const makeAgoricKeplrConnection = async (
   networkConfig = DEFAULT_NETWORK_CONFIG,
 ) => {

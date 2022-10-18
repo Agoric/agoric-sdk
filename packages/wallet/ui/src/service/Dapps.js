@@ -33,7 +33,6 @@ export const getDappService = (chainId, address) => {
   };
 
   const updateDapps = () => {
-    console.log('update dapps');
     const dapps = new Map();
     const storedDapps = loadAll(chainId, address);
     storedDapps.forEach(d => {
