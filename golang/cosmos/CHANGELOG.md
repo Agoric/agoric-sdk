@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.32.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.32.1...@agoric/cosmos@0.32.2) (2022-10-18)
+
+
+### Bug Fixes
+
+* actually run the upgrade handler for test ([142b769](https://github.com/Agoric/agoric-sdk/commit/142b7696061e724c5bf25c627b1356610dc5fa75))
+* allow test flag for update ([237c56e](https://github.com/Agoric/agoric-sdk/commit/237c56edbf9de28d6947d8f6e482aa554aae02f9))
+* init in the right order ([3050d11](https://github.com/Agoric/agoric-sdk/commit/3050d11a9bff53251d9fb7ccfea7cb713fd14ca8))
+* use fromVM instead of vm since vm is an import ([131f0db](https://github.com/Agoric/agoric-sdk/commit/131f0db9dfcd46aa04ce7e0b5115fc3735a175fd))
+
+
+
 ### [0.32.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.32.0...@agoric/cosmos@0.32.1) (2022-10-08)
 
 

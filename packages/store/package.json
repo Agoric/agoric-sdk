@@ -1,6 +1,6 @@
 {
   "name": "@agoric/store",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "description": "Wrapper for JavaScript map",
   "type": "module",
   "main": "src/index.js",
@@ -37,7 +37,7 @@
     "@endo/promise-kit": "^0.2.49"
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.30.1",
+    "@agoric/swingset-vat": "^0.30.2",
     "@fast-check/ava": "^1.0.1",
     "ava": "^4.3.1"
   },
