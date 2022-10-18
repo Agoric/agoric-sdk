@@ -31,6 +31,9 @@ import {
   parseRatio,
 } from '../../../src/contractSupport/ratio.js';
 
+// eslint-disable-next-line no-unused-vars -- type import
+import { start } from '../../../src/contracts/oracle.js';
+
 /**
  * @callback MakeFakePriceOracle
  * @param {bigint} [valueOut]
@@ -97,6 +100,7 @@ test.before('setup aggregator and oracles', async t => {
   // else, and they can use it to create a new contract instance
   // using the same code.
   vatAdminState.installBundle('b1-oracle', oracleBundle);
+  /** @type {Installation<import('../../../src/contracts/oracle.js').OracleStart>} */
   const oracleInstallation = await E(zoe).installBundleID('b1-oracle');
   vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
   const aggregatorInstallation = await E(zoe).installBundleID('b1-aggregator');
@@ -125,7 +129,6 @@ test.before('setup aggregator and oracles', async t => {
       onReply(_query, _reply) {},
     });
 
-    /** @type {OracleStartFnResult} */
     const startResult = await E(zoe).startInstance(
       oracleInstallation,
       { Fee: link.issuer },

@@ -477,7 +477,7 @@ const start = async (zcf, privateArgs) => {
       await updateQuote(deletedNow);
     },
     /**
-     * @param {Instance | string} [oracleInstance]
+     * @param {Instance<import('./oracle.js').OracleStart> | string} [oracleInstance]
      * @param {OracleQuery} [query]
      * @returns {Promise<OracleAdmin>}
      */

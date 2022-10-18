@@ -147,7 +147,6 @@ export const createPriceFeed = async (
       unitAmountIn,
     }),
   );
-  terms.absent;
 
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = E(board).getReadonlyMarshaller();

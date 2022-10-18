@@ -64,13 +64,6 @@
  */
 
 /**
- * @typedef {object} OracleStartFnResult
- * @property {OracleInitializationFacet} creatorFacet
- * @property {OraclePublicFacet} publicFacet
- * @property {Instance} instance
- */
-
-/**
  * @typedef {object} OracleKit
  * @property {OracleCreatorFacet} creatorFacet
  * @property {OraclePublicFacet} publicFacet
@@ -79,7 +72,7 @@
 
 /**
  * @typedef {object} OracleReply
- * @property {any} reply
+ * @property {unknown} reply
  * @property {Amount} [requiredFee]
  */
 
