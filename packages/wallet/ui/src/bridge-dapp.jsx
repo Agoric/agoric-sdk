@@ -7,8 +7,13 @@ import ReactDOM from 'react-dom';
 import { BridgeProtocol } from '@agoric/web-components';
 import { addOffer } from './store/Offers.js';
 import { loadDapp, upsertDapp, watchDapps } from './store/Dapps.js';
+import { OfferStatus } from './service/Offers';
 
 Error.stackTraceLimit = Infinity;
+
+/**
+ * @typedef {{ origin: string, chainId: string, address: string }} DappId
+ */
 
 /**
  * Sends a message to the dapp in the parent window.
@@ -33,12 +38,13 @@ const checkParentWindow = () => {
  * prompt the user to accept the dapp in the wallet and allow it to propose
  * offers if accepted.
  *
- * @param {string} origin
- * @param {string} chainId
- * @param {string} address
+ * @param {DappId} id
  * @param {string} proposedPetname
  */
-const requestDappConnection = (origin, chainId, address, proposedPetname) => {
+const requestDappConnection = (
+  { origin, chainId, address },
+  proposedPetname,
+) => {
   const dapp = loadDapp(chainId, address, origin);
   if (dapp) {
     return;
@@ -50,31 +56,36 @@ const requestDappConnection = (origin, chainId, address, proposedPetname) => {
  * Watches for changes in local storage to the dapp's approval status and
  * notifies the dapp.
  *
- * @param {string} origin
- * @param {string} chainId
- * @param {string} address
- * @param {boolean} latestValue
+ * @param {DappId} id
+ * @param {boolean} currentlyApproved
  */
-const watchDappApproval = (origin, chainId, address, latestValue) => {
+const watchDappApproval = ({ origin, chainId, address }, currentlyApproved) => {
   watchDapps(chainId, address, dapps => {
     const dapp = dapps.find(d => d.origin === origin);
     const isDappApproved = dapp && dapp.isEnabled;
-    if (isDappApproved !== latestValue) {
+    if (isDappApproved !== currentlyApproved) {
       sendMessage({
         type: BridgeProtocol.dappApprovalChanged,
         isDappApproved,
       });
-      latestValue = isDappApproved;
+      currentlyApproved = isDappApproved;
     }
   });
 };
 
-const createAndAddOffer = (origin, chainId, address, config) => {
+/**
+ * Propose an offer from the dapp to the wallet UI.
+ *
+ * @param {DappId} id
+ * @param {any} config // TODO better type for this.
+ */
+const createAndAddOffer = ({ origin, chainId, address }, config) => {
   const dapp = loadDapp(chainId, address, origin);
   const isDappApproved = dapp && dapp.isEnabled;
   if (!isDappApproved) return;
 
   const currentTime = new Date().getTime();
+  // TODO: Will these ever collide? Do we need more randomness?
   const id = currentTime;
 
   const offer = {
@@ -85,7 +96,7 @@ const createAndAddOffer = (origin, chainId, address, config) => {
       id,
       creationStamp: currentTime,
     },
-    status: 'proposed',
+    status: OfferStatus.proposed,
     ...config,
   };
   addOffer(chainId, address, offer);
@@ -95,18 +106,18 @@ const createAndAddOffer = (origin, chainId, address, config) => {
  * Notifies the dapp about whether it's approved or not and watches for changes
  * to its approval status.
  *
- * @param {string} origin
- * @param {string} chainId
- * @param {string} address
+ * @param {DappId} id
  */
-const checkIfDappApproved = (origin, chainId, address) => {
+const checkAndWatchDappApproval = ({ origin, chainId, address }) => {
+  // Dapps are keyed by origin. A dapp is basically an origin with a petname
+  // and an approval status.
   const dapp = loadDapp(chainId, address, origin);
   const isDappApproved = dapp && dapp.isEnabled;
   sendMessage({
     type: BridgeProtocol.checkIfDappApproved,
     isDappApproved,
   });
-  watchDappApproval(origin, chainId, address, isDappApproved);
+  watchDappApproval({ origin, chainId, address }, isDappApproved);
 };
 
 const handleIncomingMessages = () => {
@@ -119,7 +130,7 @@ const handleIncomingMessages = () => {
 
   window.addEventListener('message', ev => {
     const type = ev.data?.type;
-    if (!type?.startsWith('agoric_')) {
+    if (!type?.startsWith(BridgeProtocol.prefix)) {
       return;
     }
     if (origin === undefined) {
@@ -139,13 +150,13 @@ const handleIncomingMessages = () => {
 
     switch (type) {
       case BridgeProtocol.requestDappConnection:
-        requestDappConnection(origin, chainId, address, ev.data?.petname);
+        requestDappConnection({ origin, chainId, address }, ev.data?.petname);
         break;
       case BridgeProtocol.checkIfDappApproved:
-        checkIfDappApproved(origin, chainId, address);
+        checkAndWatchDappApproval({ origin, chainId, address });
         break;
       case BridgeProtocol.addOffer:
-        createAndAddOffer(origin, chainId, address, ev.data?.offerConfig);
+        createAndAddOffer({ origin, chainId, address }, ev.data?.offerConfig);
         break;
       default:
         break;

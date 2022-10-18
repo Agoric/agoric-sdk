@@ -143,6 +143,7 @@ export const makeWalletBridgeFromFollowers = (
     ]),
   );
 
+  // We assume just one cosmos purse per brand.
   /**
    * @typedef {{
    *  brand?: Brand,

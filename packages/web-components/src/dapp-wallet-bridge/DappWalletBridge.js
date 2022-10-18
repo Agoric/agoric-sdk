@@ -9,6 +9,7 @@ const DEFAULT_LOCATOR_URL =
   'https://wallet.agoric.app/locator/?append=/wallet/bridge.html';
 
 export const BridgeProtocol = /** @type {const} */ ({
+  prefix: 'agoric_',
   loaded: 'agoric_walletBridgeLoaded',
   requestDappConnection: 'agoric_requestDappConnection',
   checkIfDappApproved: 'agoric_checkIfDappApproved',

@@ -15,26 +15,33 @@ import {
 
 /** @typedef {import('@agoric/smart-wallet/src/types.js').Petname} Petname */
 
+export const OfferStatus = {
+  proposed: 'proposed',
+  accepted: 'accept',
+  rejected: 'rejected',
+  pending: 'pending',
+  declined: 'decline',
+};
+
 /**
  * @param {string} chainId
  * @param {string} address
  * @param {(data: string) => Promise<any>} signSpendAction
  * @param {Notifier<any>} chainOffersNotifier
- * @param {Marshaller} marshaller
+ * @param {Marshaller} boardIdMarshaller
  */
 export const getOfferService = (
   chainId,
   address,
   signSpendAction,
   chainOffersNotifier,
-  marshaller,
+  boardIdMarshaller,
 ) => {
-  let pursePetnameToBrand;
   const offers = new Map();
   const { notifier, updater } = makeNotifierKit();
   const broadcastUpdates = () => updater.updateState([...offers.values()]);
 
-  const augmentOffer = async offer => {
+  const unserializeAndAddSpendAction = async (pursePetnameToBrand, offer) => {
     const {
       id,
       instanceHandleBoardId,
@@ -42,9 +49,9 @@ export const getOfferService = (
       proposalTemplate: { give, want },
     } = offer;
 
-    const mapPurses = obj =>
+    const mapPursePetnamesToBrands = entries =>
       Object.fromEntries(
-        Object.entries(obj).map(([kw, { pursePetname, value }]) => [
+        Object.entries(entries).map(([kw, { pursePetname, value }]) => [
           kw,
           {
             brand: pursePetnameToBrand.get(pursePetname),
@@ -53,10 +60,12 @@ export const getOfferService = (
         ]),
       );
 
-    const instance = await E(marshaller).unserialize(instanceHandleBoardId);
+    const instance = await E(boardIdMarshaller).unserialize(
+      instanceHandleBoardId,
+    );
     const {
       slots: [instanceBoardId],
-    } = await E(marshaller).serialize(instance);
+    } = await E(boardIdMarshaller).serialize(instance);
 
     const offerForAction = {
       id,
@@ -66,12 +75,12 @@ export const getOfferService = (
         publicInvitationMaker: method,
       },
       proposal: {
-        give: mapPurses(give),
-        want: mapPurses(want),
+        give: mapPursePetnamesToBrands(give),
+        want: mapPursePetnamesToBrands(want),
       },
     };
 
-    const spendAction = await E(marshaller).serialize(
+    const spendAction = await E(boardIdMarshaller).serialize(
       harden({
         method: 'executeOffer',
         offer: offerForAction,
@@ -121,7 +130,7 @@ export const getOfferService = (
           offers.set(status.id, {
             ...oldOffer,
             id: status.id,
-            status: 'rejected',
+            status: OfferStatus.rejected,
             error: `${status.error}`,
           });
           remove(chainId, address, status.id);
@@ -129,31 +138,30 @@ export const getOfferService = (
           offers.set(status.id, {
             ...oldOffer,
             id: status.id,
-            status: 'accept',
+            status: OfferStatus.accepted,
           });
           remove(chainId, address, status.id);
         } else if (!('numWantsSatisfied' in status)) {
           offers.set(status.id, {
             ...oldOffer,
             id: status.id,
-            status: 'pending',
+            status: OfferStatus.pending,
           });
-          upsertOffer({ ...oldOffer, status: 'pending' });
+          upsertOffer({ ...oldOffer, status: OfferStatus.pending });
         }
         broadcastUpdates();
       }
     }
   };
 
-  const start = purseMap => {
-    pursePetnameToBrand = purseMap;
+  const start = pursePetnameToBrand => {
     const storedOffers = load(chainId, address);
     const storedOffersP = Promise.all(
       storedOffers.map(o => {
-        if (o.status === 'decline') {
+        if (o.status === OfferStatus.declined) {
           remove(chainId, address, o.id);
         }
-        return augmentOffer(o).then(ao => {
+        return unserializeAndAddSpendAction(pursePetnameToBrand, o).then(ao => {
           offers.set(ao.id, {
             ...ao,
           });
@@ -167,17 +175,22 @@ export const getOfferService = (
     watchOffers(chainId, address, newOffers => {
       const newOffersP = Promise.all(
         newOffers.map(o => {
-          return augmentOffer(o).then(ao => {
-            const oldOffer = offers.get(ao.id);
-            const status =
-              oldOffer && ['rejected', 'accept'].includes(oldOffer.status)
-                ? oldOffer.status
-                : ao.status;
-            offers.set(ao.id, {
-              ...ao,
-              status,
-            });
-          });
+          return unserializeAndAddSpendAction(pursePetnameToBrand, o).then(
+            ao => {
+              const oldOffer = offers.get(ao.id);
+              const status =
+                oldOffer &&
+                [OfferStatus.rejected, OfferStatus.accepted].includes(
+                  oldOffer.status,
+                )
+                  ? oldOffer.status
+                  : ao.status;
+              offers.set(ao.id, {
+                ...ao,
+                status,
+              });
+            },
+          );
         }),
       );
       newOffersP.then(() => broadcastUpdates());

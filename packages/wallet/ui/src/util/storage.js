@@ -10,7 +10,14 @@ export const OFFERS_STORAGE_KEY = 'OFFERS';
  */
 export const maybeSave = (key, value) => {
   if (window?.localStorage) {
-    window.localStorage.setItem(JSON.stringify(key), JSON.stringify(value));
+    try {
+      window.localStorage.setItem(JSON.stringify(key), JSON.stringify(value));
+    } catch (e) {
+      console.error(e);
+    }
+  } else {
+    // TODO: More user friendly way of handling this.
+    console.error('No localStorage found on "window"');
   }
 };
 
@@ -28,6 +35,8 @@ export const maybeLoad = key => {
       console.error(e);
       return undefined;
     }
+  } else {
+    console.error('No localStorage found on "window"');
   }
   return undefined;
 };

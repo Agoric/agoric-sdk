@@ -153,7 +153,7 @@ const OfferWithoutContext = ({
         <div className="OfferEntry">
           <h6>Signing Error</h6>
           <details style={{ whiteSpace: 'pre-wrap' }}>
-            {`${signingError}`}
+            {String(signingError)}
           </details>
         </div>
       )}
