@@ -4,7 +4,6 @@ import { makeStyles, useTheme } from '@mui/styles';
 import HelpIcon from '@mui/icons-material/HelpOutline';
 import SettingsIcon from '@mui/icons-material/SettingsOutlined';
 import IconButton from '@mui/material/IconButton';
-import Public from '@mui/icons-material/Public';
 import Tooltip from '@mui/material/Tooltip';
 
 import NavDrawer from './NavDrawer';
@@ -64,13 +63,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 // Exported for testing only.
-export const AppBarWithoutContext = ({
-  connectionComponent,
-  wantConnection,
-  setWantConnection,
-  connectionStatus,
-  connectionConfig,
-}) => {
+export const AppBarWithoutContext = ({ connectionComponent }) => {
   const theme = useTheme();
   const classes = useStyles(theme);
 
@@ -78,10 +71,6 @@ export const AppBarWithoutContext = ({
   const handleClosed = () => {
     setDialogOpen(false);
   };
-
-  const connectionTitle =
-    connectionStatus &&
-    connectionStatus[0].toUpperCase() + connectionStatus.slice(1);
 
   return (
     <header className={classes.header}>
@@ -97,27 +86,7 @@ export const AppBarWithoutContext = ({
         </a>
       </div>
       <div className={classes.appBarSection}>
-        <div className={classes.connector}>
-          {connectionComponent}
-          <Tooltip title={connectionTitle}>
-            <IconButton
-              size="medium"
-              color={wantConnection ? 'primary' : 'secondary'}
-              onClick={() =>
-                setWantConnection(!wantConnection && connectionConfig !== null)
-              }
-            >
-              <Public
-                className={
-                  connectionStatus === 'connecting' ? classes.connecting : ''
-                }
-                fontSize="inherit"
-              >
-                {connectionStatus}
-              </Public>
-            </IconButton>
-          </Tooltip>
-        </div>
+        <div className={classes.connector}>{connectionComponent}</div>
         <div className={classes.connector}>
           <Tooltip title="Settings">
             <IconButton
