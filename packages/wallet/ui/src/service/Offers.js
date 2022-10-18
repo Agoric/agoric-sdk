@@ -125,10 +125,7 @@ export const getOfferService = (
             error: `${status.error}`,
           });
           remove(chainId, address, status.id);
-        } else if (
-          oldOffer.status !== 'accept' &&
-          'numWantsSatisfied' in status
-        ) {
+        } else if ('numWantsSatisfied' in status) {
           offers.set(status.id, {
             ...oldOffer,
             id: status.id,
@@ -171,8 +168,14 @@ export const getOfferService = (
       const newOffersP = Promise.all(
         newOffers.map(o => {
           return augmentOffer(o).then(ao => {
+            const oldOffer = offers.get(ao.id);
+            const status =
+              oldOffer && ['rejected', 'accept'].includes(oldOffer.status)
+                ? oldOffer.status
+                : ao.status;
             offers.set(ao.id, {
               ...ao,
+              status,
             });
           });
         }),
