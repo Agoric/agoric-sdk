@@ -11,7 +11,7 @@
             "keyword": "ToyUSD",
             "proposedName": "Toy USD",
             "decimalPlaces": 6,
-            "denom": "ibc/usdc1234"
+            "denom": "ibc/toyusdc"
           }
         ],
         "economicCommitteeAddresses": {
