@@ -63,6 +63,7 @@ const start = async zcf => {
   });
 
   const publicFacet = Far('publicFacet', {
+    /** @param {OracleQuery} query */
     async query(query) {
       try {
         assert(!revoked, revokedMsg);
@@ -77,6 +78,7 @@ const start = async zcf => {
         throw e;
       }
     },
+    /** @param {OracleQuery} query */
     async makeQueryInvitation(query) {
       /** @type {OfferHandler} */
       const doQuery = async querySeat => {
@@ -107,3 +109,4 @@ const start = async zcf => {
 harden(start);
 export { start };
 /** @typedef {ContractOf<typeof start>} OracleContract */
+/** @typedef {typeof start} OracleStart */
