@@ -57,8 +57,8 @@ const { arbDag } = fc.letrec(tie => {
             payload: fc.oneof(
               tie('arbDag'),
               // copySet valid payload is an array of unique passables.
-              // TODO: it must be a reverse sorted array, so we should
-              // generate some of those
+              // TODO: A valid copySet payload must be a reverse sorted array,
+              // so we should generate some of those as well.
               fc.uniqueArray(tie('arbDag')),
             ),
           }),
@@ -68,8 +68,8 @@ const { arbDag } = fc.letrec(tie => {
               tie('arbDag'),
               // copyBag valid payload is an array of [passable, count] tuples
               // in which each passable is unique.
-              // TODO: it must be a reverse sorted array, so we should
-              // generate some of those
+              // TODO: A valid copyBag payload must be a reverse sorted array,
+              // so we should generate some of those as well.
               fc.uniqueArray(fc.tuple(tie('arbDag'), fc.bigInt()), {
                 selector: entry => entry[0],
               }),
@@ -79,10 +79,13 @@ const { arbDag } = fc.letrec(tie => {
             type: fc.constantFrom('copyMap'),
             payload: fc.oneof(
               tie('arbDag'),
-              // copyMap valid payload is a {keys: Array<Passable>, values: Array<Passable>} record
-              // in which keys are unique and both arrays have the same length.
-              // TODO: keys must be a reverse sorted array, so we should
-              // generate some of those
+              // copyMap valid payload is a
+              // `{ keys: Passable[], values: Passable[]}`
+              // record in which keys are unique and both arrays have the
+              // same length.
+              // TODO: In a valid copyMap payload, the keys must be a
+              // reverse sorted array, so we should generate some of
+              // those as well.
               fc
                 .uniqueArray(
                   fc.record({ key: tie('arbDag'), value: tie('arbDag') }),
