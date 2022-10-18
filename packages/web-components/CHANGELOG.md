@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/web-components@0.4.1...@agoric/web-components@0.5.0) (2022-10-18)
+
+
+### Features
+
+* **web-components:** add 'makeAgoricKeplrConnection' util ([#6452](https://github.com/Agoric/agoric-sdk/issues/6452)) ([0b4b1aa](https://github.com/Agoric/agoric-sdk/commit/0b4b1aac42379c68aabe807904f5bfd6670009c5))
+
+
+
 ### [0.4.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/web-components@0.4.0...@agoric/web-components@0.4.1) (2022-10-08)
 
 **Note:** Version bump only for package @agoric/web-components
