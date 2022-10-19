@@ -259,6 +259,8 @@ export const start = async (zcf, privateArgs, baggage) => {
         M.splitRecord({
           give: { In: anchorAmountShape },
           want: M.or({ Out: stableAmountShape }, {}),
+          multiples: 1n,
+          exit: M.any(),
         }),
       );
     },
@@ -270,6 +272,8 @@ export const start = async (zcf, privateArgs, baggage) => {
         M.splitRecord({
           give: { In: stableAmountShape },
           want: M.or({ Out: anchorAmountShape }, {}),
+          multiples: 1n,
+          exit: M.any(),
         }),
       );
     },

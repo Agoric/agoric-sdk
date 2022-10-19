@@ -1,6 +1,7 @@
 import { makePublishKit } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeHeapFarInstance } from '@agoric/store';
+import { EmptyProposal } from '@agoric/zoe/src/typeGuards.js';
 
 import { ElectoratePublicI, ElectorateCreatorI } from './typeGuards.js';
 
@@ -37,8 +38,12 @@ const start = zcf => {
 
   const creatorFacet = makeHeapFarInstance('creatorFacet', ElectorateCreatorI, {
     getPoserInvitation() {
-      return zcf.makeInvitation(() => {},
-      `noActionElectorate doesn't allow posing questions`);
+      return zcf.makeInvitation(
+        () => {},
+        `noActionElectorate doesn't allow posing questions`,
+        undefined,
+        EmptyProposal,
+      );
     },
     addQuestion(_instance, _question) {
       throw Error(`noActionElectorate doesn't add questions.`);
