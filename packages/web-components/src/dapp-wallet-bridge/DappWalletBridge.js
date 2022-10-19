@@ -71,7 +71,12 @@ export class DappWalletBridge extends LitElement {
   onLocateMessage(ev) {
     console.debug('located wallet bridge', ev);
     const { data } = ev.detail;
-    assert.typeof(data, 'string', X`Expected locate message to be a string`);
+    try {
+      assert.typeof(data, 'string', X`Expected locate message to be a string`);
+    } catch (e) {
+      this.onError(e);
+    }
+
     this.bridgeHref = data;
     this.requestUpdate();
     const dappEvent = new CustomEvent('bridgeLocated', {
@@ -116,19 +121,23 @@ export class DappWalletBridge extends LitElement {
    */
   onBridgeReadyMessage(ev) {
     const { data, send } = ev.detail;
-    assert.equal(
-      data.type,
-      BridgeProtocol.loaded,
-      X`Unexpected bridge message type ${data.type}, expected ${BridgeProtocol.loaded}`,
-    );
-    assert.string(
-      this.address,
-      X`Bridge requires an address to connect to the agoric wallet.`,
-    );
-    assert.string(
-      this.chainId,
-      X`Bridge requires a chainId to connect to the agoric wallet.`,
-    );
+    try {
+      assert.equal(
+        data.type,
+        BridgeProtocol.loaded,
+        X`Unexpected bridge message type ${data.type}, expected ${BridgeProtocol.loaded}`,
+      );
+      assert.string(
+        this.address,
+        X`Bridge requires an address to connect to the agoric wallet.`,
+      );
+      assert.string(
+        this.chainId,
+        X`Bridge requires a chainId to connect to the agoric wallet.`,
+      );
+    } catch (e) {
+      this.onError(e);
+    }
     send({
       type: BridgeProtocol.checkIfDappApproved,
       address: this.address,
@@ -179,26 +188,12 @@ export class DappWalletBridge extends LitElement {
   }
 
   render() {
-    /** @type {import('lit-html').TemplateResult<1> | undefined} */
-    let backend;
+    const hasBridgeHref = this.bridgeHref !== null;
 
-    if (this.bridgeHref === null) {
-      // If we don't know the bridge href yet, render the locator so it can
-      // tell us.
-      backend = html`<agoric-iframe-messenger
-        src=${this.locatorUrl}
-        @message=${this.onLocateMessage}
-        @error=${this.onError}
-      ></agoric-iframe-messenger>`;
-    } else {
-      // Otherwise render the bridge.
-      backend = html`<agoric-iframe-messenger
-        src=${this.bridgeHref}
-        @message=${this.onBridgeMessage}
-        @error=${this.onError}
-      ></agoric-iframe-messenger>`;
-    }
-
-    return html`<div>${backend}</div>`;
+    return html`<agoric-iframe-messenger
+      src=${hasBridgeHref ? this.bridgeHref : this.locatorUrl}
+      @message=${hasBridgeHref ? this.onBridgeMessage : this.onLocateMessage}
+      @error=${this.onError}
+    ></agoric-iframe-messenger>`;
   }
 }
