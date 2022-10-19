@@ -16,4 +16,5 @@ export const makeReactDappWalletBridge = React =>
     onBridgeMessage: 'bridgeMessage',
     onError: 'error',
     onBridgeReady: 'bridgeReady',
+    onBridgeLocated: 'bridgeLocated',
   });

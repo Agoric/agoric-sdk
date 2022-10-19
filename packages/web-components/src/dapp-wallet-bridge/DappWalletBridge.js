@@ -61,6 +61,12 @@ export class DappWalletBridge extends LitElement {
     assert.typeof(data, 'string', X`Expected locate message to be a string`);
     this.bridgeHref = data;
     this.requestUpdate();
+    const dappEvent = new CustomEvent('bridgeLocated', {
+      detail: {
+        bridgeLocation: data,
+      },
+    });
+    this.dispatchEvent(dappEvent);
   }
 
   /**
