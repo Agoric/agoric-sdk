@@ -1,6 +1,6 @@
-// @ts-nocheck
+// @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { Far, makeTagged } from '@endo/marshal';
+import { makeTagged } from '@endo/marshal';
 import { fc } from '@fast-check/ava';
 import {
   FullRankCover,
@@ -11,74 +11,18 @@ import {
   getPassStyleCover,
   assertRankSorted,
 } from '../src/patterns/rankOrder.js';
+import {
+  arbPassable,
+  exampleAlice,
+  exampleBob,
+  exampleCarol,
+} from '../tools/arb-passable.js';
 
 const { quote: q } = assert;
 
-/**
- * The only elements with identity. Everything else should be equal
- * by contents.
- */
-const alice = Far('alice', {});
-const bob = Far('bob', {});
-const carol = Far('carol', {});
-
-/**
- * A factory for arbitrary passables
- */
-const { passable } = fc.letrec(tie => {
-  return {
-    passable: tie('dag').map(x => harden(x)),
-    dag: fc.oneof(
-      { depthFactor: 0.5, withCrossShrink: true },
-      // a tagged value whose payload is an array of [key, leaf] pairs
-      // where each key is unique within the payload
-      // XXX can the payload be generalized further?
-      fc
-        .record({
-          type: fc.constantFrom('copyMap', 'copySet', 'nonsense'),
-          payload: fc
-            .uniqueArray(fc.fullUnicodeString(), { maxLength: 3 })
-            .chain(k => {
-              return fc.tuple(fc.constant(k), tie('leaf'));
-            }),
-        })
-        .map(({ type, payload }) => makeTagged(type, payload)),
-      fc.array(tie('dag'), { maxLength: 3 }),
-      fc.dictionary(
-        fc.fullUnicodeString().filter(s => s !== 'then'),
-        tie('dag'),
-        { maxKeys: 3 },
-      ),
-      tie('dag').map(v => Promise.resolve(v)),
-      tie('leaf'),
-    ),
-    leaf: fc.oneof(
-      fc.record({}),
-      fc.fullUnicodeString(),
-      fc.fullUnicodeString().map(s => Symbol.for(s)),
-      fc.fullUnicodeString().map(s => new Error(s)),
-      // primordial symbols and registered lookalikes
-      fc.constantFrom(
-        ...Object.getOwnPropertyNames(Symbol).flatMap(k => {
-          const v = Symbol[k];
-          if (typeof v !== 'symbol') return [];
-          return [v, Symbol.for(k), Symbol.for(`@@${k}`)];
-        }),
-      ),
-      fc.bigInt(),
-      fc.integer(),
-      fc.constantFrom(-0, NaN, Infinity, -Infinity),
-      fc.constantFrom(null, undefined, false, true),
-      fc.constantFrom(alice, bob, carol),
-      // unresolved promise
-      fc.constant(new Promise(() => {})),
-    ),
-  };
-});
-
 test('compareRank is reflexive', async t => {
   await fc.assert(
-    fc.property(passable, x => {
+    fc.property(arbPassable, x => {
       return t.is(compareRank(x, x), 0);
     }),
   );
@@ -86,7 +30,7 @@ test('compareRank is reflexive', async t => {
 
 test('compareRank totally orders ranks', async t => {
   await fc.assert(
-    fc.property(passable, passable, (a, b) => {
+    fc.property(arbPassable, arbPassable, (a, b) => {
       const ab = compareRank(a, b);
       const ba = compareRank(b, a);
       if (ab === 0) {
@@ -104,9 +48,10 @@ test('compareRank totally orders ranks', async t => {
 test('compareRank is transitive', async t => {
   await fc.assert(
     fc.property(
-      // operate on a set of three passables covering at least two ranks
+      // operate on a set of three distinct passables covering
+      // at least two ranks
       fc
-        .uniqueArray(passable, { minLength: 3, maxLength: 3 })
+        .uniqueArray(arbPassable, { minLength: 3, maxLength: 3 })
         .filter(
           ([a, b, c]) => compareRank(a, b) !== 0 || compareRank(a, c) !== 0,
         ),
@@ -176,7 +121,7 @@ export const sample = harden([
   2,
   null,
   [5, { foo: 4, bar: null }],
-  bob,
+  exampleBob,
   0,
   makeTagged('copySet', [
     ['a', 4],
@@ -187,7 +132,7 @@ export const sample = harden([
   undefined,
   -Infinity,
   [5],
-  alice,
+  exampleAlice,
   [],
   Symbol.for('foo'),
   new Error('not erroneous'),
@@ -195,7 +140,7 @@ export const sample = harden([
   [5, { bar: 5 }],
   Symbol.for(''),
   false,
-  carol,
+  exampleCarol,
   -0,
   {},
   [5, undefined],
@@ -285,9 +230,9 @@ const sortedSample = harden([
 
   // All remotables are tied for the same rank and the sort is stable,
   // so their relative order is preserved
-  bob,
-  alice,
-  carol,
+  exampleBob,
+  exampleAlice,
+  exampleCarol,
 
   // Lexicographic strings. Shorter beats longer.
   // TODO Probe UTF-16 vs Unicode vs UTF-8 (Moddable) ordering.
@@ -316,7 +261,8 @@ test('compare and sort by rank', t => {
   );
 });
 
-const rangeSample = harden([
+// Unused in that it is used only in a skipped test
+const unusedRangeSample = harden([
   {}, // 0 -- prefix are earlier, so empty is earliest
   { bar: null }, // 1
   { bar: undefined }, // 2 -- records with same names grouped together
@@ -336,7 +282,9 @@ const rangeSample = harden([
 ]);
 
 /** @type {[RankCover, IndexCover][]} */
-const queries = harden([
+// @ts-expect-error Stale from when RankCover was a pair of extreme values
+// rather than a pair of strings to be compared to passable encodings.
+const brokenQueries = harden([
   [
     [['c'], ['c']],
     // first > last implies absent.
@@ -366,9 +314,9 @@ const queries = harden([
 // adding composite key handling to the durable store implementation) will need
 // to re-enable and (likely) update this test.
 test.skip('range queries', t => {
-  t.assert(isRankSorted(rangeSample, compareRank));
-  for (const [rankCover, indexRange] of queries) {
-    const range = getIndexCover(rangeSample, compareRank, rankCover);
+  t.assert(isRankSorted(unusedRangeSample, compareRank));
+  for (const [rankCover, indexRange] of brokenQueries) {
+    const range = getIndexCover(unusedRangeSample, compareRank, rankCover);
     t.is(range[0], indexRange[0]);
     t.is(range[1], indexRange[1]);
   }
