@@ -500,7 +500,7 @@ test('oracle invitation', async t => {
     makeQuoteValue(8n, multiplyBy(amountIn, medianPrice).value),
   );
 
-  await E(oracleAdmin1).delete();
+  await E(E.get(oracleAdmin1).admin).delete();
 
   updater2.updateState('1234');
   await E(oracleTimer).tick();
@@ -523,7 +523,49 @@ test('oracle invitation', async t => {
   );
   t.deepEqual(value6.quoteAmount.value, makeQuoteValue(11n, 987_654n * 2n));
 
-  await E(oracleAdmin2).delete();
+  await E(E.get(oracleAdmin2).admin).delete();
+});
+
+test('oracle continuing invitation', async t => {
+  const { zoe } = t.context;
+
+  const aggregator = await t.context.makeMedianAggregator();
+  const {
+    timer: oracleTimer,
+    brandIn,
+    brandOut,
+  } = await E(zoe).getTerms(aggregator.instance);
+
+  const inv1 = await E(aggregator.creatorFacet).makeOracleInvitation('oracle1');
+  const { notifier: oracle1 } = makeNotifierKit();
+  const or1 = E(zoe).offer(inv1, undefined, undefined, { notifier: oracle1 });
+  const oracleAdmin1 = E(or1).getOfferResult();
+  const invitationMakers = await E.get(oracleAdmin1).invitationMakers;
+  t.true('makePushPriceInvitation' in invitationMakers);
+
+  const amountIn = AmountMath.make(brandIn, 1000000n);
+  const makeQuoteValue = (timestamp, valueOut) => [
+    {
+      timer: oracleTimer,
+      timestamp,
+      amountIn,
+      amountOut: AmountMath.make(brandOut, valueOut),
+    },
+  ];
+
+  const notifier = E(
+    E(aggregator.publicFacet).getPriceAuthority(),
+  ).makeQuoteNotifier(amountIn, brandOut);
+
+  const invPrice = await E(invitationMakers).makePushPriceInvitation('1234');
+  const invPriceResult = await E(zoe).offer(invPrice);
+  t.deepEqual(await E(invPriceResult).numWantsSatisfied(), 1);
+
+  await E(oracleTimer).tick();
+  await E(oracleTimer).tick();
+  await E(oracleTimer).tick();
+  const { value } = await E(notifier).getUpdateSince();
+  t.deepEqual(value.quoteAmount.value, makeQuoteValue(3n, 1_234_000_000n));
 });
 
 test('quoteAtTime', async t => {

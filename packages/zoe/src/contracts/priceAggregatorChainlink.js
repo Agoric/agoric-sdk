@@ -1,4 +1,4 @@
-// @ts-check
+// @ts-nocheck XXX
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';

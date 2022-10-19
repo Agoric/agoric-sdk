@@ -16,6 +16,24 @@ const sanitizePathSegment = name => {
   return candidate;
 };
 
+/**
+ * @typedef {{
+ * brandIn?: ERef<Brand<'nat'> | undefined>,
+ * brandOut?: ERef<Brand<'nat'> | undefined>,
+ * IN_BRAND_NAME: string,
+ * IN_BRAND_DECIMALS: string,
+ * OUT_BRAND_NAME: string,
+ * OUT_BRAND_DECIMALS: string,
+ * }} PriceFeedOptions
+ */
+
+/**
+ * Create inert brands (no mint or issuer) referred to by price oracles.
+ *
+ * @param {ChainBootstrapSpace} space
+ * @param {{options: {priceFeedOptions: PriceFeedOptions}}} opt
+ * @returns {Promise<[Brand<'nat'>, Brand<'nat'>]>}
+ */
 export const ensureOracleBrands = async (
   { consume: { agoricNamesAdmin } },
   {
@@ -34,6 +52,7 @@ export const ensureOracleBrands = async (
   /** @type {NameAdmin} */
   const obAdmin = E(agoricNamesAdmin).lookupAdmin('oracleBrand');
 
+  /** @type {(brand: ERef<Brand<'nat'> | undefined>, name: string, decimals: string) => Brand} */
   const updateFreshBrand = async (brand, name, decimals) => {
     const b = await brand;
     if (b) {
@@ -183,8 +202,14 @@ export const createPriceFeed = async (
   await Promise.all(oracleAddresses.map(distributeInvitation));
 };
 
-// Return the manifest, installations, and options.
 const t = 'priceFeed';
+/**
+ * Add a price feed to a running chain, returning the manifest, installations, and options.
+ *
+ * @param {object} utils
+ * @param {(ref: unknown) => Promise<unknown>} [utils.restoreRef]
+ * @param {PriceFeedOptions} priceFeedOptions
+ */
 export const getManifestForPriceFeed = async (
   { restoreRef },
   priceFeedOptions,
