@@ -5,7 +5,7 @@ export const DAPPS_STORAGE_KEY = 'DAPPS';
 export const OFFERS_STORAGE_KEY = 'OFFERS';
 
 /**
- * @param {string} key
+ * @param {unknown} key
  * @param {unknown} value
  */
 export const maybeSave = (key, value) => {
@@ -22,7 +22,7 @@ export const maybeSave = (key, value) => {
 };
 
 /**
- * @param {string} key
+ * @param {unknown} key
  */
 export const maybeLoad = key => {
   if (window?.localStorage) {
@@ -41,6 +41,10 @@ export const maybeLoad = key => {
   return undefined;
 };
 
+/**
+ * @param {unknown} key
+ * @param {(newValue: unknown) => void} onValueChange
+ */
 export const watchKey = (key, onValueChange) => {
   window.addEventListener('storage', ev => {
     if (ev.key !== JSON.stringify(key)) return;

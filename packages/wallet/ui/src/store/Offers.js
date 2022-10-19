@@ -5,10 +5,43 @@ import {
   OFFERS_STORAGE_KEY,
 } from '../util/storage.js';
 
-export const loadOffers = (chainId, address) =>
-  maybeLoad([OFFERS_STORAGE_KEY, chainId, address]) ?? [];
+/**
+ * @enum {string}
+ */
+export const OfferUIStatus = {
+  proposed: 'proposed',
+  accepted: 'accept',
+  rejected: 'rejected',
+  pending: 'pending',
+  declined: 'decline',
+};
 
-export const addOffer = (chainId, address, offer) => {
+/**
+ * @typedef {{
+ *   id: number;
+ *   meta: {
+ *    id: number,
+ *    creationStamp: number,
+ *   };
+ *   requestContext: {
+ *    origin: string,
+ *   };
+ *   status: OfferUIStatus;
+ *   instancePetname?: string;
+ *   spendAction?: string
+ * }} Offer
+ */
+
+export const loadOffers = (
+  /** @type {string} */ chainId,
+  /** @type {string} */ address,
+) => maybeLoad([OFFERS_STORAGE_KEY, chainId, address]) ?? [];
+
+export const addOffer = (
+  /** @type {string} */ chainId,
+  /** @type {string} */ address,
+  /** @type {Offer} */ offer,
+) => {
   const offers = loadOffers(chainId, address) ?? [];
   maybeSave(
     [OFFERS_STORAGE_KEY, chainId, address],
@@ -16,7 +49,11 @@ export const addOffer = (chainId, address, offer) => {
   );
 };
 
-export const removeOffer = (chainId, address, id) => {
+export const removeOffer = (
+  /** @type {string} */ chainId,
+  /** @type {string} */ address,
+  /** @type {number} */ id,
+) => {
   const offers = loadOffers(chainId, address) ?? [];
   maybeSave(
     [OFFERS_STORAGE_KEY, chainId, address],
@@ -24,7 +61,11 @@ export const removeOffer = (chainId, address, id) => {
   );
 };
 
-export const watchOffers = (chainId, address, onChange) => {
+export const watchOffers = (
+  /** @type {string} */ chainId,
+  /** @type {string} */ address,
+  /** @type {(newOffers: Offer[]) => void} */ onChange,
+) => {
   watchKey([OFFERS_STORAGE_KEY, chainId, address], newOffers =>
     onChange(newOffers ?? []),
   );

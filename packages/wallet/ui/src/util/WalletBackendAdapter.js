@@ -21,7 +21,9 @@ const newId = kind => `${kind}${Math.random()}`;
 
 /** @typedef {{actions: object, issuerSuggestions: Promise<AsyncIterator>}} BackendSchema */
 
-export const makeBackendFromWalletBridge = walletBridge => {
+export const makeBackendFromWalletBridge = (
+  /** @type {ReturnType<typeof makeWalletBridgeFromFollowers>} */ walletBridge,
+) => {
   /**
    * @template T
    * @param {ERef<Notifier<T>>} notifier
@@ -29,11 +31,8 @@ export const makeBackendFromWalletBridge = walletBridge => {
   const iterateNotifier = async notifier =>
     makeAsyncIterableFromNotifier(notifier)[Symbol.asyncIterator]();
 
-  const { notifier: servicesNotifier } = makeNotifierKit(
-    harden({
-      board: E(walletBridge).getBoard(),
-    }),
-  );
+  // XXX we don't have access to the board yet.
+  const { notifier: servicesNotifier } = makeNotifierKit();
 
   /**
    * @param {AsyncIterator<any[], any[], undefined>} offersMembers
@@ -189,11 +188,15 @@ export const makeWalletBridgeFromFollowers = (
     }),
   );
 
+  /** @type {Notifier<import('@agoric/smart-wallet/src/offers.js').OfferStatus>} */
+  // @ts-expect-error
+  const offersNotifer = getNotifierMethods.getOffersNotifier();
+
   const offerService = getOfferService(
     chainId,
     publicAddress,
     signSpendAction,
-    getNotifierMethods.getOffersNotifier(),
+    offersNotifer,
     marshaller,
   );
 
@@ -303,15 +306,15 @@ export const makeWalletBridgeFromFollowers = (
     }
   });
 
-  const makeEmptyPurse = () => {
+  const makeEmptyPurse = (_issuerPetname, _purseId) => {
     console.log('make empty purse');
   };
 
-  const addContact = () => {
+  const addContact = (_boardId, _petname) => {
     console.log('add contact');
   };
 
-  const addIssuer = () => {
+  const addIssuer = (_boardId, _petname, _makeDefaultPurse) => {
     console.log('add issuer');
   };
 
@@ -319,11 +322,21 @@ export const makeWalletBridgeFromFollowers = (
   const dappService = getDappService(chainId, publicAddress);
   const { acceptOffer, declineOffer, cancelOffer } = offerService;
 
+  const {
+    getContactsNotifier,
+    getIssuersNotifier,
+    getPaymentsNotifier,
+    getPursesNotifier,
+  } = getNotifierMethods;
+
   const walletBridge = Far('follower wallet bridge', {
-    ...getNotifierMethods,
     getDappsNotifier: () => dappService.notifier,
     getOffersNotifier: () => offerService.notifier,
     getIssuerSuggestionsNotifier: () => issuerService.notifier,
+    getIssuersNotifier,
+    getContactsNotifier,
+    getPaymentsNotifier,
+    getPursesNotifier,
     acceptOffer,
     declineOffer,
     cancelOffer,

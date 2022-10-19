@@ -62,10 +62,13 @@ const pursesReducer = (_, newPurses) =>
         cmp(a.pursePetname, b.pursePetname),
     ) || null;
 
-const dappsReducer = (_, newDapps) =>
+const dappsReducer = (
+  _,
+  /** @type {import('../service/Dapps').DappWithActions[] | null} */ newDapps,
+) =>
   newDapps
     ?.map(dapp => ({ ...dapp, id: dapp.origin }))
-    .sort((a, b) => cmp(a.petname, b.petname) || a.id - b.id) || null;
+    .sort((a, b) => cmp(a.petname, b.petname)) || null;
 
 const contactsReducer = (_, newContacts) =>
   newContacts

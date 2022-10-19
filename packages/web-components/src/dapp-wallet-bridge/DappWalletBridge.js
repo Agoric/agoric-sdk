@@ -18,16 +18,29 @@ export const BridgeProtocol = /** @type {const} */ ({
 });
 
 /**
+ * @typedef {{
+ * instanceHandle: "Instance";
+ * publicInvitationMaker: string;
+ * proposalTemplate: Partial<ProposalRecord>
+ * }} OfferConfig
+ */
+
+/**
  * Web component for connecting to the Agoric Smart Wallet bridge. Mainly used
  * for sending offers to a trusted wallet UI to be inspected and signed.
  */
 export class DappWalletBridge extends LitElement {
   static get properties() {
-    return { address: { type: String }, chainId: { type: String } };
+    return {
+      address: { type: String },
+      chainId: { type: String },
+      locatorUrl: { type: String },
+    };
   }
 
   constructor() {
     super();
+    this.locatorUrl = DEFAULT_LOCATOR_URL;
     this.bridgeHref = null;
     this.isBridgeReady = false;
     this.sendMessageToBridge = null;
@@ -78,12 +91,12 @@ export class DappWalletBridge extends LitElement {
   dispatchBridgeLoadedMessage(data) {
     const ev = new CustomEvent('bridgeReady', {
       detail: {
-        addOffer: offerConfig =>
+        addOffer: (/** @type {OfferConfig} */ offerConfig) =>
           this.sendMessageToBridge({
             type: BridgeProtocol.addOffer,
             offerConfig,
           }),
-        requestDappConnection: petname =>
+        requestDappConnection: (/** @type {string} */ petname) =>
           this.sendMessageToBridge({
             type: BridgeProtocol.requestDappConnection,
             petname,
@@ -173,7 +186,7 @@ export class DappWalletBridge extends LitElement {
       // If we don't know the bridge href yet, render the locator so it can
       // tell us.
       backend = html`<agoric-iframe-messenger
-        src=${DEFAULT_LOCATOR_URL}
+        src=${this.locatorUrl}
         @message=${this.onLocateMessage}
         @error=${this.onError}
       ></agoric-iframe-messenger>`;

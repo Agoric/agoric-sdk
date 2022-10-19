@@ -5,15 +5,12 @@ import './lockdown.js';
 import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { BridgeProtocol } from '@agoric/web-components';
-import { addOffer } from './store/Offers.js';
+import { addOffer, OfferUIStatus } from './store/Offers.js';
 import { loadDapp, upsertDapp, watchDapps } from './store/Dapps.js';
-import { OfferStatus } from './service/Offers';
+
+/** @typedef {import('./store/Dapps').DappKey} DappKey */
 
 Error.stackTraceLimit = Infinity;
-
-/**
- * @typedef {{ origin: string, chainId: string, address: string }} DappId
- */
 
 /**
  * Sends a message to the dapp in the parent window.
@@ -38,31 +35,31 @@ const checkParentWindow = () => {
  * prompt the user to accept the dapp in the wallet and allow it to propose
  * offers if accepted.
  *
- * @param {DappId} id
+ * @param {DappKey} dappKey
  * @param {string} proposedPetname - The suggested petname if the wallet does
  * not already know about the dapp.
  */
-const requestDappConnection = (
-  { origin, chainId, address },
-  proposedPetname,
-) => {
-  const dapp = loadDapp(chainId, address, origin);
+const requestDappConnection = (dappKey, proposedPetname) => {
+  const dapp = loadDapp(dappKey);
   if (dapp) {
     return;
   }
-  upsertDapp(chainId, address, { origin, petname: proposedPetname });
+  upsertDapp(dappKey.chainId, dappKey.address, {
+    origin: dappKey.origin,
+    petname: proposedPetname,
+  });
 };
 
 /**
  * Watches for changes in local storage to the dapp's approval status and
  * notifies the dapp.
  *
- * @param {DappId} id
+ * @param {DappKey} dappKey
  * @param {boolean} currentlyApproved
  */
-const watchDappApproval = ({ origin, chainId, address }, currentlyApproved) => {
-  watchDapps(chainId, address, dapps => {
-    const dapp = dapps.find(d => d.origin === origin);
+const watchDappApproval = (dappKey, currentlyApproved) => {
+  watchDapps(dappKey.chainId, dappKey.address, dapps => {
+    const dapp = dapps.find(d => d.origin === dappKey.origin);
     const isDappApproved = dapp && dapp.isEnabled;
     if (isDappApproved !== currentlyApproved) {
       sendMessage({
@@ -74,15 +71,16 @@ const watchDappApproval = ({ origin, chainId, address }, currentlyApproved) => {
   });
 };
 
+/** @typedef {import('@agoric/web-components/src/dapp-wallet-bridge/DappWalletBridge').OfferConfig} OfferConfig */
 /**
  * Propose an offer from the dapp to the wallet UI.
  *
- * @param {DappId} id
- * @param {any} config // TODO better type for this.
+ * @param {DappKey} dappKey
+ * @param {OfferConfig} offerConfig
  */
-const createAndAddOffer = ({ origin, chainId, address }, config) => {
-  const dapp = loadDapp(chainId, address, origin);
-  const isDappApproved = dapp && dapp.isEnabled;
+const createAndAddOffer = (dappKey, offerConfig) => {
+  const dapp = loadDapp(dappKey);
+  const isDappApproved = !!dapp?.isEnabled;
   if (!isDappApproved) return;
 
   const currentTime = new Date().getTime();
@@ -91,53 +89,48 @@ const createAndAddOffer = ({ origin, chainId, address }, config) => {
 
   const offer = {
     id,
-    instancePetname: `instance@${config.instanceHandleBoardId}`,
-    requestContext: { origin },
     meta: {
       id,
       creationStamp: currentTime,
     },
-    status: OfferStatus.proposed,
-    ...config,
+    requestContext: { origin: dappKey.origin },
+    status: OfferUIStatus.proposed,
+    ...offerConfig,
   };
-  addOffer(chainId, address, offer);
+  addOffer(dappKey.chainId, dappKey.address, offer);
 };
 
 /**
  * Notifies the dapp about whether it's approved or not and watches for changes
  * to its approval status.
  *
- * @param {DappId} id
+ * @param {DappKey} dappKey
  */
-const checkAndWatchDappApproval = ({ origin, chainId, address }) => {
+const checkAndWatchDappApproval = dappKey => {
   // Dapps are keyed by origin. A dapp is basically an origin with a petname
   // and an approval status.
-  const dapp = loadDapp(chainId, address, origin);
-  const isDappApproved = dapp && dapp.isEnabled;
+  const dapp = loadDapp(dappKey);
+  const isDappApproved = !!dapp?.isEnabled;
   sendMessage({
     type: BridgeProtocol.checkIfDappApproved,
     isDappApproved,
   });
-  watchDappApproval({ origin, chainId, address }, isDappApproved);
+  watchDappApproval(dappKey, isDappApproved);
 };
 
 const handleIncomingMessages = () => {
-  /** @type { string } */
-  let origin;
-  /** @type { string } */
-  let address;
-  /** @type { string } */
-  let chainId;
+  /** @type {DappKey=} */
+  let dappKey;
 
   window.addEventListener('message', ev => {
     const type = ev.data?.type;
     if (!type?.startsWith(BridgeProtocol.prefix)) {
       return;
     }
-    if (origin === undefined) {
-      origin = ev.origin;
-      address = ev.data?.address;
-      chainId = ev.data?.chainId;
+    if (dappKey === undefined) {
+      const origin = ev.origin;
+      const chainId = ev.data?.chainId;
+      const address = ev.data?.address;
       assert.string(
         address,
         'First message from dapp should include an address',
@@ -146,18 +139,19 @@ const handleIncomingMessages = () => {
         chainId,
         'First message from dapp should include a chainId',
       );
-      console.debug('bridge connected with dapp origin', origin);
+      dappKey = { origin, chainId, address };
+      console.debug('bridge connected with dapp', dappKey);
     }
 
     switch (type) {
       case BridgeProtocol.requestDappConnection:
-        requestDappConnection({ origin, chainId, address }, ev.data?.petname);
+        requestDappConnection(dappKey, ev.data?.petname);
         break;
       case BridgeProtocol.checkIfDappApproved:
-        checkAndWatchDappApproval({ origin, chainId, address });
+        checkAndWatchDappApproval(dappKey);
         break;
       case BridgeProtocol.addOffer:
-        createAndAddOffer({ origin, chainId, address }, ev.data?.offerConfig);
+        createAndAddOffer(dappKey, ev.data?.offerConfig);
         break;
       default:
         break;
