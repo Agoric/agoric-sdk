@@ -1,9 +1,10 @@
 // @ts-check
-
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { makeFakeStorageKit } from '@agoric/vats/tools/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { setupPsm } from './setupPsm.js';
 
@@ -162,4 +163,39 @@ test('psm block offers w/charter via invitationMakers', async t => {
       ),
     { message: 'not accepting offer with description "wantMinted"' },
   );
+});
+
+test('replace electorate of Economic Committee', async t => {
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+  const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+
+  const { zoe, governor, installs } = await setupPsm(t, electorateTerms, timer);
+
+  const {
+    creatorFacet: secondElectorateCreatorFacet,
+    instance: secondElectorateInstance,
+  } = await E(zoe).startInstance(
+    installs.electorate,
+    harden({}),
+    electorateTerms,
+    {
+      // mocks
+      marshaller: {},
+      storageNode: makeFakeStorageKit('governedPsmTest').rootNode,
+    },
+  );
+
+  const newPoserInvitationP = E(
+    secondElectorateCreatorFacet,
+  ).getPoserInvitation();
+  /** @type {Invitation} */
+  const newPoserInvitation = await newPoserInvitationP;
+
+  const { governorCreatorFacet } = governor;
+  await E(governorCreatorFacet).replaceElectorate(newPoserInvitation);
+  const pf = await E(governorCreatorFacet).getPublicFacet();
+  const { Electorate: newElectorate } = await E(pf).getGovernedParams();
+  t.is(newElectorate.type, 'invitation');
+  // @ts-expect-error unknonwn
+  t.is(newElectorate.value.value[0].instance, secondElectorateInstance);
 });

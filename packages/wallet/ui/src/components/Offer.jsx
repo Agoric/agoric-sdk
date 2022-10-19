@@ -12,6 +12,9 @@ import Proposal from './Proposal';
 
 import './Offer.scss';
 
+// XXX this isn't implemented yet so hide the button.
+const ALLOW_EXIT_OFFER = false;
+
 const statusText = {
   decline: 'Declined',
   rejected: 'Rejected',
@@ -89,7 +92,7 @@ const OfferWithoutContext = ({
 
   const controls = (
     <div className="Controls">
-      {status === 'pending' && (
+      {ALLOW_EXIT_OFFER && status === 'pending' && (
         <Chip
           onClick={exit}
           variant="outlined"

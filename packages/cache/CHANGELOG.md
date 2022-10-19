@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.2.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/cache@0.2.2...@agoric/cache@0.2.3) (2022-10-18)
+
+**Note:** Version bump only for package @agoric/cache
+
+
+
+
+
+### [0.2.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cache@0.2.1...@agoric/cache@0.2.2) (2022-10-08)
+
+**Note:** Version bump only for package @agoric/cache
+
+
+
+
+
+### [0.2.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cache@0.2.0...@agoric/cache@0.2.1) (2022-10-05)
+
+**Note:** Version bump only for package @agoric/cache
+
+
+
+
+
 ## 0.2.0 (2022-09-20)
 
 

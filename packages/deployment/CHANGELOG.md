@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.4.0...@agoric/deployment@2.5.0) (2022-10-05)
+
+
+### Features
+
+* **telemetry:** Support slog sender in subprocess ([9fa268f](https://github.com/Agoric/agoric-sdk/commit/9fa268fc9b59d9fb26d829300d7a9d5a768e47bc))
+
+
+
 ## [2.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.3.1...@agoric/deployment@2.4.0) (2022-09-20)
 
 

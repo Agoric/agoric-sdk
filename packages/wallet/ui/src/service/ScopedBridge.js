@@ -44,14 +44,14 @@ export const getScopedBridge = (origin, suggestedDappPetname, bridge) => {
   return Far('scoped bridge', {
     async addOffer(config) {
       const currentTime = new Date().getTime();
-      const id = `${currentTime}`;
+      const id = currentTime;
       await dapp.approvedP;
       offerService.addOffer({
         id,
         instancePetname: `instance@${config.instanceHandleBoardId}`,
         requestContext: { dappOrigin: origin, origin },
         meta: {
-          id: `${currentTime}`,
+          id,
           creationStamp: currentTime,
         },
         status: 'proposed',

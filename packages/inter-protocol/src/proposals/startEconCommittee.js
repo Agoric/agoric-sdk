@@ -43,7 +43,8 @@ export const startEconomicCommittee = async (
   const COMMITTEES_ROOT = 'committees';
   trace('startEconomicCommittee');
   const {
-    committeeName = 'Initial Economic Committee',
+    // NB: the electorate (and size) of the committee may change, but the name must not
+    committeeName = 'Economic Committee',
     committeeSize = 3,
     ...rest
   } = econCommitteeOptions;

@@ -16,6 +16,7 @@ type HandlerOptions struct {
 	IBCKeeper        *ibckeeper.Keeper
 	FeeCollectorName string
 	AdmissionData    interface{}
+	SwingsetKeeper   SwingsetKeeper
 }
 
 func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
@@ -31,6 +32,9 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 	if opts.AdmissionData == nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "admission data is required for AnteHandler")
 	}
+	if opts.SwingsetKeeper == nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "swingset keeper is required for AnteHandler")
+	}
 
 	var sigGasConsumer = opts.SigGasConsumer
 	if sigGasConsumer == nil {
@@ -45,6 +49,7 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewTxTimeoutHeightDecorator(),
 		ante.NewValidateMemoDecorator(opts.AccountKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(opts.AccountKeeper),
+		NewInboundDecorator(opts.SwingsetKeeper),
 		NewDeductFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper, opts.FeeCollectorName),
 		// SetPubKeyDecorator must be called before all signature verification decorators
 		ante.NewSetPubKeyDecorator(opts.AccountKeeper),

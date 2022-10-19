@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.25.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.25.2...@agoric/zoe@0.25.3) (2022-10-18)
+
+**Note:** Version bump only for package @agoric/zoe
+
+
+
+
+
+### [0.25.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.25.1...@agoric/zoe@0.25.2) (2022-10-08)
+
+**Note:** Version bump only for package @agoric/zoe
+
+
+
+
+
+### [0.25.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.25.0...@agoric/zoe@0.25.1) (2022-10-05)
+
+
+### Bug Fixes
+
+* protect zoe from keyword collision ([#6370](https://github.com/Agoric/agoric-sdk/issues/6370)) ([02af4a0](https://github.com/Agoric/agoric-sdk/commit/02af4a07ad1f99b545d0bf525bd1ea97d74639d1))
+
+
+
 ## [0.25.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.24.0...@agoric/zoe@0.25.0) (2022-09-20)
 
 

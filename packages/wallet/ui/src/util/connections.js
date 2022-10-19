@@ -1,28 +1,28 @@
 // @ts-check
-/* global process */
 
-export const SmartConnectionMethod = {
-  READ_ONLY: 'readOnly',
-  KEPLR: 'keplr',
+export const KnownNetworkConfigUrls = {
+  main: 'https://main.agoric.net/network-config',
+  devnet: 'https://devnet.agoric.net/network-config',
+  testnet: 'https://testnet.agoric.net/network-config',
+  // for localhost skip https and assume it's subpathed to /wallet
+  localhost: 'http://localhost:3000/wallet/network-config',
 };
 
-const DEFAULT_CONNECTION_CONFIGS = [
-  {
-    href: 'http://localhost:8000/wallet/network-config',
-  },
-  {
-    href: 'https://devnet.agoric.net/network-config',
-  },
-  {
-    href: 'https://testnet.agoric.net/network-config',
-  },
-];
+export const DEFAULT_CONNECTION_CONFIGS = Object.values(
+  KnownNetworkConfigUrls,
+).map(href => ({ href }));
 
-// TODO: Make mainnet unconditional.
-if (process.env.NODE_ENV === 'development') {
-  DEFAULT_CONNECTION_CONFIGS.push({
-    href: 'https://main.agoric.net/network-config',
-  });
-}
-
-export { DEFAULT_CONNECTION_CONFIGS };
+export const networkConfigUrl = {
+  fromSource(source) {
+    return KnownNetworkConfigUrls[source];
+  },
+  toSource(href) {
+    const matchingEntry = Object.entries(KnownNetworkConfigUrls).find(
+      ([_, url]) => url === href,
+    );
+    if (matchingEntry) {
+      return matchingEntry[0];
+    }
+    return 'custom';
+  },
+};

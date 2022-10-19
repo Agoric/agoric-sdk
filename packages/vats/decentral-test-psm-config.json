@@ -1,0 +1,73 @@
+{
+  "bootstrap": "bootstrap",
+  "defaultReapInterval": 1000,
+  "snapshotInterval": 1000,
+  "vats": {
+    "bootstrap": {
+      "sourceSpec": "@agoric/vats/src/core/boot-psm.js",
+      "parameters": {
+        "anchorAssets": [
+          {
+            "keyword": "ToyUSD",
+            "proposedName": "Toy USD",
+            "decimalPlaces": 6,
+            "denom": "ibc/toyusdc"
+          }
+        ],
+        "economicCommitteeAddresses": {
+          "gov1": "agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce",
+          "gov2": "agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang",
+          "gov3": "agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h"
+        }
+      },
+      "creationOptions": {
+        "critical": true
+      }
+    }
+  },
+  "bundles": {
+    "walletFactory": {
+      "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"
+    },
+    "provisionPool": {
+      "sourceSpec": "@agoric/vats/src/provisionPool.js"
+    },
+    "committee": {
+      "sourceSpec": "@agoric/governance/src/committee.js"
+    },
+    "contractGovernor": {
+      "sourceSpec": "@agoric/governance/src/contractGovernor.js"
+    },
+    "binaryVoteCounter": {
+      "sourceSpec": "@agoric/governance/src/binaryVoteCounter.js"
+    },
+    "psm": {
+      "sourceSpec": "@agoric/inter-protocol/src/psm/psm.js"
+    },
+    "psmCharter": {
+      "sourceSpec": "@agoric/inter-protocol/src/psm/psmCharter.js"
+    },
+    "bank": {
+      "sourceSpec": "@agoric/vats/src/vat-bank.js"
+    },
+    "centralSupply": {
+      "sourceSpec": "@agoric/vats/src/centralSupply.js"
+    },
+    "mintHolder": {
+      "sourceSpec": "@agoric/vats/src/mintHolder.js"
+    },
+    "board": {
+      "sourceSpec": "@agoric/vats/src/vat-board.js"
+    },
+    "chainStorage": {
+      "sourceSpec": "@agoric/vats/src/vat-chainStorage.js"
+    },
+    "zcf": {
+      "sourceSpec": "@agoric/zoe/contractFacet.js"
+    },
+    "zoe": {
+      "sourceSpec": "@agoric/vats/src/vat-zoe.js"
+    }
+  },
+  "defaultManagerType": "xs-worker"
+}

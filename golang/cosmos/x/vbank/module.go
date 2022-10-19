@@ -19,6 +19,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -104,62 +105,58 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 // EndBlock implements the AppModule interface
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
 	events := ctx.EventManager().GetABCIEventHistory()
-	addressToBalance := make(map[string]sdk.Coins, len(events)*2)
+	addressToUpdate := make(map[string]sdk.Coins, len(events)*2)
 
-	ensureBalanceIsPresent := func(address string) error {
-		if _, ok := addressToBalance[address]; ok {
-			return nil
+	// records that we want to emit an balance update for the address
+	// for the given denoms. We use the Coins only to track the set of
+	// denoms, not for the amounts.
+	ensureAddressUpdate := func(address string, denoms sdk.Coins) {
+		if denoms.IsZero() {
+			return
 		}
-		account, err := sdk.AccAddressFromBech32(address)
-		if err != nil {
-			return err
+		currentDenoms := sdk.NewCoins()
+		if coins, ok := addressToUpdate[address]; ok {
+			currentDenoms = coins
 		}
-		coins := am.keeper.GetAllBalances(ctx, account)
-		addressToBalance[address] = coins
-		return nil
+		addressToUpdate[address] = currentDenoms.Add(denoms...)
 	}
 
 	/* Scan for all the events matching (taken from cosmos-sdk/x/bank/spec/04_events.md):
 
-	### MsgSend
-
-	| Type     | Attribute Key | Attribute Value    |
-	| -------- | ------------- | ------------------ |
-	| transfer | recipient     | {recipientAddress} |
-	| transfer | sender        | {senderAddress}    |
-	| transfer | amount        | {amount}           |
-	| message  | module        | bank               |
-	| message  | action        | send               |
-	| message  | sender        | {senderAddress}    |
-
-	### MsgMultiSend
-
-	| Type     | Attribute Key | Attribute Value    |
-	| -------- | ------------- | ------------------ |
-	| transfer | recipient     | {recipientAddress} |
-	| transfer | sender        | {senderAddress}    |
-	| transfer | amount        | {amount}           |
-	| message  | module        | bank               |
-	| message  | action        | multisend          |
-	| message  | sender        | {senderAddress}    |
+	type: "coin_received"
+	  "receiver": {recipient address}
+	  "amount": {Coins string}
+	type: "coin_spent"
+	  "spender": {spender address}
+	  "amount": {Coins string}
 	*/
+NextEvent:
 	for _, event := range events {
 		switch event.Type {
-		case "transfer":
+		case banktypes.EventTypeCoinReceived, banktypes.EventTypeCoinSpent:
+			var addr string
+			denoms := sdk.NewCoins()
 			for _, attr := range event.GetAttributes() {
 				switch string(attr.GetKey()) {
-				case "recipient", "sender":
-					address := string(attr.GetValue())
-					if err := ensureBalanceIsPresent(address); err != nil {
-						stdlog.Println("Cannot ensure vbank balance for", address, err)
+				case banktypes.AttributeKeyReceiver, banktypes.AttributeKeySpender:
+					addr = string(attr.GetValue())
+				case sdk.AttributeKeyAmount:
+					coins, err := sdk.ParseCoinsNormalized(string(attr.GetValue()))
+					if err != nil {
+						stdlog.Println("Cannot ensure vbank balance for", addr, err)
+						break NextEvent
 					}
+					denoms = coins
 				}
+			}
+			if addr != "" && !denoms.IsZero() {
+				ensureAddressUpdate(addr, denoms)
 			}
 		}
 	}
 
 	// Dump all the addressToBalances entries to SwingSet.
-	action := getBalanceUpdate(ctx, am.keeper, addressToBalance)
+	action := getBalanceUpdate(ctx, am.keeper, addressToUpdate)
 	if action != nil {
 		err := am.PushAction(ctx, action)
 		if err != nil {

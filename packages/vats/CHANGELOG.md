@@ -3,6 +3,46 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.12.1...@agoric/vats@0.13.0) (2022-10-18)
+
+
+### Features
+
+* anchorAssets config for {USDC,USDT}_{axl,grv} on main ([b938a79](https://github.com/Agoric/agoric-sdk/commit/b938a79f509840c974a89cd621429f2c9dbd9d6e))
+* econ committee addresses ([548c096](https://github.com/Agoric/agoric-sdk/commit/548c0968f2e811cf449eddb370bca3448314b06c))
+* **vats:** test config doesn't use up production token keywords ([ade318b](https://github.com/Agoric/agoric-sdk/commit/ade318b8055feca9de1d8ee36bf54f64af9f32d5))
+
+
+### Bug Fixes
+
+* allow test flag for update ([237c56e](https://github.com/Agoric/agoric-sdk/commit/237c56edbf9de28d6947d8f6e482aa554aae02f9))
+
+
+
+### [0.12.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.12.0...@agoric/vats@0.12.1) (2022-10-08)
+
+
+### Bug Fixes
+
+* implement upgrade handler ([0f64bf1](https://github.com/Agoric/agoric-sdk/commit/0f64bf15e78e27e7e3127a62740025ab823a4a96))
+
+
+
+## [0.12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.11.0...@agoric/vats@0.12.0) (2022-10-05)
+
+
+### Features
+
+* **vats:** devnet config with anchorAssets, econ cttee addrs ([#6282](https://github.com/Agoric/agoric-sdk/issues/6282)) ([bc883b5](https://github.com/Agoric/agoric-sdk/commit/bc883b5649aa47fff6c6895536d172cf1e9f0e25))
+
+
+### Bug Fixes
+
+* **provisionPool:** update metrics on trades ([02733eb](https://github.com/Agoric/agoric-sdk/commit/02733eb2e8172ccd2edecab986def027d58601eb))
+* **vats:** handle duplicate provision requests ([#6307](https://github.com/Agoric/agoric-sdk/issues/6307)) ([05d405d](https://github.com/Agoric/agoric-sdk/commit/05d405d5409e1f80612bb002234f5a9c3910a7df))
+
+
+
 ## [0.11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.10.0...@agoric/vats@0.11.0) (2022-09-20)
 
 

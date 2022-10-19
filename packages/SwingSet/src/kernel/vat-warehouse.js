@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop,@jessie.js/no-nested-await */
 // @ts-check
 import { assert, details as X, quote as q } from '@agoric/assert';
 import { isNat } from '@agoric/nat';
@@ -162,21 +163,33 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   /** @param {typeof console.log} logStartup */
   async function start(logStartup) {
     const recreate = true; // note: PANIC on failure to recreate
+    const maxPreload = maxVatsOnline / 2;
+    let numPreloaded = 0;
 
     // NOTE: OPTIMIZATION OPPORTUNITY: replay vats in parallel
 
-    // instantiate all static vats
+    // instantiate all static vats, in lexicographic order, up to the
+    // maxPreload limit
     for (const [name, vatID] of kernelKeeper.getStaticVats()) {
+      if (numPreloaded >= maxPreload) {
+        break;
+      }
       logStartup(`provideVatKeeper for vat ${name} as vat ${vatID}`);
       // eslint-disable-next-line no-await-in-loop
       await ensureVatOnline(vatID, recreate);
+      numPreloaded += 1;
     }
 
-    // instantiate all dynamic vats
+    // then instantiate all dynamic vats, in creation order, also
+    // subject to maxPreload
     for (const vatID of kernelKeeper.getDynamicVats()) {
+      if (numPreloaded >= maxPreload) {
+        break;
+      }
       logStartup(`provideVatKeeper for dynamic vat ${vatID}`);
       // eslint-disable-next-line no-await-in-loop
       await ensureVatOnline(vatID, recreate);
+      numPreloaded += 1;
     }
   }
 

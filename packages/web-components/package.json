@@ -3,7 +3,7 @@
   "description": "Webcomponents for Agoric dapps",
   "license": "MIT",
   "author": "Agoric",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "main": "index.js",
   "module": "index.js",
   "scripts": {
@@ -20,9 +20,9 @@
     "start": "web-dev-server --port 8100"
   },
   "dependencies": {
-    "@agoric/assert": "^0.5.0",
-    "@agoric/cache": "^0.2.0",
-    "@agoric/casting": "^0.2.0",
+    "@agoric/assert": "^0.5.1",
+    "@agoric/cache": "^0.2.3",
+    "@agoric/casting": "^0.3.2",
     "@endo/captp": "^2.0.15",
     "@endo/marshal": "^0.7.5",
     "@endo/promise-kit": "^0.2.49",

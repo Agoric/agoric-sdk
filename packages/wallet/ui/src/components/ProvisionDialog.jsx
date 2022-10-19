@@ -1,3 +1,5 @@
+// @ts-check
+import { makeFollower, iterateLatest } from '@agoric/casting';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -7,8 +9,9 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
-import { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
+import { AmountMath } from '@agoric/ertp';
 import { withApplicationContext } from '../contexts/Application';
 
 const steps = {
@@ -24,9 +27,75 @@ const errors = {
 // TODO: Read this from the chain via rpc.
 const CREATION_FEE = '10 BLD';
 
-const ProvisionDialog = ({ onClose, open, address, href, keplrConnection }) => {
+// 100 IST
+const MINIMUM_PROVISION_POOL_BALANCE = 100n * 1_000_000n;
+
+// XXX import from the contract
+
+/**
+ * @typedef {object} ProvisionPoolMetrics
+ * @property {bigint} walletsProvisioned  count of new wallets provisioned
+ * @property {Amount<'nat'>} totalMintedProvided  running sum of Minted provided to new wallets
+ * @property {Amount<'nat'>} totalMintedConverted  running sum of Minted
+ * ever received by the contract from PSM
+ */
+
+export const useProvisionPoolMetrics = (unserializer, leader) => {
+  const [data, setData] = useState(/** @type {ProvisionPoolMetrics?} */ (null));
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchData = async () => {
+      const follower = await makeFollower(
+        `:published.provisionPool.metrics`,
+        leader,
+        {
+          unserializer,
+        },
+      );
+      for await (const { value } of iterateLatest(follower)) {
+        if (cancelled) {
+          break;
+        }
+        console.log('provisionPoolData', value);
+        setData(value);
+      }
+    };
+    fetchData().catch(e =>
+      console.error('useProvisionPoolMetrics fetchData error', e),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [unserializer, leader]);
+
+  return data;
+};
+
+/**
+ *
+ * @param {ProvisionPoolMetrics} provisionPoolData
+ * @returns {boolean}
+ */
+const isProvisionPoolLow = provisionPoolData =>
+  provisionPoolData &&
+  AmountMath.subtract(
+    provisionPoolData.totalMintedConverted,
+    provisionPoolData.totalMintedProvided,
+  ).value < MINIMUM_PROVISION_POOL_BALANCE;
+
+const ProvisionDialog = ({
+  onClose,
+  open,
+  address,
+  href,
+  keplrConnection,
+  unserializer,
+  leader,
+}) => {
   const [currentStep, setCurrentStep] = useState(steps.INITIAL);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(/** @type {string?} */ (null));
+  const provisionPoolData = useProvisionPoolMetrics(unserializer, leader);
 
   const provisionWallet = async signer => {
     setError(null);
@@ -69,7 +138,7 @@ const ProvisionDialog = ({ onClose, open, address, href, keplrConnection }) => {
     </Box>
   );
 
-  const content = (() => {
+  const content = useMemo(() => {
     switch (currentStep) {
       case steps.INITIAL:
         return (
@@ -96,7 +165,10 @@ const ProvisionDialog = ({ onClose, open, address, href, keplrConnection }) => {
       default:
         return <></>;
     }
-  })();
+  }, [currentStep, href, address]);
+
+  const provisionPoolLow =
+    provisionPoolData !== null && isProvisionPoolLow(provisionPoolData);
 
   return (
     <Dialog open={open}>
@@ -105,18 +177,29 @@ const ProvisionDialog = ({ onClose, open, address, href, keplrConnection }) => {
       </DialogTitle>
       <DialogContent>
         {content}
+        {provisionPoolLow && (
+          <DialogContentText sx={{ pt: 2 }} color="error">
+            The pool of funds to provision smart wallets is too small at this
+            time.
+          </DialogContentText>
+        )}
         {error && (
-          <DialogContentText sx={{ pt: 2 }} color="primary">
+          <DialogContentText sx={{ pt: 2 }} color="error">
             {error}
           </DialogContentText>
         )}
       </DialogContent>
       {currentStep === steps.INITIAL && (
         <DialogActions>
-          <Button color="cancel" onClick={onClose}>
+          <Button color="inherit" onClick={onClose}>
             Change Connection
           </Button>
-          <Button onClick={handleCreateButtonClicked}>Create</Button>
+          <Button
+            disabled={!provisionPoolData || provisionPoolLow}
+            onClick={handleCreateButtonClicked}
+          >
+            Create
+          </Button>
         </DialogActions>
       )}
     </Dialog>

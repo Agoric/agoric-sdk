@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.9.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.9.0...@agoric/governance@0.9.1) (2022-10-18)
+
+**Note:** Version bump only for package @agoric/governance
+
+
+
+
+
+## [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.8.1...@agoric/governance@0.9.0) (2022-10-08)
+
+
+### Features
+
+* **governance:** replaceElectorate ([12de09e](https://github.com/Agoric/agoric-sdk/commit/12de09e03a6f52c77f2453a006164f151a2c13af))
+
+
+### Bug Fixes
+
+* strike "Initial" from Economic Committee ([0f3ce16](https://github.com/Agoric/agoric-sdk/commit/0f3ce1695635551b800f04e0e232d25e16c8f562))
+
+
+
+### [0.8.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.8.0...@agoric/governance@0.8.1) (2022-10-05)
+
+**Note:** Version bump only for package @agoric/governance
+
+
+
+
+
 ## [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.7.0...@agoric/governance@0.8.0) (2022-09-20)
 
 

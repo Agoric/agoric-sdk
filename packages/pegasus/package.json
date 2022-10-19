@@ -1,6 +1,6 @@
 {
   "name": "@agoric/pegasus",
-  "version": "0.7.3",
+  "version": "0.7.6",
   "description": "Peg-as-us contract",
   "type": "module",
   "main": "./src/pegasus.js",
@@ -29,14 +29,14 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.5.0",
-    "@agoric/ertp": "^0.15.0",
+    "@agoric/assert": "^0.5.1",
+    "@agoric/ertp": "^0.15.3",
     "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.5.0",
-    "@agoric/store": "^0.8.0",
-    "@agoric/swingset-vat": "^0.29.0",
-    "@agoric/vats": "^0.11.0",
-    "@agoric/zoe": "^0.25.0",
+    "@agoric/notifier": "^0.5.1",
+    "@agoric/store": "^0.8.3",
+    "@agoric/swingset-vat": "^0.30.2",
+    "@agoric/vats": "^0.13.0",
+    "@agoric/zoe": "^0.25.3",
     "@endo/bundle-source": "^2.3.1",
     "@endo/captp": "^2.0.15",
     "@endo/far": "^0.2.11",
@@ -44,7 +44,7 @@
     "@endo/promise-kit": "^0.2.49"
   },
   "devDependencies": {
-    "@agoric/deploy-script-support": "^0.9.1",
+    "@agoric/deploy-script-support": "^0.9.4",
     "ava": "^4.3.1",
     "c8": "^7.11.0",
     "import-meta-resolve": "^1.1.1"

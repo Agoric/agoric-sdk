@@ -11,7 +11,7 @@ import MakePurse from '../components/MakePurse';
 import ImportIssuer from '../components/ImportIssuer';
 import Loading from '../components/Loading';
 import Petname from '../components/Petname';
-import { icons, defaultIcon } from '../util/Icons';
+import BrandIcon from '../components/BrandIcon';
 import { withApplicationContext } from '../contexts/Application';
 
 import './Issuers.scss';
@@ -70,12 +70,7 @@ export const IssuersWithoutContext = ({
     return (
       <CardItem key={issuer.id} hideDivider={index === 0}>
         <div className="Left">
-          <img
-            alt="icon"
-            src={icons[issuer.issuerPetname] ?? defaultIcon}
-            height="32px"
-            width="32px"
-          />
+          <BrandIcon brandPetname={issuer.issuerPetname} />
           <div>
             <Petname name={issuer.issuerPetname} />
             <div>
