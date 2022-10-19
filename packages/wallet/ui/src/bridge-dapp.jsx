@@ -39,7 +39,8 @@ const checkParentWindow = () => {
  * offers if accepted.
  *
  * @param {DappId} id
- * @param {string} proposedPetname
+ * @param {string} proposedPetname - The suggested petname if the wallet does
+ * not already know about the dapp.
  */
 const requestDappConnection = (
   { origin, chainId, address },
