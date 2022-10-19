@@ -34,8 +34,8 @@ const { details: X } = assert;
  * @property {(key: string) => void} reserve Mark a key as reserved; will
  * return a promise that is fulfilled when the key is updated (or rejected when
  * deleted).
- * @property {( key: string, newValue: unknown, newAdmin?: unknown) =>
- *   any } default Update if not already updated.  Return
+ * @property {<T>( key: string, newValue: T, newAdmin?: unknown) =>
+ *   T } default Update if not already updated.  Return
  *   existing value, or newValue if not existing.
  * @property {(
  *   key: string, newValue: unknown, newAdmin?: unknown) => void

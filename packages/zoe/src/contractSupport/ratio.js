@@ -375,10 +375,12 @@ export const quantize = (ratio, newDen) => {
   );
 };
 
+const NUMERIC_RE = /^(\d\d*)(?:\.(\d*))?$/;
+
 /**
  * Create a ratio from a given numeric value.
  *
- * @param {string | number | bigint} numeric
+ * @param {ParsableNumber} numeric
  * @param {Brand} numeratorBrand
  * @param {Brand} [denominatorBrand]
  * @returns {Ratio}
@@ -388,7 +390,7 @@ export const parseRatio = (
   numeratorBrand,
   denominatorBrand = numeratorBrand,
 ) => {
-  const match = `${numeric}`.match(/^(\d\d*)(?:\.(\d*))?$/);
+  const match = `${numeric}`.match(NUMERIC_RE);
   assert(match, X`Invalid numeric data: ${numeric}`);
 
   const [whole, part = ''] = [match[1], match[2]];
@@ -398,4 +400,14 @@ export const parseRatio = (
     10n ** BigInt(part.length),
     denominatorBrand,
   );
+};
+
+// eslint-disable-next-line jsdoc/require-returns-check
+/**
+ * @param {unknown} specimen
+ * @returns {asserts specimen is ParsableNumber}
+ */
+export const assertParsableNumber = specimen => {
+  const match = `${specimen}`.match(NUMERIC_RE);
+  assert(match, X`Invalid numeric data: ${specimen}`);
 };
