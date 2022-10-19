@@ -305,7 +305,7 @@ export const makeEncodePassable = ({
         const result = encodePromise(passable);
         result.startsWith('?') ||
           assert.fail(
-            X`internal: Promise encoding must start with "p": ${result}`,
+            X`internal: Promise encoding must start with "?": ${result}`,
           );
         return result;
       }
