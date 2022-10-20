@@ -70,8 +70,8 @@
 
 /**
  * @callback GetPublicFacet
- * @param {ERef<Instance>} instanceP
- * @returns {Promise<object>}
+ * @param {ERef<Instance<SF>>} instanceP
+ * @returns {Promise<SF>}
  */
 
 /**
@@ -286,7 +286,8 @@
  */
 
 /**
- * @typedef {Handle<'Instance'>} Instance
+ * @template [SF=any] contract start function
+ * @typedef {import('./utils').Instance<SF>} Instance
  */
 
 /**

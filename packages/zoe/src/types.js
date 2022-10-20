@@ -1,5 +1,6 @@
 /// <reference types="ses"/>
 
+// FIXME TypeScript infers runtime typeof === 'string' for handles
 /**
  * @template {string} H - the name of the handle
  * @typedef {H & {}} Handle A type constructor for an opaque type
