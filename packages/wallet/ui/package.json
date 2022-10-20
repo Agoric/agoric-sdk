@@ -18,6 +18,7 @@
     "@agoric/wallet-backend": "^0.13.3",
     "@agoric/web-components": "0.4.1",
     "@agoric/zoe": "^0.25.3",
+    "@agoric/internal": "0.2.1",
     "@cosmjs/crypto": "0.29.0",
     "@cosmjs/encoding": "0.29.0",
     "@cosmjs/proto-signing": "0.29.0",

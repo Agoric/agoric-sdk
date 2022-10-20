@@ -84,7 +84,8 @@ const createAndAddOffer = (dappKey, offerConfig) => {
   if (!isDappApproved) return;
 
   const currentTime = new Date().getTime();
-  // TODO: Will these ever collide? Do we need more randomness?
+  // TODO(https://github.com/Agoric/agoric-sdk/issues/6478): Generate separate
+  // id for transaction when signing.
   const id = currentTime;
 
   const offer = {

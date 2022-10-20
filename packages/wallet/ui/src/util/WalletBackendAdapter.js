@@ -1,6 +1,7 @@
 // @ts-check
 import { iterateEach } from '@agoric/casting';
 import { AmountMath } from '@agoric/ertp';
+import { objectMap } from '@agoric/internal';
 import {
   makeAsyncIterableFromNotifier,
   makeNotifierKit,
@@ -181,11 +182,9 @@ export const makeWalletBridgeFromFollowers = (
     return interactiveSigner.submitSpendAction(data);
   };
 
-  const getNotifierMethods = Object.fromEntries(
-    Object.entries(notifiers).map(([method, stateName]) => {
-      const { notifier } = notifierKits[stateName];
-      return [method, () => notifier];
-    }),
+  const getNotifierMethods = objectMap(
+    notifiers,
+    stateName => () => notifierKits[stateName].notifier,
   );
 
   /** @type {Notifier<import('@agoric/smart-wallet/src/offers.js').OfferStatus>} */
