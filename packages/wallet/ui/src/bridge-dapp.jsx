@@ -44,7 +44,7 @@ const requestDappConnection = (dappKey, proposedPetname) => {
   if (dapp) {
     return;
   }
-  upsertDapp(dappKey.chainId, dappKey.address, {
+  upsertDapp(dappKey.smartWalletKey, {
     origin: dappKey.origin,
     petname: proposedPetname,
   });
@@ -58,9 +58,9 @@ const requestDappConnection = (dappKey, proposedPetname) => {
  * @param {boolean} currentlyApproved
  */
 const watchDappApproval = (dappKey, currentlyApproved) => {
-  watchDapps(dappKey.chainId, dappKey.address, dapps => {
+  watchDapps(dappKey.smartWalletKey, dapps => {
     const dapp = dapps.find(d => d.origin === dappKey.origin);
-    const isDappApproved = dapp && dapp.isEnabled;
+    const isDappApproved = !!dapp?.isEnabled;
     if (isDappApproved !== currentlyApproved) {
       sendMessage({
         type: BridgeProtocol.dappApprovalChanged,
@@ -98,7 +98,7 @@ const createAndAddOffer = (dappKey, offerConfig) => {
     status: OfferUIStatus.proposed,
     ...offerConfig,
   };
-  addOffer(dappKey.chainId, dappKey.address, offer);
+  addOffer(dappKey.smartWalletKey, offer);
 };
 
 /**
@@ -132,6 +132,11 @@ const handleIncomingMessages = () => {
       const origin = ev.origin;
       const chainId = ev.data?.chainId;
       const address = ev.data?.address;
+      assert.equal(
+        type,
+        BridgeProtocol.checkIfDappApproved,
+        `First message from dapp should be type ${BridgeProtocol.checkIfDappApproved}`,
+      );
       assert.string(
         address,
         'First message from dapp should include an address',
@@ -140,7 +145,8 @@ const handleIncomingMessages = () => {
         chainId,
         'First message from dapp should include a chainId',
       );
-      dappKey = { origin, chainId, address };
+      const smartWalletKey = { chainId, address };
+      dappKey = { smartWalletKey, origin };
       console.debug('bridge connected with dapp', dappKey);
     }
 

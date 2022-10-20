@@ -16,6 +16,8 @@ export const OfferUIStatus = {
   declined: 'decline',
 };
 
+/** @typedef {import('@agoric/web-components/src/dapp-wallet-bridge/DappWalletBridge').OfferConfig} OfferConfig */
+/** @typedef {import('./Dapps.js').SmartWalletKey} SmartWalletKey */
 /**
  * @typedef {{
  *   id: number;
@@ -29,17 +31,16 @@ export const OfferUIStatus = {
  *   status: OfferUIStatus;
  *   instancePetname?: string;
  *   spendAction?: string
- * }} Offer
+ * } & OfferConfig
+ * } Offer
  */
 
 export const loadOffers = (
-  /** @type {string} */ chainId,
-  /** @type {string} */ address,
+  /** @type {SmartWalletKey} */ { chainId, address },
 ) => maybeLoad([OFFERS_STORAGE_KEY, chainId, address]) ?? [];
 
 export const addOffer = (
-  /** @type {string} */ chainId,
-  /** @type {string} */ address,
+  /** @type {SmartWalletKey} */ { chainId, address },
   /** @type {Offer} */ offer,
 ) => {
   const offers = loadOffers(chainId, address) ?? [];
@@ -50,8 +51,7 @@ export const addOffer = (
 };
 
 export const removeOffer = (
-  /** @type {string} */ chainId,
-  /** @type {string} */ address,
+  /** @type {SmartWalletKey} */ { chainId, address },
   /** @type {number} */ id,
 ) => {
   const offers = loadOffers(chainId, address) ?? [];
@@ -62,8 +62,7 @@ export const removeOffer = (
 };
 
 export const watchOffers = (
-  /** @type {string} */ chainId,
-  /** @type {string} */ address,
+  /** @type {SmartWalletKey} */ { chainId, address },
   /** @type {(newOffers: Offer[]) => void} */ onChange,
 ) => {
   watchKey([OFFERS_STORAGE_KEY, chainId, address], newOffers =>

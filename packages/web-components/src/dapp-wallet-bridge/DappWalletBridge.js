@@ -19,7 +19,7 @@ export const BridgeProtocol = /** @type {const} */ ({
 
 /**
  * @typedef {{
- * instanceHandle: "Instance";
+ * instanceHandle: import('@endo/marshal').CapData<"Instance">;
  * publicInvitationMaker: string;
  * proposalTemplate: Partial<ProposalRecord>
  * }} OfferConfig

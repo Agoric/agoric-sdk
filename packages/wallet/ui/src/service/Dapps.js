@@ -9,6 +9,7 @@ import {
 } from '../store/Dapps.js';
 
 /** @typedef {import("../store/Dapps.js").Dapp} Dapp */
+/** @typedef {import('../store/Dapps.js').SmartWalletKey} SmartWalletKey */
 
 /**
  * @typedef {{
@@ -21,8 +22,7 @@ import {
 /** @typedef {Dapp & {actions: DappActions}} DappWithActions */
 
 export const getDappService = (
-  /** @type {string} */ chainId,
-  /** @type {string} */ address,
+  /** @type {SmartWalletKey} */ smartWalletKey,
 ) => {
   /** @type {NotifierRecord<DappWithActions[]>} */
   const { notifier, updater } = makeNotifierKit();
@@ -31,23 +31,22 @@ export const getDappService = (
     /** @type {Map<string, DappWithActions>} */ dapps,
   ) => updater.updateState([...dapps.values()]);
 
-  const upsertDapp = (/** @type {Dapp} */ dapp) =>
-    upsert(chainId, address, dapp);
+  const upsertDapp = (/** @type {Dapp} */ dapp) => upsert(smartWalletKey, dapp);
 
   const deleteDapp = (
     /** @type {string} */ origin,
     /** @type { () => void } */ updateDapps,
   ) => {
-    remove({ chainId, address, origin });
+    remove({ smartWalletKey, origin });
     updateDapps();
   };
 
   const setDappPetname = (
     /** @type {string} */ origin,
-    /** @type {any} */ petname,
+    /** @type {string} */ petname,
     /** @type {{ (): void; (): void; }} */ updateDapps,
   ) => {
-    const dapp = load({ chainId, address, origin });
+    const dapp = load({ smartWalletKey, origin });
     assert(dapp, `Tried to set petname on undefined dapp ${origin}`);
     upsertDapp({ ...dapp, petname });
     updateDapps();
@@ -57,7 +56,7 @@ export const getDappService = (
     /** @type {string} */ origin,
     /** @type { () => void } */ updateDapps,
   ) => {
-    const dapp = load({ chainId, address, origin });
+    const dapp = load({ smartWalletKey, origin });
     assert(dapp, `Tried to enable undefined dapp ${origin}`);
     upsertDapp({ ...dapp, isEnabled: true });
     updateDapps();
@@ -65,7 +64,7 @@ export const getDappService = (
 
   const updateDapps = () => {
     const dapps = new Map();
-    const storedDapps = loadAll(chainId, address);
+    const storedDapps = loadAll(smartWalletKey);
     storedDapps.forEach((/** @type {{origin: string}} */ d) => {
       dapps.set(d.origin, {
         ...d,
@@ -79,7 +78,7 @@ export const getDappService = (
     broadcastUpdates(dapps);
   };
 
-  watch(chainId, address, updateDapps);
+  watch(smartWalletKey, updateDapps);
   updateDapps();
 
   return {

@@ -19,17 +19,16 @@ import {
 /** @typedef {import('@agoric/smart-wallet/src/offers.js').OfferStatus} OfferStatus */
 
 /** @typedef {import('../store/Offers').Offer} Offer */
+/** @typedef {import('../store/Dapps').SmartWalletKey} SmartWalletKey */
 
 /**
- * @param {string} chainId
- * @param {string} address
+ * @param {SmartWalletKey} smartWalletKey
  * @param {(data: string) => Promise<any>} signSpendAction
  * @param {Notifier<OfferStatus>} chainOffersNotifier
  * @param {Marshaller} boardIdMarshaller
  */
 export const getOfferService = (
-  chainId,
-  address,
+  smartWalletKey,
   signSpendAction,
   chainOffersNotifier,
   boardIdMarshaller,
@@ -40,7 +39,7 @@ export const getOfferService = (
 
   const addSpendActionAndInstancePetname = async (
     /** @type {Map<Petname, Brand>} */ pursePetnameToBrand,
-    /** @type {} */ offer,
+    /** @type {Offer} */ offer,
   ) => {
     const {
       id,
@@ -103,7 +102,7 @@ export const getOfferService = (
 
   const upsertOffer = (/** @type {Offer} */ offer) => {
     offers.set(offer.id, offer);
-    add(chainId, address, offer);
+    add(smartWalletKey, offer);
     broadcastUpdates();
   };
 
@@ -140,14 +139,14 @@ export const getOfferService = (
             status: OfferUIStatus.rejected,
             error: `${status.error}`,
           });
-          remove(chainId, address, status.id);
+          remove(smartWalletKey, status.id);
         } else if (status.numWantsSatisfied !== undefined) {
           offers.set(status.id, {
             ...oldOffer,
             id: status.id,
             status: OfferUIStatus.accepted,
           });
-          remove(chainId, address, status.id);
+          remove(smartWalletKey, status.id);
         } else if (status.numWantsSatisfied === undefined) {
           offers.set(status.id, {
             ...oldOffer,
@@ -168,26 +167,26 @@ export const getOfferService = (
    * @param {Map<Petname, Brand>} pursePetnameToBrand
    */
   const start = pursePetnameToBrand => {
-    const storedOffers = load(chainId, address);
+    const storedOffers = load(smartWalletKey);
     const storedOffersP = Promise.all(
-      storedOffers.map(o => {
+      storedOffers.map(async (/** @type {Offer} */ o) => {
         if (o.status === OfferUIStatus.declined) {
-          remove(chainId, address, o.id);
+          remove(smartWalletKey, o.id);
         }
-        return addSpendActionAndInstancePetname(pursePetnameToBrand, o).then(
-          ao => {
-            offers.set(ao.id, {
-              ...ao,
-            });
-          },
+        const ao = await addSpendActionAndInstancePetname(
+          pursePetnameToBrand,
+          o,
         );
+        offers.set(ao.id, {
+          ...ao,
+        });
       }),
     );
     storedOffersP.then(() => broadcastUpdates());
 
     watchChainOffers();
 
-    watchOffers(chainId, address, newOffers => {
+    watchOffers(smartWalletKey, newOffers => {
       const newOffersP = Promise.all(
         newOffers.map(o => {
           return addSpendActionAndInstancePetname(pursePetnameToBrand, o).then(

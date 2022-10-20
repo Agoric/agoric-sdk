@@ -94,11 +94,10 @@ const SmartWalletConnection = ({
           unserializer: context.fromMyWallet,
         });
       const bridge = makeWalletBridgeFromFollowers(
-        keplrConnection.chainId,
+        { chainId: keplrConnection.chainId, address: publicAddress },
         context.fromBoard,
         followPublished(`wallet.${publicAddress}.current`),
         followPublished(`wallet.${publicAddress}`),
-        publicAddress,
         keplrConnection,
         backendError,
         () => {

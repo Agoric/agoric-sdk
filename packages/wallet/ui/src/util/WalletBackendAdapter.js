@@ -104,22 +104,21 @@ export const makeBackendFromWalletBridge = (
   return { backendIt, cancel };
 };
 
+/** @typedef {import('../store/Dapps').SmartWalletKey} SmartWalletKey */
 /**
- * @param {string} chainId
+ * @param {SmartWalletKey} smartWalletKey
  * @param {ReturnType<import('@endo/marshal').makeMarshal>} marshaller
  * @param {import('@agoric/casting').ValueFollower<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord>} currentFollower
  * @param {import('@agoric/casting').ValueFollower<import('@agoric/smart-wallet/src/smartWallet').UpdateRecord>} updateFollower
- * @param {string} publicAddress
  * @param {object} keplrConnection
  * @param {(e: unknown) => void} [errorHandler]
  * @param {() => void} [firstCallback]
  */
 export const makeWalletBridgeFromFollowers = (
-  chainId,
+  smartWalletKey,
   marshaller,
   currentFollower,
   updateFollower,
-  publicAddress,
   keplrConnection,
   errorHandler = e => {
     // Make an unhandled rejection.
@@ -192,8 +191,7 @@ export const makeWalletBridgeFromFollowers = (
   const offersNotifer = getNotifierMethods.getOffersNotifier();
 
   const offerService = getOfferService(
-    chainId,
-    publicAddress,
+    smartWalletKey,
     signSpendAction,
     offersNotifer,
     marshaller,
@@ -318,7 +316,7 @@ export const makeWalletBridgeFromFollowers = (
   };
 
   const issuerService = getIssuerService(signSpendAction);
-  const dappService = getDappService(chainId, publicAddress);
+  const dappService = getDappService(smartWalletKey);
   const { acceptOffer, declineOffer, cancelOffer } = offerService;
 
   const {

@@ -7,7 +7,11 @@ import {
 } from '../util/storage.js';
 
 /**
- * @typedef {{ origin: string, chainId: string, address: string }} DappKey
+ * @typedef {{ chainId: string, address: string }} SmartWalletKey
+ */
+
+/**
+ * @typedef {{ origin: string, smartWalletKey: SmartWalletKey}} DappKey
  */
 
 /**
@@ -15,19 +19,17 @@ import {
  */
 
 /**
- * @param {string} chainId
- * @param {string} address
+ * @param {SmartWalletKey} smartWalletKey
  * @returns {Dapp[]}
  */
-export const loadDapps = (chainId, address) =>
+export const loadDapps = ({ chainId, address }) =>
   maybeLoad([DAPPS_STORAGE_KEY, chainId, address]) ?? [];
 
-export const loadDapp = (/** @type {DappKey} */ { chainId, address, origin }) =>
-  loadDapps(chainId, address).find(d => d.origin === origin);
+export const loadDapp = (/** @type {DappKey} */ { smartWalletKey, origin }) =>
+  loadDapps(smartWalletKey).find(d => d.origin === origin);
 
 export const upsertDapp = (
-  /** @type {string} */ chainId,
-  /** @type {string} */ address,
+  /** @type {SmartWalletKey} */ { chainId, address },
   /** @type {Dapp} */ dapp,
 ) => {
   const { origin, isEnabled, petname } = dapp;
@@ -40,9 +42,9 @@ export const upsertDapp = (
 };
 
 export const removeDapp = (
-  /** @type {DappKey} */ { chainId, address, origin },
+  /** @type {DappKey} */ { smartWalletKey: { chainId, address }, origin },
 ) => {
-  const dapps = loadDapps();
+  const dapps = loadDapps({ chainId, address });
   maybeSave(
     [DAPPS_STORAGE_KEY, chainId, address],
     dapps.filter(d => d.origin !== origin),
@@ -50,9 +52,8 @@ export const removeDapp = (
 };
 
 export const watchDapps = (
-  /** @type {string} */ chainId,
-  /** @type {string} */ address,
-  /** @type {(newDapps: Dapps[]) => void} */ onChange,
+  /** @type {SmartWalletKey} */ { chainId, address },
+  /** @type {(newDapps: Dapp[]) => void} */ onChange,
 ) => {
   watchKey([DAPPS_STORAGE_KEY, chainId, address], newDapps =>
     onChange(newDapps ?? []),
