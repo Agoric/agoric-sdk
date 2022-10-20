@@ -138,12 +138,6 @@ export const METER_TYPE = 'xs-meter-0';
 
 Be sure to also update `test/test-xs-perf.js` with the new meter version.
 
-Then, commit the meter version change.
-
-```sh
-git commit -am 'chore: Bump meter version'
-```
-
 Changing anything in Endo usually frustrates the SwingSet kernel hashes, and if
 Endo changes nothing, bumping the meter version certainly will, and so
 predictably frustrates the kernel hash golden test.
