@@ -180,7 +180,7 @@ export const setupAmm = async (
 
   const ammTerms = makeAmmTerms(
     chainTimerService,
-    E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+    E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitation),
     AmountMath.make(runBrand, minInitialPoolLiquidity),
   );
 
