@@ -18,12 +18,12 @@
     "lint:types": "tsc -p jsconfig.json"
   },
   "dependencies": {
-    "@endo/eventual-send": "^0.16.5",
-    "@endo/marshal": "^0.7.5",
-    "@endo/promise-kit": "^0.2.49"
+    "@endo/eventual-send": "^0.16.6",
+    "@endo/marshal": "^0.7.6",
+    "@endo/promise-kit": "^0.2.50"
   },
   "devDependencies": {
-    "@endo/init": "^0.5.49",
+    "@endo/init": "^0.5.50",
     "ava": "^4.3.1"
   },
   "author": "Agoric",

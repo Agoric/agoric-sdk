@@ -39,20 +39,20 @@
     "@agoric/vat-data": "^0.4.3",
     "@agoric/vats": "^0.13.0",
     "@agoric/zoe": "^0.25.3",
-    "@endo/captp": "^2.0.15",
-    "@endo/eventual-send": "^0.16.5",
-    "@endo/far": "^0.2.11",
-    "@endo/marshal": "^0.7.5",
-    "@endo/promise-kit": "^0.2.49"
+    "@endo/captp": "^2.0.16",
+    "@endo/eventual-send": "^0.16.6",
+    "@endo/far": "^0.2.12",
+    "@endo/marshal": "^0.7.6",
+    "@endo/promise-kit": "^0.2.50"
   },
   "devDependencies": {
     "@agoric/deploy-script-support": "^0.9.4",
-    "@endo/bundle-source": "^2.3.1",
-    "@endo/init": "^0.5.49",
+    "@endo/bundle-source": "^2.4.0",
+    "@endo/init": "^0.5.50",
     "ava": "^4.3.1",
     "c8": "^7.11.0",
     "import-meta-resolve": "^1.1.1",
-    "ses": "^0.15.23"
+    "ses": "^0.16.0"
   },
   "files": [
     "README.md",
