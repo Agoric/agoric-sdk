@@ -40,14 +40,18 @@ const kv = (keyObj, val) => {
   return { ...val, ...keyObj, id: id ?? text, text, value: val };
 };
 
-const inboxReducer = (_, newInbox) =>
-  newInbox
-    ?.map(tx => ({
-      ...tx,
-      offerId: tx.id,
-      id: tx.meta.id,
-    }))
-    .sort((a, b) => a.id - b.id) || null;
+const inboxReducer = (_, newInbox) => {
+  console.log('got inbox', newInbox);
+  return (
+    newInbox
+      ?.map(tx => ({
+        ...tx,
+        offerId: tx.id,
+        id: tx.meta.id,
+      }))
+      .sort((a, b) => a.id - b.id) || null
+  );
+};
 
 const pursesReducer = (_, newPurses) =>
   newPurses
@@ -58,10 +62,13 @@ const pursesReducer = (_, newPurses) =>
         cmp(a.pursePetname, b.pursePetname),
     ) || null;
 
-const dappsReducer = (_, newDapps) =>
+const dappsReducer = (
+  _,
+  /** @type {import('../service/Dapps').DappWithActions[] | null} */ newDapps,
+) =>
   newDapps
-    ?.map(dapp => ({ ...dapp, id: dapp.meta.id }))
-    .sort((a, b) => cmp(a.petname, b.petname) || a.id - b.id) || null;
+    ?.map(dapp => ({ ...dapp, id: dapp.origin }))
+    .sort((a, b) => cmp(a.petname, b.petname)) || null;
 
 const contactsReducer = (_, newContacts) =>
   newContacts
@@ -198,6 +205,7 @@ const Provider = ({ children }) => {
       // @ts-expect-error state typed as null
       address: accounts[0]?.address,
       signers: { interactiveSigner, backgroundSigner },
+      chainId: chainInfo.chainId,
     });
   };
 

@@ -10,7 +10,6 @@ import {
   ConnectionStatus,
   withApplicationContext,
 } from '../contexts/Application';
-import { bridgeStorageMessages } from '../util/BridgeStorage';
 import {
   makeBackendFromWalletBridge,
   makeWalletBridgeFromFollowers,
@@ -88,7 +87,6 @@ const SmartWalletConnection = ({
     }
 
     let cancelIterator;
-    let cleanupStorageBridge;
 
     const follow = async () => {
       const followPublished = path =>
@@ -96,13 +94,11 @@ const SmartWalletConnection = ({
           unserializer: context.fromMyWallet,
         });
       const bridge = makeWalletBridgeFromFollowers(
+        { chainId: keplrConnection.chainId, address: publicAddress },
+        context.fromBoard,
         followPublished(`wallet.${publicAddress}.current`),
         followPublished(`wallet.${publicAddress}`),
-        leader,
-        context.fromBoard,
-        publicAddress,
         keplrConnection,
-        href,
         backendError,
         () => {
           setConnectionStatus(ConnectionStatus.Connected);
@@ -110,7 +106,6 @@ const SmartWalletConnection = ({
         },
       );
       const { backendIt, cancel } = makeBackendFromWalletBridge(bridge);
-      cleanupStorageBridge = bridgeStorageMessages(bridge);
       cancelIterator = cancel;
       // Need to thunk the error handler, or it gets called immediately.
       setBackendErrorHandler(() => backendError);
@@ -131,8 +126,6 @@ const SmartWalletConnection = ({
     return () => {
       cancelIterator && cancelIterator();
       cancelIterator = undefined;
-      cleanupStorageBridge && cleanupStorageBridge();
-      cleanupStorageBridge = undefined;
     };
   }, [connectionConfig, keplrConnection]);
 

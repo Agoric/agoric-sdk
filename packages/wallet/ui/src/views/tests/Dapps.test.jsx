@@ -10,18 +10,18 @@ import Loading from '../../components/Loading';
 const dapps = [
   {
     id: 0,
-    enable: true,
+    isEnabled: true,
     actions: {
       delete: jest.fn(),
     },
   },
   {
     id: 1,
-    enable: false,
+    isEnabled: false,
   },
   {
     id: 2,
-    enable: true,
+    isEnabled: true,
   },
 ];
 

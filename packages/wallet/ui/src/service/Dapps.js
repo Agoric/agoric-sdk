@@ -1,70 +1,87 @@
+// @ts-check
 import { makeNotifierKit } from '@agoric/notifier';
 import {
-  loadDapps as load,
+  loadDapp as load,
+  loadDapps as loadAll,
   removeDapp as remove,
   upsertDapp as upsert,
+  watchDapps as watch,
 } from '../store/Dapps.js';
 
+/** @typedef {import("../store/Dapps.js").Dapp} Dapp */
+/** @typedef {import('../store/Dapps.js').SmartWalletKey} SmartWalletKey */
+
 /**
- * @param {string} publicAddress
+ * @typedef {{
+ *  enable: () => void;
+ *  disable: () => void;
+ *  setPetname: (petname: string) => void;
+ * }} DappActions
  */
-export const getDappService = publicAddress => {
-  const dapps = new Map();
+
+/** @typedef {Dapp & {actions: DappActions}} DappWithActions */
+
+export const getDappService = (
+  /** @type {SmartWalletKey} */ smartWalletKey,
+) => {
+  /** @type {NotifierRecord<DappWithActions[]>} */
   const { notifier, updater } = makeNotifierKit();
-  const broadcastUpdates = () => updater.updateState([...dapps.values()]);
 
-  const upsertDapp = dapp => {
-    dapps.set(dapp.origin, dapp);
-    upsert(publicAddress, dapp);
-    broadcastUpdates();
+  const broadcastUpdates = (
+    /** @type {Map<string, DappWithActions>} */ dapps,
+  ) => updater.updateState([...dapps.values()]);
+
+  const upsertDapp = (/** @type {Dapp} */ dapp) => upsert(smartWalletKey, dapp);
+
+  const deleteDapp = (
+    /** @type {string} */ origin,
+    /** @type { () => void } */ updateDapps,
+  ) => {
+    remove({ smartWalletKey, origin });
+    updateDapps();
   };
 
-  const deleteDapp = origin => {
-    dapps.delete(origin);
-    remove(publicAddress, origin);
-    broadcastUpdates();
-  };
-
-  const setDappPetname = (origin, petname) => {
-    const dapp = dapps.get(origin);
+  const setDappPetname = (
+    /** @type {string} */ origin,
+    /** @type {string} */ petname,
+    /** @type {{ (): void; (): void; }} */ updateDapps,
+  ) => {
+    const dapp = load({ smartWalletKey, origin });
     assert(dapp, `Tried to set petname on undefined dapp ${origin}`);
     upsertDapp({ ...dapp, petname });
+    updateDapps();
   };
 
-  const enableDapp = origin => {
-    const dapp = dapps.get(origin);
+  const enableDapp = (
+    /** @type {string} */ origin,
+    /** @type { () => void } */ updateDapps,
+  ) => {
+    const dapp = load({ smartWalletKey, origin });
     assert(dapp, `Tried to enable undefined dapp ${origin}`);
-    upsertDapp({ ...dapp, enable: true });
+    upsertDapp({ ...dapp, isEnabled: true });
+    updateDapps();
   };
 
-  const storedDapps = load(publicAddress);
-  storedDapps.forEach(d => {
-    let enableAction;
-    const approvedP = new Promise(res => {
-      enableAction = () => {
-        enableDapp(d.origin);
-        res();
-      };
+  const updateDapps = () => {
+    const dapps = new Map();
+    const storedDapps = loadAll(smartWalletKey);
+    storedDapps.forEach((/** @type {{origin: string}} */ d) => {
+      dapps.set(d.origin, {
+        ...d,
+        actions: {
+          enable: () => enableDapp(d.origin, updateDapps),
+          setPetname: petname => setDappPetname(d.origin, petname, updateDapps),
+          delete: () => deleteDapp(d.origin, updateDapps),
+        },
+      });
     });
+    broadcastUpdates(dapps);
+  };
 
-    dapps.set(d.origin, {
-      ...d,
-      approvedP,
-      actions: {
-        enable: enableAction,
-        setPetname: petname => setDappPetname(d.origin, petname),
-        delete: () => deleteDapp(d.origin),
-      },
-    });
-
-    if (d.enable) {
-      enableAction();
-    }
-  });
-  broadcastUpdates();
+  watch(smartWalletKey, updateDapps);
+  updateDapps();
 
   return {
-    dapps,
     notifier,
     addDapp: upsertDapp,
     setDappPetname,

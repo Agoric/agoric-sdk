@@ -64,11 +64,6 @@ const offer = {
   offerId: 'https://tokenpalace.app#555',
   instancePetname: ['TokenPalace', 'Installation'],
   instanceHandleBoardId: '123',
-  actions: {
-    accept: jest.fn(),
-    cancel: jest.fn(),
-    decline: jest.fn(),
-  },
   requestContext: {
     dappOrigin: 'https://tokenpalace.app',
     origin: 'unknown origin',
@@ -296,6 +291,10 @@ test('closes the offer', () => {
 });
 
 test('accepts the offer', async () => {
+  const accept = jest.fn();
+  offer.actions = {
+    accept: async () => accept(),
+  };
   const component = mount(<Offer offer={offer} />);
 
   await act(async () => component.find(Chip).at(1).props().onClick());
@@ -304,10 +303,14 @@ test('accepts the offer', async () => {
     offerId: offer.id,
     isPending: true,
   });
-  expect(offer.actions.accept).toHaveBeenCalledWith();
+  expect(accept).toHaveBeenCalledWith();
 });
 
 test('declines the offer', () => {
+  const decline = jest.fn();
+  offer.actions = {
+    decline: async () => decline(),
+  };
   const component = mount(<Offer offer={offer} />);
 
   act(() => component.find(Chip).at(2).props().onClick());
@@ -316,7 +319,7 @@ test('declines the offer', () => {
     offerId: offer.id,
     isDeclined: true,
   });
-  expect(offer.actions.decline).toHaveBeenCalledWith();
+  expect(decline).toHaveBeenCalledWith();
 });
 
 test.skip('cancels the offer', () => {

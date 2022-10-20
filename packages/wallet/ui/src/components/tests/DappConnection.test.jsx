@@ -16,7 +16,7 @@ jest.mock('@endo/eventual-send', () => ({
 
 const dapp = {
   id: 0,
-  enable: false,
+  isEnabled: false,
   actions: { enable: jest.fn(), delete: jest.fn() },
 };
 

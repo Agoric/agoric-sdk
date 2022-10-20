@@ -6,14 +6,14 @@ import Dapp from '../Dapp';
 const dapps = [
   {
     id: 0,
-    enable: true,
+    isEnabled: true,
     petname: 'tokenPalace',
     origin: 'https://tokenpalace.app',
     actions: { setPetname: jest.fn() },
   },
   {
     id: 1,
-    enable: false,
+    isEnabled: false,
     petname: 'nftShop',
     origin: 'https://nftshop.app',
   },

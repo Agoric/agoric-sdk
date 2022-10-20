@@ -2,7 +2,7 @@
 import Chip from '@mui/material/Chip';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
-import { E } from '@endo/eventual-send';
+import { useState } from 'react';
 import Request from './Request';
 import Petname from './Petname';
 import { formatDateNow } from '../util/Date';
@@ -43,6 +43,8 @@ const OfferWithoutContext = ({
   setDeclinedOffers,
   setClosedOffers,
 }) => {
+  const [signingError, setSigningError] = useState(null);
+
   const {
     instancePetname,
     instanceHandleBoardId,
@@ -67,21 +69,21 @@ const OfferWithoutContext = ({
 
   const approve = async () => {
     setPendingOffers({ offerId: id, isPending: true });
-    return E(offer.actions)
-      .accept()
-      .catch(e => {
-        setPendingOffers({ offerId: id, isPending: false });
-        console.error('Failed to accept offer', e);
-      });
+    setSigningError(null);
+    return offer.actions.accept().catch(e => {
+      setPendingOffers({ offerId: id, isPending: false });
+      console.error('Failed to sign offer', e);
+      setSigningError(e);
+    });
   };
 
   const decline = () => {
     setDeclinedOffers({ offerId: id, isDeclined: true });
-    E(offer.actions).decline().catch(console.error);
+    offer.actions.decline().catch(console.error);
   };
 
   const exit = () => {
-    E(offer.actions).cancel().catch(console.error);
+    offer.actions.cancel().catch(console.error);
   };
 
   const close = () => {
@@ -147,6 +149,14 @@ const OfferWithoutContext = ({
       <ErrorBoundary>
         <Proposal offer={offer} />
       </ErrorBoundary>
+      {signingError && (
+        <div className="OfferEntry">
+          <h6>Signing Error</h6>
+          <details style={{ whiteSpace: 'pre-wrap' }}>
+            {String(signingError)}
+          </details>
+        </div>
+      )}
       {controls}
     </Request>
   );

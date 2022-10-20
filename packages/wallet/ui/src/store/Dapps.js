@@ -1,27 +1,61 @@
-import { maybeLoad, maybeSave } from '../util/storage.js';
+// @ ts-check
+import {
+  maybeLoad,
+  maybeSave,
+  watchKey,
+  DAPPS_STORAGE_KEY,
+} from '../util/storage.js';
 
-const DAPPS_KEY_PREFIX = 'DAPPS';
+/**
+ * @typedef {{ chainId: string, address: string }} SmartWalletKey
+ */
 
-export const loadDapps = publicAddress =>
-  maybeLoad([DAPPS_KEY_PREFIX, publicAddress]) ?? [];
+/**
+ * @typedef {{ origin: string, smartWalletKey: SmartWalletKey}} DappKey
+ */
 
-export const upsertDapp = (publicAddress, dapp) => {
-  const { origin, enable, petname } = dapp;
+/**
+ * @typedef {{ origin: string, isEnabled?: boolean, petname: string }} Dapp
+ */
 
-  const dapps = loadDapps(publicAddress) ?? [];
+/**
+ * @param {SmartWalletKey} smartWalletKey
+ * @returns {Dapp[]}
+ */
+export const loadDapps = ({ chainId, address }) =>
+  maybeLoad([DAPPS_STORAGE_KEY, chainId, address]) ?? [];
+
+export const loadDapp = (/** @type {DappKey} */ { smartWalletKey, origin }) =>
+  loadDapps(smartWalletKey).find(d => d.origin === origin);
+
+export const upsertDapp = (
+  /** @type {SmartWalletKey} */ { chainId, address },
+  /** @type {Dapp} */ dapp,
+) => {
+  const { origin, isEnabled, petname } = dapp;
+
+  const dapps = loadDapps(chainId, address);
   maybeSave(
-    [DAPPS_KEY_PREFIX, publicAddress],
-    [
-      ...dapps.filter(d => d.origin !== origin),
-      { origin, enable, petname, id: origin, meta: { id: origin } },
-    ],
+    [DAPPS_STORAGE_KEY, chainId, address],
+    [...dapps.filter(d => d.origin !== origin), { origin, isEnabled, petname }],
   );
 };
 
-export const removeDapp = (publicAddress, origin) => {
-  const dapps = loadDapps(publicAddress) ?? [];
+export const removeDapp = (
+  /** @type {DappKey} */ { smartWalletKey: { chainId, address }, origin },
+) => {
+  const dapps = loadDapps({ chainId, address });
   maybeSave(
-    [DAPPS_KEY_PREFIX, publicAddress],
+    [DAPPS_STORAGE_KEY, chainId, address],
     dapps.filter(d => d.origin !== origin),
+  );
+};
+
+export const watchDapps = (
+  /** @type {SmartWalletKey} */ { chainId, address },
+  /** @type {(newDapps: Dapp[]) => void} */ onChange,
+) => {
+  watchKey([DAPPS_STORAGE_KEY, chainId, address], newDapps =>
+    onChange(newDapps ?? []),
   );
 };

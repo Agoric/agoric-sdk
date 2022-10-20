@@ -11,7 +11,6 @@ jest.mock(
   '../components/ConnectionSettingsDialog',
   () => () => 'ConnectionSettingsDialog',
 );
-jest.mock('../components/WalletConnection', () => () => 'WalletConnection');
 jest.mock('../views/Dashboard', () => () => 'Dashboard');
 jest.mock('../views/Dapps', () => () => 'Dapps');
 jest.mock('../views/Contacts', () => () => 'Contacts');

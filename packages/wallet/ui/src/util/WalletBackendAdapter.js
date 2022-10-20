@@ -1,6 +1,7 @@
 // @ts-check
 import { iterateEach } from '@agoric/casting';
 import { AmountMath } from '@agoric/ertp';
+import { objectMap } from '@agoric/internal';
 import {
   makeAsyncIterableFromNotifier,
   makeNotifierKit,
@@ -14,7 +15,6 @@ import { Far } from '@endo/marshal';
 import { getDappService } from '../service/Dapps.js';
 import { getIssuerService } from '../service/Issuers.js';
 import { getOfferService } from '../service/Offers.js';
-import { getScopedBridge } from '../service/ScopedBridge.js';
 
 /** @typedef {import('@agoric/smart-wallet/src/types.js').Petname} Petname */
 
@@ -22,7 +22,9 @@ const newId = kind => `${kind}${Math.random()}`;
 
 /** @typedef {{actions: object, issuerSuggestions: Promise<AsyncIterator>}} BackendSchema */
 
-export const makeBackendFromWalletBridge = walletBridge => {
+export const makeBackendFromWalletBridge = (
+  /** @type {ReturnType<typeof makeWalletBridgeFromFollowers>} */ walletBridge,
+) => {
   /**
    * @template T
    * @param {ERef<Notifier<T>>} notifier
@@ -30,11 +32,8 @@ export const makeBackendFromWalletBridge = walletBridge => {
   const iterateNotifier = async notifier =>
     makeAsyncIterableFromNotifier(notifier)[Symbol.asyncIterator]();
 
-  const { notifier: servicesNotifier } = makeNotifierKit(
-    harden({
-      board: E(walletBridge).getBoard(),
-    }),
-  );
+  // XXX we don't have access to the board yet.
+  const { notifier: servicesNotifier } = makeNotifierKit();
 
   /**
    * @param {AsyncIterator<any[], any[], undefined>} offersMembers
@@ -51,12 +50,12 @@ export const makeBackendFromWalletBridge = walletBridge => {
               harden({
                 id,
                 ...rest,
-                actions: Far('offerActions', {
+                actions: {
                   // Provide these synthetic actions since offers don't have any yet.
                   accept: () => E(walletBridge).acceptOffer(id),
                   decline: () => E(walletBridge).declineOffer(id),
                   cancel: () => E(walletBridge).cancelOffer(id),
-                }),
+                },
               }),
             ),
         });
@@ -105,25 +104,22 @@ export const makeBackendFromWalletBridge = walletBridge => {
   return { backendIt, cancel };
 };
 
+/** @typedef {import('../store/Dapps').SmartWalletKey} SmartWalletKey */
 /**
+ * @param {SmartWalletKey} smartWalletKey
+ * @param {ReturnType<import('@endo/marshal').makeMarshal>} marshaller
  * @param {import('@agoric/casting').ValueFollower<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord>} currentFollower
  * @param {import('@agoric/casting').ValueFollower<import('@agoric/smart-wallet/src/smartWallet').UpdateRecord>} updateFollower
- * @param {import('@agoric/casting').Leader} leader
- * @param {ReturnType<import('@endo/marshal').makeMarshal>} marshaller
- * @param {string} publicAddress
  * @param {object} keplrConnection
- * @param {string} networkConfig
  * @param {(e: unknown) => void} [errorHandler]
  * @param {() => void} [firstCallback]
  */
 export const makeWalletBridgeFromFollowers = (
+  smartWalletKey,
+  marshaller,
   currentFollower,
   updateFollower,
-  leader,
-  marshaller,
-  publicAddress,
   keplrConnection,
-  networkConfig,
   errorHandler = e => {
     // Make an unhandled rejection.
     throw e;
@@ -147,8 +143,6 @@ export const makeWalletBridgeFromFollowers = (
   );
 
   // We assume just one cosmos purse per brand.
-  /** @type {Record<number, import('@agoric/smart-wallet/src/offers.js').OfferStatus & {status: 'accept' | 'rejected'}>} */
-  const offers = {};
   /**
    * @typedef {{
    *  brand?: Brand,
@@ -175,6 +169,34 @@ export const makeWalletBridgeFromFollowers = (
     notifierKits.purses.updater.updateState(harden(purses));
   };
 
+  const signSpendAction = async data => {
+    const {
+      signers: { interactiveSigner },
+    } = keplrConnection;
+    if (!interactiveSigner) {
+      throw new Error(
+        'Cannot sign a transaction in read only mode, connect to keplr.',
+      );
+    }
+    return interactiveSigner.submitSpendAction(data);
+  };
+
+  const getNotifierMethods = objectMap(
+    notifiers,
+    stateName => () => notifierKits[stateName].notifier,
+  );
+
+  /** @type {Notifier<import('@agoric/smart-wallet/src/offers.js').OfferStatus>} */
+  // @ts-expect-error
+  const offersNotifer = getNotifierMethods.getOffersNotifier();
+
+  const offerService = getOfferService(
+    smartWalletKey,
+    signSpendAction,
+    offersNotifer,
+    marshaller,
+  );
+
   const fetchCurrent = async () => {
     await assertHasData(currentFollower);
     const latestIterable = await E(currentFollower).getLatestIterable();
@@ -190,6 +212,7 @@ export const makeWalletBridgeFromFollowers = (
     /** @type {import('@agoric/casting').ValueFollowerElement<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord>} */
     const currentEl = latest.value;
     const wallet = currentEl.value;
+    console.log('wallet current', wallet);
     for (const purse of wallet.purses) {
       console.debug('registering purse', purse);
       const brandDescriptor = wallet.brands.find(
@@ -208,6 +231,7 @@ export const makeWalletBridgeFromFollowers = (
     }
     console.debug('brandToPurse map', brandToPurse);
     updatePurses();
+    offerService.start(pursePetnameToBrand);
     return currentEl.blockHeight;
   };
 
@@ -249,32 +273,7 @@ export const makeWalletBridgeFromFollowers = (
         }
         case 'offerStatus': {
           const { status } = updateRecord;
-          console.log('offerStatus', { status, offers });
-          const oldOffer = offers[status.id];
-          if (!oldOffer) {
-            console.warn('Update for unknown offer, doing nothing.');
-            break;
-          }
-          if ('error' in status) {
-            offers[status.id] = {
-              ...oldOffer,
-              id: status.id,
-              status: 'rejected',
-              error: `${status.error}`,
-            };
-          } else if (
-            oldOffer.status !== 'accept' &&
-            'numWantsSatisfied' in status
-          ) {
-            offers[status.id] = {
-              ...oldOffer,
-              id: status.id,
-              status: 'accept',
-            };
-          }
-          notifierKits.offers.updater.updateState(
-            harden(Object.values(offers)),
-          );
+          notifierKits.offers.updater.updateState(status);
           break;
         }
         default: {
@@ -304,122 +303,43 @@ export const makeWalletBridgeFromFollowers = (
     }
   });
 
-  const getNotifierMethods = Object.fromEntries(
-    Object.entries(notifiers).map(([method, stateName]) => {
-      const { notifier } = notifierKits[stateName];
-      return [method, () => notifier];
-    }),
-  );
-
-  const makeEmptyPurse = () => {
+  const makeEmptyPurse = (_issuerPetname, _purseId) => {
     console.log('make empty purse');
   };
 
-  const addContact = () => {
+  const addContact = (_boardId, _petname) => {
     console.log('add contact');
   };
 
-  const addIssuer = () => {
+  const addIssuer = (_boardId, _petname, _makeDefaultPurse) => {
     console.log('add issuer');
   };
 
-  const signSpendAction = data => {
-    const {
-      signers: { interactiveSigner },
-    } = keplrConnection;
-    if (!interactiveSigner) {
-      throw new Error(
-        'Cannot sign a transaction in read only mode, connect to keplr.',
-      );
-    }
-    return interactiveSigner.submitSpendAction(data);
-  };
-
   const issuerService = getIssuerService(signSpendAction);
-  const dappService = getDappService(publicAddress);
-  const offerService = getOfferService(
-    publicAddress,
-    signSpendAction,
-    getNotifierMethods.getOffersNotifier(),
-  );
+  const dappService = getDappService(smartWalletKey);
   const { acceptOffer, declineOffer, cancelOffer } = offerService;
 
-  // We override addOffer to adapt the old proposalTemplate format to the new
-  // smart-wallet format.
-  const addOfferPSMHack = async details => {
-    const {
-      id,
-      instanceHandleBoardId: instance, // This actually is the instance handle, not an ID.
-      invitationMaker: { method },
-      proposalTemplate: { give, want },
-    } = details;
-
-    const mapPurses = obj =>
-      Object.fromEntries(
-        Object.entries(obj).map(([kw, { brand, pursePetname, value }]) => [
-          kw,
-          {
-            brand: brand || pursePetnameToBrand.get(pursePetname),
-            value: BigInt(value),
-          },
-        ]),
-      );
-    const offer = {
-      id: new Date().getTime(),
-      invitationSpec: {
-        source: 'contract',
-        instance,
-        publicInvitationMaker: method,
-      },
-      proposal: {
-        give: mapPurses(give),
-        want: mapPurses(want),
-      },
-    };
-    const spendAction = await E(marshaller).serialize(
-      harden({
-        method: 'executeOffer',
-        offer,
-      }),
-    );
-
-    // Recover the instance's boardId.
-    const {
-      slots: [instanceBoardId],
-    } = await E(marshaller).serialize(instance);
-
-    const fullOffer = {
-      ...details,
-      instancePetname: `instance@${instanceBoardId}`,
-      spendAction: JSON.stringify(spendAction),
-    };
-    offerService.addOffer(fullOffer);
-    offers[id] = fullOffer;
-    return id;
-  };
+  const {
+    getContactsNotifier,
+    getIssuersNotifier,
+    getPaymentsNotifier,
+    getPursesNotifier,
+  } = getNotifierMethods;
 
   const walletBridge = Far('follower wallet bridge', {
-    ...getNotifierMethods,
     getDappsNotifier: () => dappService.notifier,
     getOffersNotifier: () => offerService.notifier,
     getIssuerSuggestionsNotifier: () => issuerService.notifier,
+    getIssuersNotifier,
+    getContactsNotifier,
+    getPaymentsNotifier,
+    getPursesNotifier,
     acceptOffer,
     declineOffer,
     cancelOffer,
     makeEmptyPurse,
     addContact,
     addIssuer,
-    getScopedBridge: (origin, suggestedDappPetname) =>
-      getScopedBridge(origin, suggestedDappPetname, {
-        dappService,
-        offerService: { ...offerService, addOffer: addOfferPSMHack },
-        leader,
-        unserializer: marshaller,
-        publicAddress,
-        issuerService,
-        networkConfig,
-        ...getNotifierMethods,
-      }),
   });
 
   return walletBridge;

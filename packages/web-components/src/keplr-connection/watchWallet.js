@@ -47,6 +47,6 @@ export const watchWallet = async (leader, address, context) => {
   });
 
   return {
-    getPursesNotifier: () => pursesNotifierKit.notifier,
+    pursesNotifier: pursesNotifierKit.notifier,
   };
 };
