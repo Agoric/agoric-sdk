@@ -53,7 +53,7 @@ const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
 const oraclePath = `${dirname}/../../../src/contracts/oracle.js`;
-const aggregatorPath = `${dirname}/../../../src/contracts/priceAggregator.js`;
+const aggregatorPath = `${dirname}/../../../src/contracts/priceAggregatorSimple.js`;
 
 /**
  *

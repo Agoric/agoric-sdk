@@ -32,7 +32,11 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
 /**
  * This contract aggregates price values from a set of oracles and provides a
- * PriceAuthority for their median.
+ * PriceAuthority for their median. It's like the *Node Operator Aggregation* of [Chainlink price
+ * feeds](https://blog.chain.link/levels-of-data-aggregation-in-chainlink-price-feeds/) but its
+ * simple method of aggregation is too game-able for production use.
+ *
+ * @see {priceAggregatorChainlink}
  *
  * @param {ZCF<{
  * timer: TimerService,
@@ -477,7 +481,7 @@ const start = async (zcf, privateArgs) => {
       await updateQuote(deletedNow);
     },
     /**
-     * @param {Instance<import('./oracle.js').OracleStart> | string} [oracleInstance]
+     * @param {Instance | string} [oracleInstance]
      * @param {OracleQuery} [query]
      * @returns {Promise<OracleAdmin>}
      */

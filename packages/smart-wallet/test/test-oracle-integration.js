@@ -12,7 +12,7 @@ import {
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { E } from '@endo/far';
 
-import { INVITATION_MAKERS_DESC } from '@agoric/zoe/src/contracts/priceAggregator.js';
+import { INVITATION_MAKERS_DESC } from '@agoric/zoe/src/contracts/priceAggregatorSimple.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { AmountMath } from '@agoric/ertp';
 import { coalesceUpdates } from '../src/utils.js';
@@ -97,7 +97,7 @@ test('admin price', async t => {
     'instance',
     'ATOM-USD price feed',
   );
-  /** @type {import('@agoric/zoe/src/contracts/priceAggregator.js').PriceAggregatorContract['publicFacet']} */
+  /** @type {import('@agoric/zoe/src/contracts/priceAggregatorSimple.js').PriceAggregatorContract['publicFacet']} */
   const paPublicFacet = await E(zoe).getPublicFacet(priceAggregator);
   const priceAuthority = await E(paPublicFacet).getPriceAuthority();
 

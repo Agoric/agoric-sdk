@@ -123,7 +123,7 @@ export const createPriceFeed = async (
   /**
    * Values come from economy-template.json, which at this writing had IN:ATOM, OUT:USD
    *
-   * @type {[[Brand, Brand], [Installation<import('@agoric/zoe/src/contracts/priceAggregator.js').start>]]}
+   * @type {[[Brand, Brand], [Installation<import('@agoric/zoe/src/contracts/priceAggregatorSimple.js').start>]]}
    */
   const [[brandIn, brandOut], [priceAggregator]] = await Promise.all([
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
@@ -136,7 +136,7 @@ export const createPriceFeed = async (
   ]);
 
   const unitAmountIn = await unitAmount(brandIn);
-  /** @type {import('@agoric/zoe/src/contracts/priceAggregator.js').PriceAggregatorContract['terms']} */
+  /** @type {import('@agoric/zoe/src/contracts/priceAggregatorSimple.js').PriceAggregatorContract['terms']} */
   const terms = await deeplyFulfilledObject(
     harden({
       ...contractTerms,

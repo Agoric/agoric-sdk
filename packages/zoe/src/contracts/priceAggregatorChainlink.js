@@ -20,7 +20,9 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
 /**
  * This contract aggregates price values from a set of oracleStatuses and provides a
- * PriceAuthority for their median.
+ * PriceAuthority for their median. Unlike priceAggregatorSimple, this approximates
+ * the *Node Operator Aggregation* logic of [Chainlink price
+ * feeds](https://blog.chain.link/levels-of-data-aggregation-in-chainlink-price-feeds/).
  *
  * @param {ZCF<{
  * timer: TimerService,
@@ -588,7 +590,7 @@ const start = async (
   };
 
   /**
-   * @type {Omit<import('./priceAggregator').PriceAggregatorContract['creatorFacet'], 'makeOracleInvitation'> & {
+   * @type {Omit<import('./priceAggregatorSimple').PriceAggregatorContract['creatorFacet'], 'makeOracleInvitation'> & {
    *   getRoundData(_roundId: BigInt): Promise<any>,
    *   oracleRoundState(_oracle: OracleKey, _queriedRoundId: BigInt): Promise<any>
    * }}
