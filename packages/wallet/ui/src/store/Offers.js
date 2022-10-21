@@ -1,3 +1,4 @@
+// @ts-check
 import {
   maybeLoad,
   maybeSave,
@@ -43,7 +44,7 @@ export const addOffer = (
   /** @type {SmartWalletKey} */ { chainId, address },
   /** @type {Offer} */ offer,
 ) => {
-  const offers = loadOffers(chainId, address) ?? [];
+  const offers = loadOffers({ chainId, address }) ?? [];
   maybeSave(
     [OFFERS_STORAGE_KEY, chainId, address],
     [...offers.filter(o => o.id !== offer.id), offer],
@@ -54,7 +55,7 @@ export const removeOffer = (
   /** @type {SmartWalletKey} */ { chainId, address },
   /** @type {number} */ id,
 ) => {
-  const offers = loadOffers(chainId, address) ?? [];
+  const offers = loadOffers({ chainId, address }) ?? [];
   maybeSave(
     [OFFERS_STORAGE_KEY, chainId, address],
     offers.filter(o => o.id !== id),
@@ -65,7 +66,8 @@ export const watchOffers = (
   /** @type {SmartWalletKey} */ { chainId, address },
   /** @type {(newOffers: Offer[]) => void} */ onChange,
 ) => {
-  watchKey([OFFERS_STORAGE_KEY, chainId, address], newOffers =>
-    onChange(newOffers ?? []),
+  watchKey(
+    [OFFERS_STORAGE_KEY, chainId, address],
+    (/** @type {Offer[]} */ newOffers) => onChange(newOffers ?? []),
   );
 };
