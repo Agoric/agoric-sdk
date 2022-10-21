@@ -17,7 +17,7 @@
     "lint:eslint": "exit 0"
   },
   "dependencies": {
-    "@agoric/web-components": "^0.6.0"
+    "@agoric/web-components": "^0.5.0"
   },
   "publishConfig": {
     "access": "public"

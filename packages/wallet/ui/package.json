@@ -16,7 +16,7 @@
     "@agoric/smart-wallet": "^0.4.2",
     "@agoric/ui-components": "^0.3.3",
     "@agoric/wallet-backend": "^0.13.3",
-    "@agoric/web-components": "^0.6.0",
+    "@agoric/web-components": "^0.5.0",
     "@agoric/zoe": "^0.25.3",
     "@agoric/internal": "0.2.1",
     "@cosmjs/crypto": "0.29.0",
