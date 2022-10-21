@@ -58,12 +58,12 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
 
   /**
    *
-   * @param {string[]} operatorAddresses
+   * @param {string[]} oracleAddresses
    * @param {string} inBrandName
    * @param {string} outBrandName
    */
   const simpleCreatePriceFeed = async (
-    operatorAddresses,
+    oracleAddresses,
     inBrandName = 'ATOM',
     outBrandName = 'USD',
   ) => {
@@ -89,7 +89,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
             contractTerms: {
               POLL_INTERVAL: 1n,
             },
-            oracleAddresses: operatorAddresses,
+            oracleAddresses,
             IN_BRAND_NAME: inBrandName,
             OUT_BRAND_NAME: outBrandName,
           },

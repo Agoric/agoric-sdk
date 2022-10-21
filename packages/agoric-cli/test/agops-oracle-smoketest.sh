@@ -24,7 +24,22 @@ fi
 set -x
 
 # TODO initOracle with a distribution to $WALLET
-use simpleCreatePriceFeed with a CORE_EVAL
+# ~use simpleCreatePriceFeed with a CORE_EVAL~ also needs the installation
+
+# Run a solo with `scenario2-setup` (creates chain config and a solo config)
+
+# Run scenario2-runclient (make an agsolo and gives it all the powers, which is what you need to do the Oracle init-core script)
+
+# Then run `agoric deploy dapp-oracle/api/scripts/init-core.js
+
+# Need to specify ORACLE_ADDRESS
+# Provision the smart wallet with the Makefile rules
+# (SMART_WALLET and not REMOTE_WALLET)
+
+# Then there should be a home.priceAuthority that I can,
+# 1) query the price
+# 2) use the smart wallet cI to update it
+# 3) check that the price moved (or the update went through in the offer status)
 
 # Accept invitation to admin an oracle
 ORACLE_OFFER=$(mktemp -t agops.XXX)

@@ -13,7 +13,6 @@ import {
 } from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import * as startPSMmod from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import * as ERTPmod from '@agoric/ertp';
-// TODO: factor startEconomicCommittee out of econ-behaviors.js
 import { fit, M } from '@agoric/store';
 import {
   ECON_COMMITTEE_MANIFEST,

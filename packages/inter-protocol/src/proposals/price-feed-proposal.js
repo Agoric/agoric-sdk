@@ -82,7 +82,7 @@ export const ensureOracleBrands = async (
 
 /**
  * @param {ChainBootstrapSpace} powers
- * @param {{options: {priceFeedOptions: {AGORIC_INSTANCE_NAME: string, oracleAddresses: UNKNOWN, contractTerms: unknown, IN_BRAND_NAME: string, OUT_BRAND_NAME: string}}}} config
+ * @param {{options: {priceFeedOptions: {AGORIC_INSTANCE_NAME: string, oracleAddresses: string[], contractTerms: unknown, IN_BRAND_NAME: string, OUT_BRAND_NAME: string}}}} config
  */
 export const createPriceFeed = async (
   {
