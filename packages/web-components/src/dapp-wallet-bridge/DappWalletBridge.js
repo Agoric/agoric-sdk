@@ -5,11 +5,12 @@ import { assert, details as X } from '@agoric/assert';
 // This site tells the component the URL to load the wallet bridge from. For
 // development, the form on this site can be changed to point the dapp to a
 // different wallet URL. It defaults to 'https://wallet.agoric.app'.
-const DEFAULT_LOCATOR_URL =
+const DEFAULT_LOCATOR_HREF =
   'https://wallet.agoric.app/locator/?append=/wallet/bridge.html';
 
 export const BridgeProtocol = /** @type {const} */ ({
   prefix: 'agoric_',
+  error: 'agoric_bridgeError',
   loaded: 'agoric_walletBridgeLoaded',
   requestDappConnection: 'agoric_requestDappConnection',
   checkIfDappApproved: 'agoric_checkIfDappApproved',
@@ -34,13 +35,14 @@ export class DappWalletBridge extends LitElement {
     return {
       address: { type: String },
       chainId: { type: String },
-      locatorUrl: { type: String },
+      locatorHref: { type: String },
+      bridgeHref: { type: String },
     };
   }
 
   constructor() {
     super();
-    this.locatorUrl = DEFAULT_LOCATOR_URL;
+    this.locatorHref = DEFAULT_LOCATOR_HREF;
     this.bridgeHref = null;
     this.isBridgeReady = false;
     this.sendMessageToBridge = null;
@@ -171,6 +173,11 @@ export class DappWalletBridge extends LitElement {
    */
   onBridgeMessage(ev) {
     console.debug('bridge message received', ev);
+    if (ev.detail.data.type === BridgeProtocol.error) {
+      this.onError(new Error(ev.detail.data.message));
+      return;
+    }
+
     if (!this.isBridgeReady) {
       this.onBridgeReadyMessage(ev);
       this.isBridgeReady = true;
@@ -188,11 +195,19 @@ export class DappWalletBridge extends LitElement {
   }
 
   render() {
-    const hasBridgeHref = this.bridgeHref !== null;
+    // Locate the bridge first.
+    if (this.bridgeHref === null) {
+      return html`<agoric-iframe-messenger
+        src=${this.locatorHref}
+        @message=${this.onLocateMessage}
+        @error=${this.onError}
+      >
+      </agoric-iframe-messenger>`;
+    }
 
     return html`<agoric-iframe-messenger
-      src=${hasBridgeHref ? this.bridgeHref : this.locatorUrl}
-      @message=${hasBridgeHref ? this.onBridgeMessage : this.onLocateMessage}
+      src=${this.bridgeHref}
+      @message=${this.onBridgeMessage}
       @error=${this.onError}
     ></agoric-iframe-messenger>`;
   }
