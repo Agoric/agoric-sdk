@@ -188,11 +188,19 @@ export class DappWalletBridge extends LitElement {
   }
 
   render() {
-    const hasBridgeHref = this.bridgeHref !== null;
+    // Locate the bridge first.
+    if (this.bridgeHref === null) {
+      return html`<agoric-iframe-messenger
+        src=${this.locatorUrl}
+        @message=${this.onLocateMessage}
+        @error=${this.onError}
+      >
+      </agoric-iframe-messenger>`;
+    }
 
     return html`<agoric-iframe-messenger
-      src=${hasBridgeHref ? this.bridgeHref : this.locatorUrl}
-      @message=${hasBridgeHref ? this.onBridgeMessage : this.onLocateMessage}
+      src=${this.bridgeHref}
+      @message=${this.onBridgeMessage}
       @error=${this.onError}
     ></agoric-iframe-messenger>`;
   }
