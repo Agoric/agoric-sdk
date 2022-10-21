@@ -174,6 +174,13 @@ const connectDapp = async () => {
   });
 };
 
+const sendCookiesDisabledError = () => {
+  sendMessage({
+    type: BridgeProtocol.error,
+    message: 'Please enable cross-site cookies to use this functionality.',
+  });
+};
+
 const Bridge = () => {
   useEffect(() => {
     const tryConnect = async () => {
@@ -181,10 +188,12 @@ const Bridge = () => {
         if (await document.hasStorageAccess()) {
           connectDapp();
         } else {
-          throw new Error('wallet bridge could not connect to browser storage');
+          sendCookiesDisabledError();
         }
-      } else {
+      } else if ('localStorage' in window) {
         connectDapp();
+      } else {
+        sendCookiesDisabledError();
       }
     };
     tryConnect();
