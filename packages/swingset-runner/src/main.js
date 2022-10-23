@@ -45,11 +45,10 @@ Command line:
 FLAGS may be:
   --init           - discard any existing saved state at startup
   --initonly       - initialize the swingset but exit without running it
-  --lmdb           - runs using LMDB as the data store (default)
+  --sqlite         - runs using Sqlite3 as the data store (default)
   --memdb          - runs using the non-persistent in-memory data store
   --usexs          - run vats using the the XS engine
   --dbdir DIR      - specify where the data store should go (default BASEDIR)
-  --dbsize SIZE    - set the LMDB size limit to SIZE megabytes (default 2GB)
   --blockmode      - run in block mode (checkpoint every BLOCKSIZE blocks)
   --blocksize N    - set BLOCKSIZE to N cranks (default 200)
   --logtimes       - log block execution time stats while running
@@ -154,7 +153,7 @@ export async function main() {
   const argv = process.argv.slice(2);
 
   let forceReset = false;
-  let dbMode = '--lmdb';
+  let dbMode = '--sqlite';
   let blockSize = 200;
   let batchSize = 200;
   let blockMode = false;
@@ -178,7 +177,6 @@ export async function main() {
   let configPath = null;
   let statsFile = null;
   let dbDir = null;
-  let dbSize = 0;
   let initOnly = false;
   let useXS = false;
   let activityHash = false;
@@ -258,9 +256,6 @@ export async function main() {
       case '--dbdir':
         dbDir = argv.shift();
         break;
-      case '--dbsize':
-        dbSize = Number(argv.shift());
-        break;
       case '--raw':
         rawMode = true;
         doDumps = true;
@@ -278,7 +273,7 @@ export async function main() {
         doAudits = true;
         break;
       case '--memdb':
-      case '--lmdb':
+      case '--sqlite':
         dbMode = flag;
         break;
       case '--usexs':
@@ -360,22 +355,16 @@ export async function main() {
   switch (dbMode) {
     case '--memdb':
       if (dbDir) {
-        fail('--dbdir only valid with --lmdb');
-      }
-      if (dbSize) {
-        fail('--dbsize only valid with --lmdb');
+        fail('--dbdir only valid with --sqlite');
       }
       swingStore = initSwingStore(null);
       break;
-    case '--lmdb': {
+    case '--sqlite': {
       if (!dbDir) {
         dbDir = basedir;
       }
       const kernelStateDBDir = path.join(dbDir, 'swingset-kernel-state');
       const dbOptions = {};
-      if (dbSize) {
-        dbOptions.mapSize = dbSize * 1024 * 1024;
-      }
       if (forceReset) {
         swingStore = initSwingStore(kernelStateDBDir, dbOptions);
       } else {
@@ -717,7 +706,7 @@ export async function main() {
         ]);
       }
       if (logDisk) {
-        const diskUsage = dbMode === '--lmdb' ? swingStore.diskUsage() : 0;
+        const diskUsage = dbMode === '--sqlite' ? swingStore.diskUsage() : 0;
         data.push(diskUsage);
       }
       if (logStats) {

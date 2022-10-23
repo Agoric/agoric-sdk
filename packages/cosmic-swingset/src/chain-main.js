@@ -320,7 +320,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     });
 
     const {
-      LMDB_MAP_SIZE,
       SWING_STORE_TRACE,
       XSNAP_KEEP_SNAPSHOTS,
       NODE_HEAP_SNAPSHOTS = -1,
@@ -330,8 +329,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       env,
       serviceName: TELEMETRY_SERVICE_NAME,
     });
-
-    const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
 
     const defaultTraceFile = path.resolve(stateDBDir, 'store-trace.log');
     let swingStoreTraceFile;
@@ -426,7 +423,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       verboseBlocks: true,
       metricsProvider,
       slogSender,
-      mapSize,
       swingStoreTraceFile,
       keepSnapshots,
       afterCommitCallback,

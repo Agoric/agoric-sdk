@@ -177,8 +177,7 @@ const buildSwingset = async (
     serviceName: TELEMETRY_SERVICE_NAME,
   });
 
-  const { LMDB_MAP_SIZE, SWING_STORE_TRACE, XSNAP_KEEP_SNAPSHOTS } = env;
-  const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
+  const { SWING_STORE_TRACE, XSNAP_KEEP_SNAPSHOTS } = env;
 
   const defaultTraceFile = path.resolve(kernelStateDBDir, 'store-trace.log');
   let swingStoreTraceFile;
@@ -201,7 +200,7 @@ const buildSwingset = async (
 
   const { kvStore, streamStore, snapStore, commit } = openSwingStore(
     kernelStateDBDir,
-    { mapSize, traceFile: swingStoreTraceFile, keepSnapshots },
+    { traceFile: swingStoreTraceFile, keepSnapshots },
   );
   const hostStorage = {
     kvStore,

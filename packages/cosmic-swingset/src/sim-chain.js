@@ -92,8 +92,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     serviceName: TELEMETRY_SERVICE_NAME,
   });
 
-  const { LMDB_MAP_SIZE } = env;
-  const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
   const slogSender = await makeSlogSender({
     stateDir: stateDBdir,
     serviceName: TELEMETRY_SERVICE_NAME,
@@ -121,7 +119,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     debugName: GCI,
     metricsProvider,
     slogSender,
-    mapSize,
   });
 
   const { blockingSend, savedHeight, savedBlockTime } = s;

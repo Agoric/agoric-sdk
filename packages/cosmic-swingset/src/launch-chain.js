@@ -15,7 +15,7 @@ import {
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
 import { assert, Fail } from '@agoric/assert';
-import { openSwingStore, DEFAULT_LMDB_MAP_SIZE } from '@agoric/swing-store';
+import { openSwingStore } from '@agoric/swing-store';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
@@ -215,7 +215,6 @@ export async function launch({
   verboseBlocks = false,
   metricsProvider = DEFAULT_METER_PROVIDER,
   slogSender,
-  mapSize = DEFAULT_LMDB_MAP_SIZE,
   swingStoreTraceFile,
   keepSnapshots,
   afterCommitCallback = async () => ({}),
@@ -224,7 +223,7 @@ export async function launch({
 
   const { kvStore, streamStore, snapStore, commit } = openSwingStore(
     kernelStateDBDir,
-    { mapSize, traceFile: swingStoreTraceFile, keepSnapshots },
+    { traceFile: swingStoreTraceFile, keepSnapshots },
   );
   const hostStorage = {
     kvStore,

@@ -2,9 +2,6 @@
 
 import '@endo/init/pre-bundle-source.js';
 
-// import lmdb early to work around SES incompatibility
-import 'lmdb';
-
 import agcc from '@agoric/cosmos';
 
 import '@endo/init';

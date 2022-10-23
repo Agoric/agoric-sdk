@@ -16,49 +16,15 @@ import {
 import { Far, passStyleOf } from '@endo/marshal';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
 
-// The maximum length of an LMDB key used to be 511 bytes which corresponded to
-// 254 UTF-16 code units when using JS strings directly as keys. While we now
-// have larger key sizes and use a different unicode encoding, the prior
-// collections key constraints remain the same. They put an upper bound on the
-// post-encoding (stringified) size of keys than can be used to index entries in
-// collections.  In addition to the encoding of the collection entry key, the
-// storage key will also be prefixed with additional indexing information that
-// includes the collection ID (an integer that will grow over time as more
-// collections are created), the vat ID (which includes an integer that will
-// grow over time as vats are created), and some fixed overhead (currently 9
-// characters).  If we allot 10 characters for each ID and another 14 for
-// overhead (which includes room for change and fiddling around), this leaves
-// 220 characters for encoding collection keys.  We believe that 10 characters
-// per ID will leave plenty of room for growth -- given the kinds of transaction
-// throughput that SwingSet can support, we assess that reaching 10**10
-// collections in 10**10 vats is not a realistic danger to be overly concerned
-// about at present, though it does merit monitoring.  We expect that we will
-// have migrated off LMDB many years before the hazard could become a realistic
-// worry.
-//
-// Note that LMDB itself will throw an exception if you try to use a key that is
-// too large, but this will happen inside the kernel where recovery (from the
-// vat's perspective) is much more difficult.  Fortunately, only collection keys
-// can contain arbitrarily sized values originating from user code inside the
-// vat.  We check for such oversized keys in the collection access functions and
-// throw exceptions back to user code.  All other vatstore accesses by liveslots
-// can stay under the key size limit by construction.
-//
-// We're aware that declaring this limit here is a bit of an abstraction
-// boundary violation.  We have striven to code liveslots in a way that is
-// agnostic about what persistent storage medium it sits on top of, whereas this
-// limit is specific to LMDB.  However, the constraint that the underlying
-// storage medium is a string-to-string key-value store is entirely baked into
-// the current design, and we think it likely that migration to a different
-// storage substrate would also involve moving away from a purely string-indexed
-// store.  In such a case, significant engineering rework would be required
-// anyway and this minor bit of modularity ugliness would become irrelevant.
-// Realistically, attempting to acquire the size limit from the storage API
-// would be a lot of engineering work for little to no actual benefit, so we've
-// made the pragmatic decision to simply declare the size limit right here.
-// Obviously, if we were to move off LMDB to a different purely string-based KV
-// store, the size constraint would almost certainly change and this limit with
-// it, but for now this seems good enough.
+// XXX TODO: The following key length limit was put in place due to limitations
+// in LMDB.  With the move away from LMDB, it is no longer relevant, but I'm
+// leaving it in place for the time being as a general defensive measure against
+// various kind of resource exhaustion mischief.  Although the switch to a
+// database without the limitation that motivated this would enable this max
+// length value to be made larger, current code is already engineered with this
+// max in mind, so leaving it in place for the time being it should not pose any
+// new challenges.  Later, when we have time to examine this more deeply, we
+// should consider relaxing or removing this cap.
 const MAX_DBKEY_LENGTH = 220;
 
 function pattEq(p1, p2) {
