@@ -60,6 +60,7 @@ test('binary question', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BAIT,
+    maxWinners: 1,
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
@@ -96,6 +97,7 @@ test('binary spoiled', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BAIT,
+    maxWinners: 1,
   });
 
   const { publisher } = makePublisherFromFakes();
@@ -130,6 +132,7 @@ test('binary tied', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
+    maxWinners: 1,
   });
 
   const { publisher, storageRoot } = makePublisherFromFakes();
@@ -167,6 +170,7 @@ test('binary bad vote', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
+    maxWinners: 1,
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { creatorFacet, publicFacet, closeFacet } = makeBinaryVoteCounter(
@@ -204,6 +208,7 @@ test('binary no votes', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
+    maxWinners: 1,
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, closeFacet } = makeBinaryVoteCounter(
@@ -234,6 +239,7 @@ test('binary varying share weights', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BAIT,
+    maxWinners: 1,
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
@@ -274,6 +280,7 @@ test('binary contested', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
+    maxWinners: 1,
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
@@ -313,6 +320,7 @@ test('binary revote', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
+    maxWinners: 1,
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
@@ -353,6 +361,7 @@ test('binary question too many', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BAIT,
+    maxWinners: 1,
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
@@ -395,6 +404,7 @@ test('binary no quorum', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BAIT,
+    maxWinners: 1,
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
@@ -433,6 +443,7 @@ test('binary too many positions', async t => {
         closingRule: FAKE_CLOSING_RULE,
         quorumRule: QuorumRule.NO_QUORUM,
         tieOutcome: BAIT,
+        maxWinners: 1,
       }),
     {
       message: / - Must match one of /,

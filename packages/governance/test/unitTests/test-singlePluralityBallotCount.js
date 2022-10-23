@@ -14,7 +14,7 @@ import {
   ElectionType,
   QuorumRule,
 } from '../../src/index.js';
-import { makeMultiVoteCounter } from '../../src/multiVoteCounter.js';
+import { makeSinglePluralityVoteCounter } from '../../src/singlePluralityVoteCounter.js';
 
 const SIMPLE_ISSUE = harden({ text: 'Fish or Beef or Pork?' });
 const FISH = harden({ text: 'Fish' });
@@ -34,7 +34,7 @@ function makePublisherFromFakes() {
   return { publisher: publishKit.publisher, storageRoot };
 }
 
-test('multi contested', async t => {
+test('single plurality contested', async t => {
   const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.PLURALITY,
     issue: SIMPLE_ISSUE,
@@ -46,12 +46,13 @@ test('multi contested', async t => {
     tieOutcome: BEEF,
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
-  const { publicFacet, creatorFacet, closeFacet } = makeMultiVoteCounter(
-    questionSpec,
-    0n,
-    FAKE_COUNTER_INSTANCE,
-    publisher,
-  );
+  const { publicFacet, creatorFacet, closeFacet } =
+    makeSinglePluralityVoteCounter(
+      questionSpec,
+      0n,
+      FAKE_COUNTER_INSTANCE,
+      publisher,
+    );
 
   const template = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');
@@ -76,7 +77,7 @@ test('multi contested', async t => {
   });
 });
 
-test('multi tiecome', async t => {
+test('single plurality tiecome', async t => {
   const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.PLURALITY,
     issue: SIMPLE_ISSUE,
@@ -88,12 +89,13 @@ test('multi tiecome', async t => {
     tieOutcome: BEEF,
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
-  const { publicFacet, creatorFacet, closeFacet } = makeMultiVoteCounter(
-    questionSpec,
-    0n,
-    FAKE_COUNTER_INSTANCE,
-    publisher,
-  );
+  const { publicFacet, creatorFacet, closeFacet } =
+    makeSinglePluralityVoteCounter(
+      questionSpec,
+      0n,
+      FAKE_COUNTER_INSTANCE,
+      publisher,
+    );
 
   const template = publicFacet.getQuestion();
   const aliceSeat = makeHandle('Voter');

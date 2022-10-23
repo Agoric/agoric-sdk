@@ -105,6 +105,7 @@
  * @property {Position[]} positions
  * @property {ElectionType} electionType
  * @property {number} maxChoices
+ * @property {number} maxWinners
  * @property {ClosingRule} closingRule
  * @property {QuorumRule} quorumRule
  * @property {Position} tieOutcome
@@ -174,7 +175,7 @@
  */
 
 /**
- * @callback BuildUnrankedQuestion
+ * @callback BuildQuestion
  * @param {QuestionSpec} questionSpec
  * @param {Instance} instance - voteCounter instance
  * @returns {Question}

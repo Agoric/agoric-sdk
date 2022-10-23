@@ -132,6 +132,7 @@ export const SimpleQuestionSpecShape = harden({
   positions: M.arrayOf(harden({ text: M.string() })),
   electionType: M.or('election', 'survey'),
   maxChoices: M.gte(1),
+  maxWinners: M.gte(1),
   closingRule: ClosingRuleShape,
   quorumRule: QuorumRuleShape,
   tieOutcome: NoSimplePositionShape,
@@ -236,30 +237,21 @@ export const BinaryVoteCounterCloseI = M.interface(
   },
 );
 
-export const MultiVoteCounterPublicI = M.interface(
-  'MultiVoteCounter PublicFacet',
-  {
-    getQuestion: M.call().returns(QuestionShape),
-    isOpen: M.call().returns(M.boolean()),
-    getOutcome: M.call().returns(M.eref(M.promise())),
-    getStats: M.call().returns(M.promise()),
-    getDetails: M.call().returns(QuestionDetailsShape),
-    getInstance: M.call().returns(InstanceHandleShape),
-  },
-);
+export const VoteCounterPublicI = M.interface('VoteCounter PublicFacet', {
+  getQuestion: M.call().returns(QuestionShape),
+  isOpen: M.call().returns(M.boolean()),
+  getOutcome: M.call().returns(M.eref(M.promise())),
+  getStats: M.call().returns(M.promise()),
+  getDetails: M.call().returns(QuestionDetailsShape),
+  getInstance: M.call().returns(InstanceHandleShape),
+});
 
-export const MultiVoteCounterAdminI = M.interface(
-  'MultiVoteCounter AdminFacet',
-  {
-    submitVote: M.call(VoterHandle, M.arrayOf(PositionShape))
-      .optional(M.nat())
-      .returns({ chosen: PositionShape, shares: M.nat() }),
-  },
-);
+export const VoteCounterAdminI = M.interface('VoteCounter AdminFacet', {
+  submitVote: M.call(VoterHandle, M.arrayOf(PositionShape))
+    .optional(M.nat())
+    .returns({ chosen: PositionShape, shares: M.nat() }),
+});
 
-export const MultiVoteCounterCloseI = M.interface(
-  'MultiVoteCounter CloseFacet',
-  {
-    closeVoting: M.call().returns(),
-  },
-);
+export const VoteCounterCloseI = M.interface('VoteCounter CloseFacet', {
+  closeVoting: M.call().returns(),
+});

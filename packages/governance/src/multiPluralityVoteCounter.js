@@ -1,39 +1,26 @@
 // @ts-check
 
 import { keyEQ, makeHeapFarInstance, makeStore } from '@agoric/store';
-import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { scheduleClose } from './closingRule.js';
 import {
+  buildQuestion,
   ChoiceMethod,
   coerceQuestionSpec,
   ElectionType,
   positionIncluded,
 } from './question.js';
+import { scheduleClose } from './closingRule.js';
 import {
-  MultiVoteCounterAdminI,
-  MultiVoteCounterCloseI,
-  MultiVoteCounterPublicI,
-  QuestionI,
+  VoteCounterAdminI,
+  VoteCounterCloseI,
+  VoteCounterPublicI,
 } from './typeGuards.js';
+import { makeQuorumCounter } from './quorumCounter.js';
 
 const { details: X } = assert;
 
-const makeQuorumCounter = quorumThreshold => {
-  const check = stats => {
-    const votes = stats.results.reduce(
-      (runningTotal, { total }) => runningTotal + total,
-      0n,
-    );
-    return votes >= quorumThreshold;
-  };
-  /** @type {QuorumCounter} */
-  return Far('checker', { check });
-};
-
-const validateMultipleQuestionSpec = questionSpec => {
+const validateQuestionSpec = questionSpec => {
   coerceQuestionSpec(questionSpec);
 
   questionSpec.electionType === ElectionType.ELECTION ||
@@ -45,30 +32,26 @@ const validateMultipleQuestionSpec = questionSpec => {
 
   questionSpec.method === ChoiceMethod.PLURALITY ||
     assert.fail(X`${questionSpec.method} must be PLURALITY`);
+
+  questionSpec.maxWinners > 2 ||
+    assert.fail(X`Max winners must be more than 2`);
 };
 
 /** @type {BuildVoteCounter} */
-const makeMultiVoteCounter = (questionSpec, threshold, instance, publisher) => {
-  validateMultipleQuestionSpec(questionSpec);
+const makeMultiPluralityVoteCounter = (
+  questionSpec,
+  threshold,
+  instance,
+  publisher,
+) => {
+  validateQuestionSpec(questionSpec);
 
-  // build question
-  const questionHandle = makeHandle('Question');
-  const question = makeHeapFarInstance('question details', QuestionI, {
-    getVoteCounter() {
-      return instance;
-    },
-    getDetails() {
-      return harden({
-        ...questionSpec,
-        questionHandle,
-        counterInstance: instance,
-      });
-    },
-  });
+  const question = buildQuestion(questionSpec, instance);
   const details = question.getDetails();
 
   let isOpen = true;
   const positions = questionSpec.positions;
+
   /** @type { PromiseRecord<Position | Position[]> } */
   const outcomePromise = makePromiseKit();
   /** @type { PromiseRecord<VoteStatistics> } */
@@ -79,7 +62,7 @@ const makeMultiVoteCounter = (questionSpec, threshold, instance, publisher) => {
    * @property {Position} chosen
    * @property {bigint} shares
    */
-  /** @type {Store<Handle<'Voter'>,RecordedBallot>} */
+  /** @type {Store<Handle<'Voter'>,RecordedBallot> } */
   const allBallots = makeStore('voterHandle');
 
   const countVotes = () => {
@@ -118,26 +101,39 @@ const makeMultiVoteCounter = (questionSpec, threshold, instance, publisher) => {
         reason: 'No quorum',
       };
       E(publisher).publish(voteOutcome);
-      return;
     }
 
-    let maxScore = 0n;
-    for (const score of tally) {
-      if (score > maxScore) maxScore = score;
-    }
+    const tallyPositions = tally.map((t, i) => ({
+      position: positions[i],
+      tally: t,
+    }));
 
-    const winningPositions = [];
-    // eslint-disable-next-line no-plusplus
-    for (let i = 0; i < tally.length; i++) {
-      if (tally[i] === maxScore) {
-        winningPositions.push(positions[i]);
+    const sortedPositions = tallyPositions.sort((a, b) => {
+      if (a.tally < b.tally) return 1;
+      if (a.tally > b.tally) return -1;
+      return 0;
+    });
+
+    const uniqTally = [];
+    for (const position of sortedPositions) {
+      if (!uniqTally.includes(position.tally)) {
+        uniqTally.push(position.tally);
       }
     }
 
-    if (winningPositions.length > 1) {
+    const winningTally = uniqTally.slice(0, questionSpec.maxWinners);
+    const winningPositions = [];
+
+    for (const position of sortedPositions) {
+      if (winningTally.includes(position.tally)) {
+        winningPositions.push(position.position);
+      }
+    }
+
+    if (winningPositions.length <= questionSpec.maxWinners) {
       outcomePromise.resolve(winningPositions);
     } else {
-      outcomePromise.resolve(winningPositions[0]);
+      outcomePromise.resolve(questionSpec.tieOutcome);
     }
 
     E.when(outcomePromise.promise, position => {
@@ -152,8 +148,8 @@ const makeMultiVoteCounter = (questionSpec, threshold, instance, publisher) => {
   };
 
   const closeFacet = makeHeapFarInstance(
-    'MultiVoteCounter close',
-    MultiVoteCounterCloseI,
+    'MultiPluralityVoteCounter close',
+    VoteCounterCloseI,
     {
       closeVoting() {
         isOpen = false;
@@ -163,8 +159,8 @@ const makeMultiVoteCounter = (questionSpec, threshold, instance, publisher) => {
   );
 
   const creatorFacet = makeHeapFarInstance(
-    'MultiVoteCounter creator',
-    MultiVoteCounterAdminI,
+    'MultiPluralityVoteCounter creator',
+    VoteCounterAdminI,
     {
       submitVote(voterHandle, chosenPositions, shares = 1n) {
         assert(chosenPositions.length === 1, 'only 1 position allowed');
@@ -184,8 +180,8 @@ const makeMultiVoteCounter = (questionSpec, threshold, instance, publisher) => {
   );
 
   const publicFacet = makeHeapFarInstance(
-    'MultiVoteCounter public',
-    MultiVoteCounterPublicI,
+    'MultiPluralityVoteCounter public',
+    VoteCounterPublicI,
     {
       getQuestion() {
         return question;
@@ -223,12 +219,13 @@ const makeMultiVoteCounter = (questionSpec, threshold, instance, publisher) => {
 const start = (zcf, { outcomePublisher }) => {
   const { questionSpec, quorumThreshold } = zcf.getTerms();
 
-  const { publicFacet, creatorFacet, closeFacet } = makeMultiVoteCounter(
-    questionSpec,
-    quorumThreshold,
-    zcf.getInstance(),
-    outcomePublisher,
-  );
+  const { publicFacet, creatorFacet, closeFacet } =
+    makeMultiPluralityVoteCounter(
+      questionSpec,
+      quorumThreshold,
+      zcf.getInstance(),
+      outcomePublisher,
+    );
 
   scheduleClose(questionSpec.closingRule, () => closeFacet.closeVoting());
 
@@ -236,6 +233,6 @@ const start = (zcf, { outcomePublisher }) => {
 };
 
 harden(start);
-harden(makeMultiVoteCounter);
+harden(makeMultiPluralityVoteCounter);
 
-export { makeMultiVoteCounter, start };
+export { makeMultiPluralityVoteCounter, start };
