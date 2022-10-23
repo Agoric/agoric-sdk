@@ -1,5 +1,4 @@
 /* eslint-disable */
-import 'lmdb';
 import '@endo/init';
 import process from 'process';
 import { openSwingStore } from '@agoric/swing-store';

@@ -1,4 +1,3 @@
-import 'lmdb';
 import '@endo/init';
 import process from 'process';
 import fs from 'fs';

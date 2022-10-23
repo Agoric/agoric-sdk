@@ -34,7 +34,6 @@
     "@endo/init": "^0.5.52",
     "@endo/marshal": "^0.8.1",
     "expose-gc": "^1.0.0",
-    "lmdb": "^2.4.5",
     "n-readlines": "^1.0.1",
     "yargs": "^16.1.0"
   },

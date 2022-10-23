@@ -4,17 +4,14 @@ import path from 'path';
 import { performance } from 'perf_hooks';
 import { file as tmpFile, tmpName } from 'tmp';
 
-import { open as lmdbOpen, ABORT as lmdbAbort } from 'lmdb';
 import sqlite3 from 'better-sqlite3';
 
 import { assert } from '@agoric/assert';
 import { makeMeasureSeconds } from '@agoric/internal';
 
-import { sqlStreamStore } from './sqlStreamStore.js';
+import { makeSQLStreamStore } from './sqlStreamStore.js';
 import { makeSnapStore } from './snapStore.js';
 import { initEphemeralSwingStore } from './ephemeralSwingStore.js';
-
-export const DEFAULT_LMDB_MAP_SIZE = 2 * 1024 * 1024 * 1024;
 
 export { makeSnapStore };
 
@@ -77,16 +74,15 @@ export function makeSnapStoreIO() {
  *
  * kvStore - a key-value store used to hold the kernel's working state.  Keys
  *   and values are both strings.  Provides random access to a large number of
- *   mostly small data items.  Persistently stored in an LMDB database.
+ *   mostly small data items.  Persistently stored in a sqlite table.
  *
  * streamStore - a streaming store used to hold kernel transcripts.  Transcripts
  *   are both written and read (if they are read at all) sequentially, according
- *   to metadata kept in the kvStore.  Persistently stored in a slqLite
- *   database.
+ *   to metadata kept in the kvStore.  Persistently stored in a slqlite table.
  *
  * snapStore - large object store used to hold XS memory image snapshots of
  *   vats.  Objects are stored in files named by the cryptographic hash of the
- *   data they hold, with tracking metadata kep in the kvStore.
+ *   data they hold, with tracking metadata kept in the kvStore.
  *
  * All persistent data is kept within a single directory belonging to the swing
  * store.  The individual stores present individual APIs suitable for their
@@ -99,8 +95,8 @@ export function makeSnapStoreIO() {
  * The units of data consistency in the swingset are the crank and the block.  A
  * crank is the execution of a single delivery into the swingset, typically a
  * message delivered to a vat.  A block is a series of cranks (how many is a
- * host-determined parameter) that are considered to either all happen as a
- * unit.  Crank-to-crank trnsactionality is managed by the crank buffer, a
+ * host-determined parameter) that are considered to either all happen or not as
+ * a unit.  Crank-to-crank transactionality is managed by the crank buffer, a
  * kernel abstraction that wraps the kvStore.  Block-to-block transactionality
  * is provided by the swing store directly.  It provides a 'commit' operation
  * which will commit all changes made up to the time it is called.  It is the
@@ -118,12 +114,6 @@ export function makeSnapStoreIO() {
  * @returns {SwingAndSnapStore}
  */
 function makeSwingStore(dirPath, forceReset, options) {
-  /** @type {((result?: typeof import("lmdb").ABORT) => void) | null} */
-  let txnFinish = null;
-
-  /** @type {Promise<typeof import("lmdb").ABORT | void> | null} */
-  let txnDone = null;
-
   if (forceReset) {
     try {
       // Node.js 16.8.0 warns:
@@ -142,7 +132,7 @@ function makeSwingStore(dirPath, forceReset, options) {
   }
   fs.mkdirSync(dirPath, { recursive: true });
 
-  const { mapSize = DEFAULT_LMDB_MAP_SIZE, traceFile, keepSnapshots } = options;
+  const { traceFile, keepSnapshots } = options;
 
   let traceOutput = traceFile
     ? fs.createWriteStream(path.resolve(traceFile), {
@@ -161,70 +151,77 @@ function makeSwingStore(dirPath, forceReset, options) {
     traceOutput = null;
   }
 
-  /** @type {import('lmdb').RootDatabase<string, string> | null} */
-  let db = lmdbOpen({
-    path: dirPath,
-    // TODO: mapSize seem to be ignored / treated as informative by lmbd-js
-    mapSize,
-    // Turn off useWritemap. It can theoretically cause corruption by stray
-    // pointers, it seems incompatible with our usage of sync transactions.
-    // While we've checked it wasn't the (sole) cause of
-    // https://github.com/Agoric/agoric-sdk/issues/5031, it is no longer
-    // necessary if using WSL2 on Windows.
-    useWritemap: false,
-    name: 'swingset-kernel-state',
-    // TODO: lmdb-js is using a UTF-8 encoding for strings (both keys and values)
-    // The biggest impact is on key sizes. A key with unicode points in the range
-    // 0x0800 - 0xFFFF ends up encoded as 3 bytes where for UTF-16 they'd be
-    // encoded as 2 bytes. lmbd-js also bumps the maxKeySize to 1791 bytes,
-    // making this a non-issue for now.
-    encoding: 'string',
-  });
+  const filePath = path.join(dirPath, 'swingstore.sqlite');
+  /** @type {*} */
+  let db = sqlite3(
+    filePath,
+    // { verbose: console.log },
+  );
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS kvStore (
+      key TEXT,
+      value TEXT,
+      PRIMARY KEY (key)
+    )
+  `);
+
+  const sqlBeginTransaction = db.prepare('BEGIN IMMEDIATE TRANSACTION');
 
   function ensureTxn() {
     assert(db);
-    if (!txnDone && !txnFinish) {
-      trace('begin-tx');
-      txnDone = db.transactionSync(
-        () =>
-          new Promise(resolve => {
-            txnFinish = resolve;
-          }),
-      );
+    if (!db.inTransaction) {
+      sqlBeginTransaction.run();
+      assert(db.inTransaction);
     }
-    assert(txnDone && txnFinish);
     return db;
   }
 
   function diskUsage() {
-    const dataFilePath = `${dirPath}/data.mdb`;
+    const dataFilePath = `${dirPath}/swingstore.sqlite`;
     const stat = fs.statSync(dataFilePath);
     return stat.size;
   }
+
+  const sqlKVGet = db.prepare(`
+    SELECT value
+    FROM kvStore
+    WHERE key = ?
+  `);
+  sqlKVGet.pluck(true);
 
   /**
    * Obtain the value stored for a given key.
    *
    * @param {string} key  The key whose value is sought.
    *
-   * @returns {string | undefined} the (string) value for the given key, or undefined if there is no
-   *    such value.
+   * @returns {string | undefined} the (string) value for the given key, or
+   *    undefined if there is no such value.
    *
    * @throws if key is not a string.
    */
   function get(key) {
     assert.typeof(key, 'string');
-    let result = ensureTxn().get(key);
-    if (result == null) {
-      result = undefined;
-    }
-    return result;
+    ensureTxn();
+    return sqlKVGet.get(key);
   }
+
+  const sqlKVGetKeys = db.prepare(`
+    SELECT key
+    FROM kvStore
+    WHERE ? <= key AND key < ?
+  `);
+  sqlKVGetKeys.pluck(true);
+
+  const sqlKVGetKeysNoEnd = db.prepare(`
+    SELECT key
+    FROM kvStore
+    WHERE ? <= key
+  `);
+  sqlKVGetKeysNoEnd.pluck(true);
 
   /**
    * Generator function that returns an iterator over all the keys within a
-   * given range.  Note that this can be slow as it's only intended for use in
-   * debugging.
+   * given range.
    *
    * @param {string} start  Start of the key range of interest (inclusive).  An empty
    *    string indicates a range from the beginning of the key set.
@@ -239,16 +236,13 @@ function makeSwingStore(dirPath, forceReset, options) {
     assert.typeof(start, 'string');
     assert.typeof(end, 'string');
 
-    /** @type {import("lmdb").RangeOptions} */
-    const rangeOptions = {};
-    if (start) {
-      rangeOptions.start = start;
-    }
+    ensureTxn();
+    let keys;
     if (end) {
-      rangeOptions.end = end;
+      keys = sqlKVGetKeys.iterate(start, end);
+    } else {
+      keys = sqlKVGetKeysNoEnd.iterate(start);
     }
-
-    const keys = ensureTxn().getKeys(rangeOptions);
 
     yield* keys;
   }
@@ -267,6 +261,12 @@ function makeSwingStore(dirPath, forceReset, options) {
     return get(key) !== undefined;
   }
 
+  const sqlKVSet = db.prepare(`
+    INSERT INTO kvStore (key, value)
+    VALUES (?, ?)
+    ON CONFLICT DO UPDATE SET value = excluded.value
+  `);
+
   /**
    * Store a value for a given key.  The value will replace any prior value if
    * there was one.
@@ -281,9 +281,15 @@ function makeSwingStore(dirPath, forceReset, options) {
     assert.typeof(value, 'string');
     // synchronous read after write within a transaction is safe
     // The transaction's overall success will be awaited during commit
-    void ensureTxn().put(key, value);
+    ensureTxn();
+    sqlKVSet.run(key, value);
     trace('set', key, value);
   }
+
+  const sqlKVDel = db.prepare(`
+    DELETE from kvStore
+    WHERE key = ?
+  `);
 
   /**
    * Remove any stored value for a given key.  It is permissible for there to
@@ -295,12 +301,9 @@ function makeSwingStore(dirPath, forceReset, options) {
    */
   function del(key) {
     assert.typeof(key, 'string');
-    if (has(key)) {
-      // synchronous read after write within a transaction is safe
-      // The transaction's overall success will be awaited during commit
-      void ensureTxn().remove(key);
-      trace('del', key);
-    }
+    ensureTxn();
+    sqlKVDel.run(key);
+    trace('del', key);
   }
 
   const kvStore = {
@@ -311,11 +314,7 @@ function makeSwingStore(dirPath, forceReset, options) {
     delete: del,
   };
 
-  const {
-    commit: commitStreamStore,
-    close: closeStreamStore,
-    ...streamStore
-  } = sqlStreamStore(dirPath, { sqlite3 });
+  const streamStore = makeSQLStreamStore(db, ensureTxn);
 
   const snapshotDir = path.resolve(dirPath, 'xs-snapshots');
   fs.mkdirSync(snapshotDir, { recursive: true });
@@ -323,34 +322,16 @@ function makeSwingStore(dirPath, forceReset, options) {
     keepSnapshots,
   });
 
-  /** @param {boolean} [abort] */
-  function doCommit(abort) {
-    if (!txnFinish) {
-      return undefined;
-    }
-    txnFinish(abort ? lmdbAbort : undefined);
-    return Promise.resolve(txnDone)
-      .then(() => {
-        trace(`${abort ? 'abort' : 'commit'}-tx`);
-      })
-      .finally(() => {
-        txnDone = null;
-        txnFinish = null;
-      });
-  }
+  const sqlCommit = db.prepare('COMMIT');
 
   /**
    * Commit unsaved changes.
    */
   async function commit() {
     assert(db);
-    // Commit the stream-store first, before kvStore. We keep the
-    // streams' startPos/endPos in the kvStore, so if we crash after
-    // commitStreamStore() but before the kvstore doCommit(), we'll
-    // wake up with the old startPos/endPos and it's (mostly) as if
-    // the stream entry was never added.
-    commitStreamStore();
-    await doCommit(false);
+    if (db.inTransaction) {
+      sqlCommit.run();
+    }
 
     // NOTE: The kvstore (which used to contain vatA -> snapshot1, and
     //   is being replaced with vatA -> snapshot2)
@@ -361,14 +342,13 @@ function makeSwingStore(dirPath, forceReset, options) {
   }
 
   /**
-   * Close the database, abandoning any changes made since the last commit (if you want to save them, call
-   * commit() first).
+   * Close the database, abandoning any changes made since the last commit (if
+   * you want to save them, call commit() first).
    */
   async function close() {
     assert(db);
-    closeStreamStore();
-    await doCommit(true);
-    await db.close();
+    commit();
+    db.close();
     db = null;
     stopTrace();
   }
@@ -431,7 +411,7 @@ export function openSwingStore(dirPath, options = {}) {
 export function isSwingStore(dirPath) {
   assert.typeof(dirPath, 'string');
   if (fs.existsSync(dirPath)) {
-    const storeFile = path.resolve(dirPath, 'data.mdb');
+    const storeFile = path.resolve(dirPath, 'swingstore.sqlite');
     if (fs.existsSync(storeFile)) {
       return true;
     }
