@@ -104,7 +104,7 @@ function byName(a, b) {
  * @param {string} basedir  The directory to scan
  * @param {object} [options]
  * @param {boolean} [options.includeDevDependencies] whether to include devDependencies
- * @param {ModuleFormat} [options.bundleFormat] the bundle format to use
+ * @param {BundleFormat} [options.bundleFormat] the bundle format to use
  * @returns {SwingSetConfig} a swingset config object: {
  *   bootstrap: "bootstrap",
  *   vats: {
