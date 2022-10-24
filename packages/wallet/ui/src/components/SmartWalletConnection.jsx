@@ -2,6 +2,7 @@ import { makeFollower, makeLeader } from '@agoric/casting';
 import { observeIterator } from '@agoric/notifier';
 import { NO_SMART_WALLET_ERROR } from '@agoric/smart-wallet/src/utils';
 import { makeImportContext } from '@agoric/wallet/api/src/marshal-contexts';
+import { Far } from '@endo/marshal';
 import MuiAlert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 import React, { useEffect, useState, useMemo } from 'react';
@@ -23,6 +24,14 @@ const Alert = React.forwardRef(function Alert({ children, ...props }, ref) {
     </MuiAlert>
   );
 });
+
+/**
+ * Wallet UI doesn't use objects as presences, only as identities.
+ * Use this to override the defaultMakePresence of makeImportContext.
+ *
+ * @param {string} iface
+ */
+const inertPresence = iface => Far(iface.replace(/^Alleged: /, ''), {});
 
 const SmartWalletConnection = ({
   connectionConfig,
@@ -77,7 +86,7 @@ const SmartWalletConnection = ({
   };
 
   const [context, leader] = useMemo(
-    () => [makeImportContext(), makeLeader(href)],
+    () => [makeImportContext(inertPresence), makeLeader(href)],
     [connectionConfig, keplrConnection],
   );
 

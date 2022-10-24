@@ -19,6 +19,13 @@ import {
 } from '../util/keyManagement';
 import { onLoadP } from '../util/onLoad';
 
+/**
+ * @typedef KeplrUtils
+ * @property {string} address
+ * @property {{ interactiveSigner: import('../util/keyManagement').InteractiveSigner, backgroundSigner: import('../util/keyManagement').BackgroundSigner}} signers
+ * @property {string} chainId,
+ */
+
 const useDebugLogging = (state, watch) => {
   useEffect(() => console.debug('useDebugLogging', { state }), watch);
 };
