@@ -33,6 +33,7 @@ export const getOfferService = (
   chainOffersNotifier,
   boardIdMarshaller,
 ) => {
+  /** @type {Map<number, Offer>} */
   const offers = new Map();
   const { notifier, updater } = makeNotifierKit();
   const broadcastUpdates = () => updater.updateState([...offers.values()]);
@@ -106,16 +107,17 @@ export const getOfferService = (
     broadcastUpdates();
   };
 
-  const declineOffer = (/** @type {string} */ id) => {
+  const declineOffer = (/** @type {number} */ id) => {
     const offer = offers.get(id);
     assert(offer, `Tried to decline undefined offer ${id}`);
     upsertOffer({ ...offer, status: OfferUIStatus.declined });
     broadcastUpdates();
   };
 
-  const acceptOffer = async (/** @type {string} */ id) => {
+  const acceptOffer = async (/** @type {number} */ id) => {
     const offer = offers.get(id);
     assert(offer, `Tried to accept undefined offer ${id}`);
+    assert(offer.spendAction, 'Missing spendAction');
     return signSpendAction(offer.spendAction);
   };
 
@@ -137,6 +139,7 @@ export const getOfferService = (
             ...oldOffer,
             id: status.id,
             status: OfferUIStatus.rejected,
+            // @ts-expect-error xxx types debt
             error: `${status.error}`,
           });
           remove(smartWalletKey, status.id);

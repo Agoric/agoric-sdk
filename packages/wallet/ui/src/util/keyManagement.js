@@ -272,7 +272,7 @@ export const makeBackgroundSigner = async ({ localStorage, csprng }) => {
     queryGrants,
   });
 };
-
+/** @typedef {Awaited<ReturnType<typeof makeBackgroundSigner>>} BackgroundSigner */
 /**
  * @param {string} granter bech32 address
  * @param {string} grantee bech32 address
@@ -520,3 +520,4 @@ export const makeInteractiveSigner = async (
     },
   });
 };
+/** @typedef {Awaited<ReturnType<typeof makeInteractiveSigner>>} InteractiveSigner */

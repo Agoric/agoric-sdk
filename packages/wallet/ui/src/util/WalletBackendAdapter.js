@@ -110,7 +110,7 @@ export const makeBackendFromWalletBridge = (
  * @param {ReturnType<import('@endo/marshal').makeMarshal>} marshaller
  * @param {import('@agoric/casting').ValueFollower<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord>} currentFollower
  * @param {import('@agoric/casting').ValueFollower<import('@agoric/smart-wallet/src/smartWallet').UpdateRecord>} updateFollower
- * @param {object} keplrConnection
+ * @param {import('../contexts/Provider.jsx').KeplrUtils} keplrConnection
  * @param {(e: unknown) => void} [errorHandler]
  * @param {() => void} [firstCallback]
  */
@@ -169,6 +169,7 @@ export const makeWalletBridgeFromFollowers = (
     notifierKits.purses.updater.updateState(harden(purses));
   };
 
+  /** @param {string} data */
   const signSpendAction = async data => {
     const {
       signers: { interactiveSigner },
