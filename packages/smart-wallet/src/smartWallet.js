@@ -462,7 +462,7 @@ const behavior = {
   self: {
     /**
      *
-     * @param {import('@endo/captp').CapData<string>} actionCapData of type BridgeAction
+     * @param {import('@endo/marshal').CapData<string>} actionCapData of type BridgeAction
      * @param {boolean} [canSpend=false]
      */
     handleBridgeAction(actionCapData, canSpend = false) {

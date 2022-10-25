@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 
 import { test } from './prepare-test-env-ava.js';
 import {
@@ -124,13 +125,13 @@ test('makePublishKit', async t => {
     'failure should not be allowed after finalization',
   );
   await t.throwsAsync(
-    // @ts-expect-error known to be promise version of PublicationList
+    // @ts-ignore known to be promise version of PublicationList
     subFinal.tail,
     undefined,
     'tail promise of final result should be rejected',
   );
   await t.throwsAsync(
-    // @ts-expect-error known to be promise version of PublicationList
+    // @ts-ignore known to be promise version of PublicationList
     subscriber.subscribeAfter(subFinal.publishCount),
     undefined,
     'subscribeAfter(finalPublishCount) should be rejected',
@@ -179,13 +180,13 @@ test('makePublishKit - immediate finish', async t => {
     'failure should not be allowed after finalization',
   );
   await t.throwsAsync(
-    // @ts-expect-error known to be promise version of PublicationList
+    // @ts-ignore known to be promise version of PublicationList
     subFinal.tail,
     undefined,
     'tail promise of final result should be rejected',
   );
   await t.throwsAsync(
-    // @ts-expect-error known to be promise version of PublicationList
+    // @ts-ignore known to be promise version of PublicationList
     subscriber.subscribeAfter(subFinal.publishCount),
     undefined,
     'subscribeAfter(finalPublishCount) should be rejected',
@@ -336,7 +337,7 @@ test('subscribeAfter bounds checking', async t => {
     const repr =
       typeof badCount === 'string' ? JSON.stringify(badCount) : badCount;
     t.throws(
-      // @ts-expect-error deliberate invalid arguments for testing
+      // @ts-ignore deliberate invalid arguments for testing
       () => subscriber.subscribeAfter(badCount),
       undefined,
       `subscribeAfter should reject invalid publish count: ${typeof badCount} ${repr}`,

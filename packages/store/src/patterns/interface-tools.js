@@ -364,7 +364,7 @@ export const defineHeapFarClassKit = (
   const contextMapKit = objectMap(methodsKit, () => new WeakMap());
   const prototypeKit = objectMap(methodsKit, (methods, facetName) =>
     defendPrototype(
-      // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- different per package #4620
+      // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- different per package https://github.com/Agoric/agoric-sdk/issues/4620
       // @ts-ignore could be symbol
       `${tag} ${facetName}`,
       contextMapKit[facetName],
@@ -394,7 +394,7 @@ export const defineHeapFarClassKit = (
     }
     return facets;
   };
-  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- different per package #4620
+  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- different per package https://github.com/Agoric/agoric-sdk/issues/4620
   // @ts-ignore xxx
   return harden(makeInstanceKit);
 };
