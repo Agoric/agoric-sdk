@@ -9,6 +9,9 @@ import Tooltip from '@mui/material/Tooltip';
 import NavDrawer from './NavDrawer';
 import ConnectionSettingsDialog from './ConnectionSettingsDialog';
 import { withApplicationContext } from '../contexts/Application';
+import SmartWalletConnection from './SmartWalletConnection';
+import TermsDialog from './TermsDialog';
+import { checkLatestAgreement, acceptTerms } from '../service/Terms';
 
 const logoUrl =
   'https://agoric.com/wp-content/themes/agoric_2021_theme/assets/img/logo.svg';
@@ -63,13 +66,21 @@ const useStyles = makeStyles(theme => ({
 }));
 
 // Exported for testing only.
-export const AppBarWithoutContext = ({ connectionComponent }) => {
+export const AppBarWithoutContext = () => {
   const theme = useTheme();
   const classes = useStyles(theme);
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const handleClosed = () => {
-    setDialogOpen(false);
+  const [areTermsAccepted, setAreTermsAccepted] = useState(
+    checkLatestAgreement(),
+  );
+  const handleTermsAccepted = () => {
+    acceptTerms();
+    setAreTermsAccepted(true);
+  };
+
+  const [isConnectionDialogOpen, setIsConnectionDialogOpen] = useState(false);
+  const handleConnectionDialogClosed = () => {
+    setIsConnectionDialogOpen(false);
   };
 
   return (
@@ -86,19 +97,28 @@ export const AppBarWithoutContext = ({ connectionComponent }) => {
         </a>
       </div>
       <div className={classes.appBarSection}>
-        <div className={classes.connector}>{connectionComponent}</div>
+        <div className={classes.connector}>
+          {areTermsAccepted && <SmartWalletConnection />}
+          <TermsDialog
+            isOpen={!areTermsAccepted}
+            onClose={handleTermsAccepted}
+          />
+        </div>
         <div className={classes.connector}>
           <Tooltip title="Settings">
             <IconButton
               color="primary"
               size="medium"
               target="_blank"
-              onClick={() => setDialogOpen(true)}
+              onClick={() => setIsConnectionDialogOpen(true)}
             >
               <SettingsIcon fontSize="inherit">Help</SettingsIcon>
             </IconButton>
           </Tooltip>
-          <ConnectionSettingsDialog open={dialogOpen} onClose={handleClosed} />
+          <ConnectionSettingsDialog
+            open={isConnectionDialogOpen}
+            onClose={handleConnectionDialogClosed}
+          />
         </div>
         <div className={classes.connector}>
           <Tooltip title="Help">
@@ -118,7 +138,6 @@ export const AppBarWithoutContext = ({ connectionComponent }) => {
 };
 
 export default withApplicationContext(AppBarWithoutContext, context => ({
-  connectionComponent: context.connectionComponent,
   wantConnection: context.wantConnection,
   setWantConnection: context.setWantConnection,
   connectionStatus: context.connectionStatus,

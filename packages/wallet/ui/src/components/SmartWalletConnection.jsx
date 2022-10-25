@@ -6,6 +6,8 @@ import { Far } from '@endo/marshal';
 import MuiAlert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 import React, { useEffect, useState, useMemo } from 'react';
+import { DEFAULT_CONNECTION_CONFIGS } from '../util/connections';
+import { maybeSave } from '../util/storage';
 
 import {
   ConnectionStatus,
@@ -39,6 +41,8 @@ const SmartWalletConnection = ({
   setBackend,
   setBackendErrorHandler,
   keplrConnection,
+  allConnectionConfigs,
+  tryKeplrConnect,
 }) => {
   const [snackbarMessages, setSnackbarMessages] = useState([]);
   const [provisionDialogOpen, setProvisionDialogOpen] = useState(false);
@@ -89,6 +93,29 @@ const SmartWalletConnection = ({
     () => [makeImportContext(inertPresence), makeLeader(href)],
     [connectionConfig, keplrConnection],
   );
+
+  useEffect(() => {
+    maybeSave('connectionConfig', connectionConfig);
+
+    const updatedConnectionConfigs = [];
+
+    for (const config of allConnectionConfigs) {
+      const found = DEFAULT_CONNECTION_CONFIGS.find(
+        defaultConfig => defaultConfig.href === config.href,
+      );
+      if (!found) {
+        updatedConnectionConfigs.push(config);
+      }
+    }
+    maybeSave('userConnectionConfigs', updatedConnectionConfigs);
+
+    if (connectionConfig) {
+      tryKeplrConnect().catch(reason => {
+        console.error('tryKeplrConnect failed', reason);
+        setConnectionStatus(ConnectionStatus.Error);
+      });
+    }
+  }, [connectionConfig]);
 
   useEffect(() => {
     if (!connectionConfig || !keplrConnection) {
@@ -167,4 +194,6 @@ export default withApplicationContext(SmartWalletConnection, context => ({
   setBackend: context.setBackend,
   setBackendErrorHandler: context.setBackendErrorHandler,
   keplrConnection: context.keplrConnection,
+  allConnectionConfigs: context.allConnectionConfigs,
+  tryKeplrConnect: context.tryKeplrConnect,
 }));
