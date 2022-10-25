@@ -21,8 +21,8 @@
     "@agoric/swingset-vat": "^0.30.2",
     "@agoric/vats": "^0.11.0",
     "@agoric/wallet-backend": "^0.13.3",
-    "@endo/captp": "^2.0.15",
-    "@endo/init": "^0.5.49",
+    "@endo/captp": "^2.0.17",
+    "@endo/init": "^0.5.51",
     "ava": "^4.3.1"
   },
   "dependencies": {
@@ -36,7 +36,7 @@
     "@agoric/vat-data": "^0.4.3",
     "@agoric/vats": "^0.13.0",
     "@agoric/zoe": "^0.25.3",
-    "@endo/far": "^0.2.11"
+    "@endo/far": "^0.2.13"
   },
   "files": [
     "src/"
