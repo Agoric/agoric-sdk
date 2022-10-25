@@ -80,6 +80,8 @@ export const makeAsyncIterableFromNotifier = notifierP => {
                 return harden({ value, done });
               });
           }
+          // xxx hint for type checker
+          assert(myIterationResultP);
           return myIterationResultP;
         },
       });

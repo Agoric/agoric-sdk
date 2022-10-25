@@ -1,4 +1,5 @@
 // @ts-check
+/// <reference path="../../../SwingSet/src/vats/timer/types.d.ts" />
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
