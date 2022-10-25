@@ -12,6 +12,7 @@ export const SmartConnectionMethod = {
 };
 
 const DEFAULT_CONNECTION_CONFIGS = [
+  /*
   {
     type: ConnectionConfigType.SMART,
     href: 'http://localhost:8000/wallet/network-config',
@@ -24,6 +25,7 @@ const DEFAULT_CONNECTION_CONFIGS = [
     type: ConnectionConfigType.SMART,
     href: 'https://testnet.agoric.net/network-config',
   },
+  */
   {
     type: ConnectionConfigType.SOLO,
     href: 'http://localhost:8000',
@@ -32,10 +34,12 @@ const DEFAULT_CONNECTION_CONFIGS = [
 
 // TODO: Make mainnet unconditional.
 if (process.env.NODE_ENV === 'development') {
+  /*
   DEFAULT_CONNECTION_CONFIGS.push({
     type: ConnectionConfigType.SMART,
     href: 'https://main.agoric.net/network-config',
   });
+  */
 }
 
 export { DEFAULT_CONNECTION_CONFIGS };

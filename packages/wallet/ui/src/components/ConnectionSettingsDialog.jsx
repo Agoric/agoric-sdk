@@ -367,7 +367,7 @@ const ConnectionSettingsDialog = ({
               onChange={handleTabChange}
               aria-label="connection type"
             >
-              <Tab label="Smart Wallet" value={Tabs.SMART} />
+              {null && <Tab label="Smart Wallet" value={Tabs.SMART} />}
               <Tab label="Solo Wallet" value={Tabs.SOLO} />
             </TabList>
           </Box>
