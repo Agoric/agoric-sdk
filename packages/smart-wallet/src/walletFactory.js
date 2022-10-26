@@ -60,7 +60,7 @@ export const publishDepositFacet = async (
  * @param {ZCF<SmartWalletContractTerms>} zcf
  * @param {{
  *   storageNode: ERef<StorageNode>,
- *   bridgeManager?: ERef<import('@agoric/vats/src/bridge.js').BridgeManager>,
+ *   bridgeManager?: ERef<import('@agoric/vats').BridgeManager>,
  * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {

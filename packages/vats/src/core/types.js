@@ -66,11 +66,6 @@
  */
 
 /**
- * @typedef {ReturnType<typeof import('../bridge.js').makeBridgeManager>} BridgeManager
- * @typedef {BridgeManager | undefined} OptionalBridgeManager
- */
-
-/**
  * @typedef {{
  *   getChainBundle: () => unknown,
  *   getChainConfigNotifier: () => Notifier<unknown>,

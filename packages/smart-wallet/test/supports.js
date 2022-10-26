@@ -84,9 +84,9 @@ const setUpZoeForTest = async () => {
 harden(setUpZoeForTest);
 
 const makeFakeBridgeManager = () => {
-  /** @type {Record<string, ERef<import('@agoric/vats/src/bridge').BridgeHandler>>} */
+  /** @type {Record<string, ERef<import('@agoric/vats').BridgeHandler>>} */
   const handlers = {};
-  /** @type {import('@agoric/vats/src/bridge').BridgeManager} */
+  /** @type {import('@agoric/vats').BridgeManager} */
   const manager = {
     register(srcID, handler) {
       handlers[srcID] = handler;
