@@ -651,6 +651,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         if (isReplaying) {
           break;
         }
+        /** @type {{ksc: import('@agoric/swingset-vat').KernelSyscallObject } & Record<string, unknown>} */
         const { ksc, vsc: _1, ...attrs } = slogAttrs;
         if (!ksc) {
           break;
@@ -764,14 +765,12 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
             makeSyscallSpan(name, sattrs);
             break;
           }
-          case 'vatstoreGetAfter': {
-            const [_, vatID, priorKey, lowerBound, upperBound = ''] = ksc;
+          case 'vatstoreGetNextKey': {
+            const [_, vatID, priorKey] = ksc;
             const sattrs = {
               vatID,
               priorKey,
-              lowerBound,
-              upperBound,
-              details: `${detailsPrefix}: vatstoreGetAfter('${priorKey}', '${lowerBound}', '${upperBound}')`,
+              details: `${detailsPrefix}: vatstoreGetNextKey('${priorKey}')`,
             };
             makeSyscallSpan(name, sattrs);
             break;
@@ -799,8 +798,9 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
           }
           case 'dropImports':
           case 'retireImports':
-          case 'retireExports': {
-            const [_, krefs] = ksc;
+          case 'retireExports':
+          case 'abandonExports': {
+            const krefs = syscallType === 'abandonExports' ? ksc[2] : ksc[1];
             const krefList = krefs.join(',');
             const sattrs = {
               krefs: krefList,
@@ -819,8 +819,14 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
             makeSyscallSpan(name, sattrs);
             break;
           }
+          case 'callKernelHook': {
+            // Device-only syscall doesn't happen in vats
+            break;
+          }
           default: {
-            console.error(`Unknown syscall type:`, syscallType);
+            /** @type {never} */
+            const unexpectedSyscall = syscallType;
+            console.error(`Unknown syscall type:`, unexpectedSyscall);
           }
         }
         break;
