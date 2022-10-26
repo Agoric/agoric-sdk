@@ -6,7 +6,7 @@
   "license": "Apache-2.0",
   "author": "Agoric",
   "agoric-wallet": {
-    "htmlBasedir": "./ui/build",
+    "htmlBasedir": "./node_modules/@agoric/wallet-ui/build",
     "deploy": [
       "./api/deploy.js"
     ]
@@ -19,6 +19,7 @@
     "build": "exit 0"
   },
   "dependencies": {
+    "@agoric/wallet-ui": "0.1.3-solo.0",
     "agoric": "^0.18.2",
     "babel-eslint": "^10.0.3",
     "eslint-plugin-eslint-comments": "^3.1.2",
