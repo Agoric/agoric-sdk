@@ -82,6 +82,11 @@ export const objectMap = (original, mapFn) => {
 };
 harden(objectMap);
 
+/**
+ *
+ * @param {Array<string | symbol>} leftNames
+ * @param {Array<string | symbol>} rightNames
+ */
 export const listDifference = (leftNames, rightNames) => {
   const rightSet = new Set(rightNames);
   return leftNames.filter(name => !rightSet.has(name));
@@ -139,15 +144,20 @@ export const applyLabelingError = (func, args, label = undefined) => {
 };
 harden(applyLabelingError);
 
-const compareStringified = (left, right) => {
-  left = String(left);
-  right = String(right);
+/**
+ * @param {unknown} a
+ * @param {unknown} b
+ * @returns {-1 | 0 | 1}
+ */
+const compareStringified = (a, b) => {
+  const left = String(a);
+  const right = String(b);
   // eslint-disable-next-line no-nested-ternary
   return left < right ? -1 : left > right ? 1 : 0;
 };
 
 /**
- * @param {object} obj
+ * @param {Record<string | symbol, unknown>} obj
  * @returns {(string|symbol)[]}
  */
 export const getMethodNames = obj => {
@@ -198,7 +208,8 @@ export const bindAllMethods = obj =>
         getMethodNames(obj).map(name => [
           name,
           {
-            value: (...args) => apply(obj[name], obj, args),
+            value: (/** @type {unknown[]} */ ...args) =>
+              apply(obj[name], obj, args),
             enumerable: true,
           },
         ]),
@@ -218,7 +229,7 @@ harden(bindAllMethods);
  * - resulting type has wrapper in its name
  *
  * @template T
- * @typedef {T extends PromiseLike ? Awaited<T> : T extends {} ? DeeplyAwaitedObject<T> : Awaited<T>} DeeplyAwaited
+ * @typedef {T extends PromiseLike<any> ? Awaited<T> : T extends {} ? DeeplyAwaitedObject<T> : Awaited<T>} DeeplyAwaited
  */
 
 /**
@@ -241,6 +252,7 @@ export const deeplyFulfilledObject = obj => {
  * @returns {<T>(fn: () => Promise<T>) => Promise<{ result: T, duration: number }>}
  */
 export const makeMeasureSeconds = currentTimeMillisec => {
+  /** @param {() => any} fn */
   const measureSeconds = async fn => {
     const t0 = currentTimeMillisec();
     const result = await fn();
