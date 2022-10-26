@@ -193,12 +193,12 @@
 /**
  * @typedef {PromiseSpaceOf<{
  *   agoricNames: NameHub,
- *   agoricNamesAdmin: NameAdmin,
+ *   agoricNamesAdmin: import('@agoric/vats').NameAdmin,
  *   aggregators: Map<unknown, { aggregator: PriceAuthority, deleter: import('@agoric/zoe/tools/priceAuthorityRegistry').Deleter }>,
  *   bankManager: BankManager,
  *   bldIssuerKit: RemoteIssuerKit,
- *   board: Board,
- *   bridgeManager: OptionalBridgeManager,
+ *   board: import('@agoric/vats').Board,
+ *   bridgeManager: import('../bridge.js').BridgeManager | undefined,
  *   chainStorage: StorageNode | null,
  *   chainTimerService: TimerService,
  *   client: ClientManager,
@@ -209,9 +209,9 @@
  *   lienBridge: unknown,
  *   mints: MintsVat,
  *   namesByAddress: NameHub,
- *   namesByAddressAdmin: NameAdmin,
- *   pegasusConnections: NameHub,
- *   pegasusConnectionsAdmin: NameAdmin,
+ *   namesByAddressAdmin: import('@agoric/vats').NameAdmin,
+ *   pegasusConnections: import('@agoric/vats').NameHubKit,
+ *   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin,
  *   priceAuthorityVat: Awaited<PriceAuthorityVat>,
  *   priceAuthority: PriceAuthority,
  *   priceAuthorityAdmin: PriceAuthorityRegistryAdmin,
@@ -222,7 +222,7 @@
  *   zoe: ZoeService,
  * }>} ChainBootstrapSpace
  *
- * @typedef {import('../nameHub').NameHub} NameHub
+ * @typedef {import('@agoric/vats').NameHub} NameHub
  * IDEA/TODO: make types of demo stuff invisible in production behaviors
  * @typedef {{
  *   argv: {

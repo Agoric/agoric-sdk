@@ -8,13 +8,13 @@ export const DEPOSIT_FACET = 'depositFacet';
 const { details: X } = assert;
 
 /**
- * @param {ERef<NameAdmin>} nameAdmin
+ * @param {ERef<import('@agoric/vats').NameAdmin>} nameAdmin
  * @param {string[][]} paths
  */
 export const reserveThenGetNamePaths = async (nameAdmin, paths) => {
   /**
    *
-   * @param {ERef<NameAdmin>} nextAdmin
+   * @param {ERef<import('@agoric/vats').NameAdmin>} nextAdmin
    * @param {string[]} path
    */
   const nextPath = async (nextAdmin, path) => {
@@ -44,7 +44,7 @@ export const reserveThenGetNamePaths = async (nameAdmin, paths) => {
 };
 
 /**
- * @param {ERef<NameAdmin>} nameAdmin
+ * @param {ERef<import('@agoric/vats').NameAdmin>} nameAdmin
  * @param {string[]} names
  */
 export const reserveThenGetNames = async (nameAdmin, names) =>
@@ -68,7 +68,7 @@ export const reserveThenDeposit = async (
   console.info('confirmed deposit for', debugName);
 };
 
-/** @type {<T>(store: ERef<Map<string, T>>, key: string, make: () => T) => Promise<T>} */
+/** @type {<T>(store: ERef<Map<string, T> | import('@agoric/solo/src/scratch').ScratchPad>, key: string, make: () => T) => Promise<T>} */
 const provideWhen = async (store, key, make) => {
   const found = await E(store).get(key);
   if (found) {
@@ -81,7 +81,7 @@ const provideWhen = async (store, key, make) => {
 
 /**
  *
- * @param {{ scratch: ERef<MapStore<string, unknown>> }} homeP
+ * @param {{ scratch: ERef<import('@agoric/solo/src/scratch').ScratchPad> }} homeP
  * @param {object} opts
  * @param {(specifier: string) => Promise<{default: Bundle}>} opts.loadBundle
  * @param {string} [opts.installCacheKey]
@@ -91,12 +91,8 @@ export const makeInstallCache = async (
   { installCacheKey = 'installCache', loadBundle },
 ) => {
   /** @type {CopyMap<string, {installation: Installation, boardId: string, path?: string}>} */
-
-  const initial = await provideWhen(
-    // @ts-expect-error cast
-    E.get(homeP).scratch,
-    installCacheKey,
-    () => makeCopyMap([]),
+  const initial = await provideWhen(E.get(homeP).scratch, installCacheKey, () =>
+    makeCopyMap([]),
   );
   // ISSUE: getCopyMapEntries of CopyMap<K, V> loses K, V.
   /** @type {Map<string, {installation: Installation, boardId: string, path?: string}>} */

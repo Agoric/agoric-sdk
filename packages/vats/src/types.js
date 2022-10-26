@@ -1,5 +1,7 @@
 // @ts-check
 
+export {};
+
 /**
  * @template T
  * @typedef {import('@endo/far').EOnly<T>} EOnly
@@ -10,6 +12,5 @@
  */
 
 /**
- * @typedef {import('./nameHub.js').NameAdmin} NameAdmin
- * @typedef {NameAdmin & { getMyAddress(): string }} MyAddressNameAdmin
+ * @typedef {import('./nameHub.js').NameAdmin & { getMyAddress(): string }} MyAddressNameAdmin
  */

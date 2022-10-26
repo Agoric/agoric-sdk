@@ -17,6 +17,13 @@ import * as behaviors from './behaviors.js';
 import * as clientBehaviors from './client-behaviors.js';
 import * as utils from './utils.js';
 
+// Ambient types
+import './types.js';
+// eslint-disable-next-line import/export -- no named exports
+export * from '../types.js';
+export * from '../nameHub.js';
+export * from '../bridge.js';
+
 const { details: X, quote: q } = assert;
 
 // Choose a manifest based on runtime configured argv.ROLE.

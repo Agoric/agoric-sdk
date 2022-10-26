@@ -228,7 +228,7 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
     },
 
     /**
-     * @param {EOnly<DepositFacet>} depositFacet
+     * @param {import('@endo/far').EOnly<DepositFacet>} depositFacet
      */
     makeDepositFacetDestination: depositFacet => {
       return Far(`DepositFacetDestination`, {

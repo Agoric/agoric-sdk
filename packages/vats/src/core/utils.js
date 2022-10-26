@@ -314,8 +314,8 @@ harden(runModuleBehaviors);
  * return { produce, consume } spaces rather than NameAdmins.
  *
  * @returns {{
- *   agoricNames: NameHub,
- *   agoricNamesAdmin: NameAdmin,
+ *   agoricNames: import('../nameHub.js').NameHub,
+ *   agoricNamesAdmin: import('../nameHub.js').NameAdmin,
  *   spaces: WellKnownSpaces,
  * }}
  *
