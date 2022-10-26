@@ -3,7 +3,7 @@ import { makePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegi
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
 
 /** @type {BuildRootObjectForTestVat} */
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   return Far('root', {
     makePriceAuthority: makePriceAuthorityRegistry,
     makeFakePriceAuthority: async options =>

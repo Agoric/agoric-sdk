@@ -5,7 +5,7 @@ import { makeNotifierKit } from '@agoric/notifier';
 // This vat contains the controller-side provisioning service. To enable local
 // testing, it is loaded by both the controller and other ag-solo vat machines.
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   let bundler;
   let comms;
   let vattp;

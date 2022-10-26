@@ -3,6 +3,6 @@
 import { Far } from '@endo/marshal';
 import { makeSharingService } from '../../../src/sharing.js';
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   return Far('root', { makeSharingService });
 }

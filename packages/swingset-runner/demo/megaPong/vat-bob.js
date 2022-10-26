@@ -18,7 +18,7 @@ function ppp(count) {
   }
 }
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   let myNickname;
   let total = 0;
 

@@ -5,7 +5,7 @@ const log = console.log;
 
 log(`=> loading bootstrap.js`);
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   const target = Far('target', {
     one() {
       log(`target in one`);

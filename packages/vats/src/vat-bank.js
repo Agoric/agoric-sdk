@@ -101,7 +101,7 @@ const makePurseController = (
  * (keyed by address and brand) or create a new one.
  */
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   return Far('bankMaker', {
     /**
      * @param {ERef<import('./bridge').BridgeManager | undefined>} [bankBridgeManagerP] a bridge

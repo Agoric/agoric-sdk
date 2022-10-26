@@ -14,7 +14,7 @@ Most SwingSet vats use liveslots (with the notable exception of the comms vat). 
 
 ```js
 
-export buildRootObject(_vatPowers) {
+export buildRootObject() {
   const obj0 = Far('root', {
     foo(arg1, arg2) {
       // implement foo

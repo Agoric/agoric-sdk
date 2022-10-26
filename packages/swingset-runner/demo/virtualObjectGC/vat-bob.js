@@ -2,7 +2,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { defineKind } from '@agoric/vat-data';
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   const makeThing = defineKind('thing', label => ({ label }), {
     getLabel: ({ state }) => state.label,
   });

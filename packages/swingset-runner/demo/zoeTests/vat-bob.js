@@ -516,7 +516,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
   });
 };
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   return Far('root', {
     build: (...args) => build(makePrintLog(), ...args),
   });

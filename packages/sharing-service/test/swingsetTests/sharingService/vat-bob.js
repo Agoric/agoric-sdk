@@ -20,7 +20,7 @@ function makeBobMaker() {
   });
 }
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   return Far('root', {
     makeBobMaker(_host) {
       return makeBobMaker();
