@@ -158,7 +158,7 @@ const FIRST_METER_ID = 1n;
 
 /**
  * @param {HostStore} hostStorage
- * @param {KernelSlog} kernelSlog
+ * @param {KernelSlog | null} kernelSlog
  * @param {import('../../lib-nodejs/hasher.js').CreateSHA256} createSHA256
  */
 export default function makeKernelKeeper(
