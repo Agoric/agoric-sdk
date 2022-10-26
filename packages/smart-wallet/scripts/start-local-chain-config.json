@@ -1,0 +1,83 @@
+{
+    "bootstrap": "bootstrap",
+    "defaultReapInterval": 1000,
+    "snapshotInterval": 1000,
+    "vats": {
+        "bootstrap": {
+            "sourceSpec": "@agoric/vats/src/core/boot-oracles.js",
+            "parameters": {
+                "anchorAssets": [
+                    {
+                        "keyword": "USDC_axl",
+                        "proposedName": "USD Coin",
+                        "decimalPlaces": 6,
+                        "denom": "ibc/usdc1234"
+                    },
+                    {
+                        "keyword": "AUSD",
+                        "proposedName": "Anchor USD",
+                        "decimalPlaces": 6,
+                        "denom": "ibc/toyellie"
+                    }
+                ],
+                "economicCommitteeAddresses": {
+                    "voter": "agoric109q3uc0xt8aavne94rgd6rfeucavrx924e0ztf"
+                },
+                "demoOracleAddresses": [
+                    "agoric109q3uc0xt8aavne94rgd6rfeucavrx924e0ztf"
+                ]
+            },
+            "creationOptions": {
+                "critical": true
+            }
+        }
+    },
+    "bundles": {
+        "walletFactory": {
+            "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"
+        },
+        "provisionPool": {
+            "sourceSpec": "@agoric/vats/src/provisionPool.js"
+        },
+        "committee": {
+            "sourceSpec": "@agoric/governance/src/committee.js"
+        },
+        "contractGovernor": {
+            "sourceSpec": "@agoric/governance/src/contractGovernor.js"
+        },
+        "binaryVoteCounter": {
+            "sourceSpec": "@agoric/governance/src/binaryVoteCounter.js"
+        },
+        "psm": {
+            "sourceSpec": "@agoric/inter-protocol/src/psm/psm.js"
+        },
+        "psmCharter": {
+            "sourceSpec": "@agoric/inter-protocol/src/psm/psmCharter.js"
+        },
+        "priceAggregator": {
+            "sourceSpec": "@agoric/zoe/src/contracts/priceAggregator.js"
+        },
+        "bank": {
+            "sourceSpec": "@agoric/vats/src/vat-bank.js"
+        },
+        "centralSupply": {
+            "sourceSpec": "@agoric/vats/src/centralSupply.js"
+        },
+        "mintHolder": {
+            "sourceSpec": "@agoric/vats/src/mintHolder.js"
+        },
+        "board": {
+            "sourceSpec": "@agoric/vats/src/vat-board.js"
+        },
+        "chainStorage": {
+            "sourceSpec": "@agoric/vats/src/vat-chainStorage.js"
+        },
+        "zcf": {
+            "sourceSpec": "@agoric/zoe/contractFacet.js"
+        },
+        "zoe": {
+            "sourceSpec": "@agoric/vats/src/vat-zoe.js"
+        }
+    },
+    "defaultManagerType": "xs-worker"
+}

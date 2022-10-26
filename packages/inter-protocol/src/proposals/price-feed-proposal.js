@@ -8,6 +8,9 @@ import { deeplyFulfilledObject } from '@agoric/internal';
 
 import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import { reserveThenDeposit, reserveThenGetNames } from './utils.js';
+import { makeTracer } from '../makeTracer.js';
+
+const trace = makeTracer('RunPriceFeed');
 
 /** @type {(name: string) => void} */
 const sanitizePathSegment = name => {
@@ -49,6 +52,7 @@ export const ensureOracleBrands = async (
     },
   },
 ) => {
+  trace('ensureOracleBrands');
   /** @type {NameAdmin} */
   const obAdmin = E(agoricNamesAdmin).lookupAdmin('oracleBrand');
 
@@ -82,7 +86,7 @@ export const ensureOracleBrands = async (
 
 /**
  * @param {ChainBootstrapSpace} powers
- * @param {{options: {priceFeedOptions: {AGORIC_INSTANCE_NAME: string, oracleAddresses: UNKNOWN, contractTerms: unknown, IN_BRAND_NAME: string, OUT_BRAND_NAME: string}}}} config
+ * @param {{options: {priceFeedOptions: {AGORIC_INSTANCE_NAME: string, oracleAddresses: string[], contractTerms: unknown, IN_BRAND_NAME: string, OUT_BRAND_NAME: string}}}} config
  */
 export const createPriceFeed = async (
   {
@@ -112,6 +116,7 @@ export const createPriceFeed = async (
     },
   },
 ) => {
+  trace('createPriceFeed');
   const STORAGE_PATH = 'priceFeed';
 
   // Default to an empty Map and home.priceAuthority.
@@ -198,7 +203,9 @@ export const createPriceFeed = async (
     );
   };
 
+  trace('distributing invitations', oracleAddresses);
   await Promise.all(oracleAddresses.map(distributeInvitation));
+  trace('createPriceFeed complete');
 };
 
 const t = 'priceFeed';
@@ -247,5 +254,83 @@ export const getManifestForPriceFeed = async (
         restoreRef(priceFeedOptions.brandeOutRef),
       ...priceFeedOptions,
     },
+  },
+});
+
+/**
+ * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
+ * @param {object} [config]
+ * @param {object} [config.options]
+ * @param {string[]} [config.options.demoOracleAddresses]
+ */
+export const startPriceFeeds = async (
+  {
+    consume,
+    produce,
+    installation: {
+      consume: { priceAggregator },
+    },
+  },
+  { options: { demoOracleAddresses = [] } = {} },
+) => {
+  trace('startPriceFeeds');
+
+  const inBrandName = 'ATOM';
+  const outBrandName = 'USD';
+
+  /** @type {ERef<NameAdmin>} */
+  const installAdmin = E(consume.agoricNamesAdmin).lookupAdmin('installation');
+  await E(installAdmin).update('priceAggregator', priceAggregator);
+
+  await ensureOracleBrands(
+    { consume },
+    {
+      options: {
+        priceFeedOptions: {
+          IN_BRAND_NAME: inBrandName,
+          IN_BRAND_DECIMALS: '6',
+          OUT_BRAND_NAME: outBrandName,
+          OUT_BRAND_DECIMALS: '6',
+        },
+      },
+    },
+  );
+
+  await createPriceFeed(
+    { consume, produce },
+    {
+      options: {
+        priceFeedOptions: {
+          AGORIC_INSTANCE_NAME: `${inBrandName}-${outBrandName} price feed`,
+          contractTerms: {
+            POLL_INTERVAL: 1n,
+          },
+          oracleAddresses: demoOracleAddresses,
+          IN_BRAND_NAME: inBrandName,
+          OUT_BRAND_NAME: outBrandName,
+        },
+      },
+    },
+  );
+  trace('startPriceFeeds complete');
+};
+harden(startPriceFeeds);
+
+export const PRICE_FEEDS_MANIFEST = harden({
+  [startPriceFeeds.name]: {
+    consume: {
+      agoricNamesAdmin: true,
+      aggregators: true,
+      board: true,
+      chainStorage: true,
+      chainTimerService: true,
+      client: true,
+      namesByAddressAdmin: true,
+      priceAuthority: true,
+      priceAuthorityAdmin: true,
+      zoe: true,
+    },
+    produce: { aggregators: true },
+    installation: { consume: { priceAggregator: true } },
   },
 });

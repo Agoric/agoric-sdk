@@ -50,6 +50,7 @@ export const agoricNamesReserved = harden({
     psm: 'Parity Stability Module',
     psmCharter: 'Charter for PSM Governance questions',
     interchainPool: 'interchainPool',
+    priceAggregator: 'simple price aggregator',
   },
   instance: {
     economicCommittee: 'Economic Committee',

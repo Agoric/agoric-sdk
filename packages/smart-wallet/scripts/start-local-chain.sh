@@ -9,6 +9,9 @@ open -a /System/Applications/Utilities/Console.app $CHAIN_LOG
 # ugly way to get SDK path regardless of cwd
 SDK=$(readlink -f "$(dirname -- "$(readlink -f -- "$0")")/../../..")
 
+# Basically the psm config, plus priceAggregator and a different sourceSpec
+export CHAIN_BOOTSTRAP_VAT_CONFIG="$SDK/packages/smart-wallet/scripts/start-local-chain-config.json"
+
 WALLET=$1
 
 if [ -z "$WALLET" ]; then
@@ -20,7 +23,10 @@ fi
 WALLET_BECH32=$(agd keys show "$WALLET" --output json | jq -r .address)
 
 # grant econ governance
-sed -i '' "s/\"voter\":.*/\"voter\": \"$WALLET_BECH32\"/" "$SDK"/packages/vats/decentral-psm-config.json
+sed -i '' "s/\"voter\":.*/\"voter\": \"$WALLET_BECH32\"/" "$CHAIN_BOOTSTRAP_VAT_CONFIG"
+# grant same key the priviledge of operating the demo oracle
+# NB this assumes the current value, so won't update any others
+sed -i '' "s/agoric1ersatz/$WALLET_BECH32/" "$CHAIN_BOOTSTRAP_VAT_CONFIG"
 
 echo CHAIN_LOG $CHAIN_LOG
 echo SDK "$SDK"
@@ -31,7 +37,7 @@ echo WALLET_BECH32 "$WALLET_BECH32"
 # e.g. killall node xsnap-worker
 echo "Starting the chain..."
 cd "$SDK"/packages/cosmic-swingset || exit 1
-make scenario2-setup scenario2-run-chain-psm >>$CHAIN_LOG 2>&1 &
+make scenario2-setup scenario2-run-chain >>$CHAIN_LOG 2>&1 &
 echo "Logs written to $CHAIN_LOG"
 make wait-for-cosmos
 
@@ -47,7 +53,7 @@ agd query bank balances "$WALLET_BECH32" | grep ubld || exit 1
 echo "Provisioning your smart wallet..."
 agoric wallet provision --spend --account "$WALLET"
 echo "waiting for blocks"
-sleep 10
+sleep 15
 # verify
 agoric wallet list
 agoric wallet show --from "$WALLET"

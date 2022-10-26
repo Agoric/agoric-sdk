@@ -1,48 +1,19 @@
 // @ts-check
-/** @file Boot script for PSM-only (aka Pismo) chain */
-import { Far } from '@endo/far';
-import {
-  installGovAndPSMContracts,
-  makeAnchorAsset,
-  startPSM,
-  invitePSMCommitteeMembers,
-  PSM_MANIFEST,
-  PSM_GOV_MANIFEST,
-  startPSMCharter,
-  INVITE_PSM_COMMITTEE_MANIFEST,
-} from '@agoric/inter-protocol/src/proposals/startPSM.js';
-import * as startPSMmod from '@agoric/inter-protocol/src/proposals/startPSM.js';
+
+/** @file Boot script for demoing oracles. Builds upon boot-psm to be used in integration tests. */
+
 import * as ERTPmod from '@agoric/ertp';
-// TODO: factor startEconomicCommittee out of econ-behaviors.js
-import { fit, M } from '@agoric/store';
 import {
-  ECON_COMMITTEE_MANIFEST,
-  startEconomicCommittee,
-} from '@agoric/inter-protocol/src/proposals/startEconCommittee.js';
-import { makeAgoricNamesAccess, makePromiseSpace } from './utils.js';
-import { Stable, Stake } from '../tokens.js';
-import {
-  addBankAssets,
-  buildZoe,
-  installBootContracts,
-  makeAddressNameHubs,
-  makeBoard,
-  makeVatsFromBundles,
-  mintInitialSupply,
-} from './basic-behaviors.js';
-import * as utils from './utils.js';
-import {
-  bridgeCoreEval,
-  makeBridgeManager,
-  makeChainStorage,
-  publishAgoricNames,
-  startTimerService,
-} from './chain-behaviors.js';
-import { CHAIN_BOOTSTRAP_MANIFEST } from './manifest.js';
-import {
-  startWalletFactory,
-  WALLET_FACTORY_MANIFEST,
-} from './startWalletFactory.js';
+  PRICE_FEEDS_MANIFEST,
+  startPriceFeeds,
+} from '@agoric/inter-protocol/src/proposals/price-feed-proposal.js';
+import * as startPSMmod from '@agoric/inter-protocol/src/proposals/startPSM.js';
+import { M } from '@agoric/store';
+import { buildRootObject as buildPsmRootObject } from '@agoric/vats/src/core/boot-psm.js';
+import * as utils from '@agoric/vats/src/core/utils.js';
+import { makeAgoricNamesAccess } from '@agoric/vats/src/core/utils.js';
+import { Stable, Stake } from '@agoric/vats/src/tokens.js';
+import { E, Far } from '@endo/far';
 
 /** @typedef {import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
 
@@ -106,6 +77,27 @@ export const ParametersShape = M.partial({
   economicCommitteeAddresses: M.recordOf(M.string(), M.string()),
 });
 
+/** @param {BootstrapSpace & { devices: { vatAdmin: any }, vatPowers: { D: DProxy }, }} powers */
+const installPriceAggregatorContract = async ({
+  vatPowers: { D },
+  devices: { vatAdmin },
+  consume: { zoe },
+  installation: {
+    produce: { priceAggregator },
+  },
+}) => {
+  // Copied from installBootContracts:
+
+  // This really wants to be E(vatAdminSvc).getBundleIDByName, but it's
+  // good enough to do D(vatAdmin).getBundleIDByName
+  const bundleCap = D(vatAdmin).getNamedBundleCap('priceAggregator');
+
+  const bundle = D(bundleCap).getBundle();
+  // TODO (#4374) this should be E(zoe).installBundleID(bundleID);
+  const installation = E(zoe).install(bundle);
+  priceAggregator.resolve(installation);
+};
+
 /**
  * Build root object of the PSM-only bootstrap vat.
  *
@@ -115,22 +107,20 @@ export const ParametersShape = M.partial({
  * }} vatPowers
  * @param {{
  *     economicCommitteeAddresses: Record<string, string>,
+ *     demoOracleAddresses?: string[],
  *     anchorAssets: { denom: string, keyword?: string }[],
  * }} vatParameters
  */
 export const buildRootObject = (vatPowers, vatParameters) => {
+  const psmRootObject = buildPsmRootObject(vatPowers, vatParameters);
+
+  const { produce, consume } = psmRootObject.getPromiseSpace();
+
   const log = vatPowers.logger || console.info;
 
-  fit(harden(vatParameters), ParametersShape, 'boot-psm params');
-  const { anchorAssets, economicCommitteeAddresses } = vatParameters;
+  const { demoOracleAddresses } = vatParameters;
 
-  const { produce, consume } = makePromiseSpace(log);
-  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(
-    log,
-    agoricNamesReserved,
-  );
-  produce.agoricNames.resolve(agoricNames);
-  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
+  const { spaces } = makeAgoricNamesAccess(log, agoricNamesReserved);
 
   const runBootstrapParts = async (vats, devices) => {
     /** TODO: BootstrapPowers type puzzle */
@@ -152,12 +142,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       },
     });
     const manifest = {
-      ...CHAIN_BOOTSTRAP_MANIFEST,
-      ...WALLET_FACTORY_MANIFEST,
-      ...PSM_GOV_MANIFEST,
-      ...ECON_COMMITTEE_MANIFEST,
-      ...PSM_MANIFEST,
-      ...INVITE_PSM_COMMITTEE_MANIFEST,
+      ...PRICE_FEEDS_MANIFEST,
     };
     /** @param {string} name */
     const powersFor = name => {
@@ -167,47 +152,9 @@ export const buildRootObject = (vatPowers, vatParameters) => {
     };
 
     await Promise.all([
-      makeVatsFromBundles(powersFor('makeVatsFromBundles')),
-      buildZoe(powersFor('buildZoe')),
-      makeBoard(powersFor('makeBoard')),
-      makeBridgeManager(powersFor('makeBridgeManager')),
-      makeChainStorage(powersFor('makeChainStorage')),
-      makeAddressNameHubs(powersFor('makeAddressNameHubs')),
-      publishAgoricNames(powersFor('publishAgoricNames'), {
-        options: {
-          agoricNamesOptions: { topLevel: Object.keys(agoricNamesReserved) },
-        },
+      startPriceFeeds(powersFor('startPriceFeeds'), {
+        options: { demoOracleAddresses },
       }),
-      startWalletFactory(powersFor('startWalletFactory')),
-      mintInitialSupply(powersFor('mintInitialSupply')),
-      addBankAssets(powersFor('addBankAssets')),
-      startTimerService(powersFor('startTimerService')),
-      installBootContracts(powersFor('installBootContracts')),
-      installGovAndPSMContracts(powersFor('installGovAndPSMContracts')),
-      startEconomicCommittee(powersFor('startEconomicCommittee'), {
-        options: {
-          econCommitteeOptions: {
-            committeeSize: Object.values(economicCommitteeAddresses).length,
-          },
-        },
-      }),
-      invitePSMCommitteeMembers(powersFor('invitePSMCommitteeMembers'), {
-        options: { voterAddresses: economicCommitteeAddresses },
-      }),
-      ...anchorAssets.map(anchorOptions =>
-        makeAnchorAsset(powersFor('makeAnchorAsset'), {
-          options: { anchorOptions },
-        }),
-      ),
-      ...anchorAssets.map(anchorOptions =>
-        startPSM(powersFor('startPSM'), {
-          options: { anchorOptions },
-        }),
-      ),
-      startPSMCharter(powersFor('startPSMCharter')),
-      // Allow bootstrap powers to be granted by governance
-      // to code to be evaluated after initial bootstrap.
-      bridgeCoreEval(powersFor('bridgeCoreEval')),
     ]);
   };
 
