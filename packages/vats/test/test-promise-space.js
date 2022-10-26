@@ -1,3 +1,4 @@
+// @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { makePromiseSpace } from '../src/core/utils.js';
@@ -20,11 +21,13 @@ test('makePromiseSpace', async t => {
 
   await checkAlice(consume.alice, `Hi, I'm Alice!`);
 
+  // @ts-expect-error
   produce.alice.reset(`I'm ignored!`);
   await checkAlice(consume.alice, `Hi, I'm Alice again!`);
 
   produce.alice.reset();
   const newAlice = consume.alice;
+  // @ts-expect-error
   produce.alice.reset(`I'm rejected!`);
   await newAlice.then(
     res => t.assert(false, `unexpected resolution ${res}`),

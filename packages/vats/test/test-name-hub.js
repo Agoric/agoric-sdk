@@ -1,3 +1,4 @@
+// @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { makeNameHubKit } from '../src/nameHub.js';
@@ -135,9 +136,11 @@ test('makeNameHubKit - default and set', async t => {
   t.is(nameAdmin.default('defaulted', 'defaultValue'), 'defaultValue');
   nameAdmin.update('already set', 'initial');
   t.is(await nameAdmin.readonly().lookup('already set'), 'initial');
+  // @ts-expect-error
   t.is(nameAdmin.default('already set'), 'initial');
   nameAdmin.set('already set', 'new');
   t.is(await nameAdmin.readonly().lookup('already set'), 'new');
+  // @ts-expect-error
   t.is(nameAdmin.default('already set'), 'new');
   t.throws(() => nameAdmin.set('not set', 'irrelevant'), {
     message: 'key "not set" is not already initialized',
@@ -155,7 +158,7 @@ test('makeNameHubKit - listen for updates', t => {
 
   const brandIST = harden({ name: 'IST' });
   nameAdmin.update('IST', brandIST);
-  nameAdmin.reserve('AUSD', brandIST);
+  nameAdmin.reserve('AUSD');
 
   nameAdmin.delete('BLD');
 

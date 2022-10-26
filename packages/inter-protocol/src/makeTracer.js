@@ -1,5 +1,11 @@
+// @ts-check
 let debugInstance = 1;
 
+/**
+ *
+ * @param {string} name
+ * @param {boolean | 'verbose'} enable
+ */
 const makeTracer = (name, enable = true) => {
   debugInstance += 1;
   let debugCount = 1;

@@ -1,3 +1,4 @@
+// @ts-check
 import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 import { E } from '@endo/far';
 
@@ -67,7 +68,7 @@ export const reserveThenDeposit = async (
   console.info('confirmed deposit for', debugName);
 };
 
-/** @type {<T>(store: ERef<MapStore>, key: string, make: () => T) => Promise<T>} */
+/** @type {<T>(store: ERef<Map<string, T>>, key: string, make: () => T) => Promise<T>} */
 const provideWhen = async (store, key, make) => {
   const found = await E(store).get(key);
   if (found) {
@@ -90,8 +91,12 @@ export const makeInstallCache = async (
   { installCacheKey = 'installCache', loadBundle },
 ) => {
   /** @type {CopyMap<string, {installation: Installation, boardId: string, path?: string}>} */
-  const initial = await provideWhen(E.get(homeP).scratch, installCacheKey, () =>
-    makeCopyMap([]),
+
+  const initial = await provideWhen(
+    // @ts-expect-error cast
+    E.get(homeP).scratch,
+    installCacheKey,
+    () => makeCopyMap([]),
   );
   // ISSUE: getCopyMapEntries of CopyMap<K, V> loses K, V.
   /** @type {Map<string, {installation: Installation, boardId: string, path?: string}>} */
@@ -108,6 +113,7 @@ export const makeInstallCache = async (
   };
 
   const wrapInstall = install => async (mPath, bPath, opts) => {
+    // @ts-expect-error xxx bundle types
     const { endoZipBase64Sha512: sha512 } = await loadBundle(bPath).then(
       m => m.default,
     );
