@@ -1,25 +1,24 @@
-import bundleCentralSupply from '@agoric/vats/bundles/bundle-centralSupply.js';
-import bundleMintHolder from '@agoric/vats/bundles/bundle-mintHolder.js';
-import bundleProvisionPool from '@agoric/vats/bundles/bundle-provisionPool.js';
+// @ts-check
+import centralSupply from '@agoric/vats/bundles/bundle-centralSupply.js';
+import mintHolder from '@agoric/vats/bundles/bundle-mintHolder.js';
+import provisionPool from '@agoric/vats/bundles/bundle-provisionPool.js';
 
-import bundleWalletFactory from '../bundles/bundle-walletFactory.js';
+import walletFactory from '../bundles/bundle-walletFactory.js';
+
+const bundles = {
+  centralSupply,
+  mintHolder,
+  provisionPool,
+  walletFactory,
+};
 
 export const devices = {
   vatAdmin: {
     getNamedBundleCap: name => ({
       getBundle: () => {
-        switch (name) {
-          case 'centralSupply':
-            return bundleCentralSupply;
-          case 'mintHolder':
-            return bundleMintHolder;
-          case 'walletFactory':
-            return bundleWalletFactory;
-          case 'provisionPool':
-            return bundleProvisionPool;
-          default:
-            throw new Error(`unknown bundle ${name}`);
-        }
+        const bundle = bundles[name];
+        assert(bundle, `unknown bundle ${name}`);
+        return bundle;
       },
     }),
   },

@@ -143,7 +143,7 @@
  *     'feeDistributor' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'amm' | 'VaultFactory' | 'liquidate' | 'stakeFactory' |
- *     'Pegasus' | 'reserve' | 'psm' | 'psmCharter' | 'interchainPool',
+ *     'Pegasus' | 'reserve' | 'psm' | 'psmCharter' | 'interchainPool' | 'priceAggregator',
  *   instance: |
  *     'economicCommittee' | 'feeDistributor' |
  *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' |

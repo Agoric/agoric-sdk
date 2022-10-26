@@ -34,7 +34,7 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
 /**
  * This contract aggregates price values from a set of oracles and provides a
  * PriceAuthority for their median. This naive method is game-able and so this module
- * is a stub until we complete what is now in `priceAggregatorChain.js`.
+ * is a stub until we complete what is now in `priceAggregatorChainlink.js`.
  *
  * @param {ZCF<{
  * timer: TimerService,

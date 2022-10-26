@@ -1,24 +1,24 @@
-import bundleCommittee from '@agoric/governance/bundles/bundle-committee.js';
-import bundleContractGovernor from '@agoric/governance/bundles/bundle-contractGovernor.js';
-import bundleBinaryVoteCounter from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
-import bundlePSM from '@agoric/inter-protocol/bundles/bundle-psm.js';
-import bundlePSMCharter from '@agoric/inter-protocol/bundles/bundle-psmCharter.js';
-import bundleWalletFactory from '@agoric/smart-wallet/bundles/bundle-walletFactory.js';
+import binaryVoteCounter from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
+import committee from '@agoric/governance/bundles/bundle-committee.js';
+import contractGovernor from '@agoric/governance/bundles/bundle-contractGovernor.js';
+import psm from '@agoric/inter-protocol/bundles/bundle-psm.js';
+import psmCharter from '@agoric/inter-protocol/bundles/bundle-psmCharter.js';
+import walletFactory from '@agoric/smart-wallet/bundles/bundle-walletFactory.js';
 
-import bundleCentralSupply from '../bundles/bundle-centralSupply.js';
-import bundleMintHolder from '../bundles/bundle-mintHolder.js';
-import bundleProvisionPool from '../bundles/bundle-provisionPool.js';
+import centralSupply from '../bundles/bundle-centralSupply.js';
+import mintHolder from '../bundles/bundle-mintHolder.js';
+import provisionPool from '../bundles/bundle-provisionPool.js';
 
 const bundles = {
-  centralSupply: bundleCentralSupply,
-  mintHolder: bundleMintHolder,
-  walletFactory: bundleWalletFactory,
-  committee: bundleCommittee,
-  contractGovernor: bundleContractGovernor,
-  binaryVoteCounter: bundleBinaryVoteCounter,
-  psm: bundlePSM,
-  psmCharter: bundlePSMCharter,
-  provisionPool: bundleProvisionPool,
+  binaryVoteCounter,
+  centralSupply,
+  committee,
+  contractGovernor,
+  mintHolder,
+  provisionPool,
+  psm,
+  psmCharter,
+  walletFactory,
 };
 
 export const devices = {
