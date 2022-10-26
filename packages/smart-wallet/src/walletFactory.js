@@ -14,6 +14,10 @@ import { E } from '@endo/far';
 import { makeSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
 
+// Ambient types. Needed only for dev but this does a runtime import.
+import '@agoric/vats/exported.js';
+import '@agoric/swingset-vat/src/types-ambient.js';
+
 const PrivateArgsShape = harden(
   M.split(
     { storageNode: M.eref(M.any()) },
