@@ -241,7 +241,7 @@
  * promise will fulfill to the completion value.
  * @property {ShutdownWithFailure} terminateWithFailure
  * Terminate the vat in which the contract is running as a failure.
- * @property {(bundleCap: BundleCap, options?: Record<string, any>) => Promise<RootAndAdminNode>} upgrade
+ * @property {(bundleCap: *, options?: Record<string, any>) => Promise<RootAndAdminNode>} upgrade
  */
 
 /**
