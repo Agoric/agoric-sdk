@@ -6,6 +6,7 @@ import {
   DEFAULT_JITTER,
   DEFAULT_RETRY_CALLBACK,
 } from './defaults.js';
+import { assertNetworkConfig } from './netconfig.js';
 
 const { details: X } = assert;
 
@@ -50,7 +51,9 @@ export const makeLeaderFromNetworkConfig = (netconfigURL, options = {}) => {
       const response = await fetch(netconfigURL, {
         headers: { accept: 'application/json' },
       });
-      const { rpcAddrs } = await response.json();
+      const networkConfig = await response.json();
+      assertNetworkConfig(harden(networkConfig));
+      const { rpcAddrs } = networkConfig;
       // Our part succeeded, so reset the attempt counter.
       attempt = 0;
       return makeLeaderFromRpcAddresses(rpcAddrs, options);
