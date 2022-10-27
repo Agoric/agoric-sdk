@@ -48,6 +48,33 @@ export function makeSQLStreamStore(db, ensureTxn) {
 
   const streamStatus = new Map();
 
+  const sqlDumpStreamsQuery = db.prepare(`
+    SELECT streamName, position, item
+    FROM streamItem
+    ORDER BY position
+  `);
+
+  function dumpStreams() {
+    const dump = new Map();
+    for (const row of sqlDumpStreamsQuery.iterate()) {
+      const { streamName, position, item } = row;
+      let entry = dump.get(streamName);
+      if (!entry) {
+        entry = [];
+        dump.set(streamName, entry);
+      }
+      entry.push([position, item]);
+    }
+    return dump;
+  }
+
+  const sqlReadStreamQuery = db.prepare(`
+    SELECT item
+    FROM streamItem
+    WHERE streamName = ? AND position >= ? AND position < ?
+    ORDER BY position
+  `);
+
   /**
    * @param {string} streamName
    * @param {StreamPosition} startPosition
@@ -62,16 +89,9 @@ export function makeSQLStreamStore(db, ensureTxn) {
     startPosition.itemCount <= endPosition.itemCount ||
       Fail`${q(startPosition.itemCount)} <= ${q(endPosition.itemCount)}}`;
 
-    const sqlStreamQuery = db.prepare(`
-      SELECT item
-      FROM streamItem
-      WHERE streamName = ? AND position >= ? AND position < ?
-      ORDER BY position
-    `);
-
     function* reader() {
       ensureTxn();
-      for (const { item } of sqlStreamQuery.iterate(
+      for (const { item } of sqlReadStreamQuery.iterate(
         streamName,
         startPosition.itemCount,
         endPosition.itemCount,
@@ -126,6 +146,7 @@ export function makeSQLStreamStore(db, ensureTxn) {
     writeStreamItem,
     readStream,
     closeStream,
+    dumpStreams,
     STREAM_START,
   });
 }
