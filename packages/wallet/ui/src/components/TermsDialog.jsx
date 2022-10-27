@@ -20,18 +20,17 @@ const TermsDialog = ({ onClose, isOpen }) => {
     <Dialog open={isOpen}>
       <DialogTitle>Disclaimer</DialogTitle>
       <DialogContent>
-        {/* FIXME: GET REAL TOS LINK */}
         <FormControlLabel
           label={
             <span>
-              By ticking the box and hitting &apos;Proceed&apos; you are
-              agreeing to the terms as described{' '}
+              By clicking here you are indicating that you have read and agree
+              to our{' '}
               <a
                 className={styles.link}
-                target="agoric_wallet_tos"
-                href="https://agoric.com"
+                target="agoric_wallet_terms"
+                href="https://agoric.com/terms-and-conditions/ "
               >
-                here
+                Terms of Use
               </a>
               .
             </span>
