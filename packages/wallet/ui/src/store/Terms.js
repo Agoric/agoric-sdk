@@ -7,4 +7,4 @@ export const LATEST_TERMS_INDEX = 0;
 export const agreeToTerms = (/** @type {number} */ index) =>
   maybeSave(TERMS_KEY, index);
 
-export const getTermsAcceptance = () => maybeLoad(TERMS_KEY) ?? -1;
+export const getTermsIndexAccepted = () => maybeLoad(TERMS_KEY) ?? -1;
