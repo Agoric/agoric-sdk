@@ -11,7 +11,7 @@ import {
   DEFAULT_CONNECTION_CONFIGS,
   KnownNetworkConfigUrls,
 } from '../util/connections';
-import { maybeLoad, maybeSave } from '../util/storage';
+import { maybeLoad } from '../util/storage';
 import { suggestChain } from '../util/SuggestChain';
 import {
   makeBackgroundSigner,
@@ -144,9 +144,6 @@ const Provider = ({ children }) => {
     /** @type {import('../util/WalletBackendAdapter').BackendSchema?} */ (null),
   );
   const [schemaActions, setSchemaActions] = useState(null);
-  const [connectionComponent, setConnectionComponent] = useState(
-    /** @type {import('react').ReactElement | null} */ (null),
-  );
   const [backendErrorHandler, setBackendErrorHandler] = useState(null);
   const [previewEnabled, setPreviewEnabled] = useState(false);
   // expose for development
@@ -216,29 +213,6 @@ const Provider = ({ children }) => {
     });
   };
 
-  useEffect(() => {
-    maybeSave('connectionConfig', connectionConfig);
-
-    const updatedConnectionConfigs = [];
-
-    for (const config of allConnectionConfigs) {
-      const found = DEFAULT_CONNECTION_CONFIGS.find(
-        defaultConfig => defaultConfig.href === config.href,
-      );
-      if (!found) {
-        updatedConnectionConfigs.push(config);
-      }
-    }
-    maybeSave('userConnectionConfigs', updatedConnectionConfigs);
-
-    if (connectionConfig) {
-      tryKeplrConnect().catch(reason => {
-        console.error('tryKeplrConnect failed', reason);
-        setConnectionStatus(ConnectionStatus.Error);
-      });
-    }
-  }, [connectionConfig]);
-
   const backendSetters = new Map([
     ['services', setServices],
     ['offers', setInbox],
@@ -298,63 +272,11 @@ const Provider = ({ children }) => {
 
   const disconnect = wantReconnect => {
     setBackend(null);
-    setConnectionComponent(null);
     setConnectionStatus(ConnectionStatus.Disconnected);
     if (typeof wantReconnect === 'boolean') {
       setWantConnection(wantReconnect);
     }
   };
-
-  let attempts = 0;
-  useEffect(() => {
-    if (!connectionConfig || !wantConnection) {
-      disconnect();
-      return () => {};
-    }
-    if (connectionComponent) {
-      return () => {};
-    }
-
-    let outdated = false;
-    let retryTimeout;
-    const retry = async e => {
-      if (outdated) {
-        return;
-      }
-      console.error('Connection to', connectionConfig.href, 'failed:', e);
-      const backoff = Math.ceil(
-        Math.min(Math.random() * 2 ** attempts * 1_000, 10_000),
-      );
-      console.debug('Retrying connection after', backoff, 'ms...');
-      await new Promise(
-        resolve => (retryTimeout = setTimeout(resolve, backoff)),
-      );
-      if (outdated) {
-        return;
-      }
-      // eslint-disable-next-line no-use-before-define
-      connect().catch(retry);
-    };
-
-    let importer;
-    const connect = async () => {
-      const mod = await importer();
-      if (outdated) {
-        return;
-      }
-      const WalletConnection = mod.default;
-      setConnectionComponent(<WalletConnection />);
-      attempts = 0;
-    };
-    importer = () => import('../components/SmartWalletConnection');
-    connect().catch(retry);
-    return () => {
-      outdated = true;
-      if (retryTimeout) {
-        clearTimeout(retryTimeout);
-      }
-    };
-  }, [connectionComponent, wantConnection]);
 
   const [pendingPurseCreations, setPendingPurseCreations] = useReducer(
     pendingPurseCreationsReducer,
@@ -418,7 +340,6 @@ const Provider = ({ children }) => {
     setConnectionConfig,
     allConnectionConfigs,
     setAllConnectionConfigs,
-    connectionComponent,
     disconnect,
     connectionStatus,
     setConnectionStatus,

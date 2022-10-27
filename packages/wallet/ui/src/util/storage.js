@@ -4,6 +4,8 @@ export const DAPPS_STORAGE_KEY = 'DAPPS';
 
 export const OFFERS_STORAGE_KEY = 'OFFERS';
 
+export const TERMS_KEY = 'TERMS';
+
 /**
  * @param {unknown} key
  * @param {unknown} value
