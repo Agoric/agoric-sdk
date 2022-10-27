@@ -101,6 +101,13 @@
 
 // /////////////////////////////////////////////////////////////////////////////
 
+/**
+ * @typedef {object} DurablePublishKitOptions
+ * @property {'mandatory' | 'opportunistic' | 'ignored'} [valueDurability]
+ */
+
+// /////////////////////////////////////////////////////////////////////////////
+
 // TODO: Narrow to exclude number.
 /**
  * @typedef {number | bigint | undefined} UpdateCount a value used to mark the position
@@ -210,6 +217,8 @@
  * @property {IterationObserver<T>} publication
  * @property {Subscription<T>} subscription
  */
+
+// /////////////////////////////////////////////////////////////////////////////
 
 /** @typedef {ReturnType<typeof import('@endo/marshal').makeMarshal>} Marshaller */
 /** @typedef {Pick<Marshaller, 'unserialize'>} Unserializer */
