@@ -10,8 +10,7 @@ import { assert } from '@agoric/assert';
 import { makeMeasureSeconds } from '@agoric/internal';
 
 import { makeSQLStreamStore } from './sqlStreamStore.js';
-import { makeSnapStore } from './snapStore.js';
-import { initEphemeralSwingStore } from './ephemeralSwingStore.js';
+import { makeSnapStore, ephemeralSnapStore } from './snapStore.js';
 
 export { makeSnapStore };
 
@@ -50,6 +49,7 @@ export function makeSnapStoreIO() {
  *   writeStreamItem: (streamName: string, item: string, position: StreamPosition) => StreamPosition,
  *   readStream: (streamName: string, startPosition: StreamPosition, endPosition: StreamPosition) => IterableIterator<string>,
  *   closeStream: (streamName: string) => void,
+ *   dumpStreams: () => any,
  *   STREAM_START: StreamPosition,
  * }} StreamStore
  *
@@ -78,7 +78,7 @@ export function makeSnapStoreIO() {
  *
  * streamStore - a streaming store used to hold kernel transcripts.  Transcripts
  *   are both written and read (if they are read at all) sequentially, according
- *   to metadata kept in the kvStore.  Persistently stored in a slqlite table.
+ *   to metadata kept in the kvStore.  Persistently stored in a sqllite table.
  *
  * snapStore - large object store used to hold XS memory image snapshots of
  *   vats.  Objects are stored in files named by the cryptographic hash of the
@@ -107,30 +107,36 @@ export function makeSnapStoreIO() {
 /**
  * Do the work of `initSwingStore` and `openSwingStore`.
  *
- * @param {string} dirPath  Path to a directory in which database files may be kept.
+ * @param {string|null} dirPath  Path to a directory in which database files may be kept.
  * @param {boolean} forceReset  If true, initialize the database to an empty state
  * @param {object} options  Configuration options
  *
  * @returns {SwingAndSnapStore}
  */
 function makeSwingStore(dirPath, forceReset, options) {
-  if (forceReset) {
-    try {
-      // Node.js 16.8.0 warns:
-      // In future versions of Node.js, fs.rmdir(path, { recursive: true }) will
-      // be removed. Use fs.rm(path, { recursive: true }) instead
-      if (fs.rmSync) {
-        fs.rmSync(dirPath, { recursive: true });
-      } else {
-        fs.rmdirSync(dirPath, { recursive: true });
-      }
-    } catch (e) {
-      if (e.code !== 'ENOENT') {
-        throw e;
+  let filePath;
+  if (dirPath) {
+    if (forceReset) {
+      try {
+        // Node.js 16.8.0 warns:
+        // In future versions of Node.js, fs.rmdir(path, { recursive: true }) will
+        // be removed. Use fs.rm(path, { recursive: true }) instead
+        if (fs.rmSync) {
+          fs.rmSync(dirPath, { recursive: true });
+        } else {
+          fs.rmdirSync(dirPath, { recursive: true });
+        }
+      } catch (e) {
+        if (e.code !== 'ENOENT') {
+          throw e;
+        }
       }
     }
+    fs.mkdirSync(dirPath, { recursive: true });
+    filePath = path.join(dirPath, 'swingstore.sqlite');
+  } else {
+    filePath = ':memory:';
   }
-  fs.mkdirSync(dirPath, { recursive: true });
 
   const { traceFile, keepSnapshots } = options;
 
@@ -151,7 +157,6 @@ function makeSwingStore(dirPath, forceReset, options) {
     traceOutput = null;
   }
 
-  const filePath = path.join(dirPath, 'swingstore.sqlite');
   /** @type {*} */
   let db = sqlite3(
     filePath,
@@ -177,9 +182,13 @@ function makeSwingStore(dirPath, forceReset, options) {
   }
 
   function diskUsage() {
-    const dataFilePath = `${dirPath}/swingstore.sqlite`;
-    const stat = fs.statSync(dataFilePath);
-    return stat.size;
+    if (dirPath) {
+      const dataFilePath = `${dirPath}/swingstore.sqlite`;
+      const stat = fs.statSync(dataFilePath);
+      return stat.size;
+    } else {
+      return 0;
+    }
   }
 
   const sqlKVGet = db.prepare(`
@@ -315,12 +324,18 @@ function makeSwingStore(dirPath, forceReset, options) {
   };
 
   const streamStore = makeSQLStreamStore(db, ensureTxn);
+  let snapStore;
 
-  const snapshotDir = path.resolve(dirPath, 'xs-snapshots');
-  fs.mkdirSync(snapshotDir, { recursive: true });
-  const snapStore = makeSnapStore(snapshotDir, makeSnapStoreIO(), {
-    keepSnapshots,
-  });
+  if (dirPath) {
+    const snapshotDir = path.resolve(dirPath, 'xs-snapshots');
+    fs.mkdirSync(snapshotDir, { recursive: true });
+    snapStore = makeSnapStore(snapshotDir, makeSnapStoreIO(), {
+      keepSnapshots,
+    });
+  } else {
+    // This is present only to make TypeScript shut up
+    snapStore = ephemeralSnapStore;
+  }
 
   const sqlCommit = db.prepare('COMMIT');
 
@@ -338,7 +353,7 @@ function makeSwingStore(dirPath, forceReset, options) {
     //   MUST be committed BEFORE we delete snapshot1.
     //   Otherwise, on restart, we'll consult the kvstore and see snapshot1,
     //   but we'll fail to load it because it's been deleted already.
-    await snapStore.commitDeletes();
+    await (dirPath ? snapStore.commitDeletes() : false);
   }
 
   /**
@@ -363,21 +378,20 @@ function makeSwingStore(dirPath, forceReset, options) {
  * undefined, a memory-only ephemeral store will be created that will evaporate
  * on program exit.
  *
- * @param {string|null} dirPath  Path to a directory in which database files may
+ * @param {string|null} dirPath Path to a directory in which database files may
  *   be kept.  This directory need not actually exist yet (if it doesn't it will
  *   be created) but it is reserved (by the caller) for the exclusive use of
- *   this swing store instance.  If null, an ephemeral store will be created.
+ *   this swing store instance.  If null, an ephemeral (memory only) store will
+ *   be created.
  * @param {object?} options  Optional configuration options
  *
  * @returns {SwingStore}
  */
 export function initSwingStore(dirPath, options = {}) {
-  if (!dirPath) {
-    return initEphemeralSwingStore();
-  } else {
+  if (dirPath) {
     assert.typeof(dirPath, 'string');
-    return makeSwingStore(dirPath, true, options);
   }
+  return makeSwingStore(dirPath, true, options);
 }
 
 /**
@@ -419,4 +433,57 @@ export function isSwingStore(dirPath) {
   return false;
 }
 
-export { getAllState, setAllState } from './ephemeralSwingStore.js';
+/**
+ * Produce a representation of all the state found in a swing store.
+ *
+ * WARNING: This is a helper function intended for use in testing and debugging.
+ * It extracts *everything*, and does so in the simplest and stupidest possible
+ * way, hence it is likely to be a performance and memory hog if you attempt to
+ * use it on anything real.
+ *
+ * @param {SwingStore} swingStore  The swing store whose state is to be extracted.
+ *
+ * @returns {{
+ *   kvStuff: Record<string, string>,
+ *   streamStuff: Map<string, Array<string>>,
+ * }}  A crude representation of all of the state of `swingStore`
+ */
+export function getAllState(swingStore) {
+  const { kvStore, streamStore } = swingStore;
+  /** @type { Record<string, string> } */
+  const kvStuff = {};
+  for (const key of Array.from(kvStore.getKeys('', ''))) {
+    // @ts-expect-error get(key) of key from getKeys() is not undefined
+    kvStuff[key] = kvStore.get(key);
+  }
+  const streamStuff = streamStore.dumpStreams();
+  return { kvStuff, streamStuff };
+}
+
+/**
+ * Stuff a bunch of state into a swing store.
+ *
+ * WARNING: This is intended to support testing and should not be used as a
+ * general store initialization mechanism.  In particular, note that it does not
+ * bother to remove any pre-existing state from the store that it is given.
+ *
+ * @param {SwingStore} swingStore  The swing store whose state is to be set.
+ * @param {{
+ *   kvStuff: Record<string, string>,
+ *   streamStuff: Map<string, Array<[number, *]>>,
+ * }} stuff  The state to stuff into `swingStore`
+ */
+export function setAllState(swingStore, stuff) {
+  const { kvStore, streamStore } = swingStore;
+  const { kvStuff, streamStuff } = stuff;
+  for (const k of Object.getOwnPropertyNames(kvStuff)) {
+    kvStore.set(k, kvStuff[k]);
+  }
+  for (const [streamName, stream] of streamStuff.entries()) {
+    for (const [pos, item] of stream) {
+      const position = { itemCount: pos };
+      streamStore.writeStreamItem(streamName, item, position);
+    }
+    streamStore.closeStream(streamName);
+  }
+}
