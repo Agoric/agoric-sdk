@@ -8,6 +8,11 @@ import { Far } from '@endo/marshal';
 import './types.js';
 
 const sink = () => {};
+const makeQuietRejection = reason => {
+  const rejection = HandledPromise.reject(reason);
+  rejection.catch(sink);
+  return rejection;
+};
 
 /**
  * Asyncronously iterates over the contents of a PublicationList as it appears.
@@ -129,11 +134,9 @@ export const makePublishKit = () => {
     const resolveCurrent = tailR;
 
     if (done) {
-      tailP = HandledPromise.reject(
+      tailP = makeQuietRejection(
         new Error('Cannot read past end of iteration.'),
       );
-      // Suppress unhandled rejection error.
-      tailP.catch(() => {});
       tailR = undefined;
     } else {
       ({ promise: tailP, resolve: tailR } = makePromiseKit());
@@ -180,9 +183,7 @@ export const makePublishKit = () => {
       advanceCurrent(true, finalValue);
     },
     fail: reason => {
-      const rejection = HandledPromise.reject(reason);
-      // Suppress unhandled rejection error.
-      rejection.catch(() => {});
+      const rejection = makeQuietRejection(reason);
       advanceCurrent(true, undefined, rejection);
     },
   });
