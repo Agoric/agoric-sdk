@@ -2,9 +2,12 @@
 
 import { HandledPromise, E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Far } from '@endo/marshal';
+import { Far, assertPassable } from '@endo/marshal';
+import { vivifyKindMulti } from '@agoric/vat-data';
 
 import './types-ambient.js';
+
+const { details: X, quote: q } = assert;
 
 const sink = () => {};
 const makeQuietRejection = reason => {
@@ -182,10 +185,209 @@ export const makePublishKit = () => {
       advanceCurrent(true, finalValue);
     },
     fail: reason => {
-      const rejection = makeQuietRejection(reason);
-      advanceCurrent(true, undefined, rejection);
+      advanceCurrent(true, undefined, makeQuietRejection(reason));
     },
   });
   return harden({ publisher, subscriber });
 };
 harden(makePublishKit);
+
+// TODO: Move durable publish kit to a new file?
+
+/**
+ * @typedef {ReturnType<typeof initDurablePublishKitState>} DurablePublishKitState
+ */
+
+/**
+ * @param {DurablePublishKitOptions} [options]
+ */
+const initDurablePublishKitState = (options = {}) => {
+  const { valueDurability = 'mandatory' } = options;
+  assert.equal(valueDurability, 'mandatory');
+  return {
+    // configuration
+    valueDurability,
+
+    // lifecycle progress
+    publishCount: 0n,
+    status: 'live', // | 'finished' | 'failed'
+
+    // persisted result data
+    hasValue: false,
+    value: undefined,
+  };
+};
+
+/** @type {WeakMap<object, {currentP, tailP, tailR}>} */
+const durablePublishKitEphemeralData = new WeakMap();
+
+// XXX Does state actually work as a WeakMap key?
+/**
+ * Returns the current/next-result promises and next-result resolver
+ * associated with a given state object backing a durable publish kit.
+ * They are lost on upgrade, but recreated on-demand.
+ * Such recreation preserves the value in (but not the identity of) the
+ * current { value, done } result when possible, which is always the
+ * case when that value is terminal (i.e., from `finish` or `fail`) or
+ * when the durable publish kit is configured with
+ * `valueDurability: 'mandatory'`.
+ *
+ * @param {DurablePublishKitState} state
+ */
+const provideDurablePublishKitEphemeralData = state => {
+  const foundData = durablePublishKitEphemeralData.get(state);
+  if (foundData) {
+    return foundData;
+  }
+  const { status, publishCount } = state;
+  let newData;
+  if (status === 'failed') {
+    newData = {
+      currentP: makeQuietRejection(state.value),
+      tailP: makeQuietRejection(
+        new Error('Cannot read past end of iteration.'),
+      ),
+      tailR: undefined,
+    };
+  } else if (status === 'finished') {
+    // XXX Should we be harden()ing rejection-reason errors?
+    const tailP = makeQuietRejection(
+      new Error('Cannot read past end of iteration.'),
+    );
+    newData = {
+      currentP: HandledPromise.resolve(
+        harden({
+          head: { value: state.value, done: true },
+          publishCount,
+          tail: tailP,
+        }),
+      ),
+      tailP,
+      tailR: undefined,
+    };
+  } else if (status === 'live') {
+    const { promise: tailP, resolve: tailR } = makePromiseKit();
+    newData = {
+      currentP: state.hasValue
+        ? HandledPromise.resolve(
+            harden({
+              head: { value: state.value, done: false },
+              publishCount,
+              tail: tailP,
+            }),
+          )
+        : tailP,
+      tailP,
+      tailR,
+    };
+  } else {
+    assert.fail(X`Invalid durable promise kit status: ${q(status)}`);
+  }
+  durablePublishKitEphemeralData.set(state, harden(newData));
+  return newData;
+};
+
+/**
+ * Extends the sequence of results.
+ *
+ * @param {DurablePublishKitState} state
+ * @param {boolean} done
+ * @param {any} value
+ * @param {any} [rejection]
+ */
+const advanceDurablePublishKit = (state, done, value, rejection) => {
+  const { valueDurability, publishCount: oldPublishCount, status } = state;
+  if (status !== 'live') {
+    throw new Error('Cannot update state after termination.');
+  }
+  if (done || valueDurability === 'mandatory') {
+    assertPassable(value);
+    assertPassable(rejection);
+  }
+  const { tailP: currentP, tailR: resolveCurrent } =
+    provideDurablePublishKitEphemeralData(state);
+
+  const publishCount = oldPublishCount + 1n;
+  state.publishCount = publishCount;
+  let tailP;
+  let tailR;
+
+  if (done) {
+    state.status = rejection ? 'failed' : 'finished';
+    tailP = makeQuietRejection(new Error('Cannot read past end of iteration.'));
+    tailR = undefined;
+  } else {
+    ({ promise: tailP, resolve: tailR } = makePromiseKit());
+  }
+  durablePublishKitEphemeralData.set(state, harden({ currentP, tailP, tailR }));
+
+  if (rejection) {
+    state.value = rejection;
+    state.hasValue = true;
+    resolveCurrent(rejection);
+  } else {
+    state.hasValue = false;
+    try {
+      if (done || valueDurability !== 'ignored') {
+        assertPassable(value);
+        state.value = value;
+        state.hasValue = true;
+      }
+    } catch (err) {
+      if (done || valueDurability === 'mandatory') {
+        throw err;
+      }
+    }
+    resolveCurrent(
+      harden({
+        head: { value, done },
+        publishCount,
+        tail: tailP,
+      }),
+    );
+  }
+};
+
+/**
+ * @param {import('../../vat-data/src/types.js').Baggage} baggage
+ * @param {string} kindName
+ */
+export const vivifyDurablePublishKitMaker = (baggage, kindName) => {
+  return vivifyKindMulti(baggage, kindName, initDurablePublishKitState, {
+    // The publisher facet of a durable publish kit
+    // accepts new values.
+    publisher: {
+      publish: ({ state }, value) => {
+        advanceDurablePublishKit(state, false, value);
+      },
+      finish: ({ state }, finalValue) => {
+        advanceDurablePublishKit(state, true, finalValue);
+      },
+      fail: ({ state }, reason) => {
+        const rejection = makeQuietRejection(reason);
+        advanceDurablePublishKit(state, true, undefined, rejection);
+      },
+    },
+
+    // The subscriber facet of a durable publish kit
+    // propagates values.
+    subscriber: {
+      subscribeAfter: ({ state }, publishCount = -1n) => {
+        assert.typeof(publishCount, 'bigint');
+        const { publishCount: currentPublishCount } = state;
+        const { currentP, tailP } =
+          provideDurablePublishKitEphemeralData(state);
+        if (publishCount === currentPublishCount) {
+          return tailP;
+        } else if (publishCount < currentPublishCount) {
+          return currentP;
+        } else {
+          throw new Error(
+            'subscribeAfter argument must be a previously-issued publishCount.',
+          );
+        }
+      },
+    },
+  });
+};
+harden(vivifyDurablePublishKitMaker);
