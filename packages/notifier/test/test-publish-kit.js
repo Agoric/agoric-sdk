@@ -1,13 +1,146 @@
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 
-import { test } from './prepare-test-env-ava.js';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { makeScalarMapStore } from '@agoric/store';
 import {
   makePublishKit,
   subscribeEach,
   subscribeLatest,
+  vivifyDurablePublishKit,
 } from '../src/index.js';
 import '../src/types-ambient.js';
 import { invertPromiseSettlement } from './iterable-testing-tools.js';
+
+const { ownKeys } = Reflect;
+
+const assertCells = (t, label, cells, expectedResult) => {
+  const firstCell = cells[0];
+  for (const cell of cells) {
+    t.deepEqual(
+      Reflect.ownKeys(cell).sort(),
+      ['head', 'publishCount', 'tail'],
+      `${label} cell property keys`,
+    );
+    t.deepEqual(cell.head, expectedResult, `${label} cell result`);
+    t.truthy(cell.publishCount, `${label} cell publishCount`);
+
+    t.deepEqual(cell, firstCell, `all ${label} cells must be deeply equal`);
+    t.is(
+      cell.head.value,
+      firstCell.head.value,
+      `all ${label} cells must reference the same value`,
+    );
+    t.is(
+      cell.tail,
+      firstCell.tail,
+      `all ${label} cells must reference the same tail`,
+    );
+  }
+};
+
+// TODO: macro for use with non-durable publish kit and
+// (eventually) non-mandatory valueDurability.
+// https://github.com/avajs/ava/blob/main/docs/01-writing-tests.md#reusing-test-logic-through-macros
+test('vivifyDurablePublishKit', async t => {
+  const baggage = makeScalarMapStore();
+  const makeDurablePublishKit = vivifyDurablePublishKit(baggage, 'PublishKit');
+  const durablePublishKit = makeDurablePublishKit();
+  t.deepEqual(ownKeys(durablePublishKit), ['publisher', 'subscriber']);
+  const { publisher, subscriber } = durablePublishKit;
+
+  t.throws(
+    () => publisher.publish(Symbol('unique symbol')),
+    undefined,
+    'default configuration rejects non-passable values',
+  );
+
+  const cells = new Map();
+  const getLatestPromises = () => {
+    const promises = [subscriber.subscribeAfter()];
+    promises.push(subscriber.subscribeAfter(undefined));
+    const publishCounts = [...cells.keys()];
+    for (const publishCount of publishCounts) {
+      promises.push(subscriber.subscribeAfter(publishCount));
+    }
+    if (publishCounts.length) {
+      promises.push(cells.get(publishCounts.pop()).tail);
+    }
+    return promises;
+  };
+
+  const firstCellsP = getLatestPromises();
+  const firstVal = Symbol.for('first');
+  publisher.publish(firstVal);
+  firstCellsP.push(...getLatestPromises());
+  const firstCells = await Promise.all(firstCellsP);
+  firstCells.push(...(await Promise.all(getLatestPromises())));
+  assertCells(t, 'first', firstCells, { value: firstVal, done: false });
+  const { publishCount: firstPublishCount } = firstCells[0];
+  cells.set(firstPublishCount, firstCells[0]);
+
+  const secondCellsP = [subscriber.subscribeAfter(firstPublishCount)];
+  const secondVal = { previous: firstVal };
+  publisher.publish(secondVal);
+  const thirdVal = Symbol.for('third');
+  publisher.publish(thirdVal);
+  const thirdCellsP = getLatestPromises().slice(0, -1);
+  secondCellsP.push(firstCells[0].tail);
+  const secondCells = await Promise.all(secondCellsP);
+  secondCells.push(await firstCells[0].tail);
+  assertCells(t, 'second', secondCells, { value: secondVal, done: false });
+  const { publishCount: secondPublishCount } = secondCells[0];
+  t.false(cells.has(secondPublishCount), 'second publishCount must be new');
+  cells.set(secondPublishCount, secondCells[0]);
+  thirdCellsP.push(...getLatestPromises());
+  const thirdCells = await Promise.all(thirdCellsP);
+  thirdCells.push(...(await Promise.all(getLatestPromises())));
+  assertCells(t, 'third', thirdCells, { value: thirdVal, done: false });
+  const { publishCount: thirdPublishCount } = thirdCells[0];
+  t.false(cells.has(thirdPublishCount), 'third publishCount must be new');
+  cells.set(thirdPublishCount, thirdCells[0]);
+
+  // @ts-ignore deliberate testing of invalid invocation
+  t.throws(() => subscriber.subscribeAfter(Number(secondPublishCount)), {
+    message: /bigint/,
+  });
+
+  const fourthVal = { position: 'fourth' };
+  publisher.publish(fourthVal);
+  const fifthVal = { position: 'fifth' };
+  publisher.publish(fifthVal);
+  const leapfrogCellsP = getLatestPromises().slice(0, -1);
+  const leapfrogCells = await Promise.all(leapfrogCellsP);
+  leapfrogCells.push(...(await Promise.all(getLatestPromises().slice(0, -1))));
+  assertCells(t, 'leapfrog', leapfrogCells, { value: fifthVal, done: false });
+  const { publishCount: leapfrogPublishCount } = leapfrogCells[0];
+  t.false(cells.has(leapfrogPublishCount), 'leapfrog publishCount must be new');
+  cells.set(leapfrogPublishCount, leapfrogCells[0]);
+
+  for (const methodName of ['fail', 'finish']) {
+    t.throws(
+      () => publisher[methodName](Object.create({})),
+      undefined,
+      `${methodName} rejects non-passable values`,
+    );
+  }
+
+  const finalVal = 'FIN';
+  publisher.finish(finalVal);
+  const finalCellsP = getLatestPromises();
+  const finalCells = await Promise.all(finalCellsP);
+  finalCells.push(...(await Promise.all(getLatestPromises())));
+  assertCells(t, 'final', finalCells, { value: finalVal, done: true });
+  const { publishCount: finalPublishCount } = finalCells[0];
+  t.false(cells.has(finalPublishCount), 'final publishCount must be new');
+
+  for (const methodName of ['publish', 'fail', 'finish']) {
+    t.throws(
+      () => publisher[methodName](finalVal),
+      { message: 'Cannot update state after termination.' },
+      `${methodName} fails after the final value`,
+    );
+  }
+});
 
 test('makePublishKit', async t => {
   const { publisher, subscriber } = makePublishKit();
