@@ -4,7 +4,8 @@
 import { HandledPromise, E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far, assertPassable } from '@endo/marshal';
-import { vivifyKindMulti } from '@agoric/vat-data';
+import { M } from '@agoric/store';
+import { vivifyFarClassKit } from '@agoric/vat-data';
 
 import './types.js';
 
@@ -109,6 +110,19 @@ export const subscribeLatest = subscriber => {
   return iterable;
 };
 harden(subscribeLatest);
+
+const PublisherI = M.interface('Publisher', {
+  publish: M.call(M.any()).returns(),
+  finish: M.call(M.any()).returns(),
+  fail: M.call(M.any()).returns(),
+});
+const SubscriberI = M.interface('Subscriber', {
+  subscribeAfter: M.call().optional(M.bigint()).returns(M.promise()),
+});
+const publishKitIKit = harden({
+  publisher: PublisherI,
+  subscriber: SubscriberI,
+});
 
 /**
  * Makes a `{ publisher, subscriber }` pair for doing efficient
@@ -297,7 +311,7 @@ const provideDurablePublishKitEphemeralData = state => {
  * @param {any} [rejection]
  */
 const advanceDurablePublishKit = (state, done, value, rejection) => {
-  const { valueDurability, publishCount: oldPublishCount, status } = state;
+  const { valueDurability, status } = state;
   if (status !== 'live') {
     throw new Error('Cannot update state after termination.');
   }
@@ -308,8 +322,8 @@ const advanceDurablePublishKit = (state, done, value, rejection) => {
   const { tailP: currentP, tailR: resolveCurrent } =
     provideDurablePublishKitEphemeralData(state);
 
-  const publishCount = oldPublishCount + 1n;
-  state.publishCount = publishCount;
+  state.publishCount += 1n;
+  const publishCount = state.publishCount;
   let tailP;
   let tailR;
 
@@ -353,42 +367,51 @@ const advanceDurablePublishKit = (state, done, value, rejection) => {
  * @param {import('../../vat-data/src/types.js').Baggage} baggage
  * @param {string} kindName
  */
-export const vivifyDurablePublishKitMaker = (baggage, kindName) => {
-  return vivifyKindMulti(baggage, kindName, initDurablePublishKitState, {
-    // The publisher facet of a durable publish kit
-    // accepts new values.
-    publisher: {
-      publish: ({ state }, value) => {
-        advanceDurablePublishKit(state, false, value);
+export const vivifyDurablePublishKit = (baggage, kindName) => {
+  /**
+   * @returns {() => PublishKit<*>}
+   */
+  return vivifyFarClassKit(
+    baggage,
+    kindName,
+    publishKitIKit,
+    initDurablePublishKitState,
+    {
+      // The publisher facet of a durable publish kit
+      // accepts new values.
+      publisher: {
+        publish(value) {
+          advanceDurablePublishKit(this.state, false, value);
+        },
+        finish(finalValue) {
+          advanceDurablePublishKit(this.state, true, finalValue);
+        },
+        fail(reason) {
+          const rejection = makeQuietRejection(reason);
+          advanceDurablePublishKit(this.state, true, undefined, rejection);
+        },
       },
-      finish: ({ state }, finalValue) => {
-        advanceDurablePublishKit(state, true, finalValue);
-      },
-      fail: ({ state }, reason) => {
-        const rejection = makeQuietRejection(reason);
-        advanceDurablePublishKit(state, true, undefined, rejection);
-      },
-    },
 
-    // The subscriber facet of a durable publish kit
-    // propagates values.
-    subscriber: {
-      subscribeAfter: ({ state }, publishCount = -1n) => {
-        assert.typeof(publishCount, 'bigint');
-        const { publishCount: currentPublishCount } = state;
-        const { currentP, tailP } =
-          provideDurablePublishKitEphemeralData(state);
-        if (publishCount === currentPublishCount) {
-          return tailP;
-        } else if (publishCount < currentPublishCount) {
-          return currentP;
-        } else {
-          throw new Error(
-            'subscribeAfter argument must be a previously-issued publishCount.',
-          );
-        }
+      // The subscriber facet of a durable publish kit
+      // propagates values.
+      subscriber: {
+        subscribeAfter(publishCount = -1n) {
+          const { state } = this;
+          const { publishCount: currentPublishCount } = state;
+          const { currentP, tailP } =
+            provideDurablePublishKitEphemeralData(state);
+          if (publishCount === currentPublishCount) {
+            return tailP;
+          } else if (publishCount < currentPublishCount) {
+            return currentP;
+          } else {
+            throw new Error(
+              'subscribeAfter argument must be a previously-issued publishCount.',
+            );
+          }
+        },
       },
     },
-  });
+  );
 };
-harden(vivifyDurablePublishKitMaker);
+harden(vivifyDurablePublishKit);
