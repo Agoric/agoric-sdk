@@ -27,34 +27,23 @@ const assertTransmission = async (t, publishKit, value, method = 'publish') => {
 
 const assertCells = (t, label, cells, publishCount, result) => {
   const firstCell = cells[0];
-  const len = cells.length;
-  for (let i = 0; i < len; i += 1) {
-    const cell = cells[i];
-    const cellLabel = `${label} cell ${i + 1} of ${len}`;
-    t.deepEqual(
-      Reflect.ownKeys(cell).sort(),
-      ['head', 'publishCount', 'tail'],
-      `${cellLabel} property keys`,
-    );
-    t.deepEqual(cell.head, result, `${label} cell result`);
-    // `publishCount` values *should* be considered opaque,
-    // but de facto they are a gap-free sequence of bigints
-    // that starts at 1.
-    // t.truthy(cell.publishCount, `${cellLabel} publishCount`);
-    t.is(cell.publishCount, publishCount, `${cellLabel} publishCount`);
+  t.deepEqual(
+    Reflect.ownKeys(firstCell).sort(),
+    ['head', 'publishCount', 'tail'],
+    `${label} cell property keys`,
+  );
+  t.deepEqual(firstCell.head, result, `${label} cell result`);
+  // `publishCount` values *should* be considered opaque,
+  // but de facto they are a gap-free sequence of bigints
+  // that starts at 1.
+  // t.truthy(firstCell.publishCount, `${label} cell publishCount`);
+  t.is(firstCell.publishCount, publishCount, `${label} cell publishCount`);
 
-    t.deepEqual(cell, firstCell, `${cellLabel} must deeply equal cell 1`);
-    t.is(
-      cell.head.value,
-      firstCell.head.value,
-      `${cellLabel} value reference must match cell 1`,
-    );
-    t.is(
-      cell.tail,
-      firstCell.tail,
-      `${cellLabel} tail reference must match cell 1`,
-    );
-  }
+  t.deepEqual(
+    new Set(cells),
+    new Set([firstCell]),
+    `all ${label} cells referentially match`,
+  );
 };
 
 // TODO: Replace with test.macro once that works with prepare-test-env-ava.
