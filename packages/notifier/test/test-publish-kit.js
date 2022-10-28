@@ -2,7 +2,8 @@
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { E } from '@endo/eventual-send';
-import { makeScalarMapStore as makeBaggage } from '@agoric/store';
+// import { makeScalarMapStore as makeBaggage } from '@agoric/store';
+import { makeScalarBigMapStore } from '../../vat-data/src/vat-data-bindings.js';
 import {
   makePublishKit,
   subscribeEach,
@@ -15,6 +16,8 @@ import { invertPromiseSettlement } from './iterable-testing-tools.js';
 const { ownKeys } = Reflect;
 
 const { quote: q } = assert;
+
+const makeBaggage = () => makeScalarBigMapStore('baggage', { durable: true });
 
 const makers = {
   publishKit: makePublishKit,
@@ -194,6 +197,41 @@ test('durable publish kit rejects non-durable values', async t => {
   t.throws(() => publisher.finish(nonPassable));
   t.throws(() => publisher.fail(nonPassable));
   await assertTransmission(t, publishKit, Symbol.for('value'));
+});
+
+test('durable publish kit upgrade trauma', async t => {
+  const baggage = makeBaggage();
+  const makeDurablePublishKit = vivifyDurablePublishKit(
+    baggage,
+    'DurablePublishKit',
+  );
+  const kit1 = makeDurablePublishKit();
+  const { publisher: pub1, subscriber: sub1 } = kit1;
+  const value = Symbol.for('value');
+  await assertTransmission(t, kit1, value);
+  // THEN A MIRACLE OCCURS...
+  // @ts-expect-error
+  // eslint-disable-next-line no-undef
+  const kit2 = recoverPublishKit(baggage);
+  const { publisher: pub2, subscriber: sub2 } = kit2;
+  t.not(pub2, pub1);
+  t.not(sub2, sub1);
+  const recoveredCell = await sub2.subscribeAfter();
+  t.is(recoveredCell.head.value, value, 'published value must be recovered');
+  const finalValue = Symbol.for('final');
+  await assertTransmission(t, kit2, finalValue, 'finish');
+  // @ts-expect-error
+  // eslint-disable-next-line no-undef
+  const kit3 = recoverPublishKit(baggage);
+  const { publisher: pub3, subscriber: sub3 } = kit3;
+  t.false([pub1, pub2].includes(pub3));
+  t.false([sub1, sub2].includes(sub3));
+  const recoveredFinalCell = await sub3.subscribeAfter();
+  t.deepEqual(
+    recoveredFinalCell.head,
+    { value: finalValue, done: true },
+    'final value must be recovered',
+  );
 });
 
 // TODO: Replace with test.macro once that works with prepare-test-env-ava.
