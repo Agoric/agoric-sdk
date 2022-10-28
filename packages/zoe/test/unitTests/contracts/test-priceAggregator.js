@@ -31,9 +31,6 @@ import {
   parseRatio,
 } from '../../../src/contractSupport/ratio.js';
 
-// eslint-disable-next-line no-unused-vars -- type import
-import { start } from '../../../src/contracts/oracle.js';
-
 /**
  * @callback MakeFakePriceOracle
  * @param {bigint} [valueOut]
