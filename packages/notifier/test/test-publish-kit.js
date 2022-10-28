@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { E } from '@endo/eventual-send';
 import { makeScalarMapStore as makeBaggage } from '@agoric/store';
 import {
   makePublishKit,
@@ -44,6 +45,7 @@ const assertCells = (t, label, cells, publishCount, result) => {
     `${label} cell property keys`,
   );
   t.deepEqual(firstCell.head, result, `${label} cell result`);
+  t.is(firstCell.head.value, result.value, `${label} cell value`);
   // `publishCount` values *should* be considered opaque,
   // but de facto they are a gap-free sequence of bigints
   // that starts at 1.
@@ -53,7 +55,7 @@ const assertCells = (t, label, cells, publishCount, result) => {
   t.deepEqual(
     new Set(cells),
     new Set([firstCell]),
-    `all ${label} cells referentially match`,
+    `all ${label} cells must referentially match`,
   );
 };
 
@@ -176,7 +178,7 @@ for (const [type, maker] of Object.entries(makers)) {
 
 test('publish kit allows non-durable values', async t => {
   const publishKit = makePublishKit();
-  const nonPassable = { [Symbol('key')]: Symbol('value') };
+  const nonPassable = { [Symbol('key')]: Symbol('value'), method() {} };
   await assertTransmission(t, publishKit, nonPassable);
   await assertTransmission(t, publishKit, nonPassable, 'finish');
   await assertTransmission(t, makePublishKit(), nonPassable, 'fail');
@@ -346,12 +348,8 @@ const verifySubscribeAfterSequencing = async (t, makePublishKit) => {
   const sub2LIFO = [];
 
   const sub1FirstAll = [];
-  Promise.resolve(sub1.subscribeAfter())
-    .then(result => sub1FirstAll.push(result))
-    .catch(t.fail);
-  Promise.resolve(sub1.subscribeAfter(0n))
-    .then(result => sub1FirstAll.push(result))
-    .catch(t.fail);
+  E.when(sub1.subscribeAfter(), cell => sub1FirstAll.push(cell), t.fail);
+  E.when(sub1.subscribeAfter(), cell => sub1FirstAll.push(cell), t.fail);
 
   pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter());
@@ -365,37 +363,27 @@ const verifySubscribeAfterSequencing = async (t, makePublishKit) => {
     3,
     'each initial subscribeAfter must provide a result',
   );
-  t.deepEqual(
-    new Set(sub1FirstAll),
-    new Set([sub1FirstAll[0]]),
-    'initial results must be identical',
-  );
-  t.deepEqual(sub1FirstAll[0].head, { value: pub1First, done: false });
+  const firstResult = { value: pub1First, done: false };
+  assertCells(t, 'initial', sub1FirstAll, 1n, firstResult);
 
   const sub1FirstLateAll = [];
   const sub1SecondAll = [];
-  Promise.resolve(sub1.subscribeAfter())
-    .then(result => sub1FirstLateAll.push(result))
-    .catch(t.fail);
-  Promise.resolve(sub1.subscribeAfter(0n))
-    .then(result => sub1FirstLateAll.push(result))
-    .catch(t.fail);
-  Promise.resolve(sub1.subscribeAfter(sub1FirstAll[0].publishCount))
-    .then(result => sub1SecondAll.push(result))
-    .catch(t.fail);
+  E.when(sub1.subscribeAfter(), cell => sub1FirstLateAll.push(cell), t.fail);
+  E.when(sub1.subscribeAfter(0n), cell => sub1FirstLateAll.push(cell), t.fail);
+  E.when(
+    sub1.subscribeAfter(sub1FirstAll[0].publishCount),
+    cell => sub1SecondAll.push(cell),
+    t.fail,
+  );
 
   pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter(sub2LIFO[0].publishCount));
-  t.is(sub1FirstLateAll.length, 2, 'current results should resolve promptly');
-  t.deepEqual(
-    new Set(sub1FirstLateAll),
-    new Set([sub1FirstLateAll[0]]),
-    'current results should be identical',
-  );
+  t.is(sub1FirstLateAll.length, 2, 'current results must resolve promptly');
+  assertCells(t, 'initial (late)', sub1FirstLateAll, 1n, firstResult);
   t.deepEqual(
     sub1SecondAll,
     [],
-    'there should be no future results before another publication',
+    'there must be no future results before another publication',
   );
 
   const pub1Second = Symbol.for('pub1Second');
@@ -403,48 +391,31 @@ const verifySubscribeAfterSequencing = async (t, makePublishKit) => {
   pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter(sub2LIFO[0].publishCount));
   sub1SecondAll.push(await sub1.subscribeAfter());
-  t.is(
-    sub1FirstLateAll.length,
-    2,
-    'there should be no further "first" results',
-  );
+  t.is(sub1FirstLateAll.length, 2, 'there must be no further "first" results');
   t.is(sub1SecondAll.length, 2);
-  t.deepEqual(
-    new Set(sub1SecondAll),
-    new Set([sub1SecondAll[0]]),
-    'second results should be identical',
-  );
-  t.deepEqual(sub1SecondAll[0].head, { value: pub1Second, done: false });
+  const secondResult = { value: pub1Second, done: false };
+  assertCells(t, 'second', sub1SecondAll, 2n, secondResult);
 
   const sub1SecondLateAll = [];
   const sub1FinalAll = [];
-  Promise.resolve(sub1.subscribeAfter())
-    .then(result => sub1SecondLateAll.push(result))
-    .catch(t.fail);
-  Promise.resolve(sub1.subscribeAfter(0n))
-    .then(result => sub1SecondLateAll.push(result))
-    .catch(t.fail);
-  Promise.resolve(sub1.subscribeAfter(sub1SecondAll[0].publishCount))
-    .then(result => sub1FinalAll.push(result))
-    .catch(t.fail);
+  for (const p of [sub1.subscribeAfter(), sub1.subscribeAfter(0n)]) {
+    E.when(p, cell => sub1SecondLateAll.push(cell), t.fail);
+  }
+  E.when(
+    sub1.subscribeAfter(sub1SecondAll[0].publishCount),
+    result => sub1FinalAll.push(result),
+    t.fail,
+  );
 
   pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter(sub2LIFO[0].publishCount));
   t.is(
     sub1SecondLateAll.length,
     2,
-    'current results should resolve promptly (again)',
+    'current results must resolve promptly (again)',
   );
-  t.deepEqual(
-    new Set(sub1SecondLateAll),
-    new Set([sub1SecondLateAll[0]]),
-    'current results should be identical (again)',
-  );
-  t.deepEqual(
-    sub1FinalAll,
-    [],
-    'there should be no final results before finish',
-  );
+  assertCells(t, 'second (late)', sub1SecondLateAll, 2n, secondResult);
+  t.deepEqual(sub1FinalAll, [], 'there must be no final results before finish');
 
   const pub1Final = Symbol.for('pub1Final');
   pub1.finish(pub1Final);
@@ -454,15 +425,10 @@ const verifySubscribeAfterSequencing = async (t, makePublishKit) => {
   t.is(
     sub1SecondLateAll.length,
     2,
-    'there should be no further "second" results',
+    'there must be no further "second" results',
   );
   t.is(sub1FinalAll.length, 2);
-  t.deepEqual(
-    new Set(sub1FinalAll),
-    new Set([sub1FinalAll[0]]),
-    'final results should be identical',
-  );
-  t.deepEqual(sub1FinalAll[0].head, { value: pub1Final, done: true });
+  assertCells(t, 'final', sub1FinalAll, 3n, { value: pub1Final, done: true });
 };
 
 for (const [type, maker] of Object.entries(makers)) {
