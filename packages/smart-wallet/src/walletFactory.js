@@ -16,7 +16,6 @@ import { shape } from './typeGuards.js';
 
 // Ambient types. Needed only for dev but this does a runtime import.
 import '@agoric/vats/exported.js';
-import '@agoric/swingset-vat/src/types-ambient.js';
 
 const PrivateArgsShape = harden(
   M.split(
