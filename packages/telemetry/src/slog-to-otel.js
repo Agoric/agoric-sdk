@@ -824,8 +824,13 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         if (currentBlockHeight > 0) {
           dbTransactionManager.end();
         }
-        assert(!spans.top());
         dbTransactionManager.begin();
+        while (spans.top()) {
+          console.error(
+            `previous block was not unwound properly, unstacking ${spans.topKind()}`,
+          );
+          spans.pop();
+        }
         currentBlockHeight = slogAttrs.blockHeight;
 
         // TODO: Move the encompassing `block` root span to cosmos
@@ -869,7 +874,13 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'cosmic-swingset-end-block-finish': {
-        // Don't record finish
+        // Don't record finish but make sure our span stack is clean
+        while (spans.top() && spans.topKind() !== 'block') {
+          console.error(
+            `End block has unexpected span stack, removing ${spans.topKind()}`,
+          );
+          spans.pop();
+        }
         break;
       }
       case 'cosmic-swingset-run-start': {
