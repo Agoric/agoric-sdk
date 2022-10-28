@@ -441,13 +441,18 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       }
       case 'create-vat': {
         const { vatSourceBundle: _2, name, ...attrs } = slogAttrs;
-        spans.push(['create-vat', slogAttrs.vatID], {
-          attributes: {
-            'vat.name': name,
-            ...attrs,
-          },
-        });
         vatIdToAttrs.init(slogAttrs.vatID, { name, ...attrs });
+        const vattrs = {
+          'vat.name': name,
+          ...attrs,
+        };
+        if (spans.topKind() === 'init') {
+          spans.push(['create-vat', slogAttrs.vatID], {
+            attributes: vattrs,
+          });
+        } else {
+          spans.top()?.addEvent(`create-vat`, cleanAttrs(vattrs), now);
+        }
         break;
       }
       case 'vat-startup-start': {
@@ -456,7 +461,9 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       }
       case 'vat-startup-finish': {
         spans.pop(['vat-startup', slogAttrs.vatID]);
-        spans.pop(['create-vat', slogAttrs.vatID]);
+        if (spans.topKind() === 'create-vat') {
+          spans.pop(['create-vat', slogAttrs.vatID]);
+        }
         break;
       }
       case 'start-replay': {
