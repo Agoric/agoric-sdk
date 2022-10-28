@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { makeScalarMapStore } from '@agoric/store';
+import { makeScalarMapStore as makeBaggage } from '@agoric/store';
 import {
   makePublishKit,
   subscribeEach,
@@ -13,46 +13,57 @@ import { invertPromiseSettlement } from './iterable-testing-tools.js';
 
 const { ownKeys } = Reflect;
 
-const assertCells = (t, label, cells, expectedResult) => {
+const assertTransmission = async (t, publishKit, value, method = 'publish') => {
+  const { publisher, subscriber } = publishKit;
+  publisher[method](value);
+  if (method === 'fail') {
+    const reason = await invertPromiseSettlement(subscriber.subscribeAfter());
+    t.is(reason, value, `value is transmitted through ${method}`);
+  } else {
+    const cell = await subscriber.subscribeAfter();
+    t.is(cell.head.value, value, `value is transmitted through ${method}`);
+  }
+};
+
+const assertCells = (t, label, cells, publishCount, result) => {
   const firstCell = cells[0];
-  for (const cell of cells) {
+  const len = cells.length;
+  for (let i = 0; i < len; i += 1) {
+    const cell = cells[i];
+    const cellLabel = `${label} cell ${i + 1} of ${len}`;
     t.deepEqual(
       Reflect.ownKeys(cell).sort(),
       ['head', 'publishCount', 'tail'],
-      `${label} cell property keys`,
+      `${cellLabel} property keys`,
     );
-    t.deepEqual(cell.head, expectedResult, `${label} cell result`);
-    t.truthy(cell.publishCount, `${label} cell publishCount`);
+    t.deepEqual(cell.head, result, `${label} cell result`);
+    // `publishCount` values *should* be considered opaque,
+    // but de facto they are a gap-free sequence of bigints
+    // that starts at 1.
+    // t.truthy(cell.publishCount, `${cellLabel} publishCount`);
+    t.is(cell.publishCount, publishCount, `${cellLabel} publishCount`);
 
-    t.deepEqual(cell, firstCell, `all ${label} cells must be deeply equal`);
+    t.deepEqual(cell, firstCell, `${cellLabel} must deeply equal cell 1`);
     t.is(
       cell.head.value,
       firstCell.head.value,
-      `all ${label} cells must reference the same value`,
+      `${cellLabel} value reference must match cell 1`,
     );
     t.is(
       cell.tail,
       firstCell.tail,
-      `all ${label} cells must reference the same tail`,
+      `${cellLabel} tail reference must match cell 1`,
     );
   }
 };
 
-// TODO: macro for use with non-durable publish kit and
-// (eventually) non-mandatory valueDurability.
+// TODO: Replace with test.macro once that works with prepare-test-env-ava.
 // https://github.com/avajs/ava/blob/main/docs/01-writing-tests.md#reusing-test-logic-through-macros
-test('vivifyDurablePublishKit', async t => {
-  const baggage = makeScalarMapStore();
-  const makeDurablePublishKit = vivifyDurablePublishKit(baggage, 'PublishKit');
-  const durablePublishKit = makeDurablePublishKit();
-  t.deepEqual(ownKeys(durablePublishKit), ['publisher', 'subscriber']);
-  const { publisher, subscriber } = durablePublishKit;
-
-  t.throws(
-    () => publisher.publish(Symbol('unique symbol')),
-    undefined,
-    'default configuration rejects non-passable values',
-  );
+// eslint-disable-next-line no-shadow
+const verifyPublishKit = async (t, makePublishKit) => {
+  const publishKit = makePublishKit();
+  t.deepEqual(ownKeys(publishKit).sort(), ['publisher', 'subscriber']);
+  const { publisher, subscriber } = publishKit;
 
   const cells = new Map();
   const getLatestPromises = () => {
@@ -74,7 +85,7 @@ test('vivifyDurablePublishKit', async t => {
   firstCellsP.push(...getLatestPromises());
   const firstCells = await Promise.all(firstCellsP);
   firstCells.push(...(await Promise.all(getLatestPromises())));
-  assertCells(t, 'first', firstCells, { value: firstVal, done: false });
+  assertCells(t, 'first', firstCells, 1n, { value: firstVal, done: false });
   const { publishCount: firstPublishCount } = firstCells[0];
   cells.set(firstPublishCount, firstCells[0]);
 
@@ -87,14 +98,14 @@ test('vivifyDurablePublishKit', async t => {
   secondCellsP.push(firstCells[0].tail);
   const secondCells = await Promise.all(secondCellsP);
   secondCells.push(await firstCells[0].tail);
-  assertCells(t, 'second', secondCells, { value: secondVal, done: false });
+  assertCells(t, 'second', secondCells, 2n, { value: secondVal, done: false });
   const { publishCount: secondPublishCount } = secondCells[0];
   t.false(cells.has(secondPublishCount), 'second publishCount must be new');
   cells.set(secondPublishCount, secondCells[0]);
   thirdCellsP.push(...getLatestPromises());
   const thirdCells = await Promise.all(thirdCellsP);
   thirdCells.push(...(await Promise.all(getLatestPromises())));
-  assertCells(t, 'third', thirdCells, { value: thirdVal, done: false });
+  assertCells(t, 'third', thirdCells, 3n, { value: thirdVal, done: false });
   const { publishCount: thirdPublishCount } = thirdCells[0];
   t.false(cells.has(thirdPublishCount), 'third publishCount must be new');
   cells.set(thirdPublishCount, thirdCells[0]);
@@ -104,32 +115,27 @@ test('vivifyDurablePublishKit', async t => {
     message: /bigint/,
   });
 
-  const fourthVal = { position: 'fourth' };
+  const fourthVal = { position: 'fourth', deepPayload: [Symbol.match] };
   publisher.publish(fourthVal);
   const fifthVal = { position: 'fifth' };
   publisher.publish(fifthVal);
   const leapfrogCellsP = getLatestPromises().slice(0, -1);
   const leapfrogCells = await Promise.all(leapfrogCellsP);
   leapfrogCells.push(...(await Promise.all(getLatestPromises().slice(0, -1))));
-  assertCells(t, 'leapfrog', leapfrogCells, { value: fifthVal, done: false });
+  assertCells(t, 'leapfrog', leapfrogCells, 5n, {
+    value: fifthVal,
+    done: false,
+  });
   const { publishCount: leapfrogPublishCount } = leapfrogCells[0];
   t.false(cells.has(leapfrogPublishCount), 'leapfrog publishCount must be new');
   cells.set(leapfrogPublishCount, leapfrogCells[0]);
-
-  for (const methodName of ['fail', 'finish']) {
-    t.throws(
-      () => publisher[methodName](Object.create({})),
-      undefined,
-      `${methodName} rejects non-passable values`,
-    );
-  }
 
   const finalVal = 'FIN';
   publisher.finish(finalVal);
   const finalCellsP = getLatestPromises();
   const finalCells = await Promise.all(finalCellsP);
   finalCells.push(...(await Promise.all(getLatestPromises())));
-  assertCells(t, 'final', finalCells, { value: finalVal, done: true });
+  assertCells(t, 'final', finalCells, 6n, { value: finalVal, done: true });
   const { publishCount: finalPublishCount } = finalCells[0];
   t.false(cells.has(finalPublishCount), 'final publishCount must be new');
 
@@ -140,134 +146,34 @@ test('vivifyDurablePublishKit', async t => {
       `${methodName} fails after the final value`,
     );
   }
+};
+
+test('makePublishKit', verifyPublishKit, makePublishKit);
+test(
+  'durablePublishKit',
+  verifyPublishKit,
+  vivifyDurablePublishKit(makeBaggage(), 'DurablePublishKit'),
+);
+
+test('publishKit allows non-durable values', async t => {
+  const publishKit = makePublishKit();
+  const nonPassable = { [Symbol('key')]: Symbol('value') };
+  await assertTransmission(t, publishKit, nonPassable);
+  await assertTransmission(t, publishKit, nonPassable, 'finish');
+  await assertTransmission(t, makePublishKit(), nonPassable, 'fail');
 });
-
-test('makePublishKit', async t => {
-  const { publisher, subscriber } = makePublishKit();
-
-  const pubFirst = Symbol('first');
-  publisher.publish(pubFirst);
-  const subFirst = await subscriber.subscribeAfter();
-  t.deepEqual(
-    Reflect.ownKeys(subFirst).sort(),
-    ['head', 'publishCount', 'tail'],
-    'first iteration result keys',
+test('durablePublishKit rejects non-durable values', async t => {
+  const makeDurablePublishKit = vivifyDurablePublishKit(
+    makeBaggage(),
+    'DurablePublishKit',
   );
-  t.deepEqual(
-    subFirst.head,
-    { value: pubFirst, done: false },
-    'first iteration result head',
-  );
-  t.true(subFirst.publishCount > 0n, 'positive publish count');
-  t.is(
-    await subscriber.subscribeAfter(),
-    subFirst,
-    'subscribeAfter should return current result (first)',
-  );
-
-  const pubSecond = { previous: pubFirst };
-  publisher.publish(pubSecond);
-  const subSecondAll = await Promise.all([
-    subFirst.tail,
-    subscriber.subscribeAfter(subFirst.publishCount),
-  ]);
-  const [subSecond] = subSecondAll;
-  t.deepEqual(
-    new Set(subSecondAll),
-    new Set([subSecond]),
-    'tail and subscribeAfter(latestPublishCount) should resolve identically',
-  );
-  t.deepEqual(
-    Reflect.ownKeys(subSecond).sort(),
-    ['head', 'publishCount', 'tail'],
-    'second iteration result keys',
-  );
-  t.deepEqual(
-    subSecond.head,
-    { value: pubSecond, done: false },
-    'second iteration result head',
-  );
-  t.is(
-    subSecond.publishCount,
-    subFirst.publishCount + 1n,
-    'publish count should increment by 1',
-  );
-  t.is(
-    await subscriber.subscribeAfter(),
-    subSecond,
-    'subscribeAfter should return current result (second)',
-  );
-
-  publisher.publish(undefined);
-  const subThird = await subSecond.tail;
-  t.deepEqual(subThird.head, { value: undefined, done: false });
-  t.is(subThird.publishCount, subSecond.publishCount + 1n);
-  t.is(
-    await subscriber.subscribeAfter(subFirst.publishCount),
-    subThird,
-    'subscribeAfter(oldPublishCount) should skip to the current result',
-  );
-
-  const pubFinal = Symbol('done');
-  publisher.finish(pubFinal);
-  const subFinalAll = await Promise.all([
-    subThird.tail,
-    subscriber.subscribeAfter(subThird.publishCount),
-  ]);
-  const [subFinal] = subFinalAll;
-  t.deepEqual(new Set(subFinalAll), new Set([subFinal]));
-  t.deepEqual(
-    Reflect.ownKeys(subFinal).sort(),
-    ['head', 'publishCount', 'tail'],
-    'final iteration result keys',
-  );
-  t.deepEqual(
-    subFinal.head,
-    { value: pubFinal, done: true },
-    'final iteration result head',
-  );
-  t.is(
-    subFinal.publishCount,
-    subThird.publishCount + 1n,
-    'final publish count should increment by 1',
-  );
-  t.is(
-    await subscriber.subscribeAfter(),
-    subFinal,
-    'subscribeAfter should return current result (final)',
-  );
-  t.is(
-    await subscriber.subscribeAfter(subFirst.publishCount),
-    subFinal,
-    'subscribeAfter(oldPublishCount) should skip to the current result (final)',
-  );
-  t.throws(
-    () => publisher.publish('extra publish'),
-    undefined,
-    'publication should not be allowed after finalization',
-  );
-  t.throws(
-    () => publisher.finish('final final'),
-    undefined,
-    'finalization should not be allowed after finalization',
-  );
-  t.throws(
-    () => publisher.fail(new Error('reason')),
-    undefined,
-    'failure should not be allowed after finalization',
-  );
-  await t.throwsAsync(
-    // @ts-ignore known to be promise version of PublicationList
-    subFinal.tail,
-    undefined,
-    'tail promise of final result should be rejected',
-  );
-  await t.throwsAsync(
-    // @ts-ignore known to be promise version of PublicationList
-    subscriber.subscribeAfter(subFinal.publishCount),
-    undefined,
-    'subscribeAfter(finalPublishCount) should be rejected',
-  );
+  const publishKit = makeDurablePublishKit();
+  const { publisher } = publishKit;
+  const nonPassable = { [Symbol('key')]: Symbol('value') };
+  t.throws(() => publisher.publish(nonPassable));
+  t.throws(() => publisher.finish(nonPassable));
+  t.throws(() => publisher.fail(nonPassable));
+  await assertTransmission(t, publishKit, Symbol.for('value'));
 });
 
 test('makePublishKit - immediate finish', async t => {
