@@ -4,7 +4,7 @@
     "snapshotInterval": 1000,
     "vats": {
         "bootstrap": {
-            "sourceSpec": "@agoric/vats/src/core/boot-oracles.js",
+            "sourceSpec": "@agoric/smart-wallet/scripts/start-local-chain-boot.js",
             "parameters": {
                 "anchorAssets": [
                     {
@@ -21,10 +21,10 @@
                     }
                 ],
                 "economicCommitteeAddresses": {
-                    "voter": "agoric109q3uc0xt8aavne94rgd6rfeucavrx924e0ztf"
+                    "voter": "agoric1ersatz"
                 },
                 "demoOracleAddresses": [
-                    "agoric109q3uc0xt8aavne94rgd6rfeucavrx924e0ztf"
+                    "agoric1ersatz"
                 ]
             },
             "creationOptions": {

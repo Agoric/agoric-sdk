@@ -2,80 +2,16 @@
 
 /** @file Boot script for demoing oracles. Builds upon boot-psm to be used in integration tests. */
 
-import * as ERTPmod from '@agoric/ertp';
 import {
   PRICE_FEEDS_MANIFEST,
   startPriceFeeds,
 } from '@agoric/inter-protocol/src/proposals/price-feed-proposal.js';
-import * as startPSMmod from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import { M } from '@agoric/store';
 import { buildRootObject as buildPsmRootObject } from '@agoric/vats/src/core/boot-psm.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
-import { makeAgoricNamesAccess } from '@agoric/vats/src/core/utils.js';
-import { Stable, Stake } from '@agoric/vats/src/tokens.js';
 import { E, Far } from '@endo/far';
 
 /** @typedef {import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
-
-/**
- * We reserve these keys in name hubs.
- */
-export const agoricNamesReserved = harden(
-  /** @type {const} */ ({
-    issuer: {
-      [Stake.symbol]: Stake.proposedName,
-      [Stable.symbol]: Stable.proposedName,
-      AUSD: 'Agoric bridged USDC',
-    },
-    brand: {
-      [Stake.symbol]: Stake.proposedName,
-      [Stable.symbol]: Stable.proposedName,
-      AUSD: 'Agoric bridged USDC',
-    },
-    oracleBrand: {
-      USD: 'US Dollar',
-    },
-    installation: {
-      centralSupply: 'central supply',
-      mintHolder: 'mint holder',
-      walletFactory: 'multitenant smart wallet',
-      contractGovernor: 'contract governor',
-      committee: 'committee electorate',
-      binaryVoteCounter: 'binary vote counter',
-      psm: 'Parity Stability Module',
-      psmCharter: 'Governance Charter for PSM',
-    },
-    instance: {
-      economicCommittee: 'Economic Committee',
-      'psm-IST-AUSD': 'Parity Stability Module: IST:AUSD',
-      psmCharter: 'Charter for the PSM',
-      walletFactory: 'Smart Wallet Factory',
-      provisionPool: 'Provision Pool',
-    },
-  }),
-);
-
-/**
- * @typedef {{
- *   denom: string,
- *   keyword?: string,
- *   proposedName?: string,
- *   decimalPlaces?: number
- * }} AnchorOptions
- */
-const AnchorOptionsShape = M.split(
-  { denom: M.string() },
-  M.partial({
-    keyword: M.string(),
-    proposedName: M.string(),
-    decimalPlaces: M.number(),
-  }),
-);
-
-export const ParametersShape = M.partial({
-  anchorAssets: M.arrayOf(AnchorOptionsShape),
-  economicCommitteeAddresses: M.recordOf(M.string(), M.string()),
-});
 
 /** @param {BootstrapSpace & { devices: { vatAdmin: any }, vatPowers: { D: DProxy }, }} powers */
 const installPriceAggregatorContract = async ({
@@ -116,13 +52,15 @@ export const buildRootObject = (vatPowers, vatParameters) => {
 
   const { produce, consume } = psmRootObject.getPromiseSpace();
 
-  const log = vatPowers.logger || console.info;
+  // const log = vatPowers.logger || console.info;
 
   const { demoOracleAddresses } = vatParameters;
 
-  const { spaces } = makeAgoricNamesAccess(log, agoricNamesReserved);
+  // const { spaces } = makeAgoricNamesAccess(log, agoricNamesReserved);
 
   const runBootstrapParts = async (vats, devices) => {
+    await psmRootObject.bootstrap(vats, devices);
+
     /** TODO: BootstrapPowers type puzzle */
     /** @type { any } */
     const allPowers = harden({
@@ -132,14 +70,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       devices,
       produce,
       consume,
-      ...spaces,
-      // ISSUE: needed? runBehaviors,
-      // These module namespaces might be useful for core eval governance.
-      modules: {
-        utils: { ...utils },
-        startPSM: { ...startPSMmod },
-        ERTP: { ...ERTPmod },
-      },
+      // ...spaces,
     });
     const manifest = {
       ...PRICE_FEEDS_MANIFEST,
@@ -151,21 +82,16 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       return utils.extractPowers(permit, allPowers);
     };
 
-    await Promise.all([
-      startPriceFeeds(powersFor('startPriceFeeds'), {
-        options: { demoOracleAddresses },
-      }),
-    ]);
+    // await Promise.all([
+    //   startPriceFeeds(powersFor('startPriceFeeds'), {
+    //     options: { demoOracleAddresses },
+    //   }),
+    // ]);
   };
 
   return Far('bootstrap', {
     bootstrap: (vats, devices) => {
-      const { D } = vatPowers;
-      D(devices.mailbox).registerInboundHandler(
-        Far('dummyInboundHandler', { deliverInboundMessages: () => {} }),
-      );
-
-      return runBootstrapParts(vats, devices).catch(e => {
+      return psmRootObject.bootstrap(vats, devices).catch(e => {
         console.error('BOOTSTRAP FAILED:', e);
         throw e;
       });
