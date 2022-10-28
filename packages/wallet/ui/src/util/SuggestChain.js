@@ -5,36 +5,39 @@ export const AGORIC_COIN_TYPE = 564;
 export const COSMOS_COIN_TYPE = 118;
 
 /**
- * @param {string} networkConfig URL
- * @param {object} addrs
- * @param {string} addrs.rpcAddr URL or origin
- * @param {string} addrs.apiAddr URL
- * @param {string} chainId
- * @param {string} [caption]
+ * @param {import('@agoric/casting/src/netconfig.js').NetworkConfig} networkConfig
+ * @param {string} caption
+ * @param {number} randomFloat
+ * @param {string} [walletUrlForStaking]
  * @returns {import('@keplr-wallet/types').ChainInfo}
  */
-const makeChainInfo = (
+export const makeChainInfo = (
   networkConfig,
-  { rpcAddr, apiAddr },
-  chainId,
   caption,
+  randomFloat,
+  walletUrlForStaking,
 ) => {
-  const coinType = Number(
-    new URL(networkConfig).searchParams.get('coinType') || AGORIC_COIN_TYPE,
-  );
-  const hostname = new URL(networkConfig).hostname;
-  const network = hostname.split('.')[0];
+  const { chainName, rpcAddrs, apiAddrs } = networkConfig;
+  const index = Math.floor(randomFloat * rpcAddrs.length);
+
+  const rpcAddr = rpcAddrs[index];
   const rpc = rpcAddr.match(/:\/\//) ? rpcAddr : `http://${rpcAddr}`;
+
+  const rest = apiAddrs
+    ? // pick the same index
+      apiAddrs[index]
+    : // adapt from rpc
+      rpc.replace(/(:\d+)?$/, ':1317');
 
   return {
     rpc,
-    rest: apiAddr,
-    chainId,
-    chainName: caption || `Agoric ${network}`,
+    rest,
+    chainId: chainName,
+    chainName: caption,
     stakeCurrency,
-    walletUrlForStaking: `https://${network}.staking.agoric.app`,
+    walletUrlForStaking,
     bip44: {
-      coinType,
+      coinType: AGORIC_COIN_TYPE,
     },
     bech32Config,
     currencies: [stakeCurrency, stableCurrency],
@@ -44,7 +47,7 @@ const makeChainInfo = (
 };
 
 /**
- * @param {string} networkConfig URL
+ * @param {string} networkConfigHref
  * @param {object} io
  * @param {typeof fetch} io.fetch
  * @param {import('@keplr-wallet/types').Keplr} io.keplr
@@ -52,33 +55,38 @@ const makeChainInfo = (
  * @param {string} [caption]
  */
 export async function suggestChain(
-  networkConfig,
+  networkConfigHref,
   { fetch, keplr, random },
   caption = undefined,
 ) {
-  console.log('suggestChain: fetch', networkConfig); // log net IO
-  const res = await fetch(networkConfig);
+  console.log('suggestChain: fetch', networkConfigHref); // log net IO
+  const url = new URL(networkConfigHref);
+  const res = await fetch(url);
   if (!res.ok) {
     throw Error(`Cannot fetch network: ${res.status}`);
   }
 
-  const { chainName: chainId, apiAddrs, rpcAddrs } = await res.json();
-  assert.equal(apiAddrs.length, rpcAddrs.length);
-  const index = Math.floor(random() * rpcAddrs.length);
+  const networkConfig = await res.json();
+  // XXX including this breaks the Jest test
+  // assertNetworkConfig(harden(networkConfig));
 
-  const rpcAddr = rpcAddrs[index];
-  const apiAddr = apiAddrs[index];
+  if (!caption) {
+    const subdomain = url.hostname.split('.')[0];
+    caption = `Agoric ${subdomain}`;
+  }
+
+  const walletUrlForStaking = `https://${url.hostname}.staking.agoric.app`;
 
   const chainInfo = makeChainInfo(
     networkConfig,
-    { rpcAddr, apiAddr },
-    chainId,
     caption,
+    random(),
+    walletUrlForStaking,
   );
   console.log('chainInfo', chainInfo);
   await keplr.experimentalSuggestChain(chainInfo);
-  await keplr.enable(chainId);
-  console.log('keplr.enable chainId =', chainId, 'done');
+  await keplr.enable(chainInfo.chainId);
+  console.log('keplr.enable chainId =', chainInfo.chainId, 'done');
 
   return chainInfo;
 }
