@@ -50,7 +50,7 @@ export function buildRootObject(_vatPowers) {
         // Update the notifier when the chainBundle resolves.
         const { notifier, updater } = makeNotifierKit();
         chainBundle.then(clientHome => {
-          updater(harden({ clientHome, clientAddress: address }));
+          updater.updateState(harden({ clientHome, clientAddress: address }));
         });
         return Far('emulatedClientFacet', {
           getChainBundle: () => chainBundle,
