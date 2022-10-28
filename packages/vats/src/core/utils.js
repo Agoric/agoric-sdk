@@ -210,25 +210,28 @@ export const makePromiseSpace = (log = (..._args) => {}) => {
 harden(makePromiseSpace);
 
 /**
- * @param {unknown} template true or vat name string or recursive object
+ * Attenuate `specimen` to only allow acccess to properties specified in `template`
+ *
+ * @param {true | string | Record<string, *>} template true or vat name string or recursive object
  * @param {unknown} specimen
+ * @param {string[]} [path]
  */
-export const extract = (template, specimen) => {
+export const extract = (template, specimen, path = []) => {
   if (template === true || typeof template === 'string') {
     return specimen;
   } else if (typeof template === 'object' && template !== null) {
     if (typeof specimen !== 'object' || specimen === null) {
       assert.fail(
-        X`object template ${q(template)} requires object specimen, not ${q(
-          specimen,
-        )}`,
+        X`object template ${q(template)} requires object specimen at [${q(
+          path.join('.'),
+        )}], not ${q(specimen)}`,
       );
     }
     const target = harden(
       fromEntries(
         entries(template).map(([propName, subTemplate]) => [
           propName,
-          extract(subTemplate, specimen[propName]),
+          extract(subTemplate, specimen[propName], [...path, propName]),
         ]),
       ),
     );
@@ -248,7 +251,7 @@ export const extract = (template, specimen) => {
 harden(extract);
 
 /**
- * @param {unknown} permit the permit supplied by the manifest
+ * @param {true | string | Record<string, *>} permit the permit supplied by the manifest
  * @param {unknown} allPowers the powers to attenuate
  */
 export const extractPowers = (permit, allPowers) => {
