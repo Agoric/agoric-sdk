@@ -33,7 +33,7 @@ import './internal-types.js';
  * zoe: ERef<ZoeService>,
  * }} StartupTerms
  *
- * @typedef {import('@agoric/vats/src/nameHub').NameHub} NameHub
+ * @typedef {import('@agoric/vats').NameHub} NameHub
  */
 
 export function buildRootObject(vatPowers) {

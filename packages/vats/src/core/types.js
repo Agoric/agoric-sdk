@@ -193,7 +193,7 @@
  *   bankManager: BankManager,
  *   bldIssuerKit: RemoteIssuerKit,
  *   board: import('@agoric/vats').Board,
- *   bridgeManager: import('../bridge.js').BridgeManager | undefined,
+ *   bridgeManager: import('../types.js').BridgeManager | undefined,
  *   chainStorage: StorageNode | null,
  *   chainTimerService: TimerService,
  *   client: ClientManager,

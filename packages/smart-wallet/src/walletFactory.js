@@ -48,7 +48,7 @@ export const publishDepositFacet = async (
  *   board: ERef<import('@agoric/vats').Board>,
  * }} SmartWalletContractTerms
  *
- * @typedef {import('@agoric/vats/src/nameHub').NameHub} NameHub
+ * @typedef {import('@agoric/vats').NameHub} NameHub
  */
 
 // NB: even though all the wallets share this contract, they

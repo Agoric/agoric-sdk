@@ -25,7 +25,7 @@ test('communication', async t => {
   /** @type {undefined | ERef<{ fromBridge: (srcID: string, obj: any) => void }>} */
   let bankHandler;
 
-  /** @type {import('../src/bridge').BridgeManager} */
+  /** @type {import('../src/types.js').BridgeManager} */
   const bridgeMgr = Far('fakeBridgeManager', {
     register(srcID, handler) {
       t.is(srcID, 'bank');

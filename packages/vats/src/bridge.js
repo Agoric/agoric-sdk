@@ -17,26 +17,16 @@ import { Far } from '@endo/far';
  */
 
 /**
- * @typedef {object} BridgeHandler An object that can receive messages from the bridge device
- * @property {(srcId: string, obj: any) => Promise<void>} fromBridge Handle an inbound message
- *
- * @typedef {object} BridgeManager The object to manage this bridge
- * @property {(dstID: string, obj: any) => any} toBridge
- * @property {(srcID: string, handler: ERef<BridgeHandler>) => void} register
- * @property {(srcID: string, handler: ERef<BridgeHandler>) => void} unregister
- */
-
-/**
  * Create a handler that demuxes/muxes the bridge device by its first argument.
  *
  * @param {typeof import('@endo/far').E} E The eventual sender
  * @param {<T>(target: Device<T>) => T} D The device sender
  * @param {Device<BridgeDevice>} bridgeDevice The bridge to manage
- * @returns {BridgeManager} admin facet for this handler
+ * @returns {import('./types.js').BridgeManager} admin facet for this handler
  */
 export function makeBridgeManager(E, D, bridgeDevice) {
   /**
-   * @type {Store<string, ERef<BridgeHandler>>}
+   * @type {Store<string, ERef<import('./types.js').BridgeHandler>>}
    */
   const srcHandlers = makeStore('srcID');
 

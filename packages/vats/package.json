@@ -3,7 +3,7 @@
   "version": "0.13.0",
   "description": "Agoric's Vat library",
   "type": "module",
-  "main": "./src/core/boot.js",
+  "main": "./index.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
     "build": "yarn build:bundles",

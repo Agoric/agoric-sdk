@@ -31,7 +31,7 @@ const TRANSFER_PROPOSAL_SHAPE = {
  * @param {ERef<BoardDepositFacet>} board where to find depositFacets by boardID
  * @param {ERef<NameHub>} namesByAddress where to find depositFacets by bech32
  *
- * @typedef {import('@agoric/vats/src/nameHub.js').NameHub} NameHub
+ * @typedef {import('@agoric/vats').NameHub} NameHub
  */
 const makePegasus = (zcf, board, namesByAddress) => {
   /**
