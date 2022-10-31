@@ -58,7 +58,7 @@ export const reserveThenDeposit = async (
   addr,
   payments,
 ) => {
-  console.info('waiting for', debugName);
+  console.info('awaiting depositFacet for', debugName);
   const [depositFacet] = await reserveThenGetNamePaths(namesByAddressAdmin, [
     [addr, DEPOSIT_FACET],
   ]);

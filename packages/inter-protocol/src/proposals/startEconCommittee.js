@@ -6,7 +6,7 @@ import {
 import { E } from '@endo/far';
 import { makeTracer } from '../makeTracer.js';
 
-const trace = makeTracer('RunEconBehaviors', false);
+const trace = makeTracer('RunEconCommittee', false);
 
 /** @type {(name: string) => string} */
 const sanitizePathSegment = name => {

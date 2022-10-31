@@ -11,7 +11,9 @@ export * from './sim-behaviors.js';
 export * from './startPSM.js';
 export * from './startEconCommittee.js';
 
+/** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest} */
 const SHARED_MAIN_MANIFEST = harden({
+  /** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifestPermit} */
   [econBehaviors.setupAmm.name]: {
     consume: {
       board: 'board',
