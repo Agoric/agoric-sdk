@@ -166,8 +166,6 @@ jobs:
         run: cd packages/deploy-script-support && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (ui-components)
         run: cd packages/ui-components && yarn ${{ steps.vars.outputs.test }}
-      - name: yarn test (wallet/ui)
-        run: cd packages/wallet/ui && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (wallet)
         run: cd packages/wallet && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (eslint-config)
