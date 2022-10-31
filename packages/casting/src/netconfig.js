@@ -9,7 +9,7 @@ import { fit, M } from '@agoric/store';
  * “light clients” to prove the ancestry of data fetched from the rpc node.
  *
  * @property {string[]} rpcAddrs endpoints serving https://docs.tendermint.com/v0.34/rpc/
- * @property {string} [chainName] e.g. agoric-3
+ * @property {string} chainName e.g. agoric-3
  * @property {string[]} [apiAddrs] overrides for REST endpoints of RPC servers https://docs.cosmos.network/main/run-node/interact-node#using-the-rest-endpoints
  * @property {string} [gci] - "global chain identifier", a hash of the genesis block
  * @property {string[]} [peers] - a list of nodes used to start the p2p gossip (stored in a per-node “address book”, which is a file stored in that node’s data directory)
@@ -17,11 +17,11 @@ import { fit, M } from '@agoric/store';
  */
 export const NetworkConfigShape = M.split(
   {
+    chainName: M.string(),
     rpcAddrs: M.arrayOf(M.string()),
   },
   M.partial({
     apiAddrs: M.arrayOf(M.string()),
-    chainName: M.string(),
     gci: M.string(),
     peers: M.arrayOf(M.string()),
     seeds: M.arrayOf(M.string()),
