@@ -138,7 +138,7 @@ test('bad network config', async t => {
         jitter: null,
       }),
     {
-      message: /rpcAddrs .* must be an array/,
+      message: /rpcAddrs.*Must be a copyArray/,
     },
   );
 });

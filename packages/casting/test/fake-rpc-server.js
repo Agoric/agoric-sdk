@@ -9,6 +9,8 @@ import express from 'express';
 
 import { toAscii, toBase64 } from '@cosmjs/encoding';
 
+const chainName = 'fakeChain';
+
 let lastPort = 8989;
 
 /**
@@ -95,11 +97,13 @@ export const startFakeServer = (t, fakeValues, options = {}) => {
     app.use(express.json());
     app.get('/bad-network-config', (req, res) => {
       res.json({
+        chainName,
         rpcAddrs: 'not an array',
       });
     });
     app.get('/network-config', (req, res) => {
       res.json({
+        chainName,
         rpcAddrs: [`http://localhost:${PORT}/tendermint-rpc`],
       });
     });
