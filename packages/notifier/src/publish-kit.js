@@ -111,15 +111,15 @@ export const subscribeLatest = subscriber => {
 };
 harden(subscribeLatest);
 
-const PublisherI = M.interface('Publisher', {
+export const PublisherI = M.interface('Publisher', {
   publish: M.call(M.any()).returns(),
   finish: M.call(M.any()).returns(),
   fail: M.call(M.any()).returns(),
 });
-const SubscriberI = M.interface('Subscriber', {
+export const SubscriberI = M.interface('Subscriber', {
   subscribeAfter: M.call().optional(M.bigint()).returns(M.promise()),
 });
-const publishKitIKit = harden({
+export const publishKitIKit = harden({
   publisher: PublisherI,
   subscriber: SubscriberI,
 });
