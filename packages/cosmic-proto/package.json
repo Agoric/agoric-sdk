@@ -37,7 +37,8 @@
   },
   "files": [
     "build",
-    "LICENSE*"
+    "LICENSE*",
+    "swingset/*"
   ],
   "publishConfig": {
     "access": "public"
