@@ -2,6 +2,7 @@
 
 import { keyEQ, makeHeapFarInstance, makeStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
+import crypto from 'crypto';
 import { makePromiseKit } from '@endo/promise-kit';
 import {
   buildQuestion,
@@ -33,8 +34,8 @@ const validateQuestionSpec = questionSpec => {
   questionSpec.method === ChoiceMethod.PLURALITY ||
     assert.fail(X`${questionSpec.method} must be PLURALITY`);
 
-  questionSpec.maxWinners > 2 ||
-    assert.fail(X`Max winners must be more than 2`);
+  questionSpec.maxWinners > 1 ||
+    assert.fail(X`Max winners must be more than 1`);
 };
 
 /** @type {BuildVoteCounter} */
@@ -101,39 +102,42 @@ const makeMultiPluralityVoteCounter = (
         reason: 'No quorum',
       };
       E(publisher).publish(voteOutcome);
+      return;
     }
 
-    const tallyPositions = tally.map((t, i) => ({
-      position: positions[i],
-      tally: t,
-    }));
-
-    const sortedPositions = tallyPositions.sort((a, b) => {
-      if (a.tally < b.tally) return 1;
-      if (a.tally > b.tally) return -1;
+    const sortedPositions = stats.results.sort((a, b) => {
+      if (a.total < b.total) return 1;
+      if (a.total > b.total) return -1;
       return 0;
     });
 
-    const uniqTally = [];
-    for (const position of sortedPositions) {
-      if (!uniqTally.includes(position.tally)) {
-        uniqTally.push(position.tally);
-      }
-    }
-
-    const winningTally = uniqTally.slice(0, questionSpec.maxWinners);
     const winningPositions = [];
-
     for (const position of sortedPositions) {
-      if (winningTally.includes(position.tally)) {
-        winningPositions.push(position.position);
+      if (position.total > 0n) {
+        if (winningPositions.length < questionSpec.maxWinners) {
+          winningPositions.push(position);
+        } else if (
+          winningPositions[winningPositions.length - 1].total === position.total
+        ) {
+          winningPositions.push(position);
+        }
       }
     }
 
-    if (winningPositions.length <= questionSpec.maxWinners) {
-      outcomePromise.resolve(winningPositions);
-    } else {
+    if (winningPositions.length === 0) {
       outcomePromise.resolve(questionSpec.tieOutcome);
+    } else if (winningPositions.length <= questionSpec.maxWinners) {
+      const outcome = winningPositions.map(p => p.position);
+      outcomePromise.resolve(outcome);
+    } else {
+      const tieIndex = questionSpec.maxWinners - 1;
+      const untiedPositions = winningPositions.slice(0, tieIndex);
+
+      const tiedPositions = winningPositions.slice(tieIndex);
+      const tieWinner = tiedPositions[crypto.randomInt(tiedPositions.length)];
+
+      const outcome = untiedPositions.concat(tieWinner).map(p => p.position);
+      outcomePromise.resolve(outcome);
     }
 
     E.when(outcomePromise.promise, position => {
@@ -167,7 +171,7 @@ const makeMultiPluralityVoteCounter = (
         const [position] = chosenPositions;
         positionIncluded(positions, position) ||
           assert.fail(
-            X`The specified choice is not a legal position: ${position}`,
+            X`The specified choice is not a legal position: ${position}.`,
           );
 
         const completedBallot = harden({ chosen: position, shares });

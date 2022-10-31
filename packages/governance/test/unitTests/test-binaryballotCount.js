@@ -10,6 +10,7 @@ import {
   makeFakeMarshaller,
 } from '@agoric/notifier/tools/testSupports.js';
 
+import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
 import {
   makeBinaryVoteCounter,
   ChoiceMethod,
@@ -18,7 +19,6 @@ import {
   coerceQuestionSpec,
   makeParamChangePositions,
 } from '../../src/index.js';
-import { makeMockChainStorageRoot } from '../../../vats/tools/storage-test-utils.js';
 
 const SIMPLE_ISSUE = harden({ text: 'Fish or cut bait?' });
 const FISH = harden({ text: 'Fish' });
@@ -167,10 +167,10 @@ test('binary bad vote', async t => {
     positions: [positive, negative],
     electionType: ElectionType.PARAM_CHANGE,
     maxChoices: 1,
+    maxWinners: 1,
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
-    maxWinners: 1,
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { creatorFacet, publicFacet, closeFacet } = makeBinaryVoteCounter(
@@ -351,7 +351,7 @@ test('binary revote', async t => {
   });
 });
 
-test('binary question too many', async t => {
+test('binary question too many positions', async t => {
   const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
     issue: SIMPLE_ISSUE,
@@ -429,24 +429,4 @@ test('binary no quorum', async t => {
     outcome: 'fail',
     reason: 'No quorum',
   });
-});
-
-test('binary too many positions', async t => {
-  t.throws(
-    () =>
-      coerceQuestionSpec({
-        method: ChoiceMethod.UNRANKED,
-        issue: SIMPLE_ISSUE,
-        positions: [FISH, BAIT, harden({ text: 'sleep' })],
-        electionType: ElectionType.SURVEY,
-        maxChoices: 1,
-        closingRule: FAKE_CLOSING_RULE,
-        quorumRule: QuorumRule.NO_QUORUM,
-        tieOutcome: BAIT,
-        maxWinners: 1,
-      }),
-    {
-      message: / - Must match one of /,
-    },
-  );
 });

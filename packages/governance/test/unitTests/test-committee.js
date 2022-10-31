@@ -78,6 +78,7 @@ test('committee-open question:one', async t => {
     positions,
     electionType: ElectionType.SURVEY,
     maxChoices: 1,
+    maxWinners: 1,
     closingRule: {
       timer: buildManualTimer(t.log),
       deadline: 2n,
@@ -112,6 +113,7 @@ test('committee-open question:one', async t => {
         text: 'why',
       },
       maxChoices: 1,
+      maxWinners: 1,
       method: 'unranked',
       positions: [
         {
@@ -147,6 +149,7 @@ test('committee-open question:mixed', async t => {
     positions,
     electionType: ElectionType.SURVEY,
     maxChoices: 1,
+    maxWinners: 1,
     closingRule: { timer, deadline: 4n },
     quorumRule: QuorumRule.MAJORITY,
     tieOutcome: positions[1],

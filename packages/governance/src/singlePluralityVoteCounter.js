@@ -98,6 +98,7 @@ const makeSinglePluralityVoteCounter = (
         reason: 'No quorum',
       };
       E(publisher).publish(voteOutcome);
+      return;
     }
 
     let maxScore = 0n;
@@ -107,15 +108,17 @@ const makeSinglePluralityVoteCounter = (
 
     const winningPositions = [];
     for (let i = 0; i < tally.length; i += 1) {
-      if (tally[i] === maxScore) {
+      if (tally[i] > 0n && tally[i] === maxScore) {
         winningPositions.push(positions[i]);
       }
     }
 
     if (winningPositions.length > 1) {
       outcomePromise.resolve(winningPositions);
-    } else {
+    } else if (winningPositions.length === 1) {
       outcomePromise.resolve(winningPositions[0]);
+    } else {
+      outcomePromise.resolve(questionSpec.tieOutcome);
     }
 
     E.when(outcomePromise.promise, position => {
@@ -149,7 +152,7 @@ const makeSinglePluralityVoteCounter = (
         const [position] = chosenPositions;
         positionIncluded(positions, position) ||
           assert.fail(
-            X`The specified choice is not a legal position: ${position}`,
+            X`The specified choice is not a legal position: ${position}.`,
           );
 
         const completedBallot = harden({ chosen: position, shares });

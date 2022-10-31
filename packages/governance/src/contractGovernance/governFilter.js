@@ -56,6 +56,7 @@ const setupFilterGovernance = async (
       positions: [positive, negative],
       electionType: ElectionType.OFFER_FILTER,
       maxChoices: 1,
+      maxWinners: 1,
       closingRule: { timer, deadline },
       quorumRule: QuorumRule.MAJORITY,
       tieOutcome: negative,

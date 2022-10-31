@@ -50,7 +50,7 @@ const coerceQuestionSpec = ({
   positions,
   electionType,
   maxChoices,
-  maxWinners = 1,
+  maxWinners,
   closingRule,
   quorumRule,
   tieOutcome,
