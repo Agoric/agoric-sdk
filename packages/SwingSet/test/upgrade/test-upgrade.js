@@ -206,7 +206,10 @@ const testUpgrade = async (
   t.deepEqual(get(v2capdata, 'youAre'), 'v2');
   t.deepEqual(get(v2capdata, 'marker'), ['slot', markerKref]);
   t.deepEqual(get(v2capdata, 'data'), ['some', 'data']);
-  t.deepEqual(get(v2capdata, 'upgradeResult'), { incarnationNumber: 2 });
+  t.like(get(v2capdata, 'upgradeResult'), {
+    incarnationNumber: 2,
+    rootObject: { '@qclass': 'slot' },
+  });
   const remoerr = parse(JSON.stringify(get(v2capdata, 'remoerr')));
   t.deepEqual(remoerr, Error('vat terminated'));
 
