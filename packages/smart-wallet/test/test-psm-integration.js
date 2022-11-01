@@ -171,7 +171,7 @@ test('want stable', async t => {
   await offersFacet.executeOffer(offerSpec);
   await eventLoopIteration();
   t.is(purseBalance(computedState, anchor.brand), 0n);
-  t.is(purseBalance(computedState, stableBrand), swapSize - 1n);
+  t.is(purseBalance(computedState, stableBrand), swapSize); // assume 0% fee
 
   const currentState = await headValue(currentSub);
   t.like(currentState, { lastOfferId: 1 });

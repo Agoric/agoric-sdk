@@ -1,6 +1,6 @@
 import { Far, getInterfaceOf } from '@endo/marshal';
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   let counter = 0;
   return Far('root', {
     increment() {

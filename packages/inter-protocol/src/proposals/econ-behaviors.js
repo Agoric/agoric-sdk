@@ -52,7 +52,7 @@ const MILLI = 1_000_000n;
  *   ammInstanceWithoutReserve: Instance,
  *   ammCreatorFacet: XYKAMMCreatorFacet,
  *   ammGovernorCreatorFacet: GovernedContractFacetAccess<XYKAMMPublicFacet,XYKAMMCreatorFacet>,
- *   economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet,
+ *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet,
  *   feeDistributorCreatorFacet: import('../feeDistributor.js').FeeDistributorCreatorFacet,
  *   feeDistributorPublicFacet: import('../feeDistributor.js').FeeDistributorPublicFacet,
  *   periodicFeeCollectors: import('../feeDistributor.js').PeriodicFeeCollector[],
@@ -180,7 +180,7 @@ export const setupAmm = async (
 
   const ammTerms = makeAmmTerms(
     chainTimerService,
-    E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+    E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitation),
     AmountMath.make(runBrand, minInitialPoolLiquidity),
   );
 

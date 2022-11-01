@@ -1,7 +1,7 @@
 // @ts-check
 
 // NB: cannot import, breaks bundle building
-/* global VatData */
+/* global globalThis */
 
 import { importBundle } from '@endo/import-bundle';
 import { assert } from '@agoric/assert';
@@ -17,7 +17,7 @@ const evalContractBundle = (bundle, additionalEndowments = {}) => {
   const defaultEndowments = {
     console: louderConsole,
     assert,
-    VatData,
+    VatData: globalThis.VatData,
   };
 
   const fullEndowments = Object.create(null, {

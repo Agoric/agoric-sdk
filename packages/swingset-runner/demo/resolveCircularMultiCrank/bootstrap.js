@@ -3,7 +3,7 @@ import { Far } from '@endo/marshal';
 
 console.log(`=> loading bootstrap.js`);
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   return Far('root', {
     bootstrap(vats) {
       const pX = E(vats.bob).genPromiseX();

@@ -193,7 +193,7 @@ export const makeMyAddressNameAdminKit = address => {
   // Create a name hub for this address.
   const { nameHub, nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
 
-  /** @type {MyAddressNameAdmin} */
+  /** @type {import('../types').MyAddressNameAdmin} */
   const myAddressNameAdmin = Far('myAddressNameAdmin', {
     ...rawMyAddressNameAdmin,
     getMyAddress: () => address,
@@ -263,6 +263,8 @@ export const makeClientBanks = async ({
     bridgeManagerP,
   ]);
 
+  /** @type {{agoricNames: ERef<NameHub>, namesByAddress: ERef<NameHub>, board: ERef<import('../types').Board> }} */
+  // @ts-expect-error cast
   const terms = await deeplyFulfilledObject(
     harden({
       agoricNames,
@@ -273,7 +275,6 @@ export const makeClientBanks = async ({
   const { creatorFacet } = await E(zoe).startInstance(
     walletFactory,
     {},
-    // @ts-expect-error FIXME 'board' types don't match
     terms,
     { storageNode, bridgeManager },
   );
@@ -287,7 +288,7 @@ export const makeClientBanks = async ({
         !powerFlags.includes(PowerFlags.REMOTE_WALLET),
         `REMOTE and SMART_WALLET are exclusive`,
       );
-      /** @type {ERef<MyAddressNameAdmin>} */
+      /** @type {ERef<import('../types').MyAddressNameAdmin>} */
       const myAddressNameAdmin = E(namesByAddressAdmin).lookupAdmin(address);
 
       const smartWallet = E(creatorFacet).provideSmartWallet(
@@ -390,7 +391,6 @@ export const addBankAssets = async ({
   ]);
   const runKit = { issuer: runIssuer, brand: runBrand, payment };
 
-  /** @type {{ creatorFacet: ERef<Mint>, publicFacet: ERef<Issuer> }} */
   const { creatorFacet: bldMint, publicFacet: bldIssuer } = E.get(
     E(zoe).startInstance(
       mintHolder,

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/cache",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Agoric's simple cache interface",
   "type": "module",
   "main": "src/main.js",
@@ -12,7 +12,7 @@
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json",
+    "lint:types": "tsc -p jsconfig.json",
     "lint:eslint": "eslint --ext .js,.ts ."
   },
   "keywords": [],
@@ -20,14 +20,14 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/notifier": "^0.5.1",
-    "@agoric/store": "^0.8.2",
-    "@agoric/vat-data": "^0.4.2",
-    "@agoric/vats": "^0.12.1",
-    "@endo/far": "^0.2.11",
-    "@endo/marshal": "^0.7.5"
+    "@agoric/store": "^0.8.3",
+    "@agoric/vat-data": "^0.4.3",
+    "@agoric/vats": "^0.13.0",
+    "@endo/far": "^0.2.13",
+    "@endo/marshal": "^0.8.0"
   },
   "devDependencies": {
-    "@agoric/zoe": "^0.25.2",
+    "@agoric/zoe": "^0.25.3",
     "ava": "^4.3.1",
     "c8": "^7.7.2"
   },

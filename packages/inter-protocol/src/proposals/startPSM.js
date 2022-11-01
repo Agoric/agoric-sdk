@@ -49,8 +49,8 @@ export const startPSM = async (
   },
   {
     options: { anchorOptions = {} } = {},
-    WantMintedFeeBP = 1n,
-    GiveMintedFeeBP = 3n,
+    WantMintedFeeBP = 0n,
+    GiveMintedFeeBP = 0n,
     MINT_LIMIT = 1_000n * 1_000_000n,
   } = {},
 ) => {
@@ -328,6 +328,8 @@ export const startPSMCharter = async ({
  * PSM and gov contracts are available as
  * named swingset bundles only in
  * decentral-psm-config.json
+ *
+ * @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest}
  */
 export const PSM_GOV_MANIFEST = {
   [installGovAndPSMContracts.name]: {
@@ -408,6 +410,7 @@ export const invitePSMCommitteeMembers = async (
 };
 harden(invitePSMCommitteeMembers);
 
+/** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest} */
 export const INVITE_PSM_COMMITTEE_MANIFEST = harden({
   [invitePSMCommitteeMembers.name]: {
     consume: {
@@ -418,7 +421,9 @@ export const INVITE_PSM_COMMITTEE_MANIFEST = harden({
   },
 });
 
+/** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest} */
 export const PSM_MANIFEST = harden({
+  /** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifestPermit} */
   [makeAnchorAsset.name]: {
     consume: { agoricNamesAdmin: true, bankManager: 'bank', zoe: 'zoe' },
     installation: { consume: { mintHolder: 'zoe' } },

@@ -37,7 +37,6 @@ export default [
   "@agoric/wallet",
   "@agoric/wallet-backend",
   "@agoric/wallet-connection",
-  "@agoric/wallet-ui",
   "@agoric/web-components",
   "@agoric/xsnap",
   "@agoric/zoe",

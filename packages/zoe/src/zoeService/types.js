@@ -344,3 +344,7 @@
  * @typedef {object} ZoeFeesConfig
  * @property {NatValue} getPublicFacetFee
  */
+
+/**
+ * @typedef {Handle<'feeMintAccess'>} FeeMintAccess
+ */

@@ -1,4 +1,5 @@
 // @ts-check
+/** @file Boot script for PSM-only (aka Pismo) chain */
 import { Far } from '@endo/far';
 import {
   installGovAndPSMContracts,
@@ -59,6 +60,9 @@ export const agoricNamesReserved = harden(
       [Stake.symbol]: Stake.proposedName,
       [Stable.symbol]: Stable.proposedName,
       AUSD: 'Agoric bridged USDC',
+    },
+    oracleBrand: {
+      USD: 'US Dollar',
     },
     installation: {
       centralSupply: 'central supply',
@@ -178,7 +182,6 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       mintInitialSupply(powersFor('mintInitialSupply')),
       addBankAssets(powersFor('addBankAssets')),
       startTimerService(powersFor('startTimerService')),
-      // centralSupply, mintHolder, walletFactory
       installBootContracts(powersFor('installBootContracts')),
       installGovAndPSMContracts(powersFor('installGovAndPSMContracts')),
       startEconomicCommittee(powersFor('startEconomicCommittee'), {
@@ -206,6 +209,8 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       // to code to be evaluated after initial bootstrap.
       bridgeCoreEval(powersFor('bridgeCoreEval')),
     ]);
+    // xxx this doesn't ever resolve yet, due to a dropped promise in startPSM (datalock)
+    console.log('boot-psm fully resolved');
   };
 
   return Far('bootstrap', {
@@ -242,7 +247,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
     },
     // ??? any more dangerous than produceItem/consumeItem?
     /** @type {() => PromiseSpace} */
-    getPromiseSpace: () => ({ consume, produce }),
+    getPromiseSpace: () => ({ consume, produce, ...spaces }),
   });
 };
 

@@ -1,5 +1,3 @@
-// @ts-check
-
 import { Nat, isNat } from '@agoric/nat';
 
 import '../types.js';

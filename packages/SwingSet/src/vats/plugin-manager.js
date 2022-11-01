@@ -21,8 +21,10 @@ const DEFAULT_WALKER = Far('walker', { walk: pluginRootP => pluginRootP });
 
 /**
  * @template T
- * @typedef {T} Device
+ * @typedef {'Device' & { __deviceType__: T }} Device
  */
+
+/** @typedef {<T>(target: Device<T>) => T} DProxy (approximately) */
 
 /**
  * @callback LoadPlugin
@@ -49,18 +51,15 @@ const DEFAULT_WALKER = Far('walker', { walk: pluginRootP => pluginRootP });
  */
 
 /**
- * @typedef {object} PluginDevice
- * @property {(mod: string) => number} connect
- * @property {(receiver: Receiver) => void} registerReceiver
- * @property {(index: number, obj: Record<string, any>) => void} send
- * @property {() => string} getPluginDir
+ * @typedef { Device<ReturnType<typeof
+ *   import('@agoric/swingset-vat/src/devices/plugin/device-plugin.js').buildRootDeviceNode>> } PluginDevice
  */
 
 /**
  * Create a handler that manages a promise interface to external modules.
  *
- * @param {Device<PluginDevice>} pluginDevice The bridge to manage
- * @param {{ [prop: string]: any, D: <T>(target: Device<T>) => T}} param1
+ * @param {PluginDevice} pluginDevice The bridge to manage
+ * @param {{ [prop: string]: any, D: DProxy }} param1
  * @returns {PluginManager} admin facet for this handler
  */
 export function makePluginManager(pluginDevice, { D, ...vatPowers }) {

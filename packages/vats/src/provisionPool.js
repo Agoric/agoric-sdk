@@ -42,7 +42,7 @@ export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
   /**
    * @param {{
    *   bankManager: ERef<BankManager>,
-   *   namesByAddressAdmin: ERef<NameAdmin>,
+   *   namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>,
    *   walletFactory: ERef<import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']>
    * }} io
    */

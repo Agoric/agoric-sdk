@@ -8,7 +8,7 @@ function makePR() {
   return [p, r];
 }
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   let pX;
   let rX;
   let pY;

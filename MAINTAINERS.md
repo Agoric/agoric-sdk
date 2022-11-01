@@ -129,9 +129,9 @@ git commit -m 'chore: Update yarn.lock'
 ```
 
 It is safe to assume that any change to Endo will invalidate assumptions about
-guest application meters.
-Increment the meter type in `packages/xsnap/api.js`.
+guest application meters. 
 
+Increment the meter type in `packages/xsnap/api.js`:
 ```js
 export const METER_TYPE = 'xs-meter-0';
 ```
@@ -142,6 +142,11 @@ Changing anything in Endo usually frustrates the SwingSet kernel hashes, and if
 Endo changes nothing, bumping the meter version certainly will, and so
 predictably frustrates the kernel hash golden test.
 Update the test snapshots.
+
+```sh
+# at the repo root
+yarn build
+```
 
 ```sh
 cd packages/SwingSet

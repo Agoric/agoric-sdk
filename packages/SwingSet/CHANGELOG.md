@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.30.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.30.1...@agoric/swingset-vat@0.30.2) (2022-10-18)
+
+
+### Bug Fixes
+
+* **swingset:** only preload maxVatsOnline/2 vats ([ff696dc](https://github.com/Agoric/agoric-sdk/commit/ff696dcc98ac1bc8ca0bbb4acb4339751ba013dd)), closes [#6433](https://github.com/Agoric/agoric-sdk/issues/6433)
+
+
+
 ### [0.30.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.30.0...@agoric/swingset-vat@0.30.1) (2022-10-08)
 
 **Note:** Version bump only for package @agoric/swingset-vat

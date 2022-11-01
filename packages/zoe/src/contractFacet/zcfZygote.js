@@ -27,8 +27,6 @@ import '../../exported.js';
 import '../internal-types.js';
 import './internal-types.js';
 
-import '@agoric/swingset-vat/src/types-ambient.js';
-
 const { details: X, makeAssert } = assert;
 
 /**

@@ -9,6 +9,9 @@
   },
   "scripts": {
     "build": "exit 0",
+    "clean": "tsc --build jsconfig.build.json --clean",
+    "prepack": "tsc --build jsconfig.build.json",
+    "postpack": "yarn clean",
     "test": "ava",
     "test:nyc": "exit 0",
     "test:xs": "exit 0",
@@ -18,12 +21,12 @@
     "lint:types": "tsc -p jsconfig.json"
   },
   "dependencies": {
-    "@endo/eventual-send": "^0.16.5",
-    "@endo/marshal": "^0.7.5",
-    "@endo/promise-kit": "^0.2.49"
+    "@endo/eventual-send": "^0.16.7",
+    "@endo/marshal": "^0.8.0",
+    "@endo/promise-kit": "^0.2.51"
   },
   "devDependencies": {
-    "@endo/init": "^0.5.49",
+    "@endo/init": "^0.5.51",
     "ava": "^4.3.1"
   },
   "author": "Agoric",

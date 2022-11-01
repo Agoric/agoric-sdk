@@ -1,4 +1,3 @@
-// @ts-check
 // @jessie-check
 
 import { assert } from '@agoric/assert';

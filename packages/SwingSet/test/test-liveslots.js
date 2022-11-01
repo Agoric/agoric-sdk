@@ -1509,7 +1509,7 @@ test('buildVatNamespace not called until after startVat', async t => {
   const gcTools = makeMockGC();
   let buildCalled = false;
 
-  function buildRootObject(_vatPowers) {
+  function buildRootObject() {
     buildCalled = true;
     return Far('root', {});
   }

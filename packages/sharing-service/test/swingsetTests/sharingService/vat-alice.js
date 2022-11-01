@@ -18,7 +18,7 @@ function makeAliceMaker() {
   });
 }
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   return Far('root', {
     makeAliceMaker(_host) {
       return makeAliceMaker();

@@ -1,7 +1,7 @@
+// @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@endo/init/debug.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
+import anyTest from 'ava';
 import path from 'path';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
@@ -15,6 +15,9 @@ const CONTRACT_FILES = ['runMintContract', 'offerArgsUsageContract'];
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
+
+/** @type {import('ava').TestFn<{ data: { kernelBundles: any, config: any } }>} */
+const test = anyTest;
 
 test.before(async t => {
   const start = Date.now();

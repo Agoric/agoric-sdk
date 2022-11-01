@@ -4,6 +4,8 @@ import { html, css, LitElement } from 'lit';
 
 import { assert, details as X } from '@agoric/assert';
 import { makeCache } from '@agoric/cache';
+// eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+// @ts-ignore
 import { makeCapTP as defaultMakeCapTP } from '@endo/captp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';

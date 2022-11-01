@@ -4,6 +4,25 @@ import { E } from '@endo/eventual-send';
 import { deeplyFulfilled, Far } from '@endo/marshal';
 
 /**
+ * @typedef {object} QuestionRecord
+ * @property {ERef<VoteCounterCreatorFacet>} voteCap
+ * @property {VoteCounterPublicFacet} publicFacet
+ * @property {Timestamp} deadline
+ */
+
+/**
+ * @callback StartCounter
+ * @param {ZCF} zcf
+ * @param {QuestionSpec} questionSpec
+ * @param {unknown} quorumThreshold
+ * @param {ERef<Installation>} voteCounter
+ * @param {Store<Handle<'Question'>, QuestionRecord>} questionStore
+ * @param {Publisher<unknown>} questionPublisher
+ * @param {Publisher<OutcomeRecord>} outcomePublisher
+ * @returns {AddQuestionReturn}
+ */
+
+/**
  * Start up a new Counter for a question
  *
  * @type {StartCounter}

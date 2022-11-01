@@ -43,7 +43,6 @@ async function createLocalBundle(vats, devices, vatAdminSvc, vatPowers) {
   // Only create the plugin manager if the device exists.
   let plugin;
   if (devices.plugin) {
-    // @ts-expect-error conflicting D() types
     plugin = makePluginManager(devices.plugin, vatPowers);
   }
 

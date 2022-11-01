@@ -1,3 +1,4 @@
+// @ts-check
 import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 import { E } from '@endo/far';
 
@@ -7,13 +8,13 @@ export const DEPOSIT_FACET = 'depositFacet';
 const { details: X } = assert;
 
 /**
- * @param {ERef<NameAdmin>} nameAdmin
+ * @param {ERef<import('@agoric/vats').NameAdmin>} nameAdmin
  * @param {string[][]} paths
  */
 export const reserveThenGetNamePaths = async (nameAdmin, paths) => {
   /**
    *
-   * @param {ERef<NameAdmin>} nextAdmin
+   * @param {ERef<import('@agoric/vats').NameAdmin>} nextAdmin
    * @param {string[]} path
    */
   const nextPath = async (nextAdmin, path) => {
@@ -43,7 +44,7 @@ export const reserveThenGetNamePaths = async (nameAdmin, paths) => {
 };
 
 /**
- * @param {ERef<NameAdmin>} nameAdmin
+ * @param {ERef<import('@agoric/vats').NameAdmin>} nameAdmin
  * @param {string[]} names
  */
 export const reserveThenGetNames = async (nameAdmin, names) =>
@@ -58,7 +59,7 @@ export const reserveThenDeposit = async (
   addr,
   payments,
 ) => {
-  console.info('waiting for', debugName);
+  console.info('awaiting depositFacet for', debugName);
   const [depositFacet] = await reserveThenGetNamePaths(namesByAddressAdmin, [
     [addr, DEPOSIT_FACET],
   ]);
@@ -67,7 +68,7 @@ export const reserveThenDeposit = async (
   console.info('confirmed deposit for', debugName);
 };
 
-/** @type {<T>(store: ERef<MapStore>, key: string, make: () => T) => Promise<T>} */
+/** @type {<T>(store: ERef<Map<string, T> | import('@agoric/solo/src/scratch').ScratchPad>, key: string, make: () => T) => Promise<T>} */
 const provideWhen = async (store, key, make) => {
   const found = await E(store).get(key);
   if (found) {
@@ -80,7 +81,7 @@ const provideWhen = async (store, key, make) => {
 
 /**
  *
- * @param {{ scratch: ERef<MapStore<string, unknown>> }} homeP
+ * @param {{ scratch: ERef<import('@agoric/solo/src/scratch').ScratchPad> }} homeP
  * @param {object} opts
  * @param {(specifier: string) => Promise<{default: Bundle}>} opts.loadBundle
  * @param {string} [opts.installCacheKey]
@@ -108,6 +109,7 @@ export const makeInstallCache = async (
   };
 
   const wrapInstall = install => async (mPath, bPath, opts) => {
+    // @ts-expect-error https://github.com/Agoric/agoric-sdk/pull/6520/
     const { endoZipBase64Sha512: sha512 } = await loadBundle(bPath).then(
       m => m.default,
     );

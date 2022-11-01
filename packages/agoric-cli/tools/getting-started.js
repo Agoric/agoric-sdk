@@ -187,8 +187,6 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     for (const [suffix, code] of [
       ['/notthere', 404],
       ['', 200],
-      ['/wallet', 301],
-      ['/wallet/', 200],
     ]) {
       let urlResolve;
       const url = `http://127.0.0.1:${PORT}${suffix}`;

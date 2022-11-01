@@ -1,3 +1,4 @@
+// @ts-check
 // eslint-disable-next-line import/order
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
@@ -10,6 +11,7 @@ const bfile = name => new URL(name, import.meta.url).pathname;
 test('coveredCall service upgrade', async t => {
   const config = {
     // includeDevDependencies: true, // for vat-data
+    /** @type {ManagerType} */
     defaultManagerType: 'xs-worker', // 'local',
     bootstrap: 'bootstrap',
     // defaultReapInterval: 'never',

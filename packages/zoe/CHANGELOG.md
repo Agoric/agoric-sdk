@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.25.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.25.2...@agoric/zoe@0.25.3) (2022-10-18)
+
+**Note:** Version bump only for package @agoric/zoe
+
+
+
+
+
 ### [0.25.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.25.1...@agoric/zoe@0.25.2) (2022-10-08)
 
 **Note:** Version bump only for package @agoric/zoe

@@ -121,7 +121,7 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  * invitationPurse: Purse<'set'>,
  * }} unique
  * @param {{
- * agoricNames: ERef<import('@agoric/vats/src/nameHub.js').NameHub>,
+ * agoricNames: ERef<import('@agoric/vats').NameHub>,
  * invitationIssuer: ERef<Issuer<'set'>>,
  * invitationBrand: Brand<'set'>,
  * publicMarshaller: Marshaller,
@@ -462,7 +462,7 @@ const behavior = {
   self: {
     /**
      *
-     * @param {import('@endo/captp').CapData<string>} actionCapData of type BridgeAction
+     * @param {import('@endo/marshal').CapData<string>} actionCapData of type BridgeAction
      * @param {boolean} [canSpend=false]
      */
     handleBridgeAction(actionCapData, canSpend = false) {

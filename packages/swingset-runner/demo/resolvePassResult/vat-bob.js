@@ -2,7 +2,7 @@ import { Far } from '@endo/marshal';
 
 const log = console.log;
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   return Far('root', {
     first() {
       log('=> Bob: in first');

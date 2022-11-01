@@ -301,7 +301,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
   /**
    * @param {{
    *   agoricNames: ERef<NameHub>,
-   *   board: ERef<Board>,
+   *   board: ERef<import('@agoric/vats').Board>,
    *   zoe: ERef<ZoeService>,
    *   wallet: {
    *     purses: {

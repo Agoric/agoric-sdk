@@ -79,7 +79,7 @@ const startElectorate = async (zoe, installations) => {
 
 /**
  *
- * @param {CommitteeElectorateCreatorFacet} electorateCreatorFacet
+ * @param {import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet} electorateCreatorFacet
  * @param {*} voterCreator
  * @returns {Promise<unknown[]>}
  */

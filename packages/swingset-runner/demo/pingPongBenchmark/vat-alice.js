@@ -3,7 +3,7 @@ import { Far } from '@endo/marshal';
 
 const log = console.log;
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   let myNickname;
   let otherNickname = 'unknown';
   let otherContact = null;

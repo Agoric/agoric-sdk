@@ -10,16 +10,26 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 import fs from 'fs';
 import tmp from 'tmp';
 import { initSwingStore } from '@agoric/swing-store';
-import { loadBasedir, buildVatController } from '../../src/index.js';
+import { buildVatController } from '../../src/index.js';
 import { makeLRU } from '../../src/kernel/vat-warehouse.js';
 
 async function makeController(managerType, runtimeOptions, snapshotInterval) {
-  const config = await loadBasedir(new URL('./', import.meta.url).pathname);
-  if (snapshotInterval) {
-    config.snapshotInterval = snapshotInterval;
-  }
-  assert(config.vats);
-  config.vats.target.creationOptions = { managerType, enableDisavow: true };
+  const bpath = new URL('bootstrap.js', import.meta.url).pathname;
+  const tpath = new URL('vat-target.js', import.meta.url).pathname;
+  const config = {
+    snapshotInterval,
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        sourceSpec: bpath,
+      },
+      target: {
+        creationOptions: { managerType },
+        sourceSpec: tpath,
+      },
+    },
+  };
+
   config.vats.target2 = config.vats.target;
   config.vats.target3 = config.vats.target;
   config.vats.target4 = config.vats.target;

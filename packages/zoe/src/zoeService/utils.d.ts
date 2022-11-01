@@ -1,10 +1,7 @@
+// @ts-check
 import { Callable } from '@agoric/eventual-send';
-import type {
-  Instance,
-  IssuerKeywordRecord,
-  Payment,
-  StandardTerms,
-} from './types.js';
+
+import type { Instance, IssuerKeywordRecord, Payment } from './types.js';
 
 // XXX https://github.com/Agoric/agoric-sdk/issues/4565
 type SourceBundle = Record<string, any>;

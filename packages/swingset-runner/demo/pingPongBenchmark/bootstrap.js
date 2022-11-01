@@ -5,7 +5,7 @@ const log = console.log;
 
 log(`=> loading bootstrap.js`);
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   log(`=> setup called`);
   let alice;
   let bob;

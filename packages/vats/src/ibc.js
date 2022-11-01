@@ -22,7 +22,7 @@ const DEFAULT_ACKNOWLEDGEMENT = '\x00';
 const DEFAULT_PACKET_TIMEOUT_NS = 10n * 60n * 1_000_000_000n;
 
 /**
- * @typedef {import('./bridge').BridgeHandler} BridgeHandler
+ * @typedef {import('./types.js').BridgeHandler} BridgeHandler
  */
 
 /**

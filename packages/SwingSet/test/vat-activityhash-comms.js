@@ -1,7 +1,7 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   let comms;
 
   async function addNewRemote(name) {

@@ -1,6 +1,6 @@
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   return Far('root', {
     encourageMe(name) {
       console.log(`=> encouragementBot.encourageMe got the name: ${name}`);

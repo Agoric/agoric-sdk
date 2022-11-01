@@ -1,4 +1,5 @@
 // @ts-check
+/// <reference path="../../../SwingSet/src/vats/timer/types.d.ts" />
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
@@ -23,13 +24,17 @@ import {
   ceilDivideBy,
   multiplyRatios,
   ratiosSame,
+  assertParsableNumber,
 } from '../contractSupport/ratio.js';
 
 import '../../tools/types.js';
 
+export const INVITATION_MAKERS_DESC = 'oracle invitation';
+
 /**
  * This contract aggregates price values from a set of oracles and provides a
- * PriceAuthority for their median.
+ * PriceAuthority for their median. This naive method is game-able and so this module
+ * is a stub until we complete what is now in `priceAggregatorChainlink.js`.
  *
  * @param {ZCF<{
  * timer: TimerService,
@@ -47,7 +52,12 @@ import '../../tools/types.js';
 const start = async (zcf, privateArgs) => {
   const { timer, POLL_INTERVAL, brandIn, brandOut, unitAmountIn } =
     zcf.getTerms();
+  assert(brandIn, 'missing brandIn');
+  assert(brandOut, 'missing brandOut');
+  assert(POLL_INTERVAL, 'missing POLL_INTERVAL');
+  assert(timer, 'missing timer');
   assert(unitAmountIn, 'missing unitAmountIn');
+
   assert(privateArgs, 'Missing privateArgs in priceAggregator start');
   const { marshaller, storageNode } = privateArgs;
   assert(marshaller, 'missing marshaller');
@@ -316,9 +326,79 @@ const start = async (zcf, privateArgs) => {
     10n ** BigInt(Math.max(decimalPlacesIn - decimalPlacesOut, 0)),
     brandOut,
   );
+  /**
+   *
+   * @param {ParsableNumber} numericData
+   * @returns {Ratio}
+   */
   const makeRatioFromData = numericData => {
     const unscaled = parseRatio(numericData, brandOut, brandIn);
     return multiplyRatios(unscaled, unitPriceScale);
+  };
+
+  /**
+   *
+   * @param {Notifier<OraclePriceSubmission>} oracleNotifier
+   * @param {number} scaleValueOut
+   * @param {(result: Ratio) => Promise<void>} pushResult
+   */
+  const pushFromOracle = (oracleNotifier, scaleValueOut, pushResult) => {
+    // Support for notifiers that don't produce ratios, but need scaling for
+    // their numeric data.
+    const priceScale = parseRatio(scaleValueOut, brandOut);
+    /** @param {ParsableNumber} numericData */
+    const makeScaledRatioFromData = numericData => {
+      const ratio = makeRatioFromData(numericData);
+      return multiplyRatios(ratio, priceScale);
+    };
+
+    /**
+     * Adapt the notifier to push results.
+     *
+     * @param {UpdateRecord<OraclePriceSubmission>} param0
+     */
+    const recurse = ({ value, updateCount }) => {
+      if (!oracleNotifier || !updateCount) {
+        // Interrupt the cycle because we either are deleted or the notifier
+        // finished.
+        return;
+      }
+      // Queue the next update.
+      E(oracleNotifier).getUpdateSince(updateCount).then(recurse);
+
+      // See if we have associated parameters or just a raw value.
+      /** @type {Ratio=} */
+      let result;
+      switch (typeof value) {
+        case 'number':
+        case 'bigint':
+        case 'string': {
+          result = makeScaledRatioFromData(value);
+          break;
+        }
+        case 'undefined':
+          assert.fail('undefined value in OraclePriceSubmission');
+        case 'object': {
+          if ('data' in value) {
+            result = makeScaledRatioFromData(value.data);
+            break;
+          }
+          if ('numerator' in value) {
+            // ratio
+            result = value;
+            break;
+          }
+          assert.fail(`unknown value object`);
+        }
+        default:
+          assert.fail(`unknown value type {typeof value}`);
+      }
+
+      pushResult(result).catch(console.error);
+    };
+
+    // Start the notifier.
+    E(oracleNotifier).getUpdateSince().then(recurse);
   };
 
   const creatorFacet = Far('PriceAggregatorCreatorFacet', {
@@ -343,80 +423,49 @@ const start = async (zcf, privateArgs) => {
        * @param {object} param1
        * @param {Notifier<OraclePriceSubmission>} [param1.notifier] optional notifier that produces oracle price submissions
        * @param {number} [param1.scaleValueOut]
-       * @returns {Promise<OracleAdmin>}
+       * @returns {Promise<{admin: OracleAdmin, invitationMakers: {makePushPriceInvitation: (price: ParsableNumber) => Promise<Invitation<void>>} }>}
        */
       const offerHandler = async (
         seat,
         { notifier: oracleNotifier, scaleValueOut = 1 } = {},
       ) => {
         const admin = await creatorFacet.initOracle(oracleKey);
+        const invitationMakers = Far('invitation makers', {
+          /** @param {ParsableNumber} price */
+          makePushPriceInvitation(price) {
+            assertParsableNumber(price);
+            return zcf.makeInvitation(cSeat => {
+              cSeat.exit();
+              admin.pushResult(price);
+            }, 'PushPrice');
+          },
+        });
         seat.exit();
-        if (!oracleNotifier) {
-          // No notifier to track, just let them have the direct admin.
-          return admin;
+
+        if (oracleNotifier) {
+          pushFromOracle(oracleNotifier, scaleValueOut, r =>
+            admin.pushResult(r),
+          );
         }
 
-        // Support for notifiers that don't produce ratios, but need scaling for
-        // their numeric data.
-        const priceScale = parseRatio(scaleValueOut, brandOut);
-        const makeScaledRatioFromData = numericData => {
-          const ratio = makeRatioFromData(numericData);
-          return multiplyRatios(ratio, priceScale);
-        };
+        return harden({
+          admin: Far('oracleAdmin', {
+            ...admin,
+            /** @override */
+            delete: async () => {
+              // Stop tracking the notifier on delete.
+              oracleNotifier = undefined;
+              return admin.delete();
+            },
+          }),
 
-        /**
-         * Adapt the notifier to push results.
-         *
-         * @param {UpdateRecord<OraclePriceSubmission>} param0
-         */
-        const recurse = ({ value, updateCount }) => {
-          if (!oracleNotifier || !updateCount) {
-            // Interrupt the cycle because we either are deleted or the notifier
-            // finished.
-            return;
-          }
-          // Queue the next update.
-          E(oracleNotifier).getUpdateSince(updateCount).then(recurse);
-
-          // See if we have associated parameters or just a raw value.
-          let result;
-          switch (typeof value) {
-            case 'number':
-            case 'bigint':
-            case 'string': {
-              result = makeScaledRatioFromData(value);
-              break;
-            }
-            default: {
-              if (value && value.data !== undefined) {
-                result = {
-                  ...value,
-                  data: makeScaledRatioFromData(value.data),
-                };
-              } else {
-                result = value;
-              }
-            }
-          }
-
-          admin.pushResult(result).catch(console.error);
-        };
-
-        // Start the notifier.
-        E(oracleNotifier).getUpdateSince().then(recurse);
-
-        return Far('oracleAdmin', {
-          ...admin,
-          delete: async () => {
-            // Stop tracking the notifier on delete.
-            oracleNotifier = undefined;
-            return admin.delete();
-          },
+          invitationMakers,
         });
       };
 
-      return zcf.makeInvitation(offerHandler, 'oracle invitation');
+      return zcf.makeInvitation(offerHandler, INVITATION_MAKERS_DESC);
     },
+    /** @param {OracleKey} oracleKey */
     deleteOracle: async oracleKey => {
       for (const record of instanceToRecords.get(oracleKey)) {
         oracleRecords.delete(record);
@@ -429,6 +478,11 @@ const start = async (zcf, privateArgs) => {
       const deletedNow = await E(timer).getCurrentTimestamp();
       await updateQuote(deletedNow);
     },
+    /**
+     * @param {Instance | string} [oracleInstance]
+     * @param {OracleQuery} [query]
+     * @returns {Promise<OracleAdmin>}
+     */
     initOracle: async (oracleInstance, query) => {
       /** @type {OracleKey} */
       const oracleKey = oracleInstance || Far('fresh key', {});
@@ -450,12 +504,17 @@ const start = async (zcf, privateArgs) => {
       records.add(record);
       oracleRecords.add(record);
 
-      // Push the current price ratio.
+      /**
+       * Push the current price ratio.
+       *
+       * @param {ParsableNumber | Ratio} result
+       */
       const pushResult = result => {
         // Sample of NaN, 0, or negative numbers get culled in the median
         // calculation.
+        /** @type {Ratio=} */
         let ratio;
-        if (result && result.numerator && result.denominator) {
+        if (typeof result === 'object') {
           ratio = makeRatioFromAmounts(result.numerator, result.denominator);
           AmountMath.coerce(brandOut, ratio.numerator);
           AmountMath.coerce(brandIn, ratio.denominator);
@@ -514,6 +573,7 @@ const start = async (zcf, privateArgs) => {
       record.querier = async timestamp => {
         // Submit the query.
         const result = await E(oracle).query(query);
+        assertParsableNumber(result);
         // Now that we've received the result, check if we're out of date.
         if (timestamp < lastWakeTimestamp || !records.has(record)) {
           return;

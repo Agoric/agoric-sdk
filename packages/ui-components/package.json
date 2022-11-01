@@ -1,15 +1,15 @@
 {
   "name": "@agoric/ui-components",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Reusable UI Components for Agoric Dapps, built with React and MaterialUI",
   "type": "module",
   "main": "dist/index.js",
   "dependencies": {
     "@agoric/assert": "^0.5.1",
-    "@agoric/ertp": "^0.15.2",
+    "@agoric/ertp": "^0.15.3",
     "@agoric/nat": "^4.1.0",
-    "@endo/eventual-send": "^0.16.5",
-    "@endo/init": "^0.5.49",
+    "@endo/eventual-send": "^0.16.7",
+    "@endo/init": "^0.5.51",
     "clsx": "^1.1.1"
   },
   "peerDependencies": {
@@ -27,7 +27,7 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint .",
-    "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json"
+    "lint:types": "tsc -p jsconfig.json"
   },
   "eslintConfig": {
     "extends": [

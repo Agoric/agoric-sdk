@@ -8,7 +8,10 @@
       "parameters": {
         "anchorAssets": [
           {
-            "denom": "ibc/usdc1234"
+            "keyword": "ToyUSD",
+            "proposedName": "Toy USD",
+            "decimalPlaces": 6,
+            "denom": "ibc/toyusdc"
           }
         ],
         "economicCommitteeAddresses": {

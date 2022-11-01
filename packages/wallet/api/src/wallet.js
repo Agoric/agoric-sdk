@@ -22,18 +22,18 @@ import './internal-types.js';
 /**
  * @typedef {{
  * agoricNames: ERef<NameHub>,
- * board: ERef<Board>,
+ * board: ERef<import('@agoric/vats').Board>,
  * cacheStorageNode: ERef<StorageNode>,
  * localTimerPollInterval?: bigint,
  * localTimerService?: TimerService,
- * myAddressNameAdmin: ERef<MyAddressNameAdmin>,
+ * myAddressNameAdmin: ERef<import('@agoric/vats').MyAddressNameAdmin>,
  * namesByAddress: ERef<NameHub>,
  * timerDevice?: unknown,
  * timerDeviceScale?: number,
  * zoe: ERef<ZoeService>,
  * }} StartupTerms
  *
- * @typedef {import('@agoric/vats/src/nameHub').NameHub} NameHub
+ * @typedef {import('@agoric/vats').NameHub} NameHub
  */
 
 export function buildRootObject(vatPowers) {

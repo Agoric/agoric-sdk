@@ -58,7 +58,7 @@ const makeZot = defineKind(
   },
 );
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   let thing1;
   let thing2;
   let thing3;

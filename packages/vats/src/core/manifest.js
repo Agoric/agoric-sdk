@@ -1,5 +1,39 @@
 // @ts-check
 
+import {
+  connectFaucet,
+  grantRunBehaviors,
+  installSimEgress,
+} from '@agoric/inter-protocol/src/proposals/sim-behaviors.js';
+import { makeBridgeManager } from '../bridge.js';
+import { makeBoard } from '../lib-board.js';
+import {
+  addBankAssets,
+  buildZoe,
+  installBootContracts,
+  makeAddressNameHubs,
+  makeClientBanks,
+  makeOracleBrands,
+  makeVatsFromBundles,
+  mintInitialSupply,
+  startPriceAuthority,
+} from './basic-behaviors.js';
+import {
+  bridgeProvisioner,
+  connectChainFaucet,
+  makeChainStorage,
+  makeProvisioner,
+  publishAgoricNames,
+  setupClientManager,
+  setupNetworkProtocols,
+  startTimerService,
+} from './chain-behaviors.js';
+import { startClient } from './client-behaviors.js';
+
+/**
+ * @typedef {true | string | { [key: string]: BootstrapManifestPermit }} BootstrapManifestPermit
+ */
+
 /**
  * A manifest is an object in which each key is the name of a function to run
  * at bootstrap and the corresponding value is a "permit" describing an
@@ -10,18 +44,23 @@
  * - `true` or a string (both meaning no attenuation, with a string serving
  *   as a grouping label for convenience and diagram generation), or
  * - an object whose keys identify properties to preserve and whose values
- *   are theirselves (recursive) permits.
+ *   are themselves (recursive) permits.
+ *
+ * @typedef {Record<string, BootstrapManifestPermit>} BootstrapManifest
  */
+
+/** @type {BootstrapManifest} */
 const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
+  /** @type {BootstrapManifestPermit} */
   bridgeCoreEval: true, // Needs all the powers.
-  makeOracleBrands: {
+  [makeOracleBrands.name]: {
     oracleBrand: {
       produce: {
         USD: true,
       },
     },
   },
-  startPriceAuthority: {
+  [startPriceAuthority.name]: {
     consume: { loadCriticalVat: true, client: true },
     produce: {
       priceAuthorityVat: 'priceAuthority',
@@ -29,7 +68,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
       priceAuthorityAdmin: 'priceAuthority',
     },
   },
-  makeVatsFromBundles: {
+  [makeVatsFromBundles.name]: {
     vats: {
       vatAdmin: 'vatAdmin',
     },
@@ -43,7 +82,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
       vatStore: true,
     },
   },
-  buildZoe: {
+  [buildZoe.name]: {
     consume: {
       vatAdminSvc: true,
       loadCriticalVat: true,
@@ -54,7 +93,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
       feeMintAccess: 'zoe',
     },
   },
-  makeBoard: {
+  [makeBoard.name]: {
     consume: {
       loadCriticalVat: true,
       client: true,
@@ -63,12 +102,12 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
       board: 'board',
     },
   },
-  makeBridgeManager: {
+  [makeBridgeManager.name]: {
     devices: { bridge: true },
     vatPowers: { D: true },
     produce: { bridgeManager: true },
   },
-  makeAddressNameHubs: {
+  [makeAddressNameHubs.name]: {
     consume: {
       agoricNames: true,
       client: true,
@@ -81,7 +120,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
       produce: { myAddressNameAdmin: true },
     },
   },
-  startTimerService: {
+  [startTimerService.name]: {
     devices: {
       timer: true,
     },
@@ -94,21 +133,21 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
     },
     home: { produce: { chainTimerService: 'timer' } },
   },
-  makeChainStorage: {
+  [makeChainStorage.name]: {
     devices: { bridge: 'kernel' },
     consume: { loadCriticalVat: true },
     produce: {
       chainStorage: 'chainStorage',
     },
   },
-  publishAgoricNames: {
+  [publishAgoricNames.name]: {
     consume: {
       agoricNamesAdmin: true,
       board: 'board',
       chainStorage: 'chainStorage',
     },
   },
-  makeClientBanks: {
+  [makeClientBanks.name]: {
     consume: {
       agoricNames: true,
       namesByAddress: true,
@@ -123,7 +162,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
     installation: { consume: { walletFactory: 'zoe' } },
     home: { produce: { bank: 'bank' } },
   },
-  installBootContracts: {
+  [installBootContracts.name]: {
     vatPowers: { D: true },
     devices: { vatAdmin: true },
     consume: { zoe: 'zoe' },
@@ -132,11 +171,12 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
         centralSupply: 'zoe',
         mintHolder: 'zoe',
         walletFactory: 'zoe',
+        priceAggregator: 'zoe',
         provisionPool: 'zoe',
       },
     },
   },
-  mintInitialSupply: {
+  [mintInitialSupply.name]: {
     vatParameters: {
       argv: { bootMsg: true },
     },
@@ -151,7 +191,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
       consume: { centralSupply: 'zoe' },
     },
   },
-  addBankAssets: {
+  [addBankAssets.name]: {
     consume: {
       initialSupply: true,
       bridgeManager: true,
@@ -169,7 +209,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
     issuer: { produce: { BLD: 'BLD', IST: 'zoe' } },
     brand: { produce: { BLD: 'BLD', IST: 'zoe' } },
   },
-  makeProvisioner: {
+  [makeProvisioner.name]: {
     consume: {
       loadCriticalVat: true,
       clientCreator: true,
@@ -182,19 +222,19 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
       vattp: true,
     },
   },
-  bridgeProvisioner: {
+  [bridgeProvisioner.name]: {
     consume: {
       provisioning: true,
       bridgeManager: true,
     },
   },
-  setupClientManager: {
+  [setupClientManager.name]: {
     produce: {
       client: true,
       clientCreator: true,
     },
   },
-  setupNetworkProtocols: {
+  [setupNetworkProtocols.name]: {
     consume: {
       client: true,
       loadCriticalVat: true,
@@ -208,9 +248,10 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
   },
 });
 
+/** @type {BootstrapManifest} */
 export const CHAIN_BOOTSTRAP_MANIFEST = harden({
   ...SHARED_CHAIN_BOOTSTRAP_MANIFEST,
-  connectChainFaucet: {
+  [connectChainFaucet.name]: {
     consume: {
       client: true,
     },
@@ -218,8 +259,10 @@ export const CHAIN_BOOTSTRAP_MANIFEST = harden({
   },
 });
 
+/** @type {BootstrapManifest} */
 export const CLIENT_BOOTSTRAP_MANIFEST = harden({
-  makeVatsFromBundles: {
+  /** @type {BootstrapManifestPermit} */
+  [makeVatsFromBundles.name]: {
     vats: {
       vatAdmin: 'vatAdmin',
     },
@@ -233,7 +276,7 @@ export const CLIENT_BOOTSTRAP_MANIFEST = harden({
       vatStore: true,
     },
   },
-  startClient: {
+  [startClient.name]: {
     vatParameters: {
       argv: { FIXME_GCI: true },
     },
@@ -252,9 +295,11 @@ export const CLIENT_BOOTSTRAP_MANIFEST = harden({
   },
 });
 
+/** @type {BootstrapManifest} */
 export const SIM_CHAIN_BOOTSTRAP_MANIFEST = harden({
   ...SHARED_CHAIN_BOOTSTRAP_MANIFEST,
-  installSimEgress: {
+  /** @type {BootstrapManifestPermit} */
+  [installSimEgress.name]: {
     vatParameters: { argv: { hardcodedClientAddresses: true } },
     vats: {
       vattp: true,
@@ -262,7 +307,7 @@ export const SIM_CHAIN_BOOTSTRAP_MANIFEST = harden({
     },
     consume: { clientCreator: true },
   },
-  connectFaucet: {
+  [connectFaucet.name]: {
     consume: {
       bankManager: true,
       bldIssuerKit: true,
@@ -277,7 +322,7 @@ export const SIM_CHAIN_BOOTSTRAP_MANIFEST = harden({
     produce: { mints: true },
     home: { produce: { faucet: true } },
   },
-  grantRunBehaviors: {
+  [grantRunBehaviors.name]: {
     runBehaviors: true,
     consume: { client: true },
     home: { produce: { runBehaviors: true, governanceActions: true } },

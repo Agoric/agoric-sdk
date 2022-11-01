@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 
 import { assert, details as X } from '@agoric/assert';
 import { insistKernelType } from './parseKernelSlots.js';
@@ -207,8 +208,10 @@ export function makeKernelSyscallHandler(tools) {
       workingLowerBound = actualLowerBound;
       workingUpperBound = actualUpperBound;
       workingKeyIterator = kvStore.getKeys(startKey, actualUpperBound);
+      // @ts-ignore some resolution thinks this is undefined
       nextIter = workingKeyIterator.next();
       if (!nextIter.done && nextIter.value === actualPriorKey) {
+        // @ts-ignore some resolution thinks this is undefined
         nextIter = workingKeyIterator.next();
       }
     }

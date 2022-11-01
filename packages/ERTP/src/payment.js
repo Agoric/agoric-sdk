@@ -1,5 +1,3 @@
-// @ts-check
-
 import { initEmpty } from '@agoric/store';
 import { vivifyFarClass } from '@agoric/vat-data';
 

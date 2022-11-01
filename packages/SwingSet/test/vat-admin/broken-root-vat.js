@@ -1,4 +1,4 @@
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   // eslint-disable-next-line no-undef
   return missing({});
 }
