@@ -936,11 +936,22 @@ export default function buildKernel(
       return results;
     }
 
-    const args = [upgradeID, true, undefined, incarnationNumber];
-    const vatAdminMethargs = {
-      body: JSON.stringify(['vatUpgradeCallback', args]),
-      slots: [],
-    };
+    // TODO: Use a real makeMarshal serialize?
+    function makeVatAdminMessage(args, slots = []) {
+      return {
+        body: JSON.stringify(['vatUpgradeCallback', args]),
+        slots,
+      };
+    }
+    const kernelRootObjSlot = exportRootObject(kernelKeeper, vatID);
+    const args = [
+      upgradeID,
+      true,
+      undefined,
+      { incarnationNumber, rootObject: { '@qclass': 'slot', index: 0 } },
+    ];
+    const slots = [kernelRootObjSlot];
+    const vatAdminMethargs = makeVatAdminMessage(args, slots);
     const results = harden({
       computrons,
       meterID, // for the startVat

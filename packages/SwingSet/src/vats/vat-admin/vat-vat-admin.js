@@ -534,9 +534,9 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
    * @param {UpgradeID} upgradeID
    * @param {boolean} success
    * @param {Error | undefined} error
-   * @param {number} incarnationNumber
+   * @param {{incarnationNumber: number, rootObject: object}} incarnation
    */
-  function vatUpgradeCallback(upgradeID, success, error, incarnationNumber) {
+  function vatUpgradeCallback(upgradeID, success, error, incarnation) {
     const pending = pendingUpgrades.get(upgradeID);
     if (pending === undefined) {
       // In the case of a vatAdmin self-upgrade, the vat restart will (among
@@ -555,7 +555,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
     pendingUpgrades.delete(upgradeID);
     checkForQuiescence();
     if (success) {
-      resolve({ incarnationNumber }); // TODO maybe provide the root object again?
+      resolve(incarnation);
     } else {
       reject(error);
     }
