@@ -51,7 +51,8 @@ export function buildRootObject() {
         // Update the notifier when the chainBundle resolves.
         const { notifier, updater } = makeNotifierKit();
         chainBundle.then(clientHome => {
-          updater.updateState(harden({ clientHome, clientAddress: address }));
+          // @ts-expect-error https://github.com/Agoric/agoric-sdk/pull/6520/
+          updater(harden({ clientHome, clientAddress: address }));
         });
         return Far('emulatedClientFacet', {
           getChainBundle: () => chainBundle,

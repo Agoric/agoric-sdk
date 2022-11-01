@@ -10,7 +10,7 @@ if (!spec) {
 }
 
 const vatConfigFile = require.resolve(spec);
-const configJson = fs.readFileSync(vatConfigFile, 'utf-8');
+const configJson = fs.readFileSync(vatConfigFile);
 const config = JSON.parse(configJson);
 
 const envs = new Map();

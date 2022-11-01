@@ -109,12 +109,10 @@ export const makeInstallCache = async (
   };
 
   const wrapInstall = install => async (mPath, bPath, opts) => {
-    const bundle = await loadBundle(bPath).then(m => m.default);
-    assert(
-      'endoZipBase64Sha512' in bundle,
-      'bundle must be EndoZipBase64Bundle',
+    // @ts-expect-error https://github.com/Agoric/agoric-sdk/pull/6520/
+    const { endoZipBase64Sha512: sha512 } = await loadBundle(bPath).then(
+      m => m.default,
     );
-    const { endoZipBase64Sha512: sha512 } = bundle;
     const detail = await provideWhen(working, sha512, () =>
       install(mPath, bPath, opts).then(installation => ({
         installation,
