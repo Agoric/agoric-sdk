@@ -3,9 +3,9 @@
 
 import { HandledPromise, E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Far, assertPassable } from '@endo/marshal';
+import { Far } from '@endo/marshal';
 import { M } from '@agoric/store';
-import { vivifyFarClassKit } from '@agoric/vat-data';
+import { canBeDurable, vivifyFarClassKit } from '@agoric/vat-data';
 
 import './types.js';
 
@@ -316,8 +316,10 @@ const advanceDurablePublishKit = (state, done, value, rejection) => {
     throw new Error('Cannot update state after termination.');
   }
   if (done || valueDurability === 'mandatory') {
-    assertPassable(value);
-    assertPassable(rejection);
+    canBeDurable(value) ||
+      assert.fail(X`Cannot accept non-durable value: ${value}`);
+    canBeDurable(rejection) ||
+      assert.fail(X`Cannot accept non-durable rejection: ${rejection}`);
   }
   const { tailP: currentP, tailR: resolveCurrent } =
     provideDurablePublishKitEphemeralData(state);
@@ -344,7 +346,8 @@ const advanceDurablePublishKit = (state, done, value, rejection) => {
     state.hasValue = false;
     try {
       if (done || valueDurability !== 'ignored') {
-        assertPassable(value);
+        canBeDurable(value) ||
+          assert.fail(X`Cannot accept non-durable value: ${value}`);
         state.value = value;
         state.hasValue = true;
       }
