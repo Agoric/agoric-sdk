@@ -5,6 +5,7 @@ import { basename } from 'path';
 
 const ps = spawn('yarn', ['workspaces', '--silent', 'info'], {
   stdio: ['ignore', 'pipe', 'inherit'],
+  shell: true,
 });
 
 // Get Buffers of output.
