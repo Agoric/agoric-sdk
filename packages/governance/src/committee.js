@@ -45,7 +45,7 @@ const { ceilDivide } = natSafeMath;
  * @returns {{creatorFacet: CommitteeElectorateCreatorFacet, publicFacet: CommitteeElectoratePublic}}
  */
 const start = (zcf, privateArgs) => {
-  /** @type {Store<Handle<'Question'>, QuestionRecord>} */
+  /** @type {Store<Handle<'Question'>, import('./electorateTools.js').QuestionRecord>} */
   const allQuestions = makeStore('Question');
   assert(privateArgs?.storageNode, 'Missing storageNode');
   assert(privateArgs?.marshaller, 'Missing marshaller');
