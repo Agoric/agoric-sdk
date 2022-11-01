@@ -39,7 +39,7 @@
     "@endo/init": "^0.5.49",
     "@endo/marshal": "^0.7.5",
     "@iarna/toml": "^2.2.3",
-    "@opentelemetry/sdk-metrics-base": "^0.27.0",
+    "@opentelemetry/sdk-metrics": "^0.32.0",
     "agoric": "^0.18.3",
     "anylogger": "^0.21.0",
     "deterministic-json": "^1.0.5",
