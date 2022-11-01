@@ -20,7 +20,8 @@
  *   import('@agoric/swingset-vat/src/devices/command/device-command.js').buildRootDeviceNode>> } CommandDevice
  * @typedef { Device<ReturnType<typeof
  *   import('@agoric/swingset-vat/src/devices/mailbox/device-mailbox.js').buildRootDeviceNode>> } MailboxDevice
- * @typedef { import('@agoric/swingset-vat/src/vats/plugin-manager.js').PluginDevice } PluginDevice
+ * @typedef { Device<ReturnType<typeof
+ *   import('@agoric/swingset-vat/src/devices/plugin/device-plugin.js').buildRootDeviceNode>> } PluginDevice
  * @typedef { Device<ReturnType<typeof
  *   import('@agoric/swingset-vat/src/devices/timer/device-timer.js').buildRootDeviceNode>> } TimerDevice
  * @typedef { Device<
