@@ -2,6 +2,13 @@
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { E } from '@endo/eventual-send';
+import { makeMarshal } from '@endo/marshal';
+import {
+  buildKernelBundles,
+  initializeSwingset,
+  makeSwingsetController,
+} from '@agoric/swingset-vat';
+import { provideHostStorage } from '../../SwingSet/src/controller/hostStorage.js';
 // import { makeScalarMapStore as makeBaggage } from '@agoric/store';
 import { makeScalarBigMapStore } from '../../vat-data/src/vat-data-bindings.js';
 import {
@@ -14,8 +21,9 @@ import '../src/types-ambient.js';
 import { invertPromiseSettlement } from './iterable-testing-tools.js';
 
 const { ownKeys } = Reflect;
-
 const { quote: q } = assert;
+
+const bfile = name => new URL(name, import.meta.url).pathname;
 
 const makeBaggage = () => makeScalarBigMapStore('baggage', { durable: true });
 
@@ -39,7 +47,8 @@ const assertTransmission = async (t, publishKit, value, method = 'publish') => {
   }
 };
 
-const assertCells = (t, label, cells, publishCount, result) => {
+const assertCells = (t, label, cells, publishCount, result, options = {}) => {
+  const { strict = true } = options;
   const firstCell = cells[0];
   t.deepEqual(
     Reflect.ownKeys(firstCell).sort(),
@@ -54,11 +63,18 @@ const assertCells = (t, label, cells, publishCount, result) => {
   // t.truthy(firstCell.publishCount, `${label} cell publishCount`);
   t.is(firstCell.publishCount, publishCount, `${label} cell publishCount`);
 
-  t.deepEqual(
-    new Set(cells),
-    new Set([firstCell]),
-    `all ${label} cells must referentially match`,
-  );
+  if (strict) {
+    t.deepEqual(
+      new Set(cells),
+      new Set([firstCell]),
+      `all ${label} cells must referentially match`,
+    );
+  } else {
+    const { tail: _tail, ...props } = cells[0];
+    cells.slice(1).forEach((cell, i) => {
+      t.like(cell, props, `${label} cell ${i + 1} must match cell 0`);
+    });
+  }
 };
 
 // TODO: Replace with test.macro once that works with prepare-test-env-ava.
@@ -199,7 +215,158 @@ test('durable publish kit rejects non-durable values', async t => {
   await assertTransmission(t, publishKit, Symbol.for('value'));
 });
 
-test('durable publish kit upgrade trauma', async t => {
+test('durable publish kit upgrade trauma (full-vat integration)', async t => {
+  const config = {
+    includeDevDependencies: true, // for vat-data
+    defaultManagerType:
+      /** @type {import('../../SwingSet/src/types-external.js').ManagerType} */ (
+        'xs-worker'
+      ), // 'local',
+    bootstrap: 'bootstrap',
+    defaultReapInterval: 'never',
+    vats: {
+      bootstrap: { sourceSpec: bfile('vat-integration/bootstrap-upgrade.js') },
+    },
+    bundles: {
+      pubsub: { sourceSpec: bfile('vat-integration/vat-pubsub.js') },
+    },
+  };
+  const hostStorage = provideHostStorage();
+  const { kernel: kernelBundle, ...kernelBundles } = await buildKernelBundles();
+  const initOpts =
+    /** @type {{kernelBundles: Record<string, import('../../SwingSet/src/types-external.js').Bundle>}} */ ({
+      kernelBundles,
+    });
+  const runtimeOpts = { kernelBundle };
+  await initializeSwingset(config, [], hostStorage, initOpts);
+  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  t.teardown(c.shutdown);
+  c.pinVatRoot('bootstrap');
+  await c.run();
+
+  const { unserialize } = makeMarshal();
+  const run = async (method, args = [], slots = []) => {
+    assert(Array.isArray(args));
+    const kpid = c.queueToVatRoot('bootstrap', method, args, undefined, slots);
+    await c.run();
+    const status = c.kpStatus(kpid);
+    if (status === 'fulfilled') {
+      const capdata = c.kpResolution(kpid);
+      const decoded = unserialize(capdata);
+      return decoded;
+    }
+    throw c.kpResolution(kpid);
+  };
+
+  // Create the vat and get its subscriber.
+  await run('createVat', [
+    {
+      name: 'pubsub',
+      bundleCapName: 'pubsub',
+      vatParameters: { version: 'v1' },
+    },
+  ]);
+  t.is(
+    await run('messageVat', [{ name: 'pubsub', methodName: 'getVersion' }]),
+    'v1',
+  );
+  const sub1 = await run('messageVat', [
+    { name: 'pubsub', methodName: 'getSubscriber' },
+  ]);
+
+  // Verify receipt of a published value.
+  const value1 = Symbol.for('value1');
+  await run('messageVat', [
+    { name: 'pubsub', methodName: 'publish', args: [value1] },
+  ]);
+  const v1FirstCell = await run('messageVatObject', [
+    { presence: sub1, methodName: 'subscribeAfter' },
+  ]);
+  assertCells(t, 'v1 first', [v1FirstCell], 1n, { value: value1, done: false });
+
+  // Verify receipt of a second published value via both tail and subscribeAfter.
+  const value2 = Symbol.for('value2');
+  await run('messageVat', [
+    { name: 'pubsub', methodName: 'publish', args: [value2] },
+  ]);
+  await run('messageVatObject', [
+    { presence: sub1, methodName: 'subscribeAfter' },
+  ]);
+  const v1SecondCells = [
+    await run('awaitVatObject', [{ presence: v1FirstCell.tail }]),
+    await run('messageVatObject', [
+      { presence: sub1, methodName: 'subscribeAfter' },
+    ]),
+    await run('messageVatObject', [
+      { presence: sub1, methodName: 'subscribeAfter' },
+    ]),
+  ];
+  assertCells(
+    t,
+    'v1 second',
+    v1SecondCells,
+    2n,
+    { value: value2, done: false },
+    { strict: false },
+  );
+
+  // Upgrade the vat, breaking promises from v1.
+  await run('upgradeVat', [
+    {
+      name: 'pubsub',
+      bundleCapName: 'pubsub',
+      vatParameters: { version: 'v2' },
+    },
+  ]);
+  t.is(
+    await run('messageVat', [{ name: 'pubsub', methodName: 'getVersion' }]),
+    'v2',
+  );
+  const sub2 = await run('messageVat', [
+    { name: 'pubsub', methodName: 'getSubscriber' },
+  ]);
+  // But we can't verify the former promise without an actual reference
+  // rather than a substitute symbol.
+  // await t.throwsAsync(
+  //   async () => run('awaitVatObject', [{ presence: v1SecondCells[0].tail }]),
+  //   { message: '???' },
+  //   'tail promise of old vat must be rejected',
+  // );
+
+  // Verify receipt of the last published value from v1.
+  const v2FirstCell = await run('messageVatObject', [
+    { presence: sub2, methodName: 'subscribeAfter' },
+  ]);
+  assertCells(t, 'v2 first', [v2FirstCell], 2n, { value: value2, done: false });
+
+  // Verify receipt of a published value from v2.
+  const value3 = Symbol.for('value3');
+  await run('messageVat', [
+    { name: 'pubsub', methodName: 'publish', args: [value3] },
+  ]);
+  const v2SecondCells = [
+    await run('awaitVatObject', [{ presence: v2FirstCell.tail }]),
+    await run('messageVatObject', [
+      { presence: sub2, methodName: 'subscribeAfter' },
+    ]),
+    await run('messageVatObject', [
+      { presence: sub2, methodName: 'subscribeAfter' },
+    ]),
+  ];
+  assertCells(
+    t,
+    'v2 second',
+    v2SecondCells,
+    3n,
+    { value: value3, done: false },
+    { strict: false },
+  );
+});
+
+// TODO: Find a way to test virtual object rehydration
+// without the overhead of vats.
+// https://github.com/Agoric/agoric-sdk/pull/6502#discussion_r1008492055
+test.skip('durable publish kit upgrade trauma', async t => {
   const baggage = makeBaggage();
   const makeDurablePublishKit = vivifyDurablePublishKit(
     baggage,
