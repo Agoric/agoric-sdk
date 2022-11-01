@@ -278,12 +278,6 @@
  */
 
 /**
- * @typedef { ElectorateCreatorFacet & {
- *   getVoterInvitations: () => Promise<Invitation<{ voter: { castBallotFor(handle: any, choice?: any, ): void}}>>[]
- * }} CommitteeElectorateCreatorFacet
- */
-
-/**
  * @typedef {object} GetVoterInvitations
  * @property {() => Invitation[]} getVoterInvitations
  */

@@ -23,6 +23,12 @@ import {
 const { ceilDivide } = natSafeMath;
 
 /**
+ * @typedef { ElectorateCreatorFacet & {
+ *   getVoterInvitations: () => Promise<Invitation<{ voter: { castBallotFor(handle: any, choice?: any, ): void}}>>[]
+ * }} CommitteeElectorateCreatorFacet
+ */
+
+/**
  * Each Committee (an Electorate) represents a particular set of voters. The
  * number of voters is visible in the terms.
  *
