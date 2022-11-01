@@ -20,7 +20,8 @@
  *   import('@agoric/swingset-vat/src/devices/command/device-command.js').buildRootDeviceNode>> } CommandDevice
  * @typedef { Device<ReturnType<typeof
  *   import('@agoric/swingset-vat/src/devices/mailbox/device-mailbox.js').buildRootDeviceNode>> } MailboxDevice
- * @typedef { import('@agoric/swingset-vat/src/vats/plugin-manager.js').PluginDevice } PluginDevice
+ * @typedef { Device<ReturnType<typeof
+ *   import('@agoric/swingset-vat/src/devices/plugin/device-plugin.js').buildRootDeviceNode>> } PluginDevice
  * @typedef { Device<ReturnType<typeof
  *   import('@agoric/swingset-vat/src/devices/timer/device-timer.js').buildRootDeviceNode>> } TimerDevice
  * @typedef { Device<
@@ -63,11 +64,6 @@
  *   timer: TimerDevice,
  *   bridge?: BridgeDevice,
  * }} ChainDevices
- */
-
-/**
- * @typedef {ReturnType<typeof import('../bridge.js').makeBridgeManager>} BridgeManager
- * @typedef {BridgeManager | undefined} OptionalBridgeManager
  */
 
 /**
@@ -193,12 +189,12 @@
 /**
  * @typedef {PromiseSpaceOf<{
  *   agoricNames: NameHub,
- *   agoricNamesAdmin: NameAdmin,
+ *   agoricNamesAdmin: import('@agoric/vats').NameAdmin,
  *   aggregators: Map<unknown, { aggregator: PriceAuthority, deleter: import('@agoric/zoe/tools/priceAuthorityRegistry').Deleter }>,
  *   bankManager: BankManager,
  *   bldIssuerKit: RemoteIssuerKit,
- *   board: Board,
- *   bridgeManager: OptionalBridgeManager,
+ *   board: import('@agoric/vats').Board,
+ *   bridgeManager: import('../types.js').BridgeManager | undefined,
  *   chainStorage: StorageNode | null,
  *   chainTimerService: TimerService,
  *   client: ClientManager,
@@ -209,9 +205,9 @@
  *   lienBridge: unknown,
  *   mints: MintsVat,
  *   namesByAddress: NameHub,
- *   namesByAddressAdmin: NameAdmin,
- *   pegasusConnections: NameHub,
- *   pegasusConnectionsAdmin: NameAdmin,
+ *   namesByAddressAdmin: import('@agoric/vats').NameAdmin,
+ *   pegasusConnections: import('@agoric/vats').NameHubKit,
+ *   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin,
  *   priceAuthorityVat: Awaited<PriceAuthorityVat>,
  *   priceAuthority: PriceAuthority,
  *   priceAuthorityAdmin: PriceAuthorityRegistryAdmin,
@@ -222,7 +218,7 @@
  *   zoe: ZoeService,
  * }>} ChainBootstrapSpace
  *
- * @typedef {import('../nameHub').NameHub} NameHub
+ * @typedef {import('@agoric/vats').NameHub} NameHub
  * IDEA/TODO: make types of demo stuff invisible in production behaviors
  * @typedef {{
  *   argv: {

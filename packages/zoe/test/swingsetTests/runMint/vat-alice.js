@@ -1,3 +1,4 @@
+// @ts-check
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
@@ -55,6 +56,7 @@ const build = async (log, zoe, installations, feeMintAccess) => {
 
 export function buildRootObject(vatPowers) {
   return Far('root', {
-    build: (...args) => build(vatPowers.testLog, ...args),
+    build: (zoe, installations, feeMintAccess) =>
+      build(vatPowers.testLog, zoe, installations, feeMintAccess),
   });
 }

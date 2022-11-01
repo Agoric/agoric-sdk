@@ -1,3 +1,4 @@
+// @ts-check
 import { Far } from '@endo/marshal';
 import { makeScalarMapStore } from '@agoric/store';
 import { bindAllMethods } from '@agoric/internal';
@@ -6,6 +7,7 @@ import { buildRootObject } from '../src/vats/timer/vat-timer.js';
 // adapted from 'setup()' in test-vat-timer.js
 
 const setup = () => {
+  /** @type {{ now: bigint, currentWakeup: any, currentHandler: any }} */
   const state = {
     now: 0n, // current time, updated during test
     currentWakeup: undefined,
@@ -52,7 +54,7 @@ const setup = () => {
  * A fake TimerService, for unit tests that do not use a real
  * kernel. You can make time pass by calling `advanceTo(when)`.
  *
- * @param {ManualTimerOptions} [options]
+ * @param {{ startTime?: Timestamp }} [options]
  * @returns {TimerService & { advanceTo: (when: Timestamp) => void; }}
  */
 export const buildManualTimer = (options = {}) => {

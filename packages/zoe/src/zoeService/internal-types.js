@@ -151,10 +151,6 @@
  */
 
 /**
- * @typedef {Handle<'feeMintAccess'>} FeeMintAccess
- */
-
-/**
  * @callback GetFeeIssuerKit
  * @param {FeeMintAccess} feeMintAccess
  * @returns {IssuerKit}

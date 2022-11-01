@@ -59,16 +59,16 @@ const cmp = (a, b) => {
 /**
  * @param {{
  * agoricNames?: ERef<NameHub>
- * board: ERef<Board>
+ * board: ERef<import('@agoric/vats').Board>
  * dateNow?: () => number,
  * inboxStateChangeHandler?: (state: any) => void,
- * myAddressNameAdmin: ERef<MyAddressNameAdmin>
+ * myAddressNameAdmin: ERef<import('@agoric/vats').MyAddressNameAdmin>
  * namesByAddress?: ERef<NameHub>
  * pursesStateChangeHandler?: (state: any) => void,
  * zoe: ERef<ZoeService>,
  * }} opt
  *
- * @typedef {import('@agoric/vats/src/nameHub').NameHub} NameHub
+ * @typedef {import('@agoric/vats').NameHub} NameHub
  */
 export function makeWalletRoot({
   zoe,

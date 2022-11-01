@@ -14,6 +14,9 @@ import { E } from '@endo/far';
 import { makeSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
 
+// Ambient types. Needed only for dev but this does a runtime import.
+import '@agoric/vats/exported.js';
+
 const PrivateArgsShape = harden(
   M.split(
     { storageNode: M.eref(M.any()) },
@@ -26,7 +29,7 @@ const PrivateArgsShape = harden(
  *
  * @param {string} address
  * @param {import('./smartWallet.js').SmartWallet} wallet
- * @param {ERef<NameAdmin>} namesByAddressAdmin
+ * @param {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
  */
 export const publishDepositFacet = async (
   address,
@@ -42,10 +45,10 @@ export const publishDepositFacet = async (
 /**
  * @typedef {{
  *   agoricNames: ERef<NameHub>,
- *   board: ERef<Board>,
+ *   board: ERef<import('@agoric/vats').Board>,
  * }} SmartWalletContractTerms
  *
- * @typedef {import('@agoric/vats/src/nameHub').NameHub} NameHub
+ * @typedef {import('@agoric/vats').NameHub} NameHub
  */
 
 // NB: even though all the wallets share this contract, they
@@ -56,7 +59,7 @@ export const publishDepositFacet = async (
  * @param {ZCF<SmartWalletContractTerms>} zcf
  * @param {{
  *   storageNode: ERef<StorageNode>,
- *   bridgeManager?: ERef<BridgeManager>,
+ *   bridgeManager?: ERef<import('@agoric/vats').BridgeManager>,
  * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
@@ -141,7 +144,7 @@ export const start = async (zcf, privateArgs) => {
       /**
        * @param {string} address
        * @param {ERef<import('@agoric/vats/src/vat-bank').Bank>} bank
-       * @param {ERef<NameAdmin>} namesByAddressAdmin
+       * @param {ERef<import('@agoric/vats/').NameAdmin>} namesByAddressAdmin
        * @returns {Promise<[import('./smartWallet').SmartWallet, boolean]>} wallet
        *   along with a flag to distinguish between looking up an existing wallet
        *   and creating a new one.

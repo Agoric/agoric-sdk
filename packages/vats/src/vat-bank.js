@@ -101,10 +101,10 @@ const makePurseController = (
  * (keyed by address and brand) or create a new one.
  */
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   return Far('bankMaker', {
     /**
-     * @param {ERef<import('./bridge').BridgeManager | undefined>} [bankBridgeManagerP] a bridge
+     * @param {ERef<import('./types.js').BridgeManager | undefined>} [bankBridgeManagerP] a bridge
      * manager for the "remote" bank (such as on cosmos-sdk).  If not supplied
      * (such as on sim-chain), we just use local purses.
      */
@@ -139,7 +139,7 @@ export function buildRootObject(_vatPowers) {
       };
 
       /**
-       * @param {ERef<import('./bridge').BridgeManager>} [bankBridgeMgr]
+       * @param {ERef<import('./types.js').BridgeManager>} [bankBridgeMgr]
        */
       async function makeBankCaller(bankBridgeMgr) {
         // We do the logic here if the bridge manager is available.  Otherwise,

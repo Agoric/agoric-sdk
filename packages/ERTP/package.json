@@ -9,6 +9,9 @@
   },
   "scripts": {
     "build": "exit 0",
+    "clean": "tsc --build jsconfig.build.json --clean",
+    "prepack": "tsc --build jsconfig.build.json",
+    "postpack": "yarn clean",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava",
     "test:xs": "yarn test:xs-unit && yarn test:xs-worker",

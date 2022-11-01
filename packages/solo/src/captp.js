@@ -1,11 +1,8 @@
+// @ts-check
 import { E, makeCapTP } from '@endo/captp';
 import { Far } from '@endo/marshal';
 
-export const getCapTPHandler = (
-  send,
-  getLocalBootstrap,
-  fallback = undefined,
-) => {
+export const getCapTPHandler = (send, getLocalBootstrap, fallback) => {
   let lastEpoch;
   const chans = new Map();
   const doFallback = async (method, ...args) => {

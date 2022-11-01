@@ -1,7 +1,7 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   // eslint thinks 'other' is unused, but eslint is wrong.
   // eslint-disable-next-line no-unused-vars
   let other;

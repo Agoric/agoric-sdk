@@ -103,7 +103,7 @@ const startGovernedInstance = async (
  * them by providing a smart wallet from the wallet factory.
  *
  * @param {BootstrapPowers & PromiseSpaceOf<{
- *   economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet
+ *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet
  *   psmCharterCreatorFacet: Awaited<ReturnType<import('@agoric/inter-protocol/src/psm/psmCharter.js').start>>['creatorFacet'],
  * }>} powers
  * @param {{

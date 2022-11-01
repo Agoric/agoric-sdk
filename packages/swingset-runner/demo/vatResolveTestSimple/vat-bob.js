@@ -18,7 +18,7 @@ function hush(p) {
   );
 }
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   let p1;
   const [p0, r0] = makePR();
   return Far('root', {

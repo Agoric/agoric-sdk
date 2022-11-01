@@ -10,6 +10,9 @@
   "scripts": {
     "build": "yarn build:bundles",
     "build:bundles": "node scripts/build-bundles.js",
+    "clean": "tsc --build jsconfig.build.json --clean",
+    "prepack": "tsc --build jsconfig.build.json",
+    "postpack": "yarn clean",
     "test": "ava --verbose",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:unit": "ava 'test/unitTests/**/test-*.js' -T 1m --verbose",

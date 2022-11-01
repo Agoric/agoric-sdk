@@ -11,7 +11,7 @@ function roll(limit) {
   return randomness.randomUint32() % limit;
 }
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   let nextZotNumber = 1;
   const companions = [];
   const otherVats = [];

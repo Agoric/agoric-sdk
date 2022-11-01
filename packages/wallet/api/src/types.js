@@ -85,7 +85,7 @@
  * is safe to pass to the dapp UI.
  * @property {() => Promise<ZoeService>} getZoe
  * Get the Zoe Service
- * @property {() => Promise<Board>} getBoard
+ * @property {() => Promise<import('@agoric/vats').Board>} getBoard
  * Get the Board
  * @property {(...path: Array<unknown>) => Promise<unknown>} getAgoricNames
  * Get the curated Agoric public naming hub

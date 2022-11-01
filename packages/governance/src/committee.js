@@ -23,6 +23,12 @@ import {
 const { ceilDivide } = natSafeMath;
 
 /**
+ * @typedef { ElectorateCreatorFacet & {
+ *   getVoterInvitations: () => Promise<Invitation<{ voter: { castBallotFor(handle: any, choice?: any, ): void}}>>[]
+ * }} CommitteeElectorateCreatorFacet
+ */
+
+/**
  * Each Committee (an Electorate) represents a particular set of voters. The
  * number of voters is visible in the terms.
  *
@@ -39,7 +45,7 @@ const { ceilDivide } = natSafeMath;
  * @returns {{creatorFacet: CommitteeElectorateCreatorFacet, publicFacet: CommitteeElectoratePublic}}
  */
 const start = (zcf, privateArgs) => {
-  /** @type {Store<Handle<'Question'>, QuestionRecord>} */
+  /** @type {Store<Handle<'Question'>, import('./electorateTools.js').QuestionRecord>} */
   const allQuestions = makeStore('Question');
   assert(privateArgs?.storageNode, 'Missing storageNode');
   assert(privateArgs?.marshaller, 'Missing marshaller');

@@ -196,7 +196,7 @@ test(`PSM-only bootstrap`, async t => {
   await eventLoopIteration();
 
   const agoricNames =
-    /** @type {Promise<import('../src/nameHub.js').NameHub>} */ (
+    /** @type {Promise<import('../src/types.js').NameHub>} */ (
       E(root).consumeItem('agoricNames')
     );
   const instance = await E(agoricNames).lookup('instance', 'psm-IST-AUSD');

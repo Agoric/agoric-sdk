@@ -109,7 +109,7 @@ export const installGovernance = (zoe, produce) => {
  * Economic Committee of one.
  *
  * @param {ERef<ZoeService>} zoe
- * @param {ERef<CommitteeElectorateCreatorFacet>} electorateCreator
+ * @param {ERef<import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet>} electorateCreator
  * @param {ERef<GovernedContractFacetAccess<{},{}>>} stakeFactoryGovernorCreatorFacet
  * @param {Installation} counter
  */

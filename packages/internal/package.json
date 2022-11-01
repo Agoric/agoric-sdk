@@ -9,6 +9,9 @@
   },
   "scripts": {
     "build": "exit 0",
+    "clean": "tsc --build jsconfig.build.json --clean",
+    "prepack": "tsc --build jsconfig.build.json",
+    "postpack": "yarn clean",
     "test": "ava",
     "test:nyc": "exit 0",
     "test:xs": "exit 0",

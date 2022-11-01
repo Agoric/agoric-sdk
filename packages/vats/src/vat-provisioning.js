@@ -1,10 +1,11 @@
+// @ts-check
 import { E, Far } from '@endo/far';
 import { makeNotifierKit } from '@agoric/notifier';
 
 // This vat contains the controller-side provisioning service. To enable local
 // testing, it is loaded by both the controller and other ag-solo vat machines.
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   let bundler;
   let comms;
   let vattp;
@@ -50,6 +51,7 @@ export function buildRootObject(_vatPowers) {
         // Update the notifier when the chainBundle resolves.
         const { notifier, updater } = makeNotifierKit();
         chainBundle.then(clientHome => {
+          // @ts-expect-error https://github.com/Agoric/agoric-sdk/pull/6520/
           updater(harden({ clientHome, clientAddress: address }));
         });
         return Far('emulatedClientFacet', {

@@ -17,8 +17,6 @@ import '../internal-types.js';
 import './internal-types.js';
 import './types.js';
 
-import '@agoric/swingset-vat/src/types-ambient.js';
-
 const { details: X } = assert;
 
 // helpers for the code shared between MakeZCFMint and RegisterZCFMint

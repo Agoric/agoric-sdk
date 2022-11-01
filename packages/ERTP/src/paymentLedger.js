@@ -1,6 +1,4 @@
 /* eslint-disable no-use-before-define */
-// @ts-check
-
 import { isPromise } from '@endo/promise-kit';
 import { assertCopyArray } from '@endo/marshal';
 import { fit, M } from '@agoric/store';

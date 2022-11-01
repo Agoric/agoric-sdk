@@ -1,5 +1,3 @@
-// @ts-check
-
 import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
 
 import './types.js';

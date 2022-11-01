@@ -21,7 +21,7 @@ const XLien = /** @type { const } */ ({
  */
 
 /**
- * @param {ERef<BridgeManager>} bridgeManager
+ * @param {ERef<import('@agoric/vats').BridgeManager>} bridgeManager
  * @param {Brand<'nat'>} brand
  * @param {string} [denom]
  * @returns {StakingAuthority}

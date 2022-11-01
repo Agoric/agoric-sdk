@@ -7,7 +7,7 @@ import { makeStore } from '@agoric/store';
 // This vat contains two starting mints for demos: moolaMint and
 // simoleanMint.
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   /** @type {Store<string, { mint: Mint, brand: Brand}>} */
   const mintsAndBrands = makeStore('issuerName');
 

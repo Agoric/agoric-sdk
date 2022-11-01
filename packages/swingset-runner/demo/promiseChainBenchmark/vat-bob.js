@@ -8,7 +8,7 @@ function makePR() {
   return [p, r];
 }
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   let r = null;
   let value = 0;
   return Far('root', {

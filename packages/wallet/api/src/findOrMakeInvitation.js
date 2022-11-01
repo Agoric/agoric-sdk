@@ -21,7 +21,7 @@ const assertFirstCapASCII = str => {
 /**
  * @param {Amount<'set'>} invitationPurseBalance
  * @param {object} query
- * @param {Board} query.board
+ * @param {import('@agoric/vats').Board} query.board
  * @param {string} query.boardId
  * @returns {Promise<Array>}
  * @deprecated

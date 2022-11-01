@@ -5,7 +5,7 @@ const log = console.log;
 
 log(`=> loading bootstrap.js`);
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject() {
   return Far('root', {
     bootstrap(vats) {
       log('=> Alice: bootstrap() called');

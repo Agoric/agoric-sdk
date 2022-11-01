@@ -1,3 +1,4 @@
+// @ts-check
 import '@endo/init/debug.js';
 import test from 'ava';
 
@@ -30,7 +31,7 @@ test('dump: the @erights challenge', async t => {
     '[[Promise],[Function foo],"[hilbert]",undefined,"undefined",[URIError: wut?],[33n,Symbol(foo),Symbol(bar),Symbol(Symbol.asyncIterator)],{"NaN":NaN,"Infinity":Infinity,"neg":-Infinity},18014398509481984,{"superTagged":{[Symbol(Symbol.toStringTag)]:"Tagged"},"subTagged":[Object Tagged]{},"subTaggedNonEmpty":[Object Tagged]{"foo":"x"}}]',
   );
   t.is(
-    dump(challenges, '  '),
+    dump(challenges, 2),
     `\
 [
   [Promise],
