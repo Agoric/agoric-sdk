@@ -17,7 +17,7 @@ import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
 
-import { QCLASS } from '@endo/marshal';
+import { QCLASS, nameForPassableSymbol } from '@endo/marshal';
 import { checkBundle } from '@endo/check-bundle/lite.js';
 import { createSHA256 } from '../lib-nodejs/hasher.js';
 import engineGC from '../lib-nodejs/engine-gc.js';
@@ -466,9 +466,13 @@ export async function makeSwingsetController(
       resultPolicy = 'ignore',
       slots = [],
     ) {
+      // TODO: Use a proper makeMarshal serialize.
       function replacer(_, arg) {
         if (typeof arg === 'bigint') {
           return { [QCLASS]: 'bigint', digits: String(arg) };
+        }
+        if (typeof arg === 'symbol') {
+          return { [QCLASS]: 'symbol', name: nameForPassableSymbol(arg) };
         }
         if (arg === undefined) {
           return { [QCLASS]: 'undefined' };
