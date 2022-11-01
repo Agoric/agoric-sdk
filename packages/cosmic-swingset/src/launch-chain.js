@@ -22,7 +22,7 @@ import * as ActionType from '@agoric/internal/src/action-types.js';
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 
 import {
-  DEFAULT_METER_PROVIDER,
+  makeDefaultMeterProvider,
   makeInboundQueueMetrics,
   exportKernelStats,
   makeSlogCallbacks,
@@ -213,7 +213,7 @@ export async function launch({
   env = process.env,
   debugName = undefined,
   verboseBlocks = false,
-  metricsProvider = DEFAULT_METER_PROVIDER,
+  metricsProvider = makeDefaultMeterProvider(),
   slogSender,
   swingStoreTraceFile,
   keepSnapshots,
