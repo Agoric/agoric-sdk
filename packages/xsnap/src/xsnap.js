@@ -167,6 +167,12 @@ export function xsnap(options) {
    */
   async function runToIdle() {
     for (;;) {
+      // This nested await is safe because "terminal-throw-control-flow".
+      //
+      // If the awaited expression throws, no further code in this function
+      // runs. If it does not throw, then there is always a turn boundary
+      // before we proceed with each iteration.
+      // eslint-disable-next-line @jessie.js/no-nested-await
       const iteration = await messagesFromXsnap.next(undefined);
       if (iteration.done) {
         xsnapProcess.kill();
@@ -204,7 +210,29 @@ export function xsnap(options) {
           )}`,
         );
       } else if (message[0] === QUERY) {
+        // This nested await is safe because "not-my-problem".
+        //
+        // This nested await introduces no unsafety beyond that introduced
+        // by the next await, since it is earlier within the same control
+        // flow branch, and is top level within that branch.
+        // eslint-disable-next-line @jessie.js/no-nested-await
         const commandResult = await handleCommand(message.subarray(1));
+        // This nested await is ALMOST safe because "terminal-control-flow".
+        // This one appears nested in an unbalanced conditional, so we need
+        // to consider three cases:
+        //   * This branch is taken and the awaited expression throws.
+        //     In that case, the function exits would executing and further
+        //     code.
+        //   * This branch is taken and does not throw. In that case,
+        //     it causes a turn boundary before the next iteration.
+        //   * Another branch of the conditional is taken, skipping
+        //     this statement and proceeding syncronously to the next
+        //     iteration. The await at the top of the loop ensures that the
+        //     remainder of the loop only happens after a turn boundary.
+        //     The only remaining unsafety is that the awaited expression of
+        //     that initial await may therefore be reached synchronously or
+        //     asynchronously.
+        // eslint-disable-next-line @jessie.js/no-nested-await
         await messagesToXsnap.next([QUERY_RESPONSE_BUF, commandResult]);
       } else {
         // unrecognized responses also kill the process

@@ -385,6 +385,12 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
         });
       },
     });
+    // This nested await is safe because "terminal-control-flow".
+    //
+    // It occurs at the top level of one branch of an unbalanced non-top-level
+    // if. However, immediately after the if is another await expression
+    // that has no effects prior to the turn boundary.
+    // eslint-disable-next-line @jessie.js/no-nested-await
     const ibcHandler = await E(vats.ibc).createInstance(callbacks);
     dibcBridgeManager.register(BRIDGE_ID.DIBC, ibcHandler);
     ps.push(

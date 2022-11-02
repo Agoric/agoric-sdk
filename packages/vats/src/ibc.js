@@ -381,6 +381,13 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
           const attemptP = E(protocolImpl).inbound(localAddr, remoteAddr);
 
           // Tell what version string we negotiated.
+          //
+          // This nested await is safe because "terminal-control-flow".
+          //
+          // It occurs at the top level of one branch of an unbalanced, but
+          // top level and terminal switch statement. Nothing happens after
+          // the switch.
+          // eslint-disable-next-line @jessie.js/no-nested-await
           const attemptedLocal = await E(attemptP).getLocalAddress();
           const match = attemptedLocal.match(
             // Match:  ... /ORDER/VERSION ...
@@ -493,6 +500,9 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
             rPortID,
             order,
           );
+          // This nested await is safe because "terminal-control-flow".
+          //
+          // eslint-disable-next-line @jessie.js/no-nested-await
           const localAddr = await E(attemptP).getLocalAddress();
           E(attemptP).accept({
             localAddress: `${localAddr}/ibc-channel/${channelID}`,
@@ -512,6 +522,9 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
           const connP = channelKeyToConnP.get(channelKey);
           const data = base64ToBytes(data64);
 
+          // This nested await is safe because "terminal-control-flow".
+          //
+          // eslint-disable-next-line @jessie.js/no-nested-await
           await E(connP)
             .send(data)
             .then(ack => {
