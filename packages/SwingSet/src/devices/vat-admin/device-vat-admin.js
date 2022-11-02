@@ -70,9 +70,13 @@ bundleID before submitting to the kernel), or (temporarily) a full bundle.
 */
 
 /**
- * if you're into types, this might loosely describe devices.vatAdmin
- *
+ * @typedef { import('../../types-external.js').Bundle } Bundle
+ * @typedef { import('../../types-external.js').BundleCap } BundleCap
  * @typedef { import('../../types-external.js').BundleID } BundleID
+ */
+
+/**
+ * if you're into types, this might loosely describe devices.vatAdmin
  *
  * @typedef { string } MeterID
  * @typedef { string } VatID

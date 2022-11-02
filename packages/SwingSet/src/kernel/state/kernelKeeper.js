@@ -30,6 +30,22 @@ import { makeKernelStats } from './stats.js';
 
 const enableKernelGC = true;
 
+/**
+ * @typedef { import('../../types-external.js').BundleCap } BundleCap
+ * @typedef { import('../../types-external.js').BundleID } BundleID
+ * @typedef { import('../../types-external.js').EndoZipBase64Bundle } EndoZipBase64Bundle
+ * @typedef { import('../../types-external.js').HostStore } HostStore
+ * @typedef { import('../../types-external.js').KernelOptions } KernelOptions
+ * @typedef { import('../../types-external.js').KernelSlog } KernelSlog
+ * @typedef { import('../../types-external.js').KVStorePlus } KVStorePlus
+ * @typedef { import('../../types-external.js').ManagerType } ManagerType
+ * @typedef { import('../../types-external.js').SnapStore } SnapStore
+ * @typedef { import('../../types-external.js').StreamPosition } StreamPosition
+ * @typedef { import('../../types-external.js').StreamStore } StreamStore
+ * @typedef { import('../../types-external.js').VatKeeper } VatKeeper
+ * @typedef { import('../../types-external.js').VatManager } VatManager
+ */
+
 // Kernel state lives in a key-value store supporting key retrieval by
 // lexicographic range. All keys and values are strings.
 // We simulate a tree by concatenating path-name components with ".". When we
