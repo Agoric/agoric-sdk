@@ -39,6 +39,8 @@ const { details: X } = assert;
  *
  * @property {Amount<'nat'>} anchorPoolBalance  amount of Anchor token
  * available to be swapped
+ * @property {Amount<'nat'>} mintedPoolBalance  amount of Minted token
+ * outstanding (the amount minted minus the amount burned).
  * @property {Amount<'nat'>} feePoolBalance     amount of Minted token
  * fees available to be collected
  *
