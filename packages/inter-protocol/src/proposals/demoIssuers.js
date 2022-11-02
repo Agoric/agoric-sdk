@@ -286,6 +286,11 @@ export const connectFaucet = async ({
             case Stake.symbol:
               return bldIssuerKit;
             default: {
+              // This nested await is safe because "terminal-control-flow".
+              //
+              // This switch is the last statement within the enclosing
+              // function.
+              // eslint-disable-next-line @jessie.js/no-nested-await
               const { mint, issuer, brand } = await provideCoin(
                 name,
                 vats.mints,
@@ -304,6 +309,8 @@ export const connectFaucet = async ({
         // Use the bank layer for BLD, IST.
         if (issuerName === Stake.symbol || issuerName === Stable.symbol) {
           const purse = E(bank).getPurse(brand);
+          // This nested await is safe because "terminal-control-flow"
+          // eslint-disable-next-line @jessie.js/no-nested-await
           await E(purse).deposit(payment);
         } else {
           toFaucet = [
@@ -491,6 +498,8 @@ export const fundAMM = async ({
       async issuerName => {
         switch (issuerName) {
           case Stable.symbol: {
+            // This nested await is safe because "terminal-control-flow"
+            // eslint-disable-next-line @jessie.js/no-nested-await
             const [issuer, brand] = await Promise.all([
               centralIssuer,
               centralBrand,
@@ -625,6 +634,9 @@ export const fundAMM = async ({
       let fromCentral;
 
       if (brandsWithPriceAuthorities.includes(brand)) {
+        // TODO FIXME This code should be refactored to make this
+        // await checkably safe, or to remove it, or to record here
+        // why it is actually safe.
         ({ toCentral, fromCentral } = await E(ammPublicFacet)
           .getPriceAuthorities(brand)
           .catch(_e => {

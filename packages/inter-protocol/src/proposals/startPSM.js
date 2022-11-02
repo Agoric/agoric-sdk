@@ -4,7 +4,7 @@ import { makeStorageNodeChild } from '@agoric/vats/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { Stable } from '@agoric/vats/src/tokens.js';
-import { deeplyFulfilledObject } from '@agoric/internal';
+import { deeplyFulfilledObject, zip } from '@agoric/internal';
 import { makeScalarMapStore } from '@agoric/vat-data';
 
 import { reserveThenDeposit, reserveThenGetNamePaths } from './utils.js';
@@ -361,9 +361,6 @@ export const PSM_GOV_MANIFEST = {
     },
   },
 };
-
-/** @type { <X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
-const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 
 /**
  * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers

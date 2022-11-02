@@ -1,11 +1,8 @@
-import { deeplyFulfilledObject } from '@agoric/internal';
+import { deeplyFulfilledObject, zip } from '@agoric/internal';
 import { E } from '@endo/far';
 import { reserveThenDeposit } from './utils.js';
 
 const { values } = Object;
-
-/** @type { <X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
-const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 
 /**
  * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
