@@ -64,6 +64,15 @@ const start = async zcf => {
       try {
         assert(!revoked, revokedMsg);
         const noFee = AmountMath.makeEmpty(feeBrand);
+        // This nested await is safe because "synchronous-throw-impossible" +
+        // "terminal-control-flow".
+        //
+        // Assuming `E` does its job, the awaited expression cannot throw.
+        // If it returns a rejected promise, that will cause the stateful
+        // catch clause to execute, but only after a turn boundary.
+        // The await is at top level of a top level terminal try block, and so
+        // executes unconditionally unless something earlier threw.
+        // eslint-disable-next-line @jessie.js/no-nested-await
         const { requiredFee, reply } = await E(handler).onQuery(query, noFee);
         !requiredFee ||
           AmountMath.isGTE(noFee, requiredFee) ||
@@ -80,6 +89,11 @@ const start = async zcf => {
       const doQuery = async querySeat => {
         try {
           const fee = querySeat.getAmountAllocated('Fee', feeBrand);
+          // This nested await is safe because "synchronous-throw-impossible" +
+          // "terminal-control-flow".
+          //
+          // Same reasons as above.
+          // eslint-disable-next-line @jessie.js/no-nested-await
           const { requiredFee, reply } = await E(handler).onQuery(query, fee);
           if (requiredFee) {
             feeSeat.incrementBy(
