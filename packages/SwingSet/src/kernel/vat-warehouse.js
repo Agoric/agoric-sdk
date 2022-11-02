@@ -174,7 +174,18 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
         break;
       }
       logStartup(`provideVatKeeper for vat ${name} as vat ${vatID}`);
-      // eslint-disable-next-line no-await-in-loop
+      // Nested await safe because "terminal-combined-control-flow".
+      //
+      // `ensureVatOnline` is an async function, so this turn boundary always
+      // happens at the end of each iteration. However, the control-flow is
+      // still unbalanced. If the loop iterates zero times, we proceed to
+      // the next code synchronously. Else we proceed asynchronously.
+      // However, the next loop is terminal, and each iteration of that loop
+      // resemble each iteration of this one. Considered together, in all
+      // cases the first iteration of one of these loops will happen first,
+      // if there are any. And if there are more iterations from either loop,
+      // a turn boundary separated each iteration from the next.
+      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       await ensureVatOnline(vatID, recreate);
       numPreloaded += 1;
     }
@@ -186,7 +197,8 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
         break;
       }
       logStartup(`provideVatKeeper for dynamic vat ${vatID}`);
-      // eslint-disable-next-line no-await-in-loop
+      // Nested await safe because "terminal-control-flow"
+      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       await ensureVatOnline(vatID, recreate);
       numPreloaded += 1;
     }
@@ -391,6 +403,12 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     // worker may or may not be online
     if (ephemeral.vats.has(vatID)) {
       try {
+        // This nested await is safe because "terminal-control-flow".
+        //
+        // For these purposes, we do not consider `console.debug` to be
+        // significantly stateful. That said, no stateful code in this
+        // function executes after this line.
+        // eslint-disable-next-line @jessie.js/no-nested-await
         await evict(vatID);
       } catch (err) {
         console.debug('vat termination was already reported; ignoring:', err);

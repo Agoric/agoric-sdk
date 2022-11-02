@@ -53,6 +53,15 @@ export function buildRootDeviceNode(tools) {
    */
   async function createConnection(mod, index, epoch) {
     try {
+      // This nested await is safe because "terminal-throw-control-flow".
+      //
+      // This statement appears at the top level of a top level try block,
+      // and so is executed
+      // unconditionally. If it throws, we do nothing significantly stateful
+      // before exiting. (We do not consider `console.log` to be stateful
+      // for these purposes.) Otherwise, it will always cause a turn boundary
+      // before control flow continues.
+      // eslint-disable-next-line @jessie.js/no-nested-await
       const modNS = await endowments.import(mod);
       const receiver = obj => {
         // console.info('receiver', index, obj);
