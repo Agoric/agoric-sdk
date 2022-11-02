@@ -53,7 +53,7 @@
   },
   "peerDependencies": {
     "@endo/ses-ava": "^0.2.35",
-    "ava": "^4.3.1"
+    "ava": "^5.0.1"
   },
   "files": [
     "bin/vat",
