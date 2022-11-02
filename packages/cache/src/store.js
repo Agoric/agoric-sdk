@@ -77,6 +77,14 @@ const applyCacheTransaction = async (
   // Loop until our updated state is fresh wrt our current state.
   basisState = stateStore.get(keyStr);
   while (updatedState && updatedState.generation <= basisState.generation) {
+    // TODO FIXME This code should be refactored to make this
+    // await checkably safe, or to remove it, or to record here
+    // why it is actually safe.
+    //
+    // If we knew that this loop is guaranteed to execute at least once,
+    // then this await would be safe because "terminal-throw-control-flow".
+    // But if it might execute zero times, then the stateful code after
+    // this loop might execute synchronously or asynchronously.
     // eslint-disable-next-line no-await-in-loop
     updatedState = await getUpdatedState(basisState);
     // AWAIT INTERLEAVING
