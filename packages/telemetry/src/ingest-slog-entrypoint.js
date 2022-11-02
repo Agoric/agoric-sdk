@@ -95,6 +95,14 @@ async function run() {
       lineCount % LINE_COUNT_TO_FLUSH === 0
     ) {
       lastTime = now;
+      // TODO FIXME This code should be refactored to make this
+      // await checkably safe, or to remove it, or to record here
+      // why it is actually safe.
+      //
+      // It is nested in a conditional with no
+      // balancing await on the other branch. Likely this is low risk
+      // because it is only in telemetry. The integrity of critical computation
+      // should not be endangered by a bug in telemetry in any case.
       // eslint-disable-next-line @jessie.js/no-nested-await
       await stats(update);
     }
@@ -110,6 +118,7 @@ async function run() {
       const delayMS = PROCESSING_PERIOD - (now - startOfLastPeriod);
       maybeWait = new Promise(resolve => setTimeout(resolve, delayMS));
     }
+    // This nested await is safe because "top-of-for-await".
     // eslint-disable-next-line @jessie.js/no-nested-await
     await maybeWait;
     now = Date.now();
