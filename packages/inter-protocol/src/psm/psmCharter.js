@@ -1,5 +1,3 @@
-// @ts-check
-
 import '@agoric/governance/src/exported.js';
 import { makeScalarMapStore, M, makeHeapFarInstance, fit } from '@agoric/store';
 import '@agoric/zoe/exported.js';

@@ -1,5 +1,3 @@
-// @ts-check
-
 /** @file Boot script for demoing oracles. Builds upon boot-psm to be used in integration tests. */
 
 import { buildRootObject as buildPsmRootObject } from '@agoric/vats/src/core/boot-psm.js';

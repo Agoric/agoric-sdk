@@ -1,5 +1,3 @@
-// @ts-check
-
 /**
  * @typedef {object} VPoolPriceQuote
  * @property {Amount<'nat'>} amountIn

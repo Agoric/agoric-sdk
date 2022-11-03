@@ -1,5 +1,3 @@
-// @ts-check
-
 import { AmountMath } from '@agoric/ertp';
 import {
   makeNotifierFromSubscriber,

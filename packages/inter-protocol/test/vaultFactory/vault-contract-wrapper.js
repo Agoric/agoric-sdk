@@ -1,5 +1,3 @@
-// @ts-check
-
 import '@agoric/zoe/src/types.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';

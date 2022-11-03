@@ -1,5 +1,3 @@
-// @ts-check
-
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { objectMap } from '@agoric/internal';
 import {

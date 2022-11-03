@@ -1,5 +1,3 @@
-// @ts-check
-
 import { Far, makeLoopback } from '@endo/captp';
 import { E } from '@endo/eventual-send';
 

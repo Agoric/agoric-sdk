@@ -1,5 +1,3 @@
-// @ts-check
-
 import '@endo/init/debug.js';
 
 import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';

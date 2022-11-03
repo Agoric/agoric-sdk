@@ -1,5 +1,3 @@
-// @ts-check
-
 /**
  * @callback Maximum
  * @param {Amount} left

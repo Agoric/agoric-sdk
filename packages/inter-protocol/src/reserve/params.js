@@ -1,5 +1,3 @@
-// @ts-check
-
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 
 export const AMM_INSTANCE = 'AmmInstance';
