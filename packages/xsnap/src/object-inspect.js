@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* eslint-disable no-empty,no-nested-ternary,no-use-before-define */
 /* eslint-enable @endo/no-polymorphic-call */
 /* global globalThis */
