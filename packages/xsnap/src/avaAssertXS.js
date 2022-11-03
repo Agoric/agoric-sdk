@@ -1,6 +1,5 @@
 /* global globalThis */
 /* eslint-disable no-await-in-loop, @jessie.js/no-nested-await -- test code */
-// @ts-check
 
 /** global print */
 

@@ -9,7 +9,6 @@ HandledPromise is defined by eventual send shim.
 
 */
 /* global __dirname, __filename, issueCommand, test */
-// @ts-check
 /// <reference types="ses" />
 /// <reference types="@endo/eventual-send" />
 

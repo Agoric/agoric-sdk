@@ -8,7 +8,6 @@
  *     replay steps 00001 to the first snapshot step.
  *  3. For the last folder, play steps 00001 to last.
  */
-// @ts-check
 
 import childProcessPowers from 'child_process';
 import osPowers from 'os';

@@ -1,5 +1,4 @@
 /* global process */
-// @ts-check
 /* eslint no-await-in-loop: ["off"] */
 
 /**

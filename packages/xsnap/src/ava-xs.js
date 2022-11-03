@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-check
 
 import '@endo/init';
 import process from 'process';

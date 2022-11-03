@@ -1,5 +1,3 @@
-// @ts-check
-
 /**
  * @param {boolean} _flag
  * @returns {asserts _flag}
