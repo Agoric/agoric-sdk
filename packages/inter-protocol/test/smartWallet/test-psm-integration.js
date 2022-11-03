@@ -11,10 +11,10 @@ import {
 } from '@agoric/vats/tools/boot-test-utils.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { E } from '@endo/far';
-import { INVITATION_MAKERS_DESC } from '@agoric/inter-protocol/src/psm/psmCharter.js';
 import { NonNullish } from '@agoric/assert';
 
-import { coalesceUpdates } from '../src/utils.js';
+import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
+import { INVITATION_MAKERS_DESC } from '../../src/psm/psmCharter.js';
 import { makeDefaultTestContext } from './contexts.js';
 import { headValue, withAmountUtils } from './supports.js';
 
@@ -66,7 +66,7 @@ const purseBalance = (state, brand) => {
   return match.value;
 };
 /**
- * @param {import('../src/smartWallet.js').CurrentWalletRecord} record
+ * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} record
  * @param {Brand<'nat'>} brand
  */
 const currentPurseBalance = (record, brand) => {
@@ -90,13 +90,13 @@ test('null swap', async t => {
 
   const psmInstance = await E(agoricNames).lookup('instance', 'psm-IST-AUSD');
 
-  /** @type {import('../src/invitations.js').ContractInvitationSpec} */
+  /** @type {import('@agoric/smart-wallet/src/invitations').ContractInvitationSpec} */
   const invitationSpec = {
     source: 'contract',
     instance: psmInstance,
     publicInvitationMaker: 'makeGiveMintedInvitation',
   };
-  /** @type {import('../src/offers').OfferSpec} */
+  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
   const offerSpec = {
     id: 1,
     invitationSpec,
@@ -151,13 +151,13 @@ test('want stable', async t => {
 
   t.log('Prepare the swap');
 
-  /** @type {import('../src/invitations.js').ContractInvitationSpec} */
+  /** @type {import('@agoric/smart-wallet/src/invitations').ContractInvitationSpec} */
   const invitationSpec = {
     source: 'contract',
     instance: psmInstance,
     publicInvitationMaker: 'makeWantMintedInvitation',
   };
-  /** @type {import('../src/offers').OfferSpec} */
+  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
   const offerSpec = {
     id: 1,
     invitationSpec,
@@ -232,14 +232,14 @@ test('govern offerFilter', async t => {
 
   // The purse has the invitation to get the makers ///////////
 
-  /** @type {import('../src/invitations.js').PurseInvitationSpec} */
+  /** @type {import('@agoric/smart-wallet/src/invitations').PurseInvitationSpec} */
   const getInvMakersSpec = {
     source: 'purse',
     instance: psmCharter,
     description: INVITATION_MAKERS_DESC,
   };
 
-  /** @type {import('../src/offers').OfferSpec} */
+  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
   const invMakersOffer = {
     id: 44,
     invitationSpec: getInvMakersSpec,
@@ -248,7 +248,7 @@ test('govern offerFilter', async t => {
 
   await offersFacet.executeOffer(invMakersOffer);
 
-  /** @type {import('../src/smartWallet.js').CurrentWalletRecord} */
+  /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */
   let currentState = await headValue(currentSub);
   t.is(
     // @ts-expect-error cast amount kind
@@ -264,7 +264,7 @@ test('govern offerFilter', async t => {
 
   // Call for a vote ////////////////////////////////
 
-  /** @type {import('../src/invitations.js').ContinuingInvitationSpec} */
+  /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
   const proposeInvitationSpec = {
     source: 'continuing',
     previousOffer: 44,
@@ -272,7 +272,7 @@ test('govern offerFilter', async t => {
     invitationArgs: harden([psmInstance, ['wantStable'], 2n]),
   };
 
-  /** @type {import('../src/offers').OfferSpec} */
+  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
   const proposalOfferSpec = {
     id: 45,
     invitationSpec: proposeInvitationSpec,
@@ -305,14 +305,14 @@ test('govern offerFilter', async t => {
   t.is(voteInvitationDetail.description, 'Voter0');
   t.is(voteInvitationDetail.instance, economicCommittee);
 
-  /** @type {import('../src/invitations.js').PurseInvitationSpec} */
+  /** @type {import('@agoric/smart-wallet/src/invitations').PurseInvitationSpec} */
   const getCommitteeInvMakersSpec = {
     source: 'purse',
     instance: economicCommittee,
     description: 'Voter0',
   };
 
-  /** @type {import('../src/offers').OfferSpec} */
+  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
   const committeeInvMakersOffer = {
     id: 46,
     invitationSpec: getCommitteeInvMakersSpec,
@@ -331,7 +331,7 @@ test('govern offerFilter', async t => {
   // 44 tested above
   t.is(currentState.offerToUsedInvitation[46].value[0].description, 'Voter0');
 
-  /** @type {import('../src/invitations.js').ContinuingInvitationSpec} */
+  /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
   const getVoteSpec = {
     source: 'continuing',
     previousOffer: 46,
@@ -339,7 +339,7 @@ test('govern offerFilter', async t => {
     invitationArgs: harden([yesPosition, questionHandle]),
   };
 
-  /** @type {import('../src/offers').OfferSpec} */
+  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
   const voteOffer = {
     id: 47,
     invitationSpec: getVoteSpec,

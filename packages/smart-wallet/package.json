@@ -19,7 +19,6 @@
     "@agoric/cosmic-proto": "^0.2.1",
     "@agoric/cosmic-swingset": "^0.39.2",
     "@agoric/deploy-script-support": "^0.9.4",
-    "@agoric/inter-protocol": "^0.13.1",
     "@agoric/wallet-backend": "^0.13.3",
     "@endo/captp": "^2.0.17",
     "@endo/init": "^0.5.51",

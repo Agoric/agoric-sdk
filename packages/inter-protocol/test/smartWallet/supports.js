@@ -2,6 +2,7 @@
 
 import * as ActionType from '@agoric/cosmic-swingset/src/action-types.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { connectFaucet } from '@agoric/inter-protocol/src/proposals/demoIssuers.js';
 import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 import {
   installBootContracts,
@@ -180,6 +181,7 @@ export const makeMockTestSpace = async log => {
     makeAddressNameHubs({ consume, produce, ...spaces }),
     installBootContracts({ vatPowers, devices, consume, produce, ...spaces }),
     setupClientManager({ consume, produce, ...spaces }),
+    connectFaucet({ consume, produce, ...spaces }),
   ]);
 
   return space;
