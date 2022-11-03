@@ -9,6 +9,7 @@ import {
 } from '@agoric/vat-data';
 import { initEmpty } from '@agoric/store';
 
+/** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
 /** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -76,6 +77,7 @@ export const makeInstallationStorage = (
     /** @type {Installation} */
     // @ts-expect-error cast
     const installation = makeBundleInstallation(bundle);
+    assert(bundle, 'a bundle must be provided');
     installationsBundle.init(installation, bundle);
     return installation;
   };

@@ -13,7 +13,18 @@ import {
   buildReachableAndVatSlot,
 } from './reachable.js';
 
-/** @typedef {import('../../types-internal.js').RecordedVatOptions} RecordedVatOptions */
+/**
+ * @typedef { import('../../types-external.js').KVStore } KVStore
+ * @typedef { import('../../types-external.js').KVStorePlus } KVStorePlus
+ * @typedef { import('../../types-external.js').ManagerOptions } ManagerOptions
+ * @typedef { import('../../types-external.js').SnapStore } SnapStore
+ * @typedef { import('../../types-external.js').SourceOfBundle } SourceOfBundle
+ * @typedef { import('../../types-external.js').StreamPosition } StreamPosition
+ * @typedef { import('../../types-external.js').StreamStore } StreamStore
+ * @typedef { import('../../types-external.js').VatManager } VatManager
+ * @typedef { import('../../types-internal.js').RecordedVatOptions } RecordedVatOptions
+ * @typedef { import('../../types-external.js').TranscriptEntry } TranscriptEntry
+ */
 
 // makeVatKeeper is a pure function: all state is kept in the argument object
 

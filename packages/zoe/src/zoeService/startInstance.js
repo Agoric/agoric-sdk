@@ -11,6 +11,7 @@ import { defineDurableHandle } from '../makeHandle.js';
 import { handlePKitWarning } from '../handleWarning.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
 
 const { details: X, quote: q } = assert;
 
