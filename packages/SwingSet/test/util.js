@@ -45,7 +45,10 @@ export function dumpKT(kernel) {
   }
 }
 
-export function buildDispatch(onDispatchCallback = undefined) {
+/**
+ * @param {(d: unknown) => void} [onDispatchCallback ]
+ */
+export function buildDispatch(onDispatchCallback) {
   const log = [];
 
   const GC = ['dropExports', 'retireExports', 'retireImports'];
@@ -86,32 +89,30 @@ export function buildDispatch(onDispatchCallback = undefined) {
 }
 
 export function capSlot(index, iface = 'export') {
+  // @ts-expect-error undefined not assignable to type string
   iface = iface ? `Alleged: ${iface}` : undefined;
   return { '@qclass': 'slot', iface, index };
 }
 
 export function methargsOneSlot(method, slot, iface = 'export') {
+  // @ts-expect-error undefined not assignable to type string
   iface = iface ? `Alleged: ${iface}` : undefined;
   return capargs([method, [{ '@qclass': 'slot', iface, index: 0 }]], [slot]);
 }
 
 export function capdataOneSlot(slot, iface = 'export') {
+  // @ts-expect-error undefined not assignable to type string
   iface = iface ? `Alleged: ${iface}` : undefined;
   return capargs({ '@qclass': 'slot', iface, index: 0 }, [slot]);
 }
 
 export function capargsOneSlot(slot, iface = 'export') {
+  // @ts-expect-error undefined not assignable to type string
   iface = iface ? `Alleged: ${iface}` : undefined;
   return capargs([{ '@qclass': 'slot', iface, index: 0 }], [slot]);
 }
 
-export function makeMessage(
-  target,
-  method,
-  args = [],
-  slots = [],
-  result = null,
-) {
+export function makeMessage(target, method, args = [], slots = [], result) {
   const methargs = capargs([method, args], slots);
   const msg = { methargs, result };
   const vatDeliverObject = harden(['message', target, msg]);
