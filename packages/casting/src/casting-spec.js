@@ -123,4 +123,3 @@ export const makeCastingSpec = async sourceP => {
   }
   assert.fail(`CastingSpec ${spec} is not a string, object, or ref`);
 };
-/** @typedef {ReturnType<typeof makeCastingSpec>} CastingSpec */

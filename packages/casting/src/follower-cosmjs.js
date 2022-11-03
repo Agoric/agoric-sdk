@@ -15,9 +15,7 @@ const { Tendermint34Client } = tendermintRpcStar;
 const { details: X, quote: q } = assert;
 const textDecoder = new TextDecoder();
 
-/** @template T @typedef {import('./types.js').StreamCell<T>} StreamCell */
-/** @template T @typedef {import('./types.js').ValueFollowerElement<T>} ValueFollowerElement */
-/** @template T @typedef {import('./types.js').Follower<ValueFollowerElement<T>>} ValueFollower */
+/** @template T @typedef {import('./types.js').Follower<import('./types.js').ValueFollowerElement<T>>} ValueFollower */
 
 /**
  * This is an imperfect heuristic to navigate the migration from value cells to
@@ -341,7 +339,7 @@ export const makeCosmjsFollower = (
    * @param {any} data
    * @param {number} blockHeight
    * @param {number} currentBlockHeight
-   * @returns {Promise<ValueFollowerElement<T>>}
+   * @returns {Promise<import('./types.js').ValueFollowerElement<T>>}
    */
   const followerElementFromStreamCellValue = async (
     data,
@@ -356,7 +354,7 @@ export const makeCosmjsFollower = (
   };
 
   /**
-   * @param {StreamCell<T>} streamCell
+   * @param {import('./types.js').StreamCell<T>} streamCell
    * @param {number} currentBlockHeight
    * @yields {ValueFollowerElement<T>}
    */
@@ -371,7 +369,7 @@ export const makeCosmjsFollower = (
   }
 
   /**
-   * @param {StreamCell<T>} streamCell
+   * @param {import('./types.js').StreamCell<T>} streamCell
    * @param {number} currentBlockHeight
    * @yields {ValueFollowerElement<T>}
    */
@@ -386,7 +384,7 @@ export const makeCosmjsFollower = (
   }
 
   /**
-   * @param {StreamCell<T>} streamCell
+   * @param {import('./types.js').StreamCell<T>} streamCell
    * @param {number} currentBlockHeight
    * @yields {ValueFollowerElement<T>}
    */
