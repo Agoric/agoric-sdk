@@ -1,5 +1,3 @@
-// @ts-check
-
 // Modeled on test-heap-classes.js
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
