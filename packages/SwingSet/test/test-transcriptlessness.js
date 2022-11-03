@@ -1,7 +1,8 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { provideHostStorage } from '../src/controller/hostStorage.js';
+// eslint-disable-next-line import/order
+import { initSwingStore } from '@agoric/swing-store';
 import { buildVatController } from '../src/index.js';
 
 async function testTranscriptlessness(t, useTranscript) {
@@ -18,7 +19,7 @@ async function testTranscriptlessness(t, useTranscript) {
       },
     },
   };
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const c1 = await buildVatController(config, [], {
     hostStorage,
   });

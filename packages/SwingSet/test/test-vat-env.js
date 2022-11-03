@@ -1,6 +1,7 @@
 import { test, VatData } from '../tools/prepare-test-env-ava.js';
 
-import { provideHostStorage } from '../src/controller/hostStorage.js';
+// eslint-disable-next-line import/order
+import { initSwingStore } from '@agoric/swing-store';
 import { buildVatController } from '../src/index.js';
 
 test('harden from SES is in the test environment', t => {
@@ -72,7 +73,7 @@ async function testForExpectedGlobals(t, workerType) {
     },
     defaultManagerType: workerType,
   };
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const c = await buildVatController(config, [], {
     hostStorage,
   });

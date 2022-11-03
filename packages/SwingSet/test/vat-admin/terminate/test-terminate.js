@@ -1,8 +1,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
-import { getAllState, setAllState } from '@agoric/swing-store';
-import { provideHostStorage } from '../../../src/controller/hostStorage.js';
+import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
 
 import {
   buildVatController,
@@ -41,7 +40,7 @@ async function doTerminateNonCritical(
   const configPath = new URL('swingset-terminate.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const controller = await buildVatController(config, [], {
     ...t.context.data,
     hostStorage,
@@ -104,7 +103,7 @@ async function doTerminateCritical(
   const configPath = new URL('swingset-terminate.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const controller = await buildVatController(config, [], {
     ...t.context.data,
     hostStorage,
@@ -390,7 +389,7 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
 
-  const hostStorage1 = provideHostStorage();
+  const hostStorage1 = initSwingStore();
   {
     const c1 = await buildVatController(config, [], {
       hostStorage: hostStorage1,
@@ -409,7 +408,7 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
     ]);
   }
   const state1 = getAllState(hostStorage1);
-  const hostStorage2 = provideHostStorage();
+  const hostStorage2 = initSwingStore();
   // XXX TODO also copy transcripts
   setAllState(hostStorage2, state1);
   {
@@ -445,7 +444,7 @@ test.serial('dead vat state removed', async t => {
   const configPath = new URL('swingset-die-cleanly.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
 
   const controller = await buildVatController(config, [], {
     hostStorage,

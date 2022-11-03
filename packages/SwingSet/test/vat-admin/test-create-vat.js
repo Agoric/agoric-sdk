@@ -2,7 +2,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import bundleSource from '@endo/bundle-source';
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import {
   buildKernelBundles,
   initializeSwingset,
@@ -75,7 +75,7 @@ async function doTestSetup(t, doVatAdminRestart = false, enableSlog = false) {
     }
   }
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data, { slogSender });
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   await initializeSwingset(config, [], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
@@ -290,15 +290,15 @@ test('createVat holds refcount', async t => {
   // if/when things like that change, this test also asserts ko27, but that
   // can be updated in a single place.
 
-  // 'held' is exported by v1, which shows up in the c-lists but doesn't
+  // 'held' is exported by v6, which shows up in the c-lists but exports don't
   // count towards the refcount
   let expectedRefcount = 0;
-  let expectedCLists = 1; // v1-export-held
+  let expectedCLists = 1; // v6-export-held
 
   // bootstrap() imports 'held', adding it to the v2-bootstrap c-list and
   // incrementing the refcount.
-  expectedRefcount += 1; // v2-bootstrap
-  expectedCLists += 1; // v2-bootstrap
+  expectedRefcount += 1; // v1-bootstrap holds resolution of 'createHeld'
+  expectedCLists += 1; // v1-bootstrap
 
   // calling getHeld doesn't immediately increment the refcount
   const kpid1 = c.queueToVatRoot('bootstrap', 'getHeld', []);
@@ -307,8 +307,9 @@ test('createVat holds refcount', async t => {
   const held = krefOf(h1);
   t.is(held, 'ko27'); // gleaned from the logs, unstable, update as needed
 
-  // but `kpResolution()` does an incref on the results, making the refcount
-  // now 2,2: imported by v2-bootstrap and pinned by kpResolution.
+  // but `kpResolution()` does an incref on the results, making the refcount now
+  // 3,3: import held twice by v1-bootstrap (from 'createHeld' and temporarily
+  // from 'getHeld') and pinned by kpResolution.
   expectedRefcount += 1; // kpResolution pin
   const { refcount, refs } = findRefs(kvStore, held);
   t.deepEqual(refcount, [expectedRefcount, expectedRefcount]);
@@ -341,10 +342,11 @@ test('createVat holds refcount', async t => {
       ).length;
   }
   await stepUntil(seeDeliverCreateVat);
+  expectedRefcount -= 1; // GC discards resolution from `getHeld`
 
-  // now we should see 3,3: v2-bootstrap, the kpResolution pin, and the
+  // now we should still see 3,3: v1-bootstrap, the kpResolution pin, and the
   // send(createVat) arguments. Two of these are c-lists.
-  expectedRefcount += 1; // send(createVat) arguments
+  expectedRefcount += 1; // arg to 'createVat'
   const r1 = findRefs(kvStore, held);
   t.deepEqual(r1.refcount, [expectedRefcount, expectedRefcount]);
   t.is(r1.refs.length, expectedCLists);

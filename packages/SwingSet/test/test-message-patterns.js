@@ -7,7 +7,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 import path from 'path';
 import bundleSource from '@endo/bundle-source';
-import { provideHostStorage } from '../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import {
   initializeSwingset,
   makeSwingsetController,
@@ -139,7 +139,7 @@ export async function runVatsInComms(t, name) {
     loopbox: { ...loopboxEndowments },
   };
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   await initializeSwingset(config, [name], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
   t.teardown(c.shutdown);

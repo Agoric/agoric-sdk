@@ -2,8 +2,11 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 import tmp from 'tmp';
-import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import {
+  initSwingStore,
+  makeSnapStore,
+  makeSnapStoreIO,
+} from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
 test('vat reload from snapshot', async t => {
@@ -23,7 +26,7 @@ test('vat reload from snapshot', async t => {
   const snapstorePath = tmp.dirSync({ unsafeCleanup: true }).name;
 
   const snapStore = makeSnapStore(snapstorePath, makeSnapStoreIO());
-  const hostStorage = { snapStore, ...provideHostStorage() };
+  const hostStorage = { ...initSwingStore(), snapStore };
 
   const argv = [];
   await initializeSwingset(config, argv, hostStorage);

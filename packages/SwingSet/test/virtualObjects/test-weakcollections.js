@@ -1,8 +1,8 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
+import { initSwingStore } from '@agoric/swing-store';
 import engineGC from '../../src/lib-nodejs/engine-gc.js';
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
 import makeNextLog from '../make-nextlog.js';
@@ -25,7 +25,7 @@ test('weakMap in vat', async t => {
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const bootstrapResult = await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage, {});
   t.teardown(c.shutdown);

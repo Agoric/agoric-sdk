@@ -4,7 +4,7 @@ import { test } from './prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
 import { Far, makeMarshal } from '@endo/marshal';
-import { provideHostStorage } from '../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../src/index.js';
 import { setupTestLiveslots } from '../test/liveslots-helpers.js';
 
@@ -262,7 +262,7 @@ export async function runDVOTest(t, logCheck, testVatSource, testVatParams) {
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
   t.teardown(c.shutdown);

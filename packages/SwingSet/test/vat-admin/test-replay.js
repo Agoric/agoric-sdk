@@ -1,8 +1,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
-import { getAllState, setAllState } from '@agoric/swing-store';
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
 import { buildKernelBundles, buildVatController } from '../../src/index.js';
 import { kser } from '../../src/lib/kmarshal.js';
 
@@ -32,7 +31,7 @@ test.serial('replay dynamic vat', async t => {
   };
 
   // XXX TODO: also copy and check transcripts
-  const hostStorage1 = provideHostStorage();
+  const hostStorage1 = initSwingStore();
   {
     const c1 = await buildVatController(copy(config), [], {
       hostStorage: hostStorage1,
@@ -50,7 +49,7 @@ test.serial('replay dynamic vat', async t => {
   // new one.
 
   const state1 = getAllState(hostStorage1);
-  const hostStorage2 = provideHostStorage();
+  const hostStorage2 = initSwingStore();
   setAllState(hostStorage2, state1);
   {
     const c2 = await buildVatController(copy(config), [], {

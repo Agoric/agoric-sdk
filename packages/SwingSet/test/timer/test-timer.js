@@ -1,7 +1,8 @@
+// eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { buildTimer } from '../../src/devices/timer/timer.js';
 import { kunser } from '../../src/lib/kmarshal.js';
@@ -16,7 +17,7 @@ test('timer vat', async t => {
     devices: { timer: { sourceSpec: timer.srcPath } },
   };
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const deviceEndowments = {
     timer: { ...timer.endowments },
   };

@@ -1,16 +1,14 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
-import { getAllState, setAllState } from '@agoric/swing-store';
-
-import { provideHostStorage } from '../src/controller/hostStorage.js';
+import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
 import { buildVatController, loadBasedir } from '../src/index.js';
 
 test('transcript-light load', async t => {
   const config = await loadBasedir(
     new URL('basedir-transcript', import.meta.url).pathname,
   );
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const c = await buildVatController(config, ['one'], { hostStorage });
   t.teardown(c.shutdown);
   const state0 = getAllState(hostStorage);
@@ -39,7 +37,7 @@ test('transcript-light load', async t => {
   const cfg0 = await loadBasedir(
     new URL('basedir-transcript', import.meta.url).pathname,
   );
-  const hostStorage0 = provideHostStorage();
+  const hostStorage0 = initSwingStore();
   setAllState(hostStorage0, state0);
   const c0 = await buildVatController(cfg0, ['one'], {
     hostStorage: hostStorage0,
@@ -66,7 +64,7 @@ test('transcript-light load', async t => {
   const cfg1 = await loadBasedir(
     new URL('basedir-transcript', import.meta.url).pathname,
   );
-  const hostStorage1 = provideHostStorage();
+  const hostStorage1 = initSwingStore();
   setAllState(hostStorage1, state1);
   const c1 = await buildVatController(cfg1, ['one'], {
     hostStorage: hostStorage1,
@@ -92,7 +90,7 @@ test('transcript-light load', async t => {
   const cfg2 = await loadBasedir(
     new URL('basedir-transcript', import.meta.url).pathname,
   );
-  const hostStorage2 = provideHostStorage();
+  const hostStorage2 = initSwingStore();
   setAllState(hostStorage2, state2);
   const c2 = await buildVatController(cfg2, ['one'], {
     hostStorage: hostStorage2,

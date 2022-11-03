@@ -1,5 +1,5 @@
 import { assert } from '@agoric/assert';
-import { insistStorageAPI, makeBufferedStorage } from '../../lib/storageAPI.js';
+import { insistStorageAPI } from '../../lib/storageAPI.js';
 
 /**
  * @typedef { import('../../types-external.js').KVStore } KVStore
@@ -16,100 +16,6 @@ import { insistStorageAPI, makeBufferedStorage } from '../../lib/storageAPI.js';
 // nature of that parameter, perhaps we should establish some naming convention
 // that signals that the object could be foreign and thus deserving of
 // xenophobia.
-
-/**
- * Create and return a crank buffer, which wraps a storage object with logic
- * that buffers any mutations until told to commit them.
- *
- * @param {KVStore} kvStore  The StorageAPI object that this crank buffer will be based on.
- * @param {import('../../lib-nodejs/hasher.js').CreateSHA256}  createSHA256
- * @param {(key: string) => 'consensus' | 'local' | 'invalid'} getKeyType
- * @returns {*} an object {
- * crankBuffer,  // crank buffer as described, wrapping `kvStore`
- * commitCrank,  // function to save buffered mutations to `kvStore`
- * abortCrank,   // function to discard buffered mutations
- * }
- */
-export function buildCrankBuffer(
-  kvStore,
-  createSHA256,
-  getKeyType = () => 'consensus',
-) {
-  insistStorageAPI(kvStore);
-  let crankhasher;
-  function resetCrankhash() {
-    crankhasher = createSHA256();
-  }
-  resetCrankhash();
-
-  const {
-    kvStore: crankBuffer,
-    commit,
-    abort,
-  } = makeBufferedStorage(kvStore, {
-    onPendingSet(key, value) {
-      const keyType = getKeyType(key);
-      assert(keyType !== 'invalid');
-      if (keyType === 'consensus') {
-        crankhasher.add('add');
-        crankhasher.add('\n');
-        crankhasher.add(key);
-        crankhasher.add('\n');
-        crankhasher.add(value);
-        crankhasher.add('\n');
-      }
-    },
-    onPendingDelete(key) {
-      const keyType = getKeyType(key);
-      assert(keyType !== 'invalid');
-      if (keyType === 'consensus') {
-        crankhasher.add('delete');
-        crankhasher.add('\n');
-        crankhasher.add(key);
-        crankhasher.add('\n');
-      }
-    },
-    onAbort: resetCrankhash,
-  });
-
-  /**
-   * Flush any buffered mutations to the underlying storage, and update the
-   * activityhash.
-   *
-   * @returns {{ crankhash: string, activityhash: string }}
-   */
-  function commitCrank() {
-    // Flush the buffered operations.
-    commit();
-
-    // Calculate the resulting crankhash and reset for the next crank.
-    const crankhash = crankhasher.finish();
-    resetCrankhash();
-
-    // Get the old activityhash directly from (unbuffered) backing storage.
-    let oldActivityhash = kvStore.get('activityhash');
-    if (oldActivityhash === undefined) {
-      oldActivityhash = '';
-    }
-
-    // Digest the old activityhash and new crankhash into the new activityhash.
-    const hasher = createSHA256();
-    hasher.add('activityhash');
-    hasher.add('\n');
-    hasher.add(oldActivityhash);
-    hasher.add('\n');
-    hasher.add(crankhash);
-    hasher.add('\n');
-
-    // Store the new activityhash directly into (unbuffered) backing storage.
-    const activityhash = hasher.finish();
-    kvStore.set('activityhash', activityhash);
-
-    return { crankhash, activityhash };
-  }
-
-  return harden({ crankBuffer, commitCrank, abortCrank: abort });
-}
 
 /**
  * @param {KVStore} kvStore
@@ -165,13 +71,7 @@ export function addHelpers(kvStore) {
 // write-back buffer wrapper (the CrankBuffer), but the keeper is unaware of
 // that.
 
-export function wrapStorage(kvStore, createSHA256, getKeyType) {
+export function wrapStorage(kvStore) {
   insistStorageAPI(kvStore);
-  const { crankBuffer, commitCrank, abortCrank } = buildCrankBuffer(
-    kvStore,
-    createSHA256,
-    getKeyType,
-  );
-  const enhancedCrankBuffer = addHelpers(crankBuffer);
-  return { enhancedCrankBuffer, commitCrank, abortCrank };
+  return addHelpers(kvStore);
 }

@@ -3,8 +3,8 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
-import { getAllState } from '@agoric/swing-store';
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+// eslint-disable-next-line import/order
+import { initSwingStore, getAllState } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { kunser } from '../../src/lib/kmarshal.js';
 
@@ -34,7 +34,7 @@ async function testChangeParameters(t) {
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const { kvStore } = hostStorage;
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage, null);

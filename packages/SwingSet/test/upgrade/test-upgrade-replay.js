@@ -2,8 +2,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { assert } from '@agoric/assert';
-import { getAllState, setAllState } from '@agoric/swing-store';
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
 import {
   buildKernelBundles,
   initializeSwingset,
@@ -46,7 +45,7 @@ test('replay after upgrade', async t => {
   };
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
 
-  const hostStorage1 = provideHostStorage();
+  const hostStorage1 = initSwingStore();
   {
     await initializeSwingset(copy(config), [], hostStorage1, initOpts);
     const c1 = await makeSwingsetController(hostStorage1, {}, runtimeOpts);
@@ -68,7 +67,7 @@ test('replay after upgrade', async t => {
 
   // copy the store just to be sure
   const state1 = getAllState(hostStorage1);
-  const hostStorage2 = provideHostStorage();
+  const hostStorage2 = initSwingStore();
   setAllState(hostStorage2, state1);
   {
     const c2 = await makeSwingsetController(hostStorage2, {}, runtimeOpts);

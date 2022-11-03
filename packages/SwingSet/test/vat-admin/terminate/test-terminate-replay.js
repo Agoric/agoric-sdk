@@ -1,8 +1,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
-import { getAllState, setAllState } from '@agoric/swing-store';
-import { provideHostStorage } from '../../../src/controller/hostStorage.js';
+import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
 
 import {
   buildVatController,
@@ -21,7 +20,7 @@ test.serial('replay does not resurrect dead vat', async t => {
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
 
-  const hostStorage1 = provideHostStorage();
+  const hostStorage1 = initSwingStore();
   {
     const c1 = await buildVatController(config, [], {
       hostStorage: hostStorage1,
@@ -34,7 +33,7 @@ test.serial('replay does not resurrect dead vat', async t => {
   }
 
   const state1 = getAllState(hostStorage1);
-  const hostStorage2 = provideHostStorage();
+  const hostStorage2 = initSwingStore();
   // XXX TODO also copy transcripts
   setAllState(hostStorage2, state1);
   {

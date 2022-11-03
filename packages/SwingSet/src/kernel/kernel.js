@@ -89,7 +89,6 @@ export default function buildKernel(
     WeakRef,
     FinalizationRegistry,
     gcAndFinalize,
-    createSHA256,
   } = kernelEndowments;
   deviceEndowments = { ...deviceEndowments }; // copy so we can modify
   const {
@@ -107,7 +106,7 @@ export default function buildKernel(
     ? makeSlogger(slogCallbacks, writeSlogObject)
     : makeDummySlogger(slogCallbacks, makeConsole('disabled slogger'));
 
-  const kernelKeeper = makeKernelKeeper(hostStorage, kernelSlog, createSHA256);
+  const kernelKeeper = makeKernelKeeper(hostStorage, kernelSlog);
 
   /** @type {ReturnType<makeVatWarehouse>} */
   let vatWarehouse;
@@ -1314,8 +1313,9 @@ export default function buildKernel(
   }
 
   async function processAcceptanceMessage(message) {
-    // kdebug(`processAcceptanceQ ${JSON.stringify(message)}`);
-    // kdebug(legibilizeMessage(message));
+    kdebug('');
+    kdebug(`processAcceptanceQ ${JSON.stringify(message)}`);
+    kdebug(legibilizeMessage(message));
     kernelSlog.write({
       type: 'crank-start',
       crankType: 'routing',

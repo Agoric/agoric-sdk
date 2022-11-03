@@ -2,7 +2,7 @@
 import { test } from '../../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../../../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import { parseReachableAndVatSlot } from '../../../src/kernel/state/reachable.js';
 import {
   initializeSwingset,
@@ -31,7 +31,7 @@ const config = {
 };
 
 test('imported promises in vdata', async t => {
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const { kvStore } = hostStorage;
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
@@ -73,7 +73,7 @@ test('imported promises in vdata', async t => {
 });
 
 test('result promises in vdata', async t => {
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const { kvStore } = hostStorage;
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
@@ -115,7 +115,7 @@ test('result promises in vdata', async t => {
 });
 
 test('exported promises in vdata', async t => {
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const { kvStore } = hostStorage;
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);

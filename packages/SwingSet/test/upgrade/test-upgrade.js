@@ -4,8 +4,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
 import bundleSource from '@endo/bundle-source';
-import { getAllState } from '@agoric/swing-store';
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import { initSwingStore, getAllState } from '@agoric/swing-store';
 import { parseReachableAndVatSlot } from '../../src/kernel/state/reachable.js';
 import { parseVatSlot } from '../../src/lib/parseVatSlots.js';
 import { kunser, krefOf } from '../../src/lib/kmarshal.js';
@@ -131,7 +130,7 @@ const testUpgrade = async (
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const { kvStore } = hostStorage;
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
   await initializeSwingset(config, [], hostStorage, initOpts);
@@ -360,7 +359,7 @@ test('vat upgrade - omit vatParameters', async t => {
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
   await initializeSwingset(config, [], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
@@ -388,7 +387,7 @@ test('failed upgrade - relaxed durable rules', async t => {
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
   await initializeSwingset(config, [], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
@@ -422,7 +421,7 @@ test('failed upgrade - lost kind', async t => {
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
   await initializeSwingset(config, [], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
@@ -481,7 +480,7 @@ test('failed upgrade - explode', async t => {
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
   c.pinVatRoot('bootstrap');
@@ -525,7 +524,7 @@ async function testMultiKindUpgradeChecks(t, mode, complaint) {
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
   await initializeSwingset(config, [], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
@@ -608,7 +607,7 @@ test('failed upgrade - unknown options', async t => {
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
   await initializeSwingset(config, [], hostStorage, initOpts);
   const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
@@ -639,7 +638,7 @@ test('failed vatAdmin upgrade - bad replacement code', async t => {
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
   c.pinVatRoot('bootstrap');

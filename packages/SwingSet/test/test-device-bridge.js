@@ -1,7 +1,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 
 import {
   initializeSwingset,
@@ -18,7 +18,7 @@ test('bridge device', async t => {
   }
   const bd = buildBridge(outboundCallback);
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const config = {
     bootstrap: 'bootstrap',
     defaultManagerType: 'xs-worker',
@@ -124,7 +124,7 @@ test('bridge device can return undefined', async t => {
   }
   const bd = buildBridge(outboundCallback);
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const config = {
     bootstrap: 'bootstrap',
     vats: {
