@@ -1,5 +1,3 @@
-// @ts-check
-
 // XXX package factoring debt
 import '@agoric/notifier/exported.js';
 import '@agoric/store/exported.js';
@@ -8,12 +6,6 @@ import '@agoric/store/exported.js';
 export {};
 
 /** @template T @typedef {import('@endo/far').ERef<T>} ERef */
-
-/**
- * @typedef {object} State
- * @property {bigint} generation
- * @property {any} value
- */
 
 /**
  * @typedef {object} Updater
