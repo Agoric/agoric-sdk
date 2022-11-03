@@ -1,5 +1,3 @@
-// @ts-check
-
 import { AmountMath } from '@agoric/ertp';
 import { Nat } from '@agoric/nat';
 import { E } from '@endo/eventual-send';

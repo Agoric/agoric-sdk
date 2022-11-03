@@ -1,5 +1,3 @@
-// @ts-check
-
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import {

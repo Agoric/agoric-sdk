@@ -1,5 +1,3 @@
-// @ts-check
-
 import { E } from '@endo/eventual-send';
 import { makeStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';

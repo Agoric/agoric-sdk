@@ -1,5 +1,3 @@
-// @ts-check
-
 import { M, fit } from '@agoric/store';
 import '../../../exported.js';
 

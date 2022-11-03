@@ -1,5 +1,3 @@
-// @ts-check
-
 import { makeStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';

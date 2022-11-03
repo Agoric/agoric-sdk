@@ -1,5 +1,3 @@
-// @ts-check
-
 import { Nat } from '@agoric/nat';
 
 /**

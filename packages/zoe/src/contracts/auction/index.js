@@ -1,5 +1,3 @@
-// @ts-check
-
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';

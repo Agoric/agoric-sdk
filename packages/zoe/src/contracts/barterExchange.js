@@ -1,5 +1,3 @@
-// @ts-check
-
 import { Far } from '@endo/marshal';
 import { makeLegacyMap } from '@agoric/store';
 import '../../exported.js';
