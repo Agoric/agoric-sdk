@@ -56,6 +56,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   };
 
   const anchor = withAmountUtils(
+    // @ts-expect-error XXX
     await deeplyFulfilledObject(consume.testFirstAnchorKit),
   );
 
