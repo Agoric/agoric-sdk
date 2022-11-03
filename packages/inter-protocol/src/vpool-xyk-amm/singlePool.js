@@ -1,5 +1,3 @@
-// @ts-check
-
 import { makeFeeRatio } from './constantProduct/calcFees.js';
 import {
   pricesForStatedInput,

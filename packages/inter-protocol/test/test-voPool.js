@@ -1,5 +1,3 @@
-// @ts-check
-
 import { runVOTest, test } from '@agoric/swingset-vat/tools/vo-test-harness.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';

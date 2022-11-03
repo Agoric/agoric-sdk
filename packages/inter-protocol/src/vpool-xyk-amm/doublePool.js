@@ -1,5 +1,3 @@
-// @ts-check
-
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { makeFeeRatio } from './constantProduct/calcFees.js';

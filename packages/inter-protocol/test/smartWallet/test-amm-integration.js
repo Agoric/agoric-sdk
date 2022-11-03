@@ -1,5 +1,3 @@
-// @ts-check
-
 import test from 'ava';
 
 // defer to after ps0

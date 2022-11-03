@@ -1,5 +1,3 @@
-// @ts-check
-
 import '@agoric/zoe/exported.js';
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 

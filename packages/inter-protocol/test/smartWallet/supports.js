@@ -1,5 +1,3 @@
-// @ts-check
-
 import * as ActionType from '@agoric/cosmic-swingset/src/action-types.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { connectFaucet } from '@agoric/inter-protocol/src/proposals/demoIssuers.js';

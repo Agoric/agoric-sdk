@@ -1,5 +1,3 @@
-// @ts-check
-
 import '@endo/init/debug.js';
 import anyTest from 'ava';
 import path from 'path';

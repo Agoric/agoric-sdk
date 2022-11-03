@@ -1,5 +1,3 @@
-// @ts-check
-
 const { fromEntries, keys, values } = Object;
 
 /** @type { <X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
