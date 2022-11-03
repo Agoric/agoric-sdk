@@ -1,7 +1,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 
 import {
   swingsetIsInitialized,
@@ -12,7 +12,7 @@ import { buildBridge } from '../../src/devices/bridge/bridge.js';
 import { buildPlugin } from '../../src/devices/plugin/plugin.js';
 
 test.before('initialize storage', t => {
-  t.context.hostStorage = provideHostStorage();
+  t.context.hostStorage = initSwingStore();
 });
 
 async function setupVatController(t) {

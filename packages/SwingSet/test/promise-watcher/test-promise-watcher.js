@@ -8,8 +8,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
 // eslint-disable-next-line import/order
-import { getAllState } from '@agoric/swing-store';
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import { initSwingStore, getAllState } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
 function bfile(name) {
@@ -42,7 +41,7 @@ async function testPromiseWatcher(t) {
   const unhandledRejections = [];
   handleUnhandledRejections(rej => unhandledRejections.push(rej));
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   // ? const { kvStore } = hostStorage;
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);

@@ -1,12 +1,13 @@
 /* global WeakRef, FinalizationRegistry */
 // eslint-disable-next-line import/order
 import anylogger from 'anylogger';
+// eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
+import { initSwingStore } from '@agoric/swing-store';
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
-import { createSHA256 } from '../src/lib-nodejs/hasher.js';
 import { parseVatSlot } from '../src/lib/parseVatSlots.js';
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
@@ -15,7 +16,6 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '../src/index.js';
-import { provideHostStorage } from '../src/controller/hostStorage.js';
 import {
   makeMessage,
   makeResolutions,
@@ -47,13 +47,12 @@ function writeSlogObject(o) {
 function makeEndowments() {
   return {
     waitUntilQuiescent,
-    hostStorage: provideHostStorage(),
+    hostStorage: initSwingStore(),
     runEndOfCrank: () => {},
     makeConsole,
     writeSlogObject,
     WeakRef,
     FinalizationRegistry,
-    createSHA256,
   };
 }
 
@@ -1185,7 +1184,7 @@ test.serial('device transfer', async t => {
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
   t.teardown(c.shutdown);

@@ -1,8 +1,9 @@
+// eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import bundleSource from '@endo/bundle-source';
-import { provideHostStorage } from '../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../src/index.js';
 import {
   buildMailboxStateMap,
@@ -40,7 +41,7 @@ test.serial('vattp', async t => {
   const deviceEndowments = {
     mailbox: { ...mb.endowments },
   };
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
 
   await initializeSwingset(config, ['1'], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
@@ -86,7 +87,7 @@ test.serial('vattp 2', async t => {
   const deviceEndowments = {
     mailbox: { ...mb.endowments },
   };
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
 
   await initializeSwingset(config, ['2'], hostStorage);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);

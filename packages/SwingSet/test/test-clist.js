@@ -2,14 +2,13 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { initSwingStore } from '@agoric/swing-store';
-import { createSHA256 } from '../src/lib-nodejs/hasher.js';
 import { makeDummySlogger } from '../src/kernel/slogger.js';
 import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
 
 test(`clist reachability`, async t => {
   const slog = makeDummySlogger({});
   const hostStorage = initSwingStore(null);
-  const kk = makeKernelKeeper(hostStorage, slog, createSHA256);
+  const kk = makeKernelKeeper(hostStorage, slog);
   const s = kk.kvStore;
   kk.createStartingKernelState({ defaultManagerType: 'local' });
   const vatID = kk.allocateUnusedVatID();
@@ -94,7 +93,7 @@ test(`clist reachability`, async t => {
 test('getImporters', async t => {
   const slog = makeDummySlogger({});
   const hostStorage = initSwingStore(null);
-  const kk = makeKernelKeeper(hostStorage, slog, createSHA256);
+  const kk = makeKernelKeeper(hostStorage, slog);
 
   kk.createStartingKernelState({ defaultManagerType: 'local' });
   const vatID1 = kk.allocateUnusedVatID();

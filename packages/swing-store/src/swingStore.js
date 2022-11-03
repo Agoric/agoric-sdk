@@ -10,7 +10,8 @@ import { assert } from '@agoric/assert';
 import { makeMeasureSeconds } from '@agoric/internal';
 
 import { makeSQLStreamStore } from './sqlStreamStore.js';
-import { makeSnapStore, ephemeralSnapStore } from './snapStore.js';
+import { makeSnapStore } from './snapStore.js';
+import { createSHA256 } from './hasher.js';
 
 export { makeSnapStore };
 
@@ -56,9 +57,13 @@ export function makeSnapStoreIO() {
  * @typedef {{
  *   kvStore: KVStore, // a key-value StorageAPI object to load and store data
  *   streamStore: StreamStore, // a stream-oriented API object to append and read streams of data
+ *   snapStore?: SnapStore,
  *   commit: () => Promise<void>,  // commit changes made since the last commit
+ *   commitCrank: () => { crankhash: string, activityhash: string },
+ *   abortCrank: () => void,
  *   close: () => Promise<void>,   // shutdown the store, abandoning any uncommitted changes
  *   diskUsage?: () => number, // optional stats method
+ *   resetCrankhash: () => void, // XXX temp
  * }} SwingStore
  *
  * @typedef {SwingStore & { snapStore: ReturnType<typeof makeSnapStore> }} SwingAndSnapStore
@@ -111,9 +116,15 @@ export function makeSnapStoreIO() {
  * @param {boolean} forceReset  If true, initialize the database to an empty state
  * @param {object} options  Configuration options
  *
- * @returns {SwingAndSnapStore}
+ * @returns {SwingStore}
  */
 function makeSwingStore(dirPath, forceReset, options) {
+  let crankhasher;
+  function resetCrankhash() {
+    crankhasher = createSHA256();
+  }
+  resetCrankhash();
+
   let filePath;
   if (dirPath) {
     if (forceReset) {
@@ -170,6 +181,10 @@ function makeSwingStore(dirPath, forceReset, options) {
     )
   `);
 
+  const sqlStartCrank = db.prepare('SAVEPOINT crankSavepoint');
+  const sqlCommitCrank = db.prepare('RELEASE SAVEPOINT crankSavepoint');
+  const sqlAbortCrank = db.prepare('ROLLBACK TO SAVEPOINT crankSavepoint');
+
   const sqlBeginTransaction = db.prepare('BEGIN IMMEDIATE TRANSACTION');
 
   function ensureTxn() {
@@ -177,8 +192,21 @@ function makeSwingStore(dirPath, forceReset, options) {
     if (!db.inTransaction) {
       sqlBeginTransaction.run();
       assert(db.inTransaction);
+      sqlStartCrank.run();
     }
     return db;
+  }
+
+  /**
+   * @param {string} key
+   */
+  function getKeyType(key) {
+    if (key.startsWith('local.')) {
+      return 'local';
+    } else if (key.startsWith('host.')) {
+      return 'invalid';
+    }
+    return 'consensus';
   }
 
   function diskUsage() {
@@ -248,12 +276,12 @@ function makeSwingStore(dirPath, forceReset, options) {
     ensureTxn();
     let keys;
     if (end) {
-      keys = sqlKVGetKeys.iterate(start, end);
+      keys = sqlKVGetKeys.all(start, end);
     } else {
-      keys = sqlKVGetKeysNoEnd.iterate(start);
+      keys = sqlKVGetKeysNoEnd.all(start);
     }
 
-    yield* keys;
+    yield* keys.values();
   }
 
   /**
@@ -276,6 +304,15 @@ function makeSwingStore(dirPath, forceReset, options) {
     ON CONFLICT DO UPDATE SET value = excluded.value
   `);
 
+  // XXX Debug helper, remove before push
+  // function pfx(s) {
+  //   if (s.length < 15) {
+  //     return s;
+  //   } else {
+  //     return `${s.substring(0, 15)}...`;
+  //   }
+  // }
+
   /**
    * Store a value for a given key.  The value will replace any prior value if
    * there was one.
@@ -288,6 +325,16 @@ function makeSwingStore(dirPath, forceReset, options) {
   function set(key, value) {
     assert.typeof(key, 'string');
     assert.typeof(value, 'string');
+    const keyType = getKeyType(key);
+    assert(keyType !== 'invalid');
+    if (keyType === 'consensus') {
+      crankhasher.add('add');
+      crankhasher.add('\n');
+      crankhasher.add(key);
+      crankhasher.add('\n');
+      crankhasher.add(value);
+      crankhasher.add('\n');
+    }
     // synchronous read after write within a transaction is safe
     // The transaction's overall success will be awaited during commit
     ensureTxn();
@@ -310,6 +357,14 @@ function makeSwingStore(dirPath, forceReset, options) {
    */
   function del(key) {
     assert.typeof(key, 'string');
+    const keyType = getKeyType(key);
+    assert(keyType !== 'invalid');
+    if (keyType === 'consensus') {
+      crankhasher.add('delete');
+      crankhasher.add('\n');
+      crankhasher.add(key);
+      crankhasher.add('\n');
+    }
     ensureTxn();
     sqlKVDel.run(key);
     trace('del', key);
@@ -332,9 +387,42 @@ function makeSwingStore(dirPath, forceReset, options) {
     snapStore = makeSnapStore(snapshotDir, makeSnapStoreIO(), {
       keepSnapshots,
     });
-  } else {
-    // This is present only to make TypeScript shut up
-    snapStore = ephemeralSnapStore;
+  }
+
+  function commitCrank() {
+    // Calculate the resulting crankhash and reset for the next crank.
+    const crankhash = crankhasher.finish();
+    resetCrankhash();
+    ensureTxn();
+
+    // Get the old activityhash directly from (unbuffered) backing storage.
+    let oldActivityhash = get('activityhash');
+    if (oldActivityhash === undefined) {
+      oldActivityhash = '';
+    }
+
+    // Digest the old activityhash and new crankhash into the new activityhash.
+    const hasher = createSHA256();
+    hasher.add('activityhash');
+    hasher.add('\n');
+    hasher.add(oldActivityhash);
+    hasher.add('\n');
+    hasher.add(crankhash);
+    hasher.add('\n');
+
+    // Store the new activityhash directly into (unbuffered) backing storage.
+    const activityhash = hasher.finish();
+    set('activityhash', activityhash);
+    resetCrankhash();
+    sqlCommitCrank.run();
+    sqlStartCrank.run();
+
+    return { crankhash, activityhash };
+  }
+
+  function abortCrank() {
+    sqlAbortCrank.run();
+    resetCrankhash();
   }
 
   const sqlCommit = db.prepare('COMMIT');
@@ -353,7 +441,7 @@ function makeSwingStore(dirPath, forceReset, options) {
     //   MUST be committed BEFORE we delete snapshot1.
     //   Otherwise, on restart, we'll consult the kvstore and see snapshot1,
     //   but we'll fail to load it because it's been deleted already.
-    await (dirPath ? snapStore.commitDeletes() : false);
+    await (snapStore ? snapStore.commitDeletes() : false);
   }
 
   /**
@@ -368,7 +456,17 @@ function makeSwingStore(dirPath, forceReset, options) {
     stopTrace();
   }
 
-  return harden({ kvStore, streamStore, snapStore, commit, close, diskUsage });
+  return harden({
+    kvStore,
+    streamStore,
+    snapStore,
+    commit,
+    close,
+    diskUsage,
+    commitCrank,
+    abortCrank,
+    resetCrankhash,
+  });
 }
 
 /**
@@ -387,7 +485,7 @@ function makeSwingStore(dirPath, forceReset, options) {
  *
  * @returns {SwingStore}
  */
-export function initSwingStore(dirPath, options = {}) {
+export function initSwingStore(dirPath = null, options = {}) {
   if (dirPath) {
     assert.typeof(dirPath, 'string');
   }
@@ -404,7 +502,7 @@ export function initSwingStore(dirPath, options = {}) {
  *   swing store instance.
  * @param {object?} options  Optional configuration options
  *
- * @returns {SwingAndSnapStore}
+ * @returns {SwingStore}
  */
 export function openSwingStore(dirPath, options = {}) {
   assert.typeof(dirPath, 'string');
@@ -486,4 +584,5 @@ export function setAllState(swingStore, stuff) {
     }
     streamStore.closeStream(streamName);
   }
+  swingStore.resetCrankhash();
 }

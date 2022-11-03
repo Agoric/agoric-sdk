@@ -172,36 +172,15 @@ const FIRST_CRANK_NUMBER = 0n;
 const FIRST_METER_ID = 1n;
 
 /**
- * @param {HostStore} hostStorage
- * @param {KernelSlog | null} kernelSlog
- * @param {import('../../lib-nodejs/hasher.js').CreateSHA256} createSHA256
+ * @param {SwingStore} hostStorage
+ * @param {KernelSlog} kernelSlog
  */
-export default function makeKernelKeeper(
-  hostStorage,
-  kernelSlog,
-  createSHA256,
-) {
+export default function makeKernelKeeper(hostStorage, kernelSlog) {
   // the kernelKeeper wraps the host's raw key-value store in a crank buffer
   const rawKVStore = hostStorage.kvStore;
   insistStorageAPI(rawKVStore);
 
-  /**
-   * @param {string} key
-   */
-  function getKeyType(key) {
-    if (key.startsWith('local.')) {
-      return 'local';
-    } else if (key.startsWith('host.')) {
-      return 'invalid';
-    }
-    return 'consensus';
-  }
-
-  const {
-    abortCrank: storeAbortCrank,
-    commitCrank: storeCommitCrank,
-    enhancedCrankBuffer: kvStore,
-  } = wrapStorage(rawKVStore, createSHA256, getKeyType);
+  const kvStore = wrapStorage(rawKVStore);
   insistEnhancedStorageAPI(kvStore);
   const { streamStore, snapStore } = hostStorage;
 
@@ -244,11 +223,11 @@ export default function makeKernelKeeper(
 
   function commitCrank() {
     saveStats();
-    return storeCommitCrank();
+    return hostStorage.commitCrank();
   }
 
   function abortCrank() {
-    const ret = storeAbortCrank();
+    const ret = hostStorage.abortCrank();
     loadStats();
     return ret;
   }

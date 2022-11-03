@@ -300,6 +300,8 @@ export {};
  *   kvStore: KVStore,
  *   streamStore: StreamStore,
  *   snapStore?: SnapStore,
+ *   commitCrank: () => { crankhash: string, activityhash: string },
+ *   abortCrank: () => void,
  * }} HostStore
  *
  * @typedef { ReturnType<typeof import('./kernel/state/storageWrapper').addHelpers> } KVStorePlus

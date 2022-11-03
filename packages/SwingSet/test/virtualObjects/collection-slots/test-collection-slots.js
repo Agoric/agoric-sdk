@@ -3,7 +3,7 @@ import { test } from '../../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
-import { provideHostStorage } from '../../../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import { parseReachableAndVatSlot } from '../../../src/kernel/state/reachable.js';
 import {
   initializeSwingset,
@@ -37,7 +37,7 @@ test('collection entry slots trigger doMoreGC', async t => {
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const { kvStore } = hostStorage;
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);

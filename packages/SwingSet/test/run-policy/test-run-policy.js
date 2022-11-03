@@ -1,7 +1,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import {
   crankCounter,
@@ -23,7 +23,7 @@ async function testCranks(t, mode) {
     },
     defaultManagerType: 'xs-worker',
   };
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
   t.teardown(c.shutdown);

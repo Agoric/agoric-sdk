@@ -3,8 +3,11 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // import * as proc from 'child_process';
 import tmp from 'tmp';
-import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import {
+  initSwingStore,
+  makeSnapStore,
+  makeSnapStoreIO,
+} from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
 test('only preload maxVatsOnline vats', async t => {
@@ -32,7 +35,7 @@ test('only preload maxVatsOnline vats', async t => {
 
   const snapstorePath = tmp.dirSync({ unsafeCleanup: true }).name;
   const snapStore = makeSnapStore(snapstorePath, makeSnapStoreIO());
-  const hostStorage = { snapStore, ...provideHostStorage() };
+  const hostStorage = { snapStore, ...initSwingStore() };
 
   await initializeSwingset(config, argv, hostStorage, initOpts);
 

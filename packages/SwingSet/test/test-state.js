@@ -4,12 +4,8 @@ import { test } from '../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { createHash } from 'crypto';
 import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
-import { createSHA256 } from '../src/lib-nodejs/hasher.js';
 import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
-import {
-  buildCrankBuffer,
-  addHelpers,
-} from '../src/kernel/state/storageWrapper.js';
+import { addHelpers } from '../src/kernel/state/storageWrapper.js';
 import { makeKernelStats } from '../src/kernel/state/stats.js';
 import { KERNEL_STATS_METRICS } from '../src/kernel/metrics.js';
 import { kser, kslot } from '../src/lib/kmarshal.js';
@@ -75,119 +71,6 @@ test('storageInMemory', async t => {
   await testStorage(t, store.kvStore, () => getAllState(store).kvStuff, null);
 });
 
-test('crankBuffer fulfills storage API', async t => {
-  const store = initSwingStore(null);
-  const { crankBuffer, commitCrank } = buildCrankBuffer(
-    store.kvStore,
-    createSHA256,
-  );
-  await testStorage(
-    t,
-    crankBuffer,
-    () => getAllState(store).kvStuff,
-    commitCrank,
-  );
-});
-
-test('crankBuffer handles key iteration properly even with intra-crank data changes', t => {
-  const store = initSwingStore(null);
-  const { crankBuffer: s, commitCrank } = buildCrankBuffer(
-    store.kvStore,
-    createSHA256,
-  );
-
-  s.set('k8', '8');
-  s.set('k7', '7');
-  s.set('k6', '6');
-  s.set('k5', '5');
-  s.set('k4', '4');
-  s.set('k3', '3');
-  s.set('k2', '2');
-  s.set('k1', '1');
-  commitCrank();
-
-  let keys = Array.from(s.getKeys('k', 'k~'));
-  t.deepEqual(keys, ['k1', 'k2', 'k3', 'k4', 'k5', 'k6', 'k7', 'k8']);
-  t.deepEqual(
-    keys.map(k => s.get(k)),
-    ['1', '2', '3', '4', '5', '6', '7', '8'],
-  );
-  s.set('k0', '0 added');
-  s.set('k4', '4 revised');
-  s.set('k8', '8 revised');
-  s.set('k9', '9 added');
-  s.delete('k3');
-  s.delete('k5');
-  s.delete('k7');
-  keys = Array.from(s.getKeys('k', 'k~'));
-  t.deepEqual(keys, ['k0', 'k1', 'k2', 'k4', 'k6', 'k8', 'k9']);
-  t.deepEqual(
-    keys.map(k => s.get(k)),
-    ['0 added', '1', '2', '4 revised', '6', '8 revised', '9 added'],
-  );
-  commitCrank();
-
-  keys = Array.from(s.getKeys('k', 'k~'));
-  t.deepEqual(keys, ['k0', 'k1', 'k2', 'k4', 'k6', 'k8', 'k9']);
-  t.deepEqual(
-    keys.map(k => s.get(k)),
-    ['0 added', '1', '2', '4 revised', '6', '8 revised', '9 added'],
-  );
-});
-
-test('crankBuffer can abortCrank', t => {
-  const store = initSwingStore(null);
-  const getState = () => getAllState(store).kvStuff;
-
-  const {
-    crankBuffer: s,
-    commitCrank,
-    abortCrank,
-  } = buildCrankBuffer(store.kvStore, createSHA256);
-
-  s.set('foo', 'f');
-  t.truthy(s.has('foo'));
-  t.is(s.get('foo'), 'f');
-
-  s.set('foo2', 'f2');
-  s.set('foo1', 'f1');
-  s.set('foo3', 'f3');
-  t.deepEqual(Array.from(s.getKeys('foo1', 'foo3')), ['foo1', 'foo2']);
-  t.deepEqual(Array.from(s.getKeys('foo1', 'foo4')), ['foo1', 'foo2', 'foo3']);
-
-  s.delete('foo2');
-  t.falsy(s.has('foo2'));
-  t.is(s.get('foo2'), undefined);
-  t.deepEqual(Array.from(s.getKeys('foo1', 'foo4')), ['foo1', 'foo3']);
-
-  checkState(t, getState, []);
-
-  commitCrank();
-  checkState(t, getState, [
-    ['foo', 'f'],
-    ['foo1', 'f1'],
-    ['foo3', 'f3'],
-  ]);
-
-  s.set('foo4', 'f4');
-  abortCrank();
-
-  checkState(t, getState, [
-    ['foo', 'f'],
-    ['foo1', 'f1'],
-    ['foo3', 'f3'],
-  ]);
-
-  s.set('foo5', 'f5');
-  commitCrank();
-  checkState(t, getState, [
-    ['foo', 'f'],
-    ['foo1', 'f1'],
-    ['foo3', 'f3'],
-    ['foo5', 'f5'],
-  ]);
-});
-
 test('storage helpers', t => {
   const store = initSwingStore(null);
   const s = addHelpers(store.kvStore);
@@ -246,7 +129,7 @@ function buildKeeperStorageInMemory() {
 function duplicateKeeper(getState) {
   const store = initSwingStore(null);
   setAllState(store, { kvStuff: getState(), streamStuff: new Map() });
-  const kernelKeeper = makeKernelKeeper(store, null, createSHA256);
+  const kernelKeeper = makeKernelKeeper(store, null);
   kernelKeeper.loadStats();
   return kernelKeeper;
 }
@@ -266,7 +149,7 @@ test('hostStorage param guards', async t => {
 test('kernel state', async t => {
   const store = buildKeeperStorageInMemory();
   const { getState } = store;
-  const k = makeKernelKeeper(store, null, createSHA256);
+  const k = makeKernelKeeper(store, null);
   t.truthy(!k.getInitialized());
   k.createStartingKernelState({ defaultManagerType: 'local' });
   k.setInitialized();
@@ -299,7 +182,7 @@ test('kernel state', async t => {
 test('kernelKeeper vat names', async t => {
   const store = buildKeeperStorageInMemory();
   const { getState } = store;
-  const k = makeKernelKeeper(store, null, createSHA256);
+  const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
 
   const v1 = k.allocateVatIDForNameIfNeeded('vatname5');
@@ -350,7 +233,7 @@ test('kernelKeeper vat names', async t => {
 test('kernelKeeper device names', async t => {
   const store = buildKeeperStorageInMemory();
   const { getState } = store;
-  const k = makeKernelKeeper(store, null, createSHA256);
+  const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
 
   const d7 = k.allocateDeviceIDForNameIfNeeded('devicename5');
@@ -401,7 +284,7 @@ test('kernelKeeper device names', async t => {
 test('kernelKeeper runQueue', async t => {
   const store = buildKeeperStorageInMemory();
   const { getState } = store;
-  const k = makeKernelKeeper(store, null, createSHA256);
+  const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
 
   t.truthy(k.isRunQueueEmpty());
@@ -444,7 +327,7 @@ test('kernelKeeper runQueue', async t => {
 test('kernelKeeper promises', async t => {
   const store = buildKeeperStorageInMemory();
   const { getState } = store;
-  const k = makeKernelKeeper(store, null, createSHA256);
+  const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
 
   const p1 = k.addKernelPromiseForVat('v4');
@@ -577,7 +460,7 @@ test('kernelKeeper promises', async t => {
 
 test('kernelKeeper promise resolveToData', async t => {
   const store = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(store, null, createSHA256);
+  const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
 
   const p1 = k.addKernelPromiseForVat('v4');
@@ -593,7 +476,7 @@ test('kernelKeeper promise resolveToData', async t => {
 
 test('kernelKeeper promise reject', async t => {
   const store = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(store, null, createSHA256);
+  const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
 
   const p1 = k.addKernelPromiseForVat('v4');
@@ -610,7 +493,7 @@ test('kernelKeeper promise reject', async t => {
 test('vatKeeper', async t => {
   const store = buildKeeperStorageInMemory();
   const { getState } = store;
-  const k = makeKernelKeeper(store, null, createSHA256);
+  const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
 
   const v1 = k.allocateVatIDForNameIfNeeded('name1');
@@ -647,7 +530,7 @@ test('vatKeeper', async t => {
 
 test('vatKeeper.getOptions', async t => {
   const store = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(store, null, createSHA256);
+  const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
 
   const v1 = k.allocateVatIDForNameIfNeeded('name1');
@@ -667,14 +550,14 @@ test('vatKeeper.getOptions', async t => {
 
 test('XS vatKeeper defaultManagerType', async t => {
   const store = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(store, null, createSHA256);
+  const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'xs-worker' });
   t.is(k.getDefaultManagerType(), 'xs-worker');
 });
 
 test('meters', async t => {
   const store = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(store, null, createSHA256);
+  const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
   const m1 = k.allocateMeter(100n, 10n);
   const m2 = k.allocateMeter(200n, 150n);
@@ -759,7 +642,7 @@ const makeTestCrankHasher = (algorithm = 'sha256') => {
 
 test('crankhash - initial state and additions', t => {
   const store = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(store, null, createSHA256);
+  const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
   k.commitCrank();
   // the initial state additions happen to hash to this:
@@ -798,7 +681,7 @@ Then commit the changes in .../snapshots/ path.
 
 test('crankhash - skip keys', t => {
   const store = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(store, null, createSHA256);
+  const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
   k.commitCrank();
 
@@ -829,7 +712,7 @@ test('crankhash - duplicate set', t => {
   // hash as we add/delete, not just the accumulated additions/deletions set
 
   const store = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(store, null, createSHA256);
+  const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
   k.commitCrank();
 
@@ -860,7 +743,7 @@ test('crankhash - set and delete', t => {
   // setting and deleting a key is different than never setting it
 
   const store = buildKeeperStorageInMemory();
-  const k = makeKernelKeeper(store, null, createSHA256);
+  const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
   k.commitCrank();
 

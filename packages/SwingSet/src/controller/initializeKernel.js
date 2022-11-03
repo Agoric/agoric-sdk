@@ -2,7 +2,6 @@
 
 import { makeMarshal, Far } from '@endo/marshal';
 import { assert, Fail } from '@agoric/assert';
-import { createSHA256 } from '../lib-nodejs/hasher.js';
 import { assertKnownOptions } from '../lib/assertOptions.js';
 import { insistVatID } from '../lib/id.js';
 import { kser, kunser } from '../lib/kmarshal.js';
@@ -21,7 +20,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
   insistStorageAPI(hostStorage.kvStore);
 
   const kernelSlog = null;
-  const kernelKeeper = makeKernelKeeper(hostStorage, kernelSlog, createSHA256);
+  const kernelKeeper = makeKernelKeeper(hostStorage, kernelSlog);
 
   const wasInitialized = kernelKeeper.getInitialized();
   assert(!wasInitialized);

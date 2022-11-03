@@ -3,7 +3,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { spawn } from 'child_process';
-import { provideHostStorage } from '../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import {
   buildVatController,
   loadBasedir,
@@ -42,7 +42,7 @@ async function simpleCall(t) {
       },
     },
   };
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const controller = await buildVatController(config, [], { hostStorage });
   t.teardown(controller.shutdown);
   const data = controller.dump();
@@ -194,7 +194,7 @@ test('XS bootstrap', async t => {
     new URL('basedir-controller-2', import.meta.url).pathname,
   );
   config.defaultManagerType = 'xs-worker';
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const c = await buildVatController(config, [], { hostStorage });
   t.teardown(c.shutdown);
   await c.run();
@@ -214,7 +214,7 @@ test('XS bootstrap', async t => {
 });
 
 test('static vats are unmetered on XS', async t => {
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   const config = await loadBasedir(
     new URL('basedir-controller-2', import.meta.url).pathname,
   );

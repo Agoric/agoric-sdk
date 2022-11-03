@@ -5,7 +5,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 import fs from 'fs';
 import bundleSource from '@endo/bundle-source';
 import { assert } from '@agoric/assert';
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { kunser, krefOf } from '../../src/lib/kmarshal.js';
 
@@ -83,7 +83,7 @@ test('bundles', async t => {
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage);
   t.teardown(c.shutdown);

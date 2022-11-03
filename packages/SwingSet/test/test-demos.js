@@ -1,7 +1,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import { buildLoopbox } from '../src/devices/loopbox/loopbox.js';
 import {
   loadBasedir,
@@ -25,7 +25,7 @@ async function main(basedir, argv) {
     loopbox: { ...loopboxEndowments },
   };
 
-  const hostStorage = provideHostStorage();
+  const hostStorage = initSwingStore();
   await initializeSwingset(config, argv, hostStorage);
   const controller = await makeSwingsetController(
     hostStorage,

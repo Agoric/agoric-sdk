@@ -4,9 +4,9 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 import anylogger from 'anylogger';
 import { Fail } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
+import { initSwingStore } from '@agoric/swing-store';
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
-import { createSHA256 } from '../src/lib-nodejs/hasher.js';
-import { provideHostStorage } from '../src/controller/hostStorage.js';
 
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
@@ -30,12 +30,11 @@ function makeConsole(tag) {
 function makeEndowments() {
   return {
     waitUntilQuiescent,
-    hostStorage: provideHostStorage(),
+    hostStorage: initSwingStore(),
     runEndOfCrank: () => {},
     makeConsole,
     WeakRef,
     FinalizationRegistry,
-    createSHA256,
   };
 }
 
