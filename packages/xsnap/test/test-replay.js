@@ -1,4 +1,3 @@
-// @ts-check
 /* global Buffer */
 
 import '@endo/init/debug.js';

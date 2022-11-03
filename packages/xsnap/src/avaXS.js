@@ -6,8 +6,6 @@ Usage:
 
 */
 
-// @ts-check
-
 /* eslint-disable no-await-in-loop, @jessie.js/no-nested-await -- test code */
 import '@endo/init';
 import { assert, details as X, q } from '@agoric/assert';
