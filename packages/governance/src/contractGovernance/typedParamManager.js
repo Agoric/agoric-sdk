@@ -1,5 +1,3 @@
-// @ts-check
-
 import { ParamTypes } from '../constants.js';
 import { CONTRACT_ELECTORATE } from './governParam.js';
 import { makeParamManagerBuilder } from './paramManager.js';

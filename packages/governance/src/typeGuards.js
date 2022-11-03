@@ -1,5 +1,3 @@
-// @ts-check
-
 import { M } from '@agoric/store';
 import { TimestampShape } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';
 import {
