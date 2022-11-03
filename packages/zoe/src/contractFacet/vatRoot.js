@@ -1,5 +1,3 @@
-// @ts-check
-
 // This is the Zoe contract facet. Each time we make a new instance of a
 // contract we will start by creating a new vat and running this code in it. In
 // order to install this code in a vat, Zoe needs to import a bundle containing

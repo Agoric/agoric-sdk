@@ -1,5 +1,3 @@
-// @ts-check
-
 import { assert } from '@agoric/assert';
 import { initEmpty } from '@agoric/store';
 import { provide, defineDurableKind, makeKindHandle } from '@agoric/vat-data';

@@ -1,5 +1,3 @@
-// @ts-check
-
 /**
  * Create a purse for a new issuer
  *

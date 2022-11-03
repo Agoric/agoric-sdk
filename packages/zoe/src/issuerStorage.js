@@ -1,5 +1,3 @@
-// @ts-check
-
 import { provideDurableWeakMapStore } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 

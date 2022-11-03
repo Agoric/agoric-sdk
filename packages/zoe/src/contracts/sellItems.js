@@ -1,5 +1,3 @@
-// @ts-check
-
 import { Far } from '@endo/marshal';
 import { Nat } from '@agoric/nat';
 import { AmountMath } from '@agoric/ertp';

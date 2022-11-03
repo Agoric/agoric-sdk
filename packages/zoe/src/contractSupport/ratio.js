@@ -1,5 +1,3 @@
-// @ts-check
-
 import './types.js';
 import { assert, details as X, q } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';

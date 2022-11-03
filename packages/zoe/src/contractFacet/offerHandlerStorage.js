@@ -1,5 +1,3 @@
-// @ts-check
-
 import { makeWeakStore } from '@agoric/store';
 import { ToFarFunction } from '@endo/marshal';
 import { canBeDurable, provideDurableWeakMapStore } from '@agoric/vat-data';

@@ -1,5 +1,3 @@
-// @ts-check
-
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   assertIssuerKeywords,

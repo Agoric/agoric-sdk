@@ -1,5 +1,3 @@
-// @ts-check
-
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeStore } from '@agoric/store';
 import { makeZoeKit } from '../../src/zoeService/zoe.js';

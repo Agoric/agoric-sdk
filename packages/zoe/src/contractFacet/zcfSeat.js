@@ -1,5 +1,3 @@
-// @ts-check
-
 import {
   provideDurableWeakMapStore,
   provideDurableMapStore,
