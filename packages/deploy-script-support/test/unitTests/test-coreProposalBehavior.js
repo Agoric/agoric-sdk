@@ -10,6 +10,7 @@ import { makeCoreProposalBehavior } from '../../src/coreProposalBehavior.js';
 
 test('coreProposalBehavior', async t => {
   const manifestInstallRef = 'manifestInstallRef';
+  /** @type {[string, ...unknown[]]} */
   const getManifestCall = ['getManifestForTest', 'arg1', 'arg2'];
   const behavior = makeCoreProposalBehavior({
     E,

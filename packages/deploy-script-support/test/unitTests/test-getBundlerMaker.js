@@ -10,6 +10,7 @@ test('getBundlerMaker - already made', async t => {
     t.deepEqual(path, ['scratch', 'bundlerMaker']);
     return 'BUNDLER_MAKER_FOUND';
   };
+  // @ts-expect-error omitting args for test
   const getBundlerMaker = makeGetBundlerMaker({}, { lookup });
 
   const bundler = await getBundlerMaker({ log: t.log });

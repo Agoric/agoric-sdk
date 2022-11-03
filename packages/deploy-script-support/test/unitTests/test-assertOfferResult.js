@@ -1,4 +1,3 @@
-// @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { assertOfferResult } from '../../src/assertOfferResult.js';
