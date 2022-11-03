@@ -51,6 +51,7 @@ export const makeMapLeader = initialEntries => {
       updater.finish(completion);
       deltaPublication = undefined;
       deltaSubscription = undefined;
+      // @ts-expect-error m typed as Map
       m = undefined;
     },
     fail: reason => {
@@ -59,6 +60,7 @@ export const makeMapLeader = initialEntries => {
       updater.fail(reason);
       deltaPublication = undefined;
       deltaSubscription = undefined;
+      // @ts-expect-error m typed as Map
       m = undefined;
     },
   });
@@ -120,9 +122,11 @@ export const makeMapFollower = snapshotNotifierP => {
       void observeIteration(deltaSubscription, deltaObserver);
     },
     finish: _completion => {
+      // @ts-expect-error m typed as Map
       m = undefined;
     },
     fail: _reason => {
+      // @ts-expect-error m typed as Map
       m = undefined;
     },
   });

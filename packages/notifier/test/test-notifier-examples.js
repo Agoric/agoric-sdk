@@ -1,5 +1,3 @@
-// @ts-check
-
 import { test } from './prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
@@ -11,7 +9,7 @@ import {
 } from '../src/index.js';
 import { paula, alice, bob } from './iterable-testing-tools.js';
 
-import '../src/types.js';
+import '../src/types-ambient.js';
 
 const last = array => array[array.length - 1];
 

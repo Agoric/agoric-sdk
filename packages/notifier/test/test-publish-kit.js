@@ -1,4 +1,3 @@
-// @ts-check
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 
 import { test } from './prepare-test-env-ava.js';
@@ -7,7 +6,7 @@ import {
   subscribeEach,
   subscribeLatest,
 } from '../src/index.js';
-import '../src/types.js';
+import '../src/types-ambient.js';
 import { invertPromiseSettlement } from './iterable-testing-tools.js';
 
 test('makePublishKit', async t => {

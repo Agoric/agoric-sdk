@@ -1,4 +1,3 @@
-// @ts-check
 import { E } from '@endo/eventual-send';
 import { Far, makeMarshal } from '@endo/marshal';
 import { observeIteration } from './asyncIterableAdaptor.js';

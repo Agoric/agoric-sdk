@@ -1,10 +1,9 @@
-// @ts-check
 /// <reference types="ses"/>
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
-import './types.js';
+import './types-ambient.js';
 
 /**
  * Adaptor from a notifierP to an async iterable.

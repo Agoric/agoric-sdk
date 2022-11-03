@@ -1,12 +1,11 @@
 /* eslint-disable no-underscore-dangle */
-// @ts-check
 /// <reference types="ses"/>
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePublishKit } from './publish-kit.js';
 
-import './types.js';
+import './types-ambient.js';
 
 /**
  * @template T
