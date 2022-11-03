@@ -14,6 +14,7 @@ import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeLoopback } from '@endo/captp';
@@ -209,4 +210,11 @@ export const subscriptionKey = subscription => {
       );
       return unique;
     });
+};
+
+/** @type {<T>(subscriber: ERef<Subscriber<T>>) => Promise<T>} */
+export const headValue = async subscriber => {
+  await eventLoopIteration();
+  const record = await E(subscriber).subscribeAfter();
+  return record.head.value;
 };
