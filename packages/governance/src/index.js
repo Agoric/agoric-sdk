@@ -1,6 +1,5 @@
-// @ts-check
-
 import './types.js';
+import '@agoric/vats/src/core/types.js';
 
 export {
   ChoiceMethod,

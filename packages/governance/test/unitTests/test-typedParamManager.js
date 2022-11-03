@@ -1,5 +1,3 @@
-// @ts-check
-
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeStoredPublisherKit } from '@agoric/notifier';

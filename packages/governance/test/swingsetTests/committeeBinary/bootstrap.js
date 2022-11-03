@@ -1,5 +1,3 @@
-// @ts-check
-
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';

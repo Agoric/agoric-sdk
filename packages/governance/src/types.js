@@ -1,5 +1,3 @@
-// @ts-check
-
 /**
  * @typedef { 'unranked' | 'order' } ChoiceMethod
  * * UNRANKED: "unranked voting" means that the voter specifies some number of

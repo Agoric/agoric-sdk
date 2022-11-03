@@ -1,5 +1,3 @@
-// @ts-check
-
 import { makeNotifierFromSubscriber, observeNotifier } from '@agoric/notifier';
 import { keyEQ } from '@agoric/store';
 import { E } from '@endo/eventual-send';
