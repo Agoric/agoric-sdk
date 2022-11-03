@@ -1,4 +1,3 @@
-// @ts-check
 /// <reference types="ses"/>
 
 import { assert } from '@agoric/assert';
@@ -7,7 +6,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeAsyncIterableFromNotifier } from './asyncIterableAdaptor.js';
 
-import './types.js';
+import './types-ambient.js';
 
 /**
  * @template T

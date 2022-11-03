@@ -1,5 +1,3 @@
-// @ts-check
-
 // eslint-disable-next-line import/order
 import { test } from './prepare-test-env-ava.js';
 
@@ -19,7 +17,7 @@ import {
   makeFakeMarshaller,
 } from '../tools/testSupports.js';
 
-import '../src/types.js';
+import '../src/types-ambient.js';
 import { jsonPairs } from './marshal-corpus.js';
 
 test('stored subscription', async t => {

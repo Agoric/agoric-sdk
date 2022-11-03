@@ -1,11 +1,10 @@
-// @ts-check
 /// <reference types="ses"/>
 
 import { HandledPromise, E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
 
-import './types.js';
+import './types-ambient.js';
 
 const sink = () => {};
 
