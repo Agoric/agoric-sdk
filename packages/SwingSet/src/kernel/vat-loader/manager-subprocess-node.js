@@ -78,7 +78,7 @@ export function makeNodeSubprocessFactory(tools) {
       } else if (type === 'dispatchReady') {
         parentLog(`dispatch() ready`);
         // wait10ms().then(dispatchIsReady); // stall to let logs get printed
-        dispatchIsReady();
+        dispatchIsReady(undefined);
       } else if (type === 'syscall') {
         parentLog(`syscall`, args);
         const [vatSyscallObject] = args;

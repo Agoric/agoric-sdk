@@ -69,6 +69,7 @@ export function buildSerializationTools(syscall, deviceName) {
     if (devnodeSlot) {
       return devnodeSlot;
     }
+    // @ts-expect-error DetailsToken not a string
     throw Error(X`unable to convert value ${val}`);
   }
 

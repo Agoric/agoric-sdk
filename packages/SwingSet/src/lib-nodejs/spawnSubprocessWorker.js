@@ -1,3 +1,4 @@
+// @ts-nocheck
 // this file is loaded by the controller, in the start compartment
 import { spawn } from 'child_process';
 import { makePromiseKit } from '@endo/promise-kit';

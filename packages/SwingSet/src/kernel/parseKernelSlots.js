@@ -19,12 +19,13 @@ import { assert, details as X } from '@agoric/assert';
  *
  * @param {unknown} s  The string to be parsed, as described above.
  *
- * @returns {{type: 'object' | 'device' | 'promise', id: number}} a kernel slot object corresponding to the parameter.
+ * @returns {{type: 'object' | 'device' | 'promise', id: bigint}} a kernel slot object corresponding to the parameter.
  *
  * @throws {Error} if the given string is syntactically incorrect.
  */
 export function parseKernelSlot(s) {
   assert.typeof(s, 'string');
+  /** @type {'object' | 'device' | 'promise' | undefined} */
   let type;
   let idSuffix;
   if (s.startsWith('ko')) {

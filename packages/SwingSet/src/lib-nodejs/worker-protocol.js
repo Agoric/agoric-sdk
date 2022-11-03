@@ -28,6 +28,7 @@ export function arrayDecoderStream() {
       if (!Buffer.isBuffer(buf)) {
         throw Error('stream expects Buffers');
       }
+      // @ts-expect-error Buffer not assignable to string
       this.push(JSON.parse(buf));
     } catch (e) {
       err = e;

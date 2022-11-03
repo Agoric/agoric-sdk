@@ -1,7 +1,6 @@
 /**
  * Kernel's keeper of persistent state for a vat.
  */
-// @ts-check
 import { Nat, isNat } from '@agoric/nat';
 import { assert, details as X, q } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots.js';

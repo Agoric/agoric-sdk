@@ -704,6 +704,7 @@ export function makeState(syscall) {
     store.set(`${lpid}.data.slots`, data.slots.join(','));
     let idx = 0;
     for (const slot of data.slots) {
+      // @ts-expect-error may not be string
       incrementRefCount(slot, `resolve|s${idx}`);
       idx += 1;
     }

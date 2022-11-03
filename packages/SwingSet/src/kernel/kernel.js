@@ -1,4 +1,3 @@
-// @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { isNat } from '@agoric/nat';
 import { importBundle } from '@endo/import-bundle';

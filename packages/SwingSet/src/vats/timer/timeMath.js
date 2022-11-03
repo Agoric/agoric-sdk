@@ -1,5 +1,3 @@
-// @ts-check
-
 // TODO Move this module somewhere more pleasantly reusable
 
 import { Nat } from '@agoric/nat';

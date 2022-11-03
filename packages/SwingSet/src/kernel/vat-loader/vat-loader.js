@@ -1,4 +1,3 @@
-// @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { assertKnownOptions } from '../../lib/assertOptions.js';
 import { makeVatSlot } from '../../lib/parseVatSlots.js';

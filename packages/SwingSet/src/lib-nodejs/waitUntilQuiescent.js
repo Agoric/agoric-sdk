@@ -12,6 +12,6 @@ export function waitUntilQuiescent() {
   // Node 10 it is higher. So this trick requires Node 11.
   // https://jsblog.insiderattack.net/new-changes-to-timers-and-microtasks-from-node-v11-0-0-and-above-68d112743eb3
   const { promise: queueEmptyP, resolve } = makePromiseKit();
-  setImmediate(() => resolve());
+  setImmediate(() => resolve(undefined));
   return queueEmptyP;
 }

@@ -1,5 +1,3 @@
-// @ts-check
-
 export {};
 
 /* This file defines types that part of the external API of swingset. That
