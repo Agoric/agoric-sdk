@@ -1,4 +1,3 @@
-// @ts-check
 import { E, Far } from '@endo/far';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 import { ZipWriter } from '@endo/zip';

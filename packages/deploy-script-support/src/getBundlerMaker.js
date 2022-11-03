@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * This helper mainly exists to bridge the gaps that would be filled by
  * bundlecap support.  It will probably go away after bundlecap support is
