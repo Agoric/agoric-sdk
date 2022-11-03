@@ -54,13 +54,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
 
   const { demoOracleAddresses } = vatParameters;
 
-  // const { spaces } = makeAgoricNamesAccess(log, agoricNamesReserved);
-
   const runBootstrapParts = async (vats, devices) => {
-    await psmRootObject.bootstrap(vats, devices);
-
-    /** TODO: BootstrapPowers type puzzle */
-    /** @type { any } */
     const allPowers = harden({
       vatPowers,
       vatParameters,
