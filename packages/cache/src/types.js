@@ -10,12 +10,6 @@ export {};
 /** @template T @typedef {import('@endo/far').ERef<T>} ERef */
 
 /**
- * @typedef {object} State
- * @property {bigint} generation
- * @property {any} value
- */
-
-/**
  * @typedef {object} Updater
  * @property {(oldValue: Passable) => unknown} update
  */
