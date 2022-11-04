@@ -74,10 +74,11 @@ const makePurseController = (
 };
 
 /**
+ * @template {AssetKind} [K=AssetKind]
  * @typedef {object} AssetIssuerKit
- * @property {ERef<Mint>} [mint]
- * @property {ERef<Issuer>} issuer
- * @property {Brand} brand
+ * @property {ERef<Mint<K>>} [mint]
+ * @property {ERef<Issuer<K>>} issuer
+ * @property {Brand<K>} brand
  */
 
 /**
