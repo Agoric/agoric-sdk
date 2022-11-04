@@ -13,6 +13,7 @@ const printAll = (...args) => {
   //
   // We use inspect to render non-string arguments to strings.
   //
+  // @ts-expect-error
   // eslint-disable-next-line no-restricted-globals
   print(...args.map(v => (typeof v === 'string' ? v : inspect(v))));
 };
@@ -56,4 +57,5 @@ const console = {
   timeStamp: noop,
 };
 
+// @ts-expect-error doesn't conform to Console
 globalThis.console = console;

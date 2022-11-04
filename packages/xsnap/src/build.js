@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /* global process */
 /* eslint-disable @jessie.js/no-nested-await -- test/build code */
-// @ts-check
 import * as childProcessTop from 'child_process';
 import fsTop from 'fs';
 import osTop from 'os';

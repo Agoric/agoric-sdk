@@ -1,6 +1,4 @@
 /* global FinalizationRegistry WeakRef */
-// @ts-check
-
 import '@endo/init/debug.js';
 
 // eslint-disable-next-line import/no-extraneous-dependencies

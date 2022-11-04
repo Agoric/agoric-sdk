@@ -1,5 +1,4 @@
 /* global process */
-// @ts-check
 /* We make exceptions for test code. This is a test utility. */
 /* eslint-disable @jessie.js/no-nested-await */
 /* eslint no-await-in-loop: ["off"] */

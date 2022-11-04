@@ -1,8 +1,6 @@
-// @ts-check
-
 import { test } from './prepare-test-env-ava.js';
 import { makeNotifierKit } from '../src/index.js';
-import '../src/types.js';
+import '../src/types-ambient.js';
 
 test('notifier - initial state', async t => {
   /** @type {NotifierRecord<1>} */

@@ -1,10 +1,9 @@
-// @ts-check
 /* global setImmediate */
 
 // eslint-disable-next-line import/order
 import { makeMarshal } from '@endo/marshal';
 
-import '../src/types.js';
+import '../src/types-ambient.js';
 
 export const eventLoopIteration = async () =>
   new Promise(resolve => setImmediate(resolve));

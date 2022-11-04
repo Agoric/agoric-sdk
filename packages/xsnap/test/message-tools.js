@@ -1,5 +1,3 @@
-// @ts-check
-
 const { freeze } = Object;
 
 // a TextDecoder has mutable state; only export the (pure) decode function

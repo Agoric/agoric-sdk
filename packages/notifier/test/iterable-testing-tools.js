@@ -1,9 +1,8 @@
-// @ts-check
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { observeIteration, observeIterator } from '../src/index.js';
 
-import '../src/types.js';
+import '../src/types-ambient.js';
 
 export const invertPromiseSettlement = promise =>
   promise.then(
