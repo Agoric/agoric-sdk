@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { assert, details as X } from '@agoric/assert';
 import { insistMessage } from '../lib/message.js';
 import { insistKernelType } from './parseKernelSlots.js';

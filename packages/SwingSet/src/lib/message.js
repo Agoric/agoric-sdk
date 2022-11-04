@@ -7,7 +7,7 @@ import { insistCapData } from './capdata.js';
  * string, a .args property that's a capdata object, and optionally a .result
  * property that, if present, must be a string.
  *
- * @param {unknown} message  The object to be tested
+ * @param {any} message  The object to be tested
  *
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.

@@ -27,7 +27,7 @@ export function insistCapData(capdata) {
  * of a single presence, `null` otherwise
  *
  * @param {import('@endo/marshal').CapData<unknown>} data
- * @returns {string | undefined}
+ * @returns {string | undefined | null}
  */
 export function extractSingleSlot(data) {
   const body = JSON.parse(data.body);
@@ -38,6 +38,7 @@ export function extractSingleSlot(data) {
     body.index === 0
   ) {
     if (data.slots.length === 1) {
+      // @ts-expect-error unknown
       return data.slots[0];
     }
   }

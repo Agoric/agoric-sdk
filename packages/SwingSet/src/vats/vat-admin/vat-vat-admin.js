@@ -42,6 +42,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
   function noteRunningVat(vatID) {
     const prr = producePRR();
     const [doneP] = prr;
+    // @ts-expect-error may not have `catch`
     doneP.catch(() => {}); // shut up false whine about unhandled rejection
     runningVats.set(vatID, prr);
   }
@@ -330,6 +331,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
     noteRunningVat(vatID);
 
     const adminNode = makeAdminNode(vatID);
+    // @ts-expect-error may not have `then`
     return pendingP.then(root => {
       return { adminNode, root };
     });
@@ -531,7 +533,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
   /**
    * the kernel queues this to us when a vat upgrade completes or fails
    *
-   * @param {UpgradeID} upgradeID
+   * @param {import('../../devices/vat-admin/device-vat-admin.js').UpgradeID} upgradeID
    * @param {boolean} success
    * @param {Error | undefined} error
    * @param {number} incarnationNumber

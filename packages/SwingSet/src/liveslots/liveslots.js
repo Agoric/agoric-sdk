@@ -41,7 +41,7 @@ const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
  * @param {LiveSlotsOptions} liveSlotsOptions
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize,
  *                      meterControl }
- * @param {Console} console
+ * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} console
  * @param {*} buildVatNamespace
  *
  * @returns {*} { dispatch }
@@ -1285,7 +1285,6 @@ function build(
     }
   }
 
-  /** @type {ExitVatWithFailure} */
   function exitVatWithFailure(reason) {
     meterControl.assertIsMetered(); // else userspace getters could escape
     const args = m.serialize(harden(reason));
@@ -1496,6 +1495,7 @@ function build(
     vom.flushCache();
     await gcTools.gcAndFinalize();
     const doMore = await scanForDeadObjects();
+    // @ts-expect-error FIXME doMore is void
     if (doMore) {
       return bringOutYourDead();
     }
@@ -1657,7 +1657,7 @@ function build(
  * @param {LiveSlotsOptions} liveSlotsOptions
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
- * @param {*} buildVatNamespace
+ * @param {*} [buildVatNamespace]
  *
  * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch }
  *
@@ -1712,6 +1712,7 @@ export function makeLiveSlots(
 
 // for tests
 export function makeMarshaller(syscall, gcTools, vatID = 'forVatID') {
+  // @ts-expect-error missing buildVatNamespace param
   const { m } = build(syscall, vatID, {}, {}, gcTools, console);
   return { m };
 }
