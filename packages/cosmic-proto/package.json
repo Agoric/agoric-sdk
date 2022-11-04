@@ -15,8 +15,8 @@
   },
   "type": "module",
   "exports": {
-    "./swingset/msgs.js": "./swingset/msgs.js",
-    "./swingset/msgs.ts": "./swingset/msgs.ts",
+    "./swingset/msgs.js": "./gen/agoric/swingset/msgs.js",
+    "./swingset/msgs.ts": "./gen/agoric/swingset/msgs.ts",
     "./package.json": "./package.json"
   },
   "scripts": {
@@ -38,7 +38,8 @@
   "files": [
     "build",
     "LICENSE*",
-    "swingset/*"
+    "swingset",
+    "gen"
   ],
   "publishConfig": {
     "access": "public"

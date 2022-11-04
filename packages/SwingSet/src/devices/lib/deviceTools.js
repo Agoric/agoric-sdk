@@ -69,7 +69,7 @@ export function buildSerializationTools(syscall, deviceName) {
     if (devnodeSlot) {
       return devnodeSlot;
     }
-    throw Error(X`unable to convert value ${val}`);
+    assert.fail(X`unable to convert value ${val}`);
   }
 
   const m = makeMarshal(convertValToSlot, convertSlotToVal, {

@@ -3,6 +3,10 @@
 import { assert } from '@agoric/assert';
 import { insistStorageAPI, makeBufferedStorage } from '../../lib/storageAPI.js';
 
+/**
+ * @typedef { import('../../types-external.js').KVStore } KVStore
+ */
+
 // We wrap a provided object implementing StorageAPI methods { has, getKeys,
 // get, set, delete } (cf. packages/SwingSet/docs/state.md#transactions) and
 // add some convenience methods.
