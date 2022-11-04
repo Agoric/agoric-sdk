@@ -125,7 +125,7 @@ export async function makeDispatch(
   build,
   vatID = 'vatA',
   liveSlotsOptions = {},
-  returnTestHooks = undefined,
+  returnTestHooks,
 ) {
   const gcTools = harden({
     WeakRef,

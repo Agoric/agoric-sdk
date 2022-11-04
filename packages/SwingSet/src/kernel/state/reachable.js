@@ -12,9 +12,8 @@ export function parseReachableAndVatSlot(value) {
   } else if (flag === '_') {
     isReachable = false;
   } else {
-    assert(`flag (${flag}) must be 'R' or '_'`);
+    assert.fail(`flag (${flag}) must be 'R' or '_'`);
   }
-  // @ts-expect-error xxx TS doesn't know isReachable is assigned b/c assert() throws
   return { isReachable, vatSlot };
 }
 harden(parseReachableAndVatSlot);

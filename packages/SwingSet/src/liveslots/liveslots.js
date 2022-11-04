@@ -7,6 +7,7 @@ import {
 import { assert, details as X } from '@agoric/assert';
 import { isNat } from '@agoric/nat';
 import { isPromise } from '@endo/promise-kit';
+import { HandledPromise } from '@endo/eventual-send';
 import {
   insistVatType,
   makeVatSlot,
