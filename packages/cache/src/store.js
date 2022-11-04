@@ -1,4 +1,3 @@
-// @ts-check
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled, makeMarshal } from '@endo/marshal';
 import { matches, makeScalarMapStore } from '@agoric/store';
@@ -40,9 +39,9 @@ const makeKeyToString = (sanitize = obj => obj) => {
  * @param {(obj: unknown) => unknown} sanitize Process keys and values with
  * this function before storing them
  * @param {{
- * get(key: string): import('./types').State;
- * set(key: string, value: import('./types').State): void;
- * init(key: string, value: import('./types').State): void;
+ * get(key: string): import('./state').State;
+ * set(key: string, value: import('./state').State): void;
+ * init(key: string, value: import('./state').State): void;
  * }} stateStore
  * @returns {Promise<unknown>} the value of the updated state
  */
@@ -56,8 +55,8 @@ const applyCacheTransaction = async (
   /**
    * Retrieve a potential updated state from the transaction.
    *
-   * @param {import('./types').State} basisState
-   * @returns {Promise<import('./types').State | null>} the updated state, or null if no longer applicable
+   * @param {import('./state').State} basisState
+   * @returns {Promise<import('./state').State | null>} the updated state, or null if no longer applicable
    */
   const getUpdatedState = async basisState => {
     const { value } = basisState;
@@ -104,7 +103,7 @@ const applyCacheTransaction = async (
 };
 
 /**
- * @param {MapStore<string, import('./types').State>} stateStore
+ * @param {MapStore<string, import('./state').State>} stateStore
  * @param {ERef<Marshaller>} marshaller
  * @returns {Promise<string>}
  */
@@ -122,7 +121,7 @@ const stringifyStateStore = async (stateStore, marshaller) => {
  * Make a cache coordinator backed by a MapStore.  This coordinator doesn't
  * currently enforce any cache eviction, but that would be a useful feature.
  *
- * @param {MapStore<string, import('./types').State>} [stateStore]
+ * @param {MapStore<string, import('./state').State>} [stateStore]
  * @param {(obj: unknown) => unknown} [sanitize] Process keys and values with
  * this function before storing them. Defaults to deeplyFulfilled.
  */
@@ -167,7 +166,7 @@ export const makeScalarStoreCoordinator = (
 /**
  * Don't write any marshalled value that's older than what's already pushed
  *
- * @param {MapStore<string, import('./types').State>} stateStore
+ * @param {MapStore<string, import('./state').State>} stateStore
  * @param {ERef<Marshaller>} marshaller
  * @param {ERef<StorageNode>} storageNode
  * @returns {<T>(storedValue: T) => Promise<T>}
