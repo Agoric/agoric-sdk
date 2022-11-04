@@ -45,7 +45,10 @@ export function dumpKT(kernel) {
   }
 }
 
-export function buildDispatch(onDispatchCallback = undefined) {
+/**
+ * @param {(d: unknown) => void} [onDispatchCallback ]
+ */
+export function buildDispatch(onDispatchCallback) {
   const log = [];
 
   const GC = ['dropExports', 'retireExports', 'retireImports'];
