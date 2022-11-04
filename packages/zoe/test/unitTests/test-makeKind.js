@@ -23,10 +23,10 @@ test('defineKind non-swingset', async t => {
   const installation = await E(zoe).installBundleID('b1-minimal');
   t.notThrows(() => VatData.defineKind('x', () => {}, {}));
   t.notThrows(() => VatData.defineKindMulti('x', () => {}, { x: {}, y: {} }));
-  t.notThrows(() => VatData.makeKindHandle());
-  const kh = VatData.makeKindHandle();
+  t.notThrows(() => VatData.makeKindHandle('tag'));
+  const kh = VatData.makeKindHandle('tag');
   t.notThrows(() => VatData.defineDurableKind(kh, () => {}, {}));
-  const kh2 = VatData.makeKindHandle();
+  const kh2 = VatData.makeKindHandle('tag');
   t.notThrows(() =>
     VatData.defineDurableKindMulti(kh2, () => {}, { x: {}, y: {} }),
   );

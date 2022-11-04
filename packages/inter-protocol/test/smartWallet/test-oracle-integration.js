@@ -2,7 +2,6 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { NonNullish } from '@agoric/assert';
-import { ensureOracleBrands } from '@agoric/inter-protocol/src/proposals/price-feed-proposal.js';
 import { buildRootObject } from '@agoric/vats/src/core/boot-psm.js';
 import '@agoric/vats/src/core/types.js';
 import {
@@ -15,9 +14,10 @@ import { E } from '@endo/far';
 import { INVITATION_MAKERS_DESC } from '@agoric/zoe/src/contracts/priceAggregator.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { AmountMath } from '@agoric/ertp';
-import { coalesceUpdates } from '../src/utils.js';
+import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
+import { ensureOracleBrands } from '../../src/proposals/price-feed-proposal.js';
 import { makeDefaultTestContext } from './contexts.js';
-import { headValue } from './supports.js';
+import { headValue } from '../supports.js';
 
 /**
  * @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>
@@ -134,14 +134,14 @@ test('admin price', async t => {
 
   // The purse has the invitation to get the makers ///////////
 
-  /** @type {import('../src/invitations.js').PurseInvitationSpec} */
+  /** @type {import('@agoric/smart-wallet/src/invitations.js').PurseInvitationSpec} */
   const getInvMakersSpec = {
     source: 'purse',
     instance: priceAggregator,
     description: INVITATION_MAKERS_DESC,
   };
 
-  /** @type {import('../src/offers').OfferSpec} */
+  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
   const invMakersOffer = {
     id: 44,
     invitationSpec: getInvMakersSpec,
@@ -150,7 +150,7 @@ test('admin price', async t => {
 
   await offersFacet.executeOffer(invMakersOffer);
 
-  /** @type {import('../src/smartWallet.js').CurrentWalletRecord} */
+  /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */
   const currentState = await headValue(currentSub);
   t.deepEqual(Object.keys(currentState.offerToUsedInvitation), ['44']);
   t.is(
@@ -160,7 +160,7 @@ test('admin price', async t => {
 
   // Push a new price result /////////////////////////
 
-  /** @type {import('../src/invitations.js').ContinuingInvitationSpec} */
+  /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
   const proposeInvitationSpec = {
     source: 'continuing',
     previousOffer: 44,
@@ -168,7 +168,7 @@ test('admin price', async t => {
     invitationArgs: harden([123n]),
   };
 
-  /** @type {import('../src/offers').OfferSpec} */
+  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
   const proposalOfferSpec = {
     id: 45,
     invitationSpec: proposeInvitationSpec,

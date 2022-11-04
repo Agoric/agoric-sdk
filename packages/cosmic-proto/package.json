@@ -17,12 +17,16 @@
   "exports": {
     "./swingset/msgs.js": "./gen/agoric/swingset/msgs.js",
     "./swingset/msgs.ts": "./gen/agoric/swingset/msgs.ts",
+    "./swingset/query.js": "./gen/agoric/swingset/query.js",
+    "./swingset/query.ts": "./gen/agoric/swingset/query.ts",
+    "./swingset/swingset.js": "./gen/agoric/swingset/swingset.js",
+    "./swingset/swingset.ts": "./gen/agoric/swingset/swingset.ts",
     "./package.json": "./package.json"
   },
   "scripts": {
     "build": "echo Use yarn rebuild",
     "rebuild": "rm -rf gen && mkdir -p gen && yarn build:ts && yarn build:js && prettier -w .",
-    "build:ts": "protoc --plugin=node_modules/.bin/protoc-gen-ts_proto --ts_proto_opt='esModuleInterop=true,forceLong=long,useOptionals=true' --ts_proto_out=./gen --ts_proto_opt=importSuffix=.js ./proto/agoric/swingset/msgs.proto -I./proto",
+    "build:ts": "protoc --plugin=node_modules/.bin/protoc-gen-ts_proto --ts_proto_opt='esModuleInterop=true,forceLong=long,useOptionals=true' --ts_proto_out=./gen --ts_proto_opt=importSuffix=.js ./proto/agoric/swingset/msgs.proto ./proto/agoric/swingset/query.proto -I./proto",
     "build:js": "tsc --build jsconfig.json",
     "test": "node test/sanity-test.js",
     "test:xs": "exit 0",
