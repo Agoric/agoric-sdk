@@ -51,7 +51,7 @@
     "@agoric/deploy-script-support": "^0.9.4",
     "@endo/bundle-source": "^2.4.1",
     "@endo/init": "^0.5.51",
-    "ava": "^4.3.1",
+    "ava": "^5.0.1",
     "c8": "^7.11.0",
     "import-meta-resolve": "^1.1.1",
     "ses": "^0.17.0"
