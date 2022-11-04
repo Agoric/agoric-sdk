@@ -212,7 +212,7 @@
  *   priceAuthority: PriceAuthority,
  *   priceAuthorityAdmin: PriceAuthorityRegistryAdmin,
  *   provisioning: Awaited<ProvisioningVat>,
- *   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit,
+ *   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit<'nat'>,
  *   walletFactoryStartResult: import('./startWalletFactory').WalletFactoryStartResult,
  *   provisionPoolStartResult: unknown,
  *   zoe: ZoeService,
