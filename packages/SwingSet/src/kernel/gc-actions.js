@@ -44,6 +44,7 @@ export function processNextGCAction(kernelKeeper) {
     const hasCList = vatKeeper.hasCListEntry(kref);
     const isReachable = hasCList ? vatKeeper.getReachableFlag(kref) : undefined;
     const exists = kernelKeeper.kernelObjectExists(kref);
+    // @ts-expect-error xxx
     const { reachable, recognizable } = exists
       ? kernelKeeper.getObjectRefCount(kref)
       : {};

@@ -230,6 +230,7 @@ function deleteVirtualObjectsWithDecref({ syscall, vrm }) {
   // single decrefs)
   const durableBaserefs = Array.from(durableDecrefs.keys()).sort();
   for (const baseRef of durableBaserefs) {
+    // @ts-expect-error FIXME .get does not exist on array
     vrm.decRefCount(baseRef, durableBaserefs.get(baseRef));
   }
 
@@ -286,6 +287,7 @@ function deleteCollectionsWithDecref({ syscall, vrm }) {
   }
   const durableBaserefs = Array.from(durableDecrefs.keys()).sort();
   for (const baseRef of durableBaserefs) {
+    // @ts-expect-error FIXME .get does not exist on array
     vrm.decRefCount(baseRef, durableBaserefs.get(baseRef));
   }
 

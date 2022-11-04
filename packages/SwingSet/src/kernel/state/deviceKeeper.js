@@ -31,15 +31,15 @@ export function initializeDeviceState(kvStore, deviceID) {
  *
  * @param {*} kvStore  The storage in which the persistent state will be kept
  * @param {string} deviceID  The device ID string of the device in question
- * @param { addKernelDeviceNode: (deviceID: string) => string,
+ * @param {{ addKernelDeviceNode: (deviceID: string) => string,
  *          incrementRefCount: (kernelSlot: string,
  *                              tag: string?,
  *                              options: {
- *                                isExport: boolean?,
- *                                onlyRecognizable: boolean?,
+ *                                isExport?: boolean,
+ *                                onlyRecognizable?: boolean,
  *                              },
- *                             ) => undefined),
- *         } tools
+ *                             ) => void,
+ *         }} tools
  * @returns {*} an object to hold and access the kernel's state for the given device
  */
 export function makeDeviceKeeper(kvStore, deviceID, tools) {
@@ -185,6 +185,7 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
    * @returns {Array<[string, string, string]>} an array of this device's state information
    */
   function dumpState() {
+    /** @type {Array<[string, string, string]>} */
     const res = [];
     const prefix = `${deviceID}.c.`;
     for (const k of kvStore.getKeys(prefix, `${deviceID}.c/`)) {

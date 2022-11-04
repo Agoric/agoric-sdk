@@ -137,7 +137,7 @@ function* mergeUtf16SortedIterators(it1, it2) {
  *   onPendingDelete?: (key: string) => void, // a callback invoked after a new uncommitted delete
  *   onCommit?: () => void, // a callback invoked after pending operations have been committed
  *   onAbort?: () => void, // a callback invoked after pending operations have been aborted
- * }?} listeners  Optional callbacks to be invoked when respective events occur
+ * }} listeners  Optional callbacks to be invoked when respective events occur
  *
  * @returns {{kvStore: KVStore, commit: () => void, abort: () => void}}
  */
@@ -163,6 +163,7 @@ export function makeBufferedStorage(kvStore, listeners = {}) {
       if (additions.has(key)) return additions.get(key);
       if (deletions.has(key)) return undefined;
       const value = kvStore.get(key);
+      // @ts-expect-error value may be undefined
       if (onGet !== undefined) onGet(key, value);
       return value;
     },

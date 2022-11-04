@@ -11,6 +11,7 @@ export function waitUntilQuiescent() {
   // lower-priority than the Promise queue on browsers and Node 11, but on
   // Node 10 it is higher. So this trick requires Node 11.
   // https://jsblog.insiderattack.net/new-changes-to-timers-and-microtasks-from-node-v11-0-0-and-above-68d112743eb3
+  /** @type {PromiseKit<void>} */
   const { promise: queueEmptyP, resolve } = makePromiseKit();
   setImmediate(() => resolve());
   return queueEmptyP;

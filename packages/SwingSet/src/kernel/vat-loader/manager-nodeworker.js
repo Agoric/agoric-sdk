@@ -67,6 +67,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       void workerP.then(worker => worker.postMessage(msg));
     }
 
+    /** @type {PromiseKit<void>} */
     const { promise: dispatchReadyP, resolve: dispatchIsReady } =
       makePromiseKit();
     let waiting;

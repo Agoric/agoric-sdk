@@ -79,7 +79,7 @@ export function makeDeviceID(index) {
  *
  * @param {string} s  The string to be parsed.
  *
- * @returns {{ type: 'vat' | 'device', id: number}} an object: {
+ * @returns {{ type: 'vat' | 'device', id: bigint}} an object: {
  *    type: STRING, // 'vat' or 'device', accordingly
  *    id: Nat       // the index
  *  }
@@ -93,6 +93,7 @@ export function parseVatOrDeviceID(s) {
     X`${s} is not a string, so cannot be a VatID/DeviceID`,
   );
   s = `${s}`;
+  /** @type {'vat' | 'device' | undefined} */
   let type;
   let idSuffix;
   if (s.startsWith('v')) {

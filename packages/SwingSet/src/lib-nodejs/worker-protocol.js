@@ -5,6 +5,12 @@ import { Transform } from 'stream';
 // data into Buffers suitable for netstring conversion.
 
 export function arrayEncoderStream() {
+  /**
+   *
+   * @param {*} object
+   * @param {BufferEncoding} encoding
+   * @param {*} callback
+   */
   function transform(object, encoding, callback) {
     if (!Array.isArray(object)) {
       throw Error('stream requires Arrays');
@@ -28,6 +34,7 @@ export function arrayDecoderStream() {
       if (!Buffer.isBuffer(buf)) {
         throw Error('stream expects Buffers');
       }
+      // @ts-expect-error Buffer not assignable to string
       this.push(JSON.parse(buf));
     } catch (e) {
       err = e;
