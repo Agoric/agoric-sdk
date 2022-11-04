@@ -1,4 +1,3 @@
-// @ts-check
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 
 import { assert, details as X } from '@agoric/assert';

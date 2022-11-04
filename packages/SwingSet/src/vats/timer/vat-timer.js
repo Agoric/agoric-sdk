@@ -1,5 +1,4 @@
 /* eslint-disable no-use-before-define */
-// @ts-check
 
 import { E } from '@endo/eventual-send';
 import { Far, passStyleOf } from '@endo/marshal';

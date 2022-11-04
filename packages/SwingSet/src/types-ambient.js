@@ -1,5 +1,3 @@
-// @ts-check
-
 /**
  * @typedef { import('./types-external.js').BundleFormat } BundleFormat
  */

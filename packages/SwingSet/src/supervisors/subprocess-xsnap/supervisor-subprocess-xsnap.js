@@ -1,5 +1,4 @@
 /* global globalThis WeakRef FinalizationRegistry */
-// @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';

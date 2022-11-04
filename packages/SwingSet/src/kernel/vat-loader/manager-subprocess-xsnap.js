@@ -1,4 +1,3 @@
-// @ts-check
 import { assert, details as X, q } from '@agoric/assert';
 import { ExitCode } from '@agoric/xsnap/api.js';
 import { makeManagerKit } from './manager-helper.js';

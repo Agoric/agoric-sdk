@@ -1,4 +1,3 @@
-// @ts-check
 /* global WeakRef, FinalizationRegistry */
 
 // this file is loaded at the start of a new subprocess

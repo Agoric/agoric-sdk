@@ -1,4 +1,3 @@
-// @ts-check
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
 import { insistCapData } from '../lib/capdata.js';
 import { insistMessage } from '../lib/message.js';

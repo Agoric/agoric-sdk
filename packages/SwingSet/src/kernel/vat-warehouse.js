@@ -1,5 +1,4 @@
 /* eslint-disable no-await-in-loop,@jessie.js/no-nested-await */
-// @ts-check
 import { assert, details as X, quote as q } from '@agoric/assert';
 import { isNat } from '@agoric/nat';
 import { makeVatTranslators } from './vatTranslator.js';
