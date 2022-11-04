@@ -37,7 +37,7 @@
     "protobufjs": "^7.0.0"
   },
   "devDependencies": {
-    "ts-proto": "^1.121.1"
+    "ts-proto": "^1.131.0"
   },
   "files": [
     "build",
