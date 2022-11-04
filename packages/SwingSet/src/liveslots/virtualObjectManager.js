@@ -913,6 +913,11 @@ export function makeVirtualObjectManager(
     return kindHandle;
   }
 
+  /**
+   *
+   * @param {string} tag
+   * @returns {import('@agoric/vat-data').DurableKindHandle}
+   */
   const makeKindHandle = tag => {
     assert(kindIDID, `initializeKindHandleKind not called yet`);
     const kindID = `${allocateExportID()}`;
@@ -925,6 +930,7 @@ export function makeVirtualObjectManager(
     kindIDToDescriptor.set(kindID, durableKindDescriptor);
     registerValue(kindIDvref, kindHandle, false);
     saveDurableKindDescriptor(durableKindDescriptor);
+    // @ts-expect-error cast
     return kindHandle;
   };
 
